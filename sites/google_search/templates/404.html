@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block title %}404 - Page not found{% endblock %}
+{% block content %}
+<div class="error-page">
+    <div class="error-robot">
+        <svg width="200" height="200" viewBox="0 0 200 200" fill="none">
+            <rect x="60" y="40" width="80" height="100" rx="12" fill="#f1f3f4" stroke="#dadce0" stroke-width="3"/>
+            <circle cx="82" cy="78" r="8" fill="#4285f4"/>
+            <circle cx="118" cy="78" r="8" fill="#4285f4"/>
+            <rect x="78" y="100" width="44" height="6" rx="3" fill="#9aa0a6"/>
+            <rect x="95" y="20" width="10" height="20" fill="#9aa0a6"/>
+            <circle cx="100" cy="18" r="5" fill="#ea4335"/>
+            <rect x="40" y="60" width="20" height="8" fill="#9aa0a6"/>
+            <rect x="140" y="60" width="20" height="8" fill="#9aa0a6"/>
+            <rect x="70" y="140" width="20" height="30" fill="#9aa0a6"/>
+            <rect x="110" y="140" width="20" height="30" fill="#9aa0a6"/>
+        </svg>
+    </div>
+    <h1 class="error-code">404</h1>
+    <p class="error-text">That's an error.</p>
+    <p class="error-detail">The requested URL <code>{{ request.path }}</code> was not found on this server. That's all we know.</p>
+    <div style="margin-top:32px;">
+        <a href="{{ url_for('index') }}" class="btn-primary">Go to Google Home</a>
+    </div>
+</div>
+{% endblock %}

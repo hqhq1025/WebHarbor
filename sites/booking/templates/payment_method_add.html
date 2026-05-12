@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block title %}Add payment method — Booking{% endblock %}
+{% block content %}
+<div class="container" style="max-width:600px;">
+    <h1 class="page-title">Add payment method</h1>
+    <p class="page-subtitle">Your card details are stored securely</p>
+
+    <div class="account-card">
+        <form method="POST" action="{{ url_for('payment_method_add') }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token_value }}">
+            <div class="form-group">
+                <label>Card type *</label>
+                <select name="card_type" class="form-control" required>
+                    <option value="Visa">Visa</option>
+                    <option value="Mastercard">Mastercard</option>
+                    <option value="Amex">American Express</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Card number *</label>
+                <input type="text" name="card_number" class="form-control" placeholder="1234 5678 9012 3456" required maxlength="19">
+            </div>
+            <div class="form-group">
+                <label>Name on card *</label>
+                <input type="text" name="cardholder_name" class="form-control" placeholder="As shown on card" required>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Expiry (MM/YY) *</label>
+                    <input type="text" name="card_exp" class="form-control" placeholder="09/27" required>
+                </div>
+                <div class="form-group">
+                    <label>CVV *</label>
+                    <input type="text" name="card_cvv" class="form-control" placeholder="123" maxlength="4" required>
+                </div>
+            </div>
+            <div style="display:flex;gap:12px;margin-top:24px;">
+                <button type="submit" class="form-submit" style="flex:1;">Save card</button>
+                <a href="{{ url_for('payment_methods') }}" class="btn-secondary" style="flex:1;text-align:center;padding:14px;">Cancel</a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

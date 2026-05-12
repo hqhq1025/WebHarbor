@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+{% block title %}Create a new repository · GitHub{% endblock %}
+{% block content %}
+<div class="new-repo-page">
+  <h1 class="page-title">Create a new repository</h1>
+  <p class="page-subtitle">A repository contains all project files, including the revision history.</p>
+  <hr class="page-divider">
+
+  <form method="POST" action="/new">
+    {{ form.hidden_tag() }}
+    <div class="new-repo-owner-row">
+      <div class="form-group new-repo-owner">
+        <label class="form-label">Owner</label>
+        <button type="button" class="gh-btn gh-btn-secondary new-repo-owner-btn">
+          <img src="{{ current_user.avatar_url }}" alt="" class="gh-avatar-img" onerror="this.style.display='none'">
+          {{ current_user.username }}
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M4.427 7.427l3.396 3.396a.25.25 0 00.354 0l3.396-3.396A.25.25 0 0011.396 7H4.604a.25.25 0 00-.177.427z"/></svg>
+        </button>
+      </div>
+      <span class="new-repo-slash">/</span>
+      <div class="form-group new-repo-name">
+        <label class="form-label">Repository name <span class="form-required">*</span></label>
+        {{ form.name(class="form-input", id="repo-name", placeholder="my-project", autofocus=true) }}
+        {% for e in form.name.errors %}<span class="form-error">{{ e }}</span>{% endfor %}
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">Description <span class="form-optional">(optional)</span></label>
+      {{ form.description(class="form-input", placeholder="Short description") }}
+    </div>
+
+    <hr class="page-divider">
+
+    <div class="form-group">
+      <label class="form-radio-label">
+        {{ form.is_public(value="true") }}
+        <div class="form-radio-content">
+          <svg aria-hidden="true" height="32" viewBox="0 0 16 16" width="32" fill="currentColor">
+            <path d="M2 2.5A2.5 2.5 0 0 1 4.5 0h8.75a.75.75 0 0 1 .75.75v12.5a.75.75 0 0 1-.75.75h-2.5a.75.75 0 0 1 0-1.5h1.75v-2h-8a1 1 0 0 0-.714 1.7.75.75 0 1 1-1.072 1.05A2.495 2.495 0 0 1 2 11.5Z"/>
+          </svg>
+          <div>
+            <strong>Public</strong>
+            <p class="form-radio-desc">Anyone on the internet can see this repository. You choose who can commit.</p>
+          </div>
+        </div>
+      </label>
+      <label class="form-radio-label">
+        {{ form.is_public(value="false") }}
+        <div class="form-radio-content">
+          <svg aria-hidden="true" height="32" viewBox="0 0 16 16" width="32" fill="currentColor">
+            <path d="M4 4a4 4 0 0 1 8 0v2h.25c.966 0 1.75.784 1.75 1.75v5.5A1.75 1.75 0 0 1 12.25 15h-8.5A1.75 1.75 0 0 1 2 13.25v-5.5C2 6.784 2.784 6 3.75 6H4Zm8.25 3.5h-8.5a.25.25 0 0 0-.25.25v5.5c0 .138.112.25.25.25h8.5a.25.25 0 0 0 .25-.25v-5.5a.25.25 0 0 0-.25-.25ZM10.5 6V4a2.5 2.5 0 0 0-5 0v2Z"/>
+          </svg>
+          <div>
+            <strong>Private</strong>
+            <p class="form-radio-desc">You choose who can see and commit to this repository.</p>
+          </div>
+        </div>
+      </label>
+    </div>
+
+    <hr class="page-divider">
+
+    <div class="form-check-group">
+      <label class="form-check-label">
+        {{ form.init_readme(class="form-check") }}
+        <div>
+          <strong>Add a README file</strong>
+          <p class="form-radio-desc">This is where you can write a long description for your project.</p>
+        </div>
+      </label>
+    </div>
+
+    <hr class="page-divider">
+
+    <button type="submit" class="gh-btn gh-btn-primary gh-btn-lg">Create repository</button>
+  </form>
+</div>
+{% endblock %}

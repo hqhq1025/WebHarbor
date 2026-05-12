@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% block title %}Stars · GitHub{% endblock %}
+{% block content %}
+<div class="stars-page">
+  <div class="stars-header">
+    <h1 class="page-title">Your stars</h1>
+    <a href="/explore" class="gh-btn gh-btn-secondary">Explore GitHub</a>
+  </div>
+
+  {% if stars %}
+  <div class="stars-list">
+    {% for star in stars %}
+    <article class="repo-list-item">
+      <div class="repo-list-info">
+        <h3>
+          <a href="/{{ star.repo.full_name }}" class="repo-list-name">{{ star.repo.full_name }}</a>
+        </h3>
+        {% if star.repo.description %}
+        <p class="repo-list-desc">{{ star.repo.description }}</p>
+        {% endif %}
+        <div class="repo-list-meta">
+          {% if star.repo.language %}
+          <span class="repo-lang">
+            <span class="repo-lang-dot" style="background-color: {{ lang_colors.get(star.repo.language, '#8f9ba8') }}"></span>
+            {{ star.repo.language }}
+          </span>
+          {% endif %}
+          <span>⭐ {{ star.repo.stars_count | number_format }}</span>
+          <span>🍴 {{ star.repo.forks_count | number_format }}</span>
+          <span>Starred {{ star.created_at | time_ago }}</span>
+          {% for t in star.repo.get_topics()[:3] %}
+          <a href="/topics/{{ t }}" class="topic-badge-sm">{{ t }}</a>
+          {% endfor %}
+        </div>
+      </div>
+      <form method="POST" action="{{ url_for('star_toggle_form', repo_id=star.repo.id) }}" style="margin:0">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <input type="hidden" name="next" value="{{ url_for('my_stars') }}">
+        <button type="submit" class="gh-btn gh-btn-secondary gh-btn-sm">
+          <svg aria-hidden="true" height="14" viewBox="0 0 16 16" width="14" fill="currentColor">
+            <path d="M8 .25a.75.75 0 0 1 .673.418l1.882 3.815 4.21.612a.75.75 0 0 1 .416 1.279l-3.046 2.97.719 4.192a.751.751 0 0 1-1.088.791L8 12.347l-3.766 1.98a.75.75 0 0 1-1.088-.79l.72-4.194L.818 6.374a.75.75 0 0 1 .416-1.28l4.21-.611L7.327.668A.75.75 0 0 1 8 .25Z"/>
+          </svg>
+          Unstar
+        </button>
+      </form>
+    </article>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="empty-state empty-state-lg">
+    <svg aria-hidden="true" height="48" viewBox="0 0 16 16" width="48" fill="currentColor">
+      <path d="M8 .25a.75.75 0 0 1 .673.418l1.882 3.815 4.21.612a.75.75 0 0 1 .416 1.279l-3.046 2.97.719 4.192a.751.751 0 0 1-1.088.791L8 12.347l-3.766 1.98a.75.75 0 0 1-1.088-.79l.72-4.194L.818 6.374a.75.75 0 0 1 .416-1.28l4.21-.611L7.327.668A.75.75 0 0 1 8 .25Z"/>
+    </svg>
+    <h2>You haven't starred any repositories yet</h2>
+    <p>Stars let you bookmark interesting projects. Explore GitHub to find repos you like.</p>
+    <a href="/explore" class="gh-btn gh-btn-primary">Explore GitHub</a>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

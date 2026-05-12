@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block title %}New Notebook — Wolfram|Alpha{% endblock %}
+
+{% block content %}
+<div class="section-inner auth-page">
+  <div class="auth-card auth-card--wide">
+    <h1 class="auth-title">Create Notebook</h1>
+    <p class="auth-subtitle">Organize your computations and results in a named notebook.</p>
+    <form class="auth-form" method="post" action="/notebook/create">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <div class="form-group">
+        <label class="form-label">Notebook Title <span class="required">*</span></label>
+        <input type="text" name="title" class="form-input"
+               placeholder="e.g. Calculus Study Notes" required autofocus>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Description</label>
+        <textarea name="description" class="form-input" rows="3"
+                  placeholder="What is this notebook about?"></textarea>
+      </div>
+      <div class="form-group">
+        <label class="form-check">
+          <input type="checkbox" name="is_public"> Make notebook public
+        </label>
+      </div>
+      <div class="form-row">
+        <button type="submit" class="btn btn-pro-primary">Create Notebook</button>
+        <a href="/notebooks" class="btn btn-secondary">Cancel</a>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

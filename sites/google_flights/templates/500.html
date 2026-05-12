@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block title %}Server error | Google Flights{% endblock %}
+
+{% block content %}
+<div class="error-page">
+  <span class="material-symbols-outlined" style="font-size:120px;color:var(--g-red);">error</span>
+  <h1 style="font-family:var(--font-sans);font-size:40px;font-weight:400;margin:16px 0;">500</h1>
+  <h2 style="font-family:var(--font-sans);font-size:24px;font-weight:400;color:var(--g-grey-800);">Something went wrong</h2>
+  <p style="color:var(--g-grey-700);margin:12px 0 24px;">Our team has been notified. Please try again in a moment.</p>
+  <a href="{{ url_for('index') }}" class="btn btn-primary">Go to home</a>
+</div>
+{% endblock %}

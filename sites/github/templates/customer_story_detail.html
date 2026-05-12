@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+{% block title %}{{ story.company }} · Customer Story · GitHub{% endblock %}
+{% block content %}
+<div class="story-detail-page">
+  <a href="/customer-stories" class="back-link">← All stories</a>
+  <span class="story-industry">{{ story.industry }}</span>
+  <h1 class="story-company">{{ story.company }}</h1>
+  <h2 class="story-headline">{{ story.headline }}</h2>
+  <p class="story-summary">{{ story.summary }}</p>
+</div>
+{% endblock %}

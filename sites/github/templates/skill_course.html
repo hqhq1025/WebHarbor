@@ -1,0 +1,206 @@
+{% extends "base.html" %}
+{% block title %}{{ course.title }} · GitHub Skills{% endblock %}
+{% block content %}
+
+<!-- Hero -->
+<section class="sec-hero">
+  <div class="sec-hero-inner">
+    <div class="sec-hero-text">
+      <span class="sec-eyebrow">
+        <svg aria-hidden="true" height="16" viewBox="0 0 16 16" width="16" fill="currentColor">
+          <path d="M11.46.146A.5.5 0 0 0 11.107 0H4.893a.5.5 0 0 0-.353.146L.146 4.54A.5.5 0 0 0 0 4.893v6.214a.5.5 0 0 0 .146.353l4.394 4.394a.5.5 0 0 0 .353.146h6.214a.5.5 0 0 0 .353-.146l4.394-4.394a.5.5 0 0 0 .146-.353V4.893a.5.5 0 0 0-.146-.353Z"/>
+        </svg>
+        <a href="/skills" style="color:inherit;text-decoration:none;">GitHub Skills</a> &nbsp;/&nbsp; Course
+      </span>
+      <h1 class="sec-hero-headline">{{ course.title }}</h1>
+      <p class="sec-hero-sub">{{ course.desc }}</p>
+      <div class="sec-hero-cta">
+        <a href="/register" class="gh-btn gh-btn-primary">Start course</a>
+        <a href="/skills" class="gh-btn gh-btn-secondary">Browse all courses</a>
+      </div>
+      <ul class="sec-hero-bullets">
+        <li>Difficulty: Beginner-friendly</li>
+        <li>Duration: {{ course.duration }} · self-paced</li>
+        <li>Hands-on in your own GitHub repository</li>
+      </ul>
+    </div>
+    <div class="sec-hero-art" aria-hidden="true">
+      <div class="sec-hero-card">
+        <div class="sec-hero-card-row sec-row-bug">
+          <span class="sec-row-icon">🔀</span>
+          <span class="sec-row-msg"><strong>Conflict in</strong> <code>README.md</code> on branch <code>feature/welcome</code></span>
+        </div>
+        <div class="sec-hero-card-row sec-row-secret">
+          <span class="sec-row-icon">✏️</span>
+          <span class="sec-row-msg"><strong>Editing in browser</strong> — choose &lt;&lt;&lt; HEAD or incoming change</span>
+        </div>
+        <div class="sec-hero-card-row sec-row-dep">
+          <span class="sec-row-icon">📝</span>
+          <span class="sec-row-msg"><strong>Marked as resolved</strong> — commit message auto-suggested</span>
+        </div>
+        <div class="sec-hero-card-row sec-row-fix">
+          <span class="sec-row-icon">✅</span>
+          <span class="sec-row-msg"><strong>Pull request merged</strong> — Skills bot says "great job!"</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Breadcrumb -->
+<nav aria-label="Breadcrumb" style="max-width:1100px;margin:0 auto;padding:16px 24px 0;font-size:13px;color:var(--color-fg-muted);">
+  <a href="/" style="color:inherit;">Home</a> &nbsp;›&nbsp;
+  <a href="/skills" style="color:inherit;">Skills</a> &nbsp;›&nbsp;
+  <span style="color:var(--color-fg);">{{ course.title }}</span>
+</nav>
+
+<!-- What you'll learn -->
+<section class="sec-features">
+  <div class="sec-section-inner sec-narrow">
+    <h2 class="sec-section-title">What you'll learn</h2>
+    <p class="sec-section-lede">By the end of this course, you will be able to:</p>
+    <ul class="skill-course-actions" style="list-style:none;padding:0;margin:0;">
+      {% for a in course.actions %}
+      <li style="background:var(--color-bg-secondary); border:1px solid var(--color-border); border-radius:8px; padding:14px 18px; margin-bottom:10px; color:var(--color-fg); display:flex; align-items:flex-start; gap:12px;">
+        <span style="color:#3fb950; font-weight:700; font-size:18px; flex-shrink:0;">{{ loop.index }}.</span>
+        <span>{{ a }}</span>
+      </li>
+      {% endfor %}
+    </ul>
+  </div>
+</section>
+
+<!-- Prerequisites -->
+<section class="sec-detail">
+  <div class="sec-section-inner sec-narrow">
+    <h2 class="sec-section-title">Prerequisites</h2>
+    <p>This is a beginner-friendly course. You'll get the most out of it if you're already comfortable with the basics covered in <a href="/skills/introduction-to-github">Introduction to GitHub</a> — creating a repository, opening a pull request, and merging branches. No local Git client is required; everything happens in the GitHub web editor.</p>
+    <ul style="color:var(--color-fg-muted); line-height:1.7; padding-left:20px;">
+      <li>A free <a href="/register">GitHub account</a></li>
+      <li>A modern web browser (Chrome, Firefox, Safari, or Edge)</li>
+      <li>About {{ course.duration }} of focused time</li>
+    </ul>
+  </div>
+</section>
+
+<!-- Course modules -->
+<section class="sec-features">
+  <div class="sec-section-inner">
+    <h2 class="sec-section-title">Course modules</h2>
+    <p class="sec-section-lede">Each module is graded automatically by the Skills bot the moment you push your changes. Modules build on each other — finish them in order.</p>
+    <div class="sec-feature-grid">
+      <div class="sec-feature">
+        <div class="sec-feature-icon">1</div>
+        <h3>Set up the practice repository</h3>
+        <p>Use the course template to create a fresh repository in your own account. The Skills bot opens the first issue and walks you through the workflow you'll follow for the rest of the course.</p>
+      </div>
+      <div class="sec-feature">
+        <div class="sec-feature-icon">2</div>
+        <h3>Trigger your first conflict</h3>
+        <p>Open two branches that touch the same line of the same file. Open a pull request and watch GitHub mark it as "this branch has conflicts that must be resolved."</p>
+      </div>
+      <div class="sec-feature">
+        <div class="sec-feature-icon">3</div>
+        <h3>Resolve the conflict in the web editor</h3>
+        <p>Use the in-browser merge editor to choose between incoming and current changes — or to keep both. Commit the resolution and watch the conflict marker disappear.</p>
+      </div>
+      <div class="sec-feature">
+        <div class="sec-feature-icon">4</div>
+        <h3>Mark as resolved &amp; complete the merge</h3>
+        <p>Click "Mark as resolved", complete the merge, and confirm the pull request closes cleanly. The Skills bot verifies your final state and grades the module.</p>
+      </div>
+      <div class="sec-feature">
+        <div class="sec-feature-icon">5</div>
+        <h3>Practice on a harder conflict</h3>
+        <p>Repeat the workflow on a more realistic conflict that touches three files at once — including a binary file that requires a different resolution strategy.</p>
+      </div>
+      <div class="sec-feature">
+        <div class="sec-feature-icon">6</div>
+        <h3>Review &amp; earn your badge</h3>
+        <p>The bot opens a final review pull request, adds your completion badge to your profile, and links you to the next recommended course in the path.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Instructor -->
+<section class="sec-stories">
+  <div class="sec-section-inner sec-narrow">
+    <h2 class="sec-section-title">Course author</h2>
+    <article class="sec-story" style="display:flex; flex-direction:row; align-items:center; gap:24px;">
+      <div class="sec-story-logo sec-story-adobe" style="flex-shrink:0;">EZ</div>
+      <div style="flex:1;">
+        <blockquote class="sec-story-quote">"Merge conflicts are a rite of passage. They look terrifying the first time and routine the tenth time — this course is designed to fast-forward you to the tenth."</blockquote>
+        <div class="sec-story-attr">
+          <strong>Eddie Zaneski</strong> · Senior Developer Advocate, GitHub
+          <br>
+          <span style="font-size:12px;">Author of 4 Skills courses · Conference speaker on Git internals</span>
+        </div>
+      </div>
+    </article>
+  </div>
+</section>
+
+<!-- Social proof -->
+<section class="sec-stats">
+  <div class="sec-section-inner">
+    <div class="sec-stats-grid">
+      <div class="sec-stat">
+        <div class="sec-stat-num">214,800</div>
+        <div class="sec-stat-label">learners have completed this course</div>
+      </div>
+      <div class="sec-stat">
+        <div class="sec-stat-num">4.8 / 5</div>
+        <div class="sec-stat-label">average learner rating from 18,400 reviews</div>
+      </div>
+      <div class="sec-stat">
+        <div class="sec-stat-num">93%</div>
+        <div class="sec-stat-label">finish the course in a single sitting</div>
+      </div>
+      <div class="sec-stat">
+        <div class="sec-stat-num">{{ course.duration }}</div>
+        <div class="sec-stat-label">estimated completion time</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CTA + related -->
+<section class="sec-final-cta">
+  <div class="sec-section-inner sec-narrow sec-final-cta-inner">
+    <h2>Ready to merge with confidence?</h2>
+    <p>Spin up the practice repo and resolve your first conflict in the next 10 minutes.</p>
+    <div class="sec-hero-cta">
+      <a href="/register" class="gh-btn gh-btn-primary">Start course</a>
+      <a href="/skills" class="gh-btn gh-btn-secondary">Back to all courses</a>
+    </div>
+  </div>
+</section>
+
+<section class="sec-features">
+  <div class="sec-section-inner">
+    <h2 class="sec-section-title">After this course, try…</h2>
+    <div class="sec-feature-grid">
+      <div class="sec-feature">
+        <div class="sec-feature-icon">🔁</div>
+        <h3><a href="/skills/release-based-workflow" style="color:inherit;text-decoration:none;">Release-based workflow</a></h3>
+        <p>Apply your conflict-resolution skills to the most common branching strategy in production teams. ~2 hours.</p>
+        <a href="/skills/release-based-workflow" class="sec-feature-link">Open course →</a>
+      </div>
+      <div class="sec-feature">
+        <div class="sec-feature-icon">🔍</div>
+        <h3><a href="/skills/review-pull-requests" style="color:inherit;text-decoration:none;">Review pull requests</a></h3>
+        <p>Practice reviewing pull requests like a maintainer — leave inline comments, request changes, and approve. ~1 hour.</p>
+        <a href="/skills/review-pull-requests" class="sec-feature-link">Open course →</a>
+      </div>
+      <div class="sec-feature">
+        <div class="sec-feature-icon">⚙️</div>
+        <h3><a href="/skills/hello-github-actions" style="color:inherit;text-decoration:none;">Hello GitHub Actions</a></h3>
+        <p>Add a CI workflow to a repo and watch it run on every push. The natural next step after mastering merges. ~1 hour.</p>
+        <a href="/skills/hello-github-actions" class="sec-feature-link">Open course →</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+{% endblock %}

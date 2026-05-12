@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% block title %}Create alert - Google Alerts{% endblock %}
+
+{% block content %}
+<div class="form-page">
+    <div class="form-card">
+        <h1 class="form-title">Create an alert</h1>
+        <p class="form-subtitle">Get notified when new results appear for your query</p>
+        <form method="post">
+            {{ form.hidden_tag() }}
+            <div class="field">
+                <label>Query</label>
+                {{ form.term() }}
+            </div>
+            <div class="field">
+                <label>How often</label>
+                {{ form.frequency() }}
+            </div>
+            <div class="field">
+                <label>Sources</label>
+                {{ form.sources() }}
+            </div>
+            <div class="field">
+                <label>Region</label>
+                {{ form.region() }}
+            </div>
+            <div class="form-actions">
+                <a href="{{ url_for('alerts') }}" class="btn-text">Cancel</a>
+                <button type="submit" class="btn-primary">Create alert</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

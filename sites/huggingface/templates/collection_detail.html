@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% from "_macros.html" import repo_card %}
+{% block title %}{{ collection.title }} – Collection{% endblock %}
+
+{% block content %}
+<div class="container-wide page">
+    <div class="collection-head">
+        <h1>{{ collection.title }}</h1>
+        <p>{{ collection.description }}</p>
+        <div class="collection-head-meta">
+            <span>by {{ collection.owner.username }}</span>
+            <span>{{ 'Public' if collection.is_public else 'Private' }}</span>
+            <span>{{ items|length }} item{{ '' if items|length == 1 else 's' }}</span>
+        </div>
+        {% if current_user.is_authenticated and current_user.id == collection.user_id %}
+        <div class="collection-head-actions">
+            <a class="btn btn-sm btn-outline" href="{{ url_for('collection_edit', collection_id=collection.id) }}">Edit</a>
+            <form method="post" action="{{ url_for('collection_delete', collection_id=collection.id) }}" style="display:inline;">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button class="btn btn-sm btn-danger" type="submit">Delete</button>
+            </form>
+        </div>
+        {% endif %}
+    </div>
+
+    <div class="repo-list">
+        {% for item in items %}
+            {% if item.repo %}
+            <div class="collection-item-wrap">
+                {{ repo_card(item.repo, liked_ids) }}
+                {% if current_user.is_authenticated and current_user.id == collection.user_id %}
+                <form method="post" action="{{ url_for('collection_remove_item', collection_id=collection.id, item_id=item.id) }}" style="display:inline;">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button class="btn btn-sm btn-ghost" type="submit">Remove</button>
+                </form>
+                {% endif %}
+            </div>
+            {% endif %}
+        {% else %}
+            <p class="empty-state">This collection is empty.</p>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

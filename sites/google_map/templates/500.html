@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block title %}Server error - Google Maps{% endblock %}
+
+{% block body %}
+<div class="topbar">
+    <a href="{{ url_for('index') }}" class="brand">
+        <span class="material-icons-outlined" style="font-size:26px;color:#ea4335;">place</span>
+        <span>Google Maps</span>
+    </a>
+</div>
+
+<div class="page narrow" style="text-align:center; padding-top:80px;">
+    <div style="font-size:120px; color:var(--red); font-weight:300; line-height:1;">500</div>
+    <h1 style="margin-top:12px;">Something went wrong</h1>
+    <p class="page-sub" style="margin-bottom:28px;">We're having trouble loading this page. Please try again in a moment.</p>
+    <div style="display:flex; gap:12px; justify-content:center;">
+        <a href="{{ url_for('index') }}" class="btn">Back to map</a>
+    </div>
+</div>
+{% endblock %}

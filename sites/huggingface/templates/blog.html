@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block title %}Blog – Hugging Face{% endblock %}
+
+{% block content %}
+<section class="blog-hero">
+    <div class="container-wide">
+        <h1>The Hugging Face Blog</h1>
+        <p class="muted">Research, tutorials, and product announcements from the HF team and community.</p>
+    </div>
+</section>
+
+<div class="container-wide page">
+    <div class="blog-tags">
+        <a href="{{ url_for('blog_index') }}" class="sidebar-tag">All</a>
+        {% for t in all_tags %}
+        <a href="{{ url_for('blog_index', tag=t) }}" class="sidebar-tag">{{ t }}</a>
+        {% endfor %}
+    </div>
+
+    <div class="blog-grid">
+        {% for post in posts %}
+        <a class="blog-card result-card" href="{{ url_for('blog_post', slug=post.slug) }}">
+            <div class="blog-card-img" style="background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);display:flex;align-items:center;justify-content:center;font-size:48px;color:#fff;">📝</div>
+            <div class="blog-card-body">
+                <h3>{{ post.title }}</h3>
+                <p class="muted">{{ post.excerpt[:180] }}</p>
+                <div class="blog-card-meta">
+                    <span>{{ post.author }}</span>
+                    <span>· {{ post.published }}</span>
+                </div>
+                <div class="tag-row">
+                    {% for t in post.tags %}<span class="tag">{{ t }}</span>{% endfor %}
+                </div>
+            </div>
+        </a>
+        {% else %}
+        <p class="empty-state">No posts match your filter.</p>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

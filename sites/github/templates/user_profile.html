@@ -1,0 +1,251 @@
+{% extends "base.html" %}
+{% block title %}{{ profile_user.name or profile_user.username }} ({{ profile_user.username }}) · GitHub{% endblock %}
+{% block content %}
+<div class="profile-layout">
+  <!-- Sidebar -->
+  <aside class="profile-sidebar">
+    <div class="profile-avatar-wrap">
+      <img src="{{ profile_user.avatar_url }}" alt="{{ profile_user.username }}" class="profile-avatar"
+           onerror="this.src='/static/images/avatars/avatar_00.jpg'">
+    </div>
+    <div class="profile-name-block">
+      <h1 class="profile-name">{{ profile_user.name or profile_user.username }}</h1>
+      <span class="profile-username">{{ profile_user.username }}</span>
+    </div>
+    {% if profile_user.bio %}
+    <p class="profile-bio">{{ profile_user.bio }}</p>
+    {% endif %}
+
+    {% if current_user.is_authenticated and current_user.id != profile_user.id %}
+    <form method="POST" action="{{ url_for('follow_toggle_form', user_id=profile_user.id) }}" style="margin:0">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <input type="hidden" name="next" value="{{ request.path }}">
+      <button type="submit" class="gh-btn gh-btn-secondary gh-btn-block follow-btn" id="follow-btn">
+        <span id="follow-text">
+          {% if current_user.is_following(profile_user) %}Unfollow{% else %}Follow{% endif %}
+        </span>
+      </button>
+    </form>
+    {% elif current_user.is_authenticated and current_user.id == profile_user.id %}
+    <a href="/settings/profile" class="gh-btn gh-btn-secondary gh-btn-block">Edit profile</a>
+    {% endif %}
+
+    <div class="profile-meta">
+      {% if profile_user.company %}
+      <div class="profile-meta-item">
+        <svg aria-hidden="true" height="16" viewBox="0 0 16 16" width="16" fill="currentColor">
+          <path d="M1.5 14.25c0 .138.112.25.25.25H4v-1.25a.75.75 0 0 1 .75-.75h2.5a.75.75 0 0 1 .75.75v1.25h2.25a.25.25 0 0 0 .25-.25V1.75a.25.25 0 0 0-.25-.25h-8.5a.25.25 0 0 0-.25.25v12.5ZM3.75 6h.5a.75.75 0 0 1 0 1.5h-.5a.75.75 0 0 1 0-1.5ZM3 3.75A.75.75 0 0 1 3.75 3h.5a.75.75 0 0 1 0 1.5h-.5A.75.75 0 0 1 3 3.75Zm4 3A.75.75 0 0 1 7.75 6h.5a.75.75 0 0 1 0 1.5h-.5A.75.75 0 0 1 7 6.75ZM7.75 3h.5a.75.75 0 0 1 0 1.5h-.5a.75.75 0 0 1 0-1.5ZM3 9.75A.75.75 0 0 1 3.75 9h.5a.75.75 0 0 1 0 1.5h-.5A.75.75 0 0 1 3 9.75ZM7.75 9h.5a.75.75 0 0 1 0 1.5h-.5a.75.75 0 0 1 0-1.5Z"/>
+        </svg>
+        {{ profile_user.company }}
+      </div>
+      {% endif %}
+      {% if profile_user.location %}
+      <div class="profile-meta-item">
+        <svg aria-hidden="true" height="16" viewBox="0 0 16 16" width="16" fill="currentColor">
+          <path d="m12.596 11.596-3.535 3.536a1.5 1.5 0 0 1-2.122 0l-3.535-3.536a6.5 6.5 0 1 1 9.192-9.193 6.5 6.5 0 0 1 0 9.193Zm-1.06-8.132v-.001a5 5 0 1 0-7.072 7.072L8 14.07l3.536-3.534a5 5 0 0 0 0-7.072ZM8 9a2 2 0 1 1-.001-3.999A2 2 0 0 1 8 9Z"/>
+        </svg>
+        {{ profile_user.location }}
+      </div>
+      {% endif %}
+      {% if profile_user.website %}
+      <div class="profile-meta-item">
+        <svg aria-hidden="true" height="16" viewBox="0 0 16 16" width="16" fill="currentColor">
+          <path d="M7.775 3.275a.75.75 0 0 0 1.06 1.06l1.25-1.25a2 2 0 1 1 2.83 2.83l-2.5 2.5a2 2 0 0 1-2.83 0 .75.75 0 0 0-1.06 1.06 3.5 3.5 0 0 0 4.95 0l2.5-2.5a3.5 3.5 0 0 0-4.95-4.95l-1.25 1.25Z"/><path d="M9.168 10.575a2 2 0 0 1-2.83 0 .75.75 0 0 0-1.06 1.061 3.5 3.5 0 0 0 4.95 0l1.25-1.25a.75.75 0 0 0-1.06-1.06l-1.25 1.249Z"/>
+        </svg>
+        <a href="{{ profile_user.website }}" class="profile-link" target="_blank" rel="noopener">{{ profile_user.website | replace('https://', '') }}</a>
+      </div>
+      {% endif %}
+      {% if profile_user.twitter %}
+      <div class="profile-meta-item">
+        <svg aria-hidden="true" height="16" viewBox="0 0 16 16" width="16" fill="currentColor">
+          <path d="M13.341 1H15.5l-4.773 5.452 5.617 7.428H12.04l-3.44-4.5L4.48 13.88H2.32l5.107-5.834L1.5 1h4.66L9.04 5.137 13.341 1Zm-.741 11.631h1.184L4.09 2.21H2.815l9.785 10.421Z"/>
+        </svg>
+        <a href="https://x.com/{{ profile_user.twitter }}" class="profile-link" target="_blank" rel="noopener">@{{ profile_user.twitter }}</a>
+      </div>
+      {% endif %}
+    </div>
+
+    <!-- Followers / Following -->
+    <div class="profile-follow-stats">
+      <a href="/{{ profile_user.username }}?tab=followers" class="profile-follow-stat">
+        <svg aria-hidden="true" height="16" viewBox="0 0 16 16" width="16" fill="currentColor">
+          <path d="M2 5.5a3.5 3.5 0 1 1 5.898 2.549 5.508 5.508 0 0 1 3.034 4.084.75.75 0 1 1-1.482.235 4 4 0 0 0-7.9 0 .75.75 0 0 1-1.482-.236A5.507 5.507 0 0 1 3.102 8.05 3.493 3.493 0 0 1 2 5.5ZM11 4a3.001 3.001 0 0 1 2.22 5.018 5.01 5.01 0 0 1 2.56 3.012.749.749 0 0 1-.885.954.752.752 0 0 1-.549-.514 3.507 3.507 0 0 0-2.522-2.372.75.75 0 0 1-.574-.73v-.352a.75.75 0 0 1 .416-.672A1.5 1.5 0 0 0 11 5.5.75.75 0 0 1 11 4Zm-5.5-.5a2 2 0 1 0-.001 3.999A2 2 0 0 0 5.5 3.5Z"/>
+        </svg>
+        <strong>{{ profile_user.followers_count }}</strong> followers
+      </a>
+      <a href="/{{ profile_user.username }}?tab=following" class="profile-follow-stat">
+        <strong>{{ profile_user.following_count }}</strong> following
+      </a>
+    </div>
+  </aside>
+
+  <!-- Main content -->
+  <div class="profile-main">
+    <!-- Tab navigation -->
+    <nav class="profile-tabs">
+      <a href="/{{ profile_user.username }}?tab=repositories"
+         class="profile-tab {% if tab == 'repositories' %}active{% endif %}">
+        Repositories
+        <span class="profile-tab-count">{{ profile_user.public_repos_count }}</span>
+      </a>
+      <a href="/{{ profile_user.username }}?tab=stars"
+         class="profile-tab {% if tab == 'stars' %}active{% endif %}">
+        Stars
+      </a>
+      <a href="/{{ profile_user.username }}/followers"
+         class="profile-tab {% if tab == 'followers' %}active{% endif %}">
+        Followers
+        <span class="profile-tab-count">{{ profile_user.followers_count }}</span>
+      </a>
+      <a href="/{{ profile_user.username }}/following"
+         class="profile-tab {% if tab == 'following' %}active{% endif %}">
+        Following
+        <span class="profile-tab-count">{{ profile_user.following_count }}</span>
+      </a>
+      <a href="/{{ profile_user.username }}/watching"
+         class="profile-tab {% if tab == 'watching' %}active{% endif %}">
+        Watching
+      </a>
+    </nav>
+
+    {% if tab == 'repositories' %}
+    <div class="profile-repos">
+      {% for repo in repos %}
+      <article class="repo-list-item">
+        <div class="repo-list-info">
+          <h3>
+            <a href="/{{ repo.full_name }}" class="repo-list-name">{{ repo.name }}</a>
+            {% if not repo.is_public %}<span class="repo-visibility-badge repo-private">Private</span>{% endif %}
+            {% if repo.is_fork %}<span class="repo-fork-badge">Fork</span>{% endif %}
+          </h3>
+          {% if repo.description %}<p class="repo-list-desc">{{ repo.description }}</p>{% endif %}
+          <div class="repo-list-meta">
+            {% if repo.language %}
+            <span class="repo-lang">
+              <span class="repo-lang-dot" style="background-color: {{ lang_colors.get(repo.language, '#8f9ba8') }}"></span>
+              {{ repo.language }}
+            </span>
+            {% endif %}
+            {% if repo.stars_count > 0 %}
+            <span class="trending-stat">⭐ {{ repo.stars_count | number_format }}</span>
+            {% endif %}
+            <span class="repo-updated-sm">{{ repo.updated_relative() }}</span>
+          </div>
+        </div>
+      </article>
+      {% else %}
+      <div class="empty-state">
+        <p>{{ profile_user.username }} doesn't have any public repositories yet.</p>
+      </div>
+      {% endfor %}
+    </div>
+
+    {% elif tab == 'stars' %}
+    <div class="profile-stars">
+      {% for star in starred %}
+      <article class="repo-list-item">
+        <div class="repo-list-info">
+          <h3><a href="/{{ star.repo.full_name }}" class="repo-list-name">{{ star.repo.full_name }}</a></h3>
+          {% if star.repo.description %}<p class="repo-list-desc">{{ star.repo.description }}</p>{% endif %}
+          <div class="repo-list-meta">
+            {% if star.repo.language %}
+            <span class="repo-lang">
+              <span class="repo-lang-dot" style="background-color: {{ lang_colors.get(star.repo.language, '#8f9ba8') }}"></span>
+              {{ star.repo.language }}
+            </span>
+            {% endif %}
+            <span>⭐ {{ star.repo.stars_count | number_format }}</span>
+            <span class="repo-updated-sm">Starred {{ star.created_at | time_ago }}</span>
+          </div>
+        </div>
+      </article>
+      {% else %}
+      <div class="empty-state"><p>No starred repositories yet.</p></div>
+      {% endfor %}
+    </div>
+
+    {% elif tab == 'followers' %}
+    <div class="profile-follow-list">
+      {% for u in follow_users %}
+      <div class="follow-list-item" style="display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--gh-border)">
+        <img src="{{ u.avatar_url }}" alt="{{ u.username }}" style="width:48px;height:48px;border-radius:50%" onerror="this.src='/static/images/avatars/avatar_00.jpg'">
+        <div style="flex:1">
+          <a href="/{{ u.username }}" style="font-weight:600;color:var(--gh-link)">{{ u.username }}</a>
+          {% if u.name %}<span style="color:var(--gh-text-muted);margin-left:4px">{{ u.name }}</span>{% endif %}
+          {% if u.bio %}<p style="font-size:13px;margin:2px 0 0;color:var(--gh-text-secondary)">{{ u.bio }}</p>{% endif %}
+        </div>
+        {% if current_user.is_authenticated and current_user.id != u.id %}
+        <form method="POST" action="{{ url_for('follow_toggle_form', user_id=u.id) }}" style="margin:0">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <input type="hidden" name="next" value="{{ request.path }}">
+          <button type="submit" class="gh-btn gh-btn-secondary gh-btn-sm">
+            {% if current_user.is_following(u) %}Unfollow{% else %}Follow{% endif %}
+          </button>
+        </form>
+        {% endif %}
+      </div>
+      {% else %}
+      <div class="empty-state"><p>{{ profile_user.username }} doesn't have any followers yet.</p></div>
+      {% endfor %}
+    </div>
+
+    {% elif tab == 'following' %}
+    <div class="profile-follow-list">
+      {% for u in follow_users %}
+      <div class="follow-list-item" style="display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--gh-border)">
+        <img src="{{ u.avatar_url }}" alt="{{ u.username }}" style="width:48px;height:48px;border-radius:50%" onerror="this.src='/static/images/avatars/avatar_00.jpg'">
+        <div style="flex:1">
+          <a href="/{{ u.username }}" style="font-weight:600;color:var(--gh-link)">{{ u.username }}</a>
+          {% if u.name %}<span style="color:var(--gh-text-muted);margin-left:4px">{{ u.name }}</span>{% endif %}
+          {% if u.bio %}<p style="font-size:13px;margin:2px 0 0;color:var(--gh-text-secondary)">{{ u.bio }}</p>{% endif %}
+        </div>
+        {% if current_user.is_authenticated and current_user.id != u.id %}
+        <form method="POST" action="{{ url_for('follow_toggle_form', user_id=u.id) }}" style="margin:0">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <input type="hidden" name="next" value="{{ request.path }}">
+          <button type="submit" class="gh-btn gh-btn-secondary gh-btn-sm">
+            {% if current_user.is_following(u) %}Unfollow{% else %}Follow{% endif %}
+          </button>
+        </form>
+        {% endif %}
+      </div>
+      {% else %}
+      <div class="empty-state"><p>{{ profile_user.username }} isn't following anyone yet.</p></div>
+      {% endfor %}
+    </div>
+
+    {% elif tab == 'watching' %}
+    <div class="profile-stars">
+      {% for watch in watches %}
+      <article class="repo-list-item">
+        <div class="repo-list-info">
+          <h3><a href="/{{ watch.repo.full_name }}" class="repo-list-name">{{ watch.repo.full_name }}</a></h3>
+          {% if watch.repo.description %}<p class="repo-list-desc">{{ watch.repo.description }}</p>{% endif %}
+          <div class="repo-list-meta">
+            {% if watch.repo.language %}
+            <span class="repo-lang">
+              <span class="repo-lang-dot" style="background-color: {{ lang_colors.get(watch.repo.language, '#8f9ba8') }}"></span>
+              {{ watch.repo.language }}
+            </span>
+            {% endif %}
+            <span>&#11088; {{ watch.repo.stars_count | number_format }}</span>
+            <span class="repo-updated-sm">Watching since {{ watch.created_at | time_ago }}</span>
+          </div>
+        </div>
+        {% if current_user.is_authenticated and current_user.id == profile_user.id %}
+        <form method="POST" action="{{ url_for('watch_toggle_form', repo_id=watch.repo.id) }}" style="margin:0">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <input type="hidden" name="next" value="/{{ profile_user.username }}/watching">
+          <button type="submit" class="gh-btn gh-btn-secondary gh-btn-sm">Unwatch</button>
+        </form>
+        {% endif %}
+      </article>
+      {% else %}
+      <div class="empty-state"><p>{{ profile_user.username }} isn't watching any repositories.</p></div>
+      {% endfor %}
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+{% endblock %}

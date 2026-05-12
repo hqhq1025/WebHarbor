@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block title %}Page Not Found - ESPN{% endblock %}
+
+{% block content %}
+<div class="container">
+  <div class="error-page">
+    <div class="error-code" style="color: #d00; font-size: 96px; font-weight:900;">404</div>
+    <h1>Page Not Found</h1>
+    <p>The page you're looking for doesn't exist or has been moved.</p>
+    <div class="error-actions">
+      <a href="/" class="btn-red">Go to ESPN Home</a>
+      <a href="/search" class="btn-outline">Search ESPN</a>
+    </div>
+    <div class="error-nav">
+      <a href="/nfl/">NFL</a>
+      <a href="/nba/">NBA</a>
+      <a href="/mlb/">MLB</a>
+      <a href="/nhl/">NHL</a>
+      <a href="/soccer/">Soccer</a>
+      <a href="/scores">Scores</a>
+    </div>
+  </div>
+</div>
+{% endblock %}

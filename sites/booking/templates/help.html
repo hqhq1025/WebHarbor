@@ -1,0 +1,116 @@
+{% extends "base.html" %}
+{% block title %}Help Center — Booking{% endblock %}
+{% block content %}
+<div class="container">
+    <h1 class="page-title">Help Center / Customer Service</h1>
+    <p class="page-subtitle">Find answers to your questions. Browse by topic or jump straight to cancellation help.</p>
+
+    <div class="card-grid cards-3">
+        <a href="#managing-bookings" class="category-tile">
+            <div class="icon">&#128203;</div>
+            <h4>Managing your bookings</h4>
+            <p>View, change, or cancel your reservations.</p>
+        </a>
+        <a href="#payment-charges" class="category-tile">
+            <div class="icon">&#128178;</div>
+            <h4>Payment &amp; charges</h4>
+            <p>Information on payments, refunds, and fees.</p>
+        </a>
+        <a href="#cancellation" class="category-tile">
+            <div class="icon">&#128683;</div>
+            <h4>Cancellation options</h4>
+            <p>Understand your cancellation policy and timing.</p>
+        </a>
+        <a href="#genius" class="category-tile">
+            <div class="icon">&#128101;</div>
+            <h4>Genius programme</h4>
+            <p>Learn about loyalty rewards.</p>
+        </a>
+        <a href="#staying" class="category-tile">
+            <div class="icon">&#127963;</div>
+            <h4>Staying with us</h4>
+            <p>Check-in, check-out, and property FAQs.</p>
+        </a>
+        <a href="#contact" class="category-tile">
+            <div class="icon">&#128222;</div>
+            <h4>Contact us</h4>
+            <p>Need more help? Get in touch with customer service.</p>
+        </a>
+    </div>
+
+    <div class="pd-section mt-3" id="cancellation">
+        <h2>Cancellation questions</h2>
+
+        <h3>How do I know whether my booking has been cancelled?</h3>
+        <p>
+            When a booking is cancelled, you'll receive a <strong>cancellation confirmation email</strong> at the
+            address on the reservation, and the booking status in
+            <a href="{{ url_for('my_bookings') if current_user.is_authenticated else url_for('login') }}">My bookings</a>
+            will change to <strong>"Cancelled"</strong>. If you don't see the email within a few minutes, check your
+            spam folder and then open your account's bookings page &mdash; the status shown there is authoritative.
+        </p>
+
+        <h3>How do I cancel a booking?</h3>
+        <p>Go to <em>My bookings</em> in your account dashboard, open the reservation you want to cancel, and click
+        <strong>Cancel booking</strong>. Most reservations with "Free cancellation" can be cancelled online in one
+        click; others may ask you to contact the property directly.</p>
+
+        <h3>Will I get a refund when I cancel?</h3>
+        <p>That depends on the cancellation policy shown at the time of booking. If your reservation included
+        <strong>Free cancellation</strong> and you cancel before the cut-off date, you'll receive a full refund
+        to the card used for payment within 5-10 business days.</p>
+
+        <h3>Can the property cancel my booking?</h3>
+        <p>Only in rare cases (e.g. overbooking or emergency closure). If that happens, Booking will email you
+        immediately and help you find a comparable alternative at the same or better price.</p>
+
+        <h3>Why was my booking cancelled automatically?</h3>
+        <p>Automatic cancellations usually happen when payment could not be completed by the property's confirmation
+        deadline. Check the card you used, update your payment details in your account, and rebook if needed.</p>
+
+        <h3>Can I cancel a non-refundable booking?</h3>
+        <p>You can always cancel it, but the property has the right to charge the full amount. Some properties
+        offer a partial goodwill refund &mdash; it's worth reaching out via the booking's messaging tab.</p>
+    </div>
+
+    <div class="pd-section mt-3" id="managing-bookings">
+        <h2>Managing your bookings</h2>
+        <h3>Can I modify my dates?</h3>
+        <p>Yes &mdash; go to <em>My bookings</em> and select <strong>Modify dates</strong> on eligible reservations.</p>
+        <h3>How do I add a guest or change room type?</h3>
+        <p>Open the reservation, click <em>Manage booking</em>, and choose the option you need. If the change isn't
+        available online, message the property directly from that page.</p>
+    </div>
+
+    <div class="pd-section mt-3" id="payment-charges">
+        <h2>Payment &amp; charges</h2>
+        <h3>Is my card charged immediately?</h3>
+        <p>This depends on the property. Some charge at booking, others at check-in. See the booking details for
+        when your card will be billed.</p>
+        <h3>Which currencies are supported?</h3>
+        <p>Prices are stored in USD and converted at checkout. Use the currency selector at the top of the page
+        to view prices in USD, EUR, GBP, CNY or JPY.</p>
+    </div>
+
+    <div class="pd-section mt-3" id="genius">
+        <h2>Genius programme</h2>
+        <h3>How do I unlock Genius discounts?</h3>
+        <p>Complete two stays within two years to reach Genius Level 1 and start seeing 10% discounts on
+        participating properties. See the <a href="{{ url_for('genius') }}">Genius page</a> for full details.</p>
+    </div>
+
+    <div class="pd-section mt-3" id="staying">
+        <h2>Staying with us</h2>
+        <h3>What are standard check-in / check-out times?</h3>
+        <p>Most properties check in from 3 PM and check out by 11 AM. Specific times are listed on each property
+        page under <em>House rules</em>.</p>
+    </div>
+
+    <div class="pd-section mt-3" id="contact">
+        <h2>Contact customer service</h2>
+        <p>Email <a href="mailto:support@booking.example">support@booking.example</a> or call
+        <strong>+1 888 850 3958</strong> (24/7). When you reach out, please include your booking number so we can
+        help you faster.</p>
+    </div>
+</div>
+{% endblock %}

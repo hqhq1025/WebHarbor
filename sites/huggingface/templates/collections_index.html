@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}Collections – Hugging Face{% endblock %}
+
+{% block content %}
+<div class="container-wide page">
+    <div class="repolist-header">
+        <h1>Public collections</h1>
+        {% if current_user.is_authenticated %}
+        <a class="btn btn-primary" href="{{ url_for('collection_new') }}">+ New collection</a>
+        {% endif %}
+    </div>
+    <div class="collection-grid">
+        {% for c in collections %}
+        <a class="collection-card" href="{{ url_for('collection_detail', collection_id=c.id) }}">
+            <h3>{{ c.title }}</h3>
+            <p>{{ (c.description or '')[:140] }}</p>
+            <div class="collection-card-meta">
+                <span>{{ c.items.count() }} items</span>
+                <span>by {{ c.owner.username }}</span>
+            </div>
+        </a>
+        {% else %}
+        <p class="empty-state">No public collections yet.</p>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

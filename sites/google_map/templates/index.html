@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+{% from '_place_card.html' import place_card %}
+{% block title %}Google Maps{% endblock %}
+
+{% block body %}
+<div class="app-shell">
+    {% include '_rail.html' %}
+
+    <aside class="left-panel">
+        {% include '_search_bar.html' %}
+
+        <div class="home-hero">
+            <h1>Explore, save, plan.</h1>
+            <p>Find great places to eat, stay, and visit around the world. Save favorites to your lists and build your perfect trip.</p>
+        </div>
+
+        <div class="category-chips">
+            {% for cat in categories %}
+            <a href="{{ url_for('category_page', slug=cat.slug) }}" class="cat-chip">
+                <div class="chip-ico {{ cat.slug }}">
+                    <span class="material-icons-outlined">{{ cat.icon }}</span>
+                </div>
+                <span>{{ cat.name }}</span>
+            </a>
+            {% endfor %}
+        </div>
+
+        {% if featured %}
+        <div class="panel-section">
+            <h2>Featured places</h2>
+            <div class="sub">Iconic destinations loved by travelers around the world</div>
+        </div>
+        {% for p in featured[:6] %}
+            {{ place_card(p) }}
+        {% endfor %}
+        {% endif %}
+
+        {% if popular %}
+        <div class="panel-section">
+            <h2>Top rated near you</h2>
+            <div class="sub">Highly-rated places worth a visit</div>
+        </div>
+        {% for p in popular[:6] %}
+            {{ place_card(p) }}
+        {% endfor %}
+        {% endif %}
+
+        <div class="panel-section" style="text-align:center;">
+            <a href="{{ url_for('explore') }}" class="btn outlined">Explore more places</a>
+        </div>
+
+        <div class="app-footer" style="padding:20px;">
+            <div class="footer-links">
+                <a href="{{ url_for('about') }}">About</a>
+                <a href="{{ url_for('help_page') }}">Help</a>
+                <a href="#">Privacy</a>
+                <a href="#">Terms</a>
+            </div>
+            <div>Map data &copy; {{ current_year }} Google</div>
+        </div>
+    </aside>
+
+    {% include '_mapcanvas.html' %}
+</div>
+{% endblock %}

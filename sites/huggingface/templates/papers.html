@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% block title %}Daily Papers – Hugging Face{% endblock %}
+
+{% block content %}
+<section class="papers-hero">
+    <div class="container-wide">
+        <h1>Daily Papers</h1>
+        <p class="muted">Curated machine learning papers from the community, updated every day.</p>
+    </div>
+</section>
+
+<div class="container-wide page">
+    <div class="papers-list">
+        {% for paper in papers %}
+        <a class="paper-card result-card" href="{{ url_for('paper_detail', arxiv_id=paper.arxiv_id) }}">
+            <div class="paper-vote">
+                <span class="paper-upvotes">▲ {{ paper.upvotes }}</span>
+            </div>
+            <div class="paper-body">
+                <h3 class="paper-title">{{ paper.title }}</h3>
+                <p class="muted">{{ paper.authors }}</p>
+                <p>{{ paper.abstract[:240] }}…</p>
+                <div class="paper-meta">
+                    <span>arXiv:{{ paper.arxiv_id }}</span>
+                    <span>· {{ paper.published }}</span>
+                    {% if paper.related_models %}<span>· {{ paper.related_models|length }} related model{{ '' if paper.related_models|length == 1 else 's' }}</span>{% endif %}
+                    {% if paper.related_datasets %}<span>· {{ paper.related_datasets|length }} dataset{{ '' if paper.related_datasets|length == 1 else 's' }}</span>{% endif %}
+                </div>
+            </div>
+        </a>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

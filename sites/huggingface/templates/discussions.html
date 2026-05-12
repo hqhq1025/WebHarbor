@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block title %}Discussions – {{ repo.slug }}{% endblock %}
+
+{% block content %}
+<div class="container-wide page">
+    <div class="repo-head-compact">
+        <h1>{{ repo.slug }} · Community</h1>
+        {% if current_user.is_authenticated %}
+        <a class="btn btn-primary" href="{{ url_for('discussion_new', author=repo.slug.split('/')[0], name=repo.slug.split('/')[1]) }}">+ New discussion</a>
+        {% endif %}
+    </div>
+
+    <div class="repo-tabs">
+        <a class="repo-tab" href="{% if repo.repo_type == 'dataset' %}{{ url_for('dataset_detail', author=repo.slug.split('/')[0], name=repo.slug.split('/')[1]) }}{% elif repo.repo_type == 'space' %}{{ url_for('space_detail', author=repo.slug.split('/')[0], name=repo.slug.split('/')[1]) }}{% else %}{{ url_for('model_detail', author=repo.slug.split('/')[0], name=repo.slug.split('/')[1]) }}{% endif %}">← Back to repo</a>
+        <a class="repo-tab is-active" href="#">Community <span class="tab-count">{{ discussions|length }}</span></a>
+    </div>
+
+    <div class="discussion-list">
+        {% for d in discussions %}
+        <a class="discussion-row" href="{{ url_for('discussion_detail', author=repo.slug.split('/')[0], name=repo.slug.split('/')[1], discussion_id=d.id) }}">
+            <span class="discussion-kind tag tag-blue">{{ d.kind }}</span>
+            <div>
+                <strong>{{ d.title }}</strong>
+                <div class="discussion-meta">by {{ d.author.username if d.author else 'unknown' }} · {{ d.created_at.strftime('%b %d, %Y') }} · {{ d.replies.count() }} replies</div>
+            </div>
+            <span class="discussion-upvotes">♥ {{ d.upvotes }}</span>
+        </a>
+        {% else %}
+        <p class="empty-state">No discussions yet.</p>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

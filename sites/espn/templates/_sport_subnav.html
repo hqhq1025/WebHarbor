@@ -1,0 +1,29 @@
+{#
+  Shared sport-level sub-nav. Used on every page that lives under /<sport_slug>/...
+  Caller passes:
+    sport  — the Sport ORM object (must have .slug, .url_prefix)
+    active — string key of the active tab. One of:
+             home, news, scores, schedule, standings, stats, teams,
+             transactions, power_index, recruiting
+#}
+<nav class="sport-subnav">
+  <a href="{{ sport.url_prefix }}"             class="{{ 'active' if active == 'home'         }}">Home</a>
+  <a href="{{ sport.url_prefix }}news"         class="{{ 'active' if active == 'news'         }}">News</a>
+  <a href="{{ sport.url_prefix }}scoreboard"   class="{{ 'active' if active == 'scores'       }}">Scores</a>
+  <a href="{{ sport.url_prefix }}schedule"     class="{{ 'active' if active == 'schedule'     }}">Schedule</a>
+  <a href="{{ sport.url_prefix }}standings"    class="{{ 'active' if active == 'standings'    }}">Standings</a>
+  <a href="{{ sport.url_prefix }}stats"        class="{{ 'active' if active == 'stats'        }}">Stats</a>
+  <a href="{{ sport.url_prefix }}teams"        class="{{ 'active' if active == 'teams'        }}">Teams</a>
+  <a href="{{ sport.url_prefix }}transactions" class="{{ 'active' if active == 'transactions' }}">Transactions</a>
+  {% if sport.slug == 'nba' %}
+  <a href="/nba/bpi"                           class="{{ 'active' if active == 'power_index'  }}">BPI</a>
+  {% elif sport.slug == 'nfl' %}
+  <a href="/nfl/fpi"                           class="{{ 'active' if active == 'power_index'  }}">FPI</a>
+  {% elif sport.slug == 'soccer' %}
+  <a href="/soccer/spi"                        class="{{ 'active' if active == 'power_index'  }}">SPI</a>
+  {% elif sport.slug == 'ncaaw' %}
+  <a href="/ncaaw/recruiting"                  class="{{ 'active' if active == 'recruiting'   }}">Recruiting</a>
+  {% elif sport.slug == 'ncaam' %}
+  <a href="/ncaam/recruiting"                  class="{{ 'active' if active == 'recruiting'   }}">Recruiting</a>
+  {% endif %}
+</nav>

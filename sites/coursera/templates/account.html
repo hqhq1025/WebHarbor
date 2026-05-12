@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% block title %}My Coursera | {{ current_user.name }}{% endblock %}
+{% block content %}
+<div class="account-page container">
+  <div class="account-header">
+    <div class="account-avatar">{{ current_user.name[0].upper() }}</div>
+    <div class="account-info">
+      <h1>{{ current_user.name }}</h1>
+      <p>{{ current_user.email }}</p>
+    </div>
+    <div class="account-actions">
+      <a href="{{ url_for('account_edit') }}" class="btn-outline">Edit Profile</a>
+      <a href="{{ url_for('change_password') }}" class="btn-outline">Change Password</a>
+    </div>
+  </div>
+  <div class="account-tabs">
+    <a href="{{ url_for('account') }}" class="tab active">My Learning</a>
+    <a href="{{ url_for('wishlist') }}" class="tab">Saved</a>
+  </div>
+  <div class="account-content">
+    {% if enrollments %}
+    <div class="enrollment-grid">
+      {% for e in enrollments %}
+      <a href="{{ url_for('course_detail', slug=e.course.slug) }}" class="enrollment-card">
+        <div class="enroll-thumb {{ e.course.color_class }}">
+          {% if course_thumb(e.course) %}<img class="cct-img" src="{{ url_for('static', filename=course_thumb(e.course)) }}" alt="">{% endif %}
+          <span class="enroll-type">{{ e.course.course_type }}</span>
+        </div>
+        <div class="enroll-body">
+          <div class="enroll-partner">
+            {% set _pl = partner_logo(e.course.partner) %}{% if _pl %}<img class="cp-logo-inline" src="{{ url_for('static', filename=_pl) }}" alt="">{% endif %}
+            <span>{{ e.course.partner.name if e.course.partner else '' }}</span>
+          </div>
+          <h3>{{ e.course.title }}</h3>
+          <div class="progress-bar"><div class="progress-fill" style="width:{{ e.progress }}%"></div></div>
+          <span class="progress-pct">{{ e.progress }}% complete</span>
+        </div>
+      </a>
+      {% endfor %}
+    </div>
+    {% else %}
+    <div class="empty-state">
+      <p>You haven't enrolled in any courses yet.</p>
+      <a href="{{ url_for('search') }}" class="btn-primary">Browse Courses</a>
+    </div>
+    {% endif %}
+    <div class="danger-zone">
+      <h3>Delete Account</h3>
+      <p>This will permanently delete your account and all associated data.</p>
+      <form method="post" action="{{ url_for('account_delete') }}">
+        {{ range(1)|map('string')|join }}
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button type="submit" class="btn-danger">Delete Account</button>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

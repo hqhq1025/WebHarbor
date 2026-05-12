@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block title %}Destinations — Booking{% endblock %}
+{% block content %}
+<div class="container">
+    <h1 class="page-title">Explore destinations</h1>
+    <p class="page-subtitle">Discover amazing places around the world</p>
+
+    <div class="card-grid cards-4">
+        {% for c in cities %}
+        <a href="{{ url_for('city_page', slug=c.slug) }}" class="city-card">
+            {% if c.hero_image %}
+            <img src="{{ c.hero_image }}" alt="{{ c.display }}" class="city-card-img"
+                 onerror="this.style.background='linear-gradient(135deg,#003580,#006ce4)';this.alt=''">
+            {% endif %}
+            <div class="city-card-body">
+                <h3>{{ c.display }}</h3>
+                <span class="flag">{{ c.country }}</span>
+                <div style="font-size:11px;color:#6b6b6b;margin-top:4px;">
+                    {{ c.properties_count }} properties &middot; ★ {{ c.average_rating }}
+                </div>
+            </div>
+        </a>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

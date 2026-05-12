@@ -1,0 +1,124 @@
+{% extends "base.html" %}
+{% from "_macros.html" import repo_card, space_card %}
+{% block title %}Hugging Face – The AI community building the future.{% endblock %}
+
+{% block content %}
+<div class="container-wide">
+    <div class="today-banner" data-mirror-today="{{ mirror_now.strftime('%Y-%m-%d') }}">
+        <span class="today-banner-emoji">📅</span>
+        <span class="today-banner-text">Today is <strong>{{ mirror_today_display }}</strong>. Please treat this as the reference date for any relative time expressions ("today", "yesterday", "last week", "past month", "this year", etc.).</span>
+    </div>
+</div>
+<section class="hero">
+    <div class="hero-inner">
+        <div class="hero-emoji">🤗</div>
+        <h1 class="hero-headline">The AI community<br>building the future.</h1>
+        <p class="hero-subhead">The platform where the machine learning community collaborates on models, datasets, and applications.</p>
+        <div class="hero-cta">
+            <a href="{{ url_for('register') }}" class="btn btn-yellow btn-lg">Sign Up</a>
+            <a href="{{ url_for('enterprise') }}" class="btn btn-outline btn-lg">Enterprise Hub</a>
+        </div>
+        <p class="hero-meta">{{ total_models }}+ models · {{ total_datasets }}+ datasets · {{ total_spaces }}+ spaces</p>
+    </div>
+    <div class="hero-bg-grid"></div>
+</section>
+
+<section class="sect">
+    <div class="container-wide">
+        <div class="sect-title">
+            <h2>Trending on 🤗</h2>
+            <a href="{{ url_for('models_list') }}" class="sect-title-link">Browse all models →</a>
+        </div>
+        <div class="trending-cols">
+            <div class="trending-col">
+                <h3 class="trending-col-title">Models</h3>
+                {% for repo in trending_models %}
+                    {{ repo_card(repo, liked_ids) }}
+                {% endfor %}
+                <a href="{{ url_for('models_list') }}" class="see-more">Browse {{ total_models }}+ models →</a>
+            </div>
+            <div class="trending-col">
+                <h3 class="trending-col-title">Datasets</h3>
+                {% for repo in trending_datasets %}
+                    {{ repo_card(repo, liked_ids) }}
+                {% endfor %}
+                <a href="{{ url_for('datasets_list') }}" class="see-more">Browse {{ total_datasets }}+ datasets →</a>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="sect">
+    <div class="container-wide">
+        <div class="sect-title">
+            <h2>Spaces of the week 🔥</h2>
+            <a href="{{ url_for('spaces_list') }}" class="sect-title-link">Browse all Spaces →</a>
+        </div>
+        <div class="space-grid">
+            {% for repo in trending_spaces %}
+                {{ space_card(repo, loop.index) }}
+            {% endfor %}
+        </div>
+    </div>
+</section>
+
+<section class="home-ml">
+    <div class="container-wide">
+        <h2 class="home-ml-title">The home of Machine Learning</h2>
+        <p class="home-ml-sub">Create, discover and collaborate on ML better.</p>
+        <div class="home-ml-grid">
+            <div class="home-ml-card">
+                <div class="home-ml-card-icon">🌎</div>
+                <h3>The collaboration platform</h3>
+                <p>Host and collaborate on unlimited public models, datasets and applications.</p>
+            </div>
+            <div class="home-ml-card">
+                <div class="home-ml-card-icon">⚡</div>
+                <h3>Move faster</h3>
+                <p>With the HF Open source stack: Transformers, Diffusers, Datasets, and more.</p>
+            </div>
+            <div class="home-ml-card">
+                <div class="home-ml-card-icon">🔬</div>
+                <h3>Explore all modalities</h3>
+                <p>Text, image, video, audio or even 3D — use the right tool for the job.</p>
+            </div>
+            <div class="home-ml-card">
+                <div class="home-ml-card-icon">🏭</div>
+                <h3>Build your portfolio</h3>
+                <p>Share your work with the world and build your own ML profile.</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="sect">
+    <div class="container-wide">
+        <div class="sect-title">
+            <h2>Featured organizations</h2>
+        </div>
+        <div class="org-grid">
+            {% for org in featured_orgs %}
+            <a class="org-card" href="{{ url_for('author_page', username=org.username) }}">
+                <div class="org-card-avatar">
+                    <img src="{{ org.avatar_url }}" alt="{{ org.display_name }}" onerror="this.parentElement.innerHTML='<span>{{ org.username[0]|upper }}</span>'">
+                </div>
+                <div>
+                    <div class="org-card-name">{{ org.display_name }}{% if org.is_verified %} ✓{% endif %}</div>
+                    <div class="org-card-meta">{{ org.followers_count }} followers</div>
+                </div>
+            </a>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+
+<section class="enterprise-cta">
+    <div class="container-wide">
+        <div class="enterprise-cta-inner">
+            <h2>Enterprise Hub</h2>
+            <p>The most advanced AI platform for enterprises. Dedicated support, security, and infrastructure.</p>
+            <a class="btn btn-primary btn-lg" href="{{ url_for('enterprise') }}">Starting at $20/user/month</a>
+        </div>
+    </div>
+</section>
+{% endblock %}

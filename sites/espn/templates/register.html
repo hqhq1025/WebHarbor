@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% block title %}Sign Up - ESPN{% endblock %}
+
+{% block content %}
+<div class="container">
+  <div class="auth-page">
+    <div class="auth-card">
+      <div class="auth-logo">ESPN</div>
+      <h1 class="auth-heading">Create ESPN Account</h1>
+
+      <form method="post" action="/register" class="auth-form">
+        {{ form.hidden_tag() }}
+
+        <div class="form-group">
+          {{ form.name.label(class="form-label") }}
+          {{ form.name(class="form-input", placeholder="Your name") }}
+          {% if form.name.errors %}
+            {% for e in form.name.errors %}<span class="form-error">{{ e }}</span>{% endfor %}
+          {% endif %}
+        </div>
+
+        <div class="form-group">
+          {{ form.email.label(class="form-label") }}
+          {{ form.email(class="form-input", placeholder="you@example.com") }}
+          {% if form.email.errors %}
+            {% for e in form.email.errors %}<span class="form-error">{{ e }}</span>{% endfor %}
+          {% endif %}
+        </div>
+
+        <div class="form-group">
+          {{ form.password.label(class="form-label") }}
+          {{ form.password(class="form-input", placeholder="Choose a password (min 6 chars)") }}
+          {% if form.password.errors %}
+            {% for e in form.password.errors %}<span class="form-error">{{ e }}</span>{% endfor %}
+          {% endif %}
+        </div>
+
+        <div class="form-group">
+          {{ form.confirm.label(class="form-label") }}
+          {{ form.confirm(class="form-input", placeholder="Confirm your password") }}
+          {% if form.confirm.errors %}
+            {% for e in form.confirm.errors %}<span class="form-error">{{ e }}</span>{% endfor %}
+          {% endif %}
+        </div>
+
+        <button type="submit" class="btn-red btn-full">Create Account</button>
+      </form>
+
+      <div class="auth-footer">
+        Already have an account? <a href="/login">Log In</a>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% block title %}Amazon Prime{% endblock %}
+
+{% block content %}
+<div style="background:linear-gradient(180deg,#232f3e,#37475a);color:#fff;padding:60px 20px;text-align:center">
+    <h1 style="font-size:48px;margin:0">prime</h1>
+    <p style="font-size:20px;margin:15px 0">Exclusive benefits. Member-only deals. Free shipping.</p>
+    <button class="btn btn-orange" style="padding:12px 30px;font-size:15px">Start your free trial</button>
+    <p style="font-size:13px;margin-top:10px">$14.99/month after trial · Cancel anytime</p>
+</div>
+
+<div style="max-width:1200px;margin:30px auto;padding:20px">
+    <h2 style="text-align:center;font-size:28px;margin-bottom:30px">Prime benefits include</h2>
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:20px">
+        <div style="background:#fff;padding:20px;text-align:center;border-radius:4px">
+            <div style="font-size:48px">🚚</div>
+            <h3>FREE Delivery</h3>
+            <p class="text-muted">On millions of items</p>
+        </div>
+        <div style="background:#fff;padding:20px;text-align:center;border-radius:4px">
+            <div style="font-size:48px">📺</div>
+            <h3>Prime Video</h3>
+            <p class="text-muted">Thousands of movies and TV shows</p>
+        </div>
+        <div style="background:#fff;padding:20px;text-align:center;border-radius:4px">
+            <div style="font-size:48px">🎵</div>
+            <h3>Prime Music</h3>
+            <p class="text-muted">100 million songs ad-free</p>
+        </div>
+        <div style="background:#fff;padding:20px;text-align:center;border-radius:4px">
+            <div style="font-size:48px">🎮</div>
+            <h3>Prime Gaming</h3>
+            <p class="text-muted">Free games and in-game content</p>
+        </div>
+    </div>
+</div>
+
+<div class="product-row">
+    <div class="product-row-header">
+        <h2>Prime-Eligible Picks</h2>
+    </div>
+    <div class="row-scroll">
+        {% for p in products[:12] %}
+        <a class="row-card" href="{{ url_for('product_detail', slug=p.slug) }}">
+            <img src="{{ p.image }}" alt="{{ p.name }}" onerror="this.style.display='none'">
+            <div class="row-card-brand">{{ p.brand }}</div>
+            <div class="row-card-title">{{ p.name }}</div>
+            <div class="row-card-price">
+                <span class="price-symbol">$</span><span class="price-whole">{{ p.price|int }}</span>
+            </div>
+            <div style="color:#00a8e1;font-size:12px;font-weight:700">✓ prime</div>
+        </a>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

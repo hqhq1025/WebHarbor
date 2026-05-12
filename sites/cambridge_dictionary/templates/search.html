@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+{% block title %}{{ q }} | Cambridge Dictionary{% endblock %}
+{% block content %}
+<div class="search-results-page container">
+  {% if q %}
+    <h1 class="results-heading">
+      {% if results %}
+        Results for <em>{{ q }}</em>
+      {% else %}
+        No results for <em>{{ q }}</em>
+      {% endif %}
+    </h1>
+  {% endif %}
+
+  {% if results %}
+    <div class="results-list">
+      {% for word in results %}
+        {% if word.is_thesaurus_phrase %}
+          <div class="result-card result-card--thesaurus">
+            <div class="result-card-header">
+              <a href="{{ url_for('thesaurus_article', slug=word.slug) }}" class="result-headword">{{ word.headword }}</a>
+              <span class="result-pos">Thesaurus article</span>
+            </div>
+            {% if word.guide_word %}
+              <p class="result-guide">{{ word.guide_word }}</p>
+            {% endif %}
+            <a href="{{ url_for('thesaurus_article', slug=word.slug) }}" class="result-more-link">See thesaurus article &rsaquo;</a>
+          </div>
+        {% else %}
+          <div class="result-card">
+            <div class="result-card-header">
+              <a href="{{ url_for('word_detail', slug=word.slug) }}" class="result-headword">{{ word.headword }}</a>
+              <span class="result-pos">{{ word.pos }}</span>
+              {% if word.level %}
+                <span class="result-level level-{{ word.level|lower }}">{{ word.level }}</span>
+              {% endif %}
+            </div>
+            {% if word.guide_word %}
+              <p class="result-guide">{{ word.guide_word }}</p>
+            {% endif %}
+            <a href="{{ url_for('word_detail', slug=word.slug) }}" class="result-more-link">See full entry &rsaquo;</a>
+          </div>
+        {% endif %}
+      {% endfor %}
+    </div>
+  {% elif q %}
+    <div class="no-results">
+      <p>We couldn't find an exact match for <strong>{{ q }}</strong> in our dictionary.</p>
+      <p>Try searching for a different word or check your spelling.</p>
+      <div class="no-results-suggest">
+        <p>Popular lookups:</p>
+        <div class="suggest-tags">
+          {% for word in ['sustainability', 'serendipity', 'euphoria', 'resilience', 'pandemic'] %}
+            <a href="{{ url_for('word_detail', slug=word) }}" class="suggest-tag">{{ word }}</a>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+  {% endif %}
+</div>
+{% endblock %}

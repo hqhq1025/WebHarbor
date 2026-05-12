@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block title %}Google Translate{% endblock %}
+{% block content %}
+<div class="app-page">
+    <h1 style="color:#4285f4;">Translate</h1>
+    <p class="lead">Google's free service instantly translates words, phrases, and web pages between English and over 100 other languages.</p>
+    <div class="form-card" style="max-width:680px; margin:24px auto;">
+        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:16px;">
+            <div>
+                <label class="muted">English</label>
+                <textarea rows="5" style="width:100%; padding:10px; border:1px solid var(--color-border); border-radius:4px;" placeholder="Enter text"></textarea>
+            </div>
+            <div>
+                <label class="muted">Spanish</label>
+                <textarea rows="5" style="width:100%; padding:10px; border:1px solid var(--color-border); border-radius:4px;" placeholder="Traducción"></textarea>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

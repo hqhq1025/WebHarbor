@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block title %}Rename Notebook — Wolfram|Alpha{% endblock %}
+
+{% block content %}
+<div class="section-inner auth-page">
+  <div class="auth-card auth-card--wide">
+    <div class="breadcrumb" style="margin-bottom:12px">
+      <a href="/notebooks">Notebooks</a> ›
+      <a href="/notebook/{{ notebook.id }}">{{ notebook.title }}</a> › Rename
+    </div>
+    <h1 class="auth-title">Rename Notebook</h1>
+    <p class="auth-subtitle">Update the title and details for this notebook.</p>
+    <form class="auth-form" method="post" action="/notebook/{{ notebook.id }}/rename">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <div class="form-group">
+        <label class="form-label">Notebook Title <span class="required">*</span></label>
+        <input type="text" name="title" class="form-input"
+               value="{{ notebook.title }}" required autofocus>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Description</label>
+        <textarea name="description" class="form-input" rows="3">{{ notebook.description }}</textarea>
+      </div>
+      <div class="form-group">
+        <label class="form-check">
+          <input type="checkbox" name="is_public" {% if notebook.is_public %}checked{% endif %}>
+          Make notebook public
+        </label>
+      </div>
+      <div class="form-row">
+        <button type="submit" class="btn btn-pro-primary">Save Changes</button>
+        <a href="/notebook/{{ notebook.id }}" class="btn btn-secondary">Cancel</a>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

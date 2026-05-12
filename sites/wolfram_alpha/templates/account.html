@@ -1,0 +1,154 @@
+{% extends "base.html" %}
+{% block title %}My Account — Wolfram|Alpha{% endblock %}
+
+{% block content %}
+<div class="section-inner account-page">
+  <div class="account-header">
+    <div class="account-avatar">{{ current_user.username[0].upper() }}</div>
+    <div class="account-header-info">
+      <h1 class="account-username">{{ current_user.username }}</h1>
+      <p class="account-email">{{ current_user.email }}</p>
+      {% if current_user.is_pro %}
+      <span class="pro-badge">&#10024; Pro — {{ current_user.pro_plan | title }}</span>
+      {% else %}
+      <a href="/pro" class="upgrade-link">Upgrade to Pro &rarr;</a>
+      {% endif %}
+    </div>
+    <div class="account-header-actions">
+      <a href="/account/edit" class="btn btn-secondary">Edit Profile</a>
+    </div>
+  </div>
+
+  <div class="account-grid">
+
+    <!-- Query History -->
+    <section class="account-section">
+      <div class="account-section-header">
+        <h2>Recent Queries</h2>
+        <div class="account-section-actions">
+          <a href="/history" class="section-link">View all &rarr;</a>
+          <form action="/history/clear" method="post" style="display:inline">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button type="submit" class="btn-link-danger btn-sm">Clear</button>
+          </form>
+        </div>
+      </div>
+      {% if history %}
+      <div class="history-list">
+        {% for h in history[:8] %}
+        <a href="/input?i={{ h.query_text|urlencode }}" class="history-item">
+          <span class="history-icon">&#128269;</span>
+          <span class="history-query">{{ h.query_text }}</span>
+          <span class="history-time">{{ h.created_at.strftime('%b %d') }}</span>
+        </a>
+        {% endfor %}
+      </div>
+      {% else %}
+      <p class="empty-state">No query history yet. <a href="/">Try a computation</a></p>
+      {% endif %}
+    </section>
+
+    <!-- Favorites -->
+    <section class="account-section">
+      <div class="account-section-header">
+        <h2>Saved Topics</h2>
+        <a href="/favorites" class="section-link">View all &rarr;</a>
+      </div>
+      {% if favorites %}
+      <div class="favorites-list">
+        {% for fav in favorites[:6] %}
+        <a href="/topic/{{ fav.topic.slug }}" class="fav-item">
+          <span class="fav-icon" style="color: {{ fav.topic.category.color }}">{{ fav.topic.category.icon }}</span>
+          <span class="fav-name">{{ fav.topic.name }}</span>
+        </a>
+        {% endfor %}
+      </div>
+      {% else %}
+      <p class="empty-state">No saved topics. Browse <a href="/">topics</a> and click Save.</p>
+      {% endif %}
+    </section>
+
+    <!-- Saved Queries -->
+    <section class="account-section">
+      <div class="account-section-header">
+        <h2>Saved Queries</h2>
+        <a href="/saved-queries" class="section-link">View all &rarr;</a>
+      </div>
+      {% if saved_queries %}
+      <div class="saved-queries-list">
+        {% for sq in saved_queries[:6] %}
+        <a href="/input?i={{ sq.query_text|urlencode }}" class="saved-query-item">
+          <span class="sq-icon">&#128190;</span>
+          <code class="sq-text">{{ sq.query_text }}</code>
+          <span class="sq-date">{{ sq.created_at.strftime('%b %d') }}</span>
+        </a>
+        {% endfor %}
+      </div>
+      {% else %}
+      <p class="empty-state">No saved queries yet.</p>
+      {% endif %}
+    </section>
+
+    <!-- Notebooks -->
+    <section class="account-section">
+      <div class="account-section-header">
+        <h2>Notebooks</h2>
+        <div class="account-section-actions">
+          <a href="/notebooks" class="section-link">View all &rarr;</a>
+          <a href="/notebook/create" class="btn btn-secondary btn-sm">+ New</a>
+        </div>
+      </div>
+      {% if notebooks %}
+      <div class="notebooks-list">
+        {% for nb in notebooks[:4] %}
+        <a href="/notebook/{{ nb.id }}" class="notebook-item">
+          <span class="notebook-icon">&#128195;</span>
+          <div class="notebook-info">
+            <span class="notebook-title">{{ nb.title }}</span>
+            <span class="notebook-meta">{{ nb.entries|length }} entries · {{ nb.updated_at.strftime('%b %d') }}</span>
+          </div>
+        </a>
+        {% endfor %}
+      </div>
+      {% else %}
+      <p class="empty-state">No notebooks yet. <a href="/notebook/create">Create one</a></p>
+      {% endif %}
+    </section>
+
+  </div>
+
+  <!-- Account settings -->
+  <section class="account-settings-section">
+    <h2 class="account-settings-title">Account Settings</h2>
+    <div class="settings-links">
+      <a href="/account/edit" class="settings-link">
+        <span class="settings-link-icon">&#9998;</span>
+        <span>Edit Profile</span>
+        <span class="settings-link-arrow">›</span>
+      </a>
+      <a href="/account/password" class="settings-link">
+        <span class="settings-link-icon">&#128274;</span>
+        <span>Change Password</span>
+        <span class="settings-link-arrow">›</span>
+      </a>
+      <a href="/pro/pricing" class="settings-link">
+        <span class="settings-link-icon">&#10024;</span>
+        <span>Upgrade to Pro</span>
+        <span class="settings-link-arrow">›</span>
+      </a>
+      <a href="/logout" class="settings-link">
+        <span class="settings-link-icon">&#128682;</span>
+        <span>Sign Out</span>
+        <span class="settings-link-arrow">›</span>
+      </a>
+    </div>
+    <div class="danger-zone">
+      <h3 class="danger-zone-title">Danger Zone</h3>
+      <form action="/account/delete" method="post">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button type="submit" class="btn btn-danger">Delete Account</button>
+      </form>
+    </div>
+  </section>
+</div>
+{% endblock %}

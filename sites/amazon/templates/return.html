@@ -1,0 +1,96 @@
+{% extends "base.html" %}
+{% block title %}Return Items - Order #{{ order.order_number }} - Amazon.com{% endblock %}
+
+{% block content %}
+<div class="account-page">
+    <h1>Return Items from Order #{{ order.order_number }}</h1>
+    <p><a href="{{ url_for('order_detail', order_id=order.id) }}">&larr; Back to order details</a></p>
+
+    <form method="POST" action="{{ url_for('order_return', order_id=order.id) }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token_value }}">
+
+        <div class="checkout-section">
+            <h2>Select Items to Return</h2>
+            <p style="font-size:13px;color:var(--amz-text-secondary)">Check the items you want to return and provide a reason for each.</p>
+
+            {% for item in order.items %}
+            <div style="display:grid;grid-template-columns:auto 80px 1fr;gap:15px;padding:15px 0;border-bottom:1px solid #f0f0f0;align-items:start">
+                <input type="checkbox" name="return_items" value="{{ item.id }}"
+                    id="item_{{ item.id }}"
+                    style="width:18px;height:18px;margin-top:4px;cursor:pointer">
+
+                <img src="{{ item.product_image }}" alt="{{ item.product_name }}"
+                    style="width:80px;height:80px;object-fit:contain"
+                    onerror="this.style.display='none'">
+
+                <div>
+                    <label for="item_{{ item.id }}" style="cursor:pointer">
+                        <h3 style="font-size:14px;font-weight:600;margin:0 0 4px">{{ item.product_name }}</h3>
+                    </label>
+                    {% if item.variant %}
+                    <div style="font-size:13px;color:var(--amz-text-secondary);margin-bottom:4px">{{ item.variant }}</div>
+                    {% endif %}
+                    <div style="font-size:13px;margin-bottom:10px">
+                        <span style="font-weight:700">${{ '%.2f'|format(item.price) }}</span>
+                        &nbsp;&middot;&nbsp; Qty ordered: {{ item.quantity }}
+                    </div>
+
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;max-width:500px">
+                        <div class="form-group" style="margin:0">
+                            <label for="reason_{{ item.id }}" style="font-size:12px;font-weight:600">Return Reason</label>
+                            <select id="reason_{{ item.id }}" name="reason_{{ item.id }}" class="form-control" style="font-size:13px">
+                                <option value="">-- Select reason --</option>
+                                {% for value, label in reasons %}
+                                <option value="{{ value }}">{{ label }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="form-group" style="margin:0">
+                            <label for="qty_{{ item.id }}" style="font-size:12px;font-weight:600">Qty to Return</label>
+                            <input type="number" id="qty_{{ item.id }}" name="qty_{{ item.id }}"
+                                class="form-control" style="font-size:13px"
+                                min="1" max="{{ item.quantity }}" value="1">
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+
+        <div class="checkout-section">
+            <h2>Refund Method</h2>
+            <div style="display:flex;flex-direction:column;gap:12px">
+                <label style="display:flex;align-items:center;gap:10px;cursor:pointer;font-size:14px">
+                    <input type="radio" name="refund_method" value="original_payment" checked
+                        style="width:16px;height:16px">
+                    <div>
+                        <strong>Original payment method</strong>
+                        <div style="font-size:13px;color:var(--amz-text-secondary)">
+                            Refund to {{ order.payment_method }} ending in {{ order.payment_last4 }}
+                        </div>
+                    </div>
+                </label>
+                <label style="display:flex;align-items:center;gap:10px;cursor:pointer;font-size:14px">
+                    <input type="radio" name="refund_method" value="gift_card"
+                        style="width:16px;height:16px">
+                    <div>
+                        <strong>Amazon Gift Card</strong>
+                        <div style="font-size:13px;color:var(--amz-text-secondary)">
+                            Refund as Amazon.com Gift Card balance (instant)
+                        </div>
+                    </div>
+                </label>
+            </div>
+        </div>
+
+        <div style="margin-top:20px;display:flex;gap:12px">
+            <button type="submit" class="btn btn-orange" style="padding:12px 30px;font-size:15px">
+                Submit Return Request
+            </button>
+            <a href="{{ url_for('order_detail', order_id=order.id) }}" class="btn btn-outline" style="padding:12px 20px">
+                Cancel
+            </a>
+        </div>
+    </form>
+</div>
+{% endblock %}

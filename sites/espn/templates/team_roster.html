@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% block title %}{{ team.full_name or team.name }} Roster{% endblock %}
+
+{% block content %}
+<div class="container">
+  <div class="page-header">
+    <h1>{{ team.full_name or team.name }} Roster</h1>
+    {% set active = 'roster' %}{% include "_team_subnav.html" %}
+  </div>
+
+  <table class="data-table roster-table">
+    <thead>
+      <tr>
+        <th>#</th>
+        <th>Name</th>
+        <th>Pos</th>
+        <th>Height</th>
+        <th>Weight</th>
+        <th>Age</th>
+        <th>Exp</th>
+        <th>College</th>
+        <th>Salary</th>
+        <th>Status</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for player in players %}
+      <tr class="{{ 'injured' if player.injury_status else '' }}">
+        <td class="jersey-num">{{ player.jersey_number }}</td>
+        <td class="player-name">
+          <a href="/player/{{ sport.slug if sport else '#' }}/{{ player.slug }}">{{ player.name }}</a>
+          {% if player.injury_status %}<span class="inj-badge">{{ player.injury_status }}</span>{% endif %}
+        </td>
+        <td>{{ player.position }}</td>
+        <td>{{ player.height }}</td>
+        <td>{{ player.weight }} lbs</td>
+        <td>{{ player.age }}</td>
+        <td>{{ player.experience }} yr{{ 's' if player.experience != 1 else '' }}</td>
+        <td>{{ player.college }}</td>
+        <td>
+          {% if player.salary %}
+            ${{ '{:,.0f}'.format(player.salary) }}
+          {% else %}
+            —
+          {% endif %}
+        </td>
+        <td>{{ player.injury_status or 'Active' }}</td>
+      </tr>
+      {% else %}
+      <tr><td colspan="10" class="empty-msg">No players found on roster.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

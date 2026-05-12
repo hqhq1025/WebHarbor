@@ -1,0 +1,146 @@
+{% extends "base.html" %}
+{% block title %}My Account - BBC News{% endblock %}
+
+{% block content %}
+<section class="account-hero">
+    <div class="account-hero-avatar">{{ current_user.initials }}</div>
+    <div>
+        <h1>{{ current_user.full_name or current_user.username }}</h1>
+        <p>@{{ current_user.username }} · {{ current_user.email }}</p>
+        {% if current_user.location %}
+        <p>{{ current_user.location }}</p>
+        {% endif %}
+        {% if current_user.bio %}
+        <p style="max-width: 640px; margin-top: 8px;">{{ current_user.bio }}</p>
+        {% endif %}
+        <div class="account-hero-actions">
+            <a href="{{ url_for('account_edit') }}">Edit profile</a>
+            <a href="{{ url_for('change_password') }}">Change password</a>
+            <a href="{{ url_for('subscriptions_page') }}">Alerts</a>
+            <a href="{{ url_for('history_page') }}">History</a>
+        </div>
+    </div>
+</section>
+
+<section class="stats-strip">
+    <div class="stat-box">
+        <div class="stat-value">{{ recent_rl|length }}</div>
+        <div class="stat-label">Reading List</div>
+    </div>
+    <div class="stat-box">
+        <div class="stat-value">{{ recent_bm|length }}</div>
+        <div class="stat-label">Bookmarks</div>
+    </div>
+    <div class="stat-box">
+        <div class="stat-value">{{ digests|length }}</div>
+        <div class="stat-label">Digests</div>
+    </div>
+    <div class="stat-box">
+        <div class="stat-value">{{ my_comments|length }}</div>
+        <div class="stat-label">Comments</div>
+    </div>
+</section>
+
+<div class="account-grid">
+    <div class="account-card">
+        <h3>Reading List <a href="{{ url_for('reading_list') }}">View all →</a></h3>
+        <ul>
+            {% for item in recent_rl %}
+            <li>
+                <a href="{{ url_for('article_detail', slug=item.article.slug) }}">
+                    {{ item.article.short_headline }}
+                </a>
+                <div class="hero-side-meta">{{ item.folder }} · {{ item.added_at.strftime('%d %b') }}</div>
+            </li>
+            {% else %}
+            <li class="empty">Save articles from any story page to build your reading list.</li>
+            {% endfor %}
+        </ul>
+    </div>
+
+    <div class="account-card">
+        <h3>Bookmarks <a href="{{ url_for('bookmarks_page') }}">View all →</a></h3>
+        <ul>
+            {% for item in recent_bm %}
+            <li>
+                <a href="{{ url_for('article_detail', slug=item.article.slug) }}">
+                    {{ item.article.short_headline }}
+                </a>
+                <div class="hero-side-meta">{{ item.bookmarked_at.strftime('%d %b') }}</div>
+            </li>
+            {% else %}
+            <li class="empty">Bookmark stories for quick access from the article page.</li>
+            {% endfor %}
+        </ul>
+    </div>
+
+    <div class="account-card">
+        <h3>My Digests <a href="{{ url_for('digest_create') }}">New digest</a></h3>
+        <ul>
+            {% for d in digests[:5] %}
+            <li>
+                <a href="{{ url_for('digest_detail', digest_number=d.digest_number) }}">{{ d.title }}</a>
+                <div class="hero-side-meta">
+                    {{ d.article_count }} articles · <span class="status-pill status-{{ d.status }}">{{ d.status }}</span>
+                </div>
+            </li>
+            {% else %}
+            <li class="empty">Export a digest from your reading list to share or archive stories.</li>
+            {% endfor %}
+        </ul>
+    </div>
+
+    <div class="account-card">
+        <h3>Topic Alerts <a href="{{ url_for('subscriptions_page') }}">Manage</a></h3>
+        <ul>
+            {% for s in subs[:5] %}
+            <li>
+                <strong>{{ s.category_slug or s.topic }}</strong>
+                <div class="hero-side-meta">{{ s.frequency }}</div>
+            </li>
+            {% else %}
+            <li class="empty">Subscribe to sections or topics to receive updates.</li>
+            {% endfor %}
+        </ul>
+    </div>
+
+    <div class="account-card">
+        <h3>Recent comments</h3>
+        <ul>
+            {% for c in my_comments[:5] %}
+            <li>
+                <a href="{{ url_for('article_detail', slug=c.article.slug) }}">{{ c.article.short_headline }}</a>
+                <div class="hero-side-meta">{{ c.body[:80] }}...</div>
+            </li>
+            {% else %}
+            <li class="empty">Join the conversation on any story.</li>
+            {% endfor %}
+        </ul>
+    </div>
+
+    <div class="account-card">
+        <h3>Recently read</h3>
+        <ul>
+            {% for item in history[:5] %}
+            <li>
+                <a href="{{ url_for('article_detail', slug=item.article.slug) }}">{{ item.article.short_headline }}</a>
+                <div class="hero-side-meta">{{ item.viewed_at.strftime('%d %b %H:%M') }}</div>
+            </li>
+            {% else %}
+            <li class="empty">Your reading history appears here.</li>
+            {% endfor %}
+        </ul>
+    </div>
+</div>
+
+<div style="margin-top: 40px; padding: 20px; background: var(--bbc-bg-alt); border-left: 4px solid var(--bbc-red);">
+    <h3 style="margin-bottom: 8px;">Delete account</h3>
+    <p style="font-size: 14px; color: var(--bbc-text-light); margin-bottom: 14px;">
+        Permanently remove your account and all saved data. This cannot be undone.
+    </p>
+    <form method="post" action="{{ url_for('delete_account') }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button type="submit" class="btn btn-danger">Delete my account</button>
+    </form>
+</div>
+{% endblock %}

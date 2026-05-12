@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% block title %}{{ name }} — Author — arXiv{% endblock %}
+{% block breadcrumbs %}
+    <span class="sep">&gt;</span>
+    <a href="{{ url_for('author_papers', name=name) }}">{{ name }}</a>
+{% endblock %}
+{% block content %}
+
+<h1>{{ name }}'s articles on arXiv</h1>
+<p class="muted">[{{ papers|length }} of {{ papers|length }}]
+    <a href="{{ url_for('search', query=name, searchtype='author') }}">total of {{ papers|length }} entries</a>
+</p>
+
+{% if papers %}
+<dl>
+    {% for p in papers %}
+    <dt>
+        <span class="entry-id">[{{ loop.index }}]&nbsp;<a href="{{ url_for('paper_detail', arxiv_id=p.arxiv_id) }}">arXiv:{{ p.arxiv_id }}</a></span>
+        [<a href="{{ url_for('pdf_view', arxiv_id=p.arxiv_id) }}">pdf</a>,
+        <a href="{{ url_for('html_view', arxiv_id=p.arxiv_id) }}">html</a>,
+        <a href="{{ url_for('format_view', arxiv_id=p.arxiv_id) }}">other</a>]
+    </dt>
+    <dd class="paper-entry">
+        <div class="entry-title"><a href="{{ url_for('paper_detail', arxiv_id=p.arxiv_id) }}">{{ p.title }}</a></div>
+        <div class="entry-authors"><b>Authors:</b> {{ p.authors_display }}</div>
+        <div class="entry-subjects"><b>Subjects:</b> {{ p.primary_subject }}</div>
+    </dd>
+    {% endfor %}
+</dl>
+{% else %}
+<p class="muted">No papers found by this author.</p>
+{% endif %}
+
+{% endblock %}

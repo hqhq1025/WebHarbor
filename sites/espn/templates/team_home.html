@@ -1,0 +1,106 @@
+{% extends "base.html" %}
+{% block title %}{{ team.full_name or team.name }}{% endblock %}
+
+{% block content %}
+<div class="container">
+  <!-- Team Header -->
+  <div class="team-header" style="border-left-color: {{ team.color_primary or '#DD0000' }};">
+    <div class="team-header__row">
+      <img class="team-header__logo"
+           src="{{ url_for('static', filename='images/espn/teams/' ~ (sport.slug if sport else '') ~ '/' ~ (team.abbreviation or '').lower() ~ '.png') }}"
+           onerror="this.style.display='none';" alt="">
+      <div class="team-header__info">
+        <h1>{{ team.full_name or team.name }}</h1>
+        {% if sport %}<p class="team-sport">{{ sport.display_name or sport.name }}</p>{% endif %}
+        <p class="team-record">{{ team.wins }}-{{ team.losses }}{% if team.overtime_losses %}-{{ team.overtime_losses }}{% endif %} &bull; Streak: {{ team.streak }}</p>
+      </div>
+      {% if current_user.is_authenticated %}
+      <form method="post" action="/api/favorites/toggle" class="team-header__fav">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token_value }}">
+        <input type="hidden" name="type" value="team">
+        <input type="hidden" name="id" value="{{ team.id }}">
+        <input type="hidden" name="next" value="/team/{{ sport.slug if sport else '#' }}/{{ team.slug }}">
+        <button type="submit" class="btn-fav">&#9733; Follow Team</button>
+      </form>
+      {% endif %}
+    </div>
+    {% set active = 'overview' %}{% include "_team_subnav.html" %}
+  </div>
+
+  <div class="two-col-layout">
+    <div class="col-main">
+      <!-- Recent Games -->
+      <section class="section-block">
+        <h2 class="section-heading">Recent Games</h2>
+        {% if recent_games %}
+        <table class="data-table">
+          <thead><tr><th>Date</th><th>Opponent</th><th>Result</th><th>Score</th></tr></thead>
+          <tbody>
+            {% for game in recent_games %}
+            {% set is_home = game.home_team_id == team.id %}
+            {% set opp = game.away_team if is_home else game.home_team %}
+            {% set team_score = game.home_score if is_home else game.away_score %}
+            {% set opp_score = game.away_score if is_home else game.home_score %}
+            <tr>
+              <td>{{ game.date_display or game.date }}</td>
+              <td>{{ 'vs' if is_home else '@' }} <a href="/team/{{ sport.slug if sport else '#' }}/{{ opp.slug if opp else '#' }}">{{ opp.name if opp else '—' }}</a></td>
+              <td class="{{ 'win' if team_score > opp_score else 'loss' }}">{{ 'W' if team_score > opp_score else 'L' }}</td>
+              <td><a href="/game/{{ game.id }}">{{ team_score }}-{{ opp_score }}</a></td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+        {% else %}
+        <p class="empty-msg">No recent games.</p>
+        {% endif %}
+      </section>
+
+      <!-- Team News -->
+      {% if news %}
+      <section class="section-block">
+        <h2 class="section-heading">News</h2>
+        <ul class="headline-list">
+          {% for art in news %}
+          <li class="headline-item"><a href="/story/{{ art.slug }}">{{ art.title }}</a></li>
+          {% endfor %}
+        </ul>
+      </section>
+      {% endif %}
+    </div>
+
+    <div class="col-side">
+      <!-- Upcoming Games -->
+      {% if upcoming %}
+      <section class="section-block">
+        <h2 class="section-heading">Upcoming</h2>
+        {% for game in upcoming %}
+        {% set is_home = game.home_team_id == team.id %}
+        {% set opp = game.away_team if is_home else game.home_team %}
+        <div class="upcoming-card">
+          <div>{{ 'vs' if is_home else '@' }} {{ opp.full_name if opp else '—' }}</div>
+          <div class="upcoming-time">{{ game.date }} &bull; {{ game.time }}</div>
+          <div class="upcoming-network">{{ game.network }}</div>
+        </div>
+        {% endfor %}
+      </section>
+      {% endif %}
+
+      <!-- Injuries -->
+      {% if injuries %}
+      <section class="section-block">
+        <h2 class="section-heading">Injuries</h2>
+        <ul class="injury-list">
+          {% for player in injuries %}
+          <li>
+            <a href="/player/{{ sport.slug if sport else '#' }}/{{ player.slug }}">{{ player.name }}</a>
+            &bull; {{ player.position }}
+            &bull; <span class="injury-status">{{ player.injury_status }}</span>
+          </li>
+          {% endfor %}
+        </ul>
+      </section>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}

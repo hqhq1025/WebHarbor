@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block title %}Classroom – Hugging Face{% endblock %}
+
+{% block content %}
+<section class="task-hero">
+    <div class="container-wide">
+        <h1>Hugging Face Classroom</h1>
+        <p>Free educational tools for teachers and students learning machine learning.</p>
+    </div>
+</section>
+
+<div class="container-wide page">
+    <section class="sect">
+        <h2>Benefits</h2>
+        <ul class="benefits-list">
+            {% for b in benefits %}
+            <li>✓ {{ b }}</li>
+            {% endfor %}
+        </ul>
+    </section>
+
+    <section class="sect">
+        <h2>How to get started</h2>
+        <ol>
+            <li>Create a Hugging Face organization for your class.</li>
+            <li>Invite your students — they each get a free HF account.</li>
+            <li>Assign courses from the curriculum library or create your own.</li>
+            <li>Monitor progress in the teacher dashboard.</li>
+        </ol>
+    </section>
+</div>
+{% endblock %}

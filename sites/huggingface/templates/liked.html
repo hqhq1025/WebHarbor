@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% from "_macros.html" import repo_card %}
+{% block title %}Liked – Hugging Face{% endblock %}
+
+{% block content %}
+<div class="container-wide page">
+    <h1>Liked repositories</h1>
+    <p class="muted">{{ likes|length }} repo{{ '' if likes|length == 1 else 's' }} you've liked.</p>
+
+    <div class="repo-list">
+        {% for like in likes %}
+            {% if like.repo %}
+                {{ repo_card(like.repo) }}
+            {% endif %}
+        {% else %}
+            <p class="empty-state">You haven't liked any repos yet. <a href="{{ url_for('models_list') }}">Browse models →</a></p>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

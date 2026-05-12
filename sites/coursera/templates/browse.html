@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% block title %}{{ category_name }} Courses | Coursera{% endblock %}
+{% block content %}
+<div class="browse-page">
+  <div class="browse-hero container">
+    <h1>{{ category_name }}</h1>
+    <p>{{ courses|length }} courses available</p>
+  </div>
+  <div class="container">
+    <div class="course-grid">
+      {% for c in courses %}
+      <a href="{{ url_for('course_detail', slug=c.slug) }}" class="course-card">
+        <div class="course-card-thumb {{ c.color_class }}">
+          {% if course_thumb(c) %}<img class="cct-img" src="{{ url_for('static', filename=course_thumb(c)) }}" alt="">{% endif %}
+          <span class="course-type-badge">{{ c.course_type }}</span>
+        </div>
+        <div class="course-card-body">
+          <div class="course-partner">
+            {% set _pl = partner_logo(c.partner) %}{% if _pl %}<img class="cp-logo-inline" src="{{ url_for('static', filename=_pl) }}" alt="">{% endif %}
+            <span>{{ c.partner.name if c.partner else '' }}</span>
+          </div>
+          <h3 class="course-title">{{ c.title }}</h3>
+          <div class="course-meta">
+            <span class="course-level">{{ c.level }}</span>
+            {% if c.is_free %}<span class="course-free-badge">Free</span>{% endif %}
+          </div>
+          <div class="course-rating"><span class="stars">&#9733;</span> {{ '%.1f'|format(c.rating) }}</div>
+        </div>
+      </a>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+{% endblock %}

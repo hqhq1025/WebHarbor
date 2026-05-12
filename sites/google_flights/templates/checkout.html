@@ -1,0 +1,120 @@
+{% extends "base.html" %}
+{% block title %}Checkout | Google Flights{% endblock %}
+
+{% block content %}
+<div class="checkout-wrap">
+  <h1 style="font-family:var(--font-sans);font-size:28px;font-weight:400;margin-bottom:24px;">Review your trip</h1>
+
+  <form method="POST" action="{{ url_for('checkout') }}" class="checkout-grid">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+    <div class="checkout-main">
+      <!-- Contact -->
+      <section class="checkout-section">
+        <h2 class="checkout-section-title">Contact info</h2>
+        <div class="form-field">
+          <label for="contact_email">Email</label>
+          <input type="email" name="contact_email" id="contact_email" value="{{ current_user.email }}" required>
+        </div>
+        <div class="form-field">
+          <label for="contact_phone">Phone</label>
+          <input type="tel" name="contact_phone" id="contact_phone" value="{{ current_user.phone }}">
+        </div>
+      </section>
+
+      <!-- Passengers -->
+      <section class="checkout-section">
+        <h2 class="checkout-section-title">Passengers</h2>
+        {% for item in items %}
+          {% for p in range(item.passengers) %}
+            <div class="pax-block">
+              <div class="pax-label">Passenger {{ loop.index }} &middot; {{ item.flight.origin.iata }} &rarr; {{ item.flight.destination.iata }}</div>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+                <div class="form-field">
+                  <label>First name</label>
+                  <input type="text" name="pax_first_{{ loop.index0 }}_{{ p }}" value="{{ current_user.first_name }}" required>
+                </div>
+                <div class="form-field">
+                  <label>Last name</label>
+                  <input type="text" name="pax_last_{{ loop.index0 }}_{{ p }}" value="{{ current_user.last_name }}" required>
+                </div>
+              </div>
+            </div>
+          {% endfor %}
+        {% endfor %}
+      </section>
+
+      <!-- Payment -->
+      <section class="checkout-section">
+        <h2 class="checkout-section-title">Payment</h2>
+        {% if saved_payments %}
+        <div class="form-field" style="margin-bottom:16px;">
+          <label for="saved_payment_id">Saved cards</label>
+          <select name="saved_payment_id" id="saved_payment_id" onchange="toggleManualPayment(this)">
+            <option value="">-- Enter new card --</option>
+            {% for pm in saved_payments %}
+              <option value="{{ pm.id }}" {% if pm.is_default %}selected{% endif %}>
+                {{ pm.card_type }} ending {{ pm.last4 }} (exp {{ '%02d'|format(pm.exp_month) }}/{{ pm.exp_year }})
+              </option>
+            {% endfor %}
+          </select>
+        </div>
+        {% endif %}
+        <div id="manual-payment-fields" {% if saved_payments %}style="display:none;"{% endif %}>
+          <div class="form-field">
+            <label for="card_name">Name on card</label>
+            <input type="text" name="card_name" id="card_name" value="{{ current_user.full_name }}">
+          </div>
+          <div class="form-field">
+            <label for="card_number">Card number</label>
+            <input type="text" name="card_number" id="card_number" placeholder="4242 4242 4242 4242" value="4242424242424242">
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+            <div class="form-field">
+              <label for="card_exp">Expiry</label>
+              <input type="text" name="card_exp" id="card_exp" placeholder="MM/YY" value="12/28">
+            </div>
+            <div class="form-field">
+              <label for="card_cvc">CVC</label>
+              <input type="text" name="card_cvc" id="card_cvc" placeholder="123" value="123">
+            </div>
+          </div>
+        </div>
+        <script>
+        function toggleManualPayment(sel) {
+          var manual = document.getElementById('manual-payment-fields');
+          if (sel.value === '') {
+            manual.style.display = 'block';
+          } else {
+            manual.style.display = 'none';
+          }
+        }
+        </script>
+      </section>
+    </div>
+
+    <!-- Summary sidebar -->
+    <aside class="checkout-summary">
+      <h3 style="font-family:var(--font-sans);font-size:18px;font-weight:500;margin-bottom:16px;">Trip summary</h3>
+      {% for item in items %}
+        {% set f = item.flight %}
+        <div class="sum-trip">
+          <div style="font-weight:500;">{{ f.origin.iata }} &rarr; {{ f.destination.iata }}</div>
+          <div style="font-size:13px;color:var(--g-grey-700);">{{ f.airline }} {{ f.flight_number }}</div>
+          <div style="font-size:13px;color:var(--g-grey-700);">{{ f.departure_date|datefmt }} &middot; {{ item.cabin_class }} &middot; {{ item.passengers }}x</div>
+        </div>
+      {% endfor %}
+      <hr style="margin:12px 0;border:none;border-top:1px solid var(--g-grey-200);">
+      <div class="sum-row"><span>Subtotal</span><span>{{ subtotal|money }}</span></div>
+      <div class="sum-row"><span>Taxes &amp; fees</span><span>{{ taxes|money }}</span></div>
+      <div class="sum-row sum-total"><span>Total</span><span>{{ total|money }}</span></div>
+      <button type="submit" class="btn btn-primary" style="width:100%;margin-top:16px;">
+        Pay {{ total|money }}
+      </button>
+      <p style="font-size:12px;color:var(--g-grey-700);text-align:center;margin-top:12px;">
+        This is a demo. No real payment is processed.
+      </p>
+    </aside>
+  </form>
+</div>
+{% endblock %}

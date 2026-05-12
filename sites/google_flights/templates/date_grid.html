@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% block title %}Date grid | Google Flights{% endblock %}
+
+{% block content %}
+<section class="hero">
+  <h1>Date grid</h1>
+  <p class="hero-subtitle">Find the cheapest combination of departure and return dates</p>
+</section>
+
+<div class="tool-wrap">
+  <div class="date-grid-card">
+    <div class="date-grid-header">
+      <div>
+        <h2 style="font-family:var(--font-sans);font-size:22px;font-weight:400;">Price grid for JFK &rarr; CDG</h2>
+        <p style="color:var(--g-grey-700);font-size:14px;">Prices are averages from the past 30 days.</p>
+      </div>
+      <a href="{{ url_for('flights_list', **{'from': 'JFK', 'to': 'CDG'}) }}" class="btn btn-primary">Search flights</a>
+    </div>
+
+    <div class="date-grid">
+      <table>
+        <thead>
+          <tr>
+            <th>Depart \ Return</th>
+            <th>Apr 15</th><th>Apr 20</th><th>Apr 25</th><th>May 1</th><th>May 5</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% set rows = [('Apr 10', [520, 545, 570, 650, 680]),
+                         ('Apr 12', [499, 540, 585, 640, 710]),
+                         ('Apr 14', [530, 510, 560, 620, 695]),
+                         ('Apr 16', [560, 540, 550, 600, 680]),
+                         ('Apr 18', [585, 560, 570, 590, 655])] %}
+          {% for label, prices in rows %}
+            <tr>
+              <td><strong>{{ label }}</strong></td>
+              {% for p in prices %}
+                <td class="{% if p < 525 %}cheap{% elif p > 650 %}expensive{% endif %}">${{ p }}</td>
+              {% endfor %}
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <div class="date-grid-legend">
+      <div><span class="swatch cheap"></span>Great deal</div>
+      <div><span class="swatch"></span>Fair price</div>
+      <div><span class="swatch expensive"></span>High price</div>
+    </div>
+  </div>
+</div>
+{% endblock %}

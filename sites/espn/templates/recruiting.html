@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block title %}{{ sport.display_name or sport.name }} {{ gender }} Recruiting{% endblock %}
+
+{% block content %}
+<div class="container">
+  <div class="page-header">
+    <h1>{{ gender }} Basketball Recruiting</h1>
+    <p class="subtitle">{{ sport.display_name or sport.name }}</p>
+    {% set active = 'recruiting' %}{% include "_sport_subnav.html" %}
+  </div>
+
+  <table class="data-table recruiting-table">
+    <thead>
+      <tr>
+        <th>Rank</th>
+        <th>Name</th>
+        <th>Pos</th>
+        <th>Hometown</th>
+        <th>Stars</th>
+        <th>Committed To</th>
+        <th>Class</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for recruit in recruits %}
+      <tr>
+        <td class="rank-col">{{ recruit.rank }}</td>
+        <td class="player-name">{{ recruit.name }}</td>
+        <td>{{ recruit.position }}</td>
+        <td>{{ recruit.hometown }}</td>
+        <td class="stars-col">
+          {% for i in range(recruit.stars) %}&#9733;{% endfor %}
+          {% for i in range(5 - recruit.stars) %}&#9734;{% endfor %}
+        </td>
+        <td>{{ recruit.committed_to or 'Undecided' }}</td>
+        <td>{{ recruit.class_year }}</td>
+      </tr>
+      {% else %}
+      <tr><td colspan="7" class="empty-msg">No recruits found.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

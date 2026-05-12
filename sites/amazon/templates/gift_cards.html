@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block title %}Amazon Gift Cards{% endblock %}
+
+{% block content %}
+<div style="background:#fff;padding:40px 20px;max-width:1200px;margin:20px auto;border-radius:4px">
+    <h1 style="font-size:32px;text-align:center">Amazon Gift Cards</h1>
+    <p style="text-align:center;font-size:16px;color:var(--amz-text-secondary)">The perfect gift for any occasion</p>
+
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:20px;margin-top:30px">
+        {% for amount in [25, 50, 100, 200] %}
+        <div style="background:linear-gradient(135deg,#febd69,#f3a847);color:#111;padding:40px 20px;border-radius:8px;text-align:center;box-shadow:0 4px 12px rgba(0,0,0,0.1)">
+            <div style="font-size:14px;font-weight:700">amazon.</div>
+            <div style="font-size:32px;font-weight:700;margin:15px 0">${{ amount }}</div>
+            <div style="font-size:12px">GIFT CARD</div>
+            <button class="btn btn-outline" style="margin-top:15px;background:#fff">Buy Now</button>
+        </div>
+        {% endfor %}
+    </div>
+
+    <div style="margin-top:40px">
+        <h2>Gift Card Features</h2>
+        <ul>
+            <li>No fees</li>
+            <li>No expiration date</li>
+            <li>Redeemable toward millions of items</li>
+            <li>Available in multiple denominations</li>
+            <li>Delivered via email instantly</li>
+        </ul>
+    </div>
+</div>
+{% endblock %}

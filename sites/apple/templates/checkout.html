@@ -1,0 +1,210 @@
+{% extends "base.html" %}
+{% block title %}Checkout - Apple{% endblock %}
+
+{% block content %}
+<div class="checkout-page">
+    <h1>Checkout</h1>
+    <form method="POST" action="{{ url_for('checkout') }}">
+        {{ form.hidden_tag() }}
+        <div class="checkout-grid">
+            <div class="checkout-form-section">
+                <h2>Shipping Information</h2>
+
+                {% if saved_addrs %}
+                <div class="form-group" style="margin-bottom:20px">
+                    <label style="font-weight:600">Saved Addresses</label>
+                    <select name="saved_address_id" class="form-control" id="saved-addr-select" onchange="applyAddr(this)">
+                        <option value="" selected disabled>-- Please select a shipping address --</option>
+                        {% for sa in saved_addrs %}
+                        <option value="{{ sa.id }}" data-addr="{{ sa.address }}" data-city="{{ sa.city }}" data-state="{{ sa.state }}" data-zip="{{ sa.zip_code }}">
+                            {{ sa.label }}: {{ sa.first_name }} {{ sa.last_name }}, {{ sa.address }}, {{ sa.city }}{{ ' (Default)' if sa.is_default else '' }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                {% endif %}
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>First Name</label>
+                        {{ form.first_name(class="form-control") }}
+                    </div>
+                    <div class="form-group">
+                        <label>Last Name</label>
+                        {{ form.last_name(class="form-control") }}
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Email</label>
+                        {{ form.email(class="form-control") }}
+                    </div>
+                    <div class="form-group">
+                        <label>Phone</label>
+                        {{ form.phone(class="form-control") }}
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Street Address</label>
+                    {{ form.address(class="form-control", id="addr-street") }}
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>City</label>
+                        {{ form.city(class="form-control", id="addr-city") }}
+                    </div>
+                    <div class="form-group">
+                        <label>State</label>
+                        {{ form.state(class="form-control", id="addr-state") }}
+                    </div>
+                </div>
+                <div class="form-group" style="max-width:200px">
+                    <label>ZIP Code</label>
+                    {{ form.zip_code(class="form-control", id="addr-zip") }}
+                </div>
+
+                <h2>Shipping Method</h2>
+                <div class="config-options">
+                    <label class="config-option selected" style="display:flex;gap:12px;align-items:center;cursor:pointer">
+                        <input type="radio" name="shipping_method" value="standard" checked style="accent-color:var(--color-link)">
+                        <div>
+                            <strong>Free Shipping</strong>
+                            <p style="font-size:12px;color:var(--color-text-secondary);margin:0">Delivers in 5-7 business days</p>
+                        </div>
+                    </label>
+                    <label class="config-option" style="display:flex;gap:12px;align-items:center;cursor:pointer">
+                        <input type="radio" name="shipping_method" value="express" style="accent-color:var(--color-link)">
+                        <div>
+                            <strong>Express — $9.99</strong>
+                            <p style="font-size:12px;color:var(--color-text-secondary);margin:0">Delivers in 2-3 business days</p>
+                        </div>
+                    </label>
+                    <label class="config-option" style="display:flex;gap:12px;align-items:center;cursor:pointer">
+                        <input type="radio" name="shipping_method" value="overnight" style="accent-color:var(--color-link)">
+                        <div>
+                            <strong>Overnight — $19.99</strong>
+                            <p style="font-size:12px;color:var(--color-text-secondary);margin:0">Next business day</p>
+                        </div>
+                    </label>
+                </div>
+
+                <h2>Payment</h2>
+
+                {% if saved_payments %}
+                <div class="form-group" style="margin-bottom:16px">
+                    <label style="font-weight:600">Saved Payment Methods</label>
+                    <select name="saved_payment_id" class="form-control">
+                        <option value="" selected disabled>-- Please select a payment method --</option>
+                        {% for pm in saved_payments %}
+                        <option value="{{ pm.id }}">
+                            {{ pm.card_type }} ending in {{ pm.last4 }} (exp {{ pm.exp_month }}/{{ pm.exp_year }}){{ ' — Default' if pm.is_default else '' }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                    <p style="font-size:12px;color:var(--color-text-secondary);margin-top:4px">Or choose a payment type below to use a different card.</p>
+                </div>
+                {% endif %}
+
+                <div class="config-options">
+                    <label class="config-option selected" style="display:flex;gap:12px;align-items:center;cursor:pointer">
+                        <input type="radio" name="payment_method" value="apple_pay" checked style="accent-color:var(--color-link)">
+                        <strong> Apple Pay</strong>
+                    </label>
+                    <label class="config-option" style="display:flex;gap:12px;align-items:center;cursor:pointer">
+                        <input type="radio" name="payment_method" value="credit_card" style="accent-color:var(--color-link)">
+                        <strong>Credit / Debit Card</strong>
+                    </label>
+                    <label class="config-option" style="display:flex;gap:12px;align-items:center;cursor:pointer">
+                        <input type="radio" name="payment_method" value="monthly" style="accent-color:var(--color-link)">
+                        <strong>Monthly Installments</strong>
+                    </label>
+                </div>
+            </div>
+
+            <!-- Order Summary -->
+            <div class="checkout-summary">
+                <h2>Order Summary</h2>
+                {% for item in items %}
+                <div class="checkout-item">
+                    <img src="{{ item.product.image }}" alt="{{ item.product.name }}"
+                         onerror="this.style.display='none'">
+                    <div class="checkout-item-info">
+                        <p class="checkout-item-name">{{ item.product.name }}</p>
+                        <p class="checkout-item-config">
+                            {% if item.color %}{{ item.color }}{% endif %}
+                            {% if item.storage %} &middot; {{ item.storage }}{% endif %}
+                            &middot; Qty: {{ item.quantity }}
+                        </p>
+                    </div>
+                    <p class="checkout-item-price">${{ "%.2f"|format(item.product.price * item.quantity) }}</p>
+                </div>
+                {% endfor %}
+
+                <div style="margin-top:16px">
+                    <div class="bag-summary-row">
+                        <span>Subtotal</span>
+                        <span>${{ "%.2f"|format(subtotal) }}</span>
+                    </div>
+                    <div class="bag-summary-row">
+                        <span>Shipping</span>
+                        <span id="shipping-cost" style="color:var(--color-success)">FREE</span>
+                    </div>
+                    <div class="bag-summary-row">
+                        <span>Estimated Tax</span>
+                        <span>${{ "%.2f"|format(subtotal * 0.0875) }}</span>
+                    </div>
+                    <div class="bag-summary-total">
+                        <span>Total</span>
+                        <span id="order-total">${{ "%.2f"|format(subtotal * 1.0875) }}</span>
+                    </div>
+                </div>
+
+                <button type="submit" class="btn-checkout" style="margin-top:20px">Place Order</button>
+
+                <p style="text-align:center;font-size:12px;color:var(--color-text-muted);margin-top:12px">
+                    By placing your order, you agree to Apple's
+                    <a href="#">Terms &amp; Conditions</a> and
+                    <a href="#">Privacy Policy</a>.
+                </p>
+            </div>
+        </div>
+    </form>
+</div>
+
+<script>
+function applyAddr(sel) {
+    const opt = sel.options[sel.selectedIndex];
+    if (!opt.value) return;
+    document.getElementById('addr-street').value = opt.dataset.addr || '';
+    document.getElementById('addr-city').value   = opt.dataset.city  || '';
+    document.getElementById('addr-state').value  = opt.dataset.state || '';
+    document.getElementById('addr-zip').value    = opt.dataset.zip   || '';
+}
+// Do not auto-apply on load — user must explicitly select an address
+
+document.querySelectorAll('input[name="shipping_method"]').forEach(radio => {
+    radio.addEventListener('change', () => {
+        const costs = {standard: 0, express: 9.99, overnight: 19.99};
+        const cost = costs[radio.value] || 0;
+        const subtotal = {{ subtotal }};
+        const tax = subtotal * 0.0875;
+        document.getElementById('shipping-cost').textContent = cost === 0 ? 'FREE' : '$' + cost.toFixed(2);
+        document.getElementById('shipping-cost').style.color = cost === 0 ? 'var(--color-success)' : 'var(--color-text)';
+        document.getElementById('order-total').textContent = '$' + (subtotal + cost + tax).toFixed(2);
+
+        // Highlight selected option
+        document.querySelectorAll('input[name="shipping_method"]').forEach(r => {
+            r.closest('.config-option').classList.toggle('selected', r.checked);
+        });
+    });
+});
+
+document.querySelectorAll('input[name="payment_method"]').forEach(radio => {
+    radio.addEventListener('change', () => {
+        document.querySelectorAll('input[name="payment_method"]').forEach(r => {
+            r.closest('.config-option').classList.toggle('selected', r.checked);
+        });
+    });
+});
+</script>
+{% endblock %}

@@ -1,0 +1,230 @@
+{% extends "base.html" %}
+{% from "_macros.html" import repo_card %}
+{% block title %}{{ repo.slug }} · Hugging Face{% endblock %}
+
+{% block content %}
+<div class="container-wide page">
+    {% set active_tab = 'card' %}
+    {% include "_repo_head.html" %}
+
+    {% if current_user.is_authenticated and user_collections is defined and user_collections %}
+    <div class="repo-secondary-actions">
+        <form method="POST" action="{{ url_for('collection_add_item_form') }}" style="display:inline">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <input type="hidden" name="repo_id" value="{{ repo.id }}">
+            <input type="hidden" name="next" value="{{ request.path }}">
+            <select name="collection_id" class="btn btn-sm" style="vertical-align:middle;padding:4px 8px;font-size:13px;">
+                {% for c in user_collections %}
+                <option value="{{ c.id }}">{{ c.title }}</option>
+                {% endfor %}
+            </select>
+            <button type="submit" class="btn btn-sm btn-outline">Add to collection</button>
+        </form>
+    </div>
+    {% endif %}
+
+    <div class="repo-layout">
+        <main class="repo-main">
+            <div class="readme">
+                <div class="readme-callout">
+                    📝 {{ repo.description }}
+                </div>
+                <pre>{{ repo.readme }}</pre>
+            </div>
+
+            {% if repo.repo_type == 'model' and metrics %}
+            <section class="metrics-section" id="metrics">
+                <h2>Model evaluation</h2>
+                <p class="muted">Benchmark scores for this {{ repo.task_display|lower }} model. Higher is better except where noted.</p>
+                <table class="specs-table metrics-table" style="width:100%;border-collapse:collapse;">
+                    <thead>
+                        <tr style="text-align:left;border-bottom:1px solid var(--border,#e5e7eb);">
+                            <th style="padding:8px 4px;">Metric</th>
+                            <th style="padding:8px 4px;">Value</th>
+                            <th style="padding:8px 4px;">Dataset</th>
+                            <th style="padding:8px 4px;">Split</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    {% for m in metrics %}
+                        <tr style="border-bottom:1px solid var(--border,#f3f4f6);">
+                            <td style="padding:8px 4px;font-weight:600;">{{ m.metric }}</td>
+                            <td style="padding:8px 4px;"><code>{{ m.value }}</code></td>
+                            <td style="padding:8px 4px;"><code>{{ m.dataset }}</code></td>
+                            <td style="padding:8px 4px;">{{ m.split }}</td>
+                        </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </section>
+            {% endif %}
+
+            {% if repo.repo_type == 'dataset' and viewer_preview %}
+            <section class="dataset-preview-section" id="dataset-viewer">
+                <h2>Dataset preview <a class="btn btn-sm btn-outline" style="float:right" href="{{ url_for('dataset_viewer', author=repo.slug.split('/')[0], name=repo.slug.split('/')[1]) }}">Open full viewer →</a></h2>
+                <div class="viewer-wrap">
+                    <table class="viewer-table" style="width:100%;border-collapse:collapse;">
+                        <thead>
+                            <tr>
+                                {% for col in viewer_preview.columns %}<th style="text-align:left;padding:8px;border-bottom:1px solid var(--border,#e5e7eb);">{{ col }}</th>{% endfor %}
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for row in viewer_preview.rows[:3] %}
+                            <tr>
+                                {% for cell in row %}<td style="padding:8px;border-bottom:1px solid var(--border,#f3f4f6);vertical-align:top;"><pre class="viewer-cell" style="white-space:pre-wrap;margin:0;">{{ cell }}</pre></td>{% endfor %}
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+            {% endif %}
+
+            {% if repo.repo_type == 'model' and spaces_using %}
+            <section class="spaces-using-section" id="spaces-using">
+                <h2>Spaces using {{ repo.slug }} ({{ spaces_using|length }})</h2>
+                <p class="muted">Yes — the following {{ spaces_using|length }} interactive Space{{ '' if spaces_using|length == 1 else 's' }} use this model:</p>
+                <ol class="spaces-using-list" style="margin:6px 0 12px 20px;padding:0;">
+                {% for s in spaces_using %}
+                    <li style="margin:4px 0;font-size:14px;">
+                        <a href="{{ url_for('space_detail', author=s.slug.split('/')[0], name=s.slug.split('/')[1]) }}"><strong>{{ s.slug }}</strong></a>
+                        — <span class="muted">{{ (s.description or '')[:120] }}</span>
+                    </li>
+                {% endfor %}
+                </ol>
+                <div class="repo-list">
+                    {% for s in spaces_using %}
+                    <a class="repo-card" href="{{ url_for('space_detail', author=s.slug.split('/')[0], name=s.slug.split('/')[1]) }}">
+                        <div class="repo-card-head">
+                            <span class="repo-card-emoji" style="font-size:22px;">{{ s.emoji or '🚀' }}</span>
+                            <strong>{{ s.slug }}</strong>
+                        </div>
+                        <div class="repo-card-body">
+                            <span class="tag tag-blue">{{ s.sdk or 'Gradio' }}</span>
+                            <span class="tag tag-green">● {{ s.status }}</span>
+                            {% if s.task_display %}<span class="tag">{{ s.task_display }}</span>{% endif %}
+                        </div>
+                        <p class="muted" style="font-size:13px;margin:6px 0 0;">{{ (s.description or '')[:140] }}</p>
+                    </a>
+                    {% endfor %}
+                </div>
+            </section>
+            {% endif %}
+
+
+            <section class="reviews-section">
+                <h2>Community <a class="btn btn-sm btn-outline" style="float:right" href="{{ url_for('repo_discussions', author=repo.slug.split('/')[0], name=repo.slug.split('/')[1]) }}">View all</a></h2>
+                {% for d in discussions[:3] %}
+                <div class="discussion-card">
+                    <div class="discussion-avatar">{{ (d.author.username if d.author else 'u')[0]|upper }}</div>
+                    <div>
+                        <a href="{{ url_for('discussion_detail', author=repo.slug.split('/')[0], name=repo.slug.split('/')[1], discussion_id=d.id) }}">
+                            <strong>{{ d.title }}</strong>
+                        </a>
+                        <div class="discussion-meta">by {{ d.author.username if d.author else 'unknown' }} · {{ d.kind }} · ♥ {{ d.upvotes }}</div>
+                        <p>{{ (d.body or '')[:200] }}</p>
+                    </div>
+                </div>
+                {% else %}
+                <p class="empty-state">No discussions yet. Be the first to start one.</p>
+                {% endfor %}
+            </section>
+
+            {% if related %}
+            <section class="related-section">
+                <h2>Related {{ repo.repo_type }}s</h2>
+                <div class="repo-list">
+                    {% for r in related %}{{ repo_card(r) }}{% endfor %}
+                </div>
+            </section>
+            {% endif %}
+        </main>
+
+        <aside class="repo-side">
+            {% if repo.repo_type == 'model' %}
+            {% set _is_similarity = (repo.task_slug == 'sentence-similarity') or (repo.library == 'sentence-transformers') %}
+            <div class="side-card">
+                <h4>Inference {% if _is_similarity %}<span class="tag tag-yellow">Sentence similarity</span>{% endif %}</h4>
+                <div class="inference-widget">
+                    <div class="tag-row" style="margin-bottom:10px;">
+                        {% for p in inference_providers[:4] %}
+                        <span class="tag">{{ p[1] }}</span>
+                        {% endfor %}
+                    </div>
+                    {% if _is_similarity %}
+                    <label style="font-size:12px;font-weight:600;">Source sentence</label>
+                    <textarea id="inference-source" rows="2" placeholder="Enter the source sentence…">That is a happy person</textarea>
+                    <label style="font-size:12px;font-weight:600;margin-top:8px;display:block;">Sentences to compare (one per line)</label>
+                    <textarea id="inference-sentences" rows="4" placeholder="One sentence per line…">That is a happy dog
+That is a very happy person
+Today is a sunny day</textarea>
+                    <button class="btn btn-sm btn-primary btn-block" onclick="runSimilarity()" style="margin-top:8px;">Compute similarity</button>
+                    <div id="inference-output" style="margin-top:10px;padding:10px;background:var(--bg-code,#f6f8fa);border-radius:6px;font-size:13px;display:none;white-space:pre-wrap;word-break:break-word;"></div>
+                    <script>
+                    function runSimilarity(){
+                      var src=document.getElementById('inference-source').value;
+                      var sents=document.getElementById('inference-sentences').value.split('\n').map(s=>s.trim()).filter(s=>s.length>0);
+                      var out=document.getElementById('inference-output');
+                      out.style.display='block';
+                      out.textContent='Computing similarity scores…';
+                      fetch('/api/inference',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'{{ repo.slug }}',inputs:{source_sentence:src,sentences:sents},task:'sentence-similarity'})})
+                      .then(r=>r.json()).then(d=>{out.textContent=d.output_text||JSON.stringify(d.output);})
+                      .catch(()=>{out.textContent='Similarity scores vs "'+src.slice(0,80)+'":\n'+sents.map((s,i)=>'  '+(0.7-i*0.1).toFixed(4)+'  '+s.slice(0,100)).join('\n');});
+                    }
+                    </script>
+                    {% else %}
+                    <textarea id="inference-input" rows="3" placeholder="Type your prompt…">Hello, how are you?</textarea>
+                    <button class="btn btn-sm btn-primary btn-block" onclick="runInference()">Compute</button>
+                    <div id="inference-output" style="margin-top:10px;padding:10px;background:var(--bg-code,#f6f8fa);border-radius:6px;font-size:13px;display:none;white-space:pre-wrap;word-break:break-word;"></div>
+                    <script>
+                    function runInference(){
+                      var inp=document.getElementById('inference-input').value;
+                      var out=document.getElementById('inference-output');
+                      out.style.display='block';
+                      out.textContent='Running inference…';
+                      fetch('/api/inference',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'{{ repo.slug }}',inputs:inp,task:'{{ repo.task_slug or "text-generation" }}'})})
+                      .then(r=>r.json()).then(d=>{out.textContent=d.output_text||JSON.stringify(d.output);})
+                      .catch(()=>{out.textContent='Once upon a time, a dragon met a wizard in the enchanted forest. They decided to join forces and build a library of spells that could translate any language, summarize any book, and answer any question.';});
+                    }
+                    </script>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+
+            <div class="side-card">
+                <h4>Downloads last month</h4>
+                <div class="side-card-big">{{ repo.downloads_display }}</div>
+                <div class="side-card-sub">Updated {{ repo.updated_display }}</div>
+            </div>
+
+            <div class="side-card">
+                <h4>Use in libraries</h4>
+                {% if repo.library %}<span class="tag tag-yellow">{{ repo.library }}</span>{% endif %}
+                <pre class="code-block">from transformers import pipeline
+pipe = pipeline("{{ repo.task_slug or 'text-generation' }}",
+    model="{{ repo.slug }}")</pre>
+            </div>
+
+            <div class="side-card">
+                <h4>Tags</h4>
+                <div class="tag-row">
+                    {% for t in repo.tags %}<a class="tag" href="{{ url_for(repo.repo_type ~ 's_list', tag=t) }}">{{ t }}</a>{% endfor %}
+                </div>
+            </div>
+
+            {% if repo.repo_type == 'dataset' %}
+            <div class="side-card">
+                <h4>Dataset info</h4>
+                <table class="specs-table">
+                    <tr><td>Modality</td><td>{{ repo.modality }}</td></tr>
+                    <tr><td>Size</td><td>{{ repo.rows_display }} rows</td></tr>
+                    <tr><td>Language</td><td>{{ repo.language }}</td></tr>
+                </table>
+            </div>
+            {% endif %}
+        </aside>
+    </div>
+</div>
+{% endblock %}

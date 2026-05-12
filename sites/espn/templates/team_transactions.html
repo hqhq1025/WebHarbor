@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block title %}{{ team.full_name or team.name }} Transactions{% endblock %}
+
+{% block content %}
+<div class="container">
+  <div class="page-header">
+    <h1>{{ team.full_name or team.name }} Transactions</h1>
+    {% set active = 'transactions' %}{% include "_team_subnav.html" %}
+  </div>
+
+  <div class="transactions-list">
+    {% for tx in transactions %}
+    <div class="transaction-item">
+      <div class="tx-meta">
+        <span class="tx-type tx-type-{{ tx.transaction_type }}">{{ tx.transaction_type | title }}</span>
+        <span class="tx-date">{{ tx.date }}</span>
+        {% if tx.player %}
+        <a href="/player/{{ sport.slug if sport else '#' }}/{{ tx.player.slug }}" class="tx-player">{{ tx.player.name }}</a>
+        {% endif %}
+      </div>
+      <p class="tx-desc">{{ tx.description }}</p>
+    </div>
+    {% else %}
+    <p class="empty-msg">No transactions found for {{ team.full_name or team.name }}.</p>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}

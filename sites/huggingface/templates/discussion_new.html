@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% block title %}New discussion – {{ repo.slug }}{% endblock %}
+
+{% block content %}
+<div class="form-page">
+    <div class="form-card form-card-wide">
+        <div class="form-header">
+            <h1>New discussion</h1>
+            <p class="muted">Opening a thread on {{ repo.slug }}</p>
+        </div>
+        <form method="post">
+            {{ form.hidden_tag() }}
+            <div class="form-group">
+                <label>Type</label>
+                {{ form.kind(class="form-control") }}
+            </div>
+            <div class="form-group">
+                <label>Title</label>
+                {{ form.title(class="form-control") }}
+                {% for err in form.title.errors %}<div class="form-error">{{ err }}</div>{% endfor %}
+            </div>
+            <div class="form-group">
+                <label>Body</label>
+                {{ form.body(class="form-control", rows=10) }}
+                {% for err in form.body.errors %}<div class="form-error">{{ err }}</div>{% endfor %}
+            </div>
+            <div class="form-actions">
+                <button class="btn btn-primary" type="submit">Open discussion</button>
+                <a class="btn btn-ghost" href="{{ url_for('repo_discussions', author=repo.slug.split('/')[0], name=repo.slug.split('/')[1]) }}">Cancel</a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

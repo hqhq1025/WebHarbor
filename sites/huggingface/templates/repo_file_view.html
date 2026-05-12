@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% block title %}{{ filepath }} · {{ repo.slug }}{% endblock %}
+
+{% block content %}
+<div class="container-wide page">
+    {% include "_repo_head.html" %}
+
+    <div class="files-toolbar">
+        <div class="files-breadcrumb">
+            <button class="btn btn-sm btn-outline" type="button" disabled>main ▾</button>
+            <a href="{{ url_for(repo.repo_type ~ '_files' if repo.repo_type in ['dataset','space'] else 'model_files', author=repo.slug.split('/')[0], name=repo.slug.split('/')[1]) }}">{{ repo.slug.split('/')[1] }}</a>
+            {% set _parts = filepath.split('/') %}
+            {% set _ns = namespace(acc='') %}
+            {% for p in _parts[:-1] %}
+                {% set _ns.acc = (_ns.acc ~ '/' ~ p) if _ns.acc else p %}
+                <span class="files-sep">/</span>
+                <a href="{{ url_for(repo.repo_type ~ '_files' if repo.repo_type in ['dataset','space'] else 'model_files', author=repo.slug.split('/')[0], name=repo.slug.split('/')[1], subpath=_ns.acc) }}">{{ p }}</a>
+            {% endfor %}
+            <span class="files-sep">/</span>
+            <strong>{{ _parts[-1] }}</strong>
+        </div>
+        <div class="files-toolbar-right">
+            <a class="btn btn-sm btn-outline" href="{{ url_for(repo.repo_type ~ '_files' if repo.repo_type in ['dataset','space'] else 'model_files', author=repo.slug.split('/')[0], name=repo.slug.split('/')[1]) }}">↩ Back to files</a>
+            <a class="btn btn-sm btn-outline" href="#" onclick="alert('Raw download is not available in this mirror.');return false;">raw</a>
+            <a class="btn btn-sm btn-outline" href="{{ url_for(repo.repo_type ~ '_commits' if repo.repo_type in ['dataset','space'] else 'model_commits', author=repo.slug.split('/')[0], name=repo.slug.split('/')[1]) }}">history</a>
+        </div>
+    </div>
+
+    <div class="file-meta">
+        <span><strong>Size:</strong> {{ file.size_display }}</span>
+        {% if file.lfs %}<span class="files-lfs-badge">LFS</span>{% endif %}
+        <span class="muted">·</span>
+        <span class="muted">{{ file.last_commit_msg }}</span>
+        <span class="muted">·</span>
+        <span class="muted">{{ file.last_commit_rel }}</span>
+    </div>
+
+    {% if is_binary %}
+    <div class="file-binary-notice">
+        <p><strong>Binary / LFS file</strong></p>
+        <p>This file is stored with Git Large File Storage. Preview is not available for binary content. Use the snippet below to load it from the original Hugging Face Hub:</p>
+        <pre class="code-block">from huggingface_hub import hf_hub_download
+
+path = hf_hub_download(
+    repo_id="{{ repo.slug }}",
+    filename="{{ filepath }}",
+)
+print(path)</pre>
+    </div>
+    {% else %}
+    <div class="file-content">
+        <pre class="file-code">{{ content }}</pre>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

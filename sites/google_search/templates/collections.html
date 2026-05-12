@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block title %}Collections - Google{% endblock %}
+
+{% block content %}
+<div class="trending-page">
+    <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:16px;">
+        <div>
+            <h1 style="font-size:28px; font-weight:400; margin:0;">Collections</h1>
+            <p class="muted">Organize your bookmarks into folders</p>
+        </div>
+        <a href="{{ url_for('collection_new') }}" class="btn-primary" style="text-decoration:none;">+ New collection</a>
+    </div>
+
+    {% if items %}
+    <div class="collection-grid">
+        {% for c in items %}
+        <a class="collection-card" href="{{ url_for('collection_detail', cid=c.id) }}">
+            <div><span class="col-dot" style="background: {{ c.color }}"></span><span class="name">{{ c.name }}</span></div>
+            {% if c.description %}<div class="muted" style="font-size:12px;">{{ c.description[:100] }}</div>{% endif %}
+            <div class="meta">{{ c.bookmarks.count() }} bookmarks · {{ c.created|time_ago }}{% if c.is_public %} · Public{% endif %}</div>
+        </a>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div style="text-align:center; padding:60px; color: var(--color-text-tertiary);">
+        <p>You don't have any collections yet.</p>
+        <a href="{{ url_for('collection_new') }}" class="btn-primary" style="text-decoration:none;">Create your first collection</a>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

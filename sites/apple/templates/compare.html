@@ -1,0 +1,132 @@
+{% extends "base.html" %}
+{% block title %}Compare {{ title }} - Apple{% endblock %}
+
+{% block content %}
+<div class="compare-hero" style="text-align:center;padding:60px 20px 20px;">
+  <h1 style="font-size:48px;font-weight:700;margin:0 0 8px;">Compare {{ title }} models</h1>
+  <p style="color:#6e6e73;font-size:19px;max-width:620px;margin:0 auto 28px;">Compare features and pricing across every {{ title }} model side by side.</p>
+  <div class="compare-subnav" style="margin:20px 0;display:flex;gap:16px;justify-content:center;flex-wrap:wrap;">
+    <a href="/mac/">Mac</a> <a href="/iphone/">iPhone</a> <a href="/ipad/">iPad</a>
+    <a href="/watch/">Apple Watch</a> <a href="/airpods/">AirPods</a>
+  </div>
+</div>
+
+{% if products|length == 0 %}
+<p style="text-align:center;padding:40px;">No products available to compare in this category.</p>
+{% else %}
+<div class="compare-wrap" style="overflow-x:auto;max-width:1400px;margin:0 auto 80px;padding:0 20px;">
+  <table class="compare-table" style="width:100%;border-collapse:collapse;min-width:880px;">
+    <thead>
+      <tr>
+        <th style="width:160px;"></th>
+        {% for p in products %}
+        <th style="padding:18px 12px;text-align:center;vertical-align:top;min-width:180px;">
+          <a href="{{ url_for('product_detail', slug=p.slug) }}" style="text-decoration:none;color:inherit;display:block;">
+            <div style="background:#f5f5f7;border-radius:14px;padding:16px;margin-bottom:10px;height:160px;display:flex;align-items:center;justify-content:center;">
+              <img src="{{ p.image }}" alt="{{ p.name }}" style="max-width:100%;max-height:140px;object-fit:contain;"
+                   onerror="this.style.display='none'">
+            </div>
+            <div style="font-weight:600;font-size:17px;">{{ p.name }}</div>
+            <div style="color:#6e6e73;font-size:13px;margin-top:4px;">{{ p.subtitle }}</div>
+            <div style="margin-top:8px;font-weight:600;">From ${{ "%.2f"|format(p.price) }}</div>
+          </a>
+        </th>
+        {% endfor %}
+      </tr>
+    </thead>
+    <tbody>
+      {% macro specrow(label, attr_fn, cls='') %}
+      <tr class="compare-row {{ cls }}" style="border-top:1px solid #d2d2d7;">
+        <th style="padding:14px 12px;text-align:left;vertical-align:top;color:#6e6e73;font-weight:500;">{{ label }}</th>
+        {% for p in products %}
+        <td class="compare-cell" style="padding:14px 12px;text-align:center;vertical-align:top;">{{ attr_fn(p) or '—' }}</td>
+        {% endfor %}
+      </tr>
+      {% endmacro %}
+
+      <tr class="compare-row" style="border-top:1px solid #d2d2d7;">
+        <th style="padding:14px 12px;text-align:left;vertical-align:top;color:#6e6e73;font-weight:500;">Price</th>
+        {% for p in products %}
+        <td style="padding:14px 12px;text-align:center;"><strong>${{ "%.2f"|format(p.price) }}</strong></td>
+        {% endfor %}
+      </tr>
+      <tr class="compare-row" style="border-top:1px solid #d2d2d7;">
+        <th style="padding:14px 12px;text-align:left;vertical-align:top;color:#6e6e73;font-weight:500;">Monthly from</th>
+        {% for p in products %}
+        <td style="padding:14px 12px;text-align:center;">{% if p.monthly_price %}${{ "%.2f"|format(p.monthly_price) }}/mo.{% else %}—{% endif %}</td>
+        {% endfor %}
+      </tr>
+      <tr class="compare-row" style="border-top:1px solid #d2d2d7;">
+        <th style="padding:14px 12px;text-align:left;vertical-align:top;color:#6e6e73;font-weight:500;">Chip</th>
+        {% for p in products %}
+        <td style="padding:14px 12px;text-align:center;">{{ p.chip_family or p.processor or '—' }}</td>
+        {% endfor %}
+      </tr>
+      <tr class="compare-row" style="border-top:1px solid #d2d2d7;">
+        <th style="padding:14px 12px;text-align:left;vertical-align:top;color:#6e6e73;font-weight:500;">Display</th>
+        {% for p in products %}
+        <td style="padding:14px 12px;text-align:center;">{% if p.screen_size %}{{ p.screen_size }}"{% else %}—{% endif %}</td>
+        {% endfor %}
+      </tr>
+      <tr class="compare-row" style="border-top:1px solid #d2d2d7;">
+        <th style="padding:14px 12px;text-align:left;vertical-align:top;color:#6e6e73;font-weight:500;">Memory</th>
+        {% for p in products %}
+        <td style="padding:14px 12px;text-align:center;">{% if p.ram %}{{ p.ram }}GB{% else %}—{% endif %}</td>
+        {% endfor %}
+      </tr>
+      <tr class="compare-row" style="border-top:1px solid #d2d2d7;">
+        <th style="padding:14px 12px;text-align:left;vertical-align:top;color:#6e6e73;font-weight:500;">Storage</th>
+        {% for p in products %}
+        <td style="padding:14px 12px;text-align:center;">
+          {% set storage = p.get_storage() %}
+          {% if storage %}{{ storage|join(', ') }}{% elif p.ssd %}{{ p.ssd }}GB{% else %}—{% endif %}
+        </td>
+        {% endfor %}
+      </tr>
+      <tr class="compare-row" style="border-top:1px solid #d2d2d7;">
+        <th style="padding:14px 12px;text-align:left;vertical-align:top;color:#6e6e73;font-weight:500;">Battery life</th>
+        {% for p in products %}
+        <td style="padding:14px 12px;text-align:center;">{{ p.battery_life or '—' }}</td>
+        {% endfor %}
+      </tr>
+      <tr class="compare-row" style="border-top:1px solid #d2d2d7;">
+        <th style="padding:14px 12px;text-align:left;vertical-align:top;color:#6e6e73;font-weight:500;">Weight</th>
+        {% for p in products %}
+        <td style="padding:14px 12px;text-align:center;">{{ p.weight or '—' }}</td>
+        {% endfor %}
+      </tr>
+      <tr class="compare-row" style="border-top:1px solid #d2d2d7;">
+        <th style="padding:14px 12px;text-align:left;vertical-align:top;color:#6e6e73;font-weight:500;">Connectivity</th>
+        {% for p in products %}
+        <td style="padding:14px 12px;text-align:center;">{{ p.connectivity or '—' }}</td>
+        {% endfor %}
+      </tr>
+      <tr class="compare-row" style="border-top:1px solid #d2d2d7;">
+        <th style="padding:14px 12px;text-align:left;vertical-align:top;color:#6e6e73;font-weight:500;">Colors</th>
+        {% for p in products %}
+        <td style="padding:14px 12px;text-align:center;font-size:13px;">
+          {% set colors = p.get_colors() %}
+          {% if colors %}{{ colors|join(', ') }}{% else %}—{% endif %}
+        </td>
+        {% endfor %}
+      </tr>
+      <tr class="compare-row" style="border-top:1px solid #d2d2d7;">
+        <th style="padding:14px 12px;text-align:left;vertical-align:top;color:#6e6e73;font-weight:500;">Released</th>
+        {% for p in products %}
+        <td style="padding:14px 12px;text-align:center;">{{ p.release_year or p.release_date or '—' }}</td>
+        {% endfor %}
+      </tr>
+      <tr class="compare-row" style="border-top:1px solid #d2d2d7;">
+        <th style="padding:14px 12px;text-align:left;vertical-align:top;color:#6e6e73;font-weight:500;">&nbsp;</th>
+        {% for p in products %}
+        <td style="padding:18px 12px;text-align:center;">
+          <a href="{{ url_for('product_detail', slug=p.slug) }}" class="compare-learn" style="display:inline-block;color:#0071e3;text-decoration:none;margin-right:8px;">Learn more</a>
+          <a href="/configure/{{ p.slug }}" class="compare-buy" style="display:inline-block;padding:8px 16px;border-radius:980px;background:#0071e3;color:#fff;text-decoration:none;">Buy</a>
+        </td>
+        {% endfor %}
+      </tr>
+    </tbody>
+  </table>
+</div>
+{% endif %}
+{% endblock %}

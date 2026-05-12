@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+{% block title %}Apple Watch - Apple{% endblock %}
+
+{% block content %}
+<div class="category-hero">
+    <h1>Apple Watch</h1>
+</div>
+<div class="category-promo">
+    Get credit toward a new Apple Watch when you trade in an eligible device. <a href="#">Learn more</a>
+</div>
+<div class="category-nav">
+    {% for product in products %}
+    <a href="#{{ product.slug }}">{{ product.name.replace('Apple Watch ', '') }}</a>
+    {% endfor %}
+    <a href="/compare/watch">Compare</a>
+</div>
+
+<section class="lineup-section">
+    <div class="lineup-grid">
+        {% for product in products %}
+        <a href="{{ url_for('product_detail', slug=product.slug) }}" class="lineup-card" id="{{ product.slug }}">
+            <div class="lineup-card-image">
+                <img src="{{ product.image }}" alt="{{ product.name }}"
+                     onerror="this.parentElement.innerHTML='<div class=\'placeholder-img\' style=\'width:160px;height:200px;background:linear-gradient(135deg,#fa709a,#fee140);border-radius:16px\'>&#9201;</div>'">
+            </div>
+            {% if product.is_new %}<span class="badge-new">New</span>{% endif %}
+            <h3>{{ product.name }}</h3>
+            <p class="lineup-subtitle">{{ product.subtitle }}</p>
+            <p class="lineup-price">From ${{ "%.2f"|format(product.price) }}</p>
+            <div class="lineup-cta">
+                <span>Learn more</span>
+                <span>Buy</span>
+            </div>
+        </a>
+        {% endfor %}
+    </div>
+</section>
+
+<section class="features-section">
+    <h2 class="shelf-title">Why Apple Watch.</h2>
+    <div class="features-grid">
+        <div class="feature-card">
+            <div class="feature-icon">&#10084;&#65039;</div>
+            <h3>Health Monitoring</h3>
+            <p>ECG, blood oxygen, temperature sensing, hypertension notifications, and sleep score tracking.</p>
+        </div>
+        <div class="feature-card feature-dark">
+            <div class="feature-icon">&#127939;</div>
+            <h3>Fitness</h3>
+            <p>Workout Buddy with personalized audible motivation and precision GPS tracking.</p>
+        </div>
+        <div class="feature-card feature-dark">
+            <div class="feature-icon">&#128241;</div>
+            <h3>5G Cellular</h3>
+            <p>Stay connected even without your iPhone. Make calls, send texts, stream music.</p>
+        </div>
+        <div class="feature-card">
+            <div class="feature-stat">24hr</div>
+            <h3>All-Day Battery</h3>
+            <p>Up to 24 hours of battery life with regular use, and up to 72 hours on Ultra.</p>
+        </div>
+    </div>
+</section>
+{% endblock %}

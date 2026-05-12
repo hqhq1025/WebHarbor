@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block title %}Edit Profile - ESPN{% endblock %}
+
+{% block content %}
+<div class="container">
+  <div class="account-page">
+    <h1>Edit Profile</h1>
+    <div class="account-nav">
+      <a href="/account">Overview</a>
+      <a href="/account/edit" class="active">Edit Profile</a>
+      <a href="/account/password">Change Password</a>
+    </div>
+
+    <div class="auth-card" style="max-width:480px;">
+      <form method="post" action="/account/edit" class="auth-form">
+        {{ form.hidden_tag() }}
+
+        <div class="form-group">
+          {{ form.name.label(class="form-label") }}
+          {{ form.name(class="form-input") }}
+          {% if form.name.errors %}
+            {% for e in form.name.errors %}<span class="form-error">{{ e }}</span>{% endfor %}
+          {% endif %}
+        </div>
+
+        <div class="form-group">
+          {{ form.phone.label(class="form-label") }}
+          {{ form.phone(class="form-input", placeholder="Optional phone number") }}
+          {% if form.phone.errors %}
+            {% for e in form.phone.errors %}<span class="form-error">{{ e }}</span>{% endfor %}
+          {% endif %}
+        </div>
+
+        <button type="submit" class="btn-red">Save Changes</button>
+        <a href="/account" class="btn-outline">Cancel</a>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

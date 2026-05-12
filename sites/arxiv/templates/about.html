@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+{% block title %}About arXiv{% endblock %}
+{% block content %}
+
+<h1>About arXiv</h1>
+<p>
+    arXiv is a curated research-sharing platform open to anyone. As a pioneer in digital open
+    access, arXiv.org now hosts more than <b>three million scholarly articles</b> in eight
+    subject areas.
+</p>
+
+<div class="dash-card">
+    <h2>Mission</h2>
+    <p>
+        Our members, institutional partners, volunteer moderators, users, donors, and funders help
+        arXiv continue its mission: a <b>free distribution service</b> and <b>open-access archive</b>
+        for scholarly articles.
+    </p>
+</div>
+
+<div class="dash-card">
+    <h2>Key Facts</h2>
+    <table class="data">
+        <tr><th>Founded</th><td>1991 by Paul Ginsparg</td></tr>
+        <tr><th>Subject areas</th><td>Physics, Mathematics, Computer Science, Quantitative Biology, Quantitative Finance, Statistics, EE & Systems Science, Economics</td></tr>
+        <tr><th>Submissions</th><td>Free to submit for eligible authors</td></tr>
+        <tr><th>Review process</th><td>Submissions are <b>moderated</b> for scholarly merit but not peer-reviewed by arXiv</td></tr>
+        <tr><th>Services</th><td>Submission, compilation, production, retrieval, search, web distribution, API access</td></tr>
+        <tr><th>Host institution</th><td><a href="{{ url_for('external_cornell') }}">Cornell University</a>, with support from the Simons Foundation and member institutions</td></tr>
+    </table>
+</div>
+
+<div class="dash-card">
+    <h2>Leadership Team</h2>
+    <p>arXiv's day-to-day operations are led by a small team based at <a href="{{ url_for('external_cornell') }}">Cornell University</a>:</p>
+    <ul class="leadership-team">
+        <li><b>Ramin Zabih</b> — Faculty Director</li>
+        <li><b>Stacy Konkiel</b> — Director of Research Development and Outreach</li>
+        <li><b>Steinn Sigurdsson</b> — Scientific Director</li>
+        <li><b>Charles Frankston</b> — Senior Technical Director</li>
+        <li><b>Jake Weiskoff</b> — Engineering Lead</li>
+        <li><b>Laurinda Demers</b> — Operations Manager</li>
+        <li><b>Alison Fromme</b> — Communications Manager</li>
+    </ul>
+    <p>Three advisory councils provide strategic and scientific guidance:</p>
+    <ul>
+        <li><b>Editorial Advisory Council</b> — advises on policy and moderation</li>
+        <li><b>Institutions Advisory Council</b> — represents member institutions</li>
+        <li><b>Science Advisory Council</b> — sets scientific direction across fields</li>
+    </ul>
+</div>
+
+<div class="dash-card">
+    <h2>How to Support arXiv</h2>
+    <p>
+        arXiv depends on the generosity of donors and members. Individuals, institutions, and
+        foundations all help sustain this critical service for global research.
+    </p>
+    <p>
+        <a class="btn btn-primary" href="{{ url_for('help_page_sub', page='members') }}">Become a Member</a>
+        <a class="btn" href="{{ url_for('help_page_sub', page='donate') }}">Make a Donation</a>
+    </p>
+</div>
+
+{% endblock %}

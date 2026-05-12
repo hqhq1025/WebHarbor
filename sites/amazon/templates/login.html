@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block title %}Sign In - Amazon.com{% endblock %}
+
+{% block content %}
+<div class="auth-page">
+    <div class="auth-logo">
+        <a href="{{ url_for('index') }}" style="color:inherit;text-decoration:none">amazon<span class="auth-logo-smile">.</span></a>
+    </div>
+
+    <div class="auth-box">
+        <h1>Sign in</h1>
+        <form method="POST" novalidate>
+            {{ form.csrf_token }}
+            <div class="form-group">
+                <label for="email">Email or mobile phone number</label>
+                <input type="email" id="email" name="email" class="form-control" required>
+                {% for e in form.email.errors %}<div class="form-error">{{ e }}</div>{% endfor %}
+            </div>
+            <div class="form-group">
+                <label for="password">Password</label>
+                <input type="password" id="password" name="password" class="form-control" required>
+                {% for e in form.password.errors %}<div class="form-error">{{ e }}</div>{% endfor %}
+            </div>
+            <button type="submit" class="btn btn-orange btn-full">Sign in</button>
+        </form>
+
+        <div style="margin-top:15px;font-size:12px">
+            By continuing, you agree to Amazon's Conditions of Use and Privacy Notice.
+        </div>
+
+        <div style="margin-top:15px;font-size:12px">
+            <a href="#">▸ Need help?</a>
+        </div>
+
+        <div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--amz-border);font-size:12px">
+            <strong>Demo account:</strong> demo@amazon.com / demo1234
+        </div>
+    </div>
+
+    <div class="auth-separator"><span style="background:#fff;padding:0 8px">New to Amazon?</span></div>
+
+    <a href="{{ url_for('register') }}" class="btn btn-outline btn-full">Create your Amazon account</a>
+</div>
+{% endblock %}

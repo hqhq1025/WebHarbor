@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+{% block title %}Cambridge Dictionary Plus{% endblock %}
+{% block content %}
+<div class="plus-page">
+  <div class="plus-hero">
+    <div class="container">
+      <h1>Cambridge Dictionary Plus</h1>
+      <p>Improve your vocabulary with quizzes, games, and interactive activities.</p>
+    </div>
+  </div>
+
+  <div class="container plus-content">
+
+    <!-- Image Quizzes -->
+    <section class="plus-section" id="image-quizzes">
+      <h2 class="plus-section-title">&#x1F5BC; Image Quizzes</h2>
+      <p class="plus-section-desc">Test your vocabulary with picture-based questions.</p>
+      <div class="quiz-grid">
+        {% for quiz in image_quizzes %}
+          <a href="{{ url_for('quiz_detail', slug=quiz.slug) }}" class="quiz-card quiz-card--image">
+            <div class="quiz-card-icon">&#x1F5BC;</div>
+            <h3>{{ quiz.title }}</h3>
+            <p>{{ quiz.description[:100] }}</p>
+            <span class="quiz-difficulty difficulty-{{ quiz.difficulty }}">{{ quiz.difficulty|capitalize }}</span>
+            <span class="quiz-category">{{ quiz.category }}</span>
+            <div class="quiz-start-btn">Start quiz &rsaquo;</div>
+          </a>
+        {% endfor %}
+        {% if not image_quizzes %}
+          <p>No image quizzes available yet.</p>
+        {% endif %}
+      </div>
+    </section>
+
+    <!-- Grammar Quizzes -->
+    <section class="plus-section" id="grammar-quizzes">
+      <h2 class="plus-section-title">&#x270F; Grammar Quizzes</h2>
+      <p class="plus-section-desc">Test your grammar knowledge with these interactive quizzes.</p>
+      <div class="quiz-grid">
+        {% for quiz in grammar_quizzes %}
+          <a href="{{ url_for('quiz_detail', slug=quiz.slug) }}" class="quiz-card quiz-card--grammar">
+            <div class="quiz-card-icon">&#x270F;</div>
+            <h3>{{ quiz.title }}</h3>
+            <p>{{ quiz.description[:100] }}</p>
+            <span class="quiz-difficulty difficulty-{{ quiz.difficulty }}">{{ quiz.difficulty|capitalize }}</span>
+            <span class="quiz-category">{{ quiz.category }}</span>
+            <div class="quiz-start-btn">Start quiz &rsaquo;</div>
+          </a>
+        {% endfor %}
+        {% if not grammar_quizzes %}
+          <p>No grammar quizzes available yet.</p>
+        {% endif %}
+      </div>
+    </section>
+
+    <!-- Word Games -->
+    <section class="plus-section" id="word-games">
+      <h2 class="plus-section-title">&#x1F3AE; Word Games</h2>
+      <p class="plus-section-desc">Challenge yourself with word games.</p>
+      <div class="quiz-grid">
+        <a href="{{ url_for('word_scramble') }}" class="quiz-card quiz-card--game">
+          <div class="quiz-card-icon">&#x1F524;</div>
+          <h3>Word Scramble</h3>
+          <p>Unscramble the letters to spell the correct word before the clock runs out!</p>
+          <span class="quiz-difficulty difficulty-easy">Easy</span>
+          <div class="quiz-start-btn">Play now &rsaquo;</div>
+        </a>
+      </div>
+    </section>
+
+  </div>
+</div>
+{% endblock %}

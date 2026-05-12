@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Apple{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
+    <link rel="icon" href="{{ url_for('static', filename='images/icons/favicon.ico') }}" type="image/x-icon">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    {% block extra_head %}{% endblock %}
+</head>
+<body>
+    <!-- Global Nav -->
+    <nav class="globalnav" id="globalnav">
+        <div class="gn-content">
+            <ul class="gn-list">
+                <li class="gn-item gn-apple">
+                    <a href="{{ url_for('home') }}" class="gn-link gn-link-apple" aria-label="Apple">
+                        <svg height="44" viewBox="0 0 14 44" width="14"><path d="m13.0729 17.6825a3.61 3.61 0 0 0 -1.7502 3.0365 3.5132 3.5132 0 0 0 2.1369 3.2223 8.394 8.394 0 0 1 -1.0952 2.2592c-.6868.9954-1.3968 1.9909-2.5164 1.9909s-1.3862-.6846-2.6632-.6846-1.6806.7003-2.8923.7003-1.7197-.9167-2.5054-2.0243a9.7842 9.7842 0 0 1 -1.6626-5.4694 4.9519 4.9519 0 0 1 2.3505-4.285 3.7688 3.7688 0 0 1 1.9629-.5765c.5765 0 1.4597.6846 1.9138.6846.4234 0 1.4282-.7746 2.1757-.7746a3.5191 3.5191 0 0 1 3.0523 1.5024zm-3.5553-1.6625a3.9825 3.9825 0 0 0 .9254-2.847 4.046 4.046 0 0 0 -2.6157 1.3533 3.7738 3.7738 0 0 0 -.9549 2.7795 3.3574 3.3574 0 0 0 2.6452-1.2858z" fill="currentColor"/></svg>
+                    </a>
+                </li>
+                <li class="gn-item"><a href="{{ url_for('shop') }}" class="gn-link">Store</a></li>
+                <li class="gn-item"><a href="{{ url_for('mac') }}" class="gn-link">Mac</a></li>
+                <li class="gn-item"><a href="{{ url_for('ipad') }}" class="gn-link">iPad</a></li>
+                <li class="gn-item"><a href="{{ url_for('iphone') }}" class="gn-link">iPhone</a></li>
+                <li class="gn-item"><a href="{{ url_for('watch') }}" class="gn-link">Watch</a></li>
+                <li class="gn-item"><a href="{{ url_for('airpods') }}" class="gn-link">AirPods</a></li>
+                <li class="gn-item"><a href="{{ url_for('accessories') }}" class="gn-link">Accessories</a></li>
+                <li class="gn-item"><a href="{{ url_for('support') }}" class="gn-link">Support</a></li>
+                <li class="gn-item gn-search">
+                    <a href="{{ url_for('search') }}" class="gn-link gn-link-search" aria-label="Search">
+                        <svg height="44" viewBox="0 0 15 44" width="15"><path d="m14.298 27.202-3.87-3.87a5.963 5.963 0 0 0 1.072-3.332 6.0035 6.0035 0 1 0 -6 6 5.963 5.963 0 0 0 3.332-1.072l3.87 3.87zm-8.798-1.798a4.5 4.5 0 1 1 4.5-4.5 4.5 4.5 0 0 1 -4.5 4.5z" fill="currentColor"/></svg>
+                    </a>
+                </li>
+                <li class="gn-item gn-bag">
+                    <a href="{{ url_for('bag') }}" class="gn-link gn-link-bag" aria-label="Shopping Bag">
+                        <svg height="44" viewBox="0 0 14 44" width="14"><path d="m11.3535 16.0283h-1.0205a3.4229 3.4229 0 0 0 -3.333-2.9648 3.4229 3.4229 0 0 0 -3.333 2.9648h-1.02a2.1184 2.1184 0 0 0 -2.117 2.1162v7.7155a2.1186 2.1186 0 0 0 2.1162 2.1167h8.707a2.1186 2.1186 0 0 0 2.1168-2.1167v-7.7155a2.1184 2.1184 0 0 0 -2.1165-2.1162zm-4.3535-1.8652a2.3169 2.3169 0 0 1 2.2222 1.8652h-4.4444a2.3169 2.3169 0 0 1 2.2222-1.8652zm5.37 11.6969a1.0182 1.0182 0 0 1 -1.0166 1.0171h-8.7069a1.0182 1.0182 0 0 1 -1.0165-1.0171v-7.7155a1.0178 1.0178 0 0 1 1.0166-1.0166h8.707a1.0178 1.0178 0 0 1 1.0164 1.0166z" fill="currentColor"/></svg>
+                        {% if cart_count > 0 %}
+                        <span class="gn-bag-count">{{ cart_count }}</span>
+                        {% endif %}
+                    </a>
+                </li>
+                <li class="gn-item gn-account">
+                    {% if current_user.is_authenticated %}
+                    <a href="{{ url_for('account') }}" class="gn-link gn-link-account" aria-label="Account">
+                        <svg height="44" viewBox="0 0 16 44" width="16"><path d="M8 16a4 4 0 1 0 0 8 4 4 0 0 0 0-8zm0 6.5a2.5 2.5 0 1 1 0-5 2.5 2.5 0 0 1 0 5zm5.5 4.5c0-2.5-2.5-4-5.5-4s-5.5 1.5-5.5 4v1h11v-1z" fill="currentColor"/></svg>
+                    </a>
+                    {% else %}
+                    <a href="{{ url_for('login') }}" class="gn-link gn-link-account" aria-label="Sign In">
+                        <svg height="44" viewBox="0 0 16 44" width="16"><path d="M8 16a4 4 0 1 0 0 8 4 4 0 0 0 0-8zm0 6.5a2.5 2.5 0 1 1 0-5 2.5 2.5 0 0 1 0 5zm5.5 4.5c0-2.5-2.5-4-5.5-4s-5.5 1.5-5.5 4v1h11v-1z" fill="currentColor"/></svg>
+                    </a>
+                    {% endif %}
+                </li>
+            </ul>
+        </div>
+        <!-- Mobile menu toggle -->
+        <button class="gn-menubutton" id="gn-menubutton" aria-label="Menu">
+            <svg width="18" height="18" viewBox="0 0 18 18"><polyline fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" points="2 12, 16 12"></polyline><polyline fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" points="2 5, 16 5"></polyline></svg>
+        </button>
+    </nav>
+
+    <!-- Flash messages -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+    <div class="flash-container">
+        {% for category, message in messages %}
+        <div class="flash-message flash-{{ category }}">
+            {{ message }}
+            <button class="flash-close" onclick="this.parentElement.remove()">&times;</button>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+    {% endwith %}
+
+    <!-- Main content -->
+    <main id="main-content">
+        {% block content %}{% endblock %}
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="footer-content">
+            <div class="footer-shop-info">
+                <p class="footer-shop-info-text">
+                    <span class="footer-icon">&#9993;</span> Shop online and get free delivery, or pick up available items at an Apple Store.
+                    <a href="{{ url_for('shop') }}">Shop now &gt;</a>
+                </p>
+            </div>
+            <div class="footer-directory">
+                <div class="footer-column">
+                    <h3 class="footer-column-title">Shop and Learn</h3>
+                    <ul class="footer-column-list">
+                        <li><a href="{{ url_for('shop') }}">Store</a></li>
+                        <li><a href="{{ url_for('mac') }}">Mac</a></li>
+                        <li><a href="{{ url_for('ipad') }}">iPad</a></li>
+                        <li><a href="{{ url_for('iphone') }}">iPhone</a></li>
+                        <li><a href="{{ url_for('watch') }}">Watch</a></li>
+                        <li><a href="{{ url_for('airpods') }}">AirPods</a></li>
+                        <li><a href="{{ url_for('accessories') }}">Accessories</a></li>
+                    </ul>
+                </div>
+                <div class="footer-column">
+                    <h3 class="footer-column-title">Account</h3>
+                    <ul class="footer-column-list">
+                        <li><a href="{{ url_for('account') if current_user.is_authenticated else url_for('login') }}">Manage Your Apple ID</a></li>
+                        <li><a href="{{ url_for('bag') }}">Shopping Bag</a></li>
+                        <li><a href="{{ url_for('account') if current_user.is_authenticated else url_for('login') }}">Order Status</a></li>
+                    </ul>
+                    <h3 class="footer-column-title">Entertainment</h3>
+                    <ul class="footer-column-list">
+                        <li><a href="#" aria-disabled="true">Apple One</a></li>
+                        <li><a href="#" aria-disabled="true">Apple TV+</a></li>
+                        <li><a href="{{ url_for('apple_music') }}">Apple Music</a></li>
+                        <li><a href="#" aria-disabled="true">Apple Arcade</a></li>
+                    </ul>
+                </div>
+                <div class="footer-column">
+                    <h3 class="footer-column-title">Apple Store</h3>
+                    <ul class="footer-column-list">
+                        <li><a href="{{ url_for('shop') }}">Find a Store</a></li>
+                        <li><a href="#" aria-disabled="true">Genius Bar</a></li>
+                        <li><a href="#" aria-disabled="true">Today at Apple</a></li>
+                        <li><a href="{{ url_for('trade_in') }}">Apple Trade In</a></li>
+                        <li><a href="#" aria-disabled="true">Financing</a></li>
+                        <li><a href="{{ url_for('account') if current_user.is_authenticated else url_for('login') }}">Order Status</a></li>
+                        <li><a href="{{ url_for('support') }}">Shopping Help</a></li>
+                    </ul>
+                </div>
+                <div class="footer-column">
+                    <h3 class="footer-column-title">Apple Values</h3>
+                    <ul class="footer-column-list">
+                        <li><a href="#">Accessibility</a></li>
+                        <li><a href="#">Education</a></li>
+                        <li><a href="#">Environment</a></li>
+                        <li><a href="#">Inclusion and Diversity</a></li>
+                        <li><a href="#">Privacy</a></li>
+                        <li><a href="#">Supply Chain</a></li>
+                    </ul>
+                </div>
+                <div class="footer-column">
+                    <h3 class="footer-column-title">About Apple</h3>
+                    <ul class="footer-column-list">
+                        <li><a href="#">Newsroom</a></li>
+                        <li><a href="#">Apple Leadership</a></li>
+                        <li><a href="#">Career Opportunities</a></li>
+                        <li><a href="#">Investors</a></li>
+                        <li><a href="#">Ethics & Compliance</a></li>
+                        <li><a href="#">Events</a></li>
+                        <li><a href="#">Contact Apple</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="footer-mini">
+                <p class="footer-mini-legal">More ways to shop: <a href="#">Find an Apple Store</a> or <a href="#">other retailer</a> near you. Or call 1-800-MY-APPLE.</p>
+                <div class="footer-mini-bottom">
+                    <span class="footer-copyright">Copyright &copy; 2026 Apple Inc. All rights reserved.</span>
+                    <div class="footer-mini-links">
+                        <a href="#">Privacy Policy</a>
+                        <span class="footer-sep">|</span>
+                        <a href="#">Terms of Use</a>
+                        <span class="footer-sep">|</span>
+                        <a href="#">Sales and Refunds</a>
+                        <span class="footer-sep">|</span>
+                        <a href="#">Legal</a>
+                        <span class="footer-sep">|</span>
+                        <a href="#">Site Map</a>
+                    </div>
+                    <span class="footer-locale">United States</span>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

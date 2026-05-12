@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+{% block title %}{{ commit.message[:60] }} · {{ repo.full_name }}@{{ commit.sha[:7] }} · GitHub{% endblock %}
+{% block content %}
+<div class="repo-header-bar">
+  <div class="repo-header-inner">
+    <div class="repo-breadcrumb">
+      <a href="/{{ repo.full_name.split('/')[0] }}" class="repo-breadcrumb-link">{{ repo.full_name.split('/')[0] }}</a>
+      <span class="repo-breadcrumb-sep">/</span>
+      <a href="/{{ repo.full_name }}" class="repo-breadcrumb-link repo-breadcrumb-repo">{{ repo.name }}</a>
+      <span class="repo-breadcrumb-sep">/</span>
+      <a href="/{{ repo.full_name }}/commits" class="repo-breadcrumb-link">commits</a>
+      <span class="repo-breadcrumb-sep">/</span>
+      <code class="repo-breadcrumb-sha">{{ commit.sha[:7] }}</code>
+    </div>
+  </div>
+</div>
+<div class="repo-layout">
+  <div class="repo-main" style="width: 100%;">
+    <div class="commit-box">
+      <h1 class="commit-message">{{ commit.message }}</h1>
+      <div class="commit-meta">
+        <a href="/{{ commit.author }}" class="commit-author">{{ commit.author }}</a>
+        committed
+        <span class="commit-date">
+          {% if commit.date %}
+            {% set dt = commit.date if commit.date is string else commit.date.strftime('%Y-%m-%d') %}
+            on {{ dt[:10] }}
+          {% endif %}
+        </span>
+        ·
+        <code class="commit-sha-full">{{ commit.sha }}</code>
+      </div>
+      <div class="commit-stats">
+        Showing <strong>{{ commit.files | length }} changed file{% if commit.files | length != 1 %}s{% endif %}</strong>
+        with <strong class="additions">+{{ commit.additions }}</strong>
+        additions and <strong class="deletions">−{{ commit.deletions }}</strong>
+        deletions.
+      </div>
+      <table class="commit-files-table">
+        <thead>
+          <tr><th>File</th><th>Additions</th><th>Deletions</th></tr>
+        </thead>
+        <tbody>
+          {% for f in commit.files %}
+          <tr class="commit-file-row">
+            <td class="commit-file-name"><code>{{ f.name }}</code></td>
+            <td class="additions">+{{ f.additions }}</td>
+            <td class="deletions">−{{ f.deletions }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      <div class="commit-totals">
+        Total additions: <strong class="additions">+{{ commit.additions }}</strong>
+        · Total deletions: <strong class="deletions">−{{ commit.deletions }}</strong>
+        · Files changed: <strong>{{ commit.files | length }}</strong>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

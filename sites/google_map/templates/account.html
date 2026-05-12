@@ -1,0 +1,98 @@
+{% extends "base.html" %}
+{% block title %}Your account - Google Maps{% endblock %}
+
+{% block body %}
+<div class="topbar">
+    <a href="{{ url_for('index') }}" class="brand">
+        <span class="brand-ico"><span class="material-icons-outlined" style="font-size:26px;color:#ea4335;">place</span></span>
+        <span>
+            <span class="letter g1">G</span><span class="letter o1">o</span><span class="letter o2">o</span><span class="letter g2">g</span><span class="letter l">l</span><span class="letter e">e</span> Maps
+        </span>
+    </a>
+    <div class="nav-links">
+        <a href="{{ url_for('index') }}" class="nav-link">Map</a>
+        <a href="{{ url_for('explore') }}" class="nav-link">Explore</a>
+        <a href="{{ url_for('saved_page') }}" class="nav-link">Saved</a>
+        <a href="{{ url_for('trips_page') }}" class="nav-link">Trips</a>
+        <a href="{{ url_for('logout') }}" class="nav-link">Sign out</a>
+    </div>
+</div>
+
+<div class="page">
+    <div style="display:flex; align-items:center; gap:24px; margin-bottom:32px;">
+        <div class="avatar" style="width:80px; height:80px; font-size:32px;">{{ current_user.avatar_letter }}</div>
+        <div>
+            <h1 style="margin-bottom:4px;">{{ current_user.name }}</h1>
+            <div style="color:var(--text-secondary);">{{ current_user.email }}</div>
+            {% if current_user.home_city %}<div style="color:var(--text-secondary); font-size:13px;">Based in {{ current_user.home_city }}</div>{% endif %}
+        </div>
+        <div style="margin-left:auto; display:flex; gap:8px;">
+            <a href="{{ url_for('account_edit') }}" class="btn outlined btn-sm">Edit profile</a>
+            <a href="{{ url_for('change_password') }}" class="btn outlined btn-sm">Change password</a>
+        </div>
+    </div>
+
+    <div class="stats-row">
+        <div class="stat-card">
+            <div class="stat-label">Saved places</div>
+            <div class="stat-value">{{ saved_count }}</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-label">Lists</div>
+            <div class="stat-value">{{ lists|length }}</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-label">Trips planned</div>
+            <div class="stat-value">{{ trip_count }}</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-label">Reviews</div>
+            <div class="stat-value">{{ review_count }}</div>
+        </div>
+    </div>
+
+    <h2>Your lists</h2>
+    {% for sl in lists %}
+    <a href="{{ url_for('list_detail', list_id=sl.id) }}" class="list-card">
+        <div class="list-ico" style="background:{{ sl.color }};"><span class="material-icons-outlined">{{ sl.icon }}</span></div>
+        <div class="list-info">
+            <div class="list-name">{{ sl.name }}</div>
+            <div class="list-desc">{{ sl.description }}</div>
+        </div>
+    </a>
+    {% endfor %}
+    <div style="margin-top:8px;">
+        <a href="{{ url_for('list_create') }}" class="btn outlined btn-sm">+ New list</a>
+    </div>
+
+    {% if recent_trips %}
+    <h2>Recent trips</h2>
+    <div class="grid grid-3">
+        {% for t in recent_trips %}
+        <a href="{{ url_for('trip_detail', trip_id=t.id) }}" class="card" style="padding:18px;">
+            <div style="font-weight:500;">{{ t.title }}</div>
+            <div style="color:var(--text-secondary); font-size:13px; margin:4px 0;">{{ t.city }}</div>
+            <span class="badge {% if t.status == 'cancelled' %}danger{% elif t.status == 'completed' %}success{% else %}neutral{% endif %}">{{ t.status }}</span>
+        </a>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    {% if recent_reviews %}
+    <h2>Recent reviews</h2>
+    {% for r in recent_reviews %}
+    <div style="padding:16px 0; border-bottom:1px solid var(--divider);">
+        <a href="{{ url_for('place_detail', slug=r.place.slug) }}" style="font-weight:500;">{{ r.place.name }}</a>
+        <div class="review-stars">{% for i in range(r.rating) %}<span class="material-icons" style="font-size:14px;">star</span>{% endfor %}</div>
+        <div style="font-size:13px; color:var(--text-secondary); margin-top:4px;">{{ r.body[:200] }}</div>
+    </div>
+    {% endfor %}
+    {% endif %}
+
+    <h2 style="color: var(--red);">Danger zone</h2>
+    <form method="POST" action="{{ url_for('account_delete') }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button type="submit" class="btn danger">Delete my account</button>
+    </form>
+</div>
+{% endblock %}

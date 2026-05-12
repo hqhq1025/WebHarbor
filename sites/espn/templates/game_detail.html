@@ -1,0 +1,125 @@
+{% extends "base.html" %}
+{% block title %}
+  {{ away_team.abbreviation if away_team else 'AWY' }}
+  {{ game.away_score }}-{{ game.home_score }}
+  {{ home_team.abbreviation if home_team else 'HME' }}
+{% endblock %}
+
+{% block content %}
+<div class="container">
+  <!-- Game Header / Scoreline -->
+  <div class="game-header">
+    <div class="game-scoreline">
+      <div class="game-team away-team">
+        {% if away_team %}
+        <a href="/team/{{ sport.slug if sport else '#' }}/{{ away_team.slug }}">
+          <div class="team-name-full">{{ away_team.full_name or away_team.name }}</div>
+          <div class="team-record">{{ away_team.wins }}-{{ away_team.losses }}</div>
+        </a>
+        {% endif %}
+      </div>
+      <div class="game-score-box">
+        <div class="final-score">
+          <span class="score-away {{ 'winner' if game.away_score > game.home_score else '' }}">{{ game.away_score }}</span>
+          <span class="score-sep">-</span>
+          <span class="score-home {{ 'winner' if game.home_score > game.away_score else '' }}">{{ game.home_score }}</span>
+        </div>
+        <div class="game-status">{{ game.period }}</div>
+        <div class="game-info">{{ game.date_display or game.date }} &bull; {{ game.network }}</div>
+        <div class="game-venue">{{ game.venue }}</div>
+        {% if game.status == 'scheduled' %}
+        <div class="game-time">{{ game.time }}</div>
+        {% if game.ticket_url %}<a href="{{ game.ticket_url }}" class="btn-red ticket-btn" target="_blank">Buy Tickets</a>{% endif %}
+        {% endif %}
+      </div>
+      <div class="game-team home-team">
+        {% if home_team %}
+        <a href="/team/{{ sport.slug if sport else '#' }}/{{ home_team.slug }}">
+          <div class="team-name-full">{{ home_team.full_name or home_team.name }}</div>
+          <div class="team-record">{{ home_team.wins }}-{{ home_team.losses }}</div>
+        </a>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <!-- Game Leaders -->
+  {% if leaders %}
+  <section class="section-block">
+    <h2 class="section-heading">Game Leaders</h2>
+    <div class="leaders-grid">
+      {% if leaders.get('top_scorer') %}
+      <div class="leader-card">
+        <div class="leader-cat">Points</div>
+        <div class="leader-name">{{ leaders.top_scorer.get('name', '—') }}</div>
+        <div class="leader-val">{{ leaders.top_scorer.get('value', '—') }} PTS</div>
+        <div class="leader-team">{{ leaders.top_scorer.get('team', '') }}</div>
+      </div>
+      {% endif %}
+      {% if leaders.get('top_rebounder') %}
+      <div class="leader-card">
+        <div class="leader-cat">Rebounds</div>
+        <div class="leader-name">{{ leaders.top_rebounder.get('name', '—') }}</div>
+        <div class="leader-val">{{ leaders.top_rebounder.get('value', '—') }} REB</div>
+        <div class="leader-team">{{ leaders.top_rebounder.get('team', '') }}</div>
+      </div>
+      {% endif %}
+      {% if leaders.get('top_assists') %}
+      <div class="leader-card">
+        <div class="leader-cat">Assists</div>
+        <div class="leader-name">{{ leaders.top_assists.get('name', '—') }}</div>
+        <div class="leader-val">{{ leaders.top_assists.get('value', '—') }} AST</div>
+        <div class="leader-team">{{ leaders.top_assists.get('team', '') }}</div>
+      </div>
+      {% endif %}
+    </div>
+  </section>
+  {% endif %}
+
+  <!-- Box Score -->
+  <div class="box-score-section">
+    {% if away_stats %}
+    <section class="section-block">
+      <h2 class="section-heading">{{ away_team.full_name if away_team else 'Away' }} Box Score</h2>
+      <table class="data-table box-table">
+        <thead><tr><th>Player</th><th>MIN</th><th>PTS</th><th>REB</th><th>AST</th><th>STL</th><th>BLK</th></tr></thead>
+        <tbody>
+          {% for gs in away_stats %}
+          <tr>
+            <td><a href="/player/{{ sport.slug if sport else '#' }}/{{ gs.player.slug if gs.player else '#' }}">{{ gs.player.name if gs.player else '—' }}</a></td>
+            <td>{{ gs.minutes }}</td><td>{{ gs.points }}</td><td>{{ gs.rebounds }}</td>
+            <td>{{ gs.assists }}</td><td>{{ gs.steals }}</td><td>{{ gs.blocks }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </section>
+    {% endif %}
+
+    {% if home_stats %}
+    <section class="section-block">
+      <h2 class="section-heading">{{ home_team.full_name if home_team else 'Home' }} Box Score</h2>
+      <table class="data-table box-table">
+        <thead><tr><th>Player</th><th>MIN</th><th>PTS</th><th>REB</th><th>AST</th><th>STL</th><th>BLK</th></tr></thead>
+        <tbody>
+          {% for gs in home_stats %}
+          <tr>
+            <td><a href="/player/{{ sport.slug if sport else '#' }}/{{ gs.player.slug if gs.player else '#' }}">{{ gs.player.name if gs.player else '—' }}</a></td>
+            <td>{{ gs.minutes }}</td><td>{{ gs.points }}</td><td>{{ gs.rebounds }}</td>
+            <td>{{ gs.assists }}</td><td>{{ gs.steals }}</td><td>{{ gs.blocks }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </section>
+    {% endif %}
+  </div>
+
+  {% if game.recap %}
+  <section class="section-block">
+    <h2 class="section-heading">Recap</h2>
+    <p>{{ game.recap }}</p>
+  </section>
+  {% endif %}
+</div>
+{% endblock %}

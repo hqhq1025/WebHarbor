@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+{% block title %}Return Request Submitted - Amazon.com{% endblock %}
+
+{% block content %}
+<div class="account-page">
+    <h1>Return Request Submitted</h1>
+
+    <div style="background:#f0fff4;border:1px solid var(--amz-success);border-radius:6px;padding:20px;margin-bottom:24px;display:flex;align-items:center;gap:15px">
+        <span style="font-size:32px;color:var(--amz-success)">&#10003;</span>
+        <div>
+            <strong style="font-size:16px;color:#1a5c2a">Your return request has been received.</strong>
+            <div style="font-size:13px;color:#2d7a3a;margin-top:4px">
+                We'll send you a prepaid return label by email within 24 hours.
+            </div>
+        </div>
+    </div>
+
+    <div class="order-card">
+        <div class="order-card-header">
+            <div class="order-card-header-item">
+                <div class="label">Return ID</div>
+                <div class="value">{{ ret.id }}</div>
+            </div>
+            <div class="order-card-header-item">
+                <div class="label">Order #</div>
+                <div class="value">{{ ret.order.order_number }}</div>
+            </div>
+            <div class="order-card-header-item">
+                <div class="label">Refund Amount</div>
+                <div class="value" style="color:var(--amz-success);font-weight:700">${{ '%.2f'|format(ret.refund_amount) }}</div>
+            </div>
+            <div class="order-card-header-item">
+                <div class="label">Refund To</div>
+                <div class="value">
+                    {% if ret.refund_method == 'gift_card' %}
+                    Amazon Gift Card
+                    {% else %}
+                    Original payment method
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <div class="order-card-body">
+            <h2 style="font-size:16px;margin:15px 0 10px">Items Being Returned</h2>
+            {% for ri in ret.items %}
+            <div style="display:grid;grid-template-columns:80px 1fr;gap:15px;padding:10px 0;border-bottom:1px solid #f0f0f0">
+                <div style="width:80px;height:80px;background:#f5f5f5;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:24px;color:#ccc">📦</div>
+                <div>
+                    <h3 style="font-size:14px;font-weight:600;margin:0 0 4px">{{ ri.product_name }}</h3>
+                    <div style="font-size:13px;color:var(--amz-text-secondary);margin-bottom:4px">
+                        Qty: {{ ri.quantity }}
+                    </div>
+                    <div style="font-size:13px;color:var(--amz-text-secondary)">
+                        Reason: {{ ri.reason }}
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <div style="margin-top:24px;padding:16px;background:#fffbf0;border:1px solid #f0c040;border-radius:6px;font-size:13px">
+        <strong>What happens next?</strong>
+        <ol style="margin:8px 0 0 18px;padding:0;line-height:1.8">
+            <li>You'll receive a prepaid shipping label via email within 24 hours.</li>
+            <li>Pack the items securely and attach the label.</li>
+            <li>Drop off at any UPS or USPS location.</li>
+            <li>Your refund will be processed within 3-5 business days of receipt.</li>
+        </ol>
+    </div>
+
+    <div style="margin-top:24px;display:flex;gap:12px">
+        <a href="{{ url_for('orders_list') }}" class="btn btn-orange">View your orders</a>
+        <a href="{{ url_for('index') }}" class="btn btn-outline">Continue shopping</a>
+    </div>
+</div>
+{% endblock %}

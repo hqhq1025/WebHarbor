@@ -1,0 +1,111 @@
+{% extends "base.html" %}
+{% block title %}Shopping Bag - Apple{% endblock %}
+
+{% block extra_head %}
+<meta name="csrf-token" content="{{ csrf_token() }}">
+{% endblock %}
+
+{% block content %}
+<div class="bag-page">
+    <h1>Your Bag</h1>
+    <p class="bag-subtitle">Free delivery and free returns.</p>
+
+    {% if not items %}
+    <div class="bag-empty">
+        <h2>Your bag is empty.</h2>
+        <p>Sign in to see if you have any items in your bag, or continue shopping.</p>
+        <div style="margin-top:24px;display:flex;justify-content:center;gap:16px">
+            {% if not current_user.is_authenticated %}
+            <a href="{{ url_for('login') }}" class="btn-checkout" style="max-width:200px;display:inline-block">Sign In</a>
+            {% endif %}
+            <a href="{{ url_for('shop') }}" class="cta-link" style="font-size:17px;padding:14px">Continue Shopping &#8250;</a>
+        </div>
+    </div>
+    {% else %}
+
+    {% set subtotal = namespace(total=0) %}
+    {% for item in items %}
+    {% if item is mapping %}
+        {% set product = item.product %}
+        {% set qty = item.quantity %}
+        {% set item_id = item.id %}
+        {% set color = item.color %}
+        {% set storage = item.storage %}
+        {% set memory = item.memory %}
+        {% set unit_price = item.unit_price if item.unit_price is not none else product.price %}
+    {% else %}
+        {% set product = item.product %}
+        {% set qty = item.quantity %}
+        {% set item_id = item.id %}
+        {% set color = item.color %}
+        {% set storage = item.storage %}
+        {% set memory = item.memory %}
+        {% set unit_price = item.unit_price if item.unit_price is not none else product.price %}
+    {% endif %}
+    {% set subtotal.total = subtotal.total + unit_price * qty %}
+
+    <div class="bag-item">
+        <div class="bag-item-image">
+            <img src="{{ product.image }}" alt="{{ product.name }}"
+                 onerror="this.style.display='none';this.parentElement.innerHTML='<div class=\'placeholder-img\' style=\'width:120px;height:120px;border-radius:8px\'>{{ product.name }}</div>'">
+        </div>
+        <div class="bag-item-details">
+            <h3 class="bag-item-name">{{ product.name }}</h3>
+            <p class="bag-item-config">
+                {% if color %}{{ color }}{% endif %}
+                {% if storage %} &middot; {{ storage }}{% endif %}
+                {% if memory %} &middot; {{ memory }}{% endif %}
+            </p>
+            <div class="bag-item-qty" style="display:flex;align-items:center;gap:4px">
+                <form method="POST" action="{{ url_for('cart_update_form', item_id=item_id) }}" style="display:inline">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token_value }}">
+                    <input type="hidden" name="quantity" value="{{ [qty - 1, 0]|max }}">
+                    <button type="submit">-</button>
+                </form>
+                <span id="qty-{{ item_id }}">{{ qty }}</span>
+                <form method="POST" action="{{ url_for('cart_update_form', item_id=item_id) }}" style="display:inline">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token_value }}">
+                    <input type="hidden" name="quantity" value="{{ qty + 1 }}">
+                    <button type="submit">+</button>
+                </form>
+            </div>
+            <form method="POST" action="{{ url_for('cart_remove_form', item_id=item_id) }}" style="display:inline">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token_value }}">
+                <button type="submit" class="bag-item-remove">Remove</button>
+            </form>
+        </div>
+        <div class="bag-item-price">
+            ${{ "%.2f"|format(unit_price * qty) }}
+        </div>
+    </div>
+    {% endfor %}
+
+    <!-- Summary -->
+    <div class="bag-summary">
+        <div class="bag-summary-row">
+            <span>Subtotal</span>
+            <span>${{ "%.2f"|format(subtotal.total) }}</span>
+        </div>
+        <div class="bag-summary-row">
+            <span>Shipping</span>
+            <span style="color:var(--color-success)">FREE</span>
+        </div>
+        <div class="bag-summary-row">
+            <span>Estimated Tax</span>
+            <span>${{ "%.2f"|format(subtotal.total * 0.0875) }}</span>
+        </div>
+        <div class="bag-summary-total">
+            <span>Total</span>
+            <span>${{ "%.2f"|format(subtotal.total * 1.0875) }}</span>
+        </div>
+
+        {% if current_user.is_authenticated %}
+        <a href="{{ url_for('checkout') }}" class="btn-checkout">Check Out</a>
+        {% else %}
+        <a href="{{ url_for('login', next=url_for('checkout')) }}" class="btn-checkout">Sign in to Check Out</a>
+        {% endif %}
+    </div>
+
+    {% endif %}
+</div>
+{% endblock %}

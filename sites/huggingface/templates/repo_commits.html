@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block title %}Commits · {{ repo.slug }}{% endblock %}
+
+{% block content %}
+<div class="container-wide page">
+    {% include "_repo_head.html" %}
+
+    <div class="files-toolbar">
+        <div class="files-breadcrumb">
+            <button class="btn btn-sm btn-outline" type="button" disabled>main ▾</button>
+            <a href="{{ url_for(repo.repo_type ~ '_files' if repo.repo_type in ['dataset','space'] else 'model_files', author=repo.slug.split('/')[0], name=repo.slug.split('/')[1]) }}">{{ repo.slug.split('/')[1] }}</a>
+            <span class="files-sep">/</span>
+            <strong>commits</strong>
+        </div>
+        <div class="files-toolbar-right">
+            <span class="muted" style="font-size:13px;">{{ commits|length }} commits</span>
+        </div>
+    </div>
+
+    <ol class="commit-list">
+        {% for c in commits %}
+        <li class="commit-item">
+            <div class="commit-avatar">{{ c.author_emoji }}</div>
+            <div class="commit-body">
+                <div class="commit-msg"><strong>{{ c.message }}</strong></div>
+                <div class="commit-meta">
+                    <a href="{{ url_for('author_page', username=c.author) }}" onerror="">{{ c.author }}</a>
+                    committed <span class="muted">{{ c.rel_display }}</span>
+                </div>
+            </div>
+            <div class="commit-sha">
+                <code>{{ c.sha }}</code>
+            </div>
+        </li>
+        {% endfor %}
+    </ol>
+</div>
+{% endblock %}

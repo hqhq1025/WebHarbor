@@ -1,0 +1,3130 @@
+{
+  "eiffel-tower": [
+    {
+      "title": "Overview",
+      "desc": "An unmissable attraction famous around the world for its stunning presence and cultural significance.",
+      "images": [
+        "/static/images/places/eiffel-tower/img_00.png"
+      ]
+    },
+    {
+      "title": "Visitor Experience",
+      "desc": "Walk through the site at your own pace, snap photos from the best viewpoints, and soak in the atmosphere.",
+      "images": [
+        "/static/images/places/eiffel-tower/img_00.png"
+      ]
+    },
+    {
+      "title": "History & Meaning",
+      "desc": "Centuries of history and countless stories live within these walls - a cornerstone of the city's identity.",
+      "images": [
+        "/static/images/places/eiffel-tower/img_00.png"
+      ]
+    }
+  ],
+  "statue-of-liberty": [
+    {
+      "title": "Overview",
+      "desc": "An unmissable attraction famous around the world for its stunning presence and cultural significance.",
+      "images": [
+        "/static/images/places/statue-of-liberty/img_00.jpg"
+      ]
+    },
+    {
+      "title": "Visitor Experience",
+      "desc": "Walk through the site at your own pace, snap photos from the best viewpoints, and soak in the atmosphere.",
+      "images": [
+        "/static/images/places/statue-of-liberty/img_01.jpg"
+      ]
+    },
+    {
+      "title": "History & Meaning",
+      "desc": "Centuries of history and countless stories live within these walls - a cornerstone of the city's identity.",
+      "images": [
+        "/static/images/places/statue-of-liberty/img_02.jpg"
+      ]
+    }
+  ],
+  "empire-state-building": [
+    {
+      "title": "Overview",
+      "desc": "An unmissable attraction famous around the world for its stunning presence and cultural significance.",
+      "images": [
+        "/static/images/places/empire-state-building/img_00.png"
+      ]
+    },
+    {
+      "title": "Visitor Experience",
+      "desc": "Walk through the site at your own pace, snap photos from the best viewpoints, and soak in the atmosphere.",
+      "images": [
+        "/static/images/places/empire-state-building/img_00.png"
+      ]
+    },
+    {
+      "title": "History & Meaning",
+      "desc": "Centuries of history and countless stories live within these walls - a cornerstone of the city's identity.",
+      "images": [
+        "/static/images/places/empire-state-building/img_00.png"
+      ]
+    }
+  ],
+  "times-square": [
+    {
+      "title": "Overview",
+      "desc": "An unmissable attraction famous around the world for its stunning presence and cultural significance.",
+      "images": [
+        "/static/images/places/times-square/img_00.jpg"
+      ]
+    },
+    {
+      "title": "Visitor Experience",
+      "desc": "Walk through the site at your own pace, snap photos from the best viewpoints, and soak in the atmosphere.",
+      "images": [
+        "/static/images/places/times-square/img_00.jpg"
+      ]
+    },
+    {
+      "title": "History & Meaning",
+      "desc": "Centuries of history and countless stories live within these walls - a cornerstone of the city's identity.",
+      "images": [
+        "/static/images/places/times-square/img_00.jpg"
+      ]
+    }
+  ],
+  "brooklyn-bridge": [
+    {
+      "title": "Overview",
+      "desc": "An unmissable attraction famous around the world for its stunning presence and cultural significance.",
+      "images": [
+        "/static/images/places/brooklyn-bridge/img_00.jpg"
+      ]
+    },
+    {
+      "title": "Visitor Experience",
+      "desc": "Walk through the site at your own pace, snap photos from the best viewpoints, and soak in the atmosphere.",
+      "images": [
+        "/static/images/places/brooklyn-bridge/img_00.jpg"
+      ]
+    },
+    {
+      "title": "History & Meaning",
+      "desc": "Centuries of history and countless stories live within these walls - a cornerstone of the city's identity.",
+      "images": [
+        "/static/images/places/brooklyn-bridge/img_00.jpg"
+      ]
+    }
+  ],
+  "central-park": [
+    {
+      "title": "Trails & Walks",
+      "desc": "Miles of trails wind through diverse landscapes, perfect for morning jogs or leisurely afternoon strolls.",
+      "images": [
+        "/static/images/places/central-park/img_00.png"
+      ]
+    },
+    {
+      "title": "Recreation",
+      "desc": "Picnic areas, playgrounds, sports courts, and open lawns invite visitors of every age.",
+      "images": [
+        "/static/images/places/central-park/img_00.png"
+      ]
+    },
+    {
+      "title": "Nature",
+      "desc": "A green oasis filled with native flora and wildlife - a place to reconnect with nature in the heart of the city.",
+      "images": [
+        "/static/images/places/central-park/img_00.png"
+      ]
+    }
+  ],
+  "one-world-trade-center": [
+    {
+      "title": "Overview",
+      "desc": "An unmissable attraction famous around the world for its stunning presence and cultural significance.",
+      "images": [
+        "/static/images/places/one-world-trade-center/img_00.png"
+      ]
+    },
+    {
+      "title": "Visitor Experience",
+      "desc": "Walk through the site at your own pace, snap photos from the best viewpoints, and soak in the atmosphere.",
+      "images": [
+        "/static/images/places/one-world-trade-center/img_00.png"
+      ]
+    },
+    {
+      "title": "History & Meaning",
+      "desc": "Centuries of history and countless stories live within these walls - a cornerstone of the city's identity.",
+      "images": [
+        "/static/images/places/one-world-trade-center/img_00.png"
+      ]
+    }
+  ],
+  "colosseum": [
+    {
+      "title": "Overview",
+      "desc": "An unmissable attraction famous around the world for its stunning presence and cultural significance.",
+      "images": [
+        "/static/images/places/colosseum/img_00.jpg"
+      ]
+    },
+    {
+      "title": "Visitor Experience",
+      "desc": "Walk through the site at your own pace, snap photos from the best viewpoints, and soak in the atmosphere.",
+      "images": [
+        "/static/images/places/colosseum/img_00.jpg"
+      ]
+    },
+    {
+      "title": "History & Meaning",
+      "desc": "Centuries of history and countless stories live within these walls - a cornerstone of the city's identity.",
+      "images": [
+        "/static/images/places/colosseum/img_00.jpg"
+      ]
+    }
+  ],
+  "roman-forum": [
+    {
+      "title": "Overview",
+      "desc": "An unmissable attraction famous around the world for its stunning presence and cultural significance.",
+      "images": [
+        "/static/images/places/roman-forum/img_00.jpg"
+      ]
+    },
+    {
+      "title": "Visitor Experience",
+      "desc": "Walk through the site at your own pace, snap photos from the best viewpoints, and soak in the atmosphere.",
+      "images": [
+        "/static/images/places/roman-forum/img_00.jpg"
+      ]
+    },
+    {
+      "title": "History & Meaning",
+      "desc": "Centuries of history and countless stories live within these walls - a cornerstone of the city's identity.",
+      "images": [
+        "/static/images/places/roman-forum/img_00.jpg"
+      ]
+    }
+  ],
+  "pantheon-rome": [
+    {
+      "title": "Overview",
+      "desc": "An unmissable attraction famous around the world for its stunning presence and cultural significance.",
+      "images": [
+        "/static/images/places/pantheon-rome/img_00.png"
+      ]
+    },
+    {
+      "title": "Visitor Experience",
+      "desc": "Walk through the site at your own pace, snap photos from the best viewpoints, and soak in the atmosphere.",
+      "images": [
+        "/static/images/places/pantheon-rome/img_00.png"
+      ]
+    },
+    {
+      "title": "History & Meaning",
+      "desc": "Centuries of history and countless stories live within these walls - a cornerstone of the city's identity.",
+      "images": [
+        "/static/images/places/pantheon-rome/img_00.png"
+      ]
+    }
+  ],
+  "trevi-fountain": [
+    {
+      "title": "Overview",
+      "desc": "An unmissable attraction famous around the world for its stunning presence and cultural significance.",
+      "images": [
+        "/static/images/places/trevi-fountain/img_00.png"
+      ]
+    },
+    {
+      "title": "Visitor Experience",
+      "desc": "Walk through the site at your own pace, snap photos from the best viewpoints, and soak in the atmosphere.",
+      "images": [
+        "/static/images/places/trevi-fountain/img_00.png"
+      ]
+    },
+    {
+      "title": "History & Meaning",
+      "desc": "Centuries of history and countless stories live within these walls - a cornerstone of the city's identity.",
+      "images": [
+        "/static/images/places/trevi-fountain/img_00.png"
+      ]
+    }
+  ],
+  "vatican-city": [
+    {
+      "title": "Overview",
+      "desc": "An unmissable attraction famous around the world for its stunning presence and cultural significance.",
+      "images": [
+        "/static/images/places/vatican-city/img_00.jpg"
+      ]
+    },
+    {
+      "title": "Visitor Experience",
+      "desc": "Walk through the site at your own pace, snap photos from the best viewpoints, and soak in the atmosphere.",
+      "images": [
+        "/static/images/places/vatican-city/img_00.jpg"
+      ]
+    },
+    {
+      "title": "History & Meaning",
+      "desc": "Centuries of history and countless stories live within these walls - a cornerstone of the city's identity.",
+      "images": [
+        "/static/images/places/vatican-city/img_00.jpg"
+      ]
+    }
+  ],
+  "sagrada-familia": [
+    {
+      "title": "Overview",
+      "desc": "An unmissable attraction famous around the world for its stunning presence and cultural significance.",
+      "images": [
+        "/static/images/places/sagrada-familia/img_00.jpg"
+      ]
+    },
+    {
+      "title": "Visitor Experience",
+      "desc": "Walk through the site at your own pace, snap photos from the best viewpoints, and soak in the atmosphere.",
+      "images": [
+        "/static/images/places/sagrada-familia/img_00.jpg"
+      ]
+    },
+    {
+      "title": "History & Meaning",
+      "desc": "Centuries of history and countless stories live within these walls - a cornerstone of the city's identity.",
+      "images": [
+        "/static/images/places/sagrada-familia/img_00.jpg"
+      ]
+    }
+  ],
+  "park-guell": [
+    {
+      "title": "Trails & Walks",
+      "desc": "Miles of trails wind through diverse landscapes, perfect for morning jogs or leisurely afternoon strolls.",
+      "images": [
+        "/static/images/places/park-guell/img_00.jpg"
+      ]
+    },
+    {
+      "title": "Recreation",
+      "desc": "Picnic areas, playgrounds, sports courts, and open lawns invite visitors of every age.",
+      "images": [
+        "/static/images/places/park-guell/img_00.jpg"
+      ]
+    },
+    {
+      "title": "Nature",
+      "desc": "A green oasis filled with native flora and wildlife - a place to reconnect with nature in the heart of the city.",
+      "images": [
+        "/static/images/places/park-guell/img_00.jpg"
+      ]
+    }
+  ],
+  "casa-batllo": [
+    {
+      "title": "Overview",
+      "desc": "An unmissable attraction famous around the world for its stunning presence and cultural significance.",
+      "images": [
+        "/static/images/places/casa-batllo/img_00.png"
+      ]
+    },
+    {
+      "title": "Visitor Experience",
+      "desc": "Walk through the site at your own pace, snap photos from the best viewpoints, and soak in the atmosphere.",
+      "images": [
+        "/static/images/places/casa-batllo/img_00.png"
+      ]
+    },
+    {
+      "title": "History & Meaning",
+      "desc": "Centuries of history and countless stories live within these walls - a cornerstone of the city's identity.",
+      "images": [
+        "/static/images/places/casa-batllo/img_00.png"
+      ]
+    }
+  ],
+  "big-ben": [
+    {
+      "title": "Overview",
+      "desc": "An unmissable attraction famous around the world for its stunning presence and cultural significance.",
+      "images": [
+        "/static/images/places/big-ben/img_00.png"
+      ]
+    },
+    {
+      "title": "Visitor Experience",
+      "desc": "Walk through the site at your own pace, snap photos from the best viewpoints, and soak in the atmosphere.",
+      "images": [
+        "/static/images/places/big-ben/img_00.png"
+      ]
+    },
+    {
+      "title": "History & Meaning",
+      "desc": "Centuries of history and countless stories live within these walls - a cornerstone of the city's identity.",
+      "images": [
+        "/static/images/places/big-ben/img_00.png"
+      ]
+    }
+  ],
+  "tower-bridge": [
+    {
+      "title": "Overview",
+      "desc": "An unmissable attraction famous around the world for its stunning presence and cultural significance.",
+      "images": [
+        "/static/images/places/tower-bridge/img_00.png"
+      ]
+    },
+    {
+      "title": "Visitor Experience",
+      "desc": "Walk through the site at your own pace, snap photos from the best viewpoints, and soak in the atmosphere.",
+      "images": [
+        "/static/images/places/tower-bridge/img_00.png"
+      ]
+    },
+    {
+      "title": "History & Meaning",
+      "desc": "Centuries of history and countless stories live within these walls - a cornerstone of the city's identity.",
+      "images": [
+        "/static/images/places/tower-bridge/img_00.png"
+      ]
+    }
+  ],
+  "london-eye": [
+    {
+      "title": "Overview",
+      "desc": "An unmissable attraction famous around the world for its stunning presence and cultural significance.",
+      "images": [
+        "/static/images/places/london-eye/img_00.jpg"
+      ]
+    },
+    {
+      "title": "Visitor Experience",
+      "desc": "Walk through the site at your own pace, snap photos from the best viewpoints, and soak in the atmosphere.",
+      "images": [
+        "/static/images/places/london-eye/img_00.jpg"
+      ]
+    },
+    {
+      "title": "History & Meaning",
+      "desc": "Centuries of history and countless stories live within these walls - a cornerstone of the city's identity.",
+      "images": [
+        "/static/images/places/london-eye/img_00.jpg"
+      ]
+    }
+  ],
+  "buckingham-palace": [
+    {
+      "title": "Overview",
+      "desc": "An unmissable attraction famous around the world for its stunning presence and cultural significance.",
+      "images": [
+        "/static/images/places/buckingham-palace/img_00.jpg"
+      ]
+    },
+    {
+      "title": "Visitor Experience",
+      "desc": "Walk through the site at your own pace, snap photos from the best viewpoints, and soak in the atmosphere.",
+      "images": [
+        "/static/images/places/buckingham-palace/img_00.jpg"
+      ]
+    },
+    {
+      "title": "History & Meaning",
+      "desc": "Centuries of history and countless stories live within these walls - a cornerstone of the city's identity.",
+      "images": [
+        "/static/images/places/buckingham-palace/img_00.jpg"
+      ]
+    }
+  ],
+  "westminster-abbey": [
+    {
+      "title": "Overview",
+      "desc": "An unmissable attraction famous around the world for its stunning presence and cultural significance.",
+      "images": [
+        "/static/images/places/westminster-abbey/img_00.jpg"
+      ]
+    },
+    {
+      "title": "Visitor Experience",
+      "desc": "Walk through the site at your own pace, snap photos from the best viewpoints, and soak in the atmosphere.",
+      "images": [
+        "/static/images/places/westminster-abbey/img_01.jpg"
+      ]
+    },
+    {
+      "title": "History & Meaning",
+      "desc": "Centuries of history and countless stories live within these walls - a cornerstone of the city's identity.",
+      "images": [
+        "/static/images/places/westminster-abbey/img_00.jpg"
+      ]
+    }
+  ],
+  "tower-of-london": [
+    {
+      "title": "Overview",
+      "desc": "An unmissable attraction famous around the world for its stunning presence and cultural significance.",
+      "images": [
+        "/static/images/places/tower-of-london/img_00.jpg"
+      ]
+    },
+    {
+      "title": "Visitor Experience",
+      "desc": "Walk through the site at your own pace, snap photos from the best viewpoints, and soak in the atmosphere.",
+      "images": [
+        "/static/images/places/tower-of-london/img_00.jpg"
+      ]
+    },
+    {
+      "title": "History & Meaning",
+      "desc": "Centuries of history and countless stories live within these walls - a cornerstone of the city's identity.",
+      "images": [
+        "/static/images/places/tower-of-london/img_00.jpg"
+      ]
+    }
+  ],
+  "british-museum": [
+    {
+      "title": "Collections",
+      "desc": "Explore a world-class collection spanning multiple eras, with rotating exhibitions and permanent galleries.",
+      "images": [
+        "/static/images/places/british-museum/img_00.jpg"
+      ]
+    },
+    {
+      "title": "Visiting",
+      "desc": "Plan a half-day visit to take in the highlights - audio guides and docent tours are available.",
+      "images": [
+        "/static/images/places/british-museum/img_01.jpg"
+      ]
+    },
+    {
+      "title": "Architecture",
+      "desc": "The building itself is a work of art, designed to complement and showcase the collection within.",
+      "images": [
+        "/static/images/places/british-museum/img_02.jpg"
+      ]
+    }
+  ],
+  "natural-history-museum-london": [
+    {
+      "title": "Collections",
+      "desc": "Explore a world-class collection spanning multiple eras, with rotating exhibitions and permanent galleries.",
+      "images": [
+        "/static/images/places/natural-history-museum-london/img_00.png"
+      ]
+    },
+    {
+      "title": "Visiting",
+      "desc": "Plan a half-day visit to take in the highlights - audio guides and docent tours are available.",
+      "images": [
+        "/static/images/places/natural-history-museum-london/img_01.jpg"
+      ]
+    },
+    {
+      "title": "Architecture",
+      "desc": "The building itself is a work of art, designed to complement and showcase the collection within.",
+      "images": [
+        "/static/images/places/natural-history-museum-london/img_02.jpg"
+      ]
+    }
+  ],
+  "tate-modern": [
+    {
+      "title": "Collections",
+      "desc": "Explore a world-class collection spanning multiple eras, with rotating exhibitions and permanent galleries.",
+      "images": [
+        "/static/images/places/tate-modern/img_00.jpg"
+      ]
+    },
+    {
+      "title": "Visiting",
+      "desc": "Plan a half-day visit to take in the highlights - audio guides and docent tours are available.",
+      "images": [
+        "/static/images/places/tate-modern/img_01.jpg"
+      ]
+    },
+    {
+      "title": "Architecture",
+      "desc": "The building itself is a work of art, designed to complement and showcase the collection within.",
+      "images": [
+        "/static/images/places/tate-modern/img_00.jpg"
+      ]
+    }
+  ],
+  "louvre": [
+    {
+      "title": "Collections",
+      "desc": "Explore a world-class collection spanning multiple eras, with rotating exhibitions and permanent galleries.",
+      "images": [
+        "/static/images/places/louvre/img_00.png"
+      ]
+    },
+    {
+      "title": "Visiting",
+      "desc": "Plan a half-day visit to take in the highlights - audio guides and docent tours are available.",
+      "images": [
+        "/static/images/places/louvre/img_00.png"
+      ]
+    },
+    {
+      "title": "Architecture",
+      "desc": "The building itself is a work of art, designed to complement and showcase the collection within.",
+      "images": [
+        "/static/images/places/louvre/img_00.png"
+      ]
+    }
+  ],
+  "notre-dame-de-paris": [
+    {
+      "title": "Overview",
+      "desc": "An unmissable attraction famous around the world for its stunning presence and cultural significance.",
+      "images": [
+        "/static/images/places/notre-dame-de-paris/img_00.png"
+      ]
+    },
+    {
+      "title": "Visitor Experience",
+      "desc": "Walk through the site at your own pace, snap photos from the best viewpoints, and soak in the atmosphere.",
+      "images": [
+        "/static/images/places/notre-dame-de-paris/img_01.png"
+      ]
+    },
+    {
+      "title": "History & Meaning",
+      "desc": "Centuries of history and countless stories live within these walls - a cornerstone of the city's identity.",
+      "images": [
+        "/static/images/places/notre-dame-de-paris/img_02.png"
+      ]
+    }
+  ],
+  "arc-de-triomphe": [
+    {
+      "title": "Overview",
+      "desc": "An unmissable attraction famous around the world for its stunning presence and cultural significance.",
+      "images": [
+        "/static/images/places/arc-de-triomphe/img_00.png"
+      ]
+    },
+    {
+      "title": "Visitor Experience",
+      "desc": "Walk through the site at your own pace, snap photos from the best viewpoints, and soak in the atmosphere.",
+      "images": [
+        "/static/images/places/arc-de-triomphe/img_01.jpg"
+      ]
+    },
+    {
+      "title": "History & Meaning",
+      "desc": "Centuries of history and countless stories live within these walls - a cornerstone of the city's identity.",
+      "images": [
+        "/static/images/places/arc-de-triomphe/img_00.png"
+      ]
+    }
+  ],
+  "musee-d-orsay": [
+    {
+      "title": "Collections",
+      "desc": "Explore a world-class collection spanning multiple eras, with rotating exhibitions and permanent galleries.",
+      "images": [
+        "/static/images/places/musee-d-orsay/img_00.png"
+      ]
+    },
+    {
+      "title": "Visiting",
+      "desc": "Plan a half-day visit to take in the highlights - audio guides and docent tours are available.",
+      "images": [
+        "/static/images/places/musee-d-orsay/img_00.png"
+      ]
+    },
+    {
+      "title": "Architecture",
+      "desc": "The building itself is a work of art, designed to complement and showcase the collection within.",
+      "images": [
+        "/static/images/places/musee-d-orsay/img_00.png"
+      ]
+    }
+  ],
+  "montmartre": [
+    {
+      "title": "Overview",
+      "desc": "An unmissable attraction famous around the world for its stunning presence and cultural significance.",
+      "images": [
+        "/static/images/places/montmartre/img_00.jpg"
+      ]
+    },
+    {
+      "title": "Visitor Experience",
+      "desc": "Walk through the site at your own pace, snap photos from the best viewpoints, and soak in the atmosphere.",
+      "images": [
+        "/static/images/places/montmartre/img_00.jpg"
+      ]
+    },
+    {
+      "title": "History & Meaning",
+      "desc": "Centuries of history and countless stories live within these walls - a cornerstone of the city's identity.",
+      "images": [
+        "/static/images/places/montmartre/img_00.jpg"
+      ]
+    }
+  ],
+  "sacre-coeur": [
+    {
+      "title": "Overview",
+      "desc": "An unmissable attraction famous around the world for its stunning presence and cultural significance.",
+      "images": [
+        "/static/images/places/sacre-coeur/img_00.jpg"
+      ]
+    },
+    {
+      "title": "Visitor Experience",
+      "desc": "Walk through the site at your own pace, snap photos from the best viewpoints, and soak in the atmosphere.",
+      "images": [
+        "/static/images/places/sacre-coeur/img_00.jpg"
+      ]
+    },
+    {
+      "title": "History & Meaning",
+      "desc": "Centuries of history and countless stories live within these walls - a cornerstone of the city's identity.",
+      "images": [
+        "/static/images/places/sacre-coeur/img_00.jpg"
+      ]
+    }
+  ],
+  "palace-of-versailles": [
+    {
+      "title": "Overview",
+      "desc": "An unmissable attraction famous around the world for its stunning presence and cultural significance.",
+      "images": [
+        "/static/images/places/palace-of-versailles/img_00.png"
+      ]
+    },
+    {
+      "title": "Visitor Experience",
+      "desc": "Walk through the site at your own pace, snap photos from the best viewpoints, and soak in the atmosphere.",
+      "images": [
+        "/static/images/places/palace-of-versailles/img_00.png"
+      ]
+    },
+    {
+      "title": "History & Meaning",
+      "desc": "Centuries of history and countless stories live within these walls - a cornerstone of the city's identity.",
+      "images": [
+        "/static/images/places/palace-of-versailles/img_00.png"
+      ]
+    }
+  ],
+  "great-wall-of-china": [
+    {
+      "title": "Overview",
+      "desc": "An unmissable attraction famous around the world for its stunning presence and cultural significance.",
+      "images": [
+        "/static/images/places/great-wall-of-china/img_00.png"
+      ]
+    },
+    {
+      "title": "Visitor Experience",
+      "desc": "Walk through the site at your own pace, snap photos from the best viewpoints, and soak in the atmosphere.",
+      "images": [
+        "/static/images/places/great-wall-of-china/img_01.jpg"
+      ]
+    },
+    {
+      "title": "History & Meaning",
+      "desc": "Centuries of history and countless stories live within these walls - a cornerstone of the city's identity.",
+      "images": [
+        "/static/images/places/great-wall-of-china/img_00.png"
+      ]
+    }
+  ],
+  "forbidden-city": [
+    {
+      "title": "Overview",
+      "desc": "An unmissable attraction famous around the world for its stunning presence and cultural significance.",
+      "images": [
+        "/static/images/places/forbidden-city/img_00.jpg"
+      ]
+    },
+    {
+      "title": "Visitor Experience",
+      "desc": "Walk through the site at your own pace, snap photos from the best viewpoints, and soak in the atmosphere.",
+      "images": [
+        "/static/images/places/forbidden-city/img_00.jpg"
+      ]
+    },
+    {
+      "title": "History & Meaning",
+      "desc": "Centuries of history and countless stories live within these walls - a cornerstone of the city's identity.",
+      "images": [
+        "/static/images/places/forbidden-city/img_00.jpg"
+      ]
+    }
+  ],
+  "temple-of-heaven": [
+    {
+      "title": "Overview",
+      "desc": "An unmissable attraction famous around the world for its stunning presence and cultural significance.",
+      "images": [
+        "/static/images/places/temple-of-heaven/img_00.png"
+      ]
+    },
+    {
+      "title": "Visitor Experience",
+      "desc": "Walk through the site at your own pace, snap photos from the best viewpoints, and soak in the atmosphere.",
+      "images": [
+        "/static/images/places/temple-of-heaven/img_01.jpg"
+      ]
+    },
+    {
+      "title": "History & Meaning",
+      "desc": "Centuries of history and countless stories live within these walls - a cornerstone of the city's identity.",
+      "images": [
+        "/static/images/places/temple-of-heaven/img_02.jpg"
+      ]
+    }
+  ],
+  "summer-palace": [
+    {
+      "title": "Overview",
+      "desc": "An unmissable attraction famous around the world for its stunning presence and cultural significance.",
+      "images": [
+        "/static/images/places/summer-palace/img_00.png"
+      ]
+    },
+    {
+      "title": "Visitor Experience",
+      "desc": "Walk through the site at your own pace, snap photos from the best viewpoints, and soak in the atmosphere.",
+      "images": [
+        "/static/images/places/summer-palace/img_00.png"
+      ]
+    },
+    {
+      "title": "History & Meaning",
+      "desc": "Centuries of history and countless stories live within these walls - a cornerstone of the city's identity.",
+      "images": [
+        "/static/images/places/summer-palace/img_00.png"
+      ]
+    }
+  ],
+  "tiananmen-square": [
+    {
+      "title": "Overview",
+      "desc": "An unmissable attraction famous around the world for its stunning presence and cultural significance.",
+      "images": [
+        "/static/images/places/tiananmen-square/img_00.jpg"
+      ]
+    },
+    {
+      "title": "Visitor Experience",
+      "desc": "Walk through the site at your own pace, snap photos from the best viewpoints, and soak in the atmosphere.",
+      "images": [
+        "/static/images/places/tiananmen-square/img_01.jpg"
+      ]
+    },
+    {
+      "title": "History & Meaning",
+      "desc": "Centuries of history and countless stories live within these walls - a cornerstone of the city's identity.",
+      "images": [
+        "/static/images/places/tiananmen-square/img_00.jpg"
+      ]
+    }
+  ],
+  "burj-khalifa": [
+    {
+      "title": "Overview",
+      "desc": "An unmissable attraction famous around the world for its stunning presence and cultural significance.",
+      "images": [
+        "/static/images/places/burj-khalifa/img_00.png"
+      ]
+    },
+    {
+      "title": "Visitor Experience",
+      "desc": "Walk through the site at your own pace, snap photos from the best viewpoints, and soak in the atmosphere.",
+      "images": [
+        "/static/images/places/burj-khalifa/img_00.png"
+      ]
+    },
+    {
+      "title": "History & Meaning",
+      "desc": "Centuries of history and countless stories live within these walls - a cornerstone of the city's identity.",
+      "images": [
+        "/static/images/places/burj-khalifa/img_00.png"
+      ]
+    }
+  ],
+  "palm-jumeirah": [
+    {
+      "title": "Overview",
+      "desc": "An unmissable attraction famous around the world for its stunning presence and cultural significance.",
+      "images": [
+        "/static/images/places/palm-jumeirah/img_00.jpg"
+      ]
+    },
+    {
+      "title": "Visitor Experience",
+      "desc": "Walk through the site at your own pace, snap photos from the best viewpoints, and soak in the atmosphere.",
+      "images": [
+        "/static/images/places/palm-jumeirah/img_01.jpg"
+      ]
+    },
+    {
+      "title": "History & Meaning",
+      "desc": "Centuries of history and countless stories live within these walls - a cornerstone of the city's identity.",
+      "images": [
+        "/static/images/places/palm-jumeirah/img_00.jpg"
+      ]
+    }
+  ],
+  "dubai-mall": [
+    {
+      "title": "Stores & Brands",
+      "desc": "From global fashion houses to beloved local boutiques, you will find everything under one roof.",
+      "images": [
+        "/static/images/places/dubai-mall/img_00.png"
+      ]
+    },
+    {
+      "title": "Dining",
+      "desc": "Food courts and sit-down restaurants make this a destination for all-day visits.",
+      "images": [
+        "/static/images/places/dubai-mall/img_00.png"
+      ]
+    },
+    {
+      "title": "Experience",
+      "desc": "Beautiful architecture, seasonal events, and engaging displays turn shopping into an experience.",
+      "images": [
+        "/static/images/places/dubai-mall/img_00.png"
+      ]
+    }
+  ],
+  "burj-al-arab": [
+    {
+      "title": "Rooms & Suites",
+      "desc": "Spacious, stylish accommodations with premium bedding, modern amenities, and thoughtful touches.",
+      "images": [
+        "/static/images/places/burj-al-arab/img_00.png"
+      ]
+    },
+    {
+      "title": "Amenities",
+      "desc": "Relax at the spa, swim in the pool, and dine at award-winning restaurants - all without leaving the property.",
+      "images": [
+        "/static/images/places/burj-al-arab/img_00.png"
+      ]
+    },
+    {
+      "title": "Location",
+      "desc": "Positioned in a prime part of the city with easy access to major attractions and transit.",
+      "images": [
+        "/static/images/places/burj-al-arab/img_00.png"
+      ]
+    }
+  ],
+  "sydney-opera-house": [
+    {
+      "title": "Overview",
+      "desc": "An unmissable attraction famous around the world for its stunning presence and cultural significance.",
+      "images": [
+        "/static/images/places/sydney-opera-house/img_00.jpg"
+      ]
+    },
+    {
+      "title": "Visitor Experience",
+      "desc": "Walk through the site at your own pace, snap photos from the best viewpoints, and soak in the atmosphere.",
+      "images": [
+        "/static/images/places/sydney-opera-house/img_01.jpg"
+      ]
+    },
+    {
+      "title": "History & Meaning",
+      "desc": "Centuries of history and countless stories live within these walls - a cornerstone of the city's identity.",
+      "images": [
+        "/static/images/places/sydney-opera-house/img_00.jpg"
+      ]
+    }
+  ],
+  "sydney-harbour-bridge": [
+    {
+      "title": "Overview",
+      "desc": "An unmissable attraction famous around the world for its stunning presence and cultural significance.",
+      "images": [
+        "/static/images/places/sydney-harbour-bridge/img_00.png"
+      ]
+    },
+    {
+      "title": "Visitor Experience",
+      "desc": "Walk through the site at your own pace, snap photos from the best viewpoints, and soak in the atmosphere.",
+      "images": [
+        "/static/images/places/sydney-harbour-bridge/img_01.jpg"
+      ]
+    },
+    {
+      "title": "History & Meaning",
+      "desc": "Centuries of history and countless stories live within these walls - a cornerstone of the city's identity.",
+      "images": [
+        "/static/images/places/sydney-harbour-bridge/img_00.png"
+      ]
+    }
+  ],
+  "bondi-beach": [
+    {
+      "title": "Trails & Walks",
+      "desc": "Miles of trails wind through diverse landscapes, perfect for morning jogs or leisurely afternoon strolls.",
+      "images": [
+        "/static/images/places/bondi-beach/img_00.png"
+      ]
+    },
+    {
+      "title": "Recreation",
+      "desc": "Picnic areas, playgrounds, sports courts, and open lawns invite visitors of every age.",
+      "images": [
+        "/static/images/places/bondi-beach/img_00.png"
+      ]
+    },
+    {
+      "title": "Nature",
+      "desc": "A green oasis filled with native flora and wildlife - a place to reconnect with nature in the heart of the city.",
+      "images": [
+        "/static/images/places/bondi-beach/img_00.png"
+      ]
+    }
+  ],
+  "taj-mahal": [
+    {
+      "title": "Overview",
+      "desc": "An unmissable attraction famous around the world for its stunning presence and cultural significance.",
+      "images": [
+        "/static/images/places/taj-mahal/img_00.png"
+      ]
+    },
+    {
+      "title": "Visitor Experience",
+      "desc": "Walk through the site at your own pace, snap photos from the best viewpoints, and soak in the atmosphere.",
+      "images": [
+        "/static/images/places/taj-mahal/img_00.png"
+      ]
+    },
+    {
+      "title": "History & Meaning",
+      "desc": "Centuries of history and countless stories live within these walls - a cornerstone of the city's identity.",
+      "images": [
+        "/static/images/places/taj-mahal/img_00.png"
+      ]
+    }
+  ],
+  "gateway-of-india": [
+    {
+      "title": "Overview",
+      "desc": "An unmissable attraction famous around the world for its stunning presence and cultural significance.",
+      "images": [
+        "/static/images/places/gateway-of-india/img_00.jpg"
+      ]
+    },
+    {
+      "title": "Visitor Experience",
+      "desc": "Walk through the site at your own pace, snap photos from the best viewpoints, and soak in the atmosphere.",
+      "images": [
+        "/static/images/places/gateway-of-india/img_00.jpg"
+      ]
+    },
+    {
+      "title": "History & Meaning",
+      "desc": "Centuries of history and countless stories live within these walls - a cornerstone of the city's identity.",
+      "images": [
+        "/static/images/places/gateway-of-india/img_00.jpg"
+      ]
+    }
+  ],
+  "tokyo-tower": [
+    {
+      "title": "Overview",
+      "desc": "An unmissable attraction famous around the world for its stunning presence and cultural significance.",
+      "images": [
+        "/static/images/places/tokyo-tower/img_00.png"
+      ]
+    },
+    {
+      "title": "Visitor Experience",
+      "desc": "Walk through the site at your own pace, snap photos from the best viewpoints, and soak in the atmosphere.",
+      "images": [
+        "/static/images/places/tokyo-tower/img_00.png"
+      ]
+    },
+    {
+      "title": "History & Meaning",
+      "desc": "Centuries of history and countless stories live within these walls - a cornerstone of the city's identity.",
+      "images": [
+        "/static/images/places/tokyo-tower/img_00.png"
+      ]
+    }
+  ],
+  "tokyo-skytree": [
+    {
+      "title": "Overview",
+      "desc": "An unmissable attraction famous around the world for its stunning presence and cultural significance.",
+      "images": [
+        "/static/images/places/tokyo-skytree/img_00.jpg"
+      ]
+    },
+    {
+      "title": "Visitor Experience",
+      "desc": "Walk through the site at your own pace, snap photos from the best viewpoints, and soak in the atmosphere.",
+      "images": [
+        "/static/images/places/tokyo-skytree/img_01.png"
+      ]
+    },
+    {
+      "title": "History & Meaning",
+      "desc": "Centuries of history and countless stories live within these walls - a cornerstone of the city's identity.",
+      "images": [
+        "/static/images/places/tokyo-skytree/img_00.jpg"
+      ]
+    }
+  ],
+  "sensoji": [
+    {
+      "title": "Overview",
+      "desc": "An unmissable attraction famous around the world for its stunning presence and cultural significance.",
+      "images": [
+        "/static/images/places/sensoji/img_00.png"
+      ]
+    },
+    {
+      "title": "Visitor Experience",
+      "desc": "Walk through the site at your own pace, snap photos from the best viewpoints, and soak in the atmosphere.",
+      "images": [
+        "/static/images/places/sensoji/img_00.png"
+      ]
+    },
+    {
+      "title": "History & Meaning",
+      "desc": "Centuries of history and countless stories live within these walls - a cornerstone of the city's identity.",
+      "images": [
+        "/static/images/places/sensoji/img_00.png"
+      ]
+    }
+  ],
+  "shibuya-crossing": [
+    {
+      "title": "Overview",
+      "desc": "An unmissable attraction famous around the world for its stunning presence and cultural significance.",
+      "images": [
+        "/static/images/places/shibuya-crossing/img_00.jpg"
+      ]
+    },
+    {
+      "title": "Visitor Experience",
+      "desc": "Walk through the site at your own pace, snap photos from the best viewpoints, and soak in the atmosphere.",
+      "images": [
+        "/static/images/places/shibuya-crossing/img_00.jpg"
+      ]
+    },
+    {
+      "title": "History & Meaning",
+      "desc": "Centuries of history and countless stories live within these walls - a cornerstone of the city's identity.",
+      "images": [
+        "/static/images/places/shibuya-crossing/img_00.jpg"
+      ]
+    }
+  ],
+  "meiji-shrine": [
+    {
+      "title": "Overview",
+      "desc": "An unmissable attraction famous around the world for its stunning presence and cultural significance.",
+      "images": [
+        "/static/images/places/meiji-shrine/img_00.png"
+      ]
+    },
+    {
+      "title": "Visitor Experience",
+      "desc": "Walk through the site at your own pace, snap photos from the best viewpoints, and soak in the atmosphere.",
+      "images": [
+        "/static/images/places/meiji-shrine/img_01.jpg"
+      ]
+    },
+    {
+      "title": "History & Meaning",
+      "desc": "Centuries of history and countless stories live within these walls - a cornerstone of the city's identity.",
+      "images": [
+        "/static/images/places/meiji-shrine/img_02.png"
+      ]
+    }
+  ],
+  "fushimi-inari": [
+    {
+      "title": "Overview",
+      "desc": "An unmissable attraction famous around the world for its stunning presence and cultural significance.",
+      "images": [
+        "/static/images/places/fushimi-inari/img_00.jpg"
+      ]
+    },
+    {
+      "title": "Visitor Experience",
+      "desc": "Walk through the site at your own pace, snap photos from the best viewpoints, and soak in the atmosphere.",
+      "images": [
+        "/static/images/places/fushimi-inari/img_00.jpg"
+      ]
+    },
+    {
+      "title": "History & Meaning",
+      "desc": "Centuries of history and countless stories live within these walls - a cornerstone of the city's identity.",
+      "images": [
+        "/static/images/places/fushimi-inari/img_00.jpg"
+      ]
+    }
+  ],
+  "kinkakuji": [
+    {
+      "title": "Overview",
+      "desc": "An unmissable attraction famous around the world for its stunning presence and cultural significance.",
+      "images": [
+        "/static/images/places/kinkakuji/img_00.png"
+      ]
+    },
+    {
+      "title": "Visitor Experience",
+      "desc": "Walk through the site at your own pace, snap photos from the best viewpoints, and soak in the atmosphere.",
+      "images": [
+        "/static/images/places/kinkakuji/img_00.png"
+      ]
+    },
+    {
+      "title": "History & Meaning",
+      "desc": "Centuries of history and countless stories live within these walls - a cornerstone of the city's identity.",
+      "images": [
+        "/static/images/places/kinkakuji/img_00.png"
+      ]
+    }
+  ],
+  "ginkakuji": [
+    {
+      "title": "Overview",
+      "desc": "An unmissable attraction famous around the world for its stunning presence and cultural significance.",
+      "images": [
+        "/static/images/places/ginkakuji/img_00.png"
+      ]
+    },
+    {
+      "title": "Visitor Experience",
+      "desc": "Walk through the site at your own pace, snap photos from the best viewpoints, and soak in the atmosphere.",
+      "images": [
+        "/static/images/places/ginkakuji/img_00.png"
+      ]
+    },
+    {
+      "title": "History & Meaning",
+      "desc": "Centuries of history and countless stories live within these walls - a cornerstone of the city's identity.",
+      "images": [
+        "/static/images/places/ginkakuji/img_00.png"
+      ]
+    }
+  ],
+  "golden-gate-bridge": [
+    {
+      "title": "Overview",
+      "desc": "An unmissable attraction famous around the world for its stunning presence and cultural significance.",
+      "images": [
+        "/static/images/places/golden-gate-bridge/img_00.jpg"
+      ]
+    },
+    {
+      "title": "Visitor Experience",
+      "desc": "Walk through the site at your own pace, snap photos from the best viewpoints, and soak in the atmosphere.",
+      "images": [
+        "/static/images/places/golden-gate-bridge/img_00.jpg"
+      ]
+    },
+    {
+      "title": "History & Meaning",
+      "desc": "Centuries of history and countless stories live within these walls - a cornerstone of the city's identity.",
+      "images": [
+        "/static/images/places/golden-gate-bridge/img_00.jpg"
+      ]
+    }
+  ],
+  "alcatraz": [
+    {
+      "title": "Overview",
+      "desc": "An unmissable attraction famous around the world for its stunning presence and cultural significance.",
+      "images": [
+        "/static/images/places/alcatraz/img_00.jpg"
+      ]
+    },
+    {
+      "title": "Visitor Experience",
+      "desc": "Walk through the site at your own pace, snap photos from the best viewpoints, and soak in the atmosphere.",
+      "images": [
+        "/static/images/places/alcatraz/img_00.jpg"
+      ]
+    },
+    {
+      "title": "History & Meaning",
+      "desc": "Centuries of history and countless stories live within these walls - a cornerstone of the city's identity.",
+      "images": [
+        "/static/images/places/alcatraz/img_00.jpg"
+      ]
+    }
+  ],
+  "fishermans-wharf": [
+    {
+      "title": "Overview",
+      "desc": "An unmissable attraction famous around the world for its stunning presence and cultural significance.",
+      "images": [
+        "/static/images/places/fishermans-wharf/img_00.jpg"
+      ]
+    },
+    {
+      "title": "Visitor Experience",
+      "desc": "Walk through the site at your own pace, snap photos from the best viewpoints, and soak in the atmosphere.",
+      "images": [
+        "/static/images/places/fishermans-wharf/img_00.jpg"
+      ]
+    },
+    {
+      "title": "History & Meaning",
+      "desc": "Centuries of history and countless stories live within these walls - a cornerstone of the city's identity.",
+      "images": [
+        "/static/images/places/fishermans-wharf/img_00.jpg"
+      ]
+    }
+  ],
+  "lombard-street": [
+    {
+      "title": "Overview",
+      "desc": "An unmissable attraction famous around the world for its stunning presence and cultural significance.",
+      "images": [
+        "/static/images/places/lombard-street/img_00.jpg"
+      ]
+    },
+    {
+      "title": "Visitor Experience",
+      "desc": "Walk through the site at your own pace, snap photos from the best viewpoints, and soak in the atmosphere.",
+      "images": [
+        "/static/images/places/lombard-street/img_01.png"
+      ]
+    },
+    {
+      "title": "History & Meaning",
+      "desc": "Centuries of history and countless stories live within these walls - a cornerstone of the city's identity.",
+      "images": [
+        "/static/images/places/lombard-street/img_00.jpg"
+      ]
+    }
+  ],
+  "golden-gate-park": [
+    {
+      "title": "Trails & Walks",
+      "desc": "Miles of trails wind through diverse landscapes, perfect for morning jogs or leisurely afternoon strolls.",
+      "images": [
+        "/static/images/places/golden-gate-park/img_00.png"
+      ]
+    },
+    {
+      "title": "Recreation",
+      "desc": "Picnic areas, playgrounds, sports courts, and open lawns invite visitors of every age.",
+      "images": [
+        "/static/images/places/golden-gate-park/img_00.png"
+      ]
+    },
+    {
+      "title": "Nature",
+      "desc": "A green oasis filled with native flora and wildlife - a place to reconnect with nature in the heart of the city.",
+      "images": [
+        "/static/images/places/golden-gate-park/img_00.png"
+      ]
+    }
+  ],
+  "hollywood-sign": [
+    {
+      "title": "Overview",
+      "desc": "An unmissable attraction famous around the world for its stunning presence and cultural significance.",
+      "images": [
+        "/static/images/places/hollywood-sign/img_00.jpg"
+      ]
+    },
+    {
+      "title": "Visitor Experience",
+      "desc": "Walk through the site at your own pace, snap photos from the best viewpoints, and soak in the atmosphere.",
+      "images": [
+        "/static/images/places/hollywood-sign/img_00.jpg"
+      ]
+    },
+    {
+      "title": "History & Meaning",
+      "desc": "Centuries of history and countless stories live within these walls - a cornerstone of the city's identity.",
+      "images": [
+        "/static/images/places/hollywood-sign/img_00.jpg"
+      ]
+    }
+  ],
+  "griffith-observatory": [
+    {
+      "title": "Overview",
+      "desc": "An unmissable attraction famous around the world for its stunning presence and cultural significance.",
+      "images": [
+        "/static/images/places/griffith-observatory/img_00.jpg"
+      ]
+    },
+    {
+      "title": "Visitor Experience",
+      "desc": "Walk through the site at your own pace, snap photos from the best viewpoints, and soak in the atmosphere.",
+      "images": [
+        "/static/images/places/griffith-observatory/img_00.jpg"
+      ]
+    },
+    {
+      "title": "History & Meaning",
+      "desc": "Centuries of history and countless stories live within these walls - a cornerstone of the city's identity.",
+      "images": [
+        "/static/images/places/griffith-observatory/img_00.jpg"
+      ]
+    }
+  ],
+  "santa-monica-pier": [
+    {
+      "title": "Overview",
+      "desc": "An unmissable attraction famous around the world for its stunning presence and cultural significance.",
+      "images": [
+        "/static/images/places/santa-monica-pier/img_00.jpg"
+      ]
+    },
+    {
+      "title": "Visitor Experience",
+      "desc": "Walk through the site at your own pace, snap photos from the best viewpoints, and soak in the atmosphere.",
+      "images": [
+        "/static/images/places/santa-monica-pier/img_00.jpg"
+      ]
+    },
+    {
+      "title": "History & Meaning",
+      "desc": "Centuries of history and countless stories live within these walls - a cornerstone of the city's identity.",
+      "images": [
+        "/static/images/places/santa-monica-pier/img_00.jpg"
+      ]
+    }
+  ],
+  "venice-beach": [
+    {
+      "title": "Overview",
+      "desc": "An unmissable attraction famous around the world for its stunning presence and cultural significance.",
+      "images": [
+        "/static/images/places/venice-beach/img_00.jpg"
+      ]
+    },
+    {
+      "title": "Visitor Experience",
+      "desc": "Walk through the site at your own pace, snap photos from the best viewpoints, and soak in the atmosphere.",
+      "images": [
+        "/static/images/places/venice-beach/img_00.jpg"
+      ]
+    },
+    {
+      "title": "History & Meaning",
+      "desc": "Centuries of history and countless stories live within these walls - a cornerstone of the city's identity.",
+      "images": [
+        "/static/images/places/venice-beach/img_00.jpg"
+      ]
+    }
+  ],
+  "getty-center": [
+    {
+      "title": "Collections",
+      "desc": "Explore a world-class collection spanning multiple eras, with rotating exhibitions and permanent galleries.",
+      "images": [
+        "/static/images/places/getty-center/img_00.jpg"
+      ]
+    },
+    {
+      "title": "Visiting",
+      "desc": "Plan a half-day visit to take in the highlights - audio guides and docent tours are available.",
+      "images": [
+        "/static/images/places/getty-center/img_00.jpg"
+      ]
+    },
+    {
+      "title": "Architecture",
+      "desc": "The building itself is a work of art, designed to complement and showcase the collection within.",
+      "images": [
+        "/static/images/places/getty-center/img_00.jpg"
+      ]
+    }
+  ],
+  "willis-tower": [
+    {
+      "title": "Overview",
+      "desc": "An unmissable attraction famous around the world for its stunning presence and cultural significance.",
+      "images": [
+        "/static/images/places/willis-tower/img_00.jpg"
+      ]
+    },
+    {
+      "title": "Visitor Experience",
+      "desc": "Walk through the site at your own pace, snap photos from the best viewpoints, and soak in the atmosphere.",
+      "images": [
+        "/static/images/places/willis-tower/img_00.jpg"
+      ]
+    },
+    {
+      "title": "History & Meaning",
+      "desc": "Centuries of history and countless stories live within these walls - a cornerstone of the city's identity.",
+      "images": [
+        "/static/images/places/willis-tower/img_00.jpg"
+      ]
+    }
+  ],
+  "millennium-park": [
+    {
+      "title": "Trails & Walks",
+      "desc": "Miles of trails wind through diverse landscapes, perfect for morning jogs or leisurely afternoon strolls.",
+      "images": [
+        "/static/images/places/millennium-park/img_00.jpg"
+      ]
+    },
+    {
+      "title": "Recreation",
+      "desc": "Picnic areas, playgrounds, sports courts, and open lawns invite visitors of every age.",
+      "images": [
+        "/static/images/places/millennium-park/img_00.jpg"
+      ]
+    },
+    {
+      "title": "Nature",
+      "desc": "A green oasis filled with native flora and wildlife - a place to reconnect with nature in the heart of the city.",
+      "images": [
+        "/static/images/places/millennium-park/img_00.jpg"
+      ]
+    }
+  ],
+  "navy-pier": [
+    {
+      "title": "Overview",
+      "desc": "An unmissable attraction famous around the world for its stunning presence and cultural significance.",
+      "images": [
+        "/static/images/places/navy-pier/img_00.jpg"
+      ]
+    },
+    {
+      "title": "Visitor Experience",
+      "desc": "Walk through the site at your own pace, snap photos from the best viewpoints, and soak in the atmosphere.",
+      "images": [
+        "/static/images/places/navy-pier/img_00.jpg"
+      ]
+    },
+    {
+      "title": "History & Meaning",
+      "desc": "Centuries of history and countless stories live within these walls - a cornerstone of the city's identity.",
+      "images": [
+        "/static/images/places/navy-pier/img_00.jpg"
+      ]
+    }
+  ],
+  "art-institute-of-chicago": [
+    {
+      "title": "Collections",
+      "desc": "Explore a world-class collection spanning multiple eras, with rotating exhibitions and permanent galleries.",
+      "images": [
+        "/static/images/places/art-institute-of-chicago/img_00.png"
+      ]
+    },
+    {
+      "title": "Visiting",
+      "desc": "Plan a half-day visit to take in the highlights - audio guides and docent tours are available.",
+      "images": [
+        "/static/images/places/art-institute-of-chicago/img_01.jpg"
+      ]
+    },
+    {
+      "title": "Architecture",
+      "desc": "The building itself is a work of art, designed to complement and showcase the collection within.",
+      "images": [
+        "/static/images/places/art-institute-of-chicago/img_02.jpg"
+      ]
+    }
+  ],
+  "space-needle": [
+    {
+      "title": "Overview",
+      "desc": "An unmissable attraction famous around the world for its stunning presence and cultural significance.",
+      "images": [
+        "/static/images/places/space-needle/img_00.png"
+      ]
+    },
+    {
+      "title": "Visitor Experience",
+      "desc": "Walk through the site at your own pace, snap photos from the best viewpoints, and soak in the atmosphere.",
+      "images": [
+        "/static/images/places/space-needle/img_00.png"
+      ]
+    },
+    {
+      "title": "History & Meaning",
+      "desc": "Centuries of history and countless stories live within these walls - a cornerstone of the city's identity.",
+      "images": [
+        "/static/images/places/space-needle/img_00.png"
+      ]
+    }
+  ],
+  "pike-place-market": [
+    {
+      "title": "Stores & Brands",
+      "desc": "From global fashion houses to beloved local boutiques, you will find everything under one roof.",
+      "images": [
+        "/static/images/places/pike-place-market/img_00.jpg"
+      ]
+    },
+    {
+      "title": "Dining",
+      "desc": "Food courts and sit-down restaurants make this a destination for all-day visits.",
+      "images": [
+        "/static/images/places/pike-place-market/img_00.jpg"
+      ]
+    },
+    {
+      "title": "Experience",
+      "desc": "Beautiful architecture, seasonal events, and engaging displays turn shopping into an experience.",
+      "images": [
+        "/static/images/places/pike-place-market/img_00.jpg"
+      ]
+    }
+  ],
+  "chihuly-garden": [
+    {
+      "title": "Collections",
+      "desc": "Explore a world-class collection spanning multiple eras, with rotating exhibitions and permanent galleries.",
+      "images": [
+        "/static/images/places/chihuly-garden/img_00.png"
+      ]
+    },
+    {
+      "title": "Visiting",
+      "desc": "Plan a half-day visit to take in the highlights - audio guides and docent tours are available.",
+      "images": [
+        "/static/images/places/chihuly-garden/img_00.png"
+      ]
+    },
+    {
+      "title": "Architecture",
+      "desc": "The building itself is a work of art, designed to complement and showcase the collection within.",
+      "images": [
+        "/static/images/places/chihuly-garden/img_00.png"
+      ]
+    }
+  ],
+  "fenway-park": [
+    {
+      "title": "Overview",
+      "desc": "An unmissable attraction famous around the world for its stunning presence and cultural significance.",
+      "images": [
+        "/static/images/places/fenway-park/img_00.jpg"
+      ]
+    },
+    {
+      "title": "Visitor Experience",
+      "desc": "Walk through the site at your own pace, snap photos from the best viewpoints, and soak in the atmosphere.",
+      "images": [
+        "/static/images/places/fenway-park/img_00.jpg"
+      ]
+    },
+    {
+      "title": "History & Meaning",
+      "desc": "Centuries of history and countless stories live within these walls - a cornerstone of the city's identity.",
+      "images": [
+        "/static/images/places/fenway-park/img_00.jpg"
+      ]
+    }
+  ],
+  "freedom-trail": [
+    {
+      "title": "Overview",
+      "desc": "An unmissable attraction famous around the world for its stunning presence and cultural significance.",
+      "images": [
+        "/static/images/places/freedom-trail/img_00.png"
+      ]
+    },
+    {
+      "title": "Visitor Experience",
+      "desc": "Walk through the site at your own pace, snap photos from the best viewpoints, and soak in the atmosphere.",
+      "images": [
+        "/static/images/places/freedom-trail/img_00.png"
+      ]
+    },
+    {
+      "title": "History & Meaning",
+      "desc": "Centuries of history and countless stories live within these walls - a cornerstone of the city's identity.",
+      "images": [
+        "/static/images/places/freedom-trail/img_00.png"
+      ]
+    }
+  ],
+  "harvard-yard": [
+    {
+      "title": "Overview",
+      "desc": "An unmissable attraction famous around the world for its stunning presence and cultural significance.",
+      "images": [
+        "/static/images/places/harvard-yard/img_00.jpg"
+      ]
+    },
+    {
+      "title": "Visitor Experience",
+      "desc": "Walk through the site at your own pace, snap photos from the best viewpoints, and soak in the atmosphere.",
+      "images": [
+        "/static/images/places/harvard-yard/img_00.jpg"
+      ]
+    },
+    {
+      "title": "History & Meaning",
+      "desc": "Centuries of history and countless stories live within these walls - a cornerstone of the city's identity.",
+      "images": [
+        "/static/images/places/harvard-yard/img_00.jpg"
+      ]
+    }
+  ],
+  "las-vegas-strip": [
+    {
+      "title": "Overview",
+      "desc": "An unmissable attraction famous around the world for its stunning presence and cultural significance.",
+      "images": [
+        "/static/images/places/las-vegas-strip/img_00.jpg"
+      ]
+    },
+    {
+      "title": "Visitor Experience",
+      "desc": "Walk through the site at your own pace, snap photos from the best viewpoints, and soak in the atmosphere.",
+      "images": [
+        "/static/images/places/las-vegas-strip/img_00.jpg"
+      ]
+    },
+    {
+      "title": "History & Meaning",
+      "desc": "Centuries of history and countless stories live within these walls - a cornerstone of the city's identity.",
+      "images": [
+        "/static/images/places/las-vegas-strip/img_00.jpg"
+      ]
+    }
+  ],
+  "bellagio": [
+    {
+      "title": "Rooms & Suites",
+      "desc": "Spacious, stylish accommodations with premium bedding, modern amenities, and thoughtful touches.",
+      "images": [
+        "/static/images/places/bellagio/img_00.png"
+      ]
+    },
+    {
+      "title": "Amenities",
+      "desc": "Relax at the spa, swim in the pool, and dine at award-winning restaurants - all without leaving the property.",
+      "images": [
+        "/static/images/places/bellagio/img_00.png"
+      ]
+    },
+    {
+      "title": "Location",
+      "desc": "Positioned in a prime part of the city with easy access to major attractions and transit.",
+      "images": [
+        "/static/images/places/bellagio/img_00.png"
+      ]
+    }
+  ],
+  "caesars-palace": [
+    {
+      "title": "Rooms & Suites",
+      "desc": "Spacious, stylish accommodations with premium bedding, modern amenities, and thoughtful touches.",
+      "images": [
+        "/static/images/places/caesars-palace/img_00.png"
+      ]
+    },
+    {
+      "title": "Amenities",
+      "desc": "Relax at the spa, swim in the pool, and dine at award-winning restaurants - all without leaving the property.",
+      "images": [
+        "/static/images/places/caesars-palace/img_00.png"
+      ]
+    },
+    {
+      "title": "Location",
+      "desc": "Positioned in a prime part of the city with easy access to major attractions and transit.",
+      "images": [
+        "/static/images/places/caesars-palace/img_00.png"
+      ]
+    }
+  ],
+  "venetian-resort": [
+    {
+      "title": "Rooms & Suites",
+      "desc": "Spacious, stylish accommodations with premium bedding, modern amenities, and thoughtful touches.",
+      "images": [
+        "/static/images/places/venetian-resort/img_00.jpg"
+      ]
+    },
+    {
+      "title": "Amenities",
+      "desc": "Relax at the spa, swim in the pool, and dine at award-winning restaurants - all without leaving the property.",
+      "images": [
+        "/static/images/places/venetian-resort/img_01.png"
+      ]
+    },
+    {
+      "title": "Location",
+      "desc": "Positioned in a prime part of the city with easy access to major attractions and transit.",
+      "images": [
+        "/static/images/places/venetian-resort/img_00.jpg"
+      ]
+    }
+  ],
+  "golden-gate-park-2": [
+    {
+      "title": "Trails & Walks",
+      "desc": "Miles of trails wind through diverse landscapes, perfect for morning jogs or leisurely afternoon strolls.",
+      "images": [
+        "/static/images/places/golden-gate-park-2/img_00.png"
+      ]
+    },
+    {
+      "title": "Recreation",
+      "desc": "Picnic areas, playgrounds, sports courts, and open lawns invite visitors of every age.",
+      "images": [
+        "/static/images/places/golden-gate-park-2/img_00.png"
+      ]
+    },
+    {
+      "title": "Nature",
+      "desc": "A green oasis filled with native flora and wildlife - a place to reconnect with nature in the heart of the city.",
+      "images": [
+        "/static/images/places/golden-gate-park-2/img_00.png"
+      ]
+    }
+  ],
+  "grand-canyon": [
+    {
+      "title": "Trails & Walks",
+      "desc": "Miles of trails wind through diverse landscapes, perfect for morning jogs or leisurely afternoon strolls.",
+      "images": [
+        "/static/images/places/grand-canyon/img_00.jpg"
+      ]
+    },
+    {
+      "title": "Recreation",
+      "desc": "Picnic areas, playgrounds, sports courts, and open lawns invite visitors of every age.",
+      "images": [
+        "/static/images/places/grand-canyon/img_00.jpg"
+      ]
+    },
+    {
+      "title": "Nature",
+      "desc": "A green oasis filled with native flora and wildlife - a place to reconnect with nature in the heart of the city.",
+      "images": [
+        "/static/images/places/grand-canyon/img_00.jpg"
+      ]
+    }
+  ],
+  "marina-bay-sands": [
+    {
+      "title": "Rooms & Suites",
+      "desc": "Spacious, stylish accommodations with premium bedding, modern amenities, and thoughtful touches.",
+      "images": [
+        "/static/images/places/marina-bay-sands/img_00.png"
+      ]
+    },
+    {
+      "title": "Amenities",
+      "desc": "Relax at the spa, swim in the pool, and dine at award-winning restaurants - all without leaving the property.",
+      "images": [
+        "/static/images/places/marina-bay-sands/img_00.png"
+      ]
+    },
+    {
+      "title": "Location",
+      "desc": "Positioned in a prime part of the city with easy access to major attractions and transit.",
+      "images": [
+        "/static/images/places/marina-bay-sands/img_00.png"
+      ]
+    }
+  ],
+  "gardens-by-the-bay": [
+    {
+      "title": "Trails & Walks",
+      "desc": "Miles of trails wind through diverse landscapes, perfect for morning jogs or leisurely afternoon strolls.",
+      "images": [
+        "/static/images/places/gardens-by-the-bay/img_00.png"
+      ]
+    },
+    {
+      "title": "Recreation",
+      "desc": "Picnic areas, playgrounds, sports courts, and open lawns invite visitors of every age.",
+      "images": [
+        "/static/images/places/gardens-by-the-bay/img_00.png"
+      ]
+    },
+    {
+      "title": "Nature",
+      "desc": "A green oasis filled with native flora and wildlife - a place to reconnect with nature in the heart of the city.",
+      "images": [
+        "/static/images/places/gardens-by-the-bay/img_00.png"
+      ]
+    }
+  ],
+  "merlion": [
+    {
+      "title": "Overview",
+      "desc": "An unmissable attraction famous around the world for its stunning presence and cultural significance.",
+      "images": [
+        "/static/images/places/merlion/img_00.png"
+      ]
+    },
+    {
+      "title": "Visitor Experience",
+      "desc": "Walk through the site at your own pace, snap photos from the best viewpoints, and soak in the atmosphere.",
+      "images": [
+        "/static/images/places/merlion/img_01.jpg"
+      ]
+    },
+    {
+      "title": "History & Meaning",
+      "desc": "Centuries of history and countless stories live within these walls - a cornerstone of the city's identity.",
+      "images": [
+        "/static/images/places/merlion/img_02.jpg"
+      ]
+    }
+  ],
+  "raffles-hotel": [
+    {
+      "title": "Rooms & Suites",
+      "desc": "Spacious, stylish accommodations with premium bedding, modern amenities, and thoughtful touches.",
+      "images": [
+        "/static/images/places/raffles-hotel/img_00.png"
+      ]
+    },
+    {
+      "title": "Amenities",
+      "desc": "Relax at the spa, swim in the pool, and dine at award-winning restaurants - all without leaving the property.",
+      "images": [
+        "/static/images/places/raffles-hotel/img_00.png"
+      ]
+    },
+    {
+      "title": "Location",
+      "desc": "Positioned in a prime part of the city with easy access to major attractions and transit.",
+      "images": [
+        "/static/images/places/raffles-hotel/img_00.png"
+      ]
+    }
+  ],
+  "brandenburg-gate": [
+    {
+      "title": "Overview",
+      "desc": "An unmissable attraction famous around the world for its stunning presence and cultural significance.",
+      "images": [
+        "/static/images/places/brandenburg-gate/img_00.jpg"
+      ]
+    },
+    {
+      "title": "Visitor Experience",
+      "desc": "Walk through the site at your own pace, snap photos from the best viewpoints, and soak in the atmosphere.",
+      "images": [
+        "/static/images/places/brandenburg-gate/img_00.jpg"
+      ]
+    },
+    {
+      "title": "History & Meaning",
+      "desc": "Centuries of history and countless stories live within these walls - a cornerstone of the city's identity.",
+      "images": [
+        "/static/images/places/brandenburg-gate/img_00.jpg"
+      ]
+    }
+  ],
+  "reichstag": [
+    {
+      "title": "Overview",
+      "desc": "An unmissable attraction famous around the world for its stunning presence and cultural significance.",
+      "images": [
+        "/static/images/places/reichstag/img_00.png"
+      ]
+    },
+    {
+      "title": "Visitor Experience",
+      "desc": "Walk through the site at your own pace, snap photos from the best viewpoints, and soak in the atmosphere.",
+      "images": [
+        "/static/images/places/reichstag/img_00.png"
+      ]
+    },
+    {
+      "title": "History & Meaning",
+      "desc": "Centuries of history and countless stories live within these walls - a cornerstone of the city's identity.",
+      "images": [
+        "/static/images/places/reichstag/img_00.png"
+      ]
+    }
+  ],
+  "berlin-wall": [
+    {
+      "title": "Overview",
+      "desc": "An unmissable attraction famous around the world for its stunning presence and cultural significance.",
+      "images": [
+        "/static/images/places/berlin-wall/img_00.jpg"
+      ]
+    },
+    {
+      "title": "Visitor Experience",
+      "desc": "Walk through the site at your own pace, snap photos from the best viewpoints, and soak in the atmosphere.",
+      "images": [
+        "/static/images/places/berlin-wall/img_00.jpg"
+      ]
+    },
+    {
+      "title": "History & Meaning",
+      "desc": "Centuries of history and countless stories live within these walls - a cornerstone of the city's identity.",
+      "images": [
+        "/static/images/places/berlin-wall/img_00.jpg"
+      ]
+    }
+  ],
+  "pergamon-museum": [
+    {
+      "title": "Collections",
+      "desc": "Explore a world-class collection spanning multiple eras, with rotating exhibitions and permanent galleries.",
+      "images": [
+        "/static/images/places/pergamon-museum/img_00.png"
+      ]
+    },
+    {
+      "title": "Visiting",
+      "desc": "Plan a half-day visit to take in the highlights - audio guides and docent tours are available.",
+      "images": [
+        "/static/images/places/pergamon-museum/img_00.png"
+      ]
+    },
+    {
+      "title": "Architecture",
+      "desc": "The building itself is a work of art, designed to complement and showcase the collection within.",
+      "images": [
+        "/static/images/places/pergamon-museum/img_00.png"
+      ]
+    }
+  ],
+  "museum-island": [
+    {
+      "title": "Collections",
+      "desc": "Explore a world-class collection spanning multiple eras, with rotating exhibitions and permanent galleries.",
+      "images": [
+        "/static/images/places/museum-island/img_00.png"
+      ]
+    },
+    {
+      "title": "Visiting",
+      "desc": "Plan a half-day visit to take in the highlights - audio guides and docent tours are available.",
+      "images": [
+        "/static/images/places/museum-island/img_00.png"
+      ]
+    },
+    {
+      "title": "Architecture",
+      "desc": "The building itself is a work of art, designed to complement and showcase the collection within.",
+      "images": [
+        "/static/images/places/museum-island/img_00.png"
+      ]
+    }
+  ],
+  "rijksmuseum": [
+    {
+      "title": "Collections",
+      "desc": "Explore a world-class collection spanning multiple eras, with rotating exhibitions and permanent galleries.",
+      "images": [
+        "/static/images/places/rijksmuseum/img_00.png"
+      ]
+    },
+    {
+      "title": "Visiting",
+      "desc": "Plan a half-day visit to take in the highlights - audio guides and docent tours are available.",
+      "images": [
+        "/static/images/places/rijksmuseum/img_00.png"
+      ]
+    },
+    {
+      "title": "Architecture",
+      "desc": "The building itself is a work of art, designed to complement and showcase the collection within.",
+      "images": [
+        "/static/images/places/rijksmuseum/img_00.png"
+      ]
+    }
+  ],
+  "van-gogh-museum": [
+    {
+      "title": "Collections",
+      "desc": "Explore a world-class collection spanning multiple eras, with rotating exhibitions and permanent galleries.",
+      "images": [
+        "/static/images/places/van-gogh-museum/img_00.png"
+      ]
+    },
+    {
+      "title": "Visiting",
+      "desc": "Plan a half-day visit to take in the highlights - audio guides and docent tours are available.",
+      "images": [
+        "/static/images/places/van-gogh-museum/img_00.png"
+      ]
+    },
+    {
+      "title": "Architecture",
+      "desc": "The building itself is a work of art, designed to complement and showcase the collection within.",
+      "images": [
+        "/static/images/places/van-gogh-museum/img_00.png"
+      ]
+    }
+  ],
+  "anne-frank-house": [
+    {
+      "title": "Collections",
+      "desc": "Explore a world-class collection spanning multiple eras, with rotating exhibitions and permanent galleries.",
+      "images": [
+        "/static/images/places/anne-frank-house/img_00.png"
+      ]
+    },
+    {
+      "title": "Visiting",
+      "desc": "Plan a half-day visit to take in the highlights - audio guides and docent tours are available.",
+      "images": [
+        "/static/images/places/anne-frank-house/img_01.jpg"
+      ]
+    },
+    {
+      "title": "Architecture",
+      "desc": "The building itself is a work of art, designed to complement and showcase the collection within.",
+      "images": [
+        "/static/images/places/anne-frank-house/img_02.jpg"
+      ]
+    }
+  ],
+  "vondelpark": [
+    {
+      "title": "Trails & Walks",
+      "desc": "Miles of trails wind through diverse landscapes, perfect for morning jogs or leisurely afternoon strolls.",
+      "images": [
+        "/static/images/places/vondelpark/img_00.jpg"
+      ]
+    },
+    {
+      "title": "Recreation",
+      "desc": "Picnic areas, playgrounds, sports courts, and open lawns invite visitors of every age.",
+      "images": [
+        "/static/images/places/vondelpark/img_00.jpg"
+      ]
+    },
+    {
+      "title": "Nature",
+      "desc": "A green oasis filled with native flora and wildlife - a place to reconnect with nature in the heart of the city.",
+      "images": [
+        "/static/images/places/vondelpark/img_00.jpg"
+      ]
+    }
+  ],
+  "canal-ring": [
+    {
+      "title": "Overview",
+      "desc": "An unmissable attraction famous around the world for its stunning presence and cultural significance.",
+      "images": [
+        "/static/images/places/canal-ring/img_00.png"
+      ]
+    },
+    {
+      "title": "Visitor Experience",
+      "desc": "Walk through the site at your own pace, snap photos from the best viewpoints, and soak in the atmosphere.",
+      "images": [
+        "/static/images/places/canal-ring/img_00.png"
+      ]
+    },
+    {
+      "title": "History & Meaning",
+      "desc": "Centuries of history and countless stories live within these walls - a cornerstone of the city's identity.",
+      "images": [
+        "/static/images/places/canal-ring/img_00.png"
+      ]
+    }
+  ],
+  "prado": [
+    {
+      "title": "Collections",
+      "desc": "Explore a world-class collection spanning multiple eras, with rotating exhibitions and permanent galleries.",
+      "images": [
+        "/static/images/places/prado/img_00.png"
+      ]
+    },
+    {
+      "title": "Visiting",
+      "desc": "Plan a half-day visit to take in the highlights - audio guides and docent tours are available.",
+      "images": [
+        "/static/images/places/prado/img_01.jpg"
+      ]
+    },
+    {
+      "title": "Architecture",
+      "desc": "The building itself is a work of art, designed to complement and showcase the collection within.",
+      "images": [
+        "/static/images/places/prado/img_00.png"
+      ]
+    }
+  ],
+  "royal-palace-madrid": [
+    {
+      "title": "Overview",
+      "desc": "An unmissable attraction famous around the world for its stunning presence and cultural significance.",
+      "images": [
+        "/static/images/places/royal-palace-madrid/img_00.png"
+      ]
+    },
+    {
+      "title": "Visitor Experience",
+      "desc": "Walk through the site at your own pace, snap photos from the best viewpoints, and soak in the atmosphere.",
+      "images": [
+        "/static/images/places/royal-palace-madrid/img_00.png"
+      ]
+    },
+    {
+      "title": "History & Meaning",
+      "desc": "Centuries of history and countless stories live within these walls - a cornerstone of the city's identity.",
+      "images": [
+        "/static/images/places/royal-palace-madrid/img_00.png"
+      ]
+    }
+  ],
+  "retiro-park": [
+    {
+      "title": "Trails & Walks",
+      "desc": "Miles of trails wind through diverse landscapes, perfect for morning jogs or leisurely afternoon strolls.",
+      "images": [
+        "/static/images/places/retiro-park/img_00.png"
+      ]
+    },
+    {
+      "title": "Recreation",
+      "desc": "Picnic areas, playgrounds, sports courts, and open lawns invite visitors of every age.",
+      "images": [
+        "/static/images/places/retiro-park/img_00.png"
+      ]
+    },
+    {
+      "title": "Nature",
+      "desc": "A green oasis filled with native flora and wildlife - a place to reconnect with nature in the heart of the city.",
+      "images": [
+        "/static/images/places/retiro-park/img_00.png"
+      ]
+    }
+  ],
+  "plaza-mayor-madrid": [
+    {
+      "title": "Overview",
+      "desc": "An unmissable attraction famous around the world for its stunning presence and cultural significance.",
+      "images": [
+        "/static/images/places/plaza-mayor-madrid/img_00.png"
+      ]
+    },
+    {
+      "title": "Visitor Experience",
+      "desc": "Walk through the site at your own pace, snap photos from the best viewpoints, and soak in the atmosphere.",
+      "images": [
+        "/static/images/places/plaza-mayor-madrid/img_01.jpg"
+      ]
+    },
+    {
+      "title": "History & Meaning",
+      "desc": "Centuries of history and countless stories live within these walls - a cornerstone of the city's identity.",
+      "images": [
+        "/static/images/places/plaza-mayor-madrid/img_02.jpg"
+      ]
+    }
+  ],
+  "hagia-sophia": [
+    {
+      "title": "Overview",
+      "desc": "An unmissable attraction famous around the world for its stunning presence and cultural significance.",
+      "images": [
+        "/static/images/places/hagia-sophia/img_00.jpg"
+      ]
+    },
+    {
+      "title": "Visitor Experience",
+      "desc": "Walk through the site at your own pace, snap photos from the best viewpoints, and soak in the atmosphere.",
+      "images": [
+        "/static/images/places/hagia-sophia/img_01.jpg"
+      ]
+    },
+    {
+      "title": "History & Meaning",
+      "desc": "Centuries of history and countless stories live within these walls - a cornerstone of the city's identity.",
+      "images": [
+        "/static/images/places/hagia-sophia/img_00.jpg"
+      ]
+    }
+  ],
+  "blue-mosque": [
+    {
+      "title": "Overview",
+      "desc": "An unmissable attraction famous around the world for its stunning presence and cultural significance.",
+      "images": [
+        "/static/images/places/blue-mosque/img_00.png"
+      ]
+    },
+    {
+      "title": "Visitor Experience",
+      "desc": "Walk through the site at your own pace, snap photos from the best viewpoints, and soak in the atmosphere.",
+      "images": [
+        "/static/images/places/blue-mosque/img_00.png"
+      ]
+    },
+    {
+      "title": "History & Meaning",
+      "desc": "Centuries of history and countless stories live within these walls - a cornerstone of the city's identity.",
+      "images": [
+        "/static/images/places/blue-mosque/img_00.png"
+      ]
+    }
+  ],
+  "topkapi-palace": [
+    {
+      "title": "Overview",
+      "desc": "An unmissable attraction famous around the world for its stunning presence and cultural significance.",
+      "images": [
+        "/static/images/places/topkapi-palace/img_00.png"
+      ]
+    },
+    {
+      "title": "Visitor Experience",
+      "desc": "Walk through the site at your own pace, snap photos from the best viewpoints, and soak in the atmosphere.",
+      "images": [
+        "/static/images/places/topkapi-palace/img_01.jpg"
+      ]
+    },
+    {
+      "title": "History & Meaning",
+      "desc": "Centuries of history and countless stories live within these walls - a cornerstone of the city's identity.",
+      "images": [
+        "/static/images/places/topkapi-palace/img_00.png"
+      ]
+    }
+  ],
+  "grand-bazaar": [
+    {
+      "title": "Stores & Brands",
+      "desc": "From global fashion houses to beloved local boutiques, you will find everything under one roof.",
+      "images": [
+        "/static/images/places/grand-bazaar/img_00.jpg"
+      ]
+    },
+    {
+      "title": "Dining",
+      "desc": "Food courts and sit-down restaurants make this a destination for all-day visits.",
+      "images": [
+        "/static/images/places/grand-bazaar/img_00.jpg"
+      ]
+    },
+    {
+      "title": "Experience",
+      "desc": "Beautiful architecture, seasonal events, and engaging displays turn shopping into an experience.",
+      "images": [
+        "/static/images/places/grand-bazaar/img_00.jpg"
+      ]
+    }
+  ],
+  "acropolis": [
+    {
+      "title": "Overview",
+      "desc": "An unmissable attraction famous around the world for its stunning presence and cultural significance.",
+      "images": [
+        "/static/images/places/acropolis/img_00.jpg"
+      ]
+    },
+    {
+      "title": "Visitor Experience",
+      "desc": "Walk through the site at your own pace, snap photos from the best viewpoints, and soak in the atmosphere.",
+      "images": [
+        "/static/images/places/acropolis/img_00.jpg"
+      ]
+    },
+    {
+      "title": "History & Meaning",
+      "desc": "Centuries of history and countless stories live within these walls - a cornerstone of the city's identity.",
+      "images": [
+        "/static/images/places/acropolis/img_00.jpg"
+      ]
+    }
+  ],
+  "parthenon": [
+    {
+      "title": "Overview",
+      "desc": "An unmissable attraction famous around the world for its stunning presence and cultural significance.",
+      "images": [
+        "/static/images/places/parthenon/img_00.jpg"
+      ]
+    },
+    {
+      "title": "Visitor Experience",
+      "desc": "Walk through the site at your own pace, snap photos from the best viewpoints, and soak in the atmosphere.",
+      "images": [
+        "/static/images/places/parthenon/img_00.jpg"
+      ]
+    },
+    {
+      "title": "History & Meaning",
+      "desc": "Centuries of history and countless stories live within these walls - a cornerstone of the city's identity.",
+      "images": [
+        "/static/images/places/parthenon/img_00.jpg"
+      ]
+    }
+  ],
+  "charles-bridge": [
+    {
+      "title": "Overview",
+      "desc": "An unmissable attraction famous around the world for its stunning presence and cultural significance.",
+      "images": [
+        "/static/images/places/charles-bridge/img_00.png"
+      ]
+    },
+    {
+      "title": "Visitor Experience",
+      "desc": "Walk through the site at your own pace, snap photos from the best viewpoints, and soak in the atmosphere.",
+      "images": [
+        "/static/images/places/charles-bridge/img_00.png"
+      ]
+    },
+    {
+      "title": "History & Meaning",
+      "desc": "Centuries of history and countless stories live within these walls - a cornerstone of the city's identity.",
+      "images": [
+        "/static/images/places/charles-bridge/img_00.png"
+      ]
+    }
+  ],
+  "prague-castle": [
+    {
+      "title": "Overview",
+      "desc": "An unmissable attraction famous around the world for its stunning presence and cultural significance.",
+      "images": [
+        "/static/images/places/prague-castle/img_00.png"
+      ]
+    },
+    {
+      "title": "Visitor Experience",
+      "desc": "Walk through the site at your own pace, snap photos from the best viewpoints, and soak in the atmosphere.",
+      "images": [
+        "/static/images/places/prague-castle/img_00.png"
+      ]
+    },
+    {
+      "title": "History & Meaning",
+      "desc": "Centuries of history and countless stories live within these walls - a cornerstone of the city's identity.",
+      "images": [
+        "/static/images/places/prague-castle/img_00.png"
+      ]
+    }
+  ],
+  "old-town-square": [
+    {
+      "title": "Overview",
+      "desc": "An unmissable attraction famous around the world for its stunning presence and cultural significance.",
+      "images": [
+        "/static/images/places/old-town-square/img_00.png"
+      ]
+    },
+    {
+      "title": "Visitor Experience",
+      "desc": "Walk through the site at your own pace, snap photos from the best viewpoints, and soak in the atmosphere.",
+      "images": [
+        "/static/images/places/old-town-square/img_01.jpg"
+      ]
+    },
+    {
+      "title": "History & Meaning",
+      "desc": "Centuries of history and countless stories live within these walls - a cornerstone of the city's identity.",
+      "images": [
+        "/static/images/places/old-town-square/img_02.jpg"
+      ]
+    }
+  ],
+  "st-stephens-cathedral": [
+    {
+      "title": "Overview",
+      "desc": "An unmissable attraction famous around the world for its stunning presence and cultural significance.",
+      "images": [
+        "/static/images/places/st-stephens-cathedral/img_00.png"
+      ]
+    },
+    {
+      "title": "Visitor Experience",
+      "desc": "Walk through the site at your own pace, snap photos from the best viewpoints, and soak in the atmosphere.",
+      "images": [
+        "/static/images/places/st-stephens-cathedral/img_01.jpg"
+      ]
+    },
+    {
+      "title": "History & Meaning",
+      "desc": "Centuries of history and countless stories live within these walls - a cornerstone of the city's identity.",
+      "images": [
+        "/static/images/places/st-stephens-cathedral/img_00.png"
+      ]
+    }
+  ],
+  "schonbrunn-palace": [
+    {
+      "title": "Overview",
+      "desc": "An unmissable attraction famous around the world for its stunning presence and cultural significance.",
+      "images": [
+        "/static/images/places/schonbrunn-palace/img_00.png"
+      ]
+    },
+    {
+      "title": "Visitor Experience",
+      "desc": "Walk through the site at your own pace, snap photos from the best viewpoints, and soak in the atmosphere.",
+      "images": [
+        "/static/images/places/schonbrunn-palace/img_01.jpg"
+      ]
+    },
+    {
+      "title": "History & Meaning",
+      "desc": "Centuries of history and countless stories live within these walls - a cornerstone of the city's identity.",
+      "images": [
+        "/static/images/places/schonbrunn-palace/img_02.jpg"
+      ]
+    }
+  ],
+  "belvedere-palace": [
+    {
+      "title": "Collections",
+      "desc": "Explore a world-class collection spanning multiple eras, with rotating exhibitions and permanent galleries.",
+      "images": [
+        "/static/images/places/belvedere-palace/img_00.png"
+      ]
+    },
+    {
+      "title": "Visiting",
+      "desc": "Plan a half-day visit to take in the highlights - audio guides and docent tours are available.",
+      "images": [
+        "/static/images/places/belvedere-palace/img_01.jpg"
+      ]
+    },
+    {
+      "title": "Architecture",
+      "desc": "The building itself is a work of art, designed to complement and showcase the collection within.",
+      "images": [
+        "/static/images/places/belvedere-palace/img_00.png"
+      ]
+    }
+  ],
+  "cn-tower": [
+    {
+      "title": "Overview",
+      "desc": "An unmissable attraction famous around the world for its stunning presence and cultural significance.",
+      "images": [
+        "/static/images/places/cn-tower/img_00.png"
+      ]
+    },
+    {
+      "title": "Visitor Experience",
+      "desc": "Walk through the site at your own pace, snap photos from the best viewpoints, and soak in the atmosphere.",
+      "images": [
+        "/static/images/places/cn-tower/img_00.png"
+      ]
+    },
+    {
+      "title": "History & Meaning",
+      "desc": "Centuries of history and countless stories live within these walls - a cornerstone of the city's identity.",
+      "images": [
+        "/static/images/places/cn-tower/img_00.png"
+      ]
+    }
+  ],
+  "niagara-falls": [
+    {
+      "title": "Trails & Walks",
+      "desc": "Miles of trails wind through diverse landscapes, perfect for morning jogs or leisurely afternoon strolls.",
+      "images": [
+        "/static/images/places/niagara-falls/img_00.png"
+      ]
+    },
+    {
+      "title": "Recreation",
+      "desc": "Picnic areas, playgrounds, sports courts, and open lawns invite visitors of every age.",
+      "images": [
+        "/static/images/places/niagara-falls/img_00.png"
+      ]
+    },
+    {
+      "title": "Nature",
+      "desc": "A green oasis filled with native flora and wildlife - a place to reconnect with nature in the heart of the city.",
+      "images": [
+        "/static/images/places/niagara-falls/img_00.png"
+      ]
+    }
+  ],
+  "stanley-park": [
+    {
+      "title": "Trails & Walks",
+      "desc": "Miles of trails wind through diverse landscapes, perfect for morning jogs or leisurely afternoon strolls.",
+      "images": [
+        "/static/images/places/stanley-park/img_00.png"
+      ]
+    },
+    {
+      "title": "Recreation",
+      "desc": "Picnic areas, playgrounds, sports courts, and open lawns invite visitors of every age.",
+      "images": [
+        "/static/images/places/stanley-park/img_00.png"
+      ]
+    },
+    {
+      "title": "Nature",
+      "desc": "A green oasis filled with native flora and wildlife - a place to reconnect with nature in the heart of the city.",
+      "images": [
+        "/static/images/places/stanley-park/img_00.png"
+      ]
+    }
+  ],
+  "capilano-bridge": [
+    {
+      "title": "Overview",
+      "desc": "An unmissable attraction famous around the world for its stunning presence and cultural significance.",
+      "images": [
+        "/static/images/places/capilano-bridge/img_00.png"
+      ]
+    },
+    {
+      "title": "Visitor Experience",
+      "desc": "Walk through the site at your own pace, snap photos from the best viewpoints, and soak in the atmosphere.",
+      "images": [
+        "/static/images/places/capilano-bridge/img_00.png"
+      ]
+    },
+    {
+      "title": "History & Meaning",
+      "desc": "Centuries of history and countless stories live within these walls - a cornerstone of the city's identity.",
+      "images": [
+        "/static/images/places/capilano-bridge/img_00.png"
+      ]
+    }
+  ],
+  "mexico-city-cathedral": [
+    {
+      "title": "Overview",
+      "desc": "An unmissable attraction famous around the world for its stunning presence and cultural significance.",
+      "images": [
+        "/static/images/places/mexico-city-cathedral/img_00.png"
+      ]
+    },
+    {
+      "title": "Visitor Experience",
+      "desc": "Walk through the site at your own pace, snap photos from the best viewpoints, and soak in the atmosphere.",
+      "images": [
+        "/static/images/places/mexico-city-cathedral/img_00.png"
+      ]
+    },
+    {
+      "title": "History & Meaning",
+      "desc": "Centuries of history and countless stories live within these walls - a cornerstone of the city's identity.",
+      "images": [
+        "/static/images/places/mexico-city-cathedral/img_00.png"
+      ]
+    }
+  ],
+  "teotihuacan": [
+    {
+      "title": "Overview",
+      "desc": "An unmissable attraction famous around the world for its stunning presence and cultural significance.",
+      "images": [
+        "/static/images/places/teotihuacan/img_00.jpg"
+      ]
+    },
+    {
+      "title": "Visitor Experience",
+      "desc": "Walk through the site at your own pace, snap photos from the best viewpoints, and soak in the atmosphere.",
+      "images": [
+        "/static/images/places/teotihuacan/img_01.png"
+      ]
+    },
+    {
+      "title": "History & Meaning",
+      "desc": "Centuries of history and countless stories live within these walls - a cornerstone of the city's identity.",
+      "images": [
+        "/static/images/places/teotihuacan/img_00.jpg"
+      ]
+    }
+  ],
+  "christ-the-redeemer": [
+    {
+      "title": "Overview",
+      "desc": "An unmissable attraction famous around the world for its stunning presence and cultural significance.",
+      "images": [
+        "/static/images/places/christ-the-redeemer/img_00.png"
+      ]
+    },
+    {
+      "title": "Visitor Experience",
+      "desc": "Walk through the site at your own pace, snap photos from the best viewpoints, and soak in the atmosphere.",
+      "images": [
+        "/static/images/places/christ-the-redeemer/img_00.png"
+      ]
+    },
+    {
+      "title": "History & Meaning",
+      "desc": "Centuries of history and countless stories live within these walls - a cornerstone of the city's identity.",
+      "images": [
+        "/static/images/places/christ-the-redeemer/img_00.png"
+      ]
+    }
+  ],
+  "sugarloaf": [
+    {
+      "title": "Overview",
+      "desc": "An unmissable attraction famous around the world for its stunning presence and cultural significance.",
+      "images": [
+        "/static/images/places/sugarloaf/img_00.jpg"
+      ]
+    },
+    {
+      "title": "Visitor Experience",
+      "desc": "Walk through the site at your own pace, snap photos from the best viewpoints, and soak in the atmosphere.",
+      "images": [
+        "/static/images/places/sugarloaf/img_00.jpg"
+      ]
+    },
+    {
+      "title": "History & Meaning",
+      "desc": "Centuries of history and countless stories live within these walls - a cornerstone of the city's identity.",
+      "images": [
+        "/static/images/places/sugarloaf/img_00.jpg"
+      ]
+    }
+  ],
+  "copacabana": [
+    {
+      "title": "Trails & Walks",
+      "desc": "Miles of trails wind through diverse landscapes, perfect for morning jogs or leisurely afternoon strolls.",
+      "images": [
+        "/static/images/places/copacabana/img_00.jpg"
+      ]
+    },
+    {
+      "title": "Recreation",
+      "desc": "Picnic areas, playgrounds, sports courts, and open lawns invite visitors of every age.",
+      "images": [
+        "/static/images/places/copacabana/img_00.jpg"
+      ]
+    },
+    {
+      "title": "Nature",
+      "desc": "A green oasis filled with native flora and wildlife - a place to reconnect with nature in the heart of the city.",
+      "images": [
+        "/static/images/places/copacabana/img_00.jpg"
+      ]
+    }
+  ],
+  "machu-picchu": [
+    {
+      "title": "Overview",
+      "desc": "An unmissable attraction famous around the world for its stunning presence and cultural significance.",
+      "images": [
+        "/static/images/places/machu-picchu/img_00.png"
+      ]
+    },
+    {
+      "title": "Visitor Experience",
+      "desc": "Walk through the site at your own pace, snap photos from the best viewpoints, and soak in the atmosphere.",
+      "images": [
+        "/static/images/places/machu-picchu/img_00.png"
+      ]
+    },
+    {
+      "title": "History & Meaning",
+      "desc": "Centuries of history and countless stories live within these walls - a cornerstone of the city's identity.",
+      "images": [
+        "/static/images/places/machu-picchu/img_00.png"
+      ]
+    }
+  ],
+  "doge-palace": [
+    {
+      "title": "Overview",
+      "desc": "An unmissable attraction famous around the world for its stunning presence and cultural significance.",
+      "images": [
+        "/static/images/places/doge-palace/img_00.png"
+      ]
+    },
+    {
+      "title": "Visitor Experience",
+      "desc": "Walk through the site at your own pace, snap photos from the best viewpoints, and soak in the atmosphere.",
+      "images": [
+        "/static/images/places/doge-palace/img_00.png"
+      ]
+    },
+    {
+      "title": "History & Meaning",
+      "desc": "Centuries of history and countless stories live within these walls - a cornerstone of the city's identity.",
+      "images": [
+        "/static/images/places/doge-palace/img_00.png"
+      ]
+    }
+  ],
+  "rialto-bridge": [
+    {
+      "title": "Overview",
+      "desc": "An unmissable attraction famous around the world for its stunning presence and cultural significance.",
+      "images": [
+        "/static/images/places/rialto-bridge/img_00.png"
+      ]
+    },
+    {
+      "title": "Visitor Experience",
+      "desc": "Walk through the site at your own pace, snap photos from the best viewpoints, and soak in the atmosphere.",
+      "images": [
+        "/static/images/places/rialto-bridge/img_00.png"
+      ]
+    },
+    {
+      "title": "History & Meaning",
+      "desc": "Centuries of history and countless stories live within these walls - a cornerstone of the city's identity.",
+      "images": [
+        "/static/images/places/rialto-bridge/img_00.png"
+      ]
+    }
+  ],
+  "st-marks-square": [
+    {
+      "title": "Overview",
+      "desc": "An unmissable attraction famous around the world for its stunning presence and cultural significance.",
+      "images": [
+        "/static/images/places/st-marks-square/img_00.png"
+      ]
+    },
+    {
+      "title": "Visitor Experience",
+      "desc": "Walk through the site at your own pace, snap photos from the best viewpoints, and soak in the atmosphere.",
+      "images": [
+        "/static/images/places/st-marks-square/img_00.png"
+      ]
+    },
+    {
+      "title": "History & Meaning",
+      "desc": "Centuries of history and countless stories live within these walls - a cornerstone of the city's identity.",
+      "images": [
+        "/static/images/places/st-marks-square/img_00.png"
+      ]
+    }
+  ],
+  "santa-maria-del-fiore": [
+    {
+      "title": "Overview",
+      "desc": "An unmissable attraction famous around the world for its stunning presence and cultural significance.",
+      "images": [
+        "/static/images/places/santa-maria-del-fiore/img_00.jpg"
+      ]
+    },
+    {
+      "title": "Visitor Experience",
+      "desc": "Walk through the site at your own pace, snap photos from the best viewpoints, and soak in the atmosphere.",
+      "images": [
+        "/static/images/places/santa-maria-del-fiore/img_01.jpg"
+      ]
+    },
+    {
+      "title": "History & Meaning",
+      "desc": "Centuries of history and countless stories live within these walls - a cornerstone of the city's identity.",
+      "images": [
+        "/static/images/places/santa-maria-del-fiore/img_00.jpg"
+      ]
+    }
+  ],
+  "uffizi-gallery": [
+    {
+      "title": "Collections",
+      "desc": "Explore a world-class collection spanning multiple eras, with rotating exhibitions and permanent galleries.",
+      "images": [
+        "/static/images/places/uffizi-gallery/img_00.jpg"
+      ]
+    },
+    {
+      "title": "Visiting",
+      "desc": "Plan a half-day visit to take in the highlights - audio guides and docent tours are available.",
+      "images": [
+        "/static/images/places/uffizi-gallery/img_00.jpg"
+      ]
+    },
+    {
+      "title": "Architecture",
+      "desc": "The building itself is a work of art, designed to complement and showcase the collection within.",
+      "images": [
+        "/static/images/places/uffizi-gallery/img_00.jpg"
+      ]
+    }
+  ],
+  "ponte-vecchio": [
+    {
+      "title": "Overview",
+      "desc": "An unmissable attraction famous around the world for its stunning presence and cultural significance.",
+      "images": [
+        "/static/images/places/ponte-vecchio/img_00.png"
+      ]
+    },
+    {
+      "title": "Visitor Experience",
+      "desc": "Walk through the site at your own pace, snap photos from the best viewpoints, and soak in the atmosphere.",
+      "images": [
+        "/static/images/places/ponte-vecchio/img_00.png"
+      ]
+    },
+    {
+      "title": "History & Meaning",
+      "desc": "Centuries of history and countless stories live within these walls - a cornerstone of the city's identity.",
+      "images": [
+        "/static/images/places/ponte-vecchio/img_00.png"
+      ]
+    }
+  ],
+  "duomo-milano": [
+    {
+      "title": "Overview",
+      "desc": "An unmissable attraction famous around the world for its stunning presence and cultural significance.",
+      "images": [
+        "/static/images/places/duomo-milano/img_00.jpg"
+      ]
+    },
+    {
+      "title": "Visitor Experience",
+      "desc": "Walk through the site at your own pace, snap photos from the best viewpoints, and soak in the atmosphere.",
+      "images": [
+        "/static/images/places/duomo-milano/img_01.jpg"
+      ]
+    },
+    {
+      "title": "History & Meaning",
+      "desc": "Centuries of history and countless stories live within these walls - a cornerstone of the city's identity.",
+      "images": [
+        "/static/images/places/duomo-milano/img_02.jpg"
+      ]
+    }
+  ],
+  "galleria-vittorio-emanuele": [
+    {
+      "title": "Stores & Brands",
+      "desc": "From global fashion houses to beloved local boutiques, you will find everything under one roof.",
+      "images": [
+        "/static/images/places/galleria-vittorio-emanuele/img_00.png"
+      ]
+    },
+    {
+      "title": "Dining",
+      "desc": "Food courts and sit-down restaurants make this a destination for all-day visits.",
+      "images": [
+        "/static/images/places/galleria-vittorio-emanuele/img_00.png"
+      ]
+    },
+    {
+      "title": "Experience",
+      "desc": "Beautiful architecture, seasonal events, and engaging displays turn shopping into an experience.",
+      "images": [
+        "/static/images/places/galleria-vittorio-emanuele/img_00.png"
+      ]
+    }
+  ],
+  "edinburgh-castle": [
+    {
+      "title": "Overview",
+      "desc": "An unmissable attraction famous around the world for its stunning presence and cultural significance.",
+      "images": [
+        "/static/images/places/edinburgh-castle/img_00.png"
+      ]
+    },
+    {
+      "title": "Visitor Experience",
+      "desc": "Walk through the site at your own pace, snap photos from the best viewpoints, and soak in the atmosphere.",
+      "images": [
+        "/static/images/places/edinburgh-castle/img_00.png"
+      ]
+    },
+    {
+      "title": "History & Meaning",
+      "desc": "Centuries of history and countless stories live within these walls - a cornerstone of the city's identity.",
+      "images": [
+        "/static/images/places/edinburgh-castle/img_00.png"
+      ]
+    }
+  ],
+  "royal-mile": [
+    {
+      "title": "Overview",
+      "desc": "An unmissable attraction famous around the world for its stunning presence and cultural significance.",
+      "images": [
+        "/static/images/places/royal-mile/img_00.png"
+      ]
+    },
+    {
+      "title": "Visitor Experience",
+      "desc": "Walk through the site at your own pace, snap photos from the best viewpoints, and soak in the atmosphere.",
+      "images": [
+        "/static/images/places/royal-mile/img_00.png"
+      ]
+    },
+    {
+      "title": "History & Meaning",
+      "desc": "Centuries of history and countless stories live within these walls - a cornerstone of the city's identity.",
+      "images": [
+        "/static/images/places/royal-mile/img_00.png"
+      ]
+    }
+  ],
+  "grand-place": [
+    {
+      "title": "Overview",
+      "desc": "An unmissable attraction famous around the world for its stunning presence and cultural significance.",
+      "images": [
+        "/static/images/places/grand-place/img_00.png"
+      ]
+    },
+    {
+      "title": "Visitor Experience",
+      "desc": "Walk through the site at your own pace, snap photos from the best viewpoints, and soak in the atmosphere.",
+      "images": [
+        "/static/images/places/grand-place/img_01.jpg"
+      ]
+    },
+    {
+      "title": "History & Meaning",
+      "desc": "Centuries of history and countless stories live within these walls - a cornerstone of the city's identity.",
+      "images": [
+        "/static/images/places/grand-place/img_02.jpg"
+      ]
+    }
+  ],
+  "atomium": [
+    {
+      "title": "Overview",
+      "desc": "An unmissable attraction famous around the world for its stunning presence and cultural significance.",
+      "images": [
+        "/static/images/places/atomium/img_00.png"
+      ]
+    },
+    {
+      "title": "Visitor Experience",
+      "desc": "Walk through the site at your own pace, snap photos from the best viewpoints, and soak in the atmosphere.",
+      "images": [
+        "/static/images/places/atomium/img_00.png"
+      ]
+    },
+    {
+      "title": "History & Meaning",
+      "desc": "Centuries of history and countless stories live within these walls - a cornerstone of the city's identity.",
+      "images": [
+        "/static/images/places/atomium/img_00.png"
+      ]
+    }
+  ],
+  "parliament-building-budapest": [
+    {
+      "title": "Overview",
+      "desc": "An unmissable attraction famous around the world for its stunning presence and cultural significance.",
+      "images": [
+        "/static/images/places/parliament-building-budapest/img_00.png"
+      ]
+    },
+    {
+      "title": "Visitor Experience",
+      "desc": "Walk through the site at your own pace, snap photos from the best viewpoints, and soak in the atmosphere.",
+      "images": [
+        "/static/images/places/parliament-building-budapest/img_00.png"
+      ]
+    },
+    {
+      "title": "History & Meaning",
+      "desc": "Centuries of history and countless stories live within these walls - a cornerstone of the city's identity.",
+      "images": [
+        "/static/images/places/parliament-building-budapest/img_00.png"
+      ]
+    }
+  ],
+  "buda-castle": [
+    {
+      "title": "Overview",
+      "desc": "An unmissable attraction famous around the world for its stunning presence and cultural significance.",
+      "images": [
+        "/static/images/places/buda-castle/img_00.jpg"
+      ]
+    },
+    {
+      "title": "Visitor Experience",
+      "desc": "Walk through the site at your own pace, snap photos from the best viewpoints, and soak in the atmosphere.",
+      "images": [
+        "/static/images/places/buda-castle/img_01.png"
+      ]
+    },
+    {
+      "title": "History & Meaning",
+      "desc": "Centuries of history and countless stories live within these walls - a cornerstone of the city's identity.",
+      "images": [
+        "/static/images/places/buda-castle/img_00.jpg"
+      ]
+    }
+  ],
+  "chain-bridge": [
+    {
+      "title": "Overview",
+      "desc": "An unmissable attraction famous around the world for its stunning presence and cultural significance.",
+      "images": [
+        "/static/images/places/chain-bridge/img_00.png"
+      ]
+    },
+    {
+      "title": "Visitor Experience",
+      "desc": "Walk through the site at your own pace, snap photos from the best viewpoints, and soak in the atmosphere.",
+      "images": [
+        "/static/images/places/chain-bridge/img_00.png"
+      ]
+    },
+    {
+      "title": "History & Meaning",
+      "desc": "Centuries of history and countless stories live within these walls - a cornerstone of the city's identity.",
+      "images": [
+        "/static/images/places/chain-bridge/img_00.png"
+      ]
+    }
+  ],
+  "warsaw-old-town": [
+    {
+      "title": "Overview",
+      "desc": "An unmissable attraction famous around the world for its stunning presence and cultural significance.",
+      "images": [
+        "/static/images/places/warsaw-old-town/img_00.png"
+      ]
+    },
+    {
+      "title": "Visitor Experience",
+      "desc": "Walk through the site at your own pace, snap photos from the best viewpoints, and soak in the atmosphere.",
+      "images": [
+        "/static/images/places/warsaw-old-town/img_00.png"
+      ]
+    },
+    {
+      "title": "History & Meaning",
+      "desc": "Centuries of history and countless stories live within these walls - a cornerstone of the city's identity.",
+      "images": [
+        "/static/images/places/warsaw-old-town/img_00.png"
+      ]
+    }
+  ],
+  "market-square-krakow": [
+    {
+      "title": "Overview",
+      "desc": "An unmissable attraction famous around the world for its stunning presence and cultural significance.",
+      "images": [
+        "/static/images/places/market-square-krakow/img_00.png"
+      ]
+    },
+    {
+      "title": "Visitor Experience",
+      "desc": "Walk through the site at your own pace, snap photos from the best viewpoints, and soak in the atmosphere.",
+      "images": [
+        "/static/images/places/market-square-krakow/img_00.png"
+      ]
+    },
+    {
+      "title": "History & Meaning",
+      "desc": "Centuries of history and countless stories live within these walls - a cornerstone of the city's identity.",
+      "images": [
+        "/static/images/places/market-square-krakow/img_00.png"
+      ]
+    }
+  ]
+}

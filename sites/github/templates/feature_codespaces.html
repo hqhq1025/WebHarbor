@@ -1,0 +1,231 @@
+{% extends "base.html" %}
+{% block title %}GitHub Codespaces · Cloud development environments{% endblock %}
+{% block content %}
+
+<!-- Hero -->
+<section class="sec-hero">
+  <div class="sec-hero-inner">
+    <div class="sec-hero-text">
+      <span class="sec-eyebrow">
+        <svg aria-hidden="true" height="16" viewBox="0 0 16 16" width="16" fill="currentColor">
+          <path d="M0 1.75C0 .784.784 0 1.75 0h12.5C15.216 0 16 .784 16 1.75v12.5A1.75 1.75 0 0 1 14.25 16H1.75A1.75 1.75 0 0 1 0 14.25Z"/>
+        </svg>
+        GitHub Codespaces
+      </span>
+      <h1 class="sec-hero-headline">Code in the cloud. Open in seconds.</h1>
+      <p class="sec-hero-sub">Spin up a fully configured dev environment with one click. Codespaces gives every contributor the same setup — no more "works on my machine," no more 4-hour onboarding scripts.</p>
+      <div class="sec-hero-cta">
+        <a href="/register" class="gh-btn gh-btn-primary">Get started</a>
+        <a href="#languages" class="gh-btn gh-btn-secondary">See language support</a>
+      </div>
+      <ul class="sec-hero-bullets">
+        <li>VS Code in your browser, terminal, debugger, and all</li>
+        <li>2-, 4-, 8-, 16-, and 32-core machine types</li>
+        <li>120 free core-hours/month on Free plan</li>
+      </ul>
+    </div>
+    <div class="sec-hero-art" aria-hidden="true">
+      <div class="sec-hero-card">
+        <div class="sec-hero-card-row sec-row-fix">
+          <span class="sec-row-icon">⚡</span>
+          <span class="sec-row-msg"><strong>Codespace ready</strong> in 4.2 seconds — prebuild restored</span>
+        </div>
+        <div class="sec-hero-card-row sec-row-dep">
+          <span class="sec-row-icon">📦</span>
+          <span class="sec-row-msg"><strong>Dev container built</strong> — 142 npm packages, Node 20, Postgres 15</span>
+        </div>
+        <div class="sec-hero-card-row sec-row-secret">
+          <span class="sec-row-icon">🔐</span>
+          <span class="sec-row-msg"><strong>Secrets injected</strong> from org vault — no creds on disk</span>
+        </div>
+        <div class="sec-hero-card-row sec-row-bug">
+          <span class="sec-row-icon">🌐</span>
+          <span class="sec-row-msg"><strong>Port 3000 forwarded</strong> — open preview in browser</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Feature grid -->
+<section class="sec-features">
+  <div class="sec-section-inner">
+    <h2 class="sec-section-title">Everything your laptop does, in the cloud.</h2>
+    <p class="sec-section-lede">Codespaces is a real Linux machine you connect to from VS Code in the browser, the desktop VS Code app, or the JetBrains Gateway client. Whatever you can do locally, you can do here.</p>
+    <div class="sec-feature-grid">
+      <div class="sec-feature">
+        <div class="sec-feature-icon">⚡</div>
+        <h3>Instant dev environments</h3>
+        <p>Click "Open in Codespace" on any repo. Twenty seconds later you're at a terminal with the right Node/Python/Ruby version, your services running, and your tests passing.</p>
+        <a href="#languages" class="sec-feature-link">Supported runtimes →</a>
+      </div>
+      <div class="sec-feature">
+        <div class="sec-feature-icon">🔁</div>
+        <h3>Prebuilds</h3>
+        <p>Slow <code>npm install</code>? Slow Docker build? Run prebuilds on every push so your team's next codespace starts hot — typical cold start drops from 4 minutes to 3 seconds.</p>
+        <a href="/marketplace?category=ides" class="sec-feature-link">Configure prebuilds →</a>
+      </div>
+      <div class="sec-feature">
+        <div class="sec-feature-icon">🛡️</div>
+        <h3>Built-in security</h3>
+        <p>Codespaces never run on developer laptops, so source code stays on managed infra. Org-level policies pin the machine type, region, retention window, and allowed images.</p>
+        <a href="/resources/security" class="sec-feature-link">Codespaces security →</a>
+      </div>
+      <div class="sec-feature">
+        <div class="sec-feature-icon">🎨</div>
+        <h3>Customization that travels</h3>
+        <p>A <code>devcontainer.json</code> file in the repo defines the exact environment — base image, OS packages, VS Code extensions, post-create commands. New hires inherit it on their first click.</p>
+        <a href="/skills" class="sec-feature-link">Learn dev containers →</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Screenshot mockup -->
+<section class="sec-detail">
+  <div class="sec-section-inner">
+    <h2 class="sec-section-title">VS Code, but in your tab.</h2>
+    <p class="sec-section-lede">A real screenshot of a real codespace. Same Cmd+P, same integrated terminal, same 50,000 marketplace extensions.</p>
+    <div style="background:#0d1117; border:1px solid var(--color-border); border-radius:10px; overflow:hidden; box-shadow:0 8px 32px rgba(0,0,0,0.4);">
+      <!-- Title bar -->
+      <div style="background:#161b22; padding:8px 14px; display:flex; align-items:center; gap:8px; border-bottom:1px solid #30363d;">
+        <span style="width:10px; height:10px; border-radius:50%; background:#ff5f57;"></span>
+        <span style="width:10px; height:10px; border-radius:50%; background:#febc2e;"></span>
+        <span style="width:10px; height:10px; border-radius:50%; background:#28c840;"></span>
+        <span style="margin-left:14px; color:#8b949e; font-size:12px; font-family:ui-monospace,monospace;">codespace://octocat/hello-world &nbsp;·&nbsp; <span style="color:#3fb950;">●</span> connected · 4-core / 8GB</span>
+      </div>
+      <!-- Editor area -->
+      <div style="display:grid; grid-template-columns:200px 1fr; min-height:280px;">
+        <!-- File tree -->
+        <div style="background:#0d1117; padding:14px; border-right:1px solid #21262d; font-family:ui-monospace,monospace; font-size:12px; color:#8b949e;">
+          <div style="color:#c9d1d9; margin-bottom:8px; font-weight:600; font-size:11px; letter-spacing:0.05em; text-transform:uppercase;">Explorer</div>
+          <div style="color:#c9d1d9;">📁 hello-world</div>
+          <div style="padding-left:14px;">📁 src</div>
+          <div style="padding-left:28px; color:#79c0ff;">📄 index.ts</div>
+          <div style="padding-left:28px;">📄 server.ts</div>
+          <div style="padding-left:14px;">📄 .devcontainer.json</div>
+          <div style="padding-left:14px;">📄 package.json</div>
+          <div style="padding-left:14px;">📄 README.md</div>
+        </div>
+        <!-- Code area -->
+        <div style="padding:14px 18px; font-family:ui-monospace,monospace; font-size:13px; line-height:1.7;">
+          <div style="color:#8b949e;">  1</div>
+          <div style="display:flex; gap:14px;"><span style="color:#8b949e;">  2</span><span><span style="color:#ff7b72;">import</span> <span style="color:#c9d1d9;">{ </span><span style="color:#79c0ff;">createServer</span><span style="color:#c9d1d9;"> }</span> <span style="color:#ff7b72;">from</span> <span style="color:#a5d6ff;">'./server'</span><span style="color:#c9d1d9;">;</span></span></div>
+          <div style="display:flex; gap:14px;"><span style="color:#8b949e;">  3</span><span></span></div>
+          <div style="display:flex; gap:14px;"><span style="color:#8b949e;">  4</span><span><span style="color:#ff7b72;">const</span> <span style="color:#79c0ff;">app</span> <span style="color:#c9d1d9;">=</span> <span style="color:#79c0ff;">createServer</span><span style="color:#c9d1d9;">();</span></span></div>
+          <div style="display:flex; gap:14px;"><span style="color:#8b949e;">  5</span><span><span style="color:#79c0ff;">app</span><span style="color:#c9d1d9;">.</span><span style="color:#d2a8ff;">listen</span><span style="color:#c9d1d9;">(</span><span style="color:#79c0ff;">3000</span><span style="color:#c9d1d9;">, () =&gt; </span><span style="color:#a5d6ff;">'ready'</span><span style="color:#c9d1d9;">);</span></span></div>
+          <div style="margin-top:18px; background:#161b22; border-top:1px solid #30363d; margin-left:-18px; margin-right:-18px; padding:10px 18px; font-size:12px;">
+            <span style="color:#3fb950;">$</span> <span style="color:#c9d1d9;">npm run dev</span><br>
+            <span style="color:#8b949e;">  ▲ Server listening on http://localhost:3000 (forwarded)</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Languages grid -->
+<section class="sec-features" id="languages">
+  <div class="sec-section-inner">
+    <h2 class="sec-section-title">First-class support for every popular runtime</h2>
+    <p class="sec-section-lede">Each language ships with a curated devcontainer image — debuggers, formatters, test runners, and the right LSP, all preinstalled. Bring your own image if you need something specific.</p>
+    <div style="display:grid; grid-template-columns:repeat(6,1fr); gap:14px;">
+      <div style="text-align:center; padding:16px; background:var(--color-bg-secondary); border:1px solid var(--color-border); border-radius:8px;">
+        <div style="font-size:22px;">🟨</div><div style="font-size:13px; color:var(--color-fg); font-weight:600; margin-top:6px;">JavaScript</div>
+      </div>
+      <div style="text-align:center; padding:16px; background:var(--color-bg-secondary); border:1px solid var(--color-border); border-radius:8px;">
+        <div style="font-size:22px;">🔷</div><div style="font-size:13px; color:var(--color-fg); font-weight:600; margin-top:6px;">TypeScript</div>
+      </div>
+      <div style="text-align:center; padding:16px; background:var(--color-bg-secondary); border:1px solid var(--color-border); border-radius:8px;">
+        <div style="font-size:22px;">🐍</div><div style="font-size:13px; color:var(--color-fg); font-weight:600; margin-top:6px;">Python</div>
+      </div>
+      <div style="text-align:center; padding:16px; background:var(--color-bg-secondary); border:1px solid var(--color-border); border-radius:8px;">
+        <div style="font-size:22px;">☕</div><div style="font-size:13px; color:var(--color-fg); font-weight:600; margin-top:6px;">Java</div>
+      </div>
+      <div style="text-align:center; padding:16px; background:var(--color-bg-secondary); border:1px solid var(--color-border); border-radius:8px;">
+        <div style="font-size:22px;">🦫</div><div style="font-size:13px; color:var(--color-fg); font-weight:600; margin-top:6px;">Go</div>
+      </div>
+      <div style="text-align:center; padding:16px; background:var(--color-bg-secondary); border:1px solid var(--color-border); border-radius:8px;">
+        <div style="font-size:22px;">🦀</div><div style="font-size:13px; color:var(--color-fg); font-weight:600; margin-top:6px;">Rust</div>
+      </div>
+      <div style="text-align:center; padding:16px; background:var(--color-bg-secondary); border:1px solid var(--color-border); border-radius:8px;">
+        <div style="font-size:22px;">💎</div><div style="font-size:13px; color:var(--color-fg); font-weight:600; margin-top:6px;">Ruby</div>
+      </div>
+      <div style="text-align:center; padding:16px; background:var(--color-bg-secondary); border:1px solid var(--color-border); border-radius:8px;">
+        <div style="font-size:22px;">🐘</div><div style="font-size:13px; color:var(--color-fg); font-weight:600; margin-top:6px;">PHP</div>
+      </div>
+      <div style="text-align:center; padding:16px; background:var(--color-bg-secondary); border:1px solid var(--color-border); border-radius:8px;">
+        <div style="font-size:22px;">🟦</div><div style="font-size:13px; color:var(--color-fg); font-weight:600; margin-top:6px;">C# / .NET</div>
+      </div>
+      <div style="text-align:center; padding:16px; background:var(--color-bg-secondary); border:1px solid var(--color-border); border-radius:8px;">
+        <div style="font-size:22px;">📱</div><div style="font-size:13px; color:var(--color-fg); font-weight:600; margin-top:6px;">Kotlin</div>
+      </div>
+      <div style="text-align:center; padding:16px; background:var(--color-bg-secondary); border:1px solid var(--color-border); border-radius:8px;">
+        <div style="font-size:22px;">⚙️</div><div style="font-size:13px; color:var(--color-fg); font-weight:600; margin-top:6px;">C / C++</div>
+      </div>
+      <div style="text-align:center; padding:16px; background:var(--color-bg-secondary); border:1px solid var(--color-border); border-radius:8px;">
+        <div style="font-size:22px;">🐳</div><div style="font-size:13px; color:var(--color-fg); font-weight:600; margin-top:6px;">Custom Docker</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Plan comparison -->
+<section class="sec-plans">
+  <div class="sec-section-inner">
+    <h2 class="sec-section-title">Codespaces in every plan</h2>
+    <div class="sec-plan-table-wrap">
+      <table class="sec-plan-table">
+        <thead>
+          <tr>
+            <th></th>
+            <th>Free</th>
+            <th>Pro / Team</th>
+            <th class="sec-plan-highlight">Enterprise</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td>Free core-hours / month</td><td>120</td><td>180</td><td>Per-org pool</td></tr>
+          <tr><td>Free storage / month</td><td>15 GB</td><td>20 GB</td><td>Org-managed</td></tr>
+          <tr><td>Machine sizes</td><td>2-, 4-core</td><td>2-, 4-, 8-, 16-core</td><td>Up to 32-core</td></tr>
+          <tr><td>Custom devcontainer images</td><td>✓</td><td>✓</td><td>✓</td></tr>
+          <tr><td>Prebuilds</td><td>—</td><td>✓</td><td>✓</td></tr>
+          <tr><td>Org-level policies / restrictions</td><td>—</td><td>basic</td><td>Full</td></tr>
+          <tr><td>Region pinning &amp; data residency</td><td>—</td><td>—</td><td>✓</td></tr>
+          <tr><td>VPC peering / private networking</td><td>—</td><td>—</td><td>✓</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<!-- Customer story -->
+<section class="sec-stories">
+  <div class="sec-section-inner sec-narrow">
+    <h2 class="sec-section-title">A team that ships from the cloud</h2>
+    <article class="sec-story" style="display:flex; flex-direction:row; align-items:center; gap:24px;">
+      <div class="sec-story-logo sec-story-mercado" style="flex-shrink:0;">T.</div>
+      <div style="flex:1;">
+        <blockquote class="sec-story-quote">"Codespaces eliminated our 'works on my machine' tax. New hires open a real PR on day one — they used to spend a week just getting the Postgres extension to compile."</blockquote>
+        <div class="sec-story-attr">
+          <strong>Twilio</strong> · 1,400 engineers
+          <a href="/customer-stories/twilio" class="sec-story-link">Read case study →</a>
+        </div>
+      </div>
+    </article>
+  </div>
+</section>
+
+<!-- Final CTA -->
+<section class="sec-final-cta">
+  <div class="sec-section-inner sec-narrow sec-final-cta-inner">
+    <h2>From <code>git clone</code> to running app, in a single click.</h2>
+    <p>Try Codespaces on any of your repos — first 120 hours every month are on us.</p>
+    <div class="sec-hero-cta">
+      <a href="/register" class="gh-btn gh-btn-primary">Get started for free</a>
+      <a href="/pricing" class="gh-btn gh-btn-secondary">See pricing</a>
+    </div>
+  </div>
+</section>
+
+{% endblock %}

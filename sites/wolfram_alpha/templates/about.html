@@ -1,0 +1,88 @@
+{% extends "base.html" %}
+{% block title %}About Wolfram|Alpha{% endblock %}
+
+{% block content %}
+<section class="about-hero">
+  <div class="section-inner">
+    <h1 class="about-hero-title">About Wolfram<span class="alpha">|Alpha</span></h1>
+    <p class="about-hero-subtitle">Computational intelligence for everyone</p>
+  </div>
+</section>
+
+<div class="section-inner about-content">
+  <div class="about-grid">
+    <div class="about-text">
+      <h2>What is Wolfram|Alpha?</h2>
+      <p>Wolfram|Alpha is a unique engine for computing answers and providing knowledge. It works by using its vast store of expert-level knowledge and algorithms to automatically answer questions, do analysis and generate reports.</p>
+      <p>Wolfram|Alpha's long-term goal is to make all systematic knowledge immediately computable and accessible to everyone. Unlike a search engine, Wolfram|Alpha produces answers by doing computations on its own curated knowledge base.</p>
+
+      <h2>The Technology</h2>
+      <p>Wolfram|Alpha is built on three pillars: the Wolfram Language (formerly Mathematica), curated data about the real world, and algorithmic methods for computation and analysis. The system understands free-form text and can compute structured answers across thousands of domains.</p>
+
+      <h2>Who Uses Wolfram|Alpha?</h2>
+      <p>Wolfram|Alpha is used by millions of students, educators, professionals, and curious minds worldwide — from elementary school students learning arithmetic to research scientists computing advanced physics problems.</p>
+    </div>
+    <div class="about-sidebar">
+      <div class="about-stat-card">
+        <div class="about-stat-num">1T+</div>
+        <div class="about-stat-label">Computations performed</div>
+      </div>
+      <div class="about-stat-card">
+        <div class="about-stat-num">10,000+</div>
+        <div class="about-stat-label">Topics covered</div>
+      </div>
+      <div class="about-stat-card">
+        <div class="about-stat-num">2009</div>
+        <div class="about-stat-label">Year launched</div>
+      </div>
+      <div class="about-stat-card">
+        <div class="about-stat-num">100M+</div>
+        <div class="about-stat-label">Users worldwide</div>
+      </div>
+      <div class="about-wolfram-logo">
+        <img src="/static/images/about/wolf_logo_7ebbb5dc50.png" alt="Wolfram"
+             onerror="this.style.display='none'">
+      </div>
+    </div>
+  </div>
+
+  <div class="about-team">
+    <h2>Our Team</h2>
+    <div class="team-grid">
+      {% set team = [
+        ("Scott Wolfram", "Chief Product Officer", "pro/scott_head_shot_5e14e9d1a0.jpg"),
+        ("Thomas Wolfram", "Engineering Lead", "pro/thomas_head_shot_41785eb47e.jpg"),
+        ("Roy Wolfram", "Science & Research", "pro/roy_head_shot_43ab76fb60.jpg"),
+      ] %}
+      {% for name, role, img in team %}
+      <div class="team-card">
+        <div class="team-avatar">
+          <img src="/static/images/{{ img }}" alt="{{ name }}"
+               onerror="this.style.display='none'">
+        </div>
+        <h3 class="team-name">{{ name }}</h3>
+        <p class="team-role">{{ role }}</p>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <div class="about-links">
+    <h2>Learn More</h2>
+    <div class="about-links-grid">
+      <a href="/pro" class="about-link-card">
+        <h3>Wolfram|Alpha Pro</h3>
+        <p>Step-by-step solutions and advanced features</p>
+      </a>
+      <a href="/mobile-apps" class="about-link-card">
+        <h3>Mobile Apps</h3>
+        <p>Wolfram|Alpha on iOS and Android</p>
+      </a>
+      <a href="/products" class="about-link-card">
+        <h3>All Products</h3>
+        <p>The full Wolfram product ecosystem</p>
+      </a>
+    </div>
+  </div>
+</div>
+{% endblock %}

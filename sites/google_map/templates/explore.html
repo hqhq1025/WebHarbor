@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% from '_place_card.html' import place_card %}
+{% block title %}Explore - Google Maps{% endblock %}
+
+{% block body %}
+<div class="app-shell">
+    {% include '_rail.html' %}
+
+    <aside class="left-panel">
+        {% include '_search_bar.html' %}
+
+        <div class="panel-section">
+            <h2>Explore categories</h2>
+            <div class="sub">Browse by what you're looking for</div>
+        </div>
+        <div class="category-chips" style="padding: 8px 12px 16px;">
+            {% for cat in categories %}
+            <a href="{{ url_for('category_page', slug=cat.slug) }}" class="cat-chip">
+                <div class="chip-ico {{ cat.slug }}">
+                    <span class="material-icons-outlined">{{ cat.icon }}</span>
+                </div>
+                <span>{{ cat.name }}</span>
+            </a>
+            {% endfor %}
+        </div>
+
+        <div class="panel-section">
+            <h2>Popular destinations</h2>
+            <div class="sub">Cities travelers love</div>
+        </div>
+        <div style="padding: 0 12px 16px; display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+            {% for c in cities[:10] %}
+            <a href="{{ url_for('city_page', slug=c.slug) }}" style="background:#f8f9fa; border-radius:10px; padding:12px 14px; text-decoration:none; color:inherit; border:1px solid var(--divider);">
+                <div style="font-size:14px; font-weight:500; color:var(--text-primary);">{{ c.display_name }}</div>
+                <div style="font-size:11px; color:var(--text-tertiary); margin-top:2px;">{{ c.country }}</div>
+            </a>
+            {% endfor %}
+        </div>
+
+        <div class="panel-section">
+            <h2>Popular places</h2>
+            <div class="sub">Highly rated around the world</div>
+        </div>
+        {% for p in popular[:12] %}
+            {{ place_card(p) }}
+        {% endfor %}
+    </aside>
+
+    {% include '_mapcanvas.html' %}
+</div>
+{% endblock %}

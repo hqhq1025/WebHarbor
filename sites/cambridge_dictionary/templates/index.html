@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+{% block title %}Cambridge Dictionary | Online Dictionary & Thesaurus{% endblock %}
+{% block content %}
+<div class="hero-section">
+  <div class="container hero-inner">
+    <h1 class="hero-title">{{ ui.hero_title }}</h1>
+    <p class="hero-sub">{{ ui.hero_sub }}</p>
+  </div>
+</div>
+
+<div class="homepage-features container">
+  <div class="feature-cards">
+    <a href="{{ url_for('index') }}" class="feature-card feature-card--dict">
+      <div class="feature-icon">&#x1F4D6;</div>
+      <h3>Dictionary</h3>
+      <p>Look up definitions, pronunciations, and example sentences in British and American English.</p>
+    </a>
+    <a href="{{ url_for('thesaurus_search') }}" class="feature-card feature-card--thes">
+      <div class="feature-icon">&#x1F50D;</div>
+      <h3>Thesaurus</h3>
+      <p>Find synonyms and related words for more expressive writing.</p>
+    </a>
+    <a href="{{ url_for('translate') }}" class="feature-card feature-card--trans">
+      <div class="feature-icon">&#x1F310;</div>
+      <h3>Translate</h3>
+      <p>Translate words and phrases between English and over 100 languages.</p>
+    </a>
+    <a href="{{ url_for('grammar_index') }}" class="feature-card feature-card--gram">
+      <div class="feature-icon">&#x270F;&#xFE0F;</div>
+      <h3>Grammar</h3>
+      <p>Clear explanations of natural written and spoken English grammar.</p>
+    </a>
+  </div>
+</div>
+
+<section class="word-of-day-section">
+  <div class="container">
+    <h2 class="section-heading">{{ ui.word_of_day }}</h2>
+    {% if featured_words %}
+    {% set wotd = featured_words[0] %}
+    <div class="wotd-card">
+      <div class="wotd-header">
+        <a href="{{ url_for('word_detail', slug=wotd.slug) }}" class="wotd-headword">{{ wotd.headword }}</a>
+        <span class="wotd-pos">{{ wotd.pos }}</span>
+        {% if wotd.phonetic_uk %}
+          <span class="wotd-ipa">{{ wotd.phonetic_uk }}</span>
+        {% endif %}
+      </div>
+      {% set defs = wotd.get_definitions() %}
+      {% if defs %}
+        <p class="wotd-def">{{ defs[0].definition }}</p>
+        {% if defs[0].examples %}
+          <p class="wotd-ex">"{{ defs[0].examples[0] }}"</p>
+        {% endif %}
+      {% endif %}
+      <a href="{{ url_for('word_detail', slug=wotd.slug) }}" class="btn-primary">{{ ui.read_more }}</a>
+    </div>
+    {% endif %}
+  </div>
+</section>
+
+<section class="recent-words-section">
+  <div class="container">
+    <h2 class="section-heading">{{ ui.recent_words }}</h2>
+    <div class="word-grid">
+      {% for word in featured_words %}
+      <a href="{{ url_for('word_detail', slug=word.slug) }}" class="word-chip">
+        {{ word.headword }}
+        <span class="chip-pos">{{ word.pos }}</span>
+      </a>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+
+<section class="plus-promo-section">
+  <div class="container plus-promo-inner">
+    <div class="plus-promo-text">
+      <h2>{{ ui.plus_title }}</h2>
+      <p>{% if current_lang == 'Deutsch' %}Zugang zu exklusiven Quizzen, Wortspielen und Vokabel-Tools. Verbessern Sie Ihr Englisch mit interaktiven Aktivitäten.{% else %}Access exclusive quizzes, word games, and vocabulary tools. Improve your English with interactive activities.{% endif %}</p>
+      <a href="{{ url_for('plus_index') }}" class="btn-primary">{{ ui.try_plus }}</a>
+    </div>
+    <div class="plus-promo-features">
+      <div class="plus-feature">&#x2705; Image quizzes</div>
+      <div class="plus-feature">&#x2705; Grammar quizzes</div>
+      <div class="plus-feature">&#x2705; Word scramble games</div>
+      <div class="plus-feature">&#x2705; Save your words</div>
+    </div>
+  </div>
+</section>
+{% endblock %}

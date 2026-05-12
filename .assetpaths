@@ -1,0 +1,9 @@
+# Glob patterns for the per-site subpaths bundled into each
+# <site>.tar.gz on the Hugging Face dataset.
+#
+# fetch_assets.sh:  downloads <site>.tar.gz and extracts back to these paths.
+# extract_assets.sh: packs these paths back into <site>.tar.gz for upload.
+# Keep in sync with .gitignore (the same patterns must be ignored).
+sites/*/instance_seed/
+sites/*/static/images/
+sites/*/static/external_cache/

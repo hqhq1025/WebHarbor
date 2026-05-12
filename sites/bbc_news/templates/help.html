@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% block title %}Help - BBC News{% endblock %}
+
+{% block content %}
+<div class="static-page">
+    <h1>Help & FAQs</h1>
+    <p>Common questions about using this BBC News mirror.</p>
+
+    <h2>Creating an account</h2>
+    <p>
+        Use the <a href="{{ url_for('register') }}">Register</a> link in the top-right to create an account.
+        You need an email, username, and password. A demo account is also available if you just want to look
+        around: <code>demo@bbcnews.local</code> / <code>demodemo</code>.
+    </p>
+
+    <h2>Reading list vs. bookmarks</h2>
+    <ul>
+        <li>
+            <strong>Reading list</strong> — saving stories to read later, with optional folders and notes.
+            Designed for longer-term organisation and exporting as digests.
+        </li>
+        <li>
+            <strong>Bookmarks</strong> — one-click save from any story page for quick access.
+            Great for stories you want to come back to soon.
+        </li>
+    </ul>
+
+    <h2>What's a digest?</h2>
+    <p>
+        A digest bundles a set of articles (from your reading list, bookmarks, or the latest news)
+        into an exportable file — email newsletter, RSS, or plain text. Digests are useful for
+        archiving, sharing, or sending stories to yourself for later reading.
+    </p>
+
+    <h2>Topic alerts</h2>
+    <p>
+        Subscribe to any BBC News section (World, UK, Tech, etc.) to receive updates when new stories
+        publish. Choose daily, weekly, or breaking-only frequency.
+    </p>
+
+    <h2>Can I comment?</h2>
+    <p>
+        Yes — signed-in users can post comments on any article. You can edit or delete your own
+        comments from the article page.
+    </p>
+
+    <h2>Still need help?</h2>
+    <p>
+        See the <a href="{{ url_for('contact_page') }}">Contact</a> page to get in touch.
+    </p>
+</div>
+{% endblock %}

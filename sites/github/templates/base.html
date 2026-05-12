@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en" data-color-mode="dark" data-dark-theme="dark" data-light-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}GitHub: Let's build from here{% endblock %}</title>
+  <meta name="description" content="GitHub is where over 100 million developers shape the future of software, together.">
+  <link rel="icon" href="/static/images/homepage/logo-duolingo-14477f9e54a6_ac9c3841.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/static/css/main.css">
+  <meta name="csrf-token" content="{{ csrf_token() }}">
+</head>
+<body>
+<!-- Header / Global Nav -->
+<header class="gh-header" id="gh-header">
+  <div class="gh-header-inner">
+    <div class="gh-header-left">
+      <a href="/" class="gh-logo" aria-label="GitHub">
+        <svg height="32" aria-hidden="true" viewBox="0 0 16 16" fill="currentColor" width="32">
+          <path d="M8 0c4.42 0 8 3.58 8 8a8.013 8.013 0 0 1-5.45 7.59c-.4.08-.55-.17-.55-.38 0-.27.01-1.13.01-2.2 0-.75-.25-1.23-.54-1.48 1.78-.2 3.65-.88 3.65-3.95 0-.88-.31-1.59-.82-2.15.08-.2.36-1.02-.08-2.12 0 0-.67-.22-2.2.82-.64-.18-1.32-.27-2-.27-.68 0-1.36.09-2 .27-1.53-1.03-2.2-.82-2.2-.82-.44 1.1-.16 1.92-.08 2.12-.51.56-.82 1.28-.82 2.15 0 3.06 1.86 3.75 3.64 3.95-.23.2-.44.55-.51 1.07-.46.21-1.61.55-2.33-.66-.15-.24-.6-.83-1.23-.82-.67.01-.27.38.01.53.34.19.73.9.82 1.13.16.45.68 1.31 2.69.94 0 .67.01 1.3.01 1.49 0 .21-.15.45-.55.38A7.995 7.995 0 0 1 0 8c0-4.42 3.58-8 8-8Z"/>
+        </svg>
+      </a>
+
+      <nav class="gh-nav" role="navigation">
+        {% if current_user.is_authenticated %}
+        <a href="/{{ current_user.username }}" class="gh-nav-link">Dashboard</a>
+        {% endif %}
+        <div class="gh-nav-dropdown">
+          <button class="gh-nav-link gh-nav-dropdown-btn">Product <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M4.427 7.427l3.396 3.396a.25.25 0 00.354 0l3.396-3.396A.25.25 0 0011.396 7H4.604a.25.25 0 00-.177.427z"/></svg></button>
+          <div class="gh-nav-dropdown-menu">
+            <a href="/features/copilot" class="gh-nav-dropdown-item">GitHub Copilot</a>
+            <a href="/features/copilot/faq" class="gh-nav-dropdown-item">Copilot FAQ</a>
+            <a href="/features/actions" class="gh-nav-dropdown-item">GitHub Actions</a>
+            <a href="/features/codespaces" class="gh-nav-dropdown-item">GitHub Codespaces</a>
+            <a href="/resources/security" class="gh-nav-dropdown-item">Security</a>
+          </div>
+        </div>
+        <div class="gh-nav-dropdown">
+          <button class="gh-nav-link gh-nav-dropdown-btn">Open Source <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M4.427 7.427l3.396 3.396a.25.25 0 00.354 0l3.396-3.396A.25.25 0 0011.396 7H4.604a.25.25 0 00-.177.427z"/></svg></button>
+          <div class="gh-nav-dropdown-menu">
+            <a href="/explore" class="gh-nav-dropdown-item">Explore</a>
+            <a href="/topics" class="gh-nav-dropdown-item">Topics</a>
+            <a href="/trending" class="gh-nav-dropdown-item">Trending</a>
+          </div>
+        </div>
+        <div class="gh-nav-dropdown">
+          <button class="gh-nav-link gh-nav-dropdown-btn">Resources <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M4.427 7.427l3.396 3.396a.25.25 0 00.354 0l3.396-3.396A.25.25 0 0011.396 7H4.604a.25.25 0 00-.177.427z"/></svg></button>
+          <div class="gh-nav-dropdown-menu">
+            <a href="/skills" class="gh-nav-dropdown-item">GitHub Skills</a>
+            <a href="/customer-stories" class="gh-nav-dropdown-item">Customer Stories</a>
+            <a href="/resources" class="gh-nav-dropdown-item">All Resources</a>
+            <a href="/resources/security" class="gh-nav-dropdown-item">Security Resources</a>
+          </div>
+        </div>
+        <a href="/marketplace" class="gh-nav-link">Marketplace</a>
+        <a href="/pricing" class="gh-nav-link">Pricing</a>
+      </nav>
+    </div>
+
+    <div class="gh-header-right">
+      <!-- Search -->
+      <form class="gh-search-form" action="/search" method="get">
+        <div class="gh-search-wrap" id="gh-search-wrap">
+          <svg class="gh-search-icon" aria-hidden="true" height="16" viewBox="0 0 16 16" version="1.1" width="16" fill="currentColor">
+            <path d="M10.68 11.74a6 6 0 0 1-7.922-8.982 6 6 0 0 1 8.982 7.922l3.04 3.04a.749.749 0 0 1-.326 1.275.749.749 0 0 1-.734-.215ZM11.5 7a4.499 4.499 0 1 0-8.997 0A4.499 4.499 0 0 0 11.5 7Z"/>
+          </svg>
+          <input class="gh-search-input" type="text" name="q" placeholder="Search or jump to..." value="{{ request.args.get('q', '') }}" autocomplete="off"
+                 onfocus="document.getElementById('gh-search-syntax-popup').classList.add('open')"
+                 onblur="setTimeout(function(){document.getElementById('gh-search-syntax-popup').classList.remove('open')}, 180)">
+
+          <!-- Search syntax tips dropdown — mirrors github.com search-help popover -->
+          <div id="gh-search-syntax-popup" class="gh-search-syntax-popup" role="listbox">
+            <div class="gh-search-syntax-popup-header">Use search qualifiers to narrow results</div>
+            <ul class="gh-search-syntax-list">
+              <li><code>language:python</code> <span class="gh-search-syntax-desc">filter by programming language</span></li>
+              <li><code>stars:&gt;=100</code> <span class="gh-search-syntax-desc">repos with at least 100 stars</span></li>
+              <li><code>forks:&gt;1000</code> <span class="gh-search-syntax-desc">repos with more than 1000 forks</span></li>
+              <li><code>created:&gt;2024-01-01</code> <span class="gh-search-syntax-desc">created after a date</span></li>
+              <li><code>pushed:&gt;2024-05-01</code> <span class="gh-search-syntax-desc">recently pushed</span></li>
+              <li><code>topic:machine-learning</code> <span class="gh-search-syntax-desc">filter by topic</span></li>
+              <li><code>license:mit</code> <span class="gh-search-syntax-desc">filter by license</span></li>
+              <li><code>archived:false</code> <span class="gh-search-syntax-desc">exclude archived repos</span></li>
+            </ul>
+            <a href="/search-syntax" class="gh-search-syntax-more">View advanced search syntax →</a>
+          </div>
+        </div>
+      </form>
+
+      {% if current_user.is_authenticated %}
+        <a href="/notifications" class="gh-header-btn" aria-label="Notifications">
+          <svg aria-hidden="true" height="16" viewBox="0 0 16 16" width="16" fill="currentColor">
+            <path d="M8 16a2 2 0 0 0 1.985-1.75c.017-.137-.097-.25-.235-.25h-3.5c-.138 0-.252.113-.235.25A2 2 0 0 0 8 16ZM3 5a5 5 0 0 1 10 0v2.947c0 .05.015.098.042.139l1.703 2.555A1.519 1.519 0 0 1 13.482 13H2.518a1.516 1.516 0 0 1-1.263-2.36l1.703-2.554A.255.255 0 0 0 3 7.947Zm5-3.5A3.5 3.5 0 0 0 4.5 5v2.947c0 .346-.102.683-.294.97l-1.703 2.556a.017.017 0 0 0-.003.01l.001.006c0 .002.002.004.004.006l.006.004.007.001h10.964l.007-.001.006-.004.004-.006.001-.007a.017.017 0 0 0-.003-.01l-1.703-2.554a1.745 1.745 0 0 1-.294-.97V5A3.5 3.5 0 0 0 8 1.5Z"/>
+          </svg>
+        </a>
+        <a href="/new" class="gh-header-btn" aria-label="Create new">
+          <svg aria-hidden="true" height="16" viewBox="0 0 16 16" width="16" fill="currentColor">
+            <path d="M7.75 2a.75.75 0 0 1 .75.75V7h4.25a.75.75 0 0 1 0 1.5H8.5v4.25a.75.75 0 0 1-1.5 0V8.5H2.75a.75.75 0 0 1 0-1.5H7V2.75A.75.75 0 0 1 7.75 2Z"/>
+          </svg>
+        </a>
+        <div class="gh-nav-dropdown gh-avatar-dropdown">
+          <button class="gh-avatar-btn" aria-label="Open user menu">
+            <img src="{{ current_user.avatar_url }}" alt="{{ current_user.username }}" class="gh-avatar-img" width="20" height="20"
+                 onerror="this.src='/static/images/avatars/avatar_00.jpg'">
+          </button>
+          <div class="gh-nav-dropdown-menu gh-avatar-menu">
+            <div class="gh-dropdown-header">Signed in as <strong>{{ current_user.username }}</strong></div>
+            <div class="gh-dropdown-divider"></div>
+            <a href="/{{ current_user.username }}" class="gh-nav-dropdown-item">Your profile</a>
+            <a href="/{{ current_user.username }}?tab=repositories" class="gh-nav-dropdown-item">Your repositories</a>
+            <a href="/stars" class="gh-nav-dropdown-item">Your stars</a>
+            <a href="/watching" class="gh-nav-dropdown-item">Watching</a>
+            <a href="/account" class="gh-nav-dropdown-item">Dashboard</a>
+            <div class="gh-dropdown-divider"></div>
+            <a href="/settings/profile" class="gh-nav-dropdown-item">Settings</a>
+            <div class="gh-dropdown-divider"></div>
+            <a href="/logout" class="gh-nav-dropdown-item">Sign out</a>
+          </div>
+        </div>
+      {% else %}
+        <a href="/login" class="gh-header-link">Sign in</a>
+        <a href="/register" class="gh-btn gh-btn-primary gh-btn-sm">Sign up</a>
+      {% endif %}
+    </div>
+  </div>
+</header>
+
+<!-- Site Date Banner — for evaluation agents -->
+<div class="mirror-date-banner" role="note" aria-label="Today's date at this site">
+  <span class="mirror-date-icon" aria-hidden="true">&#128197;</span>
+  <span class="mirror-date-text">
+    <strong>Today's date at this site:</strong>
+    {{ mirror_now.strftime('%A, %B %-d, %Y') }}
+    <span class="mirror-date-iso">({{ mirror_now.strftime('%Y-%m-%d') }})</span>.
+    All "recent" / "last N days" filters are relative to this date.
+  </span>
+</div>
+
+<!-- Flash Messages -->
+{% with messages = get_flashed_messages(with_categories=true) %}
+  {% if messages %}
+  <div class="flash-container">
+    {% for category, message in messages %}
+    <div class="flash flash-{{ category }}">
+      {{ message }}
+      <button class="flash-close" onclick="this.parentElement.remove()">&times;</button>
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+{% endwith %}
+
+<!-- Main Content -->
+<main class="gh-main" role="main">
+  {% block content %}{% endblock %}
+</main>
+
+<!-- Footer -->
+<footer class="gh-footer">
+  <div class="gh-footer-inner">
+    <div class="gh-footer-left">
+      <a href="/" class="gh-footer-logo" aria-label="GitHub">
+        <svg height="24" aria-hidden="true" viewBox="0 0 16 16" fill="currentColor" width="24">
+          <path d="M8 0c4.42 0 8 3.58 8 8a8.013 8.013 0 0 1-5.45 7.59c-.4.08-.55-.17-.55-.38 0-.27.01-1.13.01-2.2 0-.75-.25-1.23-.54-1.48 1.78-.2 3.65-.88 3.65-3.95 0-.88-.31-1.59-.82-2.15.08-.2.36-1.02-.08-2.12 0 0-.67-.22-2.2.82-.64-.18-1.32-.27-2-.27-.68 0-1.36.09-2 .27-1.53-1.03-2.2-.82-2.2-.82-.44 1.1-.16 1.92-.08 2.12-.51.56-.82 1.28-.82 2.15 0 3.06 1.86 3.75 3.64 3.95-.23.2-.44.55-.51 1.07-.46.21-1.61.55-2.33-.66-.15-.24-.6-.83-1.23-.82-.67.01-.27.38.01.53.34.19.73.9.82 1.13.16.45.68 1.31 2.69.94 0 .67.01 1.3.01 1.49 0 .21-.15.45-.55.38A7.995 7.995 0 0 1 0 8c0-4.42 3.58-8 8-8Z"/>
+        </svg>
+      </a>
+      <span class="gh-footer-copy">© 2025 GitHub Mirror, Inc.</span>
+    </div>
+    <nav class="gh-footer-nav">
+      <a href="/about" class="gh-footer-link">About</a>
+      <a href="/pricing" class="gh-footer-link">Pricing</a>
+      <a href="/marketplace" class="gh-footer-link">Marketplace</a>
+      <a href="/explore" class="gh-footer-link">Explore</a>
+      <a href="/trending" class="gh-footer-link">Trending</a>
+      <a href="/topics" class="gh-footer-link">Topics</a>
+      <a href="/skills" class="gh-footer-link">Skills</a>
+      <a href="/customer-stories" class="gh-footer-link">Customer stories</a>
+      <a href="/resources" class="gh-footer-link">Resources</a>
+      <a href="/resources/security" class="gh-footer-link">Security</a>
+      <a href="/features/copilot/faq" class="gh-footer-link">Copilot FAQ</a>
+    </nav>
+  </div>
+</footer>
+
+<script src="/static/js/main.js"></script>
+</body>
+</html>

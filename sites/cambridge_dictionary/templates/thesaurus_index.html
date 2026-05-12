@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% block title %}Cambridge English Thesaurus{% endblock %}
+{% block content %}
+<div class="thesaurus-index container">
+  <h1 class="page-title">Cambridge Thesaurus</h1>
+  <p class="page-desc">Find synonyms and related words for any English word or phrase.</p>
+
+  <form action="{{ url_for('thesaurus_search') }}" method="GET" class="thes-search-form">
+    <div class="search-input-wrap big">
+      <input type="text" name="q" placeholder="Search for a word or phrase…"
+             value="{{ q }}" class="search-input big">
+      <button type="submit" class="search-btn">Search</button>
+    </div>
+  </form>
+
+  {% if results %}
+    <div class="results-list">
+      {% for entry in results %}
+        <div class="result-card">
+          <a href="{{ url_for('thesaurus_entry', phrase=entry.slug) }}" class="result-headword">{{ entry.headword }}</a>
+          {% set syns = entry.get_synonyms() %}
+          {% if syns %}
+            <div class="synonym-preview">
+              {% for s in syns[:5] %}
+                <span class="synonym-tag small">{{ s }}</span>
+              {% endfor %}
+            </div>
+          {% endif %}
+        </div>
+      {% endfor %}
+    </div>
+  {% elif q %}
+    <p class="no-results">No thesaurus entries found for <strong>{{ q }}</strong>.</p>
+  {% endif %}
+
+  <div class="thes-popular">
+    <h3>Popular thesaurus entries</h3>
+    <div class="suggest-tags">
+      {% for phrase in ['to behave well', 'feel giddy', 'euphoria'] %}
+        <a href="{{ url_for('thesaurus_search', q=phrase) }}" class="suggest-tag">{{ phrase }}</a>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% block title %}Translate | Cambridge Dictionary{% endblock %}
+{% block content %}
+<div class="translate-page container">
+  <h1 class="page-title">Translate</h1>
+  <p class="page-desc">Translate words and phrases into many languages. Translation provided by <strong>Microsoft</strong>.</p>
+
+  <div class="translate-widget">
+    <form action="{{ url_for('translate') }}" method="GET" class="translate-form">
+      <div class="translate-row">
+        <div class="translate-col">
+          <label class="trans-label">From</label>
+          <select name="src" class="trans-select">
+            <option value="english" {% if src == 'english' %}selected{% endif %}>English</option>
+          </select>
+          <textarea name="q" class="trans-textarea" placeholder="Enter a word or phrase">{{ q }}</textarea>
+        </div>
+        <div class="translate-arrow">&#x21C4;</div>
+        <div class="translate-col">
+          <label class="trans-label">To</label>
+          <select name="dst" class="trans-select">
+            <option value="chinese-simplified" {% if dst == 'chinese-simplified' %}selected{% endif %}>Chinese (Simplified)</option>
+            <option value="french" {% if dst == 'french' %}selected{% endif %}>French</option>
+            <option value="spanish" {% if dst == 'spanish' %}selected{% endif %}>Spanish</option>
+            <option value="german" {% if dst == 'german' %}selected{% endif %}>German</option>
+            <option value="japanese" {% if dst == 'japanese' %}selected{% endif %}>Japanese</option>
+            <option value="portuguese" {% if dst == 'portuguese' %}selected{% endif %}>Portuguese</option>
+            <option value="italian" {% if dst == 'italian' %}selected{% endif %}>Italian</option>
+          </select>
+          <div class="trans-result-box">
+            {% if result %}
+              <p class="trans-result-text">{{ result.text }}</p>
+            {% elif q %}
+              <p class="trans-no-result">No translation found for "{{ q }}".</p>
+            {% else %}
+              <p class="trans-placeholder">Translation will appear here.</p>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+      <button type="submit" class="btn-primary trans-submit">Translate</button>
+    </form>
+    <p class="trans-credit-note">Translation powered by <strong>Microsoft</strong> Translator.</p>
+  </div>
+
+  <div class="translate-info">
+    <h3>About Cambridge Dictionary translations</h3>
+    <p>The Cambridge Dictionary offers translations in many languages, powered by Microsoft Translator technology. For dictionary definitions, please use the <a href="{{ url_for('index') }}">Cambridge Dictionary</a>.</p>
+  </div>
+</div>
+{% endblock %}

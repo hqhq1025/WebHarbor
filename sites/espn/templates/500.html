@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block title %}Server Error - ESPN{% endblock %}
+
+{% block content %}
+<div class="container">
+  <div class="error-page">
+    <div class="error-code" style="color: #d00; font-size: 96px; font-weight:900;">500</div>
+    <h1>Something Went Wrong</h1>
+    <p>We're experiencing a technical issue. Please try again in a moment.</p>
+    <div class="error-actions">
+      <a href="/" class="btn-red">Go to ESPN Home</a>
+      <a href="javascript:location.reload()" class="btn-outline">Try Again</a>
+    </div>
+  </div>
+</div>
+{% endblock %}

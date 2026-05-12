@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+{% block title %}Add Payment Method | Google Flights{% endblock %}
+
+{% block content %}
+<div style="max-width:540px;margin:40px auto;padding:0 16px;">
+  <h1 style="font-family:var(--font-sans);font-size:28px;font-weight:400;margin-bottom:24px;">Add payment method</h1>
+
+  <form method="POST" action="{{ url_for('payment_method_add') }}" style="background:#fff;border:1px solid var(--g-grey-200);border-radius:8px;padding:24px;">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token_value }}">
+
+    <div class="form-field">
+      <label for="card_type">Card type</label>
+      <select name="card_type" id="card_type" style="width:100%;padding:10px 12px;border:1px solid var(--g-grey-300);border-radius:4px;font-size:14px;">
+        <option value="Visa">Visa</option>
+        <option value="Mastercard">Mastercard</option>
+        <option value="Amex">American Express</option>
+        <option value="Discover">Discover</option>
+      </select>
+    </div>
+
+    <div class="form-field">
+      <label for="cardholder_name">Name on card</label>
+      <input type="text" name="cardholder_name" id="cardholder_name" value="{{ current_user.full_name }}" required style="width:100%;box-sizing:border-box;">
+    </div>
+
+    <div class="form-field">
+      <label for="card_number">Card number</label>
+      <input type="text" name="card_number" id="card_number" placeholder="4242 4242 4242 4242" required style="width:100%;box-sizing:border-box;">
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;">
+      <div class="form-field">
+        <label for="exp_month">Exp month</label>
+        <select name="exp_month" id="exp_month" style="width:100%;padding:10px 8px;border:1px solid var(--g-grey-300);border-radius:4px;font-size:14px;">
+          {% for m in range(1,13) %}
+            <option value="{{ m }}">{{ '%02d'|format(m) }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="form-field">
+        <label for="exp_year">Exp year</label>
+        <select name="exp_year" id="exp_year" style="width:100%;padding:10px 8px;border:1px solid var(--g-grey-300);border-radius:4px;font-size:14px;">
+          {% for y in range(2026, 2034) %}
+            <option value="{{ y }}">{{ y }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="form-field">
+        <label for="cvc">CVC</label>
+        <input type="text" name="cvc" id="cvc" placeholder="123" maxlength="4" style="width:100%;box-sizing:border-box;">
+      </div>
+    </div>
+
+    <div class="form-field" style="display:flex;align-items:center;gap:8px;">
+      <input type="checkbox" name="is_default" id="is_default" value="1">
+      <label for="is_default" style="margin:0;font-size:14px;">Set as default payment method</label>
+    </div>
+
+    <div style="display:flex;gap:12px;margin-top:8px;">
+      <button type="submit" class="btn btn-primary">Save card</button>
+      <a href="{{ url_for('payment_methods') }}" class="btn btn-outline">Cancel</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

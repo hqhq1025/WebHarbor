@@ -1,0 +1,98 @@
+{% extends "base.html" %}
+{% block title %}Advanced Search — arXiv{% endblock %}
+{% block content %}
+
+<h1>Advanced Search</h1>
+<p class="muted">Search arXiv with multiple fields and filters.</p>
+
+<form method="post" action="{{ url_for('advanced_search') }}" class="dash-card">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+    <div class="form-row">
+        <label>Search terms</label>
+        <input type="text" name="terms" placeholder='e.g. "neural network" or Smith, J.' required>
+        <p class="form-hint">Enclose phrases in quotes. Separate multiple authors with a semicolon.</p>
+    </div>
+
+    <div class="form-row">
+        <label>Field</label>
+        <select name="field">
+            <option value="all">All fields</option>
+            <option value="title">Title</option>
+            <option value="author">Author(s)</option>
+            <option value="abstract">Abstract</option>
+            <option value="comments">Comments</option>
+            <option value="journal_ref">Journal ref</option>
+            <option value="id">arXiv identifier</option>
+            <option value="doi">DOI</option>
+        </select>
+    </div>
+
+    <div class="form-row">
+        <label>Subject area</label>
+        <select name="subject">
+            <option value="">Any subject</option>
+            <optgroup label="Main archives">
+            {% for c in main_categories %}
+                <option value="{{ c.code }}">{{ c.name }} ({{ c.code }})</option>
+            {% endfor %}
+            </optgroup>
+            {% if subcategories %}
+            <optgroup label="Subcategories">
+            {% for s in subcategories %}
+                <option value="{{ s.code }}">{{ s.code }} — {{ s.name }}</option>
+            {% endfor %}
+            </optgroup>
+            {% endif %}
+        </select>
+    </div>
+
+    <div class="form-row">
+        <label>Date range (announcement)</label>
+        <select name="date_range">
+            <option value="">Any time</option>
+            <option value="past_2_days">Past 2 days</option>
+            <option value="past_week">Past week</option>
+            <option value="past_month">Past month</option>
+            <option value="past_year">Past year</option>
+        </select>
+    </div>
+
+    <div class="form-row">
+        <label>Custom date range (optional)</label>
+        <div style="display:flex; gap:8px; align-items:center;">
+            <input type="date" name="start_date" placeholder="Start date">
+            <span>to</span>
+            <input type="date" name="end_date" placeholder="End date">
+        </div>
+        <p class="form-hint">If set, overrides the Date range dropdown above.</p>
+    </div>
+
+    <div class="form-row">
+        <label>Sort results by</label>
+        <select name="sort">
+            <option value="relevance">Relevance</option>
+            <option value="date">Announcement date (newest first)</option>
+            <option value="date_asc">Announcement date (oldest first)</option>
+            <option value="views">View count</option>
+        </select>
+    </div>
+
+    <div class="form-actions">
+        <button type="submit" class="btn btn-primary">Search</button>
+        <a href="{{ url_for('search') }}" class="btn">Basic Search</a>
+    </div>
+</form>
+
+<div class="dash-card">
+    <h2>Tips</h2>
+    <ul>
+        <li>Wildcards: use <code>?</code> for single character or <code>*</code> for multiple characters.</li>
+        <li>TeX expressions can be searched within <code>$...$</code> delimiters.</li>
+        <li>Enclose phrases in double quotes for exact matches in title, abstract, and comments.</li>
+        <li>Specific journal references can be matched with or without wildcards.</li>
+        <li>Combine multiple author names with semicolons.</li>
+    </ul>
+</div>
+
+{% endblock %}

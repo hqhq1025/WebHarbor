@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% from '_place_card.html' import place_card %}
+{% block title %}{{ city.display_name }} - Google Maps{% endblock %}
+
+{% block body %}
+<div class="app-shell">
+    {% include '_rail.html' %}
+
+    <aside class="left-panel">
+        {% set search_value = city.display_name %}
+        {% include '_search_bar.html' %}
+
+        <div class="pd-hero">
+            <img src="{{ city.hero_image }}" alt="{{ city.display_name }}"
+                 onerror="this.style.display='none'; this.parentElement.style.background='linear-gradient(135deg, #e8f0fe, #fde7f3)';">
+        </div>
+        <div class="pd-header">
+            <h1>{{ city.display_name }}</h1>
+            <div class="pd-meta">
+                <span class="category">{{ city.country }}</span>
+                <span>•</span>
+                <span>{{ (places_by_cat.values() | map('length') | sum) }} places to explore</span>
+            </div>
+            <div class="pd-sub" style="margin-top:8px;">{{ city.description }}</div>
+        </div>
+
+        {% if top_rated %}
+        <div class="panel-section">
+            <h2>Top rated in {{ city.display_name }}</h2>
+            <div class="sub">The best this city has to offer</div>
+        </div>
+        {% for p in top_rated[:8] %}
+            {{ place_card(p) }}
+        {% endfor %}
+        {% endif %}
+
+        {% for cat, places in places_by_cat.items() %}
+            <div class="panel-section">
+                <h2>{{ cat.name }}</h2>
+                <div class="sub">{{ places|length }} to explore</div>
+            </div>
+            {% for p in places[:4] %}
+                {{ place_card(p) }}
+            {% endfor %}
+            <div style="text-align:center; padding:12px 0 20px;">
+                <a href="{{ url_for('category_page', slug=cat.slug, city=city.slug) }}" class="btn outlined btn-sm">See all {{ cat.name }}</a>
+            </div>
+        {% endfor %}
+    </aside>
+
+    {% include '_mapcanvas.html' %}
+</div>
+{% endblock %}

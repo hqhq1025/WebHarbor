@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% block title %}Explore destinations from {{ origin }} | Google Flights{% endblock %}
+
+{% block content %}
+<div class="explore-layout">
+  <aside class="explore-sidebar">
+    <h1 style="font-family:var(--font-sans);font-size:24px;font-weight:400;margin-bottom:8px;">Explore destinations</h1>
+    <p style="color:var(--g-grey-700);margin-bottom:16px;font-size:14px;">
+      Flying from <strong>{% if origin_airport %}{{ origin_airport.city }} ({{ origin_airport.iata }}){% else %}{{ origin }}{% endif %}</strong>
+    </p>
+
+    <form action="{{ url_for('explore') }}" method="GET" style="margin-bottom:24px;">
+      <input type="text" name="origin" value="{{ origin }}" list="explore-origin-list" class="search-field" style="border-radius:100px;padding:12px 16px;width:100%;" placeholder="Origin IATA (e.g. SEA)">
+      <datalist id="explore-origin-list">
+        {% for city, iatas in multi_city_groups %}<option value="{{ city }}">{{ city }} (all airports — {{ iatas|join(', ') }})</option>{% endfor %}
+        {% for a in all_airports %}<option value="{{ a.iata }}">{{ a.city }} ({{ a.iata }})</option>{% endfor %}
+      </datalist>
+    </form>
+
+    {% if destinations %}
+      {% for d in destinations %}
+        {% set f = flights_by_dest.get(d.iata) %}
+        <a href="{{ url_for('destination', slug=d.city_slug) }}" class="explore-dest-card">
+          {% if d.image %}
+            <img src="{{ d.image }}" class="explore-dest-thumb" alt="{{ d.city }}" onerror="this.style.display='none'">
+          {% else %}
+            <div class="explore-dest-thumb" style="background:linear-gradient(135deg,var(--g-blue),var(--g-green));"></div>
+          {% endif %}
+          <div class="explore-dest-info">
+            <h4>{{ d.city }} ({{ d.iata }})</h4>
+            <div class="country">{{ d.country }}</div>
+            {% if f %}<div class="price">from {{ f.price|money }} &middot; {{ f.stops_str }}</div>{% endif %}
+          </div>
+        </a>
+      {% endfor %}
+    {% else %}
+      <p style="color:var(--g-grey-700);font-size:14px;">No destinations found from {{ origin }}. Try a different origin (e.g. JFK, SEA, LAX).</p>
+    {% endif %}
+  </aside>
+  <div class="explore-map" style="position:relative;background:linear-gradient(135deg,#e8f0fe,#fef7e0);">
+    <div style="padding:24px;max-width:700px;margin:0 auto;">
+      <h2 style="font-family:var(--font-sans);font-size:22px;font-weight:400;margin:0 0 4px 0;color:var(--g-grey-800);">Destinations from {{ origin_airport.city if origin_airport else origin }}</h2>
+      <p style="color:var(--g-grey-700);font-size:14px;margin-bottom:16px;">Explore {{ destinations|length }} popular destinations with live pricing.</p>
+      <div class="dest-map-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px;">
+        {% for d in destinations %}
+          {% set f = flights_by_dest.get(d.iata) %}
+          <a href="{{ url_for('flights_list', **{'from': origin_airport.iata if origin_airport else origin, 'to': d.iata}) }}"
+             class="dest-marker"
+             style="border:1px solid #dadce0;border-radius:8px;padding:10px;background:white;text-align:center;text-decoration:none;color:inherit;display:block;">
+            <div style="font-size:22px;">{{ {'Europe':'&#127965;','Asia':'&#127961;','North America':'&#127963;','Latin America':'&#127964;','Africa':'&#127968;','Middle East':'&#127970;','Oceania':'&#127966;'}.get(d.region,'&#9992;')|safe }}</div>
+            <div style="font-weight:500;font-size:13px;margin-top:4px;">{{ d.city }}</div>
+            <div style="font-size:11px;color:#5f6368;">{{ d.iata }} &middot; {{ d.country }}</div>
+            {% if f %}<div style="font-size:13px;color:var(--g-green);margin-top:4px;font-weight:500;">from {{ f.price|money }}</div>{% endif %}
+          </a>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

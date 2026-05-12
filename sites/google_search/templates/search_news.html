@@ -1,0 +1,32 @@
+{% from "_serp_header.html" import serp_header with context %}
+{% extends "base.html" %}
+{% block title %}{{ q }} - Google News{% endblock %}
+{% block header %}{{ serp_header(q, 'news') }}{% endblock %}
+
+{% block content %}
+<div class="news-list">
+    <div class="serp-meta">About {{ result_count|fmt_count }} results ({{ search_time }} seconds)</div>
+    {% if topic %}
+    {% set imgs = topic.get_images() %}
+    {% for r in results %}
+    <div class="news-item">
+        <div class="news-text">
+            <div class="news-source">{{ r.display_url }}</div>
+            <h3 class="news-headline"><a href="{{ r.external_path or url_for('url_redirect', q=r.url) }}">{{ r.title }}</a></h3>
+            <div class="news-snippet">{{ r.snippet }}</div>
+            <div class="news-meta">{{ r.source|capitalize }} · {{ (loop.index * 3)|string }} hours ago</div>
+        </div>
+        {% if imgs %}
+        <div class="news-image">
+            <img src="{{ imgs[loop.index0 % imgs|length] }}" alt="{{ r.title }}" onerror="this.parentElement.style.display='none'">
+        </div>
+        {% endif %}
+    </div>
+    {% endfor %}
+    {% else %}
+    <div style="text-align:center; padding:60px; color: var(--color-text-tertiary);">
+        No news articles found for "{{ q }}".
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

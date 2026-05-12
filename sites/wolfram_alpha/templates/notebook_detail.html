@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+{% block title %}{{ notebook.title }} — Wolfram|Alpha{% endblock %}
+
+{% block content %}
+<div class="section-inner">
+  <div class="page-header">
+    <div>
+      <div class="breadcrumb"><a href="/notebooks">Notebooks</a> › {{ notebook.title }}</div>
+      <h1 class="page-title">&#128195; {{ notebook.title }}</h1>
+      {% if notebook.description %}<p class="page-subtitle">{{ notebook.description }}</p>{% endif %}
+      <p class="notebook-meta-line">
+        <span>{{ entries|length }} entries</span>
+        <span> · Created {{ notebook.created_at.strftime('%b %d, %Y') }}</span>
+        {% if notebook.is_public %}<span class="badge-public"> · Public</span>{% endif %}
+      </p>
+    </div>
+    <form action="/notebook/{{ notebook.id }}/delete" method="post">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <a href="/notebook/{{ notebook.id }}/rename" class="btn btn-secondary" style="margin-right:6px">Rename</a>
+      <button type="submit" class="btn btn-secondary">Delete Notebook</button>
+    </form>
+  </div>
+
+  <!-- Add entry form -->
+  <div class="notebook-add-entry">
+    <h2 class="section-heading">Add Entry</h2>
+    <form action="/notebook/{{ notebook.id }}/add" method="post" class="add-entry-form">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <div class="add-entry-row">
+        <input type="text" name="query_text" class="form-input"
+               placeholder="Computation query (e.g. integrate sin x dx)" required>
+        <input type="text" name="result_summary" class="form-input"
+               placeholder="Result summary (optional)">
+        <button type="submit" class="btn btn-primary">Add</button>
+      </div>
+      <input type="text" name="notes" class="form-input" style="margin-top:8px"
+             placeholder="Notes (optional)">
+    </form>
+  </div>
+
+  <!-- Entries list -->
+  {% if entries %}
+  <div class="notebook-entries">
+    {% for entry in entries %}
+    <div class="nb-entry-card">
+      <div class="nb-entry-num">{{ loop.index }}</div>
+      <div class="nb-entry-body">
+        <a href="/input?i={{ entry.query_text|urlencode }}" class="nb-entry-query">
+          <code>{{ entry.query_text }}</code>
+        </a>
+        {% if entry.result_summary %}
+        <div class="nb-entry-result">→ {{ entry.result_summary }}</div>
+        {% endif %}
+        {% if entry.notes %}
+        <p class="nb-entry-notes">&#128221; {{ entry.notes }}</p>
+        {% endif %}
+        <div class="nb-entry-meta">Added {{ entry.created_at.strftime('%b %d, %Y') }}</div>
+      </div>
+      <form action="/notebook/entry/{{ entry.id }}/delete" method="post">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button type="submit" class="btn-icon-danger" title="Remove entry">&#10005;</button>
+      </form>
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="empty-state-page" style="margin-top: 20px;">
+    <div class="empty-icon">&#128196;</div>
+    <p>This notebook is empty. Add your first computation above.</p>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}Page not found · GitHub{% endblock %}
+{% block content %}
+<div class="error-page">
+  <div class="error-content">
+    <img src="/static/images/homepage/logo-duolingo-14477f9e54a6_ac9c3841.svg" alt="" class="error-img" onerror="this.style.display='none'">
+    <h1 class="error-code">404</h1>
+    <h2 class="error-title">This is not the web page you are looking for</h2>
+    <p class="error-body">The page you were looking for doesn't exist. <a href="/">Head back to GitHub</a>.</p>
+    <div class="error-actions">
+      <a href="/" class="gh-btn gh-btn-primary">Take me home</a>
+      <a href="/explore" class="gh-btn gh-btn-secondary">Explore GitHub</a>
+    </div>
+    <div class="error-suggestions" style="margin-top: 2rem; text-align:left; max-width:640px;">
+      <p style="color:#656d76;">Popular destinations on this GitHub mirror:</p>
+      <ul style="line-height:1.9; color:#0969da;">
+        <li><a href="/trending">Trending repositories</a> &middot; <a href="/trending?l=Python">Python</a> &middot; <a href="/trending/developers?since=monthly">Developers (monthly)</a></li>
+        <li><a href="/electron/electron/releases">electron/electron releases</a></li>
+        <li><a href="/facebook/react/releases">facebook/react releases</a></li>
+        <li><a href="/google-research/albert">google-research/albert</a> &middot; <a href="/google-research/albert/commits">commits</a></li>
+        <li><a href="/topics/image-processing">Image processing topic</a> &middot; <a href="/topics/cybersecurity">Cybersecurity</a> &middot; <a href="/topics/web-scraping">Web scraping</a></li>
+        <li><a href="/features/copilot/faq">Copilot FAQ</a></li>
+      </ul>
+    </div>
+  </div>
+</div>
+{% endblock %}

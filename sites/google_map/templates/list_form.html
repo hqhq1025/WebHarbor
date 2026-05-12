@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% block title %}{{ action }} list - Google Maps{% endblock %}
+
+{% block body %}
+<div class="topbar">
+    <a href="{{ url_for('index') }}" class="brand">
+        <span class="material-icons-outlined" style="font-size:26px;color:#ea4335;">place</span>
+        <span>Google Maps</span>
+    </a>
+    <div class="nav-links">
+        <a href="{{ url_for('lists_page') }}" class="nav-link">Back to lists</a>
+    </div>
+</div>
+
+<div class="page narrow">
+    <h1>{{ action }} list</h1>
+    <p class="page-sub">Lists help you group and share saved places.</p>
+
+    <form method="POST" style="background:#fff; padding:24px; border:1px solid var(--divider); border-radius:12px;">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <div class="form-group">
+            <label>List name</label>
+            <input type="text" name="name" required value="{{ saved_list.name if saved_list else '' }}" autofocus>
+        </div>
+        <div class="form-group">
+            <label>Description (optional)</label>
+            <textarea name="description" rows="3">{{ saved_list.description if saved_list else '' }}</textarea>
+        </div>
+        <div class="form-group">
+            <label>Accent color</label>
+            <select name="color">
+                <option value="#1a73e8" {% if saved_list and saved_list.color == '#1a73e8' %}selected{% endif %}>Blue</option>
+                <option value="#ea4335" {% if saved_list and saved_list.color == '#ea4335' %}selected{% endif %}>Red</option>
+                <option value="#fbbc04" {% if saved_list and saved_list.color == '#fbbc04' %}selected{% endif %}>Yellow</option>
+                <option value="#34a853" {% if saved_list and saved_list.color == '#34a853' %}selected{% endif %}>Green</option>
+                <option value="#a142f4" {% if saved_list and saved_list.color == '#a142f4' %}selected{% endif %}>Purple</option>
+            </select>
+        </div>
+        <div style="display:flex; gap:10px;">
+            <button type="submit" class="btn">{{ action }} list</button>
+            <a href="{{ url_for('lists_page') }}" class="btn outlined">Cancel</a>
+        </div>
+    </form>
+</div>
+{% endblock %}

@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block title %}Apple Repair - Apple Support{% endblock %}
+{% block content %}
+<div class="support-repair-page" style="max-width:980px;margin:40px auto;padding:0 20px;">
+  <p style="color:#6e6e73;font-size:14px;margin-bottom:8px;">
+    <a href="{{ url_for('support') }}">Apple Support</a> &rsaquo; Repair
+  </p>
+  <h1 style="font-size:40px;font-weight:700;margin-bottom:12px;">Apple Repair</h1>
+  <p style="color:#6e6e73;font-size:19px;margin-bottom:24px;">
+    Apple offers several ways to get your device repaired. Choose the option that works best for you.
+  </p>
+
+  <h2 style="font-size:24px;font-weight:700;margin:32px 0 12px;">Repair options</h2>
+  <ul style="line-height:1.8;margin:12px 0 24px 20px;font-size:17px;">
+    {% for name, desc in repair_options %}
+    <li style="margin-bottom:10px;"><strong>{{ name }}</strong> &mdash; {{ desc }}</li>
+    {% endfor %}
+  </ul>
+
+  {% if repair_article %}
+  <h2 style="font-size:24px;font-weight:700;margin:32px 0 12px;">Learn more</h2>
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px;">
+    <a href="{{ url_for('support_article', slug=repair_article.slug) }}"
+       class="support-article-card search-result-card"
+       style="padding:20px;border:1px solid #d2d2d7;border-radius:16px;display:block;">
+      <h3 style="font-size:17px;font-weight:700;margin-bottom:6px;">{{ repair_article.title }}</h3>
+      <p style="font-size:14px;color:#6e6e73;">{{ repair_article.summary }}</p>
+    </a>
+  </div>
+  {% endif %}
+
+  <h2 style="font-size:24px;font-weight:700;margin:32px 0 12px;">Start a repair</h2>
+  <p>
+    To begin a repair, <a href="{{ url_for('support') }}">visit Apple Support</a>,
+    visit any <a href="{{ url_for('store_pickup') }}">Apple Store</a> for a carry-in repair,
+    or call 1-800-MY-APPLE.
+  </p>
+</div>
+{% endblock %}

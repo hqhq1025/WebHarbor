@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block title %}HuggingChat – Hugging Face{% endblock %}
+
+{% block content %}
+<div class="chat-page">
+    <aside class="chat-sidebar">
+        <h3>Models</h3>
+        <p class="muted">Pick an open model to chat with.</p>
+        <div class="chat-model-list">
+            {% for m in chat_models %}
+            <div class="chat-model-item">
+                <strong>{{ m.slug.split('/')[1] }}</strong>
+                <div class="muted">{{ m.size_badge }} · {{ m.library }}</div>
+            </div>
+            {% else %}
+            <p class="muted">No chat models seeded.</p>
+            {% endfor %}
+        </div>
+    </aside>
+    <main class="chat-main">
+        <div class="chat-header">
+            <h2>HuggingChat</h2>
+            <p class="muted">Open-source chat with the best community LLMs.</p>
+        </div>
+        <div class="chat-messages">
+            <div class="chat-msg chat-msg-ai">
+                <strong>🤗 HuggingChat</strong>
+                <p>Hi! I'm running on open-source models hosted on the Hub. How can I help?</p>
+            </div>
+            <div class="chat-msg chat-msg-user">
+                <p>What's the difference between LLaMA 3 and Mistral?</p>
+            </div>
+            <div class="chat-msg chat-msg-ai">
+                <strong>🤗 HuggingChat</strong>
+                <p>Both are open-source LLMs, but they differ in architecture, training data, and licensing. LLaMA 3 (Meta) uses a grouped-query attention approach…</p>
+            </div>
+        </div>
+        <form class="chat-input" onsubmit="event.preventDefault(); showToast('Demo mode — streaming disabled.');">
+            <input type="text" class="form-control" placeholder="Ask anything…">
+            <button class="btn btn-primary" type="submit">Send</button>
+        </form>
+    </main>
+</div>
+{% endblock %}

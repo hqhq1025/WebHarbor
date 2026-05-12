@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+{% block title %}Search | Google Flights{% endblock %}
+
+{% block content %}
+<div class="search-widget">
+  <form action="{{ url_for('search') }}" method="GET" class="search-form">
+    <input type="text" name="q" value="{{ q }}" class="search-field" placeholder="Search cities, airports, airlines" autofocus style="width:100%;">
+    <button type="submit" class="search-submit"><span class="material-symbols-outlined">search</span>Search</button>
+  </form>
+</div>
+
+<div class="section">
+  {% if q %}
+    <h1 style="font-family:var(--font-sans);font-size:24px;font-weight:400;margin-bottom:16px;">
+      Results for "{{ q }}"
+    </h1>
+
+    {% if airports %}
+      <h2 style="font-family:var(--font-sans);font-size:18px;font-weight:500;margin-top:24px;">Airports &amp; cities ({{ airports|length }})</h2>
+      <div class="dest-grid">
+        {% for a in airports %}
+          <a href="{{ url_for('destination', slug=a.city_slug) }}" class="dest-card">
+            {% if a.image %}
+              <img src="{{ a.image }}" alt="{{ a.city }}" onerror="this.style.display='none';">
+            {% else %}
+              <div style="width:100%;height:100%;background:linear-gradient(135deg,var(--g-blue),var(--g-green));"></div>
+            {% endif %}
+            <div class="dest-overlay">
+              <div class="dest-name">{{ a.city }} ({{ a.iata }})</div>
+              <div class="dest-country">{{ a.country }}</div>
+            </div>
+          </a>
+        {% endfor %}
+      </div>
+    {% endif %}
+
+    {% if flights %}
+      <h2 style="font-family:var(--font-sans);font-size:18px;font-weight:500;margin-top:32px;margin-bottom:12px;">Flights ({{ flights|length }})</h2>
+      {% for f in flights %}
+        <a href="{{ url_for('flight_detail', flight_id=f.id) }}" class="flight-row">
+          <div class="airline-logo">
+            <img src="{{ f.airline_logo }}" alt="{{ f.airline }}" onerror="this.style.display='none'">
+          </div>
+          <div class="flight-row-main">
+            <div>
+              <div class="flight-time">{{ f.departure_time }}</div>
+              <div class="flight-time-sub">{{ f.origin.iata }}</div>
+            </div>
+            <div class="flight-duration">
+              <div>{{ f.duration_str }}</div>
+              <div class="flight-line"></div>
+              <div class="flight-stops-info">{{ f.stops_str }}</div>
+            </div>
+            <div>
+              <div class="flight-time">{{ f.arrival_time }}</div>
+              <div class="flight-time-sub">{{ f.destination.iata }}</div>
+            </div>
+            <div class="flight-emissions">
+              <div>{{ f.airline }}</div>
+            </div>
+          </div>
+          <div></div>
+          <div>
+            <div class="flight-price">{{ f.price|money }}</div>
+          </div>
+        </a>
+      {% endfor %}
+    {% endif %}
+
+    {% if not airports and not flights %}
+      <div class="empty-state">
+        <span class="material-symbols-outlined" style="font-size:64px;color:var(--g-grey-500);">search_off</span>
+        <h3>No results found</h3>
+        <p>Try searching for a city, airport code, or airline name.</p>
+      </div>
+    {% endif %}
+  {% else %}
+    <div class="empty-state">
+      <span class="material-symbols-outlined" style="font-size:64px;color:var(--g-grey-500);">search</span>
+      <h3>Start searching</h3>
+      <p>Enter a city, airport code, or airline name in the search box above.</p>
+    </div>
+  {% endif %}
+</div>
+{% endblock %}

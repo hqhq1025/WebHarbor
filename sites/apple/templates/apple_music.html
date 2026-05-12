@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block title %}Apple Music - Entertainment{% endblock %}
+{% block content %}
+<div style="max-width:1100px;margin:40px auto;padding:0 20px;">
+  <h1 style="font-size:52px;font-weight:700;">Apple Music</h1>
+  <p style="font-size:24px;color:#6e6e73;margin:16px 0 32px;">Over 100 million songs. 3 months on us.</p>
+
+  <h2 style="font-size:24px;font-weight:700;margin-bottom:16px;">Featured artists</h2>
+  <div class="artists-grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:16px;">
+    {% for artist in artists %}
+    <div class="artist-card search-result-card" style="padding:20px;border:1px solid #d2d2d7;border-radius:16px;text-align:center;">
+      <div style="font-size:48px;">&#127925;</div>
+      <p style="font-size:17px;font-weight:700;margin-top:8px;">{{ artist }}</p>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}

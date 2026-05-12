@@ -1,0 +1,199 @@
+{% extends "base.html" %}
+{% block title %}BBC News - Breaking news, world news, video and analysis{% endblock %}
+
+{% block content %}
+
+{% if top_story %}
+<section class="hero-grid">
+    <a href="{{ url_for('article_detail', slug=top_story.slug) }}" class="hero-main">
+        {% if top_story.hero_image %}
+        <img src="{{ top_story.hero_image }}" alt="{{ top_story.headline|e }}" class="hero-image"
+             onerror="this.parentElement.querySelector('.hero-image').style.display='none'">
+        {% else %}
+        <div class="hero-image"></div>
+        {% endif %}
+        {% if top_story.is_breaking %}
+        <span class="hero-label">BREAKING</span>
+        {% else %}
+        <span class="hero-label">{{ top_story.category.name if top_story.category else 'NEWS' }}</span>
+        {% endif %}
+        <h1 class="hero-headline">{{ top_story.headline }}</h1>
+        {% if top_story.subtitle %}
+        <p class="hero-subhead">{{ top_story.subtitle[:200] }}</p>
+        {% endif %}
+        <p class="hero-meta">
+            <span>{{ top_story.published_date_str }}</span>
+            <span>·</span>
+            <span>{{ top_story.reading_time }} min read</span>
+            {% if top_story.category %}
+            <span>·</span>
+            <span>{{ top_story.category.name }}</span>
+            {% endif %}
+        </p>
+    </a>
+    <aside class="hero-sidebar">
+        {% for art in secondary %}
+        <div class="hero-side-card">
+            <a href="{{ url_for('article_detail', slug=art.slug) }}">
+                {% if art.hero_image %}
+                <img src="{{ art.hero_image }}" alt="{{ art.headline|e }}" class="hero-side-image"
+                     onerror="this.style.display='none'">
+                {% endif %}
+                <h3 class="hero-side-title">{{ art.headline }}</h3>
+                <p class="hero-side-meta">{{ art.published_date_str }} · {{ art.category.name if art.category else 'News' }}</p>
+            </a>
+        </div>
+        {% endfor %}
+    </aside>
+</section>
+{% endif %}
+
+<div class="latest-grid">
+    <section class="latest-feed">
+        <h2 class="cat-strip-title" style="margin-bottom: 18px;">Latest Stories</h2>
+        {% for art in latest %}
+        <a class="latest-item" href="{{ url_for('article_detail', slug=art.slug) }}">
+            <div class="latest-content">
+                <span class="card-category">{{ art.category.name if art.category else 'News' }}</span>
+                <h3 class="latest-headline">{{ art.headline }}</h3>
+                {% if art.summary %}
+                <p class="latest-summary">{{ art.summary[:180] }}</p>
+                {% endif %}
+                <p class="latest-meta">{{ art.published_date_str }} · {{ art.reading_time }} min read</p>
+            </div>
+            {% if art.hero_image %}
+            <img src="{{ art.hero_image }}" alt="{{ art.headline|e }}" class="latest-image"
+                 onerror="this.style.display='none'">
+            {% else %}
+            <div class="latest-image"></div>
+            {% endif %}
+        </a>
+        {% endfor %}
+    </section>
+
+    <aside>
+        <div class="side-block">
+            <h3 class="side-title">Must Read</h3>
+            {% for art in must_read %}
+            <a class="side-item" href="{{ url_for('article_detail', slug=art.slug) }}">
+                <div class="side-item-num">{{ loop.index }}</div>
+                <div>
+                    <div class="side-item-title">{{ art.headline }}</div>
+                    <div class="hero-side-meta">{{ art.published_date_str }}</div>
+                </div>
+            </a>
+            {% endfor %}
+        </div>
+        <div class="side-block" style="background: var(--bbc-black); color: #fff;">
+            <h3 class="side-title" style="color: #fff; border-bottom-color: #fff;">Stay informed</h3>
+            <p style="font-size: 14px; margin-bottom: 14px; line-height: 1.5;">
+                Subscribe to topic alerts and build your own reading list with BBC News.
+            </p>
+            {% if current_user.is_authenticated %}
+            <a href="{{ url_for('subscriptions_page') }}" class="btn" style="width: 100%; text-align: center; background: #fff; color: #000;">Manage alerts</a>
+            {% else %}
+            <a href="{{ url_for('register') }}" class="btn" style="width: 100%; text-align: center; background: #fff; color: #000;">Create account</a>
+            {% endif %}
+        </div>
+    </aside>
+</div>
+
+{% if world_items %}
+<section class="cat-strip">
+    <div class="cat-strip-header">
+        <h2 class="cat-strip-title">World</h2>
+        <a href="{{ url_for('section_page', slug='world') }}" class="cat-strip-more">More World news →</a>
+    </div>
+    <div class="cat-strip-grid">
+        {% for art in world_items %}
+        <a class="card" href="{{ url_for('article_detail', slug=art.slug) }}">
+            <div class="card-image-wrap">
+                {% if art.hero_image %}
+                <img src="{{ art.hero_image }}" alt="{{ art.headline|e }}" class="card-image"
+                     onerror="this.style.display='none'">
+                {% endif %}
+            </div>
+            <h3 class="card-headline">{{ art.headline }}</h3>
+            <p class="card-summary">{{ art.summary[:140] }}</p>
+            <p class="card-meta">
+                <span>{{ art.published_date_str }}</span>
+            </p>
+        </a>
+        {% endfor %}
+    </div>
+</section>
+{% endif %}
+
+{% if uk_items %}
+<section class="cat-strip">
+    <div class="cat-strip-header">
+        <h2 class="cat-strip-title">UK</h2>
+        <a href="{{ url_for('section_page', slug='uk') }}" class="cat-strip-more">More UK news →</a>
+    </div>
+    <div class="cat-strip-grid">
+        {% for art in uk_items %}
+        <a class="card" href="{{ url_for('article_detail', slug=art.slug) }}">
+            <div class="card-image-wrap">
+                {% if art.hero_image %}
+                <img src="{{ art.hero_image }}" alt="{{ art.headline|e }}" class="card-image"
+                     onerror="this.style.display='none'">
+                {% endif %}
+            </div>
+            <h3 class="card-headline">{{ art.headline }}</h3>
+            <p class="card-summary">{{ art.summary[:140] }}</p>
+            <p class="card-meta"><span>{{ art.published_date_str }}</span></p>
+        </a>
+        {% endfor %}
+    </div>
+</section>
+{% endif %}
+
+{% if business_items %}
+<section class="cat-strip">
+    <div class="cat-strip-header">
+        <h2 class="cat-strip-title black">Business</h2>
+        <a href="{{ url_for('section_page', slug='business') }}" class="cat-strip-more">More Business →</a>
+    </div>
+    <div class="cat-strip-grid">
+        {% for art in business_items %}
+        <a class="card" href="{{ url_for('article_detail', slug=art.slug) }}">
+            <div class="card-image-wrap">
+                {% if art.hero_image %}
+                <img src="{{ art.hero_image }}" alt="{{ art.headline|e }}" class="card-image"
+                     onerror="this.style.display='none'">
+                {% endif %}
+            </div>
+            <h3 class="card-headline">{{ art.headline }}</h3>
+            <p class="card-summary">{{ art.summary[:140] }}</p>
+            <p class="card-meta"><span>{{ art.published_date_str }}</span></p>
+        </a>
+        {% endfor %}
+    </div>
+</section>
+{% endif %}
+
+{% if tech_items %}
+<section class="cat-strip">
+    <div class="cat-strip-header">
+        <h2 class="cat-strip-title black">Technology</h2>
+        <a href="{{ url_for('section_page', slug='technology') }}" class="cat-strip-more">More Tech →</a>
+    </div>
+    <div class="cat-strip-grid">
+        {% for art in tech_items %}
+        <a class="card" href="{{ url_for('article_detail', slug=art.slug) }}">
+            <div class="card-image-wrap">
+                {% if art.hero_image %}
+                <img src="{{ art.hero_image }}" alt="{{ art.headline|e }}" class="card-image"
+                     onerror="this.style.display='none'">
+                {% endif %}
+            </div>
+            <h3 class="card-headline">{{ art.headline }}</h3>
+            <p class="card-summary">{{ art.summary[:140] }}</p>
+            <p class="card-meta"><span>{{ art.published_date_str }}</span></p>
+        </a>
+        {% endfor %}
+    </div>
+</section>
+{% endif %}
+
+{% endblock %}

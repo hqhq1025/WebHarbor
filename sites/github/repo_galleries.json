@@ -1,0 +1,140 @@
+{
+  "microsoft/vscode": [
+    {
+      "title": "Intelligent Code Editing",
+      "desc": "VS Code offers rich code completion powered by IntelliSense, providing smart suggestions for variables, methods, and modules based on language semantics.",
+      "images": [
+        "/static/images/feature_sections/copilot_code.png",
+        "/static/images/feature_sections/accordion1.webp"
+      ]
+    },
+    {
+      "title": "Built-in Git Support",
+      "desc": "Review diffs, stage files, make commits, push and pull from any hosted SCM service \u2014 all from within the editor.",
+      "images": [
+        "/static/images/feature_sections/actions_workflow.webp",
+        "/static/images/feature_sections/pillar1.webp"
+      ]
+    },
+    {
+      "title": "Extensions Marketplace",
+      "desc": "Customize VS Code with thousands of extensions for languages, debuggers, themes, and developer tools.",
+      "images": [
+        "/static/images/feature_sections/accordion2.webp",
+        "/static/images/feature_sections/pillar2.webp"
+      ]
+    },
+    {
+      "title": "Integrated Terminal",
+      "desc": "Use the terminal directly from VS Code, running shell commands from any location with full support for bash, zsh, fish, and more.",
+      "images": [
+        "/static/images/feature_sections/codespaces_env.webp",
+        "/static/images/feature_sections/accordion3.webp"
+      ]
+    }
+  ],
+  "torvalds/linux": [
+    {
+      "title": "The World's Largest Open Source Kernel",
+      "desc": "The Linux kernel is the heart of billions of devices worldwide, from smartphones to supercomputers.",
+      "images": [
+        "/static/images/feature_sections/pillar1.webp",
+        "/static/images/feature_sections/accordion1.webp"
+      ]
+    },
+    {
+      "title": "Massive Contributor Community",
+      "desc": "Thousands of developers worldwide contribute patches, bug fixes, and features to the Linux kernel every release cycle.",
+      "images": [
+        "/static/images/feature_sections/accordion2.webp",
+        "/static/images/feature_sections/actions_collaborate.webp"
+      ]
+    },
+    {
+      "title": "Subsystems Architecture",
+      "desc": "Linux is organized into subsystems \u2014 networking, memory management, filesystems, drivers \u2014 each maintained by dedicated engineers.",
+      "images": [
+        "/static/images/feature_sections/pillar2.webp",
+        "/static/images/feature_sections/accordion3.webp"
+      ]
+    }
+  ],
+  "tensorflow/tensorflow": [
+    {
+      "title": "End-to-End Machine Learning",
+      "desc": "TensorFlow provides a comprehensive, flexible ecosystem of tools and libraries for building and deploying ML models at scale.",
+      "images": [
+        "/static/images/feature_sections/copilot_code.png",
+        "/static/images/feature_sections/pillar1.webp"
+      ]
+    },
+    {
+      "title": "Keras High-Level API",
+      "desc": "TensorFlow's Keras API makes it easy to build and train deep learning models with just a few lines of code.",
+      "images": [
+        "/static/images/feature_sections/accordion1.webp",
+        "/static/images/feature_sections/pillar2.webp"
+      ]
+    },
+    {
+      "title": "Production Deployment",
+      "desc": "Deploy models to any environment \u2014 cloud, on-device, browser, or edge \u2014 with TensorFlow Serving and TensorFlow Lite.",
+      "images": [
+        "/static/images/feature_sections/codespaces_env.webp",
+        "/static/images/feature_sections/accordion2.webp"
+      ]
+    }
+  ],
+  "facebook/react": [
+    {
+      "title": "Component-Based Architecture",
+      "desc": "Build encapsulated components that manage their own state, then compose them to make complex UIs.",
+      "images": [
+        "/static/images/feature_sections/copilot_chat.webp",
+        "/static/images/feature_sections/accordion1.webp"
+      ]
+    },
+    {
+      "title": "Declarative Views",
+      "desc": "React makes it painless to create interactive UIs. Design simple views for each state and React efficiently updates and renders components.",
+      "images": [
+        "/static/images/feature_sections/pillar1.webp",
+        "/static/images/feature_sections/pillar2.webp"
+      ]
+    },
+    {
+      "title": "Learn Once, Write Anywhere",
+      "desc": "React Native lets you build mobile apps using only JavaScript, while React DOM handles web rendering.",
+      "images": [
+        "/static/images/feature_sections/accordion2.webp",
+        "/static/images/feature_sections/accordion3.webp"
+      ]
+    }
+  ],
+  "vuejs/vue": [
+    {
+      "title": "Progressive Framework",
+      "desc": "Vue is designed from the ground up to be incrementally adoptable. It scales between a library and a full-featured framework.",
+      "images": [
+        "/static/images/feature_sections/copilot_code.png",
+        "/static/images/feature_sections/accordion1.webp"
+      ]
+    },
+    {
+      "title": "Reactive Data Binding",
+      "desc": "Vue's reactivity system automatically tracks dependencies and efficiently updates the DOM when data changes.",
+      "images": [
+        "/static/images/feature_sections/pillar1.webp",
+        "/static/images/feature_sections/pillar3.webp"
+      ]
+    },
+    {
+      "title": "Single File Components",
+      "desc": "Vue's .vue files let you co-locate template, logic, and styles in a single file for better organization.",
+      "images": [
+        "/static/images/feature_sections/accordion2.webp",
+        "/static/images/feature_sections/codespaces_env.webp"
+      ]
+    }
+  ]
+}

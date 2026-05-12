@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block title %}Brand assets – Hugging Face{% endblock %}
+
+{% block content %}
+<div class="container-narrow page">
+    <h1>Brand assets</h1>
+    <p class="muted">The Hugging Face brand is the face of an open, collaborative community. Use it with care.</p>
+
+    <h2>Logo</h2>
+    <div style="font-size:120px;text-align:center;padding:48px;background:var(--hf-bg-secondary);border-radius:16px;">🤗</div>
+
+    <h2>Colors</h2>
+    <div style="display:flex;gap:16px;margin:24px 0;">
+        <div style="width:120px;height:120px;background:#ffd21e;border-radius:12px;"></div>
+        <div style="width:120px;height:120px;background:#ff9d00;border-radius:12px;"></div>
+        <div style="width:120px;height:120px;background:#0d1117;border-radius:12px;"></div>
+    </div>
+
+    <h2>Typography</h2>
+    <p>We use IBM Plex Mono for repository names and system-ui sans-serif for body copy.</p>
+
+    <h2>Usage guidelines</h2>
+    <p>Please don't modify the logo, stretch it, or change its colors. Maintain a clear space around it equal to the height of the emoji.</p>
+</div>
+{% endblock %}

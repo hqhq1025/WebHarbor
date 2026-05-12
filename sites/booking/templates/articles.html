@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block title %}Travel articles — Booking{% endblock %}
+{% block content %}
+<div class="container">
+    <h1 class="page-title">Travel articles &amp; inspiration</h1>
+    <p class="page-subtitle">Editorial reads from our staff travellers &mdash; cities to visit, foods to chase, hotels to remember.</p>
+
+    <div class="card-grid cards-3" style="margin-top:20px;">
+        {% for a in articles %}
+        <a href="{{ url_for('article_detail', slug=a.slug) }}" class="city-card" style="text-decoration:none;color:inherit;display:block;">
+            {% if a.image %}
+            <img src="{{ a.image }}" alt="{{ a.title }}" class="city-card-img"
+                 onerror="this.style.background='linear-gradient(135deg,#003580,#006ce4)';this.alt=''">
+            {% endif %}
+            <div class="city-card-body">
+                <span class="flag" style="background:#006ce4;color:#fff;padding:2px 8px;border-radius:3px;font-size:11px;">{{ a.category }}</span>
+                <h3 style="margin:8px 0 4px 0;font-size:16px;">{{ a.title }}</h3>
+                <p style="font-size:13px;color:#555;margin:4px 0;">{{ a.excerpt }}</p>
+                <div style="font-size:11px;color:#888;margin-top:8px;">
+                    By {{ a.author }} &middot; {{ a.read_time }}
+                </div>
+                <div style="font-size:11px;color:#006ce4;margin-top:4px;">
+                    Featured places: {{ a.places | join(', ') }}
+                </div>
+            </div>
+        </a>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,277 @@
+{% extends "base.html" %}
+{% block title %}GitHub Marketplace{% endblock %}
+{% block content %}
+
+<!-- Hero -->
+<section class="sec-hero">
+  <div class="sec-hero-inner">
+    <div class="sec-hero-text">
+      <span class="sec-eyebrow">
+        <svg aria-hidden="true" height="16" viewBox="0 0 16 16" width="16" fill="currentColor">
+          <path d="M11.46.146A.5.5 0 0 0 11.107 0H4.893a.5.5 0 0 0-.353.146L.146 4.54A.5.5 0 0 0 0 4.893v6.214a.5.5 0 0 0 .146.353l4.394 4.394a.5.5 0 0 0 .353.146h6.214a.5.5 0 0 0 .353-.146l4.394-4.394a.5.5 0 0 0 .146-.353V4.893a.5.5 0 0 0-.146-.353Z"/>
+        </svg>
+        GitHub Marketplace
+      </span>
+      <h1 class="sec-hero-headline">Tools that extend GitHub.</h1>
+      <p class="sec-hero-sub">Apps, actions, and integrations that plug into your existing workflow — installable in two clicks, billed through GitHub, supported by their builders.</p>
+      <div class="sec-hero-cta">
+        <a href="#categories" class="gh-btn gh-btn-primary">Browse categories</a>
+        <a href="#build" class="gh-btn gh-btn-secondary">Build your own app</a>
+      </div>
+      <ul class="sec-hero-bullets">
+        <li>20,000+ Actions and 1,800+ Apps</li>
+        <li>Billed in your existing GitHub invoice</li>
+        <li>OAuth + GitHub App security model — least-privilege by default</li>
+      </ul>
+    </div>
+    <div class="sec-hero-art" aria-hidden="true">
+      <div class="sec-hero-card">
+        <div class="sec-hero-card-row sec-row-fix">
+          <span class="sec-row-icon">🛡️</span>
+          <span class="sec-row-msg"><strong>Snyk</strong> — installed for 12 repositories</span>
+        </div>
+        <div class="sec-hero-card-row sec-row-dep">
+          <span class="sec-row-icon">📊</span>
+          <span class="sec-row-msg"><strong>Codecov</strong> — coverage report posted to PR #482</span>
+        </div>
+        <div class="sec-hero-card-row sec-row-secret">
+          <span class="sec-row-icon">⚡</span>
+          <span class="sec-row-msg"><strong>CircleCI</strong> — workflow triggered on push</span>
+        </div>
+        <div class="sec-hero-card-row sec-row-bug">
+          <span class="sec-row-icon">🤖</span>
+          <span class="sec-row-msg"><strong>Dependabot</strong> opened 3 update PRs this morning</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Search -->
+<section class="sec-features">
+  <div class="sec-section-inner sec-narrow" style="text-align:center;">
+    <h2 class="sec-section-title">Search the Marketplace</h2>
+    <p class="sec-section-lede">Find the right tool by name, vendor, or category.</p>
+    <form action="/search" method="get" style="display:flex; gap:10px; max-width:640px; margin:0 auto;">
+      <input type="text" name="q" class="search-input-lg" placeholder="Search apps and actions" style="flex:1; padding:12px 16px; background:var(--color-bg-secondary); border:1px solid var(--color-border); border-radius:8px; color:var(--color-fg); font-size:15px;">
+      <button type="submit" class="gh-btn gh-btn-primary">Search</button>
+    </form>
+  </div>
+</section>
+
+<!-- Category grid -->
+<section class="sec-features" id="categories">
+  <div class="sec-section-inner">
+    <h2 class="sec-section-title">Browse by category</h2>
+    <p class="sec-section-lede">Every category has both Actions (for CI workflows) and Apps (for GitHub.com integrations). Click any tile to see all entries in that category.</p>
+    <div class="sec-feature-grid">
+      <a href="/marketplace?category=continuous-integration" class="sec-feature" style="text-decoration:none; color:inherit;">
+        <div class="sec-feature-icon">⚡</div>
+        <h3>CI / CD</h3>
+        <p>Run tests on every commit, block PRs that fail, and ship to production with zero-touch pipelines. Includes CircleCI, Travis, Buildkite, and 89 other CI integrations.</p>
+        <span class="sec-feature-link">Continuous integration →</span>
+      </a>
+      <a href="/marketplace?category=code-quality" class="sec-feature" style="text-decoration:none; color:inherit;">
+        <div class="sec-feature-icon">🔍</div>
+        <h3>Code quality</h3>
+        <p>Linters, type-checkers, formatters, and review bots — Codecov, SonarCloud, DeepSource, CodeClimate, and 123 others post results directly on your pull request diff.</p>
+        <span class="sec-feature-link">Code quality →</span>
+      </a>
+      <a href="/marketplace?category=project-management" class="sec-feature" style="text-decoration:none; color:inherit;">
+        <div class="sec-feature-icon">📋</div>
+        <h3>Project management</h3>
+        <p>Sync issues with Jira, Linear, Asana, Trello, or Notion. Auto-update tickets when PRs merge. Generate release notes from commit history.</p>
+        <span class="sec-feature-link">Project management →</span>
+      </a>
+      <a href="/marketplace?category=security" class="sec-feature" style="text-decoration:none; color:inherit;">
+        <div class="sec-feature-icon">🛡️</div>
+        <h3>Security</h3>
+        <p>SAST, DAST, secret scanning, container scanning, IaC scanning. Snyk, Semgrep, Trivy, Aqua, and Wiz all surface findings in the GitHub code-scanning UI.</p>
+        <span class="sec-feature-link">Security →</span>
+      </a>
+      <a href="/marketplace?category=ai" class="sec-feature" style="text-decoration:none; color:inherit;">
+        <div class="sec-feature-icon">🤖</div>
+        <h3>AI &amp; Copilot extensions</h3>
+        <p>Stack Overflow for Teams, Docker, Sentry, and 60+ other Copilot extensions you can <code>@-mention</code> from Chat. Bring your team's knowledge into the editor.</p>
+        <span class="sec-feature-link">AI extensions →</span>
+      </a>
+      <a href="/marketplace?category=monitoring" class="sec-feature" style="text-decoration:none; color:inherit;">
+        <div class="sec-feature-icon">📈</div>
+        <h3>Monitoring &amp; alerting</h3>
+        <p>Datadog, New Relic, Honeycomb, Sentry, Rollbar — surface production errors as GitHub issues, link traces back to the commit that introduced them.</p>
+        <span class="sec-feature-link">Monitoring →</span>
+      </a>
+    </div>
+  </div>
+</section>
+
+<!-- Featured apps (driven by app.py featured_apps data, plus extra cards) -->
+<section class="sec-stories" id="featured">
+  <div class="sec-section-inner">
+    <h2 class="sec-section-title">Featured apps</h2>
+    <p class="sec-section-lede" style="color:#c9d1d9;">Hand-picked tools used by thousands of teams. Free trial on every paid app.</p>
+    <div class="sec-feature-grid" style="grid-template-columns:repeat(3,1fr);">
+      {% for app in featured_apps %}
+      <article class="sec-story" style="display:flex; flex-direction:column; gap:12px;">
+        <div style="display:flex; align-items:center; gap:14px;">
+          <div class="sec-feature-icon" style="margin:0; flex-shrink:0;">{{ app.icon }}</div>
+          <div>
+            <h3 style="margin:0; font-size:16px; color:var(--color-fg); font-weight:600;">{{ app.name }}</h3>
+            <div style="font-size:12px; color:#8b949e;">★ {{ app.stars }} · {% if app.free %}Free plan available{% else %}Paid{% endif %}</div>
+          </div>
+        </div>
+        <p style="color:var(--color-fg-muted); font-size:13px; line-height:1.5; margin:0; flex:1;">{{ app.desc }}</p>
+        <div style="display:flex; gap:8px;">
+          <a href="#" class="gh-btn gh-btn-secondary gh-btn-sm">Install</a>
+          <a href="#" class="gh-btn gh-btn-secondary gh-btn-sm" style="background:transparent;">Learn more</a>
+        </div>
+      </article>
+      {% endfor %}
+
+      <!-- Additional curated tiles -->
+      <article class="sec-story" style="display:flex; flex-direction:column; gap:12px;">
+        <div style="display:flex; align-items:center; gap:14px;">
+          <div class="sec-feature-icon" style="margin:0; flex-shrink:0;">🐳</div>
+          <div>
+            <h3 style="margin:0; font-size:16px; color:var(--color-fg); font-weight:600;">Docker Build &amp; Push</h3>
+            <div style="font-size:12px; color:#8b949e;">★ 4.7 · 1.2M repos installed</div>
+          </div>
+        </div>
+        <p style="color:var(--color-fg-muted); font-size:13px; line-height:1.5; margin:0; flex:1;">Build multi-arch Docker images and push to any registry from a GitHub Actions workflow.</p>
+        <div style="display:flex; gap:8px;">
+          <a href="#" class="gh-btn gh-btn-secondary gh-btn-sm">Install</a>
+          <a href="#" class="gh-btn gh-btn-secondary gh-btn-sm" style="background:transparent;">Learn more</a>
+        </div>
+      </article>
+
+      <article class="sec-story" style="display:flex; flex-direction:column; gap:12px;">
+        <div style="display:flex; align-items:center; gap:14px;">
+          <div class="sec-feature-icon" style="margin:0; flex-shrink:0;">💬</div>
+          <div>
+            <h3 style="margin:0; font-size:16px; color:var(--color-fg); font-weight:600;">Slack + GitHub</h3>
+            <div style="font-size:12px; color:#8b949e;">★ 4.6 · 220k orgs installed · Free</div>
+          </div>
+        </div>
+        <p style="color:var(--color-fg-muted); font-size:13px; line-height:1.5; margin:0; flex:1;">Subscribe to repos, get PR/issue notifications in any channel, approve PRs from Slack with /github approve.</p>
+        <div style="display:flex; gap:8px;">
+          <a href="#" class="gh-btn gh-btn-secondary gh-btn-sm">Install</a>
+          <a href="#" class="gh-btn gh-btn-secondary gh-btn-sm" style="background:transparent;">Learn more</a>
+        </div>
+      </article>
+
+      <article class="sec-story" style="display:flex; flex-direction:column; gap:12px;">
+        <div style="display:flex; align-items:center; gap:14px;">
+          <div class="sec-feature-icon" style="margin:0; flex-shrink:0;">📐</div>
+          <div>
+            <h3 style="margin:0; font-size:16px; color:var(--color-fg); font-weight:600;">Jira Software</h3>
+            <div style="font-size:12px; color:#8b949e;">★ 4.5 · 180k orgs installed</div>
+          </div>
+        </div>
+        <p style="color:var(--color-fg-muted); font-size:13px; line-height:1.5; margin:0; flex:1;">Two-way sync between GitHub branches/PRs and Jira issues — no more "did anyone update the ticket?"</p>
+        <div style="display:flex; gap:8px;">
+          <a href="#" class="gh-btn gh-btn-secondary gh-btn-sm">Install</a>
+          <a href="#" class="gh-btn gh-btn-secondary gh-btn-sm" style="background:transparent;">Learn more</a>
+        </div>
+      </article>
+
+      <article class="sec-story" style="display:flex; flex-direction:column; gap:12px;">
+        <div style="display:flex; align-items:center; gap:14px;">
+          <div class="sec-feature-icon" style="margin:0; flex-shrink:0;">🚨</div>
+          <div>
+            <h3 style="margin:0; font-size:16px; color:var(--color-fg); font-weight:600;">Sentry</h3>
+            <div style="font-size:12px; color:#8b949e;">★ 4.8 · 95k orgs installed</div>
+          </div>
+        </div>
+        <p style="color:var(--color-fg-muted); font-size:13px; line-height:1.5; margin:0; flex:1;">Production errors auto-link to the commit that introduced them, opening a GitHub issue with full stack trace.</p>
+        <div style="display:flex; gap:8px;">
+          <a href="#" class="gh-btn gh-btn-secondary gh-btn-sm">Install</a>
+          <a href="#" class="gh-btn gh-btn-secondary gh-btn-sm" style="background:transparent;">Learn more</a>
+        </div>
+      </article>
+
+      <article class="sec-story" style="display:flex; flex-direction:column; gap:12px;">
+        <div style="display:flex; align-items:center; gap:14px;">
+          <div class="sec-feature-icon" style="margin:0; flex-shrink:0;">🌐</div>
+          <div>
+            <h3 style="margin:0; font-size:16px; color:var(--color-fg); font-weight:600;">Netlify</h3>
+            <div style="font-size:12px; color:#8b949e;">★ 4.7 · 380k repos · Free plan</div>
+          </div>
+        </div>
+        <p style="color:var(--color-fg-muted); font-size:13px; line-height:1.5; margin:0; flex:1;">Preview deploys for every PR, production deploys on merge to main. Static sites and serverless functions.</p>
+        <div style="display:flex; gap:8px;">
+          <a href="#" class="gh-btn gh-btn-secondary gh-btn-sm">Install</a>
+          <a href="#" class="gh-btn gh-btn-secondary gh-btn-sm" style="background:transparent;">Learn more</a>
+        </div>
+      </article>
+
+      <article class="sec-story" style="display:flex; flex-direction:column; gap:12px;">
+        <div style="display:flex; align-items:center; gap:14px;">
+          <div class="sec-feature-icon" style="margin:0; flex-shrink:0;">🧪</div>
+          <div>
+            <h3 style="margin:0; font-size:16px; color:var(--color-fg); font-weight:600;">SonarCloud</h3>
+            <div style="font-size:12px; color:#8b949e;">★ 4.7 · 600k+ repos · Free for OSS</div>
+          </div>
+        </div>
+        <p style="color:var(--color-fg-muted); font-size:13px; line-height:1.5; margin:0; flex:1;">Static analysis on 30+ languages with quality gates that block PRs failing your team's standards.</p>
+        <div style="display:flex; gap:8px;">
+          <a href="#" class="gh-btn gh-btn-secondary gh-btn-sm">Install</a>
+          <a href="#" class="gh-btn gh-btn-secondary gh-btn-sm" style="background:transparent;">Learn more</a>
+        </div>
+      </article>
+
+    </div>
+  </div>
+</section>
+
+<!-- Trending Actions -->
+<section class="sec-features">
+  <div class="sec-section-inner">
+    <h2 class="sec-section-title">Trending Actions this week</h2>
+    <p class="sec-section-lede">The Actions our community installed most in the last 7 days.</p>
+    <div class="sec-feature-grid">
+      <div class="sec-feature">
+        <div class="sec-feature-icon">📦</div>
+        <h3><code>actions/checkout@v4</code></h3>
+        <p>The standard checkout action. Used in 9 of every 10 workflows. Free, official, maintained by GitHub.</p>
+        <span class="sec-feature-link" style="color:#8b949e;">Installed in 38M+ workflows</span>
+      </div>
+      <div class="sec-feature">
+        <div class="sec-feature-icon">🔧</div>
+        <h3><code>actions/setup-node@v4</code></h3>
+        <p>Install any version of Node.js, with smart caching of npm/yarn/pnpm dependencies between runs.</p>
+        <span class="sec-feature-link" style="color:#8b949e;">Installed in 12M+ workflows</span>
+      </div>
+      <div class="sec-feature">
+        <div class="sec-feature-icon">☁️</div>
+        <h3><code>aws-actions/configure-aws-credentials</code></h3>
+        <p>OIDC-based AWS auth — no long-lived secrets in your repo. The recommended pattern for AWS deploys.</p>
+        <span class="sec-feature-link" style="color:#8b949e;">Installed in 4M+ workflows</span>
+      </div>
+      <div class="sec-feature">
+        <div class="sec-feature-icon">🐳</div>
+        <h3><code>docker/build-push-action</code></h3>
+        <p>Multi-platform Docker builds with layer caching. Push to GHCR, Docker Hub, ECR, GAR — anywhere.</p>
+        <span class="sec-feature-link" style="color:#8b949e;">Installed in 3.2M+ workflows</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Build your own -->
+<section class="sec-final-cta" id="build">
+  <div class="sec-section-inner sec-narrow sec-final-cta-inner">
+    <h2>Build your own GitHub App.</h2>
+    <p>Publish to the Marketplace, get distribution to 100M+ developers, and bill through GitHub's existing payment infrastructure.</p>
+    <div class="sec-hero-cta">
+      <a href="/skills/hello-github-actions" class="gh-btn gh-btn-primary">Read the developer guide</a>
+      <a href="/contact-sales" class="gh-btn gh-btn-secondary">Talk to partner team</a>
+    </div>
+  </div>
+</section>
+
+<!-- Hidden category data render so the route's categories list is referenced -->
+<div style="display:none;" aria-hidden="true">
+  {% for cat in categories %}<span>{{ cat.name }} {{ cat.count }}</span>{% endfor %}
+</div>
+
+{% endblock %}

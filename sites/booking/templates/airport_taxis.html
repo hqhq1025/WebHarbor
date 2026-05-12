@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+{% block title %}Airport taxis — Booking{% endblock %}
+{% block content %}
+<section class="hero" style="padding:40px 20px 80px;">
+    <div class="hero-inner">
+        <h1>Airport taxis — easy door-to-door transfers</h1>
+        <p>Pre-book your ride to your destination for a stress-free start.</p>
+    </div>
+    <form class="search-bar" action="{{ url_for('search') }}" method="get">
+        <div class="search-field">
+            <input type="text" name="q" placeholder="Airport">
+        </div>
+        <div class="search-field">
+            <input type="text" placeholder="Hotel or address">
+        </div>
+        <div class="search-field">
+            <input type="text" maxlength="10" inputmode="numeric" pattern="\d{4}-\d{2}-\d{2}" placeholder="YYYY-MM-DD" autocomplete="off" data-datepicker="single">
+        </div>
+        <button class="search-submit" type="submit">Search</button>
+    </form>
+</section>
+
+<div class="container">
+    <section class="section">
+        <div class="section-header">
+            <h2>Why book airport taxis?</h2>
+        </div>
+        <div class="card-grid cards-3">
+            <div class="category-tile">
+                <div class="icon">&#9989;</div>
+                <h4>Meet & greet included</h4>
+                <p>Your driver will be waiting for you at arrivals.</p>
+            </div>
+            <div class="category-tile">
+                <div class="icon">&#128176;</div>
+                <h4>Fixed prices</h4>
+                <p>Know the fare upfront — no surprises.</p>
+            </div>
+            <div class="category-tile">
+                <div class="icon">&#128274;</div>
+                <h4>Flight tracking</h4>
+                <p>We monitor your flight in case of delays.</p>
+            </div>
+        </div>
+    </section>
+
+    <section class="section">
+        <div class="section-header">
+            <h2>Popular pickup locations</h2>
+        </div>
+        <div class="card-grid cards-4">
+            {% for _ in range(8) %}
+            <div class="category-tile">
+                <div class="icon">&#9992;</div>
+                <h4>{% set airports = ['JFK', 'LAX', 'Heathrow', 'CDG', 'Narita', 'DXB', 'Changi', 'HKG'] %}{{ airports[loop.index0] }}</h4>
+                <p>{% set names = ['New York', 'Los Angeles', 'London', 'Paris', 'Tokyo', 'Dubai', 'Singapore', 'Hong Kong'] %}{{ names[loop.index0] }}</p>
+            </div>
+            {% endfor %}
+        </div>
+    </section>
+</div>
+{% endblock %}

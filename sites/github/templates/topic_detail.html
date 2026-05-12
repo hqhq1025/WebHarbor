@@ -1,0 +1,92 @@
+{% extends "base.html" %}
+{% block title %}{{ topic.display_name }} · GitHub Topics{% endblock %}
+{% block content %}
+<div class="topic-header">
+  <div class="topic-header-inner">
+    <div class="topic-header-icon">{{ topic.display_name[0].upper() }}</div>
+    <div class="topic-header-text">
+      <h1 class="topic-header-name">{{ topic.display_name }}</h1>
+      <p class="topic-header-desc">{{ topic.description }}</p>
+      <span class="topic-header-count">{{ repos.total | number_format }} repositories</span>
+    </div>
+  </div>
+</div>
+
+<div class="section-container">
+  <div class="topic-repos-header">
+    <h2>Repositories</h2>
+    <div class="topic-controls">
+      {% if topic_languages %}
+      <div class="topic-lang-chips">
+        <a href="/topics/{{ topic.slug }}{% if current_sort != 'stars' %}?o={{ current_sort }}{% endif %}"
+           class="topic-lang-chip {% if not current_lang %}active{% endif %}">
+          Any language
+        </a>
+        {% for lang, cnt in topic_languages %}
+        <a href="/topics/{{ topic.slug }}?l={{ lang }}{% if current_sort != 'stars' %}&o={{ current_sort }}{% endif %}"
+           class="topic-lang-chip {% if current_lang == lang %}active{% endif %}">
+          <span class="repo-lang-dot" style="background-color: {{ lang_colors.get(lang, '#8f9ba8') }}"></span>
+          {{ lang }} <span class="topic-lang-count">{{ cnt }}</span>
+        </a>
+        {% endfor %}
+      </div>
+      {% endif %}
+
+      <div class="topic-sort-wrap">
+        <label for="topic-sort-select" class="topic-sort-label">Sort:</label>
+        <select id="topic-sort-select" class="topic-sort-select"
+                onchange="var u=new window.URL(window.location.href); u.searchParams.set('o', this.value); u.searchParams.delete('page'); window.location=u.toString();">
+          <option value="stars" {% if current_sort == 'stars' %}selected{% endif %}>Most stars</option>
+          <option value="stars_asc" {% if current_sort == 'stars_asc' %}selected{% endif %}>Fewest stars</option>
+          <option value="forks" {% if current_sort == 'forks' %}selected{% endif %}>Most forks</option>
+          <option value="forks_asc" {% if current_sort == 'forks_asc' %}selected{% endif %}>Fewest forks</option>
+          <option value="updated" {% if current_sort == 'updated' %}selected{% endif %}>Recently updated</option>
+          <option value="least_updated" {% if current_sort == 'least_updated' %}selected{% endif %}>Least recently updated</option>
+          <option value="trending" {% if current_sort == 'trending' %}selected{% endif %}>Trending</option>
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <div class="topic-repos-list">
+    {% for repo in repos.items %}
+    <article class="repo-list-item">
+      <div class="repo-list-info">
+        <h3><a href="/{{ repo.full_name }}" class="repo-list-name">{{ repo.full_name }}</a></h3>
+        {% if repo.description %}<p class="repo-list-desc">{{ repo.description }}</p>{% endif %}
+        <div class="repo-list-meta">
+          {% if repo.language %}
+          <span class="repo-lang">
+            <span class="repo-lang-dot" style="background-color: {{ lang_colors.get(repo.language, '#8f9ba8') }}"></span>
+            {{ repo.language }}
+          </span>
+          {% endif %}
+          <span class="trending-stat">⭐ {{ repo.stars_count | number_format }}</span>
+          <span class="trending-stat">🍴 {{ repo.forks_count | number_format }}</span>
+          <span class="repo-updated-sm">{{ repo.updated_relative() }}</span>
+        </div>
+      </div>
+      {% if current_user.is_authenticated %}
+      <button class="gh-btn gh-btn-secondary gh-btn-sm" data-repo-id="{{ repo.id }}" onclick="toggleStar(this)">⭐ Star</button>
+      {% endif %}
+    </article>
+    {% else %}
+    <div class="empty-state">
+      <p>No repositories found for this topic yet.</p>
+    </div>
+    {% endfor %}
+  </div>
+
+  {% if repos.pages > 1 %}
+  <div class="pagination">
+    {% if repos.has_prev %}
+    <a href="/topics/{{ topic.slug }}?page={{ repos.prev_num }}{% if current_sort != 'stars' %}&o={{ current_sort }}{% endif %}{% if current_lang %}&l={{ current_lang }}{% endif %}" class="gh-btn gh-btn-secondary">← Previous</a>
+    {% endif %}
+    <span class="pagination-info">Page {{ repos.page }} of {{ repos.pages }}</span>
+    {% if repos.has_next %}
+    <a href="/topics/{{ topic.slug }}?page={{ repos.next_num }}{% if current_sort != 'stars' %}&o={{ current_sort }}{% endif %}{% if current_lang %}&l={{ current_lang }}{% endif %}" class="gh-btn gh-btn-secondary">Next →</a>
+    {% endif %}
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

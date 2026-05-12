@@ -1,0 +1,26 @@
+{% from "_serp_header.html" import serp_header with context %}
+{% extends "base.html" %}
+{% block title %}{{ q }} - Google Shopping{% endblock %}
+{% block header %}{{ serp_header(q, 'shopping') }}{% endblock %}
+
+{% block content %}
+<div class="images-grid" style="padding:30px 28px;">
+    {% if topic %}
+        {% set imgs = topic.get_images() %}
+        {% for r in results %}
+        <div class="image-card">
+            <img src="{{ imgs[loop.index0 % imgs|length] if imgs else '' }}" alt="{{ r.title }}"
+                 onerror="this.style.display='none'">
+            <div class="img-caption">
+                <strong>{{ r.title[:40] }}</strong><br>
+                ${{ (19 + loop.index * 7) }}.99 · {{ r.display_url }}
+            </div>
+        </div>
+        {% endfor %}
+    {% else %}
+    <div style="grid-column:1/-1; padding:60px; text-align:center; color: var(--color-text-tertiary);">
+        No shopping results for "{{ q }}".
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

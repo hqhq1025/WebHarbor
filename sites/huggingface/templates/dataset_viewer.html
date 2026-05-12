@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% block title %}{{ repo.slug }} · Dataset Viewer{% endblock %}
+
+{% block content %}
+<div class="container-wide page">
+    <nav class="docs-breadcrumb">
+        <a href="{{ url_for('dataset_detail', author=repo.slug.split('/')[0], name=repo.slug.split('/')[1]) }}">{{ repo.slug }}</a>
+        <span>/</span>
+        <span>Dataset viewer</span>
+    </nav>
+    <h1>Dataset Viewer — {{ repo.slug }}</h1>
+    <p class="muted">{{ repo.description }}</p>
+
+    <div class="viewer-meta" style="margin:8px 0 14px;">
+        <span class="tag">Split: <strong>train</strong></span>
+        <span class="tag">Rows: <strong>{{ viewer.rows|length }}</strong></span>
+        <span class="tag">Columns: <strong>{{ viewer.columns|join(', ') }}</strong></span>
+    </div>
+
+    <div class="viewer-wrap">
+        <table class="viewer-table">
+            <thead>
+                <tr>
+                    {% for col in viewer.columns %}<th>{{ col }}</th>{% endfor %}
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in viewer.rows %}
+                <tr>
+                    {% for cell in row %}<td><pre class="viewer-cell">{{ cell }}</pre></td>{% endfor %}
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    {# Parsed preview of messages-style rows — helps agents extract the 'user' content clearly. #}
+    {% if 'messages' in viewer.columns %}
+    <section class="viewer-parsed" style="margin-top:24px;">
+        <h2>First row — parsed preview</h2>
+        <p class="muted" style="font-size:13px;">Each row contains a <code>messages</code> list. Below is the decoded structure of row 0:</p>
+        {% set first_row = viewer.rows[0] %}
+        {% set msg_idx = viewer.columns.index('messages') %}
+        {% set parsed = first_row[msg_idx]|fromjson %}
+        <div class="messages-parsed" style="border:1px solid var(--border,#e5e7eb);border-radius:12px;overflow:hidden;">
+        {% for m in parsed %}
+            <div style="padding:12px 14px;border-bottom:1px solid #f3f4f6;background:{% if m.role == 'user' %}#eff6ff{% else %}#f0fdf4{% endif %};">
+                <div style="font-size:12px;color:#6b7280;margin-bottom:4px;">Message {{ loop.index }} · role = <strong>{{ m.role }}</strong></div>
+                <div><strong>{{ m.role }}:</strong> {{ m.content }}</div>
+            </div>
+        {% endfor %}
+        </div>
+        <p class="muted" style="font-size:12px;margin-top:8px;">The <strong>first message</strong>'s <code>user</code> field content is shown above in the top (blue) panel.</p>
+    </section>
+    {% endif %}
+</div>
+{% endblock %}

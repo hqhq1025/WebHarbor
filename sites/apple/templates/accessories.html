@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block title %}Accessories - Apple{% endblock %}
+
+{% block content %}
+<div class="category-hero">
+    <h1>Accessories</h1>
+</div>
+<div class="category-nav">
+    {% for product in products %}
+    <a href="#{{ product.slug }}">{{ product.name }}</a>
+    {% endfor %}
+</div>
+
+<section class="lineup-section">
+    <div class="lineup-grid">
+        {% for product in products %}
+        <a href="{{ url_for('product_detail', slug=product.slug) }}" class="lineup-card" id="{{ product.slug }}">
+            <div class="lineup-card-image">
+                <img src="{{ product.image }}" alt="{{ product.name }}"
+                     onerror="this.parentElement.innerHTML='<div class=\'placeholder-img\' style=\'width:160px;height:200px;background:linear-gradient(135deg,#ffecd2,#fcb69f);border-radius:16px\'>&#9889;</div>'">
+            </div>
+            <h3>{{ product.name }}</h3>
+            <p class="lineup-subtitle">{{ product.subtitle }}</p>
+            <p class="lineup-price">${{ "%.2f"|format(product.price) }}</p>
+            <div class="lineup-cta">
+                <span>Learn more</span>
+                <span>Buy</span>
+            </div>
+        </a>
+        {% endfor %}
+    </div>
+</section>
+{% endblock %}

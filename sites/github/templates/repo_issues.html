@@ -1,0 +1,89 @@
+{% extends "base.html" %}
+{% block title %}Issues · {{ repo.full_name }} · GitHub{% endblock %}
+{% block content %}
+<div class="repo-header-bar">
+  <div class="repo-header-inner">
+    <div class="repo-breadcrumb">
+      <a href="/{{ repo.owner.username }}" class="repo-breadcrumb-link">{{ repo.owner.username }}</a>
+      <span class="repo-breadcrumb-sep">/</span>
+      <a href="/{{ repo.full_name }}" class="repo-breadcrumb-link repo-breadcrumb-repo">{{ repo.name }}</a>
+    </div>
+    <nav class="repo-tabs">
+      <a href="/{{ repo.full_name }}" class="repo-tab">Code</a>
+      <a href="/{{ repo.full_name }}/issues" class="repo-tab repo-tab-active">
+        Issues <span class="repo-tab-count">{{ open_count }}</span>
+      </a>
+    </nav>
+  </div>
+</div>
+
+<div class="issues-page">
+  <div class="issues-toolbar">
+    <div class="issues-toggle">
+      <a href="/{{ repo.full_name }}/issues?q=is:open" class="issues-toggle-btn {% if is_open %}active{% endif %}">
+        <svg aria-hidden="true" height="16" viewBox="0 0 16 16" width="16" fill="currentColor">
+          <path d="M8 9.5a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3Z"/><path d="M8 0a8 8 0 1 1 0 16A8 8 0 0 1 8 0ZM1.5 8a6.5 6.5 0 1 0 13 0 6.5 6.5 0 0 0-13 0Z"/>
+        </svg>
+        {{ open_count }} Open
+      </a>
+      <a href="/{{ repo.full_name }}/issues?q=is:closed" class="issues-toggle-btn {% if not is_open %}active{% endif %}">
+        <svg aria-hidden="true" height="16" viewBox="0 0 16 16" width="16" fill="currentColor">
+          <path d="M8 0a8 8 0 1 1 0 16A8 8 0 0 1 8 0ZM1.5 8a6.5 6.5 0 1 0 13 0 6.5 6.5 0 0 0-13 0Zm6.78-2.22-1.5 1.5a.75.75 0 0 0 0 1.06l.97.97-.97.97a.75.75 0 0 0 1.06 1.06l1.5-1.5a.75.75 0 0 0 0-1.06l-.97-.97.97-.97a.75.75 0 0 0-1.06-1.06l-.97.97-.97-.97a.75.75 0 1 0-1.06 1.06l.97.97Z"/>
+        </svg>
+        {{ closed_count }} Closed
+      </a>
+    </div>
+    {% if current_user.is_authenticated %}
+    <a href="/{{ repo.full_name }}/issues/new" class="gh-btn gh-btn-primary gh-btn-sm">New issue</a>
+    {% endif %}
+  </div>
+
+  <div class="issues-list">
+    {% for issue in issues %}
+    <div class="issue-row">
+      <div class="issue-status-icon">
+        {% if issue.status == 'open' %}
+        <svg aria-hidden="true" height="16" viewBox="0 0 16 16" width="16" fill="#3fb950">
+          <path d="M8 9.5a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3Z"/><path d="M8 0a8 8 0 1 1 0 16A8 8 0 0 1 8 0ZM1.5 8a6.5 6.5 0 1 0 13 0 6.5 6.5 0 0 0-13 0Z"/>
+        </svg>
+        {% else %}
+        <svg aria-hidden="true" height="16" viewBox="0 0 16 16" width="16" fill="#a371f7">
+          <path d="M11.28 6.78a.75.75 0 0 0-1.06-1.06L7.25 8.69 5.78 7.22a.75.75 0 0 0-1.06 1.06l2 2a.75.75 0 0 0 1.06 0l3.5-3.5Z"/><path d="M8 0a8 8 0 1 1 0 16A8 8 0 0 1 8 0ZM1.5 8a6.5 6.5 0 1 0 13 0 6.5 6.5 0 0 0-13 0Z"/>
+        </svg>
+        {% endif %}
+      </div>
+      <div class="issue-info">
+        <div class="issue-title-row">
+          <a href="/{{ repo.full_name }}/issues/{{ issue.number }}" class="issue-title">{{ issue.title }}</a>
+          {% for label in issue.get_labels() %}
+          <span class="issue-label">{{ label }}</span>
+          {% endfor %}
+        </div>
+        <div class="issue-meta">
+          #{{ issue.number }} opened {{ issue.created_at | time_ago }} by
+          <a href="/{{ issue.author.username }}" class="issue-author">{{ issue.author.username }}</a>
+        </div>
+      </div>
+      {% if issue.comment_count() > 0 %}
+      <div class="issue-comments">
+        <svg aria-hidden="true" height="14" viewBox="0 0 16 16" width="14" fill="currentColor">
+          <path d="M1 2.75C1 1.784 1.784 1 2.75 1h10.5c.966 0 1.75.784 1.75 1.75v7.5A1.75 1.75 0 0 1 13.25 12H9.06l-2.573 2.573A1.458 1.458 0 0 1 4 13.543V12H2.75A1.75 1.75 0 0 1 1 10.25Z"/>
+        </svg>
+        {{ issue.comment_count() }}
+      </div>
+      {% endif %}
+    </div>
+    {% else %}
+    <div class="issues-empty">
+      <svg aria-hidden="true" height="24" viewBox="0 0 24 24" width="24" fill="currentColor">
+        <path d="M12 2C6.477 2 2 6.477 2 12s4.477 10 10 10 10-4.477 10-10S17.523 2 12 2zm0 18c-4.418 0-8-3.582-8-8s3.582-8 8-8 8 3.582 8 8-3.582 8-8 8zm0-11a1 1 0 0 0-1 1v4a1 1 0 0 0 2 0V10a1 1 0 0 0-1-1zm0-2a1 1 0 1 0 0 2 1 1 0 0 0 0-2z"/>
+      </svg>
+      <p>{% if is_open %}No open issues{% else %}No closed issues{% endif %}</p>
+      {% if current_user.is_authenticated %}
+      <a href="/{{ repo.full_name }}/issues/new" class="gh-btn gh-btn-primary">Open an issue</a>
+      {% endif %}
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}

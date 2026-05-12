@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block title %}Stargazers · {{ repo.full_name }} · GitHub{% endblock %}
+{% block content %}
+<div class="repo-header-bar">
+  <div class="repo-header-inner">
+    <div class="repo-breadcrumb">
+      <svg aria-hidden="true" height="16" viewBox="0 0 16 16" width="16" fill="currentColor" class="repo-icon-sm">
+        <path d="M2 2.5A2.5 2.5 0 0 1 4.5 0h8.75a.75.75 0 0 1 .75.75v12.5a.75.75 0 0 1-.75.75h-2.5a.75.75 0 0 1 0-1.5h1.75v-2h-8a1 1 0 0 0-.714 1.7.75.75 0 1 1-1.072 1.05A2.495 2.495 0 0 1 2 11.5Z"/>
+      </svg>
+      <a href="/{{ repo.full_name.split('/')[0] }}" class="repo-breadcrumb-link">{{ repo.full_name.split('/')[0] }}</a>
+      <span class="repo-breadcrumb-sep">/</span>
+      <a href="/{{ repo.full_name }}" class="repo-breadcrumb-link repo-breadcrumb-repo">{{ repo.name }}</a>
+    </div>
+  </div>
+</div>
+
+<div class="contributors-page">
+  <div class="contributors-page-inner">
+    <h1 class="contributors-title">Stargazers</h1>
+    <p class="contributors-summary">
+      <strong>{{ stargazers|length }}</strong> user{% if stargazers|length != 1 %}s{% endif %}
+      {% if stargazers|length != 1 %}have{% else %}has{% endif %} starred <strong>{{ repo.full_name }}</strong>.
+    </p>
+
+    {% if stargazers %}
+    <div class="stargazers-grid">
+      {% for u in stargazers %}
+      <a class="stargazer-card" href="/{{ u.username }}">
+        <img class="stargazer-avatar" src="{{ u.avatar_url }}" alt="{{ u.username }}"
+             onerror="this.src='/static/images/avatars/avatar_00.jpg'">
+        <div class="stargazer-meta">
+          <div class="stargazer-name">{{ u.name or u.username }}</div>
+          <div class="stargazer-username">{{ u.username }}</div>
+          {% if u.bio %}<p class="stargazer-bio">{{ u.bio }}</p>{% endif %}
+        </div>
+      </a>
+      {% endfor %}
+    </div>
+    {% else %}
+    <div class="empty-state">
+      <p>No one has starred this repository yet.</p>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,105 @@
+{% extends "base.html" %}
+{% block title %}Contributors · {{ repo.full_name }} · GitHub{% endblock %}
+{% block content %}
+<div class="repo-header-bar">
+  <div class="repo-header-inner">
+    <div class="repo-breadcrumb">
+      <svg aria-hidden="true" height="16" viewBox="0 0 16 16" width="16" fill="currentColor" class="repo-icon-sm">
+        <path d="M2 2.5A2.5 2.5 0 0 1 4.5 0h8.75a.75.75 0 0 1 .75.75v12.5a.75.75 0 0 1-.75.75h-2.5a.75.75 0 0 1 0-1.5h1.75v-2h-8a1 1 0 0 0-.714 1.7.75.75 0 1 1-1.072 1.05A2.495 2.495 0 0 1 2 11.5Z"/>
+      </svg>
+      <a href="/{{ repo.full_name.split('/')[0] }}" class="repo-breadcrumb-link">{{ repo.full_name.split('/')[0] }}</a>
+      <span class="repo-breadcrumb-sep">/</span>
+      <a href="/{{ repo.full_name }}" class="repo-breadcrumb-link repo-breadcrumb-repo">{{ repo.name }}</a>
+    </div>
+    <nav class="repo-tabs">
+      <a href="/{{ repo.full_name }}" class="repo-tab">Code</a>
+      <a href="/{{ repo.full_name }}/issues" class="repo-tab">
+        Issues <span class="repo-tab-count">{{ open_count }}</span>
+      </a>
+      <a href="/{{ repo.full_name }}/releases" class="repo-tab">Releases</a>
+      <a href="/{{ repo.full_name }}/contributors" class="repo-tab repo-tab-active">
+        Contributors <span class="repo-tab-count">{{ contributors|length }}</span>
+      </a>
+    </nav>
+  </div>
+</div>
+
+<div class="contributors-page">
+  <div class="contributors-page-inner">
+    <div class="contributors-header">
+      <div>
+        <h1 class="contributors-title">Contributors</h1>
+        <p class="contributors-summary">
+          {{ contributors|length }} contributor{% if contributors|length != 1 %}s{% endif %}
+          have made commits to <strong>{{ repo.full_name }}</strong>, totalling
+          <strong>{{ total_commits }}</strong> commits.
+        </p>
+      </div>
+      <div class="contributors-sort">
+        <label for="contrib-sort" class="contributors-sort-label">Sort:</label>
+        <select id="contrib-sort" name="sort" class="contributors-sort-select"
+                onchange="var u=new window.URL(window.location.href); u.searchParams.set('sort', this.value); window.location=u.toString();">
+          <option value="commits" {% if current_sort == 'commits' %}selected{% endif %}>Commits (most)</option>
+          <option value="commits_asc" {% if current_sort == 'commits_asc' %}selected{% endif %}>Commits (fewest)</option>
+          <option value="additions" {% if current_sort == 'additions' %}selected{% endif %}>Most additions</option>
+          <option value="deletions" {% if current_sort == 'deletions' %}selected{% endif %}>Most deletions</option>
+        </select>
+      </div>
+    </div>
+
+    {% if contributors %}
+    <div class="contributors-grid">
+      {% for c in contributors %}
+      <article class="contributor-card">
+        <div class="contributor-card-top">
+          <a href="/{{ c.username }}" class="contributor-card-avatar-link">
+            <img class="contributor-card-avatar"
+                 src="{{ c.avatar }}"
+                 alt="{{ c.username }}"
+                 onerror="this.src='/static/images/avatars/avatar_00.jpg'">
+          </a>
+          <div class="contributor-card-info">
+            <div class="contributor-card-rank">#{{ loop.index }}</div>
+            <a href="/{{ c.username }}" class="contributor-card-name">{{ c.display_name }}</a>
+            <a href="/{{ c.username }}" class="contributor-card-username">{{ c.username }}</a>
+            {% if c.bio %}
+            <p class="contributor-card-bio">{{ c.bio }}</p>
+            {% endif %}
+          </div>
+        </div>
+
+        <div class="contributor-card-stats">
+          <div class="contributor-stat">
+            <strong>{{ c.commits }}</strong>
+            <span>commits</span>
+          </div>
+          <div class="contributor-stat contributor-stat--add">
+            <strong>+{{ c.additions }}</strong>
+            <span>additions</span>
+          </div>
+          <div class="contributor-stat contributor-stat--del">
+            <strong>−{{ c.deletions }}</strong>
+            <span>deletions</span>
+          </div>
+        </div>
+
+        <div class="contributor-sparkline" title="Contributions over time">
+          {% for h in c.bars %}
+          <span class="contributor-bar" style="height:{{ h }}px"></span>
+          {% endfor %}
+        </div>
+
+        <div class="contributor-share-bar" aria-label="Contribution share">
+          <span class="contributor-share-fill" style="width: {{ c.commit_share }}%"></span>
+        </div>
+      </article>
+      {% endfor %}
+    </div>
+    {% else %}
+    <div class="empty-state">
+      <p>No contributor data yet.</p>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

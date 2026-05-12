@@ -1,0 +1,72 @@
+{% macro serp_header(q, vertical='all') -%}
+<div class="serp-header">
+    <div class="serp-header-top">
+        <a href="{{ url_for('index') }}" class="g-logo g-logo-small serp-logo">
+            <span>G</span><span>o</span><span>o</span><span>g</span><span>l</span><span>e</span>
+        </a>
+        <form action="{{ url_for('search') }}" method="get" class="serp-search" autocomplete="off">
+            <div class="search-box">
+                <div class="search-icon">
+                    <svg viewBox="0 0 24 24" fill="#9aa0a6"><path d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
+                </div>
+                <input type="search" name="q" value="{{ q }}">
+                <input type="hidden" name="tbm" value="{{ vertical }}">
+                <div class="voice-icon" title="Search by voice">
+                    <svg viewBox="0 0 24 24" width="20" height="20"><path fill="#4285f4" d="M12 15c1.66 0 3-1.34 3-3V6c0-1.66-1.34-3-3-3S9 4.34 9 6v6c0 1.66 1.34 3 3 3z"/><path fill="#ea4335" d="M17 12c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V22h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/></svg>
+                </div>
+            </div>
+        </form>
+        <div class="serp-header-actions">
+            <button class="icon-btn" data-apps-toggle aria-label="Google apps">
+                <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><circle cx="5" cy="5" r="2"/><circle cx="12" cy="5" r="2"/><circle cx="19" cy="5" r="2"/><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/><circle cx="5" cy="19" r="2"/><circle cx="12" cy="19" r="2"/><circle cx="19" cy="19" r="2"/></svg>
+            </button>
+            {% if current_user.is_authenticated %}
+            <a class="user-avatar" href="{{ url_for('account') }}" title="{{ current_user.name }}">{{ current_user.avatar_letter or 'G' }}</a>
+            {% else %}
+            <a href="{{ url_for('login') }}" class="sign-in-btn">Sign in</a>
+            {% endif %}
+        </div>
+        <div class="apps-dropdown">
+            <div class="apps-grid-mini">
+                {% for app in google_apps %}
+                <a class="app-mini" href="{{ app.url }}">
+                    <div class="icon" style="background: {{ app.color }}">{{ app.name[0] }}</div>
+                    <div>{{ app.name }}</div>
+                </a>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    <div class="serp-tabs">
+        {% for v in nav_verticals %}
+        <a class="serp-tab {% if v.slug == vertical %}active{% endif %}"
+           href="{{ url_for('search', q=q, tbm=v.slug) }}">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
+                {% if v.icon == 'image' %}
+                <path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/>
+                {% elif v.icon == 'play' %}
+                <path d="M8 5v14l11-7z"/>
+                {% elif v.icon == 'newspaper' %}
+                <path d="M20 3H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2zM8 19H4v-4h4v4zm0-6H4V9h4v4zm0-6H4V5h4v2zm6 12h-4v-4h4v4zm0-6h-4V9h4v4zm0-6h-4V5h4v2zm6 12h-4v-4h4v4zm0-6h-4V9h4v4zm0-6h-4V5h4v2z"/>
+                {% elif v.icon == 'map' %}
+                <path d="M20.5 3l-.16.03L15 5.1 9 3 3.36 4.9c-.21.07-.36.25-.36.48V20.5c0 .28.22.5.5.5l.16-.03L9 18.9l6 2.1 5.64-1.9c.21-.07.36-.25.36-.48V3.5c0-.28-.22-.5-.5-.5zM15 19l-6-2.11V5l6 2.11V19z"/>
+                {% elif v.icon == 'shopping' %}
+                <path d="M7 18c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zM1 2v2h2l3.6 7.59-1.35 2.45c-.16.28-.25.61-.25.96 0 1.1.9 2 2 2h12v-2H7.42c-.14 0-.25-.11-.25-.25l.03-.12L8.1 13h7.45c.75 0 1.41-.41 1.75-1.03l3.58-6.49c.08-.14.12-.31.12-.48 0-.55-.45-1-1-1H5.21l-.94-2H1zm16 16c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/>
+                {% elif v.icon == 'book' %}
+                <path d="M18 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 18H6V4h5v8l2.5-1.5L16 12V4h2v16z"/>
+                {% elif v.icon == 'chart' %}
+                <path d="M3 12h4v8H3zm7-5h4v13h-4zm7 2h4v11h-4z"/>
+                {% else %}
+                <path d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/>
+                {% endif %}
+            </svg>
+            {{ v.name }}
+        </a>
+        {% endfor %}
+        <a class="serp-tab" href="{{ url_for('advanced_search') }}">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M10 18a7.95 7.95 0 0 0 4.9-1.69l4.4 4.4 1.41-1.41-4.4-4.4A7.95 7.95 0 0 0 18 10c0-4.42-3.58-8-8-8s-8 3.58-8 8 3.58 8 8 8zm0-14c3.31 0 6 2.69 6 6s-2.69 6-6 6-6-2.69-6-6 2.69-6 6-6z"/></svg>
+            Tools
+        </a>
+    </div>
+</div>
+{%- endmacro %}

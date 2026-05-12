@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+{% block title %}Shopping Cart - Amazon.com{% endblock %}
+
+{% block content %}
+<div class="bag-layout">
+    <div class="bag-main">
+        {% if items %}
+        <div id="cart-success-banner" style="background:#e7f9ec;border:1px solid #4caf50;color:#1e7e34;padding:10px 14px;margin-bottom:14px;border-radius:4px;font-size:15px;font-weight:600">
+            &#10003; Item added to cart. Your shopping cart currently has {{ items|sum(attribute='quantity') }} item{% if items|sum(attribute='quantity') != 1 %}s{% endif %} (subtotal ${{ '%.2f'|format(subtotal) }}).
+        </div>
+        {% endif %}
+        <h1>Shopping Cart</h1>
+
+        {% if items %}
+        <div style="display:flex;justify-content:space-between;font-size:13px;color:var(--amz-text-secondary);margin-bottom:10px">
+            <span>Deselect all items</span>
+            <span>Price</span>
+        </div>
+        {% for item in items %}
+        <div class="bag-item">
+            <div class="bag-item-img">
+                <img src="{{ item.product.image }}" alt="{{ item.product.name }}" onerror="this.style.display='none'">
+            </div>
+            <div class="bag-item-info">
+                <h3><a href="{{ url_for('product_detail', slug=item.product.slug) }}">{{ item.product.name }}</a></h3>
+                <div class="bag-meta">
+                    {% if item.variant %}{{ item.variant }}{% endif %}
+                </div>
+                <div style="color:var(--amz-success);font-size:13px;margin:5px 0">In Stock</div>
+                <div class="bag-meta">Eligible for FREE Shipping · Gift options not available</div>
+                <div class="bag-actions">
+                    <div class="bag-qty-controls">
+                        <button onclick="updateCartItem({{ item.id }}, {{ item.quantity - 1 }})">−</button>
+                        <input type="text" value="{{ item.quantity }}" readonly>
+                        <button onclick="updateCartItem({{ item.id }}, {{ item.quantity + 1 }})">+</button>
+                    </div>
+                    <button onclick="removeCartItem({{ item.id }})" class="btn-link">Delete</button>
+                    <button onclick="toggleWishlist({{ item.product.id }}, this); removeCartItem({{ item.id }});" class="btn-link">Save for later</button>
+                </div>
+            </div>
+            <div style="text-align:right;font-size:18px;font-weight:700">${{ '%.2f'|format(item.product.price * item.quantity) }}</div>
+        </div>
+        {% endfor %}
+        <div class="bag-subtotal-row">
+            Subtotal ({{ items|sum(attribute='quantity') }} item{% if items|sum(attribute='quantity') != 1 %}s{% endif %}): <strong class="subtotal-value">${{ '%.2f'|format(subtotal) }}</strong>
+        </div>
+        {% else %}
+        <div class="empty-state" style="padding:40px 20px">
+            <h2>Your Amazon Cart is empty</h2>
+            <p>Check your Saved for later items below or <a href="{{ url_for('index') }}">continue shopping</a>.</p>
+            <a href="{{ url_for('login') }}" class="btn btn-orange">Sign in to your account</a>
+        </div>
+        {% endif %}
+    </div>
+
+    {% if items %}
+    <aside class="bag-sidebar">
+        <div class="prime-box">
+            {% if subtotal >= 35 or (current_user.is_authenticated and current_user.is_prime) %}
+            <span style="color:var(--amz-success)">✓</span> Your order qualifies for FREE Shipping.
+            {% else %}
+            Add ${{ '%.2f'|format(35 - subtotal) }} to qualify for FREE Shipping.
+            {% endif %}
+        </div>
+        <div class="subtotal">
+            Subtotal ({{ items|sum(attribute='quantity') }} item{% if items|sum(attribute='quantity') != 1 %}s{% endif %}): <strong class="subtotal-value">${{ '%.2f'|format(subtotal) }}</strong>
+        </div>
+        <label style="display:flex;align-items:center;gap:6px;margin:10px 0;font-size:13px">
+            <input type="checkbox"> This order contains a gift
+        </label>
+        <a href="{{ url_for('checkout') }}" class="btn btn-orange btn-full">Proceed to checkout</a>
+    </aside>
+    {% endif %}
+</div>
+{% endblock %}

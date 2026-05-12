@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+{% block title %}{% if editing %}Edit Address{% else %}Add New Address{% endif %} - Amazon.com{% endblock %}
+
+{% block content %}
+<div class="account-page">
+    <h1>{% if editing %}Edit Address{% else %}Add New Address{% endif %}</h1>
+    <p><a href="{{ url_for('addresses_list') }}">&larr; Back to your addresses</a></p>
+
+    <div style="max-width:600px">
+        <form method="POST" novalidate>
+            {{ form.csrf_token }}
+
+            <div class="form-group">
+                <label for="label">Address Label</label>
+                <select id="label" name="label" class="form-control">
+                    <option value="Home" {% if (addr and addr.label == 'Home') or (form.label.data == 'Home') %}selected{% endif %}>Home</option>
+                    <option value="Work" {% if (addr and addr.label == 'Work') or (form.label.data == 'Work') %}selected{% endif %}>Work</option>
+                    <option value="Other" {% if (addr and addr.label == 'Other') or (form.label.data == 'Other') %}selected{% endif %}>Other</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="full_name">Full Name</label>
+                <input type="text" id="full_name" name="full_name" class="form-control"
+                    value="{{ (addr.full_name if addr else '') or form.full_name.data or '' }}" required>
+            </div>
+
+            <div class="form-group">
+                <label for="phone">Phone Number (optional)</label>
+                <input type="text" id="phone" name="phone" class="form-control"
+                    value="{{ (addr.phone if addr else '') or form.phone.data or '' }}">
+            </div>
+
+            <div class="form-group">
+                <label for="address_line1">Street Address</label>
+                <input type="text" id="address_line1" name="address_line1" class="form-control"
+                    value="{{ (addr.address_line1 if addr else '') or form.address_line1.data or '' }}" required>
+            </div>
+
+            <div class="form-group">
+                <label for="address_line2">Apt, Suite, Unit (optional)</label>
+                <input type="text" id="address_line2" name="address_line2" class="form-control"
+                    value="{{ (addr.address_line2 if addr else '') or form.address_line2.data or '' }}">
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="city">City</label>
+                    <input type="text" id="city" name="city" class="form-control"
+                        value="{{ (addr.city if addr else '') or form.city.data or '' }}" required>
+                </div>
+                <div class="form-group">
+                    <label for="state">State</label>
+                    <input type="text" id="state" name="state" class="form-control"
+                        value="{{ (addr.state if addr else '') or form.state.data or '' }}" required>
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="zip_code">ZIP Code</label>
+                    <input type="text" id="zip_code" name="zip_code" class="form-control"
+                        value="{{ (addr.zip_code if addr else '') or form.zip_code.data or '' }}" required>
+                </div>
+                <div class="form-group">
+                    <label for="country">Country</label>
+                    <input type="text" id="country" name="country" class="form-control"
+                        value="{{ (addr.country if addr else 'United States') or form.country.data or 'United States' }}">
+                </div>
+            </div>
+
+            <div style="display:flex;gap:12px;margin-top:20px">
+                <button type="submit" class="btn btn-orange">
+                    {% if editing %}Save Changes{% else %}Add Address{% endif %}
+                </button>
+                <a href="{{ url_for('addresses_list') }}" class="btn btn-outline">Cancel</a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

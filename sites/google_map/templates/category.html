@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% from '_place_card.html' import place_card %}
+{% block title %}{{ category.name }} - Google Maps{% endblock %}
+
+{% block body %}
+<div class="app-shell">
+    {% include '_rail.html' %}
+
+    <aside class="left-panel">
+        {% set search_value = category.name %}
+        {% include '_search_bar.html' %}
+
+        <div class="filter-row">
+            <a href="?" class="filter-chip {% if not city_filter and not min_rating %}active{% endif %}">All {{ category.name }}</a>
+            <a href="?min_rating=4.5" class="filter-chip {% if min_rating == 4.5 %}active{% endif %}">
+                <span class="material-icons-outlined" style="font-size:16px;">star</span> 4.5+
+            </a>
+            <a href="?sort=reviews" class="filter-chip {% if sort == 'reviews' %}active{% endif %}">Most reviewed</a>
+            <a href="?sort=name" class="filter-chip {% if sort == 'name' %}active{% endif %}">A–Z</a>
+            {% for c in cities[:6] %}
+            <a href="?city={{ c.slug }}" class="filter-chip {% if city_filter == c.slug %}active{% endif %}">{{ c.display_name }}</a>
+            {% endfor %}
+        </div>
+
+        <div class="panel-section">
+            <h2>{{ category.name }}</h2>
+            <div class="sub">{{ places|length }} result{{ '' if places|length == 1 else 's' }}
+                {% if city_filter %}in {{ city_filter|replace('-', ' ')|title }}{% endif %}
+                {% if min_rating %}with {{ min_rating }}+ stars{% endif %}
+            </div>
+        </div>
+
+        {% if places %}
+            {% for p in places %}
+                {{ place_card(p) }}
+            {% endfor %}
+        {% else %}
+            <div class="empty-state">
+                <div class="empty-ico"><span class="material-icons-outlined">search_off</span></div>
+                <h3>No results</h3>
+                <p>Try adjusting your filters or exploring a different area.</p>
+                <a href="{{ url_for('category_page', slug=category.slug) }}" class="btn">Reset filters</a>
+            </div>
+        {% endif %}
+    </aside>
+
+    {% include '_mapcanvas.html' %}
+</div>
+{% endblock %}

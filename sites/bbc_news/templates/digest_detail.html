@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+{% block title %}{{ digest.title }} - BBC News{% endblock %}
+
+{% block content %}
+<div class="digest-detail">
+    <div class="digest-detail-header">
+        <div>
+            <h1>{{ digest.title }}</h1>
+            <p style="color: var(--bbc-text-light); font-size: 14px; margin-top: 4px;">
+                Digest #{{ digest.digest_number }} ·
+                Created {{ digest.created_at.strftime('%d %b %Y %H:%M') }} ·
+                {{ digest.format }}
+            </p>
+            <p style="margin-top: 6px;">
+                <span class="status-pill status-{{ digest.status }}">{{ digest.status }}</span>
+                · {{ digest.article_count }} articles
+                · Delivered to {{ digest.delivery_email or current_user.email }}
+            </p>
+            {% if digest.notes %}
+            <p style="margin-top: 10px; color: var(--bbc-text); font-style: italic;">{{ digest.notes }}</p>
+            {% endif %}
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 8px; min-width: 200px;">
+            <a href="{{ url_for('digest_download', digest_number=digest.digest_number) }}"
+               class="btn btn-full">Download ({{ digest.format }})</a>
+            <form method="post" action="{{ url_for('digest_resend', digest_number=digest.digest_number) }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button type="submit" class="btn btn-outline btn-full">Add all to reading list</button>
+            </form>
+            {% if digest.status != 'cancelled' %}
+            <form method="post" action="{{ url_for('digest_cancel', digest_number=digest.digest_number) }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button type="submit" class="btn btn-outline btn-full">Cancel digest</button>
+            </form>
+            {% endif %}
+        </div>
+    </div>
+
+    <h2 style="font-size: 22px; font-weight: 700; margin: 28px 0 16px;">Articles in this digest</h2>
+    {% for item in digest.items %}
+    {% if item.article %}
+    <div class="digest-detail-item">
+        {% if item.article.hero_image %}
+        <img src="{{ item.article.hero_image }}" alt="{{ item.article.headline|e }}" onerror="this.style.display='none'">
+        {% endif %}
+        <div>
+            <h3 style="font-size: 18px; font-weight: 700; margin-bottom: 4px;">
+                <a href="{{ url_for('article_detail', slug=item.article.slug) }}">{{ item.article.headline }}</a>
+            </h3>
+            {% if item.article.subtitle %}
+            <p style="color: var(--bbc-text-light); font-size: 14px; margin-bottom: 6px;">
+                {{ item.article.subtitle }}
+            </p>
+            {% endif %}
+            <p style="color: var(--bbc-meta); font-size: 12px;">
+                {{ item.article.category.name if item.article.category else 'News' }} ·
+                {{ item.article.published_date_str }} ·
+                {{ item.article.reading_time }} min read
+            </p>
+        </div>
+    </div>
+    {% endif %}
+    {% endfor %}
+
+    <div style="margin-top: 32px;">
+        <a href="{{ url_for('account') }}" class="btn btn-outline">← Back to account</a>
+    </div>
+</div>
+{% endblock %}

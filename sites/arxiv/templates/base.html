@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+    <title>{% block title %}arXiv.org e-Print archive{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
+    <link rel="icon" href="{{ url_for('static', filename='images/brand/arxiv-logomark.svg') }}" type="image/svg+xml">
+</head>
+<body>
+
+<!-- ROW 1: Cornell identity bar (black background) — Cornell logo + announcement banner + donate -->
+<div class="cu-identity">
+    <div class="cu-identity-inner">
+        <div class="cu-logo">
+            <a href="{{ url_for('external_cornell') }}">
+                <img src="{{ url_for('static', filename='images/brand/cornell-reduced-white-SMALL.svg') }}" alt="Cornell University"
+                     onerror="this.outerHTML='<strong>Cornell University</strong>'">
+            </a>
+        </div>
+        <div class="cu-banner">
+            <a href="{{ url_for('about') }}">Learn about arXiv becoming an independent nonprofit.</a>
+        </div>
+        <div class="cu-support">
+            <span>We gratefully acknowledge support from the Simons Foundation, member institutions, and all contributors.</span>
+            <a href="{{ url_for('about') }}" class="btn-donate">Donate</a>
+        </div>
+    </div>
+</div>
+
+<!-- ROW 2: arXiv masthead (Cornell maroon) — wordmark + breadcrumbs + search -->
+<header class="main-header">
+    <div class="header-inner">
+        <div class="header-logo">
+            <a href="{{ url_for('index') }}">
+                <img src="{{ url_for('static', filename='images/brand/arxiv-logo-one-color-white.svg') }}" alt="arXiv"
+                     onerror="this.outerHTML='<span style=&quot;color:#fff;font-size:28px;font-weight:bold;font-style:italic;&quot;>arXiv</span>'">
+            </a>
+        </div>
+        <div class="header-breadcrumbs">
+            {% block breadcrumbs %}{% endblock %}
+        </div>
+        <div class="header-search">
+            <form action="{{ url_for('search') }}" method="get">
+                <input type="text" name="query" placeholder="Search..." value="{{ request.args.get('query', '') }}">
+                <select name="searchtype">
+                    <option value="all">All fields</option>
+                    <option value="title">Title</option>
+                    <option value="author">Author</option>
+                    <option value="abstract">Abstract</option>
+                    <option value="id">arXiv ID</option>
+                </select>
+                <button type="submit">Search</button>
+            </form>
+        </div>
+    </div>
+    <div class="header-meta">
+        <a href="{{ url_for('help_page') }}">Help</a>
+        <span>|</span>
+        <a href="{{ url_for('advanced_search') }}">Advanced Search</a>
+        <span>|</span>
+        <a href="{{ url_for('news') }}">News</a>
+        <span>|</span>
+        <a href="{{ url_for('blog') }}">Blog</a>
+        <span>|</span>
+        <a href="{{ url_for('store') }}">Store</a>
+    </div>
+</header>
+
+{% if mirror_today_pretty %}
+<!-- Mirror date strip (anchor for relative-date tasks like "yesterday", "last week") -->
+<div class="mirror-date-strip">
+    <span class="mdate-label">Today on arXiv:</span>
+    <strong class="mdate-value">{{ mirror_today_pretty }}</strong>
+    <span class="mdate-iso">({{ mirror_today }})</span>
+    <span class="mdate-note">— all "recent / latest / last N days / yesterday" wording on arXiv is relative to this date.</span>
+</div>
+{% endif %}
+
+<!-- ROW 3: Secondary bar (login/account quick links) -->
+<div class="secondary-bar">
+    {% if current_user.is_authenticated %}
+        <a href="{{ url_for('account') }}">{{ current_user.username }}</a> |
+        <a href="{{ url_for('logout') }}">Logout</a>
+    {% else %}
+        <a href="{{ url_for('login') }}">Login</a> |
+        <a href="{{ url_for('register') }}">Register</a>
+    {% endif %}
+</div>
+
+<!-- Flash messages -->
+{% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+    <div class="flash-container">
+        {% for cat, msg in messages %}
+            <div class="flash flash-{{ 'error' if cat == 'error' else 'success' }}">
+                <span>{{ msg }}</span>
+                <button class="close" aria-label="Dismiss">×</button>
+            </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+{% endwith %}
+
+<main class="page-wrap">
+    {% block content %}{% endblock %}
+</main>
+
+<footer class="main-footer">
+    <div class="footer-inner">
+        <div>
+            <h4>About arXiv</h4>
+            <ul>
+                <li><a href="{{ url_for('about') }}">About</a></li>
+                <li><a href="{{ url_for('news') }}">arXiv News</a></li>
+                <li><a href="{{ url_for('blog') }}">arXiv Blog</a></li>
+                <li><a href="{{ url_for('store') }}">arXiv Store</a></li>
+                <li><a href="{{ url_for('help_page') }}">Help</a></li>
+                <li><a href="{{ url_for('help_page_sub', page='faq') }}">FAQ</a></li>
+                <li><a href="{{ url_for('category_taxonomy') }}">Category Taxonomy</a></li>
+            </ul>
+        </div>
+        <div>
+            <h4>Contact</h4>
+            <ul>
+                <li><a href="{{ url_for('help_page_sub', page='contact') }}">Contact Us</a></li>
+                <li><a href="{{ url_for('alerts_page') if current_user.is_authenticated else 'login' }}">Subscribe to Alerts</a></li>
+                <li><a href="{{ url_for('help_page_sub', page='submit') }}">How to Submit</a></li>
+            </ul>
+        </div>
+        <div>
+            <h4>Legal</h4>
+            <ul>
+                <li><a href="{{ url_for('help_page_sub', page='copyright') }}">Copyright</a></li>
+                <li><a href="{{ url_for('help_page_sub', page='privacy') }}">Privacy Policy</a></li>
+                <li><a href="{{ url_for('help_page_sub', page='accessibility') }}">Web Accessibility</a></li>
+            </ul>
+        </div>
+        <div>
+            <h4>Status</h4>
+            <ul>
+                <li><a href="{{ url_for('help_page_sub', page='status') }}">Operational Status</a></li>
+                <li>© {{ current_year }} arXiv</li>
+                <li class="muted">Cornell University affiliation</li>
+            </ul>
+        </div>
+    </div>
+</footer>
+
+<script src="{{ url_for('static', filename='js/main.js') }}"></script>
+{% block scripts %}{% endblock %}
+</body>
+</html>

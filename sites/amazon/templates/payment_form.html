@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+{% block title %}Add Payment Method - Amazon.com{% endblock %}
+
+{% block content %}
+<div class="account-page">
+    <h1>Add Payment Method</h1>
+    <p><a href="{{ url_for('payment_list') }}">&larr; Back to payment methods</a></p>
+
+    <div style="max-width:500px">
+        <form method="POST" novalidate>
+            {{ form.csrf_token }}
+
+            <div class="form-group">
+                <label for="card_type">Card Type</label>
+                <select id="card_type" name="card_type" class="form-control">
+                    <option value="Visa" {% if form.card_type.data == 'Visa' %}selected{% endif %}>Visa</option>
+                    <option value="Mastercard" {% if form.card_type.data == 'Mastercard' %}selected{% endif %}>Mastercard</option>
+                    <option value="American Express" {% if form.card_type.data == 'American Express' %}selected{% endif %}>American Express</option>
+                    <option value="Discover" {% if form.card_type.data == 'Discover' %}selected{% endif %}>Discover</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="cardholder_name">Name on Card</label>
+                <input type="text" id="cardholder_name" name="cardholder_name" class="form-control"
+                    value="{{ form.cardholder_name.data or '' }}" placeholder="As it appears on your card" required>
+            </div>
+
+            <div class="form-group">
+                <label for="card_number">Card Number</label>
+                <input type="text" id="card_number" name="card_number" class="form-control"
+                    value="{{ form.card_number.data or '' }}" placeholder="1234 5678 9012 3456" maxlength="19" required>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="exp_month">Expiration Month</label>
+                    <select id="exp_month" name="exp_month" class="form-control">
+                        {% for m in range(1, 13) %}
+                        <option value="{{ '%02d'|format(m) }}" {% if form.exp_month.data == '%02d'|format(m) %}selected{% endif %}>{{ '%02d'|format(m) }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="exp_year">Expiration Year</label>
+                    <select id="exp_year" name="exp_year" class="form-control">
+                        {% for y in range(2026, 2036) %}
+                        <option value="{{ y }}" {% if form.exp_year.data == y|string %}selected{% endif %}>{{ y }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+
+            <div style="display:flex;gap:12px;margin-top:20px">
+                <button type="submit" class="btn btn-orange">Add Payment Method</button>
+                <a href="{{ url_for('payment_list') }}" class="btn btn-outline">Cancel</a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% block title %}Our Partners | Coursera{% endblock %}
+{% block content %}
+<div class="partners-page">
+  <div class="partners-hero">
+    <div class="container">
+      <h1>Our Partners</h1>
+      <p>Coursera works with 300+ leading universities and companies to bring you the best online learning.</p>
+    </div>
+  </div>
+  <div class="container">
+    <div class="partners-filter-bar">
+      <form action="{{ url_for('partners') }}" method="get" class="filter-inline">
+        <select name="country" onchange="this.form.submit()">
+          <option value="">All countries</option>
+          {% for c in countries %}
+          <option value="{{ c }}" {% if c == country %}selected{% endif %}>{{ c }}</option>
+          {% endfor %}
+        </select>
+        <select name="type" onchange="this.form.submit()">
+          <option value="">All types</option>
+          <option value="university" {% if ptype == 'university' %}selected{% endif %}>Universities</option>
+          <option value="company" {% if ptype == 'company' %}selected{% endif %}>Companies</option>
+          <option value="institution" {% if ptype == 'institution' %}selected{% endif %}>Institutions</option>
+        </select>
+        {% if country or ptype %}
+        <a href="{{ url_for('partners') }}" class="btn-clear-all">Clear</a>
+        {% endif %}
+      </form>
+    </div>
+    {% if country %}
+    <h2>Partners in {{ country }}</h2>
+    {% endif %}
+    <div class="partners-grid">
+      {% for p in partners %}
+      <div class="partner-card">
+        <div class="partner-logo-circle">
+          {% set _pl = partner_logo(p) %}
+          {% if _pl %}<img src="{{ url_for('static', filename=_pl) }}" alt="{{ p.name }}">{% else %}<span class="partner-logo-fallback">{{ p.short_name[:2] }}</span>{% endif %}
+        </div>
+        <div class="partner-info">
+          <h3>{{ p.name }}</h3>
+          <span class="partner-country">{{ p.country }}</span>
+          <span class="partner-type">{{ p.partner_type|title }}</span>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+    {% if not partners %}
+    <div class="empty-state"><p>No partners found for the selected filters.</p></div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+{% block title %}Add Payment Method - Apple{% endblock %}
+
+{% block content %}
+<div style="max-width:540px;margin:0 auto;padding:80px 20px 60px">
+    <a href="{{ url_for('saved_payments') }}" style="font-size:14px;margin-bottom:16px;display:inline-block">&lsaquo; Back to Payment Methods</a>
+    <h1 style="font-size:32px;font-weight:700;font-family:var(--font-family);margin-bottom:24px">Add Payment Method</h1>
+
+    <form method="POST" action="{{ url_for('add_payment') }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token_value }}">
+
+        <div class="form-group" style="margin-bottom:16px">
+            <label style="font-weight:600;font-size:15px">Card Type</label>
+            <select name="card_type" class="form-control" style="margin-top:6px">
+                <option value="Visa">Visa</option>
+                <option value="Mastercard">Mastercard</option>
+                <option value="Amex">American Express</option>
+            </select>
+        </div>
+
+        <div class="form-group" style="margin-bottom:16px">
+            <label style="font-weight:600;font-size:15px">Card Number (last 4 digits)</label>
+            <input type="text" name="last4" class="form-control" style="margin-top:6px" required
+                   maxlength="4" pattern="[0-9]{4}" placeholder="e.g. 4242">
+        </div>
+
+        <div class="form-row">
+            <div class="form-group" style="flex:1;margin-bottom:16px">
+                <label style="font-weight:600;font-size:15px">Expiry Month</label>
+                <select name="exp_month" class="form-control" style="margin-top:6px">
+                    {% for m in range(1, 13) %}
+                    <option value="{{ m }}">{{ '%02d' % m }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="form-group" style="flex:1;margin-bottom:16px">
+                <label style="font-weight:600;font-size:15px">Expiry Year</label>
+                <select name="exp_year" class="form-control" style="margin-top:6px">
+                    {% for y in range(2025, 2033) %}
+                    <option value="{{ y }}">{{ y }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+
+        <div class="form-group" style="margin-bottom:16px">
+            <label style="font-weight:600;font-size:15px">Cardholder Name</label>
+            <input type="text" name="cardholder_name" class="form-control" style="margin-top:6px"
+                   placeholder="Name as it appears on card">
+        </div>
+
+        <div class="form-group" style="margin-bottom:24px">
+            <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
+                <input type="checkbox" name="is_default" value="1">
+                <span style="font-size:15px">Set as default payment method</span>
+            </label>
+        </div>
+
+        <button type="submit" class="btn-checkout" style="max-width:240px">Save Payment Method</button>
+    </form>
+</div>
+{% endblock %}

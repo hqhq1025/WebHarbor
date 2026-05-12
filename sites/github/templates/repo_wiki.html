@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% block title %}Wiki · {{ repo.full_name }} · GitHub{% endblock %}
+{% block content %}
+<div class="repo-header-bar">
+  <div class="repo-header-inner">
+    <div class="repo-breadcrumb">
+      <a href="/{{ repo.full_name.split('/')[0] }}" class="repo-breadcrumb-link">{{ repo.full_name.split('/')[0] }}</a>
+      <span class="repo-breadcrumb-sep">/</span>
+      <a href="/{{ repo.full_name }}" class="repo-breadcrumb-link repo-breadcrumb-repo">{{ repo.name }}</a>
+    </div>
+    <nav class="repo-tabs">
+      <a href="/{{ repo.full_name }}" class="repo-tab">Code</a>
+      <a href="/{{ repo.full_name }}/issues" class="repo-tab">Issues</a>
+      <a href="/{{ repo.full_name }}/pulls" class="repo-tab">Pull requests</a>
+      <a href="/{{ repo.full_name }}/wiki" class="repo-tab repo-tab-active">Wiki {% if pages %}<span class="repo-tab-count">{{ pages | length }}</span>{% endif %}</a>
+    </nav>
+  </div>
+</div>
+<div class="repo-layout">
+  <div class="repo-main" style="width: 100%;">
+    <h1 class="page-title">Wiki</h1>
+    {% if pages %}
+      <p class="wiki-intro">Welcome to the <strong>{{ repo.full_name }}</strong> wiki — community-maintained documentation for users and contributors.</p>
+      <ul class="wiki-pages-list">
+        {% for p in pages %}
+        <li class="wiki-page-item">
+          <a href="/{{ repo.full_name }}/wiki/{{ p.slug }}" class="wiki-page-link">{{ p.title }}</a>
+          {% if p.excerpt %}<p class="wiki-page-excerpt">{{ p.excerpt }}</p>{% endif %}
+        </li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      <div class="wiki-empty-state">
+        <svg aria-hidden="true" height="40" viewBox="0 0 16 16" width="40" fill="#6e7681">
+          <path d="M0 1.75A.75.75 0 0 1 .75 1h4.253c1.227 0 2.317.59 3 1.501A3.743 3.743 0 0 1 11.006 1h4.245a.75.75 0 0 1 .75.75v10.5a.75.75 0 0 1-.75.75h-4.507a2.25 2.25 0 0 0-1.591.659l-.622.621a.75.75 0 0 1-1.063 0l-.622-.621A2.25 2.25 0 0 0 5.258 13H.75a.75.75 0 0 1-.75-.75Zm7.251 10.324.004-5.073-.002-2.253A2.25 2.25 0 0 0 5.003 2.5H1.5v9h3.757a3.75 3.75 0 0 1 1.994.574ZM8.755 4.75l-.004 7.322a3.752 3.752 0 0 1 1.992-.572H14.5v-9h-3.495a2.25 2.25 0 0 0-2.25 2.25Z"/>
+        </svg>
+        <h2 class="wiki-empty-title">Welcome to the {{ repo.name }} wiki!</h2>
+        <p class="wiki-empty-text">There are no pages yet. The wiki is a place for collaborative documentation maintained by the project's community.</p>
+        <p class="wiki-empty-text">Maintainers can create the first page below.</p>
+        {% if current_user.is_authenticated %}
+        <a href="/{{ repo.full_name }}/wiki/_new" class="gh-btn gh-btn-primary">Create the first page</a>
+        {% endif %}
+      </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

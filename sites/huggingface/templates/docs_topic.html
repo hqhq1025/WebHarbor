@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block title %}{{ page.title }} – Hugging Face Docs{% endblock %}
+
+{% block content %}
+<div class="container-wide page docs-topic-page">
+    <div class="docs-topic-layout">
+        <aside class="sidebar docs-sidebar">
+            <h4>Documentation</h4>
+            <ul class="docs-sidebar-list">
+                {% for slug, p in all_topics.items() %}
+                <li>
+                    <a href="{{ url_for('docs_topic', topic=slug) }}" class="{% if slug == topic %}is-active{% endif %}">
+                        {{ p.title }}
+                    </a>
+                </li>
+                {% endfor %}
+            </ul>
+        </aside>
+        <main class="docs-main">
+            <nav class="docs-breadcrumb">
+                <a href="{{ url_for('docs') }}">Docs</a>
+                <span>/</span>
+                <span>{{ page.section }}</span>
+            </nav>
+            <h1 class="docs-title">{{ page.title }}</h1>
+            <p class="docs-lead muted">Library: <strong>{{ page.library }}</strong>
+            {% if page.get('github_stars') %} &middot; GitHub Stars: <strong>{{ page.github_stars }}</strong>{% endif %}
+            {% if page.get('github_url') %} &middot; <a href="{{ page.github_url }}" target="_blank" rel="noopener">View on GitHub</a>{% endif %}
+            </p>
+            <article class="docs-body">
+                <pre class="docs-prose">{{ page.body }}</pre>
+            </article>
+        </main>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,66 @@
+{# Shared header + tabs for any repo subpage (model/dataset/space).
+   Set `active_tab` in the calling template to one of: card, files, dataset_viewer, community.
+   When omitted, defaults to "card". #}
+{% set _active_tab = active_tab|default('card') %}
+{% set _author = repo.slug.split('/')[0] %}
+{% set _name = repo.slug.split('/')[1] %}
+<div class="repo-head">
+    <div class="repo-head-title">
+        <div class="repo-head-avatar">
+            <img src="{{ repo.author_obj.avatar_url if repo.author_obj else '' }}" alt="" onerror="this.parentElement.innerHTML='<span>{{ repo.slug[0]|upper }}</span>'">
+        </div>
+        <div>
+            <h1 class="repo-head-name">
+                <span class="repo-head-author"><a href="{{ url_for('author_page', username=_author) }}">{{ _author }}</a></span>
+                <span class="repo-head-sep">/</span>
+                <span class="repo-head-name-main">{{ _name }}</span>
+            </h1>
+            <div class="repo-head-badges">
+                <span class="tag tag-green">{{ repo.repo_type|capitalize }}</span>
+                {% if repo.task_display %}<span class="tag">{{ repo.task_display }}</span>{% endif %}
+                {% if repo.library %}<span class="tag tag-yellow">{{ repo.library }}</span>{% endif %}
+                {% if repo.license_display %}<span class="tag">License: {{ repo.license_display }}</span>{% endif %}
+                {% if repo.size_badge %}<span class="tag">{{ repo.size_badge }}</span>{% endif %}
+            </div>
+        </div>
+    </div>
+    <div class="repo-head-actions">
+        {% if current_user.is_authenticated %}
+        <form method="POST" action="{{ url_for('like_toggle_form', repo_id=repo.id) }}" style="display:inline">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <input type="hidden" name="next" value="{{ request.path }}">
+            <button type="submit" class="like-btn {% if is_liked %}is-liked{% endif %}" data-like-toggle data-repo-id="{{ repo.id }}">
+                ♥ <span data-like-count>{{ repo.likes_count }}</span>
+            </button>
+        </form>
+        {% else %}
+        <a class="like-btn" href="{{ url_for('login') }}">♥ {{ repo.likes_count }}</a>
+        {% endif %}
+        {% if current_user.is_authenticated %}
+        <form method="POST" action="{{ url_for('deploy_add_form', repo_id=repo.id) }}" style="display:inline">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <input type="hidden" name="hardware_slug" value="t4-small">
+            <input type="hidden" name="hours" value="24">
+            <button type="submit" class="btn btn-sm btn-primary deploy-btn" data-deploy-add data-repo-id="{{ repo.id }}" data-hardware="t4-small">Deploy →</button>
+        </form>
+        {% else %}
+        <a class="btn btn-sm btn-primary deploy-btn" href="{{ url_for('login') }}">Deploy →</a>
+        {% endif %}
+    </div>
+</div>
+
+{% set _files_url = (
+    url_for('dataset_files', author=_author, name=_name) if repo.repo_type == 'dataset'
+    else url_for('space_files', author=_author, name=_name) if repo.repo_type == 'space'
+    else url_for('model_files', author=_author, name=_name)
+) %}
+<div class="repo-tabs">
+    <a class="repo-tab {% if _active_tab == 'card' %}is-active{% endif %}" href="{{ url_for('dataset_detail', author=_author, name=_name) if repo.repo_type == 'dataset' else url_for('space_detail', author=_author, name=_name) if repo.repo_type == 'space' else url_for('model_detail', author=_author, name=_name) }}">{{ 'Dataset card' if repo.repo_type == 'dataset' else ('Space card' if repo.repo_type == 'space' else 'Model card') }}</a>
+    <a class="repo-tab {% if _active_tab == 'files' %}is-active{% endif %}" href="{{ _files_url }}">Files</a>
+    {% if repo.repo_type == 'dataset' %}
+    <a class="repo-tab {% if _active_tab == 'dataset_viewer' %}is-active{% endif %}" href="{{ url_for('dataset_viewer', author=_author, name=_name) }}">Dataset viewer</a>
+    {% else %}
+    <a class="repo-tab" href="{{ url_for('dataset_detail', author=_author, name=_name) if repo.repo_type == 'dataset' else (url_for('space_detail', author=_author, name=_name) if repo.repo_type == 'space' else url_for('model_detail', author=_author, name=_name)) }}#metrics">Metrics</a>
+    {% endif %}
+    <a class="repo-tab {% if _active_tab == 'community' %}is-active{% endif %}" href="{{ url_for('repo_discussions', author=_author, name=_name) }}">Community {% if discussions is defined %}<span class="tab-count">{{ discussions|length }}</span>{% endif %}</a>
+</div>

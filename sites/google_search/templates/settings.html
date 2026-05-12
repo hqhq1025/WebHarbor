@@ -1,0 +1,88 @@
+{% extends "base.html" %}
+{% block title %}Search settings - Google{% endblock %}
+
+{% block content %}
+<div class="settings-page">
+    <h1 style="font-size:28px; font-weight:400; margin:0 0 20px;">Search settings</h1>
+    {% with messages = get_flashed_messages() %}
+    {% if messages %}
+    <div class="flash-messages" style="margin-bottom:16px;">
+        {% for message in messages %}
+        <div style="background:#e8f5e9; color:#2e7d32; padding:12px 16px; border-radius:4px;">{{ message }}</div>
+        {% endfor %}
+    </div>
+    {% endif %}
+    {% endwith %}
+
+    <form method="POST" action="{{ url_for('settings') }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token_value }}">
+
+        <div class="settings-section">
+            <h2>Results</h2>
+            <div class="field" style="margin-bottom:16px;">
+                <label for="results_per_page">Results per page</label>
+                <select name="results_per_page" id="results_per_page">
+                    <option value="10" {% if current_user.results_per_page == 10 %}selected{% endif %}>10</option>
+                    <option value="20" {% if current_user.results_per_page == 20 %}selected{% endif %}>20</option>
+                    <option value="30" {% if current_user.results_per_page == 30 %}selected{% endif %}>30</option>
+                    <option value="50" {% if current_user.results_per_page == 50 %}selected{% endif %}>50</option>
+                    <option value="100" {% if current_user.results_per_page == 100 %}selected{% endif %}>100</option>
+                </select>
+            </div>
+            <div class="field">
+                <label>
+                    <input type="checkbox" name="dark_mode" {% if current_user.dark_mode %}checked{% endif %}>
+                    Dark mode
+                </label>
+            </div>
+        </div>
+
+        <div class="settings-section">
+            <h2>SafeSearch filters</h2>
+            <p class="muted">SafeSearch can help hide explicit content.</p>
+            <label style="display:block; margin:8px 0;">
+                <input type="radio" name="safe_search" value="strict" {% if current_user.safe_search == 'strict' %}checked{% endif %}>
+                Strict
+            </label>
+            <label style="display:block; margin:8px 0;">
+                <input type="radio" name="safe_search" value="moderate" {% if current_user.safe_search == 'moderate' %}checked{% endif %}>
+                Moderate
+            </label>
+            <label style="display:block; margin:8px 0;">
+                <input type="radio" name="safe_search" value="off" {% if current_user.safe_search == 'off' %}checked{% endif %}>
+                Off
+            </label>
+        </div>
+
+        <div class="settings-section">
+            <h2>Languages</h2>
+            <div class="field">
+                <label for="language">Search results language</label>
+                <select name="language" id="language">
+                    <option value="en" {% if current_user.language == 'en' %}selected{% endif %}>English</option>
+                    <option value="es" {% if current_user.language == 'es' %}selected{% endif %}>Spanish</option>
+                    <option value="fr" {% if current_user.language == 'fr' %}selected{% endif %}>French</option>
+                    <option value="de" {% if current_user.language == 'de' %}selected{% endif %}>German</option>
+                    <option value="ja" {% if current_user.language == 'ja' %}selected{% endif %}>Japanese</option>
+                    <option value="zh" {% if current_user.language == 'zh' %}selected{% endif %}>Chinese</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="settings-section">
+            <h2>Region</h2>
+            <select name="region" id="region">
+                <option value="US" {% if current_user.region == 'US' %}selected{% endif %}>United States</option>
+                <option value="GB" {% if current_user.region == 'GB' %}selected{% endif %}>United Kingdom</option>
+                <option value="CA" {% if current_user.region == 'CA' %}selected{% endif %}>Canada</option>
+                <option value="AU" {% if current_user.region == 'AU' %}selected{% endif %}>Australia</option>
+                <option value="JP" {% if current_user.region == 'JP' %}selected{% endif %}>Japan</option>
+                <option value="DE" {% if current_user.region == 'DE' %}selected{% endif %}>Germany</option>
+                <option value="FR" {% if current_user.region == 'FR' %}selected{% endif %}>France</option>
+            </select>
+        </div>
+
+        <button type="submit" class="btn-primary" style="margin-top:20px; padding:10px 24px; font-size:14px; cursor:pointer;">Save</button>
+    </form>
+</div>
+{% endblock %}

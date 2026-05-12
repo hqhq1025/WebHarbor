@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block title %}{{ 'New' if mode == 'new' else 'Edit' }} collection – Hugging Face{% endblock %}
+
+{% block content %}
+<div class="form-page">
+    <div class="form-card">
+        <div class="form-header">
+            <h1>{{ 'Create a collection' if mode == 'new' else 'Edit collection' }}</h1>
+        </div>
+        <form method="post">
+            {{ form.hidden_tag() }}
+            <div class="form-group">
+                <label>Title</label>
+                {{ form.title(class="form-control") }}
+                {% for err in form.title.errors %}<div class="form-error">{{ err }}</div>{% endfor %}
+            </div>
+            <div class="form-group">
+                <label>Description</label>
+                {{ form.description(class="form-control", rows=4) }}
+            </div>
+            <div class="form-group">
+                <label>Visibility</label>
+                {{ form.is_public(class="form-control") }}
+            </div>
+            <div class="form-actions">
+                <button class="btn btn-primary" type="submit">{{ 'Create' if mode == 'new' else 'Save changes' }}</button>
+                <a class="btn btn-ghost" href="{{ url_for('collections_index') }}">Cancel</a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

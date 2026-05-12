@@ -1,0 +1,2003 @@
+/* ============================================================
+   Cambridge Dictionary Mirror — main.css
+   Visual styling tuned to match dictionary.cambridge.org
+   ============================================================ */
+
+:root {
+  /* Cambridge Dictionary brand palette (sampled from real site) */
+  --cd-teal:        #00BDB6;
+  --cd-teal-dark:   #009B95;
+  --cd-teal-light:  #8EE8D8;
+  --cd-navy:        #1A2959;
+  --cd-navy-dark:   #131F44;
+  --cd-pink:        #E02E5D;
+  --cd-pink-dark:   #B62347;
+  --cd-yellow:      #FEC400;
+  --cd-orange:      #F4663B;
+  --cd-purple:      #9E69F2;
+
+  /* Greys / neutrals */
+  --text-primary:   #1D2A57;
+  --text-secondary: #565656;
+  --text-muted:     #8a8a8a;
+  --bg-white:       #ffffff;
+  --bg-light:       #f6f6f4;
+  --bg-grey:        #efefef;
+  --border:         #d7d7d7;
+  --border-light:   #e5e5e5;
+
+  /* Aliases kept for legacy class compatibility */
+  --cambridge-blue: var(--cd-navy);
+  --cambridge-dark: var(--cd-navy-dark);
+  --cambridge-light:var(--cd-teal);
+  --cambridge-accent: var(--cd-pink);
+
+  --font: Arial, Helvetica, sans-serif;
+  --font-serif: 'Georgia', 'Times New Roman', serif;
+  --max-width: 1180px;
+  --nav-h: 64px;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body { background: #fff; }
+body {
+  font-family: var(--font);
+  color: var(--text-primary);
+  background: #fff;
+  line-height: 1.5;
+  font-size: 16px;
+  -webkit-font-smoothing: antialiased;
+}
+
+a { color: var(--cd-navy); text-decoration: none; }
+a:hover { text-decoration: underline; color: var(--cd-pink); }
+
+.container {
+  max-width: var(--max-width);
+  margin: 0 auto;
+  padding: 0 25px;
+}
+
+/* ============================================================
+   Top bar — hidden (real Cambridge Dictionary doesn't have one)
+   ============================================================ */
+.topbar { display: none; }
+
+/* ============================================================
+   Top navigation — solid teal band (52px tall, matches real site)
+   Nav text is BLACK and BOLD, NOT white.
+   ============================================================ */
+.globalnav {
+  background: var(--cd-teal);
+  height: 52px;
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+}
+.nav-inner {
+  display: flex;
+  align-items: center;
+  height: 52px;
+  gap: 0;
+}
+/* Brand wordmark — only text in top nav (the big crest moves to hero) */
+.nav-logo {
+  display: flex;
+  align-items: center;
+  color: #000;
+  margin-right: 24px;
+  flex-shrink: 0;
+  height: 52px;
+  line-height: 1;
+  font-family: var(--font);
+}
+.nav-logo:hover { text-decoration: none; color: #000; }
+.logo-cambridge {
+  display: inline-block;
+  font-size: 14px;
+  font-weight: 400;
+  color: #000;
+  margin-right: 4px;
+}
+.logo-dictionary {
+  display: inline-block;
+  font-size: 14px;
+  font-weight: 700;
+  color: #000;
+}
+
+.nav-links {
+  display: flex;
+  list-style: none;
+  gap: 0;
+  flex: 1;
+  height: 100%;
+  align-items: center;
+  margin: 0;
+}
+.nav-links .nav-item {
+  color: #000;
+  padding: 0 14px;
+  height: 52px;
+  display: flex;
+  align-items: center;
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0;
+  position: relative;
+  transition: opacity 0.15s;
+}
+.nav-links .nav-item:hover {
+  color: #000;
+  text-decoration: none;
+  opacity: 0.7;
+}
+.nav-links .nav-item.active {
+  color: #000;
+}
+.nav-links .nav-item.active::after {
+  content: "";
+  position: absolute;
+  left: 12px; right: 12px; bottom: 0;
+  height: 3px;
+  background: var(--cd-pink);
+  border-radius: 2px 2px 0 0;
+}
+
+.nav-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  height: 100%;
+}
+.nav-signin, .nav-register, .nav-user, .nav-signout {
+  color: #000;
+  font-size: 13px;
+  font-weight: 700;
+  padding: 6px 12px;
+  border-radius: 14px;
+  transition: opacity 0.15s;
+}
+.nav-signin:hover, .nav-signout:hover, .nav-user:hover, .nav-register:hover {
+  text-decoration: none;
+  color: #000;
+  opacity: 0.7;
+}
+.nav-register {
+  /* keep modest contrast — slight outline ring */
+  border: 1.5px solid #000;
+}
+.lang-selector { margin-left: 4px; }
+.lang-select {
+  background: transparent;
+  color: #000;
+  border: 1px solid rgba(0,0,0,0.4);
+  border-radius: 14px;
+  padding: 5px 10px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: inherit;
+}
+.lang-select option { background: #fff; color: #000; font-weight: 400; }
+
+/* ============================================================
+   Search hero — TEAL band, continuous with the top nav above.
+   Includes Cambridge crest on the left and the white pill
+   search box on the right. Decorative navy blob shapes float
+   behind the layout to match the real site.
+   ============================================================ */
+.search-bar-wrap {
+  background: var(--cd-teal);
+  border-bottom: none;
+  padding: 28px 0 34px;
+  position: relative;
+  overflow: hidden;
+  /* tiny shadow so it visually separates from white content below */
+  box-shadow: 0 1px 0 rgba(0,0,0,0.04);
+}
+/* navy + lighter-teal organic blobs, like the real hero */
+.search-bar-wrap::before,
+.search-bar-wrap::after {
+  content: "";
+  position: absolute;
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 0;
+}
+.search-bar-wrap::before {
+  width: 460px; height: 460px;
+  background: var(--cd-navy);
+  opacity: 0.55;
+  left: -180px; top: -240px;
+  border-radius: 56% 44% 60% 40% / 50% 60% 40% 50%;
+}
+.search-bar-wrap::after {
+  width: 360px; height: 360px;
+  background: var(--cd-teal-light);
+  opacity: 0.45;
+  right: -160px; top: -180px;
+  border-radius: 50% 50% 60% 40% / 40% 60% 40% 60%;
+}
+.search-bar-wrap .container {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 32px;
+}
+
+/* Cambridge crest + wordmark — left half of hero */
+.search-bar-wrap::before { /* hide this single small one - extra decorative blobs handled in container */ }
+.cd-hero-brand,
+.search-bar-wrap .hero-brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: #fff;
+  flex-shrink: 0;
+}
+.cd-hero-brand .crest,
+.hero-brand .crest {
+  width: 64px; height: 76px;
+  background: #B62347; /* Cambridge red shield */
+  border-radius: 6px 6px 32px 32px / 6px 6px 36px 36px;
+  position: relative;
+  flex-shrink: 0;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.18);
+}
+.cd-hero-brand .crest::before,
+.hero-brand .crest::before {
+  /* three small yellow crowns in a row near the top */
+  content: "";
+  position: absolute;
+  top: 12px; left: 8px; right: 8px;
+  height: 10px;
+  background:
+    radial-gradient(circle at 5px 5px, var(--cd-yellow) 0 4px, transparent 4.5px),
+    radial-gradient(circle at 50% 5px,  var(--cd-yellow) 0 4px, transparent 4.5px),
+    radial-gradient(circle at calc(100% - 5px) 5px, var(--cd-yellow) 0 4px, transparent 4.5px);
+}
+.cd-hero-brand .crest::after,
+.hero-brand .crest::after {
+  /* horizontal book band */
+  content: "";
+  position: absolute;
+  top: 36px; left: 8px; right: 8px;
+  height: 14px;
+  background: #fff;
+  border-radius: 2px;
+  box-shadow: inset 0 6px 0 var(--cd-yellow);
+}
+.cd-hero-brand .wordmark,
+.hero-brand .wordmark {
+  display: flex;
+  flex-direction: column;
+  font-family: var(--font);
+  color: #fff;
+  line-height: 1.05;
+}
+.cd-hero-brand .wordmark .a,
+.hero-brand .wordmark .a {
+  font-size: 22px;
+  font-weight: 700;
+}
+.cd-hero-brand .wordmark .b,
+.hero-brand .wordmark .b {
+  font-size: 22px;
+  font-weight: 400;
+}
+
+/* Tabs above search box */
+.search-tabs {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+  order: -1;        /* sit above the input within the right column */
+  width: 100%;
+}
+.stab {
+  padding: 5px 14px;
+  font-size: 13px;
+  font-weight: 700;
+  color: #000;
+  background: transparent;
+  border: 1px solid rgba(0,0,0,0.25);
+  border-radius: 16px;
+  transition: all 0.15s;
+}
+.stab:hover {
+  background: rgba(255,255,255,0.4);
+  text-decoration: none;
+  color: #000;
+}
+.stab.active {
+  background: #fff;
+  color: var(--cd-navy);
+  border-color: #fff;
+}
+
+.search-form { padding: 0; position: relative; flex: 1; min-width: 320px; }
+.search-input-wrap {
+  display: flex;
+  gap: 0;
+  max-width: 760px;
+  background: #fff;
+  border-radius: 24px;
+  padding: 3px 3px 3px 4px;
+  align-items: center;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.12);
+}
+.search-input {
+  flex: 1;
+  padding: 10px 18px;
+  border: none;
+  border-radius: 24px;
+  font-size: 16px;
+  font-family: var(--font);
+  outline: none;
+  background: transparent;
+  color: #444;
+}
+.search-input::placeholder { color: #8a8a8a; }
+.search-input:focus { outline: none; }
+.search-btn {
+  background: var(--cd-yellow);
+  color: #fff;
+  border: none;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s;
+  flex-shrink: 0;
+}
+.search-btn:hover { background: #e6b000; }
+.search-btn svg { display: block; stroke: #fff; }
+
+.autocomplete-list {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  margin-top: 4px;
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  max-width: 760px;
+  z-index: 500;
+  box-shadow: 0 6px 18px rgba(0,0,0,0.15);
+}
+.autocomplete-list .ac-item {
+  padding: 10px 18px;
+  cursor: pointer;
+  font-size: 14px;
+  border-bottom: 1px solid var(--border-light);
+  color: var(--text-primary);
+}
+.autocomplete-list .ac-item:hover { background: var(--bg-light); }
+.autocomplete-list .ac-item:last-child { border-bottom: none; }
+
+/* ============================================================
+   Buttons (used across forms & promos)
+   ============================================================ */
+.btn-primary {
+  display: inline-block;
+  background: var(--cd-pink);
+  color: #fff;
+  padding: 10px 22px;
+  border-radius: 22px;
+  font-weight: 600;
+  font-size: 14px;
+  border: none;
+  cursor: pointer;
+  letter-spacing: 0.2px;
+  transition: background 0.15s;
+  font-family: inherit;
+}
+.btn-primary:hover { background: var(--cd-pink-dark); text-decoration: none; color: #fff; }
+.btn-primary.full-width { display: block; width: 100%; text-align: center; }
+
+.btn-secondary {
+  display: inline-block;
+  background: transparent;
+  color: var(--cd-navy);
+  padding: 9px 20px;
+  border-radius: 22px;
+  font-weight: 600;
+  font-size: 14px;
+  border: 2px solid var(--cd-navy);
+  cursor: pointer;
+  transition: all 0.15s;
+  font-family: inherit;
+}
+.btn-secondary:hover {
+  background: var(--cd-navy);
+  color: #fff;
+  text-decoration: none;
+}
+.btn-remove-tiny {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: 16px;
+  padding: 0 4px;
+}
+.btn-remove-tiny:hover { color: var(--cd-pink); }
+
+/* ============================================================
+   Flash messages
+   ============================================================ */
+.flash-container { margin: 14px auto; }
+.flash {
+  padding: 10px 16px;
+  border-radius: 6px;
+  margin-bottom: 8px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 14px;
+}
+.flash-success { background: #e8f7e9; color: #1e6a23; border: 1px solid #b9e1bb; }
+.flash-danger  { background: #fde8ec; color: #8a1f33; border: 1px solid #f4b9c4; }
+.flash-info    { background: #e0f5f4; color: #0a5e5a; border: 1px solid #a8e0dc; }
+.flash-close   { background: none; border: none; cursor: pointer; font-size: 18px; line-height: 1; }
+
+/* Main */
+.main-content { min-height: calc(100vh - 280px); background: #fff; }
+
+/* ============================================================
+   Homepage hero section (used on home above feature cards)
+   ============================================================ */
+.hero-section {
+  background: #fff;
+  color: var(--text-primary);
+  padding: 36px 0 8px;
+  text-align: left;
+  border-bottom: none;
+}
+.hero-section .hero-inner { max-width: var(--max-width); }
+.hero-title {
+  font-size: 24px;
+  font-weight: 700;
+  margin-bottom: 4px;
+  color: var(--cd-navy);
+  letter-spacing: -0.2px;
+}
+.hero-sub {
+  font-size: 15px;
+  color: var(--text-secondary);
+  font-weight: 400;
+}
+
+/* ============================================================
+   Homepage feature cards — clean grid
+   ============================================================ */
+.homepage-features { padding: 22px 25px 36px; }
+.feature-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 18px;
+}
+.feature-card {
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 24px 22px;
+  text-align: left;
+  display: block;
+  color: var(--text-primary);
+  transition: box-shadow 0.18s, transform 0.18s, border-color 0.18s;
+  position: relative;
+}
+.feature-card:hover {
+  box-shadow: 0 6px 18px rgba(0,0,0,0.08);
+  border-color: var(--cd-teal);
+  transform: translateY(-2px);
+  text-decoration: none;
+  color: var(--text-primary);
+}
+.feature-icon { font-size: 30px; margin-bottom: 10px; line-height: 1; }
+.feature-card h3 {
+  font-size: 17px;
+  margin-bottom: 6px;
+  color: var(--cd-navy);
+  font-weight: 700;
+}
+.feature-card p { font-size: 13px; color: var(--text-secondary); line-height: 1.5; }
+
+/* Color-strip on each feature card (matches Cambridge category accents) */
+.feature-card--dict  { border-top: 4px solid var(--cd-teal); }
+.feature-card--thes  { border-top: 4px solid var(--cd-purple); }
+.feature-card--trans { border-top: 4px solid var(--cd-pink); }
+.feature-card--gram  { border-top: 4px solid var(--cd-yellow); }
+
+/* ============================================================
+   Word of the day
+   ============================================================ */
+.word-of-day-section {
+  background: var(--bg-light);
+  padding: 36px 0;
+  border-top: 1px solid var(--border-light);
+}
+.section-heading {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--cd-navy);
+  margin-bottom: 18px;
+  position: relative;
+  padding-bottom: 8px;
+}
+.section-heading::after {
+  content: "";
+  display: block;
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 40px;
+  height: 3px;
+  background: var(--cd-teal);
+  border-radius: 2px;
+}
+.wotd-card {
+  background: #fff;
+  border: 1px solid var(--border);
+  border-left: 6px solid var(--cd-teal);
+  border-radius: 6px;
+  padding: 22px 24px;
+  max-width: 640px;
+}
+.wotd-header {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+}
+.wotd-headword { font-size: 28px; font-weight: 700; color: var(--cd-navy); font-family: var(--font); }
+.wotd-pos { color: var(--text-secondary); font-style: italic; font-size: 14px; }
+.wotd-ipa { font-family: 'DejaVu Sans', 'Arial Unicode MS', sans-serif; color: var(--text-secondary); font-size: 16px; }
+.wotd-def { font-size: 15px; margin-bottom: 10px; line-height: 1.6; }
+.wotd-ex { color: var(--text-secondary); font-style: italic; margin-bottom: 16px; font-size: 14px; line-height: 1.5; }
+
+/* ============================================================
+   Recent words — pill chips
+   ============================================================ */
+.recent-words-section { padding: 32px 0; border-top: 1px solid var(--border-light); }
+.word-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.word-chip {
+  background: #fff;
+  border: 1px solid var(--border);
+  padding: 7px 14px;
+  border-radius: 20px;
+  font-size: 14px;
+  color: var(--cd-navy);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 500;
+  transition: all 0.15s;
+}
+.word-chip:hover {
+  background: var(--cd-teal);
+  color: #fff;
+  border-color: var(--cd-teal);
+  text-decoration: none;
+}
+.chip-pos { font-size: 11px; color: var(--text-muted); font-style: italic; }
+.word-chip:hover .chip-pos { color: rgba(255,255,255,0.85); }
+
+/* ============================================================
+   Plus promo strip
+   ============================================================ */
+.plus-promo-section {
+  background: linear-gradient(120deg, var(--cd-navy) 0%, #2a3870 100%);
+  color: #fff;
+  padding: 44px 0;
+}
+.plus-promo-inner {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 48px;
+  align-items: center;
+}
+.plus-promo-text h2 { font-size: 26px; margin-bottom: 12px; font-weight: 700; }
+.plus-promo-text p { color: rgba(255,255,255,0.88); margin-bottom: 18px; line-height: 1.55; }
+.plus-promo-text .btn-primary { background: var(--cd-pink); }
+.plus-promo-text .btn-primary:hover { background: var(--cd-pink-dark); }
+.plus-promo-features { display: flex; flex-direction: column; gap: 10px; }
+.plus-feature {
+  font-size: 14px;
+  color: rgba(255,255,255,0.95);
+  background: rgba(255,255,255,0.08);
+  border-left: 3px solid var(--cd-teal);
+  padding: 8px 12px;
+  border-radius: 0 4px 4px 0;
+}
+
+/* ============================================================
+   Dictionary entry page (word_detail.html) — matches real
+   Cambridge Dictionary entry layout: flat, no heavy cards.
+   ============================================================ */
+.dict-entry {
+  padding: 22px 25px 48px;
+  max-width: 920px;
+  margin: 0 auto;
+  font-family: var(--font);
+}
+.breadcrumb {
+  font-size: 13px;
+  color: #666;
+  margin-bottom: 12px;
+  font-style: italic;
+}
+.breadcrumb a { color: #666; }
+.breadcrumb a:hover { color: var(--cd-pink); text-decoration: underline; }
+
+.entry-header {
+  margin-bottom: 14px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid #ccc;
+  position: relative;
+}
+.entry-headword-row {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 8px;
+  position: relative;
+}
+.entry-headword {
+  font-size: 36px;
+  font-weight: 700;
+  color: var(--cd-navy);
+  font-family: var(--font);
+  letter-spacing: -0.3px;
+  margin-right: 12px;
+  width: 100%;
+  display: block;
+}
+.entry-pos {
+  color: var(--text-primary);
+  font-style: italic;
+  font-size: 16px;
+  font-weight: 400;
+  font-family: var(--font);
+}
+.entry-pos::before { content: ""; }
+.entry-level {
+  padding: 1px 6px;
+  border-radius: 3px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.4px;
+  margin-left: 4px;
+}
+.level-a1, .level-a2 { background: #e6f5d0; color: #2c6415; }
+.level-b1, .level-b2 { background: #fef3cf; color: #7d5d10; }
+.level-c1, .level-c2 { background: #fde2e2; color: #922b21; }
+
+/* Pink "Add to word list" pill, top-right of entry header */
+.btn-save-word {
+  background: var(--cd-pink);
+  border: 1.5px solid var(--cd-pink);
+  color: #fff;
+  padding: 4px 14px 4px 14px;
+  border-radius: 16px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.15s;
+  font-family: inherit;
+  letter-spacing: 0.2px;
+  position: absolute;
+  right: 0;
+  top: 4px;
+}
+.btn-save-word.saved,
+.btn-save-word:hover {
+  background: var(--cd-pink-dark);
+  border-color: var(--cd-pink-dark);
+  color: #fff;
+}
+
+/* Pronunciations: inline UK/US blocks under the POS row */
+.entry-pronunciation {
+  display: flex;
+  gap: 22px;
+  flex-wrap: wrap;
+  align-items: center;
+  margin-top: 4px;
+}
+.pron-block {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: transparent;
+  padding: 0;
+  border: none;
+  border-radius: 0;
+  font-family: var(--font);
+}
+.pron-label {
+  background: transparent;
+  color: var(--cd-navy);
+  padding: 0;
+  border-radius: 0;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border: 1.5px solid var(--cd-navy);
+  padding: 1px 6px;
+  border-radius: 3px;
+}
+.pron-ipa {
+  font-family: 'DejaVu Sans', 'Arial Unicode MS', sans-serif;
+  font-size: 16px;
+  color: var(--text-primary);
+  margin-left: 4px;
+}
+/* IPA value already includes /…/ slashes from the data, so don't add more */
+.pron-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 16px;
+  padding: 0 2px;
+  color: var(--cd-navy);
+}
+.pron-btn:hover { color: var(--cd-pink); }
+
+/* Guide word — small uppercase label above sense (real "INTRODUCE NEW METHODS") */
+.guide-word {
+  color: var(--text-primary);
+  font-weight: 700;
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  margin: 18px 0 12px;
+  padding: 8px 14px;
+  background: #f0f5f5;
+  border-left: 4px solid var(--cd-teal);
+  border-radius: 0;
+}
+
+/* Definitions: flat layout, no card border, modest left padding */
+.entry-definitions { margin-bottom: 24px; }
+.sense-block {
+  margin: 0 0 18px;
+  padding: 0 0 14px 14px;
+  background: transparent;
+  border: none;
+  border-left: 4px solid var(--cd-teal);
+  border-radius: 0;
+  position: relative;
+}
+.sense-num-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+  flex-wrap: wrap;
+}
+.sense-num {
+  background: var(--cd-navy);
+  color: #fff;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+.grammar-note {
+  background: transparent;
+  color: var(--cd-navy);
+  padding: 1px 6px;
+  border-radius: 3px;
+  font-size: 12px;
+  font-family: var(--font);
+  border: 1px solid var(--cd-navy);
+  font-weight: 700;
+}
+/* grammar-note value already includes [...] brackets from the data */
+.register-tag {
+  background: transparent;
+  color: #7d3c00;
+  padding: 1px 0;
+  border-radius: 0;
+  font-size: 12px;
+  font-style: italic;
+  text-transform: lowercase;
+}
+.definition-text {
+  font-size: 16px;
+  margin: 0 0 8px;
+  line-height: 1.55;
+  color: var(--text-primary);
+}
+.example-list { list-style: none; padding: 0; margin: 0 0 4px; }
+.example-item {
+  padding: 4px 0 4px 14px;
+  font-size: 15px;
+  color: var(--text-primary);
+  font-style: italic;
+  border: none;
+  position: relative;
+}
+.example-item::before {
+  content: "•";
+  position: absolute;
+  left: 0;
+  top: 4px;
+  color: var(--text-primary);
+  font-style: normal;
+  font-weight: 700;
+}
+.ex-icon { display: none; }
+
+.sub-section-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--cd-navy);
+  margin-bottom: 16px;
+  padding-top: 24px;
+  border-top: 2px solid var(--cd-teal);
+  padding-top: 18px;
+  margin-top: 24px;
+}
+
+/* ============================================================
+   SMART Vocabulary expandable section (real Cambridge style)
+   ============================================================ */
+.smart-vocab {
+  margin: 18px 0 16px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  background: #fff;
+}
+.smart-vocab[open] { background: #fff; }
+.smart-vocab > summary {
+  list-style: none;
+  cursor: pointer;
+  padding: 10px 14px;
+  background: #f0f5f5;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--cd-navy);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.smart-vocab > summary::-webkit-details-marker { display: none; }
+.smart-vocab > summary:hover { background: #e6efef; }
+.smart-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px; height: 22px;
+  background: var(--cd-navy);
+  color: #fff;
+  border-radius: 3px;
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 1;
+}
+.smart-vocab[open] .smart-icon { background: var(--cd-pink); }
+.smart-vocab[open] .smart-icon::before { content: "−"; }
+.smart-vocab:not([open]) .smart-icon::before { content: "+"; }
+.smart-icon { font-size: 0; }
+.smart-icon::before { font-size: 16px; }
+.smart-vocab-body { padding: 14px 18px 16px; }
+.smart-topic {
+  display: inline-block;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--cd-navy);
+  text-decoration: underline;
+  margin-bottom: 12px;
+}
+.smart-topic:hover { color: var(--cd-pink); text-decoration: underline; }
+.smart-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 18px;
+  margin-bottom: 12px;
+}
+.smart-item {
+  font-size: 14px;
+  color: var(--cd-navy);
+  text-decoration: underline;
+  line-height: 1.6;
+}
+.smart-item:hover { color: var(--cd-pink); }
+.smart-tag {
+  font-size: 11px;
+  color: #888;
+  font-style: italic;
+  text-decoration: none;
+}
+.smart-more {
+  font-size: 13px;
+  color: var(--cd-pink);
+  font-weight: 700;
+}
+.smart-more:hover { color: var(--cd-pink-dark); text-decoration: underline; }
+
+/* "Related word: innovator" line */
+.related-word-line {
+  display: flex;
+  align-items: baseline;
+  gap: 14px;
+  margin: 14px 0;
+  font-size: 14px;
+  flex-wrap: wrap;
+}
+.related-word-label {
+  font-weight: 700;
+  color: var(--cd-navy);
+  text-transform: none;
+}
+.related-word-values { display: flex; gap: 12px; flex-wrap: wrap; }
+.related-word-link {
+  color: var(--cd-navy);
+  text-decoration: underline;
+  font-style: italic;
+}
+.related-word-link:hover { color: var(--cd-pink); }
+
+/* Dictionary source attribution line */
+.dict-source {
+  font-size: 12px;
+  color: #777;
+  font-style: italic;
+  margin: 10px 0 22px;
+  padding-top: 10px;
+  border-top: 1px solid #e0e0e0;
+}
+.dict-source em { font-style: italic; font-weight: 700; color: #777; }
+
+/* "What is the pronunciation of X?" link */
+.pron-question {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: #f0f5f5;
+  border: 1px solid #d0d0d0;
+  border-radius: 4px;
+  padding: 12px 16px;
+  margin: 18px 0;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--cd-navy);
+}
+.pron-question:hover {
+  background: #e6efef;
+  text-decoration: none;
+  color: var(--cd-pink);
+}
+.pron-question-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px; height: 22px;
+  background: var(--cd-navy);
+  color: #fff;
+  border-radius: 3px;
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+/* ============================================================
+   Examples-of-X corpus block
+   ============================================================ */
+.corpus-block {
+  margin: 28px 0;
+  padding: 18px 20px;
+  background: #fff;
+  border-top: 2px solid var(--cd-teal);
+}
+.corpus-h {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--cd-navy);
+  margin-bottom: 12px;
+}
+.corpus-h em { font-style: italic; }
+.corpus-headword {
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--cd-navy);
+  font-style: italic;
+  margin-bottom: 12px;
+}
+.corpus-example {
+  padding: 12px 0;
+  border-bottom: 1px solid #e8e8e8;
+}
+.corpus-example:last-of-type { border-bottom: none; }
+.corpus-sentence {
+  font-size: 15px;
+  color: var(--text-primary);
+  margin-bottom: 4px;
+  line-height: 1.55;
+}
+.corpus-source {
+  font-size: 12px;
+  color: #888;
+  font-style: italic;
+}
+.corpus-disclaimer {
+  font-size: 12px;
+  color: #888;
+  font-style: italic;
+  margin-top: 14px;
+  line-height: 1.5;
+}
+
+/* ============================================================
+   Translations panel — real Cambridge layout (vertical rows)
+   ============================================================ */
+.entry-translations {
+  margin: 28px 0;
+  padding: 18px 0;
+  border-top: 2px solid var(--cd-teal);
+}
+.trans-h {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--cd-navy);
+  margin-bottom: 14px;
+}
+.trans-h em { font-style: italic; }
+.trans-grid {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 18px;
+}
+.trans-row {
+  display: grid;
+  grid-template-columns: 220px 1fr auto;
+  gap: 16px;
+  align-items: baseline;
+  padding: 10px 0;
+  border-bottom: 1px solid #e8e8e8;
+}
+.trans-row:last-child { border-bottom: none; }
+.trans-row .trans-lang {
+  font-size: 14px;
+  font-weight: 400;
+  color: var(--text-primary);
+  text-transform: none;
+  letter-spacing: 0;
+  background: transparent;
+}
+.trans-row .trans-text {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--cd-navy);
+}
+.trans-more {
+  font-size: 13px;
+  color: var(--cd-pink);
+  font-weight: 700;
+  white-space: nowrap;
+}
+.trans-more:hover { color: var(--cd-pink-dark); text-decoration: underline; }
+
+.translator-cta {
+  background: #f0f5f5;
+  border-radius: 6px;
+  padding: 16px 18px;
+  margin-bottom: 14px;
+}
+.translator-q { font-size: 15px; font-weight: 700; color: var(--cd-navy); margin-bottom: 4px; }
+.translator-tag { font-size: 13px; color: var(--text-primary); margin-bottom: 10px; }
+.translator-btn {
+  display: inline-block;
+  background: var(--cd-navy);
+  color: #fff;
+  font-weight: 700;
+  font-size: 13px;
+  padding: 7px 16px;
+  border-radius: 4px;
+}
+.translator-btn:hover {
+  background: var(--cd-pink);
+  color: #fff;
+  text-decoration: none;
+}
+
+/* ============================================================
+   Browse nearby words list (real Cambridge style — vertical list)
+   ============================================================ */
+.browse-h {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--cd-navy);
+  margin: 28px 0 10px;
+  padding-top: 18px;
+  border-top: 2px solid var(--cd-teal);
+}
+.nearby-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+.nearby-row {
+  padding: 6px 0;
+  font-size: 15px;
+  border-bottom: 1px solid #e8e8e8;
+}
+.nearby-row:last-child { border-bottom: none; }
+.nearby-link {
+  color: var(--cd-navy);
+  text-decoration: none;
+  font-style: italic;
+}
+.nearby-link:hover { color: var(--cd-pink); text-decoration: underline; }
+.nearby-current {
+  color: var(--cd-pink);
+  font-weight: 700;
+  font-style: italic;
+}
+
+.synonym-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+.synonym-tag {
+  background: #fff;
+  border: 1px solid var(--cd-teal);
+  padding: 5px 14px;
+  border-radius: 18px;
+  font-size: 14px;
+  color: var(--cd-teal-dark);
+  font-weight: 500;
+  transition: all 0.15s;
+}
+.synonym-tag:hover {
+  background: var(--cd-teal);
+  color: #fff;
+  text-decoration: none;
+}
+.synonym-tags.large .synonym-tag { padding: 7px 18px; font-size: 15px; }
+
+.related-list { display: flex; flex-direction: column; gap: 8px; }
+.related-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  background: var(--bg-light);
+  border-radius: 4px;
+  border-left: 3px solid transparent;
+}
+.related-item:hover { border-left-color: var(--cd-teal); }
+.related-type {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  padding: 2px 7px;
+  border-radius: 3px;
+  letter-spacing: 0.4px;
+}
+.related-type--word   { background: #e6f5d0; color: #2c6415; }
+.related-type--phrase { background: #d6eaf8; color: #155a8a; }
+.related-type--idiom  { background: #fdebd0; color: #7d3c00; }
+.related-text { font-weight: 600; color: var(--cd-navy); }
+.related-def  { font-size: 13px; color: var(--text-muted); }
+
+.translation-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 12px;
+  margin-bottom: 12px;
+}
+.translation-item {
+  background: var(--bg-light);
+  padding: 12px 14px;
+  border-radius: 6px;
+  border: 1px solid var(--border-light);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.trans-lang {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--cd-teal-dark);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.trans-text { font-size: 18px; font-weight: 600; color: var(--text-primary); }
+.trans-provider { font-size: 11px; color: var(--text-muted); }
+.trans-credit, .trans-note { font-size: 13px; color: var(--text-muted); margin-top: 6px; }
+
+.browse-nearby { margin-top: 32px; padding-top: 20px; border-top: 1px solid var(--border-light); }
+.nearby-words { display: flex; flex-wrap: wrap; gap: 4px; }
+.browse-letter {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  background: var(--cd-navy);
+  border-radius: 50%;
+  font-size: 13px;
+  font-weight: 700;
+  color: #fff;
+  text-transform: uppercase;
+  transition: background 0.15s;
+}
+.browse-letter:hover { background: var(--cd-teal); color: #fff; text-decoration: none; }
+
+/* ============================================================
+   Search results page
+   ============================================================ */
+.search-results-page { padding: 30px 25px 48px; max-width: var(--max-width); margin: 0 auto; }
+.results-heading { font-size: 24px; margin-bottom: 22px; color: var(--cd-navy); font-weight: 700; }
+.results-heading em { font-style: normal; color: var(--cd-pink); font-weight: 700; }
+.results-list { display: flex; flex-direction: column; gap: 14px; }
+.result-card {
+  padding: 20px 24px;
+  border: 1px solid var(--border-light);
+  border-radius: 6px;
+  background: #fff;
+  border-left: 4px solid var(--cd-teal);
+  transition: box-shadow 0.15s;
+}
+.result-card:hover { box-shadow: 0 4px 14px rgba(0,0,0,0.08); }
+.result-card-header { display: flex; align-items: baseline; gap: 10px; margin-bottom: 6px; flex-wrap: wrap; }
+.result-headword { font-size: 22px; font-weight: 700; color: var(--cd-navy); }
+.result-pos { color: var(--text-secondary); font-style: italic; font-size: 13px; }
+.result-level { padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 700; }
+.result-ipa { font-family: 'DejaVu Sans', sans-serif; color: var(--text-secondary); font-size: 14px; }
+.result-def { font-size: 15px; margin-bottom: 6px; line-height: 1.55; }
+.result-ex { color: var(--text-muted); font-style: italic; font-size: 14px; margin-bottom: 8px; }
+.result-more-link { font-size: 13px; font-weight: 600; color: var(--cd-pink); }
+.result-more-link:hover { color: var(--cd-pink-dark); }
+
+.no-results { padding: 32px; text-align: center; background: var(--bg-light); border-radius: 8px; border: 1px solid var(--border-light); }
+.no-results-suggest { margin-top: 16px; }
+.suggest-tags { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin-top: 8px; }
+.suggest-tag {
+  padding: 6px 14px;
+  background: #fff;
+  border: 1px solid var(--cd-teal);
+  border-radius: 18px;
+  font-size: 14px;
+  color: var(--cd-teal-dark);
+}
+.suggest-tag:hover { background: var(--cd-teal); color: #fff; text-decoration: none; }
+
+/* ============================================================
+   Thesaurus article (real Cambridge long-form layout)
+   ============================================================ */
+.thesaurus-article {
+  padding: 22px 25px 48px;
+  max-width: 920px;
+  margin: 0 auto;
+  font-family: var(--font);
+}
+.thes-art-header {
+  margin-bottom: 18px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid #ccc;
+}
+.thes-art-title {
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--cd-navy);
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  margin-bottom: 10px;
+}
+.thes-art-intro {
+  font-size: 16px;
+  color: var(--text-primary);
+  font-style: italic;
+}
+.thes-art-intro em {
+  font-weight: 700;
+  color: var(--cd-navy);
+}
+
+.thes-art-body { margin-bottom: 28px; }
+.thes-art-section { margin-bottom: 22px; }
+.thes-art-para {
+  font-size: 16px;
+  line-height: 1.65;
+  color: var(--text-primary);
+  margin-bottom: 12px;
+}
+.thes-art-para strong {
+  color: var(--cd-navy);
+  font-weight: 700;
+}
+.thes-syn {
+  color: var(--cd-pink);
+  font-weight: 700;
+  text-decoration: underline;
+}
+.thes-syn:hover { color: var(--cd-pink-dark); }
+
+.thes-art-examples {
+  background: #f0f5f5;
+  border-left: 4px solid var(--cd-teal);
+  padding: 12px 16px;
+  margin: 10px 0 14px 14px;
+  border-radius: 0 4px 4px 0;
+}
+.thes-art-example {
+  padding: 5px 0;
+  font-size: 15px;
+  font-style: italic;
+  color: var(--text-primary);
+  border-bottom: 1px solid #e2eaea;
+}
+.thes-art-example:last-child { border-bottom: none; }
+.thes-art-region {
+  display: inline-block;
+  background: var(--cd-navy);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  padding: 1px 6px;
+  border-radius: 3px;
+  margin-right: 6px;
+  text-transform: uppercase;
+  font-style: normal;
+}
+
+.thes-art-synonyms {
+  margin: 26px 0 18px;
+  padding-top: 18px;
+  border-top: 2px solid var(--cd-teal);
+}
+.thes-art-h2 {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--cd-navy);
+  margin-bottom: 4px;
+}
+.thes-art-h2-sub {
+  font-size: 13px;
+  color: var(--text-secondary);
+  font-style: italic;
+  margin-bottom: 12px;
+}
+.thes-art-syn-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.thes-art-syn {
+  background: #fff;
+  border: 1px solid var(--cd-teal);
+  color: var(--cd-teal-dark);
+  padding: 5px 14px;
+  border-radius: 16px;
+  font-size: 14px;
+  font-weight: 600;
+}
+.thes-art-syn:hover {
+  background: var(--cd-teal);
+  color: #fff;
+  text-decoration: none;
+}
+
+/* ============================================================
+   Thesaurus index/entry (legacy)
+   ============================================================ */
+.thesaurus-index, .thesaurus-entry { padding: 30px 25px 48px; max-width: var(--max-width); margin: 0 auto; }
+.thes-header { margin-bottom: 22px; padding-bottom: 12px; border-bottom: 2px solid var(--cd-teal); }
+.thes-phrase { font-size: 32px; font-weight: 700; color: var(--cd-navy); }
+.thes-sense { color: var(--text-secondary); font-size: 15px; margin-bottom: 20px; }
+.thes-section-title { font-size: 18px; font-weight: 700; color: var(--cd-navy); margin-bottom: 14px; }
+.thes-synonyms-block { margin-bottom: 32px; }
+.thes-empty { color: var(--text-muted); font-style: italic; }
+.thes-related-block { }
+.thes-search-form { margin-bottom: 32px; }
+.search-input.big { font-size: 17px; padding: 14px 20px; }
+.search-input-wrap.big { max-width: 560px; }
+.thes-popular { margin-top: 32px; }
+.thes-popular h3 { margin-bottom: 12px; color: var(--cd-navy); font-size: 16px; }
+
+/* ============================================================
+   Grammar
+   ============================================================ */
+.grammar-index { padding: 30px 25px 48px; max-width: var(--max-width); margin: 0 auto; }
+.page-title { font-size: 30px; font-weight: 700; color: var(--cd-navy); margin-bottom: 6px; }
+.page-desc  { font-size: 15px; color: var(--text-secondary); margin-bottom: 28px; }
+.grammar-category-section { margin-bottom: 36px; }
+.grammar-category-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--cd-navy);
+  border-bottom: 2px solid var(--cd-teal);
+  padding-bottom: 8px;
+  margin-bottom: 16px;
+}
+.grammar-topic-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 14px;
+}
+.grammar-topic-card {
+  background: #fff;
+  border: 1px solid var(--border-light);
+  border-radius: 6px;
+  padding: 18px 20px;
+  display: block;
+  color: var(--text-primary);
+  transition: all 0.15s;
+}
+.grammar-topic-card:hover {
+  box-shadow: 0 4px 14px rgba(0,0,0,0.08);
+  border-color: var(--cd-teal);
+  text-decoration: none;
+  color: var(--text-primary);
+  transform: translateY(-1px);
+}
+.topic-card-title { font-size: 16px; font-weight: 700; color: var(--cd-navy); margin-bottom: 6px; }
+.topic-card-summary { font-size: 13px; color: var(--text-secondary); line-height: 1.5; }
+
+.grammar-topic { padding: 30px 25px 48px; max-width: var(--max-width); margin: 0 auto; }
+.grammar-topic-title { font-size: 30px; font-weight: 700; color: var(--cd-navy); margin-bottom: 6px; }
+.grammar-topic-summary { font-size: 16px; color: var(--text-secondary); margin-bottom: 28px; }
+.grammar-section { margin-bottom: 28px; }
+.grammar-section-heading { font-size: 18px; font-weight: 700; margin-bottom: 12px; color: var(--cd-navy); }
+.grammar-section-body { font-size: 15px; color: var(--text-primary); margin-bottom: 16px; line-height: 1.7; }
+.grammar-examples {
+  background: var(--bg-light);
+  padding: 16px 20px;
+  border-radius: 6px;
+  border-left: 4px solid var(--cd-teal);
+}
+.grammar-example-row { padding: 8px 0; border-bottom: 1px solid var(--border-light); display: flex; gap: 12px; align-items: flex-start; }
+.grammar-example-row:last-child { border-bottom: none; }
+.ex-label {
+  font-size: 11px;
+  font-weight: 700;
+  color: #fff;
+  background: var(--cd-teal);
+  padding: 3px 8px;
+  border-radius: 3px;
+  white-space: nowrap;
+  flex-shrink: 0;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+.ex-sentence { font-size: 14px; color: var(--text-primary); font-style: italic; }
+.grammar-nav { display: flex; justify-content: space-between; margin: 28px 0; padding: 14px 0; border-top: 1px solid var(--border-light); }
+.grammar-nav-prev, .grammar-nav-next { color: var(--cd-pink); font-weight: 600; }
+.grammar-see-also { margin-top: 14px; }
+
+/* ============================================================
+   Translate
+   ============================================================ */
+.translate-page { padding: 30px 25px 48px; max-width: var(--max-width); margin: 0 auto; }
+.translate-widget {
+  background: var(--bg-light);
+  padding: 26px;
+  border-radius: 8px;
+  margin-bottom: 28px;
+  border: 1px solid var(--border-light);
+}
+.translate-form { }
+.translate-row { display: grid; grid-template-columns: 1fr 32px 1fr; gap: 16px; align-items: start; margin-bottom: 14px; }
+.translate-col { display: flex; flex-direction: column; gap: 8px; }
+.trans-label { font-size: 13px; font-weight: 700; color: var(--cd-navy); text-transform: uppercase; letter-spacing: 0.4px; }
+.trans-select {
+  padding: 9px 12px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  font-size: 14px;
+  background: #fff;
+  font-family: inherit;
+}
+.trans-textarea {
+  padding: 12px 16px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  font-size: 15px;
+  min-height: 130px;
+  resize: vertical;
+  font-family: var(--font);
+  background: #fff;
+}
+.trans-textarea:focus, .trans-select:focus { outline: 2px solid var(--cd-teal); outline-offset: -2px; border-color: var(--cd-teal); }
+.translate-arrow {
+  font-size: 22px;
+  color: var(--cd-teal);
+  margin-top: 60px;
+  text-align: center;
+  font-weight: 700;
+}
+.trans-result-box {
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 12px 16px;
+  min-height: 130px;
+}
+.trans-result-text { font-size: 18px; color: var(--text-primary); }
+.trans-no-result { color: var(--text-muted); font-style: italic; }
+.trans-placeholder { color: var(--text-muted); }
+.trans-submit { margin-top: 8px; }
+.trans-credit-note { font-size: 12px; color: var(--text-muted); margin-top: 10px; }
+.translate-info h3 { margin-bottom: 8px; color: var(--cd-navy); font-size: 18px; }
+
+/* ============================================================
+   Plus
+   ============================================================ */
+.plus-hero {
+  background: linear-gradient(120deg, var(--cd-navy) 0%, #2a3870 100%);
+  color: #fff;
+  padding: 48px 0;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+}
+.plus-hero::before {
+  content: "";
+  position: absolute;
+  width: 320px; height: 320px;
+  border-radius: 50%;
+  background: var(--cd-teal);
+  opacity: 0.18;
+  left: -100px; top: -120px;
+}
+.plus-hero h1 { font-size: 34px; margin-bottom: 10px; font-weight: 700; position: relative; }
+.plus-hero p  { font-size: 17px; opacity: 0.9; position: relative; }
+.plus-content { padding: 36px 25px 56px; max-width: var(--max-width); margin: 0 auto; }
+.plus-section { margin-bottom: 44px; }
+.plus-section-title { font-size: 22px; font-weight: 700; color: var(--cd-navy); margin-bottom: 6px; }
+.plus-section-desc  { font-size: 14px; color: var(--text-secondary); margin-bottom: 18px; }
+
+.quiz-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 18px;
+}
+.quiz-card {
+  background: #fff;
+  border: 1px solid var(--border-light);
+  border-radius: 8px;
+  padding: 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  transition: all 0.15s;
+  color: var(--text-primary);
+  border-top: 4px solid var(--cd-teal);
+}
+.quiz-card:hover {
+  box-shadow: 0 6px 18px rgba(0,0,0,0.10);
+  transform: translateY(-2px);
+  text-decoration: none;
+  color: var(--text-primary);
+}
+.quiz-card:nth-child(4n+2) { border-top-color: var(--cd-pink); }
+.quiz-card:nth-child(4n+3) { border-top-color: var(--cd-yellow); }
+.quiz-card:nth-child(4n+4) { border-top-color: var(--cd-purple); }
+
+.quiz-card-icon { font-size: 28px; line-height: 1; }
+.quiz-card h3   { font-size: 16px; font-weight: 700; color: var(--cd-navy); }
+.quiz-card p    { font-size: 13px; color: var(--text-secondary); line-height: 1.5; }
+
+.quiz-difficulty {
+  display: inline-block;
+  padding: 2px 10px;
+  border-radius: 10px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+}
+.difficulty-easy        { background: #e6f5d0; color: #2c6415; }
+.difficulty-intermediate{ background: #fef3cf; color: #7d5d10; }
+.difficulty-hard        { background: #fde2e2; color: #922b21; }
+.quiz-category { font-size: 12px; color: var(--text-muted); }
+.quiz-start-btn { color: var(--cd-pink); font-weight: 700; font-size: 13px; margin-top: auto; }
+
+/* ============================================================
+   Quiz
+   ============================================================ */
+.quiz-page { padding: 30px 25px 48px; max-width: var(--max-width); margin: 0 auto; }
+.quiz-title { font-size: 26px; font-weight: 700; color: var(--cd-navy); margin-bottom: 6px; }
+.quiz-desc  { color: var(--text-secondary); margin-bottom: 12px; }
+.quiz-meta  { display: flex; gap: 12px; margin-bottom: 26px; flex-wrap: wrap; align-items: center; }
+.quiz-type-badge {
+  background: var(--cd-teal);
+  color: #fff;
+  padding: 3px 12px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 600;
+}
+.quiz-count { font-size: 13px; color: var(--text-muted); }
+.quiz-container {
+  background: var(--bg-light);
+  border-radius: 8px;
+  padding: 32px;
+  max-width: 640px;
+  border: 1px solid var(--border-light);
+}
+.q-progress { font-size: 13px; color: var(--text-muted); margin-bottom: 16px; }
+.q-image-placeholder {
+  background: #fff;
+  border-radius: 8px;
+  padding: 32px;
+  text-align: center;
+  margin-bottom: 16px;
+  border: 1px solid var(--border-light);
+}
+.animal-emoji { font-size: 64px; margin-bottom: 6px; }
+.q-image-caption { font-size: 13px; color: var(--text-muted); font-style: italic; }
+.q-text { font-size: 17px; font-weight: 600; margin-bottom: 18px; color: var(--cd-navy); }
+.q-options { display: flex; flex-direction: column; gap: 10px; }
+.q-option-btn {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: #fff;
+  border: 2px solid var(--border);
+  border-radius: 6px;
+  padding: 11px 16px;
+  font-size: 15px;
+  cursor: pointer;
+  text-align: left;
+  transition: all 0.15s;
+  font-family: var(--font);
+  color: var(--text-primary);
+}
+.q-option-btn:hover { border-color: var(--cd-teal); background: #effbfa; }
+.q-option-btn.correct { background: #e8f7e9; border-color: #2c6415; color: #2c6415; }
+.q-option-btn.wrong   { background: #fde2e2; border-color: #922b21; color: #922b21; }
+.opt-letter {
+  background: var(--cd-navy);
+  color: #fff;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+.q-feedback { margin-top: 12px; padding: 10px 16px; border-radius: 4px; font-size: 14px; }
+.q-feedback.correct-fb { background: #e8f7e9; color: #2c6415; }
+.q-feedback.wrong-fb   { background: #fde2e2; color: #922b21; }
+.btn-next { margin-top: 16px; }
+
+.quiz-result { text-align: center; padding: 20px 0; }
+.result-icon { font-size: 44px; margin-bottom: 10px; }
+.quiz-result h2 { font-size: 22px; margin-bottom: 8px; color: var(--cd-navy); }
+.result-score { font-size: 18px; margin-bottom: 14px; }
+#result-message { color: var(--text-secondary); margin-bottom: 18px; }
+.quiz-result a { margin: 0 8px; }
+
+/* ============================================================
+   Word scramble
+   ============================================================ */
+.scramble-page { padding: 30px 25px 48px; max-width: var(--max-width); margin: 0 auto; }
+.scramble-game {
+  background: var(--bg-light);
+  border-radius: 8px;
+  padding: 32px;
+  max-width: 520px;
+  margin-bottom: 30px;
+  border: 1px solid var(--border-light);
+}
+.scramble-clue { margin-bottom: 18px; }
+.scramble-def-label { font-weight: 700; color: var(--cd-navy); font-size: 13px; margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.4px; }
+.scramble-def { font-size: 16px; font-style: italic; color: var(--text-primary); }
+.scramble-letters { display: flex; gap: 8px; margin-bottom: 18px; flex-wrap: wrap; }
+.scramble-tile {
+  background: var(--cd-purple);
+  color: #fff;
+  width: 44px;
+  height: 44px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  font-weight: 700;
+  text-transform: uppercase;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.12);
+}
+.scramble-timer { margin-bottom: 14px; }
+#timerDisplay { font-size: 22px; font-weight: 700; color: var(--cd-navy); }
+.timer-bar { height: 6px; background: var(--border-light); border-radius: 3px; margin-top: 6px; }
+.timer-fill { height: 100%; background: var(--cd-teal); border-radius: 3px; width: 100%; transition: width 1s linear; }
+.scramble-input-wrap { display: flex; gap: 8px; margin-bottom: 12px; }
+.scramble-input {
+  flex: 1;
+  padding: 10px 16px;
+  border: 2px solid var(--border);
+  border-radius: 6px;
+  font-size: 17px;
+  text-transform: lowercase;
+  font-family: var(--font);
+}
+.scramble-input:focus { outline: none; border-color: var(--cd-teal); }
+.scramble-feedback { padding: 10px; border-radius: 4px; font-size: 14px; min-height: 36px; }
+.scramble-feedback.correct { background: #e8f7e9; color: #2c6415; }
+.scramble-feedback.wrong   { background: #fde2e2; color: #922b21; }
+.scramble-actions { display: flex; gap: 10px; margin-top: 8px; }
+.btn-hint {
+  background: transparent;
+  border: 2px solid var(--cd-teal);
+  color: var(--cd-teal-dark);
+  padding: 7px 16px;
+  border-radius: 18px;
+  cursor: pointer;
+  font-size: 13px;
+  font-family: inherit;
+}
+.btn-hint:hover { background: var(--cd-teal); color: #fff; }
+.scramble-instructions { padding-top: 20px; }
+.scramble-instructions h3 { margin-bottom: 10px; color: var(--cd-navy); }
+.scramble-instructions ol { padding-left: 22px; }
+.scramble-instructions li { margin-bottom: 6px; font-size: 14px; color: var(--text-secondary); }
+
+/* ============================================================
+   Shop
+   ============================================================ */
+.shop-page { padding: 30px 25px 48px; max-width: var(--max-width); margin: 0 auto; }
+.shop-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 22px;
+}
+.shop-card {
+  border: 1px solid var(--border-light);
+  border-radius: 8px;
+  overflow: hidden;
+  transition: box-shadow 0.2s, transform 0.2s;
+  background: #fff;
+}
+.shop-card:hover { box-shadow: 0 6px 18px rgba(0,0,0,0.10); transform: translateY(-2px); }
+.shop-card-link { display: block; color: var(--text-primary); }
+.shop-card-link:hover { text-decoration: none; color: var(--text-primary); }
+.shop-book-cover {
+  height: 180px;
+  background: linear-gradient(135deg, var(--cd-navy) 0%, #2a3870 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+.shop-book-cover.large { height: 260px; }
+.book-cover-inner {
+  background: rgba(255,255,255,0.08);
+  border: 2px solid rgba(255,255,255,0.35);
+  padding: 14px 16px;
+  border-radius: 4px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  color: #fff;
+  max-width: 200px;
+}
+.book-category { font-size: 10px; text-transform: uppercase; letter-spacing: 1.5px; opacity: 0.85; }
+.book-title { font-size: 14px; font-weight: 700; line-height: 1.3; }
+.shop-card-body { padding: 16px; }
+.shop-item-name { font-size: 15px; font-weight: 700; margin-bottom: 6px; color: var(--cd-navy); }
+.shop-item-desc { font-size: 13px; color: var(--text-secondary); margin-bottom: 6px; line-height: 1.5; }
+.shop-item-isbn { font-size: 12px; color: var(--text-muted); }
+.shop-item-footer { display: flex; align-items: center; gap: 8px; margin-top: 10px; }
+.shop-price { font-size: 18px; font-weight: 700; color: var(--cd-pink); }
+.shop-featured-badge { background: var(--cd-yellow); color: #5d4710; padding: 2px 10px; border-radius: 10px; font-size: 11px; font-weight: 700; }
+.shop-item-page { padding: 30px 25px 48px; max-width: var(--max-width); margin: 0 auto; }
+.shop-item-detail { display: grid; grid-template-columns: 280px 1fr; gap: 36px; align-items: start; margin-bottom: 36px; }
+.shop-item-title { font-size: 26px; font-weight: 700; color: var(--cd-navy); margin-bottom: 10px; }
+.shop-item-price-lg { font-size: 28px; font-weight: 700; color: var(--cd-pink); margin-bottom: 14px; }
+.shop-item-full-desc { font-size: 15px; color: var(--text-secondary); margin-bottom: 12px; line-height: 1.7; }
+.shop-item-publisher { font-size: 14px; color: var(--text-muted); margin-bottom: 6px; }
+.shop-related h3 { font-size: 18px; margin-bottom: 14px; color: var(--cd-navy); }
+.shop-grid.small { grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); }
+.shop-card.small .shop-card-body { padding: 12px; }
+
+/* ============================================================
+   Auth (login / register / forgot)
+   ============================================================ */
+.auth-page { padding: 48px 25px; max-width: 480px; margin: 0 auto; }
+.auth-card {
+  background: #fff;
+  border: 1px solid var(--border-light);
+  border-radius: 8px;
+  padding: 36px;
+  box-shadow: 0 4px 18px rgba(0,0,0,0.06);
+}
+.auth-title { font-size: 24px; font-weight: 700; margin-bottom: 6px; color: var(--cd-navy); }
+.auth-sub   { font-size: 14px; color: var(--text-muted); margin-bottom: 22px; }
+.auth-form  { display: flex; flex-direction: column; gap: 14px; }
+.form-group { display: flex; flex-direction: column; gap: 4px; }
+.form-label { font-size: 13px; font-weight: 600; color: var(--cd-navy); }
+.form-input {
+  padding: 10px 14px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font-size: 15px;
+  font-family: var(--font);
+  outline: none;
+  transition: border-color 0.15s, box-shadow 0.15s;
+  background: #fff;
+}
+.form-input:focus {
+  border-color: var(--cd-teal);
+  box-shadow: 0 0 0 3px rgba(0,189,182,0.15);
+}
+.form-error { font-size: 12px; color: var(--cd-pink); }
+.auth-switch { margin-top: 18px; text-align: center; font-size: 14px; color: var(--text-secondary); }
+.auth-switch a { color: var(--cd-pink); font-weight: 600; }
+
+/* ============================================================
+   Account
+   ============================================================ */
+.account-page { padding: 30px 25px 48px; max-width: var(--max-width); margin: 0 auto; }
+.account-title { font-size: 28px; font-weight: 700; color: var(--cd-navy); margin-bottom: 4px; }
+.account-welcome { font-size: 14px; color: var(--text-secondary); margin-bottom: 22px; }
+.account-grid { display: grid; grid-template-columns: 220px 1fr; gap: 32px; }
+.account-sidebar {
+  border-right: 1px solid var(--border-light);
+  padding-right: 22px;
+}
+.account-menu { list-style: none; }
+.account-menu li a {
+  display: block;
+  padding: 9px 14px;
+  font-size: 14px;
+  color: var(--text-secondary);
+  border-radius: 4px;
+  margin-bottom: 4px;
+  transition: all 0.15s;
+}
+.account-menu li a:hover,
+.account-menu li a.active {
+  background: var(--cd-teal);
+  color: #fff;
+  text-decoration: none;
+}
+.account-section { margin-bottom: 28px; padding-bottom: 22px; border-bottom: 1px solid var(--border-light); }
+.account-section:last-child { border-bottom: none; }
+.account-section-title { font-size: 17px; font-weight: 700; color: var(--cd-navy); margin-bottom: 14px; }
+.saved-words-list { display: flex; flex-direction: column; gap: 6px; }
+.saved-word-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  background: var(--bg-light);
+  border-radius: 4px;
+  border-left: 3px solid var(--cd-teal);
+}
+.saved-word-link { font-weight: 600; color: var(--cd-navy); flex: 1; }
+.saved-word-pos  { font-size: 12px; color: var(--text-muted); font-style: italic; }
+.history-list    { display: flex; flex-wrap: wrap; gap: 6px; }
+.history-item {
+  padding: 5px 12px;
+  background: #fff;
+  border: 1px solid var(--cd-teal);
+  border-radius: 16px;
+  font-size: 13px;
+  color: var(--cd-teal-dark);
+}
+.history-item:hover { background: var(--cd-teal); color: #fff; text-decoration: none; }
+.profile-row   { font-size: 15px; margin-bottom: 8px; }
+.profile-label { font-weight: 600; color: var(--cd-navy); }
+.empty-hint    { font-size: 14px; color: var(--text-muted); font-style: italic; }
+
+/* ============================================================
+   Error pages
+   ============================================================ */
+.error-page { padding: 80px 25px; text-align: center; }
+.error-page h1 { font-size: 80px; color: var(--cd-navy); margin-bottom: 12px; font-weight: 800; }
+.error-page p  { color: var(--text-secondary); font-size: 16px; margin-bottom: 22px; }
+
+/* ============================================================
+   Footer — solid teal Cambridge band
+   ============================================================ */
+.footer {
+  background: var(--cd-teal);
+  color: #fff;
+  padding: 44px 0 22px;
+  margin-top: 56px;
+  position: relative;
+}
+.footer::before {
+  content: "";
+  display: block;
+  height: 4px;
+  background: linear-gradient(90deg, var(--cd-pink), var(--cd-yellow), var(--cd-teal-light), var(--cd-purple));
+  position: absolute;
+  top: 0; left: 0; right: 0;
+}
+.footer-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 30px;
+  margin-bottom: 28px;
+}
+.footer-col h4 {
+  color: #fff;
+  font-size: 13px;
+  font-weight: 700;
+  margin-bottom: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+}
+.footer-col ul { list-style: none; padding: 0; }
+.footer-col ul li { margin-bottom: 7px; }
+.footer-col ul li a {
+  color: rgba(255,255,255,0.92);
+  font-size: 13px;
+}
+.footer-col ul li a:hover { color: #fff; text-decoration: underline; }
+.footer-bottom {
+  border-top: 1px solid rgba(255,255,255,0.25);
+  padding-top: 18px;
+  font-size: 12px;
+  color: rgba(255,255,255,0.85);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.footer-bottom a { color: #fff; text-decoration: underline; }
+.footer-bottom a:hover { opacity: 0.85; }
+
+/* ============================================================
+   Responsive
+   ============================================================ */
+@media (max-width: 1024px) {
+  .nav-links .nav-item { padding: 0 10px; font-size: 13px; }
+  .nav-logo { margin-right: 16px; padding-left: 44px; }
+}
+@media (max-width: 768px) {
+  .nav-links { display: none; }
+  .nav-right { gap: 6px; }
+  .lang-select { padding: 4px 8px; font-size: 11px; }
+  .plus-promo-inner { grid-template-columns: 1fr; }
+  .account-grid { grid-template-columns: 1fr; }
+  .account-sidebar { border-right: none; border-bottom: 1px solid var(--border-light); padding-right: 0; padding-bottom: 14px; }
+  .translate-row { grid-template-columns: 1fr; }
+  .translate-arrow { margin-top: 0; }
+  .shop-item-detail { grid-template-columns: 1fr; }
+  .feature-cards { grid-template-columns: 1fr 1fr; }
+  .hero-title { font-size: 22px; }
+  .search-input-wrap { max-width: 100%; }
+}
+@media (max-width: 480px) {
+  .feature-cards { grid-template-columns: 1fr; }
+  .auth-page { padding: 24px 20px; }
+  .entry-headword { font-size: 30px; }
+  .browse-letter { width: 32px; height: 32px; font-size: 12px; }
+}

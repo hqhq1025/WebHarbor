@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% block title %}{{ article.title }}{% endblock %}
+
+{% block content %}
+<div class="container">
+  <div class="article-layout">
+    <article class="article-body">
+      {% if sport %}
+      <div class="article-sport-tag">
+        <a href="{{ sport.url_prefix }}">{{ sport.display_name or sport.name }}</a>
+      </div>
+      {% endif %}
+
+      <h1 class="article-title">{{ article.title }}</h1>
+      {% if article.subtitle %}<p class="article-subtitle">{{ article.subtitle }}</p>{% endif %}
+
+      <div class="article-byline">
+        By <strong>{{ article.author }}</strong>
+        &bull; {{ article.published_date or article.created_at.strftime('%B %d, %Y') }}
+      </div>
+
+      {% if article.image %}
+      <img src="{{ article.image }}" alt="{{ article.title }}" class="article-hero-img">
+      {% endif %}
+
+      <div class="article-content">
+        {{ article.body | safe }}
+      </div>
+
+      <!-- Tags -->
+      {% set tags = article.get_tags() %}
+      {% if tags %}
+      <div class="article-tags">
+        <strong>Tags:</strong>
+        {% for tag in tags %}
+        <span class="tag">{{ tag }}</span>
+        {% endfor %}
+      </div>
+      {% endif %}
+    </article>
+
+    <!-- Sidebar: Related Articles -->
+    <aside class="article-sidebar">
+      {% if related %}
+      <section class="section-block">
+        <h3 class="section-heading">Related</h3>
+        <ul class="related-list">
+          {% for rel in related %}
+          <li>
+            <a href="/story/{{ rel.slug }}">{{ rel.title }}</a>
+            <span class="related-date">{{ rel.published_date or rel.created_at.strftime('%b %d') }}</span>
+          </li>
+          {% endfor %}
+        </ul>
+      </section>
+      {% endif %}
+    </aside>
+  </div>
+</div>
+{% endblock %}

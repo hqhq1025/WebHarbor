@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block title %}Saved Queries — Wolfram|Alpha{% endblock %}
+
+{% block content %}
+<div class="section-inner">
+  <div class="page-header">
+    <h1 class="page-title">&#128190; Saved Queries</h1>
+    <p class="page-subtitle">Computations you've saved for quick re-use.</p>
+  </div>
+
+  {% if saved_queries %}
+  <div class="saved-queries-full-list">
+    {% for sq in saved_queries %}
+    <div class="sq-card">
+      <div class="sq-card-body">
+        <a href="/input?i={{ sq.query_text|urlencode }}" class="sq-card-query">
+          <code>{{ sq.query_text }}</code>
+        </a>
+        {% if sq.notes %}
+        <p class="sq-card-notes">{{ sq.notes }}</p>
+        {% endif %}
+        <div class="sq-card-meta">
+          Saved {{ sq.created_at.strftime('%b %d, %Y') }}
+          {% if sq.topic %} · <a href="/topic/{{ sq.topic.slug }}">{{ sq.topic.name }}</a>{% endif %}
+        </div>
+      </div>
+      <div class="sq-card-actions">
+        <a href="/input?i={{ sq.query_text|urlencode }}" class="btn btn-primary btn-sm">Run</a>
+        <form action="/saved-queries/remove/{{ sq.id }}" method="post" style="display:inline">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <button type="submit" class="btn btn-secondary btn-sm">Remove</button>
+        </form>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="empty-state-page">
+    <div class="empty-icon">&#128190;</div>
+    <h2>No saved queries</h2>
+    <p>After running a computation, click "Save Query" to keep it here.</p>
+    <a href="/" class="btn btn-pro-primary">Try a Query</a>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

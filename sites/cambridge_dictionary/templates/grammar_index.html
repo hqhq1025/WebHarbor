@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block title %}Grammar | Cambridge Dictionary{% endblock %}
+{% block content %}
+<div class="grammar-index container">
+  <h1 class="page-title">Grammar</h1>
+  <p class="page-desc">Clear and simple English grammar explanations with examples of usage.</p>
+
+  {% if categories %}
+    {% for category, topics in categories.items() %}
+    <div class="grammar-category-section">
+      <h2 class="grammar-category-title">{{ category }}</h2>
+      <div class="grammar-topic-grid">
+        {% for topic in topics %}
+          <a href="{{ url_for('grammar_topic', slug=topic.slug) }}" class="grammar-topic-card">
+            <h3 class="topic-card-title">{{ topic.title }}</h3>
+            <p class="topic-card-summary">{{ topic.summary[:120] }}{% if topic.summary|length > 120 %}…{% endif %}</p>
+          </a>
+        {% endfor %}
+      </div>
+    </div>
+    {% endfor %}
+  {% else %}
+    <p>No grammar topics available yet.</p>
+  {% endif %}
+</div>
+{% endblock %}

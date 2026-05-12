@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+{% block title %}Flights — Booking{% endblock %}
+{% block content %}
+<section class="hero" style="padding:40px 20px 80px;">
+    <div class="hero-inner">
+        <h1>Book cheap flights</h1>
+        <p>Find low fares to top destinations on our official site.</p>
+    </div>
+    <form class="search-bar" action="{{ url_for('search') }}" method="get">
+        <div class="search-field">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12l20-8-8 20-2-9-10-3z"/></svg>
+            <input type="text" name="q" placeholder="From">
+        </div>
+        <div class="search-field">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12l20-8-8 20-2-9-10-3z" transform="rotate(90 12 12)"/></svg>
+            <input type="text" placeholder="Where to?">
+        </div>
+        <div class="search-field">
+            <input type="text" maxlength="10" inputmode="numeric" pattern="\d{4}-\d{2}-\d{2}" placeholder="Depart (YYYY-MM-DD)" autocomplete="off" data-datepicker="checkin">
+        </div>
+        <div class="search-field">
+            <input type="text" maxlength="10" inputmode="numeric" pattern="\d{4}-\d{2}-\d{2}" placeholder="Return (YYYY-MM-DD)" autocomplete="off" data-datepicker="checkout">
+        </div>
+        <button class="search-submit" type="submit">Search flights</button>
+    </form>
+</section>
+
+<div class="container">
+    <section class="section">
+        <div class="section-header">
+            <h2>Top flight destinations</h2>
+            <p>Popular routes from our travellers</p>
+        </div>
+        <div class="card-grid cards-4">
+            {% for c in cities[:8] %}
+            <a href="{{ url_for('city_page', slug=c.slug) }}" class="city-card">
+                {% if c.hero_image %}
+                <img src="{{ c.hero_image }}" alt="{{ c.display }}" class="city-card-img"
+                     onerror="this.style.background='linear-gradient(135deg,#003580,#006ce4)';this.alt=''">
+                {% endif %}
+                <div class="city-card-body">
+                    <h3>&#9992; {{ c.display }}</h3>
+                    <span class="flag">{{ c.country }}</span>
+                    <div style="font-size:12px;margin-top:4px;">From <strong>${{ (100 + loop.index * 47) }}</strong></div>
+                </div>
+            </a>
+            {% endfor %}
+        </div>
+    </section>
+
+    <section class="section">
+        <div class="section-header">
+            <h2>Why book flights with Booking.com?</h2>
+        </div>
+        <div class="card-grid cards-3">
+            <div class="category-tile">
+                <div class="icon">&#128077;</div>
+                <h4>No hidden fees</h4>
+                <p>Know exactly what you pay — taxes and fees included upfront.</p>
+            </div>
+            <div class="category-tile">
+                <div class="icon">&#128241;</div>
+                <h4>Easy management</h4>
+                <p>View, manage, and update your bookings in one place.</p>
+            </div>
+            <div class="category-tile">
+                <div class="icon">&#127760;</div>
+                <h4>Trusted worldwide</h4>
+                <p>Millions of travellers book their trips with us every year.</p>
+            </div>
+        </div>
+    </section>
+</div>
+{% endblock %}

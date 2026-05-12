@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% block title %}Word Scramble | Cambridge Dictionary Plus{% endblock %}
+{% block content %}
+<div class="scramble-page container">
+  <nav class="breadcrumb">
+    <a href="{{ url_for('plus_index') }}">Plus</a> &rsaquo;
+    <span>Word Scramble</span>
+  </nav>
+
+  <h1 class="page-title">Word Scramble</h1>
+  <p class="page-desc">Unscramble the letters to find the correct word. Beat the clock!</p>
+
+  <div class="scramble-game" id="scrambleGame">
+    {% if word %}
+    <div class="scramble-clue">
+      <p class="scramble-def-label">Clue:</p>
+      <p class="scramble-def">{{ definition }}</p>
+    </div>
+
+    <div class="scramble-letters" id="scrambleLetters">
+      {% for letter in scrambled %}
+        <span class="scramble-tile">{{ letter }}</span>
+      {% endfor %}
+    </div>
+
+    <div class="scramble-timer">
+      <span id="timerDisplay">30</span>s remaining
+      <div class="timer-bar"><div class="timer-fill" id="timerFill"></div></div>
+    </div>
+
+    <div class="scramble-input-wrap">
+      <input type="text" id="scrambleInput" class="scramble-input" placeholder="Type your answer…"
+             maxlength="{{ word.headword|length }}" autocomplete="off">
+      <button class="btn-primary" onclick="checkScramble('{{ word.headword }}')">Check</button>
+    </div>
+
+    <div id="scrambleFeedback" class="scramble-feedback"></div>
+
+    <div class="scramble-actions">
+      <button class="btn-secondary" onclick="window.location.reload()">New word</button>
+      <button class="btn-hint" onclick="showHint('{{ word.headword }}')">Show hint</button>
+    </div>
+    {% else %}
+    <p>No words available for the scramble game.</p>
+    {% endif %}
+  </div>
+
+  <div class="scramble-instructions">
+    <h3>How to play</h3>
+    <ol>
+      <li>Read the definition clue.</li>
+      <li>Unscramble the letters shown.</li>
+      <li>Type your answer and click Check.</li>
+      <li>Try to beat the 30-second clock!</li>
+    </ol>
+  </div>
+</div>
+{% endblock %}

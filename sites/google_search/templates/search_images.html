@@ -1,0 +1,51 @@
+{% from "_serp_header.html" import serp_header with context %}
+{% extends "base.html" %}
+{% block title %}{{ q }} - Google Image Search{% endblock %}
+{% block header %}{{ serp_header(q, 'images') }}{% endblock %}
+
+{% block content %}
+<div class="serp-tools" style="padding-left:180px;">
+    About {{ result_count|fmt_count }} results ({{ search_time }} seconds)
+</div>
+
+{% set imgs = [] %}
+{% if topic %}
+    {% for im in topic.get_images() %}
+        {% set _ = imgs.append((im, topic.name)) %}
+    {% endfor %}
+    {% for r in results %}
+        {% if r.image %}{% set _ = imgs.append((r.image, r.title)) %}{% endif %}
+    {% endfor %}
+{% endif %}
+
+<div class="images-grid">
+    {% if imgs %}
+        {% for img, alt in imgs %}
+        <a class="image-card" href="{{ url_for('search', q=alt, tbm='images') }}">
+            <img src="{{ img }}" alt="{{ alt }}" onerror="this.parentElement.style.display='none'">
+            <div class="img-caption">{{ alt }}</div>
+        </a>
+        {% endfor %}
+        {# Pad with other topics' images for richness #}
+        {% set more = nav_verticals %}
+    {% else %}
+        <div style="grid-column: 1/-1; padding: 60px; text-align:center; color: var(--color-text-tertiary);">
+            No images to show. <a href="{{ url_for('search', q='Paris', tbm='images') }}">Try Paris</a>
+        </div>
+    {% endif %}
+</div>
+
+{% if related %}
+<div class="related-block" style="padding: 20px 28px 40px;">
+    <div class="related-header">Related searches</div>
+    <div class="related-grid">
+        {% for rq in related %}
+        <a class="related-item" href="{{ url_for('search', q=rq.term, tbm='images') }}">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="#70757a"><path d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
+            <span>{{ rq.term }}</span>
+        </a>
+        {% endfor %}
+    </div>
+</div>
+{% endif %}
+{% endblock %}

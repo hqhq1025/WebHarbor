@@ -1,0 +1,300 @@
+{% extends "base.html" %}
+{% block title %}{{ course.title }} | Coursera{% endblock %}
+{% block content %}
+<div class="course-detail-page">
+  <div class="cd-hero">
+    <div class="container">
+      <div class="cd-hero-inner">
+        <div class="cd-breadcrumb">
+          <a href="{{ url_for('index') }}">Home</a> &rsaquo;
+          <a href="{{ url_for('browse', category_slug=course.category|lower|replace(' ','-')|replace('/','-') ) }}">{{ course.category }}</a> &rsaquo;
+          <span>{{ course.title }}</span>
+        </div>
+        <div class="cd-type-badge">{{ course.course_type }}</div>
+        <h1>{{ course.title }}</h1>
+        <p class="cd-subtitle">{{ course.description[:200] }}{% if course.description|length > 200 %}...{% endif %}</p>
+        <div class="cd-meta-row">
+          {% if course.partner %}
+          <span class="cd-partner">
+            {% set _pl = partner_logo(course.partner) %}
+            {% if _pl %}<img class="cp-logo-inline" src="{{ url_for('static', filename=_pl) }}" alt="" style="filter:brightness(0) invert(1) opacity(.95);">{% endif %}
+            <strong>{{ course.partner.name }}</strong>
+          </span>
+          {% endif %}
+          <span class="cd-rating"><span class="stars">&#9733;</span> <strong>{{ '%.1f'|format(course.rating) }}</strong> <span class="review-count">({{ '{:,}'.format(course.review_count) }} reviews)</span></span>
+          <span class="cd-enrolled">{{ course.enrolled_display() }} already enrolled</span>
+        </div>
+        <div class="cd-tags">
+          <span class="tag-level">{{ course.level }}</span>
+          {% if course.is_free %}<span class="tag-free">Free</span>{% endif %}
+          {% if course.has_certificate %}<span class="tag-cert">Certificate</span>{% endif %}
+          {% if course.credit_eligible %}<span class="tag-credit">Credit Eligible</span>{% endif %}
+          <span class="tag-duration">{{ course.duration_text }}</span>
+          {% if course.course_type == 'Degree' and course.application_deadline %}
+          <span class="tag-deadline">Application deadline: {{ course.application_deadline }}</span>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <nav class="cd-tabs" aria-label="Course sections">
+    <div class="cd-tabs-inner">
+      <a href="#about" class="active">About</a>
+      <a href="#outcomes">Outcomes</a>
+      {% if course.modules %}<a href="#modules">Modules</a>{% endif %}
+      <a href="#testimonials">Testimonials</a>
+      <a href="#reviews">Reviews</a>
+    </div>
+  </nav>
+
+  <div class="cd-body container">
+    <div class="cd-main">
+      {% if course.instructor %}
+      <div class="cd-instructor-strip" style="display:flex;align-items:center;gap:14px;">
+        {% set _ip = instructor_photo(course.instructor) %}
+        {% if _ip %}
+          <img src="{{ url_for('static', filename=_ip) }}" alt="" style="width:56px;height:56px;border-radius:50%;object-fit:cover;flex-shrink:0;">
+        {% endif %}
+        <div>
+          <div style="font-size:12px;color:var(--c-muted);text-transform:uppercase;letter-spacing:.5px;font-weight:700;">Instructor</div>
+          <a class="cd-instructor-link" href="{{ url_for('instructor_profile', slug=course.instructor_slug()) }}">{{ course.instructor }}</a>
+          {% if course.instructor_title %}<div style="font-size:13px;color:var(--c-muted);">{{ course.instructor_title }}</div>{% endif %}
+        </div>
+      </div>
+      {% endif %}
+
+      {% set _tst = course.get_testimonials() %}
+      {% if _tst %}
+      <section class="cd-section testimonials-section" id="testimonials">
+        <h2>Learner Testimonials</h2>
+        <p class="testimonials-lede">What learners are saying about {{ course.title }}:</p>
+        <div class="testimonials-grid">
+          {% for t in _tst %}
+          <figure class="testimonial-card">
+            <blockquote class="testimonial-quote">&ldquo;{{ t.quote }}&rdquo;</blockquote>
+            <figcaption class="testimonial-attrib">
+              <span class="testimonial-name">{{ t.name }}</span>
+              {% if t.role %}<span class="testimonial-role">, {{ t.role }}</span>{% endif %}
+              {% if t.date %}<span class="testimonial-date"> &middot; {{ t.date }}</span>{% endif %}
+            </figcaption>
+          </figure>
+          {% endfor %}
+        </div>
+      </section>
+      {% endif %}
+
+      {% if course.get_what_you_learn() %}
+      <section class="cd-section" id="outcomes">
+        <h2>What you'll learn</h2>
+        <div class="learn-grid">
+          {% for item in course.get_what_you_learn() %}
+          <div class="learn-item"><span class="check">&#10003;</span> <span>{{ item }}</span></div>
+          {% endfor %}
+        </div>
+      </section>
+      {% endif %}
+
+      {% if course.get_skills() %}
+      <section class="cd-section">
+        <h2>Skills you'll gain</h2>
+        <div class="skills-list">
+          {% for skill in course.get_skills() %}
+          <span class="skill-chip">{{ skill }}</span>
+          {% endfor %}
+        </div>
+      </section>
+      {% endif %}
+
+      {% if course.modules %}
+      <section class="cd-section cd-syllabus" id="modules">
+        <h2>There {% if course.modules|length == 1 %}is 1 module{% else %}are {{ course.modules|length }} modules{% endif %} in this course</h2>
+        <p class="module-count">This course is broken into {{ course.modules|length }} weekly modules with hands-on assignments.</p>
+        <div class="syllabus-list">
+          {% for m in course.modules %}
+          <div class="syllabus-item">
+            <div class="syllabus-week">
+              <span class="week-label">Week {{ m.week_number }}</span>
+              <strong class="module-title">{{ m.title }}</strong>
+            </div>
+            <p class="module-desc">{{ m.description }}</p>
+            <div class="module-stats">
+              <span>&#9654; {{ m.videos_count }} videos</span>
+              <span>&#128214; {{ m.readings_count }} readings</span>
+              <span>&#9998; {{ m.quizzes_count }} quizzes</span>
+            </div>
+            {% set vt = m.get_video_titles() %}
+            {% if vt %}
+            <ul class="module-videos">
+              {% for v in vt %}
+              <li class="module-video"><span class="video-icon">&#9654;</span> {{ v }}</li>
+              {% endfor %}
+            </ul>
+            {% endif %}
+          </div>
+          {% endfor %}
+        </div>
+      </section>
+      {% endif %}
+
+      {% if sub_courses %}
+      <section class="cd-section cd-sub-courses">
+        <h2>Courses in this {{ course.course_type }}</h2>
+        <div class="sub-course-list">
+          {% for sc in sub_courses %}
+          <div class="sub-course-item">
+            <div class="sub-course-num">{{ sc.order_index }}</div>
+            <div class="sub-course-body">
+              <h3>{{ sc.title }}</h3>
+              <p>{{ sc.description }}</p>
+              <span class="sub-duration">{{ sc.duration_text }}</span>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+      </section>
+      {% endif %}
+
+      <section class="cd-section" id="about">
+        <h2>About this {{ course.course_type }}</h2>
+        <p>{{ course.description }}</p>
+        {% if course.return_policy is defined and course.return_policy %}
+        <p class="return-policy">{{ course.return_policy }}</p>
+        {% endif %}
+      </section>
+
+      {% if reviews or course.review_count > 0 %}
+      <section class="cd-section reviews-section" id="reviews">
+        <h2>Learner Reviews</h2>
+        <div class="reviews-summary">
+          <div class="avg-rating">{{ '%.1f'|format(course.rating) }}</div>
+          <div>
+            <div class="stars-large">{% for i in range(5) %}&#9733;{% endfor %}</div>
+            <div style="color:var(--c-muted);font-size:14px;margin-top:4px">{{ '{:,}'.format(course.review_count) }} reviews</div>
+          </div>
+        </div>
+        {% if rating_breakdown %}
+        <div class="rating-breakdown">
+          <h3>Rating Breakdown</h3>
+          {% for stars in ['5','4','3','2','1'] %}
+          <div class="breakdown-row">
+            <span class="breakdown-stars">{{ stars }} star{{ 's' if stars != '1' else '' }}</span>
+            <div class="breakdown-bar"><div class="breakdown-fill" style="width:{{ rating_breakdown[stars] }}%"></div></div>
+            <span class="breakdown-pct">{{ rating_breakdown[stars] }}%</span>
+          </div>
+          {% endfor %}
+        </div>
+        {% endif %}
+        {% for r in reviews %}
+        <div class="review-card">
+          <div class="review-header">
+            <span class="reviewer-initial">{{ r.user.name[0].upper() }}</span>
+            <span class="reviewer-name">{{ r.user.name }}</span>
+            <span class="review-stars">{% for i in range(r.rating|int) %}&#9733;{% endfor %}</span>
+            <span class="review-date">{{ r.created_at.strftime('%b %Y') }}</span>
+            {% if current_user.is_authenticated and r.user_id == current_user.id %}
+            <form method="post" action="{{ url_for('delete_review', review_id=r.id) }}" class="inline-form">
+              {{ review_form.hidden_tag() }}
+              <button class="btn-delete-review">Delete</button>
+            </form>
+            {% endif %}
+          </div>
+          <p class="review-body">{{ r.body }}</p>
+        </div>
+        {% endfor %}
+        {% set _shown = reviews|length %}
+        {% if _shown > 0 and course.review_count > _shown %}
+        <div class="reviews-more-hint">
+          Showing <strong>{{ _shown }}</strong> of <strong>{{ '{:,}'.format(course.review_count) }}</strong> reviews
+          ({{ '{:,}'.format(course.review_count - _shown) }} more hidden)
+        </div>
+        {% endif %}
+      </section>
+      {% endif %}
+
+      {% if current_user.is_authenticated and is_enrolled %}
+      <section class="cd-section">
+        <h2>Write a Review</h2>
+        <form method="post" action="{{ url_for('submit_review', slug=course.slug) }}" class="review-form">
+          {{ review_form.hidden_tag() }}
+          <div class="form-group">
+            {{ review_form.rating.label }}
+            {{ review_form.rating(class="form-control", placeholder="4.5") }}
+          </div>
+          <div class="form-group">
+            {{ review_form.body.label }}
+            {{ review_form.body(class="form-control", rows=4) }}
+          </div>
+          <button type="submit" class="btn-primary">Submit Review</button>
+        </form>
+      </section>
+      {% endif %}
+    </div>
+
+    <aside class="cd-sidebar">
+      <div class="cd-enroll-card">
+        {% if course.is_free %}
+        <div class="price-display">Free</div>
+        <div class="price-sub">Audit available · Earn certificate by upgrading</div>
+        {% elif course.course_type == 'Guided Project' %}
+        <div class="price-display">$9.99</div>
+        <div class="price-sub">One-time purchase · Lifetime access</div>
+        {% else %}
+        <div class="price-display">Included with <a href="{{ url_for('coursera_plus') }}">Coursera Plus</a></div>
+        <div class="price-sub">7-day free trial · Cancel anytime</div>
+        {% endif %}
+        {% if current_user.is_authenticated %}
+          {% if is_enrolled %}
+          <div class="enrolled-badge">&#10003; Enrolled</div>
+          {% else %}
+          <form method="POST" action="{{ url_for('enroll_form', course_id=course.id) }}" class="inline-form">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button type="submit" class="btn-enroll btn-primary">Enroll for Free</button>
+          </form>
+          {% endif %}
+          {% if is_saved %}
+          <form method="POST" action="{{ url_for('wishlist_remove_form', course_id=course.id) }}" class="inline-form">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button type="submit" class="btn-save saved">&#9829; Saved</button>
+          </form>
+          {% else %}
+          <form method="POST" action="{{ url_for('wishlist_save_form', course_id=course.id) }}" class="inline-form">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button type="submit" class="btn-save">&#9825; Save</button>
+          </form>
+          {% endif %}
+        {% else %}
+        <a href="{{ url_for('register') }}" class="btn-primary btn-enroll">Enroll for Free</a>
+        <a href="{{ url_for('login') }}" class="btn-save">Already enrolled? Log In</a>
+        {% endif %}
+        <div class="enroll-details">
+          <div class="ed-item"><span>&#128337;</span> {{ course.duration_text }}</div>
+          <div class="ed-item"><span>&#128202;</span> {{ course.level }}</div>
+          {% if course.has_certificate %}<div class="ed-item"><span>&#127941;</span> Certificate on completion</div>{% endif %}
+          {% if course.credit_eligible %}<div class="ed-item"><span>&#127979;</span> Earn college credit</div>{% endif %}
+          {% if course.course_type == 'Degree' and course.application_deadline %}
+          <div class="ed-item"><span>&#128197;</span> Application deadline: <strong>{{ course.application_deadline }}</strong></div>
+          {% endif %}
+          <div class="ed-item"><span>&#127758;</span> English &middot; Subtitles available</div>
+        </div>
+      </div>
+      {% if related %}
+      <div class="cd-related">
+        <h4>Related courses</h4>
+        {% for r in related %}
+        <a href="{{ url_for('course_detail', slug=r.slug) }}" class="related-course">
+          <div class="related-thumb {{ r.color_class }}">
+            {% if course_thumb(r) %}<img src="{{ url_for('static', filename=course_thumb(r)) }}" alt="">{% endif %}
+          </div>
+          <div class="related-info">
+            <span class="related-partner">{{ r.partner.name if r.partner else '' }}</span>
+            <span class="related-title">{{ r.title[:60] }}</span>
+          </div>
+        </a>
+        {% endfor %}
+      </div>
+      {% endif %}
+    </aside>
+  </div>
+</div>
+{% endblock %}

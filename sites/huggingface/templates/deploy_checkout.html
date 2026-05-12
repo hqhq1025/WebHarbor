@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block title %}Checkout – Hugging Face{% endblock %}
+
+{% block content %}
+<div class="container-wide page">
+    <h1>Launch deployment</h1>
+    <div class="cart-layout">
+        <form class="checkout-form" method="post">
+            {{ form.hidden_tag() }}
+            <div class="form-group">
+                <label>Deployment name</label>
+                {{ form.name(class="form-control", placeholder="My production endpoint") }}
+                {% for err in form.name.errors %}<div class="form-error">{{ err }}</div>{% endfor %}
+            </div>
+            <div class="form-group">
+                <label>Region</label>
+                {{ form.region(class="form-control") }}
+            </div>
+            <div class="form-group">
+                <label>Payment method</label>
+                {{ form.payment_method(class="form-control") }}
+            </div>
+            <button class="btn btn-primary btn-lg" type="submit">Launch endpoint →</button>
+        </form>
+        <aside class="cart-summary">
+            <h3>Order summary</h3>
+            <ul class="summary-list">
+            {% for item in items %}
+                <li>
+                    <strong>{{ item.repo.slug.split('/')[1] }}</strong>
+                    <span>{{ item.hardware_display }} × {{ item.hours }}h</span>
+                </li>
+            {% endfor %}
+            </ul>
+            <hr>
+            <div class="cart-summary-total">{{ total_cost }}</div>
+        </aside>
+    </div>
+</div>
+{% endblock %}

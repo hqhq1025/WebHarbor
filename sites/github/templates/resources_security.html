@@ -1,0 +1,251 @@
+{% extends "base.html" %}
+{% block title %}Security · Resources · GitHub{% endblock %}
+{% block content %}
+
+<!-- Hero -->
+<section class="sec-hero">
+  <div class="sec-hero-inner">
+    <div class="sec-hero-text">
+      <span class="sec-eyebrow">
+        <svg aria-hidden="true" height="16" viewBox="0 0 16 16" width="16" fill="currentColor">
+          <path d="M11.46.146A.5.5 0 0 0 11.107 0H4.893a.5.5 0 0 0-.353.146L.146 4.54A.5.5 0 0 0 0 4.893v6.214a.5.5 0 0 0 .146.353l4.394 4.394a.5.5 0 0 0 .353.146h6.214a.5.5 0 0 0 .353-.146l4.394-4.394a.5.5 0 0 0 .146-.353V4.893a.5.5 0 0 0-.146-.353Z"/>
+        </svg>
+        GitHub Security
+      </span>
+      <h1 class="sec-hero-headline">Build secure software, fast.</h1>
+      <p class="sec-hero-sub">Find and fix vulnerabilities, leaked secrets, and risky dependencies in every pull request — without leaving the developer workflow.</p>
+      <div class="sec-hero-cta">
+        <a href="/pricing" class="gh-btn gh-btn-primary">Start free trial</a>
+        <a href="/contact-sales" class="gh-btn gh-btn-secondary">Talk to sales</a>
+      </div>
+      <ul class="sec-hero-bullets">
+        <li>Native to GitHub — no extra deployment</li>
+        <li>Powered by CodeQL semantic analysis</li>
+        <li>Trusted by 90% of the Fortune 100</li>
+      </ul>
+    </div>
+    <div class="sec-hero-art" aria-hidden="true">
+      <div class="sec-hero-card">
+        <div class="sec-hero-card-row sec-row-bug">
+          <span class="sec-row-icon">🐛</span>
+          <span class="sec-row-msg"><strong>1 high-severity vulnerability</strong> detected in <code>auth/session.py:42</code></span>
+        </div>
+        <div class="sec-hero-card-row sec-row-secret">
+          <span class="sec-row-icon">🔑</span>
+          <span class="sec-row-msg"><strong>AWS access key</strong> committed to <code>.env.example</code> — automatically revoked</span>
+        </div>
+        <div class="sec-hero-card-row sec-row-dep">
+          <span class="sec-row-icon">📦</span>
+          <span class="sec-row-msg"><strong>Dependabot</strong> opened a PR to bump <code>lodash</code> 4.17.20 → 4.17.21</span>
+        </div>
+        <div class="sec-hero-card-row sec-row-fix">
+          <span class="sec-row-icon">✅</span>
+          <span class="sec-row-msg"><strong>14 of 15 alerts resolved</strong> in this pull request</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Feature grid -->
+<section class="sec-features">
+  <div class="sec-section-inner">
+    <h2 class="sec-section-title">One platform. Four layers of defense.</h2>
+    <p class="sec-section-lede">GitHub Advanced Security combines static analysis, secret detection, and supply-chain monitoring into a single workflow that runs on every pull request.</p>
+    <div class="sec-feature-grid">
+      <div class="sec-feature">
+        <div class="sec-feature-icon">
+          <svg aria-hidden="true" height="20" viewBox="0 0 16 16" width="20" fill="currentColor">
+            <path d="M9.347 7.677A1.626 1.626 0 0 1 12 8.943c0 1.32-.65 1.793-1.155 2.155-.092.066-.18.128-.259.193A1.247 1.247 0 0 0 10 12.247v.503a.75.75 0 0 1-1.5 0v-.503c0-.825.41-1.512 1-1.957.122-.092.236-.172.339-.245.448-.314.661-.477.661-.954 0-.249-.135-.48-.353-.604a.126.126 0 0 0-.131.001A.74.74 0 0 0 9.5 9.241a.75.75 0 0 1-1.5 0 2.24 2.24 0 0 1 1.092-1.928 1.626 1.626 0 0 1 .255-.064ZM9 13.749a.75.75 0 0 1 .75-.75h.008a.75.75 0 0 1 .75.75v.008a.75.75 0 0 1-.75.75H9.75a.75.75 0 0 1-.75-.75v-.008Z"/>
+            <path d="M0 1.75C0 .784.784 0 1.75 0h12.5C15.216 0 16 .784 16 1.75v12.5A1.75 1.75 0 0 1 14.25 16H1.75A1.75 1.75 0 0 1 0 14.25Zm1.75-.25a.25.25 0 0 0-.25.25v12.5c0 .138.112.25.25.25h12.5a.25.25 0 0 0 .25-.25V1.75a.25.25 0 0 0-.25-.25Z"/>
+          </svg>
+        </div>
+        <h3>Code scanning with CodeQL</h3>
+        <p>Find SQL injection, XSS, command injection, and 200+ other vulnerability classes via semantic analysis of your code. Powered by GitHub-developed CodeQL — the same engine used by Microsoft Security Response Center.</p>
+        <a href="/features/code-scanning" class="sec-feature-link">Learn about CodeQL →</a>
+      </div>
+
+      <div class="sec-feature">
+        <div class="sec-feature-icon">
+          <svg aria-hidden="true" height="20" viewBox="0 0 16 16" width="20" fill="currentColor">
+            <path d="M10.5 0a5.5 5.5 0 1 1-1.978 10.633l-1.011 1.011A2 2 0 0 1 6.1 12.234l-.385.385a2 2 0 0 1-1.788.547l-.04.658a2 2 0 0 1-.582 1.276L1.06 15.94a.75.75 0 0 1-1.018-1.083L1.962 12.937a.5.5 0 0 0 .146-.314l.353-.345a.5.5 0 0 1 .438-.139l.317.066a.5.5 0 0 0 .587-.488l.022-.367a.5.5 0 0 1 .146-.34l.385-.385a.5.5 0 0 1 .708 0l.293.293a.5.5 0 0 0 .708 0l1.105-1.105A5.5 5.5 0 0 1 10.5 0Zm0 1.5a4 4 0 1 0 0 8 4 4 0 0 0 0-8Z"/>
+          </svg>
+        </div>
+        <h3>Secret scanning</h3>
+        <p>Detect over 200 token formats — AWS keys, Stripe API tokens, Slack webhooks, GitHub PATs — across every commit, every branch, every fork. Push protection blocks secrets <em>before</em> they leave a developer's machine.</p>
+        <a href="/features/secret-scanning" class="sec-feature-link">See supported tokens →</a>
+      </div>
+
+      <div class="sec-feature">
+        <div class="sec-feature-icon">
+          <svg aria-hidden="true" height="20" viewBox="0 0 16 16" width="20" fill="currentColor">
+            <path d="m8.878.392 5.25 3.045c.54.314.872.89.872 1.514v6.098a1.75 1.75 0 0 1-.872 1.514l-5.25 3.045a1.75 1.75 0 0 1-1.756 0l-5.25-3.045A1.75 1.75 0 0 1 1 11.049V4.951c0-.624.332-1.201.872-1.514L7.122.392a1.75 1.75 0 0 1 1.756 0Z"/>
+          </svg>
+        </div>
+        <h3>Dependency review &amp; Dependabot</h3>
+        <p>Block vulnerable open-source dependencies before they merge. See license, runtime impact, and CVE severity inline on every pull request. Dependabot opens automatic upgrade PRs the moment a fix lands upstream.</p>
+        <a href="/features/dependency-review" class="sec-feature-link">How dependency review works →</a>
+      </div>
+
+      <div class="sec-feature">
+        <div class="sec-feature-icon">
+          <svg aria-hidden="true" height="20" viewBox="0 0 16 16" width="20" fill="currentColor">
+            <path d="M3.5 1.75a.25.25 0 0 1 .25-.25h3a.75.75 0 0 0 0-1.5h-3A1.75 1.75 0 0 0 2 1.75v11.5c0 .966.784 1.75 1.75 1.75h8.5A1.75 1.75 0 0 0 14 13.25v-7a.75.75 0 0 0-1.5 0v7a.25.25 0 0 1-.25.25h-8.5a.25.25 0 0 1-.25-.25Z"/>
+            <path d="M6.604 8.396 12 3l3 3-5.396 5.396a.5.5 0 0 1-.354.146h-2.5a.25.25 0 0 1-.25-.25v-2.5a.5.5 0 0 1 .104-.396Z"/>
+          </svg>
+        </div>
+        <h3>Supply chain security</h3>
+        <p>Generate SBOMs (Software Bill of Materials) on every release. Sigstore-backed artifact signing means downstream consumers can verify provenance. Audit transitive dependencies across thousands of repositories from one dashboard.</p>
+        <a href="/features/supply-chain" class="sec-feature-link">Read the SBOM guide →</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Stats -->
+<section class="sec-stats">
+  <div class="sec-section-inner">
+    <div class="sec-stats-grid">
+      <div class="sec-stat">
+        <div class="sec-stat-num">7M+</div>
+        <div class="sec-stat-label">developers shipping secure code on GitHub</div>
+      </div>
+      <div class="sec-stat">
+        <div class="sec-stat-num">7&times;</div>
+        <div class="sec-stat-label">faster vulnerability remediation versus traditional SAST tools</div>
+      </div>
+      <div class="sec-stat">
+        <div class="sec-stat-num">1.7B</div>
+        <div class="sec-stat-label">secret-scanning alerts surfaced and blocked in 2024</div>
+      </div>
+      <div class="sec-stat">
+        <div class="sec-stat-num">90%</div>
+        <div class="sec-stat-label">of the Fortune 100 use GitHub Advanced Security</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- The 'what is advanced security' Q&A — kept verbatim so the GitHub--21 task
+     answer is still extractable from this page. -->
+<section class="sec-detail">
+  <div class="sec-section-inner sec-narrow">
+    <h2 class="sec-section-title">What is GitHub Advanced Security?</h2>
+    <p>{{ topic.sections[0].body if topic else 'GitHub Advanced Security is a suite of tools built into the developer workflow. It runs on every pull request, every push, and every default-branch update, so security feedback arrives at the same time as code review feedback. Code scanning analyzes your source for over 200 classes of vulnerability using CodeQL. Secret scanning detects leaked tokens across every commit and every fork. Dependency review flags vulnerable open-source packages before they merge. Together, these checks make security part of how developers ship — not a separate gate.' }}</p>
+  </div>
+</section>
+
+<!-- Customer stories -->
+<section class="sec-stories">
+  <div class="sec-section-inner">
+    <h2 class="sec-section-title">Trusted by security teams that ship at scale</h2>
+    <div class="sec-stories-grid">
+      <article class="sec-story">
+        <div class="sec-story-logo sec-story-mercado">M.</div>
+        <blockquote class="sec-story-quote">"GitHub Advanced Security is the only tool we found that meets developers where they already are. We went from 14 days mean-time-to-remediation to under 48 hours."</blockquote>
+        <div class="sec-story-attr">
+          <strong>Mercado Libre</strong> · 12,000 developers
+          <a href="/customer-stories/mercadolibre" class="sec-story-link">Read case study →</a>
+        </div>
+      </article>
+      <article class="sec-story">
+        <div class="sec-story-logo sec-story-adobe">A.</div>
+        <blockquote class="sec-story-quote">"We rolled out CodeQL across 30,000 developers and 5,000 repositories in eight weeks. Onboarding cost was zero — every developer already knew the GitHub UI."</blockquote>
+        <div class="sec-story-attr">
+          <strong>Adobe</strong> · enterprise
+          <a href="/customer-stories/adobe" class="sec-story-link">Read case study →</a>
+        </div>
+      </article>
+      <article class="sec-story">
+        <div class="sec-story-logo sec-story-shopify">S.</div>
+        <blockquote class="sec-story-quote">"Push protection caught 4,800 leaked credentials in the first quarter. We can now run open-source-by-default with confidence."</blockquote>
+        <div class="sec-story-attr">
+          <strong>Shopify</strong> · 6,000 developers
+          <a href="/customer-stories/shopify" class="sec-story-link">Read case study →</a>
+        </div>
+      </article>
+    </div>
+  </div>
+</section>
+
+<!-- Plan comparison -->
+<section class="sec-plans">
+  <div class="sec-section-inner">
+    <h2 class="sec-section-title">What's included in each plan</h2>
+    <div class="sec-plan-table-wrap">
+      <table class="sec-plan-table">
+        <thead>
+          <tr>
+            <th></th>
+            <th>Free<br><small>Public repos</small></th>
+            <th>Team<br><small>Private repos</small></th>
+            <th class="sec-plan-highlight">Enterprise<br><small>+ Advanced Security</small></th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td>Dependency graph + Dependabot alerts</td><td>✓</td><td>✓</td><td>✓</td></tr>
+          <tr><td>Dependabot security updates (auto-PR)</td><td>✓</td><td>✓</td><td>✓</td></tr>
+          <tr><td>Secret scanning (public repos)</td><td>✓</td><td>✓</td><td>✓</td></tr>
+          <tr><td>Secret scanning (private repos)</td><td>—</td><td>—</td><td>✓</td></tr>
+          <tr><td>Push protection for secrets</td><td>—</td><td>—</td><td>✓</td></tr>
+          <tr><td>CodeQL code scanning (private repos)</td><td>—</td><td>—</td><td>✓</td></tr>
+          <tr><td>Custom CodeQL queries</td><td>—</td><td>—</td><td>✓</td></tr>
+          <tr><td>Security overview dashboard</td><td>—</td><td>—</td><td>✓</td></tr>
+          <tr><td>Compliance reports (SOC 2, ISO 27001)</td><td>—</td><td>—</td><td>✓</td></tr>
+          <tr><td>Dedicated security advisor</td><td>—</td><td>—</td><td>✓</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<!-- FAQ -->
+<section class="sec-faq">
+  <div class="sec-section-inner sec-narrow">
+    <h2 class="sec-section-title">Frequently asked questions</h2>
+
+    <details class="sec-faq-item" open>
+      <summary>How does GitHub Advanced Security pricing work?</summary>
+      <p>Advanced Security is included with GitHub Enterprise Cloud and Enterprise Server, billed per <em>active committer</em> across the organization. Public repositories receive code scanning, secret scanning, and Dependabot at no cost. <a href="/pricing">See full pricing →</a></p>
+    </details>
+
+    <details class="sec-faq-item">
+      <summary>How does CodeQL differ from traditional SAST tools?</summary>
+      <p>CodeQL treats source code as queryable data. Instead of pattern-matching strings, it builds a semantic database of every variable, call site, and data-flow path, then runs declarative queries that ask questions like "is any tainted input ever passed to a SQL function?" That's why CodeQL catches whole-program bugs that line-by-line scanners miss.</p>
+    </details>
+
+    <details class="sec-faq-item">
+      <summary>What languages does CodeQL support?</summary>
+      <p>C, C++, C#, Go, Java, JavaScript, TypeScript, Kotlin, Python, Ruby, and Swift. Coverage for additional languages ships every quarter — see the <a href="/features/code-scanning#languages">language matrix</a>.</p>
+    </details>
+
+    <details class="sec-faq-item">
+      <summary>How fast does secret scanning detect a leaked credential?</summary>
+      <p>Push events are scanned within seconds. With <strong>push protection</strong> enabled, secrets that match a partner-defined pattern are blocked at <code>git push</code> time before they ever land on GitHub's servers — the developer is shown an inline warning and given the option to remediate.</p>
+    </details>
+
+    <details class="sec-faq-item">
+      <summary>Can I use Advanced Security alongside my existing security tooling?</summary>
+      <p>Yes. SARIF upload is supported, so any third-party SAST tool can write its findings directly into the GitHub code-scanning UI. CodeQL also exposes a CLI you can wire into existing pipelines on Jenkins, GitLab CI, or self-hosted runners.</p>
+    </details>
+
+    <details class="sec-faq-item">
+      <summary>Is GitHub Advanced Security FedRAMP / SOC 2 compliant?</summary>
+      <p>GitHub Enterprise Cloud holds SOC 1 Type 2, SOC 2 Type 2, ISO 27001:2013, and is in the FedRAMP Moderate "In Process" stage. Compliance attestations are available to Enterprise customers in the <a href="/security/center">Security Center</a>.</p>
+    </details>
+  </div>
+</section>
+
+<!-- Final CTA -->
+<section class="sec-final-cta">
+  <div class="sec-section-inner sec-narrow sec-final-cta-inner">
+    <h2>Ship secure code, starting today.</h2>
+    <p>Free to try on every public repository. Free 30-day trial of Advanced Security on private repos.</p>
+    <div class="sec-hero-cta">
+      <a href="/pricing" class="gh-btn gh-btn-primary">Start free trial</a>
+      <a href="/contact-sales" class="gh-btn gh-btn-secondary">Talk to sales</a>
+    </div>
+  </div>
+</section>
+
+{% endblock %}

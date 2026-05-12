@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% from '_place_card.html' import place_card %}
+{% block title %}Saved places - Google Maps{% endblock %}
+
+{% block body %}
+<div class="app-shell">
+    {% include '_rail.html' %}
+
+    <aside class="left-panel">
+        {% include '_search_bar.html' %}
+
+        <div class="panel-section">
+            <h2>Your saved places</h2>
+            <div class="sub">{{ saved|length }} place{{ '' if saved|length == 1 else 's' }} across {{ lists|length }} list{{ '' if lists|length == 1 else 's' }}</div>
+        </div>
+
+        <div style="padding: 12px 20px; display: flex; gap: 10px; flex-wrap: wrap;">
+            <a href="{{ url_for('lists_page') }}" class="btn outlined btn-sm">
+                <span class="material-icons-outlined" style="font-size:16px;">list</span> Manage lists
+            </a>
+            <a href="{{ url_for('list_create') }}" class="btn btn-sm">
+                <span class="material-icons-outlined" style="font-size:16px;">add</span> New list
+            </a>
+        </div>
+
+        {% if saved %}
+            {% for sp in saved %}
+                {{ place_card(sp.place) }}
+            {% endfor %}
+        {% else %}
+            <div class="empty-state">
+                <div class="empty-ico"><span class="material-icons-outlined">bookmark_border</span></div>
+                <h3>No saved places yet</h3>
+                <p>Tap the <strong>Save</strong> button on any place to add it here.</p>
+                <a href="{{ url_for('explore') }}" class="btn">Explore places</a>
+            </div>
+        {% endif %}
+    </aside>
+
+    {% include '_mapcanvas.html' %}
+</div>
+{% endblock %}

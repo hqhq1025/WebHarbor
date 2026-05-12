@@ -1,0 +1,83 @@
+{% extends "base.html" %}
+{% block title %}Google{% endblock %}
+
+{% block header %}
+<div class="top-header" style="border-bottom: none;">
+    <div style="flex: 1"></div>
+    <div class="top-header-right">
+        <a class="top-nav-link" href="{{ url_for('trending') }}">Trending</a>
+        <a class="top-nav-link" href="{{ url_for('doodles') }}">Doodles</a>
+        <a class="top-nav-link" href="{{ url_for('search', q='images', tbm='images') }}">Images</a>
+        <button class="icon-btn" data-apps-toggle aria-label="Google apps">
+            <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><circle cx="5" cy="5" r="2"/><circle cx="12" cy="5" r="2"/><circle cx="19" cy="5" r="2"/><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/><circle cx="5" cy="19" r="2"/><circle cx="12" cy="19" r="2"/><circle cx="19" cy="19" r="2"/></svg>
+        </button>
+        {% if current_user.is_authenticated %}
+        <a class="user-avatar" href="{{ url_for('account') }}" title="{{ current_user.name }}">{{ current_user.avatar_letter or 'G' }}</a>
+        {% else %}
+        <a href="{{ url_for('login') }}" class="sign-in-btn">Sign in</a>
+        {% endif %}
+    </div>
+    <div class="apps-dropdown">
+        <div class="apps-grid-mini">
+            {% for app in google_apps %}
+            <a class="app-mini" href="{{ app.url }}">
+                <div class="icon" style="background: {{ app.color }}">{{ app.name[0] }}</div>
+                <div>{{ app.name }}</div>
+            </a>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="home-container">
+    {% if doodle and doodle.image_url %}
+    <div class="doodle">
+        <a href="{{ url_for('doodle_detail', slug=doodle.slug) }}">
+            <img src="{{ doodle.image_url }}" alt="{{ doodle.title }}"
+                 onerror="this.style.display='none'">
+        </a>
+        <div class="doodle-caption">{{ doodle.title }}</div>
+    </div>
+    {% endif %}
+
+    <div class="home-logo">
+        <div class="g-logo g-logo-big">
+            <span>G</span><span>o</span><span>o</span><span>g</span><span>l</span><span>e</span>
+        </div>
+    </div>
+
+    <form class="home-search" action="{{ url_for('search') }}" method="get" autocomplete="off">
+        <div class="search-box">
+            <div class="search-icon">
+                <svg viewBox="0 0 24 24" fill="#9aa0a6"><path d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
+            </div>
+            <input type="text" name="q" autofocus>
+            <div class="voice-icon" title="Search by voice">
+                <svg viewBox="0 0 24 24" width="20" height="20"><path fill="#4285f4" d="M12 15c1.66 0 3-1.34 3-3V6c0-1.66-1.34-3-3-3S9 4.34 9 6v6c0 1.66 1.34 3 3 3z"/><path fill="#ea4335" d="M17 12c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V22h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/></svg>
+            </div>
+            <div class="lens-icon" title="Search by image">
+                <svg viewBox="0 0 24 24" width="20" height="20"><path fill="#4285f4" d="M12 15.5a3.5 3.5 0 1 1 0-7 3.5 3.5 0 0 1 0 7z"/><path fill="#34a853" d="M9 3 7.17 5H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2h-3.17L15 3H9zm3 15c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5z"/></svg>
+            </div>
+        </div>
+    </form>
+
+    <div class="home-buttons">
+        <button class="home-btn" type="submit" form="home-search-form"
+                onclick="document.querySelector('.home-search').submit()">Google Search</button>
+        <button class="home-btn" type="button"
+                onclick="const q=document.querySelector('.home-search input').value; window.location.href='/lucky?q='+encodeURIComponent(q);">I'm Feeling Lucky</button>
+    </div>
+
+    <div class="home-lang">
+        Google offered in:
+        <a href="#">Español</a>
+        <a href="#">Français</a>
+        <a href="#">Deutsch</a>
+        <a href="#">日本語</a>
+        <a href="#">中文</a>
+        <a href="#">العربية</a>
+    </div>
+</div>
+{% endblock %}

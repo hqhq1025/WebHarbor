@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% block title %}Deployment cart – Hugging Face{% endblock %}
+
+{% block content %}
+<div class="container-wide page">
+    <h1>Deployment cart</h1>
+    <p class="muted">Review your repos and hardware before launching an inference endpoint.</p>
+
+    {% if items %}
+    <div class="cart-layout">
+        <div class="cart-items">
+            {% for item in items %}
+            <div class="cart-item">
+                <div class="cart-item-avatar">
+                    <img src="{{ item.repo.author_obj.avatar_url if item.repo.author_obj else '' }}" alt="" onerror="this.parentElement.innerHTML='<span>{{ item.repo.slug[0]|upper }}</span>'">
+                </div>
+                <div class="cart-item-body">
+                    <div class="cart-item-title">{{ item.repo.slug }}</div>
+                    <div class="cart-item-hw">{{ item.hardware_display }} · {{ item.hardware_price }}</div>
+                </div>
+                <div class="cart-item-controls">
+                    <label>Hours: <input type="number" min="1" max="720" value="{{ item.hours }}" data-cart-hours data-item-id="{{ item.id }}"></label>
+                    <button class="btn btn-sm btn-ghost" data-cart-remove data-item-id="{{ item.id }}">Remove</button>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        <aside class="cart-summary">
+            <h3>Estimated cost</h3>
+            <div class="cart-summary-total">{{ total_cost }}</div>
+            <p class="muted">Based on hourly rates, before discounts.</p>
+            <a class="btn btn-primary btn-block btn-lg" href="{{ url_for('deploy_checkout') }}">Proceed to deploy →</a>
+        </aside>
+    </div>
+    {% else %}
+    <div class="empty-state">
+        <p>Your deployment cart is empty.</p>
+        <a class="btn btn-primary" href="{{ url_for('models_list') }}">Browse models to deploy →</a>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

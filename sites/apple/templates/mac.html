@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+{% block title %}Mac - Apple{% endblock %}
+
+{% block content %}
+<div class="category-hero">
+    <h1>Mac</h1>
+</div>
+<div class="category-promo">
+    Get a new Mac with education pricing. <a href="#">Learn more</a>
+</div>
+<div class="category-nav">
+    {% for product in products %}
+    <a href="#{{ product.slug }}">{{ product.name.replace('MacBook ', '').replace('iMac ', 'iMac') }}</a>
+    {% endfor %}
+    <a href="/compare/mac">Compare</a>
+</div>
+
+<section class="lineup-section">
+    <div class="lineup-grid">
+        {% for product in products %}
+        <a href="{{ url_for('product_detail', slug=product.slug) }}" class="lineup-card" id="{{ product.slug }}">
+            <div class="lineup-card-image">
+                <img src="{{ product.image }}" alt="{{ product.name }}"
+                     onerror="this.parentElement.innerHTML='<div class=\'placeholder-img\' style=\'width:200px;height:180px;background:linear-gradient(135deg,#232526,#414345);border-radius:16px\'>&#128187;</div>'">
+            </div>
+            {% if product.is_new %}<span class="badge-new">New</span>{% elif product.chip_family and 'M3' in product.chip_family %}<span class="badge-new" style="background:#86868b">Previous generation</span>{% endif %}
+            <h3>{{ product.name }}</h3>
+            <p class="lineup-subtitle">{{ product.subtitle }}{% if product.chip_family %} &middot; {{ product.chip_family }} chip{% endif %}</p>
+            <p class="lineup-price">From ${{ "%.2f"|format(product.price) }}</p>
+            <div class="lineup-cta">
+                <span>Learn more</span>
+                <span>Buy</span>
+            </div>
+        </a>
+        {% endfor %}
+    </div>
+</section>
+
+<section class="features-section">
+    <h2 class="shelf-title">Why Mac.</h2>
+    <div class="features-grid">
+        <div class="feature-card">
+            <div class="feature-stat">M5</div>
+            <h3>Apple Silicon</h3>
+            <p>Incredible performance and efficiency with the M5 family of chips.</p>
+        </div>
+        <div class="feature-card feature-dark">
+            <div class="feature-icon">&#128187;</div>
+            <h3>macOS</h3>
+            <p>The most advanced desktop operating system. Seamlessly works with all your Apple devices.</p>
+        </div>
+        <div class="feature-card feature-dark">
+            <div class="feature-icon">&#128267;</div>
+            <h3>Battery Life</h3>
+            <p>Up to 24 hours of battery life. Work all day without searching for a plug.</p>
+        </div>
+        <div class="feature-card">
+            <div class="feature-icon">&#127912;</div>
+            <h3>Retina Display</h3>
+            <p>Stunning Liquid Retina and Liquid Retina XDR displays with incredible color accuracy.</p>
+        </div>
+    </div>
+</section>
+{% endblock %}

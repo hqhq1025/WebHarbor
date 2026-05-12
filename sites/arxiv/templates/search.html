@@ -1,0 +1,90 @@
+{% extends "base.html" %}
+{% block title %}Search — arXiv{% endblock %}
+{% block content %}
+
+<h1>Search arXiv</h1>
+
+<div class="search-box-main">
+    <form action="{{ url_for('search') }}" method="get">
+        <input type="text" name="query" value="{{ query }}" placeholder="Search arXiv...">
+        <select name="searchtype">
+            <option value="all" {% if field == 'all' %}selected{% endif %}>All fields</option>
+            <option value="title" {% if field == 'title' %}selected{% endif %}>Title</option>
+            <option value="author" {% if field == 'author' %}selected{% endif %}>Author</option>
+            <option value="abstract" {% if field == 'abstract' %}selected{% endif %}>Abstract</option>
+            <option value="id" {% if field == 'id' %}selected{% endif %}>arXiv ID</option>
+        </select>
+        {% set _cur_cat = request.args.get('category') or request.args.get('primary_category') or '' %}
+        {% if _cur_cat %}
+            <input type="hidden" name="category" value="{{ _cur_cat }}">
+        {% endif %}
+        {% if request.args.get('sort') %}
+            <input type="hidden" name="sort" value="{{ request.args.get('sort') }}">
+        {% endif %}
+        {% if request.args.get('author') %}
+            <input type="hidden" name="author" value="{{ request.args.get('author') }}">
+        {% endif %}
+        <button type="submit" class="btn btn-primary">Search</button>
+        <a href="{{ url_for('advanced_search') }}" class="btn">Advanced</a>
+    </form>
+    {% if _cur_cat and query %}
+    <p style="font-size:12px;margin-top:6px;" class="muted">
+        Currently filtered to <b>{{ _cur_cat }}</b>.
+        <a href="{{ url_for('search', query=query, searchtype=field) }}">Compare with all archives &rarr;</a>
+    </p>
+    {% elif query %}
+    <p style="font-size:12px;margin-top:6px;" class="muted">
+        Searching <b>all archives</b>. Try narrowing by category:
+        <a href="{{ url_for('search', query=query, searchtype=field, category='quant-ph') }}">quant-ph</a> &middot;
+        <a href="{{ url_for('search', query=query, searchtype=field, category='cs') }}">cs</a> &middot;
+        <a href="{{ url_for('search', query=query, searchtype=field, category='math') }}">math</a> &middot;
+        <a href="{{ url_for('search', query=query, searchtype=field, category='physics') }}">physics</a>
+    </p>
+    {% endif %}
+</div>
+
+{% if query or total > 0 %}
+    {% set _cat_arg = request.args.get('category') or request.args.get('primary_category') or '' %}
+    {% set _cat_label = _cat_arg if _cat_arg else 'all archives' %}
+    <p class="muted">
+        Showing {{ (page-1)*per_page + 1 if total else 0 }}-{{ [page*per_page, total]|min }}
+        of <b>{{ total }}</b> results{% if query %} for "<b>{{ query }}</b>" in {{ field }}{% endif %}
+        {% if _cat_arg %}&middot; category: <b>{{ _cat_arg }}</b>{% else %}&middot; searched in <b>all archives</b>{% endif %}
+    </p>
+    {% if results %}
+    {% for p in results %}
+    <div class="search-result">
+        <div class="muted" style="font-size:11px;">arXiv:{{ p.arxiv_id }}
+            [<a href="{{ url_for('pdf_view', arxiv_id=p.arxiv_id) }}">pdf</a>,
+            <a href="{{ url_for('html_view', arxiv_id=p.arxiv_id) }}">html</a>,
+            <a href="{{ url_for('format_view', arxiv_id=p.arxiv_id) }}">other</a>]
+        </div>
+        <div class="rtitle"><a href="{{ url_for('paper_detail', arxiv_id=p.arxiv_id) }}">{{ p.title }}</a></div>
+        <div class="rauthors">Authors: {{ p.authors_display }}</div>
+        <div class="rsnippet">{{ p.short_abstract }}</div>
+        <div class="muted" style="font-size:11px;">{{ p.primary_subject }}{% if p.journal_ref %} &middot; {{ p.journal_ref }}{% endif %}{% if p.comments %} &middot; {{ p.comments }}{% endif %}</div>
+    </div>
+    {% endfor %}
+
+    <div class="pagination">
+        {% set _paging_args = dict(request.args) %}
+        {% if page > 1 %}
+            {% set _prev_args = dict(_paging_args) %}
+            {% set _ = _prev_args.update({'page': page-1}) %}
+            <a href="{{ url_for('search', **_prev_args) }}">&laquo; Prev</a>
+        {% endif %}
+        <span class="current">{{ page }}</span>
+        {% if page * per_page < total %}
+            {% set _next_args = dict(_paging_args) %}
+            {% set _ = _next_args.update({'page': page+1}) %}
+            <a href="{{ url_for('search', **_next_args) }}">Next &raquo;</a>
+        {% endif %}
+    </div>
+    {% else %}
+    <p class="muted">No results found. Try a different query or <a href="{{ url_for('advanced_search') }}">advanced search</a>.</p>
+    {% endif %}
+{% else %}
+    <p class="muted">Enter a search query above, or <a href="{{ url_for('advanced_search') }}">use advanced search</a>.</p>
+{% endif %}
+
+{% endblock %}

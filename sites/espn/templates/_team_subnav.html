@@ -1,0 +1,19 @@
+{#
+  Shared team-level sub-nav. Used on every page under /team/<sport>/<team>/...
+  Caller passes:
+    sport  — the Sport ORM object (must have .slug)
+    team   — the Team ORM object (must have .slug)
+    active — string key of the active tab. One of:
+             overview, roster, schedule, stats, injuries, depth_chart, transactions
+#}
+{% set ss = (sport.slug if sport else '#') %}
+{% set ts = team.slug %}
+<nav class="sport-subnav">
+  <a href="/team/{{ ss }}/{{ ts }}"               class="{{ 'active' if active == 'overview'     }}">Overview</a>
+  <a href="/team/{{ ss }}/{{ ts }}/roster"        class="{{ 'active' if active == 'roster'       }}">Roster</a>
+  <a href="/team/{{ ss }}/{{ ts }}/schedule"      class="{{ 'active' if active == 'schedule'     }}">Schedule</a>
+  <a href="/team/{{ ss }}/{{ ts }}/stats"         class="{{ 'active' if active == 'stats'        }}">Stats</a>
+  <a href="/team/{{ ss }}/{{ ts }}/injuries"      class="{{ 'active' if active == 'injuries'     }}">Injuries</a>
+  <a href="/team/{{ ss }}/{{ ts }}/depth-chart"   class="{{ 'active' if active == 'depth_chart'  }}">Depth Chart</a>
+  <a href="/team/{{ ss }}/{{ ts }}/transactions"  class="{{ 'active' if active == 'transactions' }}">Transactions</a>
+</nav>

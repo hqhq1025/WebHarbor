@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block title %}{{ topic }} - BBC News{% endblock %}
+
+{% block content %}
+<div class="topic-page-header">
+    <div class="tag">TOPIC</div>
+    <h1>{{ topic }}</h1>
+    <p style="color: var(--bbc-text-light);">{{ results|length }} stories tagged "{{ topic }}"</p>
+</div>
+
+{% if results %}
+<div class="section-grid">
+    {% for art in results %}
+    <a class="card" href="{{ url_for('article_detail', slug=art.slug) }}">
+        <div class="card-image-wrap">
+            {% if art.hero_image %}
+            <img src="{{ art.hero_image }}" alt="{{ art.headline|e }}" class="card-image"
+                 onerror="this.style.display='none'">
+            {% endif %}
+        </div>
+        <h3 class="card-headline">{{ art.headline }}</h3>
+        {% if art.subtitle %}
+        <p class="card-summary">{{ art.subtitle[:160] }}</p>
+        {% endif %}
+        <p class="card-meta">
+            <span class="card-category">{{ art.category.name if art.category else 'News' }}</span>
+            <span class="dot">•</span>
+            <span>{{ art.published_date_str }}</span>
+        </p>
+    </a>
+    {% endfor %}
+</div>
+{% else %}
+<div class="empty-state">
+    <h2>No stories found for this topic</h2>
+    <p>Try browsing <a href="{{ url_for('latest_page') }}">the latest news</a>.</p>
+</div>
+{% endif %}
+{% endblock %}

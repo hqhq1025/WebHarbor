@@ -1,0 +1,113 @@
+{% extends "base.html" %}
+{% block title %}Cornell University — arXiv host institution{% endblock %}
+{% block content %}
+
+<h1>Cornell University</h1>
+<p class="muted">
+    This is a local informational stub that mirrors selected facts from Cornell
+    University's public website. It is provided because arXiv is operated by
+    and hosted at Cornell University; agents can consult this page instead of
+    leaving the local sandbox.
+</p>
+
+<div class="dash-card">
+    <h2>Overview</h2>
+    <p>
+        Cornell University is a private Ivy League research university located
+        in <b>Ithaca, New York</b>. Founded in <b>1865</b> by Ezra Cornell and
+        Andrew Dickson White, it was chartered as a co-educational and
+        non-sectarian institution. Cornell is one of the two private
+        land-grant universities in the United States.
+    </p>
+</div>
+
+<div class="dash-card">
+    <h2>Key Facts</h2>
+    <table class="data">
+        <tr><th>Motto</th><td>"I would found an institution where any person can find instruction in any study."</td></tr>
+        <tr><th>Founded</th><td>1865</td></tr>
+        <tr><th>Type</th><td>Private research university (Ivy League, Land-grant)</td></tr>
+        <tr><th>Location</th><td>Ithaca, New York, USA</td></tr>
+        <tr><th>Campus</th><td>Main campus in Ithaca spans roughly 745 acres (302 ha); medical and tech campuses in New York City, Doha, and Roosevelt Island (Cornell Tech)</td></tr>
+        <tr><th>Colors</th><td>Carnelian red and white</td></tr>
+        <tr><th>Mascot</th><td>Big Red Bear (Touchdown)</td></tr>
+        <tr><th>Athletics</th><td>NCAA Division I (Ivy League)</td></tr>
+        <tr><th>Colleges and schools</th><td>Seven undergraduate colleges and seven graduate divisions</td></tr>
+        <tr><th>Endowment</th><td>Approximately US$10.7 billion (2024)</td></tr>
+    </table>
+</div>
+
+<div class="dash-card" id="enrollment">
+    <h2>Enrollment</h2>
+    <table class="data">
+        <tr><th>Total students (Fall 2024)</th><td><b>26,285</b></td></tr>
+        <tr><th>Undergraduate students</th><td><b>15,735</b></td></tr>
+        <tr><th>Graduate and professional students</th><td><b>10,550</b></td></tr>
+        <tr><th>International students</th><td>Approximately 25% of the student body</td></tr>
+        <tr><th>Student-to-faculty ratio</th><td>9:1</td></tr>
+        <tr><th>Acceptance rate (Class of 2028)</th><td>8.4%</td></tr>
+    </table>
+    <p class="muted">
+        These enrollment figures correspond to the most recent academic year
+        published by Cornell University's Institutional Research and Planning
+        office.
+    </p>
+</div>
+
+<div class="dash-card">
+    <h2>Academic Programs</h2>
+    <p>Cornell University comprises the following undergraduate colleges:</p>
+    <ul>
+        <li>College of Agriculture and Life Sciences (CALS)</li>
+        <li>College of Architecture, Art, and Planning (AAP)</li>
+        <li>College of Arts and Sciences</li>
+        <li>Cornell SC Johnson College of Business</li>
+        <li>College of Engineering</li>
+        <li>College of Human Ecology</li>
+        <li>School of Industrial and Labor Relations (ILR)</li>
+    </ul>
+    <p>Graduate and professional schools include:</p>
+    <ul>
+        <li>Cornell Law School</li>
+        <li>Weill Cornell Medicine (in New York City and Doha)</li>
+        <li>Cornell University Graduate School</li>
+        <li>Cornell Tech (in New York City)</li>
+        <li>College of Veterinary Medicine</li>
+    </ul>
+</div>
+
+<div class="dash-card">
+    <h2>Research and arXiv</h2>
+    <p>
+        Cornell University is the host institution for <b>arXiv.org</b>, the
+        world's largest open-access archive for scholarly preprints. arXiv was
+        founded in 1991 by Paul Ginsparg and has been maintained at Cornell
+        since 2001. The archive is operated by Cornell University Library with
+        support from the Simons Foundation, member institutions, and
+        individual donors.
+    </p>
+    <p>
+        Cornell's broader research enterprise is among the largest in the
+        United States, with research expenditures exceeding US$1.2 billion per
+        year across life sciences, engineering, humanities, social sciences,
+        and agriculture.
+    </p>
+</div>
+
+<div class="dash-card">
+    <h2>Notable Alumni and Faculty</h2>
+    <ul>
+        <li>Carl Sagan — astronomer, science communicator</li>
+        <li>Ruth Bader Ginsburg — Supreme Court Justice</li>
+        <li>Richard Feynman — Nobel Prize in Physics (faculty)</li>
+        <li>Hans Bethe — Nobel Prize in Physics (faculty)</li>
+        <li>Toni Morrison — Nobel Prize in Literature</li>
+        <li>Bill Nye — engineer and television host</li>
+    </ul>
+</div>
+
+<p class="muted">
+    <a href="{{ url_for('about') }}">&larr; Back to About arXiv</a>
+</p>
+
+{% endblock %}

@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% block title %}Pricing – Hugging Face{% endblock %}
+
+{% block content %}
+<section class="pricing-hero">
+    <div class="container-wide">
+        <h1>Simple, transparent pricing</h1>
+        <p class="muted">From hobbyists to Fortune 500 — everyone can ship ML.</p>
+    </div>
+</section>
+
+<div class="container-wide page">
+    <div class="pricing-grid">
+        {% for plan in pricing_plans %}
+        <div class="pricing-card {% if 'PRO' in plan.name %}pricing-card-featured{% endif %}">
+            {% if 'PRO' in plan.name %}<div class="pricing-ribbon">Most popular</div>{% endif %}
+            <h3>{{ plan.name }}</h3>
+            <div class="pricing-price">{{ plan.price }}<span>/{{ plan.cadence }}</span></div>
+            <p class="muted">{{ plan.tagline }}</p>
+            <ul>
+                {% for feat in plan.features %}
+                <li>✓ {{ feat }}</li>
+                {% endfor %}
+            </ul>
+            <a class="btn {% if 'PRO' in plan.name %}btn-primary{% else %}btn-outline{% endif %} btn-block" href="{{ url_for('register') }}">
+                {% if 'Free' in plan.price %}Get started{% elif 'Enterprise' in plan.name %}Contact sales{% else %}Upgrade to PRO{% endif %}
+            </a>
+        </div>
+        {% endfor %}
+    </div>
+
+    <section class="sect">
+        <h2>Spaces hardware</h2>
+        <p class="muted">Upgrade any Space or Inference Endpoint.</p>
+        <table class="hw-table">
+            <thead>
+                <tr><th>Hardware</th><th>Specs</th><th>Price / hour</th></tr>
+            </thead>
+            <tbody>
+                {% for hw in space_hardware %}
+                <tr>
+                    <td><strong>{{ hw[1] }}</strong></td>
+                    <td>{{ hw[2] }}</td>
+                    <td>{{ hw[3] }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </section>
+</div>
+{% endblock %}

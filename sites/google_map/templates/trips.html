@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% block title %}Your trips - Google Maps{% endblock %}
+
+{% block body %}
+<div class="app-shell">
+    {% include '_rail.html' %}
+
+    <aside class="left-panel">
+        {% include '_search_bar.html' %}
+
+        <div class="panel-section">
+            <h2>Your trips</h2>
+            <div class="sub">Planned getaways and past adventures</div>
+            <div style="margin-top:12px;">
+                <a href="{{ url_for('trip_create') }}" class="btn btn-sm">+ New trip</a>
+            </div>
+        </div>
+
+        {% if trips %}
+            {% for t in trips %}
+            <a href="{{ url_for('trip_detail', trip_id=t.id) }}" class="place-card">
+                <div class="info">
+                    <div class="name">{{ t.title }}</div>
+                    <div class="rating-row">
+                        <span class="material-icons-outlined" style="font-size:14px;">place</span>
+                        <span>{{ t.city or 'Multiple cities' }}</span>
+                        <span>•</span>
+                        <span>{{ t.stops.count() }} stop{{ '' if t.stops.count() == 1 else 's' }}</span>
+                    </div>
+                    <div class="meta">
+                        {% if t.start_date %}{{ t.start_date.strftime('%b %d') }}{% endif %}
+                        {% if t.end_date %} – {{ t.end_date.strftime('%b %d, %Y') }}{% endif %}
+                    </div>
+                    <div style="margin-top:6px;">
+                        <span class="badge {% if t.status == 'cancelled' %}danger{% elif t.status == 'completed' %}success{% elif t.status == 'active' %}warning{% else %}neutral{% endif %}">{{ t.status }}</span>
+                        <span style="color:var(--text-tertiary); font-size:12px;">{{ t.trip_code }}</span>
+                    </div>
+                </div>
+                <div class="thumb" style="background:var(--blue-light); display:flex; align-items:center; justify-content:center; color:var(--blue);">
+                    <span class="material-icons-outlined" style="font-size:32px;">luggage</span>
+                </div>
+            </a>
+            {% endfor %}
+        {% else %}
+            <div class="empty-state">
+                <div class="empty-ico"><span class="material-icons-outlined">luggage</span></div>
+                <h3>No trips yet</h3>
+                <p>Plan your next adventure by creating a trip.</p>
+                <a href="{{ url_for('trip_create') }}" class="btn">Plan a trip</a>
+            </div>
+        {% endif %}
+    </aside>
+
+    {% include '_mapcanvas.html' %}
+</div>
+{% endblock %}

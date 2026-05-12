@@ -1,0 +1,30 @@
+{% from "_serp_header.html" import serp_header with context %}
+{% extends "base.html" %}
+{% block title %}{{ q }} - Google Maps{% endblock %}
+{% block header %}{{ serp_header(q, 'maps') }}{% endblock %}
+
+{% block content %}
+<div class="maps-app">
+    <div class="maps-sidebar">
+        <h2 style="font-size:18px; margin:0 0 12px;">Results for "{{ q }}"</h2>
+        {% if topic %}
+        <div style="margin-bottom:16px;">
+            <strong>{{ topic.name }}</strong>
+            <div class="muted">{{ (topic.summary or '')[:200] }}</div>
+        </div>
+        {% endif %}
+        <div style="border-top:1px solid var(--color-border-light); padding-top:12px;">
+            <h3 style="font-size:14px; margin:0 0 8px;">Nearby</h3>
+            {% for r in results[:4] %}
+            <div style="padding:10px 0; border-bottom:1px solid var(--color-border-light);">
+                <strong style="font-size:13px;">{{ r.title[:50] }}</strong>
+                <div class="muted">{{ r.display_url }}</div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    <div class="maps-viewport" {% if topic and topic.hero_image %}style="background-image:url('{{ topic.hero_image }}'); background-size:cover; background-position:center;"{% endif %}>
+        <div class="maps-marker">📍</div>
+    </div>
+</div>
+{% endblock %}

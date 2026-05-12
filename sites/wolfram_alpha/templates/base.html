@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{% block title %}WolframAlpha — Computational Intelligence{% endblock %}</title>
+<meta name="csrf-token" content="{{ csrf_token() }}">
+<link rel="stylesheet" href="/static/css/main.css">
+<link rel="icon" href="/static/images/pro/wolfram_alpha_spikey_icon_5e9b37fe41.svg" type="image/svg+xml">
+</head>
+<body class="{% block body_class %}{% endblock %}">
+
+<!-- Top utility nav (real WA: minimal, right-aligned, no logo) -->
+<nav class="globalnav" id="globalnav">
+  <div class="gn-inner">
+    {% block nav_logo %}
+    <!-- homepage hides the logo here; other pages show a small one -->
+    <a href="/" class="gn-logo gn-logo--inline" aria-label="WolframAlpha Home">
+      <img src="/static/images/pro/wolfram_alpha_spikey_icon_5e9b37fe41.svg" alt="" class="gn-logo-spikey">
+      <span class="gn-logo-wa">Wolfram<span class="alpha">Alpha</span></span>
+    </a>
+    {% endblock %}
+    <div class="gn-links">
+      <a href="/pro" class="gn-link gn-link--upgrade">UPGRADE TO PRO <span class="gn-caret">&#9662;</span></a>
+      <a href="/products" class="gn-link gn-link--apps">APPS <span class="gn-caret">&#9662;</span></a>
+      <a href="/about" class="gn-link gn-link--tour">TOUR</a>
+      {% if current_user.is_authenticated %}
+        <a href="/account" class="gn-avatar" title="{{ current_user.username }}">{{ current_user.username[0].upper() }}</a>
+      {% else %}
+        <a href="/login" class="gn-link gn-signin">Sign in</a>
+      {% endif %}
+    </div>
+    <button class="gn-hamburger" id="gnHamburger" aria-label="Menu">&#9776;</button>
+  </div>
+  <div class="gn-mobile-menu" id="gnMobileMenu">
+    <a href="/pro">Upgrade to Pro</a>
+    <a href="/products">Apps</a>
+    <a href="/about">Tour</a>
+    <a href="/mobile-apps">Mobile Apps</a>
+    {% if current_user.is_authenticated %}
+      <a href="/account">My Account</a>
+      <a href="/logout">Sign Out</a>
+    {% else %}
+      <a href="/login">Sign In</a>
+      <a href="/register">Create Account</a>
+    {% endif %}
+  </div>
+</nav>
+
+<!-- Flash messages -->
+{% with messages = get_flashed_messages(with_categories=true) %}
+{% if messages %}
+<div class="flash-container" id="flashContainer">
+  {% for cat, msg in messages %}
+  <div class="flash flash-{{ cat }}" role="alert">
+    <span>{{ msg }}</span>
+    <button class="flash-close" onclick="this.parentElement.remove()">&#x2715;</button>
+  </div>
+  {% endfor %}
+</div>
+{% endif %}
+{% endwith %}
+
+<!-- Main content -->
+<main class="main-content">
+  {% block content %}{% endblock %}
+</main>
+
+<!-- "Made possible by Wolfram Language" — light gray callout + pipeline -->
+<section class="wa-language-strip">
+  <div class="wa-language-strip-inner">
+    <p class="wa-language-headline">
+      Made possible by the <strong>Wolfram Language</strong> &mdash; building on 35+ years of research &amp; development &raquo;
+    </p>
+    <div class="wa-pipeline">
+      <div class="wa-pipeline-node wa-pipeline-node--brand">
+        <img src="/static/images/pro/wolfram_alpha_spikey_icon_5e9b37fe41.svg" alt="" class="wa-pipeline-spikey">
+        <span class="wa-pipeline-label">Wolfram<span class="alpha">|Alpha</span></span>
+      </div>
+      <span class="wa-pipeline-eq">=</span>
+      <div class="wa-pipeline-node">
+        <span class="wa-pipeline-icon" aria-hidden="true">&#9881;</span>
+        <span class="wa-pipeline-label">Natural Language<br>Understanding</span>
+      </div>
+      <span class="wa-pipeline-plus">+</span>
+      <div class="wa-pipeline-node">
+        <span class="wa-pipeline-icon" aria-hidden="true">&#128202;</span>
+        <span class="wa-pipeline-label">Curated Data &amp;<br>Knowledge</span>
+      </div>
+      <span class="wa-pipeline-plus">+</span>
+      <div class="wa-pipeline-node">
+        <span class="wa-pipeline-icon" aria-hidden="true">&#8649;</span>
+        <span class="wa-pipeline-label">Dynamic Algorithmic<br>Computation</span>
+      </div>
+      <span class="wa-pipeline-arrow">&rarr;</span>
+      <div class="wa-pipeline-node">
+        <span class="wa-pipeline-icon" aria-hidden="true">&#128200;</span>
+        <span class="wa-pipeline-label">Computed Visual<br>Computation</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Light footer -->
+<footer class="site-footer">
+  <div class="footer-inner">
+    <ul class="footer-toplinks">
+      <li><a href="/pro">Pro</a></li>
+      <li><a href="/mobile-apps">Mobile Apps</a></li>
+      <li><a href="/products">Products</a></li>
+      <li><a href="/about">Business</a></li>
+      <li><a href="/about">API &amp; Developer Solutions</a></li>
+      <li><a href="/about">LLM Solutions</a></li>
+    </ul>
+    <ul class="footer-sublinks">
+      <li><a href="/about">Resources &amp; Tools</a></li>
+      <li><a href="/about">About</a></li>
+      <li><a href="/about">Contact</a></li>
+      <li>
+        <span class="footer-connect">Connect</span>
+        <a href="#" aria-label="Facebook" class="footer-social">f</a>
+        <a href="#" aria-label="Twitter" class="footer-social">x</a>
+        <a href="#" aria-label="Instagram" class="footer-social">&#9678;</a>
+        <a href="#" aria-label="LinkedIn" class="footer-social">in</a>
+      </li>
+    </ul>
+    <div class="footer-copyrow">
+      <p class="footer-copy">&copy; 2026 Wolfram</p>
+      <ul class="footer-legal">
+        <li><a href="#">Terms</a></li>
+        <li><a href="#">Privacy</a></li>
+      </ul>
+    </div>
+    <div class="footer-corp">
+      <span class="footer-corp-logo">
+        <img src="/static/images/pro/wolfram_alpha_spikey_icon_5e9b37fe41.svg" alt="" class="footer-corp-spikey">
+        <strong>WOLFRAM</strong>
+      </span>
+      <ul class="footer-corp-links">
+        <li><a href="#">wolfram.com</a></li>
+        <li><a href="#">Wolfram Language</a></li>
+        <li><a href="#">Mathematica</a></li>
+        <li><a href="#">Wolfram Demonstrations</a></li>
+        <li><a href="#">Wolfram for Education</a></li>
+        <li><a href="#">MathWorld</a></li>
+      </ul>
+    </div>
+  </div>
+</footer>
+
+<script src="/static/js/main.js"></script>
+{% block scripts %}{% endblock %}
+</body>
+</html>

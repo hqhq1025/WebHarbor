@@ -1,0 +1,111 @@
+{% extends "base.html" %}
+{% block title %}Dashboard · GitHub{% endblock %}
+{% block content %}
+<div class="account-layout">
+  <aside class="account-sidebar">
+    <div class="account-profile-mini">
+      <img src="{{ current_user.avatar_url }}" alt="{{ current_user.username }}" class="account-avatar"
+           onerror="this.src='/static/images/avatars/avatar_00.jpg'">
+      <div>
+        <div class="account-username">{{ current_user.username }}</div>
+        <div class="account-plan">{{ current_user.plan | title }} plan</div>
+      </div>
+    </div>
+    <nav class="account-nav">
+      <a href="/account" class="account-nav-link active">Dashboard</a>
+      <a href="/{{ current_user.username }}" class="account-nav-link">Your profile</a>
+      <a href="/stars" class="account-nav-link">Your stars</a>
+      <a href="/watching" class="account-nav-link">Watching</a>
+      <a href="/settings/profile" class="account-nav-link">Settings</a>
+    </nav>
+  </aside>
+
+  <div class="account-main">
+    <h1 class="account-title">Dashboard</h1>
+
+    <!-- Stats row -->
+    <div class="account-stats-row">
+      <div class="account-stat-card">
+        <span class="stat-number">{{ current_user.public_repos_count }}</span>
+        <span class="stat-label">Repositories</span>
+      </div>
+      <div class="account-stat-card">
+        <span class="stat-number">{{ current_user.followers_count }}</span>
+        <span class="stat-label">Followers</span>
+      </div>
+      <div class="account-stat-card">
+        <span class="stat-number">{{ current_user.following_count }}</span>
+        <span class="stat-label">Following</span>
+      </div>
+      <div class="account-stat-card">
+        <span class="stat-number">{{ stars|length }}</span>
+        <span class="stat-label">Stars given</span>
+      </div>
+    </div>
+
+    <!-- Your repositories -->
+    <section class="account-section">
+      <div class="account-section-header">
+        <h2 class="account-section-title">Your repositories</h2>
+        <a href="/new" class="gh-btn gh-btn-primary gh-btn-sm">New</a>
+      </div>
+      {% for repo in repos %}
+      <div class="account-repo-row">
+        <div>
+          <a href="/{{ repo.full_name }}" class="account-repo-name">{{ repo.name }}</a>
+          {% if not repo.is_public %}<span class="repo-visibility-badge repo-private">Private</span>{% endif %}
+          {% if repo.description %}<p class="account-repo-desc">{{ repo.description }}</p>{% endif %}
+          <div class="repo-list-meta">
+            {% if repo.language %}
+            <span class="repo-lang">
+              <span class="repo-lang-dot" style="background-color: {{ lang_colors.get(repo.language, '#8f9ba8') }}"></span>
+              {{ repo.language }}
+            </span>
+            {% endif %}
+            <span>⭐ {{ repo.stars_count | number_format }}</span>
+            <span>{{ repo.updated_relative() }}</span>
+          </div>
+        </div>
+      </div>
+      {% else %}
+      <div class="empty-state">
+        <p>You don't have any repositories yet.</p>
+        <a href="/new" class="gh-btn gh-btn-primary">Create your first repository</a>
+      </div>
+      {% endfor %}
+    </section>
+
+    <!-- Starred -->
+    <section class="account-section">
+      <div class="account-section-header">
+        <h2 class="account-section-title">Recently starred</h2>
+        <a href="/stars" class="account-section-link">See all stars →</a>
+      </div>
+      {% for star in stars %}
+      <div class="account-repo-row">
+        <a href="/{{ star.repo.full_name }}" class="account-repo-name">{{ star.repo.full_name }}</a>
+        {% if star.repo.description %}<p class="account-repo-desc">{{ star.repo.description }}</p>{% endif %}
+      </div>
+      {% else %}
+      <div class="empty-state"><p>No starred repositories yet. <a href="/explore">Explore GitHub</a></p></div>
+      {% endfor %}
+    </section>
+
+    <!-- Following -->
+    {% if following %}
+    <section class="account-section">
+      <h2 class="account-section-title">People you follow</h2>
+      <div class="following-grid">
+        {% for user in following %}
+        <a href="/{{ user.username }}" class="following-card">
+          <img src="{{ user.avatar_url }}" alt="{{ user.username }}" class="following-avatar"
+               onerror="this.src='/static/images/avatars/avatar_00.jpg'">
+          <span class="following-name">{{ user.username }}</span>
+        </a>
+        {% endfor %}
+      </div>
+    </section>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

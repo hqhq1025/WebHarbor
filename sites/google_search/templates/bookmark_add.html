@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block title %}Add bookmark - Google{% endblock %}
+
+{% block content %}
+<div class="form-page">
+    <div class="form-card">
+        <h1 class="form-title">Add a bookmark</h1>
+        <form method="post">
+            {{ form.hidden_tag() }}
+            <div class="field">
+                <label>Title</label>
+                {{ form.title() }}
+            </div>
+            <div class="field">
+                <label>URL</label>
+                {{ form.url() }}
+            </div>
+            <div class="field">
+                <label>Snippet</label>
+                {{ form.snippet(rows=3) }}
+            </div>
+            <div class="field">
+                <label>Personal note (optional)</label>
+                {{ form.note(rows=2) }}
+            </div>
+            <div class="field">
+                <label>Collection</label>
+                {{ form.collection_id() }}
+            </div>
+            <div class="form-actions">
+                <a href="{{ url_for('bookmarks') }}" class="btn-text">Cancel</a>
+                <button type="submit" class="btn-primary">Save</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

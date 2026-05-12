@@ -1,0 +1,178 @@
+{% extends "base.html" %}
+{% block title %}Wolfram|Alpha Pro — Step-by-Step Solutions{% endblock %}
+
+{% block content %}
+<!-- Pro Hero -->
+<section class="pro-hero">
+  <div class="section-inner pro-hero-inner">
+    <div class="pro-hero-text">
+      <h1 class="pro-hero-title">Wolfram<span class="alpha">|Alpha</span> <span class="pro-gold">Pro</span></h1>
+      <p class="pro-hero-subtitle">Unlock the full power of computational intelligence</p>
+      <p class="pro-hero-desc">Step-by-step solutions, extended computation, file uploads, and more. Trusted by students, educators, and professionals worldwide.</p>
+      <div class="pro-hero-ctas">
+        <a href="/pro/pricing" class="btn btn-pro-primary btn-lg">Go Pro Now — From $5/mo</a>
+        <a href="/register" class="btn btn-secondary btn-lg">Try Free</a>
+      </div>
+    </div>
+    <div class="pro-hero-img">
+      <img src="/static/images/heroes/hero_pro.png" alt="Wolfram Alpha Pro"
+           onerror="this.style.display='none'">
+    </div>
+  </div>
+</section>
+
+<!-- Feature highlights -->
+<section class="pro-features-section">
+  <div class="section-inner">
+    <h2 class="section-heading section-heading--center">Everything in Wolfram|Alpha, Supercharged</h2>
+    <div class="pro-features-grid">
+
+      <div class="pro-feature-card fade-in">
+        <div class="pro-feature-icon">&#128296;</div>
+        <h3>Step-by-Step Solutions</h3>
+        <p>See exactly how every answer is computed, step by step. Perfect for learning math and science.</p>
+      </div>
+
+      <div class="pro-feature-card fade-in">
+        <div class="pro-feature-icon">&#128190;</div>
+        <h3>Upload Data & Files</h3>
+        <p>Upload data in 60+ formats — spreadsheets, images, audio, video — for instant computational analysis.</p>
+      </div>
+
+      <div class="pro-feature-card fade-in">
+        <div class="pro-feature-icon">&#128202;</div>
+        <h3>Customizable Visualizations</h3>
+        <p>Adjust and export plots, graphs, and diagrams for presentations and reports.</p>
+      </div>
+
+      <div class="pro-feature-card fade-in">
+        <div class="pro-feature-icon">&#9654;</div>
+        <h3>Extended Computation Time</h3>
+        <p>Run complex queries without timeouts. Perfect for intensive mathematical computations.</p>
+      </div>
+
+      <div class="pro-feature-card fade-in">
+        <div class="pro-feature-icon">&#128196;</div>
+        <h3>Download Results</h3>
+        <p>Export computation results and data in multiple formats for offline use.</p>
+      </div>
+
+      <div class="pro-feature-card fade-in">
+        <div class="pro-feature-icon">&#127963;</div>
+        <h3>Web App Builder</h3>
+        <p>Create custom interactive calculators and forms powered by Wolfram's engine.</p>
+      </div>
+
+      <div class="pro-feature-card fade-in">
+        <div class="pro-feature-icon">&#128241;</div>
+        <h3>Mobile Apps</h3>
+        <p>Full Pro access on iOS and Android. Photo input for instant computation from images.</p>
+      </div>
+
+      <div class="pro-feature-card fade-in">
+        <div class="pro-feature-icon">&#127891;</div>
+        <h3>Problem Generator</h3>
+        <p>Practice with unlimited auto-generated problems at every difficulty level.</p>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- Pricing tiers preview -->
+<section class="pro-pricing-preview">
+  <div class="section-inner">
+    <h2 class="section-heading section-heading--center">Simple, Transparent Pricing</h2>
+    <div class="pricing-cards">
+
+      <div class="pricing-card">
+        <div class="pricing-card-header">
+          <h3>Free</h3>
+          <div class="pricing-amount"><span class="price-num">$0</span>/mo</div>
+        </div>
+        <ul class="pricing-features">
+          <li>&#10003; Basic computations</li>
+          <li>&#10003; Category browsing</li>
+          <li>&#10003; Save favorites &amp; history</li>
+          <li>&#10007; Step-by-step solutions</li>
+          <li>&#10007; File uploads</li>
+          <li>&#10007; Extended computation</li>
+        </ul>
+        <a href="/register" class="btn btn-secondary btn-full">Get Started Free</a>
+      </div>
+
+      <div class="pricing-card pricing-card--featured">
+        <div class="pricing-card-badge">Most Popular</div>
+        <div class="pricing-card-header">
+          <h3>Professional</h3>
+          <div class="pricing-amount"><span class="price-num">$5</span>/mo<span class="price-sub"> billed annually</span></div>
+          <div class="pricing-alt">or $9.99/month</div>
+        </div>
+        <ul class="pricing-features">
+          <li>&#10003; Everything in Free</li>
+          <li>&#10003; Step-by-step solutions</li>
+          <li>&#10003; File & data uploads</li>
+          <li>&#10003; Extended computation</li>
+          <li>&#10003; Download results</li>
+          <li>&#10003; Web App builder</li>
+        </ul>
+        <a href="/register" class="btn btn-pro-primary btn-full">Go Pro Now</a>
+      </div>
+
+      <div class="pricing-card">
+        <div class="pricing-card-header">
+          <h3>Premium</h3>
+          <div class="pricing-amount"><span class="price-num">$8.25</span>/mo<span class="price-sub"> billed annually</span></div>
+          <div class="pricing-alt">or $12/month</div>
+        </div>
+        <ul class="pricing-features">
+          <li>&#10003; Everything in Pro</li>
+          <li>&#10003; Priority computation</li>
+          <li>&#10003; Premium support</li>
+          <li>&#10003; Advanced export options</li>
+          <li>&#10003; Early access to features</li>
+          <li>&#10003; API access</li>
+        </ul>
+        <a href="/register" class="btn btn-secondary btn-full">Get Premium</a>
+      </div>
+
+    </div>
+    <div class="pricing-student-note">
+      <p>Student &amp; Educator discounts available. <a href="/pro/pricing">See all plans &rarr;</a></p>
+    </div>
+  </div>
+</section>
+
+<!-- Testimonials -->
+<section class="pro-testimonials">
+  <div class="section-inner">
+    <h2 class="section-heading section-heading--center">What Our Users Say</h2>
+    <div class="testimonials-grid">
+      <div class="testimonial-card">
+        <div class="testimonial-avatar">
+          <img src="/static/images/pro/testimonial-rsteves_b9570b932dfde0c2c7bf4c0669bfe79b.jpg"
+               alt="User" onerror="this.style.display='none'">
+        </div>
+        <p class="testimonial-text">"Wolfram Alpha Pro transformed how I learn calculus. The step-by-step solutions are worth every penny."</p>
+        <span class="testimonial-author">— Math Student</span>
+      </div>
+      <div class="testimonial-card">
+        <div class="testimonial-avatar">
+          <img src="/static/images/pro/testimonial-sneagle_e98fba355507218af7960fbba91c0f98.jpg"
+               alt="User" onerror="this.style.display='none'">
+        </div>
+        <p class="testimonial-text">"As a physics researcher, the extended computation time and data upload features are indispensable tools."</p>
+        <span class="testimonial-author">— Physics Researcher</span>
+      </div>
+      <div class="testimonial-card">
+        <div class="testimonial-avatar">
+          <img src="/static/images/pro/testimonial-teiden_8d86512e7ebb85f342d06a56ffac422a.jpg"
+               alt="User" onerror="this.style.display='none'">
+        </div>
+        <p class="testimonial-text">"I use Wolfram Alpha Pro daily to check financial calculations and explore economic data."</p>
+        <span class="testimonial-author">— Financial Analyst</span>
+      </div>
+    </div>
+  </div>
+</section>
+{% endblock %}

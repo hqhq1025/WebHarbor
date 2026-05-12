@@ -1,0 +1,142 @@
+{% extends "base.html" %}
+{% block title %}My account | Google Flights{% endblock %}
+
+{% block content %}
+<div class="account-wrap">
+  <div class="account-header">
+    <div class="account-avatar-lg">{{ current_user.first_name[0]|upper if current_user.first_name else current_user.email[0]|upper }}</div>
+    <div>
+      <h1 style="font-family:var(--font-sans);font-size:28px;font-weight:400;margin-bottom:4px;">Hi, {{ current_user.full_name }}</h1>
+      <p style="color:var(--g-grey-700);">{{ current_user.email }}</p>
+    </div>
+  </div>
+
+  <div class="account-grid">
+    <!-- Sidebar -->
+    <aside class="account-sidebar">
+      <a href="#bookings" class="account-link active"><span class="material-symbols-outlined">confirmation_number</span>Bookings</a>
+      <a href="#tracked" class="account-link"><span class="material-symbols-outlined">bookmark</span>Tracked flights</a>
+      <a href="#alerts" class="account-link"><span class="material-symbols-outlined">notifications</span>Price alerts</a>
+      <a href="#searches" class="account-link"><span class="material-symbols-outlined">search</span>Saved searches</a>
+      <a href="{{ url_for('account_edit') }}" class="account-link"><span class="material-symbols-outlined">edit</span>Edit profile</a>
+      <a href="{{ url_for('payment_methods') }}" class="account-link"><span class="material-symbols-outlined">credit_card</span>Payment methods</a>
+      <a href="{{ url_for('change_password') }}" class="account-link"><span class="material-symbols-outlined">lock</span>Change password</a>
+      <a href="{{ url_for('logout') }}" class="account-link"><span class="material-symbols-outlined">logout</span>Sign out</a>
+    </aside>
+
+    <!-- Main -->
+    <div class="account-main">
+      <!-- Bookings -->
+      <section id="bookings" class="account-section">
+        <h2 class="account-section-title">Bookings ({{ bookings|length }})</h2>
+        {% if bookings %}
+          <div class="booking-list">
+            {% for b in bookings %}
+              <a href="{{ url_for('booking_detail', booking_id=b.id) }}" class="booking-card">
+                <div class="booking-card-top">
+                  <div>
+                    <div class="booking-pnr">PNR {{ b.pnr }}</div>
+                    <div class="booking-date">Booked {{ b.booked_at|datefmt('%b %d, %Y') }}</div>
+                  </div>
+                  <span class="badge badge-{{ b.status }}">{{ b.status|capitalize }}</span>
+                </div>
+                <div class="booking-route">
+                  {% for bi in b.items %}
+                    {% if bi.flight %}
+                      <div class="booking-leg">
+                        <span class="material-symbols-outlined">flight_takeoff</span>
+                        {{ bi.flight.origin.city }} ({{ bi.flight.origin.iata }}) &rarr; {{ bi.flight.destination.city }} ({{ bi.flight.destination.iata }})
+                        <span style="margin-left:8px;color:var(--g-grey-700);">{{ bi.flight.airline }} {{ bi.flight.flight_number }}</span>
+                      </div>
+                    {% endif %}
+                  {% endfor %}
+                </div>
+                <div class="booking-card-bottom">
+                  <span>{{ b.item_count }} leg{% if b.item_count != 1 %}s{% endif %}</span>
+                  <strong>{{ b.total_amount|money }}</strong>
+                </div>
+              </a>
+            {% endfor %}
+          </div>
+        {% else %}
+          <div class="empty-state">
+            <span class="material-symbols-outlined" style="font-size:48px;color:var(--g-grey-500);">confirmation_number</span>
+            <p>You have no bookings yet.</p>
+            <a href="{{ url_for('index') }}" class="btn btn-primary">Search flights</a>
+          </div>
+        {% endif %}
+      </section>
+
+      <!-- Tracked Flights -->
+      <section id="tracked" class="account-section">
+        <h2 class="account-section-title">Tracked flights ({{ tracked|length }})</h2>
+        {% if tracked %}
+          <div class="tracked-list">
+            {% for t in tracked %}
+              {% if t.flight %}
+                <a href="{{ url_for('flight_detail', flight_id=t.flight.id) }}" class="tracked-card">
+                  <div>
+                    <strong>{{ t.flight.origin.city }} &rarr; {{ t.flight.destination.city }}</strong>
+                    <div style="color:var(--g-grey-700);font-size:13px;">{{ t.flight.airline }} &middot; {{ t.flight.departure_date|datefmt }}</div>
+                  </div>
+                  <div class="flight-price">{{ t.flight.price|money }}</div>
+                </a>
+              {% endif %}
+            {% endfor %}
+          </div>
+        {% else %}
+          <p style="color:var(--g-grey-700);">No tracked flights yet. <a href="{{ url_for('index') }}">Browse flights</a> and click the bookmark icon to track prices.</p>
+        {% endif %}
+      </section>
+
+      <!-- Price Alerts -->
+      <section id="alerts" class="account-section">
+        <h2 class="account-section-title">Price alerts ({{ alerts|length }})</h2>
+        {% if alerts %}
+          <div class="alert-list">
+            {% for a in alerts %}
+              <div class="alert-row">
+                <div>
+                  <strong>{{ a.origin_iata }} &rarr; {{ a.destination_iata }}</strong>
+                  <div style="color:var(--g-grey-700);font-size:13px;">Notify when below {{ a.threshold_price|money }}</div>
+                </div>
+              </div>
+            {% endfor %}
+          </div>
+        {% else %}
+          <p style="color:var(--g-grey-700);">No alerts set. <a href="{{ url_for('price_alerts') }}">Create an alert</a>.</p>
+        {% endif %}
+      </section>
+
+      <!-- Saved Searches -->
+      <section id="searches" class="account-section">
+        <h2 class="account-section-title">Saved searches ({{ saved_searches|length }})</h2>
+        {% if saved_searches %}
+          <div class="saved-list">
+            {% for s in saved_searches %}
+              <div class="saved-row">
+                <div>
+                  <strong>{{ s.label or (s.origin_iata + ' → ' + s.destination_iata) }}</strong>
+                  <div style="color:var(--g-grey-700);font-size:13px;">{{ s.passengers }} passenger &middot; {{ s.cabin_class }}</div>
+                </div>
+              </div>
+            {% endfor %}
+          </div>
+        {% else %}
+          <p style="color:var(--g-grey-700);">No saved searches.</p>
+        {% endif %}
+      </section>
+
+      <!-- Delete account -->
+      <section class="account-section" style="border-top:1px solid var(--g-grey-200);padding-top:24px;margin-top:32px;">
+        <h3 style="color:var(--g-red);font-family:var(--font-sans);font-size:16px;font-weight:500;">Delete account</h3>
+        <p style="color:var(--g-grey-700);font-size:14px;margin:8px 0 12px;">Permanently remove your account and all data.</p>
+        <form method="POST" action="{{ url_for('delete_account') }}">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <button type="submit" class="btn btn-danger">Delete my account</button>
+        </form>
+      </section>
+    </div>
+  </div>
+</div>
+{% endblock %}

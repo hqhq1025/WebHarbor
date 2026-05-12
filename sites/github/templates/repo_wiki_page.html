@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block title %}{{ page.title }} · Wiki · {{ repo.full_name }} · GitHub{% endblock %}
+{% block content %}
+<div class="repo-header-bar">
+  <div class="repo-header-inner">
+    <div class="repo-breadcrumb">
+      <a href="/{{ repo.full_name.split('/')[0] }}" class="repo-breadcrumb-link">{{ repo.full_name.split('/')[0] }}</a>
+      <span class="repo-breadcrumb-sep">/</span>
+      <a href="/{{ repo.full_name }}" class="repo-breadcrumb-link repo-breadcrumb-repo">{{ repo.name }}</a>
+    </div>
+  </div>
+</div>
+<div class="repo-layout">
+  <div class="repo-main wiki-main">
+    <aside class="wiki-sidebar">
+      <h3>Pages</h3>
+      <ul>
+        {% for p in pages %}
+        <li><a href="/{{ repo.full_name }}/wiki/{{ p.slug }}">{{ p.title }}</a></li>
+        {% endfor %}
+      </ul>
+    </aside>
+    <article class="wiki-content">
+      <h1 class="wiki-page-title">{{ page.title }}</h1>
+      <div class="wiki-page-body">
+        <pre>{{ page.body }}</pre>
+      </div>
+    </article>
+  </div>
+</div>
+{% endblock %}

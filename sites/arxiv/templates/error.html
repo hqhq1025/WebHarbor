@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block title %}Error {{ code }} — arXiv{% endblock %}
+{% block content %}
+<div class="error-page">
+    <p class="code">{{ code }}</p>
+    <h1>{{ message }}</h1>
+    <p class="muted">Sorry, something went wrong. Try the homepage or search.</p>
+    <p>
+        <a class="btn btn-primary" href="{{ url_for('index') }}">Home</a>
+        <a class="btn" href="{{ url_for('search') }}">Search</a>
+    </p>
+</div>
+{% endblock %}

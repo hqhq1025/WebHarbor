@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block title %}{{ post.title }} – Hugging Face Blog{% endblock %}
+
+{% block content %}
+<div class="container-wide page blog-post-page">
+    <nav class="docs-breadcrumb">
+        <a href="{{ url_for('blog_index') }}">Blog</a>
+        <span>/</span>
+        <span>{{ post.published }}</span>
+    </nav>
+    <h1>{{ post.title }}</h1>
+    <p class="muted">By {{ post.author }} — {{ post.published }}</p>
+    <div class="tag-row">
+        {% for t in post.tags %}<span class="tag">{{ t }}</span>{% endfor %}
+    </div>
+
+    <section class="blog-post-intro">
+        <h2>Overview</h2>
+        <p>{{ post.excerpt }}</p>
+    </section>
+
+    <article class="blog-post-body">
+        <pre class="docs-prose">{{ post.body }}</pre>
+    </article>
+</div>
+{% endblock %}

@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% block title %}{{ team.full_name or team.name }} Stats{% endblock %}
+
+{% block content %}
+<div class="container">
+  <div class="page-header">
+    <h1>{{ team.full_name or team.name }} Stats</h1>
+    {% set active = 'stats' %}{% include "_team_subnav.html" %}
+  </div>
+
+  <table class="data-table stats-table">
+    <thead>
+      <tr>
+        <th>Player</th>
+        <th>Pos</th>
+        <th>GP</th>
+        <th>PPG</th>
+        <th>RPG</th>
+        <th>APG</th>
+        <th>SPG</th>
+        <th>BPG</th>
+        <th>FG%</th>
+        <th>3P%</th>
+        <th>FT%</th>
+        <th>MIN</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for player, stat in player_season_stats %}
+      <tr>
+        <td class="player-name">
+          <a href="/player/{{ sport.slug if sport else '#' }}/{{ player.slug }}">{{ player.name }}</a>
+        </td>
+        <td>{{ player.position }}</td>
+        {% if stat %}
+        <td>{{ stat.games_played }}</td>
+        <td>{{ '%.1f'|format(stat.points_per_game) }}</td>
+        <td>{{ '%.1f'|format(stat.rebounds_per_game) }}</td>
+        <td>{{ '%.1f'|format(stat.assists_per_game) }}</td>
+        <td>{{ '%.1f'|format(stat.steals_per_game) }}</td>
+        <td>{{ '%.1f'|format(stat.blocks_per_game) }}</td>
+        <td>{{ '%.1f'|format(stat.fg_pct * 100) }}%</td>
+        <td>{{ '%.1f'|format(stat.three_pt_pct * 100) }}%</td>
+        <td>{{ '%.1f'|format(stat.ft_pct * 100) }}%</td>
+        <td>{{ '%.1f'|format(stat.minutes_per_game) }}</td>
+        {% else %}
+        <td colspan="11" class="no-stats">No stats available</td>
+        {% endif %}
+      </tr>
+      {% else %}
+      <tr><td colspan="12" class="empty-msg">No stats data found.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  <p class="table-note">Total players: {{ total_gp }}</p>
+</div>
+{% endblock %}

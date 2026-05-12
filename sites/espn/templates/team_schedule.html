@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+{% block title %}{{ team.full_name or team.name }} Schedule{% endblock %}
+
+{% block content %}
+<div class="container">
+  <div class="page-header">
+    <h1>{{ team.full_name or team.name }} Schedule</h1>
+    {% if next_game %}
+    <div class="next-game-banner">
+      <strong>Next Game:</strong>
+      {% set is_home = next_game.home_team_id == team.id %}
+      {% set opp = next_game.away_team if is_home else next_game.home_team %}
+      {{ 'vs' if is_home else '@' }} {{ opp.full_name if opp else '—' }}
+      &bull; {{ next_game.date }} &bull; {{ next_game.time }} &bull; {{ next_game.network }}
+      {% if next_game.ticket_url %}
+      <a href="{{ next_game.ticket_url }}" class="btn-red btn-small" style="margin-left:12px;">Buy Tickets</a>
+      {% endif %}
+    </div>
+    {% endif %}
+    {% set active = 'schedule' %}{% include "_team_subnav.html" %}
+  </div>
+
+  <table class="data-table schedule-table">
+    <thead>
+      <tr>
+        <th>Date</th><th>Opponent</th><th>H/A</th><th>Score</th><th>W/L</th><th>Network</th><th>Tickets</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for game in games %}
+      {% set is_home = game.home_team_id == team.id %}
+      {% set opp = game.away_team if is_home else game.home_team %}
+      {% set team_score = game.home_score if is_home else game.away_score %}
+      {% set opp_score = game.away_score if is_home else game.home_score %}
+      <tr class="{{ game.status }}">
+        <td>{{ game.date_display or game.date }}</td>
+        <td><a href="/team/{{ sport.slug if sport else '#' }}/{{ opp.slug if opp else '#' }}">{{ opp.full_name if opp else '—' }}</a></td>
+        <td>{{ 'H' if is_home else 'A' }}</td>
+        <td>
+          {% if game.status == 'final' %}
+          <a href="/game/{{ game.id }}">{{ team_score }}-{{ opp_score }}</a>
+          {% else %}
+          {{ game.time }}
+          {% endif %}
+        </td>
+        <td>
+          {% if game.status == 'final' %}
+          <span class="{{ 'win' if team_score > opp_score else 'loss' }}">{{ 'W' if team_score > opp_score else 'L' }}</span>
+          {% else %}
+          <span class="status-badge">{{ game.status | title }}</span>
+          {% endif %}
+        </td>
+        <td>{{ game.network }}</td>
+        <td>
+          {% if game.status == 'scheduled' and game.ticket_url %}
+          <a href="{{ game.ticket_url }}" class="btn-small">Buy Tickets</a>
+          {% else %}—{% endif %}
+        </td>
+      </tr>
+      {% else %}
+      <tr><td colspan="7" class="empty-msg">No games found.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

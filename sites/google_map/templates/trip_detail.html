@@ -1,0 +1,112 @@
+{% extends "base.html" %}
+{% block title %}{{ trip.title }} - Google Maps{% endblock %}
+
+{% block body %}
+<div class="app-shell">
+    {% include '_rail.html' %}
+
+    <aside class="left-panel">
+        {% include '_search_bar.html' %}
+
+        <div class="panel-section">
+            <div style="margin-bottom:8px;">
+                <a href="{{ url_for('trips_page') }}" class="link-back">
+                    <span class="material-icons-outlined" style="font-size:16px;">arrow_back</span> All trips
+                </a>
+            </div>
+            <h2 style="margin-bottom:4px;">{{ trip.title }}</h2>
+            <div style="color:var(--text-secondary); font-size:13px;">
+                <span class="material-icons-outlined" style="font-size:13px; vertical-align:middle;">place</span>
+                {{ trip.city or 'Multiple cities' }}
+                <span style="margin: 0 6px;">•</span>
+                <span style="font-family: 'Roboto Mono', monospace;">{{ trip.trip_code }}</span>
+            </div>
+
+            <div style="margin-top:10px;">
+                <span class="badge {% if trip.status == 'cancelled' %}danger{% elif trip.status == 'completed' %}success{% elif trip.status == 'active' %}warning{% else %}neutral{% endif %}">{{ trip.status }}</span>
+                {% if trip.start_date or trip.end_date %}
+                <span style="color:var(--text-secondary); font-size:13px; margin-left:4px;">
+                    {% if trip.start_date %}{{ trip.start_date.strftime('%b %d') }}{% endif %}
+                    {% if trip.end_date %} – {{ trip.end_date.strftime('%b %d, %Y') }}{% endif %}
+                </span>
+                {% endif %}
+            </div>
+
+            {% if trip.notes %}
+            <p style="color:var(--text-secondary); font-size:13px; margin-top:12px;">{{ trip.notes }}</p>
+            {% endif %}
+
+            <div style="margin-top:16px; display:flex; gap:8px; flex-wrap:wrap;">
+                {% if trip.status in ('planning', 'upcoming', 'active') %}
+                <form method="POST" action="{{ url_for('trip_complete', trip_id=trip.id) }}" style="display:inline;">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button type="submit" class="btn btn-sm">Mark complete</button>
+                </form>
+                {% endif %}
+                {% if trip.status in ('planning', 'upcoming') %}
+                <form method="POST" action="{{ url_for('trip_cancel', trip_id=trip.id) }}" style="display:inline;">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button type="submit" class="btn outlined btn-sm" style="color:var(--red);">Cancel trip</button>
+                </form>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="panel-section">
+            <h3 style="margin-bottom:10px;">Stops ({{ stops|length }})</h3>
+
+            {% if trip.status not in ('cancelled', 'completed') %}
+            <form method="POST" action="{{ url_for('trip_add_stop', trip_id=trip.id) }}" style="background:var(--surface-2); padding:12px; border-radius:10px; margin-bottom:14px;">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <div class="form-group" style="margin-bottom:8px;">
+                    <label style="font-size:12px;">Add a place by ID</label>
+                    <input type="number" name="place_id" placeholder="Place ID (find in URL on place page)" required>
+                </div>
+                <div class="form-group" style="margin-bottom:8px;">
+                    <input type="text" name="notes" placeholder="Notes (optional)">
+                </div>
+                <button type="submit" class="btn btn-sm">Add stop</button>
+            </form>
+            {% endif %}
+
+            {% if stops %}
+                {% for s in stops %}
+                <div class="place-card" style="position:relative;">
+                    <div class="info">
+                        <div class="name">
+                            <span style="color:var(--blue); font-weight:600;">{{ loop.index }}.</span>
+                            <a href="{{ url_for('place_detail', slug=s.place.slug) }}" style="color:inherit;">{{ s.place.name }}</a>
+                        </div>
+                        <div class="rating-row">
+                            <span class="material-icons-outlined" style="font-size:14px;">place</span>
+                            <span>{{ s.place.address }}</span>
+                        </div>
+                        {% if s.notes %}
+                        <div class="meta">Note: {{ s.notes }}</div>
+                        {% endif %}
+                    </div>
+                    {% if s.place.image %}
+                    <div class="thumb" style="background-image:url('{{ s.place.image }}');"></div>
+                    {% else %}
+                    <div class="thumb" style="background:var(--surface-2); display:flex; align-items:center; justify-content:center;"><span class="material-icons-outlined" style="color:var(--text-tertiary);">image</span></div>
+                    {% endif %}
+                    {% if trip.status not in ('cancelled', 'completed') %}
+                    <form method="POST" action="{{ url_for('trip_stop_remove', trip_id=trip.id, stop_id=s.id) }}" style="position:absolute; top:10px; right:10px;">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <button type="submit" class="btn ghost btn-sm" title="Remove stop">×</button>
+                    </form>
+                    {% endif %}
+                </div>
+                {% endfor %}
+            {% else %}
+            <div class="empty-state" style="padding:24px 12px;">
+                <p style="color:var(--text-secondary); font-size:13px;">No stops yet. Add places above or browse places to include.</p>
+                <a href="{{ url_for('explore') }}" class="btn btn-sm">Explore places</a>
+            </div>
+            {% endif %}
+        </div>
+    </aside>
+
+    {% include '_mapcanvas.html' %}
+</div>
+{% endblock %}

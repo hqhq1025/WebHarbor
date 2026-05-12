@@ -1,0 +1,130 @@
+{% extends "base.html" %}
+{% block title %}{{ city.display }} — Booking{% endblock %}
+{% block content %}
+<div class="container">
+    <div class="pd-header">
+        <div class="pd-breadcrumb">
+            <a href="{{ url_for('index') }}">Home</a> &rsaquo;
+            <a href="{{ url_for('destinations') }}">Destinations</a> &rsaquo;
+            {{ city.country }} &rsaquo; {{ city.display }}
+        </div>
+        <h1 class="pd-title">Hotels in {{ city.display }}, {{ city.country }}</h1>
+        <p class="text-muted">{{ city.description }}</p>
+        <p class="text-muted mt-1">{{ city.properties_count }} properties available &middot; Average rating {{ city.average_rating }}/10</p>
+    </div>
+
+    {% set city_gallery = city.get_gallery() %}
+    {% if city_gallery %}
+    <div class="pd-gallery">
+        {% if city.hero_image %}
+        <img src="{{ city.hero_image }}" alt="{{ city.display }}" class="pd-gallery-main"
+             onerror="this.style.background='linear-gradient(135deg,#003580,#006ce4)';this.alt=''">
+        {% endif %}
+        {% for img in city_gallery[:4] %}
+        <img src="{{ img }}" alt="{{ city.display }}"
+             onerror="this.style.background='linear-gradient(135deg,#003580,#006ce4)';this.alt=''">
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <div class="pd-section">
+        <h2>Discover {{ city.display }}</h2>
+        <p>{{ city.description }}</p>
+        <p>From the best-rated hotels to unique apartments and resorts, {{ city.display }} has accommodations for every traveller. Whether you're here for a weekend getaway, a business trip, or a longer holiday, you'll find the perfect place to stay.</p>
+    </div>
+
+    <!-- City gallery -->
+    {% if city_gallery|length > 4 %}
+    <div class="pd-section">
+        <h2>Photos of {{ city.display }}</h2>
+        <div class="pd-gallery-section">
+            <h3>Iconic landmarks</h3>
+            <div class="pd-gallery-images">
+                {% for img in city_gallery[4:7] %}
+                <div class="pd-gallery-img">
+                    <img src="{{ img }}" alt="{{ city.display }}"
+                         onerror="this.parentElement.style.background='linear-gradient(135deg,#003580,#006ce4)';this.parentElement.innerHTML='';">
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% if city_gallery|length > 7 %}
+        <div class="pd-gallery-section alt">
+            <h3>City life</h3>
+            <div class="pd-gallery-images">
+                {% for img in city_gallery[7:] %}
+                <div class="pd-gallery-img">
+                    <img src="{{ img }}" alt="{{ city.display }}"
+                         onerror="this.parentElement.style.background='linear-gradient(135deg,#003580,#006ce4)';this.parentElement.innerHTML='';">
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+    </div>
+    {% endif %}
+
+    <!-- Properties -->
+    <section class="section">
+        <div class="section-header">
+            <h2>Top-rated stays in {{ city.display }}</h2>
+        </div>
+        {% for prop in properties %}
+        <div class="property-card">
+            <div class="property-card-img">
+                {% if prop.image %}
+                <img src="{{ prop.image }}" alt="{{ prop.name }}"
+                     onerror="this.parentElement.innerHTML='<div style=&quot;background:linear-gradient(135deg,#003580,#006ce4);width:100%;height:100%;&quot;></div>'">
+                {% endif %}
+            </div>
+            <div class="property-card-body">
+                <div class="property-card-header">
+                    <div>
+                        <h3 class="property-card-title">
+                            <a href="{{ url_for('property_detail', slug=prop.slug) }}">{{ prop.name }}</a>
+                        </h3>
+                        <div class="stars">{% for i in range(prop.stars) %}&#9733;{% endfor %}</div>
+                        <div class="neighborhood">{{ prop.neighborhood }}</div>
+                        {% if prop.is_genius_deal %}<span class="badge badge-genius">GENIUS</span>{% endif %}
+                        <p class="short-desc">{{ prop.short_desc }}</p>
+                    </div>
+                    <div class="rating-box">
+                        <div class="rating-text">
+                            <span class="label">{{ prop.rating_label }}</span>
+                            <span class="count">{{ prop.review_count }} reviews</span>
+                        </div>
+                        <div class="rating-score">{{ prop.rating }}</div>
+                    </div>
+                </div>
+                <div class="property-card-footer">
+                    <span class="price">${{ '%.0f' % prop.discounted_price }}</span>
+                    <div class="price-includes">per night, includes taxes</div>
+                    <a href="{{ url_for('property_detail', slug=prop.slug) }}" class="btn-availability">See availability &rarr;</a>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </section>
+
+    <!-- Other destinations -->
+    <section class="section">
+        <div class="section-header">
+            <h2>Other destinations you might like</h2>
+        </div>
+        <div class="card-grid cards-4">
+            {% for c in other_cities %}
+            <a href="{{ url_for('city_page', slug=c.slug) }}" class="city-card">
+                {% if c.hero_image %}
+                <img src="{{ c.hero_image }}" alt="{{ c.display }}" class="city-card-img"
+                     onerror="this.style.background='linear-gradient(135deg,#003580,#006ce4)';this.alt=''">
+                {% endif %}
+                <div class="city-card-body">
+                    <h3>{{ c.display }}</h3>
+                    <span class="flag">{{ c.country }}</span>
+                </div>
+            </a>
+            {% endfor %}
+        </div>
+    </section>
+</div>
+{% endblock %}

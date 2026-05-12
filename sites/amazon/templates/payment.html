@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% block title %}Payment Methods - Amazon.com{% endblock %}
+
+{% block content %}
+<div class="account-page">
+    <h1>Payment Methods</h1>
+    <p><a href="{{ url_for('account') }}">&larr; Back to your account</a></p>
+
+    <div style="margin-bottom:20px">
+        <a href="{{ url_for('payment_add') }}" class="btn btn-orange">+ Add payment method</a>
+    </div>
+
+    {% if methods %}
+    <div class="account-grid">
+        {% for pm in methods %}
+        <div class="account-tile" style="display:block;padding:20px;cursor:default">
+            <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
+                <span style="font-size:24px">&#x1F4B3;</span>
+                <div>
+                    <div style="font-weight:700;font-size:15px">{{ pm.card_type }}</div>
+                    <div style="color:var(--amz-text-secondary);font-size:13px">ending in {{ pm.last4 }}</div>
+                </div>
+                {% if pm.is_default %}
+                <span style="margin-left:auto;background:var(--amz-success);color:#fff;font-size:12px;padding:2px 8px;border-radius:3px;font-weight:600">
+                    Default
+                </span>
+                {% endif %}
+            </div>
+
+            <div style="font-size:13px;color:var(--amz-text-secondary);margin-bottom:14px">
+                <div>{{ pm.cardholder_name }}</div>
+                <div>Expires {{ pm.exp_month }}/{{ pm.exp_year }}</div>
+            </div>
+
+            <div style="display:flex;gap:8px;flex-wrap:wrap">
+                <form method="POST" action="{{ url_for('payment_remove', pm_id=pm.id) }}" style="display:inline">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token_value }}">
+                    <button type="submit" class="btn btn-outline" style="padding:4px 12px;font-size:13px;color:#b12704;border-color:#b12704">Remove</button>
+                </form>
+                {% if not pm.is_default %}
+                <form method="POST" action="{{ url_for('payment_set_default', pm_id=pm.id) }}" style="display:inline">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token_value }}">
+                    <button type="submit" class="btn" style="padding:4px 12px;font-size:13px">Set as Default</button>
+                </form>
+                {% endif %}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="empty-state">
+        <h2>No saved payment methods</h2>
+        <p>Add a credit or debit card to make checkout faster.</p>
+        <a href="{{ url_for('payment_add') }}" class="btn btn-orange">Add payment method</a>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

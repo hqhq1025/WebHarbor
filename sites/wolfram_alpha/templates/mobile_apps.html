@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% block title %}Mobile Apps — Wolfram|Alpha{% endblock %}
+
+{% block content %}
+<section class="mobile-hero">
+  <div class="section-inner mobile-hero-inner">
+    <div class="mobile-hero-text">
+      <h1>Wolfram|Alpha on Your Phone</h1>
+      <p class="mobile-hero-desc">Take the world's computational intelligence engine with you. Available for iOS and Android.</p>
+      <div class="mobile-download-btns">
+        <a href="#" class="store-btn store-btn--apple">
+          <span class="store-btn-icon">&#63743;</span>
+          <div><span class="store-btn-sub">Download on the</span><span class="store-btn-main">App Store</span></div>
+        </a>
+        <a href="#" class="store-btn store-btn--google">
+          <span class="store-btn-icon">&#9654;</span>
+          <div><span class="store-btn-sub">Get it on</span><span class="store-btn-main">Google Play</span></div>
+        </a>
+      </div>
+    </div>
+    <div class="mobile-hero-img">
+      <img src="/static/images/pro/wolfram_alpha_ios_app_icon_425d062112.svg" alt="Wolfram Alpha App"
+           style="width: 160px; height: 160px;" onerror="this.style.display='none'">
+    </div>
+  </div>
+</section>
+
+<div class="section-inner">
+  <h2 class="section-heading section-heading--center">Features</h2>
+  <div class="mobile-features-grid">
+    {% set features = [
+      ("📷", "Photo Input", "Point your camera at a math problem and get instant answers."),
+      ("🎤", "Voice Input", "Speak your question naturally — no typing needed."),
+      ("📱", "Optimized UI", "Beautiful mobile interface designed for touch."),
+      ("⭐", "Pro Features", "Full Pro access on mobile with your subscription."),
+      ("📡", "Offline Mode", "Core computations available without internet."),
+      ("🔔", "Notifications", "Get alerts for scheduled computations and updates."),
+    ] %}
+    {% for icon, title, desc in features %}
+    <div class="mobile-feature-card">
+      <div class="mobile-feature-icon">{{ icon }}</div>
+      <h3>{{ title }}</h3>
+      <p>{{ desc }}</p>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}

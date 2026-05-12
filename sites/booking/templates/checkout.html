@@ -1,0 +1,132 @@
+{% extends "base.html" %}
+{% block title %}Checkout — Booking{% endblock %}
+{% block content %}
+<div class="container">
+    <h1 class="page-title">Complete your reservation</h1>
+    <p class="page-subtitle">Final step before your trip is confirmed</p>
+
+    <div class="bag-layout">
+        <form method="POST" id="checkoutForm">
+            {{ form.hidden_tag() }}
+
+            <div class="account-card">
+                <h2>Your details</h2>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>First name *</label>
+                        {{ form.first_name() }}
+                    </div>
+                    <div class="form-group">
+                        <label>Last name *</label>
+                        {{ form.last_name() }}
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Email *</label>
+                        {{ form.email() }}
+                    </div>
+                    <div class="form-group">
+                        <label>Phone *</label>
+                        {{ form.phone(placeholder="+1 555 0123") }}
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Country *</label>
+                    {{ form.country(placeholder="United States") }}
+                </div>
+                <div class="form-group">
+                    <label>Special requests (optional)</label>
+                    {{ form.special_requests(placeholder="Any special requests? Late check-in, allergies, etc.") }}
+                </div>
+            </div>
+
+            <div class="account-card">
+                <h2>Payment details</h2>
+
+                {% if saved_payments %}
+                <div class="form-group">
+                    <label>Saved payment methods</label>
+                    <select name="saved_payment_id" id="savedPaymentSelect" class="form-control">
+                        <option value="">— Enter new card —</option>
+                        {% for pm in saved_payments %}
+                        <option value="{{ pm.id }}" {% if pm.is_default %}selected{% endif %}>
+                            {{ pm.card_type }} ending {{ pm.last4 }} (exp {{ '%02d'|format(pm.exp_month) }}/{{ pm.exp_year }}){% if pm.is_default %} — Default{% endif %}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div id="newCardSection" style="{% if saved_payments %}display:none;{% endif %}">
+                {% else %}
+                <div id="newCardSection">
+                {% endif %}
+                    <p class="text-muted mb-2">Your card will be charged for the full amount.</p>
+                    <div class="form-group">
+                        <label>Card number</label>
+                        {{ form.card_number(placeholder="1234 5678 9012 3456") }}
+                    </div>
+                    <div class="form-group">
+                        <label>Name on card</label>
+                        {{ form.card_name() }}
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Expiry</label>
+                            {{ form.card_exp(placeholder="MM/YY") }}
+                        </div>
+                        <div class="form-group">
+                            <label>CVV</label>
+                            {{ form.card_cvv(placeholder="123") }}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <button type="submit" class="form-submit" style="font-size:17px;padding:16px;">Complete booking — ${{ '%.2f' % total }}</button>
+        </form>
+
+        <aside>
+            <div class="summary-card">
+                <h3>Your stay</h3>
+                {% for item in items %}
+                <div style="border-bottom:1px solid #e7e7e7;padding-bottom:12px;margin-bottom:12px;">
+                    <div style="display:flex;gap:10px;">
+                        {% if item.property.image %}
+                        <img src="{{ item.property.image }}" style="width:60px;height:60px;object-fit:cover;border-radius:4px;"
+                             onerror="this.style.background='linear-gradient(135deg,#003580,#006ce4)'">
+                        {% endif %}
+                        <div style="flex:1;">
+                            <div style="font-weight:700;font-size:13px;">{{ item.property.name }}</div>
+                            <div style="font-size:11px;color:#6b6b6b;">{{ item.check_in.strftime('%d %b') }} → {{ item.check_out.strftime('%d %b') }}</div>
+                            <div style="font-size:11px;color:#6b6b6b;">{{ item.nights }} night{{ 's' if item.nights > 1 else '' }} × {{ item.rooms }} room{{ 's' if item.rooms > 1 else '' }}</div>
+                        </div>
+                    </div>
+                    <div style="text-align:right;font-weight:700;margin-top:4px;">${{ '%.2f' % item.total }}</div>
+                </div>
+                {% endfor %}
+                <div class="summary-row">
+                    <span>Subtotal</span>
+                    <span>${{ '%.2f' % subtotal }}</span>
+                </div>
+                <div class="summary-row">
+                    <span>Taxes & fees</span>
+                    <span>${{ '%.2f' % taxes }}</span>
+                </div>
+                <div class="summary-row total">
+                    <span>Total</span>
+                    <span>${{ '%.2f' % total }}</span>
+                </div>
+            </div>
+        </aside>
+    </div>
+</div>
+<script>
+var sel = document.getElementById('savedPaymentSelect');
+var newCard = document.getElementById('newCardSection');
+if (sel && newCard) {
+    sel.addEventListener('change', function() {
+        newCard.style.display = this.value ? 'none' : 'block';
+    });
+}
+</script>
+{% endblock %}

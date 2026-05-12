@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+{% block title %}Account – Hugging Face{% endblock %}
+
+{% block content %}
+<div class="container-wide page">
+    <div class="account-layout">
+        <aside class="account-side">
+            <div class="account-side-avatar">
+                <img src="{{ current_user.avatar_url }}" alt="{{ current_user.username }}" onerror="this.parentElement.innerHTML='<span>{{ current_user.username[0]|upper }}</span>'">
+            </div>
+            <h3>{{ current_user.display_name or current_user.username }}</h3>
+            <p class="account-side-email">{{ current_user.email }}</p>
+            {% if current_user.is_pro %}<span class="tag tag-yellow">PRO</span>{% endif %}
+            <nav class="account-nav">
+                <a class="is-active" href="{{ url_for('account') }}">Overview</a>
+                <a href="{{ url_for('account_edit') }}">Edit profile</a>
+                <a href="{{ url_for('change_password') }}">Change password</a>
+                <a href="{{ url_for('liked_list') }}">Liked repos</a>
+                <a href="{{ url_for('collections_index') }}">Collections</a>
+                <a href="{{ url_for('endpoints_list') }}">Endpoints</a>
+                <a href="{{ url_for('deploy_cart') }}">Deployment cart</a>
+            </nav>
+        </aside>
+        <main class="account-main">
+            <h1>Welcome back, {{ current_user.display_name or current_user.username }}</h1>
+
+            <div class="stat-row">
+                <div class="stat-box">
+                    <div class="stat-value">{{ likes|length }}</div>
+                    <div class="stat-label">Liked repos</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-value">{{ collections|length }}</div>
+                    <div class="stat-label">Collections</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-value">{{ endpoints|length }}</div>
+                    <div class="stat-label">Endpoints</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-value">{{ follows|length }}</div>
+                    <div class="stat-label">Following</div>
+                </div>
+            </div>
+
+            <section class="sect">
+                <h2 class="sect-title"><span>Recent endpoints</span><a class="sect-title-link" href="{{ url_for('endpoints_list') }}">View all →</a></h2>
+                {% if endpoints %}
+                <div class="endpoint-list">
+                {% for ep in endpoints[:3] %}
+                    <a class="endpoint-row" href="{{ url_for('endpoint_detail', endpoint_id=ep.id) }}">
+                        <div>
+                            <strong>{{ ep.name }}</strong>
+                            <div class="endpoint-row-meta">{{ ep.endpoint_id }} · {{ ep.region }} · {{ ep.total_cost }}</div>
+                        </div>
+                        <span class="status-pill status-{{ ep.status }}">{{ ep.status }}</span>
+                    </a>
+                {% endfor %}
+                </div>
+                {% else %}
+                <p class="empty-state">No endpoints yet. <a href="{{ url_for('models_list') }}">Deploy your first model →</a></p>
+                {% endif %}
+            </section>
+
+            <section class="sect">
+                <h2 class="sect-title"><span>My collections</span><a class="sect-title-link" href="{{ url_for('collection_new') }}">+ New</a></h2>
+                {% if collections %}
+                <div class="collection-list">
+                {% for c in collections %}
+                    <a class="collection-row" href="{{ url_for('collection_detail', collection_id=c.id) }}">
+                        <strong>{{ c.title }}</strong>
+                        <div>{{ c.items.count() }} items · {{ 'Public' if c.is_public else 'Private' }}</div>
+                    </a>
+                {% endfor %}
+                </div>
+                {% else %}
+                <p class="empty-state">No collections yet.</p>
+                {% endif %}
+            </section>
+
+            <section class="sect">
+                <h2 class="sect-title"><span>Danger zone</span></h2>
+                <form method="post" action="{{ url_for('account_delete') }}">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button type="submit" class="btn btn-danger">Delete account</button>
+                </form>
+            </section>
+        </main>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block title %}Today's Deals - Amazon.com{% endblock %}
+
+{% block content %}
+<div style="background:#fff;padding:20px;max-width:1500px;margin:0 auto">
+    <div style="background:linear-gradient(90deg,#cc0c39,#ff0200);color:#fff;padding:20px;border-radius:4px;text-align:center;margin-bottom:20px">
+        <h1 style="margin:0;font-size:32px">Today's Deals</h1>
+        <p style="margin:5px 0 0">Save up to 50% on select items</p>
+    </div>
+
+    <div class="card-grid" style="padding:0">
+        {% for p in products %}
+        <div class="home-card" style="padding:10px;position:relative">
+            {% if p.discount_percent() %}
+            <div style="position:absolute;top:10px;left:10px;background:var(--amz-red);color:#fff;padding:4px 8px;border-radius:4px;font-weight:700;font-size:13px;z-index:2">
+                -{{ p.discount_percent() }}%
+            </div>
+            {% endif %}
+            <a href="{{ url_for('product_detail', slug=p.slug) }}">
+                <img src="{{ p.image }}" alt="{{ p.name }}" style="width:100%;height:220px;object-fit:contain;margin-bottom:10px" onerror="this.style.display='none'">
+            </a>
+            <div class="text-red" style="font-weight:700;font-size:15px;margin:5px 0">
+                Deal: <span class="price-symbol">$</span><span class="price-whole">{{ p.price|int }}</span><span class="price-fraction">{{ '%02d'|format((p.price * 100)|round|int % 100) }}</span>
+            </div>
+            <div class="list-price" style="font-size:13px">List: ${{ '%.2f'|format(p.list_price) }}</div>
+            <a href="{{ url_for('product_detail', slug=p.slug) }}" style="font-size:14px;color:var(--amz-text)">{{ p.name[:60] }}{% if p.name|length > 60 %}...{% endif %}</a>
+            <div class="rating" style="margin-top:5px">
+                <span class="stars">{% for i in range(p.rating|int) %}★{% endfor %}</span>
+                <span>({{ p.review_count }})</span>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

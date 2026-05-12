@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% block title %}{{ sport.display_name or sport.name }} Teams{% endblock %}
+
+{% block content %}
+<div class="container">
+  <div class="page-header">
+    <h1>{{ sport.display_name or sport.name }} Teams</h1>
+    {% set active = 'teams' %}{% include "_sport_subnav.html" %}
+  </div>
+
+  {% macro team_card(team) %}
+    <div class="team-card">
+      <a href="/team/{{ sport.slug }}/{{ team.slug }}">
+        <img class="team-logo-img"
+             src="{{ url_for('static', filename='images/espn/teams/' ~ sport.slug ~ '/' ~ (team.abbreviation or '').lower() ~ '.png') }}"
+             onerror="this.outerHTML='<div class=\'team-swatch\' style=\'background:{{ team.color_primary or '#333' }};\'></div>';"
+             alt="">
+        <div class="team-card-body">
+          <div class="team-fullname">{{ team.full_name or team.name }}</div>
+          <div class="team-record">{{ team.wins }}-{{ team.losses }}</div>
+        </div>
+      </a>
+    </div>
+  {% endmacro %}
+
+  {% if teams_by_conf %}
+    {% for conf_name, divisions in teams_by_conf.items() %}
+    <section class="section-block">
+      <h2 class="section-heading conference-heading">{{ conf_name }}</h2>
+      {% for div_name, teams in divisions.items() %}
+        {% if div_name != 'All' %}
+        <h3 class="division-heading">{{ div_name }}</h3>
+        {% endif %}
+        <div class="teams-grid">
+          {% for team in teams %}{{ team_card(team) }}{% endfor %}
+        </div>
+      {% endfor %}
+    </section>
+    {% endfor %}
+  {% else %}
+    <div class="teams-grid">
+      {% for team in all_teams %}{{ team_card(team) }}
+      {% else %}
+      <p class="empty-msg">No teams found.</p>
+      {% endfor %}
+    </div>
+  {% endif %}
+</div>
+{% endblock %}

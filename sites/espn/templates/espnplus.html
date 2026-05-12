@@ -1,0 +1,96 @@
+{% extends "base.html" %}
+{% block title %}ESPN+ - Premium Sports Streaming{% endblock %}
+
+{% block content %}
+<div class="espnplus-page">
+  <!-- Hero Banner -->
+  <div class="espnplus-hero">
+    <div class="container">
+      <div class="espnplus-logo">ESPN<span class="plus-sign">+</span></div>
+      <h1>The Home of Live Sports</h1>
+      <p class="espnplus-tagline">Exclusive live events, original shows, and the full ESPN library.</p>
+      {% if not current_user.is_authenticated %}
+      <a href="/register" class="btn-red btn-large">Sign Up Now</a>
+      <a href="/login" class="btn-outline">Log In</a>
+      {% elif not current_user.is_espn_plus %}
+      <a href="#" class="btn-red btn-large">Subscribe to ESPN+</a>
+      {% else %}
+      <p class="espnplus-active">You are subscribed to ESPN+</p>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="container">
+    <!-- Features -->
+    <section class="espnplus-features">
+      <h2 class="section-heading">What's Included</h2>
+      <div class="features-grid">
+        <div class="feature-card">
+          <div class="feature-icon">&#9917;</div>
+          <h3>Live Sports</h3>
+          <p>Thousands of live events — UFC, MLB, NHL, MLS, international soccer, college sports, and more.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">&#127909;</div>
+          <h3>ESPN Originals</h3>
+          <p>Award-winning 30 for 30 documentaries, E:60, and exclusive series.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">&#128202;</div>
+          <h3>Full Archive</h3>
+          <p>Access ESPN's full catalog of classic games, shows, and highlights.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">&#127975;</div>
+          <h3>Fantasy Sports</h3>
+          <p>Premium fantasy tools, projections, and expert advice from ESPN analysts.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">&#128295;</div>
+          <h3>Tools</h3>
+          <p>ESPN+ Tools is a suite of analytics, projections, and trade calculators that help fans research matchups, build fantasy lineups, and dig into advanced stats. It bundles the Trade Machine, Player Rater, Mock Draft, Bracket Predictor, and FPI / BPI projection dashboards in one subscriber-only workspace.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Pricing -->
+    <section class="espnplus-pricing">
+      <h2 class="section-heading">Plans</h2>
+      <div class="pricing-grid">
+        <div class="pricing-card">
+          <h3>ESPN+ Monthly</h3>
+          <div class="price">$10.99<span>/month</span></div>
+          <ul class="plan-features">
+            <li>Live sports & events</li>
+            <li>ESPN originals</li>
+            <li>Full archive access</li>
+            <li>Cancel anytime</li>
+          </ul>
+          <a href="/register" class="btn-red btn-full">Get Started</a>
+        </div>
+        <div class="pricing-card featured-plan">
+          <div class="badge-popular">Most Popular</div>
+          <h3>ESPN+ Annual</h3>
+          <div class="price">$109.99<span>/year</span></div>
+          <ul class="plan-features">
+            <li>Everything in Monthly</li>
+            <li>Save 2 months vs monthly</li>
+            <li>Priority customer support</li>
+          </ul>
+          <a href="/register" class="btn-red btn-full">Get Started</a>
+        </div>
+        <div class="pricing-card">
+          <h3>Disney Bundle</h3>
+          <div class="price">$14.99<span>/month</span></div>
+          <ul class="plan-features">
+            <li>ESPN+</li>
+            <li>Disney+</li>
+            <li>Hulu</li>
+          </ul>
+          <a href="/register" class="btn-red btn-full">Get Bundle</a>
+        </div>
+      </div>
+    </section>
+  </div>
+</div>
+{% endblock %}

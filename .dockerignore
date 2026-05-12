@@ -1,0 +1,30 @@
+# HF download metadata produced by `hf download` — not part of the image.
+sites/.cache/
+**/.cache/huggingface/
+
+# Don't ship — websyn_start.sh recreates instance/ from instance_seed/ at boot.
+sites/*/instance/
+
+# Don't ship — runtime doesn't need scrape intermediate (data is in instance_seed/*.db).
+sites/*/scraped_data/
+
+# Don't ship — bytecode / venvs.
+sites/*/__pycache__/
+**/__pycache__/
+sites/*/venv/
+sites/*/*.pyc
+
+# Don't ship — HF asset tarballs are build-time inputs (fetched/extracted by
+# scripts/fetch_assets.sh into sites/<site>/); the runtime only needs the
+# extracted content. Shipping both doubles the COPY layer.
+sites/*.tar.gz
+
+# Build / CI workspace not part of the image.
+build/
+.assets/
+*.log
+.git/
+
+# Note: sites/*/instance_seed/, static/images/, static/external_cache/ ARE
+# shipped — those are the runtime assets. They live in .gitignore (managed
+# via HF), not here.

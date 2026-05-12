@@ -1,0 +1,157 @@
+{% extends "base.html" %}
+{% block title %}ESPN - Sports News, Scores, Highlights{% endblock %}
+
+{% block content %}
+<div class="home-layout">
+
+  <!-- ─── LEFT RAIL ─── -->
+  <aside class="home-rail home-rail--left">
+
+    <div class="promo-card">
+      <h3>ALL OF ESPN.<br>ALL IN ONE PLACE.</h3>
+      <a class="btn-red btn-full" href="/espnplus">Sign Up Now</a>
+      <p class="promo-card__note">Stream live sports, originals, and more.</p>
+    </div>
+
+    <div class="rail-section">
+      <h4 class="rail-heading">Watch on ESPN</h4>
+      <a class="btn-red btn-full" href="/espnplus">Subscribe Now</a>
+      <ul class="rail-link-list">
+        <li><a href="/scores">Live Scores</a></li>
+        <li><a href="/espnplus">ESPN+ Subscribe</a></li>
+        <li><a href="/search">Search ESPN</a></li>
+      </ul>
+    </div>
+
+    <div class="rail-section">
+      <h4 class="rail-heading">Sports on ESPN</h4>
+      <ul class="rail-link-list rail-link-list--icons">
+        {% for sp in nav_sports %}
+        <li>
+          <a href="{{ sp.url_prefix }}">
+            <img src="{{ url_for('static', filename='images/espn/leagues/' ~ sp.slug ~ '.png') }}"
+                 onerror="this.style.display='none'" alt="">
+            <span>{{ sp.display_name or sp.name }}</span>
+          </a>
+        </li>
+        {% endfor %}
+      </ul>
+    </div>
+
+  </aside>
+
+  <!-- ─── CENTER MAIN ─── -->
+  <main class="home-main">
+
+    {% if featured %}
+      {% set hero = featured[0] %}
+      <article class="hero-card">
+        <a href="/story/{{ hero.slug }}">
+          {% if hero.image %}<img class="hero-card__img" src="{{ hero.image }}" alt="{{ hero.title }}">{% endif %}
+          <div class="hero-card__body">
+            <span class="sport-tag">{{ hero.sport_slug | upper }}</span>
+            <h2 class="hero-card__title">{{ hero.title }}</h2>
+            {% if hero.subtitle %}<p class="hero-card__sub">{{ hero.subtitle }}</p>{% endif %}
+          </div>
+        </a>
+      </article>
+
+      {% if featured|length > 1 %}
+      <section class="story-pair">
+        {% for art in featured[1:3] %}
+        <article class="story-card">
+          <a href="/story/{{ art.slug }}">
+            {% if art.image %}<img class="story-card__img" src="{{ art.image }}" alt="{{ art.title }}">{% endif %}
+            <div class="story-card__body">
+              <span class="sport-tag">{{ art.sport_slug | upper }}</span>
+              <h3 class="story-card__title">{{ art.title }}</h3>
+              {% if art.subtitle %}<p class="story-card__sub">{{ art.subtitle }}</p>{% endif %}
+            </div>
+          </a>
+        </article>
+        {% endfor %}
+      </section>
+      {% endif %}
+    {% endif %}
+
+    {% for sport_slug, data in sports_data.items() %}
+      {% if data.news %}
+      <section class="sport-collection">
+        <header class="sport-collection__header">
+          <a href="/{{ sport_slug }}/"><img src="{{ url_for('static', filename='images/espn/leagues/' ~ sport_slug ~ '.png') }}" onerror="this.style.display='none'" alt=""></a>
+          <h3><a href="/{{ sport_slug }}/">{{ sport_slug | upper }}</a></h3>
+          <a class="see-all" href="/{{ sport_slug }}/news">See All</a>
+        </header>
+        <div class="sport-collection__grid">
+          {% for art in data.news %}
+          <article class="story-card story-card--small">
+            <a href="/story/{{ art.slug }}">
+              {% if art.image %}<img class="story-card__img" src="{{ art.image }}" alt="{{ art.title }}">{% endif %}
+              <div class="story-card__body">
+                <h4 class="story-card__title">{{ art.title }}</h4>
+                <p class="story-card__meta">{{ art.author }} &bull; {{ art.published_date or art.created_at.strftime('%b %d') }}</p>
+              </div>
+            </a>
+          </article>
+          {% endfor %}
+        </div>
+      </section>
+      {% endif %}
+    {% endfor %}
+
+  </main>
+
+  <!-- ─── RIGHT RAIL ─── -->
+  <aside class="home-rail home-rail--right">
+
+    <div class="rail-section">
+      <h3 class="section-heading">Top Headlines</h3>
+      <ul class="headline-list headline-list--rail">
+        {% for art in headlines %}
+        <li class="headline-item">
+          <a href="/story/{{ art.slug }}">
+            <span class="headline-sport">{{ art.sport_slug | upper }}</span>
+            {{ art.title }}
+          </a>
+        </li>
+        {% else %}
+        <li class="headline-item empty">No headlines available.</li>
+        {% endfor %}
+      </ul>
+    </div>
+
+    <div class="rail-section">
+      <h3 class="section-heading">Latest Scores <a href="/scores" class="see-all">See All</a></h3>
+      {% set has_scores = false %}
+      {% for sport_slug, data in sports_data.items() %}
+        {% if data.scores %}
+          {% set has_scores = true %}
+          {% for game in data.scores[:2] %}
+          <a class="score-strip" href="/game/{{ game.id }}">
+            <div class="score-strip__league">{{ sport_slug | upper }}</div>
+            <div class="score-strip__row">
+              <span class="score-strip__team">
+                <img class="score-row__logo" src="{{ url_for('static', filename='images/espn/teams/' ~ sport_slug ~ '/' ~ (game.away_team.abbreviation or '').lower() ~ '.png') }}" onerror="this.style.display='none'" alt="">
+                <span>{{ game.away_team.abbreviation if game.away_team else '—' }}</span>
+              </span>
+              <span class="score {{ 'winner' if game.away_score > game.home_score else '' }}">{{ game.away_score }}</span>
+            </div>
+            <div class="score-strip__row">
+              <span class="score-strip__team">
+                <img class="score-row__logo" src="{{ url_for('static', filename='images/espn/teams/' ~ sport_slug ~ '/' ~ (game.home_team.abbreviation or '').lower() ~ '.png') }}" onerror="this.style.display='none'" alt="">
+                <span>{{ game.home_team.abbreviation if game.home_team else '—' }}</span>
+              </span>
+              <span class="score {{ 'winner' if game.home_score > game.away_score else '' }}">{{ game.home_score }}</span>
+            </div>
+            <div class="score-strip__state">{{ game.period }}</div>
+          </a>
+          {% endfor %}
+        {% endif %}
+      {% endfor %}
+      {% if not has_scores %}<p class="empty-msg">No recent games.</p>{% endif %}
+    </div>
+
+  </aside>
+
+</div>
+{% endblock %}

@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+{% block title %}Library — arXiv{% endblock %}
+{% block content %}
+
+<div class="library-header">
+    <h1>Your Library</h1>
+    <div>
+        <a class="btn" href="{{ url_for('export_create') }}">Export Citations</a>
+        <a class="btn" href="{{ url_for('account') }}">Account</a>
+    </div>
+</div>
+
+{% if folders %}
+<div class="library-folders">
+    <a href="{{ url_for('library') }}" class="{% if not current_folder %}active{% endif %}">All ({{ items|length if not current_folder else folders|sum(attribute=1) }})</a>
+    {% for folder, count in folders %}
+    <a href="{{ url_for('library', folder=folder) }}"
+       class="{% if current_folder == folder %}active{% endif %}">
+        {{ folder }} ({{ count }})
+    </a>
+    {% endfor %}
+</div>
+{% if current_folder %}
+<div style="margin:8px 0;">
+    <form method="post" action="{{ url_for('rename_folder') }}" style="display:inline">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <input type="hidden" name="old_name" value="{{ current_folder }}">
+        <label style="font-size:13px;">Rename folder:</label>
+        <input type="text" name="new_name" value="{{ current_folder }}" style="font-size:12px;padding:2px 6px;border:1px solid var(--border);width:160px;">
+        <button type="submit" class="btn" style="font-size:12px;padding:2px 8px;">Rename</button>
+    </form>
+</div>
+{% endif %}
+{% endif %}
+
+{% if items %}
+<ul style="list-style:none;padding:0;">
+    {% for item in items %}
+    <li class="library-item" data-lib-item="{{ item.id }}">
+        <div class="lib-title">
+            <a href="{{ url_for('paper_detail', arxiv_id=item.paper.arxiv_id) }}">{{ item.paper.title }}</a>
+        </div>
+        <div class="lib-meta">{{ item.paper.authors_display }}</div>
+        <div class="lib-meta muted">
+            arXiv:{{ item.paper.arxiv_id }} · {{ item.paper.primary_subject }}
+        </div>
+        <div class="lib-meta muted">
+            Added {{ item.added_at.strftime("%b %d, %Y") }} · Folder:
+            <form method="post" action="{{ url_for('create_folder') }}" style="display:inline">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <input type="hidden" name="paper_id" value="{{ item.paper.id }}">
+                <input type="text" name="folder_name" value="{{ item.folder }}"
+                       style="font-size:11px;padding:1px 4px;border:1px solid var(--border);width:140px;">
+                <button type="submit" class="btn" style="font-size:11px;padding:1px 6px;">Save</button>
+            </form>
+        </div>
+        {% if item.paper.abstract %}
+        <div class="lib-meta" style="margin-top:4px;">{{ item.paper.short_abstract }}</div>
+        {% endif %}
+        <div class="lib-actions">
+            <a href="{{ url_for('paper_detail', arxiv_id=item.paper.arxiv_id) }}">View</a>
+            <a href="{{ url_for('pdf_view', arxiv_id=item.paper.arxiv_id) }}">PDF</a>
+            <form method="post" action="{{ url_for('library_remove_form', item_id=item.id) }}" style="display:inline;">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button type="submit" class="btn" style="font-size:11px;padding:1px 8px;">Remove</button>
+            </form>
+        </div>
+    </li>
+    {% endfor %}
+</ul>
+{% else %}
+<div class="dash-card">
+    <p class="muted">Your library is empty.</p>
+    <p><a href="{{ url_for('index') }}" class="btn">Browse papers</a></p>
+</div>
+{% endif %}
+
+{% endblock %}

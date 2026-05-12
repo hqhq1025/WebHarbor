@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% block title %}{{ article.title }} — Booking travel articles{% endblock %}
+{% block content %}
+<div class="container">
+    <div class="pd-breadcrumb" style="margin-bottom:12px;">
+        <a href="{{ url_for('index') }}">Home</a> &rsaquo;
+        <a href="{{ url_for('articles_index') }}">Travel articles</a> &rsaquo;
+        {{ article.title }}
+    </div>
+
+    <article style="background:#fff;border:1px solid #e7e7e7;border-radius:8px;padding:24px;max-width:820px;margin:0 auto;">
+        <div style="font-size:12px;color:#006ce4;text-transform:uppercase;letter-spacing:1px;">{{ article.category }}</div>
+        <h1 style="margin:6px 0 10px 0;font-size:28px;line-height:1.2;">{{ article.title }}</h1>
+        <div style="font-size:13px;color:#666;margin-bottom:16px;">
+            By <strong>{{ article.author }}</strong> &middot; {{ article.read_time }}
+        </div>
+
+        {% if article.image %}
+        <img src="{{ article.image }}" alt="{{ article.title }}"
+             style="width:100%;max-height:380px;object-fit:cover;border-radius:6px;margin-bottom:16px;"
+             onerror="this.style.display='none'">
+        {% endif %}
+
+        <div style="font-size:16px;line-height:1.7;color:#222;">
+            {% for para in article.body.split('\n\n') %}
+            <p>{{ para | safe }}</p>
+            {% endfor %}
+        </div>
+
+        <div style="margin-top:20px;padding:14px;background:#f6f8fc;border-radius:6px;">
+            <strong>Places mentioned in this article:</strong>
+            <ul style="margin:8px 0 0 18px;">
+                {% for place in article.places %}
+                <li>{{ place }}</li>
+                {% endfor %}
+            </ul>
+        </div>
+    </article>
+
+    {% if related %}
+    <div style="max-width:820px;margin:24px auto 0 auto;">
+        <h2 style="font-size:18px;margin-bottom:12px;">You might also like</h2>
+        <div class="card-grid cards-3">
+            {% for r in related %}
+            <a href="{{ url_for('article_detail', slug=r.slug) }}" class="city-card" style="text-decoration:none;color:inherit;">
+                {% if r.image %}
+                <img src="{{ r.image }}" alt="{{ r.title }}" class="city-card-img"
+                     onerror="this.style.background='linear-gradient(135deg,#003580,#006ce4)';this.alt=''">
+                {% endif %}
+                <div class="city-card-body">
+                    <h4 style="margin:4px 0;font-size:14px;">{{ r.title }}</h4>
+                    <p style="font-size:12px;color:#555;">{{ r.excerpt }}</p>
+                </div>
+            </a>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

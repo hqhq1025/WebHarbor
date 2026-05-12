@@ -1,0 +1,100 @@
+{% extends "base.html" %}
+{% block title %}{{ category.name }} - Amazon.com{% endblock %}
+
+{% block content %}
+<div class="results-layout">
+    <aside class="results-sidebar">
+        <h3>{{ category.name }}</h3>
+        {% if subcategories %}
+        <ul>
+            <li><a href="{{ url_for('category', slug=category.slug, sort=current_sort or none) }}"><strong>All {{ category.name }}</strong></a></li>
+            {% for sub in subcategories %}
+            <li><a href="{{ url_for('category', slug=category.slug, sub=sub, sort=current_sort or none) }}"{% if current_sub == sub %} style="color:#c45500;font-weight:700"{% endif %}>{{ sub }}</a></li>
+            {% endfor %}
+        </ul>
+        {% endif %}
+
+        <h3 style="margin-top:20px">Customer Reviews</h3>
+        <ul>
+            <li><a href="#">★★★★☆ &amp; Up</a></li>
+            <li><a href="#">★★★☆☆ &amp; Up</a></li>
+            <li><a href="#">★★☆☆☆ &amp; Up</a></li>
+        </ul>
+
+        <h3 style="margin-top:20px">Price</h3>
+        <ul>
+            <li><a href="#">Under $25</a></li>
+            <li><a href="#">$25 to $50</a></li>
+            <li><a href="#">$50 to $100</a></li>
+            <li><a href="#">$100 to $200</a></li>
+            <li><a href="#">$200 &amp; Above</a></li>
+        </ul>
+
+        <h3 style="margin-top:20px">Deals &amp; Discounts</h3>
+        <ul>
+            <li><a href="#">All Discounts</a></li>
+            <li><a href="#">Today's Deals</a></li>
+        </ul>
+    </aside>
+
+    <div class="results-main">
+        <div class="results-head" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
+            <div>
+                <h1>1-{{ products|length }} of over {{ products|length * 40 }} results for <em>"{{ category.name }}"</em></h1>
+                {% if current_sub %}<p>Filtered by: <em>{{ current_sub }}</em></p>{% endif %}
+            </div>
+            <div>
+                <label for="sort-select">Sort by:</label>
+                <select id="sort-select" onchange="var u=new window.URL(window.location.href);u.searchParams.set('sort',this.value);window.location.href=u.toString()">
+                    {% set cs = current_sort or '' %}
+                    <option value="" {% if not cs %}selected{% endif %}>Featured</option>
+                    <option value="price_asc" {% if cs=='price_asc' %}selected{% endif %}>Price: Low to High</option>
+                    <option value="price_desc" {% if cs=='price_desc' %}selected{% endif %}>Price: High to Low</option>
+                    <option value="rating" {% if cs=='rating' %}selected{% endif %}>Avg. Customer Review</option>
+                    <option value="reviews" {% if cs=='reviews' %}selected{% endif %}>Most Reviews</option>
+                    <option value="newest" {% if cs=='newest' %}selected{% endif %}>Newest Arrivals</option>
+                    <option value="bestseller" {% if cs=='bestseller' %}selected{% endif %}>Best Sellers</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="results-grid">
+            {% for p in products %}
+            <div class="result-card">
+                <a href="{{ url_for('product_detail', slug=p.slug) }}" class="result-card-img">
+                    <img src="{{ p.image }}" alt="{{ p.name }}" onerror="this.style.display='none'">
+                </a>
+                <div class="result-card-info">
+                    <h2 class="result-card-title"><a href="{{ url_for('product_detail', slug=p.slug) }}">{{ p.name }}</a></h2>
+                    <div class="result-card-brand">by <a href="#">{{ p.brand }}</a></div>
+                    <div class="result-card-rating rating">
+                        <span class="stars">{% for i in range(p.rating|int) %}★{% endfor %}{% for i in range(5 - p.rating|int) %}☆{% endfor %}</span>
+                        <span>{{ p.rating }} ({{ p.review_count }})</span>
+                    </div>
+                    <div class="result-card-price">
+                        <span class="price-symbol">$</span><span class="price-whole">{{ p.price|int }}</span><span class="price-fraction">{{ '%02d'|format((p.price * 100)|round|int % 100) }}</span>
+                        {% if p.list_price > p.price %}
+                        <span class="list-price">${{ '%.2f'|format(p.list_price) }}</span>
+                        <span class="text-red" style="margin-left:6px;font-size:13px">Save {{ p.discount_percent() }}%</span>
+                        {% endif %}
+                    </div>
+                    {% if p.is_prime %}<div style="color:#00a8e1;font-size:13px;font-weight:700">✓ prime FREE Delivery</div>{% endif %}
+                    {% if p.free_shipping %}<div class="free-delivery-badge" style="color:#007600;font-size:13px;font-weight:700;margin-top:2px">&#10003; FREE Delivery</div>{% else %}<div style="color:#565959;font-size:12px;margin-top:2px">Delivery fee applies</div>{% endif %}
+                </div>
+                <div class="result-card-buy">
+                    <form method="POST" action="{{ url_for('cart_add_form', product_id=p.id) }}" style="margin:0">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token_value }}">
+                        <input type="hidden" name="variant" value="">
+                        <input type="hidden" name="quantity" value="1">
+                        <button type="submit" class="btn btn-full">Add to Cart</button>
+                    </form>
+                    <a href="{{ url_for('product_detail', slug=p.slug) }}" class="btn btn-outline btn-full">View Details</a>
+                </div>
+            </div>
+            {% else %}
+            <p style="padding:40px;text-align:center;color:#555">No products in this category yet.</p>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,87 @@
+{% extends "base.html" %}
+{% block title %}Your trip bag | Google Flights{% endblock %}
+
+{% block content %}
+<div class="bag-wrap">
+  <h1 style="font-family:var(--font-sans);font-size:28px;font-weight:400;margin-bottom:24px;">Your trip bag</h1>
+
+  {% if items %}
+  <div class="bag-grid">
+    <div class="bag-items">
+      {% for item in items %}
+        {% set f = item.flight %}
+        <div class="bag-item" data-item-id="{{ item.id }}">
+          <div class="bag-item-img">
+            {% if f.destination.image %}
+              <img src="{{ f.destination.image }}" alt="{{ f.destination.city }}" onerror="this.style.display='none'">
+            {% else %}
+              <div style="width:100%;height:100%;background:linear-gradient(135deg,var(--g-blue),var(--g-green));"></div>
+            {% endif %}
+          </div>
+          <div class="bag-item-body">
+            <div class="bag-item-route">
+              <span class="material-symbols-outlined" style="color:var(--g-blue);">flight_takeoff</span>
+              {{ f.origin.city }} ({{ f.origin.iata }}) &rarr; {{ f.destination.city }} ({{ f.destination.iata }})
+            </div>
+            <div class="bag-item-meta">
+              {{ f.airline }} {{ f.flight_number }} &middot; {{ f.departure_date|datefmt }} &middot; {{ f.departure_time }}
+            </div>
+            <div class="bag-item-meta">{{ f.duration_str }} &middot; {{ f.stops_str }} &middot; {{ item.cabin_class }}</div>
+            <div class="bag-item-controls">
+              <label style="color:var(--g-grey-700);font-size:13px;">Passengers:</label>
+              <form method="POST" action="{{ url_for('cart_update_form', item_id=item.id) }}" style="display:inline;">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token_value }}">
+                <input type="hidden" name="cabin_class" value="{{ item.cabin_class }}">
+                <select name="passengers" onchange="this.form.submit()" style="padding:2px 6px;font-size:13px;">
+                  {% for n in [1,2,3,4,5,6] %}
+                    <option value="{{ n }}" {% if item.passengers == n %}selected{% endif %}>{{ n }}</option>
+                  {% endfor %}
+                </select>
+              </form>
+              <form method="POST" action="{{ url_for('cart_remove_form', item_id=item.id) }}" style="display:inline;margin-left:8px;">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token_value }}">
+                <button type="submit" class="bag-remove" style="background:none;border:none;cursor:pointer;color:var(--g-blue);font-size:13px;text-decoration:underline;">Remove</button>
+              </form>
+            </div>
+          </div>
+          <div class="bag-item-price">
+            <div class="flight-price" data-line-total="{{ item.id }}">{{ item.line_total|money }}</div>
+            <div class="flight-price-label">total</div>
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+
+    <aside class="bag-summary">
+      <h3 style="font-family:var(--font-sans);font-size:18px;font-weight:500;margin-bottom:16px;">Summary</h3>
+      <div class="sum-row">
+        <span>Subtotal</span>
+        <span>{{ subtotal|money }}</span>
+      </div>
+      <div class="sum-row">
+        <span>Taxes &amp; fees</span>
+        <span>{{ taxes|money }}</span>
+      </div>
+      <hr style="margin:12px 0;border:none;border-top:1px solid var(--g-grey-200);">
+      <div class="sum-row sum-total">
+        <span>Total</span>
+        <span>{{ total|money }}</span>
+      </div>
+      <a href="{{ url_for('checkout') }}" class="btn btn-primary" style="width:100%;margin-top:16px;">
+        Continue to checkout
+      </a>
+      <a href="{{ url_for('index') }}" class="btn btn-outline" style="width:100%;margin-top:8px;">
+        Keep searching
+      </a>
+    </aside>
+  </div>
+  {% else %}
+    <div class="empty-state">
+      <span class="material-symbols-outlined" style="font-size:80px;color:var(--g-grey-500);">shopping_bag</span>
+      <h3>Your trip bag is empty</h3>
+      <p>Find a flight you love and add it to your bag.</p>
+      <a href="{{ url_for('index') }}" class="btn btn-primary">Search flights</a>
+    </div>
+  {% endif %}
+</div>
+{% endblock %}

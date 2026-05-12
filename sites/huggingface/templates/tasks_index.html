@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block title %}Tasks – Hugging Face{% endblock %}
+
+{% block content %}
+<section class="task-hero">
+    <div class="container-wide">
+        <h1>Tasks</h1>
+        <p>Everything you need to know about the diverse tasks supported on the Hub, from text generation to image segmentation.</p>
+    </div>
+</section>
+
+<div class="container-wide page">
+    {% for modality, tasks in tasks_by_modality.items() %}
+    <section class="sect">
+        <h2 class="task-section-title">{{ modality }}</h2>
+        <div class="task-tile-grid">
+            {% for t in tasks %}
+            <a class="task-tile" href="{{ url_for('task_detail', slug=t.slug) }}">
+                <div class="task-tile-icon">{{ t.icon }}</div>
+                <div class="task-tile-title">{{ t.display }}</div>
+                <div class="task-tile-desc">{{ (t.description or '')[:90] }}</div>
+            </a>
+            {% endfor %}
+        </div>
+    </section>
+    {% endfor %}
+</div>
+{% endblock %}

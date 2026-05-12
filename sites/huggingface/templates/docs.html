@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+{% block title %}Documentation – Hugging Face{% endblock %}
+
+{% block content %}
+<section class="task-hero">
+    <div class="container-wide">
+        <h1>Documentation</h1>
+        <p>Learn how to use Hugging Face — from your first model to deploying at scale.</p>
+    </div>
+</section>
+
+<div class="container-wide page">
+    <div class="docs-grid">
+        <a class="docs-section" href="{{ url_for('docs_topic', topic='transformers') }}">
+            <h3>🤗 Transformers</h3>
+            <p>State-of-the-art Machine Learning for Pytorch, TensorFlow, and JAX.</p>
+            <span class="docs-link" style="display:flex;align-items:center;gap:8px;">GitHub ⭐ 136k &middot; Get started →</span>
+        </a>
+        <a class="docs-section" href="#">
+            <h3>🎨 Diffusers</h3>
+            <p>Pretrained diffusion models for generating images, audio, and more.</p>
+            <span class="docs-link">GitHub ⭐ 26.8k &middot; Get started →</span>
+        </a>
+        <a class="docs-section" href="{{ url_for('docs_topic', topic='datasets') }}">
+            <h3>📚 Datasets</h3>
+            <p>Easy access to thousands of ML datasets with a single line of code.</p>
+            <span class="docs-link">GitHub ⭐ 19.4k &middot; Get started →</span>
+        </a>
+        <a class="docs-section" href="#">
+            <h3>🚀 Hub Python Library</h3>
+            <p>Interact with the Hub from your Python scripts: push, download, search.</p>
+            <span class="docs-link">GitHub ⭐ 2.3k &middot; Get started →</span>
+        </a>
+        <a class="docs-section" href="#">
+            <h3>🔥 Accelerate</h3>
+            <p>Run your raw PyTorch training script on any kind of device.</p>
+            <span class="docs-link">GitHub ⭐ 8.1k &middot; Get started →</span>
+        </a>
+        <a class="docs-section" href="#">
+            <h3>⚡ Inference Endpoints</h3>
+            <p>Deploy models on fully-managed infrastructure in minutes.</p>
+            <span class="docs-link">Get started →</span>
+        </a>
+        <a class="docs-section" href="{{ url_for('docs_topic', topic='tokenizers') }}">
+            <h3>🔤 Tokenizers</h3>
+            <p>Fast, flexible tokenizers written in Rust with Python bindings.</p>
+            <span class="docs-link">GitHub ⭐ 9.2k &middot; Get started →</span>
+        </a>
+        <a class="docs-section" href="#">
+            <h3>🧪 Evaluate</h3>
+            <p>Easily evaluate machine learning models with shared metrics.</p>
+            <span class="docs-link">GitHub ⭐ 2.1k &middot; Get started →</span>
+        </a>
+        <a class="docs-section" href="#">
+            <h3>🤖 Agents</h3>
+            <p>Build agentic workflows with tool calling and multi-step reasoning.</p>
+            <span class="docs-link">Get started →</span>
+        </a>
+    </div>
+
+    {% if all_topics %}
+    <section class="sect">
+        <h2>Popular documentation topics</h2>
+        <ul class="docs-topic-list">
+            {% for slug, p in all_topics.items() %}
+            <li>
+                <a href="{{ url_for('docs_topic', topic=slug) }}">
+                    <strong>{{ p.title }}</strong>
+                    <span class="muted">— {{ p.section }}</span>
+                </a>
+            </li>
+            {% endfor %}
+        </ul>
+    </section>
+    {% endif %}
+</div>
+{% endblock %}

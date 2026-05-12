@@ -1,0 +1,87 @@
+{% extends "base.html" %}
+{% block title %}Coursera for Business | Online Learning for Organizations{% endblock %}
+{% block content %}
+<div class="enterprise-page">
+  <div class="enterprise-hero">
+    <div class="container">
+      <div class="hero-with-art">
+        <div class="hero-text">
+          <h1>The expert-powered learning platform that drives business growth</h1>
+          <p>Give your entire team access to a comprehensive catalog of 7,000+ courses in tech, data, business, and more.</p>
+          <div style="display:flex;gap:12px;margin-top:24px;flex-wrap:wrap;">
+            <a href="{{ url_for('register') }}" class="btn-primary">Contact sales</a>
+            <a href="{{ url_for('register') }}" class="btn-outline-white">Learn more</a>
+          </div>
+        </div>
+        {% set _h = hero_image('business') %}
+        {% if _h %}<div class="hero-photo"><img src="{{ url_for('static', filename=_h) }}" alt=""></div>{% endif %}
+      </div>
+    </div>
+  </div>
+  <div class="container">
+    <section class="enterprise-benefits">
+      <h2>Why Coursera for Business?</h2>
+      <div class="benefits-grid">
+        <div class="benefit-card">
+          <span class="benefit-icon">&#127760;</span>
+          <h3>World-class content</h3>
+          <p>Access courses from 300+ top universities and companies including Google, IBM, Meta, and Stanford.</p>
+        </div>
+        <div class="benefit-card">
+          <span class="benefit-icon">&#128202;</span>
+          <h3>Measurable outcomes</h3>
+          <p>Track team progress with detailed analytics and skill assessments. Measure ROI with business impact reports.</p>
+        </div>
+        <div class="benefit-card">
+          <span class="benefit-icon">&#127941;</span>
+          <h3>Recognized credentials</h3>
+          <p>Employees earn certificates from world-class partners that they can share on LinkedIn and add to their resumes.</p>
+        </div>
+        <div class="benefit-card">
+          <span class="benefit-icon">&#128218;</span>
+          <h3>Curated content</h3>
+          <p>Coursera curates learning paths aligned to in-demand roles like data analyst, software engineer, and product manager.</p>
+        </div>
+        <div class="benefit-card">
+          <span class="benefit-icon">&#129333;</span>
+          <h3>Skill development</h3>
+          <p>Identify skill gaps and recommend personalized learning paths for every employee in your organization.</p>
+        </div>
+        <div class="benefit-card">
+          <span class="benefit-icon">&#128241;</span>
+          <h3>Mobile learning</h3>
+          <p>Employees can learn on any device, at any time, with offline access to downloaded courses.</p>
+        </div>
+      </div>
+    </section>
+    <section class="enterprise-pricing">
+      <h2>Flexible pricing for teams of all sizes</h2>
+      <div class="pricing-tiers">
+        <div class="pricing-tier">
+          <h3>Team</h3>
+          <p class="tier-size">5–125 users</p>
+          <p>Access to 7,000+ courses, analytics dashboard, and dedicated support.</p>
+          <a href="{{ url_for('register') }}" class="btn-outline">Contact Sales</a>
+        </div>
+        <div class="pricing-tier featured">
+          <h3>Enterprise</h3>
+          <p class="tier-size">125+ users</p>
+          <p>Everything in Team, plus custom integrations, SSO, and a dedicated customer success manager.</p>
+          <a href="{{ url_for('register') }}" class="btn-primary">Contact Sales</a>
+        </div>
+      </div>
+    </section>
+    <section class="partners-strip" style="border:1px solid var(--c-border);border-radius:var(--r-card);padding:32px;margin-bottom:48px;">
+      <p class="partners-label" style="text-align:center;">Top companies develop skills with Coursera</p>
+      <div class="partners-logos" style="justify-content:center;">
+        {% for slug, name in [('airbus','Airbus'),('loreal','L\'Oréal'),('merck','Merck'),('tata','Tata'),('danone','Danone'),('petrobras','Petrobras'),('leidos','Leidos'),('unilever','Unilever'),('accenture','Accenture'),('pwc','PwC')] %}
+          {% set logo = partner_logo({'slug': slug, 'name': name}) %}
+          {% if logo %}
+            <img class="partner-logo-img" src="{{ url_for('static', filename=logo) }}" alt="{{ name }}" title="{{ name }}">
+          {% endif %}
+        {% endfor %}
+      </div>
+    </section>
+  </div>
+</div>
+{% endblock %}

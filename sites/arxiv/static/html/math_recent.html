@@ -1,0 +1,1605 @@
+<!DOCTYPE html><html lang="en"><head>  <title>Algebraic Geometry  </title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="apple-touch-icon" sizes="180x180" href="/static/browse/0.3.4/images/icons/apple-touch-icon.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/static/browse/0.3.4/images/icons/favicon-32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/static/browse/0.3.4/images/icons/favicon-16x16.png">
+  <link rel="manifest" href="/static/browse/0.3.4/images/icons/site.webmanifest">
+  <link rel="mask-icon" href="/static/browse/0.3.4/images/icons/safari-pinned-tab.svg" color="#5bbad5">
+  <meta name="msapplication-TileColor" content="#da532c">
+  <meta name="theme-color" content="#ffffff">
+  <link rel="stylesheet" type="text/css" media="screen" href="/static/browse/0.3.4/css/arXiv.css?v=20260318">
+  <link rel="stylesheet" type="text/css" media="print" href="/static/browse/0.3.4/css/arXiv-print.css?v=20200611">
+  <link rel="stylesheet" type="text/css" media="screen" href="/static/browse/0.3.4/css/browse_search.css">
+  <script language="javascript" src="/static/browse/0.3.4/js/accordion.js"></script>
+  <script language="javascript" src="/static/browse/0.3.4/js/optin-modal.js?v=20250819"></script>
+  
+  <script src="/static/browse/0.3.4/js/mathjaxToggle.min.js" type="text/javascript"></script>
+  <script type="text/javascript" language="javascript">mathjaxToggle();</script><script type="text/x-mathjax-config;executed=true">MathJax.Hub.Config({
+  messageStyle: 'none',
+  extensions: ['tex2jax.js'],
+  jax: ['input/TeX','output/HTML-CSS'],
+  tex2jax: {
+    inlineMath: [['$','$']],
+    processEscapes: true,
+    ignoreClass: '.*',
+    processClass: 'mathjax.*',
+  },
+  TeX: {
+    extensions: ['AMSmath.js', 'AMSsymbols.js', 'noErrors.js'],
+    noErrors: {
+      inlineDelimiters: ['$','$'],
+      multiLine: false,
+      style: {
+        'font-size': 'normal',
+        'border': ''
+      }
+    }
+  }
+});</script><script type="text/javascript" src="//static.arxiv.org/MathJax-2.7.3/MathJax.js"></script>
+<style type="text/css">.MathJax_Preview {color: #888}
+#MathJax_Message {position: fixed; left: 1px; bottom: 2px; background-color: #E6E6E6; border: 1px solid #959595; margin: 0px; padding: 2px 8px; z-index: 102; color: black; font-size: 80%; width: auto; white-space: nowrap}
+#MathJax_MSIE_Frame {position: absolute; top: 0; left: 0; width: 0px; z-index: 101; border: 0px; margin: 0px; padding: 0px}
+.MathJax_Error {color: #CC0000; font-style: italic}
+</style><style type="text/css">.MathJax_Hover_Frame {border-radius: .25em; -webkit-border-radius: .25em; -moz-border-radius: .25em; -khtml-border-radius: .25em; box-shadow: 0px 0px 15px #83A; -webkit-box-shadow: 0px 0px 15px #83A; -moz-box-shadow: 0px 0px 15px #83A; -khtml-box-shadow: 0px 0px 15px #83A; border: 1px solid #A6D ! important; display: inline-block; position: absolute}
+.MathJax_Menu_Button .MathJax_Hover_Arrow {position: absolute; cursor: pointer; display: inline-block; border: 2px solid #AAA; border-radius: 4px; -webkit-border-radius: 4px; -moz-border-radius: 4px; -khtml-border-radius: 4px; font-family: 'Courier New',Courier; font-size: 9px; color: #F0F0F0}
+.MathJax_Menu_Button .MathJax_Hover_Arrow span {display: block; background-color: #AAA; border: 1px solid; border-radius: 3px; line-height: 0; padding: 4px}
+.MathJax_Hover_Arrow:hover {color: white!important; border: 2px solid #CCC!important}
+.MathJax_Hover_Arrow:hover span {background-color: #CCC!important}
+</style><style type="text/css">.MathJax_Display {text-align: center; margin: 1em 0em; position: relative; display: block!important; text-indent: 0; max-width: none; max-height: none; min-width: 0; min-height: 0; width: 100%}
+.MathJax .merror {background-color: #FFFF88; color: #CC0000; border: 1px solid #CC0000; padding: 1px 3px; font-style: normal; font-size: 90%}
+.MathJax .MJX-monospace {font-family: monospace}
+.MathJax .MJX-sans-serif {font-family: sans-serif}
+#MathJax_Tooltip {background-color: InfoBackground; color: InfoText; border: 1px solid black; box-shadow: 2px 2px 5px #AAAAAA; -webkit-box-shadow: 2px 2px 5px #AAAAAA; -moz-box-shadow: 2px 2px 5px #AAAAAA; -khtml-box-shadow: 2px 2px 5px #AAAAAA; filter: progid:DXImageTransform.Microsoft.dropshadow(OffX=2, OffY=2, Color='gray', Positive='true'); padding: 3px 4px; z-index: 401; position: absolute; left: 0; top: 0; width: auto; height: auto; display: none}
+.MathJax {display: inline; font-style: normal; font-weight: normal; line-height: normal; font-size: 100%; font-size-adjust: none; text-indent: 0; text-align: left; text-transform: none; letter-spacing: normal; word-spacing: normal; word-wrap: normal; white-space: nowrap; float: none; direction: ltr; max-width: none; max-height: none; min-width: 0; min-height: 0; border: 0; padding: 0; margin: 0}
+.MathJax:focus, body :focus .MathJax {display: inline-table}
+.MathJax.MathJax_FullWidth {text-align: center; display: table-cell!important; width: 10000em!important}
+.MathJax img, .MathJax nobr, .MathJax a {border: 0; padding: 0; margin: 0; max-width: 5000em; max-height: 5000em; min-width: 0; min-height: 0; vertical-align: 0; line-height: normal; text-decoration: none}
+img.MathJax_strut {border: 0!important; padding: 0!important; margin: 0!important; vertical-align: 0!important}
+.MathJax span {display: inline; position: static; border: 0; padding: 0; margin: 0; vertical-align: 0; line-height: normal; text-decoration: none}
+.MathJax nobr {white-space: nowrap!important}
+.MathJax img {display: inline!important; float: none!important}
+.MathJax * {transition: none; -webkit-transition: none; -moz-transition: none; -ms-transition: none; -o-transition: none}
+.MathJax_Processing {visibility: hidden; position: fixed; width: 0; height: 0; overflow: hidden}
+.MathJax_Processed {display: none!important}
+.MathJax_ExBox {display: block!important; overflow: hidden; width: 1px; height: 60ex; min-height: 0; max-height: none}
+.MathJax .MathJax_EmBox {display: block!important; overflow: hidden; width: 1px; height: 60em; min-height: 0; max-height: none}
+.MathJax_LineBox {display: table!important}
+.MathJax_LineBox span {display: table-cell!important; width: 10000em!important; min-width: 0; max-width: none; padding: 0; border: 0; margin: 0}
+.MathJax .MathJax_HitBox {cursor: text; background: white; opacity: 0; filter: alpha(opacity=0)}
+.MathJax .MathJax_HitBox * {filter: none; opacity: 1; background: transparent}
+#MathJax_Tooltip * {filter: none; opacity: 1; background: transparent}
+@font-face {font-family: MathJax_Main; src: url('https://static.arxiv.org/MathJax-2.7.3/fonts/HTML-CSS/TeX/woff/MathJax_Main-Regular.woff?V=2.7.3') format('woff'), url('https://static.arxiv.org/MathJax-2.7.3/fonts/HTML-CSS/TeX/otf/MathJax_Main-Regular.otf?V=2.7.3') format('opentype')}
+@font-face {font-family: MathJax_Main-bold; src: url('https://static.arxiv.org/MathJax-2.7.3/fonts/HTML-CSS/TeX/woff/MathJax_Main-Bold.woff?V=2.7.3') format('woff'), url('https://static.arxiv.org/MathJax-2.7.3/fonts/HTML-CSS/TeX/otf/MathJax_Main-Bold.otf?V=2.7.3') format('opentype')}
+@font-face {font-family: MathJax_Main-italic; src: url('https://static.arxiv.org/MathJax-2.7.3/fonts/HTML-CSS/TeX/woff/MathJax_Main-Italic.woff?V=2.7.3') format('woff'), url('https://static.arxiv.org/MathJax-2.7.3/fonts/HTML-CSS/TeX/otf/MathJax_Main-Italic.otf?V=2.7.3') format('opentype')}
+@font-face {font-family: MathJax_Math-italic; src: url('https://static.arxiv.org/MathJax-2.7.3/fonts/HTML-CSS/TeX/woff/MathJax_Math-Italic.woff?V=2.7.3') format('woff'), url('https://static.arxiv.org/MathJax-2.7.3/fonts/HTML-CSS/TeX/otf/MathJax_Math-Italic.otf?V=2.7.3') format('opentype')}
+@font-face {font-family: MathJax_Caligraphic; src: url('https://static.arxiv.org/MathJax-2.7.3/fonts/HTML-CSS/TeX/woff/MathJax_Caligraphic-Regular.woff?V=2.7.3') format('woff'), url('https://static.arxiv.org/MathJax-2.7.3/fonts/HTML-CSS/TeX/otf/MathJax_Caligraphic-Regular.otf?V=2.7.3') format('opentype')}
+@font-face {font-family: MathJax_Size1; src: url('https://static.arxiv.org/MathJax-2.7.3/fonts/HTML-CSS/TeX/woff/MathJax_Size1-Regular.woff?V=2.7.3') format('woff'), url('https://static.arxiv.org/MathJax-2.7.3/fonts/HTML-CSS/TeX/otf/MathJax_Size1-Regular.otf?V=2.7.3') format('opentype')}
+@font-face {font-family: MathJax_Size2; src: url('https://static.arxiv.org/MathJax-2.7.3/fonts/HTML-CSS/TeX/woff/MathJax_Size2-Regular.woff?V=2.7.3') format('woff'), url('https://static.arxiv.org/MathJax-2.7.3/fonts/HTML-CSS/TeX/otf/MathJax_Size2-Regular.otf?V=2.7.3') format('opentype')}
+@font-face {font-family: MathJax_Size3; src: url('https://static.arxiv.org/MathJax-2.7.3/fonts/HTML-CSS/TeX/woff/MathJax_Size3-Regular.woff?V=2.7.3') format('woff'), url('https://static.arxiv.org/MathJax-2.7.3/fonts/HTML-CSS/TeX/otf/MathJax_Size3-Regular.otf?V=2.7.3') format('opentype')}
+@font-face {font-family: MathJax_Size4; src: url('https://static.arxiv.org/MathJax-2.7.3/fonts/HTML-CSS/TeX/woff/MathJax_Size4-Regular.woff?V=2.7.3') format('woff'), url('https://static.arxiv.org/MathJax-2.7.3/fonts/HTML-CSS/TeX/otf/MathJax_Size4-Regular.otf?V=2.7.3') format('opentype')}
+.MathJax .noError {vertical-align: ; font-size: normal; text-align: left; color: black; padding: 1px 3px; border: }
+</style></head>
+
+<body class="with-cu-identity"><div style="visibility: hidden; overflow: hidden; position: absolute; top: 0px; height: 1px; width: auto; padding: 0px; border: 0px; margin: 0px; text-align: left; text-indent: 0px; text-transform: none; line-height: normal; letter-spacing: normal; word-spacing: normal;"><div id="MathJax_Hidden"></div></div><div id="MathJax_Message" style="display: none;"></div>
+  
+  
+  <div class="flex-wrap-footer">
+    <header>
+      <a href="#content" class="is-sr-only">Skip to main content</a>
+      <!-- start desktop header -->
+      <div class="columns is-vcentered is-hidden-mobile" id="cu-identity">
+        <div class="column" id="cu-logo">
+          <a href="https://www.cornell.edu/"><img src="/static/browse/0.3.4/images/icons/cu/cornell-reduced-white-SMALL.svg" alt="Cornell University"></a>
+        </div><!-- /from April 7 at 1:00 AM to May 29 at 21:40 --><!-- /from May 2 at 1:00 AM to May 5 at 9:45 AM --><div class="column banner-minimal">
+            <a href="https://tech.cornell.edu/arxiv/" target="_blank">Learn about arXiv becoming an independent nonprofit.</a>
+        </div><div class="column" id="support-ack">
+          <span id="support-ack-url">We gratefully acknowledge support from<br>the Simons Foundation, Schmidt Sciences, <a href="https://info.arxiv.org/about/ourmembers.html">UNC- Chapel Hill Library</a>, and all contributors.</span>
+          <a href="https://info.arxiv.org/about/donate.html" class="btn-header-donate">Donate</a>
+        </div>
+      </div>
+
+      <div id="header" class="is-hidden-mobile">
+<a aria-hidden="true" tabindex="-1" href="/IgnoreMe"></a>
+<div class="header-breadcrumbs">
+  <a href="/"><img src="/static/browse/0.3.4/images/arxiv-logo-one-color-white.svg" alt="arxiv logo" style="height:40px;"></a> <span>&gt;</span>
+  <a href="/list/math.AG/recent">math.AG</a>
+  </div>
+
+        <div class="columns is-vcentered is-mobile" style="justify-content: flex-end;">
+        </div>
+
+          <div class="search-block level-right">
+    <form class="level-item mini-search" method="GET" action="https://arxiv.org/search">
+      <div class="field has-addons">
+        <div class="control">
+          <input class="input is-small" type="text" name="query" placeholder="Search..." aria-label="Search term or terms" style="">
+          <p class="help"><a href="https://info.arxiv.org/help">Help</a> | <a href="https://arxiv.org/search/advanced">Advanced Search</a></p>
+        </div>
+        <div class="control">
+          <div class="select is-small">
+            <select name="searchtype" aria-label="Field to search">
+              <option value="all" selected="selected">All fields</option>
+              <option value="title">Title</option>
+              <option value="author">Author</option>
+              <option value="abstract">Abstract</option>
+              <option value="comments">Comments</option>
+              <option value="journal_ref">Journal reference</option>
+              <option value="acm_class">ACM classification</option>
+              <option value="msc_class">MSC classification</option>
+              <option value="report_num">Report number</option>
+              <option value="paper_id">arXiv identifier</option>
+              <option value="doi">DOI</option>
+              <option value="orcid">ORCID</option>
+              <option value="author_id">arXiv author ID</option>
+              <option value="help">Help pages</option>
+              <option value="full_text">Full text</option>
+            </select>
+          </div>
+        </div>
+        <input type="hidden" name="source" value="header" style="">
+        <button class="button is-small is-cul-darker">Search</button>
+      </div>
+    </form>
+  </div>
+     </div><!-- /end desktop header -->
+
+      <div class="mobile-header">
+        <div class="columns is-mobile">
+          <div class="column logo-arxiv"><a href="https://arxiv.org/"><img src="/static/browse/0.3.4/images/arxiv-logomark-small-white.svg" alt="arXiv logo" style="height:60px;"></a></div>
+          <div class="column logo-cornell"><a href="https://www.cornell.edu/">
+            <picture>
+              <source media="(min-width: 501px)" srcset="/static/browse/0.3.4/images/icons/cu/cornell-reduced-white-SMALL.svg  400w" sizes="400w">
+              <source srcset="/static/browse/0.3.4/images/icons/cu/cornell_seal_simple_black.svg 2x">
+              <img src="/static/browse/0.3.4/images/icons/cu/cornell-reduced-white-SMALL.svg" alt="Cornell University Logo">
+            </picture>
+          </a></div>
+          <div class="column nav" id="toggle-container" role="menubar">
+            <button class="toggle-control"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" class="icon filter-white"><title>open search</title><path d="M505 442.7L405.3 343c-4.5-4.5-10.6-7-17-7H372c27.6-35.3 44-79.7 44-128C416 93.1 322.9 0 208 0S0 93.1 0 208s93.1 208 208 208c48.3 0 92.7-16.4 128-44v16.3c0 6.4 2.5 12.5 7 17l99.7 99.7c9.4 9.4 24.6 9.4 33.9 0l28.3-28.3c9.4-9.4 9.4-24.6.1-34zM208 336c-70.7 0-128-57.2-128-128 0-70.7 57.2-128 128-128 70.7 0 128 57.2 128 128 0 70.7-57.2 128-128 128z"></path></svg></button>
+            <div class="mobile-toggle-block toggle-target">
+              <form class="mobile-search-form" method="GET" action="https://arxiv.org/search">
+                <div class="field has-addons">
+                  <input class="input" type="text" name="query" placeholder="Search..." aria-label="Search term or terms" style="">
+                  <input type="hidden" name="source" value="header" style="">
+                  <input type="hidden" name="searchtype" value="all" style="">
+                  <button class="button">GO</button>
+                </div>
+              </form>
+            </div>
+
+            <button class="toggle-control"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512" class="icon filter-white" role="menu"><title>open navigation menu</title><path d="M16 132h416c8.837 0 16-7.163 16-16V76c0-8.837-7.163-16-16-16H16C7.163 60 0 67.163 0 76v40c0 8.837 7.163 16 16 16zm0 160h416c8.837 0 16-7.163 16-16v-40c0-8.837-7.163-16-16-16H16c-8.837 0-16 7.163-16 16v40c0 8.837 7.163 16 16 16zm0 160h416c8.837 0 16-7.163 16-16v-40c0-8.837-7.163-16-16-16H16c-8.837 0-16 7.163-16 16v40c0 8.837 7.163 16 16 16z"></path></svg></button>
+            <div class="mobile-toggle-block toggle-target">
+              <nav class="mobile-menu" aria-labelledby="mobilemenulabel">
+                <h2 id="mobilemenulabel">quick links</h2>
+                <ul>
+                    <li><a href="https://arxiv.org/login">Login</a></li>
+                    <li><a href="https://info.arxiv.org/help">Help Pages</a></li>
+                    <li><a href="https://info.arxiv.org/about">About</a></li>
+                </ul>
+              </nav>
+            </div>
+          </div>
+        </div>
+      </div><!-- /end mobile-header -->
+    </header>
+
+    <main>
+      <div id="content">
+<div id="content-inner">
+<div id="dlpage">
+  <h1>Algebraic Geometry</h1>
+
+<h2>Authors and titles for recent submissions</h2>
+  <ul>
+<li>
+        <a href="/list/math.AG/recent?skip=0&amp;show=50">
+          Fri, 10 Apr 2026
+        </a>
+      </li><li>
+        <a href="/list/math.AG/recent?skip=9&amp;show=50">
+          Thu, 9 Apr 2026
+        </a>
+      </li><li>
+        <a href="/list/math.AG/recent?skip=26&amp;show=50">
+          Wed, 8 Apr 2026
+        </a>
+      </li><li>
+        <a href="/list/math.AG/recent?skip=46&amp;show=50">
+          Tue, 7 Apr 2026
+        </a>
+      </li><li>
+        <a href="/list/math.AG/recent?skip=67&amp;show=50">
+          Mon, 6 Apr 2026
+        </a>
+      </li></ul>
+  <p>See today's <a id="new-math.AG" aria-labelledby="new-math.AG" href="/list/math.AG/new">new</a> changes</p>
+      <div class="paging">Total of 83 entries :      <span>1-50</span>
+      <a href="/list/math.AG/recent?skip=50&amp;show=50">51-83</a>
+
+    </div>
+    <div class="morefewer">Showing up to 50 entries per page:
+          <a href="/list/math.AG/recent?skip=0&amp;show=25" rel="nofollow">
+      fewer</a>
+ |
+          <span style="color: #454545">more</span>
+ |
+          <a href="/list/math.AG/recent?skip=0&amp;show=2000" rel="nofollow">
+      all</a>
+
+    </div>
+
+
+
+      <dl id="articles">
+    <h3>Fri, 10 Apr 2026 (showing 9 of 9 entries )</h3>
+
+
+    <dt>
+      <a name="item1">[1]</a>
+      <a href="/abs/2604.08464" title="Abstract" id="2604.08464">
+        arXiv:2604.08464
+      </a>
+      
+        [<a href="/pdf/2604.08464" title="Download PDF" id="pdf-2604.08464" aria-labelledby="pdf-2604.08464">pdf</a>, <a href="https://arxiv.org/html/2604.08464v1" title="View HTML" id="html-2604.08464" aria-labelledby="html-2604.08464" rel="noopener noreferrer" target="_blank">html</a>, <a href="/format/2604.08464" title="Other formats" id="oth-2604.08464" aria-labelledby="oth-2604.08464">other</a>]
+    </dt>
+    <dd>
+      <div class="meta">
+        <div class="list-title mathjax"><span class="descriptor">Title:</span>
+          Formulae for indices of holomorphic foliations via reduction of singularities
+        </div>
+        <div class="list-authors"><a href="https://arxiv.org/search/math?searchtype=author&amp;query=Luza,+M+F">Maycol Falla Luza</a>, <a href="https://arxiv.org/search/math?searchtype=author&amp;query=S%C3%A1nchez,+P+F">Percy Fernández Sánchez</a>, <a href="https://arxiv.org/search/math?searchtype=author&amp;query=marin,+D">David marin</a></div>
+
+
+
+        <div class="list-subjects"><span class="descriptor">Subjects:</span>
+          <span class="primary-subject">Algebraic Geometry (math.AG)</span>; Complex Variables (math.CV)
+        </div>
+
+      </div>
+    </dd>
+    <dt>
+      <a name="item2">[2]</a>
+      <a href="/abs/2604.08429" title="Abstract" id="2604.08429">
+        arXiv:2604.08429
+      </a>
+      
+        [<a href="/pdf/2604.08429" title="Download PDF" id="pdf-2604.08429" aria-labelledby="pdf-2604.08429">pdf</a>, <a href="/format/2604.08429" title="Other formats" id="oth-2604.08429" aria-labelledby="oth-2604.08429">other</a>]
+    </dt>
+    <dd>
+      <div class="meta">
+        <div class="list-title mathjax"><span class="descriptor">Title:</span>
+          Derived jet and arc spaces
+        </div>
+        <div class="list-authors"><a href="https://arxiv.org/search/math?searchtype=author&amp;query=Docampo,+R">Roi Docampo</a>, <a href="https://arxiv.org/search/math?searchtype=author&amp;query=Miller,+L+E">Lance Edward Miller</a>, <a href="https://arxiv.org/search/math?searchtype=author&amp;query=Overton-Walker,+C+E">C. Eric Overton-Walker</a></div>
+
+
+
+        <div class="list-subjects"><span class="descriptor">Subjects:</span>
+          <span class="primary-subject">Algebraic Geometry (math.AG)</span>
+        </div>
+
+      </div>
+    </dd>
+    <dt>
+      <a name="item3">[3]</a>
+      <a href="/abs/2604.08146" title="Abstract" id="2604.08146">
+        arXiv:2604.08146
+      </a>
+      
+        [<a href="/pdf/2604.08146" title="Download PDF" id="pdf-2604.08146" aria-labelledby="pdf-2604.08146">pdf</a>, <a href="https://arxiv.org/html/2604.08146v1" title="View HTML" id="html-2604.08146" aria-labelledby="html-2604.08146" rel="noopener noreferrer" target="_blank">html</a>, <a href="/format/2604.08146" title="Other formats" id="oth-2604.08146" aria-labelledby="oth-2604.08146">other</a>]
+    </dt>
+    <dd>
+      <div class="meta">
+        <div class="list-title mathjax"><span class="descriptor">Title:</span>
+          On a descent conjecture of Wittenberg
+        </div>
+        <div class="list-authors"><a href="https://arxiv.org/search/math?searchtype=author&amp;query=Tian,+Y">Yisheng Tian</a></div>
+
+        <div class="list-comments mathjax"><span class="descriptor">Comments:</span>
+          All comments are welcome
+        </div>
+
+
+        <div class="list-subjects"><span class="descriptor">Subjects:</span>
+          <span class="primary-subject">Algebraic Geometry (math.AG)</span>; Number Theory (math.NT)
+        </div>
+
+      </div>
+    </dd>
+    <dt>
+      <a name="item4">[4]</a>
+      <a href="/abs/2604.08100" title="Abstract" id="2604.08100">
+        arXiv:2604.08100
+      </a>
+      
+        [<a href="/pdf/2604.08100" title="Download PDF" id="pdf-2604.08100" aria-labelledby="pdf-2604.08100">pdf</a>, <a href="https://arxiv.org/html/2604.08100v1" title="View HTML" id="html-2604.08100" aria-labelledby="html-2604.08100" rel="noopener noreferrer" target="_blank">html</a>, <a href="/format/2604.08100" title="Other formats" id="oth-2604.08100" aria-labelledby="oth-2604.08100">other</a>]
+    </dt>
+    <dd>
+      <div class="meta">
+        <div class="list-title mathjax"><span class="descriptor">Title:</span>
+          Rank one foliations on toroidal varieties
+        </div>
+        <div class="list-authors"><a href="https://arxiv.org/search/math?searchtype=author&amp;query=Spicer,+C">Calum Spicer</a>, <a href="https://arxiv.org/search/math?searchtype=author&amp;query=Tasin,+L">Luca Tasin</a></div>
+
+        <div class="list-comments mathjax"><span class="descriptor">Comments:</span>
+          20 pages
+        </div>
+
+
+        <div class="list-subjects"><span class="descriptor">Subjects:</span>
+          <span class="primary-subject">Algebraic Geometry (math.AG)</span>; Complex Variables (math.CV)
+        </div>
+
+      </div>
+    </dd>
+    <dt>
+      <a name="item5">[5]</a>
+      <a href="/abs/2604.08097" title="Abstract" id="2604.08097">
+        arXiv:2604.08097
+      </a>
+      
+        [<a href="/pdf/2604.08097" title="Download PDF" id="pdf-2604.08097" aria-labelledby="pdf-2604.08097">pdf</a>, <a href="/format/2604.08097" title="Other formats" id="oth-2604.08097" aria-labelledby="oth-2604.08097">other</a>]
+    </dt>
+    <dd>
+      <div class="meta">
+        <div class="list-title mathjax"><span class="descriptor">Title:</span>
+          Elementary links from prime Fano threefolds along two lines
+        </div>
+        <div class="list-authors"><a href="https://arxiv.org/search/math?searchtype=author&amp;query=Fujita,+K">Kento Fujita</a></div>
+
+        <div class="list-comments mathjax"><span class="descriptor">Comments:</span>
+          64 pages
+        </div>
+
+
+        <div class="list-subjects"><span class="descriptor">Subjects:</span>
+          <span class="primary-subject">Algebraic Geometry (math.AG)</span>
+        </div>
+
+      </div>
+    </dd>
+    <dt>
+      <a name="item6">[6]</a>
+      <a href="/abs/2604.08026" title="Abstract" id="2604.08026">
+        arXiv:2604.08026
+      </a>
+      
+        [<a href="/pdf/2604.08026" title="Download PDF" id="pdf-2604.08026" aria-labelledby="pdf-2604.08026">pdf</a>, <a href="https://arxiv.org/html/2604.08026v1" title="View HTML" id="html-2604.08026" aria-labelledby="html-2604.08026" rel="noopener noreferrer" target="_blank">html</a>, <a href="/format/2604.08026" title="Other formats" id="oth-2604.08026" aria-labelledby="oth-2604.08026">other</a>]
+    </dt>
+    <dd>
+      <div class="meta">
+        <div class="list-title mathjax"><span class="descriptor">Title:</span>
+          Quasi-Compactness in Infinite Dimension
+        </div>
+        <div class="list-authors"><a href="https://arxiv.org/search/math?searchtype=author&amp;query=Zeidler,+A+B">A. Bernhard Zeidler</a></div>
+
+
+
+        <div class="list-subjects"><span class="descriptor">Subjects:</span>
+          <span class="primary-subject">Algebraic Geometry (math.AG)</span>
+        </div>
+
+      </div>
+    </dd>
+    <dt>
+      <a name="item7">[7]</a>
+      <a href="/abs/2604.07876" title="Abstract" id="2604.07876">
+        arXiv:2604.07876
+      </a>
+      
+        [<a href="/pdf/2604.07876" title="Download PDF" id="pdf-2604.07876" aria-labelledby="pdf-2604.07876">pdf</a>, <a href="https://arxiv.org/html/2604.07876v1" title="View HTML" id="html-2604.07876" aria-labelledby="html-2604.07876" rel="noopener noreferrer" target="_blank">html</a>, <a href="/format/2604.07876" title="Other formats" id="oth-2604.07876" aria-labelledby="oth-2604.07876">other</a>]
+    </dt>
+    <dd>
+      <div class="meta">
+        <div class="list-title mathjax"><span class="descriptor">Title:</span>
+          The parity of theta characteristics is preserved by infinitesimal deformations
+        </div>
+        <div class="list-authors"><a href="https://arxiv.org/search/math?searchtype=author&amp;query=Lopes,+M+M">Margarida Mendes Lopes</a>, <a href="https://arxiv.org/search/math?searchtype=author&amp;query=Pardini,+R">Rita Pardini</a>, <a href="https://arxiv.org/search/math?searchtype=author&amp;query=Pignatelli,+R">Roberto Pignatelli</a></div>
+
+        <div class="list-comments mathjax"><span class="descriptor">Comments:</span>
+          9 pages, comments are welcome
+        </div>
+
+
+        <div class="list-subjects"><span class="descriptor">Subjects:</span>
+          <span class="primary-subject">Algebraic Geometry (math.AG)</span>
+        </div>
+
+      </div>
+    </dd>
+    <dt>
+      <a name="item8">[8]</a>
+      <a href="/abs/2604.07519" title="Abstract" id="2604.07519">
+        arXiv:2604.07519
+      </a>
+      
+        [<a href="/pdf/2604.07519" title="Download PDF" id="pdf-2604.07519" aria-labelledby="pdf-2604.07519">pdf</a>, <a href="https://arxiv.org/html/2604.07519v1" title="View HTML" id="html-2604.07519" aria-labelledby="html-2604.07519" rel="noopener noreferrer" target="_blank">html</a>, <a href="/format/2604.07519" title="Other formats" id="oth-2604.07519" aria-labelledby="oth-2604.07519">other</a>]
+    </dt>
+    <dd>
+      <div class="meta">
+        <div class="list-title mathjax"><span class="descriptor">Title:</span>
+          A one-step counterexample to the normalized Nash blowup conjecture
+        </div>
+        <div class="list-authors"><a href="https://arxiv.org/search/math?searchtype=author&amp;query=Liendo,+A">Alvaro Liendo</a>, <a href="https://arxiv.org/search/math?searchtype=author&amp;query=Palomino,+A+J">Ana Julisa Palomino</a>, <a href="https://arxiv.org/search/math?searchtype=author&amp;query=Rodr%C3%ADguez,+G">Gonzalo Rodríguez</a></div>
+
+        <div class="list-comments mathjax"><span class="descriptor">Comments:</span>
+          8 pages
+        </div>
+
+
+        <div class="list-subjects"><span class="descriptor">Subjects:</span>
+          <span class="primary-subject">Algebraic Geometry (math.AG)</span>
+        </div>
+
+      </div>
+    </dd>
+    <dt>
+      <a name="item9">[9]</a>
+      <a href="/abs/2604.07444" title="Abstract" id="2604.07444">
+        arXiv:2604.07444
+      </a>
+          (cross-list from hep-th)
+
+        [<a href="/pdf/2604.07444" title="Download PDF" id="pdf-2604.07444" aria-labelledby="pdf-2604.07444">pdf</a>, <a href="https://arxiv.org/html/2604.07444v1" title="View HTML" id="html-2604.07444" aria-labelledby="html-2604.07444" rel="noopener noreferrer" target="_blank">html</a>, <a href="/format/2604.07444" title="Other formats" id="oth-2604.07444" aria-labelledby="oth-2604.07444">other</a>]
+    </dt>
+    <dd>
+      <div class="meta">
+        <div class="list-title mathjax"><span class="descriptor">Title:</span>
+          Resurgence of high-energy string amplitudes
+        </div>
+        <div class="list-authors"><a href="https://arxiv.org/search/hep-th?searchtype=author&amp;query=Kervyn,+X">Xavier Kervyn</a>, <a href="https://arxiv.org/search/hep-th?searchtype=author&amp;query=Stieberger,+S">Stephan Stieberger</a></div>
+
+        <div class="list-comments mathjax"><span class="descriptor">Comments:</span>
+          62 pages, 10 figs, LaTeX
+        </div>
+
+
+        <div class="list-subjects"><span class="descriptor">Subjects:</span>
+          <span class="primary-subject">High Energy Physics - Theory (hep-th)</span>; Mathematical Physics (math-ph); Algebraic Geometry (math.AG); Number Theory (math.NT)
+        </div>
+
+      </div>
+    </dd>
+</dl>
+
+      <dl id="articles">
+    <h3>Thu, 9 Apr 2026 (showing 17 of 17 entries )</h3>
+
+
+    <dt>
+      <a name="item10">[10]</a>
+      <a href="/abs/2604.07270" title="Abstract" id="2604.07270">
+        arXiv:2604.07270
+      </a>
+      
+        [<a href="/pdf/2604.07270" title="Download PDF" id="pdf-2604.07270" aria-labelledby="pdf-2604.07270">pdf</a>, <a href="https://arxiv.org/html/2604.07270v1" title="View HTML" id="html-2604.07270" aria-labelledby="html-2604.07270" rel="noopener noreferrer" target="_blank">html</a>, <a href="/format/2604.07270" title="Other formats" id="oth-2604.07270" aria-labelledby="oth-2604.07270">other</a>]
+    </dt>
+    <dd>
+      <div class="meta">
+        <div class="list-title mathjax"><span class="descriptor">Title:</span>
+          Reconstruction of F-cohomological field theories on moduli of compact type
+        </div>
+        <div class="list-authors"><a href="https://arxiv.org/search/math?searchtype=author&amp;query=Borot,+G">Gaëtan Borot</a>, <a href="https://arxiv.org/search/math?searchtype=author&amp;query=Ragni,+S">Silvia Ragni</a>, <a href="https://arxiv.org/search/math?searchtype=author&amp;query=Rossi,+P">Paolo Rossi</a></div>
+
+        <div class="list-comments mathjax"><span class="descriptor">Comments:</span>
+          39 pages, 15 figures
+        </div>
+
+
+        <div class="list-subjects"><span class="descriptor">Subjects:</span>
+          <span class="primary-subject">Algebraic Geometry (math.AG)</span>; Mathematical Physics (math-ph)
+        </div>
+
+      </div>
+    </dd>
+    <dt>
+      <a name="item11">[11]</a>
+      <a href="/abs/2604.07255" title="Abstract" id="2604.07255">
+        arXiv:2604.07255
+      </a>
+      
+        [<a href="/pdf/2604.07255" title="Download PDF" id="pdf-2604.07255" aria-labelledby="pdf-2604.07255">pdf</a>, <a href="https://arxiv.org/html/2604.07255v1" title="View HTML" id="html-2604.07255" aria-labelledby="html-2604.07255" rel="noopener noreferrer" target="_blank">html</a>, <a href="/format/2604.07255" title="Other formats" id="oth-2604.07255" aria-labelledby="oth-2604.07255">other</a>]
+    </dt>
+    <dd>
+      <div class="meta">
+        <div class="list-title mathjax"><span class="descriptor">Title:</span>
+          Stable degeneration and birational geometry
+        </div>
+        <div class="list-authors"><a href="https://arxiv.org/search/math?searchtype=author&amp;query=Qi,+L">Lu Qi</a></div>
+
+        <div class="list-comments mathjax"><span class="descriptor">Comments:</span>
+          11 pages; to appear in Proceeding of Kinosaki Algebraic Geometry Symposium 2025; minor reference update
+        </div>
+
+
+        <div class="list-subjects"><span class="descriptor">Subjects:</span>
+          <span class="primary-subject">Algebraic Geometry (math.AG)</span>
+        </div>
+
+      </div>
+    </dd>
+    <dt>
+      <a name="item12">[12]</a>
+      <a href="/abs/2604.07252" title="Abstract" id="2604.07252">
+        arXiv:2604.07252
+      </a>
+      
+        [<a href="/pdf/2604.07252" title="Download PDF" id="pdf-2604.07252" aria-labelledby="pdf-2604.07252">pdf</a>, <a href="https://arxiv.org/html/2604.07252v1" title="View HTML" id="html-2604.07252" aria-labelledby="html-2604.07252" rel="noopener noreferrer" target="_blank">html</a>, <a href="/format/2604.07252" title="Other formats" id="oth-2604.07252" aria-labelledby="oth-2604.07252">other</a>]
+    </dt>
+    <dd>
+      <div class="meta">
+        <div class="list-title mathjax"><span class="descriptor">Title:</span>
+          A note on b-divisors and filtrations on a local ring
+        </div>
+        <div class="list-authors"><a href="https://arxiv.org/search/math?searchtype=author&amp;query=Qi,+L">Lu Qi</a></div>
+
+        <div class="list-comments mathjax"><span class="descriptor">Comments:</span>
+          11 pages; comments are most welcome!
+        </div>
+
+
+        <div class="list-subjects"><span class="descriptor">Subjects:</span>
+          <span class="primary-subject">Algebraic Geometry (math.AG)</span>
+        </div>
+
+      </div>
+    </dd>
+    <dt>
+      <a name="item13">[13]</a>
+      <a href="/abs/2604.07217" title="Abstract" id="2604.07217">
+        arXiv:2604.07217
+      </a>
+      
+        [<a href="/pdf/2604.07217" title="Download PDF" id="pdf-2604.07217" aria-labelledby="pdf-2604.07217">pdf</a>, <a href="https://arxiv.org/html/2604.07217v1" title="View HTML" id="html-2604.07217" aria-labelledby="html-2604.07217" rel="noopener noreferrer" target="_blank">html</a>, <a href="/format/2604.07217" title="Other formats" id="oth-2604.07217" aria-labelledby="oth-2604.07217">other</a>]
+    </dt>
+    <dd>
+      <div class="meta">
+        <div class="list-title mathjax"><span class="descriptor">Title:</span>
+          A note on Bondal's conjecture
+        </div>
+        <div class="list-authors"><a href="https://arxiv.org/search/math?searchtype=author&amp;query=Aza,+D">Darío Aza</a></div>
+
+
+
+        <div class="list-subjects"><span class="descriptor">Subjects:</span>
+          <span class="primary-subject">Algebraic Geometry (math.AG)</span>
+        </div>
+
+      </div>
+    </dd>
+    <dt>
+      <a name="item14">[14]</a>
+      <a href="/abs/2604.07056" title="Abstract" id="2604.07056">
+        arXiv:2604.07056
+      </a>
+      
+        [<a href="/pdf/2604.07056" title="Download PDF" id="pdf-2604.07056" aria-labelledby="pdf-2604.07056">pdf</a>, <a href="https://arxiv.org/html/2604.07056v1" title="View HTML" id="html-2604.07056" aria-labelledby="html-2604.07056" rel="noopener noreferrer" target="_blank">html</a>, <a href="/format/2604.07056" title="Other formats" id="oth-2604.07056" aria-labelledby="oth-2604.07056">other</a>]
+    </dt>
+    <dd>
+      <div class="meta">
+        <div class="list-title mathjax"><span class="descriptor">Title:</span>
+          On computing the spherical roots for a class of spherical subgroups
+        </div>
+        <div class="list-authors"><a href="https://arxiv.org/search/math?searchtype=author&amp;query=Avdeev,+R">Roman Avdeev</a></div>
+
+        <div class="list-comments mathjax"><span class="descriptor">Comments:</span>
+          v1: 27 pages
+        </div>
+
+
+        <div class="list-subjects"><span class="descriptor">Subjects:</span>
+          <span class="primary-subject">Algebraic Geometry (math.AG)</span>; Group Theory (math.GR)
+        </div>
+
+      </div>
+    </dd>
+    <dt>
+      <a name="item15">[15]</a>
+      <a href="/abs/2604.06991" title="Abstract" id="2604.06991">
+        arXiv:2604.06991
+      </a>
+      
+        [<a href="/pdf/2604.06991" title="Download PDF" id="pdf-2604.06991" aria-labelledby="pdf-2604.06991">pdf</a>, <a href="https://arxiv.org/html/2604.06991v1" title="View HTML" id="html-2604.06991" aria-labelledby="html-2604.06991" rel="noopener noreferrer" target="_blank">html</a>, <a href="/format/2604.06991" title="Other formats" id="oth-2604.06991" aria-labelledby="oth-2604.06991">other</a>]
+    </dt>
+    <dd>
+      <div class="meta">
+        <div class="list-title mathjax"><span class="descriptor">Title:</span>
+          The Deligne-Simpson problem via 2-Calabi-Yau categories
+        </div>
+        <div class="list-authors"><a href="https://arxiv.org/search/math?searchtype=author&amp;query=Hennecart,+L">Lucien Hennecart</a></div>
+
+        <div class="list-comments mathjax"><span class="descriptor">Comments:</span>
+          14 pages, comments are welcome
+        </div>
+
+
+        <div class="list-subjects"><span class="descriptor">Subjects:</span>
+          <span class="primary-subject">Algebraic Geometry (math.AG)</span>; Representation Theory (math.RT)
+        </div>
+
+      </div>
+    </dd>
+    <dt>
+      <a name="item16">[16]</a>
+      <a href="/abs/2604.06979" title="Abstract" id="2604.06979">
+        arXiv:2604.06979
+      </a>
+      
+        [<a href="/pdf/2604.06979" title="Download PDF" id="pdf-2604.06979" aria-labelledby="pdf-2604.06979">pdf</a>, <a href="https://arxiv.org/html/2604.06979v1" title="View HTML" id="html-2604.06979" aria-labelledby="html-2604.06979" rel="noopener noreferrer" target="_blank">html</a>, <a href="/format/2604.06979" title="Other formats" id="oth-2604.06979" aria-labelledby="oth-2604.06979">other</a>]
+    </dt>
+    <dd>
+      <div class="meta">
+        <div class="list-title mathjax"><span class="descriptor">Title:</span>
+          A note on complex Lie Algebras isomorphic to their conjugate
+        </div>
+        <div class="list-authors"><a href="https://arxiv.org/search/math?searchtype=author&amp;query=Demarche,+C">Cyril Demarche</a></div>
+
+        <div class="list-comments mathjax"><span class="descriptor">Comments:</span>
+          6 pages
+        </div>
+
+
+        <div class="list-subjects"><span class="descriptor">Subjects:</span>
+          <span class="primary-subject">Algebraic Geometry (math.AG)</span>; Number Theory (math.NT); Representation Theory (math.RT)
+        </div>
+
+      </div>
+    </dd>
+    <dt>
+      <a name="item17">[17]</a>
+      <a href="/abs/2604.06851" title="Abstract" id="2604.06851">
+        arXiv:2604.06851
+      </a>
+      
+        [<a href="/pdf/2604.06851" title="Download PDF" id="pdf-2604.06851" aria-labelledby="pdf-2604.06851">pdf</a>, <a href="/format/2604.06851" title="Other formats" id="oth-2604.06851" aria-labelledby="oth-2604.06851">other</a>]
+    </dt>
+    <dd>
+      <div class="meta">
+        <div class="list-title mathjax"><span class="descriptor">Title:</span>
+          A symplectic fourfold
+        </div>
+        <div class="list-authors"><a href="https://arxiv.org/search/math?searchtype=author&amp;query=Donten-Bury,+M">Maria Donten-Bury</a>, <a href="https://arxiv.org/search/math?searchtype=author&amp;query=Kapustka,+G">Grzegorz Kapustka</a>, <a href="https://arxiv.org/search/math?searchtype=author&amp;query=Piroddi,+B">Benedetta Piroddi</a>, <a href="https://arxiv.org/search/math?searchtype=author&amp;query=Wawak,+T">Tomasz Wawak</a></div>
+
+        <div class="list-comments mathjax"><span class="descriptor">Comments:</span>
+          32 pages, comments welcome
+        </div>
+
+
+        <div class="list-subjects"><span class="descriptor">Subjects:</span>
+          <span class="primary-subject">Algebraic Geometry (math.AG)</span>
+        </div>
+
+      </div>
+    </dd>
+    <dt>
+      <a name="item18">[18]</a>
+      <a href="/abs/2604.06630" title="Abstract" id="2604.06630">
+        arXiv:2604.06630
+      </a>
+      
+        [<a href="/pdf/2604.06630" title="Download PDF" id="pdf-2604.06630" aria-labelledby="pdf-2604.06630">pdf</a>, <a href="https://arxiv.org/html/2604.06630v1" title="View HTML" id="html-2604.06630" aria-labelledby="html-2604.06630" rel="noopener noreferrer" target="_blank">html</a>, <a href="/format/2604.06630" title="Other formats" id="oth-2604.06630" aria-labelledby="oth-2604.06630">other</a>]
+    </dt>
+    <dd>
+      <div class="meta">
+        <div class="list-title mathjax"><span class="descriptor">Title:</span>
+          Differential graded categories in holomorphic symplectic geometry
+        </div>
+        <div class="list-authors"><a href="https://arxiv.org/search/math?searchtype=author&amp;query=Mladenov,+B">Borislav Mladenov</a></div>
+
+        <div class="list-comments mathjax"><span class="descriptor">Comments:</span>
+          50pp., comments welcome
+        </div>
+
+
+        <div class="list-subjects"><span class="descriptor">Subjects:</span>
+          <span class="primary-subject">Algebraic Geometry (math.AG)</span>; Quantum Algebra (math.QA); Representation Theory (math.RT)
+        </div>
+
+      </div>
+    </dd>
+    <dt>
+      <a name="item19">[19]</a>
+      <a href="/abs/2604.06601" title="Abstract" id="2604.06601">
+        arXiv:2604.06601
+      </a>
+      
+        [<a href="/pdf/2604.06601" title="Download PDF" id="pdf-2604.06601" aria-labelledby="pdf-2604.06601">pdf</a>, <a href="https://arxiv.org/html/2604.06601v1" title="View HTML" id="html-2604.06601" aria-labelledby="html-2604.06601" rel="noopener noreferrer" target="_blank">html</a>, <a href="/format/2604.06601" title="Other formats" id="oth-2604.06601" aria-labelledby="oth-2604.06601">other</a>]
+    </dt>
+    <dd>
+      <div class="meta">
+        <div class="list-title mathjax"><span class="descriptor">Title:</span>
+          Cohomological aspects of power ideals
+        </div>
+        <div class="list-authors"><a href="https://arxiv.org/search/math?searchtype=author&amp;query=Crowley,+C">Colin Crowley</a>, <a href="https://arxiv.org/search/math?searchtype=author&amp;query=Larson,+M">Matt Larson</a></div>
+
+        <div class="list-comments mathjax"><span class="descriptor">Comments:</span>
+          33 pages. Comments welcome!
+        </div>
+
+
+        <div class="list-subjects"><span class="descriptor">Subjects:</span>
+          <span class="primary-subject">Algebraic Geometry (math.AG)</span>; Combinatorics (math.CO)
+        </div>
+
+      </div>
+    </dd>
+    <dt>
+      <a name="item20">[20]</a>
+      <a href="/abs/2604.06597" title="Abstract" id="2604.06597">
+        arXiv:2604.06597
+      </a>
+      
+        [<a href="/pdf/2604.06597" title="Download PDF" id="pdf-2604.06597" aria-labelledby="pdf-2604.06597">pdf</a>, <a href="https://arxiv.org/html/2604.06597v1" title="View HTML" id="html-2604.06597" aria-labelledby="html-2604.06597" rel="noopener noreferrer" target="_blank">html</a>, <a href="/format/2604.06597" title="Other formats" id="oth-2604.06597" aria-labelledby="oth-2604.06597">other</a>]
+    </dt>
+    <dd>
+      <div class="meta">
+        <div class="list-title mathjax"><span class="descriptor">Title:</span>
+          Finite-Node Perverse Schobers and Corrected Extensions for Conifold Degenerations
+        </div>
+        <div class="list-authors"><a href="https://arxiv.org/search/math?searchtype=author&amp;query=Rahman,+A">Abdul Rahman</a></div>
+
+        <div class="list-comments mathjax"><span class="descriptor">Comments:</span>
+          Initial draft
+        </div>
+
+
+        <div class="list-subjects"><span class="descriptor">Subjects:</span>
+          <span class="primary-subject">Algebraic Geometry (math.AG)</span>; Category Theory (math.CT)
+        </div>
+
+      </div>
+    </dd>
+    <dt>
+      <a name="item21">[21]</a>
+      <a href="/abs/2604.06320" title="Abstract" id="2604.06320">
+        arXiv:2604.06320
+      </a>
+      
+        [<a href="/pdf/2604.06320" title="Download PDF" id="pdf-2604.06320" aria-labelledby="pdf-2604.06320">pdf</a>, <a href="/format/2604.06320" title="Other formats" id="oth-2604.06320" aria-labelledby="oth-2604.06320">other</a>]
+    </dt>
+    <dd>
+      <div class="meta">
+        <div class="list-title mathjax"><span class="descriptor">Title:</span>
+          Factorizations of Moduli Morphisms and Universal Maps to Deligne-Mumford Stacks
+        </div>
+        <div class="list-authors"><a href="https://arxiv.org/search/math?searchtype=author&amp;query=Landi,+A">Alberto Landi</a></div>
+
+        <div class="list-comments mathjax"><span class="descriptor">Comments:</span>
+          Comments welcome!
+        </div>
+
+
+        <div class="list-subjects"><span class="descriptor">Subjects:</span>
+          <span class="primary-subject">Algebraic Geometry (math.AG)</span>
+        </div>
+
+      </div>
+    </dd>
+    <dt>
+      <a name="item22">[22]</a>
+      <a href="/abs/2604.07243" title="Abstract" id="2604.07243">
+        arXiv:2604.07243
+      </a>
+          (cross-list from math.GR)
+
+        [<a href="/pdf/2604.07243" title="Download PDF" id="pdf-2604.07243" aria-labelledby="pdf-2604.07243">pdf</a>, <a href="https://arxiv.org/html/2604.07243v1" title="View HTML" id="html-2604.07243" aria-labelledby="html-2604.07243" rel="noopener noreferrer" target="_blank">html</a>, <a href="/format/2604.07243" title="Other formats" id="oth-2604.07243" aria-labelledby="oth-2604.07243">other</a>]
+    </dt>
+    <dd>
+      <div class="meta">
+        <div class="list-title mathjax"><span class="descriptor">Title:</span>
+          Chevalley groups, commutative rings, class-preserving endomorphisms, locally inner endomorphisms, Sha-rigidity
+        </div>
+        <div class="list-authors"><a href="https://arxiv.org/search/math?searchtype=author&amp;query=Bunina,+E">Elena Bunina</a>, <a href="https://arxiv.org/search/math?searchtype=author&amp;query=Kirakosyan,+V">Vazgen Kirakosyan</a>, <a href="https://arxiv.org/search/math?searchtype=author&amp;query=Treskunov,+R">Rachel Treskunov</a></div>
+
+
+
+        <div class="list-subjects"><span class="descriptor">Subjects:</span>
+          <span class="primary-subject">Group Theory (math.GR)</span>; Algebraic Geometry (math.AG)
+        </div>
+
+      </div>
+    </dd>
+    <dt>
+      <a name="item23">[23]</a>
+      <a href="/abs/2604.07047" title="Abstract" id="2604.07047">
+        arXiv:2604.07047
+      </a>
+          (cross-list from math.NT)
+
+        [<a href="/pdf/2604.07047" title="Download PDF" id="pdf-2604.07047" aria-labelledby="pdf-2604.07047">pdf</a>, <a href="https://arxiv.org/html/2604.07047v1" title="View HTML" id="html-2604.07047" aria-labelledby="html-2604.07047" rel="noopener noreferrer" target="_blank">html</a>, <a href="/format/2604.07047" title="Other formats" id="oth-2604.07047" aria-labelledby="oth-2604.07047">other</a>]
+    </dt>
+    <dd>
+      <div class="meta">
+        <div class="list-title mathjax"><span class="descriptor">Title:</span>
+          Random conic bundle surfaces satisfy the Hasse principle
+        </div>
+        <div class="list-authors"><a href="https://arxiv.org/search/math?searchtype=author&amp;query=Frei,+C">Christopher Frei</a>, <a href="https://arxiv.org/search/math?searchtype=author&amp;query=Sofos,+E">Efthymios Sofos</a></div>
+
+
+
+        <div class="list-subjects"><span class="descriptor">Subjects:</span>
+          <span class="primary-subject">Number Theory (math.NT)</span>; Algebraic Geometry (math.AG)
+        </div>
+
+      </div>
+    </dd>
+    <dt>
+      <a name="item24">[24]</a>
+      <a href="/abs/2604.06775" title="Abstract" id="2604.06775">
+        arXiv:2604.06775
+      </a>
+          (cross-list from math.NT)
+
+        [<a href="/pdf/2604.06775" title="Download PDF" id="pdf-2604.06775" aria-labelledby="pdf-2604.06775">pdf</a>, <a href="https://arxiv.org/html/2604.06775v1" title="View HTML" id="html-2604.06775" aria-labelledby="html-2604.06775" rel="noopener noreferrer" target="_blank">html</a>, <a href="/format/2604.06775" title="Other formats" id="oth-2604.06775" aria-labelledby="oth-2604.06775">other</a>]
+    </dt>
+    <dd>
+      <div class="meta">
+        <div class="list-title mathjax"><span class="descriptor">Title:</span>
+          Boundary Cohomology of Sp6(Z): Trivial Representation
+        </div>
+        <div class="list-authors"><a href="https://arxiv.org/search/math?searchtype=author&amp;query=Mitoma,+R">Ryuto Mitoma</a></div>
+
+        <div class="list-comments mathjax"><span class="descriptor">Comments:</span>
+          40 pages
+        </div>
+
+
+        <div class="list-subjects"><span class="descriptor">Subjects:</span>
+          <span class="primary-subject">Number Theory (math.NT)</span>; Algebraic Geometry (math.AG)
+        </div>
+
+      </div>
+    </dd>
+    <dt>
+      <a name="item25">[25]</a>
+      <a href="/abs/2604.06575" title="Abstract" id="2604.06575">
+        arXiv:2604.06575
+      </a>
+          (cross-list from cs.MS)
+
+        [<a href="/pdf/2604.06575" title="Download PDF" id="pdf-2604.06575" aria-labelledby="pdf-2604.06575">pdf</a>, <a href="https://arxiv.org/html/2604.06575v2" title="View HTML" id="html-2604.06575" aria-labelledby="html-2604.06575" rel="noopener noreferrer" target="_blank">html</a>, <a href="/format/2604.06575" title="Other formats" id="oth-2604.06575" aria-labelledby="oth-2604.06575">other</a>]
+    </dt>
+    <dd>
+      <div class="meta">
+        <div class="list-title mathjax"><span class="descriptor">Title:</span>
+          Polylab: A MATLAB Toolbox for Multivariate Polynomial Modeling
+        </div>
+        <div class="list-authors"><a href="https://arxiv.org/search/cs?searchtype=author&amp;query=Niu,+Y">Yi-Shuai Niu</a>, <a href="https://arxiv.org/search/cs?searchtype=author&amp;query=Yau,+S">Shing-Tung Yau</a></div>
+
+        <div class="list-comments mathjax"><span class="descriptor">Comments:</span>
+          21 pages, 4 figures, 12 tables
+        </div>
+
+
+        <div class="list-subjects"><span class="descriptor">Subjects:</span>
+          <span class="primary-subject">Mathematical Software (cs.MS)</span>; Symbolic Computation (cs.SC); Algebraic Geometry (math.AG); Differential Geometry (math.DG); Optimization and Control (math.OC)
+        </div>
+
+      </div>
+    </dd>
+    <dt>
+      <a name="item26">[26]</a>
+      <a href="/abs/2604.06442" title="Abstract" id="2604.06442">
+        arXiv:2604.06442
+      </a>
+          (cross-list from math.NT)
+
+        [<a href="/pdf/2604.06442" title="Download PDF" id="pdf-2604.06442" aria-labelledby="pdf-2604.06442">pdf</a>, <a href="https://arxiv.org/html/2604.06442v1" title="View HTML" id="html-2604.06442" aria-labelledby="html-2604.06442" rel="noopener noreferrer" target="_blank">html</a>, <a href="/format/2604.06442" title="Other formats" id="oth-2604.06442" aria-labelledby="oth-2604.06442">other</a>]
+    </dt>
+    <dd>
+      <div class="meta">
+        <div class="list-title mathjax"><span class="descriptor">Title:</span>
+          On canonicity for integral models of Shimura varieties with hyperspecial level
+        </div>
+        <div class="list-authors"><a href="https://arxiv.org/search/math?searchtype=author&amp;query=Madapusi,+K">Keerthi Madapusi</a>, <a href="https://arxiv.org/search/math?searchtype=author&amp;query=Youcis,+A">Alex Youcis</a></div>
+
+        <div class="list-comments mathjax"><span class="descriptor">Comments:</span>
+          Comments welcome!
+        </div>
+
+
+        <div class="list-subjects"><span class="descriptor">Subjects:</span>
+          <span class="primary-subject">Number Theory (math.NT)</span>; Algebraic Geometry (math.AG)
+        </div>
+
+      </div>
+    </dd>
+</dl>
+
+      <dl id="articles">
+    <h3>Wed, 8 Apr 2026 (showing 20 of 20 entries )</h3>
+
+
+    <dt>
+      <a name="item27">[27]</a>
+      <a href="/abs/2604.06023" title="Abstract" id="2604.06023">
+        arXiv:2604.06023
+      </a>
+      
+        [<a href="/pdf/2604.06023" title="Download PDF" id="pdf-2604.06023" aria-labelledby="pdf-2604.06023">pdf</a>, <a href="https://arxiv.org/html/2604.06023v1" title="View HTML" id="html-2604.06023" aria-labelledby="html-2604.06023" rel="noopener noreferrer" target="_blank">html</a>, <a href="/format/2604.06023" title="Other formats" id="oth-2604.06023" aria-labelledby="oth-2604.06023">other</a>]
+    </dt>
+    <dd>
+      <div class="meta">
+        <div class="list-title mathjax"><span class="descriptor">Title:</span>
+          Rationality and symmetry of stable pairs generating series of Fano 3-folds
+        </div>
+        <div class="list-authors"><a href="https://arxiv.org/search/math?searchtype=author&amp;query=Karpov,+I">Ivan Karpov</a>, <a href="https://arxiv.org/search/math?searchtype=author&amp;query=Moreira,+M">Miguel Moreira</a></div>
+
+
+
+        <div class="list-subjects"><span class="descriptor">Subjects:</span>
+          <span class="primary-subject">Algebraic Geometry (math.AG)</span>; Combinatorics (math.CO)
+        </div>
+
+      </div>
+    </dd>
+    <dt>
+      <a name="item28">[28]</a>
+      <a href="/abs/2604.06003" title="Abstract" id="2604.06003">
+        arXiv:2604.06003
+      </a>
+      
+        [<a href="/pdf/2604.06003" title="Download PDF" id="pdf-2604.06003" aria-labelledby="pdf-2604.06003">pdf</a>, <a href="https://arxiv.org/html/2604.06003v1" title="View HTML" id="html-2604.06003" aria-labelledby="html-2604.06003" rel="noopener noreferrer" target="_blank">html</a>, <a href="/format/2604.06003" title="Other formats" id="oth-2604.06003" aria-labelledby="oth-2604.06003">other</a>]
+    </dt>
+    <dd>
+      <div class="meta">
+        <div class="list-title mathjax"><span class="descriptor">Title:</span>
+          Existence of holomorphic Lie algebroid connections in higher dimensions
+        </div>
+        <div class="list-authors"><a href="https://arxiv.org/search/math?searchtype=author&amp;query=Biswas,+I">Indranil Biswas</a>, <a href="https://arxiv.org/search/math?searchtype=author&amp;query=Singh,+A">Anoop Singh</a></div>
+
+        <div class="list-comments mathjax"><span class="descriptor">Comments:</span>
+          9 pages
+        </div>
+
+
+        <div class="list-subjects"><span class="descriptor">Subjects:</span>
+          <span class="primary-subject">Algebraic Geometry (math.AG)</span>
+        </div>
+
+      </div>
+    </dd>
+    <dt>
+      <a name="item29">[29]</a>
+      <a href="/abs/2604.05827" title="Abstract" id="2604.05827">
+        arXiv:2604.05827
+      </a>
+      
+        [<a href="/pdf/2604.05827" title="Download PDF" id="pdf-2604.05827" aria-labelledby="pdf-2604.05827">pdf</a>, <a href="https://arxiv.org/html/2604.05827v2" title="View HTML" id="html-2604.05827" aria-labelledby="html-2604.05827" rel="noopener noreferrer" target="_blank">html</a>, <a href="/format/2604.05827" title="Other formats" id="oth-2604.05827" aria-labelledby="oth-2604.05827">other</a>]
+    </dt>
+    <dd>
+      <div class="meta">
+        <div class="list-title mathjax"><span class="descriptor">Title:</span>
+          The Cone Conjecture for Enriques Surfaces in any Characteristic
+        </div>
+        <div class="list-authors"><a href="https://arxiv.org/search/math?searchtype=author&amp;query=Brandhorst,+S">Simon Brandhorst</a>, <a href="https://arxiv.org/search/math?searchtype=author&amp;query=Martin,+G">Gebhard Martin</a>, <a href="https://arxiv.org/search/math?searchtype=author&amp;query=Schnieders,+T">Tobias Schnieders</a></div>
+
+
+
+        <div class="list-subjects"><span class="descriptor">Subjects:</span>
+          <span class="primary-subject">Algebraic Geometry (math.AG)</span>
+        </div>
+
+      </div>
+    </dd>
+    <dt>
+      <a name="item30">[30]</a>
+      <a href="/abs/2604.05825" title="Abstract" id="2604.05825">
+        arXiv:2604.05825
+      </a>
+      
+        [<a href="/pdf/2604.05825" title="Download PDF" id="pdf-2604.05825" aria-labelledby="pdf-2604.05825">pdf</a>, <a href="https://arxiv.org/html/2604.05825v1" title="View HTML" id="html-2604.05825" aria-labelledby="html-2604.05825" rel="noopener noreferrer" target="_blank">html</a>, <a href="/format/2604.05825" title="Other formats" id="oth-2604.05825" aria-labelledby="oth-2604.05825">other</a>]
+    </dt>
+    <dd>
+      <div class="meta">
+        <div class="list-title mathjax"><span class="descriptor">Title:</span>
+          Hodge-to-de Rham degeneration and quasihomogeneous singularities of curves
+        </div>
+        <div class="list-authors"><a href="https://arxiv.org/search/math?searchtype=author&amp;query=He,+Y">Yunfan He</a></div>
+
+        <div class="list-comments mathjax"><span class="descriptor">Comments:</span>
+          27 pages
+        </div>
+
+
+        <div class="list-subjects"><span class="descriptor">Subjects:</span>
+          <span class="primary-subject">Algebraic Geometry (math.AG)</span>
+        </div>
+
+      </div>
+    </dd>
+    <dt>
+      <a name="item31">[31]</a>
+      <a href="/abs/2604.05740" title="Abstract" id="2604.05740">
+        arXiv:2604.05740
+      </a>
+      
+        [<a href="/pdf/2604.05740" title="Download PDF" id="pdf-2604.05740" aria-labelledby="pdf-2604.05740">pdf</a>, <a href="https://arxiv.org/html/2604.05740v1" title="View HTML" id="html-2604.05740" aria-labelledby="html-2604.05740" rel="noopener noreferrer" target="_blank">html</a>, <a href="/format/2604.05740" title="Other formats" id="oth-2604.05740" aria-labelledby="oth-2604.05740">other</a>]
+    </dt>
+    <dd>
+      <div class="meta">
+        <div class="list-title mathjax"><span class="descriptor">Title:</span>
+          Stability of syzygy bundles of Ulrich bundles
+        </div>
+        <div class="list-authors"><a href="https://arxiv.org/search/math?searchtype=author&amp;query=Mir%C3%B3-Roig,+R+M">Rosa M. Miró-Roig</a></div>
+
+        <div class="list-comments mathjax"><span class="descriptor">Comments:</span>
+          Mediterranean Journal of Mathematics, to appear
+        </div>
+
+
+        <div class="list-subjects"><span class="descriptor">Subjects:</span>
+          <span class="primary-subject">Algebraic Geometry (math.AG)</span>
+        </div>
+
+      </div>
+    </dd>
+    <dt>
+      <a name="item32">[32]</a>
+      <a href="/abs/2604.05664" title="Abstract" id="2604.05664">
+        arXiv:2604.05664
+      </a>
+      
+        [<a href="/pdf/2604.05664" title="Download PDF" id="pdf-2604.05664" aria-labelledby="pdf-2604.05664">pdf</a>, <a href="https://arxiv.org/html/2604.05664v1" title="View HTML" id="html-2604.05664" aria-labelledby="html-2604.05664" rel="noopener noreferrer" target="_blank">html</a>, <a href="/format/2604.05664" title="Other formats" id="oth-2604.05664" aria-labelledby="oth-2604.05664">other</a>]
+    </dt>
+    <dd>
+      <div class="meta">
+        <div class="list-title mathjax"><span class="descriptor">Title:</span>
+          The Pandharipande-Thomas rationality conjecture for superpositive curve classes on projective complex 3-manifolds
+        </div>
+        <div class="list-authors"><a href="https://arxiv.org/search/math?searchtype=author&amp;query=Anderson,+R">Reginald Anderson</a>, <a href="https://arxiv.org/search/math?searchtype=author&amp;query=Joyce,+D">Dominic Joyce</a></div>
+
+        <div class="list-comments mathjax"><span class="descriptor">Comments:</span>
+          38 pages
+        </div>
+
+
+        <div class="list-subjects"><span class="descriptor">Subjects:</span>
+          <span class="primary-subject">Algebraic Geometry (math.AG)</span>
+        </div>
+
+      </div>
+    </dd>
+    <dt>
+      <a name="item33">[33]</a>
+      <a href="/abs/2604.05659" title="Abstract" id="2604.05659">
+        arXiv:2604.05659
+      </a>
+      
+        [<a href="/pdf/2604.05659" title="Download PDF" id="pdf-2604.05659" aria-labelledby="pdf-2604.05659">pdf</a>, <a href="https://arxiv.org/html/2604.05659v1" title="View HTML" id="html-2604.05659" aria-labelledby="html-2604.05659" rel="noopener noreferrer" target="_blank">html</a>, <a href="/format/2604.05659" title="Other formats" id="oth-2604.05659" aria-labelledby="oth-2604.05659">other</a>]
+    </dt>
+    <dd>
+      <div class="meta">
+        <div class="list-title mathjax"><span class="descriptor">Title:</span>
+          Stable maps, multiplicities, and compactified Jacobians
+        </div>
+        <div class="list-authors"><a href="https://arxiv.org/search/math?searchtype=author&amp;query=Zhao,+Y">Yifan Zhao</a></div>
+
+        <div class="list-comments mathjax"><span class="descriptor">Comments:</span>
+          10 pages
+        </div>
+
+
+        <div class="list-subjects"><span class="descriptor">Subjects:</span>
+          <span class="primary-subject">Algebraic Geometry (math.AG)</span>
+        </div>
+
+      </div>
+    </dd>
+    <dt>
+      <a name="item34">[34]</a>
+      <a href="/abs/2604.05553" title="Abstract" id="2604.05553">
+        arXiv:2604.05553
+      </a>
+      
+        [<a href="/pdf/2604.05553" title="Download PDF" id="pdf-2604.05553" aria-labelledby="pdf-2604.05553">pdf</a>, <a href="/format/2604.05553" title="Other formats" id="oth-2604.05553" aria-labelledby="oth-2604.05553">other</a>]
+    </dt>
+    <dd>
+      <div class="meta">
+        <div class="list-title mathjax"><span class="descriptor">Title:</span>
+          Minimal-Degree Foliations on Cominuscule Grassmannians
+        </div>
+        <div class="list-authors"><a href="https://arxiv.org/search/math?searchtype=author&amp;query=Benedetti,+V">Vladimiro Benedetti</a> (LJAD), <a href="https://arxiv.org/search/math?searchtype=author&amp;query=Kuster,+C">Crislaine Kuster</a>, <a href="https://arxiv.org/search/math?searchtype=author&amp;query=Alan,+M">Muniz Alan</a> (UFPE)</div>
+
+
+
+        <div class="list-subjects"><span class="descriptor">Subjects:</span>
+          <span class="primary-subject">Algebraic Geometry (math.AG)</span>
+        </div>
+
+      </div>
+    </dd>
+    <dt>
+      <a name="item35">[35]</a>
+      <a href="/abs/2604.05534" title="Abstract" id="2604.05534">
+        arXiv:2604.05534
+      </a>
+      
+        [<a href="/pdf/2604.05534" title="Download PDF" id="pdf-2604.05534" aria-labelledby="pdf-2604.05534">pdf</a>, <a href="/format/2604.05534" title="Other formats" id="oth-2604.05534" aria-labelledby="oth-2604.05534">other</a>]
+    </dt>
+    <dd>
+      <div class="meta">
+        <div class="list-title mathjax"><span class="descriptor">Title:</span>
+          A Pardon Algebra for Zero-cycles
+        </div>
+        <div class="list-authors"><a href="https://arxiv.org/search/math?searchtype=author&amp;query=Behrend,+K">Kai Behrend</a></div>
+
+        <div class="list-comments mathjax"><span class="descriptor">Comments:</span>
+          48 pages, 1 figure
+        </div>
+
+
+        <div class="list-subjects"><span class="descriptor">Subjects:</span>
+          <span class="primary-subject">Algebraic Geometry (math.AG)</span>
+        </div>
+
+      </div>
+    </dd>
+    <dt>
+      <a name="item36">[36]</a>
+      <a href="/abs/2604.05411" title="Abstract" id="2604.05411">
+        arXiv:2604.05411
+      </a>
+      
+        [<a href="/pdf/2604.05411" title="Download PDF" id="pdf-2604.05411" aria-labelledby="pdf-2604.05411">pdf</a>, <a href="https://arxiv.org/html/2604.05411v1" title="View HTML" id="html-2604.05411" aria-labelledby="html-2604.05411" rel="noopener noreferrer" target="_blank">html</a>, <a href="/format/2604.05411" title="Other formats" id="oth-2604.05411" aria-labelledby="oth-2604.05411">other</a>]
+    </dt>
+    <dd>
+      <div class="meta">
+        <div class="list-title mathjax"><span class="descriptor">Title:</span>
+          Direct image and pullback of Parabolic vector bundles
+        </div>
+        <div class="list-authors"><a href="https://arxiv.org/search/math?searchtype=author&amp;query=Biswas,+I">Indranil Biswas</a>, <a href="https://arxiv.org/search/math?searchtype=author&amp;query=Gangopadhyay,+C">Chandranandan Gangopadhyay</a></div>
+
+        <div class="list-comments mathjax"><span class="descriptor">Comments:</span>
+          Final version
+        </div>
+
+
+        <div class="list-subjects"><span class="descriptor">Subjects:</span>
+          <span class="primary-subject">Algebraic Geometry (math.AG)</span>
+        </div>
+
+      </div>
+    </dd>
+    <dt>
+      <a name="item37">[37]</a>
+      <a href="/abs/2604.05369" title="Abstract" id="2604.05369">
+        arXiv:2604.05369
+      </a>
+      
+        [<a href="/pdf/2604.05369" title="Download PDF" id="pdf-2604.05369" aria-labelledby="pdf-2604.05369">pdf</a>, <a href="https://arxiv.org/html/2604.05369v1" title="View HTML" id="html-2604.05369" aria-labelledby="html-2604.05369" rel="noopener noreferrer" target="_blank">html</a>, <a href="/format/2604.05369" title="Other formats" id="oth-2604.05369" aria-labelledby="oth-2604.05369">other</a>]
+    </dt>
+    <dd>
+      <div class="meta">
+        <div class="list-title mathjax"><span class="descriptor">Title:</span>
+          Structure of the Anticanonical Minimal Model Program for Potentially klt Pairs
+        </div>
+        <div class="list-authors"><a href="https://arxiv.org/search/math?searchtype=author&amp;query=Kim,+D">Donghyeon Kim</a>, <a href="https://arxiv.org/search/math?searchtype=author&amp;query=Lee,+D">Dae-Won Lee</a></div>
+
+        <div class="list-comments mathjax"><span class="descriptor">Comments:</span>
+          Any comment is welcome
+        </div>
+
+
+        <div class="list-subjects"><span class="descriptor">Subjects:</span>
+          <span class="primary-subject">Algebraic Geometry (math.AG)</span>
+        </div>
+
+      </div>
+    </dd>
+    <dt>
+      <a name="item38">[38]</a>
+      <a href="/abs/2604.05367" title="Abstract" id="2604.05367">
+        arXiv:2604.05367
+      </a>
+      
+        [<a href="/pdf/2604.05367" title="Download PDF" id="pdf-2604.05367" aria-labelledby="pdf-2604.05367">pdf</a>, <a href="https://arxiv.org/html/2604.05367v1" title="View HTML" id="html-2604.05367" aria-labelledby="html-2604.05367" rel="noopener noreferrer" target="_blank">html</a>, <a href="/format/2604.05367" title="Other formats" id="oth-2604.05367" aria-labelledby="oth-2604.05367">other</a>]
+    </dt>
+    <dd>
+      <div class="meta">
+        <div class="list-title mathjax"><span class="descriptor">Title:</span>
+          Mixed Hodge Modules and Canonical Perverse Extensions for Multi-Node Conifold Degenerations
+        </div>
+        <div class="list-authors"><a href="https://arxiv.org/search/math?searchtype=author&amp;query=Rahman,+A">Abdul Rahman</a></div>
+
+        <div class="list-comments mathjax"><span class="descriptor">Comments:</span>
+          Initial draft
+        </div>
+
+
+        <div class="list-subjects"><span class="descriptor">Subjects:</span>
+          <span class="primary-subject">Algebraic Geometry (math.AG)</span>; Category Theory (math.CT)
+        </div>
+
+      </div>
+    </dd>
+    <dt>
+      <a name="item39">[39]</a>
+      <a href="/abs/2604.05293" title="Abstract" id="2604.05293">
+        arXiv:2604.05293
+      </a>
+      
+        [<a href="/pdf/2604.05293" title="Download PDF" id="pdf-2604.05293" aria-labelledby="pdf-2604.05293">pdf</a>, <a href="https://arxiv.org/html/2604.05293v1" title="View HTML" id="html-2604.05293" aria-labelledby="html-2604.05293" rel="noopener noreferrer" target="_blank">html</a>, <a href="/format/2604.05293" title="Other formats" id="oth-2604.05293" aria-labelledby="oth-2604.05293">other</a>]
+    </dt>
+    <dd>
+      <div class="meta">
+        <div class="list-title mathjax"><span class="descriptor">Title:</span>
+          Geometric singularities of regular surfaces with nef anti-canonical divisors over imperfect fields
+        </div>
+        <div class="list-authors"><a href="https://arxiv.org/search/math?searchtype=author&amp;query=Wang,+C">Chongning Wang</a>, <a href="https://arxiv.org/search/math?searchtype=author&amp;query=Zhang,+L">Lei Zhang</a></div>
+
+        <div class="list-comments mathjax"><span class="descriptor">Comments:</span>
+          13 pages
+        </div>
+
+
+        <div class="list-subjects"><span class="descriptor">Subjects:</span>
+          <span class="primary-subject">Algebraic Geometry (math.AG)</span>
+        </div>
+
+      </div>
+    </dd>
+    <dt>
+      <a name="item40">[40]</a>
+      <a href="/abs/2604.05233" title="Abstract" id="2604.05233">
+        arXiv:2604.05233
+      </a>
+      
+        [<a href="/pdf/2604.05233" title="Download PDF" id="pdf-2604.05233" aria-labelledby="pdf-2604.05233">pdf</a>, <a href="https://arxiv.org/html/2604.05233v1" title="View HTML" id="html-2604.05233" aria-labelledby="html-2604.05233" rel="noopener noreferrer" target="_blank">html</a>, <a href="/format/2604.05233" title="Other formats" id="oth-2604.05233" aria-labelledby="oth-2604.05233">other</a>]
+    </dt>
+    <dd>
+      <div class="meta">
+        <div class="list-title mathjax"><span class="descriptor">Title:</span>
+          Notes on acceptable bundles II
+        </div>
+        <div class="list-authors"><a href="https://arxiv.org/search/math?searchtype=author&amp;query=Fujino,+O">Osamu Fujino</a>, <a href="https://arxiv.org/search/math?searchtype=author&amp;query=Fujisawa,+T">Taro Fujisawa</a>, <a href="https://arxiv.org/search/math?searchtype=author&amp;query=Ono,+T">Takashi Ono</a></div>
+
+        <div class="list-comments mathjax"><span class="descriptor">Comments:</span>
+          41 pages
+        </div>
+
+
+        <div class="list-subjects"><span class="descriptor">Subjects:</span>
+          <span class="primary-subject">Algebraic Geometry (math.AG)</span>; Complex Variables (math.CV); Differential Geometry (math.DG)
+        </div>
+
+      </div>
+    </dd>
+    <dt>
+      <a name="item41">[41]</a>
+      <a href="/abs/2604.05148" title="Abstract" id="2604.05148">
+        arXiv:2604.05148
+      </a>
+      
+        [<a href="/pdf/2604.05148" title="Download PDF" id="pdf-2604.05148" aria-labelledby="pdf-2604.05148">pdf</a>, <a href="https://arxiv.org/html/2604.05148v1" title="View HTML" id="html-2604.05148" aria-labelledby="html-2604.05148" rel="noopener noreferrer" target="_blank">html</a>, <a href="/format/2604.05148" title="Other formats" id="oth-2604.05148" aria-labelledby="oth-2604.05148">other</a>]
+    </dt>
+    <dd>
+      <div class="meta">
+        <div class="list-title mathjax"><span class="descriptor">Title:</span>
+          On a Conjecture I for unirational algebraic groups over an imperfect field
+        </div>
+        <div class="list-authors"><a href="https://arxiv.org/search/math?searchtype=author&amp;query=Lourdeaux,+A">Alexandre Lourdeaux</a>, <a href="https://arxiv.org/search/math?searchtype=author&amp;query=Zidani,+A">Anis Zidani</a></div>
+
+
+
+        <div class="list-subjects"><span class="descriptor">Subjects:</span>
+          <span class="primary-subject">Algebraic Geometry (math.AG)</span>
+        </div>
+
+      </div>
+    </dd>
+    <dt>
+      <a name="item42">[42]</a>
+      <a href="/abs/2604.05092" title="Abstract" id="2604.05092">
+        arXiv:2604.05092
+      </a>
+      
+        [<a href="/pdf/2604.05092" title="Download PDF" id="pdf-2604.05092" aria-labelledby="pdf-2604.05092">pdf</a>, <a href="/format/2604.05092" title="Other formats" id="oth-2604.05092" aria-labelledby="oth-2604.05092">other</a>]
+    </dt>
+    <dd>
+      <div class="meta">
+        <div class="list-title mathjax"><span class="descriptor">Title:</span>
+          Frobenius nonclassicality of generalized Fermat curves with respect to conics
+        </div>
+        <div class="list-authors"><a href="https://arxiv.org/search/math?searchtype=author&amp;query=Arakelian,+N">Nazar Arakelian</a>, <a href="https://arxiv.org/search/math?searchtype=author&amp;query=Rodrigues,+L+A+M">Leandro A. M. Rodrigues</a></div>
+
+
+
+        <div class="list-subjects"><span class="descriptor">Subjects:</span>
+          <span class="primary-subject">Algebraic Geometry (math.AG)</span>; Number Theory (math.NT)
+        </div>
+
+      </div>
+    </dd>
+    <dt>
+      <a name="item43">[43]</a>
+      <a href="/abs/2604.05053" title="Abstract" id="2604.05053">
+        arXiv:2604.05053
+      </a>
+      
+        [<a href="/pdf/2604.05053" title="Download PDF" id="pdf-2604.05053" aria-labelledby="pdf-2604.05053">pdf</a>, <a href="/format/2604.05053" title="Other formats" id="oth-2604.05053" aria-labelledby="oth-2604.05053">other</a>]
+    </dt>
+    <dd>
+      <div class="meta">
+        <div class="list-title mathjax"><span class="descriptor">Title:</span>
+          Coherent sheaves in logarithmic geometry
+        </div>
+        <div class="list-authors"><a href="https://arxiv.org/search/math?searchtype=author&amp;query=Dell,+H">Hannah Dell</a>, <a href="https://arxiv.org/search/math?searchtype=author&amp;query=Hu,+X">Xianyu Hu</a>, <a href="https://arxiv.org/search/math?searchtype=author&amp;query=Kennedy-Hunt,+P">Patrick Kennedy-Hunt</a>, <a href="https://arxiv.org/search/math?searchtype=author&amp;query=Rahul,+K+M">Kabeer Manali Rahul</a>, <a href="https://arxiv.org/search/math?searchtype=author&amp;query=Schimpf,+M">Maximilian Schimpf</a></div>
+
+        <div class="list-comments mathjax"><span class="descriptor">Comments:</span>
+          47 pages, comments welcome
+        </div>
+
+
+        <div class="list-subjects"><span class="descriptor">Subjects:</span>
+          <span class="primary-subject">Algebraic Geometry (math.AG)</span>
+        </div>
+
+      </div>
+    </dd>
+    <dt>
+      <a name="item44">[44]</a>
+      <a href="/abs/2604.06144" title="Abstract" id="2604.06144">
+        arXiv:2604.06144
+      </a>
+          (cross-list from math.LO)
+
+        [<a href="/pdf/2604.06144" title="Download PDF" id="pdf-2604.06144" aria-labelledby="pdf-2604.06144">pdf</a>, <a href="https://arxiv.org/html/2604.06144v1" title="View HTML" id="html-2604.06144" aria-labelledby="html-2604.06144" rel="noopener noreferrer" target="_blank">html</a>, <a href="/format/2604.06144" title="Other formats" id="oth-2604.06144" aria-labelledby="oth-2604.06144">other</a>]
+    </dt>
+    <dd>
+      <div class="meta">
+        <div class="list-title mathjax"><span class="descriptor">Title:</span>
+          Analytically generated sharply o-minimal structures
+        </div>
+        <div class="list-authors"><a href="https://arxiv.org/search/math?searchtype=author&amp;query=Carmon,+O">Oded Carmon</a></div>
+
+        <div class="list-comments mathjax"><span class="descriptor">Comments:</span>
+          18 pages
+        </div>
+
+
+        <div class="list-subjects"><span class="descriptor">Subjects:</span>
+          <span class="primary-subject">Logic (math.LO)</span>; Algebraic Geometry (math.AG); Number Theory (math.NT)
+        </div>
+
+      </div>
+    </dd>
+    <dt>
+      <a name="item45">[45]</a>
+      <a href="/abs/2604.05625" title="Abstract" id="2604.05625">
+        arXiv:2604.05625
+      </a>
+          (cross-list from math.CV)
+
+        [<a href="/pdf/2604.05625" title="Download PDF" id="pdf-2604.05625" aria-labelledby="pdf-2604.05625">pdf</a>, <a href="https://arxiv.org/html/2604.05625v1" title="View HTML" id="html-2604.05625" aria-labelledby="html-2604.05625" rel="noopener noreferrer" target="_blank">html</a>, <a href="/format/2604.05625" title="Other formats" id="oth-2604.05625" aria-labelledby="oth-2604.05625">other</a>]
+    </dt>
+    <dd>
+      <div class="meta">
+        <div class="list-title mathjax"><span class="descriptor">Title:</span>
+          Étale cohomology of Stein algebras
+        </div>
+        <div class="list-authors"><a href="https://arxiv.org/search/math?searchtype=author&amp;query=Benoist,+O">Olivier Benoist</a></div>
+
+        <div class="list-comments mathjax"><span class="descriptor">Comments:</span>
+          29 pages
+        </div>
+
+
+        <div class="list-subjects"><span class="descriptor">Subjects:</span>
+          <span class="primary-subject">Complex Variables (math.CV)</span>; Algebraic Geometry (math.AG)
+        </div>
+
+      </div>
+    </dd>
+    <dt>
+      <a name="item46">[46]</a>
+      <a href="/abs/2604.04378" title="Abstract" id="2604.04378">
+        arXiv:2604.04378
+      </a>
+          (cross-list from math.RT)
+
+        [<a href="/pdf/2604.04378" title="Download PDF" id="pdf-2604.04378" aria-labelledby="pdf-2604.04378">pdf</a>, <a href="https://arxiv.org/html/2604.04378v1" title="View HTML" id="html-2604.04378" aria-labelledby="html-2604.04378" rel="noopener noreferrer" target="_blank">html</a>, <a href="/format/2604.04378" title="Other formats" id="oth-2604.04378" aria-labelledby="oth-2604.04378">other</a>]
+    </dt>
+    <dd>
+      <div class="meta">
+        <div class="list-title mathjax"><span class="descriptor">Title:</span>
+          Relativistic Toda lattice of type B and quantum <span class="MathJax_Preview" style="">K</span><span class="MathJax MathJax_Processing" id="MathJax-Element-1-Frame" tabindex="0" style=""></span><script type="math/tex" id="MathJax-Element-1">K</script>-theory of type C flag variety
+        </div>
+        <div class="list-authors"><a href="https://arxiv.org/search/math?searchtype=author&amp;query=Ikeda,+T">Takeshi Ikeda</a>, <a href="https://arxiv.org/search/math?searchtype=author&amp;query=Iwao,+S">Shinsuke Iwao</a>, <a href="https://arxiv.org/search/math?searchtype=author&amp;query=Kouno,+T">Takafumi Kouno</a>, <a href="https://arxiv.org/search/math?searchtype=author&amp;query=Naito,+S">Satoshi Naito</a>, <a href="https://arxiv.org/search/math?searchtype=author&amp;query=Yamaguchi,+K">Kohei Yamaguchi</a></div>
+
+        <div class="list-comments mathjax"><span class="descriptor">Comments:</span>
+          13 pages, 1 figure
+        </div>
+
+
+        <div class="list-subjects"><span class="descriptor">Subjects:</span>
+          <span class="primary-subject">Representation Theory (math.RT)</span>; Mathematical Physics (math-ph); Algebraic Geometry (math.AG)
+        </div>
+
+      </div>
+    </dd>
+</dl>
+
+      <dl id="articles">
+    <h3>Tue, 7 Apr 2026 (showing first 4 of 21 entries )</h3>
+
+
+    <dt>
+      <a name="item47">[47]</a>
+      <a href="/abs/2604.04762" title="Abstract" id="2604.04762">
+        arXiv:2604.04762
+      </a>
+      
+        [<a href="/pdf/2604.04762" title="Download PDF" id="pdf-2604.04762" aria-labelledby="pdf-2604.04762">pdf</a>, <a href="https://arxiv.org/html/2604.04762v1" title="View HTML" id="html-2604.04762" aria-labelledby="html-2604.04762" rel="noopener noreferrer" target="_blank">html</a>, <a href="/format/2604.04762" title="Other formats" id="oth-2604.04762" aria-labelledby="oth-2604.04762">other</a>]
+    </dt>
+    <dd>
+      <div class="meta">
+        <div class="list-title mathjax"><span class="descriptor">Title:</span>
+          Isotropy subgroups of homogeneous locally nilpotent derivations
+        </div>
+        <div class="list-authors"><a href="https://arxiv.org/search/math?searchtype=author&amp;query=Chunaev,+D">Dmitriy Chunaev</a>, <a href="https://arxiv.org/search/math?searchtype=author&amp;query=Evdokimova,+P">Polina Evdokimova</a></div>
+
+
+
+        <div class="list-subjects"><span class="descriptor">Subjects:</span>
+          <span class="primary-subject">Algebraic Geometry (math.AG)</span>
+        </div>
+
+      </div>
+    </dd>
+    <dt>
+      <a name="item48">[48]</a>
+      <a href="/abs/2604.04709" title="Abstract" id="2604.04709">
+        arXiv:2604.04709
+      </a>
+      
+        [<a href="/pdf/2604.04709" title="Download PDF" id="pdf-2604.04709" aria-labelledby="pdf-2604.04709">pdf</a>, <a href="https://arxiv.org/html/2604.04709v1" title="View HTML" id="html-2604.04709" aria-labelledby="html-2604.04709" rel="noopener noreferrer" target="_blank">html</a>, <a href="/format/2604.04709" title="Other formats" id="oth-2604.04709" aria-labelledby="oth-2604.04709">other</a>]
+    </dt>
+    <dd>
+      <div class="meta">
+        <div class="list-title mathjax"><span class="descriptor">Title:</span>
+          Tschirnhausen bundles of sextic covers of <span class="MathJax_Preview" style="">\mathbb{P}^1</span><span class="MathJax MathJax_Processing" id="MathJax-Element-2-Frame" tabindex="0"></span><script type="math/tex" id="MathJax-Element-2">\mathbb{P}^1</script>
+        </div>
+        <div class="list-authors"><a href="https://arxiv.org/search/math?searchtype=author&amp;query=Frengley,+S">Sam Frengley</a>, <a href="https://arxiv.org/search/math?searchtype=author&amp;query=Vemulapalli,+S">Sameera Vemulapalli</a></div>
+
+        <div class="list-comments mathjax"><span class="descriptor">Comments:</span>
+          19 pages
+        </div>
+
+
+        <div class="list-subjects"><span class="descriptor">Subjects:</span>
+          <span class="primary-subject">Algebraic Geometry (math.AG)</span>
+        </div>
+
+      </div>
+    </dd>
+    <dt>
+      <a name="item49">[49]</a>
+      <a href="/abs/2604.04682" title="Abstract" id="2604.04682">
+        arXiv:2604.04682
+      </a>
+      
+        [<a href="/pdf/2604.04682" title="Download PDF" id="pdf-2604.04682" aria-labelledby="pdf-2604.04682">pdf</a>, <a href="https://arxiv.org/html/2604.04682v1" title="View HTML" id="html-2604.04682" aria-labelledby="html-2604.04682" rel="noopener noreferrer" target="_blank">html</a>, <a href="/format/2604.04682" title="Other formats" id="oth-2604.04682" aria-labelledby="oth-2604.04682">other</a>]
+    </dt>
+    <dd>
+      <div class="meta">
+        <div class="list-title mathjax"><span class="descriptor">Title:</span>
+          Gap theorems and achirality for automorphisms of K3 surfaces and Enriques surfaces
+        </div>
+        <div class="list-authors"><a href="https://arxiv.org/search/math?searchtype=author&amp;query=Kikuta,+K">Kohei Kikuta</a>, <a href="https://arxiv.org/search/math?searchtype=author&amp;query=Takada,+Y">Yuta Takada</a>, <a href="https://arxiv.org/search/math?searchtype=author&amp;query=Takatsu,+T">Taiki Takatsu</a></div>
+
+        <div class="list-comments mathjax"><span class="descriptor">Comments:</span>
+          32 pages
+        </div>
+
+
+        <div class="list-subjects"><span class="descriptor">Subjects:</span>
+          <span class="primary-subject">Algebraic Geometry (math.AG)</span>; Group Theory (math.GR); Geometric Topology (math.GT)
+        </div>
+
+      </div>
+    </dd>
+    <dt>
+      <a name="item50">[50]</a>
+      <a href="/abs/2604.04472" title="Abstract" id="2604.04472">
+        arXiv:2604.04472
+      </a>
+      
+        [<a href="/pdf/2604.04472" title="Download PDF" id="pdf-2604.04472" aria-labelledby="pdf-2604.04472">pdf</a>, <a href="https://arxiv.org/html/2604.04472v1" title="View HTML" id="html-2604.04472" aria-labelledby="html-2604.04472" rel="noopener noreferrer" target="_blank">html</a>, <a href="/format/2604.04472" title="Other formats" id="oth-2604.04472" aria-labelledby="oth-2604.04472">other</a>]
+    </dt>
+    <dd>
+      <div class="meta">
+        <div class="list-title mathjax"><span class="descriptor">Title:</span>
+          Resolutions and deformations of cyclic quotient surface singularities
+        </div>
+        <div class="list-authors"><a href="https://arxiv.org/search/math?searchtype=author&amp;query=Ito,+Y">Yukari Ito</a>, <a href="https://arxiv.org/search/math?searchtype=author&amp;query=Sato,+K">Kohei Sato</a>, <a href="https://arxiv.org/search/math?searchtype=author&amp;query=Tosun,+M">Meral Tosun</a></div>
+
+        <div class="list-comments mathjax"><span class="descriptor">Comments:</span>
+          39 pages, 8 figures
+        </div>
+
+
+        <div class="list-subjects"><span class="descriptor">Subjects:</span>
+          <span class="primary-subject">Algebraic Geometry (math.AG)</span>
+        </div>
+
+      </div>
+    </dd>
+</dl>
+
+
+      <div class="paging">Total of 83 entries :      <span>1-50</span>
+      <a href="/list/math.AG/recent?skip=50&amp;show=50">51-83</a>
+
+    </div>
+    <div class="morefewer">Showing up to 50 entries per page:
+          <a href="/list/math.AG/recent?skip=0&amp;show=25" rel="nofollow">
+      fewer</a>
+ |
+          <span style="color: #454545">more</span>
+ |
+          <a href="/list/math.AG/recent?skip=0&amp;show=2000" rel="nofollow">
+      all</a>
+
+    </div>
+
+</div>
+</div>      </div>
+    </main>
+
+    <footer style="clear: both;">
+      <div class="columns is-desktop" role="navigation" aria-label="Secondary" style="margin: -0.75em -0.75em 0.75em -0.75em">
+        <!-- Macro-Column 1 -->
+        <div class="column" style="padding: 0;">
+          <div class="columns">
+            <div class="column">
+              <ul style="list-style: none; line-height: 2;">
+                <li><a href="https://info.arxiv.org/about">About</a></li>
+                <li><a href="https://info.arxiv.org/help">Help</a></li>
+              </ul>
+            </div>
+            <div class="column">
+              <ul style="list-style: none; line-height: 2;">
+                <li>
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" class="icon filter-black" role="presentation"><title>contact arXiv</title><desc>Click here to contact arXiv</desc><path d="M502.3 190.8c3.9-3.1 9.7-.2 9.7 4.7V400c0 26.5-21.5 48-48 48H48c-26.5 0-48-21.5-48-48V195.6c0-5 5.7-7.8 9.7-4.7 22.4 17.4 52.1 39.5 154.1 113.6 21.1 15.4 56.7 47.8 92.2 47.6 35.7.3 72-32.8 92.3-47.6 102-74.1 131.6-96.3 154-113.7zM256 320c23.2.4 56.6-29.2 73.4-41.4 132.7-96.3 142.8-104.7 173.4-128.7 5.8-4.5 9.2-11.5 9.2-18.9v-19c0-26.5-21.5-48-48-48H48C21.5 64 0 85.5 0 112v19c0 7.4 3.4 14.3 9.2 18.9 30.6 23.9 40.7 32.4 173.4 128.7 16.8 12.2 50.2 41.8 73.4 41.4z"></path></svg>
+                  <a href="https://info.arxiv.org/help/contact.html"> Contact</a>
+                </li>
+                <li>
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" class="icon filter-black" role="presentation"><title>subscribe to arXiv mailings</title><desc>Click here to subscribe</desc><path d="M476 3.2L12.5 270.6c-18.1 10.4-15.8 35.6 2.2 43.2L121 358.4l287.3-253.2c5.5-4.9 13.3 2.6 8.6 8.3L176 407v80.5c0 23.6 28.5 32.9 42.5 15.8L282 426l124.6 52.2c14.2 6 30.4-2.9 33-18.2l72-432C515 7.8 493.3-6.8 476 3.2z"></path></svg>
+                  <a href="https://info.arxiv.org/help/subscribe"> Subscribe</a>
+                </li>
+              </ul>
+            </div>
+          </div>
+        </div>
+        <!-- End Macro-Column 1 -->
+        <!-- Macro-Column 2 -->
+        <div class="column" style="padding: 0;">
+          <div class="columns">
+            <div class="column">
+              <ul style="list-style: none; line-height: 2;">
+                <li><a href="https://info.arxiv.org/help/license/index.html">Copyright</a></li>
+                <li><a href="https://info.arxiv.org/help/policies/privacy_policy.html">Privacy Policy</a></li>
+              </ul>
+            </div>
+            <div class="column sorry-app-links">
+              <ul style="list-style: none; line-height: 2;">
+                <li><a href="https://info.arxiv.org/help/web_accessibility.html">Web Accessibility Assistance</a></li>
+                <li>
+                  <p class="help">
+                    <a class="a11y-main-link" href="https://status.arxiv.org" target="_blank">arXiv Operational Status <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 512" class="icon filter-dark_grey" role="presentation"><path d="M224.3 273l-136 136c-9.4 9.4-24.6 9.4-33.9 0l-22.6-22.6c-9.4-9.4-9.4-24.6 0-33.9l96.4-96.4-96.4-96.4c-9.4-9.4-9.4-24.6 0-33.9L54.3 103c9.4-9.4 24.6-9.4 33.9 0l136 136c9.5 9.4 9.5 24.6.1 34z"></path></svg></a><br>
+                  </p>
+                </li>
+              </ul>
+            </div>
+          </div>
+        </div> <!-- end MetaColumn 2 -->
+        <!-- End Macro-Column 2 -->
+      </div>
+    </footer>
+  </div>
+
+  <script src="/static/base/1.0.1/js/member_acknowledgement.js"></script>
+
+
+
+<div style="position: absolute; width: 0px; height: 0px; overflow: hidden; padding: 0px; border: 0px; margin: 0px;"><div id="MathJax_Font_Test" style="position: absolute; visibility: hidden; top: 0px; left: 0px; width: auto; min-width: 0px; max-width: none; padding: 0px; border: 0px; margin: 0px; white-space: nowrap; text-align: left; text-indent: 0px; text-transform: none; line-height: normal; letter-spacing: normal; word-spacing: normal; font-size: 40px; font-weight: normal; font-style: normal; font-size-adjust: none; font-family: MathJax_Math-italic, monospace;"></div></div></body></html>

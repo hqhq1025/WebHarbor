@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block title %}Create Export — arXiv{% endblock %}
+{% block content %}
+
+<h1>Export Citations</h1>
+<p class="muted">Export your saved papers as BibTeX, RIS, or plain text for use in reference managers.</p>
+
+<form method="post" class="dash-card">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+    <div class="form-row">
+        <label>Source</label>
+        <select name="source" required>
+            <option value="library">Library ({{ library_items|length }} papers)</option>
+            <option value="starred">Starred ({{ starred_items|length }} papers)</option>
+        </select>
+    </div>
+
+    <div class="form-row">
+        <label>Format</label>
+        <select name="format">
+            <option value="bibtex">BibTeX</option>
+            <option value="ris">RIS (EndNote, Zotero)</option>
+            <option value="text">Plain text</option>
+        </select>
+    </div>
+
+    <div class="form-row">
+        <label>Notes (optional)</label>
+        <textarea name="notes" rows="3" placeholder="Any notes for this export..."></textarea>
+    </div>
+
+    <div class="form-actions">
+        <button type="submit" class="btn btn-primary">Create Export</button>
+        <a href="{{ url_for('library') }}" class="btn">Cancel</a>
+    </div>
+</form>
+
+{% endblock %}

@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block title %}Trending searches - Google Trends{% endblock %}
+
+{% block content %}
+<div class="trending-page">
+    <h1 style="font-size:32px; font-weight:400; margin:0 0 8px;">Trending searches</h1>
+    <p class="muted">Top searches across Google right now</p>
+    <ol class="trending-list">
+        {% for t in terms %}
+        <li class="trending-row">
+            <div class="rank">{{ t.rank }}</div>
+            <a href="{{ url_for('search', q=t.term) }}" class="term">{{ t.term }}</a>
+            <div class="vol">{{ '{:,}'.format(t.volume) }} searches</div>
+            <div class="dir {{ t.trend_direction }}">
+                {% if t.trend_direction == 'up' %}▲{% elif t.trend_direction == 'down' %}▼{% else %}→{% endif %}
+            </div>
+        </li>
+        {% endfor %}
+    </ol>
+</div>
+{% endblock %}

@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% block title %}Vacation rentals | Google Flights{% endblock %}
+
+{% block content %}
+<section class="hero">
+  <h1>Vacation rentals</h1>
+  <p class="hero-subtitle">Homes, apartments, and unique stays around the world</p>
+</section>
+
+<div class="search-widget">
+  <form class="search-form">
+    <div class="search-row">
+      <input type="text" class="search-field" placeholder="Where to?" value="Barcelona">
+      <div class="search-dates">
+        <input type="text" class="search-field" value="{{ now.date().replace(day=1).isoformat() }}" placeholder="YYYY-MM-DD" maxlength="10" inputmode="numeric" pattern="\d{4}-\d{2}-\d{2}" autocomplete="off" data-datepicker="checkin">
+        <input type="text" class="search-field" value="{{ now.date().replace(day=7).isoformat() }}" placeholder="YYYY-MM-DD" maxlength="10" inputmode="numeric" pattern="\d{4}-\d{2}-\d{2}" autocomplete="off" data-datepicker="checkout">
+      </div>
+      <select class="search-select">
+        <option>2 guests</option>
+        <option>3 guests</option>
+        <option>4 guests</option>
+      </select>
+    </div>
+    <button type="button" class="search-submit">
+      <span class="material-symbols-outlined">search</span>Search rentals
+    </button>
+  </form>
+</div>
+
+<section class="section">
+  <div class="section-header">
+    <h2 class="section-title">Rentals in popular destinations</h2>
+    <p class="section-subtitle">From cozy apartments to luxury villas</p>
+  </div>
+  <div class="dest-grid">
+    {% for d in destinations %}
+      <a href="{{ url_for('destination', slug=d.city_slug) }}" class="dest-card">
+        {% if d.image %}
+          <img src="{{ d.image }}" alt="{{ d.city }}" onerror="this.style.display='none';this.parentElement.style.background='linear-gradient(135deg,var(--g-blue),var(--g-green))';">
+        {% else %}
+          <div style="width:100%;height:100%;background:linear-gradient(135deg,var(--g-blue),var(--g-green));"></div>
+        {% endif %}
+        <div class="dest-overlay">
+          <div class="dest-name">{{ d.city }}</div>
+          <div class="dest-country">{{ d.country }}</div>
+          <div class="dest-price">Rentals from $80/night</div>
+        </div>
+      </a>
+    {% endfor %}
+  </div>
+</section>
+{% endblock %}

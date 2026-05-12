@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block title %}arXiv News{% endblock %}
+{% block content %}
+
+<h1>arXiv News</h1>
+<p class="muted">The latest news, announcements, and press from arXiv.</p>
+
+{% for item in items %}
+<div class="dash-card news-item">
+    <div class="muted" style="font-size:12px;">{{ item.date }}</div>
+    <h2>{{ item.title }}</h2>
+    <p>{{ item.body }}</p>
+</div>
+{% endfor %}
+
+{% endblock %}

@@ -1,0 +1,213 @@
+{% extends "base.html" %}
+{% block title %}{{ q or 'All Courses' }} | Coursera{% endblock %}
+{% block content %}
+<div class="search-page">
+  <div class="search-results-shell container">
+    <h2 class="results-title">{% if q %}Results for "{{ q }}"{% else %}All Results{% endif %}</h2>
+
+    {# ---- Compute which pills have an active filter, for label-on-pill visual ---- #}
+    {% set active_count = 0 %}
+    {% if free == '1' or credit == '1' or certificate == '1' or min_rating %}{% set active_count = active_count + 1 %}{% endif %}
+    {% if sort and sort != 'popular' %}{% set active_count = active_count + 1 %}{% endif %}
+
+    <form id="filter-form" action="{{ url_for('search') }}" method="get" class="filter-pill-row">
+      <input type="hidden" name="q" value="{{ q }}">
+
+      {# ---- Filter & Sort master pill ---- #}
+      <details class="filter-pill filter-pill-master {% if active_count %}filter-pill-active{% endif %}">
+        <summary>
+          <span class="fp-icon" aria-hidden="true">&#9776;</span>
+          Filter &amp; Sort{% if active_count %} ({{ active_count }}){% endif %}
+        </summary>
+        <div class="filter-popover filter-popover-wide">
+          <h3>Filter &amp; Sort</h3>
+
+          <div class="fp-section">
+            <h4>Sort by</h4>
+            {% for v, lbl in [('popular','Most Popular'),('newest','Newest'),('rating','Highest Rated')] %}
+            <label class="fp-radio">
+              <input type="radio" name="sort" value="{{ v }}" {% if sort == v %}checked{% endif %}>
+              {{ lbl }}
+            </label>
+            {% endfor %}
+          </div>
+
+          <div class="fp-section">
+            <h4>Options</h4>
+            <label class="fp-check">
+              <input type="checkbox" name="free" value="1" {% if free == '1' %}checked{% endif %}>
+              Free
+            </label>
+            <label class="fp-check">
+              <input type="checkbox" name="credit" value="1" {% if credit == '1' %}checked{% endif %}>
+              Credit Eligible
+            </label>
+            <label class="fp-check">
+              <input type="checkbox" name="certificate" value="1" {% if certificate == '1' %}checked{% endif %}>
+              Has Certificate
+            </label>
+          </div>
+
+          <div class="fp-section">
+            <h4>Minimum Rating</h4>
+            <label class="fp-radio">
+              <input type="radio" name="min_rating" value="" {% if not min_rating %}checked{% endif %}>
+              Any rating
+            </label>
+            {% for v in ['4.7','4.5','4.0'] %}
+            <label class="fp-radio">
+              <input type="radio" name="min_rating" value="{{ v }}" {% if min_rating == v %}checked{% endif %}>
+              {{ v }} &amp; up
+            </label>
+            {% endfor %}
+          </div>
+
+          <div class="fp-footer">
+            <a href="{{ url_for('search') }}?q={{ q }}" class="fp-clear">Clear all</a>
+            <button type="submit" class="btn-primary fp-view">View</button>
+          </div>
+        </div>
+      </details>
+
+      {# ---- Topic ---- #}
+      <details class="filter-pill {% if category %}filter-pill-active{% endif %}">
+        <summary>{% if category %}{{ category }}{% else %}Topic{% endif %} <span class="fp-chev" aria-hidden="true">&#x25BE;</span></summary>
+        <div class="filter-popover">
+          <h3>Topic</h3>
+          {% for slug, name in nav_categories %}
+          <label class="fp-radio">
+            <input type="radio" name="category" value="{{ name }}" {% if category == name %}checked{% endif %}>
+            {{ name }}
+          </label>
+          {% endfor %}
+          <div class="fp-footer">
+            <a href="{{ url_for('search') }}?q={{ q }}&amp;sort={{ sort }}" class="fp-clear">Clear</a>
+            <button type="submit" class="btn-primary fp-view">View</button>
+          </div>
+        </div>
+      </details>
+
+      {# ---- Duration ---- #}
+      {% set duration_label = {'less_2_hours':'< 2 Hours','1-4_weeks':'1-4 Weeks','1-3_months':'1-3 Months','3-6_months':'3-6 Months','6plus_months':'6+ Months','1-4_years':'1-4 Years'}.get(duration) %}
+      <details class="filter-pill {% if duration %}filter-pill-active{% endif %}">
+        <summary>{% if duration %}{{ duration_label }}{% else %}Duration{% endif %} <span class="fp-chev" aria-hidden="true">&#x25BE;</span></summary>
+        <div class="filter-popover">
+          <h3>Duration</h3>
+          {% for val, label in [('less_2_hours','Less Than 2 Hours'),('1-4_weeks','1-4 Weeks'),('1-3_months','1-3 Months'),('3-6_months','3-6 Months'),('6plus_months','6+ Months'),('1-4_years','1-4 Years')] %}
+          <label class="fp-radio">
+            <input type="radio" name="duration" value="{{ val }}" {% if duration == val %}checked{% endif %}>
+            {{ label }}
+          </label>
+          {% endfor %}
+          <div class="fp-footer">
+            <a href="{{ url_for('search') }}?q={{ q }}" class="fp-clear">Clear</a>
+            <button type="submit" class="btn-primary fp-view">View</button>
+          </div>
+        </div>
+      </details>
+
+      {# ---- Learning Product ---- #}
+      <details class="filter-pill {% if course_type %}filter-pill-active{% endif %}">
+        <summary>{% if course_type %}{{ course_type }}{% else %}Learning Product{% endif %} <span class="fp-chev" aria-hidden="true">&#x25BE;</span></summary>
+        <div class="filter-popover">
+          <h3>Learning Product</h3>
+          {% for t in ['Course', 'Specialization', 'Professional Certificate', 'Guided Project', 'Degree'] %}
+          <label class="fp-radio">
+            <input type="radio" name="type" value="{{ t }}" {% if course_type == t %}checked{% endif %}>
+            {{ t }}
+          </label>
+          {% endfor %}
+          <div class="fp-footer">
+            <a href="{{ url_for('search') }}?q={{ q }}" class="fp-clear">Clear</a>
+            <button type="submit" class="btn-primary fp-view">View</button>
+          </div>
+        </div>
+      </details>
+
+      {# ---- Language (display-only — real Coursera shows this; mirror DB has English-only, so the popover surfaces the choice but the only value is English) ---- #}
+      <details class="filter-pill">
+        <summary>Language <span class="fp-chev" aria-hidden="true">&#x25BE;</span></summary>
+        <div class="filter-popover">
+          <h3>Language</h3>
+          <label class="fp-radio">
+            <input type="radio" name="lang" value="en" checked>
+            English
+          </label>
+          <div class="fp-footer">
+            <a href="{{ url_for('search') }}?q={{ q }}" class="fp-clear">Clear</a>
+            <button type="submit" class="btn-primary fp-view">View</button>
+          </div>
+        </div>
+      </details>
+
+      {# ---- Level ---- #}
+      <details class="filter-pill {% if level %}filter-pill-active{% endif %}">
+        <summary>{% if level %}{{ level }}{% else %}Level{% endif %} <span class="fp-chev" aria-hidden="true">&#x25BE;</span></summary>
+        <div class="filter-popover">
+          <h3>Level</h3>
+          {% for lv in ['Beginner', 'Intermediate', 'Advanced', 'Mixed'] %}
+          <label class="fp-radio">
+            <input type="radio" name="level" value="{{ lv }}" {% if level == lv %}checked{% endif %}>
+            {{ lv }}
+          </label>
+          {% endfor %}
+          <div class="fp-footer">
+            <a href="{{ url_for('search') }}?q={{ q }}" class="fp-clear">Clear</a>
+            <button type="submit" class="btn-primary fp-view">View</button>
+          </div>
+        </div>
+      </details>
+    </form>
+
+    {# ---- Results grid ---- #}
+    {% if results %}
+    <div class="results-list">
+      {% for c in results %}
+      <a href="{{ url_for('course_detail', slug=c.slug) }}" class="result-card">
+        <div class="result-thumb {{ c.color_class }}">
+          {% if course_thumb(c) %}<img class="cct-img" src="{{ url_for('static', filename=course_thumb(c)) }}" alt="">{% endif %}
+        </div>
+        <div class="result-body">
+          <div class="result-partner">
+            {% set _pl = partner_logo(c.partner) %}{% if _pl %}<img class="cp-logo" src="{{ url_for('static', filename=_pl) }}" alt="">{% endif %}
+            <span>{{ c.partner.name if c.partner else '' }}</span>
+          </div>
+          <h3 class="result-title">{{ c.title }}</h3>
+          <p class="result-skills">
+            {% set _sk = c.get_skills() %}
+            {% if _sk %}
+              <span class="result-skills-label">Skills you'll gain:</span>
+              {{ _sk[:6]|join(', ') }}{% if _sk|length > 6 %}, +{{ _sk|length - 6 }} more{% endif %}
+            {% else %}
+              {{ c.description[:100] }}{% if c.description|length > 100 %}...{% endif %}
+            {% endif %}
+          </p>
+          <div class="result-meta-line">
+            <span class="stars">&#9733;</span>
+            <strong>{{ '%.1f'|format(c.rating) }}</strong>
+            <span class="result-review-count">({{ '{:,}'.format(c.review_count) }})</span>
+            <span class="result-meta-sep">&middot;</span>
+            <span>{{ c.level }}</span>
+            <span class="result-meta-sep">&middot;</span>
+            <span>{{ c.course_type }}</span>
+            <span class="result-meta-sep">&middot;</span>
+            <span>{{ c.duration_text }}</span>
+          </div>
+          <div class="result-status-pills">
+            {% if c.is_free %}<span class="status-pill status-free">Free</span>{% endif %}
+            <span class="status-pill status-trial">Free Trial</span>
+            {% if c.credit_eligible %}<span class="status-pill status-credit">Credit offered</span>{% endif %}
+          </div>
+        </div>
+      </a>
+      {% endfor %}
+    </div>
+    {% else %}
+    <div class="no-results">
+      <p>No courses found{% if q %} for "{{ q }}"{% endif %}. Try a different search or remove some filters.</p>
+      <a href="{{ url_for('index') }}" class="btn-primary">Browse All Courses</a>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

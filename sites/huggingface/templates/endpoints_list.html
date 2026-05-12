@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}Endpoints – Hugging Face{% endblock %}
+
+{% block content %}
+<div class="container-wide page">
+    <div class="repolist-header">
+        <h1>Inference endpoints</h1>
+        <a class="btn btn-primary" href="{{ url_for('deploy_cart') }}">+ New deployment</a>
+    </div>
+    {% if endpoints %}
+    <div class="endpoint-list">
+        {% for ep in endpoints %}
+        <a class="endpoint-row" href="{{ url_for('endpoint_detail', endpoint_id=ep.id) }}">
+            <div>
+                <strong>{{ ep.name }}</strong>
+                <div class="endpoint-row-meta">{{ ep.endpoint_id }} · {{ ep.region }} · {{ ep.total_hours }}h · {{ ep.total_cost }}</div>
+                <div class="endpoint-row-date">Created {{ ep.created_at.strftime('%b %d, %Y') }}</div>
+            </div>
+            <span class="status-pill status-{{ ep.status }}">{{ ep.status }}</span>
+        </a>
+        {% endfor %}
+    </div>
+    {% else %}
+    <p class="empty-state">No endpoints yet. <a href="{{ url_for('models_list') }}">Deploy a model →</a></p>
+    {% endif %}
+</div>
+{% endblock %}

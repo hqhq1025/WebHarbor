@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block title %}{{ article.title }} - Apple Support{% endblock %}
+{% block content %}
+<div style="max-width:760px;margin:40px auto;padding:0 20px;">
+  <p><a href="{{ url_for('support') }}">&larr; Apple Support</a></p>
+  <h1 style="font-size:36px;font-weight:700;margin:12px 0;">{{ article.title }}</h1>
+  <p style="color:#6e6e73;font-size:17px;">{{ article.summary }}</p>
+  <div style="margin-top:24px;line-height:1.7;font-size:17px;white-space:pre-line;">{{ article.body }}</div>
+  {% if article.get_compat() %}
+  <h2 style="font-size:22px;font-weight:700;margin-top:32px;">Compatible devices</h2>
+  <ul style="margin:12px 0 0 20px;line-height:1.9;">
+    {% for d in article.get_compat() %}
+    <li>{{ d }}</li>
+    {% endfor %}
+  </ul>
+  {% endif %}
+</div>
+{% endblock %}

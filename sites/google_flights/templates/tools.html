@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block title%}Tools | Google Flights{% endblock %}
+
+{% block content %}
+<section class="hero">
+  <h1>Tools to find the best flights</h1>
+  <p class="hero-subtitle">Use our suite of price tools to save money on your next trip</p>
+</section>
+
+<section class="section">
+  <div class="tools-grid">
+    <a href="{{ url_for('date_grid') }}" class="tool-card">
+      <div class="tool-icon"><span class="material-symbols-outlined">calendar_month</span></div>
+      <h3>Date grid</h3>
+      <p>See prices for every combination of departure and return dates to find the cheapest option.</p>
+    </a>
+    <a href="{{ url_for('price_graph') }}" class="tool-card">
+      <div class="tool-icon"><span class="material-symbols-outlined">stacked_line_chart</span></div>
+      <h3>Price graph</h3>
+      <p>Visualize how prices change for your chosen date range.</p>
+    </a>
+    <a href="{{ url_for('price_insights') }}" class="tool-card">
+      <div class="tool-icon"><span class="material-symbols-outlined">insights</span></div>
+      <h3>Price insights</h3>
+      <p>Historical pricing data helps you know when to book for the best deal.</p>
+    </a>
+    <a href="{{ url_for('price_tracking') }}" class="tool-card">
+      <div class="tool-icon"><span class="material-symbols-outlined">notifications_active</span></div>
+      <h3>Price tracking</h3>
+      <p>Track specific flights or routes and receive alerts when prices drop.</p>
+    </a>
+    <a href="{{ url_for('explore') }}" class="tool-card">
+      <div class="tool-icon"><span class="material-symbols-outlined">travel_explore</span></div>
+      <h3>Explore destinations</h3>
+      <p>Browse destinations across the world with live pricing.</p>
+    </a>
+    <a href="{{ url_for('deals') }}" class="tool-card">
+      <div class="tool-icon"><span class="material-symbols-outlined">local_offer</span></div>
+      <h3>Cheapest deals</h3>
+      <p>Find the best flight deals from your home airport.</p>
+    </a>
+  </div>
+</section>
+{% endblock %}

@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block title %}About the BBC - BBC News{% endblock %}
+
+{% block content %}
+<div class="static-page">
+    <h1>About the BBC</h1>
+    <p>
+        This is a learning mirror of the BBC News website, built as a standalone Flask application.
+        It reproduces the visual design, content hierarchy, and common interactive features of the original,
+        but contains no real BBC content. All articles, authors, and images are used for educational purposes.
+    </p>
+
+    <h2>What this mirror demonstrates</h2>
+    <ul>
+        <li>A news-site data model: articles, sections, topics, and user-generated comments.</li>
+        <li>A reading list, bookmarks, and exportable news digests.</li>
+        <li>Topic subscriptions and a per-user reading history.</li>
+        <li>User accounts with profile editing and password changes.</li>
+    </ul>
+
+    <h2>Tech stack</h2>
+    <ul>
+        <li>Flask + SQLAlchemy + SQLite for the backend.</li>
+        <li>Jinja2 server-rendered templates with vanilla JavaScript for interactivity.</li>
+        <li>Playwright-based scraper for harvesting hero images and page screenshots.</li>
+    </ul>
+
+    <h2>Not affiliated with the BBC</h2>
+    <p>
+        The BBC and BBC News are trademarks of the British Broadcasting Corporation.
+        This mirror is a technical exercise and is not affiliated with, endorsed by, or connected to the BBC.
+    </p>
+
+    <h2>Credits</h2>
+    <p>
+        Built as part of the mirror-web skill, a workflow for producing faithful full-stack clones of public websites.
+        Every image and headline in this mirror comes from the BBC News homepage at the time of scraping.
+    </p>
+</div>
+{% endblock %}

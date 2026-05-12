@@ -1,0 +1,94 @@
+{% extends "base.html" %}
+{% block title %}Advanced Search - Google{% endblock %}
+
+{% block content %}
+<div class="adv-page">
+    <h1 style="font-size:22px; font-weight:400; margin:0 0 24px;">Advanced Search</h1>
+    <form action="{{ url_for('search') }}" method="get">
+        <div class="adv-section">
+            <h3>Find pages with...</h3>
+            <div class="adv-row">
+                <label>all these words:</label>
+                <input type="text" name="q">
+            </div>
+            <div class="adv-row">
+                <label>this exact word or phrase:</label>
+                <input type="text" name="as_epq">
+            </div>
+            <div class="adv-row">
+                <label>any of these words:</label>
+                <input type="text" name="as_oq">
+            </div>
+            <div class="adv-row">
+                <label>none of these words:</label>
+                <input type="text" name="as_eq">
+            </div>
+            <div class="adv-row">
+                <label>numbers ranging from:</label>
+                <input type="text" name="as_nlo" placeholder="e.g. 10">
+            </div>
+        </div>
+        <div class="adv-section">
+            <h3>Then narrow your results by...</h3>
+            <div class="adv-row">
+                <label>language:</label>
+                <select name="lr">
+                    <option>any language</option>
+                    <option>English</option>
+                    <option>Spanish</option>
+                    <option>French</option>
+                    <option>German</option>
+                    <option>Japanese</option>
+                    <option>Chinese</option>
+                </select>
+            </div>
+            <div class="adv-row">
+                <label>region:</label>
+                <select name="cr">
+                    <option>any region</option>
+                    <option>United States</option>
+                    <option>United Kingdom</option>
+                    <option>Japan</option>
+                    <option>Germany</option>
+                </select>
+            </div>
+            <div class="adv-row">
+                <label>last update:</label>
+                <select name="as_qdr">
+                    <option>anytime</option>
+                    <option>past 24 hours</option>
+                    <option>past week</option>
+                    <option>past month</option>
+                    <option>past year</option>
+                </select>
+            </div>
+            <div class="adv-row">
+                <label>site or domain:</label>
+                <input type="text" name="as_sitesearch" placeholder="e.g. wikipedia.org">
+            </div>
+            <div class="adv-row">
+                <label>file type:</label>
+                <select name="as_filetype">
+                    <option>any format</option>
+                    <option>PDF</option>
+                    <option>Word (.doc)</option>
+                    <option>Excel (.xls)</option>
+                    <option>PowerPoint (.ppt)</option>
+                </select>
+            </div>
+            <div class="adv-row">
+                <label>usage rights:</label>
+                <select name="tbs">
+                    <option>not filtered</option>
+                    <option>free to use or share</option>
+                    <option>free for commercial use</option>
+                </select>
+            </div>
+        </div>
+        <div class="form-actions">
+            <a href="{{ url_for('index') }}" class="btn-text">Cancel</a>
+            <button type="submit" class="btn-primary">Advanced Search</button>
+        </div>
+    </form>
+</div>
+{% endblock %}

@@ -1,0 +1,123 @@
+{% extends "base.html" %}
+{% block title %}Reading List - BBC News{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>Your reading list</h1>
+    <p>Articles you've saved to read later{% if current_folder %} · folder: <strong>{{ current_folder }}</strong>{% endif %}</p>
+</div>
+
+<div class="rl-layout">
+    <aside class="rl-sidebar">
+        <h3>Folders</h3>
+        <a href="{{ url_for('reading_list') }}" class="{% if not current_folder %}active{% endif %}">
+            All saved <span>({{ items|length if not current_folder else '' }})</span>
+        </a>
+        {% for folder_name, count in folders %}
+        <a href="{{ url_for('reading_list', folder=folder_name) }}"
+           class="{% if current_folder == folder_name %}active{% endif %}">
+            {{ folder_name }} <span>({{ count }})</span>
+        </a>
+        {% endfor %}
+
+        <h3 style="margin-top: 24px;">Actions</h3>
+        <a href="{{ url_for('digest_create') }}">Create digest →</a>
+        <a href="{{ url_for('bookmarks_page') }}">View bookmarks →</a>
+    </aside>
+
+    <div>
+        {% if items %}
+            {% for item in items %}
+            <div class="rl-item">
+                {% if item.article.hero_image %}
+                <img src="{{ item.article.hero_image }}" alt="{{ item.article.headline|e }}"
+                     onerror="this.style.background='#eee'">
+                {% else %}
+                <div style="width:180px; height:110px; background:#eee;"></div>
+                {% endif %}
+                <div class="rl-item-content">
+                    <h3>
+                        <a href="{{ url_for('article_detail', slug=item.article.slug) }}">
+                            {{ item.article.headline }}
+                            {% if item.read %}<span style="font-size:11px; background:#e8f5e9; color:#2e7d32; padding:2px 8px; margin-left:6px;">Read</span>{% endif %}
+                        </a>
+                    </h3>
+                    <p>{{ item.article.subtitle or item.article.summary[:180] or '' }}</p>
+                    <div class="rl-item-meta">
+                        <span>{{ item.folder }}</span> ·
+                        <span>Saved {{ item.added_at.strftime('%d %b %Y') }}</span> ·
+                        <span>{{ item.article.reading_time }} min read</span>
+                        {% if item.note %} · <em>{{ item.note[:80] }}</em>{% endif %}
+                    </div>
+                </div>
+                <div class="rl-item-actions">
+                    <button type="button" onclick="markRead({{ item.id }}, this)">
+                        {% if item.read %}Mark unread{% else %}Mark as read{% endif %}
+                    </button>
+                    <form method="POST" action="{{ url_for('api_reading_list_remove') }}" style="display:inline">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <input type="hidden" name="item_id" value="{{ item.id }}">
+                        <button type="submit">Remove</button>
+                    </form>
+                    <form method="POST" action="{{ url_for('reading_list_update_item', item_id=item.id) }}" style="display:inline; margin-left:4px">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <select name="folder" onchange="this.form.submit()" style="font-size:12px; padding:3px 6px;">
+                            <option value="">Move to folder…</option>
+                            {% for folder_name, _ in folders %}
+                            <option value="{{ folder_name }}" {% if folder_name == item.folder %}selected{% endif %}>{{ folder_name }}</option>
+                            {% endfor %}
+                            <option value="Read Later">Read Later</option>
+                            <option value="Work">Work</option>
+                            <option value="Personal">Personal</option>
+                            <option value="Science">Science</option>
+                            <option value="Technology">Technology</option>
+                            <option value="Health">Health</option>
+                            <option value="Business">Business</option>
+                            <option value="Sport">Sport</option>
+                            <option value="Entertainment">Entertainment</option>
+                            <option value="Environment">Environment</option>
+                            <option value="World News">World News</option>
+                        </select>
+                        <select name="priority" onchange="this.form.submit()" style="font-size:12px; padding:3px 6px; margin-left:4px;">
+                            <option value="">Set priority…</option>
+                            <option value="high" {% if item.priority == 'high' %}selected{% endif %}>High priority</option>
+                            <option value="normal" {% if item.priority == 'normal' %}selected{% endif %}>Normal priority</option>
+                            <option value="low" {% if item.priority == 'low' %}selected{% endif %}>Low priority</option>
+                        </select>
+                    </form>
+                </div>
+            </div>
+            {% endfor %}
+        {% else %}
+            <div class="empty-state">
+                <h2>Nothing here yet</h2>
+                <p>Tap "Save to list" on any story to bookmark it for later reading.</p>
+                <a href="{{ url_for('index') }}" class="btn">Browse the news</a>
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function markRead(itemId, btn) {
+    fetch('/api/reading-list/mark-read', {
+        method: 'POST',
+        headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({item_id: itemId})
+    }).then(r => r.json()).then(data => {
+        if (data.success) window.location.reload();
+    });
+}
+function removeFromList(itemId, btn) {
+    fetch('/api/reading-list/remove', {
+        method: 'POST',
+        headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({item_id: itemId})
+    }).then(r => r.json()).then(data => {
+        if (data.success) btn.closest('.rl-item').remove();
+    });
+}
+</script>
+{% endblock %}

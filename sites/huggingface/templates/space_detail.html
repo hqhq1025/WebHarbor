@@ -1,0 +1,182 @@
+{% extends "base.html" %}
+{% from "_macros.html" import space_card %}
+{% block title %}{{ repo.slug }} · Hugging Face Spaces{% endblock %}
+
+{% block content %}
+<div class="container-wide page">
+    <div class="repo-head">
+        <div class="repo-head-title">
+            <div class="repo-head-avatar" style="background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);color:#fff;font-size:24px;">{{ repo.emoji or '🚀' }}</div>
+            <div>
+                <h1 class="repo-head-name">
+                    <span class="repo-head-author"><a href="{{ url_for('author_page', username=repo.slug.split('/')[0]) }}">{{ repo.slug.split('/')[0] }}</a></span>
+                    <span class="repo-head-sep">/</span>
+                    <span class="repo-head-name-main">{{ repo.slug.split('/')[1] }}</span>
+                </h1>
+                <div class="repo-head-badges">
+                    <span class="tag tag-green">● {{ repo.status }}</span>
+                    <span class="tag tag-blue">{{ repo.sdk or 'Gradio' }}</span>
+                    {% if repo.task_display %}<span class="tag">{{ repo.task_display }}</span>{% endif %}
+                </div>
+            </div>
+        </div>
+        <div class="repo-head-actions">
+            {% if current_user.is_authenticated %}
+            <form method="POST" action="{{ url_for('like_toggle_form', repo_id=repo.id) }}" style="display:inline">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <input type="hidden" name="next" value="{{ request.path }}">
+                <button type="submit" class="like-btn {% if is_liked %}is-liked{% endif %}" data-like-toggle data-repo-id="{{ repo.id }}">
+                    ♥ <span data-like-count>{{ repo.likes_count }}</span>
+                </button>
+            </form>
+            {% else %}
+            <a class="like-btn" href="{{ url_for('login') }}">♥ {{ repo.likes_count }}</a>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="repo-tabs">
+        <a class="repo-tab is-active" href="#">App</a>
+        <a class="repo-tab" href="#">Files</a>
+        <a class="repo-tab" href="{{ url_for('repo_discussions', author=repo.slug.split('/')[0], name=repo.slug.split('/')[1]) }}">Community <span class="tab-count">{{ discussions|length }}</span></a>
+    </div>
+
+    <div class="repo-layout">
+        <main class="repo-main">
+            {% set _name_l = (repo.slug or '')|lower %}
+            {% set _desc_l = (repo.description or '')|lower %}
+            {% set _tags_l = (repo.tags_json or '')|lower %}
+            {% set _is_chat = ('chat' in _name_l) or ('chat' in _desc_l) or ('chat' in _tags_l) or (repo.task_slug == 'text-generation') %}
+            <div class="space-frame" style="background:linear-gradient(135deg,#1e293b 0%,#0f172a 100%);border-radius:12px;padding:32px 24px;text-align:center;color:#fff;min-height:240px;display:flex;flex-direction:column;align-items:center;justify-content:center;">
+                <div style="font-size:56px;margin-bottom:12px;">{{ repo.emoji }}</div>
+                <h2 style="color:#fff;margin:0 0 12px;">{{ repo.slug.split('/')[1] }}</h2>
+                <p style="color:rgba(255,255,255,0.8);max-width:500px;">{{ repo.description }}</p>
+                <div style="display:flex;gap:10px;margin-top:16px;flex-wrap:wrap;justify-content:center;">
+                    <a class="btn btn-yellow btn-lg" href="#try-it-now">▶ Launch demo</a>
+                    <a class="btn btn-outline btn-lg" href="#try-it-now" style="color:#fff;border-color:#fff;">Try it in your browser</a>
+                </div>
+            </div>
+
+            {% if _is_chat %}
+            <section id="try-it-now" class="space-chat-section" style="margin-top:20px;border:1px solid var(--border,#e5e7eb);border-radius:12px;padding:16px;background:#fff;">
+                <h3 style="margin-top:0;">💬 Try {{ repo.slug.split('/')[1] }}</h3>
+                <p class="muted" style="font-size:13px;margin:4px 0 12px;">Send a message to the Space. This embedded chat widget runs the Space's app inline — no separate page load required.</p>
+                {% if canned_attribution %}
+                <div class="chat-sample" style="margin-bottom:10px;padding:10px 12px;background:#ecfdf5;border:1px dashed #10b981;border-radius:8px;font-size:13px;">
+                    <strong style="color:#065f46;">Example conversation (pre-loaded):</strong>
+                    <div style="margin-top:6px;"><strong style="color:#2563eb;">You:</strong> Which team trained you?</div>
+                    <div style="margin-top:2px;"><strong style="color:#16a34a;">{{ repo.slug.split('/')[1] }}:</strong> {{ canned_attribution }}</div>
+                </div>
+                {% endif %}
+                <div id="chat-log" style="min-height:120px;max-height:320px;overflow-y:auto;border:1px solid var(--border,#e5e7eb);border-radius:8px;padding:10px;background:#f9fafb;font-size:14px;margin-bottom:10px;">
+                    {% if canned_attribution %}
+                    <div style="margin:6px 0;"><strong style="color:#2563eb;">You:</strong> which team trained you</div>
+                    <div style="margin:6px 0;"><strong style="color:#16a34a;">{{ repo.slug.split('/')[1] }}:</strong> {{ canned_attribution }}</div>
+                    {% endif %}
+                </div>
+                <form id="chat-form" onsubmit="return sendChat(event)" style="display:flex;gap:8px;align-items:flex-start;">
+                    <textarea id="chat-input" rows="2" placeholder="Ask something, e.g. 'which team trained you?'" style="flex:1;padding:8px;border:1px solid var(--border,#e5e7eb);border-radius:8px;resize:vertical;"></textarea>
+                    <button type="submit" class="btn btn-primary">Send</button>
+                </form>
+                <p class="muted" style="font-size:11px;margin:8px 0 0;">Powered by the Space's inference endpoint at <code>/api/space/{{ repo.slug }}/chat</code>.</p>
+                <script>
+                function _appendChat(role, text){
+                    var log=document.getElementById('chat-log');
+                    var row=document.createElement('div');
+                    row.style.margin='6px 0';
+                    row.innerHTML='<strong style="color:'+(role==='user'?'#2563eb':'#16a34a')+';">'+(role==='user'?'You':'{{ repo.slug.split("/")[1] }}')+':</strong> '+text.replace(/</g,'&lt;');
+                    log.appendChild(row);
+                    log.scrollTop=log.scrollHeight;
+                }
+                function sendChat(ev){
+                    ev.preventDefault();
+                    var inp=document.getElementById('chat-input');
+                    var msg=(inp.value||'').trim();
+                    if(!msg){return false;}
+                    _appendChat('user', msg);
+                    inp.value='';
+                    fetch('/api/space/{{ repo.slug }}/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({message:msg})})
+                        .then(r=>r.json()).then(d=>{_appendChat('assistant', d.reply||d.output_text||'(no reply)');})
+                        .catch(()=>{_appendChat('assistant','(network error — please retry)');});
+                    return false;
+                }
+                </script>
+            </section>
+            {% else %}
+            <section id="try-it-now" class="space-embed-section" style="margin-top:20px;border:1px solid var(--border,#e5e7eb);border-radius:12px;padding:0;overflow:hidden;">
+                <div style="padding:12px 16px;border-bottom:1px solid var(--border,#e5e7eb);background:#f9fafb;display:flex;justify-content:space-between;align-items:center;">
+                    <strong>Embedded demo</strong>
+                    <a class="btn btn-sm btn-outline" href="#">Open in new tab ↗</a>
+                </div>
+                <div style="padding:40px 24px;text-align:center;background:linear-gradient(135deg,#f3f4f6,#e5e7eb);min-height:260px;display:flex;flex-direction:column;align-items:center;justify-content:center;">
+                    <div style="font-size:48px;margin-bottom:12px;">{{ repo.emoji or '🚀' }}</div>
+                    <p style="margin:0 0 8px;"><strong>Try {{ repo.slug.split('/')[1] }} in your browser</strong></p>
+                    <p class="muted" style="font-size:13px;max-width:440px;">This {{ repo.sdk or 'Gradio' }} Space renders its UI via iframe in production. Interact with it right here — no install required.</p>
+                    <iframe src="about:blank" title="Space demo iframe" style="width:100%;max-width:640px;height:320px;border:1px solid var(--border,#e5e7eb);border-radius:8px;margin-top:16px;background:#fff;"></iframe>
+                </div>
+            </section>
+            {% endif %}
+
+            <div class="readme">
+                <pre>{{ repo.readme }}</pre>
+            </div>
+
+            <section class="pd-gallery-section">
+                <h2>Screenshots</h2>
+                <p>Visual previews of the {{ repo.slug.split('/')[1] }} Space in action.</p>
+                <div class="pd-gallery-images">
+                    {% for img in gallery[:3] %}
+                    <div class="pd-gallery-img">
+                        <img src="{{ img }}" alt="Space preview" onerror="this.parentElement.style.display='none'">
+                    </div>
+                    {% endfor %}
+                </div>
+            </section>
+
+            {% if gallery|length > 3 %}
+            <section class="pd-gallery-section pd-gallery-alt">
+                <h2>More previews</h2>
+                <p>Additional examples and UI captures.</p>
+                <div class="pd-gallery-images">
+                    {% for img in gallery[3:] %}
+                    <div class="pd-gallery-img">
+                        <img src="{{ img }}" alt="" onerror="this.parentElement.style.display='none'">
+                    </div>
+                    {% endfor %}
+                </div>
+            </section>
+            {% endif %}
+
+            {% if related %}
+            <section class="related-section">
+                <h2>Related spaces</h2>
+                <div class="space-grid">
+                    {% for r in related %}{{ space_card(r, loop.index) }}{% endfor %}
+                </div>
+            </section>
+            {% endif %}
+        </main>
+
+        <aside class="repo-side">
+            <div class="side-card">
+                <h4>Runtime</h4>
+                <table class="specs-table">
+                    <tr><td>SDK</td><td>{{ repo.sdk }}</td></tr>
+                    <tr><td>Hardware</td><td>{{ repo.hardware_display }}</td></tr>
+                    <tr><td>Price</td><td>{{ repo.hardware_price }}</td></tr>
+                    <tr><td>License</td><td>{{ repo.license_display }}</td></tr>
+                </table>
+            </div>
+            <div class="side-card">
+                <h4>Upgrade hardware</h4>
+                {% for hw in space_hardware %}
+                <div class="hw-row">
+                    <span>{{ hw[1] }}</span>
+                    <span>{{ hw[3] }}</span>
+                </div>
+                {% endfor %}
+            </div>
+        </aside>
+    </div>
+</div>
+{% endblock %}

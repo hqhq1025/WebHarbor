@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block title %}Cambridge Dictionary Shop{% endblock %}
+{% block content %}
+<div class="shop-page container">
+  <h1 class="page-title">Cambridge Dictionary Shop</h1>
+  <p class="page-desc">Browse our range of Cambridge dictionaries, grammar books, and thesauruses.</p>
+
+  <div class="shop-grid">
+    {% for item in items %}
+      <div class="shop-card">
+        <a href="{{ url_for('shop_item', slug=item.slug) }}" class="shop-card-link">
+          <div class="shop-book-cover">
+            <div class="book-cover-inner">
+              <span class="book-category">{{ item.category|capitalize }}</span>
+              <span class="book-title">{{ item.name[:40] }}</span>
+            </div>
+          </div>
+          <div class="shop-card-body">
+            <h3 class="shop-item-name">{{ item.name }}</h3>
+            <p class="shop-item-desc">{{ item.description[:120] }}…</p>
+            {% if item.isbn %}
+              <p class="shop-item-isbn">ISBN: {{ item.isbn }}</p>
+            {% endif %}
+            <div class="shop-item-footer">
+              <span class="shop-price">{{ item.currency }} {{ '%.2f'|format(item.price) }}</span>
+              {% if item.is_featured %}
+                <span class="shop-featured-badge">Featured</span>
+              {% endif %}
+            </div>
+          </div>
+        </a>
+      </div>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}

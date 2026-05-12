@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block title %}Query History — Wolfram|Alpha{% endblock %}
+
+{% block content %}
+<div class="section-inner">
+  <div class="page-header">
+    <h1 class="page-title">&#128336; Query History</h1>
+    {% if history %}
+    <form action="/history/clear" method="post">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <button type="submit" class="btn btn-secondary">Clear All</button>
+    </form>
+    {% endif %}
+  </div>
+
+  {% if history %}
+  <div class="history-full-list">
+    {% set prev_date = namespace(val='') %}
+    {% for h in history %}
+    {% set cur_date = h.created_at.strftime('%B %d, %Y') %}
+    {% if cur_date != prev_date.val %}
+    <div class="history-date-divider">{{ cur_date }}</div>
+    {% set prev_date.val = cur_date %}
+    {% endif %}
+    <a href="/input?i={{ h.query_text|urlencode }}" class="history-full-item">
+      <span class="history-icon">&#128269;</span>
+      <span class="history-full-query">{{ h.query_text }}</span>
+      {% if h.topic %}
+      <span class="history-topic-tag" style="color: {{ h.topic.category.color }}">{{ h.topic.name }}</span>
+      {% endif %}
+      <span class="history-full-time">{{ h.created_at.strftime('%H:%M') }}</span>
+    </a>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="empty-state-page">
+    <div class="empty-icon">&#128336;</div>
+    <h2>No history yet</h2>
+    <p>Your recent computations will appear here.</p>
+    <a href="/" class="btn btn-pro-primary">Start Computing</a>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

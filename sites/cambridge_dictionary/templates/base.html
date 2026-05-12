@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}{{ ui.site_name }}{% endblock %} | {{ ui.site_name }}</title>
+  <meta name="csrf-token" content="{{ csrf_token() }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
+</head>
+<body>
+  <!-- Main navigation (top teal band) -->
+  <nav class="globalnav">
+    <div class="container nav-inner">
+      <a href="{{ url_for('index') }}" class="nav-logo">
+        {% if current_lang == 'Deutsch' %}
+          <span class="logo-cambridge">Cambridge</span><span class="logo-dictionary">Wörterbuch</span>
+        {% else %}
+          <span class="logo-cambridge">Cambridge</span><span class="logo-dictionary">Dictionary</span>
+        {% endif %}
+      </a>
+
+      <ul class="nav-links">
+        <li><a href="{{ url_for('index') }}" class="nav-item {% if request.endpoint == 'index' %}active{% endif %}">{{ ui.nav_dictionary }}</a></li>
+        <li><a href="{{ url_for('thesaurus_search') }}" class="nav-item {% if 'thesaurus' in (request.endpoint or '') %}active{% endif %}">{{ ui.nav_thesaurus }}</a></li>
+        <li><a href="{{ url_for('translate') }}" class="nav-item {% if request.endpoint == 'translate' %}active{% endif %}">{{ ui.nav_translate }}</a></li>
+        <li><a href="{{ url_for('grammar_index') }}" class="nav-item {% if 'grammar' in (request.endpoint or '') %}active{% endif %}">{{ ui.nav_grammar }}</a></li>
+        <li><a href="{{ url_for('plus_index') }}" class="nav-item {% if 'plus' in (request.endpoint or '') or request.endpoint in ['quiz_detail','word_scramble'] %}active{% endif %}">{{ ui.nav_plus }}</a></li>
+        <li><a href="{{ url_for('shop') }}" class="nav-item {% if 'shop' in (request.endpoint or '') %}active{% endif %}">{{ ui.nav_shop }}</a></li>
+      </ul>
+
+      <div class="nav-right">
+        {% if current_user.is_authenticated %}
+          <a href="{{ url_for('account') }}" class="nav-user">{{ current_user.name.split()[0] }}</a>
+          <a href="{{ url_for('logout') }}" class="nav-signout">{{ ui.nav_signout }}</a>
+        {% else %}
+          <a href="{{ url_for('login') }}" class="nav-signin">{{ ui.nav_signin }}</a>
+          <a href="{{ url_for('register') }}" class="nav-register">{{ ui.nav_register }}</a>
+        {% endif %}
+        <div class="lang-selector">
+          <form method="POST" action="{{ url_for('set_language') }}" id="langForm">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <select name="lang" onchange="document.getElementById('langForm').submit()" class="lang-select">
+              {% for lng in languages %}
+                <option value="{{ lng }}" {% if session.get('lang','English (UK)') == lng %}selected{% endif %}>{{ lng }}</option>
+              {% endfor %}
+            </select>
+          </form>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Search hero (continuous teal band with Cambridge crest + search box) -->
+  <div class="search-bar-wrap">
+    <div class="container">
+      <a href="{{ url_for('index') }}" class="hero-brand" aria-label="Cambridge Dictionary">
+        <span class="crest" aria-hidden="true"></span>
+        <span class="wordmark">
+          {% if current_lang == 'Deutsch' %}
+            <span class="a">Cambridge</span><span class="b">Wörterbuch</span>
+          {% else %}
+            <span class="a">Cambridge</span><span class="b">Dictionary</span>
+          {% endif %}
+        </span>
+      </a>
+      {% set _is_thes = 'thesaurus' in (request.endpoint or '') %}
+      <form action="{{ url_for('thesaurus_search') if _is_thes else url_for('search') }}" method="GET" class="search-form" autocomplete="off">
+        <div class="search-tabs">
+          <a href="{{ url_for('index') }}" class="stab {% if request.endpoint in ['index','word_detail','search'] %}active{% endif %}">Dictionary</a>
+          <a href="{{ url_for('thesaurus_search') }}" class="stab {% if 'thesaurus' in (request.endpoint or '') %}active{% endif %}">Thesaurus</a>
+          <a href="{{ url_for('translate') }}" class="stab {% if request.endpoint == 'translate' %}active{% endif %}">Translate</a>
+          <a href="{{ url_for('grammar_index') }}" class="stab {% if 'grammar' in (request.endpoint or '') %}active{% endif %}">Grammar</a>
+        </div>
+        <div class="search-input-wrap">
+          <input type="text" name="q" id="searchInput" class="search-input"
+                 placeholder="{{ ui.search_placeholder }}"
+                 value="{{ request.args.get('q','') }}">
+          <button type="submit" class="search-btn" aria-label="Search">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+            </svg>
+          </button>
+        </div>
+        <div id="autocomplete-list" class="autocomplete-list"></div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Flash messages -->
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+      <div class="flash-container container">
+        {% for cat, msg in messages %}
+          <div class="flash flash-{{ cat }}">{{ msg }}
+            <button class="flash-close" onclick="this.parentElement.remove()">&times;</button>
+          </div>
+        {% endfor %}
+      </div>
+    {% endif %}
+  {% endwith %}
+
+  <main class="main-content">
+    {% block content %}{% endblock %}
+  </main>
+
+  <footer class="footer">
+    <div class="container">
+      <div class="footer-grid">
+        <div class="footer-col">
+          <h4>Dictionary</h4>
+          <ul>
+            <li><a href="{{ url_for('index') }}">Cambridge Dictionary</a></li>
+            <li><a href="{{ url_for('translate') }}">Translate</a></li>
+            <li><a href="{{ url_for('grammar_index') }}">Grammar</a></li>
+            <li><a href="{{ url_for('thesaurus_search') }}">Thesaurus</a></li>
+          </ul>
+        </div>
+        <div class="footer-col">
+          <h4>Learning &amp; Plus</h4>
+          <ul>
+            <li><a href="{{ url_for('plus_index') }}">Cambridge Dictionary Plus</a></li>
+            <li><a href="{{ url_for('plus_index') }}">Quizzes</a></li>
+            <li><a href="{{ url_for('word_scramble') }}">Word Games</a></li>
+          </ul>
+        </div>
+        <div class="footer-col">
+          <h4>Cambridge</h4>
+          <ul>
+            <li><a href="{{ url_for('shop') }}">Cambridge Dictionary Shop</a></li>
+            <li><a href="#">About Cambridge Dictionary</a></li>
+            <li><a href="#">Cambridge University Press</a></li>
+          </ul>
+        </div>
+        <div class="footer-col">
+          <h4>Account</h4>
+          <ul>
+            {% if current_user.is_authenticated %}
+              <li><a href="{{ url_for('account') }}">My Account</a></li>
+              <li><a href="{{ url_for('logout') }}">Sign Out</a></li>
+            {% else %}
+              <li><a href="{{ url_for('login') }}">Sign In</a></li>
+              <li><a href="{{ url_for('register') }}">Register</a></li>
+            {% endif %}
+          </ul>
+        </div>
+      </div>
+      <div class="footer-bottom">
+        <p>&copy; Cambridge University Press &amp; Assessment 2024 | Translation provided by Microsoft</p>
+        <p><a href="#">Privacy</a> | <a href="#">Terms of use</a> | <a href="#">Accessibility</a></p>
+      </div>
+    </div>
+  </footer>
+
+  <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+</body>
+</html>

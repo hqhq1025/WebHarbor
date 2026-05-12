@@ -1,0 +1,61 @@
+{# Reusable card macros for repos/spaces #}
+
+{% macro repo_card(repo, liked_ids=None) %}
+<a class="repo-card" href="{% if repo.repo_type == 'dataset' %}{{ url_for('dataset_detail', author=repo.slug.split('/')[0], name=repo.slug.split('/')[1]) }}{% elif repo.repo_type == 'space' %}{{ url_for('space_detail', author=repo.slug.split('/')[0], name=repo.slug.split('/')[1]) }}{% else %}{{ url_for('model_detail', author=repo.slug.split('/')[0], name=repo.slug.split('/')[1]) }}{% endif %}">
+    <div class="repo-card-avatar">
+        <img src="{{ repo.author_obj.avatar_url if repo.author_obj else '' }}" alt="" onerror="this.parentElement.innerHTML='<span>{{ repo.slug[0]|upper }}</span>'">
+    </div>
+    <div class="repo-card-body">
+        <div class="repo-card-title">
+            <span class="repo-card-title-author">{{ repo.slug.split('/')[0] }}</span>
+            <span class="repo-card-title-sep">/</span>
+            <span>{{ repo.slug.split('/')[1] }}</span>
+        </div>
+        <div class="repo-card-meta">
+            {% if repo.task_display %}<span>{{ repo.task_display }}</span>{% endif %}
+            {% if repo.size_badge %}<span>• {{ repo.size_badge }}</span>{% endif %}
+            {% if repo.repo_type == 'dataset' and repo.rows_display != '0' %}<span>• {{ repo.rows_display }} rows</span>{% endif %}
+            <span>• Updated {{ repo.updated_display }}</span>
+        </div>
+    </div>
+    <div class="repo-card-right">
+        <span>⬇ {{ repo.downloads_display }}</span>
+        <span>♥ {{ repo.likes_display }}</span>
+    </div>
+</a>
+{% endmacro %}
+
+{% macro repo_grid_card(repo) %}
+<a class="repo-grid-card" href="{% if repo.repo_type == 'dataset' %}{{ url_for('dataset_detail', author=repo.slug.split('/')[0], name=repo.slug.split('/')[1]) }}{% elif repo.repo_type == 'space' %}{{ url_for('space_detail', author=repo.slug.split('/')[0], name=repo.slug.split('/')[1]) }}{% else %}{{ url_for('model_detail', author=repo.slug.split('/')[0], name=repo.slug.split('/')[1]) }}{% endif %}">
+    <div class="repo-grid-card-head">
+        <div class="repo-grid-card-avatar">
+            <img src="{{ repo.author_obj.avatar_url if repo.author_obj else '' }}" alt="" onerror="this.parentElement.innerHTML='<span>{{ repo.slug[0]|upper }}</span>'">
+        </div>
+        <div class="repo-grid-card-title">
+            {{ repo.slug }}
+            <div class="repo-grid-card-author">{{ repo.task_display }}</div>
+        </div>
+    </div>
+    <div class="repo-grid-card-desc">{{ (repo.description or '')[:120] }}</div>
+    <div class="repo-grid-card-footer">
+        <span>⬇ {{ repo.downloads_display }}</span>
+        <span>♥ {{ repo.likes_display }}</span>
+        <span>{{ repo.updated_display }}</span>
+    </div>
+</a>
+{% endmacro %}
+
+{% macro space_card(repo, idx=0) %}
+{% set gradient = ((repo.id or idx) % 12) + 1 %}
+<a class="space-card space-card-g{{ gradient }}" href="{{ url_for('space_detail', author=repo.slug.split('/')[0], name=repo.slug.split('/')[1]) }}">
+    <div class="space-card-status">● {{ repo.status or 'Running' }}</div>
+    <div class="space-card-emoji">{{ repo.emoji or '🚀' }}</div>
+    <div class="space-card-title">{{ repo.slug.split('/')[1] }}</div>
+    <div class="space-card-author">by {{ repo.slug.split('/')[0] }}</div>
+    <div class="space-card-desc">{{ (repo.description or '')[:100] }}</div>
+    <div class="space-card-footer">
+        <span>♥ {{ repo.likes_display }}</span>
+        <span>{{ repo.sdk or 'Gradio' }}</span>
+    </div>
+</a>
+{% endmacro %}

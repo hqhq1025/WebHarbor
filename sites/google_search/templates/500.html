@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block title %}500 - Server error{% endblock %}
+{% block content %}
+<div class="error-page">
+    <div class="error-robot">
+        <svg width="200" height="200" viewBox="0 0 200 200" fill="none">
+            <rect x="60" y="40" width="80" height="100" rx="12" fill="#f1f3f4" stroke="#dadce0" stroke-width="3"/>
+            <path d="M76 75 L88 87 M88 75 L76 87" stroke="#ea4335" stroke-width="4" stroke-linecap="round"/>
+            <path d="M112 75 L124 87 M124 75 L112 87" stroke="#ea4335" stroke-width="4" stroke-linecap="round"/>
+            <path d="M80 108 Q100 95 120 108" stroke="#9aa0a6" stroke-width="4" fill="none" stroke-linecap="round"/>
+            <rect x="95" y="20" width="10" height="20" fill="#9aa0a6"/>
+            <circle cx="100" cy="18" r="5" fill="#fbbc05"/>
+            <rect x="40" y="60" width="20" height="8" fill="#9aa0a6"/>
+            <rect x="140" y="60" width="20" height="8" fill="#9aa0a6"/>
+            <rect x="70" y="140" width="20" height="30" fill="#9aa0a6"/>
+            <rect x="110" y="140" width="20" height="30" fill="#9aa0a6"/>
+        </svg>
+    </div>
+    <h1 class="error-code">500</h1>
+    <p class="error-text">That's an error.</p>
+    <p class="error-detail">The server encountered an error and could not complete your request. Please try again in 30 seconds.</p>
+    <div style="margin-top:32px;">
+        <a href="{{ url_for('index') }}" class="btn-primary">Go to Google Home</a>
+    </div>
+</div>
+{% endblock %}

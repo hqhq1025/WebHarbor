@@ -1,0 +1,83 @@
+{% extends "base.html" %}
+{% block title %}Saved searches | Google Flights{% endblock %}
+
+{% block content %}
+<div class="section">
+  <div class="section-header">
+    <h1 style="font-family:var(--font-sans);font-size:28px;font-weight:400;">Saved searches</h1>
+    <p style="color:var(--g-grey-700);">Quickly revisit your favorite flight searches.</p>
+  </div>
+
+  <!-- Create saved search -->
+  <div class="auth-card" style="max-width:640px;margin-bottom:32px;">
+    <h2 style="font-family:var(--font-sans);font-size:18px;font-weight:500;margin-bottom:12px;">Save a search</h2>
+    <form method="POST" action="{{ url_for('saved_searches') }}" class="auth-form">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <div class="form-field">
+        <label for="label">Label</label>
+        <input type="text" name="label" id="label" placeholder="Summer Paris trip" required>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+        <div class="form-field">
+          <label for="origin_iata">From</label>
+          <input type="text" name="origin_iata" id="origin_iata" maxlength="4" placeholder="JFK">
+        </div>
+        <div class="form-field">
+          <label for="destination_iata">To</label>
+          <input type="text" name="destination_iata" id="destination_iata" maxlength="4" placeholder="CDG">
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+        <div class="form-field">
+          <label for="passengers">Passengers</label>
+          <select name="passengers" id="passengers">
+            <option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option>
+          </select>
+        </div>
+        <div class="form-field">
+          <label for="cabin_class">Class</label>
+          <select name="cabin_class" id="cabin_class">
+            <option value="Economy">Economy</option>
+            <option value="Premium">Premium economy</option>
+            <option value="Business">Business</option>
+            <option value="First">First class</option>
+          </select>
+        </div>
+      </div>
+      <button type="submit" class="btn btn-primary">Save search</button>
+    </form>
+  </div>
+
+  <!-- Existing saved searches -->
+  {% if searches %}
+    <h2 style="font-family:var(--font-sans);font-size:20px;font-weight:400;margin-bottom:16px;">Your saved searches ({{ searches|length }})</h2>
+    <div class="alert-grid">
+      {% for s in searches %}
+        <div class="alert-card">
+          <div class="alert-route">
+            <span class="material-symbols-outlined">bookmark</span>
+            {{ s.label }}
+          </div>
+          <div class="alert-threshold">
+            {% if s.origin_iata and s.destination_iata %}
+              {{ s.origin_iata }} &rarr; {{ s.destination_iata }}
+            {% endif %}
+          </div>
+          <div class="alert-date">{{ s.passengers }} passenger &middot; {{ s.cabin_class }}</div>
+          <div style="display:flex;gap:8px;margin-top:8px;">
+            {% if s.origin_iata and s.destination_iata %}
+              <a href="{{ url_for('flights_list', **{'from': s.origin_iata, 'to': s.destination_iata}) }}" class="btn btn-primary" style="font-size:13px;">Search</a>
+            {% endif %}
+            <form method="POST" action="{{ url_for('saved_search_delete', search_id=s.id) }}" style="display:inline;">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              <button type="submit" class="btn btn-outline" style="font-size:13px;">Remove</button>
+            </form>
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+  {% else %}
+    <p style="color:var(--g-grey-700);">No saved searches.</p>
+  {% endif %}
+</div>
+{% endblock %}

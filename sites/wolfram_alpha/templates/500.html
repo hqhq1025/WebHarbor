@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block title %}Server Error — Wolfram|Alpha{% endblock %}
+
+{% block content %}
+<div class="error-page">
+  <div class="error-icon">500</div>
+  <h1 class="error-title">Something Went Wrong</h1>
+  <p class="error-desc">We encountered an error processing your request. Please try again.</p>
+  <div class="error-actions">
+    <a href="/" class="btn btn-pro-primary">Go Home</a>
+    <a href="javascript:history.back()" class="btn btn-secondary">Go Back</a>
+  </div>
+</div>
+{% endblock %}

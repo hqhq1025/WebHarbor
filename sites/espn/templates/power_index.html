@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% block title %}{{ index_name }}{% endblock %}
+
+{% block content %}
+<div class="container">
+  <div class="page-header">
+    <h1>{{ index_name }}</h1>
+    <p class="subtitle">{{ abbrev }} &bull; Season: {{ season }}</p>
+    {% set active = 'power_index' %}{% include "_sport_subnav.html" %}
+  </div>
+
+  <table class="data-table power-table">
+    <thead>
+      <tr>
+        <th>Rank</th>
+        <th>Team</th>
+        <th>{{ abbrev }}</th>
+        <th>Playoff Odds</th>
+        <th>Avg Point Diff</th>
+        <th>Record</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for entry in rankings %}
+      <tr>
+        <td class="rank-col">{{ entry.rank }}</td>
+        <td>
+          {% if entry.pi_team %}
+          <a href="/team/{{ sport.slug }}/{{ entry.pi_team.slug }}">{{ entry.pi_team.full_name or entry.pi_team.name }}</a>
+          {% else %}
+          —
+          {% endif %}
+        </td>
+        <td class="stat-val">{{ '%.1f'|format(entry.index_value) }}</td>
+        <td class="stat-val">{{ '%.1f'|format(entry.playoff_odds) }}%</td>
+        <td class="stat-val">{{ '%+.1f'|format(entry.avg_point_diff) }}</td>
+        <td>
+          {% if entry.pi_team %}{{ entry.pi_team.wins }}-{{ entry.pi_team.losses }}{% endif %}
+        </td>
+      </tr>
+      {% else %}
+      <tr><td colspan="6" class="empty-msg">No power index data available.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

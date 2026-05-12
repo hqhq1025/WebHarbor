@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+{% block title %}Learn – Hugging Face{% endblock %}
+
+{% block content %}
+<section class="task-hero">
+    <div class="container-wide">
+        <h1>Learn machine learning</h1>
+        <p>Free, open-source courses from Hugging Face. Go from zero to deploying your first model.</p>
+    </div>
+</section>
+
+<div class="container-wide page">
+    <div class="docs-grid">
+        <a class="docs-section" href="#">
+            <h3>🟢 NLP Course</h3>
+            <p>From tokenizers to fine-tuning with the 🤗 Transformers library.</p>
+            <span class="docs-link">Start learning →</span>
+        </a>
+        <a class="docs-section" href="#">
+            <h3>🎨 Diffusion Models Course</h3>
+            <p>Understand and build image-generation models from first principles.</p>
+            <span class="docs-link">Start learning →</span>
+        </a>
+        <a class="docs-section" href="#">
+            <h3>🎮 Deep RL Course</h3>
+            <p>Train AI agents to beat Atari, play Doom, and more — with PPO & DQN.</p>
+            <span class="docs-link">Start learning →</span>
+        </a>
+        <a class="docs-section" href="#">
+            <h3>🔊 Audio Course</h3>
+            <p>From raw waveforms to building ASR & TTS pipelines.</p>
+            <span class="docs-link">Start learning →</span>
+        </a>
+        <a class="docs-section" href="#">
+            <h3>🤖 Agents Course</h3>
+            <p>Build LLM agents with tool use and multi-step planning.</p>
+            <span class="docs-link">Start learning →</span>
+        </a>
+        <a class="docs-section" href="#">
+            <h3>👁 Computer Vision Course</h3>
+            <p>Image classification, segmentation, object detection, and vision transformers.</p>
+            <span class="docs-link">Start learning →</span>
+        </a>
+        <a class="docs-section" href="{{ url_for('learn_classroom') }}">
+            <h3>🎓 Hugging Face Classroom</h3>
+            <p>Run a course for your students with teacher dashboards and free private Spaces.</p>
+            <span class="docs-link">Open classroom →</span>
+        </a>
+    </div>
+
+    {% if classroom_benefits %}
+    <section class="sect">
+        <h2>Benefits of Hugging Face Classroom</h2>
+        <ul class="benefits-list">
+            {% for b in classroom_benefits %}
+            <li>✓ {{ b }}</li>
+            {% endfor %}
+        </ul>
+    </section>
+    {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+{% block title %}{{ category.name }} Examples — Wolfram|Alpha{% endblock %}
+
+{% block content %}
+<section class="examples-hero" style="--cat-color: {{ category.color }}">
+  <div class="section-inner">
+    <div class="examples-hero-icon">{{ category.icon }}</div>
+    <h1 class="examples-hero-title">{{ category.name }}</h1>
+    <p class="examples-hero-desc">{{ category.description }}</p>
+    <form class="examples-search-form" action="/input" method="get">
+      <input type="text" name="i" placeholder="Try a {{ category.name|lower }} query..."
+             class="examples-search-input">
+      <button type="submit" class="btn btn-primary">Compute</button>
+    </form>
+  </div>
+</section>
+
+<div class="section-inner examples-main">
+  <!-- Subcategory nav tabs -->
+  <nav class="subcategory-tabs" aria-label="Subcategories">
+    <a href="#all" class="subcat-tab subcat-tab--active">All</a>
+    {% for sub in subcategories %}
+    <a href="#{{ sub.slug }}" class="subcat-tab">{{ sub.name }}</a>
+    {% endfor %}
+  </nav>
+
+  <!-- Subcategory sections -->
+  {% for sub in subcategories %}
+  <section class="subcategory-section" id="{{ sub.slug }}">
+    <div class="subcategory-header">
+      <h2 class="subcategory-title">{{ sub.name }}</h2>
+      <p class="subcategory-desc">{{ sub.description }}</p>
+    </div>
+    <div class="topics-examples-grid">
+      {% for topic in topics_by_sub.get(sub.slug, []) %}
+      <div class="topic-example-card">
+        <div class="tec-header">
+          <h3 class="tec-name"><a href="/topic/{{ topic.slug }}">{{ topic.name }}</a></h3>
+          {% if topic.is_new %}<span class="wa-badge-new">NEW</span>{% endif %}
+        </div>
+        <div class="tec-examples">
+          {% for ex in topic.get_examples()[:3] %}
+          <a href="/input?i={{ ex.query|urlencode }}" class="tec-example-row">
+            <code class="tec-query">{{ ex.query }}</code>
+            <span class="tec-arrow">&#9654;</span>
+            <span class="tec-result">{{ ex.result[:50] }}{% if ex.result|length > 50 %}...{% endif %}</span>
+          </a>
+          {% endfor %}
+        </div>
+        <div class="tec-footer">
+          <a href="/topic/{{ topic.slug }}" class="tec-more-link">More examples &rarr;</a>
+        </div>
+      </div>
+      {% else %}
+      <p class="no-topics">No topics yet in this subcategory.</p>
+      {% endfor %}
+    </div>
+  </section>
+  {% endfor %}
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Tab switching
+const tabs = document.querySelectorAll('.subcat-tab');
+tabs.forEach(tab => {
+  tab.addEventListener('click', (e) => {
+    e.preventDefault();
+    tabs.forEach(t => t.classList.remove('subcat-tab--active'));
+    tab.classList.add('subcat-tab--active');
+    const target = tab.getAttribute('href').slice(1);
+    document.querySelectorAll('.subcategory-section').forEach(s => {
+      s.style.display = (target === 'all' || s.id === target) ? '' : 'none';
+    });
+  });
+});
+</script>
+{% endblock %}

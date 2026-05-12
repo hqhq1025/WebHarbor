@@ -1,0 +1,37 @@
+#!/usr/bin/env bash
+# Verify every site has the runtime-required asset dirs.
+#
+# Hard requirement: instance_seed/ (every site MUST have a seed DB).
+# Soft check (warn-only): static/images/, static/external_cache/.
+# Some sites legitimately have no external cache (only google_search uses it
+# at present); some may have no scraped images.
+#
+# Used by build.sh and as a CI gate.
+set -euo pipefail
+cd "$(dirname "$0")/.."
+
+REQUIRED=(instance_seed)
+OPTIONAL=(static/images static/external_cache)
+
+missing=0
+warnings=0
+for site in sites/*/; do
+    s=$(basename "$site")
+    for sub in "${REQUIRED[@]}"; do
+        if [[ ! -d "sites/$s/$sub" ]] || [[ -z $(ls -A "sites/$s/$sub" 2>/dev/null) ]]; then
+            echo "  MISSING (required): sites/$s/$sub"
+            missing=$((missing + 1))
+        fi
+    done
+    for sub in "${OPTIONAL[@]}"; do
+        if [[ ! -d "sites/$s/$sub" ]] || [[ -z $(ls -A "sites/$s/$sub" 2>/dev/null) ]]; then
+            warnings=$((warnings + 1))
+        fi
+    done
+done
+
+if (( missing > 0 )); then
+    echo "[check] $missing required asset dirs missing — run scripts/fetch_assets.sh"
+    exit 1
+fi
+echo "[check] all sites have instance_seed/ ($warnings sites lack at least one optional asset dir — that's OK)"

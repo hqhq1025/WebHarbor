@@ -1,0 +1,108 @@
+{% extends "base.html" %}
+{% block title %}Searching code & repositories · GitHub Docs{% endblock %}
+{% block content %}
+<div class="docs-page">
+  <article class="docs-article">
+    <header class="docs-article-header">
+      <h1 class="docs-article-title">Searching on GitHub</h1>
+      <p class="docs-article-lede">Use these search qualifiers to narrow your results when searching repositories. Combine multiple qualifiers in a single query — they all apply with AND semantics.</p>
+    </header>
+
+    <section class="docs-section">
+      <h2>Repository qualifiers</h2>
+      <table class="docs-syntax-table">
+        <thead><tr><th>Qualifier</th><th>Example</th><th>Description</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><code>language:</code></td>
+            <td><code>react language:typescript</code></td>
+            <td>Match repositories written in a specific programming language. Languages are case-insensitive. Multi-word languages must be wrapped in quotes — for example <code>language:&quot;Common Lisp&quot;</code>.</td>
+          </tr>
+          <tr>
+            <td><code>topic:</code></td>
+            <td><code>topic:machine-learning</code></td>
+            <td>Match repositories that have the given topic tag. Topic slugs are lowercase with hyphens (e.g. <code>web-scraping</code>, <code>quantum-computing</code>).</td>
+          </tr>
+          <tr>
+            <td><code>license:</code></td>
+            <td><code>license:mit</code></td>
+            <td>Filter by license SPDX identifier (<code>mit</code>, <code>apache-2.0</code>, <code>gpl-3.0</code>, <code>bsd-3-clause</code>, etc.).</td>
+          </tr>
+          <tr>
+            <td><code>archived:</code></td>
+            <td><code>archived:false</code></td>
+            <td>Either <code>true</code> or <code>false</code>. Archived repositories are read-only mirrors of older work.</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section class="docs-section">
+      <h2>Numeric qualifiers (stars, forks, size)</h2>
+      <p>All numeric qualifiers support these comparison operators:</p>
+      <ul>
+        <li><code>n</code> &mdash; exactly <em>n</em></li>
+        <li><code>&lt;n</code> &mdash; less than <em>n</em></li>
+        <li><code>&lt;=n</code> &mdash; at most <em>n</em></li>
+        <li><code>&gt;n</code> &mdash; greater than <em>n</em></li>
+        <li><code>&gt;=n</code> &mdash; at least <em>n</em></li>
+        <li><code>n..m</code> &mdash; between <em>n</em> and <em>m</em> inclusive</li>
+      </ul>
+      <table class="docs-syntax-table">
+        <thead><tr><th>Qualifier</th><th>Example</th><th>Description</th></tr></thead>
+        <tbody>
+          <tr><td><code>stars:</code></td><td><code>react stars:&gt;=10000</code></td><td>Repositories with at least 10,000 stars.</td></tr>
+          <tr><td><code>forks:</code></td><td><code>nlp forks:50..500</code></td><td>Repositories with 50 to 500 forks.</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section class="docs-section">
+      <h2>Date qualifiers</h2>
+      <p>Date qualifiers accept ISO-8601 dates (<code>YYYY-MM-DD</code>) and the same comparison operators as numeric qualifiers. Today's date in this site is <strong>{{ mirror_now.strftime('%Y-%m-%d') }}</strong>.</p>
+      <table class="docs-syntax-table">
+        <thead><tr><th>Qualifier</th><th>Example</th><th>Description</th></tr></thead>
+        <tbody>
+          <tr><td><code>created:</code></td><td><code>created:&gt;2024-01-01</code></td><td>Repositories created after January 1st, 2024.</td></tr>
+          <tr><td><code>pushed:</code></td><td><code>pushed:&gt;2024-05-08</code></td><td>Repositories with commits pushed after this date — useful for "recently active" searches.</td></tr>
+          <tr><td><code>updated:</code></td><td><code>updated:&gt;2024-05-08</code></td><td>Alias of <code>pushed:</code>.</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section class="docs-section">
+      <h2>Sort qualifier</h2>
+      <p>Use <code>sort:</code> in your query, or pick from the &quot;Sort by&quot; dropdown on the search results page.</p>
+      <table class="docs-syntax-table">
+        <thead><tr><th>Value</th><th>Description</th></tr></thead>
+        <tbody>
+          <tr><td><code>best-match</code></td><td>Default. Ranks by query-token relevance, then by stars.</td></tr>
+          <tr><td><code>stars</code> / <code>stars-asc</code></td><td>Most / fewest stars.</td></tr>
+          <tr><td><code>forks</code> / <code>forks-asc</code></td><td>Most / fewest forks.</td></tr>
+          <tr><td><code>updated</code> / <code>updated-asc</code></td><td>Most / least recently updated.</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section class="docs-section">
+      <h2>Putting it together</h2>
+      <p>Find recently active Python ML repositories with substantial adoption:</p>
+      <pre class="docs-example"><code>machine learning language:python stars:&gt;=500 pushed:&gt;2024-05-08</code></pre>
+      <p>Find newly-created blockchain projects:</p>
+      <pre class="docs-example"><code>blockchain created:&gt;2024-01-01 sort:stars</code></pre>
+      <p>Find C++ game-development repositories that aren't archived:</p>
+      <pre class="docs-example"><code>game-dev language:c++ archived:false</code></pre>
+    </section>
+
+    <section class="docs-section">
+      <h2>Tips</h2>
+      <ul>
+        <li>Wrap multi-word phrases in quotes to match them exactly: <code>&quot;decision tree&quot; language:python</code>.</li>
+        <li>Qualifiers are AND-combined. There is no <code>OR</code> operator.</li>
+        <li>Negate a qualifier with a leading minus: <code>-language:javascript</code> excludes JavaScript repos.</li>
+        <li>Most qualifiers are also exposed as URL parameters (<code>?language=python&amp;min_stars=500&amp;updated_days=7</code>) for direct linking.</li>
+      </ul>
+    </section>
+  </article>
+</div>
+{% endblock %}

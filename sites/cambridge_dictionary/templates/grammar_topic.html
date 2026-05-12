@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% block title %}{{ topic.title }} | Grammar | Cambridge Dictionary{% endblock %}
+{% block content %}
+<div class="grammar-topic container">
+  <nav class="breadcrumb">
+    <a href="{{ url_for('grammar_index') }}">Grammar</a> &rsaquo;
+    <span>{{ topic.category }}</span> &rsaquo;
+    <span>{{ topic.title }}</span>
+  </nav>
+
+  <h1 class="grammar-topic-title">{{ topic.title }}</h1>
+  <p class="grammar-topic-summary">{{ topic.summary }}</p>
+
+  {% for section in content %}
+  <div class="grammar-section">
+    {% if section.heading %}
+      <h2 class="grammar-section-heading">{{ section.heading }}</h2>
+    {% endif %}
+    {% if section.body %}
+      <p class="grammar-section-body">{{ section.body }}</p>
+    {% endif %}
+    {% if section.examples %}
+      <div class="grammar-examples">
+        {% for ex in section.examples %}
+          <div class="grammar-example-row">
+            {% if ex.label %}
+              <span class="ex-label">{{ ex.label }}</span>
+            {% endif %}
+            <span class="ex-sentence">{{ ex.sentence }}</span>
+          </div>
+        {% endfor %}
+      </div>
+    {% endif %}
+  </div>
+  {% endfor %}
+
+  <div class="grammar-nav">
+    {% if prev_topic %}
+      <a href="{{ url_for('grammar_topic', slug=prev_topic.slug) }}" class="grammar-nav-prev">&laquo; {{ prev_topic.title }}</a>
+    {% endif %}
+    {% if next_topic %}
+      <a href="{{ url_for('grammar_topic', slug=next_topic.slug) }}" class="grammar-nav-next">{{ next_topic.title }} &raquo;</a>
+    {% endif %}
+  </div>
+
+  <div class="grammar-see-also">
+    <a href="{{ url_for('grammar_index') }}" class="btn-secondary">Back to Grammar</a>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}Login — arXiv{% endblock %}
+{% block content %}
+
+<div class="auth-card">
+    <h1>Log in to arXiv</h1>
+    <p class="muted">Sign in to your arXiv account to access your library, alerts, and submissions.</p>
+
+    <form method="post">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <div class="form-row">
+            <label for="email">Email</label>
+            <input type="email" id="email" name="email" required autofocus>
+        </div>
+        <div class="form-row">
+            <label for="password">Password</label>
+            <input type="password" id="password" name="password" required>
+        </div>
+        <div class="form-actions">
+            <button type="submit" class="btn btn-primary">Sign In</button>
+            <a href="{{ url_for('register') }}">Create an account</a>
+        </div>
+    </form>
+
+</div>
+
+{% endblock %}

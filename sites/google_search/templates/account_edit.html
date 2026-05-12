@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block title %}Edit your Google Account{% endblock %}
+
+{% block content %}
+<div class="form-page">
+    <div class="form-card">
+        <h1 class="form-title">Account settings</h1>
+        <form method="post">
+            {{ form.hidden_tag() }}
+            <div class="field">
+                <label>Full name</label>
+                {{ form.name() }}
+            </div>
+            <div class="field">
+                <label>Email</label>
+                {{ form.email() }}
+            </div>
+            <div class="field">
+                <label>SafeSearch</label>
+                {{ form.safe_search() }}
+            </div>
+            <div class="field">
+                <label>Region</label>
+                {{ form.region() }}
+            </div>
+            <div class="field">
+                <label>Language</label>
+                {{ form.language() }}
+            </div>
+            <div class="field">
+                <label>Results per page</label>
+                {{ form.results_per_page() }}
+            </div>
+            <div class="field field-checkbox">
+                {{ form.dark_mode() }} <label>Dark mode</label>
+            </div>
+            <div class="form-actions">
+                <a href="{{ url_for('account') }}" class="btn-text">Cancel</a>
+                <button type="submit" class="btn-primary">Save</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,450 @@
+{
+  "algebra": [
+    {
+      "title": "Solve Equations",
+      "desc": "Wolfram Alpha can solve linear, quadratic, polynomial and systems of equations symbolically or numerically.",
+      "images": [
+        "static/images/screenshots/examples_algebra.png"
+      ]
+    },
+    {
+      "title": "Polynomial Operations",
+      "desc": "Factor, expand, and simplify polynomial expressions.",
+      "images": [
+        "static/images/screenshots/mathematics.png"
+      ]
+    },
+    {
+      "title": "Graphing Functions",
+      "desc": "Visualize algebraic functions with interactive plots.",
+      "images": [
+        "static/images/screenshots/input_math.png"
+      ]
+    }
+  ],
+  "calculus": [
+    {
+      "title": "Integration",
+      "desc": "Compute definite and indefinite integrals symbolically and numerically.",
+      "images": [
+        "static/images/screenshots/input_math.png",
+        "static/images/screenshots/examples_calculus.png"
+      ]
+    },
+    {
+      "title": "Derivatives",
+      "desc": "Find derivatives of functions, including partial derivatives and higher-order derivatives.",
+      "images": [
+        "static/images/screenshots/examples_calculus.png"
+      ]
+    },
+    {
+      "title": "Series & Limits",
+      "desc": "Evaluate limits, Taylor series, Fourier series, and more.",
+      "images": [
+        "static/images/screenshots/mathematics.png"
+      ]
+    }
+  ],
+  "statistics": [
+    {
+      "title": "Statistical Distributions",
+      "desc": "Analyze probability distributions, compute moments and quantiles.",
+      "images": [
+        "static/images/screenshots/examples_statistics.png"
+      ]
+    },
+    {
+      "title": "Data Analysis",
+      "desc": "Compute descriptive statistics, regression, and correlation.",
+      "images": [
+        "static/images/screenshots/mathematics.png"
+      ]
+    },
+    {
+      "title": "Probability",
+      "desc": "Compute probabilities for events and distributions.",
+      "images": [
+        "static/images/screenshots/examples_statistics.png"
+      ]
+    }
+  ],
+  "physics": [
+    {
+      "title": "Classical Mechanics",
+      "desc": "Compute forces, energy, momentum, and motion using fundamental physics formulas.",
+      "images": [
+        "static/images/screenshots/examples_physics.png"
+      ]
+    },
+    {
+      "title": "Electromagnetic Theory",
+      "desc": "Solve problems involving electric and magnetic fields, circuits, and waves.",
+      "images": [
+        "static/images/screenshots/input_physics.png"
+      ]
+    },
+    {
+      "title": "Quantum & Atomic Physics",
+      "desc": "Explore photon energies, atomic spectra, and quantum phenomena.",
+      "images": [
+        "static/images/screenshots/examples_science.png"
+      ]
+    }
+  ],
+  "chemistry": [
+    {
+      "title": "Chemical Elements",
+      "desc": "Access comprehensive data on all elements of the periodic table.",
+      "images": [
+        "static/images/screenshots/input_carbon.png",
+        "static/images/screenshots/examples_chemistry.png"
+      ]
+    },
+    {
+      "title": "Chemical Equations",
+      "desc": "Balance and analyze chemical reactions and stoichiometry.",
+      "images": [
+        "static/images/screenshots/examples_chemistry.png"
+      ]
+    },
+    {
+      "title": "Molecular Properties",
+      "desc": "Compute molecular formulas, structure, and physical properties.",
+      "images": [
+        "static/images/screenshots/examples_science.png"
+      ]
+    }
+  ],
+  "astronomy": [
+    {
+      "title": "Solar System",
+      "desc": "Explore planetary data, orbital mechanics, and astronomical distances.",
+      "images": [
+        "static/images/screenshots/examples_astronomy.png"
+      ]
+    },
+    {
+      "title": "Stars & Galaxies",
+      "desc": "Lookup star properties, distances, and spectral data.",
+      "images": [
+        "static/images/screenshots/examples_science.png"
+      ]
+    },
+    {
+      "title": "Sky Charts",
+      "desc": "Generate star charts, planet positions, and astronomical event predictions.",
+      "images": [
+        "static/images/screenshots/examples_astronomy.png"
+      ]
+    }
+  ],
+  "weather": [
+    {
+      "title": "Current Conditions",
+      "desc": "Get real-time weather data for any location worldwide.",
+      "images": [
+        "static/images/screenshots/input_weather.png"
+      ]
+    },
+    {
+      "title": "Forecast & History",
+      "desc": "Access hourly and daily forecasts, and historical weather records.",
+      "images": [
+        "static/images/screenshots/input_weather.png"
+      ]
+    },
+    {
+      "title": "Climate Data",
+      "desc": "Analyze long-term climate trends and comparisons.",
+      "images": [
+        "static/images/screenshots/everyday.png"
+      ]
+    }
+  ],
+  "finance": [
+    {
+      "title": "Stock Market",
+      "desc": "Look up stock prices, market data, and historical charts.",
+      "images": [
+        "static/images/screenshots/examples_finance.png"
+      ]
+    },
+    {
+      "title": "Currency Exchange",
+      "desc": "Convert currencies and track exchange rate history.",
+      "images": [
+        "static/images/screenshots/examples_finance.png"
+      ]
+    },
+    {
+      "title": "Mortgage & Loans",
+      "desc": "Calculate loan payments, amortization schedules, and interest.",
+      "images": [
+        "static/images/screenshots/examples_everyday.png"
+      ]
+    }
+  ],
+  "geometry": [
+    {
+      "title": "2D Geometry",
+      "desc": "Compute areas, perimeters, and properties of 2D shapes.",
+      "images": [
+        "static/images/screenshots/examples_geometry.png"
+      ]
+    },
+    {
+      "title": "3D Geometry",
+      "desc": "Analyze volumes, surface areas, and properties of 3D solids.",
+      "images": [
+        "static/images/screenshots/mathematics.png"
+      ]
+    },
+    {
+      "title": "Coordinate Geometry",
+      "desc": "Work with lines, curves, and transformations in coordinate systems.",
+      "images": [
+        "static/images/screenshots/examples_algebra.png"
+      ]
+    }
+  ],
+  "personal-health": [
+    {
+      "title": "Body Metrics",
+      "desc": "Calculate BMI, caloric needs, and other personal health metrics.",
+      "images": [
+        "static/images/screenshots/examples_personal_health.png"
+      ]
+    },
+    {
+      "title": "Nutrition",
+      "desc": "Look up nutritional content of foods and compare diets.",
+      "images": [
+        "static/images/screenshots/examples_food.png"
+      ]
+    },
+    {
+      "title": "Medical Reference",
+      "desc": "Access clinical reference data, drug information, and anatomical data.",
+      "images": [
+        "static/images/screenshots/examples_life.png"
+      ]
+    }
+  ],
+  "number-theory": [
+    {
+      "title": "Examples",
+      "desc": "Explore computational examples and answers in this topic.",
+      "images": [
+        "static/images/screenshots/mathematics.png"
+      ]
+    }
+  ],
+  "trigonometry": [
+    {
+      "title": "Examples",
+      "desc": "Explore computational examples and answers in this topic.",
+      "images": [
+        "static/images/screenshots/mathematics.png"
+      ]
+    }
+  ],
+  "linear-algebra": [
+    {
+      "title": "Examples",
+      "desc": "Explore computational examples and answers in this topic.",
+      "images": [
+        "static/images/screenshots/mathematics.png"
+      ]
+    }
+  ],
+  "differential-equations": [
+    {
+      "title": "Examples",
+      "desc": "Explore computational examples and answers in this topic.",
+      "images": [
+        "static/images/screenshots/mathematics.png"
+      ]
+    }
+  ],
+  "probability": [
+    {
+      "title": "Examples",
+      "desc": "Explore computational examples and answers in this topic.",
+      "images": [
+        "static/images/screenshots/mathematics.png"
+      ]
+    }
+  ],
+  "discrete-math": [
+    {
+      "title": "Examples",
+      "desc": "Explore computational examples and answers in this topic.",
+      "images": [
+        "static/images/screenshots/mathematics.png"
+      ]
+    }
+  ],
+  "earth-science": [
+    {
+      "title": "Examples",
+      "desc": "Explore computational examples and answers in this topic.",
+      "images": [
+        "static/images/screenshots/science.png"
+      ]
+    }
+  ],
+  "life-sciences": [
+    {
+      "title": "Examples",
+      "desc": "Explore computational examples and answers in this topic.",
+      "images": [
+        "static/images/screenshots/science.png"
+      ]
+    }
+  ],
+  "engineering": [
+    {
+      "title": "Examples",
+      "desc": "Explore computational examples and answers in this topic.",
+      "images": [
+        "static/images/screenshots/science.png"
+      ]
+    }
+  ],
+  "units-measures": [
+    {
+      "title": "Examples",
+      "desc": "Explore computational examples and answers in this topic.",
+      "images": [
+        "static/images/screenshots/science.png"
+      ]
+    }
+  ],
+  "health-medicine": [
+    {
+      "title": "Examples",
+      "desc": "Explore computational examples and answers in this topic.",
+      "images": [
+        "static/images/screenshots/science.png"
+      ]
+    }
+  ],
+  "food-science": [
+    {
+      "title": "Examples",
+      "desc": "Explore computational examples and answers in this topic.",
+      "images": [
+        "static/images/screenshots/science.png"
+      ]
+    }
+  ],
+  "people": [
+    {
+      "title": "Examples",
+      "desc": "Explore computational examples and answers in this topic.",
+      "images": [
+        "static/images/screenshots/society.png"
+      ]
+    }
+  ],
+  "linguistics": [
+    {
+      "title": "Examples",
+      "desc": "Explore computational examples and answers in this topic.",
+      "images": [
+        "static/images/screenshots/society.png"
+      ]
+    }
+  ],
+  "geography": [
+    {
+      "title": "Examples",
+      "desc": "Explore computational examples and answers in this topic.",
+      "images": [
+        "static/images/screenshots/society.png"
+      ]
+    }
+  ],
+  "history": [
+    {
+      "title": "Examples",
+      "desc": "Explore computational examples and answers in this topic.",
+      "images": [
+        "static/images/screenshots/society.png"
+      ]
+    }
+  ],
+  "sports": [
+    {
+      "title": "Examples",
+      "desc": "Explore computational examples and answers in this topic.",
+      "images": [
+        "static/images/screenshots/society.png"
+      ]
+    }
+  ],
+  "arts-media": [
+    {
+      "title": "Examples",
+      "desc": "Explore computational examples and answers in this topic.",
+      "images": [
+        "static/images/screenshots/society.png"
+      ]
+    }
+  ],
+  "economics": [
+    {
+      "title": "Examples",
+      "desc": "Explore computational examples and answers in this topic.",
+      "images": [
+        "static/images/screenshots/society.png"
+      ]
+    }
+  ],
+  "entertainment": [
+    {
+      "title": "Examples",
+      "desc": "Explore computational examples and answers in this topic.",
+      "images": [
+        "static/images/screenshots/everyday.png"
+      ]
+    }
+  ],
+  "personal-finance": [
+    {
+      "title": "Examples",
+      "desc": "Explore computational examples and answers in this topic.",
+      "images": [
+        "static/images/screenshots/everyday.png"
+      ]
+    }
+  ],
+  "travel": [
+    {
+      "title": "Examples",
+      "desc": "Explore computational examples and answers in this topic.",
+      "images": [
+        "static/images/screenshots/everyday.png"
+      ]
+    }
+  ],
+  "household-math": [
+    {
+      "title": "Examples",
+      "desc": "Explore computational examples and answers in this topic.",
+      "images": [
+        "static/images/screenshots/everyday.png"
+      ]
+    }
+  ],
+  "household-science": [
+    {
+      "title": "Examples",
+      "desc": "Explore computational examples and answers in this topic.",
+      "images": [
+        "static/images/screenshots/everyday.png"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,86 @@
+{% extends "base.html" %}
+{% block title %}{{ repo.slug }} at main · Hugging Face{% endblock %}
+
+{% block content %}
+<div class="container-wide page">
+    {% include "_repo_head.html" %}
+
+    <div class="files-toolbar">
+        <div class="files-breadcrumb">
+            <button class="btn btn-sm btn-outline" type="button" disabled>main ▾</button>
+            <a href="{{ url_for(repo.repo_type ~ '_files' if repo.repo_type in ['dataset','space'] else 'model_files', author=repo.slug.split('/')[0], name=repo.slug.split('/')[1]) }}">{{ repo.slug.split('/')[1] }}</a>
+            {% if subpath %}
+                {% set _parts = subpath.split('/') %}
+                {% set _ns = namespace(acc='') %}
+                {% for p in _parts %}
+                    {% set _ns.acc = (_ns.acc ~ '/' ~ p) if _ns.acc else p %}
+                    <span class="files-sep">/</span>
+                    <a href="{{ url_for(repo.repo_type ~ '_files' if repo.repo_type in ['dataset','space'] else 'model_files', author=repo.slug.split('/')[0], name=repo.slug.split('/')[1], subpath=_ns.acc) }}">{{ p }}</a>
+                {% endfor %}
+            {% endif %}
+        </div>
+        <div class="files-toolbar-right">
+            <a class="btn btn-sm btn-outline" href="{{ url_for(repo.repo_type ~ '_commits' if repo.repo_type in ['dataset','space'] else 'model_commits', author=repo.slug.split('/')[0], name=repo.slug.split('/')[1]) }}">History: <strong>{{ commits|length }} commits</strong></a>
+        </div>
+    </div>
+
+    {% if head_commit %}
+    <div class="files-head-commit">
+        <span class="files-head-author">{{ head_commit.author_emoji }} <strong>{{ head_commit.author }}</strong></span>
+        <span class="files-head-msg">{{ head_commit.message }}</span>
+        <span class="files-head-meta">
+            <code>{{ head_commit.sha }}</code>
+            · <span class="muted">{{ head_commit.rel_display }}</span>
+            · <a href="{{ url_for(repo.repo_type ~ '_commits' if repo.repo_type in ['dataset','space'] else 'model_commits', author=repo.slug.split('/')[0], name=repo.slug.split('/')[1]) }}">verified</a>
+        </span>
+    </div>
+    {% endif %}
+
+    <table class="files-table">
+        <thead>
+            <tr>
+                <th class="files-th-name">Name</th>
+                <th class="files-th-msg">Last commit message</th>
+                <th class="files-th-when">Last commit date</th>
+                <th class="files-th-size">Size</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% if subpath %}
+            <tr class="files-row files-row-up">
+                {% set _parent = '/'.join(subpath.split('/')[:-1]) %}
+                <td colspan="4">
+                    {% if _parent %}
+                    <a href="{{ url_for(repo.repo_type ~ '_files' if repo.repo_type in ['dataset','space'] else 'model_files', author=repo.slug.split('/')[0], name=repo.slug.split('/')[1], subpath=_parent) }}">📁 ..</a>
+                    {% else %}
+                    <a href="{{ url_for(repo.repo_type ~ '_files' if repo.repo_type in ['dataset','space'] else 'model_files', author=repo.slug.split('/')[0], name=repo.slug.split('/')[1]) }}">📁 ..</a>
+                    {% endif %}
+                </td>
+            </tr>
+            {% endif %}
+            {% for f in files %}
+            <tr class="files-row">
+                <td class="files-name-cell">
+                    {% if f.kind == 'dir' %}
+                    <span class="files-icon">📁</span>
+                    <a href="{{ url_for(repo.repo_type ~ '_files' if repo.repo_type in ['dataset','space'] else 'model_files', author=repo.slug.split('/')[0], name=repo.slug.split('/')[1], subpath=(subpath ~ '/' if subpath else '') ~ f.display_name) }}">{{ f.display_name }}</a>
+                    {% else %}
+                    <span class="files-icon">📄</span>
+                    <a href="{{ url_for(repo.repo_type ~ '_blob' if repo.repo_type in ['dataset','space'] else 'model_blob', author=repo.slug.split('/')[0], name=repo.slug.split('/')[1], filepath=f.path) }}">{{ f.display_name }}</a>
+                    {% if f.lfs %}<span class="files-lfs-badge">LFS</span>{% endif %}
+                    {% endif %}
+                </td>
+                <td class="files-msg-cell muted">{{ f.last_commit_msg }}</td>
+                <td class="files-when-cell muted">{{ f.last_commit_rel }}</td>
+                <td class="files-size-cell">{{ f.size_display }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <p class="muted" style="margin-top:24px;font-size:13px;">
+        Want to download the full repository?
+        <code>git clone https://huggingface.co/{{ repo.slug }}</code>
+    </p>
+</div>
+{% endblock %}

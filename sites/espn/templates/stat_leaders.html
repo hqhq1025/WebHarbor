@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+{% block title %}{{ sport.display_name or sport.name }} Stat Leaders{% endblock %}
+
+{% block content %}
+<div class="container">
+  <div class="page-header">
+    <h1>{{ sport.display_name or sport.name }} Statistical Leaders</h1>
+    <p class="subtitle">Season: {{ season }}{% if conf_filter %} &bull; {{ conf_filter }}{% endif %}</p>
+    {% set active = 'stats' %}{% include "_sport_subnav.html" %}
+  </div>
+
+  <!-- Stat Category Filter -->
+  <div class="stat-filter-bar">
+    <form method="get" action="">
+      <div class="filter-group">
+        <label>Stat:</label>
+        {% for s in ['points', 'rebounds', 'assists', 'steals', 'blocks'] %}
+        <a href="?stat={{ s }}&season={{ season }}&conference={{ conf_filter }}"
+           class="stat-tab {{ 'active' if stat == s else '' }}">
+          {{ s | title }}
+        </a>
+        {% endfor %}
+      </div>
+      <input type="hidden" name="stat" value="{{ stat }}">
+      <div class="filter-group">
+        <label>Conference:</label>
+        <input type="text" name="conference" value="{{ conf_filter }}" placeholder="e.g. Eastern" class="filter-input">
+        <button type="submit" class="btn-red">Filter</button>
+      </div>
+    </form>
+  </div>
+
+  <table class="data-table leaders-table">
+    <thead>
+      <tr>
+        <th>Rank</th>
+        <th>Player</th>
+        <th>Team</th>
+        <th>GP</th>
+        <th>{{ stat | title }}</th>
+        <th>PPG</th>
+        <th>RPG</th>
+        <th>APG</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for player, s in leaders %}
+      {% set rank = loop.index %}
+      <tr>
+        <td class="rank-col">{{ rank }}</td>
+        <td class="player-name">
+          <a href="/player/{{ sport.slug }}/{{ player.slug }}">{{ player.name }}</a>
+        </td>
+        <td>
+          {% if player.team %}
+          <a href="/team/{{ sport.slug }}/{{ player.team.slug }}">{{ player.team.abbreviation or player.team.name }}</a>
+          {% else %}—{% endif %}
+        </td>
+        <td>{{ s.games_played }}</td>
+        <td class="stat-highlight">
+          {% if stat == 'points' %}{{ '%.1f'|format(s.points_per_game) }}
+          {% elif stat == 'rebounds' %}{{ '%.1f'|format(s.rebounds_per_game) }}
+          {% elif stat == 'assists' %}{{ '%.1f'|format(s.assists_per_game) }}
+          {% elif stat == 'steals' %}{{ '%.1f'|format(s.steals_per_game) }}
+          {% elif stat == 'blocks' %}{{ '%.1f'|format(s.blocks_per_game) }}
+          {% endif %}
+        </td>
+        <td>{{ '%.1f'|format(s.points_per_game) }}</td>
+        <td>{{ '%.1f'|format(s.rebounds_per_game) }}</td>
+        <td>{{ '%.1f'|format(s.assists_per_game) }}</td>
+      </tr>
+      {% else %}
+      <tr><td colspan="8" class="empty-msg">No leaders data available.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

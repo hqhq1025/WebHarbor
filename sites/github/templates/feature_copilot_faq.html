@@ -1,0 +1,201 @@
+{% extends "base.html" %}
+{% block title %}Copilot FAQs · GitHub{% endblock %}
+{% block content %}
+
+<!-- Hero -->
+<section class="sec-hero">
+  <div class="sec-hero-inner">
+    <div class="sec-hero-text">
+      <span class="sec-eyebrow">
+        <svg aria-hidden="true" height="16" viewBox="0 0 16 16" width="16" fill="currentColor">
+          <path d="M11.46.146A.5.5 0 0 0 11.107 0H4.893a.5.5 0 0 0-.353.146L.146 4.54A.5.5 0 0 0 0 4.893v6.214a.5.5 0 0 0 .146.353l4.394 4.394a.5.5 0 0 0 .353.146h6.214a.5.5 0 0 0 .353-.146l4.394-4.394a.5.5 0 0 0 .146-.353V4.893a.5.5 0 0 0-.146-.353Z"/>
+        </svg>
+        <a href="/features/copilot" style="color:inherit;text-decoration:none;">GitHub Copilot</a> &nbsp;/&nbsp; FAQ
+      </span>
+      <h1 class="sec-hero-headline">GitHub Copilot — Frequently Asked Questions</h1>
+      <p class="sec-hero-sub">Everything you wanted to know about pricing, supported editors, mobile access, data privacy, and what Copilot does (and doesn't) do with your code.</p>
+      <div class="sec-hero-cta">
+        <a href="/features/copilot" class="gh-btn gh-btn-primary">Back to Copilot</a>
+        <a href="/pricing" class="gh-btn gh-btn-secondary">See pricing</a>
+      </div>
+      <ul class="sec-hero-bullets">
+        <li>Free for verified students, teachers, and OSS maintainers</li>
+        <li>Available in your IDE, on GitHub.com, and on mobile</li>
+        <li>Enterprise-grade data handling — code never trains the public model</li>
+      </ul>
+    </div>
+    <div class="sec-hero-art" aria-hidden="true">
+      <div class="sec-hero-card">
+        <div class="sec-hero-card-row sec-row-fix">
+          <span class="sec-row-icon">💬</span>
+          <span class="sec-row-msg"><strong>Copilot Chat</strong> available in IDE, on GitHub.com, and on mobile</span>
+        </div>
+        <div class="sec-hero-card-row sec-row-dep">
+          <span class="sec-row-icon">📱</span>
+          <span class="sec-row-msg"><strong>GitHub Mobile</strong> on iOS and Android — full Chat support</span>
+        </div>
+        <div class="sec-hero-card-row sec-row-secret">
+          <span class="sec-row-icon">🎓</span>
+          <span class="sec-row-msg"><strong>Free for students</strong> via GitHub Education</span>
+        </div>
+        <div class="sec-hero-card-row sec-row-bug">
+          <span class="sec-row-icon">🛡️</span>
+          <span class="sec-row-msg"><strong>Code privacy</strong> — your code is never used to train the public model</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Quick-jump navigation -->
+<section class="sec-features">
+  <div class="sec-section-inner">
+    <h2 class="sec-section-title">Browse by topic</h2>
+    <p class="sec-section-lede">Six categories, 14 questions. Tap a category to jump to its section.</p>
+    <div style="display:flex; flex-wrap:wrap; gap:10px;">
+      <a href="#general" class="gh-btn gh-btn-secondary gh-btn-sm">General</a>
+      <a href="#pricing" class="gh-btn gh-btn-secondary gh-btn-sm">Pricing</a>
+      <a href="#mobile" class="gh-btn gh-btn-secondary gh-btn-sm">Mobile &amp; Chat</a>
+      <a href="#privacy" class="gh-btn gh-btn-secondary gh-btn-sm">Privacy &amp; Data</a>
+      <a href="#enterprise" class="gh-btn gh-btn-secondary gh-btn-sm">Enterprise</a>
+      <a href="#contact" class="gh-btn gh-btn-secondary gh-btn-sm">Contact</a>
+    </div>
+  </div>
+</section>
+
+<!-- General -->
+<section class="sec-faq" id="general">
+  <div class="sec-section-inner sec-narrow">
+    <h2 class="sec-section-title">General</h2>
+
+    <details class="sec-faq-item" open>
+      <summary>What is GitHub Copilot?</summary>
+      <p>GitHub Copilot is an AI pair programmer that helps you write code faster. It offers inline code suggestions in your editor as you type, a conversational chat interface for asking coding questions, and tools that help you understand unfamiliar code, generate tests, and review pull requests. Copilot is built on top of large language models from OpenAI and Anthropic, fine-tuned by GitHub on permissive open-source code.</p>
+    </details>
+
+    <details class="sec-faq-item">
+      <summary>How does Copilot work?</summary>
+      <p>As you type, Copilot sends a snapshot of your current file (and a few related open files) to the Copilot service, which returns a ranked list of likely next-line completions. For Chat, your question plus a small relevant slice of your code is sent to the model, the model produces an answer, and that answer is streamed back into your IDE. None of these requests are stored on disk by default.</p>
+    </details>
+
+    <details class="sec-faq-item">
+      <summary>Which programming languages are supported?</summary>
+      <p>Copilot works with every major language — JavaScript, TypeScript, Python, Java, Go, C, C++, C#, Ruby, Rust, PHP, Kotlin, Swift, Scala, Dart — plus configuration languages like YAML, Terraform, and SQL. Coverage is best for popular languages but generally usable for anything with substantial open-source code.</p>
+    </details>
+
+    <details class="sec-faq-item">
+      <summary>Which editors and IDEs does Copilot support?</summary>
+      <p>Visual Studio Code, Visual Studio, the JetBrains IDE family (IntelliJ, PyCharm, WebStorm, GoLand, Rider, etc.), Neovim, and Xcode. There is also a CLI extension for terminal usage and a web experience on GitHub.com.</p>
+    </details>
+  </div>
+</section>
+
+<!-- Pricing -->
+<section class="sec-faq" id="pricing" style="border-top:1px solid var(--color-border);">
+  <div class="sec-section-inner sec-narrow">
+    <h2 class="sec-section-title">Pricing</h2>
+
+    <details class="sec-faq-item" open>
+      <summary>How much does GitHub Copilot cost?</summary>
+      <p>Copilot Individual is $10 USD per month or $100 USD per year. Copilot Pro+ is $39 USD per month for power users. Copilot Business is $19 USD per user per month for teams, and Copilot Enterprise is $39 USD per user per month with full org-wide policy controls. A free tier (Copilot Free) is available for everyone with 2,000 completions and 50 chat messages per month.</p>
+    </details>
+
+    <details class="sec-faq-item">
+      <summary>Is there a free trial?</summary>
+      <p>Yes. New paid Individual subscribers get a 30-day free trial. After the trial, you can cancel any time and you'll keep access until the end of the billing period.</p>
+    </details>
+
+    <details class="sec-faq-item">
+      <summary>Is Copilot free for students or open-source maintainers?</summary>
+      <p>Yes. Verified students and teachers get free access through <a href="/education">GitHub Education</a>, and maintainers of popular open-source projects get free access through the GitHub for Open Source program. Both programs include all features of Copilot Individual.</p>
+    </details>
+  </div>
+</section>
+
+<!-- Mobile & Chat — keeping critical answer visible by default -->
+<section class="sec-faq" id="mobile" style="border-top:1px solid var(--color-border);">
+  <div class="sec-section-inner sec-narrow">
+    <h2 class="sec-section-title">Mobile &amp; Chat</h2>
+    <p class="sec-section-lede">Yes — Copilot Chat works on your phone. Here's the detail.</p>
+
+    <details class="sec-faq-item" open>
+      <summary>Copilot Chat in GitHub Mobile</summary>
+      <p>The Copilot Chat experience is integrated into GitHub Mobile, supported on iPhone and iPad with iOS, and on phones and tablets running Android. Chat history syncs between desktop and mobile so you can continue a conversation from your laptop on your phone.</p>
+      <p>The mobile experience supports the same conversational queries as desktop — code explanations, bug-finding hints, repo Q&amp;A, and natural-language search across your code.</p>
+    </details>
+
+    <details class="sec-faq-item" open>
+      <summary>Does Copilot Individual include access to Chat?</summary>
+      <p>Yes. Copilot Individual includes Copilot Chat in supported IDEs, on GitHub.com, and in GitHub Mobile (both iOS and Android).</p>
+    </details>
+
+    <details class="sec-faq-item">
+      <summary>What can Copilot Chat do that completion can't?</summary>
+      <p>Chat is a conversational interface — you ask a question in plain English (or any of 30+ supported languages) and Copilot answers, with optional code blocks. Use it to explain a function, generate tests for a file, suggest a refactor, write a regex, find the bug in a stack trace, or ask why a CI run failed. Completion is for "what comes next on this line"; Chat is for "how do I do X".</p>
+    </details>
+
+    <details class="sec-faq-item">
+      <summary>Can I @-mention specific files or repos in Chat?</summary>
+      <p>Yes. In supported IDEs and on GitHub.com you can use <code>#file</code>, <code>#selection</code>, <code>@workspace</code>, or <code>@github</code> to scope the conversation to a specific piece of code or to your whole repository.</p>
+    </details>
+  </div>
+</section>
+
+<!-- Privacy & Data -->
+<section class="sec-faq" id="privacy" style="border-top:1px solid var(--color-border);">
+  <div class="sec-section-inner sec-narrow">
+    <h2 class="sec-section-title">Privacy &amp; Data</h2>
+
+    <details class="sec-faq-item">
+      <summary>Does Copilot train on my private code?</summary>
+      <p>No. Code from Copilot Individual, Business, and Enterprise customers is never used to train the public foundation model. Prompts and suggestions are also not retained for training by default. Enterprise customers can additionally opt out of any prompt retention for debugging.</p>
+    </details>
+
+    <details class="sec-faq-item">
+      <summary>Where does my code go when I use Copilot?</summary>
+      <p>The minimum context required to produce a useful suggestion (typically the active file plus a few related files in your IDE workspace) is sent to the Copilot service over TLS, processed by the model, and discarded. Nothing is written to long-term storage in the default configuration.</p>
+    </details>
+
+    <details class="sec-faq-item">
+      <summary>Can Copilot suggest code that matches public open-source verbatim?</summary>
+      <p>Rarely, but it can happen. Copilot includes an optional public-code filter that detects when a suggestion exactly matches more than 150 characters of public code on GitHub and either blocks the suggestion or shows you the matching repos and licenses so you can make an informed choice.</p>
+    </details>
+  </div>
+</section>
+
+<!-- Enterprise -->
+<section class="sec-faq" id="enterprise" style="border-top:1px solid var(--color-border);">
+  <div class="sec-section-inner sec-narrow">
+    <h2 class="sec-section-title">Enterprise</h2>
+
+    <details class="sec-faq-item">
+      <summary>What's the difference between Copilot Business and Copilot Enterprise?</summary>
+      <p>Both are seat-based licenses for organizations. Business adds policy management, license assignment, audit logs, and IP indemnity. Enterprise adds personalization on your private code (Chat answers are grounded in your repos), pull-request review skills, and a knowledge base feature for ingesting internal documentation.</p>
+    </details>
+
+    <details class="sec-faq-item">
+      <summary>Does Copilot offer IP indemnification?</summary>
+      <p>Yes. Copilot Business and Enterprise customers receive standard IP indemnification for accepted suggestions when the public-code filter is enabled. See the GitHub Customer Agreement for the precise terms.</p>
+    </details>
+
+    <details class="sec-faq-item">
+      <summary>Can administrators control which features are enabled?</summary>
+      <p>Yes. Org admins can disable Chat, completion, public-code matching, and individual Copilot extensions on a per-team or per-repo basis. Audit logs record every policy change.</p>
+    </details>
+  </div>
+</section>
+
+<!-- Contact -->
+<section class="sec-final-cta" id="contact">
+  <div class="sec-section-inner sec-narrow sec-final-cta-inner">
+    <h2>Still have a question?</h2>
+    <p>Reach out — we read every message and route it to the team that built the feature.</p>
+    <div class="sec-hero-cta">
+      <a href="/contact-sales" class="gh-btn gh-btn-primary">Talk to sales</a>
+      <a href="https://github.com/orgs/community/discussions/categories/copilot" class="gh-btn gh-btn-secondary">Community forum</a>
+    </div>
+    <p style="margin-top:18px; font-size:13px; color:#8b949e;">For account-specific issues, open a ticket from <a href="/account" style="color:#79c0ff;">your account</a> or email <a href="mailto:support@github.com" style="color:#79c0ff;">support@github.com</a>.</p>
+  </div>
+</section>
+
+{% endblock %}

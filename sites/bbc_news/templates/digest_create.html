@@ -1,0 +1,83 @@
+{% extends "base.html" %}
+{% block title %}Create a digest - BBC News{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>Create a news digest</h1>
+    <p>Bundle your saved stories into an email digest, RSS feed, or text export.</p>
+</div>
+
+<div style="display: grid; grid-template-columns: 1fr 340px; gap: 32px; margin-top: 20px;">
+    <div>
+        <form method="post" class="auth-page" style="max-width: 100%; margin: 0; padding: 0; box-shadow: none; background: transparent;">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <div class="form-group">
+                <label for="title">Digest title</label>
+                <input type="text" name="title" id="title" value="My BBC News Digest — {{ current_date_str }}" required>
+            </div>
+
+            <div class="form-group">
+                <label for="source">Source</label>
+                <select name="source" id="source">
+                    <option value="reading_list">From my reading list ({{ rl_items|length }} articles)</option>
+                    <option value="bookmarks">From my bookmarks ({{ bm_items|length }} articles)</option>
+                    <option value="latest">Latest 10 BBC News stories</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="format">Format</label>
+                <select name="format" id="format">
+                    <option value="email">Email newsletter</option>
+                    <option value="rss">RSS feed</option>
+                    <option value="text">Plain text</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="delivery_email">Delivery email</label>
+                <input type="email" name="delivery_email" id="delivery_email" value="{{ current_user.email }}">
+            </div>
+
+            <div class="form-group">
+                <label for="notes">Notes (optional)</label>
+                <textarea name="notes" id="notes" rows="3" placeholder="Add a note for yourself or the digest recipient"></textarea>
+            </div>
+
+            <button type="submit" class="btn btn-full">Create digest</button>
+        </form>
+    </div>
+
+    <aside>
+        <div class="side-block">
+            <h3 class="side-title">What's a digest?</h3>
+            <p style="font-size: 13px; color: var(--bbc-text-light); margin-bottom: 12px;">
+                Digests bundle the stories you've saved into a single exportable file — email, RSS, or plain text.
+                Use them for archive, sharing, or sending to yourself for later reading.
+            </p>
+            <ul style="list-style: none; padding: 0; font-size: 13px;">
+                <li style="padding: 6px 0; border-top: 1px solid var(--bbc-border);">
+                    <strong>Email:</strong> Formatted as a newsletter digest.
+                </li>
+                <li style="padding: 6px 0; border-top: 1px solid var(--bbc-border);">
+                    <strong>RSS:</strong> Standard feed you can import into a reader.
+                </li>
+                <li style="padding: 6px 0; border-top: 1px solid var(--bbc-border);">
+                    <strong>Text:</strong> Plain, portable, readable.
+                </li>
+            </ul>
+        </div>
+
+        <div class="side-block">
+            <h3 class="side-title">Quick picks</h3>
+            <p style="font-size: 13px; color: var(--bbc-text-light);">
+                {{ rl_items|length }} in reading list ·
+                {{ bm_items|length }} in bookmarks
+            </p>
+            <a href="{{ url_for('reading_list') }}" class="btn btn-outline btn-full" style="margin-top: 8px;">
+                View reading list
+            </a>
+        </div>
+    </aside>
+</div>
+{% endblock %}

@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+{% block title %}Profile Settings · GitHub{% endblock %}
+{% block content %}
+<div class="settings-layout">
+  <aside class="settings-sidebar">
+    <nav class="settings-nav">
+      <a href="/settings/profile" class="settings-nav-link active">Profile</a>
+      <a href="/settings/password" class="settings-nav-link">Password</a>
+      <a href="/account" class="settings-nav-link">Dashboard</a>
+    </nav>
+  </aside>
+  <div class="settings-main">
+    <h1 class="settings-title">Public profile</h1>
+    <form method="POST" action="/settings/profile">
+      {{ form.hidden_tag() }}
+      <div class="settings-section">
+        <div class="form-group">
+          <label class="form-label">Name</label>
+          {{ form.name(class="form-input", placeholder="Your name") }}
+        </div>
+        <div class="form-group">
+          <label class="form-label">Bio</label>
+          {{ form.bio(class="form-input form-textarea", rows="3", placeholder="Tell us a little about yourself") }}
+          <p class="form-hint">You can <strong>@mention</strong> other users and organizations to link to them.</p>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Website</label>
+          {{ form.website(class="form-input", placeholder="https://example.com") }}
+        </div>
+        <div class="form-group">
+          <label class="form-label">Company</label>
+          {{ form.company(class="form-input", placeholder="@company") }}
+        </div>
+        <div class="form-group">
+          <label class="form-label">Location</label>
+          {{ form.location(class="form-input", placeholder="City, Country") }}
+        </div>
+        <div class="form-group">
+          <label class="form-label">Social accounts — X</label>
+          {{ form.twitter(class="form-input", placeholder="username") }}
+        </div>
+        <button type="submit" class="gh-btn gh-btn-primary">Update profile</button>
+      </div>
+    </form>
+
+    <div class="settings-danger-zone">
+      <h2 class="danger-zone-title">Danger Zone</h2>
+      <div class="danger-item">
+        <div>
+          <strong>Delete this account</strong>
+          <p>Once you delete your account, there is no going back. Please be certain.</p>
+        </div>
+        <form method="POST" action="/settings/delete">
+          {{ form.hidden_tag() }}
+          <button type="submit" class="gh-btn gh-btn-danger">Delete your account</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

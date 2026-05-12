@@ -1,0 +1,120 @@
+{% extends "base.html" %}
+{% block title %}Stays — Booking{% endblock %}
+{% block content %}
+<div class="container">
+    <h1 class="page-title">Stays</h1>
+    <p class="page-subtitle">Browse {{ pagination.total }} properties across {{ all_cities|length }} destinations</p>
+
+    <!-- Filter bar -->
+    <form method="get" style="background:#fff;padding:16px;border-radius:8px;border:1px solid #e7e7e7;margin-bottom:20px;display:flex;gap:12px;flex-wrap:wrap;align-items:end;">
+        <div class="form-group" style="margin:0;flex:1;min-width:160px;">
+            <label>City</label>
+            <select name="city">
+                <option value="">All cities</option>
+                {% for c in all_cities %}
+                <option value="{{ c.slug }}" {% if selected_city == c.slug %}selected{% endif %}>{{ c.display }}, {{ c.country }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="form-group" style="margin:0;flex:1;min-width:140px;">
+            <label>Property type</label>
+            <select name="type">
+                <option value="">All</option>
+                <option value="Hotel">Hotel</option>
+                <option value="Apartment">Apartment</option>
+                <option value="Resort">Resort</option>
+                <option value="Villa">Villa</option>
+                <option value="Hostel">Hostel</option>
+            </select>
+        </div>
+        <div class="form-group" style="margin:0;flex:1;min-width:120px;">
+            <label>Min stars</label>
+            <select name="stars">
+                <option value="">Any</option>
+                <option value="3">3+ stars</option>
+                <option value="4">4+ stars</option>
+                <option value="5">5 stars</option>
+            </select>
+        </div>
+        <div class="form-group" style="margin:0;flex:1;min-width:140px;">
+            <label>Sort by</label>
+            <select name="sort">
+                <option value="rating">Top rated</option>
+                <option value="price_low">Price (low → high)</option>
+                <option value="price_high">Price (high → low)</option>
+                <option value="stars">Star rating</option>
+            </select>
+        </div>
+        <button type="submit" class="btn-primary">Apply</button>
+    </form>
+
+    {% if properties %}
+        {% for prop in properties %}
+        <div class="property-card">
+            <div class="property-card-img">
+                {% if prop.image %}
+                <img src="{{ prop.image }}" alt="{{ prop.name }}"
+                     onerror="this.parentElement.innerHTML='<div style=&quot;background:linear-gradient(135deg,#003580,#006ce4);width:100%;height:100%;display:flex;align-items:center;justify-content:center;color:#fff;font-size:14px;padding:10px;text-align:center;&quot;>{{ prop.name }}</div>'">
+                {% endif %}
+                {% if current_user.is_authenticated %}
+                <form method="POST" action="{{ url_for('saved_toggle_form', property_id=prop.id) }}" style="position:absolute;top:8px;right:8px;">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token_value }}">
+                    <input type="hidden" name="next" value="{{ request.url }}">
+                    <button type="submit" class="save-btn">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg>
+                    </button>
+                </form>
+                {% endif %}
+            </div>
+            <div class="property-card-body">
+                <div class="property-card-header">
+                    <div>
+                        <h3 class="property-card-title">
+                            <a href="{{ url_for('property_detail', slug=prop.slug) }}">{{ prop.name }}</a>
+                        </h3>
+                        <div class="stars">{% for i in range(prop.stars) %}&#9733;{% endfor %}</div>
+                        <a href="{{ url_for('city_page', slug=prop.city.slug) }}" class="location">{{ prop.city.display }}</a>
+                        <div class="neighborhood">{{ prop.neighborhood }} &middot; {{ prop.distance_from_center }} km from centre</div>
+                        {% if prop.is_genius_deal %}<span class="badge badge-genius">GENIUS</span>{% endif %}
+                        {% if prop.free_cancellation %}<span class="badge badge-deal">Free cancellation</span>{% endif %}
+                        <p class="short-desc">{{ prop.short_desc }}</p>
+                    </div>
+                    <div class="rating-box">
+                        <div class="rating-text">
+                            <span class="label">{{ prop.rating_label }}</span>
+                            <span class="count">{{ prop.review_count }} reviews</span>
+                        </div>
+                        <div class="rating-score">{{ prop.rating }}</div>
+                    </div>
+                </div>
+                <div class="property-card-footer">
+                    <div class="price-line">1 night, 2 adults</div>
+                    {% if prop.discount_percent > 0 %}
+                    <span class="price-strikethrough">${{ '%.0f' % prop.price_per_night }}</span>
+                    {% endif %}
+                    <span class="price">${{ '%.0f' % prop.discounted_price }}</span>
+                    <div class="price-includes">Includes taxes and fees</div>
+                    <a href="{{ url_for('property_detail', slug=prop.slug) }}" class="btn-availability">See availability &rarr;</a>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+
+        <!-- Pagination -->
+        <div style="text-align:center;margin-top:32px;">
+            {% if pagination.has_prev %}
+            <a class="btn-secondary" href="?page={{ pagination.prev_num }}{% if selected_city %}&city={{ selected_city }}{% endif %}">&larr; Previous</a>
+            {% endif %}
+            <span style="padding:12px 20px;">Page {{ pagination.page }} of {{ pagination.pages }}</span>
+            {% if pagination.has_next %}
+            <a class="btn-secondary" href="?page={{ pagination.next_num }}{% if selected_city %}&city={{ selected_city }}{% endif %}">Next &rarr;</a>
+            {% endif %}
+        </div>
+    {% else %}
+    <div class="empty-state">
+        <h2>No stays found</h2>
+        <p>Try adjusting your filters.</p>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

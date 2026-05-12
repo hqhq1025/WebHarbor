@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% block title %}{{ paper.title }} – Daily Papers{% endblock %}
+
+{% block content %}
+<div class="container-wide page paper-detail-page">
+    <nav class="docs-breadcrumb">
+        <a href="{{ url_for('papers_index') }}">Daily Papers</a>
+        <span>/</span>
+        <span>arXiv:{{ paper.arxiv_id }}</span>
+    </nav>
+    <h1 class="paper-title">{{ paper.title }}</h1>
+    <p class="muted">By {{ paper.authors }} — {{ paper.published }}</p>
+    <div class="paper-stats">
+        <span class="paper-upvotes">▲ {{ paper.upvotes }} upvotes</span>
+        <span>arXiv:{{ paper.arxiv_id }}</span>
+    </div>
+
+    <section class="paper-abstract">
+        <h2>Abstract</h2>
+        <p>{{ paper.abstract }}</p>
+    </section>
+
+    {% if paper.related_models %}
+    <section class="paper-related">
+        <h2>Related models released with this paper</h2>
+        <ul>
+            {% for slug in paper.related_models %}
+            <li><a href="/{{ slug }}">{{ slug }}</a></li>
+            {% endfor %}
+        </ul>
+    </section>
+    {% endif %}
+
+    {% if paper.related_datasets %}
+    <section class="paper-related">
+        <h2>Related datasets</h2>
+        <ul>
+            {% for slug in paper.related_datasets %}
+            <li><a href="/datasets/{{ slug }}">{{ slug }}</a></li>
+            {% endfor %}
+        </ul>
+    </section>
+    {% endif %}
+</div>
+{% endblock %}

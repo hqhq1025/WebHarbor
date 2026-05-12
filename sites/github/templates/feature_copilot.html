@@ -1,0 +1,121 @@
+{% extends "base.html" %}
+{% block title %}GitHub Copilot · Your AI pair programmer{% endblock %}
+{% block content %}
+<div class="feature-page">
+  <div class="feature-hero feature-hero-dark">
+    <div class="feature-hero-content">
+      <span class="feature-eyebrow">GitHub Copilot</span>
+      <h1 class="feature-headline">Your AI pair programmer</h1>
+      <p class="feature-subhead">GitHub Copilot uses the OpenAI Codex to suggest code and entire functions in real-time, right from your editor.</p>
+      <div class="feature-cta-group">
+        <a href="/register" class="gh-btn gh-btn-primary gh-btn-lg">Get started for free</a>
+        <a href="/pricing" class="gh-btn gh-btn-outline gh-btn-lg">See pricing</a>
+      </div>
+    </div>
+    <div class="feature-hero-img">
+      <img src="/static/images/feature_sections/copilot_chat.webp" alt="GitHub Copilot" class="feature-main-img"
+           onerror="this.style.display='none'">
+    </div>
+  </div>
+
+  <!-- Stats -->
+  <div class="feature-stats-bar">
+    <div class="feature-stat">
+      <span class="feature-stat-num">55%</span>
+      <span class="feature-stat-label">faster coding</span>
+    </div>
+    <div class="feature-stat">
+      <span class="feature-stat-num">74%</span>
+      <span class="feature-stat-label">of developers stay in the flow</span>
+    </div>
+    <div class="feature-stat">
+      <span class="feature-stat-num">75%</span>
+      <span class="feature-stat-label">higher job satisfaction</span>
+    </div>
+  </div>
+
+  <!-- Key Copilot features list -->
+  {% if features %}
+  <div class="copilot-key-features">
+    <h2 class="copilot-key-features-title">Copilot features</h2>
+    <ol class="copilot-features-list">
+      {% for f in features %}
+      <li class="copilot-feature-item">
+        <strong class="copilot-feature-name">{{ f.name }}</strong>
+        <span class="copilot-feature-desc">{{ f.desc }}</span>
+      </li>
+      {% endfor %}
+    </ol>
+    <p><a href="/features/copilot/faq" class="sidebar-more-link">Read the Copilot FAQs →</a></p>
+  </div>
+  {% endif %}
+
+  <!-- Copilot Individual plan highlight -->
+  {% if individual %}
+  <div class="copilot-individual-box">
+    <h2>Copilot Individual</h2>
+    <div class="copilot-individual-pricing">
+      <span class="copilot-individual-monthly">{{ individual.price_display_monthly }}</span>
+      <span class="copilot-individual-yearly">or {{ individual.price_display_yearly }}</span>
+    </div>
+    <p>Get Copilot Individual for <strong>$100 USD per year</strong> and unlock:</p>
+    <ul>
+      {% for f in individual.features %}
+      <li>{{ f }}</li>
+      {% endfor %}
+    </ul>
+  </div>
+  {% endif %}
+
+  <!-- Feature sections -->
+  <div class="feature-sections">
+    <section class="feature-section">
+      <div class="feature-section-img">
+        <img src="/static/images/feature_sections/copilot_code.png" alt="Code suggestions" class="feature-section-img-el"
+             onerror="this.parentElement.innerHTML='<div class=feature-img-placeholder>AI Code Completion</div>'">
+      </div>
+      <div class="feature-section-text">
+        <span class="feature-section-eyebrow">Code completion</span>
+        <h2 class="feature-section-title">Get code suggestions as you type</h2>
+        <p>GitHub Copilot suggests code in real-time. It adapts to your coding style as it learns from your edits.</p>
+      </div>
+    </section>
+    <section class="feature-section feature-section-reverse">
+      <div class="feature-section-img">
+        <img src="/static/images/feature_sections/actions_collaborate.webp" alt="Copilot chat" class="feature-section-img-el"
+             onerror="this.parentElement.innerHTML='<div class=feature-img-placeholder>AI Chat</div>'">
+      </div>
+      <div class="feature-section-text">
+        <span class="feature-section-eyebrow">Chat</span>
+        <h2 class="feature-section-title">Ask questions, get answers in your IDE</h2>
+        <p>Chat with Copilot in natural language to explain code, generate tests, fix bugs, and more — directly in your editor.</p>
+      </div>
+    </section>
+  </div>
+
+  <!-- Pricing tiers -->
+  <div class="copilot-pricing">
+    <h2 class="copilot-pricing-title">Choose your Copilot plan</h2>
+    <div class="copilot-tiers">
+      {% for tier in tiers %}
+      <div class="copilot-tier">
+        <h3 class="copilot-tier-name">{{ tier.name }}</h3>
+        <div class="copilot-tier-price">{{ tier.price }}</div>
+        <p class="copilot-tier-desc">{{ tier.desc }}</p>
+        <ul class="copilot-tier-features">
+          {% for f in tier.features %}
+          <li>
+            <svg aria-hidden="true" height="14" viewBox="0 0 16 16" width="14" fill="#3fb950">
+              <path d="M13.78 4.22a.75.75 0 0 1 0 1.06l-7.25 7.25a.75.75 0 0 1-1.06 0L2.22 9.28a.751.751 0 0 1 .018-1.042.751.751 0 0 1 1.042-.018L6 10.94l6.72-6.72a.75.75 0 0 1 1.06 0Z"/>
+            </svg>
+            {{ f }}
+          </li>
+          {% endfor %}
+        </ul>
+        <a href="/register" class="gh-btn {% if tier.name == 'Pro' %}gh-btn-primary{% else %}gh-btn-secondary{% endif %} gh-btn-block">Get started</a>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+{% endblock %}

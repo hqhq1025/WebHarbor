@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+{% block title %}{{ entry.headword|upper }} - Cambridge English Thesaurus article page{% endblock %}
+{% block content %}
+<div class="thesaurus-article">
+  <nav class="breadcrumb">
+    <a href="{{ url_for('thesaurus_search') }}">Thesaurus</a> &rsaquo;
+    <a href="{{ url_for('thesaurus_search') }}">articles</a> &rsaquo;
+    <span>{{ entry.headword }}</span>
+  </nav>
+
+  <header class="thes-art-header">
+    <h1 class="thes-art-title">{{ entry.headword }}</h1>
+    {% if entry.guide_word %}
+      <p class="thes-art-intro">{{ entry.guide_word }}</p>
+    {% else %}
+      <p class="thes-art-intro">These words all mean <em>{{ entry.headword }}</em>.</p>
+    {% endif %}
+  </header>
+
+  <article class="thes-art-body">
+    {% for section in sections %}
+      <section class="thes-art-section">
+        {% if section.definition %}
+          <p class="thes-art-para">{{ section.definition|safe }}</p>
+        {% endif %}
+        {% if section.examples %}
+          <div class="thes-art-examples">
+            {% for ex in section.examples %}
+              <div class="thes-art-example">
+                {% if ex.startswith('UK:') %}
+                  <span class="thes-art-region">UK</span> {{ ex[3:].strip() }}
+                {% elif ex.startswith('US:') %}
+                  <span class="thes-art-region">US</span> {{ ex[3:].strip() }}
+                {% else %}
+                  {{ ex }}
+                {% endif %}
+              </div>
+            {% endfor %}
+          </div>
+        {% endif %}
+      </section>
+    {% endfor %}
+  </article>
+
+  {% if synonyms %}
+  <section class="thes-art-synonyms">
+    <h2 class="thes-art-h2">Synonyms and related words</h2>
+    <p class="thes-art-h2-sub">Behaving in a particular way: {{ entry.headword }}</p>
+    <div class="thes-art-syn-list">
+      {% for syn in synonyms %}
+        <a href="{{ url_for('thesaurus_search', q=syn) }}" class="synonym-tag thes-art-syn">{{ syn }}</a>
+      {% endfor %}
+    </div>
+  </section>
+  {% endif %}
+
+  <p class="dict-source">(Definition of <em>{{ entry.headword }}</em> from the Cambridge Advanced Learner's Dictionary &amp; Thesaurus &copy; Cambridge University Press)</p>
+</div>
+{% endblock %}

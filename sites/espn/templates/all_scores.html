@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% block title %}Today's Scores{% endblock %}
+
+{% block content %}
+<div class="container">
+  <div class="page-header">
+    <h1>Scores</h1>
+    <form method="get" action="/scores">
+      <input type="text" name="date" value="{{ (date_str or '').replace('-', '') }}"
+             class="date-input"
+             placeholder="YYYYMMDD"
+             pattern="\d{8}"
+             maxlength="8"
+             inputmode="numeric"
+             title="8-digit date, e.g. 20240328">
+      <button type="submit" class="btn-red">Go</button>
+    </form>
+  </div>
+
+  {% for sport, games in games_by_sport.items() %}
+  <section class="section-block">
+    <h2 class="section-heading">
+      <a href="{{ sport.url_prefix }}scoreboard">{{ sport.display_name or sport.name }}</a>
+    </h2>
+    <div class="scoreboard-grid">
+      {% for game in games %}
+      <div class="score-card">
+        <a href="/game/{{ game.id }}">
+          <div class="score-header">{{ game.date_display or game.date }}</div>
+          <div class="score-row">
+            <span class="team-abbr">{{ game.away_team.abbreviation if game.away_team else 'AWY' }}</span>
+            <span class="team-name">{{ game.away_team.name if game.away_team else 'Away' }}</span>
+            <span class="score-val {{ 'winner' if game.away_score > game.home_score else '' }}">{{ game.away_score }}</span>
+          </div>
+          <div class="score-row">
+            <span class="team-abbr">{{ game.home_team.abbreviation if game.home_team else 'HME' }}</span>
+            <span class="team-name">{{ game.home_team.name if game.home_team else 'Home' }}</span>
+            <span class="score-val {{ 'winner' if game.home_score > game.away_score else '' }}">{{ game.home_score }}</span>
+          </div>
+          <div class="score-footer">{{ game.period }}</div>
+        </a>
+      </div>
+      {% endfor %}
+    </div>
+  </section>
+  {% else %}
+  <p class="empty-msg" style="padding:40px; text-align:center;">No scores available for this date.</p>
+  {% endfor %}
+</div>
+{% endblock %}

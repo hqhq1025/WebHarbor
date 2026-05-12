@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% block title %}{{ entry.headword }} synonyms | Cambridge Thesaurus{% endblock %}
+{% block content %}
+<div class="thesaurus-entry container">
+  <nav class="breadcrumb">
+    <a href="{{ url_for('thesaurus_search') }}">Thesaurus</a> &rsaquo;
+    <span>{{ entry.headword }}</span>
+  </nav>
+
+  <div class="thes-header">
+    <h1 class="thes-phrase">{{ entry.headword }}</h1>
+    {% if entry.pos and not entry.is_thesaurus_phrase %}
+      <span class="entry-pos">{{ entry.pos }}</span>
+    {% endif %}
+  </div>
+
+  {% set defs = entry.get_definitions() %}
+  {% if defs %}
+    <p class="thes-sense">{{ defs[0].definition }}</p>
+  {% endif %}
+
+  {% if synonyms %}
+  <div class="thes-synonyms-block">
+    <h2 class="thes-section-title">Synonyms for <em>{{ entry.headword }}</em></h2>
+    <div class="synonym-tags large">
+      {% for syn in synonyms %}
+        <a href="{{ url_for('search', q=syn) }}" class="synonym-tag">{{ syn }}</a>
+      {% endfor %}
+    </div>
+  </div>
+  {% else %}
+  <div class="thes-synonyms-block">
+    <h2 class="thes-section-title">Synonyms for <em>{{ entry.headword }}</em></h2>
+    <p class="thes-empty">No synonyms available for this entry.</p>
+  </div>
+  {% endif %}
+
+  {% if related %}
+  <div class="thes-related-block">
+    <h3 class="thes-section-title">Related words and phrases</h3>
+    <div class="related-list">
+      {% for rel in related %}
+        <div class="related-item">
+          <span class="related-type related-type--{{ rel.type }}">{{ rel.type }}</span>
+          <a href="{{ url_for('search', q=rel.text) }}" class="related-text">{{ rel.text }}</a>
+          {% if rel.definition %}
+            <span class="related-def"> — {{ rel.definition }}</span>
+          {% endif %}
+        </div>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

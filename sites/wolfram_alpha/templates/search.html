@@ -1,0 +1,87 @@
+{% extends "base.html" %}
+{% block title %}{% if query %}Search: {{ query }}{% else %}Search{% endif %} — Wolfram|Alpha{% endblock %}
+
+{% block content %}
+<div class="section-inner">
+  <div class="search-page-header">
+    <h1 class="page-title">&#128269; Search Topics</h1>
+    <form class="search-page-form" action="/search" method="get">
+      <input type="text" name="q" value="{{ query }}"
+             class="wa-search-input search-page-input"
+             placeholder="Search topics, categories..." autofocus>
+      <button type="submit" class="btn btn-primary">Search</button>
+    </form>
+  </div>
+
+  {% if query %}
+  <div class="search-results-header">
+    <p>{% if results %}{{ results|length }} result{% if results|length != 1 %}s{% endif %}{% else %}No results{% endif %} for "<strong>{{ query }}</strong>"</p>
+  </div>
+
+  {% if results %}
+  <div class="wa-topics-grid">
+    {% for topic in results %}
+    <a href="/topic/{{ topic.slug }}" class="wa-topic-card fade-in">
+      <div class="wa-topic-img-wrap">
+        <img src="{{ topic.image }}" alt="{{ topic.name }}"
+             onerror="this.parentElement.innerHTML='<div class=\'topic-img-placeholder\'>{{ topic.category.icon }}</div>'">
+      </div>
+      <div class="wa-topic-body">
+        <span class="wa-topic-category" style="color: {{ topic.category.color }}">{{ topic.category.name }}</span>
+        <h3 class="wa-topic-name">{{ topic.name }}</h3>
+        <p class="wa-topic-desc">{{ topic.description[:100] }}...</p>
+        {% set exs = topic.get_examples() %}
+        {% if exs %}
+        <div class="wa-topic-example">
+          <code class="wa-example-query">{{ exs[0].query }}</code>
+        </div>
+        {% endif %}
+      </div>
+    </a>
+    {% endfor %}
+  </div>
+
+  <div class="search-also-try">
+    <h3>Or try a direct computation:</h3>
+    <a href="/input?i={{ query|urlencode }}" class="btn btn-pro-primary">
+      Compute "{{ query }}" &rarr;
+    </a>
+  </div>
+
+  {% else %}
+  <div class="search-no-results">
+    <p>No topics matched "<strong>{{ query }}</strong>".</p>
+    <p>Try computing it directly:</p>
+    <a href="/input?i={{ query|urlencode }}" class="btn btn-pro-primary">
+      Compute "{{ query }}" &rarr;
+    </a>
+    <div style="margin-top: 32px;">
+      <h3>Browse all topics:</h3>
+      <div class="cat-browse-links">
+        {% for cat in categories %}
+        <a href="/examples/{{ cat.slug }}" class="cat-browse-link" style="--cat-color: {{ cat.color }}">
+          {{ cat.icon }} {{ cat.name }}
+        </a>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
+  {% else %}
+  <!-- No query yet -->
+  <div class="search-browse">
+    <h2>Browse by Category</h2>
+    <div class="wa-categories-grid">
+      {% for cat in categories %}
+      <a href="/examples/{{ cat.slug }}" class="wa-cat-card" style="--cat-color: {{ cat.color }}">
+        <div class="wa-cat-icon">{{ cat.icon }}</div>
+        <h3 class="wa-cat-name">{{ cat.name }}</h3>
+        <p class="wa-cat-desc">{{ cat.description[:80] }}...</p>
+      </a>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

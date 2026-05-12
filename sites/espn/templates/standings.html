@@ -1,0 +1,100 @@
+{% extends "base.html" %}
+{% block title %}{{ sport.display_name or sport.name }} Standings{% endblock %}
+
+{% block content %}
+<div class="container">
+  <div class="page-header">
+    <h1>{{ sport.display_name or sport.name }} Standings</h1>
+    {% set active = 'standings' %}{% include "_sport_subnav.html" %}
+  </div>
+
+  {% if standings_data %}
+    {% for conf_entry in standings_data %}
+    <section class="section-block">
+      <h2 class="section-heading conference-heading">{{ conf_entry.conference.name }}</h2>
+
+      {% if conf_entry.divisions %}
+        {% for div_entry in conf_entry.divisions %}
+        <div class="division-block">
+          <h3 class="division-heading">{{ div_entry.division.name }}</h3>
+          <table class="data-table standings-table">
+            <thead>
+              <tr>
+                <th>Team</th><th>W</th><th>L</th>
+                {% if sport.slug == 'nhl' %}<th>OTL</th>{% endif %}
+                <th>PCT</th><th>GB</th><th>Home</th><th>Away</th><th>Streak</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for team in div_entry.teams %}
+              <tr>
+                <td><a href="/team/{{ sport.slug }}/{{ team.slug }}">{{ team.full_name or team.name }}</a></td>
+                <td>{{ team.wins }}</td>
+                <td>{{ team.losses }}</td>
+                {% if sport.slug == 'nhl' %}<td>{{ team.overtime_losses }}</td>{% endif %}
+                <td>{{ '%.3f'|format(team.win_pct) }}</td>
+                <td>{{ '%.1f'|format(team.games_back) if team.games_back else '—' }}</td>
+                <td>{{ team.home_record }}</td>
+                <td>{{ team.away_record }}</td>
+                <td>{{ team.streak }}</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        {% endfor %}
+      {% else %}
+        <table class="data-table standings-table">
+          <thead>
+            <tr>
+              <th>Team</th><th>W</th><th>L</th>
+              {% if sport.slug == 'nhl' %}<th>OTL</th>{% endif %}
+              <th>PCT</th><th>GB</th><th>Home</th><th>Away</th><th>Streak</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for team in conf_entry.teams %}
+            <tr>
+              <td><a href="/team/{{ sport.slug }}/{{ team.slug }}">{{ team.full_name or team.name }}</a></td>
+              <td>{{ team.wins }}</td>
+              <td>{{ team.losses }}</td>
+              {% if sport.slug == 'nhl' %}<td>{{ team.overtime_losses }}</td>{% endif %}
+              <td>{{ '%.3f'|format(team.win_pct) }}</td>
+              <td>{{ '%.1f'|format(team.games_back) if team.games_back else '—' }}</td>
+              <td>{{ team.home_record }}</td>
+              <td>{{ team.away_record }}</td>
+              <td>{{ team.streak }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      {% endif %}
+    </section>
+    {% endfor %}
+  {% else %}
+    <!-- Fallback: flat list -->
+    <table class="data-table standings-table">
+      <thead>
+        <tr>
+          <th>Rank</th><th>Team</th><th>W</th><th>L</th><th>PCT</th><th>GB</th><th>Streak</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for team in all_teams %}
+        <tr>
+          <td>{{ team.standing_rank }}</td>
+          <td><a href="/team/{{ sport.slug }}/{{ team.slug }}">{{ team.full_name or team.name }}</a></td>
+          <td>{{ team.wins }}</td>
+          <td>{{ team.losses }}</td>
+          <td>{{ '%.3f'|format(team.win_pct) }}</td>
+          <td>{{ '%.1f'|format(team.games_back) if team.games_back else '—' }}</td>
+          <td>{{ team.streak }}</td>
+        </tr>
+        {% else %}
+        <tr><td colspan="7" class="empty-msg">No standings data available.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  {% endif %}
+</div>
+{% endblock %}

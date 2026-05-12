@@ -1,0 +1,103 @@
+{% extends "base.html" %}
+{% block title %}My account — Booking{% endblock %}
+{% block content %}
+<div class="container">
+    <h1 class="page-title">Account</h1>
+
+    <div class="account-layout">
+        <aside class="account-sidebar">
+            <div class="avatar">{{ current_user.first_name[0] if current_user.first_name else 'G' }}</div>
+            <h3>{{ current_user.full_name }}</h3>
+            <div class="genius-level">GENIUS Level {{ current_user.genius_level }}</div>
+            <ul>
+                <li><a href="{{ url_for('account') }}">Dashboard</a></li>
+                <li><a href="{{ url_for('my_bookings') }}">My bookings</a></li>
+                <li><a href="{{ url_for('saved') }}">Saved properties</a></li>
+                <li><a href="{{ url_for('payment_methods') }}">Payment methods</a></li>
+                <li><a href="{{ url_for('account_edit') }}">Personal details</a></li>
+                <li><a href="{{ url_for('change_password') }}">Change password</a></li>
+                <li><a href="{{ url_for('logout') }}">Sign out</a></li>
+            </ul>
+        </aside>
+
+        <main>
+            <div class="account-card">
+                <h2>Welcome back, {{ current_user.first_name }}</h2>
+                <p class="text-muted">Here's an overview of your Booking account.</p>
+                <div class="account-stats">
+                    <div class="stat">
+                        <div class="stat-num">{{ total_bookings }}</div>
+                        <div class="stat-label">Total bookings</div>
+                    </div>
+                    <div class="stat">
+                        <div class="stat-num">{{ saved_count }}</div>
+                        <div class="stat-label">Saved properties</div>
+                    </div>
+                    <div class="stat">
+                        <div class="stat-num">{{ reviews|length }}</div>
+                        <div class="stat-label">Reviews written</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="account-card">
+                <h2>Recent bookings</h2>
+                {% if bookings %}
+                    {% for booking in bookings %}
+                    <div class="booking-row">
+                        {% if booking.items and booking.items[0].property.image %}
+                        <img src="{{ booking.items[0].property.image }}" alt=""
+                             onerror="this.style.background='linear-gradient(135deg,#003580,#006ce4)'">
+                        {% else %}
+                        <img src="/static/images/placeholder.jpg" onerror="this.style.background='linear-gradient(135deg,#003580,#006ce4)'">
+                        {% endif %}
+                        <div class="info">
+                            <h4>{{ booking.items[0].property.name if booking.items else 'Booking' }}</h4>
+                            <div class="meta">{{ booking.booking_number }} &middot; {{ booking.created_at.strftime('%d %b %Y') }}</div>
+                        </div>
+                        <div>
+                            <div class="status status-{{ booking.status }}">{{ booking.status.upper() }}</div>
+                            <div style="text-align:right;margin-top:4px;"><a href="{{ url_for('booking_detail', booking_id=booking.id) }}" style="font-size:12px;">View &rarr;</a></div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                    <div class="mt-2"><a href="{{ url_for('my_bookings') }}">View all bookings &rarr;</a></div>
+                {% else %}
+                    <p class="text-muted">You haven't booked anything yet.</p>
+                    <a href="{{ url_for('stays') }}" class="btn-primary mt-2">Start exploring stays</a>
+                {% endif %}
+            </div>
+
+            {% if saved %}
+            <div class="account-card">
+                <h2>Your saved properties</h2>
+                <div class="card-grid cards-4">
+                    {% for item in saved %}
+                    <a href="{{ url_for('property_detail', slug=item.property.slug) }}" class="city-card">
+                        {% if item.property.image %}
+                        <img src="{{ item.property.image }}" alt="" class="city-card-img"
+                             onerror="this.style.background='linear-gradient(135deg,#003580,#006ce4)';this.alt=''">
+                        {% endif %}
+                        <div class="city-card-body">
+                            <h3 style="font-size:14px;">{{ item.property.name }}</h3>
+                            <span class="flag">{{ item.property.city.display }}</span>
+                        </div>
+                    </a>
+                    {% endfor %}
+                </div>
+                <div class="mt-2"><a href="{{ url_for('saved') }}">View all saved &rarr;</a></div>
+            </div>
+            {% endif %}
+
+            <div class="account-card">
+                <h2>Danger zone</h2>
+                <p class="text-muted">Permanently delete your account and all data.</p>
+                <form method="POST" action="{{ url_for('account_delete') }}">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button type="submit" class="btn-secondary" style="color:#cc0000;border-color:#cc0000;">Delete my account</button>
+                </form>
+            </div>
+        </main>
+    </div>
+</div>
+{% endblock %}

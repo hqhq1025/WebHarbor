@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+{% block title %}Your bag — Booking{% endblock %}
+{% block content %}
+<div class="container">
+    <h1 class="page-title">Your bag</h1>
+    <p class="page-subtitle">Review your selections before checkout</p>
+
+    {% if items %}
+    <div class="bag-layout">
+        <div>
+            {% for item in items %}
+            <div class="bag-item" data-item-id="{{ item.id }}">
+                <img src="{{ item.property.image }}" alt="{{ item.property.name }}"
+                     onerror="this.style.background='linear-gradient(135deg,#003580,#006ce4)'">
+                <div class="bag-item-info">
+                    <h3><a href="{{ url_for('property_detail', slug=item.property.slug) }}">{{ item.property.name }}</a></h3>
+                    <div class="stars" style="color:#febb02;font-size:12px;">{% for i in range(item.property.stars) %}&#9733;{% endfor %}</div>
+                    <div class="meta">{{ item.property.neighborhood }}, {{ item.property.city.display }}</div>
+                    <div class="meta">{{ item.room_type }}</div>
+                    <div class="meta">{{ item.check_in.strftime('%d %b %Y') }} &rarr; {{ item.check_out.strftime('%d %b %Y') }} &middot; {{ item.nights }} night{{ 's' if item.nights > 1 else '' }}</div>
+                    <div class="meta">{{ item.adults }} adult{{ 's' if item.adults > 1 else '' }}{% if item.children %}, {{ item.children }} children{% endif %} &middot; {{ item.rooms }} room{{ 's' if item.rooms > 1 else '' }}</div>
+                </div>
+                <div class="bag-item-actions">
+                    <div class="item-total">${{ '%.2f' % item.total }}</div>
+                    <div class="text-muted" style="font-size:11px;margin-bottom:6px;">${{ '%.0f' % item.property.discounted_price }} × {{ item.nights }} nights × {{ item.rooms }} room{{ 's' if item.rooms > 1 else '' }}</div>
+                    <form method="POST" action="{{ url_for('cart_remove_form', item_id=item.id) }}">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token_value }}">
+                        <button type="submit" class="btn-remove">Remove</button>
+                    </form>
+                    <form method="POST" action="{{ url_for('cart_update_form', item_id=item.id) }}" style="margin-top:8px;">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token_value }}">
+                        <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;">
+                            <input type="text" name="check_in" value="{{ item.check_in.isoformat() }}" maxlength="10" inputmode="numeric" pattern="\d{4}-\d{2}-\d{2}" placeholder="YYYY-MM-DD" autocomplete="off" data-datepicker="checkin" style="font-size:11px;padding:4px;border:1px solid #ddd;border-radius:4px;width:130px;">
+                            <span style="font-size:11px;">to</span>
+                            <input type="text" name="check_out" value="{{ item.check_out.isoformat() }}" maxlength="10" inputmode="numeric" pattern="\d{4}-\d{2}-\d{2}" placeholder="YYYY-MM-DD" autocomplete="off" data-datepicker="checkout" style="font-size:11px;padding:4px;border:1px solid #ddd;border-radius:4px;width:130px;">
+                            <select name="rooms" style="font-size:11px;padding:4px;border:1px solid #ddd;border-radius:4px;">
+                                {% for r in range(1, 5) %}
+                                <option value="{{ r }}" {% if r == item.rooms %}selected{% endif %}>{{ r }} room{{ 's' if r > 1 }}</option>
+                                {% endfor %}
+                            </select>
+                            <button type="submit" class="btn-secondary" style="font-size:11px;padding:4px 10px;">Update</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+
+        <aside>
+            <div class="summary-card">
+                <h3>Price summary</h3>
+                <div class="summary-row">
+                    <span>Subtotal</span>
+                    <span>${{ '%.2f' % subtotal }}</span>
+                </div>
+                <div class="summary-row">
+                    <span>Taxes & fees (12%)</span>
+                    <span>${{ '%.2f' % taxes }}</span>
+                </div>
+                <div class="summary-row total">
+                    <span>Total</span>
+                    <span>${{ '%.2f' % total }}</span>
+                </div>
+                <a href="{{ url_for('checkout') }}" class="btn-primary" style="display:block;text-align:center;margin-top:16px;padding:14px;">Reserve now</a>
+                <p class="text-muted text-center" style="font-size:11px;margin-top:8px;">You won't be charged yet</p>
+            </div>
+        </aside>
+    </div>
+    {% else %}
+    <div class="empty-state">
+        <h2>Your bag is empty</h2>
+        <p>Start exploring stays to build your trip.</p>
+        <a href="{{ url_for('stays') }}" class="btn-primary">Browse stays</a>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

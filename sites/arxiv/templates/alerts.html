@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+{% block title %}Email Alerts — arXiv{% endblock %}
+{% block content %}
+
+<h1>Email Alerts</h1>
+<p class="muted">Get notified when new papers are published in your favorite categories.</p>
+
+<div class="dash-card">
+    <h2>Create a New Alert</h2>
+    <form method="post">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <div class="form-row">
+            <label>Category</label>
+            <select name="category_code" required>
+                {% for c in main_categories %}
+                <option value="{{ c.code }}">{{ c.name }} ({{ c.code }})</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="form-row">
+            <label>Frequency</label>
+            <select name="frequency">
+                <option value="daily">Daily</option>
+                <option value="weekly" selected>Weekly</option>
+                <option value="monthly">Monthly</option>
+            </select>
+        </div>
+        <div class="form-actions">
+            <button type="submit" class="btn btn-primary">Create Alert</button>
+        </div>
+    </form>
+</div>
+
+<div class="dash-card">
+    <h2>Your Alerts</h2>
+    {% if alerts %}
+    <table class="data">
+        <tr><th>Category</th><th>Frequency</th><th>Status</th><th></th></tr>
+        {% for a in alerts %}
+        <tr>
+            <td><a href="{{ url_for('category_detail', code=a.category_code) }}">{{ a.category_code }}</a></td>
+            <td>{{ a.frequency }}</td>
+            <td>
+                {% if a.active %}<span style="color:#2e7d32">● Active</span>
+                {% else %}<span class="muted">Paused</span>
+                {% endif %}
+            </td>
+            <td>
+                <form method="post" action="{{ url_for('delete_alert', alert_id=a.id) }}" style="display:inline">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button type="submit" class="btn" style="font-size:11px;padding:2px 8px;">Remove</button>
+                </form>
+            </td>
+        </tr>
+        {% endfor %}
+    </table>
+    {% else %}
+    <p class="muted">No alerts yet. Create one above to get started.</p>
+    {% endif %}
+</div>
+
+{% endblock %}

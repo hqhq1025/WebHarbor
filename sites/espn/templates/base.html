@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="csrf-token" content="{{ csrf_token() }}">
+  <title>{% block title %}ESPN{% endblock %} - ESPN</title>
+  <link rel="icon" type="image/png" href="{{ url_for('static', filename='images/espn/logo/espn-wordmark.png') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
+  {% block extra_head %}{% endblock %}
+</head>
+<body>
+
+  <!-- Anchor date banner -->
+  <div class="mirror-clock-banner" role="note">
+    <span class="mirror-clock-banner__icon" aria-hidden="true">&#128197;</span>
+    <span class="mirror-clock-banner__text">
+      ESPN Today's date is <strong>{{ mirror_today_label }}</strong>.
+      <span class="mirror-clock-banner__hint">Phrases like &ldquo;today&rdquo;, &ldquo;yesterday&rdquo;, &ldquo;recent&rdquo;, and &ldquo;latest&rdquo; on this site, please refer to this fixed date.</span>
+    </span>
+  </div>
+
+  <!-- Scorebar (top light-gray ticker) -->
+  <section class="scorebar" id="global-scoreboard">
+    <ul class="scorebar__list">
+      {% for sp in nav_sports[:7] %}
+      <li class="scorebar__item">
+        <a href="{{ sp.url_prefix }}scoreboard">
+          <span class="scorebar__league">
+            <img src="{{ url_for('static', filename='images/espn/leagues/' ~ sp.slug ~ '.png') }}" onerror="this.style.display='none'" alt="">
+            <span>{{ sp.name }}</span>
+          </span>
+          <span class="scorebar__state">Scores</span>
+        </a>
+      </li>
+      {% endfor %}
+    </ul>
+  </section>
+
+  <!-- Global dark nav -->
+  <nav class="global-nav">
+    <div class="global-nav__inner">
+      <a href="/" class="logo-block" aria-label="ESPN">
+        <img src="{{ url_for('static', filename='images/espn/logo/espn-wordmark.png') }}" alt="ESPN" onerror="this.style.display='none'; this.parentElement.classList.add('logo-block--text');">
+      </a>
+      <ul class="nav-tabs">
+        {% for sp in nav_sports %}
+        <li>
+          <a href="{{ sp.url_prefix }}">
+            <img class="nav-tabs__icon" src="{{ url_for('static', filename='images/espn/leagues/' ~ sp.slug ~ '.png') }}" onerror="this.style.display='none'" alt="">
+            <span>{% if sp.name|length > 8 %}{{ sp.slug|upper }}{% else %}{{ sp.name }}{% endif %}</span>
+          </a>
+        </li>
+        {% endfor %}
+      </ul>
+      <div class="nav-utility">
+        <a href="/scores" class="nav-utility__link">Scores</a>
+        <a href="/espnplus" class="nav-utility__link nav-utility__link--plus">ESPN+</a>
+        <a href="/search" class="nav-utility__link nav-utility__icon" aria-label="Search" title="Search">&#x1F50D;</a>
+        {% if current_user.is_authenticated %}
+          <a class="nav-utility__link" href="/account">{{ current_user.first_name or current_user.username }}</a>
+          <a class="nav-utility__link" href="/logout">Sign Out</a>
+        {% else %}
+          <a class="nav-utility__link" href="/login">Log In</a>
+        {% endif %}
+      </div>
+    </div>
+  </nav>
+
+  <!-- Flash Messages -->
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+      <div class="flash-container">
+        {% for category, message in messages %}
+          <div class="flash flash-{{ category }}">{{ message }}</div>
+        {% endfor %}
+      </div>
+    {% endif %}
+  {% endwith %}
+
+  <!-- Main Content -->
+  <main class="main-content">
+    {% block content %}{% endblock %}
+  </main>
+
+  <!-- Footer -->
+  <footer class="global-footer">
+    <div class="global-footer__inner">
+      <div class="global-footer__cols">
+        <div class="footer-col">
+          <h4>ESPN</h4>
+          <a href="/">Home</a>
+          <a href="/scores">Scores</a>
+          <a href="/espnplus">ESPN+</a>
+          <a href="/search">Search</a>
+        </div>
+        <div class="footer-col">
+          <h4>Sports</h4>
+          {% for sp in nav_sports[:6] %}
+          <a href="{{ sp.url_prefix }}">{{ sp.name }}</a>
+          {% endfor %}
+        </div>
+        <div class="footer-col">
+          <h4>More Sports</h4>
+          {% for sp in nav_sports[6:] %}
+          <a href="{{ sp.url_prefix }}">{{ sp.name }}</a>
+          {% endfor %}
+        </div>
+        <div class="footer-col">
+          <h4>Account</h4>
+          {% if current_user.is_authenticated %}
+            <a href="/account">My Account</a>
+            <a href="/account/edit">Edit Profile</a>
+            <a href="/logout">Sign Out</a>
+          {% else %}
+            <a href="/login">Log In</a>
+            <a href="/register">Sign Up</a>
+          {% endif %}
+        </div>
+      </div>
+      <div class="global-footer__bottom">
+        <span>&copy; 2024 ESPN. All rights reserved. Mirror site for research.</span>
+      </div>
+    </div>
+  </footer>
+
+  {% block extra_js %}{% endblock %}
+</body>
+</html>

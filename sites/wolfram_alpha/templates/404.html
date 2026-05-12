@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block title %}Page Not Found — Wolfram|Alpha{% endblock %}
+
+{% block content %}
+<div class="error-page">
+  <div class="error-icon">404</div>
+  <h1 class="error-title">Page Not Found</h1>
+  <p class="error-desc">The page you're looking for doesn't exist or has been moved.</p>
+  <div class="error-actions">
+    <a href="/" class="btn btn-pro-primary">Go Home</a>
+    <a href="/search" class="btn btn-secondary">Search Topics</a>
+  </div>
+</div>
+{% endblock %}

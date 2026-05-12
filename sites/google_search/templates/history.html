@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block title %}My Activity - Google{% endblock %}
+
+{% block content %}
+<div class="trending-page">
+    <h1 style="font-size:28px; font-weight:400; margin:0 0 16px;">My Activity</h1>
+    <p class="muted">Your search history is visible only to you.</p>
+    <form method="post" action="{{ url_for('history_clear') }}" style="margin-bottom:16px;">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button type="submit" class="btn-secondary">Clear all history</button>
+    </form>
+    {% if items %}
+    <div style="border: 1px solid var(--color-border); border-radius: 8px; overflow: hidden;">
+        {% for h in items %}
+        <div class="history-item" style="padding: 14px 20px;">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="#70757a"><path d="M13 3c-4.97 0-9 4.03-9 9H1l3.89 3.89.07.14L9 12H6c0-3.87 3.13-7 7-7s7 3.13 7 7-3.13 7-7 7c-1.93 0-3.68-.79-4.94-2.06l-1.42 1.42A8.954 8.954 0 0 0 13 21c4.97 0 9-4.03 9-9s-4.03-9-9-9zm-1 5v5l4.28 2.54.72-1.21-3.5-2.08V8H12z"/></svg>
+            <span class="q"><a href="{{ url_for('search', q=h.q) }}" style="color:inherit;">{{ h.q }}</a> <span class="muted">· in {{ h.vertical }}</span></span>
+            <span class="time">{{ h.searched_at.strftime('%b %d, %Y %H:%M') }}</span>
+            <form method="post" action="{{ url_for('history_delete', hid=h.id) }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button type="submit" class="btn-text" style="padding:4px 8px;">✕</button>
+            </form>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <p class="muted" style="padding: 40px; text-align:center;">No search history yet.</p>
+    {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block title %}About - Google Maps{% endblock %}
+
+{% block body %}
+<div class="topbar">
+    <a href="{{ url_for('index') }}" class="brand">
+        <span class="material-icons-outlined" style="font-size:26px;color:#ea4335;">place</span>
+        <span>Google Maps</span>
+    </a>
+    <div class="nav-links">
+        <a href="{{ url_for('index') }}" class="nav-link">Back to map</a>
+        <a href="{{ url_for('help_page') }}" class="nav-link">Help</a>
+    </div>
+</div>
+
+<div class="page narrow">
+    <h1>About Google Maps</h1>
+    <p class="page-sub">Find your way across {{ 38 }}+ cities, discover hundreds of real places, and plan unforgettable trips.</p>
+
+    <div class="card" style="padding:28px; margin-top:24px;">
+        <h3>What is this?</h3>
+        <p>Google Maps helps you navigate your world: faster, easier, and more reliably. Browse restaurants, hotels, attractions, museums, parks, and shops. Save your favorite spots into custom lists, plan multi-stop trips, and keep a personal timeline of everywhere you've been.</p>
+
+        <h3 style="margin-top:28px;">Features</h3>
+        <ul style="line-height:1.9; color:var(--text-secondary);">
+            <li><strong>Explore</strong> — browse thousands of curated places across {{ 8 }} categories.</li>
+            <li><strong>Save</strong> — organize places into custom lists like "Want to go" or "Favorites".</li>
+            <li><strong>Plan trips</strong> — build multi-stop itineraries with notes and dates.</li>
+            <li><strong>Directions</strong> — estimate distance and travel time between any two places.</li>
+            <li><strong>Reviews</strong> — read what others think and share your own opinions.</li>
+            <li><strong>Timeline</strong> — check in at places you visit and see your travel history.</li>
+        </ul>
+
+        <h3 style="margin-top:28px;">Our mission</h3>
+        <p>We aim to organize the world's places and make them universally accessible and useful. From the Eiffel Tower to your neighborhood coffee shop, Maps helps you find what matters.</p>
+    </div>
+
+    <div class="card" style="padding:28px; margin-top:16px;">
+        <h3>Credits</h3>
+        <p style="color:var(--text-secondary);">Place descriptions and images are sourced from Wikipedia and Wikimedia Commons under their respective licenses. This is an educational reproduction of Google Maps for learning purposes.</p>
+    </div>
+</div>
+{% endblock %}

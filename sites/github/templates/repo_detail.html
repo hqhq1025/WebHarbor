@@ -1,0 +1,391 @@
+{% extends "base.html" %}
+{% block title %}{{ repo.full_name }} · GitHub{% endblock %}
+{% block content %}
+
+<div class="repo-header-bar">
+  <div class="repo-header-inner">
+    <div class="repo-breadcrumb">
+      <svg aria-hidden="true" height="16" viewBox="0 0 16 16" width="16" fill="currentColor" class="repo-icon-sm">
+        <path d="M2 2.5A2.5 2.5 0 0 1 4.5 0h8.75a.75.75 0 0 1 .75.75v12.5a.75.75 0 0 1-.75.75h-2.5a.75.75 0 0 1 0-1.5h1.75v-2h-8a1 1 0 0 0-.714 1.7.75.75 0 1 1-1.072 1.05A2.495 2.495 0 0 1 2 11.5Zm10.5-1h-8a1 1 0 0 0-1 1v6.708A2.486 2.486 0 0 1 4.5 9h8ZM5 12.25a.25.25 0 0 1 .25-.25h3.5a.25.25 0 0 1 .25.25v3.25a.25.25 0 0 1-.4.2l-1.45-1.087a.249.249 0 0 0-.3 0L5.4 15.7a.25.25 0 0 1-.4-.2Z"/>
+      </svg>
+      <a href="/{{ owner.username }}" class="repo-breadcrumb-link">{{ owner.username }}</a>
+      <span class="repo-breadcrumb-sep">/</span>
+      <a href="/{{ repo.full_name }}" class="repo-breadcrumb-link repo-breadcrumb-repo">{{ repo.name }}</a>
+      {% if repo.is_public %}
+      <span class="repo-visibility-badge">Public</span>
+      {% else %}
+      <span class="repo-visibility-badge repo-private">Private</span>
+      {% endif %}
+    </div>
+
+    <!-- Tabs -->
+    <nav class="repo-tabs">
+      <a href="/{{ repo.full_name }}" class="repo-tab repo-tab-active">
+        <svg aria-hidden="true" height="16" viewBox="0 0 16 16" width="16" fill="currentColor">
+          <path d="M1 2.5A2.5 2.5 0 0 1 3.5 0h8.75a.75.75 0 0 1 .75.75v3.5a.75.75 0 0 1-1.5 0V1.5h-8a1 1 0 0 0-1 1v6.708A2.492 2.492 0 0 1 3.5 9h3.25a.75.75 0 0 1 0 1.5H3.5A1 1 0 0 0 2.5 11.5v1a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1v-1a1 1 0 0 0-1-1H9.25a.75.75 0 0 1 0-1.5H11.5a2.5 2.5 0 0 1 2.5 2.5v1a2.5 2.5 0 0 1-2.5 2.5h-8A2.5 2.5 0 0 1 1 13.5Z"/>
+        </svg>
+        Code
+      </a>
+      <a href="/{{ repo.full_name }}/issues" class="repo-tab">
+        <svg aria-hidden="true" height="16" viewBox="0 0 16 16" width="16" fill="currentColor">
+          <path d="M8 9.5a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3Z"/><path d="M8 0a8 8 0 1 1 0 16A8 8 0 0 1 8 0ZM1.5 8a6.5 6.5 0 1 0 13 0 6.5 6.5 0 0 0-13 0Z"/>
+        </svg>
+        Issues
+        <span class="repo-tab-count">{{ open_count }}</span>
+      </a>
+      <a href="/{{ repo.full_name }}/pulls" class="repo-tab">
+        <svg aria-hidden="true" height="16" viewBox="0 0 16 16" width="16" fill="currentColor">
+          <path d="M1.5 3.25a2.25 2.25 0 1 1 3 2.122v5.256a2.251 2.251 0 1 1-1.5 0V5.372A2.25 2.25 0 0 1 1.5 3.25Zm5.677-.177L9.573.677A.25.25 0 0 1 10 .854V2.5h1A2.5 2.5 0 0 1 13.5 5v5.628a2.251 2.251 0 1 1-1.5 0V5a1 1 0 0 0-1-1h-1v1.646a.25.25 0 0 1-.427.177L7.177 3.427a.25.25 0 0 1 0-.354ZM3.75 2.5a.75.75 0 1 0 0 1.5.75.75 0 0 0 0-1.5Zm0 9.5a.75.75 0 1 0 0 1.5.75.75 0 0 0 0-1.5Zm8.25.75a.75.75 0 1 0 1.5 0 .75.75 0 0 0-1.5 0Z"/>
+        </svg>
+        Pull requests
+        <span class="repo-tab-count">{{ open_pr_count }}</span>
+      </a>
+      <a href="/{{ repo.full_name }}/wiki" class="repo-tab">
+        <svg aria-hidden="true" height="16" viewBox="0 0 16 16" width="16" fill="currentColor">
+          <path d="M0 1.75A.75.75 0 0 1 .75 1h4.253c1.227 0 2.317.59 3 1.501A3.743 3.743 0 0 1 11.006 1h4.245a.75.75 0 0 1 .75.75v10.5a.75.75 0 0 1-.75.75h-4.507a2.25 2.25 0 0 0-1.591.659l-.622.621a.75.75 0 0 1-1.063 0l-.622-.621A2.25 2.25 0 0 0 5.258 13H.75a.75.75 0 0 1-.75-.75Zm7.251 10.324.004-5.073-.002-2.253A2.25 2.25 0 0 0 5.003 2.5H1.5v9h3.757a3.75 3.75 0 0 1 1.994.574ZM8.755 4.75l-.004 7.322a3.752 3.752 0 0 1 1.992-.572H14.5v-9h-3.495a2.25 2.25 0 0 0-2.25 2.25Z"/>
+        </svg>
+        Wiki
+        {% if repo.has_wiki %}<span class="repo-tab-count">{{ repo.get_wiki_pages() | length if repo.get_wiki_pages() else '' }}</span>{% endif %}
+      </a>
+    </nav>
+  </div>
+</div>
+
+<div class="repo-layout">
+  <!-- Main content -->
+  <div class="repo-main">
+    <!-- File tree placeholder -->
+    <div class="repo-file-header">
+      <div class="repo-branch-selector">
+        <button class="gh-btn gh-btn-secondary gh-btn-sm">
+          <svg aria-hidden="true" height="16" viewBox="0 0 16 16" width="16" fill="currentColor">
+            <path d="M9.5 3.25a2.25 2.25 0 1 1 3 2.122V6h.75a.75.75 0 0 1 0 1.5h-.75v.128a2.251 2.251 0 1 1-1.5 0V7.5h-4.5v.128a2.251 2.251 0 1 1-1.5 0V7.5H3.75a.75.75 0 0 1 0-1.5h.75V5.372A2.25 2.25 0 1 1 6 3.25a2.25 2.25 0 0 1 1.5 2.122V6h4.5V5.372A2.25 2.25 0 0 1 9.5 3.25Z"/>
+          </svg>
+          {{ repo.default_branch }}
+          <svg aria-hidden="true" height="16" viewBox="0 0 16 16" width="16" fill="currentColor">
+            <path d="M4.427 7.427l3.396 3.396a.25.25 0 00.354 0l3.396-3.396A.25.25 0 0011.396 7H4.604a.25.25 0 00-.177.427z"/>
+          </svg>
+        </button>
+        <span class="repo-branch-count">1 branch</span>
+        <span class="repo-tag-count">0 tags</span>
+      </div>
+      <div class="repo-file-actions">
+        {% if current_user.is_authenticated %}
+        <form method="POST" action="{{ url_for('fork_form', repo_id=repo.id) }}" style="display:inline">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <button type="submit" class="gh-btn gh-btn-secondary gh-btn-sm" id="fork-btn">
+            <svg aria-hidden="true" height="16" viewBox="0 0 16 16" width="16" fill="currentColor">
+              <path d="M5 5.372v.878c0 .414.336.75.75.75h4.5a.75.75 0 0 0 .75-.75v-.878a2.25 2.25 0 1 1 1.5 0v.878a2.25 2.25 0 0 1-2.25 2.25h-1.5v2.128a2.251 2.251 0 1 1-1.5 0V8.5h-1.5A2.25 2.25 0 0 1 3.5 6.25v-.878a2.25 2.25 0 1 1 1.5 0ZM5 3.25a.75.75 0 1 0-1.5 0 .75.75 0 0 0 1.5 0Zm6.75.75a.75.75 0 1 0 0-1.5.75.75 0 0 0 0 1.5Zm-3 8.75a.75.75 0 1 0-1.5 0 .75.75 0 0 0 1.5 0Z"/>
+            </svg>
+            Fork
+            <span class="repo-tab-count">{{ repo.forks_count | number_format }}</span>
+          </button>
+        </form>
+        {% endif %}
+        <a href="/new" class="gh-btn gh-btn-primary gh-btn-sm">
+          <svg aria-hidden="true" height="16" viewBox="0 0 16 16" width="16" fill="currentColor">
+            <path d="M2.75 14A1.75 1.75 0 0 1 1 12.25v-2.5a.75.75 0 0 1 1.5 0v2.5c0 .138.112.25.25.25h10.5a.25.25 0 0 0 .25-.25v-2.5a.75.75 0 0 1 1.5 0v2.5A1.75 1.75 0 0 1 13.25 14Zm-1-5.427v-3.5a.75.75 0 0 1 1.5 0v3.5L8 12.25l-4.75-3.677Zm1.19-4.427L8 7.573l5.06-3.427A.75.75 0 0 1 14 4.75v3.5l-6 4.627-6-4.627v-3.5a.75.75 0 0 1 .94-.677Z"/>
+          </svg>
+          Code
+        </a>
+      </div>
+    </div>
+
+    <!-- Latest-commit bar (mirrors github.com structure) -->
+    {% set commit_files = repo.get_commit_files() %}
+    {% if repo.latest_commit_message %}
+    <div class="repo-commit-bar">
+      <div class="repo-commit-bar-left">
+        <a href="/{{ latest_author }}" class="repo-commit-bar-avatar-link">
+          <img src="{{ avatar_for(latest_author) }}" class="repo-commit-bar-avatar"
+               alt="@{{ latest_author }}"
+               onerror="this.src='/static/images/avatars/avatar_00.jpg'">
+        </a>
+        <a href="/{{ latest_author }}" class="repo-commit-bar-author">{{ latest_author }}</a>
+        <a href="/{{ repo.full_name }}/commit/{{ repo.latest_commit_sha }}" class="repo-commit-bar-msg">{{ repo.latest_commit_message }}</a>
+        <a href="/{{ repo.full_name }}/commit/{{ repo.latest_commit_sha }}" class="repo-commit-bar-sha"><code>{{ repo.latest_commit_sha[:7] }}</code></a>
+        {% if repo.latest_commit_date %}
+        <span class="repo-commit-bar-date">· {{ repo.latest_commit_date | time_ago }}</span>
+        {% endif %}
+      </div>
+      <div class="repo-commit-bar-right">
+        <a href="/{{ repo.full_name }}/commits" class="repo-commit-count" aria-label="View all commits">
+          <svg aria-hidden="true" height="16" viewBox="0 0 16 16" width="16" fill="currentColor">
+            <path d="M11.93 8.5a4.002 4.002 0 0 1-7.86 0H.75a.75.75 0 0 1 0-1.5h3.32a4.002 4.002 0 0 1 7.86 0h3.32a.75.75 0 0 1 0 1.5Zm-1.43-.75a2.5 2.5 0 1 0-5 0 2.5 2.5 0 0 0 5 0Z"/>
+          </svg>
+          <strong>{{ commit_count }}</strong> Commits
+        </a>
+      </div>
+    </div>
+    {% endif %}
+    <div class="repo-file-list">
+      {% if commit_files %}
+        {% for f in commit_files %}
+        <div class="repo-file-row">
+          <span class="repo-file-icon">
+            <svg aria-hidden="true" height="16" viewBox="0 0 16 16" width="16" fill="#848d97">
+              <path d="M2 1.75C2 .784 2.784 0 3.75 0h6.586c.464 0 .909.184 1.237.513l2.914 2.914c.329.328.513.773.513 1.237v9.586A1.75 1.75 0 0 1 13.25 16h-9.5A1.75 1.75 0 0 1 2 14.25Z"/>
+            </svg>
+          </span>
+          <span class="repo-file-name">{{ f.name }}</span>
+          <span class="repo-file-msg">+{{ f.additions }} −{{ f.deletions }}</span>
+          <span class="repo-file-date">{{ repo.latest_commit_message[:50] }}</span>
+        </div>
+        {% endfor %}
+      {% else %}
+      {% set files = [
+        ("src/", "folder", "main: Add new feature support", "2 days ago"),
+        ("tests/", "folder", "test: Add comprehensive test suite", "5 days ago"),
+        (".github/", "folder", "ci: Update workflow configurations", "1 week ago"),
+        ("docs/", "folder", "docs: Update README and contributing guide", "3 weeks ago"),
+        (".gitignore", "file", "chore: Update gitignore", "1 month ago"),
+        ("LICENSE", "file", "chore: Initial commit", "2 years ago"),
+        ("README.md", "file", "docs: Update README with new examples", "3 days ago"),
+        ("package.json", "file", "deps: Bump dependencies", "1 week ago"),
+      ] %}
+      {% for fname, ftype, fmsg, fdate in files %}
+      <div class="repo-file-row">
+        <span class="repo-file-icon">
+          {% if ftype == "folder" %}
+          <svg aria-hidden="true" height="16" viewBox="0 0 16 16" width="16" fill="#54aeff">
+            <path d="M1.75 1A1.75 1.75 0 0 0 0 2.75v10.5C0 14.216.784 15 1.75 15h12.5A1.75 1.75 0 0 0 16 13.25v-8.5A1.75 1.75 0 0 0 14.25 3H7.5a.25.25 0 0 1-.2-.1l-.9-1.2C6.07 1.26 5.55 1 5 1Z"/>
+          </svg>
+          {% else %}
+          <svg aria-hidden="true" height="16" viewBox="0 0 16 16" width="16" fill="#848d97">
+            <path d="M2 1.75C2 .784 2.784 0 3.75 0h6.586c.464 0 .909.184 1.237.513l2.914 2.914c.329.328.513.773.513 1.237v9.586A1.75 1.75 0 0 1 13.25 16h-9.5A1.75 1.75 0 0 1 2 14.25Zm1.75-.25a.25.25 0 0 0-.25.25v12.5c0 .138.112.25.25.25h9.5a.25.25 0 0 0 .25-.25V6h-2.75A1.75 1.75 0 0 1 9 4.25V1.5Zm6.75.062V4.25c0 .138.112.25.25.25h2.688l-.011-.013-2.914-2.914-.013-.011Z"/>
+          </svg>
+          {% endif %}
+        </span>
+        <span class="repo-file-name">{{ fname }}</span>
+        <span class="repo-file-msg">{{ fmsg }}</span>
+        <span class="repo-file-date">{{ fdate }}</span>
+      </div>
+      {% endfor %}
+      {% endif %}
+    </div>
+    <!-- README -->
+    {% if repo.readme %}
+    <div class="repo-readme">
+      <div class="repo-readme-header">
+        <svg aria-hidden="true" height="16" viewBox="0 0 16 16" width="16" fill="currentColor">
+          <path d="M0 1.75A.75.75 0 0 1 .75 1h4.253c1.227 0 2.317.59 3 1.501A3.743 3.743 0 0 1 11.006 1h4.245a.75.75 0 0 1 .75.75v10.5a.75.75 0 0 1-.75.75h-4.507a2.25 2.25 0 0 0-1.591.659l-.622.621a.75.75 0 0 1-1.063 0l-.622-.621A2.25 2.25 0 0 0 5.258 13H.75a.75.75 0 0 1-.75-.75Zm7.251 10.324.004-5.073-.002-2.253A2.25 2.25 0 0 0 5.003 2.5H1.5v9h3.757a3.75 3.75 0 0 1 1.994.574ZM8.755 4.75l-.004 7.322a3.752 3.752 0 0 1 1.992-.572H14.5v-9h-3.495a2.25 2.25 0 0 0-2.25 2.25Z"/>
+        </svg>
+        README.md
+      </div>
+      <div class="repo-readme-body">
+        <pre class="repo-readme-content">{{ repo.readme }}</pre>
+      </div>
+    </div>
+    {% endif %}
+
+  </div>
+
+  <!-- Sidebar -->
+  <aside class="repo-sidebar">
+    <!-- About -->
+    <div class="sidebar-box">
+      <h3 class="sidebar-box-title">About</h3>
+      {% if repo.description %}
+      <p class="sidebar-desc">{{ repo.description }}</p>
+      {% endif %}
+      {% if repo.homepage %}
+      <div class="sidebar-link-row">
+        <svg aria-hidden="true" height="16" viewBox="0 0 16 16" width="16" fill="currentColor">
+          <path d="M7.775 3.275a.75.75 0 0 0 1.06 1.06l1.25-1.25a2 2 0 1 1 2.83 2.83l-2.5 2.5a2 2 0 0 1-2.83 0 .75.75 0 0 0-1.06 1.06 3.5 3.5 0 0 0 4.95 0l2.5-2.5a3.5 3.5 0 0 0-4.95-4.95l-1.25 1.25Z"/><path d="M9.168 10.575a2 2 0 0 1-2.83 0 .75.75 0 0 0-1.06 1.061 3.5 3.5 0 0 0 4.95 0l1.25-1.25a.75.75 0 0 0-1.06-1.06l-1.25 1.249Z"/>
+        </svg>
+        <a href="{{ repo.homepage }}" class="sidebar-link" target="_blank" rel="noopener">{{ repo.homepage | replace('https://', '') }}</a>
+      </div>
+      {% endif %}
+      <!-- Topics -->
+      {% if topics %}
+      <div class="sidebar-topics">
+        {% for t in topics %}
+        <a href="/topics/{{ t }}" class="topic-badge">{{ t }}</a>
+        {% endfor %}
+      </div>
+      {% endif %}
+      <!-- Stats -->
+      <div class="sidebar-stats">
+        <div class="sidebar-stat">
+          <svg aria-hidden="true" height="16" viewBox="0 0 16 16" width="16" fill="currentColor">
+            <path d="M8 .25a.75.75 0 0 1 .673.418l1.882 3.815 4.21.612a.75.75 0 0 1 .416 1.279l-3.046 2.97.719 4.192a.751.751 0 0 1-1.088.791L8 12.347l-3.766 1.98a.75.75 0 0 1-1.088-.79l.72-4.194L.818 6.374a.75.75 0 0 1 .416-1.28l4.21-.611L7.327.668A.75.75 0 0 1 8 .25Z"/>
+          </svg>
+          <strong>{{ repo.stars_count | number_format }}</strong> stars
+        </div>
+        <div class="sidebar-stat">
+          <svg aria-hidden="true" height="16" viewBox="0 0 16 16" width="16" fill="currentColor">
+            <path d="M5 5.372v.878c0 .414.336.75.75.75h4.5a.75.75 0 0 0 .75-.75v-.878a2.25 2.25 0 1 1 1.5 0v.878a2.25 2.25 0 0 1-2.25 2.25h-1.5v2.128a2.251 2.251 0 1 1-1.5 0V8.5h-1.5A2.25 2.25 0 0 1 3.5 6.25v-.878a2.25 2.25 0 1 1 1.5 0ZM5 3.25a.75.75 0 1 0-1.5 0 .75.75 0 0 0 1.5 0Zm6.75.75a.75.75 0 1 0 0-1.5.75.75 0 0 0 0 1.5Zm-3 8.75a.75.75 0 1 0-1.5 0 .75.75 0 0 0 1.5 0Z"/>
+          </svg>
+          <strong>{{ repo.forks_count | number_format }}</strong> forks
+        </div>
+        <div class="sidebar-stat">
+          <svg aria-hidden="true" height="16" viewBox="0 0 16 16" width="16" fill="currentColor">
+            <path d="M8 9.5a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3Z"/><path d="M8 0a8 8 0 1 1 0 16A8 8 0 0 1 8 0ZM1.5 8a6.5 6.5 0 1 0 13 0 6.5 6.5 0 0 0-13 0Z"/>
+          </svg>
+          <strong>{{ open_count | number_format }}</strong> open issues
+        </div>
+        <div class="sidebar-stat">
+          <svg aria-hidden="true" height="16" viewBox="0 0 16 16" width="16" fill="currentColor">
+            <path d="M8 2a5 5 0 1 0 0 10A5 5 0 0 0 8 2ZM1 8a7 7 0 1 1 14 0A7 7 0 0 1 1 8Zm7-3.25a.75.75 0 0 1 .75.75v2.992l2.028.812a.75.75 0 0 1-.557 1.392l-2.5-1A.751.751 0 0 1 7.25 9V5.75A.75.75 0 0 1 8 5Z"/>
+          </svg>
+          <strong>{{ repo.watchers_count | number_format }}</strong> watching
+        </div>
+      </div>
+    </div>
+
+    <!-- Star/Watch actions (form POST — works in CDP-controlled browsers) -->
+    {% if current_user.is_authenticated %}
+    <div class="sidebar-box sidebar-actions">
+      <form method="POST" action="{{ url_for('star_toggle_form', repo_id=repo.id) }}" style="margin:0">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <input type="hidden" name="next" value="{{ request.path }}">
+        <button type="submit" class="gh-btn gh-btn-secondary gh-btn-block star-action-btn {% if is_starred %}starred{% endif %}" id="main-star-btn">
+          <svg aria-hidden="true" height="16" viewBox="0 0 16 16" width="16" fill="currentColor">
+            <path d="M8 .25a.75.75 0 0 1 .673.418l1.882 3.815 4.21.612a.75.75 0 0 1 .416 1.279l-3.046 2.97.719 4.192a.751.751 0 0 1-1.088.791L8 12.347l-3.766 1.98a.75.75 0 0 1-1.088-.79l.72-4.194L.818 6.374a.75.75 0 0 1 .416-1.28l4.21-.611L7.327.668A.75.75 0 0 1 8 .25Z"/>
+          </svg>
+          <span id="star-text">{% if is_starred %}Unstar{% else %}Star{% endif %}</span>
+          <span class="star-count-badge" id="star-count">{{ repo.stars_count | number_format }}</span>
+        </button>
+      </form>
+      <form method="POST" action="{{ url_for('watch_toggle_form', repo_id=repo.id) }}" style="margin:0">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <input type="hidden" name="next" value="{{ request.path }}">
+        <button type="submit" class="gh-btn gh-btn-secondary gh-btn-block watch-action-btn {% if is_watching %}watching{% endif %}">
+          <svg aria-hidden="true" height="16" viewBox="0 0 16 16" width="16" fill="currentColor">
+            <path d="M8 2a5 5 0 1 0 0 10A5 5 0 0 0 8 2ZM1 8a7 7 0 1 1 14 0A7 7 0 0 1 1 8Zm7-3.25a.75.75 0 0 1 .75.75v2.992l2.028.812a.75.75 0 0 1-.557 1.392l-2.5-1A.751.751 0 0 1 7.25 9V5.75A.75.75 0 0 1 8 5Z"/>
+          </svg>
+          <span id="watch-text">{% if is_watching %}Unwatch{% else %}Watch{% endif %}</span>
+          <span class="star-count-badge">{{ repo.watchers_count | number_format }}</span>
+        </button>
+      </form>
+    </div>
+    {% endif %}
+
+    <!-- Releases -->
+    {% set _releases = repo.get_releases() %}
+    <div class="sidebar-box">
+      <h3 class="sidebar-box-title">
+        <a href="/{{ repo.full_name }}/releases" class="sidebar-box-title-link">Releases
+          {% if _releases %}<span class="sidebar-box-count">{{ _releases | length }}</span>{% endif %}
+        </a>
+      </h3>
+      {% if _releases %}
+      {% set _latest_rel = _releases[0] %}
+      <div class="sidebar-release-row">
+        <span class="sidebar-release-icon" aria-hidden="true">
+          <svg height="16" viewBox="0 0 16 16" width="16" fill="#3fb950">
+            <path d="M7.75 14A1.75 1.75 0 0 1 6 12.25v-8.5C6 2.784 6.784 2 7.75 2h.5c.966 0 1.75.784 1.75 1.75v8.5A1.75 1.75 0 0 1 8.25 14ZM2.5 9.75v-3.5C2.5 5.284 3.284 4.5 4.25 4.5h.5c.966 0 1.75.784 1.75 1.75v3.5a1.75 1.75 0 0 1-1.75 1.75h-.5A1.75 1.75 0 0 1 2.5 9.75Zm9 0v-3.5c0-.966.784-1.75 1.75-1.75h.5c.966 0 1.75.784 1.75 1.75v3.5a1.75 1.75 0 0 1-1.75 1.75h-.5a1.75 1.75 0 0 1-1.75-1.75Z"/>
+          </svg>
+        </span>
+        <div class="sidebar-release-info">
+          <a href="/{{ repo.full_name }}/releases" class="sidebar-release-tag">{{ _latest_rel.version }}</a>
+          <span class="sidebar-release-latest-badge">Latest</span>
+          <span class="sidebar-release-date">{{ _latest_rel.date }}</span>
+        </div>
+      </div>
+      {% if _releases | length > 1 %}
+      <a href="/{{ repo.full_name }}/releases" class="sidebar-more-link">+ {{ _releases | length - 1 }} release{% if _releases | length - 1 != 1 %}s{% endif %}</a>
+      {% endif %}
+      {% else %}
+      <p class="sidebar-empty-state">No releases published</p>
+      <a href="/{{ repo.full_name }}/releases/new" class="sidebar-empty-link">Create a new release</a>
+      {% endif %}
+    </div>
+
+    <!-- Contributors -->
+    {% if repo.get_contributors() %}
+    <div class="sidebar-box">
+      <h3 class="sidebar-box-title">
+        <a href="/{{ repo.full_name }}/contributors" class="sidebar-box-title-link">Contributors
+          <span class="sidebar-box-count">{{ repo.get_contributors()|length }}</span>
+        </a>
+      </h3>
+      <ul class="sidebar-contributors-grid">
+        {% for c in repo.get_contributors()[:20] %}
+        <li class="sidebar-contributor-cell">
+          <a href="/{{ c.username }}" title="@{{ c.username }} · {{ c.commits }} commits">
+            <img src="{{ avatar_for(c.username) }}"
+                 alt="@{{ c.username }}"
+                 class="sidebar-contributor-avatar"
+                 onerror="this.src='/static/images/avatars/avatar_00.jpg'">
+          </a>
+        </li>
+        {% endfor %}
+      </ul>
+      {% if repo.get_contributors()|length > 20 %}
+      <a href="/{{ repo.full_name }}/contributors" class="sidebar-contributors-more">+ {{ repo.get_contributors()|length - 20 }} contributors</a>
+      {% endif %}
+    </div>
+    {% endif %}
+
+    <!-- License -->
+    {% if repo.license %}
+    <div class="sidebar-box">
+      <h3 class="sidebar-box-title">License</h3>
+      <div class="sidebar-license">
+        <svg aria-hidden="true" height="16" viewBox="0 0 16 16" width="16" fill="currentColor">
+          <path d="M8.75.75V2h.985c.304 0 .604.08.869.23l1.12.644a.75.75 0 0 1-.364 1.41l-.877-.072-.11.71 1.095.337a.75.75 0 0 1 .46 1.019l-.457.84a.75.75 0 0 1-1.324-.72L10.51 6.765l-.891-.273a.75.75 0 0 1-.51-.89l.42-2.745L8.75 2.75V11h2.5a.75.75 0 0 1 0 1.5H4.75a.75.75 0 0 1 0-1.5h2.5V2.75l-.779.107.42 2.745a.75.75 0 0 1-.51.89l-.891.273.246.313a.75.75 0 0 1-1.324.72l-.457-.84a.75.75 0 0 1 .46-1.019l1.095-.337-.11-.71-.877.072a.75.75 0 0 1-.364-1.41l1.12-.644A1.75 1.75 0 0 1 6.265 2H7.25V.75a.75.75 0 0 1 1.5 0Z"/>
+        </svg>
+        {{ repo.license }} License
+      </div>
+    </div>
+    {% endif %}
+
+    <!-- Language -->
+    {% if repo.language %}
+    <div class="sidebar-box">
+      <h3 class="sidebar-box-title">Languages</h3>
+      <div class="sidebar-lang-bar">
+        <div class="lang-bar-fill" style="width: 100%; background-color: {{ lang_colors.get(repo.language, '#8f9ba8') }}"></div>
+      </div>
+      <div class="sidebar-lang-list">
+        <span class="sidebar-lang-dot" style="background-color: {{ lang_colors.get(repo.language, '#8f9ba8') }}"></span>
+        <span class="sidebar-lang-name">{{ repo.language }}</span>
+        <span class="sidebar-lang-pct">100%</span>
+      </div>
+    </div>
+    {% endif %}
+
+    <!-- Recent issues -->
+    {% if recent_issues %}
+    <div class="sidebar-box">
+      <h3 class="sidebar-box-title">Recent issues
+        <a href="/{{ repo.full_name }}/issues/new" class="sidebar-box-action">New</a>
+      </h3>
+      {% for issue in recent_issues %}
+      <div class="sidebar-issue">
+        <svg aria-hidden="true" height="14" viewBox="0 0 16 16" width="14" fill="#3fb950">
+          <path d="M8 9.5a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3Z"/><path d="M8 0a8 8 0 1 1 0 16A8 8 0 0 1 8 0ZM1.5 8a6.5 6.5 0 1 0 13 0 6.5 6.5 0 0 0-13 0Z"/>
+        </svg>
+        <a href="/{{ repo.full_name }}/issues/{{ issue.number }}" class="sidebar-issue-link">{{ issue.title[:50] }}{% if issue.title|length > 50 %}…{% endif %}</a>
+      </div>
+      {% endfor %}
+      <a href="/{{ repo.full_name }}/issues" class="sidebar-more-link">View all issues →</a>
+    </div>
+    {% endif %}
+
+    <!-- Related repos -->
+    {% if related %}
+    <div class="sidebar-box">
+      <h3 class="sidebar-box-title">Similar repositories</h3>
+      {% for r in related %}
+      <div class="sidebar-related-repo">
+        <a href="/{{ r.full_name }}" class="sidebar-related-name">{{ r.full_name }}</a>
+        <p class="sidebar-related-desc">{{ r.description[:60] }}{% if r.description|length > 60 %}…{% endif %}</p>
+        <div class="sidebar-related-meta">
+          {% if r.language %}
+          <span class="repo-lang">
+            <span class="repo-lang-dot" style="background-color: {{ lang_colors.get(r.language, '#8f9ba8') }}"></span>
+            {{ r.language }}
+          </span>
+          {% endif %}
+          <span class="repo-stars-sm">⭐ {{ r.stars_count | number_format }}</span>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+    {% endif %}
+  </aside>
+</div>
+
+{% endblock %}

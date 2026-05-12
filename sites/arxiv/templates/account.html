@@ -1,0 +1,122 @@
+{% extends "base.html" %}
+{% block title %}Account — arXiv{% endblock %}
+{% block content %}
+
+<h1>Your Account</h1>
+
+<div class="account-grid">
+    <nav class="account-nav">
+        <h3>Navigation</h3>
+        <ul>
+            <li><a href="{{ url_for('account') }}"><b>Dashboard</b></a></li>
+            <li><a href="{{ url_for('account_edit') }}">Edit Profile</a></li>
+            <li><a href="{{ url_for('change_password') }}">Change Password</a></li>
+        </ul>
+        <h3>My Papers</h3>
+        <ul>
+            <li><a href="{{ url_for('library') }}">Library ({{ library_count }})</a></li>
+            <li><a href="{{ url_for('starred_page') }}">Starred</a></li>
+            <li><a href="{{ url_for('export_create') }}">Export Citations</a></li>
+        </ul>
+        <h3>Preferences</h3>
+        <ul>
+            <li><a href="{{ url_for('alerts_page') }}">Email Alerts</a></li>
+        </ul>
+    </nav>
+
+    <div class="account-main">
+        <div class="dash-card">
+            <h2>Profile</h2>
+            <table class="data">
+                <tr><th>Username</th><td>{{ current_user.username }}</td></tr>
+                <tr><th>Email</th><td>{{ current_user.email }}</td></tr>
+                <tr><th>Full name</th><td>{{ current_user.full_name or '—' }}</td></tr>
+                <tr><th>Affiliation</th><td>{{ current_user.affiliation or '—' }}</td></tr>
+                <tr><th>ORCID</th><td>{{ current_user.orcid or '—' }}</td></tr>
+                <tr><th>Bio</th><td>{{ current_user.bio or '—' }}</td></tr>
+                <tr><th>Member since</th><td>{{ current_user.created_at.strftime("%b %d, %Y") }}</td></tr>
+            </table>
+            <a href="{{ url_for('account_edit') }}" class="btn">Edit Profile</a>
+            <a href="{{ url_for('change_password') }}" class="btn">Change Password</a>
+        </div>
+
+        <div class="dash-card">
+            <h2>Recent Library</h2>
+            {% if recent_library %}
+            <ul style="list-style:none;padding:0;">
+                {% for item in recent_library %}
+                <li class="library-item">
+                    <div class="lib-title">
+                        <a href="{{ url_for('paper_detail', arxiv_id=item.paper.arxiv_id) }}">{{ item.paper.title }}</a>
+                    </div>
+                    <div class="lib-meta">{{ item.paper.authors_display }}</div>
+                    <div class="lib-meta muted">
+                        Added {{ item.added_at.strftime("%b %d, %Y") }} · Folder: {{ item.folder }}
+                    </div>
+                </li>
+                {% endfor %}
+            </ul>
+            <a href="{{ url_for('library') }}" class="btn">View all ({{ library_count }})</a>
+            {% else %}
+            <p class="muted">Your library is empty. <a href="{{ url_for('index') }}">Browse papers</a> to start saving.</p>
+            {% endif %}
+        </div>
+
+        <div class="dash-card">
+            <h2>Export History</h2>
+            {% if exports %}
+            <table class="data">
+                <tr><th>ID</th><th>Format</th><th>Papers</th><th>Status</th><th>Date</th><th>Actions</th></tr>
+                {% for ex in exports %}
+                <tr>
+                    <td><a href="{{ url_for('export_detail', export_id=ex.export_id) }}">{{ ex.export_id }}</a></td>
+                    <td>{{ ex.format }}</td>
+                    <td>{{ ex.paper_count }}</td>
+                    <td>
+                        {% if ex.status == 'ready' %}<span style="color:#2e7d32">● Ready</span>
+                        {% elif ex.status == 'cancelled' %}<span class="muted">Cancelled</span>
+                        {% else %}{{ ex.status }}
+                        {% endif %}
+                    </td>
+                    <td>{{ ex.created_at.strftime("%b %d, %Y") }}</td>
+                    <td>
+                        <a href="{{ url_for('export_detail', export_id=ex.export_id) }}">View</a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </table>
+            {% else %}
+            <p class="muted">No exports yet. <a href="{{ url_for('export_create') }}">Create one</a>.</p>
+            {% endif %}
+        </div>
+
+        <div class="dash-card">
+            <h2>Alerts</h2>
+            {% if alerts %}
+            <ul>
+                {% for a in alerts %}
+                <li>{{ a.category_code }} — {{ a.frequency }}
+                    <form method="post" action="{{ url_for('delete_alert', alert_id=a.id) }}" style="display:inline">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <button type="submit" class="btn" style="font-size:11px;padding:2px 8px;">Remove</button>
+                    </form>
+                </li>
+                {% endfor %}
+            </ul>
+            {% else %}
+            <p class="muted">No alerts configured. <a href="{{ url_for('alerts_page') }}">Add one</a>.</p>
+            {% endif %}
+        </div>
+
+        <div class="dash-card" style="border-color:#e57373;background:#ffebee;">
+            <h2 style="color:#c62828;border-bottom-color:#e57373;">Danger Zone</h2>
+            <p>Deleting your account will permanently remove your profile, library, comments, and alerts.</p>
+            <form method="post" action="{{ url_for('delete_account') }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button type="submit" class="btn" style="background:#c62828;color:#fff;border-color:#c62828;">Delete My Account</button>
+            </form>
+        </div>
+    </div>
+</div>
+
+{% endblock %}

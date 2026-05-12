@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+{% block title %}Explore · GitHub{% endblock %}
+{% block content %}
+<div class="explore-header">
+  <div class="explore-header-inner">
+    <h1 class="explore-title">Explore GitHub</h1>
+    <p class="explore-subtitle">Discover repositories, topics, and more</p>
+    <form action="/search" method="get" class="explore-search">
+      <input type="text" name="q" class="explore-search-input" placeholder="Search repositories, people, or topics">
+      <button type="submit" class="gh-btn gh-btn-primary">Search</button>
+    </form>
+  </div>
+</div>
+
+<div class="explore-body">
+  <!-- Trending repos -->
+  <section class="explore-section">
+    <h2 class="explore-section-title">Trending repositories</h2>
+    <div class="repo-list">
+      {% for repo in trending %}
+      <article class="repo-list-item">
+        <div class="repo-list-info">
+          <h3><a href="/{{ repo.full_name }}" class="repo-list-name">{{ repo.full_name }}</a></h3>
+          {% if repo.description %}<p class="repo-list-desc">{{ repo.description }}</p>{% endif %}
+          <div class="repo-list-meta">
+            {% if repo.language %}
+            <span class="repo-lang">
+              <span class="repo-lang-dot" style="background-color: {{ lang_colors.get(repo.language, '#8f9ba8') }}"></span>
+              {{ repo.language }}
+            </span>
+            {% endif %}
+            <span class="trending-stat">⭐ {{ repo.stars_count | number_format }}</span>
+            <span class="trending-stat">🍴 {{ repo.forks_count | number_format }}</span>
+            {% for t in repo.get_topics()[:3] %}
+            <a href="/topics/{{ t }}" class="topic-badge-sm">{{ t }}</a>
+            {% endfor %}
+          </div>
+        </div>
+      </article>
+      {% endfor %}
+    </div>
+    <a href="/trending" class="explore-more-link">See more trending repositories →</a>
+  </section>
+
+  <!-- Topics -->
+  <section class="explore-section">
+    <h2 class="explore-section-title">Popular topics</h2>
+    <div class="topics-grid topics-grid-explore">
+      {% for topic in featured_topics[:12] %}
+      <a href="/topics/{{ topic.slug }}" class="topic-card-explore">
+        <span class="topic-card-name">{{ topic.display_name }}</span>
+        <p class="topic-card-desc">{{ topic.short_desc }}</p>
+        <span class="topic-card-count">{{ topic.repos_count | number_format }} repositories</span>
+      </a>
+      {% endfor %}
+    </div>
+    <a href="/topics" class="explore-more-link">See all topics →</a>
+  </section>
+
+  <!-- Collections -->
+  <section class="explore-section">
+    <h2 class="explore-section-title">Collections</h2>
+    <div class="collections-grid">
+      {% for col in collections %}
+      <div class="collection-card">
+        <h3 class="collection-title">{{ col.title }}</h3>
+        <p class="collection-desc">{{ col.desc }}</p>
+        <span class="collection-count">{{ col.count }} repositories</span>
+      </div>
+      {% endfor %}
+    </div>
+  </section>
+
+  <!-- Trending developers -->
+  <section class="explore-section">
+    <h2 class="explore-section-title">Trending developers</h2>
+    <div class="developers-grid">
+      {% for dev in trending_devs %}
+      <a href="/{{ dev.username }}" class="dev-card">
+        <img src="{{ dev.avatar_url }}" alt="{{ dev.username }}" class="dev-avatar"
+             onerror="this.src='/static/images/avatars/avatar_00.jpg'">
+        <div class="dev-info">
+          <span class="dev-name">{{ dev.name or dev.username }}</span>
+          <span class="dev-username">{{ dev.username }}</span>
+        </div>
+      </a>
+      {% endfor %}
+    </div>
+  </section>
+</div>
+{% endblock %}

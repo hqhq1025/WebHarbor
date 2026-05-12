@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block title %}{{ team.full_name or team.name }} Injuries{% endblock %}
+
+{% block content %}
+<div class="container">
+  <div class="page-header">
+    <h1>{{ team.full_name or team.name }} Injury Report</h1>
+    {% set active = 'injuries' %}{% include "_team_subnav.html" %}
+  </div>
+
+  {% if players %}
+  <table class="data-table injuries-table">
+    <thead>
+      <tr>
+        <th>Player</th>
+        <th>Position</th>
+        <th>Status</th>
+        <th>Injury</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for player in players %}
+      <tr class="injury-row status-{{ player.injury_status | lower | replace(' ', '-') }}">
+        <td class="player-name">
+          <a href="/player/{{ sport.slug if sport else '#' }}/{{ player.slug }}">{{ player.name }}</a>
+        </td>
+        <td>{{ player.position }}</td>
+        <td><span class="injury-status-badge inj-{{ player.injury_status | lower | replace(' ', '-') }}">{{ player.injury_status }}</span></td>
+        <td>{{ player.injury_description or '—' }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <div class="empty-state">
+    <p class="empty-msg">No injuries reported for {{ team.full_name or team.name }}.</p>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

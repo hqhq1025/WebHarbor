@@ -1,0 +1,147 @@
+{% extends "base.html" %}
+{% block title %}Checkout - Amazon.com{% endblock %}
+
+{% block content %}
+<div class="checkout-layout">
+    <div class="checkout-main">
+        <h1>Checkout ({{ items|sum(attribute='quantity') }} items)</h1>
+
+        <form method="POST" novalidate>
+            {{ form.csrf_token }}
+
+            <div class="checkout-section">
+                <h2>1. Shipping Address</h2>
+                {% if saved_addrs %}
+                <div class="form-group">
+                    <label for="saved_address_id">Use a saved address</label>
+                    <select id="saved_address_id" name="saved_address_id" class="form-control" onchange="toggleAddrFields(this.value)">
+                        <option value="" selected disabled>-- Please select a shipping address --</option>
+                        {% for addr in saved_addrs %}
+                        <option value="{{ addr.id }}">{{ addr.label or 'Home' }} &mdash; {{ addr.city }}, {{ addr.state }}</option>
+                        {% endfor %}
+                        <option value="new">Enter new address</option>
+                    </select>
+                </div>
+                {% endif %}
+                <div id="addr-manual-fields">
+                <div class="form-group">
+                    <label for="name">Full Name</label>
+                    <input type="text" id="name" name="name" class="form-control" value="{{ form.name.data or '' }}" required>
+                </div>
+                <div class="form-group">
+                    <label for="address">Street Address</label>
+                    <input type="text" id="address" name="address" class="form-control" value="{{ form.address.data or '' }}" required>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="city">City</label>
+                        <input type="text" id="city" name="city" class="form-control" value="{{ form.city.data or '' }}" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="state">State</label>
+                        <input type="text" id="state" name="state" class="form-control" value="{{ form.state.data or '' }}" required>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="zip_code">ZIP Code</label>
+                        <input type="text" id="zip_code" name="zip_code" class="form-control" value="{{ form.zip_code.data or '' }}" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="phone">Phone (optional)</label>
+                        <input type="text" id="phone" name="phone" class="form-control" value="{{ form.phone.data or '' }}">
+                    </div>
+                </div>
+                </div>
+            </div>
+
+            <div class="checkout-section">
+                <h2>2. Payment Method</h2>
+                {% if saved_payments %}
+                <div class="form-group">
+                    <label for="saved_payment_id">Use a saved card</label>
+                    <select id="saved_payment_id" name="saved_payment_id" class="form-control" onchange="togglePaymentFields(this.value)">
+                        <option value="" selected disabled>-- Please select a payment method --</option>
+                        {% for pm in saved_payments %}
+                        <option value="{{ pm.id }}">{{ pm.card_type }} ending in {{ pm.last4 }}</option>
+                        {% endfor %}
+                        <option value="new">Enter new card</option>
+                    </select>
+                </div>
+                {% endif %}
+                <div id="payment-manual-fields">
+                <div class="form-group">
+                    <label for="card_number">Card Number</label>
+                    <input type="text" id="card_number" name="card_number" class="form-control" placeholder="1234 5678 9012 3456" value="4111111111111111" required>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="card_exp">Expiration</label>
+                        <input type="text" id="card_exp" name="card_exp" class="form-control" placeholder="MM/YY" value="12/28" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="card_cvv">CVV</label>
+                        <input type="text" id="card_cvv" name="card_cvv" class="form-control" placeholder="123" value="123" required>
+                    </div>
+                </div>
+                </div>
+            </div>
+
+            <script>
+            function toggleAddrFields(val) {
+                document.getElementById('addr-manual-fields').style.display = (val === 'new' || val === '') ? '' : 'none';
+            }
+            function togglePaymentFields(val) {
+                document.getElementById('payment-manual-fields').style.display = (val === 'new' || val === '') ? '' : 'none';
+            }
+            </script>
+
+            <div class="checkout-section">
+                <h2>3. Review Items</h2>
+                {% for item in items %}
+                <div style="display:grid;grid-template-columns:80px 1fr auto;gap:15px;padding:10px 0;border-bottom:1px solid #f0f0f0">
+                    <img src="{{ item.product.image }}" alt="{{ item.product.name }}" style="width:80px;height:80px;object-fit:contain" onerror="this.style.display='none'">
+                    <div>
+                        <h3 style="font-size:14px;font-weight:400;margin:0 0 5px">{{ item.product.name }}</h3>
+                        <div style="font-size:13px;color:var(--amz-text-secondary)">Qty: {{ item.quantity }}</div>
+                        <div style="color:var(--amz-success);font-size:13px">In Stock</div>
+                    </div>
+                    <div style="font-weight:700">${{ '%.2f'|format(item.product.price * item.quantity) }}</div>
+                </div>
+                {% endfor %}
+            </div>
+
+            <div style="margin-top:20px">
+                <button type="submit" class="btn btn-orange btn-full" style="padding:14px;font-size:15px">Place your order</button>
+            </div>
+        </form>
+    </div>
+
+    <aside class="order-summary">
+        <button type="submit" form="" class="btn btn-orange btn-full" disabled style="opacity:0.5">Place your order</button>
+        <p style="font-size:12px;margin:8px 0">By placing your order, you agree to Amazon's Conditions of Use.</p>
+
+        <h2>Order Summary</h2>
+        <div class="summary-row">
+            <span>Items:</span>
+            <span>${{ '%.2f'|format(subtotal) }}</span>
+        </div>
+        <div class="summary-row">
+            <span>Shipping &amp; handling:</span>
+            <span>${{ '%.2f'|format(shipping) }}</span>
+        </div>
+        <div class="summary-row">
+            <span>Total before tax:</span>
+            <span>${{ '%.2f'|format(subtotal + shipping) }}</span>
+        </div>
+        <div class="summary-row">
+            <span>Estimated tax:</span>
+            <span>${{ '%.2f'|format(tax) }}</span>
+        </div>
+        <div class="summary-row summary-total">
+            <span>Order total:</span>
+            <span>${{ '%.2f'|format(total) }}</span>
+        </div>
+    </aside>
+</div>
+{% endblock %}

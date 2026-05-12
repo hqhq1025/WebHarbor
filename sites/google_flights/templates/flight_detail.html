@@ -1,0 +1,355 @@
+{% extends "base.html" %}
+{% block title %}{{ flight.airline }} {{ flight.flight_number }} | Google Flights{% endblock %}
+
+{% block content %}
+<div class="fd-header">
+  <div class="fd-container">
+    <div class="fd-breadcrumb">
+      <a href="{{ url_for('index') }}">Flights</a> &rsaquo;
+      <a href="{{ url_for('flights_list', **{'from': flight.origin.iata, 'to': flight.destination.iata}) }}">{{ flight.origin.city }} to {{ flight.destination.city }}</a> &rsaquo;
+      {{ flight.airline }} {{ flight.flight_number }}
+    </div>
+    <h1 class="fd-title">{{ flight.origin.city }} ({{ flight.origin.iata }}) to {{ flight.destination.city }} ({{ flight.destination.iata }})</h1>
+    <p class="fd-subtitle">{{ flight.airline }} &middot; {{ flight.flight_number }} &middot; {{ flight.aircraft }}</p>
+  </div>
+</div>
+
+<div class="fd-container">
+  <div class="fd-grid">
+    <div>
+      <!-- Itinerary Card -->
+      <div class="fd-card">
+        <h2 class="fd-card-title">Flight details</h2>
+        <div class="fd-itinerary">
+          <div class="fd-stop">
+            <div class="dot"></div>
+            <div class="line"></div>
+            <div class="dot"></div>
+          </div>
+          <div>
+            <div class="fd-stop-info">
+              <h4>Outbound: {{ flight.departure_time }} &middot; {{ flight.origin.city }} ({{ flight.origin.iata }})</h4>
+              <p>{{ flight.departure_date|datefmt('%a, %b %d, %Y') }} &middot; {{ flight.origin.name }}</p>
+              <p style="padding: 12px 0;color:var(--g-grey-700);">Travel time: {{ flight.duration_str }} &middot; {{ flight.stops_str }}
+                {% if flight.stops > 0 and flight.stop_cities %}
+                  <br>Layover{% if flight.stops > 1 %}s{% endif %} via {{ flight.stop_cities }}
+                  {% set layover_minutes = (flight.duration_minutes - 60)|int %}
+                  {% if layover_minutes > 60 %}
+                    &middot; ~{{ (layover_minutes / flight.stops / 60)|round(1) }}h layover
+                  {% endif %}
+                {% endif %}
+              </p>
+              <h4>{{ flight.arrival_time }} &middot; {{ flight.destination.city }} ({{ flight.destination.iata }})</h4>
+              <p>{{ flight.arrival_date|datefmt('%a, %b %d, %Y') }} &middot; {{ flight.destination.name }}</p>
+            </div>
+          </div>
+        </div>
+
+        {% if return_flight %}
+        <hr style="margin:20px 0;border:none;border-top:1px solid var(--g-grey-200);">
+        <div class="fd-itinerary">
+          <div class="fd-stop">
+            <div class="dot"></div>
+            <div class="line"></div>
+            <div class="dot"></div>
+          </div>
+          <div>
+            <div class="fd-stop-info">
+              <h4>Return: {{ return_flight.departure_time }} &middot; {{ return_flight.origin.city }} ({{ return_flight.origin.iata }})</h4>
+              <p>{{ return_flight.departure_date|datefmt('%a, %b %d, %Y') }} &middot; {{ return_flight.origin.name }} &middot; {{ return_flight.airline }} {{ return_flight.flight_number }}</p>
+              <p style="padding: 12px 0;color:var(--g-grey-700);">Travel time: {{ return_flight.duration_str }} &middot; {{ return_flight.stops_str }}
+                {% if return_flight.stops > 0 and return_flight.stop_cities %}
+                  <br>Layover via {{ return_flight.stop_cities }}
+                {% endif %}
+              </p>
+              <h4>{{ return_flight.arrival_time }} &middot; {{ return_flight.destination.city }} ({{ return_flight.destination.iata }})</h4>
+              <p>{{ return_flight.arrival_date|datefmt('%a, %b %d, %Y') }} &middot; {{ return_flight.destination.name }}</p>
+            </div>
+          </div>
+        </div>
+        <p style="margin-top:12px;padding:10px;background:#e8f0fe;border-radius:6px;font-size:13px;">
+          <strong>Total round-trip duration:</strong> {{ ((flight.duration_minutes + return_flight.duration_minutes) // 60) }}h {{ ((flight.duration_minutes + return_flight.duration_minutes) % 60) }}m
+          &middot; <strong>Return airline:</strong> {{ return_flight.airline }} ({% if return_flight.airline == flight.airline %}same as outbound{% else %}different from outbound{% endif %})
+        </p>
+        {% endif %}
+        <div class="fd-amenities">
+          <div class="fd-amenity"><span class="material-symbols-outlined">airline_seat_recline_normal</span>Legroom: {{ flight.legroom_inches }}"{% if flight.seat_pitch %} ({{ flight.seat_pitch }} pitch){% endif %}</div>
+          {% if flight.seat_type %}<div class="fd-amenity"><span class="material-symbols-outlined">event_seat</span>{{ flight.seat_type }}</div>{% endif %}
+          {% if flight.meal_service %}<div class="fd-amenity"><span class="material-symbols-outlined">restaurant</span>{{ flight.meal_service }}</div>{% endif %}
+          {% if flight.wifi %}<div class="fd-amenity"><span class="material-symbols-outlined">wifi</span>Wi-Fi</div>{% endif %}
+          {% if flight.power %}<div class="fd-amenity"><span class="material-symbols-outlined">power</span>Power outlet</div>{% endif %}
+          {% if flight.entertainment %}<div class="fd-amenity"><span class="material-symbols-outlined">movie</span>In-flight entertainment</div>{% endif %}
+          <div class="fd-amenity"><span class="material-symbols-outlined">luggage</span>{{ flight.baggage_free }} free checked bag{% if flight.baggage_free != 1 %}s{% endif %}</div>
+        </div>
+      </div>
+
+      <!-- Booking Sites Card -->
+      {% if booking_sites %}
+      <div class="fd-card">
+        <h2 class="fd-card-title">Booking sites</h2>
+        <p style="color:var(--g-grey-700);margin-bottom:14px;">
+          Compare prices for this exact flight across third-party agencies and the airline's own website.
+          The cheapest option is listed first.
+        </p>
+        <div style="overflow-x:auto;">
+          <table style="width:100%;border-collapse:collapse;font-size:14px;">
+            <thead>
+              <tr style="background:var(--g-grey-100,#f1f3f4);text-align:left;">
+                <th style="padding:10px 12px;">Booking site</th>
+                <th style="padding:10px 12px;">Type</th>
+                <th style="padding:10px 12px;">Economy</th>
+                <th style="padding:10px 12px;">Business</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for b in booking_sites %}
+              <tr style="border-bottom:1px solid var(--g-grey-200,#e8eaed);{% if loop.first %}background:#e6f4ea;{% endif %}">
+                <td style="padding:10px 12px;font-weight:500;">
+                  {{ b.site }}{% if loop.first %} <span style="color:#1e8e3e;font-size:12px;">(Cheapest)</span>{% endif %}
+                </td>
+                <td style="padding:10px 12px;color:var(--g-grey-700);">{{ b.label }}</td>
+                <td style="padding:10px 12px;">{{ b.economy_price|money }}</td>
+                <td style="padding:10px 12px;">{% if b.business_price %}{{ b.business_price|money }}{% else %}&mdash;{% endif %}</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+      {% endif %}
+
+      <!-- Emissions Card -->
+      <div class="fd-card">
+        <h2 class="fd-card-title">Emissions</h2>
+        <p style="color:var(--g-grey-800);">
+          This flight emits <strong>{{ flight.co2_emissions_kg }} kg CO<sub>2</sub></strong>
+          {% if flight.co2_vs_typical < 0 %}
+            &mdash; <span style="color:#1e8e3e;">{{ flight.co2_vs_typical|abs }}% less emissions</span> than a typical flight on this route.
+          {% elif flight.co2_vs_typical > 0 %}
+            &mdash; <span style="color:#c5221f;">{{ flight.co2_vs_typical }}% more emissions</span> than a typical flight on this route.
+          {% else %}
+            &mdash; about average for this route.
+          {% endif %}
+        </p>
+      </div>
+
+      <!-- Amenity Comparison -->
+      {% if related %}
+      <div class="fd-card">
+        <h2 class="fd-card-title">Compare flights on this route</h2>
+        <div style="overflow-x:auto;">
+          <table style="width:100%;border-collapse:collapse;font-size:14px;">
+            <thead>
+              <tr style="background:var(--g-grey-100,#f1f3f4);text-align:left;">
+                <th style="padding:10px 12px;">Airline</th>
+                <th style="padding:10px 12px;">Economy</th>
+                <th style="padding:10px 12px;">Business</th>
+                <th style="padding:10px 12px;">Seat Pitch</th>
+                <th style="padding:10px 12px;">Meal</th>
+                <th style="padding:10px 12px;">Wi-Fi</th>
+                <th style="padding:10px 12px;">Entertainment</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr style="border-bottom:1px solid var(--g-grey-200,#e8eaed);background:var(--g-blue-50,#e8f0fe);">
+                <td style="padding:10px 12px;font-weight:500;">{{ flight.airline }} (this flight)</td>
+                <td style="padding:10px 12px;">{{ flight.price|money }}</td>
+                <td style="padding:10px 12px;">{% if flight.price_business > 0 %}{{ flight.price_business|money }}{% else %}&mdash;{% endif %}</td>
+                <td style="padding:10px 12px;">{{ flight.seat_pitch or (flight.legroom_inches ~ '"') }}</td>
+                <td style="padding:10px 12px;">{{ flight.meal_service or 'Snack' }}</td>
+                <td style="padding:10px 12px;">{% if flight.wifi %}Yes{% else %}No{% endif %}</td>
+                <td style="padding:10px 12px;">{% if flight.entertainment %}Yes{% else %}No{% endif %}</td>
+              </tr>
+              {% for rf in related[:4] %}
+              <tr style="border-bottom:1px solid var(--g-grey-200,#e8eaed);">
+                <td style="padding:10px 12px;"><a href="{{ url_for('flight_detail', flight_id=rf.id) }}">{{ rf.airline }}</a></td>
+                <td style="padding:10px 12px;">{{ rf.price|money }}</td>
+                <td style="padding:10px 12px;">{% if rf.price_business > 0 %}{{ rf.price_business|money }}{% else %}&mdash;{% endif %}</td>
+                <td style="padding:10px 12px;">{{ rf.seat_pitch or (rf.legroom_inches ~ '"') }}</td>
+                <td style="padding:10px 12px;">{{ rf.meal_service or 'Snack' }}</td>
+                <td style="padding:10px 12px;">{% if rf.wifi %}Yes{% else %}No{% endif %}</td>
+                <td style="padding:10px 12px;">{% if rf.entertainment %}Yes{% else %}No{% endif %}</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+      {% endif %}
+
+      <!-- Destination Gallery -->
+      <div class="fd-card pd-gallery-section">
+        <h2 class="fd-card-title">Discover {{ flight.destination.city }}</h2>
+        <p style="color:var(--g-grey-700);margin-bottom:20px;">{{ flight.destination.description }}</p>
+        <div class="fd-gallery-grid">
+          {% for img in flight.destination.get_gallery()[:6] %}
+            <div class="fd-gallery-img pd-gallery-img">
+              <img src="{{ img }}" alt="{{ flight.destination.city }}" loading="lazy"
+                   onerror="this.parentElement.style.display='none'">
+            </div>
+          {% endfor %}
+        </div>
+        <a href="{{ url_for('destination', slug=flight.destination.city_slug) }}" class="btn btn-outline" style="margin-top:16px;">
+          See more about {{ flight.destination.city }}
+        </a>
+      </div>
+
+      <!-- Reviews -->
+      <div class="fd-card">
+        <h2 class="fd-card-title">Reviews ({{ reviews|length }})</h2>
+        {% if reviews %}
+          <div class="fd-reviews">
+            {% for r in reviews %}
+              <div class="review-card">
+                <div class="review-header">
+                  <div class="review-avatar">{{ r.user.full_name[0]|upper }}</div>
+                  <div>
+                    <div style="font-weight:500;">{{ r.user.full_name }}</div>
+                    <div class="review-stars">
+                      {% for i in range(r.rating) %}&#9733;{% endfor %}{% for i in range(5 - r.rating) %}&#9734;{% endfor %}
+                    </div>
+                  </div>
+                </div>
+                {% if r.title %}<div class="review-title">{{ r.title }}</div>{% endif %}
+                <div class="review-body">{{ r.body }}</div>
+                {% if current_user.is_authenticated and current_user.id == r.user_id %}
+                  <form action="{{ url_for('review_delete', review_id=r.id) }}" method="POST" style="display:inline;margin-top:8px;">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button type="submit" class="btn btn-danger" style="font-size:12px;padding:4px 12px;">Delete</button>
+                  </form>
+                {% endif %}
+              </div>
+            {% endfor %}
+          </div>
+        {% else %}
+          <p style="color:var(--g-grey-700);">Be the first to review this flight.</p>
+        {% endif %}
+        {% if current_user.is_authenticated %}
+          <form class="review-form" action="{{ url_for('review_submit', flight_id=flight.id) }}" method="POST">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <h3 style="font-family:var(--font-sans);font-size:16px;font-weight:500;margin-bottom:12px;">Write a review</h3>
+            <div class="star-rating">
+              {% for i in [5,4,3,2,1] %}
+                <input type="radio" name="rating" id="rating-{{ i }}" value="{{ i }}" {% if i == 5 %}checked{% endif %}>
+                <label for="rating-{{ i }}" {% if i <= 5 %}class="filled"{% endif %}>&#9733;</label>
+              {% endfor %}
+            </div>
+            <input type="text" name="title" placeholder="Review title">
+            <textarea name="body" placeholder="Share your experience..."></textarea>
+            <button type="submit" class="btn btn-primary">Submit review</button>
+          </form>
+        {% else %}
+          <p style="margin-top:16px;"><a href="{{ url_for('login') }}">Sign in</a> to write a review.</p>
+        {% endif %}
+      </div>
+
+      {% if related %}
+        <div class="fd-card">
+          <h2 class="fd-card-title">Other flights on this route</h2>
+          {% for f in related %}
+            <a href="{{ url_for('flight_detail', flight_id=f.id) }}" class="flight-row">
+              <div class="airline-logo">
+                <img src="{{ f.airline_logo }}" alt="{{ f.airline }}" onerror="this.style.display='none'">
+              </div>
+              <div class="flight-row-main">
+                <div>
+                  <div class="flight-time">{{ f.departure_time }}</div>
+                  <div class="flight-time-sub">{{ f.origin.iata }}</div>
+                </div>
+                <div class="flight-duration">
+                  <div>{{ f.duration_str }}</div>
+                  <div class="flight-line"></div>
+                  <div class="flight-stops-info">{{ f.stops_str }}</div>
+                </div>
+                <div>
+                  <div class="flight-time">{{ f.arrival_time }}</div>
+                  <div class="flight-time-sub">{{ f.destination.iata }}</div>
+                </div>
+                <div class="flight-emissions">
+                  <div>{{ f.airline }}</div>
+                </div>
+              </div>
+              <div></div>
+              <div>
+                <div class="flight-price">{{ f.price|money }}</div>
+              </div>
+            </a>
+          {% endfor %}
+        </div>
+      {% endif %}
+    </div>
+
+    <!-- Sidebar -->
+    <aside class="fd-sidebar">
+      <div class="fd-price-card">
+        <div class="fd-price">{% if return_flight %}{{ (flight.price + return_flight.price)|money }}{% else %}{{ flight.price|money }}{% endif %}</div>
+        <div class="fd-price-label">{% if return_flight or flight.return_date %}Round trip total{% else %}One-way total{% endif %}</div>
+
+        <label style="font-size:12px;color:var(--g-grey-700);display:block;margin-bottom:4px;">Class</label>
+        <select name="cabin_class" id="fd-cabin" class="fd-select">
+          <option value="Economy">Economy - {{ flight.price|money }}</option>
+          {% if flight.price_premium %}<option value="Premium">Premium economy - {{ flight.price_premium|money }}</option>{% endif %}
+          {% if flight.price_business %}<option value="Business">Business - {{ flight.price_business|money }}</option>{% endif %}
+          {% if flight.price_first %}<option value="First">First class - {{ flight.price_first|money }}</option>{% endif %}
+        </select>
+
+        <label style="font-size:12px;color:var(--g-grey-700);display:block;margin-bottom:4px;">Passengers</label>
+        <select name="passengers" id="fd-pax" class="fd-select">
+          <option value="1">1 adult</option>
+          <option value="2">2 adults</option>
+          <option value="3">3 adults</option>
+          <option value="4">4 adults</option>
+        </select>
+
+        {% if current_user.is_authenticated %}
+        <form method="POST" action="{{ url_for('cart_add_form', flight_id=flight.id) }}" id="fd-add-form">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token_value }}">
+          <input type="hidden" name="cabin_class" id="fd-form-cabin" value="Economy">
+          <input type="hidden" name="passengers" id="fd-form-pax" value="1">
+          <button type="submit" class="fd-buy-btn">
+            <span class="material-symbols-outlined">shopping_bag</span>Add to bag
+          </button>
+        </form>
+        <form method="POST" action="{{ url_for('track_add_form', flight_id=flight.id) }}" style="margin-top:8px;">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token_value }}">
+          <button type="submit" class="fd-track-btn">
+            <span class="material-symbols-outlined">bookmark_border</span>Track prices
+          </button>
+        </form>
+        <script>
+          document.getElementById('fd-cabin').addEventListener('change', function() {
+            document.getElementById('fd-form-cabin').value = this.value;
+          });
+          document.getElementById('fd-pax').addEventListener('change', function() {
+            document.getElementById('fd-form-pax').value = this.value;
+          });
+        </script>
+        {% else %}
+        <a href="{{ url_for('login') }}" class="fd-buy-btn" style="display:block;text-align:center;">
+          <span class="material-symbols-outlined">shopping_bag</span>Sign in to book
+        </a>
+        {% endif %}
+
+        <hr style="margin:20px 0;border:none;border-top:1px solid var(--g-grey-200);">
+        <div style="font-size:14px;color:var(--g-grey-800);">
+          <div style="display:flex;justify-content:space-between;padding:4px 0;">
+            <span>Aircraft</span><span>{{ flight.aircraft }}</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;padding:4px 0;">
+            <span>Flight number</span><span>{{ flight.flight_number }}</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;padding:4px 0;">
+            <span>Duration</span><span>{{ flight.duration_str }}</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;padding:4px 0;">
+            <span>Stops</span><span>{{ flight.stops_str }}</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;padding:4px 0;">
+            <span>Rating</span><span>{{ flight.rating }} / 5</span>
+          </div>
+        </div>
+      </div>
+    </aside>
+  </div>
+</div>
+{% endblock %}

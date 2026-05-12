@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block title %}Saved Courses | Coursera{% endblock %}
+{% block content %}
+<div class="container" style="padding:40px 0">
+  <h1>Saved Courses</h1>
+  {% if saved %}
+  <div class="course-grid">
+    {% for s in saved %}
+    <div class="course-card-wrapper">
+      <a href="{{ url_for('course_detail', slug=s.course.slug) }}" class="course-card">
+        <div class="course-card-thumb {{ s.course.color_class }}">
+          {% if course_thumb(s.course) %}<img class="cct-img" src="{{ url_for('static', filename=course_thumb(s.course)) }}" alt="">{% endif %}
+          <span class="course-type-badge">{{ s.course.course_type }}</span>
+        </div>
+        <div class="course-card-body">
+          <div class="course-partner">
+            {% set _pl = partner_logo(s.course.partner) %}{% if _pl %}<img class="cp-logo-inline" src="{{ url_for('static', filename=_pl) }}" alt="">{% endif %}
+            <span>{{ s.course.partner.name if s.course.partner else '' }}</span>
+          </div>
+          <h3 class="course-title">{{ s.course.title }}</h3>
+          <div class="course-rating"><span class="stars">&#9733;</span> {{ '%.1f'|format(s.course.rating) }}</div>
+        </div>
+      </a>
+      <form method="POST" action="{{ url_for('wishlist_remove_form', course_id=s.course.id) }}" style="margin:4px 0 0 0">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button type="submit" class="btn-remove-saved" style="width:100%;padding:6px;background:#f5f5f5;border:1px solid #ddd;cursor:pointer;border-radius:4px;font-size:13px">&#10006; Remove</button>
+      </form>
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="empty-state">
+    <p>No saved courses yet. Save courses to view them later.</p>
+    <a href="{{ url_for('search') }}" class="btn-primary">Browse Courses</a>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

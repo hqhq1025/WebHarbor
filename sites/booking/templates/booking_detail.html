@@ -1,0 +1,96 @@
+{% extends "base.html" %}
+{% block title %}{% if is_confirmation %}Booking confirmed — {% endif %}{{ booking.booking_number }} — Booking{% endblock %}
+{% block content %}
+<div class="container">
+    {% if is_confirmation %}
+    <div class="alert-success" style="background:#008009;color:#fff;padding:16px 20px;border-radius:8px;margin-bottom:16px;">
+        <h2 style="margin:0;font-size:22px;">&#10003; Booking confirmed</h2>
+        <p style="margin:6px 0 0 0;">Your reservation <strong>{{ booking.booking_number }}</strong> is confirmed. A confirmation email has been sent to {{ booking.guest_email }}.</p>
+    </div>
+    {% endif %}
+    <div class="booking-header">
+        <h1>Booking confirmed!</h1>
+        <div class="booking-number">Reference: {{ booking.booking_number }}</div>
+        <div class="booking-number">Status: {{ booking.status.upper() }}</div>
+        {% if booking.items %}
+        {% set first = booking.items[0] %}
+        <div class="booking-number">Check-in: {{ first.check_in.strftime('%d %b %Y') }} &middot; Check-out: {{ first.check_out.strftime('%d %b %Y') }} &middot; {{ booking.nights }} night{{ 's' if booking.nights > 1 else '' }}</div>
+        {% endif %}
+        <div class="total">Total paid: ${{ '%.2f' % booking.total }}</div>
+    </div>
+
+    <div class="account-card">
+        <h2>Status timeline</h2>
+        <div class="timeline">
+            <div class="timeline-step done">
+                <div class="timeline-dot">&#10003;</div>
+                <div class="label">Confirmed</div>
+            </div>
+            <div class="timeline-step {% if booking.status != 'cancelled' %}active{% endif %}">
+                <div class="timeline-dot">2</div>
+                <div class="label">Processing</div>
+            </div>
+            <div class="timeline-step">
+                <div class="timeline-dot">3</div>
+                <div class="label">Check-in</div>
+            </div>
+            <div class="timeline-step">
+                <div class="timeline-dot">4</div>
+                <div class="label">Check-out</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="account-card">
+        <h2>Your stays</h2>
+        {% for item in booking.items %}
+        <div class="booking-row">
+            {% if item.property.image %}
+            <img src="{{ item.property.image }}" alt=""
+                 onerror="this.style.background='linear-gradient(135deg,#003580,#006ce4)'">
+            {% endif %}
+            <div class="info">
+                <h4><a href="{{ url_for('property_detail', slug=item.property.slug) }}">{{ item.property.name }}</a></h4>
+                <div class="meta">{{ item.property.neighborhood }}, {{ item.property.city.display }}</div>
+                <div class="meta">{{ item.check_in.strftime('%d %b %Y') }} → {{ item.check_out.strftime('%d %b %Y') }}</div>
+                <div class="meta">{{ item.room_type }} &middot; {{ item.adults }} adult{{ 's' if item.adults > 1 else '' }}</div>
+            </div>
+            <div style="text-align:right;">
+                <strong>${{ '%.2f' % item.subtotal }}</strong>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <div class="account-card">
+        <h2>Guest information</h2>
+        <p><strong>{{ booking.guest_first_name }} {{ booking.guest_last_name }}</strong></p>
+        <p>{{ booking.guest_email }} &middot; {{ booking.guest_phone }}</p>
+        <p>{{ booking.guest_country }}</p>
+        {% if booking.special_requests %}
+        <h3 class="mt-2">Special requests</h3>
+        <p class="text-muted">{{ booking.special_requests }}</p>
+        {% endif %}
+    </div>
+
+    <div class="account-card">
+        <h2>Payment</h2>
+        <p>{{ booking.payment_method }} ending in {{ booking.card_last4 }}</p>
+        <p>Total charged: <strong>${{ '%.2f' % booking.total }}</strong></p>
+    </div>
+
+    <div class="account-card">
+        <h2>Manage booking</h2>
+        {% if booking.status == 'confirmed' %}
+        <form method="POST" action="{{ url_for('booking_cancel', booking_id=booking.id) }}" style="display:inline-block;margin-right:8px;">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button type="submit" class="btn-secondary" style="color:#cc0000;border-color:#cc0000;">Cancel booking</button>
+        </form>
+        {% endif %}
+        <form method="POST" action="{{ url_for('booking_rebook', booking_id=booking.id) }}" style="display:inline-block;">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button type="submit" class="btn-primary">Book again</button>
+        </form>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% block title %}{{ name }} | Instructor on Coursera{% endblock %}
+{% block content %}
+<div class="instructor-page">
+  <div class="instructor-hero">
+    <div class="container">
+      <div class="instructor-hero-inner">
+        <div class="instructor-avatar-lg">
+          {% set _ip = instructor_photo(slug) or instructor_photo(name) %}
+          {% if _ip %}<img src="{{ url_for('static', filename=_ip) }}" alt="{{ name }}">{% else %}{{ name[0]|upper }}{% endif %}
+        </div>
+        <div class="instructor-hero-text">
+          <h1>{{ name }}</h1>
+          {% if title %}<p class="instructor-title">{{ title }}</p>{% endif %}
+          {% if affiliation %}<p class="instructor-affiliation">{{ affiliation }}</p>{% endif %}
+          <p class="instructor-stat-line">
+            <strong>{{ courses|length }}</strong> course{{ 's' if courses|length != 1 else '' }} on Coursera
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="container">
+    <section class="instructor-section">
+      <h2>Courses taught by {{ name }}</h2>
+      <div class="instructor-courses-list">
+        {% for c in courses %}
+        <a class="instructor-course-card {{ c.color_class }}" href="{{ url_for('course_detail', slug=c.slug) }}">
+          <div class="instructor-course-type">{{ c.course_type }}</div>
+          <h3 class="instructor-course-title">{{ c.title }}</h3>
+          {% if c.partner %}
+          <div class="instructor-course-partner">{{ c.partner.name }}</div>
+          {% endif %}
+          <div class="instructor-course-meta">
+            <span class="stars">&#9733;</span>
+            {{ '%.1f'|format(c.rating) }}
+            ({{ '{:,}'.format(c.review_count) }} reviews)
+            &middot; {{ c.enrolled_display() }} enrolled
+          </div>
+          <p class="instructor-course-desc">{{ c.description[:180] }}{% if c.description|length > 180 %}...{% endif %}</p>
+          <div class="instructor-course-tags">
+            <span class="tag-level">{{ c.level }}</span>
+            <span class="tag-duration">{{ c.duration_text }}</span>
+            {% if c.is_free %}<span class="tag-free">Free</span>{% endif %}
+            {% if c.has_certificate %}<span class="tag-cert">Certificate</span>{% endif %}
+          </div>
+        </a>
+        {% endfor %}
+      </div>
+      {% if not courses %}
+      <div class="empty-state"><p>No courses found for this instructor.</p></div>
+      {% endif %}
+    </section>
+  </div>
+</div>
+{% endblock %}

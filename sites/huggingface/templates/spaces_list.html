@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% from "_macros.html" import space_card %}
+{% block title %}Spaces – Hugging Face{% endblock %}
+
+{% block content %}
+<div class="container-wide page">
+    <div class="repolist-header">
+        <h1 class="repolist-title">Spaces <span class="repolist-count">{{ total }}</span></h1>
+        <div class="repolist-sort">
+            <span>Sort:</span>
+            <a class="{% if active_sort == 'trending' %}is-active{% endif %}" href="?sort=trending">Trending</a>
+            <a class="{% if active_sort == 'likes' %}is-active{% endif %}" href="?sort=likes">Most likes</a>
+            <a class="{% if active_sort == 'updated' %}is-active{% endif %}" href="?sort=updated">Recently updated</a>
+        </div>
+    </div>
+
+    <div class="space-grid">
+        {% for repo in repos %}
+            {{ space_card(repo, loop.index) }}
+        {% else %}
+            <div class="empty-state"><p>No spaces found.</p></div>
+        {% endfor %}
+    </div>
+
+    {% if total_pages > 1 %}
+    <div class="pagination">
+        {% if page > 1 %}<a href="?page={{ page - 1 }}">← Prev</a>{% endif %}
+        <span>Page {{ page }} of {{ total_pages }}</span>
+        {% if page < total_pages %}<a href="?page={{ page + 1 }}">Next →</a>{% endif %}
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

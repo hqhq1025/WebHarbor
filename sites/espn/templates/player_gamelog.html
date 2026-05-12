@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+{% block title %}{{ player.name }} Game Log{% endblock %}
+
+{% block content %}
+<div class="container">
+  <div class="page-header">
+    <h1>{{ player.name }} &mdash; Game Log</h1>
+    {% if player.team %}
+    <p class="player-team-link">
+      <a href="/team/{{ sport.slug if sport else '#' }}/{{ player.team.slug }}">{{ player.team.full_name }}</a>
+      &bull; {{ player.position }}
+    </p>
+    {% endif %}
+    <nav class="sport-subnav">
+      <a href="/player/{{ sport.slug if sport else '#' }}/{{ player.slug }}">Overview</a>
+      <a href="/player/{{ sport.slug if sport else '#' }}/{{ player.slug }}/gamelog" class="active">Game Log</a>
+    </nav>
+  </div>
+
+  {% set sslug = (sport.slug if sport else '') %}
+  <table class="data-table gamelog-table">
+    <thead>
+      <tr>
+        <th>Date</th>
+        <th>Opponent</th>
+        <th>Result</th>
+        {% if sslug == 'soccer' %}
+          <th>MIN</th><th>Goals</th><th>Assists</th>
+        {% elif sslug == 'nhl' %}
+          <th>MIN</th><th>Goals</th><th>Assists</th><th>+/-</th>
+        {% elif sslug == 'nfl' %}
+          <th>TDs</th><th>Stat Block</th>
+        {% elif sslug == 'mlb' %}
+          <th>R</th><th>H</th><th>RBI</th>
+        {% else %}
+          <th>MIN</th><th>PTS</th><th>REB</th><th>AST</th><th>STL</th><th>BLK</th>
+        {% endif %}
+      </tr>
+    </thead>
+    <tbody>
+      {% for r in rows %}
+      <tr>
+        <td>
+          {% if r.game %}
+            <a href="/game/{{ r.game.id }}">{{ r.game.date_display or r.game.date }}</a>
+          {% else %}—{% endif %}
+        </td>
+        <td>
+          {% if r.opp %}
+            {{ 'vs' if r.is_home else '@' }}
+            <a href="/team/{{ sslug }}/{{ r.opp.slug }}">{{ r.opp.full_name or r.opp.name }}</a>
+          {% else %}—{% endif %}
+        </td>
+        <td>
+          {% if r.result %}
+            <span class="{{ 'win' if r.result=='W' else ('loss' if r.result=='L' else '') }}">{{ r.result }}</span>
+            {% if r.team_score is not none %} {{ r.team_score }}-{{ r.opp_score }}{% endif %}
+          {% else %}—{% endif %}
+        </td>
+        {% if sslug == 'soccer' %}
+          <td>{{ r.gs.minutes or '—' }}</td>
+          <td>{{ r.gs.points if r.gs.points is not none else '—' }}</td>
+          <td>{{ r.gs.assists if r.gs.assists is not none else '—' }}</td>
+        {% elif sslug == 'nhl' %}
+          <td>{{ r.gs.minutes or '—' }}</td>
+          <td>{{ r.gs.points if r.gs.points is not none else '—' }}</td>
+          <td>{{ r.gs.assists if r.gs.assists is not none else '—' }}</td>
+          <td>—</td>
+        {% elif sslug == 'nfl' %}
+          <td>{{ r.gs.points if r.gs.points is not none else '—' }}</td>
+          <td>—</td>
+        {% elif sslug == 'mlb' %}
+          <td>{{ r.gs.points if r.gs.points is not none else '—' }}</td>
+          <td>{{ r.gs.rebounds if r.gs.rebounds is not none else '—' }}</td>
+          <td>{{ r.gs.assists if r.gs.assists is not none else '—' }}</td>
+        {% else %}
+          <td>{{ r.gs.minutes }}</td>
+          <td>{{ r.gs.points }}</td>
+          <td>{{ r.gs.rebounds }}</td>
+          <td>{{ r.gs.assists }}</td>
+          <td>{{ r.gs.steals }}</td>
+          <td>{{ r.gs.blocks }}</td>
+        {% endif %}
+      </tr>
+      {% else %}
+      <tr><td colspan="9" class="empty-msg">No game log data available.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

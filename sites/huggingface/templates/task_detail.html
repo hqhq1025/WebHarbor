@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% from "_macros.html" import repo_card, space_card %}
+{% block title %}{{ task.display }} – Hugging Face{% endblock %}
+
+{% block content %}
+<section class="task-hero">
+    <div class="container-wide">
+        <div class="task-hero-icon">{{ task.icon }}</div>
+        <span class="task-hero-eyebrow">{{ task.modality }}</span>
+        <h1>{{ task.display }}</h1>
+        <p>{{ task.description }}</p>
+    </div>
+</section>
+
+<div class="container-wide page">
+    <section class="sect">
+        <div class="sect-title">
+            <h2>Models for {{ task.display }}</h2>
+            <a class="sect-title-link" href="{{ url_for('models_list', task=task.slug) }}">Browse all →</a>
+        </div>
+        <div class="repo-list">
+            {% for r in models %}{{ repo_card(r, liked_ids) }}{% else %}<p class="empty-state">No models yet.</p>{% endfor %}
+        </div>
+    </section>
+
+    {% if datasets %}
+    <section class="sect">
+        <div class="sect-title">
+            <h2>Datasets</h2>
+            <a class="sect-title-link" href="{{ url_for('datasets_list') }}">Browse all →</a>
+        </div>
+        <div class="repo-list">
+            {% for r in datasets %}{{ repo_card(r, liked_ids) }}{% endfor %}
+        </div>
+    </section>
+    {% endif %}
+
+    {% if spaces %}
+    <section class="sect">
+        <div class="sect-title">
+            <h2>Spaces</h2>
+            <a class="sect-title-link" href="{{ url_for('spaces_list', task=task.slug) }}">Browse all →</a>
+        </div>
+        <div class="space-grid">
+            {% for r in spaces %}{{ space_card(r, loop.index) }}{% endfor %}
+        </div>
+    </section>
+    {% endif %}
+</div>
+{% endblock %}

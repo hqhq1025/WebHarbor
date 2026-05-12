@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block title %}Terms of Service - Google{% endblock %}
+{% block content %}
+<div class="app-page" style="text-align:left;">
+    <h1 style="text-align:center;">Terms of Service</h1>
+    <p class="lead" style="text-align:center;">By using our services, you agree to these terms.</p>
+    <h2 style="font-size:22px; margin-top:32px;">Using our services</h2>
+    <p>You must follow any policies made available within the services. Don't misuse them.</p>
+    <h2 style="font-size:22px; margin-top:32px;">Your account</h2>
+    <p>You are responsible for the activity that happens on or through your Google Account.</p>
+    <h2 style="font-size:22px; margin-top:32px;">Privacy and copyright protection</h2>
+    <p>See our <a href="{{ url_for('privacy') }}">Privacy Policy</a>.</p>
+</div>
+{% endblock %}

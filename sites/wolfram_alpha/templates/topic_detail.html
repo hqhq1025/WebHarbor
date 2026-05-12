@@ -1,0 +1,235 @@
+{% extends "base.html" %}
+{% block title %}{{ topic.name }} — Wolfram|Alpha{% endblock %}
+
+{% block content %}
+<!-- Topic hero -->
+<section class="topic-hero" style="--cat-color: {{ topic.category.color }}">
+  <div class="section-inner topic-hero-inner">
+    <div class="topic-hero-text">
+      <div class="topic-breadcrumb">
+        <a href="/examples/{{ topic.category.slug }}">{{ topic.category.name }}</a>
+        {% if topic.subcategory %}
+        <span class="bc-sep">›</span>
+        <a href="/topic/{{ topic.subcategory.slug }}">{{ topic.subcategory.name }}</a>
+        {% endif %}
+      </div>
+      {% if topic.is_new %}<span class="wa-badge-new">NEW</span>{% endif %}
+      <h1 class="topic-hero-title">{{ topic.name }}</h1>
+      <p class="topic-hero-desc">{{ topic.description }}</p>
+      <div class="topic-hero-meta">
+        <span class="topic-views">&#128065; {{ topic.view_count }} views</span>
+        {% if topic.feedback %}
+        <span class="topic-rating">&#9733; {{ topic.avg_rating() }}/5 ({{ topic.feedback|length }} ratings)</span>
+        {% endif %}
+      </div>
+      <div class="topic-hero-actions">
+        {% if current_user.is_authenticated %}
+        <form action="/favorites/toggle" method="post" style="display:inline">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <input type="hidden" name="topic_id" value="{{ topic.id }}">
+          <input type="hidden" name="next" value="/topic/{{ topic.slug }}">
+          <button type="submit" class="btn btn-fav {% if is_fav %}btn-fav--active{% endif %}">
+            {% if is_fav %}&#9733; Saved{% else %}&#9734; Save Topic{% endif %}
+          </button>
+        </form>
+        {% else %}
+        <a href="/login" class="btn btn-secondary">Sign in to Save</a>
+        {% endif %}
+      </div>
+    </div>
+    <div class="topic-hero-img">
+      <img src="{{ topic.image }}" alt="{{ topic.name }}"
+           onerror="this.style.display='none'">
+    </div>
+  </div>
+</section>
+
+<!-- Try it section: example queries -->
+<section class="topic-tryit-section">
+  <div class="section-inner">
+    <h2 class="section-heading">Try These Computations</h2>
+    <div class="tryit-query-bar">
+      <input type="text" id="tryitInput" placeholder="Enter a {{ topic.name|lower }} query..."
+             class="wa-search-input" autocomplete="off">
+      <button class="btn btn-primary" onclick="runQuery()">Compute</button>
+    </div>
+    <div class="tryit-examples-grid">
+      {% for ex in topic.get_examples() %}
+      <div class="tryit-card fade-in" onclick="window.location='/input?i={{ ex.query|urlencode }}'">
+        <div class="tryit-type-badge tryit-type-{{ ex.type }}">{{ ex.type }}</div>
+        <code class="tryit-query">{{ ex.query }}</code>
+        <div class="tryit-result">
+          <span class="tryit-arrow">→</span>
+          <span class="tryit-answer">{{ ex.result }}</span>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+
+<!-- Gallery sections -->
+{% if gallery %}
+<section class="topic-gallery-section">
+  <div class="section-inner">
+    <h2 class="section-heading">Explore in Depth</h2>
+    {% for section in gallery %}
+    <div class="pd-gallery-section {% if loop.index is odd %}gallery-dark{% else %}gallery-light{% endif %}">
+      <div class="gallery-section-text">
+        <h3 class="gallery-section-title">{{ section.title }}</h3>
+        <p class="gallery-section-desc">{{ section.desc }}</p>
+      </div>
+      {% if section.images %}
+      <div class="pd-gallery-images">
+        {% for img in section.images %}
+        <div class="pd-gallery-img">
+          <img src="/{{ img }}" alt="{{ section.title }}"
+               onerror="this.parentElement.style.display='none'">
+        </div>
+        {% endfor %}
+      </div>
+      {% endif %}
+    </div>
+    {% endfor %}
+  </div>
+</section>
+{% endif %}
+
+<!-- Save query to notebook section -->
+{% if current_user.is_authenticated %}
+<section class="save-query-section">
+  <div class="section-inner">
+    <h2 class="section-heading">Save to Notebook</h2>
+    <div class="save-query-form-wrap">
+      <form action="/saved-queries/add" method="post" class="save-query-form">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <input type="text" name="query_text"
+               placeholder="Enter a query to save..." class="save-query-input" required>
+        <input type="hidden" name="topic_id" value="{{ topic.id }}">
+        <input type="hidden" name="next" value="/topic/{{ topic.slug }}">
+        <button type="submit" class="btn btn-primary">Save Query</button>
+      </form>
+    </div>
+  </div>
+</section>
+{% endif %}
+
+<!-- Feedback section -->
+<section class="feedback-section">
+  <div class="section-inner">
+    <div class="feedback-header">
+      <h2 class="section-heading">Community Ratings</h2>
+      {% if topic.feedback %}
+      <div class="avg-rating-display">
+        <span class="avg-stars">
+          {% set avg = topic.avg_rating() %}
+          {% for i in range(1,6) %}
+          <span class="star {% if i <= avg %}star-filled{% endif %}">&#9733;</span>
+          {% endfor %}
+        </span>
+        <span class="avg-number">{{ avg }}/5</span>
+        <span class="avg-count">({{ topic.feedback|length }} ratings)</span>
+      </div>
+      {% endif %}
+    </div>
+
+    {% if current_user.is_authenticated %}
+    <form action="/topic/{{ topic.slug }}/feedback" method="post" class="feedback-form">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <input type="hidden" name="rating" id="ratingValue" value="5">
+      <div class="feedback-rating-row">
+        <label class="feedback-label">Your rating:</label>
+        <div class="star-btn-group" id="starBtnGroup">
+          {% for i in range(1,6) %}
+          <button type="button" class="star-btn {% if i <= 5 %}star-btn--active{% endif %}"
+                  data-value="{{ i }}"
+                  onclick="setRating({{ i }})">
+            &#9733; {{ i }}
+          </button>
+          {% endfor %}
+        </div>
+      </div>
+      <textarea name="comment" class="feedback-comment"
+                placeholder="Share your experience with this topic (optional)..." rows="3"></textarea>
+      <button type="submit" class="btn btn-primary">Submit Feedback</button>
+    </form>
+    <script>
+    function setRating(val) {
+      document.getElementById('ratingValue').value = val;
+      document.querySelectorAll('.star-btn').forEach(function(btn) {
+        var bv = parseInt(btn.getAttribute('data-value'));
+        if (bv <= val) { btn.classList.add('star-btn--active'); }
+        else { btn.classList.remove('star-btn--active'); }
+      });
+    }
+    </script>
+    {% else %}
+    <p class="feedback-login-cta">
+      <a href="/login">Sign in</a> to rate and review this topic.
+    </p>
+    {% endif %}
+
+    {% if feedback %}
+    <div class="feedback-list">
+      {% for fb in feedback %}
+      <div class="feedback-item">
+        <div class="feedback-item-header">
+          <span class="feedback-user">{{ fb.user.username }}</span>
+          <span class="feedback-stars">
+            {% for i in range(1,6) %}
+            <span class="star {% if i <= fb.rating %}star-filled{% endif %}">&#9733;</span>
+            {% endfor %}
+          </span>
+          <span class="feedback-date">{{ fb.created_at.strftime('%b %d, %Y') }}</span>
+          {% if current_user.is_authenticated and fb.user_id == current_user.id %}
+          <form action="/feedback/{{ fb.id }}/delete" method="post" class="fb-delete-form" style="display:inline">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button type="submit" class="btn-link-danger">Delete</button>
+          </form>
+          {% endif %}
+        </div>
+        {% if fb.comment %}
+        <p class="feedback-comment-text">{{ fb.comment }}</p>
+        {% endif %}
+      </div>
+      {% endfor %}
+    </div>
+    {% endif %}
+  </div>
+</section>
+
+<!-- Related topics -->
+{% if related %}
+<section class="related-section">
+  <div class="section-inner">
+    <h2 class="section-heading">Related Topics</h2>
+    <div class="wa-topics-grid wa-topics-grid--sm">
+      {% for t in related %}
+      <a href="/topic/{{ t.slug }}" class="wa-topic-card wa-topic-card--sm">
+        <div class="wa-topic-img-wrap wa-topic-img-wrap--sm">
+          <img src="{{ t.image }}" alt="{{ t.name }}"
+               onerror="this.parentElement.innerHTML='<div class=\'topic-img-placeholder\'>{{ t.category.icon }}</div>'">
+        </div>
+        <div class="wa-topic-body">
+          <h3 class="wa-topic-name">{{ t.name }}</h3>
+          <p class="wa-topic-desc">{{ t.description[:70] }}...</p>
+        </div>
+      </a>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+function runQuery() {
+  const q = document.getElementById('tryitInput').value.trim();
+  if (q) window.location = '/input?i=' + encodeURIComponent(q);
+}
+document.getElementById('tryitInput').addEventListener('keydown', e => {
+  if (e.key === 'Enter') runQuery();
+});
+</script>
+{% endblock %}

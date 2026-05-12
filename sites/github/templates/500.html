@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block title %}Server error · GitHub{% endblock %}
+{% block content %}
+<div class="error-page">
+  <div class="error-content">
+    <h1 class="error-code">500</h1>
+    <h2 class="error-title">Hubot found some bugs</h2>
+    <p class="error-body">Something went wrong on our end. Please try again later.</p>
+    <div class="error-actions">
+      <a href="/" class="gh-btn gh-btn-primary">Take me home</a>
+    </div>
+  </div>
+</div>
+{% endblock %}

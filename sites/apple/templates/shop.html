@@ -1,0 +1,105 @@
+{% extends "base.html" %}
+{% block title %}Apple Store - Apple{% endblock %}
+
+{% block content %}
+<!-- Store Hero -->
+<div class="store-hero">
+    <h1>Store</h1>
+    <p class="store-subtitle">The best way to buy the products you love.</p>
+    <div class="store-hero-links">
+        <a href="#">Find an Apple Store <span>&#8250;</span></a>
+        <a href="#">Connect with a Specialist <span>&#8250;</span></a>
+    </div>
+</div>
+
+<!-- Category Shelf -->
+<div class="category-shelf">
+    <div class="shelf-scroll">
+        <a href="{{ url_for('mac') }}" class="shelf-card">
+            <div class="shelf-card-image">
+                <div class="placeholder-img" style="width:100px;height:100px;background:linear-gradient(135deg,#667eea,#764ba2);border-radius:50%">&#128187;</div>
+            </div>
+            <div class="shelf-card-label">Mac</div>
+        </a>
+        <a href="{{ url_for('iphone') }}" class="shelf-card">
+            <div class="shelf-card-image">
+                <div class="placeholder-img" style="width:100px;height:100px;background:linear-gradient(135deg,#f093fb,#f5576c);border-radius:50%">&#128241;</div>
+            </div>
+            <div class="shelf-card-label">iPhone</div>
+        </a>
+        <a href="{{ url_for('ipad') }}" class="shelf-card">
+            <div class="shelf-card-image">
+                <div class="placeholder-img" style="width:100px;height:100px;background:linear-gradient(135deg,#4facfe,#00f2fe);border-radius:50%">&#128218;</div>
+            </div>
+            <div class="shelf-card-label">iPad</div>
+        </a>
+        <a href="{{ url_for('watch') }}" class="shelf-card">
+            <div class="shelf-card-image">
+                <div class="placeholder-img" style="width:100px;height:100px;background:linear-gradient(135deg,#fa709a,#fee140);border-radius:50%">&#9201;</div>
+            </div>
+            <div class="shelf-card-label">Apple Watch</div>
+        </a>
+        <a href="{{ url_for('airpods') }}" class="shelf-card">
+            <div class="shelf-card-image">
+                <div class="placeholder-img" style="width:100px;height:100px;background:linear-gradient(135deg,#a18cd1,#fbc2eb);border-radius:50%">&#127911;</div>
+            </div>
+            <div class="shelf-card-label">AirPods</div>
+        </a>
+        <a href="{{ url_for('accessories') }}" class="shelf-card">
+            <div class="shelf-card-image">
+                <div class="placeholder-img" style="width:100px;height:100px;background:linear-gradient(135deg,#ffecd2,#fcb69f);border-radius:50%">&#9889;</div>
+            </div>
+            <div class="shelf-card-label">Accessories</div>
+        </a>
+    </div>
+</div>
+
+<!-- Latest Products Shelf -->
+<div class="product-shelf">
+    <h2 class="shelf-title">The latest. <span style="color:var(--color-text-secondary)">Take a look at what's new, right now.</span></h2>
+    <div class="product-scroll">
+        {% for product in products %}
+        {% if product.is_new %}
+        <a href="{{ url_for('product_detail', slug=product.slug) }}" class="product-card">
+            <div class="product-card-content">
+                {% if product.is_new %}<span class="badge-new">NEW</span>{% endif %}
+                <h3 class="product-card-name">{{ product.name }}</h3>
+                <p class="product-card-subtitle">{{ product.subtitle }}</p>
+                <p class="product-card-price">From ${{ "%.2f"|format(product.price) }}</p>
+                {% if product.monthly_price %}
+                <p class="product-card-monthly">Or ${{ "%.2f"|format(product.monthly_price) }}/mo. for {{ product.months }} mo.*</p>
+                {% endif %}
+            </div>
+            <div class="product-card-image">
+                <img src="{{ product.image }}" alt="{{ product.name }}"
+                     onerror="this.parentElement.innerHTML='<div class=\'placeholder-img\' style=\'width:200px;height:180px;background:linear-gradient(135deg,#232526,#414345);border-radius:16px\'>{{ product.name }}</div>'">
+            </div>
+        </a>
+        {% endif %}
+        {% endfor %}
+    </div>
+</div>
+
+<!-- All Products Grid -->
+<div class="lineup-section">
+    <h2 class="shelf-title">All Products</h2>
+    <div class="lineup-grid">
+        {% for product in products %}
+        <a href="{{ url_for('product_detail', slug=product.slug) }}" class="lineup-card">
+            <div class="lineup-card-image">
+                <img src="{{ product.image }}" alt="{{ product.name }}"
+                     onerror="this.parentElement.innerHTML='<div class=\'placeholder-img\' style=\'width:200px;height:200px;background:var(--color-bg-secondary);border-radius:16px;color:#666\'>{{ product.name }}</div>'">
+            </div>
+            {% if product.is_new %}<span class="badge-new">NEW</span>{% endif %}
+            <h3>{{ product.name }}</h3>
+            <p class="lineup-subtitle">{{ product.subtitle }}</p>
+            <p class="lineup-price">From ${{ "%.2f"|format(product.price) }}</p>
+            <div class="lineup-cta">
+                <span>Learn more</span>
+                <span>Buy</span>
+            </div>
+        </a>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

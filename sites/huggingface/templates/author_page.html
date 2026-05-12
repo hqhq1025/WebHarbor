@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+{% from "_macros.html" import repo_card, space_card %}
+{% block title %}{{ author.display_name }} – Hugging Face{% endblock %}
+
+{% block content %}
+<div class="container-wide page">
+    <div class="author-head">
+        <div class="author-head-avatar">
+            <img src="{{ author.avatar_url }}" alt="{{ author.display_name }}" onerror="this.parentElement.innerHTML='<span>{{ author.username[0]|upper }}</span>'">
+        </div>
+        <div class="author-head-body">
+            <h1>{{ author.display_name }}{% if author.is_verified %} <span class="verified">✓</span>{% endif %}</h1>
+            <p class="author-head-username">{{ author.username }}</p>
+            <p class="author-head-bio">{{ author.bio }}</p>
+            <div class="author-head-meta">
+                <span><strong>{{ author.followers_count }}</strong> followers</span>
+                <span>{{ models|length + datasets|length + spaces|length }} repositories</span>
+                {% if author.website %}<a href="{{ author.website }}" target="_blank">🌐 Website</a>{% endif %}
+            </div>
+        </div>
+        <div class="author-head-actions">
+            {% if current_user.is_authenticated %}
+            <form method="POST" action="{{ url_for('follow_toggle_form', author_id=author.id) }}" style="display:inline">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <input type="hidden" name="next" value="{{ request.path }}">
+                <button type="submit" class="btn btn-primary {% if is_following %}is-following{% endif %}" data-follow-toggle data-author-id="{{ author.id }}">
+                    {{ 'Following' if is_following else 'Follow' }}
+                </button>
+            </form>
+            {% else %}
+            <a class="btn btn-primary" href="{{ url_for('login') }}">Follow</a>
+            {% endif %}
+        </div>
+    </div>
+
+    {% if models %}
+    <section class="sect">
+        <h2 class="sect-title"><span>Models</span></h2>
+        <div class="repo-list">
+            {% for r in models %}{{ repo_card(r, liked_ids) }}{% endfor %}
+        </div>
+    </section>
+    {% endif %}
+
+    {% if datasets %}
+    <section class="sect">
+        <h2 class="sect-title"><span>Datasets</span></h2>
+        <div class="repo-list">
+            {% for r in datasets %}{{ repo_card(r, liked_ids) }}{% endfor %}
+        </div>
+    </section>
+    {% endif %}
+
+    {% if spaces %}
+    <section class="sect">
+        <h2 class="sect-title"><span>Spaces</span></h2>
+        <div class="space-grid">
+            {% for r in spaces %}{{ space_card(r, loop.index) }}{% endfor %}
+        </div>
+    </section>
+    {% endif %}
+
+    {% if not (models or datasets or spaces) %}
+    <p class="empty-state">This organization hasn't published anything yet.</p>
+    {% endif %}
+</div>
+{% endblock %}

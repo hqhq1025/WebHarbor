@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% block title %}Enterprise Hub – Hugging Face{% endblock %}
+
+{% block content %}
+<section class="hero">
+    <div class="hero-inner">
+        <div class="hero-emoji">🏢</div>
+        <h1 class="hero-headline">Build AI, the open way</h1>
+        <p class="hero-subhead">The most advanced AI platform, for enterprises. Security, infrastructure, and dedicated support.</p>
+        <div class="hero-cta">
+            <a class="btn btn-yellow btn-lg" href="mailto:sales@hf.co">Contact sales</a>
+            <a class="btn btn-outline btn-lg" href="{{ url_for('pricing') }}">See pricing</a>
+        </div>
+        <p class="hero-meta">Starting at $20 / user / month</p>
+    </div>
+</section>
+
+<div class="container-wide page">
+    <div class="home-ml-grid">
+        <div class="home-ml-card">
+            <div class="home-ml-card-icon">🔒</div>
+            <h3>Enterprise-grade security</h3>
+            <p>SSO / SAML, audit logs, private networking, and SOC2 Type II compliance.</p>
+        </div>
+        <div class="home-ml-card">
+            <div class="home-ml-card-icon">🌍</div>
+            <h3>Deploy everywhere</h3>
+            <p>Dedicated inference endpoints in your choice of region, including EU.</p>
+        </div>
+        <div class="home-ml-card">
+            <div class="home-ml-card-icon">👥</div>
+            <h3>Dedicated support</h3>
+            <p>Direct line to the Hugging Face team — for onboarding, training, and troubleshooting.</p>
+        </div>
+        <div class="home-ml-card">
+            <div class="home-ml-card-icon">⚖️</div>
+            <h3>Legal & compliance</h3>
+            <p>DPAs, model cards, audit trails, and exportable compliance reports.</p>
+        </div>
+    </div>
+
+    <section class="enterprise-cta">
+        <div class="enterprise-cta-inner">
+            <h2>Trusted by 50,000+ organizations</h2>
+            <p>Google, Meta, Microsoft, Amazon, Intel, and many more build on the Hub.</p>
+            <a class="btn btn-primary btn-lg" href="mailto:sales@hf.co">Book a demo →</a>
+        </div>
+    </section>
+</div>
+{% endblock %}

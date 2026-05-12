@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block title %}Apple Trade In{% endblock %}
+{% block content %}
+<div style="max-width:900px;margin:40px auto;padding:0 20px;">
+  <h1 style="font-size:40px;font-weight:700;">Apple Trade In</h1>
+  <p style="color:#6e6e73;font-size:19px;margin:12px 0 32px;">
+    Trade in your eligible device for credit toward a new one, or recycle it for free. Apple Trade In makes it easy.
+  </p>
+
+  <form action="{{ url_for('trade_in') }}" method="GET" style="margin-bottom:32px;">
+    <input type="text" name="device" class="search-input" value="{{ device }}" placeholder="Enter your device (e.g. iPhone 13 Pro Max)" style="width:100%;padding:14px;border:1px solid #d2d2d7;border-radius:12px;">
+  </form>
+
+  {% if matches %}
+  <h2 style="font-size:24px;font-weight:700;margin-bottom:16px;">Estimated trade-in value</h2>
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px;">
+    {% for m in matches %}
+    <div class="tradein-card search-result-card" style="padding:20px;border:1px solid #d2d2d7;border-radius:16px;">
+      <h3 style="font-size:17px;font-weight:700;">{{ m.device }}</h3>
+      <p style="font-size:28px;font-weight:700;color:#1d1d1f;margin:8px 0;">Up to ${{ "%.2f"|format(m.value) }}</p>
+      <p style="font-size:14px;color:#6e6e73;">Condition: {{ m.condition }}</p>
+      <p style="font-size:13px;color:#6e6e73;margin-top:8px;">{{ m.notes }}</p>
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <p>Enter your device above to see its estimated trade-in value.</p>
+  {% endif %}
+
+  <h2 style="font-size:24px;font-weight:700;margin-top:40px;">How it works</h2>
+  <ol style="line-height:2;margin:12px 0 0 20px;">
+    <li>Tell us about your device and get an instant estimate.</li>
+    <li>Send it in free or drop it off at any Apple Store.</li>
+    <li>Get credit toward a new Apple product or an Apple Gift Card.</li>
+  </ol>
+</div>
+{% endblock %}

@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block title %}Your Wishlist - Amazon.com{% endblock %}
+
+{% block content %}
+<div class="account-page">
+    <h1>Your Wishlist</h1>
+    <p><a href="{{ url_for('account') }}">&larr; Back to your account</a></p>
+
+    {% if items %}
+    <div class="wishlist-grid">
+        {% for item in items %}
+        <div class="wishlist-card">
+            <a href="{{ url_for('product_detail', slug=item.product.slug) }}">
+                <img src="{{ item.product.image }}" alt="{{ item.product.name }}" onerror="this.style.display='none'">
+            </a>
+            <h3><a href="{{ url_for('product_detail', slug=item.product.slug) }}">{{ item.product.name }}</a></h3>
+            <div class="rating">
+                <span class="stars">{% for i in range(item.product.rating|int) %}★{% endfor %}{% for i in range(5 - item.product.rating|int) %}☆{% endfor %}</span>
+                <span>({{ item.product.review_count }})</span>
+            </div>
+            <div style="margin:10px 0;font-size:18px;font-weight:700">${{ '%.2f'|format(item.product.price) }}</div>
+            <button class="btn btn-full" onclick="quickAddToBag({{ item.product.id }})">Add to Cart</button>
+            <form method="POST" action="{{ url_for('wishlist_remove', item_id=item.id) }}" style="margin-top:6px">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token_value }}">
+                <button type="submit" class="btn btn-outline btn-full">Remove</button>
+            </form>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="empty-state">
+        <h2>Your wishlist is empty</h2>
+        <p>Discover products you love and save them here for later.</p>
+        <a href="{{ url_for('index') }}" class="btn btn-orange">Continue shopping</a>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

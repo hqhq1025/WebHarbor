@@ -1,0 +1,132 @@
+{% extends "base.html" %}
+{% block title %}{{ issue.title }} · Issue #{{ issue.number }} · {{ repo.full_name }} · GitHub{% endblock %}
+{% block content %}
+<div class="repo-header-bar">
+  <div class="repo-header-inner">
+    <div class="repo-breadcrumb">
+      <a href="/{{ repo.owner.username }}" class="repo-breadcrumb-link">{{ repo.owner.username }}</a>
+      <span class="repo-breadcrumb-sep">/</span>
+      <a href="/{{ repo.full_name }}" class="repo-breadcrumb-link">{{ repo.name }}</a>
+      <span class="repo-breadcrumb-sep">/</span>
+      <a href="/{{ repo.full_name }}/issues" class="repo-breadcrumb-link">Issues</a>
+    </div>
+  </div>
+</div>
+
+<div class="issue-page">
+  <div class="issue-header">
+    <h1 class="issue-headline">{{ issue.title }}
+      <span class="issue-number">#{{ issue.number }}</span>
+    </h1>
+    <div class="issue-header-meta">
+      <span class="issue-status-pill {% if issue.status == 'open' %}open{% else %}closed{% endif %}">
+        {% if issue.status == 'open' %}
+        <svg aria-hidden="true" height="14" viewBox="0 0 16 16" width="14" fill="currentColor">
+          <path d="M8 9.5a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3Z"/><path d="M8 0a8 8 0 1 1 0 16A8 8 0 0 1 8 0ZM1.5 8a6.5 6.5 0 1 0 13 0 6.5 6.5 0 0 0-13 0Z"/>
+        </svg>
+        Open
+        {% else %}
+        <svg aria-hidden="true" height="14" viewBox="0 0 16 16" width="14" fill="currentColor">
+          <path d="M11.28 6.78a.75.75 0 0 0-1.06-1.06L7.25 8.69 5.78 7.22a.75.75 0 0 0-1.06 1.06l2 2a.75.75 0 0 0 1.06 0l3.5-3.5Z"/><path d="M8 0a8 8 0 1 1 0 16A8 8 0 0 1 8 0ZM1.5 8a6.5 6.5 0 1 0 13 0 6.5 6.5 0 0 0-13 0Z"/>
+        </svg>
+        Closed
+        {% endif %}
+      </span>
+      <a href="/{{ issue.author.username }}" class="issue-author-link">{{ issue.author.username }}</a>
+      opened this issue {{ issue.created_at | time_ago }} ·
+      {{ issue.comment_count() }} comment{% if issue.comment_count() != 1 %}s{% endif %}
+    </div>
+  </div>
+
+  <div class="issue-content-layout">
+    <div class="issue-main">
+      <!-- Original post -->
+      <div class="issue-comment-box">
+        <div class="issue-comment-header">
+          <img src="{{ issue.author.avatar_url }}" alt="{{ issue.author.username }}" class="comment-avatar"
+               onerror="this.src='/static/images/avatars/avatar_00.jpg'">
+          <div class="comment-header-info">
+            <a href="/{{ issue.author.username }}" class="comment-author">{{ issue.author.username }}</a>
+            <span class="comment-timestamp">commented {{ issue.created_at | time_ago }}</span>
+            {% if current_user.is_authenticated and current_user.id == issue.author_id %}
+            <span class="comment-author-badge">Author</span>
+            {% endif %}
+          </div>
+        </div>
+        <div class="issue-comment-body">
+          {% if issue.body %}
+          <p>{{ issue.body }}</p>
+          {% else %}
+          <em class="no-content">No description provided.</em>
+          {% endif %}
+        </div>
+      </div>
+
+      <!-- Comments -->
+      {% for comment in comments %}
+      <div class="issue-comment-box">
+        <div class="issue-comment-header">
+          <img src="{{ comment.author.avatar_url }}" alt="{{ comment.author.username }}" class="comment-avatar"
+               onerror="this.src='/static/images/avatars/avatar_00.jpg'">
+          <div class="comment-header-info">
+            <a href="/{{ comment.author.username }}" class="comment-author">{{ comment.author.username }}</a>
+            <span class="comment-timestamp">commented {{ comment.created_at | time_ago }}</span>
+          </div>
+        </div>
+        <div class="issue-comment-body">
+          <p>{{ comment.body }}</p>
+        </div>
+      </div>
+      {% endfor %}
+
+      <!-- Add comment / close -->
+      {% if current_user.is_authenticated %}
+      <div class="issue-comment-compose">
+        <img src="{{ current_user.avatar_url }}" alt="{{ current_user.username }}" class="comment-avatar"
+             onerror="this.src='/static/images/avatars/avatar_00.jpg'">
+        <div class="issue-compose-box">
+          <form method="POST" action="/{{ repo.full_name }}/issues/{{ issue.number }}/comment">
+            {{ form.hidden_tag() }}
+            {{ form.body(class="form-textarea-issue", rows="6", placeholder="Leave a comment") }}
+            {% for e in form.body.errors %}<span class="form-error">{{ e }}</span>{% endfor %}
+            <div class="compose-actions">
+              {% if issue.status == 'open' %}
+              <form method="POST" action="/{{ repo.full_name }}/issues/{{ issue.number }}/close" style="display:inline">
+                {{ form.hidden_tag() }}
+                <button type="submit" class="gh-btn gh-btn-secondary">Close issue</button>
+              </form>
+              {% else %}
+              <form method="POST" action="/{{ repo.full_name }}/issues/{{ issue.number }}/reopen" style="display:inline">
+                {{ form.hidden_tag() }}
+                <button type="submit" class="gh-btn gh-btn-secondary">Reopen issue</button>
+              </form>
+              {% endif %}
+              <button type="submit" form="comment-form" class="gh-btn gh-btn-primary">Comment</button>
+            </div>
+          </form>
+          <form method="POST" action="/{{ repo.full_name }}/issues/{{ issue.number }}/comment" id="comment-form">
+            {{ form.hidden_tag() }}
+            {{ form.body(class="form-textarea-issue", rows="6", placeholder="Leave a comment", style="display:none") }}
+          </form>
+        </div>
+      </div>
+      {% endif %}
+    </div>
+
+    <aside class="issue-sidebar">
+      <div class="sidebar-box">
+        <h3 class="sidebar-box-title">Labels</h3>
+        {% for label in issue.get_labels() %}
+        <span class="issue-label-lg">{{ label }}</span>
+        {% else %}
+        <span class="sidebar-none">None yet</span>
+        {% endfor %}
+      </div>
+      <div class="sidebar-box">
+        <h3 class="sidebar-box-title">Assignees</h3>
+        <span class="sidebar-none">No one assigned</span>
+      </div>
+    </aside>
+  </div>
+</div>
+{% endblock %}

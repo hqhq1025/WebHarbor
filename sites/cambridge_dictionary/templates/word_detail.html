@@ -1,0 +1,202 @@
+{% extends "base.html" %}
+{% block title %}{{ word.headword|upper }} | English meaning - Cambridge Dictionary{% endblock %}
+{% block content %}
+<div class="dict-entry">
+  <!-- Breadcrumb (Cambridge style: "Meaning of X in English") -->
+  <nav class="breadcrumb">
+    Meaning of <strong style="color:#1D2A57;font-weight:700;font-style:normal">{{ word.headword }}</strong> in English
+  </nav>
+
+  <div class="entry-header">
+    {% if current_user.is_authenticated %}
+      <form method="POST" action="{{ url_for('save_word_form', word_id=word.id) }}" style="display:inline">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button type="submit" class="btn-save-word {% if is_saved %}saved{% endif %}" id="saveWordBtn">
+          {% if is_saved %}&#x2713; Saved{% else %}+ Add to word list{% endif %}
+        </button>
+      </form>
+    {% endif %}
+
+    <h1 class="entry-headword">{{ word.headword }}</h1>
+
+    <div class="entry-headword-row">
+      <span class="entry-pos">{{ word.pos }}</span>
+      {% if word.level %}
+        <span class="entry-level level-{{ word.level|lower }}">{{ word.level }}</span>
+      {% endif %}
+    </div>
+
+    <!-- Pronunciation -->
+    <div class="entry-pronunciation">
+      {% if word.phonetic_uk %}
+        <div class="pron-block">
+          <span class="pron-label">uk</span>
+          <button class="pron-btn" onclick="speakWord('{{ word.headword }}', 'en-GB')" title="UK pronunciation" aria-label="UK pronunciation">&#x1F50A;</button>
+          <span class="pron-ipa">{{ word.phonetic_uk }}</span>
+        </div>
+      {% endif %}
+      {% if word.phonetic_us %}
+        <div class="pron-block">
+          <span class="pron-label">us</span>
+          <button class="pron-btn" onclick="speakWord('{{ word.headword }}', 'en-US')" title="US pronunciation" aria-label="US pronunciation">&#x1F50A;</button>
+          <span class="pron-ipa">{{ word.phonetic_us }}</span>
+        </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Definitions -->
+  <div class="entry-definitions">
+    {% if word.guide_word %}
+      <div class="guide-word">{{ word.guide_word }}</div>
+    {% endif %}
+
+    {% for defn in definitions %}
+    <div class="sense-block">
+      <div class="sense-num-row">
+        {% if definitions|length > 1 %}
+          <span class="sense-num">{{ loop.index }}</span>
+        {% endif %}
+        {% if defn.grammar_note %}
+          <span class="grammar-note">{{ defn.grammar_note }}</span>
+        {% endif %}
+        {% if defn.register %}
+          <span class="register-tag">{{ defn.register }}</span>
+        {% endif %}
+      </div>
+      <p class="definition-text">{{ defn.definition }}</p>
+      {% if defn.examples %}
+        <ul class="example-list">
+          {% for ex in defn.examples %}
+            <li class="example-item"><span class="ex-icon">&#x25BA;</span> {{ ex }}</li>
+          {% endfor %}
+        </ul>
+      {% endif %}
+    </div>
+    {% endfor %}
+  </div>
+
+  <!-- Thesaurus / Synonyms -->
+  {% if synonyms %}
+  <div class="entry-synonyms">
+    <h3 class="sub-section-title">Synonyms</h3>
+    <div class="synonym-tags">
+      {% for syn in synonyms %}
+        <a href="{{ url_for('search', q=syn) }}" class="synonym-tag">{{ syn }}</a>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- SMART Vocabulary: related words and phrases (expandable section) -->
+  {% if related %}
+    {% set topic_entry = related|selectattr('type','equalto','topic')|first %}
+    {% set rel_words = related|rejectattr('type','equalto','topic')|list %}
+    {% if rel_words %}
+  <details class="smart-vocab" open>
+    <summary class="smart-vocab-h">
+      <span class="smart-icon" aria-hidden="true">+</span>
+      SMART Vocabulary: related words and phrases
+    </summary>
+    <div class="smart-vocab-body">
+      {% set topic = topic_entry.text if topic_entry else (word.guide_word|capitalize if word.guide_word else (word.headword ~ ' related vocabulary')) %}
+      <a href="{{ url_for('search', q=word.headword) }}" class="smart-topic">{{ topic }}</a>
+      <div class="smart-list">
+        {% for rel in rel_words %}
+          <a href="{{ url_for('search', q=rel.text) }}" class="smart-item related-item related-item--{{ rel.type }}">{{ rel.text }}{% if rel.type == 'idiom' %} <span class="smart-tag">idiom</span>{% endif %}{% if rel.type == 'phrase' %} <span class="smart-tag">phrase</span>{% endif %}</a>
+        {% endfor %}
+      </div>
+      <a href="{{ url_for('search', q=word.headword) }}" class="smart-more">See more results &raquo;</a>
+    </div>
+  </details>
+    {% endif %}
+  {% endif %}
+
+  <!-- Cross-references: "Related word: innovator" -->
+  {% set xref_words = [] %}
+  {% for w in nearby_words %}
+    {% if w.id != word.id and (word.headword in w.headword or w.headword.startswith(word.headword[:4])) %}
+      {% set _ = xref_words.append(w) %}
+    {% endif %}
+  {% endfor %}
+  {% if xref_words %}
+  <div class="related-word-line">
+    <span class="related-word-label">Related word</span>
+    <div class="related-word-values">
+      {% for xw in xref_words[:3] %}
+        <a href="{{ url_for('word_detail', slug=xw.slug) }}" class="related-word-link">{{ xw.headword }}</a>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+
+  <p class="dict-source">(Definition of <em>{{ word.headword }}</em> from the Cambridge Advanced Learner's Dictionary &amp; Thesaurus &copy; Cambridge University Press)</p>
+
+  <!-- Examples of X — corpus-style block -->
+  {% if corpus_examples %}
+  <section class="corpus-block">
+    <h2 class="corpus-h">Examples of <em>{{ word.headword }}</em></h2>
+    <div class="corpus-headword">{{ word.headword }}</div>
+    {% for ex in corpus_examples %}
+    <div class="corpus-example">
+      <p class="corpus-sentence">{{ ex }}</p>
+      <p class="corpus-source">From the Cambridge English Corpus</p>
+    </div>
+    {% endfor %}
+    <p class="corpus-disclaimer">These examples are from corpora and from sources on the web. Any opinions in the examples do not represent the opinion of the Cambridge Dictionary editors or of Cambridge University Press or its licensors.</p>
+  </section>
+  {% endif %}
+
+  <!-- "What is the pronunciation of X?" — accordion-style link -->
+  {% if word.phonetic_uk or word.phonetic_us %}
+  <a href="#" class="pron-question">
+    <span class="pron-question-icon" aria-hidden="true">+</span>
+    What is the pronunciation of {{ word.headword }}?
+  </a>
+  {% endif %}
+
+  <!-- Translations -->
+  {% if translations %}
+  <section class="entry-translations">
+    <h2 class="trans-h">Translations of <em>{{ word.headword }}</em></h2>
+    <div class="trans-grid">
+      {% for lang, tr in translations.items() %}
+        <div class="trans-row">
+          <div class="trans-lang">in {{ lang|capitalize }}</div>
+          <div class="trans-text" lang="{{ lang[:2] }}">{{ tr.text }}{% if not tr.text.endswith('…') %}…{% endif %}</div>
+          <a href="{{ url_for('translate') }}?q={{ word.headword }}&amp;to={{ lang }}" class="trans-more">See more</a>
+        </div>
+      {% endfor %}
+    </div>
+    <div class="translator-cta">
+      <p class="translator-q">Need a translator?</p>
+      <p class="translator-tag">Get a quick, free translation!</p>
+      <a href="{{ url_for('translate') }}?q={{ word.headword }}" class="translator-btn">Translator tool</a>
+    </div>
+    <p class="trans-credit">Translations provided by <strong>Microsoft</strong></p>
+    <!-- Plain-text summary for accessibility & robust scraping -->
+    <ul class="trans-summary" style="margin-top:10px;padding-left:20px;font-size:0.95em;color:#222">
+      {% for lang, tr in translations.items() %}
+      <li>{{ lang|capitalize }} translation of "{{ word.headword }}" is: <strong>{{ tr.text }}</strong></li>
+      {% endfor %}
+    </ul>
+  </section>
+  {% endif %}
+
+  <!-- Browse nearby words (real Cambridge layout — words around the entry) -->
+  <section class="browse-nearby">
+    <h2 class="browse-h">Browse</h2>
+    <ul class="nearby-list">
+      {% for w in nearby_words %}
+        <li class="nearby-row">
+          {% if w.id == word.id %}
+            <span class="nearby-current">{{ w.headword }}</span>
+          {% else %}
+            <a href="{{ url_for('word_detail', slug=w.slug) }}" class="nearby-link">{{ w.headword }}</a>
+          {% endif %}
+        </li>
+      {% endfor %}
+    </ul>
+  </section>
+</div>
+{% endblock %}

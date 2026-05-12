@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+{% block title %}Server Error | Coursera{% endblock %}
+{% block content %}
+<div class="error-page container">
+  <h1>500</h1>
+  <p>Something went wrong. Please try again.</p>
+  <a href="{{ url_for('index') }}" class="btn-primary">Go Home</a>
+</div>
+{% endblock %}

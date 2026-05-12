@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block title %}Google Doodles{% endblock %}
+
+{% block content %}
+<div class="doodles-page">
+    <h1 style="font-size:40px; font-weight:400; margin:0 0 8px;">Google Doodles</h1>
+    <p class="muted">Celebrating the people, events, and moments that have made us who we are.</p>
+    <div class="doodles-grid">
+        {% for d in doodles %}
+        <a class="doodle-card" href="{{ url_for('doodle_detail', slug=d.slug) }}">
+            {% if d.image_url %}
+            <img src="{{ d.image_url }}" alt="{{ d.title }}" onerror="this.style.display='none'">
+            {% endif %}
+            <div class="body">
+                <div class="title">{{ d.title }}</div>
+                <div class="date">{{ d.published.strftime('%B %d, %Y') }}</div>
+            </div>
+        </a>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

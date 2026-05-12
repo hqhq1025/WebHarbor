@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% block title %}Timeline - Google Maps{% endblock %}
+
+{% block body %}
+<div class="app-shell">
+    {% include '_rail.html' %}
+
+    <aside class="left-panel">
+        {% include '_search_bar.html' %}
+
+        <div class="panel-section">
+            <h2>Your timeline</h2>
+            <div class="sub">Places you've visited and checked into</div>
+        </div>
+
+        {% if entries %}
+        <div style="padding: 0 20px 20px;">
+            {% for e in entries %}
+            <div class="timeline-row">
+                <div class="timeline-dot"></div>
+                <div class="timeline-body">
+                    <div class="timeline-date">{{ e.visited_at.strftime('%A, %b %d, %Y') }}</div>
+                    <div class="timeline-title">
+                        <a href="{{ url_for('place_detail', slug=e.place.slug) }}">{{ e.place.name }}</a>
+                    </div>
+                    <div class="timeline-meta">
+                        <span class="material-icons-outlined" style="font-size:13px; vertical-align:middle;">place</span>
+                        {{ e.place.address }}
+                    </div>
+                    {% if e.note %}
+                    <div class="timeline-note">{{ e.note }}</div>
+                    {% endif %}
+                    <div style="margin-top:6px;">
+                        <form method="POST" action="{{ url_for('delete_timeline_entry', entry_id=e.id) }}" style="display:inline;">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <button type="submit" class="btn ghost btn-sm">Remove</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="empty-state">
+            <div class="empty-ico"><span class="material-icons-outlined">schedule</span></div>
+            <h3>Your timeline is empty</h3>
+            <p>Check in at places you visit and they'll appear here.</p>
+            <a href="{{ url_for('explore') }}" class="btn">Discover places</a>
+        </div>
+        {% endif %}
+    </aside>
+
+    {% include '_mapcanvas.html' %}
+</div>
+{% endblock %}

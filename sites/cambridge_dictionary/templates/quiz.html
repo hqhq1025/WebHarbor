@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+{% block title %}{{ quiz.title }} | Cambridge Dictionary Plus{% endblock %}
+{% block content %}
+<div class="quiz-page container">
+  <nav class="breadcrumb">
+    <a href="{{ url_for('plus_index') }}">Plus</a> &rsaquo;
+    <a href="{{ url_for('plus_index') }}">Quizzes</a> &rsaquo;
+    <span>{{ quiz.title }}</span>
+  </nav>
+
+  <h1 class="quiz-title">{{ quiz.title }}</h1>
+  <p class="quiz-desc">{{ quiz.description }}</p>
+  <div class="quiz-meta">
+    <span class="quiz-difficulty difficulty-{{ quiz.difficulty }}">{{ quiz.difficulty|capitalize }}</span>
+    <span class="quiz-type-badge">{{ quiz.quiz_type|capitalize }} Quiz</span>
+    <span class="quiz-count">{{ questions|length }} questions</span>
+  </div>
+
+  <div id="quiz-container" class="quiz-container" data-total="{{ questions|length }}">
+    {% for q_item in questions %}
+    {% set qnum = loop.index0 %}
+    <div class="quiz-question" id="q{{ qnum }}" {% if not loop.first %}style="display:none"{% endif %}>
+      <div class="q-progress">Question {{ loop.index }} of {{ questions|length }}</div>
+      {% if q_item.image %}
+        <div class="q-image-placeholder">
+          <div class="animal-emoji">
+            {% if q_item.image == 'elephant' %}🐘
+            {% elif q_item.image == 'penguin' %}🐧
+            {% elif q_item.image == 'kangaroo' %}🦘
+            {% elif q_item.image == 'dolphin' %}🐬
+            {% elif q_item.image == 'owl' %}🦉
+            {% else %}🐾
+            {% endif %}
+          </div>
+          <p class="q-image-caption">{{ q_item.image|capitalize }}</p>
+        </div>
+      {% endif %}
+      <p class="q-text">{{ q_item.q }}</p>
+      <div class="q-options">
+        {% for opt in q_item.options %}
+          <button class="q-option-btn"
+                  onclick="selectAnswer(this, {{ loop.index0 }}, {{ q_item.answer }}, {{ qnum }})">
+            <span class="opt-letter">{{ ['A','B','C','D'][loop.index0] }}</span>
+            {{ opt }}
+          </button>
+        {% endfor %}
+      </div>
+      <div class="q-feedback" id="feedback{{ qnum }}" style="display:none"></div>
+      <button class="btn-next q-next-btn" id="next{{ qnum }}" style="display:none"
+              onclick="nextQuestion({{ qnum }}, {{ questions|length }})">
+        {% if loop.last %}See results{% else %}Next question{% endif %}
+      </button>
+    </div>
+    {% endfor %}
+
+    <div id="quiz-result" class="quiz-result" style="display:none">
+      <div class="result-icon">🎯</div>
+      <h2>Quiz Complete!</h2>
+      <p class="result-score">Your score: <strong id="final-score">0</strong> / {{ questions|length }}</p>
+      <p id="result-message"></p>
+      <a href="{{ url_for('quiz_detail', slug=quiz.slug) }}" class="btn-primary">Try again</a>
+      <a href="{{ url_for('plus_index') }}" class="btn-secondary">More quizzes</a>
+    </div>
+  </div>
+</div>
+{% endblock %}

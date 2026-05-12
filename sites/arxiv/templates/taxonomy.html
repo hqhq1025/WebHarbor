@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block title %}Category Taxonomy — arXiv{% endblock %}
+{% block breadcrumbs %}
+    <span class="sep">&gt;</span>
+    <a href="{{ url_for('category_taxonomy') }}">category_taxonomy</a>
+{% endblock %}
+{% block content %}
+
+<h1>arXiv Category Taxonomy</h1>
+<p class="muted">Complete list of subject areas and sub-categories on arXiv.</p>
+
+<div class="taxonomy-list">
+    {% for cat in categories %}
+    <h2>
+        <span style="display:inline-block;width:28px;text-align:center">{{ cat.icon }}</span>
+        {{ cat.name }} (<a href="{{ url_for('category_detail', code=cat.code) }}">{{ cat.code }}</a>)
+    </h2>
+    <p class="muted">{{ cat.description }}</p>
+    <ul class="subcat-grid">
+        {% for code, name in grouped.get(cat.code, []) %}
+        <li>
+            <code>{{ code }}</code>
+            <a href="{{ url_for('listing', code=code, view='recent') }}">{{ name }}</a>
+        </li>
+        {% endfor %}
+        {% if not grouped.get(cat.code) %}
+        <li>
+            <code>{{ cat.code }}</code>
+            <a href="{{ url_for('listing', code=cat.code, view='recent') }}">{{ cat.name }}</a>
+        </li>
+        {% endif %}
+    </ul>
+    {% endfor %}
+</div>
+
+{% endblock %}

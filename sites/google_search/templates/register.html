@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block title %}Create your Google Account{% endblock %}
+
+{% block content %}
+<div class="form-page">
+    <div class="form-card">
+        <div class="g-logo g-logo-small">
+            <span>G</span><span>o</span><span>o</span><span>g</span><span>l</span><span>e</span>
+        </div>
+        <h1 class="form-title">Create your Google Account</h1>
+        <p class="form-subtitle">to continue to Google</p>
+        <form method="post">
+            {{ form.hidden_tag() }}
+            <div class="field">
+                <label>Full name</label>
+                {{ form.name() }}
+            </div>
+            <div class="field">
+                <label>Email address</label>
+                {{ form.email() }}
+            </div>
+            <div class="field">
+                <label>Password</label>
+                {{ form.password() }}
+            </div>
+            <div class="field">
+                <label>Confirm password</label>
+                {{ form.confirm() }}
+            </div>
+            <div class="form-actions">
+                <a href="{{ url_for('login') }}" class="btn-text">Sign in instead</a>
+                <button type="submit" class="btn-primary">Create account</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

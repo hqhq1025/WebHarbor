@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block title %}Sign in — Booking{% endblock %}
+{% block content %}
+<div class="container">
+    <div class="auth-wrap">
+        <h1>Sign in or create an account</h1>
+        <p>Unlock member-only deals and earn Genius rewards.</p>
+
+        <div style="margin:12px 0 16px 0;padding:12px 14px;background:#fff8e1;border:1px solid #ffd54f;border-radius:6px;font-size:13px;">
+            <strong>Demo account:</strong> sophie.m@test.com / TestPass123!<br>
+            <span style="color:#555;font-size:12px;">Also available: kenji.t@test.com, emma.w@test.com, carlos.s@test.com (all password <code>TestPass123!</code>). Legacy: demo@booking.example / demo1234</span>
+        </div>
+
+        <form method="POST">
+            {{ form.hidden_tag() }}
+            <div class="form-group">
+                <label>Email address</label>
+                {{ form.email(placeholder="you@example.com") }}
+            </div>
+            <div class="form-group">
+                <label>Password</label>
+                {{ form.password(placeholder="Your password") }}
+            </div>
+            <button type="submit" class="form-submit">Sign in</button>
+        </form>
+        <p class="text-center mt-2">
+            Don't have an account? <a href="{{ url_for('register') }}">Create one</a>
+        </p>
+    </div>
+</div>
+{% endblock %}

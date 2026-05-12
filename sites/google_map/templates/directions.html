@@ -1,0 +1,205 @@
+{% extends "base.html" %}
+{% block title %}Directions - Google Maps{% endblock %}
+
+{% block body %}
+<div class="app-shell">
+    {% include '_rail.html' %}
+
+    <aside class="left-panel">
+        <div class="search-bar-row" style="border-bottom:none;">
+            <div class="directions-panel" style="padding:0;">
+                <form class="directions-form" method="GET" action="{{ url_for('directions') }}">
+                    <div class="dir-rows">
+                        <div class="row">
+                            <div class="dot a"></div>
+                            <input type="text" name="from" id="dir-from" placeholder="Choose starting point" value="{{ from_q }}">
+                        </div>
+                        <div class="row">
+                            <div class="dot b"></div>
+                            <input type="text" name="to" id="dir-to" placeholder="Choose destination" value="{{ to_q }}">
+                        </div>
+                        {# Swap origin / destination — real Google Maps shows
+                           the same up-down arrow on the right edge between
+                           the two inputs.  Submits the form so the swap
+                           takes effect server-side too. #}
+                        <a class="dir-swap" href="{{ url_for('directions', **{'from': to_q, 'to': from_q, 'mode': mode}) }}" title="Swap origin and destination" aria-label="Swap origin and destination">
+                            <span class="material-icons-outlined">swap_vert</span>
+                        </a>
+                    </div>
+                    <input type="hidden" name="mode" value="{{ mode }}">
+                    <button class="btn" type="submit" style="width:100%;">
+                        <span class="material-icons-outlined" style="font-size:18px;">search</span>
+                        Get directions
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        {% if from_q and to_q %}
+        <div class="mode-tabs" role="tablist">
+            {% set _modes = [('driving','directions_car','Drive'),
+                              ('walking','directions_walk','Walk'),
+                              ('transit','directions_bus','Transit'),
+                              ('bicycling','directions_bike','Bike')] %}
+            {% for m_id, m_icon, m_label in _modes %}
+            <a class="mode-tab {% if mode == m_id %}active{% endif %}"
+               href="{{ url_for('directions', **{'from': from_q, 'to': to_q, 'mode': m_id}) }}"
+               role="tab" aria-selected="{{ 'true' if mode == m_id else 'false' }}">
+                <span class="material-icons-outlined">{{ m_icon }}</span>
+                <span class="mode-label">{{ m_label }}</span>
+                {% if alternatives and mode == m_id and selected_alt %}
+                    <span class="mode-eta">{{ selected_alt.duration_label }}</span>
+                {% endif %}
+            </a>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        {% if to_candidates and pick_for == 'to' %}
+        <div class="panel-section">
+            <h2>Did you mean?</h2>
+            <div class="sub">{{ to_candidates|length }} match{{ '' if to_candidates|length == 1 else 'es' }} for "<strong>{{ to_q }}</strong>"{% if from_endpoint %} — pick a destination from <strong>{{ from_endpoint.name }}</strong>{% endif %}</div>
+            <div class="candidate-list">
+                {% for c in to_candidates %}
+                <a class="candidate-card" href="{{ url_for('directions', **{'from': from_q, 'to': c.name, 'mode': mode}) }}">
+                    <div class="cc-info">
+                        <div class="cc-name">{{ c.name }}</div>
+                        <div class="cc-meta">
+                            {% if c.rating %}<span class="cc-rating">★ {{ "%.1f"|format(c.rating) }}</span>{% if c.review_count %} <span class="cc-reviews">({{ "{:,}".format(c.review_count) }})</span>{% endif %} · {% endif %}
+                            {% if c.category_name %}{{ c.category_name }} · {% endif %}{{ c.address }}
+                        </div>
+                    </div>
+                    {% if c.distance_mi is not none %}<div class="cc-distance">{{ "%.1f"|format(c.distance_mi) }} mi</div>{% endif %}
+                </a>
+                {% endfor %}
+            </div>
+        </div>
+        {% elif from_candidates and pick_for == 'from' %}
+        <div class="panel-section">
+            <h2>Did you mean?</h2>
+            <div class="sub">{{ from_candidates|length }} match{{ '' if from_candidates|length == 1 else 'es' }} for "<strong>{{ from_q }}</strong>" — pick a starting point</div>
+            <div class="candidate-list">
+                {% for c in from_candidates %}
+                <a class="candidate-card" href="{{ url_for('directions', **{'from': c.name, 'to': to_q, 'mode': mode}) }}">
+                    <div class="cc-info">
+                        <div class="cc-name">{{ c.name }}</div>
+                        <div class="cc-meta">
+                            {% if c.rating %}<span class="cc-rating">★ {{ "%.1f"|format(c.rating) }}</span> · {% endif %}
+                            {% if c.category_name %}{{ c.category_name }} · {% endif %}{{ c.address }}
+                        </div>
+                    </div>
+                    {% if c.distance_mi is not none %}<div class="cc-distance">{{ "%.1f"|format(c.distance_mi) }} mi</div>{% endif %}
+                </a>
+                {% endfor %}
+            </div>
+        </div>
+        {% else %}
+        {% set _from_name = (route.origin_name if route else (from_endpoint.name if from_endpoint else (from_place.name if from_place else from_q))) %}
+        {% set _to_name   = (route.destination_name if route else (to_endpoint.name if to_endpoint else (to_place.name if to_place else to_q))) %}
+        {% set _from_addr = (route.origin_address if route else (from_endpoint.address if from_endpoint else (from_place.address if from_place else ''))) %}
+        {% set _to_addr   = (route.destination_address if route else (to_endpoint.address if to_endpoint else (to_place.address if to_place else ''))) %}
+        {% if route or (from_endpoint and to_endpoint) or (from_place and to_place) %}
+        <div class="panel-section" data-route-mode="{{ mode }}">
+
+            {% if alternatives and alternatives|length > 1 %}
+            <div class="route-alternatives">
+                <div class="ra-heading">{{ alternatives|length }} routes — {{ mode }}</div>
+                {% for a in alternatives %}
+                <a class="ra-item {% if selected_alt and selected_alt.id == a.id %}selected{% endif %}"
+                   href="{{ url_for('directions', **{'from': from_q, 'to': to_q, 'mode': mode, 'route': a.id}) }}">
+                    <div class="ra-radio">
+                        <span class="material-icons-outlined">{% if selected_alt and selected_alt.id == a.id %}radio_button_checked{% else %}radio_button_unchecked{% endif %}</span>
+                    </div>
+                    <div class="ra-text">
+                        <div class="ra-line1">
+                            <span class="ra-duration">{{ a.duration_label }}</span>
+                            <span class="ra-distance">({{ a.distance_label }})</span>
+                        </div>
+                        <div class="ra-line2">{{ a.name }}</div>
+                    </div>
+                </a>
+                {% endfor %}
+            </div>
+            {% endif %}
+
+            <h2 style="margin-top:18px;">Route summary</h2>
+            <div class="direction-result">
+                <div class="dr-headline">{{ _from_name }} → {{ _to_name }}</div>
+                <div class="dr-meta">
+                    {{ distance_label or (distance_km ~ ' km') }} ·
+                    ~{{ duration_label or (duration_min ~ ' min') }} {{ mode }}
+                </div>
+                {% if summary %}<div class="dr-summary">{{ summary }}</div>{% endif %}
+            </div>
+            {% if steps %}
+            <div class="route-steps" style="margin-top:16px;">
+                <div style="font-weight:500; margin-bottom:8px;">Route details</div>
+                <ol style="padding-left:20px; color:var(--text-secondary); font-size:13px; line-height:1.7;">
+                    {% for s in steps %}
+                    <li><span class="route-step">{{ s.instruction }}</span>
+                        {% if s.distance %}<em>({{ s.distance }})</em>{% endif %}</li>
+                    {% endfor %}
+                </ol>
+            </div>
+            {% endif %}
+            <div style="margin-top: 16px; padding: 12px 16px; background: #fff; border: 1px solid var(--divider); border-radius: 8px;">
+                <div style="display:flex; align-items:center; gap:10px; margin-bottom:8px;">
+                    <div class="dot a" style="width:10px; height:10px; border-radius:50%; background:var(--blue);"></div>
+                    <div>
+                        <div style="font-weight:500;">{{ _from_name }}</div>
+                        <div style="font-size:12px; color:var(--text-secondary);">{{ _from_addr }}</div>
+                    </div>
+                </div>
+                <div style="margin-left:4px; border-left:2px dashed var(--divider); height:20px;"></div>
+                <div style="display:flex; align-items:center; gap:10px;">
+                    <div class="dot b" style="width:10px; height:10px; border-radius:50%; background:var(--red);"></div>
+                    <div>
+                        <div style="font-weight:500;">{{ _to_name }}</div>
+                        <div style="font-size:12px; color:var(--text-secondary);">{{ _to_addr }}</div>
+                    </div>
+                </div>
+            </div>
+
+            {% if not steps %}
+            <div style="margin-top:16px;">
+                <div style="font-size:14px; font-weight:500; color:var(--text-primary); margin-bottom:8px;">Step-by-step</div>
+                <ol style="padding-left:20px; color:var(--text-secondary); font-size:13px; line-height:1.7;">
+                    <li>Head out from <strong>{{ _from_name }}</strong></li>
+                    {% if distance_km %}<li>Continue for approximately {{ (distance_km * 0.3) | round(1) }} km</li>{% endif %}
+                    <li>Turn onto the main route</li>
+                    <li>Arrive at <strong>{{ _to_name }}</strong></li>
+                </ol>
+            </div>
+            {% endif %}
+        </div>
+        {% elif from_q and not to_q %}
+        <div class="panel-section">
+            <h2>Add a destination</h2>
+            <div class="sub">Starting from <strong>{{ from_q }}</strong>. Enter your destination above to plan a route.</div>
+        </div>
+        {% elif to_q and not from_q %}
+        <div class="panel-section">
+            <h2>Add a starting point</h2>
+            <div class="sub">Going to <strong>{{ to_q }}</strong>. Enter where you're leaving from above.</div>
+        </div>
+        {% elif from_q or to_q %}
+        <div class="empty-state">
+            <div class="empty-ico"><span class="material-icons-outlined">location_searching</span></div>
+            <h3>No matching place found</h3>
+            <p>Make sure both origin and destination exist in our database.</p>
+        </div>
+        {% else %}
+        <div class="panel-section">
+            <h2>Plan your trip</h2>
+            <div class="sub">Enter a start and end point above to get directions between any two places.</div>
+            <p style="margin-top:12px; font-size:13px; color:var(--text-secondary);">
+                Try searching for famous landmarks like "Eiffel Tower" or "Central Park" — we'll compute the approximate distance for you.
+            </p>
+        </div>
+        {% endif %}
+        {% endif %}
+    </aside>
+
+    {% include '_mapcanvas.html' %}
+</div>
+{% endblock %}

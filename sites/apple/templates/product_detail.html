@@ -1,0 +1,715 @@
+{% extends "base.html" %}
+{% block title %}{{ product.name }} - Apple{% endblock %}
+
+{% block extra_head %}
+<meta name="csrf-token" content="{{ csrf_token() }}">
+<style>
+/* Product detail rich styles */
+.pd-gallery-section { padding: 60px 0; }
+.pd-gallery-section:nth-child(even) { background: #000; color: #fff; }
+.pd-gallery-section:nth-child(odd) { background: var(--color-bg-secondary); }
+.pd-gallery-inner {
+    max-width: var(--max-width-wide);
+    margin: 0 auto;
+    padding: 0 40px;
+}
+.pd-gallery-text {
+    max-width: 600px;
+    margin: 0 auto 32px;
+    text-align: center;
+}
+.pd-gallery-text h2 {
+    font-size: 48px;
+    font-weight: 700;
+    line-height: 1.08;
+    letter-spacing: -0.003em;
+    margin-bottom: 12px;
+    font-family: var(--font-family);
+}
+.pd-gallery-text p {
+    font-size: 19px;
+    line-height: 1.5;
+    color: var(--color-text-secondary);
+}
+.pd-gallery-section:nth-child(even) .pd-gallery-text p { color: rgba(255,255,255,0.7); }
+.pd-gallery-images {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 16px;
+}
+.pd-gallery-img {
+    border-radius: 16px;
+    overflow: hidden;
+    background: #1d1d1f;
+}
+.pd-gallery-img img {
+    width: 100%;
+    height: 280px;
+    object-fit: cover;
+    display: block;
+    transition: transform 0.4s ease;
+}
+.pd-gallery-img:hover img { transform: scale(1.03); }
+.pd-gallery-section:nth-child(odd) .pd-gallery-img { background: #fff; }
+.pd-gallery-single {
+    text-align: center;
+}
+.pd-gallery-single img {
+    max-width: 100%;
+    max-height: 500px;
+    object-fit: contain;
+    border-radius: 16px;
+}
+
+/* Whats in the box */
+.box-section {
+    max-width: var(--max-width);
+    margin: 0 auto;
+    padding: 60px 20px;
+    border-top: 1px solid var(--color-border);
+}
+.box-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 24px;
+    text-align: center;
+    margin-top: 24px;
+}
+.box-item { font-size: 14px; color: var(--color-text-secondary); }
+.box-item-icon { font-size: 48px; margin-bottom: 8px; }
+
+/* Reviews section */
+.reviews-section {
+    max-width: var(--max-width);
+    margin: 0 auto;
+    padding: 60px 20px;
+    border-top: 1px solid var(--color-border);
+}
+.reviews-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 24px;
+}
+.reviews-summary {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+.reviews-avg {
+    font-size: 48px;
+    font-weight: 700;
+    font-family: var(--font-family);
+}
+.reviews-stars { color: #ff9500; font-size: 20px; }
+.reviews-count { color: var(--color-text-secondary); font-size: 14px; }
+.review-card {
+    background: var(--color-bg-secondary);
+    border-radius: 16px;
+    padding: 24px;
+    margin-bottom: 16px;
+}
+.review-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+}
+.review-card-stars { color: #ff9500; }
+.review-card-title { font-size: 17px; font-weight: 700; margin-bottom: 4px; }
+.review-card-body { font-size: 14px; color: var(--color-text-secondary); line-height: 1.5; }
+.review-card-meta {
+    margin-top: 12px;
+    font-size: 12px;
+    color: var(--color-text-muted);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+.review-form-wrapper {
+    background: var(--color-bg-secondary);
+    border-radius: 16px;
+    padding: 24px;
+    margin-top: 24px;
+}
+.review-form-wrapper h3 { font-size: 21px; font-weight: 700; margin-bottom: 16px; }
+.star-select { display: flex; gap: 4px; margin-bottom: 16px; }
+.star-select label {
+    cursor: pointer;
+    font-size: 28px;
+    color: #d2d2d7;
+    transition: color 0.15s;
+}
+.star-select label:hover, .star-select label.active { color: #ff9500; }
+
+/* Wishlist button */
+.btn-wishlist {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    width: 100%;
+    padding: 12px;
+    margin-top: 12px;
+    background: transparent;
+    border: 1px solid var(--color-border);
+    border-radius: 12px;
+    font-size: 15px;
+    font-weight: 500;
+    cursor: pointer;
+    color: var(--color-text);
+    transition: all 0.2s;
+    font-family: var(--font-family-text);
+}
+.btn-wishlist:hover { background: var(--color-bg-secondary); }
+.btn-wishlist.wishlisted { border-color: #ff3b30; color: #ff3b30; }
+
+/* Sticky buy bar */
+.sticky-buy-bar {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: rgba(255,255,255,0.95);
+    backdrop-filter: blur(20px);
+    border-top: 1px solid var(--color-border);
+    padding: 12px 20px;
+    z-index: 9998;
+    display: none;
+}
+.sticky-buy-inner {
+    max-width: var(--max-width);
+    margin: 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+.sticky-buy-info { display: flex; align-items: center; gap: 16px; }
+.sticky-buy-info img { width: 40px; height: 40px; object-fit: contain; }
+.sticky-buy-name { font-weight: 600; font-size: 15px; }
+.sticky-buy-price { font-size: 15px; color: var(--color-text-secondary); }
+.sticky-buy-btn {
+    padding: 10px 24px;
+    background: var(--color-link);
+    color: #fff;
+    border: none;
+    border-radius: 20px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+}
+.sticky-buy-btn:hover { background: var(--color-link-hover); }
+
+@media (max-width: 767px) {
+    .pd-gallery-text h2 { font-size: 32px; }
+    .pd-gallery-images { grid-template-columns: 1fr; }
+    .reviews-header { flex-direction: column; align-items: flex-start; gap: 12px; }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Product Hero -->
+<section class="product-hero dark">
+    <span class="badge-new" style="font-size:17px">{% if product.is_new %}New{% endif %}</span>
+    <h1>{{ product.name }}</h1>
+    <p class="product-subtitle">{{ product.subtitle }}</p>
+    <div class="hero-cta" style="margin-top:12px">
+        <a href="#buy-section" class="cta-link" style="color:#2997ff">Buy</a>
+        {% if gallery %}<a href="#features" class="cta-link" style="color:#2997ff">Explore features</a>{% endif %}
+    </div>
+    <div class="product-hero-image">
+        <img src="{{ product.hero_image or product.image }}" alt="{{ product.name }}"
+             onerror="this.parentElement.innerHTML='<div class=\'placeholder-img\' style=\'width:100%;height:400px;background:linear-gradient(135deg,#1a1a2e,#16213e);border-radius:20px;font-size:64px\'>{{ product.name }}</div>'">
+    </div>
+</section>
+
+<!-- Feature Gallery Sections -->
+{% if gallery %}
+<div id="features">
+{% for feature in gallery %}
+<section class="pd-gallery-section">
+    <div class="pd-gallery-inner">
+        <div class="pd-gallery-text">
+            <h2>{{ feature.title }}</h2>
+            <p>{{ feature.desc }}</p>
+        </div>
+        {% if feature.images|length == 1 %}
+        <div class="pd-gallery-single">
+            <img src="{{ feature.images[0] }}" alt="{{ feature.title }}"
+                 onerror="this.style.display='none'">
+        </div>
+        {% elif feature.images|length > 1 %}
+        <div class="pd-gallery-images">
+            {% for img in feature.images %}
+            <div class="pd-gallery-img">
+                <img src="{{ img }}" alt="{{ feature.title }}"
+                     onerror="this.parentElement.style.display='none'">
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+    </div>
+</section>
+{% endfor %}
+</div>
+{% endif %}
+
+<!-- Description & Highlights -->
+<section style="background:#000;color:#fff;padding:80px 20px;text-align:center">
+    <div style="max-width:700px;margin:0 auto">
+        <p style="font-size:28px;font-weight:700;line-height:1.3;font-family:var(--font-family)">{{ product.description }}</p>
+    </div>
+</section>
+
+<!-- Specs Section -->
+<section class="product-detail-section" id="specs">
+    <h2>Technical Specifications</h2>
+    {% set specs = product.get_specs() %}
+    <table class="specs-table">
+        {% if product.slogan %}<tr><td>Slogan</td><td class="product-slogan">{{ product.slogan }}</td></tr>{% endif %}
+        {% if product.chip_family %}<tr><td>Chip</td><td>{{ product.chip_family }}</td></tr>{% endif %}
+        {% if product.processor %}<tr><td>Processor</td><td>{{ product.processor }}</td></tr>{% endif %}
+        {% if product.cpu_cores %}<tr><td>CPU</td><td>{{ product.cpu_cores }}-core CPU</td></tr>{% endif %}
+        {% if product.gpu_cores %}<tr><td>GPU</td><td>{{ product.gpu_cores }}-core GPU</td></tr>{% endif %}
+        {% if product.ram %}<tr><td>Memory</td><td>{{ product.ram }}GB unified memory</td></tr>{% endif %}
+        {% if product.ssd %}<tr><td>Storage</td><td>{{ product.ssd }}GB SSD</td></tr>{% endif %}
+        {% if product.screen_size %}<tr><td>Display Size</td><td>{{ product.screen_size }} inches</td></tr>{% endif %}
+        {% if product.connectivity %}<tr><td>Connectivity</td><td>{{ product.connectivity }}</td></tr>{% endif %}
+        {% if product.battery_life %}<tr><td>Battery life</td><td>{{ product.battery_life }}</td></tr>{% endif %}
+        {% if product.weight %}<tr><td>Weight</td><td>{{ product.weight }}</td></tr>{% endif %}
+        {% if product.video_recording %}<tr><td>Video Recording</td><td>{{ product.video_recording }}</td></tr>{% endif %}
+        {% if product.release_date %}<tr><td>Release date</td><td>{{ product.release_date }}</td></tr>{% endif %}
+        {% if product.release_year %}<tr><td>Release year</td><td>{{ product.release_year }}</td></tr>{% endif %}
+        {% if product.get_colors() %}<tr><td>Color options</td><td>{{ product.get_colors()|join(', ') }}</td></tr>{% endif %}
+        {% if product.get_storage() %}<tr><td>{% if product.category == 'watch' %}Case sizes{% else %}Storage options{% endif %}</td><td>{{ product.get_storage()|join(', ') }}</td></tr>{% endif %}
+        {% for key, value in specs.items() %}
+        <tr>
+            <td>{{ key|replace('_', ' ')|capitalize }}</td>
+            <td>{% if value is iterable and value is not string %}{{ value|join(', ') }}{% else %}{{ value }}{% endif %}</td>
+        </tr>
+        {% endfor %}
+    </table>
+    {% if product.tradein_eligible %}
+    <p style="margin-top:16px;padding:12px;background:#f5f5f7;border-radius:8px;">
+      <strong>Trade in your device:</strong> Get up to ${{ "%.2f"|format(product.tradein_value) }} in credit for your current device with <a href="{{ url_for('trade_in') }}">Apple Trade In</a>.
+    </p>
+    {% endif %}
+</section>
+
+<!-- What's in the Box -->
+<section class="box-section">
+    <h2 style="font-size:32px;font-weight:700;font-family:var(--font-family)">What's in the Box</h2>
+    <div class="box-grid">
+        <div class="box-item">
+            <div class="box-item-icon">
+                {% if 'iphone' in product.category %}&#128241;{% elif 'mac' in product.category %}&#128187;{% elif 'ipad' in product.category %}&#128218;{% elif 'watch' in product.category %}&#9201;{% elif 'airpods' in product.category %}&#127911;{% else %}&#128230;{% endif %}
+            </div>
+            <p>{{ product.name }}</p>
+        </div>
+        <div class="box-item">
+            <div class="box-item-icon">&#128268;</div>
+            <p>USB-C Charge Cable</p>
+        </div>
+        <div class="box-item">
+            <div class="box-item-icon">&#128196;</div>
+            <p>Documentation</p>
+        </div>
+    </div>
+</section>
+
+<!-- Buy / Configurator -->
+<section class="product-detail-section" id="buy-section">
+    <div class="product-config">
+        <h2 style="text-align:center;margin-bottom:30px;font-size:32px">Buy {{ product.name }}</h2>
+
+        <input type="hidden" id="selected-color" value="{{ product.get_colors()[0] if product.get_colors() else '' }}">
+        <input type="hidden" id="selected-storage" value="{{ product.get_storage()[0] if product.get_storage() else '' }}">
+
+        {% if product.get_colors() %}
+        <div class="config-section">
+            <p class="config-label">Color. <span id="color-label" style="font-weight:400;color:var(--color-text-secondary)">{{ product.get_colors()[0] }}</span></p>
+            <div class="config-options" style="justify-content:center">
+                {% set color_map = {
+                    'Natural Titanium': '#a8a6a0', 'Black Titanium': '#3a3a3c',
+                    'White Titanium': '#f0ece8', 'Sand Titanium': '#c4b9a8',
+                    'Midnight': '#1d1d2c', 'Starlight': '#f0e4d3',
+                    'Green': '#394c38', 'Blue': '#3c5d7e', 'Pink': '#f4c8c4',
+                    'Black': '#1d1d1f', 'White': '#f5f5f0',
+                    'Space Black': '#2a2a2c', 'Silver': '#d4d4d8',
+                    'Blush': '#e8c4c8', 'Citrus': '#e8d44d', 'Indigo': '#3f4177',
+                    'Space Gray': '#5d5d60', 'Purple': '#594f77', 'Yellow': '#f4e048',
+                    'Orange': '#e8683f', 'Red': '#c5221f',
+                    'Rose Gold': '#e8c4b8', 'Jet Black': '#1a1a1a',
+                    'Natural': '#c8b89a', 'Gold': '#d4b896', 'Slate': '#5a5a5e'
+                } %}
+                {% for color in product.get_colors() %}
+                <div class="color-swatch {{ 'selected' if loop.first else '' }}"
+                     style="background-color: {{ color_map.get(color, '#999') }}"
+                     title="{{ color }}"
+                     onclick="selectColor(this, '{{ color }}')">
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+
+        {% set _upgrades = product.get_config_upgrades() %}
+        {% set _storage_opts = _upgrades.get('storage') if _upgrades else None %}
+        {% set _memory_opts = _upgrades.get('memory') if _upgrades else None %}
+        {% if product.get_storage() %}
+        <div class="config-section">
+            <p class="config-label">{% if product.category == 'watch' %}Size{% else %}Storage{% endif %}</p>
+            <div class="config-options" style="justify-content:center">
+                {% for option in product.get_storage() %}
+                {% set ns = namespace(delta=0) %}
+                {% if _storage_opts %}{% for so in _storage_opts %}{% if option in so.label %}{% set ns.delta = so.price or 0 %}{% endif %}{% endfor %}{% endif %}
+                <div class="config-option {{ 'selected' if loop.first else '' }}"
+                     data-delta="{{ ns.delta }}"
+                     onclick="selectStorage(this, '{{ option }}')">
+                    {{ option }}{% if ns.delta and not loop.first %} <span style="color:var(--color-text-secondary);font-size:12px">+${{ '%.0f'|format(ns.delta) }}</span>{% endif %}
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+
+        {% if _memory_opts and _memory_opts|length > 1 %}
+        <div class="config-section">
+            <p class="config-label">Memory</p>
+            <div class="config-options" style="justify-content:center">
+                {% for opt in _memory_opts %}
+                <div class="config-option {{ 'selected' if loop.first else '' }}"
+                     data-delta="{{ opt.price or 0 }}"
+                     onclick="selectMemory(this, '{{ opt.label }}')">
+                    {{ opt.label }}{% if opt.price %} <span style="color:var(--color-text-secondary);font-size:12px">+${{ '%.0f'|format(opt.price) }}</span>{% endif %}
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+
+        {% if _upgrades.get('connectivity') %}
+        <div class="config-section">
+            <p class="config-label">Connectivity</p>
+            <div class="config-options" style="justify-content:center">
+                {% for opt in _upgrades.get('connectivity') %}
+                <div class="config-option {{ 'selected' if loop.first else '' }}"
+                     data-delta="{{ opt.price or 0 }}"
+                     title="{{ opt.label }}{% if opt.price %} (+${{ '%.2f'|format(opt.price) }}){% endif %}"
+                     onclick="selectConnectivity(this, '{{ opt.label }}')">
+                    {{ opt.label }}{% if opt.price %} <span style="color:var(--color-text-secondary);font-size:12px">+${{ '%.0f'|format(opt.price) }}</span>{% endif %}
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+
+        {% if product.get_keyboard_options() %}
+        <div class="config-section">
+            <p class="config-label">Keyboard</p>
+            <div class="config-options" style="justify-content:center;flex-wrap:wrap">
+                {% for kb in product.get_keyboard_options() %}
+                <div class="config-option {{ 'selected' if loop.first else '' }}"
+                     data-delta="0"
+                     onclick="selectKeyboard(this, '{{ kb }}')">
+                    {{ kb }}
+                </div>
+                {% endfor %}
+            </div>
+            <p style="text-align:center;margin-top:8px;font-size:13px;color:var(--color-text-secondary)">
+                {{ product.get_keyboard_options()|length }} keyboard layout{{ 's' if product.get_keyboard_options()|length != 1 }} available
+            </p>
+        </div>
+        {% endif %}
+
+        <div class="product-price-display" id="product-price-display" data-base="{{ product.price }}" data-months="{{ product.months or 24 }}">
+            <p class="price-full"><span id="price-full-prefix">From </span>$<span id="price-full-amount">{{ "%.2f"|format(product.price) }}</span></p>
+            {% if product.monthly_price %}
+            <p class="price-monthly">Or $<span id="price-monthly-amount">{{ "%.2f"|format(product.monthly_price) }}</span>/mo. per month for {{ product.months }} mo.*</p>
+            {% endif %}
+        </div>
+
+        {% if current_user.is_authenticated %}
+        <form method="POST" action="{{ url_for('cart_add_form', product_id=product.id) }}" id="atb-form">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token_value }}">
+            <input type="hidden" name="color" id="form-color" value="{{ product.get_colors()[0] if product.get_colors() else '' }}">
+            <input type="hidden" name="storage" id="form-storage" value="{{ product.get_storage()[0] if product.get_storage() else '' }}">
+            <input type="hidden" name="memory" id="form-memory" value="{{ _memory_opts[0].label if _memory_opts else '' }}">
+            <input type="hidden" name="price" id="form-price" value="{{ '%.2f'|format(product.price) }}">
+            <input type="hidden" name="quantity" value="1">
+            <button type="submit" class="btn-add-to-bag">Add to Bag</button>
+        </form>
+        {% else %}
+        <a href="{{ url_for('login', next=url_for('product_detail', slug=product.slug)) }}" class="btn-add-to-bag" style="display:block;text-align:center;text-decoration:none">Add to Bag</a>
+        {% endif %}
+
+        <!-- Wishlist -->
+        <button class="btn-wishlist {{ 'wishlisted' if in_wishlist else '' }}" id="wishlist-btn" onclick="toggleWishlist({{ product.id }})">
+            <span id="wishlist-icon">{{ '&#10084;&#65039;' if in_wishlist else '&#9825;' }}</span>
+            <span id="wishlist-text">{{ 'In Wishlist' if in_wishlist else 'Add to Wishlist' }}</span>
+        </button>
+
+        <!-- Pickup + Configurator links -->
+        <div class="buy-secondary-links" style="display:flex;flex-direction:column;gap:10px;align-items:center;margin-top:18px">
+            <a href="{{ url_for('store_pickup', product=product.slug, zip=product.pickup_zip or '90038') }}"
+               class="pickup-link"
+               style="font-size:15px;color:#0071e3;text-decoration:none">
+                &#128205; Check in-store pickup availability{% if product.pickup_zip %} near {{ product.pickup_zip }}{% endif %}
+            </a>
+            {% if product.pickup_available %}
+            <p style="font-size:13px;color:#1d7a1d;margin:0">
+                In stock for pickup{% if product.pickup_zip %} at stores near {{ product.pickup_zip }}{% endif %}
+            </p>
+            {% endif %}
+            {% if product.get_keyboard_options() or product.get_config_upgrades() %}
+            <a href="{{ url_for('configurator', slug=product.slug) }}"
+               class="configure-link"
+               style="font-size:15px;color:#0071e3;text-decoration:none">
+                &#9881;&#65039; Customize &amp; configure this {{ product.name }}
+            </a>
+            {% endif %}
+        </div>
+
+        <p style="text-align:center;margin-top:16px;font-size:14px;color:var(--color-text-secondary)">
+            &#10003; Free delivery &nbsp;&nbsp; &#10003; Free and easy returns &nbsp;&nbsp; &#10003; Engraving available
+        </p>
+
+        {% if not product.in_stock %}
+        <p style="text-align:center;margin-top:12px;color:var(--color-error);font-weight:600">Currently unavailable</p>
+        {% endif %}
+    </div>
+</section>
+
+<!-- Reviews -->
+<section class="reviews-section" id="reviews">
+    <div class="reviews-header">
+        <div>
+            <h2 style="font-size:32px;font-weight:700;font-family:var(--font-family);margin-bottom:8px">Ratings & Reviews</h2>
+            {% if reviews %}
+            <div class="reviews-summary">
+                <span class="reviews-avg">{{ "%.1f"|format(avg_rating or 0) }}</span>
+                <div>
+                    <div class="reviews-stars">
+                        {% for i in range(5) %}{{ '&#9733;' if i < (avg_rating or 0)|round|int else '&#9734;' }}{% endfor %}
+                    </div>
+                    <span class="reviews-count">{{ reviews|length }} review{{ 's' if reviews|length != 1 }}</span>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    {% for review in reviews %}
+    <div class="review-card">
+        <div class="review-card-header">
+            <div class="review-card-stars">
+                {% for i in range(5) %}{{ '&#9733;' if i < review.rating else '&#9734;' }}{% endfor %}
+            </div>
+        </div>
+        <h4 class="review-card-title">{{ review.title }}</h4>
+        <p class="review-card-body">{{ review.body }}</p>
+        <div class="review-card-meta">
+            <span>{{ review.user.first_name }} {{ review.user.last_name[0] }}. &mdash; {{ review.created_at.strftime('%B %d, %Y') }}</span>
+            {% if current_user.is_authenticated and current_user.id == review.user_id %}
+            <form action="{{ url_for('delete_review', review_id=review.id) }}" method="POST" style="display:inline">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button type="submit" style="background:none;border:none;color:var(--color-link);font-size:12px;cursor:pointer">Delete</button>
+            </form>
+            {% endif %}
+        </div>
+    </div>
+    {% endfor %}
+
+    {% if not reviews %}
+    <p style="color:var(--color-text-secondary);text-align:center;padding:24px">No reviews yet. Be the first to review this product.</p>
+    {% endif %}
+
+    {% if current_user.is_authenticated %}
+    <div class="review-form-wrapper">
+        <h3>Write a Review</h3>
+        <form action="{{ url_for('submit_review', slug=product.slug) }}" method="POST">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <div class="form-group">
+                <label style="font-size:14px;font-weight:600;margin-bottom:8px;display:block">Rating</label>
+                <div class="star-select" id="star-select">
+                    {% for i in range(5, 0, -1) %}
+                    <label data-val="{{ i }}" onclick="setRating({{ i }})">&#9733;</label>
+                    {% endfor %}
+                </div>
+                <select name="rating" id="rating-input" style="display:none" required>
+                    {% for i in range(5, 0, -1) %}
+                    <option value="{{ i }}">{{ i }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="form-group">
+                <input type="text" name="title" class="form-control" placeholder="Review title" required maxlength="200">
+            </div>
+            <div class="form-group">
+                <textarea name="body" class="form-control" placeholder="Write your review..." required rows="3" style="resize:vertical;min-height:80px"></textarea>
+            </div>
+            <button type="submit" class="btn-primary" style="max-width:200px">Submit Review</button>
+        </form>
+    </div>
+    {% else %}
+    <p style="text-align:center;margin-top:16px"><a href="{{ url_for('login') }}">Sign in</a> to write a review.</p>
+    {% endif %}
+</section>
+
+<!-- Related Products -->
+{% if related %}
+<section class="related-section">
+    <h2>You might also like</h2>
+    <div class="related-grid">
+        {% for item in related %}
+        <a href="{{ url_for('product_detail', slug=item.slug) }}" class="related-card">
+            <img src="{{ item.image }}" alt="{{ item.name }}"
+                 onerror="this.style.display='none'">
+            <h3>{{ item.name }}</h3>
+            <p class="price">From ${{ "%.2f"|format(item.price) }}</p>
+        </a>
+        {% endfor %}
+    </div>
+</section>
+{% endif %}
+
+<!-- Sticky buy bar -->
+<div class="sticky-buy-bar" id="sticky-bar">
+    <div class="sticky-buy-inner">
+        <div class="sticky-buy-info">
+            <img src="{{ product.image }}" alt="{{ product.name }}" onerror="this.style.display='none'">
+            <div>
+                <div class="sticky-buy-name">{{ product.name }}</div>
+                <div class="sticky-buy-price">From ${{ "%.2f"|format(product.price) }}</div>
+            </div>
+        </div>
+        <button class="sticky-buy-btn" onclick="document.getElementById('atb-form') ? document.getElementById('atb-form').submit() : window.location.href='/login'">Add to Bag</button>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function handleAddToBag() {
+    const form = document.getElementById('atb-form');
+    if (form) { form.submit(); return; }
+    window.location.href = '/login';
+}
+
+function selectColor(el, color) {
+    document.querySelectorAll('.color-swatch').forEach(s => s.classList.remove('selected'));
+    el.classList.add('selected');
+    const lbl = document.getElementById('color-label');
+    if (lbl) lbl.textContent = color;
+    const hiddenColor = document.getElementById('selected-color');
+    if (hiddenColor) hiddenColor.value = color;
+    const formColor = document.getElementById('form-color');
+    if (formColor) formColor.value = color;
+}
+
+function selectStorage(el, option) {
+    const group = el.parentElement;
+    if (group) group.querySelectorAll('.config-option').forEach(o => o.classList.remove('selected'));
+    el.classList.add('selected');
+    const hiddenStorage = document.getElementById('selected-storage');
+    if (hiddenStorage) hiddenStorage.value = option;
+    const formStorage = document.getElementById('form-storage');
+    if (formStorage) formStorage.value = option;
+    recomputePrice();
+}
+
+function selectMemory(el, option) {
+    const group = el.parentElement;
+    if (group) group.querySelectorAll('.config-option').forEach(o => o.classList.remove('selected'));
+    el.classList.add('selected');
+    const formMemory = document.getElementById('form-memory');
+    if (formMemory) formMemory.value = option;
+    recomputePrice();
+}
+
+function selectConnectivity(el, option) {
+    const group = el.parentElement;
+    if (group) group.querySelectorAll('.config-option').forEach(o => o.classList.remove('selected'));
+    el.classList.add('selected');
+    recomputePrice();
+}
+
+function selectKeyboard(el, option) {
+    const group = el.parentElement;
+    if (group) group.querySelectorAll('.config-option').forEach(o => o.classList.remove('selected'));
+    el.classList.add('selected');
+    recomputePrice();
+}
+
+function recomputePrice() {
+    const holder = document.getElementById('product-price-display');
+    if (!holder) return;
+    const base = parseFloat(holder.dataset.base || '0');
+    const months = parseFloat(holder.dataset.months || '24');
+    let delta = 0;
+    document.querySelectorAll('.config-option.selected').forEach(el => {
+        const d = parseFloat(el.dataset.delta || '0');
+        if (!isNaN(d)) delta += d;
+    });
+    const total = base + delta;
+    const amt = document.getElementById('price-full-amount');
+    if (amt) amt.textContent = total.toFixed(2);
+    const prefix = document.getElementById('price-full-prefix');
+    if (prefix) prefix.textContent = delta > 0 ? '' : 'From ';
+    const mo = document.getElementById('price-monthly-amount');
+    if (mo) mo.textContent = (total / months).toFixed(2);
+    const stickyPrice = document.querySelector('.sticky-buy-price');
+    if (stickyPrice) stickyPrice.textContent = (delta > 0 ? '$' : 'From $') + total.toFixed(2);
+    // Sync hidden price input for form submission
+    const formPrice = document.getElementById('form-price');
+    if (formPrice) formPrice.value = total.toFixed(2);
+}
+
+function toggleWishlist(productId) {
+    fetch('/api/wishlist/toggle', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ product_id: productId })
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.error) { window.location.href = '/login'; return; }
+        const btn = document.getElementById('wishlist-btn');
+        const icon = document.getElementById('wishlist-icon');
+        const text = document.getElementById('wishlist-text');
+        if (data.in_wishlist) {
+            btn.classList.add('wishlisted');
+            icon.innerHTML = '&#10084;&#65039;';
+            text.textContent = 'In Wishlist';
+        } else {
+            btn.classList.remove('wishlisted');
+            icon.innerHTML = '&#9825;';
+            text.textContent = 'Add to Wishlist';
+        }
+        showBagNotification(data.message);
+    });
+}
+
+function setRating(val) {
+    document.getElementById('rating-input').value = val;
+    document.querySelectorAll('#star-select label').forEach(l => {
+        l.classList.toggle('active', parseInt(l.dataset.val) >= val);
+    });
+}
+// Default 5 stars
+setRating(5);
+
+// Sticky bar on scroll
+const buySection = document.getElementById('buy-section');
+const stickyBar = document.getElementById('sticky-bar');
+if (buySection && stickyBar) {
+    const observer = new IntersectionObserver(entries => {
+        entries.forEach(e => {
+            stickyBar.style.display = e.isIntersecting ? 'none' : 'block';
+        });
+    }, { threshold: 0.1 });
+    observer.observe(buySection);
+}
+</script>
+{% endblock %}

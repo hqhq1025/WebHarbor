@@ -1,0 +1,174 @@
+{% extends "base.html" %}
+{% block title %}GitHub: Let's build from here · GitHub{% endblock %}
+{% block content %}
+
+{% if not current_user.is_authenticated %}
+<!-- Hero Section -->
+<section class="hero-section">
+  <div class="hero-bg">
+    <div class="hero-particles"></div>
+  </div>
+  <div class="hero-content">
+    <h1 class="hero-headline">The complete developer platform to build, scale, and deliver secure software.</h1>
+    <div class="hero-cta-group">
+      <a href="/register" class="gh-btn gh-btn-hero-primary gh-btn-lg">Get started for free</a>
+      <a href="/enterprise" class="gh-btn gh-btn-hero-secondary gh-btn-lg">Start a free enterprise trial</a>
+    </div>
+    <p class="hero-note">Over <strong>100 million</strong> developers build with GitHub</p>
+  </div>
+  <div class="hero-screenshot">
+    <img src="/static/images/homepage/hero-64ecd484397f_8a872a12.webp" alt="GitHub product interface" class="hero-img"
+         onerror="this.style.display='none'">
+  </div>
+</section>
+
+<!-- Customer logos -->
+<section class="logos-section">
+  <p class="logos-caption">Trusted by the world's leading organizations</p>
+  <div class="logos-row">
+    <img src="/static/images/homepage/figma_a2346ac1.svg" alt="Figma" class="logo-img" onerror="this.style.display='none'">
+    <img src="/static/images/homepage/mercedes-benz_62e47002.svg" alt="Mercedes-Benz" class="logo-img" onerror="this.style.display='none'">
+    <img src="/static/images/homepage/mercado-libre_9764e513.svg" alt="Mercado Libre" class="logo-img" onerror="this.style.display='none'">
+    <img src="/static/images/homepage/logo-gartner-aa8c2e452b64_092c19d6.svg" alt="Gartner" class="logo-img" onerror="this.style.display='none'">
+    <span class="logo-text">Duolingo</span>
+    <span class="logo-text">Shopify</span>
+    <span class="logo-text">Ford</span>
+    <span class="logo-text">Stripe</span>
+  </div>
+</section>
+
+<!-- Product pillars -->
+<section class="pillars-section">
+  <div class="pillar fade-in">
+    <div class="pillar-img-wrap">
+      <img src="/static/images/feature_sections/accordion1.webp" alt="Copilot" class="pillar-img" onerror="this.parentElement.innerHTML='<div class=pillar-img-placeholder></div>'">
+    </div>
+    <div class="pillar-text">
+      <span class="pillar-eyebrow">AI-powered</span>
+      <h2 class="pillar-headline">Your AI pair programmer, everywhere</h2>
+      <p class="pillar-body">GitHub Copilot uses the OpenAI Codex to suggest code and entire functions in real-time, right from your editor.</p>
+      <a href="/features/copilot" class="pillar-link">Explore GitHub Copilot →</a>
+    </div>
+  </div>
+  <div class="pillar pillar-reverse fade-in">
+    <div class="pillar-img-wrap">
+      <img src="/static/images/feature_sections/actions_workflow.webp" alt="Actions" class="pillar-img" onerror="this.parentElement.innerHTML='<div class=pillar-img-placeholder></div>'">
+    </div>
+    <div class="pillar-text">
+      <span class="pillar-eyebrow">Automation</span>
+      <h2 class="pillar-headline">Automate your workflow from idea to production</h2>
+      <p class="pillar-body">GitHub Actions makes it easy to automate all your software workflows with world-class CI/CD.</p>
+      <a href="/features/actions" class="pillar-link">Explore GitHub Actions →</a>
+    </div>
+  </div>
+  <div class="pillar fade-in">
+    <div class="pillar-img-wrap">
+      <img src="/static/images/feature_sections/codespaces_env.webp" alt="Codespaces" class="pillar-img" onerror="this.parentElement.innerHTML='<div class=pillar-img-placeholder></div>'">
+    </div>
+    <div class="pillar-text">
+      <span class="pillar-eyebrow">Cloud development</span>
+      <h2 class="pillar-headline">Code wherever you are</h2>
+      <p class="pillar-body">Spin up fully configured dev environments in the cloud in seconds. GitHub Codespaces offers a complete development experience anywhere.</p>
+      <a href="/features/codespaces" class="pillar-link">Explore GitHub Codespaces →</a>
+    </div>
+  </div>
+</section>
+
+{% else %}
+<!-- Logged-in dashboard snippet -->
+<section class="dashboard-hero">
+  <h1>Good to see you, {{ current_user.name or current_user.username }}!</h1>
+  <a href="/new" class="gh-btn gh-btn-primary">New repository</a>
+  <a href="/explore" class="gh-btn gh-btn-secondary">Explore repositories</a>
+</section>
+{% endif %}
+
+<!-- Trending Repositories -->
+<section class="trending-section">
+  <div class="section-container">
+    <div class="section-header">
+      <h2 class="section-title">Trending repositories</h2>
+      <a href="/trending" class="section-link">See more trending →</a>
+    </div>
+    <div class="repo-grid">
+      {% for repo in featured_repos %}
+      <article class="repo-card fade-in">
+        <div class="repo-card-header">
+          <a href="/{{ repo.full_name }}" class="repo-card-name">
+            <svg aria-hidden="true" height="16" viewBox="0 0 16 16" width="16" fill="currentColor" class="repo-icon">
+              <path d="M2 2.5A2.5 2.5 0 0 1 4.5 0h8.75a.75.75 0 0 1 .75.75v12.5a.75.75 0 0 1-.75.75h-2.5a.75.75 0 0 1 0-1.5h1.75v-2h-8a1 1 0 0 0-.714 1.7.75.75 0 1 1-1.072 1.05A2.495 2.495 0 0 1 2 11.5Zm10.5-1h-8a1 1 0 0 0-1 1v6.708A2.486 2.486 0 0 1 4.5 9h8ZM5 12.25a.25.25 0 0 1 .25-.25h3.5a.25.25 0 0 1 .25.25v3.25a.25.25 0 0 1-.4.2l-1.45-1.087a.249.249 0 0 0-.3 0L5.4 15.7a.25.25 0 0 1-.4-.2Z"/>
+            </svg>
+            {{ repo.full_name }}
+          </a>
+          {% if current_user.is_authenticated %}
+          <button class="star-btn-sm" data-repo-id="{{ repo.id }}" onclick="toggleStar(this)">
+            <svg aria-hidden="true" height="14" viewBox="0 0 16 16" width="14" fill="currentColor">
+              <path d="M8 .25a.75.75 0 0 1 .673.418l1.882 3.815 4.21.612a.75.75 0 0 1 .416 1.279l-3.046 2.97.719 4.192a.751.751 0 0 1-1.088.791L8 12.347l-3.766 1.98a.75.75 0 0 1-1.088-.79l.72-4.194L.818 6.374a.75.75 0 0 1 .416-1.28l4.21-.611L7.327.668A.75.75 0 0 1 8 .25Z"/>
+            </svg>
+            Star
+          </button>
+          {% endif %}
+        </div>
+        {% if repo.description %}
+        <p class="repo-card-desc">{{ repo.description[:120] }}</p>
+        {% endif %}
+        <div class="repo-card-meta">
+          {% if repo.language %}
+          <span class="repo-lang">
+            <span class="repo-lang-dot" style="background-color: {{ lang_colors.get(repo.language, '#8f9ba8') }}"></span>
+            {{ repo.language }}
+          </span>
+          {% endif %}
+          <span class="repo-stars">
+            <svg aria-hidden="true" height="14" viewBox="0 0 16 16" width="14" fill="currentColor">
+              <path d="M8 .25a.75.75 0 0 1 .673.418l1.882 3.815 4.21.612a.75.75 0 0 1 .416 1.279l-3.046 2.97.719 4.192a.751.751 0 0 1-1.088.791L8 12.347l-3.766 1.98a.75.75 0 0 1-1.088-.79l.72-4.194L.818 6.374a.75.75 0 0 1 .416-1.28l4.21-.611L7.327.668A.75.75 0 0 1 8 .25Z"/>
+            </svg>
+            {{ repo.stars_count | number_format }}
+          </span>
+          <span class="repo-forks">
+            <svg aria-hidden="true" height="14" viewBox="0 0 16 16" width="14" fill="currentColor">
+              <path d="M5 5.372v.878c0 .414.336.75.75.75h4.5a.75.75 0 0 0 .75-.75v-.878a2.25 2.25 0 1 1 1.5 0v.878a2.25 2.25 0 0 1-2.25 2.25h-1.5v2.128a2.251 2.251 0 1 1-1.5 0V8.5h-1.5A2.25 2.25 0 0 1 3.5 6.25v-.878a2.25 2.25 0 1 1 1.5 0ZM5 3.25a.75.75 0 1 0-1.5 0 .75.75 0 0 0 1.5 0Zm6.75.75a.75.75 0 1 0 0-1.5.75.75 0 0 0 0 1.5Zm-3 8.75a.75.75 0 1 0-1.5 0 .75.75 0 0 0 1.5 0Z"/>
+            </svg>
+            {{ repo.forks_count | number_format }}
+          </span>
+          <span class="repo-updated">{{ repo.updated_relative() }}</span>
+        </div>
+      </article>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+
+<!-- Featured Topics -->
+<section class="topics-section">
+  <div class="section-container">
+    <div class="section-header">
+      <h2 class="section-title">Explore topics</h2>
+      <a href="/topics" class="section-link">See all topics →</a>
+    </div>
+    <div class="topics-grid">
+      {% for topic in featured_topics %}
+      <a href="/topics/{{ topic.slug }}" class="topic-card fade-in">
+        <span class="topic-name">{{ topic.display_name }}</span>
+        <span class="topic-count">{{ topic.repos_count | number_format }} repositories</span>
+      </a>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+
+<!-- Productivity/CTA banner -->
+{% if not current_user.is_authenticated %}
+<section class="cta-banner">
+  <div class="cta-banner-inner">
+    <h2 class="cta-banner-headline">Productivity is the new superpower.</h2>
+    <p class="cta-banner-body">The world's best developers use GitHub to build, ship, and maintain their software. Join them.</p>
+    <div class="cta-banner-actions">
+      <a href="/register" class="gh-btn gh-btn-primary gh-btn-lg">Sign up for free</a>
+      <a href="/pricing" class="gh-btn gh-btn-outline gh-btn-lg">See pricing</a>
+    </div>
+  </div>
+</section>
+{% endif %}
+
+{% endblock %}

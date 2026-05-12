@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block title %}Write a review — {{ property.name }}{% endblock %}
+{% block content %}
+<div class="container">
+    <h1 class="page-title">Write a review</h1>
+    <p class="page-subtitle">Share your experience at <strong>{{ property.name }}</strong></p>
+
+    <div class="auth-wrap" style="max-width:600px;">
+        <form method="POST">
+            {{ form.hidden_tag() }}
+            <div class="form-group">
+                <label>Your rating</label>
+                {{ form.rating() }}
+            </div>
+            <div class="form-group">
+                <label>Traveller type</label>
+                {{ form.traveller_type() }}
+            </div>
+            <div class="form-group">
+                <label>Review title</label>
+                {{ form.title(placeholder="Summarize your experience") }}
+            </div>
+            <div class="form-group">
+                <label>What did you like?</label>
+                {{ form.body_positive(placeholder="Tell us about the positives...") }}
+            </div>
+            <div class="form-group">
+                <label>What could be improved?</label>
+                {{ form.body_negative(placeholder="Any suggestions...") }}
+            </div>
+            <button type="submit" class="form-submit">Submit review</button>
+            <a href="{{ url_for('property_detail', slug=property.slug) }}" class="btn-secondary mt-2" style="display:block;text-align:center;">Cancel</a>
+        </form>
+    </div>
+</div>
+{% endblock %}

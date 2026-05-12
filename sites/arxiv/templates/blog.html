@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block title %}arXiv Blog{% endblock %}
+{% block content %}
+
+<h1>arXiv Blog</h1>
+<p class="muted">Updates from the arXiv team.</p>
+
+{% for post in posts %}
+<div class="dash-card blog-card">
+    <div class="muted" style="font-size:12px;">{{ post.date }} · by {{ post.author }}</div>
+    <h2><a href="{{ url_for('blog_post', slug=post.slug) }}">{{ post.title }}</a></h2>
+    <p>{{ post.excerpt }}</p>
+    <a class="btn" href="{{ url_for('blog_post', slug=post.slug) }}">Read more →</a>
+</div>
+{% endfor %}
+
+{% endblock %}

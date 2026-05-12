@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block title %}Apple Vision Pro{% endblock %}
+{% block content %}
+<div style="max-width:1100px;margin:40px auto;padding:0 20px;">
+  {% if product %}
+  <h1 style="font-size:56px;font-weight:700;">{{ product.name }}</h1>
+  <p style="font-size:24px;color:#6e6e73;margin:16px 0;">{{ product.subtitle }}</p>
+  <p style="font-size:19px;margin:16px 0;">{{ product.description }}</p>
+  <p style="font-size:17px;">Release date: <strong>{{ product.release_date or 'February 2, 2024' }}</strong></p>
+  <p style="font-size:17px;">Available in: <strong>{{ 'United States' }}</strong></p>
+  <p style="font-size:17px;">Starting at: <strong>${{ "%.2f"|format(product.price) }}</strong></p>
+  <p style="font-size:17px;">Weight: <strong>{{ product.weight }}</strong></p>
+  {% set specs = product.get_specs() %}
+  {% if specs.get('builtin_apps') %}
+  <h2 style="font-size:24px;font-weight:700;margin:32px 0 12px;">Built-in Apps</h2>
+  <ul style="line-height:2;margin-left:20px;">
+    {% for app in specs.get('builtin_apps', []) %}<li>{{ app }}</li>{% endfor %}
+  </ul>
+  {% endif %}
+  {% else %}
+  <h1 style="font-size:56px;font-weight:700;">Apple Vision Pro</h1>
+  <p style="font-size:24px;color:#6e6e73;margin:16px 0;">Welcome to the era of spatial computing.</p>
+  <p style="font-size:17px;">Release date: <strong>February 2, 2024</strong></p>
+  <p style="font-size:17px;">Available in: <strong>United States</strong></p>
+  {% endif %}
+
+  <h2 style="font-size:32px;font-weight:700;margin:40px 0 16px;">Vision Pro Accessories</h2>
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px;">
+    {% for a in accessories %}
+    <a href="{{ url_for('product_detail', slug=a.slug) }}" class="search-result-card" style="padding:20px;border:1px solid #d2d2d7;border-radius:16px;display:block;">
+      <h3 style="font-size:17px;font-weight:700;">{{ a.name }}</h3>
+      <p style="font-size:14px;color:#6e6e73;">{{ a.subtitle }}</p>
+      <p style="font-size:15px;font-weight:600;margin-top:8px;">${{ "%.2f"|format(a.price) }}</p>
+    </a>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,182 @@
+{% extends "base.html" %}
+{% block title %}{{ query }} - Amazon.com Search{% endblock %}
+
+{% block content %}
+{% set qs = request.args %}
+<div class="results-layout">
+    <aside class="results-sidebar">
+        <form method="GET" action="{{ url_for('search') }}" id="filter-form">
+            <input type="hidden" name="q" value="{{ query }}">
+            {# Preserve the currently-selected sort across filter-form submits #}
+            <input type="hidden" name="sort" value="{{ current_sort or '' }}">
+
+            <h3>Department</h3>
+            <ul>
+                <li><a href="{{ url_for('category', slug='electronics') }}">Electronics</a></li>
+                <li><a href="{{ url_for('category', slug='computers') }}">Computers</a></li>
+                <li><a href="{{ url_for('category', slug='home') }}">Home &amp; Kitchen</a></li>
+                <li><a href="{{ url_for('category', slug='fashion') }}">Fashion</a></li>
+                <li><a href="{{ url_for('category', slug='books') }}">Books</a></li>
+                <li><a href="{{ url_for('category', slug='beauty') }}">Beauty</a></li>
+                <li><a href="{{ url_for('category', slug='sports') }}">Sports</a></li>
+                <li><a href="{{ url_for('category', slug='toys') }}">Toys</a></li>
+            </ul>
+
+            <h3 style="margin-top:20px">Customer Reviews</h3>
+            <ul class="filter-radio">
+                {% for stars in [4, 3, 2, 1] %}
+                <li>
+                    <label>
+                        <input type="radio" name="min_rating" value="{{ stars }}" {% if qs.get('min_rating')==stars|string %}checked{% endif %} onchange="this.form.submit()">
+                        {% for i in range(stars) %}★{% endfor %}{% for i in range(5-stars) %}☆{% endfor %} &amp; Up
+                    </label>
+                </li>
+                {% endfor %}
+                <li><a href="{{ url_for('search', q=query) }}">Clear rating filter</a></li>
+            </ul>
+
+            <h3 style="margin-top:20px">Price</h3>
+            <div class="filter-price">
+                <input type="number" name="min_price" placeholder="$ Min" value="{{ qs.get('min_price','') }}" step="0.01" style="width:60px">
+                <span>—</span>
+                <input type="number" name="max_price" placeholder="$ Max" value="{{ qs.get('max_price','') }}" step="0.01" style="width:60px">
+                <button type="submit" class="btn-go">Go</button>
+            </div>
+
+            <h3 style="margin-top:20px">Brand</h3>
+            <div class="filter-row">
+                <input type="text" name="brand" placeholder="Any brand" value="{{ qs.get('brand','') }}">
+                <button type="submit" class="btn-go">Apply</button>
+            </div>
+
+            <h3 style="margin-top:20px">Condition</h3>
+            <ul class="filter-radio">
+                {% for c in ['New', 'Used - Like New', 'Used - Good', 'Used - Acceptable', 'Refurbished'] %}
+                <li>
+                    <label>
+                        <input type="radio" name="condition" value="{{ c }}" {% if qs.get('condition')==c %}checked{% endif %} onchange="this.form.submit()">
+                        {{ c }}
+                    </label>
+                </li>
+                {% endfor %}
+            </ul>
+
+            <h3 style="margin-top:20px">Color</h3>
+            <input type="text" name="color" placeholder="e.g. Blue, Black" value="{{ qs.get('color','') }}" onchange="this.form.submit()">
+
+            <h3 style="margin-top:20px">Size</h3>
+            <div class="filter-row">
+                <input type="text" name="size" placeholder="e.g. M, 10, Queen" value="{{ qs.get('size','') }}">
+                <button type="submit" class="btn-go">Apply</button>
+            </div>
+
+            <h3 style="margin-top:20px">Features</h3>
+            <div class="filter-row">
+                <input type="text" name="feature" placeholder="e.g. waterproof" value="{{ qs.get('feature','') }}">
+                <button type="submit" class="btn-go">Apply</button>
+            </div>
+
+            <h3 style="margin-top:20px">Shipping</h3>
+            <ul class="filter-radio">
+                <li><label><input type="checkbox" name="prime" value="1" {% if qs.get('prime')=='1' %}checked{% endif %} onchange="this.form.submit()"> ✓ Prime Eligible</label></li>
+                <li><label><input type="checkbox" name="free_shipping" value="1" {% if qs.get('free_shipping')=='1' %}checked{% endif %} onchange="this.form.submit()"> FREE Shipping</label></li>
+                <li><label><input type="checkbox" name="free_returns" value="1" {% if qs.get('free_returns')=='1' %}checked{% endif %} onchange="this.form.submit()"> FREE Returns</label></li>
+            </ul>
+
+            <h3 style="margin-top:20px">Deals</h3>
+            <ul class="filter-radio">
+                <li><label><input type="checkbox" name="deal" value="1" {% if qs.get('deal')=='1' %}checked{% endif %} onchange="this.form.submit()"> Today's Deals</label></li>
+                <li><label><input type="checkbox" name="bestseller" value="1" {% if qs.get('bestseller')=='1' %}checked{% endif %} onchange="this.form.submit()"> Best Sellers</label></li>
+            </ul>
+
+        </form>
+    </aside>
+
+    <div class="results-main">
+        <div class="results-head" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
+            {% if query %}
+            <h1>{{ results|length }} results for <em>"{{ query }}"</em></h1>
+            {% else %}
+            <h1>{{ results|length }} results</h1>
+            {% endif %}
+            <div>
+                <label for="sort-select">Sort by:</label>
+                {% set cs = current_sort or '' %}
+                <select id="sort-select" onchange="var u=new window.URL(window.location.href);u.searchParams.set('sort',this.value);window.location.href=u.toString()">
+                    <option value="" {% if not cs %}selected{% endif %}>Featured</option>
+                    <option value="price_asc" {% if cs=='price_asc' %}selected{% endif %}>Price: Low to High</option>
+                    <option value="price_desc" {% if cs=='price_desc' %}selected{% endif %}>Price: High to Low</option>
+                    <option value="rating" {% if cs=='rating' %}selected{% endif %}>Avg. Customer Review</option>
+                    <option value="reviews" {% if cs=='reviews' %}selected{% endif %}>Most Reviews</option>
+                    <option value="newest" {% if cs=='newest' %}selected{% endif %}>Newest Arrivals</option>
+                    <option value="bestseller" {% if cs=='bestseller' %}selected{% endif %}>Best Sellers</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="results-grid">
+            {% for p in results %}
+            <div class="result-card">
+                <a href="{{ url_for('product_detail', slug=p.slug) }}" class="result-card-img">
+                    <img src="{{ p.image }}" alt="{{ p.name }}" onerror="this.style.display='none'">
+                </a>
+                <div>
+                    <h2 class="result-card-title"><a href="{{ url_for('product_detail', slug=p.slug) }}">{{ p.name }}</a></h2>
+                    <div class="result-card-brand">by <a href="{{ url_for('search', q=p.brand) }}">{{ p.brand }}</a></div>
+                    <div class="result-card-rating rating">
+                        <span class="stars">{% for i in range(p.rating|int) %}★{% endfor %}{% for i in range(5 - p.rating|int) %}☆{% endfor %}</span>
+                        <span>{{ p.rating }} ({{ '{:,}'.format(p.review_count) }})</span>
+                    </div>
+                    <div class="result-card-price">
+                        <span class="price-symbol">$</span><span class="price-whole">{{ p.price|int }}</span><span class="price-fraction">{{ '%02d'|format((p.price * 100)|round|int % 100) }}</span>
+                        {% if p.list_price > p.price %}<span class="list-price">${{ '%.2f'|format(p.list_price) }}</span>{% endif %}
+                    </div>
+                    {% if p.is_prime %}<div style="color:#00a8e1;font-size:13px;font-weight:700">✓ prime {{ p.delivery_estimate or 'FREE Delivery' }}</div>{% endif %}
+                    {% if p.free_shipping %}<div class="free-delivery-badge" style="color:#007600;font-size:13px;font-weight:700;margin-top:2px">&#10003; FREE Delivery</div>{% else %}<div style="color:#565959;font-size:12px;margin-top:2px">Delivery fee applies</div>{% endif %}
+                    {% if p.condition and p.condition != 'New' %}<div style="color:#c45500;font-size:12px;font-weight:700">Condition: {{ p.condition }}</div>{% endif %}
+                    {% if p.release_date %}<div style="font-size:12px;color:#565959">Released: {{ p.release_date }}</div>{% endif %}
+                    {% set colors = p.get_colors() %}
+                    {% if colors %}<div style="font-size:12px;color:#565959;margin-top:4px">Colors: {{ colors|join(', ') }}</div>{% endif %}
+                    {% set sizes = p.get_sizes() %}
+                    {% if sizes %}<div style="font-size:12px;color:#565959">Sizes: {{ sizes|join(', ') }}</div>{% endif %}
+                </div>
+                <div class="result-card-buy">
+                    <form method="POST" action="{{ url_for('cart_add_form', product_id=p.id) }}" style="margin:0">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token_value }}">
+                        <input type="hidden" name="variant" value="">
+                        <input type="hidden" name="quantity" value="1">
+                        <button type="submit" class="btn btn-full">Add to Cart</button>
+                    </form>
+                    <a href="{{ url_for('product_detail', slug=p.slug) }}" class="btn btn-outline btn-full">View Details</a>
+                </div>
+            </div>
+            {% else %}
+            {% if query %}
+            <div class="empty-state">
+                <h2>No results for "{{ query }}"</h2>
+                <p>Try a different search term, loosen your filters, or browse categories above.</p>
+            </div>
+            {% endif %}
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+<style>
+.filter-radio { list-style:none; padding:0; margin:6px 0; }
+.filter-radio li { padding:3px 0; font-size:13px; }
+.filter-radio label { cursor:pointer; }
+.filter-price { display:flex; align-items:center; gap:4px; margin:6px 0; }
+.filter-price input { padding:4px 6px; border:1px solid #a6a6a6; border-radius:4px; font-size:12px; }
+.filter-row { display:flex; align-items:center; gap:6px; margin:6px 0; }
+.filter-row input { flex:1; padding:6px 8px; border:1px solid #a6a6a6; border-radius:4px; font-size:13px; }
+.btn-go { padding:4px 10px; background:#ffd814; border:1px solid #fcd200; border-radius:4px; cursor:pointer; font-size:12px; }
+.results-sidebar input[type=text], .results-sidebar input[type=number] { width:100%; padding:6px 8px; border:1px solid #a6a6a6; border-radius:4px; font-size:13px; }
+.results-sidebar h3 { font-size:14px; font-weight:700; color:#0f1111; margin:0 0 4px; }
+.results-sidebar ul { list-style:none; padding:0; margin:0; }
+.results-sidebar ul li { font-size:13px; padding:3px 0; }
+.results-sidebar a { color:#007185; text-decoration:none; }
+.results-sidebar a:hover { color:#c45500; text-decoration:underline; }
+#sort-select { padding:6px 8px; border:1px solid #a6a6a6; border-radius:4px; background:#f0f2f2; font-size:13px; }
+</style>
+{% endblock %}

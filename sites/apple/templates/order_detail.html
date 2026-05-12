@@ -1,0 +1,116 @@
+{% extends "base.html" %}
+{% block title %}Order {{ order.order_number }} - Apple{% endblock %}
+
+{% block content %}
+<div style="max-width:var(--max-width);margin:0 auto;padding:80px 20px 60px">
+    <a href="{{ url_for('account') }}" style="font-size:14px;margin-bottom:16px;display:inline-block">&lsaquo; Back to Account</a>
+
+    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;margin-bottom:32px">
+        <div>
+            <h1 style="font-size:32px;font-weight:700;font-family:var(--font-family);margin-bottom:4px">Order {{ order.order_number }}</h1>
+            <p style="color:var(--color-text-secondary);font-size:14px">Placed {{ order.created_at.strftime('%B %d, %Y at %I:%M %p') }}</p>
+        </div>
+        <span class="order-status status-{{ order.status }}" style="font-size:15px;padding:6px 16px">{{ order.status|capitalize }}</span>
+    </div>
+
+    <!-- Order Timeline -->
+    <div style="background:var(--color-bg-secondary);border-radius:16px;padding:24px;margin-bottom:24px">
+        <h3 style="font-size:17px;font-weight:700;margin-bottom:16px">Order Status</h3>
+        <div style="display:flex;gap:0;align-items:center">
+            {% set steps = ['Processing', 'Shipped', 'Delivered'] %}
+            {% set status_idx = {'processing': 0, 'shipped': 1, 'delivered': 2, 'cancelled': -1} %}
+            {% set current_step = status_idx.get(order.status, 0) %}
+            {% for step in steps %}
+            <div style="flex:1;text-align:center">
+                <div style="width:28px;height:28px;border-radius:50%;margin:0 auto 6px;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;
+                    {% if order.status == 'cancelled' %}background:#fce8e6;color:#c5221f
+                    {% elif loop.index0 <= current_step %}background:var(--color-success);color:#fff
+                    {% else %}background:var(--color-border);color:var(--color-text-muted){% endif %}">
+                    {% if order.status == 'cancelled' %}&times;{% elif loop.index0 <= current_step %}&#10003;{% else %}{{ loop.index }}{% endif %}
+                </div>
+                <p style="font-size:12px;font-weight:{% if loop.index0 == current_step %}700{% else %}400{% endif %};color:{% if loop.index0 <= current_step %}var(--color-text){% else %}var(--color-text-muted){% endif %}">{{ step }}</p>
+            </div>
+            {% if not loop.last %}
+            <div style="flex:2;height:2px;background:{% if loop.index0 < current_step %}var(--color-success){% else %}var(--color-border){% endif %};margin-bottom:20px"></div>
+            {% endif %}
+            {% endfor %}
+        </div>
+        {% if order.status == 'cancelled' %}
+        <p style="text-align:center;margin-top:12px;color:#c5221f;font-weight:600">This order has been cancelled.</p>
+        {% endif %}
+    </div>
+
+    <!-- Items -->
+    <div style="background:var(--color-bg-secondary);border-radius:16px;padding:24px;margin-bottom:24px">
+        <h3 style="font-size:17px;font-weight:700;margin-bottom:16px">Items</h3>
+        {% for item in order.items %}
+        <div style="display:flex;gap:16px;padding:16px 0;{% if not loop.last %}border-bottom:1px solid var(--color-border){% endif %};align-items:center">
+            <a href="{{ url_for('product_detail', slug=item.product.slug) }}">
+                <img src="{{ item.product.image }}" alt="{{ item.product.name }}"
+                     style="width:80px;height:80px;object-fit:contain;background:#fff;border-radius:12px;padding:8px"
+                     onerror="this.style.display='none'">
+            </a>
+            <div style="flex:1">
+                <a href="{{ url_for('product_detail', slug=item.product.slug) }}" style="font-weight:600;font-size:15px;color:var(--color-text);text-decoration:none">{{ item.product.name }}</a>
+                <p style="font-size:13px;color:var(--color-text-secondary);margin-top:2px">
+                    {% if item.color %}{{ item.color }}{% endif %}
+                    {% if item.storage %} &middot; {{ item.storage }}{% endif %}
+                </p>
+                <p style="font-size:13px;color:var(--color-text-secondary)">Qty: {{ item.quantity }}</p>
+            </div>
+            <p style="font-size:15px;font-weight:600">${{ "%.2f"|format(item.price * item.quantity) }}</p>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- Order Info Grid -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:24px">
+        <div style="background:var(--color-bg-secondary);border-radius:16px;padding:24px">
+            <h3 style="font-size:15px;font-weight:700;margin-bottom:12px">Shipping Address</h3>
+            <p style="font-size:14px;color:var(--color-text-secondary);line-height:1.5">
+                {{ current_user.first_name }} {{ current_user.last_name }}<br>
+                {{ order.shipping_address }}
+            </p>
+            <p style="font-size:13px;color:var(--color-text-muted);margin-top:8px">
+                {{ order.shipping_method|capitalize }} Shipping
+            </p>
+        </div>
+        <div style="background:var(--color-bg-secondary);border-radius:16px;padding:24px">
+            <h3 style="font-size:15px;font-weight:700;margin-bottom:12px">Payment</h3>
+            <p style="font-size:14px;color:var(--color-text-secondary)">{{ order.payment_method|replace('_', ' ')|title }}</p>
+            <div style="margin-top:16px;padding-top:12px;border-top:1px solid var(--color-border)">
+                <div style="display:flex;justify-content:space-between;font-size:14px;margin-bottom:4px">
+                    <span style="color:var(--color-text-secondary)">Subtotal</span>
+                    <span>
+                        {% set shipping = {'standard': 0, 'express': 9.99, 'overnight': 19.99} %}
+                        {% set ship_cost = shipping.get(order.shipping_method, 0) %}
+                        ${{ "%.2f"|format(order.total - ship_cost) }}
+                    </span>
+                </div>
+                <div style="display:flex;justify-content:space-between;font-size:14px;margin-bottom:4px">
+                    <span style="color:var(--color-text-secondary)">Shipping</span>
+                    <span>{% if ship_cost == 0 %}FREE{% else %}${{ "%.2f"|format(ship_cost) }}{% endif %}</span>
+                </div>
+                <div style="display:flex;justify-content:space-between;font-size:15px;font-weight:700;margin-top:8px;padding-top:8px;border-top:1px solid var(--color-border)">
+                    <span>Total</span>
+                    <span>${{ "%.2f"|format(order.total) }}</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Actions -->
+    <div style="display:flex;gap:12px;flex-wrap:wrap">
+        {% if order.status == 'processing' %}
+        <form action="{{ url_for('cancel_order', order_id=order.id) }}" method="POST">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button type="submit" style="padding:12px 24px;background:#fff;border:1px solid #ff3b30;border-radius:12px;color:#ff3b30;font-size:14px;font-weight:600;cursor:pointer;font-family:var(--font-family-text)">Cancel Order</button>
+        </form>
+        {% endif %}
+        <form action="{{ url_for('reorder', order_id=order.id) }}" method="POST">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button type="submit" style="padding:12px 24px;background:var(--color-link);border:none;border-radius:12px;color:#fff;font-size:14px;font-weight:600;cursor:pointer;font-family:var(--font-family-text)">Buy Again</button>
+        </form>
+    </div>
+</div>
+{% endblock %}

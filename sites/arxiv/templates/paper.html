@@ -1,0 +1,151 @@
+{% extends "base.html" %}
+{% block title %}{{ paper.title }} — arXiv:{{ paper.arxiv_id }}{% endblock %}
+{% block breadcrumbs %}
+    {% if paper.primary_category_code %}
+    <span class="sep">&gt;</span>
+    <a href="{{ url_for('category_detail', code=paper.primary_category_code) }}">{{ paper.primary_category_code }}</a>
+    {% endif %}
+    {% if paper.primary_subject_code and paper.primary_subject_code != paper.primary_category_code %}
+    <span class="sep">&gt;</span>
+    <a href="{{ url_for('listing', code=paper.primary_subject_code, view='recent') }}">{{ paper.primary_subject_code }}</a>
+    {% endif %}
+    <span class="sep">&gt;</span>
+    <span style="color:#fff">arXiv:{{ paper.arxiv_id }}</span>
+{% endblock %}
+{% block content %}
+
+<div class="paper-detail-layout">
+    <div class="paper-main">
+        <div class="breadcrumb">
+            {% if paper.primary_category_code %}
+            <a href="{{ url_for('category_detail', code=paper.primary_category_code) }}">{{ paper.primary_category_code }}</a> &gt;
+            {% endif %}
+            {% if paper.primary_subject_code and paper.primary_subject_code != paper.primary_category_code %}
+            <a href="{{ url_for('listing', code=paper.primary_subject_code, view='recent') }}">{{ paper.primary_subject_code }}</a> &gt;
+            {% endif %}
+            arXiv:{{ paper.arxiv_id }}
+        </div>
+
+        <div class="paper-label">
+            {% if paper.submitted_date %}[Submitted on {{ paper.submitted_date }}]{% endif %}
+        </div>
+        <h1 class="paper-title">{{ paper.title }}</h1>
+
+        <div class="paper-authors">
+            {% for entry in paper.get_authors_with_affiliations() %}<a href="{{ url_for('author_papers', name=entry.name) }}">{{ entry.name }}</a>{% if not loop.last %}, {% endif %}{% endfor %}
+        </div>
+
+        <div class="paper-abstract">
+            <span class="label">Abstract:</span>
+            {% if paper.abstract %}
+                {{ paper.abstract }}
+            {% else %}
+                <i class="muted">Abstract not currently available for this paper.</i>
+            {% endif %}
+        </div>
+
+        <div class="paper-meta">
+            {% if paper.comments %}
+            <div class="row"><span class="lab">Comments:</span> {{ paper.comments }}</div>
+            {% endif %}
+            <div class="row"><span class="lab">Subjects:</span> {{ paper.subjects }}</div>
+            {% set _versions = paper.get_versions() %}
+            {% if _versions %}
+            <div class="row"><span class="lab">Submission history:</span>
+                {% for v in _versions %}
+                    <span class="version-entry">[{{ v.version }}] {{ v.date }}</span>{% if not loop.last %}; {% endif %}
+                {% endfor %}
+            </div>
+            <div class="row"><span class="lab">First version uploaded:</span> {{ _versions[0].date }}</div>
+            {% if _versions|length > 1 %}
+            <div class="row"><span class="lab">Latest version:</span> v{{ _versions[-1].version }} on {{ _versions[-1].date }}</div>
+            {% endif %}
+            {% else %}
+            <div class="row"><span class="lab">First version uploaded:</span> {{ paper.submitted_date or 'n/a' }}</div>
+            {% endif %}
+            <div class="row"><span class="lab">Cite as:</span>
+                arXiv:{{ paper.arxiv_id }} [{{ paper.primary_subject_code or paper.primary_category_code }}]
+            </div>
+            {% if paper.doi %}
+            <div class="row"><span class="lab">DOI:</span> <a href="https://doi.org/{{ paper.doi }}" target="_blank">{{ paper.doi }}</a></div>
+            {% endif %}
+        </div>
+
+        <!-- BibTeX hidden box -->
+        <div id="bibtex-box" class="sidebar-box" style="display:none;margin:10px 0;">
+            <h3>BibTeX</h3>
+            <pre style="font-family:var(--mono);font-size:12px;white-space:pre-wrap;">@article{arxiv{{ paper.arxiv_id|replace('.','') }},
+    title = {{ '{' + paper.title + '}' }},
+    author = {{ '{' + paper.get_authors()|join(' and ') + '}' }},
+    journal = {arXiv preprint arXiv:{{ paper.arxiv_id }}},
+    {% if paper.submitted_date %}year = {{ '{' + paper.submitted_date[:4] + '}' }},{% endif %}
+}</pre>
+        </div>
+
+        <!-- Bibliographic / Tools tabs (visual block — content is summary text only) -->
+        <div class="paper-tools-tabs">
+            <div class="tab-strip">
+                <div class="tab active">Bibliographic Tools</div>
+                <div class="tab">Code, Data, Demos</div>
+                <div class="tab">Related Papers</div>
+                <div class="tab">About arXivLabs</div>
+            </div>
+            <div class="tab-content">
+                <b>Bibliographic Explorer</b> — explore citations, references, and related work for this paper. See
+                <a href="https://scholar.google.com" target="_blank">Google Scholar</a>,
+                <a href="https://www.semanticscholar.org" target="_blank">Semantic Scholar</a>,
+                <a href="https://ui.adsabs.harvard.edu" target="_blank">NASA ADS</a>.
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Sidebar -->
+    <aside class="paper-sidebar">
+        <div class="sidebar-box">
+            <h3>Access Paper:</h3>
+            <ul class="sidebar-access-list">
+                <li class="access-primary"><a href="{{ url_for('pdf_view', arxiv_id=paper.arxiv_id) }}">View PDF</a></li>
+                <li><a href="{{ url_for('html_view', arxiv_id=paper.arxiv_id) }}">HTML (experimental)</a></li>
+                <li><a href="{{ url_for('eprint_view', arxiv_id=paper.arxiv_id) }}">TeX Source</a></li>
+                <li><a href="{{ url_for('format_view', arxiv_id=paper.arxiv_id) }}">Other Formats</a></li>
+            </ul>
+            <p style="font-size:11px;color:var(--text-muted);margin-top:8px;border-top:1px solid var(--border-light);padding-top:6px;">
+                <a href="{{ url_for('help_page_sub', page='license') }}">view license</a>
+            </p>
+        </div>
+
+        <div class="sidebar-box">
+            <h3>Current browse context:</h3>
+            <p><b>{{ paper.primary_subject_code or paper.primary_category_code }}</b></p>
+            <p>
+                <a href="{{ url_for('listing', code=paper.primary_subject_code or paper.primary_category_code, view='new') }}">next ›</a> |
+                <a href="{{ url_for('listing', code=paper.primary_subject_code or paper.primary_category_code, view='new') }}">‹ prev</a>
+            </p>
+            <p>
+                <a href="{{ url_for('listing', code=paper.primary_subject_code or paper.primary_category_code, view='new') }}">new</a> |
+                <a href="{{ url_for('listing', code=paper.primary_subject_code or paper.primary_category_code, view='recent') }}">recent</a>
+            </p>
+        </div>
+
+        <div class="sidebar-box">
+            <h3>References & Citations</h3>
+            <ul>
+                <li><a href="https://ui.adsabs.harvard.edu" target="_blank">NASA ADS</a></li>
+                <li><a href="https://scholar.google.com" target="_blank">Google Scholar</a></li>
+                <li><a href="https://www.semanticscholar.org" target="_blank">Semantic Scholar</a></li>
+            </ul>
+        </div>
+
+        <div class="sidebar-box">
+            <h3>Bookmark</h3>
+            <p style="text-align:center;">
+                <img src="{{ url_for('static', filename='images/brand/bibsonomy.png') }}" alt="BibSonomy"
+                     style="width:40px;"
+                     onerror="this.outerHTML='<span class=&quot;tag&quot;>BibSonomy</span>'">
+            </p>
+        </div>
+    </aside>
+</div>
+
+{% endblock %}

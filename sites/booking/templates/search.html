@@ -1,0 +1,275 @@
+{% extends "base.html" %}
+{% block title %}Search results — Booking{% endblock %}
+{% block content %}
+<div class="container">
+    <h1 class="page-title">Search results</h1>
+    {% if empty_destination %}
+    <p class="page-subtitle"><strong>0</strong> properties found</p>
+    {% elif query %}
+    <p class="page-subtitle"><strong>{{ results|length }}</strong> properties found for "<strong>{{ query }}</strong>"</p>
+    {% else %}
+    <p class="page-subtitle"><strong>{{ results|length }}</strong> properties found</p>
+    {% endif %}
+
+    {% if empty_destination %}
+    <div class="empty-state" style="background:#fff;border:1px solid #e7e7e7;border-radius:8px;padding:32px;text-align:center;color:#5d666e;font-size:15px;margin-bottom:20px;">
+        <h2 style="margin:0 0 8px 0;font-size:18px;color:#262626;">Please enter a destination to start your search.</h2>
+        <p style="margin:0;">Type a city, property name or landmark in the search box above and press Search.</p>
+    </div>
+    {% endif %}
+
+    {# Current filter params for re-rendering form state #}
+    {% set args = request.args %}
+    {% set q_checkin = args.get('checkin','') %}
+    {% set q_checkout = args.get('checkout','') %}
+
+    <form method="get" id="searchForm" style="background:#fff;padding:16px;border-radius:8px;border:1px solid #e7e7e7;margin-bottom:20px;display:flex;gap:12px;flex-wrap:wrap;align-items:end;">
+        <div class="form-group" style="margin:0;flex:1;min-width:200px;">
+            <label>Keyword / destination</label>
+            <input type="text" name="q" value="{{ query }}" placeholder="Property, city or landmark" required minlength="2">
+        </div>
+        <div class="form-group" style="margin:0;flex:1;min-width:160px;">
+            <label>City</label>
+            <select name="city_id">
+                <option value="">Any</option>
+                {% for c in all_cities %}
+                <option value="{{ c.id }}" {% if args.get('city_id')|string == c.id|string %}selected{% endif %}>{{ c.display }}, {{ c.country }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="form-group" style="margin:0;min-width:130px;max-width:170px;">
+            <label>Check-in</label>
+            <input type="text" name="checkin" value="{{ q_checkin }}" maxlength="10" inputmode="numeric" pattern="\d{4}-\d{2}-\d{2}" placeholder="YYYY-MM-DD" autocomplete="off" data-datepicker="checkin">
+        </div>
+        <div class="form-group" style="margin:0;min-width:130px;max-width:170px;">
+            <label>Check-out</label>
+            <input type="text" name="checkout" value="{{ q_checkout }}" maxlength="10" inputmode="numeric" pattern="\d{4}-\d{2}-\d{2}" placeholder="YYYY-MM-DD" autocomplete="off" data-datepicker="checkout">
+        </div>
+        <div class="form-group" style="margin:0;min-width:80px;max-width:120px;">
+            <label>Rooms</label>
+            <input type="number" name="rooms" value="{{ rooms }}" min="1" max="30" placeholder="1">
+        </div>
+        <div class="form-group" style="margin:0;min-width:80px;max-width:120px;">
+            <label>Adults</label>
+            <input type="number" name="adults" value="{{ adults }}" min="1" max="20">
+        </div>
+        <button class="btn-primary" type="submit">Search</button>
+
+        {# Hidden propagation of current filter params so top-form submission keeps them #}
+        {% for k in ['free_cancellation','breakfast','wifi','pool','parking','gym','spa','airport_shuttle','pet_friendly','air_conditioning','bicycle','min_rating','min_stars','sort','brand','currency'] %}
+            {% if args.get(k) %}<input type="hidden" name="{{ k }}" value="{{ args.get(k) }}">{% endif %}
+        {% endfor %}
+    </form>
+
+    <div style="display:grid;grid-template-columns:260px 1fr;gap:20px;align-items:start;">
+        {# =========== FILTER SIDEBAR =========== #}
+        <aside class="filter-sidebar" style="background:#fff;border:1px solid #e7e7e7;border-radius:8px;padding:16px;position:sticky;top:12px;">
+            <form method="get" id="filterForm">
+                {# carry over keyword + city + occupancy #}
+                {% if query %}<input type="hidden" name="q" value="{{ query }}">{% endif %}
+                {% if args.get('city_id') %}<input type="hidden" name="city_id" value="{{ args.get('city_id') }}">{% endif %}
+                {% if args.get('city') %}<input type="hidden" name="city" value="{{ args.get('city') }}">{% endif %}
+                {% if args.get('dest') %}<input type="hidden" name="dest" value="{{ args.get('dest') }}">{% endif %}
+                {% if args.get('near') %}<input type="hidden" name="near" value="{{ args.get('near') }}">{% endif %}
+                {% if args.get('country') %}<input type="hidden" name="country" value="{{ args.get('country') }}">{% endif %}
+                <input type="hidden" name="adults" value="{{ adults }}">
+                <input type="hidden" name="rooms" value="{{ rooms }}">
+                {% if q_checkin %}<input type="hidden" name="checkin" value="{{ q_checkin }}">{% endif %}
+                {% if q_checkout %}<input type="hidden" name="checkout" value="{{ q_checkout }}">{% endif %}
+
+                <h3 style="font-size:15px;margin:0 0 10px 0;">Filter by</h3>
+
+                {# ---- Sort dropdown ---- #}
+                <div class="filter-group" style="margin-bottom:14px;">
+                    <label style="font-weight:600;font-size:13px;display:block;margin-bottom:6px;">Sort results by</label>
+                    {% set cur_sort = args.get('sort','') %}
+                    <select name="sort" onchange="document.getElementById('filterForm').submit()" style="width:100%;padding:6px;border:1px solid #d0d0d0;border-radius:4px;">
+                        <option value="" {% if not cur_sort %}selected{% endif %}>Our top picks</option>
+                        <option value="review_score_desc" {% if cur_sort in ['review_score_desc','best_reviewed','review_score','rating'] %}selected{% endif %}>Best reviewed (review score)</option>
+                        <option value="price_asc" {% if cur_sort in ['price_asc','price_low'] %}selected{% endif %}>Price (lowest first)</option>
+                        <option value="price_desc" {% if cur_sort in ['price_desc','price_high'] %}selected{% endif %}>Price (highest first)</option>
+                        <option value="stars" {% if cur_sort == 'stars' %}selected{% endif %}>Property rating (stars)</option>
+                        <option value="distance" {% if cur_sort == 'distance' %}selected{% endif %}>Distance from city centre</option>
+                        {% if show_beach_sort %}<option value="distance_beach" {% if cur_sort == 'distance_beach' %}selected{% endif %}>Distance From Beach</option>{% endif %}
+                    </select>
+                </div>
+
+                {# ---- Popular filters (amenities / cancellation / breakfast) ---- #}
+                <div class="filter-group" style="margin-bottom:14px;">
+                    <h4 style="font-size:13px;font-weight:700;margin:0 0 6px 0;">Popular filters</h4>
+                    {% set amenity_filters = [
+                        ('free_cancellation','Free cancellation'),
+                        ('breakfast','Breakfast included'),
+                        ('wifi','Free WiFi'),
+                        ('pool','Swimming pool'),
+                        ('parking','Parking'),
+                        ('gym','Fitness center'),
+                        ('spa','Spa & wellness'),
+                        ('airport_shuttle','Airport shuttle'),
+                        ('pet_friendly','Pet-friendly'),
+                        ('air_conditioning','Air conditioning'),
+                        ('bicycle','Bicycle rental'),
+                    ] %}
+                    {% for key, label in amenity_filters %}
+                    <label style="display:block;font-size:13px;margin:4px 0;cursor:pointer;">
+                        <input type="checkbox" name="{{ key }}" value="1"
+                               {% if args.get(key) in ['1','true','on','yes'] %}checked{% endif %}
+                               onchange="document.getElementById('filterForm').submit()">
+                        {{ label }}
+                    </label>
+                    {% endfor %}
+                </div>
+
+                {# ---- Star rating selector ---- #}
+                <div class="filter-group" style="margin-bottom:14px;">
+                    <h4 style="font-size:13px;font-weight:700;margin:0 0 6px 0;">Property star rating</h4>
+                    {% set cur_stars = args.get('min_stars','') %}
+                    {% for s in [5,4,3,2,1] %}
+                    <label style="display:block;font-size:13px;margin:3px 0;cursor:pointer;">
+                        <input type="radio" name="min_stars" value="{{ s }}"
+                               {% if cur_stars|string == s|string %}checked{% endif %}
+                               onchange="document.getElementById('filterForm').submit()">
+                        {% for i in range(s) %}&#9733;{% endfor %} ({{ s }}+ stars)
+                    </label>
+                    {% endfor %}
+                    <label style="display:block;font-size:12px;margin:3px 0;color:#666;cursor:pointer;">
+                        <input type="radio" name="min_stars" value=""
+                               {% if not cur_stars %}checked{% endif %}
+                               onchange="document.getElementById('filterForm').submit()">
+                        Any
+                    </label>
+                </div>
+
+                {# ---- Minimum review score slider ---- #}
+                <div class="filter-group" style="margin-bottom:14px;">
+                    <h4 style="font-size:13px;font-weight:700;margin:0 0 6px 0;">Review score</h4>
+                    {% set cur_rating = args.get('min_rating','') %}
+                    {% for r, rlabel in [('9','Superb: 9+'),('8','Very good: 8+'),('7','Good: 7+'),('6','Pleasant: 6+')] %}
+                    <label style="display:block;font-size:13px;margin:3px 0;cursor:pointer;">
+                        <input type="radio" name="min_rating" value="{{ r }}"
+                               {% if cur_rating|string == r|string %}checked{% endif %}
+                               onchange="document.getElementById('filterForm').submit()">
+                        {{ rlabel }}
+                    </label>
+                    {% endfor %}
+                    <label style="display:block;font-size:12px;margin:3px 0;color:#666;cursor:pointer;">
+                        <input type="radio" name="min_rating" value=""
+                               {% if not cur_rating %}checked{% endif %}
+                               onchange="document.getElementById('filterForm').submit()">
+                        Any
+                    </label>
+                </div>
+
+                {# ---- Brand filter ---- #}
+                {% if brand_counts %}
+                <div class="filter-group" style="margin-bottom:14px;">
+                    <h4 style="font-size:13px;font-weight:700;margin:0 0 6px 0;">Brand</h4>
+                    {% set cur_brand = args.get('brand','') %}
+                    <label style="display:block;font-size:13px;margin:3px 0;cursor:pointer;">
+                        <input type="radio" name="brand" value=""
+                               {% if not cur_brand %}checked{% endif %}
+                               onchange="document.getElementById('filterForm').submit()">
+                        Any brand
+                    </label>
+                    {% for b, cnt in brand_counts %}
+                    <label style="display:block;font-size:13px;margin:3px 0;cursor:pointer;">
+                        <input type="radio" name="brand" value="{{ b }}"
+                               {% if cur_brand == b %}checked{% endif %}
+                               onchange="document.getElementById('filterForm').submit()">
+                        {{ b }} <span style="color:#888;">({{ cnt }})</span>
+                    </label>
+                    {% endfor %}
+                </div>
+                {% endif %}
+
+                <noscript><button type="submit" class="btn-primary" style="width:100%;">Apply filters</button></noscript>
+            </form>
+        </aside>
+
+        {# =========== RESULTS =========== #}
+        <div>
+            {% if results %}
+            {% for prop in results %}
+            <div class="property-card">
+                <div class="property-card-img">
+                    {% if prop.image %}
+                    <img src="{{ prop.image }}" alt="{{ prop.name }}"
+                         onerror="this.parentElement.innerHTML='<div style=&quot;background:linear-gradient(135deg,#003580,#006ce4);width:100%;height:100%;&quot;></div>'">
+                    {% endif %}
+                </div>
+                <div class="property-card-body">
+                    <div class="property-card-header">
+                        <div>
+                            <h3 class="property-card-title">
+                                <a href="{{ url_for('property_detail', slug=prop.slug, checkin=q_checkin, checkout=q_checkout) }}">{{ prop.name }}</a>
+                            </h3>
+                            <div class="stars">{% for i in range(prop.stars) %}&#9733;{% endfor %}</div>
+                            <div class="neighborhood">{{ prop.neighborhood }} &middot; {{ prop.city.display }}{% if prop.brand %} &middot; <span style="color:#006ce4;">{{ prop.brand }}</span>{% endif %}</div>
+                            {% if prop.miles_from_query is not none and miles_label_name %}
+                            <div class="distance-from-landmark" style="margin-top:4px;font-size:13px;color:#262626;display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
+                                <span style="color:#262626;">{{ '%.1f' % prop.miles_from_query }} miles from {{ miles_label_name }}</span>
+                                {% if miles_label_subway %}
+                                <span class="subway-pill" style="display:inline-flex;align-items:center;gap:3px;background:#ebf3ff;color:#0071c2;border:1px solid #d0e3ff;border-radius:3px;padding:1px 6px;font-size:11px;font-weight:600;">
+                                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="display:inline-block;"><circle cx="12" cy="12" r="10"></circle><path d="M8 12h8M8 8h8M8 16h8"></path></svg>
+                                    Subway Access
+                                </span>
+                                {% endif %}
+                            </div>
+                            {% endif %}
+                            {% if show_beach_sort and sort == 'distance_beach' and prop.miles_from_beach is not none and prop.beach_name %}
+                            <div class="distance-from-beach" style="margin-top:4px;font-size:13px;color:#262626;">
+                                <span style="color:#262626;">{{ '%.1f' % prop.miles_from_beach }} miles from {{ prop.beach_name }}</span>
+                            </div>
+                            {% endif %}
+                            <p class="short-desc">{{ prop.short_desc }}</p>
+                            <div style="margin-top:4px;font-size:12px;color:#555;">
+                                {% if prop.free_cancellation %}<span style="color:#008009;">&#10003; Free cancellation</span>{% endif %}
+                                {% if prop.breakfast_included %} &middot; <span>Breakfast included</span>{% endif %}
+                                {% if prop.has_wifi %} &middot; <span>Free WiFi</span>{% endif %}
+                                {% if prop.has_pool %} &middot; <span>Pool</span>{% endif %}
+                                {% if prop.has_gym %} &middot; <span>Fitness center</span>{% endif %}
+                                {% if prop.has_airport_shuttle %} &middot; <span>Airport shuttle</span>{% endif %}
+                                {% if prop.has_bicycle_rental %} &middot; <span>Bicycle rental</span>{% endif %}
+                            </div>
+                        </div>
+                        <div class="rating-box">
+                            <div class="rating-text">
+                                <span class="label">{{ prop.rating_label }}</span>
+                                <span class="count">{{ prop.review_count }}</span>
+                            </div>
+                            <div class="rating-score">{{ prop.rating }}</div>
+                        </div>
+                    </div>
+                    <div class="property-card-footer">
+                        <span class="price">${{ '%.0f' % prop.discounted_price }}</span>
+                        <div class="price-includes">per night
+                            {% if currency_code == 'CNY' %}
+                                <span style="color:#444;"> &asymp; &yen;{{ '%.0f' % (prop.discounted_price * currency_rate) }}</span>
+                            {% endif %}
+                        </div>
+                        <a href="{{ url_for('property_detail', slug=prop.slug, checkin=q_checkin, checkout=q_checkout) }}" class="btn-availability">See availability &rarr;</a>
+                        {% if current_user.is_authenticated and q_checkin and q_checkout %}
+                        <form method="POST" action="{{ url_for('cart_add_form', property_id=prop.id) }}" style="display:inline-block;margin-left:6px;">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token_value }}">
+                            <input type="hidden" name="check_in" value="{{ q_checkin }}">
+                            <input type="hidden" name="check_out" value="{{ q_checkout }}">
+                            <input type="hidden" name="adults" value="{{ adults }}">
+                            <input type="hidden" name="rooms" value="{{ rooms }}">
+                            <input type="hidden" name="room_type" value="Standard Double Room">
+                            <button type="submit" class="btn-primary" style="padding:8px 12px;font-size:12px;">Reserve</button>
+                        </form>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+            {% elif not empty_destination %}
+            <div class="empty-state">
+                <h2>No properties found</h2>
+                <p>Try a different keyword or browse all <a href="{{ url_for('stays') }}">stays</a>.</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

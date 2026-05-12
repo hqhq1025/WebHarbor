@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block title %}Cheap flight deals | Google Flights{% endblock %}
+
+{% block content %}
+<section class="hero">
+  <h1>Today's flight deals</h1>
+  <p class="hero-subtitle">Hand-picked low fares from popular airlines</p>
+</section>
+
+<div class="section">
+  <div class="deal-grid">
+    {% for f in flights %}
+      <a href="{{ url_for('flight_detail', flight_id=f.id) }}" class="deal-card">
+        <div class="deal-image">
+          {% if f.destination.image %}
+            <img src="{{ f.destination.image }}" alt="{{ f.destination.city }}" onerror="this.style.display='none'">
+          {% else %}
+            <div style="width:100%;height:100%;background:linear-gradient(135deg,var(--g-blue),var(--g-green));"></div>
+          {% endif %}
+        </div>
+        <div class="deal-body">
+          <div class="deal-route">{{ f.origin.city }} - {{ f.destination.city }}</div>
+          <div class="deal-dates">{{ f.departure_date|datefmt }} &middot; {{ f.airline }}</div>
+          <div class="deal-stops">{{ f.stops_str }} &middot; {{ f.duration_str }}</div>
+          <div class="deal-price"><span class="deal-price-label">from</span> {{ f.price|money }}</div>
+        </div>
+      </a>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}

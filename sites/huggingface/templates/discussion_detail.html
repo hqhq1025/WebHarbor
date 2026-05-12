@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% block title %}{{ discussion.title }} – {{ repo.slug }}{% endblock %}
+
+{% block content %}
+<div class="container-wide page">
+    <a class="back-link" href="{{ url_for('repo_discussions', author=repo.slug.split('/')[0], name=repo.slug.split('/')[1]) }}">← All discussions</a>
+    <div class="discussion-head">
+        <span class="tag tag-blue">{{ discussion.kind }}</span>
+        <h1>{{ discussion.title }}</h1>
+        <div class="discussion-meta">by {{ discussion.author.username if discussion.author else 'unknown' }} · {{ discussion.created_at.strftime('%b %d, %Y') }}</div>
+    </div>
+
+    <div class="discussion-body-card">
+        <p>{{ discussion.body }}</p>
+        <div class="discussion-upvote-row">
+            <button class="btn btn-sm btn-outline" data-upvote data-discussion-id="{{ discussion.id }}">
+                ♥ <span data-upvote-count>{{ discussion.upvotes }}</span>
+            </button>
+            {% if current_user.is_authenticated and current_user.id == discussion.user_id %}
+            <form method="post" action="{{ url_for('discussion_delete', discussion_id=discussion.id) }}" style="display:inline;">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button class="btn btn-sm btn-danger" type="submit">Delete</button>
+            </form>
+            {% endif %}
+        </div>
+    </div>
+
+    <h3>Replies ({{ replies|length }})</h3>
+    {% for r in replies %}
+    <div class="reply-card">
+        <strong>{{ r.user.username if r.user else 'unknown' }}</strong>
+        <p>{{ r.body }}</p>
+        <div class="discussion-meta">{{ r.created_at.strftime('%b %d, %Y %H:%M') }}</div>
+    </div>
+    {% else %}
+    <p class="muted">No replies yet.</p>
+    {% endfor %}
+
+    {% if current_user.is_authenticated %}
+    <form method="post" class="reply-form">
+        {{ reply_form.hidden_tag() }}
+        <div class="form-group">
+            <label>Add a reply</label>
+            {{ reply_form.body(class="form-control", rows=4) }}
+        </div>
+        <button class="btn btn-primary" type="submit">Post reply</button>
+    </form>
+    {% else %}
+    <p><a href="{{ url_for('login') }}">Log in</a> to reply.</p>
+    {% endif %}
+</div>
+{% endblock %}

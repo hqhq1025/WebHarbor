@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+{% block title %}Settings - Google Maps{% endblock %}
+
+{% block body %}
+<div class="topbar">
+    <a href="{{ url_for('index') }}" class="brand">
+        <span class="material-icons-outlined" style="font-size:26px;color:#ea4335;">place</span>
+        <span>Google Maps</span>
+    </a>
+    <div class="nav-links">
+        <a href="{{ url_for('index') }}" class="nav-link">Back to map</a>
+        <a href="{{ url_for('help_page') }}" class="nav-link">Help</a>
+    </div>
+</div>
+
+<div class="page narrow">
+    <h1>Search Settings</h1>
+    <p class="page-sub">Customize your Google Maps experience.</p>
+
+    <div class="card" style="padding:28px; margin-top:24px;">
+        <h2 style="font-size:18px; margin-bottom:16px;">Distance units</h2>
+        <div style="margin-bottom:20px;">
+            <label style="display:block;margin-bottom:8px;">
+                <input type="radio" name="units" value="km" checked> Kilometers (km)
+            </label>
+            <label style="display:block;margin-bottom:8px;">
+                <input type="radio" name="units" value="mi"> Miles (mi)
+            </label>
+        </div>
+
+        <h2 style="font-size:18px; margin-bottom:16px;">Language</h2>
+        <div style="margin-bottom:20px;">
+            <select style="padding:8px 12px; border:1px solid #dadce0; border-radius:8px; font-size:14px; width:100%; max-width:300px;">
+                <option value="en" selected>English</option>
+                <option value="es">Espanol</option>
+                <option value="fr">Francais</option>
+                <option value="de">Deutsch</option>
+                <option value="ja">Japanese</option>
+                <option value="zh">Chinese</option>
+                <option value="ko">Korean</option>
+                <option value="pt">Portuguese</option>
+                <option value="it">Italiano</option>
+                <option value="ar">Arabic</option>
+            </select>
+        </div>
+
+        <h2 style="font-size:18px; margin-bottom:16px;">Default location</h2>
+        <div style="margin-bottom:20px;">
+            <input type="text" placeholder="Enter your home or work address" value=""
+                   style="padding:8px 12px; border:1px solid #dadce0; border-radius:8px; font-size:14px; width:100%; max-width:400px;">
+        </div>
+
+        <h2 style="font-size:18px; margin-bottom:16px;">Map type</h2>
+        <div style="margin-bottom:20px;">
+            <label style="display:block;margin-bottom:8px;">
+                <input type="radio" name="map_type" value="default" checked> Default
+            </label>
+            <label style="display:block;margin-bottom:8px;">
+                <input type="radio" name="map_type" value="satellite"> Satellite
+            </label>
+            <label style="display:block;margin-bottom:8px;">
+                <input type="radio" name="map_type" value="terrain"> Terrain
+            </label>
+        </div>
+
+        <h2 style="font-size:18px; margin-bottom:16px;">Accessibility</h2>
+        <div style="margin-bottom:20px;">
+            <label style="display:block;margin-bottom:8px;">
+                <input type="checkbox" name="wheelchair"> Prefer wheelchair-accessible routes
+            </label>
+        </div>
+
+        <button onclick="alert('Settings saved (demo mode)')" style="padding:10px 24px; background:#1a73e8; color:#fff; border:none; border-radius:24px; font-size:14px; cursor:pointer;">
+            Save settings
+        </button>
+    </div>
+</div>
+{% endblock %}

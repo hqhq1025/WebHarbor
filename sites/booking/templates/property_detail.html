@@ -1,0 +1,342 @@
+{% extends "base.html" %}
+{% block title %}{{ property.name }} — Booking{% endblock %}
+{% block content %}
+<div class="container">
+
+    <div class="pd-header">
+        <div class="pd-breadcrumb">
+            <a href="{{ url_for('index') }}">Home</a> &rsaquo;
+            <a href="{{ url_for('stays') }}">Stays</a> &rsaquo;
+            <a href="{{ url_for('city_page', slug=property.city.slug) }}">{{ property.city.display }}</a> &rsaquo;
+            {{ property.name }}
+        </div>
+        <div class="pd-title-row">
+            <div>
+                <div class="pd-title">
+                    {{ property.name }}
+                    <span class="stars">{% for i in range(property.stars) %}&#9733;{% endfor %}</span>
+                    {% if property.is_genius_deal %}<span class="badge badge-genius">GENIUS</span>{% endif %}
+                </div>
+                <a href="#" class="pd-address">&#128205; {{ property.address }}</a> &middot;
+                <span style="font-size:13px;color:#006ce4;">Excellent location — {{ property.distance_from_center }} km from centre</span>
+                {% if property.brand and property.brand != 'Independent' %}
+                &middot; <span style="font-size:13px;color:#444;">Part of the <strong>{{ property.brand }}</strong> family</span>
+                {% endif %}
+            </div>
+            <div class="pd-actions">
+                {% if current_user.is_authenticated %}
+                <form method="POST" action="{{ url_for('saved_toggle_form', property_id=property.id) }}" style="display:inline;">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token_value }}">
+                    <input type="hidden" name="next" value="{{ request.url }}">
+                    <button type="submit" class="btn-secondary {% if is_saved %}saved{% endif %}" id="saveBtn">
+                        {% if is_saved %}&#9829; Saved{% else %}&#9825; Save{% endif %}
+                    </button>
+                </form>
+                {% endif %}
+                <a href="#rooms" class="btn-primary">Reserve</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Gallery -->
+    {% set gallery = property.get_gallery() %}
+    {% if gallery %}
+    <div class="pd-gallery">
+        <img src="{{ gallery[0] }}" alt="{{ property.name }}" class="pd-gallery-main"
+             onerror="this.style.background='linear-gradient(135deg,#003580,#006ce4)';this.alt=''">
+        {% for img in gallery[1:5] %}
+        <img src="{{ img }}" alt="{{ property.name }} photo {{ loop.index + 1 }}"
+             onerror="this.style.background='linear-gradient(135deg,#003580,#006ce4)';this.alt=''">
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <div class="pd-grid">
+        <div>
+            <!-- Description -->
+            <div class="pd-section">
+                <h2>About this property</h2>
+                <p class="pd-description">{{ property.description }}</p>
+                <p class="pd-description"><strong>{{ property.name }}</strong> offers guests {{ property.get_rooms() | length }} room types, ranging from comfortable standard rooms to spacious suites. The property is rated <strong>{{ property.rating_label }}</strong> with a {{ property.rating }}/10 score from {{ property.review_count }} reviews.</p>
+            </div>
+
+            <!-- Gallery sections - multiple -->
+            {% if gallery|length > 5 %}
+            <div class="pd-section">
+                <h2>Photos of the property</h2>
+
+                <div class="pd-gallery-section">
+                    <h3>Exterior & views</h3>
+                    <p>Beautiful architecture and surroundings that welcome you to {{ property.city.display }}.</p>
+                    <div class="pd-gallery-images">
+                        {% for img in gallery[5:8] %}
+                        <div class="pd-gallery-img">
+                            <img src="{{ img }}" alt="exterior"
+                                 onerror="this.parentElement.style.background='linear-gradient(135deg,#003580,#006ce4)';this.parentElement.innerHTML='';">
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                {% if gallery|length > 8 %}
+                <div class="pd-gallery-section alt">
+                    <h3>Rooms & suites</h3>
+                    <p>Comfortable, well-appointed rooms featuring plush bedding and modern amenities.</p>
+                    <div class="pd-gallery-images">
+                        {% for img in gallery[8:11] %}
+                        <div class="pd-gallery-img">
+                            <img src="{{ img }}" alt="room"
+                                 onerror="this.parentElement.style.background='linear-gradient(135deg,#003580,#006ce4)';this.parentElement.innerHTML='';">
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+
+                {% if gallery|length > 11 %}
+                <div class="pd-gallery-section">
+                    <h3>Amenities & facilities</h3>
+                    <p>Everything you need for a relaxing and enjoyable stay.</p>
+                    <div class="pd-gallery-images">
+                        {% for img in gallery[11:] %}
+                        <div class="pd-gallery-img">
+                            <img src="{{ img }}" alt="amenity"
+                                 onerror="this.parentElement.style.background='linear-gradient(135deg,#003580,#006ce4)';this.parentElement.innerHTML='';">
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+            {% endif %}
+
+            <!-- Amenities -->
+            <div class="pd-section">
+                <h2>Most popular facilities</h2>
+                <ul class="amenity-list">
+                    {% for amenity in property.get_amenities() %}
+                    <li><span class="check">&#10003;</span> {{ amenity }}</li>
+                    {% endfor %}
+                </ul>
+            </div>
+
+            <!-- Rooms -->
+            <div class="pd-section" id="rooms">
+                <h2>Available rooms</h2>
+                <table class="room-table">
+                    <thead>
+                        <tr>
+                            <th>Room type</th>
+                            <th>Number of guests</th>
+                            <th>Today's price</th>
+                            <th>Your choices</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for room in property.get_rooms() %}
+                        <tr>
+                            <td>
+                                <div class="room-name">{{ room.name }}</div>
+                                <div class="room-beds">{{ room.beds }}</div>
+                            </td>
+                            <td>Sleeps {{ room.sleeps }}</td>
+                            <td><div class="room-price">${{ '%.0f' % room.price }}</div>
+                                <div style="font-size:11px;color:#6b6b6b;">Includes taxes & fees</div>
+                            </td>
+                            <td>
+                                {% if property.free_cancellation %}
+                                <div style="color:#008009;font-size:12px;font-weight:700;">&#10003; Free cancellation</div>
+                                {% endif %}
+                                {% if property.breakfast_included %}
+                                <div style="color:#008009;font-size:12px;">&#10003; Breakfast included</div>
+                                {% endif %}
+                                {% if current_user.is_authenticated %}
+                                <form method="POST" action="{{ url_for('cart_add_form', property_id=property.id) }}" style="margin-top:8px;">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token_value }}">
+                                    <input type="hidden" name="room_type" value="{{ room.name }}">
+                                    <input type="hidden" name="check_in" id="roomCheckIn_{{ loop.index }}" value="{{ default_checkin }}">
+                                    <input type="hidden" name="check_out" id="roomCheckOut_{{ loop.index }}" value="{{ default_checkout }}">
+                                    <input type="hidden" name="adults" value="2">
+                                    <input type="hidden" name="rooms" value="1">
+                                    <button type="submit" class="btn-primary" style="padding:8px 14px;font-size:13px;">Reserve</button>
+                                </form>
+                                {% else %}
+                                <a href="{{ url_for('login') }}" class="btn-primary" style="display:inline-block;margin-top:8px;padding:8px 14px;font-size:13px;">Reserve</a>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Reviews -->
+            <div class="pd-section" id="reviews">
+                <h2>Guest reviews</h2>
+                <div class="reviews-summary">
+                    <div class="score">{{ avg_rating }}</div>
+                    <div>
+                        <div class="label-big">{{ property.rating_label }}</div>
+                        <div class="count-small">Based on {{ property.review_count }} reviews</div>
+                    </div>
+                    {% if current_user.is_authenticated %}
+                    <a href="{{ url_for('submit_review', slug=property.slug) }}" class="btn-secondary" style="margin-left:auto;">Write a review</a>
+                    {% endif %}
+                </div>
+
+                {% if review_scores %}
+                <div class="review-categories" style="background:#f5f5f5;border-radius:8px;padding:14px;margin:12px 0;">
+                    <h3 style="font-size:14px;margin:0 0 10px 0;">Categories</h3>
+                    <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px 24px;">
+                        {% for cat, score in review_scores.items() %}
+                        <div style="display:flex;align-items:center;justify-content:space-between;font-size:13px;">
+                            <span>{{ cat }}</span>
+                            <span style="display:flex;align-items:center;gap:8px;">
+                                <span style="background:#e7e7e7;width:80px;height:6px;border-radius:3px;overflow:hidden;display:inline-block;">
+                                    <span style="background:#003580;display:block;height:100%;width:{{ (score*10)|round(0,'floor')|int }}%;"></span>
+                                </span>
+                                <strong class="cat-score {% if score >= 9.0 %}cat-score-high{% else %}cat-score-low{% endif %}" data-category="{{ cat }}" data-score="{{ score }}">{{ '%.1f'|format(score) }}</strong>
+                            </span>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    <div style="margin-top:12px;font-size:12px;color:#444;">
+                        <div><strong>Categories above 9.0:</strong>
+                        {% if review_scores_high %}
+                            {% for cat, score in review_scores_high.items() %}{{ cat }} ({{ '%.1f'|format(score) }}){{ ', ' if not loop.last }}{% endfor %}
+                        {% else %}
+                            None
+                        {% endif %}
+                        </div>
+                        <div><strong>Categories below 9.0:</strong>
+                        {% if review_scores_low %}
+                            {% for cat, score in review_scores_low.items() %}{{ cat }} ({{ '%.1f'|format(score) }}){{ ', ' if not loop.last }}{% endfor %}
+                        {% else %}
+                            None
+                        {% endif %}
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+
+                <div class="reviews-section">
+                {% if reviews %}
+                    {% for r in reviews %}
+                    <div class="review-card">
+                        <div class="review-header">
+                            <div class="reviewer-avatar">{{ (r.user.first_name or 'G')[0] }}</div>
+                            <div>
+                                <div class="reviewer-name">{{ r.user.first_name }} {{ r.user.last_name[0] if r.user.last_name else '' }}.</div>
+                                <div class="reviewer-type">{{ r.traveller_type }} &middot; {{ r.stay_length }} night stay</div>
+                            </div>
+                            <div class="review-score-small">{{ r.rating }}</div>
+                        </div>
+                        {% if r.title %}<div class="review-title">{{ r.title }}</div>{% endif %}
+                        {% if r.body_positive %}<div class="review-body positive">{{ r.body_positive }}</div>{% endif %}
+                        {% if r.body_negative %}<div class="review-body negative">{{ r.body_negative }}</div>{% endif %}
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <p class="text-muted">No reviews yet. Be the first to review!</p>
+                {% endif %}
+                </div>
+            </div>
+
+            <!-- Similar -->
+            {% if similar %}
+            <div class="pd-section">
+                <h2>Similar properties nearby</h2>
+                <div class="card-grid cards-4">
+                    {% for prop in similar %}
+                    <a href="{{ url_for('property_detail', slug=prop.slug) }}" class="city-card">
+                        {% if prop.image %}
+                        <img src="{{ prop.image }}" alt="{{ prop.name }}" class="city-card-img"
+                             onerror="this.style.background='linear-gradient(135deg,#003580,#006ce4)';this.alt=''">
+                        {% endif %}
+                        <div class="city-card-body">
+                            <h3>{{ prop.name }}</h3>
+                            <span class="flag">{{ prop.neighborhood }}</span>
+                            <div style="margin-top:4px;">
+                                <strong>${{ '%.0f' % prop.discounted_price }}</strong>
+                                <span style="font-size:11px;color:#6b6b6b;">/night</span>
+                            </div>
+                        </div>
+                    </a>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Booking widget -->
+        <aside>
+            <div class="booking-widget">
+                <div class="rating-big">{{ avg_rating }}</div>
+                <div class="rating-label">{{ property.rating_label }}</div>
+                <div class="rating-count">{{ property.review_count }} reviews</div>
+                <hr>
+
+                <div class="price-line">Starting from</div>
+                {% if property.discount_percent > 0 %}
+                <div>
+                    <span class="price-strikethrough">${{ '%.0f' % property.price_per_night }}</span>
+                    <span class="badge badge-discount">-{{ property.discount_percent }}%</span>
+                </div>
+                {% endif %}
+                <div style="font-size:28px;font-weight:800;">${{ '%.0f' % property.discounted_price }}
+                    <span style="font-size:12px;font-weight:400;color:#6b6b6b;">/night</span>
+                </div>
+                {% if currency_code != 'USD' %}
+                <div style="font-size:13px;color:#444;margin-top:4px;">
+                    &asymp; {{ currency_symbol }}{{ '%.0f' % (property.discounted_price * currency_rate) }} {{ currency_code }}/night
+                </div>
+                {% endif %}
+                <div style="font-size:11px;color:#888;margin-top:4px;">
+                    Other currencies:
+                    &yen;{{ '%.0f' % (property.discounted_price * 7.2) }} CNY &middot;
+                    &euro;{{ '%.0f' % (property.discounted_price * 0.92) }} EUR &middot;
+                    &pound;{{ '%.0f' % (property.discounted_price * 0.79) }} GBP
+                </div>
+
+                <hr>
+                <div class="form-field">
+                    <label>Check-in</label>
+                    <input type="text" id="checkIn" value="{{ default_checkin }}" maxlength="10" inputmode="numeric" pattern="\d{4}-\d{2}-\d{2}" placeholder="YYYY-MM-DD" autocomplete="off" data-datepicker="checkin">
+                </div>
+                <div class="form-field">
+                    <label>Check-out</label>
+                    <input type="text" id="checkOut" value="{{ default_checkout }}" maxlength="10" inputmode="numeric" pattern="\d{4}-\d{2}-\d{2}" placeholder="YYYY-MM-DD" autocomplete="off" data-datepicker="checkout">
+                </div>
+                <div class="form-field">
+                    <label>Guests</label>
+                    <select id="guests">
+                        <option value="1">1 adult</option>
+                        <option value="2" selected>2 adults</option>
+                        <option value="3">3 adults</option>
+                        <option value="4">4 adults</option>
+                    </select>
+                </div>
+
+                {% if current_user.is_authenticated %}
+                <form method="POST" action="{{ url_for('cart_add_form', property_id=property.id) }}" id="widgetReserveForm">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token_value }}">
+                    <input type="hidden" name="room_type" value="Standard Double Room">
+                    <input type="hidden" name="check_in" id="widgetCheckIn" value="{{ default_checkin }}">
+                    <input type="hidden" name="check_out" id="widgetCheckOut" value="{{ default_checkout }}">
+                    <input type="hidden" name="adults" id="widgetAdults" value="2">
+                    <input type="hidden" name="rooms" value="1">
+                    <button type="submit" class="btn-primary" style="width:100%;margin-top:12px;">Reserve now</button>
+                </form>
+                {% else %}
+                <a href="{{ url_for('login') }}" class="btn-primary" style="display:block;text-align:center;margin-top:12px;">Sign in to reserve</a>
+                {% endif %}
+                {% if property.free_cancellation %}
+                <p style="font-size:11px;color:#008009;margin-top:8px;text-align:center;">
+                    &#10003; Free cancellation available
+                </p>
+                {% endif %}
+            </div>
+        </aside>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,249 @@
+{% extends "base.html" %}
+
+{% block content %}
+<section class="hero">
+    <div class="hero-inner">
+        <h1>Find your next stay</h1>
+        <p>Search low prices on hotels, homes and much more...</p>
+    </div>
+    <form class="search-bar" action="{{ url_for('search') }}" method="get">
+        <div class="search-field">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
+            <input type="text" name="q" placeholder="Where are you going?" autocomplete="off" required minlength="2">
+        </div>
+        <div class="search-field">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+            <input type="text" name="checkin" maxlength="10" inputmode="numeric" pattern="\d{4}-\d{2}-\d{2}" placeholder="YYYY-MM-DD" autocomplete="off" data-datepicker="checkin">
+        </div>
+        <div class="search-field">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+            <input type="text" name="checkout" maxlength="10" inputmode="numeric" pattern="\d{4}-\d{2}-\d{2}" placeholder="YYYY-MM-DD" autocomplete="off" data-datepicker="checkout">
+        </div>
+        <div class="search-field">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+            <select name="adults">
+                <option value="1">1 adult</option>
+                <option value="2" selected>2 adults</option>
+                <option value="3">3 adults</option>
+                <option value="4">4 adults</option>
+            </select>
+        </div>
+        <button class="search-submit" type="submit">Search</button>
+    </form>
+</section>
+
+<div class="container">
+
+    <!-- Offers banner -->
+    <section class="section">
+        <div class="offer-banner">
+            <div>
+                <h2>Genius loyalty programme</h2>
+                <p>Save 10% or more at participating properties — you'll also get access to Genius travel rewards.</p>
+                <a href="{{ url_for('genius') }}" class="btn-primary">Find out more</a>
+            </div>
+            <div class="badge-big">GENIUS</div>
+        </div>
+    </section>
+
+    <!-- Trending cities -->
+    <section class="section">
+        <div class="section-header">
+            <h2>Trending destinations</h2>
+            <p>Most popular choices for travellers from around the world</p>
+        </div>
+        <div class="card-grid cards-4">
+            {% for city in trending_cities %}
+            <a href="{{ url_for('city_page', slug=city.slug) }}" class="city-card">
+                {% if city.hero_image %}
+                <img src="{{ city.hero_image }}" alt="{{ city.display }}" class="city-card-img"
+                     onerror="this.style.background='linear-gradient(135deg, #003580, #006ce4)';this.alt=''">
+                {% else %}
+                <div class="city-card-img" style="background:linear-gradient(135deg,#003580,#006ce4)"></div>
+                {% endif %}
+                <div class="city-card-body">
+                    <h3>{{ city.display }} &nbsp;<span style="font-size:12px;">&#128205;</span></h3>
+                    <span class="flag">{{ city.country }}</span>
+                </div>
+            </a>
+            {% endfor %}
+        </div>
+    </section>
+
+    <!-- Browse by property type -->
+    <section class="section">
+        <div class="section-header">
+            <h2>Browse by property type</h2>
+        </div>
+        <div class="card-grid cards-4">
+            {% for pt in property_types %}
+            <a href="{{ url_for('property_type_page', slug=pt.slug) }}" class="category-tile">
+                <div class="icon">
+                    {% if pt.slug == 'hotels' %}&#127976;
+                    {% elif pt.slug == 'apartments' %}&#127970;
+                    {% elif pt.slug == 'resorts' %}&#127958;
+                    {% elif pt.slug == 'villas' %}&#127969;
+                    {% elif pt.slug == 'b-and-bs' %}&#128716;
+                    {% elif pt.slug == 'hostels' %}&#128719;
+                    {% elif pt.slug == 'guesthouses' %}&#127979;
+                    {% elif pt.slug == 'cabins' %}&#127957;
+                    {% endif %}
+                </div>
+                <h4>{{ pt.name }}</h4>
+                <p>{{ pt.description }}</p>
+            </a>
+            {% endfor %}
+        </div>
+    </section>
+
+    <!-- Destination categories (trip types) -->
+    <section class="section">
+        <div class="section-header">
+            <h2>Quick and easy trip planner</h2>
+            <p>Pick a vibe and explore the top destinations</p>
+        </div>
+        <div class="card-grid cards-4">
+            {% for cat in dest_categories %}
+            <a href="{{ url_for('category_page', slug=cat.slug) }}" class="category-tile">
+                <div class="icon">
+                    {% if cat.slug == 'beach' %}&#127958;
+                    {% elif cat.slug == 'city-breaks' %}&#127961;
+                    {% elif cat.slug == 'ski' %}&#9924;
+                    {% elif cat.slug == 'nature' %}&#127794;
+                    {% elif cat.slug == 'luxury' %}&#128081;
+                    {% elif cat.slug == 'family' %}&#128106;
+                    {% elif cat.slug == 'romantic' %}&#128147;
+                    {% elif cat.slug == 'business' %}&#128188;
+                    {% endif %}
+                </div>
+                <h4>{{ cat.name }}</h4>
+                <p>{{ cat.description }}</p>
+            </a>
+            {% endfor %}
+        </div>
+    </section>
+
+    <!-- Featured stays -->
+    <section class="section">
+        <div class="section-header">
+            <h2>Our top-rated stays</h2>
+            <p>Hand-picked properties our guests love</p>
+        </div>
+        {% for prop in featured %}
+        <div class="property-card">
+            <div class="property-card-img">
+                {% if prop.image %}
+                <img src="{{ prop.image }}" alt="{{ prop.name }}"
+                     onerror="this.parentElement.innerHTML='<div style=&quot;background:linear-gradient(135deg,#003580,#006ce4);width:100%;height:100%;display:flex;align-items:center;justify-content:center;color:#fff;font-size:14px;padding:10px;text-align:center;&quot;>{{ prop.name }}</div>'">
+                {% endif %}
+                {% if current_user.is_authenticated %}
+                <form method="POST" action="{{ url_for('saved_toggle_form', property_id=prop.id) }}" style="position:absolute;top:8px;right:8px;">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token_value }}">
+                    <input type="hidden" name="next" value="{{ request.url }}">
+                    <button type="submit" class="save-btn">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg>
+                    </button>
+                </form>
+                {% endif %}
+            </div>
+            <div class="property-card-body">
+                <div class="property-card-header">
+                    <div>
+                        <h3 class="property-card-title">
+                            <a href="{{ url_for('property_detail', slug=prop.slug) }}">{{ prop.name }}</a>
+                        </h3>
+                        <div class="stars">
+                            {% for i in range(prop.stars) %}&#9733;{% endfor %}
+                        </div>
+                        <a href="{{ url_for('city_page', slug=prop.city.slug) }}" class="location">{{ prop.city.display }}, {{ prop.city.country }}</a>
+                        <div class="neighborhood">{{ prop.neighborhood }} &middot; {{ prop.distance_from_center }} km from centre</div>
+                        {% if prop.is_genius_deal %}<span class="badge badge-genius">GENIUS</span>{% endif %}
+                        {% if prop.breakfast_included %}<span class="badge badge-deal">Breakfast included</span>{% endif %}
+                        <p class="short-desc">{{ prop.short_desc }}</p>
+                    </div>
+                    <div class="rating-box">
+                        <div class="rating-text">
+                            <span class="label">{{ prop.rating_label }}</span>
+                            <span class="count">{{ prop.review_count }} reviews</span>
+                        </div>
+                        <div class="rating-score">{{ prop.rating }}</div>
+                    </div>
+                </div>
+                <div class="property-card-footer">
+                    <div class="price-line">1 night, 2 adults</div>
+                    {% if prop.discount_percent > 0 %}
+                    <span class="price-strikethrough">${{ '%.0f' % prop.price_per_night }}</span>
+                    {% endif %}
+                    <span class="price">${{ '%.0f' % prop.discounted_price }}</span>
+                    <div class="price-includes">Includes taxes and fees</div>
+                    <a href="{{ url_for('property_detail', slug=prop.slug) }}" class="btn-availability">See availability &rarr;</a>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </section>
+
+    <!-- Genius deals grid -->
+    {% if genius_deals %}
+    <section class="section">
+        <div class="section-header">
+            <h2>Deals for the weekend</h2>
+            <p>Save 15% or more at these properties</p>
+        </div>
+        <div class="card-grid cards-4">
+            {% for prop in genius_deals %}
+            <a href="{{ url_for('property_detail', slug=prop.slug) }}" class="city-card">
+                {% if prop.image %}
+                <img src="{{ prop.image }}" alt="{{ prop.name }}" class="city-card-img"
+                     onerror="this.style.background='linear-gradient(135deg,#003580,#006ce4)';this.alt=''">
+                {% endif %}
+                <div class="city-card-body">
+                    <h3>{{ prop.name }}</h3>
+                    <span class="flag">{{ prop.city.display }}</span>
+                    <div style="margin-top:8px;">
+                        <span class="badge badge-discount">-{{ prop.discount_percent }}%</span>
+                        <strong style="margin-left:6px;">${{ '%.0f' % prop.discounted_price }}</strong>
+                        <span class="text-muted" style="font-size:12px;"> /night</span>
+                    </div>
+                </div>
+            </a>
+            {% endfor %}
+        </div>
+    </section>
+    {% endif %}
+
+    <!-- Travel inspiration / articles -->
+    <section class="section">
+        <div class="section-header">
+            <h2>Travel inspiration</h2>
+            <p>Editorial reads from our travel team &mdash; <a href="{{ url_for('articles_index') }}">browse all articles &rarr;</a></p>
+        </div>
+        <div class="card-grid cards-3">
+            <a href="{{ url_for('article_detail', slug='top-5-european-cities-food-lovers') }}" class="city-card">
+                <img src="/static/images/gallery/paris/paris_1.jpg" alt="European food cities" class="city-card-img"
+                     onerror="this.style.background='linear-gradient(135deg,#003580,#006ce4)';this.alt=''">
+                <div class="city-card-body">
+                    <h3>Top 5 European Cities for Food Lovers</h3>
+                    <span class="flag">Paris, Rome, Lisbon &amp; more</span>
+                </div>
+            </a>
+            <a href="{{ url_for('article_detail', slug='asia-on-a-budget') }}" class="city-card">
+                <img src="/static/images/gallery/bali/bali_1.jpg" alt="Asia on a budget" class="city-card-img"
+                     onerror="this.style.background='linear-gradient(135deg,#003580,#006ce4)';this.alt=''">
+                <div class="city-card-body">
+                    <h3>Asia on a Budget: 10 Nights Under $60 a Day</h3>
+                    <span class="flag">Bali &middot; Bangkok &middot; Singapore</span>
+                </div>
+            </a>
+            <a href="{{ url_for('article_detail', slug='romantic-city-breaks') }}" class="city-card">
+                <img src="/static/images/gallery/paris/paris_2.jpg" alt="Romantic city breaks" class="city-card-img"
+                     onerror="this.style.background='linear-gradient(135deg,#003580,#006ce4)';this.alt=''">
+                <div class="city-card-body">
+                    <h3>Seven Romantic City Breaks for Couples</h3>
+                    <span class="flag">Paris, Rome, Vienna, Amsterdam</span>
+                </div>
+            </a>
+        </div>
+    </section>
+</div>
+{% endblock %}

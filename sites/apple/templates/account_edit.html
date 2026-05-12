@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% block title %}Edit Profile - Apple{% endblock %}
+
+{% block content %}
+<div class="auth-page" style="max-width:500px">
+    <a href="{{ url_for('account') }}" style="font-size:14px;margin-bottom:16px;display:inline-block">&lsaquo; Back to Account</a>
+    <h1>Edit Profile</h1>
+    <p class="auth-subtitle">Update your personal information.</p>
+
+    <form method="POST" action="{{ url_for('account_edit') }}">
+        {{ form.hidden_tag() }}
+
+        <div class="form-row" style="margin-bottom:0">
+            <div class="form-group">
+                <label>First Name</label>
+                {{ form.first_name(class="form-control") }}
+            </div>
+            <div class="form-group">
+                <label>Last Name</label>
+                {{ form.last_name(class="form-control") }}
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label>Email</label>
+            {{ form.email(class="form-control") }}
+        </div>
+
+        <div class="form-group">
+            <label>Phone</label>
+            {{ form.phone(class="form-control", placeholder="(555) 123-4567") }}
+        </div>
+
+        <div class="form-group">
+            <label>Street Address</label>
+            {{ form.address(class="form-control") }}
+        </div>
+
+        <div class="form-row" style="margin-bottom:0">
+            <div class="form-group">
+                <label>City</label>
+                {{ form.city(class="form-control") }}
+            </div>
+            <div class="form-group">
+                <label>State</label>
+                {{ form.state(class="form-control") }}
+            </div>
+        </div>
+
+        <div class="form-group" style="max-width:200px">
+            <label>ZIP Code</label>
+            {{ form.zip_code(class="form-control") }}
+        </div>
+
+        <button type="submit" class="btn-primary">Save Changes</button>
+    </form>
+</div>
+{% endblock %}

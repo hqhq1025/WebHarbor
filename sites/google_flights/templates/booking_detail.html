@@ -1,0 +1,112 @@
+{% extends "base.html" %}
+{% block title %}Booking {{ booking.pnr }} | Google Flights{% endblock %}
+
+{% block content %}
+<div class="booking-wrap">
+  <div class="booking-header">
+    <a href="{{ url_for('account') }}" class="back-link"><span class="material-symbols-outlined">arrow_back</span>Back to account</a>
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:16px;flex-wrap:wrap;">
+      <div>
+        <h1 style="font-family:var(--font-sans);font-size:28px;font-weight:400;">Booking {{ booking.pnr }}</h1>
+        <p style="color:var(--g-grey-700);">Booked {{ booking.booked_at|datefmt('%a, %b %d, %Y') }}</p>
+      </div>
+      <span class="badge badge-{{ booking.status }}" style="font-size:14px;padding:8px 16px;">{{ booking.status|capitalize }}</span>
+    </div>
+  </div>
+
+  <!-- Timeline -->
+  <section class="booking-section">
+    <h2 class="booking-section-title">Trip timeline</h2>
+    <div class="timeline">
+      <div class="timeline-step {% if booking.status != 'cancelled' %}done{% endif %}">
+        <div class="timeline-dot"></div>
+        <div><strong>Booked</strong><div class="timeline-date">{{ booking.booked_at|datefmt('%b %d, %Y') }}</div></div>
+      </div>
+      <div class="timeline-step {% if booking.status == 'ticketed' or booking.status == 'flown' %}done{% endif %}">
+        <div class="timeline-dot"></div>
+        <div><strong>Ticketed</strong><div class="timeline-date">E-ticket issued</div></div>
+      </div>
+      <div class="timeline-step {% if booking.status == 'flown' %}done{% endif %}">
+        <div class="timeline-dot"></div>
+        <div><strong>Flown</strong><div class="timeline-date">After departure</div></div>
+      </div>
+      {% if booking.status == 'cancelled' %}
+        <div class="timeline-step cancelled">
+          <div class="timeline-dot"></div>
+          <div><strong>Cancelled</strong><div class="timeline-date">{{ booking.cancelled_at|datefmt('%b %d, %Y') if booking.cancelled_at else '' }}</div></div>
+        </div>
+      {% endif %}
+    </div>
+  </section>
+
+  <!-- Flights -->
+  <section class="booking-section">
+    <h2 class="booking-section-title">Your flights</h2>
+    {% for bi in booking.items %}
+      {% if bi.flight %}
+        <div class="booking-flight-card">
+          <div class="bfc-leg-label">{{ bi.leg|capitalize }}</div>
+          <div class="bfc-route">
+            <div>
+              <div class="flight-time">{{ bi.flight.departure_time }}</div>
+              <div>{{ bi.flight.origin.iata }} &middot; {{ bi.flight.departure_date|datefmt }}</div>
+              <div style="font-size:13px;color:var(--g-grey-700);">{{ bi.flight.origin.city }}</div>
+            </div>
+            <div style="text-align:center;">
+              <div>{{ bi.flight.duration_str }}</div>
+              <div class="flight-line"></div>
+              <div style="font-size:13px;color:var(--g-grey-700);">{{ bi.flight.stops_str }}</div>
+            </div>
+            <div>
+              <div class="flight-time">{{ bi.flight.arrival_time }}</div>
+              <div>{{ bi.flight.destination.iata }} &middot; {{ bi.flight.arrival_date|datefmt }}</div>
+              <div style="font-size:13px;color:var(--g-grey-700);">{{ bi.flight.destination.city }}</div>
+            </div>
+          </div>
+          <div class="bfc-info">
+            <span>{{ bi.flight.airline }} {{ bi.flight.flight_number }}</span>
+            <span>Aircraft: {{ bi.flight.aircraft }}</span>
+            <span>Seat: {{ bi.seat }}</span>
+            <span>{{ bi.cabin_class }}</span>
+            <span>{{ bi.passengers }} passenger{% if bi.passengers != 1 %}s{% endif %}</span>
+          </div>
+        </div>
+      {% endif %}
+    {% endfor %}
+  </section>
+
+  <!-- Passengers -->
+  <section class="booking-section">
+    <h2 class="booking-section-title">Passengers</h2>
+    <ul class="pax-list">
+      {% for p in booking.get_passengers() %}
+        <li><span class="material-symbols-outlined">person</span>{{ p.first_name }} {{ p.last_name }}</li>
+      {% endfor %}
+    </ul>
+  </section>
+
+  <!-- Payment -->
+  <section class="booking-section">
+    <h2 class="booking-section-title">Payment</h2>
+    <div class="sum-row"><span>Taxes &amp; fees</span><span>{{ booking.taxes_fees|money }}</span></div>
+    <div class="sum-row sum-total"><span>Total</span><span>{{ booking.total_amount|money }}</span></div>
+    <p style="color:var(--g-grey-700);font-size:13px;margin-top:8px;">
+      Charged to {{ booking.payment_brand }} ****{{ booking.payment_last4 }}
+    </p>
+  </section>
+
+  <!-- Actions -->
+  <section class="booking-section" style="display:flex;gap:12px;flex-wrap:wrap;">
+    {% if booking.status == 'confirmed' %}
+      <form method="POST" action="{{ url_for('booking_cancel', booking_id=booking.id) }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button type="submit" class="btn btn-danger">Cancel booking</button>
+      </form>
+    {% endif %}
+    <form method="POST" action="{{ url_for('booking_rebook', booking_id=booking.id) }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <button type="submit" class="btn btn-outline">Rebook same flights</button>
+    </form>
+  </section>
+</div>
+{% endblock %}

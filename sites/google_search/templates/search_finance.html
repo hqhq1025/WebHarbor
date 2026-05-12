@@ -1,0 +1,37 @@
+{% from "_serp_header.html" import serp_header with context %}
+{% extends "base.html" %}
+{% block title %}{{ q }} - Google Finance{% endblock %}
+{% block header %}{{ serp_header(q, 'finance') }}{% endblock %}
+
+{% block content %}
+<div class="serp-body">
+    <div class="serp-main">
+        <div class="knowledge-panel" style="margin-bottom:20px;">
+            <div class="kn-type">Market Summary</div>
+            <h2 class="kn-title">{{ q }}</h2>
+            <div style="font-size:36px; font-weight:500; color:#0f9d58;">$ {{ (42 + (q|length * 13) % 500) }}.{{ (q|length * 7) % 100 }}</div>
+            <div class="muted" style="margin-top:4px;">+{{ (q|length * 3) % 15 }}.{{ (q|length * 19) % 100 }}% today</div>
+            <div style="height:140px; background: linear-gradient(135deg, #e8f0fe, #d2e3fc); border-radius:8px; margin-top:16px; position:relative;">
+                <svg viewBox="0 0 300 100" style="width:100%; height:100%;">
+                    <polyline points="0,80 30,60 60,70 90,40 120,50 150,20 180,30 210,15 240,25 270,10 300,20"
+                              stroke="#1a73e8" stroke-width="2" fill="none"/>
+                </svg>
+            </div>
+        </div>
+        {% if results %}
+            {% for r in results %}
+            <div class="serp-result">
+                <div class="result-site">
+                    <div class="result-favicon">{{ r.source[0]|upper }}</div>
+                    <div class="result-site-info">
+                        <span class="result-source">{{ r.display_url }}</span>
+                    </div>
+                </div>
+                <h3 class="result-title"><a href="{{ r.external_path or url_for('url_redirect', q=r.url) }}">{{ r.title }}</a></h3>
+                <div class="result-snippet">{{ r.snippet }}</div>
+            </div>
+            {% endfor %}
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

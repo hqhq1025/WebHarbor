@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% block title %}Google Alerts{% endblock %}
+
+{% block content %}
+<div class="trending-page">
+    <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:16px;">
+        <div>
+            <h1 style="font-size:28px; font-weight:400; margin:0;">Alerts</h1>
+            <p class="muted">Monitor the web for new content on topics you care about</p>
+        </div>
+        <a href="{{ url_for('alert_new') }}" class="btn-primary" style="text-decoration:none;">+ Create alert</a>
+    </div>
+
+    {% if items %}
+    {% for a in items %}
+    <div class="alert-item">
+        <div class="bell">🔔</div>
+        <div class="q">
+            <strong>{{ a.term }}</strong>
+            <div class="meta">{{ a.frequency|replace('_', ' ')|capitalize }} · {{ a.sources|capitalize }} · {{ a.region }}</div>
+        </div>
+        <div class="actions">
+            <form method="post" action="{{ url_for('alert_update', aid=a.id) }}" style="display:flex; align-items:center; gap:4px;">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <select name="frequency" onchange="this.form.submit()" style="font-size:13px; padding:4px 8px; border:1px solid #dadce0; border-radius:4px; cursor:pointer;">
+                    <option value="as_it_happens" {% if a.frequency == 'as_it_happens' %}selected{% endif %}>As-it-happens</option>
+                    <option value="daily" {% if a.frequency == 'daily' %}selected{% endif %}>Daily</option>
+                    <option value="weekly" {% if a.frequency == 'weekly' %}selected{% endif %}>Weekly</option>
+                </select>
+            </form>
+            <form method="post" action="{{ url_for('alert_toggle', aid=a.id) }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button type="submit" class="btn-text">{{ 'Pause' if a.active else 'Resume' }}</button>
+            </form>
+            <form method="post" action="{{ url_for('alert_delete', aid=a.id) }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button type="submit" class="btn-text" style="color: var(--color-red);">Delete</button>
+            </form>
+        </div>
+    </div>
+    {% endfor %}
+    {% else %}
+    <p class="muted" style="padding:60px; text-align:center;">
+        No alerts yet. <a href="{{ url_for('alert_new') }}">Create your first alert</a>
+    </p>
+    {% endif %}
+</div>
+{% endblock %}

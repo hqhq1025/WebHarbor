@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+{% block title %}500 – Hugging Face{% endblock %}
+
+{% block content %}
+<div class="error-page">
+    <div class="error-page-emoji">🥲</div>
+    <h1>500</h1>
+    <p>Something went wrong on our end. Please try again in a moment.</p>
+    <a class="btn btn-primary btn-lg" href="{{ url_for('index') }}">Back to home</a>
+</div>
+{% endblock %}

@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% block title %}arXiv.org e-Print archive{% endblock %}
+{% block content %}
+
+<p class="arxiv-intro">
+    <strong>arXiv</strong> is a free distribution service and an open-access archive for nearly
+    <b>{{ "{:,}".format(total_papers) }}</b> scholarly articles in the fields of physics,
+    mathematics, computer science, quantitative biology, quantitative finance, statistics,
+    electrical engineering and systems science, and economics. Materials on this site are not
+    peer-reviewed by arXiv.
+</p>
+
+<form class="subject-search-box" action="{{ url_for('search') }}" method="get">
+    <label>Subject search and browse:</label>
+    <select name="category">
+        <option value="">All subjects</option>
+        {% for c in main_categories %}
+        <option value="{{ c.code }}">{{ c.name }}</option>
+        {% endfor %}
+    </select>
+    <input type="hidden" name="searchtype" value="all">
+    <input type="text" name="query" placeholder="Keyword or ID">
+    <button type="submit">Search</button>
+    <a href="{{ url_for('advanced_search') }}">Form Interface</a>
+    <a href="{{ url_for('category_taxonomy') }}">Catchup</a>
+</form>
+
+<div class="cat-directory">
+    {% for grp in groups %}
+    <h2 class="archive-group">{{ grp.header }}</h2>
+    <ul class="archive-list">
+        {% for item in grp.archives %}
+        <li>
+            <a href="{{ url_for('category_detail', code=item.code) }}">{{ item.name }}</a>
+            (<strong>{{ item.code }}</strong>
+            <a href="{{ url_for('listing', code=item.code, view='new') }}">new</a>,
+            <a href="{{ url_for('listing', code=item.code, view='recent') }}">recent</a>,
+            <a href="{{ url_for('search', searchtype='all', category=item.code, query='') }}">search</a>)
+            {% if item.subs %}
+            <span class="archive-subs">
+                {% for code, name in item.subs %}<a href="{{ url_for('listing', code=code, view='recent') }}">{{ name }}</a>{% if not loop.last %}; {% endif %}{% endfor %}
+            </span>
+            {% endif %}
+        </li>
+        {% endfor %}
+    </ul>
+    {% endfor %}
+
+    <h2 class="archive-group">About arXiv</h2>
+    <ul class="archive-list about-list">
+        <li><a href="{{ url_for('about') }}">General Information</a></li>
+        <li><a href="{{ url_for('help_page_sub', page='submit') }}">How to Submit an Article</a></li>
+        <li><a href="{{ url_for('help_page_sub', page='members') }}">Membership &amp; Giving</a></li>
+        <li><a href="{{ url_for('help_page_sub', page='who') }}">Who We Are</a></li>
+    </ul>
+</div>
+
+{% endblock %}

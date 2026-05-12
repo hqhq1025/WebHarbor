@@ -1,0 +1,32 @@
+{% from "_serp_header.html" import serp_header with context %}
+{% extends "base.html" %}
+{% block title %}{{ q }} - Google Books{% endblock %}
+{% block header %}{{ serp_header(q, 'books') }}{% endblock %}
+
+{% block content %}
+<div class="news-list">
+    <div class="serp-meta">About {{ result_count|fmt_count }} books ({{ search_time }} seconds)</div>
+    {% if topic %}
+    {% set imgs = topic.get_images() %}
+    {% for r in results %}
+    <div class="news-item">
+        {% if imgs %}
+        <div class="news-image" style="width:100px; height:150px;">
+            <img src="{{ imgs[loop.index0 % imgs|length] }}" alt="{{ r.title }}" onerror="this.parentElement.style.display='none'">
+        </div>
+        {% endif %}
+        <div class="news-text">
+            <div class="news-source">Book · {{ r.display_url }}</div>
+            <h3 class="news-headline">{{ r.title }}</h3>
+            <div class="news-snippet">{{ r.snippet }}</div>
+            <div class="news-meta">Published {{ 1990 + loop.index * 4 }} · 3{{ loop.index * 13 + 50 }} pages</div>
+        </div>
+    </div>
+    {% endfor %}
+    {% else %}
+    <div style="text-align:center; padding:60px; color: var(--color-text-tertiary);">
+        No books found for "{{ q }}".
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

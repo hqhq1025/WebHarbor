@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block title %}Google Maps{% endblock %}
+{% block content %}
+<div class="app-page">
+    <h1 style="color:#34a853;">Maps</h1>
+    <p class="lead">Find local businesses, view maps and get driving directions in Google Maps.</p>
+    <div class="maps-app" style="margin-top: 24px;">
+        <div class="maps-sidebar">
+            <h3 style="margin:0 0 12px;">Popular places</h3>
+            <a href="{{ url_for('topic_detail', slug='paris') }}" style="display:block; padding:10px 0; border-bottom:1px solid var(--color-border-light);">Paris, France</a>
+            <a href="{{ url_for('topic_detail', slug='tokyo') }}" style="display:block; padding:10px 0; border-bottom:1px solid var(--color-border-light);">Tokyo, Japan</a>
+            <a href="{{ url_for('topic_detail', slug='new_york_city') }}" style="display:block; padding:10px 0; border-bottom:1px solid var(--color-border-light);">New York City, USA</a>
+            <a href="{{ url_for('topic_detail', slug='london') }}" style="display:block; padding:10px 0; border-bottom:1px solid var(--color-border-light);">London, UK</a>
+        </div>
+        <div class="maps-viewport">
+            <div class="maps-marker">📍</div>
+        </div>
+    </div>
+</div>
+{% endblock %}

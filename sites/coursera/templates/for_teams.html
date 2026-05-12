@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+{% block title %}Coursera for Teams | Upskill Your Team{% endblock %}
+{% block content %}
+<div class="enterprise-page">
+  <div class="enterprise-hero">
+    <div class="container">
+      {% set _h = hero_image('business') %}
+      {% if _h %}
+      <div class="hero-with-art">
+        <div class="hero-text">
+          <h1>Coursera for Teams</h1>
+          <p>Upskill teams of 5–125 with unlimited access to 7,000+ courses from leading universities and companies.</p>
+          <div style="display:flex;gap:12px;margin-top:24px;flex-wrap:wrap;">
+            <a href="{{ url_for('register') }}" class="btn-primary">Start free trial</a>
+          </div>
+        </div>
+        <div class="hero-photo"><img src="{{ url_for('static', filename=_h) }}" alt=""></div>
+      </div>
+      {% else %}
+      <h1>Coursera for Teams</h1>
+      <p>Upskill teams of 5–125 with unlimited access to 7,000+ courses from leading universities and companies.</p>
+      <a href="{{ url_for('register') }}" class="btn-primary">Start free trial</a>
+      {% endif %}
+    </div>
+  </div>
+  <div class="container">
+    <section class="enterprise-benefits">
+      <h2>Advantages of Coursera for Teams</h2>
+      <div class="benefits-grid">
+        <div class="benefit-card">
+          <span class="benefit-icon">&#128218;</span>
+          <h3>Unlimited learning</h3>
+          <p>One subscription gives your team unlimited access to 7,000+ courses — no per-course fees.</p>
+        </div>
+        <div class="benefit-card">
+          <span class="benefit-icon">&#128202;</span>
+          <h3>Team analytics</h3>
+          <p>Monitor progress, completion rates, and skill development across your entire team from a central dashboard.</p>
+        </div>
+        <div class="benefit-card">
+          <span class="benefit-icon">&#127941;</span>
+          <h3>Industry certificates</h3>
+          <p>Team members earn certificates from Google, IBM, Meta and 300+ other world-class organisations.</p>
+        </div>
+        <div class="benefit-card">
+          <span class="benefit-icon">&#128101;</span>
+          <h3>Collaborative learning</h3>
+          <p>Create shared learning paths, assign courses, and foster a culture of continuous development.</p>
+        </div>
+        <div class="benefit-card">
+          <span class="benefit-icon">&#128241;</span>
+          <h3>Any device</h3>
+          <p>Desktop, tablet, and mobile learning with offline downloads so your team can learn anywhere.</p>
+        </div>
+        <div class="benefit-card">
+          <span class="benefit-icon">&#128279;</span>
+          <h3>LMS integration</h3>
+          <p>Integrate Coursera with your existing LMS, HR systems, and SSO for a seamless experience.</p>
+        </div>
+      </div>
+    </section>
+    <section class="teams-pricing">
+      <h2>Simple team pricing</h2>
+      <div class="teams-price-card">
+        <h3>Coursera for Teams</h3>
+        <div class="price-big">$400 <span>per user / year</span></div>
+        <p>Minimum 5 users. Volume discounts available for larger teams.</p>
+        <ul class="plan-features">
+          <li>&#10003; 7,000+ courses</li>
+          <li>&#10003; 400+ Professional Certificates</li>
+          <li>&#10003; Team analytics dashboard</li>
+          <li>&#10003; Dedicated account manager</li>
+          <li>&#10003; 14-day free trial</li>
+        </ul>
+        <a href="{{ url_for('register') }}" class="btn-primary">Start free trial</a>
+      </div>
+    </section>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,42 @@
+<aside class="left-rail">
+    <a href="{{ url_for('index') }}" class="rail-item {% if request.endpoint == 'index' %}active{% endif %}" title="Home">
+        <span class="material-icons-outlined icon">menu</span>
+    </a>
+    {% if current_user.is_authenticated %}
+        <a href="{{ url_for('saved_page') }}" class="rail-item {% if request.endpoint == 'saved_page' %}active{% endif %}" title="Saved">
+            <span class="material-icons-outlined icon">bookmark</span>
+            <span class="label">Saved</span>
+        </a>
+        <a href="{{ url_for('timeline') }}" class="rail-item {% if request.endpoint == 'timeline' %}active{% endif %}" title="Timeline">
+            <span class="material-icons-outlined icon">schedule</span>
+            <span class="label">Timeline</span>
+        </a>
+        <a href="{{ url_for('trips_page') }}" class="rail-item {% if request.endpoint == 'trips_page' %}active{% endif %}" title="Trips">
+            <span class="material-icons-outlined icon">luggage</span>
+            <span class="label">Trips</span>
+        </a>
+    {% else %}
+        <a href="{{ url_for('login') }}" class="rail-item" title="Sign in to save">
+            <span class="material-icons-outlined icon">bookmark</span>
+            <span class="label">Saved</span>
+        </a>
+    {% endif %}
+    <div class="rail-divider"></div>
+    <a href="{{ url_for('explore') }}" class="rail-item {% if request.endpoint == 'explore' %}active{% endif %}" title="Explore">
+        <span class="material-icons-outlined icon">explore</span>
+        <span class="label">Explore</span>
+    </a>
+    <a href="{{ url_for('directions', to=place.name) if place is defined and place else url_for('directions') }}" class="rail-item {% if request.endpoint == 'directions' %}active{% endif %}" title="Directions">
+        <span class="material-icons-outlined icon">directions</span>
+        <span class="label">Directions</span>
+    </a>
+    <div class="rail-divider"></div>
+    <a href="{{ url_for('settings') }}" class="rail-item {% if request.endpoint == 'settings' %}active{% endif %}" title="Settings">
+        <span class="material-icons-outlined icon">settings</span>
+        <span class="label">Settings</span>
+    </a>
+    <a href="{{ url_for('help_page') }}" class="rail-item {% if request.endpoint == 'help_page' %}active{% endif %}" title="Help">
+        <span class="material-icons-outlined icon">help_outline</span>
+        <span class="label">Help</span>
+    </a>
+</aside>

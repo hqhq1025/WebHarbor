@@ -1,0 +1,270 @@
+{% extends "base.html" %}
+{% block title %}{{ query }} — WolframAlpha{% endblock %}
+{% block body_class %}page-input{% endblock %}
+
+{% block nav_logo %}{# /input shares hero with homepage — hide nav logo #}{% endblock %}
+
+{% block content %}
+<div class="input-result-page">
+  <!-- Pro promo banner (real WA shows this above the hero on result pages) -->
+  <aside class="wa-promo-banner" id="waPromoBanner" aria-label="WolframAlpha Pro promotion">
+    <button class="wa-promo-close" aria-label="Dismiss"
+            onclick="document.getElementById('waPromoBanner').remove()">&times;</button>
+    <div class="wa-promo-inner">
+      <div class="wa-promo-illu" aria-hidden="true">
+        <span class="wa-promo-card wa-promo-card--1">
+          <em>STEP 1</em><br>
+          Simplify the following:<br>
+          <code>x&sup2; &minus; 3x + 2</code>
+        </span>
+        <img src="/static/images/pro/wolfram_alpha_spikey_icon_5e9b37fe41.svg" alt="" class="wa-promo-spikey">
+        <span class="wa-promo-card wa-promo-card--2">
+          <em>Answer:</em><br>
+          <code>(x&minus;1)(x&minus;2)</code>
+        </span>
+      </div>
+      <div class="wa-promo-text">
+        <h3 class="wa-promo-headline">Step-by-Step Solutions with <strong>Pro</strong></h3>
+        <p class="wa-promo-sub">Get a step ahead with your homework</p>
+        <a href="/pro" class="wa-promo-cta">Go <strong>Pro</strong> Now</a>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Re-use homepage hero (compact) for the search bar at top -->
+  <section class="wa-hero wa-hero--compact">
+    <div class="wa-hero-inner">
+      <p class="wa-hero-eyebrow">FROM THE MAKERS OF <strong>WOLFRAM LANGUAGE</strong> AND <strong>MATHEMATICA</strong></p>
+      <a href="/" class="wa-wordmark wa-wordmark--sm" aria-label="WolframAlpha">
+        <img src="/static/images/pro/wolfram_alpha_spikey_icon_5e9b37fe41.svg" alt="" class="wa-wordmark-spikey">
+        <span class="wa-wordmark-text"><span class="wm-wolfram">Wolfram</span><span class="wm-alpha">Alpha</span></span>
+      </a>
+      <form class="wa-search-form" action="/input" method="get">
+        <div class="wa-search-bar">
+          <div class="wa-search-input-wrap">
+            <input type="text" name="i" value="{{ query }}" class="wa-search-input" autocomplete="off" spellcheck="false">
+          </div>
+          <button type="submit" class="wa-search-btn" aria-label="Compute">
+            <span class="wa-search-btn-icon">&#8801;</span>
+          </button>
+        </div>
+        <div class="wa-toolbar">
+          <div class="wa-modes" role="tablist">
+            <span class="wa-mode-btn wa-mode-btn--active">
+              <span class="wa-mode-icon wa-mode-icon--star" aria-hidden="true">✱</span>
+              <span class="wa-mode-label">NATURAL LANGUAGE</span>
+            </span>
+            <span class="wa-mode-btn">
+              <span class="wa-mode-icon wa-mode-icon--math" aria-hidden="true"><span class="mi-int">&#8747;</span><span class="mi-sub">&Sigma;</span></span>
+              <span class="wa-mode-label">MATH INPUT</span>
+            </span>
+            <span class="wa-mode-btn wa-mode-btn--icon" title="Upload image">
+              <span class="wa-mode-icon wa-mode-icon--cam" aria-hidden="true">&#9737;</span>
+            </span>
+          </div>
+          <div class="wa-tools">
+            <a href="#" class="wa-tool-link" onclick="return false"><span class="wa-tool-icon">⌨</span>EXTENDED KEYBOARD</a>
+            <a href="/examples/mathematics" class="wa-tool-link"><span class="wa-tool-icon">⊞</span>EXAMPLES</a>
+            <a href="#" class="wa-tool-link" onclick="return false"><span class="wa-tool-icon">⬆</span>UPLOAD</a>
+            <a href="/input?i={{ ['carbon','factor 70560','BMI 5ft10 170lb','weather New York']|random|urlencode }}" class="wa-tool-link"><span class="wa-tool-icon">⚄</span>RANDOM</a>
+          </div>
+        </div>
+      </form>
+    </div>
+  </section>
+
+  <div class="result-main">
+    <!-- Result panel -->
+    <div class="result-panel-col">
+      <!-- Simulated computation result pods -->
+      <div class="result-pods">
+        <div class="result-pod result-pod--input">
+          <div class="pod-title">Input interpretation</div>
+          <div class="pod-content pod-content--input">
+            <code class="pod-input-formula">{% if computation and computation.parsed_input %}{{ computation.parsed_input }}{% else %}{{ query }}{% endif %}</code>
+          </div>
+        </div>
+
+        {% if computation %}
+        {# When pods exist, render them directly — real WA shows pod-by-pod, not a
+           bundle paragraph. plaintext is only the fallback headline if no pods. #}
+        {% if not computation.get_pods() %}
+        <div class="result-pod result-pod--result">
+          <div class="pod-title">Result</div>
+          <div class="pod-content">
+            <div class="pod-result-rich">
+              <pre class="pod-result-plaintext">{{ computation.plaintext }}</pre>
+              {% if computation.units %}
+              <div class="pod-result-units"><span class="pod-answer-label">Units:</span> <code>{{ computation.units }}</code></div>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+        {% endif %}
+
+        {% for pod in computation.get_pods() %}
+        {# Skip a pod titled "Input interpretation" — the template's first pod
+           already renders parsed_input under that heading. Avoids duplicate
+           headers seen on T24, T32, T37, T40, T41, T44 etc. #}
+        {% if pod.title|lower != 'input interpretation' %}
+        <div class="result-pod result-pod--extra">
+          <div class="pod-title">{{ pod.title }}</div>
+          <div class="pod-content">
+            <pre class="pod-extra-plaintext">{{ pod.plaintext }}</pre>
+            {% if pod.image %}
+            <img src="{{ pod.image }}" alt="{{ pod.title }}" class="pod-plot-img"
+                 onerror="this.style.display='none'">
+            {% endif %}
+          </div>
+        </div>
+        {% endif %}
+        {% endfor %}
+
+        {% if computation.plot_url %}
+        <div class="result-pod result-pod--plot">
+          <div class="pod-title">Plot</div>
+          <div class="pod-content">
+            <img src="{{ computation.plot_url }}" alt="Plot" class="pod-plot-img"
+                 onerror="this.style.display='none'">
+          </div>
+        </div>
+        {% endif %}
+
+        {% if computation.get_related() %}
+        <div class="result-pod result-pod--related-queries">
+          <div class="pod-title">Related Queries</div>
+          <div class="pod-content">
+            <div class="pod-examples-list">
+              {% for rq in computation.get_related() %}
+              <a href="/input?i={{ rq|urlencode }}" class="pod-example-row">
+                <code class="pod-ex-query">{{ rq }}</code>
+                <span class="pod-ex-arrow">&#9654;</span>
+              </a>
+              {% endfor %}
+            </div>
+          </div>
+        </div>
+        {% endif %}
+        {% else %}
+        <div class="result-pod result-pod--result">
+          <div class="pod-title">Result</div>
+          <div class="pod-content">
+            {% if matching_topic %}
+            <div class="pod-result-rich">
+              <p class="pod-result-text">WolframAlpha can compute <strong>{{ matching_topic.name }}</strong> queries with full symbolic and numerical analysis.</p>
+              {% set exs = matching_topic.get_examples() %}
+              {% for ex in exs[:2] %}
+              {% if ex.query|lower in query|lower or query|lower in ex.query|lower %}
+              <div class="pod-result-answer">
+                <span class="pod-answer-label">{{ ex.type | capitalize }}:</span>
+                <code class="pod-answer-value">{{ ex.result }}</code>
+              </div>
+              {% endif %}
+              {% endfor %}
+              <a href="/topic/{{ matching_topic.slug }}" class="pod-more-link">
+                Explore {{ matching_topic.name }} examples &rarr;
+              </a>
+            </div>
+            {% else %}
+            <div class="pod-result-demo">
+              <p class="pod-result-text">WolframAlpha processes this query using its computational knowledge engine. Sign up for Pro to get full step-by-step solutions.</p>
+              <div class="pod-demo-badge">
+                <span>&#128736;</span> Live computation powered by Wolfram&rsquo;s algorithms
+              </div>
+            </div>
+            {% endif %}
+          </div>
+        </div>
+        {% endif %}
+
+        {# Real WA does not show a 'Related Computations' pod on result pages.
+           Only show it when the record has NO pods AND a matching topic exists,
+           as a navigation-only fallback for unhandled queries. #}
+        {% if matching_topic and not computation %}
+        {% set exs = matching_topic.get_examples() %}
+        {% if exs %}
+        <div class="result-pod result-pod--examples">
+          <div class="pod-title">Related Computations</div>
+          <div class="pod-content">
+            <div class="pod-examples-list">
+              {% for ex in exs %}
+              <a href="/input?i={{ ex.query|urlencode }}" class="pod-example-row">
+                <span class="pod-ex-type">{{ ex.type }}</span>
+                <code class="pod-ex-query">{{ ex.query }}</code>
+                <span class="pod-ex-arrow">&#9654;</span>
+              </a>
+              {% endfor %}
+            </div>
+          </div>
+        </div>
+        {% endif %}
+        {% endif %}
+
+        <!-- Pro upsell pod -->
+        <div class="result-pod result-pod--pro">
+          <div class="pod-content pod-pro-cta">
+            <div class="pod-pro-icon">&#10024;</div>
+            <div class="pod-pro-text">
+              <strong>WolframAlpha Pro</strong>
+              <p>Get step-by-step solutions, extended computation time, and data upload.</p>
+            </div>
+            <a href="/pro" class="btn btn-pro-primary">Go Pro</a>
+          </div>
+        </div>
+
+        <!-- Save result -->
+        {% if current_user.is_authenticated %}
+        <div class="result-pod result-pod--save">
+          <div class="pod-title">Save This Query</div>
+          <div class="pod-content">
+            <div class="save-actions">
+              <form action="/saved-queries/add" method="post" style="display:inline">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <input type="hidden" name="query_text" value="{{ query }}">
+                <input type="hidden" name="next" value="/input?i={{ query|urlencode }}">
+                <button type="submit" class="btn btn-secondary btn-sm">&#128190; Save Query</button>
+              </form>
+              <a href="/notebooks" class="btn btn-secondary btn-sm">&#128195; Add to Notebook</a>
+            </div>
+          </div>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Sidebar -->
+    <aside class="result-sidebar">
+      {% if matching_topic %}
+      <div class="sidebar-topic-card">
+        <h3 class="sidebar-section-title">About: {{ matching_topic.name }}</h3>
+        <img src="{{ matching_topic.image }}" alt="{{ matching_topic.name }}"
+             class="sidebar-topic-img"
+             onerror="this.style.display='none'">
+        <p class="sidebar-topic-desc">{{ matching_topic.description[:150] }}...</p>
+        <a href="/topic/{{ matching_topic.slug }}" class="btn btn-secondary btn-full">
+          View All Examples &rarr;
+        </a>
+      </div>
+      {% endif %}
+
+      <div class="sidebar-related">
+        <h3 class="sidebar-section-title">Related Topics</h3>
+        {% for t in related %}
+        <a href="/topic/{{ t.slug }}" class="sidebar-related-item">
+          <span class="sidebar-related-icon" style="color: {{ t.category.color }}">{{ t.category.icon }}</span>
+          <span>{{ t.name }}</span>
+        </a>
+        {% endfor %}
+      </div>
+
+      <div class="sidebar-examples-nav">
+        <h3 class="sidebar-section-title">Explore More</h3>
+        <a href="/examples/mathematics" class="sidebar-cat-link" style="color: #a855f7">&Sigma; Mathematics</a>
+        <a href="/examples/science-and-technology" class="sidebar-cat-link" style="color: #22c55e">&#9883; Science</a>
+        <a href="/examples/society-and-culture" class="sidebar-cat-link" style="color: #ef4444">&#127757; Society</a>
+        <a href="/examples/everyday-life" class="sidebar-cat-link" style="color: #3b82f6">&#9728; Everyday</a>
+      </div>
+    </aside>
+  </div>
+</div>
+{% endblock %}

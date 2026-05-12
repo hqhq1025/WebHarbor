@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block title %}Resources · GitHub{% endblock %}
+{% block content %}
+<div class="resources-page">
+  <div class="resources-hero">
+    <h1 class="resources-hero-title">GitHub Resources</h1>
+    <p class="resources-hero-sub">Guides, articles, and best practices from GitHub.</p>
+  </div>
+  <div class="resources-topics-grid">
+    {% for t in topics %}
+    <a href="/resources/{{ t.slug }}" class="resources-topic-card">
+      <h2 class="resources-topic-title">{{ t.title }}</h2>
+      <p class="resources-topic-desc">{{ t.intro }}</p>
+    </a>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}

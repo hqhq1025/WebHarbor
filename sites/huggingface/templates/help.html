@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block title %}Help Center – Hugging Face{% endblock %}
+
+{% block content %}
+<section class="task-hero">
+    <div class="container-wide">
+        <h1>Help Center</h1>
+        <p>Find answers to common questions about the Hub, or contact support.</p>
+    </div>
+</section>
+
+<div class="container-narrow page">
+    <h2>Getting started</h2>
+    <ul class="help-list">
+        <li><strong>How do I create an account?</strong><br>Click "Sign Up" in the top right and fill in your email, username, and a password.</li>
+        <li><strong>How do I upload a model?</strong><br>Use the <code>huggingface_hub</code> Python library, or drag and drop files in the web UI.</li>
+        <li><strong>Is it free?</strong><br>Public models, datasets, and spaces are free forever. PRO and Enterprise plans add more features.</li>
+    </ul>
+
+    <h2>Billing</h2>
+    <ul class="help-list">
+        <li><strong>How is inference billed?</strong><br>By the hour of hardware used. See the <a href="{{ url_for('pricing') }}">pricing page</a> for details.</li>
+        <li><strong>Can I pause an endpoint?</strong><br>Yes — go to your endpoint's page and click "Pause". You stop being billed while paused.</li>
+    </ul>
+
+    <h2>Contact us</h2>
+    <p>Can't find what you need? Email <a href="mailto:support@hf.co">support@hf.co</a> or open a discussion in the <a href="{{ url_for('collections_index') }}">community</a>.</p>
+</div>
+{% endblock %}

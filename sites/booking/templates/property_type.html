@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block title %}{{ type.name }} — Booking{% endblock %}
+{% block content %}
+<div class="container">
+    <div class="pd-header">
+        <div class="pd-breadcrumb">
+            <a href="{{ url_for('index') }}">Home</a> &rsaquo; {{ type.name }}
+        </div>
+        <h1 class="page-title">{{ type.name }}</h1>
+        <p class="page-subtitle">{{ type.description }}</p>
+    </div>
+
+    {% if properties %}
+    <section class="section">
+        <div class="card-grid cards-3">
+            {% for prop in properties %}
+            <a href="{{ url_for('property_detail', slug=prop.slug) }}" class="city-card">
+                {% if prop.image %}
+                <img src="{{ prop.image }}" alt="{{ prop.name }}" class="city-card-img"
+                     onerror="this.style.background='linear-gradient(135deg,#003580,#006ce4)';this.alt=''">
+                {% endif %}
+                <div class="city-card-body">
+                    <h3>{{ prop.name }}</h3>
+                    <span class="flag">{{ prop.city.display }}, {{ prop.city.country }}</span>
+                    <div style="margin-top:8px;display:flex;justify-content:space-between;align-items:center;">
+                        <strong>${{ '%.0f' % prop.discounted_price }} <span style="font-size:11px;font-weight:400;color:#6b6b6b;">/night</span></strong>
+                        <span class="rating-score" style="font-size:12px;">{{ prop.rating }}</span>
+                    </div>
+                </div>
+            </a>
+            {% endfor %}
+        </div>
+    </section>
+    {% else %}
+    <div class="empty-state">
+        <h2>No {{ type.name | lower }} found</h2>
+        <p>Browse all <a href="{{ url_for('stays') }}">stays</a> instead.</p>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

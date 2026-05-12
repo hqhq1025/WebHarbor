@@ -1,0 +1,251 @@
+{% extends "base.html" %}
+{% block title %}GitHub Skills · GitHub{% endblock %}
+{% block content %}
+
+<!-- Hero -->
+<section class="sec-hero">
+  <div class="sec-hero-inner">
+    <div class="sec-hero-text">
+      <span class="sec-eyebrow">
+        <svg aria-hidden="true" height="16" viewBox="0 0 16 16" width="16" fill="currentColor">
+          <path d="M11.46.146A.5.5 0 0 0 11.107 0H4.893a.5.5 0 0 0-.353.146L.146 4.54A.5.5 0 0 0 0 4.893v6.214a.5.5 0 0 0 .146.353l4.394 4.394a.5.5 0 0 0 .353.146h6.214a.5.5 0 0 0 .353-.146l4.394-4.394a.5.5 0 0 0 .146-.353V4.893a.5.5 0 0 0-.146-.353Z"/>
+        </svg>
+        GitHub Skills
+      </span>
+      <h1 class="sec-hero-headline">Learn GitHub by doing.</h1>
+      <p class="sec-hero-sub">Hands-on, open-source courses that teach you Git, GitHub, and the modern developer workflow — taught with real repositories, real pull requests, and real merge conflicts.</p>
+      <div class="sec-hero-cta">
+        <a href="#first-day-on-github" class="gh-btn gh-btn-primary">Start your first course</a>
+        <a href="/customer-stories" class="gh-btn gh-btn-secondary">See learner stories</a>
+      </div>
+      <ul class="sec-hero-bullets">
+        <li>Free for everyone — no GitHub plan required</li>
+        <li>Self-paced, browser-based, beginner friendly</li>
+        <li>Earn shareable completion badges</li>
+      </ul>
+    </div>
+    <div class="sec-hero-art" aria-hidden="true">
+      <div class="sec-hero-card">
+        <div class="sec-hero-card-row sec-row-fix">
+          <span class="sec-row-icon">🎓</span>
+          <span class="sec-row-msg"><strong>Course started:</strong> <code>Introduction to GitHub</code> — 22 minutes remaining</span>
+        </div>
+        <div class="sec-hero-card-row sec-row-dep">
+          <span class="sec-row-icon">✅</span>
+          <span class="sec-row-msg"><strong>Step 3 of 7 complete</strong> — opened your first pull request</span>
+        </div>
+        <div class="sec-hero-card-row sec-row-secret">
+          <span class="sec-row-icon">🤖</span>
+          <span class="sec-row-msg"><strong>Skills bot</strong> auto-checked your branch and left feedback</span>
+        </div>
+        <div class="sec-hero-card-row sec-row-bug">
+          <span class="sec-row-icon">🏆</span>
+          <span class="sec-row-msg"><strong>Badge earned:</strong> <em>First-Day Contributor</em></span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Why learn with GitHub Skills -->
+<section class="sec-features">
+  <div class="sec-section-inner">
+    <h2 class="sec-section-title">Why learn with GitHub Skills</h2>
+    <p class="sec-section-lede">Every Skills course runs in a real GitHub repository you own. You commit, push, branch, merge, and review — exactly the way you will at work — guided by an automated tutor that grades your progress in real time.</p>
+    <div class="sec-feature-grid">
+      <div class="sec-feature">
+        <div class="sec-feature-icon">
+          <svg aria-hidden="true" height="20" viewBox="0 0 16 16" width="20" fill="currentColor"><path d="M8 0a8 8 0 1 1 0 16A8 8 0 0 1 8 0Zm-.5 11.5h1V6.5h-1Zm0-6h1v-1h-1Z"/></svg>
+        </div>
+        <h3>100% free, forever</h3>
+        <p>No subscription, no credit card. Every course is open-source on GitHub itself — fork the curriculum, remix the exercises, or contribute new lessons of your own.</p>
+        <a href="/pricing" class="sec-feature-link">See GitHub pricing →</a>
+      </div>
+      <div class="sec-feature">
+        <div class="sec-feature-icon">
+          <svg aria-hidden="true" height="20" viewBox="0 0 16 16" width="20" fill="currentColor"><path d="M9.5 1.75v1.5l4.5 1.875v6.25L9.5 13.25v1.5L1 11V5Z"/></svg>
+        </div>
+        <h3>Hands-on by design</h3>
+        <p>You won't watch videos — you'll write commits. Each step opens an issue or pull request in your own copy of the course repo and waits for you to push the right change.</p>
+        <a href="#featured-paths" class="sec-feature-link">Explore featured paths →</a>
+      </div>
+      <div class="sec-feature">
+        <div class="sec-feature-icon">
+          <svg aria-hidden="true" height="20" viewBox="0 0 16 16" width="20" fill="currentColor"><path d="M8 0a8 8 0 1 0 0 16A8 8 0 0 0 8 0Zm0 14a6 6 0 1 1 0-12 6 6 0 0 1 0 12Zm.75-9.25v3.69l2.47 1.43-.5.86-2.97-1.72V4.75Z"/></svg>
+        </div>
+        <h3>Self-paced &amp; bite-sized</h3>
+        <p>Most courses take 30 to 90 minutes. Pause anywhere — Skills remembers your progress and your branch, so you can pick up on a phone, tablet, or laptop.</p>
+        <a href="#faq" class="sec-feature-link">How pacing works →</a>
+      </div>
+      <div class="sec-feature">
+        <div class="sec-feature-icon">
+          <svg aria-hidden="true" height="20" viewBox="0 0 16 16" width="20" fill="currentColor"><path d="M3.75 1.5h8.5l-1 1.5h-6.5Zm-1.5 3h11.5L8 14Z"/></svg>
+        </div>
+        <h3>Earn a shareable certificate</h3>
+        <p>Finish a learning path and we'll add a verifiable badge to your GitHub profile and a downloadable PDF certificate you can post on LinkedIn or attach to a job application.</p>
+        <a href="#faq" class="sec-feature-link">Are certificates accredited? →</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Stats -->
+<section class="sec-stats">
+  <div class="sec-section-inner">
+    <div class="sec-stats-grid">
+      <div class="sec-stat">
+        <div class="sec-stat-num">5M+</div>
+        <div class="sec-stat-label">learners enrolled across GitHub Skills</div>
+      </div>
+      <div class="sec-stat">
+        <div class="sec-stat-num">30</div>
+        <div class="sec-stat-label">interactive courses across nine learning paths</div>
+      </div>
+      <div class="sec-stat">
+        <div class="sec-stat-num">12 hrs</div>
+        <div class="sec-stat-label">of total content — average path is under 4 hours</div>
+      </div>
+      <div class="sec-stat">
+        <div class="sec-stat-num">40+</div>
+        <div class="sec-stat-label">countries with active university Skills cohorts</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Course catalog (preserved sections) -->
+<section class="sec-detail">
+  <div class="sec-section-inner">
+    <h2 class="sec-section-title">Browse all courses</h2>
+    <p class="sec-section-lede">Three learning tracks, nine free courses. Start with the basics or jump straight to the workflow you want to master.</p>
+    {% for section in sections %}
+    <div class="skills-section" id="{{ section.heading | lower | replace(' ', '-') }}">
+      <h3 class="skills-section-heading">{{ section.heading }}</h3>
+      <div class="skills-courses-grid">
+        {% for c in section.courses %}
+        <a href="/skills/{{ c.slug }}" class="skills-course-card">
+          <h4 class="skills-course-title">{{ c.title }}</h4>
+          <p class="skills-course-desc">{{ c.desc }}</p>
+          <span class="skills-course-duration">{{ c.duration }}</span>
+        </a>
+        {% endfor %}
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+</section>
+
+<!-- Featured learning paths -->
+<section class="sec-features" id="featured-paths">
+  <div class="sec-section-inner">
+    <h2 class="sec-section-title">Featured learning paths</h2>
+    <p class="sec-section-lede">Stitched-together course bundles built around a single career outcome. Finish a path to earn a path-level badge.</p>
+    <div class="sec-feature-grid">
+      <div class="sec-feature">
+        <div class="sec-feature-icon">🚀</div>
+        <h3>Become a GitHub Pro</h3>
+        <p>Five courses, ~4 hours total. Learn the full developer loop: forking, branching, opening pull requests, and reviewing code like a maintainer. Best first stop for any new GitHub user.</p>
+        <a href="/skills/introduction-to-github" class="sec-feature-link">Start the path →</a>
+      </div>
+      <div class="sec-feature">
+        <div class="sec-feature-icon">⚙️</div>
+        <h3>DevOps Engineer Path</h3>
+        <p>Four courses, ~5 hours. Build CI workflows with GitHub Actions, automate releases, and ship to production with continuous delivery. Ends with a graded capstone project.</p>
+        <a href="/skills/hello-github-actions" class="sec-feature-link">Start the path →</a>
+      </div>
+      <div class="sec-feature">
+        <div class="sec-feature-icon">📚</div>
+        <h3>Open Source Contributor Path</h3>
+        <p>Three courses, ~3 hours. Learn how to find a good first issue, open a respectful pull request, and respond to maintainer feedback — the soft skills no Git tutorial covers.</p>
+        <a href="/skills/communicate-using-markdown" class="sec-feature-link">Start the path →</a>
+      </div>
+      <div class="sec-feature">
+        <div class="sec-feature-icon">🛡️</div>
+        <h3>Secure Developer Path</h3>
+        <p>Four courses, ~3.5 hours. Use Dependabot, code scanning, and secret scanning to ship secure code without slowing down. Pairs cleanly with GitHub Advanced Security at work.</p>
+        <a href="/resources/security" class="sec-feature-link">Start the path →</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Testimonials -->
+<section class="sec-stories">
+  <div class="sec-section-inner">
+    <h2 class="sec-section-title">Learners who shipped their first PR</h2>
+    <div class="sec-stories-grid">
+      <article class="sec-story">
+        <div class="sec-story-logo sec-story-mercado">P.</div>
+        <blockquote class="sec-story-quote">"I'd been a backend engineer for three years and still got nervous about merge conflicts. The Skills course had me resolve four of them in 40 minutes — I'm not nervous anymore."</blockquote>
+        <div class="sec-story-attr">
+          <strong>Priya Ramesh</strong> · Backend Engineer, Bengaluru
+        </div>
+      </article>
+      <article class="sec-story">
+        <div class="sec-story-logo sec-story-adobe">D.</div>
+        <blockquote class="sec-story-quote">"We onboard 60 new hires every quarter. Skills replaced the 8-hour internal Git workshop with a single self-paced afternoon — and the new grads actually retain it."</blockquote>
+        <div class="sec-story-attr">
+          <strong>Daniela Krause</strong> · Engineering Manager, Berlin
+        </div>
+      </article>
+      <article class="sec-story">
+        <div class="sec-story-logo sec-story-shopify">M.</div>
+        <blockquote class="sec-story-quote">"I'm a high-school CS teacher in Lagos and I run my entire class on GitHub Skills. The students see real green squares on their profile — that's the dopamine hit that hooks them."</blockquote>
+        <div class="sec-story-attr">
+          <strong>Michael Adesanya</strong> · CS Teacher, Lagos
+        </div>
+      </article>
+    </div>
+  </div>
+</section>
+
+<!-- FAQ -->
+<section class="sec-faq" id="faq">
+  <div class="sec-section-inner sec-narrow">
+    <h2 class="sec-section-title">Frequently asked questions</h2>
+
+    <details class="sec-faq-item" open>
+      <summary>Are GitHub Skills courses really free?</summary>
+      <p>Yes. Every course on this page is free to take, even if you only have a free GitHub account. There are no premium tiers, no upsells, and no credit-card prompts. The course content itself is open-source — most repos accept community pull requests for translations, typo fixes, and new exercises.</p>
+    </details>
+
+    <details class="sec-faq-item">
+      <summary>How do I earn a certificate?</summary>
+      <p>Each course ends with an automatic completion check that runs in your course repository. Once all steps pass, the Skills bot opens a final pull request that adds a badge to your profile and emails you a downloadable PDF certificate. Certificates include the course name, your GitHub handle, and the completion date — all verifiable from the course's public commit history.</p>
+    </details>
+
+    <details class="sec-faq-item">
+      <summary>Can I take courses at my own pace?</summary>
+      <p>Absolutely. Skills courses don't expire, don't have cohort start dates, and don't time out between sessions. Your progress lives in your own copy of the course repo, so you can pause for a day, a week, or a year and pick up exactly where you left off — same branch, same open PR.</p>
+    </details>
+
+    <details class="sec-faq-item">
+      <summary>Are courses available offline?</summary>
+      <p>The interactive grader needs to talk to GitHub.com to score your pushes, so you'll need a connection for the auto-feedback loop. However, every course's reading material is plain Markdown in the public repo — clone it once and you can read every lesson on a flight without WiFi.</p>
+    </details>
+
+    <details class="sec-faq-item">
+      <summary>Do Skills courses count for CPE / continuing-education credits?</summary>
+      <p>Skills certificates are recognized by several professional bodies — including ISC2 and CompTIA — for self-reported continuing professional education (CPE) credits. Each completed course is roughly 1 CPE per hour of content. Check your certifying body's policy for the exact mapping.</p>
+    </details>
+
+    <details class="sec-faq-item">
+      <summary>I'm an instructor — can I use Skills in my classroom?</summary>
+      <p>Yes, and we'd love that. <a href="/customer-stories">GitHub Education</a> partners with thousands of universities and bootcamps. Sign up for a free Teacher account to get classroom dashboards, autograding, and the ability to assign Skills courses as homework with one click.</p>
+    </details>
+  </div>
+</section>
+
+<!-- Final CTA -->
+<section class="sec-final-cta">
+  <div class="sec-section-inner sec-narrow sec-final-cta-inner">
+    <h2>Pick a course and ship your first commit today.</h2>
+    <p>Five minutes from now you could have an open pull request and a green square on your profile.</p>
+    <div class="sec-hero-cta">
+      <a href="/skills/introduction-to-github" class="gh-btn gh-btn-primary">Start with "Introduction to GitHub"</a>
+      <a href="/register" class="gh-btn gh-btn-secondary">Create a free account</a>
+    </div>
+  </div>
+</section>
+
+{% endblock %}

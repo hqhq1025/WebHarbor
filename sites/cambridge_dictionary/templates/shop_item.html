@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% block title %}{{ item.name }} | Cambridge Dictionary Shop{% endblock %}
+{% block content %}
+<div class="shop-item-page container">
+  <nav class="breadcrumb">
+    <a href="{{ url_for('shop') }}">Shop</a> &rsaquo;
+    <span>{{ item.name }}</span>
+  </nav>
+
+  <div class="shop-item-detail">
+    <div class="shop-item-cover-col">
+      <div class="shop-book-cover large">
+        <div class="book-cover-inner">
+          <span class="book-category">{{ item.category|capitalize }}</span>
+          <span class="book-title">{{ item.name[:50] }}</span>
+        </div>
+      </div>
+    </div>
+    <div class="shop-item-info-col">
+      <h1 class="shop-item-title">{{ item.name }}</h1>
+      <p class="shop-item-price-lg">{{ item.currency }} {{ '%.2f'|format(item.price) }}</p>
+      <p class="shop-item-full-desc">{{ item.description }}</p>
+      {% if item.isbn %}
+        <p class="shop-item-isbn"><strong>ISBN:</strong> {{ item.isbn }}</p>
+      {% endif %}
+      <p class="shop-item-publisher"><strong>Publisher:</strong> Cambridge University Press</p>
+      <a href="#" class="btn-primary">Add to cart</a>
+    </div>
+  </div>
+
+  {% if related %}
+  <div class="shop-related">
+    <h3>Related titles</h3>
+    <div class="shop-grid small">
+      {% for r in related %}
+        <div class="shop-card small">
+          <a href="{{ url_for('shop_item', slug=r.slug) }}" class="shop-card-link">
+            <h4>{{ r.name }}</h4>
+            <p class="shop-price">{{ r.currency }} {{ '%.2f'|format(r.price) }}</p>
+          </a>
+        </div>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

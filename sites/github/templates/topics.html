@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% block title %}Topics · GitHub{% endblock %}
+{% block content %}
+<div class="explore-header">
+  <div class="explore-header-inner">
+    <h1 class="explore-title">Topics</h1>
+    <p class="explore-subtitle">Browse popular topics on GitHub</p>
+  </div>
+</div>
+
+<div class="topics-page">
+  <section class="topics-section-featured">
+    <h2 class="topics-section-heading">Featured topics</h2>
+    <div class="topics-featured-grid">
+      {% for topic in featured %}
+      <a href="/topics/{{ topic.slug }}" class="topic-featured-card">
+        <div class="topic-featured-icon">
+          {{ topic.display_name[0].upper() }}
+        </div>
+        <div class="topic-featured-info">
+          <span class="topic-featured-name">{{ topic.display_name }}</span>
+          <p class="topic-featured-desc">{{ topic.short_desc }}</p>
+          <span class="topic-featured-count">{{ topic.repos_count | number_format }} repositories</span>
+        </div>
+      </a>
+      {% endfor %}
+    </div>
+  </section>
+
+  <section>
+    <h2 class="topics-section-heading">All topics</h2>
+    <div class="topics-all-grid">
+      {% for topic in all_topics %}
+      <a href="/topics/{{ topic.slug }}" class="topic-all-card">
+        <span class="topic-all-name">{{ topic.display_name }}</span>
+        <span class="topic-all-count">{{ topic.repos_count | number_format }}</span>
+      </a>
+      {% endfor %}
+    </div>
+  </section>
+</div>
+{% endblock %}

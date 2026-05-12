@@ -1,0 +1,206 @@
+{% extends "base.html" %}
+{% block title %}
+  {% if origin and destination %}{{ origin.city }} to {{ destination.city }} flights | Google Flights
+  {% else %}Flights | Google Flights{% endif %}
+{% endblock %}
+
+{% block content %}
+<div class="flights-hero">
+  <div class="flights-search-box">
+    <form action="{{ url_for('flights_list') }}" method="GET" class="search-form" style="width:100%;display:grid;grid-template-columns:1fr 1fr 1fr 1fr auto;gap:12px;align-items:center;">
+      <input type="text" name="from" class="search-field" placeholder="From (IATA or city)" value="{{ origin_input or origin_iata }}" list="airport-list">
+      <input type="text" name="to" class="search-field" placeholder="To (IATA or city)" value="{{ dest_input or dest_iata }}" list="airport-list">
+      <input type="text" name="depart" class="search-field" value="{{ depart }}" placeholder="YYYY-MM-DD" maxlength="10" inputmode="numeric" pattern="\d{4}-\d{2}-\d{2}" autocomplete="off" data-datepicker="checkin" required>
+      <input type="text" name="return" class="search-field" value="{{ return_date }}" placeholder="YYYY-MM-DD" maxlength="10" inputmode="numeric" pattern="\d{4}-\d{2}-\d{2}" autocomplete="off" data-datepicker="checkout">
+      <button type="submit" class="search-submit"><span class="material-symbols-outlined">search</span>Search</button>
+      <datalist id="airport-list">
+        {% for city, iatas in multi_city_groups %}<option value="{{ city }}">{{ city }} (all airports — {{ iatas|join(', ') }})</option>{% endfor %}
+        {% for a in all_airports %}<option value="{{ a.iata }}">{{ a.city }} ({{ a.iata }})</option>{% endfor %}
+      </datalist>
+    </form>
+  </div>
+</div>
+
+<div class="flights-container">
+  <div class="flights-layout" style="display:grid;grid-template-columns:260px 1fr;gap:24px;align-items:start;">
+    <!-- Filter Sidebar -->
+    <aside class="flights-sidebar" aria-label="Filter flights" style="background:white;border:1px solid var(--g-grey-200);border-radius:8px;padding:16px;position:sticky;top:16px;">
+      <h2 style="font-family:var(--font-sans);font-size:16px;font-weight:500;margin-bottom:12px;">Filters</h2>
+      <form action="{{ url_for('flights_list') }}" method="GET" id="filter-form">
+        <!-- preserve route/date -->
+        <input type="hidden" name="from" value="{{ origin_input or origin_iata }}">
+        <input type="hidden" name="to" value="{{ dest_input or dest_iata }}">
+        <input type="hidden" name="depart" value="{{ depart }}">
+        <input type="hidden" name="return" value="{{ return_date }}">
+        <input type="hidden" name="passengers" value="{{ passengers }}">
+        <input type="hidden" name="sort" value="{{ sort }}">
+
+        <!-- Stops -->
+        <fieldset style="border:none;padding:0;margin:0 0 16px 0;">
+          <legend style="font-size:13px;font-weight:500;color:var(--g-grey-800);margin-bottom:8px;">Stops</legend>
+          <label style="display:block;padding:4px 0;font-size:14px;cursor:pointer;">
+            <input type="radio" name="max_stops" value="" {% if max_stops == '' %}checked{% endif %}> Any number of stops
+          </label>
+          <label style="display:block;padding:4px 0;font-size:14px;cursor:pointer;" aria-label="Nonstop only">
+            <input type="radio" name="max_stops" value="0" {% if max_stops == '0' %}checked{% endif %}> Nonstop only
+          </label>
+          <label style="display:block;padding:4px 0;font-size:14px;cursor:pointer;">
+            <input type="radio" name="max_stops" value="1" {% if max_stops == '1' %}checked{% endif %}> 1 stop or fewer
+          </label>
+          <label style="display:block;padding:4px 0;font-size:14px;cursor:pointer;">
+            <input type="radio" name="max_stops" value="2" {% if max_stops == '2' %}checked{% endif %}> 2 stops or fewer
+          </label>
+        </fieldset>
+
+        <!-- Cabin Class -->
+        <fieldset style="border:none;padding:0;margin:0 0 16px 0;">
+          <legend style="font-size:13px;font-weight:500;color:var(--g-grey-800);margin-bottom:8px;">Cabin class</legend>
+          <select name="class" class="search-select" style="width:100%;padding:8px;border:1px solid var(--g-grey-300,#dadce0);border-radius:4px;">
+            <option value="" {% if not cabin %}selected{% endif %}>Any</option>
+            <option value="Economy" {% if cabin|lower == 'economy' %}selected{% endif %}>Economy</option>
+            <option value="Premium" {% if cabin|lower in ['premium','premium economy'] %}selected{% endif %}>Premium economy</option>
+            <option value="Business" {% if cabin|lower == 'business' %}selected{% endif %}>Business</option>
+            <option value="First" {% if cabin|lower == 'first' %}selected{% endif %}>First class</option>
+          </select>
+        </fieldset>
+
+        <!-- Price Range -->
+        <fieldset style="border:none;padding:0;margin:0 0 16px 0;">
+          <legend style="font-size:13px;font-weight:500;color:var(--g-grey-800);margin-bottom:8px;">Price range</legend>
+          <div style="display:flex;gap:6px;">
+            <input type="number" name="min_price" value="{{ min_price }}" placeholder="Min $" min="0" step="1" style="width:50%;padding:8px;border:1px solid var(--g-grey-300,#dadce0);border-radius:4px;">
+            <input type="number" name="max_price" value="{{ max_price }}" placeholder="Max $" min="0" step="1" style="width:50%;padding:8px;border:1px solid var(--g-grey-300,#dadce0);border-radius:4px;">
+          </div>
+        </fieldset>
+
+        <!-- Airlines -->
+        <fieldset style="border:none;padding:0;margin:0 0 16px 0;">
+          <legend style="font-size:13px;font-weight:500;color:var(--g-grey-800);margin-bottom:8px;">Airline</legend>
+          <select name="airline" class="search-select" style="width:100%;padding:8px;border:1px solid var(--g-grey-300,#dadce0);border-radius:4px;">
+            <option value="">Any airline</option>
+            {% for a in airline_options %}
+              <option value="{{ a }}" {% if airline == a %}selected{% endif %}>{{ a }}</option>
+            {% endfor %}
+          </select>
+        </fieldset>
+
+        <button type="submit" class="btn btn-primary" style="width:100%;padding:10px;">Apply filters</button>
+        <a href="{{ url_for('flights_list', **{'from': origin_input or origin_iata, 'to': dest_input or dest_iata, 'depart': depart, 'return': return_date}) }}" style="display:block;text-align:center;margin-top:8px;font-size:13px;color:var(--g-blue);">Clear filters</a>
+      </form>
+
+      <hr style="border:none;border-top:1px solid var(--g-grey-200);margin:16px 0;">
+      {% if origin_iata and dest_iata %}
+        <a href="{{ url_for('price_graph', **{'from': origin_input or origin_iata, 'to': dest_input or dest_iata, 'depart': depart, 'months': 2}) }}" style="display:flex;align-items:center;gap:6px;font-size:13px;color:var(--g-blue);">
+          <span class="material-symbols-outlined" style="font-size:18px;">insights</span>View price graph
+        </a>
+      {% endif %}
+    </aside>
+
+    <!-- Main Results -->
+    <div>
+      <h1 style="font-family:var(--font-sans);font-size:28px;font-weight:400;margin-bottom:16px;">
+        {% if origin and destination %}{{ origin.city }} to {{ destination.city }}{% else %}All flights{% endif %}
+      </h1>
+      {% set _sort_label = {'price': 'Price', 'duration': 'Duration', 'departure': 'Departure time', 'arrival': 'Arrival time', 'emissions': 'Emissions', 'co2': 'Emissions'}.get(sort, 'Top flights') %}
+      <p style="color:var(--g-grey-700);margin-bottom:8px;">{{ flights|length }} results - sorted by <strong>{{ _sort_label }}</strong>
+        {% if max_stops == '0' %} - Nonstop only{% elif max_stops == '1' %} - Up to 1 stop{% elif max_stops == '2' %} - Up to 2 stops{% endif %}
+        {% if cabin %} - {{ cabin|capitalize }}{% endif %}
+        {% if airline %} - {{ airline }}{% endif %}
+      </p>
+
+      {% if validation_errors %}
+        <div class="alert alert-error" role="alert" style="background:#fce8e6;border:1px solid #d93025;border-radius:4px;padding:12px;margin-bottom:16px;color:#5a0d05;">
+          <strong>Please fix your search:</strong>
+          <ul style="margin:6px 0 0 20px;padding:0;">
+            {% for err in validation_errors %}<li>{{ err }}</li>{% endfor %}
+          </ul>
+        </div>
+      {% endif %}
+      {% if not_found_hint %}
+        <div class="alert" role="alert" style="background:#fef7e0;border:1px solid #f29900;border-radius:4px;padding:12px;margin-bottom:16px;color:#5f4400;">
+          <strong>No flights for these exact dates.</strong> {{ not_found_hint }}
+        </div>
+      {% endif %}
+
+      {% set _from_q = (origin_input or origin_iata)|urlencode %}
+      {% set _to_q = (dest_input or dest_iata)|urlencode %}
+      {% set _qs_base = '?from=' ~ _from_q ~ '&to=' ~ _to_q ~ '&depart=' ~ depart ~ '&return=' ~ return_date ~ '&max_stops=' ~ max_stops ~ '&class=' ~ cabin ~ '&min_price=' ~ min_price ~ '&max_price=' ~ max_price ~ '&airline=' ~ airline %}
+      <div class="flights-toolbar" style="display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--g-grey-200);margin-bottom:12px;">
+        <div class="flights-tabs" role="tablist" style="display:flex;">
+          <a href="{{ _qs_base }}&sort=best" role="tab" aria-selected="{{ 'true' if sort != 'price' else 'false' }}"
+             class="flights-tab {% if sort != 'price' %}active{% endif %}">Best</a>
+          <a href="{{ _qs_base }}&sort=price" role="tab" aria-selected="{{ 'true' if sort == 'price' else 'false' }}"
+             class="flights-tab {% if sort == 'price' %}active{% endif %}">Cheapest</a>
+        </div>
+        <div class="flights-sort" style="display:flex;align-items:center;gap:8px;">
+          <label for="sort-by-select" style="font-size:13px;color:var(--g-grey-700);">Sort by</label>
+          <select id="sort-by-select" name="sort-by"
+                  onchange="window.location.href=this.options[this.selectedIndex].dataset.href"
+                  style="padding:6px 8px;border:1px solid var(--g-grey-300,#dadce0);border-radius:4px;font-size:13px;background:white;">
+            <option data-href="{{ _qs_base }}&sort=best"      {% if sort not in ['price','duration','departure','arrival','emissions','co2'] %}selected{% endif %}>Top flights</option>
+            <option data-href="{{ _qs_base }}&sort=price"     {% if sort == 'price' %}selected{% endif %}>Price (low to high)</option>
+            <option data-href="{{ _qs_base }}&sort=duration"  {% if sort == 'duration' %}selected{% endif %}>Duration</option>
+            <option data-href="{{ _qs_base }}&sort=departure" {% if sort == 'departure' %}selected{% endif %}>Departure time</option>
+            <option data-href="{{ _qs_base }}&sort=arrival"   {% if sort == 'arrival' %}selected{% endif %}>Arrival time</option>
+            <option data-href="{{ _qs_base }}&sort=emissions" {% if sort in ['emissions','co2'] %}selected{% endif %}>Emissions</option>
+          </select>
+        </div>
+      </div>
+
+      {% if flights %}
+        {% for f in flights %}
+          {% set display_price = f.price %}
+          {% if cabin|lower == 'business' and f.price_business %}{% set display_price = f.price_business %}{% endif %}
+          {% if cabin|lower == 'first' and f.price_first %}{% set display_price = f.price_first %}{% endif %}
+          {% if cabin|lower in ['premium','premium economy'] and f.price_premium %}{% set display_price = f.price_premium %}{% endif %}
+          <a href="{{ url_for('flight_detail', flight_id=f.id, dep=depart, **({'return': return_date} if return_date else {})) }}" class="flight-row result-card {% if f.is_best %}best{% endif %}"
+             data-flight-id="{{ f.id }}" data-price="{{ display_price }}" data-duration="{{ f.duration_minutes }}"
+             data-stops="{{ f.stops }}" data-cabin="{{ f.cabin_class }}" data-airline="{{ f.airline }}">
+            <div class="airline-logo">
+              <img src="{{ f.airline_logo }}" alt="{{ f.airline }}" onerror="this.style.display='none'">
+            </div>
+            <div class="flight-row-main">
+              <div>
+                <div class="flight-time">{{ f.departure_time }}</div>
+                <div class="flight-time-sub">{{ f.origin.iata }}</div>
+              </div>
+              <div class="flight-duration">
+                <div>{{ f.duration_str }}</div>
+                <div class="flight-line"></div>
+                <div class="flight-stops-info">
+                  {{ f.stops_str }}{% if f.stops > 0 and f.stop_cities %} via {{ f.stop_cities }}{% endif %}
+                </div>
+              </div>
+              <div>
+                <div class="flight-time">{{ f.arrival_time }}</div>
+                <div class="flight-time-sub">{{ f.destination.iata }}</div>
+              </div>
+              <div class="flight-emissions">
+                <div>{{ f.airline }}</div>
+                <div>{{ f.co2_emissions_kg }} kg CO<sub>2</sub></div>
+                {% if f.co2_vs_typical < 0 %}
+                  <div style="color:#1e8e3e;">{{ f.co2_vs_typical }}% emissions</div>
+                {% endif %}
+              </div>
+            </div>
+            <div>
+              {% if f.is_best %}<span class="badge badge-best">Best</span>{% endif %}
+            </div>
+            <div>
+              <div class="flight-price">{{ display_price|money }}</div>
+              <div class="flight-price-label">{% if return_date %}round trip{% else %}one way{% endif %}</div>
+            </div>
+          </a>
+        {% endfor %}
+      {% else %}
+        <div class="empty-state">
+          <div class="empty-state-icon"><span class="material-symbols-outlined" style="font-size:64px;">flight_takeoff</span></div>
+          <h3>No results for '{{ origin_iata or 'any origin' }}' - '{{ dest_iata or 'any destination' }}'</h3>
+          <p>Try different airports or dates, or relax your filters.</p>
+          <a href="{{ url_for('index') }}" class="btn btn-primary">Back to search</a>
+        </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}

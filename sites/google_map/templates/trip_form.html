@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% block title %}{{ action }} trip - Google Maps{% endblock %}
+
+{% block body %}
+<div class="topbar">
+    <a href="{{ url_for('index') }}" class="brand">
+        <span class="material-icons-outlined" style="font-size:26px;color:#ea4335;">place</span>
+        <span>Google Maps</span>
+    </a>
+    <div class="nav-links">
+        <a href="{{ url_for('trips_page') }}" class="nav-link">Back to trips</a>
+    </div>
+</div>
+
+<div class="page narrow">
+    <h1>{{ action }} a trip</h1>
+    <p class="page-sub">Collect places you want to visit, set dates, and share with travel companions.</p>
+
+    <form method="POST" style="background:#fff; padding:24px; border:1px solid var(--divider); border-radius:12px;">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <div class="form-group">
+            <label>Trip title</label>
+            <input type="text" name="title" required placeholder="e.g. Paris getaway" value="{{ trip.title if trip else '' }}" autofocus>
+        </div>
+        <div class="form-group">
+            <label>Destination city</label>
+            <select name="city">
+                <option value="">— Select a city —</option>
+                {% for c in cities %}
+                <option value="{{ c.display_name }}" {% if trip and trip.city == c.display_name %}selected{% endif %}>{{ c.display_name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+            <div class="form-group">
+                <label>Start date</label>
+                <input type="date" name="start_date" value="{{ trip.start_date.isoformat() if trip and trip.start_date else '' }}">
+            </div>
+            <div class="form-group">
+                <label>End date</label>
+                <input type="date" name="end_date" value="{{ trip.end_date.isoformat() if trip and trip.end_date else '' }}">
+            </div>
+        </div>
+        <div class="form-group">
+            <label>Notes (optional)</label>
+            <textarea name="notes" rows="4" placeholder="Anything you want to remember about this trip">{{ trip.notes if trip else '' }}</textarea>
+        </div>
+        <div style="display:flex; gap:10px;">
+            <button type="submit" class="btn">{{ action }} trip</button>
+            <a href="{{ url_for('trips_page') }}" class="btn outlined">Cancel</a>
+        </div>
+    </form>
+</div>
+{% endblock %}

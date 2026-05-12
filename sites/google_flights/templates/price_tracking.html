@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block title %}Price tracking | Google Flights{% endblock %}
+
+{% block content %}
+<section class="hero">
+  <h1>Track flight prices</h1>
+  <p class="hero-subtitle">Not ready to book? Get notified when prices drop.</p>
+</section>
+
+<div class="tool-wrap">
+  <div class="tracking-intro">
+    <h2 style="font-family:var(--font-sans);font-size:22px;font-weight:400;margin-bottom:16px;">How price tracking works</h2>
+    <div class="tracking-steps">
+      <div class="tracking-step">
+        <div class="step-num">1</div>
+        <h3>Find a flight</h3>
+        <p>Search for a flight you're interested in and open its details page.</p>
+      </div>
+      <div class="tracking-step">
+        <div class="step-num">2</div>
+        <h3>Click "Track prices"</h3>
+        <p>Tap the bookmark icon to start tracking. We'll monitor the price daily.</p>
+      </div>
+      <div class="tracking-step">
+        <div class="step-num">3</div>
+        <h3>Get alerts</h3>
+        <p>When the price drops significantly, we'll send you an email notification.</p>
+      </div>
+    </div>
+  </div>
+
+  {% if current_user.is_authenticated %}
+    <div style="text-align:center;margin-top:32px;">
+      <a href="{{ url_for('tracked_flights') }}" class="btn btn-primary">View your tracked flights</a>
+      <a href="{{ url_for('price_alerts') }}" class="btn btn-outline" style="margin-left:12px;">Manage alerts</a>
+    </div>
+  {% else %}
+    <div style="text-align:center;margin-top:32px;">
+      <a href="{{ url_for('login') }}" class="btn btn-primary">Sign in to track flights</a>
+    </div>
+  {% endif %}
+</div>
+{% endblock %}

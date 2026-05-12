@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block title %}{{ meta.title or meta.url }}{% endblock %}
+
+{% block content %}
+<style>
+.ext-wrap {
+  max-width: 820px;
+  margin: 16px auto 48px;
+  padding: 0 16px;
+  font-size: 15px;
+  line-height: 1.55;
+  color: #202124;
+}
+.ext-wrap h1 { font-size: 28px; margin: 18px 0 10px; }
+.ext-wrap h2 { font-size: 22px; margin: 20px 0 8px; border-bottom: 1px solid #e0e0e0; padding-bottom: 4px; }
+.ext-wrap h3 { font-size: 18px; margin: 16px 0 6px; }
+.ext-wrap h4 { font-size: 16px; margin: 14px 0 6px; color: #444; }
+.ext-wrap p { margin: 10px 0; }
+.ext-wrap ul, .ext-wrap ol { margin: 8px 0 8px 22px; }
+.ext-wrap li { margin: 4px 0; }
+.ext-wrap img { max-width: 100%; height: auto; margin: 12px 0; border-radius: 4px; }
+.ext-wrap table { border-collapse: collapse; margin: 12px 0; width: 100%; font-size: 14px; }
+.ext-wrap th, .ext-wrap td { border: 1px solid #dadce0; padding: 6px 10px; text-align: left; vertical-align: top; }
+.ext-wrap th { background: #f6f7f9; }
+.ext-wrap a { color: #1a0dab; }
+.ext-wrap a:visited { color: #681da8; }
+.ext-wrap figure { margin: 12px 0; }
+.ext-wrap .ext-title { font-size: 13px; color: #5f6368; margin-top: 4px; }
+</style>
+
+<div class="ext-wrap">
+  {% if meta.title %}<div class="ext-title">{{ meta.title }}</div>{% endif %}
+
+  <div class="ext-content">
+    {{ body|safe }}
+  </div>
+</div>
+<!-- Cached snapshot — captured {{ meta.scraped_at }}. The original page may have changed since this copy was saved. Source: {{ original_url }} -->
+{% endblock %}

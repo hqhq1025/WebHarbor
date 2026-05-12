@@ -1,0 +1,94 @@
+{% extends "base.html" %}
+{% block title %}Search ESPN{% endblock %}
+
+{% block content %}
+<div class="container">
+  <div class="search-page">
+    <h1>Search ESPN</h1>
+
+    <!-- Search Form -->
+    <form method="get" action="/search" class="search-form">
+      <div class="search-bar">
+        <input type="text" name="q" value="{{ query }}" placeholder="Search teams, players, news..." class="search-input" autofocus>
+        <button type="submit" class="btn-red search-submit">Search</button>
+      </div>
+      <div class="search-filters">
+        <select name="sport" class="filter-select">
+          <option value="">All Sports</option>
+          {% for sp in sports %}
+          <option value="{{ sp.slug }}" {{ 'selected' if sport_filter == sp.slug else '' }}>{{ sp.display_name or sp.name }}</option>
+          {% endfor %}
+        </select>
+        <select name="type" class="filter-select">
+          <option value="">All Types</option>
+          <option value="teams" {{ 'selected' if type_filter == 'teams' else '' }}>Teams</option>
+          <option value="players" {{ 'selected' if type_filter == 'players' else '' }}>Players</option>
+          <option value="articles" {{ 'selected' if type_filter == 'articles' else '' }}>Articles</option>
+        </select>
+      </div>
+    </form>
+
+    {% if query %}
+    <div class="search-results-summary">
+      Results for: <strong>{{ query }}</strong>
+      ({{ teams|length }} teams, {{ players|length }} players, {{ articles|length }} articles)
+    </div>
+
+    <!-- Teams Results -->
+    {% if teams and (not type_filter or type_filter == 'teams') %}
+    <section class="search-section">
+      <h2 class="section-heading">Teams</h2>
+      {% for team in teams %}
+      <div class="result-card">
+        <a href="/team/{{ team.sport_slug }}/{{ team.slug }}">
+          <div class="result-name">{{ team.full_name or team.name }}</div>
+          <div class="result-meta">{{ team.sport_slug | upper }} &bull; {{ team.wins }}-{{ team.losses }}</div>
+        </a>
+      </div>
+      {% endfor %}
+    </section>
+    {% endif %}
+
+    <!-- Players Results -->
+    {% if players and (not type_filter or type_filter == 'players') %}
+    <section class="search-section">
+      <h2 class="section-heading">Players</h2>
+      {% for player in players %}
+      <div class="result-card">
+        <a href="/player/{{ player.sport_slug }}/{{ player.slug }}">
+          <div class="result-name">{{ player.name }}</div>
+          <div class="result-meta">
+            {{ player.sport_slug | upper }} &bull; {{ player.position }}
+            {% if player.team %} &bull; {{ player.team.name }}{% endif %}
+          </div>
+        </a>
+      </div>
+      {% endfor %}
+    </section>
+    {% endif %}
+
+    <!-- Articles Results -->
+    {% if articles and (not type_filter or type_filter == 'articles') %}
+    <section class="search-section">
+      <h2 class="section-heading">Articles</h2>
+      {% for art in articles %}
+      <div class="result-card">
+        <a href="/story/{{ art.slug }}">
+          <div class="result-name">{{ art.title }}</div>
+          <div class="result-meta">{{ art.sport_slug | upper }} &bull; {{ art.author }} &bull; {{ art.published_date or art.created_at.strftime('%b %d, %Y') }}</div>
+        </a>
+      </div>
+      {% endfor %}
+    </section>
+    {% endif %}
+
+    {% if not teams and not players and not articles %}
+    <p class="empty-msg">No results found for "{{ query }}".</p>
+    {% endif %}
+
+    {% else %}
+    <p class="search-prompt">Enter a search term above to find teams, players, and news.</p>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

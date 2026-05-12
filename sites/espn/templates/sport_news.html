@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block title %}{{ sport.display_name or sport.name }} News{% endblock %}
+
+{% block content %}
+<div class="container">
+  <div class="page-header">
+    <h1>{{ sport.display_name or sport.name }} News</h1>
+    {% set active = 'news' %}{% include "_sport_subnav.html" %}
+  </div>
+
+  <div class="article-list">
+    {% for art in articles.items %}
+    <div class="article-list-item">
+      <div class="article-meta">
+        <span class="article-date">{{ art.published_date or art.created_at.strftime('%b %d, %Y') }}</span>
+        {% if art.is_headline %}<span class="badge-headline">Headline</span>{% endif %}
+      </div>
+      <h3 class="article-list-title"><a href="/story/{{ art.slug }}">{{ art.title }}</a></h3>
+      {% if art.subtitle %}<p class="article-subtitle">{{ art.subtitle }}</p>{% endif %}
+      <p class="article-byline">By {{ art.author }}</p>
+    </div>
+    {% else %}
+    <p class="empty-msg">No news articles available.</p>
+    {% endfor %}
+  </div>
+
+  <!-- Pagination -->
+  <div class="pagination">
+    {% if articles.has_prev %}
+    <a href="?page={{ articles.prev_num }}" class="page-btn">&laquo; Previous</a>
+    {% endif %}
+    <span class="page-info">Page {{ articles.page }} of {{ articles.pages }}</span>
+    {% if articles.has_next %}
+    <a href="?page={{ articles.next_num }}" class="page-btn">Next &raquo;</a>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

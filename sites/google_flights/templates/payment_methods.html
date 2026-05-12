@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% block title %}Payment Methods | Google Flights{% endblock %}
+
+{% block content %}
+<div style="max-width:700px;margin:40px auto;padding:0 16px;">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:24px;">
+    <h1 style="font-family:var(--font-sans);font-size:28px;font-weight:400;">Payment methods</h1>
+    <a href="{{ url_for('payment_method_add') }}" class="btn btn-primary">Add card</a>
+  </div>
+
+  {% if methods %}
+    {% for pm in methods %}
+    <div style="background:#fff;border:1px solid var(--g-grey-200);border-radius:8px;padding:16px 20px;margin-bottom:12px;display:flex;justify-content:space-between;align-items:center;">
+      <div>
+        <div style="font-weight:500;font-size:15px;">
+          {{ pm.card_type }} ending {{ pm.last4 }}
+          {% if pm.is_default %}<span style="background:var(--g-blue);color:#fff;font-size:11px;padding:2px 8px;border-radius:10px;margin-left:8px;">Default</span>{% endif %}
+        </div>
+        <div style="color:var(--g-grey-700);font-size:13px;margin-top:4px;">
+          {{ pm.cardholder_name }} &middot; Exp {{ '%02d'|format(pm.exp_month) }}/{{ pm.exp_year }}
+        </div>
+      </div>
+      <div style="display:flex;gap:8px;">
+        {% if not pm.is_default %}
+        <form method="POST" action="{{ url_for('payment_method_set_default', pm_id=pm.id) }}" style="display:inline;">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token_value }}">
+          <button type="submit" class="btn btn-outline" style="font-size:13px;padding:6px 12px;">Set default</button>
+        </form>
+        {% endif %}
+        <form method="POST" action="{{ url_for('payment_method_delete', pm_id=pm.id) }}" style="display:inline;">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token_value }}">
+          <button type="submit" class="btn btn-danger" style="font-size:13px;padding:6px 12px;">Remove</button>
+        </form>
+      </div>
+    </div>
+    {% endfor %}
+  {% else %}
+    <div class="empty-state">
+      <span class="material-symbols-outlined" style="font-size:64px;color:var(--g-grey-500);">credit_card</span>
+      <h3>No payment methods saved</h3>
+      <p>Add a card to speed up checkout.</p>
+      <a href="{{ url_for('payment_method_add') }}" class="btn btn-primary">Add card</a>
+    </div>
+  {% endif %}
+
+  <div style="margin-top:24px;">
+    <a href="{{ url_for('account') }}" style="color:var(--g-blue);text-decoration:none;">&larr; Back to account</a>
+  </div>
+</div>
+{% endblock %}

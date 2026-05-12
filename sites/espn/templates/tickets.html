@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block title %}Tickets &mdash; {{ away_team.full_name if away_team else 'Away' }} @ {{ home_team.full_name if home_team else 'Home' }}{% endblock %}
+
+{% block content %}
+<div class="container">
+  <div class="page-header">
+    <h1>Tickets</h1>
+    <p class="subtitle">
+      {{ away_team.full_name if away_team else 'Away' }} at {{ home_team.full_name if home_team else 'Home' }}
+      &bull; {{ game.date_display or game.date }}
+      {% if game.time %} &bull; {{ game.time }}{% endif %}
+      {% if game.venue %} &bull; {{ game.venue }}{% endif %}
+    </p>
+  </div>
+
+  <section class="section-block">
+    <h2 class="section-heading">Available Seating</h2>
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Section</th>
+          <th>Description</th>
+          <th class="stat-val">Price</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for t in tiers %}
+        <tr>
+          <td><strong>{{ t.section }}</strong></td>
+          <td>{{ t.name }}</td>
+          <td class="stat-val">${{ t.price }}.00</td>
+          <td><a href="#" class="btn-red btn-small">Select</a></td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    <p class="table-note">Prices include all fees. Seat availability subject to change.</p>
+  </section>
+</div>
+{% endblock %}

@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block title %}{{ doodle.title }} - Google Doodles{% endblock %}
+
+{% block content %}
+<div class="doodles-page" style="max-width:720px;">
+    <a href="{{ url_for('doodles') }}" class="btn-text" style="margin-bottom:16px;">&larr; All doodles</a>
+    {% if doodle.image_url %}
+    <img src="{{ doodle.image_url }}" alt="{{ doodle.title }}"
+         style="width:100%; max-height:400px; object-fit:cover; border-radius:12px; margin-bottom:24px;"
+         onerror="this.style.display='none'">
+    {% endif %}
+    <h1 style="font-size:36px; font-weight:400; margin:0 0 8px;">{{ doodle.title }}</h1>
+    <p class="muted">{{ doodle.published.strftime('%B %d, %Y') }}</p>
+    <p style="line-height:1.7; font-size:16px; color: var(--color-text); margin-top:20px;">{{ doodle.description }}</p>
+</div>
+{% endblock %}

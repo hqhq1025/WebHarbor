@@ -1,0 +1,211 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+    <title>{% block title %}BBC News{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect fill='%23000' width='100' height='100'/%3E%3Ctext x='50' y='68' font-family='Arial Black' font-size='40' fill='white' text-anchor='middle' font-weight='900'%3EBBC%3C/text%3E%3C/svg%3E">
+</head>
+<body>
+
+<!-- ============================================================
+     TOP "ORB" BAR  (BBC mark + global nav + sign-in + search)
+     ============================================================ -->
+<div class="orb-bar">
+    <div class="orb-inner">
+        <a href="{{ url_for('index') }}" class="orb-logo" aria-label="BBC homepage">
+            <span class="orb-logo-box">B</span><span class="orb-logo-box">B</span><span class="orb-logo-box">C</span>
+        </a>
+        <nav class="orb-nav" aria-label="Global">
+            <a href="{{ url_for('index') }}" {% if active_nav_slug == 'home' %}class="active"{% endif %}>Home</a>
+            <a href="{{ url_for('section_page', slug='news') }}" {% if active_nav_slug in ['news','uk','world','politics','africa','asia','europe','middle_east','us_canada','latin_america','australia','in_pictures','bbcverify','england','scotland','wales','northern_ireland'] %}class="active"{% endif %}>News</a>
+            <a href="{{ url_for('section_page', slug='sport') }}" {% if active_nav_slug == 'sport' %}class="active"{% endif %}>Sport</a>
+            <a href="{{ url_for('section_page', slug='business') }}" {% if active_nav_slug in ['business','market_data'] %}class="active"{% endif %}>Business</a>
+            <a href="{{ url_for('section_page', slug='technology') }}" {% if active_nav_slug in ['technology','science','ai'] %}class="active"{% endif %}>Innovation</a>
+            <a href="{{ url_for('section_page', slug='culture') }}" {% if active_nav_slug in ['culture','entertainment'] %}class="active"{% endif %}>Culture</a>
+            <a href="{{ url_for('section_page', slug='arts') }}" {% if active_nav_slug == 'arts' %}class="active"{% endif %}>Arts</a>
+            <a href="{{ url_for('section_page', slug='travel') }}" {% if active_nav_slug == 'travel' %}class="active"{% endif %}>Travel</a>
+            <a href="{{ url_for('section_page', slug='earth') }}" {% if active_nav_slug in ['earth','natural_wonders','green_living'] %}class="active"{% endif %}>Earth</a>
+            <a href="{{ url_for('section_page', slug='audio') }}" {% if active_nav_slug == 'audio' %}class="active"{% endif %}>Audio</a>
+            <a href="{{ url_for('section_page', slug='video') }}" {% if active_nav_slug == 'video' %}class="active"{% endif %}>Video</a>
+            <a href="{{ url_for('live_page') }}" {% if active_nav_slug == 'live' %}class="active"{% endif %}>Live</a>
+        </nav>
+        <div class="orb-actions">
+            {% if current_user.is_authenticated %}
+                <a href="{{ url_for('account') }}" class="orb-btn orb-btn-account">
+                    <span class="orb-avatar">{{ current_user.initials }}</span>
+                    <span class="orb-user-name">{{ current_user.full_name or current_user.username }}</span>
+                </a>
+                <a href="{{ url_for('logout') }}" class="orb-btn">Sign out</a>
+            {% else %}
+                <a href="{{ url_for('register') }}" class="orb-btn orb-btn-register">Register</a>
+                <a href="{{ url_for('login') }}" class="orb-btn orb-btn-signin">Sign In</a>
+            {% endif %}
+            <form action="{{ url_for('search') }}" method="get" class="orb-search">
+                <input type="text" name="q" placeholder="Search news, topics, sections" value="{{ request.args.get('q', '') }}">
+                <button type="submit" aria-label="Search">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- ============================================================
+     SECTION MASTHEAD  (e.g. "News" wordmark + horizontal sub-nav)
+     Shown on news pages only.
+     ============================================================ -->
+{% block masthead %}
+<header class="masthead">
+    <div class="masthead-inner">
+        <a href="{{ url_for('section_page', slug='news') }}" class="masthead-title">News</a>
+        <nav class="masthead-nav" aria-label="News sections">
+            <a href="{{ url_for('section_page', slug='news') }}" {% if active_nav_slug == 'news' %}class="active"{% endif %}>Home</a>
+            <a href="{{ url_for('section_page', slug='uk') }}" {% if active_nav_slug == 'uk' %}class="active"{% endif %}>UK</a>
+            <a href="{{ url_for('section_page', slug='world') }}" {% if active_nav_slug in ['world','africa','asia','europe','middle_east','us_canada','latin_america','australia'] %}class="active"{% endif %}>World</a>
+            <a href="{{ url_for('section_page', slug='business') }}" {% if active_nav_slug == 'business' %}class="active"{% endif %}>Business</a>
+            <a href="{{ url_for('section_page', slug='politics') }}" {% if active_nav_slug == 'politics' %}class="active"{% endif %}>Politics</a>
+            <a href="{{ url_for('section_page', slug='technology') }}" {% if active_nav_slug == 'technology' %}class="active"{% endif %}>Tech</a>
+            <a href="{{ url_for('section_page', slug='science') }}" {% if active_nav_slug == 'science' %}class="active"{% endif %}>Science</a>
+            <a href="{{ url_for('section_page', slug='health') }}" {% if active_nav_slug == 'health' %}class="active"{% endif %}>Health</a>
+            <a href="{{ url_for('section_page', slug='entertainment') }}" {% if active_nav_slug == 'entertainment' %}class="active"{% endif %}>Entertainment</a>
+            <a href="{{ url_for('section_page', slug='earth') }}" {% if active_nav_slug == 'earth' %}class="active"{% endif %}>Earth</a>
+            <a href="{{ url_for('section_page', slug='in_pictures') }}" {% if active_nav_slug == 'in_pictures' %}class="active"{% endif %}>In Pictures</a>
+            <a href="{{ url_for('section_page', slug='bbcverify') }}" {% if active_nav_slug == 'bbcverify' %}class="active"{% endif %}>BBC Verify</a>
+            <a href="{{ url_for('section_page', slug='weather') }}" {% if active_nav_slug == 'weather' %}class="active"{% endif %}>Weather</a>
+            <a href="{{ url_for('section_page', slug='war') }}" {% if active_nav_slug == 'war' %}class="active"{% endif %}>War</a>
+        </nav>
+    </div>
+</header>
+{% endblock %}
+
+<!-- ============================================================
+     PAGE SHELL  (left sidebar + main content)
+     ============================================================ -->
+<div class="page-shell">
+
+    <!-- LEFT SIDEBAR — full hierarchical BBC News navigation -->
+    <aside class="side-nav" aria-label="Section navigation">
+        <div class="side-nav-inner">
+            {# Helper macro: returns true if active_nav_slug matches node or any descendant #}
+            {% macro slug_in_tree(node, target) -%}
+                {%- if node.slug == target -%}1
+                {%- else -%}
+                    {%- for c in node.children or [] -%}
+                        {%- if slug_in_tree(c, target)|trim == '1' -%}1{%- endif -%}
+                    {%- endfor -%}
+                {%- endif -%}
+            {%- endmacro %}
+
+            {% for top in bbc_nav_tree %}
+                {% set is_active_top = slug_in_tree(top, active_nav_slug)|trim == '1' %}
+                {% if top.children %}
+                <details class="side-nav-group" {% if is_active_top %}open{% endif %}>
+                    <summary class="side-nav-top {% if active_nav_slug == top.slug %}is-active{% endif %}">
+                        <span>{{ top.title }}</span>
+                        <svg class="caret" width="12" height="12" viewBox="0 0 12 12" aria-hidden="true">
+                            <path d="M3 4l3 3 3-3" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                    </summary>
+                    <div class="side-nav-sub">
+                        <a href="{{ top.path }}" class="side-nav-sub-item side-nav-sub-all {% if active_nav_slug == top.slug %}is-active{% endif %}">All {{ top.title }}</a>
+                        {% for sub in top.children %}
+                            {% set is_active_sub = slug_in_tree(sub, active_nav_slug)|trim == '1' %}
+                            {% if sub.children %}
+                                <details class="side-nav-subgroup" {% if is_active_sub %}open{% endif %}>
+                                    <summary class="side-nav-sub-item {% if active_nav_slug == sub.slug %}is-active{% endif %}">{{ sub.title }}</summary>
+                                    <div class="side-nav-subsub">
+                                        <a href="{{ sub.path }}" class="side-nav-leaf side-nav-sub-all {% if active_nav_slug == sub.slug %}is-active{% endif %}">All {{ sub.title }}</a>
+                                        {% for leaf in sub.children %}
+                                        <a href="{{ leaf.path }}" class="side-nav-leaf {% if active_nav_slug == leaf.slug %}is-active{% endif %}">{{ leaf.title }}</a>
+                                        {% endfor %}
+                                    </div>
+                                </details>
+                            {% else %}
+                                <a href="{{ sub.path }}" class="side-nav-sub-item {% if active_nav_slug == sub.slug %}is-active{% endif %}">{{ sub.title }}</a>
+                            {% endif %}
+                        {% endfor %}
+                    </div>
+                </details>
+                {% else %}
+                <a href="{{ top.path }}" class="side-nav-top side-nav-leaf-top {% if is_active_top %}is-active{% endif %}">{{ top.title }}</a>
+                {% endif %}
+            {% endfor %}
+        </div>
+    </aside>
+
+    <!-- Flash messages -->
+    <div class="page-main">
+        {% with msgs = get_flashed_messages(with_categories=true) %}
+            {% if msgs %}
+            <div class="flash-container">
+                {% for category, message in msgs %}
+                    <div class="flash flash-{{ category }}">
+                        <span>{{ message }}</span>
+                        <button onclick="this.parentElement.remove()" aria-label="Dismiss">×</button>
+                    </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+        {% endwith %}
+
+        <main class="main-content">
+            {% block content %}{% endblock %}
+        </main>
+    </div>
+</div>
+
+<footer class="site-footer">
+    <div class="footer-top">
+        <div class="footer-inner">
+            <h2 class="footer-brand">BBC News</h2>
+            <div class="footer-grid">
+                <div class="footer-col">
+                    <h3>News</h3>
+                    <a href="{{ url_for('section_page', slug='world') }}">World</a>
+                    <a href="{{ url_for('section_page', slug='uk') }}">UK</a>
+                    <a href="{{ url_for('section_page', slug='politics') }}">Politics</a>
+                    <a href="{{ url_for('section_page', slug='business') }}">Business</a>
+                </div>
+                <div class="footer-col">
+                    <h3>More</h3>
+                    <a href="{{ url_for('section_page', slug='technology') }}">Tech</a>
+                    <a href="{{ url_for('section_page', slug='science') }}">Science</a>
+                    <a href="{{ url_for('section_page', slug='health') }}">Health</a>
+                    <a href="{{ url_for('section_page', slug='earth') }}">Earth</a>
+                </div>
+                <div class="footer-col">
+                    <h3>Your Account</h3>
+                    {% if current_user.is_authenticated %}
+                        <a href="{{ url_for('account') }}">My Account</a>
+                        <a href="{{ url_for('reading_list') }}">Reading List</a>
+                        <a href="{{ url_for('bookmarks_page') }}">Bookmarks</a>
+                        <a href="{{ url_for('subscriptions_page') }}">Subscriptions</a>
+                    {% else %}
+                        <a href="{{ url_for('login') }}">Sign In</a>
+                        <a href="{{ url_for('register') }}">Register</a>
+                    {% endif %}
+                </div>
+                <div class="footer-col">
+                    <h3>BBC</h3>
+                    <a href="{{ url_for('about_page') }}">About the BBC</a>
+                    <a href="{{ url_for('help_page') }}">Help</a>
+                    <a href="{{ url_for('contact_page') }}">Contact</a>
+                    <a href="#">Privacy Policy</a>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="footer-bottom">
+        <div class="footer-inner">
+            <p>Copyright © {{ current_year }} BBC. The BBC is not responsible for the content of external sites. This is a learning mirror — no content is real BBC output.</p>
+        </div>
+    </div>
+</footer>
+
+<script src="{{ url_for('static', filename='js/main.js') }}"></script>
+{% block extra_js %}{% endblock %}
+</body>
+</html>

@@ -1,0 +1,88 @@
+{% extends "base.html" %}
+{% block title %}Pro Pricing — Wolfram|Alpha{% endblock %}
+
+{% block content %}
+<div class="section-inner" style="padding-top: 60px;">
+  <h1 class="section-heading section-heading--center">Choose Your Plan</h1>
+  <p style="text-align:center; color: var(--color-text-secondary); margin-bottom: 40px;">All plans include access to Wolfram Alpha's full knowledge base.</p>
+
+  <div class="pricing-cards">
+    <div class="pricing-card">
+      <div class="pricing-card-header">
+        <h3>Free</h3>
+        <div class="pricing-amount"><span class="price-num">$0</span>/mo</div>
+      </div>
+      <ul class="pricing-features">
+        <li>&#10003; Unlimited basic queries</li>
+        <li>&#10003; All topic categories</li>
+        <li>&#10003; Save favorites</li>
+        <li>&#10003; Notebooks (3 max)</li>
+        <li>&#10003; Query history</li>
+        <li>&#10007; Step-by-step solutions</li>
+        <li>&#10007; File uploads</li>
+        <li>&#10007; Extended computation</li>
+        <li>&#10007; Data downloads</li>
+      </ul>
+      <a href="/register" class="btn btn-secondary btn-full">Get Started Free</a>
+    </div>
+
+    <div class="pricing-card pricing-card--featured">
+      <div class="pricing-card-badge">Most Popular</div>
+      <div class="pricing-card-header">
+        <h3>Professional</h3>
+        <div class="pricing-amount"><span class="price-num">$5</span>/mo</div>
+        <div class="pricing-alt">$60/year · or $9.99/month</div>
+      </div>
+      <ul class="pricing-features">
+        <li>&#10003; Everything in Free</li>
+        <li>&#10003; Step-by-step solutions</li>
+        <li>&#10003; Upload data (60+ formats)</li>
+        <li>&#10003; Extended computation</li>
+        <li>&#10003; Customizable visualizations</li>
+        <li>&#10003; Download results</li>
+        <li>&#10003; Web App builder</li>
+        <li>&#10003; Unlimited notebooks</li>
+        <li>&#10003; Problem generator</li>
+      </ul>
+      <a href="/register" class="btn btn-pro-primary btn-full">Go Pro Now</a>
+    </div>
+
+    <div class="pricing-card">
+      <div class="pricing-card-header">
+        <h3>Premium</h3>
+        <div class="pricing-amount"><span class="price-num">$8.25</span>/mo</div>
+        <div class="pricing-alt">$99/year · or $12/month</div>
+      </div>
+      <ul class="pricing-features">
+        <li>&#10003; Everything in Professional</li>
+        <li>&#10003; Priority computation</li>
+        <li>&#10003; API access (500 calls/mo)</li>
+        <li>&#10003; Premium expert support</li>
+        <li>&#10003; Advanced export (PDF, LaTeX)</li>
+        <li>&#10003; Early access to features</li>
+        <li>&#10003; Branded Web Apps</li>
+        <li>&#10003; Collaboration tools</li>
+        <li>&#10003; Output zoom preferences</li>
+      </ul>
+      <a href="/register" class="btn btn-secondary btn-full">Get Premium</a>
+    </div>
+  </div>
+
+  <div style="margin-top: 40px; text-align: center;">
+    <h3 style="margin-bottom: 16px;">Students &amp; Educators</h3>
+    <div class="pricing-cards" style="max-width: 600px; margin: 0 auto;">
+      <div class="pricing-card">
+        <div class="pricing-card-header"><h3>Student</h3>
+          <div class="pricing-amount"><span class="price-num">$32.75</span><span class="price-sub"> per semester</span></div>
+        </div>
+        <ul class="pricing-features">
+          <li>&#10003; All Professional features</li>
+          <li>&#10003; Per-semester billing</li>
+          <li>&#10003; .edu email required</li>
+        </ul>
+        <a href="/register" class="btn btn-pro-primary btn-full">Get Student Plan</a>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

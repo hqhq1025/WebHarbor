@@ -1,0 +1,152 @@
+{% extends "base.html" %}
+{% block title %}WolframAlpha: Computational Intelligence{% endblock %}
+{% block body_class %}page-home{% endblock %}
+
+{% block nav_logo %}{# homepage hides nav logo — big logo lives in the hero #}{% endblock %}
+
+{% block content %}
+<!-- Hero: makers eyebrow, big wordmark, search, mode/tools row, tagline -->
+<section class="wa-hero">
+  <div class="wa-hero-inner">
+    <p class="wa-hero-eyebrow">FROM THE MAKERS OF <strong>WOLFRAM LANGUAGE</strong> AND <strong>MATHEMATICA</strong></p>
+    <a href="/" class="wa-wordmark" aria-label="WolframAlpha">
+      <img src="/static/images/pro/wolfram_alpha_spikey_icon_5e9b37fe41.svg" alt="" class="wa-wordmark-spikey">
+      <span class="wa-wordmark-text"><span class="wm-wolfram">Wolfram</span><span class="wm-alpha">Alpha</span></span>
+    </a>
+
+    <form class="wa-search-form" action="/input" method="get" id="mainSearchForm">
+      <div class="wa-search-bar">
+        <div class="wa-search-input-wrap">
+          <input type="text" name="i" id="mainSearchInput"
+                 placeholder="Enter what you want to calculate or know about"
+                 class="wa-search-input" autocomplete="off" spellcheck="false">
+          <div class="wa-autocomplete" id="waAutocomplete"></div>
+        </div>
+        <button type="submit" class="wa-search-btn" aria-label="Compute">
+          <span class="wa-search-btn-icon">&#8801;</span>
+        </button>
+      </div>
+
+      <div class="wa-toolbar">
+        <div class="wa-modes" role="tablist">
+          <label class="wa-mode-btn wa-mode-btn--active">
+            <input type="radio" name="mode" value="natural" checked>
+            <span class="wa-mode-icon wa-mode-icon--star" aria-hidden="true">✱</span>
+            <span class="wa-mode-label">NATURAL LANGUAGE</span>
+          </label>
+          <label class="wa-mode-btn">
+            <input type="radio" name="mode" value="math">
+            <span class="wa-mode-icon wa-mode-icon--math" aria-hidden="true"><span class="mi-int">&#8747;</span><span class="mi-sub">&Sigma;</span></span>
+            <span class="wa-mode-label">MATH INPUT</span>
+          </label>
+          <label class="wa-mode-btn wa-mode-btn--icon" title="Upload image">
+            <input type="radio" name="mode" value="image">
+            <span class="wa-mode-icon wa-mode-icon--cam" aria-hidden="true">&#9737;</span>
+          </label>
+        </div>
+        <div class="wa-tools">
+          <a href="#" class="wa-tool-link" onclick="return false"><span class="wa-tool-icon">⌨</span>EXTENDED KEYBOARD</a>
+          <a href="/examples/mathematics" class="wa-tool-link"><span class="wa-tool-icon">⊞</span>EXAMPLES</a>
+          <a href="#" class="wa-tool-link" onclick="return false"><span class="wa-tool-icon">⬆</span>UPLOAD</a>
+          <a href="/input?i={{ ['carbon','factor 70560','BMI 5ft10 170lb','weather New York']|random|urlencode }}" class="wa-tool-link"><span class="wa-tool-icon">⚄</span>RANDOM</a>
+        </div>
+      </div>
+    </form>
+
+    <p class="wa-hero-tagline">Compute expert-level answers using Wolfram&rsquo;s breakthrough algorithms,<br>knowledgebase and AI technology</p>
+  </div>
+</section>
+
+{# Per-subcategory icon glyph (mimics real WA's tiny formula thumbnails) #}
+{% set sub_icons = {
+  'algebra': ('x²', 'math'),
+  'calculus': ('∫', 'math'),
+  'statistics': ('📊', 'emoji'),
+  'geometry': ('△', 'sym'),
+  'number-theory': ('p²', 'math'),
+  'trigonometry': ('sin', 'mathword'),
+  'linear-algebra': ('⎡⎤', 'sym'),
+  'probability': ('P(x)', 'mathword'),
+  'physics': ('⚛', 'sym'),
+  'chemistry': ('🧪', 'emoji'),
+  'astronomy': ('🪐', 'emoji'),
+  'earth-science': ('🌎', 'emoji'),
+  'life-sciences': ('🧬', 'emoji'),
+  'engineering': ('⚙', 'sym'),
+  'units-measures': ('📏', 'emoji'),
+  'weather': ('☁', 'sym'),
+  'people': ('👤', 'emoji'),
+  'linguistics': ('Aa', 'mathword'),
+  'geography': ('🌍', 'emoji'),
+  'finance': ('$', 'mathword'),
+  'history': ('📜', 'emoji'),
+  'arts-media': ('🎨', 'emoji'),
+  'personal-health': ('🏃', 'emoji'),
+  'entertainment': ('🎬', 'emoji'),
+  'personal-finance': ('💵', 'emoji'),
+  'travel': ('✈', 'sym'),
+  'household-math': ('🧮', 'emoji'),
+  'household-science': ('❄', 'sym'),
+} %}
+
+<!-- Categories: 4 vertical column lists, like real WA -->
+<section class="wa-categories-section">
+  <div class="wa-categories-grid">
+    {% for cat in categories %}
+    <div class="wa-cat-col" style="--cat-color: {{ cat.color }}">
+      <a href="/examples/{{ cat.slug }}" class="wa-cat-col-title">
+        {{ cat.name }} <span class="wa-cat-arrow">&rsaquo;</span>
+      </a>
+      <div class="wa-cat-list">
+        {% for sub in cat.subcategories[:9] %}
+        {% set icon = sub_icons.get(sub.slug, (cat.icon, 'sym')) %}
+        <a href="/topic/{{ sub.slug }}" class="wa-cat-row">
+          <span class="wa-cat-row-icon wa-cat-row-icon--{{ icon[1] }}" aria-hidden="true">{{ icon[0] }}</span>
+          <span class="wa-cat-row-name">{{ sub.name }}</span>
+        </a>
+        {% endfor %}
+        <a href="/examples/{{ cat.slug }}" class="wa-cat-row wa-cat-row--more">
+          <span class="wa-cat-row-icon wa-cat-row-icon--dots" aria-hidden="true">⋮⋮⋮</span>
+          <span class="wa-cat-row-name">More Topics &raquo;</span>
+        </a>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const input = document.getElementById('mainSearchInput');
+const acBox = document.getElementById('waAutocomplete');
+let acTimer;
+input.addEventListener('input', () => {
+  clearTimeout(acTimer);
+  const q = input.value.trim();
+  if (q.length < 2) { acBox.innerHTML=''; acBox.classList.remove('show'); return; }
+  acTimer = setTimeout(() => {
+    fetch('/api/autocomplete?q=' + encodeURIComponent(q))
+      .then(r => r.json()).then(results => {
+        if (!results.length) { acBox.innerHTML=''; acBox.classList.remove('show'); return; }
+        acBox.innerHTML = results.map(r =>
+          `<div class="ac-item" onclick="document.getElementById('mainSearchInput').value='${r.replace(/'/g,"\\'")}'; document.getElementById('mainSearchForm').submit()">${r}</div>`
+        ).join('');
+        acBox.classList.add('show');
+      });
+  }, 200);
+});
+document.addEventListener('click', (e) => {
+  if (!e.target.closest('.wa-search-bar')) {
+    acBox.innerHTML=''; acBox.classList.remove('show');
+  }
+});
+// Toggle mode buttons (visual only)
+document.querySelectorAll('.wa-mode-btn input').forEach(r => {
+  r.addEventListener('change', () => {
+    document.querySelectorAll('.wa-mode-btn').forEach(b => b.classList.remove('wa-mode-btn--active'));
+    if (r.checked) r.parentElement.classList.add('wa-mode-btn--active');
+  });
+});
+</script>
+{% endblock %}

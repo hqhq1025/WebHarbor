@@ -1,0 +1,94 @@
+{% extends "base.html" %}
+{% block title %}{{ subject_code }} {{ view }} — arXiv{% endblock %}
+{% block breadcrumbs %}
+    <span class="sep">&gt;</span>
+    <a href="{{ url_for('category_detail', code=category.code) }}">{{ category.code }}</a>
+    <span class="sep">&gt;</span>
+    <a href="{{ url_for('listing', code=subject_code, view=view) }}">{{ subject_code }} ({{ view }})</a>
+{% endblock %}
+{% block content %}
+
+<div class="listing-header">
+    <p class="subtitle">Showing <b>{{ subject_code }}</b> {{ view }} listings</p>
+    <h1>{{ category.name }}
+        {% if subject_code != category.code %}<small style="color:var(--text-muted)">· {{ subject_code }}</small>{% endif %}
+    </h1>
+</div>
+
+<div class="listing-nav">
+    Showing <b>{{ (page-1)*per_page + 1 if total else 0 }}-{{ [page*per_page, total]|min }}</b> of <b>{{ total }}</b> entries |
+    <a href="{{ url_for('listing', code=subject_code, view='new') }}">New</a> |
+    <a href="{{ url_for('listing', code=subject_code, view='recent') }}">Recent</a> |
+    <a href="{{ url_for('category_detail', code=category.code) }}">Back to {{ category.name }}</a>
+</div>
+
+{% if papers %}
+{% set idx = namespace(n=(page-1)*per_page) %}
+{% if grouped %}
+    {% for g in grouped %}
+    <h3 class="announce-day">{{ g.label }} ({{ g.count }} entries)</h3>
+    <dl>
+        {% for p in g.papers %}
+        {% set idx.n = idx.n + 1 %}
+        <dt>
+            <span class="entry-id">[{{ idx.n }}]&nbsp;<a href="{{ url_for('paper_detail', arxiv_id=p.arxiv_id) }}">arXiv:{{ p.arxiv_id }}</a></span>
+            [<a href="{{ url_for('pdf_view', arxiv_id=p.arxiv_id) }}">pdf</a>,
+            <a href="{{ url_for('html_view', arxiv_id=p.arxiv_id) }}">html</a>,
+            <a href="{{ url_for('format_view', arxiv_id=p.arxiv_id) }}">other</a>]
+        </dt>
+        <dd class="paper-entry">
+            <div class="entry-title"><a href="{{ url_for('paper_detail', arxiv_id=p.arxiv_id) }}">{{ p.title }}</a></div>
+            <div class="entry-authors"><b>Authors:</b>
+                {% for a in p.get_authors() %}
+                    <a href="{{ url_for('author_papers', name=a) }}">{{ a }}</a>{% if not loop.last %}, {% endif %}
+                {% endfor %}
+            </div>
+            {% if p.comments %}
+            <div class="entry-comments"><b>Comments:</b> {{ p.comments }}</div>
+            {% endif %}
+            <div class="entry-subjects"><b>Subjects:</b> {{ p.subjects }}</div>
+        </dd>
+        {% endfor %}
+    </dl>
+    {% endfor %}
+{% else %}
+<dl>
+    {% for p in papers %}
+    <dt>
+        <span class="entry-id">[{{ loop.index + (page-1)*per_page }}]&nbsp;<a href="{{ url_for('paper_detail', arxiv_id=p.arxiv_id) }}">arXiv:{{ p.arxiv_id }}</a></span>
+        [<a href="{{ url_for('pdf_view', arxiv_id=p.arxiv_id) }}">pdf</a>,
+        <a href="{{ url_for('html_view', arxiv_id=p.arxiv_id) }}">html</a>,
+        <a href="{{ url_for('format_view', arxiv_id=p.arxiv_id) }}">other</a>]
+    </dt>
+    <dd class="paper-entry">
+        <div class="entry-title"><a href="{{ url_for('paper_detail', arxiv_id=p.arxiv_id) }}">{{ p.title }}</a></div>
+        <div class="entry-authors"><b>Authors:</b>
+            {% for a in p.get_authors() %}
+                <a href="{{ url_for('author_papers', name=a) }}">{{ a }}</a>{% if not loop.last %}, {% endif %}
+            {% endfor %}
+        </div>
+        {% if p.comments %}
+        <div class="entry-comments"><b>Comments:</b> {{ p.comments }}</div>
+        {% endif %}
+        <div class="entry-subjects"><b>Subjects:</b> {{ p.subjects }}</div>
+    </dd>
+    {% endfor %}
+</dl>
+{% endif %}
+
+<!-- Pagination -->
+<div class="pagination">
+    {% if page > 1 %}
+        <a href="{{ url_for('listing', code=subject_code, view=view, page=page-1) }}">« Prev</a>
+    {% endif %}
+    <span class="current">{{ page }}</span>
+    {% if page * per_page < total %}
+        <a href="{{ url_for('listing', code=subject_code, view=view, page=page+1) }}">Next »</a>
+    {% endif %}
+</div>
+
+{% else %}
+<p class="muted">No entries in this listing yet.</p>
+{% endif %}
+
+{% endblock %}

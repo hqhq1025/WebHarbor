@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="csrf-token" content="{{ csrf_token() }}">
+<title>{% block title %}Google{% endblock %}</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><circle cx='12' cy='12' r='10' fill='%234285F4'/><text x='12' y='17' text-anchor='middle' fill='white' font-family='sans-serif' font-size='14' font-weight='bold'>G</text></svg>">
+{% block extra_head %}{% endblock %}
+</head>
+<body>
+
+{% block header %}
+{% if request.endpoint != 'index' %}
+<div class="top-header">
+    <a href="{{ url_for('index') }}" class="g-logo g-logo-small">
+        <span>G</span><span>o</span><span>o</span><span>g</span><span>l</span><span>e</span>
+    </a>
+    <div class="top-header-right">
+        <a class="top-nav-link" href="{{ url_for('trending') }}">Trending</a>
+        <a class="top-nav-link" href="{{ url_for('doodles') }}">Doodles</a>
+        <a class="top-nav-link" href="{{ url_for('search', q='images', tbm='images') }}">Images</a>
+        <button class="icon-btn" data-apps-toggle aria-label="Google apps">
+            <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><circle cx="5" cy="5" r="2"/><circle cx="12" cy="5" r="2"/><circle cx="19" cy="5" r="2"/><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/><circle cx="5" cy="19" r="2"/><circle cx="12" cy="19" r="2"/><circle cx="19" cy="19" r="2"/></svg>
+        </button>
+        {% if current_user.is_authenticated %}
+        <a class="user-avatar" href="{{ url_for('account') }}" title="{{ current_user.name }}">{{ current_user.avatar_letter or 'G' }}</a>
+        {% else %}
+        <a href="{{ url_for('login') }}" class="sign-in-btn">Sign in</a>
+        {% endif %}
+    </div>
+    <div class="apps-dropdown">
+        <div class="apps-grid-mini">
+            {% for app in google_apps %}
+            <a class="app-mini" href="{{ app.url }}">
+                <div class="icon" style="background: {{ app.color }}">{{ app.name[0] }}</div>
+                <div>{{ app.name }}</div>
+            </a>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% with messages = get_flashed_messages(with_categories=true) %}
+{% if messages %}
+<div class="flash-wrap">
+    {% for category, msg in messages %}
+    <div class="flash-msg {{ category }}">{{ msg }}</div>
+    {% endfor %}
+</div>
+{% endif %}
+{% endwith %}
+
+{% block content %}{% endblock %}
+
+{% block footer %}
+<footer class="g-footer">
+    <div class="footer-top">
+        {{ current_user.region or 'United States' }}
+    </div>
+    <div class="footer-bottom">
+        <a href="{{ url_for('about') }}">About</a>
+        <a href="{{ url_for('advertising') }}">Advertising</a>
+        <a href="{{ url_for('business') }}">Business</a>
+        <a href="{{ url_for('how_search_works') }}">How Search works</a>
+        <div class="footer-right">
+            <a href="{{ url_for('privacy') }}">Privacy</a>
+            <a href="{{ url_for('terms') }}">Terms</a>
+            <a href="{{ url_for('settings') }}">Settings</a>
+        </div>
+    </div>
+</footer>
+{% endblock %}
+
+<script src="{{ url_for('static', filename='js/main.js') }}"></script>
+{% block extra_js %}{% endblock %}
+</body>
+</html>

@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% block title %}{{ team.full_name or team.name }} Depth Chart{% endblock %}
+
+{% block content %}
+<div class="container">
+  <div class="page-header">
+    <h1>{{ team.full_name or team.name }} Depth Chart</h1>
+    {% set active = 'depth_chart' %}{% include "_team_subnav.html" %}
+  </div>
+
+  {% if by_position %}
+  <table class="data-table depth-table">
+    <thead>
+      <tr>
+        <th>Position</th>
+        <th>1st</th>
+        <th>2nd</th>
+        <th>3rd</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for position, entries in by_position.items() %}
+      <tr>
+        <td class="position-col"><strong>{{ position }}</strong></td>
+        {% for rank in [1, 2, 3] %}
+        <td class="depth-player-cell">
+          {% set entry = entries | selectattr('position_rank', 'equalto', rank) | first %}
+          {% if entry %}
+            <a href="/player/{{ sport.slug if sport else '#' }}/{{ entry.player.slug if entry.player else '#' }}">
+              {{ entry.player.name if entry.player else '—' }}
+            </a>
+            {% if entry.injury_notes %}
+            <span class="injury-note">{{ entry.injury_notes }}</span>
+            {% endif %}
+          {% else %}
+          —
+          {% endif %}
+        </td>
+        {% endfor %}
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <p class="empty-msg">No depth chart data available.</p>
+  {% endif %}
+</div>
+{% endblock %}

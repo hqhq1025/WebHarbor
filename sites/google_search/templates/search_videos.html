@@ -1,0 +1,44 @@
+{% from "_serp_header.html" import serp_header with context %}
+{% extends "base.html" %}
+{% block title %}{{ q }} - Google Video Search{% endblock %}
+{% block header %}{{ serp_header(q, 'videos') }}{% endblock %}
+
+{% block content %}
+<div class="videos-list">
+    <div class="serp-meta">About {{ result_count|fmt_count }} results ({{ search_time }} seconds)</div>
+    {% if topic %}
+    {% set imgs = topic.get_images() %}
+    {% for r in results %}
+    {% set video_href = r.external_path or url_for('url_redirect', q=r.url) %}
+    <div class="video-item">
+        <a class="video-thumb" href="{{ video_href }}">
+            {% if imgs %}
+            <img src="{{ imgs[loop.index0 % imgs|length] }}" alt="{{ r.title }}" onerror="this.parentElement.style.background='#000'">
+            {% endif %}
+            <span class="play-icon">{{ loop.index * 3 + 14 }}:{{ '%02d' % ((loop.index * 7) % 60) }}</span>
+        </a>
+        <div class="video-meta">
+            <div class="result-source">{{ r.display_url }}</div>
+            <h3 class="video-title"><a href="{{ video_href }}">{{ r.title }}</a></h3>
+            <div class="result-snippet">{{ r.snippet }}</div>
+            <div class="result-actions" style="margin-left:0;">
+                {% if current_user.is_authenticated %}
+                <form method="POST" action="{{ url_for('bookmark_save_form', result_id=r.id) }}" style="display:inline">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token_value }}">
+                    <button type="submit" class="btn-text" style="padding:4px 8px;">☆ Save</button>
+                </form>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+    {% else %}
+    <div class="video-item" style="border-top:none; justify-content:center; padding:60px 0;">
+        <div style="text-align:center; color: var(--color-text-tertiary);">
+            <p>No videos found for "{{ q }}"</p>
+            <a href="{{ url_for('search', q='Python', tbm='videos') }}">Try: Python</a>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

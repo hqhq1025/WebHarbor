@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% block title %}Payment Methods - Apple{% endblock %}
+
+{% block content %}
+<div style="max-width:var(--max-width);margin:0 auto;padding:80px 20px 60px">
+    <a href="{{ url_for('account') }}" style="font-size:14px;margin-bottom:16px;display:inline-block">&lsaquo; Back to Account</a>
+
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:32px">
+        <div>
+            <h1 style="font-size:40px;font-weight:700;font-family:var(--font-family);margin-bottom:8px">Payment Methods</h1>
+            <p style="color:var(--color-text-secondary);font-size:17px">Manage your saved payment methods.</p>
+        </div>
+        <a href="{{ url_for('add_payment') }}" class="btn-checkout" style="max-width:200px;display:inline-block;text-align:center;text-decoration:none">Add Payment</a>
+    </div>
+
+    {% if payments %}
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:20px">
+        {% for pm in payments %}
+        <div style="background:var(--color-bg-secondary);border-radius:20px;padding:24px;position:relative{% if pm.is_default %};border:2px solid var(--color-link){% endif %}">
+            {% if pm.is_default %}
+            <span style="position:absolute;top:12px;right:12px;background:var(--color-link);color:#fff;font-size:11px;font-weight:700;padding:3px 10px;border-radius:999px">Default</span>
+            {% endif %}
+            <div style="font-size:28px;margin-bottom:8px">
+                {% if pm.card_type == 'Visa' %}&#128179;{% elif pm.card_type == 'Mastercard' %}&#128180;{% else %}&#128181;{% endif %}
+            </div>
+            <p style="font-weight:700;font-size:17px;margin-bottom:4px">{{ pm.card_type }}</p>
+            <p style="color:var(--color-text-secondary);font-size:15px">
+                &bull;&bull;&bull;&bull; &bull;&bull;&bull;&bull; &bull;&bull;&bull;&bull; {{ pm.last4 }}<br>
+                Expires {{ pm.exp_month }}/{{ pm.exp_year }}<br>
+                {{ pm.cardholder_name }}
+            </p>
+            <div style="display:flex;gap:8px;margin-top:16px">
+                {% if not pm.is_default %}
+                <form method="POST" action="{{ url_for('set_default_payment', pm_id=pm.id) }}" style="flex:1">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token_value }}">
+                    <button type="submit" style="width:100%;padding:8px;background:var(--color-bg);border:1px solid var(--color-border);border-radius:10px;font-size:13px;font-weight:600;cursor:pointer;color:var(--color-text)">Set Default</button>
+                </form>
+                {% endif %}
+                <form method="POST" action="{{ url_for('delete_payment', pm_id=pm.id) }}" style="display:inline">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token_value }}">
+                    <button type="submit" style="padding:8px 14px;background:transparent;border:1px solid var(--color-border);border-radius:10px;font-size:13px;cursor:pointer;color:var(--color-text-secondary)">&#128465;</button>
+                </form>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div style="text-align:center;padding:60px;background:var(--color-bg-secondary);border-radius:16px">
+        <div style="font-size:48px;margin-bottom:16px">&#128179;</div>
+        <h2 style="font-size:24px;font-weight:700;margin-bottom:8px;font-family:var(--font-family)">No payment methods saved.</h2>
+        <p style="color:var(--color-text-secondary);margin-bottom:20px">Add a card to speed up checkout.</p>
+        <a href="{{ url_for('add_payment') }}" class="btn-checkout" style="max-width:200px;margin:0 auto;display:block">Add Payment Method</a>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

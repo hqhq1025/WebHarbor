@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+{% block title %}Pull requests · {{ repo.full_name }} · GitHub{% endblock %}
+{% block content %}
+<div class="repo-header-bar">
+  <div class="repo-header-inner">
+    <div class="repo-breadcrumb">
+      <a href="/{{ repo.owner.username }}" class="repo-breadcrumb-link">{{ repo.owner.username }}</a>
+      <span class="repo-breadcrumb-sep">/</span>
+      <a href="/{{ repo.full_name }}" class="repo-breadcrumb-link repo-breadcrumb-repo">{{ repo.name }}</a>
+    </div>
+    <nav class="repo-tabs">
+      <a href="/{{ repo.full_name }}" class="repo-tab">Code</a>
+      <a href="/{{ repo.full_name }}/issues" class="repo-tab">Issues</a>
+      <a href="/{{ repo.full_name }}/pulls" class="repo-tab repo-tab-active">
+        Pull requests <span class="repo-tab-count">{{ open_count }}</span>
+      </a>
+    </nav>
+  </div>
+</div>
+
+<div class="issues-page">
+  <div class="issues-toolbar">
+    <div class="issues-toggle">
+      <a href="/{{ repo.full_name }}/pulls?q=is:open" class="issues-toggle-btn {% if is_open %}active{% endif %}">
+        <svg aria-hidden="true" height="16" viewBox="0 0 16 16" width="16" fill="currentColor">
+          <path d="M1.5 3.25a2.25 2.25 0 1 1 3 2.122v5.256a2.251 2.251 0 1 1-1.5 0V5.372A2.25 2.25 0 0 1 1.5 3.25Zm5.677-.177L9.573.677A.25.25 0 0 1 10 .854V2.5h1A2.5 2.5 0 0 1 13.5 5v5.628a2.251 2.251 0 1 1-1.5 0V5a1 1 0 0 0-1-1h-1v1.646a.25.25 0 0 1-.427.177L7.177 3.427a.25.25 0 0 1 0-.354Z"/>
+        </svg>
+        {{ open_count }} Open
+      </a>
+      <a href="/{{ repo.full_name }}/pulls?q=is:closed" class="issues-toggle-btn {% if not is_open %}active{% endif %}">
+        <svg aria-hidden="true" height="16" viewBox="0 0 16 16" width="16" fill="currentColor">
+          <path d="M5 3.254V3.25a2.25 2.25 0 1 1 .26.973l-.39-.078L8 7.474l3.13-3.328-.39.078A2.25 2.25 0 1 1 11 3.254a.75.75 0 0 1-.26-.04Z"/>
+        </svg>
+        {{ closed_count }} Closed
+      </a>
+    </div>
+  </div>
+
+  <div class="issues-list">
+    {% for pr in pulls %}
+    <div class="issue-row">
+      <div class="issue-status-icon">
+        {% if pr.status == 'open' %}
+        <svg aria-hidden="true" height="16" viewBox="0 0 16 16" width="16" fill="#3fb950">
+          <path d="M1.5 3.25a2.25 2.25 0 1 1 3 2.122v5.256a2.251 2.251 0 1 1-1.5 0V5.372A2.25 2.25 0 0 1 1.5 3.25Zm5.677-.177L9.573.677A.25.25 0 0 1 10 .854V2.5h1A2.5 2.5 0 0 1 13.5 5v5.628a2.251 2.251 0 1 1-1.5 0V5a1 1 0 0 0-1-1h-1v1.646a.25.25 0 0 1-.427.177L7.177 3.427a.25.25 0 0 1 0-.354Z"/>
+        </svg>
+        {% elif pr.status == 'merged' %}
+        <svg aria-hidden="true" height="16" viewBox="0 0 16 16" width="16" fill="#a371f7">
+          <path d="M5 3.254V3.25a2.25 2.25 0 1 1 .26.973l-.39-.078L8 7.474l3.13-3.328-.39.078A2.25 2.25 0 1 1 11 3.254a.75.75 0 0 1-.26-.04Z"/>
+        </svg>
+        {% else %}
+        <svg aria-hidden="true" height="16" viewBox="0 0 16 16" width="16" fill="#f85149">
+          <path d="M3.25 1A2.25 2.25 0 0 1 4 5.372v5.256a2.251 2.251 0 1 1-1.5 0V5.372A2.251 2.251 0 0 1 3.25 1Z"/>
+        </svg>
+        {% endif %}
+      </div>
+      <div class="issue-content">
+        <a href="/{{ repo.full_name }}/issues/{{ pr.number }}" class="issue-title">{{ pr.title }}</a>
+        <div class="issue-meta">
+          #{{ pr.number }} {% if pr.status == 'open' %}opened{% elif pr.status == 'merged' %}merged{% else %}closed{% endif %}
+          on {{ pr.created_at.strftime('%b %-d, %Y') }}
+          by <a href="/{{ pr.author.username }}" class="issue-author">{{ pr.author.username }}</a>
+          {% if pr.pr_base_branch and pr.pr_head_branch %}
+          · <code class="pr-branch">{{ pr.pr_head_branch }} → {{ pr.pr_base_branch }}</code>
+          {% endif %}
+        </div>
+      </div>
+      <div class="issue-stats">
+        {% if pr.pr_changed_files %}<span class="pr-files">{{ pr.pr_changed_files }} files</span>{% endif %}
+        {% if pr.pr_additions %}<span class="additions">+{{ pr.pr_additions }}</span>{% endif %}
+        {% if pr.pr_deletions %}<span class="deletions">−{{ pr.pr_deletions }}</span>{% endif %}
+      </div>
+    </div>
+    {% else %}
+    <div class="empty-state">
+      <p>No pull requests {% if is_open %}open{% else %}closed{% endif %}.</p>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}

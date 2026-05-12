@@ -1,0 +1,213 @@
+{% extends "base.html" %}
+{% block title %}GitHub Actions · Automate your workflow{% endblock %}
+{% block content %}
+
+<!-- Hero -->
+<section class="sec-hero">
+  <div class="sec-hero-inner">
+    <div class="sec-hero-text">
+      <span class="sec-eyebrow">
+        <svg aria-hidden="true" height="16" viewBox="0 0 16 16" width="16" fill="currentColor">
+          <path d="M11.46.146A.5.5 0 0 0 11.107 0H4.893a.5.5 0 0 0-.353.146L.146 4.54A.5.5 0 0 0 0 4.893v6.214a.5.5 0 0 0 .146.353l4.394 4.394a.5.5 0 0 0 .353.146h6.214a.5.5 0 0 0 .353-.146l4.394-4.394a.5.5 0 0 0 .146-.353V4.893a.5.5 0 0 0-.146-.353Z"/>
+        </svg>
+        GitHub Actions
+      </span>
+      <h1 class="sec-hero-headline">Automate everything from idea to production.</h1>
+      <p class="sec-hero-sub">CI/CD, scheduled jobs, ChatOps, release automation, security scans — all in one YAML file that lives next to your code. Free for public repos, included in every paid plan.</p>
+      <div class="sec-hero-cta">
+        <a href="/register" class="gh-btn gh-btn-primary">Start using Actions</a>
+        <a href="/marketplace" class="gh-btn gh-btn-secondary">Browse the Marketplace</a>
+      </div>
+      <ul class="sec-hero-bullets">
+        <li>Linux, macOS, Windows, ARM, and self-hosted runners</li>
+        <li>20,000+ pre-built actions in the GitHub Marketplace</li>
+        <li>Free 2,000 minutes/month on private repos</li>
+      </ul>
+    </div>
+    <div class="sec-hero-art" aria-hidden="true">
+      <div class="sec-hero-card">
+        <div class="sec-hero-card-row sec-row-fix">
+          <span class="sec-row-icon">✅</span>
+          <span class="sec-row-msg"><strong>build (ubuntu-latest)</strong> — passed in 47s</span>
+        </div>
+        <div class="sec-hero-card-row sec-row-dep">
+          <span class="sec-row-icon">🧪</span>
+          <span class="sec-row-msg"><strong>test (node-20)</strong> — 312 tests passed</span>
+        </div>
+        <div class="sec-hero-card-row sec-row-secret">
+          <span class="sec-row-icon">🔍</span>
+          <span class="sec-row-msg"><strong>codeql</strong> — no new alerts</span>
+        </div>
+        <div class="sec-hero-card-row sec-row-bug">
+          <span class="sec-row-icon">🚀</span>
+          <span class="sec-row-msg"><strong>deploy (production)</strong> — published in 1m 12s</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Feature grid -->
+<section class="sec-features">
+  <div class="sec-section-inner">
+    <h2 class="sec-section-title">One automation engine. Every workflow.</h2>
+    <p class="sec-section-lede">Actions runs anything you can put in a Linux container — and a few things you can't, like macOS builds for iOS apps and ARM64 builds for Raspberry Pi.</p>
+    <div class="sec-feature-grid">
+      <div class="sec-feature">
+        <div class="sec-feature-icon">⚡</div>
+        <h3>Continuous integration</h3>
+        <p>Run your full test matrix on every pull request — across Node 18, 20, and 22, on Linux, macOS, and Windows, in parallel. Failure annotations land directly on the diff.</p>
+        <a href="/marketplace?category=continuous-integration" class="sec-feature-link">CI actions in Marketplace →</a>
+      </div>
+      <div class="sec-feature">
+        <div class="sec-feature-icon">🚀</div>
+        <h3>Continuous deployment</h3>
+        <p>Promote a commit from staging to production with one approval. Environment protection rules, required reviewers, and timed deploys all live in the workflow file.</p>
+        <a href="/marketplace?category=deployment" class="sec-feature-link">Deployment actions →</a>
+      </div>
+      <div class="sec-feature">
+        <div class="sec-feature-icon">🤖</div>
+        <h3>Repo automation</h3>
+        <p>Auto-label issues, greet new contributors, close stale PRs, sync forks, post Slack updates — anything you used to nag a teammate to do, encoded as YAML.</p>
+        <a href="/marketplace?category=utilities" class="sec-feature-link">Automation actions →</a>
+      </div>
+      <div class="sec-feature">
+        <div class="sec-feature-icon">📈</div>
+        <h3>Built to scale</h3>
+        <p>Self-hosted runners on your own hardware. Runner groups for org-wide governance. Larger 64-vCPU GPU runners for ML training. Concurrency controls keep deploys serialized.</p>
+        <a href="/pricing" class="sec-feature-link">Runner pricing →</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Workflow code example -->
+<section class="sec-detail">
+  <div class="sec-section-inner">
+    <h2 class="sec-section-title">A workflow file is all you need.</h2>
+    <p class="sec-section-lede">Drop a <code>.github/workflows/ci.yml</code> into any repository and Actions takes care of the rest. Here's a complete pipeline that tests on three Node versions, then deploys to production on a tag.</p>
+{% raw %}<pre style="background:#0d1117; border:1px solid var(--color-border); border-radius:8px; padding:20px 24px; overflow-x:auto; color:#c9d1d9; font-family:ui-monospace,SFMono-Regular,monospace; font-size:13px; line-height:1.6; margin:0;"><code><span style="color:#ff7b72;">name</span><span style="color:#8b949e;">:</span> CI &amp; Deploy
+
+<span style="color:#ff7b72;">on</span><span style="color:#8b949e;">:</span>
+  <span style="color:#ff7b72;">push</span><span style="color:#8b949e;">:</span>
+    <span style="color:#ff7b72;">branches</span><span style="color:#8b949e;">:</span> [main]
+    <span style="color:#ff7b72;">tags</span><span style="color:#8b949e;">:</span> [<span style="color:#a5d6ff;">'v*'</span>]
+  <span style="color:#ff7b72;">pull_request</span><span style="color:#8b949e;">:</span>
+
+<span style="color:#ff7b72;">jobs</span><span style="color:#8b949e;">:</span>
+  <span style="color:#ff7b72;">test</span><span style="color:#8b949e;">:</span>
+    <span style="color:#ff7b72;">runs-on</span><span style="color:#8b949e;">:</span> ubuntu-latest
+    <span style="color:#ff7b72;">strategy</span><span style="color:#8b949e;">:</span>
+      <span style="color:#ff7b72;">matrix</span><span style="color:#8b949e;">:</span>
+        <span style="color:#ff7b72;">node</span><span style="color:#8b949e;">:</span> [18, 20, 22]
+    <span style="color:#ff7b72;">steps</span><span style="color:#8b949e;">:</span>
+      - <span style="color:#ff7b72;">uses</span><span style="color:#8b949e;">:</span> actions/checkout@v4
+      - <span style="color:#ff7b72;">uses</span><span style="color:#8b949e;">:</span> actions/setup-node@v4
+        <span style="color:#ff7b72;">with</span><span style="color:#8b949e;">:</span>
+          <span style="color:#ff7b72;">node-version</span><span style="color:#8b949e;">:</span> ${{ matrix.node }}
+      - <span style="color:#ff7b72;">run</span><span style="color:#8b949e;">:</span> npm ci &amp;&amp; npm test
+
+  <span style="color:#ff7b72;">deploy</span><span style="color:#8b949e;">:</span>
+    <span style="color:#ff7b72;">if</span><span style="color:#8b949e;">:</span> startsWith(github.ref, <span style="color:#a5d6ff;">'refs/tags/v'</span>)
+    <span style="color:#ff7b72;">needs</span><span style="color:#8b949e;">:</span> test
+    <span style="color:#ff7b72;">runs-on</span><span style="color:#8b949e;">:</span> ubuntu-latest
+    <span style="color:#ff7b72;">environment</span><span style="color:#8b949e;">:</span> production
+    <span style="color:#ff7b72;">steps</span><span style="color:#8b949e;">:</span>
+      - <span style="color:#ff7b72;">uses</span><span style="color:#8b949e;">:</span> actions/checkout@v4
+      - <span style="color:#ff7b72;">run</span><span style="color:#8b949e;">:</span> ./scripts/release.sh</code></pre>{% endraw %}
+    <p style="margin-top:14px; color:var(--color-fg-muted); font-size:13px;">That's the whole pipeline — version-controlled, peer-reviewed, and runnable by anyone with push access.</p>
+  </div>
+</section>
+
+<!-- Stats -->
+<section class="sec-stats">
+  <div class="sec-section-inner">
+    <div class="sec-stats-grid">
+      <div class="sec-stat">
+        <div class="sec-stat-num">20,000+</div>
+        <div class="sec-stat-label">pre-built actions in the GitHub Marketplace</div>
+      </div>
+      <div class="sec-stat">
+        <div class="sec-stat-num">9.2B</div>
+        <div class="sec-stat-label">workflow runs executed in 2024</div>
+      </div>
+      <div class="sec-stat">
+        <div class="sec-stat-num">100%</div>
+        <div class="sec-stat-label">free for public repositories — including macOS runners</div>
+      </div>
+      <div class="sec-stat">
+        <div class="sec-stat-num">5 OSes</div>
+        <div class="sec-stat-label">Linux, macOS, Windows, ARM64, self-hosted</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Customers using Actions -->
+<section class="sec-stories">
+  <div class="sec-section-inner">
+    <h2 class="sec-section-title">Engineering teams shipping on Actions</h2>
+    <div class="sec-stories-grid">
+      <article class="sec-story">
+        <div class="sec-story-logo sec-story-mercado">N.</div>
+        <blockquote class="sec-story-quote">"Actions is the connective tissue across our 6,000 internal services. One workflow file — and a service ships to global production."</blockquote>
+        <div class="sec-story-attr"><strong>Netflix</strong> · 2,000+ engineers</div>
+      </article>
+      <article class="sec-story">
+        <div class="sec-story-logo sec-story-adobe">A.</div>
+        <blockquote class="sec-story-quote">"We rebuilt our entire release pipeline on Actions in three weeks. Every team gets the same paved-road template; nobody hand-rolls deploy YAML anymore."</blockquote>
+        <div class="sec-story-attr"><strong>Atlassian</strong> · 30,000+ workflows/day</div>
+      </article>
+      <article class="sec-story">
+        <div class="sec-story-logo sec-story-shopify">S.</div>
+        <blockquote class="sec-story-quote">"Self-hosted runners on our own GPU fleet let us run ML training as just another GitHub Actions job. Same UI as CI — same audit trail."</blockquote>
+        <div class="sec-story-attr"><strong>Stripe</strong> · 4,000 GPU-hours/month</div>
+      </article>
+    </div>
+  </div>
+</section>
+
+<!-- Plan comparison -->
+<section class="sec-plans">
+  <div class="sec-section-inner">
+    <h2 class="sec-section-title">What's included in each plan</h2>
+    <div class="sec-plan-table-wrap">
+      <table class="sec-plan-table">
+        <thead>
+          <tr>
+            <th></th>
+            <th>Free<br><small>Public repos</small></th>
+            <th>Team<br><small>Private repos</small></th>
+            <th class="sec-plan-highlight">Enterprise<br><small>Org-wide</small></th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td>Public-repo minutes</td><td>Unlimited</td><td>Unlimited</td><td>Unlimited</td></tr>
+          <tr><td>Private-repo minutes / month</td><td>2,000</td><td>3,000</td><td>50,000</td></tr>
+          <tr><td>Concurrent jobs</td><td>20</td><td>40</td><td>180</td></tr>
+          <tr><td>Self-hosted runners</td><td>✓</td><td>✓</td><td>✓</td></tr>
+          <tr><td>macOS runners</td><td>✓</td><td>✓</td><td>✓</td></tr>
+          <tr><td>Larger runners (16-vCPU+)</td><td>—</td><td>add-on</td><td>✓</td></tr>
+          <tr><td>GPU runners</td><td>—</td><td>add-on</td><td>✓</td></tr>
+          <tr><td>Required reviewers / environment protection</td><td>—</td><td>✓</td><td>✓</td></tr>
+          <tr><td>OIDC for cloud deploys (no static creds)</td><td>✓</td><td>✓</td><td>✓</td></tr>
+          <tr><td>SOC 2 / FedRAMP audit logs</td><td>—</td><td>—</td><td>✓</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<!-- Final CTA -->
+<section class="sec-final-cta">
+  <div class="sec-section-inner sec-narrow sec-final-cta-inner">
+    <h2>Your first green check is a commit away.</h2>
+    <p>Drop a workflow file in <code>.github/workflows/</code> and Actions will run it on the next push. Free for public repos.</p>
+    <div class="sec-hero-cta">
+      <a href="/register" class="gh-btn gh-btn-primary">Get started</a>
+      <a href="/pricing" class="gh-btn gh-btn-secondary">See pricing</a>
+    </div>
+  </div>
+</section>
+
+{% endblock %}

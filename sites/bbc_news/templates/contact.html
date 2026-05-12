@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block title %}Contact - BBC News{% endblock %}
+
+{% block content %}
+<div class="static-page">
+    <h1>Contact us</h1>
+    <p>
+        This is a learning mirror of BBC News. For real BBC News inquiries, visit the original site at
+        <code>bbc.com/news</code>. For questions about this mirror:
+    </p>
+
+    <h2>Newsroom</h2>
+    <p>
+        To report an issue with a story or send feedback on the content model, use the account
+        and comment features on any article page.
+    </p>
+
+    <h2>Technical feedback</h2>
+    <p>
+        This mirror was built with the mirror-web skill as an exercise in full-stack web cloning.
+        Bug reports and improvement suggestions about the mirror itself are welcome.
+    </p>
+
+    <h2>Demo credentials</h2>
+    <p>
+        A ready-to-use demo account is included:
+    </p>
+    <ul>
+        <li>Email: <code>demo@bbcnews.local</code></li>
+        <li>Password: <code>demodemo</code></li>
+    </ul>
+
+    <p>
+        Or <a href="{{ url_for('register') }}">register a new account</a> to try the reading list,
+        bookmarks, and digest features for yourself.
+    </p>
+</div>
+{% endblock %}

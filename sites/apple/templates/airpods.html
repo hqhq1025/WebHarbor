@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+{% block title %}AirPods - Apple{% endblock %}
+
+{% block content %}
+<div class="category-hero">
+    <h1>AirPods</h1>
+</div>
+<div class="category-nav">
+    {% for product in products %}
+    <a href="#{{ product.slug }}">{{ product.name }}</a>
+    {% endfor %}
+    <a href="/compare/airpods">Compare</a>
+</div>
+
+<section class="lineup-section">
+    <div class="lineup-grid">
+        {% for product in products %}
+        <a href="{{ url_for('product_detail', slug=product.slug) }}" class="lineup-card" id="{{ product.slug }}">
+            <div class="lineup-card-image">
+                <img src="{{ product.image }}" alt="{{ product.name }}"
+                     onerror="this.parentElement.innerHTML='<div class=\'placeholder-img\' style=\'width:160px;height:200px;background:linear-gradient(135deg,#a18cd1,#fbc2eb);border-radius:16px\'>&#127911;</div>'">
+            </div>
+            {% if product.is_new %}<span class="badge-new">New</span>{% endif %}
+            <h3>{{ product.name }}</h3>
+            <p class="lineup-subtitle">{{ product.subtitle }}</p>
+            <p class="lineup-price">From ${{ "%.2f"|format(product.price) }}</p>
+            <div class="lineup-cta">
+                <span>Learn more</span>
+                <span>Buy</span>
+            </div>
+        </a>
+        {% endfor %}
+    </div>
+</section>
+
+<section class="features-section">
+    <h2 class="shelf-title">Why AirPods.</h2>
+    <div class="features-grid">
+        <div class="feature-card feature-dark">
+            <div class="feature-icon">&#127925;</div>
+            <h3>Spatial Audio</h3>
+            <p>Personalized Spatial Audio with dynamic head tracking for immersive sound.</p>
+        </div>
+        <div class="feature-card">
+            <div class="feature-icon">&#128263;</div>
+            <h3>Active Noise Cancellation</h3>
+            <p>Block outside noise for total immersion in your music, podcasts, and calls.</p>
+        </div>
+        <div class="feature-card">
+            <div class="feature-icon">&#128266;</div>
+            <h3>Hearing Health</h3>
+            <p>A complete hearing health experience with hearing test, hearing aid, and hearing protection.</p>
+        </div>
+        <div class="feature-card feature-dark">
+            <div class="feature-stat">30hr</div>
+            <h3>Battery Life</h3>
+            <p>Up to 30 hours of total listening time with the charging case.</p>
+        </div>
+    </div>
+</section>
+{% endblock %}

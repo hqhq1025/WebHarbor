@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block title %}{{ title }} - Google Collections{% endblock %}
+
+{% block content %}
+<div class="form-page">
+    <div class="form-card">
+        <h1 class="form-title">{{ title }}</h1>
+        <form method="post">
+            {{ form.hidden_tag() }}
+            <div class="field">
+                <label>Name</label>
+                {{ form.name() }}
+            </div>
+            <div class="field">
+                <label>Description</label>
+                {{ form.description(rows=3) }}
+            </div>
+            <div class="field">
+                <label>Color</label>
+                {{ form.color() }}
+            </div>
+            <div class="field field-checkbox">
+                {{ form.is_public() }} <label>Make this collection public</label>
+            </div>
+            <div class="form-actions">
+                <a href="{{ url_for('collections') }}" class="btn-text">Cancel</a>
+                <button type="submit" class="btn-primary">Save</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

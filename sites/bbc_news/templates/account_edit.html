@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% block title %}Edit profile - BBC News{% endblock %}
+
+{% block content %}
+<div class="auth-page">
+    <h1>Edit your profile</h1>
+    <p class="auth-sub">Update how your name, location, and bio appear on BBC News.</p>
+    <form method="post">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <div class="form-group">
+            <label for="full_name">Full name</label>
+            <input type="text" name="full_name" id="full_name" value="{{ current_user.full_name or '' }}">
+        </div>
+        <div class="form-group">
+            <label for="location">Location</label>
+            <input type="text" name="location" id="location" value="{{ current_user.location or '' }}" placeholder="London, UK">
+        </div>
+        <div class="form-group">
+            <label for="bio">Bio</label>
+            <textarea name="bio" id="bio" rows="4">{{ current_user.bio or '' }}</textarea>
+        </div>
+        <div class="form-group">
+            <label style="display: flex; align-items: center; gap: 8px; font-weight: 400;">
+                <input type="checkbox" name="notification_email" {% if current_user.notification_email %}checked{% endif %}>
+                Receive email alerts for topics I subscribe to
+            </label>
+        </div>
+        <button type="submit" class="btn btn-full">Save changes</button>
+    </form>
+    <div class="auth-footer">
+        <a href="{{ url_for('account') }}">← Back to account</a>
+    </div>
+</div>
+{% endblock %}

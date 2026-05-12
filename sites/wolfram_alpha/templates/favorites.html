@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block title %}Saved Topics — Wolfram|Alpha{% endblock %}
+
+{% block content %}
+<div class="section-inner">
+  <div class="page-header">
+    <h1 class="page-title">&#9733; Saved Topics</h1>
+    <p class="page-subtitle">Topics you've bookmarked for quick access.</p>
+  </div>
+
+  {% if favorites %}
+  <div class="wa-topics-grid">
+    {% for fav in favorites %}
+    <div class="wa-topic-card">
+      <div class="wa-topic-img-wrap">
+        <img src="{{ fav.topic.image }}" alt="{{ fav.topic.name }}"
+             onerror="this.parentElement.innerHTML='<div class=\'topic-img-placeholder\'>{{ fav.topic.category.icon }}</div>'">
+      </div>
+      <div class="wa-topic-body">
+        <span class="wa-topic-category" style="color: {{ fav.topic.category.color }}">{{ fav.topic.category.name }}</span>
+        <h3 class="wa-topic-name">{{ fav.topic.name }}</h3>
+        <p class="wa-topic-desc">{{ fav.topic.description[:100] }}...</p>
+        <div class="card-actions">
+          <a href="/topic/{{ fav.topic.slug }}" class="btn btn-primary btn-sm">Explore</a>
+          <form action="/favorites/remove/{{ fav.id }}" method="post" style="display:inline">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button type="submit" class="btn btn-secondary btn-sm">Remove</button>
+          </form>
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="empty-state-page">
+    <div class="empty-icon">&#9734;</div>
+    <h2>No saved topics yet</h2>
+    <p>Browse topics and click "Save Topic" to add them here.</p>
+    <a href="/" class="btn btn-pro-primary">Explore Topics</a>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

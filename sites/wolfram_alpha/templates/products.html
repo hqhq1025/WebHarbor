@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block title %}Products — Wolfram|Alpha{% endblock %}
+
+{% block content %}
+<div class="section-inner" style="padding-top: 60px;">
+  <h1 class="section-heading section-heading--center">Wolfram Products</h1>
+  <p style="text-align:center; color: var(--color-text-secondary); margin-bottom: 40px; max-width: 600px; margin-left: auto; margin-right: auto;">
+    From a student's homework helper to an enterprise computation platform — Wolfram has a product for every need.
+  </p>
+  <div class="products-grid">
+    {% set products = [
+      ("Wolfram|Alpha", "The world's computational intelligence engine. Get expert-level answers instantly.", "/", "#cc00cc", "∑"),
+      ("Wolfram|Alpha Pro", "Step-by-step solutions, file uploads, extended computation.", "/pro", "#f59e0b", "⚡"),
+      ("Wolfram Language", "The language of computation. Used in Mathematica and beyond.", "/products", "#3b82f6", "λ"),
+      ("Wolfram Mathematica", "The ultimate system for modern technical computing.", "/products", "#22c55e", "M"),
+      ("Wolfram MathWorld", "The world's most extensive mathematics resource.", "/products", "#ef4444", "π"),
+      ("Wolfram Cloud", "Cloud-based platform for deploying Wolfram technology.", "/products", "#8b5cf6", "☁"),
+    ] %}
+    {% for name, desc, link, color, icon in products %}
+    <a href="{{ link }}" class="product-card">
+      <div class="product-card-icon" style="color: {{ color }}">{{ icon }}</div>
+      <h3 class="product-card-name">{{ name }}</h3>
+      <p class="product-card-desc">{{ desc }}</p>
+      <span class="product-card-link">Learn more &rarr;</span>
+    </a>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}

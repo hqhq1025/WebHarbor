@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% block title %}Notebooks — Wolfram|Alpha{% endblock %}
+
+{% block content %}
+<div class="section-inner">
+  <div class="page-header">
+    <h1 class="page-title">&#128195; Notebooks</h1>
+    <a href="/notebook/create" class="btn btn-pro-primary">+ New Notebook</a>
+  </div>
+
+  {% if notebooks %}
+  <div class="notebooks-grid">
+    {% for nb in notebooks %}
+    <div class="notebook-card">
+      <div class="notebook-card-header">
+        <h3 class="notebook-card-title"><a href="/notebook/{{ nb.id }}">{{ nb.title }}</a></h3>
+        {% if nb.is_public %}<span class="badge-public">Public</span>{% endif %}
+      </div>
+      {% if nb.description %}
+      <p class="notebook-card-desc">{{ nb.description[:120] }}</p>
+      {% endif %}
+      <div class="notebook-card-meta">
+        <span>{{ nb.entries|length }} entries</span>
+        <span>Updated {{ nb.updated_at.strftime('%b %d, %Y') }}</span>
+      </div>
+      <div class="notebook-card-actions">
+        <a href="/notebook/{{ nb.id }}" class="btn btn-primary btn-sm">Open</a>
+        <form action="/notebook/{{ nb.id }}/delete" method="post" style="display:inline">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <button type="submit" class="btn btn-secondary btn-sm">Delete</button>
+        </form>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="empty-state-page">
+    <div class="empty-icon">&#128195;</div>
+    <h2>No notebooks yet</h2>
+    <p>Create notebooks to organize your computations and results.</p>
+    <a href="/notebook/create" class="btn btn-pro-primary">Create First Notebook</a>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

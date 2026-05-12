@@ -1,0 +1,107 @@
+{% extends "base.html" %}
+{% from "_macros.html" import repo_card %}
+{% block title %}Search – Hugging Face{% endblock %}
+
+{% block content %}
+<div class="container-wide page">
+    <form class="search-form" action="{{ url_for('search') }}" method="get">
+        <input type="text" name="q" class="form-control form-control-lg" placeholder="Search models, datasets, spaces…" value="{{ q }}" autofocus>
+        <input type="hidden" name="type" value="{{ kind }}">
+        <input type="hidden" name="sort" value="{{ active_sort }}">
+        {% if active_license %}<input type="hidden" name="license" value="{{ active_license }}">{% endif %}
+        {% if active_library %}<input type="hidden" name="library" value="{{ active_library }}">{% endif %}
+        <button class="btn btn-primary" type="submit">Search</button>
+    </form>
+
+    <div class="search-filters">
+        <a class="{% if kind == 'all' %}is-active{% endif %}" href="?q={{ q }}&type=all&sort={{ active_sort }}{% if active_license %}&license={{ active_license }}{% endif %}{% if active_library %}&library={{ active_library }}{% endif %}">All ({{ results|length }})</a>
+        <a class="{% if kind == 'model' %}is-active{% endif %}" href="?q={{ q }}&type=model&sort={{ active_sort }}{% if active_license %}&license={{ active_license }}{% endif %}{% if active_library %}&library={{ active_library }}{% endif %}">Models</a>
+        <a class="{% if kind == 'dataset' %}is-active{% endif %}" href="?q={{ q }}&type=dataset&sort={{ active_sort }}{% if active_license %}&license={{ active_license }}{% endif %}{% if active_library %}&library={{ active_library }}{% endif %}">Datasets</a>
+        <a class="{% if kind == 'space' %}is-active{% endif %}" href="?q={{ q }}&type=space&sort={{ active_sort }}{% if active_license %}&license={{ active_license }}{% endif %}{% if active_library %}&library={{ active_library }}{% endif %}">Spaces</a>
+    </div>
+
+    <div class="search-refine" style="display:flex;gap:12px;margin:12px 0;flex-wrap:wrap;align-items:center;">
+        <form method="get" style="display:flex;gap:8px;align-items:center;">
+            <input type="hidden" name="q" value="{{ q }}">
+            <input type="hidden" name="type" value="{{ kind }}">
+            {% if active_license %}<input type="hidden" name="license" value="{{ active_license }}">{% endif %}
+            {% if active_library %}<input type="hidden" name="library" value="{{ active_library }}">{% endif %}
+            <label class="muted" style="font-size:12px;">Sort:</label>
+            <select name="sort" onchange="this.form.submit()" aria-label="Sort results" class="form-control form-control-sm">
+                <option value="trending" {% if active_sort == 'trending' %}selected{% endif %}>Trending</option>
+                <option value="likes" {% if active_sort == 'likes' %}selected{% endif %}>Most likes</option>
+                <option value="downloads" {% if active_sort == 'downloads' %}selected{% endif %}>Most downloads</option>
+                <option value="updated" {% if active_sort == 'updated' %}selected{% endif %}>Recently updated</option>
+                <option value="created" {% if active_sort == 'created' %}selected{% endif %}>Recently created</option>
+            </select>
+        </form>
+        <form method="get" style="display:flex;gap:8px;align-items:center;">
+            <input type="hidden" name="q" value="{{ q }}">
+            <input type="hidden" name="type" value="{{ kind }}">
+            <input type="hidden" name="sort" value="{{ active_sort }}">
+            {% if active_library %}<input type="hidden" name="library" value="{{ active_library }}">{% endif %}
+            <label class="muted" style="font-size:12px;">License:</label>
+            <select name="license" onchange="this.form.submit()" aria-label="License filter" class="form-control form-control-sm">
+                <option value="">Any license</option>
+                {% for lic in licenses %}
+                <option value="{{ lic[0] }}" {% if active_license == lic[0] %}selected{% endif %}>{{ lic[1] }}</option>
+                {% endfor %}
+            </select>
+        </form>
+        <form method="get" style="display:flex;gap:8px;align-items:center;">
+            <input type="hidden" name="q" value="{{ q }}">
+            <input type="hidden" name="type" value="{{ kind }}">
+            <input type="hidden" name="sort" value="{{ active_sort }}">
+            {% if active_license %}<input type="hidden" name="license" value="{{ active_license }}">{% endif %}
+            <label class="muted" style="font-size:12px;">Library:</label>
+            <select name="library" onchange="this.form.submit()" aria-label="Library filter" class="form-control form-control-sm">
+                <option value="">Any library</option>
+                {% for lib in libraries %}
+                <option value="{{ lib }}" {% if active_library == lib %}selected{% endif %}>{{ lib }}</option>
+                {% endfor %}
+            </select>
+        </form>
+        {% if active_license or active_library %}
+        <a class="muted" href="?q={{ q }}&type={{ kind }}&sort={{ active_sort }}" style="font-size:12px;">Clear filters</a>
+        {% endif %}
+    </div>
+
+    {% if parsed_filters %}
+    <p class="muted" style="font-size:12px;">Parsed structured filters from query:
+        {% for k, v in parsed_filters.items() %}<code>{{ k }}={{ v }}</code>{% if not loop.last %} · {% endif %}{% endfor %}
+    </p>
+    {% endif %}
+
+    {% set _ql = (q or '')|lower %}
+    {% set _helpful_links = [] %}
+    {% if 'classroom' in _ql or 'education' in _ql or 'teacher' in _ql or 'student' in _ql or 'course' in _ql %}
+        {% set _ = _helpful_links.append({'url': '/classroom', 'title': '🎓 Hugging Face Classroom', 'desc': 'Free educational tools, curriculum, teacher dashboards, ZeroGPU priority, certification, and benefits for teachers and students learning ML.'}) %}
+        {% set _ = _helpful_links.append({'url': '/learn', 'title': '📚 Learn Hugging Face', 'desc': 'Courses on Transformers, Diffusion, RL, and Agents — plus the Classroom program.'}) %}
+    {% endif %}
+    {% if 'blog' in _ql or 'announc' in _ql or 'news' in _ql or 'diffusion' in _ql %}
+        {% set _ = _helpful_links.append({'url': '/blog', 'title': '📝 Hugging Face Blog', 'desc': 'Latest posts on diffusion models, LLMs, ASR, diffusers releases, and research announcements.'}) %}
+    {% endif %}
+    {% if 'doc' in _ql or 'trl' in _ql or 'forward' in _ql or 'margin' in _ql or 'loss' in _ql or 'api' in _ql %}
+        {% set _ = _helpful_links.append({'url': '/docs', 'title': '📖 Documentation', 'desc': 'Library documentation covering Transformers, Diffusers, TRL, Datasets, and more.'}) %}
+    {% endif %}
+    {% if _helpful_links %}
+    <section class="search-helpful" style="margin:12px 0 16px;border:1px solid var(--border,#e5e7eb);border-radius:12px;padding:12px 16px;background:#fffbeb;">
+        <p class="muted" style="margin:0 0 8px;font-size:12px;">Suggested pages for "{{ q }}":</p>
+        <ul style="margin:0;padding-left:18px;">
+        {% for link in _helpful_links %}
+            <li style="margin:4px 0;"><a href="{{ link.url }}"><strong>{{ link.title }}</strong></a> — <span class="muted">{{ link.desc }}</span></li>
+        {% endfor %}
+        </ul>
+    </section>
+    {% endif %}
+
+    {% if q or active_license or active_library %}
+    <p class="muted">{{ results|length }} result{{ '' if results|length == 1 else 's' }}{% if q %} for "<strong>{{ q }}</strong>"{% endif %}</p>
+    <div class="repo-list">
+        {% for r in results %}{{ repo_card(r, liked_ids) }}{% else %}<p class="empty-state">No results. Try a different search.</p>{% endfor %}
+    </div>
+    {% else %}
+    <p class="muted">Enter a search term to find models, datasets, or spaces.</p>
+    {% endif %}
+</div>
+{% endblock %}

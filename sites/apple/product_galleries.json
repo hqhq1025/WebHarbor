@@ -1,0 +1,789 @@
+{
+  "ipad-air-m4": [
+    {
+      "title": "M4 Chip Performance",
+      "desc": "The M4 chip delivers an 8-core CPU, 9-core GPU, and 16-core Neural Engine. Up to 2.3x faster than iPad Air with M1.",
+      "images": [
+        "/static/images/ipad_air/chip_top_endframe__bac7em7optua_large_2x.png",
+        "/static/images/ipad_air/chip_top_startframe__b4iq8s6s0aj6_large_2x.png",
+        "/static/images/ipad_air/chip_middle_top_endframe__3zu8i1nab6ai_large_2x.png"
+      ]
+    },
+    {
+      "title": "Liquid Retina Display",
+      "desc": "11-inch and 13-inch Liquid Retina displays with P3 wide color, True Tone, and full lamination for vivid, true-to-life colors.",
+      "images": [
+        "/static/images/ipad_air/front_landscape_camera_screen__det4njjkpzsm_large_2x.jpg"
+      ]
+    },
+    {
+      "title": "Apple Intelligence",
+      "desc": "Image Wand, Writing Tools, Clean Up, and more \u2014 all processed with privacy in mind using on-device intelligence and Private Cloud Compute.",
+      "images": [
+        "/static/images/ipad_air/ipad_air_blue__btrcc5x4t6j6_large_2x.png",
+        "/static/images/ipad_air/cleanup__gd72flwjv4ii_large_2x.png",
+        "/static/images/ipad_air/ipad_air_starlight__bsd3afgeoij6_large_2x.png"
+      ]
+    },
+    {
+      "title": "Apple Pencil Pro",
+      "desc": "Squeeze, barrel roll, and haptic feedback. Hover to preview marks before you make them. A new way to create.",
+      "images": [
+        "/static/images/ipad_air/keynote__pjo7r8tun7ue_large_2x.jpg",
+        "/static/images/ipad_air/app_gallery_goodnotes__bl1xl7mcik6a_large_2x.jpg",
+        "/static/images/ipad_air/pencil__ewqbd065n4ya_large_2x.jpg"
+      ]
+    },
+    {
+      "title": "Center Stage Camera",
+      "desc": "12MP front camera with Center Stage keeps you centered in frame during video calls, even as you move around.",
+      "images": [
+        "/static/images/ipad_air/cameras_startframe__bat785d57g5e_large_2x.png",
+        "/static/images/ipad_air/cameras_endframe__cv0fbgxrv2uu_large_2x.png",
+        "/static/images/ipad_air/front_landscape_camera_startframe__gl65yy3r7pua_large_2x.jpg"
+      ]
+    },
+    {
+      "title": "Wi-Fi 7 & 5G Connectivity",
+      "desc": "Blazing-fast Wi-Fi 7, Bluetooth 6, and optional 5G cellular with eSIM. Stay connected everywhere.",
+      "images": [
+        "/static/images/ipad_air/magic_keyboard_endframe__gbalczm8nfee_large_2x.png"
+      ]
+    },
+    {
+      "title": "Apps & Creativity",
+      "desc": "Over a million apps designed specifically for iPad. From Adobe Creative Suite to GoodNotes, Procreate, and more.",
+      "images": [
+        "/static/images/ipad_air/ai_apps__czjlizvt1w2u_large_2x.jpg",
+        "/static/images/ipad_air/app_gallery_procreate__f4k4an196a6a_large_2x.jpg",
+        "/static/images/ipad_air/app_gallery_adobe_acrobat__tnus8an412aq_large_2x.jpg"
+      ]
+    },
+    {
+      "title": "Beautiful Design",
+      "desc": "Available in Space Gray, Blue, Purple, and Starlight. Just 6.1mm thin and weighing about a pound.",
+      "images": [
+        "/static/images/ipad_air/overview__h4xt3p31xviy_large_2x.png",
+        "/static/images/ipad_air/hero_endframe__6gl84bccyaqi_large_2x.png",
+        "/static/images/ipad_air/hero_middle_bottom__d6qitjkgtnsm_large_2x.png"
+      ]
+    }
+  ],
+  "iphone-17-pro": [
+    {
+      "title": "Pro Camera System",
+      "desc": "48MP Fusion camera with 8x optical-quality zoom range. Capture stunning photos in any light with Photonic Engine.",
+      "images": [
+        "/static/images/iphone_17_pro/highlights_camera_endframe__e72sxwhaxhyu_large_2x.jpg",
+        "/static/images/iphone_17_pro/rear_camera__chihxe7nejyq_xlarge_2x.jpg",
+        "/static/images/iphone_17_pro/pro_camera_system_v02_statics_endframe__fdbmrfy1xsuy_xlarge_2x.jpg"
+      ]
+    },
+    {
+      "title": "A19 Pro Chip",
+      "desc": "The most powerful chip ever in a smartphone. Blazing-fast performance for gaming, AR, and pro workflows.",
+      "images": [
+        "/static/images/iphone_17_pro/performance__fnvbyhvy8wy2_xlarge_2x.jpg",
+        "/static/images/iphone_17_pro/performance-hero_endframe__fazyny3rhsuy_xlarge_2x.jpg",
+        "/static/images/iphone_17_pro/performance__fnvbyhvy8wy2_large_2x.jpg"
+      ]
+    },
+    {
+      "title": "Titanium Design",
+      "desc": "Grade 5 titanium with a brushed finish. The strongest material ever used in an iPhone, yet remarkably light.",
+      "images": [
+        "/static/images/iphone_17_pro/hero__bsveixlwbms2_xlarge_2x.jpg",
+        "/static/images/iphone_17_pro/hero__bsveixlwbms2_large_2x.jpg",
+        "/static/images/iphone_17_pro/hero_endframe__gb7f6nb06rau_large_2x.jpg"
+      ]
+    },
+    {
+      "title": "Super Retina XDR Display",
+      "desc": "6.3-inch Always-On display with ProMotion 120Hz, 2000 nits peak brightness outdoors, and Dynamic Island.",
+      "images": [
+        "/static/images/iphone_17_pro/pro_display__bvu4xbhsdpf6_large_2x.jpg"
+      ]
+    },
+    {
+      "title": "Action Button & Controls",
+      "desc": "Customizable Action button and Camera Control. Quick access to your favorite features with a single press.",
+      "images": [
+        "/static/images/iphone_17_pro/camera_control__gl7rgu1l9066_large_2x.jpg",
+        "/static/images/iphone_17_pro/action_button__efiof6bf182u_large_2x.jpg",
+        "/static/images/iphone_17_pro/viewer_action_button_endframe__cgvuris19woi_large_2x.jpg"
+      ]
+    },
+    {
+      "title": "Apple Intelligence",
+      "desc": "Powerful AI capabilities with on-device processing. Writing Tools, Visual Intelligence, and more.",
+      "images": [
+        "/static/images/iphone_17_pro/macro__ev0r6s4jrbwy_large_2x.jpg"
+      ]
+    },
+    {
+      "title": "All-Day Battery",
+      "desc": "Up to 33 hours of video playback. The longest battery life ever in an iPhone Pro. USB-C with USB 3 speeds.",
+      "images": [
+        "/static/images/iphone_17_pro/battery__fnlwe1uwg66a_xlarge_2x.jpg",
+        "/static/images/iphone_17_pro/battery__fnlwe1uwg66a_large_2x.jpg"
+      ]
+    },
+    {
+      "title": "Privacy & Security",
+      "desc": "Face ID, Emergency SOS via satellite, Crash Detection, and industry-leading privacy protections.",
+      "images": [
+        "/static/images/iphone_17_pro/genlock__1zaxui1zpb6m_large_2x.jpg"
+      ]
+    }
+  ],
+  "macbook-neo": [
+    {
+      "title": "A18 Pro Chip",
+      "desc": "Delivers powerful everyday performance for browsing, streaming, and creative work. Energy efficient for all-day battery life.",
+      "images": [
+        "/static/images/macbook_neo/performance_lifestyle__erk9efbsqgqe_large_2x.jpg",
+        "/static/images/macbook_neo/performance_hero_1_static__c782t9ycacya_large_2x.jpg",
+        "/static/images/macbook_neo/performance_hero_3_static__dzg6zb7h18a6_large_2x.jpg"
+      ]
+    },
+    {
+      "title": "13-inch Liquid Retina Display",
+      "desc": "3.6 million pixels, 500 nits brightness, and support for 1 billion colors. Everything looks stunning.",
+      "images": [
+        "/static/images/macbook_neo/dca_display__dxwm2scb6qs2_large_2x.png",
+        "/static/images/macbook_neo/highlights_display_endframe__c0qk6ggqxdw2_large_2x.jpg",
+        "/static/images/macbook_neo/continuity_hero_mbn_screen_03__czywdzzlpno2_large_2x.jpg"
+      ]
+    },
+    {
+      "title": "Apple Intelligence",
+      "desc": "Built-in AI capabilities including Writing Tools, Genmoji, and Clean Up. All with privacy-first design.",
+      "images": [
+        "/static/images/macbook_neo/continuity_airdrop__dtzrxj9fh6uu_large_2x.jpg",
+        "/static/images/macbook_neo/highlights_ai_startframe__gmink06y7xay_large_2x.jpg",
+        "/static/images/macbook_neo/highlights_ai__cfrukhyww2nm_large_2x.jpg"
+      ]
+    },
+    {
+      "title": "Four Stunning Colors",
+      "desc": "Silver, Blush, Citrus, and Indigo. A durable recycled aluminum enclosure with 60% recycled content.",
+      "images": [
+        "/static/images/macbook_neo/design_endframe__ds3qdxgq7zki_xlarge_2x.png",
+        "/static/images/macbook_neo/design_startframe__f2qfplz27cyi_xlarge_2x.png",
+        "/static/images/macbook_neo/design_endframe__ds3qdxgq7zki_large_2x.png"
+      ]
+    },
+    {
+      "title": "macOS & Continuity",
+      "desc": "Works seamlessly with iPhone through Handoff, iPhone Mirroring, AirDrop, and Universal Clipboard.",
+      "images": [
+        "/static/images/macbook_neo/macos_hero__exzf2qzsprcm_xlarge_2x.jpg",
+        "/static/images/macbook_neo/continuity_hero_mbn_screen_02__ezfwq6yahyye_large_2x.jpg",
+        "/static/images/macbook_neo/continuity_hero_mbn_screen_01__fq2x6kk9fwii_large_2x.jpg"
+      ]
+    },
+    {
+      "title": "Security & Privacy",
+      "desc": "Touch ID, Find My, FileVault encryption, and built-in antivirus protection keep your data safe.",
+      "images": [
+        "/static/images/macbook_neo/pv_touchid__e7m0tw3z13sm_large_2x.jpg",
+        "/static/images/macbook_neo/security_hero__d6lkldnuw0ae_large_2x.jpg"
+      ]
+    }
+  ],
+  "apple-watch-series-11": [
+    {
+      "title": "Health Monitoring",
+      "desc": "Hypertension notifications, sleep apnea detection, ECG, blood oxygen, and temperature sensing. Your health at a glance.",
+      "images": [
+        "/static/images/watch/health_hero__bs99gittogoi_xlarge_2x.jpg",
+        "/static/images/watch/health_hero__bs99gittogoi_large_2x.jpg",
+        "/static/images/watch/health_bpm__egiqpma9ltiu_large_2x.jpg"
+      ]
+    },
+    {
+      "title": "Sleep Tracking",
+      "desc": "Sleep Score tracks duration, consistency, and sleep stages. Wake up knowing how well you rested.",
+      "images": [
+        "/static/images/watch/highlights_sleep_score__dl1y2j6kkouq_large_2x.jpg",
+        "/static/images/watch/health_sleep_apnea__d6m94xyv5eky_large_2x.jpg",
+        "/static/images/watch/health_sleep_score__d4pcoy8v0cwi_large_2x.jpg"
+      ]
+    },
+    {
+      "title": "Fitness & Workout",
+      "desc": "Workout Buddy delivers personalized audible motivation in real time. Precision GPS tracking for running, cycling, and more.",
+      "images": [
+        "/static/images/watch/fitness_hero__f9uqyx14gmmq_xlarge_2x.jpg",
+        "/static/images/watch/fitness_hero__f9uqyx14gmmq_large_2x.jpg",
+        "/static/images/watch/workout_endframe__dxjp8ff0co8y_large_2x.jpg"
+      ]
+    },
+    {
+      "title": "Always-On Display",
+      "desc": "Wide-angle OLED Always-On Retina display with up to 2000 nits brightness. 2x more scratch resistant.",
+      "images": [
+        "/static/images/watch/activity_hero_hw_right__7zqajh0vdn6e_large_2x.png"
+      ]
+    },
+    {
+      "title": "Design & Bands",
+      "desc": "42mm and 46mm sizes in aluminum and titanium. Rose Gold, Silver, Jet Black, Space Gray, and more.",
+      "images": [
+        "/static/images/watch/product_personalization_spring__brivm7yl89py_large_2x.jpg"
+      ]
+    },
+    {
+      "title": "5G Cellular",
+      "desc": "Stay connected without your iPhone. Make calls, send texts, and stream music with 5G cellular.",
+      "images": [
+        "/static/images/watch/highlights_5g__bvrxbjoke2c2_large_2x.jpg",
+        "/static/images/watch/go_5g__dnaeggrex4mu_large_2x.jpg"
+      ]
+    }
+  ],
+  "airpods-pro-3": [
+    {
+      "title": "Active Noise Cancellation",
+      "desc": "H3 chip powers advanced computational audio. Block outside noise for total immersion.",
+      "images": [
+        "/static/images/airpods/noise_control_startframe__fea2j3ie71ea_large_2x.png",
+        "/static/images/airpods/hearing_health_lifestyle_enhanced__fkdyyeq20bau_large_2x.png",
+        "/static/images/airpods/noise_control_endframe__c9nekquzw4q6_large_2x.png"
+      ]
+    },
+    {
+      "title": "Spatial Audio",
+      "desc": "Personalized Spatial Audio with dynamic head tracking creates a theater-like experience.",
+      "images": [
+        "/static/images/airpods/audio_airpods_pro_pair__v28g95nj97mq_large_2x.png",
+        "/static/images/airpods/personalized_listening__geshsqt82yeu_large_2x.jpg",
+        "/static/images/airpods/audio_airpods_pro_guts__gbhfrhkjpjyy_large_2x.png"
+      ]
+    },
+    {
+      "title": "Hearing Health",
+      "desc": "Hearing test, hearing aid feature, and hearing protection. A complete hearing health experience.",
+      "images": [
+        "/static/images/airpods/hearing_health_lifestyle__cj3yilvm69ea_large_2x.png",
+        "/static/images/airpods/hearing_health_endframe__fddd0pwvl3u6_large_2x.png",
+        "/static/images/airpods/hearing_health_startframe__b55bsu6g3ok2_large_2x.png"
+      ]
+    },
+    {
+      "title": "H3 Chip",
+      "desc": "Custom Apple silicon delivers smarter noise cancellation, immersive sound, and efficient battery life.",
+      "images": [
+        "/static/images/airpods/fitness_workout_buddy_lifestyle__eavcyne0aaoi_large_2x.png"
+      ]
+    }
+  ],
+  "macbook-pro-14": [
+    {
+      "title": "M5 Chip",
+      "desc": "The M5 chip delivers groundbreaking performance with an industry-leading CPU, GPU, and Neural Engine. Edit 8K video, compile code, and run demanding pro apps with ease.",
+      "images": [
+        "/static/images/macbook_pro/performance_mx_chip_background_startframe__mv8hahhmvfmi_large_2x.jpg",
+        "/static/images/macbook_pro/performance_mx_chip_background_endframe__bs7veukzx7yu_large_2x.jpg",
+        "/static/images/macbook_pro/highlights_chip_endframe__dp975gwqppw2_large_2x.jpg"
+      ]
+    },
+    {
+      "title": "M5 Pro & M5 Max",
+      "desc": "Scale up to M5 Pro for even more unified memory and GPU cores, or go all out with M5 Max for the most demanding pro workflows.",
+      "images": [
+        "/static/images/macbook_pro/performance_mx_pro__e4n5xwu3fwgi_large_2x.jpg",
+        "/static/images/macbook_pro/performance_mxmax_screen__esvj86422z2a_large_2x.jpg",
+        "/static/images/macbook_pro/performance_mx_max__get38flolaye_large_2x.jpg"
+      ]
+    },
+    {
+      "title": "Liquid Retina XDR Display",
+      "desc": "A stunning 14.2-inch Liquid Retina XDR display with extreme dynamic range, 1600 nits peak HDR brightness, ProMotion 120Hz adaptive refresh, and nano-texture option.",
+      "images": [
+        "/static/images/macbook_pro/display_nano_texture__d52wr5hrzcae_large_2x.jpg",
+        "/static/images/macbook_pro/display_edr__di5lgyrftwqe_large_2x.jpg",
+        "/static/images/macbook_pro/display_promotion__gnu8jh3d5g6e_large_2x.jpg"
+      ]
+    },
+    {
+      "title": "Design & Build",
+      "desc": "Crafted from recycled aluminum in Space Black and Silver. Impossibly thin yet built to last with an all-day battery.",
+      "images": [
+        "/static/images/macbook_pro/pv_hero_endframe__gc89p7dw1syi_large_2x.jpg",
+        "/static/images/macbook_pro/pv_hero_startframe__edowrcgd860y_large_2x.jpg",
+        "/static/images/macbook_pro/battery_hero__db4y37bs7cmu_xlarge_2x.jpg"
+      ]
+    },
+    {
+      "title": "All-Day Battery",
+      "desc": "Up to 22 hours of battery life lets you work unplugged all day. MagSafe fast charging gets you back up quickly.",
+      "images": [
+        "/static/images/macbook_pro/highlights_battery__d7riytopt742_large_2x.jpg"
+      ]
+    },
+    {
+      "title": "Pro Camera & Audio",
+      "desc": "1080p FaceTime HD camera with Center Stage, studio-quality mic array, and a six-speaker sound system with Spatial Audio.",
+      "images": [
+        "/static/images/macbook_pro/pv_camera_endframe__3d423kiwog2y_large_2x.jpg",
+        "/static/images/macbook_pro/pv_camera_startframe__djso3ghzica6_large_2x.jpg",
+        "/static/images/macbook_pro/camera_center_stage_endframe__fq6b8d6t7maa_large_2x.jpg"
+      ]
+    },
+    {
+      "title": "Apple Intelligence",
+      "desc": "Built-in AI that helps you write, summarize, create images, and more \u2014 all with privacy at the core.",
+      "images": [
+        "/static/images/macbook_pro/highlights_ai__c1tao33ompea_large_2x.jpg",
+        "/static/images/macbook_pro/ai_apple_intelligence_mac__fewqec0vfx2e_large_2x.jpg",
+        "/static/images/macbook_pro/ai_features_endframe__eo36b3vv85aq_large_2x.jpg"
+      ]
+    },
+    {
+      "title": "macOS & Continuity",
+      "desc": "macOS with Liquid Glass design. Use iPhone Mirroring, Handoff, Universal Clipboard, and AirDrop seamlessly across devices.",
+      "images": [
+        "/static/images/macbook_pro/continuity_universal_clipboard__fmic8zmwi0ii_large_2x.jpg",
+        "/static/images/macbook_pro/continuity_handoff__ehqernr0cj6u_large_2x.jpg",
+        "/static/images/macbook_pro/continuity_iphone_mirroring__buromrsyzq6a_large_2x.jpg"
+      ]
+    },
+    {
+      "title": "Connectivity",
+      "desc": "Thunderbolt 5 ports, HDMI, SDXC slot, MagSafe, and headphone jack. Connect to multiple external displays.",
+      "images": [
+        "/static/images/macbook_pro/pv_connectivity__27f84rcgb42e_large_2x.jpg",
+        "/static/images/macbook_pro/connections_hw_1__dx8464ggehsi_large_2x.jpg"
+      ]
+    },
+    {
+      "title": "Pro Apps & Workflows",
+      "desc": "Run Final Cut Pro, Logic Pro, Xcode, Adobe Creative Suite, 3D rendering, and AAA games with incredible performance.",
+      "images": [
+        "/static/images/macbook_pro/apps_3d__c1afou0tu5yu_large_2x.jpg",
+        "/static/images/macbook_pro/apps_music__b4h6vkmsa77m_large_2x.jpg",
+        "/static/images/macbook_pro/apps_photos__bfsqjiifmbzm_large_2x.jpg"
+      ]
+    },
+    {
+      "title": "Security & Privacy",
+      "desc": "Touch ID, FileVault encryption, Find My, and the Apple T2 Security Chip keep your data safe.",
+      "images": [
+        "/static/images/macbook_pro/security_icon_touchid__m8vd41ts2dm6_large_2x.png",
+        "/static/images/macbook_pro/security_icon_findmy__b5zy7yfknt36_large_2x.png"
+      ]
+    }
+  ],
+  "macbook-pro-16": [
+    {
+      "title": "M5 Pro & M5 Max",
+      "desc": "The most powerful MacBook Pro ever. M5 Pro with up to 18-core GPU, or M5 Max with up to 40-core GPU for extreme workloads.",
+      "images": [
+        "/static/images/macbook_pro/performance_mx_pro__e4n5xwu3fwgi_large_2x.jpg",
+        "/static/images/macbook_pro/performance_mxmax_screen__esvj86422z2a_large_2x.jpg",
+        "/static/images/macbook_pro/performance_mx_max__get38flolaye_large_2x.jpg"
+      ]
+    },
+    {
+      "title": "16.2-inch XDR Display",
+      "desc": "The largest Liquid Retina XDR display on any MacBook. ProMotion 120Hz, 1600 nits peak HDR, P3 wide color. Available with nano-texture glass.",
+      "images": [
+        "/static/images/macbook_pro/display_nano_texture__d52wr5hrzcae_large_2x.jpg",
+        "/static/images/macbook_pro/pv_display__fv0jzlzaak2u_large_2x.jpg",
+        "/static/images/macbook_pro/display_edr__di5lgyrftwqe_large_2x.jpg"
+      ]
+    },
+    {
+      "title": "All-Day Battery",
+      "desc": "Up to 24 hours of battery life \u2014 the longest ever in a Mac. Fast charge with MagSafe.",
+      "images": [
+        "/static/images/macbook_pro/highlights_battery__d7riytopt742_large_2x.jpg",
+        "/static/images/macbook_pro/battery_hero__db4y37bs7cmu_xlarge_2x.jpg"
+      ]
+    },
+    {
+      "title": "Design",
+      "desc": "Thin, light aluminum unibody in Space Black and Silver. Built to go anywhere your work takes you.",
+      "images": [
+        "/static/images/macbook_pro/pv_hero_endframe__gc89p7dw1syi_large_2x.jpg",
+        "/static/images/macbook_pro/pv_hero_startframe__edowrcgd860y_large_2x.jpg"
+      ]
+    },
+    {
+      "title": "Apple Intelligence",
+      "desc": "AI-powered writing, coding, and creative tools built right into macOS. Privacy-first processing on device.",
+      "images": [
+        "/static/images/macbook_pro/ai_apple_intelligence_mac__fewqec0vfx2e_large_2x.jpg",
+        "/static/images/macbook_pro/ai_features_endframe__eo36b3vv85aq_large_2x.jpg"
+      ]
+    },
+    {
+      "title": "Pro Apps & Workflows",
+      "desc": "Edit 8K ProRes video, compile massive codebases, render 3D scenes, and run AAA games natively.",
+      "images": [
+        "/static/images/macbook_pro/apps_3d__c1afou0tu5yu_large_2x.jpg",
+        "/static/images/macbook_pro/apps_coding__c9v42iv3gioi_large_2x.jpg",
+        "/static/images/macbook_pro/apps_gaming__696h0c9u39ee_large_2x.jpg"
+      ]
+    }
+  ],
+  "macbook-air-13": [
+    {
+      "title": "M5 Chip Performance",
+      "desc": "The M5 chip makes everything feel instant \u2014 from launching apps to editing photos to multitasking across dozens of tabs.",
+      "images": [
+        "/static/images/macbook_pro/performance_mx_chip_background_startframe__mv8hahhmvfmi_large_2x.jpg",
+        "/static/images/macbook_pro/performance_mx_chip_background_endframe__bs7veukzx7yu_large_2x.jpg"
+      ]
+    },
+    {
+      "title": "Fanless & Thin Design",
+      "desc": "Impossibly thin, completely silent. The MacBook Air runs cool without a fan, in four gorgeous colors.",
+      "images": [
+        "/static/images/macbook_pro/battery_hero__db4y37bs7cmu_xlarge_2x.jpg",
+        "/static/images/macbook_pro/display_hero__c32k5z50p94y_large_2x.jpg"
+      ]
+    },
+    {
+      "title": "Apple Intelligence",
+      "desc": "Smart writing tools, image generation, and Siri powered by Apple Intelligence \u2014 all processed privately.",
+      "images": [
+        "/static/images/macbook_pro/ai_apple_intelligence_mac__fewqec0vfx2e_large_2x.jpg",
+        "/static/images/macbook_pro/ai_features_endframe__eo36b3vv85aq_large_2x.jpg"
+      ]
+    },
+    {
+      "title": "macOS & Continuity",
+      "desc": "macOS works beautifully with your iPhone, iPad, and other Apple devices via Handoff, AirDrop, and iPhone Mirroring.",
+      "images": [
+        "/static/images/macbook_pro/continuity_handoff__ehqernr0cj6u_large_2x.jpg",
+        "/static/images/macbook_pro/macos_hero_startframe__by51tsiyzaj6_large_2x.jpg"
+      ]
+    }
+  ],
+  "imac-24": [
+    {
+      "title": "M5 Chip",
+      "desc": "The M5 chip powers everything you do on iMac \u2014 from creative workflows to everyday tasks, all with incredible efficiency.",
+      "images": [
+        "/static/images/macbook_pro/performance_mx_chip_background_startframe__mv8hahhmvfmi_large_2x.jpg",
+        "/static/images/macbook_pro/performance_mx_chip_background_endframe__bs7veukzx7yu_large_2x.jpg"
+      ]
+    },
+    {
+      "title": "4.5K Retina Display",
+      "desc": "A stunning 24-inch 4.5K Retina display with 500 nits brightness, P3 wide color, and True Tone.",
+      "images": [
+        "/static/images/macbook_pro/pv_display__fv0jzlzaak2u_large_2x.jpg",
+        "/static/images/macbook_pro/display_hero__c32k5z50p94y_large_2x.jpg"
+      ]
+    },
+    {
+      "title": "Apple Intelligence",
+      "desc": "AI-powered tools for writing, creating, and communicating \u2014 built into every app on macOS.",
+      "images": [
+        "/static/images/macbook_pro/ai_apple_intelligence_mac__fewqec0vfx2e_large_2x.jpg",
+        "/static/images/macbook_pro/highlights_ai__c1tao33ompea_large_2x.jpg"
+      ]
+    }
+  ],
+  "iphone-17-pro-max": [
+    {
+      "title": "Pro Camera System",
+      "desc": "48MP Fusion camera, 48MP Ultra Wide, and 12MP 5x Telephoto with 8x optical-quality zoom. The most versatile pro camera system.",
+      "images": [
+        "/static/images/iphone_17_pro/highlights_camera_endframe__e72sxwhaxhyu_large_2x.jpg",
+        "/static/images/iphone_17_pro/rear_camera__chihxe7nejyq_xlarge_2x.jpg",
+        "/static/images/iphone_17_pro/pro_camera_system_v02_statics_endframe__fdbmrfy1xsuy_xlarge_2x.jpg"
+      ]
+    },
+    {
+      "title": "A19 Pro Chip",
+      "desc": "The most powerful smartphone chip. A19 Pro enables console-quality gaming, advanced machine learning, and all-day battery.",
+      "images": [
+        "/static/images/iphone_17_pro/performance__fnvbyhvy8wy2_xlarge_2x.jpg",
+        "/static/images/iphone_17_pro/performance-hero_endframe__fazyny3rhsuy_xlarge_2x.jpg"
+      ]
+    },
+    {
+      "title": "6.9-inch Display",
+      "desc": "The largest Super Retina XDR display ever on an iPhone. Always-On, ProMotion 120Hz, 2000 nits outdoor peak brightness.",
+      "images": [
+        "/static/images/iphone_17_pro/pro_display__bvu4xbhsdpf6_large_2x.jpg",
+        "/static/images/iphone_17_pro/lock_screen__emz68nbp82aa_large_2x.jpg"
+      ]
+    },
+    {
+      "title": "Titanium Design",
+      "desc": "Grade 5 titanium frame \u2014 the strongest material ever in an iPhone. Remarkably light, stunningly beautiful.",
+      "images": [
+        "/static/images/iphone_17_pro/hero__bsveixlwbms2_xlarge_2x.jpg",
+        "/static/images/iphone_17_pro/hero_endframe__gb7f6nb06rau_large_2x.jpg"
+      ]
+    },
+    {
+      "title": "All-Day Battery",
+      "desc": "Up to 39 hours of video playback \u2014 the longest battery life ever in any iPhone.",
+      "images": [
+        "/static/images/iphone_17_pro/battery__fnlwe1uwg66a_xlarge_2x.jpg"
+      ]
+    },
+    {
+      "title": "Apple Intelligence",
+      "desc": "Powerful AI with on-device processing. Writing Tools, Visual Intelligence, Genmoji, and Image Playground.",
+      "images": [
+        "/static/images/iphone_17_pro/highlights_apple_intelligence__c9a098yssb8m_large_2x.jpg",
+        "/static/images/iphone_17_pro/visual_intelligence__dzuk4k0u50cy_large_2x.jpg"
+      ]
+    }
+  ],
+  "iphone-air": [
+    {
+      "title": "Incredibly Thin",
+      "desc": "The thinnest iPhone ever at just 5.5mm. Amazingly light yet packed with pro-level technology.",
+      "images": [
+        "/static/images/iphone/airpods__bz9s5pwm8j6u_large_2x.jpg",
+        "/static/images/iphone/airtag_accessories__kpd2m3mfy4ia_large_2x.jpg",
+        "/static/images/iphone/designed-to_last__f60bwgep88ya_large_2x.jpg"
+      ]
+    },
+    {
+      "title": "A18 Chip",
+      "desc": "The A18 chip delivers fast performance and all-day battery life with incredible power efficiency.",
+      "images": [
+        "/static/images/iphone/chip__fh5j5on49p2e_large_2x.jpg",
+        "/static/images/iphone/modal_on_track__bpe94psmit8i_large_2x.jpg"
+      ]
+    },
+    {
+      "title": "Camera",
+      "desc": "48MP main camera with Smart HDR and Photonic Engine for stunning photos in every light.",
+      "images": [
+        "/static/images/iphone/camera__dez4cvpw83sm_large_2x.jpg"
+      ]
+    },
+    {
+      "title": "Apple Intelligence",
+      "desc": "AI-powered features that help you write, create, and communicate \u2014 all processed with privacy in mind.",
+      "images": [
+        "/static/images/iphone/modal_visual_intelligence__fdoh634ydsqe_large_2x.jpg"
+      ]
+    }
+  ],
+  "iphone-17": [
+    {
+      "title": "Delightful Design",
+      "desc": "Beautiful new design with Ceramic Shield 2 \u2014 3x better scratch resistance. Available in 5 vibrant colors.",
+      "images": [
+        "/static/images/iphone/designed-to_last__f60bwgep88ya_large_2x.jpg",
+        "/static/images/iphone/modal_on_track__bpe94psmit8i_large_2x.jpg",
+        "/static/images/iphone/modal_zoom__ehbous4wk5si_large_2x.jpg"
+      ]
+    },
+    {
+      "title": "A18 Chip",
+      "desc": "A18 delivers serious power for gaming, photography, and multitasking with all-day battery life.",
+      "images": [
+        "/static/images/iphone/chip__fh5j5on49p2e_large_2x.jpg"
+      ]
+    },
+    {
+      "title": "48MP Camera",
+      "desc": "48MP main camera plus 12MP Ultra Wide. Smart HDR, Photonic Engine, and 4K Cinematic video.",
+      "images": [
+        "/static/images/iphone/camera__dez4cvpw83sm_large_2x.jpg"
+      ]
+    },
+    {
+      "title": "Dynamic Island",
+      "desc": "Dynamic Island shows alerts, Live Activities, and music controls in a fluid, interactive way.",
+      "images": []
+    }
+  ],
+  "iphone-17e": [
+    {
+      "title": "Feature Stacked",
+      "desc": "Everything you need in an iPhone \u2014 powerful chip, great camera, and Apple Intelligence \u2014 at an amazing value.",
+      "images": [
+        "/static/images/iphone/iphone_17e__cq5ygzct314y_large_2x.jpg",
+        "/static/images/iphone/designed-to_last__f60bwgep88ya_large_2x.jpg"
+      ]
+    },
+    {
+      "title": "48MP Camera",
+      "desc": "48MP main camera captures incredible detail. Smart HDR and Photonic Engine make every shot look amazing.",
+      "images": [
+        "/static/images/iphone/camera__dez4cvpw83sm_large_2x.jpg",
+        "/static/images/iphone/modal_on_track__bpe94psmit8i_large_2x.jpg"
+      ]
+    },
+    {
+      "title": "Apple Intelligence",
+      "desc": "AI features like Writing Tools, Genmoji, and Clean Up help you do more every day.",
+      "images": [
+        "/static/images/iphone/airpods__bz9s5pwm8j6u_large_2x.jpg",
+        "/static/images/iphone/modal_visual_intelligence__fdoh634ydsqe_large_2x.jpg"
+      ]
+    }
+  ],
+  "ipad-pro-m5": [
+    {
+      "title": "M5 Chip",
+      "desc": "The M5 chip with hardware-accelerated ray tracing makes iPad Pro the most powerful iPad ever.",
+      "images": [
+        "/static/images/ipad_air/chip_top_endframe__bac7em7optua_large_2x.png",
+        "/static/images/ipad_air/chip_top_startframe__b4iq8s6s0aj6_large_2x.png"
+      ]
+    },
+    {
+      "title": "Ultra Retina XDR Display",
+      "desc": "Tandem OLED Ultra Retina XDR display with extreme brightness, contrast, and color accuracy.",
+      "images": [
+        "/static/images/ipad_air/front_landscape_camera_screen__det4njjkpzsm_large_2x.jpg",
+        "/static/images/ipad_air/cameras_startframe__bat785d57g5e_large_2x.png"
+      ]
+    },
+    {
+      "title": "Apple Pencil Pro",
+      "desc": "Squeeze, barrel roll, and haptic feedback. Hover to preview. The ultimate creative tool.",
+      "images": [
+        "/static/images/ipad_air/keynote__pjo7r8tun7ue_large_2x.jpg",
+        "/static/images/ipad_air/app_gallery_goodnotes__bl1xl7mcik6a_large_2x.jpg"
+      ]
+    },
+    {
+      "title": "Pro Workflows",
+      "desc": "Run desktop-class apps like Final Cut Pro, Logic Pro, and Adobe Creative Suite natively.",
+      "images": [
+        "/static/images/ipad_air/app_gallery_adobe_acrobat__tnus8an412aq_large_2x.jpg",
+        "/static/images/ipad_air/app_gallery_games__e52w8ds9vfyq_large_2x.jpg"
+      ]
+    }
+  ],
+  "ipad-10": [
+    {
+      "title": "Liquid Retina Display",
+      "desc": "10.9-inch Liquid Retina display with True Tone. Perfect for watching, reading, and creating.",
+      "images": [
+        "/static/images/ipad_air/front_landscape_camera_screen__det4njjkpzsm_large_2x.jpg",
+        "/static/images/ipad_air/cameras_startframe__bat785d57g5e_large_2x.png"
+      ]
+    },
+    {
+      "title": "Apps & Entertainment",
+      "desc": "Over a million apps designed for iPad. Great for school, work, and play.",
+      "images": [
+        "/static/images/ipad_air/app_gallery_games__e52w8ds9vfyq_large_2x.jpg",
+        "/static/images/ipad_air/app_gallery_procreate__f4k4an196a6a_large_2x.jpg"
+      ]
+    }
+  ],
+  "apple-watch-ultra-3": [
+    {
+      "title": "Titanium Build",
+      "desc": "49mm titanium case built for extreme environments. Water resistant to 100m with EN13319 certification for recreational diving.",
+      "images": [
+        "/static/images/watch/activity_hero_hw_right__7zqajh0vdn6e_large_2x.png",
+        "/static/images/watch/fitness_hero__f9uqyx14gmmq_xlarge_2x.jpg",
+        "/static/images/watch/health_hero__bs99gittogoi_xlarge_2x.jpg"
+      ]
+    },
+    {
+      "title": "Advanced Health",
+      "desc": "Blood oxygen, ECG, temperature sensing, depth gauge, and water temperature. The most health sensors ever in Apple Watch.",
+      "images": [
+        "/static/images/watch/health_heart_rate__fcexfbi9v6em_large_2x.jpg",
+        "/static/images/watch/health_blood_oxygen__fvqt3tnj37ue_large_2x.jpg"
+      ]
+    },
+    {
+      "title": "72-Hour Battery",
+      "desc": "Up to 72 hours of battery life in Low Power Mode. Built for multi-day adventures.",
+      "images": [
+        "/static/images/watch/product_battery__fhmgm5ba3omm_large_2x.jpg"
+      ]
+    },
+    {
+      "title": "Precision GPS",
+      "desc": "Dual-frequency precision GPS with detailed trail maps. Action Button for quick access to features.",
+      "images": [
+        "/static/images/watch/fitness_custom_workouts__oguy124n47um_large_2x.jpg"
+      ]
+    }
+  ],
+  "airpods-max-2": [
+    {
+      "title": "High-Fidelity Sound",
+      "desc": "Custom-built drivers deliver rich, detailed sound across the entire frequency range. Computational audio adapts in real time.",
+      "images": [
+        "/static/images/airpods/audio_airpods_pro_pair__v28g95nj97mq_large_2x.png",
+        "/static/images/airpods/audio_airpods_pro_guts__gbhfrhkjpjyy_large_2x.png"
+      ]
+    },
+    {
+      "title": "Active Noise Cancellation",
+      "desc": "Industry-leading ANC blocks outside noise so you can fully immerse in your music.",
+      "images": [
+        "/static/images/airpods/highlights_noise_cancellation_hearing_aid__eni46zr12ogi_large_2x.jpg",
+        "/static/images/airpods/highlights_noise_cancellation__cxd50c0etw4m_large_2x.jpg"
+      ]
+    },
+    {
+      "title": "Premium Design",
+      "desc": "Breathable knit mesh canopy, stainless steel frame, and memory foam ear cushions. Available in 5 colors with USB-C.",
+      "images": [
+        "/static/images/airpods/fitness_hero_endframe__cbbu1uukdjyq_large_2x.png",
+        "/static/images/airpods/fitness_hero_startframe__bkez1lr95bde_large_2x.png"
+      ]
+    }
+  ],
+  "airpods-4": [
+    {
+      "title": "Open-Ear Comfort",
+      "desc": "Redesigned for all-day comfort. The open-ear design lets you stay aware of your surroundings.",
+      "images": [
+        "/static/images/airpods/fitness_hero_endframe__cbbu1uukdjyq_large_2x.png",
+        "/static/images/airpods/fitness_hero_startframe__bkez1lr95bde_large_2x.png"
+      ]
+    },
+    {
+      "title": "Spatial Audio",
+      "desc": "Personalized Spatial Audio with dynamic head tracking creates a theater-like listening experience.",
+      "images": [
+        "/static/images/airpods/audio_airpods_pro_pair__v28g95nj97mq_large_2x.png",
+        "/static/images/airpods/audio_airpods_pro_guts__gbhfrhkjpjyy_large_2x.png"
+      ]
+    }
+  ],
+  "apple-pencil-pro": [
+    {
+      "title": "Precision & Control",
+      "desc": "Squeeze for tool switching, barrel roll for pen angle, and haptic feedback. Pixel-perfect precision with hover preview.",
+      "images": [
+        "/static/images/ipad_air/app_gallery_goodnotes__bl1xl7mcik6a_large_2x.jpg",
+        "/static/images/ipad_air/keynote__pjo7r8tun7ue_large_2x.jpg",
+        "/static/images/ipad_air/pencil__ewqbd065n4ya_large_2x.jpg"
+      ]
+    }
+  ],
+  "magic-keyboard-ipad": [
+    {
+      "title": "Keyboard & Trackpad",
+      "desc": "Full-size backlit keyboard with function row and a large, responsive trackpad. USB-C passthrough for charging.",
+      "images": [
+        "/static/images/ipad_air/magic_keyboard_endframe__gbalczm8nfee_large_2x.png",
+        "/static/images/ipad_air/magic_keyboard_startframe__d47xcataxlsi_large_2x.png"
+      ]
+    }
+  ],
+  "airtag": [
+    {
+      "title": "Precision Finding",
+      "desc": "Ultra Wideband technology gives precise distance and direction to your AirTag. The Find My network with billions of devices helps locate items around the world.",
+      "images": [
+        "/static/images/homepage/hero_ipad_air_m4__ew8k92mk1w6e_large_2x.jpg"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,155 @@
+{% from "_serp_header.html" import serp_header with context %}
+{% extends "base.html" %}
+{% block title %}{{ q }} - Google Search{% endblock %}
+{% block header %}{{ serp_header(q, vertical) }}{% endblock %}
+
+{% block content %}
+<div class="serp-body">
+    <div class="serp-main">
+        <div class="serp-meta">
+            About {{ result_count|fmt_count }} results ({{ search_time }} seconds)
+        </div>
+
+        {% if results %}
+            {% for r in results %}
+            <div class="serp-result">
+                <div class="result-site">
+                    <div class="result-favicon">{{ r.source[0]|upper }}</div>
+                    <div class="result-site-info">
+                        <span class="result-source">{{ r.display_url }}</span>
+                        <span class="result-url">{{ r.url }}</span>
+                    </div>
+                </div>
+                <h3 class="result-title">
+                    {% if r.external_path %}
+                    <a href="{{ r.external_path }}">{{ r.title }}</a>
+                    {% else %}
+                    <a href="{{ url_for('url_redirect', q=r.url) }}">{{ r.title }}</a>
+                    {% endif %}
+                </h3>
+                <div class="result-snippet">{{ r.snippet }}</div>
+                <div class="result-actions">
+                    {% if current_user.is_authenticated %}
+                    <form method="POST" action="{{ url_for('bookmark_save_form', result_id=r.id) }}" style="display:inline">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token_value }}">
+                        <button type="submit" class="btn-text" style="padding:4px 8px;">☆ Save</button>
+                    </form>
+                    {% else %}
+                    <a href="{{ url_for('login') }}">☆ Save</a>
+                    {% endif %}
+                    {% if current_user.is_authenticated %}
+                    <a href="{{ url_for('bookmark_add', title=r.title, url=r.url, snippet=r.snippet) }}">Add note</a>
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+        {% else %}
+            <div class="serp-result">
+                <h3 class="result-title" style="margin-left: 0;">No results found for "{{ q }}"</h3>
+                <p class="result-snippet" style="margin-left: 0;">
+                    Try using different keywords, checking your spelling, or using more general terms.
+                    You could also try:
+                </p>
+                <ul style="color: var(--color-text-secondary); font-size: 14px;">
+                    <li><a href="{{ url_for('search', q='Artificial intelligence') }}">Artificial intelligence</a></li>
+                    <li><a href="{{ url_for('search', q='Paris') }}">Paris</a></li>
+                    <li><a href="{{ url_for('search', q='Mars') }}">Mars</a></li>
+                    <li><a href="{{ url_for('search', q='Python programming') }}">Python programming</a></li>
+                </ul>
+            </div>
+        {% endif %}
+
+        {% if paa %}
+        <div class="paa-block">
+            <div class="paa-header">People also ask</div>
+            {% for p in paa %}
+            <div class="paa-item">
+                <span>{{ p.question }}</span>
+                <span class="paa-arrow">▾</span>
+            </div>
+            <div class="paa-answer">{{ p.answer }}</div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        {% if related %}
+        <div class="related-block">
+            <div class="related-header">People also search for</div>
+            <div class="related-grid">
+                {% for rq in related %}
+                <a class="related-item" href="{{ url_for('search', q=rq.term) }}">
+                    <svg viewBox="0 0 24 24" width="18" height="18" fill="#70757a"><path d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
+                    <span>{{ rq.term }}</span>
+                </a>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+
+        <div class="pagination">
+            <div class="g-logo g-logo-small">
+                <span>G</span><span>o</span><span>o</span><span>o</span><span>o</span><span>g</span>
+            </div>
+            <div class="pagination-links">
+                {% set p = page %}
+                {% if p > 1 %}
+                <a href="{{ url_for('search', q=q, tbm=vertical, page=p-1) }}">&lt; Prev</a>
+                {% endif %}
+                {% for i in range(1, 11) %}
+                {% if i == p %}
+                <a class="cur">{{ i }}</a>
+                {% else %}
+                <a href="{{ url_for('search', q=q, tbm=vertical, page=i) }}">{{ i }}</a>
+                {% endif %}
+                {% endfor %}
+                <a href="{{ url_for('search', q=q, tbm=vertical, page=p+1) }}">Next &gt;</a>
+            </div>
+        </div>
+    </div>
+
+    {% if knowledge and show_panel %}
+    <aside class="serp-sidebar">
+        <div class="knowledge-panel">
+            {% if knowledge.hero_image %}
+            <div class="kn-image">
+                <img src="{{ knowledge.hero_image }}" alt="{{ knowledge.name }}"
+                     onerror="this.parentElement.style.display='none'">
+            </div>
+            {% endif %}
+            <h2 class="kn-title">{{ knowledge.wiki_title or knowledge.name }}</h2>
+            {% if knowledge.knowledge_type %}
+            <div class="kn-type">{{ knowledge.knowledge_type|capitalize }}</div>
+            {% endif %}
+            {% if knowledge.summary %}
+            <div class="kn-summary">
+                {{ knowledge.summary|summary_for_panel(answer_token) }}
+                <div class="kn-source">Wikipedia</div>
+            </div>
+            {% endif %}
+            {% if knowledge.knowledge_facts %}
+            <div class="kn-facts">
+                {% set _shown_facts = [] %}
+                {% for f in knowledge.knowledge_facts %}
+                    {% if not f|fact_leaks_answer(answer_token) %}
+                        {% set _ = _shown_facts.append(f) %}
+                    {% endif %}
+                {% endfor %}
+                {% for f in _shown_facts %}
+                <div class="kn-fact">
+                    <span class="kn-fact-key">{{ f.key }}</span>
+                    <span class="kn-fact-val">{{ f.value }}</span>
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+            <div style="margin-top:14px; display:flex; gap:8px;">
+                <a href="{{ url_for('topic_detail', slug=knowledge.slug) }}" class="btn-secondary" style="font-size:12px; padding:6px 12px;">Full details</a>
+                {% if current_user.is_authenticated %}
+                <a href="{{ url_for('alert_new', q=q) }}" class="btn-secondary" style="font-size:12px; padding:6px 12px;">Create alert</a>
+                {% endif %}
+            </div>
+        </div>
+    </aside>
+    {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% block title %}Wishlist - Apple{% endblock %}
+
+{% block extra_head %}
+<meta name="csrf-token" content="{{ csrf_token() }}">
+{% endblock %}
+
+{% block content %}
+<div style="max-width:var(--max-width);margin:0 auto;padding:80px 20px 60px">
+    <a href="{{ url_for('account') }}" style="font-size:14px;margin-bottom:16px;display:inline-block">&lsaquo; Back to Account</a>
+
+    <h1 style="font-size:40px;font-weight:700;font-family:var(--font-family);margin-bottom:8px">Your Wishlist</h1>
+    <p style="color:var(--color-text-secondary);font-size:17px;margin-bottom:32px">Items you've saved for later.</p>
+
+    {% if items %}
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:20px">
+        {% for item in items %}
+        <div style="background:var(--color-bg-secondary);border-radius:20px;overflow:hidden;transition:transform 0.3s" onmouseover="this.style.transform='translateY(-4px)'" onmouseout="this.style.transform='none'">
+            <a href="{{ url_for('product_detail', slug=item.product.slug) }}" style="text-decoration:none;color:var(--color-text)">
+                <div style="height:200px;display:flex;align-items:center;justify-content:center;background:#fff;padding:20px">
+                    <img src="{{ item.product.image }}" alt="{{ item.product.name }}"
+                         style="max-height:100%;max-width:100%;object-fit:contain"
+                         onerror="this.style.display='none'">
+                </div>
+                <div style="padding:20px">
+                    {% if item.product.is_new %}<span class="badge-new">New</span>{% endif %}
+                    <h3 style="font-size:17px;font-weight:700;margin-bottom:4px">{{ item.product.name }}</h3>
+                    <p style="font-size:14px;color:var(--color-text-secondary);margin-bottom:8px;line-height:1.4">{{ item.product.subtitle }}</p>
+                    <p style="font-size:15px;font-weight:600">From ${{ "%.2f"|format(item.product.price) }}</p>
+                </div>
+            </a>
+            <div style="padding:0 20px 20px;display:flex;gap:8px">
+                <form method="POST" action="{{ url_for('cart_add_form', product_id=item.product.id) }}" style="flex:1">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token_value }}">
+                    <input type="hidden" name="color" value="">
+                    <input type="hidden" name="storage" value="">
+                    <input type="hidden" name="quantity" value="1">
+                    <button type="submit" style="width:100%;padding:10px;background:var(--color-link);color:#fff;border:none;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer;font-family:var(--font-family-text)">Add to Bag</button>
+                </form>
+                <form action="{{ url_for('wishlist_remove', item_id=item.id) }}" method="POST" style="display:inline">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token_value }}">
+                    <button type="submit" style="padding:10px 14px;background:transparent;border:1px solid var(--color-border);border-radius:10px;font-size:13px;cursor:pointer;color:var(--color-text-secondary)" title="Remove">&#128465;</button>
+                </form>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div style="text-align:center;padding:60px;background:var(--color-bg-secondary);border-radius:16px">
+        <div style="font-size:48px;margin-bottom:16px">&#9825;</div>
+        <h2 style="font-size:24px;font-weight:700;margin-bottom:8px;font-family:var(--font-family)">Your wishlist is empty.</h2>
+        <p style="color:var(--color-text-secondary);margin-bottom:20px">Browse products and tap the heart to save them here.</p>
+        <a href="{{ url_for('shop') }}" class="btn-checkout" style="max-width:200px;margin:0 auto;display:block">Start Shopping</a>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

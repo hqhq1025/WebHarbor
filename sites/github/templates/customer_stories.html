@@ -1,0 +1,219 @@
+{% extends "base.html" %}
+{% block title %}Customer Stories · GitHub{% endblock %}
+{% block content %}
+
+<!-- Hero -->
+<section class="sec-hero">
+  <div class="sec-hero-inner">
+    <div class="sec-hero-text">
+      <span class="sec-eyebrow">
+        <svg aria-hidden="true" height="16" viewBox="0 0 16 16" width="16" fill="currentColor">
+          <path d="M11.46.146A.5.5 0 0 0 11.107 0H4.893a.5.5 0 0 0-.353.146L.146 4.54A.5.5 0 0 0 0 4.893v6.214a.5.5 0 0 0 .146.353l4.394 4.394a.5.5 0 0 0 .353.146h6.214a.5.5 0 0 0 .353-.146l4.394-4.394a.5.5 0 0 0 .146-.353V4.893a.5.5 0 0 0-.146-.353Z"/>
+        </svg>
+        Customer Stories
+      </span>
+      <h1 class="sec-hero-headline">How leading companies build with GitHub.</h1>
+      <p class="sec-hero-sub">From global automakers to scrappy startups, see how engineering teams of every size ship better software faster on the world's leading developer platform.</p>
+      <div class="sec-hero-cta">
+        <a href="/contact-sales" class="gh-btn gh-btn-primary">Talk to sales</a>
+        <a href="/pricing" class="gh-btn gh-btn-secondary">See plans</a>
+      </div>
+      <ul class="sec-hero-bullets">
+        <li>900+ public case studies across every industry</li>
+        <li>Featured on GitHub Universe and re:Invent main stages</li>
+        <li>Independently verified production metrics</li>
+      </ul>
+    </div>
+    <div class="sec-hero-art" aria-hidden="true">
+      <div class="sec-hero-card">
+        <div class="sec-hero-card-row sec-row-fix">
+          <span class="sec-row-icon">🚗</span>
+          <span class="sec-row-msg"><strong>Mercedes-Benz</strong> — 800+ developers shipping in-vehicle software</span>
+        </div>
+        <div class="sec-hero-card-row sec-row-dep">
+          <span class="sec-row-icon">🛍️</span>
+          <span class="sec-row-msg"><strong>Shopify</strong> — 55% faster code with GitHub Copilot</span>
+        </div>
+        <div class="sec-hero-card-row sec-row-secret">
+          <span class="sec-row-icon">🎬</span>
+          <span class="sec-row-msg"><strong>Netflix</strong> — petabyte-scale data tooling on GitHub Enterprise</span>
+        </div>
+        <div class="sec-hero-card-row sec-row-bug">
+          <span class="sec-row-icon">📈</span>
+          <span class="sec-row-msg"><strong>+50% faster releases</strong> across surveyed Fortune 500 customers</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Filter pills (display only) -->
+<section class="sec-features">
+  <div class="sec-section-inner">
+    <h2 class="sec-section-title">Stories by industry</h2>
+    <p class="sec-section-lede">Click an industry to filter — or scroll the full grid below.</p>
+    <div style="display:flex; flex-wrap:wrap; gap:10px; margin-bottom:32px;">
+      <a href="/customer-stories" class="gh-btn gh-btn-secondary gh-btn-sm" style="background:rgba(88,166,255,0.12); border-color:rgba(88,166,255,0.4);">All industries</a>
+      <a href="/customer-stories?industry=tech" class="gh-btn gh-btn-secondary gh-btn-sm">Tech</a>
+      <a href="/customer-stories?industry=automotive" class="gh-btn gh-btn-secondary gh-btn-sm">Automotive</a>
+      <a href="/customer-stories?industry=finance" class="gh-btn gh-btn-secondary gh-btn-sm">Finance</a>
+      <a href="/customer-stories?industry=healthcare" class="gh-btn gh-btn-secondary gh-btn-sm">Healthcare</a>
+      <a href="/customer-stories?industry=retail" class="gh-btn gh-btn-secondary gh-btn-sm">Retail &amp; E-commerce</a>
+      <a href="/customer-stories?industry=media" class="gh-btn gh-btn-secondary gh-btn-sm">Media &amp; Entertainment</a>
+    </div>
+
+    <!-- Stories grid -->
+    <div class="sec-feature-grid" style="grid-template-columns:repeat(3,1fr);">
+
+      <!-- Mercedes-Benz (must-preserve) -->
+      <a href="/customer-stories/mercedes-benz" class="sec-feature" style="text-decoration:none; color:inherit; display:block;">
+        <div class="sec-feature-icon" style="background:linear-gradient(135deg,#222,#666); color:#fff;">★</div>
+        <h3>Mercedes-Benz</h3>
+        <p style="font-size:12px; text-transform:uppercase; color:#79c0ff; letter-spacing:0.05em; margin:0 0 6px 0;">Automotive</p>
+        <p>"GitHub Enterprise lets us treat in-vehicle software like web software — small teams, fast iteration, no monolithic releases. We went from 6-month firmware cycles to weekly OTA drops."</p>
+        <p style="color:#3fb950; font-weight:600; font-size:13px;">+800 developers · 6× faster release cadence</p>
+        <span class="sec-feature-link">Read story →</span>
+      </a>
+
+      <!-- Shopify (must-preserve) -->
+      <a href="/customer-stories/shopify" class="sec-feature" style="text-decoration:none; color:inherit; display:block;">
+        <div class="sec-feature-icon" style="background:linear-gradient(135deg,#95BF47,#5E8E3E); color:#fff;">S</div>
+        <h3>Shopify</h3>
+        <p style="font-size:12px; text-transform:uppercase; color:#79c0ff; letter-spacing:0.05em; margin:0 0 6px 0;">Retail &amp; E-commerce</p>
+        <p>"Copilot is the largest single productivity gain we've measured in a decade. Our developers ship 55% faster on routine tasks — that's a full extra workday every week."</p>
+        <p style="color:#3fb950; font-weight:600; font-size:13px;">6,000 developers · +55% velocity</p>
+        <span class="sec-feature-link">Read story →</span>
+      </a>
+
+      <!-- Adobe -->
+      <a href="/customer-stories/adobe" class="sec-feature" style="text-decoration:none; color:inherit; display:block;">
+        <div class="sec-feature-icon" style="background:linear-gradient(135deg,#FA0F00,#B91A0F); color:#fff;">A</div>
+        <h3>Adobe</h3>
+        <p style="font-size:12px; text-transform:uppercase; color:#79c0ff; letter-spacing:0.05em; margin:0 0 6px 0;">Tech / Creative</p>
+        <p>"We rolled out CodeQL across 30,000 developers and 5,000 repositories in eight weeks — onboarding cost was zero because every developer already knew the GitHub UI."</p>
+        <p style="color:#3fb950; font-weight:600; font-size:13px;">30,000 developers · 5,000 repos secured</p>
+        <span class="sec-feature-link">Read story →</span>
+      </a>
+
+      <!-- Netflix -->
+      <a href="/customer-stories/netflix" class="sec-feature" style="text-decoration:none; color:inherit; display:block;">
+        <div class="sec-feature-icon" style="background:linear-gradient(135deg,#E50914,#B30710); color:#fff;">N</div>
+        <h3>Netflix</h3>
+        <p style="font-size:12px; text-transform:uppercase; color:#79c0ff; letter-spacing:0.05em; margin:0 0 6px 0;">Media &amp; Entertainment</p>
+        <p>"GitHub Actions is the connective tissue across our 6,000 internal services. One workflow file — and a service ships to global production with paved-road defaults."</p>
+        <p style="color:#3fb950; font-weight:600; font-size:13px;">6,000 services · 99.99% deploy reliability</p>
+        <span class="sec-feature-link">Read story →</span>
+      </a>
+
+      <!-- Spotify -->
+      <a href="/customer-stories/spotify" class="sec-feature" style="text-decoration:none; color:inherit; display:block;">
+        <div class="sec-feature-icon" style="background:linear-gradient(135deg,#1DB954,#0E7A35); color:#fff;">♪</div>
+        <h3>Spotify</h3>
+        <p style="font-size:12px; text-transform:uppercase; color:#79c0ff; letter-spacing:0.05em; margin:0 0 6px 0;">Media &amp; Entertainment</p>
+        <p>"Backstage and GitHub are the two pillars of our developer experience. Migrating from a homegrown Git host to GitHub Enterprise cut our internal infra burn by 40%."</p>
+        <p style="color:#3fb950; font-weight:600; font-size:13px;">2,200 engineers · −40% infra cost</p>
+        <span class="sec-feature-link">Read story →</span>
+      </a>
+
+      <!-- Mercado Libre -->
+      <a href="/customer-stories/mercadolibre" class="sec-feature" style="text-decoration:none; color:inherit; display:block;">
+        <div class="sec-feature-icon" style="background:linear-gradient(135deg,#FFE600,#FFC400); color:#1a1a1a;">M</div>
+        <h3>Mercado Libre</h3>
+        <p style="font-size:12px; text-transform:uppercase; color:#79c0ff; letter-spacing:0.05em; margin:0 0 6px 0;">Retail &amp; E-commerce</p>
+        <p>"GitHub Advanced Security met our 12,000 developers where they already are. We went from 14-day mean-time-to-remediation to under 48 hours — without any new mandatory training."</p>
+        <p style="color:#3fb950; font-weight:600; font-size:13px;">12,000 developers · 7× faster remediation</p>
+        <span class="sec-feature-link">Read story →</span>
+      </a>
+
+      <!-- Twilio -->
+      <a href="/customer-stories/twilio" class="sec-feature" style="text-decoration:none; color:inherit; display:block;">
+        <div class="sec-feature-icon" style="background:linear-gradient(135deg,#F22F46,#A11F30); color:#fff;">T</div>
+        <h3>Twilio</h3>
+        <p style="font-size:12px; text-transform:uppercase; color:#79c0ff; letter-spacing:0.05em; margin:0 0 6px 0;">Tech / Communications</p>
+        <p>"Codespaces eliminated our 'works on my machine' onboarding tax — new hires open a PR on day one instead of fighting with their laptop for a week."</p>
+        <p style="color:#3fb950; font-weight:600; font-size:13px;">−6 days new-hire ramp · +30% PR throughput</p>
+        <span class="sec-feature-link">Read story →</span>
+      </a>
+
+      <!-- Stripe -->
+      <a href="/customer-stories/stripe" class="sec-feature" style="text-decoration:none; color:inherit; display:block;">
+        <div class="sec-feature-icon" style="background:linear-gradient(135deg,#635BFF,#3F37C8); color:#fff;">$</div>
+        <h3>Stripe</h3>
+        <p style="font-size:12px; text-transform:uppercase; color:#79c0ff; letter-spacing:0.05em; margin:0 0 6px 0;">Finance / Payments</p>
+        <p>"Secret scanning push protection caught 4,800 leaked API keys in our first quarter — keys that never made it into a single commit. The blast radius was simply zero."</p>
+        <p style="color:#3fb950; font-weight:600; font-size:13px;">4,800 secrets blocked · 0 leaked credentials</p>
+        <span class="sec-feature-link">Read story →</span>
+      </a>
+
+      <!-- Pfizer -->
+      <a href="/customer-stories/pfizer" class="sec-feature" style="text-decoration:none; color:inherit; display:block;">
+        <div class="sec-feature-icon" style="background:linear-gradient(135deg,#0093D0,#00558B); color:#fff;">P</div>
+        <h3>Pfizer</h3>
+        <p style="font-size:12px; text-transform:uppercase; color:#79c0ff; letter-spacing:0.05em; margin:0 0 6px 0;">Healthcare / Pharma</p>
+        <p>"Regulated software development used to mean a six-month audit trail. With GitHub Enterprise and CodeQL, our compliance evidence is just the commit history — auditors can verify it themselves."</p>
+        <p style="color:#3fb950; font-weight:600; font-size:13px;">−65% audit prep time · 100% FDA traceability</p>
+        <span class="sec-feature-link">Read story →</span>
+      </a>
+
+    </div>
+  </div>
+</section>
+
+<!-- Featured story banner -->
+<section class="sec-detail">
+  <div class="sec-section-inner">
+    <div style="background:linear-gradient(135deg,#06141f 0%,#1a3354 100%); border:1px solid rgba(88,166,255,0.25); border-radius:16px; padding:48px; display:grid; grid-template-columns:1fr 1fr; gap:40px; align-items:center;">
+      <div>
+        <span style="display:inline-block; background:rgba(88,166,255,0.15); color:#79c0ff; padding:4px 12px; border-radius:999px; font-size:12px; font-weight:600; letter-spacing:0.05em; text-transform:uppercase; margin-bottom:16px;">Featured · Long-form story</span>
+        <h2 style="font-size:32px; color:#fff; margin:0 0 12px 0; font-weight:700;">How Mercedes-Benz ships software for 1.5 million cars on the road.</h2>
+        <p style="color:#c9d1d9; font-size:16px; line-height:1.6; margin:0 0 20px 0;">Behind the dashboard of every new MBUX-equipped vehicle is a continuous-delivery pipeline running on GitHub Actions. We sat down with the platform team to learn how they migrated 800 developers off Subversion in six months and never looked back.</p>
+        <a href="/customer-stories/mercedes-benz" class="gh-btn gh-btn-primary">Read the full story</a>
+      </div>
+      <div style="background:rgba(0,0,0,0.3); border-radius:12px; padding:24px; border:1px solid rgba(255,255,255,0.06);">
+        <blockquote style="font-style:italic; color:#fff; font-size:18px; line-height:1.55; margin:0 0 16px 0;">"Cars are computers now. GitHub is how we ship that computer."</blockquote>
+        <div style="font-size:13px; color:#8b949e;">
+          <strong style="color:#c9d1d9;">Magnus Östberg</strong><br>
+          Chief Software Officer, Mercedes-Benz
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Stats -->
+<section class="sec-stats">
+  <div class="sec-section-inner">
+    <div class="sec-stats-grid">
+      <div class="sec-stat">
+        <div class="sec-stat-num">90%</div>
+        <div class="sec-stat-label">of the Fortune 100 build software on GitHub</div>
+      </div>
+      <div class="sec-stat">
+        <div class="sec-stat-num">100M+</div>
+        <div class="sec-stat-label">developers across 4 million organizations</div>
+      </div>
+      <div class="sec-stat">
+        <div class="sec-stat-num">+50%</div>
+        <div class="sec-stat-label">average release-cadence increase among Enterprise customers</div>
+      </div>
+      <div class="sec-stat">
+        <div class="sec-stat-num">900+</div>
+        <div class="sec-stat-label">published case studies across every major industry</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Final CTA -->
+<section class="sec-final-cta">
+  <div class="sec-section-inner sec-narrow sec-final-cta-inner">
+    <h2>Bring your team to GitHub.</h2>
+    <p>Free 30-day Enterprise trial · Same-day onboarding for teams of any size · Talk to a real engineer.</p>
+    <div class="sec-hero-cta">
+      <a href="/contact-sales" class="gh-btn gh-btn-primary">Talk to sales</a>
+      <a href="/pricing" class="gh-btn gh-btn-secondary">See plans &amp; pricing</a>
+    </div>
+  </div>
+</section>
+
+{% endblock %}

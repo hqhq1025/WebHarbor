@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+{% block title %}Latest stories - BBC News{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>Latest stories</h1>
+    <p>{{ total }} stories published on BBC News — ordered newest first.</p>
+</div>
+
+<div class="latest-grid">
+    <div class="latest-feed">
+        {% for art in articles %}
+        <a class="latest-item" href="{{ url_for('article_detail', slug=art.slug) }}">
+            {% if art.hero_image %}
+            <img src="{{ art.hero_image }}" alt="{{ art.headline|e }}" class="latest-image"
+                 onerror="this.style.display='none'">
+            {% else %}
+            <div class="latest-image" style="background:#eee;"></div>
+            {% endif %}
+            <div class="latest-content">
+                <h3 class="latest-headline">{{ art.headline }}</h3>
+                {% if art.subtitle %}
+                <p class="latest-summary">{{ art.subtitle[:180] }}</p>
+                {% endif %}
+                <div class="latest-meta">
+                    {{ art.category.name if art.category else 'News' }} ·
+                    {{ art.published_date_str }} ·
+                    {{ art.reading_time }} min read
+                </div>
+            </div>
+        </a>
+        {% endfor %}
+
+        {% set total_pages = ((total / per_page)|round(0, 'ceil'))|int %}
+        {% if total_pages > 1 %}
+        <div class="pager">
+            {% if page > 1 %}
+            <a href="{{ url_for('latest_page', page=page-1) }}">← Previous</a>
+            {% endif %}
+            <span class="current">Page {{ page }} of {{ total_pages }}</span>
+            {% if page < total_pages %}
+            <a href="{{ url_for('latest_page', page=page+1) }}">Next →</a>
+            {% endif %}
+        </div>
+        {% endif %}
+    </div>
+
+    <aside>
+        <div class="side-block">
+            <h3 class="side-title">Browse by section</h3>
+            {% for cat in main_categories[:10] %}
+            <a class="side-item" href="{{ url_for('section_page', slug=cat.slug) }}">
+                <div class="side-item-num">{{ loop.index }}</div>
+                <div>
+                    <div class="side-item-title">{{ cat.name }}</div>
+                    <div class="hero-side-meta">{{ cat.article_count }} stories</div>
+                </div>
+            </a>
+            {% endfor %}
+        </div>
+    </aside>
+</div>
+{% endblock %}

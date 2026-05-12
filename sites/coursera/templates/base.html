@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="csrf-token" content="{{ csrf_token() }}">
+<title>{% block title %}Coursera | Degrees, Certificates, & Free Online Courses{% endblock %}</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
+</head>
+<body>
+{% with messages = get_flashed_messages(with_categories=true) %}
+{% if messages %}
+<div id="flash-container">
+{% for cat, msg in messages %}
+<div class="flash flash-{{ cat }}">{{ msg }}<button onclick="this.parentElement.remove()">&times;</button></div>
+{% endfor %}
+</div>
+{% endif %}
+{% endwith %}
+
+<nav class="global-nav">
+  <div class="nav-inner">
+    <a href="{{ url_for('index') }}" class="nav-logo" aria-label="Coursera home">
+      {% if site_logo %}
+      <img class="logo-img" src="{{ url_for('static', filename=site_logo) }}" alt="Coursera">
+      {% else %}
+      <span class="logo-text">coursera</span>
+      {% endif %}
+    </a>
+    <div class="nav-explore">
+      <div class="nav-dropdown">
+        <button class="nav-explore-btn" type="button">Explore <span aria-hidden="true">&#x25BE;</span></button>
+        <div class="nav-dropdown-menu">
+          <div class="dropdown-section">
+            <div class="dropdown-col">
+              <h4>Goals</h4>
+              <a href="{{ url_for('degrees') }}">Take a degree</a>
+              <a href="{{ url_for('professional_certificates') }}">Earn a Certificate</a>
+              <a href="{{ url_for('search') }}?free=1">Learn for Free</a>
+              <a href="{{ url_for('coursera_plus') }}">Coursera Plus</a>
+            </div>
+            <div class="dropdown-col">
+              <h4>Subjects</h4>
+              {% for slug, name in nav_categories[:6] %}
+              <a href="{{ url_for('browse', category_slug=slug) }}">{{ name }}</a>
+              {% endfor %}
+            </div>
+            <div class="dropdown-col">
+              <h4>For Enterprise</h4>
+              <a href="{{ url_for('business') }}">Coursera for Business</a>
+              <a href="{{ url_for('for_teams') }}">Coursera for Teams</a>
+              <a href="{{ url_for('partners') }}">Our Partners</a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <form class="nav-search" action="{{ url_for('search') }}" method="get" role="search">
+      <input type="text" name="q" placeholder="What do you want to learn?" value="{{ request.args.get('q', '') }}" aria-label="Search">
+      <button type="submit" aria-label="Search">&#128269;</button>
+    </form>
+    <div class="nav-auth">
+      {% if current_user.is_authenticated %}
+      <a href="{{ url_for('account') }}" class="nav-user-pill" aria-label="Account">{{ current_user.name[0] }}</a>
+      <a href="{{ url_for('logout') }}" class="nav-link">Log Out</a>
+      {% else %}
+      <a href="{{ url_for('login') }}" class="nav-link">Log In</a>
+      <a href="{{ url_for('register') }}" class="btn-nav-join">Join for Free</a>
+      {% endif %}
+    </div>
+  </div>
+</nav>
+
+{% block content %}{% endblock %}
+
+<footer class="site-footer">
+  <div class="footer-inner">
+    <div class="footer-col">
+      <h4>Skills</h4>
+      <a href="{{ url_for('search') }}?q=python">Python Skills</a>
+      <a href="{{ url_for('search') }}?q=excel">Excel Skills</a>
+      <a href="{{ url_for('search') }}?q=data+analysis">Data Analysis</a>
+      <a href="{{ url_for('search') }}?q=machine+learning">Machine Learning</a>
+      <a href="{{ url_for('search') }}?q=cybersecurity">Cybersecurity</a>
+      <a href="{{ url_for('search') }}?q=project+management">Project Management</a>
+    </div>
+    <div class="footer-col">
+      <h4>Professional Certificates</h4>
+      <a href="{{ url_for('professional_certificates') }}">Google Career Certificates</a>
+      <a href="{{ url_for('professional_certificates') }}">IBM Certificates</a>
+      <a href="{{ url_for('professional_certificates') }}">Meta Certificates</a>
+      <a href="{{ url_for('professional_certificates') }}">All Certificates</a>
+      <a href="{{ url_for('search') }}?type=Professional+Certificate">Browse Certificates</a>
+    </div>
+    <div class="footer-col">
+      <h4>Courses &amp; Specializations</h4>
+      <a href="{{ url_for('search') }}?type=Course">Courses</a>
+      <a href="{{ url_for('search') }}?type=Specialization">Specializations</a>
+      <a href="{{ url_for('search') }}?type=Guided+Project">Guided Projects</a>
+      <a href="{{ url_for('search') }}?free=1">Free Courses</a>
+      <a href="{{ url_for('coursera_plus') }}">Coursera Plus</a>
+      <a href="{{ url_for('degrees') }}">Online Degrees</a>
+    </div>
+    <div class="footer-col">
+      <h4>Career Resources</h4>
+      <a href="{{ url_for('business') }}">For Business</a>
+      <a href="{{ url_for('for_teams') }}">For Teams</a>
+      <a href="{{ url_for('partners') }}">For Universities</a>
+      <a href="{{ url_for('partners') }}">Partners</a>
+      {% for slug, name in nav_categories[:3] %}
+      <a href="{{ url_for('browse', category_slug=slug) }}">{{ name }}</a>
+      {% endfor %}
+    </div>
+  </div>
+  <div class="footer-brand-row">
+    <span class="fb-left">coursera</span>
+    <div class="fb-badges">
+      {% if app_store_badge %}
+      <a href="#" class="fb-badge is-img" aria-label="Download on the App Store">
+        <img src="{{ url_for('static', filename=app_store_badge) }}" alt="Download on the App Store">
+      </a>
+      {% else %}
+      <span class="fb-badge"><span><span class="fb-badge-sub">Download on the</span>App Store</span></span>
+      {% endif %}
+      {% if play_store_badge %}
+      <a href="#" class="fb-badge is-img" aria-label="Get it on Google Play">
+        <img src="{{ url_for('static', filename=play_store_badge) }}" alt="Get it on Google Play">
+      </a>
+      {% else %}
+      <span class="fb-badge"><span><span class="fb-badge-sub">Get it on</span>Google Play</span></span>
+      {% endif %}
+    </div>
+  </div>
+  <div class="footer-bottom">
+    <p>&copy; 2024 Coursera Inc. All rights reserved.</p>
+    <div class="footer-social" aria-label="Social links">
+      {% for key, label in [('facebook','Facebook'),('linkedin','LinkedIn'),('twitter','Twitter'),('youtube','YouTube'),('instagram','Instagram')] %}
+      <a href="#" aria-label="{{ label }}">
+        {% if social_icons.get(key) %}<img src="{{ url_for('static', filename=social_icons[key]) }}" alt="">{% else %}{{ label[0] }}{% endif %}
+      </a>
+      {% endfor %}
+    </div>
+  </div>
+</footer>
+<script src="{{ url_for('static', filename='js/main.js') }}"></script>
+</body>
+</html>

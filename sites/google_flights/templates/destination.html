@@ -1,0 +1,98 @@
+{% extends "base.html" %}
+{% block title %}{{ airport.city }} flights | Google Flights{% endblock %}
+
+{% block content %}
+{% set gallery = airport.get_gallery() %}
+<section class="dest-hero">
+  {% if airport.image %}
+    <img src="{{ airport.image }}" alt="{{ airport.city }}" onerror="this.style.display='none';this.parentElement.style.background='linear-gradient(135deg,var(--g-blue),var(--g-green))';">
+  {% endif %}
+  <div class="dest-hero-overlay">
+    <div class="dest-hero-eyebrow">Destination</div>
+    <h1>{{ airport.city }}, {{ airport.country }}</h1>
+  </div>
+</section>
+
+<div class="dest-body">
+  <p class="dest-description">{{ airport.description }}</p>
+
+  {% if gallery and gallery|length >= 4 %}
+    <section class="pd-gallery-section">
+      <h2 style="font-family:var(--font-sans);font-size:22px;font-weight:400;margin-bottom:16px;">Explore {{ airport.city }}</h2>
+      <div class="dest-gallery">
+        <div class="dest-gallery-main pd-gallery-img">
+          <img src="{{ gallery[0] }}" alt="{{ airport.city }}" onerror="this.style.display='none'">
+        </div>
+        {% for img in gallery[1:5] %}
+          <div class="pd-gallery-img">
+            <img src="{{ img }}" alt="{{ airport.city }}" onerror="this.style.display='none'">
+          </div>
+        {% endfor %}
+      </div>
+    </section>
+  {% endif %}
+
+  {% if gallery and gallery|length > 5 %}
+    <section class="pd-gallery-section" style="margin-bottom:48px;">
+      <h2 style="font-family:var(--font-sans);font-size:22px;font-weight:400;margin-bottom:16px;">More views</h2>
+      <div class="fd-gallery-grid">
+        {% for img in gallery[5:] %}
+          <div class="fd-gallery-img pd-gallery-img">
+            <img src="{{ img }}" alt="{{ airport.city }}" loading="lazy" onerror="this.parentElement.style.display='none'">
+          </div>
+        {% endfor %}
+      </div>
+    </section>
+  {% endif %}
+
+  {% if inbound %}
+    <section class="dest-flights-section">
+      <h2 style="font-family:var(--font-sans);font-size:22px;font-weight:400;margin-bottom:16px;">Flights to {{ airport.city }}</h2>
+      <div class="deal-grid">
+        {% for f in inbound %}
+          <a href="{{ url_for('flight_detail', flight_id=f.id) }}" class="deal-card">
+            <div class="deal-image">
+              {% if f.origin.image %}
+                <img src="{{ f.origin.image }}" alt="{{ f.origin.city }}" onerror="this.style.display='none'">
+              {% else %}
+                <div style="display:flex;align-items:center;justify-content:center;height:100%;background:var(--g-grey-100);color:var(--g-grey-700);">{{ f.origin.city }}</div>
+              {% endif %}
+            </div>
+            <div class="deal-body">
+              <div class="deal-route">From {{ f.origin.city }}</div>
+              <div class="deal-dates">{{ f.departure_date|datefmt }}</div>
+              <div class="deal-stops">{{ f.airline }} &middot; {{ f.stops_str }}</div>
+              <div class="deal-price"><span class="deal-price-label">from</span> {{ f.price|money }}</div>
+            </div>
+          </a>
+        {% endfor %}
+      </div>
+    </section>
+  {% endif %}
+
+  {% if outbound %}
+    <section class="dest-flights-section">
+      <h2 style="font-family:var(--font-sans);font-size:22px;font-weight:400;margin-bottom:16px;">Flights from {{ airport.city }}</h2>
+      <div class="deal-grid">
+        {% for f in outbound %}
+          <a href="{{ url_for('flight_detail', flight_id=f.id) }}" class="deal-card">
+            <div class="deal-image">
+              {% if f.destination.image %}
+                <img src="{{ f.destination.image }}" alt="{{ f.destination.city }}" onerror="this.style.display='none'">
+              {% else %}
+                <div style="display:flex;align-items:center;justify-content:center;height:100%;background:var(--g-grey-100);">{{ f.destination.city }}</div>
+              {% endif %}
+            </div>
+            <div class="deal-body">
+              <div class="deal-route">To {{ f.destination.city }}</div>
+              <div class="deal-dates">{{ f.departure_date|datefmt }}</div>
+              <div class="deal-stops">{{ f.airline }} &middot; {{ f.stops_str }}</div>
+              <div class="deal-price"><span class="deal-price-label">from</span> {{ f.price|money }}</div>
+            </div>
+          </a>
+        {% endfor %}
+      </div>
+    </section>
+  {% endif %}
+</div>
+{% endblock %}

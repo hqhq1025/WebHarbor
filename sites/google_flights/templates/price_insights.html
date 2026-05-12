@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+{% block title %}Price insights | Google Flights{% endblock %}
+
+{% block content %}
+<section class="hero">
+  <h1>Price insights</h1>
+  <p class="hero-subtitle">Know when to book to get the best price</p>
+</section>
+
+<div class="tool-wrap">
+  <div class="insight-card">
+    <form action="{{ url_for('price_insights') }}" method="GET" style="display:grid;grid-template-columns:1fr 1fr auto;gap:8px;margin-bottom:24px;align-items:center;">
+      <input type="text" name="from" value="{{ origin_iata }}" placeholder="From (e.g. JFK)" class="search-field" style="padding:10px;border:1px solid #dadce0;border-radius:4px;">
+      <input type="text" name="to" value="{{ dest_iata }}" placeholder="To (e.g. LAX)" class="search-field" style="padding:10px;border:1px solid #dadce0;border-radius:4px;">
+      <button type="submit" class="btn btn-primary" style="padding:10px 20px;">Analyze</button>
+    </form>
+    {% if insight %}
+    <div class="insight-header">
+      <span class="material-symbols-outlined" style="font-size:32px;color:var(--g-green);">trending_down</span>
+      <h2 style="font-family:var(--font-sans);font-size:24px;font-weight:400;">{{ origin.iata }} &rarr; {{ destination.iata }} price analysis</h2>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin:16px 0;">
+      <div><div style="font-size:12px;color:#5f6368;">Available flights</div><div style="font-size:22px;">{{ insight.count }}</div></div>
+      <div><div style="font-size:12px;color:#5f6368;">Lowest</div><div style="font-size:22px;color:var(--g-green);">${{ insight.low }}</div></div>
+      <div><div style="font-size:12px;color:#5f6368;">Average</div><div style="font-size:22px;">${{ insight.avg }}</div></div>
+      <div><div style="font-size:12px;color:#5f6368;">Highest</div><div style="font-size:22px;color:var(--g-red);">${{ insight.high }}</div></div>
+    </div>
+    <p style="color:var(--g-grey-700);">
+      Book <strong>3-6 weeks ahead</strong> to lock in the lowest price on this route.
+    </p>
+    {% else %}
+    <div class="insight-header">
+      <span class="material-symbols-outlined" style="font-size:32px;color:var(--g-green);">trending_down</span>
+      <h2 style="font-family:var(--font-sans);font-size:24px;font-weight:400;">Enter a route to see price insights</h2>
+    </div>
+    <p style="color:var(--g-grey-700);">
+      Current prices for popular routes are in line with their usual range. The cheapest deals appear 3-6 weeks before departure.
+    </p>
+    {% endif %}
+
+    <div class="insight-grid">
+      <div class="insight-tile">
+        <span class="material-symbols-outlined" style="color:var(--g-blue);">schedule</span>
+        <h3>Best time to book</h3>
+        <p>3-6 weeks before departure usually offers the lowest fares.</p>
+      </div>
+      <div class="insight-tile">
+        <span class="material-symbols-outlined" style="color:var(--g-blue);">calendar_today</span>
+        <h3>Best days to fly</h3>
+        <p>Tuesdays and Wednesdays are typically the cheapest days.</p>
+      </div>
+      <div class="insight-tile">
+        <span class="material-symbols-outlined" style="color:var(--g-blue);">hourglass_bottom</span>
+        <h3>Avoid peak times</h3>
+        <p>Holidays and summer months are 30-50% more expensive.</p>
+      </div>
+      <div class="insight-tile">
+        <span class="material-symbols-outlined" style="color:var(--g-blue);">swap_horiz</span>
+        <h3>Be flexible</h3>
+        <p>Changing your dates by one day can save up to $200.</p>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block title %}New Issue · {{ repo.full_name }} · GitHub{% endblock %}
+{% block content %}
+<div class="repo-header-bar">
+  <div class="repo-header-inner">
+    <div class="repo-breadcrumb">
+      <a href="/{{ repo.owner.username }}" class="repo-breadcrumb-link">{{ repo.owner.username }}</a>
+      <span class="repo-breadcrumb-sep">/</span>
+      <a href="/{{ repo.full_name }}" class="repo-breadcrumb-link">{{ repo.name }}</a>
+      <span class="repo-breadcrumb-sep">/</span>
+      <a href="/{{ repo.full_name }}/issues" class="repo-breadcrumb-link">Issues</a>
+    </div>
+  </div>
+</div>
+<div class="new-issue-page">
+  <div class="new-issue-layout">
+    <img src="{{ current_user.avatar_url }}" alt="{{ current_user.username }}" class="issue-form-avatar"
+         onerror="this.src='/static/images/avatars/avatar_00.jpg'">
+    <div class="new-issue-form-wrap">
+      <form method="POST" action="/{{ repo.full_name }}/issues/new">
+        {{ form.hidden_tag() }}
+        <div class="form-group">
+          <label class="form-label">Title</label>
+          {{ form.title(class="form-input form-input-lg", placeholder="Title") }}
+          {% for e in form.title.errors %}<span class="form-error">{{ e }}</span>{% endfor %}
+        </div>
+        <div class="form-group">
+          <label class="form-label">Leave a comment</label>
+          {{ form.body(class="form-textarea-issue", rows="10", placeholder="Describe the issue...") }}
+        </div>
+        <div class="issue-form-actions">
+          <a href="/{{ repo.full_name }}/issues" class="gh-btn gh-btn-secondary">Cancel</a>
+          <button type="submit" class="gh-btn gh-btn-primary">Submit new issue</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

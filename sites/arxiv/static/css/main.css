@@ -1,0 +1,1157 @@
+/*
+ * arxiv.org mirror — main stylesheet
+ * Restyled to closely match real arxiv.org visual language:
+ *   - Cornell maroon (#b31b1b) on white
+ *   - Lucida-family sans-serif body
+ *   - Three-row top: cu-identity (black bg) → arxiv masthead (maroon) → secondary bar
+ *   - Cream/tan listing date headers, bordered side panels
+ */
+
+:root {
+    --cornell-red: #b31b1b;
+    --cornell-red-dark: #8b1515;
+    --cornell-red-link: #b31b1b;
+    --link: #0000ee;
+    --link-visited: #551a8b;
+    --link-blue: #1a56b3;
+    --link-blue-visited: #51458b;
+    --bg-white: #ffffff;
+    --bg-subtle: #fafafa;
+    --bg-grey: #f5f5f5;
+    --bg-cream: #f7ecd1;
+    --bg-cream-soft: #fdf6e3;
+    --bg-blue-pale: #ecf2f7;
+    --bg-cu-bar: #000000;
+    --text: #000000;
+    --text-muted: #555555;
+    --text-faded: #777777;
+    --border: #cccccc;
+    --border-light: #e6e6e6;
+    --border-cream: #d4c187;
+    --alert-success-bg: #dff0d8;
+    --alert-success-border: #3c763d;
+    --alert-error-bg: #f2dede;
+    --alert-error-border: #a94442;
+    --serif: "Lucida Sans Unicode", "Lucida Grande", "Lucida Sans", Geneva, Verdana, Arial, sans-serif;
+    --mono: "Consolas", "Monaco", "Courier New", monospace;
+    --max-width: 1010px;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+    margin: 0;
+    padding: 0;
+    font-family: var(--serif);
+    font-size: 13px;
+    line-height: 1.45;
+    color: var(--text);
+    background: var(--bg-white);
+}
+
+a {
+    color: var(--link);
+    text-decoration: none;
+}
+a:hover { text-decoration: underline; }
+a:visited { color: var(--link-visited); }
+
+/* ============================ TOP BAR (Cornell identity) ============================ */
+.cu-identity {
+    background: var(--bg-cu-bar);
+    color: #fff;
+    padding: 0;
+    border-bottom: 0;
+    font-size: 12px;
+}
+.cu-identity-inner {
+    max-width: 100%;
+    margin: 0 auto;
+    display: flex;
+    align-items: stretch;
+    gap: 0;
+    min-height: 56px;
+    padding: 0 18px;
+}
+.cu-logo {
+    display: flex;
+    align-items: center;
+    padding-right: 22px;
+}
+.cu-logo img { height: 38px; width: auto; }
+.cu-logo strong { color:#fff; font-size:16px; }
+.cu-banner {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+}
+.cu-banner a {
+    display: inline-block;
+    background: #fff;
+    color: var(--cornell-red);
+    padding: 8px 16px;
+    border-radius: 3px;
+    font-weight: bold;
+    font-size: 13px;
+    text-decoration: none;
+    line-height: 1.3;
+    max-width: 320px;
+}
+.cu-banner a:hover { background: #f3f3f3; text-decoration: none; }
+.cu-support {
+    text-align: right;
+    font-size: 11px;
+    color: #ddd;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding-left: 18px;
+    max-width: 360px;
+    line-height: 1.35;
+}
+.cu-support a { color: #fff; text-decoration: underline; }
+.cu-support a:visited { color: #fff; }
+.btn-donate {
+    display: inline-block;
+    background: #fff;
+    color: var(--cornell-red) !important;
+    padding: 4px 14px;
+    border: 1px solid #fff;
+    border-radius: 14px;
+    font-weight: bold;
+    margin-left: 8px;
+    text-decoration: none !important;
+    font-size: 12px;
+    white-space: nowrap;
+}
+.btn-donate:hover { background: #f3f3f3; }
+
+/* ============================ MAIN HEADER (arxiv masthead) ============================ */
+header.main-header {
+    background: var(--cornell-red);
+    color: #fff;
+    padding: 0;
+    border-bottom: 1px solid #6d0e0e;
+}
+.header-inner {
+    max-width: 100%;
+    margin: 0 auto;
+    display: flex;
+    align-items: center;
+    padding: 8px 18px;
+    min-height: 60px;
+    gap: 14px;
+}
+.header-logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-shrink: 0;
+}
+.header-logo img { height: 38px; width: auto; }
+.header-breadcrumbs {
+    color: #fff;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-left: -4px;
+}
+.header-breadcrumbs a {
+    color: #fff;
+    text-decoration: none;
+}
+.header-breadcrumbs a:hover { text-decoration: underline; }
+.header-breadcrumbs a:visited { color: #fff; }
+.header-breadcrumbs .sep { color: #f3c8c8; }
+
+.header-search {
+    margin-left: auto;
+    display: flex;
+    gap: 0;
+    align-items: stretch;
+    background: #fff;
+    border-radius: 3px;
+    overflow: hidden;
+}
+.header-search input[type="text"] {
+    padding: 5px 8px;
+    border: 1px solid #fff;
+    border-right: none;
+    font-size: 13px;
+    width: 180px;
+    font-family: var(--serif);
+    background: #fff;
+    color: var(--text);
+    outline: none;
+}
+.header-search select {
+    padding: 5px 4px;
+    border: 1px solid #fff;
+    border-left: 1px solid #ccc;
+    border-right: none;
+    font-size: 12px;
+    background: #fff;
+    font-family: var(--serif);
+    outline: none;
+}
+.header-search button {
+    padding: 5px 14px;
+    border: 1px solid var(--cornell-red);
+    background: var(--cornell-red);
+    color: #fff;
+    font-weight: bold;
+    font-size: 13px;
+    cursor: pointer;
+    font-family: var(--serif);
+}
+.header-search button:hover { background: var(--cornell-red-dark); }
+
+.header-meta {
+    max-width: 100%;
+    margin: 0 auto;
+    padding: 4px 18px 4px;
+    font-size: 12px;
+    color: #fff;
+    display: flex;
+    justify-content: flex-end;
+    gap: 6px;
+    background: var(--cornell-red);
+}
+.header-meta a { color: #fff; text-decoration: underline; }
+.header-meta a:visited { color: #fff; }
+.header-meta span { color: #f3c8c8; }
+
+/* mirror-date strip — anchors relative-date wording for agents */
+.mirror-date-strip {
+    background: #fff8d6;
+    border-top: 1px solid #e0c46c;
+    border-bottom: 1px solid #e0c46c;
+    color: #4a3a00;
+    font-size: 12.5px;
+    line-height: 1.4;
+    padding: 5px 18px;
+    text-align: center;
+    font-family: var(--serif);
+}
+.mirror-date-strip .mdate-label { color: #4a3a00; }
+.mirror-date-strip .mdate-value { color: #000; font-weight: bold; margin: 0 4px; }
+.mirror-date-strip .mdate-iso   { color: #6b5418; margin-right: 4px; }
+.mirror-date-strip .mdate-note  { color: #6b5418; }
+
+/* secondary bar (login/library/etc) lives below masthead */
+.secondary-bar {
+    border-bottom: 1px solid var(--border-light);
+    background: #fff;
+    padding: 5px 18px;
+    font-size: 12px;
+    text-align: right;
+    color: var(--text-muted);
+}
+.secondary-bar a { color: var(--cornell-red); }
+
+/* ============================ FLASH ============================ */
+.flash-container {
+    max-width: var(--max-width);
+    margin: 10px auto;
+    padding: 0 18px;
+}
+.flash {
+    padding: 8px 12px;
+    margin-bottom: 8px;
+    border: 1px solid transparent;
+    border-radius: 3px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 13px;
+}
+.flash-success {
+    background: var(--alert-success-bg);
+    border-color: var(--alert-success-border);
+    color: var(--alert-success-border);
+}
+.flash-error {
+    background: var(--alert-error-bg);
+    border-color: var(--alert-error-border);
+    color: var(--alert-error-border);
+}
+.flash .close {
+    background: none; border: none; cursor: pointer;
+    font-size: 18px; font-weight: bold; color: inherit; opacity: 0.6;
+}
+
+/* ============================ PAGE CONTAINER ============================ */
+.page-wrap {
+    max-width: var(--max-width);
+    margin: 14px auto;
+    padding: 0 18px 40px;
+}
+
+h1, h2, h3, h4 {
+    margin: 0.9em 0 0.4em;
+    font-weight: bold;
+    color: var(--text);
+}
+h1 { font-size: 22px; line-height: 1.2; }
+h2 { font-size: 17px; padding-bottom: 2px; margin-top: 22px; }
+h3 { font-size: 14px; }
+h4 { font-size: 13px; }
+
+p { margin: 0.5em 0; }
+
+/* ============================ HOMEPAGE DIRECTORY ============================ */
+.intro-block {
+    background: transparent;
+    border: none;
+    padding: 8px 0 0 0;
+    margin-bottom: 14px;
+    font-size: 13px;
+}
+.intro-block p { margin: 6px 0; }
+.intro-stats {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-top: 10px;
+    font-size: 12px;
+    color: var(--text-muted);
+}
+.intro-stats span {
+    background: transparent;
+    padding: 0;
+    border: none;
+}
+.intro-stats b { color: var(--text); }
+
+.subject-search-box {
+    background: transparent;
+    border: 1px solid var(--border);
+    padding: 8px 12px;
+    border-radius: 0;
+    margin-bottom: 18px;
+}
+.subject-search-box form {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+}
+.subject-search-box label { font-weight: normal; }
+.subject-search-box select, .subject-search-box input {
+    padding: 4px 6px;
+    font-family: var(--serif);
+    font-size: 13px;
+    border: 1px solid #aaa;
+}
+.subject-search-box button {
+    padding: 4px 12px;
+    background: #fff;
+    border: 1px solid #888;
+    cursor: pointer;
+    font-family: var(--serif);
+    font-size: 13px;
+}
+.subject-search-box button:hover { background: #eee; }
+
+.arxiv-intro {
+    margin: 14px 0 16px;
+    font-size: 14px;
+    line-height: 1.45;
+    color: var(--text);
+}
+
+.subject-search-box label { margin-right: 4px; }
+.subject-search-box a { margin-left: 4px; }
+
+.cat-directory h2,
+.cat-directory h2.archive-group {
+    color: var(--text);
+    border-bottom: none;
+    margin: 18px 0 4px;
+    padding: 0;
+    background: transparent;
+    font-size: 17px;
+    font-weight: bold;
+}
+
+.cat-directory ul,
+.cat-directory ul.archive-list {
+    list-style: none;
+    margin: 0 0 6px 0;
+    padding-left: 14px;
+}
+.cat-directory ul > li,
+.cat-directory ul.archive-list > li {
+    list-style: none;
+    margin: 1px 0;
+    padding: 0;
+    font-size: 13px;
+    line-height: 1.45;
+}
+.cat-directory ul > li::before { content: ""; }
+.cat-directory ul.archive-list > li b a,
+.cat-directory ul.archive-list > li a { text-decoration: none; }
+.cat-directory ul.archive-list > li b a:hover,
+.cat-directory ul.archive-list > li a:hover { text-decoration: underline; }
+
+.cat-directory .archive-meta { color: var(--text); font-size: 13px; }
+.cat-directory .archive-meta a { color: var(--link); }
+
+.cat-directory .archive-subs {
+    display: block;
+    margin: 0 0 6px 0;
+    color: var(--text);
+    font-size: 12px;
+    line-height: 1.4;
+}
+.cat-directory .archive-subs i  { font-style: italic; color: var(--text); }
+.cat-directory .archive-subs a  { color: var(--link); }
+
+.cat-directory ul.about-list {
+    padding-left: 14px;
+    margin-bottom: 18px;
+}
+.cat-directory ul.about-list > li {
+    list-style: disc inside;
+    margin: 1px 0;
+}
+
+/* Legacy classes still used by other templates — keep them muted */
+.cat-directory .sub-list {
+    color: var(--text-muted);
+    font-size: 12px;
+    display: block;
+    padding-left: 0;
+    margin-top: 1px;
+}
+.cat-directory .sub-list a { text-decoration: none; }
+.cat-directory .cat-links {
+    color: var(--text-muted);
+    font-size: 12px;
+    margin-left: 4px;
+}
+
+/* ============================ LISTING PAGE ============================ */
+.listing-header {
+    padding: 6px 0;
+    margin-bottom: 12px;
+    border-bottom: none;
+}
+.listing-header h1 { margin: 4px 0; font-size: 22px; }
+.listing-header .subtitle { color: var(--text-muted); font-size: 13px; margin-bottom: 4px; }
+.listing-nav {
+    font-size: 13px;
+    color: var(--text-muted);
+    margin: 8px 0 16px;
+}
+.listing-nav a, .listing-nav strong { margin-right: 4px; }
+
+/* Cream/tan date-group header band — characteristic of real arxiv listing */
+h3.announce-day {
+    background: var(--bg-cream);
+    border: 1px solid var(--border-cream);
+    color: var(--text);
+    font-size: 14px;
+    font-weight: bold;
+    margin: 18px 0 10px;
+    padding: 6px 12px;
+    border-radius: 0;
+}
+.announce-day-summary {
+    background: var(--bg-cream-soft);
+    border: 1px solid var(--border-cream);
+    border-radius: 0;
+}
+
+/* listing entries are <dl><dt><dd> — keep them dense & flat like real arxiv */
+dl > dt {
+    font-size: 13px;
+    margin: 8px 0 2px;
+}
+dl > dt .entry-id {
+    font-weight: bold;
+    color: var(--text);
+}
+dl > dt a { color: var(--cornell-red); }
+dl > dd.paper-entry {
+    margin: 0 0 0 12px;
+    padding: 0 0 6px 0;
+    border-bottom: none;
+    font-size: 13px;
+}
+.paper-entry .entry-id {
+    font-family: var(--serif);
+    font-weight: bold;
+    font-size: 13px;
+    color: var(--text);
+}
+.paper-entry .entry-links {
+    font-size: 12px;
+    color: var(--text-muted);
+}
+.paper-entry .entry-title {
+    font-size: 14px;
+    font-weight: bold;
+    display: block;
+    margin: 2px 0;
+    color: var(--text);
+}
+.paper-entry .entry-title a { color: var(--text); font-weight: bold; }
+.paper-entry .entry-title a:hover { color: var(--cornell-red); }
+.paper-entry .entry-authors {
+    color: var(--text);
+    font-size: 13px;
+    margin: 2px 0;
+}
+.paper-entry .entry-authors a { color: var(--cornell-red); }
+.paper-entry .entry-subjects {
+    color: var(--text);
+    font-size: 12px;
+    margin-top: 2px;
+}
+.paper-entry .entry-comments {
+    color: var(--text);
+    font-size: 12px;
+    font-style: normal;
+}
+
+.paper-entry .entry-abs {
+    color: var(--text);
+    font-size: 12px;
+    margin-top: 4px;
+}
+
+/* ============================ PAPER DETAIL ============================ */
+.paper-detail-layout {
+    display: grid;
+    grid-template-columns: 1fr 250px;
+    gap: 24px;
+    margin-top: 8px;
+}
+.paper-main {
+    min-width: 0;
+}
+.paper-main .breadcrumb {
+    color: var(--text-muted);
+    font-size: 12px;
+    margin-bottom: 4px;
+}
+.paper-main .paper-label {
+    color: var(--text-muted);
+    font-size: 12px;
+}
+.paper-title {
+    font-size: 22px;
+    font-weight: bold;
+    margin: 6px 0 14px;
+    line-height: 1.25;
+    color: var(--text);
+}
+.paper-authors {
+    font-size: 14px;
+    margin: 4px 0 14px;
+    color: var(--text);
+}
+.paper-authors a { color: var(--cornell-red); }
+.paper-abstract {
+    background: transparent;
+    border: none;
+    border-radius: 0;
+    padding: 6px 0 6px 0;
+    margin: 14px 0;
+    font-size: 14px;
+    line-height: 1.5;
+}
+.paper-abstract .label {
+    font-weight: bold;
+    margin-right: 6px;
+}
+.paper-meta {
+    margin: 14px 0;
+    font-size: 13px;
+}
+.paper-meta .row {
+    margin: 4px 0;
+}
+.paper-meta .lab {
+    display: inline-block;
+    width: 110px;
+    color: var(--text);
+    font-weight: bold;
+    vertical-align: top;
+}
+
+.paper-actions {
+    margin: 14px 0;
+    padding: 8px 0;
+    border-top: 1px solid var(--border-light);
+    border-bottom: 1px solid var(--border-light);
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+.paper-actions form { display: inline; }
+.btn {
+    display: inline-block;
+    background: #fff;
+    color: var(--text);
+    padding: 5px 12px;
+    border: 1px solid #888;
+    border-radius: 3px;
+    font-size: 13px;
+    cursor: pointer;
+    text-decoration: none;
+    font-family: var(--serif);
+}
+.btn:hover { background: var(--bg-grey); text-decoration: none; }
+.btn.btn-primary {
+    background: var(--cornell-red);
+    color: #fff !important;
+    border-color: var(--cornell-red);
+    font-weight: bold;
+}
+.btn.btn-primary:hover { background: var(--cornell-red-dark); }
+.btn.btn-star { color: #b8860b; }
+.btn.btn-star.starred { background: #fff8ea; color: #b8860b; border-color: #b8860b; }
+
+/* Paper right sidebar — boxed panels, real arxiv style */
+.paper-sidebar {
+    font-size: 13px;
+}
+.sidebar-box {
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: 0;
+    padding: 10px 12px;
+    margin-bottom: 14px;
+}
+.sidebar-box h3 {
+    font-size: 13px;
+    margin: 0 0 8px;
+    padding-bottom: 4px;
+    border-bottom: 1px solid var(--border-light);
+    color: var(--text);
+    font-weight: bold;
+}
+.sidebar-box ul {
+    margin: 0;
+    padding-left: 0;
+    list-style: none;
+}
+.sidebar-box ul li {
+    padding-left: 0;
+    margin: 4px 0;
+}
+.sidebar-box a { font-size: 13px; color: var(--cornell-red);}
+
+.sidebar-access-list li {
+    padding-left: 0;
+    position: relative;
+    list-style: none;
+}
+.sidebar-access-list li::before {
+    content: "";
+}
+.sidebar-access-list .access-primary {
+    background: var(--cornell-red);
+    color: #fff;
+    padding: 6px 10px;
+    border-radius: 3px;
+    display: inline-block;
+    margin-bottom: 6px;
+    font-weight: bold;
+}
+.sidebar-access-list .access-primary a {
+    color: #fff;
+    text-decoration: none;
+    font-weight: bold;
+}
+.sidebar-access-list .access-primary a:hover { text-decoration: underline; }
+
+/* Paper "tabs" block (Bibliographic Tools / Code Demos / etc) — visual placeholder */
+.paper-tools-tabs {
+    border: 1px solid var(--border);
+    margin: 22px 0 14px;
+}
+.paper-tools-tabs .tab-strip {
+    display: flex;
+    background: var(--bg-grey);
+    border-bottom: 1px solid var(--border);
+}
+.paper-tools-tabs .tab-strip .tab {
+    padding: 8px 14px;
+    font-size: 13px;
+    color: var(--text);
+    border-right: 1px solid var(--border);
+    background: var(--bg-grey);
+}
+.paper-tools-tabs .tab-strip .tab.active {
+    background: #fff;
+    border-bottom: 1px solid #fff;
+    margin-bottom: -1px;
+    font-weight: bold;
+}
+.paper-tools-tabs .tab-content {
+    padding: 12px 14px;
+    font-size: 12px;
+    color: var(--text-muted);
+    background: #fff;
+}
+
+/* Comments section */
+.comments-section {
+    margin-top: 30px;
+}
+.comment {
+    background: #fff;
+    padding: 8px 12px;
+    border: 1px solid var(--border-light);
+    border-radius: 0;
+    margin: 8px 0;
+}
+.comment-head {
+    font-size: 12px;
+    color: var(--text-muted);
+    margin-bottom: 4px;
+}
+.comment-title { font-weight: bold; color: var(--text); font-size: 13px;}
+.comment-body { font-size: 13px; }
+.comment-rating { color: #e6a23c; }
+
+.comment-form textarea {
+    width: 100%;
+    padding: 8px;
+    font-family: var(--serif);
+    font-size: 13px;
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    min-height: 90px;
+}
+.comment-form input[type="text"], .comment-form select {
+    padding: 6px 8px;
+    font-family: var(--serif);
+    font-size: 13px;
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    margin-right: 8px;
+}
+
+/* Related papers */
+.related-section {
+    margin-top: 30px;
+    padding-top: 14px;
+    border-top: 1px solid var(--border-light);
+}
+.related-section h3 {
+    color: var(--text);
+    font-size: 14px;
+}
+.related-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+.related-list li {
+    padding: 6px 0;
+    border-bottom: 1px dotted var(--border);
+}
+.related-list .title { font-weight: bold; font-size: 13px; color: var(--text);}
+.related-list .authors { font-size: 12px; color: var(--text-muted); }
+
+/* ============================ FORMS ============================ */
+.auth-card {
+    max-width: 420px;
+    margin: 30px auto;
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 24px 30px;
+}
+.auth-card h1 { margin-top: 0; color: var(--text); font-size: 22px;}
+.form-row {
+    margin-bottom: 14px;
+}
+.form-row label {
+    display: block;
+    margin-bottom: 4px;
+    font-weight: bold;
+    font-size: 13px;
+}
+.form-row input[type="text"],
+.form-row input[type="email"],
+.form-row input[type="password"],
+.form-row textarea,
+.form-row select {
+    width: 100%;
+    padding: 7px 10px;
+    border: 1px solid #999;
+    border-radius: 3px;
+    font-size: 14px;
+    font-family: var(--serif);
+}
+.form-row textarea { min-height: 80px; }
+.form-actions {
+    margin-top: 18px;
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+.form-hint { font-size: 12px; color: var(--text-muted); margin-top: 4px;}
+
+/* ============================ TABLES ============================ */
+table.data {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+    margin: 10px 0;
+}
+table.data th, table.data td {
+    border: 1px solid var(--border);
+    padding: 6px 10px;
+    text-align: left;
+    vertical-align: top;
+}
+table.data th {
+    background: var(--bg-grey);
+    font-weight: bold;
+}
+
+/* ============================ ACCOUNT DASHBOARD ============================ */
+.account-grid {
+    display: grid;
+    grid-template-columns: 220px 1fr;
+    gap: 20px;
+    margin-top: 10px;
+}
+.account-nav {
+    border-right: 1px solid var(--border);
+    padding-right: 14px;
+    font-size: 14px;
+}
+.account-nav h3 {
+    font-size: 13px;
+    color: var(--text);
+    text-transform: uppercase;
+    margin-top: 14px;
+    margin-bottom: 4px;
+    border-bottom: 1px solid var(--border);
+}
+.account-nav ul { list-style: none; padding: 0; margin: 0; }
+.account-nav li { padding: 4px 0; }
+.account-main { min-width: 0; }
+
+.dash-card {
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: 0;
+    padding: 12px 14px;
+    margin-bottom: 14px;
+}
+.dash-card h2 {
+    margin-top: 0;
+    font-size: 15px;
+    color: var(--text);
+    border-bottom: 1px solid var(--border-light);
+    padding-bottom: 4px;
+}
+
+/* ============================ FOOTER ============================ */
+footer.main-footer {
+    background: var(--bg-grey);
+    border-top: 1px solid var(--border);
+    padding: 20px 0;
+    color: var(--text-muted);
+    font-size: 12px;
+    margin-top: 50px;
+}
+.footer-inner {
+    max-width: var(--max-width);
+    margin: 0 auto;
+    padding: 0 18px;
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 20px;
+}
+.footer-inner div h4 {
+    margin: 0 0 8px;
+    font-size: 13px;
+    color: var(--text);
+}
+.footer-inner ul { list-style: none; padding: 0; margin: 0; }
+.footer-inner li { padding: 2px 0; }
+.footer-inner a { color: var(--cornell-red); }
+
+/* ============================ UTILITIES ============================ */
+.muted { color: var(--text-muted); }
+.center { text-align: center; }
+.mt-10 { margin-top: 10px; }
+.mt-20 { margin-top: 20px; }
+.mb-10 { margin-bottom: 10px; }
+.tag {
+    display: inline-block;
+    background: var(--bg-grey);
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    padding: 1px 6px;
+    margin: 2px;
+    font-size: 12px;
+    color: var(--text);
+    text-decoration: none;
+}
+.tag:hover { background: #e8e8e8; }
+.tag-primary {
+    background: var(--cornell-red);
+    color: #fff;
+    border-color: var(--cornell-red);
+}
+.pill-count {
+    display: inline-block;
+    background: var(--cornell-red);
+    color: #fff;
+    border-radius: 10px;
+    padding: 1px 8px;
+    font-size: 11px;
+    margin-left: 4px;
+}
+
+/* ============================ PAGINATION ============================ */
+.pagination {
+    margin: 20px 0;
+    text-align: center;
+    font-size: 13px;
+}
+.pagination a, .pagination span {
+    display: inline-block;
+    padding: 4px 10px;
+    margin: 0 2px;
+    border: 1px solid var(--border);
+    color: var(--cornell-red);
+}
+.pagination span.current {
+    background: var(--cornell-red);
+    color: #fff;
+    border-color: var(--cornell-red);
+}
+
+/* ============================ SEARCH RESULTS ============================ */
+.search-box-main {
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: 0;
+    padding: 12px 14px;
+    margin-bottom: 16px;
+}
+.search-box-main form {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+    flex-wrap: wrap;
+}
+.search-box-main input[type="text"] {
+    flex: 1;
+    min-width: 240px;
+    padding: 6px 8px;
+    border: 1px solid #888;
+    font-size: 13px;
+    font-family: var(--serif);
+}
+.search-box-main select {
+    padding: 6px 4px;
+    border: 1px solid #888;
+    font-family: var(--serif);
+    font-size: 13px;
+}
+.search-result {
+    padding: 8px 0 10px;
+    border-bottom: 1px dotted var(--border);
+}
+.search-result .rtitle {
+    font-size: 16px;
+    font-weight: bold;
+    margin: 2px 0;
+}
+.search-result .rtitle a { color: var(--text); }
+.search-result .rtitle a:hover { color: var(--cornell-red); }
+.search-result .rauthors { font-size: 13px; color: var(--text); margin: 2px 0; }
+.search-result .rauthors a { color: var(--cornell-red); }
+.search-result .rsnippet { font-size: 12px; color: var(--text); }
+
+/* ============================ PDF PREVIEW ============================ */
+.pdf-preview {
+    background: #525659;
+    padding: 30px 0;
+    min-height: 80vh;
+}
+.pdf-page {
+    background: #fff;
+    max-width: 780px;
+    margin: 0 auto 16px;
+    padding: 56px 72px;
+    box-shadow: 0 3px 14px rgba(0,0,0,0.4);
+    font-family: "Times New Roman", Times, serif;
+    font-size: 13px;
+    line-height: 1.45;
+    color: #111;
+}
+.pdf-page h1 {
+    text-align: center;
+    font-size: 18px;
+    margin: 0 0 8px;
+}
+.pdf-page .pdf-authors { text-align: center; margin: 6px 0 24px; font-size: 14px;}
+.pdf-page .pdf-abstract-label {
+    text-align: center;
+    font-weight: bold;
+    margin: 12px 0 4px;
+}
+.pdf-page .pdf-abstract { font-size: 12px; text-align: justify; }
+.pdf-page p { text-indent: 1.5em; text-align: justify; }
+.pdf-toolbar {
+    background: #393a3c;
+    color: #ccc;
+    padding: 8px 14px;
+    text-align: center;
+    font-size: 12px;
+}
+
+/* ============================ RESPONSIVE ============================ */
+@media (max-width: 900px) {
+    .paper-detail-layout { grid-template-columns: 1fr; }
+    .account-grid { grid-template-columns: 1fr; }
+    .footer-inner { grid-template-columns: repeat(2, 1fr); }
+    .header-search input[type="text"] { width: 110px; }
+    .cu-banner { display: none; }
+    .cu-support { display: none; }
+}
+@media (max-width: 600px) {
+    .header-inner { flex-wrap: wrap; }
+    .header-search { width: 100%; }
+    .header-search input[type="text"] { flex: 1; }
+    .footer-inner { grid-template-columns: 1fr; }
+}
+
+/* ============================ TAXONOMY PAGE ============================ */
+.taxonomy-list h2 {
+    color: var(--text);
+    margin-top: 22px;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 4px;
+    font-size: 15px;
+}
+.taxonomy-list .subcat-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 4px 18px;
+    margin: 6px 0 14px;
+    padding-left: 0;
+    list-style: none;
+}
+.taxonomy-list .subcat-grid li { font-size: 13px; list-style: none;}
+.taxonomy-list code {
+    background: transparent;
+    padding: 0 4px 0 0;
+    border-radius: 0;
+    font-family: var(--serif);
+    color: var(--text);
+    font-weight: bold;
+}
+
+/* ============================ LIBRARY PAGE ============================ */
+.library-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 12px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--border);
+}
+.library-folders {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    margin-bottom: 12px;
+}
+.library-folders a {
+    padding: 3px 10px;
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    font-size: 12px;
+    background: var(--bg-subtle);
+    text-decoration: none;
+}
+.library-folders a.active {
+    background: var(--cornell-red);
+    color: #fff;
+    border-color: var(--cornell-red);
+}
+.library-item {
+    background: #fff;
+    border: 1px solid var(--border-light);
+    border-radius: 0;
+    padding: 8px 12px;
+    margin-bottom: 6px;
+}
+.library-item .lib-title { font-weight: bold; font-size: 14px; }
+.library-item .lib-meta { font-size: 12px; color: var(--text-muted); margin: 2px 0; }
+.library-item .lib-actions { font-size: 12px; margin-top: 4px; }
+.library-item .lib-actions a, .library-item .lib-actions button {
+    margin-right: 8px;
+    color: var(--cornell-red);
+    background: none;
+    border: none;
+    padding: 0;
+    font-family: var(--serif);
+    font-size: 12px;
+    cursor: pointer;
+}
+.library-item .lib-actions button:hover { text-decoration: underline; }
+
+/* ============================ ERRORS ============================ */
+.error-page {
+    text-align: center;
+    padding: 80px 20px;
+}
+.error-page .code {
+    font-size: 80px;
+    color: var(--cornell-red);
+    font-weight: bold;
+    margin: 0;
+}
+.error-page h1 { color: var(--text); }
+
+/* ============================ ANIMATIONS ============================ */
+.js-fade-ready .fade-in {
+    opacity: 0;
+    transform: translateY(8px);
+    transition: opacity 0.5s ease, transform 0.5s ease;
+}
+.js-fade-ready .fade-in.visible {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+/* Highlight */
+.highlight { background: #fffacd; padding: 0 2px; }
+
+/* "Featured / Recently featured" sections — soft cream styling so they feel native */
+.featured-section {
+    margin-top: 24px;
+    padding-top: 12px;
+    border-top: 1px solid var(--border-light);
+}
+.featured-section > h2 {
+    font-size: 16px;
+    color: var(--text);
+    border-bottom: 1px solid var(--border-light);
+    padding-bottom: 4px;
+    margin-top: 0;
+}
+.featured-list { list-style:none; padding:0; margin:0; }
+.featured-list li {
+    padding: 6px 0;
+    border-bottom: 1px dotted var(--border);
+    list-style: none;
+}

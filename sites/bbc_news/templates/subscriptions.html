@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+{% block title %}Topic alerts - BBC News{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>Topic alerts</h1>
+    <p>Subscribe to sections or topics to get updates when new stories publish.</p>
+</div>
+
+<div class="subs-form">
+    <form method="post">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <div class="form-row">
+            <div class="form-group" style="margin-bottom: 0;">
+                <label for="category_slug">Section</label>
+                <select name="category_slug" id="category_slug">
+                    <option value="">Choose a section…</option>
+                    {% for cat in main_categories %}
+                    <option value="{{ cat.slug }}">{{ cat.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="form-group" style="margin-bottom: 0;">
+                <label for="topic">Topic (optional)</label>
+                <input type="text" name="topic" id="topic" placeholder="e.g. Rugby, Climate Change…" style="padding: 8px 12px; border: 1px solid #ccc; border-radius: 4px; font-size: 14px;">
+            </div>
+            <div class="form-group" style="margin-bottom: 0;">
+                <label for="frequency">Frequency</label>
+                <select name="frequency" id="frequency">
+                    <option value="daily">Daily</option>
+                    <option value="weekly">Weekly</option>
+                    <option value="breaking_only">Breaking only</option>
+                </select>
+            </div>
+            <div style="display: flex; align-items: flex-end;">
+                <button type="submit" class="btn">Subscribe</button>
+            </div>
+        </div>
+    </form>
+</div>
+
+<div style="margin-top: 24px;">
+    <h2 style="font-size: 20px; font-weight: 700; margin-bottom: 12px;">Your subscriptions</h2>
+    {% if subs %}
+    <ul class="subs-list">
+        {% for s in subs %}
+        <li>
+            <div>
+                <strong style="font-size: 16px;">{% if s.topic %}{{ s.topic }}{% if s.category_slug %} ({{ s.category_slug }}){% endif %}{% else %}{{ s.category_slug }}{% endif %}</strong>
+                <div style="color: var(--bbc-text-light); font-size: 13px;">
+                    {{ s.frequency|replace('_', ' ') }} · subscribed {{ s.created_at.strftime('%d %b %Y') }}
+                </div>
+            </div>
+            <div style="display: flex; align-items: center; gap: 8px;">
+                <form method="post" action="{{ url_for('update_subscription', sub_id=s.id) }}" style="display: flex; align-items: center; gap: 4px;">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <select name="frequency" onchange="this.form.submit()" style="font-size: 13px; padding: 5px 8px; border: 1px solid #ccc; border-radius: 4px;">
+                        <option value="daily" {% if s.frequency == 'daily' %}selected{% endif %}>Daily</option>
+                        <option value="weekly" {% if s.frequency == 'weekly' %}selected{% endif %}>Weekly</option>
+                        <option value="breaking_only" {% if s.frequency == 'breaking_only' %}selected{% endif %}>Breaking only</option>
+                    </select>
+                </form>
+                <form method="post" action="{{ url_for('delete_subscription', sub_id=s.id) }}">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button type="submit" class="btn btn-outline" style="padding: 6px 14px; font-size: 13px;">
+                        Unsubscribe
+                    </button>
+                </form>
+            </div>
+        </li>
+        {% endfor %}
+    </ul>
+    {% else %}
+    <div class="empty-state">
+        <h2>No subscriptions yet</h2>
+        <p>Pick a section above to start receiving topic alerts.</p>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

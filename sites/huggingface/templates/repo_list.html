@@ -1,0 +1,106 @@
+{% extends "base.html" %}
+{% from "_macros.html" import repo_card %}
+{% block title %}{{ page_title }} – Hugging Face{% endblock %}
+
+{% block content %}
+<div class="container-wide page">
+    <div class="repolist-layout">
+        <aside class="sidebar">
+            <div class="sidebar-section">
+                <h4>Tasks</h4>
+                <div class="sidebar-tags">
+                    <a class="sidebar-tag {% if not active_task %}is-active{% endif %}" href="{{ request.path }}">All</a>
+                    {% for t in tasks_list[:20] %}
+                    <a class="sidebar-tag {% if active_task == t.slug %}is-active{% endif %}" href="?task={{ t.slug }}">{{ t.icon }} {{ t.display }}</a>
+                    {% endfor %}
+                </div>
+            </div>
+            {% if repo_type == 'model' %}
+            <div class="sidebar-section">
+                <h4>Libraries</h4>
+                <div class="sidebar-tags">
+                    <a class="sidebar-tag {% if not active_library %}is-active{% endif %}" href="{{ request.path }}{% if active_task %}?task={{ active_task }}{% endif %}">All</a>
+                    {% for lib in libraries[:12] %}
+                    <a class="sidebar-tag {% if active_library == lib %}is-active{% endif %}" href="?library={{ lib }}{% if active_task %}&task={{ active_task }}{% endif %}">{{ lib }}</a>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+            <div class="sidebar-section">
+                <h4>Licenses</h4>
+                <div class="sidebar-tags">
+                    <a class="sidebar-tag {% if not active_license %}is-active{% endif %}" href="{{ request.path }}{% if active_task %}?task={{ active_task }}{% endif %}">Any license</a>
+                    {% for lic in licenses[:14] %}
+                    <a class="sidebar-tag {% if active_license == lic[0] %}is-active{% endif %}" href="?license={{ lic[0] }}{% if active_task %}&task={{ active_task }}{% endif %}{% if active_library %}&library={{ active_library }}{% endif %}{% if active_sort %}&sort={{ active_sort }}{% endif %}" data-license="{{ lic[0] }}">{{ lic[1] }}</a>
+                    {% endfor %}
+                </div>
+                <form method="get" class="sidebar-form" style="margin-top:8px;">
+                    {% if active_task %}<input type="hidden" name="task" value="{{ active_task }}">{% endif %}
+                    {% if active_library %}<input type="hidden" name="library" value="{{ active_library }}">{% endif %}
+                    {% if active_sort %}<input type="hidden" name="sort" value="{{ active_sort }}">{% endif %}
+                    <label class="muted" style="font-size:11px;">License filter</label>
+                    <select name="license" class="form-control form-control-sm" onchange="this.form.submit()" aria-label="License filter">
+                        <option value="">Any license</option>
+                        {% for lic in licenses %}
+                        <option value="{{ lic[0] }}" {% if active_license == lic[0] %}selected{% endif %}>{{ lic[1] }} ({{ lic[0] }})</option>
+                        {% endfor %}
+                    </select>
+                </form>
+            </div>
+            <div class="sidebar-section">
+                <h4>Languages</h4>
+                <div class="sidebar-tags">
+                    <span class="sidebar-tag">English</span>
+                    <span class="sidebar-tag">Chinese</span>
+                    <span class="sidebar-tag">Spanish</span>
+                    <span class="sidebar-tag">French</span>
+                    <span class="sidebar-tag">German</span>
+                </div>
+            </div>
+        </aside>
+
+        <main class="repolist-main">
+            <div class="repolist-header">
+                <h1 class="repolist-title">{{ page_title }} <span class="repolist-count">{{ total }}</span></h1>
+                <div class="repolist-sort">
+                    <span>Sort:</span>
+                    <a class="{% if active_sort == 'trending' %}is-active{% endif %}" href="?sort=trending{% if active_task %}&task={{ active_task }}{% endif %}{% if active_library %}&library={{ active_library }}{% endif %}{% if active_license %}&license={{ active_license }}{% endif %}">Trending</a>
+                    <a class="{% if active_sort == 'likes' %}is-active{% endif %}" href="?sort=likes{% if active_task %}&task={{ active_task }}{% endif %}{% if active_library %}&library={{ active_library }}{% endif %}{% if active_license %}&license={{ active_license }}{% endif %}">Most likes</a>
+                    <a class="{% if active_sort == 'downloads' %}is-active{% endif %}" href="?sort=downloads{% if active_task %}&task={{ active_task }}{% endif %}{% if active_library %}&library={{ active_library }}{% endif %}{% if active_license %}&license={{ active_license }}{% endif %}">Most downloads</a>
+                    <a class="{% if active_sort == 'updated' %}is-active{% endif %}" href="?sort=updated{% if active_task %}&task={{ active_task }}{% endif %}{% if active_library %}&library={{ active_library }}{% endif %}{% if active_license %}&license={{ active_license }}{% endif %}">Recently updated</a>
+                    <form method="get" style="display:inline-block;margin-left:10px;">
+                        {% if active_task %}<input type="hidden" name="task" value="{{ active_task }}">{% endif %}
+                        {% if active_library %}<input type="hidden" name="library" value="{{ active_library }}">{% endif %}
+                        {% if active_license %}<input type="hidden" name="license" value="{{ active_license }}">{% endif %}
+                        <select name="sort" onchange="this.form.submit()" aria-label="Sort by" class="form-control form-control-sm">
+                            <option value="trending" {% if active_sort == 'trending' %}selected{% endif %}>Trending</option>
+                            <option value="likes" {% if active_sort == 'likes' %}selected{% endif %}>Most likes</option>
+                            <option value="downloads" {% if active_sort == 'downloads' %}selected{% endif %}>Most downloads</option>
+                            <option value="updated" {% if active_sort == 'updated' %}selected{% endif %}>Recently updated</option>
+                            <option value="created" {% if active_sort == 'created' %}selected{% endif %}>Recently created</option>
+                        </select>
+                    </form>
+                </div>
+            </div>
+
+            <div class="repo-list">
+                {% for repo in repos %}
+                    {{ repo_card(repo, liked_ids) }}
+                {% else %}
+                    <div class="empty-state">
+                        <p>No {{ repo_type }}s match your filters.</p>
+                    </div>
+                {% endfor %}
+            </div>
+
+            {% if total_pages > 1 %}
+            <div class="pagination">
+                {% if page > 1 %}<a href="?page={{ page - 1 }}">← Prev</a>{% endif %}
+                <span>Page {{ page }} of {{ total_pages }}</span>
+                {% if page < total_pages %}<a href="?page={{ page + 1 }}">Next →</a>{% endif %}
+            </div>
+            {% endif %}
+        </main>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block title %}Starred Papers — arXiv{% endblock %}
+{% block content %}
+
+<h1>★ Starred Papers</h1>
+<p class="muted">Papers you've starred will appear here.</p>
+
+{% if items %}
+<ul style="list-style:none;padding:0;">
+    {% for item in items %}
+    <li class="library-item">
+        <div class="lib-title">
+            <a href="{{ url_for('paper_detail', arxiv_id=item.paper.arxiv_id) }}">{{ item.paper.title }}</a>
+        </div>
+        <div class="lib-meta">{{ item.paper.authors_display }}</div>
+        <div class="lib-meta muted">
+            arXiv:{{ item.paper.arxiv_id }} · Starred {{ item.starred_at.strftime("%b %d, %Y") }}
+        </div>
+        {% if item.paper.abstract %}
+        <div class="lib-meta" style="margin-top:4px;">{{ item.paper.short_abstract }}</div>
+        {% endif %}
+        <div class="lib-actions">
+            <a href="{{ url_for('paper_detail', arxiv_id=item.paper.arxiv_id) }}">View</a>
+            <a href="{{ url_for('pdf_view', arxiv_id=item.paper.arxiv_id) }}">PDF</a>
+            <form method="post" action="{{ url_for('starred_remove', item_id=item.id) }}" style="display:inline">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button type="submit">Unstar</button>
+            </form>
+        </div>
+    </li>
+    {% endfor %}
+</ul>
+{% else %}
+<div class="dash-card">
+    <p class="muted">No starred papers yet. Click the ★ Star button on any paper to add it here.</p>
+    <p><a href="{{ url_for('index') }}" class="btn">Browse papers</a></p>
+</div>
+{% endif %}
+
+{% endblock %}

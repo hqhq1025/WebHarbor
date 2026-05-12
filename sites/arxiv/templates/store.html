@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block title %}arXiv Non-Profit Store{% endblock %}
+{% block content %}
+
+<h1>arXiv Non-Profit Store</h1>
+<p>Support arXiv by purchasing our limited-edition merchandise. All proceeds fund arXiv's
+open-access mission.</p>
+
+<div class="store-grid">
+{% for p in products %}
+    <div class="store-card">
+        <h3><a href="{{ url_for('store_item', slug=p.slug) }}">{{ p.name }}</a></h3>
+        <div class="muted">{{ p.category }}</div>
+        <div class="store-price">${{ "%.2f"|format(p.price) }}</div>
+        <p>{{ p.description }}</p>
+        <div class="muted" style="font-size:12px;">
+            Styles ({{ p.styles|length }}): {{ p.styles|join(', ') }}
+        </div>
+        <a class="btn btn-primary" href="{{ url_for('store_item', slug=p.slug) }}">View</a>
+    </div>
+{% endfor %}
+</div>
+
+{% endblock %}

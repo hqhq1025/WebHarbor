@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% block title %}Saved — Booking{% endblock %}
+{% block content %}
+<div class="container">
+    <h1 class="page-title">Saved properties</h1>
+    <p class="page-subtitle">Places you're thinking about booking</p>
+
+    {% if items %}
+    {% set lists = items|groupby('list_name') %}
+    {% for list_name, list_items in lists %}
+    <div style="margin-bottom:24px;">
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;">
+            <h2 style="margin:0;font-size:18px;">{{ list_name }}</h2>
+            <form method="POST" action="{{ url_for('saved_rename_list') }}" style="display:inline-flex;align-items:center;gap:6px;">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <input type="hidden" name="old_name" value="{{ list_name }}">
+                <input type="text" name="new_name" placeholder="New list name" value="{{ list_name }}" style="font-size:12px;padding:3px 8px;border:1px solid #ccc;border-radius:4px;width:160px;">
+                <button type="submit" class="btn-primary" style="font-size:12px;padding:3px 10px;">Rename</button>
+            </form>
+        </div>
+        <div class="card-grid cards-4">
+            {% for item in list_items %}
+            <div class="city-card">
+                <a href="{{ url_for('property_detail', slug=item.property.slug) }}">
+                    {% if item.property.image %}
+                    <img src="{{ item.property.image }}" alt="{{ item.property.name }}" class="city-card-img"
+                         onerror="this.style.background='linear-gradient(135deg,#003580,#006ce4)';this.alt=''">
+                    {% endif %}
+                    <div class="city-card-body">
+                        <h3>{{ item.property.name }}</h3>
+                        <span class="flag">{{ item.property.city.display }}, {{ item.property.city.country }}</span>
+                        <div class="mt-1">
+                            <strong>${{ '%.0f' % item.property.discounted_price }}</strong>
+                            <span style="font-size:11px;color:#6b6b6b;">/night</span>
+                            <span class="rating-score" style="font-size:11px;float:right;">{{ item.property.rating }}</span>
+                        </div>
+                    </div>
+                </a>
+                <form method="POST" action="{{ url_for('saved_remove', item_id=item.id) }}" style="padding:0 16px 12px;">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button type="submit" class="btn-remove" style="background:none;border:none;color:#cc0000;font-size:12px;cursor:pointer;text-decoration:underline;padding:0;">Remove</button>
+                </form>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endfor %}
+    {% else %}
+    <div class="empty-state">
+        <h2>No saved properties yet</h2>
+        <p>Click the heart icon on a property to save it for later.</p>
+        <a href="{{ url_for('stays') }}" class="btn-primary">Browse stays</a>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

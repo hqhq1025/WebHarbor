@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+{% block title %}Coursera Plus | Unlimited Learning{% endblock %}
+{% block content %}
+<div class="plus-page">
+  <div class="plus-hero">
+    <div class="container">
+      {% set _h = hero_image('plus') %}
+      {% if _h %}
+      <div class="hero-with-art" style="text-align:left;">
+        <div class="hero-text">
+          <h1>Coursera Plus</h1>
+          <p>Unlimited access to 7,000+ world-class courses, hands-on projects, and job-ready certificate programs — all included in your subscription.</p>
+          <div style="display:flex;gap:12px;margin-top:24px;flex-wrap:wrap;">
+            <a href="{{ url_for('register') }}" class="btn-primary" style="background:#fff;color:var(--c-primary);border-color:#fff;">Try free for 7 days</a>
+          </div>
+        </div>
+        <div class="hero-photo"><img src="{{ url_for('static', filename=_h) }}" alt=""></div>
+      </div>
+      {% else %}
+      <h1>Coursera Plus</h1>
+      <p>Unlimited access to 7,000+ world-class courses, hands-on projects, and job-ready certificate programs — all included in your subscription.</p>
+      {% endif %}
+    </div>
+  </div>
+  <div class="container">
+    <div class="pricing-section">
+      <h2>Choose your plan</h2>
+      <div class="pricing-cards">
+        <div class="pricing-card pricing-card-featured">
+          <div class="plan-badge">Best Value</div>
+          <h3>Annual Subscription</h3>
+          <div class="price-big">$399 <span>/ year</span></div>
+          <div class="price-discount">Save $309/year (43% off vs. monthly)</div>
+          <div class="price-note">$33.25 per month, billed annually</div>
+          <ul class="plan-features">
+            <li>&#10003; 7,000+ courses</li>
+            <li>&#10003; 400+ Professional Certificates</li>
+            <li>&#10003; Unlimited certificates</li>
+            <li>&#10003; 14-day free trial</li>
+          </ul>
+          <a href="{{ url_for('register') }}" class="btn-primary btn-full">Get started</a>
+        </div>
+        <div class="pricing-card">
+          <h3>Monthly Subscription</h3>
+          <div class="price-big">$59 <span>/ month</span></div>
+          <div class="price-note">Billed monthly, cancel any time</div>
+          <ul class="plan-features">
+            <li>&#10003; 7,000+ courses</li>
+            <li>&#10003; 400+ Professional Certificates</li>
+            <li>&#10003; Unlimited certificates</li>
+            <li>&#10003; 7-day free trial</li>
+          </ul>
+          <a href="{{ url_for('register') }}" class="btn-outline btn-full">Get started</a>
+        </div>
+      </div>
+    </div>
+    <div class="plus-features">
+      <h2>Everything included in Coursera Plus</h2>
+      <div class="plus-features-grid">
+        <div class="pf-item"><span class="pf-icon">&#127979;</span><h4>World-class universities</h4><p>Courses from Stanford, Yale, Google, IBM and 300+ more.</p></div>
+        <div class="pf-item"><span class="pf-icon">&#127941;</span><h4>Shareable certificates</h4><p>Add certificates to your LinkedIn profile and resume.</p></div>
+        <div class="pf-item"><span class="pf-icon">&#128232;</span><h4>Flexible scheduling</h4><p>Learn at your own pace, on any device.</p></div>
+        <div class="pf-item"><span class="pf-icon">&#127760;</span><h4>7,000+ courses</h4><p>Computer science, business, data science and more.</p></div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

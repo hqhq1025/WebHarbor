@@ -1,0 +1,134 @@
+{% extends "base.html" %}
+{% block title %}Account - Apple{% endblock %}
+
+{% block content %}
+<div class="account-page">
+    <h1>Hi, {{ current_user.first_name }}.</h1>
+    <p class="account-email">{{ current_user.email }}</p>
+
+    <!-- Quick Links -->
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-bottom:40px">
+        <a href="{{ url_for('bag') }}" style="background:var(--color-bg-secondary);border-radius:16px;padding:20px;text-align:center;text-decoration:none;color:var(--color-text);transition:transform 0.2s" onmouseover="this.style.transform='translateY(-3px)'" onmouseout="this.style.transform='none'">
+            <div style="font-size:28px;margin-bottom:6px">&#128188;</div>
+            <p style="font-weight:600;font-size:14px">Bag</p>
+        </a>
+        <a href="{{ url_for('wishlist') }}" style="background:var(--color-bg-secondary);border-radius:16px;padding:20px;text-align:center;text-decoration:none;color:var(--color-text);transition:transform 0.2s" onmouseover="this.style.transform='translateY(-3px)'" onmouseout="this.style.transform='none'">
+            <div style="font-size:28px;margin-bottom:6px">&#10084;&#65039;</div>
+            <p style="font-weight:600;font-size:14px">Wishlist{% if wishlist %} ({{ wishlist|length }}){% endif %}</p>
+        </a>
+        <a href="{{ url_for('shop') }}" style="background:var(--color-bg-secondary);border-radius:16px;padding:20px;text-align:center;text-decoration:none;color:var(--color-text);transition:transform 0.2s" onmouseover="this.style.transform='translateY(-3px)'" onmouseout="this.style.transform='none'">
+            <div style="font-size:28px;margin-bottom:6px">&#127981;</div>
+            <p style="font-weight:600;font-size:14px">Shop</p>
+        </a>
+        <a href="{{ url_for('account_edit') }}" style="background:var(--color-bg-secondary);border-radius:16px;padding:20px;text-align:center;text-decoration:none;color:var(--color-text);transition:transform 0.2s" onmouseover="this.style.transform='translateY(-3px)'" onmouseout="this.style.transform='none'">
+            <div style="font-size:28px;margin-bottom:6px">&#9881;&#65039;</div>
+            <p style="font-weight:600;font-size:14px">Settings</p>
+        </a>
+        <a href="{{ url_for('logout') }}" style="background:var(--color-bg-secondary);border-radius:16px;padding:20px;text-align:center;text-decoration:none;color:var(--color-text);transition:transform 0.2s" onmouseover="this.style.transform='translateY(-3px)'" onmouseout="this.style.transform='none'">
+            <div style="font-size:28px;margin-bottom:6px">&#128682;</div>
+            <p style="font-weight:600;font-size:14px">Sign Out</p>
+        </a>
+        <a href="{{ url_for('saved_addresses') }}" style="background:var(--color-bg-secondary);border-radius:16px;padding:20px;text-align:center;text-decoration:none;color:var(--color-text);transition:transform 0.2s" onmouseover="this.style.transform='translateY(-3px)'" onmouseout="this.style.transform='none'">
+            <div style="font-size:28px;margin-bottom:6px">&#127968;</div>
+            <p style="font-weight:600;font-size:14px">Addresses</p>
+        </a>
+        <a href="{{ url_for('saved_payments') }}" style="background:var(--color-bg-secondary);border-radius:16px;padding:20px;text-align:center;text-decoration:none;color:var(--color-text);transition:transform 0.2s" onmouseover="this.style.transform='translateY(-3px)'" onmouseout="this.style.transform='none'">
+            <div style="font-size:28px;margin-bottom:6px">&#128179;</div>
+            <p style="font-weight:600;font-size:14px">Payment Methods</p>
+        </a>
+    </div>
+
+    <!-- Orders -->
+    <div class="account-section">
+        <h2>Your Orders</h2>
+        {% if orders %}
+        {% for order in orders %}
+        <div class="order-card">
+            <div class="order-header">
+                <div>
+                    <a href="{{ url_for('order_detail', order_id=order.id) }}" class="order-number" style="color:var(--color-link);text-decoration:none">{{ order.order_number }}</a>
+                    <span style="color:var(--color-text-secondary);font-size:14px;margin-left:12px">
+                        {{ order.created_at.strftime('%B %d, %Y') }}
+                    </span>
+                </div>
+                <span class="order-status status-{{ order.status }}">{{ order.status|capitalize }}</span>
+            </div>
+            {% for item in order.items %}
+            <div class="order-item">
+                <img src="{{ item.product.image }}" alt="{{ item.product.name }}"
+                     onerror="this.style.display='none'" style="width:50px;height:50px;object-fit:contain">
+                <div style="flex:1">
+                    <p style="font-weight:600;font-size:14px">{{ item.product.name }}</p>
+                    <p style="font-size:12px;color:var(--color-text-secondary)">
+                        {% if item.color %}{{ item.color }}{% endif %}
+                        {% if item.storage %} &middot; {{ item.storage }}{% endif %}
+                        &middot; Qty: {{ item.quantity }}
+                    </p>
+                </div>
+                <p style="font-size:14px;font-weight:600">${{ "%.2f"|format(item.price * item.quantity) }}</p>
+            </div>
+            {% endfor %}
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-top:12px;padding-top:12px;border-top:1px solid var(--color-border)">
+                <div style="display:flex;gap:12px">
+                    <a href="{{ url_for('order_detail', order_id=order.id) }}" style="font-size:13px;font-weight:500">View Details &#8250;</a>
+                    {% if order.status == 'processing' %}
+                    <form action="{{ url_for('cancel_order', order_id=order.id) }}" method="POST" style="display:inline">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <button type="submit" style="background:none;border:none;color:#ff3b30;font-size:13px;font-weight:500;cursor:pointer">Cancel Order</button>
+                    </form>
+                    {% endif %}
+                    <form action="{{ url_for('reorder', order_id=order.id) }}" method="POST" style="display:inline">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <button type="submit" style="background:none;border:none;color:var(--color-link);font-size:13px;font-weight:500;cursor:pointer">Reorder</button>
+                    </form>
+                </div>
+                <span style="font-size:15px;font-weight:700">${{ "%.2f"|format(order.total) }}</span>
+            </div>
+        </div>
+        {% endfor %}
+        {% else %}
+        <div style="text-align:center;padding:40px;background:var(--color-bg-secondary);border-radius:16px">
+            <p style="color:var(--color-text-secondary)">You haven't placed any orders yet.</p>
+            <a href="{{ url_for('shop') }}" class="cta-link" style="font-size:17px;margin-top:12px;display:inline-block">Start shopping &#8250;</a>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Account Details -->
+    <div class="account-section">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+            <h2 style="margin-bottom:0">Account Details</h2>
+            <a href="{{ url_for('account_edit') }}" style="font-size:14px;font-weight:500">Edit &#8250;</a>
+        </div>
+        <div style="background:var(--color-bg-secondary);border-radius:16px;padding:24px">
+            <div style="display:grid;grid-template-columns:120px 1fr;gap:12px;font-size:14px">
+                <span style="font-weight:600;color:var(--color-text-secondary)">Name</span>
+                <span>{{ current_user.first_name }} {{ current_user.last_name }}</span>
+                <span style="font-weight:600;color:var(--color-text-secondary)">Email</span>
+                <span>{{ current_user.email }}</span>
+                {% if current_user.phone %}
+                <span style="font-weight:600;color:var(--color-text-secondary)">Phone</span>
+                <span>{{ current_user.phone }}</span>
+                {% endif %}
+                {% if current_user.address %}
+                <span style="font-weight:600;color:var(--color-text-secondary)">Address</span>
+                <span>{{ current_user.address }}, {{ current_user.city }}, {{ current_user.state }} {{ current_user.zip_code }}</span>
+                {% endif %}
+                <span style="font-weight:600;color:var(--color-text-secondary)">Member Since</span>
+                <span>{{ current_user.created_at.strftime('%B %Y') }}</span>
+            </div>
+        </div>
+        <div style="margin-top:16px;display:flex;gap:16px">
+            <a href="{{ url_for('change_password') }}" style="font-size:14px;font-weight:500">Change Password &#8250;</a>
+        </div>
+    </div>
+
+    <!-- Danger Zone -->
+    <div class="account-section" style="margin-top:40px;padding-top:24px;border-top:1px solid var(--color-border)">
+        <form action="{{ url_for('delete_account') }}" method="POST">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button type="submit" style="background:none;border:none;color:#ff3b30;font-size:14px;cursor:pointer">Delete Account</button>
+        </form>
+    </div>
+</div>
+{% endblock %}

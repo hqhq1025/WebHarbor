@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block title %}{{ topic.title }} · Resources · GitHub{% endblock %}
+{% block content %}
+<div class="resources-topic-page">
+  <a href="/resources" class="back-link">← All resources</a>
+  <h1 class="resources-topic-headline">{{ topic.headline }}</h1>
+  <p class="resources-topic-intro">{{ topic.intro }}</p>
+  {% for s in topic.sections %}
+  <section class="resources-section">
+    <h2 class="resources-section-heading">{{ s.heading }}</h2>
+    <p class="resources-section-body">{{ s.body }}</p>
+  </section>
+  {% endfor %}
+</div>
+{% endblock %}

@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block title %}Bookmarks - BBC News{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>Bookmarks</h1>
+    <p>Stories you bookmarked for quick access — {{ items|length }} total.</p>
+</div>
+
+{% if items %}
+<div class="section-grid">
+    {% for item in items %}
+    <div class="card" style="position: relative;">
+        <a href="{{ url_for('article_detail', slug=item.article.slug) }}">
+            <div class="card-image-wrap">
+                {% if item.article.hero_image %}
+                <img src="{{ item.article.hero_image }}" alt="{{ item.article.headline|e }}" class="card-image"
+                     onerror="this.style.display='none'">
+                {% endif %}
+            </div>
+            <h3 class="card-headline">{{ item.article.headline }}</h3>
+            <p class="card-meta">
+                <span class="card-category">{{ item.article.category.name if item.article.category else 'News' }}</span>
+                <span class="dot">•</span>
+                <span>Saved {{ item.bookmarked_at.strftime('%d %b') }}</span>
+            </p>
+        </a>
+        <form method="post" action="{{ url_for('bookmarks_remove', item_id=item.id) }}"
+              style="margin-top: 8px;">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button type="submit" class="btn btn-outline" style="font-size: 12px; padding: 6px 12px;">Remove</button>
+        </form>
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<div class="empty-state">
+    <h2>No bookmarks yet</h2>
+    <p>Tap the star icon on any article to bookmark it for quick access.</p>
+    <a href="{{ url_for('index') }}" class="btn">Find stories to read</a>
+</div>
+{% endif %}
+{% endblock %}

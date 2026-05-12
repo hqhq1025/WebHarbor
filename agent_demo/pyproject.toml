@@ -1,0 +1,12 @@
+[project]
+name = "webharbor-agent-demo"
+version = "0.1.0"
+description = "Minimal browser-use ReAct agent + LLM-as-judge demo for WebHarbor mirrors."
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "browser-use>=0.10.1",
+    "openai>=1.50.0",
+    "playwright>=1.56.0",
+    "simpleargparser>=0.2.4",
+]

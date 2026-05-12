@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+{% block title %}Live - BBC News{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>
+        <span style="display: inline-block; width: 12px; height: 12px; border-radius: 50%; background: var(--bbc-red); margin-right: 10px; animation: pulse 1.4s infinite;"></span>
+        Live updates
+    </h1>
+    <p>Breaking news and live event coverage from BBC News.</p>
+</div>
+
+<style>
+@keyframes pulse {
+    0% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.5; transform: scale(0.85); }
+    100% { opacity: 1; transform: scale(1); }
+}
+</style>
+
+{% if breaking %}
+<section style="margin-bottom: 36px;">
+    <h2 style="font-size: 22px; font-weight: 700; margin-bottom: 14px; border-left: 4px solid var(--bbc-red); padding-left: 12px;">
+        Breaking news
+    </h2>
+    <div class="section-grid">
+        {% for art in breaking %}
+        <a class="card" href="{{ url_for('article_detail', slug=art.slug) }}">
+            <div class="card-image-wrap">
+                {% if art.hero_image %}
+                <img src="{{ art.hero_image }}" alt="{{ art.headline|e }}" class="card-image"
+                     onerror="this.style.display='none'">
+                {% endif %}
+                <div class="card-label" style="background: var(--bbc-red);">BREAKING</div>
+            </div>
+            <h3 class="card-headline">{{ art.headline }}</h3>
+            <p class="card-meta">
+                <span class="card-category">{{ art.category.name if art.category else 'News' }}</span>
+                <span class="dot">•</span>
+                <span>{{ art.published_date_str }}</span>
+            </p>
+        </a>
+        {% endfor %}
+    </div>
+</section>
+{% endif %}
+
+{% if live %}
+<section style="margin-bottom: 36px;">
+    <h2 style="font-size: 22px; font-weight: 700; margin-bottom: 14px;">Live events</h2>
+    <div class="section-grid">
+        {% for art in live %}
+        <a class="card" href="{{ url_for('article_detail', slug=art.slug) }}">
+            <div class="card-image-wrap">
+                {% if art.hero_image %}
+                <img src="{{ art.hero_image }}" alt="{{ art.headline|e }}" class="card-image"
+                     onerror="this.style.display='none'">
+                {% endif %}
+                <div class="card-label">LIVE</div>
+            </div>
+            <h3 class="card-headline">{{ art.headline }}</h3>
+            <p class="card-meta">
+                <span class="card-category">{{ art.category.name if art.category else 'News' }}</span>
+                <span class="dot">•</span>
+                <span>Started {{ art.published_date_str }}</span>
+            </p>
+        </a>
+        {% endfor %}
+    </div>
+</section>
+{% endif %}
+
+{% if not breaking and not live %}
+<div class="empty-state">
+    <h2>No live events right now</h2>
+    <p>Check back soon or browse the <a href="{{ url_for('latest_page') }}">latest news</a>.</p>
+</div>
+{% endif %}
+{% endblock %}

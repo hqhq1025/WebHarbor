@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="{{ csrf_token_value }}">
+    <title>{% block title %}Amazon.com. Spend less. Smile more.{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='4' fill='%23232f3e'/><text x='16' y='24' text-anchor='middle' font-size='22' fill='%23febd69'>a</text></svg>">
+</head>
+<body>
+    <!-- Top Navigation -->
+    <nav class="nav-top">
+        <div class="nav-top-inner">
+            <a href="{{ url_for('index') }}" class="nav-logo" aria-label="Amazon.com">
+                amazon<span class="nav-logo-smile">.</span>
+            </a>
+
+            <a href="{{ url_for('index') }}" class="nav-item nav-item-small-hide" aria-label="Deliver to">
+                <span class="nav-deliver-icon">📍</span>
+                <div style="margin-left:4px">
+                    <small>Deliver to</small>
+                    <strong>United States</strong>
+                </div>
+            </a>
+
+            <form class="nav-search nav-search-form" action="{{ url_for('search') }}" method="get">
+                <select class="nav-search-dropdown" name="dept" aria-label="Department">
+                    <option>All</option>
+                    <option>Electronics</option>
+                    <option>Books</option>
+                    <option>Home</option>
+                    <option>Fashion</option>
+                    <option>Beauty</option>
+                </select>
+                <input type="text" class="nav-search-input" name="q" placeholder="Search Amazon" value="{{ request.args.get('q', '') }}" autocomplete="off">
+                <button type="submit" class="nav-search-btn" aria-label="Search">🔍</button>
+            </form>
+
+            <a href="{{ url_for('index') }}" class="nav-item nav-item-small-hide">
+                <div>
+                    <small>EN</small>
+                </div>
+                <span>🌐</span>
+            </a>
+
+            <a href="{% if current_user.is_authenticated %}{{ url_for('account') }}{% else %}{{ url_for('login') }}{% endif %}" class="nav-item">
+                <div>
+                    <small>Hello, {% if current_user.is_authenticated %}{{ current_user.name.split()[0] }}{% else %}sign in{% endif %}</small>
+                    <strong>Account &amp; Lists ▾</strong>
+                </div>
+            </a>
+
+            <a href="{% if current_user.is_authenticated %}{{ url_for('orders_list') }}{% else %}{{ url_for('login') }}{% endif %}" class="nav-item nav-item-small-hide">
+                <div>
+                    <small>Returns</small>
+                    <strong>&amp; Orders</strong>
+                </div>
+            </a>
+
+            <a href="{{ url_for('bag') }}" class="nav-item">
+                <div style="position:relative">
+                    <span style="font-size:28px;">🛒</span>
+                    <span class="cart-count" style="position:absolute;top:-5px;right:-10px;background:var(--amz-orange);color:#111;border-radius:50%;padding:0 5px;font-weight:700;font-size:13px;min-width:18px;text-align:center;">{{ cart_count }}</span>
+                </div>
+                <strong style="margin-left:6px;">Cart</strong>
+            </a>
+        </div>
+
+        <!-- Sub Nav -->
+        <div class="nav-sub">
+            <div class="nav-sub-inner">
+                <a class="nav-sub-item nav-sub-item-bold" href="{{ url_for('index') }}">☰ All</a>
+                <a class="nav-sub-item" href="{{ url_for('todays_deals') }}">Today's Deals</a>
+                <a class="nav-sub-item" href="{{ url_for('customer_service') }}">Customer Service</a>
+                <a class="nav-sub-item" href="{{ url_for('index') }}">Registry</a>
+                <a class="nav-sub-item" href="{{ url_for('gift_cards') }}">Gift Cards</a>
+                <a class="nav-sub-item" href="{{ url_for('index') }}">Sell</a>
+                {% for c in nav_categories %}
+                <a class="nav-sub-item" href="{{ url_for('category', slug=c.slug) }}">{{ c.name }}</a>
+                {% endfor %}
+            </div>
+        </div>
+    </nav>
+
+    <!-- Flash Messages -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+        <div class="flash-container">
+            {% for category, message in messages %}
+            <div class="flash-msg flash-{{ category }}">
+                <span>{{ message }}</span>
+                <button class="close-btn" aria-label="Close">×</button>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+    {% endwith %}
+
+    <!-- Main Content -->
+    <main>
+        {% block content %}{% endblock %}
+    </main>
+
+    <!-- Footer -->
+    <footer>
+        <div class="footer-back-top">Back to top</div>
+        <div class="footer-main">
+            <div class="footer-cols">
+                <div class="footer-col">
+                    <h4>Get to Know Us</h4>
+                    <ul>
+                        <li><a href="{{ url_for('index') }}">Careers</a></li>
+                        <li><a href="{{ url_for('index') }}">About Amazon</a></li>
+                        <li><a href="{{ url_for('index') }}">Investor Relations</a></li>
+                        <li><a href="{{ url_for('index') }}">Amazon Devices</a></li>
+                        <li><a href="{{ url_for('index') }}">Amazon Science</a></li>
+                    </ul>
+                </div>
+                <div class="footer-col">
+                    <h4>Make Money with Us</h4>
+                    <ul>
+                        <li><a href="{{ url_for('index') }}">Sell products on Amazon</a></li>
+                        <li><a href="{{ url_for('index') }}">Sell apps on Amazon</a></li>
+                        <li><a href="{{ url_for('index') }}">Become an Affiliate</a></li>
+                        <li><a href="{{ url_for('index') }}">Advertise Your Products</a></li>
+                        <li><a href="{{ url_for('index') }}">Self-Publish with Us</a></li>
+                    </ul>
+                </div>
+                <div class="footer-col">
+                    <h4>Amazon Payment Products</h4>
+                    <ul>
+                        <li><a href="{{ url_for('index') }}">Amazon Rewards Visa</a></li>
+                        <li><a href="{{ url_for('index') }}">Amazon Store Card</a></li>
+                        <li><a href="{{ url_for('index') }}">Amazon Business Card</a></li>
+                        <li><a href="{{ url_for('gift_cards') }}">Amazon Gift Cards</a></li>
+                        <li><a href="{{ url_for('index') }}">Shop with Points</a></li>
+                    </ul>
+                </div>
+                <div class="footer-col">
+                    <h4>Let Us Help You</h4>
+                    <ul>
+                        <li><a href="{% if current_user.is_authenticated %}{{ url_for('account') }}{% else %}{{ url_for('login') }}{% endif %}">Your Account</a></li>
+                        <li><a href="{% if current_user.is_authenticated %}{{ url_for('orders_list') }}{% else %}{{ url_for('login') }}{% endif %}">Your Orders</a></li>
+                        <li><a href="{{ url_for('index') }}">Shipping Rates &amp; Policies</a></li>
+                        <li><a href="{{ url_for('index') }}">Returns &amp; Replacements</a></li>
+                        <li><a href="{{ url_for('customer_service') }}">Help</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="footer-logo-sep">
+                <a href="{{ url_for('index') }}" class="brand">amazon<span class="smile">.</span></a>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            Conditions of Use · Privacy Notice · Consumer Health Data · Your Ads Privacy Choices<br>
+            © 1996-2026, Amazon.com Mirror (Educational Reproduction) · Built with Flask
+        </div>
+    </footer>
+
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

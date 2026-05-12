@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+{% block title %}Search{% if query %} — {{ query }}{% endif %} - BBC News{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>Search BBC News</h1>
+    <p>Find stories, topics, and sections across BBC News.</p>
+</div>
+
+<form method="get" action="{{ url_for('search') }}" class="search-form-big">
+    <input type="text" name="q" value="{{ query or '' }}" placeholder="Search stories, topics, people..." autofocus>
+    <select name="scope">
+        <option value="all" {% if scope == 'all' %}selected{% endif %}>All fields</option>
+        <option value="headline" {% if scope == 'headline' %}selected{% endif %}>Headlines only</option>
+        <option value="body" {% if scope == 'body' %}selected{% endif %}>Body text</option>
+    </select>
+    <button type="submit">Search</button>
+</form>
+
+{% if query %}
+<p style="color: var(--bbc-text-light); margin-bottom: 20px;">
+    {{ total }} result{{ 's' if total != 1 else '' }} for "<strong>{{ query }}</strong>"
+</p>
+
+{% if results %}
+<div class="section-grid">
+    {% for art in results %}
+    <a class="card" href="{{ url_for('article_detail', slug=art.slug) }}">
+        <div class="card-image-wrap">
+            {% if art.hero_image %}
+            <img src="{{ art.hero_image }}" alt="{{ art.headline|e }}" class="card-image"
+                 onerror="this.style.display='none'">
+            {% endif %}
+        </div>
+        <h3 class="card-headline">{{ art.headline }}</h3>
+        {% if art.subtitle %}
+        <p class="card-summary">{{ art.subtitle[:140] }}</p>
+        {% endif %}
+        <p class="card-meta">
+            <span class="card-category">{{ art.category.name if art.category else 'News' }}</span>
+            <span class="dot">•</span>
+            <span>{{ art.published_date_str }}</span>
+        </p>
+    </a>
+    {% endfor %}
+</div>
+
+{% set total_pages = ((total / per_page)|round(0, 'ceil'))|int %}
+{% if total_pages > 1 %}
+<div class="pager">
+    {% if page > 1 %}
+    <a href="{{ url_for('search', q=query, scope=scope, page=page-1) }}">← Previous</a>
+    {% endif %}
+    <span class="current">Page {{ page }} of {{ total_pages }}</span>
+    {% if page < total_pages %}
+    <a href="{{ url_for('search', q=query, scope=scope, page=page+1) }}">Next →</a>
+    {% endif %}
+</div>
+{% endif %}
+
+{% else %}
+<div class="empty-state">
+    <h2>No results found</h2>
+    <p>Try different keywords or search a broader scope.</p>
+</div>
+{% endif %}
+
+{% else %}
+<div class="empty-state">
+    <h2>What do you want to read?</h2>
+    <p>Search for people, places, topics, or headlines.</p>
+</div>
+{% endif %}
+{% endblock %}

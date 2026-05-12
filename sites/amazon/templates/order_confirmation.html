@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% block title %}Order Confirmation - Amazon.com{% endblock %}
+
+{% block content %}
+<div class="account-page" style="max-width:900px">
+    <div style="background:#fff;border:1px solid var(--amz-border);padding:30px;border-radius:4px">
+        <div style="display:flex;align-items:center;gap:15px;margin-bottom:20px">
+            <div style="width:60px;height:60px;border-radius:50%;background:var(--amz-success);color:#fff;display:flex;align-items:center;justify-content:center;font-size:32px;">✓</div>
+            <div>
+                <h1 style="margin:0;font-size:26px;color:var(--amz-success)">Thank you, your order has been placed.</h1>
+                <p style="margin:5px 0">An email confirmation has been sent to you.</p>
+            </div>
+        </div>
+
+        <div style="padding:15px;background:#f7f7f7;border-radius:4px;margin:20px 0">
+            <p style="margin:0"><strong>Order #:</strong> {{ order.order_number }}</p>
+            <p style="margin:5px 0 0"><strong>Estimated delivery:</strong> {{ order.delivery_estimate }}</p>
+        </div>
+
+        <h2 style="font-size:18px">Shipping to</h2>
+        <p>{{ order.ship_name }}<br>
+        {{ order.ship_address }}<br>
+        {{ order.ship_city }}, {{ order.ship_state }} {{ order.ship_zip }}</p>
+
+        <h2 style="font-size:18px">Items ordered</h2>
+        {% for item in order.items %}
+        <div style="display:grid;grid-template-columns:80px 1fr auto;gap:15px;padding:10px 0;border-bottom:1px solid #f0f0f0">
+            <img src="{{ item.product_image }}" alt="{{ item.product_name }}" style="width:80px;height:80px;object-fit:contain" onerror="this.style.display='none'">
+            <div>
+                <a href="{{ url_for('product_detail', slug=item.product.slug) }}">{{ item.product_name }}</a>
+                <div class="text-muted" style="font-size:13px">Qty: {{ item.quantity }}</div>
+            </div>
+            <div>${{ '%.2f'|format(item.price * item.quantity) }}</div>
+        </div>
+        {% endfor %}
+
+        <div style="margin-top:15px;text-align:right;font-size:18px">
+            Order total: <strong>${{ '%.2f'|format(order.total) }}</strong>
+        </div>
+
+        <div style="display:flex;gap:10px;margin-top:20px">
+            <a href="{{ url_for('order_detail', order_id=order.id) }}" class="btn btn-orange">View Order Details</a>
+            <a href="{{ url_for('index') }}" class="btn btn-outline">Continue shopping</a>
+        </div>
+    </div>
+</div>
+{% endblock %}

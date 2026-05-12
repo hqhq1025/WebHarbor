@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block title %}{{ item.name }} — arXiv Store{% endblock %}
+{% block content %}
+
+<p><a href="{{ url_for('store') }}">← Back to store</a></p>
+<h1>{{ item.name }}</h1>
+<div class="store-price">${{ "%.2f"|format(item.price) }}</div>
+
+<p>Select a style:</p>
+<form method="post" action="#" class="dash-card">
+    <select name="style">
+        {% for s in item.styles %}
+        <option value="{{ s }}">{{ s }}</option>
+        {% endfor %}
+    </select>
+    <button type="button" class="btn btn-primary" onclick="alert('Added to cart')">Add to Cart</button>
+</form>
+
+<p class="muted">Available styles: <b>{{ item.styles|length }}</b></p>
+
+{% endblock %}

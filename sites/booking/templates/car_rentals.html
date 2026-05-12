@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block title %}Car rentals — Booking{% endblock %}
+{% block content %}
+<section class="hero" style="padding:40px 20px 80px;">
+    <div class="hero-inner">
+        <h1>Car rentals for any kind of trip</h1>
+        <p>Great deals at over 60,000 locations worldwide.</p>
+    </div>
+    <form class="search-bar" action="{{ url_for('search') }}" method="get">
+        <div class="search-field">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/></svg>
+            <input type="text" name="q" placeholder="Pick-up location">
+        </div>
+        <div class="search-field">
+            <input type="text" maxlength="10" inputmode="numeric" pattern="\d{4}-\d{2}-\d{2}" placeholder="Pick-up (YYYY-MM-DD)" autocomplete="off" data-datepicker="checkin">
+        </div>
+        <div class="search-field">
+            <input type="text" maxlength="10" inputmode="numeric" pattern="\d{4}-\d{2}-\d{2}" placeholder="Drop-off (YYYY-MM-DD)" autocomplete="off" data-datepicker="checkout">
+        </div>
+        <button class="search-submit" type="submit">Search</button>
+    </form>
+</section>
+
+<div class="container">
+    <section class="section">
+        <div class="section-header">
+            <h2>Popular car rental destinations</h2>
+        </div>
+        <div class="card-grid cards-4">
+            {% for c in cities[:8] %}
+            <a href="{{ url_for('city_page', slug=c.slug) }}" class="city-card">
+                {% if c.hero_image %}
+                <img src="{{ c.hero_image }}" alt="{{ c.display }}" class="city-card-img"
+                     onerror="this.style.background='linear-gradient(135deg,#003580,#006ce4)';this.alt=''">
+                {% endif %}
+                <div class="city-card-body">
+                    <h3>&#128663; {{ c.display }}</h3>
+                    <span class="flag">{{ c.country }}</span>
+                    <div style="font-size:12px;margin-top:4px;">From <strong>${{ (25 + loop.index * 7) }}/day</strong></div>
+                </div>
+            </a>
+            {% endfor %}
+        </div>
+    </section>
+</div>
+{% endblock %}

@@ -1,0 +1,147 @@
+{% extends "base.html" %}
+{% block title %}Pricing · GitHub{% endblock %}
+{% block content %}
+<div class="pricing-page">
+  <div class="pricing-header">
+    <h1 class="pricing-title">Get the complete developer platform</h1>
+    <p class="pricing-subtitle">From open source to enterprise, GitHub scales with your team.</p>
+    <div class="pricing-toggle">
+      <span class="pricing-toggle-label active">Monthly</span>
+      <span class="pricing-toggle-sep">·</span>
+      <span class="pricing-toggle-label">Annual (save 20%)</span>
+    </div>
+  </div>
+
+  <div class="pricing-plans">
+    {% for plan in plans %}
+    <div class="pricing-plan {% if plan.is_popular %}pricing-plan-popular{% endif %}">
+      {% if plan.is_popular %}
+      <div class="pricing-popular-badge">Most popular</div>
+      {% endif %}
+      <div class="pricing-plan-header">
+        <h2 class="pricing-plan-name">{{ plan.name }}</h2>
+        <div class="pricing-plan-price">
+          <span class="pricing-price-amount">{{ plan.price_display }}</span>
+          <span class="pricing-price-period">{{ plan.period }}</span>
+        </div>
+        <p class="pricing-plan-desc">{{ plan.desc }}</p>
+        <a href="{{ plan.cta_url }}" class="gh-btn {% if plan.is_popular %}gh-btn-primary{% else %}gh-btn-secondary{% endif %} gh-btn-block">{{ plan.cta }}</a>
+      </div>
+      <div class="pricing-features">
+        <p class="pricing-features-heading">Includes:</p>
+        <ul class="pricing-features-list">
+          {% for feature in plan.features %}
+          <li class="pricing-feature">
+            <svg aria-hidden="true" height="16" viewBox="0 0 16 16" width="16" fill="#3fb950">
+              <path d="M13.78 4.22a.75.75 0 0 1 0 1.06l-7.25 7.25a.75.75 0 0 1-1.06 0L2.22 9.28a.751.751 0 0 1 .018-1.042.751.751 0 0 1 1.042-.018L6 10.94l6.72-6.72a.75.75 0 0 1 1.06 0Z"/>
+            </svg>
+            {{ feature }}
+          </li>
+          {% endfor %}
+        </ul>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+
+  {% if storage_comparison %}
+  <div class="pricing-storage-comparison">
+    <h2>GitHub Packages storage by plan</h2>
+    <p>Each plan includes a monthly allotment of GitHub Packages storage. Additional storage is billed per-GB above the included amount.</p>
+    <table class="pricing-storage-table">
+      <thead><tr><th>Plan</th><th>Included storage</th><th>Overage rate</th></tr></thead>
+      <tbody>
+        <tr><td>Free</td><td>500 MB</td><td>—</td></tr>
+        <tr><td>Pro</td><td>2 GB</td><td>$0.25 / GB / mo</td></tr>
+        <tr><td>Team</td><td>{{ storage_comparison.team_gb }} GB</td><td>$0.25 / GB / mo</td></tr>
+        <tr><td>Enterprise</td><td>{{ storage_comparison.enterprise_gb }} GB</td><td>$0.25 / GB / mo</td></tr>
+      </tbody>
+    </table>
+  </div>
+  {% endif %}
+
+  <!-- Compare plans -->
+  <div class="pricing-compare">
+    <h2 class="pricing-compare-title">Compare plans</h2>
+    <table class="pricing-compare-table">
+      <thead>
+        <tr>
+          <th>Feature</th>
+          <th>Free</th>
+          <th>Team</th>
+          <th>Enterprise</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Public repositories</td>
+          <td>Unlimited</td>
+          <td>Unlimited</td>
+          <td>Unlimited</td>
+        </tr>
+        <tr>
+          <td>Private repositories</td>
+          <td>Unlimited</td>
+          <td>Unlimited</td>
+          <td>Unlimited</td>
+        </tr>
+        <tr>
+          <td>Actions minutes/month</td>
+          <td>2,000</td>
+          <td>3,000</td>
+          <td>50,000</td>
+        </tr>
+        <tr>
+          <td>Packages storage</td>
+          <td>500 MB</td>
+          <td>2 GB</td>
+          <td>50 GB</td>
+        </tr>
+        <tr>
+          <td>Community support</td>
+          <td>✓</td>
+          <td>✓</td>
+          <td>✓</td>
+        </tr>
+        <tr>
+          <td>Web-based support</td>
+          <td>—</td>
+          <td>✓</td>
+          <td>✓</td>
+        </tr>
+        <tr>
+          <td>SAML SSO</td>
+          <td>—</td>
+          <td>—</td>
+          <td>✓</td>
+        </tr>
+        <tr>
+          <td>Audit log</td>
+          <td>—</td>
+          <td>—</td>
+          <td>✓</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- FAQ -->
+  <div class="pricing-faq">
+    <h2 class="pricing-faq-title">Frequently asked questions</h2>
+    <div class="faq-list">
+      <details class="faq-item">
+        <summary class="faq-question">Can I change my plan at any time?</summary>
+        <p class="faq-answer">Yes, you can upgrade or downgrade your plan at any time. Changes take effect immediately.</p>
+      </details>
+      <details class="faq-item">
+        <summary class="faq-question">What payment methods do you accept?</summary>
+        <p class="faq-answer">We accept all major credit cards including Visa, Mastercard, and American Express.</p>
+      </details>
+      <details class="faq-item">
+        <summary class="faq-question">What happens to my repositories if I downgrade?</summary>
+        <p class="faq-answer">Your repositories are never deleted when you downgrade. Private repositories may become read-only if you exceed the limits of your new plan.</p>
+      </details>
+    </div>
+  </div>
+</div>
+{% endblock %}

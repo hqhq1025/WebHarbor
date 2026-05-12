@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+{% block title %}{{ category.name }} — arXiv{% endblock %}
+{% block breadcrumbs %}
+    <span class="sep">&gt;</span>
+    <a href="{{ url_for('category_detail', code=category.code) }}">{{ category.code }}</a>
+{% endblock %}
+{% block content %}
+
+<div class="listing-header">
+    <h1>
+        <span style="display:inline-block;width:28px;text-align:center">{{ category.icon }}</span>
+        {{ category.name }}
+    </h1>
+    <p class="subtitle">{{ category.description }}</p>
+    <p class="muted">
+        <b>{{ total }}</b> papers indexed under this subject.
+        <a href="{{ url_for('listing', code=category.code, view='new') }}">New listing</a> ·
+        <a href="{{ url_for('listing', code=category.code, view='recent') }}">Recent listing</a>
+    </p>
+</div>
+
+{% if subcat_counts %}
+<div class="dash-card">
+    <h2>Sub-categories</h2>
+    <div class="subcat-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:4px 18px;list-style:none;padding:0;">
+        {% for code, count in subcat_counts %}
+        <div>
+            <a href="{{ url_for('listing', code=code, view='recent') }}">{{ code }}</a>
+            <span class="muted">({{ count }})</span>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endif %}
+
+<h2>Latest papers in {{ category.name }}</h2>
+
+{% if papers %}
+<dl>
+    {% for p in papers %}
+    <dt>
+        <span class="entry-id">[{{ loop.index + (page-1)*per_page }}]&nbsp;arXiv:{{ p.arxiv_id }}</span>
+        [<a href="{{ url_for('pdf_view', arxiv_id=p.arxiv_id) }}">pdf</a>]
+        [<a href="{{ url_for('paper_detail', arxiv_id=p.arxiv_id) }}">abs</a>]
+    </dt>
+    <dd class="paper-entry">
+        <div class="entry-title"><a href="{{ url_for('paper_detail', arxiv_id=p.arxiv_id) }}">{{ p.title }}</a></div>
+        <div class="entry-authors"><b>Authors:</b>
+            {% for a in p.get_authors()[:5] %}
+                <a href="{{ url_for('author_papers', name=a) }}">{{ a }}</a>{% if not loop.last %}, {% endif %}
+            {% endfor %}
+            {% if p.get_authors()|length > 5 %}, <i>et al.</i>{% endif %}
+        </div>
+        {% if p.comments %}
+        <div class="entry-comments"><b>Comments:</b> {{ p.comments }}</div>
+        {% endif %}
+        <div class="entry-subjects"><b>Subjects:</b> {{ p.primary_subject }}</div>
+        {% if p.abstract %}
+        <div class="entry-abs">{{ p.short_abstract }}</div>
+        {% endif %}
+    </dd>
+    {% endfor %}
+</dl>
+
+<div class="pagination">
+    {% if page > 1 %}
+        <a href="{{ url_for('category_detail', code=category.code, page=page-1) }}">« Prev</a>
+    {% endif %}
+    <span class="current">Page {{ page }}</span>
+    {% if page * per_page < total %}
+        <a href="{{ url_for('category_detail', code=category.code, page=page+1) }}">Next »</a>
+    {% endif %}
+</div>
+{% else %}
+<p class="muted">No papers yet.</p>
+{% endif %}
+
+{% endblock %}

@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% block title %}Price alerts | Google Flights{% endblock %}
+
+{% block content %}
+<div class="section">
+  <div class="section-header">
+    <h1 style="font-family:var(--font-sans);font-size:28px;font-weight:400;">Price alerts</h1>
+    <p style="color:var(--g-grey-700);">We'll email you when prices for these routes drop below your threshold.</p>
+  </div>
+
+  <!-- Create alert -->
+  <div class="auth-card" style="max-width:640px;margin-bottom:32px;">
+    <h2 style="font-family:var(--font-sans);font-size:18px;font-weight:500;margin-bottom:12px;">Create a new alert</h2>
+    <form method="POST" action="{{ url_for('price_alerts') }}" class="auth-form">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+        <div class="form-field">
+          <label for="origin_iata">From (IATA)</label>
+          <input type="text" name="origin_iata" id="origin_iata" maxlength="4" placeholder="JFK" required>
+        </div>
+        <div class="form-field">
+          <label for="destination_iata">To (IATA)</label>
+          <input type="text" name="destination_iata" id="destination_iata" maxlength="4" placeholder="CDG" required>
+        </div>
+      </div>
+      <div class="form-field">
+        <label for="threshold_price">Notify me when price drops below ($)</label>
+        <input type="number" name="threshold_price" id="threshold_price" placeholder="500" step="10" min="0" required>
+      </div>
+      <button type="submit" class="btn btn-primary">Create alert</button>
+    </form>
+  </div>
+
+  <!-- Existing alerts -->
+  {% if alerts %}
+    <h2 style="font-family:var(--font-sans);font-size:20px;font-weight:400;margin-bottom:16px;">Your alerts ({{ alerts|length }})</h2>
+    <div class="alert-grid">
+      {% for a in alerts %}
+        <div class="alert-card">
+          <div class="alert-route">
+            <span class="material-symbols-outlined">notifications_active</span>
+            {{ a.origin_iata }} &rarr; {{ a.destination_iata }}
+          </div>
+          <div class="alert-threshold">Notify below <strong>{{ a.threshold_price|money }}</strong></div>
+          <div class="alert-date">Created {{ a.created_at|datefmt('%b %d, %Y') }}</div>
+          <form method="POST" action="{{ url_for('alert_delete', alert_id=a.id) }}" style="margin-top:8px;">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button type="submit" class="btn btn-outline" style="font-size:13px;">Remove</button>
+          </form>
+        </div>
+      {% endfor %}
+    </div>
+  {% else %}
+    <p style="color:var(--g-grey-700);">No alerts yet.</p>
+  {% endif %}
+</div>
+{% endblock %}

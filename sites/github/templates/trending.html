@@ -1,0 +1,151 @@
+{% extends "base.html" %}
+{% block title %}Trending repositories · GitHub{% endblock %}
+{% block content %}
+<div class="explore-header">
+  <div class="explore-header-inner">
+    <h1 class="explore-title">Trending</h1>
+    <p class="explore-subtitle">See what the GitHub community is most excited about today.</p>
+    <nav class="trending-tabs">
+      <a href="/trending?tab=repositories&since={{ since }}{% if lang_filter %}&l={{ lang_filter }}{% endif %}"
+         class="trending-tab {% if tab != 'developers' %}active{% endif %}">Repositories</a>
+      <a href="/trending?tab=developers&since={{ since }}"
+         class="trending-tab {% if tab == 'developers' %}active{% endif %}">Developers</a>
+    </nav>
+  </div>
+</div>
+
+{% if tab == 'developers' %}
+<div class="trending-devs-section">
+  <h2 class="trending-devs-heading">Trending developers this {{ 'month' if since == 'monthly' else 'week' if since == 'weekly' else 'day' }}</h2>
+  <ol class="trending-devs-list">
+    {% for d in developers %}
+    <li class="trending-dev-item">
+      <span class="trending-dev-rank">#{{ d.rank }}</span>
+      <img src="{{ d.user.avatar_url }}" alt="{{ d.user.username }}" class="trending-dev-avatar"
+           onerror="this.src='/static/images/avatars/avatar_00.jpg'">
+      <div class="trending-dev-info">
+        <a href="/{{ d.user.username }}" class="trending-dev-name">
+          <strong>{{ d.user.name or d.user.username }}</strong>
+          <span class="trending-dev-username">{{ d.user.username }}</span>
+        </a>
+        <div class="trending-dev-popular">
+          <span>Popular repo:</span>
+          <a href="/{{ d.repo_full_name }}" class="trending-dev-repo">{{ d.repo_full_name }}</a>
+          <span>⭐ {{ d.repo.stars_count | number_format }}</span>
+        </div>
+      </div>
+    </li>
+    {% endfor %}
+  </ol>
+</div>
+{% endif %}
+
+<div class="trending-layout">
+  <aside class="trending-sidebar">
+    <div class="filter-box">
+      <h3 class="filter-title">Spoken Language:</h3>
+      <select class="filter-select" onchange="applyFilter('sl', this.value)">
+        <option value="">Any</option>
+        <option value="en">English</option>
+        <option value="zh">Chinese</option>
+        <option value="ja">Japanese</option>
+      </select>
+    </div>
+    <div class="filter-box">
+      <h3 class="filter-title">Language:</h3>
+      <select class="filter-select" onchange="applyFilter('l', this.value)">
+        <option value="" {% if not lang_filter %}selected{% endif %}>Any</option>
+        {% for lang, count in languages %}
+        <option value="{{ lang }}" {% if lang_filter == lang %}selected{% endif %}>{{ lang }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="filter-box">
+      <h3 class="filter-title">Date range:</h3>
+      <div class="filter-options">
+        <a href="/trending?since=daily{% if lang_filter %}&l={{ lang_filter }}{% endif %}"
+           class="filter-option {% if since == 'daily' %}active{% endif %}">Today</a>
+        <a href="/trending?since=weekly{% if lang_filter %}&l={{ lang_filter }}{% endif %}"
+           class="filter-option {% if since == 'weekly' %}active{% endif %}">This week</a>
+        <a href="/trending?since=monthly{% if lang_filter %}&l={{ lang_filter }}{% endif %}"
+           class="filter-option {% if since == 'monthly' %}active{% endif %}">This month</a>
+      </div>
+    </div>
+  </aside>
+
+  <div class="trending-list">
+    {% for repo in repos.items %}
+    <article class="trending-repo-card">
+      <div class="trending-rank">{{ loop.index + (repos.page - 1) * 25 }}</div>
+      <div class="trending-repo-info">
+        <h2 class="trending-repo-name">
+          <svg aria-hidden="true" height="16" viewBox="0 0 16 16" width="16" fill="currentColor" class="trending-icon">
+            <path d="M2 2.5A2.5 2.5 0 0 1 4.5 0h8.75a.75.75 0 0 1 .75.75v12.5a.75.75 0 0 1-.75.75h-2.5a.75.75 0 0 1 0-1.5h1.75v-2h-8a1 1 0 0 0-.714 1.7.75.75 0 1 1-1.072 1.05A2.495 2.495 0 0 1 2 11.5Zm10.5-1h-8a1 1 0 0 0-1 1v6.708A2.486 2.486 0 0 1 4.5 9h8ZM5 12.25a.25.25 0 0 1 .25-.25h3.5a.25.25 0 0 1 .25.25v3.25a.25.25 0 0 1-.4.2l-1.45-1.087a.249.249 0 0 0-.3 0L5.4 15.7a.25.25 0 0 1-.4-.2Z"/>
+          </svg>
+          <a href="/{{ repo.full_name }}">{{ repo.full_name }}</a>
+        </h2>
+        {% if repo.description %}
+        <p class="trending-repo-desc">{{ repo.description }}</p>
+        {% endif %}
+        <div class="trending-repo-meta">
+          {% if repo.language %}
+          <span class="repo-lang">
+            <span class="repo-lang-dot" style="background-color: {{ lang_colors.get(repo.language, '#8f9ba8') }}"></span>
+            {{ repo.language }}
+          </span>
+          {% endif %}
+          <span class="trending-stat">
+            <svg aria-hidden="true" height="14" viewBox="0 0 16 16" width="14" fill="currentColor">
+              <path d="M8 .25a.75.75 0 0 1 .673.418l1.882 3.815 4.21.612a.75.75 0 0 1 .416 1.279l-3.046 2.97.719 4.192a.751.751 0 0 1-1.088.791L8 12.347l-3.766 1.98a.75.75 0 0 1-1.088-.79l.72-4.194L.818 6.374a.75.75 0 0 1 .416-1.28l4.21-.611L7.327.668A.75.75 0 0 1 8 .25Z"/>
+            </svg>
+            {{ repo.stars_count | number_format }}
+          </span>
+          <span class="trending-stat">
+            <svg aria-hidden="true" height="14" viewBox="0 0 16 16" width="14" fill="currentColor">
+              <path d="M5 5.372v.878c0 .414.336.75.75.75h4.5a.75.75 0 0 0 .75-.75v-.878a2.25 2.25 0 1 1 1.5 0v.878a2.25 2.25 0 0 1-2.25 2.25h-1.5v2.128a2.251 2.251 0 1 1-1.5 0V8.5h-1.5A2.25 2.25 0 0 1 3.5 6.25v-.878a2.25 2.25 0 1 1 1.5 0Z"/>
+            </svg>
+            {{ repo.forks_count | number_format }}
+          </span>
+          <span class="trending-stars-today">⭐ {{ (repo.stars_count // 100) | number_format }} stars today</span>
+        </div>
+      </div>
+      {% if current_user.is_authenticated %}
+      <button class="gh-btn gh-btn-secondary gh-btn-sm star-btn-inline" data-repo-id="{{ repo.id }}" onclick="toggleStar(this)">
+        <svg aria-hidden="true" height="14" viewBox="0 0 16 16" width="14" fill="currentColor">
+          <path d="M8 .25a.75.75 0 0 1 .673.418l1.882 3.815 4.21.612a.75.75 0 0 1 .416 1.279l-3.046 2.97.719 4.192a.751.751 0 0 1-1.088.791L8 12.347l-3.766 1.98a.75.75 0 0 1-1.088-.79l.72-4.194L.818 6.374a.75.75 0 0 1 .416-1.28l4.21-.611L7.327.668A.75.75 0 0 1 8 .25Z"/>
+        </svg>
+        Star
+      </button>
+      {% endif %}
+    </article>
+    {% else %}
+    <div class="empty-state">
+      <p>No trending repositories found for the selected filters.</p>
+      <a href="/trending" class="gh-btn gh-btn-secondary">Clear filters</a>
+    </div>
+    {% endfor %}
+
+    {% if repos.pages > 1 %}
+    <div class="pagination">
+      {% if repos.has_prev %}
+      <a href="/trending?page={{ repos.prev_num }}{% if lang_filter %}&l={{ lang_filter }}{% endif %}&since={{ since }}" class="gh-btn gh-btn-secondary">← Previous</a>
+      {% endif %}
+      <span class="pagination-info">Page {{ repos.page }} of {{ repos.pages }}</span>
+      {% if repos.has_next %}
+      <a href="/trending?page={{ repos.next_num }}{% if lang_filter %}&l={{ lang_filter }}{% endif %}&since={{ since }}" class="gh-btn gh-btn-secondary">Next →</a>
+      {% endif %}
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+<script>
+function applyFilter(param, value) {
+  const url = new URL(window.location.href);
+  if (value) url.searchParams.set(param, value);
+  else url.searchParams.delete(param);
+  url.searchParams.set('page', '1');
+  window.location.href = url.toString();
+}
+</script>
+{% endblock %}

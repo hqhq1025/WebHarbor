@@ -1,0 +1,83 @@
+{% extends "base.html" %}
+{% block title %}Commits · {{ repo.full_name }} · GitHub{% endblock %}
+{% block content %}
+<div class="repo-header-bar">
+  <div class="repo-header-inner">
+    <div class="repo-breadcrumb">
+      <a href="/{{ repo.full_name.split('/')[0] }}" class="repo-breadcrumb-link">{{ repo.full_name.split('/')[0] }}</a>
+      <span class="repo-breadcrumb-sep">/</span>
+      <a href="/{{ repo.full_name }}" class="repo-breadcrumb-link repo-breadcrumb-repo">{{ repo.name }}</a>
+    </div>
+  </div>
+</div>
+<div class="repo-layout">
+  <div class="repo-main" style="width: 100%;">
+    <h1 class="page-title">Commits on {{ repo.default_branch or 'main' }}</h1>
+    <div class="commit-list">
+      {% for c in commits %}
+      <div class="commit-row">
+        <div class="commit-row-main">
+          <a href="/{{ repo.full_name }}/commit/{{ c.sha }}" class="commit-row-message">{{ c.message }}</a>
+          <div class="commit-row-meta">
+            <a href="/{{ c.author }}" class="commit-row-author">{{ c.author }}</a>
+            committed
+            <span class="commit-row-date">
+              {% if c.date %}
+                {% set dt = c.date if c.date is string else c.date.strftime('%Y-%m-%d') %}
+                on {{ dt[:10] }}
+              {% endif %}
+            </span>
+          </div>
+        </div>
+        <div class="commit-row-actions">
+          <a href="/{{ repo.full_name }}/commit/{{ c.sha }}" class="commit-row-sha"><code>{{ c.sha[:7] }}</code></a>
+          <span class="commit-row-files">{{ c.files | length }} file{% if c.files | length != 1 %}s{% endif %}</span>
+          <span class="commit-row-stats">
+            <span class="additions">+{{ c.additions }}</span>
+            <span class="deletions">−{{ c.deletions }}</span>
+          </span>
+        </div>
+      </div>
+      {% else %}
+      <div class="empty-state"><p>No commits yet.</p></div>
+      {% endfor %}
+    </div>
+    {% if commits | length >= 10 %}
+    <p class="commits-truncation-note">
+      Showing the {{ commits | length }} most recent commits. The intermediate history between this commit and the initial commit is not available on this site.
+    </p>
+    {% endif %}
+
+    {% if first_commit %}
+    <div class="commit-history-divider">
+      <span class="commit-history-divider-label">First commit (repository created)</span>
+    </div>
+    <div class="commit-list commit-list-first">
+      <div class="commit-row commit-row-first">
+        <div class="commit-row-main">
+          <a href="/{{ repo.full_name }}/commit/{{ first_commit.sha }}" class="commit-row-message">{{ first_commit.message }}</a>
+          <div class="commit-row-meta">
+            <a href="/{{ first_commit.author }}" class="commit-row-author">{{ first_commit.author }}</a>
+            committed
+            <span class="commit-row-date">
+              {% if first_commit.date %}
+                on {{ first_commit.date[:10] }}
+              {% endif %}
+            </span>
+            <span class="commit-row-first-badge">first commit</span>
+          </div>
+        </div>
+        <div class="commit-row-actions">
+          <a href="/{{ repo.full_name }}/commit/{{ first_commit.sha }}" class="commit-row-sha"><code>{{ first_commit.sha[:7] }}</code></a>
+          <span class="commit-row-files">{{ first_commit.files | length }} files</span>
+          <span class="commit-row-stats">
+            <span class="additions">+{{ first_commit.additions }}</span>
+            <span class="deletions">−{{ first_commit.deletions }}</span>
+          </span>
+        </div>
+      </div>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

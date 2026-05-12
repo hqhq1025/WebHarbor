@@ -1,0 +1,134 @@
+{% extends "base.html" %}
+{% block title %}{{ player.name }}{% endblock %}
+
+{% block content %}
+<div class="container">
+  <!-- Player Header -->
+  <div class="player-header">
+    <div class="player-header__row">
+      <img class="player-header__photo"
+           src="{{ url_for('static', filename='images/espn/placeholders/headshot.png') }}"
+           onerror="this.style.display='none';" alt="">
+    <div class="player-header__main">
+      <h1>{{ player.name }}</h1>
+      <div class="player-meta">
+        {% if player.team %}
+        <a href="/team/{{ sport.slug if sport else '#' }}/{{ player.team.slug }}" class="player-team">
+          {{ player.team.full_name or player.team.name }}
+        </a> &bull;
+        {% endif %}
+        <span>{{ player.position }}</span>
+        {% if player.jersey_number %} &bull; <span>#{{ player.jersey_number }}</span>{% endif %}
+        {% if player.height %} &bull; {{ player.height }}{% endif %}
+        {% if player.weight %} &bull; {{ player.weight }} lbs{% endif %}
+        {% if player.age %} &bull; Age {{ player.age }}{% endif %}
+      </div>
+      {% if player.injury_status %}
+      <div class="player-injury-status">
+        <span class="injury-status-badge">{{ player.injury_status }}</span>
+        {{ player.injury_description }}
+      </div>
+      {% endif %}
+      {% if current_user.is_authenticated %}
+      <form method="post" action="/api/favorites/toggle" style="margin-top:8px; display:inline;">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token_value }}">
+        <input type="hidden" name="type" value="player">
+        <input type="hidden" name="id" value="{{ player.id }}">
+        <input type="hidden" name="next" value="/player/{{ sport.slug if sport else '#' }}/{{ player.slug }}">
+        <button type="submit" class="btn-fav">&#9733; Follow Player</button>
+      </form>
+      {% endif %}
+    </div>
+    </div>
+    <nav class="sport-subnav">
+      <a href="/player/{{ sport.slug if sport else '#' }}/{{ player.slug }}" class="active">Overview</a>
+      <a href="/player/{{ sport.slug if sport else '#' }}/{{ player.slug }}/gamelog">Game Log</a>
+    </nav>
+  </div>
+
+  <!-- Season Stats -->
+  {% if season_stats %}
+  <section class="section-block">
+    <h2 class="section-heading">2023-24 Stats</h2>
+    <table class="data-table stats-table">
+      <thead>
+        <tr><th>GP</th><th>PPG</th><th>RPG</th><th>APG</th><th>SPG</th><th>BPG</th><th>FG%</th><th>3P%</th><th>FT%</th><th>MIN</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>{{ season_stats.games_played }}</td>
+          <td>{{ '%.1f'|format(season_stats.points_per_game) }}</td>
+          <td>{{ '%.1f'|format(season_stats.rebounds_per_game) }}</td>
+          <td>{{ '%.1f'|format(season_stats.assists_per_game) }}</td>
+          <td>{{ '%.1f'|format(season_stats.steals_per_game) }}</td>
+          <td>{{ '%.1f'|format(season_stats.blocks_per_game) }}</td>
+          <td>{{ '%.1f'|format(season_stats.fg_pct * 100) }}%</td>
+          <td>{{ '%.1f'|format(season_stats.three_pt_pct * 100) }}%</td>
+          <td>{{ '%.1f'|format(season_stats.ft_pct * 100) }}%</td>
+          <td>{{ '%.1f'|format(season_stats.minutes_per_game) }}</td>
+        </tr>
+      </tbody>
+    </table>
+  </section>
+  {% endif %}
+
+  <!-- Career Stats -->
+  {% if career_stats %}
+  <section class="section-block">
+    <h2 class="section-heading">Career Stats</h2>
+    <table class="data-table stats-table">
+      <thead>
+        <tr><th>GP</th><th>PTS</th><th>REB</th><th>AST</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>{{ career_stats.total_games }}</td>
+          <td>{{ career_stats.total_points }}</td>
+          <td>{{ career_stats.total_rebounds }}</td>
+          <td>{{ career_stats.total_assists }}</td>
+        </tr>
+      </tbody>
+    </table>
+  </section>
+  {% endif %}
+
+  <!-- Bio -->
+  {% if player.bio %}
+  <section class="section-block">
+    <h2 class="section-heading">Bio</h2>
+    <p>{{ player.bio }}</p>
+    <ul class="player-details">
+      {% if player.college %}<li><strong>College:</strong> {{ player.college }}</li>{% endif %}
+      {% if player.nationality %}<li><strong>Nationality:</strong> {{ player.nationality }}</li>{% endif %}
+      {% if player.birth_date %}<li><strong>Born:</strong> {{ player.birth_date }}</li>{% endif %}
+      {% if player.experience %}<li><strong>Experience:</strong> {{ player.experience }} years</li>{% endif %}
+    </ul>
+  </section>
+  {% endif %}
+
+  <!-- Recent Game Stats -->
+  {% if recent_games_stats %}
+  <section class="section-block">
+    <h2 class="section-heading">Recent Games</h2>
+    <table class="data-table">
+      <thead>
+        <tr><th>Game</th><th>MIN</th><th>PTS</th><th>REB</th><th>AST</th><th>STL</th><th>BLK</th></tr>
+      </thead>
+      <tbody>
+        {% for gs in recent_games_stats %}
+        <tr>
+          <td><a href="/game/{{ gs.game_id }}">Game #{{ gs.game_id }}</a></td>
+          <td>{{ gs.minutes }}</td>
+          <td>{{ gs.points }}</td>
+          <td>{{ gs.rebounds }}</td>
+          <td>{{ gs.assists }}</td>
+          <td>{{ gs.steals }}</td>
+          <td>{{ gs.blocks }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </section>
+  {% endif %}
+</div>
+{% endblock %}

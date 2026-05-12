@@ -1,0 +1,156 @@
+{% extends "base.html" %}
+{% block title %}Your Account - Amazon.com{% endblock %}
+
+{% block content %}
+<div class="account-page">
+    <h1>Your Account</h1>
+
+    <div class="account-grid">
+        <a href="{{ url_for('orders_list') }}" class="account-tile">
+            <div class="account-tile-icon">📦</div>
+            <div class="account-tile-info">
+                <h3>Your Orders</h3>
+                <p>Track, return, or buy things again</p>
+            </div>
+        </a>
+
+        <a href="{{ url_for('edit_profile') }}" class="account-tile">
+            <div class="account-tile-icon">🔐</div>
+            <div class="account-tile-info">
+                <h3>Login &amp; Security</h3>
+                <p>Edit login, name, and mobile number</p>
+            </div>
+        </a>
+
+        <a href="{{ url_for('addresses_list') }}" class="account-tile">
+            <div class="account-tile-icon">🏠</div>
+            <div class="account-tile-info">
+                <h3>Your Addresses</h3>
+                <p>Edit addresses for orders and gifts</p>
+            </div>
+        </a>
+
+        <a href="{{ url_for('change_password') }}" class="account-tile">
+            <div class="account-tile-icon">🔑</div>
+            <div class="account-tile-info">
+                <h3>Password</h3>
+                <p>Change your account password</p>
+            </div>
+        </a>
+
+        <a href="{{ url_for('payment_list') }}" class="account-tile">
+            <div class="account-tile-icon">💳</div>
+            <div class="account-tile-info">
+                <h3>Payment Methods</h3>
+                <p>Manage payment methods and settings</p>
+            </div>
+        </a>
+
+        <a href="{{ url_for('wishlist') }}" class="account-tile">
+            <div class="account-tile-icon">❤️</div>
+            <div class="account-tile-info">
+                <h3>Wishlist</h3>
+                <p>{{ wishlist_count }} item(s) saved</p>
+            </div>
+        </a>
+
+        <a href="{{ url_for('prime') }}" class="account-tile">
+            <div class="account-tile-icon">⭐</div>
+            <div class="account-tile-info">
+                <h3>Prime Membership</h3>
+                <p>View benefits and payment settings</p>
+            </div>
+        </a>
+
+        <a href="{{ url_for('gift_cards') }}" class="account-tile">
+            <div class="account-tile-icon">🎁</div>
+            <div class="account-tile-info">
+                <h3>Gift Cards</h3>
+                <p>View balance or redeem a card</p>
+            </div>
+        </a>
+
+        <a href="{{ url_for('customer_service') }}" class="account-tile">
+            <div class="account-tile-icon">💬</div>
+            <div class="account-tile-info">
+                <h3>Customer Service</h3>
+                <p>Get help with orders and account</p>
+            </div>
+        </a>
+
+        <a href="{{ url_for('logout') }}" class="account-tile">
+            <div class="account-tile-icon">🚪</div>
+            <div class="account-tile-info">
+                <h3>Sign Out</h3>
+                <p>Sign out of your Amazon account</p>
+            </div>
+        </a>
+    </div>
+
+    {% if orders %}
+    <div style="margin-top:30px">
+        <h2 style="font-size:20px">Recent Orders</h2>
+        {% for order in orders %}
+        <div class="order-card">
+            <div class="order-card-header">
+                <div class="order-card-header-item">
+                    <div class="label">Order placed</div>
+                    <div class="value">{{ order.created_at.strftime('%B %d, %Y') }}</div>
+                </div>
+                <div class="order-card-header-item">
+                    <div class="label">Total</div>
+                    <div class="value">${{ '%.2f'|format(order.total) }}</div>
+                </div>
+                <div class="order-card-header-item">
+                    <div class="label">Ship to</div>
+                    <div class="value">{{ order.ship_name }}</div>
+                </div>
+                <div class="order-card-header-item">
+                    <div class="label">Order #</div>
+                    <div class="value">{{ order.order_number }}</div>
+                </div>
+                <div><span class="status-badge status-{{ order.status }}">{{ order.status }}</span></div>
+            </div>
+            <div class="order-card-body">
+                {% for item in order.items[:2] %}
+                <div class="order-card-item">
+                    <img src="{{ item.product_image }}" alt="{{ item.product_name }}" onerror="this.style.display='none'">
+                    <div>
+                        <h3><a href="{{ url_for('product_detail', slug=item.product.slug) }}">{{ item.product_name }}</a></h3>
+                        <div>Qty: {{ item.quantity }}</div>
+                    </div>
+                    <div>${{ '%.2f'|format(item.price) }}</div>
+                </div>
+                {% endfor %}
+                {% if order.items|length > 2 %}
+                <p class="text-muted" style="padding:10px 0">+ {{ order.items|length - 2 }} more items</p>
+                {% endif %}
+            </div>
+            <div class="order-actions" style="flex-direction:row;gap:10px">
+                <a href="{{ url_for('order_detail', order_id=order.id) }}" class="btn btn-outline">View Details</a>
+                {% if order.status == 'processing' %}
+                <form method="POST" action="{{ url_for('order_cancel', order_id=order.id) }}" style="display:inline">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token_value }}">
+                    <button type="submit" class="btn btn-outline">Cancel</button>
+                </form>
+                {% endif %}
+                <form method="POST" action="{{ url_for('order_reorder', order_id=order.id) }}" style="display:inline">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token_value }}">
+                    <button type="submit" class="btn">Buy Again</button>
+                </form>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <div style="margin-top:30px;padding:15px;background:#fff3f3;border:1px solid #ffcccc;border-radius:4px">
+        <h3 style="font-size:16px;margin-top:0;color:#b12704">Close account</h3>
+        <p style="font-size:13px">Deleting your account will permanently remove all your data including orders, reviews, and wishlist.</p>
+        <form method="POST" action="{{ url_for('delete_account') }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token_value }}">
+            <button type="submit" class="btn btn-outline" style="color:#b12704;border-color:#b12704">Delete Account</button>
+        </form>
+    </div>
+</div>
+{% endblock %}

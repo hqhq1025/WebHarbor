@@ -1,0 +1,114 @@
+{% extends "base.html" %}
+{% block title %}Releases · {{ repo.full_name }} · GitHub{% endblock %}
+{% block content %}
+<div class="repo-header-bar">
+  <div class="repo-header-inner">
+    <div class="repo-breadcrumb">
+      <svg aria-hidden="true" height="16" viewBox="0 0 16 16" width="16" fill="currentColor" class="repo-icon-sm">
+        <path d="M2 2.5A2.5 2.5 0 0 1 4.5 0h8.75a.75.75 0 0 1 .75.75v12.5a.75.75 0 0 1-.75.75h-2.5a.75.75 0 0 1 0-1.5h1.75v-2h-8a1 1 0 0 0-.714 1.7.75.75 0 1 1-1.072 1.05A2.495 2.495 0 0 1 2 11.5Z"/>
+      </svg>
+      <a href="/{{ repo.full_name.split('/')[0] }}" class="repo-breadcrumb-link">{{ repo.full_name.split('/')[0] }}</a>
+      <span class="repo-breadcrumb-sep">/</span>
+      <a href="/{{ repo.full_name }}" class="repo-breadcrumb-link repo-breadcrumb-repo">{{ repo.name }}</a>
+    </div>
+    <nav class="repo-tabs">
+      <a href="/{{ repo.full_name }}" class="repo-tab">Code</a>
+      <a href="/{{ repo.full_name }}/issues" class="repo-tab">
+        Issues <span class="repo-tab-count">{{ open_count }}</span>
+      </a>
+      <a href="/{{ repo.full_name }}/releases" class="repo-tab repo-tab-active">
+        Releases <span class="repo-tab-count">{{ releases|length }}</span>
+      </a>
+      <a href="/{{ repo.full_name }}/contributors" class="repo-tab">Contributors</a>
+    </nav>
+  </div>
+</div>
+
+<div class="releases-page">
+  <div class="releases-page-inner">
+    <aside class="releases-sidebar">
+      <h3 class="releases-sidebar-title">Releases</h3>
+      <ul class="releases-timeline">
+        {% for r in releases %}
+        <li class="releases-timeline-item {% if r.is_latest %}is-latest{% endif %}">
+          <a href="#release-{{ loop.index }}" class="releases-timeline-link">
+            <span class="releases-timeline-dot"></span>
+            <div class="releases-timeline-meta">
+              <div class="releases-timeline-version">{{ r.version }}</div>
+              <div class="releases-timeline-date">{{ r.date }}</div>
+            </div>
+          </a>
+        </li>
+        {% endfor %}
+      </ul>
+    </aside>
+
+    <div class="releases-main">
+      {% if releases %}
+        {% for r in releases %}
+        <section id="release-{{ loop.index }}" class="release-card {% if r.is_latest %}release-card--latest{% endif %}">
+          <div class="release-card-side">
+            {% if r.is_latest %}
+            <span class="release-pill release-pill--latest">Latest</span>
+            {% elif r.is_prerelease %}
+            <span class="release-pill release-pill--pre">Pre-release</span>
+            {% endif %}
+            <div class="release-card-date">{{ r.date }}</div>
+          </div>
+          <div class="release-card-body">
+            <h2 class="release-card-title">
+              <svg aria-hidden="true" height="18" viewBox="0 0 16 16" width="18" fill="currentColor" class="release-tag-icon">
+                <path d="M1 7.775V2.75C1 1.784 1.784 1 2.75 1h5.025c.464 0 .91.184 1.238.513l6.25 6.25a1.75 1.75 0 0 1 0 2.474l-5.026 5.026a1.75 1.75 0 0 1-2.474 0l-6.25-6.25A1.752 1.752 0 0 1 1 7.775Zm1.5 0c0 .066.026.13.073.177l6.25 6.25a.25.25 0 0 0 .354 0l5.025-5.025a.25.25 0 0 0 0-.354l-6.25-6.25a.25.25 0 0 0-.177-.073H2.75a.25.25 0 0 0-.25.25ZM6 5a1 1 0 1 1 0 2 1 1 0 0 1 0-2Z"/>
+              </svg>
+              <a href="/{{ repo.full_name }}/releases/tag/{{ r.version }}">{{ r.version }}</a>
+            </h2>
+
+            <div class="release-card-meta">
+              <img class="release-author-avatar" src="{{ r.author_avatar }}"
+                   alt="{{ r.author }}"
+                   onerror="this.src='/static/images/avatars/avatar_00.jpg'">
+              <a href="/{{ r.author }}" class="release-author-name">{{ r.author }}</a>
+              <span class="release-meta-sep">released this</span>
+              <span class="release-card-date-inline">{{ r.date }}</span>
+              <span class="release-meta-sep">·</span>
+              <code class="release-commit-sha">{{ r.commit_sha }}</code>
+            </div>
+
+            {% if r.notes %}
+            <div class="release-body-rendered">
+              <p>{{ r.notes }}</p>
+            </div>
+            {% endif %}
+
+            <details class="release-assets" {% if r.is_latest %}open{% endif %}>
+              <summary class="release-assets-summary">
+                <svg aria-hidden="true" height="16" viewBox="0 0 16 16" width="16" fill="currentColor">
+                  <path d="M2.75 1h10.5c.966 0 1.75.784 1.75 1.75v10.5A1.75 1.75 0 0 1 13.25 15H2.75A1.75 1.75 0 0 1 1 13.25V2.75C1 1.784 1.784 1 2.75 1ZM2.5 2.75v10.5c0 .138.112.25.25.25h10.5a.25.25 0 0 0 .25-.25V2.75a.25.25 0 0 0-.25-.25H2.75a.25.25 0 0 0-.25.25Z"/>
+                </svg>
+                Assets <span class="release-assets-count">{{ r.assets|length }}</span>
+              </summary>
+              <ul class="release-assets-list">
+                {% for a in r.assets %}
+                <li class="release-asset">
+                  <svg aria-hidden="true" height="16" viewBox="0 0 16 16" width="16" fill="currentColor">
+                    <path d="M2 1.75C2 .784 2.784 0 3.75 0h6.586c.464 0 .909.184 1.237.513l2.914 2.914c.329.328.513.773.513 1.237v9.586A1.75 1.75 0 0 1 13.25 16h-9.5A1.75 1.75 0 0 1 2 14.25Z"/>
+                  </svg>
+                  <a href="#" class="release-asset-name">{{ a.name }}</a>
+                  <span class="release-asset-size">{{ a.size }}</span>
+                </li>
+                {% endfor %}
+              </ul>
+            </details>
+          </div>
+        </section>
+        {% endfor %}
+      {% else %}
+        <div class="empty-state">
+          <h2>No releases published</h2>
+          <p>The author hasn't tagged any releases yet.</p>
+        </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}

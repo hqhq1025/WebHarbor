@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block title %}Log In | Coursera{% endblock %}
+{% block content %}
+<div class="auth-page">
+  <div class="auth-card">
+    <div class="auth-logo">Coursera</div>
+    <h1>Log in to Coursera</h1>
+    <form method="post" action="{{ url_for('login') }}">
+      {{ form.hidden_tag() }}
+      <div class="form-group">
+        {{ form.email.label }}
+        {{ form.email(class="form-control", placeholder="Email address") }}
+        {% for e in form.email.errors %}<div class="form-error">{{ e }}</div>{% endfor %}
+      </div>
+      <div class="form-group">
+        {{ form.password.label }}
+        {{ form.password(class="form-control", placeholder="Password") }}
+        {% for e in form.password.errors %}<div class="form-error">{{ e }}</div>{% endfor %}
+      </div>
+      <button type="submit" class="btn-primary btn-full">Log In</button>
+    </form>
+    <p class="auth-switch">New to Coursera? <a href="{{ url_for('register') }}">Join for free</a></p>
+  </div>
+</div>
+{% endblock %}

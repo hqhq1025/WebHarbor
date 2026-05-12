@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+{% block title %}iPhone - Apple{% endblock %}
+
+{% block content %}
+<!-- Category Hero -->
+<div class="category-hero">
+    <h1>iPhone</h1>
+</div>
+
+<!-- Promo Banner -->
+<div class="category-promo">
+    Get credit toward iPhone 17, iPhone Air, or iPhone 17 Pro when you trade in an eligible smartphone.
+    <a href="{{ url_for('shop') }}">Learn about trade-in</a>
+</div>
+
+<!-- Sub Navigation -->
+<div class="category-nav">
+    {% for product in products %}
+    <a href="#{{ product.slug }}">{{ product.name }}</a>
+    {% endfor %}
+    <a href="/compare/iphone">Compare</a>
+</div>
+
+<!-- Product Lineup -->
+<section class="lineup-section">
+    <div class="lineup-grid">
+        {% for product in products %}
+        <a href="{{ url_for('product_detail', slug=product.slug) }}" class="lineup-card" id="{{ product.slug }}">
+            <div class="lineup-card-image">
+                <img src="{{ product.image }}" alt="{{ product.name }}"
+                     onerror="this.parentElement.innerHTML='<div class=\'placeholder-img\' style=\'width:160px;height:220px;background:linear-gradient(135deg,#1a1a2e,#16213e);border-radius:16px\'>&#128241;</div>'">
+            </div>
+            {% if product.is_new %}<span class="badge-new">New</span>{% endif %}
+            <h3>{{ product.name }}</h3>
+            <p class="lineup-subtitle">{{ product.subtitle }}</p>
+            <p class="lineup-price">From ${{ "%.2f"|format(product.price) }}</p>
+            <div class="lineup-cta">
+                <span>Learn more</span>
+                <span>Buy</span>
+            </div>
+        </a>
+        {% endfor %}
+    </div>
+</section>
+
+<!-- Feature Highlights -->
+<section class="features-section">
+    <h2 class="shelf-title">Why iPhone.</h2>
+    <div class="features-grid">
+        <div class="feature-card feature-dark">
+            <div class="feature-icon">&#128247;</div>
+            <h3>Camera</h3>
+            <p>Advanced camera systems with 48MP resolution, Smart HDR, and up to 8x optical-quality zoom on iPhone 17 Pro.</p>
+        </div>
+        <div class="feature-card">
+            <div class="feature-stat">3x</div>
+            <h3>Ceramic Shield 2</h3>
+            <p>3x better scratch resistance than any other smartphone glass.</p>
+        </div>
+        <div class="feature-card">
+            <div class="feature-icon">&#128267;</div>
+            <h3>All-Day Battery</h3>
+            <p>Up to 33 hours of video playback on iPhone 17 Pro. The longest battery life ever in iPhone.</p>
+        </div>
+        <div class="feature-card feature-dark">
+            <div class="feature-icon">&#128274;</div>
+            <h3>Privacy</h3>
+            <p>Apple Intelligence processes on device. Your data stays yours with Private Cloud Compute.</p>
+        </div>
+    </div>
+</section>
+{% endblock %}

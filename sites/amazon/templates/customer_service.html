@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+{% block title %}Customer Service - Amazon.com{% endblock %}
+
+{% block content %}
+<div class="account-page" style="max-width:1200px">
+    <h1>Hello. What can we help you with?</h1>
+    <div style="background:#fff;padding:30px;border-radius:4px">
+        <div class="account-grid">
+            <a class="account-tile" href="{{ url_for('orders_list') if current_user.is_authenticated else url_for('login') }}">
+                <div class="account-tile-icon">📦</div>
+                <div class="account-tile-info">
+                    <h3>Where's my stuff?</h3>
+                    <p>Track package, manage orders</p>
+                </div>
+            </a>
+            <a class="account-tile" href="{{ url_for('index') }}">
+                <div class="account-tile-icon">🔄</div>
+                <div class="account-tile-info">
+                    <h3>Return or replace items</h3>
+                    <p>Print return labels, check status</p>
+                </div>
+            </a>
+            <a class="account-tile" href="{{ url_for('account') if current_user.is_authenticated else url_for('login') }}">
+                <div class="account-tile-icon">🔒</div>
+                <div class="account-tile-info">
+                    <h3>Manage your account</h3>
+                    <p>Update addresses, passwords</p>
+                </div>
+            </a>
+        </div>
+
+        <h2 style="margin-top:30px">Browse help topics</h2>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:15px;margin-top:15px">
+            <div>
+                <h3 style="font-size:15px">Shipping &amp; Delivery</h3>
+                <ul style="list-style:none;padding:0;font-size:13px">
+                    <li><a href="#">Shipping rates &amp; times</a></li>
+                    <li><a href="#">Track your package</a></li>
+                    <li><a href="#">International shipping</a></li>
+                </ul>
+            </div>
+            <div>
+                <h3 style="font-size:15px">Returns &amp; Refunds</h3>
+                <ul style="list-style:none;padding:0;font-size:13px">
+                    <li><a href="#">Return policy</a></li>
+                    <li><a href="#">Refund timelines</a></li>
+                    <li><a href="#">Replacement orders</a></li>
+                </ul>
+            </div>
+            <div>
+                <h3 style="font-size:15px">Payment &amp; Pricing</h3>
+                <ul style="list-style:none;padding:0;font-size:13px">
+                    <li><a href="#">Payment options</a></li>
+                    <li><a href="#">Promotional codes</a></li>
+                    <li><a href="#">Gift cards</a></li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

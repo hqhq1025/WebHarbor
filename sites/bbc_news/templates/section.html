@@ -1,0 +1,103 @@
+{% extends "base.html" %}
+{% block title %}{{ category.name }} - BBC News{% endblock %}
+
+{% block content %}
+
+{# Section breadcrumb (e.g. "News > World > Africa") #}
+{% if category.parent_slug %}
+<nav class="section-breadcrumb" aria-label="Breadcrumb">
+    <a href="{{ url_for('section_page', slug='news') }}">News</a>
+    <span>/</span>
+    <a href="{{ url_for('section_page', slug=category.parent_slug) }}">{{ category.parent_slug|replace('_',' ')|title }}</a>
+    <span>/</span>
+    <span class="current">{{ category.name }}</span>
+</nav>
+{% endif %}
+
+<div class="section-hero">
+    <h1>{{ category.name }}</h1>
+    {% if category.description %}
+    <p>{{ category.description }}</p>
+    {% endif %}
+</div>
+
+{# Horizontal sub-section strip — like BBC's section pill bar #}
+{% if children %}
+<nav class="section-subnav" aria-label="Subsections">
+    <a href="{{ url_for('section_page', slug=category.slug) }}" class="active">All</a>
+    {% for child in children %}
+    <a href="{{ url_for('section_page', slug=child.slug) }}">{{ child.name }}</a>
+    {% endfor %}
+</nav>
+{% endif %}
+
+{% if lead %}
+<section class="section-lead">
+    <a href="{{ url_for('article_detail', slug=lead.slug) }}">
+        {% if lead.hero_image %}
+        <img src="{{ lead.hero_image }}" alt="{{ lead.headline|e }}" class="section-lead-image"
+             onerror="this.style.display='none'">
+        {% else %}
+        <div class="section-lead-image"></div>
+        {% endif %}
+    </a>
+    <div class="section-lead-content">
+        <span class="card-category">{{ category.name }}</span>
+        <h2><a href="{{ url_for('article_detail', slug=lead.slug) }}">{{ lead.headline }}</a></h2>
+        {% if lead.subtitle %}
+        <p>{{ lead.subtitle[:250] }}</p>
+        {% endif %}
+        <p class="hero-meta">
+            <span>{{ lead.published_date_str }}</span>
+            <span>·</span>
+            <span>{{ lead.reading_time }} min read</span>
+        </p>
+    </div>
+</section>
+{% endif %}
+
+{% if articles %}
+<section class="section-grid">
+    {% for art in articles %}
+    <a class="card" href="{{ url_for('article_detail', slug=art.slug) }}">
+        <div class="card-image-wrap">
+            {% if art.hero_image %}
+            <img src="{{ art.hero_image }}" alt="{{ art.headline|e }}" class="card-image"
+                 onerror="this.style.display='none'">
+            {% endif %}
+        </div>
+        <h3 class="card-headline">{{ art.headline }}</h3>
+        {% if art.summary %}
+        <p class="card-summary">{{ art.summary[:140] }}</p>
+        {% endif %}
+        <p class="card-meta">
+            <span>{{ art.published_date_str }}</span>
+            <span class="dot"></span>
+            <span>{{ art.reading_time }} min read</span>
+        </p>
+    </a>
+    {% endfor %}
+</section>
+{% endif %}
+
+{% if total == 0 %}
+<div class="empty-state">
+    <h2>No articles yet</h2>
+    <p>There are no stories in this section right now. Check back soon.</p>
+    <a href="{{ url_for('index') }}" class="btn">Back to homepage</a>
+</div>
+{% endif %}
+
+{% if total > per_page %}
+<nav class="pager">
+    {% if page > 1 %}
+    <a href="{{ url_for('section_page', slug=category.slug, page=page-1) }}">← Previous</a>
+    {% endif %}
+    <span class="current">Page {{ page }} of {{ ((total - 1) // per_page) + 1 }}</span>
+    {% if page * per_page < total %}
+    <a href="{{ url_for('section_page', slug=category.slug, page=page+1) }}">Next →</a>
+    {% endif %}
+</nav>
+{% endif %}
+
+{% endblock %}

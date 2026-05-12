@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% block title %}Order Confirmation - Apple{% endblock %}
+
+{% block content %}
+<div class="confirmation-page">
+    <div class="confirmation-checkmark">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="20 6 9 17 4 12"></polyline>
+        </svg>
+    </div>
+
+    <h1>Thank you for your order.</h1>
+    <p class="confirmation-order-number">Order {{ order.order_number }}</p>
+
+    <div style="background:var(--color-bg-secondary);border-radius:16px;padding:24px;text-align:left;margin-bottom:24px">
+        <div style="display:flex;justify-content:space-between;margin-bottom:12px">
+            <span style="color:var(--color-text-secondary)">Status</span>
+            <span class="order-status status-{{ order.status }}">{{ order.status|capitalize }}</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;margin-bottom:12px">
+            <span style="color:var(--color-text-secondary)">Shipping</span>
+            <span>{{ order.shipping_address }}</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;margin-bottom:12px">
+            <span style="color:var(--color-text-secondary)">Payment</span>
+            <span>{{ order.payment_method|replace('_', ' ')|title }}</span>
+        </div>
+
+        {% for item in order.items %}
+        <div class="checkout-item" style="border-top:1px solid var(--color-border);padding-top:12px">
+            <img src="{{ item.product.image }}" alt="{{ item.product.name }}" style="width:50px;height:50px;object-fit:contain"
+                 onerror="this.style.display='none'">
+            <div class="checkout-item-info">
+                <p class="checkout-item-name">{{ item.product.name }}</p>
+                <p class="checkout-item-config">
+                    {% if item.color %}{{ item.color }}{% endif %}
+                    {% if item.storage %} &middot; {{ item.storage }}{% endif %}
+                    &middot; Qty: {{ item.quantity }}
+                </p>
+            </div>
+            <p class="checkout-item-price">${{ "%.2f"|format(item.price * item.quantity) }}</p>
+        </div>
+        {% endfor %}
+
+        <div class="bag-summary-total" style="margin-top:12px;padding-top:12px">
+            <span>Total</span>
+            <span>${{ "%.2f"|format(order.total) }}</span>
+        </div>
+    </div>
+
+    <p style="color:var(--color-text-secondary);margin-bottom:24px">
+        We'll send a confirmation email with your order details and tracking information.
+    </p>
+
+    <a href="{{ url_for('shop') }}" class="btn-checkout" style="max-width:300px;margin:0 auto">Continue Shopping</a>
+</div>
+{% endblock %}

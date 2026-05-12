@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+{% block title %}{{ endpoint.name }} – Endpoint{% endblock %}
+
+{% block content %}
+<div class="container-wide page">
+    <div class="endpoint-head">
+        <div>
+            <h1>{{ endpoint.name }}</h1>
+            <div class="endpoint-head-meta">
+                <code>{{ endpoint.endpoint_id }}</code>
+                <span>{{ endpoint.region }}</span>
+                <span>Created {{ endpoint.created_at.strftime('%b %d, %Y') }}</span>
+            </div>
+        </div>
+        <div>
+            <span class="status-pill status-{{ endpoint.status }}">{{ endpoint.status }}</span>
+        </div>
+    </div>
+
+    <div class="endpoint-actions">
+        {% if endpoint.status in ['initializing', 'running'] %}
+        <form method="post" action="{{ url_for('endpoint_pause', endpoint_id=endpoint.id) }}" style="display:inline;">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button class="btn btn-outline" type="submit">Pause</button>
+        </form>
+        {% endif %}
+        {% if endpoint.status == 'paused' %}
+        <form method="post" action="{{ url_for('endpoint_resume', endpoint_id=endpoint.id) }}" style="display:inline;">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button class="btn btn-primary" type="submit">Resume</button>
+        </form>
+        {% endif %}
+        {% if endpoint.status != 'terminated' %}
+        <form method="post" action="{{ url_for('endpoint_terminate', endpoint_id=endpoint.id) }}" style="display:inline;">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button class="btn btn-danger" type="submit">Terminate</button>
+        </form>
+        {% endif %}
+        <form method="post" action="{{ url_for('endpoint_redeploy', endpoint_id=endpoint.id) }}" style="display:inline;">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button class="btn btn-ghost" type="submit">Redeploy</button>
+        </form>
+    </div>
+
+    <section class="sect">
+        <h2>Deployed repositories</h2>
+        <table class="specs-table">
+            <tr><th>Repository</th><th>Hardware</th><th>Hours</th><th>Rate</th></tr>
+            {% for item in endpoint.items %}
+            <tr>
+                <td>{{ item.repo.slug }}</td>
+                <td>{{ item.hardware_display }}</td>
+                <td>{{ item.hours }}</td>
+                <td>{{ item.hardware_price }}</td>
+            </tr>
+            {% endfor %}
+        </table>
+    </section>
+
+    <div class="stat-row">
+        <div class="stat-box">
+            <div class="stat-value">{{ endpoint.total_cost }}</div>
+            <div class="stat-label">Total cost</div>
+        </div>
+        <div class="stat-box">
+            <div class="stat-value">{{ endpoint.total_hours }}h</div>
+            <div class="stat-label">Total hours</div>
+        </div>
+        <div class="stat-box">
+            <div class="stat-value">{{ endpoint.items.count() }}</div>
+            <div class="stat-label">Repositories</div>
+        </div>
+    </div>
+</div>
+{% endblock %}

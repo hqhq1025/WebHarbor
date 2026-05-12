@@ -1,0 +1,170 @@
+{% extends "base.html" %}
+{% block title %}Flights | Google Flights{% endblock %}
+
+{% block content %}
+<section class="hero">
+  <div class="hero-illustration"></div>
+  <h1>Flights</h1>
+  <p class="hero-subtitle">Find and book cheap flights worldwide and track prices</p>
+</section>
+
+<div class="search-widget">
+  <div class="search-tabs">
+    <button class="search-tab active" data-type="round">
+      <span class="material-symbols-outlined">sync_alt</span>Round trip
+    </button>
+    <button class="search-tab" data-type="oneway">
+      <span class="material-symbols-outlined">trending_flat</span>One way
+    </button>
+    <button class="search-tab" data-type="multi">
+      <span class="material-symbols-outlined">multiple_stop</span>Multi-city
+    </button>
+  </div>
+  <form action="{{ url_for('flights_list') }}" method="GET" class="search-form">
+    <div class="search-row">
+      <input type="text" name="from" class="search-field search-field-from" placeholder="Where from? (e.g. JFK or New York)" value="" list="airport-list" required>
+      <button type="button" class="search-swap" aria-label="Swap">
+        <span class="material-symbols-outlined">swap_horiz</span>
+      </button>
+      <input type="text" name="to" class="search-field search-field-to" placeholder="Where to? (e.g. LAX or Los Angeles)" value="" list="airport-list" required>
+      <div class="search-dates">
+        <input type="text" name="depart" class="search-field" value="" placeholder="Departure" maxlength="10" inputmode="numeric" pattern="\d{4}-\d{2}-\d{2}" autocomplete="off" data-datepicker="checkin" required>
+        <input type="text" name="return" class="search-field" data-return-field value="" placeholder="Return (optional)" maxlength="10" inputmode="numeric" pattern="\d{4}-\d{2}-\d{2}" autocomplete="off" data-datepicker="checkout">
+      </div>
+    </div>
+    <datalist id="airport-list">
+      {% for city, iatas in multi_city_groups %}<option value="{{ city }}">{{ city }} (all airports — {{ iatas|join(', ') }})</option>{% endfor %}
+      {% for a in all_airports %}<option value="{{ a.iata }}">{{ a.city }} ({{ a.iata }})</option>{% endfor %}
+    </datalist>
+    <div class="search-secondary">
+      <select name="passengers" class="search-select">
+        <option value="1">1 adult</option>
+        <option value="2">2 adults</option>
+        <option value="3">3 adults</option>
+        <option value="4">4 adults</option>
+      </select>
+      <select name="class" class="search-select">
+        <option value="Economy">Economy</option>
+        <option value="Premium">Premium economy</option>
+        <option value="Business">Business</option>
+        <option value="First">First class</option>
+      </select>
+      <select name="sort" class="search-select">
+        <option value="best">Best</option>
+        <option value="price">Cheapest</option>
+        <option value="duration">Fastest</option>
+      </select>
+    </div>
+    <button type="submit" class="search-submit">
+      <span class="material-symbols-outlined">search</span>Search flights
+    </button>
+  </form>
+</div>
+
+<section class="section">
+  <div class="section-header">
+    <h2 class="section-title">Find cheap flights from United States to anywhere</h2>
+  </div>
+  <div class="city-tabs">
+    {% for origin in popular_origins %}
+      <button class="city-tab {% if loop.first %}active{% endif %}" data-iata="{{ origin.iata }}">{{ origin.city }}</button>
+    {% endfor %}
+  </div>
+  <div class="deal-grid">
+    {% for f in featured %}
+      <a href="{{ url_for('flight_detail', flight_id=f.id) }}" class="deal-card" data-origin="{{ f.origin.iata }}">
+        <div class="deal-image">
+          {% if f.destination.image %}
+            <img src="{{ f.destination.image }}" alt="{{ f.destination.city }}"
+                 onerror="this.parentElement.innerHTML='<div style=&quot;display:flex;align-items:center;justify-content:center;height:100%;background:linear-gradient(135deg,#1a73e8,#34a853);color:white;font-family:Google Sans;&quot;>' + this.alt + '</div>';">
+          {% else %}
+            <div style="display:flex;align-items:center;justify-content:center;height:100%;background:linear-gradient(135deg,var(--g-blue),var(--g-green));color:white;font-family:Google Sans;">
+              {{ f.destination.city }}
+            </div>
+          {% endif %}
+        </div>
+        <div class="deal-body">
+          <div class="deal-route">{{ f.origin.city }} - {{ f.destination.city }}</div>
+          <div class="deal-dates">{{ f.departure_date|datefmt }} - {{ f.arrival_date|datefmt }}</div>
+          <div class="deal-stops">{{ f.stops_str }}</div>
+          <div class="deal-price">
+            <span class="deal-price-label">from</span> {{ f.price|money }}
+          </div>
+        </div>
+      </a>
+    {% endfor %}
+  </div>
+</section>
+
+<section class="section">
+  <div class="section-header">
+    <h2 class="section-title">Popular destinations</h2>
+    <p class="section-subtitle">Explore the best places to travel this season</p>
+  </div>
+  <div class="dest-grid">
+    {% for d in popular_dests %}
+      <a href="{{ url_for('destination', slug=d.city_slug) }}" class="dest-card">
+        {% if d.image %}
+          <img src="{{ d.image }}" alt="{{ d.city }}"
+               onerror="this.style.display='none';this.parentElement.style.background='linear-gradient(135deg,var(--g-blue),var(--g-green))';">
+        {% else %}
+          <div style="width:100%;height:100%;background:linear-gradient(135deg,var(--g-blue),var(--g-green));"></div>
+        {% endif %}
+        <div class="dest-overlay">
+          <div class="dest-name">{{ d.city }}</div>
+          <div class="dest-country">{{ d.country }}</div>
+          <div class="dest-price">Explore flights</div>
+        </div>
+      </a>
+    {% endfor %}
+  </div>
+</section>
+
+<section class="section">
+  <div class="section-header">
+    <h2 class="section-title">Useful tools to help you find the best airline tickets</h2>
+  </div>
+  <div class="tools-grid">
+    <a href="{{ url_for('date_grid') }}" class="tool-card">
+      <div class="tool-icon"><span class="material-symbols-outlined">calendar_month</span></div>
+      <h3>Find the cheapest days to fly</h3>
+      <p>The Date grid and Price graph make it easy to find the best flight deals</p>
+    </a>
+    <a href="{{ url_for('price_insights') }}" class="tool-card">
+      <div class="tool-icon"><span class="material-symbols-outlined">insights</span></div>
+      <h3>Know when to book with price insights</h3>
+      <p>Price history and trend data show you the best time to book your airline ticket to get the cheapest price</p>
+    </a>
+    <a href="{{ url_for('price_tracking') }}" class="tool-card">
+      <div class="tool-icon"><span class="material-symbols-outlined">notifications_active</span></div>
+      <h3>Track flight prices for a trip</h3>
+      <p>Not ready to book yet? Observe price changes for a route or flight and get notified when prices drop.</p>
+    </a>
+    <a href="{{ url_for('explore') }}" class="tool-card">
+      <div class="tool-icon"><span class="material-symbols-outlined">explore</span></div>
+      <h3>Explore the best flight deals with AI</h3>
+      <p>Describe your ideal trip and let Google Flights find you the best deals</p>
+    </a>
+  </div>
+</section>
+
+<section class="section">
+  <div class="section-header">
+    <h2 class="section-title">Frequently asked questions</h2>
+  </div>
+  <div style="max-width:800px;">
+    <details style="padding:16px 0;border-bottom:1px solid var(--g-grey-200);">
+      <summary style="font-family:var(--font-sans);font-size:16px;font-weight:500;cursor:pointer;">How can I find last minute flight deals?</summary>
+      <p style="color:var(--g-grey-700);margin-top:12px;">Use our price graph to see how fares change in the next few days and find the cheapest time to fly.</p>
+    </details>
+    <details style="padding:16px 0;border-bottom:1px solid var(--g-grey-200);">
+      <summary style="font-family:var(--font-sans);font-size:16px;font-weight:500;cursor:pointer;">How can I find flight deals if my travel plans are flexible?</summary>
+      <p style="color:var(--g-grey-700);margin-top:12px;">Use the Explore feature to browse destinations across the world with live pricing.</p>
+    </details>
+    <details style="padding:16px 0;border-bottom:1px solid var(--g-grey-200);">
+      <summary style="font-family:var(--font-sans);font-size:16px;font-weight:500;cursor:pointer;">How can I track the price of a flight?</summary>
+      <p style="color:var(--g-grey-700);margin-top:12px;">Sign in and click the bookmark icon on any flight to add it to your tracked list. We'll notify you when the price drops.</p>
+    </details>
+  </div>
+</section>
+{% endblock %}

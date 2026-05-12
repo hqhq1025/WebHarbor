@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block title %}Attractions — Booking{% endblock %}
+{% block content %}
+<section class="hero" style="padding:40px 20px 80px;">
+    <div class="hero-inner">
+        <h1>Attractions, tours & experiences</h1>
+        <p>Discover incredible things to do around the world — skip the lines.</p>
+    </div>
+    <form class="search-bar" action="{{ url_for('search') }}" method="get">
+        <div class="search-field">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/></svg>
+            <input type="text" name="q" placeholder="Where do you want to go?">
+        </div>
+        <div class="search-field">
+            <input type="text" maxlength="10" inputmode="numeric" pattern="\d{4}-\d{2}-\d{2}" placeholder="YYYY-MM-DD" autocomplete="off" data-datepicker="single">
+        </div>
+        <button class="search-submit" type="submit">Search</button>
+    </form>
+</section>
+
+<div class="container">
+    <section class="section">
+        <div class="section-header">
+            <h2>Popular attractions</h2>
+            <p>Book experiences and sightseeing with free cancellation</p>
+        </div>
+        <div class="card-grid cards-4">
+            {% for c in cities[:12] %}
+            <a href="{{ url_for('city_page', slug=c.slug) }}" class="city-card">
+                {% if c.hero_image %}
+                <img src="{{ c.hero_image }}" alt="{{ c.display }}" class="city-card-img"
+                     onerror="this.style.background='linear-gradient(135deg,#003580,#006ce4)';this.alt=''">
+                {% endif %}
+                <div class="city-card-body">
+                    <h3>&#127966; {{ c.display }}</h3>
+                    <span class="flag">Tours & experiences</span>
+                    <div style="font-size:12px;margin-top:4px;">From <strong>${{ (19 + loop.index * 5) }}</strong></div>
+                </div>
+            </a>
+            {% endfor %}
+        </div>
+    </section>
+</div>
+{% endblock %}

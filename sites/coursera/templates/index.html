@@ -1,0 +1,186 @@
+{% extends "base.html" %}
+{% block title %}Coursera | Build Skills with Online Courses{% endblock %}
+{% block content %}
+<section class="hero-section">
+  <div class="hero-inner">
+    <div class="hero-copy">
+      <h1>Learn without limits</h1>
+      <p>Start, switch, or advance your career with more than 7,000 courses, Professional Certificates, and degrees from world-class universities and companies.</p>
+      <div class="hero-cta">
+        <a href="{{ url_for('register') }}" class="btn-primary">Join for Free</a>
+        <a href="{{ url_for('coursera_plus') }}" class="btn-outline">Try Coursera Plus</a>
+      </div>
+    </div>
+    {% if hero_home %}
+    <div class="hero-art has-img" aria-hidden="true">
+      <img class="hero-art-img" src="{{ url_for('static', filename=hero_home) }}" alt="">
+    </div>
+    {% else %}
+    <div class="hero-art" aria-hidden="true">
+      <div class="ha-row">
+        <div class="ha-tile cat-cs">Computer Science</div>
+        <div class="ha-tile cat-ds">Data Science</div>
+      </div>
+      <div class="ha-row">
+        <div class="ha-tile cat-biz">Business</div>
+        <div class="ha-tile cat-it">IT</div>
+      </div>
+      <div class="ha-meta">
+        <div class="ha-dot">A</div>
+        <div><b>Andrew Ng</b><span>Stanford · DeepLearning.AI</span></div>
+      </div>
+    </div>
+    {% endif %}
+  </div>
+</section>
+
+<section class="partners-strip">
+  <div class="container">
+    <p class="partners-label">Learn from 350+ leading universities and companies</p>
+    <div class="partners-logos">
+      {% for slug, name in [('stanford','Stanford'),('ibm','IBM'),('yale','Yale'),('duke','Duke'),('michigan','Michigan'),('deeplearning-ai','DeepLearning.AI'),('johns-hopkins','Johns Hopkins'),('imperial-college-london','Imperial College London'),('princeton','Princeton'),('illinois','Illinois')] %}
+        {% set logo = partner_logo({'slug': slug, 'name': name}) %}
+        {% if logo %}
+          <img class="partner-logo-img" src="{{ url_for('static', filename=logo) }}" alt="{{ name }}" title="{{ name }}">
+        {% else %}
+          <span class="partner-chip">{{ name }}</span>
+        {% endif %}
+      {% endfor %}
+    </div>
+  </div>
+</section>
+
+<section class="section-featured">
+  <div class="container">
+    <div class="section-header">
+      <h2>Most popular</h2>
+      <a href="{{ url_for('search') }}" class="see-all">Show all &rsaquo;</a>
+    </div>
+    <div class="course-grid">
+      {% for c in featured %}
+      <a href="{{ url_for('course_detail', slug=c.slug) }}" class="course-card">
+        <div class="course-card-thumb {{ c.color_class }}">
+          {% if course_thumb(c) %}<img class="cct-img" src="{{ url_for('static', filename=course_thumb(c)) }}" alt="">{% endif %}
+          <span class="course-type-badge">{{ c.course_type }}</span>
+          <span class="course-thumb-title">{{ c.title[:40] }}{% if c.title|length > 40 %}...{% endif %}</span>
+        </div>
+        <div class="course-card-body">
+          <div class="course-partner">
+            {% set _pl = partner_logo(c.partner) %}{% if _pl %}<img class="cp-logo-inline" src="{{ url_for('static', filename=_pl) }}" alt="">{% endif %}
+            <span>{{ c.partner.name if c.partner else '' }}</span>
+          </div>
+          <h3 class="course-title">{{ c.title }}</h3>
+          <div class="course-meta">
+            <span class="course-level">{{ c.level }}</span>
+            {% if c.is_free %}<span class="course-free-badge">Free</span>{% endif %}
+          </div>
+          <div class="course-rating">
+            <span class="stars">&#9733;</span> <strong>{{ '%.1f'|format(c.rating) }}</strong>
+            <span class="review-count">({{ '{:,}'.format(c.review_count) }} reviews)</span>
+          </div>
+        </div>
+      </a>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+
+{% if free_courses %}
+<section class="section-free">
+  <div class="container">
+    <div class="section-header">
+      <h2>Free courses to get you started</h2>
+      <a href="{{ url_for('search') }}?free=1" class="see-all">Show all &rsaquo;</a>
+    </div>
+    <div class="course-grid">
+      {% for c in free_courses %}
+      <a href="{{ url_for('course_detail', slug=c.slug) }}" class="course-card">
+        <div class="course-card-thumb {{ c.color_class }}">
+          {% if course_thumb(c) %}<img class="cct-img" src="{{ url_for('static', filename=course_thumb(c)) }}" alt="">{% endif %}
+          <span class="course-type-badge">{{ c.course_type }}</span>
+          <span class="course-free-label">FREE</span>
+        </div>
+        <div class="course-card-body">
+          <div class="course-partner">
+            {% set _pl = partner_logo(c.partner) %}{% if _pl %}<img class="cp-logo-inline" src="{{ url_for('static', filename=_pl) }}" alt="">{% endif %}
+            <span>{{ c.partner.name if c.partner else '' }}</span>
+          </div>
+          <h3 class="course-title">{{ c.title }}</h3>
+          <div class="course-meta">
+            <span class="course-level">{{ c.level }}</span>
+            <span class="course-duration">{{ c.duration_text }}</span>
+          </div>
+          <div class="course-rating">
+            <span class="stars">&#9733;</span> <strong>{{ '%.1f'|format(c.rating) }}</strong>
+          </div>
+        </div>
+      </a>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+{% endif %}
+
+<section class="section-categories">
+  <div class="container">
+    <div class="section-header">
+      <h2>Explore subjects</h2>
+    </div>
+    <div class="category-grid">
+      {% for slug, name in nav_categories %}
+      {% set _ci = category_image(slug) %}
+      <a href="{{ url_for('browse', category_slug=slug) }}" class="category-card cat-{{ slug }}"
+         {% if _ci %}style="background-image:url('{{ url_for('static', filename=_ci) }}');"{% endif %}>
+        <span>{{ name }}</span>
+      </a>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+
+<section class="section-new">
+  <div class="container">
+    <div class="section-header">
+      <h2>New on Coursera</h2>
+      <a href="{{ url_for('search') }}?sort=newest" class="see-all">Show all &rsaquo;</a>
+    </div>
+    <div class="course-grid">
+      {% for c in new_courses[:6] %}
+      <a href="{{ url_for('course_detail', slug=c.slug) }}" class="course-card">
+        <div class="course-card-thumb {{ c.color_class }}">
+          {% if course_thumb(c) %}<img class="cct-img" src="{{ url_for('static', filename=course_thumb(c)) }}" alt="">{% endif %}
+          <span class="course-type-badge">{{ c.course_type }}</span>
+          <span class="new-label">NEW</span>
+        </div>
+        <div class="course-card-body">
+          <div class="course-partner">
+            {% set _pl = partner_logo(c.partner) %}{% if _pl %}<img class="cp-logo-inline" src="{{ url_for('static', filename=_pl) }}" alt="">{% endif %}
+            <span>{{ c.partner.name if c.partner else '' }}</span>
+          </div>
+          <h3 class="course-title">{{ c.title }}</h3>
+          <div class="course-meta">
+            <span class="course-level">{{ c.level }}</span>
+          </div>
+          <div class="course-rating">
+            <span class="stars">&#9733;</span> <strong>{{ '%.1f'|format(c.rating) }}</strong>
+          </div>
+        </div>
+      </a>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+
+<section class="cta-banner">
+  <div class="container">
+    <div class="cta-banner-inner">
+      <div class="cta-text">
+        <h2>Coursera Plus</h2>
+        <p>Get unlimited access to 7,000+ courses from world-class universities and companies.</p>
+        <p class="cta-price">$399 / year</p>
+      </div>
+      <a href="{{ url_for('coursera_plus') }}" class="btn-primary">Try Coursera Plus</a>
+    </div>
+  </div>
+</section>
+{% endblock %}

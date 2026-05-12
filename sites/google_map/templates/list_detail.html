@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+{% from '_place_card.html' import place_card %}
+{% block title %}{{ saved_list.name }} - Google Maps{% endblock %}
+
+{% block body %}
+<div class="app-shell">
+    {% include '_rail.html' %}
+
+    <aside class="left-panel">
+        {% include '_search_bar.html' %}
+
+        <div class="panel-section">
+            <div style="display:flex; align-items:center; gap:14px; margin-bottom:8px;">
+                <div class="list-ico" style="background:{{ saved_list.color }}; width:48px; height:48px; border-radius:50%; display:flex; align-items:center; justify-content:center; color:#fff;">
+                    <span class="material-icons-outlined">{{ saved_list.icon }}</span>
+                </div>
+                <div style="flex:1;">
+                    <h2 style="margin-bottom:2px;">{{ saved_list.name }}</h2>
+                    <div style="color:var(--text-secondary); font-size:13px;">{{ saved|length }} place{{ '' if saved|length == 1 else 's' }}</div>
+                </div>
+            </div>
+            {% if saved_list.description %}
+            <p style="color:var(--text-secondary); font-size:13px; margin-bottom:12px;">{{ saved_list.description }}</p>
+            {% endif %}
+
+            <div style="display:flex; gap:8px; flex-wrap:wrap;">
+                <a href="{{ url_for('list_edit', list_id=saved_list.id) }}" class="btn outlined btn-sm">Edit</a>
+                {% if not saved_list.is_default %}
+                <form method="POST" action="{{ url_for('list_delete', list_id=saved_list.id) }}" style="display:inline;">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button type="submit" class="btn outlined btn-sm" style="color: var(--red);">Delete</button>
+                </form>
+                {% endif %}
+            </div>
+        </div>
+
+        {% if saved %}
+            {% for sp in saved %}
+                <div style="position:relative;">
+                    {{ place_card(sp.place) }}
+                    <form method="POST" action="{{ url_for('saved_remove', saved_id=sp.id) }}" style="position:absolute; top:14px; right:14px;">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <button class="btn ghost btn-sm" type="submit" title="Remove">×</button>
+                    </form>
+                </div>
+            {% endfor %}
+        {% else %}
+            <div class="empty-state">
+                <div class="empty-ico"><span class="material-icons-outlined">bookmark_border</span></div>
+                <h3>This list is empty</h3>
+                <p>Save places to this list by tapping the bookmark icon.</p>
+                <a href="{{ url_for('explore') }}" class="btn">Discover places</a>
+            </div>
+        {% endif %}
+    </aside>
+
+    {% include '_mapcanvas.html' %}
+</div>
+{% endblock %}

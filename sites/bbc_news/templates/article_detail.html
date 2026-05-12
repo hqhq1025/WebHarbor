@@ -1,0 +1,220 @@
+{% extends "base.html" %}
+{% block title %}{{ article.headline }} - BBC News{% endblock %}
+
+{% block content %}
+<article class="article-page-wide">
+<div>
+    <div class="article-category">{{ article.category.name if article.category else 'News' }}</div>
+    <h1 class="article-headline">{{ article.headline }}</h1>
+    {% if article.subtitle %}
+    <p class="article-subtitle">{{ article.subtitle }}</p>
+    {% endif %}
+    <div class="article-meta">
+        <span class="author">{{ article.author }}</span>
+        <span class="dot">•</span>
+        {% if article.published_at %}
+        <time class="article-published" datetime="{{ article.published_at.isoformat() }}" title="{{ article.published_at.strftime('%d %B %Y, %H:%M') }}">
+            <span class="published-relative">{{ article.published_date_str }}</span>
+            <span class="published-sep"> &middot; </span>
+            <span class="published-absolute">Published {{ article.published_at.strftime('%d %B %Y') }}</span>
+        </time>
+        {% else %}
+        <span>{{ article.published_date_str }}</span>
+        {% endif %}
+        <span class="dot">•</span>
+        <span>{{ article.reading_time }} min read</span>
+        {% if article.view_count > 0 %}
+        <span class="dot">•</span>
+        <span>{{ '{:,}'.format(article.view_count) }} views</span>
+        {% endif %}
+    </div>
+
+    {% if article.hero_image %}
+    <img src="{{ article.hero_image }}" alt="{{ article.headline|e }}" class="article-hero"
+         onerror="this.style.display='none'">
+    <p class="article-hero-caption">Photo: BBC News</p>
+    {% endif %}
+
+    <div class="article-actions">
+        {% if current_user.is_authenticated %}
+        {% if in_reading_list and reading_list_item %}
+        <form method="POST" action="{{ url_for('api_reading_list_remove') }}" style="display:inline">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <input type="hidden" name="item_id" value="{{ reading_list_item.id }}">
+            <button type="submit" class="article-action-btn active">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z"/></svg>
+                <span class="rl-label">Saved to list</span>
+            </button>
+        </form>
+        {% else %}
+        <form method="POST" action="{{ url_for('api_reading_list_add') }}" style="display:inline">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <input type="hidden" name="article_id" value="{{ article.id }}">
+            <input type="hidden" name="folder" value="Read Later">
+            <button type="submit" class="article-action-btn">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z"/></svg>
+                <span class="rl-label">Save to list</span>
+            </button>
+        </form>
+        {% endif %}
+        <form method="POST" action="{{ url_for('api_bookmark_toggle') }}" style="display:inline">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <input type="hidden" name="article_id" value="{{ article.id }}">
+            <button type="submit" class="article-action-btn {% if is_bookmarked %}active{% endif %}">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+                <span class="bm-label">{% if is_bookmarked %}Bookmarked{% else %}Bookmark{% endif %}</span>
+            </button>
+        </form>
+        {% else %}
+        <a href="{{ url_for('login') }}" class="article-action-btn">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z"/></svg>
+            <span>Save to list</span>
+        </a>
+        <a href="{{ url_for('login') }}" class="article-action-btn">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+            <span>Bookmark</span>
+        </a>
+        {% endif %}
+        <a href="#comments" class="article-action-btn">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+            <span>{{ article.comment_count }} comments</span>
+        </a>
+        <button class="article-action-btn" onclick="copyShareUrl()">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8M16 6l-4-4-4 4M12 2v13"/></svg>
+            <span>Share</span>
+        </button>
+    </div>
+
+    <div class="article-body">
+        {% for para in article.get_paragraphs() %}
+        <p>{{ para }}</p>
+        {% endfor %}
+    </div>
+
+    {% if article.get_topics() %}
+    <div class="topics-row">
+        {% for topic in article.get_topics() %}
+        <a href="{{ url_for('topic_page', topic=topic) }}" class="topic-chip">{{ topic }}</a>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    {# Gallery sections from article_galleries.json #}
+    {% set gallery_data = article_gallery %}
+    {% if article_gallery and article_gallery.sections %}
+    {% for section in article_gallery.sections %}
+    <section class="pd-gallery-section {% if loop.index is even %}dark{% endif %}">
+        <h2 class="pd-gallery-title">{{ section.title }}</h2>
+        <p class="pd-gallery-desc">{{ section.desc }}</p>
+        <div class="pd-gallery-images">
+            {% for img in section.images %}
+            <div class="pd-gallery-img">
+                <img src="{{ img }}" alt="{{ article.headline|e }}"
+                     onerror="this.parentElement.innerHTML='<div class=&quot;placeholder-img&quot;>{{ article.headline[:40]|e }}</div>'">
+            </div>
+            {% endfor %}
+        </div>
+    </section>
+    {% endfor %}
+    {% endif %}
+
+    <section class="related-section">
+        <h2>More from BBC News</h2>
+        <div class="related-grid">
+            {% for art in related[:6] %}
+            <a class="card" href="{{ url_for('article_detail', slug=art.slug) }}">
+                <div class="card-image-wrap">
+                    {% if art.hero_image %}
+                    <img src="{{ art.hero_image }}" alt="{{ art.headline|e }}" class="card-image"
+                         onerror="this.style.display='none'">
+                    {% endif %}
+                </div>
+                <h3 class="card-headline">{{ art.headline }}</h3>
+                <p class="card-meta">
+                    <span class="card-category">{{ art.category.name if art.category else 'News' }}</span>
+                    <span class="dot"></span>
+                    <span>{{ art.published_date_str }}</span>
+                </p>
+            </a>
+            {% endfor %}
+        </div>
+    </section>
+
+    <section class="comments-section" id="comments">
+        <h2>Comments ({{ article.comment_count }})</h2>
+        {% if current_user.is_authenticated %}
+        <form class="comment-form" method="post" action="{{ url_for('submit_comment', slug=article.slug) }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <textarea name="body" placeholder="Share your thoughts on this story..." required></textarea>
+            <button type="submit">Post comment</button>
+        </form>
+        {% else %}
+        <div style="padding: 16px; background: var(--bbc-bg-alt); margin-bottom: 20px; font-size: 14px;">
+            <a href="{{ url_for('login') }}" style="color: var(--bbc-red); font-weight: 700;">Sign in</a> to join the conversation.
+        </div>
+        {% endif %}
+
+        {% for c in comments %}
+        <div class="comment">
+            <div class="comment-header">
+                <div class="comment-avatar">{{ (c.user.username[:1] if c.user else 'U').upper() }}</div>
+                <div>
+                    <div class="comment-author">{{ c.user.full_name or c.user.username if c.user else 'Anonymous' }}</div>
+                    <div class="comment-time">{{ c.created_at.strftime('%d %b %Y %H:%M') }}</div>
+                </div>
+            </div>
+            <div class="comment-body">{{ c.body }}</div>
+            <div class="comment-actions">
+                <button onclick="likeComment({{ c.id }}, this)">
+                    <span class="like-text">Like</span> (<span class="like-count">{{ c.like_count }}</span>)
+                </button>
+                {% if current_user.is_authenticated and current_user.id == c.user_id %}
+                <form method="post" action="{{ url_for('delete_comment', comment_id=c.id) }}" style="display:inline">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button type="submit">Delete</button>
+                </form>
+                {% endif %}
+            </div>
+        </div>
+        {% else %}
+        <p style="color: var(--bbc-meta); font-style: italic;">No comments yet. Be the first to share your thoughts.</p>
+        {% endfor %}
+    </section>
+</div>
+
+<aside>
+    <div class="side-block">
+        <h3 class="side-title">More to read</h3>
+        {% for art in more_articles %}
+        <a class="side-item" href="{{ url_for('article_detail', slug=art.slug) }}">
+            <div class="side-item-num">{{ loop.index }}</div>
+            <div>
+                <div class="side-item-title">{{ art.headline }}</div>
+                <div class="hero-side-meta">{{ art.published_date_str }}</div>
+            </div>
+        </a>
+        {% endfor %}
+    </div>
+
+    {% if article.category %}
+    <div class="side-block">
+        <h3 class="side-title">{{ article.category.name }}</h3>
+        <p style="font-size: 13px; color: var(--bbc-text-light); margin-bottom: 12px;">
+            {{ article.category.description[:120] if article.category.description else '' }}
+        </p>
+        <a href="{{ url_for('section_page', slug=article.category.slug) }}" class="btn btn-outline btn-full">See all {{ article.category.name }}</a>
+    </div>
+    {% endif %}
+</aside>
+</article>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function copyShareUrl() {
+    navigator.clipboard.writeText(window.location.href).then(() => {
+        alert('Article link copied to clipboard');
+    }).catch(() => {});
+}
+</script>
+{% endblock %}

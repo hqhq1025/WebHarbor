@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+{% block title %}iPad - Apple{% endblock %}
+
+{% block content %}
+<div class="category-hero">
+    <h1>iPad</h1>
+</div>
+<div class="category-promo">
+    Save with education pricing on iPad. <a href="#">Learn more</a>
+</div>
+<div class="category-nav">
+    {% for product in products %}
+    <a href="#{{ product.slug }}">{{ product.name }}</a>
+    {% endfor %}
+    <a href="/compare/ipad">Compare</a>
+</div>
+
+<section class="lineup-section">
+    <div class="lineup-grid">
+        {% for product in products %}
+        <a href="{{ url_for('product_detail', slug=product.slug) }}" class="lineup-card" id="{{ product.slug }}">
+            <div class="lineup-card-image">
+                <img src="{{ product.image }}" alt="{{ product.name }}"
+                     onerror="this.parentElement.innerHTML='<div class=\'placeholder-img\' style=\'width:180px;height:220px;background:linear-gradient(135deg,#4facfe,#00f2fe);border-radius:16px\'>&#128218;</div>'">
+            </div>
+            {% if product.is_new %}<span class="badge-new">New</span>{% endif %}
+            <h3>{{ product.name }}</h3>
+            <p class="lineup-subtitle">{{ product.subtitle }}</p>
+            <p class="lineup-price">From ${{ "%.2f"|format(product.price) }}</p>
+            <div class="lineup-cta">
+                <span>Learn more</span>
+                <span>Buy</span>
+            </div>
+        </a>
+        {% endfor %}
+    </div>
+</section>
+
+<section class="features-section">
+    <h2 class="shelf-title">Why iPad.</h2>
+    <div class="features-grid">
+        <div class="feature-card">
+            <div class="feature-stat">M4</div>
+            <h3>Supercharged Performance</h3>
+            <p>M4 chip delivers incredible speed for any task, from creative work to gaming.</p>
+        </div>
+        <div class="feature-card feature-dark">
+            <div class="feature-icon">&#9999;&#65039;</div>
+            <h3>Apple Pencil Pro</h3>
+            <p>Squeeze, barrel roll, and haptic feedback for an expressive experience.</p>
+        </div>
+        <div class="feature-card feature-dark">
+            <div class="feature-icon">&#128250;</div>
+            <h3>Center Stage</h3>
+            <p>Camera follows you as you move during FaceTime calls.</p>
+        </div>
+        <div class="feature-card">
+            <div class="feature-icon">&#127760;</div>
+            <h3>Wi-Fi 7</h3>
+            <p>Ultrafast wireless connectivity for streaming, downloads, and more.</p>
+        </div>
+    </div>
+</section>
+{% endblock %}

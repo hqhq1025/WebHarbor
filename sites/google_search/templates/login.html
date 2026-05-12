@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block title %}Sign in - Google Account{% endblock %}
+
+{% block content %}
+<div class="form-page">
+    <div class="form-card">
+        <div class="g-logo g-logo-small">
+            <span>G</span><span>o</span><span>o</span><span>g</span><span>l</span><span>e</span>
+        </div>
+        <h1 class="form-title">Sign in</h1>
+        <p class="form-subtitle">Use your Google Account</p>
+        <form method="post">
+            {{ form.hidden_tag() }}
+            <div class="field">
+                <label>Email or phone</label>
+                {{ form.email(placeholder='you@example.com') }}
+            </div>
+            <div class="field">
+                <label>Password</label>
+                {{ form.password() }}
+            </div>
+            <div class="field field-checkbox">
+                {{ form.remember() }}
+                <label for="remember">Stay signed in</label>
+            </div>
+            <div class="form-actions">
+                <a href="{{ url_for('register') }}" class="btn-text">Create account</a>
+                <button type="submit" class="btn-primary">Next</button>
+            </div>
+        </form>
+    </div>
+    <p class="muted" style="text-align:center; margin-top:24px;">
+        Demo: <code>demo@google.com</code> / <code>demo1234</code>
+    </p>
+</div>
+{% endblock %}
