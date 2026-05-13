@@ -33,7 +33,7 @@
   <div class="pill-form-row">
     <label for="pill-imprint">Imprint
       <input id="pill-imprint" type="text" name="imprint" value="{{ imprint or '' }}"
-             placeholder="e.g. L484, TV 150, etc.">
+             placeholder="Enter imprint code (e.g., M367)">
     </label>
   </div>
 
@@ -59,13 +59,14 @@
   </div>
 
   <div class="pill-form-row">
-    <button type="submit" class="btn btn-primary btn-large">Find my pill</button>
+    <button type="submit" class="btn btn-primary btn-large">Identify Pill</button>
   </div>
 </form>
 
 {% if results is not none %}
   <h2 class="pill-results-heading">Results ({{ results|length }})</h2>
   {% if results %}
+    <p class="pill-results-count">Found {{ results|length }} pill{{ '' if results|length == 1 else 's' }} matching your search</p>
     <div class="pill-result-grid">
       {% for r in results %}
         {% set color_lc = (r.color or '')|lower %}
@@ -148,18 +149,34 @@
       {% endfor %}
     </div>
   {% else %}
-    <p class="muted">No matching pills found. Try fewer or different criteria.</p>
+    <div class="pill-no-results">
+      <h3>No pills found matching
+        {%- if imprint %} "{{ imprint }}"{% endif -%}
+        {%- if shape %} {{ shape }}{% endif -%}
+        {%- if color %} {{ color }}{% endif -%}
+      </h3>
+      <p>Suggestions:</p>
+      <ul>
+        <li>Try searching with fewer criteria</li>
+        <li>Check spelling of the imprint code</li>
+      </ul>
+      <p class="pill-poison-control"><strong>Poison Control:</strong> <a href="tel:1-800-222-1222">1-800-222-1222</a></p>
+    </div>
   {% endif %}
+{% else %}
+  <section class="how-it-works pill-how-to-use">
+    <h2>How to use the Pill Identifier</h2>
+    <ol class="how-it-works-steps">
+      <li>Enter the imprint code on your pill</li>
+      <li>Select the shape (optional)</li>
+      <li>Select the color (optional)</li>
+      <li>Click Search</li>
+    </ol>
+    <p class="pill-note"><strong>Note:</strong> The imprint is the number, letters, or markings on the pill.</p>
+    <p class="pill-example"><strong>Example:</strong> 'M367' for a white oval pill.</p>
+    <p class="pill-safety-warning"><strong>Safety warning:</strong> If you cannot identify a pill, contact Poison Control: <a href="tel:1-800-222-1222">1-800-222-1222</a>.</p>
+  </section>
 {% endif %}
-
-<section class="how-it-works">
-  <h2>How it works</h2>
-  <ol class="how-it-works-steps">
-    <li><strong>Enter the imprint code</strong> printed or stamped on the pill (letters and/or numbers).</li>
-    <li><strong>Select shape and color</strong> to narrow down the results.</li>
-    <li><strong>Browse the results</strong> and click any result for full drug information, including uses, warnings, dosage, side effects, and interactions.</li>
-  </ol>
-</section>
 
 <section class="tips-section">
   <h2>Additional tips</h2>

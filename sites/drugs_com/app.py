@@ -1388,6 +1388,31 @@ def format_drug_text(text):
     if not text:
         return ''
     text = str(text).strip()
+    # Strip section number prefixes from FDA labels (e.g. "11 DESCRIPTION ", "1 INDICATIONS AND USAGE ")
+    text = re.sub(r'^\s*\d+\s+[A-Z][A-Z ]{3,}\s+', '', text)
+    text = re.sub(r'\.\s*\d+\s+[A-Z][A-Z ]{3,}\s+', '. ', text)
+    # Strip full sentences that are pure chemistry boilerplate
+    boilerplate_patterns = [
+        r'[Tt]he (empirical|chemical|molecular) formula',
+        r'[Mm]olecular [Ww]eight',
+        r'[Ii]nactive [Ii]ngredients',
+        r'[Cc]hemical [Nn]ame',
+        r'[Cc]rystalline powder',
+        r'[Ss]oluble in (water|methanol|ethanol)',
+        r'[Mm]elting [Pp]oint',
+        r'[Pp]Ka value',
+        r'[Ff]D&?C (Yellow|Blue|Red)',
+        r'contains? (the following|gelatin|lactose|corn starch)',
+        r'USP is \([βαδ]',     # IUPAC stereochem name "calcium USP is (βR, δR)-..."
+        r'structural formula',
+        r'molecular weight is \d',
+    ]
+    sentences_raw = re.split(r'(?<=[.!?])\s+', text)
+    filtered = []
+    for s in sentences_raw:
+        if not any(re.search(p, s) for p in boilerplate_patterns):
+            filtered.append(s)
+    text = ' '.join(filtered) if filtered else text
     # Collapse internal newlines into spaces.
     text = re.sub(r'\n+', ' ', text)
     # Bold ALL-CAPS section headings like 'WARNINGS:' or 'DOSAGE:'.
