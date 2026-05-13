@@ -19,8 +19,8 @@
 </div>
 
 <article class="drug-detail">
-  <header class="drug-header" style="display:flex;gap:18px;align-items:flex-start">
-    <div class="drug-header-image-wrap" style="flex:0 0 auto;display:flex;flex-direction:column;align-items:center;gap:4px;">
+  <header class="drug-header">
+    <div class="drug-header-image-wrap">
       <a href="{{ url_for('drug_images', slug=drug.slug) }}" class="drug-header-image drug-header-image--featured" aria-label="View {{ drug.generic_name }} pill images">
         {% if drug.slug|pill_image_exists %}
           <img src="{{ url_for('static', filename='images/pills/' + drug.slug + '.jpg') }}"
@@ -35,8 +35,8 @@
       </a>
       <a href="{{ url_for('drug_images', slug=drug.slug) }}" class="drug-header-image-caption">View images &rsaquo;</a>
     </div>
-    <div class="drug-header-text" style="flex:1 1 auto;min-width:0">
-    <h1>{{ drug.generic_name|capitalize }} <button type="button" class="drug-pronounce-btn speaker-icon" aria-label="Pronounce {{ drug.generic_name }}" title="Hear pronunciation" style="background:none;border:none;cursor:pointer;font-size:inherit;padding:0 4px;">&#128264;</button></h1>
+    <div class="drug-header-text">
+    <h1 class="drug-title">{{ drug.generic_name|capitalize }} <button type="button" class="drug-pronounce-btn speaker-icon" aria-label="Pronounce {{ drug.generic_name }}" title="Hear pronunciation">&#128264;</button></h1>
     {% if drug.pronunciation %}<p class="pronunciation">Pronunciation: <em>{{ drug.pronunciation }}</em></p>{% endif %}
     <div class="drug-meta-line">
       <span class="drug-meta-item"><strong>Generic name:</strong> {{ drug.generic_name }}</span>
@@ -85,13 +85,16 @@
         <a href="{{ url_for('login') }}" class="btn btn-cta-primary">&#43; Sign in to Add to My Med List</a>
       {% endif %}
     </div>
-    <p class="reviewer-line">
+    <div class="reviewer-box">
       <span class="reviewer-avatar" aria-hidden="true">
         {%- set parts = (drug.reviewer_name or 'MD').split() -%}
         {{ (parts[0][0] if parts and parts[0] else 'M') ~ (parts[-1][0] if parts and parts|length > 1 else 'D') }}
       </span>
-      <span>Medically reviewed by {{ drug.reviewer_name }}, {{ drug.reviewer_credential }}. Last updated on {{ drug.last_updated.strftime('%b %d, %Y') }}.</span>
-    </p>
+      <div class="reviewer-box-text">
+        <span class="reviewer-box-line"><span class="reviewer-box-label">Medically reviewed</span> by <strong>{{ drug.reviewer_name }}</strong>, {{ drug.reviewer_credential }}</span>
+        <span class="reviewer-box-meta">Last reviewed on {{ drug.last_updated.strftime('%b %d, %Y') }}</span>
+      </div>
+    </div>
     </div>
   </header>
 
@@ -131,10 +134,10 @@
         {% set _warn_text = (drug.warnings or '') %}
         {% set _warn_lower = _warn_text|lower %}
         {% if _warn_text and ('boxed warning' in _warn_lower or 'black box' in _warn_lower or _warn_text.lstrip().startswith('WARNING:')) %}
-        <div class="black-box-warning" role="alert" style="border:2px solid #c62828;background:#fff5f5;padding:14px 16px;margin:12px 0;border-radius:4px;">
-          <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
-            <span aria-hidden="true" style="font-size:1.4em;color:#c62828;">&#9888;</span>
-            <strong style="color:#c62828;text-transform:uppercase;letter-spacing:0.5px;">Boxed Warning</strong>
+        <div class="black-box-warning" role="alert">
+          <div class="black-box-warning-head">
+            <span aria-hidden="true" class="black-box-warning-icon">&#9888;</span>
+            <strong class="black-box-warning-title">Boxed Warning</strong>
           </div>
           <div class="black-box-warning-body">
             {% set _paras = _warn_text.split('\n\n') %}
@@ -153,7 +156,7 @@
 
       <section id="before-taking">
         <h2>Before taking this medicine</h2>
-        <div class="info-box" style="background:#e7f3fb;border-left:4px solid #2c7fb8;padding:12px 16px;margin:12px 0;border-radius:4px;">
+        <div class="info-box">
           <strong>Important:</strong> Tell your healthcare provider about all medications
           you're taking before starting {{ drug.generic_name }}.
         </div>
@@ -188,13 +191,11 @@
 
       <section id="side-effects">
         <h2>{{ drug.generic_name|capitalize }} side effects</h2>
-        <div class="serious-effects-callout" role="alert" style="background:#fff8e1;border-left:5px solid #f9a825;padding:12px 16px;margin:12px 0;border-radius:4px;">
-          <div style="display:flex;align-items:flex-start;gap:8px;">
-            <span aria-hidden="true" style="font-size:1.3em;color:#b27300;line-height:1;">&#9888;</span>
-            <div>
-              <strong style="color:#7a4f00;">Call your doctor at once if you experience:</strong>
-              <span class="muted">signs of an allergic reaction (hives; difficult breathing; swelling of your face, lips, tongue, or throat), severe or persistent symptoms, unusual bleeding or bruising, chest pain, or any of the serious side effects listed below.</span>
-            </div>
+        <div class="serious-effects-callout" role="alert">
+          <span aria-hidden="true" class="serious-effects-icon">&#9888;</span>
+          <div class="serious-effects-body">
+            <strong class="serious-effects-title">Call your doctor at once if you experience:</strong>
+            <span class="muted">signs of an allergic reaction (hives; difficult breathing; swelling of your face, lips, tongue, or throat), severe or persistent symptoms, unusual bleeding or bruising, chest pain, or any of the serious side effects listed below.</span>
           </div>
         </div>
         {{ drug.side_effects | format_drug_text | safe }}
@@ -203,9 +204,9 @@
       <section id="interactions">
         <h2>What other drugs will affect {{ drug.generic_name }}?</h2>
         {% if drug_interactions is defined and not drug_interactions %}
-        <div class="interactions-empty-state" style="padding:14px 16px;border:1px dashed #cfd6e0;border-radius:6px;background:#f7faff;margin:8px 0 16px;">
-          <p style="margin:0 0 6px;"><strong>No documented drug-drug interactions found</strong> for {{ drug.generic_name }} in our database.</p>
-          <p class="muted" style="margin:0;">This does not mean none exist. Always tell your healthcare provider about every medication, supplement, and herbal product you take. <a href="{{ url_for('interaction_checker') }}?drug={{ drug.slug }}">Use the full interaction checker &rsaquo;</a></p>
+        <div class="interactions-empty-state">
+          <p class="interactions-empty-head"><strong>No documented drug-drug interactions found</strong> for {{ drug.generic_name }} in our database.</p>
+          <p class="muted interactions-empty-body">This does not mean none exist. Always tell your healthcare provider about every medication, supplement, and herbal product you take. <a href="{{ url_for('interaction_checker') }}?drug={{ drug.slug }}">Use the full interaction checker &rsaquo;</a></p>
         </div>
         {% endif %}
         {% if drug_interactions is defined and drug_interactions %}
@@ -213,12 +214,12 @@
         {% set _sev_color = {'major': '#c62828', 'moderate': '#ef6c00', 'minor': '#2e7d32', 'unknown': '#666'} %}
         {% set _sorted_ix = drug_interactions|sort(attribute='severity') %}
         <p class="muted"><strong>{{ drug.generic_name|capitalize }} has {{ drug_interactions|length }} known drug interaction{{ 's' if drug_interactions|length != 1 else '' }}.</strong></p>
-        <ul class="drug-interactions-list" style="list-style:none;padding:0;margin:8px 0 16px;">
+        <ul class="drug-interactions-list">
           {% for ix in _sorted_ix[:12] %}
             {% set other = ix.drug_b if ix.drug_a_id == drug.id else ix.drug_a %}
             {% set sev = (ix.severity or 'unknown')|lower %}
-            <li style="padding:8px 10px;border:1px solid #e2e2e2;border-left:4px solid {{ _sev_color.get(sev, '#999') }};border-radius:4px;margin-bottom:6px;">
-              <span class="severity-badge severity-{{ sev }}" style="display:inline-block;min-width:70px;text-align:center;padding:2px 8px;border-radius:10px;background:{{ _sev_color.get(sev, '#999') }};color:#fff;font-size:0.78em;text-transform:uppercase;font-weight:600;margin-right:8px;">{{ sev }}</span>
+            <li class="drug-interaction-row drug-interaction-row--{{ sev }}">
+              <span class="severity-badge severity-{{ sev }}">{{ sev }}</span>
               {% if other %}
                 <a href="{{ url_for('drug_detail', slug=other.slug) }}"><strong>{{ other.generic_name|capitalize }}</strong></a>
               {% endif %}
@@ -268,26 +269,26 @@
         {% if drug.drug_class %}
         <p class="muted">Other drugs in the {{ drug.drug_class.name }} class.</p>
         {% endif %}
-        <div class="related-drugs-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px;margin-top:8px">
+        <div class="related-drugs-grid">
           {% for r in related_drugs[:6] %}
           {% set r_full = ((r.avg_rating or 0) / 2) | int %}
           {% set r_half = (((r.avg_rating or 0) / 2) - r_full) >= 0.5 %}
-          <a href="{{ url_for('drug_detail', slug=r.slug) }}" class="related-drug-card" style="display:block;padding:12px;border:1px solid #e2e2e2;border-radius:6px;background:#fff;text-decoration:none;color:inherit">
-            <strong style="display:block;color:#0072ce;margin-bottom:4px">{{ r.generic_name|capitalize }}</strong>
-            {% if r.drug_class %}<div class="muted" style="font-size:0.85em;margin-bottom:6px">{{ r.drug_class.name }}</div>{% endif %}
+          <a href="{{ url_for('drug_detail', slug=r.slug) }}" class="related-drug-card">
+            <strong class="related-drug-name">{{ r.generic_name|capitalize }}</strong>
+            {% if r.drug_class %}<div class="muted related-drug-class">{{ r.drug_class.name }}</div>{% endif %}
             {% if r.avg_rating %}
-            <div class="star-display" style="font-size:0.9em">
+            <div class="star-display related-drug-stars">
               <span class="stars">
                 {% for i in range(r_full) %}<span class="star star-full">&#9733;</span>{% endfor %}
                 {% if r_half %}<span class="star star-half">&#189;</span>{% endif %}
                 {% for i in range(5 - r_full - (1 if r_half else 0)) %}<span class="star star-empty">&#9734;</span>{% endfor %}
               </span>
-              <span class="rating-num" style="margin-left:4px">{{ "%.1f"|format(r.avg_rating) }}/10</span>
+              <span class="rating-num">{{ "%.1f"|format(r.avg_rating) }}/10</span>
             </div>
             {% else %}
-            <div class="muted" style="font-size:0.85em">No ratings yet</div>
+            <div class="muted related-drug-noratings">No ratings yet</div>
             {% endif %}
-            <div style="margin-top:6px">
+            <div class="related-drug-avail">
               {% if 'Rx' in r.availability and 'OTC' in r.availability %}
                 <span class="avail-badge avail-both">Rx/OTC</span>
               {% elif 'Rx' in r.availability %}
@@ -302,7 +303,7 @@
           {% endfor %}
         </div>
         {% if drug.drug_class %}
-        <p style="margin-top:12px"><a href="{{ url_for('drug_class_page', slug=drug.drug_class.slug) }}">See all {{ drug.drug_class.name }} drugs &rsaquo;</a></p>
+        <p class="related-drugs-more"><a href="{{ url_for('drug_class_page', slug=drug.drug_class.slug) }}">See all {{ drug.drug_class.name }} drugs &rsaquo;</a></p>
         {% endif %}
       </section>
       {% endif %}
@@ -584,12 +585,30 @@
           </li>
         </ul>
         {% if current_user.is_authenticated %}
-        <button id="med-list-toggle" data-slug="{{ drug.slug }}" class="btn-med-list">
-          {{ 'Remove from My Med List' if saved else 'Add to My Med List' }}
+        <button id="med-list-toggle" data-slug="{{ drug.slug }}" class="btn-med-list btn-med-list--lg">
+          <span class="btn-med-list-icon" aria-hidden="true">{% if saved %}&#10003;{% else %}&#43;{% endif %}</span>
+          <span class="btn-med-list-text">{{ 'Remove from My Med List' if saved else 'Add to My Med List' }}</span>
         </button>
         {% else %}
-        <a href="{{ url_for('login') }}" class="btn-med-list">Sign in to save</a>
+        <a href="{{ url_for('login') }}" class="btn-med-list btn-med-list--lg">
+          <span class="btn-med-list-icon" aria-hidden="true">&#43;</span>
+          <span class="btn-med-list-text">Sign in to save</span>
+        </a>
         {% endif %}
+      </div>
+
+      <div class="sidebar-box sidebar-interaction-checker">
+        <h3>Drug interaction checker</h3>
+        <p class="muted sidebar-checker-hint">Check {{ drug.generic_name|capitalize }} against another medication.</p>
+        <form action="{{ url_for('interaction_checker') }}" method="post" class="sidebar-checker-form">
+          <ul class="sidebar-checker-chips">
+            <li class="sidebar-checker-chip"><span>{{ drug.generic_name|capitalize }}</span></li>
+          </ul>
+          <input type="hidden" name="drugs" value="{{ drug.generic_name }}" />
+          <label for="sidebar-drug2" class="visually-hidden">Add another drug</label>
+          <input type="text" id="sidebar-drug2" name="drugs" placeholder="Add another drug" autocomplete="off" />
+          <button type="submit" class="btn btn-primary sidebar-checker-submit">Check interactions</button>
+        </form>
       </div>
 
       {% if recently_viewed %}
@@ -633,18 +652,18 @@
 
       <div class="sidebar-box more-about">
         <h3>More about {{ drug.generic_name }}</h3>
-        <ul class="more-about-list">
-          <li><a href="{{ url_for('drug_prices', slug=drug.slug) }}">Drug pricing</a></li>
-          <li><a href="{{ url_for('drug_images', slug=drug.slug) }}">Drug images</a></li>
-          <li><a href="{{ url_for('drug_side_effects', slug=drug.slug) }}">Side effects (detailed)</a></li>
-          <li><a href="{{ url_for('drug_dosage', slug=drug.slug) }}">Dosage guide</a></li>
-          <li><a href="{{ url_for('drug_interactions_page', slug=drug.slug) }}">Drug interactions</a></li>
-          <li><a href="{{ url_for('drug_pregnancy', slug=drug.slug) }}">Pregnancy info</a></li>
-          <li><a href="{{ url_for('interaction_checker') }}?drug={{ drug.slug }}">Check interactions</a></li>
-          <li><a href="{{ url_for('search') }}?q={{ drug.generic_name }}">Compare alternatives</a></li>
-          <li><a href="#reviews">User reviews ({{ drug.review_count }})</a></li>
+        <ul class="more-about-list more-about-list--icons">
+          <li><a href="{{ url_for('drug_prices', slug=drug.slug) }}" class="more-about-link"><span class="ma-icon ma-icon-price" aria-hidden="true">$</span><span>Drug pricing</span></a></li>
+          <li><a href="{{ url_for('drug_dosage', slug=drug.slug) }}" class="more-about-link"><span class="ma-icon ma-icon-dosage" aria-hidden="true">Rx</span><span>Dosage guide</span></a></li>
+          <li><a href="{{ url_for('drug_side_effects', slug=drug.slug) }}" class="more-about-link"><span class="ma-icon ma-icon-warn" aria-hidden="true">!</span><span>Side effects (detailed)</span></a></li>
+          <li><a href="{{ url_for('drug_images', slug=drug.slug) }}" class="more-about-link"><span class="ma-icon ma-icon-image" aria-hidden="true">&#9635;</span><span>Drug images</span></a></li>
+          <li><a href="{{ url_for('drug_pregnancy', slug=drug.slug) }}" class="more-about-link"><span class="ma-icon ma-icon-preg" aria-hidden="true">&#9792;</span><span>Pregnancy info</span></a></li>
+          <li><a href="{{ url_for('drug_interactions_page', slug=drug.slug) }}" class="more-about-link"><span class="ma-icon ma-icon-inter" aria-hidden="true">&#8651;</span><span>Drug interactions</span></a></li>
+          <li><a href="{{ url_for('interaction_checker') }}?drug={{ drug.slug }}" class="more-about-link"><span class="ma-icon ma-icon-check" aria-hidden="true">&#10003;</span><span>Check interactions</span></a></li>
+          <li><a href="{{ url_for('search') }}?q={{ drug.generic_name }}" class="more-about-link"><span class="ma-icon ma-icon-compare" aria-hidden="true">&#8644;</span><span>Compare alternatives</span></a></li>
+          <li><a href="#reviews" class="more-about-link"><span class="ma-icon ma-icon-reviews" aria-hidden="true">&#9733;</span><span>User reviews ({{ drug.review_count }})</span></a></li>
           {% if drug.drug_class %}
-          <li>Drug class: <a href="{{ url_for('drug_class_page', slug=drug.drug_class.slug) }}">{{ drug.drug_class.name }}</a></li>
+          <li><a href="{{ url_for('drug_class_page', slug=drug.drug_class.slug) }}" class="more-about-link"><span class="ma-icon ma-icon-class" aria-hidden="true">&#8801;</span><span>Class: {{ drug.drug_class.name }}</span></a></li>
           {% endif %}
         </ul>
       </div>

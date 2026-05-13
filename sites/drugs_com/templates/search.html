@@ -13,23 +13,26 @@
   <button type="submit" class="btn btn-primary">Search</button>
 </form>
 
-{% if matched_condition %}
-  <div class="info-banner">
-    Showing drugs that treat <strong>{{ matched_condition.name }}</strong>.
-    <a href="{{ url_for('condition_page', slug=matched_condition.slug) }}">View condition page &rsaquo;</a>
+{% if matched_class %}
+  <div class="match-banner match-banner-class">
+    <span class="match-banner-label">Showing drugs in class:</span>
+    <strong>{{ matched_class.name }}</strong>
+    <a class="match-banner-link" href="{{ url_for('drug_class_page', slug=matched_class.slug) }}">View drug class page &rsaquo;</a>
   </div>
 {% endif %}
-{% if matched_class %}
-  <div class="info-banner">
-    Showing drugs in the <strong>{{ matched_class.name }}</strong> class.
-    <a href="{{ url_for('drug_class_page', slug=matched_class.slug) }}">View drug class page &rsaquo;</a>
+{% if matched_condition %}
+  <div class="match-banner match-banner-condition">
+    <span class="match-banner-label">Showing drugs for condition:</span>
+    <strong>{{ matched_condition.name }}</strong>
+    <a class="match-banner-link" href="{{ url_for('condition_page', slug=matched_condition.slug) }}">View condition page &rsaquo;</a>
   </div>
 {% endif %}
 
 <div class="search-layout">
   <aside class="filter-sidebar">
-    <h3>Filter results</h3>
-    <form method="get" action="{{ url_for('search') }}">
+    <div class="filter-card">
+    <h3 class="filter-card-title">Filter results</h3>
+    <form method="get" action="{{ url_for('search') }}" class="filter-form">
       <input type="hidden" name="q" value="{{ q }}">
 
       <div class="filter-group">
@@ -65,6 +68,7 @@
       <button type="submit" class="btn btn-primary btn-block">Apply filters</button>
       <a class="btn btn-outline btn-block" href="{{ url_for('search', q=q) }}">Reset filters</a>
     </form>
+    </div>
   </aside>
 
   <section class="search-results-col">
@@ -108,7 +112,15 @@
             </p>
             <p class="drug-card-desc">{% set cd = (d.uses or d.description or '')|clean_desc %}{{ cd[:220] }}{% if cd|length > 220 %}...{% endif %}</p>
             <p class="drug-card-footer">
-              <span class="muted">Rating: {{ d.avg_rating }}/10 ({{ d.review_count }} review{{ '' if d.review_count == 1 else 's' }})</span>
+              {% if d.review_count and d.avg_rating %}
+                {% set stars = ((d.avg_rating / 2)|round(0, 'floor'))|int %}
+                <span class="drug-card-stars" title="{{ d.avg_rating }}/10">
+                  {% for i in range(5) %}<span class="star {% if i < stars %}star-on{% endif %}">&#9733;</span>{% endfor %}
+                  <span class="muted">{{ '%.1f'|format(d.avg_rating) }}/10 ({{ d.review_count }} review{{ '' if d.review_count == 1 else 's' }})</span>
+                </span>
+              {% else %}
+                <span class="muted">No reviews yet</span>
+              {% endif %}
               <a href="{{ url_for('drug_detail', slug=d.slug) }}" class="card-link">View details &rsaquo;</a>
             </p>
           </article>
@@ -167,12 +179,14 @@
       <div class="no-results-box">
         <h2>No results found{% if q %} for "{{ q }}"{% endif %}</h2>
         {% if suggestions %}
-          <p><strong>Did you mean?</strong></p>
-          <ul class="suggestions-list">
-            {% for s in suggestions %}
-              <li><a href="{{ url_for('search', q=s) }}">{{ s|capitalize }}</a></li>
-            {% endfor %}
-          </ul>
+          <div class="did-you-mean">
+            <p class="did-you-mean-label"><strong>Did you mean?</strong></p>
+            <div class="did-you-mean-pills">
+              {% for s in suggestions %}
+                <a class="suggestion-pill" href="{{ url_for('search', q=s) }}">{{ s|capitalize }}</a>
+              {% endfor %}
+            </div>
+          </div>
         {% endif %}
         <p>Suggestions:</p>
         <ul>

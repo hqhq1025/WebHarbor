@@ -66,12 +66,17 @@
     </section>
     {% endif %}
 
-    <div class="letter-grid">
+    <div class="letter-grid letter-index">
       <a class="letter-btn {% if not active_letter %}active{% endif %}"
          href="{{ url_for('conditions_list') }}">All</a>
       {% for letter in all_letters %}
-        <a class="letter-btn {% if active_letter == letter %}active{% endif %}"
-           href="{{ url_for('conditions_list') }}?letter={{ letter }}">{{ letter }}</a>
+        {% set has = (grouped_conditions and grouped_conditions.get(letter)) %}
+        {% if not active_letter and has %}
+          <a class="letter-btn" href="#letter-{{ letter }}">{{ letter }} <span class="letter-count">({{ grouped_conditions[letter]|length }})</span></a>
+        {% else %}
+          <a class="letter-btn {% if active_letter == letter %}active{% endif %} {% if not has and not active_letter %}letter-empty{% endif %}"
+             href="{{ url_for('conditions_list') }}?letter={{ letter }}">{{ letter }}</a>
+        {% endif %}
       {% endfor %}
     </div>
 
@@ -100,12 +105,15 @@
             <h3 style="margin:0 0 8px;padding:4px 0;border-bottom:2px solid var(--navy,#1a3a6e);color:var(--navy,#1a3a6e);font-size:1.1rem">{{ letter }}</h3>
             <ul class="condition-grid">
               {% for c in grouped_conditions[letter] %}
-                <li data-name="{{ c.name }}">
-                  <a href="{{ url_for('condition_page', slug=c.slug) }}">{{ c.name }}</a>
-                  <span class="muted">({{ c.drug_count }} drug{{ '' if c.drug_count == 1 else 's' }})</span>
+                <li class="condition-card" data-name="{{ c.name }}">
+                  <div class="condition-card-head">
+                    <a class="condition-card-name" href="{{ url_for('condition_page', slug=c.slug) }}">{{ c.name }}</a>
+                    <span class="condition-drug-badge">{{ c.drug_count }} drug{{ '' if c.drug_count == 1 else 's' }}</span>
+                  </div>
                   {% if c.description %}
-                    <p class="condition-desc muted">{{ c.description[:160] }}{% if c.description|length > 160 %}&hellip;{% endif %}</p>
+                    <p class="condition-desc">{{ c.description[:160] }}{% if c.description|length > 160 %}&hellip;{% endif %}</p>
                   {% endif %}
+                  <a class="condition-card-link" href="{{ url_for('condition_page', slug=c.slug) }}">See drugs &rsaquo;</a>
                 </li>
               {% endfor %}
             </ul>

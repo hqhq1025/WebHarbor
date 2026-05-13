@@ -1554,7 +1554,8 @@ def tokenize(q):
 
 
 def score_drug(drug, tokens):
-    text = f"{drug.generic_name} {drug.brand_names_json} {drug.description or ''}".lower()
+    class_name = drug.drug_class.name if drug.drug_class else ""
+    text = f"{drug.generic_name} {drug.brand_names_json} {class_name} {drug.uses or ''} {drug.description or ''}".lower()
     return sum(1 for t in tokens if t in text)
 
 
@@ -2122,10 +2123,20 @@ def search():
                 matched_condition = c
                 break
         if not matched_condition:
+            for c in Condition.query.all():
+                if ql in c.name.lower() or ql in (c.slug or ""):
+                    matched_condition = c
+                    break
+        if not matched_condition:
             for cls in DrugClass.query.all():
                 if cls.name.lower() == ql or cls.slug == ql:
                     matched_class = cls
                     break
+            if not matched_class:
+                for cls in DrugClass.query.all():
+                    if ql in cls.name.lower() or ql in (cls.slug or ""):
+                        matched_class = cls
+                        break
 
         scored = [(score_drug(d, tokens), d) for d in drugs]
         scored = [(s, d) for s, d in scored if s > 0]
