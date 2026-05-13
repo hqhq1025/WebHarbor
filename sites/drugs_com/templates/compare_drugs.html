@@ -97,6 +97,18 @@
           {% endfor %}
         </tr>
         <tr>
+          <td class="cq-attr">Brand names</td>
+          {% for _, d, _f in selected_drugs %}
+            <td>{{ d.brand_names|join(', ') or '—' }}</td>
+          {% endfor %}
+        </tr>
+        <tr>
+          <td class="cq-attr">Dosage forms</td>
+          {% for _, _d, f in selected_drugs %}
+            <td>{{ f or '—' }}</td>
+          {% endfor %}
+        </tr>
+        <tr>
           <td class="cq-attr">Average rating</td>
           {% for _, d, _f in selected_drugs %}
             <td>
@@ -121,63 +133,9 @@
     </table>
   </div>
 
-  <table class="compare-table" style="width:100%;border-collapse:collapse;margin:20px 0">
-    <thead>
-      <tr style="background:#0c3b6f;color:#fff">
-        <th style="padding:10px;text-align:left;width:18%">Attribute</th>
-        {% for _, d, _f in selected_drugs %}
-          <th style="padding:10px;text-align:left">{{ d.generic_name|capitalize }}</th>
-        {% endfor %}
-      </tr>
-    </thead>
-    <tbody>
-      {% for label, attr in [
-        ('Generic name', 'generic_name'),
-        ('Availability', 'availability'),
-        ('CSA schedule', 'csa_schedule'),
-        ('Pregnancy risk', 'pregnancy_risk'),
-      ] %}
-        <tr style="border-bottom:1px solid #eee">
-          <td style="padding:10px;font-weight:600;background:#f6f9fc">{{ label }}</td>
-          {% for _, d, _f in selected_drugs %}
-            <td style="padding:10px">{{ d[attr] or '—' }}</td>
-          {% endfor %}
-        </tr>
-      {% endfor %}
-      <tr style="border-bottom:1px solid #eee">
-        <td style="padding:10px;font-weight:600;background:#f6f9fc">Drug class</td>
-        {% for _, d, _f in selected_drugs %}
-          <td style="padding:10px">{{ d.drug_class.name if d.drug_class else '—' }}</td>
-        {% endfor %}
-      </tr>
-      <tr style="border-bottom:1px solid #eee">
-        <td style="padding:10px;font-weight:600;background:#f6f9fc">Brand names</td>
-        {% for _, d, _f in selected_drugs %}
-          <td style="padding:10px">{{ d.brand_names|join(', ') or '—' }}</td>
-        {% endfor %}
-      </tr>
-      <tr style="border-bottom:1px solid #eee">
-        <td style="padding:10px;font-weight:600;background:#f6f9fc">Dosage forms</td>
-        {% for _, _d, f in selected_drugs %}
-          <td style="padding:10px">{{ f or '—' }}</td>
-        {% endfor %}
-      </tr>
-      <tr style="border-bottom:1px solid #eee">
-        <td style="padding:10px;font-weight:600;background:#f6f9fc">Average rating</td>
-        {% for _, d, _f in selected_drugs %}
-          <td style="padding:10px">{{ d.avg_rating }}/10 ({{ d.review_count }} reviews)</td>
-        {% endfor %}
-      </tr>
-      {% for label, attr in [('Uses','uses'), ('Warnings','warnings'), ('Side effects','side_effects')] %}
-        <tr style="border-bottom:1px solid #eee;vertical-align:top">
-          <td style="padding:10px;font-weight:600;background:#f6f9fc">{{ label }}</td>
-          {% for _, d, _f in selected_drugs %}
-            <td style="padding:10px;font-size:.9rem;max-width:300px">{{ (d[attr] or '—')[:300] }}{% if d[attr] and d[attr]|length > 300 %}…{% endif %}</td>
-          {% endfor %}
-        </tr>
-      {% endfor %}
-    </tbody>
-  </table>
+  <p style="margin-top:16px">
+    See the side-by-side detailed comparison below for uses, warnings, side effects, and dosage.
+  </p>
   <p>
     {% for _, d, _f in selected_drugs %}
       <a href="{{ url_for('drug_detail', slug=d.slug) }}">Full {{ d.generic_name }} page</a>{% if not loop.last %} &middot; {% endif %}
@@ -198,7 +156,8 @@
       {% for slug, drug, _ in selected_drugs %}
       <div class="compare-col">
         <h4>{{ drug.generic_name|capitalize }}</h4>
-        <p>{{ (drug.uses or drug.description or 'See full prescribing information.')[:300] }}{% if (drug.uses or '')|length > 300 %}...{% endif %}</p>
+        {% set cd = (drug.uses or drug.description or 'See full prescribing information.')|clean_desc %}
+        <p>{{ cd[:300] }}{% if cd|length > 300 %}...{% endif %}</p>
         <a href="{{ url_for('drug_detail', slug=drug.slug) }}">Full information &rsaquo;</a>
       </div>
       {% endfor %}

@@ -106,7 +106,7 @@
                 </span>
               {% endif %}
             </p>
-            <p class="drug-card-desc">{{ (d.description or '')[:220] }}{% if (d.description or '')|length > 220 %}...{% endif %}</p>
+            <p class="drug-card-desc">{% set cd = (d.uses or d.description or '')|clean_desc %}{{ cd[:220] }}{% if cd|length > 220 %}...{% endif %}</p>
             <p class="drug-card-footer">
               <span class="muted">Rating: {{ d.avg_rating }}/10 ({{ d.review_count }} review{{ '' if d.review_count == 1 else 's' }})</span>
               <a href="{{ url_for('drug_detail', slug=d.slug) }}" class="card-link">View details &rsaquo;</a>

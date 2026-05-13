@@ -98,9 +98,10 @@
             </div>
             <div>
               <div style="font-size:0.75rem;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;color:#6b7280;padding:0 4px 6px;border-bottom:1px solid #e0e6ef;margin-bottom:4px">Checkers &amp; Tools</div>
-              <a href="{{ url_for('symptom_checker') }}">Symptoms Checker</a>
+              <a href="{{ url_for('symptom_checker') }}">Symptom Checker</a>
               <a href="{{ url_for('side_effects_page') }}">Side Effects Checker</a>
               <a href="{{ url_for('warnings_index') }}">Drug Warnings</a>
+              <a href="{{ url_for('search') }}?q=dosage">Dosage Guide</a>
               <a href="{{ url_for('search') }}?q=pregnancy">Pregnancy Safety</a>
               <a href="{{ url_for('contact') }}">Emergency Info</a>
             </div>
@@ -217,7 +218,7 @@
       <h4>Conditions &amp; Care</h4>
       <ul>
         <li><a href="{{ url_for('conditions_list') }}">Conditions A-Z</a></li>
-        <li><a href="{{ url_for('side_effects_page') }}">Symptom Checker</a></li>
+        <li><a href="{{ url_for('symptom_checker') }}">Symptom Checker</a></li>
         <li><a href="{{ url_for('side_effects_page') }}">Drug Side Effects</a></li>
         <li><a href="{{ url_for('search') }}?q=dosage">Dosage Guide</a></li>
         <li><a href="{{ url_for('pill_identifier') }}">Drug Identifier</a></li>

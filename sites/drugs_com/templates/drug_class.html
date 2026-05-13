@@ -96,7 +96,7 @@
           <td>
             <a href="{{ url_for('drug_detail', slug=d.slug) }}"><strong>{{ d.generic_name|capitalize }}</strong></a>
             {% if d.description %}
-              <div class="muted" style="font-size:13px;margin-top:4px">{{ d.description[:140] }}{% if d.description|length > 140 %}...{% endif %}</div>
+              <div class="muted" style="font-size:13px;margin-top:4px">{% set cd = d.description|clean_desc %}{{ cd[:140] }}{% if cd|length > 140 %}...{% endif %}</div>
             {% endif %}
           </td>
           <td class="muted">{{ d.brand_names|join(', ') if d.brand_names else 'Generic' }}</td>

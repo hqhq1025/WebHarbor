@@ -48,8 +48,9 @@
                 {% if d.brand_names %}
                   <div class="drug-card-brands muted">Brand names: {{ d.brand_names|join(', ') }}</div>
                 {% endif %}
-                {% if d.description %}
-                  <p class="drug-card-desc">{{ d.description[:100] }}{% if d.description|length > 100 %}&hellip;{% endif %}</p>
+                {% set cd = (d.uses or d.description or '')|clean_desc %}
+                {% if cd %}
+                  <p class="drug-card-desc">{{ cd[:100] }}{% if cd|length > 100 %}&hellip;{% endif %}</p>
                 {% endif %}
               </li>
             {% endfor %}

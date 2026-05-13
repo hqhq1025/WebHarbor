@@ -79,7 +79,7 @@
             {% if a.source %}{{ a.source }} &middot; {% endif %}{{ a.published_at.strftime('%B %d, %Y') }}
           </div>
           <p style="font-size:14px;line-height:1.6;color:var(--gray-700,#444);margin:6px 0 8px">
-            {{ a.body[:180] }}{% if a.body|length > 180 %}...{% endif %}
+            {{ a.body[:200] }}{% if a.body|length > 200 %}...{% endif %}
           </p>
           <a href="{{ url_for('news_article', article_id=a.id) }}" style="font-size:13px;font-weight:600">Read more &rsaquo;</a>
         </div>
