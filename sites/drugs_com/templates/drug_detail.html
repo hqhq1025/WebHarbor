@@ -98,6 +98,7 @@
     <a href="#warnings" role="tab" data-tab="warnings">Warnings</a>
     <a href="#before-taking" role="tab" data-tab="before-taking">Before taking</a>
     <a href="#dosage" role="tab" data-tab="dosage">Dosage</a>
+    <a href="#what-to-avoid" role="tab" data-tab="what-to-avoid">What to avoid</a>
     <a href="#side-effects" role="tab" data-tab="side-effects">Side effects</a>
     <a href="#interactions" role="tab" data-tab="interactions">Interactions</a>
     <a href="#faq" role="tab" data-tab="faq">FAQ</a>
@@ -130,9 +131,17 @@
 
       <section id="before-taking">
         <h2>Before taking this medicine</h2>
-        <p>You should not use {{ drug.generic_name }} if you are allergic to it, or if you have ever had an asthma attack or severe allergic reaction after taking aspirin or an NSAID.</p>
-        <p>To make sure {{ drug.generic_name }} is safe for you, tell your doctor if you have ever had heart disease, high blood pressure, a heart attack, stroke, or blood clot; stomach ulcers or bleeding; liver or kidney disease; asthma; or if you smoke.</p>
-        <p>Ask a doctor before using this medicine if you are pregnant or breastfeeding.</p>
+        <div class="info-box" style="background:#e7f3fb;border-left:4px solid #2c7fb8;padding:12px 16px;margin:12px 0;border-radius:4px;">
+          <strong>Important:</strong> Tell your healthcare provider about all medications
+          you're taking before starting {{ drug.generic_name }}.
+        </div>
+        <p>Before taking {{ drug.generic_name }}, tell your doctor if you:</p>
+        <ul class="before-taking-list">
+          <li><strong>Have allergies</strong> &mdash; You should not use {{ drug.generic_name }} if you are allergic to it or any of its ingredients. Tell your doctor about all known drug or food allergies.</li>
+          <li><strong>Take other medications</strong> &mdash; Many drugs can interact with {{ drug.generic_name }}. Share a complete list of prescription medicines, over-the-counter products, vitamins, and herbal supplements with your healthcare provider. <a href="{{ url_for('interaction_checker') }}?drug={{ drug.slug }}">Check for drug interactions &rsaquo;</a></li>
+          <li><strong>Have medical conditions</strong> &mdash; Tell your doctor if you have ever had heart disease, high blood pressure, heart attack, stroke, blood clots, stomach ulcers or bleeding, liver or kidney disease, asthma, or other chronic conditions that may affect how {{ drug.generic_name }} works for you.</li>
+          <li><strong>Are pregnant or breastfeeding</strong> &mdash; Ask a doctor before using this medicine if you are pregnant, planning to become pregnant, or breastfeeding. See the <a href="{{ url_for('drug_pregnancy', slug=drug.slug) }}">pregnancy and lactation information</a> for {{ drug.generic_name }} (pregnancy risk: {{ drug.pregnancy_risk }}).</li>
+        </ul>
       </section>
 
       <section id="dosage">
@@ -142,8 +151,17 @@
         <p>Since {{ drug.generic_name }} is often used when needed, you may not be on a dosing schedule. If you are on a schedule, take the missed dose as soon as you remember. Skip the missed dose if it is almost time for your next scheduled dose. Do not take extra medicine to make up the missed dose.</p>
         <h3>What happens if I overdose?</h3>
         <p>Seek emergency medical attention or call the Poison Help line at 1-800-222-1222.</p>
-        <h3>What to avoid</h3>
-        <p>Ask a doctor or pharmacist before using other medicines for pain, fever, swelling, or cold/flu symptoms. They may contain ingredients similar to {{ drug.generic_name }}. Avoid drinking alcohol, which may increase your risk of stomach bleeding.</p>
+      </section>
+
+      <section id="what-to-avoid">
+        <h2>What to avoid while taking {{ drug.generic_name }}</h2>
+        <p>While taking {{ drug.generic_name }}, you should avoid the following:</p>
+        <ul class="avoid-list">
+          {% for item in avoid_items %}
+            <li><strong>{{ item.title }}</strong> &mdash; {{ item.reason }}</li>
+          {% endfor %}
+        </ul>
+        <p class="muted">Ask a doctor or pharmacist before using other medicines that may interact with {{ drug.generic_name }}.</p>
       </section>
 
       <section id="side-effects">
@@ -510,7 +528,7 @@
 
 <script>
 (function(){
-  var TAB_IDS = ['uses','warnings','before-taking','dosage','side-effects','interactions','faq'];
+  var TAB_IDS = ['uses','warnings','before-taking','dosage','what-to-avoid','side-effects','interactions','faq'];
   var tabs = document.querySelectorAll('.section-tabs a[data-tab]');
   if (!tabs.length) return;
 

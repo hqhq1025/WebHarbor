@@ -1171,14 +1171,27 @@ def seed_interactions():
 
 
 def seed_news():
+    """Seed news articles.
+
+    Each entry in NEWS_DATA is a tuple of (title, category, body) or
+    (title, category, body, source, published_at_iso). When the 5-tuple form
+    is used, the explicit source and publication date override the defaults.
+    """
     existing = {n.title for n in NewsArticle.query.all()}
     now = datetime.utcnow()
-    for i, (title, cat, body) in enumerate(NEWS_DATA):
+    for i, entry in enumerate(NEWS_DATA):
+        if len(entry) == 5:
+            title, cat, body, source, pub_iso = entry
+            published_at = datetime.fromisoformat(pub_iso)
+        else:
+            title, cat, body = entry
+            source = "Drugs.com Medical News"
+            published_at = now - timedelta(days=i * 2)
         if title in existing:
             continue
         db.session.add(NewsArticle(
-            title=title, category=cat, body=body, source="Drugs.com Medical News",
-            published_at=now - timedelta(days=i * 2),
+            title=title, category=cat, body=body, source=source,
+            published_at=published_at,
             is_featured=(i < 4),
         ))
     db.session.commit()
@@ -1596,13 +1609,85 @@ def drug_detail(slug):
         (DrugInteraction.drug_a_id == drug.id) | (DrugInteraction.drug_b_id == drug.id)
     ).all()
     faq_items = drug.faq or _build_default_faq(drug)
+    avoid_items = _build_avoid_items(drug)
     return render_template("drug_detail.html", drug=drug, reviews=reviews,
                            related=related, drug_conditions=drug_conditions, saved=saved,
                            rating_distribution=rating_distribution, user_review=user_review,
                            related_news=related_news, related_drugs=related_drugs,
                            drug_interactions=drug_interactions,
                            faq_items=faq_items,
+                           avoid_items=avoid_items,
                            recently_viewed=recently_viewed)
+
+
+def _build_avoid_items(drug):
+    """Return a list of {title, reason} avoidance recommendations tailored to the drug's class.
+
+    Class-specific guidance is matched by keyword against the drug's class name; falls
+    back to a generic alcohol/driving warning when no class is matched. A generic
+    "other medicines with similar ingredients" item is always appended.
+    """
+    cname = (drug.drug_class.name or "").lower() if drug.drug_class else ""
+    items = []
+    rules = [
+        (("nsaid", "anti-inflammatory"), [
+            ("Alcohol", "Drinking alcohol while taking NSAIDs increases the risk of stomach bleeding and ulcers."),
+            ("Other NSAIDs", "Avoid combining with other NSAIDs (e.g., aspirin, naproxen) unless directed by your doctor."),
+        ]),
+        (("ssri", "snri", "antidepressant"), [
+            ("Alcohol", "Alcohol can worsen drowsiness and may reduce the effectiveness of the medication."),
+            ("MAO inhibitors", "Combining with MAOIs can cause a dangerous reaction known as serotonin syndrome."),
+            ("St. John's Wort", "This herbal supplement can increase the risk of serotonin syndrome."),
+        ]),
+        (("opioid", "narcotic"), [
+            ("Alcohol", "Mixing alcohol with opioids can cause severe drowsiness, slowed breathing, and overdose."),
+            ("Driving or operating machinery", "Opioids can impair your reactions and judgment until you know how this medicine affects you."),
+            ("Other CNS depressants", "Avoid benzodiazepines, sleep aids, and muscle relaxants unless directed."),
+        ]),
+        (("statin", "hmg-coa"), [
+            ("Grapefruit juice", "Grapefruit can raise statin levels in the blood and increase the risk of muscle and liver problems."),
+            ("Excessive alcohol", "Heavy alcohol use combined with statins increases the risk of liver damage."),
+        ]),
+        (("anticoagulant", "blood thinner"), [
+            ("NSAIDs and aspirin", "These medications increase the risk of bleeding when combined with anticoagulants."),
+            ("Vitamin K rich foods in large amounts", "Sudden changes in leafy green intake can affect how well warfarin-type drugs work."),
+            ("Alcohol", "Alcohol can increase bleeding risk and affect anticoagulant levels."),
+        ]),
+        (("benzodiazepine", "sedative", "hypnotic"), [
+            ("Alcohol", "Combining alcohol with sedatives can cause severe drowsiness and breathing problems."),
+            ("Driving or operating machinery", "This medicine can impair your reactions until you know how it affects you."),
+        ]),
+        (("antibiotic",), [
+            ("Alcohol", "Alcohol can worsen side effects and, with some antibiotics, cause severe reactions."),
+            ("Dairy or antacids near doses", "Some antibiotics are poorly absorbed when taken with calcium, iron, or antacids."),
+        ]),
+        (("antihistamine",), [
+            ("Alcohol", "Alcohol can intensify drowsiness caused by antihistamines."),
+            ("Driving or operating machinery", "Until you know how this medicine affects you, avoid activities requiring alertness."),
+        ]),
+        (("ace inhibitor", "arb", "angiotensin"), [
+            ("Potassium supplements and salt substitutes", "These can cause dangerously high potassium levels when combined with ACE inhibitors or ARBs."),
+            ("NSAIDs", "NSAIDs may reduce the blood-pressure-lowering effect and increase the risk of kidney problems."),
+        ]),
+        (("diabetes", "insulin", "biguanide", "sulfonylurea"), [
+            ("Alcohol", "Alcohol can cause unpredictable changes in blood sugar and increase the risk of low blood sugar."),
+            ("Skipping meals", "Missing meals while taking diabetes medication raises the risk of hypoglycemia."),
+        ]),
+    ]
+    for keywords, additions in rules:
+        if any(k in cname for k in keywords):
+            items.extend(additions)
+            break
+    if not items:
+        items = [
+            ("Alcohol", f"Drinking alcohol while taking {drug.generic_name} may worsen side effects."),
+            ("Driving or operating machinery", f"Until you know how {drug.generic_name} affects you, avoid activities requiring full alertness."),
+        ]
+    items.append((
+        "Other medicines with similar ingredients",
+        f"Ask a doctor or pharmacist before using other medicines for pain, fever, swelling, or cold/flu symptoms, as they may contain ingredients similar to {drug.generic_name}.",
+    ))
+    return [{"title": t, "reason": r} for t, r in items]
 
 
 @app.route("/<slug>/reviews")
