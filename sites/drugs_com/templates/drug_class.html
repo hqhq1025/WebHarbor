@@ -7,12 +7,16 @@
   <span>{{ drug_class.name }}</span>
 </nav>
 
-<h1>
+<h1 class="drug-class-title">
   {{ drug_class.name }}
-  <span class="count-badge" style="display:inline-block;margin-left:8px;padding:2px 10px;background:var(--navy,#1a3a6e);color:#fff;border-radius:12px;font-size:14px;vertical-align:middle">
-    {{ drug_count }} drug{{ '' if drug_count == 1 else 's' }} in this class
-  </span>
+  <span class="count-badge">{{ drug_count }} drug{{ '' if drug_count == 1 else 's' }} in this class</span>
 </h1>
+
+{% if class_description or drug_class.description %}
+<div class="drug-class-lede">
+  <p>{{ class_description or drug_class.description }}</p>
+</div>
+{% endif %}
 
 <div class="two-col">
   <div class="main-col">
@@ -38,17 +42,17 @@
 
     {% if notable_drugs %}
       <h2>Notable {{ drug_class.name }}</h2>
-      <p class="muted" style="font-size:14px;margin-top:-4px">Top-rated drugs in this class based on user reviews.</p>
-      <ul class="notable-drugs" style="list-style:none;padding:0;margin:8px 0 16px">
+      <p class="muted notable-drugs-lede">Top-rated drugs in this class based on user reviews.</p>
+      <ul class="notable-drugs">
         {% for d in notable_drugs %}
-          <li style="padding:8px 0;border-bottom:1px solid #eef1f5;display:flex;justify-content:space-between;align-items:center;gap:12px">
-            <div>
+          <li class="notable-drugs-row">
+            <div class="notable-drugs-info">
               <a href="{{ url_for('drug_detail', slug=d.slug) }}"><strong>{{ d.generic_name|capitalize }}</strong></a>
               {% if d.brand_names %}
-                <span class="muted" style="font-size:13px">— {{ d.brand_names|join(', ') }}</span>
+                <span class="muted notable-drugs-brands">&mdash; {{ d.brand_names|join(', ') }}</span>
               {% endif %}
             </div>
-            <div style="white-space:nowrap;font-size:13px">
+            <div class="notable-drugs-rating">
               <span class="rating">{{ '%.1f'|format(d.avg_rating) if d.avg_rating else '-' }}</span>
               <span class="muted">/ 10 &middot; {{ d.review_count or 0 }} review{{ '' if (d.review_count or 0) == 1 else 's' }}</span>
             </div>
@@ -58,7 +62,7 @@
     {% endif %}
 
     {% if drugs %}
-      <p style="margin:12px 0">
+      <p class="drug-class-compare-cta">
         <a class="btn btn-primary" href="{{ url_for('compare_drugs') }}?drugs={{ drugs|map(attribute='generic_name')|join(',') }}">
           Compare drugs in this class
         </a>
@@ -68,16 +72,14 @@
     <h2>List of {{ drug_class.name }}</h2>
 
     {% if drugs %}
-    <div class="sort-controls" style="margin:8px 0 12px;font-size:14px">
+    <div class="sort-controls drug-class-sort">
       <span class="muted">Sort by:</span>
       <a href="{{ url_for('drug_class_page', slug=drug_class.slug, sort='name') }}"
-         style="margin:0 6px;{% if sort == 'name' %}font-weight:600;text-decoration:underline{% endif %}">A-Z</a>
-      |
+         class="sort-link {% if sort == 'name' %}sort-link--active{% endif %}">A-Z</a>
       <a href="{{ url_for('drug_class_page', slug=drug_class.slug, sort='rating') }}"
-         style="margin:0 6px;{% if sort == 'rating' %}font-weight:600;text-decoration:underline{% endif %}">Rating</a>
-      |
+         class="sort-link {% if sort == 'rating' %}sort-link--active{% endif %}">Rating</a>
       <a href="{{ url_for('drug_class_page', slug=drug_class.slug, sort='reviews') }}"
-         style="margin:0 6px;{% if sort == 'reviews' %}font-weight:600;text-decoration:underline{% endif %}">Most reviewed</a>
+         class="sort-link {% if sort == 'reviews' %}sort-link--active{% endif %}">Most reviewed</a>
     </div>
 
     <table class="drug-table">
@@ -96,7 +98,7 @@
           <td>
             <a href="{{ url_for('drug_detail', slug=d.slug) }}"><strong>{{ d.generic_name|capitalize }}</strong></a>
             {% if d.description %}
-              <div class="muted" style="font-size:13px;margin-top:4px">{% set cd = d.description|clean_desc %}{{ cd[:140] }}{% if cd|length > 140 %}...{% endif %}</div>
+              <div class="muted drug-table-desc">{% set cd = d.description|clean_desc %}{{ cd[:140] }}{% if cd|length > 140 %}...{% endif %}</div>
             {% endif %}
           </td>
           <td class="muted">{{ d.brand_names|join(', ') if d.brand_names else 'Generic' }}</td>
@@ -112,6 +114,12 @@
           <td>
             {% set _r = d.avg_rating or 0 %}
             <span class="rating {% if _r >= 7.5 %}rating-high{% elif _r >= 5 %}rating-mid{% elif _r > 0 %}rating-low{% endif %}">{{ '%.1f'|format(d.avg_rating) if d.avg_rating else '-' }}</span>
+            {% if _r > 0 %}
+              {% set _stars = ((_r / 2)|round(0, 'common'))|int %}
+              <span class="rating-stars" aria-label="{{ _stars }} out of 5 stars">
+                {% for i in range(5) %}{% if i < _stars %}<span class="star star--filled">&#9733;</span>{% else %}<span class="star">&#9734;</span>{% endif %}{% endfor %}
+              </span>
+            {% endif %}
           </td>
           <td>
             <a href="{{ url_for('drug_detail', slug=d.slug) }}#reviews">{{ d.review_count or 0 }} review{{ '' if (d.review_count or 0) == 1 else 's' }}</a>

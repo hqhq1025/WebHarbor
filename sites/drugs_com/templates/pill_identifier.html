@@ -65,9 +65,17 @@
 </form>
 
 {% if results is not none %}
-  <h2 class="pill-results-heading">Results ({{ results|length }})</h2>
+  <div class="pill-results-header">
+    <h2 class="pill-results-heading">{{ results|length }} result{{ '' if results|length == 1 else 's' }} found</h2>
+    <div class="pill-criteria-summary">
+      <span class="pill-criteria-label">Searched for:</span>
+      {% if imprint %}<span class="pill-criteria-chip pill-criteria-chip--imprint">Imprint: <strong>{{ imprint }}</strong></span>{% endif %}
+      {% if shape %}<span class="pill-criteria-chip">Shape: <strong>{{ shape }}</strong></span>{% endif %}
+      {% if color %}<span class="pill-criteria-chip">Color: <strong>{{ color }}</strong></span>{% endif %}
+      {% if not imprint and not shape and not color %}<span class="pill-criteria-chip">Any pill</span>{% endif %}
+    </div>
+  </div>
   {% if results %}
-    <p class="pill-results-count">Found {{ results|length }} pill{{ '' if results|length == 1 else 's' }} matching your search</p>
     <div class="pill-result-grid">
       {% for r in results %}
         {% set color_lc = (r.color or '')|lower %}
@@ -84,16 +92,17 @@
             </div>
           {% endif %}
           <div class="pill-card-body">
+            {% if r.imprint %}
+              <div class="pill-imprint-display" title="Imprint code">{{ r.imprint }}</div>
+            {% endif %}
             <h3 class="pill-card-name">
               <a href="{{ url_for('drug_detail', slug=r.drug.slug) }}">{{ r.drug.generic_name|capitalize }}{% if r.strength %} {{ r.strength }}{% endif %}</a>
             </h3>
-            <p class="pill-card-attrs">
-              {% if r.imprint %}<strong>{{ r.imprint }}</strong>{% endif %}
-              {% if r.imprint and (r.shape or r.color) %} &middot; {% endif %}
-              {% if r.shape %}{{ r.shape }}{% endif %}
-              {% if r.shape and r.color %} &middot; {% endif %}
-              {% if r.color %}{{ r.color }}{% endif %}
-            </p>
+            <div class="pill-chip-row">
+              {% if r.shape %}<span class="pill-chip pill-chip--shape">{{ r.shape }}</span>{% endif %}
+              {% if r.color %}<span class="pill-chip pill-chip--color pill-chip--color-{{ color_lc }}">{{ r.color }}</span>{% endif %}
+              {% if r.strength %}<span class="pill-chip pill-chip--strength">{{ r.strength }}</span>{% endif %}
+            </div>
             {% if r.drug.availability %}
               {% set avail_lc = r.drug.availability|lower %}
               {% set badge_cls = 'rx' if 'rx' in avail_lc and 'otc' not in avail_lc else ('otc' if avail_lc == 'otc' else 'mixed') %}
@@ -105,23 +114,25 @@
                 <a href="{{ url_for('drug_class_page', slug=r.drug.drug_class.slug) }}">{{ r.drug.drug_class.name }}</a>
               </p>
             {% endif %}
-            <a href="{{ url_for('drug_detail', slug=r.drug.slug) }}" class="pill-card-link">Full Drug Information &rarr;</a>
+            <a href="{{ url_for('drug_detail', slug=r.drug.slug) }}" class="pill-card-link">Full drug info &rarr;</a>
           </div>
         </article>
       {% endfor %}
     </div>
   {% else %}
     <div class="pill-no-results">
-      <h3>No pills found matching
-        {%- if imprint %} "{{ imprint }}"{% endif -%}
-        {%- if shape %} {{ shape }}{% endif -%}
-        {%- if color %} {{ color }}{% endif -%}
-      </h3>
-      <p>Suggestions:</p>
-      <ul>
-        <li>Try searching with fewer criteria</li>
-        <li>Check spelling of the imprint code</li>
+      <div class="pill-no-results-icon" aria-hidden="true">?</div>
+      <h3 class="pill-no-results-title">No pills found matching your search</h3>
+      <p class="pill-no-results-lede">We couldn't find any pills matching the criteria above. Try one of the following:</p>
+      <ul class="pill-no-results-suggestions">
+        <li>Remove one criterion (try imprint alone, or shape + color without imprint)</li>
+        <li>Double-check the imprint code — letter O versus number 0, letter I versus number 1</li>
+        <li>Imprint codes may be split across two lines on the pill — try both halves separately</li>
+        <li>If the pill has no imprint, leave the imprint field blank and search by shape and color</li>
       </ul>
+      <div class="pill-no-results-cta">
+        <a href="{{ url_for('pill_identifier') }}" class="btn btn-primary">Start a new search</a>
+      </div>
       <p class="pill-poison-control"><strong>Poison Control:</strong> <a href="tel:1-800-222-1222">1-800-222-1222</a></p>
     </div>
   {% endif %}

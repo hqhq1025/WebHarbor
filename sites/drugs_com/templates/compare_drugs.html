@@ -17,34 +17,31 @@
 {% if drug2 %}{% set _ = selected_drugs.append(('drug2', drug2, dosage_forms.drug2)) %}{% endif %}
 {% if drug3 %}{% set _ = selected_drugs.append(('drug3', drug3, dosage_forms.drug3)) %}{% endif %}
 
-<form action="{{ url_for('compare_drugs') }}" method="get" class="compare-form" style="margin:24px 0;padding:20px;background:#f6f9fc;border:1px solid #e3ecf3;border-radius:6px">
-  <div style="display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:16px;align-items:end">
-    <div>
-      <label for="drug1" style="display:block;font-weight:600;margin-bottom:6px">First Drug</label>
+<form action="{{ url_for('compare_drugs') }}" method="get" class="compare-form">
+  <div class="compare-form-grid">
+    <div class="compare-form-field">
+      <label for="drug1">First drug</label>
       <input list="drug-options" name="drug1" id="drug1" value="{{ drug1.generic_name if drug1 else '' }}"
-             placeholder="Type a drug name (e.g. ibuprofen)"
-             style="width:100%;padding:10px;border:1px solid #ccc;border-radius:4px">
+             placeholder="Type a drug name (e.g. ibuprofen)">
     </div>
-    <div>
-      <label for="drug2" style="display:block;font-weight:600;margin-bottom:6px">Second Drug</label>
+    <div class="compare-form-field">
+      <label for="drug2">Second drug</label>
       <input list="drug-options" name="drug2" id="drug2" value="{{ drug2.generic_name if drug2 else '' }}"
-             placeholder="Type a drug name (e.g. naproxen)"
-             style="width:100%;padding:10px;border:1px solid #ccc;border-radius:4px">
+             placeholder="Type a drug name (e.g. naproxen)">
     </div>
-    <div>
-      <label for="drug3" style="display:block;font-weight:600;margin-bottom:6px">Third Drug <span class="muted" style="font-weight:400">(optional)</span></label>
+    <div class="compare-form-field">
+      <label for="drug3">Third drug <span class="muted compare-form-optional">(optional)</span></label>
       <input list="drug-options" name="drug3" id="drug3" value="{{ drug3.generic_name if drug3 else '' }}"
-             placeholder="Type a drug name (e.g. aspirin)"
-             style="width:100%;padding:10px;border:1px solid #ccc;border-radius:4px">
+             placeholder="Type a drug name (e.g. aspirin)">
     </div>
-    <button type="submit" class="btn" style="padding:10px 24px">Compare</button>
+    <button type="submit" class="btn btn-primary compare-form-submit">Compare</button>
   </div>
   <datalist id="drug-options">
     {% for d in popular %}
       <option value="{{ d.generic_name }}">{{ d.generic_name }}</option>
     {% endfor %}
   </datalist>
-  <p class="muted" style="font-size:.85rem;margin-top:8px">Tip: type the generic name, e.g. <code>ibuprofen</code>, <code>naproxen</code>.</p>
+  <p class="muted compare-form-tip">Tip: type the generic name, e.g. <code>ibuprofen</code>, <code>naproxen</code>.</p>
 </form>
 
 {% if selected_drugs|length >= 2 %}
@@ -54,7 +51,7 @@
 
   <!-- Quick comparison table -->
   <div class="compare-quick-wrap">
-    <h3 style="margin:0 0 10px;font-size:1.05rem;color:#0c3b6f">Quick comparison</h3>
+    <h3 class="compare-quick-heading">Quick comparison</h3>
     <table class="compare-quick-table">
       <thead>
         <tr>
@@ -108,6 +105,11 @@
             <td>{{ f or '—' }}</td>
           {% endfor %}
         </tr>
+        {% set _rounded_ratings = [] %}
+        {% for _, d, _f in selected_drugs %}
+          {% if d.review_count and d.review_count > 0 %}{% set _ = _rounded_ratings.append('%.1f'|format(d.avg_rating or 0)) %}{% endif %}
+        {% endfor %}
+        {% set _rating_tie = _rounded_ratings|length >= 2 and (_rounded_ratings|unique|list)|length < _rounded_ratings|length %}
         <tr>
           <td class="cq-attr">Average rating</td>
           {% for _, d, _f in selected_drugs %}
@@ -129,6 +131,15 @@
             </td>
           {% endfor %}
         </tr>
+        {% if _rating_tie %}
+        <tr>
+          <td class="cq-attr"></td>
+          <td colspan="{{ selected_drugs|length }}" class="cq-rating-tie-note">
+            <span class="cq-tie-badge">Tie</span>
+            Two or more drugs share the same average rating &mdash; consider review counts and side-effect profiles below.
+          </td>
+        </tr>
+        {% endif %}
       </tbody>
     </table>
   </div>
@@ -146,59 +157,57 @@
 {% endif %}
 
 {% if selected_drugs %}
-<section class="detailed-comparison" style="margin-top:32px">
-  <h2>Detailed Comparison</h2>
+<section class="detailed-comparison">
+  <h2>Detailed comparison</h2>
 
-  <!-- Description side by side -->
+  {% set col_count = selected_drugs|length %}
+
   <div class="compare-section">
     <h3>What are these drugs used for?</h3>
-    <div class="compare-cols" style="display:grid;grid-template-columns:{% for _ in selected_drugs %}1fr {% endfor %};gap:16px">
+    <div class="compare-cols compare-cols--{{ col_count }}">
       {% for slug, drug, _ in selected_drugs %}
       <div class="compare-col">
-        <h4>{{ drug.generic_name|capitalize }}</h4>
+        <h4 class="compare-col-header">{{ drug.generic_name|capitalize }}</h4>
         {% set cd = (drug.uses or drug.description or 'See full prescribing information.')|clean_desc %}
         <p>{{ cd[:300] }}{% if cd|length > 300 %}...{% endif %}</p>
-        <a href="{{ url_for('drug_detail', slug=drug.slug) }}">Full information &rsaquo;</a>
+        <a href="{{ url_for('drug_detail', slug=drug.slug) }}" class="compare-col-link">Full information &rsaquo;</a>
       </div>
       {% endfor %}
     </div>
   </div>
 
-  <!-- Warnings -->
-  <div class="compare-section" style="margin-top:20px">
+  <div class="compare-section">
     <h3>Warnings</h3>
-    <div class="compare-cols" style="display:grid;grid-template-columns:{% for _ in selected_drugs %}1fr {% endfor %};gap:16px">
+    <div class="compare-cols compare-cols--{{ col_count }}">
       {% for slug, drug, _ in selected_drugs %}
       <div class="compare-col">
-        <h4>{{ drug.generic_name|capitalize }}</h4>
+        <h4 class="compare-col-header">{{ drug.generic_name|capitalize }}</h4>
         <p>{{ (drug.warnings or 'See prescribing information for complete warnings.')[:300] }}{% if (drug.warnings or '')|length > 300 %}...{% endif %}</p>
       </div>
       {% endfor %}
     </div>
   </div>
 
-  <!-- Side effects -->
-  <div class="compare-section" style="margin-top:20px">
+  <div class="compare-section">
     <h3>Common side effects</h3>
-    <div class="compare-cols" style="display:grid;grid-template-columns:{% for _ in selected_drugs %}1fr {% endfor %};gap:16px">
+    <div class="compare-cols compare-cols--{{ col_count }}">
       {% for slug, drug, _ in selected_drugs %}
       <div class="compare-col">
-        <h4>{{ drug.generic_name|capitalize }}</h4>
+        <h4 class="compare-col-header">{{ drug.generic_name|capitalize }}</h4>
         <p>{{ (drug.side_effects or 'See prescribing information.')[:300] }}{% if (drug.side_effects or '')|length > 300 %}...{% endif %}</p>
       </div>
       {% endfor %}
     </div>
   </div>
 
-  <!-- Dosage -->
-  <div class="compare-section" style="margin-top:20px">
+  <div class="compare-section">
     <h3>Dosage</h3>
-    <div class="compare-cols" style="display:grid;grid-template-columns:{% for _ in selected_drugs %}1fr {% endfor %};gap:16px">
+    <div class="compare-cols compare-cols--{{ col_count }}">
       {% for slug, drug, _ in selected_drugs %}
       <div class="compare-col">
-        <h4>{{ drug.generic_name|capitalize }}</h4>
+        <h4 class="compare-col-header">{{ drug.generic_name|capitalize }}</h4>
         <p>{{ (drug.dosage or 'See prescribing information.')[:300] }}{% if (drug.dosage or '')|length > 300 %}...{% endif %}</p>
-        <a href="{{ url_for('drug_dosage', slug=drug.slug) }}">Full dosage guide &rsaquo;</a>
+        <a href="{{ url_for('drug_dosage', slug=drug.slug) }}" class="compare-col-link">Full dosage guide &rsaquo;</a>
       </div>
       {% endfor %}
     </div>
@@ -208,7 +217,10 @@
 {% if selected_drugs|length >= 2 %}
 {% set best_rated = selected_drugs|sort(attribute='1.avg_rating', reverse=true)|first %}
 <div class="bottom-line-box">
-  <h2>Bottom line</h2>
+  <div class="bottom-line-header">
+    <span class="bottom-line-icon" aria-hidden="true">i</span>
+    <h2>Bottom line</h2>
+  </div>
   <p>
     You are comparing
     {% for _, d, _f in selected_drugs %}<strong>{{ d.generic_name|capitalize }}</strong>{% if not loop.last %}{% if loop.revindex == 2 %} and {% else %}, {% endif %}{% endif %}{% endfor %}.

@@ -3060,6 +3060,8 @@ def my_med_list_toggle():
 
 @app.route("/pro/")
 @app.route("/pro")
+@app.route("/pro-edition")
+@app.route("/pro-edition/")
 def pro_edition():
     classes = DrugClass.query.order_by(DrugClass.name).all()
     return render_template("pro_edition.html", classes=classes)
