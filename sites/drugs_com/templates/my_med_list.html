@@ -26,8 +26,13 @@
 
     {% if items %}
     <div class="med-list-actions">
-      <a class="btn btn-primary" href="{{ url_for('interaction_checker') }}">Check all medications for interactions</a>
-      <span class="med-list-count muted">{{ items|length }} medication{% if items|length != 1 %}s{% endif %} saved</span>
+      <form method="post" action="{{ url_for('interaction_checker') }}" class="med-list-check-form">
+        {% for item in items %}
+          <input type="hidden" name="drugs" value="{{ item.drug.generic_name }}">
+        {% endfor %}
+        <button type="submit" class="btn btn-primary">Check all medications for interactions</button>
+      </form>
+      <span class="med-list-count muted">You have {{ items|length }} medication{% if items|length != 1 %}s{% endif %} in your list</span>
     </div>
     {% endif %}
 

@@ -1267,13 +1267,23 @@ def seed_benchmark_users():
     drugs = Drug.query.all()
     if not drugs:
         return
+    # Per-user curated med lists. Alice gets a chronic-care mix (pain reliever
+    # + diabetes + statin) so the med list page demos varied drug classes.
+    curated_meds = {
+        "alice.j@test.com": ["ibuprofen", "metformin", "atorvastatin"],
+    }
     for idx, u in enumerate(BENCHMARK_USERS):
         user = User(username=u["username"], email=u["email"])
         user.set_password(u["password"])
         db.session.add(user)
         db.session.flush()
         # Saved drugs (3+)
-        saved_pool = drugs[(idx * 7) % len(drugs):(idx * 7) % len(drugs) + 5]
+        curated = curated_meds.get(u["email"])
+        if curated:
+            saved_pool = [d for slug in curated
+                          for d in [Drug.query.filter_by(slug=slug).first()] if d]
+        else:
+            saved_pool = drugs[(idx * 7) % len(drugs):(idx * 7) % len(drugs) + 5]
         if len(saved_pool) < 3:
             saved_pool = drugs[:5]
         for d in saved_pool[:4]:

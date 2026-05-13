@@ -6,7 +6,22 @@
 </nav>
 
 <h1>My Drugs.com <span class="muted">&mdash; {{ current_user.username }}</span></h1>
-<p class="account-welcome">Welcome back, {{ current_user.username }}! Signed in as <a href="mailto:{{ current_user.email }}">{{ current_user.email }}</a>.</p>
+
+<div class="account-profile-header">
+  <div class="account-avatar" aria-hidden="true">
+    {% set parts = (current_user.username or 'U').replace('_', ' ').replace('.', ' ').split() %}
+    {% if parts|length >= 2 %}{{ (parts[0][0] ~ parts[1][0])|upper }}{% else %}{{ (current_user.username[:2])|upper }}{% endif %}
+  </div>
+  <div class="account-profile-info">
+    <p class="account-profile-name">{{ current_user.username }}</p>
+    <p class="account-profile-email"><a href="mailto:{{ current_user.email }}">{{ current_user.email }}</a></p>
+    <p class="account-profile-since muted">Member since
+      {% if current_user.created_at %}{{ current_user.created_at.strftime('%B %Y') }}{% else %}2024{% endif %}
+    </p>
+  </div>
+</div>
+
+<p class="account-welcome">Welcome back, {{ current_user.username }}! Manage your medications, reviews, and preferences below.</p>
 
 <nav class="account-tabs">
   <a href="{{ url_for('account') }}" class="active">My Account</a>
@@ -29,6 +44,18 @@
     <span class="stat-value">{{ recently_viewed_count }}</span>
     <span class="stat-label">Drug{{ '' if recently_viewed_count == 1 else 's' }} Viewed</span>
   </div>
+</div>
+
+<div class="account-actions">
+  <a class="btn btn-primary account-action-btn" href="{{ url_for('drug_az') }}">
+    <span class="account-action-icon">+</span> Add medications
+  </a>
+  <a class="btn btn-primary account-action-btn" href="{{ url_for('drug_az') }}#popular">
+    <span class="account-action-icon">&#9733;</span> Write a review
+  </a>
+  <a class="btn btn-outline account-action-btn" href="/account/settings">
+    <span class="account-action-icon">&#9881;</span> Update profile
+  </a>
 </div>
 
 <div class="account-grid">
@@ -106,6 +133,28 @@
     {% else %}
       <p class="muted">You have not viewed any drug pages yet. Browse <a href="{{ url_for('drug_az') }}">Drugs A-Z</a> to get started.</p>
     {% endif %}
+  </section>
+
+  <section class="account-box">
+    <h2>Account settings</h2>
+    <form method="post" action="/account/settings" class="account-settings-form">
+      <div class="form-row">
+        <label for="acct-email">Email address</label>
+        <input id="acct-email" type="email" name="email" value="{{ current_user.email }}">
+      </div>
+      <fieldset class="form-fieldset">
+        <legend>Email preferences</legend>
+        <label class="form-check"><input type="checkbox" name="newsletter" checked> Weekly health newsletter</label>
+        <label class="form-check"><input type="checkbox" name="drug_alerts" checked> FDA drug alerts &amp; recalls</label>
+        <label class="form-check"><input type="checkbox" name="new_approvals"> New drug approvals</label>
+      </fieldset>
+      <fieldset class="form-fieldset">
+        <legend>Notification settings</legend>
+        <label class="form-check"><input type="checkbox" name="interaction_warnings" checked> Interaction warnings for drugs in my list</label>
+        <label class="form-check"><input type="checkbox" name="refill_reminders"> Refill reminders</label>
+      </fieldset>
+      <button type="submit" class="btn btn-primary btn-sm">Save preferences</button>
+    </form>
   </section>
 
   <section class="account-box">
