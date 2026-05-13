@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% from "_pill_svg.html" import render_pill %}
 {% block title %}{{ drug.generic_name|capitalize }} Uses, Dosage & Side Effects - {{ site_name }}{% endblock %}
 {% block content %}
 <div class="breadcrumb-row">
@@ -19,58 +20,35 @@
 
 <article class="drug-detail">
   <header class="drug-header" style="display:flex;gap:18px;align-items:flex-start">
-    <a href="{{ url_for('drug_images', slug=drug.slug) }}" class="drug-header-image" aria-label="View {{ drug.generic_name }} pill images" style="flex:0 0 auto">
-      {% if drug.slug|pill_image_exists %}
-        <img src="{{ url_for('static', filename='images/pills/' + drug.slug + '.jpg') }}"
-             alt="{{ drug.generic_name|capitalize }} pill"
-             class="pill-photo pill-photo--header" loading="lazy">
-      {% elif drug.images and drug.images|length > 0 %}
-        {% set img0 = drug.images[0] %}
-        {% set color_map = {
-          'white': '#f8f8f8', 'yellow': '#fff5b8', 'orange': '#ffd9a8',
-          'pink': '#fce6ec', 'red': '#fbcfcf', 'blue': '#d6e6fa',
-          'green': '#d6f0d6', 'purple': '#e3d4ef', 'brown': '#e0cdb8',
-          'gray': '#e2e2e2', 'grey': '#e2e2e2', 'black': '#cccccc'
-        } %}
-        {% set stroke_map = {
-          'white': '#bbb', 'yellow': '#c9a920', 'orange': '#c87b1f',
-          'pink': '#b8526a', 'red': '#a83232', 'blue': '#2c6cb8',
-          'green': '#3b8a3b', 'purple': '#7a4eaa', 'brown': '#7a5a36',
-          'gray': '#888', 'grey': '#888', 'black': '#333'
-        } %}
-        {% set c_key = (img0.color or 'white')|lower %}
-        {% set fill = color_map.get(c_key, '#f0f0f0') %}
-        {% set stroke = stroke_map.get(c_key, '#999') %}
-        {% set shape = (img0.shape or 'round')|lower %}
-        <svg viewBox="0 0 120 60" width="110" height="55" xmlns="http://www.w3.org/2000/svg" style="border:1px solid #e2e2e2;border-radius:6px;background:#fff;padding:4px" aria-label="{{ img0.color }} {{ img0.shape }} pill {{ img0.imprint or '' }}">
-          {% if 'capsule' in shape %}
-            <rect x="14" y="18" width="92" height="24" rx="12" ry="12" fill="{{ fill }}" stroke="{{ stroke }}" stroke-width="1.5"/>
-            <line x1="60" y1="18" x2="60" y2="42" stroke="{{ stroke }}" stroke-width="1"/>
-          {% elif 'oval' in shape or 'oblong' in shape or 'elliptical' in shape %}
-            <ellipse cx="60" cy="30" rx="50" ry="18" fill="{{ fill }}" stroke="{{ stroke }}" stroke-width="1.5"/>
-          {% elif 'square' in shape or 'rect' in shape %}
-            <rect x="35" y="10" width="50" height="40" rx="4" ry="4" fill="{{ fill }}" stroke="{{ stroke }}" stroke-width="1.5"/>
-          {% elif 'triangle' in shape %}
-            <polygon points="60,8 92,50 28,50" fill="{{ fill }}" stroke="{{ stroke }}" stroke-width="1.5"/>
-          {% else %}
-            <circle cx="60" cy="30" r="22" fill="{{ fill }}" stroke="{{ stroke }}" stroke-width="1.5"/>
-          {% endif %}
-          <text x="60" y="34" text-anchor="middle" font-size="10" fill="#333" font-family="sans-serif">{{ (img0.imprint or '')[:8] }}</text>
-        </svg>
-      {% else %}
-        <svg viewBox="0 0 120 60" width="110" height="55" xmlns="http://www.w3.org/2000/svg" style="border:1px solid #e2e2e2;border-radius:6px;background:#fff;padding:4px" aria-label="No image available">
-          <ellipse cx="60" cy="30" rx="50" ry="22" fill="#eeeeee" stroke="#bbbbbb" stroke-width="1.5"/>
-          <text x="60" y="35" text-anchor="middle" font-size="10" fill="#888" font-family="sans-serif">No image</text>
-        </svg>
-      {% endif %}
-    </a>
+    <div class="drug-header-image-wrap" style="flex:0 0 auto;display:flex;flex-direction:column;align-items:center;gap:4px;">
+      <a href="{{ url_for('drug_images', slug=drug.slug) }}" class="drug-header-image drug-header-image--featured" aria-label="View {{ drug.generic_name }} pill images">
+        {% if drug.slug|pill_image_exists %}
+          <img src="{{ url_for('static', filename='images/pills/' + drug.slug + '.jpg') }}"
+               alt="{{ drug.generic_name|capitalize }} pill"
+               class="pill-photo pill-photo--header pill-photo--featured" loading="lazy">
+        {% elif drug.images and drug.images|length > 0 %}
+          {% set img0 = drug.images[0] %}
+          {{ render_pill('feat-' + drug.slug, img0.shape or 'round', img0.color or 'white', img0.imprint or drug.slug[:4].upper()) }}
+        {% else %}
+          {{ render_pill('feat-' + drug.slug, 'round', 'white', drug.slug[:4].upper()) }}
+        {% endif %}
+      </a>
+      <a href="{{ url_for('drug_images', slug=drug.slug) }}" class="drug-header-image-caption">View images &rsaquo;</a>
+    </div>
     <div class="drug-header-text" style="flex:1 1 auto;min-width:0">
     <h1>{{ drug.generic_name|capitalize }} <button type="button" class="drug-pronounce-btn speaker-icon" aria-label="Pronounce {{ drug.generic_name }}" title="Hear pronunciation" style="background:none;border:none;cursor:pointer;font-size:inherit;padding:0 4px;">&#128264;</button></h1>
     {% if drug.pronunciation %}<p class="pronunciation">Pronunciation: <em>{{ drug.pronunciation }}</em></p>{% endif %}
-    <ul class="meta-row">
-      <li><strong>Generic name:</strong> {{ drug.generic_name }}</li>
-      <li><strong>Brand names:</strong> {{ drug.brand_names|join(', ') if drug.brand_names else 'N/A' }}</li>
-      <li><strong>Dosage forms:</strong>
+    <div class="drug-meta-line">
+      <span class="drug-meta-item"><strong>Generic name:</strong> {{ drug.generic_name }}</span>
+      <span class="drug-meta-item"><strong>Brand names:</strong>
+        {% if drug.brand_names %}
+          {% for bn in drug.brand_names[:4] %}<span class="brand-chip">{{ bn }}</span>{% if not loop.last %} {% endif %}{% endfor %}
+          {% if drug.brand_names|length > 4 %}<span class="brand-chip brand-chip--more">+{{ drug.brand_names|length - 4 }} more</span>{% endif %}
+        {% else %}
+          <span class="muted">N/A</span>
+        {% endif %}
+      </span>
+      <span class="drug-meta-item"><strong>Dosage forms:</strong>
         {% if drug.availability == 'OTC' %}
           oral tablet, oral capsule
         {% elif drug.drug_class and 'injection' in drug.drug_class.name.lower() %}
@@ -78,13 +56,13 @@
         {% else %}
           tablet, capsule, oral solution
         {% endif %}
-      </li>
-      <li><strong>Drug class:</strong>
+      </span>
+      <span class="drug-meta-item"><strong>Drug class:</strong>
         {% if drug.drug_class %}
           <a href="{{ url_for('drug_class_page', slug=drug.drug_class.slug) }}">{{ drug.drug_class.name }}</a>
         {% else %}N/A{% endif %}
-      </li>
-    </ul>
+      </span>
+    </div>
     {% if drug.avg_rating %}
     {% set full_stars = (drug.avg_rating / 2) | int %}
     {% set half_star = ((drug.avg_rating / 2) - full_stars) >= 0.5 %}

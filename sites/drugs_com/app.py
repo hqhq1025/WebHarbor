@@ -1064,6 +1064,17 @@ def seed_conditions():
     db.session.commit()
 
 
+DRUG_CONTENT_OVERRIDES = {
+    "metformin": {
+        "uses": "Metformin is a biguanide antidiabetic used to treat type 2 diabetes mellitus. It works by decreasing hepatic glucose production, decreasing intestinal absorption of glucose, and improving insulin sensitivity by increasing peripheral glucose uptake and utilization. Metformin is often the first-line medication for type 2 diabetes, particularly in overweight patients. It may also be used for polycystic ovary syndrome (PCOS).",
+        "description": "Metformin (Glucophage) is an oral diabetes medicine that helps control blood sugar levels. It is the most widely used drug for type 2 diabetes and is often prescribed alongside lifestyle changes.",
+        "warnings": "Lactic acidosis: Metformin can cause a rare but serious condition called lactic acidosis, a buildup of lactic acid in the blood. Symptoms include weakness, unusual muscle pain, trouble breathing, unusual drowsiness, stomach discomfort, nausea, vomiting, or feeling cold. Seek emergency care immediately. Discontinue if renal impairment (eGFR <30), contrast dye procedures, or surgery requiring anesthesia.",
+        "side_effects": "Common side effects include nausea, vomiting, diarrhea, stomach upset, and metallic taste (especially when first starting the medication). These usually improve over time. Serious: lactic acidosis (rare), vitamin B12 deficiency with long-term use.",
+        "dosage": "Adults: Initial dose 500 mg twice daily or 850 mg once daily with meals. Increase by 500 mg weekly or 850 mg every 2 weeks as tolerated. Maximum dose: 2550 mg/day. Extended-release: 500-1000 mg once daily with evening meal, max 2000-2500 mg/day. Pediatric (10+ years): 500 mg twice daily, max 2000 mg/day.",
+    },
+}
+
+
 def seed_drugs():
     existing = {d.generic_name for d in Drug.query.all()}
     cls_by_name = {c.name: c.id for c in DrugClass.query.all()}
@@ -1091,6 +1102,18 @@ def seed_drugs():
             adv = adv or syn["side_effects"]
             inter = inter or syn["interactions_text"]
             desc = desc or syn["description"]
+
+        # Manual overrides for drugs whose openFDA label resolved to a combination
+        # product or otherwise mismatched content. Each override fully replaces the
+        # uses/description/warnings/dosage/side_effects so the single-ingredient
+        # drug page reads correctly.
+        if gname in DRUG_CONTENT_OVERRIDES:
+            ov = DRUG_CONTENT_OVERRIDES[gname]
+            uses = ov.get("uses", uses)
+            desc = ov.get("description", desc)
+            warn = ov.get("warnings", warn)
+            dose = ov.get("dosage", dose)
+            adv = ov.get("side_effects", adv)
 
         faq = [
             {"q": f"What is {gname} used for?", "a": (uses or "")[:400] or f"{gname} is used to treat {', '.join(conds) if conds else 'various medical conditions'}."},
@@ -3298,7 +3321,15 @@ def health():
 
 @app.errorhandler(404)
 def not_found(e):
-    return render_template("base.html", not_found=True), 404
+    try:
+        popular_drugs = (
+            Drug.query.order_by(Drug.rating_count.desc().nullslast())
+            .limit(12)
+            .all()
+        )
+    except Exception:
+        popular_drugs = []
+    return render_template("base.html", not_found=True, popular_drugs=popular_drugs), 404
 
 
 # ---------------------------------------------------------------------------

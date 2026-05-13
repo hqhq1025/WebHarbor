@@ -124,18 +124,68 @@
       {% endif %}
     {% endwith %}
     {% block content %}{% if not_found %}
-    <div style="padding:40px 0">
+    <div class="not-found-page" style="padding:32px 0 56px">
       <nav class="breadcrumb"><a href="{{ url_for('index') }}">Home</a> &rsaquo; <span>Page Not Found</span></nav>
-      <h1 style="font-size:2rem;margin-bottom:12px">Page Not Found</h1>
-      <p style="margin-bottom:20px">The page you were looking could <strong>not be found</strong> or is unavailable.</p>
-      <h2 style="font-size:1.2rem;margin-bottom:12px">Where to now?</h2>
-      <ul style="list-style:disc;padding-left:22px;line-height:2">
-        <li>Use our <a href="{{ url_for('drug_az') }}">A-Z list of drugs</a> to find medications by brand or generic name.</li>
-        <li>Find treatment options by <a href="{{ url_for('conditions_list') }}">disease or condition</a>.</li>
-        <li>Identify unknown pills by using our <a href="{{ url_for('pill_identifier') }}">pill identifier tool</a>.</li>
-        <li>Check for <a href="{{ url_for('interaction_checker') }}">drug interactions</a> to identify potentially harmful combinations.</li>
-        <li>Stay up-to-date with the <a href="{{ url_for('news_index') }}">latest drug news</a>.</li>
-      </ul>
+
+      <div style="display:flex;align-items:center;gap:24px;margin:24px 0 12px;flex-wrap:wrap">
+        <div aria-hidden="true" style="font-size:5rem;font-weight:800;color:#3b82c4;line-height:1;letter-spacing:-2px">404</div>
+        <div>
+          <h1 style="font-size:2rem;margin:0 0 6px;color:#222">Page Not Found</h1>
+          <p style="margin:0;color:#555;max-width:560px">The page you were looking for could <strong>not be found</strong> or is no longer available. Try a search, or pick one of the popular destinations below.</p>
+        </div>
+      </div>
+
+      <form action="{{ url_for('search') }}" method="get" style="margin:24px 0 32px;max-width:640px">
+        <div style="display:flex;border:2px solid #3b82c4;border-radius:4px;overflow:hidden;background:#fff">
+          <input type="search" name="q" placeholder="Search drugs, conditions, pill imprints..." style="flex:1;border:0;padding:12px 14px;font-size:1rem;outline:none" autofocus>
+          <button type="submit" style="background:#3b82c4;color:#fff;border:0;padding:0 22px;font-weight:600;cursor:pointer">Search</button>
+        </div>
+      </form>
+
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:24px;margin-top:8px">
+        <section style="background:#f7faff;border:1px solid #dfeaf5;border-radius:6px;padding:18px 20px">
+          <h2 style="font-size:1.05rem;margin:0 0 10px;color:#0e4a78">Find a Drug</h2>
+          <ul style="list-style:none;padding:0;margin:0;line-height:2">
+            <li><a href="{{ url_for('drug_az') }}">Drugs A-Z Index</a></li>
+            <li><a href="{{ url_for('drug_classes_list') }}">Browse by Drug Class</a></li>
+            <li><a href="{{ url_for('pill_identifier') }}">Pill Identifier</a></li>
+            <li><a href="{{ url_for('compare_drugs') }}">Compare Drugs</a></li>
+          </ul>
+        </section>
+        <section style="background:#fff8f3;border:1px solid #f3dfcb;border-radius:6px;padding:18px 20px">
+          <h2 style="font-size:1.05rem;margin:0 0 10px;color:#a85a16">Check Safety</h2>
+          <ul style="list-style:none;padding:0;margin:0;line-height:2">
+            <li><a href="{{ url_for('interaction_checker') }}">Drug Interaction Checker</a></li>
+            <li><a href="{{ url_for('side_effects_page') }}">Side Effects A-Z</a></li>
+            <li><a href="{{ url_for('warnings_index') }}">Black Box Warnings</a></li>
+            <li><a href="{{ url_for('symptom_checker') }}">Symptom Checker</a></li>
+          </ul>
+        </section>
+        <section style="background:#f3faf4;border:1px solid #cfe6d4;border-radius:6px;padding:18px 20px">
+          <h2 style="font-size:1.05rem;margin:0 0 10px;color:#256a36">Conditions &amp; News</h2>
+          <ul style="list-style:none;padding:0;margin:0;line-height:2">
+            <li><a href="{{ url_for('conditions_list') }}">Conditions A-Z</a></li>
+            <li><a href="{{ url_for('news_index') }}">Latest Medical News</a></li>
+            <li><a href="{{ url_for('news_category', category='fda-alerts') }}">FDA Drug Alerts</a></li>
+            <li><a href="{{ url_for('news_category', category='new-drug-approvals') }}">New Drug Approvals</a></li>
+          </ul>
+        </section>
+      </div>
+
+      {% if popular_drugs %}
+      <section style="margin-top:32px">
+        <h2 style="font-size:1.1rem;margin-bottom:10px;border-bottom:1px solid #e2e2e2;padding-bottom:6px">Popular drugs</h2>
+        <div style="display:flex;flex-wrap:wrap;gap:8px">
+          {% for d in popular_drugs %}
+            <a href="{{ url_for('drug_detail', slug=d.slug) }}" style="display:inline-block;padding:5px 12px;border:1px solid #c5d5e8;border-radius:14px;font-size:0.9rem;color:#0072ce;text-decoration:none;background:#fff">{{ d.generic_name|capitalize }}</a>
+          {% endfor %}
+        </div>
+      </section>
+      {% endif %}
+
+      <p style="margin-top:32px;color:#777;font-size:0.92rem">
+        Still can't find what you need? Visit the <a href="{{ url_for('sitemap') }}">sitemap</a> or <a href="{{ url_for('contact') }}">contact us</a>.
+      </p>
     </div>
     {% endif %}{% endblock %}
   </div>
