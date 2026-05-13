@@ -23,12 +23,13 @@
     <button type="button" id="add-drug" class="add-btn">Add</button>
   </div>
 
-  <p id="empty-hint" class="checker-hint"{% if drugs_input %} style="display:none;"{% endif %}>
+  <p id="empty-hint" class="checker-hint"{% if drugs_input or prefill %} style="display:none;"{% endif %}>
     Type a drug name in the box above to get started.
   </p>
 
   <ul id="drug-list" class="checker-drug-list">
-    {% for name in drugs_input or [] %}
+    {% set initial = drugs_input if drugs_input else ([prefill] if prefill else []) %}
+    {% for name in initial %}
       <li class="checker-drug-tag">
         <span class="drug-name">{{ name }}</span>
         <input type="hidden" name="drugs" value="{{ name }}">

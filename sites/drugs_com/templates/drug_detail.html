@@ -306,6 +306,8 @@
           <li><a href="{{ url_for('drug_images', slug=drug.slug) }}">Drug images</a></li>
           <li><a href="{{ url_for('drug_side_effects', slug=drug.slug) }}">Side effects (detailed)</a></li>
           <li><a href="{{ url_for('drug_dosage', slug=drug.slug) }}">Dosage guide</a></li>
+          <li><a href="{{ url_for('drug_interactions_page', slug=drug.slug) }}">Drug interactions</a></li>
+          <li><a href="{{ url_for('drug_pregnancy', slug=drug.slug) }}">Pregnancy info</a></li>
           <li><a href="{{ url_for('interaction_checker') }}?drug={{ drug.slug }}">Check interactions</a></li>
           <li><a href="{{ url_for('search') }}?q={{ drug.generic_name }}">Compare alternatives</a></li>
           <li><a href="#reviews">User reviews ({{ drug.review_count }})</a></li>

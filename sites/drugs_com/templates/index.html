@@ -48,8 +48,37 @@
   </a>
 </div>
 
+<!-- Health Topics -->
+{% if health_topics %}
+<div class="container">
+  <div class="home-row">
+    <h2>Browse by Health Topic</h2>
+    <div class="topics-grid">
+      {% for topic in health_topics %}
+      <a href="{{ url_for('condition_page', slug=topic.slug) }}" class="topic-card">
+        <span class="topic-name">{{ topic.name }}</span>
+        <span class="topic-drugs muted">{{ topic.drug_count }} drugs</span>
+      </a>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+{% endif %}
+
 <!-- Browse section: A-Z + Browse by Site Section -->
 <div class="container">
+  {% if fda_news %}
+  <div class="home-row fda-alerts-strip">
+    <h2><span class="fda-badge">FDA</span> Recent Alerts</h2>
+    <ul>
+      {% for a in fda_news %}
+      <li><a href="{{ url_for('news_article', article_id=a.id) }}">{{ a.title }}</a> <span class="muted">{{ a.published_at.strftime('%b %d') }}</span></li>
+      {% endfor %}
+    </ul>
+    <a href="{{ url_for('news_index') }}">View all FDA Alerts &rarr;</a>
+  </div>
+  {% endif %}
+
   <div class="home-browse-grid" style="margin-top:28px">
     <!-- Left: Browse Drugs -->
     <div>
@@ -140,6 +169,19 @@
         <a href="{{ url_for('drug_detail', slug=d.slug) }}">{{ d.generic_name|capitalize }}</a>
       {% endfor %}
     </div>
+  </div>
+</div>
+
+<div class="newsletter-strip">
+  <div class="container newsletter-inner">
+    <div>
+      <h3>Stay up to date on drug news</h3>
+      <p class="muted">Get FDA alerts, drug approvals, and health news delivered to your inbox.</p>
+    </div>
+    <form action="{{ url_for('newsletter_subscribe') }}" method="post" class="newsletter-form">
+      <input type="email" name="email" placeholder="Enter your email address" class="newsletter-input" required>
+      <button type="submit" class="btn btn-primary">Subscribe</button>
+    </form>
   </div>
 </div>
 {% endblock %}

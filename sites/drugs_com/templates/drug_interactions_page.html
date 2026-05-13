@@ -1,0 +1,87 @@
+{% extends "base.html" %}
+{% block title %}{{ drug.generic_name|title }} Drug Interactions - {{ site_name }}{% endblock %}
+{% block content %}
+<nav class="breadcrumb" aria-label="Breadcrumb">
+  <a href="{{ url_for('index') }}">Home</a>
+  <span class="sep">&rsaquo;</span>
+  <a href="{{ url_for('drug_az') }}">Drugs A-Z</a>
+  <span class="sep">&rsaquo;</span>
+  <a href="{{ url_for('drug_detail', slug=drug.slug) }}">{{ drug.generic_name|title }}</a>
+  <span class="sep">&rsaquo;</span>
+  <span class="current">Interactions</span>
+</nav>
+
+<div class="page-with-sidebar">
+<div class="main-col">
+
+<h1>{{ drug.generic_name|title }} Drug Interactions</h1>
+<p class="lead">A list of known interactions between {{ drug.generic_name|title }} and other
+medications in our database. This list is not exhaustive &mdash; always tell your healthcare
+provider about every medication and supplement you take.</p>
+
+<div class="interaction-summary" style="padding:0.75rem 1rem;background:#f5f7fa;border-left:4px solid #2a6fb0;margin:0.75rem 0;border-radius:4px;">
+  <strong>{{ summary.total }} interaction{{ '' if summary.total == 1 else 's' }} found</strong>
+  {% if summary.total %}
+    ({% if summary.major %}<span style="color:#c0392b;font-weight:600;">{{ summary.major }} major</span>{% else %}0 major{% endif %},
+    {% if summary.moderate %}<span style="color:#e67e22;font-weight:600;">{{ summary.moderate }} moderate</span>{% else %}0 moderate{% endif %},
+    {% if summary.minor %}<span style="color:#b7950b;font-weight:600;">{{ summary.minor }} minor</span>{% else %}0 minor{% endif %})
+  {% endif %}
+</div>
+
+{% if interactions %}
+<table class="interactions-table" style="width:100%;border-collapse:collapse;margin:1rem 0;">
+  <thead>
+    <tr style="background:#f0f4f8;text-align:left;">
+      <th style="padding:0.5rem 0.75rem;border-bottom:2px solid #cfd8dc;">Severity</th>
+      <th style="padding:0.5rem 0.75rem;border-bottom:2px solid #cfd8dc;">Interacts with</th>
+      <th style="padding:0.5rem 0.75rem;border-bottom:2px solid #cfd8dc;">Description</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for it in interactions %}
+      {% set sev = it.severity %}
+      {% set bg = '#c0392b' if sev == 'major' else ('#e67e22' if sev == 'moderate' else ('#f1c40f' if sev == 'minor' else '#90a4ae')) %}
+      {% set fg = '#222' if sev == 'minor' else '#fff' %}
+      <tr style="border-bottom:1px solid #e0e0e0;">
+        <td style="padding:0.5rem 0.75rem;vertical-align:top;">
+          <span class="sev-badge sev-{{ sev }}" style="display:inline-block;padding:2px 10px;border-radius:12px;background:{{ bg }};color:{{ fg }};font-size:0.85em;font-weight:600;text-transform:capitalize;">{{ sev }}</span>
+        </td>
+        <td style="padding:0.5rem 0.75rem;vertical-align:top;">
+          <a href="{{ url_for('drug_detail', slug=it.other_drug.slug) }}">{{ it.other_drug.generic_name }}</a>
+        </td>
+        <td style="padding:0.5rem 0.75rem;vertical-align:top;">{{ it.description }}</td>
+      </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% else %}
+<p>No interactions for {{ drug.generic_name|title }} are recorded in our database. This does
+not mean none exist &mdash; always confirm with a pharmacist or clinician.</p>
+{% endif %}
+
+<section class="check-more" style="margin-top:1.5rem;padding:1rem;border:1px solid #e0e0e0;border-radius:4px;background:#fafafa;">
+  <h2 style="margin-top:0;">Check more interactions</h2>
+  <p>Add other medications you take alongside {{ drug.generic_name|title }} to see how they
+  interact.</p>
+  <p><a class="btn btn-primary" href="{{ url_for('interaction_checker') }}?drug={{ drug.slug }}">Open the interaction checker with {{ drug.generic_name|title }} pre-filled</a></p>
+</section>
+
+<p style="margin-top:1rem;"><a href="{{ url_for('drug_detail', slug=drug.slug) }}">&larr; Back to {{ drug.generic_name|title }} drug information</a></p>
+
+</div>
+
+<aside class="sidebar">
+  <div class="sidebar-box more-about">
+    <h3>More about {{ drug.generic_name }}</h3>
+    <ul class="more-about-list">
+      <li><a href="{{ url_for('drug_detail', slug=drug.slug) }}">Drug overview</a></li>
+      <li><a href="{{ url_for('drug_dosage', slug=drug.slug) }}">Dosage guide</a></li>
+      <li><a href="{{ url_for('drug_side_effects', slug=drug.slug) }}">Side effects</a></li>
+      <li><a href="{{ url_for('drug_pregnancy', slug=drug.slug) }}">Pregnancy info</a></li>
+      <li><a href="{{ url_for('drug_images', slug=drug.slug) }}">Drug images</a></li>
+      <li><a href="{{ url_for('drug_prices', slug=drug.slug) }}">Pricing</a></li>
+    </ul>
+  </div>
+</aside>
+</div>
+{% endblock %}

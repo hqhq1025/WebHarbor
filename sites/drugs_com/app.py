@@ -1331,11 +1331,18 @@ def inject_globals():
 @app.route("/")
 def index():
     featured = Drug.query.filter_by(is_featured=True).limit(8).all()
-    trending = Drug.query.order_by(Drug.review_count.desc()).limit(10).all()
+    trending = Drug.query.order_by(Drug.review_count.desc()).limit(12).all()
     news = NewsArticle.query.order_by(NewsArticle.published_at.desc()).limit(6).all()
     classes = DrugClass.query.order_by(DrugClass.name).limit(12).all()
+    health_topics = Condition.query.filter(
+        Condition.slug.in_(['hypertension', 'diabetes', 'depression', 'anxiety', 'pain',
+                            'high-cholesterol', 'heart-disease', 'asthma', 'arthritis', 'insomnia'])
+    ).all()
+    fda_news = NewsArticle.query.filter_by(category="FDA Alerts").order_by(
+        NewsArticle.published_at.desc()).limit(3).all()
     return render_template("index.html", featured=featured, trending=trending,
-                           news=news, classes=classes)
+                           news=news, classes=classes,
+                           health_topics=health_topics, fda_news=fda_news)
 
 
 @app.route("/drug_information.html")
@@ -1509,6 +1516,14 @@ def interaction_checker():
     interactions = None
     unrecognized = []
     summary = None
+    # Pre-populate from URL param (linked from drug detail pages, e.g. ?drug=ibuprofen)
+    prefill_slug = request.args.get("drug", "").strip()
+    prefill = ""
+    if prefill_slug:
+        d = Drug.query.filter_by(slug=prefill_slug).first()
+        if not d:
+            d = Drug.query.filter(db.func.lower(Drug.generic_name) == prefill_slug.lower()).first()
+        prefill = d.generic_name if d else prefill_slug
     if request.method == "POST":
         raw = request.form.getlist("drugs")
         drugs_input = [r.strip() for r in raw if r and r.strip()]
@@ -1562,6 +1577,7 @@ def interaction_checker():
         interactions=interactions,
         unrecognized=unrecognized,
         summary=summary,
+        prefill=prefill,
     )
 
 
@@ -1912,6 +1928,45 @@ def drug_dosage(slug):
 def drug_side_effects(slug):
     drug = Drug.query.filter_by(slug=slug).first_or_404()
     return render_template("drug_side_effects.html", drug=drug)
+
+
+@app.route("/<slug>/pregnancy")
+def drug_pregnancy(slug):
+    drug = Drug.query.filter_by(slug=slug).first_or_404()
+    return render_template("drug_pregnancy.html", drug=drug)
+
+
+@app.route("/<slug>/interactions")
+def drug_interactions_page(slug):
+    drug = Drug.query.filter_by(slug=slug).first_or_404()
+    interactions = DrugInteraction.query.filter(
+        db.or_(DrugInteraction.drug_a_id == drug.id, DrugInteraction.drug_b_id == drug.id)
+    ).all()
+    interaction_details = []
+    for i in interactions:
+        other_id = i.drug_b_id if i.drug_a_id == drug.id else i.drug_a_id
+        other = Drug.query.get(other_id)
+        if other is None:
+            continue
+        interaction_details.append({
+            'other_drug': other,
+            'severity': i.severity,
+            'description': i.description,
+        })
+    sev_order = {'major': 0, 'moderate': 1, 'minor': 2, 'unknown': 3}
+    interaction_details.sort(key=lambda x: sev_order.get(x['severity'], 3))
+    summary = {
+        'total': len(interaction_details),
+        'major': sum(1 for x in interaction_details if x['severity'] == 'major'),
+        'moderate': sum(1 for x in interaction_details if x['severity'] == 'moderate'),
+        'minor': sum(1 for x in interaction_details if x['severity'] == 'minor'),
+    }
+    return render_template(
+        "drug_interactions_page.html",
+        drug=drug,
+        interactions=interaction_details,
+        summary=summary,
+    )
 
 
 @app.route("/_health")
