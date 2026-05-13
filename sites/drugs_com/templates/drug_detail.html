@@ -22,9 +22,36 @@
     <a href="{{ url_for('drug_images', slug=drug.slug) }}" class="drug-header-image" aria-label="View {{ drug.generic_name }} pill images" style="flex:0 0 auto">
       {% if drug.images and drug.images|length > 0 %}
         {% set img0 = drug.images[0] %}
-        <svg viewBox="0 0 120 60" width="110" height="55" xmlns="http://www.w3.org/2000/svg" style="border:1px solid #e2e2e2;border-radius:6px;background:#fff;padding:4px">
-          <ellipse cx="60" cy="30" rx="50" ry="22" fill="#fce6ec" stroke="#b8526a" stroke-width="1.5"/>
-          <text x="60" y="35" text-anchor="middle" font-size="12" fill="#333" font-family="sans-serif">{{ img0.imprint or '' }}</text>
+        {% set color_map = {
+          'white': '#f8f8f8', 'yellow': '#fff5b8', 'orange': '#ffd9a8',
+          'pink': '#fce6ec', 'red': '#fbcfcf', 'blue': '#d6e6fa',
+          'green': '#d6f0d6', 'purple': '#e3d4ef', 'brown': '#e0cdb8',
+          'gray': '#e2e2e2', 'grey': '#e2e2e2', 'black': '#cccccc'
+        } %}
+        {% set stroke_map = {
+          'white': '#bbb', 'yellow': '#c9a920', 'orange': '#c87b1f',
+          'pink': '#b8526a', 'red': '#a83232', 'blue': '#2c6cb8',
+          'green': '#3b8a3b', 'purple': '#7a4eaa', 'brown': '#7a5a36',
+          'gray': '#888', 'grey': '#888', 'black': '#333'
+        } %}
+        {% set c_key = (img0.color or 'white')|lower %}
+        {% set fill = color_map.get(c_key, '#f0f0f0') %}
+        {% set stroke = stroke_map.get(c_key, '#999') %}
+        {% set shape = (img0.shape or 'round')|lower %}
+        <svg viewBox="0 0 120 60" width="110" height="55" xmlns="http://www.w3.org/2000/svg" style="border:1px solid #e2e2e2;border-radius:6px;background:#fff;padding:4px" aria-label="{{ img0.color }} {{ img0.shape }} pill {{ img0.imprint or '' }}">
+          {% if 'capsule' in shape %}
+            <rect x="14" y="18" width="92" height="24" rx="12" ry="12" fill="{{ fill }}" stroke="{{ stroke }}" stroke-width="1.5"/>
+            <line x1="60" y1="18" x2="60" y2="42" stroke="{{ stroke }}" stroke-width="1"/>
+          {% elif 'oval' in shape or 'oblong' in shape or 'elliptical' in shape %}
+            <ellipse cx="60" cy="30" rx="50" ry="18" fill="{{ fill }}" stroke="{{ stroke }}" stroke-width="1.5"/>
+          {% elif 'square' in shape or 'rect' in shape %}
+            <rect x="35" y="10" width="50" height="40" rx="4" ry="4" fill="{{ fill }}" stroke="{{ stroke }}" stroke-width="1.5"/>
+          {% elif 'triangle' in shape %}
+            <polygon points="60,8 92,50 28,50" fill="{{ fill }}" stroke="{{ stroke }}" stroke-width="1.5"/>
+          {% else %}
+            <circle cx="60" cy="30" r="22" fill="{{ fill }}" stroke="{{ stroke }}" stroke-width="1.5"/>
+          {% endif %}
+          <text x="60" y="34" text-anchor="middle" font-size="10" fill="#333" font-family="sans-serif">{{ (img0.imprint or '')[:8] }}</text>
         </svg>
       {% else %}
         <svg viewBox="0 0 120 60" width="110" height="55" xmlns="http://www.w3.org/2000/svg" style="border:1px solid #e2e2e2;border-radius:6px;background:#fff;padding:4px" aria-label="No image available">
@@ -206,15 +233,45 @@
       {% if related_drugs %}
       <section id="similar-drugs">
         <h2>Similar medications</h2>
-        <div class="related-drugs-grid">
-          {% for r in related_drugs %}
-          <a href="{{ url_for('drug_detail', slug=r.slug) }}" class="related-drug-card">
-            <strong>{{ r.generic_name|capitalize }}</strong>
-            <span class="avail-badge">{{ r.availability }}</span>
-            {% if r.avg_rating %}<span>&#9733; {{ r.avg_rating }}/10</span>{% endif %}
+        {% if drug.drug_class %}
+        <p class="muted">Other drugs in the {{ drug.drug_class.name }} class.</p>
+        {% endif %}
+        <div class="related-drugs-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px;margin-top:8px">
+          {% for r in related_drugs[:6] %}
+          {% set r_full = ((r.avg_rating or 0) / 2) | int %}
+          {% set r_half = (((r.avg_rating or 0) / 2) - r_full) >= 0.5 %}
+          <a href="{{ url_for('drug_detail', slug=r.slug) }}" class="related-drug-card" style="display:block;padding:12px;border:1px solid #e2e2e2;border-radius:6px;background:#fff;text-decoration:none;color:inherit">
+            <strong style="display:block;color:#0072ce;margin-bottom:4px">{{ r.generic_name|capitalize }}</strong>
+            {% if r.drug_class %}<div class="muted" style="font-size:0.85em;margin-bottom:6px">{{ r.drug_class.name }}</div>{% endif %}
+            {% if r.avg_rating %}
+            <div class="star-display" style="font-size:0.9em">
+              <span class="stars">
+                {% for i in range(r_full) %}<span class="star star-full">&#9733;</span>{% endfor %}
+                {% if r_half %}<span class="star star-half">&#189;</span>{% endif %}
+                {% for i in range(5 - r_full - (1 if r_half else 0)) %}<span class="star star-empty">&#9734;</span>{% endfor %}
+              </span>
+              <span class="rating-num" style="margin-left:4px">{{ "%.1f"|format(r.avg_rating) }}/10</span>
+            </div>
+            {% else %}
+            <div class="muted" style="font-size:0.85em">No ratings yet</div>
+            {% endif %}
+            <div style="margin-top:6px">
+              {% if 'Rx' in r.availability and 'OTC' in r.availability %}
+                <span class="avail-badge avail-both">Rx/OTC</span>
+              {% elif 'Rx' in r.availability %}
+                <span class="avail-badge avail-rx">Rx</span>
+              {% elif 'OTC' in r.availability %}
+                <span class="avail-badge avail-otc">OTC</span>
+              {% else %}
+                <span class="avail-badge">{{ r.availability }}</span>
+              {% endif %}
+            </div>
           </a>
           {% endfor %}
         </div>
+        {% if drug.drug_class %}
+        <p style="margin-top:12px"><a href="{{ url_for('drug_class_page', slug=drug.drug_class.slug) }}">See all {{ drug.drug_class.name }} drugs &rsaquo;</a></p>
+        {% endif %}
       </section>
       {% endif %}
 
@@ -449,13 +506,24 @@
           <li class="status-row">
             <span class="status-icon pregnancy" aria-hidden="true"></span>
             <span class="status-label">Pregnancy &amp; Lactation</span>
-            <span class="status-value"><a href="{{ url_for('drug_pregnancy', slug=drug.slug) }}">{{ drug.pregnancy_risk or 'Risk data available' }}</a></span>
+            <span class="status-value">
+              <a href="{{ url_for('drug_pregnancy', slug=drug.slug) }}">
+                {% if drug.pregnancy_risk and drug.pregnancy_risk|upper in ['A','B','C','D','X'] %}
+                  Category {{ drug.pregnancy_risk|upper }}
+                {% elif drug.pregnancy_risk %}
+                  {{ drug.pregnancy_risk }}
+                {% else %}
+                  Not classified
+                {% endif %}
+                <span class="status-arrow">&rsaquo;</span>
+              </a>
+            </span>
           </li>
           <li class="status-row">
-            <span class="status-icon csa" aria-hidden="true">N/A</span>
+            <span class="status-icon csa" aria-hidden="true"></span>
             <span class="status-label">CSA Schedule*</span>
             <span class="status-value">
-              {% if drug.csa_schedule and drug.csa_schedule|lower not in ['n/a', 'none', 'not scheduled'] %}
+              {% if drug.csa_schedule and drug.csa_schedule|lower not in ['n/a', 'none', 'not scheduled', ''] %}
                 {{ drug.csa_schedule }}
               {% else %}
                 Not a controlled drug
@@ -467,8 +535,14 @@
             <span class="status-icon approval" aria-hidden="true"></span>
             <span class="status-label">Approval History</span>
             <span class="status-value">
-              <a href="{{ url_for('drug_detail', slug=drug.slug) }}#further-information">FDA approved &middot; Last updated {{ drug.last_updated.strftime('%b %Y') }}
-              <span class="status-arrow">&rsaquo;</span></a>
+              <a href="{{ url_for('drug_detail', slug=drug.slug) }}#further-information">
+                {% if drug.approval_date %}
+                  FDA approved {{ drug.approval_date.strftime('%b %Y') if drug.approval_date.strftime is defined else drug.approval_date }}
+                {% else %}
+                  FDA approved &middot; Last updated {{ drug.last_updated.strftime('%b %Y') }}
+                {% endif %}
+                <span class="status-arrow">&rsaquo;</span>
+              </a>
             </span>
           </li>
           <li class="status-row">
