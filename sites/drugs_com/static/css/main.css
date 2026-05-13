@@ -1853,3 +1853,10 @@ details.faq-detail p { padding: 0 0 14px; font-size: 0.92rem; color: var(--gray-
 .calc-result:empty {
   display: none;
 }
+
+@media print {
+  .nav-primary, .utility-bar, .site-header, .section-tabs,
+  .drug-actions, .sidebar, footer { display: none !important; }
+  .detail-grid { grid-template-columns: 1fr !important; }
+  .detail-main section { display: block !important; }
+}
