@@ -417,8 +417,8 @@ a:hover { text-decoration: underline; color: var(--blue-mid); }
 .browse-tab.active { color: var(--blue); border-bottom-color: var(--blue); }
 .browse-tab:hover { color: var(--blue); text-decoration: none; }
 .letter-grid {
-  display: grid;
-  grid-template-columns: repeat(7, 1fr);
+  display: flex;
+  flex-wrap: wrap;
   gap: 6px;
   padding: 16px;
   background: var(--gray-50);
@@ -429,15 +429,17 @@ a:hover { text-decoration: underline; color: var(--blue-mid); }
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 38px;
+  min-width: 38px;
   height: 38px;
   border-radius: 50%;
-  background: var(--card-bg, #2a3a54);
-  color: var(--text, #e8e8e8);
+  background: #e8ecf1;
+  color: #1a3a6e;
   font-weight: 600;
-  font-size: 0.9rem;
+  font-size: 0.85rem;
   text-decoration: none;
   transition: background 0.15s;
+  padding: 0 4px;
+  white-space: nowrap;
 }
 .letter-btn:hover, .letter-btn.active {
   background: var(--blue);
