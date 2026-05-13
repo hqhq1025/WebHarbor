@@ -1373,6 +1373,27 @@ def index():
     trending = Drug.query.order_by(Drug.review_count.desc()).limit(12).all()
     news = NewsArticle.query.order_by(NewsArticle.published_at.desc()).limit(6).all()
     classes = DrugClass.query.order_by(DrugClass.name).limit(12).all()
+    # Top 12 conditions by drug count (for homepage "Browse by" tabs)
+    top_conditions = (Condition.query
+                      .order_by(Condition.drug_count.desc(), Condition.name)
+                      .limit(12).all())
+    # Top 12 drug classes by number of drugs (denormalized count via subquery)
+    class_drug_counts = dict(
+        db.session.query(Drug.drug_class_id, db.func.count(Drug.id))
+        .group_by(Drug.drug_class_id).all()
+    )
+    all_classes = DrugClass.query.all()
+    for c in all_classes:
+        c.drug_count_val = class_drug_counts.get(c.id, 0)
+    top_drug_classes = sorted(
+        all_classes, key=lambda c: (-c.drug_count_val, c.name)
+    )[:12]
+    # Common symptoms for the "Symptoms" tab (flat list of 12 from body systems)
+    top_symptoms = [
+        "Headache", "Cough", "Chest pain", "Nausea", "Joint pain", "Rash",
+        "Anxiety", "Fatigue", "Shortness of breath", "Abdominal pain",
+        "Back pain", "Insomnia",
+    ]
     health_topics = Condition.query.filter(
         Condition.slug.in_(['hypertension', 'diabetes', 'depression', 'anxiety', 'pain',
                             'high-cholesterol', 'heart-disease', 'asthma', 'arthritis', 'insomnia'])
@@ -1389,7 +1410,10 @@ def index():
                            news=news, classes=classes,
                            health_topics=health_topics, fda_news=fda_news,
                            new_approvals=new_approvals,
-                           image_samples=image_samples)
+                           image_samples=image_samples,
+                           top_conditions=top_conditions,
+                           top_drug_classes=top_drug_classes,
+                           top_symptoms=top_symptoms)
 
 
 @app.route("/drug_information.html")
@@ -1762,6 +1786,19 @@ def search():
         lower_to_orig = {n.lower(): n for n in all_names}
         suggestions = [lower_to_orig.get(s, s) for s in suggestions]
 
+    # "Related searches": fuzzy-near drug names, excluding any name already
+    # present in the result set. Only computed when a query is present.
+    related_searches = []
+    if q:
+        result_names_lower = {d.generic_name.lower() for d in results}
+        all_names = [d.generic_name for d in Drug.query.all()]
+        candidates = [n for n in all_names if n.lower() not in result_names_lower]
+        matches = difflib.get_close_matches(q.lower(),
+                                            [n.lower() for n in candidates],
+                                            n=6, cutoff=0.4)
+        lower_to_orig = {n.lower(): n for n in candidates}
+        related_searches = [lower_to_orig.get(s, s) for s in matches]
+
     total = len(results)
     total_all = total + len(condition_results) + len(news_results)
     total_pages = max(1, (total + per_page - 1) // per_page)
@@ -1778,6 +1815,7 @@ def search():
                            class_slug=class_slug, cond_slug=cond_slug, avail=avail,
                            page=page, total_pages=total_pages,
                            suggestions=suggestions,
+                           related_searches=related_searches,
                            matched_condition=matched_condition,
                            matched_class=matched_class)
 

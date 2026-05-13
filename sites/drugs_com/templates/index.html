@@ -142,17 +142,54 @@ function scrollCarousel(dir) {
   <div class="home-browse-grid" style="margin-top:28px">
     <!-- Left: Browse Drugs -->
     <div>
-      <div class="browse-panel-title">Browse Drugs</div>
-      <div class="browse-panel-tabs">
-        <a class="browse-tab active" href="{{ url_for('drug_az') }}">Drugs</a>
-        <a class="browse-tab" href="{{ url_for('conditions_list') }}">Conditions</a>
-        <a class="browse-tab" href="{{ url_for('side_effects_page') }}">Symptoms</a>
+      <div class="browse-panel-title">Browse by</div>
+      <div class="browse-panel-tabs" id="homeBrowseTabs">
+        <button type="button" class="browse-tab active" data-target="browse-panel-drugs">Drugs A-Z</button>
+        <button type="button" class="browse-tab" data-target="browse-panel-conditions">Conditions</button>
+        <button type="button" class="browse-tab" data-target="browse-panel-classes">Drug Classes</button>
+        <button type="button" class="browse-tab" data-target="browse-panel-symptoms">Symptoms</button>
       </div>
-      <div class="letter-grid" style="grid-template-columns:repeat(7,1fr)">
-        {% for L in ['A','B','C','D','E','F','G','H','I','J','K','L','M','N','O','P','Q','R','S','T','U','V','W','X','Y','Z','0-9'] %}
-          <a class="letter-btn letter-btn-sm" href="{{ url_for('drug_az') }}?letter={{ L }}">{{ L }}</a>
-        {% endfor %}
+
+      <div class="browse-panel-content" id="browse-panel-drugs">
+        <div class="letter-grid" style="grid-template-columns:repeat(7,1fr)">
+          {% for L in ['A','B','C','D','E','F','G','H','I','J','K','L','M','N','O','P','Q','R','S','T','U','V','W','X','Y','Z','0-9'] %}
+            <a class="letter-btn letter-btn-sm" href="{{ url_for('drug_az') }}?letter={{ L }}">{{ L }}</a>
+          {% endfor %}
+        </div>
       </div>
+
+      <div class="browse-panel-content" id="browse-panel-conditions" style="display:none">
+        <div class="topics-grid">
+          {% for c in top_conditions %}
+            <a href="{{ url_for('condition_page', slug=c.slug) }}" class="topic-card">
+              <span class="topic-name">{{ c.name }}</span>
+              {% if c.drug_count %}<span class="topic-drugs muted">{{ c.drug_count }} drugs</span>{% endif %}
+            </a>
+          {% endfor %}
+        </div>
+      </div>
+
+      <div class="browse-panel-content" id="browse-panel-classes" style="display:none">
+        <div class="topics-grid">
+          {% for c in top_drug_classes %}
+            <a href="{{ url_for('drug_class_page', slug=c.slug) }}" class="topic-card">
+              <span class="topic-name">{{ c.name }}</span>
+              <span class="topic-drugs muted">{{ c.drug_count_val }} drugs</span>
+            </a>
+          {% endfor %}
+        </div>
+      </div>
+
+      <div class="browse-panel-content" id="browse-panel-symptoms" style="display:none">
+        <div class="topics-grid">
+          {% for s in top_symptoms %}
+            <a href="{{ url_for('symptom_checker') }}?symptom={{ s }}" class="topic-card">
+              <span class="topic-name">{{ s }}</span>
+            </a>
+          {% endfor %}
+        </div>
+      </div>
+
       <div class="browse-footer">
         Browse A-Z:
         <a href="{{ url_for('drug_az') }}">drugs</a>,
@@ -161,6 +198,21 @@ function scrollCarousel(dir) {
         <a href="{{ url_for('side_effects_page') }}">symptoms</a>
       </div>
     </div>
+    <script>
+    (function () {
+      var tabs = document.querySelectorAll('#homeBrowseTabs .browse-tab');
+      tabs.forEach(function (tab) {
+        tab.addEventListener('click', function () {
+          var target = tab.getAttribute('data-target');
+          tabs.forEach(function (t) { t.classList.remove('active'); });
+          tab.classList.add('active');
+          document.querySelectorAll('.browse-panel-content').forEach(function (p) {
+            p.style.display = (p.id === target) ? '' : 'none';
+          });
+        });
+      });
+    })();
+    </script>
 
     <!-- Right: Browse by Site Section -->
     <div>

@@ -144,6 +144,17 @@
       </ul>
     {% endif %}
 
+    {% if q and related_searches %}
+      <section class="related-searches" style="margin-top:32px;padding-top:20px;border-top:1px solid #eef1f5">
+        <h2 class="search-group-heading">Related searches</h2>
+        <div class="popular-searches">
+          {% for name in related_searches %}
+            <a href="{{ url_for('search', q=name) }}">{{ name|capitalize }}</a>
+          {% endfor %}
+        </div>
+      </section>
+    {% endif %}
+
     {% if not results and not condition_results and not news_results %}
       <div class="no-results-box">
         <h2>No results found{% if q %} for "{{ q }}"{% endif %}</h2>
