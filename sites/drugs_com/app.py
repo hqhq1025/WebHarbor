@@ -204,6 +204,11 @@ class NewsArticle(db.Model):
     published_at = db.Column(db.DateTime, default=datetime.utcnow)
     is_featured = db.Column(db.Boolean, default=False)
 
+    @property
+    def slug(self):
+        s = re.sub(r"[^a-z0-9]+", "-", (self.title or "").lower()).strip("-")
+        return s or f"article-{self.id}"
+
 
 class SavedDrug(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -1518,7 +1523,33 @@ def drug_detail(slug):
     user_review = None
     if current_user.is_authenticated:
         user_review = DrugReview.query.filter_by(drug_id=drug.id, user_id=current_user.id).first()
-    related_news = NewsArticle.query.order_by(NewsArticle.published_at.desc()).limit(5).all()
+    related_news = NewsArticle.query.filter(
+        db.or_(
+            NewsArticle.title.ilike(f"%{drug.generic_name}%"),
+            NewsArticle.body.ilike(f"%{drug.generic_name}%")
+        )
+    ).order_by(NewsArticle.published_at.desc()).limit(3).all()
+
+    # Fallback: add brand name matches to fill up to 3
+    if len(related_news) < 3 and drug.brand_names:
+        seen_ids = {a.id for a in related_news}
+        for brand in drug.brand_names[:2]:
+            extras = NewsArticle.query.filter(
+                db.or_(
+                    NewsArticle.title.ilike(f"%{brand}%"),
+                    NewsArticle.body.ilike(f"%{brand}%")
+                )
+            ).order_by(NewsArticle.published_at.desc()).limit(2).all()
+            for a in extras:
+                if a.id not in seen_ids:
+                    related_news.append(a)
+                    seen_ids.add(a.id)
+                    if len(related_news) >= 3:
+                        break
+
+    # Final fallback: just recent news
+    if not related_news:
+        related_news = NewsArticle.query.order_by(NewsArticle.published_at.desc()).limit(3).all()
     related_drugs = []
     if drug.drug_class_id:
         related_drugs = Drug.query.filter(
@@ -2083,7 +2114,15 @@ def news_index():
         ))
     articles = query.order_by(NewsArticle.published_at.desc()).limit(30).all()
     categories = ["New Drug Approvals", "Medical", "FDA Alerts", "Clinical Trials", "Health"]
-    return render_template("news.html", articles=articles, active_category=cat, active_cat=cat or None, categories=categories, search_query=q)
+    fda_alerts = NewsArticle.query.filter(
+        NewsArticle.category.in_(["FDA Alerts", "Safety"])
+    ).order_by(NewsArticle.published_at.desc()).limit(4).all()
+    return render_template("news.html", articles=articles, active_category=cat, active_cat=cat or None, categories=categories, search_query=q, fda_alerts=fda_alerts)
+
+
+@app.route("/news/<slug>-<int:article_id>")
+def news_article_slug(slug, article_id):
+    return news_article(article_id)
 
 
 @app.route("/news/article/<int:article_id>")
@@ -2118,7 +2157,10 @@ def news_category(category):
         abort(404)
     articles = NewsArticle.query.filter_by(category=cat).order_by(NewsArticle.published_at.desc()).all()
     categories = list(cat_map.values())
-    return render_template("news.html", articles=articles, categories=categories, active_cat=cat)
+    fda_alerts = NewsArticle.query.filter(
+        NewsArticle.category.in_(["FDA Alerts", "Safety"])
+    ).order_by(NewsArticle.published_at.desc()).limit(4).all()
+    return render_template("news.html", articles=articles, categories=categories, active_cat=cat, fda_alerts=fda_alerts)
 
 
 @app.route("/drug-classes")

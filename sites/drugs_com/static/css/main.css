@@ -1725,3 +1725,92 @@ details.faq-detail p { padding: 0 0 14px; font-size: 0.92rem; color: var(--gray-
   font-size: .9rem;
 }
 .related-drug-card:hover { background: #f6f9fc; }
+
+/* Pro Edition clinical calculators */
+.calc-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 16px;
+  margin-top: 16px;
+}
+.calc-widget {
+  border: 1px solid #dde3ea;
+  background: #fff;
+  border-radius: 8px;
+  padding: 16px;
+  box-shadow: 0 1px 2px rgba(12, 59, 111, 0.04);
+  display: flex;
+  flex-direction: column;
+}
+.calc-widget h4 {
+  margin: 0 0 4px;
+  font-size: 1rem;
+  color: #0c3b6f;
+}
+.calc-widget .calc-desc {
+  margin: 0 0 12px;
+  font-size: .85rem;
+  color: #5a6470;
+}
+.calc-inputs {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.calc-inputs label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: .82rem;
+  color: #36404a;
+  font-weight: 500;
+}
+.calc-inputs input[type="number"],
+.calc-inputs select {
+  padding: 7px 9px;
+  border: 1px solid #c9d1da;
+  border-radius: 4px;
+  font-size: .9rem;
+  background: #fff;
+  font-weight: 400;
+  color: #1a2330;
+}
+.calc-inputs input[type="number"]:focus,
+.calc-inputs select:focus {
+  outline: none;
+  border-color: #1a6cb0;
+  box-shadow: 0 0 0 2px rgba(26, 108, 176, 0.15);
+}
+.calc-inputs .calc-row {
+  display: flex;
+  gap: 6px;
+}
+.calc-inputs .calc-row input {
+  flex: 1;
+  min-width: 0;
+}
+.calc-inputs button {
+  margin-top: 4px;
+  background: #1a6cb0;
+  color: #fff;
+  border: none;
+  padding: 8px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: .88rem;
+}
+.calc-inputs button:hover { background: #155a93; }
+.calc-result {
+  margin-top: 12px;
+  padding: 10px 12px;
+  background: #f1f6fb;
+  border-left: 3px solid #1a6cb0;
+  border-radius: 3px;
+  font-size: .92rem;
+  color: #1a2330;
+  min-height: 1.2em;
+}
+.calc-result:empty {
+  display: none;
+}

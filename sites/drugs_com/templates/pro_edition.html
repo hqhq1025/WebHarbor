@@ -36,69 +36,101 @@
     <section class="account-box">
       <h2>Clinical Calculators</h2>
       <p>Common bedside calculations for clinical decision-making.</p>
-      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px;margin-top:12px">
-        <div class="card" style="border:1px solid #ddd;padding:12px;border-radius:6px">
-          <strong>BMI Calculator</strong>
-          <p class="muted" style="font-size:.9rem">Body mass index from height &amp; weight.</p>
-          <div style="display:flex;flex-direction:column;gap:6px;margin-top:8px">
-            <input type="number" id="bmi-height" placeholder="Height (cm)" step="0.1" style="padding:6px;border:1px solid #ccc;border-radius:4px">
-            <input type="number" id="bmi-weight" placeholder="Weight (kg)" step="0.1" style="padding:6px;border:1px solid #ccc;border-radius:4px">
+      <div class="calc-grid">
+        <div class="calc-widget">
+          <h4>BMI Calculator</h4>
+          <p class="muted calc-desc">Body mass index from height &amp; weight.</p>
+          <div class="calc-inputs">
+            <label>Weight (lbs)
+              <input type="number" id="bmi-weight" placeholder="150" step="0.1">
+            </label>
+            <label>Height
+              <span class="calc-row">
+                <input type="number" id="bmi-ft" placeholder="ft (5)" step="1">
+                <input type="number" id="bmi-in" placeholder="in (8)" step="0.1">
+              </span>
+            </label>
             <button type="button" class="btn btn-sm" onclick="calcBMI()">Calculate</button>
-            <div id="bmi-result" class="muted" style="font-size:.9rem"></div>
           </div>
+          <div id="bmi-result" class="calc-result"></div>
         </div>
-        <div class="card" style="border:1px solid #ddd;padding:12px;border-radius:6px">
-          <strong>Creatinine Clearance</strong>
-          <p class="muted" style="font-size:.9rem">Cockcroft-Gault estimate of renal function.</p>
-          <div style="display:flex;flex-direction:column;gap:6px;margin-top:8px">
-            <input type="number" id="crcl-age" placeholder="Age (years)" style="padding:6px;border:1px solid #ccc;border-radius:4px">
-            <input type="number" id="crcl-weight" placeholder="Weight (kg)" step="0.1" style="padding:6px;border:1px solid #ccc;border-radius:4px">
-            <input type="number" id="crcl-scr" placeholder="Serum creatinine (mg/dL)" step="0.01" style="padding:6px;border:1px solid #ccc;border-radius:4px">
-            <select id="crcl-sex" style="padding:6px;border:1px solid #ccc;border-radius:4px">
-              <option value="male">Male</option>
-              <option value="female">Female</option>
-            </select>
+
+        <div class="calc-widget">
+          <h4>Creatinine Clearance</h4>
+          <p class="muted calc-desc">Cockcroft-Gault estimate of renal function.</p>
+          <div class="calc-inputs">
+            <label>Age (years)
+              <input type="number" id="crcl-age" placeholder="65">
+            </label>
+            <label>Weight (kg)
+              <input type="number" id="crcl-weight" placeholder="70" step="0.1">
+            </label>
+            <label>Serum creatinine (mg/dL)
+              <input type="number" id="crcl-scr" placeholder="1.0" step="0.01">
+            </label>
+            <label>Sex
+              <select id="crcl-sex">
+                <option value="male">Male</option>
+                <option value="female">Female</option>
+              </select>
+            </label>
             <button type="button" class="btn btn-sm" onclick="calcCrCl()">Calculate</button>
-            <div id="crcl-result" class="muted" style="font-size:.9rem"></div>
           </div>
+          <div id="crcl-result" class="calc-result"></div>
         </div>
-        <div class="card" style="border:1px solid #ddd;padding:12px;border-radius:6px">
-          <strong>eGFR</strong>
-          <p class="muted" style="font-size:.9rem">CKD-EPI 2021 estimated glomerular filtration rate.</p>
-        </div>
-        <div class="card" style="border:1px solid #ddd;padding:12px;border-radius:6px">
-          <strong>Opioid Conversion</strong>
-          <p class="muted" style="font-size:.9rem">Morphine milligram equivalents (MME).</p>
-        </div>
-        <div class="card" style="border:1px solid #ddd;padding:12px;border-radius:6px">
-          <strong>Body Weight Calculator</strong>
-          <p class="muted" style="font-size:.9rem">Ideal &amp; adjusted body weight (Devine).</p>
-          <div style="display:flex;flex-direction:column;gap:6px;margin-top:8px">
-            <input type="number" id="ibw-height-in" placeholder="Height (inches)" step="0.1" style="padding:6px;border:1px solid #ccc;border-radius:4px">
-            <input type="number" id="ibw-weight-kg" placeholder="Actual weight (kg)" step="0.1" style="padding:6px;border:1px solid #ccc;border-radius:4px">
-            <select id="ibw-sex" style="padding:6px;border:1px solid #ccc;border-radius:4px">
-              <option value="male">Male</option>
-              <option value="female">Female</option>
-            </select>
+
+        <div class="calc-widget">
+          <h4>Ideal Body Weight</h4>
+          <p class="muted calc-desc">Devine formula; adjusted body weight when actual &gt; IBW.</p>
+          <div class="calc-inputs">
+            <label>Height
+              <span class="calc-row">
+                <input type="number" id="ibw-ft" placeholder="ft (5)" step="1">
+                <input type="number" id="ibw-in" placeholder="in (8)" step="0.1">
+              </span>
+            </label>
+            <label>Actual weight (kg, optional)
+              <input type="number" id="ibw-weight-kg" placeholder="80" step="0.1">
+            </label>
+            <label>Sex
+              <select id="ibw-sex">
+                <option value="male">Male</option>
+                <option value="female">Female</option>
+              </select>
+            </label>
             <button type="button" class="btn btn-sm" onclick="calcIBW()">Calculate</button>
-            <div id="ibw-result" class="muted" style="font-size:.9rem"></div>
           </div>
+          <div id="ibw-result" class="calc-result"></div>
         </div>
-        <div class="card" style="border:1px solid #ddd;padding:12px;border-radius:6px">
-          <strong>Pediatric Dosing</strong>
-          <p class="muted" style="font-size:.9rem">Weight-based dose calculations.</p>
+
+        <div class="calc-widget">
+          <h4>Body Surface Area</h4>
+          <p class="muted calc-desc">Mosteller formula: &radic;(height &times; weight / 3600).</p>
+          <div class="calc-inputs">
+            <label>Height (cm)
+              <input type="number" id="bsa-height" placeholder="170" step="0.1">
+            </label>
+            <label>Weight (kg)
+              <input type="number" id="bsa-weight" placeholder="70" step="0.1">
+            </label>
+            <button type="button" class="btn btn-sm" onclick="calcBSA()">Calculate</button>
+          </div>
+          <div id="bsa-result" class="calc-result"></div>
         </div>
       </div>
       <script>
         function calcBMI() {
-          var h = parseFloat(document.getElementById('bmi-height').value);
           var w = parseFloat(document.getElementById('bmi-weight').value);
+          var ft = parseFloat(document.getElementById('bmi-ft').value) || 0;
+          var inches = parseFloat(document.getElementById('bmi-in').value) || 0;
           var out = document.getElementById('bmi-result');
-          if (!h || !w || h <= 0) { out.textContent = 'Enter valid height and weight.'; return; }
-          var m = h / 100;
-          var bmi = w / (m * m);
-          var cat = bmi < 18.5 ? 'Underweight' : bmi < 25 ? 'Normal' : bmi < 30 ? 'Overweight' : 'Obese';
-          out.textContent = 'BMI: ' + bmi.toFixed(1) + ' kg/m² (' + cat + ')';
+          var totalIn = ft * 12 + inches;
+          if (!w || w <= 0 || totalIn <= 0) { out.textContent = 'Enter valid weight and height.'; return; }
+          var h = totalIn * 0.0254;
+          var wkg = w * 0.453592;
+          var bmi = wkg / (h * h);
+          var cat = bmi < 18.5 ? 'Underweight' : bmi < 25 ? 'Normal weight' : bmi < 30 ? 'Overweight' : 'Obese';
+          out.innerHTML = 'BMI: <strong>' + bmi.toFixed(1) + '</strong> kg/m² &mdash; ' + cat;
         }
         function calcCrCl() {
           var age = parseFloat(document.getElementById('crcl-age').value);
@@ -109,25 +141,34 @@
           if (!age || !wt || !scr || scr <= 0) { out.textContent = 'Enter valid age, weight, and SCr.'; return; }
           var crcl = ((140 - age) * wt) / (72 * scr);
           if (sex === 'female') crcl *= 0.85;
-          out.textContent = 'CrCl: ' + crcl.toFixed(1) + ' mL/min';
+          out.innerHTML = 'CrCl: <strong>' + crcl.toFixed(1) + '</strong> mL/min';
         }
         function calcIBW() {
-          var inches = parseFloat(document.getElementById('ibw-height-in').value);
+          var ft = parseFloat(document.getElementById('ibw-ft').value) || 0;
+          var inches = parseFloat(document.getElementById('ibw-in').value) || 0;
           var actual = parseFloat(document.getElementById('ibw-weight-kg').value);
           var sex = document.getElementById('ibw-sex').value;
           var out = document.getElementById('ibw-result');
-          if (!inches || inches <= 0) { out.textContent = 'Enter valid height.'; return; }
-          var over = Math.max(0, inches - 60);
+          var totalIn = ft * 12 + inches;
+          if (totalIn <= 0) { out.textContent = 'Enter valid height.'; return; }
+          var over = Math.max(0, totalIn - 60);
           var ibw = (sex === 'female' ? 45.5 : 50) + 2.3 * over;
-          var msg = 'IBW: ' + ibw.toFixed(1) + ' kg';
+          var msg = 'IBW: <strong>' + ibw.toFixed(1) + '</strong> kg';
           if (actual && actual > ibw) {
             var abw = ibw + 0.4 * (actual - ibw);
-            msg += ' · ABW: ' + abw.toFixed(1) + ' kg';
+            msg += ' &middot; ABW: <strong>' + abw.toFixed(1) + '</strong> kg';
           }
-          out.textContent = msg;
+          out.innerHTML = msg;
+        }
+        function calcBSA() {
+          var h = parseFloat(document.getElementById('bsa-height').value);
+          var w = parseFloat(document.getElementById('bsa-weight').value);
+          var out = document.getElementById('bsa-result');
+          if (!h || !w || h <= 0 || w <= 0) { out.textContent = 'Enter valid height and weight.'; return; }
+          var bsa = Math.sqrt((h * w) / 3600);
+          out.innerHTML = 'BSA: <strong>' + bsa.toFixed(2) + '</strong> m²';
         }
       </script>
-      </div>
     </section>
 
     <section class="account-box">
