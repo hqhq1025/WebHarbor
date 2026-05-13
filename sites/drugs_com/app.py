@@ -1380,6 +1380,34 @@ def drug_detail(slug):
                            rating_distribution=rating_distribution, user_review=user_review)
 
 
+@app.route("/<slug>/reviews")
+def drug_reviews_page(slug):
+    drug = Drug.query.filter_by(slug=slug).first_or_404()
+    page = request.args.get('page', 1, type=int)
+    condition_filter = request.args.get('condition', '')
+    sort = request.args.get('sort', 'recent')
+
+    query = DrugReview.query.filter_by(drug_id=drug.id)
+    if condition_filter:
+        query = query.filter_by(condition_treated=condition_filter)
+    if sort == 'helpful':
+        query = query.order_by(DrugReview.helpful_count.desc())
+    elif sort == 'highest':
+        query = query.order_by(DrugReview.rating.desc())
+    elif sort == 'lowest':
+        query = query.order_by(DrugReview.rating.asc())
+    else:
+        query = query.order_by(DrugReview.created_at.desc())
+
+    reviews = query.paginate(page=page, per_page=20, error_out=False)
+    conditions = db.session.query(DrugReview.condition_treated).filter_by(drug_id=drug.id).distinct().all()
+    conditions = [c[0] for c in conditions if c[0]]
+    rating_dist = {i: DrugReview.query.filter_by(drug_id=drug.id, rating=i).count() for i in range(1, 11)}
+    return render_template("drug_reviews_page.html", drug=drug, reviews=reviews,
+                          conditions=conditions, condition_filter=condition_filter,
+                          sort=sort, rating_dist=rating_dist)
+
+
 @app.route("/<slug>/review", methods=["POST"])
 @login_required
 def submit_review(slug):
@@ -1850,6 +1878,26 @@ def my_reviews():
 @login_required
 def account_settings():
     return render_template("account_settings.html")
+
+
+@app.route("/account/settings/save", methods=["POST"])
+@login_required
+def save_settings():
+    flash("Settings saved.", "success")
+    return redirect(url_for("account_settings"))
+
+
+@app.route("/account/subscriptions")
+@login_required
+def account_subscriptions():
+    return render_template("account_subscriptions.html")
+
+
+@app.route("/account/subscriptions/save", methods=["POST"])
+@login_required
+def save_subscriptions():
+    flash("Email preferences saved.", "success")
+    return redirect(url_for("account_subscriptions"))
 
 
 @app.route("/sitemap")

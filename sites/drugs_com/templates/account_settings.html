@@ -14,37 +14,78 @@
   <a href="{{ url_for('my_med_list') }}">My Med List</a>
   <a href="/account/reviews">My Reviews</a>
   <a href="/account/settings" class="active">Settings</a>
-  <a href="/account/settings">Subscriptions</a>
+  <a href="/account/subscriptions">Subscriptions</a>
 </nav>
 
-<form onsubmit="event.preventDefault();alert('Settings saved (demo).')" class="account-box" style="max-width:640px">
-  <h2>Profile Information</h2>
+{% with messages = get_flashed_messages(with_categories=true) %}
+  {% for category, message in messages %}
+    <div class="flash flash-{{ category }}" style="padding:10px 14px;border-radius:4px;background:#e8f5e9;border:1px solid #a5d6a7;margin-bottom:14px">{{ message }}</div>
+  {% endfor %}
+{% endwith %}
+
+<form method="post" action="{{ url_for('save_settings') }}" class="account-box" style="max-width:680px">
+  <h2>Profile</h2>
   <div style="margin-bottom:14px">
     <label style="display:block;font-weight:600;margin-bottom:6px">Username</label>
-    <input type="text" name="username" value="{{ current_user.username }}" style="width:100%;padding:10px;border:1px solid #ccc;border-radius:4px">
+    <input type="text" name="username" value="{{ current_user.username }}" readonly style="width:100%;padding:10px;border:1px solid #ccc;border-radius:4px;background:#f5f5f5">
+    <small class="muted">Username cannot be changed.</small>
   </div>
   <div style="margin-bottom:14px">
     <label style="display:block;font-weight:600;margin-bottom:6px">Email address</label>
     <input type="email" name="email" value="{{ current_user.email }}" style="width:100%;padding:10px;border:1px solid #ccc;border-radius:4px">
   </div>
+
+  <h3 style="margin-top:18px">Change password</h3>
+  <div style="margin-bottom:14px">
+    <label style="display:block;font-weight:600;margin-bottom:6px">Current password</label>
+    <input type="password" name="current_password" style="width:100%;padding:10px;border:1px solid #ccc;border-radius:4px">
+  </div>
   <div style="margin-bottom:14px">
     <label style="display:block;font-weight:600;margin-bottom:6px">New password</label>
-    <input type="password" name="password" placeholder="Leave blank to keep current password" style="width:100%;padding:10px;border:1px solid #ccc;border-radius:4px">
+    <input type="password" name="new_password" placeholder="Leave blank to keep current password" style="width:100%;padding:10px;border:1px solid #ccc;border-radius:4px">
+  </div>
+  <div style="margin-bottom:14px">
+    <label style="display:block;font-weight:600;margin-bottom:6px">Confirm new password</label>
+    <input type="password" name="confirm_password" style="width:100%;padding:10px;border:1px solid #ccc;border-radius:4px">
   </div>
 
-  <h2 style="margin-top:24px">Email Preferences</h2>
-  <label style="display:block;margin-bottom:8px"><input type="checkbox" checked> Weekly drug news digest</label>
-  <label style="display:block;margin-bottom:8px"><input type="checkbox" checked> FDA safety alerts</label>
-  <label style="display:block;margin-bottom:8px"><input type="checkbox"> New approval notifications</label>
-  <label style="display:block;margin-bottom:8px"><input type="checkbox"> Product offers from partners</label>
+  <h2 style="margin-top:24px">Notification Preferences</h2>
+  <p>Manage email digests, FDA alerts and reminders on the
+    <a href="{{ url_for('account_subscriptions') }}">Subscriptions page</a>.</p>
 
-  <h2 style="margin-top:24px">Privacy</h2>
-  <label style="display:block;margin-bottom:8px"><input type="checkbox" checked> Show my reviews publicly</label>
-  <label style="display:block;margin-bottom:8px"><input type="checkbox"> Allow personalized recommendations</label>
+  <h2 style="margin-top:24px">Privacy &amp; Data</h2>
+  <label style="display:block;margin-bottom:8px"><input type="checkbox" name="public_reviews" checked> Show my reviews publicly</label>
+  <label style="display:block;margin-bottom:8px"><input type="checkbox" name="personalized"> Allow personalized recommendations based on my Med List</label>
+  <label style="display:block;margin-bottom:8px"><input type="checkbox" name="analytics" checked> Share anonymous usage analytics</label>
+  <label style="display:block;margin-bottom:8px"><input type="checkbox" name="third_party"> Allow data sharing with research partners</label>
+
+  <h2 style="margin-top:24px">Connected Apps</h2>
+  <div class="connected-apps" style="border:1px solid #e0e0e0;border-radius:4px">
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 14px;border-bottom:1px solid #eee">
+      <div>
+        <strong>Drugs.com for iOS</strong><br>
+        <span class="muted">Not connected</span>
+      </div>
+      <button type="button" class="btn btn-outline" disabled>Disconnected</button>
+    </div>
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 14px">
+      <div>
+        <strong>Drugs.com for Android</strong><br>
+        <span class="muted">Not connected</span>
+      </div>
+      <button type="button" class="btn btn-outline" disabled>Disconnected</button>
+    </div>
+  </div>
 
   <div style="margin-top:24px;display:flex;gap:12px">
     <button type="submit" class="btn">Save changes</button>
     <a href="{{ url_for('account') }}" class="btn btn-outline">Cancel</a>
   </div>
 </form>
+
+<section class="account-box" style="max-width:680px;margin-top:24px;border:1px solid #e57373;background:#fff5f5">
+  <h2 style="color:#c62828">Danger Zone</h2>
+  <p>Permanently delete your Drugs.com account and all associated data, including your Med List and reviews.</p>
+  <button type="button" class="btn" style="background:#c62828;color:#fff" onclick="alert('Contact support to delete your account.')">Delete my account</button>
+</section>
 {% endblock %}

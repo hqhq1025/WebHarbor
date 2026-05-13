@@ -133,7 +133,10 @@
       {% endif %}
 
       <section id="reviews">
-        <h2>User reviews for {{ drug.generic_name }}</h2>
+        <div class="reviews-heading">
+          <h2>User reviews for {{ drug.generic_name }}</h2>
+          <a href="{{ url_for('drug_reviews_page', slug=drug.slug) }}" class="reviews-view-all">View all reviews &rarr;</a>
+        </div>
         <div class="reviews-summary">
           <div class="reviews-summary-score">
             <div class="reviews-summary-number">{{ drug.avg_rating }}<span class="reviews-summary-denominator"> / 10</span></div>
@@ -161,9 +164,29 @@
           {% endif %}
         </div>
 
+        <div class="reviews-filter">
+          <select class="form-select" onchange="filterReviews(this.value)" id="condition-filter">
+            <option value="">All conditions</option>
+            {% for cond in reviews|map(attribute='condition_treated')|unique|list %}
+              {% if cond %}<option value="{{ cond }}">{{ cond|capitalize }}</option>{% endif %}
+            {% endfor %}
+          </select>
+          <select class="form-select" onchange="sortReviews(this.value)" id="sort-select">
+            <option value="recent">Most recent</option>
+            <option value="helpful">Most helpful</option>
+            <option value="highest">Highest rated</option>
+            <option value="lowest">Lowest rated</option>
+          </select>
+        </div>
+
         {% if reviews %}
+          <div class="reviews-list">
           {% for r in reviews %}
-            <article class="review">
+            <article class="review review-card"
+                     data-condition="{{ r.condition_treated or '' }}"
+                     data-rating="{{ r.rating or 0 }}"
+                     data-helpful="{{ r.helpful_count or 0 }}"
+                     data-date="{{ r.created_at.strftime('%s') if r.created_at else 0 }}">
               <header class="review-header">
                 <span class="review-score">{{ r.rating }}/10</span>
                 <strong>{{ r.title }}</strong>
@@ -174,11 +197,35 @@
                 </span>
               </header>
               <p>{{ r.body }}</p>
+              <div class="review-helpful muted">Was this helpful? <span class="review-helpful-count">{{ r.helpful_count or 0 }}</span> found this helpful</div>
             </article>
           {% endfor %}
+          </div>
         {% else %}
           <p class="muted">No reviews yet.</p>
         {% endif %}
+
+        <script>
+        function filterReviews(condition) {
+            document.querySelectorAll('.review-card').forEach(card => {
+                const cond = card.dataset.condition || '';
+                card.style.display = (!condition || cond.toLowerCase() === condition.toLowerCase()) ? '' : 'none';
+            });
+        }
+        function sortReviews(order) {
+            const list = document.querySelector('.reviews-list');
+            if (!list) return;
+            const cards = Array.from(list.querySelectorAll('.review-card'));
+            cards.sort((a, b) => {
+                if (order === 'recent') return parseInt(b.dataset.date||0) - parseInt(a.dataset.date||0);
+                if (order === 'helpful') return parseInt(b.dataset.helpful||0) - parseInt(a.dataset.helpful||0);
+                if (order === 'highest') return parseInt(b.dataset.rating||0) - parseInt(a.dataset.rating||0);
+                if (order === 'lowest') return parseInt(a.dataset.rating||0) - parseInt(b.dataset.rating||0);
+                return 0;
+            });
+            cards.forEach(c => list.appendChild(c));
+        }
+        </script>
 
         {% if current_user.is_authenticated %}
         <div id="add-review" class="review-form-box">

@@ -1,0 +1,90 @@
+{% extends "base.html" %}
+{% block title %}{{ drug.generic_name|capitalize }} User Reviews & Ratings - {{ site_name }}{% endblock %}
+{% block content %}
+<div class="container">
+  <nav class="breadcrumb">
+    <a href="{{ url_for('index') }}">Home</a> &rsaquo;
+    <a href="{{ url_for('drug_detail', slug=drug.slug) }}">{{ drug.generic_name|capitalize }}</a> &rsaquo;
+    <span>Reviews</span>
+  </nav>
+
+  <h1>User Reviews for {{ drug.generic_name|capitalize }}</h1>
+
+  <section class="reviews-summary">
+    <div class="reviews-summary-score">
+      <div class="reviews-summary-number">{{ drug.avg_rating }}<span class="reviews-summary-denominator"> / 10</span></div>
+      <div class="muted">{{ drug.review_count }} reviews</div>
+    </div>
+    <div class="reviews-distribution">
+      {% set total = drug.review_count or 1 %}
+      {% for score in range(10, 0, -1) %}
+        {% set count = rating_dist[score] %}
+        {% set pct = (count * 100 / total)|round(0, 'floor')|int %}
+        <div class="rating-row">
+          <span class="rating-row-label">{{ score }}</span>
+          <span class="rating-row-bar"><span class="rating-row-fill" style="width: {{ pct }}%"></span></span>
+          <span class="rating-row-count">{{ count }}</span>
+        </div>
+      {% endfor %}
+    </div>
+  </section>
+
+  <form method="get" class="reviews-filter">
+    <label>Filter by condition:
+      <select name="condition" class="form-select">
+        <option value="">All conditions</option>
+        {% for cond in conditions %}
+          <option value="{{ cond }}" {% if cond == condition_filter %}selected{% endif %}>{{ cond|capitalize }}</option>
+        {% endfor %}
+      </select>
+    </label>
+    <label>Sort by:
+      <select name="sort" class="form-select">
+        <option value="recent" {% if sort=='recent' %}selected{% endif %}>Most recent</option>
+        <option value="helpful" {% if sort=='helpful' %}selected{% endif %}>Most helpful</option>
+        <option value="highest" {% if sort=='highest' %}selected{% endif %}>Highest rated</option>
+        <option value="lowest" {% if sort=='lowest' %}selected{% endif %}>Lowest rated</option>
+      </select>
+    </label>
+    <button type="submit" class="btn btn-primary">Apply</button>
+    <a href="{{ url_for('drug_detail', slug=drug.slug) }}#add-review" class="btn btn-secondary">Write a review</a>
+  </form>
+
+  <div class="reviews-list">
+    {% if reviews.items %}
+      {% for r in reviews.items %}
+        <article class="review review-card"
+                 data-condition="{{ r.condition_treated or '' }}"
+                 data-rating="{{ r.rating or 0 }}"
+                 data-helpful="{{ r.helpful_count or 0 }}">
+          <header class="review-header">
+            <span class="review-score">{{ r.rating }}/10</span>
+            <strong>{{ r.title }}</strong>
+            <span class="muted">
+              &mdash; {{ r.user.username if r.user else 'anon' }}
+              {% if r.condition_treated %} (for {{ r.condition_treated }}){% endif %}
+              on {{ r.created_at.strftime('%b %d, %Y') }}
+            </span>
+          </header>
+          <p>{{ r.body }}</p>
+          <div class="review-helpful muted">Was this helpful? <span class="review-helpful-count">{{ r.helpful_count or 0 }}</span> found this helpful</div>
+        </article>
+      {% endfor %}
+    {% else %}
+      <p class="muted">No reviews match these filters.</p>
+    {% endif %}
+  </div>
+
+  {% if reviews.pages and reviews.pages > 1 %}
+  <nav class="pagination">
+    {% if reviews.has_prev %}
+      <a href="{{ url_for('drug_reviews_page', slug=drug.slug, page=reviews.prev_num, condition=condition_filter, sort=sort) }}">&laquo; Previous</a>
+    {% endif %}
+    <span class="muted">Page {{ reviews.page }} of {{ reviews.pages }}</span>
+    {% if reviews.has_next %}
+      <a href="{{ url_for('drug_reviews_page', slug=drug.slug, page=reviews.next_num, condition=condition_filter, sort=sort) }}">Next &raquo;</a>
+    {% endif %}
+  </nav>
+  {% endif %}
+</div>
+{% endblock %}
