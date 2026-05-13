@@ -109,7 +109,10 @@
               <span class="avail-badge">{{ d.availability or 'Rx/OTC' }}</span>
             {% endif %}
           </td>
-          <td><span class="rating">{{ '%.1f'|format(d.avg_rating) if d.avg_rating else '-' }}</span></td>
+          <td>
+            {% set _r = d.avg_rating or 0 %}
+            <span class="rating {% if _r >= 7.5 %}rating-high{% elif _r >= 5 %}rating-mid{% elif _r > 0 %}rating-low{% endif %}">{{ '%.1f'|format(d.avg_rating) if d.avg_rating else '-' }}</span>
+          </td>
           <td>
             <a href="{{ url_for('drug_detail', slug=d.slug) }}#reviews">{{ d.review_count or 0 }} review{{ '' if (d.review_count or 0) == 1 else 's' }}</a>
           </td>

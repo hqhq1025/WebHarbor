@@ -13,12 +13,28 @@
   {% endif %}
 </nav>
 
-<h1 style="font-size:28px;font-weight:700;color:var(--navy,#1a3a6e);margin:12px 0 6px">
-  {% if active_cat %}{{ active_cat }}{% else %}Pharmaceutical News and Articles{% endif %}
-</h1>
-<p class="lead muted" style="margin-bottom:20px">
-  Stay informed with the latest medical news, FDA drug alerts, new drug approvals, and clinical trial results.
-</p>
+{% set cat_meta = {
+  "New Drug Approvals": {"color": "#2e7d32", "bg": "linear-gradient(135deg,#e8f5e9 0%,#c8e6c9 100%)", "icon": "approvals", "blurb": "Newly approved medications, expanded indications, and biosimilars cleared by the U.S. Food and Drug Administration."},
+  "Medical": {"color": "#1565c0", "bg": "linear-gradient(135deg,#e3f2fd 0%,#bbdefb 100%)", "icon": "medical", "blurb": "Consumer-focused medical research, study findings, and clinical guidance from the medical literature."},
+  "FDA Alerts": {"color": "#c0392b", "bg": "linear-gradient(135deg,#fff5f5 0%,#ffd6d6 100%)", "icon": "alert", "blurb": "Drug safety communications, recalls, boxed warning updates, and other FDA regulatory actions."},
+  "Clinical Trials": {"color": "#6a1b9a", "bg": "linear-gradient(135deg,#f3e5f5 0%,#e1bee7 100%)", "icon": "trial", "blurb": "Late-stage clinical trial results and ongoing studies of investigational therapies."},
+  "Health": {"color": "#ef6c00", "bg": "linear-gradient(135deg,#fff3e0 0%,#ffe0b2 100%)", "icon": "health", "blurb": "Practical guidance on medication use, adherence, interactions, and patient safety."}
+} %}
+{% if active_cat and cat_meta.get(active_cat) %}
+  {% set meta = cat_meta[active_cat] %}
+  <div class="news-cat-banner" style="background:{{ meta.bg }};border-left:6px solid {{ meta.color }};padding:18px 22px;border-radius:6px;margin:14px 0 18px">
+    <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+      <span class="badge" style="background:{{ meta.color }};color:#fff;font-weight:700;text-transform:uppercase;letter-spacing:0.6px;font-size:11px;padding:5px 10px;border-radius:3px">{{ active_cat }}</span>
+      <h1 style="font-size:26px;font-weight:700;color:{{ meta.color }};margin:0">{{ active_cat }}</h1>
+    </div>
+    <p style="margin:8px 0 0;color:var(--gray-700,#444);font-size:14px;line-height:1.55">{{ meta.blurb }}</p>
+  </div>
+{% else %}
+  <h1 style="font-size:28px;font-weight:700;color:var(--navy,#1a3a6e);margin:12px 0 6px">Pharmaceutical News and Articles</h1>
+  <p class="lead muted" style="margin-bottom:20px">
+    Stay informed with the latest medical news, FDA drug alerts, new drug approvals, and clinical trial results.
+  </p>
+{% endif %}
 
 {% set cat_display = {
   "New Drug Approvals": "New Drugs",
@@ -49,18 +65,24 @@
 <div class="news-layout" style="display:grid;grid-template-columns:7fr 3fr;gap:32px;align-items:start">
   <div class="news-main">
     {% for a in articles %}
-      <div class="news-card">
-        <span class="badge" style="text-transform:uppercase;font-size:11px;letter-spacing:0.5px">{{ a.category }}</span>
-        <h2>
-          <a href="{{ url_for('news_article', article_id=a.id) }}">{{ a.title }}</a>
-        </h2>
-        <div class="news-meta">
-          {% if a.source %}{{ a.source }} &middot; {% endif %}{{ a.published_at.strftime('%B %d, %Y') }}
+      {% set am = cat_meta.get(a.category, {"color": "#1a3a6e", "bg": "linear-gradient(135deg,#e0e6ef 0%,#c5cee0 100%)"}) %}
+      <div class="news-card news-card-grid">
+        <div class="news-thumb" aria-hidden="true" style="background:{{ am.bg }};border:1px solid rgba(0,0,0,0.05)">
+          <span class="news-thumb-letter" style="color:{{ am.color }}">{{ a.title[:1]|upper }}</span>
         </div>
-        <p style="font-size:14px;line-height:1.6;color:var(--gray-700,#444);margin:6px 0 8px">
-          {{ a.body[:150] }}{% if a.body|length > 150 %}...{% endif %}
-        </p>
-        <a href="{{ url_for('news_article', article_id=a.id) }}" style="font-size:13px;font-weight:600">Read more &rsaquo;</a>
+        <div class="news-card-body">
+          <span class="badge" style="background:{{ am.color }};color:#fff;text-transform:uppercase;font-size:11px;letter-spacing:0.5px;padding:3px 8px;border-radius:3px">{{ a.category }}</span>
+          <h2>
+            <a href="{{ url_for('news_article', article_id=a.id) }}">{{ a.title }}</a>
+          </h2>
+          <div class="news-meta">
+            {% if a.source %}{{ a.source }} &middot; {% endif %}{{ a.published_at.strftime('%B %d, %Y') }}
+          </div>
+          <p style="font-size:14px;line-height:1.6;color:var(--gray-700,#444);margin:6px 0 8px">
+            {{ a.body[:180] }}{% if a.body|length > 180 %}...{% endif %}
+          </p>
+          <a href="{{ url_for('news_article', article_id=a.id) }}" style="font-size:13px;font-weight:600">Read more &rsaquo;</a>
+        </div>
       </div>
     {% else %}
       <p class="muted">No articles found.</p>

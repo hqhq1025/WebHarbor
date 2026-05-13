@@ -216,6 +216,12 @@
 
       <section id="interactions">
         <h2>What other drugs will affect {{ drug.generic_name }}?</h2>
+        {% if drug_interactions is defined and not drug_interactions %}
+        <div class="interactions-empty-state" style="padding:14px 16px;border:1px dashed #cfd6e0;border-radius:6px;background:#f7faff;margin:8px 0 16px;">
+          <p style="margin:0 0 6px;"><strong>No documented drug-drug interactions found</strong> for {{ drug.generic_name }} in our database.</p>
+          <p class="muted" style="margin:0;">This does not mean none exist. Always tell your healthcare provider about every medication, supplement, and herbal product you take. <a href="{{ url_for('interaction_checker') }}?drug={{ drug.slug }}">Use the full interaction checker &rsaquo;</a></p>
+        </div>
+        {% endif %}
         {% if drug_interactions is defined and drug_interactions %}
         {% set _sev_order = {'major': 0, 'moderate': 1, 'minor': 2, 'unknown': 3} %}
         {% set _sev_color = {'major': '#c62828', 'moderate': '#ef6c00', 'minor': '#2e7d32', 'unknown': '#666'} %}
