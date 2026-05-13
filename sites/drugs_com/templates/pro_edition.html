@@ -40,10 +40,27 @@
         <div class="card" style="border:1px solid #ddd;padding:12px;border-radius:6px">
           <strong>BMI Calculator</strong>
           <p class="muted" style="font-size:.9rem">Body mass index from height &amp; weight.</p>
+          <div style="display:flex;flex-direction:column;gap:6px;margin-top:8px">
+            <input type="number" id="bmi-height" placeholder="Height (cm)" step="0.1" style="padding:6px;border:1px solid #ccc;border-radius:4px">
+            <input type="number" id="bmi-weight" placeholder="Weight (kg)" step="0.1" style="padding:6px;border:1px solid #ccc;border-radius:4px">
+            <button type="button" class="btn btn-sm" onclick="calcBMI()">Calculate</button>
+            <div id="bmi-result" class="muted" style="font-size:.9rem"></div>
+          </div>
         </div>
         <div class="card" style="border:1px solid #ddd;padding:12px;border-radius:6px">
           <strong>Creatinine Clearance</strong>
           <p class="muted" style="font-size:.9rem">Cockcroft-Gault estimate of renal function.</p>
+          <div style="display:flex;flex-direction:column;gap:6px;margin-top:8px">
+            <input type="number" id="crcl-age" placeholder="Age (years)" style="padding:6px;border:1px solid #ccc;border-radius:4px">
+            <input type="number" id="crcl-weight" placeholder="Weight (kg)" step="0.1" style="padding:6px;border:1px solid #ccc;border-radius:4px">
+            <input type="number" id="crcl-scr" placeholder="Serum creatinine (mg/dL)" step="0.01" style="padding:6px;border:1px solid #ccc;border-radius:4px">
+            <select id="crcl-sex" style="padding:6px;border:1px solid #ccc;border-radius:4px">
+              <option value="male">Male</option>
+              <option value="female">Female</option>
+            </select>
+            <button type="button" class="btn btn-sm" onclick="calcCrCl()">Calculate</button>
+            <div id="crcl-result" class="muted" style="font-size:.9rem"></div>
+          </div>
         </div>
         <div class="card" style="border:1px solid #ddd;padding:12px;border-radius:6px">
           <strong>eGFR</strong>
@@ -54,13 +71,62 @@
           <p class="muted" style="font-size:.9rem">Morphine milligram equivalents (MME).</p>
         </div>
         <div class="card" style="border:1px solid #ddd;padding:12px;border-radius:6px">
-          <strong>Corrected QT (QTc)</strong>
-          <p class="muted" style="font-size:.9rem">Bazett, Fridericia, and Framingham formulas.</p>
+          <strong>Body Weight Calculator</strong>
+          <p class="muted" style="font-size:.9rem">Ideal &amp; adjusted body weight (Devine).</p>
+          <div style="display:flex;flex-direction:column;gap:6px;margin-top:8px">
+            <input type="number" id="ibw-height-in" placeholder="Height (inches)" step="0.1" style="padding:6px;border:1px solid #ccc;border-radius:4px">
+            <input type="number" id="ibw-weight-kg" placeholder="Actual weight (kg)" step="0.1" style="padding:6px;border:1px solid #ccc;border-radius:4px">
+            <select id="ibw-sex" style="padding:6px;border:1px solid #ccc;border-radius:4px">
+              <option value="male">Male</option>
+              <option value="female">Female</option>
+            </select>
+            <button type="button" class="btn btn-sm" onclick="calcIBW()">Calculate</button>
+            <div id="ibw-result" class="muted" style="font-size:.9rem"></div>
+          </div>
         </div>
         <div class="card" style="border:1px solid #ddd;padding:12px;border-radius:6px">
           <strong>Pediatric Dosing</strong>
           <p class="muted" style="font-size:.9rem">Weight-based dose calculations.</p>
         </div>
+      </div>
+      <script>
+        function calcBMI() {
+          var h = parseFloat(document.getElementById('bmi-height').value);
+          var w = parseFloat(document.getElementById('bmi-weight').value);
+          var out = document.getElementById('bmi-result');
+          if (!h || !w || h <= 0) { out.textContent = 'Enter valid height and weight.'; return; }
+          var m = h / 100;
+          var bmi = w / (m * m);
+          var cat = bmi < 18.5 ? 'Underweight' : bmi < 25 ? 'Normal' : bmi < 30 ? 'Overweight' : 'Obese';
+          out.textContent = 'BMI: ' + bmi.toFixed(1) + ' kg/m² (' + cat + ')';
+        }
+        function calcCrCl() {
+          var age = parseFloat(document.getElementById('crcl-age').value);
+          var wt = parseFloat(document.getElementById('crcl-weight').value);
+          var scr = parseFloat(document.getElementById('crcl-scr').value);
+          var sex = document.getElementById('crcl-sex').value;
+          var out = document.getElementById('crcl-result');
+          if (!age || !wt || !scr || scr <= 0) { out.textContent = 'Enter valid age, weight, and SCr.'; return; }
+          var crcl = ((140 - age) * wt) / (72 * scr);
+          if (sex === 'female') crcl *= 0.85;
+          out.textContent = 'CrCl: ' + crcl.toFixed(1) + ' mL/min';
+        }
+        function calcIBW() {
+          var inches = parseFloat(document.getElementById('ibw-height-in').value);
+          var actual = parseFloat(document.getElementById('ibw-weight-kg').value);
+          var sex = document.getElementById('ibw-sex').value;
+          var out = document.getElementById('ibw-result');
+          if (!inches || inches <= 0) { out.textContent = 'Enter valid height.'; return; }
+          var over = Math.max(0, inches - 60);
+          var ibw = (sex === 'female' ? 45.5 : 50) + 2.3 * over;
+          var msg = 'IBW: ' + ibw.toFixed(1) + ' kg';
+          if (actual && actual > ibw) {
+            var abw = ibw + 0.4 * (actual - ibw);
+            msg += ' · ABW: ' + abw.toFixed(1) + ' kg';
+          }
+          out.textContent = msg;
+        }
+      </script>
       </div>
     </section>
 
@@ -91,10 +157,13 @@
       <h2>Professional Newsletter</h2>
       <p>Get weekly summaries of FDA approvals, label changes, safety alerts, and clinical news
          delivered to your inbox.</p>
-      <form onsubmit="event.preventDefault();alert('Subscribed (demo).')" style="display:flex;gap:8px;margin-top:12px">
+      <form id="newsletter-form" onsubmit="event.preventDefault();document.getElementById('newsletter-confirm').style.display='block';this.reset();" style="display:flex;gap:8px;margin-top:12px">
         <input type="email" placeholder="your@hospital.org" style="flex:1;padding:10px;border:1px solid #ccc;border-radius:4px">
         <button class="btn" type="submit">Subscribe</button>
       </form>
+      <div id="newsletter-confirm" role="status" style="display:none;margin-top:10px;padding:10px;background:#e7f4ea;border:1px solid #b4dabd;color:#205a2e;border-radius:4px">
+        Subscribed (demo). You will receive the weekly professional newsletter.
+      </div>
     </section>
   </div>
 

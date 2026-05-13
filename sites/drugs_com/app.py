@@ -1385,7 +1385,7 @@ def drug_az():
     if letter not in string.ascii_uppercase:
         letter = "A"
     drugs = Drug.query.filter(Drug.generic_name.ilike(f"{letter}%")).order_by(Drug.generic_name).all()
-    return render_template("drug_az.html", letter=letter, drugs=drugs)
+    return render_template("drug_az.html", active_letter=letter, all_letters=list(string.ascii_uppercase), drugs=drugs)
 
 
 @app.route("/<slug>.html")
@@ -1855,6 +1855,7 @@ def logout():
     return redirect(url_for("index"))
 
 
+@app.route("/my-account.html")
 @app.route("/account")
 @login_required
 def account():
@@ -1863,6 +1864,7 @@ def account():
     return render_template("account.html", reviews=reviews, saved_count=saved_count)
 
 
+@app.route("/my-med-list.html")
 @app.route("/my-med-list")
 @login_required
 def my_med_list():
@@ -1904,12 +1906,44 @@ def pro_edition():
 @app.route("/compare/")
 @app.route("/compare")
 def compare_drugs():
-    slug1 = request.args.get("drug1", "")
-    slug2 = request.args.get("drug2", "")
-    drug1 = Drug.query.filter_by(slug=slug1).first() if slug1 else None
-    drug2 = Drug.query.filter_by(slug=slug2).first() if slug2 else None
+    def _lookup(q):
+        if not q:
+            return None
+        q = q.strip()
+        if not q:
+            return None
+        d = Drug.query.filter(db.func.lower(Drug.slug) == q.lower()).first()
+        if d:
+            return d
+        d = Drug.query.filter(db.func.lower(Drug.generic_name) == q.lower()).first()
+        if d:
+            return d
+        # brand name fallback (substring match against brand_names_json)
+        return Drug.query.filter(Drug.brand_names_json.ilike(f"%{q}%")).first()
+
+    def _dosage_forms(drug):
+        if not drug:
+            return "—"
+        shapes = {img.shape for img in drug.images if img.shape}
+        return ", ".join(sorted(shapes)) if shapes else "Tablet"
+
+    drug1 = _lookup(request.args.get("drug1", ""))
+    drug2 = _lookup(request.args.get("drug2", ""))
+    drug3 = _lookup(request.args.get("drug3", ""))
     popular = Drug.query.order_by(Drug.review_count.desc()).limit(20).all()
-    return render_template("compare_drugs.html", drug1=drug1, drug2=drug2, popular=popular)
+    dosage_forms = {
+        "drug1": _dosage_forms(drug1),
+        "drug2": _dosage_forms(drug2),
+        "drug3": _dosage_forms(drug3),
+    }
+    return render_template(
+        "compare_drugs.html",
+        drug1=drug1,
+        drug2=drug2,
+        drug3=drug3,
+        popular=popular,
+        dosage_forms=dosage_forms,
+    )
 
 
 @app.route("/account/reviews")

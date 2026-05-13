@@ -55,15 +55,22 @@
     <a href="{{ url_for('drug_prices', slug=drug.slug) }}" class="btn btn-sm btn-outline">Pricing</a>
   </div>
 
-  <nav class="section-tabs">
-    <a href="#uses">Uses</a>
-    <a href="#warnings">Warnings</a>
-    <a href="#before-taking">Before taking</a>
-    <a href="#dosage">Dosage</a>
-    <a href="#side-effects">Side effects</a>
-    <a href="#interactions">Interactions</a>
-    <a href="#faq">FAQ</a>
+  <nav class="section-tabs" role="tablist">
+    <a href="#uses" role="tab" data-tab="uses">Uses</a>
+    <a href="#warnings" role="tab" data-tab="warnings">Warnings</a>
+    <a href="#before-taking" role="tab" data-tab="before-taking">Before taking</a>
+    <a href="#dosage" role="tab" data-tab="dosage">Dosage</a>
+    <a href="#side-effects" role="tab" data-tab="side-effects">Side effects</a>
+    <a href="#interactions" role="tab" data-tab="interactions">Interactions</a>
+    <a href="#faq" role="tab" data-tab="faq">FAQ</a>
   </nav>
+  <style>
+    .section-tabs a.active {
+      font-weight: 700;
+      border-bottom: 3px solid #0072ce;
+      color: #0072ce;
+    }
+  </style>
 
   <div class="detail-grid">
     <div class="detail-main">
@@ -283,7 +290,7 @@
           <li class="status-row">
             <span class="status-icon pregnancy" aria-hidden="true"></span>
             <span class="status-label">Pregnancy &amp; Lactation</span>
-            <span class="status-value"><a href="#before-taking">{{ drug.pregnancy_risk or 'Risk data available' }}</a></span>
+            <span class="status-value"><a href="{{ url_for('drug_pregnancy', slug=drug.slug) }}">{{ drug.pregnancy_risk or 'Risk data available' }}</a></span>
           </li>
           <li class="status-row">
             <span class="status-icon csa" aria-hidden="true">N/A</span>
@@ -301,8 +308,8 @@
             <span class="status-icon approval" aria-hidden="true"></span>
             <span class="status-label">Approval History</span>
             <span class="status-value">
-              FDA approved &middot; Last updated {{ drug.last_updated.strftime('%b %Y') }}
-              <span class="status-arrow">&rsaquo;</span>
+              <a href="{{ url_for('drug_detail', slug=drug.slug) }}#further-information">FDA approved &middot; Last updated {{ drug.last_updated.strftime('%b %Y') }}
+              <span class="status-arrow">&rsaquo;</span></a>
             </span>
           </li>
           <li class="status-row">
@@ -360,10 +367,6 @@
           <li><a href="{{ url_for('interaction_checker') }}?drug={{ drug.slug }}">Check interactions</a></li>
           <li><a href="{{ url_for('search') }}?q={{ drug.generic_name }}">Compare alternatives</a></li>
           <li><a href="#reviews">User reviews ({{ drug.review_count }})</a></li>
-          <li><a href="#side-effects">Side effects</a></li>
-          <li><a href="#dosage">Dosage information</a></li>
-          <li><a href="#before-taking">Pregnancy warnings</a></li>
-          <li><a href="#before-taking">Breastfeeding</a></li>
           {% if drug.drug_class %}
           <li>Drug class: <a href="{{ url_for('drug_class_page', slug=drug.drug_class.slug) }}">{{ drug.drug_class.name }}</a></li>
           {% endif %}
@@ -408,6 +411,44 @@
   }
   if(btn) toggle(btn, 'Remove from My Med List', 'Add to My Med List');
   if(saveLink) toggle(saveLink, 'Saved', 'Save');
+})();
+</script>
+
+<script>
+(function(){
+  var TAB_IDS = ['uses','warnings','before-taking','dosage','side-effects','interactions','faq'];
+  var tabs = document.querySelectorAll('.section-tabs a[data-tab]');
+  if (!tabs.length) return;
+
+  function activate(id){
+    if (TAB_IDS.indexOf(id) === -1) id = 'uses';
+    TAB_IDS.forEach(function(sid){
+      var sec = document.getElementById(sid);
+      if (sec) sec.style.display = (sid === id) ? '' : 'none';
+    });
+    tabs.forEach(function(t){
+      if (t.dataset.tab === id) t.classList.add('active');
+      else t.classList.remove('active');
+    });
+  }
+
+  tabs.forEach(function(tab){
+    tab.addEventListener('click', function(e){
+      e.preventDefault();
+      var id = tab.dataset.tab;
+      activate(id);
+      if (history.replaceState) history.replaceState(null, '', '#' + id);
+      else window.location.hash = id;
+    });
+  });
+
+  var initial = (window.location.hash || '').replace(/^#/, '');
+  activate(TAB_IDS.indexOf(initial) !== -1 ? initial : 'uses');
+
+  window.addEventListener('hashchange', function(){
+    var h = (window.location.hash || '').replace(/^#/, '');
+    if (TAB_IDS.indexOf(h) !== -1) activate(h);
+  });
 })();
 </script>
 {% endblock %}

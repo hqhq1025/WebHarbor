@@ -18,7 +18,12 @@
     <label for="drug-input" class="visually-hidden">Enter a drug name</label>
     <input type="text" id="drug-input" placeholder="Enter a drug name" list="drug-suggestions" autocomplete="off">
     <datalist id="drug-suggestions">
-      {% for d in drugs %}<option value="{{ d.generic_name }}">{% endfor %}
+      {% for d in drugs %}
+        <option value="{{ d.generic_name }}">{{ d.generic_name }}{% if d.brand_names %} (generic){% endif %}</option>
+        {% for brand in d.brand_names %}
+          <option value="{{ brand }}">{{ brand }} (brand for {{ d.generic_name }})</option>
+        {% endfor %}
+      {% endfor %}
     </datalist>
     <button type="button" id="add-drug" class="add-btn">Add</button>
   </div>
