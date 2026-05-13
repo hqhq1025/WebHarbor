@@ -920,12 +920,53 @@ details.faq-detail p { padding: 0 0 14px; font-size: 0.92rem; color: var(--gray-
 }
 
 /* ── Drug detail layout ── */
+html { scroll-behavior: smooth; }
+
 .drug-detail-layout {
   display: grid;
   grid-template-columns: 2fr 1fr;
   gap: 28px;
   align-items: start;
 }
+
+/* Make the drug-detail sidebar follow the reader on long pages. */
+.detail-grid { align-items: start; }
+.detail-sidebar { position: sticky; top: 80px; align-self: start; max-height: calc(100vh - 96px); overflow-y: auto; }
+.detail-sidebar::-webkit-scrollbar { width: 6px; }
+.detail-sidebar::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.15); border-radius: 3px; }
+
+/* Stand-alone star colors (used outside .star-display containers) */
+.star-full { color: #f5a623; }
+.star-half { color: #f5a623; }
+.star-empty { color: #d4d4d4; }
+.star-on { color: #f5a623; }
+.star-off { color: #d4d4d4; }
+
+/* Severity-coded interaction cards (drug detail interactions section).
+   Templates currently inline these styles per-row; the class form is the
+   canonical contract — prefer it in new templates. */
+.interaction-card {
+  border-left: 4px solid #ccc;
+  padding: 12px 16px;
+  margin: 8px 0;
+  background: #fafafa;
+  border-radius: 0 4px 4px 0;
+}
+.interaction-card.major    { border-left-color: #dc2626; background: #fef2f2; }
+.interaction-card.moderate { border-left-color: #ea580c; background: #fff7ed; }
+.interaction-card.minor    { border-left-color: #ca8a04; background: #fefce8; }
+.interaction-card.unknown  { border-left-color: #94a3b8; background: #f8fafc; }
+
+/* Pregnancy / CSA pill colors for sidebar status badges */
+.avail-pregnancy-a { background: #dcfce7; color: #166534; }
+.avail-pregnancy-b { background: #d1fae5; color: #065f46; }
+.avail-pregnancy-c { background: #fef3c7; color: #92400e; }
+.avail-pregnancy-d { background: #fed7aa; color: #9a3412; }
+.avail-pregnancy-x { background: #fee2e2; color: #991b1b; }
+.avail-schedule-2,
+.avail-schedule-3,
+.avail-schedule-4,
+.avail-schedule-5 { background: #fef3c7; color: #92400e; }
 
 /* ── Drug detail sticky tabs ── */
 .drug-tabs {
@@ -1085,6 +1126,7 @@ details.faq-detail p { padding: 0 0 14px; font-size: 0.92rem; color: var(--gray-
   .row-section.split { grid-template-columns: 1fr; }
   .detail-grid { grid-template-columns: 1fr; }
   .drug-detail-layout { grid-template-columns: 1fr; }
+  .detail-sidebar { position: static; max-height: none; overflow: visible; }
   .med-list-layout { grid-template-columns: 1fr; }
   .feature-icons {
     display: grid;
@@ -2708,6 +2750,13 @@ details.faq-detail p { padding: 0 0 14px; font-size: 0.92rem; color: var(--gray-
 .condition-grid li .muted {
   font-size: 0.8rem;
   color: #6b7280;
+}
+.condition-grid li .condition-desc {
+  display: block;
+  margin: 6px 0 0;
+  font-size: 0.82rem;
+  line-height: 1.4;
+  color: #4b5563;
 }
 
 /* Account profile header */

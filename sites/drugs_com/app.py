@@ -2527,13 +2527,20 @@ def pill_identifier_results():
     shape = (request.args.get("shape") or "").strip()
     color = (request.args.get("color") or "").strip()
     q = DrugImage.query
-    if imprint:
-        q = q.filter(DrugImage.imprint.ilike(f"%{imprint}%"))
     if shape:
-        q = q.filter(DrugImage.shape == shape)
+        q = q.filter(db.func.lower(DrugImage.shape) == shape.lower())
     if color:
-        q = q.filter(DrugImage.color == color)
-    results = q.all()
+        q = q.filter(db.func.lower(DrugImage.color) == color.lower())
+    candidates = q.all()
+    if imprint:
+        # Partial, case-insensitive match that ignores spaces and hyphens so
+        # "I-2", "I 2", and "i2" all match a stored imprint of "I-2".
+        def _norm(s):
+            return re.sub(r"[\s\-]+", "", (s or "")).lower()
+        needle = _norm(imprint)
+        results = [r for r in candidates if needle in _norm(r.imprint)]
+    else:
+        results = candidates
     shapes = sorted({i.shape for i in DrugImage.query.all() if i.shape})
     colors = sorted({i.color for i in DrugImage.query.all() if i.color})
     return render_template("pill_identifier.html", shapes=shapes, colors=colors,

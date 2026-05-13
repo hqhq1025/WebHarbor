@@ -88,6 +88,9 @@
             <li data-name="{{ c.name }}">
               <a href="{{ url_for('condition_page', slug=c.slug) }}">{{ c.name }}</a>
               <span class="muted">({{ c.drug_count }} drug{{ '' if c.drug_count == 1 else 's' }})</span>
+              {% if c.description %}
+                <p class="condition-desc muted">{{ c.description[:160] }}{% if c.description|length > 160 %}&hellip;{% endif %}</p>
+              {% endif %}
             </li>
           {% endfor %}
         </ul>
@@ -100,6 +103,9 @@
                 <li data-name="{{ c.name }}">
                   <a href="{{ url_for('condition_page', slug=c.slug) }}">{{ c.name }}</a>
                   <span class="muted">({{ c.drug_count }} drug{{ '' if c.drug_count == 1 else 's' }})</span>
+                  {% if c.description %}
+                    <p class="condition-desc muted">{{ c.description[:160] }}{% if c.description|length > 160 %}&hellip;{% endif %}</p>
+                  {% endif %}
                 </li>
               {% endfor %}
             </ul>
