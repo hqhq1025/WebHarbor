@@ -1,0 +1,82 @@
+{% extends "base.html" %}
+{% block title %}{% if condition %}List of {{ drugs|length }} {{ condition.name }} Medications Compared - Drugs.com{% else %}Medical Conditions - Drugs.com{% endif %}{% endblock %}
+{% block content %}
+{% if condition %}
+  <nav class="breadcrumb">
+    <a href="{{ url_for('index') }}">Home</a> &rsaquo;
+    <a href="{{ url_for('conditions_list') }}">Treatments</a> &rsaquo;
+    <span>{{ condition.name }}</span>
+  </nav>
+
+  <h1>{{ condition.name }} Medications</h1>
+
+  <p class="muted"><strong>Other names:</strong> {{ condition.name }}</p>
+  <p class="muted">Medically reviewed by Drugs.com. Last updated on May 13, 2026.</p>
+
+  <p>{{ condition.description }}</p>
+
+  <h2>Drugs used to treat {{ condition.name }}</h2>
+  <p class="muted">The following list of medications are in some way related to or used in the treatment of this condition.</p>
+
+  {% if drugs %}
+  <table class="drug-table">
+    <thead>
+      <tr>
+        <th>Drug name</th>
+        <th>Rating</th>
+        <th>Reviews</th>
+        <th>Rx/OTC</th>
+        <th>Pregnancy</th>
+        <th>CSA</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for d in drugs %}
+      <tr>
+        <td>
+          <a href="{{ url_for('drug_detail', slug=d.slug) }}"><strong>{{ d.generic_name|capitalize }}</strong></a>
+          <div class="muted">{{ d.brand_names|join(', ') if d.brand_names else 'Generic' }}</div>
+          <div class="muted">for {{ d.generic_name }} to treat {{ condition.name }}</div>
+        </td>
+        <td><span class="rating">{{ d.avg_rating }}</span></td>
+        <td>{{ d.review_count }} reviews</td>
+        <td><span class="badge">{{ d.availability }}</span></td>
+        <td>{{ d.pregnancy_risk or 'N' }}</td>
+        <td>{{ d.csa_schedule or 'N' }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <p class="muted" style="margin-top:1.5em;font-size:0.9em;">
+    <strong>Rx</strong> Prescription only. &nbsp;
+    <strong>OTC</strong> Over-the-counter. &nbsp;
+    <strong>Pregnancy Category:</strong> A = No risk, B = No risk in non-human studies, C = Risk cannot be ruled out, D = Positive evidence of risk, X = Contraindicated, N = Not classified. &nbsp;
+    <strong>CSA Schedule:</strong> N = Not a controlled drug, 1-5 = Schedule I-V.
+  </p>
+  {% else %}
+  <p class="muted">No drugs listed for this condition.</p>
+  {% endif %}
+
+  <h2>Frequently asked questions</h2>
+  <p class="muted">See more about {{ condition.name }} on Drugs.com.</p>
+
+{% else %}
+  <nav class="breadcrumb"><a href="{{ url_for('index') }}">Home</a> &rsaquo; <span>Treatments</span></nav>
+  <h1>Medical Conditions</h1>
+  <p>Browse medical conditions and the drugs used to treat them.</p>
+  <ul class="condition-grid">
+    {% for c in all_conditions %}
+      <li><a href="{{ url_for('condition_page', slug=c.slug) }}">{{ c.name }}</a> <span class="muted">({{ c.drug_count }} drugs)</span></li>
+    {% endfor %}
+  </ul>
+
+  <h2>Browse treatment options</h2>
+  <div class="letter-grid">
+    {% for letter in 'ABCDEFGHIJKLMNOPQRSTUVWXYZ' %}
+      <a class="letter-btn" href="{{ url_for('conditions_list') }}?letter={{ letter }}">{{ letter }}</a>
+    {% endfor %}
+    <a class="letter-btn" href="{{ url_for('conditions_list') }}?letter=0-9">0-9</a>
+  </div>
+{% endif %}
+{% endblock %}

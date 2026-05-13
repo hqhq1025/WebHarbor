@@ -1,0 +1,150 @@
+{% extends "base.html" %}
+{% block title %}Drug Interaction Checker - Find Unsafe Combinations - {{ site_name }}{% endblock %}
+{% block content %}
+<div class="page-with-sidebar">
+<div class="main-col">
+
+<h1>Drug Interaction Checker</h1>
+<p class="lead">Use our drug interaction checker to find potentially harmful drug, food, and alcohol interactions.</p>
+
+<div class="checker-box">
+  <div class="checker-input">
+    <label for="drug-input"><strong>Drug name</strong></label>
+    <input type="text" id="drug-input" placeholder="Type a drug name" list="drug-suggestions">
+    <datalist id="drug-suggestions">
+      {% for d in drugs %}<option value="{{ d.generic_name }}">{% endfor %}
+    </datalist>
+    <button id="add-drug" class="btn btn-primary">Add</button>
+  </div>
+
+  <p id="empty-hint" class="muted">Type a drug name in the box above to get started.</p>
+
+  <ul id="drug-list" class="checker-drug-list"></ul>
+
+  <button id="check-btn" class="btn btn-primary" style="display:none;">Check interactions</button>
+  <div id="results" class="checker-results"></div>
+</div>
+
+<p class="checker-note">
+  <strong>Note:</strong> Not all drugs interact, and not every interaction means you must stop taking
+  one of your medications. Always consult your healthcare provider about how drug interactions should
+  be managed before making any changes to your current prescription.
+</p>
+
+<section class="faq-section">
+  <h2>Drug Interaction FAQs</h2>
+  <ul class="faq-list">
+    <li><details><summary>What is a drug interaction?</summary></details></li>
+    <li><details><summary>What are the types of drug interactions?</summary></details></li>
+    <li><details><summary>What do the interaction severity ratings mean?</summary></details></li>
+    <li><details><summary>What are common signs and symptoms of a drug interaction?</summary></details></li>
+    <li><details><summary>How can I avoid drug interactions?</summary></details></li>
+    <li><details><summary>Can I eat or drink grapefruit with my medicine?</summary></details></li>
+    <li><details><summary>Can I drink alcohol with my prescribed medications?</summary></details></li>
+    <li><details><summary>Can herbs and supplements interact with my drugs?</summary></details></li>
+    <li><details><summary>How do I check for drug interactions?</summary></details></li>
+    <li><details><summary>What should I do if I find a drug interaction?</summary></details></li>
+  </ul>
+  <p class="muted small">FAQs written by Leigh Ann Anderson, PharmD. Last updated on Nov 5, 2025.</p>
+</section>
+
+</div>
+
+<aside class="sidebar">
+  <div class="sidebar-box">
+    <h3>Popular tools &amp; resources</h3>
+    <ul class="sidebar-links">
+      <li><a href="#">My Med List</a></li>
+      <li><a href="{{ url_for('interaction_checker') }}">Drug interaction checker</a></li>
+      <li><a href="{{ url_for('pill_identifier') }}">Pill identifier</a></li>
+      <li><a href="#">Compare drugs</a></li>
+      <li><a href="#">Medical Q &amp; A</a></li>
+      <li><a href="#">Latest drug news</a></li>
+    </ul>
+  </div>
+</aside>
+</div>
+
+<script>
+(function(){
+  var drugs = [];
+  var input = document.getElementById('drug-input');
+  var listEl = document.getElementById('drug-list');
+  var resultsEl = document.getElementById('results');
+  var emptyHint = document.getElementById('empty-hint');
+  var checkBtn = document.getElementById('check-btn');
+
+  function render(){
+    listEl.innerHTML = '';
+    drugs.forEach(function(name, i){
+      var li = document.createElement('li');
+      li.textContent = name + ' ';
+      var btn = document.createElement('button');
+      btn.textContent = 'remove';
+      btn.className = 'btn btn-sm';
+      btn.onclick = function(){ drugs.splice(i,1); render(); };
+      li.appendChild(btn);
+      listEl.appendChild(li);
+    });
+    emptyHint.style.display = drugs.length ? 'none' : '';
+    checkBtn.style.display = drugs.length >= 2 ? '' : 'none';
+  }
+
+  document.getElementById('add-drug').addEventListener('click', function(){
+    var v = input.value.trim();
+    if(v){ drugs.push(v); input.value=''; render(); }
+  });
+
+  input.addEventListener('keydown', function(e){
+    if(e.key === 'Enter'){ e.preventDefault(); document.getElementById('add-drug').click(); }
+  });
+
+  checkBtn.addEventListener('click', function(){
+    fetch('{{ url_for("api_interaction_check") }}', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({drugs: drugs})
+    }).then(r=>r.json()).then(data=>{
+      var html = '<h2>Results</h2>';
+      html += '<p class="muted">Drugs checked: ' + (data.drugs_checked||[]).join(', ') + '</p>';
+      if(data.unrecognized && data.unrecognized.length){
+        html += '<p class="warn">Unrecognized: ' + data.unrecognized.join(', ') + '</p>';
+      }
+      if(data.interactions && data.interactions.length){
+        html += '<ul class="interaction-list">';
+        data.interactions.forEach(function(it){
+          var sevLabel = it.severity.charAt(0).toUpperCase() + it.severity.slice(1);
+          html += '<li class="interaction sev-' + it.severity + '">' +
+                  '<span class="badge badge-' + it.severity + '">' + sevLabel + '</span> ' +
+                  '<strong>' + it.drug_a + ' + ' + it.drug_b + '</strong>' +
+                  '<p>' + it.description + '</p></li>';
+        });
+        html += '</ul>';
+      } else {
+        html += '<p>No known interactions found among these drugs in our database.</p>';
+      }
+      resultsEl.innerHTML = html;
+    });
+  });
+})();
+</script>
+
+<style>
+  .badge-major{background:#c0392b;color:#fff;padding:2px 8px;border-radius:3px;font-size:0.85em;}
+  .badge-moderate{background:#e67e22;color:#fff;padding:2px 8px;border-radius:3px;font-size:0.85em;}
+  .badge-minor{background:#27ae60;color:#fff;padding:2px 8px;border-radius:3px;font-size:0.85em;}
+  .badge-unknown{background:#7f8c8d;color:#fff;padding:2px 8px;border-radius:3px;font-size:0.85em;}
+  .checker-note{background:#fff8e1;border-left:4px solid #f0ad4e;padding:10px 14px;margin:18px 0;}
+  .page-with-sidebar{display:flex;gap:24px;align-items:flex-start;}
+  .main-col{flex:1;min-width:0;}
+  .sidebar{width:260px;flex-shrink:0;}
+  .sidebar-box{background:#f5f7fa;border:1px solid #e1e6ec;padding:14px;border-radius:4px;}
+  .sidebar-box h3{margin-top:0;}
+  .sidebar-links{list-style:none;padding:0;margin:0;}
+  .sidebar-links li{padding:6px 0;border-bottom:1px solid #e1e6ec;}
+  .sidebar-links li:last-child{border-bottom:none;}
+  .faq-list{list-style:none;padding:0;}
+  .faq-list li{padding:8px 0;border-bottom:1px solid #eee;}
+  .faq-list summary{cursor:pointer;font-weight:500;}
+  .small{font-size:0.85em;}
+</style>
+{% endblock %}

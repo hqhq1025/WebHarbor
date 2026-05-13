@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% block title %}Search results for "{{ q }}" - {{ site_name }}{% endblock %}
+{% block content %}
+<h1>Search results for "{{ q }}"</h1>
+
+<form method="get" action="{{ url_for('search') }}" class="search-filters">
+  <input type="search" name="q" value="{{ q }}" placeholder="Search drugs, conditions, brands">
+  <select name="class">
+    <option value="">All drug classes</option>
+    {% for c in classes %}
+      <option value="{{ c.slug }}" {% if c.slug == class_slug %}selected{% endif %}>{{ c.name }}</option>
+    {% endfor %}
+  </select>
+  <select name="condition">
+    <option value="">All conditions</option>
+    {% for c in conditions %}
+      <option value="{{ c.slug }}" {% if c.slug == cond_slug %}selected{% endif %}>{{ c.name }}</option>
+    {% endfor %}
+  </select>
+  <select name="availability">
+    <option value="">Any availability</option>
+    <option value="Rx" {% if avail == 'Rx' %}selected{% endif %}>Rx</option>
+    <option value="OTC" {% if avail == 'OTC' %}selected{% endif %}>OTC</option>
+    <option value="Rx and/or OTC" {% if avail == 'Rx and/or OTC' %}selected{% endif %}>Rx and/or OTC</option>
+  </select>
+  <button type="submit" class="btn btn-primary">Search</button>
+</form>
+
+<p class="muted">{{ results|length }} result{{ '' if results|length == 1 else 's' }} for "{{ q }}"</p>
+
+<ul class="result-list">
+  {% for d in results %}
+    <li class="result-card">
+      <a href="{{ url_for('drug_detail', slug=d.slug) }}"><h2>{{ d.generic_name|capitalize }}</h2></a>
+      <p class="muted">
+        generic name: {{ d.generic_name }}
+        {% if d.drug_class %} &middot; <a href="{{ url_for('drug_class_page', slug=d.drug_class.slug) }}">{{ d.drug_class.name }}</a>{% endif %}
+        &middot; <span class="badge">{{ d.availability }}</span>
+      </p>
+      <p>{{ (d.description or '')[:240] }}{% if (d.description or '')|length > 240 %}...{% endif %}</p>
+      <p class="rating">Rating: {{ d.avg_rating }}/10 ({{ d.review_count }} reviews)</p>
+    </li>
+  {% else %}
+    <li class="muted no-results">
+      <p>No results found for "{{ q }}".</p>
+      <ul>
+        <li>Check your spelling.</li>
+        <li>Try searching by a brand name instead of the generic name (or vice versa).</li>
+        <li>Browse the full <a href="{{ url_for('drug_az') }}">Drugs A-Z</a> index.</li>
+      </ul>
+    </li>
+  {% endfor %}
+</ul>
+{% endblock %}

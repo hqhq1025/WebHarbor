@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+{% block title %}{% if drug_class %}{{ drug_class.name }} - Drugs.com{% else %}Drug Classes - Drugs.com{% endif %}{% endblock %}
+{% block content %}
+{% if drug_class %}
+  <nav class="breadcrumb">
+    <a href="{{ url_for('index') }}">Home</a> &rsaquo;
+    <a href="{{ url_for('drug_classes_list') }}">Drug Classes</a> &rsaquo;
+    <span>{{ drug_class.name }}</span>
+  </nav>
+
+  <h1>{{ drug_class.name }}</h1>
+
+  <p class="muted"><strong>Other names:</strong> {{ drug_class.name }}</p>
+  <p class="muted">Medically reviewed by Drugs.com. Last updated on May 13, 2026.</p>
+
+  <h2>What are {{ drug_class.name }}?</h2>
+  <p>{{ drug_class.description }}</p>
+
+  <h2>What are {{ drug_class.name }} used for?</h2>
+  <p>{{ drug_class.name }} are used in the treatment of a variety of conditions. See the list of drugs below for specific indications and approved uses.</p>
+
+  <h2>What are the differences between {{ drug_class.name }}?</h2>
+  <p>Drugs within the {{ drug_class.name }} class can differ in their mechanism of action, dosage forms, side effect profiles, and approved indications. Consult the individual drug pages for details.</p>
+
+  <h2>List of {{ drug_class.name }}</h2>
+
+  {% if drugs %}
+  <table class="drug-table">
+    <thead>
+      <tr>
+        <th>Drug Name</th>
+        <th>Avg. Rating</th>
+        <th>Reviews</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for d in drugs %}
+      <tr>
+        <td>
+          <a href="{{ url_for('drug_detail', slug=d.slug) }}"><strong>{{ d.generic_name|capitalize }}</strong></a>
+          <span class="badge">Pro</span>
+          <div class="muted">{{ d.brand_names|join(', ') if d.brand_names else 'Generic' }}</div>
+        </td>
+        <td><span class="rating">{{ d.avg_rating }}</span></td>
+        <td>{{ d.review_count }} reviews</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <p class="muted" style="margin-top:1.5em;font-size:0.9em;">
+    For ratings, users were asked how effective they found the medicine while considering positive/adverse effects and ease of use (1 = not effective, 10 = most effective).
+  </p>
+  {% else %}
+  <p class="muted">No drugs in this class.</p>
+  {% endif %}
+
+  <h2>See also</h2>
+  <p class="muted">Medical conditions associated with {{ drug_class.name }}.</p>
+
+  <h2>Further information</h2>
+  <p class="muted">Always consult your healthcare provider to ensure the information displayed on this page applies to your personal circumstances.</p>
+  <p class="muted"><strong>Medical Disclaimer</strong></p>
+
+{% else %}
+  <nav class="breadcrumb"><a href="{{ url_for('index') }}">Home</a> &rsaquo; <span>Drug Classes</span></nav>
+  <h1>Drug Classes</h1>
+  <p>Browse all drug classes in our database.</p>
+  <ul class="condition-grid">
+    {% for c in all_classes %}
+      <li><a href="{{ url_for('drug_class_page', slug=c.slug) }}">{{ c.name }}</a></li>
+    {% endfor %}
+  </ul>
+{% endif %}
+{% endblock %}

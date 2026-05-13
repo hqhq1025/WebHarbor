@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% block title %}My Account - {{ site_name }}{% endblock %}
+{% block content %}
+<nav class="breadcrumb">
+  <a href="{{ url_for('index') }}">Home</a> &rsaquo; <span>My Account</span>
+</nav>
+
+<nav class="account-nav">
+  <a href="{{ url_for('account') }}" class="active">My Account</a>
+  <a href="{{ url_for('my_med_list') }}">My Med List</a>
+  <a href="#">Drug Alerts</a>
+  <a href="#">Settings</a>
+</nav>
+
+<h1>Welcome, {{ current_user.username }}</h1>
+<p class="muted">{{ current_user.email }} &middot; Joined {{ current_user.created_at.strftime('%b %d, %Y') }}</p>
+
+<div class="account-grid">
+  <section class="account-box">
+    <h2>My Med List</h2>
+    <p>{{ saved_count }} drug{{ '' if saved_count == 1 else 's' }} saved.</p>
+    <a class="btn btn-outline" href="{{ url_for('my_med_list') }}">View My Med List</a>
+  </section>
+
+  <section class="account-box">
+    <h2>My Reviews ({{ reviews|length }})</h2>
+    {% for r in reviews %}
+      <article class="review">
+        <strong>{{ r.title }}</strong> &mdash; <a href="{{ url_for('drug_detail', slug=r.drug.slug) }}">{{ r.drug.generic_name|capitalize }}</a>
+        <p class="muted">{{ r.rating }}/10 &middot; for {{ r.condition_treated }} &middot; {{ r.created_at.strftime('%b %d, %Y') }}</p>
+        <p>{{ r.body }}</p>
+      </article>
+    {% else %}
+      <p class="muted">You have not posted any reviews yet.</p>
+    {% endfor %}
+  </section>
+
+  <section class="account-box">
+    <h2>Quick links</h2>
+    <ul class="quick-links">
+      <li><a href="{{ url_for('interaction_checker') }}">Drug Interaction Checker</a></li>
+      <li><a href="{{ url_for('pill_identifier') }}">Pill Identifier</a></li>
+      <li><a href="{{ url_for('my_med_list') }}">My Med List</a></li>
+      <li><a href="{{ url_for('news_index') }}">News</a></li>
+    </ul>
+  </section>
+</div>
+{% endblock %}

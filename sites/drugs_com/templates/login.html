@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block title %}Sign in to Drugs.com | {{ site_name }}{% endblock %}
+{% block content %}
+<div class="auth-box">
+  <h1>Sign in to Drugs.com</h1>
+  <form method="post">
+    <label for="email">Email address</label>
+    <input id="email" type="email" name="email" required>
+    <label for="password">Password</label>
+    <input id="password" type="password" name="password" required>
+    <button type="submit" class="btn btn-primary">Sign In</button>
+  </form>
+  <p><a href="#">Forgot your password?</a></p>
+  <p>Don't have an account? <a href="{{ url_for('register') }}">Create a free account</a></p>
+
+  <div class="auth-benefits">
+    <h2>Sign in for access to:</h2>
+    <ul>
+      <li>My Med List</li>
+      <li>Interaction Checker results</li>
+      <li>Drug Reminders</li>
+      <li>Community discussions</li>
+    </ul>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,262 @@
+{% extends "base.html" %}
+{% block title %}{{ drug.generic_name|capitalize }} Uses, Dosage & Side Effects - {{ site_name }}{% endblock %}
+{% block content %}
+<nav class="breadcrumb">
+  <a href="{{ url_for('index') }}">Drugs.com</a> &rsaquo;
+  <a href="{{ url_for('drug_az') }}">Drugs A-Z</a> &rsaquo;
+  <span>{{ drug.generic_name|capitalize }}</span>
+</nav>
+
+<article class="drug-detail">
+  <header class="drug-header">
+    <h1>{{ drug.generic_name|capitalize }}</h1>
+    {% if drug.pronunciation %}<p class="pronunciation">Pronunciation: <em>{{ drug.pronunciation }}</em></p>{% endif %}
+    <ul class="meta-row">
+      <li><strong>Generic name:</strong> {{ drug.generic_name }}</li>
+      <li><strong>Brand names:</strong> {{ drug.brand_names|join(', ') if drug.brand_names else 'N/A' }}</li>
+      {% if drug.images %}
+      <li><strong>Dosage forms:</strong>
+        {% set forms = [] %}
+        {% for img in drug.images %}{% if img.strength %}{% set _ = forms.append(img.strength) %}{% endif %}{% endfor %}
+        {{ forms|join('; ') if forms else 'See prescribing information' }}
+      </li>
+      {% endif %}
+      <li><strong>Drug class:</strong>
+        {% if drug.drug_class %}
+          <a href="{{ url_for('drug_class_page', slug=drug.drug_class.slug) }}">{{ drug.drug_class.name }}</a>
+        {% else %}N/A{% endif %}
+      </li>
+      <li><strong>Availability:</strong> {{ drug.availability }}</li>
+    </ul>
+    <p class="reviewer-line">Medically reviewed by {{ drug.reviewer_name }}, {{ drug.reviewer_credential }}. Last updated on {{ drug.last_updated.strftime('%b %d, %Y') }}.</p>
+  </header>
+
+  <nav class="section-tabs">
+    <a href="#uses">Uses</a>
+    <a href="#warnings">Warnings</a>
+    <a href="#before-taking">Before taking</a>
+    <a href="#dosage">Dosage</a>
+    <a href="#side-effects">Side effects</a>
+    <a href="#interactions">Interactions</a>
+    <a href="#faq">FAQ</a>
+    <a href="#reviews">Reviews</a>
+  </nav>
+
+  <div class="detail-grid">
+    <div class="detail-main">
+      {% if drug.description %}
+      <section><h2>What is {{ drug.generic_name }}?</h2><p>{{ drug.description }}</p></section>
+      {% endif %}
+
+      <section id="uses"><h2>Uses</h2><p>{{ drug.uses }}</p>
+        {% if drug_conditions %}
+        <p><strong>Conditions treated:</strong>
+          {% for c in drug_conditions %}<a href="{{ url_for('condition_page', slug=c.slug) }}">{{ c.name }}</a>{% if not loop.last %}, {% endif %}{% endfor %}
+        </p>
+        {% endif %}
+      </section>
+
+      <section id="warnings"><h2>Warnings</h2><p>{{ drug.warnings }}</p></section>
+
+      <section id="before-taking">
+        <h2>Before taking this medicine</h2>
+        <p>You should not use {{ drug.generic_name }} if you are allergic to it, or if you have ever had an asthma attack or severe allergic reaction after taking aspirin or an NSAID.</p>
+        <p>To make sure {{ drug.generic_name }} is safe for you, tell your doctor if you have ever had heart disease, high blood pressure, a heart attack, stroke, or blood clot; stomach ulcers or bleeding; liver or kidney disease; asthma; or if you smoke.</p>
+        <p>Ask a doctor before using this medicine if you are pregnant or breastfeeding.</p>
+      </section>
+
+      <section id="dosage">
+        <h2>How should I take {{ drug.generic_name }}?</h2>
+        <p>{{ drug.dosage }}</p>
+        <h3>What happens if I miss a dose?</h3>
+        <p>Since {{ drug.generic_name }} is often used when needed, you may not be on a dosing schedule. If you are on a schedule, take the missed dose as soon as you remember. Skip the missed dose if it is almost time for your next scheduled dose. Do not take extra medicine to make up the missed dose.</p>
+        <h3>What happens if I overdose?</h3>
+        <p>Seek emergency medical attention or call the Poison Help line at 1-800-222-1222.</p>
+        <h3>What to avoid</h3>
+        <p>Ask a doctor or pharmacist before using other medicines for pain, fever, swelling, or cold/flu symptoms. They may contain ingredients similar to {{ drug.generic_name }}. Avoid drinking alcohol, which may increase your risk of stomach bleeding.</p>
+      </section>
+
+      <section id="side-effects">
+        <h2>{{ drug.generic_name|capitalize }} side effects</h2>
+        <p>Get emergency medical help if you have signs of an allergic reaction: hives; difficult breathing; swelling of your face, lips, tongue, or throat.</p>
+        <p>{{ drug.side_effects }}</p>
+      </section>
+
+      <section id="interactions">
+        <h2>What other drugs will affect {{ drug.generic_name }}?</h2>
+        <p>{{ drug.interactions_text }}</p>
+        <div class="interaction-mini-checker">
+          <p><strong>Enter medications to view a detailed interaction report using our Drug Interaction Checker.</strong></p>
+          <form action="{{ url_for('interaction_checker') }}" method="get" class="mini-checker-form">
+            <label for="mini-drug-input">Drug name</label>
+            <input type="text" id="mini-drug-input" name="drug" placeholder="Enter a drug name" />
+            <button type="submit" class="btn btn-primary">Add</button>
+          </form>
+        </div>
+      </section>
+
+      <section id="faq"><h2>Popular FAQ</h2>
+        {% if drug.faq %}
+        <ul class="faq-questions">
+          {% for item in drug.faq %}
+            <li><a href="#faq-{{ loop.index }}">{{ item.q }}</a></li>
+          {% endfor %}
+        </ul>
+        {% for item in drug.faq %}
+          <div class="faq-item" id="faq-{{ loop.index }}">
+            <h3>{{ item.q }}</h3>
+            <p>{{ item.a }}</p>
+          </div>
+        {% endfor %}
+        {% endif %}
+      </section>
+
+      <section id="reviews"><h2>User reviews ({{ drug.review_count }})</h2>
+        <p>Average rating: <strong>{{ drug.avg_rating }}/10</strong></p>
+        {% for r in reviews %}
+          <article class="review">
+            <header>
+              <strong>{{ r.title }}</strong>
+              <span class="muted">— {{ r.user.username if r.user else 'anon' }} on {{ r.created_at.strftime('%b %d, %Y') }}</span>
+            </header>
+            <p class="rating">Rating: {{ r.rating }}/10 &middot; For: {{ r.condition_treated }}</p>
+            <p>{{ r.body }}</p>
+            <p class="muted">{{ r.helpful_count }} found this helpful</p>
+          </article>
+        {% else %}
+          <p class="muted">No reviews yet.</p>
+        {% endfor %}
+      </section>
+
+      {% if drug_conditions %}
+      <section id="related-guides">
+        <h2>Related treatment guides</h2>
+        <ul class="treatment-guides">
+          {% for c in drug_conditions %}
+            <li><a href="{{ url_for('condition_page', slug=c.slug) }}">{{ c.name }}</a></li>
+          {% endfor %}
+        </ul>
+      </section>
+      {% endif %}
+
+      <section id="further-information">
+        <h2>Further information</h2>
+        <p>Remember, keep this and all other medicines out of the reach of children, never share your medicines with others, and use {{ drug.generic_name }} only for the indication prescribed. Always consult your healthcare provider to ensure the information displayed on this page applies to your personal circumstances.</p>
+        <p class="muted medical-disclaimer"><strong>Medical Disclaimer:</strong> The information provided here is for reference only and is not intended as medical advice or a substitute for consultation with a qualified healthcare professional.</p>
+      </section>
+    </div>
+
+    <aside class="detail-sidebar">
+      <div class="status-box">
+        <h3>DRUG STATUS</h3>
+        <ul>
+          <li>
+            <strong>Availability</strong>
+            <div class="status-value">
+              {% if 'Rx' in drug.availability and 'OTC' in drug.availability %}
+                <span class="badge">Rx</span> and/or <span class="badge">OTC</span>
+              {% elif 'Rx' in drug.availability %}
+                <span class="badge">Rx</span> Prescription only
+              {% elif 'OTC' in drug.availability %}
+                <span class="badge">OTC</span> Over-the-counter
+              {% else %}
+                {{ drug.availability }}
+              {% endif %}
+            </div>
+          </li>
+          <li>
+            <strong>Pregnancy &amp; Lactation</strong>
+            <div class="status-value">{{ drug.pregnancy_risk or 'Risk data available' }}</div>
+          </li>
+          <li>
+            <strong>CSA Schedule*</strong>
+            <div class="status-value">
+              {% if drug.csa_schedule and drug.csa_schedule|lower not in ['n/a', 'none', 'not scheduled'] %}
+                {{ drug.csa_schedule }}
+              {% else %}
+                Not a controlled drug. N/A
+              {% endif %}
+            </div>
+          </li>
+          <li>
+            <strong>Approval History</strong>
+            <div class="status-value">Drug history at FDA</div>
+          </li>
+          <li>
+            <strong>Ingredients</strong>
+            <div class="status-value">Active &amp; Inactive</div>
+          </li>
+          <li>
+            <strong>User Reviews &amp; Ratings</strong>
+            <div class="status-value">
+              <a href="#reviews">{{ drug.avg_rating }} / 10 &middot; {{ drug.review_count }} Reviews</a>
+            </div>
+          </li>
+        </ul>
+        {% if current_user.is_authenticated %}
+        <button id="save-toggle" data-slug="{{ drug.slug }}" class="btn btn-primary">
+          {{ 'Remove from My Med List' if saved else 'Add to My Med List' }}
+        </button>
+        {% else %}
+        <a href="{{ url_for('login') }}" class="btn btn-outline">Sign in to save</a>
+        {% endif %}
+      </div>
+
+      <div class="sidebar-box">
+        <h3>More about {{ drug.generic_name }}</h3>
+        <ul>
+          <li><a href="{{ url_for('interaction_checker') }}?drug={{ drug.slug }}">Check interactions</a></li>
+          <li><a href="{{ url_for('search') }}?q={{ drug.generic_name }}">Compare alternatives</a></li>
+          <li><a href="#reviews">Reviews ({{ drug.review_count }})</a></li>
+          {% if drug.images %}<li><a href="#images">Drug images</a></li>{% endif %}
+          <li><a href="#side-effects">Side effects</a></li>
+          <li><a href="#dosage">Dosage information</a></li>
+          <li><a href="#before-taking">During pregnancy</a></li>
+          <li><a href="#before-taking">Breastfeeding</a></li>
+          {% if drug.drug_class %}
+          <li>Drug class: <a href="{{ url_for('drug_class_page', slug=drug.drug_class.slug) }}">{{ drug.drug_class.name }}</a></li>
+          {% endif %}
+        </ul>
+      </div>
+
+      {% if related %}
+      <div class="sidebar-box">
+        <h3>Related drugs</h3>
+        <ul>
+          {% for r in related %}
+            <li><a href="{{ url_for('drug_detail', slug=r.slug) }}">{{ r.generic_name|capitalize }}</a></li>
+          {% endfor %}
+        </ul>
+      </div>
+      {% endif %}
+
+      {% if drug.images %}
+      <div class="sidebar-box" id="images">
+        <h3>Images</h3>
+        <ul>
+          {% for img in drug.images %}
+            <li>{{ drug.generic_name|capitalize }} {{ img.strength }} ({{ img.imprint }}) &mdash; {{ img.shape }}, {{ img.color }}</li>
+          {% endfor %}
+        </ul>
+      </div>
+      {% endif %}
+    </aside>
+  </div>
+</article>
+
+<script>
+(function(){
+  var btn = document.getElementById('save-toggle');
+  if(!btn) return;
+  btn.addEventListener('click', function(){
+    fetch('{{ url_for("my_med_list_toggle") }}', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({slug: btn.dataset.slug})
+    }).then(r=>r.json()).then(data=>{
+      btn.textContent = data.saved ? 'Remove from My Med List' : 'Add to My Med List';
+    });
+  });
+})();
+</script>
+{% endblock %}

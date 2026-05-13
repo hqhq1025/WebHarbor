@@ -1,0 +1,105 @@
+{% extends "base.html" %}
+{% block title %}Pill Identifier - Quickly Find and ID your Drugs (with pictures) - {{ site_name }}{% endblock %}
+{% block content %}
+<div class="page-with-sidebar">
+<div class="main-col">
+
+<h1>Pill Identifier</h1>
+
+<div class="disclaimer-box">
+  <p><strong>By using the Pill Identification Wizard, you agree to the following terms:</strong></p>
+  <p>
+    The Pill Identification Wizard tool is for informational purposes only. It is not a substitute
+    for professional medical advice, diagnosis, or treatment. Always seek the advice of a qualified
+    healthcare provider regarding any medication.
+    <a href="#disclaimer">Pill Identification disclaimer</a>
+  </p>
+  <button type="button" class="btn btn-primary"
+          onclick="this.closest('.disclaimer-box').style.display='none';">Agree and continue</button>
+</div>
+
+<h2>Need help to identify that pill?</h2>
+<p>
+  Worried about some capsules found in your teenager's room? Not sure about those leftover pills still
+  in the bathroom cabinet? There's a good chance that our Pill Identification Wizard (Pill Finder) can
+  help you match the imprint, size, shape, or color and lead you to the detailed description in our
+  drug database.
+</p>
+
+<form method="get" action="{{ url_for('pill_identifier_results') }}" class="pill-form">
+  <label>Imprint <input type="text" name="imprint" value="{{ imprint or '' }}" placeholder="e.g. I-2"></label>
+  <label>Shape
+    <select name="shape">
+      <option value="">Any</option>
+      {% for s in shapes %}<option value="{{ s }}" {% if s == shape %}selected{% endif %}>{{ s }}</option>{% endfor %}
+    </select>
+  </label>
+  <label>Color
+    <select name="color">
+      <option value="">Any</option>
+      {% for c in colors %}<option value="{{ c }}" {% if c == color %}selected{% endif %}>{{ c }}</option>{% endfor %}
+    </select>
+  </label>
+  <button type="submit" class="btn btn-primary">Search</button>
+</form>
+
+{% if results is not none %}
+  <h2>Results ({{ results|length }})</h2>
+  {% if results %}
+    <table class="pill-table">
+      <thead><tr><th>Imprint</th><th>Shape</th><th>Color</th><th>Strength</th><th>Drug</th><th>Manufacturer</th></tr></thead>
+      <tbody>
+        {% for r in results %}
+          <tr>
+            <td>{{ r.imprint }}</td><td>{{ r.shape }}</td><td>{{ r.color }}</td>
+            <td>{{ r.strength }}</td>
+            <td><a href="{{ url_for('drug_detail', slug=r.drug.slug) }}">{{ r.drug.generic_name|capitalize }}</a></td>
+            <td>{{ r.manufacturer }}</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  {% else %}
+    <p class="muted">No matching pills found.</p>
+  {% endif %}
+{% endif %}
+
+<section class="tips-section">
+  <h2>Additional tips</h2>
+  <ul>
+    <li>Periodically check your medicine cabinets for expired, re-bottled, or unidentified pills.</li>
+    <li>Avoid confusion and mistakes: keep all medications in their original bottles or packets with pertinent labeling and instructions attached.</li>
+    <li>If you do not find a match while trying to identify your pill using our Pill Finder tool, then contact your healthcare provider.</li>
+  </ul>
+</section>
+
+</div>
+
+<aside class="sidebar">
+  <div class="sidebar-box">
+    <h3>Popular tools &amp; resources</h3>
+    <ul class="sidebar-links">
+      <li><a href="#">My Med List</a></li>
+      <li><a href="{{ url_for('interaction_checker') }}">Drug interaction checker</a></li>
+      <li><a href="{{ url_for('pill_identifier') }}">Pill identifier</a></li>
+      <li><a href="#">Compare drugs</a></li>
+      <li><a href="#">Medical Q &amp; A</a></li>
+      <li><a href="#">Latest drug news</a></li>
+    </ul>
+  </div>
+</aside>
+</div>
+
+<style>
+  .page-with-sidebar{display:flex;gap:24px;align-items:flex-start;}
+  .main-col{flex:1;min-width:0;}
+  .sidebar{width:260px;flex-shrink:0;}
+  .sidebar-box{background:#f5f7fa;border:1px solid #e1e6ec;padding:14px;border-radius:4px;}
+  .sidebar-box h3{margin-top:0;}
+  .sidebar-links{list-style:none;padding:0;margin:0;}
+  .sidebar-links li{padding:6px 0;border-bottom:1px solid #e1e6ec;}
+  .sidebar-links li:last-child{border-bottom:none;}
+  .disclaimer-box{background:#fff8e1;border:1px solid #f0ad4e;padding:14px;border-radius:4px;margin:14px 0;}
+  .tips-section{margin-top:24px;}
+</style>
+{% endblock %}

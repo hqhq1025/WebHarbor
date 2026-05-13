@@ -1,0 +1,100 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="hero">
+  <h1>Trusted medical information you can rely on</h1>
+  <p>Drugs.com is the most popular, comprehensive and up-to-date source of drug information online. Providing free, peer-reviewed, accurate and independent data on more than 24,000 prescription drugs, over-the-counter medicines &amp; natural products.</p>
+  <form action="{{ url_for('search') }}" method="get" class="hero-search">
+    <input type="search" name="q" placeholder="Search by drug name, condition, or brand">
+    <button type="submit">Search</button>
+  </form>
+  <div class="quick-links">
+    <a href="{{ url_for('pill_identifier') }}">Pill Identifier</a>
+    <a href="{{ url_for('interaction_checker') }}">Interaction Checker</a>
+    <a href="{{ url_for('drug_az') }}">Drugs A-Z</a>
+    <a href="{{ url_for('news_index') }}">Medical News</a>
+  </div>
+</section>
+
+<section class="row-section">
+  <h2>Drug Information</h2>
+  <ul class="quick-info-list">
+    <li><a href="{{ url_for('drug_az') }}">A to Z Drug List</a></li>
+    <li><a href="{{ url_for('conditions_list') }}">Treatment Options</a></li>
+    <li><a href="{{ url_for('drug_classes_list') }}">Drugs by Class</a></li>
+    <li><a href="{{ url_for('search') }}?q=dosage">Dosage</a></li>
+    <li><a href="{{ url_for('search') }}?q=side+effects">Side Effects</a></li>
+    <li><a href="{{ url_for('search') }}?q=q+and+a">Medical Q &amp; A</a></li>
+    <li><a href="{{ url_for('search') }}?q=generic">Generic Drugs</a></li>
+    <li><a href="{{ url_for('pill_identifier') }}">Pill Identifier</a></li>
+    <li><a href="{{ url_for('interaction_checker') }}">Interaction Checker</a></li>
+  </ul>
+</section>
+
+<section class="row-section">
+  <h2>Featured drugs</h2>
+  <div class="card-grid">
+    {% for d in featured %}
+      <a class="drug-card" href="{{ url_for('drug_detail', slug=d.slug) }}">
+        <h3>{{ d.generic_name|capitalize }}</h3>
+        <p class="muted">{{ d.brand_names|join(', ') if d.brand_names else 'Generic' }}</p>
+        <p class="rating">Rating: {{ d.avg_rating }}/10 ({{ d.review_count }})</p>
+      </a>
+    {% endfor %}
+  </div>
+</section>
+
+<section class="row-section">
+  <h2>Trending</h2>
+  <ol class="trending-list">
+    {% for d in trending %}
+      <li><a href="{{ url_for('drug_detail', slug=d.slug) }}">{{ d.generic_name|capitalize }}</a>
+        <span class="muted">— {{ d.availability }}</span></li>
+    {% endfor %}
+  </ol>
+</section>
+
+<section class="row-section split">
+  <div class="split-left">
+    <h2>Latest medical news</h2>
+    <ul class="news-list">
+      {% for a in news %}
+        <li>
+          <div class="news-meta">
+            <span class="badge">{{ a.category }}</span>
+            <span class="muted">{{ a.published_at.strftime('%B %d, %Y') }}</span>
+          </div>
+          <h3><a href="{{ url_for('news_article', article_id=a.id) }}">{{ a.title }}</a></h3>
+          <p class="muted">{{ a.body[:140] }}{% if a.body|length > 140 %}...{% endif %}</p>
+        </li>
+      {% endfor %}
+    </ul>
+    <p><a href="{{ url_for('news_index') }}">Read more news...</a></p>
+  </div>
+  <div class="split-right">
+    <h2>Browse drug classes</h2>
+    <ul class="class-list">
+      {% for c in classes %}
+        <li><a href="{{ url_for('drug_class_page', slug=c.slug) }}">{{ c.name }}</a></li>
+      {% endfor %}
+    </ul>
+  </div>
+</section>
+
+<section class="row-section">
+  <h2>Browse drugs A-Z</h2>
+  <div class="letter-grid">
+    {% for L in all_letters %}
+      <a class="letter-btn" href="{{ url_for('drug_az') }}?letter={{ L }}">{{ L }}</a>
+    {% endfor %}
+  </div>
+</section>
+
+<section class="row-section">
+  <h2>Top 100 Drugs</h2>
+  <ul class="top-drugs-list">
+    {% for d in trending[:20] %}
+      <li><a href="{{ url_for('drug_detail', slug=d.slug) }}">{{ d.generic_name|capitalize }}</a></li>
+    {% endfor %}
+  </ul>
+</section>
+{% endblock %}

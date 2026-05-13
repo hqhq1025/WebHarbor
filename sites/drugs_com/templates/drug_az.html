@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+{% block title %}Drugs & Medications A to Z - {{ site_name }}{% endblock %}
+{% block content %}
+<nav class="breadcrumb">
+  <a href="{{ url_for('index') }}">Drugs.com</a> &rsaquo; <span>Drugs &amp; Medications A to Z</span>
+</nav>
+
+<h1>Drugs &amp; Medications A to Z</h1>
+<p class="lead">Detailed and accurate information is provided on over 24,000 prescription and over-the-counter medicines for both consumers and healthcare professionals.</p>
+
+<form action="{{ url_for('search') }}" method="get" class="az-search">
+  <input type="search" name="q" placeholder="Search drugs, conditions, or brand names">
+  <button type="submit">Submit</button>
+</form>
+
+<h2>Browse A-Z</h2>
+<div class="letter-grid wide">
+  {% for L in all_letters %}
+    <a class="letter-btn {% if L == letter %}active{% endif %}" href="{{ url_for('drug_az') }}?letter={{ L }}">{{ L }}</a>
+  {% endfor %}
+  <a class="letter-btn {% if letter == '0-9' %}active{% endif %}" href="{{ url_for('drug_az') }}?letter=0-9">0-9</a>
+</div>
+
+<section class="az-list">
+  <h2>Drugs starting with "{{ letter }}"</h2>
+  {% if drugs %}
+    <ul>
+      {% for d in drugs %}
+        <li>
+          <a href="{{ url_for('drug_detail', slug=d.slug) }}">{{ d.generic_name|capitalize }}</a>
+          {% if d.brand_names %}<span class="muted"> — {{ d.brand_names|join(', ') }}</span>{% endif %}
+          <span class="badge">{{ d.availability }}</span>
+        </li>
+      {% endfor %}
+    </ul>
+  {% else %}
+    <p class="muted">No drugs in our database starting with this letter.</p>
+  {% endif %}
+</section>
+
+<section class="row-section">
+  <h2>Browse drugs by category</h2>
+  <ul class="category-list">
+    <li><a href="{{ url_for('search') }}?q=side+effects">Drug Side Effects</a></li>
+    <li><a href="{{ url_for('search') }}?q=dosage">Drug Dosage</a></li>
+    <li><a href="{{ url_for('search') }}?q=pregnancy">Pregnancy Warnings</a></li>
+    <li><a href="{{ url_for('conditions_list') }}">Treatment Options</a></li>
+    <li><a href="{{ url_for('drug_classes_list') }}">Drugs by Class</a></li>
+    <li><a href="{{ url_for('search') }}?q=q+and+a">Medical Q &amp; A</a></li>
+    <li><a href="{{ url_for('search') }}?q=generic">Generic Drugs</a></li>
+    <li><a href="{{ url_for('search') }}?q=otc">OTC Drugs</a></li>
+    <li><a href="{{ url_for('search') }}?q=compare">Compare Drugs</a></li>
+    <li><a href="{{ url_for('search') }}?q=natural">Natural Products</a></li>
+  </ul>
+</section>
+
+<section class="row-section">
+  <h2>Popular drug searches</h2>
+  <ul class="popular-drugs">
+    {% for name in ['acetaminophen','adderall','amoxicillin','atorvastatin','azithromycin','ciprofloxacin','clonazepam','cyclobenzaprine','doxycycline','duloxetine','gabapentin','hydrochlorothiazide','ibuprofen','lisinopril','loratadine','metformin','metoprolol','omeprazole','prednisone','sertraline','semaglutide','sildenafil','tramadol','warfarin','zolpidem'] %}
+      <li><a href="{{ url_for('drug_detail', slug=name) }}">{{ name|capitalize }}</a></li>
+    {% endfor %}
+  </ul>
+</section>
+{% endblock %}

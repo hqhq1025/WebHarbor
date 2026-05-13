@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block title %}My Med List - {{ site_name }}{% endblock %}
+{% block content %}
+<nav class="breadcrumb">
+  <a href="{{ url_for('index') }}">Home</a> &rsaquo; <a href="{{ url_for('account') }}">My Account</a> &rsaquo; <span>My Med List</span>
+</nav>
+
+<h1>My Med List</h1>
+<p class="muted">Track the medications you or a family member are taking.</p>
+
+<ul class="result-list">
+  {% for item in items %}
+    <li class="result-card">
+      <a href="{{ url_for('drug_detail', slug=item.drug.slug) }}"><h3>{{ item.drug.generic_name|capitalize }}</h3></a>
+      <p class="muted">{{ item.drug.brand_names|join(', ') if item.drug.brand_names else 'Generic' }} &middot; <span class="badge">{{ item.drug.availability }}</span></p>
+      <p>Added {{ item.created_at.strftime('%b %d, %Y') }}</p>
+      {% if item.notes %}<p><em>Notes:</em> {{ item.notes }}</p>{% endif %}
+    </li>
+  {% else %}
+    <li class="muted">Your med list is empty. <a href="{{ url_for('drug_az') }}">Browse drugs</a> and click "Add to My Med List" to save medications here.</li>
+  {% endfor %}
+</ul>
+
+{% if items %}
+<div class="med-list-actions">
+  <a class="btn btn-primary" href="{{ url_for('interaction_checker') }}">Check all medications for interactions</a>
+</div>
+{% endif %}
+
+<p class="muted disclaimer">Always consult your healthcare provider before making any changes to your medications.</p>
+{% endblock %}
