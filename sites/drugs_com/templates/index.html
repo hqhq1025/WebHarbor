@@ -6,14 +6,24 @@
 <div class="hero-section">
   <h1>Know more. Be sure.</h1>
   <p class="hero-sub">Drug and health information, from pharmacists you can trust.</p>
-  <form action="{{ url_for('search') }}" method="get">
+  <form action="{{ url_for('search') }}" method="get" class="hero-search-form">
     <div class="hero-search-wrap">
-      <input class="hero-search-input" type="search" name="q" placeholder="Enter a drug name, condition, pill imprint, etc.">
-      <button class="hero-search-btn" type="submit">Search</button>
+      <input class="hero-search-input" type="search" name="q" placeholder="Search drugs, conditions, or symptoms...">
+      <button class="hero-search-btn" type="submit" aria-label="Search">
+        <svg width="20" height="20" viewBox="0 0 20 20" fill="none" style="vertical-align:middle"><circle cx="8.5" cy="8.5" r="5.75" stroke="currentColor" stroke-width="1.8"/><line x1="12.9" y1="12.9" x2="17" y2="17" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+        <span style="margin-left:6px">Search</span>
+      </button>
     </div>
   </form>
+  <p class="hero-popular">
+    <strong>Popular searches:</strong>
+    <a href="{{ url_for('search') }}?q=ibuprofen">ibuprofen</a> &middot;
+    <a href="{{ url_for('search') }}?q=acetaminophen">acetaminophen</a> &middot;
+    <a href="{{ url_for('search') }}?q=metformin">metformin</a> &middot;
+    <a href="{{ url_for('search') }}?q=lisinopril">lisinopril</a>
+  </p>
   <p class="hero-trending">
-    <strong>Trending searches:</strong>
+    <strong>Trending:</strong>
     {% for d in trending[:6] %}
       <a href="{{ url_for('drug_detail', slug=d.slug) }}">{{ d.generic_name|capitalize }}</a>{% if not loop.last %},{% endif %}
     {% endfor %}
@@ -223,6 +233,29 @@ function scrollCarousel(dir) {
     </div>
   </div>
 </div>
+
+{% if new_approvals %}
+<div class="container">
+  <div class="home-row new-approvals-row">
+    <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:14px">
+      <h2 style="margin:0">New Drug Approvals</h2>
+      <a href="{{ url_for('news_category', category='new-drug-approvals') }}" style="font-size:0.92rem">View all &rsaquo;</a>
+    </div>
+    <div class="new-approvals-grid">
+      {% for a in new_approvals %}
+      <a class="approval-card" href="{{ url_for('news_article', article_id=a.id) }}">
+        <div class="approval-card-meta">
+          <span class="badge">{{ a.category }}</span>
+          <span class="muted">{{ a.published_at.strftime('%b %d, %Y') }}</span>
+        </div>
+        <h3 class="approval-card-title">{{ a.title }}</h3>
+        <p class="approval-card-excerpt muted">{{ a.body[:130] }}{% if a.body|length > 130 %}...{% endif %}</p>
+      </a>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+{% endif %}
 
 <div class="newsletter-strip">
   <div class="container newsletter-inner">

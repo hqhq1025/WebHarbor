@@ -383,6 +383,17 @@
         {% endif %}
       </div>
 
+      {% if recently_viewed %}
+      <div class="sidebar-box recently-viewed-box">
+        <h3>Recently viewed</h3>
+        <ul class="sidebar-links">
+          {% for d in recently_viewed[:4] %}
+            <li><a href="{{ url_for('drug_detail', slug=d.slug) }}">{{ d.generic_name|capitalize }}</a></li>
+          {% endfor %}
+        </ul>
+      </div>
+      {% endif %}
+
       <div class="sidebar-box dosage-info-box">
         <h3>Dosage information</h3>
         <p class="muted"><strong>Typical adult dosage</strong></p>

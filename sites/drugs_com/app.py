@@ -1374,12 +1374,16 @@ def index():
     ).all()
     fda_news = NewsArticle.query.filter_by(category="FDA Alerts").order_by(
         NewsArticle.published_at.desc()).limit(3).all()
+    new_approvals = NewsArticle.query.filter(
+        NewsArticle.category.in_(['New Drug Approvals', 'New Drugs'])
+    ).order_by(NewsArticle.published_at.desc()).limit(4).all()
     image_drugs = (Drug.query.join(DrugImage, DrugImage.drug_id == Drug.id)
                    .order_by(db.func.random()).limit(6).all())
     image_samples = [(d, d.images[0]) for d in image_drugs if d.images]
     return render_template("index.html", featured=featured, trending=trending,
                            news=news, classes=classes,
                            health_topics=health_topics, fda_news=fda_news,
+                           new_approvals=new_approvals,
                            image_samples=image_samples)
 
 
@@ -1398,6 +1402,21 @@ def drug_detail(slug):
     drug = Drug.query.filter_by(slug=slug).first()
     if not drug:
         abort(404)
+    # Track recently viewed drugs in session
+    viewed = session.get("recently_viewed", [])
+    if drug.slug in viewed:
+        viewed.remove(drug.slug)
+    viewed.insert(0, drug.slug)
+    viewed = viewed[:10]
+    session["recently_viewed"] = viewed
+    session.modified = True
+    # Fetch recently viewed Drug rows (excluding current page's drug) in session order
+    other_slugs = [s for s in viewed if s != drug.slug]
+    recently_viewed = []
+    if other_slugs:
+        recently_viewed = Drug.query.filter(Drug.slug.in_(other_slugs)).all()
+        rv_order = {s: i for i, s in enumerate(other_slugs)}
+        recently_viewed.sort(key=lambda d: rv_order.get(d.slug, 99))
     reviews = DrugReview.query.filter_by(drug_id=drug.id).order_by(DrugReview.helpful_count.desc()).limit(20).all()
     related = Drug.query.filter(Drug.generic_name.in_(drug.related_drugs)).all()
     cond_by_slug = {c.slug: c for c in Condition.query.all()}
@@ -1427,7 +1446,8 @@ def drug_detail(slug):
                            related=related, drug_conditions=drug_conditions, saved=saved,
                            rating_distribution=rating_distribution, user_review=user_review,
                            related_news=related_news, related_drugs=related_drugs,
-                           drug_interactions=drug_interactions)
+                           drug_interactions=drug_interactions,
+                           recently_viewed=recently_viewed)
 
 
 @app.route("/<slug>/reviews")
@@ -1629,6 +1649,27 @@ def search():
                            suggestions=suggestions,
                            matched_condition=matched_condition,
                            matched_class=matched_class)
+
+
+@app.route("/api/autocomplete")
+def autocomplete():
+    q = request.args.get("q", "").strip().lower()
+    if len(q) < 2:
+        return jsonify([])
+    # Search generic names
+    drugs = Drug.query.filter(Drug.generic_name.ilike(f"{q}%")).limit(5).all()
+    # Also search brand names within the list
+    results = []
+    for d in drugs:
+        results.append({"type": "drug", "name": d.generic_name, "url": f"/{d.slug}.html", "label": d.generic_name.capitalize()})
+        for brand in (d.brand_names or [])[:1]:  # only first brand
+            if brand.lower().startswith(q):
+                results.append({"type": "brand", "name": brand, "url": f"/{d.slug}.html", "label": f"{brand} ({d.generic_name})"})
+    # Also search conditions
+    conditions = Condition.query.filter(Condition.name.ilike(f"%{q}%")).limit(3).all()
+    for c in conditions:
+        results.append({"type": "condition", "name": c.name, "url": f"/condition/{c.slug}", "label": c.name})
+    return jsonify(results[:8])
 
 
 @app.route("/drug_interactions.html", methods=["GET", "POST"])
@@ -2051,7 +2092,15 @@ def logout():
 def account():
     reviews = DrugReview.query.filter_by(user_id=current_user.id).order_by(DrugReview.created_at.desc()).all()
     saved_count = SavedDrug.query.filter_by(user_id=current_user.id).count()
-    return render_template("account.html", reviews=reviews, saved_count=saved_count)
+    recently_viewed_slugs = session.get("recently_viewed", [])
+    recently_viewed = []
+    if recently_viewed_slugs:
+        recently_viewed = Drug.query.filter(Drug.slug.in_(recently_viewed_slugs)).all()
+        slug_order = {s: i for i, s in enumerate(recently_viewed_slugs)}
+        recently_viewed.sort(key=lambda d: slug_order.get(d.slug, 99))
+    return render_template("account.html", reviews=reviews, saved_count=saved_count,
+                           recently_viewed=recently_viewed,
+                           recently_viewed_count=len(recently_viewed_slugs))
 
 
 @app.route("/my-med-list.html")

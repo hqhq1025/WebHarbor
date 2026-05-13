@@ -24,6 +24,10 @@
     <span class="stat-value">{{ reviews|length }}</span>
     <span class="stat-label">Review{{ '' if reviews|length == 1 else 's' }} Posted</span>
   </div>
+  <div class="account-stat">
+    <span class="stat-value">{{ recently_viewed_count }}</span>
+    <span class="stat-label">Drug{{ '' if recently_viewed_count == 1 else 's' }} Viewed</span>
+  </div>
 </div>
 
 <div class="account-grid">
@@ -54,6 +58,22 @@
     {% else %}
       <p class="muted">You have not posted any reviews yet. Visit any drug page to write a review.</p>
     {% endfor %}
+  </section>
+
+  <section class="account-box">
+    <h2>Recently Viewed</h2>
+    {% if recently_viewed %}
+      <ul class="recently-viewed-list">
+        {% for d in recently_viewed[:5] %}
+          <li>
+            <a href="{{ url_for('drug_detail', slug=d.slug) }}">{{ d.generic_name|capitalize }}</a>
+            <span class="badge badge-{{ 'rx' if d.availability and 'rx' in (d.availability|lower) else 'otc' }}">{{ d.availability or 'Rx' }}</span>
+          </li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      <p class="muted">You have not viewed any drug pages yet. Browse <a href="{{ url_for('drug_az') }}">Drugs A-Z</a> to get started.</p>
+    {% endif %}
   </section>
 
   <section class="account-box">

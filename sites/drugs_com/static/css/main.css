@@ -37,6 +37,85 @@ a:hover { text-decoration: underline; color: var(--blue-mid); }
 .container { max-width: 1200px; margin: 0 auto; padding: 0 20px; }
 .muted { color: var(--gray-500); font-size: 0.92em; }
 
+/* Utility bar */
+.utility-bar {
+  background: #eef1f5;
+  border-bottom: 1px solid var(--border);
+  font-size: 0.78rem;
+  color: var(--gray-700);
+}
+.utility-bar-inner {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 4px 20px;
+  min-height: 26px;
+}
+.utility-bar-left, .utility-bar-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.utility-link {
+  color: var(--gray-700);
+  font-size: 0.78rem;
+  padding: 2px 4px;
+}
+.utility-link:hover { color: var(--blue); text-decoration: underline; }
+.utility-sep { color: var(--gray-300); }
+
+/* Hero popular searches */
+.hero-popular {
+  font-size: 0.9rem;
+  color: var(--gray-700);
+  margin: 8px 0 4px;
+}
+.hero-popular a {
+  margin: 0 4px;
+  color: var(--blue);
+}
+.hero-popular a:hover { text-decoration: underline; }
+
+/* New Drug Approvals grid */
+.new-approvals-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 14px;
+}
+.approval-card {
+  display: block;
+  background: #fff;
+  border: 1px solid var(--gray-200);
+  border-left: 4px solid var(--blue);
+  border-radius: 6px;
+  padding: 14px 16px;
+  color: inherit;
+  transition: box-shadow 0.15s, border-color 0.15s;
+}
+.approval-card:hover {
+  box-shadow: var(--shadow-lg);
+  text-decoration: none;
+  border-left-color: var(--orange);
+}
+.approval-card-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+  font-size: 0.78rem;
+}
+.approval-card-title {
+  color: var(--navy);
+  font-size: 1rem;
+  font-weight: 700;
+  line-height: 1.35;
+  margin-bottom: 6px;
+}
+.approval-card-excerpt {
+  font-size: 0.85rem;
+  line-height: 1.45;
+}
+
 /* ── Header ── */
 .site-header {
   background: #fff;
@@ -81,9 +160,37 @@ a:hover { text-decoration: underline; color: var(--blue-mid); }
   display: flex;
   border: 1.5px solid var(--gray-300);
   border-radius: 4px;
-  overflow: hidden;
   background: #fff;
+  position: relative;
 }
+.search-autocomplete {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background: white;
+  border: 1px solid #ddd;
+  border-top: none;
+  border-radius: 0 0 6px 6px;
+  box-shadow: 0 4px 12px rgba(0,0,0,.15);
+  z-index: 1000;
+  max-height: 320px;
+  overflow-y: auto;
+}
+.autocomplete-item {
+  padding: 10px 14px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: .95rem;
+  border-bottom: 1px solid #f0f0f0;
+}
+.autocomplete-item:hover, .autocomplete-item.active {
+  background: #f6f9fc;
+}
+.autocomplete-icon { font-size: 1.1rem; }
+.autocomplete-label { flex: 1; color: #222; }
 .header-search-inner:focus-within { border-color: var(--blue); box-shadow: 0 0 0 2px rgba(26,115,200,0.15); }
 .header-search-input {
   flex: 1;
