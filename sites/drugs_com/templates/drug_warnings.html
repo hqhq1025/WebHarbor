@@ -1,31 +1,76 @@
 {% extends "base.html" %}
-{% block title %}Drug Warnings &amp; Black Box Warnings | {{ site_name }}{% endblock %}
+{% block title %}{{ drug.generic_name|capitalize }} Warnings - {{ site_name }}{% endblock %}
 {% block content %}
-<div style="padding:24px 0">
-  <nav class="breadcrumb"><a href="{{ url_for('index') }}">Home</a> &rsaquo; <span>Drug Warnings</span></nav>
-  <h1 style="font-size:2rem;margin-bottom:12px">Drug Warnings &amp; Black Box Warnings</h1>
+<div class="breadcrumb-row">
+  <nav class="breadcrumb">
+    <a href="{{ url_for('index') }}">Home</a> &rsaquo;
+    <a href="{{ url_for('drug_detail', slug=drug.slug) }}">{{ drug.generic_name|capitalize }}</a> &rsaquo;
+    <span>Warnings</span>
+  </nav>
+</div>
 
-  <section style="background:#fff4f4;border-left:4px solid #c0392b;padding:14px 18px;margin-bottom:20px;border-radius:4px">
-    <h2 style="font-size:1.15rem;margin-bottom:6px">What is a black box warning?</h2>
-    <p>A boxed warning (also called a black box warning) is the strongest warning the U.S. Food and Drug Administration (FDA) requires for prescription drugs that carry a significant risk of serious or life-threatening adverse effects. The warning appears in a black-bordered box at the top of the package insert and is intended to alert prescribers and patients to these risks.</p>
+<article class="drug-detail">
+  <header class="drug-header">
+    <h1>{{ drug.generic_name|capitalize }} Warnings</h1>
+    <p class="reviewer-line">
+      <span>Medically reviewed by {{ drug.reviewer_name }}, {{ drug.reviewer_credential }}. Last updated on {{ drug.last_updated.strftime('%b %d, %Y') }}.</span>
+    </p>
+    {% if drug.drug_class %}
+    <p><strong>Drug class:</strong>
+      <a href="{{ url_for('drug_class_page', slug=drug.drug_class.slug) }}">{{ drug.drug_class.name }}</a>
+    </p>
+    {% endif %}
+  </header>
+
+  {% if boxed_warning %}
+  <section style="background:#fff4f4;border:2px solid #c0392b;padding:16px 20px;margin:18px 0;border-radius:6px">
+    <h2 style="margin:0 0 8px;color:#c0392b;font-size:1.2rem">Boxed Warning (Black Box Warning)</h2>
+    <p style="margin:0">{{ boxed_warning }}</p>
+    <p class="muted" style="margin:10px 0 0;font-size:13px">A boxed warning is the strongest warning the FDA requires, alerting prescribers and patients to risks of serious or life-threatening adverse effects.</p>
+  </section>
+  {% endif %}
+
+  {% if warning_cards %}
+    {% for name, items in warning_cards %}
+    <section style="border:1px solid #e0e6ef;border-radius:6px;padding:14px 18px;margin:14px 0;background:#fff">
+      <h2 style="margin:0 0 10px;font-size:1.1rem;color:var(--navy,#1a3a6e)">{{ name }}</h2>
+      {% if items|length == 1 %}
+        <p style="margin:0">{{ items[0] }}</p>
+      {% else %}
+        <ul style="margin:0;padding-left:20px">
+          {% for item in items %}<li style="margin-bottom:6px">{{ item }}</li>{% endfor %}
+        </ul>
+      {% endif %}
+    </section>
+    {% endfor %}
+  {% else %}
+    <section>
+      <h2>Warnings</h2>
+      <p>No specific warnings have been recorded for {{ drug.generic_name }}. Always consult your healthcare provider before starting or stopping any medication.</p>
+    </section>
+  {% endif %}
+
+  <section style="margin-top:24px">
+    <h2>General precautions</h2>
+    <ul>
+      <li>Tell your doctor about all medical conditions, including kidney, liver, or heart problems.</li>
+      <li>Disclose all medications you take, including prescription drugs, over-the-counter products, vitamins, and herbal supplements.</li>
+      <li>Inform your doctor if you are pregnant, planning to become pregnant, or breastfeeding.</li>
+      <li>Do not stop taking {{ drug.generic_name }} abruptly unless directed by your prescriber.</li>
+      <li>Store the medication as directed and keep out of reach of children.</li>
+    </ul>
   </section>
 
-  <h2 style="font-size:1.3rem;margin:24px 0 10px">Drugs with significant warnings</h2>
-  <table style="width:100%;border-collapse:collapse">
-    <thead>
-      <tr style="background:#f1f5fa">
-        <th style="text-align:left;padding:10px;border-bottom:1px solid #ddd">Drug</th>
-        <th style="text-align:left;padding:10px;border-bottom:1px solid #ddd">Warning summary</th>
-      </tr>
-    </thead>
-    <tbody>
-      {% for d in drugs %}
-        <tr>
-          <td style="padding:10px;border-bottom:1px solid #eee;white-space:nowrap"><a href="{{ url_for('drug_detail', slug=d.slug) }}">{{ d.generic_name }}</a></td>
-          <td style="padding:10px;border-bottom:1px solid #eee">{{ (d.warnings or '')[:280] }}{% if d.warnings and d.warnings|length > 280 %}&hellip;{% endif %}</td>
-        </tr>
-      {% endfor %}
-    </tbody>
-  </table>
-</div>
+  <section style="margin-top:24px;padding:14px 16px;border:1px solid #e0e6ef;border-radius:6px;background:#f7f9fc">
+    <h2 style="margin:0 0 10px;font-size:1.05rem">Related information for {{ drug.generic_name|capitalize }}</h2>
+    <ul style="margin:0;padding-left:20px">
+      <li><a href="{{ url_for('drug_side_effects', slug=drug.slug) }}">{{ drug.generic_name|capitalize }} side effects</a></li>
+      <li><a href="{{ url_for('drug_interactions_page', slug=drug.slug) }}">{{ drug.generic_name|capitalize }} drug interactions</a></li>
+      <li><a href="{{ url_for('drug_pregnancy', slug=drug.slug) }}">{{ drug.generic_name|capitalize }} pregnancy &amp; lactation</a></li>
+      <li><a href="{{ url_for('drug_dosage', slug=drug.slug) }}">{{ drug.generic_name|capitalize }} dosage</a></li>
+    </ul>
+  </section>
+
+  <p style="margin-top:18px"><a href="{{ url_for('drug_detail', slug=drug.slug) }}">&laquo; Back to {{ drug.generic_name|capitalize }} overview</a></p>
+</article>
 {% endblock %}

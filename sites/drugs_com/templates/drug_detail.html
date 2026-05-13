@@ -132,6 +132,9 @@
 
       <section id="interactions">
         <h2>What other drugs will affect {{ drug.generic_name }}?</h2>
+        {% if drug_interactions is defined and drug_interactions %}
+        <p class="muted"><strong>{{ drug.generic_name|capitalize }} has {{ drug_interactions|length }} known drug interactions.</strong></p>
+        {% endif %}
         {{ drug.interactions_text | format_drug_text | safe }}
         <div class="interaction-mini-checker">
           <p><strong>Check {{ drug.generic_name|capitalize }} for interactions</strong></p>
@@ -154,6 +157,21 @@
             <p>{{ item.a }}</p>
           </details>
         {% endfor %}
+      </section>
+      {% endif %}
+
+      {% if related_drugs %}
+      <section id="similar-drugs">
+        <h2>Similar medications</h2>
+        <div class="related-drugs-grid">
+          {% for r in related_drugs %}
+          <a href="{{ url_for('drug_detail', slug=r.slug) }}" class="related-drug-card">
+            <strong>{{ r.generic_name|capitalize }}</strong>
+            <span class="avail-badge">{{ r.availability }}</span>
+            {% if r.avg_rating %}<span>&#9733; {{ r.avg_rating }}/10</span>{% endif %}
+          </a>
+          {% endfor %}
+        </div>
       </section>
       {% endif %}
 

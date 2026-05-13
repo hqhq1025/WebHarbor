@@ -81,8 +81,60 @@
   </div>
 
   {% if interactions %}
+    {% set sev_groups = [
+      ('major', 'Major Interactions', '#c0392b', '#fff', '&#9888;'),
+      ('moderate', 'Moderate Interactions', '#e67e22', '#fff', '&#9889;'),
+      ('minor', 'Minor Interactions', '#f1c40f', '#222', '&#8505;'),
+    ] %}
+    {% for sev, label, bg, fg, icon in sev_groups %}
+      {% set group_items = interactions | selectattr('severity', 'equalto', sev) | list %}
+      {% if group_items %}
+        <div class="severity-group sev-group-{{ sev }}" style="margin:1rem 0;">
+          <h3 style="background:{{ bg }};color:{{ fg }};padding:0.5rem 0.85rem;margin:0 0 0.5rem 0;border-radius:4px;font-size:1.05em;">
+            {{ icon|safe }} {{ label }} ({{ group_items|length }})
+          </h3>
+          <ul class="interaction-list" style="list-style:none;padding-left:0;margin:0;">
+            {% for it in group_items %}
+              <li class="interaction sev-{{ it.severity }}" style="border:1px solid #e0e0e0;border-left:4px solid {{ bg }};padding:0.75rem 1rem;margin:0.5rem 0;border-radius:4px;background:#fff;">
+                <div style="display:flex;align-items:center;gap:0.75rem;flex-wrap:wrap;">
+                  <span class="sev-badge sev-{{ it.severity }}" style="display:inline-block;padding:3px 10px;border-radius:12px;background:{{ bg }};color:{{ fg }};font-size:0.85em;font-weight:600;">{{ icon|safe }} {{ it.severity | capitalize }}</span>
+                  <strong>
+                    <a href="{{ url_for('drug_detail', slug=it.drug_a.slug) }}">{{ it.drug_a.generic_name }}</a>
+                    +
+                    <a href="{{ url_for('drug_detail', slug=it.drug_b.slug) }}">{{ it.drug_b.generic_name }}</a>
+                  </strong>
+                </div>
+                <p style="margin:0.5rem 0 0 0;">{{ it.description }}</p>
+                <details style="margin-top:0.5rem;">
+                  <summary style="cursor:pointer;color:#2a6fb0;font-size:0.9em;">More information</summary>
+                  <div style="margin-top:0.5rem;font-size:0.92em;color:#333;">
+                    <p>This interaction is classified as <strong>{{ it.severity }}</strong>.
+                      {% if it.severity == 'major' %}Avoid this combination unless directed and closely monitored by your healthcare provider.
+                      {% elif it.severity == 'moderate' %}Use only with appropriate clinical monitoring or dose adjustment.
+                      {% else %}This interaction is typically clinically minor but worth noting.
+                      {% endif %}
+                    </p>
+                    <p>For pharmacology details, see the drug pages for
+                      <a href="{{ url_for('drug_detail', slug=it.drug_a.slug) }}">{{ it.drug_a.generic_name }}</a> and
+                      <a href="{{ url_for('drug_detail', slug=it.drug_b.slug) }}">{{ it.drug_b.generic_name }}</a>.
+                    </p>
+                  </div>
+                </details>
+              </li>
+            {% endfor %}
+          </ul>
+        </div>
+      {% endif %}
+    {% endfor %}
+  {% else %}
+    <p>No known drug-drug interactions found among these drugs in our database.</p>
+  {% endif %}
+
+  {% if food_interactions %}
+    <h3 style="margin-top:1.5rem;">Drug-Food Interactions</h3>
+    <p class="muted">Common dietary considerations for the drugs you entered.</p>
     <ul class="interaction-list" style="list-style:none;padding-left:0;">
-      {% for it in interactions %}
+      {% for it in food_interactions %}
         {% set bg = '#c0392b' if it.severity == 'major' else ('#e67e22' if it.severity == 'moderate' else '#f1c40f') %}
         {% set fg = '#222' if it.severity == 'minor' else '#fff' %}
         {% set icon = '&#9888;' if it.severity == 'major' else ('&#9889;' if it.severity == 'moderate' else '&#8505;') %}
@@ -90,32 +142,36 @@
           <div style="display:flex;align-items:center;gap:0.75rem;flex-wrap:wrap;">
             <span class="sev-badge sev-{{ it.severity }}" style="display:inline-block;padding:3px 10px;border-radius:12px;background:{{ bg }};color:{{ fg }};font-size:0.85em;font-weight:600;">{{ icon|safe }} {{ it.severity | capitalize }}</span>
             <strong>
-              <a href="{{ url_for('drug_detail', slug=it.drug_a.slug) }}">{{ it.drug_a.generic_name }}</a>
-              +
-              <a href="{{ url_for('drug_detail', slug=it.drug_b.slug) }}">{{ it.drug_b.generic_name }}</a>
+              <a href="{{ url_for('drug_detail', slug=it.drug.slug) }}">{{ it.drug.generic_name }}</a>
+              + {{ it.item }}
             </strong>
           </div>
           <p style="margin:0.5rem 0 0 0;">{{ it.description }}</p>
-          <details style="margin-top:0.5rem;">
-            <summary style="cursor:pointer;color:#2a6fb0;font-size:0.9em;">More information</summary>
-            <div style="margin-top:0.5rem;font-size:0.92em;color:#333;">
-              <p>This interaction is classified as <strong>{{ it.severity }}</strong>.
-                {% if it.severity == 'major' %}Avoid this combination unless directed and closely monitored by your healthcare provider.
-                {% elif it.severity == 'moderate' %}Use only with appropriate clinical monitoring or dose adjustment.
-                {% else %}This interaction is typically clinically minor but worth noting.
-                {% endif %}
-              </p>
-              <p>For pharmacology details, see the drug pages for
-                <a href="{{ url_for('drug_detail', slug=it.drug_a.slug) }}">{{ it.drug_a.generic_name }}</a> and
-                <a href="{{ url_for('drug_detail', slug=it.drug_b.slug) }}">{{ it.drug_b.generic_name }}</a>.
-              </p>
-            </div>
-          </details>
         </li>
       {% endfor %}
     </ul>
-  {% else %}
-    <p>No known interactions found among these drugs in our database.</p>
+  {% endif %}
+
+  {% if alcohol_interactions %}
+    <h3 style="margin-top:1.5rem;">Drug-Alcohol Interactions</h3>
+    <p class="muted">Risks of combining alcohol with the drugs you entered.</p>
+    <ul class="interaction-list" style="list-style:none;padding-left:0;">
+      {% for it in alcohol_interactions %}
+        {% set bg = '#c0392b' if it.severity == 'major' else ('#e67e22' if it.severity == 'moderate' else '#f1c40f') %}
+        {% set fg = '#222' if it.severity == 'minor' else '#fff' %}
+        {% set icon = '&#9888;' if it.severity == 'major' else ('&#9889;' if it.severity == 'moderate' else '&#8505;') %}
+        <li class="interaction sev-{{ it.severity }}" style="border:1px solid #e0e0e0;border-left:4px solid {{ bg }};padding:0.75rem 1rem;margin:0.5rem 0;border-radius:4px;background:#fff;">
+          <div style="display:flex;align-items:center;gap:0.75rem;flex-wrap:wrap;">
+            <span class="sev-badge sev-{{ it.severity }}" style="display:inline-block;padding:3px 10px;border-radius:12px;background:{{ bg }};color:{{ fg }};font-size:0.85em;font-weight:600;">{{ icon|safe }} {{ it.severity | capitalize }}</span>
+            <strong>
+              <a href="{{ url_for('drug_detail', slug=it.drug.slug) }}">{{ it.drug.generic_name }}</a>
+              + Alcohol
+            </strong>
+          </div>
+          <p style="margin:0.5rem 0 0 0;">{{ it.description }}</p>
+        </li>
+      {% endfor %}
+    </ul>
   {% endif %}
 </section>
 {% endif %}

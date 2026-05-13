@@ -11,7 +11,23 @@
 
 <div class="two-col">
   <div class="main-col">
+    {% if top_conditions and not active_letter %}
+    <section class="top-conditions" style="margin:8px 0 20px;padding:14px 16px;border:1px solid #e0e6ef;border-radius:6px;background:#f7f9fc">
+      <h2 style="margin:0 0 10px;font-size:1.15rem">Top conditions</h2>
+      <div style="display:flex;flex-wrap:wrap;gap:8px">
+        {% for c in top_conditions %}
+          <a href="{{ url_for('condition_page', slug=c.slug) }}"
+             style="display:inline-block;padding:6px 12px;background:#fff;border:1px solid #cfd8e3;border-radius:16px;text-decoration:none;color:var(--navy,#1a3a6e);font-size:14px">
+            {{ c.name }} <span class="muted" style="font-size:12px">({{ c.drug_count or 0 }})</span>
+          </a>
+        {% endfor %}
+      </div>
+    </section>
+    {% endif %}
+
     <div class="letter-grid">
+      <a class="letter-btn {% if not active_letter %}active{% endif %}"
+         href="{{ url_for('conditions_list') }}">All</a>
       {% for letter in all_letters %}
         <a class="letter-btn {% if active_letter == letter %}active{% endif %}"
            href="{{ url_for('conditions_list') }}?letter={{ letter }}">{{ letter }}</a>

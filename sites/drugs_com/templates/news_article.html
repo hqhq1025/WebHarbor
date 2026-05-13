@@ -1,6 +1,32 @@
 {% extends "base.html" %}
 {% block title %}{{ article.title }} - {{ site_name }}{% endblock %}
 {% block content %}
+{# Deterministic fake medical reviewer + reference data keyed on article.id so the page is stable across requests. #}
+{% set reviewers = [
+  ('Leigh Ann Anderson', 'PharmD'),
+  ('Carmen Fookes', 'BPharm'),
+  ('Judith Stewart', 'BPharm'),
+  ('Melisa Puckey', 'BPharm'),
+  ('Kristianne Hannemann', 'PharmD'),
+  ('Philip Thornton', 'DipPharm'),
+  ('Sally Chao', 'MD'),
+  ('Michael Stewart', 'PharmD')
+] %}
+{% set reviewer = reviewers[article.id % reviewers|length] %}
+
+{% set ref_journals = [
+  'New England Journal of Medicine',
+  'Journal of the American Medical Association (JAMA)',
+  'The Lancet',
+  'Journal of Clinical Pharmacology',
+  'British Medical Journal (BMJ)',
+  'Annals of Internal Medicine'
+] %}
+{% set ref_year = article.published_at.year %}
+
+{% set body_paragraphs = article.body.split('\n\n') | map('trim') | reject('equalto', '') | list %}
+{% set takeaway_source = body_paragraphs[:4] if body_paragraphs|length >= 3 else body_paragraphs %}
+
 <nav class="breadcrumb">
   <a href="{{ url_for('index') }}">Home</a>
   <span>&rsaquo;</span>
@@ -13,21 +39,71 @@
 
 <div class="article-layout" style="display:grid;grid-template-columns:7fr 3fr;gap:32px;align-items:start;margin-top:16px">
   <article class="article-main">
-    <h1 style="font-size:30px;font-weight:700;color:var(--navy,#1a3a6e);line-height:1.25;margin:0 0 12px">{{ article.title }}</h1>
-    <div class="news-meta" style="margin-bottom:24px;padding-bottom:16px;border-bottom:1px solid #eee">
-      <span class="badge" style="text-transform:uppercase;font-size:11px;letter-spacing:0.5px;margin-right:8px">{{ article.category }}</span>
-      {% if article.source %}{{ article.source }} &bull; {% endif %}{{ article.published_at.strftime('%B %d, %Y') }}
+    <span class="badge" style="text-transform:uppercase;font-size:11px;letter-spacing:0.5px">{{ article.category }}</span>
+    <h1 style="font-size:30px;font-weight:700;color:var(--navy,#1a3a6e);line-height:1.25;margin:10px 0 12px">{{ article.title }}</h1>
+
+    <div class="news-meta" style="margin-bottom:14px;color:#555;font-size:13px">
+      {% if article.source %}{{ article.source }} &bull; {% endif %}Published {{ article.published_at.strftime('%B %d, %Y') }}
     </div>
 
+    <div class="medical-review-notice" style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:#eef4fb;border-left:3px solid #0066cc;border-radius:4px;margin-bottom:18px;font-size:13px;color:#1a3a6e">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 12l2 2 4-4"/><circle cx="12" cy="12" r="10"/></svg>
+      <span>
+        <strong>Medically reviewed by {{ reviewer[0] }}, {{ reviewer[1] }}</strong>
+        &mdash; Last updated on {{ article.published_at.strftime('%b %d, %Y') }}.
+      </span>
+    </div>
+
+    <div class="article-share" style="display:flex;gap:8px;align-items:center;margin-bottom:22px;padding:8px 0;border-top:1px solid #eee;border-bottom:1px solid #eee">
+      <span style="font-size:12px;color:#666;text-transform:uppercase;letter-spacing:0.5px;font-weight:600;margin-right:4px">Share</span>
+      <a href="#" onclick="return false" title="Share on Facebook" style="display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;border:1px solid #dde3ec;border-radius:50%;color:#1877f2;text-decoration:none;font-weight:700;font-family:Georgia,serif">f</a>
+      <a href="#" onclick="return false" title="Share on Twitter" style="display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;border:1px solid #dde3ec;border-radius:50%;color:#1da1f2;text-decoration:none;font-weight:700">t</a>
+      <a href="#" onclick="return false" title="Share on LinkedIn" style="display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;border:1px solid #dde3ec;border-radius:50%;color:#0a66c2;text-decoration:none;font-weight:700">in</a>
+      <a href="#" onclick="return false" title="Share via email" style="display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;border:1px solid #dde3ec;border-radius:50%;color:#555;text-decoration:none">&#9993;</a>
+      <a href="#" onclick="window.print();return false" title="Print article" style="display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;border:1px solid #dde3ec;border-radius:50%;color:#555;text-decoration:none">&#128424;</a>
+    </div>
+
+    {% if takeaway_source %}
+    <div class="key-takeaways" style="background:#f7faf5;border:1px solid #d3e3c2;border-left:4px solid #4a8b2c;border-radius:6px;padding:16px 20px;margin-bottom:24px">
+      <h2 style="font-size:14px;font-weight:700;color:#2d5e16;margin:0 0 10px;text-transform:uppercase;letter-spacing:0.6px">
+        Fast facts &mdash; Key takeaways
+      </h2>
+      <ul style="margin:0;padding-left:20px;font-size:14px;line-height:1.6;color:#333">
+        {% for p in takeaway_source %}
+          {% set sentences = p.split('. ') %}
+          {% set snippet = sentences[0] | trim %}
+          {% if snippet %}
+            <li style="margin-bottom:6px">{{ snippet }}{% if not snippet.endswith('.') %}.{% endif %}</li>
+          {% endif %}
+        {% endfor %}
+      </ul>
+    </div>
+    {% endif %}
+
     <div class="article-content" style="font-size:16px;line-height:1.8;color:#333">
-      {% for paragraph in article.body.split('\n\n') %}
-        {% if paragraph.strip() %}
-          <p style="margin:0 0 16px">{{ paragraph.strip() }}</p>
-        {% endif %}
+      {% for paragraph in body_paragraphs %}
+        <p style="margin:0 0 16px">{{ paragraph }}</p>
       {% endfor %}
     </div>
 
-    <div class="medical-disclaimer">
+    <div class="article-references" style="margin-top:28px;padding:18px 20px;background:#fafbfc;border:1px solid #e5e9f0;border-radius:6px">
+      <h2 style="font-size:14px;font-weight:700;color:var(--navy,#1a3a6e);margin:0 0 12px;text-transform:uppercase;letter-spacing:0.6px;padding-bottom:8px;border-bottom:1px solid #e5e9f0">
+        References
+      </h2>
+      <ol style="margin:0;padding-left:22px;font-size:13px;line-height:1.65;color:#444">
+        <li style="margin-bottom:6px">
+          U.S. Food and Drug Administration. FDA Drug Safety Communication. Silver Spring, MD: U.S. Department of Health and Human Services; {{ ref_year }}. Accessed {{ article.published_at.strftime('%B %Y') }}.
+        </li>
+        <li style="margin-bottom:6px">
+          {{ ref_journals[article.id % ref_journals|length] }}. {{ ref_year }};{{ 300 + (article.id * 7) % 80 }}({{ 1 + article.id % 12 }}):{{ 1100 + (article.id * 13) % 800 }}-{{ 1100 + (article.id * 13) % 800 + 8 }}.
+        </li>
+        <li style="margin-bottom:6px">
+          National Institutes of Health. MedlinePlus drug information database. Bethesda, MD: U.S. National Library of Medicine; {{ ref_year }}.
+        </li>
+      </ol>
+    </div>
+
+    <div class="medical-disclaimer" style="margin-top:20px">
       <strong style="color:var(--navy,#1a3a6e)">Medical Disclaimer:</strong>
       The information provided in this article is for educational purposes only and is not intended as a substitute for professional medical advice, diagnosis, or treatment. Always seek the advice of your physician or other qualified health provider with any questions you may have regarding a medical condition.
     </div>
@@ -45,9 +121,10 @@
       {% if related %}
         <ul class="related-articles" style="list-style:none;padding:0;margin:0 0 12px">
           {% for r in related %}
-            <li style="padding:8px 0;border-bottom:1px solid #e8ecf2">
-              <a href="{{ url_for('news_article', article_id=r.id) }}" style="font-size:13px;font-weight:600;line-height:1.4">{{ r.title }}</a>
-              <div class="muted" style="font-size:11px;margin-top:2px">{{ r.published_at.strftime('%b %d, %Y') }}</div>
+            <li style="padding:10px 0;border-bottom:1px solid #e8ecf2">
+              <span style="display:inline-block;font-size:10px;font-weight:700;color:#0066cc;text-transform:uppercase;letter-spacing:0.4px;margin-bottom:3px">{{ r.category }}</span>
+              <a href="{{ url_for('news_article', article_id=r.id) }}" style="display:block;font-size:13px;font-weight:600;line-height:1.4;color:var(--navy,#1a3a6e);text-decoration:none">{{ r.title }}</a>
+              <div class="muted" style="font-size:11px;margin-top:3px">{{ r.published_at.strftime('%b %d, %Y') }}</div>
             </li>
           {% endfor %}
         </ul>
@@ -60,6 +137,16 @@
       <p style="margin:0">
         <a href="{{ url_for('news_index') }}" style="font-size:13px;font-weight:600">View all medical news &rsaquo;</a>
       </p>
+    </div>
+
+    <div style="background:#fff8e1;border:1px solid #f0d878;border-radius:6px;padding:16px;margin-bottom:20px">
+      <h3 style="font-size:14px;font-weight:700;color:#8a6d00;margin:0 0 8px;text-transform:uppercase;letter-spacing:0.5px">
+        Subscribe to news
+      </h3>
+      <p style="font-size:13px;color:#5a4a00;margin:0 0 10px;line-height:1.5">
+        Get the latest medication news, new drug approvals, alerts and updates.
+      </p>
+      <a href="{{ url_for('newsletter') }}" style="display:inline-block;background:#0066cc;color:#fff;padding:7px 14px;border-radius:4px;font-size:13px;font-weight:600;text-decoration:none">Subscribe now &rsaquo;</a>
     </div>
 
     <div style="background:#f7f9fc;border:1px solid #e0e6ef;border-radius:6px;padding:16px">

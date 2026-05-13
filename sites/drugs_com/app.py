@@ -1414,10 +1414,20 @@ def drug_detail(slug):
     if current_user.is_authenticated:
         user_review = DrugReview.query.filter_by(drug_id=drug.id, user_id=current_user.id).first()
     related_news = NewsArticle.query.order_by(NewsArticle.published_at.desc()).limit(5).all()
+    related_drugs = []
+    if drug.drug_class_id:
+        related_drugs = Drug.query.filter(
+            Drug.drug_class_id == drug.drug_class_id,
+            Drug.id != drug.id
+        ).order_by(db.func.random()).limit(6).all()
+    drug_interactions = DrugInteraction.query.filter(
+        (DrugInteraction.drug_a_id == drug.id) | (DrugInteraction.drug_b_id == drug.id)
+    ).all()
     return render_template("drug_detail.html", drug=drug, reviews=reviews,
                            related=related, drug_conditions=drug_conditions, saved=saved,
                            rating_distribution=rating_distribution, user_review=user_review,
-                           related_news=related_news)
+                           related_news=related_news, related_drugs=related_drugs,
+                           drug_interactions=drug_interactions)
 
 
 @app.route("/<slug>/reviews")
@@ -1684,6 +1694,9 @@ def interaction_checker():
             "moderate": sum(1 for it in interactions if it["severity"] == "moderate"),
             "minor": sum(1 for it in interactions if it["severity"] == "minor"),
         }
+        food_interactions, alcohol_interactions = _lifestyle_interactions(resolved)
+    else:
+        food_interactions, alcohol_interactions = [], []
     return render_template(
         "interaction_checker.html",
         drugs=drugs,
@@ -1692,7 +1705,107 @@ def interaction_checker():
         unrecognized=unrecognized,
         summary=summary,
         prefill=prefill,
+        food_interactions=food_interactions,
+        alcohol_interactions=alcohol_interactions,
     )
+
+
+# Hardcoded clinical reference data for drug-food / drug-alcohol interactions.
+# Keyed by (lowercased) generic name and by (lowercased) drug-class name.
+_FOOD_BY_GENERIC = {
+    "warfarin": [
+        {"item": "Vitamin K-rich foods (kale, spinach, broccoli)", "severity": "moderate",
+         "description": "Large or fluctuating intake of leafy greens high in vitamin K can antagonize warfarin's anticoagulant effect and destabilize INR. Keep vitamin K intake consistent rather than eliminating these foods."},
+        {"item": "Cranberry juice", "severity": "moderate",
+         "description": "Cranberry juice may potentiate warfarin and raise INR, increasing bleeding risk. Limit intake or avoid large quantities while on warfarin."},
+    ],
+    "ibuprofen": [
+        {"item": "High-sodium foods", "severity": "minor",
+         "description": "NSAIDs can cause fluid retention and elevate blood pressure; high-sodium meals compound this effect, particularly in patients with hypertension or heart failure."},
+    ],
+}
+
+_FOOD_BY_CLASS = {
+    "nsaids": [
+        {"item": "High-sodium foods", "severity": "minor",
+         "description": "NSAIDs promote sodium and water retention. Diets high in sodium can amplify blood-pressure increases and edema, especially in older adults or those with cardiac disease."},
+    ],
+    "statins": [
+        {"item": "Grapefruit juice", "severity": "major",
+         "description": "Grapefruit inhibits intestinal CYP3A4 and substantially raises serum levels of simvastatin, lovastatin, and atorvastatin. Elevated exposure increases the risk of myopathy and rhabdomyolysis."},
+    ],
+    "ssris": [
+        {"item": "Tyramine-rich foods (aged cheese, cured meats)", "severity": "minor",
+         "description": "While SSRIs are safer than MAOIs with tyramine, large tyramine loads can occasionally precipitate hypertensive or serotonergic symptoms in susceptible patients."},
+    ],
+    "anticoagulants": [
+        {"item": "Vitamin K-rich foods (kale, spinach, broccoli)", "severity": "moderate",
+         "description": "Vitamin K antagonizes warfarin-type anticoagulants. Keep daily vitamin K intake consistent to maintain stable INR; abrupt changes alter anticoagulant control."},
+    ],
+    "ace inhibitors": [
+        {"item": "Potassium-rich foods (bananas, oranges, salt substitutes)", "severity": "moderate",
+         "description": "ACE inhibitors reduce aldosterone-mediated potassium excretion. Excess dietary potassium, especially with salt substitutes, can produce clinically significant hyperkalemia."},
+    ],
+}
+
+_ALCOHOL_BY_GENERIC = {
+    "metronidazole": {"severity": "major",
+        "description": "Metronidazole with alcohol can produce a disulfiram-like reaction with flushing, nausea, vomiting, tachycardia, and headache. Avoid alcohol during therapy and for at least 48 hours after the last dose."},
+    "warfarin": {"severity": "major",
+        "description": "Acute heavy alcohol intake inhibits warfarin metabolism and raises INR with bleeding risk; chronic use induces metabolism and reduces effect. Either pattern destabilizes anticoagulation."},
+    "acetaminophen": {"severity": "moderate",
+        "description": "Chronic alcohol use induces CYP2E1, increasing formation of acetaminophen's hepatotoxic metabolite (NAPQI). Combination significantly raises the risk of acute liver injury."},
+}
+
+_ALCOHOL_BY_CLASS = {
+    "nsaids": {"severity": "major",
+        "description": "Combining NSAIDs with alcohol substantially increases the risk of gastrointestinal bleeding, ulceration, and renal injury. Avoid or minimize alcohol while taking NSAIDs."},
+    "ssris": {"severity": "moderate",
+        "description": "SSRIs combined with alcohol increase central nervous system depression, sedation, and impaired judgment. Alcohol may also worsen depressive symptoms and reduce SSRI efficacy."},
+    "benzodiazepines": {"severity": "major",
+        "description": "Benzodiazepines plus alcohol cause additive CNS and respiratory depression. The combination can produce profound sedation, respiratory arrest, and death."},
+    "opioids": {"severity": "major",
+        "description": "Opioids and alcohol both depress the CNS and respiratory drive. Concurrent use markedly increases the risk of fatal respiratory depression and overdose."},
+    "anticoagulants": {"severity": "major",
+        "description": "Alcohol affects both anticoagulant metabolism and platelet function, increasing the risk of major bleeding. Patients should limit intake and discuss safe thresholds with their clinician."},
+    "antihistamines": {"severity": "moderate",
+        "description": "First-generation antihistamines combined with alcohol produce additive sedation and psychomotor impairment, raising the risk of falls and motor-vehicle accidents."},
+    "antidiabetics": {"severity": "moderate",
+        "description": "Alcohol can cause hypoglycemia (especially fasting) and impair recognition of warning symptoms. Sulfonylureas and insulin carry the greatest risk."},
+}
+
+
+def _lifestyle_interactions(resolved_drugs):
+    """Return (food_interactions, alcohol_interactions) for the given Drug rows.
+
+    Each food entry is {drug, item, severity, description}; each alcohol entry
+    is {drug, severity, description}. Lookups are by lowercased generic name
+    and drug-class name against hardcoded reference tables; drugs without
+    matches contribute nothing. Lists are sorted major -> moderate -> minor,
+    deduplicated per (drug, item) for food and one entry per drug for alcohol.
+    """
+    sev_order = {"major": 0, "moderate": 1, "minor": 2}
+    food, alcohol = [], []
+    seen_food = set()
+    seen_alc = set()
+    for d in resolved_drugs:
+        gname = (d.generic_name or "").lower()
+        cname = (d.drug_class.name or "").lower() if d.drug_class else ""
+        candidates = list(_FOOD_BY_GENERIC.get(gname, []))
+        candidates.extend(_FOOD_BY_CLASS.get(cname, []))
+        for entry in candidates:
+            key = (d.id, entry["item"])
+            if key in seen_food:
+                continue
+            seen_food.add(key)
+            food.append({"drug": d, **entry})
+        alc = _ALCOHOL_BY_GENERIC.get(gname) or _ALCOHOL_BY_CLASS.get(cname)
+        if alc and d.id not in seen_alc:
+            seen_alc.add(d.id)
+            alcohol.append({"drug": d, **alc})
+    food.sort(key=lambda x: sev_order.get(x["severity"], 99))
+    alcohol.sort(key=lambda x: sev_order.get(x["severity"], 99))
+    return food, alcohol
 
 
 @app.route("/api/interaction-check", methods=["POST"])
@@ -1878,9 +1991,35 @@ def drug_classes_list():
 @app.route("/conditions")
 @app.route("/conditions.html")
 def conditions_list():
-    conditions = Condition.query.order_by(Condition.name).all()
+    all_conditions = Condition.query.order_by(Condition.name).all()
+    for c in all_conditions:
+        if c.drug_count is None:
+            c.drug_count = DrugCondition.query.filter_by(condition_id=c.id).count()
     all_letters = list('ABCDEFGHIJKLMNOPQRSTUVWXYZ') + ['0-9']
-    return render_template("conditions.html", conditions=conditions, all_letters=all_letters, active_letter=None)
+    active_letter = (request.args.get("letter") or "").upper().strip() or None
+    if active_letter == '0-9':
+        conditions = [c for c in all_conditions if c.name and not c.name[0].isalpha()]
+    elif active_letter:
+        conditions = [c for c in all_conditions if c.name and c.name[0].upper() == active_letter]
+    else:
+        conditions = all_conditions
+    top_slugs = ["hypertension", "diabetes", "depression", "asthma", "anxiety",
+                 "high_cholesterol", "heart_disease", "migraine", "gerd", "arthritis"]
+    by_slug = {c.slug: c for c in all_conditions}
+    top_conditions = [by_slug[s] for s in top_slugs if s in by_slug]
+    if len(top_conditions) < 6:
+        extras = sorted(all_conditions, key=lambda c: -(c.drug_count or 0))
+        for c in extras:
+            if c not in top_conditions:
+                top_conditions.append(c)
+            if len(top_conditions) >= 8:
+                break
+    top_conditions = top_conditions[:8]
+    return render_template("conditions.html",
+                           conditions=conditions,
+                           all_letters=all_letters,
+                           active_letter=active_letter,
+                           top_conditions=top_conditions)
 
 
 # --- Auth ---
@@ -2095,9 +2234,9 @@ def side_effects_page():
 
 @app.route("/warnings/")
 @app.route("/blackbox-warnings")
-def drug_warnings():
+def warnings_index():
     drugs_with_warnings = Drug.query.filter(Drug.warnings.isnot(None)).order_by(Drug.generic_name).limit(50).all()
-    return render_template("drug_warnings.html", drugs=drugs_with_warnings)
+    return render_template("warnings_index.html", drugs=drugs_with_warnings)
 
 
 @app.route("/newsletter")
@@ -2134,10 +2273,84 @@ def drug_images(slug):
     return render_template("drug_images.html", drug=drug, images=images)
 
 
+def generate_drug_prices(drug):
+    """Build a deterministic per-pharmacy price table for a drug.
+
+    Pricing tier is chosen from drug attributes:
+      * Controlled substances (`csa_schedule` starts with "Schedule") use a
+        mid-to-high band ($40-$220 / 30-day supply).
+      * Brand-only drugs (Rx, has brand names, no generic equivalent flag)
+        use the brand band ($80-$520 / 30-day supply).
+      * OTC drugs use a low band ($4-$25 / 30-day supply).
+      * Everything else (generic Rx) uses $6-$45 / 30-day supply.
+
+    A per-drug seed (derived from id + generic_name length) drives small
+    deterministic variation across pharmacies so the table looks plausible
+    without random noise per request.
+
+    Returns a list of dicts:
+        {pharmacy, unit_price, supply_price, coupon, savings_pct}
+    plus a `base_retail` value usable as the "average retail" anchor.
+    """
+    seed = (drug.id * 31 + len(drug.generic_name or "") * 7) % 997
+    csa = (drug.csa_schedule or "").lower()
+    avail = (drug.availability or "Rx").lower()
+    brands = drug.brand_names or []
+
+    if csa.startswith("schedule"):
+        base = 40 + (seed % 180)
+        tier = "controlled"
+    elif "otc" in avail:
+        base = 4 + (seed % 22)
+        tier = "otc"
+    elif brands and "rx" in avail:
+        # Brand-name Rx drugs skew expensive.
+        base = 80 + (seed % 440)
+        tier = "brand"
+    else:
+        base = 6 + (seed % 40)
+        tier = "generic"
+
+    pharmacies = [
+        ("CVS Pharmacy",     1.12, True),
+        ("Walgreens",        1.15, True),
+        ("Walmart Pharmacy", 0.88, False),
+        ("Rite Aid",         1.06, True),
+        ("Costco Pharmacy",  0.82, False),
+        ("GoodRx Price",     0.55, True),
+    ]
+
+    rows = []
+    for i, (name, mult, coupon) in enumerate(pharmacies):
+        # tiny deterministic jitter so prices aren't perfect multiples
+        jitter = ((seed + i * 13) % 7) / 100.0  # 0.00 .. 0.06
+        supply = round(base * (mult + jitter), 2)
+        # Assume 30 tablets/capsules per 30-day supply for unit price.
+        unit = round(supply / 30.0, 2)
+        savings = max(0, int(round((1 - supply / (base * 1.15)) * 100)))
+        rows.append({
+            "pharmacy": name,
+            "unit_price": unit,
+            "supply_price": supply,
+            "coupon": coupon,
+            "savings_pct": savings,
+        })
+
+    return {
+        "tier": tier,
+        "base_retail": round(base * 1.15, 2),
+        "rows": rows,
+        "has_generic": bool(brands),  # if it has brand names, a generic equivalent exists too
+        "brand_price": round(base * 4.2, 2) if tier == "generic" and brands else None,
+        "generic_price": round(base * 0.95, 2) if tier == "brand" else None,
+    }
+
+
 @app.route("/<slug>/prices")
 def drug_prices(slug):
     drug = Drug.query.filter_by(slug=slug).first_or_404()
-    return render_template("drug_prices.html", drug=drug)
+    price_data = generate_drug_prices(drug)
+    return render_template("drug_prices.html", drug=drug, price_data=price_data)
 
 
 @app.route("/<slug>/dosage")
@@ -2156,6 +2369,59 @@ def drug_side_effects(slug):
 def drug_pregnancy(slug):
     drug = Drug.query.filter_by(slug=slug).first_or_404()
     return render_template("drug_pregnancy.html", drug=drug)
+
+
+@app.route("/<slug>/warnings")
+def drug_warnings(slug):
+    drug = Drug.query.filter_by(slug=slug).first_or_404()
+    text = (drug.warnings or "").strip()
+    boxed_warning = None
+    lowered = text.lower()
+    if "boxed warning" in lowered or "black box" in lowered:
+        for para in text.split("\n\n"):
+            if "boxed warning" in para.lower() or "black box" in para.lower():
+                boxed_warning = para.strip()
+                break
+        if not boxed_warning:
+            boxed_warning = text[:400]
+    categories = [
+        ("Before taking this medicine",
+         ["allerg", "pregnan", "breastfeed", "tell your doctor", "medical history",
+          "kidney", "liver", "heart"]),
+        ("Serious side effects to watch for",
+         ["severe", "stop taking", "emergency", "call your doctor", "seek medical",
+          "anaphyla", "bleeding", "skin reaction"]),
+        ("Drug and food interactions",
+         ["other medic", "interaction", "alcohol", "grapefruit", "food"]),
+        ("Special populations",
+         ["children", "elderly", "older adults", "pediatric", "geriatric"]),
+    ]
+    paragraphs = [p.strip() for p in text.split("\n\n") if p.strip()]
+    if len(paragraphs) <= 1 and text:
+        # Try sentence-split if no paragraph breaks.
+        import re
+        paragraphs = [s.strip() for s in re.split(r"(?<=[.!?])\s+", text) if s.strip()]
+    categorized = {name: [] for name, _ in categories}
+    general = []
+    for p in paragraphs:
+        pl = p.lower()
+        if boxed_warning and p in boxed_warning:
+            continue
+        placed = False
+        for name, kws in categories:
+            if any(k in pl for k in kws):
+                categorized[name].append(p)
+                placed = True
+                break
+        if not placed:
+            general.append(p)
+    cards = [(name, items) for name, items in categorized.items() if items]
+    if general:
+        cards.append(("General warnings", general))
+    return render_template("drug_warnings.html",
+                           drug=drug,
+                           boxed_warning=boxed_warning,
+                           warning_cards=cards)
 
 
 @app.route("/<slug>/interactions")

@@ -1397,6 +1397,40 @@ details.faq-detail p { padding: 0 0 14px; font-size: 0.92rem; color: var(--gray-
 .pill-result-attrs dt { color: #777; font-weight: 600; }
 .pill-result-attrs dd { margin: 0; color: #333; }
 
+.pill-icon-circle { width: 72px; height: 72px; background: linear-gradient(135deg, #f7f9fc 0%, #eaeef3 100%); }
+
+.pill-result-imprint {
+  margin: 0 0 6px;
+  font-size: 12px;
+  color: #555;
+  letter-spacing: 0.02em;
+}
+.pill-result-imprint strong {
+  display: inline-block;
+  padding: 1px 6px;
+  background: #f0f3f7;
+  border: 1px solid #d8dde4;
+  border-radius: 3px;
+  color: #222;
+  font-family: "SFMono-Regular", Menlo, Consolas, monospace;
+  font-size: 12px;
+}
+
+.pill-availability-badge {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 1px 7px;
+  border-radius: 10px;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  vertical-align: middle;
+}
+.pill-availability-badge--rx { background: #e3f2fd; color: #0277bd; border: 1px solid #bbdefb; }
+.pill-availability-badge--otc { background: #e8f5e9; color: #2e7d32; border: 1px solid #c8e6c9; }
+.pill-availability-badge--mixed { background: #fff3e0; color: #ef6c00; border: 1px solid #ffe0b2; }
+
 .how-it-works {
   background: #f5f7fa;
   border: 1px solid #e1e6ec;
@@ -1521,3 +1555,22 @@ details.faq-detail p { padding: 0 0 14px; font-size: 0.92rem; color: var(--gray-
     cursor: pointer;
     color: #1a3a6e;
 }
+
+.related-drugs-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 12px;
+  margin-top: 16px;
+}
+.related-drug-card {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 14px;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  text-decoration: none;
+  color: inherit;
+  font-size: .9rem;
+}
+.related-drug-card:hover { background: #f6f9fc; }
