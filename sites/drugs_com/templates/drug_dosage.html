@@ -9,6 +9,8 @@
   </nav>
 </div>
 
+<div class="page-with-sidebar">
+<div class="main-col">
 <article class="drug-detail">
   <header class="drug-header">
     <h1>{{ drug.generic_name|capitalize }} Dosage</h1>
@@ -95,6 +97,18 @@
   </section>
 
   <section>
+    <h2>How to take {{ drug.generic_name|capitalize }}</h2>
+    <ul>
+      <li>Take exactly as prescribed by your healthcare provider. Follow all directions on the product label.</li>
+      <li>For oral tablets and capsules, swallow whole with a full glass of water unless otherwise instructed. Do not crush, chew, or split extended-release forms.</li>
+      <li>Take with food if gastrointestinal upset occurs, unless the product specifies an empty stomach.</li>
+      <li>Try to take each dose at the same time each day to maintain steady drug levels.</li>
+      <li>Do not stop {{ drug.generic_name|capitalize }} abruptly without first speaking to your prescriber, even if you feel better.</li>
+      <li>Keep all scheduled follow-up appointments so your provider can monitor your response.</li>
+    </ul>
+  </section>
+
+  <section>
     <h2>What happens if I miss a dose?</h2>
     <p>Take the missed dose as soon as you remember. Skip the missed dose if it is almost time for your next scheduled dose. Do not take extra medicine to make up the missed dose.</p>
   </section>
@@ -117,4 +131,19 @@
 
   <p><a href="{{ url_for('drug_detail', slug=drug.slug) }}">&laquo; Back to {{ drug.generic_name|capitalize }} overview</a></p>
 </article>
+</div>
+<aside class="sidebar">
+  <div class="sidebar-box more-about">
+    <h3>More about {{ drug.generic_name }}</h3>
+    <ul class="more-about-list">
+      <li><a href="{{ url_for('drug_detail', slug=drug.slug) }}">Drug overview</a></li>
+      <li><a href="{{ url_for('drug_side_effects', slug=drug.slug) }}">Side effects</a></li>
+      <li><a href="{{ url_for('drug_interactions_page', slug=drug.slug) }}">Drug interactions</a></li>
+      <li><a href="{{ url_for('drug_pregnancy', slug=drug.slug) }}">Pregnancy &amp; lactation</a></li>
+      <li><a href="{{ url_for('drug_images', slug=drug.slug) }}">Pill images</a></li>
+      <li><a href="{{ url_for('drug_prices', slug=drug.slug) }}">Prices &amp; coupons</a></li>
+    </ul>
+  </div>
+</aside>
+</div>
 {% endblock %}

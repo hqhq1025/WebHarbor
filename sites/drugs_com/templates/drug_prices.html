@@ -176,6 +176,47 @@
   <p style="color:#555;font-size:0.92rem;margin-top:10px">Dosing reference: {{ (drug.dosage)[:240] }}{% if drug.dosage|length > 240 %}...{% endif %}</p>
   {% endif %}
 
+  <!-- Price history trend -->
+  <h2 style="font-size:1.35rem;margin:30px 0 10px">{{ drug.generic_name|title }} price history (last 12 months)</h2>
+  <p style="color:#666;font-size:0.9rem;margin-bottom:10px">
+    Estimated 30-day supply cash price trend at U.S. retail pharmacies. Values are deterministic estimates for benchmark purposes.
+  </p>
+  {% set base = price_data.base_retail %}
+  {% set months = ['Jun','Jul','Aug','Sep','Oct','Nov','Dec','Jan','Feb','Mar','Apr','May'] %}
+  {% set deltas = [-6,-4,-2,1,3,2,5,4,2,-1,-3,0] %}
+  <div style="overflow-x:auto">
+    <table style="width:100%;border-collapse:collapse;max-width:720px">
+      <thead>
+        <tr style="background:#f1f5fa">
+          <th style="text-align:left;padding:9px;border-bottom:1px solid #ddd">Month</th>
+          <th style="text-align:right;padding:9px;border-bottom:1px solid #ddd">Avg 30-day price</th>
+          <th style="text-align:left;padding:9px;border-bottom:1px solid #ddd">Trend</th>
+          <th style="text-align:right;padding:9px;border-bottom:1px solid #ddd">Change</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for m in months %}
+          {% set d = deltas[loop.index0] %}
+          {% set p = base * (1 + d / 100.0) %}
+          {% set barw = (40 + d * 2) %}
+          <tr>
+            <td style="padding:8px;border-bottom:1px solid #eee">{{ m }}</td>
+            <td style="padding:8px;border-bottom:1px solid #eee;text-align:right">${{ '%.2f' % p }}</td>
+            <td style="padding:8px;border-bottom:1px solid #eee">
+              <span style="display:inline-block;height:10px;width:{{ barw }}%;background:{% if d > 0 %}#e57373{% elif d < 0 %}#81c784{% else %}#90a4ae{% endif %};border-radius:3px"></span>
+            </td>
+            <td style="padding:8px;border-bottom:1px solid #eee;text-align:right;color:{% if d > 0 %}#c0392b{% elif d < 0 %}#1c7c2f{% else %}#666{% endif %}">
+              {% if d > 0 %}+{% endif %}{{ d }}%
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <p style="color:#666;font-size:0.85rem;margin-top:8px">
+    Prices may vary by location. Use a coupon to save on every refill.
+  </p>
+
   <!-- Patient Assistance -->
   <h2 style="font-size:1.35rem;margin:30px 0 10px">Patient assistance &amp; copay programs</h2>
   <ul style="margin:0 0 0 18px;line-height:1.7">

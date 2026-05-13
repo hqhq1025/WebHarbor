@@ -9,6 +9,32 @@
 <h1>Conditions & Treatments A to Z</h1>
 <p class="muted">Browse conditions and their treatments.</p>
 
+<div class="conditions-search-box">
+  <input type="text" id="conditions-filter-input" placeholder="Filter conditions by name..."
+         oninput="filterConditions(this.value)" aria-label="Filter conditions">
+  <span class="muted conditions-filter-hint" id="conditions-filter-hint"></span>
+</div>
+
+<script>
+  function filterConditions(q) {
+    var query = (q || '').trim().toLowerCase();
+    var items = document.querySelectorAll('.condition-grid li');
+    var visible = 0;
+    items.forEach(function(li) {
+      var name = (li.getAttribute('data-name') || li.textContent || '').toLowerCase();
+      var match = !query || name.indexOf(query) !== -1;
+      li.style.display = match ? '' : 'none';
+      if (match) visible++;
+    });
+    document.querySelectorAll('.letter-section').forEach(function(sec) {
+      var anyVisible = sec.querySelectorAll('.condition-grid li:not([style*="display: none"])').length > 0;
+      sec.style.display = anyVisible ? '' : 'none';
+    });
+    var hint = document.getElementById('conditions-filter-hint');
+    if (hint) hint.textContent = query ? (visible + ' match' + (visible === 1 ? '' : 'es')) : '';
+  }
+</script>
+
 <div class="two-col">
   <div class="main-col">
     {% if featured_conditions and not active_letter %}
@@ -59,7 +85,7 @@
       {% if active_letter %}
         <ul class="condition-grid">
           {% for c in conditions %}
-            <li>
+            <li data-name="{{ c.name }}">
               <a href="{{ url_for('condition_page', slug=c.slug) }}">{{ c.name }}</a>
               <span class="muted">({{ c.drug_count }} drug{{ '' if c.drug_count == 1 else 's' }})</span>
             </li>
@@ -71,7 +97,7 @@
             <h3 style="margin:0 0 8px;padding:4px 0;border-bottom:2px solid var(--navy,#1a3a6e);color:var(--navy,#1a3a6e);font-size:1.1rem">{{ letter }}</h3>
             <ul class="condition-grid">
               {% for c in grouped_conditions[letter] %}
-                <li>
+                <li data-name="{{ c.name }}">
                   <a href="{{ url_for('condition_page', slug=c.slug) }}">{{ c.name }}</a>
                   <span class="muted">({{ c.drug_count }} drug{{ '' if c.drug_count == 1 else 's' }})</span>
                 </li>

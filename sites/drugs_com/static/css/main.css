@@ -2434,3 +2434,60 @@ details.faq-detail p { padding: 0 0 14px; font-size: 0.92rem; color: var(--gray-
 .about-page .about-section p { line-height: 1.55; color: #333; margin: 6px 0; }
 .about-page .about-section ul { margin: 6px 0 10px 22px; line-height: 1.6; }
 .about-page .about-team li { line-height: 1.5; }
+
+/* Conditions A-Z filter search */
+.conditions-search-box {
+  margin: 10px 0 16px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.conditions-search-box input {
+  flex: 1;
+  max-width: 420px;
+  padding: 8px 12px;
+  font-size: 14px;
+  border: 1px solid #cfd8e3;
+  border-radius: 4px;
+  background: #fff;
+}
+.conditions-search-box input:focus {
+  outline: none;
+  border-color: #1a3a6e;
+  box-shadow: 0 0 0 2px rgba(26, 58, 110, 0.15);
+}
+.conditions-filter-hint {
+  font-size: 13px;
+}
+
+/* Popular drug classes (drug_classes list page) */
+.popular-classes {
+  margin: 14px 0 22px;
+  padding: 14px 16px;
+  border: 1px solid #d6e0f0;
+  border-radius: 6px;
+  background: #eef4fb;
+}
+.popular-classes h2 {
+  margin: 0 0 4px;
+  font-size: 1.15rem;
+}
+.popular-classes-sub {
+  margin: 0 0 10px;
+  font-size: 13px;
+}
+.popular-classes-list {
+  margin: 0;
+  padding-left: 22px;
+  columns: 2;
+  column-gap: 24px;
+}
+.popular-classes-list li {
+  margin: 4px 0 10px;
+  break-inside: avoid;
+}
+.popular-classes-desc {
+  font-size: 12px;
+  margin-top: 2px;
+  line-height: 1.4;
+}

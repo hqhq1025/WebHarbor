@@ -2584,7 +2584,10 @@ def drug_classes_list():
             "description": description,
         })
     total = len(class_data)
-    return render_template("drug_classes.html", class_data=class_data, total=total)
+    popular_classes = sorted(class_data, key=lambda x: (-(x["count"] or 0), x["obj"].name))[:10]
+    popular_classes = [p for p in popular_classes if (p["count"] or 0) > 0]
+    return render_template("drug_classes.html", class_data=class_data, total=total,
+                           popular_classes=popular_classes)
 
 
 @app.route("/conditions")
