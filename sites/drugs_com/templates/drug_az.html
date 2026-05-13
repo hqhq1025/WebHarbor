@@ -32,15 +32,24 @@
       <section class="row-section az-list">
         <h2>Drugs starting with &ldquo;{{ active_letter }}&rdquo;</h2>
         {% if drugs %}
-          <ul>
+          <ul class="drug-card-list">
             {% for d in drugs %}
-              <li>
-                <a href="{{ url_for('drug_detail', slug=d.slug) }}">{{ d.generic_name|capitalize }}</a>
-                {% if d.brand_names %}<span class="muted"> &mdash; {{ d.brand_names|join(', ') }}</span>{% endif %}
-                {% if d.drug_class %}<span class="muted"> &middot; {{ d.drug_class }}</span>{% endif %}
-                <span class="badge">{{ d.availability }}</span>
-                {% if d.review_count %}
-                  <span class="muted"> &middot; {{ '%.1f'|format(d.avg_rating) }}/10 ({{ d.review_count }} reviews)</span>
+              <li class="drug-card">
+                <div class="drug-card-header">
+                  <a class="drug-card-name" href="{{ url_for('drug_detail', slug=d.slug) }}">{{ d.generic_name|capitalize }}</a>
+                  {% if d.drug_class %}
+                    <a class="tag tag-class" href="{{ url_for('drug_class_page', slug=d.drug_class.slug) }}">{{ d.drug_class.name }}</a>
+                  {% endif %}
+                  <span class="tag tag-availability tag-{{ d.availability|lower }}">{{ d.availability }}</span>
+                  {% if d.review_count and d.avg_rating > 0 %}
+                    <span class="drug-card-rating">&#9733; {{ '%.1f'|format(d.avg_rating) }}/10 ({{ d.review_count }} reviews)</span>
+                  {% endif %}
+                </div>
+                {% if d.brand_names %}
+                  <div class="drug-card-brands muted">Brand names: {{ d.brand_names|join(', ') }}</div>
+                {% endif %}
+                {% if d.description %}
+                  <p class="drug-card-desc">{{ d.description[:100] }}{% if d.description|length > 100 %}&hellip;{% endif %}</p>
                 {% endif %}
               </li>
             {% endfor %}
@@ -96,6 +105,36 @@
   </div>
 
   <aside class="az-sidebar">
+    <div class="sidebar-box">
+      <h3>Browse by Drug Type</h3>
+      <ul>
+        <li><a href="{{ url_for('search') }}?q=Rx&amp;availability=Rx">Prescription (Rx)</a></li>
+        <li><a href="{{ url_for('search') }}?q=OTC&amp;availability=OTC">Over the Counter (OTC)</a></li>
+      </ul>
+    </div>
+
+    {% if popular_classes %}
+    <div class="sidebar-box">
+      <h3>Popular Drug Classes</h3>
+      <ul>
+        {% for c in popular_classes %}
+          <li><a href="{{ url_for('drug_class_page', slug=c.slug) }}">{{ c.name }}</a></li>
+        {% endfor %}
+      </ul>
+    </div>
+    {% endif %}
+
+    {% if popular_conditions %}
+    <div class="sidebar-box">
+      <h3>Popular Conditions</h3>
+      <ul>
+        {% for c in popular_conditions %}
+          <li><a href="{{ url_for('condition_page', slug=c.slug) }}">{{ c.name }}</a></li>
+        {% endfor %}
+      </ul>
+    </div>
+    {% endif %}
+
     <div class="sidebar-box newsletter-subscribe-box">
       <h3>Subscribe to our newsletters</h3>
       <form action="{{ url_for('newsletter_subscribe') }}" method="post">

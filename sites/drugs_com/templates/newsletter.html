@@ -1,29 +1,59 @@
 {% extends "base.html" %}
 {% block title %}Drugs.com Newsletter | {{ site_name }}{% endblock %}
 {% block content %}
-<div style="padding:24px 0;max-width:760px">
+<div style="padding:24px 0;max-width:880px">
   <nav class="breadcrumb"><a href="{{ url_for('index') }}">Home</a> &rsaquo; <span>Newsletter</span></nav>
   <h1 style="font-size:2rem;margin-bottom:8px">Get the latest drug information delivered to your inbox</h1>
-  <p style="margin-bottom:20px">Join over 2 million subscribers who get free, expert-reviewed drug news and health updates from Drugs.com.</p>
+  <p style="margin-bottom:20px">Join over 2 million subscribers who get free, expert-reviewed drug news and health updates from Drugs.com. Choose the newsletters that match your interests.</p>
 
-  <section style="background:#f1f8ff;border:1px solid #cfe2f3;padding:20px;border-radius:6px;margin-bottom:24px">
-    <form action="{{ url_for('newsletter_subscribe') }}" method="post" style="display:flex;gap:8px;flex-wrap:wrap">
-      <input type="email" name="email" required placeholder="your.email@example.com" style="flex:1;min-width:240px;padding:10px;border:1px solid #ccc;border-radius:4px">
-      <button type="submit" style="padding:10px 20px;background:#3b82c4;color:#fff;border:0;border-radius:4px;cursor:pointer;font-weight:600">Subscribe</button>
+  <section style="background:#f1f8ff;border:1px solid #cfe2f3;padding:20px;border-radius:6px;margin-bottom:28px">
+    <form action="{{ url_for('newsletter_subscribe') }}" method="post">
+      <h2 style="font-size:1.15rem;margin:0 0 12px">Choose your newsletters</h2>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:10px;margin-bottom:16px">
+        <label style="display:flex;gap:10px;align-items:flex-start;background:#fff;padding:10px;border:1px solid #d6dde6;border-radius:4px;cursor:pointer">
+          <input type="checkbox" name="lists" value="daily_mednews" checked style="margin-top:3px">
+          <span><strong>Daily MedNews</strong><br><small>Daily roundup of the latest drug and health news.</small></span>
+        </label>
+        <label style="display:flex;gap:10px;align-items:flex-start;background:#fff;padding:10px;border:1px solid #d6dde6;border-radius:4px;cursor:pointer">
+          <input type="checkbox" name="lists" value="weekly_safety" checked style="margin-top:3px">
+          <span><strong>Weekly Drug Safety Alerts</strong><br><small>Recalls, FDA warnings, and safety communications.</small></span>
+        </label>
+        <label style="display:flex;gap:10px;align-items:flex-start;background:#fff;padding:10px;border:1px solid #d6dde6;border-radius:4px;cursor:pointer">
+          <input type="checkbox" name="lists" value="approvals_monthly" style="margin-top:3px">
+          <span><strong>New Drug Approvals Monthly</strong><br><small>Summaries of newly approved FDA medications.</small></span>
+        </label>
+        <label style="display:flex;gap:10px;align-items:flex-start;background:#fff;padding:10px;border:1px solid #d6dde6;border-radius:4px;cursor:pointer">
+          <input type="checkbox" name="lists" value="clinical_trials" style="margin-top:3px">
+          <span><strong>Clinical Trial Results</strong><br><small>Notable results from clinical trials and research.</small></span>
+        </label>
+      </div>
+
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <input type="email" name="email" required placeholder="your.email@example.com" style="flex:1;min-width:240px;padding:10px;border:1px solid #ccc;border-radius:4px">
+        <button type="submit" style="padding:10px 22px;background:#3b82c4;color:#fff;border:0;border-radius:4px;cursor:pointer;font-weight:600">Subscribe</button>
+      </div>
+      <p style="font-size:12px;color:#666;margin:10px 0 0">We respect your privacy. Unsubscribe at any time.</p>
     </form>
   </section>
 
-  <h2 style="font-size:1.3rem;margin:24px 0 10px">What you'll receive</h2>
-  <ul style="list-style:disc;padding-left:22px;line-height:2">
-    <li><strong>Weekly drug news</strong> &mdash; the latest in medical research and pharmacology</li>
-    <li><strong>FDA alerts</strong> &mdash; timely safety communications and recalls</li>
-    <li><strong>New drug approvals</strong> &mdash; summaries of newly approved medications</li>
-    <li><strong>Health tips</strong> &mdash; practical guidance from pharmacists and physicians</li>
-  </ul>
+  <h2 style="font-size:1.3rem;margin:24px 0 10px">Recent newsletter topics</h2>
+  <p style="margin:0 0 10px;color:#555">A sample of articles featured in recent Drugs.com newsletters.</p>
+  {% if recent_articles %}
+    <ul style="list-style:none;padding:0;line-height:1.6">
+      {% for a in recent_articles %}
+        <li style="padding:10px 0;border-bottom:1px solid #eee">
+          <a href="{{ url_for('news_article', article_id=a.id) }}" style="font-weight:600">{{ a.title }}</a>
+          <div style="font-size:13px;color:#666">{{ a.category }}{% if a.published_at %} &middot; {{ a.published_at.strftime('%b %d, %Y') }}{% endif %}</div>
+        </li>
+      {% endfor %}
+    </ul>
+  {% else %}
+    <p class="muted">No recent articles available.</p>
+  {% endif %}
 
   <h2 style="font-size:1.3rem;margin:28px 0 10px">Manage your subscriptions</h2>
   {% if current_user.is_authenticated %}
-    <p>You are currently signed in as <strong>{{ current_user.email }}</strong>. Your newsletter preferences are tied to this email.</p>
+    <p>You are currently signed in as <strong>{{ current_user.email }}</strong>. Manage your newsletter preferences in <a href="{{ url_for('account_subscriptions') }}">Email Subscriptions</a>.</p>
   {% else %}
     <p><a href="{{ url_for('login') }}">Sign in</a> to manage existing newsletter preferences.</p>
   {% endif %}

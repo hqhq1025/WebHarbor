@@ -1482,6 +1482,35 @@ def drug_az():
         for L in string.ascii_uppercase
     }
     popular_drugs = Drug.query.order_by(Drug.review_count.desc()).limit(10).all()
+
+    # Top 8 drug classes by number of associated drugs.
+    class_counts = (
+        db.session.query(Drug.drug_class_id, db.func.count(Drug.id))
+        .filter(Drug.drug_class_id.isnot(None))
+        .group_by(Drug.drug_class_id)
+        .all()
+    )
+    class_counts_sorted = sorted(class_counts, key=lambda r: -r[1])[:8]
+    class_ids = [cid for cid, _ in class_counts_sorted]
+    class_by_id = {c.id: c for c in DrugClass.query.filter(DrugClass.id.in_(class_ids)).all()} if class_ids else {}
+    popular_classes = [class_by_id[cid] for cid, _ in class_counts_sorted if cid in class_by_id]
+
+    # Top 6 conditions by drug count.
+    cond_counts = dict(
+        db.session.query(DrugCondition.condition_id, db.func.count(DrugCondition.drug_id))
+        .group_by(DrugCondition.condition_id)
+        .all()
+    )
+    all_conditions = Condition.query.all()
+    for c in all_conditions:
+        computed = cond_counts.get(c.id, 0)
+        if c.drug_count is None or c.drug_count == 0:
+            c.drug_count = computed
+    popular_conditions = sorted(
+        all_conditions, key=lambda c: (-(c.drug_count or 0), c.name)
+    )
+    popular_conditions = [c for c in popular_conditions if (c.drug_count or 0) > 0][:6]
+
     return render_template(
         "drug_az.html",
         active_letter=letter,
@@ -1489,6 +1518,8 @@ def drug_az():
         drugs=drugs,
         letter_counts=letter_counts,
         popular_drugs=popular_drugs,
+        popular_classes=popular_classes,
+        popular_conditions=popular_conditions,
     )
 
 
@@ -2768,7 +2799,13 @@ def save_subscriptions():
 def sitemap():
     classes = DrugClass.query.order_by(DrugClass.name).all()
     conditions = Condition.query.order_by(Condition.name).all()
-    return render_template("sitemap.html", classes=classes, conditions=conditions)
+    all_letters = [chr(c) for c in range(ord("A"), ord("Z") + 1)] + ["0-9"]
+    return render_template(
+        "sitemap.html",
+        classes=classes,
+        conditions=conditions,
+        all_letters=all_letters,
+    )
 
 
 SIDE_EFFECTS_AZ = [
@@ -2835,7 +2872,10 @@ def warnings_index():
 
 @app.route("/newsletter")
 def newsletter():
-    return render_template("newsletter.html")
+    recent_articles = (
+        NewsArticle.query.order_by(NewsArticle.published_at.desc()).limit(6).all()
+    )
+    return render_template("newsletter.html", recent_articles=recent_articles)
 
 
 @app.route("/newsletter/subscribe", methods=["POST"])
