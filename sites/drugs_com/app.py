@@ -2046,6 +2046,7 @@ def pill_identifier_results():
 
 
 @app.route("/condition/<slug>")
+@app.route("/conditions/<slug>")
 def condition_page(slug):
     cond = Condition.query.filter_by(slug=slug).first_or_404()
     links = DrugCondition.query.filter_by(condition_id=cond.id).all()
@@ -2435,6 +2436,27 @@ def compare_drugs():
 def my_reviews():
     reviews = DrugReview.query.filter_by(user_id=current_user.id).order_by(DrugReview.created_at.desc()).all()
     return render_template("my_reviews.html", reviews=reviews)
+
+
+@app.route("/account/reviews/<int:review_id>/delete", methods=["POST"])
+@login_required
+def delete_review(review_id):
+    review = DrugReview.query.filter_by(id=review_id, user_id=current_user.id).first_or_404()
+    db.session.delete(review)
+    db.session.commit()
+    return redirect(url_for("my_reviews"))
+
+
+@app.route("/my-med-list/notes", methods=["POST"])
+@login_required
+def update_med_notes():
+    slug = request.form.get("slug")
+    notes = request.form.get("notes", "")
+    drug = Drug.query.filter_by(slug=slug).first_or_404()
+    item = SavedDrug.query.filter_by(user_id=current_user.id, drug_id=drug.id).first_or_404()
+    item.notes = notes[:500]
+    db.session.commit()
+    return redirect(url_for("my_med_list"))
 
 
 @app.route("/account/settings")

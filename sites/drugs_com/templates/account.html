@@ -32,6 +32,15 @@
 
 <div class="account-grid">
   <section class="account-box">
+    <h2>My Stats</h2>
+    <dl class="user-info">
+      <dt>Drugs in Med List</dt><dd>{{ saved_count }}</dd>
+      <dt>Reviews written</dt><dd>{{ reviews|length }}</dd>
+      <dt>Date joined</dt><dd>{% if current_user.created_at %}{{ current_user.created_at.strftime('%B %d, %Y') }}{% else %}Member since 2024{% endif %}</dd>
+    </dl>
+  </section>
+
+  <section class="account-box">
     <h2>User information</h2>
     <dl class="user-info">
       <dt>Username</dt><dd>{{ current_user.username }}</dd>
@@ -54,6 +63,9 @@
         <a href="{{ url_for('drug_detail', slug=r.drug.slug) }}">{{ r.drug.generic_name|capitalize }}</a>
         <p class="muted">{{ r.rating }}/10 &middot; for {{ r.condition_treated }} &middot; {{ r.created_at.strftime('%b %d, %Y') }}</p>
         <p>{{ r.body }}</p>
+        <form method="post" action="{{ url_for('delete_review', review_id=r.id) }}" class="review-delete" onsubmit="return confirm('Delete this review?');">
+          <button type="submit" class="btn btn-outline btn-sm">Delete</button>
+        </form>
       </article>
     {% else %}
       <p class="muted">You have not posted any reviews yet. Visit any drug page to write a review.</p>

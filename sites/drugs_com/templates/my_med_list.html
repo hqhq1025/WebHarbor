@@ -32,7 +32,16 @@
             <span class="avail-badge {% if item.drug.availability == 'Rx' %}avail-rx{% elif item.drug.availability == 'OTC' %}avail-otc{% else %}avail-both{% endif %}">{{ item.drug.availability }}</span>
           </p>
           <p class="muted">Added {{ item.created_at.strftime('%b %d, %Y') }}</p>
-          {% if item.notes %}<p class="med-notes"><em>Notes:</em> {{ item.notes }}</p>{% endif %}
+          <div class="med-notes-display" id="notes-display-{{ item.id }}">
+            {% if item.notes %}<p class="med-notes"><em>Notes:</em> {{ item.notes }}</p>{% else %}<p class="med-notes muted"><em>No notes.</em></p>{% endif %}
+            <button type="button" class="btn btn-outline btn-sm" onclick="document.getElementById('notes-display-{{ item.id }}').style.display='none';document.getElementById('notes-edit-{{ item.id }}').style.display='block';">Edit notes</button>
+          </div>
+          <form method="post" action="{{ url_for('update_med_notes') }}" class="med-notes-edit" id="notes-edit-{{ item.id }}" style="display:none;">
+            <input type="hidden" name="slug" value="{{ item.drug.slug }}">
+            <textarea name="notes" rows="3" maxlength="500" class="med-notes-textarea">{{ item.notes or '' }}</textarea>
+            <button type="submit" class="btn btn-primary btn-sm">Save</button>
+            <button type="button" class="btn btn-outline btn-sm" onclick="document.getElementById('notes-display-{{ item.id }}').style.display='block';document.getElementById('notes-edit-{{ item.id }}').style.display='none';">Cancel</button>
+          </form>
           <form method="post" action="{{ url_for('my_med_list_toggle') }}" class="med-remove">
             <input type="hidden" name="slug" value="{{ item.drug.slug }}">
             <button type="submit" class="btn btn-outline btn-sm">Remove</button>
