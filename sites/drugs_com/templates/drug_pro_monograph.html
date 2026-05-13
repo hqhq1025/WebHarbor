@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+{% block title %}{{ drug.generic_name|capitalize }} (Professional) - {{ site_name }}{% endblock %}
+{% block content %}
+<nav class="breadcrumb">
+  <a href="{{ url_for('index') }}">Home</a> &rsaquo;
+  <a href="{{ url_for('drug_detail', slug=drug.slug) }}">{{ drug.generic_name|capitalize }}</a> &rsaquo;
+  <span>Professional</span>
+</nav>
+
+<article class="drug-pro-monograph">
+  <header class="pro-monograph-header">
+    <span class="pro-monograph-eyebrow">Professional Monograph</span>
+    <h1>{{ drug.generic_name|capitalize }}</h1>
+    {% if drug.brand_names %}
+    <p class="pro-monograph-brands">
+      <strong>Brand names:</strong>
+      {% for bn in drug.brand_names %}<span class="brand-chip">{{ bn }}</span>{% if not loop.last %} {% endif %}{% endfor %}
+    </p>
+    {% endif %}
+    {% if drug.drug_class %}
+    <p class="pro-monograph-class">
+      <strong>Pharmacologic class:</strong>
+      <a href="{{ url_for('drug_class_page', slug=drug.drug_class.slug) }}">{{ drug.drug_class.name }}</a>
+    </p>
+    {% endif %}
+    <p class="muted pro-monograph-audience">
+      This monograph is intended for healthcare professionals. Patients should refer to the
+      <a href="{{ url_for('drug_detail', slug=drug.slug) }}">consumer information page</a>.
+    </p>
+  </header>
+
+  <section>
+    <h2>Indications and Usage</h2>
+    {{ (drug.uses or 'See full prescribing information.') | format_drug_text | safe }}
+  </section>
+
+  <section>
+    <h2>Dosage and Administration</h2>
+    {{ (drug.dosage or 'See full prescribing information.') | format_drug_text | safe }}
+    <p><a href="{{ url_for('drug_dosage', slug=drug.slug) }}">Detailed dosage information &rsaquo;</a></p>
+  </section>
+
+  <section>
+    <h2>Contraindications and Warnings</h2>
+    {{ (drug.warnings or 'See full prescribing information.') | format_drug_text | safe }}
+  </section>
+
+  <section>
+    <h2>Adverse Reactions</h2>
+    {{ (drug.side_effects or 'See full prescribing information.') | format_drug_text | safe }}
+    <p><a href="{{ url_for('drug_side_effects', slug=drug.slug) }}">Detailed adverse reactions &rsaquo;</a></p>
+  </section>
+
+  <section>
+    <h2>Drug Interactions</h2>
+    {{ (drug.interactions_text or 'See full prescribing information.') | format_drug_text | safe }}
+    <p><a href="{{ url_for('drug_interactions_page', slug=drug.slug) }}">Detailed interactions &rsaquo;</a></p>
+  </section>
+
+  <section>
+    <h2>Use in Specific Populations</h2>
+    <p><strong>Pregnancy:</strong>
+      {% if drug.pregnancy_risk %}Category {{ drug.pregnancy_risk }}.{% else %}Not classified.{% endif %}
+      <a href="{{ url_for('drug_pregnancy', slug=drug.slug) }}">Pregnancy and lactation details &rsaquo;</a>
+    </p>
+    <p><strong>Controlled substance:</strong>
+      {% if drug.csa_schedule and drug.csa_schedule|lower not in ['n/a', 'none', 'not scheduled', ''] %}
+        {{ drug.csa_schedule }}
+      {% else %}
+        Not a controlled substance.
+      {% endif %}
+    </p>
+  </section>
+
+  <p class="muted medical-disclaimer">
+    <strong>Disclaimer:</strong> This professional summary is reference material only and is not a
+    substitute for the full FDA-approved prescribing information.
+  </p>
+</article>
+{% endblock %}

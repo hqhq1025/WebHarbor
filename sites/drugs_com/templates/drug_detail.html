@@ -650,6 +650,17 @@
       </div>
       {% endif %}
 
+      <div class="sidebar-box professional-resources">
+        <h3>Professional resources</h3>
+        <ul class="sidebar-links pro-resources-list">
+          <li><a href="{{ url_for('drug_pro_monograph', slug=drug.slug) }}">{{ drug.generic_name|capitalize }} monograph (Professional)</a></li>
+          <li><a href="{{ url_for('drug_dosage', slug=drug.slug) }}">Dosage (Professional)</a></li>
+          <li><a href="{{ url_for('drug_side_effects', slug=drug.slug) }}">Side effects (detailed)</a></li>
+          <li><a href="{{ url_for('drug_pregnancy', slug=drug.slug) }}">Pregnancy &amp; lactation</a></li>
+          <li><a href="{{ url_for('drug_interactions_page', slug=drug.slug) }}">Drug interactions (detailed)</a></li>
+        </ul>
+      </div>
+
       <div class="sidebar-box more-about">
         <h3>More about {{ drug.generic_name }}</h3>
         <ul class="more-about-list more-about-list--icons">

@@ -2330,8 +2330,11 @@ def interaction_checker():
         food_interactions, alcohol_interactions = _lifestyle_interactions(resolved)
     else:
         food_interactions, alcohol_interactions = [], []
-        # Also support GET with ?drugs=name1&drugs=name2 to run the check directly
+        # Also support GET with ?drugs=name1&drugs=name2 to run the check directly.
+        # Also support comma-separated single param: ?drugs=ibuprofen,warfarin
         get_drugs = request.args.getlist("drugs")
+        if len(get_drugs) == 1 and ',' in get_drugs[0]:
+            get_drugs = [d.strip() for d in get_drugs[0].split(',')]
         if get_drugs and len([r for r in get_drugs if r and r.strip()]) >= 2:
             drugs_input = [r.strip() for r in get_drugs if r and r.strip()]
             resolved = []
@@ -3409,6 +3412,18 @@ def drug_prices(slug):
     drug = Drug.query.filter_by(slug=slug).first_or_404()
     price_data = generate_drug_prices(drug)
     return render_template("drug_prices.html", drug=drug, price_data=price_data)
+
+
+@app.route("/drugs/pro/<slug>")
+def drug_pro_monograph(slug):
+    """Professional monograph stub page for a drug.
+
+    Returns a 200 page summarizing prescriber-oriented info (mechanism, indications,
+    dosing, contraindications, adverse reactions). Stub-quality content sourced from
+    the existing drug record fields; mirrors the real drugs.com /pro/<slug>.html URL.
+    """
+    drug = Drug.query.filter_by(slug=slug).first_or_404()
+    return render_template("drug_pro_monograph.html", drug=drug)
 
 
 @app.route("/<slug>/dosage")
