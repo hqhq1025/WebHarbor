@@ -7,7 +7,12 @@
   <span>{{ drug_class.name }}</span>
 </nav>
 
-<h1>{{ drug_class.name }}</h1>
+<h1>
+  {{ drug_class.name }}
+  <span class="count-badge" style="display:inline-block;margin-left:8px;padding:2px 10px;background:var(--navy,#1a3a6e);color:#fff;border-radius:12px;font-size:14px;vertical-align:middle">
+    {{ drug_count }} drug{{ '' if drug_count == 1 else 's' }} in this class
+  </span>
+</h1>
 
 <div class="two-col">
   <div class="main-col">
@@ -28,6 +33,18 @@
     <h2>List of {{ drug_class.name }}</h2>
 
     {% if drugs %}
+    <div class="sort-controls" style="margin:8px 0 12px;font-size:14px">
+      <span class="muted">Sort by:</span>
+      <a href="{{ url_for('drug_class_page', slug=drug_class.slug, sort='name') }}"
+         style="margin:0 6px;{% if sort == 'name' %}font-weight:600;text-decoration:underline{% endif %}">A-Z</a>
+      |
+      <a href="{{ url_for('drug_class_page', slug=drug_class.slug, sort='rating') }}"
+         style="margin:0 6px;{% if sort == 'rating' %}font-weight:600;text-decoration:underline{% endif %}">Rating</a>
+      |
+      <a href="{{ url_for('drug_class_page', slug=drug_class.slug, sort='reviews') }}"
+         style="margin:0 6px;{% if sort == 'reviews' %}font-weight:600;text-decoration:underline{% endif %}">Most reviewed</a>
+    </div>
+
     <table class="drug-table">
       <thead>
         <tr>

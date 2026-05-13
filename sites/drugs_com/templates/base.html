@@ -87,13 +87,24 @@
       <a href="/pro/" class="nav-link">Pro Edition</a>
       <div class="nav-more-wrap">
         <a href="{{ url_for('conditions_list') }}" class="nav-link nav-more-btn">More...</a>
-        <div class="nav-dropdown">
-          <a href="{{ url_for('conditions_list') }}">Conditions &amp; Treatments</a>
-          <a href="{{ url_for('drug_classes_list') }}">Drug Classes</a>
-          <a href="{{ url_for('my_med_list') }}">My Med List</a>
-          <a href="{{ url_for('news_index') }}">FDA Alerts</a>
-          <a href="{{ url_for('search') }}?q=side+effects">Side Effects</a>
-          <a href="{{ url_for('side_effects_page') }}">Symptoms Checker</a>
+        <div class="nav-dropdown nav-dropdown-wide" style="min-width:520px;padding:14px 18px;display:none">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px">
+            <div>
+              <div style="font-size:0.75rem;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;color:#6b7280;padding:0 4px 6px;border-bottom:1px solid #e0e6ef;margin-bottom:4px">Browse</div>
+              <a href="{{ url_for('conditions_list') }}">Conditions A-Z</a>
+              <a href="{{ url_for('drug_classes_list') }}">Drug Classes</a>
+              <a href="{{ url_for('drug_az') }}">Drugs A-Z</a>
+              <a href="{{ url_for('news_index') }}">FDA Alerts</a>
+            </div>
+            <div>
+              <div style="font-size:0.75rem;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;color:#6b7280;padding:0 4px 6px;border-bottom:1px solid #e0e6ef;margin-bottom:4px">Checkers &amp; Tools</div>
+              <a href="{{ url_for('symptom_checker') }}">Symptoms Checker</a>
+              <a href="{{ url_for('side_effects_page') }}">Side Effects Checker</a>
+              <a href="{{ url_for('warnings_index') }}">Drug Warnings</a>
+              <a href="{{ url_for('search') }}?q=pregnancy">Pregnancy Safety</a>
+              <a href="{{ url_for('contact') }}">Emergency Info</a>
+            </div>
+          </div>
         </div>
       </div>
       <a href="{{ url_for('search') }}" class="nav-link nav-help">Help &amp; Support</a>

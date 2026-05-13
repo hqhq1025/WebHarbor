@@ -1956,7 +1956,15 @@ def condition_page(slug):
 @app.route("/drug-class/<slug>")
 def drug_class_page(slug):
     cls = DrugClass.query.filter_by(slug=slug).first_or_404()
-    drugs = Drug.query.filter_by(drug_class_id=cls.id).order_by(Drug.generic_name).all()
+    sort = (request.args.get("sort") or "name").lower()
+    drugs_q = Drug.query.filter_by(drug_class_id=cls.id)
+    if sort == "rating":
+        drugs = drugs_q.order_by(Drug.avg_rating.desc(), Drug.generic_name).all()
+    elif sort == "reviews":
+        drugs = drugs_q.order_by(Drug.review_count.desc(), Drug.generic_name).all()
+    else:
+        sort = "name"
+        drugs = drugs_q.order_by(Drug.generic_name).all()
     related = (
         DrugClass.query.filter(DrugClass.id != cls.id)
         .order_by(DrugClass.name)
@@ -1964,7 +1972,12 @@ def drug_class_page(slug):
         .all()
     )
     return render_template(
-        "drug_class.html", drug_class=cls, drugs=drugs, related_classes=related
+        "drug_class.html",
+        drug_class=cls,
+        drugs=drugs,
+        related_classes=related,
+        sort=sort,
+        drug_count=len(drugs),
     )
 
 
@@ -2061,6 +2074,108 @@ def conditions_list():
                            all_letters=all_letters,
                            active_letter=active_letter,
                            top_conditions=top_conditions)
+
+
+SYMPTOM_BODY_SYSTEMS = [
+    ("Head & Neurological", [
+        "Headache", "Dizziness", "Fatigue", "Memory problems", "Confusion",
+    ]),
+    ("Respiratory", [
+        "Cough", "Shortness of breath", "Wheezing", "Congestion", "Sore throat",
+    ]),
+    ("Cardiovascular", [
+        "Chest pain", "Rapid heartbeat", "High blood pressure", "Swelling",
+    ]),
+    ("Digestive", [
+        "Nausea", "Vomiting", "Diarrhea", "Constipation", "Abdominal pain", "Heartburn",
+    ]),
+    ("Musculoskeletal", [
+        "Joint pain", "Muscle pain", "Back pain", "Weakness",
+    ]),
+    ("Skin", [
+        "Rash", "Itching", "Hives", "Dry skin",
+    ]),
+    ("Mental Health", [
+        "Anxiety", "Depression", "Insomnia", "Mood changes",
+    ]),
+]
+
+# Map symptom name -> list of condition slugs that commonly present with it.
+SYMPTOM_CONDITION_MAP = {
+    "Headache": ["migraine", "hypertension", "anxiety"],
+    "Dizziness": ["hypertension", "anemia", "anxiety"],
+    "Fatigue": ["hypothyroidism", "anemia", "depression", "diabetes"],
+    "Memory problems": ["depression", "anxiety"],
+    "Confusion": ["depression", "anemia"],
+    "Cough": ["asthma", "copd", "influenza", "bacterial_infections"],
+    "Shortness of breath": ["asthma", "copd", "heart_disease", "anemia"],
+    "Wheezing": ["asthma", "copd"],
+    "Congestion": ["influenza", "viral_infections"],
+    "Sore throat": ["influenza", "bacterial_infections", "viral_infections"],
+    "Chest pain": ["heart_disease", "acid_reflux", "anxiety"],
+    "Rapid heartbeat": ["hyperthyroidism", "anxiety", "heart_disease"],
+    "High blood pressure": ["hypertension", "heart_disease"],
+    "Swelling": ["heart_disease", "arthritis", "gout"],
+    "Nausea": ["nausea", "migraine", "acid_reflux"],
+    "Vomiting": ["nausea", "influenza"],
+    "Diarrhea": ["diarrhea", "crohns_disease", "bacterial_infections"],
+    "Constipation": ["constipation", "hypothyroidism"],
+    "Abdominal pain": ["acid_reflux", "crohns_disease", "constipation"],
+    "Heartburn": ["acid_reflux"],
+    "Joint pain": ["arthritis", "gout", "lupus"],
+    "Muscle pain": ["muscle_spasm", "influenza"],
+    "Back pain": ["muscle_spasm", "osteoporosis"],
+    "Weakness": ["anemia", "hypothyroidism", "vitamin_deficiency"],
+    "Rash": ["eczema", "psoriasis", "lupus"],
+    "Itching": ["eczema", "psoriasis", "acne"],
+    "Hives": ["eczema"],
+    "Dry skin": ["eczema", "psoriasis", "hypothyroidism"],
+    "Anxiety": ["anxiety", "depression"],
+    "Depression": ["depression", "anxiety", "hypothyroidism"],
+    "Insomnia": ["anxiety", "depression", "menopause"],
+    "Mood changes": ["depression", "anxiety", "menopause"],
+}
+
+
+@app.route("/symptom-checker", methods=["GET", "POST"])
+@app.route("/symptom-checker.html", methods=["GET", "POST"])
+@app.route("/symptom_checker.html", methods=["GET", "POST"])
+def symptom_checker():
+    """Symptom checker: pick symptoms grouped by body system, see possible conditions.
+
+    Selected symptoms come in via ``?symptom=X&symptom=Y`` (GET) or a form POST.
+    Each symptom maps to a small static list of condition slugs; the union of
+    those slugs is resolved against the ``Condition`` table and ranked by how
+    many of the chosen symptoms point to each condition.
+    """
+    if request.method == "POST":
+        selected = request.form.getlist("symptom")
+    else:
+        selected = request.args.getlist("symptom")
+    selected_set = {s for s in selected if s in SYMPTOM_CONDITION_MAP}
+
+    # Count how many selected symptoms point to each condition slug.
+    slug_hits = {}
+    for sym in selected_set:
+        for slug in SYMPTOM_CONDITION_MAP.get(sym, []):
+            slug_hits[slug] = slug_hits.get(slug, 0) + 1
+
+    possible_conditions = []
+    if slug_hits:
+        conds = Condition.query.filter(Condition.slug.in_(list(slug_hits.keys()))).all()
+        by_slug = {c.slug: c for c in conds}
+        for slug, hits in sorted(slug_hits.items(), key=lambda kv: (-kv[1], kv[0])):
+            c = by_slug.get(slug)
+            if c is not None:
+                possible_conditions.append((c, hits))
+
+    return render_template(
+        "symptom_checker.html",
+        body_systems=SYMPTOM_BODY_SYSTEMS,
+        selected=selected_set,
+        possible_conditions=possible_conditions,
+        total_selected=len(selected_set),
+    )
 
 
 # --- Auth ---

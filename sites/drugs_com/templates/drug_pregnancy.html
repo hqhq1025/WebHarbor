@@ -60,6 +60,32 @@
   provider promptly so the regimen can be reassessed.</p>
 </section>
 
+<section class="trimester-section">
+  <h2>Trimester-specific considerations</h2>
+  <div class="trimester-grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin-top:0.5rem;">
+    <div class="trimester-card" style="padding:12px;border:1px solid #e0e0e0;border-radius:4px;background:#f9fbfd;">
+      <h3 style="margin:0 0 6px;font-size:1rem;">First trimester (weeks 1-12)</h3>
+      <p style="margin:0;">Organ development is most active during the first trimester, making the fetus most vulnerable to teratogenic exposure. Many medications are best avoided or used at the lowest effective dose during this period unless clearly indicated.</p>
+    </div>
+    <div class="trimester-card" style="padding:12px;border:1px solid #e0e0e0;border-radius:4px;background:#f9fbfd;">
+      <h3 style="margin:0 0 6px;font-size:1rem;">Second trimester (weeks 13-27)</h3>
+      <p style="margin:0;">Major organogenesis is largely complete, but ongoing fetal growth and development continue. Some medications that are contraindicated in the third trimester may be acceptable here under medical supervision.</p>
+    </div>
+    <div class="trimester-card" style="padding:12px;border:1px solid #e0e0e0;border-radius:4px;background:#f9fbfd;">
+      <h3 style="margin:0 0 6px;font-size:1rem;">Third trimester (weeks 28-40)</h3>
+      <p style="margin:0;">Certain drug classes (for example NSAIDs such as {{ drug.generic_name|title if 'profen' in drug.generic_name|lower or 'naproxen' in drug.generic_name|lower else 'select agents' }}) can affect fetal circulation or delivery and are often avoided in late pregnancy. Always confirm trimester-specific safety with your clinician.</p>
+    </div>
+  </div>
+</section>
+
+<section class="bottom-line" style="margin:1.5rem 0;padding:1rem 1.25rem;background:#e8f4fd;border:1px solid #b6dcf6;border-left:4px solid #1976d2;border-radius:4px;">
+  <h2 style="margin-top:0;">Bottom line</h2>
+  <p style="margin:0;">{{ drug.generic_name|title }} carries an FDA pregnancy classification of
+  <strong>{{ risk }}</strong>. Do not start, stop, or change the dose of this medication during
+  pregnancy or while breastfeeding without first speaking to your healthcare provider. The safest
+  choice depends on your individual condition, gestational age, and available alternatives.</p>
+</section>
+
 <section class="lactation-section">
   <h2>Lactation / Breastfeeding</h2>
   <p>Whether {{ drug.generic_name|title }} passes into human milk in clinically significant
@@ -83,6 +109,7 @@
   <strong>Always consult your healthcare provider</strong> before starting, stopping, or
   changing any medication during pregnancy or while breastfeeding. The information on this
   page is for general reference and does not replace individualized medical advice.
+  <a href="{{ url_for('drug_interactions_page', slug=drug.slug) }}" style="display:inline-block;margin-top:0.5rem;font-weight:600;">Talk to a healthcare provider about {{ drug.generic_name|title }} &rsaquo;</a>
 </p>
 
 <p style="margin-top:1rem;"><a href="{{ url_for('drug_detail', slug=drug.slug) }}">&larr; Back to {{ drug.generic_name|title }} drug information</a></p>
