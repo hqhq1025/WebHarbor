@@ -1873,3 +1873,51 @@ details.faq-detail p { padding: 0 0 14px; font-size: 0.92rem; color: var(--gray-
   font-weight: 500;
   white-space: nowrap;
 }
+
+/* Review form: star selector */
+.star-selector {
+  display: inline-flex;
+  gap: 4px;
+  font-size: 28px;
+  line-height: 1;
+  cursor: pointer;
+  user-select: none;
+  margin: 6px 0 10px;
+}
+.star-selector .star-btn {
+  color: #d0d0d0;
+  transition: color 0.1s ease, transform 0.1s ease;
+}
+.star-selector .star-btn.star-on { color: #f5a623; }
+.star-selector .star-btn:hover { transform: scale(1.1); }
+.char-count {
+  font-size: 12px;
+  text-align: right;
+  margin-top: 4px;
+}
+
+/* Review card stars + tags */
+.review-stars {
+  display: inline-flex;
+  gap: 2px;
+  margin-left: 6px;
+  font-size: 14px;
+  line-height: 1;
+}
+.review-stars .star-on { color: #f5a623; }
+.review-stars .star-off { color: #d0d0d0; }
+.review-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 6px 0;
+}
+.review-tag {
+  display: inline-block;
+  background: #eef3f8;
+  color: #2c5777;
+  border-radius: 10px;
+  padding: 2px 10px;
+  font-size: 12px;
+  font-weight: 500;
+}

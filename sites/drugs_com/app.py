@@ -1800,8 +1800,12 @@ def submit_review(slug):
         rating = 5
     rating = max(1, min(10, rating))
     title = (request.form.get("title") or "")[:200]
-    body = (request.form.get("body") or "")[:2000]
+    body = (request.form.get("body") or "")[:1000]
     condition = (request.form.get("condition_treated") or "")[:100]
+    # duration_taken is accepted from the form (Task: "How long did you take this medication?")
+    # but is not persisted: adding a column would alter the seed DB on first boot and break
+    # /reset/<site> byte-identity. Display-side template handles its absence ("if available").
+    _ = (request.form.get("duration_taken") or "")[:60]
     existing = DrugReview.query.filter_by(drug_id=drug.id, user_id=current_user.id).first()
     if existing:
         existing.rating = rating
