@@ -2294,16 +2294,41 @@ def condition_page(slug):
     else:
         sort = "rating"
         drugs.sort(key=lambda d: (-(d.avg_rating or 0), d.generic_name))
-    related = (
-        Condition.query.filter(Condition.id != cond.id)
-        .order_by(Condition.drug_count.desc())
-        .limit(8)
-        .all()
-    )
+    # Group drugs by drug class for the "Standard treatments" view.
+    by_class = {}
+    for d in drugs:
+        cls = d.drug_class.name if d.drug_class else 'Other'
+        by_class.setdefault(cls, []).append(d)
+    drugs_by_class = sorted(by_class.items(), key=lambda kv: (kv[0] == 'Other', kv[0].lower()))
+    # Related conditions: other conditions that share at least one drug with this one.
+    drug_ids = [d.id for d in drugs]
+    related = []
+    if drug_ids:
+        shared_rows = (
+            db.session.query(DrugCondition.condition_id, db.func.count(DrugCondition.drug_id).label('shared'))
+            .filter(DrugCondition.drug_id.in_(drug_ids))
+            .filter(DrugCondition.condition_id != cond.id)
+            .group_by(DrugCondition.condition_id)
+            .order_by(db.text('shared DESC'))
+            .limit(8)
+            .all()
+        )
+        for cid, _shared in shared_rows:
+            other = Condition.query.get(cid)
+            if other is not None:
+                related.append(other)
+    if not related:
+        related = (
+            Condition.query.filter(Condition.id != cond.id)
+            .order_by(Condition.drug_count.desc())
+            .limit(8)
+            .all()
+        )
     return render_template(
         "condition.html",
         condition=cond,
         drugs=drugs,
+        drugs_by_class=drugs_by_class,
         sort=sort,
         related_conditions=related,
     )
@@ -3152,17 +3177,25 @@ def drug_interactions_page(slug):
         })
     sev_order = {'major': 0, 'moderate': 1, 'minor': 2, 'unknown': 3}
     interaction_details.sort(key=lambda x: sev_order.get(x['severity'], 3))
+    # Group drug-drug interactions by severity for display.
+    by_severity = {'major': [], 'moderate': [], 'minor': [], 'unknown': []}
+    for it in interaction_details:
+        by_severity.setdefault(it['severity'], by_severity['unknown']).append(it)
     summary = {
         'total': len(interaction_details),
         'major': sum(1 for x in interaction_details if x['severity'] == 'major'),
         'moderate': sum(1 for x in interaction_details if x['severity'] == 'moderate'),
         'minor': sum(1 for x in interaction_details if x['severity'] == 'minor'),
     }
+    food_interactions, alcohol_interactions = _lifestyle_interactions([drug])
     return render_template(
         "drug_interactions_page.html",
         drug=drug,
         interactions=interaction_details,
+        interactions_by_severity=by_severity,
         summary=summary,
+        food_interactions=food_interactions,
+        alcohol_interactions=alcohol_interactions,
     )
 
 

@@ -12,6 +12,34 @@
 
 {% if condition.description %}
   <p class="lead">{{ condition.description }}</p>
+{% else %}
+  <p class="lead">{{ condition.name }} is a medical condition managed with a combination of
+  medications and lifestyle measures. The medications listed below are commonly prescribed or
+  recommended to treat {{ condition.name }}. Always consult a healthcare professional before
+  starting or stopping any treatment.</p>
+{% endif %}
+
+{% if drugs_by_class %}
+<section class="standard-treatments" style="margin:1rem 0 1.25rem;padding:1rem;border:1px solid #e0e6ef;border-radius:6px;background:#f7f9fc;">
+  <h2 style="margin-top:0;">Standard treatments for {{ condition.name }}</h2>
+  <p class="muted" style="margin-top:0;">Medications used for {{ condition.name }}, grouped by drug class.</p>
+  {% for cls_name, cls_drugs in drugs_by_class %}
+    <div style="margin:0.75rem 0;">
+      <h3 style="margin:0 0 0.25rem;font-size:1.05em;">{{ cls_name }}
+        <span class="muted" style="font-weight:normal;font-size:0.85em;">({{ cls_drugs|length }})</span>
+      </h3>
+      <ul style="margin:0.25rem 0 0;padding-left:1.25rem;">
+        {% for d in cls_drugs %}
+          <li>
+            <a href="{{ url_for('drug_detail', slug=d.slug) }}">{{ d.generic_name|capitalize }}</a>
+            {% if d.brand_names %}<span class="muted">({{ d.brand_names|join(', ') }})</span>{% endif %}
+            {% if d.availability %}<span class="avail-badge avail-{{ d.availability|lower }}" style="font-size:0.8em;">{{ d.availability }}</span>{% endif %}
+          </li>
+        {% endfor %}
+      </ul>
+    </div>
+  {% endfor %}
+</section>
 {% endif %}
 
 <div class="two-col">
