@@ -10,10 +10,12 @@
 <p class="lead">Browse the comprehensive list of drug classes. Each class groups medications that share a similar
 mechanism of action, chemical structure, or therapeutic use.</p>
 
+<p class="muted" style="font-size:14px;margin-top:-4px"><strong>{{ total }}</strong> drug class{{ '' if total == 1 else 'es' }}</p>
+
 {% set groups = {} %}
-{% for c in classes %}
-  {% set letter = (c.name[0]|upper) %}
-  {% if not groups.update({letter: groups.get(letter, []) + [c]}) %}{% endif %}
+{% for item in class_data %}
+  {% set letter = (item.obj.name[0]|upper) %}
+  {% if not groups.update({letter: groups.get(letter, []) + [item]}) %}{% endif %}
 {% endfor %}
 
 <div class="letter-jump" style="margin:16px 0;display:flex;flex-wrap:wrap;gap:6px">
@@ -25,20 +27,34 @@ mechanism of action, chemical structure, or therapeutic use.</p>
 {% for letter in groups.keys()|sort %}
   <section id="letter-{{ letter }}" class="row-section" style="margin-bottom:24px">
     <h2 style="border-bottom:2px solid var(--navy,#1a3a6e);padding-bottom:4px;margin-bottom:12px">{{ letter }}</h2>
-    <div class="class-grid" style="display:grid;grid-template-columns:repeat(auto-fill, minmax(280px, 1fr));gap:12px">
-      {% for c in groups[letter] %}
+    <div class="class-grid" style="display:grid;grid-template-columns:repeat(auto-fill, minmax(300px, 1fr));gap:12px">
+      {% for item in groups[letter] %}
+        {% set c = item.obj %}
         <div class="class-card" style="border:1px solid #e0e6ef;border-radius:6px;padding:12px;background:#fff">
-          <a href="{{ url_for('drug_class_page', slug=c.slug) }}" style="font-weight:600;color:var(--navy,#1a3a6e);text-decoration:none">{{ c.name }}</a>
-          <div class="muted" style="font-size:13px;margin-top:4px">
-            {{ c.drug_count_val }} drug{{ '' if c.drug_count_val == 1 else 's' }}
+          <div style="display:flex;justify-content:space-between;align-items:baseline;gap:8px">
+            <a href="{{ url_for('drug_class_page', slug=c.slug) }}" style="font-weight:600;color:var(--navy,#1a3a6e);text-decoration:none">{{ c.name }}</a>
+            <span class="tag-class">{{ item.count }} drug{{ '' if item.count == 1 else 's' }}</span>
           </div>
+          {% if item.description %}
+            <div class="muted" style="font-size:13px;margin-top:6px;line-height:1.4">
+              {{ item.description.split('.')[0] }}.
+            </div>
+          {% endif %}
+          {% if item.top_drugs %}
+            <div style="font-size:12px;margin-top:8px;color:#555">
+              Top drugs:
+              {% for d in item.top_drugs %}
+                <a href="{{ url_for('drug_detail', slug=d.slug) }}" style="color:#1a6cb0;text-decoration:none">{{ d.generic_name }}</a>{% if not loop.last %}, {% endif %}
+              {% endfor %}
+            </div>
+          {% endif %}
         </div>
       {% endfor %}
     </div>
   </section>
 {% endfor %}
 
-{% if not classes %}
+{% if not class_data %}
   <p class="muted">No drug classes available.</p>
 {% endif %}
 {% endblock %}

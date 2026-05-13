@@ -2445,9 +2445,28 @@ def news_category(category):
 @app.route("/drug-classes.html")
 def drug_classes_list():
     classes = DrugClass.query.order_by(DrugClass.name).all()
-    for c in classes:
-        c.drug_count_val = Drug.query.filter_by(drug_class_id=c.id).count()
-    return render_template("drug_classes.html", classes=classes)
+    class_data = []
+    for dc in classes:
+        top_drugs = (
+            Drug.query.filter_by(drug_class_id=dc.id)
+            .order_by(Drug.review_count.desc())
+            .limit(3)
+            .all()
+        )
+        count = Drug.query.filter_by(drug_class_id=dc.id).count()
+        description = (
+            CLASS_DESCRIPTIONS.get(dc.name)
+            or CLASS_DESCRIPTIONS.get((dc.name or "").rstrip("s"))
+            or (dc.description or "")
+        )
+        class_data.append({
+            "obj": dc,
+            "count": count,
+            "top_drugs": top_drugs,
+            "description": description,
+        })
+    total = len(class_data)
+    return render_template("drug_classes.html", class_data=class_data, total=total)
 
 
 @app.route("/conditions")
