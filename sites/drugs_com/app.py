@@ -2093,6 +2093,53 @@ def interaction_checker():
         food_interactions, alcohol_interactions = _lifestyle_interactions(resolved)
     else:
         food_interactions, alcohol_interactions = [], []
+        # Also support GET with ?drugs=name1&drugs=name2 to run the check directly
+        get_drugs = request.args.getlist("drugs")
+        if get_drugs and len([r for r in get_drugs if r and r.strip()]) >= 2:
+            drugs_input = [r.strip() for r in get_drugs if r and r.strip()]
+            resolved = []
+            seen_ids = set()
+            for n in drugs_input:
+                low = n.lower()
+                d = Drug.query.filter(db.func.lower(Drug.generic_name) == low).first()
+                if not d:
+                    for cand in drugs:
+                        if low in [b.lower() for b in cand.brand_names]:
+                            d = cand
+                            break
+                if d and d.id not in seen_ids:
+                    resolved.append(d)
+                    seen_ids.add(d.id)
+                elif not d:
+                    unrecognized.append(n)
+
+            interactions = []
+            pair_keys = set()
+            for a, b in combinations(resolved, 2):
+                rec = DrugInteraction.query.filter(
+                    ((DrugInteraction.drug_a_id == a.id) & (DrugInteraction.drug_b_id == b.id)) |
+                    ((DrugInteraction.drug_a_id == b.id) & (DrugInteraction.drug_b_id == a.id))
+                ).first()
+                key = tuple(sorted([a.id, b.id]))
+                if key in pair_keys:
+                    continue
+                pair_keys.add(key)
+                if rec:
+                    interactions.append({
+                        "drug_a": a,
+                        "drug_b": b,
+                        "severity": rec.severity,
+                        "description": rec.description,
+                    })
+            order = {"major": 0, "moderate": 1, "minor": 2}
+            interactions.sort(key=lambda it: order.get(it["severity"], 99))
+            summary = {
+                "total": len(interactions),
+                "major": sum(1 for it in interactions if it["severity"] == "major"),
+                "moderate": sum(1 for it in interactions if it["severity"] == "moderate"),
+                "minor": sum(1 for it in interactions if it["severity"] == "minor"),
+            }
+            food_interactions, alcohol_interactions = _lifestyle_interactions(resolved)
     return render_template(
         "interaction_checker.html",
         drugs=drugs,

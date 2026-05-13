@@ -1,6 +1,12 @@
 {% extends "base.html" %}
 {% block title %}Compare Drugs - Drugs.com{% endblock %}
 {% block content %}
+<style>
+.compare-section { border-top: 2px solid #e0e6ef; padding-top: 20px; }
+.compare-col { background: #f7f9fc; border: 1px solid #e0e6ef; border-radius: 6px; padding: 14px; }
+.compare-col h4 { color: #0072ce; font-size: 14px; font-weight: 700; margin: 0 0 8px; }
+.compare-col p { font-size: 13px; line-height: 1.6; color: #444; margin: 0 0 8px; }
+</style>
 <nav class="breadcrumb">
   <a href="{{ url_for('index') }}">Home</a> &rsaquo; <span>Compare Drugs</span>
 </nav>
@@ -115,6 +121,66 @@
   </p>
 {% elif selected_drugs|length == 1 %}
   <p class="muted">Select at least one more drug above to see the comparison.</p>
+{% endif %}
+
+{% if selected_drugs %}
+<section class="detailed-comparison" style="margin-top:32px">
+  <h2>Detailed Comparison</h2>
+
+  <!-- Description side by side -->
+  <div class="compare-section">
+    <h3>What are these drugs used for?</h3>
+    <div class="compare-cols" style="display:grid;grid-template-columns:{% for _ in selected_drugs %}1fr {% endfor %};gap:16px">
+      {% for slug, drug, _ in selected_drugs %}
+      <div class="compare-col">
+        <h4>{{ drug.generic_name|capitalize }}</h4>
+        <p>{{ (drug.uses or drug.description or 'See full prescribing information.')[:300] }}{% if (drug.uses or '')|length > 300 %}...{% endif %}</p>
+        <a href="{{ url_for('drug_detail', slug=drug.slug) }}">Full information &rsaquo;</a>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <!-- Warnings -->
+  <div class="compare-section" style="margin-top:20px">
+    <h3>Warnings</h3>
+    <div class="compare-cols" style="display:grid;grid-template-columns:{% for _ in selected_drugs %}1fr {% endfor %};gap:16px">
+      {% for slug, drug, _ in selected_drugs %}
+      <div class="compare-col">
+        <h4>{{ drug.generic_name|capitalize }}</h4>
+        <p>{{ (drug.warnings or 'See prescribing information for complete warnings.')[:300] }}{% if (drug.warnings or '')|length > 300 %}...{% endif %}</p>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <!-- Side effects -->
+  <div class="compare-section" style="margin-top:20px">
+    <h3>Common side effects</h3>
+    <div class="compare-cols" style="display:grid;grid-template-columns:{% for _ in selected_drugs %}1fr {% endfor %};gap:16px">
+      {% for slug, drug, _ in selected_drugs %}
+      <div class="compare-col">
+        <h4>{{ drug.generic_name|capitalize }}</h4>
+        <p>{{ (drug.side_effects or 'See prescribing information.')[:300] }}{% if (drug.side_effects or '')|length > 300 %}...{% endif %}</p>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <!-- Dosage -->
+  <div class="compare-section" style="margin-top:20px">
+    <h3>Dosage</h3>
+    <div class="compare-cols" style="display:grid;grid-template-columns:{% for _ in selected_drugs %}1fr {% endfor %};gap:16px">
+      {% for slug, drug, _ in selected_drugs %}
+      <div class="compare-col">
+        <h4>{{ drug.generic_name|capitalize }}</h4>
+        <p>{{ (drug.dosage or 'See prescribing information.')[:300] }}{% if (drug.dosage or '')|length > 300 %}...{% endif %}</p>
+        <a href="{{ url_for('drug_dosage', slug=drug.slug) }}">Full dosage guide &rsaquo;</a>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</section>
 {% endif %}
 
 <section style="margin-top:40px">
