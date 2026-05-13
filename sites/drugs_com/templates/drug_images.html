@@ -124,6 +124,9 @@
             <dt>Strength:</dt><dd>{{ img.strength or '—' }}</dd>
             <dt>Manufacturer:</dt><dd>{{ img.manufacturer or '—' }}</dd>
           </dl>
+          {% if img.imprint %}
+            <a href="{{ url_for('pill_identifier_results', imprint=img.imprint) }}" class="btn btn-outline btn-small">Identify this pill</a>
+          {% endif %}
         </div>
       </article>
     {% endfor %}

@@ -1,6 +1,27 @@
 {% extends "base.html" %}
 {% block title %}{{ drug.generic_name|capitalize }} User Reviews & Ratings - {{ site_name }}{% endblock %}
 {% block content %}
+<style>
+  .reviews-summary { display: flex; gap: 28px; align-items: flex-start; padding: 18px; border: 1px solid var(--gray-200, #e3e6eb); border-radius: 6px; background: #fafbfc; margin-bottom: 20px; }
+  .reviews-summary-score { min-width: 130px; text-align: center; }
+  .reviews-summary-number { font-size: 2.4rem; font-weight: 700; color: var(--navy, #1a3e72); line-height: 1.1; }
+  .reviews-summary-denominator { font-size: 1rem; color: #666; font-weight: 400; }
+  .reviews-distribution { flex: 1; display: flex; flex-direction: column; gap: 4px; }
+  .rating-row { display: grid; grid-template-columns: 28px 1fr 48px; gap: 10px; align-items: center; font-size: 0.9rem; }
+  .rating-row-label { text-align: right; font-weight: 600; color: #333; }
+  .rating-row-bar { display: block; height: 12px; background: #e8ecf1; border-radius: 6px; overflow: hidden; position: relative; }
+  .rating-row-fill { display: block; height: 100%; background: linear-gradient(90deg, #2a7fba, #4aa3df); border-radius: 6px; min-width: 2px; }
+  .rating-row-count { text-align: left; color: #555; font-variant-numeric: tabular-nums; }
+  .reviews-filter { display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end; padding: 12px; background: #f5f7fa; border-radius: 6px; margin-bottom: 18px; }
+  .reviews-filter label { display: flex; flex-direction: column; font-size: 0.85rem; color: #555; gap: 4px; }
+  .reviews-list .review-card { padding: 14px; border: 1px solid #e3e6eb; border-radius: 6px; margin-bottom: 12px; background: #fff; }
+  .review-score { display: inline-block; background: var(--navy, #1a3e72); color: #fff; padding: 2px 8px; border-radius: 4px; font-weight: 700; margin-right: 8px; }
+  .pagination { display: flex; gap: 14px; align-items: center; justify-content: center; margin: 20px 0; }
+  @media (max-width: 768px) {
+    .reviews-summary { flex-direction: column; }
+    .reviews-summary-score { min-width: 0; text-align: left; }
+  }
+</style>
 <div class="container">
   <nav class="breadcrumb">
     <a href="{{ url_for('index') }}">Home</a> &rsaquo;
@@ -10,6 +31,8 @@
 
   <h1>User Reviews for {{ drug.generic_name|capitalize }}</h1>
 
+  <div class="detail-grid">
+   <div class="detail-main">
   <section class="reviews-summary">
     <div class="reviews-summary-score">
       <div class="reviews-summary-number">{{ drug.avg_rating }}<span class="reviews-summary-denominator"> / 10</span></div>
@@ -90,6 +113,73 @@
     {% endif %}
   </nav>
   {% endif %}
+   </div>
+
+   <aside class="detail-sidebar">
+     <div class="sidebar-box status-box">
+       <h3>Drug status</h3>
+       <ul class="status-list">
+         <li>
+           <strong>Availability:</strong>
+           {% if 'Rx' in drug.availability and 'OTC' in drug.availability %}
+             Rx and/or OTC
+           {% elif 'Rx' in drug.availability %}
+             Prescription only (Rx)
+           {% elif 'OTC' in drug.availability %}
+             Over-the-counter (OTC)
+           {% else %}
+             {{ drug.availability }}
+           {% endif %}
+         </li>
+         {% if drug.drug_class %}
+         <li><strong>Drug class:</strong>
+           <a href="{{ url_for('drug_class_page', slug=drug.drug_class.slug) }}">{{ drug.drug_class.name }}</a>
+         </li>
+         {% endif %}
+         {% if drug.pregnancy_risk %}
+         <li><strong>Pregnancy:</strong>
+           {% if drug.pregnancy_risk|upper in ['A','B','C','D','X'] %}Category {{ drug.pregnancy_risk|upper }}{% else %}{{ drug.pregnancy_risk }}{% endif %}
+         </li>
+         {% endif %}
+         {% if drug.csa_schedule and drug.csa_schedule|lower not in ['n/a', 'none', 'not scheduled', ''] %}
+         <li><strong>CSA Schedule:</strong> {{ drug.csa_schedule }}</li>
+         {% endif %}
+       </ul>
+     </div>
+
+     <div class="sidebar-box rating-box">
+       <h3>Overall rating</h3>
+       <div class="rating-score">{{ drug.avg_rating }} / 10</div>
+       <div class="muted">{{ drug.review_count }} user reviews</div>
+       <a href="{{ url_for('drug_detail', slug=drug.slug) }}#add-review" class="btn btn-primary" style="display:inline-block; margin-top:10px;">Write a review</a>
+     </div>
+
+     <div class="sidebar-box more-about">
+       <h3>More about {{ drug.generic_name|capitalize }}</h3>
+       <ul class="more-about-list">
+         <li><a href="{{ url_for('drug_detail', slug=drug.slug) }}">Drug overview</a></li>
+         <li><a href="{{ url_for('drug_prices', slug=drug.slug) }}">Drug pricing</a></li>
+         <li><a href="{{ url_for('drug_images', slug=drug.slug) }}">Drug images</a></li>
+         <li><a href="{{ url_for('drug_side_effects', slug=drug.slug) }}">Side effects (detailed)</a></li>
+         <li><a href="{{ url_for('drug_dosage', slug=drug.slug) }}">Dosage guide</a></li>
+         <li><a href="{{ url_for('drug_interactions_page', slug=drug.slug) }}">Drug interactions</a></li>
+         <li><a href="{{ url_for('drug_pregnancy', slug=drug.slug) }}">Pregnancy info</a></li>
+         <li><a href="{{ url_for('interaction_checker') }}?drug={{ drug.slug }}">Check interactions</a></li>
+       </ul>
+     </div>
+
+     {% if related is defined and related %}
+     <div class="sidebar-box">
+       <h3>Related drugs</h3>
+       <ul class="sidebar-links">
+         {% for r in related %}
+           <li><a href="{{ url_for('drug_detail', slug=r.slug) }}">{{ r.generic_name|capitalize }}</a></li>
+         {% endfor %}
+       </ul>
+     </div>
+     {% endif %}
+   </aside>
+  </div>
 </div>
 <script>
 document.querySelectorAll('.review-helpful').forEach(box => {
