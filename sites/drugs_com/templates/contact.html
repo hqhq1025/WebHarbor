@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}Contact Us | {{ site_name }}{% endblock %}
+{% block content %}
+<div style="padding:24px 0;max-width:820px">
+  <nav class="breadcrumb"><a href="{{ url_for('index') }}">Home</a> &rsaquo; <span>Contact Us</span></nav>
+  <h1 style="font-size:2rem;margin-bottom:14px">Contact Us</h1>
+  <p style="margin-bottom:20px">We welcome questions, feedback, and corrections from our readers. Please review the categories below to make sure your message reaches the right team.</p>
+
+  <h2 style="font-size:1.25rem;margin:18px 0 8px">General questions and feedback</h2>
+  <p>For general questions about the Drugs.com website, suggestions for improvement, or comments on our content, email <a href="mailto:feedback@drugs.com">feedback@drugs.com</a>. We read every message, although we cannot always respond individually.</p>
+
+  <h2 style="font-size:1.25rem;margin:18px 0 8px">Medical questions</h2>
+  <p>Drugs.com staff cannot provide individualized medical advice. If you have a question about your medication, dose, side effects, or interactions, please contact your physician, pharmacist, or local poison control center. In the U.S., you can also reach the Poison Help line 24 hours a day at 1-800-222-1222.</p>
+
+  <h2 style="font-size:1.25rem;margin:18px 0 8px">Editorial corrections</h2>
+  <p>If you've found an error in one of our drug monographs, news articles, or other editorial content, email <a href="mailto:editor@drugs.com">editor@drugs.com</a> with the page URL and a description of the issue. Our medical editors review every submission and update content when needed.</p>
+
+  <h2 style="font-size:1.25rem;margin:18px 0 8px">Press and media</h2>
+  <p>Members of the press requesting interviews, statements, or background information should contact <a href="mailto:press@drugs.com">press@drugs.com</a>. Please include your name, outlet, deadline, and a brief description of your story.</p>
+
+  <h2 style="font-size:1.25rem;margin:18px 0 8px">Business and advertising</h2>
+  <p>For partnership, licensing, or advertising inquiries, contact <a href="mailto:business@drugs.com">business@drugs.com</a>. We do not accept unsolicited content submissions.</p>
+
+  <h2 style="font-size:1.25rem;margin:18px 0 8px">Mailing address</h2>
+  <p>Drugs.com<br>Attn: Reader Services<br>200 Drug Information Plaza<br>Auckland 1010, New Zealand</p>
+</div>
+{% endblock %}

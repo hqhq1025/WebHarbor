@@ -102,11 +102,13 @@
         <h2>What other drugs will affect {{ drug.generic_name }}?</h2>
         <p>{{ drug.interactions_text }}</p>
         <div class="interaction-mini-checker">
-          <p><strong>Enter medications to view a detailed interaction report using our Drug Interaction Checker.</strong></p>
+          <p><strong>Check {{ drug.generic_name|capitalize }} for interactions</strong></p>
+          <p class="muted">Enter another medication to view a detailed interaction report with {{ drug.generic_name }}.</p>
           <form action="{{ url_for('interaction_checker') }}" method="get" class="mini-checker-form">
-            <label for="mini-drug-input">Drug name</label>
-            <input type="text" id="mini-drug-input" name="drug" placeholder="Enter a drug name" />
-            <button type="submit" class="btn btn-primary">Add</button>
+            <input type="hidden" name="drug" value="{{ drug.slug }}" />
+            <label for="mini-drug-input">Add a second drug</label>
+            <input type="text" id="mini-drug-input" name="drug2" placeholder="Enter a drug name" />
+            <button type="submit" class="btn btn-primary">Check interaction</button>
           </form>
         </div>
       </section>
@@ -125,19 +127,80 @@
 
       <section id="reviews">
         <h2>User reviews for {{ drug.generic_name }}</h2>
+        <div class="reviews-summary">
+          <div class="reviews-summary-score">
+            <div class="reviews-summary-number">{{ drug.avg_rating }}<span class="reviews-summary-denominator"> / 10</span></div>
+            <div class="muted">{{ drug.review_count }} reviews</div>
+          </div>
+          <div class="reviews-distribution">
+            {% set total = drug.review_count or 1 %}
+            {% for score in range(10, 0, -1) %}
+              {% set count = rating_distribution[score] if rating_distribution else 0 %}
+              {% set pct = (count * 100 / total)|round(0, 'floor')|int %}
+              <div class="rating-row">
+                <span class="rating-row-label">{{ score }}</span>
+                <span class="rating-row-bar"><span class="rating-row-fill" style="width: {{ pct }}%"></span></span>
+                <span class="rating-row-count">{{ count }}</span>
+              </div>
+            {% endfor %}
+          </div>
+        </div>
+
+        <div class="reviews-actions">
+          {% if current_user.is_authenticated %}
+            <a href="#add-review" class="btn btn-primary">{{ 'Edit your review' if user_review else 'Add your review' }}</a>
+          {% else %}
+            <a href="{{ url_for('login') }}" class="btn btn-primary">Sign in to add your review</a>
+          {% endif %}
+        </div>
+
         {% if reviews %}
           {% for r in reviews %}
             <article class="review">
               <header class="review-header">
                 <span class="review-score">{{ r.rating }}/10</span>
                 <strong>{{ r.title }}</strong>
-                <span class="muted">— {{ r.user.username if r.user else 'anon' }} on {{ r.created_at.strftime('%b %d, %Y') }}</span>
+                <span class="muted">
+                  &mdash; {{ r.user.username if r.user else 'anon' }}
+                  {% if r.condition_treated %} (for {{ r.condition_treated }}){% endif %}
+                  on {{ r.created_at.strftime('%b %d, %Y') }}
+                </span>
               </header>
               <p>{{ r.body }}</p>
             </article>
           {% endfor %}
         {% else %}
           <p class="muted">No reviews yet.</p>
+        {% endif %}
+
+        {% if current_user.is_authenticated %}
+        <div id="add-review" class="review-form-box">
+          <h3>{{ 'Edit your review' if user_review else 'Add your review' }}</h3>
+          <form method="post" action="{{ url_for('submit_review', slug=drug.slug) }}" class="review-form">
+            <label for="review-rating">Your rating: <output id="review-rating-out">{{ user_review.rating if user_review else 8 }}</output> / 10</label>
+            <input type="range" id="review-rating" name="rating" min="1" max="10"
+                   value="{{ user_review.rating if user_review else 8 }}"
+                   oninput="document.getElementById('review-rating-out').textContent = this.value" />
+
+            <label for="review-condition">Condition treated</label>
+            <input type="text" id="review-condition" name="condition_treated"
+                   value="{{ user_review.condition_treated if user_review else '' }}"
+                   placeholder="e.g. Pain, Headache, Anxiety" maxlength="100" />
+
+            <label for="review-title">Title</label>
+            <input type="text" id="review-title" name="title"
+                   value="{{ user_review.title if user_review else '' }}"
+                   placeholder="Summarize your experience" maxlength="200" />
+
+            <label for="review-body">Your review</label>
+            <textarea id="review-body" name="body" rows="5" maxlength="2000"
+                      placeholder="Share details of your experience with this medicine">{{ user_review.body if user_review else '' }}</textarea>
+
+            <button type="submit" class="btn btn-primary">{{ 'Update review' if user_review else 'Submit review' }}</button>
+          </form>
+        </div>
+        {% else %}
+        <p class="muted"><a href="{{ url_for('login') }}">Sign in</a> to add your review.</p>
         {% endif %}
       </section>
     </div>

@@ -1,0 +1,124 @@
+{% extends "base.html" %}
+{% block title %}Drugs.com Pro Edition | For Healthcare Professionals{% endblock %}
+{% block content %}
+<nav class="breadcrumb">
+  <a href="{{ url_for('index') }}">Home</a> &rsaquo; <span>Pro Edition</span>
+</nav>
+
+<section class="pro-hero" style="background:linear-gradient(135deg,#0c3b6f,#1a6cb0);color:#fff;padding:48px 32px;border-radius:8px;margin-bottom:32px">
+  <h1 style="font-size:2.2rem;margin:0 0 12px;color:#fff">Drugs.com for Healthcare Professionals</h1>
+  <p style="font-size:1.1rem;max-width:720px;margin:0 0 20px;line-height:1.5">
+    Authoritative drug information, clinical decision support, and prescribing references curated for
+    physicians, pharmacists, nurses, and other healthcare professionals.
+  </p>
+  <div style="display:flex;gap:12px;flex-wrap:wrap">
+    <a href="{{ url_for('drug_az') }}" class="btn" style="background:#fff;color:#0c3b6f">Browse Monographs</a>
+    <a href="{{ url_for('interaction_checker') }}" class="btn btn-outline" style="border-color:#fff;color:#fff">Interaction Checker</a>
+  </div>
+</section>
+
+<div class="account-grid" style="display:grid;grid-template-columns:2fr 1fr;gap:32px">
+  <div>
+    <section class="account-box">
+      <h2>Monograph Library</h2>
+      <p>Comprehensive professional drug monographs with prescribing details, pharmacology,
+         contraindications, adverse events, and drug-drug interactions.</p>
+      <a class="btn btn-outline" href="{{ url_for('drug_az') }}">Browse the full A-Z monograph library</a>
+    </section>
+
+    <section class="account-box">
+      <h2>Drug Interaction Checker</h2>
+      <p>Screen for drug-drug interactions with severity classification (major, moderate, minor)
+         and clinical management recommendations.</p>
+      <a class="btn btn-outline" href="{{ url_for('interaction_checker') }}">Open Interaction Checker</a>
+    </section>
+
+    <section class="account-box">
+      <h2>Clinical Calculators</h2>
+      <p>Common bedside calculations for clinical decision-making.</p>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px;margin-top:12px">
+        <div class="card" style="border:1px solid #ddd;padding:12px;border-radius:6px">
+          <strong>BMI Calculator</strong>
+          <p class="muted" style="font-size:.9rem">Body mass index from height &amp; weight.</p>
+        </div>
+        <div class="card" style="border:1px solid #ddd;padding:12px;border-radius:6px">
+          <strong>Creatinine Clearance</strong>
+          <p class="muted" style="font-size:.9rem">Cockcroft-Gault estimate of renal function.</p>
+        </div>
+        <div class="card" style="border:1px solid #ddd;padding:12px;border-radius:6px">
+          <strong>eGFR</strong>
+          <p class="muted" style="font-size:.9rem">CKD-EPI 2021 estimated glomerular filtration rate.</p>
+        </div>
+        <div class="card" style="border:1px solid #ddd;padding:12px;border-radius:6px">
+          <strong>Opioid Conversion</strong>
+          <p class="muted" style="font-size:.9rem">Morphine milligram equivalents (MME).</p>
+        </div>
+        <div class="card" style="border:1px solid #ddd;padding:12px;border-radius:6px">
+          <strong>Corrected QT (QTc)</strong>
+          <p class="muted" style="font-size:.9rem">Bazett, Fridericia, and Framingham formulas.</p>
+        </div>
+        <div class="card" style="border:1px solid #ddd;padding:12px;border-radius:6px">
+          <strong>Pediatric Dosing</strong>
+          <p class="muted" style="font-size:.9rem">Weight-based dose calculations.</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="account-box">
+      <h2>Pill Identifier</h2>
+      <p>Identify prescription and OTC tablets and capsules by imprint, shape, and color.</p>
+      <a class="btn btn-outline" href="{{ url_for('pill_identifier') }}">Open Pill Identifier</a>
+    </section>
+
+    <section class="account-box">
+      <h2>Browse by Drug Class</h2>
+      <p>Drug class monographs include mechanism of action, member drugs, and class-level warnings.</p>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:8px;margin-top:12px">
+        {% for c in classes %}
+          <a href="{{ url_for('drug_class_page', slug=c.slug) }}" style="padding:8px;border:1px solid #eee;border-radius:4px;text-decoration:none">{{ c.name }}</a>
+        {% endfor %}
+      </div>
+    </section>
+
+    <section class="account-box">
+      <h2>Prescribing Information</h2>
+      <p>FDA-approved labeling, boxed warnings, REMS programs, and controlled substance schedule
+         references. Each drug page includes the full prescribing information section, dosage and
+         administration guidance, pregnancy and lactation considerations, and CSA schedule.</p>
+    </section>
+
+    <section class="account-box">
+      <h2>Professional Newsletter</h2>
+      <p>Get weekly summaries of FDA approvals, label changes, safety alerts, and clinical news
+         delivered to your inbox.</p>
+      <form onsubmit="event.preventDefault();alert('Subscribed (demo).')" style="display:flex;gap:8px;margin-top:12px">
+        <input type="email" placeholder="your@hospital.org" style="flex:1;padding:10px;border:1px solid #ccc;border-radius:4px">
+        <button class="btn" type="submit">Subscribe</button>
+      </form>
+    </section>
+  </div>
+
+  <aside>
+    <section class="account-box">
+      <h3>Quick Tools</h3>
+      <ul class="quick-links">
+        <li><a href="{{ url_for('drug_az') }}">Drug Monographs A-Z</a></li>
+        <li><a href="{{ url_for('interaction_checker') }}">Interaction Checker</a></li>
+        <li><a href="{{ url_for('pill_identifier') }}">Pill Identifier</a></li>
+        <li><a href="/compare/">Compare Drugs</a></li>
+        <li><a href="{{ url_for('drug_classes_list') }}">Drug Classes</a></li>
+        <li><a href="{{ url_for('conditions_list') }}">Conditions</a></li>
+        <li><a href="{{ url_for('news_index') }}">FDA Alerts &amp; News</a></li>
+      </ul>
+    </section>
+    <section class="account-box">
+      <h3>For Prescribers</h3>
+      <p class="muted" style="font-size:.92rem">
+        Drug.com Pro Edition aggregates curated drug labeling and clinical references for use in
+        professional settings. Content is for informational purposes; verify against current FDA
+        labeling before clinical decisions.
+      </p>
+    </section>
+  </aside>
+</div>
+{% endblock %}

@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+{% block title %}{{ drug.generic_name }} Prices &amp; Coupons | {{ site_name }}{% endblock %}
+{% set seed = (drug.generic_name|length * 13 + drug.id * 7) %}
+{% set retail30 = 18 + (seed % 240) %}
+{% set discount30 = (retail30 * 0.55) | round(2) %}
+{% set retail60 = (retail30 * 1.85) | round(2) %}
+{% set discount60 = (discount30 * 1.85) | round(2) %}
+{% set retail90 = (retail30 * 2.6) | round(2) %}
+{% set discount90 = (discount30 * 2.6) | round(2) %}
+{% block content %}
+<div style="padding:24px 0">
+  <nav class="breadcrumb">
+    <a href="{{ url_for('index') }}">Home</a> &rsaquo;
+    <a href="{{ url_for('drug_detail', slug=drug.slug) }}">{{ drug.generic_name }}</a> &rsaquo;
+    <span>Prices</span>
+  </nav>
+  <h1 style="font-size:2rem;margin-bottom:8px">{{ drug.generic_name }} Prices, Coupons &amp; Patient Assistance</h1>
+  <p style="margin-bottom:18px">Below are typical U.S. retail prices and discount-card prices for {{ drug.generic_name }}{% if drug.brand_names %} ({{ drug.brand_names|join(', ') }}){% endif %}. Actual prices vary by pharmacy and location.</p>
+
+  <section style="background:#eaf5ff;border:1px solid #b8d8ef;border-radius:6px;padding:16px 18px;margin-bottom:22px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px">
+    <div>
+      <h2 style="font-size:1.15rem;margin-bottom:4px">Get a free discount card</h2>
+      <p style="margin:0">Save up to 80% off retail at over 65,000 participating U.S. pharmacies.</p>
+    </div>
+    <a href="#" style="background:#3b82c4;color:#fff;padding:10px 18px;border-radius:4px;text-decoration:none;font-weight:600">Get free card</a>
+  </section>
+
+  <h2 style="font-size:1.3rem;margin:18px 0 10px">Pricing by supply</h2>
+  <table style="width:100%;border-collapse:collapse">
+    <thead>
+      <tr style="background:#f1f5fa">
+        <th style="text-align:left;padding:10px;border-bottom:1px solid #ddd">Supply</th>
+        <th style="text-align:left;padding:10px;border-bottom:1px solid #ddd">Average retail</th>
+        <th style="text-align:left;padding:10px;border-bottom:1px solid #ddd">Discount card price</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><td style="padding:10px;border-bottom:1px solid #eee">30-day supply</td><td style="padding:10px;border-bottom:1px solid #eee">${{ retail30 }}</td><td style="padding:10px;border-bottom:1px solid #eee;color:#1c7c2f"><strong>${{ discount30 }}</strong></td></tr>
+      <tr><td style="padding:10px;border-bottom:1px solid #eee">60-day supply</td><td style="padding:10px;border-bottom:1px solid #eee">${{ retail60 }}</td><td style="padding:10px;border-bottom:1px solid #eee;color:#1c7c2f"><strong>${{ discount60 }}</strong></td></tr>
+      <tr><td style="padding:10px;border-bottom:1px solid #eee">90-day supply</td><td style="padding:10px;border-bottom:1px solid #eee">${{ retail90 }}</td><td style="padding:10px;border-bottom:1px solid #eee;color:#1c7c2f"><strong>${{ discount90 }}</strong></td></tr>
+    </tbody>
+  </table>
+
+  <h2 style="font-size:1.3rem;margin:24px 0 10px">Available forms &amp; dosages</h2>
+  <p>Tablet, capsule, oral solution. Dosing: {{ (drug.dosage or 'See drug detail page for full dosing information.')[:280] }}</p>
+
+  <h2 style="font-size:1.3rem;margin:24px 0 10px">Compare prices at pharmacies near you</h2>
+  <table style="width:100%;border-collapse:collapse;max-width:560px">
+    <thead><tr style="background:#f1f5fa"><th style="text-align:left;padding:10px;border-bottom:1px solid #ddd">Pharmacy</th><th style="text-align:left;padding:10px;border-bottom:1px solid #ddd">30-day price</th></tr></thead>
+    <tbody>
+      <tr><td style="padding:10px;border-bottom:1px solid #eee">CVS Pharmacy</td><td style="padding:10px;border-bottom:1px solid #eee">${{ (discount30 * 1.05) | round(2) }}</td></tr>
+      <tr><td style="padding:10px;border-bottom:1px solid #eee">Walgreens</td><td style="padding:10px;border-bottom:1px solid #eee">${{ (discount30 * 1.08) | round(2) }}</td></tr>
+      <tr><td style="padding:10px;border-bottom:1px solid #eee">Walmart</td><td style="padding:10px;border-bottom:1px solid #eee">${{ (discount30 * 0.92) | round(2) }}</td></tr>
+      <tr><td style="padding:10px;border-bottom:1px solid #eee">Costco</td><td style="padding:10px;border-bottom:1px solid #eee">${{ (discount30 * 0.88) | round(2) }}</td></tr>
+      <tr><td style="padding:10px;border-bottom:1px solid #eee">Rite Aid</td><td style="padding:10px;border-bottom:1px solid #eee">${{ (discount30 * 1.02) | round(2) }}</td></tr>
+    </tbody>
+  </table>
+</div>
+{% endblock %}

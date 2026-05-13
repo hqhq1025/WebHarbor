@@ -1,76 +1,140 @@
 {% extends "base.html" %}
-{% block title %}Search results for "{{ q }}" - {{ site_name }}{% endblock %}
+{% block title %}{% if q %}Search results for "{{ q }}"{% else %}Search drugs{% endif %} - {{ site_name }}{% endblock %}
 {% block content %}
-<nav class="breadcrumb">
+<nav class="breadcrumb" aria-label="Breadcrumb">
   <a href="{{ url_for('index') }}">Home</a> &rsaquo; <span>Search results</span>
+  {% if q %} &rsaquo; <span>"{{ q }}"</span>{% endif %}
 </nav>
 
-<h1>Search results for "{{ q }}"</h1>
+<h1>{% if q %}Search results for "{{ q }}"{% else %}Browse drugs{% endif %}</h1>
 
-<form method="get" action="{{ url_for('search') }}" class="search-filters">
-  <div class="filter-row">
-    <label for="filter-q">Search</label>
-    <input id="filter-q" type="search" name="q" value="{{ q }}" placeholder="Search drugs, conditions, brands">
-  </div>
-  <div class="filter-row">
-    <label for="filter-class">Drug class</label>
-    <select id="filter-class" name="class">
-      <option value="">All drug classes</option>
-      {% for c in classes %}
-        <option value="{{ c.slug }}" {% if c.slug == class_slug %}selected{% endif %}>{{ c.name }}</option>
-      {% endfor %}
-    </select>
-  </div>
-  <div class="filter-row">
-    <label for="filter-condition">Condition</label>
-    <select id="filter-condition" name="condition">
-      <option value="">All conditions</option>
-      {% for c in conditions %}
-        <option value="{{ c.slug }}" {% if c.slug == cond_slug %}selected{% endif %}>{{ c.name }}</option>
-      {% endfor %}
-    </select>
-  </div>
-  <div class="filter-row">
-    <label for="filter-avail">Availability</label>
-    <select id="filter-avail" name="availability">
-      <option value="">Any availability</option>
-      <option value="Rx" {% if avail == 'Rx' %}selected{% endif %}>Rx (Prescription only)</option>
-      <option value="OTC" {% if avail == 'OTC' %}selected{% endif %}>OTC (Over the counter)</option>
-      <option value="Rx and/or OTC" {% if avail == 'Rx and/or OTC' %}selected{% endif %}>Rx and/or OTC</option>
-    </select>
-  </div>
-  <div class="filter-row filter-submit">
-    <button type="submit" class="btn btn-primary">Search</button>
-    <a class="btn btn-outline" href="{{ url_for('search') }}">Reset filters</a>
-  </div>
+<form method="get" action="{{ url_for('search') }}" class="search-bar-top">
+  <input type="search" name="q" value="{{ q }}" placeholder="Search drugs, conditions, brand names..." class="search-input-lg">
+  <button type="submit" class="btn btn-primary">Search</button>
 </form>
 
-<p class="result-count muted">{{ results|length }} result{{ '' if results|length == 1 else 's' }} for "{{ q }}"</p>
+{% if matched_condition %}
+  <div class="info-banner">
+    Showing drugs that treat <strong>{{ matched_condition.name }}</strong>.
+    <a href="{{ url_for('condition_page', slug=matched_condition.slug) }}">View condition page &rsaquo;</a>
+  </div>
+{% endif %}
+{% if matched_class %}
+  <div class="info-banner">
+    Showing drugs in the <strong>{{ matched_class.name }}</strong> class.
+    <a href="{{ url_for('drug_class_page', slug=matched_class.slug) }}">View drug class page &rsaquo;</a>
+  </div>
+{% endif %}
 
-<ul class="result-list">
-  {% for d in results %}
-    <li class="result-card">
-      <h2><a href="{{ url_for('drug_detail', slug=d.slug) }}">{{ d.generic_name|capitalize }}</a></h2>
-      <p class="result-meta muted">
-        {% if d.brand_names %}Brand names: {{ d.brand_names|join(', ') }} &middot; {% endif %}
-        {% if d.drug_class %}<a href="{{ url_for('drug_class_page', slug=d.drug_class.slug) }}">{{ d.drug_class.name }}</a> &middot; {% endif %}
-        <span class="avail-badge {% if d.availability == 'Rx' %}avail-rx{% elif d.availability == 'OTC' %}avail-otc{% else %}avail-both{% endif %}">{{ d.availability }}</span>
-      </p>
-      <p class="result-excerpt">{{ (d.description or '')[:240] }}{% if (d.description or '')|length > 240 %}...{% endif %}</p>
-      <p class="rating muted">Rating: {{ d.avg_rating }}/10 ({{ d.review_count }} review{{ '' if d.review_count == 1 else 's' }})</p>
-    </li>
-  {% else %}
-    <li class="result-card no-results">
-      <h2>No results found for "{{ q }}"</h2>
-      <p>We could not find any drugs matching your search. Try the following:</p>
-      <ul>
-        <li>Check your spelling.</li>
-        <li>Try searching by a brand name instead of the generic name (or vice versa).</li>
-        <li>Remove a filter (drug class, condition, or availability).</li>
-        <li>Browse the full <a href="{{ url_for('drug_az') }}">Drugs A-Z</a> index.</li>
-        <li>Use the <a href="{{ url_for('pill_identifier') }}">Pill Identifier</a> if you only have a pill on hand.</li>
-      </ul>
-    </li>
-  {% endfor %}
-</ul>
+<div class="search-layout">
+  <aside class="filter-sidebar">
+    <h3>Filter results</h3>
+    <form method="get" action="{{ url_for('search') }}">
+      <input type="hidden" name="q" value="{{ q }}">
+
+      <div class="filter-group">
+        <label for="filter-class">Drug class</label>
+        <select id="filter-class" name="class">
+          <option value="">All drug classes</option>
+          {% for c in classes %}
+            <option value="{{ c.slug }}" {% if c.slug == class_slug %}selected{% endif %}>{{ c.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="filter-group">
+        <label for="filter-avail">Availability</label>
+        <select id="filter-avail" name="availability">
+          <option value="">All</option>
+          <option value="Rx" {% if avail == 'Rx' %}selected{% endif %}>Rx (Prescription only)</option>
+          <option value="OTC" {% if avail == 'OTC' %}selected{% endif %}>OTC (Over the counter)</option>
+          <option value="Rx and/or OTC" {% if avail == 'Rx and/or OTC' %}selected{% endif %}>Rx and/or OTC</option>
+        </select>
+      </div>
+
+      <div class="filter-group">
+        <label for="filter-condition">Category / Condition</label>
+        <select id="filter-condition" name="condition">
+          <option value="">All conditions</option>
+          {% for c in conditions %}
+            <option value="{{ c.slug }}" {% if c.slug == cond_slug %}selected{% endif %}>{{ c.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <button type="submit" class="btn btn-primary btn-block">Apply filters</button>
+      <a class="btn btn-outline btn-block" href="{{ url_for('search', q=q) }}">Reset filters</a>
+    </form>
+  </aside>
+
+  <section class="search-results-col">
+    <p class="search-results-count">
+      {% if q %}
+        {{ total }} result{{ '' if total == 1 else 's' }} for "{{ q }}"
+      {% else %}
+        Showing {{ total }} drug{{ '' if total == 1 else 's' }}
+      {% endif %}
+    </p>
+
+    {% if results %}
+      <div class="drug-card-grid">
+        {% for d in results %}
+          <article class="drug-card">
+            <header class="drug-card-header">
+              <h2 class="drug-card-name">
+                <a href="{{ url_for('drug_detail', slug=d.slug) }}">{{ d.generic_name|capitalize }}</a>
+              </h2>
+              <span class="avail-badge {% if d.availability == 'Rx' %}avail-rx{% elif d.availability == 'OTC' %}avail-otc{% else %}avail-both{% endif %}">{{ d.availability }}</span>
+            </header>
+            <p class="drug-card-meta">
+              {% if d.brand_names %}<span class="brand-names">Brand names: {{ d.brand_names|join(', ') }}</span>{% endif %}
+              {% if d.drug_class %}
+                <span class="drug-class-link">
+                  <a href="{{ url_for('drug_class_page', slug=d.drug_class.slug) }}">{{ d.drug_class.name }}</a>
+                </span>
+              {% endif %}
+            </p>
+            <p class="drug-card-desc">{{ (d.description or '')[:220] }}{% if (d.description or '')|length > 220 %}...{% endif %}</p>
+            <p class="drug-card-footer">
+              <span class="muted">Rating: {{ d.avg_rating }}/10 ({{ d.review_count }} review{{ '' if d.review_count == 1 else 's' }})</span>
+              <a href="{{ url_for('drug_detail', slug=d.slug) }}" class="card-link">View details &rsaquo;</a>
+            </p>
+          </article>
+        {% endfor %}
+      </div>
+
+      {% if total_pages > 1 %}
+        <nav class="pagination" aria-label="Pagination">
+          {% if page > 1 %}
+            <a class="btn btn-outline" href="{{ url_for('search', q=q, **{'class': class_slug, 'condition': cond_slug, 'availability': avail, 'page': page-1}) }}">&lsaquo; Previous</a>
+          {% endif %}
+          <span class="pagination-info">Page {{ page }} of {{ total_pages }}</span>
+          {% if page < total_pages %}
+            <a class="btn btn-outline" href="{{ url_for('search', q=q, **{'class': class_slug, 'condition': cond_slug, 'availability': avail, 'page': page+1}) }}">Next &rsaquo;</a>
+          {% endif %}
+        </nav>
+      {% endif %}
+    {% else %}
+      <div class="no-results-box">
+        <h2>No results found{% if q %} for "{{ q }}"{% endif %}</h2>
+        {% if suggestions %}
+          <p><strong>Did you mean?</strong></p>
+          <ul class="suggestions-list">
+            {% for s in suggestions %}
+              <li><a href="{{ url_for('search', q=s) }}">{{ s|capitalize }}</a></li>
+            {% endfor %}
+          </ul>
+        {% endif %}
+        <p>Suggestions:</p>
+        <ul>
+          <li>Check your spelling.</li>
+          <li>Try searching by a brand name instead of the generic name (or vice versa).</li>
+          <li>Remove a filter (drug class, condition, or availability).</li>
+          <li>Browse the full <a href="{{ url_for('drug_az') }}">Drugs A-Z</a> index.</li>
+          <li>Use the <a href="{{ url_for('pill_identifier') }}">Pill Identifier</a> if you only have a pill on hand.</li>
+        </ul>
+      </div>
+    {% endif %}
+  </section>
+</div>
 {% endblock %}

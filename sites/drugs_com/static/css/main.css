@@ -678,3 +678,680 @@ details.faq-detail p { padding: 0 0 14px; font-size: 0.92rem; color: var(--gray-
   .header-top-inner { flex-wrap: wrap; gap: 10px; }
   .hero-section h1 { font-size: 1.7rem; }
 }
+
+/* ── Drug detail layout ── */
+.drug-detail-layout {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 28px;
+  align-items: start;
+}
+
+/* ── Drug detail sticky tabs ── */
+.drug-tabs {
+  position: sticky;
+  top: 0;
+  background: #fff;
+  z-index: 10;
+  border-bottom: 2px solid var(--blue);
+}
+
+/* ── Rating bars (reviews) ── */
+.rating-bar-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 4px 0;
+}
+.rating-bar-label {
+  width: 20px;
+  text-align: right;
+  font-size: 0.85rem;
+  color: #666;
+}
+.rating-bar-track {
+  flex: 1;
+  height: 8px;
+  background: #e8eaed;
+  border-radius: 4px;
+  overflow: hidden;
+}
+.rating-bar-fill {
+  height: 100%;
+  background: var(--blue);
+  border-radius: 4px;
+}
+.rating-bar-count {
+  width: 30px;
+  font-size: 0.8rem;
+  color: #888;
+}
+
+/* ── Interaction severity badges ── */
+.severity-badge {
+  display: inline-block;
+  padding: 2px 10px;
+  border-radius: 12px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+.severity-major { background: #fee2e2; color: #dc2626; }
+.severity-moderate { background: #fef3c7; color: #d97706; }
+.severity-minor { background: #dcfce7; color: #16a34a; }
+.severity-unknown { background: #f1f5f9; color: #64748b; }
+
+/* ── Pro Edition page ── */
+.pro-hero {
+  background: linear-gradient(135deg, #002a5c, #1a73c8);
+  color: #fff;
+  padding: 48px 0;
+  margin-bottom: 32px;
+}
+.pro-tools-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 20px;
+  margin: 24px 0;
+}
+.pro-tool-card {
+  border: 1px solid #dfe3e8;
+  border-radius: 8px;
+  padding: 20px;
+  text-align: center;
+  transition: box-shadow 0.2s;
+}
+.pro-tool-card:hover {
+  box-shadow: 0 4px 12px rgba(0,42,92,0.12);
+}
+
+/* ── Compare drugs ── */
+.compare-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 24px 0;
+}
+.compare-table th, .compare-table td {
+  padding: 12px 16px;
+  border: 1px solid #dfe3e8;
+  vertical-align: top;
+}
+.compare-table th {
+  background: #f5f7fa;
+  font-weight: 600;
+}
+.compare-table tr:nth-child(even) td {
+  background: #fafbfc;
+}
+
+/* ── Hero section (override) ── */
+.hero-section {
+  background: linear-gradient(135deg, #e8f0ff 0%, #f0f7ff 60%, #fff 100%);
+  padding: 48px 0 40px;
+  text-align: center;
+  border-bottom: 1px solid #dde5f0;
+}
+.hero-section h1 {
+  font-size: 2.4rem;
+  color: var(--navy);
+  margin-bottom: 8px;
+  font-weight: 800;
+}
+.hero-sub {
+  color: #4a6080;
+  font-size: 1.1rem;
+  margin-bottom: 24px;
+}
+.hero-search-wrap {
+  display: flex;
+  max-width: 600px;
+  margin: 0 auto 20px;
+  box-shadow: 0 2px 12px rgba(0,42,92,0.15);
+  border-radius: 6px;
+  overflow: hidden;
+}
+.hero-search-input {
+  flex: 1;
+  padding: 14px 18px;
+  border: none;
+  font-size: 1rem;
+  outline: none;
+}
+.hero-search-btn {
+  background: var(--blue);
+  color: #fff;
+  border: none;
+  padding: 0 24px;
+  font-size: 1rem;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+/* ── Mobile responsive (≤768px) ── */
+@media (max-width: 768px) {
+  .header-top-inner {
+    flex-wrap: wrap;
+  }
+  .header-top-inner .brand,
+  .header-top-inner .header-search-wrap {
+    flex-basis: 100%;
+  }
+  .main-nav .nav-inner {
+    overflow-x: auto;
+    flex-wrap: nowrap;
+    -webkit-overflow-scrolling: touch;
+  }
+  .home-browse-grid { grid-template-columns: 1fr; }
+  .row-section.split { grid-template-columns: 1fr; }
+  .detail-grid { grid-template-columns: 1fr; }
+  .drug-detail-layout { grid-template-columns: 1fr; }
+  .med-list-layout { grid-template-columns: 1fr; }
+  .feature-icons {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px;
+  }
+  .account-grid { grid-template-columns: 1fr; }
+  .footer-top { grid-template-columns: repeat(2, 1fr); }
+}
+
+/* ── System dark mode ── */
+@media (prefers-color-scheme: dark) {
+  body {
+    background: #1a1a2e;
+    color: #e8e8e8;
+  }
+  a { color: #4da6ff; }
+  a:hover { color: #80c0ff; }
+
+  .site-header {
+    background: #16213e;
+    border-bottom-color: #2a2a4a;
+  }
+  .brand-logo { color: #e8e8e8; }
+  .header-search-inner {
+    background: #0f3460;
+    border-color: #2a2a4a;
+  }
+  .header-search-input {
+    background: #0f3460;
+    color: #e8e8e8;
+  }
+  .header-user-btn,
+  .header-register-btn { color: #cfd6e4; }
+  .header-signin-btn { color: #4da6ff; border-color: #4da6ff; }
+  .header-signin-btn:hover { background: #4da6ff; color: #16213e; }
+
+  .az-strip {
+    background: #16213e;
+    border-bottom-color: #2a2a4a;
+  }
+  .az-strip-link { color: #4da6ff; }
+
+  .nav-dropdown {
+    background: #16213e;
+    border-color: #2a2a4a;
+  }
+  .nav-dropdown a { color: #e8e8e8; }
+  .nav-dropdown a:hover { background: #0f3460; color: #4da6ff; }
+
+  .hero-section {
+    background: linear-gradient(135deg, #16213e 0%, #1a1a2e 100%);
+    border-bottom-color: #2a2a4a;
+  }
+  .hero-section h1 { color: #e8e8e8; }
+  .hero-sub { color: #b0b8c8; }
+  .hero-search-input {
+    background: #0f3460;
+    color: #e8e8e8;
+  }
+
+  .feature-icons {
+    background: #16213e;
+    border-top-color: #2a2a4a;
+    border-bottom-color: #2a2a4a;
+  }
+  .feature-icon-item { color: #cfd6e4; }
+  .feature-icon-circle {
+    background: #0f3460;
+    border-color: #2a2a4a;
+    color: #4da6ff;
+  }
+
+  .browse-panel-tabs,
+  .letter-grid,
+  .browse-footer,
+  .site-section-panel {
+    background: #16213e;
+    border-color: #2a2a4a;
+  }
+  .browse-tab { color: #cfd6e4; }
+  .letter-btn {
+    background: #0f3460;
+    color: #e8e8e8;
+    border-color: #2a2a4a;
+  }
+
+  .home-row { border-top-color: #2a2a4a; }
+  .home-row h2,
+  .row-section h2,
+  .detail-main h2,
+  .detail-main h3,
+  .drug-header h1,
+  .news-list h3,
+  .news-card h2 a,
+  .auth-box h1,
+  .account-box h2,
+  .sidebar-box h3,
+  .faq-item h3,
+  .interaction h4 { color: #e8e8e8; }
+
+  .row-section,
+  .account-box,
+  .result-card,
+  .drug-card,
+  .med-card,
+  .news-card,
+  .checker-box,
+  .auth-box {
+    background: #16213e;
+    border-color: #2a2a4a;
+    color: #e8e8e8;
+  }
+  .drug-card { color: #e8e8e8; }
+  .drug-card h3,
+  .result-card h2 { color: #4da6ff; }
+  .row-section h2,
+  .detail-main h2 { border-bottom-color: #2a2a4a; }
+
+  .news-list li,
+  .news-card,
+  .review,
+  .faq-item,
+  .site-section-panel li,
+  .az-list li,
+  .sidebar-box li,
+  .more-about-list li,
+  .popular-tools li,
+  .class-list li { border-bottom-color: #2a2a4a; }
+
+  .detail-sidebar > div {
+    background: #16213e;
+    border-color: #2a2a4a;
+  }
+  .status-box-title { color: #cfd6e4; border-bottom-color: #2a2a4a; }
+  .status-row { border-bottom-color: #2a2a4a; }
+  .status-label { color: #e8e8e8; }
+  .status-value { color: #b0b8c8; }
+
+  .meta-row { border-top-color: #2a2a4a; border-bottom-color: #2a2a4a; }
+  .meta-row li strong { color: #cfd6e4; }
+  .pronunciation,
+  .reviewer-line,
+  .muted,
+  .news-list p,
+  .news-meta,
+  .breadcrumb,
+  .breadcrumb span { color: #b0b8c8; }
+
+  .section-tabs,
+  .news-tabs,
+  .account-tabs { border-bottom-color: #2a2a4a; }
+  .section-tabs a,
+  .news-tabs a,
+  .account-tabs a,
+  .browse-tab { color: #cfd6e4; }
+
+  .drug-tabs {
+    background: #16213e;
+    border-bottom-color: #4da6ff;
+  }
+
+  .search-filters,
+  .pill-form,
+  .medical-disclaimer {
+    background: #16213e;
+    border-color: #2a2a4a;
+    color: #e8e8e8;
+  }
+  .search-filters input,
+  .search-filters select,
+  .pill-form input,
+  .pill-form select,
+  .checker-input input,
+  .mini-checker-form input,
+  .auth-box input {
+    background: #0f3460;
+    color: #e8e8e8;
+    border-color: #2a2a4a;
+  }
+  .pill-table,
+  .drug-table,
+  .compare-table {
+    background: #16213e;
+    color: #e8e8e8;
+  }
+  .pill-table th,
+  .drug-table th {
+    background: #0f3460;
+    color: #e8e8e8;
+  }
+  .pill-table td,
+  .drug-table td { border-bottom-color: #2a2a4a; }
+  .compare-table th, .compare-table td { border-color: #2a2a4a; }
+  .compare-table th { background: #0f3460; }
+  .compare-table tr:nth-child(even) td { background: #0f3460; }
+  .pill-table tr:hover td,
+  .drug-table tr:hover td { background: #0f3460; }
+
+  .condition-grid li,
+  .pro-tool-card {
+    background: #16213e;
+    border-color: #2a2a4a;
+  }
+
+  .auth-benefits { background: #0f3460; }
+  .auth-benefits h3,
+  .auth-benefits li { color: #e8e8e8; }
+
+  .rating-bar-track { background: #2a2a4a; }
+  .rating-bar-label,
+  .rating-bar-count { color: #b0b8c8; }
+
+  .checker-drug-list li { background: #0f3460; color: #e8e8e8; }
+  .interaction { background: #0f3460; border-left-color: #2a2a4a; }
+
+  .site-footer {
+    background: #0d0d1a;
+  }
+
+  /* Availability badges keep original colors — visible on dark too */
+}
+
+/* ==========================================================================
+   Search results & Pill identifier
+   ========================================================================== */
+
+.search-bar-top {
+  display: flex;
+  gap: 8px;
+  margin: 12px 0 18px;
+}
+.search-input-lg {
+  flex: 1;
+  padding: 10px 14px;
+  font-size: 15px;
+  border: 1px solid #c5cbd3;
+  border-radius: 4px;
+}
+
+.info-banner {
+  background: #e8f4fd;
+  border-left: 4px solid #0277bd;
+  padding: 10px 14px;
+  margin: 12px 0;
+  border-radius: 3px;
+  font-size: 14px;
+}
+
+.search-layout {
+  display: flex;
+  gap: 24px;
+  align-items: flex-start;
+  margin-top: 16px;
+}
+
+.filter-sidebar {
+  width: 240px;
+  flex-shrink: 0;
+  background: #f5f7fa;
+  border: 1px solid #e1e6ec;
+  border-radius: 4px;
+  padding: 16px;
+}
+.filter-sidebar h3 {
+  margin-top: 0;
+  margin-bottom: 12px;
+  font-size: 15px;
+  color: #333;
+  border-bottom: 1px solid #e1e6ec;
+  padding-bottom: 8px;
+}
+.filter-group {
+  margin-bottom: 12px;
+  display: flex;
+  flex-direction: column;
+}
+.filter-group label {
+  font-size: 12px;
+  font-weight: 600;
+  color: #555;
+  margin-bottom: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+.filter-group select {
+  padding: 6px 8px;
+  border: 1px solid #c5cbd3;
+  border-radius: 3px;
+  background: #fff;
+  font-size: 13px;
+}
+.btn-block {
+  display: block;
+  width: 100%;
+  text-align: center;
+  margin-bottom: 6px;
+}
+
+.search-results-col { flex: 1; min-width: 0; }
+.search-results-count {
+  color: #777;
+  font-size: 13px;
+  margin: 0 0 12px;
+}
+
+.search-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  background: #f5f7fa;
+  padding: 10px;
+  border-radius: 4px;
+  margin-bottom: 14px;
+}
+
+.drug-card-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+}
+.drug-card {
+  background: #fff;
+  border: 1px solid #e1e6ec;
+  border-left: 4px solid #0277bd;
+  border-radius: 4px;
+  padding: 14px 16px;
+  transition: box-shadow 0.15s ease;
+}
+.drug-card:hover { box-shadow: 0 2px 6px rgba(0,0,0,0.08); }
+.drug-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+  margin-bottom: 6px;
+}
+.drug-card-name {
+  margin: 0;
+  font-size: 17px;
+}
+.drug-card-name a { color: #0277bd; text-decoration: none; }
+.drug-card-name a:hover { text-decoration: underline; }
+.drug-card-meta {
+  font-size: 13px;
+  color: #555;
+  margin: 4px 0;
+}
+.drug-card-meta .brand-names { margin-right: 8px; }
+.drug-card-meta .drug-class-link::before { content: " · "; color: #aaa; }
+.drug-card-desc {
+  font-size: 13px;
+  color: #444;
+  line-height: 1.5;
+  margin: 6px 0;
+}
+.drug-card-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 12px;
+  margin: 6px 0 0;
+}
+.card-link { color: #0277bd; text-decoration: none; font-weight: 600; }
+.card-link:hover { text-decoration: underline; }
+
+.avail-badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.avail-rx { background: #fde7e9; color: #b1283a; }
+.avail-otc { background: #e3f5e1; color: #2a7a30; }
+.avail-both { background: #fff3cd; color: #856404; }
+
+.pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin-top: 20px;
+}
+.pagination-info { color: #666; font-size: 13px; }
+
+.no-results-box {
+  background: #fffbe6;
+  border: 1px solid #f0d77c;
+  border-radius: 4px;
+  padding: 18px;
+}
+.no-results-box h2 { margin-top: 0; }
+.suggestions-list { list-style: none; padding: 0; display: flex; flex-wrap: wrap; gap: 8px; }
+.suggestions-list li a {
+  display: inline-block;
+  padding: 4px 10px;
+  background: #e8f4fd;
+  color: #0277bd;
+  border-radius: 3px;
+  text-decoration: none;
+  font-size: 13px;
+}
+.suggestions-list li a:hover { background: #d3eafd; }
+
+/* --- Pill identifier --- */
+.pill-form {
+  background: #f5f7fa;
+  border: 1px solid #e1e6ec;
+  border-radius: 4px;
+  padding: 16px;
+  margin: 14px 0;
+}
+.pill-form-row { margin-bottom: 12px; }
+.pill-form-row:last-child { margin-bottom: 0; }
+.pill-form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px;
+}
+.pill-form label {
+  display: block;
+  font-weight: 600;
+  font-size: 13px;
+  color: #333;
+}
+.pill-form input,
+.pill-form select {
+  display: block;
+  width: 100%;
+  margin-top: 4px;
+  padding: 8px 10px;
+  font-size: 14px;
+  border: 1px solid #c5cbd3;
+  border-radius: 3px;
+  background: #fff;
+}
+.btn-large { padding: 10px 22px; font-size: 15px; }
+.btn-small { padding: 4px 10px; font-size: 12px; }
+
+.pill-results-heading { margin-top: 22px; }
+.pill-result-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 14px;
+  margin-top: 12px;
+}
+.pill-result-card {
+  display: flex;
+  gap: 12px;
+  background: #fff;
+  border: 1px solid #e1e6ec;
+  border-radius: 4px;
+  padding: 12px;
+  transition: box-shadow 0.15s ease;
+}
+.pill-result-card:hover { box-shadow: 0 2px 6px rgba(0,0,0,0.08); }
+
+.pill-icon-circle {
+  flex-shrink: 0;
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: #f0f3f7;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #d3d8df;
+  border: 1px solid #e1e6ec;
+}
+.pill-icon-circle svg { width: 100%; height: 100%; }
+.pill-icon-circle[data-color="white"] { color: #ffffff; }
+.pill-icon-circle[data-color="yellow"] { color: #ffe066; }
+.pill-icon-circle[data-color="orange"] { color: #ffa94d; }
+.pill-icon-circle[data-color="pink"] { color: #faa2c1; }
+.pill-icon-circle[data-color="red"] { color: #ff6b6b; }
+.pill-icon-circle[data-color="brown"] { color: #a47148; }
+.pill-icon-circle[data-color="gray"] { color: #adb5bd; }
+.pill-icon-circle[data-color="green"] { color: #69db7c; }
+.pill-icon-circle[data-color="blue"] { color: #74c0fc; }
+.pill-icon-circle[data-color="purple"] { color: #b197fc; }
+.pill-icon-circle[data-color="black"] { color: #495057; }
+.pill-icon-circle[data-color="turquoise"] { color: #66d9e8; }
+
+.pill-result-body { flex: 1; min-width: 0; }
+.pill-result-name { margin: 0 0 6px; font-size: 15px; }
+.pill-result-name a { color: #0277bd; text-decoration: none; }
+.pill-result-name a:hover { text-decoration: underline; }
+.pill-result-attrs {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 2px 8px;
+  font-size: 12px;
+  margin: 0 0 8px;
+}
+.pill-result-attrs dt { color: #777; font-weight: 600; }
+.pill-result-attrs dd { margin: 0; color: #333; }
+
+.how-it-works {
+  background: #f5f7fa;
+  border: 1px solid #e1e6ec;
+  border-radius: 4px;
+  padding: 14px 18px;
+  margin-top: 22px;
+}
+.how-it-works h2 { margin-top: 0; }
+.how-it-works-steps { padding-left: 20px; }
+.how-it-works-steps li { margin-bottom: 6px; }

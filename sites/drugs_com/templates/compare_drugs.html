@@ -1,0 +1,119 @@
+{% extends "base.html" %}
+{% block title %}Compare Drugs - Drugs.com{% endblock %}
+{% block content %}
+<nav class="breadcrumb">
+  <a href="{{ url_for('index') }}">Home</a> &rsaquo; <span>Compare Drugs</span>
+</nav>
+
+<h1>Compare Drugs Side by Side</h1>
+<p class="muted" style="max-width:760px">
+  Select two medications below to view a side-by-side comparison of their generic and brand names,
+  drug class, availability, indications, warnings, side effects, and average user rating.
+</p>
+
+<form action="/compare/" method="get" class="compare-form" style="margin:24px 0;padding:20px;background:#f6f9fc;border:1px solid #e3ecf3;border-radius:6px">
+  <div style="display:grid;grid-template-columns:1fr 1fr auto;gap:16px;align-items:end">
+    <div>
+      <label for="drug1" style="display:block;font-weight:600;margin-bottom:6px">First Drug</label>
+      <input list="drug-options" name="drug1" id="drug1" value="{{ drug1.slug if drug1 else '' }}"
+             placeholder="Type a drug name (e.g. ibuprofen)"
+             style="width:100%;padding:10px;border:1px solid #ccc;border-radius:4px">
+    </div>
+    <div>
+      <label for="drug2" style="display:block;font-weight:600;margin-bottom:6px">Second Drug</label>
+      <input list="drug-options" name="drug2" id="drug2" value="{{ drug2.slug if drug2 else '' }}"
+             placeholder="Type a drug name (e.g. naproxen)"
+             style="width:100%;padding:10px;border:1px solid #ccc;border-radius:4px">
+    </div>
+    <button type="submit" class="btn" style="padding:10px 24px">Compare</button>
+  </div>
+  <datalist id="drug-options">
+    {% for d in popular %}
+      <option value="{{ d.slug }}">{{ d.generic_name }}</option>
+    {% endfor %}
+  </datalist>
+  <p class="muted" style="font-size:.85rem;margin-top:8px">Tip: use the drug's generic-name slug, e.g. <code>ibuprofen</code>, <code>naproxen</code>.</p>
+</form>
+
+{% if drug1 and drug2 %}
+  <h2>{{ drug1.generic_name|capitalize }} vs. {{ drug2.generic_name|capitalize }}</h2>
+  <table class="compare-table" style="width:100%;border-collapse:collapse;margin:20px 0">
+    <thead>
+      <tr style="background:#0c3b6f;color:#fff">
+        <th style="padding:10px;text-align:left;width:20%">Attribute</th>
+        <th style="padding:10px;text-align:left">{{ drug1.generic_name|capitalize }}</th>
+        <th style="padding:10px;text-align:left">{{ drug2.generic_name|capitalize }}</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% set rows = [
+        ('Generic name', drug1.generic_name, drug2.generic_name),
+        ('Brand names', drug1.brand_names|join(', ') or '—', drug2.brand_names|join(', ') or '—'),
+        ('Drug class', drug1.drug_class.name if drug1.drug_class else '—', drug2.drug_class.name if drug2.drug_class else '—'),
+        ('Availability', drug1.availability, drug2.availability),
+        ('CSA schedule', drug1.csa_schedule, drug2.csa_schedule),
+        ('Pregnancy risk', drug1.pregnancy_risk, drug2.pregnancy_risk),
+        ('Average rating', (drug1.avg_rating|string) ~ '/10 (' ~ (drug1.review_count|string) ~ ' reviews)', (drug2.avg_rating|string) ~ '/10 (' ~ (drug2.review_count|string) ~ ' reviews)'),
+      ] %}
+      {% for label, a, b in rows %}
+        <tr style="border-bottom:1px solid #eee">
+          <td style="padding:10px;font-weight:600;background:#f6f9fc">{{ label }}</td>
+          <td style="padding:10px">{{ a }}</td>
+          <td style="padding:10px">{{ b }}</td>
+        </tr>
+      {% endfor %}
+      <tr style="border-bottom:1px solid #eee;vertical-align:top">
+        <td style="padding:10px;font-weight:600;background:#f6f9fc">Uses</td>
+        <td style="padding:10px">{{ drug1.uses or '—' }}</td>
+        <td style="padding:10px">{{ drug2.uses or '—' }}</td>
+      </tr>
+      <tr style="border-bottom:1px solid #eee;vertical-align:top">
+        <td style="padding:10px;font-weight:600;background:#f6f9fc">Warnings</td>
+        <td style="padding:10px">{{ drug1.warnings or '—' }}</td>
+        <td style="padding:10px">{{ drug2.warnings or '—' }}</td>
+      </tr>
+      <tr style="border-bottom:1px solid #eee;vertical-align:top">
+        <td style="padding:10px;font-weight:600;background:#f6f9fc">Side effects</td>
+        <td style="padding:10px">{{ drug1.side_effects or '—' }}</td>
+        <td style="padding:10px">{{ drug2.side_effects or '—' }}</td>
+      </tr>
+    </tbody>
+  </table>
+  <p>
+    <a href="{{ url_for('drug_detail', slug=drug1.slug) }}">Full {{ drug1.generic_name }} page</a> &middot;
+    <a href="{{ url_for('drug_detail', slug=drug2.slug) }}">Full {{ drug2.generic_name }} page</a>
+  </p>
+{% elif drug1 or drug2 %}
+  <p class="muted">Select a second drug above to see the comparison.</p>
+{% endif %}
+
+<section style="margin-top:40px">
+  <h2>Popular Comparisons</h2>
+  <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px;margin-top:16px">
+    <a href="/compare/?drug1=ibuprofen&drug2=naproxen" class="card" style="border:1px solid #ddd;padding:14px;border-radius:6px;text-decoration:none">
+      <strong>Ibuprofen vs. Naproxen</strong>
+      <p class="muted" style="font-size:.9rem;margin:6px 0 0">NSAIDs for pain and inflammation</p>
+    </a>
+    <a href="/compare/?drug1=acetaminophen&drug2=ibuprofen" class="card" style="border:1px solid #ddd;padding:14px;border-radius:6px;text-decoration:none">
+      <strong>Acetaminophen vs. Ibuprofen</strong>
+      <p class="muted" style="font-size:.9rem;margin:6px 0 0">Pain and fever relief</p>
+    </a>
+    <a href="/compare/?drug1=sertraline&drug2=fluoxetine" class="card" style="border:1px solid #ddd;padding:14px;border-radius:6px;text-decoration:none">
+      <strong>Sertraline vs. Fluoxetine</strong>
+      <p class="muted" style="font-size:.9rem;margin:6px 0 0">SSRIs for depression and anxiety</p>
+    </a>
+    <a href="/compare/?drug1=semaglutide&drug2=tirzepatide" class="card" style="border:1px solid #ddd;padding:14px;border-radius:6px;text-decoration:none">
+      <strong>Semaglutide vs. Tirzepatide</strong>
+      <p class="muted" style="font-size:.9rem;margin:6px 0 0">GLP-1 agonists for diabetes &amp; weight</p>
+    </a>
+    <a href="/compare/?drug1=omeprazole&drug2=famotidine" class="card" style="border:1px solid #ddd;padding:14px;border-radius:6px;text-decoration:none">
+      <strong>Omeprazole vs. Famotidine</strong>
+      <p class="muted" style="font-size:.9rem;margin:6px 0 0">Acid reflux treatments</p>
+    </a>
+    <a href="/compare/?drug1=loratadine&drug2=cetirizine" class="card" style="border:1px solid #ddd;padding:14px;border-radius:6px;text-decoration:none">
+      <strong>Loratadine vs. Cetirizine</strong>
+      <p class="muted" style="font-size:.9rem;margin:6px 0 0">Antihistamines for allergies</p>
+    </a>
+  </div>
+</section>
+{% endblock %}

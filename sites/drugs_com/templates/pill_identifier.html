@@ -4,6 +4,7 @@
 <nav class="breadcrumb" aria-label="Breadcrumb">
   <a href="{{ url_for('index') }}">Home</a> &rsaquo;
   <span>Pill Identifier</span>
+  {% if results is not none %} &rsaquo; <span>Results</span>{% endif %}
 </nav>
 
 <div class="page-with-sidebar">
@@ -28,60 +29,106 @@
   down. Enter any of the criteria below and we'll match it against our drug database.
 </p>
 
-<form method="get" action="{{ url_for('pill_identifier') }}" class="pill-form">
-  <label>Imprint
-    <input type="text" name="imprint" value="{{ imprint or '' }}" placeholder="Enter imprint code">
-  </label>
-  <label>Shape
-    <select name="shape">
-      <option value="">Select shape</option>
-      {% for s in ['Round','Oval','Capsule','Oblong','Rectangle','Square','Triangle','Pentagon','Hexagon','Eight-sided'] %}
-        <option value="{{ s }}" {% if s == shape %}selected{% endif %}>{{ s }}</option>
-      {% endfor %}
-    </select>
-  </label>
-  <label>Color
-    <select name="color">
-      <option value="">Select color</option>
-      {% for c in ['White','Yellow','Orange','Pink','Red','Brown','Purple','Blue','Green','Black'] %}
-        <option value="{{ c }}" {% if c == color %}selected{% endif %}>{{ c }}</option>
-      {% endfor %}
-    </select>
-  </label>
-  <button type="submit" class="btn btn-primary">Search</button>
+<form method="get" action="{{ url_for('pill_identifier_results') }}" class="pill-form">
+  <div class="pill-form-row">
+    <label for="pill-imprint">Imprint
+      <input id="pill-imprint" type="text" name="imprint" value="{{ imprint or '' }}"
+             placeholder="e.g. L484, TV 150, etc.">
+    </label>
+  </div>
+
+  <div class="pill-form-row pill-form-grid">
+    <label for="pill-shape">Shape
+      <select id="pill-shape" name="shape">
+        <option value="">Select shape</option>
+        {% for s in ['Round','Oval','Capsule','Rectangle','Diamond','Pentagon','Triangle','Figure 8','Bullet'] %}
+          <option value="{{ s }}" {% if s == shape %}selected{% endif %}>{{ s }}</option>
+        {% endfor %}
+      </select>
+    </label>
+
+    <label for="pill-color">Color
+      <select id="pill-color" name="color">
+        <option value="">Select color</option>
+        {% for c in ['White','Yellow','Orange','Pink','Red','Brown','Gray','Green','Blue','Purple','Black','Turquoise'] %}
+          <option value="{{ c }}" {% if c == color %}selected{% endif %}>{{ c }}</option>
+        {% endfor %}
+      </select>
+    </label>
+
+    <label for="pill-size">Size (optional)
+      <select id="pill-size" name="size">
+        <option value="">Any size</option>
+        <option value="smaller-eraser">Smaller than a pencil eraser</option>
+        <option value="eraser">About a pencil eraser</option>
+        <option value="dime">About a dime</option>
+        <option value="larger-dime">Larger than a dime</option>
+      </select>
+    </label>
+  </div>
+
+  <div class="pill-form-row">
+    <button type="submit" class="btn btn-primary btn-large">Find my pill</button>
+  </div>
 </form>
 
 {% if results is not none %}
-  <h2>Results ({{ results|length }})</h2>
+  <h2 class="pill-results-heading">Results ({{ results|length }})</h2>
   {% if results %}
-    <table class="pill-table">
-      <thead>
-        <tr>
-          <th>Drug Name</th>
-          <th>Imprint</th>
-          <th>Strength</th>
-          <th>Shape</th>
-          <th>Color</th>
-          <th>Drug Class</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for r in results %}
-          <tr>
-            <td><a href="{{ url_for('drug_detail', slug=r.drug.slug) }}">{{ r.drug.generic_name|capitalize }}</a></td>
-            <td>{{ r.imprint }}</td>
-            <td>{{ r.strength }}</td>
-            <td>{{ r.shape }}</td>
-            <td>{{ r.color }}</td>
-            <td>{% if r.drug.drug_class %}{{ r.drug.drug_class.name }}{% endif %}</td>
-          </tr>
-        {% endfor %}
-      </tbody>
-    </table>
+    <div class="pill-result-grid">
+      {% for r in results %}
+        <article class="pill-result-card">
+          <div class="pill-icon-circle" data-color="{{ (r.color or '')|lower }}">
+            <svg viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+              {% if r.shape == 'Capsule' %}
+                <rect x="6" y="22" width="48" height="16" rx="8" ry="8" fill="currentColor" stroke="#555" stroke-width="1"/>
+              {% elif r.shape == 'Oval' %}
+                <ellipse cx="30" cy="30" rx="24" ry="14" fill="currentColor" stroke="#555" stroke-width="1"/>
+              {% elif r.shape == 'Rectangle' %}
+                <rect x="8" y="20" width="44" height="20" rx="3" fill="currentColor" stroke="#555" stroke-width="1"/>
+              {% elif r.shape == 'Triangle' %}
+                <polygon points="30,8 54,52 6,52" fill="currentColor" stroke="#555" stroke-width="1"/>
+              {% elif r.shape == 'Diamond' %}
+                <polygon points="30,6 54,30 30,54 6,30" fill="currentColor" stroke="#555" stroke-width="1"/>
+              {% else %}
+                <circle cx="30" cy="30" r="22" fill="currentColor" stroke="#555" stroke-width="1"/>
+              {% endif %}
+              <text x="30" y="34" font-size="9" text-anchor="middle" fill="#222">{{ r.imprint or '' }}</text>
+            </svg>
+          </div>
+          <div class="pill-result-body">
+            <h3 class="pill-result-name">
+              <a href="{{ url_for('drug_detail', slug=r.drug.slug) }}">{{ r.drug.generic_name|capitalize }}</a>
+            </h3>
+            <dl class="pill-result-attrs">
+              <dt>Imprint:</dt><dd>{{ r.imprint or '—' }}</dd>
+              <dt>Strength:</dt><dd>{{ r.strength or '—' }}</dd>
+              <dt>Shape:</dt><dd>{{ r.shape or '—' }}</dd>
+              <dt>Color:</dt><dd>{{ r.color or '—' }}</dd>
+              <dt>Manufacturer:</dt><dd>{{ r.manufacturer or '—' }}</dd>
+              {% if r.drug.drug_class %}
+                <dt>Drug class:</dt>
+                <dd><a href="{{ url_for('drug_class_page', slug=r.drug.drug_class.slug) }}">{{ r.drug.drug_class.name }}</a></dd>
+              {% endif %}
+            </dl>
+            <a href="{{ url_for('drug_detail', slug=r.drug.slug) }}" class="btn btn-outline btn-small">View full drug information</a>
+          </div>
+        </article>
+      {% endfor %}
+    </div>
   {% else %}
-    <p class="muted">No matching pills found.</p>
+    <p class="muted">No matching pills found. Try fewer or different criteria.</p>
   {% endif %}
 {% endif %}
+
+<section class="how-it-works">
+  <h2>How it works</h2>
+  <ol class="how-it-works-steps">
+    <li><strong>Enter the imprint code</strong> printed or stamped on the pill (letters and/or numbers).</li>
+    <li><strong>Select shape and color</strong> to narrow down the results.</li>
+    <li><strong>Browse the results</strong> and click any result for full drug information, including uses, warnings, dosage, side effects, and interactions.</li>
+  </ol>
+</section>
 
 <section class="tips-section">
   <h2>Additional tips</h2>
@@ -108,21 +155,4 @@
   </div>
 </aside>
 </div>
-
-<style>
-  .breadcrumb{margin:8px 0 14px;font-size:13px;color:#666;}
-  .breadcrumb a{color:#0277bd;text-decoration:none;}
-  .page-with-sidebar{display:flex;gap:24px;align-items:flex-start;}
-  .main-col{flex:1;min-width:0;}
-  .sidebar{width:260px;flex-shrink:0;}
-  .sidebar-box{background:#f5f7fa;border:1px solid #e1e6ec;padding:14px;border-radius:4px;}
-  .sidebar-box h3{margin-top:0;}
-  .sidebar-links{list-style:none;padding:0;margin:0;}
-  .sidebar-links li{padding:6px 0;border-bottom:1px solid #e1e6ec;}
-  .sidebar-links li:last-child{border-bottom:none;}
-  .disclaimer-box{background:#fff8e1;border:1px solid #f0ad4e;padding:14px;border-radius:4px;margin:14px 0;}
-  .tips-section{margin-top:24px;}
-</style>
 {% endblock %}
-</content>
-</invoke>

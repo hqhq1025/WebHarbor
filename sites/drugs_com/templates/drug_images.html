@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block title %}{{ drug.generic_name }} Pill Images | {{ site_name }}{% endblock %}
+{% block content %}
+<div style="padding:24px 0">
+  <nav class="breadcrumb">
+    <a href="{{ url_for('index') }}">Home</a> &rsaquo;
+    <a href="{{ url_for('drug_detail', slug=drug.slug) }}">{{ drug.generic_name }}</a> &rsaquo;
+    <span>Images</span>
+  </nav>
+  <h1 style="font-size:2rem;margin-bottom:8px">{{ drug.generic_name }} Pill Images</h1>
+  <p style="margin-bottom:20px">Pill images for {{ drug.generic_name }}{% if drug.brand_names %} (brand: {{ drug.brand_names|join(', ') }}){% endif %}. <a href="{{ url_for('drug_detail', slug=drug.slug) }}">Back to drug details</a>.</p>
+
+  {% if images %}
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:18px">
+      {% for img in images %}
+        <div style="border:1px solid #e2e2e2;border-radius:6px;padding:14px;background:#fff;text-align:center">
+          <svg viewBox="0 0 120 60" width="160" height="80" xmlns="http://www.w3.org/2000/svg" style="margin-bottom:8px">
+            <ellipse cx="60" cy="30" rx="50" ry="22" fill="#fce6ec" stroke="#b8526a" stroke-width="1.5"/>
+            <text x="60" y="35" text-anchor="middle" font-size="12" fill="#333" font-family="sans-serif">{{ img.imprint or '' }}</text>
+          </svg>
+          <div style="text-align:left;font-size:0.92rem;line-height:1.55">
+            <div><strong>Imprint:</strong> {{ img.imprint or '&mdash;' | safe }}</div>
+            <div><strong>Shape:</strong> {{ img.shape or '&mdash;' | safe }}</div>
+            <div><strong>Color:</strong> {{ img.color or '&mdash;' | safe }}</div>
+            <div><strong>Strength:</strong> {{ img.strength or '&mdash;' | safe }}</div>
+            <div><strong>Manufacturer:</strong> {{ img.manufacturer or '&mdash;' | safe }}</div>
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+  {% else %}
+    <p style="padding:24px;background:#f7f7f7;border-radius:6px">No pill images are available for {{ drug.generic_name }}.</p>
+  {% endif %}
+</div>
+{% endblock %}

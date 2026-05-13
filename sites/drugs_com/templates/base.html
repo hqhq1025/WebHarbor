@@ -65,9 +65,9 @@
       <a href="{{ url_for('drug_az') }}" class="nav-link">Drugs A-Z</a>
       <a href="{{ url_for('pill_identifier') }}" class="nav-link">Pill Identifier</a>
       <a href="{{ url_for('interaction_checker') }}" class="nav-link">Drug Interaction Checker</a>
-      <a href="{{ url_for('search') }}" class="nav-link">Compare Drugs</a>
+      <a href="/compare/" class="nav-link">Compare Drugs</a>
       <a href="{{ url_for('news_index') }}" class="nav-link">News</a>
-      <a href="{{ url_for('drug_classes_list') }}" class="nav-link">Pro Edition</a>
+      <a href="/pro/" class="nav-link">Pro Edition</a>
       <div class="nav-more-wrap">
         <a href="{{ url_for('conditions_list') }}" class="nav-link nav-more-btn">More...</a>
         <div class="nav-dropdown">
@@ -120,15 +120,16 @@
         <li><a href="#">About Drugs.com</a></li>
         <li><a href="#">Advertising policy</a></li>
         <li><a href="#">Attribution &amp; citations</a></li>
-        <li><a href="#">Contact us</a></li>
+        <li><a href="{{ url_for('contact') }}">Contact us</a></li>
+        <li><a href="{{ url_for('newsletter') }}">Newsletter</a></li>
       </ul>
     </div>
     <div class="footer-col">
       <h4>Terms &amp; Privacy</h4>
       <ul>
-        <li><a href="#">Terms of use</a></li>
+        <li><a href="{{ url_for('terms') }}">Terms of use</a></li>
         <li><a href="#">Editorial policy</a></li>
-        <li><a href="#">Privacy policy</a></li>
+        <li><a href="{{ url_for('privacy') }}">Privacy policy</a></li>
         <li><a href="#">Accessibility</a></li>
       </ul>
     </div>
@@ -158,7 +159,7 @@
   </div>
   <div class="container footer-bottom">
     <p class="footer-disclaimer">Drugs.com provides accurate and independent information on more than 24,000 prescription drugs, over-the-counter medicines and natural products. This material is provided for educational purposes only and is not intended for medical advice, diagnosis or treatment.</p>
-    <p class="footer-copy">&copy; {{ current_year }} Drugs.com (benchmark mirror for educational use). <a href="#">Sitemap</a></p>
+    <p class="footer-copy">&copy; {{ current_year }} Drugs.com (benchmark mirror for educational use). <a href="/sitemap">Sitemap</a></p>
   </div>
 </footer>
 </body>

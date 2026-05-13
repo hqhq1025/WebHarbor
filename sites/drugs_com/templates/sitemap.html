@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+{% block title %}Sitemap - Drugs.com{% endblock %}
+{% block content %}
+<nav class="breadcrumb">
+  <a href="{{ url_for('index') }}">Home</a> &rsaquo; <span>Sitemap</span>
+</nav>
+
+<h1>Sitemap</h1>
+<p class="muted">A complete map of major sections on Drugs.com.</p>
+
+<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:24px;margin-top:24px">
+  <section>
+    <h2>Main Tools</h2>
+    <ul>
+      <li><a href="{{ url_for('index') }}">Home</a></li>
+      <li><a href="{{ url_for('drug_az') }}">Drugs A-Z</a></li>
+      <li><a href="{{ url_for('pill_identifier') }}">Pill Identifier</a></li>
+      <li><a href="{{ url_for('interaction_checker') }}">Drug Interaction Checker</a></li>
+      <li><a href="/compare/">Compare Drugs</a></li>
+      <li><a href="{{ url_for('search') }}">Advanced Search</a></li>
+      <li><a href="/pro/">Pro Edition</a></li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>News</h2>
+    <ul>
+      <li><a href="{{ url_for('news_index') }}">Medical News</a></li>
+      <li><a href="{{ url_for('news_category', category='new-drug-approvals') }}">New Drug Approvals</a></li>
+      <li><a href="{{ url_for('news_category', category='fda-alerts') }}">FDA Alerts</a></li>
+      <li><a href="{{ url_for('news_category', category='clinical-trials') }}">Clinical Trials</a></li>
+      <li><a href="{{ url_for('news_category', category='medical') }}">Medical</a></li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>Account</h2>
+    <ul>
+      <li><a href="{{ url_for('account') }}">My Account</a></li>
+      <li><a href="{{ url_for('my_med_list') }}">My Med List</a></li>
+      <li><a href="/account/reviews">My Reviews</a></li>
+      <li><a href="/account/settings">Settings</a></li>
+      <li><a href="{{ url_for('login') }}">Sign In</a></li>
+      <li><a href="{{ url_for('register') }}">Register</a></li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>Browse A-Z</h2>
+    <div style="display:flex;flex-wrap:wrap;gap:6px">
+      {% for L in all_letters %}
+        <a href="{{ url_for('drug_az') }}?letter={{ L }}" style="padding:4px 8px;border:1px solid #ddd;border-radius:3px;text-decoration:none">{{ L }}</a>
+      {% endfor %}
+    </div>
+  </section>
+</div>
+
+<section style="margin-top:32px">
+  <h2>Drug Classes</h2>
+  <div style="columns:3;column-gap:24px">
+    {% for c in classes %}
+      <div style="break-inside:avoid;margin-bottom:6px"><a href="{{ url_for('drug_class_page', slug=c.slug) }}">{{ c.name }}</a></div>
+    {% endfor %}
+  </div>
+</section>
+
+<section style="margin-top:32px">
+  <h2>Conditions &amp; Treatments</h2>
+  <div style="columns:3;column-gap:24px">
+    {% for c in conditions %}
+      <div style="break-inside:avoid;margin-bottom:6px"><a href="{{ url_for('condition_page', slug=c.slug) }}">{{ c.name }}</a></div>
+    {% endfor %}
+  </div>
+</section>
+{% endblock %}
