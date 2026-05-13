@@ -626,6 +626,78 @@ PILL_IMAGES_DATA = [
     ("zolpidem", "TEVA 73", "Round", "Pink", "5 mg", "Teva"),
     ("clonazepam", "C 1", "Round", "Yellow", "0.5 mg", "Accord"),
     ("methylphenidate", "M 5", "Round", "Yellow", "5 mg", "Mallinckrodt"),
+    ("warfarin", "COUMADIN 1", "round", "pink", "1mg", "Bristol-Myers Squibb"),
+    ("warfarin", "COUMADIN 2", "round", "lavender", "2mg", "Bristol-Myers Squibb"),
+    ("warfarin", "COUMADIN 5", "round", "peach", "5mg", "Bristol-Myers Squibb"),
+    ("warfarin", "COUMADIN 10", "round", "white", "10mg", "Bristol-Myers Squibb"),
+    ("clopidogrel", "75", "round", "pink", "75mg", "Sanofi-Aventis"),
+    ("furosemide", "LASIX 40", "round", "white", "40mg", "Sanofi-Aventis"),
+    ("furosemide", "LASIX 80", "oval", "white", "80mg", "Sanofi-Aventis"),
+    ("prednisone", "DELTASONE 5", "round", "white", "5mg", "Pfizer"),
+    ("prednisone", "DELTASONE 20", "round", "peach", "20mg", "Pfizer"),
+    ("metformin", "GLUCOPHAGE 500", "oval", "white", "500mg", "Bristol-Myers Squibb"),
+    ("rosuvastatin", "CRESTOR 10", "round", "pink", "10mg", "AstraZeneca"),
+    ("rosuvastatin", "CRESTOR 20", "round", "pink", "20mg", "AstraZeneca"),
+    ("losartan", "COZAAR 50", "oval", "white", "50mg", "Merck"),
+    ("metoprolol", "LOPRESSOR 50", "round", "pink", "50mg", "Novartis"),
+    ("carvedilol", "COREG 6.25", "oval", "white", "6.25mg", "GlaxoSmithKline"),
+    ("amlodipine", "NORVASC 5", "diamond", "white", "5mg", "Pfizer"),
+    ("amlodipine", "NORVASC 10", "round", "white", "10mg", "Pfizer"),
+    ("hydrochlorothiazide", "HYDRODIURIL 25", "round", "peach", "25mg", "Merck"),
+    ("pantoprazole", "PROTONIX 20", "oval", "yellow", "20mg", "Wyeth"),
+    ("pantoprazole", "PROTONIX 40", "oval", "yellow", "40mg", "Wyeth"),
+    ("famotidine", "PEPCID 20", "oval", "brown", "20mg", "Merck"),
+    ("ondansetron", "ZOFRAN 4", "oval", "white", "4mg", "GlaxoSmithKline"),
+    ("ondansetron", "ZOFRAN 8", "oval", "yellow", "8mg", "GlaxoSmithKline"),
+    ("cetirizine", "ZYRTEC 10", "oval", "white", "10mg", "UCB"),
+    ("loratadine", "CLARITIN 10", "round", "white", "10mg", "Bayer"),
+    ("montelukast", "SINGULAIR 10", "round", "beige", "10mg", "Merck"),
+    ("ciprofloxacin", "CIPRO 500", "oval", "white", "500mg", "Bayer"),
+    ("doxycycline", "VIBRAMYCIN 100", "capsule", "blue/white", "100mg", "Pfizer"),
+    ("fluconazole", "DIFLUCAN 150", "oval", "pink", "150mg", "Pfizer"),
+    ("acyclovir", "ZOVIRAX 400", "oval", "blue", "400mg", "GlaxoSmithKline"),
+    ("tamsulosin", "FLOMAX 0.4", "capsule", "olive/orange", "0.4mg", "Boehringer Ingelheim"),
+    ("tadalafil", "CIALIS 10", "oval", "yellow", "10mg", "Eli Lilly"),
+    ("sildenafil", "VIAGRA 50", "diamond", "blue", "50mg", "Pfizer"),
+    ("sildenafil", "VIAGRA 100", "diamond", "blue", "100mg", "Pfizer"),
+    ("oxycodone", "OC 10", "round", "white", "10mg", "Purdue Pharma"),
+    ("methylphenidate", "RITALIN 10", "round", "white", "10mg", "Novartis"),
+    ("amphetamine", "ADDERALL 20", "round", "orange", "20mg", "Teva"),
+    ("lithium", "LITHOBID 300", "capsule", "pink", "300mg", "Noven"),
+    ("valproic acid", "DEPAKOTE 250", "oval", "salmon", "250mg", "AbbVie"),
+    ("lamotrigine", "LAMICTAL 100", "oval", "white", "100mg", "GlaxoSmithKline"),
+    ("levetiracetam", "KEPPRA 500", "oval", "yellow", "500mg", "UCB"),
+    ("duloxetine", "CYMBALTA 30", "capsule", "white/blue", "30mg", "Eli Lilly"),
+    ("venlafaxine", "EFFEXOR 75", "capsule", "peach", "75mg", "Pfizer"),
+    ("bupropion", "WELLBUTRIN 150", "round", "purple", "150mg", "GlaxoSmithKline"),
+    ("trazodone", "DESYREL 100", "round", "white", "100mg", "Mead Johnson"),
+    ("escitalopram", "LEXAPRO 10", "round", "white", "10mg", "Forest Labs"),
+    ("quetiapine", "SEROQUEL 100", "round", "yellow", "100mg", "AstraZeneca"),
+    ("quetiapine", "SEROQUEL 300", "oval", "white", "300mg", "AstraZeneca"),
+    ("olanzapine", "ZYPREXA 5", "round", "white", "5mg", "Eli Lilly"),
+    ("aripiprazole", "ABILIFY 10", "round", "pink", "10mg", "Otsuka"),
+    ("clonazepam", "KLONOPIN 1", "round", "blue", "1mg", "Roche"),
+    ("lorazepam", "ATIVAN 1", "round", "white", "1mg", "Wyeth"),
+    ("diazepam", "VALIUM 5", "round", "yellow", "5mg", "Roche"),
+    ("buspirone", "BUSPAR 15", "oval", "white", "15mg", "Bristol-Myers Squibb"),
+    ("pregabalin", "LYRICA 75", "capsule", "white/orange", "75mg", "Pfizer"),
+    ("celecoxib", "CELEBREX 200", "capsule", "white/gold", "200mg", "Pfizer"),
+    ("naproxen", "ALEVE 220", "oval", "blue", "220mg", "Bayer"),
+    ("cyclobenzaprine", "FLEXERIL 10", "round", "yellow", "10mg", "McNeil"),
+    ("colchicine", "COLCRYS 0.6", "oval", "purple", "0.6mg", "Takeda"),
+    ("allopurinol", "ZYLOPRIM 300", "round", "white", "300mg", "Aspen"),
+    ("alendronate", "FOSAMAX 70", "oval", "white", "70mg", "Merck"),
+    ("estradiol", "ESTRACE 1", "round", "pink", "1mg", "Warner Chilcott"),
+    ("levothyroxine", "SYNTHROID 100", "oval", "yellow", "100mcg", "AbbVie"),
+    ("levothyroxine", "SYNTHROID 50", "oval", "white", "50mcg", "AbbVie"),
+    ("methimazole", "TAPAZOLE 10", "round", "white", "10mg", "Monarch"),
+    ("finasteride", "PROSCAR 5", "round", "blue", "5mg", "Merck"),
+    ("finasteride", "PROPECIA 1", "oval", "tan", "1mg", "Merck"),
+    ("spironolactone", "ALDACTONE 25", "round", "white", "25mg", "Pfizer"),
+    ("digoxin", "LANOXIN 0.25", "round", "white", "0.25mg", "GlaxoSmithKline"),
+    ("lisinopril", "ZESTRIL 10", "round", "pink", "10mg", "AstraZeneca"),
+    ("atorvastatin", "LIPITOR 20", "oval", "white", "20mg", "Pfizer"),
+    ("atorvastatin", "LIPITOR 40", "oval", "white", "40mg", "Pfizer"),
 ]
 
 
@@ -853,6 +925,16 @@ REVIEW_TEMPLATES = [
     ("Best medication I've tried", 10, "Out of several medications I've tried for {cond}, this has been the most effective with the fewest side effects. Quality of life vastly improved."),
     ("Cautious recommendation", 7, "It works for my {cond} but the cost is significant. Insurance covered most of it. Be sure to discuss generics."),
     ("Side effects too much", 2, "The side effects were too disruptive for my daily life, even though it did help with {cond}. Discontinued after a few weeks."),
+    ("Changed my life", 10, "After years of struggling with {cond}, this medication has truly changed my life. I feel like a completely different person and can finally enjoy daily activities again."),
+    ("Minimal side effects", 9, "Been taking this for treating {cond} and it works great with very minimal side effects. Much better than the previous medication I was on."),
+    ("Gradual improvement", 7, "It took several weeks before I noticed any improvement in my {cond}, but once it kicked in, the difference was noticeable. Staying patient was key."),
+    ("Mixed results", 5, "This drug helped somewhat with my {cond} but I'm still experiencing breakthrough symptoms. My doctor and I are still adjusting the dosage."),
+    ("Difficult adjustment period", 6, "The first two weeks treating {cond} were rough with side effects, but things settled down and now it seems to be working. Stick with it if you can."),
+    ("Better than expected", 8, "I was skeptical but this has exceeded my expectations for managing {cond}. Following up with my doctor regularly has made all the difference."),
+    ("Not right for me", 3, "Unfortunately this medication wasn't a good fit for my {cond}. I experienced too many side effects and had to discontinue. Everyone is different."),
+    ("Consistent results", 9, "Very reliable medication. My {cond} has been under consistent control since starting this treatment. My doctor is pleased with my lab results."),
+    ("Insurance hassle but worth it", 8, "Had some trouble getting this covered for {cond} but my doctor fought for it. Now that I'm on it, I understand why - it works really well."),
+    ("Mild but effective", 7, "Nothing dramatic but steadily effective for my {cond}. Fewer side effects than alternatives I've tried. Would recommend discussing with your doctor."),
 ]
 
 
@@ -1024,13 +1106,22 @@ def seed_drug_conditions():
 
 
 def seed_pill_images():
-    if DrugImage.query.count() > 0:
-        return
     drug_by_name = {d.generic_name: d for d in Drug.query.all()}
+    existing = set()
+    for pi in DrugImage.query.all():
+        existing.add((pi.drug_id, pi.imprint))
+    to_add = []
     for gname, imprint, shape, color, strength, mfg in PILL_IMAGES_DATA:
         d = drug_by_name.get(gname)
         if not d:
             continue
+        if (d.id, imprint) in existing:
+            continue
+        to_add.append((d, imprint, shape, color, strength, mfg))
+        existing.add((d.id, imprint))
+    if not to_add:
+        return
+    for d, imprint, shape, color, strength, mfg in to_add:
         db.session.add(DrugImage(
             drug_id=d.id, imprint=imprint, shape=shape, color=color,
             strength=strength, manufacturer=mfg,
@@ -1120,7 +1211,7 @@ def seed_benchmark_users():
 
 def seed_extra_reviews():
     """Add ~50 additional reviews across drugs from auto-generated reviewer users."""
-    if DrugReview.query.count() >= 40:
+    if DrugReview.query.count() >= 100:
         return
     # Create some anonymous reviewer users if not present
     reviewers = []
@@ -1135,7 +1226,27 @@ def seed_extra_reviews():
         reviewers.append(u)
     popular = ["ibuprofen", "metformin", "lisinopril", "sertraline", "atorvastatin",
                "amoxicillin", "levothyroxine", "alprazolam", "gabapentin", "omeprazole",
-               "semaglutide", "fluoxetine", "amlodipine", "tramadol", "zolpidem"]
+               "semaglutide", "fluoxetine", "amlodipine", "tramadol", "zolpidem",
+               "warfarin", "clopidogrel", "furosemide", "prednisone", "rosuvastatin",
+               "losartan", "metoprolol", "carvedilol", "hydrochlorothiazide",
+               "pantoprazole", "famotidine", "ondansetron", "cetirizine", "loratadine",
+               "montelukast", "ciprofloxacin", "doxycycline", "fluconazole", "acyclovir",
+               "tamsulosin", "tadalafil", "sildenafil", "oxycodone", "hydrocodone",
+               "methylphenidate", "lithium", "valproic acid", "lamotrigine",
+               "levetiracetam", "duloxetine", "venlafaxine", "bupropion", "trazodone",
+               "escitalopram", "quetiapine", "olanzapine", "aripiprazole", "clonazepam",
+               "lorazepam", "diazepam", "buspirone", "pregabalin", "celecoxib",
+               "naproxen", "cyclobenzaprine", "colchicine", "allopurinol", "alendronate",
+               "estradiol", "methimazole", "finasteride", "spironolactone", "digoxin",
+               "citalopram", "paroxetine", "mirtazapine", "risperidone", "topiramate",
+               "verapamil", "diltiazem", "valsartan", "atenolol", "propranolol",
+               "apixaban", "rivaroxaban", "esomeprazole", "lansoprazole", "azithromycin",
+               "fexofenadine", "hydroxyzine", "fluticasone", "tiotropium",
+               "valacyclovir", "morphine", "buprenorphine", "atomoxetine",
+               "carbamazepine", "haloperidol", "methocarbamol", "baclofen",
+               "tizanidine", "risedronate", "raloxifene", "testosterone",
+               "isotretinoin", "tretinoin", "timolol", "latanoprost",
+               "vitamin D3", "folic acid", "ferrous sulfate", "multivitamin"]
     drug_by_name = {d.generic_name: d for d in Drug.query.all()}
     count = 0
     for i, name in enumerate(popular):
@@ -1154,7 +1265,7 @@ def seed_extra_reviews():
                 created_at=datetime.utcnow() - timedelta(days=(i * 4 + j)),
             ))
             count += 1
-            if count >= 55:
+            if count >= 200:
                 break
         if count >= 55:
             break
@@ -1174,6 +1285,10 @@ def recompute_drug_ratings():
 
 
 def seed_database():
+    # Gate the entire seeding block: even a no-op commit bumps SQLite metadata
+    # and breaks /reset byte-identity. All-or-nothing is the correct invariant.
+    if Drug.query.count() > 0:
+        return
     seed_drug_classes()
     seed_conditions()
     seed_drugs()
