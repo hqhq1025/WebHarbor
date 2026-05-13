@@ -18,7 +18,22 @@
 </div>
 
 <article class="drug-detail">
-  <header class="drug-header">
+  <header class="drug-header" style="display:flex;gap:18px;align-items:flex-start">
+    <a href="{{ url_for('drug_images', slug=drug.slug) }}" class="drug-header-image" aria-label="View {{ drug.generic_name }} pill images" style="flex:0 0 auto">
+      {% if drug.images and drug.images|length > 0 %}
+        {% set img0 = drug.images[0] %}
+        <svg viewBox="0 0 120 60" width="110" height="55" xmlns="http://www.w3.org/2000/svg" style="border:1px solid #e2e2e2;border-radius:6px;background:#fff;padding:4px">
+          <ellipse cx="60" cy="30" rx="50" ry="22" fill="#fce6ec" stroke="#b8526a" stroke-width="1.5"/>
+          <text x="60" y="35" text-anchor="middle" font-size="12" fill="#333" font-family="sans-serif">{{ img0.imprint or '' }}</text>
+        </svg>
+      {% else %}
+        <svg viewBox="0 0 120 60" width="110" height="55" xmlns="http://www.w3.org/2000/svg" style="border:1px solid #e2e2e2;border-radius:6px;background:#fff;padding:4px" aria-label="No image available">
+          <ellipse cx="60" cy="30" rx="50" ry="22" fill="#eeeeee" stroke="#bbbbbb" stroke-width="1.5"/>
+          <text x="60" y="35" text-anchor="middle" font-size="10" fill="#888" font-family="sans-serif">No image</text>
+        </svg>
+      {% endif %}
+    </a>
+    <div class="drug-header-text" style="flex:1 1 auto;min-width:0">
     <h1>{{ drug.generic_name|capitalize }} <span class="speaker-icon" aria-hidden="true">&#128264;</span></h1>
     {% if drug.pronunciation %}<p class="pronunciation">Pronunciation: <em>{{ drug.pronunciation }}</em></p>{% endif %}
     <ul class="meta-row">
@@ -46,6 +61,7 @@
       </span>
       <span>Medically reviewed by {{ drug.reviewer_name }}, {{ drug.reviewer_credential }}. Last updated on {{ drug.last_updated.strftime('%b %d, %Y') }}.</span>
     </p>
+    </div>
   </header>
 
   <div class="drug-actions">
@@ -206,7 +222,11 @@
                 </span>
               </header>
               <p>{{ r.body }}</p>
-              <div class="review-helpful muted">Was this helpful? <span class="review-helpful-count">{{ r.helpful_count or 0 }}</span> found this helpful</div>
+              <div class="review-helpful muted" data-review-id="{{ r.id }}" data-slug="{{ drug.slug }}">
+                Was this helpful?
+                <button type="button" class="btn btn-sm btn-outline review-helpful-yes">&#128077; Yes (<span class="review-helpful-count">{{ r.helpful_count or 0 }}</span>)</button>
+                <button type="button" class="btn btn-sm btn-outline review-helpful-no">&#128078; No</button>
+              </div>
             </article>
           {% endfor %}
           </div>
@@ -234,6 +254,24 @@
             });
             cards.forEach(c => list.appendChild(c));
         }
+        document.querySelectorAll('.review-helpful').forEach(box => {
+            const slug = box.dataset.slug;
+            const rid = box.dataset.reviewId;
+            const countEl = box.querySelector('.review-helpful-count');
+            const card = box.closest('.review-card');
+            function send(vote) {
+                const fd = new FormData(); fd.append('vote', vote);
+                fetch('/' + slug + '/review/' + rid + '/helpful', {method: 'POST', body: fd})
+                    .then(r => r.json()).then(data => {
+                        if (countEl) countEl.textContent = data.votes;
+                        if (card) card.dataset.helpful = data.votes;
+                    });
+            }
+            const yes = box.querySelector('.review-helpful-yes');
+            const no = box.querySelector('.review-helpful-no');
+            if (yes) yes.addEventListener('click', () => send('yes'));
+            if (no) no.addEventListener('click', () => send('no'));
+        });
         </script>
 
         {% if current_user.is_authenticated %}

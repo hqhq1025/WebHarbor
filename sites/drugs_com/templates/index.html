@@ -70,6 +70,34 @@ function scrollCarousel(dir) {
 }
 </script>
 
+<!-- Drug Images -->
+{% if image_samples %}
+<div class="container">
+  <div class="home-row">
+    <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:12px">
+      <h2 style="margin:0">Drug Images</h2>
+      <a href="{{ url_for('pill_identifier') }}" style="font-size:0.95rem">View all images &rsaquo;</a>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:14px">
+      {% for d, img in image_samples %}
+      <a href="{{ url_for('drug_images', slug=d.slug) }}" style="display:block;border:1px solid #e2e2e2;border-radius:6px;padding:12px;background:#fff;text-align:center;text-decoration:none;color:inherit">
+        <svg viewBox="0 0 120 60" width="140" height="70" xmlns="http://www.w3.org/2000/svg" style="margin-bottom:8px">
+          <ellipse cx="60" cy="30" rx="50" ry="22" fill="#fce6ec" stroke="#b8526a" stroke-width="1.5"/>
+          <text x="60" y="35" text-anchor="middle" font-size="12" fill="#333" font-family="sans-serif">{{ img.imprint or '' }}</text>
+        </svg>
+        <div style="font-weight:600;font-size:0.95rem">{{ d.generic_name|capitalize }}</div>
+        {% if img.shape or img.color %}
+        <div class="muted" style="font-size:0.82rem;margin-top:2px">
+          {{ img.color or '' }}{% if img.color and img.shape %}, {% endif %}{{ img.shape or '' }}
+        </div>
+        {% endif %}
+      </a>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+{% endif %}
+
 <!-- Health Topics -->
 {% if health_topics %}
 <div class="container">

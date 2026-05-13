@@ -67,7 +67,11 @@
             </span>
           </header>
           <p>{{ r.body }}</p>
-          <div class="review-helpful muted">Was this helpful? <span class="review-helpful-count">{{ r.helpful_count or 0 }}</span> found this helpful</div>
+          <div class="review-helpful muted" data-review-id="{{ r.id }}" data-slug="{{ drug.slug }}">
+            Was this helpful?
+            <button type="button" class="btn btn-sm btn-outline review-helpful-yes">&#128077; Yes (<span class="review-helpful-count">{{ r.helpful_count or 0 }}</span>)</button>
+            <button type="button" class="btn btn-sm btn-outline review-helpful-no">&#128078; No</button>
+          </div>
         </article>
       {% endfor %}
     {% else %}
@@ -87,4 +91,22 @@
   </nav>
   {% endif %}
 </div>
+<script>
+document.querySelectorAll('.review-helpful').forEach(box => {
+    const slug = box.dataset.slug;
+    const rid = box.dataset.reviewId;
+    const countEl = box.querySelector('.review-helpful-count');
+    function send(vote) {
+        const fd = new FormData(); fd.append('vote', vote);
+        fetch('/' + slug + '/review/' + rid + '/helpful', {method: 'POST', body: fd})
+            .then(r => r.json()).then(data => {
+                if (countEl) countEl.textContent = data.votes;
+            });
+    }
+    const yes = box.querySelector('.review-helpful-yes');
+    const no = box.querySelector('.review-helpful-no');
+    if (yes) yes.addEventListener('click', () => send('yes'));
+    if (no) no.addEventListener('click', () => send('no'));
+});
+</script>
 {% endblock %}

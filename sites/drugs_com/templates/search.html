@@ -70,13 +70,17 @@
   <section class="search-results-col">
     <p class="search-results-count">
       {% if q %}
-        {{ total }} result{{ '' if total == 1 else 's' }} for "{{ q }}"
+        {{ total_all if total_all is defined else total }} result{{ '' if (total_all if total_all is defined else total) == 1 else 's' }} for "{{ q }}"
+        {% if total_all is defined and total_all != total %}
+          <span class="muted">({{ total }} drug{{ '' if total == 1 else 's' }}{% if condition_results %}, {{ condition_results|length }} condition{{ '' if condition_results|length == 1 else 's' }}{% endif %}{% if news_results %}, {{ news_results|length }} news article{{ '' if news_results|length == 1 else 's' }}{% endif %})</span>
+        {% endif %}
       {% else %}
         Showing {{ total }} drug{{ '' if total == 1 else 's' }}
       {% endif %}
     </p>
 
     {% if results %}
+      <h2 class="search-group-heading">Drugs <span class="muted">({{ total }})</span></h2>
       <div class="drug-card-grid">
         {% for d in results %}
           <article class="drug-card">
@@ -114,7 +118,33 @@
           {% endif %}
         </nav>
       {% endif %}
-    {% else %}
+    {% endif %}
+
+    {% if condition_results %}
+      <h2 class="search-group-heading">Conditions <span class="muted">({{ condition_results|length }})</span></h2>
+      <ul class="search-group-list">
+        {% for c in condition_results %}
+          <li>
+            <a href="{{ url_for('condition_page', slug=c.slug) }}"><strong>{{ c.name }}</strong></a>
+            {% if c.description %}<span class="muted"> &mdash; {{ (c.description or '')[:160] }}{% if (c.description or '')|length > 160 %}...{% endif %}</span>{% endif %}
+          </li>
+        {% endfor %}
+      </ul>
+    {% endif %}
+
+    {% if news_results %}
+      <h2 class="search-group-heading">News <span class="muted">({{ news_results|length }})</span></h2>
+      <ul class="search-group-list">
+        {% for a in news_results %}
+          <li>
+            <a href="{{ url_for('news_article', article_id=a.id) }}"><strong>{{ a.title }}</strong></a>
+            <span class="muted"> &mdash; {{ a.category }}{% if a.published_at %} &middot; {{ a.published_at.strftime('%b %d, %Y') }}{% endif %}</span>
+          </li>
+        {% endfor %}
+      </ul>
+    {% endif %}
+
+    {% if not results and not condition_results and not news_results %}
       <div class="no-results-box">
         <h2>No results found{% if q %} for "{{ q }}"{% endif %}</h2>
         {% if suggestions %}

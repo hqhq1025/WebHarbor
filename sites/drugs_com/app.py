@@ -10,6 +10,7 @@ import re
 import string
 from datetime import datetime, timedelta
 from itertools import combinations
+import difflib
 
 from flask import (
     Flask, render_template, request, redirect, url_for, flash, jsonify,
@@ -1373,9 +1374,13 @@ def index():
     ).all()
     fda_news = NewsArticle.query.filter_by(category="FDA Alerts").order_by(
         NewsArticle.published_at.desc()).limit(3).all()
+    image_drugs = (Drug.query.join(DrugImage, DrugImage.drug_id == Drug.id)
+                   .order_by(db.func.random()).limit(6).all())
+    image_samples = [(d, d.images[0]) for d in image_drugs if d.images]
     return render_template("index.html", featured=featured, trending=trending,
                            news=news, classes=classes,
-                           health_topics=health_topics, fda_news=fda_news)
+                           health_topics=health_topics, fda_news=fda_news,
+                           image_samples=image_samples)
 
 
 @app.route("/drug_information.html")
@@ -1476,6 +1481,17 @@ def submit_review(slug):
     return redirect(url_for("drug_detail", slug=slug) + "#reviews")
 
 
+@app.route("/<slug>/review/<int:review_id>/helpful", methods=["POST"])
+def review_helpful_vote(slug, review_id):
+    drug = Drug.query.filter_by(slug=slug).first_or_404()
+    review = DrugReview.query.filter_by(id=review_id, drug_id=drug.id).first_or_404()
+    vote = (request.values.get("vote") or "yes").lower()
+    delta = -1 if vote == "no" else 1
+    review.helpful_count = max(0, (review.helpful_count or 0) + delta)
+    db.session.commit()
+    return jsonify({"votes": review.helpful_count, "review_id": review.id})
+
+
 @app.route("/search")
 def search():
     q = (request.args.get("q") or "").strip()
@@ -1518,20 +1534,32 @@ def search():
 
         scored = [(score_drug(d, tokens), d) for d in drugs]
         scored = [(s, d) for s, d in scored if s > 0]
+        existing_ids = {d.id for _, d in scored}
+
+        # Explicit brand-name match: include drugs whose brand names contain
+        # any query token (and bump the score of already-scored drugs).
+        for d in drugs:
+            brand_blob = " ".join(d.brand_names).lower() if d.brand_names else ""
+            if any(t in brand_blob for t in tokens):
+                if d.id in existing_ids:
+                    scored = [(s + 2, dd) if dd.id == d.id else (s, dd) for s, dd in scored]
+                else:
+                    scored.append((2, d))
+                    existing_ids.add(d.id)
 
         # Boost drugs matching the condition/class
         if matched_condition:
             extras = [d for d in drugs if matched_condition.slug in d.conditions_list]
-            existing_ids = {d.id for _, d in scored}
             for d in extras:
                 if d.id not in existing_ids:
                     scored.append((1, d))
+                    existing_ids.add(d.id)
         if matched_class:
             extras = [d for d in drugs if d.drug_class_id == matched_class.id]
-            existing_ids = {d.id for _, d in scored}
             for d in extras:
                 if d.id not in existing_ids:
                     scored.append((1, d))
+                    existing_ids.add(d.id)
 
         scored.sort(key=lambda x: (-x[0], x[1].generic_name))
         results = [d for _, d in scored]
@@ -1541,20 +1569,40 @@ def search():
             drugs = Drug.query.order_by(Drug.review_count.desc()).all()
         results = sorted(drugs, key=lambda d: -d.review_count) if not q else sorted(drugs, key=lambda d: d.generic_name)
 
-    # "Did you mean?" suggestions for typos when no results
+    # Conditions and News result groups (only when there's a query and no
+    # restrictive drug-only filters are applied).
+    condition_results = []
+    news_results = []
+    if q:
+        ql = q.lower()
+        for c in Condition.query.all():
+            if ql in c.name.lower() or ql in (c.slug or "").lower() \
+               or ql in (c.description or "").lower():
+                condition_results.append(c)
+        condition_results.sort(key=lambda c: c.name)
+        condition_results = condition_results[:10]
+
+        for a in NewsArticle.query.all():
+            if ql in a.title.lower() or ql in (a.body or "").lower() \
+               or ql in (a.category or "").lower():
+                news_results.append(a)
+        news_results.sort(key=lambda a: a.published_at or datetime.min, reverse=True)
+        news_results = news_results[:10]
+
+    # "Did you mean?" suggestions: 3 closest drug names by edit-distance
+    # ratio whenever the query produced zero drug hits.
     suggestions = []
     if q and not results:
-        ql = q.lower()
-        all_drugs = Drug.query.all()
-        for d in all_drugs:
-            name = d.generic_name.lower()
-            # simple substring or prefix match for suggestions
-            if ql[:3] and name.startswith(ql[:3]):
-                suggestions.append(d.generic_name)
-            if len(suggestions) >= 5:
-                break
+        all_names = [d.generic_name for d in Drug.query.all()]
+        suggestions = difflib.get_close_matches(q.lower(),
+                                                [n.lower() for n in all_names],
+                                                n=3, cutoff=0.5)
+        # Map back to canonical capitalisation.
+        lower_to_orig = {n.lower(): n for n in all_names}
+        suggestions = [lower_to_orig.get(s, s) for s in suggestions]
 
     total = len(results)
+    total_all = total + len(condition_results) + len(news_results)
     total_pages = max(1, (total + per_page - 1) // per_page)
     page = min(page, total_pages)
     page_results = results[(page - 1) * per_page: page * per_page]
@@ -1562,6 +1610,9 @@ def search():
     classes = DrugClass.query.order_by(DrugClass.name).all()
     conditions = Condition.query.order_by(Condition.name).all()
     return render_template("search.html", q=q, results=page_results, total=total,
+                           total_all=total_all,
+                           condition_results=condition_results,
+                           news_results=news_results,
                            classes=classes, conditions=conditions,
                            class_slug=class_slug, cond_slug=cond_slug, avail=avail,
                            page=page, total_pages=total_pages,
@@ -1987,15 +2038,59 @@ def sitemap():
     return render_template("sitemap.html", classes=classes, conditions=conditions)
 
 
+SIDE_EFFECTS_AZ = [
+    "Abdominal pain", "Acne", "Agitation", "Allergic reaction", "Anemia",
+    "Anxiety", "Appetite loss", "Arrhythmia", "Back pain", "Bleeding",
+    "Bloating", "Blurred vision", "Bruising", "Chest pain", "Chills",
+    "Confusion", "Constipation", "Cough", "Cramps", "Depression",
+    "Diarrhea", "Dizziness", "Drowsiness", "Dry mouth", "Edema",
+    "Fatigue", "Fever", "Flushing", "Gas", "Hair loss",
+    "Headache", "Heartburn", "Hypertension", "Hypotension", "Indigestion",
+    "Insomnia", "Itching", "Jaundice", "Joint pain", "Liver damage",
+    "Muscle pain", "Nausea", "Nervousness", "Numbness", "Palpitations",
+    "Rash", "Restlessness", "Ringing in ears", "Seizures", "Shortness of breath",
+    "Skin reaction", "Sore throat", "Stomach upset", "Sweating", "Swelling",
+    "Tachycardia", "Tremor", "Vomiting", "Weakness", "Weight gain",
+    "Weight loss",
+]
+
+MOST_SEARCHED_SIDE_EFFECTS = [
+    "Nausea", "Headache", "Dizziness", "Drowsiness", "Fatigue",
+    "Diarrhea", "Constipation", "Insomnia", "Weight gain", "Rash",
+]
+
+
 @app.route("/side-effects/")
 @app.route("/side-effects")
 def side_effects_page():
-    q = request.args.get("q", "")
+    """Side Effects A-Z index page.
+
+    Renders an alphabetical directory of common side effect names with an
+    A-Z letter navigation, a search box, a "most commonly searched" list,
+    and (when ``?q=`` is supplied) drugs whose ``side_effects`` text matches.
+    """
+    q = (request.args.get("q") or "").strip()
     drugs = []
     if q:
-        drugs = Drug.query.filter(Drug.side_effects.ilike(f"%{q}%")).limit(20).all()
-    popular = Drug.query.order_by(Drug.review_count.desc()).limit(20).all()
-    return render_template("side_effects.html", drugs=drugs, query=q, popular=popular)
+        drugs = Drug.query.filter(Drug.side_effects.ilike(f"%{q}%")).limit(30).all()
+
+    # Group the curated A-Z list by first letter for the directory grid.
+    by_letter = {}
+    for name in SIDE_EFFECTS_AZ:
+        letter = name[0].upper()
+        by_letter.setdefault(letter, []).append(name)
+    for letter in by_letter:
+        by_letter[letter].sort()
+    letters = sorted(by_letter.keys())
+    all_letters = list(string.ascii_uppercase)
+
+    popular = Drug.query.order_by(Drug.review_count.desc()).limit(10).all()
+    return render_template(
+        "side_effects.html",
+        drugs=drugs, query=q, popular=popular,
+        by_letter=by_letter, letters=letters, all_letters=all_letters,
+        most_searched=MOST_SEARCHED_SIDE_EFFECTS,
+    )
 
 
 @app.route("/warnings/")
