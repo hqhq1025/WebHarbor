@@ -48,6 +48,45 @@
   </button>
 </form>
 
+{% if not drugs_input %}
+<section class="checker-empty-state" style="margin:1rem 0;">
+  <div class="how-it-works" style="background:#f5f7fa;border:1px solid #dde3ec;border-radius:6px;padding:14px 18px;margin-bottom:16px;">
+    <h2 style="margin-top:0;font-size:1.15em;">How it works</h2>
+    <ul style="margin:0.5rem 0 0 0;padding-left:1.2rem;">
+      <li>Enter 2 or more drugs to check for interactions.</li>
+      <li>Searches both generic and brand names.</li>
+      <li>Severity levels:
+        <span class="sev-badge sev-major" style="display:inline-block;padding:2px 8px;border-radius:10px;background:#c0392b;color:#fff;font-size:0.85em;margin:0 2px;">Major</span> avoid combination;
+        <span class="sev-badge sev-moderate" style="display:inline-block;padding:2px 8px;border-radius:10px;background:#e67e22;color:#fff;font-size:0.85em;margin:0 2px;">Moderate</span> use with caution and monitoring;
+        <span class="sev-badge sev-minor" style="display:inline-block;padding:2px 8px;border-radius:10px;background:#f1c40f;color:#222;font-size:0.85em;margin:0 2px;">Minor</span> limited clinical effect.
+      </li>
+    </ul>
+  </div>
+
+  <div class="common-interactions" style="background:#fff;border:1px solid #dde3ec;border-radius:6px;padding:14px 18px;">
+    <h2 style="margin-top:0;font-size:1.15em;">Common interactions to check</h2>
+    <p class="muted" style="margin:0.25rem 0 0.75rem 0;">Click a pair to add both drugs to the checker.</p>
+    <div class="common-pair-buttons" style="display:flex;flex-wrap:wrap;gap:8px;">
+      {% set common_pairs = [
+        ['Warfarin', 'Aspirin'],
+        ['Metformin', 'Alcohol'],
+        ['Lisinopril', 'Potassium supplements'],
+        ['Simvastatin', 'Amiodarone'],
+        ['Fluoxetine', 'Tramadol'],
+        ['Ibuprofen', 'Prednisone']
+      ] %}
+      {% for pair in common_pairs %}
+        <button type="button" class="common-pair-btn"
+                data-drug-a="{{ pair[0] }}" data-drug-b="{{ pair[1] }}"
+                style="background:#eef3fa;border:1px solid #b9c8db;color:#1f4e84;border-radius:18px;padding:6px 14px;cursor:pointer;font-size:0.92em;">
+          {{ pair[0] }} + {{ pair[1] }}
+        </button>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+{% endif %}
+
 <p class="checker-disclaimer">
   Not all drugs interact, and not every interaction means you must stop taking one of your
   medications. Always consult your healthcare provider about how drug interactions should be
@@ -56,6 +95,11 @@
 
 {% if drugs_input %}
 <section class="checker-results">
+  <div class="allergy-reminder" style="background:#fff9e6;border-left:4px solid #f0ad4e;padding:12px 16px;margin-bottom:20px;border-radius:0 4px 4px 0">
+    <strong>&#9888; Check your drug allergies:</strong> Always inform your healthcare provider
+    of any drug allergies before starting a new medication. If you experience signs of
+    an allergic reaction (hives, difficulty breathing, swelling), seek emergency care immediately.
+  </div>
   <h2>Interaction Results</h2>
   <p class="muted">Drugs checked: {{ drugs_input | join(', ') }}</p>
   {% if unrecognized %}
@@ -277,6 +321,18 @@
 
   input.addEventListener('keydown', function(e){
     if(e.key === 'Enter'){ e.preventDefault(); addBtn.click(); }
+  });
+
+  // Wire up "Common interactions" quick-fill buttons.
+  Array.prototype.forEach.call(document.querySelectorAll('.common-pair-btn'), function(btn){
+    btn.addEventListener('click', function(){
+      var a = btn.getAttribute('data-drug-a');
+      var b = btn.getAttribute('data-drug-b');
+      // Clear existing list so the pair shows cleanly.
+      Array.prototype.forEach.call(listEl.querySelectorAll('li'), function(li){ li.remove(); });
+      if(a) addDrug(a);
+      if(b) addDrug(b);
+    });
   });
 
   // Wire up pre-rendered remove buttons (server-rendered tags).

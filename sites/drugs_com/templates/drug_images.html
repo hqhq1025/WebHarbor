@@ -1,35 +1,162 @@
 {% extends "base.html" %}
-{% block title %}{{ drug.generic_name }} Pill Images | {{ site_name }}{% endblock %}
+{% block title %}{{ drug.generic_name|capitalize }} Pill Images | {{ site_name }}{% endblock %}
 {% block content %}
-<div style="padding:24px 0">
-  <nav class="breadcrumb">
-    <a href="{{ url_for('index') }}">Home</a> &rsaquo;
-    <a href="{{ url_for('drug_detail', slug=drug.slug) }}">{{ drug.generic_name }}</a> &rsaquo;
-    <span>Images</span>
-  </nav>
-  <h1 style="font-size:2rem;margin-bottom:8px">{{ drug.generic_name }} Pill Images</h1>
-  <p style="margin-bottom:20px">Pill images for {{ drug.generic_name }}{% if drug.brand_names %} (brand: {{ drug.brand_names|join(', ') }}){% endif %}. <a href="{{ url_for('drug_detail', slug=drug.slug) }}">Back to drug details</a>.</p>
+{# Two-tone pairing for capsules: maps a primary color to a complementary second half. #}
+{% set capsule_pair = {
+  'white': '#d0d4da', 'yellow': '#ffa94d', 'orange': '#ffe066', 'pink': '#ffffff',
+  'red': '#ffe066', 'brown': '#f0d9b5', 'gray': '#495057', 'green': '#ffffff',
+  'blue': '#ffffff', 'purple': '#faa2c1', 'black': '#adb5bd', 'turquoise': '#ffffff'
+} %}
+{% set color_map = {
+  'white': '#ffffff', 'yellow': '#ffe066', 'orange': '#ffa94d', 'pink': '#faa2c1',
+  'red': '#ff6b6b', 'brown': '#a47148', 'gray': '#adb5bd', 'green': '#69db7c',
+  'blue': '#74c0fc', 'purple': '#b197fc', 'black': '#495057', 'turquoise': '#66d9e8'
+} %}
 
-  {% if images %}
-    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:18px">
-      {% for img in images %}
-        <div style="border:1px solid #e2e2e2;border-radius:6px;padding:14px;background:#fff;text-align:center">
-          <svg viewBox="0 0 120 60" width="160" height="80" xmlns="http://www.w3.org/2000/svg" style="margin-bottom:8px">
-            <ellipse cx="60" cy="30" rx="50" ry="22" fill="#fce6ec" stroke="#b8526a" stroke-width="1.5"/>
-            <text x="60" y="35" text-anchor="middle" font-size="12" fill="#333" font-family="sans-serif">{{ img.imprint or '' }}</text>
+<nav class="breadcrumb" aria-label="Breadcrumb">
+  <a href="{{ url_for('index') }}">Home</a> &rsaquo;
+  <a href="{{ url_for('drug_detail', slug=drug.slug) }}">{{ drug.generic_name|capitalize }}</a> &rsaquo;
+  <span>Images</span>
+</nav>
+
+<div class="page-with-sidebar">
+<div class="main-col">
+
+<header class="drug-images-header">
+  <h1>{{ drug.generic_name|capitalize }} Images</h1>
+  <p class="drug-images-subtitle">
+    {% if drug.drug_class %}
+      <a href="{{ url_for('drug_class_page', slug=drug.drug_class.slug) }}">{{ drug.drug_class.name }}</a>
+    {% endif %}
+    {% if drug.brand_names %}
+      {% if drug.drug_class %} &middot; {% endif %}
+      Brand names: {{ drug.brand_names|join(', ') }}
+    {% endif %}
+  </p>
+</header>
+
+<div class="disclaimer-box">
+  <p><strong>Note:</strong> These images are for identification purposes only. Colors may vary between manufacturers and lots, and image rendering may differ slightly from the actual product.</p>
+</div>
+
+{% if images %}
+  <p class="muted" style="margin:14px 0">Showing {{ images|length }} pill image{{ '' if images|length == 1 else 's' }} for {{ drug.generic_name|capitalize }}.</p>
+  <div class="pill-result-grid drug-images-grid">
+    {% for img in images %}
+      {% set color_lc = (img.color or '')|lower %}
+      {% set is_light = color_lc in ['white','yellow','pink','orange','turquoise','gray'] %}
+      {% set text_fill = '#222' if is_light else '#fff' %}
+      {% set primary = color_map.get(color_lc, '#cfd4da') %}
+      {% set secondary = capsule_pair.get(color_lc, '#ffffff') %}
+      <article class="pill-result-card">
+        <div class="pill-icon-circle" data-color="{{ color_lc }}">
+          <svg viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+            <defs>
+              <radialGradient id="di-shine-{{ loop.index }}" cx="35%" cy="28%" r="68%">
+                <stop offset="0%" stop-color="#fff" stop-opacity="0.6"/>
+                <stop offset="55%" stop-color="#fff" stop-opacity="0"/>
+              </radialGradient>
+              <radialGradient id="di-body-{{ loop.index }}" cx="50%" cy="50%" r="60%">
+                <stop offset="0%" stop-color="currentColor" stop-opacity="1"/>
+                <stop offset="100%" stop-color="#000" stop-opacity="0.12"/>
+              </radialGradient>
+              <filter id="di-shadow-{{ loop.index }}" x="-10%" y="-10%" width="120%" height="130%">
+                <feDropShadow dx="0" dy="1" stdDeviation="0.9" flood-opacity="0.28"/>
+              </filter>
+            </defs>
+            <g filter="url(#di-shadow-{{ loop.index }})">
+            {% if img.shape == 'Capsule' %}
+              {# Two-tone capsule: left half primary color, right half secondary color. #}
+              <defs>
+                <clipPath id="di-capsule-{{ loop.index }}">
+                  <rect x="4" y="22" width="52" height="16" rx="8" ry="8"/>
+                </clipPath>
+              </defs>
+              <g clip-path="url(#di-capsule-{{ loop.index }})">
+                <rect x="4" y="22" width="26" height="16" fill="{{ primary }}"/>
+                <rect x="30" y="22" width="26" height="16" fill="{{ secondary }}"/>
+              </g>
+              <rect x="4" y="22" width="52" height="16" rx="8" ry="8" fill="none" stroke="#3a3a3a" stroke-width="0.8"/>
+              <line x1="30" y1="22" x2="30" y2="38" stroke="#3a3a3a" stroke-width="0.6" stroke-opacity="0.55"/>
+              <rect x="4" y="22" width="52" height="16" rx="8" ry="8" fill="url(#di-shine-{{ loop.index }})"/>
+            {% elif img.shape == 'Oval' %}
+              <ellipse cx="30" cy="30" rx="25" ry="14" fill="url(#di-body-{{ loop.index }})" stroke="#3a3a3a" stroke-width="0.8"/>
+              <ellipse cx="30" cy="30" rx="25" ry="14" fill="url(#di-shine-{{ loop.index }})"/>
+            {% elif img.shape == 'Rectangle' %}
+              <rect x="7" y="19" width="46" height="22" rx="3" fill="url(#di-body-{{ loop.index }})" stroke="#3a3a3a" stroke-width="0.8"/>
+              <rect x="7" y="19" width="46" height="22" rx="3" fill="url(#di-shine-{{ loop.index }})"/>
+            {% elif img.shape == 'Triangle' %}
+              <polygon points="30,8 54,50 6,50" fill="url(#di-body-{{ loop.index }})" stroke="#3a3a3a" stroke-width="0.8" stroke-linejoin="round"/>
+              <polygon points="30,8 54,50 6,50" fill="url(#di-shine-{{ loop.index }})"/>
+            {% elif img.shape == 'Diamond' %}
+              <polygon points="30,6 54,30 30,54 6,30" fill="url(#di-body-{{ loop.index }})" stroke="#3a3a3a" stroke-width="0.8" stroke-linejoin="round"/>
+              <polygon points="30,6 54,30 30,54 6,30" fill="url(#di-shine-{{ loop.index }})"/>
+            {% elif img.shape == 'Pentagon' %}
+              <polygon points="30,7 54,25 45,52 15,52 6,25" fill="url(#di-body-{{ loop.index }})" stroke="#3a3a3a" stroke-width="0.8" stroke-linejoin="round"/>
+              <polygon points="30,7 54,25 45,52 15,52 6,25" fill="url(#di-shine-{{ loop.index }})"/>
+            {% elif img.shape == 'Bullet' %}
+              <path d="M14,16 Q30,4 46,16 L46,50 L14,50 Z" fill="url(#di-body-{{ loop.index }})" stroke="#3a3a3a" stroke-width="0.8" stroke-linejoin="round"/>
+              <path d="M14,16 Q30,4 46,16 L46,50 L14,50 Z" fill="url(#di-shine-{{ loop.index }})"/>
+            {% elif img.shape == 'Figure 8' %}
+              <circle cx="20" cy="30" r="14" fill="url(#di-body-{{ loop.index }})" stroke="#3a3a3a" stroke-width="0.8"/>
+              <circle cx="40" cy="30" r="14" fill="url(#di-body-{{ loop.index }})" stroke="#3a3a3a" stroke-width="0.8"/>
+              <circle cx="20" cy="30" r="14" fill="url(#di-shine-{{ loop.index }})"/>
+              <circle cx="40" cy="30" r="14" fill="url(#di-shine-{{ loop.index }})"/>
+            {% else %}
+              {# Default: Round pill with score line. #}
+              <circle cx="30" cy="30" r="23" fill="url(#di-body-{{ loop.index }})" stroke="#3a3a3a" stroke-width="0.8"/>
+              <line x1="9" y1="30" x2="51" y2="30" stroke="#3a3a3a" stroke-width="0.5" stroke-opacity="0.4"/>
+              <circle cx="30" cy="30" r="23" fill="url(#di-shine-{{ loop.index }})"/>
+            {% endif %}
+            </g>
+            {% if img.imprint %}
+              <text x="30" y="33" font-family="Arial, sans-serif" font-size="{{ 9 if (img.imprint|length) <= 5 else 7 }}" font-weight="700" text-anchor="middle" fill="{{ text_fill }}">{{ img.imprint }}</text>
+            {% endif %}
           </svg>
-          <div style="text-align:left;font-size:0.92rem;line-height:1.55">
-            <div><strong>Imprint:</strong> {{ img.imprint or '&mdash;' | safe }}</div>
-            <div><strong>Shape:</strong> {{ img.shape or '&mdash;' | safe }}</div>
-            <div><strong>Color:</strong> {{ img.color or '&mdash;' | safe }}</div>
-            <div><strong>Strength:</strong> {{ img.strength or '&mdash;' | safe }}</div>
-            <div><strong>Manufacturer:</strong> {{ img.manufacturer or '&mdash;' | safe }}</div>
-          </div>
         </div>
-      {% endfor %}
-    </div>
-  {% else %}
-    <p style="padding:24px;background:#f7f7f7;border-radius:6px">No pill images are available for {{ drug.generic_name }}.</p>
-  {% endif %}
+        <div class="pill-result-body">
+          <h3 class="pill-result-name">
+            {% if img.imprint %}Imprint <strong>{{ img.imprint }}</strong>{% else %}{{ drug.generic_name|capitalize }}{% endif %}
+          </h3>
+          <dl class="pill-result-attrs">
+            <dt>Shape:</dt><dd>{{ img.shape or '—' }}</dd>
+            <dt>Color:</dt><dd>{{ img.color or '—' }}</dd>
+            <dt>Strength:</dt><dd>{{ img.strength or '—' }}</dd>
+            <dt>Manufacturer:</dt><dd>{{ img.manufacturer or '—' }}</dd>
+          </dl>
+        </div>
+      </article>
+    {% endfor %}
+  </div>
+{% else %}
+  <p class="muted" style="padding:24px;background:#f7f7f7;border-radius:6px">No pill images are available for {{ drug.generic_name|capitalize }}.</p>
+{% endif %}
+
+<p style="margin-top:24px">
+  <a href="{{ url_for('drug_detail', slug=drug.slug) }}" class="btn btn-outline">&larr; Back to {{ drug.generic_name|capitalize }} drug information</a>
+</p>
+
+</div>
+
+<aside class="sidebar">
+  <div class="sidebar-box popular-tools">
+    <h3>More about {{ drug.generic_name|capitalize }}</h3>
+    <ul class="sidebar-links">
+      <li><a href="{{ url_for('drug_detail', slug=drug.slug) }}">Drug information</a></li>
+      <li><a href="{{ url_for('drug_prices', slug=drug.slug) }}">Pricing &amp; coupons</a></li>
+      <li><a href="{{ url_for('drug_side_effects', slug=drug.slug) }}">Side effects</a></li>
+      <li><a href="{{ url_for('drug_dosage', slug=drug.slug) }}">Dosage</a></li>
+      <li><a href="{{ url_for('drug_pregnancy', slug=drug.slug) }}">Pregnancy warnings</a></li>
+      <li><a href="{{ url_for('drug_reviews_page', slug=drug.slug) }}">User reviews</a></li>
+    </ul>
+  </div>
+  <div class="sidebar-box popular-tools">
+    <h3>Related tools</h3>
+    <ul class="sidebar-links">
+      <li><a href="{{ url_for('pill_identifier') }}">Pill identifier</a></li>
+      <li><a href="{{ url_for('interaction_checker') }}">Drug interaction checker</a></li>
+    </ul>
+  </div>
+</aside>
 </div>
 {% endblock %}
