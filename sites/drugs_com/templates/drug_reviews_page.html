@@ -1,27 +1,6 @@
 {% extends "base.html" %}
 {% block title %}{{ drug.generic_name|capitalize }} User Reviews & Ratings - {{ site_name }}{% endblock %}
 {% block content %}
-<style>
-  .reviews-summary { display: flex; gap: 28px; align-items: flex-start; padding: 18px; border: 1px solid var(--gray-200, #e3e6eb); border-radius: 6px; background: #fafbfc; margin-bottom: 20px; }
-  .reviews-summary-score { min-width: 130px; text-align: center; }
-  .reviews-summary-number { font-size: 2.4rem; font-weight: 700; color: var(--navy, #1a3e72); line-height: 1.1; }
-  .reviews-summary-denominator { font-size: 1rem; color: #666; font-weight: 400; }
-  .reviews-distribution { flex: 1; display: flex; flex-direction: column; gap: 4px; }
-  .rating-row { display: grid; grid-template-columns: 28px 1fr 48px; gap: 10px; align-items: center; font-size: 0.9rem; }
-  .rating-row-label { text-align: right; font-weight: 600; color: #333; }
-  .rating-row-bar { display: block; height: 12px; background: #e8ecf1; border-radius: 6px; overflow: hidden; position: relative; }
-  .rating-row-fill { display: block; height: 100%; background: linear-gradient(90deg, #2a7fba, #4aa3df); border-radius: 6px; min-width: 2px; }
-  .rating-row-count { text-align: left; color: #555; font-variant-numeric: tabular-nums; }
-  .reviews-filter { display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end; padding: 12px; background: #f5f7fa; border-radius: 6px; margin-bottom: 18px; }
-  .reviews-filter label { display: flex; flex-direction: column; font-size: 0.85rem; color: #555; gap: 4px; }
-  .reviews-list .review-card { padding: 14px; border: 1px solid #e3e6eb; border-radius: 6px; margin-bottom: 12px; background: #fff; }
-  .review-score { display: inline-block; background: var(--navy, #1a3e72); color: #fff; padding: 2px 8px; border-radius: 4px; font-weight: 700; margin-right: 8px; }
-  .pagination { display: flex; gap: 14px; align-items: center; justify-content: center; margin: 20px 0; }
-  @media (max-width: 768px) {
-    .reviews-summary { flex-direction: column; }
-    .reviews-summary-score { min-width: 0; text-align: left; }
-  }
-</style>
 <div class="container">
   <nav class="breadcrumb">
     <a href="{{ url_for('index') }}">Home</a> &rsaquo;
