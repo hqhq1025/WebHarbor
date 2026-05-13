@@ -17,10 +17,45 @@
 <div class="two-col">
   <div class="main-col">
     <h2>What are {{ drug_class.name }}?</h2>
-    <p>{{ drug_class.description or 'No description available.' }}</p>
+    <p>{{ class_description or drug_class.description or 'No description available.' }}</p>
 
     <h2>What are {{ drug_class.name }} used for?</h2>
-    <p>{{ drug_class.name }} are used in the treatment of a variety of medical conditions. See the list of drugs below for specific indications and approved uses.</p>
+    {% if common_conditions %}
+      <p>{{ drug_class.name }} are most commonly used to treat the following conditions:</p>
+      <ul class="common-conditions">
+        {% for entry in common_conditions %}
+          <li>
+            <a href="{{ url_for('condition_page', slug=entry.condition.slug) }}">{{ entry.condition.name }}</a>
+            <span class="muted" style="font-size:13px">
+              ({{ entry.count }} drug{{ '' if entry.count == 1 else 's' }} in this class)
+            </span>
+          </li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      <p>{{ drug_class.name }} are used in the treatment of a variety of medical conditions. See the list of drugs below for specific indications and approved uses.</p>
+    {% endif %}
+
+    {% if notable_drugs %}
+      <h2>Notable {{ drug_class.name }}</h2>
+      <p class="muted" style="font-size:14px;margin-top:-4px">Top-rated drugs in this class based on user reviews.</p>
+      <ul class="notable-drugs" style="list-style:none;padding:0;margin:8px 0 16px">
+        {% for d in notable_drugs %}
+          <li style="padding:8px 0;border-bottom:1px solid #eef1f5;display:flex;justify-content:space-between;align-items:center;gap:12px">
+            <div>
+              <a href="{{ url_for('drug_detail', slug=d.slug) }}"><strong>{{ d.generic_name|capitalize }}</strong></a>
+              {% if d.brand_names %}
+                <span class="muted" style="font-size:13px">— {{ d.brand_names|join(', ') }}</span>
+              {% endif %}
+            </div>
+            <div style="white-space:nowrap;font-size:13px">
+              <span class="rating">{{ '%.1f'|format(d.avg_rating) if d.avg_rating else '-' }}</span>
+              <span class="muted">/ 10 &middot; {{ d.review_count or 0 }} review{{ '' if (d.review_count or 0) == 1 else 's' }}</span>
+            </div>
+          </li>
+        {% endfor %}
+      </ul>
+    {% endif %}
 
     {% if drugs %}
       <p style="margin:12px 0">

@@ -209,15 +209,38 @@
     active = -1;
   }
 
+  function groupLabel(type){
+    if (type === 'condition') return 'Conditions';
+    return 'Drugs';
+  }
+
   function render(data){
     items = data || [];
     if (!items.length){ hide(); return; }
-    box.innerHTML = items.map(function(r, i){
-      return '<div class="autocomplete-item" data-idx="'+i+'" data-url="'+r.url+'">'
-           + '<span class="autocomplete-icon">'+iconFor(r.type)+'</span>'
-           + '<span class="autocomplete-label">'+escapeHtml(r.label)+'</span>'
-           + '</div>';
-    }).join('');
+    // Group items by type bucket (drug/brand -> Drugs, condition -> Conditions)
+    var groups = {};
+    var order = [];
+    items.forEach(function(r){
+      var g = (r.type === 'condition') ? 'condition' : 'drug';
+      if (!groups[g]){ groups[g] = []; order.push(g); }
+      groups[g].push(r);
+    });
+    var html = '';
+    var idx = 0;
+    var reordered = [];
+    order.forEach(function(g){
+      html += '<div class="autocomplete-group-header">'+groupLabel(g)+'</div>';
+      groups[g].forEach(function(r){
+        html += '<div class="autocomplete-item" data-idx="'+idx+'" data-url="'+r.url+'">'
+             + '<span class="autocomplete-icon">'+iconFor(r.type)+'</span>'
+             + '<span class="autocomplete-label">'+escapeHtml(r.label)+'</span>'
+             + '</div>';
+        reordered.push(r);
+        idx++;
+      });
+    });
+    items = reordered;
+    box.innerHTML = html;
     box.hidden = false;
     active = -1;
     Array.prototype.forEach.call(box.querySelectorAll('.autocomplete-item'), function(el){

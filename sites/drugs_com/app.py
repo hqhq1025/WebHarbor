@@ -1399,7 +1399,19 @@ def drug_az():
     if letter not in string.ascii_uppercase:
         letter = "A"
     drugs = Drug.query.filter(Drug.generic_name.ilike(f"{letter}%")).order_by(Drug.generic_name).all()
-    return render_template("drug_az.html", active_letter=letter, all_letters=list(string.ascii_uppercase), drugs=drugs)
+    letter_counts = {
+        L: Drug.query.filter(Drug.generic_name.ilike(f"{L}%")).count()
+        for L in string.ascii_uppercase
+    }
+    popular_drugs = Drug.query.order_by(Drug.review_count.desc()).limit(10).all()
+    return render_template(
+        "drug_az.html",
+        active_letter=letter,
+        all_letters=list(string.ascii_uppercase),
+        drugs=drugs,
+        letter_counts=letter_counts,
+        popular_drugs=popular_drugs,
+    )
 
 
 def _first_sentences(text, n):
@@ -2073,6 +2085,35 @@ def condition_page(slug):
     )
 
 
+CLASS_DESCRIPTIONS = {
+    "NSAID": "Nonsteroidal anti-inflammatory drugs (NSAIDs) reduce pain, fever, and inflammation by blocking cyclooxygenase enzymes.",
+    "NSAIDs": "Nonsteroidal anti-inflammatory drugs (NSAIDs) reduce pain, fever, and inflammation by blocking cyclooxygenase enzymes.",
+    "SSRI": "Selective serotonin reuptake inhibitors (SSRIs) increase serotonin levels in the brain and are used to treat depression and anxiety disorders.",
+    "SSRIs": "Selective serotonin reuptake inhibitors (SSRIs) increase serotonin levels in the brain and are used to treat depression and anxiety disorders.",
+    "SNRI": "Serotonin-norepinephrine reuptake inhibitors (SNRIs) raise serotonin and norepinephrine levels, used for depression, anxiety, and chronic pain.",
+    "ACE Inhibitor": "ACE inhibitors block the angiotensin-converting enzyme to lower blood pressure and treat heart failure.",
+    "ACE Inhibitors": "ACE inhibitors block the angiotensin-converting enzyme to lower blood pressure and treat heart failure.",
+    "ARB": "Angiotensin II receptor blockers (ARBs) relax blood vessels by blocking angiotensin II, used to treat hypertension and heart failure.",
+    "Beta Blocker": "Beta blockers slow the heart rate and lower blood pressure by blocking adrenaline effects on beta receptors.",
+    "Beta Blockers": "Beta blockers slow the heart rate and lower blood pressure by blocking adrenaline effects on beta receptors.",
+    "Calcium Channel Blocker": "Calcium channel blockers relax blood vessels and reduce the heart's workload by blocking calcium entry into cardiac and smooth muscle cells.",
+    "Statin": "Statins lower LDL cholesterol by inhibiting HMG-CoA reductase in the liver, reducing the risk of cardiovascular events.",
+    "Statins": "Statins lower LDL cholesterol by inhibiting HMG-CoA reductase in the liver, reducing the risk of cardiovascular events.",
+    "PPI": "Proton pump inhibitors (PPIs) suppress stomach acid production by blocking the H+/K+ ATPase pump, used for GERD and ulcers.",
+    "Proton Pump Inhibitor": "Proton pump inhibitors (PPIs) suppress stomach acid production by blocking the H+/K+ ATPase pump, used for GERD and ulcers.",
+    "Antibiotic": "Antibiotics kill or inhibit bacteria and are used to treat bacterial infections.",
+    "Antibiotics": "Antibiotics kill or inhibit bacteria and are used to treat bacterial infections.",
+    "Antihistamine": "Antihistamines block histamine receptors to relieve allergy symptoms such as sneezing, itching, and runny nose.",
+    "Antihistamines": "Antihistamines block histamine receptors to relieve allergy symptoms such as sneezing, itching, and runny nose.",
+    "Benzodiazepine": "Benzodiazepines enhance GABA activity in the brain to produce calming effects, used for anxiety, insomnia, and seizures.",
+    "Opioid": "Opioids bind to opioid receptors to relieve moderate to severe pain; they carry risk of dependence and respiratory depression.",
+    "Opioids": "Opioids bind to opioid receptors to relieve moderate to severe pain; they carry risk of dependence and respiratory depression.",
+    "Corticosteroid": "Corticosteroids reduce inflammation and suppress the immune response, used for asthma, allergies, and autoimmune conditions.",
+    "Diuretic": "Diuretics increase urine output to remove excess fluid, used for hypertension, heart failure, and edema.",
+    "Biguanide": "Biguanides such as metformin lower blood glucose by reducing hepatic glucose production, used as first-line therapy for type 2 diabetes.",
+}
+
+
 @app.route("/drug-class/<slug>")
 def drug_class_page(slug):
     cls = DrugClass.query.filter_by(slug=slug).first_or_404()
@@ -2091,6 +2132,44 @@ def drug_class_page(slug):
         .limit(8)
         .all()
     )
+
+    class_description = cls.description
+    if not class_description:
+        class_description = (
+            CLASS_DESCRIPTIONS.get(cls.name)
+            or CLASS_DESCRIPTIONS.get((cls.name or "").rstrip("s"))
+        )
+
+    drug_ids = [d.id for d in drugs]
+    common_conditions = []
+    if drug_ids:
+        cond_counts = (
+            db.session.query(
+                DrugCondition.condition_id,
+                db.func.count(DrugCondition.drug_id),
+            )
+            .filter(DrugCondition.drug_id.in_(drug_ids))
+            .group_by(DrugCondition.condition_id)
+            .order_by(db.func.count(DrugCondition.drug_id).desc())
+            .limit(8)
+            .all()
+        )
+        if cond_counts:
+            ids = [cid for cid, _ in cond_counts]
+            cond_map = {
+                c.id: c
+                for c in Condition.query.filter(Condition.id.in_(ids)).all()
+            }
+            for cid, n in cond_counts:
+                c = cond_map.get(cid)
+                if c:
+                    common_conditions.append({"condition": c, "count": n})
+
+    notable_drugs = sorted(
+        drugs,
+        key=lambda d: (-(d.avg_rating or 0), -(d.review_count or 0), d.generic_name),
+    )[:5]
+
     return render_template(
         "drug_class.html",
         drug_class=cls,
@@ -2098,6 +2177,9 @@ def drug_class_page(slug):
         related_classes=related,
         sort=sort,
         drug_count=len(drugs),
+        class_description=class_description,
+        common_conditions=common_conditions,
+        notable_drugs=notable_drugs,
     )
 
 
@@ -2177,9 +2259,17 @@ def drug_classes_list():
 @app.route("/conditions.html")
 def conditions_list():
     all_conditions = Condition.query.order_by(Condition.name).all()
+    condition_drug_counts = dict(
+        db.session.query(
+            DrugCondition.condition_id, db.func.count(DrugCondition.drug_id)
+        )
+        .group_by(DrugCondition.condition_id)
+        .all()
+    )
     for c in all_conditions:
-        if c.drug_count is None:
-            c.drug_count = DrugCondition.query.filter_by(condition_id=c.id).count()
+        computed = condition_drug_counts.get(c.id, 0)
+        if c.drug_count is None or c.drug_count == 0:
+            c.drug_count = computed
     all_letters = list('ABCDEFGHIJKLMNOPQRSTUVWXYZ') + ['0-9']
     active_letter = (request.args.get("letter") or "").upper().strip() or None
     if active_letter == '0-9':
@@ -2200,11 +2290,35 @@ def conditions_list():
             if len(top_conditions) >= 8:
                 break
     top_conditions = top_conditions[:8]
+
+    # Featured conditions: those with the most drugs (independent of curated top list).
+    featured_conditions = sorted(
+        all_conditions, key=lambda c: (-(c.drug_count or 0), c.name)
+    )[:8]
+    featured_conditions = [c for c in featured_conditions if (c.drug_count or 0) > 0]
+
+    # Group conditions alphabetically for letter section headers.
+    grouped_conditions = {}
+    for c in conditions:
+        if not c.name:
+            continue
+        first = c.name[0].upper()
+        if not first.isalpha():
+            first = "0-9"
+        grouped_conditions.setdefault(first, []).append(c)
+    grouped_keys = sorted(
+        grouped_conditions.keys(), key=lambda k: (k == "0-9", k)
+    )
+
     return render_template("conditions.html",
                            conditions=conditions,
                            all_letters=all_letters,
                            active_letter=active_letter,
-                           top_conditions=top_conditions)
+                           top_conditions=top_conditions,
+                           condition_drug_counts=condition_drug_counts,
+                           featured_conditions=featured_conditions,
+                           grouped_conditions=grouped_conditions,
+                           grouped_keys=grouped_keys)
 
 
 SYMPTOM_BODY_SYSTEMS = [

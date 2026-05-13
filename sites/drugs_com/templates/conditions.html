@@ -11,6 +11,21 @@
 
 <div class="two-col">
   <div class="main-col">
+    {% if featured_conditions and not active_letter %}
+    <section class="featured-conditions" style="margin:8px 0 20px;padding:14px 16px;border:1px solid #d6e0f0;border-radius:6px;background:#eef4fb">
+      <h2 style="margin:0 0 4px;font-size:1.15rem">Featured Conditions</h2>
+      <p class="muted" style="margin:0 0 10px;font-size:13px">The most common conditions, ranked by number of treatment options available.</p>
+      <ol style="margin:0;padding-left:20px;columns:2;column-gap:24px">
+        {% for c in featured_conditions %}
+          <li style="margin:4px 0;break-inside:avoid">
+            <a href="{{ url_for('condition_page', slug=c.slug) }}">{{ c.name }}</a>
+            <span class="muted" style="font-size:13px">— {{ c.drug_count or 0 }} drug{{ '' if (c.drug_count or 0) == 1 else 's' }}</span>
+          </li>
+        {% endfor %}
+      </ol>
+    </section>
+    {% endif %}
+
     {% if top_conditions and not active_letter %}
     <section class="top-conditions" style="margin:8px 0 20px;padding:14px 16px;border:1px solid #e0e6ef;border-radius:6px;background:#f7f9fc">
       <h2 style="margin:0 0 10px;font-size:1.15rem">Top conditions</h2>
@@ -41,14 +56,30 @@
     {% endif %}
 
     {% if conditions %}
-    <ul class="condition-grid">
-      {% for c in conditions %}
-        <li>
-          <a href="{{ url_for('condition_page', slug=c.slug) }}">{{ c.name }}</a>
-          <span class="muted">({{ c.drug_count }} drug{{ '' if c.drug_count == 1 else 's' }})</span>
-        </li>
-      {% endfor %}
-    </ul>
+      {% if active_letter %}
+        <ul class="condition-grid">
+          {% for c in conditions %}
+            <li>
+              <a href="{{ url_for('condition_page', slug=c.slug) }}">{{ c.name }}</a>
+              <span class="muted">({{ c.drug_count }} drug{{ '' if c.drug_count == 1 else 's' }})</span>
+            </li>
+          {% endfor %}
+        </ul>
+      {% else %}
+        {% for letter in grouped_keys %}
+          <section class="letter-section" id="letter-{{ letter }}" style="margin:18px 0">
+            <h3 style="margin:0 0 8px;padding:4px 0;border-bottom:2px solid var(--navy,#1a3a6e);color:var(--navy,#1a3a6e);font-size:1.1rem">{{ letter }}</h3>
+            <ul class="condition-grid">
+              {% for c in grouped_conditions[letter] %}
+                <li>
+                  <a href="{{ url_for('condition_page', slug=c.slug) }}">{{ c.name }}</a>
+                  <span class="muted">({{ c.drug_count }} drug{{ '' if c.drug_count == 1 else 's' }})</span>
+                </li>
+              {% endfor %}
+            </ul>
+          </section>
+        {% endfor %}
+      {% endif %}
     {% else %}
       <p class="muted">No conditions found{% if active_letter %} for "{{ active_letter }}"{% endif %}.</p>
     {% endif %}
