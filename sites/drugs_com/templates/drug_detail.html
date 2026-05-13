@@ -120,22 +120,29 @@
     <a href="{{ url_for('drug_prices', slug=drug.slug) }}" class="btn btn-sm btn-outline">Pricing</a>
   </div>
 
-  <nav class="section-tabs" role="tablist">
-    <a href="#uses" role="tab" data-tab="uses">Uses</a>
-    <a href="#warnings" role="tab" data-tab="warnings">Warnings</a>
-    <a href="#before-taking" role="tab" data-tab="before-taking">Before taking</a>
-    <a href="#dosage" role="tab" data-tab="dosage">Dosage</a>
-    <a href="#what-to-avoid" role="tab" data-tab="what-to-avoid">What to avoid</a>
-    <a href="#side-effects" role="tab" data-tab="side-effects">Side effects</a>
-    <a href="#interactions" role="tab" data-tab="interactions">Interactions</a>
-    <a href="#faq" role="tab" data-tab="faq">FAQ</a>
+  <nav class="section-tabs">
+    <a href="#uses">Uses</a>
+    <a href="#warnings">Warnings</a>
+    <a href="#before-taking">Before taking</a>
+    <a href="#dosage">Dosage</a>
+    <a href="#what-to-avoid">What to avoid</a>
+    <a href="#side-effects">Side effects</a>
+    <a href="#interactions">Interactions</a>
+    <a href="#faq">FAQ</a>
   </nav>
   <style>
+    .section-tabs {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: white;
+    }
     .section-tabs a.active {
       font-weight: 700;
       border-bottom: 3px solid #0072ce;
       color: #0072ce;
     }
+    html { scroll-behavior: smooth; }
   </style>
 
   <div class="detail-grid">
@@ -662,39 +669,22 @@
 
 <script>
 (function(){
-  var TAB_IDS = ['uses','warnings','before-taking','dosage','what-to-avoid','side-effects','interactions','faq'];
-  var tabs = document.querySelectorAll('.section-tabs a[data-tab]');
-  if (!tabs.length) return;
-
-  function activate(id){
-    if (TAB_IDS.indexOf(id) === -1) id = 'uses';
-    TAB_IDS.forEach(function(sid){
-      var sec = document.getElementById(sid);
-      if (sec) sec.style.display = (sid === id) ? '' : 'none';
+  var sections = ['uses','warnings','before-taking','dosage','what-to-avoid','side-effects','interactions','faq'];
+  var tabs = document.querySelectorAll('.section-tabs a');
+  function updateActive() {
+    var scrollY = window.scrollY + 120;
+    var active = sections[0];
+    sections.forEach(function(id) {
+      var el = document.getElementById(id);
+      if (el && el.offsetTop <= scrollY) active = id;
     });
-    tabs.forEach(function(t){
-      if (t.dataset.tab === id) t.classList.add('active');
-      else t.classList.remove('active');
+    tabs.forEach(function(t) {
+      var href = t.getAttribute('href');
+      t.classList.toggle('active', href === '#' + active);
     });
   }
-
-  tabs.forEach(function(tab){
-    tab.addEventListener('click', function(e){
-      e.preventDefault();
-      var id = tab.dataset.tab;
-      activate(id);
-      if (history.replaceState) history.replaceState(null, '', '#' + id);
-      else window.location.hash = id;
-    });
-  });
-
-  var initial = (window.location.hash || '').replace(/^#/, '');
-  activate(TAB_IDS.indexOf(initial) !== -1 ? initial : 'uses');
-
-  window.addEventListener('hashchange', function(){
-    var h = (window.location.hash || '').replace(/^#/, '');
-    if (TAB_IDS.indexOf(h) !== -1) activate(h);
-  });
+  window.addEventListener('scroll', updateActive, {passive: true});
+  updateActive();
 })();
 </script>
 

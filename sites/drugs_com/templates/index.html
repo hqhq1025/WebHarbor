@@ -30,6 +30,14 @@
   </p>
 </div>
 
+<div class="az-quicknav" style="background:#f7f9fc;border:1px solid #e0e6ef;border-radius:6px;padding:10px 16px;margin:16px 0;display:flex;flex-wrap:wrap;gap:4px;align-items:center">
+  <span style="font-weight:600;color:#1a3a6e;margin-right:8px;font-size:14px">Browse A-Z:</span>
+  {% for L in 'ABCDEFGHIJKLMNOPQRSTUVWXYZ' %}
+    <a href="{{ url_for('drug_az') }}?letter={{ L }}" style="display:inline-block;padding:3px 7px;border:1px solid #c5d5e8;border-radius:3px;font-size:13px;font-weight:600;color:#0072ce;text-decoration:none;background:#fff">{{ L }}</a>
+  {% endfor %}
+  <a href="{{ url_for('drug_az') }}?letter=0" style="display:inline-block;padding:3px 7px;border:1px solid #c5d5e8;border-radius:3px;font-size:13px;font-weight:600;color:#0072ce;text-decoration:none;background:#fff">0-9</a>
+</div>
+
 <!-- Feature icons -->
 <div class="feature-carousel-wrap">
   <button class="carousel-btn carousel-prev" onclick="scrollCarousel(-1)" aria-label="Previous">&#8249;</button>
@@ -124,6 +132,18 @@ function scrollCarousel(dir) {
   </div>
 </div>
 {% endif %}
+
+<div class="container">
+<div class="newsletter-subscribe" style="background:#e7f3fb;border:1px solid #b8d4ea;border-radius:6px;padding:20px;margin:24px 0">
+  <h3 style="font-size:18px;font-weight:700;color:#1a3a6e;margin:0 0 8px">Stay up to date on drug news</h3>
+  <p style="color:#555;margin:0 0 12px;font-size:14px">Subscribe to Drugs.com newsletters for the latest medication news, new drug approvals, alerts and updates.</p>
+  <form action="{{ url_for('newsletter_subscribe') }}" method="post" style="display:flex;gap:10px;flex-wrap:wrap">
+    <input type="email" name="email" placeholder="Enter your email address" style="flex:1 1 240px;padding:8px 12px;border:1px solid #b0c4d8;border-radius:4px;font-size:14px">
+    <button type="submit" class="btn btn-primary" style="padding:8px 20px;font-size:14px">Subscribe</button>
+  </form>
+  <p style="font-size:12px;color:#888;margin:8px 0 0">Drugs.com will never sell or share your email address.</p>
+</div>
+</div>
 
 <!-- Browse section: A-Z + Browse by Site Section -->
 <div class="container">
@@ -320,5 +340,19 @@ function scrollCarousel(dir) {
       <button type="submit" class="btn btn-primary">Subscribe</button>
     </form>
   </div>
+</div>
+
+<div class="container">
+<div class="mobile-app-banner" style="background:#1a3a6e;color:#fff;border-radius:8px;padding:24px;margin:24px 0;display:flex;align-items:center;gap:24px">
+  <div style="flex:1">
+    <h3 style="font-size:20px;font-weight:700;color:#fff;margin:0 0 8px">Drugs.com Mobile App</h3>
+    <p style="color:#b8d4ea;margin:0 0 12px;font-size:14px">Access drug & treatment information, identify pills, check interactions and set up personal medication records. Available for Android and iOS devices.</p>
+    <div style="display:flex;gap:12px">
+      <span style="display:inline-block;background:#000;color:#fff;padding:8px 16px;border-radius:6px;font-size:13px;font-weight:600">App Store</span>
+      <span style="display:inline-block;background:#000;color:#fff;padding:8px 16px;border-radius:6px;font-size:13px;font-weight:600">Google Play</span>
+    </div>
+  </div>
+  <div style="font-size:72px;opacity:0.3">📱</div>
+</div>
 </div>
 {% endblock %}

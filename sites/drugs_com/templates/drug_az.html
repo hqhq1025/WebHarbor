@@ -91,6 +91,11 @@
         <li><a href="{{ url_for('search') }}?q=brand+generic">Brand/Generic</a></li>
         <li><a href="{{ url_for('search') }}?q=manufacturer">Drug Manufacturer</a></li>
         <li><a href="{{ url_for('search') }}?q=natural">Natural Products</a></li>
+        <li><a href="{{ url_for('search') }}?q=international">International Drug Names</a></li>
+        <li><a href="{{ url_for('search') }}?q=generic">Generic Drug Names</a></li>
+        <li><a href="{{ url_for('search') }}?q=OTC&amp;availability=OTC">OTC Drugs</a></li>
+        <li><a href="{{ url_for('news_index') }}?category=new-drugs">New Drugs</a></li>
+        <li><a href="{{ url_for('news_index') }}?category=fda-alerts">FDA Alerts</a></li>
       </ul>
     </section>
 
@@ -101,6 +106,47 @@
           <li><a href="{{ url_for('drug_detail', slug=name) }}">{{ name|capitalize }}</a></li>
         {% endfor %}
       </ul>
+    </section>
+
+    <section class="row-section drug-sources">
+      <h2>Consumer drug sources</h2>
+      <div class="drug-sources-grid" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-top:12px">
+        <div class="source-card" style="border:1px solid #e0e6ef;border-radius:6px;padding:16px">
+          <h3 style="font-size:15px;font-weight:700;color:#1a3a6e;margin:0 0 8px">Cerner Multum Consumer Drug Information</h3>
+          <p style="font-size:13px;color:#555;line-height:1.5">Multum provides current, accurate drug information such as drug descriptions, side effects, dosing, and warnings, as well as its use in the treatment and prevention of diseases.</p>
+          <p style="font-size:12px;color:#888">The leaflets are available in three languages and are tailored for use by adults.</p>
+        </div>
+        <div class="source-card" style="border:1px solid #e0e6ef;border-radius:6px;padding:16px">
+          <h3 style="font-size:15px;font-weight:700;color:#1a3a6e;margin:0 0 8px">Micromedex Consumer Drug Information (Advanced)</h3>
+          <p style="font-size:13px;color:#555;line-height:1.5">Micromedex Advanced Consumer drug information pertaining to a wide variety of drugs (ie, Rx, OTC, vitamins) written using everyday language.</p>
+        </div>
+        <div class="source-card" style="border:1px solid #e0e6ef;border-radius:6px;padding:16px">
+          <h3 style="font-size:15px;font-weight:700;color:#1a3a6e;margin:0 0 8px">Natural Product Information (Consumer)</h3>
+          <p style="font-size:13px;color:#555;line-height:1.5">The Natural database consumer information pertains to natural/herbal products containing possible drug-drug interactions, possible drug interactions with other health conditions, and drug effects.</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="row-section drug-sources">
+      <h2>Professional drug sources</h2>
+      <div class="drug-sources-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:12px">
+        <div class="source-card" style="border:1px solid #e0e6ef;border-radius:6px;padding:16px">
+          <h3 style="font-size:15px;font-weight:700;color:#1a3a6e;margin:0 0 8px">AHFS DI Monographs</h3>
+          <p style="font-size:13px;color:#555;line-height:1.5">The American Society of Health-System Pharmacists (ASHP) provides comprehensive professional monographs including pharmacokinetics, mechanism of action, thorough descriptions of indications, contraindications, adverse effects and precautions, drug interactions, and patient information pertaining to the proper use of drugs. FDA approved labeling to ensure that monographs include evidence-based findings in the review of drug information.</p>
+        </div>
+        <div class="source-card" style="border:1px solid #e0e6ef;border-radius:6px;padding:16px">
+          <h3 style="font-size:15px;font-weight:700;color:#1a3a6e;margin:0 0 8px">Professional Patient Advice</h3>
+          <p style="font-size:13px;color:#555;line-height:1.5">Drugs.com provides 5 Patient Advices for the professional. These are evidence-based clinical tools for clinicians with detailed pharmacokinetic data, clinical guidelines, and prescribing information.</p>
+        </div>
+        <div class="source-card" style="border:1px solid #e0e6ef;border-radius:6px;padding:16px">
+          <h3 style="font-size:15px;font-weight:700;color:#1a3a6e;margin:0 0 8px">Natural Product Information (Professional)</h3>
+          <p style="font-size:13px;color:#555;line-height:1.5">The Natural database professional information pertaining to natural/herbal products contains possible drug-drug interactions, possible drug interactions with other health conditions, and drug effects with appropriate citations.</p>
+        </div>
+        <div class="source-card" style="border:1px solid #e0e6ef;border-radius:6px;padding:16px">
+          <h3 style="font-size:15px;font-weight:700;color:#1a3a6e;margin:0 0 8px">Natural Product Information (Advanced)</h3>
+          <p style="font-size:13px;color:#555;line-height:1.5">The Natural database professional information (advanced) pertaining to natural/herbal products contains possible drug interactions, efficacy, and safety information along with appropriate citations.</p>
+        </div>
+      </div>
     </section>
   </div>
 
@@ -155,6 +201,16 @@
         <li><a href="{{ url_for('drug_detail', slug='wegovy') }}">Wegovy</a></li>
         <li><a href="{{ url_for('drug_detail', slug='metformin') }}">Metformin</a></li>
         <li><a href="{{ url_for('drug_detail', slug='lisinopril') }}">Lisinopril</a></li>
+      </ul>
+    </div>
+
+    <div class="sidebar-box">
+      <h3>Recently Approved</h3>
+      <ul>
+        <li><a href="{{ url_for('drug_detail', slug='semaglutide') }}">Semaglutide (Ozempic)</a><br><span class="muted" style="font-size:12px">Type 2 diabetes, weight loss</span></li>
+        <li><a href="{{ url_for('drug_detail', slug='tirzepatide') }}">Tirzepatide (Mounjaro)</a><br><span class="muted" style="font-size:12px">Type 2 diabetes, obesity</span></li>
+        <li><a href="{{ url_for('drug_detail', slug='lecanemab') }}">Lecanemab (Leqembi)</a><br><span class="muted" style="font-size:12px">Alzheimer's disease</span></li>
+        <li><a href="{{ url_for('news_index') }}" style="font-size:13px;color:#0072ce">More New Drug Approvals &rsaquo;</a></li>
       </ul>
     </div>
 
