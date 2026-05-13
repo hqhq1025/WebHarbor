@@ -54,6 +54,28 @@
         {% else %}N/A{% endif %}
       </li>
     </ul>
+    {% if drug.avg_rating %}
+    {% set full_stars = (drug.avg_rating / 2) | int %}
+    {% set half_star = ((drug.avg_rating / 2) - full_stars) >= 0.5 %}
+    <div class="star-display" aria-label="Average rating {{ '%.1f'|format(drug.avg_rating) }} out of 10">
+      <span class="stars">
+        {% for i in range(full_stars) %}<span class="star star-full">&#9733;</span>{% endfor %}
+        {% if half_star %}<span class="star star-half">&#189;</span>{% endif %}
+        {% for i in range(5 - full_stars - (1 if half_star else 0)) %}<span class="star star-empty">&#9734;</span>{% endfor %}
+      </span>
+      <span class="rating-num">{{ "%.1f"|format(drug.avg_rating) }}/10</span>
+      <a href="#reviews" class="rating-num-count">({{ drug.review_count }} reviews)</a>
+    </div>
+    {% endif %}
+    <div class="drug-header-cta">
+      {% if current_user.is_authenticated %}
+        <button id="med-list-toggle-top" data-slug="{{ drug.slug }}" class="btn btn-cta-primary">
+          {% if saved %}&#10003; In My Med List &mdash; Remove{% else %}&#43; Add to My Med List{% endif %}
+        </button>
+      {% else %}
+        <a href="{{ url_for('login') }}" class="btn btn-cta-primary">&#43; Sign in to Add to My Med List</a>
+      {% endif %}
+    </div>
     <p class="reviewer-line">
       <span class="reviewer-avatar" aria-hidden="true">
         {%- set parts = (drug.reviewer_name or 'MD').split() -%}
@@ -336,7 +358,7 @@
             <span class="status-label">Availability</span>
             <span class="status-value">
               {% if 'Rx' in drug.availability and 'OTC' in drug.availability %}
-                <span class="avail-badge avail-rx">Rx</span><span class="avail-badge avail-otc">OTC</span> Rx and/or OTC
+                <span class="avail-badge avail-both">Rx/OTC</span> Rx and/or OTC
               {% elif 'Rx' in drug.availability %}
                 <span class="avail-badge avail-rx">Rx</span> Prescription only
               {% elif 'OTC' in drug.availability %}
@@ -466,6 +488,7 @@
 <script>
 (function(){
   var btn = document.getElementById('med-list-toggle');
+  var btnTop = document.getElementById('med-list-toggle-top');
   var saveLink = document.getElementById('save-toggle');
   function toggle(el, savedText, unsavedText){
     el.addEventListener('click', function(e){
@@ -480,6 +503,7 @@
     });
   }
   if(btn) toggle(btn, 'Remove from My Med List', 'Add to My Med List');
+  if(btnTop) toggle(btnTop, '✓ In My Med List — Remove', '+ Add to My Med List');
   if(saveLink) toggle(saveLink, 'Saved', 'Save');
 })();
 </script>
