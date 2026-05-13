@@ -148,15 +148,18 @@
         </div>
       </section>
 
-      {% if drug.faq %}
+      {% if faq_items %}
       <section id="faq">
         <h2>Frequently asked questions</h2>
-        {% for item in drug.faq %}
-          <details class="faq-detail">
-            <summary>{{ item.q }}</summary>
-            <p>{{ item.a }}</p>
+        <p class="muted faq-intro">Common questions about {{ drug.generic_name }}. Click a question to view the answer.</p>
+        <div class="faq-list">
+        {% for item in faq_items %}
+          <details class="faq-item">
+            <summary class="faq-question"><span class="faq-q-label">Q:</span> {{ item.q }}</summary>
+            <div class="faq-answer"><span class="faq-a-label">A:</span> {{ item.a }}</div>
           </details>
         {% endfor %}
+        </div>
       </section>
       {% endif %}
 

@@ -1397,6 +1397,92 @@ def drug_az():
     return render_template("drug_az.html", active_letter=letter, all_letters=list(string.ascii_uppercase), drugs=drugs)
 
 
+def _first_sentences(text, n):
+    """Return the first n sentences from text as a single string."""
+    if not text:
+        return ""
+    # Strip simple HTML tags that may live in seed content
+    plain = re.sub(r"<[^>]+>", " ", text)
+    plain = re.sub(r"\s+", " ", plain).strip()
+    parts = re.split(r"(?<=[.!?])\s+", plain)
+    parts = [p for p in parts if p]
+    return " ".join(parts[:n]).strip()
+
+
+def _build_default_faq(drug):
+    """Generate a contextual FAQ from drug fields when faq_json is empty."""
+    name = drug.generic_name
+    name_cap = name.capitalize() if name else "this medicine"
+    items = []
+
+    uses_summary = _first_sentences(drug.uses, 2) or _first_sentences(drug.description, 2)
+    if uses_summary:
+        items.append({
+            "q": f"What is {name} used for?",
+            "a": uses_summary,
+        })
+
+    items.append({
+        "q": f"How does {name} work?",
+        "a": (
+            f"{name_cap} belongs to the {drug.drug_class.name} class. "
+            f"{drug.drug_class.description}"
+        ) if drug.drug_class else (
+            f"{name_cap} works through its active pharmacological mechanism in the body. "
+            f"Talk to your doctor or pharmacist for a detailed explanation of how it works for your condition."
+        ),
+    })
+
+    se_summary = _first_sentences(drug.side_effects, 3)
+    if se_summary:
+        items.append({
+            "q": f"What are the most common side effects of {name}?",
+            "a": se_summary,
+        })
+
+    avail = (drug.availability or "").lower()
+    if "otc" in avail and "rx" in avail:
+        otc_answer = (
+            f"{name_cap} is available both over the counter and by prescription, "
+            f"depending on the strength and formulation."
+        )
+    elif "otc" in avail:
+        otc_answer = (
+            f"Yes. {name_cap} is available over the counter without a prescription. "
+            f"Always follow the directions on the label."
+        )
+    else:
+        otc_answer = (
+            f"No. {name_cap} is a prescription-only medicine and is not available over the counter. "
+            f"You will need a prescription from a licensed healthcare provider."
+        )
+    items.append({
+        "q": f"Is {name} available over the counter?",
+        "a": otc_answer,
+    })
+
+    preg = (drug.pregnancy_risk or "").strip()
+    if preg:
+        items.append({
+            "q": f"Is {name} safe to take during pregnancy?",
+            "a": (
+                f"Pregnancy risk for {name}: {preg}. "
+                f"Always talk to your doctor before taking any medicine while pregnant or breastfeeding."
+            ),
+        })
+
+    items.append({
+        "q": f"Is there a generic version of {name}?",
+        "a": (
+            f"{name_cap} is itself a generic name. Generic versions are widely available "
+            f"and may be sold under several brand names: "
+            f"{', '.join(drug.brand_names) if drug.brand_names else 'see the brand names listed above'}."
+        ),
+    })
+
+    return items
+
+
 @app.route("/<slug>.html")
 def drug_detail(slug):
     drug = Drug.query.filter_by(slug=slug).first()
@@ -1442,11 +1528,13 @@ def drug_detail(slug):
     drug_interactions = DrugInteraction.query.filter(
         (DrugInteraction.drug_a_id == drug.id) | (DrugInteraction.drug_b_id == drug.id)
     ).all()
+    faq_items = drug.faq or _build_default_faq(drug)
     return render_template("drug_detail.html", drug=drug, reviews=reviews,
                            related=related, drug_conditions=drug_conditions, saved=saved,
                            rating_distribution=rating_distribution, user_review=user_review,
                            related_news=related_news, related_drugs=related_drugs,
                            drug_interactions=drug_interactions,
+                           faq_items=faq_items,
                            recently_viewed=recently_viewed)
 
 

@@ -637,7 +637,6 @@ a:hover { text-decoration: underline; color: var(--blue-mid); }
 .rating-score { font-size: 1.1rem; font-weight: 700; color: var(--navy); }
 .rating-count { color: var(--blue); font-size: 0.88rem; }
 
-.faq-item { padding: 12px 0; border-bottom: 1px solid var(--gray-100); }
 .faq-item h3 { color: var(--navy); font-size: 1rem; margin-bottom: 6px; }
 
 .review { padding: 14px 0; border-bottom: 1px solid var(--gray-100); }
@@ -789,6 +788,51 @@ a:hover { text-decoration: underline; color: var(--blue-mid); }
 .mini-checker-form button { padding: 8px 16px; background: var(--blue); color: #fff; border: none; border-radius: 4px; font-weight: 600; cursor: pointer; font-size: 0.9rem; }
 
 /* FAQ accordion */
+.faq-intro { margin: 4px 0 14px; font-size: 0.9rem; }
+.faq-list { border-top: 1px solid var(--gray-200); }
+details.faq-item { border-bottom: 1px solid var(--gray-200); padding: 0; }
+details.faq-item > summary.faq-question {
+  padding: 14px 30px 14px 0;
+  cursor: pointer;
+  font-weight: 700;
+  color: var(--navy);
+  font-size: 0.98rem;
+  list-style: none;
+  position: relative;
+  line-height: 1.45;
+}
+details.faq-item > summary.faq-question::-webkit-details-marker { display: none; }
+details.faq-item > summary.faq-question::after {
+  content: "";
+  position: absolute;
+  right: 6px;
+  top: 50%;
+  width: 9px;
+  height: 9px;
+  border-right: 2px solid var(--blue);
+  border-bottom: 2px solid var(--blue);
+  transform: translateY(-70%) rotate(45deg);
+  transition: transform 0.2s ease;
+}
+details.faq-item[open] > summary.faq-question::after {
+  transform: translateY(-30%) rotate(-135deg);
+}
+details.faq-item > summary.faq-question:hover { color: var(--blue); }
+.faq-q-label, .faq-a-label {
+  display: inline-block;
+  min-width: 22px;
+  font-weight: 700;
+  color: var(--blue);
+  margin-right: 4px;
+}
+.faq-a-label { color: var(--green); }
+details.faq-item > .faq-answer {
+  padding: 0 0 16px 0;
+  font-size: 0.93rem;
+  color: var(--gray-700);
+  line-height: 1.65;
+}
+/* Back-compat: keep the older .faq-detail class working if used elsewhere */
 details.faq-detail { border-bottom: 1px solid var(--gray-200); }
 details.faq-detail summary { padding: 13px 0; cursor: pointer; font-weight: 600; color: var(--navy); font-size: 0.95rem; list-style: none; display: flex; justify-content: space-between; align-items: center; }
 details.faq-detail summary::after { content: "+"; font-size: 1.3rem; color: var(--blue); }
