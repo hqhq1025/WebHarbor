@@ -88,6 +88,56 @@ function scrollCarousel(dir) {
 }
 </script>
 
+<!-- Browse by Health Category -->
+<div class="container">
+  <section class="health-category-section">
+    <h2>Browse by Health Category</h2>
+    <p class="health-category-sub">Find medications and treatment information organized by the conditions they treat.</p>
+    <div class="health-category-grid">
+      <a class="health-category-card hc-pain" href="{{ url_for('search') }}?q=pain">
+        <span class="hc-icon">&#9889;</span>
+        <span class="hc-name">Pain Relief</span>
+        <span class="hc-desc">NSAIDs, analgesics, and prescription pain management</span>
+      </a>
+      <a class="health-category-card hc-antibiotics" href="{{ url_for('search') }}?q=antibiotic">
+        <span class="hc-icon">&#9763;</span>
+        <span class="hc-name">Antibiotics</span>
+        <span class="hc-desc">Treatments for bacterial infections</span>
+      </a>
+      <a class="health-category-card hc-heart" href="{{ url_for('search') }}?q=blood+pressure">
+        <span class="hc-icon">&#9829;</span>
+        <span class="hc-name">Heart &amp; Blood Pressure</span>
+        <span class="hc-desc">Hypertension, cholesterol, and cardiac care</span>
+      </a>
+      <a class="health-category-card hc-mental" href="{{ url_for('search') }}?q=depression">
+        <span class="hc-icon">&#9788;</span>
+        <span class="hc-name">Mental Health</span>
+        <span class="hc-desc">Depression, anxiety, and mood disorders</span>
+      </a>
+      <a class="health-category-card hc-diabetes" href="{{ url_for('search') }}?q=diabetes">
+        <span class="hc-icon">&#127852;</span>
+        <span class="hc-name">Diabetes</span>
+        <span class="hc-desc">Blood-sugar control and insulin therapies</span>
+      </a>
+      <a class="health-category-card hc-womens" href="{{ url_for('search') }}?q=women">
+        <span class="hc-icon">&#9792;</span>
+        <span class="hc-name">Women's Health</span>
+        <span class="hc-desc">Contraception, hormone therapy, and more</span>
+      </a>
+      <a class="health-category-card hc-sleep" href="{{ url_for('search') }}?q=insomnia">
+        <span class="hc-icon">&#9790;</span>
+        <span class="hc-name">Sleep</span>
+        <span class="hc-desc">Insomnia treatments and sleep aids</span>
+      </a>
+      <a class="health-category-card hc-vitamins" href="{{ url_for('search') }}?q=vitamin">
+        <span class="hc-icon">&#9728;</span>
+        <span class="hc-name">Vitamins &amp; Supplements</span>
+        <span class="hc-desc">Nutritional supplements and OTC vitamins</span>
+      </a>
+    </div>
+  </section>
+</div>
+
 <!-- Drug Images -->
 {% if image_samples %}
 <div class="container">

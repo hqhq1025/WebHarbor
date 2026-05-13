@@ -20,7 +20,11 @@
 <article class="drug-detail">
   <header class="drug-header" style="display:flex;gap:18px;align-items:flex-start">
     <a href="{{ url_for('drug_images', slug=drug.slug) }}" class="drug-header-image" aria-label="View {{ drug.generic_name }} pill images" style="flex:0 0 auto">
-      {% if drug.images and drug.images|length > 0 %}
+      {% if drug.slug|pill_image_exists %}
+        <img src="{{ url_for('static', filename='images/pills/' + drug.slug + '.jpg') }}"
+             alt="{{ drug.generic_name|capitalize }} pill"
+             class="pill-photo pill-photo--header" loading="lazy">
+      {% elif drug.images and drug.images|length > 0 %}
         {% set img0 = drug.images[0] %}
         {% set color_map = {
           'white': '#f8f8f8', 'yellow': '#fff5b8', 'orange': '#ffd9a8',

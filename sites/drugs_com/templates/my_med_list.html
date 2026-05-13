@@ -12,14 +12,22 @@
 
 <div class="med-list-layout">
   <div class="med-list-main">
-    <p class="muted instructions">
-      Add medications by searching for them in <a href="{{ url_for('drug_az') }}">Drugs A-Z</a>
-      and clicking "Add to My Med List" on any drug page.
-    </p>
+    <form class="med-add-form" action="{{ url_for('search') }}" method="get" role="search">
+      <label for="med-add-q" class="med-add-label">Add a medication</label>
+      <div class="med-add-row">
+        <input id="med-add-q" type="search" name="q" placeholder="Search by generic or brand name (e.g. ibuprofen, Tylenol)" class="med-add-input" autocomplete="off">
+        <button type="submit" class="btn btn-primary">Search</button>
+      </div>
+      <p class="muted instructions">
+        Find a drug, then click <strong>Add to My Med List</strong> on its page.
+        You can also browse <a href="{{ url_for('drug_az') }}">Drugs A-Z</a>.
+      </p>
+    </form>
 
     {% if items %}
     <div class="med-list-actions">
       <a class="btn btn-primary" href="{{ url_for('interaction_checker') }}">Check all medications for interactions</a>
+      <span class="med-list-count muted">{{ items|length }} medication{% if items|length != 1 %}s{% endif %} saved</span>
     </div>
     {% endif %}
 
@@ -29,6 +37,7 @@
           <h2><a href="{{ url_for('drug_detail', slug=item.drug.slug) }}">{{ item.drug.generic_name|capitalize }}</a></h2>
           <p class="result-meta muted">
             {% if item.drug.brand_names %}Brand names: {{ item.drug.brand_names|join(', ') }} &middot; {% endif %}
+            {% if item.drug.drug_class %}{{ item.drug.drug_class.name }} &middot; {% endif %}
             <span class="avail-badge {% if item.drug.availability == 'Rx' %}avail-rx{% elif item.drug.availability == 'OTC' %}avail-otc{% else %}avail-both{% endif %}">{{ item.drug.availability }}</span>
           </p>
           <p class="muted">Added {{ item.created_at.strftime('%b %d, %Y') }}</p>
@@ -48,9 +57,14 @@
           </form>
         </li>
       {% else %}
-        <li class="result-card no-results">
-          <p>Your med list is empty.</p>
-          <p><a href="{{ url_for('drug_az') }}">Browse Drugs A-Z</a> and click "Add to My Med List" on any drug page to start tracking your medications.</p>
+        <li class="result-card no-results med-empty">
+          <h2 class="med-empty-title">Your Med List is empty</h2>
+          <p>Keep track of every prescription and over-the-counter medication you take so you can check for interactions, set reminders, and share an accurate list with your healthcare team.</p>
+          <ul class="med-empty-steps">
+            <li>Search for a medication using the box above, or <a href="{{ url_for('drug_az') }}">browse Drugs A-Z</a>.</li>
+            <li>On the drug's page, click <strong>Add to My Med List</strong>.</li>
+            <li>Return here to review your list, add notes, and check for interactions.</li>
+          </ul>
         </li>
       {% endfor %}
     </ul>
@@ -68,6 +82,16 @@
         <li><a href="{{ url_for('pill_identifier') }}">Pill Identifier</a></li>
         <li><a href="{{ url_for('drug_az') }}">Browse Drugs A-Z</a></li>
         <li><a href="{{ url_for('account') }}">Back to My Account</a></li>
+      </ul>
+    </section>
+
+    <section class="account-box">
+      <h2>Reminders &amp; tips</h2>
+      <ul class="med-tips">
+        <li>Take medications at the same time each day to build a routine.</li>
+        <li>Use the <strong>Notes</strong> field on each medication to record dosage, frequency, or prescriber instructions.</li>
+        <li>Review your list with your pharmacist or doctor at every appointment.</li>
+        <li>Never stop a prescription medication without consulting your healthcare provider.</li>
       </ul>
     </section>
   </aside>

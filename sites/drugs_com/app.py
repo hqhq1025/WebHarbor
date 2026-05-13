@@ -1375,6 +1375,22 @@ def score_drug(drug, tokens):
     return sum(1 for t in tokens if t in text)
 
 
+@app.template_filter('pill_image_exists')
+def pill_image_exists(slug):
+    """Return True iff ``static/images/pills/<slug>.jpg`` is present on disk.
+
+    Used by drug detail / pill identifier / drug images templates to decide
+    whether to render the real downloaded photo (from NLM DailyMed, public
+    domain) or fall back to the inline SVG pill illustration. The
+    ``static/images/`` tree is HF-managed so its contents vary between
+    fresh clones; templates can't filesystem-check, hence this filter.
+    """
+    if not slug:
+        return False
+    path = os.path.join(BASE_DIR, 'static', 'images', 'pills', f'{slug}.jpg')
+    return os.path.exists(path)
+
+
 @app.template_filter('format_drug_text')
 def format_drug_text(text):
     """Format raw FDA-label drug text into readable HTML paragraphs.
@@ -1634,6 +1650,7 @@ def _build_default_faq(drug):
     return items
 
 
+@app.route("/<slug>")
 @app.route("/<slug>.html")
 def drug_detail(slug):
     drug = Drug.query.filter_by(slug=slug).first()
@@ -2986,8 +3003,21 @@ def side_effects_page():
 @app.route("/warnings/")
 @app.route("/blackbox-warnings")
 def warnings_index():
+    category = (request.args.get("category") or "all").lower()
     drugs_with_warnings = Drug.query.filter(Drug.warnings.isnot(None)).order_by(Drug.generic_name).limit(50).all()
-    return render_template("warnings_index.html", drugs=drugs_with_warnings)
+    fda_alerts = (
+        NewsArticle.query
+        .filter(NewsArticle.category.in_(["FDA Alerts", "Recalls", "Safety Alerts"]))
+        .order_by(NewsArticle.published_at.desc())
+        .limit(20)
+        .all()
+    )
+    return render_template(
+        "warnings_index.html",
+        drugs=drugs_with_warnings,
+        fda_alerts=fda_alerts,
+        category=category,
+    )
 
 
 @app.route("/newsletter")
@@ -3018,6 +3048,12 @@ def privacy():
 @app.route("/contact")
 def contact():
     return render_template("contact.html")
+
+
+@app.route("/support")
+@app.route("/help")
+def help_page():
+    return render_template("help.html")
 
 
 @app.route("/<slug>/images")

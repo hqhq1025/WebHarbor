@@ -1,40 +1,91 @@
 {% extends "base.html" %}
 {% block title %}Side Effects A-Z | {{ site_name }}{% endblock %}
 {% block content %}
-<div style="padding:24px 0">
+<div class="side-effects-page">
   <nav class="breadcrumb"><a href="{{ url_for('index') }}">Home</a> &rsaquo; <span>Side Effects</span></nav>
-  <h1 style="font-size:2rem;margin-bottom:8px">Drug Side Effects A-Z</h1>
-  <p style="margin-bottom:20px;color:#555">Browse common and serious drug side effects alphabetically, or search for a specific symptom.</p>
 
-  <form action="{{ url_for('side_effects_page') }}" method="get" style="margin-bottom:24px;display:flex;gap:8px;max-width:560px">
-    <input type="search" name="q" value="{{ query }}" placeholder="Search side effects (e.g. nausea, dizziness)" style="flex:1;padding:10px;border:1px solid #ccc;border-radius:4px">
-    <button type="submit" style="padding:10px 18px;background:#3b82c4;color:#fff;border:0;border-radius:4px;cursor:pointer">Search</button>
+  <h1 class="page-title">Drug Side Effects A-Z</h1>
+  <p class="page-subtitle">Side effects are unintended physical or psychological effects that occur with a medication. Most are mild and resolve on their own, but some can be serious and require medical attention. Use this hub to look up side effects by drug, by symptom name, or by category.</p>
+
+  <form action="{{ url_for('side_effects_page') }}" method="get" class="side-effects-search" role="search">
+    <label for="se-q" class="visually-hidden">Search side effects</label>
+    <input id="se-q" type="search" name="q" value="{{ query }}" placeholder="Search side effects (e.g. nausea, dizziness)" class="side-effects-search-input">
+    <button type="submit" class="btn btn-primary">Search</button>
   </form>
 
-  <section style="margin:18px 0 28px">
-    <h2 style="font-size:1.2rem;margin-bottom:10px">Most commonly searched side effects</h2>
-    <div style="display:flex;flex-wrap:wrap;gap:8px">
+  <section class="side-effects-popular">
+    <h2 class="side-effects-h2">Most commonly searched side effects</h2>
+    <div class="se-tag-row">
       {% for s in most_searched %}
-        <a href="{{ url_for('side_effects_page', q=s|lower) }}" style="display:inline-block;padding:6px 12px;background:#eaf2fa;border:1px solid #c8dcef;border-radius:18px;color:#15457a;text-decoration:none;font-size:0.92rem">{{ s }}</a>
+        <a href="{{ url_for('side_effects_page', q=s|lower) }}" class="se-tag">{{ s }}</a>
       {% endfor %}
     </div>
   </section>
 
-  <nav aria-label="A-Z navigation" style="margin:18px 0;padding:10px;background:#f5f7fa;border:1px solid #e2e6ec;border-radius:6px;display:flex;flex-wrap:wrap;gap:6px">
+  <section class="side-effects-categories">
+    <h2 class="side-effects-h2">Side effect categories</h2>
+    <div class="se-category-grid">
+      <article class="se-category-card se-cat-serious">
+        <h3>Serious side effects</h3>
+        <p>Effects that can be life-threatening or cause lasting harm and require immediate medical attention. Examples include severe bleeding, liver damage, irregular heartbeats, seizures, and suicidal thoughts.</p>
+        <ul>
+          <li><a href="{{ url_for('side_effects_page', q='bleeding') }}">Severe bleeding</a></li>
+          <li><a href="{{ url_for('side_effects_page', q='liver damage') }}">Liver damage</a></li>
+          <li><a href="{{ url_for('side_effects_page', q='arrhythmia') }}">Irregular heartbeat</a></li>
+          <li><a href="{{ url_for('side_effects_page', q='seizures') }}">Seizures</a></li>
+        </ul>
+      </article>
+
+      <article class="se-category-card se-cat-allergic">
+        <h3>Allergic reactions</h3>
+        <p>Immune-mediated responses ranging from mild rash to life-threatening anaphylaxis. Stop the medication and get emergency care for swelling of the face or throat, difficulty breathing, or widespread hives.</p>
+        <ul>
+          <li><a href="{{ url_for('side_effects_page', q='rash') }}">Rash and itching</a></li>
+          <li><a href="{{ url_for('side_effects_page', q='swelling') }}">Swelling (angioedema)</a></li>
+          <li><a href="{{ url_for('side_effects_page', q='shortness of breath') }}">Shortness of breath</a></li>
+          <li><a href="{{ url_for('side_effects_page', q='allergic reaction') }}">Anaphylaxis</a></li>
+        </ul>
+      </article>
+
+      <article class="se-category-card se-cat-longterm">
+        <h3>Long-term effects</h3>
+        <p>Effects that develop or persist after weeks, months, or years of use. These may include dependence, organ-system changes, weight changes, or cognitive effects, and should be monitored by your prescriber.</p>
+        <ul>
+          <li><a href="{{ url_for('side_effects_page', q='weight gain') }}">Weight gain or loss</a></li>
+          <li><a href="{{ url_for('side_effects_page', q='depression') }}">Mood changes</a></li>
+          <li><a href="{{ url_for('side_effects_page', q='hair loss') }}">Hair loss</a></li>
+          <li><a href="{{ url_for('side_effects_page', q='hypertension') }}">High blood pressure</a></li>
+        </ul>
+      </article>
+
+      <article class="se-category-card se-cat-common">
+        <h3>Common, mild effects</h3>
+        <p>Frequently reported and usually self-limiting. They often improve as the body adjusts to a medication in the first one to two weeks.</p>
+        <ul>
+          <li><a href="{{ url_for('side_effects_page', q='nausea') }}">Nausea</a></li>
+          <li><a href="{{ url_for('side_effects_page', q='headache') }}">Headache</a></li>
+          <li><a href="{{ url_for('side_effects_page', q='drowsiness') }}">Drowsiness</a></li>
+          <li><a href="{{ url_for('side_effects_page', q='dry mouth') }}">Dry mouth</a></li>
+        </ul>
+      </article>
+    </div>
+  </section>
+
+  <nav aria-label="A-Z navigation" class="se-az-nav">
     {% for L in all_letters %}
       {% if L in letters %}
-        <a href="#letter-{{ L }}" style="display:inline-block;min-width:28px;text-align:center;padding:4px 6px;background:#fff;border:1px solid #c8dcef;border-radius:4px;text-decoration:none;color:#15457a;font-weight:600">{{ L }}</a>
+        <a href="#letter-{{ L }}" class="se-az-letter is-active">{{ L }}</a>
       {% else %}
-        <span style="display:inline-block;min-width:28px;text-align:center;padding:4px 6px;color:#aaa;border:1px solid #eee;border-radius:4px">{{ L }}</span>
+        <span class="se-az-letter is-disabled">{{ L }}</span>
       {% endif %}
     {% endfor %}
   </nav>
 
   {% if query %}
-    <section style="margin:24px 0">
-      <h2 style="font-size:1.3rem;margin:18px 0 10px">Drugs that mention &ldquo;{{ query }}&rdquo;</h2>
+    <section class="se-results">
+      <h2 class="side-effects-h2">Drugs that mention &ldquo;{{ query }}&rdquo;</h2>
       {% if drugs %}
-        <ul style="list-style:disc;padding-left:22px;line-height:2">
+        <ul class="se-result-list">
           {% for d in drugs %}
             <li><a href="{{ url_for('drug_detail', slug=d.slug) }}">{{ d.generic_name }}</a>{% if d.drug_class %} &mdash; {{ d.drug_class.name }}{% endif %}</li>
           {% endfor %}
@@ -45,15 +96,15 @@
     </section>
   {% endif %}
 
-  <section style="margin:28px 0">
-    <h2 style="font-size:1.3rem;margin:18px 0 14px">Browse side effects alphabetically</h2>
-    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:18px">
+  <section class="se-az-section">
+    <h2 class="side-effects-h2">Browse side effects alphabetically</h2>
+    <div class="se-az-grid">
       {% for L in letters %}
-        <div id="letter-{{ L }}" style="border:1px solid #e2e2e2;border-radius:6px;padding:14px;background:#fff">
-          <h3 style="margin:0 0 8px;font-size:1.1rem;color:#15457a;border-bottom:1px solid #eee;padding-bottom:4px">{{ L }}</h3>
-          <ul style="list-style:none;padding:0;margin:0;line-height:1.85">
+        <div id="letter-{{ L }}" class="se-az-card">
+          <h3 class="se-az-card-title">{{ L }}</h3>
+          <ul class="se-az-card-list">
             {% for name in by_letter[L] %}
-              <li><a href="{{ url_for('search', q=name|lower) }}">{{ name }}</a></li>
+              <li><a href="{{ url_for('side_effects_page', q=name|lower) }}">{{ name }}</a></li>
             {% endfor %}
           </ul>
         </div>
@@ -61,19 +112,23 @@
     </div>
   </section>
 
-  <section style="margin:32px 0">
-    <h2 style="font-size:1.3rem;margin:18px 0 10px">Popular drugs &amp; their common side effects</h2>
-    <table style="width:100%;border-collapse:collapse">
-      <thead><tr style="background:#f1f5fa"><th style="text-align:left;padding:10px;border-bottom:1px solid #ddd">Drug</th><th style="text-align:left;padding:10px;border-bottom:1px solid #ddd">Common side effects</th></tr></thead>
+  <section class="se-popular-drugs">
+    <h2 class="side-effects-h2">Popular drugs &amp; their common side effects</h2>
+    <table class="se-popular-table">
+      <thead><tr><th>Drug</th><th>Common side effects</th></tr></thead>
       <tbody>
         {% for d in popular %}
           <tr>
-            <td style="padding:10px;border-bottom:1px solid #eee"><a href="{{ url_for('drug_detail', slug=d.slug) }}">{{ d.generic_name }}</a></td>
-            <td style="padding:10px;border-bottom:1px solid #eee">{{ (d.side_effects or '')[:220] }}{% if d.side_effects and d.side_effects|length > 220 %}&hellip;{% endif %}</td>
+            <td class="se-popular-drug"><a href="{{ url_for('drug_side_effects', slug=d.slug) }}">{{ d.generic_name }}</a></td>
+            <td>{{ (d.side_effects or '')[:220] }}{% if d.side_effects and d.side_effects|length > 220 %}&hellip;{% endif %}</td>
           </tr>
         {% endfor %}
       </tbody>
     </table>
   </section>
+
+  <aside class="se-disclaimer">
+    <p><strong>When to seek emergency care:</strong> Call 911 or your local emergency number for trouble breathing, swelling of the face/lips/throat, chest pain, fainting, severe bleeding, or thoughts of harming yourself. For non-emergency reactions, contact your prescriber or pharmacist before stopping any medication.</p>
+  </aside>
 </div>
 {% endblock %}

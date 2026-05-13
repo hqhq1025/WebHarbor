@@ -1,12 +1,6 @@
 {% extends "base.html" %}
 {% block title %}Compare Drugs - Drugs.com{% endblock %}
 {% block content %}
-<style>
-.compare-section { border-top: 2px solid #e0e6ef; padding-top: 20px; }
-.compare-col { background: #f7f9fc; border: 1px solid #e0e6ef; border-radius: 6px; padding: 14px; }
-.compare-col h4 { color: #0072ce; font-size: 14px; font-weight: 700; margin: 0 0 8px; }
-.compare-col p { font-size: 13px; line-height: 1.6; color: #444; margin: 0 0 8px; }
-</style>
 <nav class="breadcrumb">
   <a href="{{ url_for('index') }}">Home</a> &rsaquo; <span>Compare Drugs</span>
 </nav>
@@ -57,6 +51,76 @@
   <h2>
     {% for _, d, _f in selected_drugs %}{{ d.generic_name|capitalize }}{% if not loop.last %} vs. {% endif %}{% endfor %}
   </h2>
+
+  <!-- Quick comparison table -->
+  <div class="compare-quick-wrap">
+    <h3 style="margin:0 0 10px;font-size:1.05rem;color:#0c3b6f">Quick comparison</h3>
+    <table class="compare-quick-table">
+      <thead>
+        <tr>
+          <th class="cq-attr-head">Attribute</th>
+          {% for _, d, _f in selected_drugs %}
+            <th>
+              <span class="cq-generic">{{ d.generic_name|capitalize }}</span>
+              {% if d.brand_names %}
+                <span class="cq-brands">{{ d.brand_names|join(', ') }}</span>
+              {% else %}
+                <span class="cq-brands">Generic only</span>
+              {% endif %}
+            </th>
+          {% endfor %}
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="cq-attr">Drug class</td>
+          {% for _, d, _f in selected_drugs %}
+            <td>{{ d.drug_class.name if d.drug_class else '—' }}</td>
+          {% endfor %}
+        </tr>
+        <tr>
+          <td class="cq-attr">Availability</td>
+          {% for _, d, _f in selected_drugs %}
+            <td>{{ d.availability or '—' }}</td>
+          {% endfor %}
+        </tr>
+        <tr>
+          <td class="cq-attr">Pregnancy category</td>
+          {% for _, d, _f in selected_drugs %}
+            <td>{{ d.pregnancy_risk or '—' }}</td>
+          {% endfor %}
+        </tr>
+        <tr>
+          <td class="cq-attr">CSA schedule</td>
+          {% for _, d, _f in selected_drugs %}
+            <td>{{ d.csa_schedule or 'N/A' }}</td>
+          {% endfor %}
+        </tr>
+        <tr>
+          <td class="cq-attr">Average rating</td>
+          {% for _, d, _f in selected_drugs %}
+            <td>
+              {% if d.review_count and d.review_count > 0 %}
+                {% set r = d.avg_rating or 0 %}
+                {% if r >= 7 %}
+                  <span class="rating-pill rating-pill-good">{{ '%.1f'|format(r) }}/10</span>
+                {% elif r >= 5 %}
+                  <span class="rating-pill rating-pill-mid">{{ '%.1f'|format(r) }}/10</span>
+                {% else %}
+                  <span class="rating-pill rating-pill-bad">{{ '%.1f'|format(r) }}/10</span>
+                {% endif %}
+                <span class="rating-count">{{ d.review_count }} reviews</span>
+              {% else %}
+                <span class="rating-pill rating-pill-na">N/A</span>
+                <span class="rating-count">no reviews</span>
+              {% endif %}
+            </td>
+          {% endfor %}
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
   <table class="compare-table" style="width:100%;border-collapse:collapse;margin:20px 0">
     <thead>
       <tr style="background:#0c3b6f;color:#fff">
@@ -181,6 +245,39 @@
     </div>
   </div>
 </section>
+
+{% if selected_drugs|length >= 2 %}
+{% set best_rated = selected_drugs|sort(attribute='1.avg_rating', reverse=true)|first %}
+<div class="bottom-line-box">
+  <h2>Bottom line</h2>
+  <p>
+    You are comparing
+    {% for _, d, _f in selected_drugs %}<strong>{{ d.generic_name|capitalize }}</strong>{% if not loop.last %}{% if loop.revindex == 2 %} and {% else %}, {% endif %}{% endif %}{% endfor %}.
+    {% set classes = selected_drugs|map(attribute='1')|map(attribute='drug_class')|select|map(attribute='name')|list|unique|list %}
+    {% if classes|length == 1 %}
+      All belong to the <strong>{{ classes[0] }}</strong> drug class, so they share a similar mechanism of action and overlapping side-effect profiles.
+    {% else %}
+      They span different drug classes ({{ classes|join(', ') }}), so their mechanisms, indications, and side-effect profiles differ meaningfully.
+    {% endif %}
+  </p>
+  {% set rx = selected_drugs|map(attribute='1')|selectattr('availability','equalto','Rx')|list %}
+  {% set otc = selected_drugs|map(attribute='1')|selectattr('availability','equalto','OTC')|list %}
+  {% if rx and otc %}
+    <p>The comparison mixes prescription-only and over-the-counter options &mdash; the OTC choice is easier to access, but the Rx option is typically reserved for cases where stronger or more targeted therapy is warranted.</p>
+  {% endif %}
+  {% if best_rated[1].review_count and best_rated[1].review_count > 0 %}
+    <p>
+      <span class="bl-pick">Highest user rating</span>
+      <strong>{{ best_rated[1].generic_name|capitalize }}</strong>
+      leads on user reviews at <strong>{{ '%.1f'|format(best_rated[1].avg_rating or 0) }}/10</strong>
+      across {{ best_rated[1].review_count }} ratings. User ratings reflect patient experience and should not replace medical judgment.
+    </p>
+  {% endif %}
+  <p class="muted" style="font-size:0.85rem;margin-top:6px">
+    This summary is generated from the comparison data above. Always consult a healthcare professional before starting, stopping, or switching medications.
+  </p>
+</div>
+{% endif %}
 {% endif %}
 
 <section style="margin-top:40px">
