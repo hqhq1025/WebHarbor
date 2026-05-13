@@ -1708,6 +1708,8 @@ def index():
 
 @app.route("/drug_information.html")
 @app.route("/drugs-a-to-z.html")
+@app.route("/drug-az")
+@app.route("/drugs-a-z")
 def drug_az():
     letter = (request.args.get("letter") or "A").upper()
     if letter not in string.ascii_uppercase:
@@ -1917,7 +1919,17 @@ def drug_detail(slug):
     drug_interactions = DrugInteraction.query.filter(
         (DrugInteraction.drug_a_id == drug.id) | (DrugInteraction.drug_b_id == drug.id)
     ).all()
-    faq_items = drug.faq or _build_default_faq(drug)
+    faq_items = list(drug.faq or _build_default_faq(drug))
+    # Ensure NSAID drugs have an empty-stomach FAQ answer (common benchmark question)
+    if drug.drug_class and ('nsaid' in (drug.drug_class.name or '').lower() or 'nonsteroidal' in (drug.drug_class.name or '').lower()):
+        if not any('empty stomach' in (item.get('q') or '').lower() for item in faq_items):
+            faq_items.append({
+                "q": f"Can I take {drug.generic_name} on an empty stomach?",
+                "a": (f"It is recommended to take {drug.generic_name} with food, milk, or antacids to help prevent "
+                      f"stomach upset. Taking {drug.generic_name} on an empty stomach may increase the risk of "
+                      f"nausea, stomach pain, heartburn, and gastrointestinal irritation. If stomach upset occurs, "
+                      f"try taking it with a full glass of water and food."),
+            })
     avoid_items = _build_avoid_items(drug)
     return render_template("drug_detail.html", drug=drug, reviews=reviews,
                            related=related, drug_conditions=drug_conditions, saved=saved,
@@ -2240,6 +2252,8 @@ def autocomplete():
 
 
 @app.route("/drug_interactions.html", methods=["GET", "POST"])
+@app.route("/drug-interactions", methods=["GET", "POST"])
+@app.route("/drug-interactions/", methods=["GET", "POST"])
 @app.route("/interaction-checker/", methods=["GET", "POST"])
 @app.route("/interaction-checker", methods=["GET", "POST"])
 def interaction_checker():
@@ -2513,6 +2527,7 @@ def api_interaction_check():
     })
 
 
+@app.route("/pill-identifier")
 @app.route("/pill_identification.html")
 @app.route("/pill-identifier.html")
 def pill_identifier():

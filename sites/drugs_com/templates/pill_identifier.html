@@ -43,7 +43,7 @@
       <select id="pill-shape" name="shape">
         <option value="">Select shape</option>
         {% for s in ['Round','Oval','Capsule','Rectangle','Diamond','Pentagon','Triangle','Figure 8','Bullet'] %}
-          <option value="{{ s }}" {% if s == shape %}selected{% endif %}>{{ s }}</option>
+          <option value="{{ s }}" {% if s|lower == (shape or '')|lower %}selected{% endif %}>{{ s }}</option>
         {% endfor %}
       </select>
     </label>
@@ -52,7 +52,7 @@
       <select id="pill-color" name="color">
         <option value="">Select color</option>
         {% for c in ['White','Yellow','Orange','Pink','Red','Brown','Gray','Green','Blue','Purple','Black','Turquoise'] %}
-          <option value="{{ c }}" {% if c == color %}selected{% endif %}>{{ c }}</option>
+          <option value="{{ c }}" {% if c|lower == (color or '')|lower %}selected{% endif %}>{{ c }}</option>
         {% endfor %}
       </select>
     </label>
