@@ -55,13 +55,23 @@
     </div>
 
     {% if drugs %}
-      <p style="margin:8px 0 16px">
+      <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin:8px 0 16px">
         <a class="btn btn-primary" href="{{ url_for('compare_drugs') }}?drugs={{ drugs[:4]|map(attribute='generic_name')|join(',') }}">
           Compare drugs
         </a>
-      </p>
+        <label for="drug-class-filter" class="muted" style="font-size:13px">Filter by drug class:</label>
+        <select id="drug-class-filter" class="drug-class-filter" style="padding:4px 8px;border:1px solid #c2cad6;border-radius:4px;background:#fff;">
+          <option value="">All drug classes ({{ drugs|length }})</option>
+          {% if drugs_by_class %}
+            {% for cls_name, cls_drugs in drugs_by_class %}
+              <option value="{{ cls_name }}">{{ cls_name }} ({{ cls_drugs|length }})</option>
+            {% endfor %}
+          {% endif %}
+        </select>
+        <span id="drug-class-filter-count" class="muted" style="font-size:13px"></span>
+      </div>
 
-      <table class="drug-table">
+      <table class="drug-table" id="condition-drug-table">
         <thead>
           <tr>
             <th>Drug name</th>
@@ -74,7 +84,7 @@
         </thead>
         <tbody>
           {% for d in drugs %}
-          <tr>
+          <tr data-drug-class="{{ d.drug_class.name if d.drug_class else '' }}">
             <td>
               <a href="{{ url_for('drug_detail', slug=d.slug) }}"><strong>{{ d.generic_name|capitalize }}</strong></a>
             </td>
@@ -149,6 +159,35 @@
       <li><a href="{{ url_for('pill_identifier') }}">Pill Identifier</a></li>
       <li><a href="{{ url_for('drug_az') }}">Drugs A-Z</a></li>
     </ul>
+
+    <h3>Subscribe to our newsletters</h3>
+    <p class="muted" style="font-size:13px;margin:4px 0 8px">
+      Get the latest medication news, new drug approvals, alerts and updates.
+    </p>
+    <a class="btn btn-secondary" href="/newsletter">Subscribe</a>
   </aside>
 </div>
+
+<script>
+(function() {
+  var sel = document.getElementById('drug-class-filter');
+  var countEl = document.getElementById('drug-class-filter-count');
+  var table = document.getElementById('condition-drug-table');
+  if (!sel || !table) return;
+  sel.addEventListener('change', function() {
+    var val = sel.value;
+    var rows = table.querySelectorAll('tbody tr');
+    var shown = 0;
+    rows.forEach(function(r) {
+      if (!val || r.getAttribute('data-drug-class') === val) {
+        r.style.display = '';
+        shown++;
+      } else {
+        r.style.display = 'none';
+      }
+    });
+    countEl.textContent = val ? ('Showing ' + shown + ' drug' + (shown === 1 ? '' : 's')) : '';
+  });
+})();
+</script>
 {% endblock %}

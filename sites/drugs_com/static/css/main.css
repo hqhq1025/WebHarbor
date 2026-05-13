@@ -571,6 +571,7 @@ a:hover { text-decoration: underline; color: var(--blue-mid); }
 .section-tabs {
   display: flex; flex-wrap: wrap; gap: 0;
   border-bottom: 2px solid var(--gray-200); margin-bottom: 22px;
+  position: sticky; top: 0; z-index: 50; background: #fff;
 }
 .section-tabs a {
   padding: 10px 16px; color: var(--gray-700);
@@ -582,7 +583,8 @@ a:hover { text-decoration: underline; color: var(--blue-mid); }
 .section-tabs a.active { color: var(--blue); border-bottom-color: var(--blue); }
 
 .detail-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 28px; }
-.detail-main section { margin-bottom: 28px; }
+.detail-main section { margin-bottom: 28px; border-top: 1px solid #e8ecf1; padding-top: 24px; }
+.detail-main section:first-child { border-top: none; padding-top: 0; }
 .detail-main h2 { color: var(--navy); margin-bottom: 12px; font-size: 1.25rem; }
 .detail-main h3 { color: var(--navy); margin: 14px 0 8px; font-size: 1.05rem; }
 .detail-main p { margin-bottom: 10px; line-height: 1.65; }
@@ -1935,3 +1937,54 @@ details.faq-detail p { padding: 0 0 14px; font-size: 0.92rem; color: var(--gray-
 .rating-row-count { text-align: left; color: #555; }
 .reviews-filter { display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end; padding: 12px; background: #f5f7fa; border-radius: 6px; margin-bottom: 18px; }
 .reviews-list .review-card { padding: 14px; border: 1px solid #e3e6eb; border-radius: 6px; margin-bottom: 12px; background: #fff; }
+
+/* Drug A-Z source cards */
+.source-card { transition: box-shadow 0.2s, border-color 0.2s; background: #fff; }
+.source-card:hover { box-shadow: 0 2px 8px rgba(0,0,0,0.1); border-color: #c8d2e0 !important; }
+.source-card a { text-decoration: none; }
+.source-card a:hover { text-decoration: underline; }
+
+/* Compare drugs column hover */
+.compare-col { transition: box-shadow 0.2s, border-color 0.2s; }
+.compare-col:hover { box-shadow: 0 2px 8px rgba(0,0,0,0.08); border-color: #c8d2e0; }
+
+/* Dark mode for recently added elements */
+@media (prefers-color-scheme: dark) {
+  .section-tabs { background: #16213e; }
+  .detail-main section { border-top-color: #2a2a4a; }
+  .reviews-summary {
+    background: #16213e;
+    border-color: #2a2a4a;
+    color: #e8e8e8;
+  }
+  .reviews-summary-number { color: #ffffff; }
+  .reviews-summary-denominator { color: #b0b8c8; }
+  .rating-row-label { color: #e8e8e8; }
+  .rating-row-count { color: #b0b8c8; }
+  .rating-row-bar { background: #2a2a4a; }
+  .rating-row-fill { background: linear-gradient(90deg, #4da6ff, #7ec0ff); }
+  .reviews-distribution { color: #e8e8e8; }
+  .reviews-filter {
+    background: #16213e;
+    color: #e8e8e8;
+  }
+  .reviews-list .review-card {
+    background: #16213e;
+    border-color: #2a2a4a;
+    color: #e8e8e8;
+  }
+  .source-card {
+    background: #16213e !important;
+    border-color: #2a2a4a !important;
+    color: #e8e8e8;
+  }
+  .source-card:hover { box-shadow: 0 2px 8px rgba(0,0,0,0.4); border-color: #4da6ff !important; }
+  .compare-col {
+    background: #16213e !important;
+    border-color: #2a2a4a !important;
+    color: #e8e8e8;
+  }
+  .compare-col h4 { color: #4da6ff !important; }
+  .compare-col p { color: #cfd6e4 !important; }
+  .compare-col:hover { box-shadow: 0 2px 8px rgba(0,0,0,0.4); border-color: #4da6ff !important; }
+}
