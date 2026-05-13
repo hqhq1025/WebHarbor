@@ -79,8 +79,16 @@
       {% endif %}
     </p>
 
+    {% if q and (results or condition_results or news_results) %}
+      <nav class="search-category-tabs" aria-label="Result categories">
+        {% if results %}<a href="#group-drugs">Drugs <span class="count">({{ total }})</span></a>{% endif %}
+        {% if condition_results %}<a href="#group-conditions">Conditions <span class="count">({{ condition_results|length }})</span></a>{% endif %}
+        {% if news_results %}<a href="#group-news">News <span class="count">({{ news_results|length }})</span></a>{% endif %}
+      </nav>
+    {% endif %}
+
     {% if results %}
-      <h2 class="search-group-heading">Drugs <span class="muted">({{ total }})</span></h2>
+      <h2 class="search-group-heading" id="group-drugs">Drugs <span class="muted">({{ total }})</span></h2>
       <div class="drug-card-grid">
         {% for d in results %}
           <article class="drug-card">
@@ -121,7 +129,7 @@
     {% endif %}
 
     {% if condition_results %}
-      <h2 class="search-group-heading">Conditions <span class="muted">({{ condition_results|length }})</span></h2>
+      <h2 class="search-group-heading" id="group-conditions">Conditions <span class="muted">({{ condition_results|length }})</span></h2>
       <ul class="search-group-list">
         {% for c in condition_results %}
           <li>
@@ -133,7 +141,7 @@
     {% endif %}
 
     {% if news_results %}
-      <h2 class="search-group-heading">News <span class="muted">({{ news_results|length }})</span></h2>
+      <h2 class="search-group-heading" id="group-news">News <span class="muted">({{ news_results|length }})</span></h2>
       <ul class="search-group-list">
         {% for a in news_results %}
           <li>
@@ -174,6 +182,16 @@
           <li>Browse the full <a href="{{ url_for('drug_az') }}">Drugs A-Z</a> index.</li>
           <li>Use the <a href="{{ url_for('pill_identifier') }}">Pill Identifier</a> if you only have a pill on hand.</li>
         </ul>
+        {% if related_searches %}
+          <div class="search-popular-fallback">
+            <h3>Popular searches</h3>
+            <div class="popular-searches">
+              {% for name in related_searches %}
+                <a href="{{ url_for('search', q=name) }}">{{ name|capitalize }}</a>
+              {% endfor %}
+            </div>
+          </div>
+        {% endif %}
       </div>
     {% endif %}
   </section>

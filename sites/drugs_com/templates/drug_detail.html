@@ -164,6 +164,26 @@
 
       <section id="warnings">
         <h2>Warnings</h2>
+        {% set _warn_text = (drug.warnings or '') %}
+        {% set _warn_lower = _warn_text|lower %}
+        {% if _warn_text and ('boxed warning' in _warn_lower or 'black box' in _warn_lower or _warn_text.lstrip().startswith('WARNING:')) %}
+        <div class="black-box-warning" role="alert" style="border:2px solid #c62828;background:#fff5f5;padding:14px 16px;margin:12px 0;border-radius:4px;">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
+            <span aria-hidden="true" style="font-size:1.4em;color:#c62828;">&#9888;</span>
+            <strong style="color:#c62828;text-transform:uppercase;letter-spacing:0.5px;">Boxed Warning</strong>
+          </div>
+          <div class="black-box-warning-body">
+            {% set _paras = _warn_text.split('\n\n') %}
+            {% set _bx = namespace(text=None) %}
+            {% for _p in _paras %}
+              {% if _bx.text is none and ('boxed warning' in _p|lower or 'black box' in _p|lower or _p.lstrip().startswith('WARNING:')) %}
+                {% set _bx.text = _p %}
+              {% endif %}
+            {% endfor %}
+            {{ (_bx.text or _warn_text[:400]) | format_drug_text | safe }}
+          </div>
+        </div>
+        {% endif %}
         {{ drug.warnings | format_drug_text | safe }}
       </section>
 
@@ -204,16 +224,47 @@
 
       <section id="side-effects">
         <h2>{{ drug.generic_name|capitalize }} side effects</h2>
-        <p>Get emergency medical help if you have signs of an allergic reaction: hives; difficult breathing; swelling of your face, lips, tongue, or throat.</p>
+        <div class="serious-effects-callout" role="alert" style="background:#fff8e1;border-left:5px solid #f9a825;padding:12px 16px;margin:12px 0;border-radius:4px;">
+          <div style="display:flex;align-items:flex-start;gap:8px;">
+            <span aria-hidden="true" style="font-size:1.3em;color:#b27300;line-height:1;">&#9888;</span>
+            <div>
+              <strong style="color:#7a4f00;">Call your doctor at once if you experience:</strong>
+              <span class="muted">signs of an allergic reaction (hives; difficult breathing; swelling of your face, lips, tongue, or throat), severe or persistent symptoms, unusual bleeding or bruising, chest pain, or any of the serious side effects listed below.</span>
+            </div>
+          </div>
+        </div>
         {{ drug.side_effects | format_drug_text | safe }}
       </section>
 
       <section id="interactions">
         <h2>What other drugs will affect {{ drug.generic_name }}?</h2>
         {% if drug_interactions is defined and drug_interactions %}
-        <p class="muted"><strong>{{ drug.generic_name|capitalize }} has {{ drug_interactions|length }} known drug interactions.</strong></p>
+        {% set _sev_order = {'major': 0, 'moderate': 1, 'minor': 2, 'unknown': 3} %}
+        {% set _sev_color = {'major': '#c62828', 'moderate': '#ef6c00', 'minor': '#2e7d32', 'unknown': '#666'} %}
+        {% set _sorted_ix = drug_interactions|sort(attribute='severity') %}
+        <p class="muted"><strong>{{ drug.generic_name|capitalize }} has {{ drug_interactions|length }} known drug interaction{{ 's' if drug_interactions|length != 1 else '' }}.</strong></p>
+        <ul class="drug-interactions-list" style="list-style:none;padding:0;margin:8px 0 16px;">
+          {% for ix in _sorted_ix[:12] %}
+            {% set other = ix.drug_b if ix.drug_a_id == drug.id else ix.drug_a %}
+            {% set sev = (ix.severity or 'unknown')|lower %}
+            <li style="padding:8px 10px;border:1px solid #e2e2e2;border-left:4px solid {{ _sev_color.get(sev, '#999') }};border-radius:4px;margin-bottom:6px;">
+              <span class="severity-badge severity-{{ sev }}" style="display:inline-block;min-width:70px;text-align:center;padding:2px 8px;border-radius:10px;background:{{ _sev_color.get(sev, '#999') }};color:#fff;font-size:0.78em;text-transform:uppercase;font-weight:600;margin-right:8px;">{{ sev }}</span>
+              {% if other %}
+                <a href="{{ url_for('drug_detail', slug=other.slug) }}"><strong>{{ other.generic_name|capitalize }}</strong></a>
+              {% endif %}
+              {% if ix.description %}<span class="muted"> &mdash; {{ ix.description }}</span>{% endif %}
+            </li>
+          {% endfor %}
+        </ul>
+        {% if drug_interactions|length > 12 %}
+        <p><a href="{{ url_for('drug_interactions_page', slug=drug.slug) }}">View all {{ drug_interactions|length }} interactions &rsaquo;</a></p>
+        {% endif %}
         {% endif %}
         {{ drug.interactions_text | format_drug_text | safe }}
+        <h3>Alcohol &amp; food interactions</h3>
+        <p>Avoid drinking alcohol while taking {{ drug.generic_name }}. Alcohol may increase the risk of certain side effects, including drowsiness, stomach bleeding, or liver damage. Ask your doctor or pharmacist before consuming grapefruit or grapefruit juice, as it can interact with several medications.</p>
+        <h3>Lab test interactions</h3>
+        <p>{{ drug.generic_name|capitalize }} may interfere with certain laboratory tests, possibly causing false results. Tell any healthcare provider who treats you or orders lab work that you are using this medicine.</p>
         <div class="interaction-mini-checker">
           <p><strong>Check {{ drug.generic_name|capitalize }} for interactions</strong></p>
           <p class="muted">Enter another medication to view a detailed interaction report with {{ drug.generic_name }}.</p>

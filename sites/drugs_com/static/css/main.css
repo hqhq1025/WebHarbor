@@ -2327,3 +2327,110 @@ details.faq-detail p { padding: 0 0 14px; font-size: 0.92rem; color: var(--gray-
   align-items: center;
   justify-content: center;
 }
+
+/* Symptom checker result cards */
+.symptom-results-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 14px;
+  margin: 14px 0 18px;
+}
+.symptom-result-card {
+  background: #fff;
+  border: 1px solid var(--gray-200);
+  border-left: 4px solid var(--blue);
+  border-radius: 6px;
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+.symptom-result-card:hover {
+  border-color: var(--blue);
+  box-shadow: 0 2px 6px rgba(26, 58, 110, 0.08);
+}
+.symptom-result-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px;
+}
+.symptom-result-name { margin: 0; font-size: 1.05rem; }
+.symptom-result-name a { color: var(--blue); }
+.symptom-result-hits {
+  font-size: 0.78rem;
+  color: var(--gray-700);
+  background: #eef2f8;
+  padding: 2px 8px;
+  border-radius: 10px;
+  white-space: nowrap;
+}
+.symptom-result-desc {
+  margin: 0;
+  font-size: 0.9rem;
+  color: var(--gray-700);
+  line-height: 1.45;
+}
+.symptom-result-footer { margin: 0; font-size: 0.9rem; }
+.symptom-disclaimer-note {
+  margin-top: 12px;
+  padding: 10px 14px;
+  background: #f7f9fc;
+  border-left: 3px solid var(--gray-300);
+  border-radius: 4px;
+  font-size: 0.85rem;
+  color: var(--gray-700);
+  font-style: italic;
+}
+
+/* Search results category tabs */
+.search-category-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin: 14px 0 18px;
+  border-bottom: 1px solid var(--gray-200);
+}
+.search-category-tabs a {
+  padding: 8px 16px;
+  font-size: 0.9rem;
+  color: var(--gray-700);
+  border: 1px solid transparent;
+  border-bottom: none;
+  border-radius: 4px 4px 0 0;
+  margin-bottom: -1px;
+}
+.search-category-tabs a:hover {
+  color: var(--blue);
+  background: #f7f9fc;
+  text-decoration: none;
+}
+.search-category-tabs a .count {
+  color: var(--gray-700);
+  font-size: 0.8rem;
+  margin-left: 4px;
+}
+.search-popular-fallback { margin-top: 18px; }
+.search-popular-fallback h3 { font-size: 1rem; margin: 0 0 10px; }
+
+/* Account welcome banner */
+.account-welcome {
+  background: #f0f6ff;
+  border-left: 3px solid #1c5dbb;
+  padding: 10px 14px;
+  margin: 10px 0 18px;
+  border-radius: 4px;
+  color: #243044;
+}
+
+/* About page */
+.about-page .about-section { margin: 22px 0; }
+.about-page .about-section h2 {
+  font-size: 1.25rem;
+  margin: 18px 0 8px;
+  color: #1c5dbb;
+}
+.about-page .about-section p { line-height: 1.55; color: #333; margin: 6px 0; }
+.about-page .about-section ul { margin: 6px 0 10px 22px; line-height: 1.6; }
+.about-page .about-team li { line-height: 1.5; }

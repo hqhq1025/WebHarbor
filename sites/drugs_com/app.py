@@ -3050,6 +3050,12 @@ def contact():
     return render_template("contact.html")
 
 
+@app.route("/about")
+@app.route("/about.html")
+def about_page():
+    return render_template("about.html")
+
+
 @app.route("/support")
 @app.route("/help")
 def help_page():
