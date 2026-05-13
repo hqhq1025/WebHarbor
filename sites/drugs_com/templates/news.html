@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}{% if active_cat %}{{ active_cat }} - Medical News - {{ site_name }}{% else %}Latest Medical News & Drug Information - {{ site_name }}{% endif %}{% endblock %}
+{% block title %}{% if active_cat %}{{ active_cat }} - Pharmaceutical News and Articles - {{ site_name }}{% else %}Pharmaceutical News and Articles - {{ site_name }}{% endif %}{% endblock %}
 {% block content %}
 <nav class="breadcrumb">
   <a href="{{ url_for('index') }}">Drugs.com</a>
@@ -14,19 +14,36 @@
 </nav>
 
 <h1 style="font-size:28px;font-weight:700;color:var(--navy,#1a3a6e);margin:12px 0 6px">
-  {% if active_cat %}{{ active_cat }}{% else %}Latest Medical News & Drug Information{% endif %}
+  {% if active_cat %}{{ active_cat }}{% else %}Pharmaceutical News and Articles{% endif %}
 </h1>
 <p class="lead muted" style="margin-bottom:20px">
   Stay informed with the latest medical news, FDA drug alerts, new drug approvals, and clinical trial results.
 </p>
 
+{% set cat_display = {
+  "New Drug Approvals": "New Drugs",
+  "Medical": "Consumer",
+  "FDA Alerts": "FDA Alerts",
+  "Clinical Trials": "Clinical Trials",
+  "Health": "Health"
+} %}
 <div class="news-tabs">
-  <a href="{{ url_for('news_index') }}" class="{% if not active_cat %}active{% endif %}">All</a>
+  <a href="{{ url_for('news_index') }}" class="{% if not active_cat %}active{% endif %}">All News</a>
   {% for cat in categories %}
     {% set slug = cat|lower|replace(' ', '-') %}
     <a href="{{ url_for('news_category', category=slug) }}"
-       class="{% if active_cat == cat %}active{% endif %}">{{ cat }}</a>
+       class="{% if active_cat == cat %}active{% endif %}">{{ cat_display.get(cat, cat) }}</a>
   {% endfor %}
+</div>
+
+<div class="news-search-wrap">
+  <form action="{{ url_for('news_index') }}" method="get" class="news-search-form">
+    <input type="hidden" name="cat" value="{{ active_category or '' }}">
+    <input type="search" name="q" placeholder="Search news" value="{{ request.args.get('q', '') }}" class="news-search-input">
+    <button type="submit" class="news-search-btn">
+      <svg width="18" height="18" viewBox="0 0 20 20" fill="none"><circle cx="8.5" cy="8.5" r="5.75" stroke="currentColor" stroke-width="1.8"/><line x1="12.9" y1="12.9" x2="17" y2="17" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+    </button>
+  </form>
 </div>
 
 <div class="news-layout" style="display:grid;grid-template-columns:7fr 3fr;gap:32px;align-items:start">

@@ -242,13 +242,15 @@ a:hover { text-decoration: underline; color: var(--blue-mid); }
 /* Feature icons row */
 .feature-icons {
   display: flex;
+  overflow: hidden;
+  gap: 20px;
+  flex: 1;
   justify-content: center;
-  gap: 32px;
   padding: 28px 20px;
   border-top: 1px solid var(--gray-100);
   border-bottom: 1px solid var(--gray-100);
   background: #fff;
-  flex-wrap: wrap;
+  scroll-behavior: smooth;
 }
 .feature-icon-item {
   display: flex;
@@ -320,15 +322,43 @@ a:hover { text-decoration: underline; color: var(--blue-mid); }
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 10px 0;
-  background: #fff;
-  color: var(--navy);
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: var(--card-bg, #2a3a54);
+  color: var(--text, #e8e8e8);
   font-weight: 600;
-  border-radius: 4px;
-  border: 1px solid var(--gray-200);
-  font-size: 0.95rem;
+  font-size: 0.9rem;
+  text-decoration: none;
+  transition: background 0.15s;
 }
-.letter-btn:hover, .letter-btn.active { background: var(--blue); color: #fff; border-color: var(--blue); text-decoration: none; }
+.letter-btn:hover, .letter-btn.active {
+  background: var(--blue);
+  color: white;
+}
+.letter-btn-sm {
+  width: 32px;
+  height: 32px;
+  font-size: 0.85rem;
+}
+
+/* Feature carousel */
+.feature-carousel-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+  padding: 20px 0;
+}
+.carousel-btn {
+  background: none;
+  border: none;
+  font-size: 2rem;
+  color: #888;
+  cursor: pointer;
+  padding: 0 12px;
+  line-height: 1;
+}
+.carousel-btn:hover { color: var(--blue); }
 .browse-footer {
   padding: 10px 16px;
   background: var(--gray-50);
@@ -958,6 +988,28 @@ details.faq-detail p { padding: 0 0 14px; font-size: 0.92rem; color: var(--gray-
     border-color: #2a2a4a;
     color: #e8e8e8;
   }
+
+  /* Drug detail page: ensure solid card backgrounds and high-contrast text. */
+  .drug-detail {
+    background: #16213e;
+    color: #e8e8e8;
+  }
+  .detail-main,
+  .detail-main section {
+    background: transparent;
+    color: #e8e8e8;
+  }
+  .detail-main p,
+  .detail-main li {
+    color: #d4dbe8;
+  }
+  .detail-main strong { color: #ffffff; }
+  .sidebar-box,
+  .status-box {
+    background: #1e2a3e;
+    border-color: #2a2a4a;
+    color: #e8e8e8;
+  }
   .drug-card { color: #e8e8e8; }
   .drug-card h3,
   .result-card h2 { color: #4da6ff; }
@@ -1424,4 +1476,48 @@ details.faq-detail p { padding: 0 0 14px; font-size: 0.92rem; color: var(--gray-
     border-radius: 4px;
     font-size: 0.9rem;
     width: 280px;
+}
+
+.newsletter-check {
+    display: block;
+    margin: 6px 0;
+    font-size: 0.9rem;
+    cursor: pointer;
+}
+.newsletter-check input {
+    margin-right: 6px;
+}
+.newsletter-email-input {
+    width: 100%;
+    padding: 8px 12px;
+    border: 1px solid #dfe3e8;
+    border-radius: 4px;
+    font-size: 0.9rem;
+    margin-top: 10px;
+    box-sizing: border-box;
+}
+.news-search-wrap {
+    margin: 12px 0 20px;
+}
+.news-search-form {
+    display: flex;
+    max-width: 480px;
+    border: 1px solid #dfe3e8;
+    border-radius: 4px;
+    overflow: hidden;
+}
+.news-search-input {
+    flex: 1;
+    padding: 8px 12px;
+    border: none;
+    outline: none;
+    font-size: 0.95rem;
+}
+.news-search-btn {
+    background: #f4f6fa;
+    border: none;
+    border-left: 1px solid #dfe3e8;
+    padding: 0 14px;
+    cursor: pointer;
+    color: #1a3a6e;
 }

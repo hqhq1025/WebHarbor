@@ -19,7 +19,7 @@
 
   <section>
     <h2>Overview</h2>
-    <p>{{ drug.side_effects }}</p>
+    {{ drug.side_effects | format_drug_text | safe }}
   </section>
 
   <section>

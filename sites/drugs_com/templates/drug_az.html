@@ -77,12 +77,14 @@
   </div>
 
   <aside class="az-sidebar">
-    <div class="sidebar-box">
+    <div class="sidebar-box newsletter-subscribe-box">
       <h3>Subscribe to our newsletters</h3>
-      <p class="muted" style="font-size:0.88rem;margin-bottom:10px;">Stay informed with the latest medical news, FDA alerts, and new drug approvals delivered to your inbox.</p>
-      <form action="{{ url_for('drug_az') }}" method="post" class="newsletter-form" onsubmit="event.preventDefault();">
-        <input type="email" name="email" placeholder="Your email address" aria-label="Email address">
-        <button type="submit">Subscribe</button>
+      <form action="{{ url_for('newsletter_subscribe') }}" method="post">
+        <label class="newsletter-check"><input type="checkbox" name="subs" value="monthly" checked> Monthly newsletter</label>
+        <label class="newsletter-check"><input type="checkbox" name="subs" value="mednews" checked> Daily MedNews</label>
+        <label class="newsletter-check"><input type="checkbox" name="subs" value="fda"> FDA safety alerts</label>
+        <input type="email" name="email" placeholder="Enter your email address" class="newsletter-email-input">
+        <button type="submit" class="btn btn-primary" style="width:100%;margin-top:8px">Subscribe</button>
       </form>
     </div>
 

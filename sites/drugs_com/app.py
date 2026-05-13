@@ -1315,6 +1315,39 @@ def score_drug(drug, tokens):
     return sum(1 for t in tokens if t in text)
 
 
+@app.template_filter('format_drug_text')
+def format_drug_text(text):
+    """Format raw FDA-label drug text into readable HTML paragraphs.
+
+    Collapses internal newlines, bolds ALL-CAPS section headings like
+    'WARNINGS:', sets off numbered list items, and groups sentences into
+    paragraphs of roughly three sentences each. Returns an HTML string
+    consisting of one or more ``<p>...</p>`` blocks; intended to be
+    piped through ``|safe`` in templates.
+    """
+    if not text:
+        return ''
+    text = str(text).strip()
+    # Collapse internal newlines into spaces.
+    text = re.sub(r'\n+', ' ', text)
+    # Bold ALL-CAPS section headings like 'WARNINGS:' or 'DOSAGE:'.
+    text = re.sub(r'([A-Z]{3,}:)\s*', r'<strong>\1</strong> ', text)
+    # Split into sentences at terminal punctuation followed by capital/digit.
+    sentences = re.split(r'(?<=[.!?])\s+(?=[A-Z0-9])', text)
+    paragraphs = []
+    current = []
+    for i, sentence in enumerate(sentences):
+        if not sentence.strip():
+            continue
+        current.append(sentence.strip())
+        if len(current) >= 3 or i == len(sentences) - 1:
+            paragraphs.append(' '.join(current))
+            current = []
+    if current:
+        paragraphs.append(' '.join(current))
+    return '<p>' + '</p><p>'.join(p for p in paragraphs if p.strip()) + '</p>'
+
+
 @app.context_processor
 def inject_globals():
     return {
@@ -1375,9 +1408,11 @@ def drug_detail(slug):
     user_review = None
     if current_user.is_authenticated:
         user_review = DrugReview.query.filter_by(drug_id=drug.id, user_id=current_user.id).first()
+    related_news = NewsArticle.query.order_by(NewsArticle.published_at.desc()).limit(5).all()
     return render_template("drug_detail.html", drug=drug, reviews=reviews,
                            related=related, drug_conditions=drug_conditions, saved=saved,
-                           rating_distribution=rating_distribution, user_review=user_review)
+                           rating_distribution=rating_distribution, user_review=user_review,
+                           related_news=related_news)
 
 
 @app.route("/<slug>/reviews")
@@ -1730,9 +1765,19 @@ def drug_class_page(slug):
 
 @app.route("/news/")
 def news_index():
-    articles = NewsArticle.query.order_by(NewsArticle.published_at.desc()).all()
+    cat = request.args.get("cat", "")
+    q = request.args.get("q", "")
+    query = NewsArticle.query
+    if cat:
+        query = query.filter_by(category=cat)
+    if q:
+        query = query.filter(db.or_(
+            NewsArticle.title.ilike(f"%{q}%"),
+            NewsArticle.body.ilike(f"%{q}%")
+        ))
+    articles = query.order_by(NewsArticle.published_at.desc()).limit(30).all()
     categories = ["New Drug Approvals", "Medical", "FDA Alerts", "Clinical Trials", "Health"]
-    return render_template("news.html", articles=articles, categories=categories, active_cat=None)
+    return render_template("news.html", articles=articles, active_category=cat, active_cat=cat or None, categories=categories, search_query=q)
 
 
 @app.route("/news/article/<int:article_id>")

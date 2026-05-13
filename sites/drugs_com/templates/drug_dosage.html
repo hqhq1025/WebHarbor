@@ -37,7 +37,7 @@
 
   <section>
     <h2>Usual adult dose</h2>
-    <p>{{ drug.dosage }}</p>
+    {{ drug.dosage | format_drug_text | safe }}
   </section>
 
   <section>
