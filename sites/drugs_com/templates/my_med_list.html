@@ -34,7 +34,8 @@
           <p class="muted">Added {{ item.created_at.strftime('%b %d, %Y') }}</p>
           {% if item.notes %}<p class="med-notes"><em>Notes:</em> {{ item.notes }}</p>{% endif %}
           <form method="post" action="{{ url_for('my_med_list_toggle') }}" class="med-remove">
-            <button type="submit" class="btn btn-outline btn-small">Remove</button>
+            <input type="hidden" name="slug" value="{{ item.drug.slug }}">
+            <button type="submit" class="btn btn-outline btn-sm">Remove</button>
           </form>
         </li>
       {% else %}

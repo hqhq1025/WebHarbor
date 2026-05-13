@@ -16,8 +16,6 @@
         <a class="letter-btn {% if active_letter == letter %}active{% endif %}"
            href="{{ url_for('conditions_list') }}?letter={{ letter }}">{{ letter }}</a>
       {% endfor %}
-      <a class="letter-btn {% if active_letter == '0-9' %}active{% endif %}"
-         href="{{ url_for('conditions_list') }}?letter=0-9">0-9</a>
     </div>
 
     {% if active_letter %}

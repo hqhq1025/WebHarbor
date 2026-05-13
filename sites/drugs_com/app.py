@@ -1100,18 +1100,24 @@ def my_med_list():
 @login_required
 def my_med_list_toggle():
     data = request.get_json(silent=True) or {}
-    slug = data.get("slug")
+    slug = data.get("slug") or request.form.get("slug")
     drug = Drug.query.filter_by(slug=slug).first()
     if not drug:
-        return jsonify({"ok": False, "error": "drug_not_found"}), 404
+        if request.is_json:
+            return jsonify({"ok": False, "error": "drug_not_found"}), 404
+        return redirect(url_for("my_med_list"))
     existing = SavedDrug.query.filter_by(user_id=current_user.id, drug_id=drug.id).first()
     if existing:
         db.session.delete(existing)
         db.session.commit()
-        return jsonify({"ok": True, "saved": False})
+        if request.is_json:
+            return jsonify({"ok": True, "saved": False})
+        return redirect(url_for("my_med_list"))
     db.session.add(SavedDrug(user_id=current_user.id, drug_id=drug.id))
     db.session.commit()
-    return jsonify({"ok": True, "saved": True})
+    if request.is_json:
+        return jsonify({"ok": True, "saved": True})
+    return redirect(url_for("my_med_list"))
 
 
 @app.route("/_health")
