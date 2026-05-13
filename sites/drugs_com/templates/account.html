@@ -58,18 +58,37 @@
   <section class="account-box">
     <h2>My Reviews ({{ reviews|length }})</h2>
     {% for r in reviews %}
+      {% set stars = ((r.rating or 0) / 2)|round(0, 'floor')|int %}
       <article class="review">
-        <strong>{{ r.title }}</strong> &mdash;
-        <a href="{{ url_for('drug_detail', slug=r.drug.slug) }}">{{ r.drug.generic_name|capitalize }}</a>
-        <p class="muted">{{ r.rating }}/10 &middot; for {{ r.condition_treated }} &middot; {{ r.created_at.strftime('%b %d, %Y') }}</p>
+        <h3 class="review-drug-name">
+          <a href="{{ url_for('drug_detail', slug=r.drug.slug) }}">{{ r.drug.generic_name|capitalize }}</a>
+        </h3>
+        <div class="review-rating" title="{{ r.rating }}/10">
+          <span class="stars">{% for _ in range(stars) %}&#9733;{% endfor %}{% for _ in range(5 - stars) %}&#9734;{% endfor %}</span>
+          <span class="muted">{{ r.rating }}/10</span>
+        </div>
+        <strong>{{ r.title }}</strong>
+        <p class="muted">for {{ r.condition_treated }} &middot; {{ r.created_at.strftime('%B %d, %Y') }}</p>
         <p>{{ r.body }}</p>
-        <form method="post" action="{{ url_for('delete_review', review_id=r.id) }}" class="review-delete" onsubmit="return confirm('Delete this review?');">
-          <button type="submit" class="btn btn-outline btn-sm">Delete</button>
-        </form>
+        <div class="review-actions">
+          <a class="btn btn-outline btn-sm" href="/{{ r.drug.slug }}/reviews">Edit</a>
+          <form method="post" action="{{ url_for('delete_review', review_id=r.id) }}" class="review-delete" onsubmit="return confirm('Delete this review?');">
+            <button type="submit" class="btn btn-outline btn-sm">Delete</button>
+          </form>
+        </div>
       </article>
     {% else %}
       <p class="muted">You have not posted any reviews yet. Visit any drug page to write a review.</p>
     {% endfor %}
+  </section>
+
+  <section class="account-box">
+    <h2>Saved Searches</h2>
+    <ul class="saved-searches">
+      <li><a href="{{ url_for('search') }}?q=ibuprofen+side+effects">ibuprofen side effects</a></li>
+      <li><a href="{{ url_for('search') }}?q=metformin+dosage">metformin dosage</a></li>
+      <li><a href="{{ url_for('search') }}?q=warfarin+interactions">warfarin interactions</a></li>
+    </ul>
   </section>
 
   <section class="account-box">

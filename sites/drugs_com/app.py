@@ -8,6 +8,7 @@ import os
 import json
 import re
 import string
+import hashlib
 from datetime import datetime, timedelta
 from itertools import combinations
 import difflib
@@ -2866,6 +2867,15 @@ def drug_images(slug):
     return render_template("drug_images.html", drug=drug, images=images)
 
 
+def _price_seed_unit(drug_id, pharmacy, qty):
+    """Deterministic 0.0-1.0 jitter derived from (drug_id, pharmacy, qty).
+
+    Stable across requests so a benchmark sees identical prices each load.
+    """
+    h = hashlib.md5(f"{drug_id}{pharmacy}{qty}".encode()).hexdigest()
+    return int(h[:4], 16) / 65535.0
+
+
 def generate_drug_prices(drug):
     """Build a deterministic per-pharmacy price table for a drug.
 
@@ -2877,13 +2887,15 @@ def generate_drug_prices(drug):
       * OTC drugs use a low band ($4-$25 / 30-day supply).
       * Everything else (generic Rx) uses $6-$45 / 30-day supply.
 
-    A per-drug seed (derived from id + generic_name length) drives small
-    deterministic variation across pharmacies so the table looks plausible
-    without random noise per request.
+    Prices are emitted for three quantity tiers (30, 60, 90) using a
+    hash-based per-(drug, pharmacy, qty) seed so the same drug always
+    quotes the same numbers. The 60- and 90-tablet tiers apply a bulk
+    discount multiplier (1.85 and 2.6 respectively) versus 30.
 
-    Returns a list of dicts:
-        {pharmacy, unit_price, supply_price, coupon, savings_pct}
-    plus a `base_retail` value usable as the "average retail" anchor.
+    Returns:
+        {tier, base_retail, quantities, prices_by_qty, rows, ...}
+    where `prices_by_qty[qty]` is the list of pharmacy rows for that qty
+    and `rows` is the 30-tablet row list (kept for backward compatibility).
     """
     seed = (drug.id * 31 + len(drug.generic_name or "") * 7) % 997
     csa = (drug.csa_schedule or "").lower()
@@ -2913,26 +2925,42 @@ def generate_drug_prices(drug):
         ("GoodRx Price",     0.55, True),
     ]
 
-    rows = []
-    for i, (name, mult, coupon) in enumerate(pharmacies):
-        # tiny deterministic jitter so prices aren't perfect multiples
-        jitter = ((seed + i * 13) % 7) / 100.0  # 0.00 .. 0.06
-        supply = round(base * (mult + jitter), 2)
-        # Assume 30 tablets/capsules per 30-day supply for unit price.
-        unit = round(supply / 30.0, 2)
-        savings = max(0, int(round((1 - supply / (base * 1.15)) * 100)))
-        rows.append({
-            "pharmacy": name,
-            "unit_price": unit,
-            "supply_price": supply,
-            "coupon": coupon,
-            "savings_pct": savings,
-        })
+    # Quantity tiers and bulk-discount multipliers vs base 30-tablet supply.
+    qty_multipliers = {30: 1.0, 60: 1.85, 90: 2.6}
+    quantities = [30, 60, 90]
+
+    prices_by_qty = {}
+    for qty in quantities:
+        qmult = qty_multipliers[qty]
+        rows_q = []
+        for name, mult, coupon in pharmacies:
+            r = _price_seed_unit(drug.id, name, qty)  # 0.0..1.0
+            # 0.8 + r*0.4 → 0.8..1.2 deterministic jitter band
+            supply = round(base * qmult * mult * (0.8 + r * 0.4), 2)
+            unit = round(supply / qty, 2)
+            retail_at_qty = base * qmult * 1.15
+            savings = max(0, int(round((1 - supply / retail_at_qty) * 100)))
+            rows_q.append({
+                "pharmacy": name,
+                "unit_price": unit,
+                "supply_price": supply,
+                "coupon": coupon,
+                "savings_pct": savings,
+            })
+        prices_by_qty[qty] = rows_q
+
+    # Deterministic coupon code for this drug.
+    coupon_code = "DRUGS" + hashlib.md5(
+        f"coupon-{drug.id}-{drug.generic_name or ''}".encode()
+    ).hexdigest()[:4].upper()
 
     return {
         "tier": tier,
         "base_retail": round(base * 1.15, 2),
-        "rows": rows,
+        "rows": prices_by_qty[30],  # backward-compatible default view
+        "quantities": quantities,
+        "prices_by_qty": prices_by_qty,
+        "coupon_code": coupon_code,
         "has_generic": bool(brands),  # if it has brand names, a generic equivalent exists too
         "brand_price": round(base * 4.2, 2) if tier == "generic" and brands else None,
         "generic_price": round(base * 0.95, 2) if tier == "brand" else None,

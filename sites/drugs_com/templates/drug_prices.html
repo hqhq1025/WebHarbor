@@ -19,49 +19,129 @@
     <a href="#generic-compare">generic prices below</a>.
   </p>
 
-  <!-- Coupon CTA -->
-  <section style="background:linear-gradient(90deg,#eaf5ff,#f5fbff);border:1px solid #b8d8ef;border-radius:8px;padding:18px 20px;margin-bottom:24px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:14px">
-    <div style="flex:1;min-width:260px">
-      <h2 style="font-size:1.2rem;margin:0 0 4px">Get a free {{ drug.generic_name|title }} discount card</h2>
-      <p style="margin:0;color:#444">Save up to 80% off retail price at over 65,000 participating U.S. pharmacies including CVS, Walgreens, Walmart, Rite Aid, and Kroger. No insurance required.</p>
+  <!-- GoodRx-style coupon CTA -->
+  <section style="background:linear-gradient(135deg,#0a8a3a,#1c7c2f);color:#fff;border-radius:10px;padding:22px 24px;margin-bottom:24px;box-shadow:0 4px 14px rgba(28,124,47,0.18)">
+    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:18px">
+      <div style="flex:1;min-width:260px">
+        <div style="display:inline-block;background:#fff;color:#0a8a3a;font-weight:800;font-size:1.05rem;padding:6px 14px;border-radius:999px;letter-spacing:0.3px;margin-bottom:10px">
+          Save up to 80% with GoodRx
+        </div>
+        <h2 style="font-size:1.35rem;margin:0 0 6px;color:#fff">Get a free {{ drug.generic_name|title }} discount card</h2>
+        <p style="margin:0;color:#e9f6ec;font-size:0.95rem">Accepted at 65,000+ U.S. pharmacies including CVS, Walgreens, Walmart, Rite Aid, and Kroger. No insurance required.</p>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+        <input id="coupon-email" type="email" placeholder="your@email.com"
+               style="padding:11px 14px;border:0;border-radius:5px;font-size:0.95rem;min-width:200px"/>
+        <button id="get-coupon-btn" type="button"
+                style="background:#fff;color:#0a8a3a;padding:11px 22px;border-radius:5px;border:0;font-weight:700;cursor:pointer;white-space:nowrap">
+          Get Free Coupon &rsaquo;
+        </button>
+      </div>
     </div>
-    <a href="#" style="background:#1c7c2f;color:#fff;padding:11px 22px;border-radius:5px;text-decoration:none;font-weight:600;white-space:nowrap">Get free coupon &rsaquo;</a>
+    <div id="coupon-result" style="display:none;margin-top:14px;background:rgba(255,255,255,0.95);color:#0a3d1a;border-radius:6px;padding:12px 16px;font-size:0.95rem">
+      <strong>Coupon code: <span id="coupon-code-out" style="font-family:monospace;font-size:1.05rem">{{ price_data.coupon_code }}</span></strong>
+      &nbsp;&mdash; Show this at the pharmacy counter to redeem your discount.
+    </div>
   </section>
+  <script>
+    (function () {
+      var btn = document.getElementById('get-coupon-btn');
+      var box = document.getElementById('coupon-result');
+      if (btn && box) {
+        btn.addEventListener('click', function () { box.style.display = 'block'; });
+      }
+    })();
+  </script>
 
   <!-- Pharmacy comparison -->
   <h2 style="font-size:1.35rem;margin:8px 0 10px">{{ drug.generic_name|title }} prices at U.S. pharmacies</h2>
   <p style="color:#666;font-size:0.9rem;margin-bottom:10px">
-    Prices shown are estimates for a 30-day supply (30 tablets/capsules) of the most common strength.
+    Choose a quantity to see estimated cash prices at major U.S. pharmacies for the most common strength.
     Actual price may differ at your local pharmacy.
   </p>
-  <div style="overflow-x:auto">
-  <table style="width:100%;border-collapse:collapse;min-width:640px">
-    <thead>
-      <tr style="background:#f1f5fa">
-        <th style="text-align:left;padding:11px;border-bottom:2px solid #cfd8e3">Pharmacy</th>
-        <th style="text-align:right;padding:11px;border-bottom:2px solid #cfd8e3">Price per pill</th>
-        <th style="text-align:right;padding:11px;border-bottom:2px solid #cfd8e3">30-day supply</th>
-        <th style="text-align:center;padding:11px;border-bottom:2px solid #cfd8e3">Coupon</th>
-        <th style="text-align:right;padding:11px;border-bottom:2px solid #cfd8e3">Savings</th>
-      </tr>
-    </thead>
-    <tbody>
-      {% for row in price_data.rows %}
-      <tr>
-        <td style="padding:11px;border-bottom:1px solid #eee">
-          <strong>{{ row.pharmacy }}</strong>
-          {% if row.pharmacy == 'GoodRx Price' %}<span style="background:#fef3c7;color:#92400e;font-size:0.72rem;padding:2px 6px;border-radius:3px;margin-left:6px">Best price</span>{% endif %}
-        </td>
-        <td style="padding:11px;border-bottom:1px solid #eee;text-align:right">${{ '%.2f' % row.unit_price }}</td>
-        <td style="padding:11px;border-bottom:1px solid #eee;text-align:right"><strong>${{ '%.2f' % row.supply_price }}</strong></td>
-        <td style="padding:11px;border-bottom:1px solid #eee;text-align:center">
-          {% if row.coupon %}<span style="color:#1c7c2f">&#10004; Yes</span>{% else %}<span style="color:#999">&mdash;</span>{% endif %}
-        </td>
-        <td style="padding:11px;border-bottom:1px solid #eee;text-align:right;color:#1c7c2f">{{ row.savings_pct }}%</td>
-      </tr>
-      {% endfor %}
-    </tbody>
-  </table>
+
+  <div id="qty-tabs" style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap" role="tablist" aria-label="Quantity">
+    {% for q in price_data.quantities %}
+    <button type="button" class="qty-tab" data-qty="{{ q }}"
+            style="padding:9px 18px;border:1px solid #b8d8ef;background:#fff;color:#0a5;border-radius:6px;cursor:pointer;font-weight:600">
+      {{ q }} tablets
+    </button>
+    {% endfor %}
+  </div>
+
+  {% for q in price_data.quantities %}
+  <div class="qty-panel" data-qty="{{ q }}" style="overflow-x:auto;{% if not loop.first %}display:none;{% endif %}">
+    <table style="width:100%;border-collapse:collapse;min-width:640px">
+      <thead>
+        <tr style="background:#f1f5fa">
+          <th style="text-align:left;padding:11px;border-bottom:2px solid #cfd8e3">Pharmacy</th>
+          <th style="text-align:right;padding:11px;border-bottom:2px solid #cfd8e3">Price per pill</th>
+          <th style="text-align:right;padding:11px;border-bottom:2px solid #cfd8e3">{{ q }}-tablet price</th>
+          <th style="text-align:center;padding:11px;border-bottom:2px solid #cfd8e3">Coupon</th>
+          <th style="text-align:right;padding:11px;border-bottom:2px solid #cfd8e3">Savings</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in price_data.prices_by_qty[q] %}
+        <tr>
+          <td style="padding:11px;border-bottom:1px solid #eee">
+            <strong>{{ row.pharmacy }}</strong>
+            {% if row.pharmacy == 'GoodRx Price' %}<span style="background:#fef3c7;color:#92400e;font-size:0.72rem;padding:2px 6px;border-radius:3px;margin-left:6px">Best price</span>{% endif %}
+          </td>
+          <td style="padding:11px;border-bottom:1px solid #eee;text-align:right">${{ '%.2f' % row.unit_price }}</td>
+          <td style="padding:11px;border-bottom:1px solid #eee;text-align:right"><strong>${{ '%.2f' % row.supply_price }}</strong></td>
+          <td style="padding:11px;border-bottom:1px solid #eee;text-align:center">
+            {% if row.coupon %}<span style="color:#1c7c2f">&#10004; Yes</span>{% else %}<span style="color:#999">&mdash;</span>{% endif %}
+          </td>
+          <td style="padding:11px;border-bottom:1px solid #eee;text-align:right;color:#1c7c2f">{{ row.savings_pct }}%</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% endfor %}
+
+  <script>
+    (function () {
+      var tabs = document.querySelectorAll('#qty-tabs .qty-tab');
+      var panels = document.querySelectorAll('.qty-panel');
+      function activate(q) {
+        tabs.forEach(function (t) {
+          var on = t.getAttribute('data-qty') === q;
+          t.style.background = on ? '#0a8a3a' : '#fff';
+          t.style.color = on ? '#fff' : '#0a5';
+          t.style.borderColor = on ? '#0a8a3a' : '#b8d8ef';
+        });
+        panels.forEach(function (p) {
+          p.style.display = p.getAttribute('data-qty') === q ? 'block' : 'none';
+        });
+      }
+      tabs.forEach(function (t) {
+        t.addEventListener('click', function () { activate(t.getAttribute('data-qty')); });
+      });
+      if (tabs.length) activate(tabs[0].getAttribute('data-qty'));
+    })();
+  </script>
+
+  <!-- What affects the price? -->
+  <h2 style="font-size:1.35rem;margin:30px 0 10px">What affects the price?</h2>
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px">
+    <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:14px 16px">
+      <h3 style="margin:0 0 6px;font-size:1rem;color:#0a5">Generic vs. brand name</h3>
+      <p style="margin:0;color:#444;font-size:0.92rem">Generic versions of the same medication typically cost 80-90% less than the brand-name product while delivering the same active ingredient and clinical effect.</p>
+    </div>
+    <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:14px 16px">
+      <h3 style="margin:0 0 6px;font-size:1rem;color:#0a5">Insurance coverage</h3>
+      <p style="margin:0;color:#444;font-size:0.92rem">Copays vary widely by plan tier. Some plans cover generics with a $0-$10 copay, while non-preferred brand drugs may require co-insurance of 25-50%.</p>
+    </div>
+    <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:14px 16px">
+      <h3 style="margin:0 0 6px;font-size:1rem;color:#0a5">Quantity discounts</h3>
+      <p style="margin:0;color:#444;font-size:0.92rem">Filling a 90-day supply usually costs less per pill than three 30-day refills because of reduced dispensing fees. Mail-order pharmacies often add an extra discount.</p>
+    </div>
+    <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:14px 16px">
+      <h3 style="margin:0 0 6px;font-size:1rem;color:#0a5">Pharmacy location</h3>
+      <p style="margin:0;color:#444;font-size:0.92rem">Cash prices for the identical medication can vary 2-5x between neighboring pharmacies. Big-box and warehouse pharmacies are typically lower than retail chains.</p>
+    </div>
   </div>
 
   <!-- Generic vs Brand -->
