@@ -13,14 +13,13 @@
   <div class="main-col">
     <form method="GET" action="{{ url_for('symptom_checker') }}" id="symptom-form">
       {% for system, symptoms in body_systems %}
-        <section style="margin:18px 0;padding:14px 16px;border:1px solid #e0e6ef;border-radius:6px;background:#f7f9fc">
-          <h2 style="margin:0 0 10px;font-size:1.1rem">{{ system }}</h2>
-          <div style="display:flex;flex-wrap:wrap;gap:8px">
+        <section class="is-393">
+          <h2 class="is-394">{{ system }}</h2>
+          <div class="is-053">
             {% for sym in symptoms %}
               {% set is_on = sym in selected %}
               <label style="display:inline-flex;align-items:center;padding:6px 12px;border:1px solid {% if is_on %}#1a3a6e{% else %}#cfd8e3{% endif %};border-radius:16px;background:{% if is_on %}#1a3a6e{% else %}#fff{% endif %};color:{% if is_on %}#fff{% else %}#1a3a6e{% endif %};font-size:14px;cursor:pointer">
-                <input type="checkbox" name="symptom" value="{{ sym }}" {% if is_on %}checked{% endif %}
-                       style="margin-right:6px" onchange="document.getElementById('symptom-form').submit()">
+                <input class="is-395" type="checkbox" name="symptom" value="{{ sym }}" {% if is_on %}checked{% endif %} onchange="document.getElementById('symptom-form').submit()">
                 {{ sym }}
               </label>
             {% endfor %}
@@ -28,19 +27,19 @@
         </section>
       {% endfor %}
 
-      <div style="margin-top:14px;display:flex;gap:10px;align-items:center">
-        <button type="submit" class="btn btn-primary" style="padding:8px 16px">Check Symptoms</button>
-        <a href="{{ url_for('symptom_checker') }}" class="btn" style="padding:8px 16px">Clear all</a>
+      <div class="is-396">
+        <button type="submit" class="btn btn-primary is-397">Check Symptoms</button>
+        <a href="{{ url_for('symptom_checker') }}" class="btn is-397">Clear all</a>
         <span class="muted">{{ total_selected }} symptom{{ '' if total_selected == 1 else 's' }} selected</span>
       </div>
     </form>
 
-    <section style="margin-top:24px">
-      <h2 style="font-size:1.2rem">Possible conditions</h2>
+    <section class="is-122">
+      <h2 class="is-398">Possible conditions</h2>
       {% if total_selected == 0 %}
         <p class="muted">Select one or more symptoms above to see possible conditions.</p>
       {% elif possible_conditions %}
-        <p class="muted" style="margin-top:0">Showing the top {{ possible_conditions[:8]|length }} condition{{ '' if possible_conditions[:8]|length == 1 else 's' }} most associated with your selected symptoms.</p>
+        <p class="muted is-064">Showing the top {{ possible_conditions[:8]|length }} condition{{ '' if possible_conditions[:8]|length == 1 else 's' }} most associated with your selected symptoms.</p>
         <div class="symptom-results-grid">
           {% for c, hits in possible_conditions[:8] %}
             <article class="symptom-result-card">
@@ -63,7 +62,7 @@
       {% endif %}
     </section>
 
-    <div style="margin-top:18px;padding:12px 14px;border-left:4px solid #d9a300;background:#fff8e1;border-radius:4px;font-size:14px">
+    <div class="is-399">
       <strong>Important:</strong> This symptom checker provides educational information only. If you have severe symptoms such as chest pain, sudden weakness, difficulty breathing, or signs of a stroke, call emergency services immediately.
     </div>
   </div>

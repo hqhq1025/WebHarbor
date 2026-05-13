@@ -30,7 +30,7 @@
 </div>
 
 {% if images %}
-  <p class="muted" style="margin:14px 0">Showing {{ images|length }} pill image{{ '' if images|length == 1 else 's' }} for {{ drug.generic_name|capitalize }}.</p>
+  <p class="muted is-120">Showing {{ images|length }} pill image{{ '' if images|length == 1 else 's' }} for {{ drug.generic_name|capitalize }}.</p>
   <div class="pill-result-grid drug-images-grid">
     {% for img in images %}
       {% set color_lc = (img.color or '')|lower %}
@@ -66,10 +66,10 @@
     {% endfor %}
   </div>
 {% else %}
-  <p class="muted" style="padding:24px;background:#f7f7f7;border-radius:6px">No pill images are available for {{ drug.generic_name|capitalize }}.</p>
+  <p class="muted is-121">No pill images are available for {{ drug.generic_name|capitalize }}.</p>
 {% endif %}
 
-<p style="margin-top:24px">
+<p class="is-122">
   <a href="{{ url_for('drug_detail', slug=drug.slug) }}" class="btn btn-outline">&larr; Back to {{ drug.generic_name|capitalize }} drug information</a>
 </p>
 

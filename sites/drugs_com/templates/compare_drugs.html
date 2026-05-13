@@ -6,7 +6,7 @@
 </nav>
 
 <h1>Compare Drugs Side by Side</h1>
-<p class="muted" style="max-width:760px">
+<p class="muted is-056">
   Select up to three medications below to view a side-by-side comparison of their generic and brand
   names, drug class, dosage forms, availability, indications, warnings, side effects, and average
   user rating.
@@ -144,7 +144,7 @@
     </table>
   </div>
 
-  <p style="margin-top:16px">
+  <p class="is-057">
     See the side-by-side detailed comparison below for uses, warnings, side effects, and dosage.
   </p>
   <p>
@@ -244,39 +244,39 @@
       across {{ best_rated[1].review_count }} ratings. User ratings reflect patient experience and should not replace medical judgment.
     </p>
   {% endif %}
-  <p class="muted" style="font-size:0.85rem;margin-top:6px">
+  <p class="muted is-058">
     This summary is generated from the comparison data above. Always consult a healthcare professional before starting, stopping, or switching medications.
   </p>
 </div>
 {% endif %}
 {% endif %}
 
-<section style="margin-top:40px">
+<section class="is-059">
   <h2>Popular Comparisons</h2>
-  <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px;margin-top:16px">
-    <a href="{{ url_for('compare_drugs') }}?drug1=ibuprofen&drug2=naproxen" class="card" style="border:1px solid #ddd;padding:14px;border-radius:6px;text-decoration:none">
+  <div class="is-060">
+    <a href="{{ url_for('compare_drugs') }}?drug1=ibuprofen&drug2=naproxen" class="card is-061">
       <strong>Ibuprofen vs. Naproxen</strong>
-      <p class="muted" style="font-size:.9rem;margin:6px 0 0">NSAIDs for pain and inflammation</p>
+      <p class="muted is-062">NSAIDs for pain and inflammation</p>
     </a>
-    <a href="{{ url_for('compare_drugs') }}?drug1=acetaminophen&drug2=ibuprofen" class="card" style="border:1px solid #ddd;padding:14px;border-radius:6px;text-decoration:none">
+    <a href="{{ url_for('compare_drugs') }}?drug1=acetaminophen&drug2=ibuprofen" class="card is-061">
       <strong>Acetaminophen vs. Ibuprofen</strong>
-      <p class="muted" style="font-size:.9rem;margin:6px 0 0">Pain and fever relief</p>
+      <p class="muted is-062">Pain and fever relief</p>
     </a>
-    <a href="{{ url_for('compare_drugs') }}?drug1=sertraline&drug2=fluoxetine" class="card" style="border:1px solid #ddd;padding:14px;border-radius:6px;text-decoration:none">
+    <a href="{{ url_for('compare_drugs') }}?drug1=sertraline&drug2=fluoxetine" class="card is-061">
       <strong>Sertraline vs. Fluoxetine</strong>
-      <p class="muted" style="font-size:.9rem;margin:6px 0 0">SSRIs for depression and anxiety</p>
+      <p class="muted is-062">SSRIs for depression and anxiety</p>
     </a>
-    <a href="{{ url_for('compare_drugs') }}?drug1=semaglutide&drug2=tirzepatide" class="card" style="border:1px solid #ddd;padding:14px;border-radius:6px;text-decoration:none">
+    <a href="{{ url_for('compare_drugs') }}?drug1=semaglutide&drug2=tirzepatide" class="card is-061">
       <strong>Semaglutide vs. Tirzepatide</strong>
-      <p class="muted" style="font-size:.9rem;margin:6px 0 0">GLP-1 agonists for diabetes &amp; weight</p>
+      <p class="muted is-062">GLP-1 agonists for diabetes &amp; weight</p>
     </a>
-    <a href="{{ url_for('compare_drugs') }}?drug1=omeprazole&drug2=famotidine" class="card" style="border:1px solid #ddd;padding:14px;border-radius:6px;text-decoration:none">
+    <a href="{{ url_for('compare_drugs') }}?drug1=omeprazole&drug2=famotidine" class="card is-061">
       <strong>Omeprazole vs. Famotidine</strong>
-      <p class="muted" style="font-size:.9rem;margin:6px 0 0">Acid reflux treatments</p>
+      <p class="muted is-062">Acid reflux treatments</p>
     </a>
-    <a href="{{ url_for('compare_drugs') }}?drug1=loratadine&drug2=cetirizine" class="card" style="border:1px solid #ddd;padding:14px;border-radius:6px;text-decoration:none">
+    <a href="{{ url_for('compare_drugs') }}?drug1=loratadine&drug2=cetirizine" class="card is-061">
       <strong>Loratadine vs. Cetirizine</strong>
-      <p class="muted" style="font-size:.9rem;margin:6px 0 0">Antihistamines for allergies</p>
+      <p class="muted is-062">Antihistamines for allergies</p>
     </a>
   </div>
 </section>

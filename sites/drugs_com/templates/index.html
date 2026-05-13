@@ -10,8 +10,8 @@
     <div class="hero-search-wrap">
       <input class="hero-search-input" type="search" name="q" placeholder="Search drugs, conditions, or symptoms...">
       <button class="hero-search-btn" type="submit" aria-label="Search">
-        <svg width="20" height="20" viewBox="0 0 20 20" fill="none" style="vertical-align:middle"><circle cx="8.5" cy="8.5" r="5.75" stroke="currentColor" stroke-width="1.8"/><line x1="12.9" y1="12.9" x2="17" y2="17" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
-        <span style="margin-left:6px">Search</span>
+        <svg class="is-227" width="20" height="20" viewBox="0 0 20 20" fill="none"><circle cx="8.5" cy="8.5" r="5.75" stroke="currentColor" stroke-width="1.8"/><line x1="12.9" y1="12.9" x2="17" y2="17" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+        <span class="is-228">Search</span>
       </button>
     </div>
   </form>
@@ -30,12 +30,12 @@
   </p>
 </div>
 
-<div class="az-quicknav" style="background:#f7f9fc;border:1px solid #e0e6ef;border-radius:6px;padding:10px 16px;margin:16px 0;display:flex;flex-wrap:wrap;gap:4px;align-items:center">
-  <span style="font-weight:600;color:#1a3a6e;margin-right:8px;font-size:14px">Browse A-Z:</span>
+<div class="az-quicknav is-229">
+  <span class="is-230">Browse A-Z:</span>
   {% for L in 'ABCDEFGHIJKLMNOPQRSTUVWXYZ' %}
-    <a href="{{ url_for('drug_az') }}?letter={{ L }}" style="display:inline-block;padding:3px 7px;border:1px solid #c5d5e8;border-radius:3px;font-size:13px;font-weight:600;color:#0072ce;text-decoration:none;background:#fff">{{ L }}</a>
+    <a class="is-231" href="{{ url_for('drug_az') }}?letter={{ L }}">{{ L }}</a>
   {% endfor %}
-  <a href="{{ url_for('drug_az') }}?letter=0" style="display:inline-block;padding:3px 7px;border:1px solid #c5d5e8;border-radius:3px;font-size:13px;font-weight:600;color:#0072ce;text-decoration:none;background:#fff">0-9</a>
+  <a class="is-231" href="{{ url_for('drug_az') }}?letter=0">0-9</a>
 </div>
 
 <!-- Feature icons -->
@@ -142,20 +142,20 @@ function scrollCarousel(dir) {
 {% if image_samples %}
 <div class="container">
   <div class="home-row">
-    <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:12px">
-      <h2 style="margin:0">Drug Images</h2>
-      <a href="{{ url_for('pill_identifier') }}" style="font-size:0.95rem">View all images &rsaquo;</a>
+    <div class="is-232">
+      <h2 class="is-071">Drug Images</h2>
+      <a class="is-233" href="{{ url_for('pill_identifier') }}">View all images &rsaquo;</a>
     </div>
-    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:14px">
+    <div class="is-234">
       {% for d, img in image_samples %}
-      <a href="{{ url_for('drug_images', slug=d.slug) }}" style="display:block;border:1px solid #e2e2e2;border-radius:6px;padding:12px;background:#fff;text-align:center;text-decoration:none;color:inherit">
-        <svg viewBox="0 0 120 60" width="140" height="70" xmlns="http://www.w3.org/2000/svg" style="margin-bottom:8px">
+      <a class="is-235" href="{{ url_for('drug_images', slug=d.slug) }}">
+        <svg class="is-236" viewBox="0 0 120 60" width="140" height="70" xmlns="http://www.w3.org/2000/svg">
           <ellipse cx="60" cy="30" rx="50" ry="22" fill="#fce6ec" stroke="#b8526a" stroke-width="1.5"/>
           <text x="60" y="35" text-anchor="middle" font-size="12" fill="#333" font-family="sans-serif">{{ img.imprint or '' }}</text>
         </svg>
-        <div style="font-weight:600;font-size:0.95rem">{{ d.generic_name|capitalize }}</div>
+        <div class="is-237">{{ d.generic_name|capitalize }}</div>
         {% if img.shape or img.color %}
-        <div class="muted" style="font-size:0.82rem;margin-top:2px">
+        <div class="muted is-238">
           {{ img.color or '' }}{% if img.color and img.shape %}, {% endif %}{{ img.shape or '' }}
         </div>
         {% endif %}
@@ -184,14 +184,14 @@ function scrollCarousel(dir) {
 {% endif %}
 
 <div class="container">
-<div class="newsletter-subscribe" style="background:#e7f3fb;border:1px solid #b8d4ea;border-radius:6px;padding:20px;margin:24px 0">
-  <h3 style="font-size:18px;font-weight:700;color:#1a3a6e;margin:0 0 8px">Stay up to date on drug news</h3>
-  <p style="color:#555;margin:0 0 12px;font-size:14px">Subscribe to Drugs.com newsletters for the latest medication news, new drug approvals, alerts and updates.</p>
-  <form action="{{ url_for('newsletter_subscribe') }}" method="post" style="display:flex;gap:10px;flex-wrap:wrap">
-    <input type="email" name="email" placeholder="Enter your email address" style="flex:1 1 240px;padding:8px 12px;border:1px solid #b0c4d8;border-radius:4px;font-size:14px">
-    <button type="submit" class="btn btn-primary" style="padding:8px 20px;font-size:14px">Subscribe</button>
+<div class="newsletter-subscribe is-239">
+  <h3 class="is-240">Stay up to date on drug news</h3>
+  <p class="is-241">Subscribe to Drugs.com newsletters for the latest medication news, new drug approvals, alerts and updates.</p>
+  <form class="is-242" action="{{ url_for('newsletter_subscribe') }}" method="post">
+    <input class="is-243" type="email" name="email" placeholder="Enter your email address">
+    <button type="submit" class="btn btn-primary is-244">Subscribe</button>
   </form>
-  <p style="font-size:12px;color:#888;margin:8px 0 0">Drugs.com will never sell or share your email address.</p>
+  <p class="is-245">Drugs.com will never sell or share your email address.</p>
 </div>
 </div>
 
@@ -209,7 +209,7 @@ function scrollCarousel(dir) {
   </div>
   {% endif %}
 
-  <div class="home-browse-grid" style="margin-top:28px">
+  <div class="home-browse-grid is-246">
     <!-- Left: Browse Drugs -->
     <div>
       <div class="browse-panel-title">Browse by</div>
@@ -221,7 +221,7 @@ function scrollCarousel(dir) {
       </div>
 
       <div class="browse-panel-content" id="browse-panel-drugs">
-        <div class="letter-grid" style="grid-template-columns:repeat(7,1fr)">
+        <div class="letter-grid is-247">
           {% for L in ['A','B','C','D','E','F','G','H','I','J','K','L','M','N','O','P','Q','R','S','T','U','V','W','X','Y','Z','0-9'] %}
             <a class="letter-btn letter-btn-sm" href="{{ url_for('drug_az') }}?letter={{ L }}">{{ L }}</a>
           {% endfor %}
@@ -318,9 +318,9 @@ function scrollCarousel(dir) {
   </div>
 
   <!-- Latest news + drug classes two-col -->
-  <div style="display:grid;grid-template-columns:2fr 1fr;gap:28px;padding:24px 0;border-top:1px solid #eef1f5">
+  <div class="is-248">
     <div>
-      <h2 style="font-size:1.25rem;font-weight:700;color:#002a5c;margin-bottom:16px">Latest Medical News</h2>
+      <h2 class="is-249">Latest Medical News</h2>
       <ul class="news-list">
         {% for a in news %}
           <li>
@@ -333,10 +333,10 @@ function scrollCarousel(dir) {
           </li>
         {% endfor %}
       </ul>
-      <p style="margin-top:10px"><a href="{{ url_for('news_index') }}">Read more medical news &rsaquo;</a></p>
+      <p class="is-250"><a href="{{ url_for('news_index') }}">Read more medical news &rsaquo;</a></p>
     </div>
     <div>
-      <h2 style="font-size:1.25rem;font-weight:700;color:#002a5c;margin-bottom:16px">Browse Drug Classes</h2>
+      <h2 class="is-249">Browse Drug Classes</h2>
       <ul class="class-list">
         {% for c in classes %}
           <li><a href="{{ url_for('drug_class_page', slug=c.slug) }}">{{ c.name }}</a></li>
@@ -359,9 +359,9 @@ function scrollCarousel(dir) {
 {% if new_approvals %}
 <div class="container">
   <div class="home-row new-approvals-row">
-    <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:14px">
-      <h2 style="margin:0">New Drug Approvals</h2>
-      <a href="{{ url_for('news_category', category='new-drug-approvals') }}" style="font-size:0.92rem">View all &rsaquo;</a>
+    <div class="is-251">
+      <h2 class="is-071">New Drug Approvals</h2>
+      <a class="is-252" href="{{ url_for('news_category', category='new-drug-approvals') }}">View all &rsaquo;</a>
     </div>
     <div class="new-approvals-grid">
       {% for a in new_approvals %}
@@ -393,16 +393,16 @@ function scrollCarousel(dir) {
 </div>
 
 <div class="container">
-<div class="mobile-app-banner" style="background:#1a3a6e;color:#fff;border-radius:8px;padding:24px;margin:24px 0;display:flex;align-items:center;gap:24px">
-  <div style="flex:1">
-    <h3 style="font-size:20px;font-weight:700;color:#fff;margin:0 0 8px">Drugs.com Mobile App</h3>
-    <p style="color:#b8d4ea;margin:0 0 12px;font-size:14px">Access drug & treatment information, identify pills, check interactions and set up personal medication records. Available for Android and iOS devices.</p>
-    <div style="display:flex;gap:12px">
-      <span style="display:inline-block;background:#000;color:#fff;padding:8px 16px;border-radius:6px;font-size:13px;font-weight:600">App Store</span>
-      <span style="display:inline-block;background:#000;color:#fff;padding:8px 16px;border-radius:6px;font-size:13px;font-weight:600">Google Play</span>
+<div class="mobile-app-banner is-253">
+  <div class="is-254">
+    <h3 class="is-255">Drugs.com Mobile App</h3>
+    <p class="is-256">Access drug & treatment information, identify pills, check interactions and set up personal medication records. Available for Android and iOS devices.</p>
+    <div class="is-257">
+      <span class="is-258">App Store</span>
+      <span class="is-258">Google Play</span>
     </div>
   </div>
-  <div style="font-size:72px;opacity:0.3">📱</div>
+  <div class="is-259">📱</div>
 </div>
 </div>
 {% endblock %}

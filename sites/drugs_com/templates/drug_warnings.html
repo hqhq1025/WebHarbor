@@ -23,22 +23,22 @@
   </header>
 
   {% if boxed_warning %}
-  <section style="background:#fff4f4;border:2px solid #c0392b;padding:16px 20px;margin:18px 0;border-radius:6px">
-    <h2 style="margin:0 0 8px;color:#c0392b;font-size:1.2rem">Boxed Warning (Black Box Warning)</h2>
-    <p style="margin:0">{{ boxed_warning }}</p>
-    <p class="muted" style="margin:10px 0 0;font-size:13px">A boxed warning is the strongest warning the FDA requires, alerting prescribers and patients to risks of serious or life-threatening adverse effects.</p>
+  <section class="is-201">
+    <h2 class="is-202">Boxed Warning (Black Box Warning)</h2>
+    <p class="is-071">{{ boxed_warning }}</p>
+    <p class="muted is-203">A boxed warning is the strongest warning the FDA requires, alerting prescribers and patients to risks of serious or life-threatening adverse effects.</p>
   </section>
   {% endif %}
 
   {% if warning_cards %}
     {% for name, items in warning_cards %}
-    <section style="border:1px solid #e0e6ef;border-radius:6px;padding:14px 18px;margin:14px 0;background:#fff">
-      <h2 style="margin:0 0 10px;font-size:1.1rem;color:var(--navy,#1a3a6e)">{{ name }}</h2>
+    <section class="is-204">
+      <h2 class="is-205">{{ name }}</h2>
       {% if items|length == 1 %}
-        <p style="margin:0">{{ items[0] }}</p>
+        <p class="is-071">{{ items[0] }}</p>
       {% else %}
-        <ul style="margin:0;padding-left:20px">
-          {% for item in items %}<li style="margin-bottom:6px">{{ item }}</li>{% endfor %}
+        <ul class="is-206">
+          {% for item in items %}<li class="is-207">{{ item }}</li>{% endfor %}
         </ul>
       {% endif %}
     </section>
@@ -50,7 +50,7 @@
     </section>
   {% endif %}
 
-  <section style="margin-top:24px">
+  <section class="is-122">
     <h2>General precautions</h2>
     <ul>
       <li>Tell your doctor about all medical conditions, including kidney, liver, or heart problems.</li>
@@ -61,9 +61,9 @@
     </ul>
   </section>
 
-  <section style="margin-top:24px;padding:14px 16px;border:1px solid #e0e6ef;border-radius:6px;background:#f7f9fc">
-    <h2 style="margin:0 0 10px;font-size:1.05rem">Related information for {{ drug.generic_name|capitalize }}</h2>
-    <ul style="margin:0;padding-left:20px">
+  <section class="is-075">
+    <h2 class="is-208">Related information for {{ drug.generic_name|capitalize }}</h2>
+    <ul class="is-206">
       <li><a href="{{ url_for('drug_side_effects', slug=drug.slug) }}">{{ drug.generic_name|capitalize }} side effects</a></li>
       <li><a href="{{ url_for('drug_interactions_page', slug=drug.slug) }}">{{ drug.generic_name|capitalize }} drug interactions</a></li>
       <li><a href="{{ url_for('drug_pregnancy', slug=drug.slug) }}">{{ drug.generic_name|capitalize }} pregnancy &amp; lactation</a></li>
@@ -71,6 +71,6 @@
     </ul>
   </section>
 
-  <p style="margin-top:18px"><a href="{{ url_for('drug_detail', slug=drug.slug) }}">&laquo; Back to {{ drug.generic_name|capitalize }} overview</a></p>
+  <p class="is-030"><a href="{{ url_for('drug_detail', slug=drug.slug) }}">&laquo; Back to {{ drug.generic_name|capitalize }} overview</a></p>
 </article>
 {% endblock %}

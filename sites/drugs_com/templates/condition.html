@@ -20,20 +20,20 @@
 {% endif %}
 
 {% if drugs_by_class %}
-<section class="standard-treatments" style="margin:1rem 0 1.25rem;padding:1rem;border:1px solid #e0e6ef;border-radius:6px;background:#f7f9fc;">
-  <h2 style="margin-top:0;">Standard treatments for {{ condition.name }}</h2>
-  <p class="muted" style="margin-top:0;">Medications used for {{ condition.name }}, grouped by drug class.</p>
+<section class="standard-treatments is-063">
+  <h2 class="is-064">Standard treatments for {{ condition.name }}</h2>
+  <p class="muted is-064">Medications used for {{ condition.name }}, grouped by drug class.</p>
   {% for cls_name, cls_drugs in drugs_by_class %}
-    <div style="margin:0.75rem 0;">
-      <h3 style="margin:0 0 0.25rem;font-size:1.05em;">{{ cls_name }}
-        <span class="muted" style="font-weight:normal;font-size:0.85em;">({{ cls_drugs|length }})</span>
+    <div class="is-065">
+      <h3 class="is-066">{{ cls_name }}
+        <span class="muted is-067">({{ cls_drugs|length }})</span>
       </h3>
-      <ul style="margin:0.25rem 0 0;padding-left:1.25rem;">
+      <ul class="is-068">
         {% for d in cls_drugs %}
           <li>
             <a href="{{ url_for('drug_detail', slug=d.slug) }}">{{ d.generic_name|capitalize }}</a>
             {% if d.brand_names %}<span class="muted">({{ d.brand_names|join(', ') }})</span>{% endif %}
-            {% if d.availability %}<span class="avail-badge avail-{{ d.availability|lower }}" style="font-size:0.8em;">{{ d.availability }}</span>{% endif %}
+            {% if d.availability %}<span class="avail-badge avail-{{ d.availability|lower }} is-069">{{ d.availability }}</span>{% endif %}
           </li>
         {% endfor %}
       </ul>
@@ -44,10 +44,10 @@
 
 <div class="two-col">
   <div class="main-col">
-    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin:16px 0 8px">
-      <h2 style="margin:0">Drugs used for {{ condition.name }}</h2>
+    <div class="is-070">
+      <h2 class="is-071">Drugs used for {{ condition.name }}</h2>
       <div class="sort-controls">
-        <span class="muted" style="font-size:13px">Sort by:</span>
+        <span class="muted is-072">Sort by:</span>
         <a href="?sort=rating" class="{% if sort == 'rating' or not sort %}active{% endif %}">Rating</a>
         &middot;
         <a href="?sort=name" class="{% if sort == 'name' %}active{% endif %}">Name</a>
@@ -55,12 +55,12 @@
     </div>
 
     {% if drugs %}
-      <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin:8px 0 16px">
+      <div class="is-073">
         <a class="btn btn-primary" href="{{ url_for('compare_drugs') }}?drugs={{ drugs[:4]|map(attribute='generic_name')|join(',') }}">
           Compare drugs
         </a>
-        <label for="drug-class-filter" class="muted" style="font-size:13px">Filter by drug class:</label>
-        <select id="drug-class-filter" class="drug-class-filter" style="padding:4px 8px;border:1px solid #c2cad6;border-radius:4px;background:#fff;">
+        <label for="drug-class-filter" class="muted is-072">Filter by drug class:</label>
+        <select id="drug-class-filter" class="drug-class-filter is-074">
           <option value="">All drug classes ({{ drugs|length }})</option>
           {% if drugs_by_class %}
             {% for cls_name, cls_drugs in drugs_by_class %}
@@ -68,7 +68,7 @@
             {% endfor %}
           {% endif %}
         </select>
-        <span id="drug-class-filter-count" class="muted" style="font-size:13px"></span>
+        <span id="drug-class-filter-count" class="muted is-072"></span>
       </div>
 
       <table class="drug-table" id="condition-drug-table">
@@ -121,9 +121,9 @@
       <p class="muted">No drugs listed for this condition.</p>
     {% endif %}
 
-    <details class="learn-more" style="margin-top:24px;padding:14px 16px;border:1px solid #e0e6ef;border-radius:6px;background:#f7f9fc">
-      <summary style="cursor:pointer;font-weight:600;color:var(--navy,#1a3a6e)">Learn more about {{ condition.name }}</summary>
-      <div style="margin-top:12px;line-height:1.7">
+    <details class="learn-more is-075">
+      <summary class="is-076">Learn more about {{ condition.name }}</summary>
+      <div class="is-077">
         {% if condition.description %}
           <p>{{ condition.description }}</p>
         {% endif %}
@@ -161,7 +161,7 @@
     </ul>
 
     <h3>Subscribe to our newsletters</h3>
-    <p class="muted" style="font-size:13px;margin:4px 0 8px">
+    <p class="muted is-078">
       Get the latest medication news, new drug approvals, alerts and updates.
     </p>
     <a class="btn btn-secondary" href="/newsletter">Subscribe</a>

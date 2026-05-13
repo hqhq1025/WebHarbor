@@ -19,12 +19,12 @@
 medications in our database. This list is not exhaustive &mdash; always tell your healthcare
 provider about every medication and supplement you take.</p>
 
-<div class="interaction-summary" style="padding:0.75rem 1rem;background:#f5f7fa;border-left:4px solid #2a6fb0;margin:0.75rem 0;border-radius:4px;">
+<div class="interaction-summary is-123">
   <strong>{{ summary.total }} interaction{{ '' if summary.total == 1 else 's' }} found</strong>
   {% if summary.total %}
-    ({% if summary.major %}<span style="color:#c0392b;font-weight:600;">{{ summary.major }} major</span>{% else %}0 major{% endif %},
-    {% if summary.moderate %}<span style="color:#e67e22;font-weight:600;">{{ summary.moderate }} moderate</span>{% else %}0 moderate{% endif %},
-    {% if summary.minor %}<span style="color:#b7950b;font-weight:600;">{{ summary.minor }} minor</span>{% else %}0 minor{% endif %})
+    ({% if summary.major %}<span class="is-124">{{ summary.major }} major</span>{% else %}0 major{% endif %},
+    {% if summary.moderate %}<span class="is-125">{{ summary.moderate }} moderate</span>{% else %}0 moderate{% endif %},
+    {% if summary.minor %}<span class="is-126">{{ summary.minor }} minor</span>{% else %}0 minor{% endif %})
   {% endif %}
 </div>
 
@@ -34,28 +34,28 @@ provider about every medication and supplement you take.</p>
   <span class="sev-badge sev-{{ sev }}" style="display:inline-block;padding:2px 10px;border-radius:12px;background:{{ bg }};color:{{ fg }};font-size:0.85em;font-weight:600;text-transform:capitalize;">{{ sev }}</span>
 {%- endmacro %}
 
-<h2 style="margin-top:1.5rem;">Drug-drug interactions</h2>
+<h2 class="is-127">Drug-drug interactions</h2>
 {% if interactions %}
   {% for sev in ['major', 'moderate', 'minor', 'unknown'] %}
     {% set group = interactions_by_severity.get(sev) %}
     {% if group %}
-      <h3 style="margin:1rem 0 0.5rem;text-transform:capitalize;">{{ sev }} ({{ group|length }})</h3>
-      <table class="interactions-table" style="width:100%;border-collapse:collapse;margin:0.25rem 0 0.75rem;">
+      <h3 class="is-128">{{ sev }} ({{ group|length }})</h3>
+      <table class="interactions-table is-129">
         <thead>
-          <tr style="background:#f0f4f8;text-align:left;">
-            <th style="padding:0.5rem 0.75rem;border-bottom:2px solid #cfd8dc;">Severity</th>
-            <th style="padding:0.5rem 0.75rem;border-bottom:2px solid #cfd8dc;">Interacts with</th>
-            <th style="padding:0.5rem 0.75rem;border-bottom:2px solid #cfd8dc;">Description</th>
+          <tr class="is-130">
+            <th class="is-131">Severity</th>
+            <th class="is-131">Interacts with</th>
+            <th class="is-131">Description</th>
           </tr>
         </thead>
         <tbody>
           {% for it in group %}
-            <tr style="border-bottom:1px solid #e0e0e0;">
-              <td style="padding:0.5rem 0.75rem;vertical-align:top;">{{ sev_badge(it.severity) }}</td>
-              <td style="padding:0.5rem 0.75rem;vertical-align:top;">
+            <tr class="is-132">
+              <td class="is-133">{{ sev_badge(it.severity) }}</td>
+              <td class="is-133">
                 <a href="{{ url_for('drug_detail', slug=it.other_drug.slug) }}">{{ it.other_drug.generic_name }}</a>
               </td>
-              <td style="padding:0.5rem 0.75rem;vertical-align:top;">{{ it.description }}</td>
+              <td class="is-133">{{ it.description }}</td>
             </tr>
           {% endfor %}
         </tbody>
@@ -67,22 +67,22 @@ provider about every medication and supplement you take.</p>
 This does not mean none exist &mdash; always confirm with a pharmacist or clinician.</p>
 {% endif %}
 
-<h2 style="margin-top:1.75rem;">Drug-food interactions</h2>
+<h2 class="is-134">Drug-food interactions</h2>
 {% if food_interactions %}
-<table class="interactions-table" style="width:100%;border-collapse:collapse;margin:0.5rem 0;">
+<table class="interactions-table is-135">
   <thead>
-    <tr style="background:#f0f4f8;text-align:left;">
-      <th style="padding:0.5rem 0.75rem;border-bottom:2px solid #cfd8dc;">Severity</th>
-      <th style="padding:0.5rem 0.75rem;border-bottom:2px solid #cfd8dc;">Food / item</th>
-      <th style="padding:0.5rem 0.75rem;border-bottom:2px solid #cfd8dc;">Description</th>
+    <tr class="is-130">
+      <th class="is-131">Severity</th>
+      <th class="is-131">Food / item</th>
+      <th class="is-131">Description</th>
     </tr>
   </thead>
   <tbody>
     {% for it in food_interactions %}
-      <tr style="border-bottom:1px solid #e0e0e0;">
-        <td style="padding:0.5rem 0.75rem;vertical-align:top;">{{ sev_badge(it.severity) }}</td>
-        <td style="padding:0.5rem 0.75rem;vertical-align:top;">{{ it.item }}</td>
-        <td style="padding:0.5rem 0.75rem;vertical-align:top;">{{ it.description }}</td>
+      <tr class="is-132">
+        <td class="is-133">{{ sev_badge(it.severity) }}</td>
+        <td class="is-133">{{ it.item }}</td>
+        <td class="is-133">{{ it.description }}</td>
       </tr>
     {% endfor %}
   </tbody>
@@ -91,12 +91,12 @@ This does not mean none exist &mdash; always confirm with a pharmacist or clinic
 <p>No significant food interactions are recorded for {{ drug.generic_name|title }}.</p>
 {% endif %}
 
-<h2 style="margin-top:1.75rem;">Drug-alcohol interactions</h2>
+<h2 class="is-134">Drug-alcohol interactions</h2>
 {% if alcohol_interactions %}
   {% for it in alcohol_interactions %}
-    <div style="padding:0.75rem 1rem;border:1px solid #e0e0e0;border-radius:4px;margin:0.5rem 0;background:#fff;">
-      <p style="margin:0 0 0.4rem;">{{ sev_badge(it.severity) }} <strong>Alcohol</strong></p>
-      <p style="margin:0;">{{ it.description }}</p>
+    <div class="is-136">
+      <p class="is-137">{{ sev_badge(it.severity) }} <strong>Alcohol</strong></p>
+      <p class="is-071">{{ it.description }}</p>
     </div>
   {% endfor %}
 {% else %}
@@ -104,8 +104,8 @@ This does not mean none exist &mdash; always confirm with a pharmacist or clinic
 alcohol use with your clinician regardless.</p>
 {% endif %}
 
-<section class="check-more" style="margin-top:1.5rem;padding:1rem;border:1px solid #e0e0e0;border-radius:4px;background:#fafafa;">
-  <h2 style="margin-top:0;">Check for more interactions</h2>
+<section class="check-more is-138">
+  <h2 class="is-064">Check for more interactions</h2>
   <p>Add other medications you take alongside {{ drug.generic_name|title }} to see how they
   interact.</p>
   <p><a class="btn btn-primary" href="{{ url_for('interaction_checker') }}?drug={{ drug.slug }}">Open the interaction checker with {{ drug.generic_name|title }} pre-filled</a></p>

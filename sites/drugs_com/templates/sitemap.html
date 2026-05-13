@@ -8,11 +8,11 @@
 <h1>Sitemap</h1>
 <p class="muted">A complete map of major sections on Drugs.com.</p>
 
-<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:24px;margin-top:24px">
+<div class="is-386">
 
   <section>
-    <h2 style="border-bottom:2px solid #3b82c4;padding-bottom:6px">Drug Information</h2>
-    <ul style="list-style:none;padding:0;line-height:1.9">
+    <h2 class="is-387">Drug Information</h2>
+    <ul class="is-388">
       <li><a href="{{ url_for('drug_az') }}">Drugs A-Z Index</a></li>
       <li><a href="{{ url_for('drug_classes_list') }}">Drug Classes</a></li>
       <li><a href="{{ url_for('conditions_list') }}">Conditions &amp; Treatments</a></li>
@@ -23,8 +23,8 @@
   </section>
 
   <section>
-    <h2 style="border-bottom:2px solid #3b82c4;padding-bottom:6px">Drug Tools</h2>
-    <ul style="list-style:none;padding:0;line-height:1.9">
+    <h2 class="is-387">Drug Tools</h2>
+    <ul class="is-388">
       <li><a href="{{ url_for('interaction_checker') }}">Drug Interaction Checker</a></li>
       <li><a href="{{ url_for('pill_identifier') }}">Pill Identifier</a></li>
       <li><a href="{{ url_for('compare_drugs') }}">Compare Drugs</a></li>
@@ -34,8 +34,8 @@
   </section>
 
   <section>
-    <h2 style="border-bottom:2px solid #3b82c4;padding-bottom:6px">News &amp; Resources</h2>
-    <ul style="list-style:none;padding:0;line-height:1.9">
+    <h2 class="is-387">News &amp; Resources</h2>
+    <ul class="is-388">
       <li><a href="{{ url_for('news_index') }}">Medical News</a></li>
       <li><a href="{{ url_for('news_category', category='new-drug-approvals') }}">New Drug Approvals</a></li>
       <li><a href="{{ url_for('news_category', category='fda-alerts') }}">FDA Alerts</a></li>
@@ -46,8 +46,8 @@
   </section>
 
   <section>
-    <h2 style="border-bottom:2px solid #3b82c4;padding-bottom:6px">User Tools</h2>
-    <ul style="list-style:none;padding:0;line-height:1.9">
+    <h2 class="is-387">User Tools</h2>
+    <ul class="is-388">
       <li><a href="{{ url_for('account') }}">My Account</a></li>
       <li><a href="{{ url_for('my_med_list') }}">My Med List</a></li>
       <li><a href="{{ url_for('my_reviews') }}">My Reviews</a></li>
@@ -60,36 +60,36 @@
 
 </div>
 
-<section style="margin-top:32px">
+<section class="is-051">
   <h2>Browse Drugs A-Z</h2>
-  <div style="display:flex;flex-wrap:wrap;gap:6px">
+  <div class="is-389">
     {% for L in all_letters %}
-      <a href="{{ url_for('drug_az') }}?letter={{ L }}" style="padding:4px 10px;border:1px solid #ddd;border-radius:3px;text-decoration:none;font-weight:600">{{ L }}</a>
+      <a class="is-390" href="{{ url_for('drug_az') }}?letter={{ L }}">{{ L }}</a>
     {% endfor %}
   </div>
 </section>
 
-<section style="margin-top:32px">
+<section class="is-051">
   <h2>Drug Classes</h2>
-  <div style="columns:3;column-gap:24px">
+  <div class="is-391">
     {% for c in classes %}
-      <div style="break-inside:avoid;margin-bottom:6px"><a href="{{ url_for('drug_class_page', slug=c.slug) }}">{{ c.name }}</a></div>
+      <div class="is-392"><a href="{{ url_for('drug_class_page', slug=c.slug) }}">{{ c.name }}</a></div>
     {% endfor %}
   </div>
 </section>
 
-<section style="margin-top:32px">
+<section class="is-051">
   <h2>Conditions &amp; Treatments</h2>
-  <div style="columns:3;column-gap:24px">
+  <div class="is-391">
     {% for c in conditions %}
-      <div style="break-inside:avoid;margin-bottom:6px"><a href="{{ url_for('condition_page', slug=c.slug) }}">{{ c.name }}</a></div>
+      <div class="is-392"><a href="{{ url_for('condition_page', slug=c.slug) }}">{{ c.name }}</a></div>
     {% endfor %}
   </div>
 </section>
 
-<section style="margin-top:32px">
+<section class="is-051">
   <h2>About Drugs.com</h2>
-  <ul style="list-style:none;padding:0;line-height:1.9">
+  <ul class="is-388">
     <li><a href="{{ url_for('contact') }}">Contact Us</a></li>
     <li><a href="{{ url_for('terms') }}">Terms of Use</a></li>
     <li><a href="{{ url_for('privacy') }}">Privacy Policy</a></li>

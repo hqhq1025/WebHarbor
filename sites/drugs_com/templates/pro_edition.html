@@ -5,31 +5,31 @@
   <a href="{{ url_for('index') }}">Home</a> &rsaquo; <span>Pro Edition</span>
 </nav>
 
-<section class="pro-hero" style="background:linear-gradient(135deg,#0c3b6f,#1a6cb0);color:#fff;padding:48px 32px;border-radius:8px;margin-bottom:32px">
-  <h1 style="font-size:2.2rem;margin:0 0 12px;color:#fff">Drugs.com for Healthcare Professionals</h1>
-  <p style="font-size:1.1rem;max-width:720px;margin:0 0 20px;line-height:1.5">
+<section class="pro-hero is-353">
+  <h1 class="is-354">Drugs.com for Healthcare Professionals</h1>
+  <p class="is-355">
     Authoritative drug information, clinical decision support, and prescribing references curated for
     physicians, pharmacists, nurses, and other healthcare professionals.
   </p>
-  <div style="display:flex;gap:12px;flex-wrap:wrap">
-    <a href="{{ url_for('drug_az') }}" class="btn" style="background:#fff;color:#0c3b6f">Browse Monographs</a>
-    <a href="{{ url_for('interaction_checker') }}" class="btn btn-outline" style="border-color:#fff;color:#fff">Interaction Checker</a>
+  <div class="is-356">
+    <a href="{{ url_for('drug_az') }}" class="btn is-357">Browse Monographs</a>
+    <a href="{{ url_for('interaction_checker') }}" class="btn btn-outline is-358">Interaction Checker</a>
   </div>
 </section>
 
-<section class="pro-search-widget account-box" style="margin-bottom:32px;background:#f4f8fc;border:1px solid #d5e3f0">
-  <h2 style="margin-top:0">Professional Drug Lookup</h2>
-  <p class="muted" style="margin:0 0 12px">Search across drug monographs, interactions, and dosing references.</p>
-  <form action="{{ url_for('search') }}" method="get" class="pro-search-form" style="display:flex;gap:8px;flex-wrap:wrap">
-    <input type="text" name="q" placeholder="Search drug monographs, interactions, dosing..." class="pro-search-input" style="flex:1;min-width:260px;padding:12px;border:1px solid #b9cee3;border-radius:4px;font-size:1rem">
-    <button class="btn" type="submit" style="background:#0c3b6f;color:#fff">Search</button>
+<section class="pro-search-widget account-box is-359">
+  <h2 class="is-064">Professional Drug Lookup</h2>
+  <p class="muted is-025">Search across drug monographs, interactions, and dosing references.</p>
+  <form action="{{ url_for('search') }}" method="get" class="pro-search-form is-340">
+    <input type="text" name="q" placeholder="Search drug monographs, interactions, dosing..." class="pro-search-input is-360">
+    <button class="btn is-361" type="submit">Search</button>
   </form>
 </section>
 
-<section class="pro-section account-box" style="margin-bottom:32px">
-  <h2 style="margin-top:0">Clinical Drug Monographs</h2>
+<section class="pro-section account-box is-362">
+  <h2 class="is-064">Clinical Drug Monographs</h2>
   <p class="pro-subtitle muted">Comprehensive drug information for healthcare professionals.</p>
-  <div class="pro-drug-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px;margin-top:16px">
+  <div class="pro-drug-grid is-363">
     {% for m in [
       ('ibuprofen', 'Ibuprofen', 'NSAID / analgesic'),
       ('metformin', 'Metformin', 'Biguanide antidiabetic'),
@@ -38,39 +38,39 @@
       ('sertraline', 'Sertraline', 'SSRI antidepressant'),
       ('omeprazole', 'Omeprazole', 'Proton pump inhibitor'),
     ] %}
-      <div class="pro-drug-card" style="padding:14px;border:1px solid #e3e7ec;border-radius:6px;background:#fff">
-        <h4 style="margin:0 0 4px"><a href="{{ url_for('drug_detail', slug=m[0]) }}" style="text-decoration:none;color:#0c3b6f">{{ m[1] }}</a></h4>
-        <p class="muted" style="margin:0 0 10px;font-size:.88rem">{{ m[2] }}</p>
+      <div class="pro-drug-card is-364">
+        <h4 class="is-107"><a class="is-365" href="{{ url_for('drug_detail', slug=m[0]) }}">{{ m[1] }}</a></h4>
+        <p class="muted is-366">{{ m[2] }}</p>
         <a class="btn btn-sm btn-outline" href="{{ url_for('drug_detail', slug=m[0]) }}">View Monograph</a>
       </div>
     {% endfor %}
   </div>
 </section>
 
-<section class="pro-section account-box" style="margin-bottom:32px">
-  <h2 style="margin-top:0">Professional Resources</h2>
+<section class="pro-section account-box is-362">
+  <h2 class="is-064">Professional Resources</h2>
   <p class="pro-subtitle muted">Clinical decision support tools and reference databases.</p>
-  <div class="pro-resource-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:12px;margin-top:16px">
-    <a href="{{ url_for('interaction_checker') }}" style="display:block;padding:16px;border:1px solid #e3e7ec;border-radius:6px;background:#fff;text-decoration:none;color:inherit">
-      <h4 style="margin:0 0 6px;color:#0c3b6f">Drug Interaction Checker Pro</h4>
-      <p class="muted" style="margin:0;font-size:.9rem">Screen multi-drug regimens with severity classification.</p>
+  <div class="pro-resource-grid is-367">
+    <a class="is-368" href="{{ url_for('interaction_checker') }}">
+      <h4 class="is-369">Drug Interaction Checker Pro</h4>
+      <p class="muted is-370">Screen multi-drug regimens with severity classification.</p>
     </a>
-    <a href="{{ url_for('news_category', category='fda-alerts') }}" style="display:block;padding:16px;border:1px solid #e3e7ec;border-radius:6px;background:#fff;text-decoration:none;color:inherit">
-      <h4 style="margin:0 0 6px;color:#0c3b6f">FDA Drug Safety Communications</h4>
-      <p class="muted" style="margin:0;font-size:.9rem">Current alerts, boxed warnings, and label changes.</p>
+    <a class="is-368" href="{{ url_for('news_category', category='fda-alerts') }}">
+      <h4 class="is-369">FDA Drug Safety Communications</h4>
+      <p class="muted is-370">Current alerts, boxed warnings, and label changes.</p>
     </a>
-    <a href="{{ url_for('drug_az') }}" style="display:block;padding:16px;border:1px solid #e3e7ec;border-radius:6px;background:#fff;text-decoration:none;color:inherit">
-      <h4 style="margin:0 0 6px;color:#0c3b6f">Prescribing Reference</h4>
-      <p class="muted" style="margin:0;font-size:.9rem">A-Z monograph library with full prescribing information.</p>
+    <a class="is-368" href="{{ url_for('drug_az') }}">
+      <h4 class="is-369">Prescribing Reference</h4>
+      <p class="muted is-370">A-Z monograph library with full prescribing information.</p>
     </a>
-    <a href="#clinical-calculators" style="display:block;padding:16px;border:1px solid #e3e7ec;border-radius:6px;background:#fff;text-decoration:none;color:inherit">
-      <h4 style="margin:0 0 6px;color:#0c3b6f">Clinical Calculators</h4>
-      <p class="muted" style="margin:0;font-size:.9rem">BMI, CrCl, IBW/ABW, and BSA bedside tools.</p>
+    <a class="is-368" href="#clinical-calculators">
+      <h4 class="is-369">Clinical Calculators</h4>
+      <p class="muted is-370">BMI, CrCl, IBW/ABW, and BSA bedside tools.</p>
     </a>
   </div>
 </section>
 
-<div class="account-grid" style="display:grid;grid-template-columns:2fr 1fr;gap:32px">
+<div class="account-grid is-371">
   <div>
     <section class="account-box">
       <h2>Monograph Library</h2>
@@ -233,9 +233,9 @@
     <section class="account-box">
       <h2>Browse by Drug Class</h2>
       <p>Drug class monographs include mechanism of action, member drugs, and class-level warnings.</p>
-      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:8px;margin-top:12px">
+      <div class="is-372">
         {% for c in classes %}
-          <a href="{{ url_for('drug_class_page', slug=c.slug) }}" style="padding:8px;border:1px solid #eee;border-radius:4px;text-decoration:none">{{ c.name }}</a>
+          <a class="is-373" href="{{ url_for('drug_class_page', slug=c.slug) }}">{{ c.name }}</a>
         {% endfor %}
       </div>
     </section>
@@ -251,11 +251,11 @@
       <h2>Professional Newsletter</h2>
       <p>Get weekly summaries of FDA approvals, label changes, safety alerts, and clinical news
          delivered to your inbox.</p>
-      <form id="newsletter-form" onsubmit="event.preventDefault();document.getElementById('newsletter-confirm').style.display='block';this.reset();" style="display:flex;gap:8px;margin-top:12px">
-        <input type="email" placeholder="your@hospital.org" style="flex:1;padding:10px;border:1px solid #ccc;border-radius:4px">
+      <form class="is-374" id="newsletter-form" onsubmit="event.preventDefault();document.getElementById('newsletter-confirm').style.display='block';this.reset();">
+        <input class="is-213" type="email" placeholder="your@hospital.org">
         <button class="btn" type="submit">Subscribe</button>
       </form>
-      <div id="newsletter-confirm" role="status" style="display:none;margin-top:10px;padding:10px;background:#e7f4ea;border:1px solid #b4dabd;color:#205a2e;border-radius:4px">
+      <div class="is-375" id="newsletter-confirm" role="status">
         Subscribed (demo). You will receive the weekly professional newsletter.
       </div>
     </section>
@@ -276,7 +276,7 @@
     </section>
     <section class="account-box">
       <h3>For Prescribers</h3>
-      <p class="muted" style="font-size:.92rem">
+      <p class="muted is-376">
         Drug.com Pro Edition aggregates curated drug labeling and clinical references for use in
         professional settings. Content is for informational purposes; verify against current FDA
         labeling before clinical decisions.

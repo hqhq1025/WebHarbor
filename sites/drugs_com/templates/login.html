@@ -6,68 +6,66 @@
   <span>Sign In</span>
 </nav>
 
-<div class="auth-box" style="max-width:440px;margin:24px auto;padding:32px;border:1px solid #e0e0e0;border-radius:8px;background:#fff;box-shadow:0 2px 8px rgba(0,0,0,0.04)">
-  <div style="text-align:center;margin-bottom:20px">
-    <a href="{{ url_for('index') }}" style="text-decoration:none">
-      <span style="display:inline-block;font-size:28px;font-weight:700;color:#0072ce;letter-spacing:-0.5px">Drugs<span style="color:#f57c00">.com</span></span>
+<div class="auth-box is-288">
+  <div class="is-289">
+    <a class="is-290" href="{{ url_for('index') }}">
+      <span class="is-291">Drugs<span class="is-292">.com</span></span>
     </a>
-    <p class="muted" style="margin:6px 0 0;font-size:13px">Know more. Live healthier.</p>
+    <p class="muted is-293">Know more. Live healthier.</p>
   </div>
 
-  <h1 style="text-align:center;font-size:22px;margin:0 0 20px">Sign in to your account</h1>
+  <h1 class="is-294">Sign in to your account</h1>
 
   {% with messages = get_flashed_messages(with_categories=true) %}
     {% if messages %}
       {% for category, message in messages %}
-        <p class="flash flash-{{ category }}" style="padding:10px 14px;border-radius:4px;background:#fff3cd;border:1px solid #ffe082">{{ message }}</p>
+        <p class="flash flash-{{ category }} is-295">{{ message }}</p>
       {% endfor %}
     {% endif %}
   {% endwith %}
 
   <form method="post" action="{{ url_for('login') }}">
-    <div style="margin-bottom:14px">
-      <label for="email" style="display:block;font-weight:600;margin-bottom:6px">Email address</label>
-      <input id="email" type="email" name="email" required autocomplete="email"
-             style="width:100%;padding:10px;border:1px solid #ccc;border-radius:4px;box-sizing:border-box">
+    <div class="is-296">
+      <label class="is-016" for="email">Email address</label>
+      <input class="is-018" id="email" type="email" name="email" required autocomplete="email">
     </div>
 
-    <div style="margin-bottom:10px">
-      <label for="password" style="display:flex;justify-content:space-between;align-items:center;font-weight:600;margin-bottom:6px">
+    <div class="is-297">
+      <label class="is-298" for="password">
         <span>Password</span>
-        <a href="#" class="forgot-link" style="font-weight:400;font-size:13px;color:#0072ce">Forgot your password?</a>
+        <a href="#" class="forgot-link is-299">Forgot your password?</a>
       </label>
-      <input id="password" type="password" name="password" required autocomplete="current-password"
-             style="width:100%;padding:10px;border:1px solid #ccc;border-radius:4px;box-sizing:border-box">
+      <input class="is-018" id="password" type="password" name="password" required autocomplete="current-password">
     </div>
 
-    <label style="display:flex;align-items:center;gap:8px;margin-bottom:18px;font-size:14px">
+    <label class="is-300">
       <input type="checkbox" name="remember_me" value="1"> Remember me on this device
     </label>
 
-    <button type="submit" class="btn btn-primary" style="width:100%;padding:11px;font-size:15px;font-weight:600">Sign in</button>
+    <button type="submit" class="btn btn-primary is-301">Sign in</button>
   </form>
 
-  <div class="auth-divider" style="text-align:center;margin:20px 0;position:relative;color:#888;font-size:13px">
-    <span style="background:#fff;padding:0 12px;position:relative;z-index:1">or continue with</span>
-    <div style="position:absolute;top:50%;left:0;right:0;height:1px;background:#e0e0e0;z-index:0"></div>
+  <div class="auth-divider is-302">
+    <span class="is-303">or continue with</span>
+    <div class="is-304"></div>
   </div>
 
-  <div style="display:flex;gap:10px;margin-bottom:18px">
-    <button type="button" class="btn btn-outline" style="flex:1;padding:10px;display:flex;align-items:center;justify-content:center;gap:8px;background:#fff;border:1px solid #dadce0">
-      <span style="display:inline-block;width:18px;height:18px;background:conic-gradient(from -45deg,#ea4335 0 25%,#fbbc05 0 50%,#34a853 0 75%,#4285f4 0);border-radius:50%"></span>
-      <span style="font-weight:500">Google</span>
+  <div class="is-305">
+    <button type="button" class="btn btn-outline is-306">
+      <span class="is-307"></span>
+      <span class="is-308">Google</span>
     </button>
-    <button type="button" class="btn btn-outline" style="flex:1;padding:10px;display:flex;align-items:center;justify-content:center;gap:8px;background:#1877f2;color:#fff;border:1px solid #1877f2">
-      <strong style="font-family:Georgia,serif;font-size:18px;line-height:1">f</strong>
-      <span style="font-weight:500">Facebook</span>
+    <button type="button" class="btn btn-outline is-309">
+      <strong class="is-310">f</strong>
+      <span class="is-308">Facebook</span>
     </button>
   </div>
 
-  <p class="auth-switch" style="text-align:center;margin:0 0 12px">
-    Don't have an account? <a href="{{ url_for('register') }}" style="color:#0072ce;font-weight:600">Register</a>
+  <p class="auth-switch is-311">
+    Don't have an account? <a class="is-312" href="{{ url_for('register') }}">Register</a>
   </p>
 
-  <p class="auth-note" style="text-align:center;font-size:12px;color:#666;background:#f5f9ff;border:1px dashed #b3d7ff;padding:8px;border-radius:4px;margin:12px 0 0">
+  <p class="auth-note is-313">
     <em>Any credentials work in this demo environment.</em>
   </p>
 </div>

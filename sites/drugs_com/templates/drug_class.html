@@ -30,7 +30,7 @@
         {% for entry in common_conditions %}
           <li>
             <a href="{{ url_for('condition_page', slug=entry.condition.slug) }}">{{ entry.condition.name }}</a>
-            <span class="muted" style="font-size:13px">
+            <span class="muted is-072">
               ({{ entry.count }} drug{{ '' if entry.count == 1 else 's' }} in this class)
             </span>
           </li>

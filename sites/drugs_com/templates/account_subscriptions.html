@@ -19,32 +19,32 @@
 
 {% with messages = get_flashed_messages(with_categories=true) %}
   {% for category, message in messages %}
-    <div class="flash flash-{{ category }}" style="padding:10px 14px;border-radius:4px;background:#e8f5e9;border:1px solid #a5d6a7;margin-bottom:14px">{{ message }}</div>
+    <div class="flash flash-{{ category }} is-027">{{ message }}</div>
   {% endfor %}
 {% endwith %}
 
 <div class="account-grid">
-  <form method="post" action="{{ url_for('save_subscriptions') }}" class="account-box" style="max-width:640px">
+  <form method="post" action="{{ url_for('save_subscriptions') }}" class="account-box is-028">
     <h2>Email notification preferences</h2>
     <p class="muted">Choose which Drugs.com emails to receive at <strong>{{ current_user.email }}</strong>.</p>
 
-    <label style="display:block;margin-bottom:10px">
+    <label class="is-029">
       <input type="checkbox" name="fda_alerts" checked> FDA Drug Safety Alerts
     </label>
-    <label style="display:block;margin-bottom:10px">
+    <label class="is-029">
       <input type="checkbox" name="new_approvals" checked> New Drug Approvals
     </label>
-    <label style="display:block;margin-bottom:10px">
+    <label class="is-029">
       <input type="checkbox" name="news_digest" checked> Medical News Digest (weekly)
     </label>
-    <label style="display:block;margin-bottom:10px">
+    <label class="is-029">
       <input type="checkbox" name="med_list_reminders" checked> My Med List reminders
     </label>
-    <label style="display:block;margin-bottom:10px">
+    <label class="is-029">
       <input type="checkbox" name="interaction_warnings" checked> Drug interaction warnings
     </label>
 
-    <div style="margin-top:18px">
+    <div class="is-030">
       <button type="submit" class="btn">Save preferences</button>
     </div>
   </form>
@@ -53,7 +53,7 @@
     <h2>Current subscription tier</h2>
     <p><strong>Free Account</strong></p>
     <p class="muted">You have access to the full consumer drug database, the interaction checker, the pill identifier, and your personal Med List.</p>
-    <h3 style="margin-top:18px">Drugs.com Pro Edition</h3>
+    <h3 class="is-030">Drugs.com Pro Edition</h3>
     <p>Unlock prescriber-grade monographs, advanced interaction reports, and clinical decision support designed for healthcare professionals.</p>
     <a class="btn" href="/pro">Upgrade to Pro Edition</a>
   </section>
