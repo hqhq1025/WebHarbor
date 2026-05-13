@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+{% block title %}Conditions & Treatments A to Z - Drugs.com{% endblock %}
+{% block content %}
+<nav class="breadcrumb">
+  <a href="{{ url_for('index') }}">Home</a> &rsaquo;
+  <span>Conditions & Treatments A to Z</span>
+</nav>
+
+<h1>Conditions & Treatments A to Z</h1>
+<p class="muted">Browse conditions and their treatments.</p>
+
+<div class="two-col">
+  <div class="main-col">
+    <div class="letter-grid">
+      {% for letter in all_letters %}
+        <a class="letter-btn {% if active_letter == letter %}active{% endif %}"
+           href="{{ url_for('conditions_list') }}?letter={{ letter }}">{{ letter }}</a>
+      {% endfor %}
+      <a class="letter-btn {% if active_letter == '0-9' %}active{% endif %}"
+         href="{{ url_for('conditions_list') }}?letter=0-9">0-9</a>
+    </div>
+
+    {% if active_letter %}
+      <h2>Conditions starting with "{{ active_letter }}"</h2>
+    {% else %}
+      <h2>All conditions</h2>
+    {% endif %}
+
+    {% if conditions %}
+    <ul class="condition-grid">
+      {% for c in conditions %}
+        <li>
+          <a href="{{ url_for('condition_page', slug=c.slug) }}">{{ c.name }}</a>
+          <span class="muted">({{ c.drug_count }} drug{{ '' if c.drug_count == 1 else 's' }})</span>
+        </li>
+      {% endfor %}
+    </ul>
+    {% else %}
+      <p class="muted">No conditions found{% if active_letter %} for "{{ active_letter }}"{% endif %}.</p>
+    {% endif %}
+  </div>
+
+  <aside class="sidebar">
+    <h3>Browse by category</h3>
+    <ul>
+      <li><a href="{{ url_for('drug_az') }}">Drugs A-Z</a></li>
+      <li><a href="{{ url_for('drug_classes_list') }}">Drug Classes</a></li>
+      <li><a href="{{ url_for('pill_identifier') }}">Pill Identifier</a></li>
+      <li><a href="{{ url_for('interaction_checker') }}">Interaction Checker</a></li>
+    </ul>
+
+    <h3>Popular tools</h3>
+    <ul>
+      <li><a href="{{ url_for('search') }}">Compare Drugs</a></li>
+      <li><a href="{{ url_for('news_index') }}">Medical News</a></li>
+    </ul>
+  </aside>
+</div>
+{% endblock %}

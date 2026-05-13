@@ -1,65 +1,120 @@
 {% extends "base.html" %}
 {% block title %}Drug Interaction Checker - Find Unsafe Combinations - {{ site_name }}{% endblock %}
 {% block content %}
+<nav class="breadcrumb" aria-label="Breadcrumb">
+  <a href="{{ url_for('index') }}">Home</a>
+  <span class="sep">&rsaquo;</span>
+  <span class="current">Drug Interaction Checker</span>
+</nav>
+
 <div class="page-with-sidebar">
 <div class="main-col">
 
 <h1>Drug Interaction Checker</h1>
 <p class="lead">Use our drug interaction checker to find potentially harmful drug, food, and alcohol interactions.</p>
 
-<div class="checker-box">
+<form method="post" action="{{ url_for('interaction_checker') }}" class="checker-box" id="checker-form">
   <div class="checker-input">
-    <label for="drug-input"><strong>Drug name</strong></label>
-    <input type="text" id="drug-input" placeholder="Type a drug name" list="drug-suggestions">
+    <label for="drug-input" class="visually-hidden">Enter a drug name</label>
+    <input type="text" id="drug-input" placeholder="Enter a drug name" list="drug-suggestions" autocomplete="off">
     <datalist id="drug-suggestions">
       {% for d in drugs %}<option value="{{ d.generic_name }}">{% endfor %}
     </datalist>
-    <button id="add-drug" class="btn btn-primary">Add</button>
+    <button type="button" id="add-drug" class="add-btn">Add</button>
   </div>
 
-  <p id="empty-hint" class="muted">Type a drug name in the box above to get started.</p>
+  <p id="empty-hint" class="checker-hint"{% if drugs_input %} style="display:none;"{% endif %}>
+    Type a drug name in the box above to get started.
+  </p>
 
-  <ul id="drug-list" class="checker-drug-list"></ul>
+  <ul id="drug-list" class="checker-drug-list">
+    {% for name in drugs_input or [] %}
+      <li class="checker-drug-tag">
+        <span class="drug-name">{{ name }}</span>
+        <input type="hidden" name="drugs" value="{{ name }}">
+        <button type="button" class="remove-drug" aria-label="Remove {{ name }}">&times;</button>
+      </li>
+    {% endfor %}
+  </ul>
 
-  <button id="check-btn" class="btn btn-primary" style="display:none;">Check interactions</button>
-  <div id="results" class="checker-results"></div>
-</div>
+  <button type="submit" id="check-btn" class="btn btn-primary"{% if not drugs_input or drugs_input|length < 2 %} style="display:none;"{% endif %}>
+    Check Interactions
+  </button>
+</form>
 
-<p class="checker-note">
-  <strong>Note:</strong> Not all drugs interact, and not every interaction means you must stop taking
-  one of your medications. Always consult your healthcare provider about how drug interactions should
-  be managed before making any changes to your current prescription.
+<p class="checker-disclaimer">
+  Not all drugs interact, and not every interaction means you must stop taking one of your
+  medications. Always consult your healthcare provider about how drug interactions should be
+  managed before making any changes to your current prescription.
 </p>
+
+{% if drugs_input %}
+<section class="checker-results">
+  <h2>Interaction Results</h2>
+  <p class="muted">Drugs checked: {{ drugs_input | join(', ') }}</p>
+
+  {% if interactions %}
+    <ul class="interaction-list">
+      {% for it in interactions %}
+        <li class="interaction sev-{{ it.severity }}">
+          <span class="sev-label sev-{{ it.severity }}">{{ it.severity | capitalize }}</span>
+          <strong>{{ it.drug_a.generic_name }} + {{ it.drug_b.generic_name }}</strong>
+          <p>{{ it.description }}</p>
+        </li>
+      {% endfor %}
+    </ul>
+  {% else %}
+    <p>No known interactions found among these drugs in our database.</p>
+  {% endif %}
+</section>
+{% endif %}
 
 <section class="faq-section">
   <h2>Drug Interaction FAQs</h2>
-  <ul class="faq-list">
-    <li><details><summary>What is a drug interaction?</summary></details></li>
-    <li><details><summary>What are the types of drug interactions?</summary></details></li>
-    <li><details><summary>What do the interaction severity ratings mean?</summary></details></li>
-    <li><details><summary>What are common signs and symptoms of a drug interaction?</summary></details></li>
-    <li><details><summary>How can I avoid drug interactions?</summary></details></li>
-    <li><details><summary>Can I eat or drink grapefruit with my medicine?</summary></details></li>
-    <li><details><summary>Can I drink alcohol with my prescribed medications?</summary></details></li>
-    <li><details><summary>Can herbs and supplements interact with my drugs?</summary></details></li>
-    <li><details><summary>How do I check for drug interactions?</summary></details></li>
-    <li><details><summary>What should I do if I find a drug interaction?</summary></details></li>
-  </ul>
-  <p class="muted small">FAQs written by Leigh Ann Anderson, PharmD. Last updated on Nov 5, 2025.</p>
+  <details class="faq-detail"><summary>What is a drug interaction?</summary>
+    <p>A drug interaction occurs when a medication's effect is altered by another drug, food, beverage, or supplement. Interactions can make a medication less effective, increase side effects, or trigger unexpected reactions.</p>
+  </details>
+  <details class="faq-detail"><summary>How do I use the drug interaction checker?</summary>
+    <p>Type the name of a drug in the search box and click Add. Repeat for each medication, supplement, or substance you want to check. Once at least two drugs have been added, click Check Interactions to view the results.</p>
+  </details>
+  <details class="faq-detail"><summary>What are the most common drug interactions?</summary>
+    <p>Common interactions include warfarin with NSAIDs, MAO inhibitors with SSRIs, ACE inhibitors with potassium supplements, and statins with certain antibiotics or grapefruit juice.</p>
+  </details>
+  <details class="faq-detail"><summary>What foods or drinks interact with my medications?</summary>
+    <p>Grapefruit juice, leafy greens high in vitamin K, dairy products, caffeine, and alcohol can all interact with various prescription drugs. Always check the label and consult your pharmacist.</p>
+  </details>
+  <details class="faq-detail"><summary>What happens if I have a drug interaction?</summary>
+    <p>Outcomes range from mild side effects (nausea, drowsiness) to severe events (bleeding, organ damage, serotonin syndrome). The severity depends on the specific drugs and your individual health profile.</p>
+  </details>
+  <details class="faq-detail"><summary>Can supplements interact with drugs?</summary>
+    <p>Yes. Herbal supplements such as St. John's wort, ginkgo, and garlic, as well as vitamins and minerals, can meaningfully alter the action of prescription drugs.</p>
+  </details>
+  <details class="faq-detail"><summary>Are drug interactions always dangerous?</summary>
+    <p>No. Many interactions are minor and clinically insignificant. Some are even beneficial and are used intentionally in combination therapy. Your healthcare provider can help interpret severity.</p>
+  </details>
+  <details class="faq-detail"><summary>How serious are drug interactions?</summary>
+    <p>Severity is typically classified as major (avoid combination), moderate (use with caution and monitoring), or minor (limited clinical effect). The checker labels each interaction accordingly.</p>
+  </details>
+  <details class="faq-detail"><summary>What should I do if my drugs interact?</summary>
+    <p>Do not stop taking any prescribed medication on your own. Contact your doctor or pharmacist promptly to discuss whether a dosage adjustment, timing change, or alternative therapy is appropriate.</p>
+  </details>
+  <details class="faq-detail"><summary>Authored by Leigh Ann Anderson, PharmD. Last updated: Nov 5, 2025.</summary>
+    <p>Reviewed and maintained by the Drugs.com clinical editorial team. Content is updated regularly to reflect current prescribing information and clinical guidelines.</p>
+  </details>
 </section>
 
 </div>
 
 <aside class="sidebar">
-  <div class="sidebar-box">
+  <div class="sidebar-box popular-tools">
     <h3>Popular tools &amp; resources</h3>
     <ul class="sidebar-links">
       <li><a href="#">My Med List</a></li>
-      <li><a href="{{ url_for('interaction_checker') }}">Drug interaction checker</a></li>
-      <li><a href="{{ url_for('pill_identifier') }}">Pill identifier</a></li>
-      <li><a href="#">Compare drugs</a></li>
+      <li><a href="{{ url_for('interaction_checker') }}">Drug Interaction Checker</a></li>
+      <li><a href="{{ url_for('pill_identifier') }}">Pill Identifier</a></li>
+      <li><a href="#">Compare Drugs</a></li>
       <li><a href="#">Medical Q &amp; A</a></li>
-      <li><a href="#">Latest drug news</a></li>
+      <li><a href="#">Latest Drug News</a></li>
     </ul>
   </div>
 </aside>
@@ -67,84 +122,62 @@
 
 <script>
 (function(){
-  var drugs = [];
+  var form = document.getElementById('checker-form');
   var input = document.getElementById('drug-input');
+  var addBtn = document.getElementById('add-drug');
   var listEl = document.getElementById('drug-list');
-  var resultsEl = document.getElementById('results');
   var emptyHint = document.getElementById('empty-hint');
   var checkBtn = document.getElementById('check-btn');
 
-  function render(){
-    listEl.innerHTML = '';
-    drugs.forEach(function(name, i){
-      var li = document.createElement('li');
-      li.textContent = name + ' ';
-      var btn = document.createElement('button');
-      btn.textContent = 'remove';
-      btn.className = 'btn btn-sm';
-      btn.onclick = function(){ drugs.splice(i,1); render(); };
-      li.appendChild(btn);
-      listEl.appendChild(li);
-    });
-    emptyHint.style.display = drugs.length ? 'none' : '';
-    checkBtn.style.display = drugs.length >= 2 ? '' : 'none';
+  function updateState(){
+    var count = listEl.querySelectorAll('li').length;
+    emptyHint.style.display = count ? 'none' : '';
+    checkBtn.style.display = count >= 2 ? '' : 'none';
   }
 
-  document.getElementById('add-drug').addEventListener('click', function(){
+  function addDrug(name){
+    if(!name) return;
+    var li = document.createElement('li');
+    li.className = 'checker-drug-tag';
+
+    var span = document.createElement('span');
+    span.className = 'drug-name';
+    span.textContent = name;
+
+    var hidden = document.createElement('input');
+    hidden.type = 'hidden';
+    hidden.name = 'drugs';
+    hidden.value = name;
+
+    var rm = document.createElement('button');
+    rm.type = 'button';
+    rm.className = 'remove-drug';
+    rm.setAttribute('aria-label', 'Remove ' + name);
+    rm.innerHTML = '&times;';
+    rm.addEventListener('click', function(){ li.remove(); updateState(); });
+
+    li.appendChild(span);
+    li.appendChild(hidden);
+    li.appendChild(rm);
+    listEl.appendChild(li);
+    updateState();
+  }
+
+  addBtn.addEventListener('click', function(){
     var v = input.value.trim();
-    if(v){ drugs.push(v); input.value=''; render(); }
+    if(v){ addDrug(v); input.value = ''; input.focus(); }
   });
 
   input.addEventListener('keydown', function(e){
-    if(e.key === 'Enter'){ e.preventDefault(); document.getElementById('add-drug').click(); }
+    if(e.key === 'Enter'){ e.preventDefault(); addBtn.click(); }
   });
 
-  checkBtn.addEventListener('click', function(){
-    fetch('{{ url_for("api_interaction_check") }}', {
-      method:'POST', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({drugs: drugs})
-    }).then(r=>r.json()).then(data=>{
-      var html = '<h2>Results</h2>';
-      html += '<p class="muted">Drugs checked: ' + (data.drugs_checked||[]).join(', ') + '</p>';
-      if(data.unrecognized && data.unrecognized.length){
-        html += '<p class="warn">Unrecognized: ' + data.unrecognized.join(', ') + '</p>';
-      }
-      if(data.interactions && data.interactions.length){
-        html += '<ul class="interaction-list">';
-        data.interactions.forEach(function(it){
-          var sevLabel = it.severity.charAt(0).toUpperCase() + it.severity.slice(1);
-          html += '<li class="interaction sev-' + it.severity + '">' +
-                  '<span class="badge badge-' + it.severity + '">' + sevLabel + '</span> ' +
-                  '<strong>' + it.drug_a + ' + ' + it.drug_b + '</strong>' +
-                  '<p>' + it.description + '</p></li>';
-        });
-        html += '</ul>';
-      } else {
-        html += '<p>No known interactions found among these drugs in our database.</p>';
-      }
-      resultsEl.innerHTML = html;
-    });
+  // Wire up pre-rendered remove buttons (server-rendered tags).
+  Array.prototype.forEach.call(listEl.querySelectorAll('.remove-drug'), function(btn){
+    btn.addEventListener('click', function(){ btn.closest('li').remove(); updateState(); });
   });
+
+  updateState();
 })();
 </script>
-
-<style>
-  .badge-major{background:#c0392b;color:#fff;padding:2px 8px;border-radius:3px;font-size:0.85em;}
-  .badge-moderate{background:#e67e22;color:#fff;padding:2px 8px;border-radius:3px;font-size:0.85em;}
-  .badge-minor{background:#27ae60;color:#fff;padding:2px 8px;border-radius:3px;font-size:0.85em;}
-  .badge-unknown{background:#7f8c8d;color:#fff;padding:2px 8px;border-radius:3px;font-size:0.85em;}
-  .checker-note{background:#fff8e1;border-left:4px solid #f0ad4e;padding:10px 14px;margin:18px 0;}
-  .page-with-sidebar{display:flex;gap:24px;align-items:flex-start;}
-  .main-col{flex:1;min-width:0;}
-  .sidebar{width:260px;flex-shrink:0;}
-  .sidebar-box{background:#f5f7fa;border:1px solid #e1e6ec;padding:14px;border-radius:4px;}
-  .sidebar-box h3{margin-top:0;}
-  .sidebar-links{list-style:none;padding:0;margin:0;}
-  .sidebar-links li{padding:6px 0;border-bottom:1px solid #e1e6ec;}
-  .sidebar-links li:last-child{border-bottom:none;}
-  .faq-list{list-style:none;padding:0;}
-  .faq-list li{padding:8px 0;border-bottom:1px solid #eee;}
-  .faq-list summary{cursor:pointer;font-weight:500;}
-  .small{font-size:0.85em;}
-</style>
 {% endblock %}

@@ -1,15 +1,25 @@
 {% extends "base.html" %}
 {% block title %}{{ drug.generic_name|capitalize }} Uses, Dosage & Side Effects - {{ site_name }}{% endblock %}
 {% block content %}
-<nav class="breadcrumb">
-  <a href="{{ url_for('index') }}">Drugs.com</a> &rsaquo;
-  <a href="{{ url_for('drug_az') }}">Drugs A-Z</a> &rsaquo;
-  <span>{{ drug.generic_name|capitalize }}</span>
-</nav>
+<div class="breadcrumb-row">
+  <nav class="breadcrumb">
+    <a href="{{ url_for('index') }}">Home</a> &rsaquo;
+    <span>{{ drug.generic_name|capitalize }}</span>
+  </nav>
+  <div class="breadcrumb-actions">
+    <a href="#" onclick="window.print();return false;" class="action-link">Print</a>
+    <span class="action-sep">|</span>
+    {% if current_user.is_authenticated %}
+      <a href="#" id="save-toggle" data-slug="{{ drug.slug }}" class="action-link">{{ 'Saved' if saved else 'Save' }}</a>
+    {% else %}
+      <a href="{{ url_for('login') }}" class="action-link">Save</a>
+    {% endif %}
+  </div>
+</div>
 
 <article class="drug-detail">
   <header class="drug-header">
-    <h1>{{ drug.generic_name|capitalize }}</h1>
+    <h1>{{ drug.generic_name|capitalize }} <span class="speaker-icon" aria-hidden="true">&#128264;</span></h1>
     {% if drug.pronunciation %}<p class="pronunciation">Pronunciation: <em>{{ drug.pronunciation }}</em></p>{% endif %}
     <ul class="meta-row">
       <li><strong>Generic name:</strong> {{ drug.generic_name }}</li>
@@ -26,9 +36,14 @@
           <a href="{{ url_for('drug_class_page', slug=drug.drug_class.slug) }}">{{ drug.drug_class.name }}</a>
         {% else %}N/A{% endif %}
       </li>
-      <li><strong>Availability:</strong> {{ drug.availability }}</li>
     </ul>
-    <p class="reviewer-line">Medically reviewed by {{ drug.reviewer_name }}, {{ drug.reviewer_credential }}. Last updated on {{ drug.last_updated.strftime('%b %d, %Y') }}.</p>
+    <p class="reviewer-line">
+      <span class="reviewer-avatar" aria-hidden="true">
+        {%- set parts = (drug.reviewer_name or 'MD').split() -%}
+        {{ (parts[0][0] if parts and parts[0] else 'M') ~ (parts[-1][0] if parts and parts|length > 1 else 'D') }}
+      </span>
+      <span>Medically reviewed by {{ drug.reviewer_name }}, {{ drug.reviewer_credential }}. Last updated on {{ drug.last_updated.strftime('%b %d, %Y') }}.</span>
+    </p>
   </header>
 
   <nav class="section-tabs">
@@ -39,24 +54,25 @@
     <a href="#side-effects">Side effects</a>
     <a href="#interactions">Interactions</a>
     <a href="#faq">FAQ</a>
-    <a href="#reviews">Reviews</a>
   </nav>
 
   <div class="detail-grid">
     <div class="detail-main">
-      {% if drug.description %}
-      <section><h2>What is {{ drug.generic_name }}?</h2><p>{{ drug.description }}</p></section>
-      {% endif %}
-
-      <section id="uses"><h2>Uses</h2><p>{{ drug.uses }}</p>
+      <section id="uses">
+        <h2>What is {{ drug.generic_name }}?</h2>
+        {% if drug.description %}<p>{{ drug.description }}</p>{% endif %}
+        <p>{{ drug.uses }}</p>
         {% if drug_conditions %}
-        <p><strong>Conditions treated:</strong>
-          {% for c in drug_conditions %}<a href="{{ url_for('condition_page', slug=c.slug) }}">{{ c.name }}</a>{% if not loop.last %}, {% endif %}{% endfor %}
+        <p><strong>{{ drug.generic_name|capitalize }} is used to treat:</strong>
+          {% for c in drug_conditions %}<a href="{{ url_for('condition_page', slug=c.slug) }}">{{ c.name }}</a>{% if not loop.last %}, {% endif %}{% endfor %}.
         </p>
         {% endif %}
       </section>
 
-      <section id="warnings"><h2>Warnings</h2><p>{{ drug.warnings }}</p></section>
+      <section id="warnings">
+        <h2>Warnings</h2>
+        <p>{{ drug.warnings }}</p>
+      </section>
 
       <section id="before-taking">
         <h2>Before taking this medicine</h2>
@@ -95,128 +111,101 @@
         </div>
       </section>
 
-      <section id="faq"><h2>Popular FAQ</h2>
-        {% if drug.faq %}
-        <ul class="faq-questions">
-          {% for item in drug.faq %}
-            <li><a href="#faq-{{ loop.index }}">{{ item.q }}</a></li>
-          {% endfor %}
-        </ul>
+      {% if drug.faq %}
+      <section id="faq">
+        <h2>Frequently asked questions</h2>
         {% for item in drug.faq %}
-          <div class="faq-item" id="faq-{{ loop.index }}">
-            <h3>{{ item.q }}</h3>
+          <details class="faq-detail">
+            <summary>{{ item.q }}</summary>
             <p>{{ item.a }}</p>
-          </div>
+          </details>
         {% endfor %}
-        {% endif %}
-      </section>
-
-      <section id="reviews"><h2>User reviews ({{ drug.review_count }})</h2>
-        <p>Average rating: <strong>{{ drug.avg_rating }}/10</strong></p>
-        {% for r in reviews %}
-          <article class="review">
-            <header>
-              <strong>{{ r.title }}</strong>
-              <span class="muted">— {{ r.user.username if r.user else 'anon' }} on {{ r.created_at.strftime('%b %d, %Y') }}</span>
-            </header>
-            <p class="rating">Rating: {{ r.rating }}/10 &middot; For: {{ r.condition_treated }}</p>
-            <p>{{ r.body }}</p>
-            <p class="muted">{{ r.helpful_count }} found this helpful</p>
-          </article>
-        {% else %}
-          <p class="muted">No reviews yet.</p>
-        {% endfor %}
-      </section>
-
-      {% if drug_conditions %}
-      <section id="related-guides">
-        <h2>Related treatment guides</h2>
-        <ul class="treatment-guides">
-          {% for c in drug_conditions %}
-            <li><a href="{{ url_for('condition_page', slug=c.slug) }}">{{ c.name }}</a></li>
-          {% endfor %}
-        </ul>
       </section>
       {% endif %}
 
-      <section id="further-information">
-        <h2>Further information</h2>
-        <p>Remember, keep this and all other medicines out of the reach of children, never share your medicines with others, and use {{ drug.generic_name }} only for the indication prescribed. Always consult your healthcare provider to ensure the information displayed on this page applies to your personal circumstances.</p>
-        <p class="muted medical-disclaimer"><strong>Medical Disclaimer:</strong> The information provided here is for reference only and is not intended as medical advice or a substitute for consultation with a qualified healthcare professional.</p>
+      <section id="reviews">
+        <h2>User reviews for {{ drug.generic_name }}</h2>
+        {% if reviews %}
+          {% for r in reviews %}
+            <article class="review">
+              <header class="review-header">
+                <span class="review-score">{{ r.rating }}/10</span>
+                <strong>{{ r.title }}</strong>
+                <span class="muted">— {{ r.user.username if r.user else 'anon' }} on {{ r.created_at.strftime('%b %d, %Y') }}</span>
+              </header>
+              <p>{{ r.body }}</p>
+            </article>
+          {% endfor %}
+        {% else %}
+          <p class="muted">No reviews yet.</p>
+        {% endif %}
       </section>
     </div>
 
     <aside class="detail-sidebar">
       <div class="status-box">
-        <h3>DRUG STATUS</h3>
-        <ul>
-          <li>
-            <strong>Availability</strong>
-            <div class="status-value">
+        <h3 class="status-box-title">DRUG STATUS</h3>
+        <ul class="status-list">
+          <li class="status-row">
+            <span class="status-icon rx-otc" aria-hidden="true"></span>
+            <span class="status-label">Availability</span>
+            <span class="status-value">
               {% if 'Rx' in drug.availability and 'OTC' in drug.availability %}
-                <span class="badge">Rx</span> and/or <span class="badge">OTC</span>
+                <span class="avail-badge avail-rx">Rx</span><span class="avail-badge avail-otc">OTC</span> Rx and/or OTC
               {% elif 'Rx' in drug.availability %}
-                <span class="badge">Rx</span> Prescription only
+                <span class="avail-badge avail-rx">Rx</span> Prescription only
               {% elif 'OTC' in drug.availability %}
-                <span class="badge">OTC</span> Over-the-counter
+                <span class="avail-badge avail-otc">OTC</span> Over-the-counter
               {% else %}
                 {{ drug.availability }}
               {% endif %}
-            </div>
+            </span>
           </li>
-          <li>
-            <strong>Pregnancy &amp; Lactation</strong>
-            <div class="status-value">{{ drug.pregnancy_risk or 'Risk data available' }}</div>
+          <li class="status-row">
+            <span class="status-icon pregnancy" aria-hidden="true"></span>
+            <span class="status-label">Pregnancy &amp; Lactation</span>
+            <span class="status-value"><a href="#before-taking">{{ drug.pregnancy_risk or 'Risk data available' }}</a></span>
           </li>
-          <li>
-            <strong>CSA Schedule*</strong>
-            <div class="status-value">
+          <li class="status-row">
+            <span class="status-icon csa" aria-hidden="true">N/A</span>
+            <span class="status-label">CSA Schedule*</span>
+            <span class="status-value">
               {% if drug.csa_schedule and drug.csa_schedule|lower not in ['n/a', 'none', 'not scheduled'] %}
                 {{ drug.csa_schedule }}
               {% else %}
-                Not a controlled drug. N/A
+                Not a controlled drug
               {% endif %}
-            </div>
+              <span class="status-arrow">&rsaquo;</span>
+            </span>
           </li>
-          <li>
-            <strong>Approval History</strong>
-            <div class="status-value">Drug history at FDA</div>
+          <li class="status-row">
+            <span class="status-icon approval" aria-hidden="true"></span>
+            <span class="status-label">Approval History</span>
+            <span class="status-value">Drug history at FDA <span class="status-arrow">&rsaquo;</span></span>
           </li>
-          <li>
-            <strong>Ingredients</strong>
-            <div class="status-value">Active &amp; Inactive</div>
-          </li>
-          <li>
-            <strong>User Reviews &amp; Ratings</strong>
-            <div class="status-value">
-              <a href="#reviews">{{ drug.avg_rating }} / 10 &middot; {{ drug.review_count }} Reviews</a>
-            </div>
+          <li class="status-row">
+            <span class="status-icon ingredients" aria-hidden="true"></span>
+            <span class="status-label">Ingredients</span>
+            <span class="status-value">Active &amp; Inactive <span class="status-arrow">&rsaquo;</span></span>
           </li>
         </ul>
         {% if current_user.is_authenticated %}
-        <button id="save-toggle" data-slug="{{ drug.slug }}" class="btn btn-primary">
+        <button id="med-list-toggle" data-slug="{{ drug.slug }}" class="btn-med-list">
           {{ 'Remove from My Med List' if saved else 'Add to My Med List' }}
         </button>
         {% else %}
-        <a href="{{ url_for('login') }}" class="btn btn-outline">Sign in to save</a>
+        <a href="{{ url_for('login') }}" class="btn-med-list">Sign in to save</a>
         {% endif %}
       </div>
 
-      <div class="sidebar-box">
-        <h3>More about {{ drug.generic_name }}</h3>
-        <ul>
-          <li><a href="{{ url_for('interaction_checker') }}?drug={{ drug.slug }}">Check interactions</a></li>
-          <li><a href="{{ url_for('search') }}?q={{ drug.generic_name }}">Compare alternatives</a></li>
-          <li><a href="#reviews">Reviews ({{ drug.review_count }})</a></li>
-          {% if drug.images %}<li><a href="#images">Drug images</a></li>{% endif %}
-          <li><a href="#side-effects">Side effects</a></li>
-          <li><a href="#dosage">Dosage information</a></li>
-          <li><a href="#before-taking">During pregnancy</a></li>
-          <li><a href="#before-taking">Breastfeeding</a></li>
-          {% if drug.drug_class %}
-          <li>Drug class: <a href="{{ url_for('drug_class_page', slug=drug.drug_class.slug) }}">{{ drug.drug_class.name }}</a></li>
-          {% endif %}
-        </ul>
+      <div class="sidebar-box rating-box">
+        <h3>User Reviews &amp; Ratings</h3>
+        <div class="rating-score">{{ drug.avg_rating }} / 10</div>
+        <div class="rating-bar-wrap">
+          {% set pct = ((drug.avg_rating or 0) * 10)|round(0, 'floor')|int %}
+          <div class="rating-bar" style="width: {{ pct }}%"></div>
+        </div>
+        <a href="#reviews" class="rating-count">{{ drug.review_count }} Reviews</a>
       </div>
 
       {% if related %}
@@ -230,33 +219,60 @@
       </div>
       {% endif %}
 
-      {% if drug.images %}
-      <div class="sidebar-box" id="images">
-        <h3>Images</h3>
+      <div class="sidebar-box more-about">
+        <h3>More about {{ drug.generic_name }}</h3>
+        <ul class="more-about-list">
+          <li><a href="{{ url_for('interaction_checker') }}?drug={{ drug.slug }}">Check interactions</a></li>
+          <li><a href="{{ url_for('search') }}?q={{ drug.generic_name }}">Compare alternatives</a></li>
+          <li><a href="#reviews">Reviews ({{ drug.review_count }})</a></li>
+          <li><a href="#side-effects">Side effects</a></li>
+          <li><a href="#dosage">Dosage information</a></li>
+          <li><a href="#before-taking">During pregnancy</a></li>
+          <li><a href="#before-taking">Breastfeeding</a></li>
+          {% if drug.drug_class %}
+          <li>Drug class: <a href="{{ url_for('drug_class_page', slug=drug.drug_class.slug) }}">{{ drug.drug_class.name }}</a></li>
+          {% endif %}
+        </ul>
+      </div>
+
+      {% if related_news %}
+      <div class="sidebar-box">
+        <h3>Related News</h3>
         <ul>
-          {% for img in drug.images %}
-            <li>{{ drug.generic_name|capitalize }} {{ img.strength }} ({{ img.imprint }}) &mdash; {{ img.shape }}, {{ img.color }}</li>
+          {% for n in related_news %}
+            <li><a href="{{ url_for('news_article', slug=n.slug) }}">{{ n.title }}</a></li>
           {% endfor %}
         </ul>
       </div>
       {% endif %}
     </aside>
   </div>
+
+  <section id="further-information" class="further-information">
+    <h2>Further information</h2>
+    <p>Remember, keep this and all other medicines out of the reach of children, never share your medicines with others, and use {{ drug.generic_name }} only for the indication prescribed. Always consult your healthcare provider to ensure the information displayed on this page applies to your personal circumstances.</p>
+    <p class="muted medical-disclaimer"><strong>Medical Disclaimer:</strong> The information provided here is for reference only and is not intended as medical advice or a substitute for consultation with a qualified healthcare professional.</p>
+  </section>
 </article>
 
 <script>
 (function(){
-  var btn = document.getElementById('save-toggle');
-  if(!btn) return;
-  btn.addEventListener('click', function(){
-    fetch('{{ url_for("my_med_list_toggle") }}', {
-      method: 'POST',
-      headers: {'Content-Type':'application/json'},
-      body: JSON.stringify({slug: btn.dataset.slug})
-    }).then(r=>r.json()).then(data=>{
-      btn.textContent = data.saved ? 'Remove from My Med List' : 'Add to My Med List';
+  var btn = document.getElementById('med-list-toggle');
+  var saveLink = document.getElementById('save-toggle');
+  function toggle(el, savedText, unsavedText){
+    el.addEventListener('click', function(e){
+      e.preventDefault();
+      fetch('{{ url_for("my_med_list_toggle") }}', {
+        method: 'POST',
+        headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({slug: el.dataset.slug})
+      }).then(r=>r.json()).then(data=>{
+        el.textContent = data.saved ? savedText : unsavedText;
+      });
     });
-  });
+  }
+  if(btn) toggle(btn, 'Remove from My Med List', 'Add to My Med List');
+  if(saveLink) toggle(saveLink, 'Saved', 'Save');
 })();
 </script>
 {% endblock %}

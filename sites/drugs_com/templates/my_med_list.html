@@ -2,30 +2,64 @@
 {% block title %}My Med List - {{ site_name }}{% endblock %}
 {% block content %}
 <nav class="breadcrumb">
-  <a href="{{ url_for('index') }}">Home</a> &rsaquo; <a href="{{ url_for('account') }}">My Account</a> &rsaquo; <span>My Med List</span>
+  <a href="{{ url_for('index') }}">Home</a> &rsaquo;
+  <a href="{{ url_for('account') }}">My Account</a> &rsaquo;
+  <span>My Med List</span>
 </nav>
 
 <h1>My Med List</h1>
-<p class="muted">Track the medications you or a family member are taking.</p>
+<p class="subtitle">Track the medications you or a family member are taking.</p>
 
-<ul class="result-list">
-  {% for item in items %}
-    <li class="result-card">
-      <a href="{{ url_for('drug_detail', slug=item.drug.slug) }}"><h3>{{ item.drug.generic_name|capitalize }}</h3></a>
-      <p class="muted">{{ item.drug.brand_names|join(', ') if item.drug.brand_names else 'Generic' }} &middot; <span class="badge">{{ item.drug.availability }}</span></p>
-      <p>Added {{ item.created_at.strftime('%b %d, %Y') }}</p>
-      {% if item.notes %}<p><em>Notes:</em> {{ item.notes }}</p>{% endif %}
-    </li>
-  {% else %}
-    <li class="muted">Your med list is empty. <a href="{{ url_for('drug_az') }}">Browse drugs</a> and click "Add to My Med List" to save medications here.</li>
-  {% endfor %}
-</ul>
+<div class="med-list-layout">
+  <div class="med-list-main">
+    <p class="muted instructions">
+      Add medications by searching for them in <a href="{{ url_for('drug_az') }}">Drugs A-Z</a>
+      and clicking "Add to My Med List" on any drug page.
+    </p>
 
-{% if items %}
-<div class="med-list-actions">
-  <a class="btn btn-primary" href="{{ url_for('interaction_checker') }}">Check all medications for interactions</a>
+    {% if items %}
+    <div class="med-list-actions">
+      <a class="btn btn-primary" href="{{ url_for('interaction_checker') }}">Check all medications for interactions</a>
+    </div>
+    {% endif %}
+
+    <ul class="result-list med-list">
+      {% for item in items %}
+        <li class="result-card med-card">
+          <h2><a href="{{ url_for('drug_detail', slug=item.drug.slug) }}">{{ item.drug.generic_name|capitalize }}</a></h2>
+          <p class="result-meta muted">
+            {% if item.drug.brand_names %}Brand names: {{ item.drug.brand_names|join(', ') }} &middot; {% endif %}
+            <span class="avail-badge {% if item.drug.availability == 'Rx' %}avail-rx{% elif item.drug.availability == 'OTC' %}avail-otc{% else %}avail-both{% endif %}">{{ item.drug.availability }}</span>
+          </p>
+          <p class="muted">Added {{ item.created_at.strftime('%b %d, %Y') }}</p>
+          {% if item.notes %}<p class="med-notes"><em>Notes:</em> {{ item.notes }}</p>{% endif %}
+          <form method="post" action="{{ url_for('my_med_list_toggle') }}" class="med-remove">
+            <button type="submit" class="btn btn-outline btn-small">Remove</button>
+          </form>
+        </li>
+      {% else %}
+        <li class="result-card no-results">
+          <p>Your med list is empty.</p>
+          <p><a href="{{ url_for('drug_az') }}">Browse Drugs A-Z</a> and click "Add to My Med List" on any drug page to start tracking your medications.</p>
+        </li>
+      {% endfor %}
+    </ul>
+
+    <p class="muted disclaimer">
+      Always consult your healthcare provider before making any changes to your medications.
+    </p>
+  </div>
+
+  <aside class="med-list-sidebar">
+    <section class="account-box">
+      <h2>My Med List Tools</h2>
+      <ul class="quick-links">
+        <li><a href="{{ url_for('interaction_checker') }}">Drug Interaction Checker</a></li>
+        <li><a href="{{ url_for('pill_identifier') }}">Pill Identifier</a></li>
+        <li><a href="{{ url_for('drug_az') }}">Browse Drugs A-Z</a></li>
+        <li><a href="{{ url_for('account') }}">Back to My Account</a></li>
+      </ul>
+    </section>
+  </aside>
 </div>
-{% endif %}
-
-<p class="muted disclaimer">Always consult your healthcare provider before making any changes to your medications.</p>
 {% endblock %}

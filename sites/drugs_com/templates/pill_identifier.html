@@ -1,43 +1,51 @@
 {% extends "base.html" %}
 {% block title %}Pill Identifier - Quickly Find and ID your Drugs (with pictures) - {{ site_name }}{% endblock %}
 {% block content %}
+<nav class="breadcrumb" aria-label="Breadcrumb">
+  <a href="{{ url_for('index') }}">Home</a> &rsaquo;
+  <span>Pill Identifier</span>
+</nav>
+
 <div class="page-with-sidebar">
 <div class="main-col">
 
-<h1>Pill Identifier</h1>
+<h1>Pill Identifier - Quickly Find and ID your Drugs (with pictures)</h1>
 
-<div class="disclaimer-box">
-  <p><strong>By using the Pill Identification Wizard, you agree to the following terms:</strong></p>
+<div class="disclaimer-box" id="pill-disclaimer">
   <p>
-    The Pill Identification Wizard tool is for informational purposes only. It is not a substitute
-    for professional medical advice, diagnosis, or treatment. Always seek the advice of a qualified
-    healthcare provider regarding any medication.
-    <a href="#disclaimer">Pill Identification disclaimer</a>
+    <strong>Important:</strong> This pill identification tool is provided as a reference only.
+    Always consult with your pharmacist, physician, or other qualified health care professional
+    if in doubt.
   </p>
   <button type="button" class="btn btn-primary"
-          onclick="this.closest('.disclaimer-box').style.display='none';">Agree and continue</button>
+          onclick="document.getElementById('pill-disclaimer').style.display='none';">Agree and continue</button>
 </div>
 
 <h2>Need help to identify that pill?</h2>
 <p>
-  Worried about some capsules found in your teenager's room? Not sure about those leftover pills still
-  in the bathroom cabinet? There's a good chance that our Pill Identification Wizard (Pill Finder) can
-  help you match the imprint, size, shape, or color and lead you to the detailed description in our
-  drug database.
+  Use the pill finder to identify medications by visual appearance or medicine name. If you're not
+  sure what medication to search for, the imprint, shape, and color of the pill can help narrow it
+  down. Enter any of the criteria below and we'll match it against our drug database.
 </p>
 
-<form method="get" action="{{ url_for('pill_identifier_results') }}" class="pill-form">
-  <label>Imprint <input type="text" name="imprint" value="{{ imprint or '' }}" placeholder="e.g. I-2"></label>
+<form method="get" action="{{ url_for('pill_identifier') }}" class="pill-form">
+  <label>Imprint
+    <input type="text" name="imprint" value="{{ imprint or '' }}" placeholder="Enter imprint code">
+  </label>
   <label>Shape
     <select name="shape">
-      <option value="">Any</option>
-      {% for s in shapes %}<option value="{{ s }}" {% if s == shape %}selected{% endif %}>{{ s }}</option>{% endfor %}
+      <option value="">Select shape</option>
+      {% for s in ['Round','Oval','Capsule','Oblong','Rectangle','Square','Triangle','Pentagon','Hexagon','Eight-sided'] %}
+        <option value="{{ s }}" {% if s == shape %}selected{% endif %}>{{ s }}</option>
+      {% endfor %}
     </select>
   </label>
   <label>Color
     <select name="color">
-      <option value="">Any</option>
-      {% for c in colors %}<option value="{{ c }}" {% if c == color %}selected{% endif %}>{{ c }}</option>{% endfor %}
+      <option value="">Select color</option>
+      {% for c in ['White','Yellow','Orange','Pink','Red','Brown','Purple','Blue','Green','Black'] %}
+        <option value="{{ c }}" {% if c == color %}selected{% endif %}>{{ c }}</option>
+      {% endfor %}
     </select>
   </label>
   <button type="submit" class="btn btn-primary">Search</button>
@@ -47,14 +55,25 @@
   <h2>Results ({{ results|length }})</h2>
   {% if results %}
     <table class="pill-table">
-      <thead><tr><th>Imprint</th><th>Shape</th><th>Color</th><th>Strength</th><th>Drug</th><th>Manufacturer</th></tr></thead>
+      <thead>
+        <tr>
+          <th>Drug Name</th>
+          <th>Imprint</th>
+          <th>Strength</th>
+          <th>Shape</th>
+          <th>Color</th>
+          <th>Drug Class</th>
+        </tr>
+      </thead>
       <tbody>
         {% for r in results %}
           <tr>
-            <td>{{ r.imprint }}</td><td>{{ r.shape }}</td><td>{{ r.color }}</td>
-            <td>{{ r.strength }}</td>
             <td><a href="{{ url_for('drug_detail', slug=r.drug.slug) }}">{{ r.drug.generic_name|capitalize }}</a></td>
-            <td>{{ r.manufacturer }}</td>
+            <td>{{ r.imprint }}</td>
+            <td>{{ r.strength }}</td>
+            <td>{{ r.shape }}</td>
+            <td>{{ r.color }}</td>
+            <td>{% if r.drug.drug_class %}{{ r.drug.drug_class.name }}{% endif %}</td>
           </tr>
         {% endfor %}
       </tbody>
@@ -67,30 +86,32 @@
 <section class="tips-section">
   <h2>Additional tips</h2>
   <ul>
-    <li>Periodically check your medicine cabinets for expired, re-bottled, or unidentified pills.</li>
-    <li>Avoid confusion and mistakes: keep all medications in their original bottles or packets with pertinent labeling and instructions attached.</li>
-    <li>If you do not find a match while trying to identify your pill using our Pill Finder tool, then contact your healthcare provider.</li>
+    <li>Always read the label on your prescription bottle.</li>
+    <li>If you find a pill and are not sure what it is, do NOT take it.</li>
+    <li>When in doubt, consult your pharmacist.</li>
   </ul>
 </section>
 
 </div>
 
 <aside class="sidebar">
-  <div class="sidebar-box">
+  <div class="sidebar-box popular-tools">
     <h3>Popular tools &amp; resources</h3>
     <ul class="sidebar-links">
-      <li><a href="#">My Med List</a></li>
+      <li><a href="{{ url_for('my_med_list') }}">My Med List</a></li>
       <li><a href="{{ url_for('interaction_checker') }}">Drug interaction checker</a></li>
       <li><a href="{{ url_for('pill_identifier') }}">Pill identifier</a></li>
       <li><a href="#">Compare drugs</a></li>
       <li><a href="#">Medical Q &amp; A</a></li>
-      <li><a href="#">Latest drug news</a></li>
+      <li><a href="{{ url_for('news_index') }}">Latest drug news</a></li>
     </ul>
   </div>
 </aside>
 </div>
 
 <style>
+  .breadcrumb{margin:8px 0 14px;font-size:13px;color:#666;}
+  .breadcrumb a{color:#0277bd;text-decoration:none;}
   .page-with-sidebar{display:flex;gap:24px;align-items:flex-start;}
   .main-col{flex:1;min-width:0;}
   .sidebar{width:260px;flex-shrink:0;}
@@ -103,3 +124,5 @@
   .tips-section{margin-top:24px;}
 </style>
 {% endblock %}
+</content>
+</invoke>

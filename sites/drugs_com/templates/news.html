@@ -2,68 +2,74 @@
 {% block title %}{% if active_cat %}{{ active_cat }} - Medical News - {{ site_name }}{% else %}Latest Medical News & Drug Information - {{ site_name }}{% endif %}{% endblock %}
 {% block content %}
 <nav class="breadcrumb">
-  <a href="{{ url_for('index') }}">Drugs.com</a> &rsaquo;
+  <a href="{{ url_for('index') }}">Drugs.com</a>
+  <span>&rsaquo;</span>
   {% if active_cat %}
-    <a href="{{ url_for('news_index') }}">Medical News</a> &rsaquo; <span>{{ active_cat }}</span>
+    <a href="{{ url_for('news_index') }}">Medical News</a>
+    <span>&rsaquo;</span>
+    <span>{{ active_cat }}</span>
   {% else %}
     <span>Medical News</span>
   {% endif %}
 </nav>
 
-<h1 style="font-size:28px;font-weight:700;color:#1a3a6e;margin:12px 0 6px">
+<h1 style="font-size:28px;font-weight:700;color:var(--navy,#1a3a6e);margin:12px 0 6px">
   {% if active_cat %}{{ active_cat }}{% else %}Latest Medical News & Drug Information{% endif %}
 </h1>
 <p class="lead muted" style="margin-bottom:20px">
   Stay informed with the latest medical news, FDA drug alerts, new drug approvals, and clinical trial results.
 </p>
 
-<div class="news-filter tabs news-tabs" style="display:flex;flex-wrap:wrap;gap:4px;border-bottom:2px solid #e0e0e0;margin-bottom:24px">
-  <a href="{{ url_for('news_index') }}"
-     class="tab {% if not active_cat %}active{% endif %}"
-     style="padding:10px 16px;text-decoration:none;font-weight:600;font-size:14px;color:{% if not active_cat %}#0066cc{% else %}#555{% endif %};border-bottom:3px solid {% if not active_cat %}#0066cc{% else %}transparent{% endif %};margin-bottom:-2px">All</a>
+<div class="news-tabs">
+  <a href="{{ url_for('news_index') }}" class="{% if not active_cat %}active{% endif %}">All</a>
   {% for cat in categories %}
     {% set slug = cat|lower|replace(' ', '-') %}
     <a href="{{ url_for('news_category', category=slug) }}"
-       class="tab {% if active_cat == cat %}active{% endif %}"
-       style="padding:10px 16px;text-decoration:none;font-weight:600;font-size:14px;color:{% if active_cat == cat %}#0066cc{% else %}#555{% endif %};border-bottom:3px solid {% if active_cat == cat %}#0066cc{% else %}transparent{% endif %};margin-bottom:-2px">{{ cat }}</a>
+       class="{% if active_cat == cat %}active{% endif %}">{{ cat }}</a>
   {% endfor %}
 </div>
 
 <div class="news-layout" style="display:grid;grid-template-columns:7fr 3fr;gap:32px;align-items:start">
   <div class="news-main">
     {% for a in articles %}
-      <div class="news-card" style="padding:18px 0;border-bottom:1px solid #eee">
-        <div class="article-cat" style="font-size:11px;font-weight:700;text-transform:uppercase;color:#0066cc;letter-spacing:0.5px;margin-bottom:6px">
-          {{ a.category }}
-        </div>
-        <h2 style="font-size:20px;font-weight:700;margin:0 0 8px;line-height:1.3">
-          <a href="{{ url_for('news_article', article_id=a.id) }}"
-             style="color:#1a3a6e;text-decoration:none">{{ a.title }}</a>
+      <div class="news-card">
+        <span class="badge" style="text-transform:uppercase;font-size:11px;letter-spacing:0.5px">{{ a.category }}</span>
+        <h2>
+          <a href="{{ url_for('news_article', article_id=a.id) }}">{{ a.title }}</a>
         </h2>
-        <p class="muted" style="font-size:13px;color:#888;margin:0 0 8px">
+        <div class="news-meta">
           {% if a.source %}{{ a.source }} &middot; {% endif %}{{ a.published_at.strftime('%B %d, %Y') }}
+        </div>
+        <p style="font-size:14px;line-height:1.6;color:var(--gray-700,#444);margin:6px 0 8px">
+          {{ a.body[:150] }}{% if a.body|length > 150 %}...{% endif %}
         </p>
-        <p style="font-size:14px;line-height:1.6;color:#444;margin:0 0 8px">
-          {{ a.body[:250] }}{% if a.body|length > 250 %}...{% endif %}
-        </p>
-        <a href="{{ url_for('news_article', article_id=a.id) }}" class="read-more" style="font-size:13px;color:#0066cc;text-decoration:none;font-weight:600">Read more &rsaquo;</a>
+        <a href="{{ url_for('news_article', article_id=a.id) }}" style="font-size:13px;font-weight:600">Read more &rsaquo;</a>
       </div>
     {% else %}
       <p class="muted">No articles found.</p>
     {% endfor %}
+
+    {% if articles and articles|length >= 10 %}
+      <div class="pagination" style="margin-top:24px;display:flex;gap:8px;justify-content:center">
+        <a href="#" style="padding:6px 12px;border:1px solid #e0e6ef;border-radius:4px">&laquo; Prev</a>
+        <span style="padding:6px 12px;background:#0066cc;color:#fff;border-radius:4px">1</span>
+        <a href="#" style="padding:6px 12px;border:1px solid #e0e6ef;border-radius:4px">Next &raquo;</a>
+      </div>
+    {% endif %}
   </div>
 
   <aside class="news-sidebar">
     <div style="background:#f7f9fc;border:1px solid #e0e6ef;border-radius:6px;padding:16px">
-      <h3 style="font-size:15px;font-weight:700;color:#1a3a6e;margin:0 0 12px;padding-bottom:8px;border-bottom:1px solid #e0e6ef;text-transform:uppercase;letter-spacing:0.5px">
+      <h3 style="font-size:15px;font-weight:700;color:var(--navy,#1a3a6e);margin:0 0 12px;padding-bottom:8px;border-bottom:1px solid #e0e6ef;text-transform:uppercase;letter-spacing:0.5px">
         Popular tools & resources
       </h3>
-      <ul style="list-style:none;padding:0;margin:0;font-size:14px;line-height:2.1">
-        <li><a href="{{ url_for('drug_az') }}" style="color:#0066cc;text-decoration:none">Drugs A-Z</a></li>
-        <li><a href="{{ url_for('pill_identifier') }}" style="color:#0066cc;text-decoration:none">Pill Identifier</a></li>
-        <li><a href="{{ url_for('interaction_checker') }}" style="color:#0066cc;text-decoration:none">Drug Interaction Checker</a></li>
-        <li><a href="{{ url_for('search') }}" style="color:#0066cc;text-decoration:none">Compare Drugs</a></li>
-        <li><a href="{{ url_for('conditions_list') }}" style="color:#0066cc;text-decoration:none">Conditions & Treatments</a></li>
+      <ul class="popular-tools">
+        <li><a href="{{ url_for('my_med_list') }}">My Med List</a></li>
+        <li><a href="{{ url_for('interaction_checker') }}">Drug interaction checker</a></li>
+        <li><a href="{{ url_for('pill_identifier') }}">Pill identifier</a></li>
+        <li><a href="{{ url_for('search') }}">Compare drugs</a></li>
+        <li><a href="{{ url_for('drug_az') }}">Medical Q &amp; A</a></li>
+        <li><a href="{{ url_for('news_index') }}">Latest drug news</a></li>
       </ul>
     </div>
   </aside>

@@ -1054,7 +1054,8 @@ def drug_classes_list():
 @app.route("/conditions.html")
 def conditions_list():
     conditions = Condition.query.order_by(Condition.name).all()
-    return render_template("condition.html", condition=None, drugs=None, all_conditions=conditions)
+    all_letters = list('ABCDEFGHIJKLMNOPQRSTUVWXYZ') + ['0-9']
+    return render_template("conditions.html", conditions=conditions, all_letters=all_letters, active_letter=None)
 
 
 # --- Auth ---

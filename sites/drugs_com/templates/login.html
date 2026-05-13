@@ -1,26 +1,54 @@
 {% extends "base.html" %}
 {% block title %}Sign in to Drugs.com | {{ site_name }}{% endblock %}
 {% block content %}
+<nav class="breadcrumb">
+  <a href="{{ url_for('index') }}">Home</a> &rsaquo;
+  <span>Sign In</span>
+</nav>
+
 <div class="auth-box">
   <h1>Sign in to Drugs.com</h1>
-  <form method="post">
+
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+      {% for category, message in messages %}
+        <p class="flash flash-{{ category }}">{{ message }}</p>
+      {% endfor %}
+    {% endif %}
+  {% endwith %}
+
+  <form method="post" action="{{ url_for('login') }}">
     <label for="email">Email address</label>
-    <input id="email" type="email" name="email" required>
-    <label for="password">Password</label>
-    <input id="password" type="password" name="password" required>
-    <button type="submit" class="btn btn-primary">Sign In</button>
+    <input id="email" type="email" name="email" required autocomplete="email">
+
+    <label for="password">
+      Password
+      <a href="#" class="forgot-link">Forgot your password?</a>
+    </label>
+    <input id="password" type="password" name="password" required autocomplete="current-password">
+
+    <button type="submit" class="btn btn-primary">Sign in</button>
   </form>
-  <p><a href="#">Forgot your password?</a></p>
-  <p>Don't have an account? <a href="{{ url_for('register') }}">Create a free account</a></p>
+
+  <div class="auth-divider"><span>or</span></div>
+
+  <p class="auth-switch">
+    New user? <a href="{{ url_for('register') }}">Create a free account</a>
+  </p>
 
   <div class="auth-benefits">
-    <h2>Sign in for access to:</h2>
+    <h3>Sign in for access to:</h3>
     <ul>
       <li>My Med List</li>
-      <li>Interaction Checker results</li>
-      <li>Drug Reminders</li>
-      <li>Community discussions</li>
+      <li>Drug interaction alerts</li>
+      <li>Saved medication history</li>
+      <li>Personalized drug reminders</li>
+      <li>Email newsletters</li>
     </ul>
   </div>
+
+  <p class="auth-note">
+    <em>This is a benchmark environment &mdash; any credentials will work.</em>
+  </p>
 </div>
 {% endblock %}

@@ -1,100 +1,145 @@
 {% extends "base.html" %}
+{% block title %}Drugs.com | Know More. Be Sure.{% endblock %}
 {% block content %}
-<section class="hero">
-  <h1>Trusted medical information you can rely on</h1>
-  <p>Drugs.com is the most popular, comprehensive and up-to-date source of drug information online. Providing free, peer-reviewed, accurate and independent data on more than 24,000 prescription drugs, over-the-counter medicines &amp; natural products.</p>
-  <form action="{{ url_for('search') }}" method="get" class="hero-search">
-    <input type="search" name="q" placeholder="Search by drug name, condition, or brand">
-    <button type="submit">Search</button>
+
+<!-- Hero -->
+<div class="hero-section">
+  <h1>Know more. Be sure.</h1>
+  <p class="hero-sub">Drug and health information, from pharmacists you can trust.</p>
+  <form action="{{ url_for('search') }}" method="get">
+    <div class="hero-search-wrap">
+      <input class="hero-search-input" type="search" name="q" placeholder="Enter a drug name, condition, pill imprint, etc.">
+      <button class="hero-search-btn" type="submit">Search</button>
+    </div>
   </form>
-  <div class="quick-links">
-    <a href="{{ url_for('pill_identifier') }}">Pill Identifier</a>
-    <a href="{{ url_for('interaction_checker') }}">Interaction Checker</a>
-    <a href="{{ url_for('drug_az') }}">Drugs A-Z</a>
-    <a href="{{ url_for('news_index') }}">Medical News</a>
-  </div>
-</section>
-
-<section class="row-section">
-  <h2>Drug Information</h2>
-  <ul class="quick-info-list">
-    <li><a href="{{ url_for('drug_az') }}">A to Z Drug List</a></li>
-    <li><a href="{{ url_for('conditions_list') }}">Treatment Options</a></li>
-    <li><a href="{{ url_for('drug_classes_list') }}">Drugs by Class</a></li>
-    <li><a href="{{ url_for('search') }}?q=dosage">Dosage</a></li>
-    <li><a href="{{ url_for('search') }}?q=side+effects">Side Effects</a></li>
-    <li><a href="{{ url_for('search') }}?q=q+and+a">Medical Q &amp; A</a></li>
-    <li><a href="{{ url_for('search') }}?q=generic">Generic Drugs</a></li>
-    <li><a href="{{ url_for('pill_identifier') }}">Pill Identifier</a></li>
-    <li><a href="{{ url_for('interaction_checker') }}">Interaction Checker</a></li>
-  </ul>
-</section>
-
-<section class="row-section">
-  <h2>Featured drugs</h2>
-  <div class="card-grid">
-    {% for d in featured %}
-      <a class="drug-card" href="{{ url_for('drug_detail', slug=d.slug) }}">
-        <h3>{{ d.generic_name|capitalize }}</h3>
-        <p class="muted">{{ d.brand_names|join(', ') if d.brand_names else 'Generic' }}</p>
-        <p class="rating">Rating: {{ d.avg_rating }}/10 ({{ d.review_count }})</p>
-      </a>
+  <p class="hero-trending">
+    <strong>Trending searches:</strong>
+    {% for d in trending[:6] %}
+      <a href="{{ url_for('drug_detail', slug=d.slug) }}">{{ d.generic_name|capitalize }}</a>{% if not loop.last %},{% endif %}
     {% endfor %}
+  </p>
+</div>
+
+<!-- Feature icons -->
+<div class="feature-icons">
+  <a class="feature-icon-item" href="{{ url_for('my_med_list') }}">
+    <div class="feature-icon-circle">
+      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="4" width="18" height="16" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="4" x2="9" y2="20"/><circle cx="6" cy="13.5" r="0.8" fill="currentColor"/><line x1="9" y1="13.5" x2="18" y2="13.5"/><circle cx="6" cy="17" r="0.8" fill="currentColor"/><line x1="9" y1="17" x2="18" y2="17"/></svg>
+    </div>
+    My Med List
+  </a>
+  <a class="feature-icon-item" href="{{ url_for('pill_identifier') }}">
+    <div class="feature-icon-circle">
+      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="11" cy="11" r="7"/><circle cx="11" cy="11" r="3.5"/><line x1="16.2" y1="16.2" x2="21" y2="21"/></svg>
+    </div>
+    Pill Identifier
+  </a>
+  <a class="feature-icon-item" href="{{ url_for('interaction_checker') }}">
+    <div class="feature-icon-circle">
+      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="9"/><line x1="12" y1="8" x2="12" y2="12"/><circle cx="12" cy="15.5" r="0.8" fill="currentColor"/></svg>
+    </div>
+    Drug Interaction Checker
+  </a>
+  <a class="feature-icon-item" href="{{ url_for('drug_az') }}">
+    <div class="feature-icon-circle">
+      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="4" width="18" height="16" rx="2"/><line x1="7" y1="9" x2="17" y2="9"/><line x1="7" y1="13" x2="17" y2="13"/><line x1="7" y1="17" x2="13" y2="17"/></svg>
+    </div>
+    Drugs &amp; Medications
+  </a>
+</div>
+
+<!-- Browse section: A-Z + Browse by Site Section -->
+<div class="container">
+  <div class="home-browse-grid" style="margin-top:28px">
+    <!-- Left: Browse Drugs -->
+    <div>
+      <div class="browse-panel-title">Browse Drugs</div>
+      <div class="browse-panel-tabs">
+        <a class="browse-tab active" href="{{ url_for('drug_az') }}">Drugs</a>
+        <a class="browse-tab" href="{{ url_for('conditions_list') }}">Conditions</a>
+      </div>
+      <div class="letter-grid" style="grid-template-columns:repeat(7,1fr)">
+        {% for L in ['A','B','C','D','E','F','G','H','I','J','K','L','M','N','O','P','Q','R','S','T','U','V','W','X','Y','Z','0-9'] %}
+          <a class="letter-btn" href="{{ url_for('drug_az') }}?letter={{ L }}">{{ L }}</a>
+        {% endfor %}
+      </div>
+      <div class="browse-footer">
+        Browse A-Z:
+        <a href="{{ url_for('drug_az') }}">drugs</a>,
+        <a href="{{ url_for('conditions_list') }}">conditions</a>,
+        <a href="{{ url_for('drug_classes_list') }}">drug classes</a>
+      </div>
+    </div>
+
+    <!-- Right: Browse by Site Section -->
+    <div>
+      <div class="browse-panel-title">Browse by Site Section</div>
+      <div class="site-section-panel">
+        <ul>
+          <li><a href="{{ url_for('drug_az') }}">Drugs A-Z (Español)</a></li>
+          <li><a href="{{ url_for('search') }}?q=side+effects">Side Effects Checker</a></li>
+          <li><a href="{{ url_for('search') }}?q=dosage">Dosage Guidelines</a></li>
+          <li><a href="{{ url_for('my_med_list') }}">Manage your Meds</a></li>
+          <li><a href="{{ url_for('drug_classes_list') }}">Health Professionals</a></li>
+          <li><a href="{{ url_for('news_index') }}">Medical News</a></li>
+          <li><a href="{{ url_for('news_index') }}">FDA Alerts</a></li>
+          <li><a href="{{ url_for('news_index') }}">New Drugs</a></li>
+          <li><a href="{{ url_for('conditions_list') }}">More...</a></li>
+        </ul>
+      </div>
+    </div>
   </div>
-</section>
 
-<section class="row-section">
-  <h2>Trending</h2>
-  <ol class="trending-list">
-    {% for d in trending %}
-      <li><a href="{{ url_for('drug_detail', slug=d.slug) }}">{{ d.generic_name|capitalize }}</a>
-        <span class="muted">— {{ d.availability }}</span></li>
-    {% endfor %}
-  </ol>
-</section>
-
-<section class="row-section split">
-  <div class="split-left">
-    <h2>Latest medical news</h2>
-    <ul class="news-list">
-      {% for a in news %}
-        <li>
-          <div class="news-meta">
-            <span class="badge">{{ a.category }}</span>
-            <span class="muted">{{ a.published_at.strftime('%B %d, %Y') }}</span>
-          </div>
-          <h3><a href="{{ url_for('news_article', article_id=a.id) }}">{{ a.title }}</a></h3>
-          <p class="muted">{{ a.body[:140] }}{% if a.body|length > 140 %}...{% endif %}</p>
-        </li>
+  <!-- Featured drugs -->
+  <div class="home-row">
+    <h2>Featured drugs</h2>
+    <div class="card-grid">
+      {% for d in featured %}
+        <a class="drug-card" href="{{ url_for('drug_detail', slug=d.slug) }}">
+          <h3>{{ d.generic_name|capitalize }}</h3>
+          <p class="muted">{{ d.brand_names|join(', ') if d.brand_names else 'Generic' }}</p>
+          <p class="rating">Rating: {{ d.avg_rating }}/10 ({{ d.review_count }})</p>
+        </a>
       {% endfor %}
-    </ul>
-    <p><a href="{{ url_for('news_index') }}">Read more news...</a></p>
+    </div>
   </div>
-  <div class="split-right">
-    <h2>Browse drug classes</h2>
-    <ul class="class-list">
-      {% for c in classes %}
-        <li><a href="{{ url_for('drug_class_page', slug=c.slug) }}">{{ c.name }}</a></li>
+
+  <!-- Latest news + drug classes two-col -->
+  <div style="display:grid;grid-template-columns:2fr 1fr;gap:28px;padding:24px 0;border-top:1px solid #eef1f5">
+    <div>
+      <h2 style="font-size:1.25rem;font-weight:700;color:#002a5c;margin-bottom:16px">Latest Medical News</h2>
+      <ul class="news-list">
+        {% for a in news %}
+          <li>
+            <div class="news-meta">
+              <span class="badge">{{ a.category }}</span>
+              <span class="muted">{{ a.published_at.strftime('%B %d, %Y') }}</span>
+            </div>
+            <h3><a href="{{ url_for('news_article', article_id=a.id) }}">{{ a.title }}</a></h3>
+            <p class="muted">{{ a.body[:140] }}{% if a.body|length > 140 %}...{% endif %}</p>
+          </li>
+        {% endfor %}
+      </ul>
+      <p style="margin-top:10px"><a href="{{ url_for('news_index') }}">Read more medical news &rsaquo;</a></p>
+    </div>
+    <div>
+      <h2 style="font-size:1.25rem;font-weight:700;color:#002a5c;margin-bottom:16px">Browse Drug Classes</h2>
+      <ul class="class-list">
+        {% for c in classes %}
+          <li><a href="{{ url_for('drug_class_page', slug=c.slug) }}">{{ c.name }}</a></li>
+        {% endfor %}
+      </ul>
+    </div>
+  </div>
+
+  <!-- Popular drug searches -->
+  <div class="home-row">
+    <h2>Popular Drug Searches</h2>
+    <div class="popular-searches">
+      {% for d in trending %}
+        <a href="{{ url_for('drug_detail', slug=d.slug) }}">{{ d.generic_name|capitalize }}</a>
       {% endfor %}
-    </ul>
+    </div>
   </div>
-</section>
-
-<section class="row-section">
-  <h2>Browse drugs A-Z</h2>
-  <div class="letter-grid">
-    {% for L in all_letters %}
-      <a class="letter-btn" href="{{ url_for('drug_az') }}?letter={{ L }}">{{ L }}</a>
-    {% endfor %}
-  </div>
-</section>
-
-<section class="row-section">
-  <h2>Top 100 Drugs</h2>
-  <ul class="top-drugs-list">
-    {% for d in trending[:20] %}
-      <li><a href="{{ url_for('drug_detail', slug=d.slug) }}">{{ d.generic_name|capitalize }}</a></li>
-    {% endfor %}
-  </ul>
-</section>
+</div>
 {% endblock %}

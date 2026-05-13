@@ -13,11 +13,9 @@
 
 <div class="article-layout" style="display:grid;grid-template-columns:7fr 3fr;gap:32px;align-items:start;margin-top:16px">
   <article class="article-main">
-    <div class="article-cat" style="font-size:12px;font-weight:700;text-transform:uppercase;color:#0066cc;letter-spacing:0.5px;margin-bottom:8px">
-      {{ article.category }}
-    </div>
-    <h1 style="font-size:30px;font-weight:700;color:#1a3a6e;line-height:1.25;margin:0 0 12px">{{ article.title }}</h1>
-    <div class="article-meta" style="font-size:13px;color:#888;margin-bottom:24px;padding-bottom:16px;border-bottom:1px solid #eee">
+    <h1 style="font-size:30px;font-weight:700;color:var(--navy,#1a3a6e);line-height:1.25;margin:0 0 12px">{{ article.title }}</h1>
+    <div class="news-meta" style="margin-bottom:24px;padding-bottom:16px;border-bottom:1px solid #eee">
+      <span class="badge" style="text-transform:uppercase;font-size:11px;letter-spacing:0.5px;margin-right:8px">{{ article.category }}</span>
       {% if article.source %}{{ article.source }} &bull; {% endif %}{{ article.published_at.strftime('%B %d, %Y') }}
     </div>
 
@@ -27,40 +25,41 @@
       {% endfor %}
     </div>
 
-    <div class="medical-disclaimer" style="margin-top:32px;padding:16px;background:#f7f9fc;border-left:4px solid #0066cc;border-radius:4px;font-size:13px;color:#555;line-height:1.6">
-      <strong style="color:#1a3a6e">Medical Disclaimer:</strong>
+    <div class="medical-disclaimer">
+      <strong style="color:var(--navy,#1a3a6e)">Medical Disclaimer:</strong>
       The information provided in this article is for educational purposes only and is not intended as a substitute for professional medical advice, diagnosis, or treatment. Always seek the advice of your physician or other qualified health provider with any questions you may have regarding a medical condition.
     </div>
 
     <div style="margin-top:24px;padding-top:16px;border-top:1px solid #eee">
-      <a href="{{ url_for('news_index') }}" style="color:#0066cc;text-decoration:none;font-weight:600">&larr; Back to Medical News</a>
+      <a href="{{ url_for('news_index') }}" style="font-weight:600">&larr; Back to Medical News</a>
     </div>
   </article>
 
   <aside class="article-sidebar">
     <div style="background:#f7f9fc;border:1px solid #e0e6ef;border-radius:6px;padding:16px;margin-bottom:20px">
-      <h3 style="font-size:15px;font-weight:700;color:#1a3a6e;margin:0 0 12px;padding-bottom:8px;border-bottom:1px solid #e0e6ef;text-transform:uppercase;letter-spacing:0.5px">
+      <h3 style="font-size:15px;font-weight:700;color:var(--navy,#1a3a6e);margin:0 0 12px;padding-bottom:8px;border-bottom:1px solid #e0e6ef;text-transform:uppercase;letter-spacing:0.5px">
         Related News
       </h3>
-      <p class="muted" style="font-size:13px;color:#888;margin:0 0 8px">
+      <p class="muted" style="font-size:13px;margin:0 0 8px">
         Browse more articles in
-        <a href="{{ url_for('news_category', category=article.category|lower|replace(' ', '-')) }}" style="color:#0066cc;text-decoration:none">{{ article.category }}</a>.
+        <a href="{{ url_for('news_category', category=article.category|lower|replace(' ', '-')) }}">{{ article.category }}</a>.
       </p>
       <p style="margin:0">
-        <a href="{{ url_for('news_index') }}" style="color:#0066cc;text-decoration:none;font-size:13px;font-weight:600">View all medical news &rsaquo;</a>
+        <a href="{{ url_for('news_index') }}" style="font-size:13px;font-weight:600">View all medical news &rsaquo;</a>
       </p>
     </div>
 
     <div style="background:#f7f9fc;border:1px solid #e0e6ef;border-radius:6px;padding:16px">
-      <h3 style="font-size:15px;font-weight:700;color:#1a3a6e;margin:0 0 12px;padding-bottom:8px;border-bottom:1px solid #e0e6ef;text-transform:uppercase;letter-spacing:0.5px">
+      <h3 style="font-size:15px;font-weight:700;color:var(--navy,#1a3a6e);margin:0 0 12px;padding-bottom:8px;border-bottom:1px solid #e0e6ef;text-transform:uppercase;letter-spacing:0.5px">
         Popular tools & resources
       </h3>
-      <ul style="list-style:none;padding:0;margin:0;font-size:14px;line-height:2.1">
-        <li><a href="{{ url_for('drug_index') }}" style="color:#0066cc;text-decoration:none">Drugs A-Z</a></li>
-        <li><a href="{{ url_for('pill_identifier') }}" style="color:#0066cc;text-decoration:none">Pill Identifier</a></li>
-        <li><a href="{{ url_for('interaction_checker') }}" style="color:#0066cc;text-decoration:none">Drug Interaction Checker</a></li>
-        <li><a href="{{ url_for('search') }}" style="color:#0066cc;text-decoration:none">Compare Drugs</a></li>
-        <li><a href="{{ url_for('conditions_index') }}" style="color:#0066cc;text-decoration:none">Conditions & Treatments</a></li>
+      <ul class="popular-tools">
+        <li><a href="{{ url_for('my_med_list') }}">My Med List</a></li>
+        <li><a href="{{ url_for('interaction_checker') }}">Drug interaction checker</a></li>
+        <li><a href="{{ url_for('pill_identifier') }}">Pill identifier</a></li>
+        <li><a href="{{ url_for('search') }}">Compare drugs</a></li>
+        <li><a href="{{ url_for('drug_az') }}">Medical Q &amp; A</a></li>
+        <li><a href="{{ url_for('news_index') }}">Latest drug news</a></li>
       </ul>
     </div>
   </aside>

@@ -1,24 +1,44 @@
 {% extends "base.html" %}
-{% block title %}My Account - {{ site_name }}{% endblock %}
+{% block title %}My Drugs.com - {{ current_user.username }}{% endblock %}
 {% block content %}
 <nav class="breadcrumb">
   <a href="{{ url_for('index') }}">Home</a> &rsaquo; <span>My Account</span>
 </nav>
 
-<nav class="account-nav">
+<h1>My Drugs.com <span class="muted">&mdash; {{ current_user.username }}</span></h1>
+
+<nav class="account-tabs">
   <a href="{{ url_for('account') }}" class="active">My Account</a>
   <a href="{{ url_for('my_med_list') }}">My Med List</a>
-  <a href="#">Drug Alerts</a>
+  <a href="#">My Reviews</a>
   <a href="#">Settings</a>
+  <a href="#">Subscriptions</a>
 </nav>
 
-<h1>Welcome, {{ current_user.username }}</h1>
-<p class="muted">{{ current_user.email }} &middot; Joined {{ current_user.created_at.strftime('%b %d, %Y') }}</p>
+<div class="account-stats">
+  <div class="account-stat">
+    <span class="stat-value">{{ saved_count }}</span>
+    <span class="stat-label">Saved Medication{{ '' if saved_count == 1 else 's' }}</span>
+  </div>
+  <div class="account-stat">
+    <span class="stat-value">{{ reviews|length }}</span>
+    <span class="stat-label">Review{{ '' if reviews|length == 1 else 's' }} Posted</span>
+  </div>
+</div>
 
 <div class="account-grid">
   <section class="account-box">
+    <h2>User information</h2>
+    <dl class="user-info">
+      <dt>Username</dt><dd>{{ current_user.username }}</dd>
+      <dt>Email</dt><dd>{{ current_user.email }}</dd>
+      <dt>Member since</dt><dd>{{ current_user.created_at.strftime('%B %d, %Y') }}</dd>
+    </dl>
+  </section>
+
+  <section class="account-box">
     <h2>My Med List</h2>
-    <p>{{ saved_count }} drug{{ '' if saved_count == 1 else 's' }} saved.</p>
+    <p>You have <strong>{{ saved_count }}</strong> drug{{ '' if saved_count == 1 else 's' }} saved to your med list.</p>
     <a class="btn btn-outline" href="{{ url_for('my_med_list') }}">View My Med List</a>
   </section>
 
@@ -26,22 +46,24 @@
     <h2>My Reviews ({{ reviews|length }})</h2>
     {% for r in reviews %}
       <article class="review">
-        <strong>{{ r.title }}</strong> &mdash; <a href="{{ url_for('drug_detail', slug=r.drug.slug) }}">{{ r.drug.generic_name|capitalize }}</a>
+        <strong>{{ r.title }}</strong> &mdash;
+        <a href="{{ url_for('drug_detail', slug=r.drug.slug) }}">{{ r.drug.generic_name|capitalize }}</a>
         <p class="muted">{{ r.rating }}/10 &middot; for {{ r.condition_treated }} &middot; {{ r.created_at.strftime('%b %d, %Y') }}</p>
         <p>{{ r.body }}</p>
       </article>
     {% else %}
-      <p class="muted">You have not posted any reviews yet.</p>
+      <p class="muted">You have not posted any reviews yet. Visit any drug page to write a review.</p>
     {% endfor %}
   </section>
 
   <section class="account-box">
     <h2>Quick links</h2>
     <ul class="quick-links">
-      <li><a href="{{ url_for('interaction_checker') }}">Drug Interaction Checker</a></li>
+      <li><a href="{{ url_for('drug_az') }}">Add medications (Drugs A-Z)</a></li>
+      <li><a href="{{ url_for('interaction_checker') }}">Check drug interactions</a></li>
+      <li><a href="{{ url_for('my_med_list') }}">View my saved medications</a></li>
       <li><a href="{{ url_for('pill_identifier') }}">Pill Identifier</a></li>
-      <li><a href="{{ url_for('my_med_list') }}">My Med List</a></li>
-      <li><a href="{{ url_for('news_index') }}">News</a></li>
+      <li><a href="{{ url_for('news_index') }}">Medical news</a></li>
     </ul>
   </section>
 </div>
