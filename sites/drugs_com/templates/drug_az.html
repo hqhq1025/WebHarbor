@@ -54,10 +54,11 @@
     <section class="row-section">
       <h2>Browse drugs by category</h2>
       <ul class="category-list category-grid">
-        <li><a href="{{ url_for('search') }}?q=side+effects">Side Effects</a></li>
+        <li><a href="{{ url_for('side_effects_page') }}">Side Effects</a></li>
         <li><a href="{{ url_for('search') }}?q=dosage">Dosage</a></li>
         <li><a href="{{ url_for('search') }}?q=pregnancy">Pregnancy Warnings</a></li>
-        <li><a href="{{ url_for('drug_classes_list') }}">Drug Class</a></li>
+        <li><a href="{{ url_for('drug_classes_list') }}">Drug Classes</a></li>
+        <li><a href="{{ url_for('interaction_checker') }}">Drug Interactions</a></li>
         <li><a href="{{ url_for('search') }}?q=availability">Availability</a></li>
         <li><a href="{{ url_for('search') }}?q=brand+generic">Brand/Generic</a></li>
         <li><a href="{{ url_for('search') }}?q=manufacturer">Drug Manufacturer</a></li>

@@ -1648,15 +1648,40 @@ def condition_page(slug):
     links = DrugCondition.query.filter_by(condition_id=cond.id).all()
     drugs = [Drug.query.get(l.drug_id) for l in links]
     drugs = [d for d in drugs if d]
-    drugs.sort(key=lambda d: -d.avg_rating)
-    return render_template("condition.html", condition=cond, drugs=drugs)
+    sort = (request.args.get("sort") or "rating").lower()
+    if sort == "name":
+        drugs.sort(key=lambda d: d.generic_name)
+    else:
+        sort = "rating"
+        drugs.sort(key=lambda d: (-(d.avg_rating or 0), d.generic_name))
+    related = (
+        Condition.query.filter(Condition.id != cond.id)
+        .order_by(Condition.drug_count.desc())
+        .limit(8)
+        .all()
+    )
+    return render_template(
+        "condition.html",
+        condition=cond,
+        drugs=drugs,
+        sort=sort,
+        related_conditions=related,
+    )
 
 
 @app.route("/drug-class/<slug>")
 def drug_class_page(slug):
     cls = DrugClass.query.filter_by(slug=slug).first_or_404()
     drugs = Drug.query.filter_by(drug_class_id=cls.id).order_by(Drug.generic_name).all()
-    return render_template("drug_class.html", drug_class=cls, drugs=drugs)
+    related = (
+        DrugClass.query.filter(DrugClass.id != cls.id)
+        .order_by(DrugClass.name)
+        .limit(8)
+        .all()
+    )
+    return render_template(
+        "drug_class.html", drug_class=cls, drugs=drugs, related_classes=related
+    )
 
 
 @app.route("/news/")
@@ -1669,7 +1694,16 @@ def news_index():
 @app.route("/news/article/<int:article_id>")
 def news_article(article_id):
     article = NewsArticle.query.get_or_404(article_id)
-    return render_template("news_article.html", article=article)
+    related = (
+        NewsArticle.query.filter(
+            NewsArticle.category == article.category,
+            NewsArticle.id != article.id,
+        )
+        .order_by(NewsArticle.published_at.desc())
+        .limit(5)
+        .all()
+    )
+    return render_template("news_article.html", article=article, related=related)
 
 
 @app.route("/news/<category>")
@@ -1696,7 +1730,9 @@ def news_category(category):
 @app.route("/drug-classes.html")
 def drug_classes_list():
     classes = DrugClass.query.order_by(DrugClass.name).all()
-    return render_template("drug_class.html", drug_class=None, drugs=None, all_classes=classes)
+    for c in classes:
+        c.drug_count_val = Drug.query.filter_by(drug_class_id=c.id).count()
+    return render_template("drug_classes.html", classes=classes)
 
 
 @app.route("/conditions")
@@ -1864,6 +1900,18 @@ def drug_images(slug):
 def drug_prices(slug):
     drug = Drug.query.filter_by(slug=slug).first_or_404()
     return render_template("drug_prices.html", drug=drug)
+
+
+@app.route("/<slug>/dosage")
+def drug_dosage(slug):
+    drug = Drug.query.filter_by(slug=slug).first_or_404()
+    return render_template("drug_dosage.html", drug=drug)
+
+
+@app.route("/<slug>/side-effects")
+def drug_side_effects(slug):
+    drug = Drug.query.filter_by(slug=slug).first_or_404()
+    return render_template("drug_side_effects.html", drug=drug)
 
 
 @app.route("/_health")

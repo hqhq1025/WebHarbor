@@ -38,12 +38,23 @@
   <aside class="article-sidebar">
     <div style="background:#f7f9fc;border:1px solid #e0e6ef;border-radius:6px;padding:16px;margin-bottom:20px">
       <h3 style="font-size:15px;font-weight:700;color:var(--navy,#1a3a6e);margin:0 0 12px;padding-bottom:8px;border-bottom:1px solid #e0e6ef;text-transform:uppercase;letter-spacing:0.5px">
-        Related News
+        Related articles
       </h3>
-      <p class="muted" style="font-size:13px;margin:0 0 8px">
-        Browse more articles in
-        <a href="{{ url_for('news_category', category=article.category|lower|replace(' ', '-')) }}">{{ article.category }}</a>.
-      </p>
+      {% if related %}
+        <ul class="related-articles" style="list-style:none;padding:0;margin:0 0 12px">
+          {% for r in related %}
+            <li style="padding:8px 0;border-bottom:1px solid #e8ecf2">
+              <a href="{{ url_for('news_article', article_id=r.id) }}" style="font-size:13px;font-weight:600;line-height:1.4">{{ r.title }}</a>
+              <div class="muted" style="font-size:11px;margin-top:2px">{{ r.published_at.strftime('%b %d, %Y') }}</div>
+            </li>
+          {% endfor %}
+        </ul>
+      {% else %}
+        <p class="muted" style="font-size:13px;margin:0 0 8px">
+          Browse more articles in
+          <a href="{{ url_for('news_category', category=article.category|lower|replace(' ', '-')) }}">{{ article.category }}</a>.
+        </p>
+      {% endif %}
       <p style="margin:0">
         <a href="{{ url_for('news_index') }}" style="font-size:13px;font-weight:600">View all medical news &rsaquo;</a>
       </p>

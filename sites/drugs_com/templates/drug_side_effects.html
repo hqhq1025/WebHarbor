@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+{% block title %}{{ drug.generic_name|capitalize }} Side Effects - {{ site_name }}{% endblock %}
+{% block content %}
+<div class="breadcrumb-row">
+  <nav class="breadcrumb">
+    <a href="{{ url_for('index') }}">Home</a> &rsaquo;
+    <a href="{{ url_for('drug_detail', slug=drug.slug) }}">{{ drug.generic_name|capitalize }}</a> &rsaquo;
+    <span>Side effects</span>
+  </nav>
+</div>
+
+<article class="drug-detail">
+  <header class="drug-header">
+    <h1>{{ drug.generic_name|capitalize }} Side Effects</h1>
+    <p class="reviewer-line">
+      <span>Medically reviewed by {{ drug.reviewer_name }}, {{ drug.reviewer_credential }}. Last updated on {{ drug.last_updated.strftime('%b %d, %Y') }}.</span>
+    </p>
+  </header>
+
+  <section>
+    <h2>Overview</h2>
+    <p>{{ drug.side_effects }}</p>
+  </section>
+
+  <section>
+    <h2>Common side effects (greater than 10%)</h2>
+    <ul>
+      <li>Upset stomach, heartburn, or nausea</li>
+      <li>Mild headache or dizziness</li>
+      <li>Drowsiness or fatigue</li>
+      <li>Mild rash or itching</li>
+      <li>Constipation or diarrhea</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>Less common side effects (1-10%)</h2>
+    <ul>
+      <li>Gastrointestinal: abdominal pain, gas, bloating, vomiting</li>
+      <li>Cardiovascular: mild fluid retention, swelling of the hands or feet, elevated blood pressure</li>
+      <li>Renal: decreased urine output, increased serum creatinine</li>
+      <li>Nervous system: nervousness, ringing in the ears (tinnitus)</li>
+      <li>Hematologic: easy bruising</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>Rare but serious side effects (less than 1%)</h2>
+    <ul>
+      <li>Severe gastrointestinal bleeding or perforation</li>
+      <li>Heart attack, stroke, or blood clots</li>
+      <li>Acute kidney injury or kidney failure</li>
+      <li>Severe allergic reactions, including anaphylaxis</li>
+      <li>Stevens-Johnson syndrome / toxic epidermal necrolysis</li>
+      <li>Hepatic failure or severe liver injury</li>
+      <li>Aseptic meningitis</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>When to seek emergency help</h2>
+    <p>Get emergency medical help immediately if you experience any of the following:</p>
+    <ul>
+      <li>Signs of an allergic reaction: hives, difficult breathing, swelling of your face, lips, tongue, or throat</li>
+      <li>Chest pain, shortness of breath, slurred speech, or weakness on one side of the body</li>
+      <li>Black, tarry, or bloody stools; coughing up blood or vomit that looks like coffee grounds</li>
+      <li>Severe stomach pain that does not go away</li>
+      <li>Little or no urination; swelling, rapid weight gain</li>
+      <li>Skin rash, blistering, or peeling, especially with fever</li>
+    </ul>
+  </section>
+
+  <p><a href="{{ url_for('drug_detail', slug=drug.slug) }}">&laquo; Back to {{ drug.generic_name|capitalize }} overview</a></p>
+</article>
+{% endblock %}

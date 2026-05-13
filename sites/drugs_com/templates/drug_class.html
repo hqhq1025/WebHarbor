@@ -17,6 +17,14 @@
     <h2>What are {{ drug_class.name }} used for?</h2>
     <p>{{ drug_class.name }} are used in the treatment of a variety of medical conditions. See the list of drugs below for specific indications and approved uses.</p>
 
+    {% if drugs %}
+      <p style="margin:12px 0">
+        <a class="btn btn-primary" href="{{ url_for('compare_drugs') }}?drugs={{ drugs|map(attribute='generic_name')|join(',') }}">
+          Compare drugs in this class
+        </a>
+      </p>
+    {% endif %}
+
     <h2>List of {{ drug_class.name }}</h2>
 
     {% if drugs %}
@@ -24,6 +32,8 @@
       <thead>
         <tr>
           <th>Drug Name</th>
+          <th>Brand names</th>
+          <th>Rx/OTC</th>
           <th>Avg. Rating</th>
           <th>Reviews</th>
         </tr>
@@ -33,8 +43,19 @@
         <tr>
           <td>
             <a href="{{ url_for('drug_detail', slug=d.slug) }}"><strong>{{ d.generic_name|capitalize }}</strong></a>
-            
-            <div class="muted">{{ d.brand_names|join(', ') if d.brand_names else 'Generic' }}</div>
+            {% if d.description %}
+              <div class="muted" style="font-size:13px;margin-top:4px">{{ d.description[:140] }}{% if d.description|length > 140 %}...{% endif %}</div>
+            {% endif %}
+          </td>
+          <td class="muted">{{ d.brand_names|join(', ') if d.brand_names else 'Generic' }}</td>
+          <td>
+            {% if d.availability == 'Rx' %}
+              <span class="avail-badge avail-rx">Rx</span>
+            {% elif d.availability == 'OTC' %}
+              <span class="avail-badge avail-otc">OTC</span>
+            {% else %}
+              <span class="avail-badge">{{ d.availability or 'Rx/OTC' }}</span>
+            {% endif %}
           </td>
           <td><span class="rating">{{ '%.1f'|format(d.avg_rating) if d.avg_rating else '-' }}</span></td>
           <td>
@@ -46,7 +67,7 @@
     </table>
 
     <p class="muted footnote">
-      Ratings reflect user experience; 1 = poor, 10 = excellent. "(Pro)" indicates a professional/prescriber resource is available.
+      Ratings reflect user experience; 1 = poor, 10 = excellent.
     </p>
     {% else %}
       <p class="muted">No drugs in this class.</p>
@@ -56,13 +77,18 @@
   <aside class="sidebar">
     <h3>Related drug classes</h3>
     <ul>
+      {% if related_classes %}
+        {% for rc in related_classes %}
+          <li><a href="{{ url_for('drug_class_page', slug=rc.slug) }}">{{ rc.name }}</a></li>
+        {% endfor %}
+      {% endif %}
       <li><a href="{{ url_for('drug_classes_list') }}">All drug classes</a></li>
     </ul>
 
     <h3>Popular tools</h3>
     <ul>
       <li><a href="{{ url_for('interaction_checker') }}">Drug Interaction Checker</a></li>
-      <li><a href="{{ url_for('search') }}">Compare Drugs</a></li>
+      <li><a href="{{ url_for('compare_drugs') }}">Compare Drugs</a></li>
       <li><a href="{{ url_for('pill_identifier') }}">Pill Identifier</a></li>
       <li><a href="{{ url_for('drug_az') }}">Drugs A-Z</a></li>
     </ul>

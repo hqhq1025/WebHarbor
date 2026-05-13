@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}List of {{ drugs|length }} {{ condition.name }} Medications Compared - Drugs.com{% endblock %}
+{% block title %}{{ condition.name }} - Medications & Treatment - Drugs.com{% endblock %}
 {% block content %}
 <nav class="breadcrumb">
   <a href="{{ url_for('index') }}">Home</a> &rsaquo;
@@ -7,61 +7,120 @@
   <span>{{ condition.name }}</span>
 </nav>
 
-<h1>List of {{ drugs|length }} {{ condition.name }} Medications Compared</h1>
+<h1>{{ condition.name }}</h1>
 <p class="muted">Medically reviewed by Drugs.com. Last updated on May 13, 2026.</p>
 
 {% if condition.description %}
-  <p>{{ condition.description }}</p>
+  <p class="lead">{{ condition.description }}</p>
 {% endif %}
 
-<h2>Drugs used to treat {{ condition.name }}</h2>
-<p class="muted">The following list of medications are in some way related to or used in the treatment of this condition.</p>
+<div class="two-col">
+  <div class="main-col">
+    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin:16px 0 8px">
+      <h2 style="margin:0">Drugs used for {{ condition.name }}</h2>
+      <div class="sort-controls">
+        <span class="muted" style="font-size:13px">Sort by:</span>
+        <a href="?sort=rating" class="{% if sort == 'rating' or not sort %}active{% endif %}">Rating</a>
+        &middot;
+        <a href="?sort=name" class="{% if sort == 'name' %}active{% endif %}">Name</a>
+      </div>
+    </div>
 
-{% if drugs %}
-<table class="drug-table">
-  <thead>
-    <tr>
-      <th>Drug Name</th>
-      <th>Rating</th>
-      <th>Reviews</th>
-      <th>Rx/OTC</th>
-      <th>Pregnancy</th>
-      <th>CSA Schedule</th>
-    </tr>
-  </thead>
-  <tbody>
-    {% for d in drugs %}
-    <tr>
-      <td>
-        <a href="{{ url_for('drug_detail', slug=d.slug) }}"><strong>{{ d.generic_name|capitalize }}</strong></a>
-        <div class="muted">{{ d.brand_names|join(', ') if d.brand_names else 'Generic' }}</div>
-        <div class="muted">For {{ condition.name }}{% if d.drug_class %} &middot; {{ d.drug_class }}{% endif %}</div>
-      </td>
-      <td><span class="rating">{{ '%.1f'|format(d.avg_rating) if d.avg_rating else '-' }}</span></td>
-      <td>{{ d.review_count or 0 }} review{{ '' if (d.review_count or 0) == 1 else 's' }}</td>
-      <td>
-        {% if d.availability == 'Rx' %}
-          <span class="avail-badge avail-rx">Rx</span>
-        {% elif d.availability == 'OTC' %}
-          <span class="avail-badge avail-otc">OTC</span>
-        {% else %}
-          <span class="avail-badge">{{ d.availability or 'Rx/OTC' }}</span>
+    {% if drugs %}
+      <p style="margin:8px 0 16px">
+        <a class="btn btn-primary" href="{{ url_for('compare_drugs') }}?drugs={{ drugs[:4]|map(attribute='generic_name')|join(',') }}">
+          Compare drugs
+        </a>
+      </p>
+
+      <table class="drug-table">
+        <thead>
+          <tr>
+            <th>Drug name</th>
+            <th>Brand names</th>
+            <th>Drug class</th>
+            <th>Rx/OTC</th>
+            <th>Rating</th>
+            <th>Reviews</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for d in drugs %}
+          <tr>
+            <td>
+              <a href="{{ url_for('drug_detail', slug=d.slug) }}"><strong>{{ d.generic_name|capitalize }}</strong></a>
+            </td>
+            <td class="muted">{{ d.brand_names|join(', ') if d.brand_names else 'Generic' }}</td>
+            <td>
+              {% if d.drug_class %}
+                <a href="{{ url_for('drug_class_page', slug=d.drug_class.slug) }}">{{ d.drug_class.name }}</a>
+              {% else %}-{% endif %}
+            </td>
+            <td>
+              {% if d.availability == 'Rx' %}
+                <span class="avail-badge avail-rx">Rx</span>
+              {% elif d.availability == 'OTC' %}
+                <span class="avail-badge avail-otc">OTC</span>
+              {% else %}
+                <span class="avail-badge">{{ d.availability or 'Rx/OTC' }}</span>
+              {% endif %}
+            </td>
+            <td><span class="rating">{{ '%.1f'|format(d.avg_rating) if d.avg_rating else '-' }}</span></td>
+            <td>
+              <a href="{{ url_for('drug_detail', slug=d.slug) }}#reviews">{{ d.review_count or 0 }} review{{ '' if (d.review_count or 0) == 1 else 's' }}</a>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+
+      <p class="muted footnote">
+        <strong>Rating:</strong> User ratings on a scale of 1 (poor) to 10 (excellent).
+        <strong>Rx</strong> = Prescription only.
+        <strong>OTC</strong> = Over-the-counter.
+      </p>
+    {% else %}
+      <p class="muted">No drugs listed for this condition.</p>
+    {% endif %}
+
+    <details class="learn-more" style="margin-top:24px;padding:14px 16px;border:1px solid #e0e6ef;border-radius:6px;background:#f7f9fc">
+      <summary style="cursor:pointer;font-weight:600;color:var(--navy,#1a3a6e)">Learn more about {{ condition.name }}</summary>
+      <div style="margin-top:12px;line-height:1.7">
+        {% if condition.description %}
+          <p>{{ condition.description }}</p>
         {% endif %}
-      </td>
-      <td>{{ d.pregnancy_risk or 'N' }}</td>
-      <td>{{ d.csa_schedule or 'N' }}</td>
-    </tr>
-    {% endfor %}
-  </tbody>
-</table>
+        <p>
+          {{ condition.name }} can affect people of any age. Treatment goals typically include symptom relief,
+          slowing disease progression, and improving quality of life. Always consult a healthcare professional
+          before starting, stopping, or changing any medication used to treat {{ condition.name }}.
+        </p>
+        <ul>
+          <li><a href="{{ url_for('search') }}?q={{ condition.name }}">Search articles about {{ condition.name }}</a></li>
+          <li><a href="{{ url_for('news_index') }}">Latest medical news</a></li>
+          <li><a href="{{ url_for('interaction_checker') }}">Check drug interactions</a></li>
+        </ul>
+      </div>
+    </details>
+  </div>
 
-<p class="muted footnote">
-  <strong>Rating:</strong> User ratings on a scale of 1 (poor) to 10 (excellent).<br>
-  <strong>Rx</strong> = Prescription only. &nbsp; <strong>OTC</strong> = Over-the-counter.<br>
-  <strong>Pregnancy Category:</strong> A = No risk, B = No risk in non-human studies, C = Risk cannot be ruled out, D = Positive evidence of risk, X = Contraindicated, N = Not classified.<br>
-  <strong>CSA Schedule:</strong> N = Not a controlled drug, 1 = Schedule I, 2 = Schedule II, 3 = Schedule III, 4 = Schedule IV, 5 = Schedule V.
-</p>
-{% else %}
-  <p class="muted">No drugs listed for this condition.</p>
-{% endif %}
+  <aside class="sidebar">
+    <h3>Related conditions</h3>
+    <ul>
+      {% if related_conditions %}
+        {% for rc in related_conditions %}
+          <li><a href="{{ url_for('condition_page', slug=rc.slug) }}">{{ rc.name }}</a></li>
+        {% endfor %}
+      {% endif %}
+      <li><a href="{{ url_for('conditions_list') }}">All conditions</a></li>
+    </ul>
+
+    <h3>Popular tools</h3>
+    <ul>
+      <li><a href="{{ url_for('interaction_checker') }}">Drug Interaction Checker</a></li>
+      <li><a href="{{ url_for('compare_drugs') }}">Compare Drugs</a></li>
+      <li><a href="{{ url_for('pill_identifier') }}">Pill Identifier</a></li>
+      <li><a href="{{ url_for('drug_az') }}">Drugs A-Z</a></li>
+    </ul>
+  </aside>
+</div>
 {% endblock %}

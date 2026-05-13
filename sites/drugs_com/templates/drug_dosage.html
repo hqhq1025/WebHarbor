@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+{% block title %}{{ drug.generic_name|capitalize }} Dosage Guide - {{ site_name }}{% endblock %}
+{% block content %}
+<div class="breadcrumb-row">
+  <nav class="breadcrumb">
+    <a href="{{ url_for('index') }}">Home</a> &rsaquo;
+    <a href="{{ url_for('drug_detail', slug=drug.slug) }}">{{ drug.generic_name|capitalize }}</a> &rsaquo;
+    <span>Dosage</span>
+  </nav>
+</div>
+
+<article class="drug-detail">
+  <header class="drug-header">
+    <h1>{{ drug.generic_name|capitalize }} Dosage</h1>
+    <p class="reviewer-line">
+      <span>Medically reviewed by {{ drug.reviewer_name }}, {{ drug.reviewer_credential }}. Last updated on {{ drug.last_updated.strftime('%b %d, %Y') }}.</span>
+    </p>
+    {% if drug.drug_class %}
+    <p><strong>Drug class:</strong>
+      <a href="{{ url_for('drug_class_page', slug=drug.drug_class.slug) }}">{{ drug.drug_class.name }}</a>
+    </p>
+    {% endif %}
+  </header>
+
+  <section>
+    <h2>Applies to the following dosage forms and strengths</h2>
+    {% if drug.images %}
+    <ul>
+      {% set forms = [] %}
+      {% for img in drug.images %}{% if img.strength %}{% set _ = forms.append(img.strength) %}{% endif %}{% endfor %}
+      {% for f in forms %}<li>{{ f }}</li>{% endfor %}
+    </ul>
+    {% else %}
+    <p>See prescribing information for available dosage forms.</p>
+    {% endif %}
+  </section>
+
+  <section>
+    <h2>Usual adult dose</h2>
+    <p>{{ drug.dosage }}</p>
+  </section>
+
+  <section>
+    <h2>Common adult doses</h2>
+    <p>Doses vary by indication, body weight, and renal/hepatic function. Always follow the dosing on the product label or your prescriber's directions.</p>
+  </section>
+
+  <section>
+    <h2>Pediatric dose</h2>
+    <p>Pediatric dosing of {{ drug.generic_name }} is typically weight-based. Consult a pediatrician before use in children, particularly in infants under 6 months of age. Do not exceed the maximum daily dose.</p>
+  </section>
+
+  <section>
+    <h2>Dosage adjustments</h2>
+    <h3>Renal impairment</h3>
+    <p>Use with caution in patients with renal impairment. A dose reduction may be necessary; monitor renal function during therapy.</p>
+    <h3>Hepatic impairment</h3>
+    <p>Use with caution in patients with hepatic impairment. Periodic monitoring of liver enzymes is recommended for chronic use.</p>
+    <h3>Geriatric use</h3>
+    <p>Older adults may be more sensitive to the effects of this medication. Start at the lowest effective dose.</p>
+  </section>
+
+  <section>
+    <h2>What happens if I miss a dose?</h2>
+    <p>Take the missed dose as soon as you remember. Skip the missed dose if it is almost time for your next scheduled dose. Do not take extra medicine to make up the missed dose.</p>
+  </section>
+
+  <section>
+    <h2>What happens if I overdose?</h2>
+    <p>Seek emergency medical attention or call the Poison Help line at 1-800-222-1222. Overdose symptoms may include nausea, vomiting, stomach pain, drowsiness, black or bloody stools, coughing up blood, shallow breathing, fainting, or coma.</p>
+  </section>
+
+  <p><a href="{{ url_for('drug_detail', slug=drug.slug) }}">&laquo; Back to {{ drug.generic_name|capitalize }} overview</a></p>
+</article>
+{% endblock %}

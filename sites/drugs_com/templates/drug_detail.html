@@ -46,6 +46,13 @@
     </p>
   </header>
 
+  <div class="drug-actions">
+    <button onclick="window.print()" class="btn btn-sm btn-outline">Print</button>
+    <a href="#" class="btn btn-sm btn-outline">Share</a>
+    <a href="{{ url_for('drug_images', slug=drug.slug) }}" class="btn btn-sm btn-outline">Drug Images</a>
+    <a href="{{ url_for('drug_prices', slug=drug.slug) }}" class="btn btn-sm btn-outline">Pricing</a>
+  </div>
+
   <nav class="section-tabs">
     <a href="#uses">Uses</a>
     <a href="#warnings">Warnings</a>
@@ -244,7 +251,10 @@
           <li class="status-row">
             <span class="status-icon approval" aria-hidden="true"></span>
             <span class="status-label">Approval History</span>
-            <span class="status-value">Drug history at FDA <span class="status-arrow">&rsaquo;</span></span>
+            <span class="status-value">
+              FDA approved &middot; Last updated {{ drug.last_updated.strftime('%b %Y') }}
+              <span class="status-arrow">&rsaquo;</span>
+            </span>
           </li>
           <li class="status-row">
             <span class="status-icon ingredients" aria-hidden="true"></span>
@@ -259,6 +269,13 @@
         {% else %}
         <a href="{{ url_for('login') }}" class="btn-med-list">Sign in to save</a>
         {% endif %}
+      </div>
+
+      <div class="sidebar-box dosage-info-box">
+        <h3>Dosage information</h3>
+        <p class="muted"><strong>Typical adult dosage</strong></p>
+        <p>{{ (drug.dosage or 'See full prescribing information.')[:150] }}{% if drug.dosage and drug.dosage|length > 150 %}&hellip;{% endif %}</p>
+        <p><a href="{{ url_for('drug_dosage', slug=drug.slug) }}">View complete dosage information &rsaquo;</a></p>
       </div>
 
       <div class="sidebar-box rating-box">
@@ -285,12 +302,16 @@
       <div class="sidebar-box more-about">
         <h3>More about {{ drug.generic_name }}</h3>
         <ul class="more-about-list">
+          <li><a href="{{ url_for('drug_prices', slug=drug.slug) }}">Drug pricing</a></li>
+          <li><a href="{{ url_for('drug_images', slug=drug.slug) }}">Drug images</a></li>
+          <li><a href="{{ url_for('drug_side_effects', slug=drug.slug) }}">Side effects (detailed)</a></li>
+          <li><a href="{{ url_for('drug_dosage', slug=drug.slug) }}">Dosage guide</a></li>
           <li><a href="{{ url_for('interaction_checker') }}?drug={{ drug.slug }}">Check interactions</a></li>
           <li><a href="{{ url_for('search') }}?q={{ drug.generic_name }}">Compare alternatives</a></li>
-          <li><a href="#reviews">Reviews ({{ drug.review_count }})</a></li>
+          <li><a href="#reviews">User reviews ({{ drug.review_count }})</a></li>
           <li><a href="#side-effects">Side effects</a></li>
           <li><a href="#dosage">Dosage information</a></li>
-          <li><a href="#before-taking">During pregnancy</a></li>
+          <li><a href="#before-taking">Pregnancy warnings</a></li>
           <li><a href="#before-taking">Breastfeeding</a></li>
           {% if drug.drug_class %}
           <li>Drug class: <a href="{{ url_for('drug_class_page', slug=drug.drug_class.slug) }}">{{ drug.drug_class.name }}</a></li>

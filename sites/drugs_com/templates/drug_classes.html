@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block title %}Drug Classes - Browse All - Drugs.com{% endblock %}
+{% block content %}
+<nav class="breadcrumb">
+  <a href="{{ url_for('index') }}">Home</a> &rsaquo;
+  <span>Drug Classes</span>
+</nav>
+
+<h1>Drug Classes</h1>
+<p class="lead">Browse the comprehensive list of drug classes. Each class groups medications that share a similar
+mechanism of action, chemical structure, or therapeutic use.</p>
+
+{% set groups = {} %}
+{% for c in classes %}
+  {% set letter = (c.name[0]|upper) %}
+  {% if not groups.update({letter: groups.get(letter, []) + [c]}) %}{% endif %}
+{% endfor %}
+
+<div class="letter-jump" style="margin:16px 0;display:flex;flex-wrap:wrap;gap:6px">
+  {% for letter in groups.keys()|sort %}
+    <a class="letter-btn" href="#letter-{{ letter }}">{{ letter }}</a>
+  {% endfor %}
+</div>
+
+{% for letter in groups.keys()|sort %}
+  <section id="letter-{{ letter }}" class="row-section" style="margin-bottom:24px">
+    <h2 style="border-bottom:2px solid var(--navy,#1a3a6e);padding-bottom:4px;margin-bottom:12px">{{ letter }}</h2>
+    <div class="class-grid" style="display:grid;grid-template-columns:repeat(auto-fill, minmax(280px, 1fr));gap:12px">
+      {% for c in groups[letter] %}
+        <div class="class-card" style="border:1px solid #e0e6ef;border-radius:6px;padding:12px;background:#fff">
+          <a href="{{ url_for('drug_class_page', slug=c.slug) }}" style="font-weight:600;color:var(--navy,#1a3a6e);text-decoration:none">{{ c.name }}</a>
+          <div class="muted" style="font-size:13px;margin-top:4px">
+            {{ c.drug_count_val }} drug{{ '' if c.drug_count_val == 1 else 's' }}
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+  </section>
+{% endfor %}
+
+{% if not classes %}
+  <p class="muted">No drug classes available.</p>
+{% endif %}
+{% endblock %}
