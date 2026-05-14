@@ -253,6 +253,11 @@
 
   function addDrug(name){
     if(!name) return;
+    var lower = name.toLowerCase();
+    var existing = listEl.querySelectorAll('input[name="drugs"]');
+    for(var i=0; i<existing.length; i++){
+      if(existing[i].value.toLowerCase() === lower) return;
+    }
     var li = document.createElement('li');
     li.className = 'checker-drug-tag';
 
@@ -291,6 +296,7 @@
       fetch('/api/autocomplete?q=' + encodeURIComponent(q))
         .then(function(r){ return r.json(); })
         .then(function(data){
+          if(!input.value.trim()){ acHide(); return; }
           var drugs = (data||[]).filter(function(r){ return r.type !== 'condition'; }).slice(0,8);
           if(!drugs.length){ acHide(); return; }
           var html = '';
