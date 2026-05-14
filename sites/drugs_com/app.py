@@ -6091,11 +6091,13 @@ def newsletter_subscribe():
 
 
 @app.route("/terms")
+@app.route("/terms.html")
 def terms():
     return render_template("terms.html")
 
 
 @app.route("/privacy")
+@app.route("/privacy.html")
 def privacy():
     return render_template("privacy.html")
 
