@@ -77,15 +77,6 @@
       </ul>
     </section>
 
-    <section class="row-section">
-      <h2>Popular drug searches</h2>
-      <ul class="popular-searches popular-columns">
-        {% for name in ['acetaminophen','adderall','amoxicillin','atorvastatin','azithromycin','ciprofloxacin','clonazepam','cyclobenzaprine','doxycycline','duloxetine','gabapentin','hydrochlorothiazide','ibuprofen','lisinopril','loratadine','metformin','metoprolol','omeprazole','prednisone','sertraline','semaglutide','sildenafil','tramadol','warfarin','zolpidem'] %}
-          <li><a href="{{ url_for('drug_detail', slug=name) }}">{{ name|capitalize }}</a></li>
-        {% endfor %}
-      </ul>
-    </section>
-
     <section class="row-section drug-sources">
       <h2>Consumer drug sources</h2>
       <div class="drug-sources-grid">

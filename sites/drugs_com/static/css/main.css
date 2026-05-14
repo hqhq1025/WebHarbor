@@ -993,7 +993,7 @@ html { scroll-behavior: smooth; }
 
 .drug-detail-layout {
   display: grid;
-  grid-template-columns: 2fr 1fr;
+  grid-template-columns: minmax(0, 2.4fr) minmax(260px, 1fr);
   gap: 28px;
   align-items: start;
 }
