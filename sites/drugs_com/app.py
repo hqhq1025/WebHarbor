@@ -6631,6 +6631,7 @@ def drug_warnings(slug):
 
 
 @app.route("/<slug>/interactions")
+@app.route("/<slug>/drug-interactions")
 def drug_interactions_page(slug):
     drug = Drug.query.filter_by(slug=slug).first_or_404()
     interactions = DrugInteraction.query.filter(
