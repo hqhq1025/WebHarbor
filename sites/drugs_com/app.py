@@ -3493,7 +3493,7 @@ def seed_benchmark_users():
 
 def seed_extra_reviews():
     """Add reviews across all popular drugs from auto-generated reviewer users."""
-    if DrugReview.query.count() >= 300:
+    if DrugReview.query.count() >= 1200:
         return
     # Create some anonymous reviewer users if not present
     reviewers = []
@@ -3528,7 +3528,27 @@ def seed_extra_reviews():
                "carbamazepine", "haloperidol", "methocarbamol", "baclofen",
                "tizanidine", "risedronate", "raloxifene", "testosterone",
                "isotretinoin", "tretinoin", "timolol", "latanoprost",
-               "vitamin D3", "folic acid", "ferrous sulfate", "multivitamin"]
+               "vitamin D3", "folic acid", "ferrous sulfate", "multivitamin",
+               "aspirin", "meloxicam", "diclofenac", "indomethacin", "methotrexate",
+               "acetaminophen", "codeine", "ketorolac", "piroxicam", "etodolac",
+               "nifedipine", "amlodipine", "felodipine", "ramipril", "enalapril",
+               "captopril", "benazepril", "irbesartan", "olmesartan", "telmisartan",
+               "insulin glargine", "insulin lispro", "pioglitazone", "sitagliptin",
+               "empagliflozin", "dapagliflozin", "liraglutide", "dulaglutide",
+               "atorvastatin", "simvastatin", "pravastatin", "fluvastatin",
+               "ezetimibe", "fenofibrate", "gemfibrozil", "niacin",
+               "albuterol", "ipratropium", "budesonide", "salmeterol",
+               "montelukast", "zafirlukast", "cromolyn", "theophylline",
+               "alendronate", "ibandronate", "zoledronic acid", "denosumab",
+               "levothyroxine", "liothyronine", "methimazole", "propylthiouracil",
+               "hydrocortisone", "dexamethasone", "methylprednisolone", "triamcinolone",
+               "amoxicillin", "clavulanate", "ampicillin", "cephalexin", "cefazolin",
+               "clindamycin", "erythromycin", "tetracycline", "minocycline",
+               "trimethoprim", "sulfamethoxazole", "nitrofurantoin", "fosfomycin",
+               "fluconazole", "itraconazole", "voriconazole", "terbinafine",
+               "acyclovir", "valacyclovir", "famciclovir", "oseltamivir",
+               "hydroxychloroquine", "chloroquine", "doxycycline", "mefloquine",
+               "donepezil", "memantine", "rivastigmine", "galantamine", "lecanemab"]
     drug_by_name = {d.generic_name: d for d in Drug.query.all()}
     count = 0
     for i, name in enumerate(popular):
@@ -3548,9 +3568,11 @@ def seed_extra_reviews():
                 created_at=datetime.utcnow() - timedelta(days=(i * 4 + j)),
             ))
             count += 1
-        if count >= 800:
+        if count >= 2000:
             break
     db.session.commit()
+    if count > 0:
+        recompute_drug_ratings()
 
 
 def recompute_drug_ratings():
