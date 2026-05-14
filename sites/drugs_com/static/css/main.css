@@ -585,7 +585,7 @@ a:hover { text-decoration: underline; color: var(--blue-mid); }
 .section-tabs a:hover { color: var(--blue); border-bottom-color: var(--blue); text-decoration: none; }
 .section-tabs a.active { color: var(--blue); border-bottom-color: var(--blue); }
 
-.detail-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 28px; }
+.detail-grid { display: grid; grid-template-columns: minmax(0, 2fr) minmax(280px, 1fr); gap: 28px; }
 .detail-main section { margin-bottom: 28px; border-top: 1px solid #e8ecf1; padding-top: 24px; }
 .detail-main section:first-child { border-top: none; padding-top: 0; }
 .detail-main h2 {
