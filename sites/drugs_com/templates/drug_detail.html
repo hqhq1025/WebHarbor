@@ -165,6 +165,15 @@
     </div>
   </div>
 
+  <aside class="pricing-cta" aria-label="Drug pricing">
+    <div class="pricing-cta-icon" aria-hidden="true">$</div>
+    <div class="pricing-cta-body">
+      <h3 class="pricing-cta-title">Compare {{ drug.generic_name|capitalize }} prices at your local pharmacy</h3>
+      <p class="pricing-cta-text">See the lowest cash and copay prices for {{ drug.generic_name }} near you. Print a free discount card and save up to 80% at participating U.S. pharmacies.</p>
+    </div>
+    <a href="{{ url_for('drug_prices', slug=drug.slug) }}" class="btn btn-cta-primary pricing-cta-btn">View prices &rsaquo;</a>
+  </aside>
+
   <nav class="section-tabs">
     <a href="#uses">Uses</a>
     <a href="#warnings">Warnings</a>
@@ -306,14 +315,24 @@
         <h3>Lab test interactions</h3>
         <p>{{ drug.generic_name|capitalize }} may interfere with certain laboratory tests, possibly causing false results. Tell any healthcare provider who treats you or orders lab work that you are using this medicine.</p>
         <div class="interaction-mini-checker">
-          <p><strong>Check {{ drug.generic_name|capitalize }} for interactions</strong></p>
-          <p class="muted">Enter another medication to view a detailed interaction report with {{ drug.generic_name }}.</p>
+          <div class="mini-checker-head">
+            <span class="mini-checker-icon" aria-hidden="true">&#8651;</span>
+            <div>
+              <h3 class="mini-checker-title">Add {{ drug.generic_name }} to the drug interaction checker</h3>
+              <p class="mini-checker-sub">Enter another medication you take to see how it interacts with {{ drug.generic_name }}. The checker reviews known prescription, OTC, and herbal interactions.</p>
+            </div>
+          </div>
           <form action="{{ url_for('interaction_checker') }}" method="get" class="mini-checker-form">
             <input type="hidden" name="drug" value="{{ drug.slug }}" />
-            <label for="mini-drug-input">Add a second drug</label>
-            <input type="text" id="mini-drug-input" name="drug2" placeholder="Enter a drug name" />
-            <button type="submit" class="btn btn-primary">Check interaction</button>
+            <label for="mini-drug-input" class="visually-hidden">Add a second drug</label>
+            <input type="text" id="mini-drug-input" name="drug2" placeholder="Enter another drug name" autocomplete="off" />
+            <button type="submit" class="btn btn-primary">Check interactions</button>
           </form>
+          <p class="mini-checker-links">
+            <a href="{{ url_for('interaction_checker') }}?drug={{ drug.slug }}">Open the full interaction checker &rsaquo;</a>
+            <span class="mini-checker-sep">&middot;</span>
+            <a href="{{ url_for('drug_interactions_page', slug=drug.slug) }}">View all {{ drug.generic_name }} interactions &rsaquo;</a>
+          </p>
         </div>
       </section>
 
@@ -788,8 +807,15 @@
 
   <section id="further-information" class="further-information">
     <h2>Further information</h2>
-    <p>Remember, keep this and all other medicines out of the reach of children, never share your medicines with others, and use {{ drug.generic_name }} only for the indication prescribed. Always consult your healthcare provider to ensure the information displayed on this page applies to your personal circumstances.</p>
-    <p class="muted medical-disclaimer"><strong>Medical Disclaimer:</strong> The information provided here is for reference only and is not intended as medical advice or a substitute for consultation with a qualified healthcare professional.</p>
+    <ul class="further-information-list">
+      <li>Remember, keep this and all other medicines out of the reach of children, never share your medicines with others, and use {{ drug.generic_name }} only for the indication prescribed.</li>
+      <li>Always consult your healthcare provider to ensure the information displayed on this page applies to your personal circumstances.</li>
+      <li>Do not use {{ drug.generic_name }} after the expiration date printed on the label. Store at room temperature away from moisture, heat, and direct light unless your pharmacist tells you otherwise.</li>
+      <li>If you suspect an overdose, contact a poison control center or emergency room immediately. U.S. residents can call the Poison Help line at <strong>1-800-222-1222</strong>.</li>
+      <li>This information does not replace the advice of a doctor. Healthwise, Incorporated disclaims any warranty or liability for your use of this information.</li>
+    </ul>
+    <p class="medical-disclaimer"><strong>Medical Disclaimer:</strong> The information provided here is for reference only and is not intended as medical advice or a substitute for consultation with a qualified healthcare professional. Drugs.com provides accurate and independent information on more than 24,000 prescription drugs, over-the-counter medicines, and natural products. Data sources include IBM Watson Micromedex, Cerner Multum, and others.</p>
+    <p class="further-information-copyright muted">Copyright 1996-{{ drug.last_updated.strftime('%Y') }} Drugs.com. Revision date: {{ drug.last_updated.strftime('%B %d, %Y') }}.</p>
   </section>
 </article>
 
