@@ -259,23 +259,15 @@
 
       {% if faq_items %}
       <section id="faq">
-        <h2>Popular FAQ</h2>
+        <h2>Frequently asked questions</h2>
         <div class="faq-list">
-        {% for item in faq_items[:5] %}
+        {% for item in faq_items %}
           <div class="faq-item">
             <p class="faq-question">{{ item.q }}</p>
             <p class="faq-answer">{{ item.a }}</p>
           </div>
         {% endfor %}
         </div>
-        {% if faq_items|length > 5 %}
-        <h3>More FAQ</h3>
-        <ul class="faq-more-list">
-          {% for item in faq_items[5:] %}
-            <li><a href="#faq">{{ item.q }}</a></li>
-          {% endfor %}
-        </ul>
-        {% endif %}
         <p class="muted faq-attr">FAQs authored by the {{ site_name }} editorial team. Last reviewed {{ 'Nov 5, 2025' }}.</p>
       </section>
       {% endif %}
