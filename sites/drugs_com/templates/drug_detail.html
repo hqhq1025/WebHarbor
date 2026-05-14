@@ -258,12 +258,12 @@
       {% if faq_items %}
       <section id="faq">
         <h2>Frequently asked questions</h2>
-        <div class="faq-list">
+        <div class="faq-list faq-accordion">
         {% for item in faq_items %}
-          <div class="faq-item">
-            <p class="faq-question">{{ item.q }}</p>
-            <p class="faq-answer">{{ item.a }}</p>
-          </div>
+          <details class="faq-item" {% if loop.first %}open{% endif %}>
+            <summary class="faq-question">{{ item.q }}</summary>
+            <div class="faq-answer"><p>{{ item.a }}</p></div>
+          </details>
         {% endfor %}
         </div>
         <p class="muted faq-attr">FAQs authored by the {{ site_name }} editorial team. Last reviewed {{ 'Nov 5, 2025' }}.</p>
