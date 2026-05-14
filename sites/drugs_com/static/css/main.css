@@ -7677,3 +7677,276 @@ html { scroll-behavior: smooth; }
   .review-form-full select,
   .review-form-full textarea { background: #1a1a2e; color: #e8e8e8; border-color: #2a2a4a; }
 }
+
+/* --- Pill identifier: improved form UX (instructions, shape icons, color swatches, reset) --- */
+.pill-form-instructions {
+  margin: 8px 0 16px;
+  color: #3a4456;
+  line-height: 1.55;
+}
+.pill-form-instructions code {
+  background: #f0f3f7;
+  border: 1px solid #d8dde4;
+  border-radius: 3px;
+  padding: 1px 6px;
+  font-family: "SFMono-Regular", Menlo, Consolas, monospace;
+  font-size: 0.88em;
+  color: #1a3a6e;
+}
+.pill-field-label {
+  display: block;
+  font-weight: 600;
+  font-size: 0.92rem;
+  color: #1a3a6e;
+}
+.pill-field-hint {
+  display: block;
+  font-weight: 400;
+  font-size: 0.78rem;
+  color: #6b7280;
+  margin: 2px 0 8px;
+}
+
+/* Shape picker — clickable chips with mini SVG icons. */
+.pill-shape-picker {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 4px;
+}
+.pill-shape-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: #fff;
+  border: 1.5px solid #d8dde4;
+  border-radius: 22px;
+  cursor: pointer;
+  font-size: 0.86rem;
+  color: #1a3a6e;
+  transition: background 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+  user-select: none;
+}
+.pill-shape-chip:hover {
+  border-color: #74a8e0;
+  background: #f3f8ff;
+}
+.pill-shape-chip-input {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+}
+.pill-shape-chip--selected,
+.pill-shape-chip:has(.pill-shape-chip-input:checked) {
+  background: #e6efff;
+  border-color: #3b82c4;
+  box-shadow: 0 0 0 2px rgba(59, 130, 196, 0.18);
+  font-weight: 600;
+}
+.pill-shape-icon {
+  width: 28px;
+  height: 24px;
+  flex-shrink: 0;
+}
+
+/* Color picker — clickable chips with color swatches. */
+.pill-color-picker {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 4px;
+}
+.pill-color-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px 6px 8px;
+  background: #fff;
+  border: 1.5px solid #d8dde4;
+  border-radius: 22px;
+  cursor: pointer;
+  font-size: 0.86rem;
+  color: #1a3a6e;
+  transition: background 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+  user-select: none;
+}
+.pill-color-chip:hover {
+  border-color: #74a8e0;
+  background: #f3f8ff;
+}
+.pill-color-chip-input {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+}
+.pill-color-chip--selected,
+.pill-color-chip:has(.pill-color-chip-input:checked) {
+  background: #e6efff;
+  border-color: #3b82c4;
+  box-shadow: 0 0 0 2px rgba(59, 130, 196, 0.18);
+  font-weight: 600;
+}
+.pill-color-swatch {
+  display: inline-block;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 1px solid rgba(0, 0, 0, 0.18);
+  flex-shrink: 0;
+  box-shadow: inset 0 1px 2px rgba(255, 255, 255, 0.5);
+}
+.pill-color-swatch--white     { background: #ffffff; }
+.pill-color-swatch--yellow    { background: #ffe066; }
+.pill-color-swatch--orange    { background: #ff922b; }
+.pill-color-swatch--pink      { background: #faa2c1; }
+.pill-color-swatch--red       { background: #fa5252; }
+.pill-color-swatch--brown     { background: #8b5a2b; }
+.pill-color-swatch--gray      { background: #adb5bd; }
+.pill-color-swatch--green     { background: #51cf66; }
+.pill-color-swatch--blue      { background: #4dabf7; }
+.pill-color-swatch--purple    { background: #b197fc; }
+.pill-color-swatch--black     { background: #2c3338; border-color: #2c3338; }
+.pill-color-swatch--turquoise { background: #66d9e8; }
+
+/* Form actions row. */
+.pill-form-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+}
+.pill-form-reset {
+  display: inline-block;
+  padding: 10px 18px;
+  background: #fff;
+  border: 1.5px solid #c5cbd3;
+  color: #1a3a6e;
+  border-radius: 4px;
+  text-decoration: none;
+  font-size: 14px;
+  font-weight: 600;
+}
+.pill-form-reset:hover {
+  background: #f3f8ff;
+  border-color: #74a8e0;
+}
+
+/* Per-result "Identify this pill" CTA. */
+.pill-card-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin-top: 10px;
+}
+.pill-card-actions .pill-card-link { margin-top: 0; }
+.pill-card-identify-btn {
+  font-size: 0.82rem;
+  padding: 6px 12px;
+  text-decoration: none;
+}
+
+/* ===== Search page: matched condition / class card ===== */
+.match-condition-card {
+  border: 1px solid #cfe3f3;
+  background: linear-gradient(135deg, #f3f9fd 0%, #eaf3fb 100%);
+  border-left: 4px solid #0277bd;
+  border-radius: 6px;
+  padding: 14px 18px;
+  margin: 14px 0 18px;
+}
+.match-condition-card-class {
+  border-left-color: #6a3fb8;
+  background: linear-gradient(135deg, #f7f3fd 0%, #efe8fa 100%);
+  border-color: #d8cbf0;
+}
+.match-condition-head { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+.match-condition-eyebrow {
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #0277bd;
+  background: #fff;
+  border: 1px solid #cfe3f3;
+  padding: 2px 8px;
+  border-radius: 12px;
+}
+.match-condition-card-class .match-condition-eyebrow { color: #6a3fb8; border-color: #d8cbf0; }
+.match-condition-name { font-size: 1.25rem; margin: 0; }
+.match-condition-name a { color: #1a1a1a; text-decoration: none; }
+.match-condition-name a:hover { color: #0277bd; text-decoration: underline; }
+.match-condition-desc { color: #444; margin: 8px 0 10px; line-height: 1.45; }
+.match-condition-actions { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; margin: 0; }
+.match-condition-count { font-size: 0.85rem; }
+
+/* ===== Search drug card: badge row ===== */
+.drug-card-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 6px 0 8px;
+}
+.badge-chip {
+  display: inline-block;
+  font-size: 0.78rem;
+  padding: 3px 10px;
+  border-radius: 12px;
+  border: 1px solid transparent;
+  line-height: 1.4;
+  text-decoration: none;
+  white-space: nowrap;
+}
+.badge-chip-class {
+  background: #eef4fb;
+  border-color: #cfe0f2;
+  color: #0c5fa8;
+}
+.badge-chip-class:hover { background: #dfeaf6; text-decoration: none; }
+.badge-chip-csa {
+  background: #fff5e0;
+  border-color: #f0d8a0;
+  color: #8a5a00;
+  font-weight: 600;
+}
+.drug-card-meta-label {
+  font-weight: 600;
+  color: #555;
+}
+
+/* ===== Popular for query sidebar card ===== */
+.popular-for-query-card { margin-bottom: 14px; }
+.popular-for-query-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+.popular-for-query-list li {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 0;
+  border-bottom: 1px solid #eef0f3;
+  font-size: 0.9rem;
+  flex-wrap: wrap;
+}
+.popular-for-query-list li:last-child { border-bottom: none; }
+.popular-for-query-name {
+  font-weight: 600;
+  color: #0277bd;
+  text-decoration: none;
+}
+.popular-for-query-name:hover { text-decoration: underline; }
+.popular-for-query-brand { font-size: 0.82rem; }
+.avail-badge-sm {
+  font-size: 0.7rem;
+  padding: 1px 7px;
+  margin-left: auto;
+}
+.btn-sm { font-size: 0.85rem; padding: 6px 12px; }
+

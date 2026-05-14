@@ -2312,6 +2312,20 @@ def search():
         lower_to_orig = {n.lower(): n for n in candidates}
         related_searches = [lower_to_orig.get(s, s) for s in matches]
 
+    # Contextually popular drugs for the matched condition/class — surfaced
+    # as a "Popular searches" sidebar block so a query like "diabetes" shows
+    # Metformin, Insulin, etc. rather than fuzzy-near drug names.
+    popular_for_query = []
+    if matched_condition:
+        cond_drugs = [d for d in Drug.query.all()
+                      if matched_condition.slug in d.conditions_list]
+        cond_drugs.sort(key=lambda d: -(d.review_count or 0))
+        popular_for_query = cond_drugs[:8]
+    elif matched_class:
+        cls_drugs = Drug.query.filter(Drug.drug_class_id == matched_class.id).all()
+        cls_drugs.sort(key=lambda d: -(d.review_count or 0))
+        popular_for_query = cls_drugs[:8]
+
     total = len(results)
     total_all = total + len(condition_results) + len(news_results)
     total_pages = max(1, (total + per_page - 1) // per_page)
@@ -2329,6 +2343,7 @@ def search():
                            page=page, total_pages=total_pages,
                            suggestions=suggestions,
                            related_searches=related_searches,
+                           popular_for_query=popular_for_query,
                            matched_condition=matched_condition,
                            matched_class=matched_class)
 

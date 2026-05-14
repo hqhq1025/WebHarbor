@@ -13,23 +13,56 @@
   <button type="submit" class="btn btn-primary">Search</button>
 </form>
 
-{% if matched_class %}
-  <div class="match-banner match-banner-class">
-    <span class="match-banner-label">Showing drugs in class:</span>
-    <strong>{{ matched_class.name }}</strong>
-    <a class="match-banner-link" href="{{ url_for('drug_class_page', slug=matched_class.slug) }}">View drug class page &rsaquo;</a>
-  </div>
-{% endif %}
 {% if matched_condition %}
-  <div class="match-banner match-banner-condition">
-    <span class="match-banner-label">Showing drugs for condition:</span>
-    <strong>{{ matched_condition.name }}</strong>
-    <a class="match-banner-link" href="{{ url_for('condition_page', slug=matched_condition.slug) }}">View condition page &rsaquo;</a>
-  </div>
+  <section class="match-condition-card">
+    <div class="match-condition-head">
+      <span class="match-condition-eyebrow">Condition match</span>
+      <h2 class="match-condition-name">
+        <a href="{{ url_for('condition_page', slug=matched_condition.slug) }}">{{ matched_condition.name }}</a>
+      </h2>
+    </div>
+    {% if matched_condition.description %}
+      <p class="match-condition-desc">{{ (matched_condition.description or '')[:240] }}{% if (matched_condition.description or '')|length > 240 %}...{% endif %}</p>
+    {% endif %}
+    <p class="match-condition-actions">
+      <a class="btn btn-primary btn-sm" href="{{ url_for('condition_page', slug=matched_condition.slug) }}">View all results for {{ matched_condition.name }} &rsaquo;</a>
+      {% if matched_condition.drug_count %}<span class="muted match-condition-count">{{ matched_condition.drug_count }} drug{{ '' if matched_condition.drug_count == 1 else 's' }} treat this condition</span>{% endif %}
+    </p>
+  </section>
+{% endif %}
+{% if matched_class %}
+  <section class="match-condition-card match-condition-card-class">
+    <div class="match-condition-head">
+      <span class="match-condition-eyebrow">Drug class match</span>
+      <h2 class="match-condition-name">
+        <a href="{{ url_for('drug_class_page', slug=matched_class.slug) }}">{{ matched_class.name }}</a>
+      </h2>
+    </div>
+    {% if matched_class.description %}
+      <p class="match-condition-desc">{{ (matched_class.description or '')[:240] }}{% if (matched_class.description or '')|length > 240 %}...{% endif %}</p>
+    {% endif %}
+    <p class="match-condition-actions">
+      <a class="btn btn-primary btn-sm" href="{{ url_for('drug_class_page', slug=matched_class.slug) }}">View drug class page &rsaquo;</a>
+    </p>
+  </section>
 {% endif %}
 
 <div class="search-layout">
   <aside class="filter-sidebar">
+    {% if popular_for_query %}
+      <div class="filter-card popular-for-query-card">
+        <h3 class="filter-card-title">Popular for &ldquo;{{ q }}&rdquo;</h3>
+        <ul class="popular-for-query-list">
+          {% for d in popular_for_query %}
+            <li>
+              <a href="{{ url_for('drug_detail', slug=d.slug) }}" class="popular-for-query-name">{{ d.generic_name|capitalize }}</a>
+              {% if d.brand_names %}<span class="muted popular-for-query-brand"> &middot; {{ d.brand_names[0] }}</span>{% endif %}
+              <span class="avail-badge avail-badge-sm {% if d.availability == 'Rx' %}avail-rx{% elif d.availability == 'OTC' %}avail-otc{% else %}avail-both{% endif %}">{{ d.availability }}</span>
+            </li>
+          {% endfor %}
+        </ul>
+      </div>
+    {% endif %}
     <div class="filter-card">
     <h3 class="filter-card-title">Filter results</h3>
     <form method="get" action="{{ url_for('search') }}" class="filter-form">
@@ -102,14 +135,17 @@
               </h2>
               <span class="avail-badge {% if d.availability == 'Rx' %}avail-rx{% elif d.availability == 'OTC' %}avail-otc{% else %}avail-both{% endif %}">{{ d.availability }}</span>
             </header>
-            <p class="drug-card-meta">
-              {% if d.brand_names %}<span class="brand-names">Brand names: {{ d.brand_names|join(', ') }}</span>{% endif %}
+            <div class="drug-card-badges">
               {% if d.drug_class %}
-                <span class="drug-class-link">
-                  <a href="{{ url_for('drug_class_page', slug=d.drug_class.slug) }}">{{ d.drug_class.name }}</a>
-                </span>
+                <a class="badge-chip badge-chip-class" href="{{ url_for('drug_class_page', slug=d.drug_class.slug) }}">{{ d.drug_class.name }}</a>
               {% endif %}
-            </p>
+              {% if d.csa_schedule and d.csa_schedule != 'N' %}
+                <span class="badge-chip badge-chip-csa">CSA {{ d.csa_schedule }}</span>
+              {% endif %}
+            </div>
+            {% if d.brand_names %}
+              <p class="drug-card-meta"><span class="drug-card-meta-label">Brand names:</span> {{ d.brand_names|join(', ') }}</p>
+            {% endif %}
             <p class="drug-card-desc">{% set cd = (d.uses or d.description or '')|clean_desc %}{{ cd[:220] }}{% if cd|length > 220 %}...{% endif %}</p>
             <p class="drug-card-footer">
               {% if d.review_count and d.avg_rating %}

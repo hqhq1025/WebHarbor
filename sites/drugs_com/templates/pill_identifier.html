@@ -24,43 +24,76 @@
 </div>
 
 <h2>Need help to identify that pill?</h2>
-<p>
-  Use the pill finder to identify medications by visual appearance or medicine name. If you're not
-  sure what medication to search for, the imprint, shape, and color of the pill can help narrow it
-  down. Enter any of the criteria below and we'll match it against our drug database.
+<p class="pill-form-instructions">
+  Enter <strong>any combination</strong> of the imprint code, shape, and color stamped on your
+  pill. Even one field is enough to start narrowing down matches — but the more details you
+  provide, the more accurate the result. The imprint is the letters or numbers printed,
+  debossed, or engraved on the pill (e.g., <code>M367</code>, <code>I-2</code>).
 </p>
 
 <form method="get" action="{{ url_for('pill_identifier') }}" class="pill-form">
   <div class="pill-form-row">
-    <label for="pill-imprint">Imprint
+    <label for="pill-imprint" class="pill-field-label">Imprint code
+      <span class="pill-field-hint">Letters and/or numbers printed on the pill</span>
       <input id="pill-imprint" type="text" name="imprint" value="{{ imprint or '' }}"
              placeholder="Enter imprint code (e.g., M367)">
     </label>
   </div>
 
-  <div class="pill-form-row pill-form-grid">
-    <label for="pill-shape">Shape
-      <select id="pill-shape" name="shape">
-        <option value="">Select shape</option>
-        {% for s in ['Round','Oval','Capsule','Rectangle','Diamond','Pentagon','Triangle','Figure 8','Bullet'] %}
-          <option value="{{ s }}" {% if s|lower == (shape or '')|lower %}selected{% endif %}>{{ s }}</option>
+  <div class="pill-form-row">
+    <div class="pill-field-label">Shape
+      <span class="pill-field-hint">Tap the closest match (optional)</span>
+      <div class="pill-shape-picker" role="radiogroup" aria-label="Pill shape">
+        {% set shape_options = [
+          ('Round',     'M14,4 a10,10 0 1,0 0.01,0'),
+          ('Oval',      'M2,12 a10,5 0 1,0 24,0 a10,5 0 1,0 -24,0'),
+          ('Capsule',   'M3,12 h22 a6,6 0 0,1 0,0 a6,6 0 0,1 -22,0 z M3,12 a6,6 0 0,1 22,0'),
+          ('Oblong',    'M2,12 a8,4 0 1,0 24,0 a8,4 0 1,0 -24,0'),
+          ('Rectangle', 'M3,8 h22 v8 h-22 z'),
+          ('Diamond',   'M14,3 l11,9 l-11,9 l-11,-9 z'),
+          ('Pentagon',  'M14,3 l11,7 l-4,12 h-14 l-4,-12 z'),
+          ('Triangle',  'M14,4 l11,17 h-22 z'),
+          ('Figure 8',  'M9,8 a4,4 0 1,0 0.01,0 z M19,16 a4,4 0 1,0 0.01,0 z'),
+          ('Bullet',    'M6,12 a8,6 0 0,1 16,0 v0 h-16 z'),
+        ] %}
+        {% for label, _path in shape_options %}
+          {% set is_sel = (label|lower == (shape or '')|lower) %}
+          <label class="pill-shape-chip{% if is_sel %} pill-shape-chip--selected{% endif %}">
+            <input type="radio" name="shape" value="{{ label }}" class="pill-shape-chip-input"
+                   {% if is_sel %}checked{% endif %}>
+            <svg class="pill-shape-icon" viewBox="0 0 28 24" aria-hidden="true">
+              <path d="{{ _path }}" fill="#e8eef7" stroke="#5a6b85" stroke-width="1.4"
+                    stroke-linejoin="round"/>
+            </svg>
+            <span class="pill-shape-chip-label">{{ label }}</span>
+          </label>
         {% endfor %}
-      </select>
-    </label>
-
-    <label for="pill-color">Color
-      <select id="pill-color" name="color">
-        <option value="">Select color</option>
-        {% for c in ['White','Yellow','Orange','Pink','Red','Brown','Gray','Green','Blue','Purple','Black','Turquoise'] %}
-          <option value="{{ c }}" {% if c|lower == (color or '')|lower %}selected{% endif %}>{{ c }}</option>
-        {% endfor %}
-      </select>
-    </label>
-
+      </div>
+    </div>
   </div>
 
   <div class="pill-form-row">
+    <div class="pill-field-label">Color
+      <span class="pill-field-hint">Tap the closest match (optional)</span>
+      <div class="pill-color-picker" role="radiogroup" aria-label="Pill color">
+        {% for c in ['White','Yellow','Orange','Pink','Red','Brown','Gray','Green','Blue','Purple','Black','Turquoise'] %}
+          {% set is_sel = (c|lower == (color or '')|lower) %}
+          <label class="pill-color-chip{% if is_sel %} pill-color-chip--selected{% endif %}">
+            <input type="radio" name="color" value="{{ c }}" class="pill-color-chip-input"
+                   {% if is_sel %}checked{% endif %}>
+            <span class="pill-color-swatch pill-color-swatch--{{ c|lower }}" aria-hidden="true"></span>
+            <span class="pill-color-chip-label">{{ c }}</span>
+          </label>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+
+  <div class="pill-form-row pill-form-actions">
     <button type="submit" class="btn btn-primary btn-large">Identify Pill</button>
+    {% if results is not none %}
+      <a href="{{ url_for('pill_identifier') }}" class="btn btn-secondary pill-form-reset">Clear / start over</a>
+    {% endif %}
   </div>
 </form>
 
@@ -114,7 +147,11 @@
                 <a href="{{ url_for('drug_class_page', slug=r.drug.drug_class.slug) }}">{{ r.drug.drug_class.name }}</a>
               </p>
             {% endif %}
-            <a href="{{ url_for('drug_detail', slug=r.drug.slug) }}" class="pill-card-link">Full drug info &rarr;</a>
+            <div class="pill-card-actions">
+              <a href="{{ url_for('drug_detail', slug=r.drug.slug) }}"
+                 class="btn btn-primary btn-small pill-card-identify-btn">Identify this pill</a>
+              <a href="{{ url_for('drug_detail', slug=r.drug.slug) }}" class="pill-card-link">Full drug info &rarr;</a>
+            </div>
           </div>
         </article>
       {% endfor %}
