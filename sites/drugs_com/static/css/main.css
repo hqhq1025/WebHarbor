@@ -4213,6 +4213,17 @@ html { scroll-behavior: smooth; }
 }
 .compare-form-optional { font-weight: 400; }
 .compare-form-submit { padding: 10px 24px; }
+.compare-ac-wrap { position: relative; }
+.compare-ac-drop {
+  position: absolute; top: 100%; left: 0; right: 0; z-index: 200;
+  background: #fff; border: 1px solid #c8d5e3; border-top: none;
+  border-radius: 0 0 4px 4px; box-shadow: 0 4px 12px rgba(0,0,0,.1);
+  max-height: 220px; overflow-y: auto;
+}
+.compare-ac-item {
+  padding: 8px 12px; font-size: 0.9rem; cursor: pointer; color: var(--gray-900);
+}
+.compare-ac-item:hover { background: var(--blue-light); color: var(--blue); }
 .compare-form-tip { font-size: 0.85rem; margin-top: 8px; }
 @media (max-width: 720px) {
   .compare-form-grid { grid-template-columns: 1fr; }

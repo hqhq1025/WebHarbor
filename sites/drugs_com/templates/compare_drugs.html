@@ -19,30 +19,71 @@
 
 <form action="{{ url_for('compare_drugs') }}" method="get" class="compare-form">
   <div class="compare-form-grid">
-    <div class="compare-form-field">
+    <div class="compare-form-field compare-ac-wrap">
       <label for="drug1">First drug</label>
-      <input list="drug-options" name="drug1" id="drug1" value="{{ drug1.generic_name if drug1 else '' }}"
-             placeholder="Type a drug name (e.g. ibuprofen)">
+      <input type="text" name="drug1" id="drug1" autocomplete="off"
+             value="{{ drug1.generic_name if drug1 else '' }}"
+             placeholder="Type a drug name (e.g. ibuprofen)" class="compare-ac-input">
+      <div class="compare-ac-drop" id="compare-ac-1" hidden></div>
     </div>
-    <div class="compare-form-field">
+    <div class="compare-form-field compare-ac-wrap">
       <label for="drug2">Second drug</label>
-      <input list="drug-options" name="drug2" id="drug2" value="{{ drug2.generic_name if drug2 else '' }}"
-             placeholder="Type a drug name (e.g. naproxen)">
+      <input type="text" name="drug2" id="drug2" autocomplete="off"
+             value="{{ drug2.generic_name if drug2 else '' }}"
+             placeholder="Type a drug name (e.g. naproxen)" class="compare-ac-input">
+      <div class="compare-ac-drop" id="compare-ac-2" hidden></div>
     </div>
-    <div class="compare-form-field">
+    <div class="compare-form-field compare-ac-wrap">
       <label for="drug3">Third drug <span class="muted compare-form-optional">(optional)</span></label>
-      <input list="drug-options" name="drug3" id="drug3" value="{{ drug3.generic_name if drug3 else '' }}"
-             placeholder="Type a drug name (e.g. aspirin)">
+      <input type="text" name="drug3" id="drug3" autocomplete="off"
+             value="{{ drug3.generic_name if drug3 else '' }}"
+             placeholder="Type a drug name (e.g. aspirin)" class="compare-ac-input">
+      <div class="compare-ac-drop" id="compare-ac-3" hidden></div>
     </div>
     <button type="submit" class="btn btn-primary compare-form-submit">Compare</button>
   </div>
-  <datalist id="drug-options">
-    {% for d in popular %}
-      <option value="{{ d.generic_name }}">{{ d.generic_name }}</option>
-    {% endfor %}
-  </datalist>
   <p class="muted compare-form-tip">Tip: type the generic name, e.g. <code>ibuprofen</code>, <code>naproxen</code>.</p>
 </form>
+<script>
+(function(){
+  function setupCompareAC(inputId, dropId){
+    var inp = document.getElementById(inputId);
+    var drop = document.getElementById(dropId);
+    if(!inp||!drop) return;
+    var timer=null;
+    function hide(){ drop.hidden=true; drop.innerHTML=''; }
+    inp.addEventListener('input', function(){
+      clearTimeout(timer);
+      var q = inp.value.trim();
+      if(q.length < 2){ hide(); return; }
+      timer = setTimeout(function(){
+        fetch('/api/autocomplete?q='+encodeURIComponent(q))
+          .then(function(r){ return r.json(); })
+          .then(function(data){
+            var drugs = (data||[]).filter(function(r){ return r.type !== 'condition'; }).slice(0,8);
+            if(!drugs.length){ hide(); return; }
+            var html='';
+            drugs.forEach(function(r){
+              html+='<div class="compare-ac-item" data-val="'+r.name.replace(/"/g,'&quot;')+'">'+r.label+'</div>';
+            });
+            drop.innerHTML=html; drop.hidden=false;
+            drop.querySelectorAll('.compare-ac-item').forEach(function(el){
+              el.addEventListener('mousedown',function(e){
+                e.preventDefault();
+                inp.value=el.getAttribute('data-val');
+                hide();
+              });
+            });
+          }).catch(hide);
+      }, 180);
+    });
+    inp.addEventListener('blur', function(){ setTimeout(hide, 200); });
+  }
+  setupCompareAC('drug1','compare-ac-1');
+  setupCompareAC('drug2','compare-ac-2');
+  setupCompareAC('drug3','compare-ac-3');
+})();
+</script>
 
 {% if selected_drugs|length >= 2 %}
   <h2>

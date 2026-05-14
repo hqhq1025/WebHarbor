@@ -13,8 +13,13 @@
 <div class="med-list-layout">
   <div class="med-list-main">
     {% if items %}
-    {% set rx_top = items|selectattr('drug.availability', 'equalto', 'Rx')|list|length %}
-    {% set otc_top = items|selectattr('drug.availability', 'equalto', 'OTC')|list|length %}
+    {% set ns_top = namespace(rx_top=0, otc_top=0) %}
+    {% for item in items %}
+      {% if 'Rx' in (item.drug.availability or '') %}{% set ns_top.rx_top = ns_top.rx_top + 1 %}{% endif %}
+      {% if 'OTC' in (item.drug.availability or '') %}{% set ns_top.otc_top = ns_top.otc_top + 1 %}{% endif %}
+    {% endfor %}
+    {% set rx_top = ns_top.rx_top %}
+    {% set otc_top = ns_top.otc_top %}
     <div class="med-stats-bar">
       <div class="med-stats-item">
         <span class="med-stats-num">{{ items|length }}</span>
@@ -44,8 +49,13 @@
     </form>
 
     {% if items %}
-    {% set rx_count = items|selectattr('drug.availability', 'equalto', 'Rx')|list|length %}
-    {% set otc_count = items|selectattr('drug.availability', 'equalto', 'OTC')|list|length %}
+    {% set ns = namespace(rx_count=0, otc_count=0) %}
+    {% for item in items %}
+      {% if 'Rx' in (item.drug.availability or '') %}{% set ns.rx_count = ns.rx_count + 1 %}{% endif %}
+      {% if 'OTC' in (item.drug.availability or '') %}{% set ns.otc_count = ns.otc_count + 1 %}{% endif %}
+    {% endfor %}
+    {% set rx_count = ns.rx_count %}
+    {% set otc_count = ns.otc_count %}
     {% set classes_seen = [] %}
     {% for item in items %}{% if item.drug.drug_class and item.drug.drug_class.name not in classes_seen %}{% set _ = classes_seen.append(item.drug.drug_class.name) %}{% endif %}{% endfor %}
 
