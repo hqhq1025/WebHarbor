@@ -4400,10 +4400,110 @@ def not_found(e):
 # ---------------------------------------------------------------------------
 # Bootstrap
 # ---------------------------------------------------------------------------
+_SUPPLEMENTAL_CONDITIONS = [
+    ("ocd", "Obsessive-Compulsive Disorder (OCD)", "OCD is a mental health disorder characterized by recurring unwanted thoughts (obsessions) and repetitive behaviors (compulsions)."),
+    ("ptsd", "Post-Traumatic Stress Disorder (PTSD)", "PTSD is a psychiatric disorder that may occur after experiencing or witnessing traumatic events."),
+    ("panic_disorder", "Panic Disorder", "Panic disorder involves recurrent, unexpected panic attacks and persistent concern about future attacks."),
+    ("social_anxiety", "Social Anxiety Disorder", "Social anxiety disorder is an intense, persistent fear of being watched and judged by others."),
+    ("pmdd", "Premenstrual Dysphoric Disorder (PMDD)", "PMDD is a severe form of premenstrual syndrome causing significant emotional and physical symptoms."),
+    ("neuropathic_pain", "Neuropathic Pain", "Neuropathic pain is chronic pain caused by damage or dysfunction of the nervous system."),
+    ("restless_legs", "Restless Legs Syndrome", "Restless legs syndrome is a condition causing an uncontrollable urge to move the legs, usually due to uncomfortable sensations."),
+    ("fibromyalgia", "Fibromyalgia", "Fibromyalgia is a chronic condition causing widespread pain, fatigue, and cognitive difficulties."),
+    ("urinary_tract_infection", "Urinary Tract Infection (UTI)", "UTIs are bacterial infections of the urinary tract, including the bladder and kidneys."),
+    ("pneumonia", "Pneumonia", "Pneumonia is an infection of the lungs caused by bacteria, viruses, or fungi."),
+    ("edema", "Edema", "Edema is swelling caused by excess fluid trapped in the body's tissues."),
+    ("atrial_fibrillation", "Atrial Fibrillation", "Atrial fibrillation is an irregular heart rhythm that can increase risk of stroke and heart failure."),
+    ("deep_vein_thrombosis", "Deep Vein Thrombosis (DVT)", "DVT is a blood clot that forms in a deep vein, usually in the legs."),
+    ("pulmonary_embolism", "Pulmonary Embolism", "Pulmonary embolism is a blockage in one of the pulmonary arteries, usually caused by blood clots."),
+    ("type1_diabetes", "Diabetes (Type 1)", "Type 1 diabetes is an autoimmune condition where the pancreas produces little or no insulin."),
+    ("weight_management", "Obesity / Weight Management", "Obesity management involves medical treatment to achieve and maintain a healthy body weight."),
+]
+
+_SUPPLEMENTAL_DRUG_CONDITIONS: list[tuple[str, str]] = [
+    ("sertraline", "ocd"),
+    ("sertraline", "ptsd"),
+    ("sertraline", "panic_disorder"),
+    ("sertraline", "social_anxiety"),
+    ("sertraline", "pmdd"),
+    ("fluoxetine", "ocd"),
+    ("fluoxetine", "panic_disorder"),
+    ("gabapentin", "neuropathic_pain"),
+    ("gabapentin", "restless_legs"),
+    ("gabapentin", "fibromyalgia"),
+    ("ciprofloxacin", "urinary_tract_infection"),
+    ("ciprofloxacin", "pneumonia"),
+    ("levofloxacin", "urinary_tract_infection"),
+    ("levofloxacin", "pneumonia"),
+    ("amoxicillin", "urinary_tract_infection"),
+    ("amoxicillin", "pneumonia"),
+    ("furosemide", "edema"),
+    ("furosemide", "atrial_fibrillation"),
+    ("warfarin", "atrial_fibrillation"),
+    ("warfarin", "deep_vein_thrombosis"),
+    ("warfarin", "pulmonary_embolism"),
+    ("semaglutide", "weight_management"),
+    ("semaglutide", "type1_diabetes"),
+    ("metformin", "obesity"),
+    ("alprazolam", "panic_disorder"),
+    ("alprazolam", "social_anxiety"),
+]
+
+
+def seed_supplemental():
+    """Add conditions and drug-condition links introduced after initial seeding.
+
+    Runs unconditionally on every boot; each insertion is gated by a slug/pair
+    existence check so the function is fully idempotent with no commits if
+    nothing has changed.
+    """
+    changed = False
+    existing_cond_slugs = {c.slug for c in Condition.query.all()}
+    for slug, name, desc in _SUPPLEMENTAL_CONDITIONS:
+        if slug not in existing_cond_slugs:
+            db.session.add(Condition(name=name, slug=slug, description=desc))
+            existing_cond_slugs.add(slug)
+            changed = True
+    if changed:
+        db.session.commit()
+        changed = False
+
+    cond_by_slug = {c.slug: c.id for c in Condition.query.all()}
+    drug_by_name = {d.generic_name: d for d in Drug.query.all()}
+    existing_pairs = {
+        (dc.drug_id, dc.condition_id)
+        for dc in DrugCondition.query.all()
+    }
+    # Collect desired slugs per drug from supplemental list
+    desired_slugs_per_drug: dict[str, list[str]] = {}
+    for drug_name, cond_slug in _SUPPLEMENTAL_DRUG_CONDITIONS:
+        desired_slugs_per_drug.setdefault(drug_name, []).append(cond_slug)
+
+    for drug_name, extra_slugs in desired_slugs_per_drug.items():
+        drug = drug_by_name.get(drug_name)
+        if not drug:
+            continue
+        # Add missing DrugCondition rows
+        for cond_slug in extra_slugs:
+            cond_id = cond_by_slug.get(cond_slug)
+            if cond_id and (drug.id, cond_id) not in existing_pairs:
+                db.session.add(DrugCondition(drug_id=drug.id, condition_id=cond_id))
+                existing_pairs.add((drug.id, cond_id))
+                changed = True
+        # Patch conditions_json so the drug detail page reflects all conditions
+        current = drug.conditions_list
+        merged = list(dict.fromkeys(current + extra_slugs))
+        if merged != current:
+            drug.conditions_json = json.dumps(merged)
+            changed = True
+    if changed:
+        db.session.commit()
+
+
 def init_app():
     with app.app_context():
         db.create_all()
         seed_database()
+        seed_supplemental()
 
 
 init_app()
