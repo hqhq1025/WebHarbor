@@ -735,9 +735,13 @@ a:hover { text-decoration: underline; color: var(--blue-mid); }
 /* ── Interaction checker ── */
 .checker-box { background: #fff; padding: 22px; border-radius: 6px; box-shadow: var(--shadow); border: 1px solid var(--border); }
 .checker-input { display: flex; gap: 10px; margin-bottom: 10px; }
-.checker-input input { flex: 1; padding: 10px 14px; border: 1px solid var(--gray-300); border-radius: 4px; font-size: 0.95rem; }
 .checker-input .add-btn { padding: 10px 22px; background: var(--blue); color: #fff; border: none; border-radius: 4px; font-weight: 600; cursor: pointer; }
 .checker-input .add-btn:hover { background: var(--blue-mid); }
+.checker-ac-wrap { position: relative; flex: 1; display: flex; gap: 10px; }
+.checker-ac-wrap input { flex: 1; padding: 10px 14px; border: 1px solid var(--gray-300); border-radius: 4px; font-size: 0.95rem; }
+.checker-ac-drop { position: absolute; top: 100%; left: 0; right: 0; z-index: 200; background: #fff; border: 1px solid #c8d5e3; border-top: none; border-radius: 0 0 4px 4px; box-shadow: 0 4px 12px rgba(0,0,0,.1); max-height: 220px; overflow-y: auto; }
+.checker-ac-item { padding: 8px 12px; font-size: 0.9rem; cursor: pointer; color: var(--gray-900); }
+.checker-ac-item:hover { background: var(--blue-light); color: var(--blue); }
 .checker-hint { color: var(--gray-500); font-size: 0.85rem; margin-bottom: 14px; }
 .checker-drug-list { list-style: none; margin-bottom: 14px; }
 .checker-drug-list li { padding: 8px 12px; background: var(--blue-light); border-radius: 4px; margin-bottom: 6px; display: flex; justify-content: space-between; align-items: center; font-size: 0.9rem; }

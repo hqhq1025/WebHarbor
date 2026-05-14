@@ -14,17 +14,10 @@
 <p class="lead">Use our drug interaction checker to find potentially harmful drug, food, and alcohol interactions.</p>
 
 <form method="post" action="{{ url_for('interaction_checker') }}" class="checker-box" id="checker-form">
-  <div class="checker-input">
+  <div class="checker-input checker-ac-wrap">
     <label for="drug-input" class="visually-hidden">Enter a drug name</label>
-    <input type="text" id="drug-input" placeholder="Enter a drug name" list="drug-suggestions" autocomplete="off">
-    <datalist id="drug-suggestions">
-      {% for d in drugs %}
-        <option value="{{ d.generic_name }}">{{ d.generic_name }}{% if d.brand_names %} (generic){% endif %}</option>
-        {% for brand in d.brand_names %}
-          <option value="{{ brand }}">{{ brand }} (brand for {{ d.generic_name }})</option>
-        {% endfor %}
-      {% endfor %}
-    </datalist>
+    <input type="text" id="drug-input" placeholder="Enter a drug name" autocomplete="off">
+    <div class="checker-ac-drop" id="checker-ac-drop" hidden></div>
     <button type="button" id="add-drug" class="add-btn">Add</button>
   </div>
 
@@ -286,9 +279,41 @@
     updateState();
   }
 
+  // Autocomplete
+  var acDrop = document.getElementById('checker-ac-drop');
+  var acTimer = null;
+  function acHide(){ acDrop.hidden = true; acDrop.innerHTML = ''; }
+  input.addEventListener('input', function(){
+    clearTimeout(acTimer);
+    var q = input.value.trim();
+    if(q.length < 2){ acHide(); return; }
+    acTimer = setTimeout(function(){
+      fetch('/api/autocomplete?q=' + encodeURIComponent(q))
+        .then(function(r){ return r.json(); })
+        .then(function(data){
+          var drugs = (data||[]).filter(function(r){ return r.type !== 'condition'; }).slice(0,8);
+          if(!drugs.length){ acHide(); return; }
+          var html = '';
+          drugs.forEach(function(r){
+            html += '<div class="checker-ac-item" data-val="' + r.name.replace(/"/g,'&quot;') + '">' + r.label + '</div>';
+          });
+          acDrop.innerHTML = html; acDrop.hidden = false;
+          acDrop.querySelectorAll('.checker-ac-item').forEach(function(el){
+            el.addEventListener('mousedown', function(e){
+              e.preventDefault();
+              input.value = el.getAttribute('data-val');
+              acHide();
+              addBtn.click();
+            });
+          });
+        }).catch(acHide);
+    }, 180);
+  });
+  input.addEventListener('blur', function(){ setTimeout(acHide, 200); });
+
   addBtn.addEventListener('click', function(){
     var v = input.value.trim();
-    if(v){ addDrug(v); input.value = ''; input.focus(); }
+    if(v){ addDrug(v); input.value = ''; acHide(); input.focus(); }
   });
 
   input.addEventListener('keydown', function(e){
