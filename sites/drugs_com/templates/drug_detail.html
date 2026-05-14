@@ -98,15 +98,6 @@
       <a href="#reviews" class="rating-num-count">({{ drug.review_count }} reviews)</a>
     </div>
     {% endif %}
-    <div class="drug-header-cta">
-      {% if current_user.is_authenticated %}
-        <button id="med-list-toggle-top" data-slug="{{ drug.slug }}" class="btn btn-cta-primary">
-          {% if saved %}&#10003; In My Med List &mdash; Remove{% else %}&#43; Add to My Med List{% endif %}
-        </button>
-      {% else %}
-        <a href="{{ url_for('login') }}" class="btn btn-cta-primary">&#43; Sign in to Add to My Med List</a>
-      {% endif %}
-    </div>
     <div class="reviewer-box">
       <span class="reviewer-avatar" aria-hidden="true">
         {%- set parts = (drug.reviewer_name or 'MD').split() -%}
@@ -331,218 +322,36 @@
       {% endif %}
 
       <section id="reviews">
-        <div class="reviews-heading">
-          <h2>User reviews for {{ drug.generic_name }}</h2>
-          <a href="{{ url_for('drug_reviews_page', slug=drug.slug) }}" class="reviews-view-all">View all reviews &rarr;</a>
+        <h2>User reviews for {{ drug.generic_name }}</h2>
+        {% if drug.avg_rating and drug.review_count %}
+        <div class="reviews-summary-compact">
+          <span class="reviews-score-big">{{ "%.1f"|format(drug.avg_rating) }}</span>
+          <span class="reviews-score-denom">/10</span>
+          <span class="reviews-score-count muted">&mdash; {{ drug.review_count }} ratings</span>
         </div>
-        <div class="reviews-summary">
-          <div class="reviews-summary-score">
-            <div class="reviews-summary-number">{{ drug.avg_rating }}<span class="reviews-summary-denominator"> / 10</span></div>
-            <div class="muted">{{ drug.review_count }} reviews</div>
-          </div>
-          <div class="reviews-distribution">
-            {% set total = drug.review_count or 1 %}
-            {% for score in range(10, 0, -1) %}
-              {% set count = rating_distribution[score] if rating_distribution else 0 %}
-              {% set pct = (count * 100 / total)|round(0, 'floor')|int %}
-              <div class="rating-row">
-                <span class="rating-row-label">{{ score }}</span>
-                <span class="rating-row-bar"><span class="rating-row-fill" style="width: {{ pct }}%"></span></span>
-                <span class="rating-row-count">{{ count }}</span>
-              </div>
-            {% endfor %}
-          </div>
-        </div>
-
-        <div class="reviews-actions">
-          {% if current_user.is_authenticated %}
-            <a href="#add-review" class="btn btn-primary">{{ 'Edit your review' if user_review else 'Add your review' }}</a>
-          {% else %}
-            <a href="{{ url_for('login') }}" class="btn btn-primary">Sign in to add your review</a>
-          {% endif %}
-        </div>
-
-        <div class="reviews-filter">
-          <select class="form-select" onchange="filterReviews(this.value)" id="condition-filter">
-            <option value="">All conditions</option>
-            {% for cond in reviews|map(attribute='condition_treated')|unique|list %}
-              {% if cond %}<option value="{{ cond }}">{{ cond|replace('_',' ')|replace('-',' ')|title }}</option>{% endif %}
-            {% endfor %}
-          </select>
-          <select class="form-select" onchange="sortReviews(this.value)" id="sort-select">
-            <option value="recent">Most recent</option>
-            <option value="helpful">Most helpful</option>
-            <option value="highest">Highest rated</option>
-            <option value="lowest">Lowest rated</option>
-          </select>
-        </div>
-
+        {% endif %}
         {% if reviews %}
-          <p class="muted reviews-preview-note">Showing {{ [reviews|length, 3]|min }} of {{ drug.review_count }} review{{ 's' if drug.review_count != 1 else '' }}. <a href="{{ url_for('drug_reviews_page', slug=drug.slug) }}">View all reviews &rarr;</a></p>
           <div class="reviews-list">
           {% for r in reviews[:3] %}
             {% set star5 = ((r.rating or 0) / 2)|round(0, 'floor')|int %}
-            {% set duration = r.duration_taken if r.duration_taken is defined else None %}
-            <article class="review review-card"
-                     data-condition="{{ r.condition_treated or '' }}"
-                     data-rating="{{ r.rating or 0 }}"
-                     data-helpful="{{ r.helpful_count or 0 }}"
-                     data-date="{{ r.created_at.strftime('%s') if r.created_at else 0 }}">
+            <article class="review review-card">
               <header class="review-header">
                 <span class="review-score">{{ r.rating }}/10</span>
-                <span class="review-stars" aria-label="{{ star5 }} out of 5 stars" title="{{ r.rating }}/10">
+                <span class="review-stars">
                   {% for s in range(1, 6) %}<span class="star {% if s <= star5 %}star-on{% else %}star-off{% endif %}">★</span>{% endfor %}
                 </span>
                 <strong>{{ r.title }}</strong>
-                <span class="muted">
-                  &mdash; {{ r.user.username if r.user else 'anon' }}
-                  on {{ r.created_at.strftime('%B %d, %Y') if r.created_at else '' }}
-                </span>
+                <span class="muted">&mdash; {{ r.user.username if r.user else 'anon' }}, {{ r.created_at.strftime('%B %d, %Y') if r.created_at else '' }}</span>
               </header>
-              <div class="review-tags">
-                {% if r.condition_treated %}<span class="review-tag">Condition: {{ r.condition_treated|replace('_',' ')|replace('-',' ')|title }}</span>{% endif %}
-                {% if duration %}<span class="review-tag">Took for: {{ duration }}</span>{% endif %}
-              </div>
+              {% if r.condition_treated %}<p class="review-condition muted">Condition: {{ r.condition_treated|replace('_',' ')|replace('-',' ')|title }}</p>{% endif %}
               <p>{{ r.body }}</p>
-              <div class="review-helpful muted" data-review-id="{{ r.id }}" data-slug="{{ drug.slug }}">
-                Was this review helpful?
-                <button type="button" class="btn btn-sm btn-outline review-helpful-yes">&#128077; Yes (<span class="review-helpful-count">{{ r.helpful_count or 0 }}</span>)</button>
-                <button type="button" class="btn btn-sm btn-outline review-helpful-no">&#128078; No</button>
-              </div>
             </article>
           {% endfor %}
           </div>
-          {% if drug.review_count and drug.review_count > 3 %}
-          <p class="reviews-see-more"><a href="{{ url_for('drug_reviews_page', slug=drug.slug) }}" class="btn btn-outline reviews-see-more-link">See all {{ drug.review_count }} reviews &rarr;</a></p>
-          {% endif %}
         {% else %}
-          <p class="muted">No reviews yet.</p>
+          <p class="muted">No reviews yet. Be the first to review {{ drug.generic_name }}.</p>
         {% endif %}
-
-        <script>
-        function filterReviews(condition) {
-            document.querySelectorAll('.review-card').forEach(card => {
-                const cond = card.dataset.condition || '';
-                card.style.display = (!condition || cond.toLowerCase() === condition.toLowerCase()) ? '' : 'none';
-            });
-        }
-        function sortReviews(order) {
-            const list = document.querySelector('.reviews-list');
-            if (!list) return;
-            const cards = Array.from(list.querySelectorAll('.review-card'));
-            cards.sort((a, b) => {
-                if (order === 'recent') return parseInt(b.dataset.date||0) - parseInt(a.dataset.date||0);
-                if (order === 'helpful') return parseInt(b.dataset.helpful||0) - parseInt(a.dataset.helpful||0);
-                if (order === 'highest') return parseInt(b.dataset.rating||0) - parseInt(a.dataset.rating||0);
-                if (order === 'lowest') return parseInt(a.dataset.rating||0) - parseInt(b.dataset.rating||0);
-                return 0;
-            });
-            cards.forEach(c => list.appendChild(c));
-        }
-        document.querySelectorAll('.review-helpful').forEach(box => {
-            const slug = box.dataset.slug;
-            const rid = box.dataset.reviewId;
-            const countEl = box.querySelector('.review-helpful-count');
-            const card = box.closest('.review-card');
-            function send(vote) {
-                const fd = new FormData(); fd.append('vote', vote);
-                fetch('/' + slug + '/review/' + rid + '/helpful', {method: 'POST', body: fd})
-                    .then(r => r.json()).then(data => {
-                        if (countEl) countEl.textContent = data.votes;
-                        if (card) card.dataset.helpful = data.votes;
-                    });
-            }
-            const yes = box.querySelector('.review-helpful-yes');
-            const no = box.querySelector('.review-helpful-no');
-            if (yes) yes.addEventListener('click', () => send('yes'));
-            if (no) no.addEventListener('click', () => send('no'));
-        });
-        </script>
-
-        {% if current_user.is_authenticated %}
-        <div id="add-review" class="review-form-box">
-          <h3>{{ 'Edit your review' if user_review else 'Add your review' }}</h3>
-          <form method="post" action="{{ url_for('submit_review', slug=drug.slug) }}" class="review-form">
-            {% set init_rating = user_review.rating if user_review else 7 %}
-            <label>Your rating: <span id="rating-display">{{ init_rating }}</span> / 10</label>
-            <div class="star-selector" id="star-selector">
-              {% for i in range(1, 11) %}
-                <span class="star-btn" data-value="{{ i }}" title="{{ i }}/10" role="button" tabindex="0">★</span>
-              {% endfor %}
-            </div>
-            <input type="hidden" name="rating" id="rating-input" value="{{ init_rating }}">
-
-            <label for="review-condition">Condition treated</label>
-            <input type="text" id="review-condition" name="condition_treated"
-                   value="{{ user_review.condition_treated if user_review else '' }}"
-                   placeholder="e.g. Pain, Headache, Anxiety" maxlength="100" />
-
-            <label for="review-duration">How long did you take this medication?</label>
-            <select id="review-duration" name="duration_taken" class="form-select">
-              {% set cur_dur = (user_review.duration_taken if (user_review and user_review.duration_taken is defined) else '') %}
-              <option value="" {% if not cur_dur %}selected{% endif %}>Select duration</option>
-              {% for opt in ['Less than 1 month', '1-6 months', '6 months to 1 year', '1-2 years', 'More than 2 years'] %}
-                <option value="{{ opt }}" {% if cur_dur == opt %}selected{% endif %}>{{ opt }}</option>
-              {% endfor %}
-            </select>
-
-            <label for="review-title">Title</label>
-            <input type="text" id="review-title" name="title"
-                   value="{{ user_review.title if user_review else '' }}"
-                   placeholder="Summarize your experience" maxlength="200" />
-
-            <label for="review-body">Your review</label>
-            <textarea id="review-body" name="body" rows="5" maxlength="1000"
-                      placeholder="Share details of your experience with this medicine">{{ user_review.body if user_review else '' }}</textarea>
-            <div class="char-count muted"><span id="review-body-count">0</span>/1000 characters</div>
-
-            <div class="review-form-actions">
-              <button type="submit" class="btn btn-primary">{{ 'Update review' if user_review else 'Submit review' }}</button>
-              <a href="{{ url_for('drug_reviews_page', slug=drug.slug) }}" class="review-form-all-link">Read all {{ drug.review_count }} reviews &rarr;</a>
-            </div>
-          </form>
-          <script>
-          (function() {
-            const selector = document.getElementById('star-selector');
-            const input = document.getElementById('rating-input');
-            const display = document.getElementById('rating-display');
-            if (selector && input) {
-              const stars = selector.querySelectorAll('.star-btn');
-              function paint(val) {
-                stars.forEach(s => {
-                  const v = parseInt(s.dataset.value, 10);
-                  s.classList.toggle('star-on', v <= val);
-                  s.classList.toggle('star-off', v > val);
-                });
-              }
-              function setVal(v) {
-                input.value = v;
-                if (display) display.textContent = v;
-                paint(v);
-              }
-              stars.forEach(s => {
-                s.addEventListener('mouseenter', () => paint(parseInt(s.dataset.value, 10)));
-                s.addEventListener('click', () => setVal(parseInt(s.dataset.value, 10)));
-                s.addEventListener('keydown', (e) => {
-                  if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setVal(parseInt(s.dataset.value, 10)); }
-                });
-              });
-              selector.addEventListener('mouseleave', () => paint(parseInt(input.value, 10) || 0));
-              setVal(parseInt(input.value, 10) || 0);
-            }
-            const body = document.getElementById('review-body');
-            const count = document.getElementById('review-body-count');
-            if (body && count) {
-              const update = () => { count.textContent = body.value.length; };
-              body.addEventListener('input', update);
-              update();
-            }
-          })();
-          </script>
-        </div>
-        {% else %}
-        <p class="muted"><a href="{{ url_for('login') }}">Sign in</a> to add your review.</p>
-        {% endif %}
+        <p><a href="{{ url_for('drug_reviews_page', slug=drug.slug) }}" class="btn btn-outline">Read all {{ drug.review_count or 0 }} user reviews &rarr;</a></p>
       </section>
     </div>
 
