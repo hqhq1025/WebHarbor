@@ -392,9 +392,10 @@ DRUGS_DATA = [
     ("tamsulosin", "Alpha blockers", "Rx", "Not a controlled drug", "tam-SOO-loe-sin", ["Flomax"], ["bph"]),
     ("doxazosin", "Alpha blockers", "Rx", "Not a controlled drug", "dox-AY-zoe-sin", ["Cardura"], ["hypertension", "bph"]),
     ("diclofenac", "Nonsteroidal anti-inflammatory drugs", "Rx and/or OTC", "Not a controlled drug", "dye-KLOE-fen-ak", ["Voltaren", "Cataflam", "Cambia"], ["pain", "arthritis"]),
-    ("memantine", "NMDA receptor antagonists", "Rx", "Not a controlled drug", "me-MAN-teen", ["Namenda", "Namenda XR"], ["dementia"]),
-    ("naltrexone", "Opioid antagonists", "Rx", "Not a controlled drug", "nal-TREX-one", ["Vivitrol", "ReVia"], ["addiction"]),
+    ("memantine", "NMDA receptor antagonists", "Rx", "Not a controlled drug", "me-MAN-teen", ["Namenda", "Namenda XR"], ["dementia", "alzheimers"]),
+    ("naltrexone", "Opioid antagonists", "Rx", "Not a controlled drug", "nal-TREX-one", ["Vivitrol", "ReVia"], ["addiction", "opioid_dependence"]),
     ("trimethoprim", "Antibiotics", "Rx", "Not a controlled drug", "trye-METH-oh-prim", ["Primsol", "Proloprim"], ["bacterial_infections"]),
+    ("lecanemab", "Amyloid beta-directed antibodies", "Rx", "Not a controlled drug", "le-KAN-e-mab", ["Leqembi"], ["alzheimers"]),
     ("hydroxychloroquine", "Antimalarials", "Rx", "Not a controlled drug", "hye-drox-ee-KLOR-oh-kwin", ["Plaquenil"], ["lupus", "arthritis"]),
     ("methotrexate", "Antimetabolites", "Rx", "Not a controlled drug", "meth-oh-TREX-ate", ["Trexall", "Otrexup"], ["arthritis", "psoriasis", "cancer"]),
     ("adalimumab", "TNF inhibitors", "Rx", "Not a controlled drug", "a-da-LIM-ue-mab", ["Humira"], ["arthritis", "crohns_disease", "psoriasis"]),
@@ -646,6 +647,9 @@ CONDITIONS_DATA = [
     ("blood_clots", "Blood Clots (Thrombosis)", "Blood clots can block veins or arteries and cause serious complications such as stroke or pulmonary embolism."),
     ("anemia", "Anemia", "Anemia is a condition in which the blood lacks enough healthy red blood cells to carry oxygen."),
     ("vitamin_deficiency", "Vitamin Deficiency", "Vitamin deficiencies occur when the body lacks sufficient amounts of essential vitamins."),
+    ("dementia", "Dementia / Alzheimer's Disease", "Dementia is a general term for a decline in mental ability severe enough to interfere with daily life. Alzheimer's disease is the most common cause."),
+    ("addiction", "Substance Use Disorder / Addiction", "Addiction is a chronic disorder involving compulsive substance use despite harmful consequences."),
+    ("alzheimers", "Alzheimer's Disease", "Alzheimer's disease is a progressive neurological disorder that causes the brain to shrink and brain cells to die."),
 ]
 
 
