@@ -431,7 +431,7 @@ DRUGS_DATA = [
     ("glipizide", "Sulfonamides", "Rx", "Not a controlled drug", "GLIP-i-zide", ["Glucotrol"], ["diabetes"]),
     ("pravastatin", "Statins", "Rx", "Not a controlled drug", "PRA-va-sta-tin", ["Pravachol"], ["high_cholesterol"]),
     ("simvastatin", "Statins", "Rx", "Not a controlled drug", "SIM-va-sta-tin", ["Zocor"], ["high_cholesterol"]),
-    ("ezetimibe", "Statins", "Rx", "Not a controlled drug", "ez-ET-i-mibe", ["Zetia"], ["high_cholesterol"]),
+    ("ezetimibe", "Cholesterol absorption inhibitors", "Rx", "Not a controlled drug", "ez-ET-i-mibe", ["Zetia"], ["high_cholesterol"]),
     ("valsartan", "ARBs", "Rx", "Not a controlled drug", "val-SAR-tan", ["Diovan"], ["hypertension", "heart_disease"]),
     ("olmesartan", "ARBs", "Rx", "Not a controlled drug", "ole-me-SAR-tan", ["Benicar"], ["hypertension"]),
     ("irbesartan", "ARBs", "Rx", "Not a controlled drug", "ir-be-SAR-tan", ["Avapro"], ["hypertension"]),
