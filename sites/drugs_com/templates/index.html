@@ -261,10 +261,9 @@ function scrollCarousel(dir) {
     <div class="is-234">
       {% for d, img in image_samples %}
       <a class="is-235" href="{{ url_for('drug_images', slug=d.slug) }}">
-        <svg class="is-236" viewBox="0 0 120 60" width="140" height="70" xmlns="http://www.w3.org/2000/svg">
-          <ellipse cx="60" cy="30" rx="50" ry="22" fill="#fce6ec" stroke="#b8526a" stroke-width="1.5"/>
-          <text x="60" y="35" text-anchor="middle" font-size="12" fill="#333" font-family="sans-serif">{{ img.imprint or '' }}</text>
-        </svg>
+        <div class="is-236-wrap">
+          {{ render_pill('home-img-' ~ loop.index, img.shape or 'oval', img.color or 'white', img.imprint or '') }}
+        </div>
         <div class="is-237">{{ d.generic_name|capitalize }}</div>
         {% if img.shape or img.color %}
         <div class="muted is-238">

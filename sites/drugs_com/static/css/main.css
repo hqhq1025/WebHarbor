@@ -5764,6 +5764,19 @@ html { scroll-behavior: smooth; }
 .is-236 {
   margin-bottom:8px;
 }
+.is-236-wrap {
+  margin-bottom:8px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  height:80px;
+}
+.is-236-wrap .pill-svg {
+  max-width:140px;
+  max-height:75px;
+  width:100%;
+  height:auto;
+}
 .is-237 {
   font-weight:600;
   font-size:0.95rem;
