@@ -3020,7 +3020,7 @@ def seed_benchmark_users():
 
 def seed_extra_reviews():
     """Add ~50 additional reviews across drugs from auto-generated reviewer users."""
-    if DrugReview.query.count() >= 100:
+    if DrugReview.query.count() >= 60:
         return
     # Create some anonymous reviewer users if not present
     reviewers = []
