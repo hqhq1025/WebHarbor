@@ -1181,6 +1181,21 @@ def truncate(text, n=2400):
     return text if len(text) <= n else text[:n].rsplit(" ", 1)[0] + "..."
 
 
+def _trunc_at_sentence(text, max_chars=600):
+    """Truncate text at the last sentence boundary within max_chars."""
+    if not text:
+        return text
+    text = str(text).strip()
+    if len(text) <= max_chars:
+        return text
+    chunk = text[:max_chars]
+    for sep in (". ", "! ", "? "):
+        pos = chunk.rfind(sep)
+        if pos > max_chars // 3:
+            return chunk[:pos + 1]
+    return chunk.rsplit(" ", 1)[0] + "..."
+
+
 def synthetic_content(generic, cls_name, conditions):
     """Generate realistic synthetic content when OpenFDA isn't available."""
     cond_text = ", ".join(conditions) if conditions else "various medical conditions"
@@ -3281,9 +3296,9 @@ def seed_drugs():
             adv = ov.get("side_effects", adv)
 
         faq = [
-            {"q": f"What is {gname} used for?", "a": (uses or "")[:400] or f"{gname} is used to treat {', '.join(conds) if conds else 'various medical conditions'}."},
-            {"q": f"How should I take {gname}?", "a": (dose or "")[:400] or f"Take {gname} exactly as prescribed by your doctor."},
-            {"q": f"What are the most common side effects of {gname}?", "a": (adv or "")[:400] or "Common side effects vary; consult the side effects section above."},
+            {"q": f"What is {gname} used for?", "a": _trunc_at_sentence(uses) or f"{gname} is used to treat {', '.join(conds) if conds else 'various medical conditions'}."},
+            {"q": f"How should I take {gname}?", "a": _trunc_at_sentence(dose) or f"Take {gname} exactly as prescribed by your doctor."},
+            {"q": f"What are the most common side effects of {gname}?", "a": _trunc_at_sentence(adv) or "Common side effects vary; consult the side effects section above."},
             {"q": f"Can I drink alcohol while taking {gname}?", "a": "Talk with your doctor or pharmacist about whether alcohol is safe to consume while on this medication. Alcohol can worsen side effects of many drugs."},
             {"q": f"Is {gname} safe during pregnancy?", "a": "Discuss with your doctor before using this medication if you are pregnant, planning pregnancy, or breastfeeding."},
         ]
