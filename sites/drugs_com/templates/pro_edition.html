@@ -51,23 +51,112 @@
   <h2 class="is-064">Professional Resources</h2>
   <p class="pro-subtitle muted">Clinical decision support tools and reference databases.</p>
   <div class="pro-resource-grid is-367">
-    <a class="is-368" href="{{ url_for('interaction_checker') }}">
+    <a class="pro-resource-card is-368" href="{{ url_for('interaction_checker') }}">
+      <div class="pro-resource-icon" aria-hidden="true">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 4v6a5 5 0 0 0 10 0V4"/><path d="M5 4h4"/><path d="M15 4h4"/><circle cx="12" cy="17" r="4"/></svg>
+      </div>
       <h4 class="is-369">Drug Interaction Checker Pro</h4>
       <p class="muted is-370">Screen multi-drug regimens with severity classification.</p>
     </a>
-    <a class="is-368" href="{{ url_for('news_category', category='fda-alerts') }}">
+    <a class="pro-resource-card is-368" href="{{ url_for('news_category', category='fda-alerts') }}">
+      <div class="pro-resource-icon" aria-hidden="true">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+      </div>
       <h4 class="is-369">FDA Drug Safety Communications</h4>
       <p class="muted is-370">Current alerts, boxed warnings, and label changes.</p>
     </a>
-    <a class="is-368" href="{{ url_for('drug_az') }}">
+    <a class="pro-resource-card is-368" href="{{ url_for('drug_az') }}">
+      <div class="pro-resource-icon" aria-hidden="true">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+      </div>
       <h4 class="is-369">Prescribing Reference</h4>
       <p class="muted is-370">A-Z monograph library with full prescribing information.</p>
     </a>
-    <a class="is-368" href="#clinical-calculators">
+    <a class="pro-resource-card is-368" href="#clinical-calculators">
+      <div class="pro-resource-icon" aria-hidden="true">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="2" width="16" height="20" rx="2"/><line x1="8" y1="6" x2="16" y2="6"/><line x1="8" y1="10" x2="10" y2="10"/><line x1="12" y1="10" x2="14" y2="10"/><line x1="16" y1="10" x2="16" y2="10"/><line x1="8" y1="14" x2="10" y2="14"/><line x1="12" y1="14" x2="14" y2="14"/><line x1="16" y1="14" x2="16" y2="14"/><line x1="8" y1="18" x2="10" y2="18"/><line x1="12" y1="18" x2="14" y2="18"/></svg>
+      </div>
       <h4 class="is-369">Clinical Calculators</h4>
       <p class="muted is-370">BMI, CrCl, IBW/ABW, and BSA bedside tools.</p>
     </a>
+    <a class="pro-resource-card is-368" href="{{ url_for('pill_identifier') }}">
+      <div class="pro-resource-icon" aria-hidden="true">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.5 20.5 3.5 13.5a5 5 0 0 1 7-7l7 7a5 5 0 0 1-7 7z"/><line x1="8.5" y1="8.5" x2="15.5" y2="15.5"/></svg>
+      </div>
+      <h4 class="is-369">Pill Identifier</h4>
+      <p class="muted is-370">Identify tablets and capsules by imprint, shape, and color.</p>
+    </a>
+    <a class="pro-resource-card is-368" href="{{ url_for('drug_classes_list') }}">
+      <div class="pro-resource-icon" aria-hidden="true">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3h7v7H3z"/><path d="M14 3h7v7h-7z"/><path d="M3 14h7v7H3z"/><path d="M14 14h7v7h-7z"/></svg>
+      </div>
+      <h4 class="is-369">Drug Class Reference</h4>
+      <p class="muted is-370">Mechanism of action, members, and class-level warnings.</p>
+    </a>
+    <a class="pro-resource-card is-368" href="{{ url_for('conditions_list') }}">
+      <div class="pro-resource-icon" aria-hidden="true">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+      </div>
+      <h4 class="is-369">Conditions &amp; Treatments</h4>
+      <p class="muted is-370">Browse therapeutic options by indication.</p>
+    </a>
+    <a class="pro-resource-card is-368" href="{{ url_for('news_index') }}">
+      <div class="pro-resource-icon" aria-hidden="true">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 22h16a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2H8a2 2 0 0 0-2 2v16a2 2 0 0 1-2 2zm0 0a2 2 0 0 1-2-2v-9c0-1.1.9-2 2-2h2"/><path d="M18 14h-8"/><path d="M15 18h-5"/><path d="M10 6h8v4h-8V6z"/></svg>
+      </div>
+      <h4 class="is-369">Medical News &amp; Approvals</h4>
+      <p class="muted is-370">New approvals, label changes, and clinical updates.</p>
+    </a>
   </div>
+</section>
+
+<section class="pro-section account-box is-362">
+  <h2 class="is-064">What's Included in Pro Edition</h2>
+  <p class="pro-subtitle muted">Curated for clinical practice and prescriber workflows.</p>
+  <ul class="pro-features-grid">
+    <li class="pro-feature">
+      <span class="pro-feature-check" aria-hidden="true">&check;</span>
+      <div>
+        <strong>Professional Drug Monographs</strong>
+        <p class="muted">Pharmacology, pharmacokinetics, contraindications, adverse reactions, and full prescribing information.</p>
+      </div>
+    </li>
+    <li class="pro-feature">
+      <span class="pro-feature-check" aria-hidden="true">&check;</span>
+      <div>
+        <strong>FDA Package Inserts</strong>
+        <p class="muted">Approved labeling, boxed warnings, REMS programs, and indication updates.</p>
+      </div>
+    </li>
+    <li class="pro-feature">
+      <span class="pro-feature-check" aria-hidden="true">&check;</span>
+      <div>
+        <strong>Clinical Pharmacology</strong>
+        <p class="muted">Mechanism of action, metabolism, half-life, and protein binding for evidence-based decisions.</p>
+      </div>
+    </li>
+    <li class="pro-feature">
+      <span class="pro-feature-check" aria-hidden="true">&check;</span>
+      <div>
+        <strong>Dosing Calculators</strong>
+        <p class="muted">Weight-based dosing, renal adjustment, BMI, CrCl, IBW/ABW, and BSA at the bedside.</p>
+      </div>
+    </li>
+    <li class="pro-feature">
+      <span class="pro-feature-check" aria-hidden="true">&check;</span>
+      <div>
+        <strong>Drug-Drug Interaction Screening</strong>
+        <p class="muted">Severity classification with clinical management recommendations.</p>
+      </div>
+    </li>
+    <li class="pro-feature">
+      <span class="pro-feature-check" aria-hidden="true">&check;</span>
+      <div>
+        <strong>Pregnancy &amp; Lactation</strong>
+        <p class="muted">Risk categories and lactation considerations for prescribing decisions.</p>
+      </div>
+    </li>
+  </ul>
 </section>
 
 <div class="account-grid is-371">

@@ -1559,16 +1559,46 @@ def seed_database():
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
+_SEARCH_ALIASES: dict[str, list[str]] = {
+    "antibiotics": ["antibiotic", "antibacterial", "antimicrobial"],
+    "antibiotic":  ["antibiotics", "antibacterial", "antimicrobial"],
+    "antifungals": ["antifungal"],
+    "antifungal":  ["antifungals"],
+    "antidepressants": ["antidepressant"],
+    "antidepressant":  ["antidepressants"],
+    "antipsychotics":  ["antipsychotic"],
+    "antipsychotic":   ["antipsychotics"],
+    "blood pressure":  ["antihypertensive", "hypertension"],
+    "diabetes":        ["antidiabetic", "hypoglycemic"],
+    "pain":            ["analgesic", "nsaid", "opioid"],
+    "cholesterol":     ["statin", "lipid"],
+    "anxiety":         ["anxiolytic", "benzodiazepine"],
+    "seizures":        ["anticonvulsant", "antiepileptic"],
+    "steroids":        ["corticosteroid", "glucocorticoid"],
+}
+
+
 def tokenize(q):
     if not q:
         return []
     return [t.lower() for t in re.split(r"\W+", q) if t]
 
 
+def _expand_tokens(tokens: list[str]) -> list[str]:
+    expanded = list(tokens)
+    for t in tokens:
+        for alias in _SEARCH_ALIASES.get(t, []):
+            if alias not in expanded:
+                expanded.append(alias)
+    return expanded
+
+
 def score_drug(drug, tokens):
     class_name = drug.drug_class.name if drug.drug_class else ""
-    text = f"{drug.generic_name} {drug.brand_names_json} {class_name} {drug.uses or ''} {drug.description or ''}".lower()
-    return sum(1 for t in tokens if t in text)
+    class_desc = drug.drug_class.description if drug.drug_class else ""
+    text = f"{drug.generic_name} {drug.brand_names_json} {class_name} {class_desc} {drug.uses or ''} {drug.description or ''}".lower()
+    expanded = _expand_tokens(tokens)
+    return sum(1 for t in expanded if t in text)
 
 
 @app.template_filter('pill_image_exists')
