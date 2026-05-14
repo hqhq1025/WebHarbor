@@ -3453,8 +3453,8 @@ def seed_benchmark_users():
 
 
 def seed_extra_reviews():
-    """Add ~50 additional reviews across drugs from auto-generated reviewer users."""
-    if DrugReview.query.count() >= 60:
+    """Add reviews across all popular drugs from auto-generated reviewer users."""
+    if DrugReview.query.count() >= 300:
         return
     # Create some anonymous reviewer users if not present
     reviewers = []
@@ -3509,9 +3509,7 @@ def seed_extra_reviews():
                 created_at=datetime.utcnow() - timedelta(days=(i * 4 + j)),
             ))
             count += 1
-            if count >= 200:
-                break
-        if count >= 55:
+        if count >= 800:
             break
     db.session.commit()
 

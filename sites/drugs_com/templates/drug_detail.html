@@ -421,7 +421,8 @@
           {% endfor %}
         </div>
         {% if drug.drug_class %}
-        <p class="related-drugs-more"><a href="{{ url_for('drug_class_page', slug=drug.drug_class.slug) }}">See all {{ drug.drug_class.name }} drugs &rsaquo;</a></p>
+        {% set _class_name_lc = drug.drug_class.name | lower %}
+        <p class="related-drugs-more"><a href="{{ url_for('drug_class_page', slug=drug.drug_class.slug) }}">See all {{ drug.drug_class.name }}{% if not 'drug' in _class_name_lc %} drugs{% endif %} &rsaquo;</a></p>
         {% endif %}
       </section>
       {% endif %}
