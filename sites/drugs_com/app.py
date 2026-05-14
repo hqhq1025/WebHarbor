@@ -5310,7 +5310,23 @@ def compare_drugs():
         if not drug:
             return "—"
         shapes = {img.shape for img in drug.images if img.shape}
-        return ", ".join(sorted(shapes)) if shapes else "Tablet"
+        if shapes:
+            return ", ".join(sorted(shapes))
+        dc = (drug.drug_class.name if drug.drug_class else "").lower()
+        gn = drug.generic_name.lower()
+        if "glp-1" in dc or "glucagon-like" in dc or gn in ("semaglutide", "liraglutide", "tirzepatide"):
+            return "subcutaneous injection"
+        if "insulin" in dc or "insulin" in gn:
+            return "subcutaneous injection"
+        if "monoclonal" in dc or "biologic" in dc or gn in ("adalimumab", "rituximab", "dupilumab", "enoxaparin"):
+            return "injection"
+        if "inhal" in dc or "bronchodilator" in dc or gn in ("fluticasone", "tiotropium", "salmeterol", "budesonide", "ipratropium"):
+            return "inhalation aerosol/powder"
+        if "ophthalm" in dc or gn in ("bimatoprost", "latanoprost", "timolol ophthalmic", "brimonidine"):
+            return "ophthalmic solution"
+        if "retinoid" in dc or gn in ("tretinoin", "isotretinoin", "adapalene"):
+            return "cream, gel"
+        return "Tablet"
 
     # Support both ?drug1=X&drug2=Y and ?drugs=X&drugs=Y formats
     drugs_list = request.args.getlist("drugs")
