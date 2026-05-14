@@ -96,15 +96,15 @@
               <a href="{{ url_for('conditions_list') }}">Conditions A-Z</a>
               <a href="{{ url_for('drug_classes_list') }}">Drug Classes</a>
               <a href="{{ url_for('drug_az') }}">Drugs A-Z</a>
-              <a href="{{ url_for('news_index') }}">FDA Alerts</a>
+              <a href="/fda-alerts">FDA Alerts</a>
             </div>
             <div>
               <div class="is-033">Checkers &amp; Tools</div>
               <a href="{{ url_for('symptom_checker') }}">Symptom Checker</a>
               <a href="{{ url_for('side_effects_page') }}">Side Effects Checker</a>
               <a href="{{ url_for('warnings_index') }}">Drug Warnings</a>
-              <a href="{{ url_for('search') }}?q=dosage">Dosage Guide</a>
-              <a href="{{ url_for('search') }}?q=pregnancy">Pregnancy Safety</a>
+              <a href="{{ url_for('drug_az') }}">Dosage Guide</a>
+              <a href="{{ url_for('search') }}?q=pregnancy+warnings">Pregnancy Safety</a>
               <a href="{{ url_for('contact') }}">Emergency Info</a>
             </div>
           </div>

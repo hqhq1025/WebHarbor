@@ -5599,8 +5599,8 @@ def news_article(article_id):
     return render_template("news_article.html", article=article, related=related)
 
 
-@app.route("/news/<category>")
 @app.route("/news/category/<category>")
+@app.route("/news/<category>")
 @app.route("/new-drug-approvals", defaults={"category": "new-drug-approvals"})
 @app.route("/fda-alerts", defaults={"category": "fda-alerts"})
 @app.route("/clinical-trials", defaults={"category": "clinical-trials"})
@@ -5791,9 +5791,9 @@ SYMPTOM_CONDITION_MAP = {
 }
 
 
-@app.route("/symptom-checker", methods=["GET", "POST"])
-@app.route("/symptom-checker.html", methods=["GET", "POST"])
 @app.route("/symptom_checker.html", methods=["GET", "POST"])
+@app.route("/symptom-checker.html", methods=["GET", "POST"])
+@app.route("/symptom-checker", methods=["GET", "POST"])
 def symptom_checker():
     """Symptom checker: pick symptoms grouped by body system, see possible conditions.
 
@@ -6115,10 +6115,10 @@ def side_effects_page():
     )
 
 
+@app.route("/boxed-warnings")
 @app.route("/warnings/")
 @app.route("/blackbox-warnings")
 @app.route("/black-box-warnings")
-@app.route("/boxed-warnings")
 def warnings_index():
     category = (request.args.get("category") or "all").lower()
     drugs_with_warnings = Drug.query.filter(Drug.warnings.isnot(None)).order_by(Drug.generic_name).limit(50).all()
