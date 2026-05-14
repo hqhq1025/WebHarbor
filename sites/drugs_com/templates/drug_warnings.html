@@ -69,7 +69,7 @@
       {% endif %}
     </section>
     {% endfor %}
-  {% else %}
+  {% elif not boxed_warning %}
     <section>
       <h2>Warnings</h2>
       <p>No specific warnings have been recorded for {{ drug.generic_name }}. Always consult your healthcare provider before starting or stopping any medication.</p>

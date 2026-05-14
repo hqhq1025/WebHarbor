@@ -6612,7 +6612,8 @@ def drug_warnings(slug):
     general = []
     for p in paragraphs:
         pl = p.lower()
-        if boxed_warning and p in boxed_warning:
+        # Skip only the exact boxed-warning text; let categorized detail through.
+        if boxed_warning and (p == boxed_warning or p == text.strip()):
             continue
         placed = False
         for name, kws in categories:
