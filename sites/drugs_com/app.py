@@ -3493,9 +3493,7 @@ def seed_benchmark_users():
 
 def seed_extra_reviews():
     """Add reviews across all popular drugs from auto-generated reviewer users."""
-    if DrugReview.query.count() >= 2400:
-        return
-    # Create some anonymous reviewer users if not present
+    # Create reviewer users first (needed to check existing pairs)
     reviewers = []
     for i in range(8):
         email = f"reviewer{i}@example.com"
@@ -3506,6 +3504,14 @@ def seed_extra_reviews():
             db.session.add(u)
             db.session.flush()
         reviewers.append(u)
+    reviewer_ids = {u.id for u in reviewers}
+    if DrugReview.query.filter(DrugReview.user_id.in_(reviewer_ids)).count() >= 700:
+        return
+    # Pre-load existing (drug_id, user_id) pairs to avoid duplicates
+    existing_pairs = {
+        (r.drug_id, r.user_id)
+        for r in DrugReview.query.filter(DrugReview.user_id.in_(reviewer_ids)).all()
+    }
     popular = ["ibuprofen", "metformin", "lisinopril", "sertraline", "atorvastatin",
                "amoxicillin", "levothyroxine", "alprazolam", "gabapentin", "omeprazole",
                "semaglutide", "fluoxetine", "amlodipine", "tramadol", "zolpidem",
@@ -3570,6 +3576,8 @@ def seed_extra_reviews():
             # Offset by 5 so reviewer_N templates don't duplicate benchmark user reviews
             tmpl = REVIEW_TEMPLATES[(i + j + 5) % len(REVIEW_TEMPLATES)]
             u = reviewers[(i + j) % len(reviewers)]
+            if (d.id, u.id) in existing_pairs:
+                continue
             db.session.add(DrugReview(
                 drug_id=d.id, user_id=u.id, rating=tmpl[1],
                 title=tmpl[0], body=tmpl[2].format(cond=_humanize_cond(conds[j % len(conds)])),
