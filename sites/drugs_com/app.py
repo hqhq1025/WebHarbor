@@ -3858,7 +3858,7 @@ def news_category(category):
     if not cat:
         abort(404)
     articles = NewsArticle.query.filter_by(category=cat).order_by(NewsArticle.published_at.desc()).all()
-    categories = list(cat_map.values())
+    categories = list(dict.fromkeys(cat_map.values()))
     fda_alerts = NewsArticle.query.filter(
         NewsArticle.category.in_(["FDA Alerts", "Safety"])
     ).order_by(NewsArticle.published_at.desc()).limit(4).all()
