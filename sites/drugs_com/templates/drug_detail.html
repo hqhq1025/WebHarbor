@@ -472,7 +472,10 @@
                       placeholder="Share details of your experience with this medicine">{{ user_review.body if user_review else '' }}</textarea>
             <div class="char-count muted"><span id="review-body-count">0</span>/1000 characters</div>
 
-            <button type="submit" class="btn btn-primary">{{ 'Update review' if user_review else 'Submit review' }}</button>
+            <div class="review-form-actions">
+              <button type="submit" class="btn btn-primary">{{ 'Update review' if user_review else 'Submit review' }}</button>
+              <a href="{{ url_for('drug_reviews_page', slug=drug.slug) }}" class="review-form-all-link">Read all {{ drug.review_count }} reviews &rarr;</a>
+            </div>
           </form>
           <script>
           (function() {
@@ -599,6 +602,17 @@
         </a>
         {% endif %}
       </div>
+
+      {% if drug_conditions %}
+      <div class="sidebar-box conditions-treated-box">
+        <h3>Conditions treated by {{ drug.generic_name|capitalize }}</h3>
+        <ul class="conditions-treated-list">
+          {% for c in drug_conditions %}
+            <li><a href="{{ url_for('condition_page', slug=c.slug) }}">{{ c.name }}</a></li>
+          {% endfor %}
+        </ul>
+      </div>
+      {% endif %}
 
       <div class="sidebar-box sidebar-interaction-checker">
         <h3>Drug interaction checker</h3>

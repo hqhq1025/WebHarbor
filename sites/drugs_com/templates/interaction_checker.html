@@ -106,11 +106,13 @@
   {% endif %}
 
   {% if summary %}
-    <div class="interaction-summary is-123">
-      <strong>{{ summary.total }} interaction{{ '' if summary.total == 1 else 's' }} found:</strong>
-      <span class="sev-badge sev-major is-271">&#9888; {{ summary.major }} major</span>
-      <span class="sev-badge sev-moderate is-272">&#9889; {{ summary.moderate }} moderate</span>
-      <span class="sev-badge sev-minor is-273">&#8505; {{ summary.minor }} minor</span>
+    <div class="interaction-summary results-summary-header">
+      <div class="results-summary-count">{{ summary.total }} interaction{{ '' if summary.total == 1 else 's' }} found</div>
+      <div class="results-summary-breakdown">
+        <span class="sev-badge sev-major">&#9888; {{ summary.major }} major</span>
+        <span class="sev-badge sev-moderate">&#9889; {{ summary.moderate }} moderate</span>
+        <span class="sev-badge sev-minor">&#8505; {{ summary.minor }} minor</span>
+      </div>
     </div>
   {% endif %}
 
@@ -125,23 +127,23 @@
 
   {% if interactions %}
     {% set sev_groups = [
-      ('major', 'Major Interactions', '#c0392b', '#fff', '&#9888;'),
-      ('moderate', 'Moderate Interactions', '#e67e22', '#fff', '&#9889;'),
-      ('minor', 'Minor Interactions', '#f1c40f', '#222', '&#8505;'),
+      ('major', 'Major Interactions', '&#9888;'),
+      ('moderate', 'Moderate Interactions', '&#9889;'),
+      ('minor', 'Minor Interactions', '&#8505;'),
     ] %}
-    {% for sev, label, bg, fg, icon in sev_groups %}
+    {% for sev, label, icon in sev_groups %}
       {% set group_items = interactions | selectattr('severity', 'equalto', sev) | list %}
       {% if group_items %}
-        <div class="severity-group sev-group-{{ sev }} is-260">
-          <h3 style="background:{{ bg }};color:{{ fg }};padding:0.5rem 0.85rem;margin:0 0 0.5rem 0;border-radius:4px;font-size:1.05em;">
+        <div class="severity-group sev-group-{{ sev }}">
+          <h3 class="severity-group-head severity-group-head--{{ sev }}">
             {{ icon|safe }} {{ label }} ({{ group_items|length }})
           </h3>
-          <ul class="interaction-list is-280">
+          <ul class="interaction-list">
             {% for it in group_items %}
-              <li class="interaction sev-{{ it.severity }}" style="border:1px solid #e0e0e0;border-left:4px solid {{ bg }};padding:0.75rem 1rem;margin:0.5rem 0;border-radius:4px;background:#fff;">
-                <div class="is-281">
-                  <span class="sev-badge sev-{{ it.severity }}" style="display:inline-block;padding:3px 10px;border-radius:12px;background:{{ bg }};color:{{ fg }};font-size:0.85em;font-weight:600;">{{ icon|safe }} {{ it.severity | capitalize }}</span>
-                  <strong>
+              <li class="interaction interaction-row sev-{{ it.severity }} interaction-row--{{ it.severity }}">
+                <div class="interaction-row-head">
+                  <span class="sev-badge sev-{{ it.severity }}">{{ icon|safe }} {{ it.severity | capitalize }}</span>
+                  <strong class="interaction-row-drugs">
                     <a href="{{ url_for('drug_detail', slug=it.drug_a.slug) }}">{{ it.drug_a.generic_name }}</a>
                     +
                     {% if it.drug_b %}
@@ -183,20 +185,18 @@
   {% if food_interactions %}
     <h3 class="is-127">Drug-Food Interactions</h3>
     <p class="muted">Common dietary considerations for the drugs you entered.</p>
-    <ul class="interaction-list is-287">
+    <ul class="interaction-list">
       {% for it in food_interactions %}
-        {% set bg = '#c0392b' if it.severity == 'major' else ('#e67e22' if it.severity == 'moderate' else '#f1c40f') %}
-        {% set fg = '#222' if it.severity == 'minor' else '#fff' %}
         {% set icon = '&#9888;' if it.severity == 'major' else ('&#9889;' if it.severity == 'moderate' else '&#8505;') %}
-        <li class="interaction sev-{{ it.severity }}" style="border:1px solid #e0e0e0;border-left:4px solid {{ bg }};padding:0.75rem 1rem;margin:0.5rem 0;border-radius:4px;background:#fff;">
-          <div class="is-281">
-            <span class="sev-badge sev-{{ it.severity }}" style="display:inline-block;padding:3px 10px;border-radius:12px;background:{{ bg }};color:{{ fg }};font-size:0.85em;font-weight:600;">{{ icon|safe }} {{ it.severity | capitalize }}</span>
-            <strong>
+        <li class="interaction interaction-row sev-{{ it.severity }} interaction-row--{{ it.severity }}">
+          <div class="interaction-row-head">
+            <span class="sev-badge sev-{{ it.severity }}">{{ icon|safe }} {{ it.severity | capitalize }}</span>
+            <strong class="interaction-row-drugs">
               <a href="{{ url_for('drug_detail', slug=it.drug.slug) }}">{{ it.drug.generic_name }}</a>
               + {{ it.item }}
             </strong>
           </div>
-          <p class="is-282">{{ it.description }}</p>
+          <p class="interaction-row-desc">{{ it.description }}</p>
         </li>
       {% endfor %}
     </ul>
@@ -205,20 +205,18 @@
   {% if alcohol_interactions %}
     <h3 class="is-127">Drug-Alcohol Interactions</h3>
     <p class="muted">Risks of combining alcohol with the drugs you entered.</p>
-    <ul class="interaction-list is-287">
+    <ul class="interaction-list">
       {% for it in alcohol_interactions %}
-        {% set bg = '#c0392b' if it.severity == 'major' else ('#e67e22' if it.severity == 'moderate' else '#f1c40f') %}
-        {% set fg = '#222' if it.severity == 'minor' else '#fff' %}
         {% set icon = '&#9888;' if it.severity == 'major' else ('&#9889;' if it.severity == 'moderate' else '&#8505;') %}
-        <li class="interaction sev-{{ it.severity }}" style="border:1px solid #e0e0e0;border-left:4px solid {{ bg }};padding:0.75rem 1rem;margin:0.5rem 0;border-radius:4px;background:#fff;">
-          <div class="is-281">
-            <span class="sev-badge sev-{{ it.severity }}" style="display:inline-block;padding:3px 10px;border-radius:12px;background:{{ bg }};color:{{ fg }};font-size:0.85em;font-weight:600;">{{ icon|safe }} {{ it.severity | capitalize }}</span>
-            <strong>
+        <li class="interaction interaction-row sev-{{ it.severity }} interaction-row--{{ it.severity }}">
+          <div class="interaction-row-head">
+            <span class="sev-badge sev-{{ it.severity }}">{{ icon|safe }} {{ it.severity | capitalize }}</span>
+            <strong class="interaction-row-drugs">
               <a href="{{ url_for('drug_detail', slug=it.drug.slug) }}">{{ it.drug.generic_name }}</a>
               + Alcohol
             </strong>
           </div>
-          <p class="is-282">{{ it.description }}</p>
+          <p class="interaction-row-desc">{{ it.description }}</p>
         </li>
       {% endfor %}
     </ul>

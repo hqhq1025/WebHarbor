@@ -287,9 +287,10 @@ a:hover { text-decoration: underline; color: var(--blue-mid); }
   z-index: 200;
   padding: 6px 0;
 }
-.nav-dropdown a { display: block; padding: 8px 16px; color: var(--gray-900); font-size: 0.9rem; }
+.nav-dropdown a { display: block; padding: 8px 14px; color: var(--gray-900); font-size: 0.9rem; text-decoration: none; border-radius: 3px; }
 .nav-dropdown a:hover { background: var(--blue-light); color: var(--blue); text-decoration: none; }
-.nav-more-wrap:hover .nav-dropdown { display: block; }
+.nav-more-wrap:hover .nav-dropdown,
+.nav-more-wrap:focus-within .nav-dropdown { display: block; }
 
 /* ── Main content ── */
 .site-main { padding: 22px 0 60px; min-height: 70vh; }
@@ -6762,3 +6763,245 @@ html { scroll-behavior: smooth; }
     color: #5a4500;
     font-size: 0.95rem;
 }
+
+/* ---------- Reviews page enhancements ---------- */
+.reviews-page-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    flex-wrap: wrap;
+    margin-bottom: 18px;
+}
+.reviews-page-header h1 {
+    margin: 0;
+}
+.btn-write-review-top {
+    white-space: nowrap;
+    padding: 10px 18px;
+    font-weight: 600;
+}
+.reviews-summary-stars {
+    margin: 6px 0 4px;
+    font-size: 1.15rem;
+    letter-spacing: 1px;
+    color: #f5a623;
+}
+.reviews-summary-stars .star-empty {
+    color: #d0d4dc;
+}
+.review-rating-badge {
+    display: inline-flex;
+    align-items: baseline;
+    justify-content: center;
+    min-width: 56px;
+    padding: 8px 10px;
+    border-radius: 8px;
+    font-weight: 700;
+    font-size: 1.35rem;
+    color: #fff;
+    line-height: 1;
+    flex-shrink: 0;
+}
+.review-rating-badge .rb-denom {
+    font-size: 0.7rem;
+    font-weight: 500;
+    opacity: 0.85;
+    margin-left: 2px;
+}
+.review-rating-badge.rb-high { background: #2e7d32; }
+.review-rating-badge.rb-mid  { background: #ef6c00; }
+.review-rating-badge.rb-low  { background: #c62828; }
+.review-card .review-header {
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+    margin-bottom: 10px;
+}
+.review-header-meta {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 0;
+    flex: 1;
+}
+.review-title {
+    font-size: 1.05rem;
+    color: #1a3e72;
+}
+.review-byline {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.88rem;
+}
+.review-byline .review-stars {
+    color: #f5a623;
+    letter-spacing: 1px;
+}
+.review-byline .star-off {
+    color: #d0d4dc;
+}
+.review-byline .review-author {
+    font-weight: 600;
+    color: #333;
+}
+.review-byline .review-dot {
+    color: #999;
+}
+.review-byline .review-condition {
+    background: #eef4fb;
+    color: #1a3e72;
+    padding: 1px 8px;
+    border-radius: 10px;
+    font-size: 0.8rem;
+}
+.review-body {
+    margin: 6px 0 10px;
+    line-height: 1.55;
+    color: #2a2a2a;
+}
+.review-helpful {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    padding-top: 8px;
+    border-top: 1px dashed #e3e6eb;
+}
+.review-helpful-label {
+    font-weight: 600;
+    color: #555;
+}
+.review-report-link {
+    margin-left: auto;
+    color: #888;
+    font-size: 0.85rem;
+    text-decoration: none;
+}
+.review-report-link:hover { text-decoration: underline; }
+
+/* Review form: align Submit + Read-all link */
+.review-form-actions {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    flex-wrap: wrap;
+    margin-top: 8px;
+}
+.review-form-all-link {
+    color: #1a73e8;
+    font-weight: 600;
+    text-decoration: none;
+}
+.review-form-all-link:hover { text-decoration: underline; }
+
+@media (prefers-color-scheme: dark) {
+    .review-title { color: #cfe0ff; }
+    .reviews-summary-stars .star-empty { color: #3a3a55; }
+    .review-byline .star-off { color: #3a3a55; }
+    .review-byline .review-author { color: #e6e6e6; }
+    .review-byline .review-condition { background: #1f2a3a; color: #cfe0ff; }
+    .review-body { color: #d8d8d8; }
+    .review-helpful { border-top-color: #2a2a4a; }
+    .review-helpful-label { color: #b0b8c8; }
+    .review-form-all-link { color: #7ec0ff; }
+}
+
+/* ---------- Interaction checker results ---------- */
+.results-summary-header {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 14px 18px;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    margin: 14px 0 18px;
+}
+.results-summary-count {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: #1f2937;
+}
+.results-summary-breakdown {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+.sev-badge {
+    display: inline-block;
+    padding: 4px 10px;
+    border-radius: 12px;
+    font-size: 0.8rem;
+    font-weight: 700;
+    letter-spacing: 0.2px;
+    color: #fff;
+    background: #6b7280;
+    white-space: nowrap;
+}
+.sev-badge.sev-major    { background: #c0392b; color: #fff; }
+.sev-badge.sev-moderate { background: #e67e22; color: #fff; }
+.sev-badge.sev-minor    { background: #f1c40f; color: #1f2937; }
+
+.severity-group { margin: 14px 0 18px; }
+.severity-group-head {
+    margin: 0 0 8px 0;
+    padding: 8px 14px;
+    border-radius: 4px;
+    font-size: 1.05rem;
+    color: #fff;
+}
+.severity-group-head--major    { background: #c0392b; }
+.severity-group-head--moderate { background: #e67e22; }
+.severity-group-head--minor    { background: #f1c40f; color: #1f2937; }
+
+.interaction-row {
+    border: 1px solid #e2e8f0;
+    border-left: 4px solid #d1d5db;
+    padding: 12px 16px;
+    margin: 8px 0;
+    border-radius: 4px;
+    background: #fff;
+}
+.interaction-row--major    { border-left-color: #c0392b; background: #fdecea; }
+.interaction-row--moderate { border-left-color: #e67e22; background: #fff7ed; }
+.interaction-row--minor    { border-left-color: #f1c40f; background: #fefce8; }
+
+.interaction-row-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 6px;
+}
+.interaction-row-drugs { font-size: 1rem; color: #1f2937; }
+.interaction-row-drugs a { color: #1565c0; font-weight: 700; }
+.interaction-row-drugs a:hover { text-decoration: underline; }
+.interaction-row-desc {
+    margin: 6px 0 0;
+    color: #374151;
+    font-size: 0.93rem;
+    line-height: 1.5;
+}
+
+/* ---------- Conditions-treated sidebar box ---------- */
+.conditions-treated-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+.conditions-treated-list li {
+    padding: 6px 0;
+    border-bottom: 1px solid var(--gray-100);
+    font-size: 0.92rem;
+}
+.conditions-treated-list li:last-child { border-bottom: none; }
+.conditions-treated-list a {
+    color: var(--blue);
+    text-decoration: none;
+}
+.conditions-treated-list a:hover { text-decoration: underline; }
