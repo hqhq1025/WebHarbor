@@ -2342,6 +2342,26 @@ def interaction_checker():
             "minor": sum(1 for it in interactions if it["severity"] == "minor"),
         }
         food_interactions, alcohol_interactions = _lifestyle_interactions(resolved)
+        # If "alcohol" was explicitly entered, fold its interactions into main results
+        if any(n.lower() == "alcohol" for n in drugs_input or []):
+            for alc in alcohol_interactions:
+                interactions.append({
+                    "drug_a": alc["drug"],
+                    "drug_b": None,
+                    "drug_b_name": "Alcohol",
+                    "severity": alc["severity"],
+                    "description": alc["description"],
+                })
+            alcohol_interactions = []
+            order = {"major": 0, "moderate": 1, "minor": 2}
+            interactions.sort(key=lambda it: order.get(it["severity"], 99))
+            summary = {
+                "total": len(interactions),
+                "major": sum(1 for it in interactions if it["severity"] == "major"),
+                "moderate": sum(1 for it in interactions if it["severity"] == "moderate"),
+                "minor": sum(1 for it in interactions if it["severity"] == "minor"),
+            }
+            unrecognized = [n for n in unrecognized if n.lower() != "alcohol"]
     else:
         food_interactions, alcohol_interactions = [], []
         # Also support GET with ?drugs=name1&drugs=name2 to run the check directly.
@@ -2394,6 +2414,26 @@ def interaction_checker():
                 "minor": sum(1 for it in interactions if it["severity"] == "minor"),
             }
             food_interactions, alcohol_interactions = _lifestyle_interactions(resolved)
+            # If "alcohol" was explicitly entered, fold its interactions into main results
+            if any(n.lower() == "alcohol" for n in drugs_input or []):
+                for alc in alcohol_interactions:
+                    interactions.append({
+                        "drug_a": alc["drug"],
+                        "drug_b": None,
+                        "drug_b_name": "Alcohol",
+                        "severity": alc["severity"],
+                        "description": alc["description"],
+                    })
+                alcohol_interactions = []
+                order = {"major": 0, "moderate": 1, "minor": 2}
+                interactions.sort(key=lambda it: order.get(it["severity"], 99))
+                summary = {
+                    "total": len(interactions),
+                    "major": sum(1 for it in interactions if it["severity"] == "major"),
+                    "moderate": sum(1 for it in interactions if it["severity"] == "moderate"),
+                    "minor": sum(1 for it in interactions if it["severity"] == "minor"),
+                }
+                unrecognized = [n for n in unrecognized if n.lower() != "alcohol"]
     return render_template(
         "interaction_checker.html",
         drugs=drugs,
@@ -2452,6 +2492,8 @@ _ALCOHOL_BY_GENERIC = {
         "description": "Acute heavy alcohol intake inhibits warfarin metabolism and raises INR with bleeding risk; chronic use induces metabolism and reduces effect. Either pattern destabilizes anticoagulation."},
     "acetaminophen": {"severity": "moderate",
         "description": "Chronic alcohol use induces CYP2E1, increasing formation of acetaminophen's hepatotoxic metabolite (NAPQI). Combination significantly raises the risk of acute liver injury."},
+    "metformin": {"severity": "moderate",
+        "description": "Alcohol increases the risk of lactic acidosis in patients taking metformin, especially in those who drink heavily. Alcohol can also cause hypoglycemia or hyperglycemia and masks warning symptoms. Limit or avoid alcohol while taking metformin."},
 }
 
 _ALCOHOL_BY_CLASS = {

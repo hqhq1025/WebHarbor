@@ -144,7 +144,11 @@
                   <strong>
                     <a href="{{ url_for('drug_detail', slug=it.drug_a.slug) }}">{{ it.drug_a.generic_name }}</a>
                     +
-                    <a href="{{ url_for('drug_detail', slug=it.drug_b.slug) }}">{{ it.drug_b.generic_name }}</a>
+                    {% if it.drug_b %}
+                      <a href="{{ url_for('drug_detail', slug=it.drug_b.slug) }}">{{ it.drug_b.generic_name }}</a>
+                    {% else %}
+                      {{ it.drug_b_name or 'Alcohol' }}
+                    {% endif %}
                   </strong>
                 </div>
                 <p class="is-282">{{ it.description }}</p>
@@ -160,9 +164,9 @@
                       {% else %}This interaction is typically clinically minor but worth noting.
                       {% endif %}
                     </p>
-                    <p>For pharmacology details, see the drug pages for
-                      <a href="{{ url_for('drug_detail', slug=it.drug_a.slug) }}">{{ it.drug_a.generic_name }}</a> and
-                      <a href="{{ url_for('drug_detail', slug=it.drug_b.slug) }}">{{ it.drug_b.generic_name }}</a>.
+                    <p>For pharmacology details, see the drug page for
+                      <a href="{{ url_for('drug_detail', slug=it.drug_a.slug) }}">{{ it.drug_a.generic_name }}</a>{% if it.drug_b %} and
+                      <a href="{{ url_for('drug_detail', slug=it.drug_b.slug) }}">{{ it.drug_b.generic_name }}</a>{% endif %}.
                     </p>
                   </div>
                 </details>
