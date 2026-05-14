@@ -6128,6 +6128,7 @@ def contact():
 
 @app.route("/about")
 @app.route("/about.html")
+@app.route("/advertise")
 def about_page():
     return render_template("about.html")
 
