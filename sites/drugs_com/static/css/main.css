@@ -684,6 +684,15 @@ a:hover { text-decoration: underline; color: var(--blue-mid); }
 }
 .btn-cta-primary:active { transform: translateY(0); box-shadow: 0 1px 2px rgba(21, 101, 192, 0.3); }
 
+.page-with-sidebar { display: grid; grid-template-columns: minmax(0, 2fr) minmax(240px, 320px); gap: 28px; align-items: start; }
+.page-with-sidebar .main-col { min-width: 0; }
+.page-with-sidebar .sidebar { position: sticky; top: 80px; align-self: start; }
+@media (max-width: 900px) {
+  .page-with-sidebar { grid-template-columns: 1fr; }
+  .page-with-sidebar .sidebar { position: static; }
+}
+
+.sidebar-box { background: #fff; border: 1px solid var(--gray-200); border-radius: 6px; padding: 16px; margin-bottom: 16px; }
 .sidebar-box h3 { color: var(--navy); font-size: 0.95rem; margin-bottom: 10px; font-weight: 700; }
 .sidebar-box ul { list-style: none; }
 .sidebar-box li { padding: 5px 0; font-size: 0.9rem; border-bottom: 1px solid var(--gray-100); }

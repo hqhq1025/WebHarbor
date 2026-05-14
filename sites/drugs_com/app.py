@@ -5825,6 +5825,7 @@ def compare_drugs_slug(vs_slug):
 
 @app.route("/compare/")
 @app.route("/compare")
+@app.route("/compare-drugs")
 def compare_drugs():
     def _lookup(q):
         if not q:
