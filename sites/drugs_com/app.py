@@ -4018,7 +4018,7 @@ def drug_detail(slug):
                       f"try taking it with a full glass of water and food."),
             })
     avoid_items = _build_avoid_items(drug)
-    _ov = DRUG_CONTENT_OVERRIDES.get(drug.generic_name, {})
+    _ov = DRUG_CONTENT_OVERRIDES.get(drug.generic_name) or DRUG_CONTENT_OVERRIDES.get(drug.generic_name.replace(' ', '-'), {})
     before_taking = _ov.get("before_taking")
     # Apply runtime content overrides so drug pages reflect accurate info even if DB was seeded
     # with incorrect OpenFDA data (e.g. wrong formulation) or generic fallbacks.
@@ -6119,17 +6119,36 @@ def drug_pro_monograph(slug):
 @app.route("/<slug>/dosage")
 def drug_dosage(slug):
     drug = Drug.query.filter_by(slug=slug).first_or_404()
-    _ov = DRUG_CONTENT_OVERRIDES.get(drug.generic_name, {})
+    _ov = DRUG_CONTENT_OVERRIDES.get(drug.generic_name) or DRUG_CONTENT_OVERRIDES.get(drug.generic_name.replace(' ', '-'), {})
     rt_dosage = _ov.get("dosage") or drug.dosage
     return render_template("drug_dosage.html", drug=drug, rt_dosage=rt_dosage)
+
+
+def _parse_side_effects(text):
+    """Parse side_effects text into {common: [...], serious: [...]} lists."""
+    if not text:
+        return None
+    common, serious = [], []
+    common_m = re.search(r'Common[^:]*:\s*(.+?)(?=\.\s*Serious|\Z)', text, re.IGNORECASE | re.DOTALL)
+    serious_m = re.search(r'Serious[^:]*:\s*(.+?)(?=\.\s*Common|\Z)', text, re.IGNORECASE | re.DOTALL)
+    if common_m:
+        raw = common_m.group(1).strip().rstrip('.')
+        common = [s.strip() for s in re.split(r',\s*(?:and\s+)?', raw) if s.strip()]
+    if serious_m:
+        raw = serious_m.group(1).strip().rstrip('.')
+        serious = [s.strip() for s in re.split(r',\s*(?:and\s+)?', raw) if s.strip()]
+    if not common and not serious:
+        return None
+    return {"common": common, "serious": serious}
 
 
 @app.route("/<slug>/side-effects")
 def drug_side_effects(slug):
     drug = Drug.query.filter_by(slug=slug).first_or_404()
-    _ov = DRUG_CONTENT_OVERRIDES.get(drug.generic_name, {})
+    _ov = DRUG_CONTENT_OVERRIDES.get(drug.generic_name) or DRUG_CONTENT_OVERRIDES.get(drug.generic_name.replace(' ', '-'), {})
     rt_side_effects = _ov.get("side_effects") or drug.side_effects
-    return render_template("drug_side_effects.html", drug=drug, rt_side_effects=rt_side_effects)
+    se_parsed = _parse_side_effects(rt_side_effects)
+    return render_template("drug_side_effects.html", drug=drug, rt_side_effects=rt_side_effects, se_parsed=se_parsed)
 
 
 # FDA pregnancy category mapping for common drugs. Drugs not listed fall through
@@ -6417,7 +6436,7 @@ def drug_pregnancy(slug):
 @app.route("/<slug>/warnings")
 def drug_warnings(slug):
     drug = Drug.query.filter_by(slug=slug).first_or_404()
-    _ov = DRUG_CONTENT_OVERRIDES.get(drug.generic_name, {})
+    _ov = DRUG_CONTENT_OVERRIDES.get(drug.generic_name) or DRUG_CONTENT_OVERRIDES.get(drug.generic_name.replace(' ', '-'), {})
     text = (_ov.get("warnings") or drug.warnings or "").strip()
     boxed_warning = None
     lowered = text.lower()

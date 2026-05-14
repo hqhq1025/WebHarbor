@@ -79,6 +79,11 @@
   <section class="se-block se-block--common">
     <h2><span class="se-pill se-pill--common">Common</span> Side effects (greater than 10%)</h2>
     <p class="se-block-note">Generally mild and often resolve as your body adjusts to the medication. Not considered medically serious.</p>
+    {% if se_parsed and se_parsed.common %}
+    <ul>
+      {% for item in se_parsed.common %}<li>{{ item|capitalize }}</li>{% endfor %}
+    </ul>
+    {% else %}
     <ul>
       <li>Upset stomach, heartburn, or nausea</li>
       <li>Mild headache or dizziness</li>
@@ -86,24 +91,17 @@
       <li>Mild rash or itching</li>
       <li>Constipation or diarrhea</li>
     </ul>
-  </section>
-
-  <section class="se-block se-block--less-common">
-    <h2><span class="se-pill se-pill--less-common">Less common</span> Side effects (1-10%)</h2>
-    <p class="se-block-note">Usually not dangerous but worth reporting to your prescriber if persistent or troublesome.</p>
-    <ul>
-      <li><strong>Gastrointestinal:</strong> abdominal pain, gas, bloating, vomiting</li>
-      <li><strong>Cardiovascular:</strong> mild fluid retention, swelling of the hands or feet, elevated blood pressure</li>
-      <li><strong>Renal:</strong> decreased urine output, increased serum creatinine</li>
-      <li><strong>Nervous system:</strong> nervousness, ringing in the ears (tinnitus)</li>
-      <li><strong>Hematologic:</strong> easy bruising</li>
-      <li><strong>Dermatologic:</strong> photosensitivity, mild urticaria</li>
-    </ul>
+    {% endif %}
   </section>
 
   <section class="se-block se-block--rare">
     <h2><span class="se-pill se-pill--rare">Rare but serious</span> Side effects (less than 1%)</h2>
     <p class="se-block-note">These are uncommon but can be life-threatening. Stop the medication and seek medical attention if any occur.</p>
+    {% if se_parsed and se_parsed.serious %}
+    <ul>
+      {% for item in se_parsed.serious %}<li>{{ item|capitalize }}</li>{% endfor %}
+    </ul>
+    {% else %}
     <ul>
       <li>Severe gastrointestinal bleeding or perforation</li>
       <li>Heart attack, stroke, or blood clots</li>
@@ -114,6 +112,7 @@
       <li>Aseptic meningitis</li>
       <li>Severe bone marrow suppression (agranulocytosis, aplastic anemia)</li>
     </ul>
+    {% endif %}
   </section>
 
   <section class="se-block se-block--serious">
