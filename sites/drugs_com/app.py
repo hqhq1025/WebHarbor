@@ -3957,6 +3957,11 @@ def _build_default_faq(drug):
 def drug_detail(slug):
     drug = Drug.query.filter_by(slug=slug).first()
     if not drug:
+        # Try matching by brand name (case-insensitive) — agents often navigate to brand URLs.
+        slug_lower = slug.lower().replace('-', ' ').replace('_', ' ')
+        for d in Drug.query.all():
+            if d.brand_names and any(b.lower() == slug_lower for b in d.brand_names):
+                return redirect(url_for('drug_detail', slug=d.slug), 301)
         abort(404)
     # Track recently viewed drugs in session
     viewed = session.get("recently_viewed", [])
