@@ -6215,6 +6215,7 @@ def drug_prices(slug):
 
 
 @app.route("/drugs/pro/<slug>")
+@app.route("/pro/<slug>")
 def drug_pro_monograph(slug):
     """Professional monograph stub page for a drug.
 
