@@ -1223,6 +1223,7 @@ DRUG_CONTENT_OVERRIDES = {
         "warnings": "Lactic acidosis: Metformin can cause a rare but serious condition called lactic acidosis, a buildup of lactic acid in the blood. Symptoms include weakness, unusual muscle pain, trouble breathing, unusual drowsiness, stomach discomfort, nausea, vomiting, or feeling cold. Seek emergency care immediately. Discontinue if renal impairment (eGFR <30), contrast dye procedures, or surgery requiring anesthesia.",
         "side_effects": "Common side effects include nausea, vomiting, diarrhea, stomach upset, and metallic taste (especially when first starting the medication). These usually improve over time. Serious: lactic acidosis (rare), vitamin B12 deficiency with long-term use.",
         "dosage": "Adults: Initial dose 500 mg twice daily or 850 mg once daily with meals. Increase by 500 mg weekly or 850 mg every 2 weeks as tolerated. Maximum dose: 2550 mg/day. Extended-release: 500-1000 mg once daily with evening meal, max 2000-2500 mg/day. Pediatric (10+ years): 500 mg twice daily, max 2000 mg/day.",
+        "interactions_text": "Metformin can interact with several medications that affect renal function or blood glucose. Carbonic anhydrase inhibitors (topiramate, zonisamide, acetazolamide) may increase the risk of lactic acidosis — consider more frequent monitoring. Drugs that reduce metformin clearance by inhibiting renal tubular transporters (OCT2/MATE) include dolutegravir, ranolazine, vandetanib, and cimetidine — use caution and monitor for metformin toxicity. Iodinated contrast agents: hold metformin at the time of or prior to iodinated contrast procedures and restart 48 hours after, only if renal function is stable. Alcohol potentiates the effect of metformin on lactate metabolism — warn patients against excessive alcohol use. Drugs that cause hyperglycemia (thiazides, corticosteroids, thyroid products, estrogens, phenytoin, nicotinic acid, sympathomimetics, calcium channel blockers, isoniazid) may lead to loss of glycemic control. Insulin secretagogues or insulin combined with metformin may increase hypoglycemia risk.",
     },
     "omeprazole": {
         "uses": "Omeprazole is a proton pump inhibitor (PPI) indicated for the treatment of gastroesophageal reflux disease (GERD), erosive esophagitis, duodenal and gastric ulcers, pathological hypersecretory conditions including Zollinger-Ellison syndrome, and for the eradication of Helicobacter pylori infection in combination with appropriate antibiotics. It is also used to reduce the risk of gastric ulcers in patients on continuous NSAID therapy and, in over-the-counter strengths, for the short-term self-treatment of frequent heartburn occurring two or more days per week.",
@@ -4003,10 +4004,29 @@ def drug_detail(slug):
     rt_dosage = _ov.get("dosage") or drug.dosage
     rt_side_effects = _ov.get("side_effects") or drug.side_effects
     rt_description = _ov.get("description") or drug.description
+    # Use override if present, otherwise use DB interactions_text but strip paragraphs
+    # that reference combination-product brand names (e.g. ZITUVIMET for metformin).
+    _COMBO_BRANDS = {'ZITUVIMET', 'JANUMET', 'INVOKAMET', 'XIGDUO', 'SYNJARDY',
+                     'KOMBIGLYZE', 'JENTADUETO', 'KAZANO', 'OSENI', 'GLYXAMBI',
+                     'STEGLUJAN', 'QTERNMET', 'TRIJARDY', 'SEGLUROMET', 'JARDIANCE',
+                     'FARXIGA', 'INVOKANA', 'BYDUREON', 'BYETTA', 'TRULICITY',
+                     'OZEMPIC', 'VICTOZA', 'RYBELSUS', 'MOUNJARO', 'WEGOVY'}
+    _raw_interactions = _ov.get("interactions_text") or drug.interactions_text or ""
+    if _raw_interactions:
+        _inter_paras = []
+        for _p in _raw_interactions.split('\n\n'):
+            _p_up = _p.upper()
+            if any(b in _p_up for b in _COMBO_BRANDS) and drug.generic_name.upper() not in _p_up[:50]:
+                continue
+            _inter_paras.append(_p)
+        rt_interactions = '\n\n'.join(_inter_paras) or None
+    else:
+        rt_interactions = None
     return render_template("drug_detail.html", drug=drug, reviews=reviews,
                            before_taking=before_taking,
                            rt_uses=rt_uses, rt_warnings=rt_warnings, rt_dosage=rt_dosage,
                            rt_side_effects=rt_side_effects, rt_description=rt_description,
+                           rt_interactions=rt_interactions,
                            related=related, drug_conditions=drug_conditions, saved=saved,
                            rating_distribution=rating_distribution, user_review=user_review,
                            related_news=related_news, related_drugs=related_drugs,

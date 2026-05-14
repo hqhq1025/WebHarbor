@@ -52,7 +52,7 @@
       {% for cond in conditions %}
       <li>
         <a href="{{ url_for('drug_reviews_page', slug=drug.slug, condition=cond) }}"
-           class="reviews-by-condition-chip {% if cond == condition_filter %}is-active{% endif %}">{{ cond|capitalize }}</a>
+           class="reviews-by-condition-chip {% if cond == condition_filter %}is-active{% endif %}">{{ cond|replace('_',' ')|replace('-',' ')|title }}</a>
       </li>
       {% endfor %}
     </ul>
@@ -64,7 +64,7 @@
       <select name="condition" class="form-select">
         <option value="">All conditions</option>
         {% for cond in conditions %}
-          <option value="{{ cond }}" {% if cond == condition_filter %}selected{% endif %}>{{ cond|capitalize }}</option>
+          <option value="{{ cond }}" {% if cond == condition_filter %}selected{% endif %}>{{ cond|replace('_',' ')|replace('-',' ')|title }}</option>
         {% endfor %}
       </select>
     </label>
@@ -103,7 +103,7 @@
                 <span class="review-date">{{ r.created_at.strftime('%b %d, %Y') }}</span>
                 {% if r.condition_treated %}
                   <span class="review-dot">&middot;</span>
-                  <span class="review-condition">For {{ r.condition_treated|capitalize }}</span>
+                  <span class="review-condition">For {{ r.condition_treated|replace('_',' ')|replace('-',' ')|title }}</span>
                 {% endif %}
               </div>
             </div>

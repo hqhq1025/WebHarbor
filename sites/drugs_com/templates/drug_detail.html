@@ -232,25 +232,30 @@
         <h2>Warnings</h2>
         {% set _warn_text = (rt_warnings or '') %}
         {% set _warn_lower = _warn_text|lower %}
-        {% if _warn_text and ('boxed warning' in _warn_lower or 'black box' in _warn_lower or _warn_text.lstrip().startswith('WARNING:')) %}
+        {% set _has_boxed = _warn_text and ('boxed warning' in _warn_lower or 'black box' in _warn_lower or _warn_text.lstrip().startswith('WARNING:')) %}
+        {% if _has_boxed %}
+        {% set _paras = _warn_text.split('\n\n') %}
+        {% set _bx = namespace(text=None, rest=[]) %}
+        {% for _p in _paras %}
+          {% if _bx.text is none and ('boxed warning' in _p|lower or 'black box' in _p|lower or _p.lstrip().startswith('WARNING:')) %}
+            {% set _bx.text = _p %}
+          {% else %}
+            {% set _bx.rest = _bx.rest + [_p] %}
+          {% endif %}
+        {% endfor %}
         <div class="black-box-warning" role="alert">
           <div class="black-box-warning-head">
             <span aria-hidden="true" class="black-box-warning-icon">&#9888;</span>
             <strong class="black-box-warning-title">Boxed Warning</strong>
           </div>
           <div class="black-box-warning-body">
-            {% set _paras = _warn_text.split('\n\n') %}
-            {% set _bx = namespace(text=None) %}
-            {% for _p in _paras %}
-              {% if _bx.text is none and ('boxed warning' in _p|lower or 'black box' in _p|lower or _p.lstrip().startswith('WARNING:')) %}
-                {% set _bx.text = _p %}
-              {% endif %}
-            {% endfor %}
             {{ (_bx.text or _warn_text[:400]) | format_drug_text | safe }}
           </div>
         </div>
-        {% endif %}
+        {{ _bx.rest | join('\n\n') | format_drug_text | safe }}
+        {% else %}
         {{ rt_warnings | format_drug_text | safe }}
+        {% endif %}
       </section>
 
       <section id="before-taking">
@@ -339,7 +344,7 @@
         <p><a href="{{ url_for('drug_interactions_page', slug=drug.slug) }}">View all {{ drug_interactions|length }} interactions &rsaquo;</a></p>
         {% endif %}
         {% endif %}
-        {{ drug.interactions_text | format_drug_text | safe }}
+        {% if rt_interactions %}{{ rt_interactions | format_drug_text | safe }}{% endif %}
         <h3>Alcohol &amp; food interactions</h3>
         <p>Avoid drinking alcohol while taking {{ drug.generic_name }}. Alcohol may increase the risk of certain side effects, including drowsiness, stomach bleeding, or liver damage. Ask your doctor or pharmacist before consuming grapefruit or grapefruit juice, as it can interact with several medications.</p>
         <h3>Lab test interactions</h3>
@@ -457,7 +462,7 @@
           <select class="form-select" onchange="filterReviews(this.value)" id="condition-filter">
             <option value="">All conditions</option>
             {% for cond in reviews|map(attribute='condition_treated')|unique|list %}
-              {% if cond %}<option value="{{ cond }}">{{ cond|capitalize }}</option>{% endif %}
+              {% if cond %}<option value="{{ cond }}">{{ cond|replace('_',' ')|replace('-',' ')|title }}</option>{% endif %}
             {% endfor %}
           </select>
           <select class="form-select" onchange="sortReviews(this.value)" id="sort-select">
@@ -491,7 +496,7 @@
                 </span>
               </header>
               <div class="review-tags">
-                {% if r.condition_treated %}<span class="review-tag">Condition: {{ r.condition_treated }}</span>{% endif %}
+                {% if r.condition_treated %}<span class="review-tag">Condition: {{ r.condition_treated|replace('_',' ')|replace('-',' ')|title }}</span>{% endif %}
                 {% if duration %}<span class="review-tag">Took for: {{ duration }}</span>{% endif %}
               </div>
               <p>{{ r.body }}</p>
