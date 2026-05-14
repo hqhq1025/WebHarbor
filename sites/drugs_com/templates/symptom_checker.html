@@ -18,7 +18,7 @@
           <div class="is-053">
             {% for sym in symptoms %}
               {% set is_on = sym in selected %}
-              <label style="display:inline-flex;align-items:center;padding:6px 12px;border:1px solid {% if is_on %}#1a3a6e{% else %}#cfd8e3{% endif %};border-radius:16px;background:{% if is_on %}#1a3a6e{% else %}#fff{% endif %};color:{% if is_on %}#fff{% else %}#1a3a6e{% endif %};font-size:14px;cursor:pointer">
+              <label class="symptom-chip{% if is_on %} is-selected{% endif %}">
                 <input class="is-395" type="checkbox" name="symptom" value="{{ sym }}" {% if is_on %}checked{% endif %} onchange="document.getElementById('symptom-form').submit()">
                 {{ sym }}
               </label>
