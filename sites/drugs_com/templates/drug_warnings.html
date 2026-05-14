@@ -30,9 +30,23 @@
   </section>
   {% endif %}
 
+  <aside class="warning-callout-urgent">
+    <h2 class="warning-callout-urgent-title">Seek immediate medical help</h2>
+    <p>Call your doctor or emergency services right away if you experience any of the following while taking {{ drug.generic_name }}:</p>
+    <ul>
+      <li>Signs of a severe allergic reaction: hives, swelling of the face, lips, tongue, or throat, difficulty breathing.</li>
+      <li>Chest pain, irregular heartbeat, fainting, or sudden severe headache.</li>
+      <li>Unusual bleeding or bruising, black or bloody stools, vomiting blood.</li>
+      <li>Severe skin reaction: blistering, peeling, or a red/purple rash that spreads.</li>
+      <li>Confusion, slurred speech, seizures, or loss of consciousness.</li>
+    </ul>
+    <p class="muted warning-callout-urgent-note">In the U.S., dial 911 or go to the nearest emergency room. Outside the U.S., contact your local emergency number.</p>
+  </aside>
+
   {% if warning_cards %}
     {% for name, items in warning_cards %}
-    <section class="is-204">
+    {% set is_before = name == 'Before taking this medicine' %}
+    <section class="{% if is_before %}warning-before-taking{% else %}is-204{% endif %}">
       <h2 class="is-205">{{ name }}</h2>
       {% if items|length == 1 %}
         <p class="is-071">{{ items[0] }}</p>

@@ -10,7 +10,7 @@
 
   <div class="reviews-page-header">
     <h1>User Reviews for {{ drug.generic_name|capitalize }}</h1>
-    <a href="{{ url_for('drug_detail', slug=drug.slug) }}#add-review" class="btn btn-primary btn-write-review-top">&#9998; Write a Review</a>
+    <a href="{{ url_for('drug_review_new', slug=drug.slug) }}" class="btn btn-primary btn-write-review-top">&#9998; Write a Review</a>
   </div>
 
   <div class="detail-grid">
@@ -41,6 +41,24 @@
     </div>
   </section>
 
+  {% if conditions %}
+  <section class="reviews-by-condition">
+    <h3>Reviews by condition</h3>
+    <ul class="reviews-by-condition-list">
+      <li>
+        <a href="{{ url_for('drug_reviews_page', slug=drug.slug) }}"
+           class="reviews-by-condition-chip {% if not condition_filter %}is-active{% endif %}">All conditions</a>
+      </li>
+      {% for cond in conditions %}
+      <li>
+        <a href="{{ url_for('drug_reviews_page', slug=drug.slug, condition=cond) }}"
+           class="reviews-by-condition-chip {% if cond == condition_filter %}is-active{% endif %}">{{ cond|capitalize }}</a>
+      </li>
+      {% endfor %}
+    </ul>
+  </section>
+  {% endif %}
+
   <form method="get" class="reviews-filter">
     <label>Filter by condition:
       <select name="condition" class="form-select">
@@ -59,7 +77,7 @@
       </select>
     </label>
     <button type="submit" class="btn btn-primary">Apply</button>
-    <a href="{{ url_for('drug_detail', slug=drug.slug) }}#add-review" class="btn btn-secondary">Write a review</a>
+    <a href="{{ url_for('drug_review_new', slug=drug.slug) }}" class="btn btn-secondary">Write a review</a>
   </form>
 
   <div class="reviews-list">
@@ -153,7 +171,7 @@
        <h3>Overall rating</h3>
        <div class="rating-score">{{ drug.avg_rating }} / 10</div>
        <div class="muted">{{ drug.review_count }} user reviews</div>
-       <a href="{{ url_for('drug_detail', slug=drug.slug) }}#add-review" class="btn btn-primary is-200">Write a review</a>
+       <a href="{{ url_for('drug_review_new', slug=drug.slug) }}" class="btn btn-primary is-200">Write a review</a>
      </div>
 
      <div class="sidebar-box more-about">

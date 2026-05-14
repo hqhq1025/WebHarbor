@@ -2084,6 +2084,17 @@ def drug_reviews_page(slug):
                           sort=sort, rating_dist=rating_dist)
 
 
+@app.route("/<slug>/reviews/new", methods=["GET"])
+@login_required
+def drug_review_new(slug):
+    drug = Drug.query.filter_by(slug=slug).first_or_404()
+    user_review = DrugReview.query.filter_by(drug_id=drug.id, user_id=current_user.id).first()
+    conditions = db.session.query(DrugReview.condition_treated).filter_by(drug_id=drug.id).distinct().all()
+    conditions = [c[0] for c in conditions if c[0]]
+    return render_template("drug_review_new.html", drug=drug, user_review=user_review,
+                           conditions=conditions)
+
+
 @app.route("/<slug>/review", methods=["POST"])
 @login_required
 def submit_review(slug):
@@ -2100,6 +2111,12 @@ def submit_review(slug):
     # but is not persisted: adding a column would alter the seed DB on first boot and break
     # /reset/<site> byte-identity. Display-side template handles its absence ("if available").
     _ = (request.form.get("duration_taken") or "")[:60]
+    # Sub-ratings (effectiveness, ease of use, satisfaction) are accepted from the form on the
+    # dedicated "Write a Review" page but, like duration_taken, are not persisted: adding
+    # columns would alter the seed DB on first boot and break /reset/<site> byte-identity.
+    _ = (request.form.get("effectiveness") or "")[:3]
+    _ = (request.form.get("ease_of_use") or "")[:3]
+    _ = (request.form.get("satisfaction") or "")[:3]
     existing = DrugReview.query.filter_by(drug_id=drug.id, user_id=current_user.id).first()
     if existing:
         existing.rating = rating

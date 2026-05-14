@@ -5548,6 +5548,38 @@ html { scroll-behavior: smooth; }
   margin:0 0 10px;
   font-size:1.05rem;
 }
+.warning-callout-urgent {
+  background:#fff8e1;
+  border-left:6px solid #e67e22;
+  border:1px solid #f0c674;
+  padding:16px 20px;
+  margin:18px 0;
+  border-radius:6px;
+}
+.warning-callout-urgent-title {
+  margin:0 0 8px;
+  color:#a04000;
+  font-size:1.15rem;
+}
+.warning-callout-urgent ul {
+  margin:8px 0 8px 18px;
+  padding:0;
+}
+.warning-callout-urgent li {
+  margin-bottom:4px;
+}
+.warning-callout-urgent-note {
+  margin:8px 0 0;
+  font-size:13px;
+}
+.warning-before-taking {
+  background:#f4f8fc;
+  border:1px solid #c9d8ea;
+  border-left:5px solid #1a3a6e;
+  padding:14px 18px;
+  margin:14px 0;
+  border-radius:6px;
+}
 .is-209 {
   background:#f1f8ff;
   border:1px solid #cfe2f3;
@@ -7553,3 +7585,46 @@ html { scroll-behavior: smooth; }
 
 /* ---- Section tabs on sub-pages (e.g., /<slug>/dosage) ---- */
 .section-tabs--subpage { margin-bottom: 18px; position: static; box-shadow: none; }
+
+/* ── Reviews by condition chips ── */
+.reviews-by-condition { margin: 0 0 18px; padding: 14px; background: #f5f7fa; border: 1px solid var(--gray-200, #e3e6eb); border-radius: 6px; }
+.reviews-by-condition h3 { margin: 0 0 10px; font-size: 1rem; color: var(--navy, #1a3e72); }
+.reviews-by-condition-list { list-style: none; padding: 0; margin: 0; display: flex; flex-wrap: wrap; gap: 8px; }
+.reviews-by-condition-chip { display: inline-block; padding: 5px 12px; border: 1px solid #c8d2dd; border-radius: 999px; background: #fff; color: #1a3e72; text-decoration: none; font-size: 0.88rem; }
+.reviews-by-condition-chip:hover { background: #e8f0fa; }
+.reviews-by-condition-chip.is-active { background: #1a3e72; color: #fff; border-color: #1a3e72; }
+@media (prefers-color-scheme: dark) {
+  .reviews-by-condition { background: #1a1a2e; border-color: #2a2a4a; }
+  .reviews-by-condition h3 { color: #cfe0ff; }
+  .reviews-by-condition-chip { background: #2a2a4a; color: #cfe0ff; border-color: #3a3a55; }
+  .reviews-by-condition-chip:hover { background: #3a3a55; }
+  .reviews-by-condition-chip.is-active { background: #4da6ff; color: #0b0f1a; border-color: #4da6ff; }
+}
+
+/* ── Dedicated Write a Review page ── */
+.review-new-wrap { max-width: 760px; margin: 0 auto; }
+.review-new-wrap h1 { color: var(--navy, #1a3e72); margin-bottom: 6px; }
+.review-form-full .review-fieldset {
+  border: 1px solid var(--gray-200, #e3e6eb);
+  border-radius: 6px;
+  padding: 14px 16px;
+  margin: 14px 0;
+}
+.review-form-full .review-fieldset legend {
+  font-weight: 600;
+  color: var(--navy, #1a3e72);
+  padding: 0 6px;
+}
+.review-form-full label { display: block; margin: 8px 0 4px; font-weight: 500; }
+.review-form-full input[type="text"],
+.review-form-full select,
+.review-form-full textarea { width: 100%; padding: 8px; border: 1px solid var(--gray-200, #e3e6eb); border-radius: 4px; font-family: inherit; font-size: 0.95rem; }
+.subratings-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; }
+@media (prefers-color-scheme: dark) {
+  .review-new-wrap h1 { color: #cfe0ff; }
+  .review-form-full .review-fieldset { border-color: #2a2a4a; background: #0f1424; }
+  .review-form-full .review-fieldset legend { color: #cfe0ff; }
+  .review-form-full input[type="text"],
+  .review-form-full select,
+  .review-form-full textarea { background: #1a1a2e; color: #e8e8e8; border-color: #2a2a4a; }
+}
