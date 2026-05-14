@@ -3541,6 +3541,11 @@ def seed_database():
     seed_benchmark_users()
     seed_extra_reviews()
     recompute_drug_ratings()
+    # Supplemental and backfill passes run once as part of initial seeding;
+    # they are defined later in the file but called here so the all-or-nothing
+    # gate above covers them too (avoids SQLite metadata bumps on every reset).
+    seed_supplemental()
+    seed_pregnancy_risks()
 
 
 # ---------------------------------------------------------------------------
@@ -6738,8 +6743,6 @@ def init_app():
     with app.app_context():
         db.create_all()
         seed_database()
-        seed_supplemental()
-        seed_pregnancy_risks()
 
 
 init_app()
