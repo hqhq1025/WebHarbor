@@ -4030,7 +4030,17 @@ def drug_detail(slug):
                      'FARXIGA', 'INVOKANA', 'BYDUREON', 'BYETTA', 'TRULICITY',
                      'OZEMPIC', 'VICTOZA', 'RYBELSUS', 'MOUNJARO', 'WEGOVY'}
     _raw_interactions = _ov.get("interactions_text") or drug.interactions_text or ""
-    if _raw_interactions:
+    # If no manual override and the DB field is raw FDA structured table text, suppress it
+    # so only the clean inline DrugInteraction widget is shown.
+    _RAW_FDA_PATTERNS = (
+        re.compile(r'^\s*7\s+DRUG INTERACTIONS\s+See Table'),
+        re.compile(r'^\s*7\s+DRUG INTERACTIONS\s+Table'),
+        re.compile(r'^ADVERSE REACTIONS\b'),
+        re.compile(r'^\s*7\.?\s+DRUG INTERACTIONS\s+[A-Z]'),
+    )
+    _is_raw_fda = (not _ov.get("interactions_text") and
+                   any(p.match(_raw_interactions) for p in _RAW_FDA_PATTERNS))
+    if _raw_interactions and not _is_raw_fda:
         _inter_paras = []
         for _p in _raw_interactions.split('\n\n'):
             _p_up = _p.upper()
