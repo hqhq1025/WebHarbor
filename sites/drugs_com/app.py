@@ -1678,9 +1678,21 @@ def _expand_tokens(tokens: list[str]) -> list[str]:
 def score_drug(drug, tokens):
     class_name = drug.drug_class.name if drug.drug_class else ""
     class_desc = drug.drug_class.description if drug.drug_class else ""
-    text = f"{drug.generic_name} {drug.brand_names_json} {class_name} {class_desc} {drug.uses or ''} {drug.description or ''}".lower()
+    gname = drug.generic_name.lower()
+    brands = " ".join(drug.brand_names).lower() if drug.brand_names else ""
+    body = f"{class_name} {class_desc} {drug.uses or ''} {drug.description or ''}".lower()
     expanded = _expand_tokens(tokens)
-    return sum(1 for t in expanded if t in text)
+    score = 0
+    for t in expanded:
+        if t == gname:
+            score += 20  # exact generic name match
+        elif gname.startswith(t) or t in gname:
+            score += 10  # partial generic name match
+        elif t in brands:
+            score += 8   # brand name match
+        elif t in body:
+            score += 1   # description/class match
+    return score
 
 
 @app.template_filter('pill_image_exists')
