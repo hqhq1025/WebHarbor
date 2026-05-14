@@ -1686,6 +1686,7 @@ DRUG_CONTENT_OVERRIDES = {
         "side_effects": "At therapeutic doses: generally well tolerated when TSH is in normal range. Signs of over-replacement (too much): palpitations, tachycardia, heat intolerance, sweating, weight loss, insomnia, anxiety, diarrhea, tremors. Signs of under-replacement (too little): fatigue, weight gain, cold intolerance, dry skin, constipation, depression, bradycardia.",
         "dosage": "Adults (full replacement): 1.6 mcg/kg/day (IBW) once daily. Elderly or cardiac patients: start 12.5-25 mcg/day, increase by 12.5-25 mcg every 4-6 weeks. Recheck TSH 4-8 weeks after any dose change; annual monitoring when stable. Take on an empty stomach 30-60 minutes before breakfast; consistently at the same time each day. Many formulations (Synthroid, Levoxyl, Tirosint) are NOT bioequivalent — do not switch brands without physician guidance.",
         "before_taking": "Tell your doctor about all medications — many reduce levothyroxine absorption: calcium supplements, iron, antacids, bile acid sequestrants (cholestyramine), omeprazole/PPIs, sucralfate, and soy products should be taken 4 hours apart from levothyroxine. Certain drugs increase levothyroxine metabolism (phenytoin, rifampin, carbamazepine). Tell your doctor if you have heart disease, adrenal insufficiency (treat with corticosteroids before levothyroxine), diabetes (may change insulin/OHA requirements), or osteoporosis. Inform your doctor if you are pregnant — dose requirements increase early in pregnancy; do not stop levothyroxine during pregnancy.",
+        "interactions_text": "Levothyroxine interacts with many drugs that affect its absorption, metabolism, or thyroid hormone levels. Absorption-reducing agents should be taken at least 4 hours apart from levothyroxine: calcium carbonate, ferrous sulfate, cholestyramine (Questran), colestipol, colesevelam, sucralfate, aluminum and magnesium hydroxide antacids, sevelamer, lanthanum carbonate, and proton pump inhibitors (omeprazole, lansoprazole).\n\nDrugs that increase levothyroxine clearance (may require dose increase): phenytoin, carbamazepine, rifampin, phenobarbital, and ritonavir stimulate hepatic metabolism. Estrogen-containing oral contraceptives and hormone replacement therapy increase thyroxine-binding globulin (TBG), which may increase total T4 requirements in hypothyroid patients on replacement therapy.\n\nDrugs that decrease TSH or affect thyroid hormone levels: glucocorticoids, dopamine, and octreotide may reduce TSH secretion. Amiodarone contains large amounts of iodine and can cause hypothyroidism or hyperthyroidism — thyroid function requires close monitoring. Lithium inhibits thyroid hormone synthesis and release. Tyrosine kinase inhibitors (sunitinib, sorafenib) and immunotherapy agents can cause thyroiditis.\n\nEffect of levothyroxine on other drugs: levothyroxine may enhance the anticoagulant effect of warfarin — monitor INR closely when starting, stopping, or changing levothyroxine doses. Levothyroxine may increase the sensitivity to tricyclic antidepressants. Levothyroxine may affect insulin or oral hypoglycemic requirements in diabetic patients — monitor blood glucose.",
     },
     "alprazolam": {
         "description": "Alprazolam (Xanax, Xanax XR, Niravam) is a short-acting triazolobenzodiazepine that potentiates GABA-A receptor activity, producing anxiolytic, sedative, muscle-relaxant, and anticonvulsant effects. It is a Schedule IV controlled substance.",
@@ -3663,9 +3664,23 @@ def format_drug_text(text):
     if not text:
         return ''
     text = str(text).strip()
-    # Strip section number prefixes from FDA labels (e.g. "11 DESCRIPTION ", "1 INDICATIONS AND USAGE ")
-    text = re.sub(r'^\s*\d+\s+[A-Z][A-Z ]{3,}\s+', '', text)
-    text = re.sub(r'\.\s*\d+\s+[A-Z][A-Z ]{3,}\s+', '. ', text)
+    # Strip section number prefixes from FDA labels (e.g. "11 DESCRIPTION ", "7 DRUG INTERACTIONS ")
+    text = re.sub(r'^\s*\d+(?:\.\d+)?\s+[A-Z][A-Z ]{3,}\s+', '', text)
+    text = re.sub(r'\.\s*\d+(?:\.\d+)?\s+[A-Z][A-Z ]{3,}\s+', '. ', text)
+    # Strip FDA cross-reference parentheticals like "[see Clinical Pharmacology (12.3)]"
+    text = re.sub(r'\[see [^\]]{1,60}\(\d+[\.\d]*\)\]', '', text)
+    text = re.sub(r'\( ?\d+(?:\.\d+)? ?\)', '', text)
+    # Strip raw FDA table headers like "Table 5." or "Table 5. Drugs That May..."
+    text = re.sub(r'Table \d+\.?[^.]*?\.\s*', '', text)
+    # Strip FDA subsection headings like "7.1 Drugs Known to Affect Thyroid Hormone Pharmacokinetics"
+    # Match: digit.digit + space + Title Case words (up to 80 chars total) + lookahead for sentence start
+    text = re.sub(r'\d+\.\d+(?:\.\d+)? [A-Z][A-Za-z ,/()-]{5,80}?(?=\n|  |\. [A-Z]| [A-Z][a-z]{2,}[^a-z])', ' ', text)
+    # Strip parenthetical table ranges like "(Tables 5 to 8)" or "(Table 5)"
+    text = re.sub(r'\(Tables? \d+(?: to \d+)?\)', '', text)
+    # Strip flattened FDA table column headers like "Drug or Drug Class Effect " at start of paragraphs
+    text = re.sub(r'(?:Drug (?:or Drug Class|Class|Name)\s+(?:Effect|Mechanism|Clinical Impact|Recommendation)\s*)', '', text)
+    # Strip inline section refs like "(7)" or "( 7 )" after spaces
+    text = re.sub(r'\s\(\s?\d+\s?\)\s', ' ', text)
     # Strip full sentences that are pure chemistry boilerplate
     boilerplate_patterns = [
         r'[Tt]he (empirical|chemical|molecular) formula',
@@ -3681,6 +3696,8 @@ def format_drug_text(text):
         r'USP is \([βαδ]',     # IUPAC stereochem name "calcium USP is (βR, δR)-..."
         r'structural formula',
         r'molecular weight is \d',
+        r'See full prescribing information',
+        r'prescribing information for',
     ]
     sentences_raw = re.split(r'(?<=[.!?])\s+', text)
     filtered = []
@@ -5780,8 +5797,10 @@ def compare_drugs():
             return "cream, gel"
         return "Tablet"
 
-    # Support both ?drug1=X&drug2=Y and ?drugs=X&drugs=Y formats
+    # Support ?drug1=X&drug2=Y, ?drugs=X&drugs=Y, and ?drugs=X,Y formats
     drugs_list = request.args.getlist("drugs")
+    if len(drugs_list) == 1 and "," in drugs_list[0]:
+        drugs_list = [d.strip() for d in drugs_list[0].split(",")]
     drug1 = _lookup(request.args.get("drug1") or (drugs_list[0] if len(drugs_list) > 0 else ""))
     drug2 = _lookup(request.args.get("drug2") or (drugs_list[1] if len(drugs_list) > 1 else ""))
     drug3 = _lookup(request.args.get("drug3") or (drugs_list[2] if len(drugs_list) > 2 else ""))
