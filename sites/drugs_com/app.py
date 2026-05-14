@@ -6119,13 +6119,17 @@ def drug_pro_monograph(slug):
 @app.route("/<slug>/dosage")
 def drug_dosage(slug):
     drug = Drug.query.filter_by(slug=slug).first_or_404()
-    return render_template("drug_dosage.html", drug=drug)
+    _ov = DRUG_CONTENT_OVERRIDES.get(drug.generic_name, {})
+    rt_dosage = _ov.get("dosage") or drug.dosage
+    return render_template("drug_dosage.html", drug=drug, rt_dosage=rt_dosage)
 
 
 @app.route("/<slug>/side-effects")
 def drug_side_effects(slug):
     drug = Drug.query.filter_by(slug=slug).first_or_404()
-    return render_template("drug_side_effects.html", drug=drug)
+    _ov = DRUG_CONTENT_OVERRIDES.get(drug.generic_name, {})
+    rt_side_effects = _ov.get("side_effects") or drug.side_effects
+    return render_template("drug_side_effects.html", drug=drug, rt_side_effects=rt_side_effects)
 
 
 # FDA pregnancy category mapping for common drugs. Drugs not listed fall through
@@ -6413,7 +6417,8 @@ def drug_pregnancy(slug):
 @app.route("/<slug>/warnings")
 def drug_warnings(slug):
     drug = Drug.query.filter_by(slug=slug).first_or_404()
-    text = (drug.warnings or "").strip()
+    _ov = DRUG_CONTENT_OVERRIDES.get(drug.generic_name, {})
+    text = (_ov.get("warnings") or drug.warnings or "").strip()
     boxed_warning = None
     lowered = text.lower()
     if "boxed warning" in lowered or "black box" in lowered:

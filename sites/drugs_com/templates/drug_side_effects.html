@@ -33,7 +33,7 @@
 
   <section class="se-overview">
     <h2>Overview</h2>
-    {{ drug.side_effects | format_drug_text | safe }}
+    {{ (rt_side_effects or drug.side_effects) | format_drug_text | safe }}
     <p>The lists below organize side effects by reported frequency in clinical trials and
     postmarketing surveillance. Frequency ranges reflect the proportion of patients who
     experienced the effect in pooled studies of {{ drug.generic_name|capitalize }}; your
