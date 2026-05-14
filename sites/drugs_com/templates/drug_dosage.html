@@ -65,6 +65,16 @@
         </tr>
       </thead>
       <tbody>
+        {% if dosage_rows %}
+          {% for row in dosage_rows %}
+          <tr>
+            <td>{{ row.indication }}</td>
+            <td>{{ row.form }}</td>
+            <td>{{ row.adult }}</td>
+            <td>{{ row.pediatric }}</td>
+          </tr>
+          {% endfor %}
+        {% else %}
         <tr>
           <td>Primary indication</td>
           <td>Oral (tablet/capsule)</td>
@@ -77,12 +87,7 @@
           <td>Lowest effective maintenance dose; reassess periodically.</td>
           <td>Adjust by weight and clinical response.</td>
         </tr>
-        <tr>
-          <td>Alternate routes (if available)</td>
-          <td>IV / topical / other</td>
-          <td>Per product label.</td>
-          <td>Per product label; not all forms are approved in children.</td>
-        </tr>
+        {% endif %}
       </tbody>
     </table>
   </section>

@@ -6116,12 +6116,45 @@ def drug_pro_monograph(slug):
     return render_template("drug_pro_monograph.html", drug=drug)
 
 
+def _parse_dosage_rows(text, drug_name):
+    """Parse dosage text into list of {indication, form, adult, pediatric} rows."""
+    if not text:
+        return None
+    rows = []
+    sentences = re.split(r'(?<=[.;])\s+', text.strip())
+    adult_dose = ""
+    ped_dose = ""
+    for s in sentences:
+        sl = s.lower()
+        if re.search(r'ped|child|infant|neonate', sl):
+            ped_dose = s.strip()
+        elif re.search(r'adult|initial|usual|max|dose', sl):
+            if adult_dose:
+                adult_dose += " " + s.strip()
+            else:
+                adult_dose = s.strip()
+    if adult_dose:
+        form = "Oral"
+        if re.search(r'topical|cream|gel|patch', adult_dose.lower()):
+            form = "Topical"
+        elif re.search(r'inject|IV|subcutaneous', adult_dose):
+            form = "Injection"
+        rows.append({
+            "indication": f"{drug_name.capitalize()} treatment",
+            "form": form,
+            "adult": adult_dose,
+            "pediatric": ped_dose or "Consult prescribing information for weight-based dosing."
+        })
+    return rows if rows else None
+
+
 @app.route("/<slug>/dosage")
 def drug_dosage(slug):
     drug = Drug.query.filter_by(slug=slug).first_or_404()
     _ov = DRUG_CONTENT_OVERRIDES.get(drug.generic_name) or DRUG_CONTENT_OVERRIDES.get(drug.generic_name.replace(' ', '-'), {})
     rt_dosage = _ov.get("dosage") or drug.dosage
-    return render_template("drug_dosage.html", drug=drug, rt_dosage=rt_dosage)
+    dosage_rows = _parse_dosage_rows(rt_dosage, drug.generic_name)
+    return render_template("drug_dosage.html", drug=drug, rt_dosage=rt_dosage, dosage_rows=dosage_rows)
 
 
 def _parse_side_effects(text):
