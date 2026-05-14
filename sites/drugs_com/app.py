@@ -3493,7 +3493,7 @@ def seed_benchmark_users():
 
 def seed_extra_reviews():
     """Add reviews across all popular drugs from auto-generated reviewer users."""
-    if DrugReview.query.count() >= 1200:
+    if DrugReview.query.count() >= 2400:
         return
     # Create some anonymous reviewer users if not present
     reviewers = []
@@ -3548,7 +3548,17 @@ def seed_extra_reviews():
                "fluconazole", "itraconazole", "voriconazole", "terbinafine",
                "acyclovir", "valacyclovir", "famciclovir", "oseltamivir",
                "hydroxychloroquine", "chloroquine", "doxycycline", "mefloquine",
-               "donepezil", "memantine", "rivastigmine", "galantamine", "lecanemab"]
+               "donepezil", "memantine", "rivastigmine", "galantamine", "lecanemab",
+               "tirzepatide", "sumatriptan", "diphenhydramine", "melatonin", "amitriptyline",
+               "naloxone", "naltrexone", "doxazosin", "adalimumab", "dupilumab",
+               "clonidine", "prazosin", "terazosin", "guanfacine",
+               "zolpidem", "eszopiclone", "ramelteon", "doxylamine",
+               "nortriptyline", "imipramine", "desipramine", "clomipramine",
+               "sumatriptan", "rizatriptan", "zolmitriptan", "eletriptan",
+               "morphine", "oxymorphone", "fentanyl", "tapentadol",
+               "methadone", "naltrexone", "buprenorphine",
+               "vitamin B12", "vitamin C", "zinc", "magnesium", "calcium carbonate",
+               "docusate", "polyethylene glycol", "bisacodyl", "senna"]
     drug_by_name = {d.generic_name: d for d in Drug.query.all()}
     count = 0
     for i, name in enumerate(popular):
@@ -3568,7 +3578,7 @@ def seed_extra_reviews():
                 created_at=datetime.utcnow() - timedelta(days=(i * 4 + j)),
             ))
             count += 1
-        if count >= 2000:
+        if count >= 4000:
             break
     db.session.commit()
     if count > 0:
