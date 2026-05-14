@@ -5376,6 +5376,7 @@ _DRUG_CLASS_SLUG_ALIASES: dict[str, str] = {
 
 
 @app.route("/drug-class/<slug>")
+@app.route("/drug-classes/<slug>")
 def drug_class_page(slug):
     # Handle common abbreviations and aliases
     canonical = _DRUG_CLASS_SLUG_ALIASES.get(slug.lower())
