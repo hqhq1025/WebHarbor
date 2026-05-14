@@ -4221,6 +4221,8 @@ def drug_reviews_page(slug):
 
 
 @app.route("/<slug>/reviews/new", methods=["GET"])
+@app.route("/<slug>/reviews/write", methods=["GET"])
+@app.route("/<slug>/reviews/write.html", methods=["GET"])
 @login_required
 def drug_review_new(slug):
     drug = Drug.query.filter_by(slug=slug).first_or_404()
