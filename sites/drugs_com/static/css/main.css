@@ -4392,6 +4392,31 @@ html { scroll-behavior: smooth; }
 .notable-drugs-brands { font-size: 0.82rem; }
 .notable-drugs-rating { white-space: nowrap; font-size: 0.82rem; }
 
+.drug-class-section { margin: 18px 0 22px; }
+.drug-class-section h2 {
+  margin: 0 0 8px;
+  padding-bottom: 4px;
+  border-bottom: 1px solid #e3e8ef;
+  color: #1a3a6e;
+}
+.drug-class-section p { line-height: 1.6; margin: 0 0 10px; }
+
+.class-side-effects {
+  list-style: disc;
+  padding-left: 22px;
+  margin: 8px 0 0;
+  columns: 2;
+  column-gap: 28px;
+}
+.class-side-effects li {
+  margin: 4px 0;
+  break-inside: avoid;
+  line-height: 1.45;
+}
+@media (max-width: 640px) {
+  .class-side-effects { columns: 1; }
+}
+
 /* Drug dosage page */
 .dosage-table {
   width: 100%;
@@ -7417,3 +7442,114 @@ html { scroll-behavior: smooth; }
     padding: 8px 18px;
     font-weight: 600;
 }
+
+/* ---- Hero search autocomplete (homepage) ---- */
+.hero-search-wrap { position: relative; }
+.hero-autocomplete {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background: #fff;
+  border: 1px solid var(--gray-300);
+  border-top: none;
+  border-radius: 0 0 6px 6px;
+  box-shadow: 0 6px 18px rgba(0,0,0,0.12);
+  z-index: 60;
+  max-height: 360px;
+  overflow-y: auto;
+  text-align: left;
+}
+.hero-autocomplete .autocomplete-group-header {
+  padding: 6px 14px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--gray-500);
+  background: var(--gray-50, #f6f8fb);
+  border-bottom: 1px solid var(--gray-100);
+}
+.hero-autocomplete .autocomplete-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  cursor: pointer;
+  font-size: 0.95rem;
+  color: var(--gray-900);
+  border-bottom: 1px solid var(--gray-50, #f0f3f7);
+}
+.hero-autocomplete .autocomplete-item:last-child { border-bottom: none; }
+.hero-autocomplete .autocomplete-item.active,
+.hero-autocomplete .autocomplete-item:hover { background: var(--blue-light, #eaf3fb); color: var(--blue); }
+.hero-autocomplete .autocomplete-icon { font-size: 1rem; flex-shrink: 0; }
+.hero-autocomplete .autocomplete-label { flex: 1; }
+
+/* ---- Featured drugs grid (homepage) ---- */
+.featured-drugs-sub { margin: 4px 0 14px; }
+.featured-drugs-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 16px;
+}
+.featured-drug-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 16px 12px 14px;
+  border: 1px solid var(--gray-200);
+  border-radius: 8px;
+  background: #fff;
+  text-decoration: none;
+  color: inherit;
+  transition: box-shadow 0.15s ease, transform 0.15s ease, border-color 0.15s ease;
+}
+.featured-drug-card:hover {
+  box-shadow: 0 6px 18px rgba(0,0,0,0.08);
+  transform: translateY(-2px);
+  border-color: var(--blue);
+  text-decoration: none;
+}
+.featured-drug-pill {
+  width: 110px;
+  height: 70px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 8px;
+}
+.featured-drug-pill .pill-svg,
+.featured-drug-pill-img {
+  max-width: 100%;
+  max-height: 100%;
+  width: auto;
+  height: auto;
+  object-fit: contain;
+}
+.featured-drug-name {
+  font-size: 1rem;
+  font-weight: 600;
+  margin: 4px 0 2px;
+  color: var(--blue);
+}
+.featured-drug-brands {
+  font-size: 0.82rem;
+  margin: 0 0 8px;
+  min-height: 1em;
+}
+.featured-drug-meta {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.85rem;
+  margin: 0;
+}
+.featured-drug-rating { color: #d97706; font-weight: 600; }
+.featured-drug-rating .muted { font-weight: 400; }
+
+/* ---- Section tabs on sub-pages (e.g., /<slug>/dosage) ---- */
+.section-tabs--subpage { margin-bottom: 18px; position: static; box-shadow: none; }

@@ -1,20 +1,90 @@
 {% extends "base.html" %}
 {% block title %}Drugs.com | Know More. Be Sure.{% endblock %}
+{% from "_pill_svg.html" import render_pill %}
 {% block content %}
 
 <!-- Hero -->
 <div class="hero-section">
   <h1>Know more. Be sure.</h1>
   <p class="hero-sub">Drug and health information, from pharmacists you can trust.</p>
-  <form action="{{ url_for('search') }}" method="get" class="hero-search-form">
+  <form action="{{ url_for('search') }}" method="get" class="hero-search-form" autocomplete="off">
     <div class="hero-search-wrap">
-      <input class="hero-search-input" type="search" name="q" placeholder="Search drugs, conditions, or symptoms...">
+      <input class="hero-search-input" type="search" name="q" id="hero-search-input"
+             placeholder="Enter a drug name, condition, or imprint"
+             autocomplete="off" aria-label="Search drugs, conditions, or imprints">
       <button class="hero-search-btn" type="submit" aria-label="Search">
         <svg class="is-227" width="20" height="20" viewBox="0 0 20 20" fill="none"><circle cx="8.5" cy="8.5" r="5.75" stroke="currentColor" stroke-width="1.8"/><line x1="12.9" y1="12.9" x2="17" y2="17" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
         <span class="is-228">Search</span>
       </button>
+      <div class="hero-autocomplete search-autocomplete" id="hero-autocomplete" hidden></div>
     </div>
   </form>
+  <script>
+  (function(){
+    var input = document.getElementById('hero-search-input');
+    var box = document.getElementById('hero-autocomplete');
+    if (!input || !box) return;
+    var timer = null, items = [], active = -1;
+    function hide(){ box.hidden = true; box.innerHTML = ''; items = []; active = -1; }
+    function escapeHtml(s){
+      return String(s).replace(/[&<>"']/g, function(c){
+        return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];
+      });
+    }
+    function groupLabel(t){ return t === 'condition' ? 'Conditions' : 'Drugs'; }
+    function iconFor(t){ return t === 'condition' ? '\u{1F3E5}' : '\u{1F48A}'; }
+    function setActive(i){
+      var nodes = box.querySelectorAll('.autocomplete-item');
+      nodes.forEach(function(n){ n.classList.remove('active'); });
+      active = i;
+      if (i >= 0 && i < nodes.length) nodes[i].classList.add('active');
+    }
+    function render(data){
+      items = data || [];
+      if (!items.length){ hide(); return; }
+      var groups = {}, order = [];
+      items.forEach(function(r){
+        var g = r.type === 'condition' ? 'condition' : 'drug';
+        if (!groups[g]){ groups[g] = []; order.push(g); }
+        groups[g].push(r);
+      });
+      var html = '', idx = 0, reordered = [];
+      order.forEach(function(g){
+        html += '<div class="autocomplete-group-header">' + groupLabel(g) + '</div>';
+        groups[g].forEach(function(r){
+          html += '<div class="autocomplete-item" data-idx="' + idx + '" data-url="' + r.url + '">'
+                + '<span class="autocomplete-icon">' + iconFor(r.type) + '</span>'
+                + '<span class="autocomplete-label">' + escapeHtml(r.label) + '</span>'
+                + '</div>';
+          reordered.push(r); idx++;
+        });
+      });
+      items = reordered;
+      box.innerHTML = html;
+      box.hidden = false;
+      active = -1;
+      Array.prototype.forEach.call(box.querySelectorAll('.autocomplete-item'), function(el){
+        el.addEventListener('mousedown', function(e){ e.preventDefault(); window.location.href = el.getAttribute('data-url'); });
+        el.addEventListener('mouseenter', function(){ setActive(parseInt(el.getAttribute('data-idx'), 10)); });
+      });
+    }
+    function fetchSuggestions(){
+      var q = input.value.trim();
+      if (q.length < 2){ hide(); return; }
+      fetch('/api/autocomplete?q=' + encodeURIComponent(q))
+        .then(function(r){ return r.json(); }).then(render).catch(hide);
+    }
+    input.addEventListener('input', function(){ if (timer) clearTimeout(timer); timer = setTimeout(fetchSuggestions, 180); });
+    input.addEventListener('keydown', function(e){
+      if (box.hidden || !items.length) return;
+      if (e.key === 'ArrowDown'){ e.preventDefault(); setActive((active + 1) % items.length); }
+      else if (e.key === 'ArrowUp'){ e.preventDefault(); setActive((active - 1 + items.length) % items.length); }
+      else if (e.key === 'Enter' && active >= 0){ e.preventDefault(); window.location.href = items[active].url; }
+      else if (e.key === 'Escape'){ hide(); }
+    });
+    document.addEventListener('click', function(e){ if (!box.contains(e.target) && e.target !== input) hide(); });
+  })();
+  </script>
   <p class="hero-popular">
     <strong>Popular searches:</strong>
     <a href="{{ url_for('search') }}?q=ibuprofen">ibuprofen</a> &middot;
@@ -318,12 +388,27 @@ function scrollCarousel(dir) {
   <!-- Featured drugs -->
   <div class="home-row">
     <h2>Featured drugs</h2>
-    <div class="card-grid">
+    <p class="muted featured-drugs-sub">Popular medications with pill images, brand names, and user ratings.</p>
+    <div class="card-grid featured-drugs-grid">
       {% for d in featured %}
-        <a class="drug-card" href="{{ url_for('drug_detail', slug=d.slug) }}">
-          <h3>{{ d.generic_name|capitalize }}</h3>
-          <p class="muted">{{ d.brand_names|join(', ') if d.brand_names else 'Generic' }}</p>
-          <p class="rating">Rating: {{ d.avg_rating }}/10 ({{ d.review_count }})</p>
+        <a class="drug-card featured-drug-card" href="{{ url_for('drug_detail', slug=d.slug) }}">
+          <div class="featured-drug-pill">
+            {% if d.slug|pill_image_exists %}
+              <img src="{{ url_for('static', filename='images/pills/' + d.slug + '.jpg') }}"
+                   alt="{{ d.generic_name|capitalize }} pill" class="featured-drug-pill-img" loading="lazy">
+            {% elif d.images and d.images|length > 0 %}
+              {% set img0 = d.images[0] %}
+              {{ render_pill('feat-home-' + d.slug, img0.shape or 'oval', img0.color or 'white', img0.imprint or d.slug[:4].upper()) }}
+            {% else %}
+              {{ render_pill('feat-home-' + d.slug, 'oval', 'white', d.slug[:4].upper()) }}
+            {% endif %}
+          </div>
+          <h3 class="featured-drug-name">{{ d.generic_name|capitalize }}</h3>
+          <p class="muted featured-drug-brands">{{ d.brand_names|join(', ') if d.brand_names else 'Generic' }}</p>
+          <p class="featured-drug-meta">
+            <span class="avail-badge {% if d.availability == 'Rx' %}avail-rx{% elif d.availability == 'OTC' %}avail-otc{% else %}avail-both{% endif %}">{{ d.availability }}</span>
+            {% if d.avg_rating %}<span class="featured-drug-rating">&#9733; {{ '%.1f'|format(d.avg_rating) }}/10 <span class="muted">({{ d.review_count }})</span></span>{% endif %}
+          </p>
         </a>
       {% endfor %}
     </div>

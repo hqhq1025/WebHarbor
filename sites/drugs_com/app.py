@@ -2764,6 +2764,140 @@ CLASS_DESCRIPTIONS = {
 }
 
 
+# Extended, multi-paragraph profiles for major drug classes. Each entry has:
+#   overview     - "What are X?" mechanism-of-action paragraph
+#   uses         - "What are X used for?" paragraph
+#   side_effects - list of common side effects shared across the class
+# Lookup by class name OR singular form (stripping trailing 's').
+DRUG_CLASS_DESCRIPTIONS_EXTENDED = {
+    "Benzodiazepines": {
+        "overview": (
+            "Benzodiazepines are central nervous system depressants that enhance the activity of "
+            "gamma-aminobutyric acid (GABA), the brain's main inhibitory neurotransmitter. By binding to "
+            "a specific site on the GABA-A receptor, they increase the frequency with which chloride "
+            "channels open in response to GABA, producing sedation, anxiolysis, muscle relaxation, and "
+            "anticonvulsant effects. Individual benzodiazepines differ mainly in onset and duration of "
+            "action, which determines whether a given drug is preferred for acute anxiety, panic attacks, "
+            "alcohol withdrawal, status epilepticus, or short-term insomnia."
+        ),
+        "uses": (
+            "Benzodiazepines are most often prescribed for the short-term management of generalized "
+            "anxiety disorder, panic disorder, and acute situational anxiety. They are also used to "
+            "control acute seizures and status epilepticus, manage alcohol and sedative withdrawal, "
+            "produce sedation for medical procedures, treat severe insomnia for limited periods, and "
+            "relieve muscle spasm. Because of the risk of tolerance, dependence, and withdrawal, "
+            "guidelines generally recommend the lowest effective dose for the shortest duration."
+        ),
+        "side_effects": [
+            "Drowsiness and sedation",
+            "Dizziness and unsteadiness",
+            "Impaired coordination and falls (especially in older adults)",
+            "Memory problems and anterograde amnesia",
+            "Slowed reaction time and impaired driving",
+            "Confusion and cognitive slowing",
+            "Tolerance, physical dependence, and withdrawal on abrupt discontinuation",
+            "Respiratory depression when combined with opioids or alcohol",
+        ],
+    },
+    "SSRIs": {
+        "overview": (
+            "Selective serotonin reuptake inhibitors (SSRIs) block the serotonin transporter on "
+            "presynaptic neurons, increasing the amount of serotonin available in the synapse. Over "
+            "several weeks, this leads to downstream adaptations in serotonin receptor signaling that "
+            "are thought to underlie their antidepressant and anxiolytic effects. SSRIs are the most "
+            "widely prescribed class of antidepressants because they are generally better tolerated and "
+            "considerably safer in overdose than older tricyclic antidepressants and MAO inhibitors."
+        ),
+        "uses": (
+            "SSRIs are first-line therapy for major depressive disorder and most anxiety disorders, "
+            "including generalized anxiety disorder, panic disorder, social anxiety disorder, "
+            "obsessive-compulsive disorder, and post-traumatic stress disorder. They are also used for "
+            "premenstrual dysphoric disorder, bulimia nervosa, and certain forms of chronic pain. Full "
+            "therapeutic effect typically takes four to six weeks, and treatment is usually continued "
+            "for at least six months after symptom remission."
+        ),
+        "side_effects": [
+            "Nausea and gastrointestinal upset",
+            "Headache",
+            "Insomnia or, conversely, drowsiness",
+            "Sexual dysfunction (decreased libido, delayed orgasm)",
+            "Weight changes",
+            "Dry mouth",
+            "Sweating",
+            "Increased risk of bleeding, especially with NSAIDs",
+            "Hyponatremia (low sodium), particularly in older adults",
+            "Discontinuation syndrome if stopped abruptly",
+        ],
+    },
+    "Statins": {
+        "overview": (
+            "Statins are HMG-CoA reductase inhibitors. By blocking the rate-limiting enzyme of "
+            "cholesterol synthesis in the liver, they reduce hepatic cholesterol production, upregulate "
+            "LDL receptors on liver cells, and increase clearance of LDL particles from the blood. The "
+            "net effect is a substantial reduction in LDL cholesterol and a modest reduction in "
+            "triglycerides, along with anti-inflammatory and plaque-stabilizing effects on the arterial "
+            "wall. Decades of large randomized trials have established that statins reduce the risk of "
+            "heart attack, stroke, and cardiovascular death."
+        ),
+        "uses": (
+            "Statins are prescribed for primary and secondary prevention of cardiovascular disease in "
+            "people with elevated LDL cholesterol, established coronary artery disease, prior stroke, "
+            "diabetes, or a high calculated 10-year risk of atherosclerotic events. They are also used "
+            "in familial hypercholesterolemia. Guidelines emphasize high-intensity statin therapy for "
+            "those at highest risk and moderate-intensity therapy for intermediate-risk patients."
+        ),
+        "side_effects": [
+            "Muscle aches and pains (myalgia)",
+            "Muscle weakness",
+            "Elevated liver enzymes",
+            "Headache",
+            "Digestive symptoms (nausea, constipation, diarrhea)",
+            "Increased blood sugar and small increased risk of new-onset diabetes",
+            "Rarely, rhabdomyolysis (severe muscle breakdown)",
+            "Memory or concentration complaints (uncommon and usually reversible)",
+        ],
+    },
+    "ACE inhibitors": {
+        "overview": (
+            "Angiotensin-converting enzyme (ACE) inhibitors block the enzyme that converts angiotensin "
+            "I to angiotensin II, a potent vasoconstrictor that also stimulates aldosterone release. "
+            "By lowering angiotensin II levels, ACE inhibitors relax blood vessels, reduce sodium and "
+            "water retention, and decrease the workload on the heart. They also reduce bradykinin "
+            "breakdown, which contributes to their vasodilatory effect and to their characteristic dry "
+            "cough. Long-term use slows progression of kidney disease, particularly in diabetes."
+        ),
+        "uses": (
+            "ACE inhibitors are a first-line treatment for hypertension and are central to the "
+            "management of heart failure with reduced ejection fraction, where they improve survival "
+            "and reduce hospitalization. They are also used after myocardial infarction to limit "
+            "ventricular remodeling, and in patients with diabetic nephropathy or chronic kidney "
+            "disease with proteinuria, where they slow progression of kidney damage."
+        ),
+        "side_effects": [
+            "Dry, persistent cough",
+            "Elevated blood potassium (hyperkalemia)",
+            "Dizziness or lightheadedness, especially with the first dose",
+            "Low blood pressure",
+            "Worsening kidney function in susceptible patients",
+            "Loss of taste",
+            "Rash",
+            "Angioedema (rare but serious swelling of the face, lips, or airway)",
+            "Should not be used in pregnancy due to fetal harm",
+        ],
+    },
+}
+
+
+def get_extended_class_profile(class_name):
+    """Return the extended profile dict for a class name, or None if not present."""
+    if not class_name:
+        return None
+    return (
+        DRUG_CLASS_DESCRIPTIONS_EXTENDED.get(class_name)
+        or DRUG_CLASS_DESCRIPTIONS_EXTENDED.get(class_name.rstrip("s"))
+    )
+
+
 @app.route("/drug-class/<slug>")
 def drug_class_page(slug):
     cls = DrugClass.query.filter_by(slug=slug).first_or_404()
@@ -2783,12 +2917,17 @@ def drug_class_page(slug):
         .all()
     )
 
-    class_description = cls.description
-    if not class_description:
-        class_description = (
-            CLASS_DESCRIPTIONS.get(cls.name)
-            or CLASS_DESCRIPTIONS.get((cls.name or "").rstrip("s"))
-        )
+    extended = get_extended_class_profile(cls.name) or {}
+    class_overview = extended.get("overview")
+    class_uses = extended.get("uses")
+    class_side_effects = extended.get("side_effects") or []
+
+    class_description = (
+        class_overview
+        or cls.description
+        or CLASS_DESCRIPTIONS.get(cls.name)
+        or CLASS_DESCRIPTIONS.get((cls.name or "").rstrip("s"))
+    )
 
     drug_ids = [d.id for d in drugs]
     common_conditions = []
@@ -2828,6 +2967,9 @@ def drug_class_page(slug):
         sort=sort,
         drug_count=len(drugs),
         class_description=class_description,
+        class_overview=class_overview,
+        class_uses=class_uses,
+        class_side_effects=class_side_effects,
         common_conditions=common_conditions,
         notable_drugs=notable_drugs,
     )
