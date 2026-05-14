@@ -57,7 +57,7 @@
 
     <label class="is-382">
       <input class="is-339" type="checkbox" name="agree_terms" required>
-      <span>I agree to the <a class="is-383" href="#">Terms of Use</a> and <a class="is-383" href="#">Privacy Policy</a>.</span>
+      <span>I agree to the <a class="is-383" href="{{ url_for('terms') }}">Terms of Use</a> and <a class="is-383" href="{{ url_for('privacy') }}">Privacy Policy</a>.</span>
     </label>
 
     <button type="submit" class="btn btn-primary is-301">Create account</button>
