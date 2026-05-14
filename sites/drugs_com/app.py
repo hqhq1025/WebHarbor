@@ -2631,9 +2631,29 @@ def api_interaction_check():
 @app.route("/pill_identification.html")
 @app.route("/pill-identifier.html")
 def pill_identifier():
+    # When GET params are present, process as a search (same logic as pill_identifier_results)
+    imprint = (request.args.get("imprint") or "").strip()
+    shape = (request.args.get("shape") or "").strip()
+    color = (request.args.get("color") or "").strip()
     shapes = sorted({i.shape for i in DrugImage.query.all() if i.shape})
     colors = sorted({i.color for i in DrugImage.query.all() if i.color})
-    return render_template("pill_identifier.html", shapes=shapes, colors=colors, results=None)
+    if not imprint and not shape and not color:
+        return render_template("pill_identifier.html", shapes=shapes, colors=colors, results=None)
+    q = DrugImage.query
+    if shape:
+        q = q.filter(db.func.lower(DrugImage.shape) == shape.lower())
+    if color:
+        q = q.filter(db.func.lower(DrugImage.color) == color.lower())
+    candidates = q.all()
+    if imprint:
+        def _norm(s):
+            return re.sub(r"[\s\-]+", "", (s or "")).lower()
+        needle = _norm(imprint)
+        results = [r for r in candidates if needle in _norm(r.imprint)]
+    else:
+        results = candidates
+    return render_template("pill_identifier.html", shapes=shapes, colors=colors,
+                           results=results, imprint=imprint, shape=shape, color=color)
 
 
 @app.route("/pill-identifier-results")

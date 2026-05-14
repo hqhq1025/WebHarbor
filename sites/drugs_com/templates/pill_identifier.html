@@ -30,7 +30,7 @@
   down. Enter any of the criteria below and we'll match it against our drug database.
 </p>
 
-<form method="get" action="{{ url_for('pill_identifier_results') }}" class="pill-form">
+<form method="get" action="{{ url_for('pill_identifier') }}" class="pill-form">
   <div class="pill-form-row">
     <label for="pill-imprint">Imprint
       <input id="pill-imprint" type="text" name="imprint" value="{{ imprint or '' }}"
