@@ -13,6 +13,16 @@
 
 <div class="page-with-sidebar">
 <div class="main-col">
+<nav class="section-tabs section-tabs--subpage" aria-label="Drug sections">
+  <a href="{{ url_for('drug_detail', slug=drug.slug) }}#uses">Uses</a>
+  <a href="{{ url_for('drug_detail', slug=drug.slug) }}#warnings">Warnings</a>
+  <a href="{{ url_for('drug_detail', slug=drug.slug) }}#before-taking">Before taking</a>
+  <a href="{{ url_for('drug_dosage', slug=drug.slug) }}">Dosage</a>
+  <a href="{{ url_for('drug_detail', slug=drug.slug) }}#what-to-avoid">What to avoid</a>
+  <a href="{{ url_for('drug_side_effects', slug=drug.slug) }}">Side effects</a>
+  <a href="{{ url_for('drug_interactions_page', slug=drug.slug) }}" class="active" aria-current="page">Interactions</a>
+  <a href="{{ url_for('drug_detail', slug=drug.slug) }}#faq">FAQ</a>
+</nav>
 
 <h1>{{ drug.generic_name|title }} Drug Interactions</h1>
 <p class="lead">A list of known interactions between {{ drug.generic_name|title }} and other

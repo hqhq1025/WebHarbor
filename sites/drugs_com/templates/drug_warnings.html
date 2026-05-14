@@ -9,7 +9,19 @@
   </nav>
 </div>
 
+<div class="page-with-sidebar">
+<div class="main-col">
 <article class="drug-detail">
+  <nav class="section-tabs section-tabs--subpage" aria-label="Drug sections">
+    <a href="{{ url_for('drug_detail', slug=drug.slug) }}#uses">Uses</a>
+    <a href="{{ url_for('drug_detail', slug=drug.slug) }}#warnings" class="active" aria-current="page">Warnings</a>
+    <a href="{{ url_for('drug_detail', slug=drug.slug) }}#before-taking">Before taking</a>
+    <a href="{{ url_for('drug_dosage', slug=drug.slug) }}">Dosage</a>
+    <a href="{{ url_for('drug_detail', slug=drug.slug) }}#what-to-avoid">What to avoid</a>
+    <a href="{{ url_for('drug_side_effects', slug=drug.slug) }}">Side effects</a>
+    <a href="{{ url_for('drug_interactions_page', slug=drug.slug) }}">Interactions</a>
+    <a href="{{ url_for('drug_detail', slug=drug.slug) }}#faq">FAQ</a>
+  </nav>
   <header class="drug-header">
     <h1>{{ drug.generic_name|capitalize }} Warnings</h1>
     <p class="reviewer-line">
@@ -87,4 +99,20 @@
 
   <p class="is-030"><a href="{{ url_for('drug_detail', slug=drug.slug) }}">&laquo; Back to {{ drug.generic_name|capitalize }} overview</a></p>
 </article>
+</div>
+<aside class="sidebar">
+  <div class="sidebar-box">
+    <h3>More about {{ drug.generic_name }}</h3>
+    <ul class="sidebar-links">
+      <li><a href="{{ url_for('drug_detail', slug=drug.slug) }}">Drug overview</a></li>
+      <li><a href="{{ url_for('drug_dosage', slug=drug.slug) }}">Dosage guide</a></li>
+      <li><a href="{{ url_for('drug_side_effects', slug=drug.slug) }}">Side effects</a></li>
+      <li><a href="{{ url_for('drug_interactions_page', slug=drug.slug) }}">Drug interactions</a></li>
+      <li><a href="{{ url_for('drug_pregnancy', slug=drug.slug) }}">Pregnancy &amp; lactation</a></li>
+      <li><a href="{{ url_for('drug_images', slug=drug.slug) }}">Pill images</a></li>
+      <li><a href="{{ url_for('drug_prices', slug=drug.slug) }}">Prices &amp; coupons</a></li>
+    </ul>
+  </div>
+</aside>
+</div>
 {% endblock %}

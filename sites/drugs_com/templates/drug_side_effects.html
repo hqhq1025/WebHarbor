@@ -12,6 +12,16 @@
 <div class="page-with-sidebar">
 <div class="main-col">
 <article class="drug-detail">
+  <nav class="section-tabs section-tabs--subpage" aria-label="Drug sections">
+    <a href="{{ url_for('drug_detail', slug=drug.slug) }}#uses">Uses</a>
+    <a href="{{ url_for('drug_detail', slug=drug.slug) }}#warnings">Warnings</a>
+    <a href="{{ url_for('drug_detail', slug=drug.slug) }}#before-taking">Before taking</a>
+    <a href="{{ url_for('drug_dosage', slug=drug.slug) }}">Dosage</a>
+    <a href="{{ url_for('drug_detail', slug=drug.slug) }}#what-to-avoid">What to avoid</a>
+    <a href="{{ url_for('drug_side_effects', slug=drug.slug) }}" class="active" aria-current="page">Side effects</a>
+    <a href="{{ url_for('drug_interactions_page', slug=drug.slug) }}">Interactions</a>
+    <a href="{{ url_for('drug_detail', slug=drug.slug) }}#faq">FAQ</a>
+  </nav>
   <header class="drug-header">
     <h1>{{ drug.generic_name|capitalize }} Side Effects</h1>
     <p class="reviewer-line">

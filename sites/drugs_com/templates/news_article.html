@@ -77,8 +77,22 @@
       <h2>Fast facts &mdash; Key takeaways</h2>
       <ul>
         {% for p in takeaway_source %}
+          {# Extract first real sentence - accumulate fragments until we get >= 40 chars or run out #}
           {% set sentences = p.split('. ') %}
-          {% set snippet = sentences[0] | trim %}
+          {% set ns = namespace(snippet='', done=false) %}
+          {% for frag in sentences %}
+            {% if not ns.done %}
+              {% if ns.snippet %}
+                {% set ns.snippet = ns.snippet + '. ' + frag %}
+              {% else %}
+                {% set ns.snippet = frag %}
+              {% endif %}
+              {% if ns.snippet | length >= 50 %}
+                {% set ns.done = true %}
+              {% endif %}
+            {% endif %}
+          {% endfor %}
+          {% set snippet = ns.snippet | trim %}
           {% if snippet %}
             <li>{{ snippet }}{% if not snippet.endswith('.') %}.{% endif %}</li>
           {% endif %}
