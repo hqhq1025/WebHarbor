@@ -631,7 +631,7 @@ CONDITIONS_DATA = [
 
 PILL_IMAGES_DATA = [
     # (generic_name, imprint, shape, color, strength, manufacturer)
-    ("ibuprofen", "I-2", "Round", "White", "200 mg", "Advil"),
+    ("ibuprofen", "I-2", "Oval", "White", "200 mg", "Advil"),
     ("ibuprofen", "44-291", "Round", "Brown", "200 mg", "LNK International"),
     ("ibuprofen", "IP 466", "Oval", "White", "800 mg", "Amneal Pharmaceuticals"),
     ("acetaminophen", "TYLENOL 500", "Oblong", "White", "500 mg", "McNeil"),

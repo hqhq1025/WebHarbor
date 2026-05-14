@@ -39,7 +39,7 @@
     {% if drug.images %}
     <ul>
       {% set forms = [] %}
-      {% for img in drug.images %}{% if img.strength %}{% set _ = forms.append(img.strength) %}{% endif %}{% endfor %}
+      {% for img in drug.images %}{% if img.strength and img.strength not in forms %}{% set _ = forms.append(img.strength) %}{% endif %}{% endfor %}
       {% for f in forms %}<li>{{ f }}</li>{% endfor %}
     </ul>
     {% else %}
