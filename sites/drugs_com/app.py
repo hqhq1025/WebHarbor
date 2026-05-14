@@ -992,6 +992,32 @@ NEWS_DATA = [
 ]
 
 
+_COND_DISPLAY: dict[str, str] = {
+    "pain": "pain", "hypertension": "high blood pressure", "high_blood_pressure": "high blood pressure",
+    "high_cholesterol": "high cholesterol", "heart_disease": "heart disease", "diabetes": "diabetes",
+    "type2_diabetes": "type 2 diabetes", "type1_diabetes": "type 1 diabetes",
+    "depression": "depression", "anxiety": "anxiety", "ocd": "OCD", "ptsd": "PTSD",
+    "panic_disorder": "panic disorder", "social_anxiety": "social anxiety disorder",
+    "pmdd": "PMDD", "seizures": "seizures", "epilepsy": "epilepsy",
+    "neuropathic_pain": "neuropathic pain", "restless_legs": "restless legs syndrome",
+    "fibromyalgia": "fibromyalgia", "obesity": "weight management",
+    "weight_management": "weight management", "asthma": "asthma", "copd": "COPD",
+    "acid_reflux": "acid reflux", "gerd": "GERD", "infection": "bacterial infection",
+    "urinary_tract_infection": "urinary tract infections", "pneumonia": "pneumonia",
+    "edema": "edema", "atrial_fibrillation": "atrial fibrillation",
+    "deep_vein_thrombosis": "blood clots", "pulmonary_embolism": "pulmonary embolism",
+    "thyroid": "thyroid condition", "hypothyroidism": "hypothyroidism",
+    "insomnia": "insomnia", "sleep_disorder": "sleep problems", "gout": "gout",
+    "rheumatoid_arthritis": "rheumatoid arthritis", "osteoporosis": "osteoporosis",
+    "migraine": "migraines", "nausea": "nausea", "fever": "fever",
+    "inflammation": "inflammation", "general": "my condition",
+}
+
+
+def _humanize_cond(slug: str) -> str:
+    return _COND_DISPLAY.get(slug, slug.replace("_", " "))
+
+
 REVIEW_TEMPLATES = [
     ("Worked great for my condition", 9, "I was prescribed this for {cond} and have had excellent results. Minimal side effects so far. Highly recommend talking to your doctor about this option."),
     ("Took a while to kick in", 7, "It took about 4 weeks before I really noticed a difference treating my {cond}. Once it started working, the effect has been consistent. Some mild side effects at first."),
@@ -1539,7 +1565,7 @@ def seed_benchmark_users():
             tmpl = REVIEW_TEMPLATES[(idx + j) % len(REVIEW_TEMPLATES)]
             db.session.add(DrugReview(
                 drug_id=target.id, user_id=user.id, rating=tmpl[1],
-                title=tmpl[0], body=tmpl[2].format(cond=conds[0]),
+                title=tmpl[0], body=tmpl[2].format(cond=_humanize_cond(conds[0])),
                 condition_treated=conds[0],
                 helpful_count=(idx + j) * 3,
             ))
@@ -1592,11 +1618,12 @@ def seed_extra_reviews():
             continue
         conds = d.conditions_list or ["general"]
         for j in range(4):
-            tmpl = REVIEW_TEMPLATES[(i + j) % len(REVIEW_TEMPLATES)]
+            # Offset by 5 so reviewer_N templates don't duplicate benchmark user reviews
+            tmpl = REVIEW_TEMPLATES[(i + j + 5) % len(REVIEW_TEMPLATES)]
             u = reviewers[(i + j) % len(reviewers)]
             db.session.add(DrugReview(
                 drug_id=d.id, user_id=u.id, rating=tmpl[1],
-                title=tmpl[0], body=tmpl[2].format(cond=conds[j % len(conds)]),
+                title=tmpl[0], body=tmpl[2].format(cond=_humanize_cond(conds[j % len(conds)])),
                 condition_treated=conds[j % len(conds)],
                 helpful_count=(j + 1) * 4,
                 created_at=datetime.utcnow() - timedelta(days=(i * 4 + j)),
