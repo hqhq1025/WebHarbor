@@ -6022,9 +6022,12 @@ def privacy():
     return render_template("privacy.html")
 
 
-@app.route("/contact")
+@app.route("/contact", methods=["GET", "POST"])
 def contact():
-    return render_template("contact.html")
+    submitted = False
+    if request.method == "POST":
+        submitted = True
+    return render_template("contact.html", submitted=submitted)
 
 
 @app.route("/about")

@@ -38,9 +38,12 @@
     <h2>Applies to the following dosage forms and strengths</h2>
     {% if drug.images %}
     <ul>
-      {% set forms = [] %}
-      {% for img in drug.images %}{% if img.strength and img.strength not in forms %}{% set _ = forms.append(img.strength) %}{% endif %}{% endfor %}
-      {% for f in forms %}<li>{{ f }}</li>{% endfor %}
+      {% set seen = [] %}
+      {% for img in drug.images %}
+        {% set entry = (img.dosage_form or img.shape or '') + (' ' + img.strength if img.strength else '') %}
+        {% set entry = entry.strip() %}
+        {% if entry and entry not in seen %}{% set _ = seen.append(entry) %}<li>{{ entry }}</li>{% endif %}
+      {% endfor %}
     </ul>
     {% else %}
     <p>See prescribing information for available dosage forms.</p>

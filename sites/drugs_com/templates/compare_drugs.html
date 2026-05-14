@@ -241,7 +241,8 @@
 </section>
 
 {% if selected_drugs|length >= 2 %}
-{% set best_rated = selected_drugs|sort(attribute='1.avg_rating', reverse=true)|first %}
+{% set reviewed_drugs = selected_drugs|selectattr('1.review_count')|list %}
+{% set best_rated = (reviewed_drugs if reviewed_drugs else selected_drugs)|sort(attribute='1.avg_rating', reverse=true)|first %}
 <div class="bottom-line-box">
   <div class="bottom-line-header">
     <span class="bottom-line-icon" aria-hidden="true">i</span>

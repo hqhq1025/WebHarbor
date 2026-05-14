@@ -867,8 +867,11 @@
         method: 'POST',
         headers: {'Content-Type':'application/json'},
         body: JSON.stringify({slug: el.dataset.slug})
-      }).then(r=>r.json()).then(data=>{
-        el.textContent = data.saved ? savedText : unsavedText;
+      }).then(r=>{
+        if(!r.ok){ if(r.status===401) window.location='{{ url_for("login") }}'; return; }
+        return r.json();
+      }).then(data=>{
+        if(data) el.textContent = data.saved ? savedText : unsavedText;
       });
     });
   }
