@@ -4843,7 +4843,14 @@ def pill_identifier_results():
 @app.route("/condition/<slug>")
 @app.route("/conditions/<slug>")
 def condition_page(slug):
-    cond = Condition.query.filter_by(slug=slug).first_or_404()
+    # Normalize slug: agents may use hyphens where DB stores underscores (or vice versa).
+    cond = Condition.query.filter_by(slug=slug).first()
+    if cond is None:
+        alt = slug.replace('-', '_') if '-' in slug else slug.replace('_', '-')
+        cond = Condition.query.filter_by(slug=alt).first()
+    if cond is None:
+        from flask import abort
+        abort(404)
     links = DrugCondition.query.filter_by(condition_id=cond.id).all()
     drugs = [Drug.query.get(l.drug_id) for l in links]
     drugs = [d for d in drugs if d]
@@ -5382,7 +5389,13 @@ def drug_class_page(slug):
     canonical = _DRUG_CLASS_SLUG_ALIASES.get(slug.lower())
     if canonical:
         return redirect(url_for("drug_class_page", slug=canonical), 301)
-    cls = DrugClass.query.filter_by(slug=slug).first_or_404()
+    cls = DrugClass.query.filter_by(slug=slug).first()
+    if cls is None:
+        alt = slug.replace('-', '_') if '-' in slug else slug.replace('_', '-')
+        cls = DrugClass.query.filter_by(slug=alt).first()
+    if cls is None:
+        from flask import abort
+        abort(404)
     sort = (request.args.get("sort") or "name").lower()
     drugs_q = Drug.query.filter_by(drug_class_id=cls.id)
     if sort == "rating":
