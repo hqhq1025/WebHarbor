@@ -3667,8 +3667,9 @@ def format_drug_text(text):
     # Strip section number prefixes from FDA labels (e.g. "11 DESCRIPTION ", "7 DRUG INTERACTIONS ")
     text = re.sub(r'^\s*\d+(?:\.\d+)?\s+[A-Z][A-Z ]{3,}\s+', '', text)
     text = re.sub(r'\.\s*\d+(?:\.\d+)?\s+[A-Z][A-Z ]{3,}\s+', '. ', text)
-    # Strip FDA cross-reference parentheticals like "[see Clinical Pharmacology (12.3)]"
-    text = re.sub(r'\[see [^\]]{1,60}\(\d+[\.\d]*\)\]', '', text)
+    # Strip FDA cross-reference bracketed refs like "[see Clinical Pharmacology (12.3)]"
+    # or bare "[see Clinical Pharmacology  ]"
+    text = re.sub(r'\[see [^\]]{1,80}\]', '', text)
     text = re.sub(r'\( ?\d+(?:\.\d+)? ?\)', '', text)
     # Strip raw FDA table headers like "Table 5." or "Table 5. Drugs That May..."
     text = re.sub(r'Table \d+\.?[^.]*?\.\s*', '', text)
@@ -4424,8 +4425,17 @@ def interaction_checker():
         if not d:
             d = Drug.query.filter(db.func.lower(Drug.generic_name) == prefill_slug.lower()).first()
         prefill = d.generic_name if d else prefill_slug
-    if request.method == "POST":
-        raw = request.form.getlist("drugs")
+    # Support GET with multiple drugs: ?drugs[]=warfarin&drugs[]=aspirin or ?drugs=warfarin,aspirin
+    get_drugs = request.args.getlist("drugs[]") or request.args.getlist("drugs")
+    if len(get_drugs) == 1 and "," in get_drugs[0]:
+        get_drugs = [d.strip() for d in get_drugs[0].split(",")]
+    if request.method == "GET" and len(get_drugs) >= 2:
+        # Simulate a POST with these drugs
+        request_override = get_drugs
+    else:
+        request_override = None
+    if request.method == "POST" or request_override:
+        raw = request_override if request_override else request.form.getlist("drugs")
         drugs_input = [r.strip() for r in raw if r and r.strip()]
         resolved = []
         seen_ids = set()
@@ -5935,6 +5945,10 @@ def side_effects_page():
     all_letters = list(string.ascii_uppercase)
 
     popular = Drug.query.order_by(Drug.review_count.desc()).limit(10).all()
+    # Attach override side_effects text so template can use cleaner content
+    for d in popular:
+        _ov = DRUG_CONTENT_OVERRIDES.get(d.generic_name) or DRUG_CONTENT_OVERRIDES.get(d.generic_name.replace(' ', '-'), {})
+        d._se_text = _ov.get("side_effects") or d.side_effects or ""
     return render_template(
         "side_effects.html",
         drugs=drugs, query=q, popular=popular,

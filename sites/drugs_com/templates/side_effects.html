@@ -120,7 +120,7 @@
         {% for d in popular %}
           <tr>
             <td class="se-popular-drug"><a href="{{ url_for('drug_side_effects', slug=d.slug) }}">{{ d.generic_name }}</a></td>
-            <td>{{ (d.side_effects or '')[:220] }}{% if d.side_effects and d.side_effects|length > 220 %}&hellip;{% endif %}</td>
+            <td>{{ (d._se_text or '')[:220] }}{% if d._se_text and d._se_text|length > 220 %}&hellip;{% endif %}</td>
           </tr>
         {% endfor %}
       </tbody>
