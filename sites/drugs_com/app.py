@@ -3835,6 +3835,9 @@ def index():
 @app.route("/drugs-a-to-z.html")
 @app.route("/drug-az")
 @app.route("/drugs-a-z")
+@app.route("/dosage")
+@app.route("/dosage-guide.html")
+@app.route("/dosage-guide")
 def drug_az():
     letter = (request.args.get("letter") or "A").upper()
     if letter not in string.ascii_uppercase:
@@ -4279,6 +4282,7 @@ def review_helpful_vote(slug, review_id):
 
 
 @app.route("/search")
+@app.route("/advanced-search")
 def search():
     q = (request.args.get("q") or "").strip()
     class_slug = request.args.get("class") or ""
@@ -4816,6 +4820,8 @@ def api_interaction_check():
 @app.route("/pill-identifier")
 @app.route("/pill_identification.html")
 @app.route("/pill-identifier.html")
+@app.route("/drug-identifier")
+@app.route("/drug-identifier.html")
 def pill_identifier():
     # When GET params are present, process as a search (same logic as pill_identifier_results)
     imprint = (request.args.get("imprint") or "").strip()
@@ -6027,6 +6033,7 @@ MOST_SEARCHED_SIDE_EFFECTS = [
 
 @app.route("/side-effects/")
 @app.route("/side-effects")
+@app.route("/side-effects.html")
 def side_effects_page():
     """Side Effects A-Z index page.
 
@@ -6064,6 +6071,8 @@ def side_effects_page():
 
 @app.route("/warnings/")
 @app.route("/blackbox-warnings")
+@app.route("/black-box-warnings")
+@app.route("/boxed-warnings")
 def warnings_index():
     category = (request.args.get("category") or "all").lower()
     drugs_with_warnings = Drug.query.filter(Drug.warnings.isnot(None)).order_by(Drug.generic_name).limit(50).all()
