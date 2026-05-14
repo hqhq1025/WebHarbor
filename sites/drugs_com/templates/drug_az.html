@@ -23,7 +23,7 @@
       <div class="letter-grid wide">
         {% for L in all_letters %}
           <a class="letter-btn {% if active_letter and L == active_letter %}active{% endif %}"
-             href="{{ url_for('drug_az') }}?letter={{ L }}">{{ L }}{% if letter_counts %} ({{ letter_counts.get(L, 0) }}){% endif %}</a>
+             href="{{ url_for('drug_az') }}?letter={{ L }}">{{ L }}</a>
         {% endfor %}
       </div>
     </section>

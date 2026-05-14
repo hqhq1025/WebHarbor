@@ -42,8 +42,7 @@
       <span class="drug-meta-item"><strong>Generic name:</strong> {{ drug.generic_name }}</span>
       <span class="drug-meta-item"><strong>Brand names:</strong>
         {% if drug.brand_names %}
-          {% for bn in drug.brand_names[:4] %}<span class="brand-chip">{{ bn }}</span>{% if not loop.last %} {% endif %}{% endfor %}
-          {% if drug.brand_names|length > 4 %}<span class="brand-chip brand-chip--more">+{{ drug.brand_names|length - 4 }} more</span>{% endif %}
+          {% for bn in drug.brand_names %}<span class="brand-chip">{{ bn }}</span>{% if not loop.last %} {% endif %}{% endfor %}
         {% else %}
           <span class="muted">N/A</span>
         {% endif %}
@@ -124,7 +123,6 @@
     <a href="#warnings">Warnings</a>
     <a href="#before-taking">Before taking</a>
     <a href="{{ url_for('drug_dosage', slug=drug.slug) }}">Dosage</a>
-    <a href="#what-to-avoid">What to avoid</a>
     <a href="{{ url_for('drug_side_effects', slug=drug.slug) }}">Side effects</a>
     <a href="{{ url_for('drug_interactions_page', slug=drug.slug) }}">Interactions</a>
     <a href="#faq">FAQ</a>

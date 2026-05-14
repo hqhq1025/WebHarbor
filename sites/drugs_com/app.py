@@ -573,6 +573,21 @@ DRUGS_DATA = [
     # Sleep aids (2 -> 4)
     ("ramelteon", "Sleep aids", "Rx", "Not a controlled drug", "ra-MEL-tee-on", ["Rozerem"], ["insomnia"]),
     ("suvorexant", "Sleep aids", "C-IV", "C-IV", "soo-voe-REX-ant", ["Belsomra"], ["insomnia"]),
+    # J drugs
+    ("januvia", "DPP-4 inhibitors", "Rx", "Not a controlled drug", "ja-NOO-vee-a", ["Sitagliptin"], ["diabetes"]),
+    ("jardiance", "SGLT2 inhibitors", "Rx", "Not a controlled drug", "JAR-dee-ance", ["Empagliflozin"], ["diabetes", "heart_disease"]),
+    ("janumet", "Biguanides", "Rx", "Not a controlled drug", "JAN-yoo-met", ["Sitagliptin/Metformin"], ["diabetes"]),
+    # U drugs
+    ("ursodiol", "Gallstone solubilizing agents", "Rx", "Not a controlled drug", "ur-SOE-dee-ol", ["Actigall", "URSO 250"], ["gallstones"]),
+    ("umeclidinium", "Bronchodilators, long-acting", "Rx", "Not a controlled drug", "ue-mek-li-DIN-ee-um", ["Incruse Ellipta"], ["COPD"]),
+    ("ulipristal", "Progesterone agonists/antagonists", "Rx", "Not a controlled drug", "ue-LIP-ri-stal", ["Ella"], ["contraception"]),
+    # X drugs
+    ("xarelto", "Anticoagulants", "Rx", "Not a controlled drug", "za-REL-toe", ["Rivaroxaban"], ["blood_clots", "heart_disease"]),
+    ("xeljanz", "JAK inhibitors", "Rx", "Not a controlled drug", "ZEL-janz", ["Tofacitinib"], ["arthritis"]),
+    ("xanax", "Benzodiazepines", "Rx", "C-IV", "ZAN-ax", ["Alprazolam"], ["anxiety"]),
+    # Y drugs
+    ("yaz", "Contraceptives", "Rx", "Not a controlled drug", "YAZ", ["Drospirenone/Ethinyl estradiol"], ["contraception"]),
+    ("yasmin", "Contraceptives", "Rx", "Not a controlled drug", "YAZ-min", ["Drospirenone/Ethinyl estradiol"], ["contraception"]),
 ]
 
 
@@ -3745,7 +3760,12 @@ def inject_globals():
 @app.route("/")
 def index():
     featured = Drug.query.filter_by(is_featured=True).limit(8).all()
-    trending = Drug.query.order_by(Drug.review_count.desc()).limit(12).all()
+    _trending_names = ["semaglutide", "tirzepatide", "lisinopril", "metformin",
+                        "atorvastatin", "gabapentin", "sertraline", "amoxicillin",
+                        "ibuprofen", "levothyroxine", "omeprazole", "amlodipine"]
+    trending = [Drug.query.filter_by(generic_name=n).first()
+                for n in _trending_names]
+    trending = [d for d in trending if d]
     news = NewsArticle.query.order_by(NewsArticle.published_at.desc()).limit(6).all()
     classes = DrugClass.query.order_by(DrugClass.name).limit(12).all()
     # Top 12 conditions by drug count (for homepage "Browse by" tabs)

@@ -45,16 +45,16 @@
       <span class="pill-field-hint">Tap the closest match (optional)</span>
       <div class="pill-shape-picker" role="radiogroup" aria-label="Pill shape">
         {% set shape_options = [
-          ('Round',     'M14,4 a10,10 0 1,0 0.01,0'),
-          ('Oval',      'M2,12 a10,5 0 1,0 24,0 a10,5 0 1,0 -24,0'),
-          ('Capsule',   'M3,12 h22 a6,6 0 0,1 0,0 a6,6 0 0,1 -22,0 z M3,12 a6,6 0 0,1 22,0'),
-          ('Oblong',    'M2,12 a8,4 0 1,0 24,0 a8,4 0 1,0 -24,0'),
-          ('Rectangle', 'M3,8 h22 v8 h-22 z'),
-          ('Diamond',   'M14,3 l11,9 l-11,9 l-11,-9 z'),
-          ('Pentagon',  'M14,3 l11,7 l-4,12 h-14 l-4,-12 z'),
-          ('Triangle',  'M14,4 l11,17 h-22 z'),
-          ('Figure 8',  'M9,8 a4,4 0 1,0 0.01,0 z M19,16 a4,4 0 1,0 0.01,0 z'),
-          ('Bullet',    'M6,12 a8,6 0 0,1 16,0 v0 h-16 z'),
+          ('Round',      'M14,4 a10,10 0 1,0 0.01,0'),
+          ('Oval',       'M2,12 a10,5 0 1,0 24,0 a10,5 0 1,0 -24,0'),
+          ('Capsule',    'M5,12 h18 a6,6 0 0,1 0,0 a6,6 0 0,1 -18,0 z'),
+          ('Oblong',     'M2,12 a8,4 0 1,0 24,0 a8,4 0 1,0 -24,0'),
+          ('Rectangle',  'M3,8 h22 v8 h-22 z'),
+          ('3-sided',    'M14,4 l11,17 h-22 z'),
+          ('4-sided',    'M14,3 l11,9 l-11,9 l-11,-9 z'),
+          ('5-sided',    'M14,3 l11,7 l-4,12 h-14 l-4,-12 z'),
+          ('6-sided',    'M14,3 l10,6 l0,6 l-10,6 l-10,-6 l0,-6 z'),
+          ('8-sided',    'M8,4 h8 l6,6 v6 l-6,6 h-8 l-6,-6 v-6 z'),
         ] %}
         {% for label, _path in shape_options %}
           {% set is_sel = (label|lower == (shape or '')|lower) %}
