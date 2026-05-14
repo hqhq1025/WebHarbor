@@ -4185,6 +4185,7 @@ def _build_avoid_items(drug):
 
 
 @app.route("/<slug>/reviews")
+@app.route("/<slug>/reviews.html")
 def drug_reviews_page(slug):
     drug = Drug.query.filter_by(slug=slug).first_or_404()
     page = request.args.get('page', 1, type=int)
@@ -5498,6 +5499,8 @@ def drug_class_page(slug):
 
 
 @app.route("/news/")
+@app.route("/mednews")
+@app.route("/mednews/")
 def news_index():
     cat = request.args.get("cat", "")
     q = request.args.get("q", "")
@@ -5546,6 +5549,9 @@ def news_article(article_id):
 
 @app.route("/news/<category>")
 @app.route("/news/category/<category>")
+@app.route("/new-drug-approvals", defaults={"category": "new-drug-approvals"})
+@app.route("/fda-alerts", defaults={"category": "fda-alerts"})
+@app.route("/clinical-trials", defaults={"category": "clinical-trials"})
 def news_category(category):
     cat_map = {
         "new-drug-approvals": "New Drug Approvals",
@@ -5867,6 +5873,7 @@ def compare_drugs_slug(vs_slug):
 @app.route("/compare/")
 @app.route("/compare")
 @app.route("/compare-drugs")
+@app.route("/compare-drugs.html")
 def compare_drugs():
     def _lookup(q):
         if not q:
@@ -6123,6 +6130,7 @@ def help_page():
 
 
 @app.route("/<slug>/images")
+@app.route("/<slug>/images.html")
 def drug_images(slug):
     drug = Drug.query.filter_by(slug=slug).first_or_404()
     images = DrugImage.query.filter_by(drug_id=drug.id).all()
@@ -6230,6 +6238,7 @@ def generate_drug_prices(drug):
 
 
 @app.route("/<slug>/prices")
+@app.route("/<slug>/prices.html")
 def drug_prices(slug):
     drug = Drug.query.filter_by(slug=slug).first_or_404()
     price_data = generate_drug_prices(drug)
@@ -6282,6 +6291,7 @@ def _parse_dosage_rows(text, drug_name):
 
 
 @app.route("/<slug>/dosage")
+@app.route("/<slug>/dosage.html")
 def drug_dosage(slug):
     drug = Drug.query.filter_by(slug=slug).first_or_404()
     _ov = DRUG_CONTENT_OVERRIDES.get(drug.generic_name) or DRUG_CONTENT_OVERRIDES.get(drug.generic_name.replace(' ', '-'), {})
@@ -6309,6 +6319,7 @@ def _parse_side_effects(text):
 
 
 @app.route("/<slug>/side-effects")
+@app.route("/<slug>/side-effects.html")
 def drug_side_effects(slug):
     drug = Drug.query.filter_by(slug=slug).first_or_404()
     _ov = DRUG_CONTENT_OVERRIDES.get(drug.generic_name) or DRUG_CONTENT_OVERRIDES.get(drug.generic_name.replace(' ', '-'), {})
@@ -6593,6 +6604,7 @@ def _pregnancy_info(drug):
 
 
 @app.route("/<slug>/pregnancy")
+@app.route("/<slug>/pregnancy.html")
 def drug_pregnancy(slug):
     drug = Drug.query.filter_by(slug=slug).first_or_404()
     preg = _pregnancy_info(drug)
@@ -6600,6 +6612,7 @@ def drug_pregnancy(slug):
 
 
 @app.route("/<slug>/warnings")
+@app.route("/<slug>/warnings.html")
 def drug_warnings(slug):
     drug = Drug.query.filter_by(slug=slug).first_or_404()
     _ov = DRUG_CONTENT_OVERRIDES.get(drug.generic_name) or DRUG_CONTENT_OVERRIDES.get(drug.generic_name.replace(' ', '-'), {})
@@ -6655,7 +6668,9 @@ def drug_warnings(slug):
 
 
 @app.route("/<slug>/interactions")
+@app.route("/<slug>/interactions.html")
 @app.route("/<slug>/drug-interactions")
+@app.route("/<slug>/drug-interactions.html")
 def drug_interactions_page(slug):
     drug = Drug.query.filter_by(slug=slug).first_or_404()
     interactions = DrugInteraction.query.filter(
