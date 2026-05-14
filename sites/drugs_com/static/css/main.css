@@ -7230,6 +7230,55 @@ html { scroll-behavior: smooth; }
 }
 .conditions-treated-list a:hover { text-decoration: underline; }
 
+/* ---------- Conditions callout (top of Uses section) ---------- */
+.conditions-callout {
+    margin: 0.75rem 0 1.25rem;
+    padding: 0.85rem 1rem 0.9rem;
+    background: #eef6fb;
+    border: 1px solid #c8e0ec;
+    border-left: 4px solid var(--blue, #2a6fb5);
+    border-radius: 6px;
+}
+.conditions-callout-head {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.55rem;
+}
+.conditions-callout-icon {
+    font-size: 1.1rem;
+    color: var(--blue, #2a6fb5);
+}
+.conditions-callout-title {
+    font-size: 1rem;
+    color: #1f2937;
+}
+.conditions-callout-chips {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem 0.5rem;
+}
+.conditions-callout-chips .condition-chip {
+    display: inline-block;
+    padding: 0.32rem 0.7rem;
+    background: #fff;
+    border: 1px solid var(--blue, #2a6fb5);
+    border-radius: 999px;
+    color: var(--blue, #2a6fb5);
+    font-size: 0.9rem;
+    font-weight: 500;
+    text-decoration: none;
+    transition: background 0.15s, color 0.15s;
+}
+.conditions-callout-chips .condition-chip:hover {
+    background: var(--blue, #2a6fb5);
+    color: #fff;
+    text-decoration: none;
+}
+
 /* ============================================================
    Pregnancy detail page (drug_pregnancy.html)
    ============================================================ */

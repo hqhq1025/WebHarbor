@@ -189,13 +189,21 @@
     <div class="detail-main">
       <section id="uses">
         <h2>What is {{ drug.generic_name }}?</h2>
+        {% if drug_conditions %}
+        <div class="conditions-callout" aria-label="Conditions treated">
+          <div class="conditions-callout-head">
+            <span class="conditions-callout-icon" aria-hidden="true">&#9873;</span>
+            <strong class="conditions-callout-title">What conditions is {{ drug.generic_name }} used to treat?</strong>
+          </div>
+          <ul class="conditions-callout-chips">
+            {% for c in drug_conditions %}
+              <li><a href="{{ url_for('condition_page', slug=c.slug) }}" class="condition-chip">{{ c.name }}</a></li>
+            {% endfor %}
+          </ul>
+        </div>
+        {% endif %}
         {% if drug.description %}{{ drug.description | format_drug_text | safe }}{% endif %}
         {{ drug.uses | format_drug_text | safe }}
-        {% if drug_conditions %}
-        <p><strong>{{ drug.generic_name|capitalize }} is used to treat:</strong>
-          {% for c in drug_conditions %}<a href="{{ url_for('condition_page', slug=c.slug) }}">{{ c.name }}</a>{% if not loop.last %}, {% endif %}{% endfor %}.
-        </p>
-        {% endif %}
       </section>
 
       <section id="warnings">
