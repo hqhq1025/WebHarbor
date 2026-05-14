@@ -5560,7 +5560,18 @@ def news_index():
     per_page = 15
     query = NewsArticle.query
     if cat:
-        query = query.filter_by(category=cat)
+        cat_map = {
+            "new-drug-approvals": "New Drug Approvals",
+            "new drug approvals": "New Drug Approvals",
+            "medical": "Medical",
+            "fda-alerts": "FDA Alerts",
+            "fda alerts": "FDA Alerts",
+            "clinical-trials": "Clinical Trials",
+            "clinical trials": "Clinical Trials",
+            "health": "Health",
+        }
+        db_cat = cat_map.get(cat.lower(), cat)
+        query = query.filter_by(category=db_cat)
     if q:
         query = query.filter(db.or_(
             NewsArticle.title.ilike(f"%{q}%"),
@@ -6293,6 +6304,8 @@ def generate_drug_prices(drug):
     }
 
 
+@app.route("/<slug>/price-guide")
+@app.route("/<slug>/price-guide.html")
 @app.route("/<slug>/prices")
 @app.route("/<slug>/prices.html")
 def drug_prices(slug):
