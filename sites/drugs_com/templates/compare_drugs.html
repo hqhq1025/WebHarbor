@@ -84,7 +84,7 @@
         <tr>
           <td class="cq-attr">Pregnancy category</td>
           {% for _, d, _f in selected_drugs %}
-            <td>{{ d.pregnancy_risk or '—' }}</td>
+            <td>{% set _cat = d.pregnancy_risk|preg_category %}{% if _cat %}Category {{ _cat }}{% else %}{{ d.pregnancy_risk or '—' }}{% endif %}</td>
           {% endfor %}
         </tr>
         <tr>

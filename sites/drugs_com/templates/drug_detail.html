@@ -123,9 +123,9 @@
     <div class="quick-facts-item">
       <span class="quick-facts-label">Pregnancy</span>
       <span class="quick-facts-value">
-        {% set _pr = (drug.pregnancy_risk or '')|upper %}
-        {% if _pr in ['A','B','C','D','X'] %}
-          <span class="preg-badge preg-badge--{{ _pr|lower }}">Category {{ _pr }}</span>
+        {% set _cat = drug.pregnancy_risk|preg_category %}
+        {% if _cat %}
+          <span class="preg-badge preg-badge--{{ _cat|lower }}">Category {{ _cat }}</span>
         {% elif drug.pregnancy_risk %}
           <span class="preg-badge preg-badge--other">{{ drug.pregnancy_risk }}</span>
         {% else %}
@@ -642,9 +642,9 @@
               <span class="status-label">Pregnancy &amp; Lactation</span>
               <span class="status-value">
                 <a href="{{ url_for('drug_pregnancy', slug=drug.slug) }}" class="status-link">
-                  {% set _pr = (drug.pregnancy_risk or '')|upper %}
-                  {% if _pr in ['A','B','C','D','X'] %}
-                    <span class="preg-badge preg-badge--{{ _pr|lower }}">Category {{ _pr }}</span>
+                  {% set _cat = drug.pregnancy_risk|preg_category %}
+                  {% if _cat %}
+                    <span class="preg-badge preg-badge--{{ _cat|lower }}">Category {{ _cat }}</span>
                   {% elif drug.pregnancy_risk %}
                     <span class="preg-badge preg-badge--other">{{ drug.pregnancy_risk }}</span>
                   {% else %}

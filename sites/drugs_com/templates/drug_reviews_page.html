@@ -158,7 +158,7 @@
          {% endif %}
          {% if drug.pregnancy_risk %}
          <li><strong>Pregnancy:</strong>
-           {% if drug.pregnancy_risk|upper in ['A','B','C','D','X'] %}Category {{ drug.pregnancy_risk|upper }}{% else %}{{ drug.pregnancy_risk }}{% endif %}
+           {% set _cat = drug.pregnancy_risk|preg_category %}{% if _cat %}Category {{ _cat }}{% else %}{{ drug.pregnancy_risk }}{% endif %}
          </li>
          {% endif %}
          {% if drug.csa_schedule and drug.csa_schedule|lower not in ['n/a', 'none', 'not scheduled', ''] %}

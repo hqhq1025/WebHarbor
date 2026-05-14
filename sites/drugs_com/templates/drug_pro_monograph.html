@@ -60,7 +60,7 @@
   <section>
     <h2>Use in Specific Populations</h2>
     <p><strong>Pregnancy:</strong>
-      {% if drug.pregnancy_risk %}Category {{ drug.pregnancy_risk }}.{% else %}Not classified.{% endif %}
+      {% set _cat = drug.pregnancy_risk|preg_category %}{% if _cat %}Category {{ _cat }} — {{ drug.pregnancy_risk }}.{% elif drug.pregnancy_risk %}{{ drug.pregnancy_risk }}.{% else %}Not classified.{% endif %}
       <a href="{{ url_for('drug_pregnancy', slug=drug.slug) }}">Pregnancy and lactation details &rsaquo;</a>
     </p>
     <p><strong>Controlled substance:</strong>

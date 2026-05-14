@@ -1977,6 +1977,27 @@ def score_drug(drug, tokens):
     return score
 
 
+@app.template_filter('preg_category')
+def preg_category_filter(risk: str) -> str:
+    """Extract FDA pregnancy category letter (A/B/C/D/X) from a full risk string.
+
+    Handles both bare letters ('C') and prefixed forms ('Category C - description...')
+    Returns the uppercase letter, or '' if not found.
+    """
+    if not risk:
+        return ''
+    s = risk.strip()
+    # Try "Category X" prefix form
+    if s.upper().startswith('CATEGORY '):
+        letter = s[9:10].upper()
+        if letter in 'ABCDX':
+            return letter
+    # Try bare single letter
+    if len(s) == 1 and s.upper() in 'ABCDX':
+        return s.upper()
+    return ''
+
+
 @app.template_filter('pill_image_exists')
 def pill_image_exists(slug):
     """Return True iff ``static/images/pills/<slug>.jpg`` is present on disk.
