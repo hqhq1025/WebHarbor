@@ -235,7 +235,7 @@
         {% if drug_interactions is defined and drug_interactions %}
         <p class="muted">{{ drug.generic_name|capitalize }} has {{ drug_interactions|length }} known drug interaction{{ 's' if drug_interactions|length != 1 else '' }}. Ask your doctor or pharmacist before using {{ drug.generic_name }} with any other medications, especially:</p>
         <ul class="drug-interactions-list">
-          {% for ix in drug_interactions|sort(attribute='severity')[:12] %}
+          {% for ix in (drug_interactions|sort(attribute='severity'))[:12] %}
             {% set other = ix.drug_b if ix.drug_a_id == drug.id else ix.drug_a %}
             {% if other %}
             <li>
