@@ -2874,6 +2874,7 @@ def news_article(article_id):
 
 
 @app.route("/news/<category>")
+@app.route("/news/category/<category>")
 def news_category(category):
     cat_map = {
         "new-drug-approvals": "New Drug Approvals",
