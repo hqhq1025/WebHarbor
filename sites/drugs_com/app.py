@@ -3875,13 +3875,13 @@ def index():
                            top_symptoms=top_symptoms)
 
 
-@app.route("/drug_information.html")
-@app.route("/drugs-a-to-z.html")
-@app.route("/drug-az")
-@app.route("/drugs-a-z")
-@app.route("/dosage")
-@app.route("/dosage-guide.html")
 @app.route("/dosage-guide")
+@app.route("/dosage-guide.html")
+@app.route("/dosage")
+@app.route("/drugs-a-z")
+@app.route("/drug-az")
+@app.route("/drugs-a-to-z.html")
+@app.route("/drug_information.html")
 def drug_az():
     letter = (request.args.get("letter") or "A").upper()
     if letter not in string.ascii_uppercase:
@@ -4327,8 +4327,8 @@ def review_helpful_vote(slug, review_id):
     return jsonify({"votes": review.helpful_count, "review_id": review.id})
 
 
-@app.route("/search")
 @app.route("/advanced-search")
+@app.route("/search")
 def search():
     q = (request.args.get("q") or "").strip()
     class_slug = request.args.get("class") or ""
@@ -4533,11 +4533,11 @@ def autocomplete():
     return jsonify(results[:8])
 
 
-@app.route("/drug_interactions.html", methods=["GET", "POST"])
-@app.route("/drug-interactions", methods=["GET", "POST"])
-@app.route("/drug-interactions/", methods=["GET", "POST"])
-@app.route("/interaction-checker/", methods=["GET", "POST"])
 @app.route("/interaction-checker", methods=["GET", "POST"])
+@app.route("/interaction-checker/", methods=["GET", "POST"])
+@app.route("/drug_interactions.html", methods=["GET", "POST"])
+@app.route("/drug-interactions/", methods=["GET", "POST"])
+@app.route("/drug-interactions", methods=["GET", "POST"])
 def interaction_checker():
     drugs = Drug.query.order_by(Drug.generic_name).all()
     drugs_input = None
@@ -4863,11 +4863,11 @@ def api_interaction_check():
     })
 
 
-@app.route("/pill-identifier")
+@app.route("/drug-identifier.html")
+@app.route("/drug-identifier")
 @app.route("/pill_identification.html")
 @app.route("/pill-identifier.html")
-@app.route("/drug-identifier")
-@app.route("/drug-identifier.html")
+@app.route("/pill-identifier")
 def pill_identifier():
     # When GET params are present, process as a search (same logic as pill_identifier_results)
     imprint = (request.args.get("imprint") or "").strip()
@@ -5550,9 +5550,9 @@ def drug_class_page(slug):
     )
 
 
-@app.route("/news/")
-@app.route("/mednews")
 @app.route("/mednews/")
+@app.route("/mednews")
+@app.route("/news/")
 def news_index():
     cat = request.args.get("cat", "")
     q = request.args.get("q", "")
