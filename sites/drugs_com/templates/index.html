@@ -38,6 +38,18 @@
   <a class="is-231" href="{{ url_for('drug_az') }}?letter=0">0-9</a>
 </div>
 
+<div class="container">
+  <section class="quick-browse-section">
+    <h2 class="quick-browse-title">Popular searches</h2>
+    <p class="quick-browse-sub">Jump straight to the most-searched medications on Drugs.com.</p>
+    <div class="quick-browse-chips">
+      {% for name in ['ibuprofen','acetaminophen','metformin','lisinopril','atorvastatin','amlodipine','omeprazole','gabapentin','sertraline','levothyroxine','amoxicillin','prednisone'] %}
+        <a class="quick-chip" href="{{ url_for('search') }}?q={{ name }}">{{ name|capitalize }}</a>
+      {% endfor %}
+    </div>
+  </section>
+</div>
+
 <!-- Feature icons -->
 <div class="feature-carousel-wrap">
   <button class="carousel-btn carousel-prev" onclick="scrollCarousel(-1)" aria-label="Previous">&#8249;</button>

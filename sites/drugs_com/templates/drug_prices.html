@@ -67,7 +67,7 @@
   </div>
 
   {% for q in price_data.quantities %}
-  <div class="qty-panel" data-qty="{{ q }}" style="overflow-x:auto;{% if not loop.first %}display:none;{% endif %}">
+  <div class="qty-panel price-qty-panel" data-qty="{{ q }}"{% if not loop.first %} style="display:none"{% endif %}>
     <table class="is-166">
       <thead>
         <tr class="is-167">
@@ -196,13 +196,14 @@
           {% set d = deltas[loop.index0] %}
           {% set p = base * (1 + d / 100.0) %}
           {% set barw = (40 + d * 2) %}
+          {% set trend_cls = 'price-trend-up' if d > 0 else ('price-trend-down' if d < 0 else 'price-trend-flat') %}
           <tr>
             <td class="is-193">{{ m }}</td>
             <td class="is-194">${{ '%.2f' % p }}</td>
             <td class="is-193">
-              <span style="display:inline-block;height:10px;width:{{ barw }}%;background:{% if d > 0 %}#e57373{% elif d < 0 %}#81c784{% else %}#90a4ae{% endif %};border-radius:3px"></span>
+              <span class="price-trend-bar {{ trend_cls }}" data-width="{{ barw }}"></span>
             </td>
-            <td style="padding:8px;border-bottom:1px solid #eee;text-align:right;color:{% if d > 0 %}#c0392b{% elif d < 0 %}#1c7c2f{% else %}#666{% endif %}">
+            <td class="price-trend-change {{ trend_cls }}">
               {% if d > 0 %}+{% endif %}{{ d }}%
             </td>
           </tr>
@@ -210,6 +211,13 @@
       </tbody>
     </table>
   </div>
+  <script>
+    (function () {
+      document.querySelectorAll('.price-trend-bar[data-width]').forEach(function (b) {
+        b.style.width = b.getAttribute('data-width') + '%';
+      });
+    })();
+  </script>
   <p class="is-195">
     Prices may vary by location. Use a coupon to save on every refill.
   </p>

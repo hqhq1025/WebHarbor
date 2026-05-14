@@ -160,6 +160,9 @@
           <strong>Important:</strong> Tell your healthcare provider about all medications
           you're taking before starting {{ drug.generic_name }}.
         </div>
+        {% if before_taking %}
+        <p class="before-taking-detail">{{ before_taking }}</p>
+        {% endif %}
         <p>Before taking {{ drug.generic_name }}, tell your doctor if you:</p>
         <ul class="before-taking-list">
           <li><strong>Have allergies</strong> &mdash; You should not use {{ drug.generic_name }} if you are allergic to it or any of its ingredients. Tell your doctor about all known drug or food allergies.</li>
@@ -172,6 +175,12 @@
       <section id="dosage">
         <h2>How should I take {{ drug.generic_name }}?</h2>
         {{ drug.dosage | format_drug_text | safe }}
+        {% if drug.dosage %}
+        <div class="dosage-quick-ref">
+          <h3>Quick reference dosing guide</h3>
+          <p>Always follow your doctor's instructions or the medication label. The information below is for reference only.</p>
+        </div>
+        {% endif %}
         <h3>What happens if I miss a dose?</h3>
         <p>Since {{ drug.generic_name }} is often used when needed, you may not be on a dosing schedule. If you are on a schedule, take the missed dose as soon as you remember. Skip the missed dose if it is almost time for your next scheduled dose. Do not take extra medicine to make up the missed dose.</p>
         <h3>What happens if I overdose?</h3>
