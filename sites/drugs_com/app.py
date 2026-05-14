@@ -3175,6 +3175,153 @@ DRUG_CLASS_DESCRIPTIONS_EXTENDED = {
             "Opioid-induced hyperalgesia with prolonged high-dose use",
         ],
     },
+    "SNRIs": {
+        "overview": (
+            "Serotonin-norepinephrine reuptake inhibitors (SNRIs) inhibit the reuptake of both serotonin "
+            "and norepinephrine into presynaptic neurons, increasing availability of both neurotransmitters "
+            "in the synapse. The dual mechanism distinguishes them from SSRIs and contributes to their "
+            "effectiveness in both mood and pain conditions. Common SNRIs include venlafaxine (Effexor), "
+            "duloxetine (Cymbalta), desvenlafaxine (Pristiq), and levomilnacipran (Fetzima)."
+        ),
+        "uses": (
+            "SNRIs are approved for major depressive disorder, generalized anxiety disorder, social anxiety "
+            "disorder, and panic disorder. Duloxetine has additional FDA approvals for diabetic peripheral "
+            "neuropathic pain, fibromyalgia, and chronic musculoskeletal pain. Venlafaxine extended-release "
+            "is used for hot flashes in menopausal women. They are also used off-label for migraine prevention "
+            "and stress urinary incontinence."
+        ),
+        "side_effects": [
+            "Nausea (often transient, especially at initiation)",
+            "Headache, dizziness, somnolence or insomnia",
+            "Dry mouth, constipation",
+            "Increased sweating",
+            "Sexual dysfunction (decreased libido, anorgasmia, delayed ejaculation)",
+            "Dose-dependent hypertension (especially venlafaxine at higher doses)",
+            "Tachycardia",
+            "Discontinuation syndrome on abrupt cessation (dizziness, sensory disturbances, irritability)",
+            "Suicidal ideation (boxed warning in children, adolescents, and young adults)",
+            "Serotonin syndrome (especially with other serotonergic agents)",
+            "Hyponatremia (SIADH, particularly in elderly patients)",
+            "Increased bleeding risk (with anticoagulants or NSAIDs)",
+        ],
+    },
+    "GLP-1 receptor agonists": {
+        "overview": (
+            "GLP-1 receptor agonists mimic the action of glucagon-like peptide-1, an incretin hormone "
+            "released after meals. They stimulate insulin secretion in a glucose-dependent manner, suppress "
+            "glucagon release, slow gastric emptying, and reduce appetite via central mechanisms. This class "
+            "includes exenatide (Byetta, Bydureon), liraglutide (Victoza, Saxenda), semaglutide (Ozempic, "
+            "Wegovy, Rybelsus), dulaglutide (Trulicity), and tirzepatide (Mounjaro, Zepbound), the last "
+            "being a dual GIP/GLP-1 receptor agonist."
+        ),
+        "uses": (
+            "GLP-1 receptor agonists are used as adjuncts to diet and exercise in adults with type 2 "
+            "diabetes mellitus to improve glycemic control. Several agents in this class also carry "
+            "cardiovascular risk reduction indications in patients with type 2 diabetes and established "
+            "cardiovascular disease. Higher-dose formulations of semaglutide (Wegovy) and liraglutide "
+            "(Saxenda) are approved for chronic weight management in adults and adolescents with obesity "
+            "or overweight with comorbidities."
+        ),
+        "side_effects": [
+            "Nausea, vomiting, diarrhea, constipation (most common, especially during dose escalation)",
+            "Abdominal pain, dyspepsia",
+            "Injection-site reactions (for subcutaneous formulations)",
+            "Decreased appetite and weight loss",
+            "Pancreatitis (rare but serious; discontinue if suspected)",
+            "Cholelithiasis and cholecystitis (increased risk with weight loss)",
+            "Hypoglycemia (mainly when combined with insulin or sulfonylureas)",
+            "Diabetic retinopathy complications (with rapid glycemic improvement, particularly semaglutide)",
+            "Acute kidney injury (often secondary to dehydration from GI side effects)",
+            "Thyroid C-cell tumors (rodent carcinogenicity data; boxed warning; avoid in MEN 2 or MTC history)",
+            "Tachycardia",
+        ],
+    },
+    "SGLT2 inhibitors": {
+        "overview": (
+            "Sodium-glucose cotransporter 2 (SGLT2) inhibitors block SGLT2 in the proximal renal tubule, "
+            "reducing glucose reabsorption and increasing urinary glucose excretion. This insulin-independent "
+            "mechanism lowers blood glucose, body weight, and blood pressure. Members include canagliflozin "
+            "(Invokana), dapagliflozin (Farxiga), empagliflozin (Jardiance), and ertugliflozin (Steglatro)."
+        ),
+        "uses": (
+            "SGLT2 inhibitors are used to improve glycemic control in adults with type 2 diabetes mellitus. "
+            "Several have additional cardiorenal indications: empagliflozin and dapagliflozin reduce the risk "
+            "of cardiovascular death and hospitalization for heart failure in adults with established CVD or "
+            "cardiovascular risk factors; dapagliflozin and canagliflozin slow progression of diabetic kidney "
+            "disease. Dapagliflozin is also approved for heart failure with reduced ejection fraction "
+            "regardless of diabetes status."
+        ),
+        "side_effects": [
+            "Genital mycotic infections (vulvovaginal candidiasis, balanitis; most common class side effect)",
+            "Urinary tract infections (increased due to glucosuria)",
+            "Polyuria, pollakiuria",
+            "Hypotension and dehydration (especially in elderly and with diuretics)",
+            "Hypoglycemia (mainly when combined with insulin or sulfonylureas)",
+            "Fournier's gangrene (necrotizing fasciitis of the perineum; rare but serious)",
+            "Diabetic ketoacidosis, often euglycemic (especially with type 1 diabetes or peri-surgical use)",
+            "Increased LDL cholesterol",
+            "Lower limb amputations (canagliflozin; avoid in high-risk patients)",
+            "Bone fractures (canagliflozin; mechanism unclear)",
+            "Acute kidney injury on initiation (volume depletion–mediated)",
+        ],
+    },
+    "ARBs": {
+        "overview": (
+            "Angiotensin receptor blockers (ARBs) selectively block the angiotensin II type 1 (AT1) receptor, "
+            "preventing angiotensin II from causing vasoconstriction and aldosterone release. Unlike ACE "
+            "inhibitors, ARBs do not inhibit bradykinin degradation and therefore rarely cause cough. "
+            "Common ARBs include losartan (Cozaar), valsartan (Diovan), irbesartan (Avapro), olmesartan "
+            "(Benicar), telmisartan (Micardis), and candesartan (Atacand)."
+        ),
+        "uses": (
+            "ARBs are primarily used for hypertension and heart failure with reduced ejection fraction (as "
+            "alternatives to ACE inhibitors). Losartan and irbesartan have specific approvals for nephropathy "
+            "in type 2 diabetics. Valsartan reduces cardiovascular mortality and hospitalization after "
+            "myocardial infarction. ARBs are first-line for patients who require renin-angiotensin system "
+            "blockade but cannot tolerate ACE inhibitor–induced cough."
+        ),
+        "side_effects": [
+            "Hyperkalemia (especially with potassium-sparing diuretics or renal impairment)",
+            "Hypotension (particularly in volume-depleted patients)",
+            "Acute kidney injury (with bilateral renal artery stenosis or severe volume depletion)",
+            "Angioedema (rare, but cross-reactivity with ACE inhibitor history is possible)",
+            "Dizziness, lightheadedness",
+            "Elevated serum creatinine on initiation (usually mild and stabilizes)",
+            "Fetal and neonatal toxicity (BOXED WARNING: contraindicated in pregnancy)",
+            "Hepatotoxicity (olmesartan-associated sprue-like enteropathy, rare)",
+        ],
+    },
+    "Anticonvulsants": {
+        "overview": (
+            "Anticonvulsants (antiepileptic drugs, AEDs) are a diverse group of medications that reduce "
+            "seizure frequency and severity through multiple mechanisms including voltage-gated sodium channel "
+            "blockade (phenytoin, carbamazepine, lamotrigine), enhancement of GABAergic inhibition "
+            "(valproate, benzodiazepines, gabapentin analogs), calcium channel modulation (gabapentin, "
+            "pregabalin), and glutamate receptor antagonism (perampanel). Many also have indications "
+            "for mood stabilization, neuropathic pain, and migraine prevention."
+        ),
+        "uses": (
+            "AEDs are used as monotherapy or adjunctive therapy for focal and generalized epileptic seizures. "
+            "Selected agents are used for bipolar disorder mood stabilization (valproate, lamotrigine, "
+            "carbamazepine), neuropathic pain (gabapentin, pregabalin), migraine prophylaxis (valproate, "
+            "topiramate), and anxiety disorders (pregabalin). Phenytoin is used for acute seizure management "
+            "and cardiac arrhythmias. Status epilepticus is managed with intravenous benzodiazepines and "
+            "phenytoin or levetiracetam."
+        ),
+        "side_effects": [
+            "Sedation, somnolence, cognitive slowing (dose-related, most common class effect)",
+            "Dizziness, ataxia, diplopia (especially at initiation or with dose increases)",
+            "Nausea, vomiting, weight changes (gain with valproate/gabapentin; loss with topiramate/zonisamide)",
+            "Rash (ranging from mild maculopapular to severe Stevens-Johnson syndrome/TEN, especially lamotrigine, carbamazepine, phenytoin)",
+            "Hyponatremia (carbamazepine, oxcarbazepine; via SIADH mechanism)",
+            "Teratogenicity (valproate: highest risk—neural tube defects, cognitive impairment; carbamazepine, phenytoin also teratogenic)",
+            "Osteoporosis with long-term use (enzyme-inducing AEDs accelerate vitamin D metabolism)",
+            "Drug interactions (enzyme inducers carbamazepine, phenytoin, phenobarbital decrease many co-medications)",
+            "Suicidal ideation and behavior (class warning for all AEDs)",
+            "Valproate-specific: hepatotoxicity, pancreatitis, hyperammonemia, thrombocytopenia, PCOS",
+            "Phenytoin-specific: gingival hyperplasia, peripheral neuropathy, folate deficiency, cerebellar atrophy with toxicity",
+        ],
+    },
 }
 
 
