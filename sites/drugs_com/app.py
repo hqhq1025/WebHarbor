@@ -5424,6 +5424,8 @@ def drug_class_page(slug):
 def news_index():
     cat = request.args.get("cat", "")
     q = request.args.get("q", "")
+    page = request.args.get("page", 1, type=int)
+    per_page = 15
     query = NewsArticle.query
     if cat:
         query = query.filter_by(category=cat)
@@ -5432,12 +5434,17 @@ def news_index():
             NewsArticle.title.ilike(f"%{q}%"),
             NewsArticle.body.ilike(f"%{q}%")
         ))
-    articles = query.order_by(NewsArticle.published_at.desc()).limit(30).all()
+    total = query.count()
+    total_pages = max(1, (total + per_page - 1) // per_page)
+    page = min(max(1, page), total_pages)
+    articles = query.order_by(NewsArticle.published_at.desc()).offset((page - 1) * per_page).limit(per_page).all()
     categories = ["New Drug Approvals", "Medical", "FDA Alerts", "Clinical Trials", "Health"]
     fda_alerts = NewsArticle.query.filter(
         NewsArticle.category.in_(["FDA Alerts", "Safety"])
     ).order_by(NewsArticle.published_at.desc()).limit(4).all()
-    return render_template("news.html", articles=articles, active_category=cat, active_cat=cat or None, categories=categories, search_query=q, fda_alerts=fda_alerts)
+    return render_template("news.html", articles=articles, active_category=cat, active_cat=cat or None,
+                           categories=categories, search_query=q, fda_alerts=fda_alerts,
+                           page=page, total_pages=total_pages)
 
 
 @app.route("/news/<slug>-<int:article_id>")

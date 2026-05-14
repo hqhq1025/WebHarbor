@@ -1604,6 +1604,11 @@ html { scroll-behavior: smooth; }
   margin-top: 20px;
 }
 .pagination-info { color: #666; font-size: 13px; }
+.pagination-link { display: inline-block; padding: 6px 12px; border: 1px solid #ddd; border-radius: 4px; color: var(--blue); text-decoration: none; font-size: 0.9rem; }
+.pagination-link:hover { background: var(--blue); color: #fff; border-color: var(--blue); }
+.pagination-link--active { background: var(--blue); color: #fff; border-color: var(--blue); font-weight: 700; }
+.pagination-link--disabled { color: #aaa; border-color: #eee; cursor: default; }
+.pagination-ellipsis { padding: 6px 4px; color: #999; }
 
 .no-results-box {
   background: #fffbe6;
