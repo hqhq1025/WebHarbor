@@ -458,32 +458,110 @@ function scrollCarousel(dir) {
     </div>
   </div>
 
-  <!-- Latest news + drug classes two-col -->
-  <div class="is-248">
-    <div>
+  <!-- 3-col layout: left nav | news | right approvals (matches real drugs.com) -->
+  <div class="home-3col">
+    <!-- Left sidebar navigation -->
+    <aside class="home-left-nav">
+      <div class="home-left-nav-section">
+        <h3 class="home-left-nav-head">Find a Drug</h3>
+        <ul>
+          <li><a href="{{ url_for('drug_az') }}">Drugs A to Z</a></li>
+          <li><a href="{{ url_for('drug_classes_list') }}">Drug Classes</a></li>
+          <li><a href="{{ url_for('search') }}?q=generic">Generic Drugs</a></li>
+          <li><a href="{{ url_for('search') }}?q=OTC&availability=OTC">OTC Drugs</a></li>
+        </ul>
+      </div>
+      <div class="home-left-nav-section">
+        <h3 class="home-left-nav-head">Drug Information</h3>
+        <ul>
+          <li><a href="{{ url_for('side_effects_page') }}">Side Effects A-Z</a></li>
+          <li><a href="{{ url_for('search') }}?q=dosage">Dosage Guidelines</a></li>
+          <li><a href="{{ url_for('interaction_checker') }}">Drug Interactions</a></li>
+          <li><a href="{{ url_for('search') }}?q=pregnancy">Pregnancy Warnings</a></li>
+          <li><a href="{{ url_for('warnings_index') }}">Black Box Warnings</a></li>
+        </ul>
+      </div>
+      <div class="home-left-nav-section">
+        <h3 class="home-left-nav-head">Tools</h3>
+        <ul>
+          <li><a href="{{ url_for('pill_identifier') }}">Identify a Pill</a></li>
+          <li><a href="{{ url_for('compare_drugs') }}">Compare Drugs</a></li>
+          <li><a href="{{ url_for('my_med_list') }}">Medication Record</a></li>
+          <li><a href="{{ url_for('symptom_checker') }}">Symptom Checker</a></li>
+        </ul>
+      </div>
+      <div class="home-left-nav-section">
+        <h3 class="home-left-nav-head">Browse by Condition</h3>
+        <ul>
+          {% for c in top_conditions[:8] %}
+            <li><a href="{{ url_for('condition_page', slug=c.slug) }}">{{ c.name }}</a></li>
+          {% endfor %}
+          <li><a href="{{ url_for('conditions_list') }}">More conditions &rsaquo;</a></li>
+        </ul>
+      </div>
+      <div class="home-left-nav-section">
+        <h3 class="home-left-nav-head">Professionals</h3>
+        <ul>
+          <li><a href="{{ url_for('pro_edition') }}">Pro Edition</a></li>
+          <li><a href="{{ url_for('drug_az') }}">Prescribing Information</a></li>
+        </ul>
+      </div>
+    </aside>
+
+    <!-- Center: news feed -->
+    <div class="home-news-feed">
       <h2 class="is-249">Latest Medical News</h2>
-      <ul class="news-list">
+      <ul class="news-list news-list--dense">
         {% for a in news %}
           <li>
             <div class="news-meta">
-              <span class="badge">{{ a.category }}</span>
+              <span class="badge news-badge-sm">{{ a.category }}</span>
               <span class="muted">{{ a.published_at.strftime('%B %d, %Y') }}</span>
             </div>
             <h3><a href="{{ url_for('news_article', article_id=a.id) }}">{{ a.title }}</a></h3>
-            <p class="muted">{{ a.body[:140] }}{% if a.body|length > 140 %}...{% endif %}</p>
+            <p class="muted">{{ a.body[:160] }}{% if a.body|length > 160 %}...{% endif %}</p>
           </li>
         {% endfor %}
       </ul>
       <p class="is-250"><a href="{{ url_for('news_index') }}">Read more medical news &rsaquo;</a></p>
     </div>
-    <div>
-      <h2 class="is-249">Browse Drug Classes</h2>
-      <ul class="class-list">
-        {% for c in classes %}
-          <li><a href="{{ url_for('drug_class_page', slug=c.slug) }}">{{ c.name }}</a></li>
-        {% endfor %}
-      </ul>
-    </div>
+
+    <!-- Right sidebar: drug approvals + newsletter -->
+    <aside class="home-right-sidebar">
+      {% if new_approvals %}
+      <div class="home-right-box">
+        <h3 class="home-right-box-head">New Drug Approvals</h3>
+        <ul class="home-approvals-list">
+          {% for a in new_approvals[:5] %}
+          <li>
+            <a href="{{ url_for('news_article', article_id=a.id) }}">{{ a.title }}</a>
+            <div class="muted approval-date-sm">{{ a.published_at.strftime('%b %d, %Y') }}</div>
+          </li>
+          {% endfor %}
+        </ul>
+        <a class="home-right-more" href="{{ url_for('news_category', category='new-drug-approvals') }}">View all approvals &rsaquo;</a>
+      </div>
+      {% endif %}
+
+      <div class="home-right-box">
+        <h3 class="home-right-box-head">Browse Drug Classes</h3>
+        <ul class="home-class-list">
+          {% for c in classes[:12] %}
+            <li><a href="{{ url_for('drug_class_page', slug=c.slug) }}">{{ c.name }}</a></li>
+          {% endfor %}
+          <li><a href="{{ url_for('drug_classes_list') }}">All classes &rsaquo;</a></li>
+        </ul>
+      </div>
+
+      <div class="home-right-box home-newsletter-box">
+        <h3 class="home-right-box-head">Subscribe to our newsletters</h3>
+        <p class="muted" style="font-size:0.82rem;">FDA alerts, drug approvals, and health news.</p>
+        <form action="{{ url_for('newsletter_subscribe') }}" method="post">
+          <input type="email" name="email" placeholder="Enter your email" class="newsletter-email-input" style="width:100%;margin-bottom:6px;">
+          <button type="submit" class="btn btn-primary" style="width:100%;font-size:0.85rem;">Subscribe</button>
+        </form>
+      </div>
+    </aside>
   </div>
 
   <!-- Popular drug searches / Top drugs -->
@@ -491,7 +569,7 @@ function scrollCarousel(dir) {
     <h2>Popular Drug Searches</h2>
     <p class="muted">Most-searched medications on Drugs.com.</p>
     <div class="popular-searches popular-searches--wide">
-      {% set top_drugs = ['acetaminophen','adderall','alprazolam','amoxicillin','atorvastatin','azithromycin','bupropion','buspirone','citalopram','clonazepam','cyclobenzaprine','doxycycline','duloxetine','escitalopram','fluoxetine','gabapentin','hydrochlorothiazide','hydroxyzine','ibuprofen','levothyroxine','lisinopril','loratadine','lorazepam','losartan','metformin','metoprolol','metronidazole','naproxen','omeprazole','oxycodone','pantoprazole','prednisone','sertraline','sildenafil','simvastatin','trazodone','trimethoprim','warfarin','zolpidem','amitriptyline','amlodipine','atenolol','carvedilol','cetirizine','clindamycin','clopidogrel','diazepam','diclofenac','diltiazem','doxazosin','enalapril','famotidine','finasteride','fluticasone','furosemide','glipizide','hydrocodone','insulin glargine','levofloxacin','lisinopril','meloxicam','memantine','methylphenidate','metoclopramide','mirtazapine','montelukast','morphine','naltrexone','nifedipine','nitrofurantoin','paroxetine','quetiapine','ramipril','ranitidine','rosuvastatin','semaglutide','spironolactone','tamsulosin','tirzepatide','topiramate','tramadol','valacyclovir','venlafaxine','verapamil'] %}
+      {% set top_drugs = ['acetaminophen','adderall','alprazolam','amoxicillin','atorvastatin','azithromycin','bupropion','buspirone','citalopram','clonazepam','cyclobenzaprine','doxycycline','duloxetine','escitalopram','fluoxetine','gabapentin','hydrochlorothiazide','hydroxyzine','ibuprofen','levothyroxine','lisinopril','loratadine','lorazepam','losartan','metformin','metoprolol','metronidazole','naproxen','omeprazole','oxycodone','pantoprazole','prednisone','sertraline','sildenafil','simvastatin','trazodone','trimethoprim','warfarin','zolpidem','amitriptyline','amlodipine','atenolol','carvedilol','cetirizine','clindamycin','clopidogrel','diazepam','diclofenac','diltiazem','doxazosin','enalapril','famotidine','finasteride','fluticasone','furosemide','glipizide','hydrocodone','insulin glargine','levofloxacin','meloxicam','memantine','methylphenidate','metoclopramide','mirtazapine','montelukast','morphine','naltrexone','nifedipine','nitrofurantoin','paroxetine','quetiapine','ramipril','ranitidine','rosuvastatin','semaglutide','spironolactone','tamsulosin','tirzepatide','topiramate','tramadol','valacyclovir','venlafaxine','verapamil'] %}
       {% for name in top_drugs %}
         <a href="{{ url_for('drug_detail', slug=name|lower|replace(' ','-')) }}">{{ name|capitalize }}</a>
       {% endfor %}
@@ -500,7 +578,7 @@ function scrollCarousel(dir) {
 </div>
 
 {% if new_approvals %}
-<div class="container">
+<div class="container" style="display:none">
   <div class="home-row new-approvals-row">
     <div class="is-251">
       <h2 class="is-071">New Drug Approvals</h2>

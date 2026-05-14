@@ -278,29 +278,44 @@
 {% endif %}
 {% endif %}
 
-<section class="is-059">
-  <h2>Popular Comparisons</h2>
-  <div class="is-060">
-    <a href="{{ url_for('compare_drugs') }}?drug1=ibuprofen&drug2=naproxen" class="card is-061">
-      <strong>Ibuprofen vs. Naproxen</strong>
-      <p class="muted is-062">NSAIDs for pain and inflammation</p>
-    </a>
-    <a href="{{ url_for('compare_drugs') }}?drug1=atorvastatin&drug2=simvastatin" class="card is-061">
-      <strong>Atorvastatin vs. Simvastatin</strong>
-      <p class="muted is-062">Statins for high cholesterol</p>
-    </a>
-    <a href="{{ url_for('compare_drugs') }}?drug1=metformin&drug2=glipizide" class="card is-061">
-      <strong>Metformin vs. Glipizide</strong>
-      <p class="muted is-062">Oral medications for type 2 diabetes</p>
-    </a>
-    <a href="{{ url_for('compare_drugs') }}?drug1=sertraline&drug2=escitalopram" class="card is-061">
-      <strong>Sertraline vs. Escitalopram</strong>
-      <p class="muted is-062">SSRIs for depression and anxiety</p>
-    </a>
-    <a href="{{ url_for('compare_drugs') }}?drug1=lisinopril&drug2=losartan" class="card is-061">
-      <strong>Lisinopril vs. Losartan</strong>
-      <p class="muted is-062">Blood pressure medications (ACE vs. ARB)</p>
-    </a>
+<section class="compare-popular-section">
+  <h2>Popular comparisons</h2>
+  {% set pop_groups = [
+    ('Type 2 Diabetes', [
+      ('metformin','glipizide'), ('semaglutide','tirzepatide'), ('metformin','sitagliptin'),
+      ('glipizide','glimepiride'), ('insulin glargine','insulin detemir')
+    ]),
+    ('Weight Loss', [
+      ('semaglutide','tirzepatide'), ('orlistat','phentermine'), ('semaglutide','liraglutide')
+    ]),
+    ('Depression', [
+      ('sertraline','escitalopram'), ('fluoxetine','sertraline'), ('bupropion','sertraline'),
+      ('duloxetine','venlafaxine')
+    ]),
+    ('High Blood Pressure', [
+      ('lisinopril','losartan'), ('amlodipine','lisinopril'), ('metoprolol','atenolol'),
+      ('lisinopril','metoprolol')
+    ]),
+    ('Pain &amp; Inflammation', [
+      ('ibuprofen','naproxen'), ('ibuprofen','acetaminophen'), ('naproxen','celecoxib'),
+      ('ibuprofen','aspirin')
+    ]),
+    ('High Cholesterol', [
+      ('atorvastatin','simvastatin'), ('atorvastatin','rosuvastatin'), ('simvastatin','pravastatin'),
+      ('ezetimibe','atorvastatin')
+    ])
+  ] %}
+  <div class="compare-popular-grid">
+    {% for group_name, pairs in pop_groups %}
+    <div class="compare-popular-group">
+      <h3 class="compare-popular-group-title">{{ group_name|safe }}</h3>
+      <ul class="compare-popular-list">
+        {% for a, b in pairs %}
+        <li><a href="{{ url_for('compare_drugs') }}?drug1={{ a|replace(' ','+') }}&drug2={{ b|replace(' ','+') }}">{{ a|capitalize }} vs {{ b|capitalize }}</a></li>
+        {% endfor %}
+      </ul>
+    </div>
+    {% endfor %}
   </div>
 </section>
 {% endblock %}

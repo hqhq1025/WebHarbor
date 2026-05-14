@@ -7956,3 +7956,53 @@ html { scroll-behavior: smooth; }
 }
 .btn-sm { font-size: 0.85rem; padding: 6px 12px; }
 
+
+/* Drug A-Z simple name list */
+.az-name-list { list-style: disc; padding-left: 1.5rem; column-count: 2; column-gap: 2rem; }
+.az-name-list li { padding: 3px 0; font-size: 0.95rem; break-inside: avoid; }
+@media (max-width: 600px) { .az-name-list { column-count: 1; } }
+
+/* Compare drugs popular comparisons grid */
+.compare-popular-section { margin-top: 2.5rem; }
+.compare-popular-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.5rem; margin-top: 1rem; }
+@media (max-width: 900px) { .compare-popular-grid { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 600px) { .compare-popular-grid { grid-template-columns: 1fr; } }
+.compare-popular-group-title { font-size: 0.95rem; font-weight: 700; color: #333; margin: 0 0 0.5rem; }
+.compare-popular-list { list-style: none; padding: 0; margin: 0; }
+.compare-popular-list li { padding: 3px 0; font-size: 0.88rem; }
+.compare-popular-list a { color: var(--blue); text-decoration: none; }
+.compare-popular-list a:hover { text-decoration: underline; }
+
+/* Homepage 3-column layout */
+.home-3col { display: grid; grid-template-columns: 180px 1fr 200px; gap: 1.5rem; margin-top: 1.5rem; align-items: start; }
+@media (max-width: 1100px) { .home-3col { grid-template-columns: 160px 1fr; } .home-right-sidebar { display: none; } }
+@media (max-width: 750px) { .home-3col { grid-template-columns: 1fr; } .home-left-nav { display: none; } }
+
+.home-left-nav { font-size: 0.88rem; }
+.home-left-nav-section { margin-bottom: 1rem; }
+.home-left-nav-head { font-size: 0.78rem; font-weight: 700; color: #555; text-transform: uppercase; letter-spacing: 0.04em; margin: 0 0 4px; }
+.home-left-nav ul { list-style: none; padding: 0; margin: 0; }
+.home-left-nav li { padding: 2px 0; }
+.home-left-nav a { color: var(--blue); text-decoration: none; font-size: 0.88rem; }
+.home-left-nav a:hover { text-decoration: underline; }
+
+.home-news-feed .news-list--dense li { padding: 10px 0; border-bottom: 1px solid #eee; }
+.home-news-feed .news-list--dense li:last-child { border-bottom: none; }
+.news-badge-sm { font-size: 0.7rem; padding: 1px 7px; }
+
+.home-right-sidebar { font-size: 0.88rem; }
+.home-right-box { background: #f8f9fa; border: 1px solid #e8eaf0; border-radius: 6px; padding: 12px; margin-bottom: 1rem; }
+.home-right-box-head { font-size: 0.85rem; font-weight: 700; color: #1a3a6e; margin: 0 0 8px; padding-bottom: 6px; border-bottom: 2px solid var(--blue); }
+.home-approvals-list { list-style: none; padding: 0; margin: 0 0 6px; }
+.home-approvals-list li { padding: 6px 0; border-bottom: 1px solid #e8eaf0; font-size: 0.83rem; }
+.home-approvals-list li:last-child { border-bottom: none; }
+.home-approvals-list a { color: var(--blue); text-decoration: none; font-weight: 500; }
+.home-approvals-list a:hover { text-decoration: underline; }
+.approval-date-sm { font-size: 0.75rem; color: #888; }
+.home-right-more { font-size: 0.8rem; color: var(--blue); text-decoration: none; }
+.home-right-more:hover { text-decoration: underline; }
+.home-class-list { list-style: none; padding: 0; margin: 0; }
+.home-class-list li { padding: 3px 0; font-size: 0.83rem; }
+.home-class-list a { color: var(--blue); text-decoration: none; }
+.home-class-list a:hover { text-decoration: underline; }
+.home-newsletter-box .newsletter-email-input { font-size: 0.82rem; padding: 5px 8px; }
