@@ -1096,6 +1096,21 @@ def seed_conditions():
 
 
 DRUG_CONTENT_OVERRIDES = {
+    "ciprofloxacin": {
+        "description": "Ciprofloxacin (Cipro) is a broad-spectrum fluoroquinolone antibiotic active against both gram-negative and gram-positive organisms. Oral tablets are available as immediate-release (250, 500, 750 mg) and extended-release (500, 1000 mg) formulations.",
+        "uses": "Ciprofloxacin is indicated for urinary tract infections (including complicated UTIs and pyelonephritis), lower respiratory tract infections, skin and soft tissue infections, bone and joint infections, intra-abdominal infections (in combination with metronidazole), infectious diarrhea, typhoid fever, uncomplicated cervical and urethral gonorrhea, chronic bacterial prostatitis, inhalational anthrax (post-exposure prophylaxis), and plague. It is a key treatment option for drug-resistant gram-negative organisms.",
+        "warnings": "FDA BOXED WARNING: Fluoroquinolones, including ciprofloxacin, have been associated with disabling and potentially irreversible serious adverse reactions that have occurred together, including tendinitis and tendon rupture, peripheral neuropathy, and central nervous system effects. Discontinue ciprofloxacin immediately at first signs of tendon pain, swelling, or inflammation; peripheral neuropathy (pain, burning, tingling, numbness, weakness); or CNS reactions (convulsions, toxic psychosis, increased intracranial pressure). Reserve ciprofloxacin for infections that have no alternative treatment options. Ciprofloxacin may exacerbate muscle weakness in patients with myasthenia gravis. Risk of aortic aneurysm and dissection is increased, particularly in elderly patients and those with risk factors for aortic disease. Serious and occasionally fatal hypersensitivity reactions have been reported after the first dose. Clostridium difficile-associated diarrhea (CDAD) has been reported. Ciprofloxacin may prolong the QT interval. Avoid use in children, adolescents, and pregnant women due to arthropathic risk. Limit sun/UV light exposure due to photosensitivity risk.",
+        "side_effects": "Common: nausea, diarrhea, abnormal liver function tests, vomiting, abdominal pain or discomfort, headache, restlessness. Serious: tendon rupture (particularly Achilles tendon, risk increased in patients older than 60 years, on corticosteroids, or with organ transplants), peripheral neuropathy (may be irreversible), CNS effects (confusion, tremors, hallucinations, depression, seizures), QT prolongation and torsades de pointes, Clostridioides difficile-associated colitis, hepatic failure, anaphylaxis, severe skin reactions (Stevens-Johnson syndrome, toxic epidermal necrolysis), aortic aneurysm and dissection.",
+        "dosage": "Uncomplicated UTI: 250 mg every 12 hours for 3 days (IR) or 500 mg once daily for 3 days (XR). Complicated UTI / pyelonephritis: 500 mg every 12 hours for 7-14 days (IR) or 1000 mg once daily for 7-14 days (XR). Lower respiratory tract infection: 500-750 mg every 12 hours for 7-14 days. Skin and soft tissue infections: 500-750 mg every 12 hours for 7-14 days. Bone/joint: 500-750 mg every 12 hours for 4-8 weeks. Prostatitis: 500 mg every 12 hours for 28 days. Take immediate-release tablets with or without food; extended-release tablets with main meal. Avoid antacids, calcium, iron, and dairy products within 2 hours of immediate-release ciprofloxacin.",
+        "before_taking": "Do not take ciprofloxacin if you are allergic to ciprofloxacin, other fluoroquinolones (such as levofloxacin, moxifloxacin, norfloxacin), or any of its components. Tell your doctor if you have tendon problems, myasthenia gravis, QT interval prolongation or hypokalemia/hypomagnesemia, seizure disorder or CNS disease, diabetes, kidney or liver disease, joint problems, or aortic aneurysm. Avoid antacids containing magnesium or aluminum, calcium-containing products (including dairy), sucralfate, iron, or zinc within 2 hours before or 6 hours after taking ciprofloxacin, as they impair absorption. Limit caffeine and avoid excessive sun exposure.",
+    },
+    "levofloxacin": {
+        "description": "Levofloxacin (Levaquin) is a broad-spectrum fluoroquinolone antibiotic available as oral tablets (250, 500, 750 mg) and intravenous solution.",
+        "uses": "Levofloxacin is indicated for community-acquired pneumonia (including penicillin-resistant Streptococcus pneumoniae), nosocomial pneumonia, acute bacterial exacerbation of chronic bronchitis, acute bacterial sinusitis, complicated and uncomplicated skin infections, complicated UTI and pyelonephritis, chronic bacterial prostatitis, and inhalational anthrax (post-exposure). It is also used in combination regimens for tuberculosis.",
+        "warnings": "FDA BOXED WARNING: Serious, disabling, and potentially permanent side effects including tendinitis, tendon rupture, peripheral neuropathy, and CNS effects. Reserve for infections with no alternative treatment options. Risk of exacerbating myasthenia gravis. QT prolongation and torsades de pointes reported. Aortic aneurysm and dissection risk increased. Hypoglycemia and hyperglycemia, including hypoglycemic coma, have been reported (especially in elderly diabetics). Clostridioides difficile-associated diarrhea reported.",
+        "side_effects": "Common: nausea, headache, diarrhea, insomnia, constipation, dizziness. Serious: tendon rupture, peripheral neuropathy, CNS effects, QT prolongation, severe hypoglycemia, hepatotoxicity, CDAD.",
+        "dosage": "Community-acquired pneumonia (mild-moderate): 500 mg once daily for 7-14 days; (multi-drug-resistant S. pneumoniae): 750 mg once daily for 5 days. Nosocomial pneumonia: 750 mg once daily for 7-14 days. Skin infections: 500-750 mg once daily for 7-14 days. UTI/pyelonephritis: 250-750 mg once daily for 3-10 days. Take without regard to meals; avoid antacids and multivitamins within 2 hours.",
+    },
     "metformin": {
         "before_taking": "You should not take metformin if you are allergic to metformin, have severe kidney disease (eGFR below 30 mL/min/1.73 m^2), or have metabolic acidosis or diabetic ketoacidosis. Tell your doctor if you have moderate kidney problems, liver disease, heart failure, a history of alcohol abuse, or are scheduled for surgery or any procedure using iodinated contrast dye. Inform your doctor if you are pregnant, planning pregnancy, or breastfeeding.",
         "uses": "Metformin is a biguanide antidiabetic used to treat type 2 diabetes mellitus. It works by decreasing hepatic glucose production, decreasing intestinal absorption of glucose, and improving insulin sensitivity by increasing peripheral glucose uptake and utilization. Metformin is often the first-line medication for type 2 diabetes, particularly in overweight patients. It may also be used for polycystic ovary syndrome (PCOS).",
@@ -2005,9 +2020,19 @@ def drug_detail(slug):
                       f"try taking it with a full glass of water and food."),
             })
     avoid_items = _build_avoid_items(drug)
-    before_taking = DRUG_CONTENT_OVERRIDES.get(drug.generic_name, {}).get("before_taking")
+    _ov = DRUG_CONTENT_OVERRIDES.get(drug.generic_name, {})
+    before_taking = _ov.get("before_taking")
+    # Apply runtime content overrides so drug pages reflect accurate info even if DB was seeded
+    # with incorrect OpenFDA data (e.g. wrong formulation) or generic fallbacks.
+    rt_uses = _ov.get("uses") or drug.uses
+    rt_warnings = _ov.get("warnings") or drug.warnings
+    rt_dosage = _ov.get("dosage") or drug.dosage
+    rt_side_effects = _ov.get("side_effects") or drug.side_effects
+    rt_description = _ov.get("description") or drug.description
     return render_template("drug_detail.html", drug=drug, reviews=reviews,
                            before_taking=before_taking,
+                           rt_uses=rt_uses, rt_warnings=rt_warnings, rt_dosage=rt_dosage,
+                           rt_side_effects=rt_side_effects, rt_description=rt_description,
                            related=related, drug_conditions=drug_conditions, saved=saved,
                            rating_distribution=rating_distribution, user_review=user_review,
                            related_news=related_news, related_drugs=related_drugs,
@@ -2948,6 +2973,160 @@ DRUG_CLASS_DESCRIPTIONS_EXTENDED = {
             "Should not be used in pregnancy due to fetal harm",
         ],
     },
+    "Nonsteroidal anti-inflammatory drugs": {
+        "overview": (
+            "Nonsteroidal anti-inflammatory drugs (NSAIDs) are among the most widely used medications "
+            "in the world. They relieve pain, reduce fever, and decrease inflammation by inhibiting "
+            "cyclooxygenase enzymes (COX-1 and COX-2), which are responsible for producing prostaglandins "
+            "— lipid compounds that promote inflammation, sensitize pain receptors, and regulate several "
+            "physiological processes. Traditional NSAIDs inhibit both COX-1 and COX-2, while selective "
+            "COX-2 inhibitors (coxibs) preferentially target the inducible isoform to reduce gastrointestinal "
+            "risk. NSAIDs are available both over-the-counter (e.g., ibuprofen, naproxen, aspirin) and "
+            "by prescription (e.g., diclofenac, indomethacin, meloxicam, celecoxib)."
+        ),
+        "uses": (
+            "NSAIDs are used for a wide range of conditions including headaches, dental pain, menstrual "
+            "cramps, muscle aches, minor injuries, osteoarthritis, rheumatoid arthritis, ankylosing "
+            "spondylitis, and gout. Low-dose aspirin has a separate role in cardiovascular prevention by "
+            "irreversibly inhibiting platelet thromboxane A2 synthesis. Prescription NSAIDs are also used "
+            "for acute gout flares, pericarditis, and perioperative pain management."
+        ),
+        "side_effects": [
+            "Stomach upset, nausea, indigestion",
+            "Gastric or duodenal ulcers and gastrointestinal bleeding",
+            "Increased blood pressure",
+            "Fluid retention and edema",
+            "Reduced kidney function (especially with long-term or high-dose use)",
+            "Cardiovascular events (heart attack, stroke) with chronic use",
+            "Allergic reactions including rash, hives",
+            "Liver enzyme elevations (rare)",
+            "Increased bleeding time (especially aspirin)",
+        ],
+    },
+    "Beta blockers": {
+        "overview": (
+            "Beta blockers (beta-adrenergic blocking agents) work by blocking the action of epinephrine "
+            "(adrenaline) at beta-adrenergic receptors in the heart, kidneys, and other organs. This slows "
+            "heart rate, reduces the force of cardiac contractions, and lowers blood pressure. Beta-1 "
+            "selective agents (cardioselective) primarily affect the heart, while non-selective beta "
+            "blockers also block beta-2 receptors in the lungs and peripheral vasculature. Some beta "
+            "blockers also have intrinsic sympathomimetic activity or additional alpha-blocking properties."
+        ),
+        "uses": (
+            "Beta blockers are prescribed for hypertension, angina pectoris, heart failure with reduced "
+            "ejection fraction, rate control in atrial fibrillation and flutter, prevention of "
+            "re-infarction after myocardial infarction, supraventricular tachycardias, essential tremor, "
+            "migraine prophylaxis, and hyperthyroidism. They are also used to reduce anxiety symptoms in "
+            "performance-related situational anxiety and are a component of post-MI secondary prevention."
+        ),
+        "side_effects": [
+            "Fatigue and exercise intolerance",
+            "Bradycardia (slow heart rate)",
+            "Cold extremities",
+            "Dizziness or lightheadedness",
+            "Shortness of breath (especially non-selective agents in asthma/COPD patients)",
+            "Sexual dysfunction",
+            "Masking of hypoglycemia symptoms in diabetic patients",
+            "Sleep disturbances and vivid dreams",
+            "Weight gain",
+        ],
+    },
+    "Proton pump inhibitors": {
+        "overview": (
+            "Proton pump inhibitors (PPIs) are a class of acid-suppressing medications that work by "
+            "irreversibly (and with omeprazole/esomeprazole) or reversibly inhibiting the hydrogen-potassium "
+            "ATPase enzyme (the 'proton pump') on the secretory surface of gastric parietal cells. This "
+            "blocks the final step of gastric acid production regardless of the stimulus. PPIs are the "
+            "most potent acid-suppressing agents available and produce sustained suppression of both basal "
+            "and stimulated gastric acid secretion. They require conversion from an inactive prodrug form "
+            "in the acidic environment of the parietal cell canaliculi."
+        ),
+        "uses": (
+            "PPIs are used for gastroesophageal reflux disease (GERD), erosive esophagitis, peptic ulcer "
+            "disease (both treatment and prevention of NSAID-induced ulcers), Helicobacter pylori "
+            "eradication (in combination with antibiotics), Zollinger-Ellison syndrome and other "
+            "hypersecretory conditions, and Barrett's esophagus. Short-course OTC formulations are "
+            "approved for frequent heartburn occurring 2 or more days per week."
+        ),
+        "side_effects": [
+            "Headache",
+            "Nausea, diarrhea, or constipation",
+            "Abdominal pain",
+            "Hypomagnesemia with prolonged use",
+            "Vitamin B12 deficiency with long-term use",
+            "Increased risk of Clostridioides difficile infection",
+            "Possible increased risk of bone fractures with long-term high-dose use",
+            "Acute interstitial nephritis (rare)",
+            "Drug interactions (especially with clopidogrel and methotrexate)",
+        ],
+    },
+    "Fluoroquinolones": {
+        "overview": (
+            "Fluoroquinolones are broad-spectrum synthetic antibiotics that kill bacteria by inhibiting "
+            "two essential bacterial enzymes: DNA gyrase (topoisomerase II) and topoisomerase IV. These "
+            "enzymes are required for bacterial DNA replication, transcription, repair, and recombination. "
+            "By trapping the enzyme-DNA complex in a broken state, fluoroquinolones cause rapid "
+            "bactericidal activity. Their excellent oral bioavailability and penetration into tissues "
+            "and cells make them useful for treating a wide range of infections. However, growing "
+            "resistance and a distinctive serious adverse effect profile have led guidelines to "
+            "recommend reserving them for infections with few alternatives."
+        ),
+        "uses": (
+            "Fluoroquinolones are used for community-acquired pneumonia, complicated urinary tract "
+            "infections and pyelonephritis, bacterial prostatitis, intra-abdominal infections, skin "
+            "and soft tissue infections, sexually transmitted infections including gonorrhea and "
+            "certain cases of chlamydia, traveler's diarrhea, anthrax and plague (as part of "
+            "post-exposure prophylaxis), and Mycobacterium avium complex. They are also used in "
+            "combination regimens for tuberculosis (levofloxacin, moxifloxacin)."
+        ),
+        "side_effects": [
+            "Nausea, diarrhea, abdominal discomfort",
+            "Headache and dizziness",
+            "Tendinitis and tendon rupture (especially Achilles tendon)",
+            "Peripheral neuropathy (may be permanent)",
+            "CNS effects: insomnia, restlessness, confusion, seizures (rare)",
+            "QT interval prolongation (especially moxifloxacin)",
+            "Aortic aneurysm and aortic dissection (increased risk)",
+            "Hypoglycemia (especially in elderly diabetic patients)",
+            "Clostridioides difficile-associated diarrhea",
+            "Photosensitivity reactions",
+            "FDA Boxed Warning: disabling and potentially permanent side effects involving tendons, muscles, joints, nerves, and CNS",
+        ],
+    },
+    "Opioids": {
+        "overview": (
+            "Opioids are a class of drugs that act primarily on opioid receptors (mu, kappa, and delta) "
+            "in the brain, spinal cord, and peripheral tissues to produce analgesia, sedation, and "
+            "euphoria. Natural opioids (morphine, codeine) are derived from the opium poppy; "
+            "semi-synthetic opioids (oxycodone, hydrocodone, buprenorphine) are chemically modified "
+            "natural opioids; and fully synthetic opioids (fentanyl, methadone, tramadol) are produced "
+            "entirely in the laboratory. Opioid analgesics are among the most effective treatments for "
+            "severe acute pain and cancer pain, but their use in chronic non-cancer pain is controversial "
+            "due to risks of tolerance, physical dependence, addiction, and overdose. Most strong opioids "
+            "are classified as Schedule II controlled substances in the United States."
+        ),
+        "uses": (
+            "Opioids are indicated for severe acute pain (post-surgical, trauma, burn), cancer-related "
+            "pain, and moderate-to-severe chronic pain in carefully selected patients when alternatives "
+            "are inadequate. Methadone and buprenorphine are used in medication-assisted treatment of "
+            "opioid use disorder. Codeine and hydrocodone are used in low doses for cough suppression. "
+            "Loperamide (a peripheral opioid) is used for diarrhea. Palliative care relies heavily on "
+            "opioids for end-of-life symptom management."
+        ),
+        "side_effects": [
+            "Constipation (nearly universal; does not develop tolerance)",
+            "Nausea and vomiting (especially initially)",
+            "Sedation and drowsiness",
+            "Respiratory depression (dose-dependent; most serious acute risk)",
+            "Itching (pruritus)",
+            "Urinary retention",
+            "Tolerance and physical dependence with ongoing use",
+            "Risk of addiction and opioid use disorder",
+            "Overdose (miosis, stupor, respiratory depression; treat with naloxone)",
+            "Hormonal effects: hypogonadism, decreased testosterone/estrogen with long-term use",
+            "Opioid-induced hyperalgesia with prolonged high-dose use",
+        ],
+    },
 }
 
 
@@ -2961,8 +3140,30 @@ def get_extended_class_profile(class_name):
     )
 
 
+_DRUG_CLASS_SLUG_ALIASES: dict[str, str] = {
+    # Long-name aliases for DB slugs that use short names
+    "nsaids": "nonsteroidal-anti-inflammatory-drugs",
+    "nonsteroidal-anti-inflammatory": "nonsteroidal-anti-inflammatory-drugs",
+    "benzos": "benzodiazepines",
+    "ppi": "proton-pump-inhibitors",
+    "ppis": "proton-pump-inhibitors",
+    "hmg-coa-reductase-inhibitors": "statins",
+    "selective-serotonin-reuptake-inhibitors": "ssris",
+    "serotonin-norepinephrine-reuptake-inhibitors": "snris",
+    "angiotensin-converting-enzyme-inhibitors": "ace-inhibitors",
+    "angiotensin-receptor-blockers": "arbs",
+    "beta-adrenergic-blockers": "beta-blockers",
+    "glucocorticoids": "corticosteroids",
+    "opioid-analgesics": "opioids",
+}
+
+
 @app.route("/drug-class/<slug>")
 def drug_class_page(slug):
+    # Handle common abbreviations and aliases
+    canonical = _DRUG_CLASS_SLUG_ALIASES.get(slug.lower())
+    if canonical:
+        return redirect(url_for("drug_class_page", slug=canonical), 301)
     cls = DrugClass.query.filter_by(slug=slug).first_or_404()
     sort = (request.args.get("sort") or "name").lower()
     drugs_q = Drug.query.filter_by(drug_class_id=cls.id)
@@ -3387,6 +3588,15 @@ def my_med_list_toggle():
 def pro_edition():
     classes = DrugClass.query.order_by(DrugClass.name).all()
     return render_template("pro_edition.html", classes=classes)
+
+
+@app.route("/compare/<path:vs_slug>")
+def compare_drugs_slug(vs_slug):
+    """Handle /compare/drugA-vs-drugB URL format."""
+    if "-vs-" in vs_slug:
+        parts = vs_slug.split("-vs-", 1)
+        return redirect(url_for("compare_drugs", drug1=parts[0], drug2=parts[1]))
+    return redirect(url_for("compare_drugs", drug1=vs_slug))
 
 
 @app.route("/compare/")

@@ -202,13 +202,13 @@
           </ul>
         </div>
         {% endif %}
-        {% if drug.description %}{{ drug.description | format_drug_text | safe }}{% endif %}
-        {{ drug.uses | format_drug_text | safe }}
+        {% if rt_description %}{{ rt_description | format_drug_text | safe }}{% endif %}
+        {{ rt_uses | format_drug_text | safe }}
       </section>
 
       <section id="warnings">
         <h2>Warnings</h2>
-        {% set _warn_text = (drug.warnings or '') %}
+        {% set _warn_text = (rt_warnings or '') %}
         {% set _warn_lower = _warn_text|lower %}
         {% if _warn_text and ('boxed warning' in _warn_lower or 'black box' in _warn_lower or _warn_text.lstrip().startswith('WARNING:')) %}
         <div class="black-box-warning" role="alert">
@@ -228,7 +228,7 @@
           </div>
         </div>
         {% endif %}
-        {{ drug.warnings | format_drug_text | safe }}
+        {{ rt_warnings | format_drug_text | safe }}
       </section>
 
       <section id="before-taking">
@@ -251,8 +251,8 @@
 
       <section id="dosage">
         <h2>How should I take {{ drug.generic_name }}?</h2>
-        {{ drug.dosage | format_drug_text | safe }}
-        {% if drug.dosage %}
+        {{ rt_dosage | format_drug_text | safe }}
+        {% if rt_dosage %}
         <div class="dosage-quick-ref">
           <h3>Quick reference dosing guide</h3>
           <p>Always follow your doctor's instructions or the medication label. The information below is for reference only.</p>
@@ -284,7 +284,7 @@
             <span class="muted">signs of an allergic reaction (hives; difficult breathing; swelling of your face, lips, tongue, or throat), severe or persistent symptoms, unusual bleeding or bruising, chest pain, or any of the serious side effects listed below.</span>
           </div>
         </div>
-        {{ drug.side_effects | format_drug_text | safe }}
+        {{ rt_side_effects | format_drug_text | safe }}
       </section>
 
       <section id="interactions">
@@ -746,7 +746,7 @@
       <div class="sidebar-box dosage-info-box">
         <h3>Dosage information</h3>
         <p class="muted"><strong>Typical adult dosage</strong></p>
-        <p>{{ (drug.dosage or 'See full prescribing information.')[:150] }}{% if drug.dosage and drug.dosage|length > 150 %}&hellip;{% endif %}</p>
+        <p>{{ (rt_dosage or 'See full prescribing information.')[:150] }}{% if rt_dosage and rt_dosage|length > 150 %}&hellip;{% endif %}</p>
         <p><a href="{{ url_for('drug_dosage', slug=drug.slug) }}">View complete dosage information &rsaquo;</a></p>
       </div>
 
