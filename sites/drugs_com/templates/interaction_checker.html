@@ -266,12 +266,12 @@
   <div class="sidebar-box popular-tools">
     <h3>Popular tools &amp; resources</h3>
     <ul class="sidebar-links">
-      <li><a href="#">My Med List</a></li>
+      <li><a href="{{ url_for('my_med_list') }}">My Med List</a></li>
       <li><a href="{{ url_for('interaction_checker') }}">Drug Interaction Checker</a></li>
       <li><a href="{{ url_for('pill_identifier') }}">Pill Identifier</a></li>
-      <li><a href="#">Compare Drugs</a></li>
-      <li><a href="#">Medical Q &amp; A</a></li>
-      <li><a href="#">Latest Drug News</a></li>
+      <li><a href="{{ url_for('compare_drugs') }}">Compare Drugs</a></li>
+      <li><a href="{{ url_for('drug_az') }}">Medical Q &amp; A</a></li>
+      <li><a href="{{ url_for('news_index') }}">Latest Drug News</a></li>
     </ul>
   </div>
 </aside>
