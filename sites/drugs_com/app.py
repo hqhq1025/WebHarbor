@@ -1041,6 +1041,85 @@ REVIEW_TEMPLATES = [
     ("Mild but effective", 7, "Nothing dramatic but steadily effective for my {cond}. Fewer side effects than alternatives I've tried. Would recommend discussing with your doctor."),
 ]
 
+_PREGNANCY_RISK: dict[str, str] = {
+    # Category D / X — contraindicated or significant fetal risk
+    "lisinopril": "Category D - Fetal toxicity; discontinue when pregnancy detected",
+    "enalapril": "Category D - Fetal toxicity; discontinue when pregnancy detected",
+    "ramipril": "Category D - Fetal toxicity; discontinue when pregnancy detected",
+    "captopril": "Category D - Fetal toxicity; discontinue when pregnancy detected",
+    "benazepril": "Category D - Fetal toxicity; discontinue when pregnancy detected",
+    "losartan": "Category D - Fetal toxicity; discontinue when pregnancy detected",
+    "valsartan": "Category D - Fetal toxicity; discontinue when pregnancy detected",
+    "warfarin": "Category X - Contraindicated; causes fetal warfarin syndrome",
+    "isotretinoin": "Category X - Absolutely contraindicated; causes severe birth defects",
+    "methotrexate": "Category X - Contraindicated; causes fetal death/malformations",
+    "thalidomide": "Category X - Contraindicated; causes severe limb defects",
+    "testosterone": "Category X - Contraindicated; causes virilization of female fetus",
+    "finasteride": "Category X - Contraindicated in women; causes male fetal genital abnormalities",
+    "lithium": "Category D - Cardiac malformations (Ebstein anomaly); risk/benefit discussion required",
+    "valproic acid": "Category D - Neural tube defects, cognitive impairment; avoid if possible",
+    "carbamazepine": "Category D - Neural tube defects and other birth defects",
+    "phenytoin": "Category D - Fetal hydantoin syndrome",
+    "topiramate": "Category D - Cleft palate and other birth defects",
+    # Category C — risk cannot be ruled out
+    "metformin": "Category B - Generally considered safe; often used in gestational diabetes",
+    "ibuprofen": "Category C (avoid in 3rd trimester) - May cause premature ductus arteriosus closure",
+    "naproxen": "Category C (avoid in 3rd trimester) - May cause premature ductus arteriosus closure",
+    "meloxicam": "Category C (avoid in 3rd trimester) - NSAID; avoid near term",
+    "celecoxib": "Category C (avoid in 3rd trimester) - NSAID; avoid near term",
+    "aspirin": "Category D in 3rd trimester - Low-dose aspirin (81 mg) may be used under supervision",
+    "sertraline": "Category C - Neonatal adaptation syndrome; benefits often outweigh risks",
+    "fluoxetine": "Category C - Neonatal adaptation syndrome; discuss risk/benefit",
+    "escitalopram": "Category C - Neonatal adaptation syndrome; discuss risk/benefit",
+    "paroxetine": "Category D - Cardiac defects (ASD/VSD) reported; avoid if possible",
+    "duloxetine": "Category C - Neonatal adaptation syndrome; use with caution",
+    "venlafaxine": "Category C - Neonatal adaptation syndrome; discuss risk/benefit",
+    "bupropion": "Category C - Use only if clearly needed; neonatal seizures reported",
+    "alprazolam": "Category D - Neonatal withdrawal and floppy infant syndrome",
+    "diazepam": "Category D - Neonatal withdrawal and floppy infant syndrome",
+    "lorazepam": "Category D - Neonatal withdrawal; avoid chronic use",
+    "clonazepam": "Category D - Neonatal withdrawal; avoid chronic use",
+    "oxycodone": "Category C - Neonatal opioid withdrawal syndrome; avoid near term",
+    "hydrocodone": "Category C - Neonatal opioid withdrawal syndrome; avoid near term",
+    "tramadol": "Category C - Neonatal withdrawal; avoid in late pregnancy",
+    "gabapentin": "Category C - Limited human data; use only if clearly needed",
+    "pregabalin": "Category C - Limited human data; use only if clearly needed",
+    "atorvastatin": "Category X - Contraindicated; cholesterol needed for fetal development",
+    "rosuvastatin": "Category X - Contraindicated; cholesterol needed for fetal development",
+    "simvastatin": "Category X - Contraindicated; cholesterol needed for fetal development",
+    "amlodipine": "Category C - Limited data; use only if clearly needed",
+    "metoprolol": "Category C - Fetal bradycardia and growth restriction possible",
+    "carvedilol": "Category C - Beta-blocker; fetal bradycardia possible",
+    "hydrochlorothiazide": "Category B - Generally safe; monitor fetal growth",
+    "furosemide": "Category C - Use only if clearly needed; monitor fetus",
+    "spironolactone": "Category C - Anti-androgenic effects; limited data",
+    "omeprazole": "Category C - Generally considered safe in pregnancy",
+    "esomeprazole": "Category C - Generally considered safe in pregnancy",
+    "pantoprazole": "Category C - Generally considered safe in pregnancy",
+    "ranitidine": "Category B - Generally considered safe",
+    "famotidine": "Category B - Generally considered safe",
+    "ondansetron": "Category B - Commonly used for nausea/vomiting of pregnancy",
+    "levothyroxine": "Category A - Essential for fetal brain development; continue therapy",
+    "insulin": "Category B - Preferred antidiabetic in pregnancy",
+    "semaglutide": "Category C - Limited data; discontinue when pregnancy recognized",
+    "methotrexate": "Category X - Absolutely contraindicated",
+    "prednisone": "Category C - Short-term use generally acceptable; avoid near term",
+    "amoxicillin": "Category B - Generally considered safe",
+    "azithromycin": "Category B - Generally considered safe",
+    "ciprofloxacin": "Category C - Avoid if possible; alternative preferred",
+    "levofloxacin": "Category C - Avoid if possible; joint/cartilage concerns in animal studies",
+    "doxycycline": "Category D - Tooth discoloration and bone inhibition; avoid after 2nd trimester",
+    "acetaminophen": "Category B - Preferred analgesic/antipyretic in pregnancy",
+    "zolpidem": "Category C - Neonatal withdrawal; avoid chronic use near term",
+    "trazodone": "Category C - Limited data; use only if clearly needed",
+    "quetiapine": "Category C - Neonatal extrapyramidal symptoms possible",
+    "olanzapine": "Category C - Neonatal extrapyramidal symptoms possible",
+    "methylphenidate": "Category C - Limited data; avoid if possible",
+    "apixaban": "Category B - Bleeding risk; avoid near term",
+    "rivaroxaban": "Category C - Bleeding risk; avoid near term",
+    "clopidogrel": "Category B - Limited data; use only if clearly needed",
+}
+
 
 BENCHMARK_USERS = [
     {"email": "alice.j@test.com", "username": "alice_j", "password": "TestPass123!"},
@@ -1400,7 +1479,7 @@ def seed_drugs():
             drug_class_id=cls_by_name.get(cname),
             availability=avail,
             csa_schedule=csa,
-            pregnancy_risk="Discuss with your doctor",
+            pregnancy_risk=_PREGNANCY_RISK.get(gname, "Discuss with your doctor"),
             pronunciation=pron,
             description=desc,
             uses=uses,
@@ -4685,11 +4764,28 @@ def seed_supplemental():
         db.session.commit()
 
 
+def seed_pregnancy_risks():
+    """Backfill pregnancy_risk for all drugs that have a known value.
+
+    Runs unconditionally; each update is a no-op when the value is already correct,
+    so the function is fully idempotent. Only commits when at least one row changes.
+    """
+    changed = False
+    for gname, risk in _PREGNANCY_RISK.items():
+        d = Drug.query.filter(db.func.lower(Drug.generic_name) == gname.lower()).first()
+        if d and d.pregnancy_risk != risk:
+            d.pregnancy_risk = risk
+            changed = True
+    if changed:
+        db.session.commit()
+
+
 def init_app():
     with app.app_context():
         db.create_all()
         seed_database()
         seed_supplemental()
+        seed_pregnancy_risks()
 
 
 init_app()
