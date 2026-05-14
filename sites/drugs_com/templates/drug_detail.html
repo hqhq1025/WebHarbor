@@ -49,9 +49,31 @@
         {% endif %}
       </span>
       <span class="drug-meta-item"><strong>Dosage forms:</strong>
-        {% if drug.availability == 'OTC' %}
-          oral tablet, oral capsule
-        {% elif drug.drug_class and 'injection' in drug.drug_class.name.lower() %}
+        {% set dc = (drug.drug_class.name if drug.drug_class else '')|lower %}
+        {% set gn = drug.generic_name|lower %}
+        {% if 'glp-1' in dc or 'glucagon-like' in dc or gn in ('semaglutide','liraglutide','tirzepatide','dulaglutide','exenatide') %}
+          subcutaneous injection
+        {% elif 'insulin' in dc or gn in ('insulin glargine','insulin aspart','insulin lispro','insulin detemir') %}
+          subcutaneous injection
+        {% elif 'monoclonal antibody' in dc or 'biologic' in dc or gn in ('adalimumab','rituximab','dupilumab','tofacitinib','enoxaparin') %}
+          injection, solution
+        {% elif 'inhal' in dc or 'bronchodilator' in dc or gn in ('fluticasone','tiotropium','salmeterol','formoterol','budesonide','ipratropium','albuterol') %}
+          inhalation aerosol, inhalation powder
+        {% elif 'ophthalm' in dc or gn in ('bimatoprost','latanoprost','timolol','brimonidine','tobramycin ophthalmic','ofloxacin ophthalmic') %}
+          ophthalmic solution
+        {% elif 'retinoid' in dc or gn in ('tretinoin','isotretinoin','adapalene') %}
+          cream, gel, topical solution
+        {% elif gn in ('testosterone','estradiol','fentanyl') and 'patch' not in gn %}
+          tablet, injection, topical gel
+        {% elif gn == 'nitroglycerin' %}
+          sublingual tablet, translingual spray, transdermal patch, injection
+        {% elif gn in ('calcitonin','oxytocin') %}
+          injection, nasal spray
+        {% elif gn in ('progesterone','levonorgestrel') %}
+          tablet, capsule, injection, intrauterine device
+        {% elif drug.availability == 'OTC' %}
+          tablet, capsule, liquid
+        {% elif 'injection' in dc %}
           injection, solution
         {% else %}
           tablet, capsule, oral solution
