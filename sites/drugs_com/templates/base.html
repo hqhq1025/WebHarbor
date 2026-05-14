@@ -19,7 +19,9 @@
         <a href="#" class="utility-link">Community</a>
       </div>
       <div class="utility-bar-right">
-        <a href="/pro/" class="utility-link">Pro</a>
+        <a href="{{ url_for('newsletter') }}" class="utility-link">Subscribe</a>
+        <span class="utility-sep">|</span>
+        <a href="{{ url_for('help_page') }}" class="utility-link">Help</a>
       </div>
     </div>
   </div>
@@ -108,7 +110,6 @@
           </div>
         </div>
       </div>
-      <a href="{{ url_for('help_page') }}" class="nav-link nav-help">Help &amp; Support</a>
     </div>
   </nav>
 </header>

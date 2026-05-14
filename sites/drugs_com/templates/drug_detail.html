@@ -120,81 +120,13 @@
     </div>
   </header>
 
-  <div class="drug-actions">
-    <button onclick="window.print()" class="btn btn-sm btn-outline">Print</button>
-    <button type="button" id="share-btn" class="btn btn-sm btn-outline">Share</button>
-    <a href="{{ url_for('drug_images', slug=drug.slug) }}" class="btn btn-sm btn-outline">Drug Images</a>
-    <a href="{{ url_for('drug_prices', slug=drug.slug) }}" class="btn btn-sm btn-outline">Pricing</a>
+  <div class="drug-actions-bar">
+    <a href="#" onclick="window.print();return false;" class="drug-action-link">Print</a>
+    <span class="drug-action-sep">|</span>
+    <a href="{{ url_for('drug_images', slug=drug.slug) }}" class="drug-action-link">Drug images</a>
+    <span class="drug-action-sep">|</span>
+    <a href="{{ url_for('drug_prices', slug=drug.slug) }}" class="drug-action-link">Pricing &amp; coupons</a>
   </div>
-
-  <div class="quick-facts">
-    <div class="quick-facts-item">
-      <span class="quick-facts-label">Availability</span>
-      <span class="quick-facts-value">
-        {% if 'Rx' in drug.availability and 'OTC' in drug.availability %}
-          <span class="avail-badge avail-both">Rx/OTC</span>
-        {% elif 'Rx' in drug.availability %}
-          <span class="avail-badge avail-rx">Rx</span>
-        {% elif 'OTC' in drug.availability %}
-          <span class="avail-badge avail-otc">OTC</span>
-        {% else %}
-          {{ drug.availability }}
-        {% endif %}
-      </span>
-    </div>
-    <div class="quick-facts-item">
-      <span class="quick-facts-label">Pregnancy</span>
-      <span class="quick-facts-value">
-        {% set _cat = drug.pregnancy_risk|preg_category %}
-        {% if _cat %}
-          <span class="preg-badge preg-badge--{{ _cat|lower }}">Category {{ _cat }}</span>
-        {% elif drug.pregnancy_risk %}
-          <span class="preg-badge preg-badge--other">{{ drug.pregnancy_risk }}</span>
-        {% else %}
-          <span class="muted">Consult Dr</span>
-        {% endif %}
-      </span>
-    </div>
-    <div class="quick-facts-item">
-      <span class="quick-facts-label">CSA Schedule</span>
-      <span class="quick-facts-value">
-        {% set _csa = (drug.csa_schedule or '')|lower %}
-        {% if drug.csa_schedule and _csa not in ['n/a', 'none', 'not scheduled', ''] and 'not a controlled' not in _csa and 'not controlled' not in _csa %}
-          <span class="csa-badge csa-badge--scheduled">{{ drug.csa_schedule }}</span>
-        {% else %}
-          <span class="csa-badge csa-badge--none">Not controlled</span>
-        {% endif %}
-      </span>
-    </div>
-    <div class="quick-facts-item">
-      <span class="quick-facts-label">Drug class</span>
-      <span class="quick-facts-value">
-        {% if drug.drug_class %}
-          <a href="{{ url_for('drug_class_page', slug=drug.drug_class.slug) }}">{{ drug.drug_class.name }}</a>
-        {% else %}<span class="muted">N/A</span>{% endif %}
-      </span>
-    </div>
-    <div class="quick-facts-item">
-      <span class="quick-facts-label">Rating</span>
-      <span class="quick-facts-value">
-        {% if drug.avg_rating %}
-          <strong>{{ "%.1f"|format(drug.avg_rating) }}</strong><span class="muted"> / 10</span>
-          <a href="#reviews" class="quick-facts-rating-count">({{ drug.review_count }})</a>
-        {% else %}
-          <span class="muted">Not yet rated</span>
-        {% endif %}
-      </span>
-    </div>
-  </div>
-
-  <aside class="pricing-cta" aria-label="Drug pricing">
-    <div class="pricing-cta-icon" aria-hidden="true">$</div>
-    <div class="pricing-cta-body">
-      <h3 class="pricing-cta-title">Compare {{ drug.generic_name|capitalize }} prices at your local pharmacy</h3>
-      <p class="pricing-cta-text">See the lowest cash and copay prices for {{ drug.generic_name }} near you. Print a free discount card and save up to 80% at participating U.S. pharmacies.</p>
-    </div>
-    <a href="{{ url_for('drug_prices', slug=drug.slug) }}" class="btn btn-cta-primary pricing-cta-btn">View prices &rsaquo;</a>
-  </aside>
 
   <nav class="section-tabs">
     <a href="#uses">Uses</a>
@@ -211,19 +143,6 @@
     <div class="detail-main">
       <section id="uses">
         <h2>What is {{ drug.generic_name }}?</h2>
-        {% if drug_conditions %}
-        <div class="conditions-callout" aria-label="Conditions treated">
-          <div class="conditions-callout-head">
-            <span class="conditions-callout-icon" aria-hidden="true">&#9873;</span>
-            <strong class="conditions-callout-title">What conditions is {{ drug.generic_name }} used to treat?</strong>
-          </div>
-          <ul class="conditions-callout-chips">
-            {% for c in drug_conditions %}
-              <li><a href="{{ url_for('condition_page', slug=c.slug) }}" class="condition-chip">{{ c.name }}</a></li>
-            {% endfor %}
-          </ul>
-        </div>
-        {% endif %}
         {% if rt_description %}{{ rt_description | format_drug_text | safe }}{% endif %}
         {{ rt_uses | format_drug_text | safe }}
       </section>
@@ -323,21 +242,16 @@
         </div>
         {% endif %}
         {% if drug_interactions is defined and drug_interactions %}
-        {% set _sev_order = {'major': 0, 'moderate': 1, 'minor': 2, 'unknown': 3} %}
-        {% set _sev_color = {'major': '#c62828', 'moderate': '#ef6c00', 'minor': '#2e7d32', 'unknown': '#666'} %}
-        {% set _sorted_ix = drug_interactions|sort(attribute='severity') %}
-        <p class="muted"><strong>{{ drug.generic_name|capitalize }} has {{ drug_interactions|length }} known drug interaction{{ 's' if drug_interactions|length != 1 else '' }}.</strong></p>
+        <p class="muted">{{ drug.generic_name|capitalize }} has {{ drug_interactions|length }} known drug interaction{{ 's' if drug_interactions|length != 1 else '' }}. Ask your doctor or pharmacist before using {{ drug.generic_name }} with any other medications, especially:</p>
         <ul class="drug-interactions-list">
-          {% for ix in _sorted_ix[:12] %}
+          {% for ix in drug_interactions|sort(attribute='severity')[:12] %}
             {% set other = ix.drug_b if ix.drug_a_id == drug.id else ix.drug_a %}
-            {% set sev = (ix.severity or 'unknown')|lower %}
-            <li class="drug-interaction-row drug-interaction-row--{{ sev }}">
-              <span class="severity-badge severity-{{ sev }}">{{ sev }}</span>
-              {% if other %}
-                <a href="{{ url_for('drug_detail', slug=other.slug) }}"><strong>{{ other.generic_name|capitalize }}</strong></a>
-              {% endif %}
-              {% if ix.description %}<span class="muted"> &mdash; {{ ix.description }}</span>{% endif %}
+            {% if other %}
+            <li>
+              <a href="{{ url_for('drug_detail', slug=other.slug) }}">{{ other.generic_name|capitalize }}</a>
+              <span class="muted"> ({{ (ix.severity or 'unknown') }} interaction)</span>
             </li>
+            {% endif %}
           {% endfor %}
         </ul>
         {% if drug_interactions|length > 12 %}
@@ -349,40 +263,29 @@
         <p>Avoid drinking alcohol while taking {{ drug.generic_name }}. Alcohol may increase the risk of certain side effects, including drowsiness, stomach bleeding, or liver damage. Ask your doctor or pharmacist before consuming grapefruit or grapefruit juice, as it can interact with several medications.</p>
         <h3>Lab test interactions</h3>
         <p>{{ drug.generic_name|capitalize }} may interfere with certain laboratory tests, possibly causing false results. Tell any healthcare provider who treats you or orders lab work that you are using this medicine.</p>
-        <div class="interaction-mini-checker">
-          <div class="mini-checker-head">
-            <span class="mini-checker-icon" aria-hidden="true">&#8651;</span>
-            <div>
-              <h3 class="mini-checker-title">Add {{ drug.generic_name }} to the drug interaction checker</h3>
-              <p class="mini-checker-sub">Enter another medication you take to see how it interacts with {{ drug.generic_name }}. The checker reviews known prescription, OTC, and herbal interactions.</p>
-            </div>
-          </div>
-          <form action="{{ url_for('interaction_checker') }}" method="get" class="mini-checker-form">
-            <input type="hidden" name="drug" value="{{ drug.slug }}" />
-            <label for="mini-drug-input" class="visually-hidden">Add a second drug</label>
-            <input type="text" id="mini-drug-input" name="drug2" placeholder="Enter another drug name" autocomplete="off" />
-            <button type="submit" class="btn btn-primary">Check interactions</button>
-          </form>
-          <p class="mini-checker-links">
-            <a href="{{ url_for('interaction_checker') }}?drug={{ drug.slug }}">Open the full interaction checker &rsaquo;</a>
-            <span class="mini-checker-sep">&middot;</span>
-            <a href="{{ url_for('drug_interactions_page', slug=drug.slug) }}">View all {{ drug.generic_name }} interactions &rsaquo;</a>
-          </p>
-        </div>
+        <p><a href="{{ url_for('drug_interactions_page', slug=drug.slug) }}">View all {{ drug.generic_name }} interactions &rsaquo;</a></p>
       </section>
 
       {% if faq_items %}
       <section id="faq">
-        <h2>Frequently asked questions</h2>
-        <p class="muted faq-intro">Common questions about {{ drug.generic_name }}. Click a question to view the answer.</p>
+        <h2>Popular FAQ</h2>
         <div class="faq-list">
-        {% for item in faq_items %}
-          <details class="faq-item">
-            <summary class="faq-question"><span class="faq-q-label">Q:</span> {{ item.q }}</summary>
-            <div class="faq-answer"><span class="faq-a-label">A:</span> {{ item.a }}</div>
-          </details>
+        {% for item in faq_items[:5] %}
+          <div class="faq-item">
+            <p class="faq-question">{{ item.q }}</p>
+            <p class="faq-answer">{{ item.a }}</p>
+          </div>
         {% endfor %}
         </div>
+        {% if faq_items|length > 5 %}
+        <h3>More FAQ</h3>
+        <ul class="faq-more-list">
+          {% for item in faq_items[5:] %}
+            <li><a href="#faq">{{ item.q }}</a></li>
+          {% endfor %}
+        </ul>
+        {% endif %}
+        <p class="muted faq-attr">FAQs authored by the {{ site_name }} editorial team. Last reviewed {{ 'Nov 5, 2025' }}.</p>
       </section>
       {% endif %}
 

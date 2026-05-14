@@ -48,43 +48,6 @@
   </button>
 </form>
 
-{% if not drugs_input %}
-<section class="checker-empty-state is-260">
-  <div class="how-it-works is-261">
-    <h2 class="is-262">How it works</h2>
-    <ul class="is-263">
-      <li>Enter 2 or more drugs to check for interactions.</li>
-      <li>Searches both generic and brand names.</li>
-      <li>Severity levels:
-        <span class="sev-badge sev-major is-264">Major</span> avoid combination;
-        <span class="sev-badge sev-moderate is-265">Moderate</span> use with caution and monitoring;
-        <span class="sev-badge sev-minor is-266">Minor</span> limited clinical effect.
-      </li>
-    </ul>
-  </div>
-
-  <div class="common-interactions is-267">
-    <h2 class="is-262">Common interactions to check</h2>
-    <p class="muted is-268">Click a pair to add both drugs to the checker.</p>
-    <div class="common-pair-buttons is-053">
-      {% set common_pairs = [
-        ['Warfarin', 'Aspirin'],
-        ['Metformin', 'Alcohol'],
-        ['Lisinopril', 'Potassium supplements'],
-        ['Simvastatin', 'Amiodarone'],
-        ['Fluoxetine', 'Tramadol'],
-        ['Ibuprofen', 'Prednisone']
-      ] %}
-      {% for pair in common_pairs %}
-        <button type="button" class="common-pair-btn is-269"
-                data-drug-a="{{ pair[0] }}" data-drug-b="{{ pair[1] }}">
-          {{ pair[0] }} + {{ pair[1] }}
-        </button>
-      {% endfor %}
-    </div>
-  </div>
-</section>
-{% endif %}
 
 <p class="checker-disclaimer">
   Not all drugs interact, and not every interaction means you must stop taking one of your
