@@ -13,6 +13,44 @@
   <button type="submit" class="btn btn-primary">Search</button>
 </form>
 
+{% if exact_drug %}
+<section class="exact-match-card">
+  <div class="exact-match-eyebrow">Best match</div>
+  <div class="exact-match-body">
+    <div class="exact-match-info">
+      <h2 class="exact-match-name">
+        <a href="{{ url_for('drug_detail', slug=exact_drug.slug) }}">{{ exact_drug.generic_name|capitalize }}</a>
+        <span class="avail-badge {% if exact_drug.availability == 'Rx' %}avail-rx{% elif exact_drug.availability == 'OTC' %}avail-otc{% else %}avail-both{% endif %}">{{ exact_drug.availability }}</span>
+      </h2>
+      {% if exact_drug.brand_names %}
+        <p class="exact-match-brands muted"><strong>Brand names:</strong> {{ exact_drug.brand_names|join(', ') }}</p>
+      {% endif %}
+      {% if exact_drug.drug_class %}
+        <p class="exact-match-class muted"><strong>Drug class:</strong>
+          <a href="{{ url_for('drug_class_page', slug=exact_drug.drug_class.slug) }}">{{ exact_drug.drug_class.name }}</a>
+        </p>
+      {% endif %}
+      {% set cd = (exact_drug.uses or exact_drug.description or '')|clean_desc %}
+      {% if cd %}<p class="exact-match-desc">{{ cd[:280] }}{% if cd|length > 280 %}...{% endif %}</p>{% endif %}
+      <div class="exact-match-links">
+        <a href="{{ url_for('drug_detail', slug=exact_drug.slug) }}" class="btn btn-primary btn-sm">Full prescribing information</a>
+        <a href="{{ url_for('drug_side_effects', slug=exact_drug.slug) }}">Side effects</a>
+        <a href="{{ url_for('drug_dosage', slug=exact_drug.slug) }}">Dosage</a>
+        <a href="{{ url_for('drug_interactions_page', slug=exact_drug.slug) }}">Interactions</a>
+        <a href="{{ url_for('drug_reviews_page', slug=exact_drug.slug) }}">Reviews</a>
+      </div>
+    </div>
+    {% if exact_drug.avg_rating and exact_drug.review_count %}
+    <div class="exact-match-rating">
+      <div class="exact-match-score">{{ '%.1f'|format(exact_drug.avg_rating) }}</div>
+      <div class="muted" style="font-size:0.8rem;">out of 10</div>
+      <div class="muted" style="font-size:0.78rem;">{{ exact_drug.review_count }} reviews</div>
+    </div>
+    {% endif %}
+  </div>
+</section>
+{% endif %}
+
 {% if matched_condition %}
   <section class="match-condition-card">
     <div class="match-condition-head">

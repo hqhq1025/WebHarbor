@@ -4376,6 +4376,21 @@ def search():
         cls_drugs.sort(key=lambda d: -(d.review_count or 0))
         popular_for_query = cls_drugs[:8]
 
+    # Exact drug match: generic name or slug equals query
+    exact_drug = None
+    if q:
+        ql = q.lower().strip()
+        exact_drug = Drug.query.filter(
+            db.or_(
+                db.func.lower(Drug.generic_name) == ql,
+                Drug.slug == ql.replace(" ", "-"),
+            )
+        ).first()
+        if not exact_drug and results:
+            top = results[0]
+            if top.generic_name.lower() == ql or top.slug == ql.replace(" ", "-"):
+                exact_drug = top
+
     total = len(results)
     total_all = total + len(condition_results) + len(news_results)
     total_pages = max(1, (total + per_page - 1) // per_page)
@@ -4395,7 +4410,8 @@ def search():
                            related_searches=related_searches,
                            popular_for_query=popular_for_query,
                            matched_condition=matched_condition,
-                           matched_class=matched_class)
+                           matched_class=matched_class,
+                           exact_drug=exact_drug)
 
 
 @app.route("/api/autocomplete")

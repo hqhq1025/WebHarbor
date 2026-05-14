@@ -8006,3 +8006,19 @@ html { scroll-behavior: smooth; }
 .home-class-list a { color: var(--blue); text-decoration: none; }
 .home-class-list a:hover { text-decoration: underline; }
 .home-newsletter-box .newsletter-email-input { font-size: 0.82rem; padding: 5px 8px; }
+
+/* Search exact match featured card */
+.exact-match-card { background: #fff; border: 1px solid #c5d8f0; border-left: 4px solid var(--blue); border-radius: 6px; padding: 16px 20px; margin-bottom: 1.5rem; }
+.exact-match-eyebrow { font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--blue); margin-bottom: 6px; }
+.exact-match-body { display: flex; gap: 1.5rem; align-items: flex-start; }
+.exact-match-info { flex: 1; }
+.exact-match-name { font-size: 1.35rem; margin: 0 0 6px; display: flex; align-items: center; gap: 8px; }
+.exact-match-name a { color: #1a3a6e; text-decoration: none; }
+.exact-match-name a:hover { text-decoration: underline; }
+.exact-match-brands, .exact-match-class { margin: 2px 0; font-size: 0.88rem; }
+.exact-match-desc { font-size: 0.9rem; margin: 8px 0; color: #333; line-height: 1.5; }
+.exact-match-links { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 10px; font-size: 0.85rem; }
+.exact-match-links a:not(.btn) { color: var(--blue); text-decoration: none; }
+.exact-match-links a:not(.btn):hover { text-decoration: underline; }
+.exact-match-rating { text-align: center; min-width: 80px; }
+.exact-match-score { font-size: 2.2rem; font-weight: 700; color: #1a3a6e; line-height: 1; }

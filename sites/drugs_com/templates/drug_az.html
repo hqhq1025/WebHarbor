@@ -48,20 +48,12 @@
 
     {% if popular_drugs %}
       <section class="row-section popular-drugs">
-        <h2>Popular Drugs</h2>
-        <ol class="popular-drugs-list">
+        <h2>Popular drug searches</h2>
+        <ul class="popular-searches popular-columns">
           {% for d in popular_drugs %}
-            <li>
-              <a href="{{ url_for('drug_detail', slug=d.slug) }}">{{ d.generic_name|capitalize }}</a>
-              {% if d.brand_names %}<span class="muted"> &mdash; {{ d.brand_names|join(', ') }}</span>{% endif %}
-              {% if d.drug_class %}<span class="muted"> &middot; {{ d.drug_class }}</span>{% endif %}
-              <span class="badge">{{ d.availability }}</span>
-              {% if d.review_count %}
-                <span class="muted"> &middot; {{ '%.1f'|format(d.avg_rating) }}/10 ({{ d.review_count }} reviews)</span>
-              {% endif %}
-            </li>
+            <li><a href="{{ url_for('drug_detail', slug=d.slug) }}">{{ d.generic_name|capitalize }}</a></li>
           {% endfor %}
-        </ol>
+        </ul>
       </section>
     {% endif %}
 
