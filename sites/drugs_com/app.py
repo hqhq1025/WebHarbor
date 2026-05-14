@@ -3551,10 +3551,286 @@ def drug_side_effects(slug):
     return render_template("drug_side_effects.html", drug=drug)
 
 
+# FDA pregnancy category mapping for common drugs. Drugs not listed fall through
+# to a class-based heuristic, then to a neutral default. The historical
+# A/B/C/D/X letter system is used because it remains the form most agents and
+# benchmark tasks expect, even though FDA replaced it with PLLR labeling in 2015.
+PREGNANCY_CATEGORIES = {
+    "lisinopril": "D",
+    "enalapril": "D",
+    "losartan": "D",
+    "valsartan": "D",
+    "warfarin": "X",
+    "isotretinoin": "X",
+    "methotrexate": "X",
+    "thalidomide": "X",
+    "atorvastatin": "X",
+    "simvastatin": "X",
+    "rosuvastatin": "X",
+    "ibuprofen": "C",
+    "naproxen": "C",
+    "aspirin": "D",
+    "celecoxib": "C",
+    "metformin": "B",
+    "amoxicillin": "B",
+    "azithromycin": "B",
+    "cephalexin": "B",
+    "acetaminophen": "B",
+    "metoprolol": "C",
+    "amlodipine": "C",
+    "hydrochlorothiazide": "B",
+    "furosemide": "C",
+    "sertraline": "C",
+    "fluoxetine": "C",
+    "escitalopram": "C",
+    "alprazolam": "D",
+    "diazepam": "D",
+    "lorazepam": "D",
+    "clonazepam": "D",
+    "oxycodone": "C",
+    "hydrocodone": "C",
+    "tramadol": "C",
+    "morphine": "C",
+    "codeine": "C",
+    "prednisone": "C",
+    "albuterol": "C",
+    "omeprazole": "C",
+    "atenolol": "D",
+    "carbamazepine": "D",
+    "phenytoin": "D",
+    "valproic acid": "X",
+    "topiramate": "D",
+    "lithium": "D",
+    "tetracycline": "D",
+    "doxycycline": "D",
+    "ciprofloxacin": "C",
+    "levofloxacin": "C",
+}
+
+# Per-class fallback when a specific drug isn't mapped above.
+PREGNANCY_CATEGORY_BY_CLASS = {
+    "ACE inhibitors": "D",
+    "Angiotensin II receptor blockers": "D",
+    "Nonsteroidal anti-inflammatory drugs": "C",
+    "HMG-CoA reductase inhibitors": "X",
+    "Statins": "X",
+    "Benzodiazepines": "D",
+    "Tetracycline antibiotics": "D",
+    "Penicillin antibiotics": "B",
+    "Macrolide antibiotics": "B",
+    "Cephalosporin antibiotics": "B",
+    "Fluoroquinolone antibiotics": "C",
+    "Opioid analgesics": "C",
+    "Selective serotonin reuptake inhibitors": "C",
+    "Beta blockers": "C",
+    "Calcium channel blockers": "C",
+    "Thiazide diuretics": "B",
+    "Loop diuretics": "C",
+    "Proton pump inhibitors": "C",
+    "Corticosteroids": "C",
+    "Antiepileptics": "D",
+}
+
+
+def _pregnancy_info(drug):
+    """Derive an FDA pregnancy category and risk profile for `drug`.
+
+    Resolution order: explicit `PREGNANCY_CATEGORIES` mapping, then
+    `PREGNANCY_CATEGORY_BY_CLASS` heuristic, then a neutral "Not classified"
+    fallback. Returns a dict consumed by `drug_pregnancy.html` containing:
+
+      category       single-letter code A/B/C/D/X or "" if unclassified
+      label          human label e.g. "Category D"
+      cat_class      CSS class suffix for `.preg-badge--*`
+      risk_summary   one-paragraph plain-language risk summary
+      considerations list of clinical-consideration bullet strings
+      fetal_data     list of fetal-risk evidence bullet strings
+      breastfeeding  one-paragraph lactation summary
+      severity_rank  0-4 used to drive emphasis / banner color
+    """
+    name = (drug.generic_name or "").lower()
+    cls_name = drug.drug_class.name if getattr(drug, "drug_class", None) else ""
+
+    cat = PREGNANCY_CATEGORIES.get(name)
+    if not cat:
+        cat = PREGNANCY_CATEGORY_BY_CLASS.get(cls_name, "")
+
+    name_cap = (drug.generic_name or "this medication").title()
+
+    if cat == "A":
+        return {
+            "category": "A",
+            "label": "Category A",
+            "cat_class": "a",
+            "severity_rank": 0,
+            "risk_summary": (
+                f"Adequate and well-controlled studies in pregnant women have not "
+                f"demonstrated a risk to the fetus with {name_cap} in any trimester. "
+                f"This is the lowest pregnancy-risk classification."
+            ),
+            "considerations": [
+                f"{name_cap} is generally considered safe across all trimesters when used at standard doses.",
+                "Routine prenatal monitoring is sufficient; no additional fetal surveillance is required for this drug.",
+                "Continue to discuss any new medication with your obstetrician.",
+            ],
+            "fetal_data": [
+                "Human studies: no increased rate of congenital malformations in exposed pregnancies.",
+                "Animal reproduction studies: no evidence of fetal harm at clinically relevant doses.",
+                "Postmarketing surveillance: no signal for adverse fetal outcomes.",
+            ],
+            "breastfeeding": (
+                f"{name_cap} is generally compatible with breastfeeding. Infant exposure through "
+                f"breast milk is low and no adverse effects on the breastfed infant have been observed."
+            ),
+        }
+    if cat == "B":
+        return {
+            "category": "B",
+            "label": "Category B",
+            "cat_class": "b",
+            "severity_rank": 1,
+            "risk_summary": (
+                f"Animal reproduction studies have not demonstrated a fetal risk with {name_cap}, "
+                f"but there are no adequate and well-controlled studies in pregnant women. "
+                f"{name_cap} is generally considered acceptable when clinically indicated."
+            ),
+            "considerations": [
+                f"{name_cap} may be used during pregnancy when the potential benefit justifies the potential risk.",
+                "Use the lowest effective dose for the shortest required duration.",
+                "Inform your obstetrician of all current medications, including over-the-counter products.",
+            ],
+            "fetal_data": [
+                "Animal reproduction studies: no evidence of impaired fertility or fetal harm.",
+                "Human pregnancy registries: limited data, no consistent signal for major congenital anomalies.",
+                "Population studies have not shown an increased rate of birth defects above baseline (~3%).",
+            ],
+            "breastfeeding": (
+                f"{name_cap} is typically compatible with breastfeeding. Small amounts may pass into breast "
+                f"milk; monitor the infant for unusual symptoms and notify the pediatrician if any occur."
+            ),
+        }
+    if cat == "C":
+        return {
+            "category": "C",
+            "label": "Category C",
+            "cat_class": "c",
+            "severity_rank": 2,
+            "risk_summary": (
+                f"Animal reproduction studies have shown an adverse effect on the fetus with {name_cap}, "
+                f"or no animal studies have been conducted, and there are no adequate well-controlled "
+                f"studies in humans. The drug should be used in pregnancy only if the potential benefit "
+                f"justifies the potential risk to the fetus."
+            ),
+            "considerations": [
+                f"Reserve {name_cap} for situations where clearly indicated and alternatives with better safety data are not appropriate.",
+                "Use the lowest effective dose for the shortest required duration, particularly during the first trimester.",
+                "Discuss the risk-benefit balance with your obstetrician before continuing or starting therapy.",
+                "Consider switching to a Category A or B alternative if one is available for your indication.",
+            ],
+            "fetal_data": [
+                "Animal studies: evidence of teratogenicity or embryolethality at doses approaching the human exposure range.",
+                "Human data: insufficient or conflicting; pregnancy registries are ongoing.",
+                "Mechanism-based concerns may exist depending on the drug's pharmacology (e.g., late-trimester NSAID exposure can affect ductus arteriosus closure).",
+            ],
+            "breastfeeding": (
+                f"Use {name_cap} during breastfeeding only with healthcare-provider guidance. The drug may be "
+                f"excreted in human milk; the decision should weigh maternal benefit against potential infant exposure."
+            ),
+        }
+    if cat == "D":
+        return {
+            "category": "D",
+            "label": "Category D",
+            "cat_class": "d",
+            "severity_rank": 3,
+            "risk_summary": (
+                f"There is positive evidence of human fetal risk based on adverse-reaction data from "
+                f"investigational or marketing experience or studies in humans. However, the potential "
+                f"benefits from use of {name_cap} in pregnant women may be acceptable despite its risks "
+                f"in serious or life-threatening situations when safer drugs cannot be used or are ineffective."
+            ),
+            "considerations": [
+                f"Avoid {name_cap} during pregnancy whenever a safer alternative is available for your condition.",
+                "If pregnancy is detected while on therapy, contact your obstetrician promptly so the regimen can be reassessed.",
+                "Effective contraception is recommended for patients of reproductive potential.",
+                "If continued use is clinically necessary, enhanced fetal surveillance (e.g., targeted ultrasound) may be warranted.",
+                "Do not stop chronic therapy abruptly without medical advice; abrupt discontinuation may itself pose risks.",
+            ],
+            "fetal_data": [
+                f"Human data: documented adverse fetal effects have been observed in pregnancies exposed to {name_cap}.",
+                "Second- and third-trimester exposure is associated with the strongest signals for fetal harm in this category.",
+                "Specific risks vary by drug class — ACE inhibitors and ARBs are linked to oligohydramnios, fetal renal dysfunction, skull hypoplasia, and neonatal death; benzodiazepines with neonatal withdrawal and floppy infant syndrome.",
+                "First-trimester exposure may carry an elevated risk of structural malformations versus the baseline rate of ~3%.",
+            ],
+            "breastfeeding": (
+                f"Use of {name_cap} during breastfeeding requires careful evaluation. Some Category D drugs "
+                f"are still compatible with nursing at standard maternal doses; others are not. Confirm with "
+                f"your healthcare provider before continuing therapy while breastfeeding."
+            ),
+        }
+    if cat == "X":
+        return {
+            "category": "X",
+            "label": "Category X",
+            "cat_class": "x",
+            "severity_rank": 4,
+            "risk_summary": (
+                f"Studies in animals or humans have demonstrated fetal abnormalities, or there is positive "
+                f"evidence of fetal risk based on human experience, or both. The risk of use of {name_cap} "
+                f"in a pregnant woman clearly outweighs any possible benefit. {name_cap} is CONTRAINDICATED "
+                f"in women who are or may become pregnant."
+            ),
+            "considerations": [
+                f"{name_cap} must NOT be used during pregnancy.",
+                "Patients of reproductive potential must use effective contraception throughout therapy and for an appropriate washout period after discontinuation.",
+                "If pregnancy occurs during therapy, discontinue the drug immediately and notify the obstetrician for counseling regarding fetal risk.",
+                "A negative pregnancy test may be required prior to initiating therapy.",
+                "Enrollment in a manufacturer pregnancy-prevention or REMS program may be required (e.g., iPLEDGE for isotretinoin).",
+            ],
+            "fetal_data": [
+                f"Multiple human pregnancies exposed to {name_cap} have documented major congenital malformations, fetal demise, or both.",
+                "Effects are typically dose-independent at therapeutic exposure and may occur with even brief first-trimester exposure.",
+                "Pattern of teratogenicity is drug-specific and well characterized in postmarketing registries.",
+            ],
+            "breastfeeding": (
+                f"{name_cap} is generally contraindicated during breastfeeding. Discuss safer alternatives "
+                f"with your healthcare provider before initiating therapy if nursing is planned."
+            ),
+        }
+
+    # Unclassified fallback.
+    return {
+        "category": "",
+        "label": "Not classified",
+        "cat_class": "none",
+        "severity_rank": 2,
+        "risk_summary": (
+            f"{name_cap} has not been assigned a specific FDA pregnancy category in this reference, or its "
+            f"PLLR-format labeling does not map cleanly to the legacy A/B/C/D/X system. Pregnancy safety "
+            f"should be assessed by your healthcare provider based on the latest prescribing information."
+        ),
+        "considerations": [
+            f"Discuss {name_cap} with your obstetrician before continuing or starting therapy in pregnancy.",
+            "Bring the current prescribing information (package insert) to your prenatal visit.",
+            "Use the lowest effective dose for the shortest required duration if therapy is continued.",
+        ],
+        "fetal_data": [
+            "Human data: limited or not summarized in this reference.",
+            "Animal data: refer to the manufacturer prescribing information.",
+            "Consult the FDA Pregnancy and Lactation Labeling Rule (PLLR) section of the official label for the full risk summary.",
+        ],
+        "breastfeeding": (
+            f"Lactation safety for {name_cap} should be evaluated individually. Consult your healthcare "
+            f"provider or a lactation specialist before nursing while on this medication."
+        ),
+    }
+
+
 @app.route("/<slug>/pregnancy")
 def drug_pregnancy(slug):
     drug = Drug.query.filter_by(slug=slug).first_or_404()
-    return render_template("drug_pregnancy.html", drug=drug)
+    preg = _pregnancy_info(drug)
+    return render_template("drug_pregnancy.html", drug=drug, preg=preg)
 
 
 @app.route("/<slug>/warnings")

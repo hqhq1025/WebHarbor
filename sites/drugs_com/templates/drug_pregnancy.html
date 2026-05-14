@@ -16,31 +16,43 @@
 
 <h1>{{ drug.generic_name|title }} Pregnancy and Breastfeeding Warnings</h1>
 
-{% set risk = (drug.pregnancy_risk or 'Consult your doctor') %}
-{% set rlow = risk|lower %}
-{% if 'a' == rlow or rlow.startswith('category a') %}
-  {% set badge_bg = '#2e7d32' %}{% set badge_fg = '#fff' %}
-{% elif rlow.startswith('b') or 'category b' in rlow %}
-  {% set badge_bg = '#558b2f' %}{% set badge_fg = '#fff' %}
-{% elif rlow.startswith('c') or 'category c' in rlow %}
-  {% set badge_bg = '#e67e22' %}{% set badge_fg = '#fff' %}
-{% elif rlow.startswith('d') or 'category d' in rlow %}
-  {% set badge_bg = '#c0392b' %}{% set badge_fg = '#fff' %}
-{% elif rlow.startswith('x') or 'category x' in rlow %}
-  {% set badge_bg = '#7b1818' %}{% set badge_fg = '#fff' %}
-{% else %}
-  {% set badge_bg = '#607d8b' %}{% set badge_fg = '#fff' %}
-{% endif %}
-
-<div class="pregnancy-summary" style="margin:1rem 0;padding:1rem;border:1px solid #e0e0e0;border-left:4px solid {{ badge_bg }};border-radius:4px;background:#fff;">
+<div class="pregnancy-summary pregnancy-summary--{{ preg.cat_class }}">
   <p class="is-139"><strong>FDA Pregnancy Category for {{ drug.generic_name|title }}:</strong></p>
-  <span class="preg-badge" style="display:inline-block;padding:4px 12px;border-radius:14px;background:{{ badge_bg }};color:{{ badge_fg }};font-weight:600;">{{ risk }}</span>
+  <span class="preg-badge preg-badge--{{ preg.cat_class }} preg-badge--lg">{{ preg.label }}</span>
+  {% if preg.severity_rank >= 3 %}
+  <p class="pregnancy-summary-callout"><strong>Use with caution or contraindication during pregnancy.</strong> See risk summary below.</p>
+  {% endif %}
 </div>
+
+<section class="pregnancy-section pregnancy-risk-summary">
+  <h2>Risk Summary</h2>
+  <p>{{ preg.risk_summary }}</p>
+</section>
+
+<section class="pregnancy-section pregnancy-clinical">
+  <h2>Clinical Considerations</h2>
+  <ul class="clinical-considerations">
+    {% for c in preg.considerations %}<li>{{ c }}</li>{% endfor %}
+  </ul>
+</section>
+
+<section class="pregnancy-section pregnancy-fetal-data">
+  <h2>Data on fetal risk</h2>
+  <ul class="fetal-data-list">
+    {% for f in preg.fetal_data %}<li>{{ f }}</li>{% endfor %}
+  </ul>
+  <p class="pregnancy-data-source">
+    Sources: FDA-approved prescribing information, published pregnancy registries, and peer-reviewed teratology literature.
+    Data presented here are summary statements; consult the full prescribing label and a maternal-fetal medicine specialist for individualized counseling.
+  </p>
+</section>
 
 <section class="pregnancy-explainer">
   <h2>FDA Pregnancy Categories</h2>
   <p>The U.S. Food and Drug Administration historically classified medications into five pregnancy
-  risk categories based on the available evidence of fetal harm in humans and animals.</p>
+  risk categories based on the available evidence of fetal harm in humans and animals. In 2015 the
+  FDA replaced this letter system with the Pregnancy and Lactation Labeling Rule (PLLR) for new
+  drug labels, but the legacy A/B/C/D/X categories remain in widespread clinical use.</p>
   <ul>
     <li><strong>Category A</strong> &mdash; Adequate, well-controlled studies in pregnant women have not shown an increased risk of fetal abnormalities.</li>
     <li><strong>Category B</strong> &mdash; Animal studies have revealed no evidence of harm to the fetus; however, there are no adequate studies in pregnant women.</li>
@@ -48,16 +60,6 @@
     <li><strong>Category D</strong> &mdash; Studies in pregnant women have demonstrated a risk to the fetus. The benefits of therapy may outweigh the potential risk in serious or life-threatening situations.</li>
     <li><strong>Category X</strong> &mdash; Studies in animals or pregnant women have demonstrated positive evidence of fetal abnormalities. The risks involved clearly outweigh the potential benefits.</li>
   </ul>
-</section>
-
-<section class="pregnancy-section">
-  <h2>Pregnancy</h2>
-  <p>{{ drug.generic_name|title }} is classified as <strong>{{ risk }}</strong>. Use during
-  pregnancy should be guided by a clinician who can weigh the expected maternal benefit against
-  any potential fetal risk. Where alternative therapies with a more established safety profile
-  exist, those should generally be preferred during pregnancy.</p>
-  <p>If you become pregnant while taking {{ drug.generic_name|title }}, notify your healthcare
-  provider promptly so the regimen can be reassessed.</p>
 </section>
 
 <section class="trimester-section">
@@ -73,7 +75,7 @@
     </div>
     <div class="trimester-card is-141">
       <h3 class="is-142">Third trimester (weeks 28-40)</h3>
-      <p class="is-071">Certain drug classes (for example NSAIDs such as {{ drug.generic_name|title if 'profen' in drug.generic_name|lower or 'naproxen' in drug.generic_name|lower else 'select agents' }}) can affect fetal circulation or delivery and are often avoided in late pregnancy. Always confirm trimester-specific safety with your clinician.</p>
+      <p class="is-071">Certain drug classes (for example NSAIDs and ACE inhibitors) can affect fetal circulation, renal function, or delivery, and are often avoided in late pregnancy. Always confirm trimester-specific safety with your clinician.</p>
     </div>
   </div>
 </section>
@@ -81,13 +83,14 @@
 <section class="bottom-line is-143">
   <h2 class="is-064">Bottom line</h2>
   <p class="is-071">{{ drug.generic_name|title }} carries an FDA pregnancy classification of
-  <strong>{{ risk }}</strong>. Do not start, stop, or change the dose of this medication during
+  <strong>{{ preg.label }}</strong>. Do not start, stop, or change the dose of this medication during
   pregnancy or while breastfeeding without first speaking to your healthcare provider. The safest
   choice depends on your individual condition, gestational age, and available alternatives.</p>
 </section>
 
 <section class="lactation-section">
   <h2>Lactation / Breastfeeding</h2>
+  <p>{{ preg.breastfeeding }}</p>
   <p>Whether {{ drug.generic_name|title }} passes into human milk in clinically significant
   amounts depends on the specific drug's pharmacokinetic profile. Many medications are excreted
   in breast milk to some degree. Consult your healthcare provider or a lactation specialist

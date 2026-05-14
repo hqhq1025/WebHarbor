@@ -24,13 +24,61 @@
     {% endif %}
   </header>
 
-  <section>
+  <aside class="se-emergency-banner" role="note">
+    <strong>Get emergency medical help</strong> if you have signs of an allergic reaction
+    (hives; difficult breathing; swelling of your face, lips, tongue, or throat) or a severe
+    reaction (fever, sore throat, burning in your eyes, skin pain, red or purple skin rash
+    that spreads and causes blistering and peeling). Call 911 or your local emergency number.
+  </aside>
+
+  <section class="se-overview">
     <h2>Overview</h2>
     {{ drug.side_effects | format_drug_text | safe }}
+    <p>The lists below organize side effects by reported frequency in clinical trials and
+    postmarketing surveillance. Frequency ranges reflect the proportion of patients who
+    experienced the effect in pooled studies of {{ drug.generic_name|capitalize }}; your
+    individual risk may differ based on dose, duration, concomitant medications, and
+    underlying conditions.</p>
   </section>
 
-  <section>
-    <h2>Common side effects (greater than 10%)</h2>
+  <section class="se-frequency-table-wrap">
+    <h2>Frequency at a glance</h2>
+    <table class="se-frequency-table">
+      <thead>
+        <tr>
+          <th>Frequency</th>
+          <th>Definition</th>
+          <th>Typical action</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr class="se-row-common">
+          <td><strong>Common</strong></td>
+          <td>&gt; 10% of patients</td>
+          <td>Usually mild; monitor and discuss at next visit.</td>
+        </tr>
+        <tr class="se-row-less-common">
+          <td><strong>Less common</strong></td>
+          <td>1% to 10% of patients</td>
+          <td>Often manageable; contact prescriber if persistent.</td>
+        </tr>
+        <tr class="se-row-rare">
+          <td><strong>Rare</strong></td>
+          <td>0.1% to 1% of patients</td>
+          <td>Contact prescriber promptly.</td>
+        </tr>
+        <tr class="se-row-very-rare">
+          <td><strong>Very rare / serious</strong></td>
+          <td>&lt; 0.1% of patients</td>
+          <td>Seek urgent medical attention.</td>
+        </tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section class="se-block se-block--common">
+    <h2><span class="se-pill se-pill--common">Common</span> Side effects (greater than 10%)</h2>
+    <p class="se-block-note">Generally mild and often resolve as your body adjusts to the medication. Not considered medically serious.</p>
     <ul>
       <li>Upset stomach, heartburn, or nausea</li>
       <li>Mild headache or dizziness</li>
@@ -40,19 +88,22 @@
     </ul>
   </section>
 
-  <section>
-    <h2>Less common side effects (1-10%)</h2>
+  <section class="se-block se-block--less-common">
+    <h2><span class="se-pill se-pill--less-common">Less common</span> Side effects (1-10%)</h2>
+    <p class="se-block-note">Usually not dangerous but worth reporting to your prescriber if persistent or troublesome.</p>
     <ul>
-      <li>Gastrointestinal: abdominal pain, gas, bloating, vomiting</li>
-      <li>Cardiovascular: mild fluid retention, swelling of the hands or feet, elevated blood pressure</li>
-      <li>Renal: decreased urine output, increased serum creatinine</li>
-      <li>Nervous system: nervousness, ringing in the ears (tinnitus)</li>
-      <li>Hematologic: easy bruising</li>
+      <li><strong>Gastrointestinal:</strong> abdominal pain, gas, bloating, vomiting</li>
+      <li><strong>Cardiovascular:</strong> mild fluid retention, swelling of the hands or feet, elevated blood pressure</li>
+      <li><strong>Renal:</strong> decreased urine output, increased serum creatinine</li>
+      <li><strong>Nervous system:</strong> nervousness, ringing in the ears (tinnitus)</li>
+      <li><strong>Hematologic:</strong> easy bruising</li>
+      <li><strong>Dermatologic:</strong> photosensitivity, mild urticaria</li>
     </ul>
   </section>
 
-  <section>
-    <h2>Rare but serious side effects (less than 1%)</h2>
+  <section class="se-block se-block--rare">
+    <h2><span class="se-pill se-pill--rare">Rare but serious</span> Side effects (less than 1%)</h2>
+    <p class="se-block-note">These are uncommon but can be life-threatening. Stop the medication and seek medical attention if any occur.</p>
     <ul>
       <li>Severe gastrointestinal bleeding or perforation</li>
       <li>Heart attack, stroke, or blood clots</li>
@@ -61,25 +112,50 @@
       <li>Stevens-Johnson syndrome / toxic epidermal necrolysis</li>
       <li>Hepatic failure or severe liver injury</li>
       <li>Aseptic meningitis</li>
+      <li>Severe bone marrow suppression (agranulocytosis, aplastic anemia)</li>
     </ul>
   </section>
 
-  <section>
-    <h2>When to seek emergency help</h2>
-    <p>Get emergency medical help immediately if you experience any of the following:</p>
-    <ul>
+  <section class="se-block se-block--serious">
+    <h2>Serious side effects &mdash; seek emergency help</h2>
+    <p>Get emergency medical help immediately if you experience any of the following while taking {{ drug.generic_name|capitalize }}:</p>
+    <ul class="se-serious-list">
       <li>Signs of an allergic reaction: hives, difficult breathing, swelling of your face, lips, tongue, or throat</li>
       <li>Chest pain, shortness of breath, slurred speech, or weakness on one side of the body</li>
       <li>Black, tarry, or bloody stools; coughing up blood or vomit that looks like coffee grounds</li>
       <li>Severe stomach pain that does not go away</li>
       <li>Little or no urination; swelling, rapid weight gain</li>
       <li>Skin rash, blistering, or peeling, especially with fever</li>
+      <li>Yellowing of the skin or eyes (jaundice); dark urine; severe upper-stomach pain spreading to your back</li>
     </ul>
   </section>
 
-  <section>
+  <section class="se-block se-block--call">
     <h2>When to call your doctor</h2>
     <p>Call your healthcare provider if any of the side effects listed above persist, worsen, or interfere with daily activities. Some side effects may resolve on their own as your body adjusts; others may require a dose change or switch to a different medication.</p>
+    <ul>
+      <li>Side effects that last more than a few days after starting therapy</li>
+      <li>Any new or unusual symptom not listed on this page</li>
+      <li>Symptoms that interfere with sleep, work, or daily activities</li>
+      <li>Side effects that worsen with each dose</li>
+    </ul>
+  </section>
+
+  <section class="se-block se-block--medwatch" id="report-side-effect">
+    <h2>Report side effects to the FDA</h2>
+    <p>You are encouraged to report negative side effects of prescription drugs to the FDA.
+    Reporting helps identify safety issues that may not have been seen in clinical trials.</p>
+    <div class="medwatch-card">
+      <p><strong>FDA MedWatch &mdash; Adverse Event Reporting Program</strong></p>
+      <ul class="medwatch-channels">
+        <li><strong>Online:</strong> <a href="#" rel="nofollow">www.fda.gov/medwatch</a></li>
+        <li><strong>Phone:</strong> 1-800-FDA-1088 (1-800-332-1088)</li>
+        <li><strong>Fax:</strong> 1-800-FDA-0178 (1-800-332-0178)</li>
+        <li><strong>Mail:</strong> MedWatch, FDA, 5600 Fishers Lane, Rockville, MD 20857</li>
+      </ul>
+      <p class="medwatch-note">Use FDA Form 3500 for consumer / patient reports and Form 3500A for mandatory reports from manufacturers and importers. Reports may be submitted anonymously.</p>
+    </div>
+    <p>You may also report adverse events to the manufacturer of your specific brand of {{ drug.generic_name|capitalize }}, who is required to forward the report to the FDA.</p>
   </section>
 
   <p class="back-to-overview"><a href="{{ url_for('drug_detail', slug=drug.slug) }}">&laquo; Back to full {{ drug.generic_name|capitalize }} information</a></p>
@@ -104,6 +180,11 @@
       <li><a href="{{ url_for('side_effects_page') }}">Side effects index</a></li>
       <li><a href="{{ url_for('my_med_list') }}">My Med List</a></li>
     </ul>
+  </div>
+  <div class="sidebar-box se-report-sidebar">
+    <h3>Report a side effect</h3>
+    <p>Help the FDA monitor drug safety.</p>
+    <p><a href="#report-side-effect" class="se-report-link">Report to MedWatch &rsaquo;</a></p>
   </div>
 </aside>
 </div>

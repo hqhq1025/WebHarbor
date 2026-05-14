@@ -105,6 +105,66 @@
     <a href="{{ url_for('drug_prices', slug=drug.slug) }}" class="btn btn-sm btn-outline">Pricing</a>
   </div>
 
+  <div class="quick-facts">
+    <div class="quick-facts-item">
+      <span class="quick-facts-label">Availability</span>
+      <span class="quick-facts-value">
+        {% if 'Rx' in drug.availability and 'OTC' in drug.availability %}
+          <span class="avail-badge avail-both">Rx/OTC</span>
+        {% elif 'Rx' in drug.availability %}
+          <span class="avail-badge avail-rx">Rx</span>
+        {% elif 'OTC' in drug.availability %}
+          <span class="avail-badge avail-otc">OTC</span>
+        {% else %}
+          {{ drug.availability }}
+        {% endif %}
+      </span>
+    </div>
+    <div class="quick-facts-item">
+      <span class="quick-facts-label">Pregnancy</span>
+      <span class="quick-facts-value">
+        {% set _pr = (drug.pregnancy_risk or '')|upper %}
+        {% if _pr in ['A','B','C','D','X'] %}
+          <span class="preg-badge preg-badge--{{ _pr|lower }}">Category {{ _pr }}</span>
+        {% elif drug.pregnancy_risk %}
+          <span class="preg-badge preg-badge--other">{{ drug.pregnancy_risk }}</span>
+        {% else %}
+          <span class="muted">Consult Dr</span>
+        {% endif %}
+      </span>
+    </div>
+    <div class="quick-facts-item">
+      <span class="quick-facts-label">CSA Schedule</span>
+      <span class="quick-facts-value">
+        {% set _csa = (drug.csa_schedule or '')|lower %}
+        {% if drug.csa_schedule and _csa not in ['n/a', 'none', 'not scheduled', ''] and 'not a controlled' not in _csa and 'not controlled' not in _csa %}
+          <span class="csa-badge csa-badge--scheduled">{{ drug.csa_schedule }}</span>
+        {% else %}
+          <span class="csa-badge csa-badge--none">Not controlled</span>
+        {% endif %}
+      </span>
+    </div>
+    <div class="quick-facts-item">
+      <span class="quick-facts-label">Drug class</span>
+      <span class="quick-facts-value">
+        {% if drug.drug_class %}
+          <a href="{{ url_for('drug_class_page', slug=drug.drug_class.slug) }}">{{ drug.drug_class.name }}</a>
+        {% else %}<span class="muted">N/A</span>{% endif %}
+      </span>
+    </div>
+    <div class="quick-facts-item">
+      <span class="quick-facts-label">Rating</span>
+      <span class="quick-facts-value">
+        {% if drug.avg_rating %}
+          <strong>{{ "%.1f"|format(drug.avg_rating) }}</strong><span class="muted"> / 10</span>
+          <a href="#reviews" class="quick-facts-rating-count">({{ drug.review_count }})</a>
+        {% else %}
+          <span class="muted">Not yet rated</span>
+        {% endif %}
+      </span>
+    </div>
+  </div>
+
   <nav class="section-tabs">
     <a href="#uses">Uses</a>
     <a href="#warnings">Warnings</a>
@@ -284,7 +344,9 @@
             <div class="related-drug-card-head">
               <strong class="related-drug-name">{{ r.generic_name|capitalize }}</strong>
               {% if r.avg_rating %}
-              <span class="related-drug-rating-badge">{{ "%.1f"|format(r.avg_rating) }}/10</span>
+              <span class="related-drug-rating-badge">&#9733; {{ "%.1f"|format(r.avg_rating) }}/10</span>
+              {% else %}
+              <span class="related-drug-rating-badge related-drug-rating-badge--none">No ratings</span>
               {% endif %}
             </div>
             <div class="related-drug-desc">
@@ -358,8 +420,9 @@
         </div>
 
         {% if reviews %}
+          <p class="muted reviews-preview-note">Showing {{ [reviews|length, 3]|min }} of {{ drug.review_count }} review{{ 's' if drug.review_count != 1 else '' }}. <a href="{{ url_for('drug_reviews_page', slug=drug.slug) }}">View all reviews &rarr;</a></p>
           <div class="reviews-list">
-          {% for r in reviews %}
+          {% for r in reviews[:3] %}
             {% set star5 = ((r.rating or 0) / 2)|round(0, 'floor')|int %}
             {% set duration = r.duration_taken if r.duration_taken is defined else None %}
             <article class="review review-card"
@@ -391,6 +454,9 @@
             </article>
           {% endfor %}
           </div>
+          {% if drug.review_count and drug.review_count > 3 %}
+          <p class="reviews-see-more"><a href="{{ url_for('drug_reviews_page', slug=drug.slug) }}" class="btn btn-outline reviews-see-more-link">See all {{ drug.review_count }} reviews &rarr;</a></p>
+          {% endif %}
         {% else %}
           <p class="muted">No reviews yet.</p>
         {% endif %}
