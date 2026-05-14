@@ -546,6 +546,33 @@ DRUGS_DATA = [
     ("ferrous sulfate", "Iron supplements", "OTC", "Not a controlled drug", "FER-us SUL-fate", ["Slow FE", "Feosol"], ["anemia"]),
     ("vitamin B12", "Vitamins", "OTC", "Not a controlled drug", "VYE-ta-min B12", ["Cyanoject", "Nascobal"], ["vitamin_deficiency", "anemia"]),
     ("multivitamin", "Vitamins", "OTC", "Not a controlled drug", "mul-tee-VYE-ta-min", ["Centrum", "One A Day"], ["vitamin_deficiency"]),
+    # DMARDs (bring class from 0 to 3)
+    ("sulfasalazine", "DMARDs", "Rx", "Not a controlled drug", "sul-fa-SAL-a-zeen", ["Azulfidine"], ["arthritis", "crohns_disease"]),
+    ("leflunomide", "DMARDs", "Rx", "Not a controlled drug", "le-FLOO-no-mide", ["Arava"], ["arthritis"]),
+    ("tofacitinib", "DMARDs", "Rx", "Not a controlled drug", "toe-fa-SYE-ti-nib", ["Xeljanz"], ["arthritis", "psoriasis"]),
+    # Tetracyclines (1 -> 3)
+    ("minocycline", "Tetracyclines", "Rx", "Not a controlled drug", "mi-noe-SYE-kleen", ["Minocin", "Solodyn"], ["acne", "bacterial_infections"]),
+    ("tetracycline", "Tetracyclines", "Rx", "Not a controlled drug", "tet-ra-SYE-kleen", ["Sumycin"], ["bacterial_infections", "acne"]),
+    # Macrolides (1 -> 3)
+    ("clarithromycin", "Macrolides", "Rx", "Not a controlled drug", "kla-RITH-roe-mye-sin", ["Biaxin"], ["bacterial_infections"]),
+    ("erythromycin", "Macrolides", "Rx", "Not a controlled drug", "er-ith-roe-MYE-sin", ["Ery-Tab", "Erythrocin"], ["bacterial_infections", "acne"]),
+    # Triptans (1 -> 4)
+    ("rizatriptan", "Triptans", "Rx", "Not a controlled drug", "rye-za-TRIP-tan", ["Maxalt"], ["migraine"]),
+    ("eletriptan", "Triptans", "Rx", "Not a controlled drug", "el-e-TRIP-tan", ["Relpax"], ["migraine"]),
+    ("zolmitriptan", "Triptans", "Rx", "Not a controlled drug", "zole-mi-TRIP-tan", ["Zomig"], ["migraine"]),
+    # SNRIs (2 -> 4)
+    ("desvenlafaxine", "SNRIs", "Rx", "Not a controlled drug", "des-ven-la-FAX-een", ["Pristiq", "Khedezla"], ["depression"]),
+    ("milnacipran", "SNRIs", "Rx", "Not a controlled drug", "mil-NA-si-pran", ["Savella"], ["pain"]),
+    # Thyroid hormones (2 -> 3)
+    ("liothyronine", "Thyroid hormones", "Rx", "Not a controlled drug", "lye-oh-THYE-roe-neen", ["Cytomel"], ["hypothyroidism"]),
+    # Bronchodilators (2 -> 3)
+    ("formoterol", "Bronchodilators", "Rx", "Not a controlled drug", "for-MOE-te-rol", ["Foradil", "Perforomist"], ["asthma", "copd"]),
+    # Diuretics (3 -> 5)
+    ("chlorthalidone", "Diuretics", "Rx", "Not a controlled drug", "klor-THAL-i-done", ["Thalitone"], ["hypertension"]),
+    ("indapamide", "Diuretics", "Rx", "Not a controlled drug", "in-DAP-a-mide", ["Lozol"], ["hypertension", "heart_disease"]),
+    # Sleep aids (2 -> 4)
+    ("ramelteon", "Sleep aids", "Rx", "Not a controlled drug", "ra-MEL-tee-on", ["Rozerem"], ["insomnia"]),
+    ("suvorexant", "Sleep aids", "C-IV", "C-IV", "soo-voe-REX-ant", ["Belsomra"], ["insomnia"]),
 ]
 
 
