@@ -144,6 +144,32 @@
     </table>
   </div>
 
+  {% set _classes = selected_drugs|map(attribute='1')|map(attribute='drug_class')|select|map(attribute='name')|list|unique|list %}
+  {% set _avails = selected_drugs|map(attribute='1')|map(attribute='availability')|select|list|unique|list %}
+  {% set _pregs = selected_drugs|map(attribute='1')|map(attribute='pregnancy_risk')|select|list|unique|list %}
+  <div class="compare-simdiff">
+    <div class="compare-simdiff-col compare-simdiff-sim">
+      <h4>Similarities</h4>
+      <ul>
+        {% if _classes|length == 1 %}<li>Same drug class: <strong>{{ _classes[0] }}</strong></li>{% endif %}
+        {% if _avails|length == 1 %}<li>Same availability: <strong>{{ _avails[0] }}</strong></li>{% endif %}
+        {% if _pregs|length == 1 and _pregs[0] %}<li>Same pregnancy category: <strong>{{ _pregs[0] }}</strong></li>{% endif %}
+        {% if _classes|length > 1 and _avails|length > 1 and (_pregs|length > 1 or not _pregs) %}<li class="muted">No major attribute overlap &mdash; see differences.</li>{% endif %}
+      </ul>
+    </div>
+    <div class="compare-simdiff-col compare-simdiff-diff">
+      <h4>Differences</h4>
+      <ul>
+        {% if _classes|length > 1 %}<li>Different drug classes: {{ _classes|join(' vs. ') }}</li>{% endif %}
+        {% if _avails|length > 1 %}<li>Mixed availability: {{ _avails|join(' vs. ') }}</li>{% endif %}
+        {% if _pregs|length > 1 %}<li>Different pregnancy categories: {{ _pregs|join(' vs. ') }}</li>{% endif %}
+        {% set _schedules = selected_drugs|map(attribute='1')|map(attribute='csa_schedule')|select|list|unique|list %}
+        {% if _schedules|length > 1 %}<li>Different CSA schedules: {{ _schedules|join(' vs. ') }}</li>{% endif %}
+        {% if _classes|length == 1 and _avails|length == 1 %}<li class="muted">Largely overlapping &mdash; compare side effects and dosing below.</li>{% endif %}
+      </ul>
+    </div>
+  </div>
+
   <p class="is-057">
     See the side-by-side detailed comparison below for uses, warnings, side effects, and dosage.
   </p>
@@ -258,25 +284,21 @@
       <strong>Ibuprofen vs. Naproxen</strong>
       <p class="muted is-062">NSAIDs for pain and inflammation</p>
     </a>
-    <a href="{{ url_for('compare_drugs') }}?drug1=acetaminophen&drug2=ibuprofen" class="card is-061">
-      <strong>Acetaminophen vs. Ibuprofen</strong>
-      <p class="muted is-062">Pain and fever relief</p>
+    <a href="{{ url_for('compare_drugs') }}?drug1=atorvastatin&drug2=simvastatin" class="card is-061">
+      <strong>Atorvastatin vs. Simvastatin</strong>
+      <p class="muted is-062">Statins for high cholesterol</p>
     </a>
-    <a href="{{ url_for('compare_drugs') }}?drug1=sertraline&drug2=fluoxetine" class="card is-061">
-      <strong>Sertraline vs. Fluoxetine</strong>
+    <a href="{{ url_for('compare_drugs') }}?drug1=metformin&drug2=glipizide" class="card is-061">
+      <strong>Metformin vs. Glipizide</strong>
+      <p class="muted is-062">Oral medications for type 2 diabetes</p>
+    </a>
+    <a href="{{ url_for('compare_drugs') }}?drug1=sertraline&drug2=escitalopram" class="card is-061">
+      <strong>Sertraline vs. Escitalopram</strong>
       <p class="muted is-062">SSRIs for depression and anxiety</p>
     </a>
-    <a href="{{ url_for('compare_drugs') }}?drug1=semaglutide&drug2=tirzepatide" class="card is-061">
-      <strong>Semaglutide vs. Tirzepatide</strong>
-      <p class="muted is-062">GLP-1 agonists for diabetes &amp; weight</p>
-    </a>
-    <a href="{{ url_for('compare_drugs') }}?drug1=omeprazole&drug2=famotidine" class="card is-061">
-      <strong>Omeprazole vs. Famotidine</strong>
-      <p class="muted is-062">Acid reflux treatments</p>
-    </a>
-    <a href="{{ url_for('compare_drugs') }}?drug1=loratadine&drug2=cetirizine" class="card is-061">
-      <strong>Loratadine vs. Cetirizine</strong>
-      <p class="muted is-062">Antihistamines for allergies</p>
+    <a href="{{ url_for('compare_drugs') }}?drug1=lisinopril&drug2=losartan" class="card is-061">
+      <strong>Lisinopril vs. Losartan</strong>
+      <p class="muted is-062">Blood pressure medications (ACE vs. ARB)</p>
     </a>
   </div>
 </section>

@@ -4153,6 +4153,38 @@ html { scroll-behavior: smooth; }
   font-size: 1.05rem;
   color: #0c3b6f;
 }
+.compare-simdiff {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin: 16px 0 24px;
+}
+@media (max-width: 720px) {
+  .compare-simdiff { grid-template-columns: 1fr; }
+}
+.compare-simdiff-col {
+  border: 1px solid #e0e6ef;
+  border-radius: 6px;
+  padding: 12px 16px;
+  background: #fff;
+}
+.compare-simdiff-col h4 {
+  margin: 0 0 8px;
+  font-size: 0.95rem;
+  padding-bottom: 6px;
+  border-bottom: 1px solid #eef1f6;
+}
+.compare-simdiff-col ul {
+  margin: 0;
+  padding-left: 18px;
+  font-size: 0.9rem;
+  line-height: 1.55;
+}
+.compare-simdiff-col ul li { margin-bottom: 4px; }
+.compare-simdiff-sim { border-left: 3px solid #2e8b57; }
+.compare-simdiff-sim h4 { color: #1f5f3c; }
+.compare-simdiff-diff { border-left: 3px solid #c0392b; }
+.compare-simdiff-diff h4 { color: #8a261c; }
 .compare-quick-table tbody td.cq-rating-tie-note {
   background: #fff8e1 !important;
   color: #6b4d00;
