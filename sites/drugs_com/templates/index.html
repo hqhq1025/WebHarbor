@@ -148,17 +148,47 @@
       </div>
       Drugs &amp; Medications
     </a>
+    <a class="feature-icon-item" href="{{ url_for('symptom_checker') }}">
+      <div class="feature-icon-circle">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M9 12h6M9 16h6M9 8h3"/><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M16 3v5h5"/></svg>
+      </div>
+      Symptom Checker
+    </a>
+    <a class="feature-icon-item" href="{{ url_for('side_effects_page') }}">
+      <div class="feature-icon-circle">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="9"/><path d="M12 8v4l3 3"/></svg>
+      </div>
+      Side Effects
+    </a>
+    <a class="feature-icon-item" href="{{ url_for('conditions_list') }}">
+      <div class="feature-icon-circle">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/></svg>
+      </div>
+      Conditions
+    </a>
     <a class="feature-icon-item" href="{{ url_for('compare_drugs') }}">
       <div class="feature-icon-circle">
         <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M9 3H5a2 2 0 00-2 2v14a2 2 0 002 2h4M15 3h4a2 2 0 012 2v14a2 2 0 01-2 2h-4M12 3v18M9 8l-3 4 3 4M15 8l3 4-3 4"/></svg>
       </div>
       Compare Drugs
     </a>
+    <a class="feature-icon-item" href="{{ url_for('news_category', category='fda-alerts') }}">
+      <div class="feature-icon-circle">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+      </div>
+      FDA Alerts
+    </a>
+    <a class="feature-icon-item" href="{{ url_for('drug_prices', slug='ibuprofen') }}">
+      <div class="feature-icon-circle">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
+      </div>
+      Price Guide
+    </a>
     <a class="feature-icon-item" href="{{ url_for('pro_edition') }}">
       <div class="feature-icon-circle">
         <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="8" r="4"/><path d="M20 21a8 8 0 10-16 0"/><path d="M12 11v6M9 16h6"/></svg>
       </div>
-      Pro Edition
+      Health Professionals
     </a>
   </div>
   <button class="carousel-btn carousel-next" onclick="scrollCarousel(1)" aria-label="Next">&#8250;</button>
@@ -366,20 +396,34 @@ function scrollCarousel(dir) {
     })();
     </script>
 
-    <!-- Right: Browse by Site Section -->
+    <!-- Right: Drug Information rail -->
     <div>
-      <div class="browse-panel-title">Browse by Site Section</div>
+      <div class="browse-panel-title">Drug Information</div>
       <div class="site-section-panel">
         <ul>
-          <li><a href="{{ url_for('drug_az') }}">Drugs A-Z (Español)</a></li>
-          <li><a href="{{ url_for('search') }}?q=side+effects">Side Effects Checker</a></li>
-          <li><a href="{{ url_for('search') }}?q=dosage">Dosage Guidelines</a></li>
-          <li><a href="{{ url_for('my_med_list') }}">Manage your Meds</a></li>
-          <li><a href="{{ url_for('drug_classes_list') }}">Health Professionals</a></li>
+          <li><a href="{{ url_for('drug_az') }}">A to Z Drug List</a></li>
+          <li><a href="{{ url_for('drug_classes_list') }}">Drugs by Class</a></li>
+          <li><a href="{{ url_for('search') }}?q=dosage">Dosage</a></li>
+          <li><a href="{{ url_for('side_effects_page') }}">Side Effects</a></li>
+          <li><a href="{{ url_for('search') }}?q=pregnancy">Pregnancy Warnings</a></li>
+          <li><a href="{{ url_for('search') }}?q=OTC&availability=OTC">OTC Drugs</a></li>
+          <li><a href="{{ url_for('search') }}?q=generic">Generic Drugs</a></li>
+          <li><a href="{{ url_for('conditions_list') }}">Conditions A-Z</a></li>
+        </ul>
+        <div class="browse-panel-title" style="margin-top:12px">Tools</div>
+        <ul>
+          <li><a href="{{ url_for('interaction_checker') }}">Interaction Checker</a></li>
+          <li><a href="{{ url_for('pill_identifier') }}">Pill Identifier</a></li>
+          <li><a href="{{ url_for('symptom_checker') }}">Symptom Checker</a></li>
+          <li><a href="{{ url_for('my_med_list') }}">Medication Record</a></li>
+          <li><a href="{{ url_for('compare_drugs') }}">Compare Drugs</a></li>
+        </ul>
+        <div class="browse-panel-title" style="margin-top:12px">News &amp; Alerts</div>
+        <ul>
           <li><a href="{{ url_for('news_index') }}">Medical News</a></li>
-          <li><a href="{{ url_for('news_index') }}">FDA Alerts</a></li>
-          <li><a href="{{ url_for('news_index') }}">New Drugs</a></li>
-          <li><a href="{{ url_for('conditions_list') }}">More...</a></li>
+          <li><a href="{{ url_for('news_category', category='clinical-trials') }}">Clinical Trials</a></li>
+          <li><a href="{{ url_for('news_category', category='fda-alerts') }}">FDA Drug Alerts</a></li>
+          <li><a href="{{ url_for('news_category', category='new-drug-approvals') }}">New FDA Approvals</a></li>
         </ul>
       </div>
     </div>
@@ -442,12 +486,14 @@ function scrollCarousel(dir) {
     </div>
   </div>
 
-  <!-- Popular drug searches -->
+  <!-- Popular drug searches / Top drugs -->
   <div class="home-row">
     <h2>Popular Drug Searches</h2>
-    <div class="popular-searches">
-      {% for d in trending %}
-        <a href="{{ url_for('drug_detail', slug=d.slug) }}">{{ d.generic_name|capitalize }}</a>
+    <p class="muted">Most-searched medications on Drugs.com.</p>
+    <div class="popular-searches popular-searches--wide">
+      {% set top_drugs = ['acetaminophen','adderall','alprazolam','amoxicillin','atorvastatin','azithromycin','bupropion','buspirone','citalopram','clonazepam','cyclobenzaprine','doxycycline','duloxetine','escitalopram','fluoxetine','gabapentin','hydrochlorothiazide','hydroxyzine','ibuprofen','levothyroxine','lisinopril','loratadine','lorazepam','losartan','metformin','metoprolol','metronidazole','naproxen','omeprazole','oxycodone','pantoprazole','prednisone','sertraline','sildenafil','simvastatin','trazodone','trimethoprim','warfarin','zolpidem','amitriptyline','amlodipine','atenolol','carvedilol','cetirizine','clindamycin','clopidogrel','diazepam','diclofenac','diltiazem','doxazosin','enalapril','famotidine','finasteride','fluticasone','furosemide','glipizide','hydrocodone','insulin glargine','levofloxacin','lisinopril','meloxicam','memantine','methylphenidate','metoclopramide','mirtazapine','montelukast','morphine','naltrexone','nifedipine','nitrofurantoin','paroxetine','quetiapine','ramipril','ranitidine','rosuvastatin','semaglutide','spironolactone','tamsulosin','tirzepatide','topiramate','tramadol','valacyclovir','venlafaxine','verapamil'] %}
+      {% for name in top_drugs %}
+        <a href="{{ url_for('drug_detail', slug=name|lower|replace(' ','-')) }}">{{ name|capitalize }}</a>
       {% endfor %}
     </div>
   </div>
