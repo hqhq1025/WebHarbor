@@ -8,10 +8,29 @@
 </nav>
 
 <h1>My Med List</h1>
-<p class="subtitle">Track the medications you or a family member are taking.</p>
+<p class="subtitle">Your personal medication list</p>
 
 <div class="med-list-layout">
   <div class="med-list-main">
+    {% if items %}
+    {% set rx_top = items|selectattr('drug.availability', 'equalto', 'Rx')|list|length %}
+    {% set otc_top = items|selectattr('drug.availability', 'equalto', 'OTC')|list|length %}
+    <div class="med-stats-bar">
+      <div class="med-stats-item">
+        <span class="med-stats-num">{{ items|length }}</span>
+        <span class="med-stats-label">Total medications</span>
+      </div>
+      <div class="med-stats-item">
+        <span class="med-stats-num">{{ rx_top }}</span>
+        <span class="med-stats-label">Prescription (Rx)</span>
+      </div>
+      <div class="med-stats-item">
+        <span class="med-stats-num">{{ otc_top }}</span>
+        <span class="med-stats-label">Over-the-counter</span>
+      </div>
+    </div>
+    {% endif %}
+
     <form class="med-add-form" action="{{ url_for('search') }}" method="get" role="search">
       <label for="med-add-q" class="med-add-label">Add a medication</label>
       <div class="med-add-row">

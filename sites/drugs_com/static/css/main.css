@@ -3240,6 +3240,37 @@ html { scroll-behavior: smooth; }
 @media (max-width: 720px) {
   .med-interaction-cta { flex-direction: column; align-items: stretch; }
   .med-summary-grid { grid-template-columns: repeat(2, 1fr); }
+  .med-stats-bar { grid-template-columns: repeat(3, 1fr); gap: 8px; padding: 12px; }
+  .med-stats-num { font-size: 1.4rem; }
+}
+.med-stats-bar {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  background: linear-gradient(135deg, #0c3b6f 0%, #154a85 100%);
+  color: #fff;
+  border-radius: 8px;
+  padding: 18px 22px;
+  margin-bottom: 18px;
+  box-shadow: 0 2px 6px rgba(12, 59, 111, 0.18);
+}
+.med-stats-item { display: flex; flex-direction: column; align-items: center; text-align: center; }
+.med-stats-num { font-size: 1.9rem; font-weight: 700; line-height: 1.1; color: #ffd54a; }
+.med-stats-label {
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: #e4eef9;
+  margin-top: 4px;
+}
+.pill-results-imprint {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  background: #fff4d6;
+  color: #6a4400;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-weight: 700;
+  border: 1px solid #f0d27a;
 }
 
 /* ============================================================
@@ -6469,3 +6500,176 @@ html { scroll-behavior: smooth; }
 .drug-pro-monograph h2 {
   font-size: 18px; color: #0a5cad; border-bottom: 1px solid #dde4ec; padding-bottom: 4px;
 }
+
+/* News category thumbnails (replaces large letter placeholder) */
+.news-thumb-cat {
+  width: 132px;
+  height: 100px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  position: relative;
+  border: 1px solid rgba(0,0,0,0.05);
+}
+.news-thumb-cat::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at 30% 20%, rgba(255,255,255,0.55), rgba(255,255,255,0) 60%);
+  pointer-events: none;
+}
+.news-thumb-icon {
+  font-size: 38px;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.6);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+  position: relative;
+  z-index: 1;
+}
+.news-thumb-cat--approvals { background: linear-gradient(135deg, #e8f5e9 0%, #a5d6a7 100%); }
+.news-thumb-cat--approvals .news-thumb-icon { color: #2e7d32; }
+.news-thumb-cat--alert     { background: linear-gradient(135deg, #fff5f5 0%, #ef9a9a 100%); }
+.news-thumb-cat--alert     .news-thumb-icon { color: #c0392b; }
+.news-thumb-cat--medical   { background: linear-gradient(135deg, #e3f2fd 0%, #90caf9 100%); }
+.news-thumb-cat--medical   .news-thumb-icon { color: #1565c0; }
+.news-thumb-cat--trial     { background: linear-gradient(135deg, #f3e5f5 0%, #ce93d8 100%); }
+.news-thumb-cat--trial     .news-thumb-icon { color: #6a1b9a; }
+.news-thumb-cat--health    { background: linear-gradient(135deg, #fff3e0 0%, #ffcc80 100%); }
+.news-thumb-cat--health    .news-thumb-icon { color: #ef6c00; font-weight: 700; }
+.news-thumb-cat--default   { background: linear-gradient(135deg, #e0e6ef 0%, #c5cee0 100%); }
+.news-thumb-cat--default   .news-thumb-icon { color: #1a3a6e; }
+@media (max-width: 700px) {
+  .news-thumb-cat { width: 100%; height: 120px; }
+}
+
+/* News category banner (category landing) */
+.news-cat-banner {
+  padding: 18px 22px;
+  border-radius: 6px;
+  margin: 14px 0 18px;
+  border-left: 6px solid #1a3a6e;
+  background: #f1f4f9;
+}
+.news-cat-banner--approvals { background: linear-gradient(135deg,#e8f5e9 0%,#c8e6c9 100%); border-left-color: #2e7d32; }
+.news-cat-banner--medical   { background: linear-gradient(135deg,#e3f2fd 0%,#bbdefb 100%); border-left-color: #1565c0; }
+.news-cat-banner--alert     { background: linear-gradient(135deg,#fff5f5 0%,#ffd6d6 100%); border-left-color: #c0392b; }
+.news-cat-banner--trial     { background: linear-gradient(135deg,#f3e5f5 0%,#e1bee7 100%); border-left-color: #6a1b9a; }
+.news-cat-banner--health    { background: linear-gradient(135deg,#fff3e0 0%,#ffe0b2 100%); border-left-color: #ef6c00; }
+
+.news-cat-title { font-size: 26px; font-weight: 700; margin: 0; color: #1a3a6e; }
+.news-cat-title--approvals { color: #2e7d32; }
+.news-cat-title--medical   { color: #1565c0; }
+.news-cat-title--alert     { color: #c0392b; }
+.news-cat-title--trial     { color: #6a1b9a; }
+.news-cat-title--health    { color: #ef6c00; }
+
+.news-cat-badge {
+  color: #fff;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  font-size: 11px;
+  padding: 4px 9px;
+  border-radius: 3px;
+  background: #1a3a6e;
+}
+.news-cat-badge--approvals { background: #2e7d32; }
+.news-cat-badge--medical   { background: #1565c0; }
+.news-cat-badge--alert     { background: #c0392b; }
+.news-cat-badge--trial     { background: #6a1b9a; }
+.news-cat-badge--health    { background: #ef6c00; }
+
+/* Pregnancy and CSA badges in drug status sidebar */
+.preg-badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+  color: #fff;
+  background: #6b7280;
+}
+.preg-badge--a { background: #2e7d32; }
+.preg-badge--b { background: #43a047; }
+.preg-badge--c { background: #f59e0b; color: #1f2937; }
+.preg-badge--d { background: #ef6c00; }
+.preg-badge--x { background: #c62828; }
+.preg-badge--other { background: #1565c0; }
+.preg-badge--none  { background: #6b7280; }
+
+.csa-badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-size: 11px;
+  font-weight: 700;
+  background: #e5e7eb;
+  color: #374151;
+}
+.csa-badge--scheduled { background: #4b5563; color: #fff; }
+.csa-badge--none      { background: #e5e7eb; color: #4b5563; }
+
+/* Horizontal-scrolling related drugs row (drug detail bottom) */
+.related-drugs-row {
+  display: flex;
+  gap: 12px;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  padding: 8px 2px 14px;
+  margin-top: 8px;
+  -webkit-overflow-scrolling: touch;
+}
+.related-drugs-row .related-drug-card {
+  flex: 0 0 220px;
+  scroll-snap-align: start;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 12px 14px;
+  border: 1px solid var(--gray-200);
+  border-radius: 8px;
+  background: #fff;
+  text-decoration: none;
+  color: inherit;
+  transition: box-shadow 0.15s, border-color 0.15s, transform 0.15s;
+}
+.related-drugs-row .related-drug-card:hover {
+  border-color: var(--blue);
+  box-shadow: 0 4px 12px rgba(0, 114, 206, 0.15);
+  transform: translateY(-1px);
+}
+.related-drug-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.related-drug-rating-badge {
+  display: inline-block;
+  padding: 2px 7px;
+  border-radius: 10px;
+  font-size: 11px;
+  font-weight: 700;
+  background: #fef3c7;
+  color: #b45309;
+  white-space: nowrap;
+}
+.related-drug-desc {
+  font-size: 12px;
+  color: #6b7280;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.related-drugs-row .related-drug-avail { margin-top: auto; }
+.related-drugs-row::-webkit-scrollbar { height: 8px; }
+.related-drugs-row::-webkit-scrollbar-thumb { background: var(--gray-200); border-radius: 4px; }
