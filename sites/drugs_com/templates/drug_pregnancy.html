@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% from "_drug_sidebar.html" import drug_status_sidebar %}
 {% block title %}{{ drug.generic_name|title }} Pregnancy and Breastfeeding Warnings - {{ site_name }}{% endblock %}
 {% block content %}
 <nav class="breadcrumb" aria-label="Breadcrumb">
@@ -11,6 +12,12 @@
   <span class="current">Pregnancy &amp; Lactation</span>
 </nav>
 
+<div class="drug-page-type-tabs">
+  <a href="{{ url_for('drug_detail', slug=drug.slug) }}" class="drug-page-type-tab active" aria-current="page">Consumer</a>
+  <a href="{{ url_for('drug_pro_monograph', slug=drug.slug) }}" class="drug-page-type-tab">Professional</a>
+  <a href="{{ url_for('drug_faq_page', slug=drug.slug) }}" class="drug-page-type-tab">FAQ</a>
+</div>
+
 <div class="page-with-sidebar">
 <div class="main-col">
 <nav class="section-tabs section-tabs--subpage" aria-label="Drug sections">
@@ -18,10 +25,9 @@
   <a href="{{ url_for('drug_detail', slug=drug.slug) }}#warnings">Warnings</a>
   <a href="{{ url_for('drug_detail', slug=drug.slug) }}#before-taking">Before taking</a>
   <a href="{{ url_for('drug_dosage', slug=drug.slug) }}">Dosage</a>
-  <a href="{{ url_for('drug_detail', slug=drug.slug) }}#what-to-avoid">What to avoid</a>
   <a href="{{ url_for('drug_side_effects', slug=drug.slug) }}">Side effects</a>
   <a href="{{ url_for('drug_interactions_page', slug=drug.slug) }}">Interactions</a>
-  <a href="{{ url_for('drug_detail', slug=drug.slug) }}#faq">FAQ</a>
+  <a href="{{ url_for('drug_faq_page', slug=drug.slug) }}">FAQ</a>
 </nav>
 
 <h1>{{ drug.generic_name|title }} Pregnancy and Breastfeeding Warnings</h1>
@@ -35,7 +41,7 @@
 </div>
 
 <section class="pregnancy-section pregnancy-risk-summary">
-  <h2>Risk Summary</h2>
+  <h2>{{ drug.generic_name|title }} Pregnancy Warnings</h2>
   <p>{{ preg.risk_summary }}</p>
 </section>
 
@@ -99,7 +105,7 @@
 </section>
 
 <section class="lactation-section">
-  <h2>Lactation / Breastfeeding</h2>
+  <h2>{{ drug.generic_name|title }} Breastfeeding Warnings</h2>
   <p>{{ preg.breastfeeding }}</p>
   <p>Whether {{ drug.generic_name|title }} passes into human milk in clinically significant
   amounts depends on the specific drug's pharmacokinetic profile. Many medications are excreted
@@ -125,22 +131,16 @@
   <a class="is-145" href="{{ url_for('drug_interactions_page', slug=drug.slug) }}">Talk to a healthcare provider about {{ drug.generic_name|title }} &rsaquo;</a>
 </p>
 
+<section id="further-information">
+  <h2>Further information</h2>
+  <p>Always consult your healthcare provider to ensure the information displayed on this page applies to your personal circumstances.</p>
+  <p>Copyright 1996-{{ drug.last_updated.strftime('%Y') }} Drugs.com.</p>
+</section>
+
 <p class="is-146"><a href="{{ url_for('drug_detail', slug=drug.slug) }}">&larr; Back to {{ drug.generic_name|title }} drug information</a></p>
 
 </div>
 
-<aside class="sidebar">
-  <div class="sidebar-box more-about">
-    <h3>More about {{ drug.generic_name }}</h3>
-    <ul class="more-about-list">
-      <li><a href="{{ url_for('drug_detail', slug=drug.slug) }}">Drug overview</a></li>
-      <li><a href="{{ url_for('drug_dosage', slug=drug.slug) }}">Dosage guide</a></li>
-      <li><a href="{{ url_for('drug_side_effects', slug=drug.slug) }}">Side effects</a></li>
-      <li><a href="{{ url_for('drug_interactions_page', slug=drug.slug) }}">Drug interactions</a></li>
-      <li><a href="{{ url_for('drug_images', slug=drug.slug) }}">Drug images</a></li>
-      <li><a href="{{ url_for('drug_prices', slug=drug.slug) }}">Pricing</a></li>
-    </ul>
-  </div>
-</aside>
+{{ drug_status_sidebar(drug) }}
 </div>
 {% endblock %}

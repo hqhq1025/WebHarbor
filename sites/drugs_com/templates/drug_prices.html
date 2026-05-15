@@ -1,11 +1,34 @@
 {% extends "base.html" %}
+{% from "_drug_sidebar.html" import drug_status_sidebar %}
 {% block title %}{{ drug.generic_name }} Prices, Coupons &amp; Savings Tips | {{ site_name }}{% endblock %}
 {% block content %}
-<div class="is-147">
-  <nav class="breadcrumb">
-    <a href="{{ url_for('index') }}">Home</a> &rsaquo;
-    <a href="{{ url_for('drug_detail', slug=drug.slug) }}">{{ drug.generic_name }}</a> &rsaquo;
-    <span>Prices</span>
+<nav class="breadcrumb" aria-label="Breadcrumb">
+  <a href="{{ url_for('index') }}">Home</a>
+  <span class="sep">&rsaquo;</span>
+  <a href="{{ url_for('drug_az') }}">Drugs A-Z</a>
+  <span class="sep">&rsaquo;</span>
+  <a href="{{ url_for('drug_detail', slug=drug.slug) }}">{{ drug.generic_name|title }}</a>
+  <span class="sep">&rsaquo;</span>
+  <span class="current">Prices</span>
+</nav>
+
+<div class="drug-page-type-tabs">
+  <a href="{{ url_for('drug_detail', slug=drug.slug) }}" class="drug-page-type-tab active" aria-current="page">Consumer</a>
+  <a href="{{ url_for('drug_pro_monograph', slug=drug.slug) }}" class="drug-page-type-tab">Professional</a>
+  <a href="{{ url_for('drug_faq_page', slug=drug.slug) }}" class="drug-page-type-tab">FAQ</a>
+</div>
+
+<div class="page-with-sidebar">
+<div class="main-col">
+<article class="drug-detail">
+  <nav class="section-tabs section-tabs--subpage" aria-label="Drug sections">
+    <a href="{{ url_for('drug_detail', slug=drug.slug) }}#uses">Uses</a>
+    <a href="{{ url_for('drug_detail', slug=drug.slug) }}#warnings">Warnings</a>
+    <a href="{{ url_for('drug_detail', slug=drug.slug) }}#before-taking">Before taking</a>
+    <a href="{{ url_for('drug_dosage', slug=drug.slug) }}">Dosage</a>
+    <a href="{{ url_for('drug_side_effects', slug=drug.slug) }}">Side effects</a>
+    <a href="{{ url_for('drug_interactions_page', slug=drug.slug) }}">Interactions</a>
+    <a href="{{ url_for('drug_faq_page', slug=drug.slug) }}">FAQ</a>
   </nav>
 
   <h1 class="is-148">{{ drug.generic_name|title }} Prices, Coupons and Patient Assistance Programs</h1>
@@ -245,5 +268,17 @@
     <li><a href="{{ url_for('drug_images', slug=drug.slug) }}">Pill images</a></li>
     <li><a href="{{ url_for('interaction_checker') }}">Drug interaction checker</a></li>
   </ul>
+
+  <section id="further-information">
+    <h2>Further information</h2>
+    <p>Always consult your healthcare provider to ensure the information displayed on this page applies to your personal circumstances.</p>
+    <p>Copyright 1996-{{ drug.last_updated.strftime('%Y') }} Drugs.com.</p>
+  </section>
+
+  <p class="back-to-overview"><a href="{{ url_for('drug_detail', slug=drug.slug) }}">&laquo; Back to full {{ drug.generic_name|title }} information</a></p>
+</article>
+</div>
+
+{{ drug_status_sidebar(drug) }}
 </div>
 {% endblock %}

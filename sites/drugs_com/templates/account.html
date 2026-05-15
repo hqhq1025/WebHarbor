@@ -26,9 +26,9 @@
 <nav class="account-tabs">
   <a href="{{ url_for('account') }}" class="active">My Account</a>
   <a href="{{ url_for('my_med_list') }}">My Med List</a>
-  <a href="/account/reviews">My Reviews</a>
-  <a href="/account/settings">Settings</a>
-  <a href="/account/subscriptions">Subscriptions</a>
+  <a href="{{ url_for('my_reviews') }}">My Reviews</a>
+  <a href="{{ url_for('account_settings') }}">Settings</a>
+  <a href="{{ url_for('account_subscriptions') }}">Subscriptions</a>
 </nav>
 
 <div class="account-stats">
@@ -53,7 +53,7 @@
   <a class="btn btn-primary account-action-btn" href="{{ url_for('drug_az') }}#popular">
     <span class="account-action-icon">&#9733;</span> Write a review
   </a>
-  <a class="btn btn-outline account-action-btn" href="/account/settings">
+  <a class="btn btn-outline account-action-btn" href="{{ url_for('account_settings') }}">
     <span class="account-action-icon">&#9881;</span> Update profile
   </a>
 </div>
@@ -99,7 +99,7 @@
         <p class="muted">for {{ r.condition_treated }} &middot; {{ r.created_at.strftime('%B %d, %Y') }}</p>
         <p>{{ r.body }}</p>
         <div class="review-actions">
-          <a class="btn btn-outline btn-sm" href="/{{ r.drug.slug }}/reviews">Edit</a>
+          <a class="btn btn-outline btn-sm" href="{{ url_for('drug_review_new', slug=r.drug.slug) }}">Edit</a>
           <form method="post" action="{{ url_for('delete_review', review_id=r.id) }}" class="review-delete" onsubmit="return confirm('Delete this review?');">
             <button type="submit" class="btn btn-outline btn-sm">Delete</button>
           </form>
@@ -165,8 +165,8 @@
       <li><a href="{{ url_for('my_med_list') }}">View my saved medications</a></li>
       <li><a href="{{ url_for('pill_identifier') }}">Pill Identifier</a></li>
       <li><a href="{{ url_for('news_index') }}">Medical news</a></li>
-      <li><a href="/account/subscriptions">Email subscriptions &amp; preferences</a></li>
-      <li><a href="/account/settings">Account settings</a></li>
+      <li><a href="{{ url_for('account_subscriptions') }}">Email subscriptions &amp; preferences</a></li>
+      <li><a href="{{ url_for('account_settings') }}">Account settings</a></li>
     </ul>
   </section>
 </div>

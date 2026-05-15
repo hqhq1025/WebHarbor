@@ -38,6 +38,7 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 os.makedirs(os.path.join(BASE_DIR, "instance"), exist_ok=True)
 
 app = Flask(__name__, instance_path=os.path.join(BASE_DIR, "instance"))
+app.url_map.strict_slashes = False
 app.config["SECRET_KEY"] = "drugs_com-dev-secret-please-change"
 app.config["SQLALCHEMY_DATABASE_URI"] = (
     "sqlite:///" + os.path.join(BASE_DIR, "instance", "drugs_com.db")
@@ -3255,6 +3256,22 @@ DRUG_CONTENT_OVERRIDES = {
         "dosage": "Recommended dose: 10 mg within 30 minutes of bedtime (at least 7 hours before planned awakening). May increase to max 20 mg/day if 10 mg not effective. Start with 5 mg if taking moderate CYP3A4 inhibitors. Avoid strong CYP3A4 inhibitors (contraindicated).",
         "before_taking": "Tell your doctor about depression, narcolepsy, or drug or alcohol dependence. Do not take with strong CYP3A4 inhibitors. Allow 7 hours before activities requiring full alertness. Avoid alcohol.",
     },
+    "diclofenac": {
+        "description": "Diclofenac (Voltaren, Cataflam, Cambia) is an oral and topical NSAID (nonsteroidal anti-inflammatory drug) with analgesic and anti-inflammatory properties. Oral formulations are available by prescription; a topical gel (Voltaren) is available over the counter for joint and muscle pain.",
+        "uses": "Diclofenac is used to treat pain, inflammation, and stiffness from osteoarthritis, rheumatoid arthritis, and ankylosing spondylitis. Oral diclofenac potassium (Cambia) is also used for acute migraine with or without aura. Topical diclofenac gel is used for osteoarthritis pain in joints of the hands, wrists, elbows, knees, ankles, and feet. Diclofenac epolamine patch is used to treat acute pain from minor strains, sprains, and contusions.",
+        "warnings": "NSAIDs, including diclofenac, can increase the risk of serious cardiovascular thrombotic events including myocardial infarction and stroke, which can be fatal. Diclofenac can cause serious GI adverse events including bleeding, ulceration, and perforation of the stomach and intestines. Risk of hepatotoxicity: diclofenac is associated with a higher rate of liver enzyme elevations than other NSAIDs; liver tests should be monitored if used long-term. Avoid use in the third trimester of pregnancy and in patients with severe hepatic, renal, or cardiac impairment. Topical diclofenac can cause local skin reactions.",
+        "side_effects": "Common (oral): abdominal pain, nausea, dyspepsia, diarrhea, constipation, headache, dizziness, rash, elevated liver enzymes. Serious: GI bleeding, peptic ulcer, hepatotoxicity (diclofenac has one of the highest rates among NSAIDs), cardiovascular events, renal insufficiency, severe skin reactions (SJS, TEN), anaphylaxis. Topical: local skin dryness, redness, and pruritus.",
+        "dosage": "Osteoarthritis (oral): 100-150 mg/day in divided doses (e.g., 50 mg 2-3 times daily). Rheumatoid arthritis: 150-200 mg/day in divided doses. Migraine (Cambia): 50 mg powder packet dissolved in water at headache onset; do not repeat within 24 hours. Topical gel (Voltaren 1%): apply 4 g to the affected joint(s) 4 times daily; upper extremities max 16 g/day, lower extremities max 32 g/day.",
+        "before_taking": "Tell your doctor if you have heart disease, high blood pressure, liver or kidney disease, asthma, stomach ulcers, or GI bleeding. Inform your doctor about all medications, especially blood thinners, other NSAIDs, SSRIs, ACE inhibitors, or diuretics. Use caution in patients with cardiovascular risk factors. Liver function should be monitored during chronic diclofenac therapy.",
+    },
+    "ursodiol": {
+        "description": "Ursodiol (ursodeoxycholic acid; brand names Actigall, URSO 250, URSO Forte) is a bile acid used to dissolve gallstones, prevent gallstone formation, and treat primary biliary cholangitis (PBC). It is available by prescription.",
+        "uses": "Ursodiol is indicated for: (1) dissolution of radiolucent, noncalcified gallbladder stones less than 20 mm in diameter in patients who are not surgical candidates; (2) prevention of gallstone formation in obese patients undergoing rapid weight loss; and (3) treatment of primary biliary cholangitis (PBC, also called primary biliary cirrhosis) to improve liver function tests and slow disease progression.",
+        "warnings": "Gallstone dissolution therapy with ursodiol works for radiolucent, noncalcified gallstones only. Stones may recur after discontinuation. Liver tests should be monitored in patients with PBC. Use with caution in patients with hepatic impairment. Ursodiol is not recommended during pregnancy unless clearly needed; use effective contraception during therapy.",
+        "side_effects": "Generally well tolerated. Common: diarrhea (dose-related), abdominal discomfort, nausea, vomiting, indigestion, constipation, hair thinning (rare). Serious: rare worsening of liver disease in patients with PBC who have advanced cirrhosis; monitor liver function tests.",
+        "dosage": "Gallstone dissolution: 8-10 mg/kg/day in 2-3 divided doses. Prevention of gallstones during rapid weight loss: 300 mg twice daily during the weight-loss period. Primary biliary cholangitis: 13-15 mg/kg/day in 2-4 divided doses, administered with food. Duration of gallstone dissolution therapy: up to 24 months; obtain ultrasound at 6 and 12 months to assess response.",
+        "before_taking": "Tell your doctor about liver disease, bile duct abnormalities, or recent bile duct surgery. Do not use for calcified or radiopaque gallstones, or for gallstone pancreatitis. Ursodiol may reduce the absorption of cyclosporine; dose adjustment may be needed.",
+    },
 }
 
 
@@ -3493,17 +3510,34 @@ def seed_benchmark_users():
 
 def seed_extra_reviews():
     """Add reviews across all popular drugs from auto-generated reviewer users."""
+    _REVIEWER_NAMES = [
+        ("ChrisB79", "chrisb79@example.com"),
+        ("MaryM_health", "marym.health@example.com"),
+        ("JohnD_rx", "johnd.rx@example.com"),
+        ("SarahK2024", "sarahk2024@example.com"),
+        ("PatientAdvocate", "patient.advocate@example.com"),
+        ("MigraineWarrior", "migraine.warrior@example.com"),
+        ("DiabetesMgmt", "diabetes.mgmt@example.com"),
+        ("HeartHealthPro", "hearthealthpro@example.com"),
+    ]
     # Create reviewer users first (needed to check existing pairs)
     reviewers = []
-    for i in range(8):
-        email = f"reviewer{i}@example.com"
+    for i, (uname, email) in enumerate(_REVIEWER_NAMES):
         u = User.query.filter_by(email=email).first()
         if not u:
-            u = User(username=f"reviewer_{i}", email=email)
+            # also try legacy email in case DB was seeded before rename
+            legacy = f"reviewer{i}@example.com"
+            u = User.query.filter_by(email=legacy).first()
+        if not u:
+            u = User(username=uname, email=email)
             u.set_password("review-seed-pw")
             db.session.add(u)
             db.session.flush()
+        elif u.username != uname:
+            u.username = uname
+            u.email = email
         reviewers.append(u)
+    db.session.commit()  # always persist username/email renames
     reviewer_ids = {u.id for u in reviewers}
     if DrugReview.query.filter(DrugReview.user_id.in_(reviewer_ids)).count() >= 700:
         return
@@ -3878,19 +3912,36 @@ def index():
 @app.route("/dosage-guide")
 @app.route("/dosage-guide.html")
 @app.route("/dosage")
+def dosage_guide():
+    drugs = Drug.query.order_by(Drug.generic_name).all()
+    return render_template("dosage_guide.html", drugs=drugs)
+
+
+@app.route("/pregnancy-safety")
+@app.route("/pregnancy-safety.html")
+def pregnancy_safety():
+    drugs = Drug.query.filter(Drug.pregnancy_risk.isnot(None)).order_by(Drug.generic_name).all()
+    return render_template("pregnancy_safety.html", drugs=drugs)
+
+
 @app.route("/drugs-a-z")
 @app.route("/drug-az")
 @app.route("/drugs-a-to-z.html")
 @app.route("/drug_information.html")
 def drug_az():
     letter = (request.args.get("letter") or "A").upper()
-    if letter not in string.ascii_uppercase:
-        letter = "A"
-    drugs = Drug.query.filter(Drug.generic_name.ilike(f"{letter}%")).order_by(Drug.generic_name).all()
+    if letter in ("0-9", "0"):
+        letter = "0-9"
+        drugs = Drug.query.filter(Drug.generic_name.op("GLOB")("[0-9]*")).order_by(Drug.generic_name).all()
+    else:
+        if letter not in string.ascii_uppercase:
+            letter = "A"
+        drugs = Drug.query.filter(Drug.generic_name.ilike(f"{letter}%")).order_by(Drug.generic_name).all()
     letter_counts = {
         L: Drug.query.filter(Drug.generic_name.ilike(f"{L}%")).count()
         for L in string.ascii_uppercase
     }
+    letter_counts["0-9"] = Drug.query.filter(Drug.generic_name.op("GLOB")("[0-9]*")).count()
     popular_drugs = Drug.query.order_by(Drug.review_count.desc()).limit(10).all()
 
     # Top 8 drug classes by number of associated drugs.
@@ -3924,7 +3975,7 @@ def drug_az():
     return render_template(
         "drug_az.html",
         active_letter=letter,
-        all_letters=list(string.ascii_uppercase),
+        all_letters=list(string.ascii_uppercase) + ["0-9"],
         drugs=drugs,
         letter_counts=letter_counts,
         popular_drugs=popular_drugs,
@@ -4231,6 +4282,10 @@ def _build_avoid_items(drug):
     return [{"title": t, "reason": r} for t, r in items]
 
 
+@app.route("/comments/<slug>/")
+@app.route("/comments/<slug>")
+@app.route("/answers/support-group/<slug>/")
+@app.route("/answers/support-group/<slug>")
 @app.route("/<slug>/reviews")
 @app.route("/<slug>/reviews.html")
 def drug_reviews_page(slug):
@@ -4255,9 +4310,17 @@ def drug_reviews_page(slug):
     conditions = db.session.query(DrugReview.condition_treated).filter_by(drug_id=drug.id).distinct().all()
     conditions = [c[0] for c in conditions if c[0]]
     rating_dist = {i: DrugReview.query.filter_by(drug_id=drug.id, rating=i).count() for i in range(1, 11)}
+    related_drugs = []
+    if drug.drug_class_id:
+        related_drugs = Drug.query.filter(
+            Drug.drug_class_id == drug.drug_class_id,
+            Drug.id != drug.id
+        ).order_by(Drug.avg_rating.desc().nullslast()).limit(6).all()
+    faq_items = list(drug.faq or _build_default_faq(drug))
     return render_template("drug_reviews_page.html", drug=drug, reviews=reviews,
                           conditions=conditions, condition_filter=condition_filter,
-                          sort=sort, rating_dist=rating_dist)
+                          sort=sort, rating_dist=rating_dist,
+                          faq_items=faq_items, related_drugs=related_drugs)
 
 
 @app.route("/<slug>/reviews/new", methods=["GET"])
@@ -4921,6 +4984,8 @@ def pill_identifier_results():
 
 
 @app.route("/condition/<slug>")
+@app.route("/condition/<slug>.html")
+@app.route("/conditions/<slug>.html")
 @app.route("/conditions/<slug>")
 def condition_page(slug):
     # Normalize slug: agents may use hyphens where DB stores underscores (or vice versa).
@@ -5463,6 +5528,8 @@ _DRUG_CLASS_SLUG_ALIASES: dict[str, str] = {
 
 
 @app.route("/drug-class/<slug>")
+@app.route("/drug-class/<slug>.html")
+@app.route("/drug-classes/<slug>.html")
 @app.route("/drug-classes/<slug>")
 def drug_class_page(slug):
     # Handle common abbreviations and aliases
@@ -5550,6 +5617,7 @@ def drug_class_page(slug):
     )
 
 
+@app.route("/news.html")
 @app.route("/mednews/")
 @app.route("/mednews")
 @app.route("/news/")
@@ -5558,18 +5626,18 @@ def news_index():
     q = request.args.get("q", "")
     page = request.args.get("page", 1, type=int)
     per_page = 15
+    cat_map = {
+        "new-drug-approvals": "New Drug Approvals",
+        "new drug approvals": "New Drug Approvals",
+        "medical": "Medical",
+        "fda-alerts": "FDA Alerts",
+        "fda alerts": "FDA Alerts",
+        "clinical-trials": "Clinical Trials",
+        "clinical trials": "Clinical Trials",
+        "health": "Health",
+    }
     query = NewsArticle.query
     if cat:
-        cat_map = {
-            "new-drug-approvals": "New Drug Approvals",
-            "new drug approvals": "New Drug Approvals",
-            "medical": "Medical",
-            "fda-alerts": "FDA Alerts",
-            "fda alerts": "FDA Alerts",
-            "clinical-trials": "Clinical Trials",
-            "clinical trials": "Clinical Trials",
-            "health": "Health",
-        }
         db_cat = cat_map.get(cat.lower(), cat)
         query = query.filter_by(category=db_cat)
     if q:
@@ -5585,7 +5653,8 @@ def news_index():
     fda_alerts = NewsArticle.query.filter(
         NewsArticle.category.in_(["FDA Alerts", "Safety"])
     ).order_by(NewsArticle.published_at.desc()).limit(4).all()
-    return render_template("news.html", articles=articles, active_category=cat, active_cat=cat or None,
+    display_cat = cat_map.get(cat.lower(), cat) if cat else None
+    return render_template("news.html", articles=articles, active_category=display_cat, active_cat=display_cat,
                            categories=categories, search_query=q, fda_alerts=fda_alerts,
                            page=page, total_pages=total_pages)
 
@@ -5611,6 +5680,9 @@ def news_article(article_id):
 
 
 @app.route("/news/category/<category>")
+@app.route("/newdrugs.html", defaults={"category": "new-drug-approvals"})
+@app.route("/fda_alerts.html", defaults={"category": "fda-alerts"})
+@app.route("/clinical_trials.html", defaults={"category": "clinical-trials"})
 @app.route("/news/<category>")
 @app.route("/new-drug-approvals", defaults={"category": "new-drug-approvals"})
 @app.route("/fda-alerts", defaults={"category": "fda-alerts"})
@@ -5802,6 +5874,7 @@ SYMPTOM_CONDITION_MAP = {
 }
 
 
+@app.route("/symptoms", methods=["GET", "POST"])
 @app.route("/symptom_checker.html", methods=["GET", "POST"])
 @app.route("/symptom-checker.html", methods=["GET", "POST"])
 @app.route("/symptom-checker", methods=["GET", "POST"])
@@ -5844,6 +5917,8 @@ def symptom_checker():
 
 
 # --- Auth ---
+@app.route("/account/login/", methods=["GET", "POST"])
+@app.route("/account/login", methods=["GET", "POST"])
 @app.route("/login", methods=["GET", "POST"])
 def login():
     if request.method == "POST":
@@ -5852,6 +5927,8 @@ def login():
     return render_template("login.html")
 
 
+@app.route("/account/register/", methods=["GET", "POST"])
+@app.route("/account/register", methods=["GET", "POST"])
 @app.route("/register", methods=["GET", "POST"])
 def register():
     if request.method == "POST":
@@ -5917,6 +5994,7 @@ def my_med_list_toggle():
 
 @app.route("/pro/")
 @app.route("/pro")
+@app.route("/professionals.html")
 @app.route("/pro-edition")
 @app.route("/pro-edition/")
 def pro_edition():
@@ -5929,7 +6007,7 @@ def compare_drugs_slug(vs_slug):
     """Handle /compare/drugA-vs-drugB URL format."""
     if "-vs-" in vs_slug:
         parts = vs_slug.split("-vs-", 1)
-        return redirect(url_for("compare_drugs", drug1=parts[0], drug2=parts[1]))
+        return redirect(url_for("compare_drugs", drug1=parts[0].removesuffix(".html"), drug2=parts[1].removesuffix(".html")))
     return redirect(url_for("compare_drugs", drug1=vs_slug))
 
 
@@ -6052,6 +6130,7 @@ def save_subscriptions():
     return redirect(url_for("account_subscriptions"))
 
 
+@app.route("/sitemap.xml")
 @app.route("/sitemap")
 @app.route("/sitemap.html")
 def sitemap():
@@ -6126,6 +6205,7 @@ def side_effects_page():
     )
 
 
+@app.route("/drug-warnings")
 @app.route("/boxed-warnings")
 @app.route("/warnings/")
 @app.route("/blackbox-warnings")
@@ -6183,11 +6263,16 @@ def contact():
     return render_template("contact.html", submitted=submitted)
 
 
-@app.route("/about")
-@app.route("/about.html")
 @app.route("/advertise")
+@app.route("/about.html")
+@app.route("/about")
 def about_page():
     return render_template("about.html")
+
+
+@app.route("/apps")
+def apps_page():
+    return render_template("apps.html")
 
 
 @app.route("/support")
@@ -6196,6 +6281,7 @@ def help_page():
     return render_template("help.html")
 
 
+@app.route("/image/<slug>-images.html")
 @app.route("/<slug>/images")
 @app.route("/<slug>/images.html")
 def drug_images(slug):
@@ -6304,6 +6390,8 @@ def generate_drug_prices(drug):
     }
 
 
+@app.route("/price-guide/<slug>")
+@app.route("/price-guide/<slug>.html")
 @app.route("/<slug>/price-guide")
 @app.route("/<slug>/price-guide.html")
 @app.route("/<slug>/prices")
@@ -6314,7 +6402,10 @@ def drug_prices(slug):
     return render_template("drug_prices.html", drug=drug, price_data=price_data)
 
 
+@app.route("/monograph/<slug>.html")
+@app.route("/monograph/<slug>")
 @app.route("/drugs/pro/<slug>")
+@app.route("/pro/<slug>.html")
 @app.route("/pro/<slug>")
 @app.route("/<slug>/monograph")
 @app.route("/<slug>/monograph.html")
@@ -6361,6 +6452,8 @@ def _parse_dosage_rows(text, drug_name):
     return rows if rows else None
 
 
+@app.route("/dosage/<slug>.html")
+@app.route("/dosage/<slug>")
 @app.route("/<slug>/dosage")
 @app.route("/<slug>/dosage.html")
 def drug_dosage(slug):
@@ -6368,7 +6461,15 @@ def drug_dosage(slug):
     _ov = DRUG_CONTENT_OVERRIDES.get(drug.generic_name) or DRUG_CONTENT_OVERRIDES.get(drug.generic_name.replace(' ', '-'), {})
     rt_dosage = _ov.get("dosage") or drug.dosage
     dosage_rows = _parse_dosage_rows(rt_dosage, drug.generic_name)
-    return render_template("drug_dosage.html", drug=drug, rt_dosage=rt_dosage, dosage_rows=dosage_rows)
+    related_drugs = []
+    if drug.drug_class_id:
+        related_drugs = Drug.query.filter(
+            Drug.drug_class_id == drug.drug_class_id,
+            Drug.id != drug.id
+        ).order_by(Drug.avg_rating.desc().nullslast()).limit(6).all()
+    faq_items = list(drug.faq or _build_default_faq(drug))
+    return render_template("drug_dosage.html", drug=drug, rt_dosage=rt_dosage, dosage_rows=dosage_rows,
+                           related_drugs=related_drugs, faq_items=faq_items)
 
 
 def _parse_side_effects(text):
@@ -6389,6 +6490,8 @@ def _parse_side_effects(text):
     return {"common": common, "serious": serious}
 
 
+@app.route("/sfx/<slug>-side-effects.html")
+@app.route("/sfx/<slug>")
 @app.route("/<slug>/side-effects")
 @app.route("/<slug>/side-effects.html")
 def drug_side_effects(slug):
@@ -6396,7 +6499,15 @@ def drug_side_effects(slug):
     _ov = DRUG_CONTENT_OVERRIDES.get(drug.generic_name) or DRUG_CONTENT_OVERRIDES.get(drug.generic_name.replace(' ', '-'), {})
     rt_side_effects = _ov.get("side_effects") or drug.side_effects
     se_parsed = _parse_side_effects(rt_side_effects)
-    return render_template("drug_side_effects.html", drug=drug, rt_side_effects=rt_side_effects, se_parsed=se_parsed)
+    related_drugs = []
+    if drug.drug_class_id:
+        related_drugs = Drug.query.filter(
+            Drug.drug_class_id == drug.drug_class_id,
+            Drug.id != drug.id
+        ).order_by(Drug.avg_rating.desc().nullslast()).limit(6).all()
+    faq_items = list(drug.faq or _build_default_faq(drug))
+    return render_template("drug_side_effects.html", drug=drug, rt_side_effects=rt_side_effects,
+                           se_parsed=se_parsed, related_drugs=related_drugs, faq_items=faq_items)
 
 
 # FDA pregnancy category mapping for common drugs. Drugs not listed fall through
@@ -6674,6 +6785,10 @@ def _pregnancy_info(drug):
     }
 
 
+@app.route("/pregnancy/<slug>.html")
+@app.route("/pregnancy/<slug>")
+@app.route("/breastfeeding/<slug>.html")
+@app.route("/breastfeeding/<slug>")
 @app.route("/<slug>/pregnancy")
 @app.route("/<slug>/pregnancy.html")
 def drug_pregnancy(slug):
@@ -6738,6 +6853,25 @@ def drug_warnings(slug):
                            warning_cards=cards)
 
 
+@app.route("/tips/<slug>-patient-tips")
+@app.route("/tips/<slug>")
+@app.route("/<slug>/faq")
+@app.route("/<slug>/faq.html")
+def drug_faq_page(slug):
+    drug = Drug.query.filter_by(slug=slug).first_or_404()
+    faq_items = list(drug.faq or _build_default_faq(drug))
+    return render_template("drug_faq_page.html", drug=drug, faq_items=faq_items)
+
+
+@app.route("/<slug>/professional")
+@app.route("/<slug>/professional.html")
+def drug_professional_page(slug):
+    drug = Drug.query.filter_by(slug=slug).first_or_404()
+    return redirect(url_for('drug_pro_monograph', slug=slug), 301)
+
+
+@app.route("/drug-interactions/<slug>.html")
+@app.route("/drug-interactions/<slug>")
 @app.route("/<slug>/interactions")
 @app.route("/<slug>/interactions.html")
 @app.route("/<slug>/drug-interactions")
@@ -6771,6 +6905,12 @@ def drug_interactions_page(slug):
         'minor': sum(1 for x in interaction_details if x['severity'] == 'minor'),
     }
     food_interactions, alcohol_interactions = _lifestyle_interactions([drug])
+    related_drugs = []
+    if drug.drug_class_id:
+        related_drugs = Drug.query.filter(
+            Drug.drug_class_id == drug.drug_class_id,
+            Drug.id != drug.id
+        ).order_by(Drug.avg_rating.desc().nullslast()).limit(6).all()
     return render_template(
         "drug_interactions_page.html",
         drug=drug,
@@ -6779,7 +6919,15 @@ def drug_interactions_page(slug):
         summary=summary,
         food_interactions=food_interactions,
         alcohol_interactions=alcohol_interactions,
+        related_drugs=related_drugs,
     )
+
+
+@app.route("/emergency")
+@app.route("/emergency-info")
+@app.route("/emergency-info.html")
+def emergency_info():
+    return render_template("emergency_info.html")
 
 
 @app.route("/_health")

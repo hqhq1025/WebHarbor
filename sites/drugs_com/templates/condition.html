@@ -3,7 +3,7 @@
 {% block content %}
 <nav class="breadcrumb">
   <a href="{{ url_for('index') }}">Home</a> &rsaquo;
-  <a href="{{ url_for('conditions_list') }}">Treatments</a> &rsaquo;
+  <a href="{{ url_for('conditions_list') }}">Conditions</a> &rsaquo;
   <span>{{ condition.name }}</span>
 </nav>
 
@@ -164,7 +164,7 @@
     <p class="muted is-078">
       Get the latest medication news, new drug approvals, alerts and updates.
     </p>
-    <a class="btn btn-secondary" href="/newsletter">Subscribe</a>
+    <a class="btn btn-secondary" href="{{ url_for('newsletter') }}">Subscribe</a>
   </aside>
 </div>
 

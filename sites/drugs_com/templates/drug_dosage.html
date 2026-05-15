@@ -1,12 +1,20 @@
 {% extends "base.html" %}
-{% block title %}{{ drug.generic_name|capitalize }} Dosage Guide - {{ site_name }}{% endblock %}
+{% from "_drug_sidebar.html" import drug_status_sidebar %}
+{% block title %}{{ drug.generic_name|capitalize }} Dosage Guide + Max Dose, Adjustments - {{ site_name }}{% endblock %}
 {% block content %}
 <div class="breadcrumb-row">
   <nav class="breadcrumb">
     <a href="{{ url_for('index') }}">Home</a> &rsaquo;
+    <a href="{{ url_for('drug_az') }}">Drugs A-Z</a> &rsaquo;
     <a href="{{ url_for('drug_detail', slug=drug.slug) }}">{{ drug.generic_name|capitalize }}</a> &rsaquo;
     <span>Dosage Guide</span>
   </nav>
+</div>
+
+<div class="drug-page-type-tabs">
+  <a href="{{ url_for('drug_detail', slug=drug.slug) }}" class="drug-page-type-tab active" aria-current="page">Consumer</a>
+  <a href="{{ url_for('drug_pro_monograph', slug=drug.slug) }}" class="drug-page-type-tab">Professional</a>
+  <a href="{{ url_for('drug_faq_page', slug=drug.slug) }}" class="drug-page-type-tab">FAQ</a>
 </div>
 
 <div class="page-with-sidebar">
@@ -17,10 +25,9 @@
     <a href="{{ url_for('drug_detail', slug=drug.slug) }}#warnings">Warnings</a>
     <a href="{{ url_for('drug_detail', slug=drug.slug) }}#before-taking">Before taking</a>
     <a href="{{ url_for('drug_dosage', slug=drug.slug) }}" class="active" aria-current="page">Dosage</a>
-    <a href="{{ url_for('drug_detail', slug=drug.slug) }}#what-to-avoid">What to avoid</a>
     <a href="{{ url_for('drug_side_effects', slug=drug.slug) }}">Side effects</a>
     <a href="{{ url_for('drug_interactions_page', slug=drug.slug) }}">Interactions</a>
-    <a href="{{ url_for('drug_detail', slug=drug.slug) }}#faq">FAQ</a>
+    <a href="{{ url_for('drug_faq_page', slug=drug.slug) }}">FAQ</a>
   </nav>
   <header class="drug-header">
     <h1>{{ drug.generic_name|capitalize }} Dosage</h1>
@@ -51,48 +58,36 @@
   </section>
 
   <section>
-    <h2>Usual adult dose</h2>
-    {{ (rt_dosage or drug.dosage) | format_drug_text | safe }}
+    <div class="dosage-quick-nav">
+      <h3>Usual Adult Dose for:</h3>
+      <ul>
+        {% if dosage_rows %}
+          {% for row in dosage_rows %}<li><a href="#adult-dose-{{ loop.index }}">{{ row.indication }}</a></li>{% endfor %}
+        {% else %}
+          <li>Primary indication</li>
+          <li>Maintenance therapy</li>
+        {% endif %}
+      </ul>
+      <h3>Usual Pediatric Dose for:</h3>
+      <ul>
+        {% if dosage_rows %}
+          {% for row in dosage_rows %}<li><a href="#ped-dose-{{ loop.index }}">{{ row.indication }} (pediatric)</a></li>{% endfor %}
+        {% else %}
+          <li>Primary indication (weight-based)</li>
+        {% endif %}
+      </ul>
+    </div>
   </section>
 
   <section>
-    <h2>Dosage by indication</h2>
-    <p>Doses vary by indication, body weight, and renal/hepatic function. Always follow the dosing on the product label or your prescriber's directions.</p>
-    <table class="dosage-table">
-      <thead>
-        <tr>
-          <th>Indication</th>
-          <th>Form</th>
-          <th>Adult dose</th>
-          <th>Pediatric dose</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% if dosage_rows %}
-          {% for row in dosage_rows %}
-          <tr>
-            <td>{{ row.indication }}</td>
-            <td>{{ row.form }}</td>
-            <td>{{ row.adult }}</td>
-            <td>{{ row.pediatric }}</td>
-          </tr>
-          {% endfor %}
-        {% else %}
-        <tr>
-          <td>Primary indication</td>
-          <td>Oral (tablet/capsule)</td>
-          <td>Standard adult starting dose per prescribing information; titrate to response.</td>
-          <td>Weight-based; see pediatric prescribing information. Consult a pediatrician.</td>
-        </tr>
-        <tr>
-          <td>Maintenance therapy</td>
-          <td>Oral</td>
-          <td>Lowest effective maintenance dose; reassess periodically.</td>
-          <td>Adjust by weight and clinical response.</td>
-        </tr>
-        {% endif %}
-      </tbody>
-    </table>
+    <h2>Usual Adult Dose for {{ drug.generic_name|capitalize }}</h2>
+    {{ (rt_dosage or drug.dosage) | format_drug_text | safe }}
+    {% if dosage_rows %}
+      {% for row in dosage_rows %}
+      <h2 id="adult-dose-{{ loop.index }}">Usual Adult Dose for {{ row.indication }}</h2>
+      <p>{{ row.adult }}</p>
+      {% endfor %}
+    {% endif %}
   </section>
 
   <section class="max-dose-warning">
@@ -147,21 +142,44 @@
     </ul>
   </section>
 
+  {% if faq_items %}
+  <section class="dosage-faq">
+    <h2>Frequently asked questions</h2>
+    <ul class="dosage-faq-list">
+    {% for item in faq_items[:8] %}
+      <li><a href="{{ url_for('drug_faq_page', slug=drug.slug) }}">{{ item.q }}</a></li>
+    {% endfor %}
+    </ul>
+  </section>
+  {% endif %}
+
+  {% if related_drugs %}
+  <section class="dosage-see-also">
+    <h2>See also:</h2>
+    <div class="related-drugs-carousel">
+      {% for r in related_drugs[:6] %}
+      <a href="{{ url_for('drug_detail', slug=r.slug) }}" class="related-drug-card">
+        <div class="related-drug-card-head">
+          <strong class="related-drug-name">{{ r.generic_name|capitalize }}</strong>
+          {% if r.avg_rating %}
+          <span class="related-drug-rating-badge">&#9733; {{ "%.1f"|format(r.avg_rating) }}</span>
+          {% endif %}
+        </div>
+      </a>
+      {% endfor %}
+    </div>
+  </section>
+  {% endif %}
+
+  <section id="further-information">
+    <h2>Further information</h2>
+    <p>Always consult your healthcare provider to ensure the information displayed on this page applies to your personal circumstances.</p>
+    <p>Copyright 1996-{{ drug.last_updated.strftime('%Y') }} Drugs.com. Version: {{ drug.last_updated.strftime('%m.%y') }}.</p>
+  </section>
+
   <p class="back-to-overview"><a href="{{ url_for('drug_detail', slug=drug.slug) }}">&laquo; Back to full {{ drug.generic_name|capitalize }} information</a></p>
 </article>
 </div>
-<aside class="sidebar">
-  <div class="sidebar-box more-about">
-    <h3>More about {{ drug.generic_name }}</h3>
-    <ul class="more-about-list">
-      <li><a href="{{ url_for('drug_detail', slug=drug.slug) }}">Drug overview</a></li>
-      <li><a href="{{ url_for('drug_side_effects', slug=drug.slug) }}">Side effects</a></li>
-      <li><a href="{{ url_for('drug_interactions_page', slug=drug.slug) }}">Drug interactions</a></li>
-      <li><a href="{{ url_for('drug_pregnancy', slug=drug.slug) }}">Pregnancy &amp; lactation</a></li>
-      <li><a href="{{ url_for('drug_images', slug=drug.slug) }}">Pill images</a></li>
-      <li><a href="{{ url_for('drug_prices', slug=drug.slug) }}">Prices &amp; coupons</a></li>
-    </ul>
-  </div>
-</aside>
+{{ drug_status_sidebar(drug) }}
 </div>
 {% endblock %}

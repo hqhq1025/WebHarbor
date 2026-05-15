@@ -1,21 +1,41 @@
 {% extends "base.html" %}
+{% from "_drug_sidebar.html" import drug_status_sidebar %}
 {% block title %}{{ drug.generic_name|capitalize }} User Reviews & Ratings - {{ site_name }}{% endblock %}
 {% block content %}
-<div class="container">
-  <nav class="breadcrumb">
-    <a href="{{ url_for('index') }}">Home</a> &rsaquo;
-    <a href="{{ url_for('drug_detail', slug=drug.slug) }}">{{ drug.generic_name|capitalize }}</a> &rsaquo;
-    <span>Reviews</span>
-  </nav>
+<nav class="breadcrumb" aria-label="Breadcrumb">
+  <a href="{{ url_for('index') }}">Home</a>
+  <span class="sep">&rsaquo;</span>
+  <a href="{{ url_for('drug_az') }}">Drugs A-Z</a>
+  <span class="sep">&rsaquo;</span>
+  <a href="{{ url_for('drug_detail', slug=drug.slug) }}">{{ drug.generic_name|capitalize }}</a>
+  <span class="sep">&rsaquo;</span>
+  <span class="current">Reviews</span>
+</nav>
 
-  <div class="reviews-page-header">
-    <h1>User Reviews for {{ drug.generic_name|capitalize }}</h1>
-    <a href="{{ url_for('drug_review_new', slug=drug.slug) }}" class="btn btn-primary btn-write-review-top">&#9998; Write a Review</a>
-  </div>
+<div class="drug-page-type-tabs">
+  <a href="{{ url_for('drug_detail', slug=drug.slug) }}" class="drug-page-type-tab active" aria-current="page">Consumer</a>
+  <a href="{{ url_for('drug_pro_monograph', slug=drug.slug) }}" class="drug-page-type-tab">Professional</a>
+  <a href="{{ url_for('drug_faq_page', slug=drug.slug) }}" class="drug-page-type-tab">FAQ</a>
+</div>
 
-  <div class="detail-grid">
-   <div class="detail-main">
-  <section class="reviews-summary">
+<div class="page-with-sidebar">
+<div class="main-col">
+<nav class="section-tabs section-tabs--subpage" aria-label="Drug sections">
+  <a href="{{ url_for('drug_detail', slug=drug.slug) }}#uses">Uses</a>
+  <a href="{{ url_for('drug_detail', slug=drug.slug) }}#warnings">Warnings</a>
+  <a href="{{ url_for('drug_detail', slug=drug.slug) }}#before-taking">Before taking</a>
+  <a href="{{ url_for('drug_dosage', slug=drug.slug) }}">Dosage</a>
+  <a href="{{ url_for('drug_side_effects', slug=drug.slug) }}">Side effects</a>
+  <a href="{{ url_for('drug_interactions_page', slug=drug.slug) }}">Interactions</a>
+  <a href="{{ url_for('drug_faq_page', slug=drug.slug) }}">FAQ</a>
+</nav>
+
+<div class="reviews-page-header">
+  <h1>{{ drug.generic_name|capitalize }} User Reviews &amp; Ratings</h1>
+  <a href="{{ url_for('drug_review_new', slug=drug.slug) }}" class="btn btn-primary btn-write-review-top">&#9998; Write a Review</a>
+</div>
+
+<section class="reviews-summary">
     <div class="reviews-summary-score">
       <div class="reviews-summary-number">{{ "%.1f"|format(drug.avg_rating or 0) }}<span class="reviews-summary-denominator"> / 10</span></div>
       {% set full_stars_p = ((drug.avg_rating or 0) / 2) | int %}
@@ -133,73 +153,54 @@
     {% endif %}
   </nav>
   {% endif %}
-   </div>
 
-   <aside class="detail-sidebar">
-     <div class="sidebar-box status-box">
-       <h3>Drug status</h3>
-       <ul class="status-list">
-         <li>
-           <strong>Availability:</strong>
-           {% if 'Rx' in drug.availability and 'OTC' in drug.availability %}
-             Rx and/or OTC
-           {% elif 'Rx' in drug.availability %}
-             Prescription only (Rx)
-           {% elif 'OTC' in drug.availability %}
-             Over-the-counter (OTC)
-           {% else %}
-             {{ drug.availability }}
-           {% endif %}
-         </li>
-         {% if drug.drug_class %}
-         <li><strong>Drug class:</strong>
-           <a href="{{ url_for('drug_class_page', slug=drug.drug_class.slug) }}">{{ drug.drug_class.name }}</a>
-         </li>
-         {% endif %}
-         {% if drug.pregnancy_risk %}
-         <li><strong>Pregnancy:</strong>
-           {% set _cat = drug.pregnancy_risk|preg_category %}{% if _cat %}Category {{ _cat }}{% else %}{{ drug.pregnancy_risk }}{% endif %}
-         </li>
-         {% endif %}
-         {% if drug.csa_schedule and drug.csa_schedule|lower not in ['n/a', 'none', 'not scheduled', ''] %}
-         <li><strong>CSA Schedule:</strong> {{ drug.csa_schedule }}</li>
-         {% endif %}
-       </ul>
-     </div>
+  {% if faq_items %}
+  <section class="reviews-faq">
+    <h3>Frequently asked questions</h3>
+    <div class="faq-list faq-accordion">
+    {% for item in faq_items[:4] %}
+      <details class="faq-item" {% if loop.first %}open{% endif %}>
+        <summary class="faq-question">{{ item.q }}</summary>
+        <div class="faq-answer"><p>{{ item.a }}</p></div>
+      </details>
+    {% endfor %}
+    </div>
+    <h3>More FAQ</h3>
+    <ul class="more-faq-list">
+      <li><a href="{{ url_for('drug_faq_page', slug=drug.slug) }}">View more {{ drug.generic_name|capitalize }} FAQ&hellip;</a></li>
+    </ul>
+  </section>
+  {% endif %}
 
-     <div class="sidebar-box rating-box">
-       <h3>Overall rating</h3>
-       <div class="rating-score">{{ drug.avg_rating }} / 10</div>
-       <div class="muted">{{ drug.review_count }} user reviews</div>
-       <a href="{{ url_for('drug_review_new', slug=drug.slug) }}" class="btn btn-primary is-200">Write a review</a>
-     </div>
+  {% if related_drugs %}
+  <section class="reviews-see-also">
+    <h2>See also:</h2>
+    <div class="related-drugs-carousel">
+      {% for r in related_drugs[:6] %}
+      <a href="{{ url_for('drug_detail', slug=r.slug) }}" class="related-drug-card">
+        <div class="related-drug-card-head">
+          <strong class="related-drug-name">{{ r.generic_name|capitalize }}</strong>
+          {% if r.avg_rating %}
+          <span class="related-drug-rating-badge">&#9733; {{ "%.1f"|format(r.avg_rating) }}</span>
+          {% endif %}
+        </div>
+      </a>
+      {% endfor %}
+    </div>
+  </section>
+  {% endif %}
 
-     <div class="sidebar-box more-about">
-       <h3>More about {{ drug.generic_name|capitalize }}</h3>
-       <ul class="more-about-list">
-         <li><a href="{{ url_for('drug_detail', slug=drug.slug) }}">Drug overview</a></li>
-         <li><a href="{{ url_for('drug_prices', slug=drug.slug) }}">Drug pricing</a></li>
-         <li><a href="{{ url_for('drug_images', slug=drug.slug) }}">Drug images</a></li>
-         <li><a href="{{ url_for('drug_side_effects', slug=drug.slug) }}">Side effects (detailed)</a></li>
-         <li><a href="{{ url_for('drug_dosage', slug=drug.slug) }}">Dosage guide</a></li>
-         <li><a href="{{ url_for('drug_interactions_page', slug=drug.slug) }}">Drug interactions</a></li>
-         <li><a href="{{ url_for('drug_pregnancy', slug=drug.slug) }}">Pregnancy info</a></li>
-         <li><a href="{{ url_for('interaction_checker') }}?drug={{ drug.slug }}">Check interactions</a></li>
-       </ul>
-     </div>
+  <p class="reviews-disclaimer muted">Reviews may be edited to correct grammar/spelling or remove inappropriate content. Reviews appearing to come from parties with a vested interest are not published. This information is not intended to endorse any medication and should not replace the expertise and judgment of healthcare professionals.</p>
 
-     {% if related is defined and related %}
-     <div class="sidebar-box">
-       <h3>Related drugs</h3>
-       <ul class="sidebar-links">
-         {% for r in related %}
-           <li><a href="{{ url_for('drug_detail', slug=r.slug) }}">{{ r.generic_name|capitalize }}</a></li>
-         {% endfor %}
-       </ul>
-     </div>
-     {% endif %}
-   </aside>
-  </div>
+   <section id="further-information">
+    <h2>Further information</h2>
+    <p>Always consult your healthcare provider to ensure the information displayed on this page applies to your personal circumstances.</p>
+    <p>Copyright 1996-{{ drug.last_updated.strftime('%Y') }} Drugs.com.</p>
+  </section>
+</div>
+</div>
+
+{{ drug_status_sidebar(drug) }}
 </div>
 <script>
 document.querySelectorAll('.review-helpful').forEach(box => {

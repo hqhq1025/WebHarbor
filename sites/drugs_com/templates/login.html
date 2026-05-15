@@ -14,7 +14,7 @@
     <p class="muted is-293">Know more. Live healthier.</p>
   </div>
 
-  <h1 class="is-294">Sign in to your account</h1>
+  <h1 class="is-294">Sign In</h1>
 
   {% with messages = get_flashed_messages(with_categories=true) %}
     {% if messages %}
@@ -59,10 +59,14 @@
       <strong class="is-310">f</strong>
       <span class="is-308">Facebook</span>
     </button>
+    <button type="button" class="btn btn-outline is-309">
+      <span class="is-307">&#63743;</span>
+      <span class="is-308">Apple</span>
+    </button>
   </div>
 
   <p class="auth-switch is-311">
-    Don't have an account? <a class="is-312" href="{{ url_for('register') }}">Register</a>
+    Don't have an account? <a class="is-312" href="{{ url_for('register') }}">Sign up</a>
   </p>
 
   <p class="auth-note is-313">

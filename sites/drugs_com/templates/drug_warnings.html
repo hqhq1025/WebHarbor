@@ -1,12 +1,20 @@
 {% extends "base.html" %}
+{% from "_drug_sidebar.html" import drug_status_sidebar %}
 {% block title %}{{ drug.generic_name|capitalize }} Warnings - {{ site_name }}{% endblock %}
 {% block content %}
 <div class="breadcrumb-row">
   <nav class="breadcrumb">
     <a href="{{ url_for('index') }}">Home</a> &rsaquo;
+    <a href="{{ url_for('drug_az') }}">Drugs A-Z</a> &rsaquo;
     <a href="{{ url_for('drug_detail', slug=drug.slug) }}">{{ drug.generic_name|capitalize }}</a> &rsaquo;
     <span>Warnings</span>
   </nav>
+</div>
+
+<div class="drug-page-type-tabs">
+  <a href="{{ url_for('drug_detail', slug=drug.slug) }}" class="drug-page-type-tab active" aria-current="page">Consumer</a>
+  <a href="{{ url_for('drug_pro_monograph', slug=drug.slug) }}" class="drug-page-type-tab">Professional</a>
+  <a href="{{ url_for('drug_faq_page', slug=drug.slug) }}" class="drug-page-type-tab">FAQ</a>
 </div>
 
 <div class="page-with-sidebar">
@@ -17,10 +25,9 @@
     <a href="{{ url_for('drug_detail', slug=drug.slug) }}#warnings" class="active" aria-current="page">Warnings</a>
     <a href="{{ url_for('drug_detail', slug=drug.slug) }}#before-taking">Before taking</a>
     <a href="{{ url_for('drug_dosage', slug=drug.slug) }}">Dosage</a>
-    <a href="{{ url_for('drug_detail', slug=drug.slug) }}#what-to-avoid">What to avoid</a>
     <a href="{{ url_for('drug_side_effects', slug=drug.slug) }}">Side effects</a>
     <a href="{{ url_for('drug_interactions_page', slug=drug.slug) }}">Interactions</a>
-    <a href="{{ url_for('drug_detail', slug=drug.slug) }}#faq">FAQ</a>
+    <a href="{{ url_for('drug_faq_page', slug=drug.slug) }}">FAQ</a>
   </nav>
   <header class="drug-header">
     <h1>{{ drug.generic_name|capitalize }} Warnings</h1>
@@ -100,19 +107,6 @@
   <p class="is-030"><a href="{{ url_for('drug_detail', slug=drug.slug) }}">&laquo; Back to {{ drug.generic_name|capitalize }} overview</a></p>
 </article>
 </div>
-<aside class="sidebar">
-  <div class="sidebar-box">
-    <h3>More about {{ drug.generic_name }}</h3>
-    <ul class="sidebar-links">
-      <li><a href="{{ url_for('drug_detail', slug=drug.slug) }}">Drug overview</a></li>
-      <li><a href="{{ url_for('drug_dosage', slug=drug.slug) }}">Dosage guide</a></li>
-      <li><a href="{{ url_for('drug_side_effects', slug=drug.slug) }}">Side effects</a></li>
-      <li><a href="{{ url_for('drug_interactions_page', slug=drug.slug) }}">Drug interactions</a></li>
-      <li><a href="{{ url_for('drug_pregnancy', slug=drug.slug) }}">Pregnancy &amp; lactation</a></li>
-      <li><a href="{{ url_for('drug_images', slug=drug.slug) }}">Pill images</a></li>
-      <li><a href="{{ url_for('drug_prices', slug=drug.slug) }}">Prices &amp; coupons</a></li>
-    </ul>
-  </div>
-</aside>
+{{ drug_status_sidebar(drug) }}
 </div>
 {% endblock %}

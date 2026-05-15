@@ -105,7 +105,7 @@
   {% for L in 'ABCDEFGHIJKLMNOPQRSTUVWXYZ' %}
     <a class="is-231" href="{{ url_for('drug_az') }}?letter={{ L }}">{{ L }}</a>
   {% endfor %}
-  <a class="is-231" href="{{ url_for('drug_az') }}?letter=0">0-9</a>
+  <a class="is-231" href="{{ url_for('drug_az') }}?letter=0-9">0-9</a>
 </div>
 
 <div class="container">
@@ -612,17 +612,4 @@ function scrollCarousel(dir) {
   </div>
 </div>
 
-<div class="container">
-<div class="mobile-app-banner is-253">
-  <div class="is-254">
-    <h3 class="is-255">Drugs.com Mobile App</h3>
-    <p class="is-256">Access drug & treatment information, identify pills, check interactions and set up personal medication records. Available for Android and iOS devices.</p>
-    <div class="is-257">
-      <span class="is-258">App Store</span>
-      <span class="is-258">Google Play</span>
-    </div>
-  </div>
-  <div class="is-259">📱</div>
-</div>
-</div>
 {% endblock %}

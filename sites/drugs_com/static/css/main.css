@@ -354,7 +354,7 @@ a:hover { text-decoration: underline; color: var(--blue-mid); }
   overflow-y: visible;
   gap: 20px;
   flex: 1;
-  justify-content: center;
+  justify-content: flex-start;
   padding: 28px 20px;
   border-top: 1px solid var(--gray-100);
   border-bottom: 1px solid var(--gray-100);
@@ -871,6 +871,7 @@ a:hover { text-decoration: underline; color: var(--blue-mid); }
 .medical-disclaimer { margin-top: 28px; padding: 14px 16px; background: var(--gray-50); border-left: 4px solid var(--blue); font-size: 0.85rem; color: var(--gray-700); line-height: 1.6; }
 .more-about-list { list-style: none; }
 .more-about-list li { padding: 5px 0; border-bottom: 1px solid var(--gray-100); font-size: 0.9rem; }
+.more-about-list a.active { font-weight: 700; color: #1a73c8; pointer-events: none; }
 
 /* Interaction mini-checker in drug detail */
 .interaction-mini-checker {
@@ -1222,240 +1223,6 @@ html { scroll-behavior: smooth; }
   .footer-top { grid-template-columns: repeat(2, 1fr); }
 }
 
-/* ── System dark mode ── */
-@media (prefers-color-scheme: dark) {
-  body {
-    background: #1a1a2e;
-    color: #e8e8e8;
-  }
-  a { color: #4da6ff; }
-  a:hover { color: #80c0ff; }
-
-  .site-header {
-    background: #16213e;
-    border-bottom-color: #2a2a4a;
-  }
-  .brand-logo { color: #e8e8e8; }
-  .header-search-inner {
-    background: #0f3460;
-    border-color: #2a2a4a;
-  }
-  .header-search-input {
-    background: #0f3460;
-    color: #e8e8e8;
-  }
-  .header-user-btn,
-  .header-register-btn { color: #cfd6e4; }
-  .header-signin-btn { color: #4da6ff; border-color: #4da6ff; }
-  .header-signin-btn:hover { background: #4da6ff; color: #16213e; }
-
-  .az-strip {
-    background: #16213e;
-    border-bottom-color: #2a2a4a;
-  }
-  .az-strip-link { color: #4da6ff; }
-
-  .nav-dropdown {
-    background: #16213e;
-    border-color: #2a2a4a;
-  }
-  .nav-dropdown a { color: #e8e8e8; }
-  .nav-dropdown a:hover { background: #0f3460; color: #4da6ff; }
-
-  .hero-section {
-    background: linear-gradient(135deg, #16213e 0%, #1a1a2e 100%);
-    border-bottom-color: #2a2a4a;
-  }
-  .hero-section h1 { color: #e8e8e8; }
-  .hero-sub { color: #b0b8c8; }
-  .hero-search-input {
-    background: #0f3460;
-    color: #e8e8e8;
-  }
-
-  .feature-icons {
-    background: #16213e;
-    border-top-color: #2a2a4a;
-    border-bottom-color: #2a2a4a;
-  }
-  .feature-icon-item { color: #cfd6e4; }
-  .feature-icon-circle {
-    background: #0f3460;
-    border-color: #2a2a4a;
-    color: #4da6ff;
-  }
-
-  .browse-panel-tabs,
-  .letter-grid,
-  .browse-footer,
-  .site-section-panel {
-    background: #16213e;
-    border-color: #2a2a4a;
-  }
-  .browse-tab { color: #cfd6e4; }
-  .letter-btn {
-    background: #0f3460;
-    color: #e8e8e8;
-    border-color: #2a2a4a;
-  }
-
-  .home-row { border-top-color: #2a2a4a; }
-  .home-row h2,
-  .row-section h2,
-  .detail-main h2,
-  .detail-main h3,
-  .drug-header h1,
-  .news-list h3,
-  .news-card h2 a,
-  .auth-box h1,
-  .account-box h2,
-  .sidebar-box h3,
-  .faq-item h3,
-  .interaction h4 { color: #e8e8e8; }
-
-  .row-section,
-  .account-box,
-  .result-card,
-  .drug-card,
-  .med-card,
-  .news-card,
-  .checker-box,
-  .auth-box {
-    background: #16213e;
-    border-color: #2a2a4a;
-    color: #e8e8e8;
-  }
-
-  /* Drug detail page: ensure solid card backgrounds and high-contrast text. */
-  .drug-detail {
-    background: #16213e;
-    color: #e8e8e8;
-  }
-  .detail-main,
-  .detail-main section {
-    background: transparent;
-    color: #e8e8e8;
-  }
-  .detail-main p,
-  .detail-main li {
-    color: #d4dbe8;
-  }
-  .detail-main strong { color: #ffffff; }
-  .sidebar-box,
-  .status-box {
-    background: #1e2a3e;
-    border-color: #2a2a4a;
-    color: #e8e8e8;
-  }
-  .drug-card { color: #e8e8e8; }
-  .drug-card h3,
-  .result-card h2 { color: #4da6ff; }
-  .row-section h2,
-  .detail-main h2 { border-bottom-color: #2a2a4a; }
-
-  .news-list li,
-  .news-card,
-  .review,
-  .faq-item,
-  .site-section-panel li,
-  .az-list li,
-  .sidebar-box li,
-  .more-about-list li,
-  .popular-tools li,
-  .class-list li { border-bottom-color: #2a2a4a; }
-
-  .detail-sidebar > div {
-    background: #16213e;
-    border-color: #2a2a4a;
-  }
-  .status-box-title { color: #cfd6e4; border-bottom-color: #2a2a4a; }
-  .status-row { border-bottom-color: #2a2a4a; }
-  .status-label { color: #e8e8e8; }
-  .status-value { color: #b0b8c8; }
-
-  .meta-row { border-top-color: #2a2a4a; border-bottom-color: #2a2a4a; }
-  .meta-row li strong { color: #cfd6e4; }
-  .pronunciation,
-  .reviewer-line,
-  .muted,
-  .news-list p,
-  .news-meta,
-  .breadcrumb,
-  .breadcrumb span { color: #b0b8c8; }
-
-  .section-tabs,
-  .news-tabs,
-  .account-tabs { border-bottom-color: #2a2a4a; }
-  .section-tabs a,
-  .news-tabs a,
-  .account-tabs a,
-  .browse-tab { color: #cfd6e4; }
-
-  .drug-tabs {
-    background: #16213e;
-    border-bottom-color: #4da6ff;
-  }
-
-  .search-filters,
-  .pill-form,
-  .medical-disclaimer {
-    background: #16213e;
-    border-color: #2a2a4a;
-    color: #e8e8e8;
-  }
-  .search-filters input,
-  .search-filters select,
-  .pill-form input,
-  .pill-form select,
-  .checker-input input,
-  .mini-checker-form input,
-  .auth-box input {
-    background: #0f3460;
-    color: #e8e8e8;
-    border-color: #2a2a4a;
-  }
-  .pill-table,
-  .drug-table,
-  .compare-table {
-    background: #16213e;
-    color: #e8e8e8;
-  }
-  .pill-table th,
-  .drug-table th {
-    background: #0f3460;
-    color: #e8e8e8;
-  }
-  .pill-table td,
-  .drug-table td { border-bottom-color: #2a2a4a; }
-  .compare-table th, .compare-table td { border-color: #2a2a4a; }
-  .compare-table th { background: #0f3460; }
-  .compare-table tr:nth-child(even) td { background: #0f3460; }
-  .pill-table tr:hover td,
-  .drug-table tr:hover td { background: #0f3460; }
-
-  .condition-grid li,
-  .pro-tool-card {
-    background: #16213e;
-    border-color: #2a2a4a;
-  }
-
-  .auth-benefits { background: #0f3460; }
-  .auth-benefits h3,
-  .auth-benefits li { color: #e8e8e8; }
-
-  .rating-bar-track { background: #2a2a4a; }
-  .rating-bar-label,
-  .rating-bar-count { color: #b0b8c8; }
-
-  .checker-drug-list li { background: #0f3460; color: #e8e8e8; }
-  .interaction { background: #0f3460; border-left-color: #2a2a4a; }
-
-  .site-footer {
-    background: #0d0d1a;
-  }
-
-  /* Availability badges keep original colors — visible on dark too */
-}
 
 /* ==========================================================================
    Search results & Pill identifier
@@ -2152,46 +1919,6 @@ html { scroll-behavior: smooth; }
 .compare-col { transition: box-shadow 0.2s, border-color 0.2s; }
 .compare-col:hover { box-shadow: 0 2px 8px rgba(0,0,0,0.08); border-color: #c8d2e0; }
 
-/* Dark mode for recently added elements */
-@media (prefers-color-scheme: dark) {
-  .section-tabs { background: #16213e; }
-  .detail-main section { border-top-color: #2a2a4a; }
-  .reviews-summary {
-    background: #16213e;
-    border-color: #2a2a4a;
-    color: #e8e8e8;
-  }
-  .reviews-summary-number { color: #ffffff; }
-  .reviews-summary-denominator { color: #b0b8c8; }
-  .rating-row-label { color: #e8e8e8; }
-  .rating-row-count { color: #b0b8c8; }
-  .rating-row-bar { background: #2a2a4a; }
-  .rating-row-fill { background: linear-gradient(90deg, #4da6ff, #7ec0ff); }
-  .reviews-distribution { color: #e8e8e8; }
-  .reviews-filter {
-    background: #16213e;
-    color: #e8e8e8;
-  }
-  .reviews-list .review-card {
-    background: #16213e;
-    border-color: #2a2a4a;
-    color: #e8e8e8;
-  }
-  .source-card {
-    background: #16213e !important;
-    border-color: #2a2a4a !important;
-    color: #e8e8e8;
-  }
-  .source-card:hover { box-shadow: 0 2px 8px rgba(0,0,0,0.4); border-color: #4da6ff !important; }
-  .compare-col {
-    background: #16213e !important;
-    border-color: #2a2a4a !important;
-    color: #e8e8e8;
-  }
-  .compare-col h4 { color: #4da6ff !important; }
-  .compare-col p { color: #cfd6e4 !important; }
-  .compare-col:hover { box-shadow: 0 2px 8px rgba(0,0,0,0.4); border-color: #4da6ff !important; }
-}
 
 /* News article: author byline + helpfulness widget */
 .article-byline { font-size: 13px; color: #555; margin-bottom: 14px; }
@@ -3116,6 +2843,47 @@ html { scroll-behavior: smooth; }
   color: #4b5563;
 }
 
+/* Account stats bar */
+.account-stats {
+  display: flex;
+  gap: 24px;
+  margin: 16px 0 18px;
+  flex-wrap: wrap;
+}
+.account-stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background: var(--light-bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 14px 22px;
+  min-width: 110px;
+  text-align: center;
+}
+.stat-value {
+  font-size: 1.8rem;
+  font-weight: 700;
+  color: var(--navy);
+  line-height: 1.1;
+}
+.stat-label {
+  font-size: 0.82rem;
+  color: var(--muted);
+  margin-top: 4px;
+}
+
+/* Account welcome banner */
+.account-welcome {
+  background: #f0f6ff;
+  border-left: 4px solid var(--primary);
+  padding: 10px 16px;
+  border-radius: 0 6px 6px 0;
+  margin-bottom: 14px;
+  color: var(--navy);
+  font-size: 0.95rem;
+}
+
 /* Account profile header */
 .account-profile-header {
   display: flex;
@@ -3641,10 +3409,12 @@ html { scroll-behavior: smooth; }
   flex-direction: column;
   align-items: center;
   gap: 4px;
+  order: 2;
 }
 .drug-header-text {
   flex: 1 1 auto;
   min-width: 0;
+  order: 1;
 }
 .drug-header .drug-title {
   display: flex;
@@ -3938,6 +3708,26 @@ html { scroll-behavior: smooth; }
   color: #fff;
 }
 .btn-med-list--lg:active { transform: translateY(0); }
+.btn-med-list--header {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  background: linear-gradient(180deg, #f59e0b 0%, #d97706 100%);
+  color: #fff;
+  padding: 8px 16px;
+  border: none;
+  border-radius: 5px;
+  font-weight: 600;
+  font-size: 0.88rem;
+  cursor: pointer;
+  margin-top: 12px;
+  box-shadow: 0 2px 4px rgba(217,119,6,0.2);
+  transition: all 0.15s;
+  text-decoration: none;
+}
+.btn-med-list--header:hover { background: linear-gradient(180deg, #ea8d00 0%, #b8650a 100%); color: #fff; text-decoration: none; }
+.drug-header-actions { margin-top: 8px; }
+.btn-med-list--header { max-width: 260px; }
 .btn-med-list-icon {
   display: inline-flex;
   align-items: center;
@@ -7167,17 +6957,6 @@ html { scroll-behavior: smooth; }
 }
 .review-form-all-link:hover { text-decoration: underline; }
 
-@media (prefers-color-scheme: dark) {
-    .review-title { color: #cfe0ff; }
-    .reviews-summary-stars .star-empty { color: #3a3a55; }
-    .review-byline .star-off { color: #3a3a55; }
-    .review-byline .review-author { color: #e6e6e6; }
-    .review-byline .review-condition { background: #1f2a3a; color: #cfe0ff; }
-    .review-body { color: #d8d8d8; }
-    .review-helpful { border-top-color: #2a2a4a; }
-    .review-helpful-label { color: #b0b8c8; }
-    .review-form-all-link { color: #7ec0ff; }
-}
 
 /* ---------- Interaction checker results ---------- */
 .results-summary-header {
@@ -7688,13 +7467,6 @@ html { scroll-behavior: smooth; }
 .reviews-by-condition-chip { display: inline-block; padding: 5px 12px; border: 1px solid #c8d2dd; border-radius: 999px; background: #fff; color: #1a3e72; text-decoration: none; font-size: 0.88rem; }
 .reviews-by-condition-chip:hover { background: #e8f0fa; }
 .reviews-by-condition-chip.is-active { background: #1a3e72; color: #fff; border-color: #1a3e72; }
-@media (prefers-color-scheme: dark) {
-  .reviews-by-condition { background: #1a1a2e; border-color: #2a2a4a; }
-  .reviews-by-condition h3 { color: #cfe0ff; }
-  .reviews-by-condition-chip { background: #2a2a4a; color: #cfe0ff; border-color: #3a3a55; }
-  .reviews-by-condition-chip:hover { background: #3a3a55; }
-  .reviews-by-condition-chip.is-active { background: #4da6ff; color: #0b0f1a; border-color: #4da6ff; }
-}
 
 /* ── Dedicated Write a Review page ── */
 .review-new-wrap { max-width: 760px; margin: 0 auto; }
@@ -7715,14 +7487,6 @@ html { scroll-behavior: smooth; }
 .review-form-full select,
 .review-form-full textarea { width: 100%; padding: 8px; border: 1px solid var(--gray-200, #e3e6eb); border-radius: 4px; font-family: inherit; font-size: 0.95rem; }
 .subratings-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; }
-@media (prefers-color-scheme: dark) {
-  .review-new-wrap h1 { color: #cfe0ff; }
-  .review-form-full .review-fieldset { border-color: #2a2a4a; background: #0f1424; }
-  .review-form-full .review-fieldset legend { color: #cfe0ff; }
-  .review-form-full input[type="text"],
-  .review-form-full select,
-  .review-form-full textarea { background: #1a1a2e; color: #e8e8e8; border-color: #2a2a4a; }
-}
 
 /* --- Pill identifier: improved form UX (instructions, shape icons, color swatches, reset) --- */
 .pill-form-instructions {
@@ -8079,6 +7843,176 @@ html { scroll-behavior: smooth; }
 .faq-more-list a:hover { text-decoration: underline; }
 .faq-attr { font-size: 0.8rem; margin-top: 1rem; }
 
+/* Reviews section header with write-review button */
+.reviews-section-header { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 0.5rem; }
+.reviews-section-header h2 { margin: 0; }
+.btn-write-review { font-size: 0.92rem; padding: 7px 14px; white-space: nowrap; }
+
 /* Drug interactions list: plain style */
 .drug-interactions-list { list-style: disc; padding-left: 1.5rem; }
 .drug-interactions-list li { padding: 3px 0; font-size: 0.92rem; }
+
+/* Inline interaction checker widget */
+.inline-interaction-checker { background: #f0f4fa; border: 1px solid #c9d8ef; border-radius: 6px; padding: 16px 20px; margin: 20px 0 8px; }
+.inline-interaction-checker h3 { margin: 0 0 6px; font-size: 1rem; color: #1a3a6e; }
+.inline-checker-row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-top: 10px; }
+.inline-checker-input { flex: 1; min-width: 180px; padding: 8px 12px; border: 1px solid #b0c4de; border-radius: 4px; font-size: 0.92rem; }
+.inline-checker-input:focus { outline: none; border-color: #2563eb; box-shadow: 0 0 0 2px rgba(37,99,235,0.15); }
+
+/* FAQ sub-page expanded style */
+.faq-item details[open] .faq-answer { display: block; }
+
+/* Reviews summary with rating distribution */
+.reviews-summary-full { display: flex; gap: 24px; align-items: flex-start; margin-bottom: 20px; padding: 16px; background: #f8f9fc; border-radius: 8px; border: 1px solid #e3e8f0; flex-wrap: wrap; }
+.reviews-score-panel { display: flex; flex-direction: column; align-items: center; min-width: 100px; }
+.reviews-score-big { font-size: 3rem; font-weight: 700; color: #1a3a6e; line-height: 1; }
+.reviews-score-denom { font-size: 1rem; color: #666; }
+.reviews-score-stars { margin: 4px 0; }
+.reviews-score-count { font-size: 0.85rem; }
+.rating-dist-panel { flex: 1; min-width: 200px; }
+.rating-dist-row { display: flex; align-items: center; gap: 6px; margin-bottom: 3px; font-size: 0.82rem; }
+.rating-dist-label { width: 16px; text-align: right; font-weight: 600; color: #333; }
+.rating-dist-bar-wrap { flex: 1; height: 10px; background: #e3e8f0; border-radius: 5px; overflow: hidden; }
+.rating-dist-bar { height: 100%; background: linear-gradient(90deg, #3b82f6, #1a3a6e); border-radius: 5px; min-width: 2px; transition: width 0.3s; }
+.rating-dist-count { width: 24px; text-align: right; color: #888; }
+
+/* Consumer / Professional / FAQ page type tabs */
+.drug-page-type-tabs { display: flex; gap: 0; border-bottom: 2px solid #dde4f0; margin: 0 0 16px; }
+.drug-page-type-tab { padding: 8px 18px; font-size: 0.9rem; font-weight: 500; color: #555; text-decoration: none; border-bottom: 3px solid transparent; margin-bottom: -2px; transition: color 0.15s; }
+.drug-page-type-tab:hover { color: var(--blue); }
+.drug-page-type-tab.active { color: var(--blue); border-bottom-color: var(--blue); font-weight: 600; }
+
+/* Drug status sidebar box (FAQ, reviews, and other sub-pages) */
+.sidebar-box-title { font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #6b7280; margin-bottom: 10px; }
+.drug-status-grid { display: flex; flex-direction: column; gap: 8px; }
+.drug-status-item { display: flex; flex-direction: column; gap: 2px; }
+.drug-status-label { font-size: 0.72rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; color: #9ca3af; }
+.drug-status-value { font-size: 0.85rem; color: #374151; }
+.drug-status-value.status-rx { color: #1e40af; font-weight: 600; }
+.drug-status-value.status-otc { color: #065f46; font-weight: 600; }
+
+/* Sidebar rating block (FAQ, reviews sub-pages) */
+.sidebar-rating-big { display: flex; align-items: baseline; gap: 4px; margin-bottom: 10px; }
+.rating-score-big { font-size: 2rem; font-weight: 700; color: #1a73c8; line-height: 1; }
+.rating-denom { font-size: 0.9rem; color: #6b7280; }
+.sidebar-rating-big a { font-size: 0.82rem; color: #1a73c8; margin-left: 4px; }
+
+/* Full-width button helper */
+.btn-block { display: block; width: 100%; text-align: center; }
+.mt-2 { margin-top: 8px; }
+
+/* Related drugs carousel (drug detail page) */
+.related-drugs-carousel { display: flex; gap: 12px; overflow-x: auto; padding-bottom: 8px; scroll-snap-type: x mandatory; }
+.related-drugs-carousel::-webkit-scrollbar { height: 4px; }
+.related-drugs-carousel::-webkit-scrollbar-thumb { background: #c8d4e8; border-radius: 2px; }
+.related-drugs-carousel .related-drug-card { flex: 0 0 110px; min-width: 110px; display: flex; flex-direction: column; align-items: center; text-align: center; padding: 10px 8px; border: 1px solid #e3e8f0; border-radius: 8px; text-decoration: none; color: #222; scroll-snap-align: start; transition: border-color 0.15s; }
+.related-drugs-carousel .related-drug-card:hover { border-color: #2563eb; color: #1a3a6e; }
+.related-drug-card-pill { width: 60px; height: 30px; margin-bottom: 8px; }
+.related-drug-card-pill svg { width: 60px; height: 30px; }
+.related-drug-rating-badge { font-size: 0.72rem; color: #e9800a; }
+
+/* Dosage info link (block link under sections) */
+.dosage-info-link { margin: 12px 0; }
+.dosage-info-link a { font-size: 0.88rem; color: #1a73c8; text-decoration: none; }
+.dosage-info-link a:hover { text-decoration: underline; }
+
+/* Sidebar images box */
+.sidebar-images-row { display: flex; gap: 8px; flex-wrap: wrap; margin: 8px 0; }
+.sidebar-pill-thumb { display: block; width: 56px; height: 28px; }
+.sidebar-pill-thumb svg { width: 56px; height: 28px; }
+.sidebar-images-link { font-size: 0.82rem; color: #1a73c8; text-decoration: none; }
+.sidebar-images-link:hover { text-decoration: underline; }
+
+/* Sidebar write review link */
+.sidebar-write-review { display: block; margin-top: 6px; font-size: 0.82rem; color: #1a73c8; text-decoration: none; }
+.sidebar-write-review:hover { text-decoration: underline; }
+
+/* Rating score in sidebar */
+.rating-score { font-size: 1.5rem; font-weight: 700; color: #1a3a6e; line-height: 1.1; }
+.rating-score-denom { font-size: 0.9rem; font-weight: 400; color: #666; }
+
+/* More about section in main content */
+.more-about-section { margin: 24px 0; }
+.more-about-section h2 { font-size: 1.2rem; margin-bottom: 12px; }
+.more-about-section h3 { font-size: 0.95rem; font-weight: 700; color: #555; margin: 14px 0 6px; text-transform: uppercase; letter-spacing: 0.04em; font-size: 0.78rem; }
+.more-about-links { margin: 0 0 8px; padding: 0; list-style: none; }
+.more-about-links li { padding: 3px 0; }
+.more-about-links a { color: #1a73c8; font-size: 0.9rem; text-decoration: none; }
+.more-about-links a:hover { text-decoration: underline; }
+
+/* More FAQ list */
+.more-faq-list { list-style: none; padding: 0; margin: 8px 0 0; }
+.more-faq-list li { padding: 2px 0; }
+.more-faq-list a { color: #1a73c8; font-size: 0.9rem; }
+
+/* ── Side effects page: accordion severity groups ── */
+.se-applies-to { font-size: 0.9rem; color: #555; margin-bottom: 1rem; }
+.se-precautions { margin: 1.2rem 0; }
+.se-severity-group { border: 1px solid #e0e0e0; border-radius: 4px; margin-bottom: 0.6rem; }
+.se-severity-group summary { padding: 0.65rem 1rem; font-size: 0.95rem; cursor: pointer; background: #f7f8fa; border-radius: 4px; }
+.se-severity-group[open] summary { border-bottom: 1px solid #e0e0e0; border-radius: 4px 4px 0 0; }
+.se-severity-group ul { padding: 0.6rem 1rem 0.6rem 2rem; margin: 0; }
+.se-serious-list { list-style: disc; padding-left: 1.5rem; }
+.se-serious-list li { margin-bottom: 0.3rem; font-size: 0.92rem; }
+.se-block--other { margin-top: 1.6rem; }
+.se-block--pro { background: #f0f4fb; border-radius: 6px; padding: 1.2rem 1.4rem; margin: 1.6rem 0; }
+.se-block--pro h2 { font-size: 1.1rem; margin-bottom: 0.8rem; }
+.se-block--pro h3 { font-size: 0.95rem; margin: 1rem 0 0.4rem; font-weight: 700; }
+.se-block--medwatch { background: #fafafa; border: 1px solid #ddd; border-radius: 6px; padding: 1.2rem 1.4rem; margin: 1.6rem 0; }
+.medwatch-card { background: #fff; border: 1px solid #ccc; border-radius: 4px; padding: 1rem 1.2rem; margin: 0.8rem 0; }
+.medwatch-channels { list-style: none; padding: 0; margin: 0.5rem 0; }
+.medwatch-channels li { padding: 0.25rem 0; font-size: 0.9rem; }
+.medwatch-note { font-size: 0.82rem; color: #666; margin-top: 0.5rem; }
+.se-report-sidebar { font-size: 0.9rem; }
+.se-report-link { color: #1a73c8; text-decoration: none; font-weight: 600; }
+.se-report-link:hover { text-decoration: underline; }
+
+/* ── Dosage page quick nav ── */
+.dosage-quick-nav { background: #f7f8fa; border: 1px solid #e0e0e0; border-radius: 4px; padding: 1rem 1.4rem; margin-bottom: 1.2rem; }
+.dosage-quick-nav h3 { font-size: 0.88rem; text-transform: uppercase; letter-spacing: 0.04em; color: #555; margin: 0.8rem 0 0.3rem; }
+.dosage-quick-nav h3:first-child { margin-top: 0; }
+.dosage-quick-nav ul { list-style: disc; padding-left: 1.4rem; margin: 0 0 0.4rem; }
+.dosage-quick-nav li { font-size: 0.9rem; }
+.dosage-quick-nav a { color: #1a73c8; text-decoration: none; }
+.dosage-quick-nav a:hover { text-decoration: underline; }
+.dosage-faq-list { list-style: none; padding: 0; margin: 0; }
+.dosage-faq-list li { padding: 0.35rem 0; border-bottom: 1px solid #f0f0f0; font-size: 0.9rem; }
+.dosage-faq-list a { color: #1a73c8; text-decoration: none; }
+.dosage-faq-list a:hover { text-decoration: underline; }
+.max-dose-warning { background: #fff8f0; border-left: 4px solid #e67e22; border-radius: 0 4px 4px 0; padding: 1rem 1.2rem; margin: 1.2rem 0; }
+.max-dose-warning h2 { font-size: 1rem; margin-bottom: 0.4rem; color: #c0392b; }
+
+/* ── Interactions page: frequently checked + inline checker ── */
+.ix-inline-checker { background: #f0f4fb; border: 1px solid #c5d8f0; border-radius: 6px; padding: 1rem 1.2rem; margin: 1rem 0 1.4rem; }
+.ix-inline-checker p { margin: 0 0 0.5rem; font-size: 0.92rem; }
+.ix-inline-form { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.ix-inline-input { flex: 1; min-width: 180px; padding: 7px 10px; border: 1px solid #ccc; border-radius: 4px; font-size: 0.9rem; }
+.ix-frequently-checked { margin: 1.2rem 0 1.6rem; }
+.ix-freq-list { list-style: none; padding: 0; margin: 0.5rem 0; columns: 2; column-gap: 2rem; }
+.ix-freq-list li { padding: 0.3rem 0; font-size: 0.9rem; display: flex; align-items: center; gap: 6px; break-inside: avoid; }
+.ix-freq-list a { color: #1a73c8; text-decoration: none; }
+.ix-freq-list a:hover { text-decoration: underline; }
+.sev-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+.sev-dot--major { background: #c0392b; }
+.sev-dot--moderate { background: #d97706; }
+.sev-dot--minor { background: #2e7d32; }
+.sev-dot--unknown { background: #888; }
+.sev-label--major { color: #c0392b; font-size: 0.78rem; font-weight: 600; }
+.sev-label--moderate { color: #d97706; font-size: 0.78rem; font-weight: 600; }
+.sev-label--minor { color: #2e7d32; font-size: 0.78rem; font-weight: 600; }
+.sev-label--unknown { color: #888; font-size: 0.78rem; font-weight: 600; }
+
+/* ── Footer mobile app banner ── */
+.footer-mobile-app { border-top: 1px solid #ddd; padding: 20px 0; }
+.footer-app-banner { display: flex; align-items: center; gap: 24px; flex-wrap: wrap; }
+.footer-app-text { flex: 1; }
+.footer-app-text strong { display: block; font-size: 1rem; margin-bottom: 4px; }
+.footer-app-text p { font-size: 0.85rem; color: #555; margin: 0; }
+.footer-app-links { display: flex; gap: 10px; flex-wrap: wrap; }
+.footer-app-badge { display: inline-block; border: 1px solid #ccc; border-radius: 6px; padding: 6px 12px; color: #333; font-size: 0.82rem; text-decoration: none; background: #f7f8fa; }
+.footer-app-badge:hover { background: #eee; }
+
+/* ── Reviews page ── */
+.reviews-faq { margin: 1.6rem 0; }
+.reviews-disclaimer { font-size: 0.82rem; margin: 0.8rem 0; }
+.reviews-see-also { margin: 1.4rem 0; }

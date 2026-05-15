@@ -30,7 +30,7 @@
 
     {% if active_letter %}
       <section class="row-section az-list">
-        <h2>Drugs starting with &ldquo;{{ active_letter }}&rdquo;</h2>
+        <h2>{% if active_letter == '0-9' %}Drugs starting with a number (0-9){% else %}Drugs starting with &ldquo;{{ active_letter }}&rdquo;{% endif %}</h2>
         {% if drugs %}
           <ul class="az-name-list">
             {% for d in drugs %}
@@ -72,8 +72,8 @@
         <li><a href="{{ url_for('search') }}?q=international">International Drug Names</a></li>
         <li><a href="{{ url_for('search') }}?q=generic">Generic Drug Names</a></li>
         <li><a href="{{ url_for('search') }}?q=OTC&amp;availability=OTC">OTC Drugs</a></li>
-        <li><a href="{{ url_for('news_index') }}?category=new-drugs">New Drugs</a></li>
-        <li><a href="{{ url_for('news_index') }}?category=fda-alerts">FDA Alerts</a></li>
+        <li><a href="{{ url_for('news_index') }}?cat=new-drug-approvals">New Drugs</a></li>
+        <li><a href="{{ url_for('news_index') }}?cat=fda-alerts">FDA Alerts</a></li>
       </ul>
     </section>
 

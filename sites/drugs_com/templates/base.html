@@ -12,11 +12,11 @@
   <div class="utility-bar">
     <div class="container utility-bar-inner">
       <div class="utility-bar-left">
-        <a href="#" class="utility-link">Apps</a>
+        <a href="{{ url_for('apps_page') }}" class="utility-link">Apps</a>
         <span class="utility-sep">|</span>
         <a href="{{ url_for('newsletter') }}" class="utility-link">Newsletter</a>
         <span class="utility-sep">|</span>
-        <a href="#" class="utility-link">Community</a>
+        <a href="{{ url_for('news_index') }}" class="utility-link">Community</a>
       </div>
       <div class="utility-bar-right">
         <a href="{{ url_for('newsletter') }}" class="utility-link">Subscribe</a>
@@ -74,7 +74,7 @@
       {% for L in ['A','B','C','D','E','F','G','H','I','J','K','L','M','N','O','P','Q','R','S','T','U','V','W','X','Y','Z','0-9'] %}
         <a href="{{ url_for('drug_az') }}?letter={{ L }}" class="az-strip-link">{{ L }}</a>
       {% endfor %}
-      <a href="{{ url_for('search') }}?q=" class="az-strip-adv">Advanced Search</a>
+      <a href="{{ url_for('search') }}" class="az-strip-adv">Advanced Search</a>
     </div>
   </div>
 
@@ -86,7 +86,7 @@
       <a href="{{ url_for('interaction_checker') }}" class="nav-link">Drug Interaction Checker</a>
       <a href="{{ url_for('compare_drugs') }}" class="nav-link">Compare Drugs</a>
       <a href="{{ url_for('news_index') }}" class="nav-link">News</a>
-      <a href="/pro/" class="nav-link">Pro Edition</a>
+      <a href="{{ url_for('pro_edition') }}" class="nav-link">Pro Edition</a>
       <div class="nav-more-wrap">
         <a href="{{ url_for('conditions_list') }}" class="nav-link nav-more-btn">More...</a>
         <div class="nav-dropdown nav-dropdown-wide is-031">
@@ -96,16 +96,16 @@
               <a href="{{ url_for('conditions_list') }}">Conditions A-Z</a>
               <a href="{{ url_for('drug_classes_list') }}">Drug Classes</a>
               <a href="{{ url_for('drug_az') }}">Drugs A-Z</a>
-              <a href="/fda-alerts">FDA Alerts</a>
+              <a href="{{ url_for('news_category', category='fda-alerts') }}">FDA Alerts</a>
             </div>
             <div>
               <div class="is-033">Checkers &amp; Tools</div>
               <a href="{{ url_for('symptom_checker') }}">Symptom Checker</a>
               <a href="{{ url_for('side_effects_page') }}">Side Effects Checker</a>
               <a href="{{ url_for('warnings_index') }}">Drug Warnings</a>
-              <a href="{{ url_for('drug_az') }}">Dosage Guide</a>
-              <a href="{{ url_for('search') }}?q=pregnancy+warnings">Pregnancy Safety</a>
-              <a href="{{ url_for('contact') }}">Emergency Info</a>
+              <a href="{{ url_for('dosage_guide') }}">Dosage Guide</a>
+              <a href="{{ url_for('pregnancy_safety') }}">Pregnancy Safety</a>
+              <a href="{{ url_for('emergency_info') }}">Emergency Info</a>
             </div>
           </div>
         </div>
@@ -199,7 +199,7 @@
       <h4>Company</h4>
       <ul>
         <li><a href="{{ url_for('about_page') }}">About</a></li>
-        <li><a href="#">Advertise</a></li>
+        <li><a href="{{ url_for('about_page') }}">Advertise</a></li>
         <li><a href="{{ url_for('privacy') }}">Privacy Policy</a></li>
         <li><a href="{{ url_for('terms') }}">Terms of Use</a></li>
         <li><a href="{{ url_for('contact') }}">Contact</a></li>
@@ -221,7 +221,7 @@
         <li><a href="{{ url_for('conditions_list') }}">Conditions A-Z</a></li>
         <li><a href="{{ url_for('symptom_checker') }}">Symptom Checker</a></li>
         <li><a href="{{ url_for('side_effects_page') }}">Drug Side Effects</a></li>
-        <li><a href="{{ url_for('search') }}?q=dosage">Dosage Guide</a></li>
+        <li><a href="{{ url_for('dosage_guide') }}">Dosage Guide</a></li>
         <li><a href="{{ url_for('pill_identifier') }}">Drug Identifier</a></li>
       </ul>
     </div>
@@ -236,8 +236,8 @@
     </div>
   </div>
   <div class="container footer-bottom">
-    <p class="footer-disclaimer">Drugs.com provides accurate and independent information on more than 24,000 prescription drugs, over-the-counter medicines and natural products. This material is provided for educational purposes only and is not intended for medical advice, diagnosis or treatment.</p>
-    <p class="footer-copy">&copy; {{ current_year }} Drugs.com (benchmark mirror for educational use). <a href="/sitemap">Sitemap</a></p>
+    <p class="footer-disclaimer">Drugs.com provides accurate and independent information on more than 24,000 prescription drugs, over-the-counter medicines and natural products. This material is provided for educational purposes only and is not intended for medical advice, diagnosis or treatment. Data sources include Micromedex (updated {{ current_year }}), Cerner Multum™ (updated {{ current_year }}), ASHP (updated {{ current_year }}) and others.</p>
+    <p class="footer-copy">Copyright &copy; 2000-{{ current_year }} Drugs.com. All rights reserved. <a href="{{ url_for('sitemap') }}">Sitemap</a></p>
   </div>
 </footer>
 <script>
