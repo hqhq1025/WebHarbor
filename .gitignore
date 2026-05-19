@@ -84,6 +84,7 @@ secrets.json
 *.pid
 *.tmp
 *.bak
+audit_screens/
 
 # =============================================================
 # CI / build workspace

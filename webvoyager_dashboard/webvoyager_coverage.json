@@ -1,0 +1,1236 @@
+{
+  "total": 643,
+  "answer_types": {
+    "possible": 500,
+    "golden": 143
+  },
+  "sites": [
+    {
+      "site": "Allrecipes",
+      "count": 45,
+      "answer_types": {
+        "possible": 41,
+        "golden": 4
+      },
+      "capabilities": {
+        "筛选排序": 35,
+        "摘要问答": 24,
+        "文档详情": 36,
+        "查找检索": 40,
+        "状态操作": 2,
+        "时效/实时": 1,
+        "地图路线": 1,
+        "浏览导航": 1
+      },
+      "avg_question_len": 158.0,
+      "examples": [
+        {
+          "id": "Allrecipes--0",
+          "question": "Provide a recipe for vegetarian lasagna with more than 100 reviews and a rating of at least 4.5 stars suitable for 6 people.",
+          "answer_type": "possible"
+        },
+        {
+          "id": "Allrecipes--1",
+          "question": "Find a recipe for a vegetarian lasagna that has at least a four-star rating and uses zucchini.",
+          "answer_type": "possible"
+        },
+        {
+          "id": "Allrecipes--2",
+          "question": "Find a recipe for a vegetarian lasagna under 600 calories per serving that has a prep time of less than 1 hour.",
+          "answer_type": "possible"
+        },
+        {
+          "id": "Allrecipes--3",
+          "question": "Locate a recipe for vegan chocolate chip cookies with over 60 reviews and a rating of at least 4.5 stars on Allrecipes.",
+          "answer_type": "golden"
+        },
+        {
+          "id": "Allrecipes--4",
+          "question": "Find a recipe for Baked Salmon that takes less than 30 minutes to prepare and has at least a 4 star rating based on user reviews.",
+          "answer_type": "possible"
+        },
+        {
+          "id": "Allrecipes--5",
+          "question": "Search for a popular Pasta Sauce with more than 1000 reviews and a rating above 4 stars. Create a shopping list of ingredients for this recipe.",
+          "answer_type": "possible"
+        }
+      ],
+      "real_time_examples": [
+        {
+          "id": "Allrecipes--17",
+          "question": "Find the Easy Vegetarian Spinach Lasagna recipe on Allrecipes and tell me what the latest review says."
+        }
+      ],
+      "stateful_examples": [
+        {
+          "id": "Allrecipes--5",
+          "question": "Search for a popular Pasta Sauce with more than 1000 reviews and a rating above 4 stars. Create a shopping list of ingredients for this recipe."
+        },
+        {
+          "id": "Allrecipes--25",
+          "question": "Find a popular quinoa salad recipe on Allrecipes with more than 500 reviews and a rating above 4 stars. Create a shopping list of ingredients for this recipe and include the total cooking and preparation time."
+        }
+      ]
+    },
+    {
+      "site": "Amazon",
+      "count": 41,
+      "answer_types": {
+        "possible": 40,
+        "golden": 1
+      },
+      "capabilities": {
+        "查找检索": 32,
+        "筛选排序": 35,
+        "状态操作": 8,
+        "摘要问答": 7,
+        "浏览导航": 5,
+        "文档详情": 8,
+        "比较计算": 1
+      },
+      "avg_question_len": 128.8,
+      "examples": [
+        {
+          "id": "Amazon--0",
+          "question": "Search an Xbox Wireless controller with green color and rated above 4 stars.",
+          "answer_type": "possible"
+        },
+        {
+          "id": "Amazon--1",
+          "question": "Search for women's golf polos in m size, priced between 50 to 75 dollars, and save the lowest priced among results.",
+          "answer_type": "possible"
+        },
+        {
+          "id": "Amazon--2",
+          "question": "Find a gaming desktop with Windows 11 Home, and the disk size should be 1TB.",
+          "answer_type": "possible"
+        },
+        {
+          "id": "Amazon--3",
+          "question": "Find climbing gears and sort the results by price high to low. Answer the first 3 results after sorting.",
+          "answer_type": "possible"
+        },
+        {
+          "id": "Amazon--4",
+          "question": "Find the used Nintendo Switch Lite on Amazon then filter by 'Used - Good', tell me the cheapest one that is 'Used - Good'.",
+          "answer_type": "possible"
+        },
+        {
+          "id": "Amazon--5",
+          "question": "Find a Blue iPhone 12 Pro 128gb and add to cart.",
+          "answer_type": "possible"
+        }
+      ],
+      "real_time_examples": [],
+      "stateful_examples": [
+        {
+          "id": "Amazon--1",
+          "question": "Search for women's golf polos in m size, priced between 50 to 75 dollars, and save the lowest priced among results."
+        },
+        {
+          "id": "Amazon--5",
+          "question": "Find a Blue iPhone 12 Pro 128gb and add to cart."
+        },
+        {
+          "id": "Amazon--15",
+          "question": "Find a pair of mens running shoes in black, size 7, 4+ stars and under $50 and add them to my cart on Amazon."
+        },
+        {
+          "id": "Amazon--19",
+          "question": "Look for an English language book on roman empire history in the Amazon Kindle store. Sort by newests arrivals and look for a title that will be released within a month."
+        },
+        {
+          "id": "Amazon--20",
+          "question": "Search for a wireless ergonomic keyboard with backlighting and a rating of at least 4 stars. The price should be between $40 to $60. Save the product with the 500+ customer reviews."
+        },
+        {
+          "id": "Amazon--27",
+          "question": "Look for a USB-C hub on Amazon compatible with MacBook Pro, featuring at least 4 ports, including HDMI and SD card reader. The price should be under $50. Select the one after sorting by Best Sellers."
+        }
+      ]
+    },
+    {
+      "site": "Apple",
+      "count": 43,
+      "answer_types": {
+        "possible": 36,
+        "golden": 7
+      },
+      "capabilities": {
+        "比较计算": 9,
+        "状态操作": 8,
+        "时效/实时": 19,
+        "查找检索": 18,
+        "文档详情": 4,
+        "筛选排序": 4,
+        "其他": 4,
+        "摘要问答": 6,
+        "地图路线": 1,
+        "浏览导航": 1
+      },
+      "avg_question_len": 101.6,
+      "examples": [
+        {
+          "id": "Apple--0",
+          "question": "Compare the prices of the latest models of MacBook Air available on Apple's website.",
+          "answer_type": "possible"
+        },
+        {
+          "id": "Apple--1",
+          "question": "Research the new features of the iOS 17 on Apple support and check its compatibility with the iPhone 12.",
+          "answer_type": "possible"
+        },
+        {
+          "id": "Apple--2",
+          "question": "Compare the prices and chips for the iPhone 14 Pro and iPhone 15 Pro models directly from Apple's website.",
+          "answer_type": "possible"
+        },
+        {
+          "id": "Apple--3",
+          "question": "Find the latest model of the iPhone and compare the price and screen size between the pro and pro max.",
+          "answer_type": "possible"
+        },
+        {
+          "id": "Apple--4",
+          "question": "How much does it cost to buy a Macbook pro, 16-inch, Apple M3 Max chip with 16-core CPU, 40-core GPU, 64GB unified memory, 1TB SSD.",
+          "answer_type": "possible"
+        },
+        {
+          "id": "Apple--5",
+          "question": "Check the release date and price for the latest version of the iPhone.",
+          "answer_type": "possible"
+        }
+      ],
+      "real_time_examples": [
+        {
+          "id": "Apple--0",
+          "question": "Compare the prices of the latest models of MacBook Air available on Apple's website."
+        },
+        {
+          "id": "Apple--3",
+          "question": "Find the latest model of the iPhone and compare the price and screen size between the pro and pro max."
+        },
+        {
+          "id": "Apple--5",
+          "question": "Check the release date and price for the latest version of the iPhone."
+        },
+        {
+          "id": "Apple--6",
+          "question": "Find AirPods on Apple and how many types are currently available."
+        },
+        {
+          "id": "Apple--8",
+          "question": "Identify and list the specifications of the latest iPad model released by Apple, including its storage options, processor type, and display features."
+        },
+        {
+          "id": "Apple--9",
+          "question": "Check the Apple Store for the availability of the latest iPhone model and schedule an in-store pickup at the nearest Apple Store for January 10, 2024."
+        }
+      ],
+      "stateful_examples": [
+        {
+          "id": "Apple--0",
+          "question": "Compare the prices of the latest models of MacBook Air available on Apple's website."
+        },
+        {
+          "id": "Apple--4",
+          "question": "How much does it cost to buy a Macbook pro, 16-inch, Apple M3 Max chip with 16-core CPU, 40-core GPU, 64GB unified memory, 1TB SSD."
+        },
+        {
+          "id": "Apple--10",
+          "question": "Find information on the latest (as of today's date) MacBook model, including its key features such as processor type, memory size, and storage capacity."
+        },
+        {
+          "id": "Apple--13",
+          "question": "How many colors does the latest MacBook Air come in?"
+        },
+        {
+          "id": "Apple--14",
+          "question": "Identify the upgrade options available for the cheapest base model of the MacBook Pro 14-inch with M3 chip, and calculate the total price difference from the base model to the maximum upgrade (no Pre-Installed Software) offered by Apple."
+        },
+        {
+          "id": "Apple--15",
+          "question": "On Apple's website, how many different types of keyboards are available when customizing your 14-inch MacBook Pro?"
+        }
+      ]
+    },
+    {
+      "site": "ArXiv",
+      "count": 43,
+      "answer_types": {
+        "possible": 27,
+        "golden": 16
+      },
+      "capabilities": {
+        "查找检索": 31,
+        "时效/实时": 20,
+        "状态操作": 2,
+        "摘要问答": 18,
+        "文档详情": 11,
+        "筛选排序": 6,
+        "其他": 4,
+        "比较计算": 3,
+        "浏览导航": 3,
+        "地图路线": 1
+      },
+      "avg_question_len": 124.8,
+      "examples": [
+        {
+          "id": "ArXiv--0",
+          "question": "Search for the latest preprints about 'quantum computing'.",
+          "answer_type": "possible"
+        },
+        {
+          "id": "ArXiv--1",
+          "question": "Search for the latest research papers on quantum computing submitted to ArXiv within the last two days.",
+          "answer_type": "possible"
+        },
+        {
+          "id": "ArXiv--2",
+          "question": "Look up the most recent papers related to 'cs.CL', select one and show its abstract.",
+          "answer_type": "possible"
+        },
+        {
+          "id": "ArXiv--3",
+          "question": "Locate the most recent research paper about 'Algebraic Topology' under Mathematics published on ArXiv. Provide the title of the paper, the name of the authors, and the abstract.",
+          "answer_type": "possible"
+        },
+        {
+          "id": "ArXiv--4",
+          "question": "Find the most recent research papers in Astrophysics of Galaxies. How many papers have been announced in the last day?",
+          "answer_type": "possible"
+        },
+        {
+          "id": "ArXiv--5",
+          "question": "Search papers about \"quantum computing\" which has been submitted to the Quantum Physics category on ArXiv. How many results in total. What if search in all archives?",
+          "answer_type": "possible"
+        }
+      ],
+      "real_time_examples": [
+        {
+          "id": "ArXiv--0",
+          "question": "Search for the latest preprints about 'quantum computing'."
+        },
+        {
+          "id": "ArXiv--1",
+          "question": "Search for the latest research papers on quantum computing submitted to ArXiv within the last two days."
+        },
+        {
+          "id": "ArXiv--2",
+          "question": "Look up the most recent papers related to 'cs.CL', select one and show its abstract."
+        },
+        {
+          "id": "ArXiv--3",
+          "question": "Locate the most recent research paper about 'Algebraic Topology' under Mathematics published on ArXiv. Provide the title of the paper, the name of the authors, and the abstract."
+        },
+        {
+          "id": "ArXiv--4",
+          "question": "Find the most recent research papers in Astrophysics of Galaxies. How many papers have been announced in the last day?"
+        },
+        {
+          "id": "ArXiv--7",
+          "question": "Find the most recent paper submitted on machine learning in the Computer Science category posted on ArXiv."
+        }
+      ],
+      "stateful_examples": [
+        {
+          "id": "ArXiv--2",
+          "question": "Look up the most recent papers related to 'cs.CL', select one and show its abstract."
+        },
+        {
+          "id": "ArXiv--41",
+          "question": "Find the button to share arxiv non-profit store and follow the QR code to share the shop. Then add arXiv Forever short sleeve (XL) to your cart."
+        }
+      ]
+    },
+    {
+      "site": "BBC News",
+      "count": 42,
+      "answer_types": {
+        "possible": 40,
+        "golden": 2
+      },
+      "capabilities": {
+        "查找检索": 30,
+        "时效/实时": 29,
+        "摘要问答": 20,
+        "筛选排序": 8,
+        "浏览导航": 6,
+        "文档详情": 2,
+        "状态操作": 1
+      },
+      "avg_question_len": 111.4,
+      "examples": [
+        {
+          "id": "BBC News--0",
+          "question": "Find a report on the BBC News website about recent developments in renewable energy technologies in the UK.",
+          "answer_type": "possible"
+        },
+        {
+          "id": "BBC News--1",
+          "question": "Read the latest health-related news article published on BBC News and summarize the key points discussed.",
+          "answer_type": "possible"
+        },
+        {
+          "id": "BBC News--2",
+          "question": "Read the latest article regarding the environmental impacts of deforestation published within the last two days.",
+          "answer_type": "possible"
+        },
+        {
+          "id": "BBC News--3",
+          "question": "Check the leaderboard for Golf's DP World Tour in the SPORT section, what was the name of the most recent tournament, and how many teams have a Total of -10 strokes.",
+          "answer_type": "possible"
+        },
+        {
+          "id": "BBC News--4",
+          "question": "Find the latest article regarding the economic implications of climate change in Europe as reported by BBC News and summarize the central points.",
+          "answer_type": "possible"
+        },
+        {
+          "id": "BBC News--5",
+          "question": "Find the article \"What is climate change? A really simple guide\" and use it to answer what human activities are causing climate change.",
+          "answer_type": "golden"
+        }
+      ],
+      "real_time_examples": [
+        {
+          "id": "BBC News--0",
+          "question": "Find a report on the BBC News website about recent developments in renewable energy technologies in the UK."
+        },
+        {
+          "id": "BBC News--1",
+          "question": "Read the latest health-related news article published on BBC News and summarize the key points discussed."
+        },
+        {
+          "id": "BBC News--2",
+          "question": "Read the latest article regarding the environmental impacts of deforestation published within the last two days."
+        },
+        {
+          "id": "BBC News--3",
+          "question": "Check the leaderboard for Golf's DP World Tour in the SPORT section, what was the name of the most recent tournament, and how many teams have a Total of -10 strokes."
+        },
+        {
+          "id": "BBC News--4",
+          "question": "Find the latest article regarding the economic implications of climate change in Europe as reported by BBC News and summarize the central points."
+        },
+        {
+          "id": "BBC News--6",
+          "question": "Find the top story from BBC News in the technology section for today."
+        }
+      ],
+      "stateful_examples": [
+        {
+          "id": "BBC News--37",
+          "question": "Identify the latest book review featured in the Culture section and provide the title and author of the book."
+        }
+      ]
+    },
+    {
+      "site": "Booking",
+      "count": 44,
+      "answer_types": {
+        "possible": 42,
+        "golden": 2
+      },
+      "capabilities": {
+        "查找检索": 35,
+        "筛选排序": 23,
+        "摘要问答": 10,
+        "地图路线": 7,
+        "状态操作": 14,
+        "文档详情": 7,
+        "浏览导航": 5,
+        "时效/实时": 1,
+        "比较计算": 1
+      },
+      "avg_question_len": 147.0,
+      "examples": [
+        {
+          "id": "Booking--0",
+          "question": "Find a Mexico hotel with deals for December 25-26.",
+          "answer_type": "possible"
+        },
+        {
+          "id": "Booking--1",
+          "question": "Find the cheapest available hotel room for a three night stay from 1st Jan in Jakarta. The room is for 2 adults, just answer the cheapest hotel room and the price.",
+          "answer_type": "possible"
+        },
+        {
+          "id": "Booking--2",
+          "question": "Find a hotel in Ohio From December 20th to December 23th for 3 adults and 2 rooms.",
+          "answer_type": "possible"
+        },
+        {
+          "id": "Booking--3",
+          "question": "Find a hotel with 4 star and above rating in Los Angeles for 3 days from Dec 18th.",
+          "answer_type": "possible"
+        },
+        {
+          "id": "Booking--4",
+          "question": "Search for the cheapest Hotel near Kashi Vishwanath Temple that offer breakfast from Dec 25th - Dec 26th.",
+          "answer_type": "possible"
+        },
+        {
+          "id": "Booking--5",
+          "question": "Search a hotel with free WiFi and air conditioning in Bali from Jan 1 to Jan 4, 2024.",
+          "answer_type": "possible"
+        }
+      ],
+      "real_time_examples": [
+        {
+          "id": "Booking--33",
+          "question": "Find the Customer Service on the Booking website, browse the questions about cancellation, and tell me 'how do I know whether my booking has been cancelled'."
+        }
+      ],
+      "stateful_examples": [
+        {
+          "id": "Booking--6",
+          "question": "Book one room which provides breakfast, and airport shuttle from Jan 22 to 25 in Los Angeles."
+        },
+        {
+          "id": "Booking--10",
+          "question": "Find a well-reviewed hotel in Paris with available bookings suitable for a couple (2 adults) on Valentine's Day week, February 14-21, 2024, that offers free cancellation options."
+        },
+        {
+          "id": "Booking--11",
+          "question": "Reserve a hotel in downtown Chicago with a rating of 9 or higher for a stay from March 20-27, 2024, which offers free cancellation and includes a fitness center."
+        },
+        {
+          "id": "Booking--13",
+          "question": "Find and book a hotel in Paris with suitable accommodations for a family of four (two adults and two children) offering free cancellation for the dates of February 14-21, 2024."
+        },
+        {
+          "id": "Booking--14",
+          "question": "Book a highly-rated hotel with a swimming pool and free WiFi near the Louvre Museum in Paris for the weekend of March 3-5, 2024."
+        },
+        {
+          "id": "Booking--15",
+          "question": "Find the highest-rated luxury hotel in Rome available for booking from January 10, 2024, to January 20, 2024, for 2 adults. Include the cost, amenities offered, and customer rating."
+        }
+      ]
+    },
+    {
+      "site": "Cambridge Dictionary",
+      "count": 43,
+      "answer_types": {
+        "golden": 9,
+        "possible": 34
+      },
+      "capabilities": {
+        "查找检索": 36,
+        "文档详情": 20,
+        "摘要问答": 11,
+        "浏览导航": 4,
+        "筛选排序": 4,
+        "比较计算": 1,
+        "状态操作": 1,
+        "其他": 2
+      },
+      "avg_question_len": 122.0,
+      "examples": [
+        {
+          "id": "Cambridge Dictionary--0",
+          "question": "Look up the pronunciation and definition of the word \"sustainability\" on the Cambridge Dictionary.",
+          "answer_type": "golden"
+        },
+        {
+          "id": "Cambridge Dictionary--1",
+          "question": "Find the pronunciation, definition, and a sample sentence for the word 'serendipity'.",
+          "answer_type": "possible"
+        },
+        {
+          "id": "Cambridge Dictionary--2",
+          "question": "Look up the pronunciation, definition, and example sentence for the word \"ubiquitous\" in UK and US English.",
+          "answer_type": "possible"
+        },
+        {
+          "id": "Cambridge Dictionary--3",
+          "question": "Look up the definition, pronunciation, and examples of the word \"zeitgeist.\"",
+          "answer_type": "possible"
+        },
+        {
+          "id": "Cambridge Dictionary--4",
+          "question": "Look for the British English pronunciation of the word \"innovate\" and write down the International Phonetic Alphabet (IPA) notation, then find one example sentence provided in the Cambridge Dictionary that uses this word.",
+          "answer_type": "possible"
+        },
+        {
+          "id": "Cambridge Dictionary--5",
+          "question": "Learn the UK and US pronunciation of the word \"procrastination\", and find one example sentence that reflects its use in context.",
+          "answer_type": "possible"
+        }
+      ],
+      "real_time_examples": [],
+      "stateful_examples": [
+        {
+          "id": "Cambridge Dictionary--38",
+          "question": "Go to the Plus section of Cambridge Dictionary, finish a recommended Grammar quiz without login and tell me your final score."
+        }
+      ]
+    },
+    {
+      "site": "Coursera",
+      "count": 42,
+      "answer_types": {
+        "possible": 40,
+        "golden": 2
+      },
+      "capabilities": {
+        "查找检索": 36,
+        "摘要问答": 18,
+        "时效/实时": 3,
+        "筛选排序": 11,
+        "文档详情": 5,
+        "其他": 1,
+        "比较计算": 4,
+        "浏览导航": 6,
+        "状态操作": 1
+      },
+      "avg_question_len": 159.2,
+      "examples": [
+        {
+          "id": "Coursera--0",
+          "question": "Find a beginner-level online course about '3d printing' which lasts 1-3 months, and is provided by a renowned university.",
+          "answer_type": "possible"
+        },
+        {
+          "id": "Coursera--1",
+          "question": "Search for a beginner-level online course about Python programming, suitable for someone who has no programming experience on Coursera.",
+          "answer_type": "possible"
+        },
+        {
+          "id": "Coursera--2",
+          "question": "Find a Beginner's Spanish Specialization on Coursera and show all the courses in this Specialization.",
+          "answer_type": "possible"
+        },
+        {
+          "id": "Coursera--3",
+          "question": "Identify a new course or Specialization on Coursera related to Python Data Science, sort the courses by newest, what the first course is and which institution offers it.",
+          "answer_type": "possible"
+        },
+        {
+          "id": "Coursera--4",
+          "question": "Identify a course or Specialization on Coursera that helps business process management with with a rating 4.7.",
+          "answer_type": "possible"
+        },
+        {
+          "id": "Coursera--5",
+          "question": "Identify a Specialization on Coursera that teaches C++ programming for beginners, provide the name and what the learning outcomes are.",
+          "answer_type": "possible"
+        }
+      ],
+      "real_time_examples": [
+        {
+          "id": "Coursera--0",
+          "question": "Find a beginner-level online course about '3d printing' which lasts 1-3 months, and is provided by a renowned university."
+        },
+        {
+          "id": "Coursera--20",
+          "question": "Find an Intermediate-level online course on Coursera about 'Blockchain Technology' which lasts between 1 to 4 weeks, and is provided by a well-known institution. Also, note the course's main goals and the instructor's name."
+        },
+        {
+          "id": "Coursera--36",
+          "question": "Browse Coursera, which universities offer Master of Advanced Study in Engineering degrees? Tell me what is the latest application deadline for this degree?"
+        }
+      ],
+      "stateful_examples": [
+        {
+          "id": "Coursera--34",
+          "question": "Find the course on Coursera named 'Essentials of Global Health'. Determine the instructor of this course and summarize his bio, note if there are any additional courses he offers on Coursera."
+        }
+      ]
+    },
+    {
+      "site": "ESPN",
+      "count": 44,
+      "answer_types": {
+        "possible": 34,
+        "golden": 10
+      },
+      "capabilities": {
+        "查找检索": 22,
+        "时效/实时": 25,
+        "摘要问答": 13,
+        "筛选排序": 11,
+        "其他": 5,
+        "文档详情": 1,
+        "浏览导航": 3,
+        "比较计算": 1
+      },
+      "avg_question_len": 107.4,
+      "examples": [
+        {
+          "id": "ESPN--0",
+          "question": "Look up the current standings for the NBA Eastern Conference on ESPN.",
+          "answer_type": "possible"
+        },
+        {
+          "id": "ESPN--1",
+          "question": "Check the latest articles on ESPN for updates on any trades that occurred in the NBA within the past 2 days.",
+          "answer_type": "possible"
+        },
+        {
+          "id": "ESPN--2",
+          "question": "Show the scores and main highlight of the Milwaukee Bucks game that took place within the last 2 days on ESPN.",
+          "answer_type": "possible"
+        },
+        {
+          "id": "ESPN--3",
+          "question": "Retrieve the final score from the most recent NBA game broadcast on ESPN, including the playing teams' names and the date of the match.",
+          "answer_type": "possible"
+        },
+        {
+          "id": "ESPN--4",
+          "question": "Check ESPN for the final scores of NBA games that were played yesterday.",
+          "answer_type": "possible"
+        },
+        {
+          "id": "ESPN--5",
+          "question": "Identify the top scorer in the NBA from the latest completed game and note down the points scored, the team they play for, and their position on the team.",
+          "answer_type": "possible"
+        }
+      ],
+      "real_time_examples": [
+        {
+          "id": "ESPN--0",
+          "question": "Look up the current standings for the NBA Eastern Conference on ESPN."
+        },
+        {
+          "id": "ESPN--1",
+          "question": "Check the latest articles on ESPN for updates on any trades that occurred in the NBA within the past 2 days."
+        },
+        {
+          "id": "ESPN--2",
+          "question": "Show the scores and main highlight of the Milwaukee Bucks game that took place within the last 2 days on ESPN."
+        },
+        {
+          "id": "ESPN--3",
+          "question": "Retrieve the final score from the most recent NBA game broadcast on ESPN, including the playing teams' names and the date of the match."
+        },
+        {
+          "id": "ESPN--4",
+          "question": "Check ESPN for the final scores of NBA games that were played yesterday."
+        },
+        {
+          "id": "ESPN--5",
+          "question": "Identify the top scorer in the NBA from the latest completed game and note down the points scored, the team they play for, and their position on the team."
+        }
+      ],
+      "stateful_examples": []
+    },
+    {
+      "site": "GitHub",
+      "count": 41,
+      "answer_types": {
+        "golden": 14,
+        "possible": 27
+      },
+      "capabilities": {
+        "查找检索": 35,
+        "浏览导航": 15,
+        "时效/实时": 12,
+        "其他": 1,
+        "比较计算": 3,
+        "状态操作": 7,
+        "筛选排序": 12,
+        "摘要问答": 12,
+        "文档详情": 1
+      },
+      "avg_question_len": 116.7,
+      "examples": [
+        {
+          "id": "GitHub--0",
+          "question": "Search for an open-source project related to 'climate change data visualization' on GitHub and report the project with the most stars.",
+          "answer_type": "golden"
+        },
+        {
+          "id": "GitHub--1",
+          "question": "Search for an open-source repository for machine learning in Python, specifically focused on decision trees, updated within the last 2 days.",
+          "answer_type": "possible"
+        },
+        {
+          "id": "GitHub--2",
+          "question": "Look for the trending Python repositories on GitHub with most stars.",
+          "answer_type": "possible"
+        },
+        {
+          "id": "GitHub--3",
+          "question": "Find out how much more package storage the Enterprise version has over Team in GitHub Pricing.",
+          "answer_type": "golden"
+        },
+        {
+          "id": "GitHub--4",
+          "question": "Find a popular JavaScript repository created in the last 30 days on GitHub with a Readme file.",
+          "answer_type": "possible"
+        },
+        {
+          "id": "GitHub--5",
+          "question": "Find a Python repository on GitHub that has been updated in the past 2 days and has at least 500 stars.",
+          "answer_type": "possible"
+        }
+      ],
+      "real_time_examples": [
+        {
+          "id": "GitHub--1",
+          "question": "Search for an open-source repository for machine learning in Python, specifically focused on decision trees, updated within the last 2 days."
+        },
+        {
+          "id": "GitHub--7",
+          "question": "Find the official GitHub repository for ALBERT and show me what files the repo changed in the most recent commit."
+        },
+        {
+          "id": "GitHub--8",
+          "question": "Look up the latest stable release version of Vuex and find out when it was published."
+        },
+        {
+          "id": "GitHub--12",
+          "question": "Retrieve the latest release from the 'electron/electron' repository on GitHub and note down the release version number and date."
+        },
+        {
+          "id": "GitHub--13",
+          "question": "Identify the latest top-trending open-source project in the category of 'Machine Learning' on GitHub, and check the number of stars it has received."
+        },
+        {
+          "id": "GitHub--15",
+          "question": "Locate a repository on GitHub related to 'quantum computing' that has been updated within the last week and has at least 50 stars. Provide a brief description of the project."
+        }
+      ],
+      "stateful_examples": [
+        {
+          "id": "GitHub--4",
+          "question": "Find a popular JavaScript repository created in the last 30 days on GitHub with a Readme file."
+        },
+        {
+          "id": "GitHub--9",
+          "question": "Locate a repository on GitHub that was created in the last week and has 50 or more stars. Provide brief details about the project's purpose and its programming language."
+        },
+        {
+          "id": "GitHub--11",
+          "question": "Find a newly created open-source project on GitHub related to 'climate change' that has been initiated in January 2023; check the main programming language used and the project's description."
+        },
+        {
+          "id": "GitHub--28",
+          "question": "Identify the most starred JavaScript repositories on GitHub that were created after 2023-12-29."
+        },
+        {
+          "id": "GitHub--31",
+          "question": "Find the official GitHub repository for TensorFlow and list the files changed in the last commit. Tell me the name of changed files, total additions and total deletion."
+        },
+        {
+          "id": "GitHub--36",
+          "question": "Identify a new open-source project on GitHub related to 'AI agriculture' that created in 2022, and note its main programming language and description."
+        }
+      ]
+    },
+    {
+      "site": "Google Flights",
+      "count": 42,
+      "answer_types": {
+        "possible": 42
+      },
+      "capabilities": {
+        "筛选排序": 26,
+        "状态操作": 7,
+        "摘要问答": 12,
+        "浏览导航": 5,
+        "时效/实时": 1,
+        "查找检索": 31,
+        "比较计算": 9
+      },
+      "avg_question_len": 148.2,
+      "examples": [
+        {
+          "id": "Google Flights--0",
+          "question": "Book a journey with return option on same day from Edinburg to Manchester on December 28th and show me the lowest price option available.",
+          "answer_type": "possible"
+        },
+        {
+          "id": "Google Flights--1",
+          "question": "Show me the list of one-way flights today (February 17, 2024) from Chicago to Paris.",
+          "answer_type": "possible"
+        },
+        {
+          "id": "Google Flights--2",
+          "question": "Find the lowest fare from all eligible one-way flights for 1 adult from JFK to Heathrow on Jan. 22.",
+          "answer_type": "possible"
+        },
+        {
+          "id": "Google Flights--3",
+          "question": "Search for the one-way flight available from Calgary to New York on Jan. 1st with the lowest carbon dioxide emissions.",
+          "answer_type": "possible"
+        },
+        {
+          "id": "Google Flights--4",
+          "question": "Search for one-way flights from New York to London on Dec. 26th and filter the results to show only non-stop flights.",
+          "answer_type": "possible"
+        },
+        {
+          "id": "Google Flights--5",
+          "question": "Find flights from Chicago to London on 20 December and return on 23 December.",
+          "answer_type": "possible"
+        }
+      ],
+      "real_time_examples": [
+        {
+          "id": "Google Flights--1",
+          "question": "Show me the list of one-way flights today (February 17, 2024) from Chicago to Paris."
+        }
+      ],
+      "stateful_examples": [
+        {
+          "id": "Google Flights--0",
+          "question": "Book a journey with return option on same day from Edinburg to Manchester on December 28th and show me the lowest price option available."
+        },
+        {
+          "id": "Google Flights--6",
+          "question": "Search for a flight on December 19 and return on December 26 from Tel Aviv to Venice and Select First Class."
+        },
+        {
+          "id": "Google Flights--11",
+          "question": "Compare the prices for round-trip flights from New York to Tokyo for a departure on February 10, 2024, and a return on February 24, 2024, and select the option with the least number of stops."
+        },
+        {
+          "id": "Google Flights--20",
+          "question": "Book a round-trip flight from San Francisco to Berlin, departing on March 5, 2024, and returning on March 12, 2024, and find the option with the shortest total travel time."
+        },
+        {
+          "id": "Google Flights--22",
+          "question": "Find a round-trip flight from Rio de Janeiro to Los Angeles, leaving on March 15, 2024, and returning on March 22, 2024, and select the option with the least carbon dioxide emissions."
+        },
+        {
+          "id": "Google Flights--24",
+          "question": "Compare prices for economy class round-trip flights from Dubai to Rome, departing on March 1, 2024, and returning on March 8, 2024, and select the option with the fewest stops."
+        }
+      ]
+    },
+    {
+      "site": "Google Map",
+      "count": 41,
+      "answer_types": {
+        "possible": 32,
+        "golden": 9
+      },
+      "capabilities": {
+        "查找检索": 34,
+        "筛选排序": 8,
+        "摘要问答": 9,
+        "地图路线": 21,
+        "其他": 2,
+        "浏览导航": 5,
+        "状态操作": 2,
+        "文档详情": 4,
+        "时效/实时": 2
+      },
+      "avg_question_len": 85.7,
+      "examples": [
+        {
+          "id": "Google Map--0",
+          "question": "Find 5 beauty salons with ratings greater than 4.8 in Seattle, WA.",
+          "answer_type": "possible"
+        },
+        {
+          "id": "Google Map--1",
+          "question": "Tell me one bus stop that is nearest to the intersection of main street and Amherst street in Altavista.",
+          "answer_type": "golden"
+        },
+        {
+          "id": "Google Map--2",
+          "question": "Find Apple Stores close to zip code 90028",
+          "answer_type": "possible"
+        },
+        {
+          "id": "Google Map--3",
+          "question": "The least amount of walking from Central Park Zoo to the Broadway Theater in New York.",
+          "answer_type": "possible"
+        },
+        {
+          "id": "Google Map--4",
+          "question": "Plan a trip from Boston Logan Airport to North Station.",
+          "answer_type": "possible"
+        },
+        {
+          "id": "Google Map--5",
+          "question": "Search for a parking garage near Thalia Hall in Chicago that isn't open 24 hours.",
+          "answer_type": "possible"
+        }
+      ],
+      "real_time_examples": [
+        {
+          "id": "Google Map--17",
+          "question": "Search for locksmiths open now but not open 24 hours in Texas City."
+        },
+        {
+          "id": "Google Map--32",
+          "question": "Search for plumbers available now but not open 24 hours in Orlando, FL."
+        }
+      ],
+      "stateful_examples": [
+        {
+          "id": "Google Map--13",
+          "question": "Find a parking lot in Gloucester and book a ride from there to North Plymouth, view the map to understand the route better."
+        },
+        {
+          "id": "Google Map--35",
+          "question": "Search for a natural reserve in Texas called Big Bend National Park and gather its Basic Information."
+        }
+      ]
+    },
+    {
+      "site": "Google Search",
+      "count": 43,
+      "answer_types": {
+        "golden": 16,
+        "possible": 27
+      },
+      "capabilities": {
+        "查找检索": 27,
+        "时效/实时": 20,
+        "筛选排序": 8,
+        "摘要问答": 12,
+        "浏览导航": 3,
+        "文档详情": 1,
+        "其他": 2,
+        "状态操作": 1,
+        "比较计算": 1
+      },
+      "avg_question_len": 87.1,
+      "examples": [
+        {
+          "id": "Google Search--0",
+          "question": "Find the initial release date for Guardians of the Galaxy Vol. 3 the movie.",
+          "answer_type": "golden"
+        },
+        {
+          "id": "Google Search--1",
+          "question": "Find Kevin Durant's bio",
+          "answer_type": "possible"
+        },
+        {
+          "id": "Google Search--2",
+          "question": "Search for the latest news title about the NBA team the Los Angeles Lakers.",
+          "answer_type": "possible"
+        },
+        {
+          "id": "Google Search--3",
+          "question": "Show me a list of comedy movies, sorted by user ratings. Show me the Top 5 movies.",
+          "answer_type": "golden"
+        },
+        {
+          "id": "Google Search--4",
+          "question": "Show most played games in Steam. And tell me the number of players in In game at this time",
+          "answer_type": "possible"
+        },
+        {
+          "id": "Google Search--5",
+          "question": "find the score of the latest nba game played by the phoenix suns.",
+          "answer_type": "possible"
+        }
+      ],
+      "real_time_examples": [
+        {
+          "id": "Google Search--2",
+          "question": "Search for the latest news title about the NBA team the Los Angeles Lakers."
+        },
+        {
+          "id": "Google Search--5",
+          "question": "find the score of the latest nba game played by the phoenix suns."
+        },
+        {
+          "id": "Google Search--10",
+          "question": "Find the no. 1 weekly charts ranked artist based on Billboard and tell me 10 most played song by this artist until now."
+        },
+        {
+          "id": "Google Search--15",
+          "question": "Please try to log in to twitter with email: webagenttest@testmail.com and password: test123456. Let me know if the login was successful."
+        },
+        {
+          "id": "Google Search--16",
+          "question": "How many members are there in the OpenAI community on Reddit, and what is the hottest news right now?"
+        },
+        {
+          "id": "Google Search--18",
+          "question": "When and where the most recent World Cup was held, and which team was the winner?"
+        }
+      ],
+      "stateful_examples": [
+        {
+          "id": "Google Search--15",
+          "question": "Please try to log in to twitter with email: webagenttest@testmail.com and password: test123456. Let me know if the login was successful."
+        }
+      ]
+    },
+    {
+      "site": "Huggingface",
+      "count": 43,
+      "answer_types": {
+        "possible": 26,
+        "golden": 17
+      },
+      "capabilities": {
+        "查找检索": 27,
+        "其他": 4,
+        "浏览导航": 8,
+        "摘要问答": 13,
+        "时效/实时": 11,
+        "筛选排序": 3,
+        "比较计算": 1,
+        "状态操作": 3,
+        "文档详情": 7
+      },
+      "avg_question_len": 130.6,
+      "examples": [
+        {
+          "id": "Huggingface--0",
+          "question": "Find a pre-trained natural language processing model on Hugging Face that can perform sentiment analysis, and make sure the model's last update is within March 2023.",
+          "answer_type": "possible"
+        },
+        {
+          "id": "Huggingface--1",
+          "question": "Use the Huggingface Inference API to generate a short story about a dragon and a wizard.",
+          "answer_type": "possible"
+        },
+        {
+          "id": "Huggingface--2",
+          "question": "Discover three new and popular open-source NLP models for language translation released in the past month on Huggingface.",
+          "answer_type": "possible"
+        },
+        {
+          "id": "Huggingface--3",
+          "question": "Look up a model with a license of cc-by-sa-4.0 with the most likes on Hugging face.",
+          "answer_type": "possible"
+        },
+        {
+          "id": "Huggingface--4",
+          "question": "Locate an open-source conversational AI model on Hugging Face, trained in English and list its main features and applications.",
+          "answer_type": "possible"
+        },
+        {
+          "id": "Huggingface--5",
+          "question": "Find a model released on Hugging Face for recipe generation. Retrieve the information of the model, including its name, model size and tensor type.",
+          "answer_type": "possible"
+        }
+      ],
+      "real_time_examples": [
+        {
+          "id": "Huggingface--7",
+          "question": "Which is the most downloaded audio related dataset on Hugging face currently."
+        },
+        {
+          "id": "Huggingface--11",
+          "question": "Identify the latest updated image to video model available on Huggingface and summarize its main features."
+        },
+        {
+          "id": "Huggingface--12",
+          "question": "Find the most recently updated machine learning model on Huggingface which focuses on Error Correction."
+        },
+        {
+          "id": "Huggingface--16",
+          "question": "Find information on the latest (as of today's date) pre-trained language model on Huggingface suitable for text classification and briefly describe its intended use case and architecture."
+        },
+        {
+          "id": "Huggingface--17",
+          "question": "Find the most recently updated open-source project related to natural language processing on the Huggingface platform. Provide the project's name, creator, and a brief description of its functionality."
+        },
+        {
+          "id": "Huggingface--19",
+          "question": "Explore and summarize the features of the most recent open-source NLP model released by Hugging Face for English text summarization."
+        }
+      ],
+      "stateful_examples": [
+        {
+          "id": "Huggingface--15",
+          "question": "Identify the most downloaded models on Hugging face that use the PaddlePaddle library."
+        },
+        {
+          "id": "Huggingface--18",
+          "question": "Look up TRL's forward modelling in the hugging face documentation on how to add a margin to a loss."
+        },
+        {
+          "id": "Huggingface--38",
+          "question": "Investigate the 'transformers' library in the Hugging Face documentation, focusing on how to add new tokens to a tokenizer."
+        }
+      ]
+    },
+    {
+      "site": "Wolfram Alpha",
+      "count": 46,
+      "answer_types": {
+        "golden": 34,
+        "possible": 12
+      },
+      "capabilities": {
+        "其他": 19,
+        "比较计算": 13,
+        "摘要问答": 5,
+        "时效/实时": 5,
+        "筛选排序": 3,
+        "查找检索": 3,
+        "状态操作": 2
+      },
+      "avg_question_len": 90.4,
+      "examples": [
+        {
+          "id": "Wolfram Alpha--0",
+          "question": "derivative of x^2 when x=5.6",
+          "answer_type": "golden"
+        },
+        {
+          "id": "Wolfram Alpha--1",
+          "question": "Give a constraint on the set of inequalities for the inner region of the pentagram.",
+          "answer_type": "possible"
+        },
+        {
+          "id": "Wolfram Alpha--2",
+          "question": "Calculate 3^71 and retain 5 significant figures in scientific notation.",
+          "answer_type": "golden"
+        },
+        {
+          "id": "Wolfram Alpha--3",
+          "question": "Let g(x) be the integral of x^2 cos(2x). Write the expression of g(x).",
+          "answer_type": "golden"
+        },
+        {
+          "id": "Wolfram Alpha--4",
+          "question": "Pack 24 circles in a circle radius r. Compare Densest known packing and Square packing. Then tell me the radius of the inner circles.",
+          "answer_type": "golden"
+        },
+        {
+          "id": "Wolfram Alpha--5",
+          "question": "Show the solution of y\"(z) + sin(y(z)) = 0 from wolframalpha.",
+          "answer_type": "golden"
+        }
+      ],
+      "real_time_examples": [
+        {
+          "id": "Wolfram Alpha--4",
+          "question": "Pack 24 circles in a circle radius r. Compare Densest known packing and Square packing. Then tell me the radius of the inner circles."
+        },
+        {
+          "id": "Wolfram Alpha--12",
+          "question": "Which character in unicode 8900 to 8920 looks like a snowflake"
+        },
+        {
+          "id": "Wolfram Alpha--13",
+          "question": "What is 10,000 US dollars worth now in 1980 and in 1970?"
+        },
+        {
+          "id": "Wolfram Alpha--16",
+          "question": "Weight lose for a male with current weight 90 kg, 40 year old, 175 cm. If he intakes 1500 calories every day, how long will it take to lose 17 kg."
+        },
+        {
+          "id": "Wolfram Alpha--31",
+          "question": "Using Wolfram Alpha, determine the current temperature and wind speed in Chicago, IL."
+        }
+      ],
+      "stateful_examples": [
+        {
+          "id": "Wolfram Alpha--29",
+          "question": "Create a plot of cat curve using wolfram alpha."
+        },
+        {
+          "id": "Wolfram Alpha--41",
+          "question": "What is the approximate Heart Rate Reserve of a 50 year old man who has a heart rate of 60bpm at rest."
+        }
+      ]
+    }
+  ]
+}

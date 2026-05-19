@@ -1,0 +1,263 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>WebVoyager 原始任务覆盖审计</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <main class="doc-main">
+    <article class="doc-article">
+      <a class="doc-back" href="index.html#variant-playbook">返回 Dashboard</a>
+      <p class="eyebrow">WebVoyager Coverage</p>
+      <h1>WebVoyager 原始 benchmark 考了什么</h1>
+      <p class="doc-lede">这页统计 WebVoyager 原始 643 条任务覆盖了哪些站点、哪些能力、哪些答案口径，以及哪些题有时效/实时风险或状态操作要求。它用来判断 WebHarbor 继续造数据时应该补覆盖，还是扩难度。</p>
+      <section class="doc-section">
+        <h2>总览</h2>
+        <div class="doc-grid compact">
+          <div class="doc-card"><h3>任务数</h3><p>643</p></div>
+          <div class="doc-card"><h3>站点数</h3><p>15</p></div>
+          <div class="doc-card"><h3>Golden</h3><p>143</p></div>
+          <div class="doc-card"><h3>Possible</h3><p>500</p></div>
+        </div>
+      </section>
+      <section class="doc-section">
+        <h2>站点能力矩阵</h2>
+        <div class="doc-table-wrap">
+          <table class="doc-table">
+            <thead><tr><th>站点</th><th>题数</th><th>答案口径</th><th>平均题长</th><th>能力标签计数</th></tr></thead>
+            <tbody><tr><td>Allrecipes</td><td>45</td><td>possible: 41, golden: 4</td><td>158.0</td><td>查找检索: 40<br>文档详情: 36<br>筛选排序: 35<br>摘要问答: 24<br>状态操作: 2<br>时效/实时: 1<br>地图路线: 1<br>浏览导航: 1</td></tr><tr><td>Amazon</td><td>41</td><td>possible: 40, golden: 1</td><td>128.8</td><td>筛选排序: 35<br>查找检索: 32<br>状态操作: 8<br>文档详情: 8<br>摘要问答: 7<br>浏览导航: 5<br>比较计算: 1</td></tr><tr><td>Apple</td><td>43</td><td>possible: 36, golden: 7</td><td>101.6</td><td>时效/实时: 19<br>查找检索: 18<br>比较计算: 9<br>状态操作: 8<br>摘要问答: 6<br>文档详情: 4<br>筛选排序: 4<br>其他: 4<br>地图路线: 1<br>浏览导航: 1</td></tr><tr><td>ArXiv</td><td>43</td><td>possible: 27, golden: 16</td><td>124.8</td><td>查找检索: 31<br>时效/实时: 20<br>摘要问答: 18<br>文档详情: 11<br>筛选排序: 6<br>其他: 4<br>比较计算: 3<br>浏览导航: 3<br>状态操作: 2<br>地图路线: 1</td></tr><tr><td>BBC News</td><td>42</td><td>possible: 40, golden: 2</td><td>111.4</td><td>查找检索: 30<br>时效/实时: 29<br>摘要问答: 20<br>筛选排序: 8<br>浏览导航: 6<br>文档详情: 2<br>状态操作: 1</td></tr><tr><td>Booking</td><td>44</td><td>possible: 42, golden: 2</td><td>147.0</td><td>查找检索: 35<br>筛选排序: 23<br>状态操作: 14<br>摘要问答: 10<br>地图路线: 7<br>文档详情: 7<br>浏览导航: 5<br>时效/实时: 1<br>比较计算: 1</td></tr><tr><td>Cambridge Dictionary</td><td>43</td><td>golden: 9, possible: 34</td><td>122.0</td><td>查找检索: 36<br>文档详情: 20<br>摘要问答: 11<br>浏览导航: 4<br>筛选排序: 4<br>其他: 2<br>比较计算: 1<br>状态操作: 1</td></tr><tr><td>Coursera</td><td>42</td><td>possible: 40, golden: 2</td><td>159.2</td><td>查找检索: 36<br>摘要问答: 18<br>筛选排序: 11<br>浏览导航: 6<br>文档详情: 5<br>比较计算: 4<br>时效/实时: 3<br>其他: 1<br>状态操作: 1</td></tr><tr><td>ESPN</td><td>44</td><td>possible: 34, golden: 10</td><td>107.4</td><td>时效/实时: 25<br>查找检索: 22<br>摘要问答: 13<br>筛选排序: 11<br>其他: 5<br>浏览导航: 3<br>文档详情: 1<br>比较计算: 1</td></tr><tr><td>GitHub</td><td>41</td><td>golden: 14, possible: 27</td><td>116.7</td><td>查找检索: 35<br>浏览导航: 15<br>时效/实时: 12<br>筛选排序: 12<br>摘要问答: 12<br>状态操作: 7<br>比较计算: 3<br>其他: 1<br>文档详情: 1</td></tr><tr><td>Google Flights</td><td>42</td><td>possible: 42</td><td>148.2</td><td>查找检索: 31<br>筛选排序: 26<br>摘要问答: 12<br>比较计算: 9<br>状态操作: 7<br>浏览导航: 5<br>时效/实时: 1</td></tr><tr><td>Google Map</td><td>41</td><td>possible: 32, golden: 9</td><td>85.7</td><td>查找检索: 34<br>地图路线: 21<br>摘要问答: 9<br>筛选排序: 8<br>浏览导航: 5<br>文档详情: 4<br>其他: 2<br>状态操作: 2<br>时效/实时: 2</td></tr><tr><td>Google Search</td><td>43</td><td>golden: 16, possible: 27</td><td>87.1</td><td>查找检索: 27<br>时效/实时: 20<br>摘要问答: 12<br>筛选排序: 8<br>浏览导航: 3<br>其他: 2<br>文档详情: 1<br>状态操作: 1<br>比较计算: 1</td></tr><tr><td>Huggingface</td><td>43</td><td>possible: 26, golden: 17</td><td>130.6</td><td>查找检索: 27<br>摘要问答: 13<br>时效/实时: 11<br>浏览导航: 8<br>文档详情: 7<br>其他: 4<br>筛选排序: 3<br>状态操作: 3<br>比较计算: 1</td></tr><tr><td>Wolfram Alpha</td><td>46</td><td>golden: 34, possible: 12</td><td>90.4</td><td>其他: 19<br>比较计算: 13<br>摘要问答: 5<br>时效/实时: 5<br>筛选排序: 3<br>查找检索: 3<br>状态操作: 2</td></tr></tbody>
+          </table>
+        </div>
+      </section>
+      
+        <section class="doc-section audit-site">
+          <h2>Allrecipes</h2>
+          <div class="doc-grid compact">
+            <div class="doc-card"><h3>题数</h3><p>45</p></div>
+            <div class="doc-card"><h3>Golden</h3><p>4</p></div>
+            <div class="doc-card"><h3>Possible</h3><p>41</p></div>
+          </div>
+          <h3>原题样例</h3>
+          <ul><li><code>Allrecipes--0</code> Provide a recipe for vegetarian lasagna with more than 100 reviews and a rating of at least 4.5 stars suitable for 6 people. <span class='tag'>possible</span></li><li><code>Allrecipes--1</code> Find a recipe for a vegetarian lasagna that has at least a four-star rating and uses zucchini. <span class='tag'>possible</span></li><li><code>Allrecipes--2</code> Find a recipe for a vegetarian lasagna under 600 calories per serving that has a prep time of less than 1 hour. <span class='tag'>possible</span></li><li><code>Allrecipes--3</code> Locate a recipe for vegan chocolate chip cookies with over 60 reviews and a rating of at least 4.5 stars on Allrecipes. <span class='tag'>golden</span></li><li><code>Allrecipes--4</code> Find a recipe for Baked Salmon that takes less than 30 minutes to prepare and has at least a 4 star rating based on user reviews. <span class='tag'>possible</span></li><li><code>Allrecipes--5</code> Search for a popular Pasta Sauce with more than 1000 reviews and a rating above 4 stars. Create a shopping list of ingredients for this recipe. <span class='tag'>possible</span></li></ul>
+          <h3>时效/实时风险样例</h3>
+          <ul><li><code>Allrecipes--17</code> Find the Easy Vegetarian Spinach Lasagna recipe on Allrecipes and tell me what the latest review says.</li></ul>
+          <h3>状态操作样例</h3>
+          <ul><li><code>Allrecipes--5</code> Search for a popular Pasta Sauce with more than 1000 reviews and a rating above 4 stars. Create a shopping list of ingredients for this recipe.</li><li><code>Allrecipes--25</code> Find a popular quinoa salad recipe on Allrecipes with more than 500 reviews and a rating above 4 stars. Create a shopping list of ingredients for this recipe and include the total cooking and preparation time.</li></ul>
+        </section>
+        
+        <section class="doc-section audit-site">
+          <h2>Amazon</h2>
+          <div class="doc-grid compact">
+            <div class="doc-card"><h3>题数</h3><p>41</p></div>
+            <div class="doc-card"><h3>Golden</h3><p>1</p></div>
+            <div class="doc-card"><h3>Possible</h3><p>40</p></div>
+          </div>
+          <h3>原题样例</h3>
+          <ul><li><code>Amazon--0</code> Search an Xbox Wireless controller with green color and rated above 4 stars. <span class='tag'>possible</span></li><li><code>Amazon--1</code> Search for women&#x27;s golf polos in m size, priced between 50 to 75 dollars, and save the lowest priced among results. <span class='tag'>possible</span></li><li><code>Amazon--2</code> Find a gaming desktop with Windows 11 Home, and the disk size should be 1TB. <span class='tag'>possible</span></li><li><code>Amazon--3</code> Find climbing gears and sort the results by price high to low. Answer the first 3 results after sorting. <span class='tag'>possible</span></li><li><code>Amazon--4</code> Find the used Nintendo Switch Lite on Amazon then filter by &#x27;Used - Good&#x27;, tell me the cheapest one that is &#x27;Used - Good&#x27;. <span class='tag'>possible</span></li><li><code>Amazon--5</code> Find a Blue iPhone 12 Pro 128gb and add to cart. <span class='tag'>possible</span></li></ul>
+          <h3>时效/实时风险样例</h3>
+          <ul><li>无明显时效题样例</li></ul>
+          <h3>状态操作样例</h3>
+          <ul><li><code>Amazon--1</code> Search for women&#x27;s golf polos in m size, priced between 50 to 75 dollars, and save the lowest priced among results.</li><li><code>Amazon--5</code> Find a Blue iPhone 12 Pro 128gb and add to cart.</li><li><code>Amazon--15</code> Find a pair of mens running shoes in black, size 7, 4+ stars and under $50 and add them to my cart on Amazon.</li><li><code>Amazon--19</code> Look for an English language book on roman empire history in the Amazon Kindle store. Sort by newests arrivals and look for a title that will be released within a month.</li><li><code>Amazon--20</code> Search for a wireless ergonomic keyboard with backlighting and a rating of at least 4 stars. The price should be between $40 to $60. Save the product with the 500+ customer reviews.</li><li><code>Amazon--27</code> Look for a USB-C hub on Amazon compatible with MacBook Pro, featuring at least 4 ports, including HDMI and SD card reader. The price should be under $50. Select the one after sorting by Best Sellers.</li></ul>
+        </section>
+        
+        <section class="doc-section audit-site">
+          <h2>Apple</h2>
+          <div class="doc-grid compact">
+            <div class="doc-card"><h3>题数</h3><p>43</p></div>
+            <div class="doc-card"><h3>Golden</h3><p>7</p></div>
+            <div class="doc-card"><h3>Possible</h3><p>36</p></div>
+          </div>
+          <h3>原题样例</h3>
+          <ul><li><code>Apple--0</code> Compare the prices of the latest models of MacBook Air available on Apple&#x27;s website. <span class='tag'>possible</span></li><li><code>Apple--1</code> Research the new features of the iOS 17 on Apple support and check its compatibility with the iPhone 12. <span class='tag'>possible</span></li><li><code>Apple--2</code> Compare the prices and chips for the iPhone 14 Pro and iPhone 15 Pro models directly from Apple&#x27;s website. <span class='tag'>possible</span></li><li><code>Apple--3</code> Find the latest model of the iPhone and compare the price and screen size between the pro and pro max. <span class='tag'>possible</span></li><li><code>Apple--4</code> How much does it cost to buy a Macbook pro, 16-inch, Apple M3 Max chip with 16-core CPU, 40-core GPU, 64GB unified memory, 1TB SSD. <span class='tag'>possible</span></li><li><code>Apple--5</code> Check the release date and price for the latest version of the iPhone. <span class='tag'>possible</span></li></ul>
+          <h3>时效/实时风险样例</h3>
+          <ul><li><code>Apple--0</code> Compare the prices of the latest models of MacBook Air available on Apple&#x27;s website.</li><li><code>Apple--3</code> Find the latest model of the iPhone and compare the price and screen size between the pro and pro max.</li><li><code>Apple--5</code> Check the release date and price for the latest version of the iPhone.</li><li><code>Apple--6</code> Find AirPods on Apple and how many types are currently available.</li><li><code>Apple--8</code> Identify and list the specifications of the latest iPad model released by Apple, including its storage options, processor type, and display features.</li><li><code>Apple--9</code> Check the Apple Store for the availability of the latest iPhone model and schedule an in-store pickup at the nearest Apple Store for January 10, 2024.</li></ul>
+          <h3>状态操作样例</h3>
+          <ul><li><code>Apple--0</code> Compare the prices of the latest models of MacBook Air available on Apple&#x27;s website.</li><li><code>Apple--4</code> How much does it cost to buy a Macbook pro, 16-inch, Apple M3 Max chip with 16-core CPU, 40-core GPU, 64GB unified memory, 1TB SSD.</li><li><code>Apple--10</code> Find information on the latest (as of today&#x27;s date) MacBook model, including its key features such as processor type, memory size, and storage capacity.</li><li><code>Apple--13</code> How many colors does the latest MacBook Air come in?</li><li><code>Apple--14</code> Identify the upgrade options available for the cheapest base model of the MacBook Pro 14-inch with M3 chip, and calculate the total price difference from the base model to the maximum upgrade (no Pre-Installed Software) offered by Apple.</li><li><code>Apple--15</code> On Apple&#x27;s website, how many different types of keyboards are available when customizing your 14-inch MacBook Pro?</li></ul>
+        </section>
+        
+        <section class="doc-section audit-site">
+          <h2>ArXiv</h2>
+          <div class="doc-grid compact">
+            <div class="doc-card"><h3>题数</h3><p>43</p></div>
+            <div class="doc-card"><h3>Golden</h3><p>16</p></div>
+            <div class="doc-card"><h3>Possible</h3><p>27</p></div>
+          </div>
+          <h3>原题样例</h3>
+          <ul><li><code>ArXiv--0</code> Search for the latest preprints about &#x27;quantum computing&#x27;. <span class='tag'>possible</span></li><li><code>ArXiv--1</code> Search for the latest research papers on quantum computing submitted to ArXiv within the last two days. <span class='tag'>possible</span></li><li><code>ArXiv--2</code> Look up the most recent papers related to &#x27;cs.CL&#x27;, select one and show its abstract. <span class='tag'>possible</span></li><li><code>ArXiv--3</code> Locate the most recent research paper about &#x27;Algebraic Topology&#x27; under Mathematics published on ArXiv. Provide the title of the paper, the name of the authors, and the abstract. <span class='tag'>possible</span></li><li><code>ArXiv--4</code> Find the most recent research papers in Astrophysics of Galaxies. How many papers have been announced in the last day? <span class='tag'>possible</span></li><li><code>ArXiv--5</code> Search papers about &quot;quantum computing&quot; which has been submitted to the Quantum Physics category on ArXiv. How many results in total. What if search in all archives? <span class='tag'>possible</span></li></ul>
+          <h3>时效/实时风险样例</h3>
+          <ul><li><code>ArXiv--0</code> Search for the latest preprints about &#x27;quantum computing&#x27;.</li><li><code>ArXiv--1</code> Search for the latest research papers on quantum computing submitted to ArXiv within the last two days.</li><li><code>ArXiv--2</code> Look up the most recent papers related to &#x27;cs.CL&#x27;, select one and show its abstract.</li><li><code>ArXiv--3</code> Locate the most recent research paper about &#x27;Algebraic Topology&#x27; under Mathematics published on ArXiv. Provide the title of the paper, the name of the authors, and the abstract.</li><li><code>ArXiv--4</code> Find the most recent research papers in Astrophysics of Galaxies. How many papers have been announced in the last day?</li><li><code>ArXiv--7</code> Find the most recent paper submitted on machine learning in the Computer Science category posted on ArXiv.</li></ul>
+          <h3>状态操作样例</h3>
+          <ul><li><code>ArXiv--2</code> Look up the most recent papers related to &#x27;cs.CL&#x27;, select one and show its abstract.</li><li><code>ArXiv--41</code> Find the button to share arxiv non-profit store and follow the QR code to share the shop. Then add arXiv Forever short sleeve (XL) to your cart.</li></ul>
+        </section>
+        
+        <section class="doc-section audit-site">
+          <h2>BBC News</h2>
+          <div class="doc-grid compact">
+            <div class="doc-card"><h3>题数</h3><p>42</p></div>
+            <div class="doc-card"><h3>Golden</h3><p>2</p></div>
+            <div class="doc-card"><h3>Possible</h3><p>40</p></div>
+          </div>
+          <h3>原题样例</h3>
+          <ul><li><code>BBC News--0</code> Find a report on the BBC News website about recent developments in renewable energy technologies in the UK. <span class='tag'>possible</span></li><li><code>BBC News--1</code> Read the latest health-related news article published on BBC News and summarize the key points discussed. <span class='tag'>possible</span></li><li><code>BBC News--2</code> Read the latest article regarding the environmental impacts of deforestation published within the last two days. <span class='tag'>possible</span></li><li><code>BBC News--3</code> Check the leaderboard for Golf&#x27;s DP World Tour in the SPORT section, what was the name of the most recent tournament, and how many teams have a Total of -10 strokes. <span class='tag'>possible</span></li><li><code>BBC News--4</code> Find the latest article regarding the economic implications of climate change in Europe as reported by BBC News and summarize the central points. <span class='tag'>possible</span></li><li><code>BBC News--5</code> Find the article &quot;What is climate change? A really simple guide&quot; and use it to answer what human activities are causing climate change. <span class='tag'>golden</span></li></ul>
+          <h3>时效/实时风险样例</h3>
+          <ul><li><code>BBC News--0</code> Find a report on the BBC News website about recent developments in renewable energy technologies in the UK.</li><li><code>BBC News--1</code> Read the latest health-related news article published on BBC News and summarize the key points discussed.</li><li><code>BBC News--2</code> Read the latest article regarding the environmental impacts of deforestation published within the last two days.</li><li><code>BBC News--3</code> Check the leaderboard for Golf&#x27;s DP World Tour in the SPORT section, what was the name of the most recent tournament, and how many teams have a Total of -10 strokes.</li><li><code>BBC News--4</code> Find the latest article regarding the economic implications of climate change in Europe as reported by BBC News and summarize the central points.</li><li><code>BBC News--6</code> Find the top story from BBC News in the technology section for today.</li></ul>
+          <h3>状态操作样例</h3>
+          <ul><li><code>BBC News--37</code> Identify the latest book review featured in the Culture section and provide the title and author of the book.</li></ul>
+        </section>
+        
+        <section class="doc-section audit-site">
+          <h2>Booking</h2>
+          <div class="doc-grid compact">
+            <div class="doc-card"><h3>题数</h3><p>44</p></div>
+            <div class="doc-card"><h3>Golden</h3><p>2</p></div>
+            <div class="doc-card"><h3>Possible</h3><p>42</p></div>
+          </div>
+          <h3>原题样例</h3>
+          <ul><li><code>Booking--0</code> Find a Mexico hotel with deals for December 25-26. <span class='tag'>possible</span></li><li><code>Booking--1</code> Find the cheapest available hotel room for a three night stay from 1st Jan in Jakarta. The room is for 2 adults, just answer the cheapest hotel room and the price. <span class='tag'>possible</span></li><li><code>Booking--2</code> Find a hotel in Ohio From December 20th to December 23th for 3 adults and 2 rooms. <span class='tag'>possible</span></li><li><code>Booking--3</code> Find a hotel with 4 star and above rating in Los Angeles for 3 days from Dec 18th. <span class='tag'>possible</span></li><li><code>Booking--4</code> Search for the cheapest Hotel near Kashi Vishwanath Temple that offer breakfast from Dec 25th - Dec 26th. <span class='tag'>possible</span></li><li><code>Booking--5</code> Search a hotel with free WiFi and air conditioning in Bali from Jan 1 to Jan 4, 2024. <span class='tag'>possible</span></li></ul>
+          <h3>时效/实时风险样例</h3>
+          <ul><li><code>Booking--33</code> Find the Customer Service on the Booking website, browse the questions about cancellation, and tell me &#x27;how do I know whether my booking has been cancelled&#x27;.</li></ul>
+          <h3>状态操作样例</h3>
+          <ul><li><code>Booking--6</code> Book one room which provides breakfast, and airport shuttle from Jan 22 to 25 in Los Angeles.</li><li><code>Booking--10</code> Find a well-reviewed hotel in Paris with available bookings suitable for a couple (2 adults) on Valentine&#x27;s Day week, February 14-21, 2024, that offers free cancellation options.</li><li><code>Booking--11</code> Reserve a hotel in downtown Chicago with a rating of 9 or higher for a stay from March 20-27, 2024, which offers free cancellation and includes a fitness center.</li><li><code>Booking--13</code> Find and book a hotel in Paris with suitable accommodations for a family of four (two adults and two children) offering free cancellation for the dates of February 14-21, 2024.</li><li><code>Booking--14</code> Book a highly-rated hotel with a swimming pool and free WiFi near the Louvre Museum in Paris for the weekend of March 3-5, 2024.</li><li><code>Booking--15</code> Find the highest-rated luxury hotel in Rome available for booking from January 10, 2024, to January 20, 2024, for 2 adults. Include the cost, amenities offered, and customer rating.</li></ul>
+        </section>
+        
+        <section class="doc-section audit-site">
+          <h2>Cambridge Dictionary</h2>
+          <div class="doc-grid compact">
+            <div class="doc-card"><h3>题数</h3><p>43</p></div>
+            <div class="doc-card"><h3>Golden</h3><p>9</p></div>
+            <div class="doc-card"><h3>Possible</h3><p>34</p></div>
+          </div>
+          <h3>原题样例</h3>
+          <ul><li><code>Cambridge Dictionary--0</code> Look up the pronunciation and definition of the word &quot;sustainability&quot; on the Cambridge Dictionary. <span class='tag'>golden</span></li><li><code>Cambridge Dictionary--1</code> Find the pronunciation, definition, and a sample sentence for the word &#x27;serendipity&#x27;. <span class='tag'>possible</span></li><li><code>Cambridge Dictionary--2</code> Look up the pronunciation, definition, and example sentence for the word &quot;ubiquitous&quot; in UK and US English. <span class='tag'>possible</span></li><li><code>Cambridge Dictionary--3</code> Look up the definition, pronunciation, and examples of the word &quot;zeitgeist.&quot; <span class='tag'>possible</span></li><li><code>Cambridge Dictionary--4</code> Look for the British English pronunciation of the word &quot;innovate&quot; and write down the International Phonetic Alphabet (IPA) notation, then find one example sentence provided in the Cambridge Dictionary that uses this word. <span class='tag'>possible</span></li><li><code>Cambridge Dictionary--5</code> Learn the UK and US pronunciation of the word &quot;procrastination&quot;, and find one example sentence that reflects its use in context. <span class='tag'>possible</span></li></ul>
+          <h3>时效/实时风险样例</h3>
+          <ul><li>无明显时效题样例</li></ul>
+          <h3>状态操作样例</h3>
+          <ul><li><code>Cambridge Dictionary--38</code> Go to the Plus section of Cambridge Dictionary, finish a recommended Grammar quiz without login and tell me your final score.</li></ul>
+        </section>
+        
+        <section class="doc-section audit-site">
+          <h2>Coursera</h2>
+          <div class="doc-grid compact">
+            <div class="doc-card"><h3>题数</h3><p>42</p></div>
+            <div class="doc-card"><h3>Golden</h3><p>2</p></div>
+            <div class="doc-card"><h3>Possible</h3><p>40</p></div>
+          </div>
+          <h3>原题样例</h3>
+          <ul><li><code>Coursera--0</code> Find a beginner-level online course about &#x27;3d printing&#x27; which lasts 1-3 months, and is provided by a renowned university. <span class='tag'>possible</span></li><li><code>Coursera--1</code> Search for a beginner-level online course about Python programming, suitable for someone who has no programming experience on Coursera. <span class='tag'>possible</span></li><li><code>Coursera--2</code> Find a Beginner&#x27;s Spanish Specialization on Coursera and show all the courses in this Specialization. <span class='tag'>possible</span></li><li><code>Coursera--3</code> Identify a new course or Specialization on Coursera related to Python Data Science, sort the courses by newest, what the first course is and which institution offers it. <span class='tag'>possible</span></li><li><code>Coursera--4</code> Identify a course or Specialization on Coursera that helps business process management with with a rating 4.7. <span class='tag'>possible</span></li><li><code>Coursera--5</code> Identify a Specialization on Coursera that teaches C++ programming for beginners, provide the name and what the learning outcomes are. <span class='tag'>possible</span></li></ul>
+          <h3>时效/实时风险样例</h3>
+          <ul><li><code>Coursera--0</code> Find a beginner-level online course about &#x27;3d printing&#x27; which lasts 1-3 months, and is provided by a renowned university.</li><li><code>Coursera--20</code> Find an Intermediate-level online course on Coursera about &#x27;Blockchain Technology&#x27; which lasts between 1 to 4 weeks, and is provided by a well-known institution. Also, note the course&#x27;s main goals and the instructor&#x27;s name.</li><li><code>Coursera--36</code> Browse Coursera, which universities offer Master of Advanced Study in Engineering degrees? Tell me what is the latest application deadline for this degree?</li></ul>
+          <h3>状态操作样例</h3>
+          <ul><li><code>Coursera--34</code> Find the course on Coursera named &#x27;Essentials of Global Health&#x27;. Determine the instructor of this course and summarize his bio, note if there are any additional courses he offers on Coursera.</li></ul>
+        </section>
+        
+        <section class="doc-section audit-site">
+          <h2>ESPN</h2>
+          <div class="doc-grid compact">
+            <div class="doc-card"><h3>题数</h3><p>44</p></div>
+            <div class="doc-card"><h3>Golden</h3><p>10</p></div>
+            <div class="doc-card"><h3>Possible</h3><p>34</p></div>
+          </div>
+          <h3>原题样例</h3>
+          <ul><li><code>ESPN--0</code> Look up the current standings for the NBA Eastern Conference on ESPN. <span class='tag'>possible</span></li><li><code>ESPN--1</code> Check the latest articles on ESPN for updates on any trades that occurred in the NBA within the past 2 days. <span class='tag'>possible</span></li><li><code>ESPN--2</code> Show the scores and main highlight of the Milwaukee Bucks game that took place within the last 2 days on ESPN. <span class='tag'>possible</span></li><li><code>ESPN--3</code> Retrieve the final score from the most recent NBA game broadcast on ESPN, including the playing teams&#x27; names and the date of the match. <span class='tag'>possible</span></li><li><code>ESPN--4</code> Check ESPN for the final scores of NBA games that were played yesterday. <span class='tag'>possible</span></li><li><code>ESPN--5</code> Identify the top scorer in the NBA from the latest completed game and note down the points scored, the team they play for, and their position on the team. <span class='tag'>possible</span></li></ul>
+          <h3>时效/实时风险样例</h3>
+          <ul><li><code>ESPN--0</code> Look up the current standings for the NBA Eastern Conference on ESPN.</li><li><code>ESPN--1</code> Check the latest articles on ESPN for updates on any trades that occurred in the NBA within the past 2 days.</li><li><code>ESPN--2</code> Show the scores and main highlight of the Milwaukee Bucks game that took place within the last 2 days on ESPN.</li><li><code>ESPN--3</code> Retrieve the final score from the most recent NBA game broadcast on ESPN, including the playing teams&#x27; names and the date of the match.</li><li><code>ESPN--4</code> Check ESPN for the final scores of NBA games that were played yesterday.</li><li><code>ESPN--5</code> Identify the top scorer in the NBA from the latest completed game and note down the points scored, the team they play for, and their position on the team.</li></ul>
+          <h3>状态操作样例</h3>
+          <ul><li>无明显状态操作题样例</li></ul>
+        </section>
+        
+        <section class="doc-section audit-site">
+          <h2>GitHub</h2>
+          <div class="doc-grid compact">
+            <div class="doc-card"><h3>题数</h3><p>41</p></div>
+            <div class="doc-card"><h3>Golden</h3><p>14</p></div>
+            <div class="doc-card"><h3>Possible</h3><p>27</p></div>
+          </div>
+          <h3>原题样例</h3>
+          <ul><li><code>GitHub--0</code> Search for an open-source project related to &#x27;climate change data visualization&#x27; on GitHub and report the project with the most stars. <span class='tag'>golden</span></li><li><code>GitHub--1</code> Search for an open-source repository for machine learning in Python, specifically focused on decision trees, updated within the last 2 days. <span class='tag'>possible</span></li><li><code>GitHub--2</code> Look for the trending Python repositories on GitHub with most stars. <span class='tag'>possible</span></li><li><code>GitHub--3</code> Find out how much more package storage the Enterprise version has over Team in GitHub Pricing. <span class='tag'>golden</span></li><li><code>GitHub--4</code> Find a popular JavaScript repository created in the last 30 days on GitHub with a Readme file. <span class='tag'>possible</span></li><li><code>GitHub--5</code> Find a Python repository on GitHub that has been updated in the past 2 days and has at least 500 stars. <span class='tag'>possible</span></li></ul>
+          <h3>时效/实时风险样例</h3>
+          <ul><li><code>GitHub--1</code> Search for an open-source repository for machine learning in Python, specifically focused on decision trees, updated within the last 2 days.</li><li><code>GitHub--7</code> Find the official GitHub repository for ALBERT and show me what files the repo changed in the most recent commit.</li><li><code>GitHub--8</code> Look up the latest stable release version of Vuex and find out when it was published.</li><li><code>GitHub--12</code> Retrieve the latest release from the &#x27;electron/electron&#x27; repository on GitHub and note down the release version number and date.</li><li><code>GitHub--13</code> Identify the latest top-trending open-source project in the category of &#x27;Machine Learning&#x27; on GitHub, and check the number of stars it has received.</li><li><code>GitHub--15</code> Locate a repository on GitHub related to &#x27;quantum computing&#x27; that has been updated within the last week and has at least 50 stars. Provide a brief description of the project.</li></ul>
+          <h3>状态操作样例</h3>
+          <ul><li><code>GitHub--4</code> Find a popular JavaScript repository created in the last 30 days on GitHub with a Readme file.</li><li><code>GitHub--9</code> Locate a repository on GitHub that was created in the last week and has 50 or more stars. Provide brief details about the project&#x27;s purpose and its programming language.</li><li><code>GitHub--11</code> Find a newly created open-source project on GitHub related to &#x27;climate change&#x27; that has been initiated in January 2023; check the main programming language used and the project&#x27;s description.</li><li><code>GitHub--28</code> Identify the most starred JavaScript repositories on GitHub that were created after 2023-12-29.</li><li><code>GitHub--31</code> Find the official GitHub repository for TensorFlow and list the files changed in the last commit. Tell me the name of changed files, total additions and total deletion.</li><li><code>GitHub--36</code> Identify a new open-source project on GitHub related to &#x27;AI agriculture&#x27; that created in 2022, and note its main programming language and description.</li></ul>
+        </section>
+        
+        <section class="doc-section audit-site">
+          <h2>Google Flights</h2>
+          <div class="doc-grid compact">
+            <div class="doc-card"><h3>题数</h3><p>42</p></div>
+            <div class="doc-card"><h3>Golden</h3><p>0</p></div>
+            <div class="doc-card"><h3>Possible</h3><p>42</p></div>
+          </div>
+          <h3>原题样例</h3>
+          <ul><li><code>Google Flights--0</code> Book a journey with return option on same day from Edinburg to Manchester on December 28th and show me the lowest price option available. <span class='tag'>possible</span></li><li><code>Google Flights--1</code> Show me the list of one-way flights today (February 17, 2024) from Chicago to Paris. <span class='tag'>possible</span></li><li><code>Google Flights--2</code> Find the lowest fare from all eligible one-way flights for 1 adult from JFK to Heathrow on Jan. 22. <span class='tag'>possible</span></li><li><code>Google Flights--3</code> Search for the one-way flight available from Calgary to New York on Jan. 1st with the lowest carbon dioxide emissions. <span class='tag'>possible</span></li><li><code>Google Flights--4</code> Search for one-way flights from New York to London on Dec. 26th and filter the results to show only non-stop flights. <span class='tag'>possible</span></li><li><code>Google Flights--5</code> Find flights from Chicago to London on 20 December and return on 23 December. <span class='tag'>possible</span></li></ul>
+          <h3>时效/实时风险样例</h3>
+          <ul><li><code>Google Flights--1</code> Show me the list of one-way flights today (February 17, 2024) from Chicago to Paris.</li></ul>
+          <h3>状态操作样例</h3>
+          <ul><li><code>Google Flights--0</code> Book a journey with return option on same day from Edinburg to Manchester on December 28th and show me the lowest price option available.</li><li><code>Google Flights--6</code> Search for a flight on December 19 and return on December 26 from Tel Aviv to Venice and Select First Class.</li><li><code>Google Flights--11</code> Compare the prices for round-trip flights from New York to Tokyo for a departure on February 10, 2024, and a return on February 24, 2024, and select the option with the least number of stops.</li><li><code>Google Flights--20</code> Book a round-trip flight from San Francisco to Berlin, departing on March 5, 2024, and returning on March 12, 2024, and find the option with the shortest total travel time.</li><li><code>Google Flights--22</code> Find a round-trip flight from Rio de Janeiro to Los Angeles, leaving on March 15, 2024, and returning on March 22, 2024, and select the option with the least carbon dioxide emissions.</li><li><code>Google Flights--24</code> Compare prices for economy class round-trip flights from Dubai to Rome, departing on March 1, 2024, and returning on March 8, 2024, and select the option with the fewest stops.</li></ul>
+        </section>
+        
+        <section class="doc-section audit-site">
+          <h2>Google Map</h2>
+          <div class="doc-grid compact">
+            <div class="doc-card"><h3>题数</h3><p>41</p></div>
+            <div class="doc-card"><h3>Golden</h3><p>9</p></div>
+            <div class="doc-card"><h3>Possible</h3><p>32</p></div>
+          </div>
+          <h3>原题样例</h3>
+          <ul><li><code>Google Map--0</code> Find 5 beauty salons with ratings greater than 4.8 in Seattle, WA. <span class='tag'>possible</span></li><li><code>Google Map--1</code> Tell me one bus stop that is nearest to the intersection of main street and Amherst street in Altavista. <span class='tag'>golden</span></li><li><code>Google Map--2</code> Find Apple Stores close to zip code 90028 <span class='tag'>possible</span></li><li><code>Google Map--3</code> The least amount of walking from Central Park Zoo to the Broadway Theater in New York. <span class='tag'>possible</span></li><li><code>Google Map--4</code> Plan a trip from Boston Logan Airport to North Station. <span class='tag'>possible</span></li><li><code>Google Map--5</code> Search for a parking garage near Thalia Hall in Chicago that isn&#x27;t open 24 hours. <span class='tag'>possible</span></li></ul>
+          <h3>时效/实时风险样例</h3>
+          <ul><li><code>Google Map--17</code> Search for locksmiths open now but not open 24 hours in Texas City.</li><li><code>Google Map--32</code> Search for plumbers available now but not open 24 hours in Orlando, FL.</li></ul>
+          <h3>状态操作样例</h3>
+          <ul><li><code>Google Map--13</code> Find a parking lot in Gloucester and book a ride from there to North Plymouth, view the map to understand the route better.</li><li><code>Google Map--35</code> Search for a natural reserve in Texas called Big Bend National Park and gather its Basic Information.</li></ul>
+        </section>
+        
+        <section class="doc-section audit-site">
+          <h2>Google Search</h2>
+          <div class="doc-grid compact">
+            <div class="doc-card"><h3>题数</h3><p>43</p></div>
+            <div class="doc-card"><h3>Golden</h3><p>16</p></div>
+            <div class="doc-card"><h3>Possible</h3><p>27</p></div>
+          </div>
+          <h3>原题样例</h3>
+          <ul><li><code>Google Search--0</code> Find the initial release date for Guardians of the Galaxy Vol. 3 the movie. <span class='tag'>golden</span></li><li><code>Google Search--1</code> Find Kevin Durant&#x27;s bio <span class='tag'>possible</span></li><li><code>Google Search--2</code> Search for the latest news title about the NBA team the Los Angeles Lakers. <span class='tag'>possible</span></li><li><code>Google Search--3</code> Show me a list of comedy movies, sorted by user ratings. Show me the Top 5 movies. <span class='tag'>golden</span></li><li><code>Google Search--4</code> Show most played games in Steam. And tell me the number of players in In game at this time <span class='tag'>possible</span></li><li><code>Google Search--5</code> find the score of the latest nba game played by the phoenix suns. <span class='tag'>possible</span></li></ul>
+          <h3>时效/实时风险样例</h3>
+          <ul><li><code>Google Search--2</code> Search for the latest news title about the NBA team the Los Angeles Lakers.</li><li><code>Google Search--5</code> find the score of the latest nba game played by the phoenix suns.</li><li><code>Google Search--10</code> Find the no. 1 weekly charts ranked artist based on Billboard and tell me 10 most played song by this artist until now.</li><li><code>Google Search--15</code> Please try to log in to twitter with email: webagenttest@testmail.com and password: test123456. Let me know if the login was successful.</li><li><code>Google Search--16</code> How many members are there in the OpenAI community on Reddit, and what is the hottest news right now?</li><li><code>Google Search--18</code> When and where the most recent World Cup was held, and which team was the winner?</li></ul>
+          <h3>状态操作样例</h3>
+          <ul><li><code>Google Search--15</code> Please try to log in to twitter with email: webagenttest@testmail.com and password: test123456. Let me know if the login was successful.</li></ul>
+        </section>
+        
+        <section class="doc-section audit-site">
+          <h2>Huggingface</h2>
+          <div class="doc-grid compact">
+            <div class="doc-card"><h3>题数</h3><p>43</p></div>
+            <div class="doc-card"><h3>Golden</h3><p>17</p></div>
+            <div class="doc-card"><h3>Possible</h3><p>26</p></div>
+          </div>
+          <h3>原题样例</h3>
+          <ul><li><code>Huggingface--0</code> Find a pre-trained natural language processing model on Hugging Face that can perform sentiment analysis, and make sure the model&#x27;s last update is within March 2023. <span class='tag'>possible</span></li><li><code>Huggingface--1</code> Use the Huggingface Inference API to generate a short story about a dragon and a wizard. <span class='tag'>possible</span></li><li><code>Huggingface--2</code> Discover three new and popular open-source NLP models for language translation released in the past month on Huggingface. <span class='tag'>possible</span></li><li><code>Huggingface--3</code> Look up a model with a license of cc-by-sa-4.0 with the most likes on Hugging face. <span class='tag'>possible</span></li><li><code>Huggingface--4</code> Locate an open-source conversational AI model on Hugging Face, trained in English and list its main features and applications. <span class='tag'>possible</span></li><li><code>Huggingface--5</code> Find a model released on Hugging Face for recipe generation. Retrieve the information of the model, including its name, model size and tensor type. <span class='tag'>possible</span></li></ul>
+          <h3>时效/实时风险样例</h3>
+          <ul><li><code>Huggingface--7</code> Which is the most downloaded audio related dataset on Hugging face currently.</li><li><code>Huggingface--11</code> Identify the latest updated image to video model available on Huggingface and summarize its main features.</li><li><code>Huggingface--12</code> Find the most recently updated machine learning model on Huggingface which focuses on Error Correction.</li><li><code>Huggingface--16</code> Find information on the latest (as of today&#x27;s date) pre-trained language model on Huggingface suitable for text classification and briefly describe its intended use case and architecture.</li><li><code>Huggingface--17</code> Find the most recently updated open-source project related to natural language processing on the Huggingface platform. Provide the project&#x27;s name, creator, and a brief description of its functionality.</li><li><code>Huggingface--19</code> Explore and summarize the features of the most recent open-source NLP model released by Hugging Face for English text summarization.</li></ul>
+          <h3>状态操作样例</h3>
+          <ul><li><code>Huggingface--15</code> Identify the most downloaded models on Hugging face that use the PaddlePaddle library.</li><li><code>Huggingface--18</code> Look up TRL&#x27;s forward modelling in the hugging face documentation on how to add a margin to a loss.</li><li><code>Huggingface--38</code> Investigate the &#x27;transformers&#x27; library in the Hugging Face documentation, focusing on how to add new tokens to a tokenizer.</li></ul>
+        </section>
+        
+        <section class="doc-section audit-site">
+          <h2>Wolfram Alpha</h2>
+          <div class="doc-grid compact">
+            <div class="doc-card"><h3>题数</h3><p>46</p></div>
+            <div class="doc-card"><h3>Golden</h3><p>34</p></div>
+            <div class="doc-card"><h3>Possible</h3><p>12</p></div>
+          </div>
+          <h3>原题样例</h3>
+          <ul><li><code>Wolfram Alpha--0</code> derivative of x^2 when x=5.6 <span class='tag'>golden</span></li><li><code>Wolfram Alpha--1</code> Give a constraint on the set of inequalities for the inner region of the pentagram. <span class='tag'>possible</span></li><li><code>Wolfram Alpha--2</code> Calculate 3^71 and retain 5 significant figures in scientific notation. <span class='tag'>golden</span></li><li><code>Wolfram Alpha--3</code> Let g(x) be the integral of x^2 cos(2x). Write the expression of g(x). <span class='tag'>golden</span></li><li><code>Wolfram Alpha--4</code> Pack 24 circles in a circle radius r. Compare Densest known packing and Square packing. Then tell me the radius of the inner circles. <span class='tag'>golden</span></li><li><code>Wolfram Alpha--5</code> Show the solution of y&quot;(z) + sin(y(z)) = 0 from wolframalpha. <span class='tag'>golden</span></li></ul>
+          <h3>时效/实时风险样例</h3>
+          <ul><li><code>Wolfram Alpha--4</code> Pack 24 circles in a circle radius r. Compare Densest known packing and Square packing. Then tell me the radius of the inner circles.</li><li><code>Wolfram Alpha--12</code> Which character in unicode 8900 to 8920 looks like a snowflake</li><li><code>Wolfram Alpha--13</code> What is 10,000 US dollars worth now in 1980 and in 1970?</li><li><code>Wolfram Alpha--16</code> Weight lose for a male with current weight 90 kg, 40 year old, 175 cm. If he intakes 1500 calories every day, how long will it take to lose 17 kg.</li><li><code>Wolfram Alpha--31</code> Using Wolfram Alpha, determine the current temperature and wind speed in Chicago, IL.</li></ul>
+          <h3>状态操作样例</h3>
+          <ul><li><code>Wolfram Alpha--29</code> Create a plot of cat curve using wolfram alpha.</li><li><code>Wolfram Alpha--41</code> What is the approximate Heart Rate Reserve of a 50 year old man who has a heart rate of 60bpm at rest.</li></ul>
+        </section>
+        
+    </article>
+  </main>
+</body>
+</html>

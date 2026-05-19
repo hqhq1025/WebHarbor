@@ -1,0 +1,165 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>WebHarbor 造数据前的稳定性审计</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%23101410'/%3E%3Cpath d='M6 23 14 7l4 8 3-5 5 13z' fill='%23d8ef8b'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <main class="doc-main">
+    <article class="doc-article">
+      <a class="doc-back" href="index.html#variant-playbook">返回 Dashboard</a>
+      <p class="eyebrow">Data Generation Stability</p>
+      <h1>WebHarbor 造数据前的稳定性审计</h1>
+      <p class="doc-lede">
+        这页回答一个问题：基于 WebHarbor 继续设计 WebVoyager 风格任务时，哪些内容是固定的，哪些会随机，哪些会随日期或用户状态变化。
+        这个边界会直接决定哪些任务能自动生成，哪些任务必须人工审。
+      </p>
+
+      <section class="doc-section">
+        <h2>总体判断</h2>
+        <p>
+          WebHarbor 不是完全静态网页集合。它是 15 个 Flask 站点，每个站点有 SQLite seed DB、模板、静态资源、登录态、购物车、收藏等状态。
+          <code>/reset/&lt;site&gt;</code> 会把 runtime DB 从 <code>instance_seed/</code> 还原，适合 rollout 训练。
+        </p>
+        <div class="doc-grid">
+          <div class="doc-card">
+            <h3>固定 seed 数据</h3>
+            <p>SQLite 里的实体、字段、绝大多数详情页内容是固定的。最适合从这里反向生成任务。</p>
+          </div>
+          <div class="doc-card">
+            <h3>构建期随机，seed 后固定</h3>
+            <p>很多 seed 脚本用随机数生成评论、价格、图片或评分。只要 seed DB 不重建，这些值就是固定的。</p>
+          </div>
+          <div class="doc-card">
+            <h3>请求时随机</h3>
+            <p>首页推荐、related 内容、部分搜索结果 count/search time 会随请求变化。不能用来做 strict gold。</p>
+          </div>
+          <div class="doc-card">
+            <h3>用户状态或时间状态</h3>
+            <p>购物车、收藏、history、notebook、booking、checkout 会随操作变化。日期相关任务必须看站点有没有镜像日期锚点。</p>
+          </div>
+        </div>
+      </section>
+
+      <section class="doc-section">
+        <h2>每站稳定性表</h2>
+        <div class="doc-table-wrap">
+          <table class="doc-table">
+            <thead>
+              <tr>
+                <th>Site</th>
+                <th>固定部分</th>
+                <th>随机/变化部分</th>
+                <th>日期锚点</th>
+                <th>造题建议</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr><td>Allrecipes</td><td>Recipe、Category、Review、Nutrition、Recipe Box、Meal Plan、Shopping List schema 固定。</td><td>搜索排序内部有 deterministic shuffle；同 query 下顺序被人为打散。</td><td>无强镜像日期；created_at 多为 seed/runtime 字段。</td><td>适合从 recipe DB 反向生成约束题。不要依赖首页位置。</td></tr>
+              <tr><td>Amazon</td><td>Product、Category、Review、Policy、Cart、Order、Wishlist schema 固定。</td><td>首页 <code>order_by(random())</code> 每次刷新会换推荐；订单号和配送日期 runtime 随机。</td><td>无强镜像日期。</td><td>适合商品搜索、筛选、详情、加购。不要用首页 deal 的精确位置做 gold。</td></tr>
+              <tr><td>Apple</td><td>Product、SupportArticle、TradeInValue、配置选项固定。</td><td>购物车 session、订单号使用 secrets；部分日期用当前时间。</td><td>无强镜像日期。</td><td>适合产品比较、配置报价、support/trade-in。避免“latest”，除非题面绑定明确型号。</td></tr>
+              <tr><td>ArXiv</td><td>Paper、Category、versions、help、store、blog 大多固定。</td><td>view/download/star_count 在 seed 时随机；related papers 用 <code>func.random()</code>。</td><td>有 <code>mirror_today</code>，来自最大 submitted_date。</td><td>适合分类、日期窗口、版本、help 文档。不要用 related/random 推荐做精确题。</td></tr>
+              <tr><td>BBC News</td><td>Article、Category、Sport、Market、Audio 内容大多固定。</td><td>must-read、related articles 用 <code>func.random()</code>；digest id 随机。</td><td>有局部 fixed/relative 逻辑，但仍有 <code>datetime.utcnow()</code>。</td><td>适合文章和体育表格。新闻“latest/recent”要绑定页面日期或固定文章标题。</td></tr>
+              <tr><td>Booking</td><td>Property、City、Landmark、Review、amenity flags、currency rates 固定。</td><td>seed 期大量随机生成价格、评分、amenity、reviews；购物车/booking/saved state runtime 变化。</td><td>有部分 mirror date 逻辑，但默认入住日期会随真实日期走。</td><td>适合从 DB 反向生成酒店题。题面日期必须显式给出。</td></tr>
+              <tr><td>Cambridge Dictionary</td><td>Word、GrammarTopic、ShopItem、Quiz schema 固定。</td><td>Word scramble 每次随机选词/洗牌；语言选择存在 session。</td><td>有 current_year，但不影响词条。</td><td>适合词条、翻译、grammar 精确字段。Quiz/game 要接受交互随机或改成固定题。</td></tr>
+              <tr><td>Coursera</td><td>Course、Partner、Module、SubCourse、Review 固定。</td><td>seed 里部分图片/评论可能随机；wishlist/enrollment/review state runtime 变化。</td><td>有 current_year，课程 sort_date 固定。</td><td>适合课程搜索、module、partner、review distribution。状态题需要 reset 后验证。</td></tr>
+              <tr><td>ESPN</td><td>Sport、Team、Game、Player、Stats、Articles、Standings 固定。</td><td>基本无请求时随机；seed_data 里有固定赛季和日期内容。</td><td>有强镜像日期 banner：April 10, 2024。</td><td>很适合固定日期体育表格、赛程、roster、stat 任务。today/latest 按 banner 解读。</td></tr>
+              <tr><td>GitHub</td><td>Repo、User、Topic、Issue、Commit、Pricing、Skills 固定。</td><td>基本无请求时随机；登录态 star/watch/fork/follow 会变。</td><td>有强镜像日期：May 15, 2024。</td><td>适合 qualifier 搜索、commit/release/issues/pricing。日期任务应相对镜像日期。</td></tr>
+              <tr><td>Google Flights</td><td>Airport、Flight、Booking、Track、SavedSearch schema 固定。</td><td>seed 中航班大规模随机生成，但 seed 后固定；tracking/booking/payment state runtime 变化。</td><td>有 mirror/reference date 逻辑；部分 date overlay 会替换年份。</td><td>最适合批量生成。必须先查航班表确认 route/date/cabin/stops 有结果。</td></tr>
+              <tr><td>Google Map</td><td>Place、City、Route、Review、Category 固定。</td><td>seed 时随机坐标、评分、评论、地址；trip/save/timeline state runtime 变化。</td><td>有大量 anchor/mirror date 辅助逻辑。</td><td>适合附近搜索、路线、营业时间、评论。生成前要处理地点消歧义和 radius。</td></tr>
+              <tr><td>Google Search</td><td>Topic、SearchResult、PAA、RelatedQuery、KnowledgeFact 固定。</td><td>搜索结果 count/time 每次随机；Lucky/random topic/related topic 用 <code>func.random()</code>。</td><td>缺强全站日期锚点；很多原题是 current/latest。</td><td>风险最高。只适合从已 seed topic/cache 造题；current/latest 必须改成快照题。</td></tr>
+              <tr><td>Hugging Face</td><td>Repo、Author、Task、Docs、Blog、Dataset Viewer 大多固定。</td><td>seed 用固定 random；注册头像 random；endpoint id runtime random。</td><td>有强镜像日期：April 25, 2026。</td><td>适合模型、数据集、文档、API、Dataset Viewer。搜索更新时间按镜像日期。</td></tr>
+              <tr><td>Wolfram Alpha</td><td>ComputationResult、Topic、Category 固定。</td><td>SECRET_KEY runtime；notebook/favorite/history state 会变；少量 user seed 时间用 utcnow。</td><td>无强全站日期；部分 query 是 current/weather。</td><td>只能围绕已 seed computation_results 造计算题。实时天气/金融类要快照化。</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="doc-section">
+        <h2>造数据策略</h2>
+        <div class="doc-callout">
+          <h3>任务应该从 DB 反向生成</h3>
+          <p>不要先让模型写自然语言题，再去网页上碰答案。应先从 seed DB 找到答案实体，再生成题面，再用 Playwright 验证页面上能看到答案字段。</p>
+        </div>
+        <ol class="doc-steps">
+          <li>查询满足约束的实体，例如 <code>city=Paris AND breakfast=True AND rating&gt;=9</code>。</li>
+          <li>确认搜索 URL 能显示该实体。</li>
+          <li>生成自然语言 instruction。</li>
+          <li>记录 expected answer、must appear 字段和稳定性标签。</li>
+          <li>用浏览器验证页面上能找到这些字段。</li>
+        </ol>
+      </section>
+
+      <section class="doc-section">
+        <h2>任务稳定性标签</h2>
+        <div class="doc-grid compact">
+          <div class="doc-card"><h3>fixture_fixed</h3><p>答案完全来自 seed DB。</p></div>
+          <div class="doc-card"><h3>request_random</h3><p>页面刷新会随机变化。</p></div>
+          <div class="doc-card"><h3>session_state</h3><p>任务需要登录、购物车、收藏或历史。</p></div>
+          <div class="doc-card"><h3>date_anchor</h3><p>任务依赖镜像日期。</p></div>
+          <div class="doc-card"><h3>real_time_risk</h3><p>原题像实时网页，必须改成快照题。</p></div>
+          <div class="doc-card"><h3>asset_sensitive</h3><p>任务依赖图片或视觉资源。</p></div>
+        </div>
+      </section>
+
+      <section class="doc-section">
+        <h2>推荐优先级</h2>
+        <div class="doc-grid">
+          <div class="doc-card">
+            <h3>第一阶段</h3>
+            <p>Google Flights、Booking、Amazon、Google Map、ESPN。数据表丰富，约束可参数化，验证路径清楚。</p>
+          </div>
+          <div class="doc-card">
+            <h3>第二阶段</h3>
+            <p>ArXiv、GitHub、Hugging Face、Coursera、Cambridge Dictionary、Allrecipes。适合内容检索和详情抽取，需要更细字段验证。</p>
+          </div>
+          <div class="doc-card">
+            <h3>谨慎处理</h3>
+            <p>Google Search、BBC News 的 latest/current 新闻题、Wolfram Alpha 的实时天气/金融题。这些题必须快照化。</p>
+          </div>
+        </div>
+      </section>
+
+      <section class="doc-section">
+        <h2>最小任务元数据</h2>
+        <pre class="doc-code"><code>{
+  "site": "booking",
+  "task_family": "hotel_search_with_amenity_filters",
+  "start_url": "http://localhost:40005/",
+  "instruction": "Find a Paris hotel ...",
+  "expected_answer": {
+    "property_name": "...",
+    "rating": 9.1,
+    "amenities": ["breakfast", "free WiFi"]
+  },
+  "validation": {
+    "must_appear": ["...", "Breakfast included", "9.1"],
+    "state_check": null
+  },
+  "stability": {
+    "fixture_fixed": true,
+    "request_random": false,
+    "session_state": false,
+    "date_anchor": true,
+    "real_time_risk": false
+  },
+  "difficulty": 6
+}</code></pre>
+      </section>
+
+      <section class="doc-section">
+        <h2>当前最重要的判断</h2>
+        <p>
+          WebHarbor 可以造数据，但不能把所有页面当静态快照用。它更像一个小型可控互联网：DB 是固定世界，页面有一部分随机展示层，用户状态会随操作变化，日期有些站点固定、有些站点仍读真实当前时间。
+        </p>
+        <p>
+          造高质量数据的关键不是多写题，而是先给每个任务标出稳定性来源。只要这个边界建好，WebHarbor 可以从 WebVoyager 的 643 题扩成几千条可靠任务；如果忽略这个边界，数据会混入大量漂移题和不可复现题。
+        </p>
+      </section>
+    </article>
+  </main>
+</body>
+</html>

@@ -1,0 +1,618 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>WebHarbor 变量空间审计</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <main class="doc-main">
+    <article class="doc-article">
+      <a class="doc-back" href="index.html#variant-playbook">返回 Dashboard</a>
+      <p class="eyebrow">Variable Registry</p>
+      <h1>WebHarbor 变量空间审计</h1>
+      <p class="doc-lede">这页从当前运行的 WebHarbor seed DB、源码 request 参数和状态表中抽取变量。它用于判断哪些字段可以排列组合造题，哪些组合需要先做 DB 可行性验证。</p>
+      <section class="doc-section">
+        <h2>总体统计</h2>
+        <div class="doc-grid compact">
+          <div class="doc-card"><h3>站点</h3><p>15</p></div>
+          <div class="doc-card"><h3>总表数</h3><p>162</p></div>
+          <div class="doc-card"><h3>总行数</h3><p>171393</p></div>
+          <div class="doc-card"><h3>候选变量</h3><p>502</p></div>
+        </div>
+      </section>
+      
+        <section class="doc-section audit-site">
+          <h2>Allrecipes</h2>
+          <div class="doc-grid compact">
+            <div class="doc-card"><h3>表数量</h3><p>7</p></div>
+            <div class="doc-card"><h3>总行数</h3><p>9960</p></div>
+            <div class="doc-card"><h3>可用变量</h3><p>33</p></div>
+            <div class="doc-card"><h3>二阶组合估计</h3><p>101016</p></div>
+            <div class="doc-card"><h3>三阶组合估计</h3><p>14288012</p></div>
+            <div class="doc-card"><h3>状态表</h3><p>meal_plan_item, shopping_list</p></div>
+          </div>
+          <h3>请求变量</h3>
+          <p><strong>query args:</strong> cuisine, diet, dish_type, feature, ingredient, main_ingredient, max_calories, max_cook_mins, max_ingredients, max_prep_mins, max_reviews, max_total_mins, meal_type, method, min_calories, min_cook_mins, min_rating, min_reviews, min_total_mins, next, page, q, servings, sort</p>
+          <p><strong>form args:</strong> bio, body, confirm_password, current_password, day, display_name, email, index, item, location, meal_type, name, new_password, next, notes, password, rating, recipe_id, remember, title, username</p>
+          <p><strong>json args:</strong> day, index, item, meal_type, recipe_id</p>
+          <h3>优先用于排列组合的字段</h3>
+          <div class="doc-table-wrap">
+            <table class="doc-table">
+              <thead><tr><th>表</th><th>字段</th><th>类型</th><th>distinct</th><th>样例</th></tr></thead>
+              <tbody><tr><td>category</td><td>description</td><td>categorical_low</td><td>14</td><td>Start your morning right with our best breakfast and brunch recipes., Find the perfect dinner recipe for tonight., Party-ready appetizers and snacks everyone will love., Sweet treats and dessert recipes for every occasion.</td></tr>
+<tr><td>category</td><td>display_order</td><td>categorical_low</td><td>14</td><td>1, 2, 3, 4</td></tr>
+<tr><td>category</td><td>id</td><td>categorical_low</td><td>14</td><td>3, 13, 10, 1</td></tr>
+<tr><td>category</td><td>name</td><td>categorical_low</td><td>14</td><td>Breakfast &amp; Brunch, Dinner, Appetizers &amp; Snacks, Desserts</td></tr>
+<tr><td>category</td><td>parent_type</td><td>categorical_low</td><td>3</td><td>meal, ingredient, cuisine</td></tr>
+<tr><td>category</td><td>slug</td><td>categorical_low</td><td>14</td><td>appetizers, asian, baking, breakfast</td></tr>
+<tr><td>recipe</td><td>is_editors_pick</td><td>boolean_or_binary</td><td>2</td><td>0, 1</td></tr>
+<tr><td>recipe</td><td>is_featured</td><td>boolean_or_binary</td><td>2</td><td>1, 0</td></tr>
+<tr><td>recipe</td><td>category_id</td><td>categorical_low</td><td>10</td><td>1, 2, 5, 10</td></tr>
+<tr><td>recipe</td><td>cooking_method</td><td>categorical_low</td><td>11</td><td>baked, fried, pan-fried, no-cook</td></tr>
+<tr><td>recipe</td><td>cuisine</td><td>categorical_low</td><td>14</td><td>American, Italian, French, Japanese</td></tr>
+<tr><td>recipe</td><td>dietary_tags_json</td><td>categorical_low</td><td>18</td><td>[], ["vegetarian"], ["vegan", "vegetarian"], ["vegan", "vegetarian", "dairy-free"]</td></tr>
+<tr><td>recipe</td><td>dish_type</td><td>categorical_low</td><td>8</td><td>main, dessert, sauce, salad</td></tr>
+<tr><td>recipe</td><td>main_ingredient</td><td>categorical_low</td><td>23</td><td>pasta, chocolate, salmon, tomato</td></tr>
+<tr><td>recipe</td><td>max_oven_temp</td><td>categorical_low</td><td>3</td><td>0, 425, 400</td></tr>
+<tr><td>recipe</td><td>meal_type</td><td>categorical_low</td><td>6</td><td>dinner, snack, breakfast, appetizer</td></tr>
+<tr><td>recipe</td><td>servings</td><td>categorical_low</td><td>11</td><td>6, 12, 4, 8</td></tr>
+<tr><td>recipe</td><td>yield_amount</td><td>categorical_low</td><td>19</td><td>6 waffles, 1 (9x5-inch) meatloaf, 1 (9-inch) pie, 1 (9x5-inch) loaf</td></tr></tbody>
+            </table>
+          </div>
+        </section>
+        
+        <section class="doc-section audit-site">
+          <h2>Amazon</h2>
+          <div class="doc-grid compact">
+            <div class="doc-card"><h3>表数量</h3><p>12</p></div>
+            <div class="doc-card"><h3>总行数</h3><p>8637</p></div>
+            <div class="doc-card"><h3>可用变量</h3><p>25</p></div>
+            <div class="doc-card"><h3>二阶组合估计</h3><p>31592</p></div>
+            <div class="doc-card"><h3>三阶组合估计</h3><p>2413626</p></div>
+            <div class="doc-card"><h3>状态表</h3><p>cart_items, order_items, orders, saved_addresses, wishlist_items</p></div>
+          </div>
+          <h3>请求变量</h3>
+          <p><strong>query args:</strong> bestseller, brand, color, condition, deal, feature, free_returns, free_shipping, max_price, min_price, min_rating, min_reviews, next, prime, q, size, sort, sub, year</p>
+          <p><strong>form args:</strong> next, quantity, refund_method, saved_address_id, saved_payment_id, variant</p>
+          <p><strong>json args:</strong> item_id, product_id, quantity, variant</p>
+          <h3>优先用于排列组合的字段</h3>
+          <div class="doc-table-wrap">
+            <table class="doc-table">
+              <thead><tr><th>表</th><th>字段</th><th>类型</th><th>distinct</th><th>样例</th></tr></thead>
+              <tbody><tr><td>categories</td><td>description</td><td>categorical_low</td><td>8</td><td>Shop the latest in Electronics, Shop the latest in Computers, Shop the latest in Home &amp; Kitchen, Shop the latest in Fashion</td></tr>
+<tr><td>categories</td><td>icon</td><td>categorical_low</td><td>8</td><td>📱, 💻, 🏠, 👕</td></tr>
+<tr><td>categories</td><td>id</td><td>categorical_low</td><td>8</td><td>6, 5, 2, 1</td></tr>
+<tr><td>categories</td><td>name</td><td>categorical_low</td><td>8</td><td>Electronics, Computers, Home &amp; Kitchen, Fashion</td></tr>
+<tr><td>categories</td><td>slug</td><td>categorical_low</td><td>8</td><td>beauty, books, computers, electronics</td></tr>
+<tr><td>products</td><td>free_returns</td><td>boolean_or_binary</td><td>1</td><td>1</td></tr>
+<tr><td>products</td><td>free_shipping</td><td>boolean_or_binary</td><td>2</td><td>1, 0</td></tr>
+<tr><td>products</td><td>is_bestseller</td><td>boolean_or_binary</td><td>2</td><td>1, 0</td></tr>
+<tr><td>products</td><td>is_deal</td><td>boolean_or_binary</td><td>2</td><td>1, 0</td></tr>
+<tr><td>products</td><td>is_featured</td><td>boolean_or_binary</td><td>2</td><td>1, 0</td></tr>
+<tr><td>products</td><td>category_slug</td><td>categorical_low</td><td>10</td><td>beauty, books, computers, electronics</td></tr>
+<tr><td>products</td><td>condition</td><td>categorical_low</td><td>5</td><td>New, Used - Good, Used - Like New, Refurbished</td></tr>
+<tr><td>products</td><td>delivery_estimate</td><td>categorical_low</td><td>10</td><td>FREE delivery in 2 days, FREE delivery Tue, Apr 15, Delivery: $19.99, FREE delivery Tuesday</td></tr>
+<tr><td>products</td><td>return_policy</td><td>categorical_low</td><td>9</td><td>30-day return policy. Eligible for free returns., This item is returnable within 30 days of delivery. Free Returns on this item — ship it back at no cost with the prepaid Amazon return shipping label provided in Your Orders. Item must be in new, unworn condition with all original tags attached. Refunds typically post within 3-5 business days of Amazon receiving the return. Final-sale and personalized items excluded. Hazardous-material restrictions apply only if shipping internationally; domestic US returns incur no restocking fee. For size exchanges, initiate a return and place a new order for the preferred size — we'll price-match if the replacement is at the same list price. Questions? Contact seller support from Your Orders., Returns accepted within 14 days. Buyer pays return shipping. Item must be unworn with tags., This item is non-returnable. Final sale.</td></tr>
+<tr><td>products</td><td>stock</td><td>categorical_mid</td><td>44</td><td>52, 45, 402, 303</td></tr>
+<tr><td>products</td><td>subcategory</td><td>categorical_mid</td><td>76</td><td>Smart Home, Headphones, Streaming, E-readers</td></tr>
+<tr><td>products</td><td>release_date</td><td>date_or_time</td><td>16</td><td>Pre-order: 2026-04-23, Pre-order: 2026-04-16, Pre-order: 2026-05-09, Pre-order: 2026-04-14</td></tr>
+<tr><td>products</td><td>brand</td><td>high_cardinality</td><td>274</td><td>Amazon, Apple, Sony, Samsung</td></tr></tbody>
+            </table>
+          </div>
+        </section>
+        
+        <section class="doc-section audit-site">
+          <h2>Apple</h2>
+          <div class="doc-grid compact">
+            <div class="doc-card"><h3>表数量</h3><p>11</p></div>
+            <div class="doc-card"><h3>总行数</h3><p>168</p></div>
+            <div class="doc-card"><h3>可用变量</h3><p>49</p></div>
+            <div class="doc-card"><h3>二阶组合估计</h3><p>191214</p></div>
+            <div class="doc-card"><h3>三阶组合估计</h3><p>37794548</p></div>
+            <div class="doc-card"><h3>状态表</h3><p>cart_item, order, order_item, saved_addresses, wishlist_item</p></div>
+          </div>
+          <h3>请求变量</h3>
+          <p><strong>query args:</strong> category, chip, color, connectivity, date, device, feature, in_stock, is_new, max_price, min_price, min_ram, min_ssd, next, product, q, release_year, screen_size, sort, storage, store, subcategory, topic, zip</p>
+          <p><strong>form args:</strong> address, card_type, cardholder_name, city, color, date, exp_month, exp_year, first_name, is_default, label, last4, last_name, memory, phone, product, quantity, saved_address_id, saved_payment_id, state, storage, store, zip, zip_code</p>
+          <p><strong>json args:</strong> color, item_id, product_id, quantity, storage</p>
+          <h3>优先用于排列组合的字段</h3>
+          <div class="doc-table-wrap">
+            <table class="doc-table">
+              <thead><tr><th>表</th><th>字段</th><th>类型</th><th>distinct</th><th>样例</th></tr></thead>
+              <tbody><tr><td>product</td><td>is_featured</td><td>boolean_or_binary</td><td>2</td><td>1, 0</td></tr>
+<tr><td>product</td><td>is_new</td><td>boolean_or_binary</td><td>2</td><td>1, 0</td></tr>
+<tr><td>product</td><td>tradein_eligible</td><td>boolean_or_binary</td><td>2</td><td>0, 1</td></tr>
+<tr><td>product</td><td>battery_life</td><td>categorical_low</td><td>16</td><td>Up to 23 hours video playback, Up to 29 hours video playback, Up to 26 hours video playback, Up to 22 hours video playback</td></tr>
+<tr><td>product</td><td>box_contents</td><td>categorical_low</td><td>5</td><td>[], ["iPad mini", "USB-C Charge Cable (1m)", "20W USB-C Power Adapter", "Documentation"], ["MacBook Pro", "140W USB-C Power Adapter", "USB-C to MagSafe 3 Cable (2m)"], ["MacBook Pro", "70W USB-C Power Adapter", "USB-C to MagSafe 3 Cable (2m)"]</td></tr>
+<tr><td>product</td><td>category</td><td>categorical_low</td><td>9</td><td>iphone, mac, ipad, watch</td></tr>
+<tr><td>product</td><td>chip_family</td><td>categorical_low</td><td>20</td><td>M5 Pro, M5, A17 Pro, A16 Bionic</td></tr>
+<tr><td>product</td><td>connectivity</td><td>categorical_low</td><td>7</td><td>5G, 4G LTE, Wi-Fi 6E, Wi-Fi + Cellular</td></tr>
+<tr><td>product</td><td>cpu_cores</td><td>categorical_low</td><td>6</td><td>0, 8, 16, 10</td></tr>
+<tr><td>product</td><td>gpu_cores</td><td>categorical_low</td><td>6</td><td>0, 10, 40, 16</td></tr>
+<tr><td>product</td><td>keyboard_options</td><td>categorical_low</td><td>4</td><td>[], ["Backlit Magic Keyboard with Touch ID - US English", "Backlit Magic Keyboard with Touch ID - British English", "Backlit Magic Keyboard with Touch ID - Spanish", "Backlit Magic Keyboard with Touch ID - French"], ["Magic Keyboard with Touch ID - US English", "Magic Keyboard with Touch ID - British English", "Magic Keyboard with Touch ID - Spanish", "Magic Keyboard with Touch ID - French"], ["Magic Keyboard - US English", "Magic Keyboard - British English", "Magic Keyboard - Spanish", "Magic Keyboard - French"]</td></tr>
+<tr><td>product</td><td>ram</td><td>categorical_low</td><td>5</td><td>0, 16, 8, 64</td></tr>
+<tr><td>product</td><td>screen_size</td><td>categorical_low</td><td>13</td><td>0.0, 15.3, 6.1, 6.7</td></tr>
+<tr><td>product</td><td>ssd</td><td>categorical_low</td><td>6</td><td>0, 512, 1024, 256</td></tr>
+<tr><td>product</td><td>storage_options</td><td>categorical_low</td><td>20</td><td>["256GB", "512GB", "1TB"], ["128GB", "256GB", "512GB"], ["128GB", "256GB"], ["256GB", "512GB"]</td></tr>
+<tr><td>product</td><td>color_options</td><td>categorical_mid</td><td>43</td><td>["Natural Titanium", "Black Titanium", "White Titanium", "Sand Titanium"], ["Midnight", "Starlight", "Green", "Blue", "Pink"], ["Black", "White", "Pink", "Green", "Blue"], ["Black", "White", "Pink", "Green"]</td></tr>
+<tr><td>product</td><td>config_upgrades</td><td>categorical_mid</td><td>26</td><td>{"storage": [{"label": "256GB", "price": 0}, {"label": "512GB", "price": 200}, {"label": "1TB", "price": 400}]}, {"storage": [{"label": "128GB", "price": 0}, {"label": "256GB", "price": 90}, {"label": "512GB", "price": 270}]}, {"storage": [{"label": "128GB", "price": 0}, {"label": "256GB", "price": 90}]}, {"storage": [{"label": "256GB SSD", "price": 0}, {"label": "512GB SSD", "price": 200}]}</td></tr>
+<tr><td>product</td><td>description</td><td>categorical_mid</td><td>80</td><td>The most advanced iPhone ever with A19 Pro chip, titanium design, and a 48MP camera system with 8x optical-quality zoom., Massive 6.9-inch display, A19 Pro chip, and the longest battery life ever in an iPhone., Incredibly thin and light design with the power of pro inside., Beautiful design with Ceramic Shield 2 and Dynamic Island.</td></tr></tbody>
+            </table>
+          </div>
+        </section>
+        
+        <section class="doc-section audit-site">
+          <h2>ArXiv</h2>
+          <div class="doc-grid compact">
+            <div class="doc-card"><h3>表数量</h3><p>9</p></div>
+            <div class="doc-card"><h3>总行数</h3><p>1812</p></div>
+            <div class="doc-card"><h3>可用变量</h3><p>18</p></div>
+            <div class="doc-card"><h3>二阶组合估计</h3><p>44247</p></div>
+            <div class="doc-card"><h3>三阶组合估计</h3><p>3975949</p></div>
+            <div class="doc-card"><h3>状态表</h3><p>alerts, library_items, starred_papers</p></div>
+          </div>
+          <h3>请求变量</h3>
+          <p><strong>query args:</strong> author, category, date_from, date_to, folder, html, journal_ref, last_days, max_authors, min_authors, month, next, page, per_page, primary_category, q, query, searchtype, sort, subject, year, year_from, year_to</p>
+          <p><strong>form args:</strong> affiliation, bio, body, category, category_code, confirm_password, current_password, date_range, email, end_date, field, folder, folder_name, format, frequency, full_name, new_name, new_password, notes, old_name, orcid, paper_id, paper_ids, password, rating, sort, source, start_date, subject, terms, title, username</p>
+          <p><strong>json args:</strong> folder, item_id, note, paper_id</p>
+          <h3>优先用于排列组合的字段</h3>
+          <div class="doc-table-wrap">
+            <table class="doc-table">
+              <thead><tr><th>表</th><th>字段</th><th>类型</th><th>distinct</th><th>样例</th></tr></thead>
+              <tbody><tr><td>categories</td><td>code</td><td>categorical_low</td><td>20</td><td>astro-ph, cond-mat, cs, econ</td></tr>
+<tr><td>categories</td><td>color</td><td>categorical_low</td><td>20</td><td>#b31b1b, #1e3a8a, #4a148c, #0d1b2a</td></tr>
+<tr><td>categories</td><td>description</td><td>categorical_low</td><td>20</td><td>Research in computing, from the theoretical foundations of algorithms to the practice of machine learning, computer vision, and software engineering., Pure and applied mathematics: algebra, geometry, topology, analysis, probability, number theory, and more., General physics research spanning applied, atomic, biological, computational, and many other subfields., Astrophysics: cosmology, galaxies, high-energy phenomena, instrumentation, solar and stellar physics.</td></tr>
+<tr><td>categories</td><td>icon</td><td>categorical_low</td><td>18</td><td>💻, ∑, ⚛, 🌌</td></tr>
+<tr><td>categories</td><td>id</td><td>categorical_low</td><td>20</td><td>4, 5, 1, 20</td></tr>
+<tr><td>categories</td><td>name</td><td>categorical_low</td><td>20</td><td>Computer Science, Mathematics, Physics, Astrophysics</td></tr>
+<tr><td>categories</td><td>short_name</td><td>categorical_low</td><td>20</td><td>CS, Math, Phys, Astro</td></tr>
+<tr><td>papers</td><td>n_authors</td><td>categorical_low</td><td>24</td><td>1, 2, 3, 4</td></tr>
+<tr><td>papers</td><td>primary_category_code</td><td>categorical_low</td><td>17</td><td>astro-ph, cond-mat, cs, econ</td></tr>
+<tr><td>papers</td><td>versions_json</td><td>categorical_low</td><td>5</td><td>[], [{"version": "v1", "date": "2023-03-15"}, {"version": "v2", "date": "2023-03-16"}, {"version": "v3", "date": "2023-03-27"}, {"version": "v4", "date": "2023-12-19"}], [{"version": "v1", "date": "2026-04-28"}], [{"version": "v1", "date": "2026-04-27"}]</td></tr>
+<tr><td>papers</td><td>announce_date</td><td>date_or_time</td><td>382</td><td>2004-04-01, 2013-05-09, 2013-08-12, 2019-05-06</td></tr>
+<tr><td>papers</td><td>submitted_date</td><td>date_or_time</td><td>382</td><td>2004-04-01, 2013-05-09, 2013-08-12, 2019-05-06</td></tr>
+<tr><td>papers</td><td>figures_count</td><td>numeric_or_threshold</td><td>31</td><td>0, 3, 5, 1</td></tr>
+<tr><td>papers</td><td>formulas_count</td><td>numeric_or_threshold</td><td>2</td><td>0, 9</td></tr>
+<tr><td>papers</td><td>submitted_day</td><td>numeric_or_threshold</td><td>31</td><td>1, 9, 12, 6</td></tr>
+<tr><td>papers</td><td>submitted_month</td><td>numeric_or_threshold</td><td>12</td><td>4, 5, 8, 12</td></tr>
+<tr><td>papers</td><td>submitted_year</td><td>numeric_or_threshold</td><td>13</td><td>2001, 2003, 2004, 2008</td></tr>
+<tr><td>papers</td><td>tables_count</td><td>numeric_or_threshold</td><td>20</td><td>0, 6, 7, 1</td></tr></tbody>
+            </table>
+          </div>
+        </section>
+        
+        <section class="doc-section audit-site">
+          <h2>BBC News</h2>
+          <div class="doc-grid compact">
+            <div class="doc-card"><h3>表数量</h3><p>10</p></div>
+            <div class="doc-card"><h3>总行数</h3><p>520</p></div>
+            <div class="doc-card"><h3>可用变量</h3><p>18</p></div>
+            <div class="doc-card"><h3>二阶组合估计</h3><p>25722</p></div>
+            <div class="doc-card"><h3>三阶组合估计</h3><p>1716388</p></div>
+            <div class="doc-card"><h3>状态表</h3><p>reading_history</p></div>
+          </div>
+          <h3>请求变量</h3>
+          <p><strong>query args:</strong> content_type, folder, next, page, q, query, region, scope, section, since_days, sort, subsection, tag</p>
+          <p><strong>form args:</strong> article_id, bio, body, category_slug, confirm_password, current_password, delivery_email, email, folder, format, frequency, full_name, location, new_password, notes, notification_email, parent_id, password, priority, source, title, topic, username</p>
+          <p><strong>json args:</strong> article_id, comment_id, folder, item_id, note</p>
+          <h3>优先用于排列组合的字段</h3>
+          <div class="doc-table-wrap">
+            <table class="doc-table">
+              <thead><tr><th>表</th><th>字段</th><th>类型</th><th>distinct</th><th>样例</th></tr></thead>
+              <tbody><tr><td>articles</td><td>content_type</td><td>boolean_or_binary</td><td>2</td><td>article, podcast</td></tr>
+<tr><td>articles</td><td>is_breaking</td><td>boolean_or_binary</td><td>2</td><td>1, 0</td></tr>
+<tr><td>articles</td><td>is_featured</td><td>boolean_or_binary</td><td>2</td><td>1, 0</td></tr>
+<tr><td>articles</td><td>is_live</td><td>boolean_or_binary</td><td>2</td><td>1, 0</td></tr>
+<tr><td>articles</td><td>region</td><td>categorical_low</td><td>9</td><td>Middle East, UK, World, Europe</td></tr>
+<tr><td>articles</td><td>section_slug</td><td>categorical_low</td><td>24</td><td>africa, ai, arts, asia</td></tr>
+<tr><td>articles</td><td>category_id</td><td>categorical_mid</td><td>31</td><td>11, 6, 10, 4</td></tr>
+<tr><td>articles</td><td>feature_tags</td><td>categorical_mid</td><td>85</td><td>[], ["renewable-energy", "uk", "wind", "solar", "climate"], ["health", "nhs", "medicine", "uk"], ["deforestation", "environment", "climate", "forest"]</td></tr>
+<tr><td>articles</td><td>subsection</td><td>categorical_mid</td><td>76</td><td>Africa, Archaeology, Arctic, Artificial Intelligence</td></tr>
+<tr><td>articles</td><td>reading_time</td><td>numeric_or_threshold</td><td>5</td><td>2, 1, 3, 6</td></tr>
+<tr><td>categories</td><td>color</td><td>categorical_low</td><td>3</td><td>#bb1919, #000000, #0a6b2e</td></tr>
+<tr><td>categories</td><td>parent_slug</td><td>categorical_low</td><td>11</td><td>news, business, earth, technology</td></tr>
+<tr><td>categories</td><td>description</td><td>categorical_mid</td><td>38</td><td>The latest news, analysis, and stories from around the world, Top stories and breaking news, International news and correspondent reports, News from across the United Kingdom</td></tr>
+<tr><td>categories</td><td>id</td><td>categorical_mid</td><td>55</td><td>27, 25, 48, 11</td></tr>
+<tr><td>categories</td><td>name</td><td>categorical_mid</td><td>55</td><td>Home, News, World, UK</td></tr>
+<tr><td>categories</td><td>slug</td><td>categorical_mid</td><td>55</td><td>africa, ai, art_design, arts</td></tr>
+<tr><td>categories</td><td>sort_order</td><td>categorical_mid</td><td>37</td><td>10, 20, 30, 40</td></tr>
+<tr><td>categories</td><td>subtitle</td><td>categorical_mid</td><td>27</td><td>The latest news, analysis, and stories from around the world, Top stories and breaking news, International news and correspondent reports, News from across the United Kingdom</td></tr></tbody>
+            </table>
+          </div>
+        </section>
+        
+        <section class="doc-section audit-site">
+          <h2>Booking</h2>
+          <div class="doc-grid compact">
+            <div class="doc-card"><h3>表数量</h3><p>12</p></div>
+            <div class="doc-card"><h3>总行数</h3><p>1780</p></div>
+            <div class="doc-card"><h3>可用变量</h3><p>61</p></div>
+            <div class="doc-card"><h3>二阶组合估计</h3><p>254388</p></div>
+            <div class="doc-card"><h3>三阶组合估计</h3><p>58292192</p></div>
+            <div class="doc-card"><h3>状态表</h3><p>booking, booking_item, cart_item, saved_property</p></div>
+          </div>
+          <h3>请求变量</h3>
+          <p><strong>query args:</strong> adults, brand, checkin, checkout, children, city, city_id, country, currency, dest, destination, max_price, min_price, min_rating, min_stars, near, next, page, property_type, q, rooms, sort, stars, type</p>
+          <p><strong>form args:</strong> adults, card_exp, card_number, card_type, cardholder_name, check_in, check_out, checkin, checkout, children, new_name, next, old_name, room_type, rooms</p>
+          <p><strong>json args:</strong> adults, check_in, check_out, children, item_id, property_id, room_type, rooms</p>
+          <h3>优先用于排列组合的字段</h3>
+          <div class="doc-table-wrap">
+            <table class="doc-table">
+              <thead><tr><th>表</th><th>字段</th><th>类型</th><th>distinct</th><th>样例</th></tr></thead>
+              <tbody><tr><td>city</td><td>gallery_json</td><td>categorical_low</td><td>24</td><td>["/static/images/gallery/nyc/nyc_g0.webp", "/static/images/gallery/nyc/nyc_g1.webp", "/static/images/gallery/nyc/nyc_g2.webp", "/static/images/gallery/nyc/nyc_g3.webp", "/static/images/gallery/nyc/nyc_g4.webp", "/static/images/gallery/nyc/nyc_g5.webp", "/static/images/gallery/nyc/nyc_g6.webp", "/static/images/gallery/nyc/nyc_g7.webp", "/static/images/gallery/nyc/nyc_g8.webp", "/static/images/gallery/nyc/nyc_g9.webp", "/static/images/gallery/nyc/nyc_g10.webp", "/static/images/gallery/nyc/nyc_g11.webp"], ["/static/images/gallery/paris/paris_g0.webp", "/static/images/gallery/paris/paris_g1.webp", "/static/images/gallery/paris/paris_g2.webp", "/static/images/gallery/paris/paris_g3.webp", "/static/images/gallery/paris/paris_g4.webp", "/static/images/gallery/paris/paris_g5.webp", "/static/images/gallery/paris/paris_g6.webp", "/static/images/gallery/paris/paris_g7.webp", "/static/images/gallery/paris/paris_g8.webp", "/static/images/gallery/paris/paris_g9.webp", "/static/images/gallery/paris/paris_g10.webp", "/static/images/gallery/paris/paris_g11.webp"], ["/static/images/gallery/london/london_g0.webp", "/static/images/gallery/london/london_g1.webp", "/static/images/gallery/london/london_g2.webp", "/static/images/gallery/london/london_g3.webp", "/static/images/gallery/london/london_g4.webp", "/static/images/gallery/london/london_g5.webp", "/static/images/gallery/london/london_g6.webp", "/static/images/gallery/london/london_g7.webp", "/static/images/gallery/london/london_g8.webp", "/static/images/gallery/london/london_g9.webp", "/static/images/gallery/london/london_g10.webp", "/static/images/gallery/london/london_g11.webp"], ["/static/images/gallery/tokyo/tokyo_g0.webp", "/static/images/gallery/tokyo/tokyo_g1.webp", "/static/images/gallery/tokyo/tokyo_g2.webp", "/static/images/gallery/tokyo/tokyo_g3.webp", "/static/images/gallery/tokyo/tokyo_g4.webp", "/static/images/gallery/tokyo/tokyo_g5.webp", "/static/images/gallery/tokyo/tokyo_g6.webp", "/static/images/gallery/tokyo/tokyo_g7.webp", "/static/images/gallery/tokyo/tokyo_g8.webp", "/static/images/gallery/tokyo/tokyo_g9.webp", "/static/images/gallery/tokyo/tokyo_g10.webp", "/static/images/gallery/tokyo/tokyo_g11.webp"]</td></tr>
+<tr><td>city</td><td>hero_image</td><td>categorical_low</td><td>24</td><td>/static/images/cities/nyc/nyc_0.webp, /static/images/cities/paris/paris_0.webp, /static/images/cities/london/london_0.webp, /static/images/cities/tokyo/tokyo_0.webp</td></tr>
+<tr><td>city</td><td>description</td><td>categorical_mid</td><td>33</td><td>The city that never sleeps. Iconic skyline, world-class museums, Broadway shows, and endless food., The City of Light. Art, romance, and timeless Parisian charm along the Seine., Historic royal heritage meets cutting-edge culture in this global capital., Dazzling neon, ancient temples, Michelin-starred ramen, and unmatched hospitality.</td></tr>
+<tr><td>city</td><td>display</td><td>categorical_mid</td><td>33</td><td>New York, Paris, London, Tokyo</td></tr>
+<tr><td>city</td><td>id</td><td>categorical_mid</td><td>33</td><td>9, 8, 12, 7</td></tr>
+<tr><td>city</td><td>key</td><td>categorical_mid</td><td>33</td><td>amsterdam, bali, bangkok, barcelona</td></tr>
+<tr><td>city</td><td>lat</td><td>categorical_mid</td><td>33</td><td>40.7128, 48.8566, 51.5074, 35.6762</td></tr>
+<tr><td>city</td><td>lng</td><td>categorical_mid</td><td>33</td><td>-74.006, 2.3522, -0.1278, 139.6503</td></tr>
+<tr><td>city</td><td>nearest_beach_lat</td><td>categorical_mid</td><td>33</td><td>40.5755, 49.358, 50.8198, 35.6298</td></tr>
+<tr><td>city</td><td>nearest_beach_lng</td><td>categorical_mid</td><td>33</td><td>-73.9707, 0.076, -0.1366, 139.7762</td></tr>
+<tr><td>city</td><td>nearest_beach_name</td><td>categorical_mid</td><td>33</td><td>Coney Island Beach, Deauville Beach, Brighton Beach, Odaiba Beach</td></tr>
+<tr><td>city</td><td>slug</td><td>categorical_mid</td><td>33</td><td>amsterdam, bali, bangkok, barcelona</td></tr>
+<tr><td>city</td><td>average_rating</td><td>numeric_or_threshold</td><td>11</td><td>8.2, 8.4, 8.3, 8.6</td></tr>
+<tr><td>city</td><td>country</td><td>numeric_or_threshold</td><td>25</td><td>United States, France, United Kingdom, Japan</td></tr>
+<tr><td>city</td><td>country_code</td><td>numeric_or_threshold</td><td>25</td><td>us, fr, gb, jp</td></tr>
+<tr><td>city</td><td>properties_count</td><td>numeric_or_threshold</td><td>30</td><td>4827, 6512, 5931, 7245</td></tr>
+<tr><td>landmark</td><td>subway_access</td><td>boolean_or_binary</td><td>2</td><td>0, 1</td></tr>
+<tr><td>landmark</td><td>city_id</td><td>categorical_low</td><td>22</td><td>10, 1, 2, 3</td></tr></tbody>
+            </table>
+          </div>
+        </section>
+        
+        <section class="doc-section audit-site">
+          <h2>Cambridge Dictionary</h2>
+          <div class="doc-grid compact">
+            <div class="doc-card"><h3>表数量</h3><p>7</p></div>
+            <div class="doc-card"><h3>总行数</h3><p>1896</p></div>
+            <div class="doc-card"><h3>可用变量</h3><p>19</p></div>
+            <div class="doc-card"><h3>二阶组合估计</h3><p>9293</p></div>
+            <div class="doc-card"><h3>三阶组合估计</h3><p>380863</p></div>
+            <div class="doc-card"><h3>状态表</h3><p>saved_words, search_history</p></div>
+          </div>
+          <h3>请求变量</h3>
+          <p><strong>query args:</strong> dst, next, q, src, type</p>
+          <p><strong>form args:</strong> lang</p>
+          <p><strong>json args:</strong> word_id</p>
+          <h3>优先用于排列组合的字段</h3>
+          <div class="doc-table-wrap">
+            <table class="doc-table">
+              <thead><tr><th>表</th><th>字段</th><th>类型</th><th>distinct</th><th>样例</th></tr></thead>
+              <tbody><tr><td>grammar_topics</td><td>category</td><td>categorical_low</td><td>5</td><td>Verbs, Grammar in use, Adjectives and adverbs, Prepositions</td></tr>
+<tr><td>grammar_topics</td><td>content_json</td><td>categorical_low</td><td>8</td><td>[{"heading": "Uses of the present perfect simple", "body": "We use the present perfect simple with past events that have a connection to the present. It is formed with have/has + past participle.", "examples": [{"label": "Affirmative", "sentence": "I have visited Paris three times."}, {"label": "Affirmative", "sentence": "She has already finished her homework."}, {"label": "Negative", "sentence": "I haven't seen him since last Monday."}, {"label": "Negative", "sentence": "They haven't arrived yet."}, {"label": "Interrogative", "sentence": "Have you ever eaten sushi?"}, {"label": "Interrogative", "sentence": "Has she called back yet?"}]}, {"heading": "With time adverbs", "body": "The present perfect simple is commonly used with time adverbs such as: ever, never, already, yet, just, recently, since, for.", "examples": [{"label": "Ever/Never", "sentence": "Have you ever been to Australia?"}, {"label": "Just", "sentence": "I've just received the news."}, {"label": "Since", "sentence": "He has lived here since 2010."}, {"label": "For", "sentence": "She has worked for this company for five years."}]}], [{"heading": "May, might and could for possibility", "body": "We use may, might and could to say that something is possible. 'May' suggests a stronger possibility than 'might' or 'could'. All three are followed by the base form of the verb.", "examples": [{"label": "May (present/future)", "sentence": "It may rain later today."}, {"label": "Might (present/future)", "sentence": "She might come to the party, but she's not sure."}, {"label": "Could (present/future)", "sentence": "Could you be right? I think it's possible."}, {"label": "Past possibility (may have)", "sentence": "He may have forgotten about the meeting."}, {"label": "Past possibility (might have)", "sentence": "She might have taken the wrong train."}]}, {"heading": "Difference between 'may', 'might', and 'could'", "body": "Although these words are often interchangeable, there are subtle differences. 'May' is slightly more formal than 'might'. 'Could' often suggests that the possibility depends on certain conditions.", "examples": [{"label": "Formal", "sentence": "The government may introduce new regulations."}, {"label": "Informal", "sentence": "I might go out tonight."}, {"label": "Conditional", "sentence": "With a bit more effort, she could pass the exam."}]}], [{"heading": "Using fewer", "body": "We use 'fewer' before plural countable nouns (things you can count individually).", "examples": [{"label": "Correct", "sentence": "There are fewer cars on the road today."}, {"label": "Correct", "sentence": "Fewer students attended the lecture than expected."}, {"label": "Correct", "sentence": "We need fewer meetings and more action."}]}, {"heading": "Using less", "body": "We use 'less' before uncountable nouns (things that cannot be counted individually) and before numbers and amounts.", "examples": [{"label": "Correct", "sentence": "We should use less water to protect the environment."}, {"label": "Correct", "sentence": "There is less traffic on Sundays."}, {"label": "Correct", "sentence": "The journey takes less than an hour."}, {"label": "Informal usage", "sentence": "Less people came than we expected. (informal, but common)"}]}], [{"heading": "Formation of the passive", "body": "The passive is formed with the appropriate form of the verb be + the past participle. The agent (the doer of the action) may be included with by or omitted.", "examples": [{"label": "Present simple passive", "sentence": "The letters are delivered every morning."}, {"label": "Past simple passive", "sentence": "The book was written in 1984."}, {"label": "Present perfect passive", "sentence": "The problem has been solved."}, {"label": "Future passive", "sentence": "The project will be completed next week."}, {"label": "With agent", "sentence": "The Mona Lisa was painted by Leonardo da Vinci."}]}, {"heading": "When to use the passive", "body": "We use the passive when we want to focus on the person or thing affected by an action, when the agent is unknown, or when we want to avoid mentioning the agent.", "examples": [{"label": "Unknown agent", "sentence": "My car has been stolen."}, {"label": "Formal/impersonal", "sentence": "It is believed that the company will announce new jobs."}, {"label": "Scientific writing", "sentence": "The samples were heated to 100 degrees."}]}]</td></tr>
+<tr><td>grammar_topics</td><td>id</td><td>categorical_low</td><td>8</td><td>8, 5, 3, 6</td></tr>
+<tr><td>grammar_topics</td><td>slug</td><td>categorical_low</td><td>8</td><td>articles, comparative-and-superlative-adjectives, fewer-and-less, group-prepositions</td></tr>
+<tr><td>grammar_topics</td><td>sort_order</td><td>categorical_low</td><td>8</td><td>10, 20, 30, 40</td></tr>
+<tr><td>grammar_topics</td><td>summary</td><td>categorical_low</td><td>8</td><td>The present perfect simple is used to talk about past events that have a connection to the present., Modal verbs such as might, could, and may are used to express different degrees of possibility., 'Fewer' is used with countable nouns; 'less' is used with uncountable nouns., In the passive voice, the object of the active sentence becomes the subject, and the focus is on what happens to the subject.</td></tr>
+<tr><td>grammar_topics</td><td>title</td><td>categorical_low</td><td>8</td><td>Present perfect simple, Modal verbs: possibility, Fewer and less, Passive voice</td></tr>
+<tr><td>shop_items</td><td>is_featured</td><td>boolean_or_binary</td><td>2</td><td>1, 0</td></tr>
+<tr><td>shop_items</td><td>category</td><td>categorical_low</td><td>3</td><td>dictionaries, grammar, thesaurus</td></tr>
+<tr><td>shop_items</td><td>description</td><td>categorical_low</td><td>8</td><td>The world's favourite learner's dictionary, with over 140,000 words, phrases, and examples. Ideal for upper-intermediate to advanced learners., Essential vocabulary reference for American English. Includes thousands of example sentences and a clear explanation of American culture., The authoritative guide to English pronunciation. Contains over 200,000 British and American pronunciations using the International Phonetic Alphabet., A comprehensive and authoritative guide to grammar and usage for learners and teachers of English.</td></tr>
+<tr><td>shop_items</td><td>id</td><td>categorical_low</td><td>8</td><td>1, 7, 2, 3</td></tr>
+<tr><td>shop_items</td><td>isbn</td><td>categorical_low</td><td>8</td><td>978-1-107-03499-3, 978-0-521-68257-7, 978-0-521-15253-2, 978-0-521-58349-9</td></tr>
+<tr><td>shop_items</td><td>name</td><td>categorical_low</td><td>8</td><td>Cambridge Advanced Learner's Dictionary (4th Edition), Cambridge Dictionary of American English (2nd Edition), Cambridge English Pronouncing Dictionary (18th Edition), Cambridge Grammar of English</td></tr>
+<tr><td>shop_items</td><td>slug</td><td>categorical_low</td><td>8</td><td>cambridge-advanced-learners-dictionary-4th, cambridge-business-english-dictionary, cambridge-dictionary-american-english-2nd, cambridge-english-pronouncing-dictionary-18th</td></tr>
+<tr><td>shop_items</td><td>price</td><td>numeric_or_threshold</td><td>8</td><td>35.0, 29.99, 39.0, 55.0</td></tr>
+<tr><td>words</td><td>is_thesaurus_phrase</td><td>boolean_or_binary</td><td>2</td><td>0, 1</td></tr>
+<tr><td>words</td><td>level</td><td>categorical_low</td><td>7</td><td>C1, C2, B2, A1</td></tr>
+<tr><td>words</td><td>pos</td><td>categorical_low</td><td>6</td><td>noun, adjective, verb, phrase</td></tr></tbody>
+            </table>
+          </div>
+        </section>
+        
+        <section class="doc-section audit-site">
+          <h2>Coursera</h2>
+          <div class="doc-grid compact">
+            <div class="doc-card"><h3>表数量</h3><p>8</p></div>
+            <div class="doc-card"><h3>总行数</h3><p>3013</p></div>
+            <div class="doc-card"><h3>可用变量</h3><p>35</p></div>
+            <div class="doc-card"><h3>二阶组合估计</h3><p>79418</p></div>
+            <div class="doc-card"><h3>三阶组合估计</h3><p>9892580</p></div>
+            <div class="doc-card"><h3>状态表</h3><p>enrollments, saved_courses</p></div>
+          </div>
+          <h3>请求变量</h3>
+          <p><strong>query args:</strong> category, certificate, country, credit, duration, free, level, min_rating, next, q, sort, type</p>
+          <p><strong>form args:</strong> course_id</p>
+          <p><strong>json args:</strong> course_id</p>
+          <h3>优先用于排列组合的字段</h3>
+          <div class="doc-table-wrap">
+            <table class="doc-table">
+              <thead><tr><th>表</th><th>字段</th><th>类型</th><th>distinct</th><th>样例</th></tr></thead>
+              <tbody><tr><td>course_modules</td><td>week_number</td><td>categorical_low</td><td>8</td><td>1, 2, 3, 4</td></tr>
+<tr><td>course_modules</td><td>description</td><td>categorical_mid</td><td>74</td><td>Course orientation and getting started., Language, logic, and communication., Conjunctions, disjunctions, conditionals., Natural numbers, integers, rationals, reals.</td></tr>
+<tr><td>course_modules</td><td>quizzes_count</td><td>numeric_or_threshold</td><td>2</td><td>1, 2</td></tr>
+<tr><td>course_modules</td><td>readings_count</td><td>numeric_or_threshold</td><td>4</td><td>2, 3, 4, 1</td></tr>
+<tr><td>course_modules</td><td>videos_count</td><td>numeric_or_threshold</td><td>11</td><td>3, 5, 4, 6</td></tr>
+<tr><td>courses</td><td>credit_eligible</td><td>boolean_or_binary</td><td>2</td><td>0, 1</td></tr>
+<tr><td>courses</td><td>has_certificate</td><td>boolean_or_binary</td><td>2</td><td>1, 0</td></tr>
+<tr><td>courses</td><td>is_featured</td><td>boolean_or_binary</td><td>2</td><td>1, 0</td></tr>
+<tr><td>courses</td><td>is_free</td><td>boolean_or_binary</td><td>2</td><td>0, 1</td></tr>
+<tr><td>courses</td><td>is_new</td><td>boolean_or_binary</td><td>2</td><td>0, 1</td></tr>
+<tr><td>courses</td><td>category</td><td>categorical_low</td><td>11</td><td>Math and Logic, Business, Social Sciences, Arts and Humanities</td></tr>
+<tr><td>courses</td><td>color_class</td><td>categorical_low</td><td>11</td><td>cat-math, cat-biz, cat-soc, cat-arts</td></tr>
+<tr><td>courses</td><td>course_type</td><td>categorical_low</td><td>5</td><td>Course, Specialization, Professional Certificate, Guided Project</td></tr>
+<tr><td>courses</td><td>degree_type</td><td>categorical_low</td><td>4</td><td>Master, MasterAdvancedStudy, Bachelor</td></tr>
+<tr><td>courses</td><td>level</td><td>categorical_low</td><td>4</td><td>Beginner, Intermediate, Advanced, Mixed</td></tr>
+<tr><td>courses</td><td>subcategory</td><td>categorical_low</td><td>3</td><td>Physical Science and Engineering, Finance</td></tr>
+<tr><td>courses</td><td>partner_id</td><td>categorical_mid</td><td>40</td><td>1, 6, 4, 11</td></tr>
+<tr><td>courses</td><td>sort_date</td><td>date_or_time</td><td>20</td><td>2023-09-01, 2023-06-01, 2023-01-01, 2023-04-01</td></tr></tbody>
+            </table>
+          </div>
+        </section>
+        
+        <section class="doc-section audit-site">
+          <h2>ESPN</h2>
+          <div class="doc-grid compact">
+            <div class="doc-card"><h3>表数量</h3><p>15</p></div>
+            <div class="doc-card"><h3>总行数</h3><p>4025</p></div>
+            <div class="doc-card"><h3>可用变量</h3><p>68</p></div>
+            <div class="doc-card"><h3>二阶组合估计</h3><p>437030</p></div>
+            <div class="doc-card"><h3>三阶组合估计</h3><p>132254408</p></div>
+            <div class="doc-card"><h3>状态表</h3><p>user_favorites</p></div>
+          </div>
+          <h3>请求变量</h3>
+          <p><strong>query args:</strong> conference, date, next, page, q, season, sport, stat, type</p>
+          <p><strong>form args:</strong> 无</p>
+          <p><strong>json args:</strong> id, next, type</p>
+          <h3>优先用于排列组合的字段</h3>
+          <div class="doc-table-wrap">
+            <table class="doc-table">
+              <thead><tr><th>表</th><th>字段</th><th>类型</th><th>distinct</th><th>样例</th></tr></thead>
+              <tbody><tr><td>articles</td><td>is_featured</td><td>boolean_or_binary</td><td>2</td><td>0, 1</td></tr>
+<tr><td>articles</td><td>is_headline</td><td>boolean_or_binary</td><td>2</td><td>1, 0</td></tr>
+<tr><td>articles</td><td>sport_slug</td><td>categorical_low</td><td>12</td><td>fantasy, golf, mlb, mma</td></tr>
+<tr><td>articles</td><td>author</td><td>categorical_mid</td><td>39</td><td>ESPN Staff, ESPN Soccer Staff, ESPN NHL Staff, ESPN College Football</td></tr>
+<tr><td>articles</td><td>published_date</td><td>date_or_time</td><td>103</td><td>April 9, 2024, April 8, 2024, April 7, 2024, April 6, 2024</td></tr>
+<tr><td>articles</td><td>tags</td><td>high_cardinality</td><td>252</td><td>["NBA", "Boston Celtics", "Jayson Tatum", "Standings"], ["NBA", "LeBron James", "Los Angeles Lakers", "Records", "Career Stats"], ["NBA", "Joel Embiid", "Philadelphia 76ers", "Injuries"], ["NBA", "Luka Doncic", "Dallas Mavericks", "Stats Leaders"]</td></tr>
+<tr><td>games</td><td>status</td><td>boolean_or_binary</td><td>2</td><td>final, scheduled</td></tr>
+<tr><td>games</td><td>network</td><td>categorical_low</td><td>14</td><td>ESPN, ABC, TNT, CBS</td></tr>
+<tr><td>games</td><td>period</td><td>categorical_low</td><td>3</td><td>Final, Scheduled, Final OT</td></tr>
+<tr><td>games</td><td>sport_slug</td><td>categorical_low</td><td>6</td><td>mlb, nba, ncaaf, nfl</td></tr>
+<tr><td>games</td><td>date</td><td>date_or_time</td><td>62</td><td>2023-12-25, 2024-04-05, 2024-04-06, 2024-04-14</td></tr>
+<tr><td>games</td><td>date_display</td><td>date_or_time</td><td>62</td><td>December 25, 2023, April 5, 2024, April 6, 2024, April 14, 2024</td></tr>
+<tr><td>games</td><td>away_score</td><td>numeric_or_threshold</td><td>35</td><td>117, 122, 101, 114</td></tr>
+<tr><td>games</td><td>home_score</td><td>numeric_or_threshold</td><td>42</td><td>120, 115, 108, 127</td></tr>
+<tr><td>games</td><td>time</td><td>numeric_or_threshold</td><td>12</td><td>7:30 PM ET, 7:00 PM ET, 9:30 PM ET, 10:30 PM ET</td></tr>
+<tr><td>player_stats</td><td>season</td><td>boolean_or_binary</td><td>2</td><td>career, 2023-24</td></tr>
+<tr><td>player_stats</td><td>soccer_appearances</td><td>boolean_or_binary</td><td>2</td><td>0, 14</td></tr>
+<tr><td>player_stats</td><td>soccer_assists</td><td>boolean_or_binary</td><td>2</td><td>0, 6</td></tr></tbody>
+            </table>
+          </div>
+        </section>
+        
+        <section class="doc-section audit-site">
+          <h2>GitHub</h2>
+          <div class="doc-grid compact">
+            <div class="doc-card"><h3>表数量</h3><p>9</p></div>
+            <div class="doc-card"><h3>总行数</h3><p>7005</p></div>
+            <div class="doc-card"><h3>可用变量</h3><p>25</p></div>
+            <div class="doc-card"><h3>二阶组合估计</h3><p>34942</p></div>
+            <div class="doc-card"><h3>三阶组合估计</h3><p>2786250</p></div>
+            <div class="doc-card"><h3>状态表</h3><p>follows, star, watch</p></div>
+          </div>
+          <h3>请求变量</h3>
+          <p><strong>query args:</strong> archived, created_after, created_before, created_days, email, has_readme, has_wiki, l, language, license, max_forks, max_stars, min_forks, min_stars, next, o, owner_type, page, q, s, since, sort, tab, topic, type, updated_after, updated_before, updated_days</p>
+          <p><strong>form args:</strong> next</p>
+          <p><strong>json args:</strong> repo_id, user_id</p>
+          <h3>优先用于排列组合的字段</h3>
+          <div class="doc-table-wrap">
+            <table class="doc-table">
+              <thead><tr><th>表</th><th>字段</th><th>类型</th><th>distinct</th><th>样例</th></tr></thead>
+              <tbody><tr><td>issue</td><td>is_pr</td><td>boolean_or_binary</td><td>2</td><td>0, 1</td></tr>
+<tr><td>issue</td><td>pr_base_branch</td><td>boolean_or_binary</td><td>2</td><td>main, master</td></tr>
+<tr><td>issue</td><td>pr_changed_files</td><td>categorical_low</td><td>16</td><td>0, 15, 14, 9</td></tr>
+<tr><td>issue</td><td>status</td><td>categorical_low</td><td>3</td><td>open, closed, merged</td></tr>
+<tr><td>issue</td><td>number</td><td>categorical_mid</td><td>63</td><td>1, 2, 3, 4</td></tr>
+<tr><td>issue</td><td>pr_commits_count</td><td>numeric_or_threshold</td><td>11</td><td>0, 8, 1, 2</td></tr>
+<tr><td>repository</td><td>has_readme</td><td>boolean_or_binary</td><td>2</td><td>1, 0</td></tr>
+<tr><td>repository</td><td>has_wiki</td><td>boolean_or_binary</td><td>2</td><td>1, 0</td></tr>
+<tr><td>repository</td><td>is_archived</td><td>boolean_or_binary</td><td>2</td><td>0, 1</td></tr>
+<tr><td>repository</td><td>license</td><td>categorical_low</td><td>9</td><td>MIT, GPL-2.0, Apache-2.0, BSD-3-Clause</td></tr>
+<tr><td>repository</td><td>owner_type</td><td>categorical_low</td><td>4</td><td>user, org, Organization, User</td></tr>
+<tr><td>repository</td><td>wiki_pages_json</td><td>categorical_low</td><td>11</td><td>[{"slug": "home", "title": "Home", "body": "Welcome to the Visual Studio Code wiki. Documentation for contributors building, testing, and debugging the editor."}, {"slug": "how-to-contribute", "title": "How to Contribute", "body": "Step-by-step guide to building VS Code from source, running the test suite, and submitting your first pull request."}, {"slug": "extension-api-tips", "title": "Extension API Tips", "body": "Best practices for writing high-quality VS Code extensions: activation events, performance, language client/server architecture."}, {"slug": "building-on-windows", "title": "Building on Windows", "body": "Building VS Code on Windows requires Visual Studio 2022 with the C++ workload, Python 3.11, and Node.js 18."}], [], [{"slug": "home", "title": "Home", "body": "TensorFlow community-maintained documentation. For official docs, see tensorflow.org. This wiki covers contributor workflows."}, {"slug": "building-from-source", "title": "Building from Source", "body": "TensorFlow uses Bazel to build. Recommended: bazel 6.5.0, GCC 9+, CUDA 12.x for GPU builds. Run `./configure` first."}, {"slug": "gpu-troubleshooting", "title": "GPU Troubleshooting", "body": "Common CUDA / cuDNN issues, driver version mismatches, and how to verify TF can see your GPU with `tf.config.list_physical_devices`."}], [{"slug": "home", "title": "Home", "body": "React contributor documentation. Architecture overview, build process, and policy for accepting pull requests."}, {"slug": "reconciler-architecture", "title": "Reconciler Architecture", "body": "Deep-dive into the React Fiber reconciler: work loops, double buffering, and concurrent rendering primitives."}, {"slug": "release-process", "title": "Release Process", "body": "How major / minor / patch releases are cut. CHANGELOG conventions and codenames."}]</td></tr>
+<tr><td>repository</td><td>gallery_json</td><td>categorical_mid</td><td>70</td><td>[{"title": "Intelligent Code Editing", "desc": "VS Code offers rich code completion powered by IntelliSense, providing smart suggestions for variables, methods, and modules based on language semantics.", "images": ["/static/images/feature_sections/copilot_code.png", "/static/images/feature_sections/accordion1.webp"]}, {"title": "Built-in Git Support", "desc": "Review diffs, stage files, make commits, push and pull from any hosted SCM service \u2014 all from within the editor.", "images": ["/static/images/feature_sections/actions_workflow.webp", "/static/images/feature_sections/pillar1.webp"]}, {"title": "Extensions Marketplace", "desc": "Customize VS Code with thousands of extensions for languages, debuggers, themes, and developer tools.", "images": ["/static/images/feature_sections/accordion2.webp", "/static/images/feature_sections/pillar2.webp"]}, {"title": "Integrated Terminal", "desc": "Use the terminal directly from VS Code, running shell commands from any location with full support for bash, zsh, fish, and more.", "images": ["/static/images/feature_sections/codespaces_env.webp", "/static/images/feature_sections/accordion3.webp"]}], [{"title": "The World's Largest Open Source Kernel", "desc": "The Linux kernel is the heart of billions of devices worldwide, from smartphones to supercomputers.", "images": ["/static/images/feature_sections/pillar1.webp", "/static/images/feature_sections/accordion1.webp"]}, {"title": "Massive Contributor Community", "desc": "Thousands of developers worldwide contribute patches, bug fixes, and features to the Linux kernel every release cycle.", "images": ["/static/images/feature_sections/accordion2.webp", "/static/images/feature_sections/actions_collaborate.webp"]}, {"title": "Subsystems Architecture", "desc": "Linux is organized into subsystems \u2014 networking, memory management, filesystems, drivers \u2014 each maintained by dedicated engineers.", "images": ["/static/images/feature_sections/pillar2.webp", "/static/images/feature_sections/accordion3.webp"]}], [{"title": "End-to-End Machine Learning", "desc": "TensorFlow provides a comprehensive, flexible ecosystem of tools and libraries for building and deploying ML models at scale.", "images": ["/static/images/feature_sections/copilot_code.png", "/static/images/feature_sections/pillar1.webp"]}, {"title": "Keras High-Level API", "desc": "TensorFlow's Keras API makes it easy to build and train deep learning models with just a few lines of code.", "images": ["/static/images/feature_sections/accordion1.webp", "/static/images/feature_sections/pillar2.webp"]}, {"title": "Production Deployment", "desc": "Deploy models to any environment \u2014 cloud, on-device, browser, or edge \u2014 with TensorFlow Serving and TensorFlow Lite.", "images": ["/static/images/feature_sections/codespaces_env.webp", "/static/images/feature_sections/accordion2.webp"]}], [{"title": "Component-Based Architecture", "desc": "Build encapsulated components that manage their own state, then compose them to make complex UIs.", "images": ["/static/images/feature_sections/copilot_chat.webp", "/static/images/feature_sections/accordion1.webp"]}, {"title": "Declarative Views", "desc": "React makes it painless to create interactive UIs. Design simple views for each state and React efficiently updates and renders components.", "images": ["/static/images/feature_sections/pillar1.webp", "/static/images/feature_sections/pillar2.webp"]}, {"title": "Learn Once, Write Anywhere", "desc": "React Native lets you build mobile apps using only JavaScript, while React DOM handles web rendering.", "images": ["/static/images/feature_sections/accordion2.webp", "/static/images/feature_sections/accordion3.webp"]}]</td></tr>
+<tr><td>repository</td><td>language</td><td>categorical_mid</td><td>31</td><td>TypeScript, C, Python, JavaScript</td></tr>
+<tr><td>repository</td><td>latest_release_notes</td><td>categorical_mid</td><td>39</td><td>Python runtime fixes; performance improvements in the renderer., React 18.3.1 — deprecation warnings for features removed in 19., Patch release fixing a regression in the scheduler introduced in the previous version., First release candidate — please test the the autoloader changes carefully.</td></tr>
+<tr><td>repository</td><td>latest_commit_date</td><td>date_or_time</td><td>249</td><td>2024-05-15 07:00:00.000000, 2024-05-15 12:00:00.000000, 2024-05-15 06:00:00.000000, 2024-05-15 00:00:00.000000</td></tr>
+<tr><td>repository</td><td>latest_release_date</td><td>date_or_time</td><td>151</td><td>2024-04-10 00:00:00.000000, 2024-04-26 00:00:00.000000, 2024-03-23 00:00:00.000000, 2024-05-04 00:00:00.000000</td></tr>
+<tr><td>repository</td><td>updated_at</td><td>date_or_time</td><td>447</td><td>2024-05-15 12:00:00.000000, 2023-11-21 12:00:00, 2024-05-13 02:00:00, 2024-03-04 12:00:00</td></tr></tbody>
+            </table>
+          </div>
+        </section>
+        
+        <section class="doc-section audit-site">
+          <h2>Google Flights</h2>
+          <div class="doc-grid compact">
+            <div class="doc-card"><h3>表数量</h3><p>11</p></div>
+            <div class="doc-card"><h3>总行数</h3><p>127015</p></div>
+            <div class="doc-card"><h3>可用变量</h3><p>35</p></div>
+            <div class="doc-card"><h3>二阶组合估计</h3><p>92914</p></div>
+            <div class="doc-card"><h3>三阶组合估计</h3><p>12537028</p></div>
+            <div class="doc-card"><h3>状态表</h3><p>booking, booking_item, cart_item, price_alert, saved_search</p></div>
+          </div>
+          <h3>请求变量</h3>
+          <p><strong>query args:</strong> airline, cabin, class, dep, depart, from, max_price, max_stops, min_price, months, next, origin, passengers, q, return, return_flight_id, sort, to, trip</p>
+          <p><strong>form args:</strong> address, body, cabin_class, card_number, card_type, cardholder_name, city, comfort, confirm_password, contact_email, contact_phone, country, current_password, date_of_birth, destination_iata, email, exp_month, exp_year, first_name, frequent_flyer, is_default, label, last_name, new_password, origin_iata, passengers, passport_number, password, phone, punctuality, rating, return_flight_id, saved_payment_id, service, target_price, threshold_price, title</p>
+          <p><strong>json args:</strong> cabin_class, flight_id, item_id, passengers, return_flight_id</p>
+          <h3>优先用于排列组合的字段</h3>
+          <div class="doc-table-wrap">
+            <table class="doc-table">
+              <thead><tr><th>表</th><th>字段</th><th>类型</th><th>distinct</th><th>样例</th></tr></thead>
+              <tbody><tr><td>airport</td><td>is_popular</td><td>boolean_or_binary</td><td>2</td><td>1, 0</td></tr>
+<tr><td>airport</td><td>region</td><td>categorical_low</td><td>7</td><td>North America, Europe, Asia, Middle East</td></tr>
+<tr><td>airport</td><td>city</td><td>categorical_mid</td><td>89</td><td>New York, Los Angeles, Chicago, San Francisco</td></tr>
+<tr><td>airport</td><td>city_slug</td><td>categorical_mid</td><td>89</td><td>abu-dhabi, amsterdam, athens, atlanta</td></tr>
+<tr><td>airport</td><td>country</td><td>numeric_or_threshold</td><td>53</td><td>United States, United Kingdom, France, Italy</td></tr>
+<tr><td>flight</td><td>entertainment</td><td>boolean_or_binary</td><td>2</td><td>1, 0</td></tr>
+<tr><td>flight</td><td>is_best</td><td>boolean_or_binary</td><td>2</td><td>0, 1</td></tr>
+<tr><td>flight</td><td>is_cheapest</td><td>boolean_or_binary</td><td>2</td><td>0, 1</td></tr>
+<tr><td>flight</td><td>is_fastest</td><td>boolean_or_binary</td><td>2</td><td>0, 1</td></tr>
+<tr><td>flight</td><td>power</td><td>boolean_or_binary</td><td>2</td><td>1, 0</td></tr>
+<tr><td>flight</td><td>seat_type</td><td>boolean_or_binary</td><td>2</td><td>Standard seat, Recliner seat</td></tr>
+<tr><td>flight</td><td>wifi</td><td>boolean_or_binary</td><td>2</td><td>1, 0</td></tr>
+<tr><td>flight</td><td>aircraft</td><td>categorical_low</td><td>11</td><td>Airbus A380, Boeing 737-800, Boeing 737 MAX 8, Airbus A350-900</td></tr>
+<tr><td>flight</td><td>airline</td><td>categorical_low</td><td>23</td><td>British Airways, Air Canada, KLM, Lufthansa</td></tr>
+<tr><td>flight</td><td>airline_code</td><td>categorical_low</td><td>23</td><td>BA, AC, KL, LH</td></tr>
+<tr><td>flight</td><td>airline_logo</td><td>categorical_low</td><td>23</td><td>/static/images/airlines/british.svg, /static/images/airlines/aircanada.svg, /static/images/airlines/klm.svg, /static/images/airlines/lufthansa.svg</td></tr>
+<tr><td>flight</td><td>baggage_free</td><td>categorical_low</td><td>3</td><td>0, 1, 2</td></tr>
+<tr><td>flight</td><td>co2_vs_typical</td><td>categorical_low</td><td>18</td><td>25, 0, 15, 5</td></tr></tbody>
+            </table>
+          </div>
+        </section>
+        
+        <section class="doc-section audit-site">
+          <h2>Google Map</h2>
+          <div class="doc-grid compact">
+            <div class="doc-card"><h3>表数量</h3><p>12</p></div>
+            <div class="doc-card"><h3>总行数</h3><p>1207</p></div>
+            <div class="doc-card"><h3>可用变量</h3><p>45</p></div>
+            <div class="doc-card"><h3>二阶组合估计</h3><p>105136</p></div>
+            <div class="doc-card"><h3>三阶组合估计</h3><p>15300262</p></div>
+            <div class="doc-card"><h3>状态表</h3><p>saved_list, saved_place, timeline_entry, trip, trip_stop</p></div>
+          </div>
+          <h3>请求变量</h3>
+          <p><strong>query args:</strong> category, city, from, lat, lng, min_rating, mode, nearby_category, next, q, radius, route, sort, to</p>
+          <p><strong>form args:</strong> bio, body, city, color, current_password, description, email, end_date, home_city, list_id, name, new_password, new_password2, note, notes, password, password2, place_id, rating, start_date, title</p>
+          <p><strong>json args:</strong> list_id, place_id</p>
+          <h3>优先用于排列组合的字段</h3>
+          <div class="doc-table-wrap">
+            <table class="doc-table">
+              <thead><tr><th>表</th><th>字段</th><th>类型</th><th>distinct</th><th>样例</th></tr></thead>
+              <tbody><tr><td>category</td><td>color</td><td>categorical_low</td><td>9</td><td>#ea4335, #4285f4, #fbbc04, #34a853</td></tr>
+<tr><td>category</td><td>description</td><td>categorical_low</td><td>16</td><td>Discover the best places to eat, from cozy neighborhood cafes to world-class dining., Find the perfect place to stay - hotels, resorts, and boutique properties around the world., Iconic landmarks, historic sites, and must-see destinations in every city., Art, history, science - explore world-class collections and exhibitions.</td></tr>
+<tr><td>category</td><td>icon</td><td>categorical_low</td><td>16</td><td>restaurant, hotel, camera, museum</td></tr>
+<tr><td>category</td><td>id</td><td>categorical_low</td><td>16</td><td>16, 3, 11, 13</td></tr>
+<tr><td>category</td><td>name</td><td>categorical_low</td><td>16</td><td>Restaurants, Hotels, Attractions, Museums</td></tr>
+<tr><td>category</td><td>slug</td><td>categorical_low</td><td>16</td><td>airports, attractions, bus-stops, charging</td></tr>
+<tr><td>city</td><td>description</td><td>categorical_mid</td><td>66</td><td>The city that never sleeps - from Times Square to Central Park, discover iconic NYC., Explore Los Angeles - one of United States's most beloved destinations., Explore Chicago - one of United States's most beloved destinations., Explore San Francisco - one of United States's most beloved destinations.</td></tr>
+<tr><td>city</td><td>hero_image</td><td>categorical_mid</td><td>40</td><td>/static/images/cities/new-york/img_00.png, /static/images/cities/los-angeles/img_00.jpg, /static/images/cities/chicago/img_00.png, /static/images/cities/san-francisco/img_00.jpg</td></tr>
+<tr><td>city</td><td>country</td><td>numeric_or_threshold</td><td>25</td><td>United States, United Kingdom, France, Italy</td></tr>
+<tr><td>place</td><td>bicycle_parking</td><td>boolean_or_binary</td><td>2</td><td>0, 1</td></tr>
+<tr><td>place</td><td>closes_at_night</td><td>boolean_or_binary</td><td>2</td><td>0, 1</td></tr>
+<tr><td>place</td><td>delivery_available</td><td>boolean_or_binary</td><td>2</td><td>0, 1</td></tr>
+<tr><td>place</td><td>ev_charging</td><td>boolean_or_binary</td><td>2</td><td>0, 1</td></tr>
+<tr><td>place</td><td>has_parking_lot</td><td>boolean_or_binary</td><td>2</td><td>1, 0</td></tr>
+<tr><td>place</td><td>is_24h</td><td>boolean_or_binary</td><td>2</td><td>0, 1</td></tr>
+<tr><td>place</td><td>is_featured</td><td>boolean_or_binary</td><td>2</td><td>1, 0</td></tr>
+<tr><td>place</td><td>is_open_now</td><td>boolean_or_binary</td><td>2</td><td>1, 0</td></tr>
+<tr><td>place</td><td>is_popular</td><td>boolean_or_binary</td><td>2</td><td>0, 1</td></tr></tbody>
+            </table>
+          </div>
+        </section>
+        
+        <section class="doc-section audit-site">
+          <h2>Google Search</h2>
+          <div class="doc-grid compact">
+            <div class="doc-card"><h3>表数量</h3><p>15</p></div>
+            <div class="doc-card"><h3>总行数</h3><p>2934</p></div>
+            <div class="doc-card"><h3>可用变量</h3><p>7</p></div>
+            <div class="doc-card"><h3>二阶组合估计</h3><p>2743</p></div>
+            <div class="doc-card"><h3>三阶组合估计</h3><p>45773</p></div>
+            <div class="doc-card"><h3>状态表</h3><p>alert, collection, search_history</p></div>
+          </div>
+          <h3>请求变量</h3>
+          <p><strong>query args:</strong> collection, next, page, q, snippet, tbm, title, topic, url</p>
+          <p><strong>form args:</strong> comment, dark_mode, frequency, language, q, rating, region, results_per_page, safe_search</p>
+          <p><strong>json args:</strong> q, result_id</p>
+          <h3>优先用于排列组合的字段</h3>
+          <div class="doc-table-wrap">
+            <table class="doc-table">
+              <thead><tr><th>表</th><th>字段</th><th>类型</th><th>distinct</th><th>样例</th></tr></thead>
+              <tbody><tr><td>knowledge_fact</td><td>rank</td><td>numeric_or_threshold</td><td>7</td><td>0, 1, 2, 3</td></tr>
+<tr><td>paa_question</td><td>rank</td><td>numeric_or_threshold</td><td>3</td><td>1, 0, 2</td></tr>
+<tr><td>search_result</td><td>source_type</td><td>boolean_or_binary</td><td>1</td><td>web</td></tr>
+<tr><td>search_result</td><td>rank</td><td>numeric_or_threshold</td><td>12</td><td>0, 1, 2, 3</td></tr>
+<tr><td>topic</td><td>knowledge_type</td><td>categorical_mid</td><td>28</td><td>movie, person, team, list</td></tr>
+<tr><td>topic</td><td>task_id</td><td>categorical_mid</td><td>44</td><td>Google Search--0, Google Search--1, Google Search--10, Google Search--11</td></tr>
+<tr><td>topic</td><td>search_time</td><td>numeric_or_threshold</td><td>49</td><td>0.22, 0.27, 0.32, 0.37</td></tr></tbody>
+            </table>
+          </div>
+        </section>
+        
+        <section class="doc-section audit-site">
+          <h2>Hugging Face</h2>
+          <div class="doc-grid compact">
+            <div class="doc-card"><h3>表数量</h3><p>13</p></div>
+            <div class="doc-card"><h3>总行数</h3><p>1100</p></div>
+            <div class="doc-card"><h3>可用变量</h3><p>33</p></div>
+            <div class="doc-card"><h3>二阶组合估计</h3><p>83827</p></div>
+            <div class="doc-card"><h3>三阶组合估计</h3><p>10738138</p></div>
+            <div class="doc-card"><h3>状态表</h3><p>cart_items, collection_items, collections, follows</p></div>
+          </div>
+          <h3>请求变量</h3>
+          <p><strong>query args:</strong> library, license, modality, next, page, q, sdk, sort, tag, task, topic, type</p>
+          <p><strong>form args:</strong> collection_id, hardware_slug, hours, next, repo_id</p>
+          <p><strong>json args:</strong> author_id, collection_id, hardware_slug, hours, inputs, item_id, message, model, repo_id, task</p>
+          <h3>优先用于排列组合的字段</h3>
+          <div class="doc-table-wrap">
+            <table class="doc-table">
+              <thead><tr><th>表</th><th>字段</th><th>类型</th><th>distinct</th><th>样例</th></tr></thead>
+              <tbody><tr><td>authors</td><td>is_verified</td><td>boolean_or_binary</td><td>2</td><td>1, 0</td></tr>
+<tr><td>authors</td><td>kind</td><td>boolean_or_binary</td><td>2</td><td>org, user</td></tr>
+<tr><td>discussions</td><td>status</td><td>boolean_or_binary</td><td>1</td><td>open</td></tr>
+<tr><td>discussions</td><td>body</td><td>categorical_low</td><td>13</td><td>Hi team — I ran this locally with 24k tokens and the attention pattern seems off. Have you evaluated on longer context?, Really impressive results on my benchmark. Congrats to the authors!, Has anyone tried running this with vLLM? I'm getting OOM on a single A100 at batch_size=4., For the license question — can I use the outputs commercially? The tag says OpenRAIL but the README says apache-2.0.</td></tr>
+<tr><td>discussions</td><td>id</td><td>categorical_low</td><td>20</td><td>1, 2, 3, 4</td></tr>
+<tr><td>discussions</td><td>kind</td><td>categorical_low</td><td>3</td><td>discussion, pull-request, issue</td></tr>
+<tr><td>discussions</td><td>repo_id</td><td>categorical_low</td><td>16</td><td>12, 13, 19, 21</td></tr>
+<tr><td>discussions</td><td>title</td><td>categorical_low</td><td>14</td><td>How does this model handle long context?, Model keeps hallucinating tool calls — any fix?, Quantization question: FP8 vs INT4?, Fine-tuning on custom data — best practice?</td></tr>
+<tr><td>discussions</td><td>upvotes</td><td>categorical_low</td><td>17</td><td>43, 52, 8, 70</td></tr>
+<tr><td>discussions</td><td>user_id</td><td>categorical_low</td><td>5</td><td>1, 2, 3, 4</td></tr>
+<tr><td>discussions</td><td>created_at</td><td>date_or_time</td><td>20</td><td>2026-04-11 16:19:29.666518, 2026-04-11 16:19:29.668253, 2026-04-11 16:19:29.670451, 2026-04-11 16:19:29.671449</td></tr>
+<tr><td>repositories</td><td>is_featured</td><td>boolean_or_binary</td><td>2</td><td>1, 0</td></tr>
+<tr><td>repositories</td><td>is_new</td><td>boolean_or_binary</td><td>2</td><td>1, 0</td></tr>
+<tr><td>repositories</td><td>banner_url</td><td>categorical_low</td><td>11</td><td>/static/images/repos/dataset_wikipedia_01.png, /static/images/repos/dataset_wikipedia_02.webp, /static/images/repos/dataset_wikipedia_03.png, /static/images/repos/dataset_wikipedia_05.png</td></tr>
+<tr><td>repositories</td><td>emoji</td><td>categorical_low</td><td>23</td><td>🚀, 🎨, ⚡, 🎙️</td></tr>
+<tr><td>repositories</td><td>inference_provider</td><td>categorical_low</td><td>11</td><td>Together AI, Novita, SambaNova, Replicate</td></tr>
+<tr><td>repositories</td><td>language</td><td>categorical_low</td><td>18</td><td>Chinese, Spanish, Portuguese, German</td></tr>
+<tr><td>repositories</td><td>library</td><td>categorical_low</td><td>13</td><td>Transformers, Diffusers, sentence-transformers, stable-baselines3</td></tr></tbody>
+            </table>
+          </div>
+        </section>
+        
+        <section class="doc-section audit-site">
+          <h2>Wolfram Alpha</h2>
+          <div class="doc-grid compact">
+            <div class="doc-card"><h3>表数量</h3><p>11</p></div>
+            <div class="doc-card"><h3>总行数</h3><p>321</p></div>
+            <div class="doc-card"><h3>可用变量</h3><p>22</p></div>
+            <div class="doc-card"><h3>二阶组合估计</h3><p>50184</p></div>
+            <div class="doc-card"><h3>三阶组合估计</h3><p>4848918</p></div>
+            <div class="doc-card"><h3>状态表</h3><p>favorites, notebook_entries, notebooks, query_history, saved_queries</p></div>
+          </div>
+          <h3>请求变量</h3>
+          <p><strong>query args:</strong> category, i, next, q</p>
+          <p><strong>form args:</strong> bio, comment, confirm, confirm_password, current_password, description, email, full_name, institution, is_public, new_password, next, notes, password, query_text, rating, remember, result_summary, title, topic_id, username</p>
+          <p><strong>json args:</strong> notes, query_text, topic_id</p>
+          <h3>优先用于排列组合的字段</h3>
+          <div class="doc-table-wrap">
+            <table class="doc-table">
+              <thead><tr><th>表</th><th>字段</th><th>类型</th><th>distinct</th><th>样例</th></tr></thead>
+              <tbody><tr><td>computation_results</td><td>category</td><td>categorical_low</td><td>11</td><td>mathematics, science-and-technology, everyday-life, society-and-culture</td></tr>
+<tr><td>computation_results</td><td>related_queries</td><td>categorical_low</td><td>16</td><td>[], ["integral of x sin(x)", "integral of e^x cos(x)"], ["weather Chicago", "Chicago temperature"], ["roots of 2x^3 - 3x^2 + 4x - 5", "plot 2x^3 - 3x^2 + 4x - 5", "derivative of 2x^3 - 3x^2 + 4x - 5"]</td></tr>
+<tr><td>computation_results</td><td>subcategory</td><td>categorical_low</td><td>19</td><td>calculus, geometry, physics, algebra</td></tr>
+<tr><td>computation_results</td><td>topic_slug</td><td>categorical_low</td><td>19</td><td>calculus, geometry, physics, algebra</td></tr>
+<tr><td>subcategories</td><td>category_id</td><td>categorical_low</td><td>4</td><td>1, 2, 3, 4</td></tr>
+<tr><td>subcategories</td><td>sort_order</td><td>categorical_low</td><td>8</td><td>1, 2, 3, 4</td></tr>
+<tr><td>subcategories</td><td>description</td><td>categorical_mid</td><td>28</td><td>Solve equations, factor polynomials, work with algebraic expressions., Derivatives, integrals, limits, series, differential equations., Statistical distributions, regression, hypothesis testing, data analysis., Areas, volumes, coordinates, transformations, and geometric proofs.</td></tr>
+<tr><td>subcategories</td><td>id</td><td>categorical_mid</td><td>28</td><td>1, 22, 11, 2</td></tr>
+<tr><td>subcategories</td><td>name</td><td>categorical_mid</td><td>28</td><td>Algebra, Calculus &amp; Analysis, Statistics, Geometry</td></tr>
+<tr><td>subcategories</td><td>slug</td><td>categorical_mid</td><td>28</td><td>algebra, arts-media, astronomy, calculus</td></tr>
+<tr><td>topics</td><td>is_featured</td><td>boolean_or_binary</td><td>2</td><td>1, 0</td></tr>
+<tr><td>topics</td><td>is_new</td><td>boolean_or_binary</td><td>2</td><td>0, 1</td></tr>
+<tr><td>topics</td><td>category_id</td><td>categorical_low</td><td>4</td><td>1, 2, 3, 4</td></tr>
+<tr><td>topics</td><td>description</td><td>categorical_low</td><td>23</td><td>Solve equations, factor polynomials, work with expressions and inequalities. Wolfram Alpha handles everything from simple linear equations to complex polynomial systems., Compute derivatives, integrals, limits, series expansions, and much more. Wolfram Alpha delivers step-by-step solutions for calculus problems., Statistical computations including distributions, regression, hypothesis testing, and data analysis. Input your data for instant statistical summaries., Compute geometric properties of 2D shapes, 3D solids, and coordinate geometry. From basic areas to advanced differential geometry.</td></tr>
+<tr><td>topics</td><td>examples</td><td>categorical_low</td><td>23</td><td>[{"query": "solve 3x + 4 = 19", "type": "equation", "result": "x = 5"}, {"query": "factor x^3 - 8", "type": "factoring", "result": "(x - 2)(x\u00b2 + 2x + 4)"}, {"query": "expand (a+b)^6", "type": "expansion", "result": "a\u2076 + 6a\u2075b + 15a\u2074b\u00b2 + 20a\u00b3b\u00b3 + 15a\u00b2b\u2074 + 6ab\u2075 + b\u2076"}, {"query": "solve system 2x+y=5, x-y=1", "type": "system", "result": "x=2, y=1"}, {"query": "simplify (x^2-4)/(x+2)", "type": "simplification", "result": "x - 2"}], [{"query": "integrate sin(x) dx", "type": "integral", "result": "\u2212cos(x) + C"}, {"query": "d/dx [x^3 * ln(x)]", "type": "derivative", "result": "x\u00b2(1 + 3 ln x)"}, {"query": "lim x-&gt;0 sin(x)/x", "type": "limit", "result": "1"}, {"query": "Taylor series e^x around x=0", "type": "series", "result": "1 + x + x\u00b2/2! + x\u00b3/3! + ..."}, {"query": "integrate x^2 from 0 to 3", "type": "definite", "result": "9"}], [{"query": "mean {1, 4, 7, 2, 8, 3}", "type": "descriptive", "result": "4.17"}, {"query": "normal distribution mean=0 sd=1", "type": "distribution", "result": "PDF/CDF plot and properties"}, {"query": "linear regression (1,2),(2,3),(3,5),(4,4),(5,6)", "type": "regression", "result": "y = 0.9x + 1.1"}, {"query": "binomial distribution n=20 p=0.3", "type": "probability", "result": "Mean=6, Variance=4.2"}, {"query": "chi-squared test", "type": "hypothesis", "result": "Critical values and p-values"}], [{"query": "area of ellipse a=5, b=3", "type": "2d", "result": "47.12 square units"}, {"query": "volume of cone r=4, h=9", "type": "3d", "result": "150.8 cubic units"}, {"query": "distance (1,2) to (4,6)", "type": "coordinate", "result": "5"}, {"query": "triangle with sides 3,4,5", "type": "triangle", "result": "Right triangle, area=6"}, {"query": "regular hexagon side 5", "type": "polygon", "result": "Area=64.95, Perimeter=30"}]</td></tr>
+<tr><td>topics</td><td>id</td><td>categorical_low</td><td>23</td><td>1, 11, 2, 10</td></tr>
+<tr><td>topics</td><td>image</td><td>categorical_low</td><td>23</td><td>/static/images/topics/algebra.png, /static/images/topics/calculus.png, /static/images/topics/statistics.png, /static/images/topics/geometry.png</td></tr>
+<tr><td>topics</td><td>name</td><td>categorical_low</td><td>23</td><td>Algebra, Calculus &amp; Analysis, Statistics, Geometry</td></tr></tbody>
+            </table>
+          </div>
+        </section>
+        
+    </article>
+  </main>
+</body>
+</html>

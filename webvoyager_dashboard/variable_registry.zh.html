@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>WebHarbor 推荐变量注册表</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <main class="doc-main">
+    <article class="doc-article">
+      <a class="doc-back" href="index.html#variant-playbook">返回 Dashboard</a>
+      <p class="eyebrow">Variable Registry</p>
+      <h1>WebHarbor 推荐变量注册表</h1>
+      <p class="doc-lede">
+        这个页面不是把所有 DB 字段机械列出来，而是按当前 WebHarbor 实际 UI 和 seed DB 覆盖，挑出适合排列组合造题的变量。
+        组合前仍然要先查 DB 和跑浏览器验证。
+      </p>
+
+      <section class="doc-section">
+        <h2>先用这些站点做批量生成</h2>
+        <div class="doc-grid">
+          <div class="doc-card"><h3>Google Flights</h3><p>变量空间最大，航班表 126k+ 行。优先组合 origin、destination、depart、return、cabin、stops、price、airline、emissions、duration。</p></div>
+          <div class="doc-card"><h3>Booking</h3><p>酒店题最容易参数化。优先组合 city、dates、adults/rooms、rating、stars、price、amenities、brand、distance。</p></div>
+          <div class="doc-card"><h3>Amazon</h3><p>电商筛选和状态流丰富。优先组合 category、query、brand、price、rating、reviews、condition、variant、shipping/returns。</p></div>
+          <div class="doc-card"><h3>Google Map</h3><p>适合空间推理。优先组合 city/zip/anchor、category、rating、hours、distance、route mode、review field。</p></div>
+          <div class="doc-card"><h3>ESPN</h3><p>表格题很稳。优先组合 sport、date、team、conference、stat、position、schedule、standings、injury。</p></div>
+        </div>
+      </section>
+
+      <section class="doc-section">
+        <h2>推荐变量矩阵</h2>
+        <div class="doc-table-wrap">
+          <table class="doc-table">
+            <thead><tr><th>站点</th><th>核心实体</th><th>可组合变量</th><th>推荐题型</th><th>验证方式</th><th>不要碰什么</th></tr></thead>
+            <tbody>
+              <tr><td>Allrecipes</td><td>recipe</td><td>cuisine、diet、ingredient、main_ingredient、meal_type、method、min_rating、min_reviews、max_prep_mins、max_calories、servings</td><td>多条件菜谱检索；营养字段抽取；购物清单/meal plan 状态题</td><td>recipe detail + Nutrition Facts + shopping-list/meal-plan 页面</td><td>首页随机位置；过长步骤摘要</td></tr>
+              <tr><td>Amazon</td><td>product</td><td>category、query、brand、min/max_price、min_rating、min_reviews、condition、color、size、free_shipping、free_returns、sort</td><td>商品筛选；Top N 比较；变体加购；退货/保护计划/评论抽取</td><td>搜索结果 + product detail + cart/wishlist 状态页</td><td>首页随机 deal 位置；只在标题里隐含的规格</td></tr>
+              <tr><td>Apple</td><td>product / support_article</td><td>category、chip、storage、color、connectivity、screen_size、release_year、min_ram、min_ssd、topic、zip</td><td>产品比较；配置报价；support 文档；trade-in；pickup</td><td>product/spec/support/trade-in 页面 + bag 配置摘要</td><td>未绑定型号的 latest；没有确认页的 pickup 细节</td></tr>
+              <tr><td>ArXiv</td><td>paper</td><td>query、searchtype、category、subject、year/month、date_from/date_to、min/max_authors、html、journal_ref</td><td>分类日期检索；论文详情；版本历史；帮助文档；商店状态题</td><td>search count + paper detail + help/store 页面</td><td>related random；离开本地镜像的 Cornell 外链</td></tr>
+              <tr><td>BBC News</td><td>article / sport table</td><td>section、subsection、region、tag、since_days、sort、q、sport table fields</td><td>栏目头条；文章字段抽取；体育表格；音频/文化/旅行列表</td><td>article metadata + table row/column + section title</td><td>无日期锚点的 latest；开放长摘要</td></tr>
+              <tr><td>Booking</td><td>property</td><td>q/dest/city/country/near、checkin、checkout、adults、children、rooms、min_rating、min_stars、min/max_price、property_type、brand、sort、amenity flags</td><td>酒店筛选；距离/品牌 facet；货币换算；预订/bag；评论分类</td><td>search result count + property detail + booking/bag/currency 页面</td><td>默认 date.today；筛选后 0 结果的组合</td></tr>
+              <tr><td>Cambridge Dictionary</td><td>word / grammar_topic</td><td>q、src/dst translation、type、language、grammar category、quiz type</td><td>IPA/定义/例句；翻译；thesaurus；grammar；quiz/game</td><td>word detail + translation/thesaurus/grammar 页面</td><td>随机 word scramble 作 strict gold</td></tr>
+              <tr><td>Coursera</td><td>course</td><td>q、level、type、duration、category、certificate、free、credit、min_rating、sort、country</td><td>课程发现；specialization 课程列表；module/video 数；partner；review percentage</td><td>search result + course detail + partner/degree 页面</td><td>没有 result count 的复杂筛选组合</td></tr>
+              <tr><td>ESPN</td><td>game / team / player</td><td>sport、date、season、conference、stat、type、team、player、position、status</td><td>scoreboard；standings；player stats；roster/injury/depth chart；article/transaction</td><td>table row/column + game detail + team/player page</td><td>不按镜像日期解释的 today/latest</td></tr>
+              <tr><td>GitHub</td><td>repository / issue</td><td>q、language、license、topic、min/max_stars、min/max_forks、created/updated dates、has_readme、sort、type</td><td>repo qualifier 搜索；release/commit/contributor；issue；pricing；sign-up validation</td><td>search results + repo subpage + pricing/form validation</td><td>没有 seeded today 的相对日期；未 seeded 的 repo 子页</td></tr>
+              <tr><td>Google Flights</td><td>flight</td><td>from、to、depart、return、trip、passengers、class/cabin、max_stops、min/max_price、airline、sort、months</td><td>航线搜索；最低价/最快/最低排放；price graph；booking options；track/alert</td><td>flight rows + detail page + graph/provider labels</td><td>未先查表的航线日期组合</td></tr>
+              <tr><td>Google Map</td><td>place / route</td><td>q、category、city、lat/lng、nearby_category、radius、min_rating、from/to、mode、sort</td><td>附近地点；路线；营业时间；评论；share/print；settings</td><td>place detail + directions + route fields + review text</td><td>模糊地点无 disambiguation；超大半径</td></tr>
+              <tr><td>Google Search</td><td>topic / search_result</td><td>q、tbm、topic、page、collection、snippet/title/url</td><td>知识卡事实；垂直搜索；cached page 阅读；PAA/related</td><td>knowledge fact + cached external page + SERP card</td><td>真实实时 current/latest；随机 result_count/search_time</td></tr>
+              <tr><td>Hugging Face</td><td>repository / docs / dataset row</td><td>type、task、license、library、modality、sdk、sort、tag、q、page</td><td>模型/数据集/Space 搜索；docs 参数；Inference API；Dataset Viewer；pricing</td><td>repo card + model card/docs/API response/dataset row</td><td>未固定输出的生成式 inference</td></tr>
+              <tr><td>Wolfram Alpha</td><td>computation_result</td><td>i/q、category、topic、subcategory、units、keywords</td><td>数学/科学/单位/日期/健康计算；pod 比较；notebook 状态</td><td>computation_results plaintext/pods + result page</td><td>未 seed 的任意 query；实时天气/金融</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="doc-section">
+        <h2>组合规则</h2>
+        <div class="doc-grid">
+          <div class="doc-card"><h3>先查 DB</h3><p>每个变量组合必须先返回至少一个答案实体。0 结果直接丢弃。</p></div>
+          <div class="doc-card"><h3>再查页面</h3><p>答案字段必须能在搜索结果页、详情页或确认页上看见。</p></div>
+          <div class="doc-card"><h3>限制组合阶数</h3><p>第一阶段只做 2 到 4 个变量的组合。高阶组合容易 0 结果，也难评估。</p></div>
+          <div class="doc-card"><h3>保留干扰项</h3><p>好题不应该只有一个结果，但目标答案要能通过约束稳定选出。</p></div>
+        </div>
+      </section>
+    </article>
+  </main>
+</body>
+</html>

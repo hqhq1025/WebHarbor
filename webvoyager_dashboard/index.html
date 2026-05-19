@@ -1,0 +1,242 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>WebHarbor × WebVoyager Infrastructure Atlas</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%23101410'/%3E%3Cpath d='M6 23 14 7l4 8 3-5 5 13z' fill='%23d8ef8b'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="page-shell">
+    <aside class="rail">
+      <div class="mark">
+        <span class="mark-dot"></span>
+        <div>
+          <strong>WH/WV</strong>
+          <small>infra atlas</small>
+        </div>
+      </div>
+      <nav>
+        <a href="#overview">Overview</a>
+        <a href="#infra">Infra</a>
+        <a href="#sites">Sites</a>
+        <a href="#playbook">Playbook</a>
+        <a href="#tasks">Tasks</a>
+        <a href="#evidence">Evidence</a>
+      </nav>
+      <div class="rail-note">
+        <button id="themeToggle" class="theme-toggle" type="button" aria-label="切换深色模式">
+          <span class="theme-icon">◐</span>
+          <span class="theme-text">Theme</span>
+        </button>
+        <span>Generated</span>
+        <time id="generatedAt">-</time>
+      </div>
+    </aside>
+
+    <main>
+      <section class="hero" id="overview">
+        <div class="hero-copy">
+          <p class="eyebrow">Local benchmark operations dashboard</p>
+          <h1>WebHarbor × WebVoyager 任务与环境质量图谱</h1>
+          <p class="hero-lede">
+            把 WebHarbor 的 15 个本地镜像、Docker 控制面、SQLite seed 数据、浏览器抽测证据，
+            和 WebVoyager 643 条任务统一放到一个可筛选、可审计的视图里。
+          </p>
+        </div>
+        <div class="hero-panel">
+          <div class="status-pill" id="healthPill">loading</div>
+          <div class="mini-topology" id="miniTopology"></div>
+        </div>
+      </section>
+
+      <section class="metric-strip" id="metricStrip"></section>
+
+      <section class="split-section" id="infra">
+        <div class="section-title">
+          <p class="eyebrow">Infrastructure</p>
+          <h2>运行时基础设施</h2>
+        </div>
+        <div class="infra-grid">
+          <div class="panel wide">
+            <div class="panel-head">
+              <h3>Docker / Control Plane</h3>
+              <span id="containerStatus" class="tag">-</span>
+            </div>
+            <div class="kv-grid" id="infraFacts"></div>
+          </div>
+          <div class="panel">
+            <div class="panel-head">
+              <h3>任务对齐</h3>
+              <span class="tag ok" id="alignmentTag">-</span>
+            </div>
+            <div class="alignment-bars" id="alignmentBars"></div>
+          </div>
+          <div class="panel">
+            <div class="panel-head">
+              <h3>风险信号</h3>
+              <span class="tag warn">audit</span>
+            </div>
+            <div id="riskList" class="risk-list"></div>
+          </div>
+        </div>
+      </section>
+
+      <section id="sites">
+        <div class="section-title">
+          <p class="eyebrow">Mirror Sites</p>
+          <h2>15 个复刻站点质量概览</h2>
+        </div>
+        <div class="site-toolbar">
+          <button class="seg active" data-site-mode="quality">质量视图</button>
+          <button class="seg" data-site-mode="data">数据规模</button>
+          <button class="seg" data-site-mode="code">实现规模</button>
+        </div>
+        <div class="site-grid" id="siteGrid"></div>
+      </section>
+
+      <section id="playbook">
+        <div class="section-title">
+          <p class="eyebrow">Manual Playbook</p>
+          <h2>逐站人工任务设计建议</h2>
+        </div>
+        <div class="playbook-intro">
+          <p>
+            这一部分不是脚本统计，而是按 WebVoyager 的原始任务逐站人工审阅后写出的任务设计建议。
+            每个站点文件都包含基础设施能力、可泛化任务族、站点特化任务族、逐任务扩展建议和扩容前需要补的基础设施。
+          </p>
+          <div class="playbook-search">
+            <label>
+              <span>审阅内搜索</span>
+              <input id="reviewSearchInput" type="search" placeholder="搜索建议、任务 ID、场景">
+            </label>
+          </div>
+        </div>
+        <div class="review-shell">
+          <div class="review-tabs" id="reviewTabs"></div>
+          <article class="review-reader" id="reviewReader"></article>
+        </div>
+      </section>
+
+      <section id="variant-playbook">
+        <div class="section-title">
+          <p class="eyebrow">Variant Library</p>
+          <h2>基于现有基础设施的详细造题变体</h2>
+        </div>
+        <div class="playbook-intro">
+          <p>
+            造数据前先分清固定数据、请求时随机、日期锚点和用户状态。稳定性审计文档已经按 15 个站点梳理了这些边界。
+          </p>
+          <div class="playbook-search">
+            <a class="review-open-site" href="data_generation_stability.html" target="_blank" rel="noreferrer">打开稳定性审计</a>
+          </div>
+        </div>
+        <div class="playbook-intro">
+          <p>
+            变量空间审计页从当前运行容器的 SQLite seed DB 和源码 request 参数中抽取字段覆盖，帮助判断哪些变量适合排列组合造题。
+          </p>
+          <div class="playbook-search">
+            <a class="review-open-site" href="variable_audit.html" target="_blank" rel="noreferrer">打开变量空间审计</a>
+          </div>
+        </div>
+        <div class="playbook-intro">
+          <p>
+            推荐变量注册表是人工筛过的一版：只保留适合造题的变量、推荐组合、验证方式和不要碰的高风险组合。
+          </p>
+          <div class="playbook-search">
+            <a class="review-open-site" href="variable_registry.zh.html" target="_blank" rel="noreferrer">打开推荐变量注册表</a>
+          </div>
+        </div>
+        <div class="playbook-intro">
+          <p>
+            WebVoyager 覆盖审计页统计原始 643 条任务到底考了哪些站点、能力标签、答案口径、实时风险和状态操作。
+          </p>
+          <div class="playbook-search">
+            <a class="review-open-site" href="webvoyager_coverage.html" target="_blank" rel="noreferrer">打开 WebVoyager 覆盖审计</a>
+          </div>
+        </div>
+        <div class="variant-shell" id="variantShell"></div>
+      </section>
+
+      <section class="split-section">
+        <div class="section-title">
+          <p class="eyebrow">Distribution</p>
+          <h2>任务结构分布</h2>
+        </div>
+        <div class="chart-grid">
+          <div class="panel">
+            <div class="panel-head"><h3>动作类型</h3><span class="tag">multi-label</span></div>
+            <div id="actionChart" class="bar-list"></div>
+          </div>
+          <div class="panel">
+            <div class="panel-head"><h3>答案类型</h3><span class="tag">reference</span></div>
+            <div id="answerChart" class="donut-wrap"></div>
+          </div>
+          <div class="panel">
+            <div class="panel-head"><h3>复杂度分布</h3><span class="tag">heuristic</span></div>
+            <div id="complexityChart" class="hist"></div>
+          </div>
+        </div>
+      </section>
+
+      <section id="tasks">
+        <div class="section-title row-title">
+          <div>
+            <p class="eyebrow">Task Explorer</p>
+            <h2>643 条 WebVoyager 原任务</h2>
+          </div>
+          <div class="task-count" id="taskCount">-</div>
+        </div>
+        <div class="filters">
+          <label>
+            <span>搜索</span>
+            <input id="searchInput" type="search" placeholder="任务、答案、站点、ID">
+          </label>
+          <label>
+            <span>站点</span>
+            <select id="siteFilter"></select>
+          </label>
+          <label>
+            <span>答案</span>
+            <select id="answerFilter">
+              <option value="">全部</option>
+              <option value="golden">golden</option>
+              <option value="possible">possible</option>
+            </select>
+          </label>
+          <label>
+            <span>动作</span>
+            <select id="actionFilter"></select>
+          </label>
+          <label>
+            <span>状态流</span>
+            <select id="stateFilter">
+              <option value="">全部</option>
+              <option value="state">需要登录/保存/购买</option>
+              <option value="stateless">纯查找/回答</option>
+            </select>
+          </label>
+        </div>
+        <div class="task-list" id="taskList"></div>
+        <div class="load-more-wrap">
+          <button id="loadMoreBtn" class="load-more" type="button">显示更多任务</button>
+        </div>
+      </section>
+
+      <section id="evidence">
+        <div class="section-title">
+          <p class="eyebrow">Browser Evidence</p>
+          <h2>截图与抽测证据</h2>
+        </div>
+        <div class="evidence-grid" id="evidenceGrid"></div>
+      </section>
+    </main>
+  </div>
+
+  <script src="data.js"></script>
+  <script src="review_data.js"></script>
+  <script src="variant_playbook.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
