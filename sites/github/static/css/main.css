@@ -866,8 +866,8 @@ pre, code { font-family: var(--font-mono); }
   display: grid; grid-template-columns: 1fr 296px;
   max-width: var(--max-content); margin: 0 auto; padding: 24px 16px; gap: 24px;
 }
-.repo-main {}
-.repo-sidebar {}
+.repo-main { min-width: 0; }
+.repo-sidebar { min-width: 0; }
 
 /* File browser */
 .repo-file-header {
@@ -876,7 +876,7 @@ pre, code { font-family: var(--font-mono); }
   border-radius: var(--radius-sm) var(--radius-sm) 0 0; padding: 12px 16px;
   gap: 12px;
 }
-.repo-branch-selector { display: flex; align-items: center; gap: 12px; }
+.repo-branch-selector { display: flex; align-items: center; gap: 12px; min-width: 0; }
 .repo-branch-count, .repo-tag-count { font-size: 12px; color: var(--color-text-secondary); }
 .repo-file-actions { display: flex; gap: 8px; }
 /* Latest-commit bar above file tree (mirrors real github) */
@@ -916,17 +916,17 @@ pre, code { font-family: var(--font-mono); }
 .repo-commit-count:hover { background: var(--color-bg-tertiary); color: var(--color-link); }
 .repo-commit-count strong { font-weight: 600; }
 
-.repo-file-list { border: 1px solid var(--color-border); border-top: none; }
+.repo-file-list { border: 1px solid var(--color-border); border-top: none; overflow: hidden; }
 .repo-file-row {
-  display: grid; grid-template-columns: 24px 200px 1fr 100px;
+  display: grid; grid-template-columns: 24px minmax(180px, 2fr) minmax(88px, 120px) minmax(0, 1.5fr);
   align-items: center; gap: 8px; padding: 8px 16px;
   border-bottom: 1px solid var(--color-border-muted); font-size: 14px;
 }
 .repo-file-row:last-child { border-bottom: none; }
-.repo-file-icon { display: flex; }
-.repo-file-name { color: var(--color-link); font-weight: 600; }
-.repo-file-msg { color: var(--color-text-secondary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.repo-file-date { color: var(--color-text-secondary); font-size: 12px; text-align: right; }
+.repo-file-icon { display: flex; min-width: 0; }
+.repo-file-name { color: var(--color-link); font-weight: 600; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.repo-file-msg { color: var(--color-text-secondary); min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.repo-file-date { color: var(--color-text-secondary); font-size: 12px; text-align: right; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
 /* README */
 .repo-readme {
@@ -1363,7 +1363,7 @@ pre, code { font-family: var(--font-mono); }
   .trending-layout { flex-direction: column; }
   .trending-sidebar { width: 100%; }
   .repo-grid { grid-template-columns: 1fr; }
-  .repo-file-row { grid-template-columns: 24px 1fr 80px; }
+  .repo-file-row { grid-template-columns: 24px minmax(0, 1fr) minmax(72px, 96px); }
   .repo-file-msg { display: none; }
   .marketplace-layout { grid-template-columns: 1fr; }
   .notifications-layout { grid-template-columns: 1fr; }
