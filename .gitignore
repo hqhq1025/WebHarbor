@@ -95,3 +95,10 @@ audit_screens/
 # Agent demo results
 # =============================================================
 agent_demo/runs/
+
+# Local trajectory viewer handoff artifacts generated from mage_web_sft_factory.
+webvoyager_dashboard/login_trajectory_viewer/runs/
+webvoyager_dashboard/login_trajectory_viewer/runs_index.json
+webvoyager_dashboard/login_trajectory_viewer/trajectory_assets/
+webvoyager_dashboard/login_trajectory_viewer/viewer_data.json
+webvoyager_dashboard/trajectory_audit/

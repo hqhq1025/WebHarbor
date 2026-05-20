@@ -61,11 +61,17 @@ smaller on purpose to avoid non-oracle tasks.
 
 ## Supported families
 
-For each supported site, the prototype emits three DB-backed families:
+For each supported site, the generator emits three DB-backed families:
 
 1. **Detail lookup**: the task names a target entity and asks for visible fields.
 2. **Identify by constraints**: the task hides the target name, gives stable target features as constraints, and expects the entity identity.
 3. **State mutation**: the task logs in as a benchmark user, performs an operation such as save/cart/star/like/favorite/track, and validates DB before/after state.
+
+Most state-mutation sites also expose a multi-entity variant. Multi-entity rows
+keep the legacy `target_entity` for compatibility and add `target_entities` plus
+an operation such as `cart_add_multiple_products` or `saved_places_add_multiple`.
+Use `--item-count 2..4` and `--quantity-profile ones|mixed|increasing` to control
+the combination size and quantities.
 
 | Site | Detail family | Identify family | Mutation family | Oracle entity |
 | --- | --- | --- | --- | --- |
@@ -82,6 +88,24 @@ For each supported site, the prototype emits three DB-backed families:
 | Google Maps | `place_search_detail_lookup` | `place_identify_by_constraints` | `saved_place_add` | `Place` |
 | Hugging Face | `repository_search_detail_lookup` | `repository_identify_by_constraints` | `repo_like_add` | `Repository` |
 | Wolfram Alpha | `topic_example_lookup` | `topic_identify_by_constraints` | `favorite_topic_add` | `Topic` |
+
+Multi-entity state families currently include:
+
+```text
+allrecipes: recipe_box_save_multiple
+amazon: cart_add_multiple_products
+apple: bag_add_multiple_products
+arxiv: library_add_multiple_papers
+booking: bag_add_multiple_stays
+cambridge_dictionary: saved_words_add_multiple
+coursera: saved_courses_add_multiple
+espn: favorite_teams_add_multiple
+github: repo_star_add_multiple
+google_flights: tracked_flights_add_multiple
+google_map: saved_places_add_multiple
+huggingface: repo_like_add_multiple
+wolfram_alpha: favorite_topics_add_multiple
+```
 
 ## How to generate
 
@@ -105,7 +129,8 @@ product_identify_by_constraints
 cart_add_product
 ```
 
-Generate one task:
+Generate one task. `--limit` defaults to `1`, preserving the original
+single-spec behavior:
 
 ```bash
 .venv/bin/python scripts/generate_structured_tasks.py \
@@ -114,7 +139,53 @@ Generate one task:
   --output /tmp/amazon_identify.jsonl
 ```
 
-Generate and validate every supported family:
+Generate a deterministic batch from multiple DB entities:
+
+```bash
+.venv/bin/python scripts/generate_structured_tasks.py \
+  --site amazon \
+  --family product_identify_by_constraints \
+  --limit 25 \
+  --offset 0 \
+  --output /tmp/amazon_identify_25.jsonl
+```
+
+`--limit` means "emit at most N tasks"; if fewer DB entities satisfy the
+family's constraints, fewer rows are written. `--offset` is a stable candidate
+offset for paging through the same deterministic ordering:
+
+```bash
+.venv/bin/python scripts/generate_structured_tasks.py \
+  --site amazon \
+  --family product_search_with_filters \
+  --offset 25 \
+  --limit 25 \
+  --output /tmp/amazon_detail_page2.jsonl
+```
+
+Generate a multi-item state task batch:
+
+```bash
+.venv/bin/python scripts/generate_structured_tasks.py \
+  --site amazon \
+  --family cart_add_multiple_products \
+  --item-count 2 \
+  --quantity-profile mixed \
+  --limit 20 \
+  --output /tmp/amazon_multi_cart.jsonl
+```
+
+Validate a JSONL batch:
+
+```bash
+.venv/bin/python scripts/validate_structured_task.py \
+  --spec /tmp/amazon_identify_25.jsonl
+```
+
+The validator reads every non-empty JSONL row. Any row failure returns non-zero
+and reports the failing task id; success prints `validated N task(s)`.
+
+Generate and validate every supported family in batches:
 
 ```bash
 for site in $(.venv/bin/python scripts/generate_structured_tasks.py --list-sites); do
@@ -123,10 +194,15 @@ for site in $(.venv/bin/python scripts/generate_structured_tasks.py --list-sites
     .venv/bin/python scripts/generate_structured_tasks.py \
       --site "$site" \
       --family "$family" \
+      --limit 3 \
       --output "$out"
-    .venv/bin/python scripts/validate_structured_task.py \
-      --spec "$out" \
-      --phase before
+    phase=spec
+    case "$family" in
+      recipe_box_save|cart_add_product|library_add_paper|saved_property_add|saved_word_add|saved_course_add|favorite_team_add|repo_star_add|tracked_flight_add|saved_place_add|repo_like_add|favorite_topic_add)
+        phase=before
+        ;;
+    esac
+    .venv/bin/python scripts/validate_structured_task.py --spec "$out" --phase "$phase"
   done
 done
 ```
@@ -152,7 +228,8 @@ Expected answer = identity(X).
 ```
 
 Identify prompts must not reveal the human-visible target name. The validator
-checks that the hidden target entity still matches the DB fields and that an
+checks that the hidden target entity still matches the DB fields, that the
+constraint set uniquely identifies the target in the seeded DB, and that an
 incorrect `expected_answer.identity` is rejected.
 
 ## Mutation families and login injection
@@ -165,7 +242,7 @@ Mutation specs add authenticated actor and state-transition metadata:
   "login": {
     "required": true,
     "strategy": "ui_credentials",
-    "login_url": "http://localhost:40001/login",
+    "login_url": "https://www.amazon.com/ap/signin",
     "post_login_assertion": "authenticated user session is active"
   },
   "state_transition": {
@@ -176,10 +253,13 @@ Mutation specs add authenticated actor and state-transition metadata:
 ```
 
 The generator chooses a benchmark user and a target that is absent from that
-user's current state, so the task has a clean before state. Browser runners
+user's current state, so each task has a clean before state. Browser runners
 should use `actor.email`, `actor.password`, and `login.login_url` through the
-normal UI login flow. This is the login-injection contract: credentials are not
-hard-coded into the runner; they are carried by the structured task.
+normal UI login flow. `login.login_url` is the real upstream website's login or
+account sign-in URL, such as `https://www.amazon.com/ap/signin` or
+`https://github.com/login`, not a localhost mirror URL. This is the
+login-injection contract: credentials are not hard-coded into the runner; they
+are carried by the structured task.
 
 Validate before an agent run:
 
@@ -221,9 +301,10 @@ truth for entity identity or state mutation.
 - `scripts/generate_structured_tasks.py`
   - `--list-sites`
   - `--site <site> --list-families`
-  - `--site <site> --family <family> --output <jsonl>`
+  - `--site <site> --family <family> --limit <n> --offset <n> --output <jsonl>`
 - `scripts/validate_structured_task.py`
-  - validates one JSON/JSONL spec against seeded SQLite DB predicates
+  - validates one JSON spec or every row in a JSONL batch against seeded SQLite
+    DB predicates
   - supports `--phase spec|before|after`
 - `scripts/structured_task_runtime.py`
   - loads each site app from a temporary copy, calls real seed functions, and
@@ -233,6 +314,7 @@ truth for entity identity or state mutation.
   - `tests/test_reverse_generators_all_sites.py`
   - `tests/test_reverse_identify_families.py`
   - `tests/test_mutation_generators.py`
+  - `tests/test_structured_task_batch_generation.py`
 
 ## Next extensions
 

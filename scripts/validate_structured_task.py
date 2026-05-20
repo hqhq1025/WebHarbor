@@ -13,6 +13,9 @@ from typing import Any
 from structured_task_runtime import load_site_app
 
 
+_APP_CACHE: dict[str, Any] = {}
+
+
 def _fail(message: str) -> None:
     raise SystemExit(message)
 
@@ -31,7 +34,9 @@ def _eq(actual: Any, expected: Any, field: str, reasons: list[str]) -> None:
 
 
 def _load(site: str):
-    return load_site_app(site, fresh_instance=True).module
+    if site not in _APP_CACHE:
+        _APP_CACHE[site] = load_site_app(site, fresh_instance=True).module
+    return _APP_CACHE[site]
 
 
 
@@ -44,6 +49,15 @@ def _assert_identity(spec: dict[str, Any], actual: Any) -> None:
     expected = _expected_identity(spec)
     if expected is not None and str(actual) != expected:
         _fail(f"identity mismatch: expected {expected!r}, DB target is {actual!r}")
+
+
+def _is_identify(spec: dict[str, Any]) -> bool:
+    return spec.get("validation", {}).get("answer_kind") == "entity_identity"
+
+
+def _assert_unique_count(site: str, count: int, identity: str) -> None:
+    if count != 1:
+        _fail(f"{site} identify constraints are not unique for {identity!r}: matched {count} rows")
 
 
 def _generic_entity_validate(site: str, model_name: str, lookup: dict[str, Any], spec: dict[str, Any], field_map: dict[str, str]) -> None:
@@ -65,6 +79,16 @@ def _generic_entity_validate(site: str, model_name: str, lookup: dict[str, Any],
         for expected_field, attr in field_map.items():
             if expected_field in expected:
                 _eq(getattr(obj, attr), expected[expected_field], expected_field, reasons)
+        if _is_identify(spec):
+            q_unique = model.query
+            matched_fields = 0
+            for constraint_field, attr in field_map.items():
+                if constraint_field in constraints and hasattr(model, attr):
+                    q_unique = q_unique.filter(getattr(model, attr) == constraints[constraint_field])
+                    matched_fields += 1
+            if matched_fields:
+                identity = str(getattr(obj, identity_attr)) if identity_attr else repr(lookup)
+                _assert_unique_count(site, q_unique.count(), identity)
         # Common optional constraint checks.
         if "min_rating" in constraints and hasattr(obj, "rating") and obj.rating < float(constraints["min_rating"]):
             reasons.append(f"rating<{constraints['min_rating']}")
@@ -106,6 +130,22 @@ def _amazon_validate(spec: dict[str, Any]) -> None:
             reasons.append("free_shipping")
         if c.get("brand") and p.brand != c["brand"]:
             reasons.append("brand")
+        if _is_identify(spec):
+            q = app.Product.query
+            field_map = {
+                "brand": "brand",
+                "category": "category_slug",
+                "price": "price",
+                "rating": "rating",
+                "review_count": "review_count",
+                "condition": "condition",
+                "free_shipping": "free_shipping",
+                "free_returns": "free_returns",
+            }
+            for key, attr in field_map.items():
+                if key in c:
+                    q = q.filter(getattr(app.Product, attr) == c[key])
+            _assert_unique_count("amazon", q.count(), p.name)
         if reasons:
             _fail(f"Amazon product does not satisfy constraints: {', '.join(reasons)}")
 
@@ -133,6 +173,13 @@ def _apple_validate(spec: dict[str, Any]) -> None:
         }
         for k, actual in checks.items():
             _eq(actual, e.get(k), k, reasons)
+        if _is_identify(spec):
+            q = app.Product.query
+            for key, attr in {"category": "category", "subtitle": "subtitle", "price": "price",
+                              "monthly_price": "monthly_price", "in_stock": "in_stock"}.items():
+                if key in spec.get("constraints", {}):
+                    q = q.filter(getattr(app.Product, attr) == spec["constraints"][key])
+            _assert_unique_count("apple", q.count(), p.name)
         if reasons:
             _fail(f"Apple product does not satisfy constraints: {', '.join(reasons)}")
 
@@ -153,6 +200,16 @@ def _arxiv_validate(spec: dict[str, Any]) -> None:
         reasons: list[str] = []
         for k, actual in checks.items():
             _eq(actual, e.get(k), k, reasons)
+        if _is_identify(spec):
+            c = spec.get("constraints", {})
+            q = app.Paper.query
+            for key, attr in {"primary_subject": "primary_subject", "submitted_date": "submitted_date",
+                              "author_count": "n_authors"}.items():
+                if key in c:
+                    q = q.filter(getattr(app.Paper, attr) == c[key])
+            if "first_author" in c:
+                q = q.filter(app.Paper.authors_json.like(f'%"{c["first_author"]}"%'))
+            _assert_unique_count("arxiv", q.count(), p.title)
         if reasons:
             _fail(f"arXiv paper does not satisfy constraints: {', '.join(reasons)}")
 
@@ -196,6 +253,21 @@ def _booking_validate(spec: dict[str, Any]) -> None:
         expected_brand = expected.get("brand") or target.get("brand")
         if expected_brand is not None and prop.brand != expected_brand:
             reasons.append(f"brand!={expected_brand}")
+        if _is_identify(spec):
+            q = app.Property.query
+            if city_name:
+                q = q.join(app.City).filter(app.City.display == city_name)
+            for key, attr in {"rating": "rating", "review_count": "review_count", "nightly_price": "price_per_night",
+                              "stars": "stars", "property_type": "property_type",
+                              "distance_from_center_km": "distance_from_center", "brand": "brand"}.items():
+                if key in constraints:
+                    q = q.filter(getattr(app.Property, attr) == constraints[key])
+            amenities_unique = set(constraints.get("amenities", []))
+            if "breakfast_included" in amenities_unique:
+                q = q.filter(app.Property.breakfast_included.is_(True))
+            if "free_wifi" in amenities_unique:
+                q = q.filter(app.Property.has_wifi.is_(True))
+            _assert_unique_count("booking", q.count(), prop.name)
         if reasons:
             _fail(f"Booking property {prop.name!r} does not satisfy constraints: {', '.join(reasons)}")
 
@@ -216,6 +288,16 @@ def _cambridge_dictionary_validate(spec: dict[str, Any]) -> None:
         reasons: list[str] = []
         for k, actual in checks.items():
             _eq(actual, e.get(k), k, reasons)
+        if _is_identify(spec):
+            c = spec.get("constraints", {})
+            q = app.Word.query
+            for key, attr in {"part_of_speech": "pos", "level": "level", "uk_phonetic": "phonetic_uk",
+                              "us_phonetic": "phonetic_us"}.items():
+                if key in c:
+                    q = q.filter(getattr(app.Word, attr) == c[key])
+            if "first_definition" in c:
+                q = q.filter(app.Word.definitions_json.like(f'%{c["first_definition"]}%'))
+            _assert_unique_count("cambridge_dictionary", q.count(), w.headword)
         if reasons:
             _fail(f"Cambridge word does not satisfy constraints: {', '.join(reasons)}")
 
@@ -236,6 +318,17 @@ def _coursera_validate(spec: dict[str, Any]) -> None:
         reasons: list[str] = []
         for k, actual in checks.items():
             _eq(actual, e.get(k), k, reasons)
+        if _is_identify(spec):
+            cst = spec.get("constraints", {})
+            q = app.Course.query
+            for key, attr in {"level": "level", "rating": "rating", "review_count": "review_count",
+                              "duration": "duration_text", "instructor": "instructor",
+                              "certificate": "has_certificate"}.items():
+                if key in cst:
+                    q = q.filter(getattr(app.Course, attr) == cst[key])
+            if "partner" in cst:
+                q = q.join(app.Partner).filter(app.Partner.name == cst["partner"])
+            _assert_unique_count("coursera", q.count(), c.title)
         if reasons:
             _fail(f"Coursera course does not satisfy constraints: {', '.join(reasons)}")
 
@@ -269,7 +362,7 @@ def _google_flights_validate(spec: dict[str, Any]) -> None:
         dest = app.Airport.query.filter_by(iata=str(constraints.get("destination", "")).upper()).first()
         if origin is None or dest is None:
             _fail("Google Flights origin/destination constraint did not resolve")
-        depart = constraints.get("depart")
+        depart = constraints.get("depart") or constraints.get("departure_date")
         dep_d = datetime.strptime(depart, "%Y-%m-%d").date() if depart else None
 
         candidates = app.Flight.query.filter(app.Flight.origin_id == origin.id, app.Flight.destination_id == dest.id)
@@ -288,6 +381,28 @@ def _google_flights_validate(spec: dict[str, Any]) -> None:
             _fail(f"Google Flights flight {flight_number!r} is not the cheapest matching flight")
         if expected.get("price") is not None and float(expected["price"]) != float(flight.price):
             _fail(f"Google Flights price mismatch for {flight_number!r}")
+        if _is_identify(spec):
+            q = candidates
+            duration = constraints.get("duration")
+            if duration:
+                hours = minutes = 0
+                parts = str(duration).replace("h", "h ").replace("m", "m ").split()
+                for i, part in enumerate(parts):
+                    if part == "h" and i > 0:
+                        hours = int(parts[i - 1])
+                    elif part == "m" and i > 0:
+                        minutes = int(parts[i - 1])
+                    elif part.endswith("h"):
+                        hours = int(part[:-1])
+                    elif part.endswith("m"):
+                        minutes = int(part[:-1])
+                q = q.filter(app.Flight.duration_minutes == hours * 60 + minutes)
+            for key, attr in {"airline": "airline", "departure_time": "departure_time", "arrival_time": "arrival_time",
+                              "stops": "stops", "price": "price",
+                              "aircraft": "aircraft"}.items():
+                if key in constraints:
+                    q = q.filter(getattr(app.Flight, attr) == constraints[key])
+            _assert_unique_count("google_flights", q.count(), flight.flight_number)
 
 
 def _google_map_validate(spec: dict[str, Any]) -> None:
@@ -307,6 +422,18 @@ def _google_map_validate(spec: dict[str, Any]) -> None:
         reasons: list[str] = []
         for k, actual in checks.items():
             _eq(actual, e.get(k), k, reasons)
+        if _is_identify(spec):
+            c = spec.get("constraints", {})
+            q = app.Place.query
+            if "category" in c:
+                q = q.join(app.Category).filter(app.Category.name == c["category"])
+            if "city" in c:
+                q = q.join(app.City).filter(app.City.display_name == c["city"])
+            for key, attr in {"rating": "rating", "review_count": "review_count", "address": "address",
+                              "price_level": "price_level", "parking_lot": "has_parking_lot"}.items():
+                if key in c:
+                    q = q.filter(getattr(app.Place, attr) == c[key])
+            _assert_unique_count("google_map", q.count(), p.name)
         if reasons:
             _fail(f"Google Maps place does not satisfy constraints: {', '.join(reasons)}")
 
@@ -327,6 +454,16 @@ def _huggingface_validate(spec: dict[str, Any]) -> None:
         reasons: list[str] = []
         for k, actual in checks.items():
             _eq(actual, e.get(k), k, reasons)
+        if _is_identify(spec):
+            c = spec.get("constraints", {})
+            q = app.Repository.query
+            for key, attr in {"repo_type": "repo_type", "library": "library", "license": "license_display",
+                              "downloads": "downloads", "likes": "likes_count", "status": "status"}.items():
+                if key in c:
+                    q = q.filter(getattr(app.Repository, attr) == c[key])
+            if "task" in c:
+                q = q.join(app.Task).filter(app.Task.display == c["task"])
+            _assert_unique_count("huggingface", q.count(), r.slug)
         if reasons:
             _fail(f"Hugging Face repository does not satisfy constraints: {', '.join(reasons)}")
 
@@ -347,12 +484,28 @@ def _wolfram_alpha_validate(spec: dict[str, Any]) -> None:
         reasons: list[str] = []
         for k, actual in checks.items():
             _eq(actual, e.get(k), k, reasons)
+        if _is_identify(spec):
+            c = spec.get("constraints", {})
+            matches = []
+            for candidate in app.Topic.query.all():
+                if "is_featured" in c and candidate.is_featured != c["is_featured"]:
+                    continue
+                candidate_examples = json.loads(candidate.examples or "[]")
+                candidate_first = candidate_examples[0] if candidate_examples else {}
+                if "first_example_query" in c and candidate_first.get("query", "") != c["first_example_query"]:
+                    continue
+                if "first_example_result" in c and candidate_first.get("result", "") != c["first_example_result"]:
+                    continue
+                matches.append(candidate)
+            _assert_unique_count("wolfram_alpha", len(matches), t.name)
         if reasons:
             _fail(f"Wolfram topic does not satisfy constraints: {', '.join(reasons)}")
 
 
 def _mutation_lookup(app, spec: dict[str, Any]):
     site = spec["site"]
+    if spec.get("target_entities"):
+        return _multi_mutation_lookup(app, spec)
     target = spec.get("target_entity", {})
     actor = spec.get("actor", {})
     email = actor.get("email")
@@ -393,6 +546,58 @@ def _mutation_lookup(app, spec: dict[str, Any]):
     _fail(f"unsupported mutation site: {site}")
 
 
+def _multi_mutation_lookup(app, spec: dict[str, Any]):
+    site = spec["site"]
+    actor = spec.get("actor", {})
+    email = actor.get("email")
+    user = app.User.query.filter_by(email=email).first()
+    if user is None:
+        _fail(f"mutation actor not found: {email}")
+    targets = spec.get("target_entities") or []
+    if not targets:
+        _fail("multi mutation target_entities missing")
+    rows = []
+    model = fk = None
+    if site == "allrecipes":
+        model, fk = app.RecipeBoxItem, "recipe_id"
+    elif site == "amazon":
+        model, fk = app.CartItem, "product_id"
+    elif site == "apple":
+        model, fk = app.CartItem, "product_id"
+    elif site == "arxiv":
+        model, fk = app.LibraryItem, "paper_id"
+    elif site == "booking":
+        model, fk = app.CartItem, "property_id"
+    elif site == "cambridge_dictionary":
+        model, fk = app.SavedWord, "word_id"
+    elif site == "coursera":
+        model, fk = app.SavedCourse, "course_id"
+    elif site == "github":
+        model, fk = app.Star, "repo_id"
+    elif site == "google_flights":
+        model, fk = app.TrackedFlight, "flight_id"
+    elif site == "huggingface":
+        model, fk = app.Like, "repo_id"
+    elif site == "wolfram_alpha":
+        model, fk = app.Favorite, "topic_id"
+    if model is not None:
+        for target in targets:
+            row = model.query.filter_by(user_id=user.id).filter(getattr(model, fk) == target.get("id")).first()
+            rows.append((target, row))
+        return user, rows
+    if site == "espn":
+        for target in targets:
+            row = app.UserFavorite.query.filter_by(user_id=user.id, item_type="team", item_id=target.get("id")).first()
+            rows.append((target, row))
+        return user, rows
+    if site == "google_map":
+        for target in targets:
+            row = app.SavedPlace.query.filter_by(user_id=user.id, place_id=target.get("id")).first()
+            rows.append((target, row))
+        return user, rows
+    _fail(f"unsupported multi mutation site: {site}")
+
+
 def _mutation_validate(spec: dict[str, Any], phase: str) -> None:
     site = spec.get("site")
     app = _load(site)
@@ -400,6 +605,9 @@ def _mutation_validate(spec: dict[str, Any], phase: str) -> None:
     operation = spec.get("operation", {})
     with app.app.app_context():
         user, row = _mutation_lookup(app, spec)
+        if spec.get("target_entities"):
+            _multi_mutation_validate_rows(spec, row, phase)
+            return
         if phase == "before":
             if row is not None:
                 _fail(f"before state failed: mutation row already exists for {site}")
@@ -414,6 +622,58 @@ def _mutation_validate(spec: dict[str, Any], phase: str) -> None:
         # spec phase: actor and target exist; before must be absent in fresh DB.
         if row is not None:
             _fail(f"spec state failed: mutation row already exists for {site}")
+
+
+def _multi_mutation_validate_rows(spec: dict[str, Any], rows: list[tuple[dict[str, Any], Any]], phase: str) -> None:
+    site = spec["site"]
+    _validate_expected_totals(spec)
+    if phase in {"before", "spec"}:
+        existing = [target for target, row in rows if row is not None]
+        if existing:
+            first = existing[0]
+            _fail(f"{site} before state failed: product_id={first.get('id')} already exists")
+        return
+    if phase == "after":
+        for target, row in rows:
+            if row is None:
+                _fail(f"{site} state mismatch: item_id={target.get('id')} expected quantity={target.get('quantity', 1)} actual=missing")
+            if hasattr(row, "quantity") and int(row.quantity) != int(target.get("quantity", 1)):
+                _fail(f"{site} state mismatch: item_id={target.get('id')} expected quantity={target.get('quantity', 1)} actual={row.quantity}")
+            if "line_total" in target:
+                unit_price = getattr(row, "unit_price", None)
+                if unit_price is None and hasattr(row, "product") and row.product is not None:
+                    unit_price = getattr(row.product, "price", None)
+                if unit_price is not None:
+                    actual_line = round(float(unit_price) * int(getattr(row, "quantity", target.get("quantity", 1))), 2)
+                    if abs(actual_line - float(target["line_total"])) > 0.01:
+                        _fail(f"{site} state mismatch: item_id={target.get('id')} field=line_total expected={target['line_total']} actual={actual_line}")
+            for field in ("check_in", "check_out", "adults", "rooms", "room_type"):
+                if field in target and hasattr(row, field) and str(getattr(row, field)) != str(target[field]):
+                    _fail(f"{site} state mismatch: item_id={target.get('id')} field={field} expected={target[field]} actual={getattr(row, field)}")
+        return
+
+
+def _validate_expected_totals(spec: dict[str, Any]) -> None:
+    expected = spec.get("expected_answer", {})
+    items = expected.get("items") or []
+    if not items:
+        return
+    line_sum = 0.0
+    saw_money = False
+    for item in items:
+        if "unit_price" in item and "quantity" in item and "line_total" in item:
+            saw_money = True
+            calc = round(float(item["unit_price"]) * int(item["quantity"]), 2)
+            if abs(calc - float(item["line_total"])) > 0.01:
+                _fail(f"{spec['site']} expected total mismatch: item={item.get('identity')} line_total={item['line_total']} calculated={calc}")
+            line_sum += float(item["line_total"])
+        elif "item_total" in item:
+            saw_money = True
+            line_sum += float(item["item_total"])
+    if saw_money and "subtotal" in expected:
+        subtotal = round(line_sum, 2)
+        if abs(subtotal - float(expected["subtotal"])) > 0.01:
+            _fail(f"{spec['site']} expected subtotal mismatch: expected={expected['subtotal']} calculated={subtotal}")
 
 
 VALIDATORS = {
@@ -451,15 +711,29 @@ def main() -> int:
                         help="for state mutation tasks, validate spec/before/after DB state")
     args = parser.parse_args()
     text = args.spec.read_text(encoding="utf-8").strip()
-    spec = json.loads(text.splitlines()[0])
+    specs = [json.loads(line) for line in text.splitlines() if line.strip()]
+    if not specs:
+        print(f"empty spec file: {args.spec}", file=sys.stderr)
+        return 1
     try:
-        validate(spec, phase=args.phase)
+        for index, spec in enumerate(specs, start=1):
+            try:
+                validate(spec, phase=args.phase)
+            except SystemExit as exc:
+                if exc.code and isinstance(exc.code, str):
+                    task_id = spec.get("id", f"{args.spec}:{index}")
+                    print(f"{task_id}: {exc.code}", file=sys.stderr)
+                    return 1
+                raise
     except SystemExit as exc:
         if exc.code and isinstance(exc.code, str):
             print(exc.code, file=sys.stderr)
             return 1
         raise
-    print(f"validated {spec.get('id', args.spec)}")
+    if len(specs) == 1:
+        print(f"validated {specs[0].get('id', args.spec)}")
+    else:
+        print(f"validated {len(specs)} task(s)")
     return 0
 
 

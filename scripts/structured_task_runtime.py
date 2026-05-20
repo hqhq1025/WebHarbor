@@ -59,6 +59,24 @@ UPSTREAM_URLS = {
     "espn": "https://www.espn.com/",
 }
 
+UPSTREAM_LOGIN_URLS = {
+    "allrecipes": "https://www.allrecipes.com/account/signin/",
+    "amazon": "https://www.amazon.com/ap/signin",
+    "apple": "https://account.apple.com/sign-in",
+    "arxiv": "https://arxiv.org/login",
+    "bbc_news": "https://account.bbc.com/signin",
+    "booking": "https://www.booking.com/signin.html",
+    "cambridge_dictionary": "https://login.sso.cambridge.org/",
+    "coursera": "https://www.coursera.org/login",
+    "espn": "https://www.espn.com/login",
+    "github": "https://github.com/login",
+    "google_flights": "https://accounts.google.com/",
+    "google_map": "https://accounts.google.com/",
+    "google_search": "https://accounts.google.com/",
+    "huggingface": "https://huggingface.co/login",
+    "wolfram_alpha": "https://user.wolfram.com/",
+}
+
 
 
 @dataclass(frozen=True)

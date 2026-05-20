@@ -1,0 +1,301 @@
+{
+  "allrecipes": [
+    {
+      "user_id": 1,
+      "email": "alice.j@test.com",
+      "password": "TestPass123!",
+      "display_name": "Alice Johnson",
+      "persona": "weeknight meal planner"
+    },
+    {
+      "user_id": 2,
+      "email": "bob.c@test.com",
+      "password": "TestPass123!",
+      "display_name": "Bob Chen",
+      "persona": "family recipe collector"
+    },
+    {
+      "user_id": 3,
+      "email": "carol.d@test.com",
+      "password": "TestPass123!",
+      "display_name": "Carol Davis",
+      "persona": "holiday cooking planner"
+    }
+  ],
+  "amazon": [
+    {
+      "user_id": 2,
+      "email": "alice.j@test.com",
+      "password": "TestPass123!",
+      "display_name": "Alice Johnson",
+      "persona": "home electronics and books shopper"
+    },
+    {
+      "user_id": 3,
+      "email": "bob.c@test.com",
+      "password": "TestPass123!",
+      "display_name": "Bob Chen",
+      "persona": "office and kitchen shopper"
+    },
+    {
+      "user_id": 4,
+      "email": "carol.d@test.com",
+      "password": "TestPass123!",
+      "display_name": "Carol Davis",
+      "persona": "family household shopper"
+    }
+  ],
+  "apple": [
+    {
+      "user_id": 1,
+      "email": "alice.j@test.com",
+      "password": "TestPass123!",
+      "display_name": "Alice Johnson",
+      "persona": "Apple hardware shopper"
+    },
+    {
+      "user_id": 2,
+      "email": "bob.c@test.com",
+      "password": "TestPass123!",
+      "display_name": "Bob Chen",
+      "persona": "Mac and accessory buyer"
+    },
+    {
+      "user_id": 3,
+      "email": "carol.d@test.com",
+      "password": "TestPass123!",
+      "display_name": "Carol Davis",
+      "persona": "family device buyer"
+    }
+  ],
+  "arxiv": [
+    {
+      "user_id": 2,
+      "email": "alice.j@test.com",
+      "password": "TestPass123!",
+      "display_name": "Alice Johnson",
+      "persona": "ML paper reader"
+    },
+    {
+      "user_id": 3,
+      "email": "bob.c@test.com",
+      "password": "TestPass123!",
+      "display_name": "Bob Chen",
+      "persona": "systems paper reader"
+    },
+    {
+      "user_id": 4,
+      "email": "carol.d@test.com",
+      "password": "TestPass123!",
+      "display_name": "Carol Davis",
+      "persona": "NLP paper reader"
+    }
+  ],
+  "booking": [
+    {
+      "user_id": 2,
+      "email": "sophie.m@test.com",
+      "password": "TestPass123!",
+      "display_name": "Sophie Martin",
+      "persona": "European city traveler"
+    },
+    {
+      "user_id": 3,
+      "email": "kenji.t@test.com",
+      "password": "TestPass123!",
+      "display_name": "Kenji Tanaka",
+      "persona": "business traveler"
+    },
+    {
+      "user_id": 4,
+      "email": "emma.w@test.com",
+      "password": "TestPass123!",
+      "display_name": "Emma Williams",
+      "persona": "family vacation planner"
+    }
+  ],
+  "cambridge_dictionary": [
+    {
+      "user_id": 1,
+      "email": "alice.j@test.com",
+      "password": "TestPass123!",
+      "display_name": "Alice Johnson",
+      "persona": "advanced English learner"
+    },
+    {
+      "user_id": 2,
+      "email": "bob.c@test.com",
+      "password": "TestPass123!",
+      "display_name": "Bob Chen",
+      "persona": "business English learner"
+    },
+    {
+      "user_id": 3,
+      "email": "carol.d@test.com",
+      "password": "TestPass123!",
+      "display_name": "Carol Davis",
+      "persona": "exam vocabulary learner"
+    }
+  ],
+  "coursera": [
+    {
+      "user_id": 1,
+      "email": "alice.j@test.com",
+      "password": "TestPass123!",
+      "display_name": "Alice Johnson",
+      "persona": "machine learning learner"
+    },
+    {
+      "user_id": 2,
+      "email": "bob.c@test.com",
+      "password": "TestPass123!",
+      "display_name": "Bob Chen",
+      "persona": "business analytics learner"
+    },
+    {
+      "user_id": 3,
+      "email": "carol.d@test.com",
+      "password": "TestPass123!",
+      "display_name": "Carol Davis",
+      "persona": "career switcher"
+    }
+  ],
+  "espn": [
+    {
+      "user_id": 1,
+      "email": "alice.j@test.com",
+      "password": "TestPass123!",
+      "display_name": "Alice Johnson",
+      "persona": "NBA fan"
+    },
+    {
+      "user_id": 2,
+      "email": "bob.c@test.com",
+      "password": "TestPass123!",
+      "display_name": "Bob Chen",
+      "persona": "soccer fan"
+    },
+    {
+      "user_id": 3,
+      "email": "carol.d@test.com",
+      "password": "TestPass123!",
+      "display_name": "Carol Davis",
+      "persona": "college sports fan"
+    }
+  ],
+  "github": [
+    {
+      "user_id": 35,
+      "email": "alice.j@test.com",
+      "password": "TestPass123!",
+      "display_name": "Alice Johnson",
+      "persona": "open source frontend developer"
+    },
+    {
+      "user_id": 36,
+      "email": "bob.c@test.com",
+      "password": "TestPass123!",
+      "display_name": "Bob Chen",
+      "persona": "ML infrastructure developer"
+    },
+    {
+      "user_id": 37,
+      "email": "carol.d@test.com",
+      "password": "TestPass123!",
+      "display_name": "Carol Diaz",
+      "persona": "web framework developer"
+    }
+  ],
+  "google_flights": [
+    {
+      "user_id": 1,
+      "email": "alice.j@test.com",
+      "password": "TestPass123!",
+      "display_name": "Alice Johnson",
+      "persona": "frequent economy traveler"
+    },
+    {
+      "user_id": 2,
+      "email": "bob.c@test.com",
+      "password": "TestPass123!",
+      "display_name": "Bob Chen",
+      "persona": "price-sensitive traveler"
+    },
+    {
+      "user_id": 3,
+      "email": "carol.d@test.com",
+      "password": "TestPass123!",
+      "display_name": "Carol Davis",
+      "persona": "family trip planner"
+    }
+  ],
+  "google_map": [
+    {
+      "user_id": 1,
+      "email": "alice.j@test.com",
+      "password": "TestPass123!",
+      "display_name": "Alice Johnson",
+      "persona": "city explorer"
+    },
+    {
+      "user_id": 2,
+      "email": "bob.c@test.com",
+      "password": "TestPass123!",
+      "display_name": "Bob Chen",
+      "persona": "restaurant saver"
+    },
+    {
+      "user_id": 3,
+      "email": "carol.d@test.com",
+      "password": "TestPass123!",
+      "display_name": "Carol Davis",
+      "persona": "travel itinerary planner"
+    }
+  ],
+  "huggingface": [
+    {
+      "user_id": 2,
+      "email": "alice.j@test.com",
+      "password": "TestPass123!",
+      "display_name": "Alice Johnson",
+      "persona": "NLP model evaluator"
+    },
+    {
+      "user_id": 3,
+      "email": "bob.c@test.com",
+      "password": "TestPass123!",
+      "display_name": "Bob Chen",
+      "persona": "dataset builder"
+    },
+    {
+      "user_id": 4,
+      "email": "carol.d@test.com",
+      "password": "TestPass123!",
+      "display_name": "Carol Davis",
+      "persona": "Spaces explorer"
+    }
+  ],
+  "wolfram_alpha": [
+    {
+      "user_id": 2,
+      "email": "alice.j@test.com",
+      "password": "TestPass123!",
+      "display_name": "Alice Johnson",
+      "persona": "math student"
+    },
+    {
+      "user_id": 3,
+      "email": "bob.c@test.com",
+      "password": "TestPass123!",
+      "display_name": "Bob Chen",
+      "persona": "engineering student"
+    },
+    {
+      "user_id": 4,
+      "email": "carol.d@test.com",
+      "password": "TestPass123!",
+      "display_name": "Carol Davis",
+      "persona": "science tutor"
+    }
+  ]
+}
