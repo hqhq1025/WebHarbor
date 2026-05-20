@@ -1,9 +1,9 @@
 # WebVoyager 原题到 WebHarbor 造题能力覆盖审计
 
 - 原题数：`643`
-- 覆盖状态：`{"full": 501, "full_rewrite": 132, "missing": 8, "partial": 2}`
+- 覆盖状态：`{"full": 504, "full_rewrite": 132, "missing": 7}`
 - 能力标签：`{"calculation": 93, "compare_pair": 51, "current_or_external": 134, "date_time": 204, "detail_lookup": 451, "download_upload_share": 4, "login_auth": 5, "multi_filter": 258, "quiz_or_interactive": 16, "route_or_directions": 28, "set_count": 149, "sort_extreme": 129, "state_action": 32}`
-- 缺口：`{"download_upload_share_not_oracle_safe": 4, "missing_capability:current_or_external": 2, "missing_capability:download_upload_share": 4, "missing_capability:login_auth": 1, "missing_capability:quiz_or_interactive": 1, "needs_seeded_snapshot_rewrite": 2, "requires_stable_snapshot_rewrite": 132, "unsupported_surface:external_twitter_login": 1, "unsupported_surface:external_youtube_page": 1, "unsupported_surface:horse racing results": 1, "unsupported_surface:podcasts": 1}`
+- 缺口：`{"download_upload_share_not_oracle_safe": 2, "missing_capability:current_or_external": 2, "missing_capability:download_upload_share": 2, "missing_capability:login_auth": 1, "needs_seeded_snapshot_rewrite": 2, "requires_stable_snapshot_rewrite": 132, "unsupported_surface:external_twitter_login": 1, "unsupported_surface:external_youtube_page": 1, "unsupported_surface:horse racing results": 1, "unsupported_surface:podcast episode": 1, "unsupported_surface:podcasts": 1}`
 
 ## 站点覆盖矩阵
 
@@ -12,8 +12,8 @@
 | allrecipes | 45 | 44 | 1 | 0 | 0 | requires_stable_snapshot_rewrite:1 | hard_multistage_readonly, recipe_any_k, recipe_compare_pair, recipe_detail_extract, recipe_exists_with_constraints, shopping_list_state_dbdiff |
 | amazon | 41 | 41 | 0 | 0 | 0 | 无 | cart_add_state_dbdiff, hard_multistage_readonly, product_compare_pair, product_exists_with_filters, product_top_k_visible |
 | apple | 43 | 24 | 19 | 0 | 0 | requires_stable_snapshot_rewrite:19 | apple_product_compare_pair, apple_product_spec_extract, apple_support_extract, apple_trade_in_lookup, hard_multistage_readonly |
-| arxiv | 43 | 22 | 19 | 0 | 2 | requires_stable_snapshot_rewrite:19, download_upload_share_not_oracle_safe:2, missing_capability:download_upload_share:2 | hard_multistage_readonly, library_star_state_dbdiff, paper_compare_pair, paper_count_by_category_date, paper_detail_extract, paper_exists_with_filters |
-| bbc_news | 42 | 11 | 27 | 2 | 2 | requires_stable_snapshot_rewrite:27, missing_capability:current_or_external:2, needs_seeded_snapshot_rewrite:2, missing_capability:quiz_or_interactive:1, unsupported_surface:horse racing results:1 | article_compare_pair, article_detail_extract, article_exists_with_filters, article_top_k_visible, hard_multistage_readonly, reading_bookmark_state_dbdiff |
+| arxiv | 43 | 23 | 19 | 0 | 1 | requires_stable_snapshot_rewrite:19, download_upload_share_not_oracle_safe:1, missing_capability:download_upload_share:1 | hard_multistage_readonly, library_star_state_dbdiff, paper_compare_pair, paper_count_by_category_date, paper_detail_extract, paper_exists_with_filters |
+| bbc_news | 42 | 12 | 27 | 0 | 3 | requires_stable_snapshot_rewrite:27, missing_capability:current_or_external:2, needs_seeded_snapshot_rewrite:2, unsupported_surface:horse racing results:1, unsupported_surface:podcast episode:1 | article_compare_pair, article_detail_extract, article_exists_with_filters, article_top_k_visible, hard_multistage_readonly, reading_bookmark_state_dbdiff |
 | booking | 44 | 44 | 0 | 0 | 0 | 无 | booking_cart_state_dbdiff, hard_multistage_readonly, hotel_any_k, hotel_compare_pair, hotel_exists_with_filters, hotel_top_k_visible |
 | cambridge_dictionary | 43 | 43 | 0 | 0 | 0 | 无 | pronunciation_extract, quiz_action_probe, translation_extract, word_compare_pair, word_definition_lookup |
 | coursera | 42 | 41 | 1 | 0 | 0 | requires_stable_snapshot_rewrite:1 | course_compare_pair, course_detail_extract, course_exists_with_filters, hard_multistage_readonly, specialization_subcourse_set, wishlist_state_dbdiff |
@@ -22,35 +22,28 @@
 | google_flights | 42 | 41 | 1 | 0 | 0 | requires_stable_snapshot_rewrite:1 | flight_cart_state_dbdiff, flight_compare_pair, flight_detail_extract, flight_exists_with_filters, flight_top_k_visible, hard_multistage_readonly |
 | google_map | 41 | 40 | 0 | 0 | 1 | download_upload_share_not_oracle_safe:1, missing_capability:download_upload_share:1 | directions_distance_time, place_any_k, place_compare_pair, place_exists_with_filters, save_place_state_dbdiff |
 | google_search | 43 | 24 | 17 | 0 | 2 | requires_stable_snapshot_rewrite:17, missing_capability:login_auth:1, unsupported_surface:external_twitter_login:1, unsupported_surface:external_youtube_page:1 | bookmark_state_dbdiff, knowledge_panel_extract, serp_answer_lookup, serp_compare_pair, serp_top_k_visible |
-| huggingface | 43 | 33 | 9 | 0 | 1 | requires_stable_snapshot_rewrite:9, download_upload_share_not_oracle_safe:1, missing_capability:download_upload_share:1 | hard_multistage_readonly, hf_mock_inference, hf_repo_compare_pair, hf_repo_detail_extract, hf_repo_exists_with_filters, hf_state_dbdiff |
+| huggingface | 43 | 34 | 9 | 0 | 0 | requires_stable_snapshot_rewrite:9 | hard_multistage_readonly, hf_mock_inference, hf_repo_compare_pair, hf_repo_detail_extract, hf_repo_exists_with_filters, hf_state_dbdiff |
 | wolfram_alpha | 46 | 44 | 2 | 0 | 0 | requires_stable_snapshot_rewrite:2 | computation_compare_pair, computation_exact_lookup, computation_variant_lookup, hard_multistage_readonly, pod_extract, saved_query_state_dbdiff |
 
 ## 缺口样例
 
 ### `download_upload_share_not_oracle_safe`
-- `ArXiv--18` `arxiv` `missing`: Download the paper 'Dense Passage Retrieval for Open-Domain Question Answering'. How many formulas are in the article and which one is the loss function?
 - `ArXiv--41` `arxiv` `missing`: Find the button to share arxiv non-profit store and follow the QR code to share the shop. Then add arXiv Forever short sleeve (XL) to your cart.
 - `Google Map--31` `google_map` `missing`: First search New York's Central Park Zoo on Google Map, and then find the way to share the map. What is the generated sharing link?
-- `Huggingface--9` `huggingface` `missing`: Find the most download machine translation model on Huggingface which focuses on English and Japanese (en-ja) and report the evaluation metrics stated for it.
 
 ### `missing_capability:current_or_external`
-- `BBC News--29` `bbc_news` `partial`: Visit BBC News Audio and find out which podcast episode is currently featured as the "New Releases".
+- `BBC News--29` `bbc_news` `missing`: Visit BBC News Audio and find out which podcast episode is currently featured as the "New Releases".
 - `BBC News--39` `bbc_news` `missing`: Check the Horse Racing results in Sport section, browse all the games that took place yesterday and see which one had the highest number of runners.
 
 ### `missing_capability:download_upload_share`
-- `ArXiv--18` `arxiv` `missing`: Download the paper 'Dense Passage Retrieval for Open-Domain Question Answering'. How many formulas are in the article and which one is the loss function?
 - `ArXiv--41` `arxiv` `missing`: Find the button to share arxiv non-profit store and follow the QR code to share the shop. Then add arXiv Forever short sleeve (XL) to your cart.
 - `Google Map--31` `google_map` `missing`: First search New York's Central Park Zoo on Google Map, and then find the way to share the map. What is the generated sharing link?
-- `Huggingface--9` `huggingface` `missing`: Find the most download machine translation model on Huggingface which focuses on English and Japanese (en-ja) and report the evaluation metrics stated for it.
 
 ### `missing_capability:login_auth`
 - `Google Search--15` `google_search` `missing`: Please try to log in to twitter with email: webagenttest@testmail.com and password: test123456. Let me know if the login was successful.
 
-### `missing_capability:quiz_or_interactive`
-- `BBC News--41` `bbc_news` `partial`: Find Golf in BBC News, check the Leaderboard at this point in Women's Majors and count which country has the most players in the top 20? Which player has the best score amongst the Australian players and in what place.
-
 ### `needs_seeded_snapshot_rewrite`
-- `BBC News--29` `bbc_news` `partial`: Visit BBC News Audio and find out which podcast episode is currently featured as the "New Releases".
+- `BBC News--29` `bbc_news` `missing`: Visit BBC News Audio and find out which podcast episode is currently featured as the "New Releases".
 - `BBC News--39` `bbc_news` `missing`: Check the Horse Racing results in Sport section, browse all the games that took place yesterday and see which one had the highest number of runners.
 
 ### `requires_stable_snapshot_rewrite`
@@ -71,6 +64,9 @@
 
 ### `unsupported_surface:horse racing results`
 - `BBC News--39` `bbc_news` `missing`: Check the Horse Racing results in Sport section, browse all the games that took place yesterday and see which one had the highest number of runners.
+
+### `unsupported_surface:podcast episode`
+- `BBC News--29` `bbc_news` `missing`: Visit BBC News Audio and find out which podcast episode is currently featured as the "New Releases".
 
 ### `unsupported_surface:podcasts`
 - `BBC News--18` `bbc_news` `missing`: Visit BBC News Audio, What are the best PodCasts for 2023? List 2 of them.
