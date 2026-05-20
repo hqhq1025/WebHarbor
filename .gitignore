@@ -102,3 +102,4 @@ webvoyager_dashboard/login_trajectory_viewer/runs_index.json
 webvoyager_dashboard/login_trajectory_viewer/trajectory_assets/
 webvoyager_dashboard/login_trajectory_viewer/viewer_data.json
 webvoyager_dashboard/trajectory_audit/
+webvoyager_dashboard/webvoyager_coverage_v2/*.json
