@@ -28,8 +28,7 @@
   <form action="{{ url_for('store_pickup') }}" method="GET" style="margin:24px 0;">
     {% if product %}<input type="hidden" name="product" value="{{ product.slug }}">{% endif %}
     <input type="text" name="zip" value="{{ zip_code }}" placeholder="Enter ZIP code"
-           class="search-input"
-           style="padding:14px;border:1px solid #d2d2d7;border-radius:12px;">
+           class="search-input search-input-boxed">
   </form>
 
   {% if zip_code %}

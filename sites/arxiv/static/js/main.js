@@ -34,7 +34,129 @@ document.addEventListener("DOMContentLoaded", function() {
             el.classList.add('visible');
         });
     }, 300);
+
+    initSearchTypeMenus();
 });
+
+function initSearchTypeMenus() {
+    const menus = Array.from(document.querySelectorAll('[data-searchtype-menu]'));
+    if (!menus.length) return;
+
+    function closeMenu(menu) {
+        menu.classList.remove('open');
+        const trigger = menu.querySelector('[data-searchtype-trigger]');
+        if (trigger) trigger.setAttribute('aria-expanded', 'false');
+        menu.querySelectorAll('[data-searchtype-option]').forEach(function(option) {
+            option.classList.remove('active');
+        });
+    }
+
+    function openMenu(menu) {
+        menus.forEach(function(other) {
+            if (other !== menu) closeMenu(other);
+        });
+        menu.classList.add('open');
+        const trigger = menu.querySelector('[data-searchtype-trigger]');
+        if (trigger) trigger.setAttribute('aria-expanded', 'true');
+    }
+
+    function setValue(menu, option) {
+        const input = menu.querySelector('[data-searchtype-input]');
+        const label = menu.querySelector('[data-searchtype-label]');
+        if (input) input.value = option.dataset.value || 'all';
+        if (label) label.textContent = option.textContent.trim();
+        menu.querySelectorAll('[data-searchtype-option]').forEach(function(item) {
+            const selected = item === option;
+            item.classList.toggle('selected', selected);
+            item.setAttribute('aria-selected', selected ? 'true' : 'false');
+        });
+        closeMenu(menu);
+        const trigger = menu.querySelector('[data-searchtype-trigger]');
+        if (trigger) trigger.focus();
+    }
+
+    function focusOption(menu, direction) {
+        const options = Array.from(menu.querySelectorAll('[data-searchtype-option]'));
+        if (!options.length) return;
+        const current = document.activeElement && document.activeElement.matches('[data-searchtype-option]')
+            ? options.indexOf(document.activeElement)
+            : options.findIndex(function(option) { return option.classList.contains('selected'); });
+        let next = current;
+        if (direction === 'first') next = 0;
+        else if (direction === 'last') next = options.length - 1;
+        else next = (current + direction + options.length) % options.length;
+        options.forEach(function(option) {
+            option.classList.remove('active');
+        });
+        options[next].classList.add('active');
+        options[next].focus();
+    }
+
+    menus.forEach(function(menu) {
+        const trigger = menu.querySelector('[data-searchtype-trigger]');
+        const options = Array.from(menu.querySelectorAll('[data-searchtype-option]'));
+        if (!trigger || !options.length) return;
+
+        trigger.addEventListener('click', function() {
+            if (menu.classList.contains('open')) closeMenu(menu);
+            else openMenu(menu);
+        });
+
+        trigger.addEventListener('keydown', function(event) {
+            if (event.key === 'ArrowDown') {
+                event.preventDefault();
+                openMenu(menu);
+                focusOption(menu, 1);
+            } else if (event.key === 'ArrowUp') {
+                event.preventDefault();
+                openMenu(menu);
+                focusOption(menu, -1);
+            } else if (event.key === 'Enter' || event.key === ' ') {
+                event.preventDefault();
+                if (menu.classList.contains('open')) closeMenu(menu);
+                else {
+                    openMenu(menu);
+                    focusOption(menu, 'first');
+                }
+            } else if (event.key === 'Escape') {
+                closeMenu(menu);
+            }
+        });
+
+        options.forEach(function(option) {
+            option.addEventListener('click', function() {
+                setValue(menu, option);
+            });
+            option.addEventListener('keydown', function(event) {
+                if (event.key === 'ArrowDown') {
+                    event.preventDefault();
+                    focusOption(menu, 1);
+                } else if (event.key === 'ArrowUp') {
+                    event.preventDefault();
+                    focusOption(menu, -1);
+                } else if (event.key === 'Home') {
+                    event.preventDefault();
+                    focusOption(menu, 'first');
+                } else if (event.key === 'End') {
+                    event.preventDefault();
+                    focusOption(menu, 'last');
+                } else if (event.key === 'Enter' || event.key === ' ') {
+                    event.preventDefault();
+                    setValue(menu, option);
+                } else if (event.key === 'Escape') {
+                    closeMenu(menu);
+                    trigger.focus();
+                }
+            });
+        });
+    });
+
+    document.addEventListener('click', function(event) {
+        menus.forEach(function(menu) {
+            if (!menu.contains(event.target)) closeMenu(menu);
+        });
+    });
+}
 
 // ---- Library (cart) actions ----
 async function addToLibrary(paperId) {

@@ -44,13 +44,35 @@
         <div class="header-search">
             <form action="{{ url_for('search') }}" method="get">
                 <input type="text" name="query" placeholder="Search..." value="{{ request.args.get('query', '') }}">
-                <select name="searchtype">
-                    <option value="all">All fields</option>
-                    <option value="title">Title</option>
-                    <option value="author">Author</option>
-                    <option value="abstract">Abstract</option>
-                    <option value="id">arXiv ID</option>
-                </select>
+                {% set header_search_type_options = [
+                    ('all', 'All fields'),
+                    ('title', 'Title'),
+                    ('author', 'Author'),
+                    ('abstract', 'Abstract'),
+                    ('id', 'arXiv ID')
+                ] %}
+                {% set header_searchtype = request.args.get('searchtype', 'all') %}
+                {% set current_header_searchtype = header_searchtype if header_searchtype in header_search_type_options|map(attribute=0)|list else 'all' %}
+                {% set current_header_searchtype_label = header_search_type_options|selectattr(0, 'equalto', current_header_searchtype)|map(attribute=1)|first %}
+                <div class="searchtype-menu searchtype-menu-compact" data-searchtype-menu>
+                    <input type="hidden" name="searchtype" value="{{ current_header_searchtype }}" data-searchtype-input>
+                    <button type="button" class="searchtype-trigger" aria-haspopup="listbox" aria-expanded="false" data-searchtype-trigger>
+                        <span data-searchtype-label>{{ current_header_searchtype_label }}</span>
+                        <span class="searchtype-caret" aria-hidden="true">▾</span>
+                    </button>
+                    <div class="searchtype-options" role="listbox" tabindex="-1" data-searchtype-options>
+                        {% for value, label in header_search_type_options %}
+                        <button type="button"
+                                role="option"
+                                class="searchtype-option{% if value == current_header_searchtype %} selected{% endif %}"
+                                data-searchtype-option
+                                data-value="{{ value }}"
+                                aria-selected="{{ 'true' if value == current_header_searchtype else 'false' }}">
+                            {{ label }}
+                        </button>
+                        {% endfor %}
+                    </div>
+                </div>
                 <button type="submit">Search</button>
             </form>
         </div>

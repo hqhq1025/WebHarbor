@@ -7,13 +7,34 @@
 <div class="search-box-main">
     <form action="{{ url_for('search') }}" method="get">
         <input type="text" name="query" value="{{ query }}" placeholder="Search arXiv...">
-        <select name="searchtype">
-            <option value="all" {% if field == 'all' %}selected{% endif %}>All fields</option>
-            <option value="title" {% if field == 'title' %}selected{% endif %}>Title</option>
-            <option value="author" {% if field == 'author' %}selected{% endif %}>Author</option>
-            <option value="abstract" {% if field == 'abstract' %}selected{% endif %}>Abstract</option>
-            <option value="id" {% if field == 'id' %}selected{% endif %}>arXiv ID</option>
-        </select>
+        {% set search_type_options = [
+            ('all', 'All fields'),
+            ('title', 'Title'),
+            ('author', 'Author'),
+            ('abstract', 'Abstract'),
+            ('id', 'arXiv ID')
+        ] %}
+        {% set current_searchtype = field if field in search_type_options|map(attribute=0)|list else 'all' %}
+        {% set current_searchtype_label = search_type_options|selectattr(0, 'equalto', current_searchtype)|map(attribute=1)|first %}
+        <div class="searchtype-menu" data-searchtype-menu>
+            <input type="hidden" name="searchtype" value="{{ current_searchtype }}" data-searchtype-input>
+            <button type="button" class="searchtype-trigger" aria-haspopup="listbox" aria-expanded="false" data-searchtype-trigger>
+                <span data-searchtype-label>{{ current_searchtype_label }}</span>
+                <span class="searchtype-caret" aria-hidden="true">▾</span>
+            </button>
+            <div class="searchtype-options" role="listbox" tabindex="-1" data-searchtype-options>
+                {% for value, label in search_type_options %}
+                <button type="button"
+                        role="option"
+                        class="searchtype-option{% if value == current_searchtype %} selected{% endif %}"
+                        data-searchtype-option
+                        data-value="{{ value }}"
+                        aria-selected="{{ 'true' if value == current_searchtype else 'false' }}">
+                    {{ label }}
+                </button>
+                {% endfor %}
+            </div>
+        </div>
         {% set _cur_cat = request.args.get('category') or request.args.get('primary_category') or '' %}
         {% if _cur_cat %}
             <input type="hidden" name="category" value="{{ _cur_cat }}">
