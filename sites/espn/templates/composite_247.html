@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}247Sports Composite — {{ sport.name }}{% endblock %}
+{% block content %}
+<div class="container">
+  <h1>247Sports Composite — {{ sport.name }}</h1>
+  <p>National recruiting rankings powered by the 247Sports Composite formula.</p>
+  <table class="composite-table">
+    <thead>
+      <tr><th>Rank</th><th>Recruit</th><th>Position</th><th>Hometown</th><th>Stars</th><th>Committed To</th></tr>
+    </thead>
+    <tbody>
+      {% for r in recruits %}
+      <tr>
+        <td>{{ r.rank }}</td>
+        <td>{{ r.name }}</td>
+        <td>{{ r.position }}</td>
+        <td>{{ r.hometown }}</td>
+        <td>{{ '★' * r.stars }}</td>
+        <td>{{ r.committed_to or 'Uncommitted' }}</td>
+      </tr>
+      {% else %}
+      <tr><td colspan="6">No composite rankings available.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

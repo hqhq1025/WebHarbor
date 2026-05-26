@@ -25,7 +25,7 @@
                 </select>
             </form>
             <a href="{{ url_for('help_page') }}" class="header-btn">Help</a>
-            <a href="#" class="header-btn">List your property</a>
+            <a href="{{ url_for('list_your_property') }}" class="header-btn">List your property</a>
             {% if current_user.is_authenticated %}
                 <a href="{{ url_for('account') }}" class="header-btn header-btn-outline">{{ current_user.first_name or 'Account' }}</a>
                 <a href="{{ url_for('bag') }}" class="header-btn header-btn-outline">Bag {% if cart_count %}({{ cart_count }}){% endif %}</a>

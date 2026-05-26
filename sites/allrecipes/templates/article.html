@@ -1,0 +1,87 @@
+{% extends "base.html" %}
+{% block title %}{{ article.title }}{% endblock %}
+{% block content %}
+<div class="container" style="margin-top:30px;max-width:840px">
+    <div class="breadcrumb" style="font-size:0.8rem;color:#999;margin-bottom:12px">
+        <a href="{{ url_for('index') }}" style="color:#666">Home</a> &rsaquo;
+        <a href="{{ url_for('articles_hub') }}" style="color:#666">Articles</a> &rsaquo;
+        <a href="{{ url_for('articles_hub', category=article.category) }}" style="color:#666">{{ article.category.replace('-', ' ')|title }}</a> &rsaquo;
+        {{ article.title }}
+    </div>
+
+    <div style="font-size:0.78rem;color:#2e7d32;text-transform:uppercase;font-weight:600;margin-bottom:8px">{{ article.category.replace('-', ' ') }}</div>
+    <h1 style="font-size:2.1rem;margin:0 0 10px 0;line-height:1.2">{{ article.title }}</h1>
+    <div style="display:flex;gap:14px;color:#666;font-size:0.9rem;margin-bottom:18px">
+        <span>By <strong>{{ article.author_name }}</strong></span>
+        <span>{{ article.read_time_mins }} min read</span>
+        <span>{{ article.published_at.strftime('%B %d, %Y') }}</span>
+        <span>{{ article.view_count }} views</span>
+    </div>
+
+    {% if article.hero_image %}
+    <div style="margin-bottom:20px"><img src="{{ article.hero_image }}" alt="{{ article.title }}" loading="lazy" style="width:100%;max-height:420px;object-fit:cover;border-radius:8px"></div>
+    {% endif %}
+
+    {% if article.excerpt %}
+    <p style="font-size:1.15rem;color:#333;line-height:1.55;border-left:4px solid #c62828;padding-left:14px;margin-bottom:20px;font-style:italic">{{ article.excerpt }}</p>
+    {% endif %}
+
+    {% set body = article.get_body() %}
+    {% for section in body %}
+    <section style="margin-bottom:24px">
+        {% if section.heading %}<h2 style="font-size:1.5rem;margin:24px 0 10px 0">{{ section.heading }}</h2>{% endif %}
+        {% for para in section.get('paragraphs', []) %}
+        <p style="line-height:1.7;color:#222;margin-bottom:12px">{{ para }}</p>
+        {% endfor %}
+        {% if section.get('callout') %}
+        <div style="background:#fff8e1;border:1px solid #f0c36d;border-radius:6px;padding:14px 16px;margin:14px 0">
+            <strong>Tip:</strong> {{ section.callout }}
+        </div>
+        {% endif %}
+    </section>
+    {% endfor %}
+
+    {% set tags = article.get_tags() %}
+    {% if tags %}
+    <div style="margin-top:24px;display:flex;flex-wrap:wrap;gap:6px">
+        {% for t in tags %}<span style="background:#e0f2f1;color:#00695c;font-size:0.78rem;padding:4px 12px;border-radius:14px">#{{ t }}</span>{% endfor %}
+    </div>
+    {% endif %}
+
+    {% if related %}
+    <section style="margin-top:36px">
+        <h2 style="font-size:1.3rem;margin-bottom:10px">Try These Recipes</h2>
+        <div class="recipe-grid recipe-grid-3">
+            {% for r in related %}
+            <div class="recipe-card">
+                <div class="recipe-card-image">
+                    <a href="{{ url_for('recipe_detail', slug=r.slug) }}">
+                        <img src="{{ r.image }}" alt="{{ r.title }}" loading="lazy"
+                             onerror="this.parentElement.innerHTML='<div class=\'placeholder-img\'>{{ r.title }}</div>'">
+                    </a>
+                </div>
+                <div class="recipe-card-body">
+                    <div class="recipe-card-title"><a href="{{ url_for('recipe_detail', slug=r.slug) }}">{{ r.title }}</a></div>
+                    <div class="recipe-card-meta">
+                        <div class="recipe-card-rating">{% for i in range(5) %}<span class="star {% if i >= r.avg_rating|round(0,'floor')|int %}empty{% endif %}">&#9733;</span>{% endfor %}</div>
+                        <span>({{ r.review_count|int }})</span>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </section>
+    {% endif %}
+
+    {% if more %}
+    <section style="margin-top:36px">
+        <h2 style="font-size:1.3rem;margin-bottom:10px">More from {{ article.category.replace('-', ' ')|title }}</h2>
+        <ul style="list-style:none;padding:0">
+            {% for m in more %}
+            <li style="margin-bottom:8px"><a href="{{ url_for('article_detail', slug=m.slug) }}">{{ m.title }}</a> &middot; <span style="color:#999;font-size:0.85rem">{{ m.read_time_mins }} min read</span></li>
+            {% endfor %}
+        </ul>
+    </section>
+    {% endif %}
+</div>
+{% endblock %}

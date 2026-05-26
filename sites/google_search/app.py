@@ -143,6 +143,10 @@ class SearchResult(db.Model):
     source_type = db.Column(db.String(20), default='web')  # web, news, image, video
     rank = db.Column(db.Integer, default=0)
     image = db.Column(db.String(400))
+    # R4 enrichment: SERP card metadata
+    result_type = db.Column(db.String(20), default='organic')  # organic, featured, ad
+    breadcrumb = db.Column(db.String(300), default='')         # en.wikipedia.org › wiki › <Topic>
+    favicon = db.Column(db.String(300), default='')            # favicon URL
 
     feedback = db.relationship('ResultFeedback', backref='result', lazy='dynamic',
                                cascade='all, delete-orphan')
@@ -736,6 +740,9 @@ def search():
             'image': r.image,
             'topic': r.topic,
             'external_path': ext_path,
+            'result_type': getattr(r, 'result_type', 'organic') or 'organic',
+            'breadcrumb': getattr(r, 'breadcrumb', '') or '',
+            'favicon': getattr(r, 'favicon', '') or '',
         })
 
     # Panel visibility: only show for bio / fact-lookup tasks.
@@ -999,6 +1006,136 @@ def doodle_detail(slug):
 @app.route('/advanced')
 def advanced_search():
     return render_template('advanced.html')
+
+
+# --- R4 deep sub-pages ----------------------------------------------------
+
+@app.route('/webhp')
+def webhp():
+    """Homepage shortcut variant — kept for /webhp link compatibility."""
+    return redirect(url_for('index'))
+
+
+@app.route('/imghp')
+def imghp():
+    """Images homepage — same UI as /search?tbm=images for a stock query."""
+    return render_template('imghp.html')
+
+
+@app.route('/videohp')
+def videohp():
+    """Videos homepage."""
+    return render_template('videohp.html')
+
+
+@app.route('/search/snapshot')
+@app.route('/search/snapshot/<slug>')
+def search_snapshot(slug=None):
+    """AI Overview / Search Generative Experience snapshot.
+
+    Surfaces the answer_token + knowledge_panel as a synthesized AI-style
+    summary, citing the topic's top results.
+    """
+    q = (request.args.get('q') or '').strip()
+    topic = None
+    if slug:
+        topic = Topic.query.filter_by(slug=slug).first()
+    if topic is None and q:
+        topic = find_topic(q)
+    return render_template('search_snapshot.html', topic=topic, q=q)
+
+
+@app.route('/preferences/region', methods=['GET', 'POST'])
+def preferences_region():
+    """Region picker — Google's 'Search results region' setting."""
+    saved = False
+    if request.method == 'POST':
+        region = request.form.get('region', 'US')[:30]
+        if current_user.is_authenticated:
+            current_user.region = region
+            db.session.commit()
+        else:
+            session['region'] = region
+        saved = True
+    return render_template('preferences_region.html', saved=saved)
+
+
+@app.route('/preferences/languages', methods=['GET', 'POST'])
+def preferences_languages():
+    """Languages picker — controls UI language + result language preferences."""
+    saved = False
+    if request.method == 'POST':
+        lang = request.form.get('language', 'en')[:10]
+        if current_user.is_authenticated:
+            current_user.language = lang
+            db.session.commit()
+        else:
+            session['language'] = lang
+        saved = True
+    return render_template('preferences_languages.html', saved=saved)
+
+
+_HELP_TOPICS = {
+    'basics': ('Search basics', 'Get more out of Google Search by learning the fundamentals of how queries work.'),
+    'operators': ('Search operators', 'Use operators like site:, intitle:, intext:, "exact phrase", and minus terms.'),
+    'images': ('Search Images', 'Find images, reverse-image search with Google Lens, and filter by colour or licence.'),
+    'safesearch': ('SafeSearch', 'Filter explicit content from Search results across every Google product.'),
+    'voice': ('Voice Search', 'Speak your query — works on Chrome, Android, and iOS.'),
+    'shortcuts': ('Search shortcuts', 'Tips for calculator, conversions, weather, dictionary, and other inline answers.'),
+    'discover': ('Discover feed', 'Personalised content card stream that learns from your interests.'),
+    'history': ('Search history', 'View, delete, or pause your saved search activity at any time.'),
+    'autocomplete': ('Autocomplete predictions', 'How predictions are generated and how to remove inappropriate ones.'),
+    'languages': ('Languages on Search', 'Change your Google Search interface and content language.'),
+}
+
+
+@app.route('/search/help')
+def search_help_index():
+    return render_template('search_help_index.html', topics=_HELP_TOPICS)
+
+
+@app.route('/search/help/<topic>')
+def search_help(topic):
+    if topic not in _HELP_TOPICS:
+        abort(404)
+    title, body = _HELP_TOPICS[topic]
+    return render_template('search_help.html',
+                           help_topic=topic, help_title=title, help_body=body,
+                           topics=_HELP_TOPICS)
+
+
+_SUPPORT_ANSWERS = {
+    134479: ('How Search works',
+             'When you type a query into Google Search, our systems look across hundreds of billions of pages in the Search index and return the most relevant, useful results.'),
+    181196: ('Manage your activity controls',
+             'You can view, manage, and delete the activity that Google saves to your Google Account at any time.'),
+    9637484: ('Refine web searches',
+             'Operators include site:, related:, intext:, intitle:, AROUND(n), filetype:, and the OR operator (in caps) for alternation.'),
+    173733:  ('Remove personal information from Google',
+              'Submit a request and Google reviews material that may violate one of our removal policies.'),
+    9132983: ('Sign in to your Google Account',
+              'Use any Google product by signing in once. Your account follows you across Search, Maps, Gmail, and more.'),
+    9657411: ('SafeSearch settings',
+              'SafeSearch helps you filter explicit content like nudity and violence from your Google Search results.'),
+    9134408: ('Trending searches',
+              'Trends shows the relative popularity of search terms over time and across regions.'),
+    9627632: ('Search by image with Lens',
+              'Identify objects, landmarks, plants, and animals using your camera or any image saved on your device.'),
+    9645136: ('Browsing and search activity on Chrome',
+              'Customise what Chrome saves about your activity, including browsing history and downloads.'),
+    142949:  ('Search settings overview',
+              'Adjust language, region, results-per-page, and SafeSearch from a single dashboard.'),
+}
+
+
+@app.route('/support/answer/<int:answer_id>')
+def support_answer(answer_id):
+    if answer_id not in _SUPPORT_ANSWERS:
+        abort(404)
+    title, body = _SUPPORT_ANSWERS[answer_id]
+    return render_template('support_answer.html',
+                           answer_id=answer_id,
+                           answer_title=title, answer_body=body)
 
 
 @app.route('/about')

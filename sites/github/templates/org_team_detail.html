@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block title %}{{ team.name }} · {{ org.username }} · Team{% endblock %}
+{% block content %}
+<div style="padding:24px 32px;max-width:1100px;margin:0 auto;">
+  <div style="font-size:13px;color:#7d8590;margin-bottom:6px;">
+    <a href="/orgs/{{ org.username }}/teams" style="color:#58a6ff;text-decoration:none;">← All teams</a>
+  </div>
+  <header style="display:flex;gap:16px;align-items:center;margin-bottom:20px;">
+    <div style="width:56px;height:56px;border-radius:8px;background:#30363d;display:flex;align-items:center;justify-content:center;">
+      <svg height="24" width="24" viewBox="0 0 16 16" fill="#e6edf3"><path d="M2 5.5a3.5 3.5 0 1 1 5.898 2.549 5.508 5.508 0 0 1 3.034 4.084.75.75 0 1 1-1.482.235 4 4 0 0 0-7.9 0 .75.75 0 0 1-1.482-.236A5.507 5.507 0 0 1 3.102 8.05 3.493 3.493 0 0 1 2 5.5Z"/></svg>
+    </div>
+    <div style="flex:1;">
+      <h1 style="margin:0;font-size:22px;color:#e6edf3;">{{ team.name }}</h1>
+      <div style="font-size:13px;color:#7d8590;">@{{ org.username }}/{{ team.slug }} · {{ team.privacy }} · created {{ team.created_at.strftime('%b %-d, %Y') }}</div>
+    </div>
+  </header>
+  <p style="color:#c9d1d9;margin:0 0 20px;">{{ team.description }}</p>
+
+  <section style="margin-bottom:28px;">
+    <h2 style="font-size:16px;margin:0 0 10px;">Members <span style="color:#7d8590;font-weight:400;">({{ members|length }})</span></h2>
+    <div class="org-avatar-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:10px;">
+      {% for u in members %}
+      <a href="/{{ u.username }}" style="display:flex;flex-direction:column;align-items:center;text-align:center;padding:10px;border:1px solid #30363d;border-radius:8px;text-decoration:none;color:inherit;background:#0d1117;">
+        <img src="{{ u.avatar_url }}" alt="{{ u.username }}" width="48" height="48" style="border-radius:50%;margin-bottom:6px;" onerror="this.src='/static/images/avatars/avatar_00.jpg'">
+        <span style="font-size:13px;color:#e6edf3;font-weight:600;">{{ u.username }}</span>
+        {% if u.name %}<span style="font-size:11px;color:#7d8590;">{{ u.name }}</span>{% endif %}
+      </a>
+      {% endfor %}
+    </div>
+  </section>
+
+  <section>
+    <h2 style="font-size:16px;margin:0 0 10px;">Repositories <span style="color:#7d8590;font-weight:400;">({{ team_repos|length }})</span></h2>
+    <ul style="list-style:none;padding:0;margin:0;border:1px solid #30363d;border-radius:8px;">
+      {% for r in team_repos %}
+      <li style="padding:12px 14px;border-bottom:1px solid #30363d;">
+        <a href="/{{ r.full_name }}" style="color:#58a6ff;font-weight:600;text-decoration:none;">{{ r.full_name }}</a>
+        <div style="font-size:12px;color:#7d8590;margin-top:2px;">{{ r.language }} · {{ r.stars_count }} stars · {{ r.description[:120] }}</div>
+      </li>
+      {% endfor %}
+    </ul>
+  </section>
+</div>
+{% endblock %}

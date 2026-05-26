@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% block title %}{{ occasion_name }} Recipes - Full Listing{% endblock %}
+{% block content %}
+<div class="container" style="margin-top:30px">
+    <div class="breadcrumb" style="font-size:0.8rem;color:#999;margin-bottom:12px">
+        <a href="{{ url_for('index') }}" style="color:#666">Home</a> &rsaquo;
+        <a href="{{ url_for('occasions') }}" style="color:#666">Occasions</a> &rsaquo;
+        <a href="{{ url_for('occasion_page', slug=occasion_slug) }}" style="color:#666">{{ occasion_name }}</a> &rsaquo;
+        Recipes
+    </div>
+
+    <div class="occasion-hero" style="background:linear-gradient(135deg,#fbe9e7,#ffccbc);border-radius:8px;padding:24px;margin-bottom:18px">
+        <h1 class="section-title" style="margin:0 0 6px 0">All {{ occasion_name }} Recipes</h1>
+        <p style="color:#444;margin:0">{{ occasion_description }}</p>
+        <div style="margin-top:12px;font-size:0.9rem"><strong>{{ total_count }}</strong> recipes &middot; sort by:
+            <a href="{{ url_for('occasion_recipes_listing', slug=occasion_slug, sort='popular') }}" style="margin-left:6px;font-weight:{% if sort == 'popular' %}700{% else %}400{% endif %}">Popular</a>
+            <a href="{{ url_for('occasion_recipes_listing', slug=occasion_slug, sort='rating') }}" style="margin-left:6px;font-weight:{% if sort == 'rating' %}700{% else %}400{% endif %}">Rating</a>
+            <a href="{{ url_for('occasion_recipes_listing', slug=occasion_slug, sort='name') }}" style="margin-left:6px;font-weight:{% if sort == 'name' %}700{% else %}400{% endif %}">Name</a>
+        </div>
+    </div>
+
+    {% if recipes.items %}
+    <div class="recipe-grid recipe-grid-4" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:14px">
+        {% for recipe in recipes.items %}
+        <div class="recipe-card">
+            <div class="recipe-card-image">
+                <a href="{{ url_for('recipe_detail', slug=recipe.slug) }}">
+                    <img src="{{ recipe.image }}" alt="{{ recipe.title }}" loading="lazy"
+                         onerror="this.parentElement.innerHTML='<div class=\'placeholder-img\'>{{ recipe.title }}</div>'">
+                </a>
+            </div>
+            <div class="recipe-card-body">
+                <div class="recipe-card-title"><a href="{{ url_for('recipe_detail', slug=recipe.slug) }}">{{ recipe.title }}</a></div>
+                <div class="recipe-card-meta">
+                    <div class="recipe-card-rating">
+                        {% for i in range(5) %}<span class="star {% if i >= recipe.avg_rating|round(0,'floor')|int %}empty{% endif %}">&#9733;</span>{% endfor %}
+                    </div>
+                    <span>({{ recipe.review_count|int }})</span>
+                </div>
+                <div style="font-size:0.78rem;color:#666;margin-top:4px">{{ recipe.total_time }} &middot; serves {{ recipe.servings }}</div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    {% if recipes.pages > 1 %}
+    <div class="pagination">
+        {% if recipes.has_prev %}<a href="{{ url_for('occasion_recipes_listing', slug=occasion_slug, page=recipes.prev_num, sort=sort) }}">&laquo;</a>{% endif %}
+        {% for p in recipes.iter_pages() %}
+            {% if p %}<a href="{{ url_for('occasion_recipes_listing', slug=occasion_slug, page=p, sort=sort) }}" class="{% if p == recipes.page %}active{% endif %}">{{ p }}</a>
+            {% else %}<span class="disabled">&hellip;</span>{% endif %}
+        {% endfor %}
+        {% if recipes.has_next %}<a href="{{ url_for('occasion_recipes_listing', slug=occasion_slug, page=recipes.next_num, sort=sort) }}">&raquo;</a>{% endif %}
+    </div>
+    {% endif %}
+    {% else %}
+    <div class="empty-state"><p>No recipes yet for this occasion.</p></div>
+    {% endif %}
+</div>
+{% endblock %}

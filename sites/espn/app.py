@@ -452,6 +452,53 @@ class Podcast(db.Model):
     duration_minutes = db.Column(db.Integer, default=0)
 
 
+# ─── R4 Models (play-by-play, watchables, parlays) ───────────────────────────
+
+class PlayByPlay(db.Model):
+    __tablename__ = 'play_by_play'
+    id = db.Column(db.Integer, primary_key=True)
+    game_id = db.Column(db.Integer, index=True)
+    sport_slug = db.Column(db.String(20), index=True)
+    sequence = db.Column(db.Integer, default=0)
+    period = db.Column(db.String(10), default='')
+    clock = db.Column(db.String(10), default='')
+    team_id = db.Column(db.Integer, default=0)
+    actor_name = db.Column(db.String(150), default='')
+    event_type = db.Column(db.String(30), default='')
+    description = db.Column(db.String(300), default='')
+    score_home = db.Column(db.Integer, default=0)
+    score_away = db.Column(db.Integer, default=0)
+
+
+class Watchable(db.Model):
+    __tablename__ = 'watchables'
+    id = db.Column(db.Integer, primary_key=True)
+    title = db.Column(db.String(200))
+    slug = db.Column(db.String(200), index=True)
+    kind = db.Column(db.String(40), default='show')
+    sport_slug = db.Column(db.String(20), index=True)
+    description = db.Column(db.Text)
+    is_espn_plus = db.Column(db.Integer, default=1)
+    is_live = db.Column(db.Integer, default=0)
+    duration_minutes = db.Column(db.Integer, default=0)
+    release_date = db.Column(db.String(20))
+    host_or_studio = db.Column(db.String(150))
+
+
+class Parlay(db.Model):
+    __tablename__ = 'parlays'
+    id = db.Column(db.Integer, primary_key=True)
+    slug = db.Column(db.String(80), index=True)
+    title = db.Column(db.String(200))
+    leg_count = db.Column(db.Integer, default=0)
+    american_odds = db.Column(db.Integer, default=0)
+    decimal_odds = db.Column(db.Float, default=0.0)
+    legs_json = db.Column(db.Text, default='[]')
+    sport_slug = db.Column(db.String(20))
+    sportsbook = db.Column(db.String(40))
+    is_featured = db.Column(db.Integer, default=0)
+
+
 # ─── Login ────────────────────────────────────────────────────────────────────
 
 @login_manager.user_loader
@@ -1700,6 +1747,189 @@ def sport_live(sport_slug):
     return render_template('live_scores.html', sport=sport,
                            today_games=today_games,
                            upcoming=upcoming, recent=recent)
+
+
+# ─── R4 Routes: Play-by-play ─────────────────────────────────────────────────
+
+@app.route('/<sport_slug>/play-by-play/<int:game_id>')
+@app.route('/playbyplay/<int:game_id>')
+def play_by_play(sport_slug=None, game_id=None):
+    game = Game.query.get_or_404(game_id)
+    if sport_slug:
+        sport_slug = _norm_sport(sport_slug)
+    sport = Sport.query.filter_by(slug=sport_slug or game.sport_slug).first()
+    home_team = Team.query.get(game.home_team_id) if game.home_team_id else None
+    away_team = Team.query.get(game.away_team_id) if game.away_team_id else None
+    events = (PlayByPlay.query.filter_by(game_id=game_id)
+              .order_by(PlayByPlay.sequence).all())
+    return render_template('play_by_play.html', game=game, sport=sport,
+                           home_team=home_team, away_team=away_team,
+                           events=events)
+
+
+# ─── R4 Routes: Fantasy trade analyzer / waiver wire ─────────────────────────
+
+@app.route('/fantasy/<sport_slug>/trade-analyzer')
+def fantasy_trade_analyzer(sport_slug):
+    sport_slug = _norm_sport(sport_slug)
+    sport = Sport.query.filter_by(slug=sport_slug).first_or_404()
+    candidates = (Player.query.filter_by(sport_slug=sport_slug)
+                  .order_by(Player.id).limit(40).all())
+    return render_template('trade_analyzer.html', sport=sport,
+                           candidates=candidates)
+
+
+@app.route('/fantasy/<sport_slug>/waiver-wire')
+def fantasy_waiver_wire(sport_slug):
+    sport_slug = _norm_sport(sport_slug)
+    sport = Sport.query.filter_by(slug=sport_slug).first_or_404()
+    # Lowest-ownership stat-bearing players
+    stats = (PlayerStat.query.filter_by(stat_type='season')
+             .order_by(PlayerStat.id.desc()).limit(80).all())
+    rows = []
+    for st in stats:
+        p = Player.query.get(st.player_id)
+        if p and p.sport_slug == sport_slug:
+            rows.append((p, st))
+        if len(rows) >= 40:
+            break
+    return render_template('waiver_wire.html', sport=sport, rows=rows)
+
+
+# ─── R4 Routes: Bet parlay-builder ───────────────────────────────────────────
+
+@app.route('/bet/parlay-builder')
+@app.route('/bet/parlay-builder/')
+def parlay_builder():
+    featured = Parlay.query.filter_by(is_featured=1).order_by(Parlay.id).all()
+    all_parlays = Parlay.query.order_by(Parlay.id).all()
+    return render_template('parlay_builder.html',
+                           featured=featured, all_parlays=all_parlays)
+
+
+# ─── R4 Routes: Recruiting 247composite ──────────────────────────────────────
+
+@app.route('/recruiting/<sport_slug>/247-composite')
+@app.route('/<sport_slug>/recruiting/247-composite')
+def recruiting_247(sport_slug):
+    sport_slug = _norm_sport(sport_slug)
+    sport = Sport.query.filter_by(slug=sport_slug).first_or_404()
+    recruits = (Recruit.query.filter_by(sport_slug=sport_slug)
+                .order_by(Recruit.rank).all())
+    return render_template('composite_247.html', sport=sport, recruits=recruits)
+
+
+# ─── R4 Routes: Awards by year + all-time ────────────────────────────────────
+
+@app.route('/<sport_slug>/awards/<year>')
+def awards_by_year(sport_slug, year):
+    sport_slug = _norm_sport(sport_slug)
+    sport = Sport.query.filter_by(slug=sport_slug).first_or_404()
+    # Match either '2023' or '2023-24' season strings
+    awards = (Award.query.filter_by(sport_slug=sport_slug)
+              .filter(Award.season.like(f'%{year}%'))
+              .order_by(Award.id).all())
+    if not awards:
+        abort(404)
+    return render_template('awards_year.html', sport=sport,
+                           awards=awards, year=year)
+
+
+@app.route('/<sport_slug>/all-time')
+def all_time_leaders(sport_slug):
+    sport_slug = _norm_sport(sport_slug)
+    sport = Sport.query.filter_by(slug=sport_slug).first_or_404()
+    # Pull stat-bearing seasons; show top 30 by a sport-specific key.
+    stats = (PlayerStat.query.filter_by(stat_type='season').all())
+    enriched = []
+    for st in stats:
+        p = Player.query.get(st.player_id)
+        if not p or p.sport_slug != sport_slug:
+            continue
+        if sport_slug == 'nba':
+            key = st.points_per_game or 0
+        elif sport_slug == 'nfl':
+            key = (st.passing_yards or 0) + (st.rushing_yards or 0) * 1.5
+        elif sport_slug == 'mlb':
+            key = (st.home_runs or 0) * 4 + (st.rbi or 0)
+        elif sport_slug == 'nhl':
+            key = st.hockey_points or 0
+        elif sport_slug == 'soccer':
+            key = (st.soccer_goals or 0) * 2 + (st.soccer_assists or 0)
+        else:
+            key = 0
+        enriched.append((key, p, st))
+    enriched.sort(key=lambda r: r[0], reverse=True)
+    enriched = enriched[:30]
+    return render_template('all_time.html', sport=sport, leaders=enriched)
+
+
+# ─── R4 Routes: Watch list (ESPN+) ───────────────────────────────────────────
+
+@app.route('/watch/list')
+@app.route('/watch/list/')
+def watch_list():
+    items = (Watchable.query.order_by(Watchable.is_live.desc(),
+                                      Watchable.id).all())
+    sport_filter = request.args.get('sport', '').strip()
+    kind_filter = request.args.get('kind', '').strip()
+    if sport_filter:
+        items = [w for w in items if w.sport_slug == sport_filter]
+    if kind_filter:
+        items = [w for w in items if w.kind == kind_filter]
+    return render_template('watch_list.html', items=items,
+                           sport_filter=sport_filter, kind_filter=kind_filter)
+
+
+@app.route('/watch/list/add', methods=['POST', 'GET'])
+def watch_list_add():
+    slug = (request.values.get('slug') or '').strip()
+    show = Watchable.query.filter_by(slug=slug).first()
+    if not show:
+        flash('Show not found.', 'error')
+        return redirect(url_for('watch_list'))
+    # Store in session list (no DB write — keeps seed deterministic)
+    saved = session.get('watch_list', [])
+    if slug not in saved:
+        saved.append(slug)
+        session['watch_list'] = saved
+        flash(f'Added "{show.title}" to your Watch List.', 'success')
+    else:
+        flash(f'"{show.title}" is already on your Watch List.', 'info')
+    return redirect(url_for('watch_show', slug=slug))
+
+
+@app.route('/watch/<slug>')
+def watch_show(slug):
+    show = Watchable.query.filter_by(slug=slug).first_or_404()
+    related = (Watchable.query.filter_by(sport_slug=show.sport_slug)
+               .filter(Watchable.id != show.id).limit(6).all())
+    saved = session.get('watch_list', [])
+    return render_template('watch_show.html', show=show, related=related,
+                           on_watch_list=(slug in saved))
+
+
+# ─── R4 Routes: Podcast transcript search ────────────────────────────────────
+
+@app.route('/podcasts/search')
+def podcasts_search():
+    q = (request.args.get('q', '') or '').strip().lower()
+    if not q:
+        return render_template('podcasts.html',
+                               podcasts=[], sport_filter='', search_q='')
+    tokens = [t for t in q.split() if t]
+    matches = []
+    for pod in Podcast.query.order_by(Podcast.id).all():
+        hay = ' '.join([
+            (pod.title or '').lower(),
+            (pod.host or '').lower(),
+            (pod.description or '').lower(),
+            (pod.latest_episode_title or '').lower(),
+        ])
+        if all(tok in hay for tok in tokens):
+            matches.append(pod)
+    return render_template('podcasts.html', podcasts=matches,
+                           sport_filter='', search_q=q)
 
 
 # ─── Seed Data ────────────────────────────────────────────────────────────────

@@ -54,6 +54,11 @@ R3_SENTINEL_BODY = "<<R3-baked>>"
 # replay the same offsets as R2 and risk identical synthetic content.
 R3_RNG = random.Random(20260516)
 
+# R4 sentinel: planted once at end of bake_r4 so we don't re-emit the
+# regional sub-editions / deep sub-page / multi-step additions.
+R4_SENTINEL_BODY = "<<R4-baked>>"
+R4_RNG = random.Random(20260526)
+
 # Map RSS file -> (primary category slug, optional subsection label).
 # Specialised feeds first so their slugs win when an article appears in
 # both a sub-feed (e.g. world/africa) and the generic news feed.
@@ -2235,6 +2240,1676 @@ def bake_r3(con: sqlite3.Connection) -> dict[str, int]:
     return stats
 
 
+# =======================================================================
+# R4: BBC regional editions, deep sub-pages, multi-step features
+# =======================================================================
+
+R4_NEW_CATEGORIES: list[tuple[str, str, str, str, int, str]] = [
+    # slug, name, color, parent_slug, sort_order, description
+    ("bbc_africa",   "BBC Africa",          "#000000", "world",        201,
+     "BBC Africa: stories from across the continent in English, French and Swahili."),
+    ("bbc_brasil",   "BBC Brasil",          "#000000", "latin_america",202,
+     "BBC Brasil: jornalismo em portugues, das Americas para o mundo lusofono."),
+    ("bbc_mundo",    "BBC News Mundo",      "#000000", "latin_america",203,
+     "BBC News Mundo: noticias en espanol para America Latina y el mundo hispanohablante."),
+    ("bbc_arabic",   "BBC Arabic",          "#000000", "middle_east",  204,
+     "BBC Arabic: news in Arabic from the Middle East and North Africa region."),
+    ("bbc_persian",  "BBC Persian",         "#000000", "middle_east",  205,
+     "BBC Persian: news in Farsi for Iran, Afghanistan and the Persian-speaking diaspora."),
+    ("bbc_russian",  "BBC Russian",         "#000000", "europe",       206,
+     "BBC Russian: independent news in Russian for Russia and the broader region."),
+    ("bbc_china",    "BBC News China",      "#000000", "asia",         207,
+     "BBC News China: reporting on China, Hong Kong and Taiwan in English and Chinese."),
+    ("bbc_india",    "BBC News India",      "#000000", "asia",         208,
+     "BBC News India: in-depth reporting on India and South Asia."),
+    ("breaking_news","Breaking News",       "#bb1919", "news",         11,
+     "Breaking news from BBC News: developing stories monitored by our newsroom."),
+    ("video_clips",  "Video clips",         "#000000", "video",        21,
+     "Short-form video clips from BBC News reporters around the world."),
+    ("podcasts_genres","Podcast genres",    "#000000", "podcasts",     31,
+     "Browse BBC podcasts by genre: news, history, comedy, drama, science."),
+    ("iplayer_categories","iPlayer categories","#000000","iplayer",    41,
+     "BBC iPlayer programmes by category: drama, documentary, comedy, sport, news."),
+    ("multi_step",   "Long reads",          "#000000", "",             251,
+     "BBC Long reads: deeply reported features that follow a story across weeks or months."),
+]
+
+
+def ensure_r4_categories(con: sqlite3.Connection) -> int:
+    """Insert any missing R4 categories. Idempotent."""
+    cur = con.cursor()
+    existing = {r[0] for r in cur.execute("SELECT slug FROM categories")}
+    added = 0
+    for slug, name, color, parent, order, desc in R4_NEW_CATEGORIES:
+        if slug in existing:
+            continue
+        cur.execute(
+            "INSERT INTO categories (slug, name, color, icon, parent_slug, "
+            "sort_order, description, subtitle) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+            (slug, name, color, "", parent, order, desc, desc[:250]),
+        )
+        added += 1
+    return added
+
+
+# ---- R4 country / region pools -----------------------------------------
+
+AFRICAN_COUNTRIES: list[tuple[str, str]] = [
+    ("Nigeria", "Lagos"), ("Kenya", "Nairobi"), ("South Africa", "Johannesburg"),
+    ("Ethiopia", "Addis Ababa"), ("Ghana", "Accra"), ("Senegal", "Dakar"),
+    ("Tanzania", "Dar es Salaam"), ("Uganda", "Kampala"), ("Rwanda", "Kigali"),
+    ("Egypt", "Cairo"), ("Morocco", "Rabat"), ("Tunisia", "Tunis"),
+    ("Algeria", "Algiers"), ("Sudan", "Khartoum"), ("Zimbabwe", "Harare"),
+    ("Zambia", "Lusaka"), ("Botswana", "Gaborone"), ("Namibia", "Windhoek"),
+    ("Mozambique", "Maputo"), ("Cameroon", "Yaounde"), ("Ivory Coast", "Abidjan"),
+    ("Mali", "Bamako"), ("Burkina Faso", "Ouagadougou"), ("Madagascar", "Antananarivo"),
+]
+
+LATIN_AMERICA_COUNTRIES: list[tuple[str, str, str]] = [
+    ("Brazil", "Sao Paulo", "pt"), ("Argentina", "Buenos Aires", "es"),
+    ("Mexico", "Mexico City", "es"), ("Colombia", "Bogota", "es"),
+    ("Chile", "Santiago", "es"), ("Peru", "Lima", "es"),
+    ("Venezuela", "Caracas", "es"), ("Ecuador", "Quito", "es"),
+    ("Bolivia", "La Paz", "es"), ("Paraguay", "Asuncion", "es"),
+    ("Uruguay", "Montevideo", "es"), ("Costa Rica", "San Jose", "es"),
+    ("Panama", "Panama City", "es"), ("Cuba", "Havana", "es"),
+    ("Dominican Republic", "Santo Domingo", "es"), ("Guatemala", "Guatemala City", "es"),
+    ("Honduras", "Tegucigalpa", "es"), ("Nicaragua", "Managua", "es"),
+    ("El Salvador", "San Salvador", "es"),
+]
+
+MIDDLE_EAST_COUNTRIES: list[tuple[str, str]] = [
+    ("Saudi Arabia", "Riyadh"), ("Iran", "Tehran"), ("Iraq", "Baghdad"),
+    ("Syria", "Damascus"), ("Lebanon", "Beirut"), ("Jordan", "Amman"),
+    ("Israel", "Jerusalem"), ("Palestinian Territories", "Ramallah"),
+    ("Egypt", "Cairo"), ("UAE", "Abu Dhabi"), ("Qatar", "Doha"),
+    ("Kuwait", "Kuwait City"), ("Bahrain", "Manama"), ("Oman", "Muscat"),
+    ("Yemen", "Sanaa"), ("Turkey", "Istanbul"), ("Afghanistan", "Kabul"),
+]
+
+ASIAN_COUNTRIES: list[tuple[str, str]] = [
+    ("China", "Beijing"), ("India", "New Delhi"), ("Japan", "Tokyo"),
+    ("South Korea", "Seoul"), ("North Korea", "Pyongyang"),
+    ("Indonesia", "Jakarta"), ("Vietnam", "Hanoi"), ("Thailand", "Bangkok"),
+    ("Philippines", "Manila"), ("Malaysia", "Kuala Lumpur"),
+    ("Singapore", "Singapore"), ("Pakistan", "Islamabad"),
+    ("Bangladesh", "Dhaka"), ("Sri Lanka", "Colombo"), ("Myanmar", "Naypyidaw"),
+    ("Cambodia", "Phnom Penh"), ("Laos", "Vientiane"), ("Nepal", "Kathmandu"),
+    ("Mongolia", "Ulaanbaatar"), ("Taiwan", "Taipei"), ("Hong Kong", "Hong Kong"),
+]
+
+EUROPEAN_COUNTRIES: list[tuple[str, str]] = [
+    ("France", "Paris"), ("Germany", "Berlin"), ("Italy", "Rome"),
+    ("Spain", "Madrid"), ("Portugal", "Lisbon"), ("Greece", "Athens"),
+    ("Netherlands", "Amsterdam"), ("Belgium", "Brussels"),
+    ("Switzerland", "Bern"), ("Austria", "Vienna"), ("Sweden", "Stockholm"),
+    ("Norway", "Oslo"), ("Denmark", "Copenhagen"), ("Finland", "Helsinki"),
+    ("Iceland", "Reykjavik"), ("Ireland", "Dublin"), ("Poland", "Warsaw"),
+    ("Czechia", "Prague"), ("Hungary", "Budapest"), ("Romania", "Bucharest"),
+    ("Bulgaria", "Sofia"), ("Croatia", "Zagreb"), ("Serbia", "Belgrade"),
+    ("Ukraine", "Kyiv"), ("Russia", "Moscow"), ("Belarus", "Minsk"),
+]
+
+UK_POSTCODES: list[tuple[str, str, str]] = [
+    ("SW1A", "London Westminster", "England"),
+    ("EC1V", "London Clerkenwell", "England"),
+    ("E14",  "London Canary Wharf", "England"),
+    ("N1",   "London Islington", "England"),
+    ("SE1",  "London Bermondsey", "England"),
+    ("W1A",  "London Marylebone", "England"),
+    ("M1",   "Manchester city centre", "England"),
+    ("M14",  "Manchester Fallowfield", "England"),
+    ("B1",   "Birmingham city centre", "England"),
+    ("B15",  "Birmingham Edgbaston", "England"),
+    ("LS1",  "Leeds city centre", "England"),
+    ("L1",   "Liverpool city centre", "England"),
+    ("L18",  "Liverpool Mossley Hill", "England"),
+    ("NE1",  "Newcastle upon Tyne", "England"),
+    ("S1",   "Sheffield city centre", "England"),
+    ("NG1",  "Nottingham city centre", "England"),
+    ("BS1",  "Bristol city centre", "England"),
+    ("BN1",  "Brighton North Laine", "England"),
+    ("PL1",  "Plymouth Barbican", "England"),
+    ("NR2",  "Norwich Tombland", "England"),
+    ("CB2",  "Cambridge city centre", "England"),
+    ("OX1",  "Oxford city centre", "England"),
+    ("YO1",  "York Minster", "England"),
+    ("BA1",  "Bath city centre", "England"),
+    ("EX1",  "Exeter city centre", "England"),
+    ("EH1",  "Edinburgh Old Town", "Scotland"),
+    ("EH8",  "Edinburgh Holyrood", "Scotland"),
+    ("G1",   "Glasgow city centre", "Scotland"),
+    ("G12",  "Glasgow West End", "Scotland"),
+    ("AB10", "Aberdeen city centre", "Scotland"),
+    ("DD1",  "Dundee Waterfront", "Scotland"),
+    ("IV1",  "Inverness Highlands", "Scotland"),
+    ("FK8",  "Stirling Castle", "Scotland"),
+    ("KY16", "St Andrews", "Scotland"),
+    ("CF10", "Cardiff city centre", "Wales"),
+    ("CF24", "Cardiff Bay", "Wales"),
+    ("SA1",  "Swansea Maritime", "Wales"),
+    ("NP20", "Newport Wales", "Wales"),
+    ("LL11", "Wrexham", "Wales"),
+    ("LL57", "Bangor Gwynedd", "Wales"),
+    ("BT1",  "Belfast city centre", "Northern Ireland"),
+    ("BT15", "Belfast North", "Northern Ireland"),
+    ("BT47", "Derry Londonderry", "Northern Ireland"),
+    ("BT28", "Lisburn", "Northern Ireland"),
+    ("BT34", "Newry", "Northern Ireland"),
+]
+# Headline patterns for regional editions — generic enough to apply across
+# many countries without sounding repetitive. Drawn from real BBC Africa
+# / BBC Brasil / BBC Mundo headline shapes (May 2026).
+AFRICA_HEADLINES = [
+    ("Election preparations begin in {country} as candidates file papers",
+     "Independent electoral commission opens nominations period in {capital}; opposition groups raise procedural concerns."),
+    ("{country} central bank holds key rate amid currency pressure",
+     "Monetary authorities in {capital} resist political calls for an immediate cut as inflation softens slowly."),
+    ("Floods displace thousands in northern {country}",
+     "Humanitarian agencies appeal for funds after rivers burst banks; shelter and clean water are the immediate priorities."),
+    ("Drought worsens food security in parts of {country}",
+     "Crop failures across the sahel-influenced belt push more households into food insecurity, the WFP warns."),
+    ("Young entrepreneurs in {capital} pitch climate-tech ideas",
+     "A startup accelerator in {country} backs 30 founders working on solar mini-grids and irrigation."),
+    ("{country} mourns veteran journalist who broke the story of the decade",
+     "Tributes pour in across {capital} for a reporter whose work shaped the country's political conversation."),
+    ("Power cuts return to {country} as grid maintenance overruns",
+     "Authorities in {capital} apologise to consumers as scheduled outages extend beyond the published schedule."),
+    ("Women's football in {country} attracts record sponsorship",
+     "The national league signs a multi-year deal that should treble player wages."),
+    ("Mobile money in {country} now used by 8 in 10 adults",
+     "Central bank data shows mobile wallets overtaking commercial bank accounts; regulators flag fraud."),
+    ("Public hospitals in {country} expand cancer screening",
+     "A new screening programme launches in {capital} with WHO support, targeting cervical and breast cancers."),
+    ("{country} signs trade pact with neighbour states",
+     "The agreement reduces tariffs on processed goods and is expected to boost cross-border trade in {capital}."),
+    ("Tourism rebounds in {country} as visa policy relaxes",
+     "Hotel occupancy in {capital} returns to pre-pandemic levels; safari operators report fully booked seasons."),
+    ("Drought-resistant maize trials show promise across {country}",
+     "Agricultural researchers in {capital} say new hybrids yield 20% more in dry seasons without irrigation."),
+    ("Civil society groups in {country} sound alarm on press freedom",
+     "Journalists in {capital} say recent legal cases are designed to chill investigative reporting."),
+    ("{country} signs renewable energy pact for 500MW solar park",
+     "Construction near {capital} is due to begin within 12 months; community groups demand local hiring."),
+]
+
+LATAM_HEADLINES = [
+    ("{country} announces fiscal package amid budget pressure",
+     "The finance ministry in {capital} unveils new spending cuts and tax reforms; markets respond cautiously."),
+    ("Indigenous leaders in {country} demand land rights review",
+     "Communities living near {capital} call on the federal government to honour constitutional protections."),
+    ("Amazonian deforestation hits 12-month low in {country}",
+     "Satellite imagery shared with BBC News shows enforcement stepping up in protected reserves."),
+    ("{country} football: rivalry match ends in late drama",
+     "A late goal at the national stadium in {capital} settles a fixture watched by millions."),
+    ("Inflation easing in {country} as central bank holds rate",
+     "Headline CPI in {country} dipped for the third consecutive month, encouraging the bank in {capital}."),
+    ("Migration corridor: thousands head north through {country}",
+     "Authorities in {capital} report unprecedented numbers of families travelling on foot toward the US border."),
+    ("{country} elections: front-runner widens lead in latest poll",
+     "A national survey in {capital} shows the gap stretching as voters cite the economy as their top issue."),
+    ("Femicide protests fill streets in {capital}",
+     "Marchers in {country} demand stronger sentences and faster police response to gender violence."),
+    ("{country} writers shortlisted for international literary prize",
+     "Two novelists from {capital} are named on the shortlist for one of the world's richest literary awards."),
+    ("Mining royalty dispute in {country} reaches court",
+     "Provincial governments take the federal government to court over how royalties are shared from copper exports."),
+    ("Carnival in {country} attracts record-breaking crowds",
+     "Tourism officials in {capital} estimate visitor numbers at their highest since records began."),
+    ("{country} football: women's national team beats world champions",
+     "An upset win in {capital} sees the team qualify for next year's continental championships."),
+    ("{country} faces shortage of teachers in rural areas",
+     "Education unions warn that pay and working conditions are pushing teachers in {capital} into private schools."),
+    ("Drug-trafficking network dismantled across {country}",
+     "Federal agents in {capital} announce arrests spanning three states and seize a record haul of cocaine."),
+    ("{country} cinema: new wave of directors heads to Cannes",
+     "Three feature films from {country} are accepted into the official Cannes selection this year."),
+]
+
+MIDEAST_HEADLINES = [
+    ("{country} announces ceasefire framework after weeks of talks",
+     "Mediators in {capital} say a sequenced agreement is now in writing and awaits approval from both sides."),
+    ("Tensions rise on {country}'s northern border",
+     "Cross-border exchanges of fire are reported overnight; observers in {capital} call for restraint."),
+    ("{country} central bank intervenes to support currency",
+     "Reserves drawn down by an estimated 1.5bn dollars in three days; analysts in {capital} doubt the strategy is sustainable."),
+    ("Aid convoys reach besieged area of {country}",
+     "Trucks carrying food and medicine cross into territory cut off for weeks; UN officials describe the situation as critical."),
+    ("{country} women's rights groups march in {capital}",
+     "Protesters call for legal reforms on personal status laws; the rally is the largest in five years."),
+    ("Oil exports from {country} rise as quotas relax",
+     "Energy ministry data shows production in {country} up 4% month-on-month with most cargo bound for Asia."),
+    ("{country} youth unemployment is at a 15-year high",
+     "Government statistics in {capital} confirm a generational squeeze that economists call a ticking bomb."),
+    ("Universities in {country} reopen after months of disruption",
+     "Students return to lecture halls in {capital} amid heavy security; final exams have been rescheduled."),
+    ("{country} signs nuclear cooperation pact with European partner",
+     "The agreement on civilian nuclear research is unrelated to military matters, the foreign ministry in {capital} says."),
+    ("Cultural festival in {country} draws international visitors",
+     "A two-week celebration in {capital} of music, film and literature opens with a sold-out concert."),
+    ("Floods damage farmland in southern {country}",
+     "Authorities in {capital} declare a state of emergency for two provinces; aid agencies prepare to assist."),
+    ("{country} cabinet reshuffled after parliamentary debate",
+     "Three new ministers are sworn in at {capital}'s presidential palace, including the country's first female finance minister."),
+]
+
+ASIA_HEADLINES = [
+    ("{country} typhoon causes widespread damage along coast",
+     "Authorities in {capital} confirm casualties and major infrastructure damage; rescue operations are underway."),
+    ("Tech sector in {country} hires aggressively despite global slowdown",
+     "Companies near {capital} say AI-related roles are pulling in graduates at record salaries."),
+    ("{country} parliament passes long-awaited data protection bill",
+     "The law in {capital} brings the country closer to international privacy standards; civil liberties groups call it a partial win."),
+    ("Air quality alert across northern {country}",
+     "Schools in {capital} suspend outdoor activities as PM2.5 readings surge to hazardous levels."),
+    ("{country} cricket: T20 league signs landmark broadcast deal",
+     "A multi-billion-dollar agreement makes the league one of the richest in world sport."),
+    ("Earthquake shakes parts of {country}; no casualties reported",
+     "A magnitude 5.6 tremor rattles homes in {capital}'s suburbs and prompts brief evacuation."),
+    ("{country} announces electric vehicle subsidy extension",
+     "Drivers buying EVs in {country} get extended tax breaks; the policy aims to cut urban air pollution in {capital}."),
+    ("Manufacturing exports from {country} hit five-year high",
+     "Customs data in {capital} shows surge in semiconductor and machinery shipments to Europe."),
+    ("{country} space agency launches lunar mission",
+     "A rocket carrying a small lander lifts off from a coastal base; engineers in {capital} celebrate a textbook ascent."),
+    ("Heritage temple in {country} reopens after restoration",
+     "Conservators in {capital} unveil a five-year project that has stabilised crumbling stonework."),
+    ("{country} signs free-trade pact with Pacific neighbours",
+     "The agreement removes tariffs on 90% of goods and is expected to boost exports through {capital}'s main port."),
+    ("Climate refugees in {country} resettled in higher villages",
+     "Coastal communities near {capital} are moved inland as sea levels reshape the shoreline."),
+]
+
+EUROPE_HEADLINES = [
+    ("{country} forms new coalition government after long talks",
+     "Parties shake hands in {capital} on a programme that prioritises housing, defence and climate."),
+    ("{country} central bank trims rate as inflation eases",
+     "Officials in {capital} say price pressures are now within target range for the first time in 18 months."),
+    ("{country} signs defence pact with NATO neighbours",
+     "Joint exercises announced for next year; the agreement was signed in {capital}'s government quarter."),
+    ("Migration policy reshuffled in {country} after court ruling",
+     "Justices in {capital} strike down two provisions of the country's asylum law; ministers vow to redraft."),
+    ("{country} commuter rail strike enters second week",
+     "Talks resume in {capital} as commuters face cancellations across the main intercity routes."),
+    ("Renewable share of {country} grid reaches new high",
+     "Wind and solar supplied 51% of electricity in March, the energy regulator in {capital} reports."),
+    ("{country} parliament debates assisted dying bill",
+     "Lawmakers in {capital} consider proposals that would make the country the latest in Europe to legalise the practice."),
+    ("{country} football: domestic cup final goes to penalties",
+     "A dramatic final at the national stadium near {capital} ends with the underdogs taking the trophy."),
+    ("{country} farmers protest agricultural reforms",
+     "Tractors gather in {capital} to oppose new environmental rules that growers say will raise costs."),
+    ("{country} announces ban on single-use plastics",
+     "The legislation passed in {capital} aligns the country with EU directives and takes effect next January."),
+    ("{country} cultural year opens with film festival",
+     "Headlines from the official opening in {capital}: a packed schedule of free events expected to draw a million visitors."),
+    ("Housing crisis in {country} prompts emergency parliament session",
+     "MPs in {capital} debate new measures to free up affordable rentals in major cities."),
+]
+def _r4_synth_body(lead: str, headline: str, country: str, capital: str) -> str:
+    """Five-paragraph synthesized body for R4 regional stories. All
+    paragraphs are derived deterministically from the inputs (no RNG)."""
+    return (
+        f"{lead}\n\n"
+        f"BBC News correspondents in {capital} have followed this story since "
+        f"it first broke on regional television. Officials in {country} are "
+        f"under pressure both at home and from international partners, and the "
+        f"response in the coming days will be closely watched.\n\n"
+        f"\"This is not a problem that can be solved in a single news cycle,\" "
+        f"one analyst told the BBC. \"What matters is whether the institutions "
+        f"in {country} are equipped to deliver on the commitments now being "
+        f"made in {capital}.\"\n\n"
+        f"The story has resonated beyond {country}'s borders. Similar dynamics "
+        f"are visible in neighbouring countries, and regional bodies have "
+        f"already signalled they will discuss the implications at their next "
+        f"summit.\n\n"
+        f"BBC News will continue to cover developments. Our team is in {capital} "
+        f"and is gathering reaction from communities most directly affected. "
+        f"Updates will follow as the story progresses."
+    )
+
+
+def _r4_make_row(*, slug, headline, lead, body, category_id, section_slug,
+                 subsection, region, ts, view_count, country=None,
+                 hero="", topics=None, feature_tags=None, content_type="article",
+                 is_breaking=0, is_live=0, video_url="", is_featured=0):
+    return {
+        "slug": slug,
+        "headline": headline,
+        "subtitle": lead[:300],
+        "summary": lead[:300],
+        "body": body,
+        "author": "BBC News",
+        "category_id": category_id,
+        "hero_image": hero,
+        "gallery_json": "[]",
+        "gallery_full_json": "{}",
+        "topics_json": json.dumps(topics or [region]),
+        "published_at": ts.strftime("%Y-%m-%d %H:%M:%S"),
+        "reading_time": max(2, len(body.split()) // 200),
+        "word_count": len(body.split()),
+        "view_count": view_count,
+        "is_featured": is_featured,
+        "is_breaking": is_breaking,
+        "is_live": is_live,
+        "location": country or region,
+        "source_url": f"https://www.bbc.com/news/articles/{slug}",
+        "section_slug": section_slug,
+        "subsection": subsection,
+        "region": region,
+        "video_url": video_url,
+        "feature_tags": json.dumps(feature_tags or [section_slug]),
+        "content_type": content_type,
+    }
+
+
+def _cat_id(con, slug: str) -> int | None:
+    row = con.execute("SELECT id FROM categories WHERE slug=?", (slug,)).fetchone()
+    return row[0] if row else None
+
+
+# ---- R4 synth functions -------------------------------------------------
+
+def synth_bbc_africa(con, hero_pool: list[str]) -> list[dict]:
+    cid = _cat_id(con, "bbc_africa") or _cat_id(con, "africa")
+    if cid is None:
+        return []
+    out: list[dict] = []
+    base = MIRROR_REFERENCE_DATE
+    for country, capital in AFRICAN_COUNTRIES:
+        for idx, (hl_pat, lead_pat) in enumerate(AFRICA_HEADLINES[:6]):
+            headline = hl_pat.format(country=country, capital=capital)
+            lead = lead_pat.format(country=country, capital=capital)
+            slug = _det_slug("r4-africa", f"{country}|{idx}")
+            hero = hero_pool[(_det_int(slug) + 13) % len(hero_pool)]
+            ts = base - timedelta(
+                days=(_det_int(slug) % 120) + 1,
+                hours=(_det_int(slug) // 31) % 24,
+            )
+            body = _r4_synth_body(lead, headline, country, capital)
+            out.append(_r4_make_row(
+                slug=slug, headline=headline, lead=lead, body=body,
+                category_id=cid, section_slug="bbc_africa",
+                subsection=country, region="Africa", ts=ts,
+                view_count=400 + (_det_int(slug) % 12000),
+                country=country, hero=hero,
+                topics=["Africa", country, "BBC Africa"],
+                feature_tags=["bbc_africa", country.lower().replace(" ", "_")],
+            ))
+    return out
+
+
+def synth_bbc_brasil(con, hero_pool: list[str]) -> list[dict]:
+    cid = _cat_id(con, "bbc_brasil") or _cat_id(con, "latin_america")
+    if cid is None:
+        return []
+    out: list[dict] = []
+    base = MIRROR_REFERENCE_DATE
+    # Brazil-only deep coverage.
+    cities = ["Sao Paulo", "Rio de Janeiro", "Brasilia", "Salvador", "Fortaleza",
+             "Belo Horizonte", "Manaus", "Curitiba", "Recife", "Porto Alegre"]
+    for city_idx, city in enumerate(cities):
+        for idx, (hl_pat, lead_pat) in enumerate(LATAM_HEADLINES[:8]):
+            headline = hl_pat.format(country="Brazil", capital=city)
+            # Add Portuguese flavour:
+            headline_pt = headline.replace("Brazil", "Brasil")
+            lead = lead_pat.format(country="Brazil", capital=city)
+            slug = _det_slug("r4-brasil", f"{city}|{idx}")
+            hero = hero_pool[(_det_int(slug) + 41) % len(hero_pool)]
+            ts = base - timedelta(
+                days=(_det_int(slug) % 150) + 1,
+                hours=(_det_int(slug) // 17) % 24,
+            )
+            body = _r4_synth_body(lead, headline_pt, "Brasil", city)
+            out.append(_r4_make_row(
+                slug=slug, headline=headline_pt, lead=lead, body=body,
+                category_id=cid, section_slug="bbc_brasil",
+                subsection=city, region="Latin America", ts=ts,
+                view_count=300 + (_det_int(slug) % 9000),
+                country="Brasil", hero=hero,
+                topics=["Brasil", city, "BBC Brasil"],
+                feature_tags=["bbc_brasil", "portugues"],
+            ))
+    return out
+
+
+def synth_bbc_mundo(con, hero_pool: list[str]) -> list[dict]:
+    cid = _cat_id(con, "bbc_mundo") or _cat_id(con, "latin_america")
+    if cid is None:
+        return []
+    out: list[dict] = []
+    base = MIRROR_REFERENCE_DATE
+    spanish_countries = [(c, cap) for c, cap, lang in LATIN_AMERICA_COUNTRIES if lang == "es"]
+    for country, capital in spanish_countries:
+        for idx, (hl_pat, lead_pat) in enumerate(LATAM_HEADLINES[:5]):
+            headline = hl_pat.format(country=country, capital=capital)
+            lead = lead_pat.format(country=country, capital=capital)
+            slug = _det_slug("r4-mundo", f"{country}|{idx}")
+            hero = hero_pool[(_det_int(slug) + 23) % len(hero_pool)]
+            ts = base - timedelta(
+                days=(_det_int(slug) % 140) + 1,
+                hours=(_det_int(slug) // 19) % 24,
+            )
+            body = _r4_synth_body(lead, headline, country, capital)
+            out.append(_r4_make_row(
+                slug=slug, headline=headline, lead=lead, body=body,
+                category_id=cid, section_slug="bbc_mundo",
+                subsection=country, region="Latin America", ts=ts,
+                view_count=350 + (_det_int(slug) % 8500),
+                country=country, hero=hero,
+                topics=["Latin America", country, "BBC Mundo"],
+                feature_tags=["bbc_mundo", "espanol"],
+            ))
+    return out
+
+
+def synth_bbc_arabic(con, hero_pool: list[str]) -> list[dict]:
+    cid = _cat_id(con, "bbc_arabic") or _cat_id(con, "middle_east")
+    if cid is None:
+        return []
+    out: list[dict] = []
+    base = MIRROR_REFERENCE_DATE
+    for country, capital in MIDDLE_EAST_COUNTRIES:
+        for idx, (hl_pat, lead_pat) in enumerate(MIDEAST_HEADLINES[:4]):
+            headline = hl_pat.format(country=country, capital=capital)
+            lead = lead_pat.format(country=country, capital=capital)
+            slug = _det_slug("r4-arabic", f"{country}|{idx}")
+            hero = hero_pool[(_det_int(slug) + 53) % len(hero_pool)]
+            ts = base - timedelta(
+                days=(_det_int(slug) % 130) + 1,
+                hours=(_det_int(slug) // 23) % 24,
+            )
+            body = _r4_synth_body(lead, headline, country, capital)
+            out.append(_r4_make_row(
+                slug=slug, headline=headline, lead=lead, body=body,
+                category_id=cid, section_slug="bbc_arabic",
+                subsection=country, region="Middle East", ts=ts,
+                view_count=300 + (_det_int(slug) % 10000),
+                country=country, hero=hero,
+                topics=["Middle East", country, "BBC Arabic"],
+                feature_tags=["bbc_arabic", "arabic"],
+            ))
+    return out
+
+
+def synth_bbc_persian(con, hero_pool: list[str]) -> list[dict]:
+    cid = _cat_id(con, "bbc_persian") or _cat_id(con, "middle_east")
+    if cid is None:
+        return []
+    out: list[dict] = []
+    base = MIRROR_REFERENCE_DATE
+    persian_targets = [("Iran", "Tehran"), ("Afghanistan", "Kabul"),
+                       ("Tajikistan", "Dushanbe")]
+    for country, capital in persian_targets:
+        for idx, (hl_pat, lead_pat) in enumerate(MIDEAST_HEADLINES[:10]):
+            headline = hl_pat.format(country=country, capital=capital)
+            lead = lead_pat.format(country=country, capital=capital)
+            slug = _det_slug("r4-persian", f"{country}|{idx}")
+            hero = hero_pool[(_det_int(slug) + 67) % len(hero_pool)]
+            ts = base - timedelta(
+                days=(_det_int(slug) % 110) + 1,
+                hours=(_det_int(slug) // 29) % 24,
+            )
+            body = _r4_synth_body(lead, headline, country, capital)
+            out.append(_r4_make_row(
+                slug=slug, headline=headline, lead=lead, body=body,
+                category_id=cid, section_slug="bbc_persian",
+                subsection=country, region="Middle East", ts=ts,
+                view_count=250 + (_det_int(slug) % 7500),
+                country=country, hero=hero,
+                topics=["Middle East", country, "BBC Persian"],
+                feature_tags=["bbc_persian", "farsi"],
+            ))
+    return out
+
+
+def synth_bbc_russian(con, hero_pool: list[str]) -> list[dict]:
+    cid = _cat_id(con, "bbc_russian") or _cat_id(con, "europe")
+    if cid is None:
+        return []
+    out: list[dict] = []
+    base = MIRROR_REFERENCE_DATE
+    targets = [("Russia", "Moscow"), ("Belarus", "Minsk"), ("Ukraine", "Kyiv"),
+               ("Kazakhstan", "Astana"), ("Georgia", "Tbilisi"), ("Moldova", "Chisinau")]
+    for country, capital in targets:
+        for idx, (hl_pat, lead_pat) in enumerate(EUROPE_HEADLINES[:6]):
+            headline = hl_pat.format(country=country, capital=capital)
+            lead = lead_pat.format(country=country, capital=capital)
+            slug = _det_slug("r4-russian", f"{country}|{idx}")
+            hero = hero_pool[(_det_int(slug) + 79) % len(hero_pool)]
+            ts = base - timedelta(
+                days=(_det_int(slug) % 130) + 1,
+                hours=(_det_int(slug) // 13) % 24,
+            )
+            body = _r4_synth_body(lead, headline, country, capital)
+            out.append(_r4_make_row(
+                slug=slug, headline=headline, lead=lead, body=body,
+                category_id=cid, section_slug="bbc_russian",
+                subsection=country, region="Europe", ts=ts,
+                view_count=300 + (_det_int(slug) % 8000),
+                country=country, hero=hero,
+                topics=["Europe", country, "BBC Russian"],
+                feature_tags=["bbc_russian", "russian"],
+            ))
+    return out
+
+
+def synth_bbc_china(con, hero_pool: list[str]) -> list[dict]:
+    cid = _cat_id(con, "bbc_china") or _cat_id(con, "asia")
+    if cid is None:
+        return []
+    out: list[dict] = []
+    base = MIRROR_REFERENCE_DATE
+    targets = [("China", "Beijing"), ("Hong Kong", "Hong Kong"),
+               ("Taiwan", "Taipei"), ("Macau", "Macau")]
+    for country, capital in targets:
+        for idx, (hl_pat, lead_pat) in enumerate(ASIA_HEADLINES[:8]):
+            headline = hl_pat.format(country=country, capital=capital)
+            lead = lead_pat.format(country=country, capital=capital)
+            slug = _det_slug("r4-china", f"{country}|{idx}")
+            hero = hero_pool[(_det_int(slug) + 89) % len(hero_pool)]
+            ts = base - timedelta(
+                days=(_det_int(slug) % 125) + 1,
+                hours=(_det_int(slug) // 11) % 24,
+            )
+            body = _r4_synth_body(lead, headline, country, capital)
+            out.append(_r4_make_row(
+                slug=slug, headline=headline, lead=lead, body=body,
+                category_id=cid, section_slug="bbc_china",
+                subsection=country, region="Asia", ts=ts,
+                view_count=400 + (_det_int(slug) % 11000),
+                country=country, hero=hero,
+                topics=["Asia", country, "BBC News China"],
+                feature_tags=["bbc_china", "china"],
+            ))
+    return out
+
+
+def synth_bbc_india(con, hero_pool: list[str]) -> list[dict]:
+    cid = _cat_id(con, "bbc_india") or _cat_id(con, "asia")
+    if cid is None:
+        return []
+    out: list[dict] = []
+    base = MIRROR_REFERENCE_DATE
+    cities = ["New Delhi", "Mumbai", "Kolkata", "Chennai", "Bengaluru",
+              "Hyderabad", "Ahmedabad", "Jaipur", "Pune", "Lucknow"]
+    for city in cities:
+        for idx, (hl_pat, lead_pat) in enumerate(ASIA_HEADLINES[:5]):
+            headline = hl_pat.format(country="India", capital=city)
+            lead = lead_pat.format(country="India", capital=city)
+            slug = _det_slug("r4-india", f"{city}|{idx}")
+            hero = hero_pool[(_det_int(slug) + 97) % len(hero_pool)]
+            ts = base - timedelta(
+                days=(_det_int(slug) % 140) + 1,
+                hours=(_det_int(slug) // 7) % 24,
+            )
+            body = _r4_synth_body(lead, headline, "India", city)
+            out.append(_r4_make_row(
+                slug=slug, headline=headline, lead=lead, body=body,
+                category_id=cid, section_slug="bbc_india",
+                subsection=city, region="Asia", ts=ts,
+                view_count=400 + (_det_int(slug) % 9500),
+                country="India", hero=hero,
+                topics=["Asia", "India", city],
+                feature_tags=["bbc_india", "south_asia"],
+            ))
+    return out
+
+
+def synth_world_country_drill(con, hero_pool: list[str]) -> list[dict]:
+    """For /world/<region>/<country> drill-down: pre-create a handful of
+    region-tagged articles for each country across Asia, Europe, Africa."""
+    out: list[dict] = []
+    base = MIRROR_REFERENCE_DATE
+    region_map = [
+        ("asia",          "Asia",          ASIAN_COUNTRIES,       ASIA_HEADLINES),
+        ("europe",        "Europe",        EUROPEAN_COUNTRIES,    EUROPE_HEADLINES),
+        ("africa",        "Africa",        AFRICAN_COUNTRIES,     AFRICA_HEADLINES),
+        ("middle_east",   "Middle East",   MIDDLE_EAST_COUNTRIES, MIDEAST_HEADLINES),
+    ]
+    for section_slug, region_label, country_pool, headlines in region_map:
+        cid = _cat_id(con, section_slug)
+        if cid is None:
+            continue
+        for country, capital in country_pool:
+            for idx, (hl_pat, lead_pat) in enumerate(headlines[:3]):
+                headline = hl_pat.format(country=country, capital=capital)
+                lead = lead_pat.format(country=country, capital=capital)
+                slug = _det_slug(f"r4-{section_slug}", f"{country}|{idx}")
+                hero = hero_pool[(_det_int(slug) + 7) % len(hero_pool)]
+                ts = base - timedelta(
+                    days=(_det_int(slug) % 95) + 1,
+                    hours=(_det_int(slug) // 9) % 24,
+                )
+                body = _r4_synth_body(lead, headline, country, capital)
+                out.append(_r4_make_row(
+                    slug=slug, headline=headline, lead=lead, body=body,
+                    category_id=cid, section_slug=section_slug,
+                    subsection=country, region=region_label, ts=ts,
+                    view_count=400 + (_det_int(slug) % 8000),
+                    country=country, hero=hero,
+                    topics=[region_label, country],
+                    feature_tags=[section_slug, country.lower().replace(" ", "_")],
+                ))
+    return out
+def synth_in_pictures_essays(con, hero_pool: list[str]) -> list[dict]:
+    """Deep /news/in_pictures photo essays."""
+    cid = _cat_id(con, "in_pictures")
+    if cid is None:
+        return []
+    out: list[dict] = []
+    base = MIRROR_REFERENCE_DATE
+    essay_topics = [
+        ("In pictures: spring blossom across the UK", "Cherry blossom in the parks of London, Edinburgh and Belfast as readers send in their photographs."),
+        ("In pictures: a year of climate protest", "Twelve images from twelve months of demonstrations across five continents."),
+        ("In pictures: the world's most striking street art of 2026", "From Bogota to Belgrade, the murals that stopped passers-by in their tracks."),
+        ("In pictures: dawn over the Himalayas", "A BBC photographer's week capturing first light over the peaks."),
+        ("In pictures: life in the world's coldest inhabited place", "Children, schools and reindeer in northern Siberia at -50C."),
+        ("In pictures: the architecture of post-war housing", "How communities across Europe are saving 20th-century estates from demolition."),
+        ("In pictures: the year in space photography", "Auroras, supermoons and the Milky Way over remote landscapes."),
+        ("In pictures: festivals of light around the world", "Diwali, Hanukkah and Christmas captured at city scale."),
+        ("In pictures: a year on the front line of conservation", "Rangers, scientists and volunteers in some of the world's most threatened ecosystems."),
+        ("In pictures: working dogs of the world", "Sheepdogs in Snowdonia, sled dogs in Greenland and detection dogs in Kenya."),
+        ("In pictures: the last of the world's traditional crafts", "Master artisans in Japan, Turkey and Peru passing on skills to a new generation."),
+        ("In pictures: the new wave of African fashion designers", "Designers from Lagos, Nairobi and Dakar reshaping global runways."),
+        ("In pictures: extreme weather as the new normal", "How communities are adapting to fires, floods and droughts in 2026."),
+        ("In pictures: the world's most isolated communities", "Life in remote islands, mountain valleys and Arctic settlements."),
+        ("In pictures: the resurgence of vinyl in 2026", "Record shops, pressing plants and the artists driving the boom."),
+        ("In pictures: the everyday objects shaping the future", "From foldable phones to compostable packaging — small designs with big consequences."),
+        ("In pictures: the last week of the Edinburgh Fringe", "Five performers, five photographs, five very different shows."),
+        ("In pictures: dawn-to-dusk on a Welsh mountain", "A photographer's 18-hour vigil on Cadair Idris."),
+        ("In pictures: the changing face of Britain's high streets", "What replaced the bank, the post office and the department store."),
+        ("In pictures: weddings across faiths in 2026 Britain", "Twelve couples, twelve traditions, one country."),
+        ("In pictures: the wildlife of urban Britain", "Foxes, peregrines and badgers caught on camera in city centres."),
+        ("In pictures: the world's oldest universities", "Cloisters, libraries and lecture halls from Bologna to Beijing."),
+        ("In pictures: the rebirth of the night train", "Sleeper services from Paris to Vienna are filling up again."),
+        ("In pictures: the lives of Britain's fishing fleet", "Small ports, long hours and an industry under pressure."),
+        ("In pictures: the new face of cricket in England", "Women's leagues, junior clubs and a record-breaking summer."),
+        ("In pictures: opera under the stars", "Outdoor productions in Verona, Bregenz and Glyndebourne."),
+        ("In pictures: the festivals of West Africa", "Music, dance and street parades from Dakar to Accra."),
+        ("In pictures: the last days of the analogue cinema", "Projectionists holding on as film prints are phased out."),
+        ("In pictures: a year inside a working dairy farm", "Calving, milking and the changing economics of British dairy."),
+        ("In pictures: refugees rebuilding lives across Europe", "Twelve families, twelve countries of origin, twelve new beginnings."),
+        ("In pictures: traditional fishing villages of Vietnam", "Long-tail boats, floating markets and the rhythms of the coast."),
+        ("In pictures: the wild coastlines of Scotland", "Cliffs, beaches and offshore stacks captured from drone and ground."),
+        ("In pictures: London after dark", "Markets, theatres and street life from 10pm to 6am."),
+        ("In pictures: the women shaping European parliament", "Twenty MEPs, twenty very different paths to Brussels."),
+        ("In pictures: the kitchen gardens of Britain", "Walled gardens, allotments and the rediscovery of heritage vegetables."),
+        ("In pictures: snow leopards of the Hindu Kush", "Camera traps reveal a thriving population thought to be vanishing."),
+        ("In pictures: the rebirth of England's canals", "Boaters, towpaths and the volunteers keeping waterways open."),
+        ("In pictures: musicians of Sahel", "Mali, Niger and Burkina Faso — a region's sound under threat."),
+        ("In pictures: the festival circuit of British folk music", "Cambridge, Cropredy and Sidmouth in a record summer."),
+        ("In pictures: the children of the Calais camp", "Five years on from the first reporting trip, a return visit."),
+        ("In pictures: the food markets of Mexico City", "Colour, noise and culinary history in CDMX's covered markets."),
+        ("In pictures: northern lights over the British Isles", "Auroras photographed as far south as Cornwall this spring."),
+        ("In pictures: women boxers training across the UK", "From Glasgow to Brighton, club gyms and rising professionals."),
+        ("In pictures: the bookshops of the world", "Twenty independent bookshops worth a detour."),
+        ("In pictures: the architecture of empty offices", "Photographer Eve Mascarenhas on the post-pandemic city."),
+        ("In pictures: the polar science stations of Antarctica", "Researchers, engineers and chefs at the bottom of the world."),
+        ("In pictures: the village fetes of England", "Cake stalls, brass bands and the British summer outdoors."),
+        ("In pictures: the world's vanishing glaciers", "Five glaciers photographed annually for ten years."),
+        ("In pictures: dance across the African continent", "Choreographers redefining contemporary movement."),
+        ("In pictures: the cathedrals of Britain in 2026", "Twelve cathedrals, twelve photographers, twelve very different perspectives."),
+        ("In pictures: the youth orchestras of Latin America", "Inspired by El Sistema, expanded across the continent."),
+        ("In pictures: the last Yiddish theatres", "Performers in New York, London and Warsaw keeping a tradition alive."),
+        ("In pictures: the new generation of British poets", "Twenty writers, twenty very different voices."),
+        ("In pictures: street food of Bangkok", "Pad thai, mango sticky rice and the vendors who define the city."),
+        ("In pictures: surfing the cold-water breaks of Cornwall", "Wetsuits, wax and a year-round community."),
+        ("In pictures: the cafes of Vienna", "An institution unchanged in a century — but only just."),
+        ("In pictures: the world's tea houses", "Tokyo, Marrakesh, Istanbul and the rituals around the leaf."),
+        ("In pictures: ferry crossings of the Scottish Hebrides", "CalMac, weather and the lifeline of island life."),
+        ("In pictures: rebuilding after the Turkish earthquakes", "Three years on, towns rising again."),
+        ("In pictures: the workshops of Stradivari", "Cremona's violin makers in 2026."),
+        ("In pictures: dawn at the world's longest beaches", "From Cox's Bazar to Praia do Cassino."),
+        ("In pictures: night skies free of light pollution", "International dark-sky reserves photographed across two hemispheres."),
+        ("In pictures: the volunteers of Britain's RNLI", "Lifeboat crews from Scilly to Shetland."),
+        ("In pictures: cycling across Mongolia", "A two-month expedition by a BBC News reporter."),
+        ("In pictures: backyard astronomers of Britain", "Amateur observatories from suburban Surrey to the Outer Hebrides."),
+        ("In pictures: street food markets of Mexico", "Tortillerias, taquerias and the women who run them."),
+        ("In pictures: women's rugby in 2026", "From grassroots clubs to the Six Nations decider."),
+        ("In pictures: the cycle lanes reshaping European cities", "Paris, Utrecht, Seville — five cities rewriting their streets."),
+        ("In pictures: the new wave of Welsh-language film", "Directors, producers and actors at S4C."),
+        ("In pictures: lakes that disappear in summer", "Cyclical bodies of water across Europe and Central Asia."),
+        ("In pictures: Cornwall's tin mining heritage", "From World Heritage status to working museums."),
+        ("In pictures: the last drive-in cinemas", "Open-air screens from California to Korea, still drawing crowds."),
+        ("In pictures: the children's choirs of South Africa", "Township choirs, national finals and the music that unites."),
+        ("In pictures: stargazing in the Outer Hebrides", "Dark-sky tourism on the islands of Lewis and Harris."),
+        ("In pictures: the dancers of the Bolshoi", "A year backstage at the Moscow ballet."),
+        ("In pictures: the world's most colourful neighbourhoods", "From Burano to Bo-Kaap."),
+        ("In pictures: the Royal Navy in 2026", "From submarines to aircraft carriers — a year afloat."),
+        ("In pictures: the cooks of Naples", "Pizza, pasta and a city's culinary stubbornness."),
+        ("In pictures: a year on Lundy Island", "Wildlife, weather and the 28 inhabitants of a Bristol Channel rock."),
+        ("In pictures: the markets of Marrakech", "Souks, spices and the rhythms of the medina."),
+        ("In pictures: the bookbinders of Britain", "Bespoke workshops keeping a centuries-old craft alive."),
+    ]
+    for idx, (headline, lead) in enumerate(essay_topics):
+        slug = _det_slug("r4-pix", f"{idx}|{headline[:40]}")
+        hero = hero_pool[(_det_int(slug) + 31) % len(hero_pool)]
+        ts = base - timedelta(
+            days=(idx * 3 + 1) % 200,
+            hours=(_det_int(slug) // 41) % 24,
+        )
+        body = (
+            f"{lead}\n\n"
+            f"Photographs in this essay were submitted to and selected by "
+            f"the BBC News picture desk. The selection is part of our regular "
+            f"In Pictures series, which highlights the visual storytelling of "
+            f"photojournalists and amateur contributors alike.\n\n"
+            f"Each image has been captioned by the photographer and lightly "
+            f"edited for clarity. The series runs weekly and is curated by "
+            f"the BBC News visual journalism team.\n\n"
+            f"Submissions for next month's edition can be sent via the BBC "
+            f"News contact page. Please include a short caption and your "
+            f"location with each image.\n\n"
+            f"View the full gallery in the slideshow below. Use the arrow "
+            f"keys to navigate, or click the image to enter fullscreen mode."
+        )
+        out.append(_r4_make_row(
+            slug=slug, headline=headline, lead=lead, body=body,
+            category_id=cid, section_slug="in_pictures",
+            subsection="Photo Essay", region="", ts=ts,
+            view_count=600 + (_det_int(slug) % 18000),
+            hero=hero,
+            topics=["In Pictures", "Photo Essay"],
+            feature_tags=["in_pictures", "photo_essay", "gallery"],
+            content_type="gallery",
+        ))
+    return out
+
+
+def synth_audio_digests(con, hero_pool: list[str]) -> list[dict]:
+    cid = _cat_id(con, "audio") or _cat_id(con, "sounds")
+    if cid is None:
+        return []
+    out: list[dict] = []
+    base = MIRROR_REFERENCE_DATE
+    series = [
+        "The Daily News Briefing", "Newscast", "Global News Podcast",
+        "Americast", "The Documentary", "More or Less", "Witness History",
+        "From Our Own Correspondent", "Inside Health", "Crowd Science",
+        "Tech Tent", "Business Daily", "BBC OS Conversations",
+        "BBC Sounds Daily", "World Service Newshour", "Discovery",
+        "The Climate Question", "Outlook", "The Comb",
+        "Stumped: Cricket Podcast",
+    ]
+    topics = [
+        "the week in politics", "the AI gold rush", "interest rates and inflation",
+        "the war in eastern Europe", "climate negotiations", "the housing crisis",
+        "the future of work", "a deep dive on cryptocurrency", "elections in India",
+        "the latest from space", "young voters across Europe", "global food prices",
+        "the rebirth of public transport", "the streaming wars",
+        "world cricket in 2026", "Premier League title race",
+        "Wimbledon preview", "the future of football", "the gig economy",
+        "loneliness and mental health",
+    ]
+    for s_idx, series_name in enumerate(series):
+        for t_idx, topic in enumerate(topics[:6]):
+            headline = f"{series_name}: {topic}"
+            slug = _det_slug("r4-audio", f"{series_name}|{topic}")
+            hero = hero_pool[(_det_int(slug) + 11) % len(hero_pool)]
+            ts = base - timedelta(
+                days=(s_idx * 7 + t_idx * 3) % 180,
+                hours=(_det_int(slug) // 13) % 24,
+            )
+            lead = (
+                f"This week on {series_name}, the BBC's correspondents explore "
+                f"{topic}. Subscribe via the BBC Sounds app to listen on the move."
+            )
+            body = (
+                f"{lead}\n\n"
+                f"Hosts and guests dig into the story behind the headlines, "
+                f"and ask what comes next. The full episode is 28 minutes and "
+                f"is available now on BBC Sounds.\n\n"
+                f"Subscribe to the podcast feed to receive new episodes "
+                f"automatically. You can also download episodes for offline "
+                f"listening in the BBC Sounds app.\n\n"
+                f"Get in touch with the team via email or voice note: we "
+                f"feature listener questions in every fourth episode.\n\n"
+                f"Use the player below to listen now, or open the episode in "
+                f"BBC Sounds for the full chapter markers and transcript."
+            )
+            out.append(_r4_make_row(
+                slug=slug, headline=headline, lead=lead, body=body,
+                category_id=cid, section_slug="audio",
+                subsection=series_name, region="", ts=ts,
+                view_count=500 + (_det_int(slug) % 14000),
+                hero=hero,
+                topics=["Audio", "Podcast", series_name],
+                feature_tags=["audio", "podcast", "bbc_sounds"],
+                content_type="audio",
+                video_url=f"https://www.bbc.co.uk/sounds/play/{slug}",
+            ))
+    return out
+def synth_weather_7day(con, hero_pool: list[str]) -> list[dict]:
+    cid = _cat_id(con, "weather")
+    if cid is None:
+        return []
+    out: list[dict] = []
+    base = MIRROR_REFERENCE_DATE
+    conditions = ["Sunny intervals", "Light rain", "Cloudy", "Heavy rain",
+                  "Thundery showers", "Snow showers", "Foggy start",
+                  "Clear and cold", "Windy with showers", "Hot and sunny"]
+    for pc_idx, (postcode, area, nation) in enumerate(UK_POSTCODES):
+        headline = f"Weather 7-day forecast for {area} ({postcode})"
+        lead = (
+            f"Seven-day forecast for {area}, {nation}. Conditions across {postcode} "
+            f"are expected to follow the recent pattern, with no significant change "
+            f"on the horizon."
+        )
+        slug = _det_slug("r4-wx7", f"{postcode}|{area}")
+        hero = hero_pool[(_det_int(slug) + 19) % len(hero_pool)]
+        ts = base - timedelta(
+            hours=(pc_idx * 13 + _det_int(slug)) % (24 * 30),
+        )
+        # 7-day breakdown table in the body
+        days = ["Today", "Tomorrow", "Day 3", "Day 4", "Day 5", "Day 6", "Day 7"]
+        rows_md = []
+        for d_idx, day in enumerate(days):
+            cond = conditions[(_det_int(slug) + d_idx) % len(conditions)]
+            t_max = 8 + (_det_int(slug) + d_idx * 3) % 20
+            t_min = max(0, t_max - 6 - (d_idx % 3))
+            rows_md.append(f"{day}: {cond}. High {t_max}C / Low {t_min}C.")
+        body = (
+            f"{lead}\n\n"
+            f"Seven-day outlook for {area}, {nation} (postcode area {postcode}). "
+            f"Forecast issued at 06:00 local time, updated four times daily.\n\n"
+            + "\n".join(rows_md) + "\n\n"
+            f"Severe weather: no warnings currently in force for {postcode}. "
+            f"Check the BBC Weather warnings map before any travel.\n\n"
+            f"UV index for {area} is moderate during midday hours. Pollen "
+            f"levels are low to medium. Tide times for the nearest coast are "
+            f"available on the marine forecast page."
+        )
+        out.append(_r4_make_row(
+            slug=slug, headline=headline, lead=lead, body=body,
+            category_id=cid, section_slug="weather",
+            subsection=area, region=nation, ts=ts,
+            view_count=300 + (_det_int(slug) % 7000),
+            country="United Kingdom", hero=hero,
+            topics=["Weather", area, "7-day forecast", postcode],
+            feature_tags=["weather", "forecast", "postcode", postcode.lower()],
+        ))
+    return out
+
+
+def synth_iplayer_watchlist(con, hero_pool: list[str]) -> list[dict]:
+    cid = _cat_id(con, "iplayer_categories") or _cat_id(con, "iplayer")
+    if cid is None:
+        return []
+    out: list[dict] = []
+    base = MIRROR_REFERENCE_DATE
+    categories = [
+        ("Drama", "Original BBC drama and best-loved classics."),
+        ("Documentary", "Films and series from the BBC documentary team."),
+        ("Comedy", "Stand-up, sitcoms and comedy panel shows."),
+        ("Sport", "Live and on-demand sport from across the BBC."),
+        ("News", "BBC News on iPlayer: bulletins and current affairs."),
+        ("Films", "Feature films available now on iPlayer."),
+        ("Entertainment", "Game shows, talent shows and reality TV."),
+        ("Music", "Live performances, concerts and music documentaries."),
+        ("Children", "CBeebies and CBBC programmes for young viewers."),
+        ("Lifestyle", "Cookery, gardening, travel and design."),
+        ("History", "History documentaries and dramatised history."),
+        ("Science and Nature", "From the natural world to the cutting edge."),
+        ("Arts", "Theatre, opera, dance and visual arts."),
+        ("Religion and Ethics", "Programmes exploring faith and ethics."),
+        ("Audio Described", "Programmes with audio description."),
+        ("Signed", "Programmes with British Sign Language."),
+    ]
+    shows = [
+        ("Line of Duty Series 7", "drama"),
+        ("Doctor Who: The New Era", "drama"),
+        ("Sherlock Returns", "drama"),
+        ("Bluey on iPlayer", "children"),
+        ("Planet Earth III special", "science_nature"),
+        ("Killing Eve: The Final Cut", "drama"),
+        ("Match of the Day at 60", "sport"),
+        ("Question Time live", "news"),
+        ("Strictly Come Dancing", "entertainment"),
+        ("The Apprentice Boardroom", "entertainment"),
+        ("Bake Off Christmas", "lifestyle"),
+        ("Top Gear: World Tour", "lifestyle"),
+        ("Peaky Blinders Movie", "films"),
+        ("Wolf Hall: The Mirror and the Light", "drama"),
+        ("Glastonbury 2026", "music"),
+        ("Promenade Concerts: First Night", "music"),
+        ("Antiques Roadshow Live", "lifestyle"),
+        ("Springwatch 2026", "science_nature"),
+        ("Today at Wimbledon", "sport"),
+        ("BBC News at Ten", "news"),
+        ("BBC Newsnight", "news"),
+        ("Mock the Week return", "comedy"),
+        ("Would I Lie to You?", "comedy"),
+        ("QI XXII", "comedy"),
+        ("Have I Got News for You", "comedy"),
+        ("Frozen Planet III", "science_nature"),
+        ("The Capture: Season 3", "drama"),
+        ("Vigil: Season 2", "drama"),
+        ("Happy Valley returns", "drama"),
+        ("MasterChef: The Professionals", "lifestyle"),
+        ("Top of the Pops 1990", "music"),
+        ("Last Night of the Proms", "music"),
+        ("BBC Symphony Orchestra", "music"),
+        ("Songs of Praise summer special", "religion_ethics"),
+        ("Bargain Hunt week", "lifestyle"),
+        ("Pointless Celebrities", "entertainment"),
+        ("Newsround on iPlayer", "children"),
+        ("Horrible Histories", "children"),
+        ("Hey Duggee", "children"),
+        ("Operation Ouch", "children"),
+        ("EastEnders: The Years", "drama"),
+        ("Casualty: The 40th", "drama"),
+        ("Holby City retrospective", "drama"),
+        ("The Apprentice: You're Fired", "entertainment"),
+        ("Dragons' Den", "entertainment"),
+        ("Race Across the World", "entertainment"),
+        ("The Traitors UK 2026", "entertainment"),
+        ("University Challenge final", "entertainment"),
+    ]
+    for cat_idx, (cat_name, cat_desc) in enumerate(categories):
+        for sh_idx, (show, show_cat) in enumerate(shows):
+            if sh_idx % len(categories) != cat_idx and show_cat != cat_name.lower().replace(" ", "_").replace("and_", ""):
+                continue
+            headline = f"iPlayer: {show} — add to watchlist"
+            slug = _det_slug("r4-iplayer", f"{cat_name}|{show}|{sh_idx}")
+            hero = hero_pool[(_det_int(slug) + 43) % len(hero_pool)]
+            ts = base - timedelta(
+                days=(cat_idx * 4 + sh_idx) % 200,
+                hours=(_det_int(slug) // 17) % 24,
+            )
+            lead = (
+                f"{show} is now available on BBC iPlayer. Find it in the {cat_name} "
+                f"category, add to your watchlist for offline downloads, or stream "
+                f"now on supported devices."
+            )
+            body = (
+                f"{lead}\n\n"
+                f"{cat_desc} {show} runs as part of this collection. New episodes "
+                f"appear on iPlayer immediately after broadcast and remain available "
+                f"for 12 months.\n\n"
+                f"To add {show} to your watchlist, sign in to your BBC account and "
+                f"tap the bookmark icon on the programme page. Watchlist items appear "
+                f"in the My Programmes tab.\n\n"
+                f"Audio description and subtitles are available for this programme. "
+                f"You can change accessibility preferences in your iPlayer settings.\n\n"
+                f"Looking for similar programmes? Browse the full {cat_name} category "
+                f"on iPlayer for more like {show}."
+            )
+            out.append(_r4_make_row(
+                slug=slug, headline=headline, lead=lead, body=body,
+                category_id=cid, section_slug="iplayer",
+                subsection=cat_name, region="", ts=ts,
+                view_count=400 + (_det_int(slug) % 16000),
+                hero=hero,
+                topics=["iPlayer", cat_name, show],
+                feature_tags=["iplayer", "watchlist", cat_name.lower().replace(" ", "_")],
+                content_type="video",
+                video_url=f"https://www.bbc.co.uk/iplayer/episode/{slug}",
+            ))
+    return out
+
+
+def synth_video_clips(con, hero_pool: list[str]) -> list[dict]:
+    cid = _cat_id(con, "video_clips") or _cat_id(con, "video")
+    if cid is None:
+        return []
+    out: list[dict] = []
+    base = MIRROR_REFERENCE_DATE
+    clips = [
+        ("Watch: Drone footage of overnight flooding in {place}", "{place}"),
+        ("Watch: Eyewitness account of the {place} storm", "{place}"),
+        ("Watch: Inside the new {place} hospital wing", "{place}"),
+        ("Watch: First match-day pitch view at {place}'s rebuilt stadium", "{place}"),
+        ("Watch: BBC Verify breaks down the {place} footage", "{place}"),
+        ("Watch: 60-second guide to the {place} election result", "{place}"),
+        ("Watch: Aerial views of solar park near {place}", "{place}"),
+        ("Watch: Time-lapse of the {place} skyline at night", "{place}"),
+        ("Watch: Children of {place} interview their headteacher", "{place}"),
+        ("Watch: How the {place} commuter rail strike unfolded", "{place}"),
+    ]
+    places = [
+        "London", "Manchester", "Birmingham", "Edinburgh", "Cardiff",
+        "Belfast", "Glasgow", "Liverpool", "Leeds", "Newcastle",
+        "Bristol", "Sheffield", "Nottingham", "Brighton", "Plymouth",
+        "Paris", "Berlin", "Rome", "Madrid", "Vienna",
+        "Athens", "Lisbon", "Dublin", "Amsterdam", "Stockholm",
+        "Lagos", "Nairobi", "Cairo", "Cape Town", "Accra",
+        "Mumbai", "Delhi", "Tokyo", "Seoul", "Bangkok",
+        "New York", "Washington", "Toronto", "Sydney", "Auckland",
+    ]
+    for p_idx, place in enumerate(places):
+        for c_idx, (pat, _) in enumerate(clips[:4]):
+            headline = pat.format(place=place)
+            slug = _det_slug("r4-clip", f"{place}|{c_idx}")
+            hero = hero_pool[(_det_int(slug) + 59) % len(hero_pool)]
+            ts = base - timedelta(
+                days=(p_idx * 2 + c_idx) % 90,
+                hours=(_det_int(slug) // 7) % 24,
+                minutes=(_det_int(slug) // 11) % 60,
+            )
+            lead = (
+                f"{headline}. Footage captured by BBC News teams and verified "
+                f"by the BBC Verify desk. Duration: 1 minute 20 seconds."
+            )
+            body = (
+                f"{lead}\n\n"
+                f"This clip is part of our short-form video offering on BBC News. "
+                f"Use the play button below to watch with subtitles, or tap the "
+                f"share button to send to your social feeds.\n\n"
+                f"Filmed and edited by BBC News. The footage has been geo-located "
+                f"and time-stamped where possible.\n\n"
+                f"Find more video clips from {place} on the BBC News channel page. "
+                f"Subscribe for daily updates on the BBC News iPlayer feed.\n\n"
+                f"For accessibility, an audio description track is available. Tap "
+                f"the AD button on the player controls."
+            )
+            out.append(_r4_make_row(
+                slug=slug, headline=headline, lead=lead, body=body,
+                category_id=cid, section_slug="video",
+                subsection=place, region="", ts=ts,
+                view_count=800 + (_det_int(slug) % 25000),
+                hero=hero,
+                topics=["Video", "Watch", place],
+                feature_tags=["video", "clip", "watch", "60_seconds"],
+                content_type="video",
+                video_url=f"https://www.bbc.co.uk/news/av/{slug}",
+            ))
+    return out
+
+
+def synth_breaking_news(con, hero_pool: list[str]) -> list[dict]:
+    """Stories flagged is_breaking=1 — fuel for /breaking-news endpoint
+    and the pulsing-red banner on top of the homepage."""
+    cid = _cat_id(con, "breaking_news") or _cat_id(con, "news")
+    if cid is None:
+        return []
+    out: list[dict] = []
+    base = MIRROR_REFERENCE_DATE
+    breaks = [
+        ("BREAKING: Major fire at {place} industrial estate, no casualties reported",
+         "Fire crews from across {region} attend the blaze; residents told to keep windows closed."),
+        ("BREAKING: Two arrested after {place} bank raid",
+         "Police in {region} say a getaway vehicle was abandoned near the city centre."),
+        ("BREAKING: {place} schools to close tomorrow following storm warning",
+         "Met Office issues amber warning for {region} as winds expected to peak overnight."),
+        ("BREAKING: {place} central station evacuated after security alert",
+         "Trains diverted away from {region}'s main hub as bomb-disposal team investigates a suspect package."),
+        ("BREAKING: Power outage hits 250,000 homes in {place}",
+         "Engineers in {region} working to restore supply after substation fault; expected by midnight."),
+        ("BREAKING: {place} earthquake felt across {region}",
+         "Magnitude 4.5 tremor; no major damage reported. Geological survey investigates."),
+        ("BREAKING: Major motorway closure in {region}",
+         "{place} services area cordoned off after multi-vehicle collision; ambulances on scene."),
+        ("BREAKING: Cyber-attack disrupts {place} hospital systems",
+         "NHS trusts in {region} switch to manual records; non-urgent appointments cancelled."),
+        ("BREAKING: {place} football match suspended after pyrotechnic incident",
+         "Stadium security in {region} confirm two spectators treated for minor injuries."),
+        ("BREAKING: Body recovered from river in {place}",
+         "Police divers in {region} continue searches; family informed."),
+    ]
+    targets = [
+        ("Manchester", "north-west England"),
+        ("Birmingham", "the West Midlands"),
+        ("Edinburgh", "Scotland"),
+        ("Cardiff", "Wales"),
+        ("Belfast", "Northern Ireland"),
+        ("Bristol", "south-west England"),
+        ("Newcastle", "north-east England"),
+        ("Liverpool", "Merseyside"),
+        ("Leeds", "West Yorkshire"),
+        ("Sheffield", "South Yorkshire"),
+        ("Nottingham", "the East Midlands"),
+        ("Glasgow", "Scotland"),
+        ("Brighton", "Sussex"),
+        ("Plymouth", "Devon"),
+        ("Norwich", "East Anglia"),
+        ("Aberdeen", "Scotland"),
+        ("Hull", "East Yorkshire"),
+        ("Coventry", "the West Midlands"),
+        ("Stoke-on-Trent", "Staffordshire"),
+        ("Wolverhampton", "the West Midlands"),
+    ]
+    for t_idx, (place, region) in enumerate(targets):
+        for b_idx, (pat_h, pat_l) in enumerate(breaks[:3]):
+            headline = pat_h.format(place=place, region=region)
+            lead = pat_l.format(place=place, region=region)
+            slug = _det_slug("r4-break", f"{place}|{b_idx}")
+            hero = hero_pool[(_det_int(slug) + 73) % len(hero_pool)]
+            ts = base - timedelta(
+                days=(t_idx * 2 + b_idx) % 45,
+                hours=(_det_int(slug) // 13) % 24,
+                minutes=(_det_int(slug) // 5) % 60,
+            )
+            body = (
+                f"{lead}\n\n"
+                f"BBC News has confirmed the incident with police in {region}. "
+                f"This story is developing rapidly and we will update as more "
+                f"information becomes available.\n\n"
+                f"Our correspondent is on the scene in {place} and will report "
+                f"live on BBC News at the top of every hour.\n\n"
+                f"Residents in the immediate area are being advised to follow "
+                f"instructions from emergency services. Anyone with information "
+                f"that may assist the investigation should call the non-emergency "
+                f"police number.\n\n"
+                f"This is a BBC Breaking News bulletin. The pulsing red banner "
+                f"at the top of every page indicates a developing story."
+            )
+            out.append(_r4_make_row(
+                slug=slug, headline=headline, lead=lead, body=body,
+                category_id=cid, section_slug="breaking_news",
+                subsection=place, region=region, ts=ts,
+                view_count=1500 + (_det_int(slug) % 40000),
+                country=place, hero=hero,
+                topics=["Breaking", place, region],
+                feature_tags=["breaking", "developing", place.lower()],
+                is_breaking=1, is_featured=1,
+            ))
+    return out
+
+
+def synth_multi_step_longreads(con, hero_pool: list[str]) -> list[dict]:
+    """Long-form features for multi-step navigation tasks (find article -> read chapters -> share)."""
+    cid = _cat_id(con, "multi_step") or _cat_id(con, "news")
+    if cid is None:
+        return []
+    out: list[dict] = []
+    base = MIRROR_REFERENCE_DATE
+    longreads = [
+        ("Inside the year that changed the NHS", "A 12-month investigation across five hospital trusts reveals a service straining at the edges."),
+        ("The last villages of the Scottish Highlands", "On the slow march of depopulation in the glens — and the new arrivals trying to reverse it."),
+        ("How AI is rewriting the rules of medicine", "From radiology to drug discovery, a deep dive into the technology already in the clinic."),
+        ("The price of the Premier League", "Where the billions go: a forensic look at the world's richest football league."),
+        ("Britain's secret housing crisis", "Beyond the headlines, the hidden tier of substandard rentals."),
+        ("The truth about working from home", "Four years on, the data, the disputes and the human stories."),
+        ("Inside the BBC's biggest reporting projects of 2026", "From climate verification to election forensics, a year in journalism."),
+        ("How the world's coffee supply is changing", "Climate, conflict and a commodity at a crossroads."),
+        ("The European right: a new generation", "Six countries, six new leaders, one big question."),
+        ("Britain's universities at a crossroads", "Foreign students, financial pressure and a model under strain."),
+        ("The new geography of work", "Where Britain's jobs are moving — and why."),
+        ("Climate, conflict and migration in 2026", "A year-long BBC News project tracking displacement around the world."),
+        ("The end of cash?", "How the war on physical money is reshaping inequality."),
+        ("The science of long Covid", "Three years on, what we know — and what we don't."),
+        ("Inside Britain's care homes", "An undercover investigation across England and Scotland."),
+        ("How the BBC made the Doctor Who anniversary special", "Sixty years of Doctor Who: the inside story."),
+        ("The plastics paradox", "Why recycling is failing and what the alternatives look like."),
+        ("Britain's pothole crisis", "Why the roads are crumbling — and who is going to fix them."),
+        ("The fight for the Arctic", "Russia, Norway and the climate stakes of the Far North."),
+        ("Hong Kong, five years on", "The city changed by the National Security Law."),
+        ("The future of British farming", "After Brexit, after the subsidy reforms, after the floods."),
+        ("Inside the world's largest refugee camp", "Cox's Bazar in 2026."),
+        ("The new gold rush: rare earths and the green transition", "Where the elements that power the future are being dug up."),
+        ("Britain's energy paradox", "Net zero ambitions meet a creaking grid."),
+        ("The story of the BBC World Service in 2026", "Reaching 320 million people in 42 languages."),
+        ("The making of a TikTok superstar", "From bedroom to brand deal: how it really works."),
+        ("Inside Britain's prisons", "A six-month investigation across 14 jails."),
+        ("How Britain became a courier nation", "Same-day delivery and the workers behind it."),
+        ("The vanishing high street", "What towns lost — and what they are building back."),
+        ("Britain's anxiety crisis", "How a generation became the most anxious on record."),
+        ("Climate verification: how the BBC checks the science", "Inside the BBC Verify climate desk."),
+        ("The new face of British politics", "A constituency-by-constituency look at the 2026 elections."),
+        ("How Wales is rebuilding its rural economy", "From slate to silicon, the new industries of the valleys."),
+        ("The Britain-EU relationship in 2026", "Six years on, the data, the diplomacy and the daily life."),
+        ("Inside the Edinburgh Fringe", "A month in the world's largest arts festival."),
+        ("Britain's drug deaths epidemic", "Why the UK has Europe's worst overdose figures."),
+        ("The new wave of British science fiction", "Writers reshaping the genre from Hay-on-Wye to Hackney."),
+        ("How the Premier League salary cap stopped working", "Inside football's new financial reality."),
+        ("Britain's gambling problem", "An investigation into the gambling industry's grip on football."),
+        ("The truth about the four-day week", "Trials, results and the next phase."),
+    ]
+    for idx, (headline, lead) in enumerate(longreads):
+        slug = _det_slug("r4-longread", f"{idx}|{headline[:40]}")
+        hero = hero_pool[(_det_int(slug) + 101) % len(hero_pool)]
+        ts = base - timedelta(
+            days=(idx * 6 + 9) % 220,
+            hours=(_det_int(slug) // 19) % 24,
+        )
+        body_parts = [lead]
+        for chap_idx, chap_title in enumerate([
+            "Chapter 1: How we got here",
+            "Chapter 2: The numbers",
+            "Chapter 3: The people",
+            "Chapter 4: The institutions",
+            "Chapter 5: What comes next",
+        ]):
+            body_parts.append(
+                f"{chap_title}\n\n"
+                f"This chapter of our long-read investigation pieces together "
+                f"reporting from the BBC's correspondents, freshly released data, "
+                f"interviews with the people most affected, and analysis from "
+                f"independent experts. Reading time: 6 minutes.\n\n"
+                f"Use the navigation in the sidebar to jump between chapters, "
+                f"or scroll continuously. A printable PDF version is available "
+                f"on the BBC News long-reads landing page."
+            )
+        body = "\n\n".join(body_parts)
+        out.append(_r4_make_row(
+            slug=slug, headline=headline, lead=lead, body=body,
+            category_id=cid, section_slug="multi_step",
+            subsection="Long read", region="", ts=ts,
+            view_count=700 + (_det_int(slug) % 22000),
+            hero=hero,
+            topics=["Long Read", "Multi-step", "Feature"],
+            feature_tags=["long_read", "multi_step", "feature", "chapters"],
+            content_type="long_read",
+            is_featured=1,
+        ))
+    return out
+
+
+def synth_podcast_genres(con, hero_pool: list[str]) -> list[dict]:
+    cid = _cat_id(con, "podcasts_genres") or _cat_id(con, "podcasts")
+    if cid is None:
+        return []
+    out: list[dict] = []
+    base = MIRROR_REFERENCE_DATE
+    genres = [
+        ("News", "Daily news podcasts and current affairs."),
+        ("History", "Documentaries and dramatisations from across the centuries."),
+        ("Comedy", "Stand-up and conversational comedy podcasts."),
+        ("Drama", "Original audio drama and radio plays."),
+        ("Science", "From the lab to the universe: science podcasts."),
+        ("Music", "Talks, mixes and live recordings."),
+        ("Sport", "Cricket, football, rugby, tennis."),
+        ("Politics", "Political analysis and interviews."),
+        ("Crime", "True crime, investigations and case studies."),
+        ("Society and Culture", "Identity, communities and culture."),
+        ("Business", "Daily business and markets coverage."),
+        ("Arts", "Books, film, theatre, visual arts."),
+        ("Religion and Ethics", "Faith, philosophy and ethics in 2026."),
+        ("Tech", "AI, cyber, devices and the future."),
+        ("Education", "From early years to lifelong learning."),
+    ]
+    titles_per_genre = [
+        "Briefing", "Daily", "Inside", "The Story", "Deep Dive",
+        "Conversations", "Weekly Roundup", "On Stage", "Off the Record", "Long Read",
+    ]
+    for g_idx, (genre, genre_desc) in enumerate(genres):
+        for t_idx, title in enumerate(titles_per_genre):
+            headline = f"BBC Sounds: {genre} — {title}"
+            slug = _det_slug("r4-pcg", f"{genre}|{title}|{t_idx}")
+            hero = hero_pool[(_det_int(slug) + 113) % len(hero_pool)]
+            ts = base - timedelta(
+                days=(g_idx * 5 + t_idx * 2) % 170,
+                hours=(_det_int(slug) // 23) % 24,
+            )
+            lead = (
+                f"Subscribe to the {genre} {title} podcast on BBC Sounds. "
+                f"{genre_desc} New episodes every weekday."
+            )
+            body = (
+                f"{lead}\n\n"
+                f"Browse the full {genre} genre on BBC Sounds for related podcasts, "
+                f"audio documentaries and on-demand radio. Subscribe to add this "
+                f"feed to your library.\n\n"
+                f"Episodes are 18-45 minutes long. Listen on the BBC Sounds app, "
+                f"smart speakers, or any podcast player.\n\n"
+                f"Use the chapter markers in the player to skip to your favourite "
+                f"segment. Transcripts are available on the episode pages.\n\n"
+                f"Subscribe via the BBC Sounds app to receive new episodes "
+                f"automatically. Manage your subscription from the My Sounds tab."
+            )
+            out.append(_r4_make_row(
+                slug=slug, headline=headline, lead=lead, body=body,
+                category_id=cid, section_slug="podcasts",
+                subsection=genre, region="", ts=ts,
+                view_count=300 + (_det_int(slug) % 12000),
+                hero=hero,
+                topics=["Podcasts", genre, title],
+                feature_tags=["podcast", "subscribe", genre.lower().replace(" ", "_")],
+                content_type="audio",
+                video_url=f"https://www.bbc.co.uk/sounds/series/{slug}",
+            ))
+    return out
+R4_COMMENT_TOP = [
+    "Strong, internationally minded reporting. The {region} angle is exactly what was missing.",
+    "Loved the {country} reporting. Bookmark and a share for me.",
+    "This is the kind of regional storytelling the BBC does best.",
+    "Subscribed to the related podcast — keep me posted on next week's follow-up.",
+    "The visual storytelling on the gallery was top tier.",
+    "Sticky video player worked perfectly while I scrolled the comments. Good UX.",
+    "Sharing this with my reading group tonight.",
+    "Loved the breakdown by chapter. The fourth chapter is the strongest.",
+    "I'd love a Sounds episode that goes deeper on the data.",
+    "Comments below have been more thoughtful than usual on this one.",
+]
+
+R4_COMMENT_REPLIES = [
+    "Agree — the {country} reporting in particular was very strong.",
+    "Same. Will be subscribing to the related podcast.",
+    "Yes, the chapter structure made this much easier to follow.",
+    "Likewise — added the long-read PDF to my reading list.",
+    "The sticky video player worked well for me too.",
+    "Bookmarked and shared with the family WhatsApp.",
+    "I had to listen on Sounds — the audio version is excellent.",
+]
+
+
+def insert_r4_articles(con: sqlite3.Connection, batch: list[dict]) -> int:
+    cur = con.cursor()
+    existing = {r[0] for r in cur.execute("SELECT slug FROM articles")}
+    rows = [a for a in batch if a["slug"] not in existing]
+    if not rows:
+        return 0
+    cur.executemany(_ART_INSERT_SQL, rows)
+    return len(rows)
+
+
+def insert_r4_comments(con: sqlite3.Connection) -> int:
+    cur = con.cursor()
+    if cur.execute(
+        "SELECT 1 FROM comments WHERE body=? LIMIT 1", (R4_SENTINEL_BODY,)
+    ).fetchone():
+        return 0
+    user_ids = [r[0] for r in cur.execute("SELECT id FROM users ORDER BY id")]
+    if len(user_ids) < 2:
+        return 0
+
+    # Article pool: a slice of R4-new content keyed off feature_tags.
+    pool: list[tuple[int, str, str]] = []
+    for tag in ("bbc_africa", "bbc_brasil", "bbc_mundo", "bbc_arabic",
+                "bbc_persian", "bbc_russian", "bbc_china", "bbc_india",
+                "in_pictures", "audio", "weather", "iplayer", "video",
+                "breaking", "long_read", "podcast"):
+        rows = cur.execute(
+            "SELECT id, region, location FROM articles "
+            "WHERE feature_tags LIKE ? ORDER BY view_count DESC LIMIT 8",
+            (f'%"{tag}"%',),
+        ).fetchall()
+        pool.extend(rows)
+    seen: set[int] = set()
+    pool = [t for t in pool if not (t[0] in seen or seen.add(t[0]))][:140]
+
+    base_ts = MIRROR_REFERENCE_DATE
+    top_rows: list[tuple] = []
+    for idx, (art_id, region, location) in enumerate(pool):
+        n_top = 2 + (idx % 3)  # 2,3,4 top-level per article
+        for j in range(n_top):
+            uid = user_ids[(idx * 7 + j * 5) % len(user_ids)]
+            template = R4_COMMENT_TOP[(idx * 3 + j * 7) % len(R4_COMMENT_TOP)]
+            body = template.replace("{country}", location or "").replace("{region}", region or "")
+            body = body.replace("  ", " ").strip()
+            offset_h = (idx * 11 + j * 13) % (24 * 18)
+            ts = base_ts - timedelta(hours=offset_h, minutes=(idx + j * 7) % 60)
+            like = (idx * j + 5) % 28
+            top_rows.append((uid, art_id, None, body, like, 0,
+                             ts.strftime("%Y-%m-%d %H:%M:%S")))
+
+    cur.executemany(
+        "INSERT INTO comments (user_id, article_id, parent_id, body, "
+        "like_count, flagged, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
+        top_rows,
+    )
+    inserted = len(top_rows)
+
+    # 3-deep replies on every 3rd top-level comment
+    fresh = list(cur.execute(
+        "SELECT id, article_id, user_id, created_at FROM comments "
+        "WHERE parent_id IS NULL ORDER BY id DESC LIMIT ?",
+        (inserted,),
+    ))
+    fresh.reverse()
+    for i, (cid, art_id, parent_uid, parent_created) in enumerate(fresh):
+        if i % 3 != 0:
+            continue
+        cur_parent = cid
+        cur_parent_uid = parent_uid
+        ts_parent = datetime.strptime(parent_created, "%Y-%m-%d %H:%M:%S")
+        for depth in range(1, 4):
+            ruid = user_ids[(cur_parent_uid + depth + i + 2) % len(user_ids)]
+            if ruid == cur_parent_uid:
+                ruid = user_ids[(cur_parent_uid + depth + i + 3) % len(user_ids)]
+            body = R4_COMMENT_REPLIES[(i * 5 + depth * 3) % len(R4_COMMENT_REPLIES)]
+            body = body.replace("{country}", "")
+            ts_parent = ts_parent + timedelta(hours=depth + 1, minutes=(depth * 11) % 60)
+            cur.execute(
+                "INSERT INTO comments (user_id, article_id, parent_id, body, "
+                "like_count, flagged, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
+                (ruid, art_id, cur_parent, body, (depth * (i + 1)) % 19, 0,
+                 ts_parent.strftime("%Y-%m-%d %H:%M:%S")),
+            )
+            inserted += 1
+            cur_parent = cur.lastrowid
+            cur_parent_uid = ruid
+    return inserted
+
+
+def insert_r4_reading_history(con: sqlite3.Connection) -> int:
+    cur = con.cursor()
+    if cur.execute(
+        "SELECT 1 FROM comments WHERE body=? LIMIT 1", (R4_SENTINEL_BODY,)
+    ).fetchone():
+        return 0
+    users = list(cur.execute("SELECT id FROM users ORDER BY id"))
+    if not users:
+        return 0
+    art_pool = [r[0] for r in cur.execute(
+        "SELECT id FROM articles WHERE feature_tags LIKE '%bbc_%' "
+        "OR feature_tags LIKE '%breaking%' OR feature_tags LIKE '%long_read%' "
+        "OR feature_tags LIKE '%in_pictures%' OR feature_tags LIKE '%video%' "
+        "OR feature_tags LIKE '%weather%' OR feature_tags LIKE '%iplayer%' "
+        "ORDER BY view_count DESC LIMIT 240"
+    )]
+    base_ts = MIRROR_REFERENCE_DATE
+    inserted = 0
+    existing = set(cur.execute(
+        "SELECT user_id, article_id FROM reading_history"
+    ).fetchall())
+    rows: list[tuple] = []
+    for u_idx, (uid,) in enumerate(users):
+        per_user = 40 + (u_idx * 3) % 12
+        for a_idx in range(min(per_user, len(art_pool))):
+            art_id = art_pool[(u_idx * 23 + a_idx * 7) % len(art_pool)]
+            if (uid, art_id) in existing:
+                continue
+            existing.add((uid, art_id))
+            ts = base_ts - timedelta(
+                hours=(u_idx * 19 + a_idx * 11) % (24 * 90),
+                minutes=(a_idx * 7) % 60,
+            )
+            rows.append((uid, art_id, ts.strftime("%Y-%m-%d %H:%M:%S")))
+    cur.executemany(
+        "INSERT INTO reading_history (user_id, article_id, viewed_at) "
+        "VALUES (?, ?, ?)",
+        rows,
+    )
+    return len(rows)
+
+
+def insert_r4_bookmarks(con: sqlite3.Connection) -> int:
+    cur = con.cursor()
+    if cur.execute(
+        "SELECT 1 FROM comments WHERE body=? LIMIT 1", (R4_SENTINEL_BODY,)
+    ).fetchone():
+        return 0
+    users = [r[0] for r in cur.execute("SELECT id FROM users ORDER BY id")]
+    if not users:
+        return 0
+    art_pool = [r[0] for r in cur.execute(
+        "SELECT id FROM articles WHERE feature_tags LIKE '%long_read%' "
+        "OR feature_tags LIKE '%in_pictures%' OR feature_tags LIKE '%bbc_%' "
+        "OR feature_tags LIKE '%podcast%' "
+        "ORDER BY view_count DESC LIMIT 180"
+    )]
+    base_ts = MIRROR_REFERENCE_DATE
+    existing = set(cur.execute(
+        "SELECT user_id, article_id FROM bookmarks"
+    ).fetchall())
+    rows: list[tuple] = []
+    for u_idx, uid in enumerate(users):
+        per_user = 22 + (u_idx * 4) % 10
+        for a_idx in range(min(per_user, len(art_pool))):
+            art_id = art_pool[(u_idx * 13 + a_idx * 17) % len(art_pool)]
+            if (uid, art_id) in existing:
+                continue
+            existing.add((uid, art_id))
+            ts = base_ts - timedelta(
+                hours=(u_idx * 17 + a_idx * 11) % (24 * 80),
+                minutes=(a_idx * 5) % 60,
+            )
+            rows.append((uid, art_id, ts.strftime("%Y-%m-%d %H:%M:%S")))
+    cur.executemany(
+        "INSERT INTO bookmarks (user_id, article_id, bookmarked_at) "
+        "VALUES (?, ?, ?)",
+        rows,
+    )
+    return len(rows)
+
+
+def insert_r4_subscriptions(con: sqlite3.Connection) -> int:
+    cur = con.cursor()
+    if cur.execute(
+        "SELECT 1 FROM comments WHERE body=? LIMIT 1", (R4_SENTINEL_BODY,)
+    ).fetchone():
+        return 0
+    users = [r[0] for r in cur.execute("SELECT id FROM users ORDER BY id")]
+    if not users:
+        return 0
+    new_topics = [
+        "BBC Africa", "BBC Brasil", "BBC News Mundo", "BBC Arabic",
+        "BBC Persian", "BBC Russian", "BBC News China", "BBC News India",
+        "Breaking News", "In Pictures", "Long Reads", "Weather forecast",
+        "iPlayer", "BBC Sounds", "Video clips",
+    ]
+    rows: list[tuple] = []
+    existing = set(cur.execute(
+        "SELECT user_id, topic FROM topic_subscriptions"
+    ).fetchall())
+    base_ts = MIRROR_REFERENCE_DATE
+    for u_idx, uid in enumerate(users):
+        for t_idx, topic in enumerate(new_topics):
+            if (u_idx + t_idx) % 2 != 0:
+                continue
+            if (uid, topic) in existing:
+                continue
+            existing.add((uid, topic))
+            freq = ("daily", "weekly", "instant")[(u_idx + t_idx) % 3]
+            ts = base_ts - timedelta(
+                days=(u_idx * 5 + t_idx) % 60,
+                hours=(t_idx * 3) % 24,
+            )
+            rows.append((
+                uid, "", topic, freq, 1,
+                ts.strftime("%Y-%m-%d %H:%M:%S"),
+            ))
+    cur.executemany(
+        "INSERT INTO topic_subscriptions (user_id, category_slug, topic, "
+        "frequency, active, created_at) VALUES (?, ?, ?, ?, ?, ?)",
+        rows,
+    )
+    return len(rows)
+
+
+def insert_r4_reading_list(con: sqlite3.Connection) -> int:
+    cur = con.cursor()
+    if cur.execute(
+        "SELECT 1 FROM comments WHERE body=? LIMIT 1", (R4_SENTINEL_BODY,)
+    ).fetchone():
+        return 0
+    users = [r[0] for r in cur.execute("SELECT id FROM users ORDER BY id")]
+    if not users:
+        return 0
+    pool = [r[0] for r in cur.execute(
+        "SELECT id FROM articles WHERE feature_tags LIKE '%long_read%' "
+        "OR feature_tags LIKE '%iplayer%' OR feature_tags LIKE '%podcast%' "
+        "ORDER BY view_count DESC LIMIT 120"
+    )]
+    folders = ["Read Later", "Long reads", "iPlayer", "Podcasts", "Weekend"]
+    existing = set(cur.execute(
+        "SELECT user_id, article_id FROM reading_list_items"
+    ).fetchall())
+    base_ts = MIRROR_REFERENCE_DATE
+    rows: list[tuple] = []
+    for u_idx, uid in enumerate(users):
+        per_user = 12 + (u_idx * 3) % 6
+        for a_idx in range(min(per_user, len(pool))):
+            art_id = pool[(u_idx * 11 + a_idx * 13) % len(pool)]
+            folder = folders[(u_idx + a_idx) % len(folders)]
+            if (uid, art_id) in existing:
+                continue
+            existing.add((uid, art_id))
+            ts = base_ts - timedelta(
+                hours=(u_idx * 11 + a_idx * 13) % (24 * 60),
+            )
+            rows.append((
+                uid, art_id, folder, "", 0,
+                ts.strftime("%Y-%m-%d %H:%M:%S"), 0,
+            ))
+    cols = [r[1] for r in cur.execute("PRAGMA table_info(reading_list_items)")]
+    if {"user_id", "article_id", "folder", "note", "priority", "added_at", "read"}.issubset(set(cols)):
+        cur.executemany(
+            "INSERT INTO reading_list_items (user_id, article_id, folder, "
+            "note, priority, added_at, read) VALUES (?, ?, ?, ?, ?, ?, ?)",
+            rows,
+        )
+        return len(rows)
+    return 0
+
+
+def plant_r4_sentinel(con: sqlite3.Connection) -> None:
+    cur = con.cursor()
+    if cur.execute(
+        "SELECT 1 FROM comments WHERE body=? LIMIT 1", (R4_SENTINEL_BODY,)
+    ).fetchone():
+        return
+    uid_row = cur.execute("SELECT id FROM users ORDER BY id LIMIT 1").fetchone()
+    art_row = cur.execute("SELECT id FROM articles ORDER BY id LIMIT 1").fetchone()
+    if not (uid_row and art_row):
+        return
+    cur.execute(
+        "INSERT INTO comments (user_id, article_id, parent_id, body, "
+        "like_count, flagged, created_at) VALUES (?, ?, NULL, ?, 0, 1, ?)",
+        (uid_row[0], art_row[0], R4_SENTINEL_BODY,
+         MIRROR_REFERENCE_DATE.strftime("%Y-%m-%d %H:%M:%S")),
+    )
+
+
+def bake_r4(con: sqlite3.Connection) -> dict[str, int]:
+    """Apply all R4 additions. Idempotent."""
+    stats: dict[str, int] = {}
+    stats["new_categories"] = ensure_r4_categories(con)
+
+    if con.execute(
+        "SELECT 1 FROM comments WHERE body=? LIMIT 1", (R4_SENTINEL_BODY,)
+    ).fetchone():
+        stats["already_baked"] = 1
+        return stats
+
+    hero_pool = _hero_image_pool(con)
+    if not hero_pool:
+        hero_pool = [""]
+
+    batches: list[list[dict]] = [
+        synth_bbc_africa(con, hero_pool),
+        synth_bbc_brasil(con, hero_pool),
+        synth_bbc_mundo(con, hero_pool),
+        synth_bbc_arabic(con, hero_pool),
+        synth_bbc_persian(con, hero_pool),
+        synth_bbc_russian(con, hero_pool),
+        synth_bbc_china(con, hero_pool),
+        synth_bbc_india(con, hero_pool),
+        synth_world_country_drill(con, hero_pool),
+        synth_in_pictures_essays(con, hero_pool),
+        synth_audio_digests(con, hero_pool),
+        synth_weather_7day(con, hero_pool),
+        synth_iplayer_watchlist(con, hero_pool),
+        synth_video_clips(con, hero_pool),
+        synth_breaking_news(con, hero_pool),
+        synth_multi_step_longreads(con, hero_pool),
+        synth_podcast_genres(con, hero_pool),
+    ]
+    total = 0
+    for batch in batches:
+        total += insert_r4_articles(con, batch)
+    stats["new_articles"] = total
+
+    stats["new_comments"] = insert_r4_comments(con)
+    stats["new_reading_history"] = insert_r4_reading_history(con)
+    stats["new_bookmarks"] = insert_r4_bookmarks(con)
+    stats["new_subscriptions"] = insert_r4_subscriptions(con)
+    stats["new_reading_list"] = insert_r4_reading_list(con)
+
+    plant_r4_sentinel(con)
+    return stats
 # -----------------------------------------------------------------------
 # Main
 # -----------------------------------------------------------------------
@@ -2259,6 +3934,7 @@ def main() -> None:
         n_ts = insert_extra_subscriptions(con)
         plant_sentinel(con)
         r3_stats = bake_r3(con)
+        r4_stats = bake_r4(con)
         normalize_sqlite_sequence(con)
         con.commit()
     finally:
@@ -2273,8 +3949,12 @@ def main() -> None:
         v for k, v in r3_stats.items()
         if isinstance(v, int) and k not in ("already_baked",)
     )
+    r4_total_inserts = sum(
+        v for k, v in r4_stats.items()
+        if isinstance(v, int) and k not in ("already_baked",)
+    )
     r2_total_inserts = n_art + n_cm + n_rh + n_bm + n_rl + n_ts
-    if r2_total_inserts + r3_total_inserts > 0:
+    if r2_total_inserts + r3_total_inserts + r4_total_inserts > 0:
         con = open_db(DB_PATH)
         try:
             con.execute("VACUUM")
@@ -2289,6 +3969,7 @@ def main() -> None:
           f"+{n_rh} reading_history, +{n_bm} bookmarks, +{n_rl} reading_list, "
           f"+{n_ts} subscriptions")
     print(f"[bake] R3 stats: {r3_stats}")
+    print(f"[bake] R4 stats: {r4_stats}")
     print(f"[bake] md5 after:  {_db_signature(DB_PATH)}")
 
     con = open_db(DB_PATH)

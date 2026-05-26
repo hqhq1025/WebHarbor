@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% block title %}Calendar Availability — {{ prop.name }} — Booking{% endblock %}
+{% block content %}
+<div class="container">
+    <a href="{{ url_for('property_detail', slug=prop.slug) }}" class="text-link"
+       style="font-size:13px;color:#006ce4;">&lsaquo; Back to {{ prop.name }}</a>
+    <h1 class="page-title">2-month availability calendar</h1>
+    <p style="color:#444;max-width:720px;">
+        Pick your check-in date by clicking an available day. Grey squares are
+        already booked. Booking shows two months at a time so you can plan a
+        weekend or week-long stay without paging back and forth.
+    </p>
+
+    <div class="cal-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-top:18px;">
+        {% for m in months %}
+        <div class="cal-month" style="background:#fff;border:1px solid #e2e2e2;border-radius:8px;padding:16px;">
+            <h3 style="margin:0 0 12px 0;text-align:center;font-weight:700;color:#003580;">{{ m.name }}</h3>
+            <table style="width:100%;border-collapse:separate;border-spacing:2px;font-size:13px;">
+                <thead>
+                    <tr style="color:#888;">
+                        <th>Mo</th><th>Tu</th><th>We</th><th>Th</th><th>Fr</th><th>Sa</th><th>Su</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% set ns = namespace(weekday=0) %}
+                    <tr>
+                    {% for _ in range(m.first_weekday) %}<td></td>{% set ns.weekday = ns.weekday + 1 %}{% endfor %}
+                    {% for d in m.days %}
+                        {% if ns.weekday >= 7 %}
+                            </tr><tr>
+                            {% set ns.weekday = 0 %}
+                        {% endif %}
+                        <td style="text-align:center;border-radius:4px;padding:6px 0;
+                                   background:{% if not d.available %}#ededed;color:#aaa{% elif d.is_weekend %}#fff5d6;color:#866b00{% else %}#e8f1ff;color:#003580{% endif %};
+                                   font-weight:600;
+                                   text-decoration:{% if not d.available %}line-through{% else %}none{% endif %};">
+                            {{ d.date.day }}
+                        </td>
+                        {% set ns.weekday = ns.weekday + 1 %}
+                    {% endfor %}
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        {% endfor %}
+    </div>
+
+    <div style="margin-top:18px;font-size:13px;color:#444;">
+        <span style="display:inline-block;width:14px;height:14px;background:#e8f1ff;border-radius:3px;vertical-align:middle;"></span>
+        Weekday available &middot;
+        <span style="display:inline-block;width:14px;height:14px;background:#fff5d6;border-radius:3px;vertical-align:middle;"></span>
+        Weekend available &middot;
+        <span style="display:inline-block;width:14px;height:14px;background:#ededed;border-radius:3px;vertical-align:middle;"></span>
+        Unavailable
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% block title %}Resolve conflicts · #{{ pr.number }} · {{ repo.full_name }}{% endblock %}
+{% block content %}
+<div class="repo-header-bar">
+  <div class="repo-header-inner">
+    <div class="repo-breadcrumb">
+      <a href="/{{ repo.full_name }}" class="repo-breadcrumb-link">{{ repo.full_name }}</a>
+      <span class="repo-breadcrumb-sep">/</span>
+      <a href="/{{ repo.full_name }}/pulls" class="repo-breadcrumb-link">Pull requests</a>
+      <span class="repo-breadcrumb-sep">/</span>
+      <span>#{{ pr.number }}</span>
+    </div>
+  </div>
+</div>
+<div style="padding:24px 32px;max-width:1300px;margin:0 auto;">
+  <h1 style="font-size:20px;margin:0 0 4px;">Resolve conflicts: {{ pr.title }}</h1>
+  <div style="font-size:13px;color:#7d8590;margin-bottom:16px;">
+    Merging <code style="background:#161b22;padding:2px 6px;border-radius:4px;">{{ pr.pr_head_branch }}</code>
+    into <code style="background:#161b22;padding:2px 6px;border-radius:4px;">{{ pr.pr_base_branch or 'main' }}</code>
+    · {{ files|length }} conflicting file{{ 's' if files|length != 1 else '' }}
+  </div>
+  {% for f in files %}
+  <section style="border:1px solid #30363d;border-radius:8px;margin-bottom:18px;overflow:hidden;">
+    <header style="padding:8px 14px;background:#161b22;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #30363d;">
+      <code style="color:#e6edf3;">{{ f.name }}</code>
+      <span style="font-size:11px;color:#f85149;background:rgba(248,81,73,0.1);border:1px solid #f85149;padding:1px 8px;border-radius:999px;">CONFLICT</span>
+    </header>
+    <div class="pr-diff-side-by-side" style="display:grid;grid-template-columns:1fr 1fr;gap:0;font-family:ui-monospace,Menlo,monospace;font-size:12px;">
+      <div style="padding:10px;background:rgba(248,81,73,0.07);border-right:1px solid #30363d;">
+        <div style="font-size:11px;text-transform:uppercase;color:#f85149;margin-bottom:6px;letter-spacing:.5px;">Current change ({{ pr.pr_base_branch or 'main' }})</div>
+        <pre style="margin:0;white-space:pre-wrap;color:#c9d1d9;">{{ f.ours }}</pre>
+      </div>
+      <div style="padding:10px;background:rgba(63,185,80,0.07);">
+        <div style="font-size:11px;text-transform:uppercase;color:#3fb950;margin-bottom:6px;letter-spacing:.5px;">Incoming change ({{ pr.pr_head_branch }})</div>
+        <pre style="margin:0;white-space:pre-wrap;color:#c9d1d9;">{{ f.theirs }}</pre>
+      </div>
+    </div>
+    <footer style="padding:10px 14px;background:#0d1117;display:flex;gap:8px;border-top:1px solid #30363d;">
+      <button class="gh-btn gh-btn-sm" disabled>Accept Current</button>
+      <button class="gh-btn gh-btn-sm" disabled>Accept Incoming</button>
+      <button class="gh-btn gh-btn-sm" disabled>Accept Both</button>
+      <span style="flex:1;"></span>
+      <button class="gh-btn gh-btn-primary gh-btn-sm" disabled>Mark as resolved</button>
+    </footer>
+  </section>
+  {% endfor %}
+</div>
+{% endblock %}

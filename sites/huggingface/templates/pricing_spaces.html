@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% block title %}Spaces compute pricing · Hugging Face{% endblock %}
+
+{% block content %}
+<div class="container-wide page">
+    <nav class="docs-breadcrumb">
+        <a href="{{ url_for('pricing') }}">Pricing</a><span>/</span><span>Spaces compute</span>
+    </nav>
+    <h1>Spaces compute pricing</h1>
+    <p class="muted">Choose the hardware tier that powers your Space. Pricing is hourly and billed by the second while your Space is running. CPU Basic stays free for everyone.</p>
+
+    <table class="files-table" style="margin-top:16px;">
+        <thead>
+            <tr>
+                <th>Tier</th>
+                <th>Specs</th>
+                <th>Best for</th>
+                <th>Price</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for hw in hardware %}
+            <tr>
+                <td><strong>{{ hw[1] }}</strong> <code style="font-size:11px;color:#6b7280;">{{ hw[0] }}</code></td>
+                <td class="muted">{{ hw[2] }}</td>
+                <td class="muted">
+                    {% if 'cpu' in hw[0] %}Lightweight Gradio demos, static apps, scripts
+                    {% elif 't4' in hw[0] %}Small models (≤7B int4), image classification
+                    {% elif 'l4' in hw[0] %}Mid-size LLM inference, audio models
+                    {% elif 'l40' in hw[0] %}Larger LLMs, FLUX-class image generation
+                    {% elif 'a10g' in hw[0] %}Mid-tier LLM serving, real-time TTS
+                    {% elif 'a100' in hw[0] %}Frontier-model inference, long context
+                    {% else %}General purpose{% endif %}
+                </td>
+                <td><strong>{{ hw[3] }}</strong></td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <section style="margin-top:32px;">
+        <h2 style="font-size:18px;">FAQ</h2>
+        <details style="margin-top:8px;"><summary><strong>Is there a free tier?</strong></summary>
+            <p class="muted">Yes — every Space starts on CPU Basic at no cost. Upgrade only when you need a GPU.</p>
+        </details>
+        <details style="margin-top:8px;"><summary><strong>How is billing calculated?</strong></summary>
+            <p class="muted">Per-second metering. A paused Space accrues storage cost only ($0.001/GB/hr).</p>
+        </details>
+        <details style="margin-top:8px;"><summary><strong>Can I auto-sleep idle Spaces?</strong></summary>
+            <p class="muted">Set <code>sleep_time</code> in your Space metadata. Default is 24h on Pro, 48h on Enterprise.</p>
+        </details>
+    </section>
+</div>
+{% endblock %}

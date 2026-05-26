@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+{% block title %}A+ Content — {{ product.name }} - Amazon.com{% endblock %}
+
+{% block content %}
+<div style="max-width:1200px;margin:0 auto;padding:20px 12px">
+    <a href="{{ url_for('product_detail', slug=product.slug) }}" class="text-link">← Back to {{ product.name }}</a>
+
+    <section style="background:linear-gradient(135deg, #232f3e, #131a22);color:#fff;padding:48px 32px;border-radius:6px;margin:14px 0 24px">
+        <div style="display:flex;gap:36px;align-items:center;flex-wrap:wrap">
+            <div style="flex:1;min-width:280px">
+                <h1 style="font-size:36px;line-height:1.2;margin:0 0 12px">{{ aplus.hero_title }}</h1>
+                <p style="font-size:16px;line-height:1.5;color:#dcdcdc">{{ aplus.hero_subtitle }}</p>
+            </div>
+            <div style="flex:1;min-width:280px">
+                <img src="{{ aplus.hero_image }}" alt="{{ product.name }}"
+                     style="width:100%;border-radius:6px;background:#fff"
+                     onerror="this.style.display='none'">
+            </div>
+        </div>
+    </section>
+
+    <section style="margin:0 0 24px">
+        <h2 style="text-align:center;font-size:24px;margin-bottom:18px">From the manufacturer</h2>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(220px, 1fr));gap:16px">
+            {% for title, body in aplus.benefits %}
+            <div style="background:#fff;padding:22px 18px;border-radius:6px;border:1px solid #e7e7e7">
+                <h3 style="font-size:16px;margin:0 0 8px;color:#0f1111">{{ title }}</h3>
+                <p style="font-size:13px;color:#555;line-height:1.5;margin:0">{{ body }}</p>
+            </div>
+            {% endfor %}
+        </div>
+    </section>
+
+    {% if aplus.showcase_images %}
+    <section style="margin:0 0 24px">
+        <h2 style="text-align:center;font-size:24px;margin-bottom:18px">Designed for everyday</h2>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(220px, 1fr));gap:12px">
+            {% for img in aplus.showcase_images %}
+            <div style="background:#f7f7f7;border-radius:6px;overflow:hidden;aspect-ratio:1/1">
+                <img src="{{ img }}" alt="{{ product.name }} showcase"
+                     style="width:100%;height:100%;object-fit:cover"
+                     onerror="this.style.display='none'">
+            </div>
+            {% endfor %}
+        </div>
+    </section>
+    {% endif %}
+
+    <section style="background:#fff;padding:28px;border-radius:6px;text-align:center;margin:0 0 24px">
+        <h2 style="font-size:20px;margin:0 0 12px">Why customers love {{ product.brand or 'us' }}</h2>
+        <div style="display:flex;gap:24px;justify-content:center;flex-wrap:wrap;margin-top:12px">
+            <div>
+                <div style="font-size:32px;font-weight:700;color:#c45500">{{ product.rating }}</div>
+                <div style="font-size:13px;color:#565959">Average rating</div>
+            </div>
+            <div>
+                <div style="font-size:32px;font-weight:700;color:#c45500">{{ product.review_count|int }}</div>
+                <div style="font-size:13px;color:#565959">Verified reviews</div>
+            </div>
+            <div>
+                <div style="font-size:32px;font-weight:700;color:#c45500">{{ (product.rating * 20)|int }}%</div>
+                <div style="font-size:13px;color:#565959">Customer satisfaction</div>
+            </div>
+        </div>
+    </section>
+
+    <div style="text-align:center;margin:30px 0 12px">
+        <a href="{{ url_for('product_detail', slug=product.slug) }}" class="btn">Shop {{ product.name }}</a>
+    </div>
+</div>
+{% endblock %}

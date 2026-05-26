@@ -40,12 +40,20 @@
         <a href="{{ url_for('login') }}" class="recipe-action-btn">&#9825; Save</a>
         {% endif %}
         <button class="recipe-action-btn" onclick="window.print()">&#128424; Print</button>
+        <!-- R4: share-via-link -->
+        {% set share_token = recipe.slug|hash_slug %}
+        <button class="recipe-action-btn share-btn"
+                data-share-url="https://allrecipes.com/r/{{ share_token }}"
+                onclick="(function(b){navigator.clipboard&&navigator.clipboard.writeText(b.dataset.shareUrl);b.textContent='Link Copied';})(this)">
+            &#128279; Share
+        </button>
+        <span class="share-link-display" style="font-size:0.78rem;color:#666;margin-left:8px;user-select:all">https://allrecipes.com/r/{{ share_token }}</span>
     </div>
 </div>
 
 <!-- Hero Image -->
 <div class="recipe-hero-image">
-    <img src="{{ recipe.image }}" alt="{{ recipe.title }}"
+    <img src="{{ recipe.image }}" alt="{{ recipe.title }}" loading="eager"
          onerror="this.parentElement.innerHTML='<div class=\'placeholder-img\' style=\'height:400px\'>{{ recipe.title }}</div>'">
 </div>
 
@@ -109,9 +117,20 @@
 {% if ingredients %}
 <div class="recipe-section">
     <h2>Ingredients</h2>
+    <!-- R4: scale-by-servings widget -->
+    <div class="servings-scale" data-base-servings="{{ recipe.servings or '4' }}" data-recipe-slug="{{ recipe.slug }}"
+         style="display:flex;align-items:center;gap:10px;margin-bottom:14px;background:#f7f7f7;padding:10px 14px;border-radius:6px">
+        <span style="font-size:0.9rem;color:#555">Adjust servings:</span>
+        <button class="scale-btn" data-scale="0.5" type="button" style="padding:4px 12px;border:1px solid #c62828;background:#fff;color:#c62828;border-radius:4px;cursor:pointer">&#189;x</button>
+        <button class="scale-btn active" data-scale="1" type="button" style="padding:4px 12px;border:1px solid #c62828;background:#c62828;color:#fff;border-radius:4px;cursor:pointer">1x</button>
+        <button class="scale-btn" data-scale="2" type="button" style="padding:4px 12px;border:1px solid #c62828;background:#fff;color:#c62828;border-radius:4px;cursor:pointer">2x</button>
+        <button class="scale-btn" data-scale="4" type="button" style="padding:4px 12px;border:1px solid #c62828;background:#fff;color:#c62828;border-radius:4px;cursor:pointer">4x</button>
+        <span class="current-servings" style="font-size:0.9rem;color:#333;margin-left:6px">Serves <strong data-current="{{ recipe.servings or '4' }}">{{ recipe.servings or '4' }}</strong></span>
+        <a href="{{ url_for('api_recipe_scale', slug=recipe.slug, servings=8) }}" style="font-size:0.78rem;color:#999;margin-left:auto" title="raw scale API">API</a>
+    </div>
     <ul class="ingredients-list">
         {% for ing in ingredients %}
-        <li>{{ ing }}</li>
+        <li data-base-ingredient="{{ ing }}">{{ ing }}</li>
         {% endfor %}
     </ul>
 </div>
@@ -119,9 +138,22 @@
 
 <!-- Instructions -->
 {% set instructions = recipe.get_instructions() %}
+{% set step_images = recipe.gallery_json|step_images_from %}
 {% if instructions %}
 <div class="recipe-section">
     <h2>Directions</h2>
+    {% if step_images %}
+    <div class="step-image-strip" style="display:flex;gap:10px;overflow-x:auto;padding-bottom:10px;margin-bottom:14px">
+        {% for img_url in step_images %}
+        <figure style="flex:0 0 180px;margin:0">
+            <img src="{{ img_url }}" alt="Step {{ loop.index }}" loading="lazy"
+                 style="width:180px;height:120px;object-fit:cover;border-radius:6px;display:block"
+                 onerror="this.parentElement.style.display='none'">
+            <figcaption style="font-size:0.78rem;color:#666;margin-top:4px;text-align:center">Step {{ loop.index }}</figcaption>
+        </figure>
+        {% endfor %}
+    </div>
+    {% endif %}
     <ol class="instructions-list">
         {% for step in instructions %}
         <li>
@@ -300,12 +332,12 @@
 {% if related %}
 <div class="recipe-section related-section">
     <h2>You Might Also Like</h2>
-    <div class="recipe-grid recipe-grid-3">
+    <div class="related-carousel" style="display:flex;gap:14px;overflow-x:auto;padding-bottom:12px;scroll-snap-type:x mandatory">
         {% for recipe in related %}
-        <div class="recipe-card">
+        <div class="recipe-card carousel-card" style="flex:0 0 240px;scroll-snap-align:start">
             <div class="recipe-card-image">
                 <a href="{{ url_for('recipe_detail', slug=recipe.slug) }}">
-                    <img src="{{ recipe.image }}" alt="{{ recipe.title }}"
+                    <img src="{{ recipe.image }}" alt="{{ recipe.title }}" loading="lazy"
                          onerror="this.parentElement.innerHTML='<div class=\'placeholder-img\'>{{ recipe.title }}</div>'">
                 </a>
             </div>
@@ -325,4 +357,50 @@
     </div>
 </div>
 {% endif %}
+
+<!-- R4: quick-look modal placeholder (hidden by default, shown via JS) -->
+<div id="recipe-quick-look" class="quick-look-modal" hidden
+     style="position:fixed;inset:0;background:rgba(0,0,0,0.55);z-index:1000;align-items:center;justify-content:center;display:none">
+    <div class="quick-look-card" style="background:#fff;border-radius:8px;max-width:520px;width:90%;padding:24px;position:relative">
+        <button onclick="document.getElementById('recipe-quick-look').style.display='none'"
+                style="position:absolute;top:8px;right:12px;background:none;border:none;font-size:1.4rem;cursor:pointer">&times;</button>
+        <h3 style="margin:0 0 8px 0">{{ recipe.title }} — Quick Look</h3>
+        <p style="color:#555">{{ recipe.description[:200] }}{% if recipe.description|length > 200 %}&hellip;{% endif %}</p>
+        <div style="display:flex;gap:14px;font-size:0.9rem;color:#666;margin-top:10px">
+            <span><strong>Prep:</strong> {{ recipe.prep_time }}</span>
+            <span><strong>Cook:</strong> {{ recipe.cook_time }}</span>
+            <span><strong>Total:</strong> {{ recipe.total_time }}</span>
+        </div>
+        <div style="margin-top:14px">
+            <a href="{{ url_for('recipe_detail', slug=recipe.slug) }}" class="btn btn-primary">View Full Recipe</a>
+        </div>
+    </div>
+</div>
+
+<script>
+// R4: client-side scale-by-servings.
+(function(){
+    var btns = document.querySelectorAll('.scale-btn');
+    var lis = document.querySelectorAll('.ingredients-list li[data-base-ingredient]');
+    var servingsDisplay = document.querySelector('.current-servings strong[data-current]');
+    var baseServings = parseInt((servingsDisplay && servingsDisplay.dataset.current) || '4', 10) || 4;
+    function fmt(n){ if(Math.abs(n - Math.round(n)) < 0.05) return ''+Math.round(n); return (Math.round(n*4)/4).toString(); }
+    btns.forEach(function(b){
+        b.addEventListener('click', function(){
+            btns.forEach(function(o){ o.classList.remove('active'); o.style.background='#fff'; o.style.color='#c62828'; });
+            b.classList.add('active'); b.style.background='#c62828'; b.style.color='#fff';
+            var f = parseFloat(b.dataset.scale) || 1;
+            lis.forEach(function(li){
+                var raw = li.dataset.baseIngredient || '';
+                var m = raw.match(/^\s*(\d+(?:\.\d+)?|\d+\/\d+)\s+(.*)$/);
+                if(m){
+                    var n; if(m[1].indexOf('/')>=0){ var p=m[1].split('/'); n=parseFloat(p[0])/parseFloat(p[1]); } else { n=parseFloat(m[1]); }
+                    li.textContent = fmt(n*f) + ' ' + m[2];
+                } else { li.textContent = raw; }
+            });
+            if(servingsDisplay){ servingsDisplay.textContent = fmt(baseServings*f); }
+        });
+    });
+})();
+</script>
 {% endblock %}

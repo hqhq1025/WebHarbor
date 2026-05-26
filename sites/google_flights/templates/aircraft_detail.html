@@ -1,0 +1,41 @@
+{% extends 'base.html' %}
+{% block title %}{{ aircraft_name }} - Aircraft details{% endblock %}
+{% block content %}
+<div class="info-page">
+  <div class="info-page-inner">
+    <h1>{{ aircraft_name }}</h1>
+    <div style="color:#5f6368;margin-bottom:18px;">
+      ICAO type code <strong>{{ icao }}</strong> &middot; Manufacturer {{ manufacturer }} &middot; {{ family }} family
+    </div>
+
+    <div class="card-grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-bottom:18px;">
+      <div style="background:#fff;border:1px solid #dadce0;border-radius:8px;padding:14px;">
+        <div style="font-size:12px;color:#5f6368;">Seats (typical)</div>
+        <div style="font-size:22px;font-weight:500;">{{ seats }}</div>
+      </div>
+      <div style="background:#fff;border:1px solid #dadce0;border-radius:8px;padding:14px;">
+        <div style="font-size:12px;color:#5f6368;">Range</div>
+        <div style="font-size:22px;font-weight:500;">{{ range_km }} km</div>
+      </div>
+      <div style="background:#fff;border:1px solid #dadce0;border-radius:8px;padding:14px;">
+        <div style="font-size:12px;color:#5f6368;">CO2 / pax / km</div>
+        <div style="font-size:22px;font-weight:500;">{{ co2_per_pax_km }} g</div>
+      </div>
+      <div style="background:#fff;border:1px solid #dadce0;border-radius:8px;padding:14px;">
+        <div style="font-size:12px;color:#5f6368;">Catalog flights</div>
+        <div style="font-size:22px;font-weight:500;">{{ '{:,}'.format(flight_count) }}</div>
+      </div>
+    </div>
+
+    <h2>Overview</h2>
+    <p>{{ blurb }}</p>
+
+    <h2>Operators in the catalog</h2>
+    <ul>
+      {% for op in operators %}
+        <li><a href="{{ url_for('airline_detail', code=op.code) }}">{{ op.name }}</a> — {{ op.count }} flights</li>
+      {% endfor %}
+    </ul>
+  </div>
+</div>
+{% endblock %}

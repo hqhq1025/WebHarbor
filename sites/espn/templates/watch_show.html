@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block title %}{{ show.title }} — ESPN+{% endblock %}
+{% block content %}
+<div class="container">
+  <article class="watch-detail">
+    {% if show.is_live %}<div class="live-score-widget"><span class="live-dot"></span><span>LIVE NOW</span></div>{% endif %}
+    <h1>{{ show.title }}</h1>
+    <div class="watch-detail__meta">
+      {{ show.kind|capitalize }} &bull; {{ show.sport_slug|upper }} &bull; {{ show.duration_minutes }} min
+      &bull; {{ show.host_or_studio }} &bull; {{ show.release_date }}
+    </div>
+    {% if show.is_espn_plus %}<span class="espn-plus-badge">ESPN+</span>{% endif %}
+    <p>{{ show.description }}</p>
+
+    <form method="post" action="/watch/list/add" class="watch-add-form">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <input type="hidden" name="slug" value="{{ show.slug }}">
+      {% if on_watch_list %}
+        <button type="submit" class="btn-secondary" disabled>On Your Watch List</button>
+      {% else %}
+        <button type="submit" class="btn-red">Add to Watch List</button>
+      {% endif %}
+    </form>
+  </article>
+
+  <section>
+    <h2>Related on ESPN+</h2>
+    <div class="watch-grid">
+      {% for w in related %}
+      <a href="/watch/{{ w.slug }}" class="watch-card">
+        <h3>{{ w.title }}</h3>
+        <div class="watch-card__meta">{{ w.kind|capitalize }} &bull; {{ w.duration_minutes }} min</div>
+      </a>
+      {% endfor %}
+    </div>
+  </section>
+
+  <a href="/watch/list" class="btn-secondary">Back to Watch List</a>
+</div>
+{% endblock %}

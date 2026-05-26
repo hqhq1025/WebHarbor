@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% block title %}AI Overview - {{ topic.name if topic else q }}{% endblock %}
+{% block content %}
+<div class="snapshot-page">
+    <div class="snapshot-header">
+        <svg viewBox="0 0 24 24" width="24" height="24"><path fill="#4285f4" d="M12 2 L13.5 8 L20 9.5 L13.5 11 L12 17 L10.5 11 L4 9.5 L10.5 8 Z"/></svg>
+        <h1>AI Overview</h1>
+        <span class="snapshot-tag">Generated snapshot</span>
+    </div>
+
+    {% if topic %}
+    <div class="snapshot-summary">
+        <p class="snapshot-lead">{{ topic.summary[:280] }}{% if topic.summary|length > 280 %}…{% endif %}</p>
+        {% if topic.answer_token %}
+        <div class="snapshot-answer">{{ topic.answer_token }}</div>
+        {% endif %}
+    </div>
+
+    {% set kp = topic.knowledge_panel_json %}
+    {% if topic.results %}
+    <div class="snapshot-citations">
+        <h2>Citations</h2>
+        <ol>
+            {% for r in topic.results[:6] %}
+            <li>
+                <a href="{{ url_for('url_redirect', q=r.url, topic=topic.slug) }}">{{ r.title }}</a>
+                <span class="snapshot-cite-src">{{ r.display_url }}</span>
+            </li>
+            {% endfor %}
+        </ol>
+    </div>
+    {% endif %}
+
+    {% if topic.knowledge_facts %}
+    <div class="snapshot-facts">
+        <h2>Key facts</h2>
+        <dl>
+            {% for f in topic.knowledge_facts[:8] %}
+            <dt>{{ f.key }}</dt><dd>{{ f.value }}</dd>
+            {% endfor %}
+        </dl>
+    </div>
+    {% endif %}
+
+    <div class="snapshot-actions">
+        <a class="btn-primary" href="{{ url_for('search', q=topic.query_text or topic.name) }}">Open full results</a>
+        <a class="btn-secondary" href="{{ url_for('topic_detail', slug=topic.slug) }}">Topic page</a>
+    </div>
+    {% else %}
+    <p class="snapshot-empty">No snapshot is available for <strong>{{ q or 'this query' }}</strong>. Try a more specific search.</p>
+    <a class="btn-primary" href="{{ url_for('index') }}">Back to Google</a>
+    {% endif %}
+</div>
+{% endblock %}

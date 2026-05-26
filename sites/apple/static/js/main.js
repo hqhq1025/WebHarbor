@@ -226,3 +226,18 @@ function initSearch() {
         }, 800);
     });
 }
+
+/* --- R4 polish: fade-in lazy-loaded images via IntersectionObserver --- */
+(function () {
+    if (!('IntersectionObserver' in window)) return;
+    const apply = function (img) {
+        if (img.complete && img.naturalHeight > 0) {
+            img.classList.add('is-loaded');
+        } else {
+            img.addEventListener('load', () => img.classList.add('is-loaded'), { once: true });
+        }
+    };
+    document.addEventListener('DOMContentLoaded', function () {
+        document.querySelectorAll('img[loading="lazy"]').forEach(apply);
+    });
+})();

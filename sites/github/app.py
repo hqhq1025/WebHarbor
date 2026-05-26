@@ -335,6 +335,93 @@ class IssueComment(db.Model):
     created_at = db.Column(db.DateTime, default=mirror_now)
 
 
+# ─────────────────────────── R4 Models ───────────────────────────
+# Added in R4 polish: Discussion threads, Sponsorship, Project Boards (Kanban),
+# Packages and Org Teams. Everything is seeded deterministically from
+# (repo.id|org.id|user.id) so md5×2 stays stable.
+
+class Discussion(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    repo_id = db.Column(db.Integer, db.ForeignKey('repository.id'), nullable=False)
+    author_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    number = db.Column(db.Integer, nullable=False)
+    title = db.Column(db.String(255), nullable=False)
+    body = db.Column(db.Text, default='')
+    # category: Announcements / Q&A / Ideas / Show and tell / General / Polls
+    category = db.Column(db.String(40), default='General')
+    status = db.Column(db.String(20), default='open')  # open / answered / closed
+    upvotes = db.Column(db.Integer, default=0)
+    comments_count = db.Column(db.Integer, default=0)
+    answered_comment_id = db.Column(db.Integer, nullable=True)
+    created_at = db.Column(db.DateTime, default=mirror_now)
+
+
+class DiscussionComment(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    discussion_id = db.Column(db.Integer, db.ForeignKey('discussion.id'),
+                              nullable=False)
+    author_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    body = db.Column(db.Text, nullable=False)
+    is_answer = db.Column(db.Integer, default=0)
+    created_at = db.Column(db.DateTime, default=mirror_now)
+
+
+class Sponsorship(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    sponsor_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    target_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    tier = db.Column(db.String(40), default='Backer')  # Backer / Supporter / Sponsor / Patron
+    amount_cents = db.Column(db.Integer, default=500)
+    status = db.Column(db.String(20), default='active')
+    is_recurring = db.Column(db.Integer, default=1)
+    started_at = db.Column(db.DateTime, default=mirror_now)
+
+
+class ProjectBoard(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    repo_id = db.Column(db.Integer, db.ForeignKey('repository.id'), nullable=False)
+    number = db.Column(db.Integer, nullable=False)
+    name = db.Column(db.String(120), nullable=False)
+    description = db.Column(db.Text, default='')
+    status = db.Column(db.String(20), default='open')
+    # JSON: [{"name": "Todo", "cards": [{"title":..., "issue":..., "labels":[]}]}]
+    columns_json = db.Column(db.Text, default='[]')
+    created_at = db.Column(db.DateTime, default=mirror_now)
+
+    def get_columns(self):
+        try:
+            return json.loads(self.columns_json or '[]')
+        except Exception:
+            return []
+
+
+class Package(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    repo_id = db.Column(db.Integer, db.ForeignKey('repository.id'), nullable=False)
+    name = db.Column(db.String(120), nullable=False)
+    ecosystem = db.Column(db.String(20), default='npm')  # npm / pypi / container / maven / nuget / rubygems
+    version = db.Column(db.String(40), default='1.0.0')
+    description = db.Column(db.String(255), default='')
+    downloads_total = db.Column(db.Integer, default=0)
+    visibility = db.Column(db.String(20), default='public')
+    published_at = db.Column(db.DateTime, default=mirror_now)
+
+
+class Team(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    org_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    slug = db.Column(db.String(80), nullable=False)
+    name = db.Column(db.String(80), nullable=False)
+    description = db.Column(db.String(255), default='')
+    privacy = db.Column(db.String(20), default='visible')  # visible / secret
+    member_count = db.Column(db.Integer, default=0)
+    repo_count = db.Column(db.Integer, default=0)
+    # JSON arrays of usernames / full_names so we don't need extra join tables.
+    members_json = db.Column(db.Text, default='[]')
+    repos_json = db.Column(db.Text, default='[]')
+    created_at = db.Column(db.DateTime, default=mirror_now)
+
+
 @login_manager.user_loader
 def load_user(user_id):
     return db.session.get(User, int(user_id))
@@ -4011,6 +4098,220 @@ def copilot_landing():
                            suggestions=suggestions, sample_chat=sample_chat)
 
 
+# ─────────────────────────── R4: deep sub-pages ───────────────────────────
+# Discussions, Project Boards / Kanban, Sponsors, Packages, Org teams,
+# Releases by tag, PR conflicts/diff side-by-side.
+
+@app.route('/<username>/<reponame>/discussions')
+def repo_discussions(username, reponame):
+    repo = _require_repo(username, reponame)
+    category = request.args.get('category', '')
+    status = request.args.get('status', '')
+    q = Discussion.query.filter_by(repo_id=repo.id)
+    if category:
+        q = q.filter(Discussion.category == category)
+    if status:
+        q = q.filter(Discussion.status == status)
+    discussions = q.order_by(Discussion.created_at.desc()).all()
+    categories = ['Announcements', 'General', 'Ideas', 'Q&A',
+                  'Show and tell', 'Polls']
+    return render_template('repo_discussions.html', repo=repo,
+                           discussions=discussions, categories=categories,
+                           active_category=category, active_status=status)
+
+
+@app.route('/<username>/<reponame>/discussions/<int:number>')
+def repo_discussion_detail(username, reponame, number):
+    repo = _require_repo(username, reponame)
+    d = Discussion.query.filter_by(repo_id=repo.id, number=number).first()
+    if not d:
+        abort(404)
+    comments = (DiscussionComment.query
+                .filter_by(discussion_id=d.id)
+                .order_by(DiscussionComment.created_at.asc())
+                .all())
+    return render_template('repo_discussion_detail.html',
+                           repo=repo, d=d, comments=comments)
+
+
+@app.route('/<username>/<reponame>/projects')
+def repo_projects(username, reponame):
+    repo = _require_repo(username, reponame)
+    boards = (ProjectBoard.query.filter_by(repo_id=repo.id)
+              .order_by(ProjectBoard.number.asc()).all())
+    return render_template('repo_projects.html', repo=repo, boards=boards)
+
+
+@app.route('/<username>/<reponame>/projects/<int:number>')
+def repo_project_detail(username, reponame, number):
+    repo = _require_repo(username, reponame)
+    board = (ProjectBoard.query
+             .filter_by(repo_id=repo.id, number=number).first())
+    if not board:
+        abort(404)
+    return render_template('repo_project_kanban.html',
+                           repo=repo, board=board)
+
+
+@app.route('/<username>/<reponame>/packages')
+def repo_packages(username, reponame):
+    repo = _require_repo(username, reponame)
+    eco = request.args.get('ecosystem', '')
+    q = Package.query.filter_by(repo_id=repo.id)
+    if eco:
+        q = q.filter(Package.ecosystem == eco)
+    pkgs = q.order_by(Package.downloads_total.desc()).all()
+    ecosystems = sorted({p.ecosystem for p in
+                         Package.query.filter_by(repo_id=repo.id).all()})
+    return render_template('repo_packages.html', repo=repo,
+                           pkgs=pkgs, ecosystems=ecosystems,
+                           active_eco=eco)
+
+
+@app.route('/<username>/<reponame>/releases/tag/<tag>')
+def repo_release_tag(username, reponame, tag):
+    repo = _require_repo(username, reponame)
+    releases = repo.get_releases() or []
+    rel = next((r for r in releases if r.get('version') == tag), None)
+    if not rel:
+        rel = next((r for r in releases
+                    if str(r.get('version', '')).startswith(tag)), None)
+    if not rel:
+        abort(404)
+    return render_template('repo_release_tag.html',
+                           repo=repo, rel=rel, tag=tag)
+
+
+@app.route('/<username>/<reponame>/pull/<int:number>/conflicts')
+def repo_pull_conflicts(username, reponame, number):
+    repo = _require_repo(username, reponame)
+    pr = Issue.query.filter_by(repo_id=repo.id, number=number, is_pr=1).first()
+    if not pr:
+        abort(404)
+    h = _r4_hash(repo.full_name, 'conflict', number)
+    files = []
+    fcount = 1 + (h % 3)
+    base_files = repo.get_commit_files() or []
+    fallback = ['src/index.ts', 'lib/utils.py', 'README.md',
+                'package.json', 'config.yaml']
+    for i in range(fcount):
+        if base_files:
+            fname = base_files[i % len(base_files)]['name']
+        else:
+            fname = fallback[(h + i) % len(fallback)]
+        files.append({
+            'name': fname,
+            'ours': (f"# from {pr.pr_base_branch or 'main'}\n"
+                     f"def {fname.replace('/', '_').split('.')[0]}_v{1 + (h % 4)}():\n"
+                     f"    return {h % 999}"),
+            'theirs': (f"# from {pr.pr_head_branch or 'feature'}\n"
+                       f"def {fname.replace('/', '_').split('.')[0]}_v{2 + (h % 4)}():\n"
+                       f"    return {h % 999 + 7}"),
+        })
+    return render_template('repo_pull_conflicts.html',
+                           repo=repo, pr=pr, files=files)
+
+
+@app.route('/orgs/<org>/teams')
+def org_teams(org):
+    owner = User.query.filter_by(username=org).first()
+    if not owner:
+        abort(404)
+    teams = (Team.query.filter_by(org_id=owner.id)
+             .order_by(Team.slug.asc()).all())
+    org_repo_count = Repository.query.filter_by(owner_id=owner.id).count()
+    return render_template('org_teams.html', org=owner,
+                           teams=teams, org_repo_count=org_repo_count)
+
+
+@app.route('/orgs/<org>/teams/<slug>')
+def org_team_detail(org, slug):
+    owner = User.query.filter_by(username=org).first()
+    if not owner:
+        abort(404)
+    team = Team.query.filter_by(org_id=owner.id, slug=slug).first()
+    if not team:
+        abort(404)
+    members = []
+    try:
+        members_names = json.loads(team.members_json or '[]')
+    except Exception:
+        members_names = []
+    for n in members_names:
+        u = User.query.filter_by(username=n).first()
+        if u:
+            members.append(u)
+    try:
+        team_repos_names = json.loads(team.repos_json or '[]')
+    except Exception:
+        team_repos_names = []
+    team_repos = []
+    for fn in team_repos_names:
+        r = Repository.query.filter_by(full_name=fn).first()
+        if r:
+            team_repos.append(r)
+    return render_template('org_team_detail.html', org=owner,
+                           team=team, members=members,
+                           team_repos=team_repos)
+
+
+@app.route('/orgs/<org>')
+def org_landing(org):
+    owner = User.query.filter_by(username=org).first()
+    if not owner:
+        abort(404)
+    return redirect(url_for('user_profile', username=org))
+
+
+@app.route('/sponsors')
+def sponsors_index():
+    """Discover sponsorable accounts — featured by sponsor count."""
+    rows = (db.session.query(Sponsorship.target_id,
+                             func.count(Sponsorship.id).label('n'),
+                             func.sum(Sponsorship.amount_cents).label('total'))
+            .group_by(Sponsorship.target_id)
+            .order_by(func.count(Sponsorship.id).desc())
+            .limit(30).all())
+    featured = []
+    for target_id, n, total in rows:
+        u = db.session.get(User, target_id)
+        if u:
+            featured.append({'user': u, 'sponsors': n or 0,
+                             'monthly_cents': int(total or 0)})
+    return render_template('sponsors_index.html', featured=featured)
+
+
+@app.route('/sponsors/<username>')
+def sponsors_for(username):
+    target = User.query.filter_by(username=username).first()
+    if not target:
+        abort(404)
+    sponsorships = (Sponsorship.query.filter_by(target_id=target.id)
+                    .order_by(Sponsorship.started_at.desc()).all())
+    sponsor_users = []
+    total_cents = 0
+    for s in sponsorships:
+        u = db.session.get(User, s.sponsor_id)
+        if u:
+            sponsor_users.append({'user': u, 'sponsorship': s})
+            if s.status == 'active':
+                total_cents += s.amount_cents or 0
+    tiers = [
+        {'name': 'Backer', 'price': 5,
+         'desc': 'Show your support and unlock a sponsor badge.'},
+        {'name': 'Supporter', 'price': 25,
+         'desc': 'Early access to release notes and roadmaps.'},
+        {'name': 'Sponsor', 'price': 100,
+         'desc': 'Listed in README + monthly mention.'},
+        {'name': 'Patron', 'price': 500,
+         'desc': 'Direct line for prioritized issues.'},
+    ]
+    return render_template('sponsors_for.html', target=target,
+                           sponsorships=sponsorships,
+                           sponsor_users=sponsor_users,
+                           total_cents=total_cents, tiers=tiers)
+
+
 # ─────────────────────────── Main ───────────────────────────
 
 def seed_benchmark_users():
@@ -5054,6 +5355,689 @@ def seed_extra_pulls():
     return promoted
 
 
+# ─────────────────────────── R4 bulk seeders ───────────────────────────
+# Synthesize organization-owned repos + discussions + sponsorships + project
+# boards + packages + teams so /orgs/<org>/teams, /<repo>/discussions,
+# /<repo>/projects, /sponsors, /<repo>/packages all have real data.
+#
+# Every value derives from a hash of a stable key (org username, repo id,
+# slot index) — never from `random` or wall-clock — so md5×2 matches.
+
+_R4_REPO_SUFFIXES = [
+    'core', 'cli', 'sdk', 'tools', 'examples', 'docs', 'starter',
+    'plugin', 'utils', 'kit', 'experiments', 'website', 'demos',
+    'workflow', 'cookbook', 'specs', 'protocol', 'playground',
+    'blueprint', 'sandbox', 'lab', 'roadmap', 'lite',
+]
+_R4_REPO_DESC = [
+    "Lightweight {a} helpers used internally by the {org} team.",
+    "Reference {a} integration patterns and examples for {org}.",
+    "Open documentation site for {org} {a} projects.",
+    "{a} utilities split out of the main {org} monorepo.",
+    "Curated awesome list of {a} resources maintained by {org}.",
+    "Public roadmap and design notes for {org}'s {a} platform.",
+    "Tooling that powers {org}'s {a} release pipeline.",
+    "{a} starter template — fork, edit, deploy.",
+    "Working group repository for {org}'s {a} initiative.",
+    "Community-contributed plugins for {org}'s {a} stack.",
+]
+_R4_REPO_README_BANK = [
+    "# {full}\n\n> {desc}\n\n## Why\n\nThis repository keeps the {a} layer "
+    "of {org}'s stack honest. We aim for small, well-tested helpers that the "
+    "rest of the org can rely on without pulling in a heavy framework.\n\n"
+    "## Install\n\n```bash\n# Choose your weapon\nnpm i @{org}/{name}\npip "
+    "install {org}-{name}\ngo get github.com/{org}/{name}\n```\n\n## Quick "
+    "start\n\nSee [`examples/`](./examples) for a runnable demo.\n",
+    "# {full}\n\n{desc}\n\n## Status\n\nProduction-ready since v{maj}.{min}. "
+    "Public API is stable; breaking changes go through a deprecation cycle "
+    "of at least one minor release.\n\n## Features\n\n- Zero runtime "
+    "dependencies (except {a}).\n- Tree-shakeable / minifies well.\n- Works "
+    "in browsers, Node ≥18, and modern bundlers.\n- TypeScript types "
+    "shipped.\n\n## Contributing\n\nPlease read `CONTRIBUTING.md` before "
+    "opening a PR. We squash-merge; small focused changes get reviewed "
+    "fastest.\n",
+    "# {full}\n\n{desc}\n\nThis project is part of the broader **{org}** "
+    "ecosystem. The goal is to keep {a}-related concerns in one place so "
+    "downstream teams don't reinvent them every quarter.\n\n## Roadmap\n\n"
+    "- [x] v1: stable core API\n- [x] v{maj}: structured logging hooks\n- [ ] "
+    "v{nx}: native async support\n- [ ] v{nx2}: WASM build\n\nSee `ROADMAP.md` "
+    "for context.\n",
+]
+_R4_LICENSE_BAND = ['MIT', 'Apache-2.0', 'BSD-3-Clause', 'MIT', 'MIT',
+                    'MPL-2.0', 'GPL-3.0', 'Apache-2.0']
+_R4_BRANCH_BAND = ['main', 'main', 'main', 'master', 'develop', 'trunk']
+_R4_LANG_POOL = ['Python', 'TypeScript', 'JavaScript', 'Go', 'Rust', 'Java',
+                 'C++', 'Ruby', 'Kotlin', 'Swift', 'Shell', 'C#']
+
+
+def _r4_hash(*parts) -> int:
+    """Stable cross-process hash. Never `hash()` — that's seeded by env."""
+    key = '|'.join(str(p) for p in parts)
+    return int(hashlib.sha1(key.encode()).hexdigest()[:10], 16)
+
+
+def seed_r4_org_repos():
+    """Grow the catalog from ~8000 → 12000+ by synthesizing additional repos
+    under existing organization owners. Deterministic against org username +
+    suffix index. Each repo gets readme excerpt, languages list, license,
+    archive status, default_branch.
+
+    Idempotent: stops once total repo count ≥ 12000."""
+    target_total = 12000
+    have = Repository.query.count()
+    if have >= target_total:
+        return 0
+
+    # All organization owners, ordered for determinism.
+    orgs = (User.query
+            .join(Repository, Repository.owner_id == User.id)
+            .filter(Repository.owner_type == 'organization')
+            .order_by(User.username.asc())
+            .distinct()
+            .all())
+    if not orgs:
+        return 0
+
+    existing_full = {r.full_name for r in
+                     Repository.query.with_entities(Repository.full_name).all()}
+    topic_by_slug = {t.slug: t for t in Topic.query.all()}
+
+    # Common topics so synthesized repos pick up real /topics/<slug> linkage.
+    common_topics_pool = [
+        'cli', 'sdk', 'documentation', 'developer-tools', 'open-source',
+        'awesome-list', 'plugin', 'starter', 'utilities', 'roadmap',
+        'examples', 'demo', 'platform', 'monitoring', 'security',
+        'devtools', 'workflow', 'productivity', 'react', 'nodejs',
+        'python', 'typescript', 'go', 'rust', 'kubernetes', 'docker',
+    ]
+
+    added = 0
+    # Multiple passes through suffixes so big orgs get more repos but tiny
+    # ones still get a couple. Stop on target hit.
+    for slot in range(len(_R4_REPO_SUFFIXES)):
+        if have + added >= target_total:
+            break
+        for org in orgs:
+            if have + added >= target_total:
+                break
+            # Skip orgs that already have ≥40 repos so we don't drown them.
+            existing_for_org = sum(1 for fn in existing_full
+                                   if fn.startswith(org.username + '/'))
+            if existing_for_org >= 40:
+                continue
+            suffix = _R4_REPO_SUFFIXES[(slot + _r4_hash(org.username)) %
+                                       len(_R4_REPO_SUFFIXES)]
+            base_name = f"{org.username.split('-')[0].lower()}-{suffix}"
+            base_name = re.sub(r'[^a-z0-9._-]', '-', base_name)[:60].strip('-')
+            if not base_name:
+                continue
+            full = f"{org.username}/{base_name}"
+            # Disambiguate if collision.
+            if full in existing_full:
+                full = f"{org.username}/{base_name}-{slot}"
+                if full in existing_full:
+                    continue
+                base_name = full.split('/', 1)[1]
+            h = _r4_hash(full, slot)
+            lang = _R4_LANG_POOL[h % len(_R4_LANG_POOL)]
+            area = ['ingestion', 'parser', 'cache', 'auth', 'routing',
+                    'transport', 'config', 'telemetry'][(h >> 3) % 8]
+            desc = _R4_REPO_DESC[(h >> 5) % len(_R4_REPO_DESC)].format(
+                a=area, org=org.username)[:255]
+            readme = _R4_REPO_README_BANK[(h >> 7) % len(_R4_REPO_README_BANK)].format(
+                full=full, name=base_name, org=org.username, desc=desc,
+                a=area,
+                maj=1 + (h % 4),
+                min=(h >> 2) % 18,
+                nx=2 + (h % 4),
+                nx2=3 + (h % 4),
+            )
+            # languages list (stored as JSON in topics_text? No, in readme).
+            # We keep main "language" field + add a sibling list via gallery_json
+            # ratio map: [{name,pct}].
+            lang2 = _R4_LANG_POOL[(h >> 9) % len(_R4_LANG_POOL)]
+            lang3 = _R4_LANG_POOL[(h >> 11) % len(_R4_LANG_POOL)]
+            lang_mix = [
+                {'name': lang, 'pct': 55 + (h % 25)},
+                {'name': lang2 if lang2 != lang else 'Shell',
+                 'pct': 15 + ((h >> 1) % 18)},
+                {'name': lang3 if lang3 not in (lang, lang2) else 'HTML',
+                 'pct': 5 + ((h >> 2) % 10)},
+            ]
+            # Normalize so pct sums to 100.
+            tot = sum(x['pct'] for x in lang_mix)
+            for x in lang_mix:
+                x['pct'] = round(x['pct'] * 100 / tot)
+            gallery = {'language_mix': lang_mix}
+
+            stars = 5 + (h % 1400)
+            forks = max(0, stars // (3 + (h % 6)))
+            watchers = max(1, stars // 6)
+            open_issues = (h >> 4) % 18
+            is_archived = ((h >> 7) % 12 == 0)
+            license_ = _R4_LICENSE_BAND[(h >> 6) % len(_R4_LICENSE_BAND)]
+            default_branch = _R4_BRANCH_BAND[(h >> 8) % len(_R4_BRANCH_BAND)]
+            # Pick 2-4 topics
+            topic_slugs = []
+            for k in range(2 + (h % 3)):
+                ts = common_topics_pool[(h * 7 + k * 13) %
+                                        len(common_topics_pool)]
+                if ts not in topic_slugs:
+                    topic_slugs.append(ts)
+
+            created = _BULK_REF - timedelta(days=120 + (h % 1200),
+                                            hours=(h >> 4) % 24)
+            pushed = _BULK_REF - timedelta(days=(h % 240),
+                                           hours=(h >> 5) % 24)
+            updated = pushed
+            sha = hashlib.sha1(full.encode()).hexdigest()
+
+            repo = Repository(
+                owner_id=org.id,
+                name=base_name,
+                full_name=full,
+                description=desc,
+                language=lang,
+                license=license_,
+                stars_count=stars,
+                forks_count=forks,
+                watchers_count=watchers,
+                open_issues_count=open_issues,
+                is_public=True,
+                is_fork=False,
+                is_template=((h >> 9) % 25 == 0),
+                is_archived=is_archived,
+                has_readme=True,
+                has_wiki=((h >> 3) % 4 == 0),
+                has_issues=True,
+                owner_type='organization',
+                default_branch=default_branch,
+                size_kb=200 + (h % 18000),
+                readme=readme,
+                topics_text=json.dumps(topic_slugs),
+                gallery_json=json.dumps(gallery),
+                created_at=created,
+                updated_at=updated,
+                pushed_at=pushed,
+                latest_release_version=f"v{1 + (h % 4)}.{(h >> 2) % 18}.{(h >> 4) % 12}",
+                latest_release_date=pushed - timedelta(days=14 + (h % 60)),
+                latest_release_notes=f"Bug fixes, performance, and docs polish in the {area} module.",
+                latest_commit_sha=sha,
+                latest_commit_message=f"Refactor {area} for clarity ({base_name})",
+                latest_commit_date=pushed,
+                latest_commit_additions=12 + (h % 240),
+                latest_commit_deletions=4 + ((h >> 1) % 120),
+            )
+            db.session.add(repo)
+            db.session.flush()
+            for slug in topic_slugs:
+                t = topic_by_slug.get(slug)
+                if t is not None:
+                    repo.topics.append(t)
+            existing_full.add(full)
+            added += 1
+            if added % 500 == 0:
+                db.session.commit()
+    db.session.commit()
+    return added
+
+
+# ── Discussions ──────────────────────────────────────────────────
+_R4_DISC_TITLES = [
+    "How are you using {a} in production?",
+    "Proposal: rework the {a} configuration story",
+    "Q: best practices for {a} in monorepos?",
+    "Show and tell: my {a} dashboard built in a weekend",
+    "Roadmap discussion — v{nx} priorities",
+    "Annual {a} survey results — let's discuss",
+    "Help: {a} stops working after upgrading to v{maj}",
+    "Why we picked this {a} architecture (and what we'd change)",
+    "Should we deprecate the legacy {a} flag?",
+    "RFC: typed plugin API for {a} extensions",
+    "Lessons from running {a} on Kubernetes for 18 months",
+    "Naming poll: rename `--strict` to `--exhaustive`?",
+]
+_R4_DISC_BODIES = [
+    "Curious to hear how teams are deploying this in real workloads. We "
+    "run ~14 nodes across two regions and the only sharp edge has been "
+    "config reloads — what's your story?",
+    "I've been sketching a proposal that collapses the three config sources "
+    "(env, file, CLI flag) into a single layered loader. Feedback wanted "
+    "before I open a PR.",
+    "Pros: smaller surface area, easier docs. Cons: breaking change for "
+    "anyone wiring up multiple sources today. Worth the migration?",
+    "Sharing some numbers from our internal benchmark. tl;dr is the new "
+    "code path is ~38% faster on cold start, no regressions on hot path.",
+    "Wanted to surface a community sentiment thread before we lock the "
+    "next minor release. Please drop a +1 / -1 + short reasoning.",
+]
+_R4_DISC_CATEGORIES = ['Q&A', 'Ideas', 'Announcements', 'General',
+                       'Show and tell', 'Polls', 'Ideas', 'Q&A']
+
+
+def seed_r4_discussions():
+    """Generate 2-6 discussions per top repo (stars >= 200) so
+    /<repo>/discussions has real content. ~3000 discussions total."""
+    if Discussion.query.count() >= 2500:
+        return 0
+    top_repos = (Repository.query
+                 .filter(Repository.stars_count >= 200)
+                 .order_by(Repository.id.asc())
+                 .limit(700)
+                 .all())
+    if not top_repos:
+        return 0
+    pool_unames = ['alice_j', 'bob_c', 'carol_d', 'david_k',
+                   'octocat', 'gaearon', 'sindresorhus', 'tj',
+                   'antirez', 'mxcl', 'mitchellh', 'fabpot', 'torvalds',
+                   'gvanrossum', 'yyx990803']
+    pool = [u for u in (User.query.filter_by(username=n).first()
+                        for n in pool_unames) if u]
+    if not pool:
+        return 0
+    pool_size = len(pool)
+
+    added = 0
+    for repo in top_repos:
+        existing = Discussion.query.filter_by(repo_id=repo.id).count()
+        if existing > 0:
+            continue
+        s = repo.stars_count or 0
+        n = 2 if s < 1000 else (4 if s < 10000 else 6)
+        base_dt = repo.pushed_at or _BULK_REF
+        if base_dt > _BULK_REF:
+            base_dt = _BULK_REF
+        for i in range(n):
+            h = _r4_hash(repo.full_name, 'disc', i)
+            area = _COMMIT_AREAS[h % len(_COMMIT_AREAS)]
+            title = _R4_DISC_TITLES[(h >> 2) % len(_R4_DISC_TITLES)].format(
+                a=area, maj=1 + (h % 5), nx=2 + (h % 4))[:255]
+            body = _R4_DISC_BODIES[(h >> 4) % len(_R4_DISC_BODIES)]
+            category = _R4_DISC_CATEGORIES[(h >> 6) % len(_R4_DISC_CATEGORIES)]
+            status_pick = h % 10
+            if category == 'Q&A' and status_pick < 6:
+                status = 'answered'
+            elif status_pick < 2:
+                status = 'closed'
+            else:
+                status = 'open'
+            author = pool[(h >> 8) % pool_size]
+            created = base_dt - timedelta(days=i * 6 + (h % 90),
+                                          hours=(h >> 3) % 24)
+            comments_count = 1 + (h % 14)
+            d = Discussion(
+                repo_id=repo.id,
+                author_id=author.id,
+                number=i + 1,
+                title=title,
+                body=body,
+                category=category,
+                status=status,
+                upvotes=(h >> 5) % 80,
+                comments_count=comments_count,
+                created_at=created,
+            )
+            db.session.add(d)
+            db.session.flush()
+            # Sprinkle a few real comments so /<repo>/discussions/<n> isn't
+            # empty when WebVoyager clicks in.
+            for j in range(min(3, comments_count)):
+                ch = _r4_hash(repo.full_name, 'disc', i, 'c', j)
+                cauthor = pool[(ch >> 4) % pool_size]
+                cbody = _R4_DISC_BODIES[ch % len(_R4_DISC_BODIES)]
+                is_ans = 0
+                if status == 'answered' and j == 0:
+                    is_ans = 1
+                dc = DiscussionComment(
+                    discussion_id=d.id,
+                    author_id=cauthor.id,
+                    body=cbody,
+                    is_answer=is_ans,
+                    created_at=created + timedelta(days=j * 2,
+                                                   hours=(ch % 24)),
+                )
+                db.session.add(dc)
+                if is_ans:
+                    db.session.flush()
+                    d.answered_comment_id = dc.id
+            added += 1
+        if added and added % 200 == 0:
+            db.session.commit()
+    db.session.commit()
+    return added
+
+
+# ── Sponsorships ─────────────────────────────────────────────────
+_R4_SPONSOR_TIERS = [
+    ('Backer', 500),  # $5/mo
+    ('Backer', 1000),  # $10/mo
+    ('Supporter', 2500),  # $25/mo
+    ('Sponsor', 10000),  # $100/mo
+    ('Patron', 50000),  # $500/mo
+]
+
+
+def seed_r4_sponsorships():
+    """Seed ~280 sponsorship entries from benchmark + popular users to
+    well-known developer/org accounts. Idempotent."""
+    if Sponsorship.query.count() >= 250:
+        return 0
+    # Targets: popular individual maintainers + orgs with stars.
+    candidate_targets = [
+        'octocat', 'gaearon', 'yyx990803', 'sindresorhus', 'tj',
+        'antirez', 'mxcl', 'mitchellh', 'fabpot', 'torvalds',
+        'gvanrossum', 'evanw', 'kentcdodds', 'jaredpalmer',
+        'facebook', 'vuejs', 'vercel', 'tensorflow', 'huggingface',
+        'rust-lang', 'golang', 'pallets', 'django',
+    ]
+    targets = [u for u in (User.query.filter_by(username=n).first()
+                           for n in candidate_targets) if u]
+    if not targets:
+        return 0
+    # Sponsors: benchmark users + first 60 org owners + first 200 user-owners
+    sponsor_pool_names = ['alice_j', 'bob_c', 'carol_d', 'david_k']
+    sponsor_pool = [u for u in (User.query.filter_by(username=n).first()
+                                for n in sponsor_pool_names) if u]
+    # Augment with deterministic id-ordered slice.
+    extra_sponsors = (User.query
+                      .filter(User.username.notin_(sponsor_pool_names))
+                      .order_by(User.id.asc())
+                      .limit(220)
+                      .all())
+    sponsor_pool.extend(extra_sponsors)
+    if not sponsor_pool:
+        return 0
+
+    added = 0
+    for target in targets:
+        # Skip if already has sponsorships seeded.
+        if Sponsorship.query.filter_by(target_id=target.id).count() >= 6:
+            continue
+        # 8-16 sponsors per target deterministically.
+        h = _r4_hash(target.username, 'sponsor-target')
+        n = 8 + (h % 9)
+        for i in range(n):
+            sh = _r4_hash(target.username, 'sponsor', i)
+            sponsor = sponsor_pool[sh % len(sponsor_pool)]
+            if sponsor.id == target.id:
+                continue
+            if Sponsorship.query.filter_by(sponsor_id=sponsor.id,
+                                           target_id=target.id).first():
+                continue
+            tier_name, tier_amount = _R4_SPONSOR_TIERS[
+                (sh >> 4) % len(_R4_SPONSOR_TIERS)]
+            started = _BULK_REF - timedelta(days=30 + (sh % 700),
+                                            hours=(sh >> 2) % 24)
+            s = Sponsorship(
+                sponsor_id=sponsor.id,
+                target_id=target.id,
+                tier=tier_name,
+                amount_cents=tier_amount,
+                status='active' if (sh % 10) < 8 else 'paused',
+                is_recurring=1 if (sh % 5) < 4 else 0,
+                started_at=started,
+            )
+            db.session.add(s)
+            added += 1
+    db.session.commit()
+    return added
+
+
+# ── Project Boards (Kanban) ──────────────────────────────────────
+_R4_PROJECT_NAMES = [
+    "Roadmap Q{q}",
+    "Bug Triage — v{maj}",
+    "{lang} Migration Plan",
+    "Performance push",
+    "Security hardening",
+    "Docs overhaul",
+    "v{nx} GA checklist",
+    "API stabilization",
+]
+_R4_PROJECT_COLS = ['Backlog', 'Todo', 'In progress', 'In review', 'Done']
+_R4_PROJECT_CARD_TITLES = [
+    "Audit {a} for memory regressions",
+    "Document {a} migration guide",
+    "Reproduce flaky {a} test on Windows",
+    "Triage open {a} issues from last quarter",
+    "Add metrics endpoint for {a}",
+    "Spike: WASM build for {a}",
+    "Remove deprecated {a} APIs",
+    "Update {a} examples in docs",
+    "Investigate {a} memory usage under load",
+    "Wire up CI for {a} on macOS",
+    "Refactor {a} retry logic",
+    "Adopt structured logging for {a}",
+]
+
+
+def seed_r4_project_boards():
+    """Generate 1-3 project boards per top-200 repo (~400 boards)."""
+    if ProjectBoard.query.count() >= 350:
+        return 0
+    top_repos = (Repository.query
+                 .filter(Repository.stars_count >= 500)
+                 .order_by(Repository.stars_count.desc(), Repository.id.asc())
+                 .limit(180)
+                 .all())
+    added = 0
+    for repo in top_repos:
+        if ProjectBoard.query.filter_by(repo_id=repo.id).count() > 0:
+            continue
+        n = 1 + (_r4_hash(repo.full_name, 'pb') % 3)
+        for i in range(n):
+            h = _r4_hash(repo.full_name, 'pb', i)
+            name = _R4_PROJECT_NAMES[h % len(_R4_PROJECT_NAMES)].format(
+                q=1 + (h % 4), maj=1 + (h % 6), nx=2 + (h % 5),
+                lang=repo.language or 'Polyglot')[:120]
+            cols = []
+            for ci, col_name in enumerate(_R4_PROJECT_COLS):
+                cards = []
+                ncards = 2 + ((h >> ci) % 4)
+                for k in range(ncards):
+                    ch = _r4_hash(repo.full_name, 'pb', i, 'col', ci, 'card', k)
+                    area = _COMMIT_AREAS[ch % len(_COMMIT_AREAS)]
+                    title = _R4_PROJECT_CARD_TITLES[
+                        (ch >> 3) % len(_R4_PROJECT_CARD_TITLES)].format(a=area)
+                    labels_pool = [
+                        ['bug'], ['enhancement'], ['documentation'],
+                        ['good first issue'], ['help wanted'],
+                        ['performance'], ['security'], ['needs-discussion'],
+                    ]
+                    labels = labels_pool[(ch >> 5) % len(labels_pool)]
+                    cards.append({'title': title[:200], 'labels': labels,
+                                  'issue_number': ((ch >> 7) % 900) + 1})
+                cols.append({'name': col_name, 'cards': cards})
+            created = (repo.pushed_at or _BULK_REF) - timedelta(
+                days=30 + (h % 200), hours=(h >> 4) % 24)
+            if created > _BULK_REF:
+                created = _BULK_REF
+            pb = ProjectBoard(
+                repo_id=repo.id,
+                number=i + 1,
+                name=name,
+                description=f"Tracking board for the {repo.name} {name} milestone.",
+                status='open' if (h % 8) != 0 else 'closed',
+                columns_json=json.dumps(cols),
+                created_at=created,
+            )
+            db.session.add(pb)
+            added += 1
+    db.session.commit()
+    return added
+
+
+# ── Packages ─────────────────────────────────────────────────────
+_R4_PACKAGE_ECOSYSTEMS = ['npm', 'pypi', 'container', 'maven',
+                          'rubygems', 'nuget']
+
+
+def _r4_package_ecosystem_for(lang: str):
+    return {
+        'JavaScript': 'npm', 'TypeScript': 'npm', 'Vue': 'npm',
+        'Python': 'pypi', 'Jupyter Notebook': 'pypi',
+        'Java': 'maven', 'Kotlin': 'maven', 'Scala': 'maven',
+        'Ruby': 'rubygems', 'C#': 'nuget',
+        'Go': 'container', 'Rust': 'container',
+        'Dockerfile': 'container', 'Shell': 'container',
+    }.get(lang, 'container')
+
+
+def seed_r4_packages():
+    """1-2 packages per top-400 repo. ~600 packages."""
+    if Package.query.count() >= 550:
+        return 0
+    top_repos = (Repository.query
+                 .filter(Repository.stars_count >= 200)
+                 .order_by(Repository.stars_count.desc(),
+                           Repository.id.asc())
+                 .limit(400)
+                 .all())
+    added = 0
+    for repo in top_repos:
+        if Package.query.filter_by(repo_id=repo.id).count() > 0:
+            continue
+        n = 1 + (_r4_hash(repo.full_name, 'pkg') % 2)
+        for i in range(n):
+            h = _r4_hash(repo.full_name, 'pkg', i)
+            eco_primary = _r4_package_ecosystem_for(repo.language or '')
+            eco = eco_primary if i == 0 else _R4_PACKAGE_ECOSYSTEMS[
+                (h >> 2) % len(_R4_PACKAGE_ECOSYSTEMS)]
+            if eco == 'npm':
+                name = f"@{repo.full_name.split('/')[0]}/{repo.name}".lower()
+            elif eco == 'pypi':
+                name = repo.name.replace('_', '-').lower()
+            elif eco == 'maven':
+                name = f"com.{repo.full_name.split('/')[0].lower()}:{repo.name}"
+            elif eco == 'rubygems':
+                name = repo.name.replace('_', '-').lower()
+            elif eco == 'nuget':
+                name = f"{repo.full_name.split('/')[0]}.{repo.name}".title()
+            else:
+                name = f"ghcr.io/{repo.full_name.lower()}"
+            name = name[:120]
+            version = f"{1 + (h % 8)}.{(h >> 2) % 24}.{(h >> 4) % 30}"
+            downloads = 100 + (h % 5_000_000)
+            published = (repo.pushed_at or _BULK_REF) - timedelta(
+                days=7 + (h % 90), hours=(h >> 6) % 24)
+            if published > _BULK_REF:
+                published = _BULK_REF
+            pkg = Package(
+                repo_id=repo.id,
+                name=name,
+                ecosystem=eco,
+                version=version,
+                description=(repo.description or '')[:255],
+                downloads_total=downloads,
+                visibility='public',
+                published_at=published,
+            )
+            db.session.add(pkg)
+            added += 1
+    db.session.commit()
+    return added
+
+
+# ── Org Teams ────────────────────────────────────────────────────
+_R4_TEAM_TEMPLATES = [
+    ("core-maintainers", "Core Maintainers",
+     "Top-level maintainers with merge rights across the org."),
+    ("docs-team", "Docs Team",
+     "Writes, reviews and ships documentation across the org."),
+    ("security-response", "Security Response",
+     "Handles incoming security advisories and coordinates fixes."),
+    ("design-systems", "Design Systems",
+     "Owns the org's shared design tokens and component library."),
+    ("platform-engineering", "Platform Engineering",
+     "Internal platform & developer experience tooling."),
+    ("release-managers", "Release Managers",
+     "Drives release cuts, changelogs and packaging across repos."),
+    ("triagers", "Issue Triagers",
+     "Front line on incoming issues and PRs."),
+    ("community", "Community",
+     "Helps newcomers, runs events and curates discussions."),
+]
+
+
+def seed_r4_teams():
+    """3-6 teams per top-80 org. ~400 teams."""
+    if Team.query.count() >= 800:
+        return 0
+    # Order by total stars across the owner's repos. We don't filter on
+    # owner_type because plenty of well-known "orgs" (django, vuejs, rust-lang,
+    # huggingface, …) ship under owner_type='user' in the legacy seed and we
+    # still want their team pages populated.
+    org_rows = (db.session.query(
+                    User, func.sum(Repository.stars_count).label('s'),
+                    func.count(Repository.id).label('rc'))
+                .join(Repository, Repository.owner_id == User.id)
+                .group_by(User.id)
+                .having(func.count(Repository.id) >= 1)
+                .order_by(func.sum(Repository.stars_count).desc())
+                .limit(220)
+                .all())
+    org_users = [row[0] for row in org_rows]
+    if not org_users:
+        return 0
+    # Username pool to draw team members from.
+    member_pool = [u.username for u in
+                   User.query.order_by(User.id.asc()).limit(400).all()]
+    if not member_pool:
+        return 0
+
+    added = 0
+    for rank, org in enumerate(org_users):
+        existing = Team.query.filter_by(org_id=org.id).count()
+        if existing > 0:
+            continue
+        h = _r4_hash(org.username, 'team')
+        # Top-40 orgs by stars get ALL 8 team templates so common slugs
+        # ('docs-team', 'core-maintainers', 'security-response', …) are
+        # always present on the orgs WebVoyager tasks reference. Smaller
+        # orgs still get 3-6 deterministic picks.
+        if rank < 40:
+            template_indices = list(range(len(_R4_TEAM_TEMPLATES)))
+        else:
+            n = 3 + (h % 4)
+            template_indices = [(h + i) % len(_R4_TEAM_TEMPLATES)
+                                for i in range(n)]
+        # Repos owned by this org for team-repo lists.
+        org_repos = [r.full_name for r in
+                     Repository.query.filter_by(owner_id=org.id)
+                     .order_by(Repository.id.asc()).limit(15).all()]
+        for i, ti in enumerate(template_indices):
+            slug, name, desc = _R4_TEAM_TEMPLATES[ti]
+            mcount = 4 + ((h >> i) % 9)
+            members = []
+            for k in range(mcount):
+                m = member_pool[(_r4_hash(org.username, slug, k)) %
+                                len(member_pool)]
+                if m not in members and m != org.username:
+                    members.append(m)
+            rcount = min(len(org_repos), 1 + ((h >> (i + 2)) % 4))
+            team_repos = org_repos[:rcount]
+            created = _BULK_REF - timedelta(
+                days=60 + (_r4_hash(org.username, slug) % 800))
+            t = Team(
+                org_id=org.id,
+                slug=slug,
+                name=name,
+                description=desc,
+                privacy='visible' if (h + i) % 8 != 0 else 'secret',
+                member_count=len(members),
+                repo_count=len(team_repos),
+                members_json=json.dumps(members),
+                repos_json=json.dumps(team_repos),
+                created_at=created,
+            )
+            db.session.add(t)
+            added += 1
+        if added and added % 80 == 0:
+            db.session.commit()
+    db.session.commit()
+    return added
+
+
 def normalize_seed_db_layout(dirty: bool = False):
     """Re-emit indexes in alpha order + VACUUM so seed rebuilds match
     byte-for-byte across processes (see harden-env/gotchas.md #2).
@@ -5147,8 +6131,16 @@ def create_app():
         seed_extra_watches()
         c1 = seed_extra_commits() or 0
         c2 = seed_extra_pulls() or 0
+        # R4: org-driven extras
+        c3 = seed_r4_org_repos() or 0
+        c4 = seed_r4_discussions() or 0
+        c5 = seed_r4_sponsorships() or 0
+        c6 = seed_r4_project_boards() or 0
+        c7 = seed_r4_packages() or 0
+        c8 = seed_r4_teams() or 0
         ct = post_seed_tweaks() or 0
-        normalize_seed_db_layout(dirty=(c0 + c1 + c2 + ct) > 0)
+        normalize_seed_db_layout(
+            dirty=(c0 + c1 + c2 + c3 + c4 + c5 + c6 + c7 + c8 + ct) > 0)
     return app
 
 
@@ -5166,8 +6158,16 @@ with app.app_context():
         seed_extra_watches()
         c1 = seed_extra_commits() or 0
         c2 = seed_extra_pulls() or 0
+        # R4
+        c3 = seed_r4_org_repos() or 0
+        c4 = seed_r4_discussions() or 0
+        c5 = seed_r4_sponsorships() or 0
+        c6 = seed_r4_project_boards() or 0
+        c7 = seed_r4_packages() or 0
+        c8 = seed_r4_teams() or 0
         ct = post_seed_tweaks() or 0
-        normalize_seed_db_layout(dirty=(c0 + c1 + c2 + ct) > 0)
+        normalize_seed_db_layout(
+            dirty=(c0 + c1 + c2 + c3 + c4 + c5 + c6 + c7 + c8 + ct) > 0)
     except Exception:
         # In case of stale schema, skip silently; routes remain available.
         db.session.rollback()

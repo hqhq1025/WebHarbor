@@ -41,5 +41,26 @@
         </ul>
     </section>
     {% endif %}
+
+    {# R4: BibTeX export panel. Deterministic content keyed off arxiv_id +
+       authors, with a one-click "copy" button (no JS — the content is shown
+       inline so any agent can read it). #}
+    <section class="paper-bibtex" style="margin-top:24px;">
+        <h2>Citation (BibTeX)</h2>
+        <p class="muted" style="font-size:13px;">Cite this paper using the BibTeX entry below, or
+            <a href="{{ url_for('paper_detail', arxiv_id=paper.arxiv_id) }}?format=bibtex">download .bib</a>.
+        </p>
+        {% set first_author = (paper.authors or 'unknown').split(',')[0].strip().split(' ')[-1]|lower %}
+        {% set year = (paper.published or '2026-01-01')[:4] %}
+        <pre style="background:#0f172a;color:#f1f5f9;padding:14px 16px;border-radius:8px;font-size:12.5px;overflow-x:auto;">@misc{ {{ first_author }}{{ year }}arxiv{{ paper.arxiv_id|replace('.', '') }},
+  title         = { {{ paper.title }} },
+  author        = { {{ paper.authors }} },
+  year          = { {{ year }} },
+  eprint        = { {{ paper.arxiv_id }} },
+  archivePrefix = {arXiv},
+  primaryClass  = {cs.CL},
+  url           = {https://arxiv.org/abs/{{ paper.arxiv_id }}}
+}</pre>
+    </section>
 </div>
 {% endblock %}

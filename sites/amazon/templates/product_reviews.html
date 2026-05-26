@@ -1,0 +1,87 @@
+{% extends "base.html" %}
+{% block title %}All Reviews — {{ product.name }} - Amazon.com{% endblock %}
+
+{% block content %}
+<div class="account-page" style="max-width:1200px">
+    <div style="background:#fff;padding:20px;border-radius:4px;margin-bottom:14px">
+        <div style="display:flex;gap:18px;align-items:flex-start">
+            <img src="{{ product.image }}" alt="{{ product.name }}"
+                 style="width:120px;height:120px;object-fit:contain;background:#f7f7f7;border-radius:4px"
+                 onerror="this.style.display='none'">
+            <div style="flex:1">
+                <a href="{{ url_for('product_detail', slug=product.slug) }}" class="text-link" style="font-size:18px">{{ product.name }}</a>
+                <div style="color:#565959;font-size:13px;margin-top:4px">{{ product.brand }} · {{ product.category_slug|capitalize }}</div>
+                <div class="rating" style="margin-top:6px">
+                    <span class="stars" style="color:#ffa41c">{% for i in range(product.rating|int) %}★{% endfor %}{% for i in range(5 - product.rating|int) %}☆{% endfor %}</span>
+                    <span>{{ product.rating }} out of 5 · {{ product.review_count }} global ratings</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="results-layout">
+        <aside class="results-sidebar">
+            <h3>Filter by stars</h3>
+            <ul>
+                <li><a href="{{ url_for('product_reviews', slug=product.slug) }}"
+                       style="{% if not star_filter %}font-weight:700{% endif %}">All stars ({{ product.review_count }})</a></li>
+                {% for n in [5,4,3,2,1] %}
+                <li><a href="{{ url_for('product_reviews', slug=product.slug, star=n) }}"
+                       style="{% if star_filter == n %}font-weight:700;color:#c45500{% endif %}">
+                    {{ n }} star{{ 's' if n > 1 else '' }} ({{ star_counts.get(n, 0) }})
+                </a></li>
+                {% endfor %}
+            </ul>
+
+            <h3 style="margin-top:20px">Sort</h3>
+            <ul>
+                <li><a href="{{ url_for('product_reviews', slug=product.slug, sort='recent', star=star_filter or none) }}"
+                       style="{% if current_sort == 'recent' %}font-weight:700{% endif %}">Most recent</a></li>
+                <li><a href="{{ url_for('product_reviews', slug=product.slug, sort='helpful', star=star_filter or none) }}"
+                       style="{% if current_sort == 'helpful' %}font-weight:700{% endif %}">Top reviews</a></li>
+                <li><a href="{{ url_for('product_reviews', slug=product.slug, sort='oldest', star=star_filter or none) }}"
+                       style="{% if current_sort == 'oldest' %}font-weight:700{% endif %}">Oldest first</a></li>
+            </ul>
+        </aside>
+
+        <div class="results-main">
+            <h1 style="font-size:22px;margin:0 0 6px">Reviews</h1>
+            <div style="color:#565959;font-size:13px;margin-bottom:14px">
+                Showing {{ reviews|length }} of {{ total }} reviews
+                {% if star_filter %}filtered to {{ star_filter }} stars{% endif %}
+                · page {{ page }} of {{ pages }}
+            </div>
+
+            {% for r in reviews %}
+            <div class="review-item" style="background:#fff;padding:18px;border-radius:4px;margin-bottom:10px">
+                <div class="review-header">
+                    <div class="review-avatar">{{ r.user.name[0]|upper }}</div>
+                    <div class="review-author">{{ r.user.name }}</div>
+                </div>
+                <div class="stars" style="color:#ffa41c">{% for i in range(r.rating) %}★{% endfor %}{% for i in range(5 - r.rating) %}☆{% endfor %}</div>
+                <h3 class="review-title" style="margin:6px 0 4px;font-size:15px">{{ r.title }}</h3>
+                <div class="review-meta" style="font-size:12px;color:#565959">
+                    {% if r.verified %}<span class="review-verified" style="color:#c45500;font-weight:700">Verified Purchase</span> ·{% endif %}
+                    Reviewed on {{ r.created_at.strftime('%B %d, %Y') }}
+                </div>
+                <p class="review-body" style="margin-top:8px">{{ r.body }}</p>
+            </div>
+            {% else %}
+            <p class="text-muted">No reviews match the current filter.</p>
+            {% endfor %}
+
+            {% if pages > 1 %}
+            <div style="display:flex;gap:8px;justify-content:center;margin-top:18px">
+                {% if page > 1 %}
+                <a class="btn btn-outline" href="{{ url_for('product_reviews', slug=product.slug, page=page-1, star=star_filter or none, sort=current_sort or none) }}">← Previous</a>
+                {% endif %}
+                <span style="padding:8px 16px;font-size:13px">Page {{ page }} of {{ pages }}</span>
+                {% if page < pages %}
+                <a class="btn btn-outline" href="{{ url_for('product_reviews', slug=product.slug, page=page+1, star=star_filter or none, sort=current_sort or none) }}">Next →</a>
+                {% endif %}
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

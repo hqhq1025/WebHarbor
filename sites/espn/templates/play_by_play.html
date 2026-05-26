@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block title %}Play-by-Play{% endblock %}
+{% block content %}
+<div class="container">
+  <h1>Play-by-Play</h1>
+  <div class="pbp-header">
+    <div class="pbp-team">
+      {% if away_team %}<a href="/team/{{ game.sport_slug }}/{{ away_team.slug }}">{{ away_team.full_name }}</a>{% endif %}
+      <span class="pbp-score">{{ game.away_score }}</span>
+    </div>
+    <div class="pbp-vs">at</div>
+    <div class="pbp-team">
+      <span class="pbp-score">{{ game.home_score }}</span>
+      {% if home_team %}<a href="/team/{{ game.sport_slug }}/{{ home_team.slug }}">{{ home_team.full_name }}</a>{% endif %}
+    </div>
+  </div>
+  <div class="pbp-meta">{{ game.date_display }} &bull; {{ game.network }} &bull; {{ game.venue }}</div>
+
+  {% if game.status != 'final' %}
+  <div class="live-score-widget" aria-label="Live indicator">
+    <span class="live-dot"></span><span>LIVE</span>
+  </div>
+  {% endif %}
+
+  <a href="/game/{{ game.id }}" class="btn-secondary">Back to game summary</a>
+
+  <table class="pbp-table">
+    <thead>
+      <tr><th>#</th><th>Period</th><th>Clock</th><th>Play</th><th>Score</th></tr>
+    </thead>
+    <tbody>
+      {% for ev in events %}
+      <tr class="pbp-row pbp-{{ ev.event_type }}">
+        <td>{{ ev.sequence }}</td>
+        <td>{{ ev.period }}</td>
+        <td>{{ ev.clock }}</td>
+        <td>{{ ev.description }}</td>
+        <td>{{ ev.score_away }}-{{ ev.score_home }}</td>
+      </tr>
+      {% else %}
+      <tr><td colspan="5">No play-by-play available for this game.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

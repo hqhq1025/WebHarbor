@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block title %}{{ sport.name }} Awards — {{ year }}{% endblock %}
+{% block content %}
+<div class="container">
+  <h1>{{ sport.name }} Awards — {{ year }}</h1>
+  <a href="/awards" class="btn-secondary">All Awards</a>
+  <div class="awards-grid">
+    {% for a in awards %}
+    <article class="award-card">
+      <h3>{{ a.award_name }} <span class="award-season">{{ a.season }}</span></h3>
+      <div class="award-card__winner">Winner #{{ a.winner_player_id }}</div>
+      <div class="award-card__voting">Voting share: {{ (a.voting_share * 100)|round(1) }}%</div>
+      <details>
+        <summary>Finalists</summary>
+        <ol class="finalists-list">
+          {% for f in a.finalists|from_json_safe %}
+          <li>{{ f.name }} — {{ (f.votes_share * 100)|round(1) }}%</li>
+          {% endfor %}
+        </ol>
+      </details>
+      <div class="award-card__date">Announced {{ a.announced_date }}</div>
+    </article>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}

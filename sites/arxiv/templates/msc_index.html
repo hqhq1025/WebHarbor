@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block title %}MSC2020 Index — arXiv{% endblock %}
+{% block breadcrumbs %}
+    <span class="sep">&gt;</span>
+    <span style="color:#fff">MSC2020</span>
+{% endblock %}
+{% block content %}
+
+<h1 style="font-size:20px;margin:14px 0 4px;">Mathematics Subject Classification — MSC2020</h1>
+<div class="muted" style="font-size:13px;margin-bottom:18px;">
+    Browse {{ total_papers }} classified papers by top-level MSC family code.
+    Click any row to drill into the matching paper list.
+</div>
+
+{% if families %}
+<table style="width:100%;border-collapse:collapse;font-size:13px;">
+    <thead>
+        <tr style="background:var(--bg-cream);">
+            <th style="text-align:left;padding:6px 10px;border-bottom:1px solid var(--border-cream);">Family</th>
+            <th style="text-align:left;padding:6px 10px;border-bottom:1px solid var(--border-cream);">Label</th>
+            <th style="text-align:right;padding:6px 10px;border-bottom:1px solid var(--border-cream);">Papers</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for fam in families %}
+        <tr>
+            <td style="padding:6px 10px;border-bottom:1px solid var(--border-light);"><a class="mono" href="{{ url_for('msc_listing', msc_class=fam.code) }}">{{ fam.code }}</a></td>
+            <td style="padding:6px 10px;border-bottom:1px solid var(--border-light);"><a href="{{ url_for('msc_listing', msc_class=fam.code) }}">{{ fam.label }}</a></td>
+            <td style="padding:6px 10px;border-bottom:1px solid var(--border-light);text-align:right;"><span class="mono">{{ fam.count }}</span></td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% else %}
+<p class="muted">No MSC-classified papers in the corpus.</p>
+{% endif %}
+
+<p class="muted" style="font-size:11px;margin-top:18px;">
+    Source: <a href="{{ url_for('category_taxonomy') }}">arXiv subject taxonomy</a>.
+    MSC codes come from the bibliographic metadata supplied by paper authors.
+</p>
+
+{% endblock %}

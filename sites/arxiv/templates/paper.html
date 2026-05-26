@@ -50,6 +50,9 @@
         {% set _is_long_abs = (paper.display_abstract|length) > 720 %}
         <div class="paper-abstract{% if _is_long_abs %} collapsible{% endif %}" id="paper-abstract">
             <span class="label">Abstract:</span>
+            <span class="abstract-read-badge" title="Estimated reading time at 200 wpm">
+                ⏱ {{ paper.reading_time_min }} min read
+            </span>
             {% if paper.display_abstract %}
                 <span class="abs-body">{{ paper.display_abstract }}</span>
                 {% if _is_long_abs %}
@@ -63,11 +66,46 @@
             {% endif %}
         </div>
 
+        {% set _rail = paper.version_rail %}
+        {% if _rail %}
+        <div class="version-rail" aria-label="Version history">
+            <div class="version-rail-header">Submission history</div>
+            <ol class="version-rail-list">
+                {% for v in _rail %}
+                <li class="version-rail-item{% if loop.last %} latest{% endif %}">
+                    <span class="version-dot"></span>
+                    <span class="version-tag">[{{ v.version }}]</span>
+                    <span class="version-date">{{ v.date or 'n/a' }}</span>
+                    {% if v.label %}<span class="version-label">{{ v.label }}</span>{% endif %}
+                    {% if loop.last and _rail|length > 1 %}<span class="version-badge">current</span>{% endif %}
+                </li>
+                {% endfor %}
+            </ol>
+        </div>
+        {% endif %}
+
         <div class="paper-meta">
             {% if paper.display_comments %}
             <div class="row"><span class="lab">Comments:</span> {{ paper.display_comments }}</div>
             {% endif %}
             <div class="row"><span class="lab">Subjects:</span> {{ paper.subjects }}</div>
+            {% if paper.msc_class %}
+            <div class="row"><span class="lab">MSC class:</span>
+                {% set _fam = paper.msc_class.strip()[:2] %}
+                <a href="{{ url_for('msc_listing', msc_class=_fam) }}" class="mono">{{ paper.msc_class }}</a>
+            </div>
+            {% endif %}
+            {% if paper.acm_class %}
+            <div class="row"><span class="lab">ACM class:</span> <span class="mono">{{ paper.acm_class }}</span></div>
+            {% endif %}
+            {% if paper.journal_ref %}
+            <div class="row"><span class="lab">Journal-ref:</span>
+                <a href="{{ url_for('journal_ref_search', q=paper.journal_ref) }}"><i>{{ paper.display_journal_ref }}</i></a>
+            </div>
+            {% endif %}
+            {% if paper.report_no %}
+            <div class="row"><span class="lab">Report-no:</span> <span class="mono">{{ paper.report_no }}</span></div>
+            {% endif %}
             {% set _versions = paper.get_versions() %}
             {% if _versions %}
             <div class="row"><span class="lab">Submission history:</span>
@@ -207,6 +245,8 @@
         <div class="sidebar-box">
             <h3>References & Citations</h3>
             <ul>
+                <li><a href="{{ url_for('paper_related', arxiv_id=paper.arxiv_id) }}">Related Papers (full)</a></li>
+                <li><a href="{{ url_for('trackback', arxiv_id=paper.arxiv_id) }}">Trackbacks</a></li>
                 <li><a href="https://ui.adsabs.harvard.edu" target="_blank">NASA ADS</a></li>
                 <li><a href="https://scholar.google.com" target="_blank">Google Scholar</a></li>
                 <li><a href="https://www.semanticscholar.org" target="_blank">Semantic Scholar</a></li>

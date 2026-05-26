@@ -1,0 +1,58 @@
+{% extends 'base.html' %}
+{% block title %}Visa requirements - Tools{% endblock %}
+{% block content %}
+<div class="info-page">
+  <div class="info-page-inner">
+    <h1>Visa requirements</h1>
+    <p>Look up the entry requirements for a destination based on your passport.
+       Useful for trip planning — most countries' rules are unique to nationality.</p>
+
+    <form method="GET" class="filter-bar" style="display:flex;gap:8px;margin-bottom:18px;flex-wrap:wrap;">
+      <label>Passport
+        <select name="passport" style="padding:6px;border:1px solid #dadce0;border-radius:4px;">
+          {% for opt in passport_options %}
+            <option value="{{ opt }}" {% if opt == passport %}selected{% endif %}>{{ opt }}</option>
+          {% endfor %}
+        </select>
+      </label>
+      <label>Destination country
+        <input type="text" name="dest" value="{{ dest or '' }}" placeholder="e.g. Japan" style="padding:6px;border:1px solid #dadce0;border-radius:4px;width:180px;">
+      </label>
+      <button type="submit" class="btn-primary">Check</button>
+    </form>
+
+    {% if result %}
+      <div style="background:#fff;border:1px solid #dadce0;border-radius:8px;padding:18px;">
+        <h2 style="margin-top:0;">{{ passport }} passport &rarr; {{ result.country }}</h2>
+        <p><strong>Requirement:</strong> {{ result.status }}</p>
+        <p><strong>Max stay:</strong> {{ result.max_stay }}</p>
+        <p><strong>Notes:</strong> {{ result.notes }}</p>
+        <p style="color:#5f6368;font-size:13px;margin-bottom:0;">
+          This information is informational. Always check the destination's
+          official embassy site before booking.
+        </p>
+      </div>
+    {% endif %}
+
+    <h2 style="margin-top:24px;">Recently checked</h2>
+    <table class="data-table" style="width:100%;border-collapse:collapse;">
+      <thead>
+        <tr style="text-align:left;border-bottom:1px solid #dadce0;">
+          <th style="padding:8px 12px;">Passport</th>
+          <th style="padding:8px 12px;">Country</th>
+          <th style="padding:8px 12px;">Requirement</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for r in popular_lookups %}
+        <tr style="border-bottom:1px solid #f1f3f4;">
+          <td style="padding:8px 12px;">{{ r.passport }}</td>
+          <td style="padding:8px 12px;">{{ r.country }}</td>
+          <td style="padding:8px 12px;">{{ r.status }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

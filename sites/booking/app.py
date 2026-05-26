@@ -177,6 +177,9 @@ class Property(db.Model):
     amenities_json = db.Column(db.Text)         # JSON list of amenities
     room_types_json = db.Column(db.Text)        # JSON list of room types
     review_scores_json = db.Column(db.Text)     # JSON dict of sub-score categories
+    # R4 quality polish — cancellation policy detail + new filter flags
+    cancellation_policy = db.Column(db.Text)
+    cancellation_label = db.Column(db.String(60), default='Free cancellation')
 
     is_featured = db.Column(db.Boolean, default=False)
     is_genius_deal = db.Column(db.Boolean, default=False)
@@ -197,6 +200,11 @@ class Property(db.Model):
     has_bicycle_rental = db.Column(db.Boolean, default=False)
     has_restaurant = db.Column(db.Boolean, default=False)
     has_beach_access = db.Column(db.Boolean, default=False)
+    # R4 — accessibility, eco certification, virtual tour
+    is_accessible = db.Column(db.Boolean, default=False)
+    is_eco_certified = db.Column(db.Boolean, default=False)
+    has_virtual_tour = db.Column(db.Boolean, default=False)
+    virtual_tour_url = db.Column(db.String(300))
 
     max_guests = db.Column(db.Integer, default=4)
     landmark_tags = db.Column(db.Text)  # JSON list of nearby landmark tokens
@@ -2419,6 +2427,177 @@ def press():
 
 
 # =====================================================================
+# R4 SUB-PAGES — deeper feature surface for task coverage
+# =====================================================================
+
+@app.route('/reviews-tool')
+def reviews_tool():
+    """Look up a property by city/name and show its review sub-scores."""
+    q = (request.args.get('q') or '').strip()
+    city_key = (request.args.get('city') or '').strip()
+    results = []
+    if q or city_key:
+        query = Property.query
+        if city_key:
+            c = City.query.filter_by(key=city_key).first() or City.query.filter_by(slug=city_key).first()
+            if c:
+                query = query.filter_by(city_id=c.id)
+        if q:
+            query = query.filter(or_(Property.name.ilike(f"%{q}%"),
+                                     Property.neighborhood.ilike(f"%{q}%")))
+        results = query.order_by(Property.rating.desc()).limit(12).all()
+        # Compute the top property by Cleanliness sub-score for the result set
+        if results:
+            best = max(results, key=lambda p: p.get_review_scores().get('Cleanliness', 0))
+            top_by_cleanliness = {'property': best,
+                                  'score': best.get_review_scores().get('Cleanliness', 0)}
+        else:
+            top_by_cleanliness = None
+    else:
+        top_by_cleanliness = None
+    cities = City.query.order_by(City.display.asc()).limit(60).all()
+    return render_template('reviews_tool.html', q=q, city_key=city_key, results=results,
+                           cities=cities, top_by_cleanliness=top_by_cleanliness)
+
+
+@app.route('/tools/value-checker')
+def value_checker():
+    """Average nightly price + value verdict for a given city/date range."""
+    city_key = (request.args.get('city') or '').strip()
+    checkin = (request.args.get('checkin') or '').strip()
+    checkout = (request.args.get('checkout') or '').strip()
+    city = None
+    avg_price = None
+    sample_size = 0
+    verdict = None
+    if city_key:
+        city = City.query.filter_by(key=city_key).first() or City.query.filter_by(slug=city_key).first()
+        if city:
+            props = Property.query.filter_by(city_id=city.id).all()
+            sample_size = len(props)
+            if sample_size:
+                avg_price = round(sum(p.discounted_price for p in props) / sample_size, 2)
+                # Deterministic verdict — flag if cheaper than 80% of cities
+                global_avg = db.session.query(func.avg(Property.price_per_night)).scalar() or 100
+                if avg_price < global_avg * 0.85:
+                    verdict = 'Great value — prices are below the global average.'
+                elif avg_price > global_avg * 1.25:
+                    verdict = 'Premium destination — prices are well above the global average.'
+                else:
+                    verdict = 'Average pricing — in line with the global market.'
+    return render_template('value_checker.html', city_key=city_key, checkin=checkin,
+                           checkout=checkout, city=city, avg_price=avg_price,
+                           sample_size=sample_size, verdict=verdict,
+                           cities=City.query.order_by(City.display.asc()).limit(60).all())
+
+
+@app.route('/list-your-property', methods=['GET', 'POST'])
+@app.route('/list-property', methods=['GET', 'POST'])
+def list_your_property():
+    """Host onboarding — multi-step wizard (single page, deterministic copy)."""
+    step = int(request.args.get('step', 1) or 1)
+    if request.method == 'POST':
+        # Just bump step on submit; final step shows the success message.
+        step = min(5, step + 1)
+    return render_template('list_your_property.html', step=step)
+
+
+@app.route('/tools/calendar-availability')
+@app.route('/tools/calendar-availability/<slug>')
+def calendar_availability(slug=None):
+    """Two-month availability calendar for a property (deterministic)."""
+    prop = None
+    if slug:
+        prop = Property.query.filter_by(slug=slug).first()
+    if prop is None:
+        prop = Property.query.order_by(Property.rating.desc()).first()
+    if prop is None:
+        abort(404)
+    # Render two months starting at today (UTC). Determinism: unavailability
+    # is a hash of (property_id, year, month, day).
+    start = MIRROR_REFERENCE_DATE.date().replace(day=1)
+    months = []
+    for offset in (0, 1):
+        m_year = start.year + ((start.month - 1 + offset) // 12)
+        m_month = ((start.month - 1 + offset) % 12) + 1
+        days = []
+        first_day = date(m_year, m_month, 1)
+        if m_month == 12:
+            next_first = date(m_year + 1, 1, 1)
+        else:
+            next_first = date(m_year, m_month + 1, 1)
+        cursor = first_day
+        while cursor < next_first:
+            seed_key = f"cal|{prop.id}|{cursor.isoformat()}"
+            avail_h = int(hashlib.sha256(seed_key.encode("utf-8")).hexdigest(), 16) % 100
+            available = avail_h > 20  # ~80% available
+            is_weekend = cursor.weekday() in (5, 6)
+            days.append({'date': cursor, 'available': available, 'is_weekend': is_weekend})
+            cursor = cursor + timedelta(days=1)
+        months.append({'year': m_year, 'month': m_month,
+                       'name': first_day.strftime('%B %Y'),
+                       'first_weekday': first_day.weekday(),
+                       'days': days})
+    return render_template('calendar_availability.html', prop=prop, months=months)
+
+
+@app.route('/property/<slug>/rooms')
+def property_rooms(slug):
+    """Standalone rooms-only view (accordion)."""
+    prop = Property.query.filter_by(slug=slug).first_or_404()
+    rooms = prop.get_rooms()
+    return render_template('property_rooms.html', property=prop, rooms=rooms)
+
+
+@app.route('/property/<slug>/virtual-tour')
+def property_virtual_tour(slug):
+    prop = Property.query.filter_by(slug=slug).first_or_404()
+    if not prop.has_virtual_tour:
+        return render_template('property_virtual_tour.html', property=prop,
+                               available=False), 200
+    return render_template('property_virtual_tour.html', property=prop, available=True)
+
+
+@app.route('/city/<slug>/things-to-do')
+def city_things_to_do(slug):
+    """City activities — attractions list for the city."""
+    city = City.query.filter_by(slug=slug).first_or_404()
+    attractions = Attraction.query.filter_by(city_key=city.key).order_by(
+        Attraction.rating.desc()
+    ).limit(60).all()
+    return render_template('city_things_to_do.html', city=city, attractions=attractions)
+
+
+@app.route('/awards')
+@app.route('/traveller-review-awards')
+def awards():
+    """Traveller Review Awards — top-rated properties globally."""
+    top_props = Property.query.filter(Property.rating >= 9.0).order_by(
+        Property.rating.desc(), Property.review_count.desc()
+    ).limit(60).all()
+    # Group by city for browsing
+    by_city = {}
+    for p in top_props:
+        by_city.setdefault(p.city.display, []).append(p)
+    return render_template('awards.html', top_props=top_props, by_city=by_city)
+
+
+@app.route('/genius-rewards-redeem')
+@app.route('/genius/redeem')
+def genius_redeem():
+    """Frequent-flyer redemption simulator."""
+    city_key = (request.args.get('city') or 'paris').strip()
+    city = City.query.filter_by(key=city_key).first() or City.query.filter_by(slug=city_key).first()
+    if not city:
+        city = City.query.filter_by(key='paris').first()
+    sample = Property.query.filter_by(city_id=city.id).order_by(Property.rating.desc()).limit(8).all()
+    # Points: 100 points per $1 of the nightly price.
+    quotes = [{'property': p, 'points_per_night': int(round(p.discounted_price * 100))} for p in sample]
+    return render_template('genius_redeem.html', city=city, quotes=quotes,
+                           cities=City.query.order_by(City.display.asc()).limit(60).all())
+
+
+# =====================================================================
 # ERROR HANDLERS
 # =====================================================================
 
@@ -2440,6 +2619,7 @@ def seed_database():
     from seed_data import (
         CITY_INFO, DESTINATION_CATEGORIES, PROPERTY_TYPES,
         EXTRA_HOTELS, TRENDING_DESTINATIONS, AMENITIES,
+        CANCELLATION_POLICIES,
         build_hotel_description, get_hotel_data, get_image_map
     )
 
@@ -2576,10 +2756,11 @@ def seed_database():
         # Rating
         rating = round(random.uniform(7.8, 9.6), 1)
 
-        # Amenities
-        amenities = random.sample(AMENITIES, random.randint(8, 14))
+        # Amenities — booking-style detail page shows 30+ items.
+        amenities = random.sample(AMENITIES, random.randint(30, 42))
         if stars == 5:
-            for a in ['Swimming pool', 'Spa & wellness', 'Fitness center', 'Restaurant']:
+            for a in ['Swimming pool', 'Spa & wellness', 'Fitness center', 'Restaurant',
+                      'Concierge service', 'Daily housekeeping']:
                 if a not in amenities:
                     amenities.append(a)
 
@@ -2591,17 +2772,20 @@ def seed_database():
         # Main image - first from gallery
         main_image = prop_gallery[0] if prop_gallery else (city.hero_image or '/static/images/placeholder.jpg')
 
-        # Room types
+        # Room types — booking-style detail page always shows 5+ rooms.
         room_types = [
             {'name': 'Standard Double Room', 'price': price, 'sleeps': 2, 'beds': '1 double bed'},
             {'name': 'Deluxe Queen Room', 'price': round(price * 1.25, 0), 'sleeps': 2, 'beds': '1 queen bed'},
             {'name': 'Superior Twin Room', 'price': round(price * 1.35, 0), 'sleeps': 2, 'beds': '2 single beds'},
             {'name': 'Family Room', 'price': round(price * 1.65, 0), 'sleeps': 4, 'beds': '1 double + 2 singles'},
+            {'name': 'Junior Suite', 'price': round(price * 1.85, 0), 'sleeps': 3, 'beds': '1 king bed + sofa bed'},
+            {'name': 'Connecting Twin Rooms', 'price': round(price * 2.1, 0), 'sleeps': 4, 'beds': '4 single beds'},
         ]
         if stars >= 4:
             room_types.append({'name': 'Executive Suite', 'price': round(price * 2.2, 0), 'sleeps': 3, 'beds': '1 king bed + sofa bed'})
         if stars == 5:
             room_types.append({'name': 'Presidential Suite', 'price': round(price * 4.5, 0), 'sleeps': 4, 'beds': '1 king bed + 2 singles'})
+            room_types.append({'name': 'Penthouse Suite', 'price': round(price * 6.0, 0), 'sleeps': 6, 'beds': '2 king beds + sofa bed'})
 
         # Random dest category
         dest_cat = random.choice(dest_cat_slugs)
@@ -2626,6 +2810,15 @@ def seed_database():
 
         flags = derive_amenity_flags(amenities)
         max_g = max(4, 2 + stars)  # larger stars → bigger suites
+
+        # R4 quality polish — cancellation policy (deterministic per-property),
+        # eco / accessibility / virtual-tour flags so the new filter tasks have
+        # real ground truth to land on.
+        _cp_h = int(hashlib.sha256(f"cp|{name}|{city.display}".encode("utf-8")).hexdigest(), 16)
+        cp_label, cp_text = CANCELLATION_POLICIES[_cp_h % len(CANCELLATION_POLICIES)]
+        _eco = (int(hashlib.sha256(f"eco|{name}".encode("utf-8")).hexdigest(), 16) % 5) == 0  # ~20%
+        _acc = (int(hashlib.sha256(f"acc|{name}".encode("utf-8")).hexdigest(), 16) % 4) == 0  # ~25%
+        _vt = (int(hashlib.sha256(f"vt|{name}".encode("utf-8")).hexdigest(), 16) % 3) == 0   # ~33%
 
         # Brand assignment — based on property name hints, falls back to deterministic pool
         name_l = name.lower()
@@ -2680,6 +2873,12 @@ def seed_database():
             distance_from_center=round(random.uniform(0.3, 6.5), 1),
             max_guests=max_g,
             landmark_tags=json.dumps([]),
+            cancellation_policy=cp_text,
+            cancellation_label=cp_label,
+            is_eco_certified=_eco,
+            is_accessible=_acc,
+            has_virtual_tour=_vt,
+            virtual_tour_url=(f"/property/{slug}/virtual-tour" if _vt else None),
             **flags,
         )
         db.session.add(prop)
@@ -2764,6 +2963,15 @@ def _seed_aux_tables():
                 db.session.add(Attraction(**r))
             db.session.commit()
             print(f"[aux] seeded {Attraction.query.count()} attractions")
+        # R4 — append procedural attractions on top of the scraped set.
+        path2 = src / 'expansion_attractions_r4.json'
+        if path2.exists() and Attraction.query.count() < 4500:
+            with open(path2) as f:
+                rows = json.load(f)
+            for r in rows:
+                db.session.add(Attraction(**r))
+            db.session.commit()
+            print(f"[aux] +R4 attractions -> {Attraction.query.count()} total")
 
     if AirportTaxi.query.first() is None:
         path = src / 'aux_taxis.json'
@@ -2774,6 +2982,15 @@ def _seed_aux_tables():
                 db.session.add(AirportTaxi(**r))
             db.session.commit()
             print(f"[aux] seeded {AirportTaxi.query.count()} airport taxi quotes")
+        # R4 — append procedural quotes.
+        path2 = src / 'expansion_taxis_r4.json'
+        if path2.exists() and AirportTaxi.query.count() < 3000:
+            with open(path2) as f:
+                rows = json.load(f)
+            for r in rows:
+                db.session.add(AirportTaxi(**r))
+            db.session.commit()
+            print(f"[aux] +R4 taxis -> {AirportTaxi.query.count()} total")
 
     if GeniusReward.query.first() is None:
         path = src / 'aux_genius.json'
@@ -3589,6 +3806,19 @@ def _migrate_schema():
             if 'lng' not in cols:
                 with db.engine.begin() as conn:
                     conn.execute(text('ALTER TABLE property ADD COLUMN lng FLOAT'))
+            # R4 polish — new columns
+            for cname, ctype, cdefault in [
+                ('cancellation_policy', 'TEXT', None),
+                ('cancellation_label', 'VARCHAR(60)', "'Free cancellation'"),
+                ('is_accessible', 'BOOLEAN', '0'),
+                ('is_eco_certified', 'BOOLEAN', '0'),
+                ('has_virtual_tour', 'BOOLEAN', '0'),
+                ('virtual_tour_url', 'VARCHAR(300)', None),
+            ]:
+                if cname not in cols:
+                    default_sql = f" DEFAULT {cdefault}" if cdefault else ''
+                    with db.engine.begin() as conn:
+                        conn.execute(text(f'ALTER TABLE property ADD COLUMN {cname} {ctype}{default_sql}'))
         # City: add nearest_beach_* columns if missing (used by sort=distance_beach)
         if 'city' in insp.get_table_names():
             ccols = {c['name'] for c in insp.get_columns('city')}
@@ -3610,6 +3840,40 @@ def _migrate_schema():
         if missing:
             db.session.commit()
             print(f"[migrate] populated review_scores_json for {len(missing)} properties")
+
+        # R4 — backfill cancellation_policy / eco / accessible / virtual_tour
+        # for any property missing them (idempotent, deterministic).
+        try:
+            from seed_data import CANCELLATION_POLICIES as _CP
+        except Exception:
+            _CP = []
+        if _CP:
+            missing_cp = Property.query.filter(
+                or_(Property.cancellation_policy.is_(None), Property.cancellation_policy == '')
+            ).all()
+            for p in missing_cp:
+                key = f"cp|{p.name}|{p.city.display if p.city else ''}"
+                idx = int(hashlib.sha256(key.encode("utf-8")).hexdigest(), 16) % len(_CP)
+                lbl, txt = _CP[idx]
+                p.cancellation_policy = txt
+                p.cancellation_label = lbl
+            if missing_cp:
+                db.session.commit()
+                print(f"[migrate] backfilled cancellation_policy for {len(missing_cp)} properties")
+
+        # Backfill new flags only when never set (boolean default = False at
+        # row creation, so we detect "never seeded" via virtual_tour_url being
+        # NULL — only properties created before R4 will have that as NULL).
+        no_r4 = Property.query.filter(Property.virtual_tour_url.is_(None)).all()
+        if no_r4:
+            for p in no_r4:
+                p.is_eco_certified = (int(hashlib.sha256(f"eco|{p.name}".encode("utf-8")).hexdigest(), 16) % 5) == 0
+                p.is_accessible = (int(hashlib.sha256(f"acc|{p.name}".encode("utf-8")).hexdigest(), 16) % 4) == 0
+                p.has_virtual_tour = (int(hashlib.sha256(f"vt|{p.name}".encode("utf-8")).hexdigest(), 16) % 3) == 0
+                if p.has_virtual_tour:
+                    p.virtual_tour_url = f"/property/{p.slug}/virtual-tour"
+            db.session.commit()
+            print(f"[migrate] backfilled R4 flags for {len(no_r4)} properties")
 
         # Backfill property lat/lng from city centroid + deterministic jitter
         # so every search result can show a "X.X miles from <landmark>" line.

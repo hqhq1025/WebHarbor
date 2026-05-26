@@ -22,32 +22,39 @@
     <div class="entry-headword-row">
       <span class="entry-pos">{{ word.pos }}</span>
       {% if word.level %}
-        <span class="entry-level level-{{ word.level|lower }}">{{ word.level }}</span>
+        <span class="entry-level level-{{ word.level|lower }}" title="CEFR level {{ word.level }}">{{ word.level }}</span>
+      {% endif %}
+      {% if word.register %}
+        <span class="register-chip register-chip--{{ word.register }}" title="Register: {{ word.register }}">{{ word.register }}</span>
+      {% endif %}
+      {% if word.frequency_rank %}
+        <span class="freq-rank" title="Frequency rank (lower = more common)">freq #{{ word.frequency_rank }}</span>
       {% endif %}
     </div>
 
-    <!-- Pronunciation -->
-    <div class="entry-pronunciation">
+    <!-- Pronunciation: side-by-side UK/US with IPA hover popup -->
+    <div class="entry-pronunciation pron-side-by-side-inline">
       {% if word.phonetic_uk or word.audio_uk_path %}
-        <div class="pron-block">
+        <div class="pron-block pron-block--uk" data-region="uk">
           <span class="pron-label">uk</span>
           <button class="pron-btn" onclick="speakWord('{{ word.headword }}', 'en-GB')" title="UK pronunciation" aria-label="UK pronunciation">&#x1F50A;</button>
           {% if word.audio_uk_path %}
             <audio class="pron-audio" preload="none" src="{{ word.audio_uk_path }}" data-region="uk"></audio>
           {% endif %}
-          <span class="pron-ipa" data-region="uk">{{ word.phonetic_uk or word.pronunciation_ipa }}</span>
+          <span class="pron-ipa pron-ipa--hoverable" data-region="uk" title="UK IPA: {{ word.phonetic_uk or word.pronunciation_ipa }}">{{ word.phonetic_uk or word.pronunciation_ipa }}</span>
         </div>
       {% endif %}
       {% if word.phonetic_us or word.audio_us_path %}
-        <div class="pron-block">
+        <div class="pron-block pron-block--us" data-region="us">
           <span class="pron-label">us</span>
           <button class="pron-btn" onclick="speakWord('{{ word.headword }}', 'en-US')" title="US pronunciation" aria-label="US pronunciation">&#x1F50A;</button>
           {% if word.audio_us_path %}
             <audio class="pron-audio" preload="none" src="{{ word.audio_us_path }}" data-region="us"></audio>
           {% endif %}
-          <span class="pron-ipa" data-region="us">{{ word.phonetic_us or word.pronunciation_ipa }}</span>
+          <span class="pron-ipa pron-ipa--hoverable" data-region="us" title="US IPA: {{ word.phonetic_us or word.pronunciation_ipa }}">{{ word.phonetic_us or word.pronunciation_ipa }}</span>
         </div>
       {% endif %}
+      <a href="{{ url_for('pronunciation_detail', slug=word.slug) }}" class="pron-more-link">Side-by-side &raquo;</a>
     </div>
     {% if word.definitions_count %}
       <p class="entry-meta-count" data-defcount="{{ word.definitions_count }}">
@@ -98,6 +105,42 @@
       {% endfor %}
     </div>
   </div>
+  {% endif %}
+
+  <!-- R4: Mistake-corner note (per-word) -->
+  {% if word.mistake_note %}
+  <aside class="entry-mistake-note">
+    <h3 class="entry-mistake-h"><span class="mistake-mark-wrong">&#x26A0;</span> Common mistake</h3>
+    <p>{{ word.mistake_note }}</p>
+    <a href="{{ url_for('mistake_index') }}" class="entry-mistake-more">More mistake-corner topics &raquo;</a>
+  </aside>
+  {% endif %}
+
+  <!-- R4: Collocations preview -->
+  {% set collocs = word.get_collocations() %}
+  {% if collocs %}
+  <section class="entry-collocations">
+    <h3 class="sub-section-title">Common collocations</h3>
+    <ul class="entry-coll-list">
+      {% for c in collocs[:4] %}
+        <li class="entry-coll-item">
+          <span class="entry-coll-type">{{ c.type }}</span>
+          <strong>{{ c.phrase }}</strong>
+          <span class="entry-coll-ex">&mdash; {{ c.example }}</span>
+        </li>
+      {% endfor %}
+    </ul>
+    <a href="{{ url_for('collocation_detail', slug=word.slug) }}" class="entry-coll-more">See all collocations &raquo;</a>
+  </section>
+  {% endif %}
+
+  <!-- R4: Etymology preview -->
+  {% if word.etymology %}
+  <section class="entry-etymology">
+    <h3 class="sub-section-title">Word origin</h3>
+    <p class="entry-ety-text">{{ word.etymology[:240] }}{% if word.etymology|length > 240 %}…{% endif %}</p>
+    <a href="{{ url_for('etymology_detail', slug=word.slug) }}" class="entry-ety-more">Full etymology &raquo;</a>
+  </section>
   {% endif %}
 
   <!-- SMART Vocabulary: related words and phrases (expandable section) -->

@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+{% block title %}Journal-ref search — arXiv{% endblock %}
+{% block breadcrumbs %}
+    <span class="sep">&gt;</span>
+    <span style="color:#fff">journal-ref search</span>
+{% endblock %}
+{% block content %}
+
+<h1 style="font-size:20px;margin:14px 0 4px;">Search by journal reference</h1>
+<div class="muted" style="font-size:13px;margin-bottom:14px;">
+    Look up arXiv preprints by the published-venue string (e.g. <span class="mono">Phys. Rev. D</span>, <span class="mono">JHEP</span>, <span class="mono">Nature</span>).
+</div>
+
+<form method="get" action="{{ url_for('journal_ref_search') }}" style="margin-bottom:18px;">
+    <input type="text" name="q" value="{{ query or '' }}" placeholder="e.g. Phys. Rev. D" style="padding:6px;width:340px;">
+    <button type="submit" class="btn btn-primary">Search</button>
+    {% if query %}<a href="{{ url_for('journal_ref_search') }}" class="muted" style="margin-left:6px;">clear</a>{% endif %}
+</form>
+
+{% if query %}
+    <p style="font-size:13px;"><b>{{ total }}</b> papers cite a journal-ref matching "<b>{{ query }}</b>".</p>
+    {% if papers %}
+    <dl>
+        {% for p in papers %}
+        <dt>
+            <span class="entry-id">[{{ loop.index + (page-1)*per_page }}]&nbsp;<a href="{{ url_for('paper_detail', arxiv_id=p.arxiv_id) }}">arXiv:{{ p.arxiv_id }}</a></span>
+            <span class="muted">· {{ p.submitted_date }}</span>
+        </dt>
+        <dd class="paper-entry">
+            <div class="entry-title"><a href="{{ url_for('paper_detail', arxiv_id=p.arxiv_id) }}">{{ p.display_title }}</a></div>
+            <div class="entry-authors"><b>Authors:</b>
+                {% for a in p.get_authors() %}<a href="{{ url_for('author_papers', name=a) }}">{{ a }}</a>{% if not loop.last %}, {% endif %}{% endfor %}
+            </div>
+            <div class="entry-subjects"><b>Journal-ref:</b> <i>{{ p.display_journal_ref }}</i></div>
+            <div class="entry-subjects"><b>Subjects:</b> {{ p.subjects }}</div>
+        </dd>
+        {% endfor %}
+    </dl>
+    <div class="pagination">
+        {% if page > 1 %}<a href="{{ url_for('journal_ref_search', q=query, page=page-1) }}">« Prev</a>{% endif %}
+        <span class="current">{{ page }}</span>
+        {% if page * per_page < total %}<a href="{{ url_for('journal_ref_search', q=query, page=page+1) }}">Next »</a>{% endif %}
+    </div>
+    {% else %}
+    <p class="muted">No matching journal-refs found.</p>
+    {% endif %}
+{% else %}
+    <h2 style="font-size:15px;border-bottom:1px solid var(--border);padding-bottom:4px;">Top journals seen in this corpus</h2>
+    {% if directory %}
+    <table style="width:100%;border-collapse:collapse;font-size:13px;margin-top:10px;">
+        <thead>
+            <tr style="background:var(--bg-cream);">
+                <th style="text-align:left;padding:6px 10px;border-bottom:1px solid var(--border-cream);">Journal-ref prefix</th>
+                <th style="text-align:right;padding:6px 10px;border-bottom:1px solid var(--border-cream);">Papers</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for head, n in directory %}
+            <tr>
+                <td style="padding:6px 10px;border-bottom:1px solid var(--border-light);"><a href="{{ url_for('journal_ref_search', q=head) }}">{{ head }}</a></td>
+                <td style="padding:6px 10px;border-bottom:1px solid var(--border-light);text-align:right;"><span class="mono">{{ n }}</span></td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <p class="muted">No journal-refs in the corpus yet.</p>
+    {% endif %}
+{% endif %}
+
+{% endblock %}

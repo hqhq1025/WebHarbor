@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+{% block title %}Week {{ n }}: {{ module.title }} | {{ course.title }} | Coursera{% endblock %}
+{% block content %}
+<div class="lecture-page" style="background:#F2F5FA;min-height:100vh;">
+  <div class="container" style="max-width:1100px;margin:0 auto;padding:32px 24px;">
+    <nav class="cd-breadcrumb" style="margin-bottom:18px;font-size:13px;color:#5B6780;">
+      <a href="{{ url_for('index') }}" style="color:#0056D2;">Home</a> &rsaquo;
+      <a href="{{ url_for('course_detail', slug=course.slug) }}" style="color:#0056D2;">{{ course.title }}</a> &rsaquo;
+      <span>Week {{ n }}</span>
+    </nav>
+
+    <header style="background:#fff;border:1px solid #DAE1ED;border-radius:12px;padding:28px;margin-bottom:22px;">
+      <div style="font-size:12px;font-weight:800;color:#0056D2;text-transform:uppercase;letter-spacing:.5px;">Lecture &middot; Week {{ n }} of {{ total }}</div>
+      <h1 style="font-size:30px;margin:6px 0 10px;">{{ module.title }}</h1>
+      <p style="color:#5B6780;font-size:15px;line-height:1.55;">{{ module.description }}</p>
+      <div style="display:flex;gap:18px;margin-top:14px;font-size:13px;color:#5B6780;">
+        <span>&#9654; {{ module.videos_count }} videos</span>
+        <span>&#128214; {{ module.readings_count }} readings</span>
+        <span>&#9998; {{ module.quizzes_count }} quizzes</span>
+      </div>
+
+      <div class="cd-progress-ring" style="margin-top:22px;display:flex;align-items:center;gap:18px;">
+        {% set pct = (n * 100 / total) | round(0, 'floor') | int %}
+        <div style="position:relative;width:88px;height:88px;border-radius:50%;background:conic-gradient(#0056D2 {{ pct * 3.6 }}deg,#E5F0FF 0);display:flex;align-items:center;justify-content:center;">
+          <div style="width:70px;height:70px;border-radius:50%;background:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;">
+            <div style="font-size:18px;font-weight:800;color:#0056D2;">{{ pct }}%</div>
+            <div style="font-size:10px;color:#5B6780;font-weight:600;">progress</div>
+          </div>
+        </div>
+        <div>
+          <div style="font-weight:700;">Course progress</div>
+          <div style="font-size:13px;color:#5B6780;">Week {{ n }} of {{ total }} complete</div>
+        </div>
+      </div>
+    </header>
+
+    <section style="background:#fff;border:1px solid #DAE1ED;border-radius:12px;padding:24px;margin-bottom:22px;">
+      <h2 style="font-size:20px;margin:0 0 14px;">Video lessons</h2>
+      <ul style="list-style:none;padding:0;margin:0;">
+        {% for vt in module.get_video_titles() %}
+        <li style="padding:14px 0;border-bottom:1px solid #EEF1F8;display:flex;gap:14px;align-items:center;">
+          <span style="display:inline-flex;width:36px;height:36px;border-radius:50%;background:#E5F0FF;color:#0056D2;align-items:center;justify-content:center;font-weight:800;">{{ loop.index }}</span>
+          <div style="flex:1;">
+            <div style="font-weight:600;">{{ vt }}</div>
+            <div style="font-size:12px;color:#5B6780;margin-top:2px;">Auto-graded · English (subtitles in 10+ languages)</div>
+          </div>
+          <span style="color:#0056D2;font-weight:600;">&#9654; Play</span>
+        </li>
+        {% endfor %}
+      </ul>
+    </section>
+
+    <section style="background:#fff;border:1px solid #DAE1ED;border-radius:12px;padding:24px;margin-bottom:22px;">
+      <h2 style="font-size:20px;margin:0 0 8px;">Transcript & downloads</h2>
+      <p style="color:#5B6780;font-size:14px;">English transcript + 10 subtitle languages (Spanish · French · German · Mandarin · Japanese · Arabic · Portuguese · Russian · Korean · Hindi). Closed-captions, downloadable as .vtt or .srt.</p>
+      <a href="{{ url_for('course_assignment', slug=course.slug, n=n) }}" style="display:inline-block;margin-top:10px;background:#0056D2;color:#fff;padding:10px 20px;border-radius:6px;text-decoration:none;font-weight:600;">Go to Week {{ n }} Assignment</a>
+    </section>
+
+    <nav style="display:flex;justify-content:space-between;gap:12px;">
+      {% if prev_n %}
+      <a href="{{ url_for('course_lecture', slug=course.slug, n=prev_n) }}" style="padding:10px 18px;border-radius:6px;background:#fff;border:1px solid #DAE1ED;text-decoration:none;color:#0056D2;font-weight:600;">&larr; Week {{ prev_n }}</a>
+      {% else %}<span></span>{% endif %}
+      {% if next_n %}
+      <a href="{{ url_for('course_lecture', slug=course.slug, n=next_n) }}" style="padding:10px 18px;border-radius:6px;background:#0056D2;color:#fff;text-decoration:none;font-weight:600;">Week {{ next_n }} &rarr;</a>
+      {% endif %}
+    </nav>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% block title %}MSC2020 {{ msc_class }} — arXiv{% endblock %}
+{% block breadcrumbs %}
+    <span class="sep">&gt;</span>
+    <a href="{{ url_for('msc_listing') }}">MSC2020</a>
+    <span class="sep">&gt;</span>
+    <span style="color:#fff">{{ msc_class }}</span>
+{% endblock %}
+{% block content %}
+
+<h1 style="font-size:20px;margin:14px 0 4px;">MSC2020 · {{ msc_class }}
+    {% if family_label %} <small style="color:var(--text-muted)">— {{ family_label }}</small>{% endif %}
+</h1>
+<div class="muted" style="font-size:13px;margin-bottom:14px;">
+    Showing <b>{{ (page-1)*per_page + 1 if total else 0 }}-{{ [page*per_page, total]|min }}</b> of <b>{{ total }}</b>
+    papers classified under MSC family <span class="mono">{{ msc_class }}</span>.
+    <a href="{{ url_for('msc_listing') }}">‹ Back to MSC index</a>
+</div>
+
+{% if papers %}
+<dl>
+    {% for p in papers %}
+    <dt>
+        <span class="entry-id">[{{ loop.index + (page-1)*per_page }}]&nbsp;<a href="{{ url_for('paper_detail', arxiv_id=p.arxiv_id) }}">arXiv:{{ p.arxiv_id }}</a></span>
+        [<a href="{{ url_for('pdf_view', arxiv_id=p.arxiv_id) }}">pdf</a>]
+        <span class="muted">· {{ p.submitted_date }}</span>
+    </dt>
+    <dd class="paper-entry">
+        <div class="entry-title"><a href="{{ url_for('paper_detail', arxiv_id=p.arxiv_id) }}">{{ p.display_title }}</a></div>
+        <div class="entry-authors"><b>Authors:</b>
+            {% for a in p.get_authors() %}<a href="{{ url_for('author_papers', name=a) }}">{{ a }}</a>{% if not loop.last %}, {% endif %}{% endfor %}
+        </div>
+        <div class="entry-subjects"><b>MSC:</b> <span class="mono">{{ p.msc_class }}</span></div>
+        <div class="entry-subjects"><b>Subjects:</b> {{ p.subjects }}</div>
+    </dd>
+    {% endfor %}
+</dl>
+<div class="pagination">
+    {% if page > 1 %}<a href="{{ url_for('msc_listing', msc_class=msc_class, page=page-1) }}">« Prev</a>{% endif %}
+    <span class="current">{{ page }}</span>
+    {% if page * per_page < total %}<a href="{{ url_for('msc_listing', msc_class=msc_class, page=page+1) }}">Next »</a>{% endif %}
+</div>
+{% else %}
+<p class="muted">No papers found for MSC class <b>{{ msc_class }}</b>.</p>
+{% endif %}
+
+{% endblock %}

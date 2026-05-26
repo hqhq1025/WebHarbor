@@ -1,0 +1,42 @@
+{% extends 'base.html' %}
+{% block title %}Add eSIM - Trip {{ booking.pnr }}{% endblock %}
+{% block content %}
+<div class="info-page">
+  <div class="info-page-inner">
+    <h1>Stay connected with an eSIM</h1>
+    <div style="color:#5f6368;margin-bottom:18px;">
+      Booking <strong>{{ booking.pnr }}</strong> &middot; Destination: {{ destination_country }}
+    </div>
+    <p>Pick a data plan for your trip. eSIMs activate instantly on arrival and
+       work with most newer phones. Plans cover the destination country only.</p>
+
+    <form method="POST" action="{{ url_for('trip_esim_add', booking_id=booking.id) }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <div class="card-grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px;margin-bottom:18px;">
+        {% for plan in plans %}
+        <label style="background:#fff;border:1px solid #dadce0;border-radius:8px;padding:14px;cursor:pointer;display:block;">
+          <input type="radio" name="plan" value="{{ plan.id }}"
+                 {% if loop.first and not current_plan %}checked{% endif %}
+                 {% if current_plan == plan.id %}checked{% endif %}
+                 style="margin-right:6px;">
+          <span style="font-weight:500;">{{ plan.name }}</span>
+          <div style="color:#5f6368;font-size:13px;margin-top:4px;">{{ plan.gb }} GB &middot; {{ plan.days }} days</div>
+          <div style="margin-top:8px;font-size:18px;font-weight:500;">${{ plan.price }}</div>
+        </label>
+        {% endfor %}
+      </div>
+      <p style="color:#5f6368;font-size:13px;">
+        Coverage: {{ destination_country }}. Network partner: {{ network_partner }}.
+      </p>
+      <button type="submit" class="btn-primary">Add to trip</button>
+      <a href="{{ url_for('trip_manage', booking_id=booking.id) }}" style="margin-left:8px;">Back to trip</a>
+    </form>
+
+    {% if current_plan %}
+      <div style="margin-top:18px;background:#e6f4ea;border:1px solid #34a853;border-radius:8px;padding:12px;">
+        <strong>eSIM added.</strong> You'll receive activation instructions 24 hours before departure.
+      </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

@@ -95,6 +95,22 @@ class Word(db.Model):
     is_thesaurus_phrase = db.Column(db.Boolean, default=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
+    # R4 extensions ----------------------------------------------------------
+    # Word-level register tag (formal / informal / slang / archaic / technical /
+    # literary / humorous). Empty string for neutral. This complements the
+    # per-sense register inside definitions_json — R4 surfaces a top-level chip.
+    register = db.Column(db.String(40), default='')
+    # 1-based frequency rank within the dictionary. 1 = most frequent. 0 means
+    # rank not yet assigned (legacy R2/R3 rows).
+    frequency_rank = db.Column(db.Integer, default=0)
+    # Short etymology paragraph rendered on /etymology/<slug>.
+    etymology = db.Column(db.Text, default='')
+    # JSON list of {phrase, type, example} entries, surfaced on
+    # /collocation/<slug> and inside word_detail.
+    collocations_json = db.Column(db.Text, default='[]')
+    # Common-mistake hint shown on the word entry page.
+    mistake_note = db.Column(db.Text, default='')
+
     saved_by = db.relationship('SavedWord', backref='word', lazy=True,
                                cascade='all, delete-orphan')
 
@@ -119,6 +135,12 @@ class Word(db.Model):
     def get_synonyms(self):
         try:
             return json.loads(self.synonyms_json or '[]')
+        except Exception:
+            return []
+
+    def get_collocations(self):
+        try:
+            return json.loads(self.collocations_json or '[]')
         except Exception:
             return []
 
@@ -193,6 +215,30 @@ class Quiz(db.Model):
     def get_questions(self):
         try:
             return json.loads(self.questions_json or '[]')
+        except Exception:
+            return []
+
+
+class MistakeCorner(db.Model):
+    """R4 — mistake-corner topics surfaced under /mistake/<slug>.
+
+    Each entry is a self-contained learner-error topic (e.g. ``affect-vs-effect``,
+    ``schedule-uk-vs-us``) with a body paragraph and a list of wrong→right
+    example pairs.
+    """
+    __tablename__ = 'mistake_corner'
+    id = db.Column(db.Integer, primary_key=True)
+    slug = db.Column(db.String(120), unique=True, nullable=False, index=True)
+    topic = db.Column(db.String(200), nullable=False)
+    category = db.Column(db.String(80), default='')
+    body = db.Column(db.Text, default='')
+    # examples_json: list of {wrong, right, note}
+    examples_json = db.Column(db.Text, default='[]')
+    sort_order = db.Column(db.Integer, default=0)
+
+    def get_examples(self):
+        try:
+            return json.loads(self.examples_json or '[]')
         except Exception:
             return []
 
@@ -1182,6 +1228,152 @@ def thesaurus_word_alias(slug):
     if slug in {'english', 'articles'}:
         abort(404)
     return redirect(url_for('thesaurus_entry', phrase=slug), code=301)
+
+
+# ---------------------------------------------------------------------------
+# R4 sub-pages: deep dictionary surface
+# ---------------------------------------------------------------------------
+# Real Cambridge has dedicated landing pages for etymology, collocation,
+# pronunciation, and a word-of-the-day archive. R4 wires these as
+# read-only deterministic surfaces over the new metadata columns on Word
+# and the MistakeCorner table.
+
+@app.route('/etymology')
+@app.route('/etymology/')
+def etymology_index():
+    """List the words that have an etymology paragraph populated. Real
+    Cambridge groups by root language; we surface a flat list ordered by
+    headword for stable scraping. Paginated to keep page weight bounded."""
+    page = max(1, int(request.args.get('page', 1)))
+    per = 50
+    base = (Word.query
+            .filter(Word.is_thesaurus_phrase == False,  # noqa
+                    Word.etymology != ''))
+    total = base.count()
+    words = (base.order_by(Word.headword.asc())
+             .offset((page - 1) * per).limit(per).all())
+    return render_template('etymology_index.html', words=words,
+                           page=page, per=per, total=total)
+
+
+@app.route('/etymology/<slug>')
+def etymology_detail(slug):
+    word = Word.query.filter_by(slug=slug).first_or_404()
+    if not word.etymology:
+        abort(404)
+    return render_template('etymology.html', word=word)
+
+
+@app.route('/collocation')
+@app.route('/collocation/')
+def collocation_index():
+    """List words with curated collocation entries."""
+    page = max(1, int(request.args.get('page', 1)))
+    per = 50
+    base = (Word.query
+            .filter(Word.is_thesaurus_phrase == False,  # noqa
+                    Word.collocations_json != '[]',
+                    Word.collocations_json != ''))
+    total = base.count()
+    words = (base.order_by(Word.headword.asc())
+             .offset((page - 1) * per).limit(per).all())
+    return render_template('collocation_index.html', words=words,
+                           page=page, per=per, total=total)
+
+
+@app.route('/collocation/<slug>')
+def collocation_detail(slug):
+    word = Word.query.filter_by(slug=slug).first_or_404()
+    colls = word.get_collocations()
+    if not colls:
+        abort(404)
+    return render_template('collocation.html', word=word, collocations=colls)
+
+
+@app.route('/mistake')
+@app.route('/mistake/')
+def mistake_index():
+    topics = MistakeCorner.query.order_by(MistakeCorner.sort_order).all()
+    # Group by category for the side-nav rendering.
+    categories = {}
+    for t in topics:
+        categories.setdefault(t.category or 'Other', []).append(t)
+    return render_template('mistake_index.html', topics=topics,
+                           categories=categories)
+
+
+@app.route('/mistake/<slug>')
+def mistake_detail(slug):
+    topic = MistakeCorner.query.filter_by(slug=slug).first_or_404()
+    examples = topic.get_examples()
+    # Adjacent for prev/next nav.
+    all_topics = MistakeCorner.query.order_by(MistakeCorner.sort_order).all()
+    idx = next((i for i, t in enumerate(all_topics) if t.id == topic.id), 0)
+    prev_t = all_topics[idx - 1] if idx > 0 else None
+    next_t = all_topics[idx + 1] if idx < len(all_topics) - 1 else None
+    return render_template('mistake_detail.html', topic=topic,
+                           examples=examples, prev_topic=prev_t,
+                           next_topic=next_t)
+
+
+@app.route('/pronunciation/<slug>')
+def pronunciation_detail(slug):
+    """Side-by-side UK/US pronunciation page. Read-only — surfaces both
+    IPA values, audio buttons, and a syllable count derived from the
+    headword (deterministic)."""
+    word = Word.query.filter_by(slug=slug).first_or_404()
+    # Crude syllable estimate: count vowel groups.
+    head = (word.headword or '').lower()
+    syllables = max(1, len(re.findall(r'[aeiouy]+', head)))
+    return render_template('pronunciation.html', word=word,
+                           syllables=syllables)
+
+
+@app.route('/word-of-the-day/archive')
+@app.route('/word-of-the-day/archive/')
+def wotd_archive_landing():
+    # Landing — list the years we have archives for.
+    years = [2024, 2025, 2026]
+    return render_template('wotd_archive.html', year=None, entries=[],
+                           years=years)
+
+
+@app.route('/word-of-the-day/archive/<int:year>')
+def wotd_archive_year(year):
+    """Render the deterministic Word-of-the-Day picks for an entire year.
+
+    Uses the same hash-of-date logic as ``word_of_the_day`` so the archive
+    is always consistent with the live WOTD URL."""
+    if year < 2020 or year > 2030:
+        abort(404)
+    import hashlib as _hl
+    from datetime import date as _date, timedelta as _td
+    pool = (Word.query
+            .filter(Word.is_thesaurus_phrase == False,  # noqa
+                    Word.phonetic_uk != '')
+            .order_by(Word.id).all())
+    if not pool:
+        pool = Word.query.filter(Word.is_thesaurus_phrase == False  # noqa
+                                 ).order_by(Word.id).all()
+    if not pool:
+        abort(404)
+    # Walk every calendar day of the year. Bound at MIRROR_REFERENCE_DATE so
+    # future-dated days don't appear (matches what users would see "today").
+    start = _date(year, 1, 1)
+    end = _date(year, 12, 31)
+    today = MIRROR_REFERENCE_DATE.date()
+    if end > today:
+        end = today
+    entries = []
+    if start <= end:
+        d = start
+        while d <= end:
+            idx = int(_hl.md5(d.isoformat().encode()).hexdigest()[:8], 16) % len(pool)
+            entries.append({'date': d, 'word': pool[idx]})
+            d += _td(days=1)
+    years = [2024, 2025, 2026]
+    return render_template('wotd_archive.html', year=year, entries=entries,
+                           years=years)
 
 
 # ---------------------------------------------------------------------------
@@ -2728,6 +2920,39 @@ def seed_database():
                 is_thesaurus_phrase=bool(wd.get('is_thesaurus_phrase', False)),
                 created_at=MIRROR_REFERENCE_DATE,
             ))
+        # R4 expansion: ~5500 further WordNet entries with rich metadata —
+        # word-level register, frequency rank, etymology paragraph,
+        # collocations, and a common-mistake note. Same append-after pattern
+        # so legacy ids stay stable.
+        extra3 = _load_json('words_r4.json') or []
+        for wd in extra3:
+            if wd['slug'] in seen_slugs:
+                continue
+            seen_slugs.add(wd['slug'])
+            db.session.add(Word(
+                headword=wd['headword'], slug=wd['slug'],
+                pos=wd.get('pos', ''), guide_word=wd.get('guide_word', ''),
+                phonetic_uk=wd.get('phonetic_uk', ''),
+                phonetic_us=wd.get('phonetic_us', ''),
+                pronunciation_ipa=(wd.get('pronunciation_ipa')
+                                   or wd.get('phonetic_uk', '')),
+                audio_uk_path=wd.get('audio_uk_path',
+                                     f"/static/audio/uk/{wd['slug']}.mp3"),
+                audio_us_path=wd.get('audio_us_path',
+                                     f"/static/audio/us/{wd['slug']}.mp3"),
+                level=wd.get('level', ''),
+                definitions_json=_j(wd.get('definitions', [])),
+                translations_json=_j(wd.get('translations', {})),
+                related_json=_j(wd.get('related', [])),
+                synonyms_json=_j(wd.get('synonyms', [])),
+                is_thesaurus_phrase=bool(wd.get('is_thesaurus_phrase', False)),
+                created_at=MIRROR_REFERENCE_DATE,
+                register=wd.get('register', ''),
+                frequency_rank=int(wd.get('frequency_rank', 0) or 0),
+                etymology=wd.get('etymology', ''),
+                collocations_json=_j(wd.get('collocations', [])),
+                mistake_note=wd.get('mistake_note', ''),
+            ))
     else:
         # Fallback: inline curated lists.
         seen_slugs = set()
@@ -2828,6 +3053,35 @@ def seed_database():
             description=qd.get('description', ''),
             questions_json=_j(qd.get('questions', [])),
         ))
+
+    # ── R4: Mistake corner topics ────────────────────────────────────────
+    mistakes = _load_json('mistakes_r4.json') or []
+    for md in mistakes:
+        db.session.add(MistakeCorner(
+            slug=md['slug'], topic=md['topic'],
+            category=md.get('category', ''),
+            body=md.get('body', ''),
+            examples_json=_j(md.get('examples', [])),
+            sort_order=md.get('sort_order', 0),
+        ))
+
+    # ── R4: curated-word patch (etymology / collocations / mistake_note /
+    # register / frequency_rank for the ~25 anchor words tasks reference). We
+    # flush the bulk inserts first so the patch UPDATEs see real rows. Order
+    # of UPDATEs is dictated by sorted slug keys for byte-determinism.
+    db.session.flush()
+    curated_patch = _load_json('curated_patch_r4.json') or {}
+    for slug in sorted(curated_patch.keys()):
+        patch = curated_patch[slug]
+        w = Word.query.filter_by(slug=slug,
+                                 is_thesaurus_phrase=False).first()
+        if not w:
+            continue
+        w.register = patch.get('register', '')
+        w.frequency_rank = int(patch.get('frequency_rank', 0) or 0)
+        w.etymology = patch.get('etymology', '')
+        w.collocations_json = _j(patch.get('collocations', []))
+        w.mistake_note = patch.get('mistake_note', '')
 
     db.session.commit()
 

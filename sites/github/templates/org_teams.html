@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block title %}Teams · {{ org.username }} · GitHub{% endblock %}
+{% block content %}
+<div style="padding:24px 32px;max-width:1100px;margin:0 auto;">
+  <header style="display:flex;gap:16px;align-items:center;margin-bottom:20px;">
+    <img src="{{ org.avatar_url }}" alt="{{ org.username }}" width="64" height="64" style="border-radius:8px;" onerror="this.src='/static/images/avatars/avatar_00.jpg'">
+    <div>
+      <h1 style="margin:0;font-size:22px;"><a href="/{{ org.username }}" style="color:#e6edf3;text-decoration:none;">{{ org.username }}</a></h1>
+      <div style="font-size:13px;color:#7d8590;">{{ org_repo_count }} repositories · Organization</div>
+    </div>
+  </header>
+  <nav class="repo-tabs" style="margin-bottom:18px;">
+    <a href="/{{ org.username }}" class="repo-tab">Overview</a>
+    <a href="/{{ org.username }}?tab=repositories" class="repo-tab">Repositories</a>
+    <a href="/orgs/{{ org.username }}/teams" class="repo-tab repo-tab-active">
+      Teams <span class="repo-tab-count">{{ teams|length }}</span>
+    </a>
+    <a href="/sponsors/{{ org.username }}" class="repo-tab">Sponsorship</a>
+  </nav>
+  {% if teams %}
+  <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px;">
+    {% for t in teams %}
+    <a href="/orgs/{{ org.username }}/teams/{{ t.slug }}" style="border:1px solid #30363d;border-radius:8px;padding:14px;text-decoration:none;color:inherit;display:block;background:#0d1117;">
+      <div style="display:flex;align-items:center;gap:8px;font-weight:600;color:#e6edf3;">
+        <svg height="16" width="16" viewBox="0 0 16 16" fill="currentColor"><path d="M2 5.5a3.5 3.5 0 1 1 5.898 2.549 5.508 5.508 0 0 1 3.034 4.084.75.75 0 1 1-1.482.235 4 4 0 0 0-7.9 0 .75.75 0 0 1-1.482-.236A5.507 5.507 0 0 1 3.102 8.05 3.493 3.493 0 0 1 2 5.5ZM11 4a3.001 3.001 0 0 1 2.22 5.018 5.01 5.01 0 0 1 2.56 3.012.749.749 0 0 1-.885.954.752.752 0 0 1-.549-.514 3.507 3.507 0 0 0-2.522-2.372.75.75 0 0 1-.574-.73v-.352a.75.75 0 0 1 .416-.672A1.5 1.5 0 0 0 11 5.5.75.75 0 0 1 11 4Z"/></svg>
+        <span>{{ t.name }}</span>
+        {% if t.privacy == 'secret' %}<span style="font-size:10px;color:#d29922;background:rgba(210,153,34,0.1);border:1px solid #d29922;border-radius:999px;padding:1px 6px;">Secret</span>{% endif %}
+      </div>
+      <div style="font-size:12px;color:#7d8590;margin-top:4px;">@{{ org.username }}/{{ t.slug }}</div>
+      <p style="font-size:13px;color:#8b949e;margin:8px 0 0;">{{ t.description }}</p>
+      <div style="font-size:12px;color:#7d8590;margin-top:10px;">{{ t.member_count }} members · {{ t.repo_count }} repos</div>
+    </a>
+    {% endfor %}
+  </div>
+  {% else %}
+  <p style="color:#7d8590;">This organization has no teams yet.</p>
+  {% endif %}
+</div>
+{% endblock %}

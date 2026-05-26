@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block title %}Virtual tour — {{ property.name }} — Booking{% endblock %}
+{% block content %}
+<div class="container">
+    <a href="{{ url_for('property_detail', slug=property.slug) }}" class="text-link"
+       style="font-size:13px;color:#006ce4;">&lsaquo; Back to {{ property.name }}</a>
+    <h1 class="page-title">Virtual tour &middot; {{ property.name }}</h1>
+    {% if available %}
+    <p style="color:#444;">Step inside {{ property.name }} from anywhere — pan the 360°
+       view, zoom in on amenities, and check sight-lines before you book.</p>
+
+    <div style="position:relative;background:#003580;color:#fff;border-radius:8px;overflow:hidden;
+                height:420px;display:flex;align-items:center;justify-content:center;
+                background-image:linear-gradient(135deg,#003580,#006ce4);">
+        <div style="text-align:center;">
+            <div style="font-size:48px;margin-bottom:8px;">&#9678;</div>
+            <div style="font-weight:700;font-size:18px;">Interactive 360° tour</div>
+            <div style="font-size:13px;opacity:0.85;margin-top:4px;">Click and drag to look around &middot; pinch to zoom</div>
+            <button class="btn-primary" style="margin-top:14px;background:#fff;color:#003580;">Start tour</button>
+        </div>
+    </div>
+
+    <div style="margin-top:18px;display:grid;grid-template-columns:repeat(4,1fr);gap:10px;">
+        {% for label in ['Lobby', 'Standard Room', 'Pool deck', 'Restaurant'] %}
+        <button class="btn-secondary" style="font-size:13px;">{{ label }}</button>
+        {% endfor %}
+    </div>
+    {% else %}
+    <p class="text-muted">A virtual tour is not currently available for this property.
+       Please check back later, or browse the photo gallery on the property page.</p>
+    {% endif %}
+</div>
+{% endblock %}

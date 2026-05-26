@@ -1,0 +1,87 @@
+{% extends "base.html" %}
+{% block title %}Labeled places — Google Maps{% endblock %}
+
+{% block extra_head %}
+<style>
+.lbl-wrap{max-width:780px;margin:24px auto;padding:0 24px;font-family:Roboto,Arial,sans-serif;color:#202124;}
+.lbl-head h1{font-size:22px;margin:0 0 6px;font-weight:500;}
+.lbl-sub{color:#5f6368;font-size:13px;margin-bottom:20px;}
+.lbl-group{margin-bottom:24px;}
+.lbl-group h2{font-size:16px;font-weight:500;color:#202124;margin:0 0 10px;display:flex;align-items:center;gap:8px;}
+.lbl-chip{font-size:11px;color:#5f6368;border:1px solid #dadce0;border-radius:10px;padding:2px 8px;}
+.lbl-list{list-style:none;padding:0;margin:0;}
+.lbl-card{display:flex;align-items:center;gap:14px;background:#fff;border:1px solid #e8eaed;border-radius:10px;padding:12px 14px;margin-bottom:8px;}
+.lbl-card .ico{width:36px;height:36px;border-radius:50%;background:#e8f0fe;color:#1a73e8;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.lbl-card .info{flex:1;}
+.lbl-card .info .name a{color:#202124;text-decoration:none;font-weight:500;font-size:14px;}
+.lbl-card .info .name a:hover{text-decoration:underline;}
+.lbl-card .info .addr{font-size:12px;color:#5f6368;margin-top:2px;}
+.lbl-card form{display:flex;gap:6px;}
+.lbl-card form input{width:90px;border:1px solid #dadce0;border-radius:6px;padding:6px 8px;font-size:12px;}
+.lbl-card form button{background:#1a73e8;color:#fff;border:none;border-radius:6px;padding:6px 10px;font-size:12px;cursor:pointer;}
+.lbl-empty{padding:30px 0;color:#5f6368;font-size:14px;text-align:center;}
+</style>
+{% endblock %}
+
+{% block body %}
+<div class="lbl-wrap" id="labeled-page">
+    <div class="lbl-head"><h1>Labeled places</h1></div>
+    <div class="lbl-sub">Home, Work, and any other labels you've added to saved places.</div>
+
+    {% set ordered = ['Home', 'Work'] %}
+    {% for k in ordered %}
+        {% if grouped.get(k) %}
+        <section class="lbl-group" data-label="{{ k|lower }}">
+            <h2><span class="material-icons-outlined" style="font-size:20px;color:#1a73e8;">{% if k == 'Home' %}home{% else %}work{% endif %}</span> {{ k }} <span class="lbl-chip">{{ grouped.get(k)|length }} place{{ '' if grouped.get(k)|length == 1 else 's' }}</span></h2>
+            <ul class="lbl-list">
+                {% for sp in grouped.get(k) %}
+                <li class="lbl-card">
+                    <div class="ico"><span class="material-icons-outlined">{% if k == 'Home' %}home{% else %}work{% endif %}</span></div>
+                    <div class="info">
+                        <div class="name"><a href="{{ url_for('place_detail', slug=sp.place.slug) }}">{{ sp.place.name }}</a></div>
+                        <div class="addr">{{ sp.place.address }}</div>
+                    </div>
+                    <form method="POST" action="{{ url_for('your_places_label_set', saved_id=sp.id) }}">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <input type="text" name="label" value="{{ sp.label }}" maxlength="32">
+                        <button type="submit">Save</button>
+                    </form>
+                </li>
+                {% endfor %}
+            </ul>
+        </section>
+        {% endif %}
+    {% endfor %}
+
+    {% set others = [] %}
+    {% for k, v in grouped.items() %}{% if k not in ordered %}{% set _ = others.append(k) %}{% endif %}{% endfor %}
+    {% if others %}
+    <section class="lbl-group" data-label="custom">
+        <h2><span class="material-icons-outlined" style="font-size:20px;color:#34a853;">label</span> Custom labels <span class="lbl-chip">{{ others|length }}</span></h2>
+        {% for k in others %}
+            <h3 style="font-size:13px;color:#5f6368;font-weight:500;margin:14px 0 6px;">{{ k }}</h3>
+            <ul class="lbl-list">
+                {% for sp in grouped.get(k) %}
+                <li class="lbl-card">
+                    <div class="ico"><span class="material-icons-outlined">label</span></div>
+                    <div class="info">
+                        <div class="name"><a href="{{ url_for('place_detail', slug=sp.place.slug) }}">{{ sp.place.name }}</a></div>
+                        <div class="addr">{{ sp.place.address }}</div>
+                    </div>
+                    <form method="POST" action="{{ url_for('your_places_label_set', saved_id=sp.id) }}">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <input type="text" name="label" value="{{ sp.label }}" maxlength="32">
+                        <button type="submit">Save</button>
+                    </form>
+                </li>
+                {% endfor %}
+            </ul>
+        {% endfor %}
+    </section>
+    {% endif %}
+
+    {% if not saved %}
+    <div class="lbl-empty">No labeled places yet. Open any saved place and add a "Home" or "Work" label to see it here.</div>
+    {% endif %}
+</div>
+{% endblock %}

@@ -1996,6 +1996,482 @@ def business_quote():
 
 
 # ---------------------------------------------------------------------------
+# R4 sub-pages: retail / today-at-apple / refurbished shop / accessibility
+# All views are read-only and use module-level constants so they don't
+# perturb the seed DB (byte-identical reset stays valid).
+# ---------------------------------------------------------------------------
+
+APPLE_RETAIL_STORES = [
+    # (slug, name, city_slug, city, state, zip, address, phone, hours)
+    ('the-grove',       'Apple The Grove',        'los-angeles',    'Los Angeles',  'CA', '90036', '189 The Grove Drive',           '(323) 617-8205', 'Mon-Sat 10:00-21:00, Sun 11:00-19:00'),
+    ('beverly-center',  'Apple Beverly Center',   'los-angeles',    'Los Angeles',  'CA', '90048', '8500 Beverly Blvd',             '(310) 360-2470', 'Mon-Sat 10:00-21:00, Sun 11:00-19:00'),
+    ('century-city',    'Apple Century City',     'los-angeles',    'Los Angeles',  'CA', '90067', '10250 Santa Monica Blvd',       '(310) 282-5310', 'Mon-Sat 10:00-21:00, Sun 11:00-19:00'),
+    ('union-square',    'Apple Union Square',     'san-francisco',  'San Francisco','CA', '94108', '300 Post Street',               '(415) 486-4800', 'Mon-Sat 09:00-20:00, Sun 10:00-19:00'),
+    ('palo-alto',       'Apple Palo Alto',        'palo-alto',      'Palo Alto',    'CA', '94301', '340 University Avenue',         '(650) 798-1450', 'Mon-Sat 10:00-21:00, Sun 11:00-19:00'),
+    ('stanford',        'Apple Stanford',         'palo-alto',      'Palo Alto',    'CA', '94304', '660 Stanford Shopping Center',  '(650) 384-2900', 'Mon-Sat 10:00-21:00, Sun 11:00-18:00'),
+    ('fifth-avenue',    'Apple Fifth Avenue',     'new-york',       'New York',     'NY', '10153', '767 Fifth Avenue',              '(212) 336-1440', 'Open 24 hours'),
+    ('grand-central',   'Apple Grand Central',    'new-york',       'New York',     'NY', '10017', '45 Grand Central Terminal',     '(212) 284-1800', 'Mon-Sat 07:00-21:00, Sun 09:00-21:00'),
+    ('soho',            'Apple SoHo',             'new-york',       'New York',     'NY', '10012', '103 Prince Street',             '(212) 226-3126', 'Mon-Sat 09:00-21:00, Sun 10:00-19:00'),
+    ('michigan-avenue', 'Apple Michigan Avenue',  'chicago',        'Chicago',      'IL', '60611', '401 N Michigan Avenue',         '(312) 529-9500', 'Mon-Sat 09:00-21:00, Sun 10:00-19:00'),
+    ('boylston-street', 'Apple Boylston Street',  'boston',         'Boston',       'MA', '02116', '815 Boylston Street',           '(617) 385-9400', 'Mon-Sat 10:00-21:00, Sun 11:00-19:00'),
+    ('georgetown',      'Apple Georgetown',       'washington-dc',  'Washington',   'DC', '20007', '1229 Wisconsin Avenue NW',      '(202) 572-1460', 'Mon-Sat 10:00-21:00, Sun 11:00-19:00'),
+    ('aventura',        'Apple Aventura',         'miami',          'Miami',        'FL', '33180', '19565 Biscayne Boulevard',      '(305) 466-4760', 'Mon-Sat 10:00-21:00, Sun 11:00-19:00'),
+    ('lincoln-road',    'Apple Lincoln Road',     'miami',          'Miami Beach',  'FL', '33139', '1100 Lincoln Road',             '(305) 421-0900', 'Mon-Sat 10:00-22:00, Sun 11:00-21:00'),
+    ('university-village','Apple University Village','seattle',     'Seattle',      'WA', '98105', '2624 NE University Village',    '(206) 526-2580', 'Mon-Sat 10:00-21:00, Sun 11:00-19:00'),
+    ('downtown-seattle','Apple Downtown Seattle', 'seattle',        'Seattle',      'WA', '98101', '1632 6th Avenue',               '(206) 264-0900', 'Mon-Sat 10:00-21:00, Sun 11:00-19:00'),
+    ('twelve-oaks',     'Apple Twelve Oaks',      'novi',           'Novi',         'MI', '48377', '27500 Novi Road',               '(248) 735-6700', 'Mon-Sat 10:00-21:00, Sun 11:00-19:00'),
+    ('lenox-square',    'Apple Lenox Square',     'atlanta',        'Atlanta',      'GA', '30326', '3393 Peachtree Road NE',        '(404) 264-2400', 'Mon-Sat 10:00-21:00, Sun 12:00-18:00'),
+    ('domain-northside','Apple Domain Northside', 'austin',         'Austin',       'TX', '78758', '11506 Century Oaks Terrace',    '(512) 873-7100', 'Mon-Sat 10:00-21:00, Sun 11:00-19:00'),
+    ('northpark',       'Apple NorthPark',        'dallas',         'Dallas',       'TX', '75225', '8687 N Central Expressway',     '(214) 369-0700', 'Mon-Sat 10:00-21:00, Sun 12:00-18:00'),
+    ('biltmore',        'Apple Biltmore',         'phoenix',        'Phoenix',      'AZ', '85016', '2502 E Camelback Road',         '(602) 553-3900', 'Mon-Sat 10:00-21:00, Sun 11:00-19:00'),
+    ('park-meadows',    'Apple Park Meadows',     'denver',         'Lone Tree',    'CO', '80124', '8405 Park Meadows Center Dr',   '(303) 410-9600', 'Mon-Sat 10:00-21:00, Sun 11:00-19:00'),
+    ('regent-street',   'Apple Regent Street',    'london',         'London',       'UK', 'W1B 5AH','235 Regent Street',            '+44 20 7153-9000','Mon-Sat 10:00-21:00, Sun 12:00-18:00'),
+    ('covent-garden',   'Apple Covent Garden',    'london',         'London',       'UK', 'WC2E 8RA','1-7 The Piazza',              '+44 20 7447-1400','Mon-Sat 10:00-21:00, Sun 12:00-18:00'),
+    ('marche-saint-germain','Apple Marche Saint-Germain','paris',   'Paris',        'FR', '75006', '12 Rue de Rennes',              '+33 1 84-79-1400','Mon-Sat 10:00-20:00, closed Sun'),
+    ('omotesando',      'Apple Omotesando',       'tokyo',          'Tokyo',        'JP', '150-0001','4-2-13 Jingumae Shibuya',     '+81 3-6757-2700', 'Daily 10:00-21:00'),
+    ('marina-bay-sands','Apple Marina Bay Sands', 'singapore',      'Singapore',    'SG', '018956','2 Bayfront Avenue B2-06',       '+65 6634-1900',   'Daily 10:00-22:00'),
+    ('orchard-road',    'Apple Orchard Road',     'singapore',      'Singapore',    'SG', '238871','270 Orchard Road',              '+65 6604-1800',   'Daily 10:00-22:00'),
+    ('hongkong-ifc',    'Apple ifc mall',         'hong-kong',      'Hong Kong',    'HK', '00000', 'L1 Shop 1018 ifc mall',         '+852 3971-3800',  'Daily 10:00-21:00'),
+    ('shanghai-pudong', 'Apple Pudong',           'shanghai',       'Shanghai',     'CN', '200120','933 Lujiazui Ring Road',        '+86 21 6133-9900','Daily 10:00-22:00'),
+]
+
+def _store_by_slug(slug):
+    return next((s for s in APPLE_RETAIL_STORES if s[0] == slug), None)
+
+
+def _stores_by_city(city_slug):
+    return [s for s in APPLE_RETAIL_STORES if s[2] == city_slug]
+
+
+@app.route('/retail')
+@app.route('/retail/')
+def retail_index():
+    """Apple Retail — list of every Apple Store, grouped by city."""
+    by_city = {}
+    for s in APPLE_RETAIL_STORES:
+        by_city.setdefault((s[2], s[3], s[4]), []).append(s)
+    page = {
+        'title': 'Apple Store locations',
+        'subtitle': f'{len(APPLE_RETAIL_STORES)} Apple Stores across the U.S. and around the world.',
+        'body': [
+            'Visit an Apple Store to shop the latest products, get expert help, book a Genius Bar appointment, or join a Today at Apple session.',
+            'Trade in eligible devices for credit toward a new Apple product. Same-day pickup is available on most in-stock items.',
+        ],
+        'links': [
+            ('In-store pickup', '/store/pickup'),
+            ('Genius Bar', '/retail/the-grove/genius-bar'),
+            ('Today at Apple', '/today'),
+            ('Apple Trade In', '/trade-in'),
+        ],
+        'stores': APPLE_RETAIL_STORES,
+        'by_city': by_city,
+    }
+    return render_template('info_page.html', topic='retail', page=page)
+
+
+@app.route('/retail/<city_slug>')
+@app.route('/retail/<city_slug>/')
+def retail_city(city_slug):
+    """Apple Retail — list of stores in a given city, or a specific store
+    when the slug matches a store directly. Routes like
+    `/retail/the-grove`, `/retail/los-angeles`, and `/retail/london` all
+    work because store slugs and city slugs share the same namespace."""
+    stores = _stores_by_city(city_slug)
+    if not stores:
+        # Maybe the slug is a store directly.
+        store = _store_by_slug(city_slug)
+        if store:
+            return retail_store(city_slug)
+        abort(404)
+    city_label = stores[0][3]
+    page = {
+        'title': f'Apple Stores in {city_label}',
+        'subtitle': f'{len(stores)} Apple Store location{"s" if len(stores) != 1 else ""} in {city_label}.',
+        'body': [
+            f'Shop, get expert help, and book Genius Bar appointments at one of {len(stores)} Apple locations in {city_label}.',
+        ] + [f'{s[1]} — {s[6]}, {s[3]}, {s[4]} {s[5]}. Phone {s[7]}. Hours: {s[8]}.' for s in stores],
+        'links': [(s[1], f'/retail/{s[0]}') for s in stores] +
+                 [('Back to all Apple Stores', '/retail')],
+    }
+    return render_template('info_page.html', topic=f'retail/{city_slug}', page=page)
+
+
+@app.route('/retail/<store_slug>/store')
+def retail_store(store_slug):
+    """Individual Apple Store landing page."""
+    store = _store_by_slug(store_slug)
+    if not store:
+        abort(404)
+    slug, name, city_slug, city, state, zipc, addr, phone, hours = store
+    page = {
+        'title': name,
+        'subtitle': f'{addr}, {city}, {state} {zipc}',
+        'body': [
+            f'Hours: {hours}',
+            f'Phone: {phone}',
+            'Shop the latest iPhone, Mac, iPad, Apple Watch, AirPods, Apple Vision Pro, and accessories.',
+            'Free Personal Setup with every purchase. Trade in eligible devices for credit toward your purchase.',
+            'Same-day Apple Store Pickup available on most in-stock products — ready in as little as one hour.',
+            'Specialist appointments available daily. Reserve a one-hour session online.',
+        ],
+        'links': [
+            ('Book a Genius Bar appointment', f'/retail/{slug}/genius-bar'),
+            ('Today at Apple sessions', f'/retail/{slug}/today-at-apple'),
+            ('In-store pickup', f'/store/pickup?store={slug}'),
+            ('Personal Setup', '#'),
+            (f'All stores in {city}', f'/retail/{city_slug}'),
+            ('All Apple Stores', '/retail'),
+        ],
+    }
+    return render_template('info_page.html', topic=f'retail/{store_slug}', page=page)
+
+
+@app.route('/retail/<store_slug>/genius-bar', methods=['GET', 'POST'])
+def retail_genius_bar(store_slug):
+    """Book a Genius Bar appointment at a specific Apple Store."""
+    store = _store_by_slug(store_slug)
+    if not store:
+        abort(404)
+    slug, name, _city_slug, city, state, zipc, addr, phone, hours = store
+    submitted = (request.method == 'POST')
+    requested_topic = request.values.get('topic', '').strip()
+    requested_date = request.values.get('date', '').strip()
+    body = [
+        f'Genius Bar appointments at {name}.',
+        f'Location: {addr}, {city}, {state} {zipc}.',
+        f'Hours: {hours}.',
+        'Bring your device, Apple ID password, and a photo ID. Appointments are 20 minutes by default; complex repairs may extend to 60 minutes.',
+        'Common Genius Bar topics: iPhone repair, Mac diagnostic, Apple Watch battery service, AirPods replacement, Apple Vision Pro fit and Light Seal sizing.',
+    ]
+    if submitted:
+        body = [f'Appointment requested — {name} — topic "{requested_topic or "General"}" on {requested_date or "next available"}.'] + body
+    page = {
+        'title': f'Genius Bar at {name}',
+        'subtitle': 'Get hardware help from an Apple Expert.',
+        'body': body,
+        'links': [
+            ('iPhone repair', f'/retail/{slug}/genius-bar?topic=iphone-repair'),
+            ('Mac diagnostic', f'/retail/{slug}/genius-bar?topic=mac-diagnostic'),
+            ('Apple Watch service', f'/retail/{slug}/genius-bar?topic=apple-watch-service'),
+            ('AirPods service', f'/retail/{slug}/genius-bar?topic=airpods-service'),
+            ('Vision Pro fit & Light Seal', f'/retail/{slug}/genius-bar?topic=vision-pro-fit'),
+            ('Back to store', f'/retail/{slug}'),
+        ],
+    }
+    return render_template('info_page.html', topic=f'retail/{store_slug}/genius-bar', page=page)
+
+
+# ---------------------------------------------------------------------------
+# Today at Apple — free in-store creative sessions across categories
+# ---------------------------------------------------------------------------
+
+TODAY_AT_APPLE_SESSIONS = [
+    # (slug, title, category, duration_min, summary, body)
+    ('photo-walks-skill-builders',         'Photo Walks: Skill Builders with iPhone',         'photography', 60,
+     'Sharpen your eye with iPhone-led photo walks.',
+     'Step outside the Apple Store with a Creative Pro to learn composition, lighting, and editing on iPhone 17 Pro. We provide gear; bring an open mind. Sessions every Saturday at participating stores.'),
+    ('photo-portraits-with-iphone',        'Photo Lab: Portraits with iPhone',                'photography', 60,
+     'Master the Portraits feature on iPhone.',
+     'Learn the Portrait mode workflow on iPhone 17 — bokeh effects, lighting presets, depth control, and re-editing portraits after the shot in Photos.'),
+    ('video-cinematic-on-iphone',          'Video Lab: Cinematic Mode and ProRes',            'video',       60,
+     'Shoot beautifully shallow-focus videos on iPhone.',
+     'A Creative Pro walks you through Cinematic mode, ProRes recording, Action mode, and editing in Final Cut Camera on iPhone.'),
+    ('music-lab-garageband',               'Music Lab: Beats with GarageBand',                'music',       60,
+     'Create your first beat in GarageBand on iPad.',
+     'Pick up an iPad and a pair of AirPods and build a beat in GarageBand. Suitable for first-time musicians and producers.'),
+    ('music-lab-logic-pro',                'Music Lab: Producing in Logic Pro',               'music',       90,
+     'Mix and master in Logic Pro on MacBook Pro.',
+     'Bring your tracks or use ours. Learn mixing, mastering, and Logic Pro for iPad workflows. Sessions are 90 minutes; prior GarageBand experience helps.'),
+    ('art-and-design-procreate',           'Art and Design: Sketching in Procreate on iPad',  'art',         60,
+     'Sketch and shade in Procreate with Apple Pencil Pro.',
+     'A Creative Pro guides you through brushes, layers, and shading techniques in Procreate. Hands-on with Apple Pencil Pro.'),
+    ('coding-club-swift-playgrounds',      'Coding Club: First Steps in Swift Playgrounds',   'coding',      60,
+     'Write your first Swift app on iPad.',
+     'Designed for ages 10+. Build a small app and run it on iPad. Counts toward Apple Schoolwork and Apple Teacher recognition.'),
+    ('coding-lab-swiftui-mac',             'Coding Lab: Build a SwiftUI Layout on Mac',       'coding',      90,
+     'Learn SwiftUI fundamentals with Xcode on Mac.',
+     'A 90-minute hands-on lab. Bring a 13" or 15" MacBook Air (Mac mini provided at the store) and we will show how to build a list view in SwiftUI.'),
+    ('apple-watch-walking-club',           'Apple Watch Walking Club',                        'fitness',     45,
+     'Walk together — log your activity with Apple Watch.',
+     'Group walk from the store using Apple Watch Workout app. Tips on goal setting, Activity rings, and pacing. Open to all fitness levels.'),
+    ('today-at-apple-kids-hour',           'Today at Apple Kids Hour',                        'kids',        45,
+     'Hands-on creative fun for ages 6 to 10.',
+     'Stop-motion videos, sketching in Freeform, and short coding puzzles in Swift Playgrounds. Parent or guardian must attend.'),
+    ('apple-pencil-handwriting',           'Apple Pencil Lab: Handwriting and Scribble',      'art',         45,
+     'Practice Scribble and Markup on iPad Pro.',
+     'Learn Apple Pencil Pro gestures, double-tap shortcuts, and the Scribble system that turns handwriting into text in any app.'),
+    ('vision-pro-introductory-demo',       'Apple Vision Pro Introductory Demo',              'vision',      30,
+     'Try Apple Vision Pro in store.',
+     'A guided 30-minute demo of Apple Vision Pro. Try spatial photos and video, Mac Virtual Display, immersive Environments, and FaceTime with Persona. Available at most flagship stores; book in advance.'),
+    ('accessibility-voiceover-discover',   'Accessibility Lab: Discover VoiceOver',           'accessibility',60,
+     'Hands-on with the VoiceOver screen reader.',
+     'Discover the VoiceOver Rotor, gestures, and Braille input. Suitable for anyone who is curious about Apple accessibility — including educators and family members.'),
+    ('accessibility-personal-voice',       'Accessibility Lab: Set up Personal Voice',        'accessibility',60,
+     'Create a Personal Voice on iPhone or iPad.',
+     'Walk through the Personal Voice setup using 15 minutes of recorded prompts. Pair with Live Speech to type and have the device speak in your voice.'),
+    ('skills-business-finder',             'Apple at Work: Build a Business Finder app',      'business',    90,
+     'Build a small business finder with Numbers on Mac.',
+     'A 90-minute lab building a customer list and chart in Numbers, then sharing as a Pages document. Ideal for small business owners.'),
+]
+
+
+@app.route('/today')
+@app.route('/today/')
+def today_at_apple_index():
+    """Browse all Today at Apple sessions."""
+    page = {
+        'title': 'Today at Apple',
+        'subtitle': f'{len(TODAY_AT_APPLE_SESSIONS)} free sessions covering photo, video, music, art, coding, fitness, and accessibility.',
+        'body': [
+            'Join free in-person sessions led by Apple Creative Pros. All gear is provided. Open to everyone.',
+            'Most sessions run 45 to 90 minutes. Some sessions are designed for ages 6-10, marked Kids Hour.',
+        ],
+        'links': [(s[1], f'/today/{s[0]}') for s in TODAY_AT_APPLE_SESSIONS],
+        'sessions': TODAY_AT_APPLE_SESSIONS,
+    }
+    return render_template('info_page.html', topic='today', page=page)
+
+
+@app.route('/today/<session_slug>', methods=['GET', 'POST'])
+def today_at_apple_session(session_slug):
+    session_data = next((s for s in TODAY_AT_APPLE_SESSIONS if s[0] == session_slug), None)
+    if not session_data:
+        abort(404)
+    slug, title, cat, duration, summary, body_text = session_data
+    submitted = (request.method == 'POST')
+    requested_store = request.values.get('store', '').strip()
+    requested_date = request.values.get('date', '').strip()
+    body = [summary, body_text,
+            f'Duration: {duration} minutes.',
+            f'Category: {cat.capitalize()}.',
+            'All Apple devices are provided — bring yourself, your curiosity, and a friend.']
+    if submitted:
+        body = [f'Booked — {title} at "{requested_store or "your selected store"}" on {requested_date or "next available date"}.'] + body
+    page = {
+        'title': title,
+        'subtitle': summary,
+        'body': body,
+        'links': [(s[1], f'/retail/{s[0]}/today-at-apple') for s in APPLE_RETAIL_STORES[:6]] +
+                 [('All Today at Apple sessions', '/today')],
+    }
+    return render_template('info_page.html', topic=f'today/{slug}', page=page)
+
+
+@app.route('/retail/<store_slug>/today-at-apple')
+def retail_today(store_slug):
+    """Today at Apple schedule at a specific Apple Store."""
+    store = _store_by_slug(store_slug)
+    if not store:
+        abort(404)
+    page = {
+        'title': f'Today at Apple at {store[1]}',
+        'subtitle': f'Free creative sessions at {store[1]}.',
+        'body': [
+            'Browse all upcoming Today at Apple sessions at this location. Sessions are first-come, first-served when seats remain on the day; reservations recommended.',
+            'Sessions vary by store. The full Today at Apple catalog runs nightly worldwide.',
+        ],
+        'links': [(t[1], f'/today/{t[0]}?store={store_slug}') for t in TODAY_AT_APPLE_SESSIONS] +
+                 [('Back to store', f'/retail/{store_slug}')],
+    }
+    return render_template('info_page.html', topic=f'retail/{store_slug}/today-at-apple', page=page)
+
+
+# ---------------------------------------------------------------------------
+# Refurbished store — filtered shop view (no DB change)
+# ---------------------------------------------------------------------------
+
+@app.route('/shop/refurbished')
+@app.route('/shop/refurbished/')
+def shop_refurbished():
+    """Apple Certified Refurbished — listing of every refurbished SKU."""
+    cat = request.args.get('category', '').strip().lower()
+    q = Product.query.filter(Product.subcategory == 'refurbished')
+    if cat:
+        q = q.filter(Product.category == cat)
+    products = q.order_by(Product.price.desc()).all()
+    page = {
+        'title': 'Apple Certified Refurbished',
+        'subtitle': f'{len(products)} Apple-tested refurbished products.',
+        'body': [
+            'Apple Certified Refurbished products are fully tested, repackaged, and covered by a one-year Apple limited warranty. AppleCare+ is available for an additional fee.',
+            'Refurbished products are typically discounted 15% off the equivalent new price. Free shipping and 14-day returns on every order.',
+        ],
+        'links': [(p.name, f'/shop/refurbished/{p.slug.replace("certified-refurbished-", "")}') for p in products[:60]] +
+                 [('Refurbished iPhone', '/shop/refurbished?category=iphone'),
+                  ('Refurbished Mac', '/shop/refurbished?category=mac'),
+                  ('Refurbished iPad', '/shop/refurbished?category=ipad'),
+                  ('Refurbished Apple Watch', '/shop/refurbished?category=watch'),
+                  ('Refurbished AirPods', '/shop/refurbished?category=airpods')],
+        'products': products,
+    }
+    return render_template('info_page.html', topic='shop/refurbished', page=page)
+
+
+@app.route('/shop/refurbished/<slug>')
+def shop_refurbished_product(slug):
+    """Single refurbished product detail (redirects to canonical product page)."""
+    p = (Product.query.filter_by(slug=f'certified-refurbished-{slug}').first()
+         or Product.query.filter_by(slug=slug).first())
+    if not p:
+        abort(404)
+    return redirect(url_for('product_detail', slug=p.slug))
+
+
+# ---------------------------------------------------------------------------
+# Accessibility — per-feature drilldown
+# ---------------------------------------------------------------------------
+
+ACCESSIBILITY_FEATURES = {
+    'vision': {
+        'title': 'Vision Accessibility',
+        'subtitle': 'See more, read more, work more — at your own pace.',
+        'body': [
+            'VoiceOver — built-in screen reader that describes what is on the display and lets you control iPhone, iPad, Mac, Apple Watch, and Apple TV with gestures or a refreshable Braille display.',
+            'Zoom — magnify anywhere on screen up to 15×, with a picture-in-picture window so the rest of the display stays in context.',
+            'Magnifier — turn iPhone into a digital magnifying glass with point-and-shoot detection for People, Doors, and Furniture.',
+            'Display & Text Size — adjust contrast, color filters, reduce motion, and use Bold Text app-wide.',
+            'Spoken Content and Live Speech — have any text spoken aloud, or type and have Apple devices speak in a Personal Voice.',
+        ],
+        'links': [
+            ('Set up VoiceOver', '/support/article/accessibility-features'),
+            ('Use Magnifier', '/support/article/accessibility-features'),
+            ('Apple Vision Pro and accessibility', '/vision-pro'),
+            ('All accessibility features', '/accessibility'),
+        ],
+    },
+    'hearing': {
+        'title': 'Hearing Accessibility',
+        'subtitle': 'Hear more, communicate more.',
+        'body': [
+            'Made for iPhone Hearing Aids — stream audio, take calls, and adjust hearing aid settings directly from iPhone.',
+            'Live Captions — automatic real-time captions for any FaceTime call, phone call, or audio playing on your device.',
+            'Sound Recognition — be alerted on iPhone, iPad, Apple Watch, or HomePod when smoke alarms, sirens, doorbells, or a baby cry are detected nearby.',
+            'AirPods Pro Hearing Aid Feature — clinical-grade hearing aid functionality powered by AirPods Pro 2 with the H2 chip (US, AU, EU).',
+            'RTT and TTY support — send and receive real-time text over a cellular connection on iPhone.',
+        ],
+        'links': [
+            ('AirPods Pro Hearing Aid feature', '/product/airpods-pro-3'),
+            ('Live Captions setup', '/support/article/accessibility-features'),
+            ('Made for iPhone hearing aids', '/accessibility'),
+            ('All accessibility features', '/accessibility'),
+        ],
+    },
+    'mobility': {
+        'title': 'Mobility Accessibility',
+        'subtitle': 'Control devices the way that works for you.',
+        'body': [
+            'AssistiveTouch — replace multi-finger gestures with single-tap actions, and use Apple Watch to control your devices via wrist motion.',
+            'Voice Control — navigate and edit on iPhone, iPad, and Mac entirely by voice, with a full grid overlay for precision.',
+            'Switch Control — drive iPhone, iPad, and Mac with one or more external switches, head gestures, or facial expressions.',
+            'Eye Tracking — control iPhone and iPad using only your eyes, calibrated in seconds with the front camera (iPadOS / iOS 18 and later).',
+            'Back Tap and Action Button — assign actions to a back-of-iPhone tap or the Action button on iPhone Pro models.',
+        ],
+        'links': [
+            ('AssistiveTouch setup', '/support/article/accessibility-features'),
+            ('Voice Control', '/support/article/accessibility-features'),
+            ('Switch Control accessories', '/product/switch-control-jelly-bean-switch'),
+            ('All accessibility features', '/accessibility'),
+        ],
+    },
+    'speech': {
+        'title': 'Speech Accessibility',
+        'subtitle': 'Type to talk. Save your voice.',
+        'body': [
+            'Live Speech — type what you want to say and have iPhone, iPad, Mac, or Apple Watch speak it aloud during in-person and FaceTime conversations.',
+            'Personal Voice — record about 15 minutes of audio on iPhone or iPad and create a synthesized version of your own voice for use with Live Speech.',
+            'Vocal Shortcuts — train Siri to recognize custom utterances and run Shortcuts hands-free.',
+        ],
+        'links': [
+            ('Set up Personal Voice', '/today/accessibility-personal-voice'),
+            ('Live Speech', '/support/article/accessibility-features'),
+            ('All accessibility features', '/accessibility'),
+        ],
+    },
+    'cognitive': {
+        'title': 'Cognitive Accessibility',
+        'subtitle': 'A simpler way to use Apple devices.',
+        'body': [
+            'Assistive Access — a distilled experience of iPhone and iPad with high-contrast buttons, larger text, and a focused set of apps.',
+            'Guided Access — temporarily restrict iPhone or iPad to a single app, with controls to disable touch areas or hardware buttons.',
+            'Background Sounds — generate balanced noise, ocean, rain, or stream to help minimize distractions or aid focus and rest.',
+            'Personal Voice — speech tools designed for users with progressive speech conditions.',
+        ],
+        'links': [
+            ('Set up Assistive Access', '/support/article/accessibility-features'),
+            ('Background Sounds', '/support/article/accessibility-features'),
+            ('All accessibility features', '/accessibility'),
+        ],
+    },
+}
+
+
+@app.route('/accessibility/<feature>')
+@app.route('/accessibility/<feature>/')
+def accessibility_feature(feature):
+    page = ACCESSIBILITY_FEATURES.get((feature or '').lower())
+    if not page:
+        abort(404)
+    return render_template('info_page.html', topic=f'accessibility/{feature}', page=page)
+
+
+@app.route('/accessibility/feature/<feature>')
+def accessibility_feature_alias(feature):
+    return redirect(url_for('accessibility_feature', feature=feature), code=301)
+
+
+# ---------------------------------------------------------------------------
+# Education / Business — R4 add-on flows
+# ---------------------------------------------------------------------------
+
+@app.route('/education-pricing/eligibility')
+@app.route('/education-pricing/eligibility/')
+def education_eligibility():
+    """Eligibility check for Apple Education Pricing (UNiDAYS-verified)."""
+    page = {
+        'title': 'Apple Education Pricing — Eligibility',
+        'subtitle': 'Verify your status with UNiDAYS to unlock savings.',
+        'body': [
+            'You are eligible for Apple Education Pricing if you are a current or newly accepted college student.',
+            'Parents buying for a college student in their household are also eligible.',
+            'Teachers and staff at all grade levels — primary, secondary, and post-secondary — qualify year-round.',
+            'Homeschool teachers, board members, and PTA officers also qualify when buying for use with students.',
+            'Verification is handled at checkout by UNiDAYS. Your status is reverified once per year; no manual paperwork required.',
+        ],
+        'links': [
+            ('Shop Mac with Education savings', '/mac'),
+            ('Shop iPad with Education savings', '/ipad'),
+            ('Shop AppleCare+ for Education', '/product/education-savings-applecare-edu-macbook-pro-14'),
+            ('Back to Education Pricing', '/education-pricing'),
+        ],
+    }
+    return render_template('info_page.html', topic='education-pricing/eligibility', page=page)
+
+
+@app.route('/business/quote/bulk', methods=['GET', 'POST'])
+def business_quote_bulk():
+    """Apple at Work — bulk quote request (10+ units)."""
+    submitted = (request.method == 'POST')
+    page = {
+        'title': 'Bulk Business Quote',
+        'subtitle': 'For orders of 10 or more devices.',
+        'body': [
+            'For organizations purchasing 10 or more Macs, iPads, or iPhones, request a bulk quote from an Apple Business Specialist.',
+            'Bulk quotes include volume pricing, Apple Financial Services lease options, zero-touch deployment with Apple Business Manager, and AppleCare+ for Business coverage.',
+            'For the U.S. business team, call 1-800-854-3680 Monday through Friday, 7 AM – 5 PM PT.',
+        ] + ([f'Quote received. An Apple Business Specialist will follow up within one business day.'] if submitted else []),
+        'links': [
+            ('Volume Bundle: 10× MacBook Air 13"', '/product/volume-bundle-macbook-air-13-10pk'),
+            ('Volume Bundle: 25× MacBook Air 13"', '/product/volume-bundle-macbook-air-13-25pk'),
+            ('Volume Bundle: 25× iPad Air M4',     '/product/volume-bundle-ipad-air-m4-25pk'),
+            ('Volume Bundle: 50× iPhone 16',       '/product/volume-bundle-iphone-16-50pk'),
+            ('Apple Business Essentials', '/product/apple-business-essentials-25-seat'),
+            ('Back to Apple at Work', '/business'),
+        ],
+    }
+    return render_template('info_page.html', topic='business/quote/bulk', page=page)
+
+
+# ---------------------------------------------------------------------------
 
 @app.route('/configure/<slug>')
 def configurator(slug):
@@ -4984,11 +5460,558 @@ EXTRA_PRODUCTS_R3_TAIL = _extend_r3()
 EXTRA_PRODUCTS_R3 = EXTRA_PRODUCTS_R3 + EXTRA_PRODUCTS_R3_TAIL
 
 
+# ---------------------------------------------------------------------------
+# R4 product extension (target 605 → 900+).
+# All entries are deterministic and synthesized via small builders that mirror
+# Apple's real SKU shapes: certified-refurbished tier, education-bundle pricing,
+# extended Watch band rainbow, iPhone 17 / 16 / Air case + folio matrix, more
+# chargers and USB-C cables, business volume bundles. No DB-table changes.
+# ---------------------------------------------------------------------------
+
+def _refurb_tuple(base_name, slug, cat, price_orig, year, chip, colors, storage, specs):
+    """Apple Certified Refurbished: typical Apple Store discount is 15% off."""
+    refurb_price = round(price_orig * 0.85 / 5) * 5 + 4  # $X9 ladder
+    name = f'{base_name} — Certified Refurbished'
+    return (name, f'certified-refurbished-{slug}', cat, 'refurbished',
+            'Apple Certified Refurbished. One-year warranty.',
+            f'{base_name} backed by Apple — fully tested, repackaged, and covered by a one-year Apple limited warranty. '
+            f'AppleCare+ available. Free shipping and 14-day returns.',
+            float(refurb_price), None, colors, storage,
+            dict(specs, refurbished='Certified', warranty='1-year Apple limited'),
+            year, chip)
+
+
+def _edu_bundle_tuple(name, slug, price, mp, colors, storage, specs, year):
+    """Education savings SKU. Mirrors Apple's UNiDAYS-verified pricing.
+
+    Education pricing typically saves $50–$200 off Mac/iPad list. We encode
+    that explicitly into the SKU so tasks can ask 'what is the education
+    price for MacBook Air' and the agent has a single SKU to point at.
+
+    Returns the standard 13-tuple expected by `_seed_extra_products`; the
+    monthly-installment column is derived from `mp` in the loader.
+    """
+    return (name, f'education-savings-{slug}', 'mac', 'education',
+            'Save with Apple Education Pricing — UNiDAYS verified.',
+            f'{name}. College students, parents buying for college students, and teachers save with Apple Education Pricing. '
+            f'Verify your status using UNiDAYS at checkout. Bundles include AirPods on us with an eligible Mac or iPad.',
+            float(price), mp, colors, storage, specs, year, '')
+
+
+def _band_matrix(material, sizes, colors, price, year=2025):
+    """Generate (size × color) Watch band SKUs in deterministic order."""
+    out = []
+    for size, compat in sizes:
+        for color in colors:
+            slug = f'{material.lower().replace(" ", "-")}-{size}-r4-{color.lower().replace(" ", "-").replace("/", "-")}'
+            name = f'{material} - {size} {color}'
+            out.append(_watch_band_tuple(name, slug, color, price, year, compat))
+    return out
+
+
+def _extend_r4():
+    """R4 expansion — pushes product count from 605 to 900+ with high-quality
+    SKUs that mirror real Apple Store inventory categories (refurbished,
+    education, today-at-apple-themed accessories, business bundles)."""
+    extra = []
+
+    # ------------------------------------------------------------------
+    # A. Certified Refurbished tier — popular flagship + recent generation
+    # ------------------------------------------------------------------
+    refurb_specs_iphone = {'chip': 'A18', 'display': '6.1" Super Retina XDR',
+                           'camera': '48MP Main', 'battery': 'Apple-tested'}
+    refurb_specs_mac = {'memory': '16GB', 'battery': 'Apple-tested', 'condition': 'A-grade'}
+    refurb_specs_ipad = {'display': 'Liquid Retina', 'battery': 'Apple-tested'}
+    refurb_specs_watch = {'health': 'Blood oxygen, ECG', 'condition': 'A-grade'}
+
+    for base, slug, price, year, chip in [
+        # iPhone refurbished
+        ('iPhone 16 Pro Max',    'iphone-16-pro-max',    1199.00, 2024, 'A18 Pro'),
+        ('iPhone 16 Pro',        'iphone-16-pro',         999.00, 2024, 'A18 Pro'),
+        ('iPhone 16 Plus',       'iphone-16-plus',        899.00, 2024, 'A18'),
+        ('iPhone 16',            'iphone-16',             799.00, 2024, 'A18'),
+        ('iPhone 15 Pro Max',    'iphone-15-pro-max',    1199.00, 2023, 'A17 Pro'),
+        ('iPhone 15 Pro',        'iphone-15-pro',         999.00, 2023, 'A17 Pro'),
+        ('iPhone 15 Plus',       'iphone-15-plus',        899.00, 2023, 'A16'),
+        ('iPhone 15',            'iphone-15',             799.00, 2023, 'A16'),
+        ('iPhone 14 Pro Max',    'iphone-14-pro-max',    1099.00, 2022, 'A16'),
+        ('iPhone 14 Pro',        'iphone-14-pro',         999.00, 2022, 'A16'),
+        ('iPhone 14 Plus',       'iphone-14-plus',        799.00, 2022, 'A15'),
+        ('iPhone 14',            'iphone-14',             699.00, 2022, 'A15'),
+        ('iPhone 13 Pro Max',    'iphone-13-pro-max',    1099.00, 2021, 'A15'),
+        ('iPhone 13 Pro',        'iphone-13-pro',         999.00, 2021, 'A15'),
+        ('iPhone 13',            'iphone-13',             699.00, 2021, 'A15'),
+        ('iPhone SE (3rd gen)',  'iphone-se-3',           429.00, 2022, 'A15'),
+    ]:
+        extra.append(_refurb_tuple(base, slug, 'iphone', price, year, chip,
+                                   ['Black', 'White', 'Blue'], ['128GB', '256GB', '512GB'],
+                                   refurb_specs_iphone))
+
+    for base, slug, price, year, chip in [
+        ('MacBook Pro 14" M4',       'macbook-pro-14-m4',       1599.00, 2024, 'M4'),
+        ('MacBook Pro 14" M4 Pro',   'macbook-pro-14-m4-pro',   1999.00, 2024, 'M4 Pro'),
+        ('MacBook Pro 16" M4 Pro',   'macbook-pro-16-m4-pro',   2499.00, 2024, 'M4 Pro'),
+        ('MacBook Pro 16" M4 Max',   'macbook-pro-16-m4-max',   3499.00, 2024, 'M4 Max'),
+        ('MacBook Pro 14" M3',       'macbook-pro-14-m3',       1599.00, 2023, 'M3'),
+        ('MacBook Pro 16" M3',       'macbook-pro-16-m3',       2499.00, 2023, 'M3 Pro'),
+        ('MacBook Air 13" M3',       'macbook-air-13-m3',       1099.00, 2024, 'M3'),
+        ('MacBook Air 15" M3',       'macbook-air-15-m3',       1299.00, 2024, 'M3'),
+        ('MacBook Air 13" M2',       'macbook-air-13-m2',        999.00, 2022, 'M2'),
+        ('iMac 24" M4',              'imac-24-m4',              1299.00, 2024, 'M4'),
+        ('iMac 24" M3',              'imac-24-m3',              1299.00, 2023, 'M3'),
+        ('Mac mini M4',              'mac-mini-m4',              599.00, 2024, 'M4'),
+        ('Mac mini M4 Pro',          'mac-mini-m4-pro',         1399.00, 2024, 'M4 Pro'),
+        ('Mac Studio M2 Max',        'mac-studio-m2-max',       1999.00, 2023, 'M2 Max'),
+        ('Mac Studio M2 Ultra',      'mac-studio-m2-ultra',     3999.00, 2023, 'M2 Ultra'),
+    ]:
+        extra.append(_refurb_tuple(base, slug, 'mac', price, year, chip,
+                                   ['Space Black', 'Silver', 'Space Gray'],
+                                   ['256GB', '512GB', '1TB', '2TB'],
+                                   refurb_specs_mac))
+
+    for base, slug, price, year, chip in [
+        ('iPad Pro 11" M4',     'ipad-pro-11-m4',        999.00, 2024, 'M4'),
+        ('iPad Pro 13" M4',     'ipad-pro-13-m4',       1299.00, 2024, 'M4'),
+        ('iPad Air 11" M4',     'ipad-air-11-m4',        599.00, 2024, 'M4'),
+        ('iPad Air 13" M4',     'ipad-air-13-m4',        799.00, 2024, 'M4'),
+        ('iPad (10th gen)',     'ipad-10',               349.00, 2022, 'A14 Bionic'),
+        ('iPad mini (7th gen)', 'ipad-mini-7',           499.00, 2024, 'A17 Pro'),
+        ('iPad Pro 11" M2',     'ipad-pro-11-m2',        799.00, 2022, 'M2'),
+    ]:
+        extra.append(_refurb_tuple(base, slug, 'ipad', price, year, chip,
+                                   ['Space Black', 'Silver', 'Blue', 'Purple'],
+                                   ['64GB', '128GB', '256GB', '512GB'],
+                                   refurb_specs_ipad))
+
+    for base, slug, price, year in [
+        ('Apple Watch Ultra 2',           'apple-watch-ultra-2',           799.00, 2023),
+        ('Apple Watch Series 10',         'apple-watch-series-10',         399.00, 2024),
+        ('Apple Watch Series 9',          'apple-watch-series-9',          399.00, 2023),
+        ('Apple Watch SE (2nd gen)',      'apple-watch-se-2',              249.00, 2023),
+        ('Apple Watch Hermès Series 10',  'apple-watch-hermes-series-10', 1249.00, 2024),
+    ]:
+        extra.append(_refurb_tuple(base, slug, 'watch', price, year, 'S10',
+                                   ['Silver', 'Space Black'], ['41mm', '45mm'],
+                                   refurb_specs_watch))
+
+    for base, slug, price, year in [
+        ('AirPods Pro 2 (USB-C)',  'airpods-pro-2-usb-c',  249.00, 2023),
+        ('AirPods Max',            'airpods-max',          549.00, 2020),
+        ('AirPods 3 with MagSafe', 'airpods-3-magsafe',    169.00, 2022),
+    ]:
+        extra.append(_refurb_tuple(base, slug, 'airpods', price, year, 'H2',
+                                   ['White', 'Midnight'], [],
+                                   {'anc': 'Active Noise Cancellation', 'battery': 'Apple-tested'}))
+
+    # ------------------------------------------------------------------
+    # B. Education savings SKUs — bundles + per-product education prices
+    # ------------------------------------------------------------------
+    edu_skus = [
+        ('MacBook Air 13" — Education',    'macbook-air-13',    999.00,  41.62, ['Midnight', 'Starlight', 'Space Gray', 'Silver'], ['256GB', '512GB', '1TB'], {'chip': 'M5', 'memory': '16GB', 'savings_off_retail': 100}, 2026),
+        ('MacBook Air 15" — Education',    'macbook-air-15',   1199.00,  49.95, ['Midnight', 'Starlight', 'Space Gray', 'Silver'], ['256GB', '512GB', '1TB'], {'chip': 'M5', 'memory': '16GB', 'savings_off_retail': 100}, 2026),
+        ('MacBook Pro 14" — Education',    'macbook-pro-14',   1599.00,  66.62, ['Space Black', 'Silver'], ['512GB', '1TB', '2TB'], {'chip': 'M5', 'memory': '24GB', 'savings_off_retail': 100}, 2026),
+        ('MacBook Pro 16" — Education',    'macbook-pro-16',   2299.00,  95.79, ['Space Black', 'Silver'], ['512GB', '1TB', '2TB'], {'chip': 'M5 Pro', 'memory': '36GB', 'savings_off_retail': 200}, 2026),
+        ('iMac 24" — Education',           'imac-24',          1249.00,  52.04, ['Blue', 'Green', 'Pink', 'Silver'], ['256GB', '512GB'], {'chip': 'M5', 'memory': '16GB', 'savings_off_retail': 50}, 2026),
+        ('Mac mini — Education',           'mac-mini',          549.00,  22.87, ['Silver'], ['256GB', '512GB'], {'chip': 'M4', 'memory': '16GB', 'savings_off_retail': 50}, 2025),
+        ('iPad Air M4 — Education',        'ipad-air-m4',       549.00,  22.87, ['Space Gray', 'Blue', 'Purple', 'Starlight'], ['128GB', '256GB', '512GB'], {'chip': 'M4', 'savings_off_retail': 50}, 2024),
+        ('iPad Pro M5 — Education',        'ipad-pro-m5',       899.00,  37.45, ['Space Black', 'Silver'], ['256GB', '512GB', '1TB'], {'chip': 'M5', 'savings_off_retail': 100}, 2025),
+        ('iPad (10th gen) — Education',    'ipad-10',           329.00,  13.70, ['Blue', 'Pink', 'Yellow', 'Silver'], ['64GB', '256GB'], {'chip': 'A14 Bionic', 'savings_off_retail': 20}, 2022),
+    ]
+    for name, slug, price, mp, colors, storage, specs, year in edu_skus:
+        extra.append(_edu_bundle_tuple(name, slug, price, mp, colors, storage, specs, year))
+
+    # Education AppleCare add-on bundle SKUs — single bundled price
+    for term, slug, price in [
+        ('Education AppleCare+ for MacBook Air',    'applecare-edu-macbook-air',    179.00),
+        ('Education AppleCare+ for MacBook Pro 14', 'applecare-edu-macbook-pro-14', 219.00),
+        ('Education AppleCare+ for MacBook Pro 16', 'applecare-edu-macbook-pro-16', 269.00),
+        ('Education AppleCare+ for iPad Pro',       'applecare-edu-ipad-pro',        99.00),
+        ('Education AppleCare+ for iPad Air',       'applecare-edu-ipad-air',        79.00),
+        ('Education AppleCare+ for iMac',           'applecare-edu-imac',           149.00),
+    ]:
+        extra.append((term, f'education-savings-{slug}', 'accessories', 'education',
+                      'Education AppleCare+. Verified via UNiDAYS.',
+                      f'{term} — 3-year hardware coverage, unlimited accidental damage incidents, and 24/7 Apple Specialist support, at the education price.',
+                      price, None, ['Education'], [], {'term': '3 years', 'audience': 'Education'}, 2026, ''))
+
+    # ------------------------------------------------------------------
+    # C. Watch bands — rainbow extension (R4 color matrix)
+    # ------------------------------------------------------------------
+    sizes = (('41mm', 'Apple Watch 40/41mm'),
+             ('45mm', 'Apple Watch 44/45/46mm'),
+             ('49mm', 'Apple Watch Ultra 49mm'))
+    r4_band_colors = ['Cement Gray', 'Powder Blue', 'Apricot', 'Aubergine',
+                      'Sage Green', 'Coral Pink', 'Indigo Twilight']
+    extra += _band_matrix('Sport Band R4',  sizes, r4_band_colors, 49.00)
+    extra += _band_matrix('Sport Loop R4',  sizes, r4_band_colors, 49.00)
+    extra += _band_matrix('Braided Loop R4', (sizes[0], sizes[1]),
+                          ['Charcoal', 'Cement Gray', 'Coral Pink'], 99.00)
+
+    # Today-at-Apple themed limited-edition bands (real Apple drops every season)
+    for season, color in [
+        ('Pride Edition 2025', 'Rainbow'),
+        ('International Womens Day 2025', 'Lilac'),
+        ('Unity 2025', 'Black-Gold'),
+        ('Black Unity 2025', 'Pan-African'),
+    ]:
+        slug = f'sport-band-41mm-{season.lower().replace(" ", "-")}-r4'
+        extra.append(_watch_band_tuple(f'Sport Band - 41mm {season}', slug, color, 49.00, 2025,
+                                       'Apple Watch 40/41mm'))
+        slug45 = f'sport-band-45mm-{season.lower().replace(" ", "-")}-r4'
+        extra.append(_watch_band_tuple(f'Sport Band - 45mm {season}', slug45, color, 49.00, 2025,
+                                       'Apple Watch 44/45/46mm'))
+
+    # ------------------------------------------------------------------
+    # D. iPhone 17 / Air / 16 series cases — complete color matrix
+    # ------------------------------------------------------------------
+    case_matrix = [
+        ('iPhone 17 Pro Max',  'iphone-17-pro-max',  ['Black', 'Storm Blue', 'Plum', 'Cypress', 'Natural Tan', 'Stone Gray', 'Light Pink']),
+        ('iPhone 17 Plus',     'iphone-17-plus',     ['Black', 'Storm Blue', 'Light Pink', 'Cypress', 'Sun Yellow']),
+        ('iPhone Air',         'iphone-air',         ['Midnight', 'Starlight', 'Green', 'Blue', 'Pink', 'Apricot']),
+    ]
+    for model, model_slug, colors in case_matrix:
+        for c in colors:
+            extra.append(_case_tuple(
+                f'{model} Silicone Case with MagSafe - {c} (R4)',
+                f'{model_slug}-silicone-r4-{c.lower().replace(" ", "-")}',
+                model, c, 49.00))
+        for c in colors[:3]:
+            extra.append(_case_tuple(
+                f'{model} Fine Woven Case with MagSafe - {c} (R4)',
+                f'{model_slug}-fine-woven-r4-{c.lower().replace(" ", "-")}',
+                model, c, 59.00, kind='Fine Woven Case'))
+        # Clear case per model
+        extra.append(_case_tuple(
+            f'{model} Clear Case with MagSafe (R4)',
+            f'{model_slug}-clear-magsafe-r4', model, 'Clear', 49.00,
+            kind='Clear Case'))
+
+    # ------------------------------------------------------------------
+    # E. Smart Folio / Magic Keyboard for iPad — R4 color set
+    # ------------------------------------------------------------------
+    folio_colors = ['Charcoal Gray', 'Light Violet', 'Denim', 'Sage', 'Marigold', 'Storm Blue']
+    for model, model_slug in [
+        ('iPad Pro 11" M4',  'ipad-pro-11-m4'),
+        ('iPad Pro 13" M4',  'ipad-pro-13-m4'),
+        ('iPad Air 11" M4',  'ipad-air-11-m4'),
+        ('iPad Air 13" M4',  'ipad-air-13-m4'),
+    ]:
+        for c in folio_colors:
+            slug = f'smart-folio-r4-{model_slug}-{c.lower().replace(" ", "-")}'
+            extra.append((f'Smart Folio for {model} - {c}', slug, 'accessories', 'ipad-folio',
+                          'Smart Folio cover.',
+                          f'Smart Folio for {model} in {c}. Front and back cover with multiple viewing angles. '
+                          f'Auto-wake and sleep. Magnetic attachment.',
+                          79.00, None, [c], [], {'compat': model, 'color': c}, 2025, ''))
+    # Magic Keyboard for iPad Pro M4 in two colors
+    for c in ['White', 'Black']:
+        extra.append((f'Magic Keyboard for iPad Pro 11" M4 - {c} (R4)',
+                      f'magic-keyboard-r4-ipad-pro-11-m4-{c.lower()}',
+                      'accessories', 'ipad-keyboard',
+                      'Backlit Magic Keyboard with trackpad.',
+                      f'Magic Keyboard for iPad Pro 11" (M4) in {c}. Floating cantilever design, backlit keys, '
+                      f'glass trackpad, function-key row, and USB-C passthrough charging.',
+                      299.00, None, [c], [], {'compat': 'iPad Pro 11" M4', 'color': c}, 2024, ''))
+        extra.append((f'Magic Keyboard for iPad Pro 13" M4 - {c} (R4)',
+                      f'magic-keyboard-r4-ipad-pro-13-m4-{c.lower()}',
+                      'accessories', 'ipad-keyboard',
+                      'Backlit Magic Keyboard with trackpad.',
+                      f'Magic Keyboard for iPad Pro 13" (M4) in {c}. Floating cantilever design, backlit keys, '
+                      f'glass trackpad, function-key row, and USB-C passthrough charging.',
+                      349.00, None, [c], [], {'compat': 'iPad Pro 13" M4', 'color': c}, 2024, ''))
+
+    # ------------------------------------------------------------------
+    # F. Chargers, cables, adapters — extended catalog
+    # ------------------------------------------------------------------
+    # MagSafe + USB-C cables in 1m / 2m / braided variants
+    for length, price in [('1m', 19.0), ('1m Braided', 29.0),
+                          ('2m', 29.0), ('2m Braided', 39.0),
+                          ('3m', 39.0), ('3m Braided', 49.0)]:
+        slug = f'usb-c-charge-cable-{length.lower().replace(" ", "-")}-r4'
+        extra.append((f'USB-C Charge Cable ({length}) (R4)', slug, 'accessories', 'cable',
+                      'Charge and sync cable.',
+                      f'USB-C Charge Cable {length}. Connects USB-C-equipped devices for fast charging and data transfer up to 480Mbps.',
+                      price, None, ['White'], [], {'length': length, 'spec': 'USB 2.0, 60W'}, 2024, ''))
+    for length, price in [('1m', 29.0), ('1m Braided', 39.0),
+                          ('2m', 39.0), ('2m Braided', 49.0)]:
+        slug = f'thunderbolt-4-cable-{length.lower().replace(" ", "-")}-r4'
+        extra.append((f'Thunderbolt 4 (USB-C) Pro Cable ({length}) (R4)', slug, 'accessories', 'cable',
+                      'Thunderbolt 4 Pro cable.',
+                      f'Thunderbolt 4 Pro Cable {length}. Up to 40Gb/s Thunderbolt and 100W charging. '
+                      f'Compatible with all USB-C devices.',
+                      price, None, ['Black'], [], {'length': length, 'spec': 'TB4 40Gbps'}, 2024, ''))
+    # Color variants of MagSafe Charger (1m, 2m woven)
+    for length, color, price in [
+        ('1m woven', 'Midnight',    39.0),
+        ('1m woven', 'Starlight',   39.0),
+        ('1m woven', 'Cypress',     39.0),
+        ('1m woven', 'Storm Blue',  39.0),
+        ('2m woven', 'Midnight',    49.0),
+        ('2m woven', 'Starlight',   49.0),
+        ('2m woven', 'Cypress',     49.0),
+        ('2m woven', 'Storm Blue',  49.0),
+    ]:
+        slug = f'magsafe-charger-{length.replace(" ", "-")}-{color.lower().replace(" ", "-")}-r4'
+        extra.append((f'MagSafe Charger ({length}) - {color} (R4)', slug, 'accessories', 'charger',
+                      'MagSafe wireless charger.',
+                      f'MagSafe Charger {length} in {color}. Up to 25W fast wireless charging with a compatible 30W or higher USB-C adapter.',
+                      price, None, [color], [], {'output': 'MagSafe 25W', 'length': length}, 2024, ''))
+    # Worldwide travel adapter colors + extra wattage adapters
+    for slug, name, watts in [
+        ('usb-c-power-adapter-30w-r4',  'USB-C Power Adapter 30W',          30),
+        ('usb-c-power-adapter-60w-r4',  'USB-C Power Adapter 60W',          60),
+        ('usb-c-power-adapter-96w-r4',  'USB-C Power Adapter 96W',          96),
+        ('usb-c-power-adapter-140w-r4', 'USB-C Power Adapter 140W (Pro)',  140),
+    ]:
+        extra.append(_power_tuple(name, slug, watts, year=2025))
+
+    # ------------------------------------------------------------------
+    # G. Business + bulk volume bundles
+    # ------------------------------------------------------------------
+    for seats, slug, price in [
+        (25,  'apple-business-essentials-25-seat',  399.0),
+        (50,  'apple-business-essentials-50-seat',  749.0),
+        (100, 'apple-business-essentials-100-seat', 1399.0),
+        (250, 'apple-business-essentials-250-seat', 3299.0),
+        (500, 'apple-business-essentials-500-seat', 6299.0),
+    ]:
+        extra.append((f'Apple Business Essentials — {seats}-seat plan', slug, 'accessories', 'business',
+                      f'Device management for {seats} employees.',
+                      f'Apple Business Essentials covers up to {seats} employees. Includes device management, 24/7 Apple Support, '
+                      f'iCloud storage, and AppleCare+ for Business options. Volume billing with monthly invoicing.',
+                      price, None, ['Business'], [], {'seats': seats, 'audience': 'Business'}, 2026, ''))
+
+    for slug, name, qty, price in [
+        ('volume-bundle-macbook-air-13-10pk',  'Volume Bundle: 10× MacBook Air 13"', 10, 9499.0),
+        ('volume-bundle-macbook-air-13-25pk',  'Volume Bundle: 25× MacBook Air 13"', 25, 22999.0),
+        ('volume-bundle-ipad-air-m4-25pk',     'Volume Bundle: 25× iPad Air M4',     25, 12999.0),
+        ('volume-bundle-iphone-16-50pk',       'Volume Bundle: 50× iPhone 16',       50, 36999.0),
+        ('volume-bundle-imac-24-10pk',         'Volume Bundle: 10× iMac 24"',        10, 11999.0),
+    ]:
+        extra.append((name, slug, 'accessories', 'business',
+                      f'Volume Pricing — {qty}-pack for Apple at Work customers.',
+                      f'{name}. Available exclusively through the Apple Business Program. Contact 1-800-854-3680 for AFS lease options, '
+                      f'volume discounts, zero-touch deployment, and Apple Business Manager onboarding.',
+                      price, None, ['Business'], [], {'qty': qty, 'audience': 'Business'}, 2026, ''))
+
+    # ------------------------------------------------------------------
+    # H. Accessibility-themed + Today-at-Apple session add-ons
+    # ------------------------------------------------------------------
+    for slug, name, price, desc in [
+        ('switch-control-jelly-bean-switch',         'Jelly Bean Twist Switch (for Switch Control)',         59.0,
+         'Single-action switch with 3.5mm jack. Compatible with iPad and iPhone Switch Control accessibility feature.'),
+        ('rj-cooper-bluetooth-supertalker',          'RJ Cooper Bluetooth SuperTalker',                       89.0,
+         'Augmentative and alternative communication (AAC) Bluetooth keyboard for iPad. Works with the iOS Accessibility Speak Selection feature.'),
+        ('logitech-adaptive-gaming-kit',             'Logitech Adaptive Gaming Kit',                          99.0,
+         'Kit of accessibility buttons for use with the Xbox Adaptive Controller and Apple Game Controller assistive features.'),
+        ('made-for-iphone-hearing-aid-pair',         'Made for iPhone Hearing Aid Pair (Cochlear / Resound)', 2399.0,
+         'Pair of Made for iPhone (MFi) hearing aids. Stream audio directly from iPhone, take calls, and adjust via the Hearing accessibility menu.'),
+    ]:
+        extra.append((name, slug, 'accessories', 'accessibility',
+                      'Accessibility add-on.',
+                      desc, price, None, ['Accessibility'], [],
+                      {'audience': 'Accessibility', 'platform': 'iOS / iPadOS / macOS'}, 2024, ''))
+
+    # ------------------------------------------------------------------
+    # I. HomeKit / Smart home — third-party accessories sold by Apple
+    # ------------------------------------------------------------------
+    for slug, name, brand, kind, price in [
+        ('eve-motion-sensor-r4',          'Eve Motion (HomeKit Motion Sensor)',         'Eve',       'sensor',    49.95),
+        ('eve-door-window-r4',            'Eve Door & Window Sensor',                   'Eve',       'sensor',    39.95),
+        ('eve-water-guard-r4',            'Eve Water Guard',                            'Eve',       'sensor',    89.95),
+        ('eve-thermo-r4',                 'Eve Thermo (HomeKit Radiator Valve)',        'Eve',       'thermostat',79.95),
+        ('eve-degree-r4',                 'Eve Degree (Weather Sensor)',                'Eve',       'sensor',    69.95),
+        ('philips-hue-bridge-r4',         'Philips Hue Bridge',                         'Philips',   'hub',       59.99),
+        ('philips-hue-go-portable-r4',    'Philips Hue Go Portable Light',              'Philips',   'lamp',      89.99),
+        ('philips-hue-ambiance-bulb-r4',  'Philips Hue White and Color Ambiance A19 Bulb','Philips', 'bulb',      49.99),
+        ('philips-hue-light-strip-r4',    'Philips Hue Lightstrip Plus (2m)',           'Philips',   'lightstrip',89.99),
+        ('nanoleaf-lines-starter-r4',     'Nanoleaf Lines Smarter Kit (15-piece)',      'Nanoleaf',  'lightstrip',199.99),
+        ('nanoleaf-shapes-triangles-r4',  'Nanoleaf Shapes Triangles Smarter Kit',      'Nanoleaf',  'lightstrip',199.99),
+        ('nanoleaf-essentials-bulb-r4',   'Nanoleaf Essentials A19 Smart Bulb',         'Nanoleaf',  'bulb',      19.99),
+        ('aqara-hub-m2-r4',               'Aqara Hub M2 (Matter, Thread)',              'Aqara',     'hub',       49.99),
+        ('aqara-camera-hub-g3-r4',        'Aqara Camera Hub G3 (HomeKit Secure Video)', 'Aqara',     'camera',   109.99),
+        ('aqara-presence-sensor-fp2-r4',  'Aqara Presence Sensor FP2',                  'Aqara',     'sensor',    82.99),
+        ('logitech-circle-view-r4',       'Logitech Circle View Camera (HomeKit Secure Video)','Logitech','camera',159.99),
+        ('netatmo-smart-thermostat-r4',   'Netatmo Smart Thermostat',                   'Netatmo',   'thermostat',179.99),
+        ('netatmo-smart-doorbell-r4',     'Netatmo Smart Video Doorbell',               'Netatmo',   'camera',   299.99),
+        ('level-lock-plus-r4',            'Level Lock+ (Home Key)',                     'Level',     'lock',     329.00),
+        ('yale-assure-lock-2-r4',         'Yale Assure Lock 2 (Home Key)',              'Yale',      'lock',     279.99),
+        ('schlage-encode-plus-r4',        'Schlage Encode Plus Smart WiFi Deadbolt',    'Schlage',   'lock',     299.99),
+        ('lutron-caseta-starter-r4',      'Lutron Caséta Smart Lighting Starter Kit',   'Lutron',    'switch',   149.95),
+        ('myq-smart-garage-r4',           'myQ Smart Garage Hub (HomeKit)',             'myQ',       'garage',    49.98),
+        ('eve-energy-smart-plug-r4',      'Eve Energy Smart Plug',                      'Eve',       'plug',      39.95),
+        ('iottie-magsafe-mount-r4',       'iOttie iTap Magnetic 2 MagSafe Car Mount',   'iOttie',    'mount',     34.99),
+    ]:
+        extra.append((name, slug, 'accessories', 'homekit',
+                      f'{brand} {kind} for the Apple Home app.',
+                      f'{name}. Connects to the Apple Home app on iPhone, iPad, Mac, HomePod, or Apple TV. '
+                      f'Works with Siri shortcuts. Matter and Thread support where available.',
+                      price, None, ['White'], [],
+                      {'brand': brand, 'kind': kind, 'platform': 'HomeKit'}, 2025, ''))
+
+    # ------------------------------------------------------------------
+    # J. Audio + TV accessories
+    # ------------------------------------------------------------------
+    for slug, name, price, desc in [
+        ('apple-tv-4k-2024-siri-remote-r4',  'Siri Remote (USB-C, 3rd generation)',                          69.0,
+         'Lightweight rechargeable Siri Remote with a touch-enabled clickpad, dedicated Siri and back buttons. USB-C charging.'),
+        ('apple-tv-4k-ethernet-r4',          'Apple TV 4K (Wi-Fi + Ethernet, 128GB)',                       149.0,
+         'Apple TV 4K with Ethernet, Thread support, and 128GB storage. Powered by A15 Bionic.'),
+        ('homepod-mini-orange-r4',           'HomePod mini - Orange',                                        99.0,
+         'Room-filling sound in a compact design. Audio sharing across multiple HomePods, with U1 chip for handoff from iPhone.'),
+        ('homepod-mini-yellow-r4',           'HomePod mini - Yellow',                                        99.0,
+         'Room-filling sound in a compact design. Audio sharing across multiple HomePods, with U1 chip for handoff from iPhone.'),
+        ('homepod-mini-blue-r4',             'HomePod mini - Blue',                                          99.0,
+         'Room-filling sound in a compact design. Audio sharing across multiple HomePods, with U1 chip for handoff from iPhone.'),
+        ('apple-tv-remote-loop-r4',          'Apple TV Remote Loop',                                         13.0,
+         'Tether loop for the Siri Remote. Prevents drops during use.'),
+        ('beats-pill-statement-red-r4',      'Beats Pill - Statement Red (R4)',                             149.99,
+         'Pill-shaped wireless speaker. Up to 24 hours of battery. Lossless audio over USB-C. iOS Find My support.'),
+        ('beats-pill-matte-black-r4',        'Beats Pill - Matte Black (R4)',                               149.99,
+         'Pill-shaped wireless speaker. Up to 24 hours of battery. Lossless audio over USB-C. iOS Find My support.'),
+        ('belkin-soundform-immerse-r4',      'Belkin SoundForm Immerse with MagSafe Charger',                89.99,
+         'Bluetooth speaker doubling as a MagSafe charger for iPhone. Spatial Audio playback for FaceTime.'),
+        ('sonos-era-300-airplay2-r4',        'Sonos Era 300 (AirPlay 2)',                                   449.0,
+         'Spatial Audio speaker with AirPlay 2. Tune Sonos rooms with the Sonos app and group with HomePod via Apple Music.'),
+    ]:
+        extra.append((name, slug, 'audio', 'tv-audio',
+                      desc[:80], desc, price, None, ['Default'], [],
+                      {'category': 'audio'}, 2024, ''))
+
+    # ------------------------------------------------------------------
+    # K. iPhone protection — screen protectors + lens kits
+    # ------------------------------------------------------------------
+    for model_slug, model, price in [
+        ('iphone-17-pro-max',  'iPhone 17 Pro Max',  44.95),
+        ('iphone-17-pro',      'iPhone 17 Pro',      44.95),
+        ('iphone-17',          'iPhone 17',          39.95),
+        ('iphone-air',         'iPhone Air',         39.95),
+        ('iphone-16-pro-max',  'iPhone 16 Pro Max',  44.95),
+        ('iphone-16-pro',      'iPhone 16 Pro',      44.95),
+        ('iphone-15-pro-max',  'iPhone 15 Pro Max',  44.95),
+        ('iphone-15-pro',      'iPhone 15 Pro',      44.95),
+    ]:
+        extra.append((f'Belkin UltraGlass 2 Screen Protector for {model}',
+                      f'belkin-ultraglass-2-{model_slug}-r4', 'accessories', 'iphone-protection',
+                      'Tempered-glass screen protector.',
+                      f'Belkin UltraGlass 2 with Magnetic Tray Alignment for {model}. Anti-microbial coating, scratch resistant. '
+                      f'Compatible with Face ID and Action button.',
+                      price, None, ['Clear'], [],
+                      {'compat': model, 'kind': 'Screen Protector'}, 2025, ''))
+        extra.append((f'Moment Lens Mount and Filter Kit for {model}',
+                      f'moment-lens-mount-{model_slug}-r4', 'accessories', 'iphone-protection',
+                      'Pro mount with magnetic CPL/ND filters.',
+                      f'Moment lens mount system with magnetic CPL and ND filters for {model}. Connect M-series lenses for telephoto, anamorphic, and macro.',
+                      89.99, None, ['Black'], [],
+                      {'compat': model, 'kind': 'Lens Mount'}, 2025, ''))
+
+    # ------------------------------------------------------------------
+    # L. Watch chargers + docks
+    # ------------------------------------------------------------------
+    for slug, name, price, desc in [
+        ('apple-watch-magnetic-charger-1m-r4',    'Apple Watch Magnetic Fast Charger to USB-C Cable (1 m)', 29.0,
+         'Magnetic charging puck and 1-meter USB-C cable. Fast charges Apple Watch Series 7 and later.'),
+        ('apple-watch-magnetic-charger-2m-r4',    'Apple Watch Magnetic Fast Charger to USB-C Cable (2 m)', 39.0,
+         'Magnetic charging puck and 2-meter USB-C cable. Fast charges Apple Watch Series 7 and later.'),
+        ('apple-watch-dock-leather-saddle-r4',    'Apple Watch Travel Dock - Saddle Brown Leather',         59.0,
+         'Hand-finished leather travel dock with integrated cable management for Apple Watch.'),
+        ('apple-watch-dock-leather-midnight-r4',  'Apple Watch Travel Dock - Midnight Leather',             59.0,
+         'Hand-finished leather travel dock with integrated cable management for Apple Watch.'),
+        ('nomad-apple-watch-charging-stand-r4',   'Nomad Apple Watch Charging Stand',                       79.95,
+         'Aluminum charging stand for Apple Watch with weighted base and integrated USB-C cable.'),
+        ('apple-watch-magsafe-duo-r4',            'Apple MagSafe Duo Charger for Apple Watch + iPhone',     129.0,
+         'Foldable MagSafe Duo charger. Charges iPhone and Apple Watch simultaneously.'),
+    ]:
+        extra.append((name, slug, 'accessories', 'charger',
+                      desc[:80], desc, price, None, ['Default'], [],
+                      {'kind': 'Watch Charger'}, 2024, ''))
+
+    # ------------------------------------------------------------------
+    # M. Additional refurbished SKUs (HomePod, Apple TV, Vision Pro)
+    # ------------------------------------------------------------------
+    for base, slug, price, year in [
+        ('HomePod (2nd generation)', 'homepod-2',                   299.00, 2023),
+        ('HomePod mini',             'homepod-mini',                 99.00, 2020),
+        ('Apple TV 4K (3rd gen)',    'apple-tv-4k-3rd-gen',         129.00, 2022),
+        ('Apple Vision Pro 256GB',   'vision-pro-256gb',           3499.00, 2024),
+        ('Apple Vision Pro 512GB',   'vision-pro-512gb',           3699.00, 2024),
+        ('Apple Vision Pro 1TB',     'vision-pro-1tb',             3899.00, 2024),
+    ]:
+        extra.append(_refurb_tuple(base, slug, 'audio' if 'HomePod' in base else 'vision' if 'Vision' in base else 'tv',
+                                   price, year, 'A15',
+                                   ['Default'], [], {'condition': 'Apple Certified'}))
+
+    # ------------------------------------------------------------------
+    # N. Final fill — Watch bumpers, iPhone crossbody straps, Pencil tips,
+    #    and Mac peripherals to bring the catalog past 900 SKUs.
+    # ------------------------------------------------------------------
+    for slug, name, price, desc in [
+        ('apple-watch-bumper-41mm-clear-r4',  'Apple Watch Bumper Case - 41mm Clear',                       29.0,
+         'Slim, MagSafe-compatible bumper case for Apple Watch 40/41mm. Protects edges without obstructing buttons.'),
+        ('apple-watch-bumper-45mm-clear-r4',  'Apple Watch Bumper Case - 45mm Clear',                       29.0,
+         'Slim, MagSafe-compatible bumper case for Apple Watch 44/45/46mm. Protects edges without obstructing buttons.'),
+        ('apple-watch-bumper-49mm-black-r4',  'Apple Watch Ultra Bumper Case - 49mm Black',                 39.0,
+         'Reinforced rubber bumper for Apple Watch Ultra 49mm. Adventure-grade impact protection.'),
+        ('apple-pencil-pro-tips-r4',          'Apple Pencil Pro Replacement Tips (4-pack)',                 19.0,
+         'Four replacement tips for Apple Pencil Pro. Compatible with iPad Pro M4, iPad Air M4, and Apple Pencil (2nd generation).'),
+        ('apple-pencil-usb-c-tips-r4',        'Apple Pencil (USB-C) Replacement Tips (4-pack)',             15.0,
+         'Four replacement tips for Apple Pencil (USB-C). Pixel-perfect precision and tilt sensitivity preserved.'),
+        ('magic-mouse-black-r4',              'Magic Mouse - Black (R4)',                                   99.0,
+         'Apple Magic Mouse, redesigned with USB-C charging. Black aluminum body. Multi-touch surface for swipe and scroll gestures.'),
+        ('magic-trackpad-black-r4',           'Magic Trackpad - Black (R4)',                                129.0,
+         'Apple Magic Trackpad with Force Touch and Multi-Touch. Black aluminum. USB-C charging.'),
+        ('magic-keyboard-numeric-black-r4',   'Magic Keyboard with Numeric Keypad - Black (R4)',            149.0,
+         'Magic Keyboard with Numeric Keypad and dedicated function-key row. Black aluminum. USB-C connector.'),
+        ('magic-keyboard-touch-id-black-r4',  'Magic Keyboard with Touch ID and Numeric Keypad - Black',    199.0,
+         'Magic Keyboard with Touch ID and Numeric Keypad. Black anodized aluminum. Compatible with Apple silicon Macs.'),
+        ('studio-display-vesa-r4',            'Studio Display - VESA Mount Adapter',                        1599.0,
+         '27-inch 5K Retina display with VESA mount adapter. 12MP Ultra Wide camera and six-speaker sound system.'),
+        ('iphone-crossbody-strap-marigold-r4','iPhone Crossbody Strap - Marigold',                          59.0,
+         'MagSafe-compatible crossbody strap. Marigold color. Magnetic closure with iPhone Cases.'),
+        ('iphone-crossbody-strap-storm-r4',   'iPhone Crossbody Strap - Storm Blue',                        59.0,
+         'MagSafe-compatible crossbody strap. Storm Blue color. Magnetic closure with iPhone Cases.'),
+        ('iphone-crossbody-strap-cypress-r4', 'iPhone Crossbody Strap - Cypress',                           59.0,
+         'MagSafe-compatible crossbody strap. Cypress color. Magnetic closure with iPhone Cases.'),
+        ('iphone-crossbody-strap-light-pink-r4','iPhone Crossbody Strap - Light Pink',                      59.0,
+         'MagSafe-compatible crossbody strap. Light Pink color. Magnetic closure with iPhone Cases.'),
+        ('iphone-fineWoven-folio-marigold-r4','iPhone Fine Woven Folio - Marigold',                         79.0,
+         'Fine Woven folio with card slot. Marigold color. Wakes and sleeps your iPhone when opened or closed.'),
+        ('iphone-fineWoven-folio-evergreen-r4','iPhone Fine Woven Folio - Evergreen',                       79.0,
+         'Fine Woven folio with card slot. Evergreen color. Wakes and sleeps your iPhone when opened or closed.'),
+        ('apple-watch-link-bracelet-titanium-r4','Apple Watch Link Bracelet - Titanium (45mm)',             449.0,
+         'Polished titanium Link Bracelet for Apple Watch. Removable links for size adjustment. Premium butterfly closure.'),
+        ('apple-watch-modern-buckle-deep-r4', 'Apple Watch Modern Buckle - Deep Sea Blue',                  149.0,
+         'Granada leather Modern Buckle in Deep Sea Blue. Magnetic closure for easy on/off.'),
+        ('apple-watch-leather-link-saddle-r4','Apple Watch Leather Link - Saddle Brown (Medium)',           99.0,
+         'Saddle Brown leather link with hidden magnets. Adjusts automatically for a precise fit on the wrist.'),
+        ('apple-watch-leather-link-evergreen-r4','Apple Watch Leather Link - Evergreen (Medium)',           99.0,
+         'Evergreen leather link with hidden magnets. Adjusts automatically for a precise fit on the wrist.'),
+        ('belkin-iphone-stand-magsafe-r4',    'Belkin BoostCharge Pro 3-in-1 Wireless MagSafe Stand',       149.95,
+         '3-in-1 charging stand for iPhone (MagSafe), Apple Watch, and AirPods. Officially MagSafe-certified.'),
+        ('twelve-south-bookarc-r4',           'Twelve South BookArc for MacBook',                            59.99,
+         'Vertical aluminum stand for MacBook Air or MacBook Pro. Clears desk space and improves airflow.'),
+        ('twelve-south-hirise-pro-r4',        'Twelve South HiRise Pro for MacBook',                         99.99,
+         'Adjustable aluminum laptop stand for MacBook with integrated USB-C cable pass-through.'),
+        ('moft-snap-on-magsafe-r4',           'MOFT Snap-On MagSafe Wallet & Stand',                         24.99,
+         'Foldable MagSafe wallet with built-in stand. Holds up to three cards and props iPhone in landscape or portrait.'),
+        ('peak-design-mobile-tripod-r4',      'Peak Design Mobile Tripod (MagSafe)',                         79.95,
+         'Slim aluminum mobile tripod with MagSafe attachment. Pairs with iPhone for Cinematic-mode video.'),
+    ]:
+        extra.append((name, slug, 'accessories', 'misc',
+                      desc[:80], desc, price, None, ['Default'], [],
+                      {'category': 'accessory'}, 2025, ''))
+
+    return extra
+
+
+EXTRA_PRODUCTS_R4 = _extend_r4()
+
+
 def _seed_extra_products():
-    """Add the EXTRA_PRODUCTS + EXTRA_PRODUCTS_R2 + EXTRA_PRODUCTS_R3 rows. Idempotent — skips slugs already present."""
+    """Add the EXTRA_PRODUCTS + EXTRA_PRODUCTS_R2 + EXTRA_PRODUCTS_R3 + EXTRA_PRODUCTS_R4 rows. Idempotent — skips slugs already present."""
     existing = {p.slug for p in Product.query.with_entities(Product.slug).all()}
     added = 0
-    for tup in (EXTRA_PRODUCTS + EXTRA_PRODUCTS_R2 + EXTRA_PRODUCTS_R3):
+    for tup in (EXTRA_PRODUCTS + EXTRA_PRODUCTS_R2 + EXTRA_PRODUCTS_R3 + EXTRA_PRODUCTS_R4):
         (name, slug, cat, subcat, subt, desc, price, mp, colors, storage, specs, year, chip) = tup
         if slug in existing:
             continue

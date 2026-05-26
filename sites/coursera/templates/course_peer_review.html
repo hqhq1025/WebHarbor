@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block title %}Peer Review Queue | {{ course.title }} | Coursera{% endblock %}
+{% block content %}
+<div class="peer-review-page" style="background:#F2F5FA;min-height:100vh;">
+  <div class="container" style="max-width:1000px;margin:0 auto;padding:32px 24px;">
+    <nav class="cd-breadcrumb" style="margin-bottom:18px;font-size:13px;color:#5B6780;">
+      <a href="{{ url_for('index') }}" style="color:#0056D2;">Home</a> &rsaquo;
+      <a href="{{ url_for('course_detail', slug=course.slug) }}" style="color:#0056D2;">{{ course.title }}</a> &rsaquo;
+      <span>Peer Review</span>
+    </nav>
+
+    <header style="background:#fff;border:1px solid #DAE1ED;border-radius:12px;padding:24px;margin-bottom:18px;">
+      <h1 style="font-size:26px;margin:0 0 6px;">Peer review queue</h1>
+      <p style="color:#5B6780;font-size:14px;">Submissions waiting for a peer reviewer. Picking one rewards you with a peer-review credit toward your own grade.</p>
+    </header>
+
+    {% if submissions %}
+    <ul style="list-style:none;padding:0;margin:0;background:#fff;border:1px solid #DAE1ED;border-radius:12px;overflow:hidden;">
+      {% for s in submissions %}
+      <li style="padding:18px 22px;border-bottom:1px solid #EEF1F8;display:flex;gap:14px;align-items:center;">
+        <span style="display:inline-flex;width:42px;height:42px;border-radius:50%;background:#FFF1DD;color:#DD7B0F;align-items:center;justify-content:center;font-weight:800;">{{ s.learner[0]|upper }}</span>
+        <div style="flex:1;">
+          <div style="font-weight:600;font-size:16px;">{{ s.title }}</div>
+          <div style="font-size:12px;color:#5B6780;margin-top:2px;">By {{ s.learner }} &middot; submitted {{ s.submitted_days_ago }} day{{ 's' if s.submitted_days_ago != 1 else '' }} ago &middot; learner progress {{ s.progress }}%</div>
+        </div>
+        <span style="background:#0056D2;color:#fff;padding:8px 14px;border-radius:6px;font-weight:600;font-size:13px;">Review</span>
+      </li>
+      {% endfor %}
+    </ul>
+    {% else %}
+    <div style="background:#fff;border:1px dashed #DAE1ED;border-radius:12px;padding:34px;text-align:center;color:#5B6780;">No submissions currently waiting. Check back after the next assignment deadline.</div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

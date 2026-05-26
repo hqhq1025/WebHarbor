@@ -1,0 +1,88 @@
+{% extends 'base.html' %}
+{% block title %}{{ origin.iata }} to {{ dest.iata }} route stats{% endblock %}
+{% block content %}
+<div class="info-page">
+  <div class="info-page-inner">
+    <h1>{{ origin.city }} &rarr; {{ dest.city }}</h1>
+    <div style="color:#5f6368;margin-bottom:18px;">
+      {{ origin.name }} ({{ origin.iata }}) to {{ dest.name }} ({{ dest.iata }})
+      &middot; great-circle {{ distance_km }} km
+    </div>
+
+    <div class="card-grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-bottom:18px;">
+      <div style="background:#fff;border:1px solid #dadce0;border-radius:8px;padding:14px;">
+        <div style="font-size:12px;color:#5f6368;">Catalog flights</div>
+        <div style="font-size:22px;font-weight:500;">{{ '{:,}'.format(stats.count) }}</div>
+      </div>
+      <div style="background:#fff;border:1px solid #dadce0;border-radius:8px;padding:14px;">
+        <div style="font-size:12px;color:#5f6368;">Cheapest economy</div>
+        <div style="font-size:22px;font-weight:500;">${{ stats.min_price|round(0)|int }}</div>
+      </div>
+      <div style="background:#fff;border:1px solid #dadce0;border-radius:8px;padding:14px;">
+        <div style="font-size:12px;color:#5f6368;">Average economy</div>
+        <div style="font-size:22px;font-weight:500;">${{ stats.avg_price|round(0)|int }}</div>
+      </div>
+      <div style="background:#fff;border:1px solid #dadce0;border-radius:8px;padding:14px;">
+        <div style="font-size:12px;color:#5f6368;">Avg duration</div>
+        <div style="font-size:22px;font-weight:500;">{{ stats.avg_duration_h }}h {{ stats.avg_duration_m }}m</div>
+      </div>
+      <div style="background:#fff;border:1px solid #dadce0;border-radius:8px;padding:14px;">
+        <div style="font-size:12px;color:#5f6368;">Nonstop share</div>
+        <div style="font-size:22px;font-weight:500;">{{ stats.nonstop_pct }}%</div>
+      </div>
+      <div style="background:#fff;border:1px solid #dadce0;border-radius:8px;padding:14px;">
+        <div style="font-size:12px;color:#5f6368;">Avg CO2 (kg)</div>
+        <div style="font-size:22px;font-weight:500;">{{ stats.avg_co2 }}</div>
+      </div>
+    </div>
+
+    <h2>Carriers on this route</h2>
+    <table class="data-table" style="width:100%;border-collapse:collapse;">
+      <thead>
+        <tr style="text-align:left;border-bottom:1px solid #dadce0;">
+          <th style="padding:8px 12px;">Airline</th>
+          <th style="padding:8px 12px;">Flights</th>
+          <th style="padding:8px 12px;">Avg price</th>
+          <th style="padding:8px 12px;">Avg rating</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in carriers %}
+        <tr style="border-bottom:1px solid #f1f3f4;">
+          <td style="padding:8px 12px;">
+            <a href="{{ url_for('airline_detail', code=row.code) }}">{{ row.name }}</a>
+          </td>
+          <td style="padding:8px 12px;">{{ row.count }}</td>
+          <td style="padding:8px 12px;">${{ row.avg_price|round(0)|int }}</td>
+          <td style="padding:8px 12px;">{{ row.avg_rating|round(1) }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+
+    <h2 style="margin-top:24px;">Popularity trend (last 12 months)</h2>
+    <table class="data-table" style="width:100%;border-collapse:collapse;">
+      <thead>
+        <tr style="text-align:left;border-bottom:1px solid #dadce0;">
+          <th style="padding:6px 10px;">Month</th>
+          <th style="padding:6px 10px;">Flights</th>
+          <th style="padding:6px 10px;">Avg price</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in trend %}
+        <tr style="border-bottom:1px solid #f1f3f4;">
+          <td style="padding:6px 10px;">{{ row.month }}</td>
+          <td style="padding:6px 10px;">{{ row.count }}</td>
+          <td style="padding:6px 10px;">${{ row.avg_price|round(0)|int }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+
+    <p style="margin-top:24px;">
+      <a class="btn-primary" href="{{ url_for('flights_list', **{'from': origin.iata, 'to': dest.iata}) }}">Search this route</a>
+    </p>
+  </div>
+</div>
+{% endblock %}

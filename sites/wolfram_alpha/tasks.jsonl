@@ -423,3 +423,411 @@
 {"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--422", "ques": "Compute the QR decomposition of a 3x3 random matrix.", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
 {"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--423", "ques": "Solve the system: 2x + 3y - z = 1, x - y + 2z = 5, 3x + y + z = 6.", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
 {"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--424", "ques": "Calculate the orbital period of a satellite at 400 km altitude.", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--425", "ques": "Factor x^2 - 3x + 2.", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--426", "ques": "Expand (x - 1)(x - 2).", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--427", "ques": "Factor x^2 - 5x + 6.", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--428", "ques": "Expand (x - 2)(x - 3).", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--429", "ques": "Factor x^2 - 7x + 12.", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--430", "ques": "Expand (x - 3)(x - 4).", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--431", "ques": "Factor x^2 - 7x + 10.", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--432", "ques": "Expand (x - 2)(x - 5).", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--433", "ques": "Factor x^2 - 8x + 15.", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--434", "ques": "Expand (x - 3)(x - 5).", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--435", "ques": "Factor x^2 - 9x + 20.", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--436", "ques": "Expand (x - 4)(x - 5).", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--437", "ques": "Factor x^2 - 7x + 6.", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--438", "ques": "Expand (x - 1)(x - 6).", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--439", "ques": "Factor x^2 - 9x + 14.", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--440", "ques": "Expand (x - 2)(x - 7).", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--441", "ques": "Factor x^2 - 10x + 21.", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--442", "ques": "Expand (x - 3)(x - 7).", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--443", "ques": "Factor x^2 - 9x + 8.", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--444", "ques": "Expand (x - 1)(x - 8).", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--445", "ques": "Factor x^2 - 11x + 18.", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--446", "ques": "Expand (x - 2)(x - 9).", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--447", "ques": "Factor x^2 - 11x + 28.", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--448", "ques": "Expand (x - 4)(x - 7).", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--449", "ques": "Factor x^2 - 11x + 24.", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--450", "ques": "Expand (x - 3)(x - 8).", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--451", "ques": "Factor x^2 - 12x + 35.", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--452", "ques": "Expand (x - 5)(x - 7).", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--453", "ques": "Factor x^2 - 13x + 42.", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--454", "ques": "Expand (x - 6)(x - 7).", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--455", "ques": "Factor x^2 - 13x + 40.", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--456", "ques": "Expand (x - 5)(x - 8).", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--457", "ques": "Factor x^2 - 13x + 36.", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--458", "ques": "Expand (x - 4)(x - 9).", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--459", "ques": "Factor x^2 - 14x + 45.", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--460", "ques": "Expand (x - 5)(x - 9).", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--461", "ques": "Factor x^2 - 15x + 54.", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--462", "ques": "Expand (x - 6)(x - 9).", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--463", "ques": "Factor x^2 - 16x + 63.", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--464", "ques": "Expand (x - 7)(x - 9).", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--465", "ques": "Compute the derivative of x^3.", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--466", "ques": "Compute the derivative of x^4.", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--467", "ques": "Compute the derivative of x^5.", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--468", "ques": "Compute the derivative of x^6.", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--469", "ques": "Compute the derivative of x^7.", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--470", "ques": "Compute the derivative of x^8.", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--471", "ques": "Compute the derivative of x^9.", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--472", "ques": "Compute the derivative of x^10.", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--473", "ques": "Compute the derivative of x^11.", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--474", "ques": "Compute the derivative of x^12.", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--475", "ques": "Compute the derivative of x^13.", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--476", "ques": "Compute the derivative of x^14.", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--477", "ques": "Compute the derivative of x^15.", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--478", "ques": "Compute the derivative of x^16.", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--479", "ques": "Compute the derivative of x^17.", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--480", "ques": "Compute the derivative of x^18.", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--481", "ques": "Compute the derivative of x^19.", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--482", "ques": "Compute the derivative of x^20.", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--483", "ques": "Compute the derivative of sin(1x).", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--484", "ques": "Compute the integral of cos(1x).", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--485", "ques": "Compute the derivative of e^(1x).", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--486", "ques": "Compute the derivative of sin(2x).", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--487", "ques": "Compute the integral of cos(2x).", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--488", "ques": "Compute the derivative of e^(2x).", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--489", "ques": "Compute the derivative of sin(3x).", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--490", "ques": "Compute the integral of cos(3x).", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--491", "ques": "Compute the derivative of e^(3x).", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--492", "ques": "Compute the derivative of sin(5x).", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--493", "ques": "Compute the integral of cos(5x).", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--494", "ques": "Compute the derivative of e^(5x).", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--495", "ques": "Compute the derivative of sin(7x).", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--496", "ques": "Compute the integral of cos(7x).", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--497", "ques": "Compute the derivative of e^(7x).", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--498", "ques": "Compute the derivative of sin(10x).", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--499", "ques": "Compute the integral of cos(10x).", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--500", "ques": "Compute the derivative of e^(10x).", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--501", "ques": "Compute the integral of x^2 from 0 to 1.", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--502", "ques": "Compute the integral of x^3 from 0 to 1.", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--503", "ques": "Compute the integral of x^5 from 0 to 1.", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--504", "ques": "Compute the integral of x^7 from 0 to 1.", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--505", "ques": "Compute the integral of x^10 from 0 to 1.", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--506", "ques": "Compute the integral of x^14 from 0 to 1.", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--507", "ques": "Show the step-by-step solution for the integral of 1/(x^2 + 4).", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--508", "ques": "Show the step-by-step solution for the integral of 1/(x^2 + 9).", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--509", "ques": "Show the step-by-step solution for the integral of 1/(x^2 + 16).", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--510", "ques": "Show the step-by-step solution for the integral of 1/(x^2 + 25).", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--511", "ques": "Show the step-by-step solution for the integral of 1/(x^2 + 36).", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--512", "ques": "Show the step-by-step solution for the integral of 1/(x^2 + 49).", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--513", "ques": "Compute the prime factorization of 120.", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--514", "ques": "Compute the prime factorization of 144.", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--515", "ques": "Compute the prime factorization of 200.", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--516", "ques": "Compute the prime factorization of 360.", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--517", "ques": "Compute the prime factorization of 999.", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--518", "ques": "Compute the prime factorization of 1024.", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--519", "ques": "Compute the prime factorization of 1729.", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--520", "ques": "Compute the prime factorization of 360360.", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--521", "ques": "Compute the prime factorization of 9999.", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--522", "ques": "Compute gcd(48, 180).", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--523", "ques": "Compute lcm(48, 180).", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--524", "ques": "Compute gcd(252, 105).", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--525", "ques": "Compute lcm(252, 105).", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--526", "ques": "Compute gcd(360, 495).", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--527", "ques": "Compute lcm(360, 495).", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--528", "ques": "Compute gcd(462, 1071).", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--529", "ques": "Compute lcm(462, 1071).", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--530", "ques": "Compute gcd(693, 609).", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--531", "ques": "Compute lcm(693, 609).", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--532", "ques": "Compute the binomial coefficient C(10, 3).", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--533", "ques": "Compute the binomial coefficient C(12, 5).", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--534", "ques": "Compute the binomial coefficient C(15, 4).", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--535", "ques": "Compute the binomial coefficient C(20, 6).", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--536", "ques": "Compute the binomial coefficient C(25, 5).", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--537", "ques": "Compute the binomial coefficient C(8, 2).", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--538", "ques": "Compute the binomial coefficient C(7, 3).", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--539", "ques": "Compute the binomial coefficient C(50, 10).", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--540", "ques": "Compute Fibonacci F_10.", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--541", "ques": "Compute Fibonacci F_15.", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--542", "ques": "Compute Fibonacci F_20.", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--543", "ques": "Compute Fibonacci F_25.", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--544", "ques": "Compute Fibonacci F_30.", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--545", "ques": "Compute Fibonacci F_40.", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--546", "ques": "Compute Fibonacci F_50.", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--547", "ques": "Compute 5!.", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--548", "ques": "Compute 7!.", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--549", "ques": "Compute 10!.", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--550", "ques": "Compute 12!.", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--551", "ques": "Compute 15!.", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--552", "ques": "Compute 20!.", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--553", "ques": "What is the probability that the sum of 2d6 is 8?", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--554", "ques": "What is the probability that the sum of 3d6 is 9?", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--555", "ques": "What is the probability that the sum of 2d8 is 10?", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--556", "ques": "What is the probability that the sum of 3d10 is 13?", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--557", "ques": "Compute the mean and standard deviation of {2, 4, 4, 4, 5, 5, 7, 9}.", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--558", "ques": "Compute the 95% confidence interval for mean=100, sd=10, n=50.", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--559", "ques": "Compute P(X = 3) for X ~ Binomial(10, 0.3).", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--560", "ques": "Compute P(X = 12) for X ~ Binomial(20, 0.5).", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--561", "ques": "Compute P(X = 8) for X ~ Binomial(50, 0.2).", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--562", "ques": "Compute the standard normal CDF at z = 1.", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--563", "ques": "Compute the standard normal CDF at z = 1.5.", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--564", "ques": "Compute the standard normal CDF at z = 1.96.", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--565", "ques": "Compute the standard normal CDF at z = 2.0.", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--566", "ques": "Compute the standard normal CDF at z = 2.5.", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--567", "ques": "Compute the molar mass of H2O.", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--568", "ques": "Compute the molar mass of CO2.", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--569", "ques": "Compute the molar mass of CH4.", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--570", "ques": "Compute the molar mass of NH3.", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--571", "ques": "Compute the molar mass of NaCl.", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--572", "ques": "Compute the molar mass of HCl.", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--573", "ques": "Compute the molar mass of H2SO4.", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--574", "ques": "Compute the molar mass of HNO3.", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--575", "ques": "Compute the molar mass of C6H12O6.", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--576", "ques": "Compute the molar mass of C12H22O11.", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--577", "ques": "Compute the molar mass of C8H10N4O2.", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--578", "ques": "Compute the molar mass of C9H8O4.", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--579", "ques": "Compute the molar mass of C2H5OH.", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--580", "ques": "Compute the molar mass of C6H6.", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--581", "ques": "Compute the molar mass of CaCO3.", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--582", "ques": "Compute the molar mass of NaOH.", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--583", "ques": "Compute the molar mass of KMnO4.", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--584", "ques": "Compute the molar mass of Al2O3.", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--585", "ques": "Compute the molar mass of SiO2.", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--586", "ques": "Compute the molar mass of Fe2O3.", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--587", "ques": "Dilute 1.0 M stock from 10 mL to 100 mL \u2014 what is the final molarity?", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--588", "ques": "Dilute 0.5 M stock from 25 mL to 250 mL \u2014 what is the final molarity?", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--589", "ques": "Dilute 2.0 M stock from 5 mL to 50 mL \u2014 what is the final molarity?", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--590", "ques": "Dilute 1.5 M stock from 20 mL to 100 mL \u2014 what is the final molarity?", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--591", "ques": "Compute pH for hydrogen-ion concentration [H+] = 0.01 M.", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--592", "ques": "Compute pH for hydrogen-ion concentration [H+] = 0.0001 M.", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--593", "ques": "Compute pH for hydrogen-ion concentration [H+] = 1e-06 M.", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--594", "ques": "Compute pH for hydrogen-ion concentration [H+] = 1e-10 M.", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--595", "ques": "Compute pH for hydrogen-ion concentration [H+] = 1e-13 M.", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--596", "ques": "Compute the kinetic energy of a 1 kg mass at 5 m/s.", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--597", "ques": "Compute the kinetic energy of a 1 kg mass at 10 m/s.", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--598", "ques": "Compute the kinetic energy of a 1 kg mass at 30 m/s.", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--599", "ques": "Compute the kinetic energy of a 1 kg mass at 50 m/s.", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--600", "ques": "Compute the kinetic energy of a 5 kg mass at 5 m/s.", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--601", "ques": "Compute the kinetic energy of a 5 kg mass at 10 m/s.", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--602", "ques": "Compute the kinetic energy of a 5 kg mass at 30 m/s.", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--603", "ques": "Compute the kinetic energy of a 5 kg mass at 50 m/s.", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--604", "ques": "Compute the kinetic energy of a 10 kg mass at 5 m/s.", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--605", "ques": "Compute the kinetic energy of a 10 kg mass at 10 m/s.", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--606", "ques": "Compute the kinetic energy of a 10 kg mass at 30 m/s.", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--607", "ques": "Compute the kinetic energy of a 10 kg mass at 50 m/s.", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--608", "ques": "Compute the kinetic energy of a 100 kg mass at 5 m/s.", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--609", "ques": "Compute the kinetic energy of a 100 kg mass at 10 m/s.", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--610", "ques": "Compute the kinetic energy of a 100 kg mass at 30 m/s.", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--611", "ques": "Compute the kinetic energy of a 100 kg mass at 50 m/s.", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--612", "ques": "Compute the kinetic energy of a 1000 kg mass at 5 m/s.", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--613", "ques": "Compute the kinetic energy of a 1000 kg mass at 10 m/s.", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--614", "ques": "Compute the kinetic energy of a 1000 kg mass at 30 m/s.", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--615", "ques": "Compute the kinetic energy of a 1000 kg mass at 50 m/s.", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--616", "ques": "Compute the photon energy at 400 nm.", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--617", "ques": "Compute the photon energy at 500 nm.", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--618", "ques": "Compute the photon energy at 600 nm.", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--619", "ques": "Compute the photon energy at 800 nm.", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--620", "ques": "Compute the photon energy at 1550 nm.", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--621", "ques": "Compute the period of a simple pendulum of length 10 cm on Earth.", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--622", "ques": "Compute the period of a simple pendulum of length 50 cm on Earth.", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--623", "ques": "Compute the period of a simple pendulum of length 100 cm on Earth.", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--624", "ques": "Compute the period of a simple pendulum of length 200 cm on Earth.", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--625", "ques": "Compute the period of a simple pendulum of length 500 cm on Earth.", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--626", "ques": "Compute the wavelength corresponding to 60 Hz.", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--627", "ques": "Compute the wavelength corresponding to 1e+06 Hz.", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--628", "ques": "Compute the wavelength corresponding to 1e+08 Hz.", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--629", "ques": "Compute the wavelength corresponding to 2.4e+09 Hz.", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--630", "ques": "Compute the wavelength corresponding to 5e+09 Hz.", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--631", "ques": "Compute the monthly mortgage payment for a $100,000 loan at 3% over 15 years.", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--632", "ques": "Compute the monthly mortgage payment for a $250,000 loan at 5% over 30 years.", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--633", "ques": "Compute the monthly mortgage payment for a $350,000 loan at 6.5% over 30 years.", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--634", "ques": "Compute the monthly mortgage payment for a $500,000 loan at 7% over 30 years.", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--635", "ques": "Compute the monthly mortgage payment for a $1,000,000 loan at 4% over 30 years.", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--636", "ques": "Compute the monthly mortgage payment for a $200,000 loan at 4% over 15 years.", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--637", "ques": "What is the future value of $1000 invested at 5% for 10 years?", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--638", "ques": "What is the future value of $5000 invested at 7% for 20 years?", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--639", "ques": "What is the future value of $10000 invested at 4% for 15 years?", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--640", "ques": "What is the future value of $50000 invested at 6% for 30 years?", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--641", "ques": "Convert 100 km to mi.", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--642", "ques": "Convert 75 mph to km/h.", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--643", "ques": "Convert 180 cm to in.", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--644", "ques": "Convert 5 lb to kg.", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--645", "ques": "Convert 98.6 F to C.", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--646", "ques": "Convert -40 C to F.", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--647", "ques": "Convert 1 yr to s.", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--648", "ques": "Convert 1 AU to m.", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--649", "ques": "Convert 1 parsec to ly.", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--650", "ques": "Convert 1 atm to kPa.", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--651", "ques": "Convert 500 BTU to kJ.", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--652", "ques": "Convert 1 calorie to J.", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--653", "ques": "Convert 60 mph to m/s.", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--654", "ques": "Compute the Elo expected score for a player rated 1500 versus 1700.", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--655", "ques": "Compute the Elo expected score for a player rated 2000 versus 2200.", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--656", "ques": "Compute the Elo expected score for a player rated 2800 versus 2400.", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--657", "ques": "Compute the Elo expected score for a player rated 1200 versus 1400.", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--658", "ques": "Compute the Elo expected score for a player rated 2500 versus 2500.", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--659", "ques": "What is the symmetric-equivalent security level of 1024-bit RSA?", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--660", "ques": "What is the symmetric-equivalent security level of 2048-bit RSA?", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--661", "ques": "What is the symmetric-equivalent security level of 3072-bit RSA?", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--662", "ques": "What is the symmetric-equivalent security level of 4096-bit RSA?", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--663", "ques": "What is the symmetric-equivalent security level of 8192-bit RSA?", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--664", "ques": "What is the output size in bits of SHA-1?", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--665", "ques": "What is the output size in bits of SHA-256?", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--666", "ques": "What is the output size in bits of SHA-512?", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--667", "ques": "What is the output size in bits of SHA3-256?", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--668", "ques": "What is the output size in bits of BLAKE2b?", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--669", "ques": "Estimate the work to find a collision in an ideal 80-bit hash.", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--670", "ques": "Estimate the work to find a collision in an ideal 128-bit hash.", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--671", "ques": "Estimate the work to find a collision in an ideal 192-bit hash.", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--672", "ques": "Estimate the work to find a collision in an ideal 256-bit hash.", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--673", "ques": "How many parameters does BERT-base have?", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--674", "ques": "How many parameters does BERT-large have?", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--675", "ques": "How many parameters does GPT-2 medium have?", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--676", "ques": "How many parameters does LLaMA-7B have?", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--677", "ques": "How many parameters does LLaMA-13B have?", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--678", "ques": "How many parameters does ViT-B/16 have?", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--679", "ques": "How many parameters does ResNet-50 have?", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--680", "ques": "How many parameters does VGG-16 have?", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--681", "ques": "How many parameters does EfficientNet-B0 have?", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--682", "ques": "Look up the hidden dimension of GPT-2 medium.", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--683", "ques": "How many transformer layers does BERT-large have?", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--684", "ques": "What is the formula for scaled dot-product attention?", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--685", "ques": "Explain the residual connection used in ResNet.", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--686", "ques": "State the Adam optimizer update rule.", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--687", "ques": "What is the ECO code for the Sicilian Defense?", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--688", "ques": "Describe the Lucena position.", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--689", "ques": "What are the requirements to earn a Grandmaster title?", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--690", "ques": "Who currently holds the World Chess Championship?", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--691", "ques": "State the LTV/CAC ratio considered healthy for SaaS.", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--692", "ques": "What is the standard Amazon referral fee percentage?", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--693", "ques": "Compute customer acquisition cost from $50k marketing spend with 250 new customers.", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--694", "ques": "Define cart abandonment rate and give an industry benchmark.", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--695", "ques": "Estimate the monthly active users of Facebook in 2024.", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--696", "ques": "What is the average daily time spent on TikTok per user?", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--697", "ques": "Compute engagement rate for a post with 5000 likes, 200 comments, 100 shares, and 100000 impressions.", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--698", "ques": "Plot sin(x) from 0 to 2\u03c0.", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--699", "ques": "Plot the function f(x) = x^3 - 6x^2 + 11x - 6.", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--700", "ques": "Plot e^(-x^2) on [-3, 3].", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--701", "ques": "Open the Wolfram|Alpha widget builder and find the embed code template.", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--702", "ques": "Copy the permalink for the result of 'derivative of x^2'.", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--703", "ques": "Look up the Wolfram|Alpha Full Results API endpoint URL.", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--704", "ques": "Find the Spoken Results API rate-limit on the free tier.", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--705", "ques": "List the dataset categories Wolfram|Alpha exposes (visit /resources/datasets).", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--706", "ques": "Navigate to the Conversational API product page and report its free-tier monthly call limit.", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--707", "ques": "Use the alternate-forms tab on the result page for 'factor x^2 - 5x + 6'.", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--708", "ques": "On the result for 'derivative of x^7', read the Wolfram Language code pod.", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--709", "ques": "Pick the 'mathematical operation' assumption for 'pi' and report the new interpretation.", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--710", "ques": "Log into your account, search for 'derivative of x^3', then check it appears in your query history.", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--711", "ques": "Save the query 'integral of cos(x)' to your saved queries list.", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--712", "ques": "Add the result of 'molar mass of H2O' to a notebook.", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--713", "ques": "Compute the area of a circle with radius 3.", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--714", "ques": "Compute the volume of a sphere with radius 3.", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--715", "ques": "Compute the surface area of a sphere with radius 3.", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--716", "ques": "Compute the area of a circle with radius 5.", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--717", "ques": "Compute the volume of a sphere with radius 5.", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--718", "ques": "Compute the surface area of a sphere with radius 5.", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--719", "ques": "Compute the area of a circle with radius 7.", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--720", "ques": "Compute the volume of a sphere with radius 7.", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--721", "ques": "Compute the surface area of a sphere with radius 7.", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--722", "ques": "Compute the area of a circle with radius 10.", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--723", "ques": "Compute the volume of a sphere with radius 10.", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--724", "ques": "Compute the surface area of a sphere with radius 10.", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--725", "ques": "Compute the area of a circle with radius 12.", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--726", "ques": "Compute the volume of a sphere with radius 12.", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--727", "ques": "Compute the surface area of a sphere with radius 12.", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--728", "ques": "Compute the area of a circle with radius 15.", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--729", "ques": "Compute the volume of a sphere with radius 15.", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--730", "ques": "Compute the surface area of a sphere with radius 15.", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--731", "ques": "Compute the area of a circle with radius 20.", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--732", "ques": "Compute the volume of a sphere with radius 20.", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--733", "ques": "Compute the surface area of a sphere with radius 20.", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--734", "ques": "Compute the area of a circle with radius 25.", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--735", "ques": "Compute the volume of a sphere with radius 25.", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--736", "ques": "Compute the surface area of a sphere with radius 25.", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--737", "ques": "Compute the area of a circle with radius 30.", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--738", "ques": "Compute the volume of a sphere with radius 30.", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--739", "ques": "Compute the surface area of a sphere with radius 30.", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--740", "ques": "Compute the area of an equilateral triangle with side 3.", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--741", "ques": "Compute the area of an equilateral triangle with side 5.", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--742", "ques": "Compute the area of an equilateral triangle with side 7.", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--743", "ques": "Compute the area of an equilateral triangle with side 10.", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--744", "ques": "Compute the area of an equilateral triangle with side 12.", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--745", "ques": "Compute the area of an equilateral triangle with side 15.", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--746", "ques": "Compute the area of an equilateral triangle with side 20.", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--747", "ques": "Compute the interior angle of a regular 5-gon.", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--748", "ques": "Compute the interior angle of a regular 6-gon.", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--749", "ques": "Compute the interior angle of a regular 7-gon.", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--750", "ques": "Compute the interior angle of a regular 8-gon.", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--751", "ques": "Compute the interior angle of a regular 9-gon.", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--752", "ques": "Compute the interior angle of a regular 10-gon.", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--753", "ques": "Compute the interior angle of a regular 12-gon.", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--754", "ques": "Compute the modular inverse of 7 mod 13.", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--755", "ques": "Compute the modular inverse of 17 mod 100.", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--756", "ques": "Compute the modular inverse of 3 mod 11.", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--757", "ques": "Compute the modular inverse of 5 mod 17.", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--758", "ques": "Compute the modular inverse of 2 mod 29.", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--759", "ques": "How many days are there between 2000-01-01 and 2024-01-01?", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--760", "ques": "How many days are there between 1969-07-20 and 2024-07-20?", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--761", "ques": "How many days are there between 1492-10-12 and 2024-10-12?", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--762", "ques": "How many days are there between 2024-02-29 and 2025-02-28?", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--763", "ques": "How many days are there between 2024-01-01 and 2030-01-01?", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--764", "ques": "How many parameters does ResNet-101 have?", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--765", "ques": "How many parameters does ResNet-152 have?", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--766", "ques": "How many parameters does GPT-3 (175B) have?", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--767", "ques": "How many parameters does LLaMA-65B have?", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--768", "ques": "How many parameters does ViT-L/16 have?", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--769", "ques": "How many parameters does MobileNetV2 have?", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--770", "ques": "How many parameters does Inception V3 have?", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--771", "ques": "How many parameters does AlexNet have?", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--772", "ques": "How many parameters does VGG-19 have?", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--773", "ques": "Compute the Coulomb force between charges 1e-06 C and 1e-06 C separated by 0.1 m.", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--774", "ques": "Compute the Coulomb force between charges 2e-06 C and 3e-06 C separated by 1.0 m.", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--775", "ques": "Compute the Coulomb force between charges 5e-09 C and 5e-09 C separated by 0.01 m.", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--776", "ques": "Compute the gravitational potential energy of a 5 kg object at height 10 m.", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--777", "ques": "Compute the gravitational potential energy of a 5 kg object at height 20 m.", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--778", "ques": "Compute the gravitational potential energy of a 5 kg object at height 50 m.", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--779", "ques": "Compute the gravitational potential energy of a 5 kg object at height 100 m.", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--780", "ques": "Compute the 95% confidence interval for a sample of n=25, mean=50, sd=8.", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--781", "ques": "Compute the 95% confidence interval for a sample of n=100, mean=50, sd=8.", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--782", "ques": "Compute the 95% confidence interval for a sample of n=200, mean=50, sd=8.", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--783", "ques": "What is \u03a6(-1.5) for the standard normal distribution?", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--784", "ques": "What is \u03a6(-1) for the standard normal distribution?", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--785", "ques": "What is \u03a6(0.5) for the standard normal distribution?", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--786", "ques": "What is \u03a6(1.0) for the standard normal distribution?", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--787", "ques": "What is \u03a6(1.96) for the standard normal distribution?", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--788", "ques": "Compute the Elo expected score for a 2700-rated player versus 2750-rated opponent.", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--789", "ques": "Compute the Elo expected score for a 1800-rated player versus 2000-rated opponent.", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--790", "ques": "Compute the Elo expected score for a 1400-rated player versus 1300-rated opponent.", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--791", "ques": "Compute the Elo expected score for a 900-rated player versus 1100-rated opponent.", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--792", "ques": "Compute the ROAS break-even point for a 40% gross margin product.", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--793", "ques": "Compute the dim weight of a 12 \u00d7 12 \u00d7 12 inch package using the US DIM factor 139.", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--794", "ques": "What was the largest esports prize pool ever recorded?", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--795", "ques": "Estimate Twitch's average concurrent viewer count in 2024.", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--796", "ques": "What is the typical engagement-rate benchmark on TikTok?", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--797", "ques": "Compute the dropshipping margin given Price=$50, COGS=$15, ad cost=$10, fees=$3.", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--798", "ques": "Go to /resources/tutorials and list the available tutorial titles.", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--799", "ques": "Go to /resources/widgets and find the link for the BMI calculator widget.", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--800", "ques": "Open /resources/api and find the link to the Short Answers API page.", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--801", "ques": "Visit /products/short-answers-api and report the endpoint URL.", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--802", "ques": "On /widget/builder, copy the iframe embed code template.", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--803", "ques": "Generate a share permalink for the computation result with id 3000 (visit /share/3000).", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--804", "ques": "Find the Wolfram|Alpha Conversational API monthly free-tier call count.", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--805", "ques": "Identify the rate-limit on the Wolfram|Alpha Simple API free tier.", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--806", "ques": "State the equation for scaled dot-product attention used in Transformer models.", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--807", "ques": "What is the Kyber post-quantum scheme standardized by NIST?", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--808", "ques": "Describe Dilithium and its FIPS standard number.", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--809", "ques": "Give the parameter count formula for a Transformer (BERT-style) layer.", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--810", "ques": "What is the typical batch normalization formula y = \u03b3(x\u2212\u03bc)/\u221a(\u03c3\u00b2+\u03b5)+\u03b2 used for?", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--811", "ques": "Explain the LWE problem in post-quantum lattice cryptography.", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--812", "ques": "Compare AES-128, AES-192, and AES-256 in terms of key size and rounds.", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--813", "ques": "Create a new public notebook titled 'Calculus exam prep' from your account.", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--814", "ques": "Add 'derivative of x^5' and 'integral of cos(2x)' as notebook entries.", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--815", "ques": "Submit feedback (5 stars) on the topic 'Transformer Architecture' from your account.", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--816", "ques": "Toggle favorite on the 'RSA Cryptography' topic.", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--817", "ques": "Plot cos(x) from -\u03c0 to \u03c0.", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--818", "ques": "Plot tan(x) on the interval (-\u03c0/2, \u03c0/2) and identify asymptotes.", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--819", "ques": "Plot x^2 and x^3 together on [-2, 2].", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--820", "ques": "Plot the parametric curve x = cos(t), y = sin(t) for t in [0, 2\u03c0].", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--821", "ques": "Compute the sum of the first 10 positive integers.", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--822", "ques": "Compute the sum of the first 20 positive integers.", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--823", "ques": "Compute the sum of the first 50 positive integers.", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--824", "ques": "Compute the sum of the first 100 positive integers.", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--825", "ques": "Compute the sum of squares of the first 10 positive integers.", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--826", "ques": "Compute the sum of squares of the first 20 positive integers.", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--827", "ques": "Compute the sum of squares of the first 50 positive integers.", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--828", "ques": "Compute the sum of the infinite geometric series 1 + 1/2 + 1/4 + 1/8 + ...", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--829", "ques": "Compute the sum 1/1! + 1/2! + 1/3! + ... and identify the closed form.", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--830", "ques": "What day of the week was January 1, 2000?", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--831", "ques": "Convert Gregorian date March 14, 2024 to Julian calendar.", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}
+{"web_name": "Wolfram Alpha", "id": "Wolfram Alpha--832", "ques": "How many days does the Islamic year have?", "web": "http://localhost:40011/", "upstream_url": "https://www.wolframalpha.com/"}

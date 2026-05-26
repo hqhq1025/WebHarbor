@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}Resources — {{ info.label }}{% endblock %}
+
+{% block content %}
+<div class="section-inner" style="padding-top: 40px;">
+  <nav class="resource-nav">
+    {% for rt, meta in all_types.items() %}
+    <a href="/resources/{{ rt }}" class="resource-tab {% if rt == rtype %}resource-tab--active{% endif %}">{{ meta.label }}</a>
+    {% endfor %}
+  </nav>
+
+  <h1 class="section-heading">{{ info.label }}</h1>
+  <p class="resource-desc">{{ info.desc }}</p>
+
+  <ul class="resource-list">
+    {% for entry in info['items'] %}
+    <li class="resource-item">
+      {% if entry[1].startswith('/') %}
+        <a href="{{ entry[1] }}" class="resource-item-link"><strong>{{ entry[0] }}</strong> <span class="resource-item-url">{{ entry[1] }}</span></a>
+      {% else %}
+        <span class="resource-item-text"><strong>{{ entry[0] }}</strong> — {{ entry[1] }}</span>
+      {% endif %}
+    </li>
+    {% endfor %}
+  </ul>
+</div>
+{% endblock %}

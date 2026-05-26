@@ -3585,3 +3585,841 @@ def seed_user_content(db, User, Place, Review, Photo, TimelineEntry):
             ))
         db.session.commit()
         print(f"seed_user_content: added {TimelineEntry.query.count()} timeline entries")
+
+# ============================================================================
+# R4 additions: OSM-tile-style place expansion + per-place extras backfill
+# (popular times, accessibility, service options, menu, ratings distribution)
+# + curated transit lines.
+# Every value is hash-derived from the row's slug so rebuilds stay
+# byte-identical across machines.
+# ============================================================================
+
+# Service-business templates: small local businesses every dense city has —
+# these are the "OSM tile-density" tail of the catalog.  ~70 entries × 812
+# cities → ~57k more places to push the total past 130k.
+_R4_TEMPLATES = [
+    # (cat_slug, name_pattern, subtitle, desc, price, rlo, rhi)
+    ("services", "{anchor} Dry Cleaners", "Dry cleaner",
+     "Family dry-cleaning shop with same-day service, alterations, and shoe repair.", "$$", 4.0, 4.7),
+    ("services", "{anchor} Laundromat", "Laundromat",
+     "Coin-operated laundromat with high-efficiency washers, drop-off service, and free Wi-Fi.", "$", 3.7, 4.4),
+    ("services", "{anchor} Tailor Shop", "Tailor",
+     "Custom tailor shop with on-site alterations, hemming, and wedding-attire fittings.", "$$", 4.4, 4.9),
+    ("services", "{anchor} Shoe Repair", "Shoe repair",
+     "Cobbler offering resoling, heel replacement, leather conditioning, and bag repair.", "$$", 4.5, 4.9),
+    ("services", "{anchor} Computer Repair", "Computer repair",
+     "Computer & laptop repair shop with same-day data recovery and screen replacements.", "$$", 4.0, 4.7),
+    ("services", "{anchor} Phone Repair", "Phone repair",
+     "Phone and tablet repair store offering screen, battery, and water-damage service.", "$$", 4.1, 4.7),
+    ("services", "{anchor} Locksmith 24h", "24-hour locksmith",
+     "24-hour locksmith for residential lockouts, auto unlocks, and rekeying.", "$$", 4.0, 4.7),
+    ("services", "{anchor} Print & Copy Center", "Print & copy",
+     "Print, scan, and copy center with large-format printing, binding, and notary on staff.", "$", 4.0, 4.6),
+    ("services", "{anchor} Plumbing Services", "Plumber",
+     "Licensed plumbing service for leak repair, water heaters, drain cleaning, and re-piping.", "$$", 4.2, 4.8),
+    ("services", "{anchor} Electricians Co.", "Electrician",
+     "Licensed electricians offering panel upgrades, EV-charger installation, and lighting work.", "$$", 4.3, 4.8),
+    ("services", "{anchor} HVAC Heating & Cooling", "HVAC contractor",
+     "HVAC contractor servicing furnaces, AC units, heat pumps, and ducting.", "$$", 4.1, 4.7),
+    ("services", "{anchor} Garage Door Repair", "Garage door repair",
+     "Garage door repair & installation — broken springs, openers, panels, and full doors.", "$$", 4.2, 4.7),
+    ("services", "{anchor} House Cleaning Co.", "Cleaning service",
+     "Residential cleaning service with bonded & insured staff, recurring or one-time visits.", "$$", 4.3, 4.8),
+    ("services", "{anchor} Pest Control", "Pest control",
+     "Pest control company treating ants, roaches, rodents, termites, and bed bugs.", "$$", 4.1, 4.7),
+    ("services", "{anchor} Landscaping & Lawn", "Landscaper",
+     "Landscaping & lawn-care company offering mowing, mulch, tree trimming, and design.", "$$", 4.2, 4.7),
+    ("services", "{anchor} Roofing Contractors", "Roofer",
+     "Roofing contractor with shingle, metal, flat-roof installation, and insurance claims help.", "$$$", 4.1, 4.7),
+    ("services", "{anchor} Window Cleaning Co.", "Window cleaning",
+     "Residential and commercial window cleaning — interior, exterior, and screens.", "$$", 4.3, 4.8),
+    ("services", "{anchor} Carpet Cleaning", "Carpet cleaning",
+     "Hot-water-extraction carpet cleaning with stain removal and pet-odor treatment.", "$$", 4.0, 4.6),
+    ("services", "{anchor} Moving Company", "Movers",
+     "Local & long-distance movers offering packing, storage, and piano moving.", "$$", 4.0, 4.6),
+    ("services", "{anchor} Storage Units", "Self-storage",
+     "Self-storage facility with climate-controlled units, drive-up access, and 24h gate.", "$$", 4.0, 4.6),
+    ("services", "{anchor} Towing Service", "Tow truck",
+     "24-hour towing service for accidents, jump-starts, and roadside lockouts.", "$$", 3.8, 4.4),
+    ("services", "{anchor} Tax Preparation Office", "Tax prep",
+     "Tax preparation office for individuals and small businesses, year-round appointments.", "$$", 4.2, 4.8),
+    ("services", "{anchor} Legal Aid Clinic", "Lawyer",
+     "Legal aid clinic providing free consultations on tenant, family, and immigration law.", "Free", 4.4, 4.9),
+    ("services", "{anchor} Real Estate Office", "Real estate office",
+     "Real estate brokerage with residential and commercial agents servicing the metro area.", "$$", 4.0, 4.6),
+    ("services", "{anchor} Notary Public", "Notary",
+     "Walk-in notary public, mobile-notary appointments, and apostille service.", "$", 4.5, 4.9),
+    ("services", "{anchor} Wedding Photography Studio", "Photography studio",
+     "Wedding and portrait photography studio with engagement-session bundles.", "$$$", 4.6, 4.9),
+    ("services", "{anchor} Bike Repair Shop", "Bike repair",
+     "Bike repair shop with tune-ups, flat-fix, drivetrain service, and used-bike sales.", "$$", 4.4, 4.9),
+    ("services", "{anchor} Watch & Jewelry Repair", "Jewelry repair",
+     "Watch battery, sizing, and jewelry repair while you wait.", "$$", 4.4, 4.9),
+    ("services", "{anchor} Music Lessons Studio", "Music school",
+     "Private music lessons in piano, guitar, voice, and strings for all ages.", "$$", 4.6, 4.9),
+    ("services", "{anchor} Dance Studio", "Dance studio",
+     "Dance studio offering ballet, jazz, hip-hop, and adult drop-in classes.", "$$", 4.5, 4.9),
+    ("restaurants", "{anchor} Pizzeria", "Pizzeria",
+     "Casual pizzeria with hand-tossed pies, daily specials, and craft beer.", "$$", 4.1, 4.7),
+    ("restaurants", "{anchor} Burger Bar", "Burger restaurant",
+     "Burger bar with grass-fed patties, classic shakes, and a curated whiskey list.", "$$", 4.0, 4.6),
+    ("restaurants", "{anchor} Ramen House", "Ramen restaurant",
+     "Ramen specialist with rich tonkotsu broth, gyoza, and bao buns.", "$$", 4.3, 4.8),
+    ("restaurants", "{anchor} Vegan Cafe", "Vegan restaurant",
+     "Plant-based cafe with bowls, sandwiches, smoothies, and house-made desserts.", "$$", 4.3, 4.8),
+    ("restaurants", "{anchor} BBQ Smokehouse", "Barbecue",
+     "Slow-smoked BBQ with brisket, ribs, pulled pork, and house sauces.", "$$", 4.3, 4.8),
+    ("restaurants", "{anchor} Korean Grill", "Korean BBQ",
+     "Korean BBQ with tabletop grills, banchan, and soju cocktails.", "$$$", 4.4, 4.9),
+    ("restaurants", "{anchor} Indian Kitchen", "Indian restaurant",
+     "Indian kitchen serving regional curries, tandoor specialties, and weekend buffet.", "$$", 4.3, 4.8),
+    ("restaurants", "{anchor} Thai Garden", "Thai restaurant",
+     "Thai restaurant with pad Thai, curry, and a deep wine-and-cocktail program.", "$$", 4.2, 4.7),
+    ("restaurants", "{anchor} Mediterranean Grill", "Mediterranean",
+     "Mediterranean grill with falafel, kebabs, hummus, and fresh pita.", "$$", 4.2, 4.7),
+    ("restaurants", "{anchor} Ice Cream Parlor", "Ice cream shop",
+     "Ice-cream parlor with house-churned flavors, vegan options, and waffle cones.", "$", 4.5, 4.9),
+    ("restaurants", "{anchor} Donut Shop", "Donut shop",
+     "Donut shop with old-fashioned, raised, and seasonal-flavor donuts plus drip coffee.", "$", 4.4, 4.9),
+    ("restaurants", "{anchor} Bubble Tea House", "Bubble tea",
+     "Bubble tea cafe with milk teas, fruit teas, cheese foam, and snack menu.", "$", 4.2, 4.7),
+    ("restaurants", "{anchor} Juice Bar", "Juice bar",
+     "Juice bar with cold-pressed juices, smoothie bowls, and acai.", "$$", 4.3, 4.8),
+    ("restaurants", "{anchor} Wine Bar", "Wine bar",
+     "Wine bar with 50+ pours by the glass, charcuterie, and small plates.", "$$$", 4.3, 4.8),
+    ("restaurants", "{anchor} Cocktail Lounge", "Cocktail bar",
+     "Cocktail lounge with seasonal menu, classic rotation, and zero-proof options.", "$$$", 4.4, 4.9),
+    ("restaurants", "{anchor} Sports Bar & Grill", "Sports bar",
+     "Sports bar with wings, beers on tap, and every major-league game on screen.", "$$", 3.9, 4.5),
+    ("restaurants", "{anchor} Diner", "Diner",
+     "Classic American diner serving all-day breakfast, milkshakes, and blue-plate specials.", "$", 4.0, 4.6),
+    ("restaurants", "{anchor} Food Truck Court", "Food trucks",
+     "Rotating food-truck court with seating, picnic tables, and weekend live music.", "$", 4.2, 4.7),
+    ("restaurants", "{anchor} Bakery", "Bakery",
+     "Bakery with sourdough, croissants, cakes, and custom-order cookies.", "$$", 4.4, 4.9),
+    ("restaurants", "{anchor} Sandwich Shop", "Sandwich shop",
+     "Sandwich shop with hot subs, deli classics, and house-roasted meats.", "$", 4.2, 4.7),
+    ("shopping", "{anchor} Hardware Store", "Hardware store",
+     "Independent hardware store with paint mixing, key cutting, and tool rentals.", "$$", 4.3, 4.8),
+    ("shopping", "{anchor} Garden Center", "Garden center",
+     "Garden center with plants, seeds, soil, pottery, and weekend workshops.", "$$", 4.4, 4.9),
+    ("shopping", "{anchor} Pet Supply", "Pet store",
+     "Pet supply store with food, treats, toys, and grooming appointments.", "$$", 4.3, 4.8),
+    ("shopping", "{anchor} Toy Store", "Toy store",
+     "Independent toy store with curated wooden toys, board games, and crafts.", "$$", 4.5, 4.9),
+    ("shopping", "{anchor} Vintage Thrift", "Thrift store",
+     "Curated vintage thrift store with rotating designer, denim, and accessories.", "$", 4.2, 4.7),
+    ("shopping", "{anchor} Music Records Shop", "Record store",
+     "Independent record store with vinyl, CDs, listening stations, and in-store events.", "$$", 4.5, 4.9),
+    ("shopping", "{anchor} Florist", "Florist",
+     "Florist with same-day delivery, wedding florals, and seasonal bouquets.", "$$", 4.5, 4.9),
+    ("shopping", "{anchor} Art Supply", "Art supply",
+     "Art supply store with paints, papers, brushes, and weekend studio classes.", "$$", 4.4, 4.9),
+    ("shopping", "{anchor} Comics Shop", "Comics shop",
+     "Comics shop with weekly new releases, back issues, and board-game night.", "$$", 4.4, 4.9),
+    ("shopping", "{anchor} Camera Store", "Camera store",
+     "Camera store with new and used gear, rentals, and on-site sensor cleaning.", "$$$", 4.4, 4.9),
+    ("health-beauty", "{anchor} Nail Salon", "Nail salon",
+     "Nail salon with manicures, pedicures, gel, and dip-powder service.", "$$", 4.3, 4.8),
+    ("health-beauty", "{anchor} Barber Shop", "Barber",
+     "Classic barber shop with haircuts, hot-towel shaves, and beard trims.", "$$", 4.5, 4.9),
+    ("health-beauty", "{anchor} Massage Therapy", "Massage",
+     "Therapeutic massage practice — deep tissue, Swedish, and prenatal.", "$$$", 4.6, 4.9),
+    ("health-beauty", "{anchor} Skin Clinic", "Skin clinic",
+     "Medical-grade skin clinic with facials, laser, and dermatology referrals.", "$$$", 4.4, 4.9),
+    ("health-beauty", "{anchor} Tanning Studio", "Tanning",
+     "Sunless tanning studio with airbrush, spray-booth, and bed options.", "$$", 4.1, 4.7),
+    ("health-beauty", "{anchor} Eyelash Bar", "Lash bar",
+     "Eyelash extension and lift bar with same-day appointments.", "$$$", 4.4, 4.9),
+    ("fitness", "{anchor} Pilates Studio", "Pilates",
+     "Reformer Pilates studio with private and small-group sessions.", "$$$", 4.5, 4.9),
+    ("fitness", "{anchor} CrossFit Box", "CrossFit",
+     "CrossFit box with daily WODs, foundations classes, and on-ramp track.", "$$$", 4.4, 4.9),
+    ("fitness", "{anchor} Boxing Gym", "Boxing",
+     "Boxing gym with private coaching, group classes, and youth program.", "$$", 4.4, 4.9),
+    ("fitness", "{anchor} Martial Arts Dojo", "Martial arts",
+     "Family martial-arts dojo teaching karate, BJJ, and Muay Thai.", "$$", 4.5, 4.9),
+    ("fitness", "{anchor} Swimming Pool", "Aquatic center",
+     "Public aquatic center with lap pool, family pool, and swim lessons.", "$", 4.3, 4.8),
+    ("entertainment", "{anchor} Karaoke Lounge", "Karaoke",
+     "Private-room karaoke lounge with full bar and snacks.", "$$", 4.3, 4.8),
+    ("entertainment", "{anchor} Escape Room", "Escape room",
+     "Escape-room venue with 4-6 themed rooms; reservations recommended.", "$$", 4.5, 4.9),
+    ("entertainment", "{anchor} Arcade Lounge", "Arcade",
+     "Arcade lounge with classic cabinets, pinball, and craft cocktails.", "$$", 4.4, 4.9),
+    ("entertainment", "{anchor} Pool & Billiards Hall", "Billiards",
+     "Pool hall with regulation tables, weekly tournaments, and full bar.", "$$", 4.2, 4.7),
+    ("entertainment", "{anchor} Mini Golf", "Mini golf",
+     "Outdoor mini-golf course with 18 themed holes and seasonal snack bar.", "$$", 4.4, 4.9),
+]
+
+
+def expand_places_r4(db, Place, Category, City):
+    """R4 OSM-tile-style expansion: small-business templates per city.
+
+    Idempotent: skip once Place count exceeds 130000.
+    """
+    if Place.query.count() >= 130000:
+        return
+
+    random.seed(20260516)
+    cat_by_slug = {c.slug: c for c in Category.query.all()}
+    cities = City.query.order_by(City.id).all()
+    if not cities:
+        return
+
+    donor_pool = []
+    for p in Place.query.filter(Place.hero_image.like("/static/images/places/%")).limit(80).all():
+        try:
+            photos = json.loads(p.photos_json or "[]")
+        except Exception:
+            photos = []
+        if p.hero_image:
+            donor_pool.append((p.hero_image, photos or [p.hero_image]))
+    if not donor_pool:
+        donor_pool = [("/static/images/heroes/eiffel-tower.jpg",
+                       ["/static/images/heroes/eiffel-tower.jpg"])]
+
+    added = 0
+    for city in cities:
+        anchor = city.display_name.split(",")[0].split(" ")[0]
+        templates = list(_R4_TEMPLATES)
+        slug_seed = int.from_bytes(
+            hashlib.md5(("r4-" + city.slug).encode()).digest()[:4], "big")
+        rng = random.Random(slug_seed)
+        rng.shuffle(templates)
+
+        for idx, (cat_slug, pattern, subtitle, desc, price, rlo, rhi) in enumerate(templates):
+            cat = cat_by_slug.get(cat_slug)
+            if not cat:
+                continue
+            slug = f"r4-{city.slug}-{cat_slug}-{idx}"
+            if Place.query.filter_by(slug=slug).first():
+                continue
+
+            name = pattern.format(anchor=anchor)
+            # Per-row deterministic local RNG so individual jitter
+            # doesn't depend on earlier row's RNG state.
+            local_seed = int.from_bytes(
+                hashlib.md5(slug.encode()).digest()[:4], "big")
+            lrng = random.Random(local_seed)
+
+            hero, gallery = donor_pool[local_seed % len(donor_pool)]
+            lat = city.lat + (local_seed % 800 - 400) / 10000.0  # ±0.04
+            lng = city.lng + ((local_seed // 800) % 1000 - 500) / 10000.0
+            rating = round(rlo + (lrng.random()) * (rhi - rlo), 1)
+            review_count = 20 + (local_seed % 4800)
+
+            tags = [cat_slug, anchor.lower(), city.country.lower()]
+            hours_pick = (local_seed >> 4) % 6
+            hours_options = [
+                "Mon-Sun: 9:00 AM - 9:00 PM",
+                "Mon-Sat: 10:00 AM - 8:00 PM, Sun 11:00 AM - 6:00 PM",
+                "Tue-Sun: 11:00 AM - 10:00 PM, Closed Mon",
+                "Open 24 hours",
+                "Mon-Fri: 7:00 AM - 7:00 PM, Weekends 8:00 AM - 5:00 PM",
+                "Mon-Sun: 6:00 AM - 10:00 PM",
+            ]
+            db.session.add(Place(
+                slug=slug, name=name, category_id=cat.id, city_id=city.id,
+                subtitle=subtitle,
+                description=desc,
+                address=f"{20 + (local_seed % 980)} {['Main','Oak','Park','Elm','Pine','Cedar'][local_seed % 6]} St, {city.display_name}",
+                phone=f"+{1 + (local_seed % 9)} {200 + (local_seed % 800)} {1000 + (local_seed % 9000)}",
+                hours=hours_options[hours_pick],
+                website=google_maps_search_url(name, city.display_name),
+                rating=rating,
+                review_count=review_count,
+                price_level=price,
+                hero_image=hero,
+                photos_json=json.dumps(gallery[:5]),
+                lat=lat, lng=lng,
+                tags_json=json.dumps(tags),
+                subcategory=subtitle,
+                is_24h=(hours_pick == 3),
+                is_popular=(rating >= 4.6 and (local_seed % 5) == 0),
+                has_parking_lot=(cat_slug in ("shopping", "fitness") or (local_seed % 3) == 0),
+                delivery_available=(cat_slug == "restaurants" and (local_seed % 2) == 0),
+            ))
+            added += 1
+            if added % 500 == 0:
+                db.session.commit()
+
+    db.session.commit()
+    print(f"expand_places_r4: added {added} small-business places (total {Place.query.count()})")
+
+
+# ---------------------------------------------------------------------------
+# Per-place extras backfill: deterministic from md5(slug).  Fills in the
+# R4 columns (popular_times, accessibility, service options, menu, ratings
+# distribution) for every Place row.  Skips rows that already look filled
+# so warm restarts don't re-randomise.
+# ---------------------------------------------------------------------------
+
+def _seed_int(slug, salt):
+    return int.from_bytes(
+        hashlib.md5((salt + ":" + slug).encode()).digest()[:4], "big")
+
+
+def _det_bool(slug, salt, threshold):
+    """Deterministic boolean: True if hash mod 100 < threshold (0..100)."""
+    return (_seed_int(slug, salt) % 100) < threshold
+
+
+def _det_choice(slug, salt, options):
+    return options[_seed_int(slug, salt) % len(options)]
+
+
+def _gen_popular_times(slug, category_slug, busiest_day_idx, peak_hour):
+    """Generate a 7×24 matrix of 0..100 ints centred on (busiest_day, peak_hour).
+
+    Open hours vary by category (bars peak at night, bakeries at AM).
+    Shape: bell around peak_hour, scaled per day, zero outside open window.
+    """
+    cat = category_slug or ""
+    # category-specific open window (start_h, end_h, base_amp)
+    if cat in ("restaurants",) and "bar" in slug:
+        start, end, base = 16, 24, 70
+    elif cat in ("entertainment",) and ("bar" in slug or "club" in slug or "comedy" in slug):
+        start, end, base = 18, 24, 75
+    elif cat in ("coffee-shops", "bakery"):
+        start, end, base = 6, 19, 65
+    elif cat in ("hotels",):
+        start, end, base = 0, 24, 35
+    elif cat in ("hospitals", "police-stations", "fire-stations", "gas-stations", "atms"):
+        start, end, base = 0, 24, 30
+    elif cat in ("museums", "libraries"):
+        start, end, base = 10, 18, 50
+    elif cat in ("parks", "beaches", "playgrounds", "dog-parks"):
+        start, end, base = 6, 21, 55
+    elif cat in ("shopping", "indoor-mall-shops"):
+        start, end, base = 10, 21, 60
+    elif cat in ("schools", "campus-buildings"):
+        start, end, base = 7, 17, 65
+    elif cat in ("transit", "bus-stops"):
+        start, end, base = 5, 23, 60
+    else:
+        start, end, base = 8, 22, 55
+
+    matrix = [[0] * 24 for _ in range(7)]
+    # per-day multiplier seeded by slug+day so curves differ across rows
+    for d in range(7):
+        dmul = 0.55 + (_seed_int(slug, f"d{d}") % 100) / 100.0 * 0.55  # 0.55..1.10
+        if d == busiest_day_idx:
+            dmul *= 1.15
+        elif d == (busiest_day_idx + 1) % 7:
+            dmul *= 0.92
+        if cat in ("entertainment", "restaurants") and d in (4, 5):
+            dmul *= 1.05  # Fri/Sat busier for nightlife
+        if cat in ("services", "schools", "campus-buildings") and d in (5, 6):
+            dmul *= 0.45  # weekend dip for service/school
+        for h in range(24):
+            if not (start <= h < end if start < end else (h >= start or h < end)):
+                matrix[d][h] = 0
+                continue
+            # bell curve around peak_hour with width 4h
+            dist = abs(h - peak_hour)
+            shape = max(0, 100 - dist * 14)  # 100..40..0
+            val = int(base * dmul * shape / 100.0)
+            val = max(0, min(100, val))
+            matrix[d][h] = val
+    return matrix
+
+
+def _hours_dict_from_string(hours_str):
+    """Best-effort parse of the canonical `hours` string into a 7-day dict.
+
+    Handles the dialects seen in build_places + expand_places + R4 templates:
+      'Open 24 hours'                              -> all days 'Open 24 hours'
+      'Mon-Sun: 9:00 AM - 9:00 PM'                 -> all days
+      'Mon-Fri: ..., Weekends: ...'                -> weekdays + weekend
+      'Mon-Sat: ..., Sun ...'                      -> weekdays + Sun
+      'Tue-Sun: ..., Closed Mon'                   -> Mon Closed, rest range
+      'Mon-Thu: A, Fri-Sat: B'                     -> Mon..Thu A, Fri..Sat B
+    Returns {} when nothing recognised — the template will skip the block.
+    """
+    if not hours_str:
+        return {}
+    s = hours_str.replace("–", "-").replace("—", "-")
+    days = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"]
+    out = {d: "" for d in days}
+    lower = s.lower()
+    if "24 hour" in lower or "open 24" in lower:
+        return {d: "Open 24 hours" for d in days}
+
+    import re as _re
+    # Split on commas first so each segment can be processed in isolation.
+    parts = [p.strip() for p in s.split(",")]
+    DAY_IDX = {"mon": 0, "tue": 1, "wed": 2, "thu": 3,
+               "fri": 4, "sat": 5, "sun": 6}
+
+    def _apply(idxs, val):
+        for i in idxs:
+            if 0 <= i < 7:
+                out[days[i]] = val
+
+    for part in parts:
+        p = part.strip()
+        pl = p.lower()
+        if not p:
+            continue
+        # "Closed Mon" / "Closed Sun"
+        m = _re.match(r"^closed\s+([a-z]{3})$", pl)
+        if m:
+            d = m.group(1)
+            if d in DAY_IDX:
+                _apply([DAY_IDX[d]], "Closed")
+                continue
+        # "Weekends: X" / "Weekends X"
+        m = _re.match(r"^weekends[:\s]+(.+)$", pl)
+        if m:
+            _apply([5, 6], m.group(1).strip())
+            continue
+        # "Mon-Fri: X" / "Mon-Sun: X" range
+        m = _re.match(r"^([a-z]{3})\s*-\s*([a-z]{3})[:\s]+(.+)$", pl)
+        if m:
+            a, b, val = m.group(1), m.group(2), m.group(3).strip()
+            if a in DAY_IDX and b in DAY_IDX:
+                ai, bi = DAY_IDX[a], DAY_IDX[b]
+                if ai <= bi:
+                    _apply(list(range(ai, bi + 1)), val)
+                else:
+                    # wrap (rare)
+                    _apply(list(range(ai, 7)) + list(range(0, bi + 1)), val)
+                continue
+        # "Sun X" / "Mon X" single-day
+        m = _re.match(r"^([a-z]{3})[:\s]+(.+)$", pl)
+        if m:
+            d, val = m.group(1), m.group(2).strip()
+            if d in DAY_IDX:
+                _apply([DAY_IDX[d]], val)
+                continue
+    # Drop empty days so the template either shows full data or nothing
+    if not any(out.values()):
+        return {}
+    # Promote blanks to "Closed" so the row still renders informatively
+    for d in days:
+        if not out[d]:
+            out[d] = "Closed"
+    return out
+
+
+_MENU_TEMPLATES = {
+    "italian": [
+        ("Starters", [("Bruschetta", "Toasted bread, tomato, basil.", 9),
+                      ("Caprese Salad", "Mozzarella, tomato, basil.", 12),
+                      ("Arancini", "Risotto fritters with marinara.", 11)]),
+        ("Pasta",    [("Spaghetti Carbonara", "Egg, pecorino, guanciale.", 18),
+                      ("Penne Arrabbiata", "Tomato, chili, garlic.", 16),
+                      ("Linguine alle Vongole", "Clams, white wine, parsley.", 24)]),
+        ("Pizza",    [("Margherita", "Tomato, mozzarella, basil.", 16),
+                      ("Diavola", "Spicy salami, mozzarella.", 18),
+                      ("Quattro Formaggi", "Four-cheese blend.", 19)]),
+        ("Dessert",  [("Tiramisu", "Espresso-soaked ladyfingers.", 10),
+                      ("Cannoli", "Sicilian ricotta-filled pastry.", 9)]),
+    ],
+    "asian": [
+        ("Starters", [("Edamame", "Lightly salted soybeans.", 7),
+                      ("Gyoza", "Pork dumplings, ponzu.", 11),
+                      ("Spring Rolls", "Vegetable, sweet chili sauce.", 9)]),
+        ("Ramen",    [("Tonkotsu Ramen", "Pork-bone broth, chashu.", 17),
+                      ("Miso Ramen", "Soybean broth, corn, scallion.", 16),
+                      ("Shoyu Ramen", "Soy-based broth, bamboo.", 16)]),
+        ("Rice",     [("Chicken Katsu Don", "Breaded chicken on rice.", 16),
+                      ("Beef Bulgogi Bowl", "Marinated beef, kimchi.", 19)]),
+        ("Dessert",  [("Mochi Ice Cream", "Assorted flavors.", 8),
+                      ("Matcha Cheesecake", "Green tea cheesecake.", 9)]),
+    ],
+    "american": [
+        ("Starters", [("Wings", "Buffalo, BBQ, or dry-rub.", 14),
+                      ("Loaded Fries", "Cheese, bacon, scallion.", 12),
+                      ("Caesar Salad", "Romaine, parmesan, crouton.", 13)]),
+        ("Burgers",  [("Classic Cheeseburger", "American, lettuce, tomato.", 16),
+                      ("Bacon Cheddar Burger", "Smoked bacon, cheddar.", 18),
+                      ("Veggie Burger", "House black-bean patty.", 15)]),
+        ("Mains",    [("Smoked Brisket", "12 hr smoked, served by oz.", 26),
+                      ("Half Roast Chicken", "Herb butter, mashed potato.", 22)]),
+        ("Dessert",  [("Apple Pie", "Cinnamon, vanilla ice cream.", 9),
+                      ("Brownie Sundae", "Warm brownie, fudge.", 10)]),
+    ],
+    "cafe": [
+        ("Coffee",   [("Drip Coffee", "Daily single-origin.", 4),
+                      ("Espresso", "Double shot.", 4),
+                      ("Cappuccino", "Espresso, steamed milk.", 5),
+                      ("Pour Over", "Hand-poured single-origin.", 6)]),
+        ("Pastries", [("Croissant", "Butter, flaky.", 4),
+                      ("Almond Croissant", "Filled with frangipane.", 5),
+                      ("Blueberry Muffin", "House-made.", 4)]),
+        ("Brunch",   [("Avocado Toast", "Multigrain, lemon, chili.", 12),
+                      ("Eggs Benedict", "English muffin, hollandaise.", 14)]),
+    ],
+    "bar": [
+        ("Cocktails", [("Old Fashioned", "Bourbon, bitters, orange.", 14),
+                       ("Negroni", "Gin, Campari, vermouth.", 14),
+                       ("Margarita", "Tequila, lime, agave.", 13),
+                       ("Mezcal Mule", "Mezcal, ginger, lime.", 15)]),
+        ("Wine",      [("House Red", "Daily selection by the glass.", 12),
+                       ("House White", "Daily selection by the glass.", 12),
+                       ("Sparkling", "Brut, by the glass.", 13)]),
+        ("Bites",     [("Charcuterie Board", "Cured meats, cheeses.", 22),
+                       ("Olives & Almonds", "Marinated, warm.", 9)]),
+    ],
+}
+
+
+def _menu_template_for(slug, name_lc, category_slug):
+    if "pizza" in name_lc or "trattoria" in name_lc or "italian" in name_lc or "osteria" in name_lc:
+        return _MENU_TEMPLATES["italian"]
+    if ("ramen" in name_lc or "sushi" in name_lc or "noodle" in name_lc
+            or "korean" in name_lc or "thai" in name_lc or "asian" in name_lc):
+        return _MENU_TEMPLATES["asian"]
+    if "cafe" in name_lc or "coffee" in name_lc or "bakery" in name_lc or "donut" in name_lc:
+        return _MENU_TEMPLATES["cafe"]
+    if "bar" in name_lc or "lounge" in name_lc or "wine" in name_lc or "cocktail" in name_lc:
+        return _MENU_TEMPLATES["bar"]
+    if category_slug == "restaurants":
+        return _MENU_TEMPLATES["american"]
+    return None
+
+
+def backfill_place_extras(db, Place, Category):
+    """Deterministic backfill of R4 columns for every Place row.
+
+    Skips rows that already have popular_times_json filled (so warm restarts
+    are no-ops).  All values derive from md5(slug + salt) so byte-id holds.
+    """
+    # Cheap completion check: if 90% of rows already have popular_times
+    # filled, treat as done.
+    sample_n = Place.query.count()
+    if sample_n == 0:
+        return
+    filled = (Place.query
+              .filter(Place.popular_times_json != "[]",
+                      Place.popular_times_json != "")
+              .count())
+    if filled >= sample_n * 0.9:
+        return
+
+    cat_by_id = {c.id: c.slug for c in Category.query.all()}
+    DAY_KEYS = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"]
+    batch = 0
+    total = 0
+    BATCH = 1500
+    # Stream in chunks to keep memory low at 130k rows
+    offset = 0
+    while True:
+        rows = (Place.query
+                .order_by(Place.id)
+                .offset(offset).limit(BATCH).all())
+        if not rows:
+            break
+        offset += BATCH
+        for p in rows:
+            slug = p.slug or ""
+            cat_slug = cat_by_id.get(p.category_id, "")
+            name_lc = (p.name or "").lower()
+
+            # busiest day/hour deterministic from slug
+            if cat_slug in ("entertainment", "restaurants") and ("bar" in slug or "club" in slug):
+                busy_d_options = [4, 5]   # Fri/Sat
+                base_hour = 21
+            elif cat_slug == "coffee-shops" or "cafe" in name_lc:
+                busy_d_options = [0, 1, 2, 5]
+                base_hour = 8
+            elif cat_slug in ("services", "schools"):
+                busy_d_options = [1, 2, 3]
+                base_hour = 11
+            elif cat_slug == "shopping" or cat_slug == "indoor-mall-shops":
+                busy_d_options = [5, 6]   # weekend
+                base_hour = 14
+            else:
+                busy_d_options = [3, 4, 5]
+                base_hour = 13
+            busy_d = busy_d_options[_seed_int(slug, "bd") % len(busy_d_options)]
+            peak_h = max(0, min(23, base_hour + (_seed_int(slug, "ph") % 5) - 2))
+
+            # popular times matrix
+            matrix = _gen_popular_times(slug, cat_slug, busy_d, peak_h)
+            p.popular_times_json = json.dumps(matrix)
+            p.busiest_day = DAY_KEYS[busy_d]
+            p.busiest_hour = peak_h
+
+            # hours_json per-day breakdown (parsed from canonical hours string)
+            if not p.hours_json or p.hours_json == "{}":
+                hd = _hours_dict_from_string(p.hours or "")
+                if hd:
+                    p.hours_json = json.dumps(hd)
+
+            # service options
+            if cat_slug == "restaurants":
+                p.dine_in = _det_bool(slug, "din", 88)
+                p.takeout = _det_bool(slug, "tko", 78)
+                if not p.delivery_available:
+                    p.delivery_available = _det_bool(slug, "dlv", 55)
+                p.curbside_pickup = _det_bool(slug, "cbp", 38)
+                p.contactless_pickup = _det_bool(slug, "cpu", 42)
+                p.accepts_reservations = _det_bool(slug, "rsv", 56)
+                p.serves_breakfast = "cafe" in name_lc or "bakery" in name_lc or "diner" in name_lc or _det_bool(slug, "brk", 32)
+                p.serves_lunch = _det_bool(slug, "lun", 80)
+                p.serves_dinner = _det_bool(slug, "din2", 88)
+                p.serves_brunch = "cafe" in name_lc or "diner" in name_lc or _det_bool(slug, "brn", 28)
+                p.serves_alcohol = ("bar" in name_lc or "lounge" in name_lc or "wine" in name_lc
+                                    or _det_bool(slug, "alc", 48))
+                p.serves_vegetarian = _det_bool(slug, "veg", 62)
+            else:
+                p.dine_in = False
+                p.takeout = cat_slug in ("coffee-shops",) and _det_bool(slug, "tko", 70)
+                p.contactless_pickup = cat_slug in ("shopping", "supermarkets", "pharmacies") and _det_bool(slug, "cpu", 55)
+                p.curbside_pickup = cat_slug in ("supermarkets", "pharmacies", "shopping") and _det_bool(slug, "cbp", 40)
+                p.accepts_reservations = cat_slug in ("hotels",) or _det_bool(slug, "rsv", 14)
+
+            # accessibility — vary per category; civic / large venues
+            # have more flags set, small services fewer
+            high_access_cats = {"hospitals", "libraries", "museums", "campus-buildings",
+                                "transit", "post-offices", "police-stations", "schools",
+                                "hotels", "shopping", "supermarkets", "indoor-mall-shops",
+                                "fire-stations"}
+            low_access_cats = {"dog-parks", "public-restrooms", "playgrounds", "beaches"}
+            if cat_slug in high_access_cats:
+                base_prob = 78
+            elif cat_slug in low_access_cats:
+                base_prob = 48
+            else:
+                base_prob = 62
+            p.wheelchair_accessible_entrance = _det_bool(slug, "wae", base_prob + 6)
+            p.wheelchair_accessible_restroom = _det_bool(slug, "war", base_prob)
+            p.wheelchair_accessible_parking = _det_bool(slug, "wap", base_prob - 4)
+            p.wheelchair_accessible_seating = _det_bool(slug, "was", base_prob - 8)
+            p.has_braille_menu = (cat_slug == "restaurants") and _det_bool(slug, "bra", 14)
+            p.has_assistive_hearing = (cat_slug in ("museums", "entertainment", "campus-buildings", "hospitals")) and _det_bool(slug, "hrl", 38)
+            p.has_service_animal_welcome = _det_bool(slug, "saw", 78)
+            access_count = sum([
+                bool(p.wheelchair_accessible_entrance),
+                bool(p.wheelchair_accessible_restroom),
+                bool(p.wheelchair_accessible_parking),
+                bool(p.wheelchair_accessible_seating),
+                bool(p.has_braille_menu),
+                bool(p.has_assistive_hearing),
+                bool(p.has_service_animal_welcome),
+            ])
+            p.accessibility_score = round(access_count * 100 / 7)
+
+            # ratings distribution from rating + review_count
+            rc = max(0, p.review_count or 0)
+            r = p.rating or 4.0
+            # Higher rating → more 5-star weight; deterministic spread
+            if r >= 4.7:
+                w = [62, 22, 9, 4, 3]
+            elif r >= 4.4:
+                w = [50, 28, 12, 6, 4]
+            elif r >= 4.0:
+                w = [38, 30, 17, 9, 6]
+            elif r >= 3.5:
+                w = [28, 26, 22, 14, 10]
+            else:
+                w = [18, 22, 22, 20, 18]
+            # Sum normalise to rc
+            tot = sum(w)
+            dist = [(rc * x) // tot for x in w]
+            # absorb remainder into top bucket
+            dist[0] += rc - sum(dist)
+            p.ratings_dist_json = json.dumps(dist)
+
+            # menu for restaurant-ish places
+            mtpl = _menu_template_for(slug, name_lc, cat_slug)
+            if mtpl:
+                # Deterministic price offset per place (±$2) using slug hash
+                off = (_seed_int(slug, "menu") % 5) - 2
+                menu = []
+                for section_name, items in mtpl:
+                    sec_items = []
+                    for nm, dsc, price in items:
+                        sec_items.append({
+                            "name": nm, "desc": dsc,
+                            "price": max(3, price + off),
+                        })
+                    menu.append({"section": section_name, "items": sec_items})
+                p.menu_json = json.dumps(menu)
+
+            batch += 1
+            total += 1
+            if batch >= 500:
+                db.session.commit()
+                batch = 0
+    db.session.commit()
+    print(f"backfill_place_extras: updated {total} place rows")
+
+
+# ---------------------------------------------------------------------------
+# Curated transit lines for major US cities.
+# ---------------------------------------------------------------------------
+_TRANSIT_LINES = [
+    # (city_slug, slug, name, short_name, agency, mode, color, peak, off, hours, stops[], desc)
+    ("new-york", "mta-1-train", "1 Train (Broadway-7th Avenue Local)", "1", "MTA New York City Subway", "subway", "#EE352E",
+     "Every 4 min", "Every 8 min", "24 hours", [
+         "South Ferry", "Rector St", "Cortlandt St", "Chambers St",
+         "Franklin St", "Canal St", "Houston St", "Christopher St",
+         "14th St", "18th St", "23rd St", "28th St", "34th St-Penn",
+         "Times Sq-42nd St", "50th St", "59th St-Columbus Circle",
+         "66th St-Lincoln Center", "72nd St", "79th St", "86th St",
+         "96th St", "103rd St", "Cathedral Pkwy-110th St", "116th St",
+         "125th St", "137th St-City College", "145th St", "157th St",
+         "168th St-Washington Heights", "181st St", "191st St",
+         "Dyckman St", "207th St", "215th St", "Marble Hill-225th St",
+         "231st St", "238th St", "Van Cortlandt Park-242nd St",
+     ],
+     "Local Broadway-7th Avenue service from South Ferry to Van Cortlandt Park."),
+    ("new-york", "mta-l-train", "L Train (14th St-Canarsie Local)", "L", "MTA New York City Subway", "subway", "#A7A9AC",
+     "Every 4 min", "Every 10 min", "24 hours", [
+         "8 Av", "6 Av", "Union Sq-14 St", "3 Av", "1 Av",
+         "Bedford Av", "Lorimer St", "Graham Av", "Grand St",
+         "Montrose Av", "Morgan Av", "Jefferson St", "DeKalb Av",
+         "Myrtle-Wyckoff Avs", "Halsey St", "Wilson Av",
+         "Bushwick Av-Aberdeen St", "Broadway Junction",
+         "Atlantic Av", "Sutter Av", "Livonia Av", "New Lots Av",
+         "East 105 St", "Canarsie-Rockaway Pkwy",
+     ],
+     "L train runs between 8 Av in Manhattan and Canarsie in Brooklyn."),
+    ("new-york", "mta-m15-bus", "M15 Bus (1st & 2nd Av)", "M15", "MTA New York City Bus", "bus", "#D7B5D8",
+     "Every 5 min", "Every 12 min", "24 hours", [
+         "South Ferry", "Whitehall St", "Pearl St", "Allen St",
+         "Houston St", "14 St", "23 St", "34 St-Midtown",
+         "42 St", "57 St", "72 St", "86 St", "96 St",
+         "116 St", "125 St-East Harlem",
+     ], "M15 Select Bus Service along 1st and 2nd Avenues."),
+    ("san-francisco", "muni-n-judah", "N Judah (Light Rail)", "N", "SFMTA Muni Metro", "light-rail", "#005DBD",
+     "Every 8 min", "Every 12 min", "5:00 AM – 1:00 AM", [
+         "Caltrain Depot", "Embarcadero", "Montgomery St",
+         "Powell St", "Civic Center", "Van Ness", "Church St",
+         "Duboce/Noe", "Carl & Cole", "9th & Irving", "19th Av",
+         "Sunset Blvd", "Judah & 46th Av", "Ocean Beach",
+     ], "N Judah runs from Ocean Beach to Caltrain through the Sunset and Downtown."),
+    ("san-francisco", "bart-orange-line", "BART Richmond–Berryessa/N. San José", "Orange", "Bay Area Rapid Transit", "subway", "#FF9933",
+     "Every 15 min", "Every 20 min", "5:00 AM – 12:00 AM", [
+         "Richmond", "El Cerrito del Norte", "El Cerrito Plaza",
+         "North Berkeley", "Downtown Berkeley", "Ashby",
+         "MacArthur", "19th St Oakland", "12th St/Oakland City Center",
+         "Lake Merritt", "Fruitvale", "Coliseum", "San Leandro",
+         "Bay Fair", "Hayward", "South Hayward", "Union City",
+         "Fremont", "Warm Springs/South Fremont", "Milpitas",
+         "Berryessa/North San José",
+     ], "Orange Line connects Richmond with Berryessa via Berkeley and Fremont."),
+    ("boston", "mbta-red-line", "MBTA Red Line", "RL", "MBTA", "subway", "#DA291C",
+     "Every 4 min", "Every 9 min", "5:00 AM – 1:00 AM", [
+         "Alewife", "Davis", "Porter", "Harvard", "Central",
+         "Kendall/MIT", "Charles/MGH", "Park Street",
+         "Downtown Crossing", "South Station", "Broadway",
+         "Andrew", "JFK/UMass", "Savin Hill", "Fields Corner",
+         "Shawmut", "Ashmont",
+     ], "Red Line runs from Alewife to Ashmont and Braintree branches."),
+    ("boston", "mbta-green-b", "MBTA Green Line B (Boston College)", "B", "MBTA", "light-rail", "#00843D",
+     "Every 7 min", "Every 12 min", "5:00 AM – 12:30 AM", [
+         "Government Center", "Park Street", "Boylston",
+         "Arlington", "Copley", "Hynes Convention Center",
+         "Kenmore", "Blandford St", "BU East", "BU Central",
+         "BU West", "St. Paul St", "Pleasant St", "Babcock St",
+         "Packards Corner", "Harvard Ave", "Griggs St",
+         "Allston St", "Warren St", "Washington St",
+         "Sutherland Rd", "Chiswick Rd", "Chestnut Hill Av",
+         "South St", "Boston College",
+     ], "B branch of the Green Line, terminating at Boston College."),
+    ("chicago", "cta-red-line", "CTA Red Line", "Red", "Chicago Transit Authority", "subway", "#C60C30",
+     "Every 4 min", "Every 12 min", "24 hours", [
+         "Howard", "Jarvis", "Morse", "Loyola", "Granville",
+         "Thorndale", "Bryn Mawr", "Berwyn", "Argyle", "Lawrence",
+         "Wilson", "Sheridan", "Addison", "Belmont", "Fullerton",
+         "North/Clybourn", "Clark/Division", "Chicago", "Grand",
+         "Lake", "Monroe", "Jackson", "Harrison", "Roosevelt",
+         "Cermak-Chinatown", "Sox-35th", "47th", "Garfield",
+         "63rd", "69th", "79th", "87th", "95th/Dan Ryan",
+     ], "Red Line runs 24/7 between Howard and 95th/Dan Ryan."),
+    ("chicago", "cta-blue-line", "CTA Blue Line (O'Hare-Forest Park)", "Blue", "Chicago Transit Authority", "subway", "#00A1DE",
+     "Every 5 min", "Every 12 min", "24 hours", [
+         "O'Hare", "Rosemont", "Cumberland", "Harlem (O'Hare)",
+         "Jefferson Park", "Montrose", "Irving Park", "Addison",
+         "Belmont", "Logan Square", "California", "Western",
+         "Damen", "Division", "Chicago", "Grand", "Clark/Lake",
+         "Washington", "Monroe", "Jackson", "LaSalle", "Clinton",
+         "UIC-Halsted", "Racine", "Illinois Medical District",
+         "Western (Forest Park)", "Kedzie-Homan", "Pulaski",
+         "Cicero", "Austin", "Oak Park", "Harlem (Forest Park)",
+         "Forest Park",
+     ], "Blue Line connects O'Hare International Airport with Forest Park."),
+    ("washington", "wmata-red", "WMATA Red Line", "RD", "WMATA Metrorail", "subway", "#BF0D3E",
+     "Every 6 min", "Every 12 min", "5:00 AM – 12:00 AM", [
+         "Shady Grove", "Rockville", "Twinbrook", "White Flint",
+         "Grosvenor-Strathmore", "Medical Center", "Bethesda",
+         "Friendship Heights", "Tenleytown-AU", "Van Ness-UDC",
+         "Cleveland Park", "Woodley Park", "Dupont Circle",
+         "Farragut North", "Metro Center", "Gallery Pl-Chinatown",
+         "Judiciary Square", "Union Station", "NoMa-Gallaudet U",
+         "Rhode Island Av", "Brookland-CUA", "Fort Totten",
+         "Takoma", "Silver Spring", "Forest Glen", "Wheaton",
+         "Glenmont",
+     ], "Red Line is WMATA's busiest line, running through downtown DC."),
+    ("seattle", "sound-transit-1-line", "Sound Transit 1 Line (Link Light Rail)", "1", "Sound Transit", "light-rail", "#0072CE",
+     "Every 8 min", "Every 12 min", "5:00 AM – 1:00 AM", [
+         "Lynnwood City Center", "Mountlake Terrace",
+         "Shoreline North/185th", "Shoreline South/148th",
+         "Northgate", "Roosevelt", "U District", "University of Washington",
+         "Capitol Hill", "Westlake", "University Street", "Pioneer Square",
+         "International District/Chinatown", "Stadium",
+         "SODO", "Beacon Hill", "Mount Baker", "Columbia City",
+         "Othello", "Rainier Beach", "Tukwila Int'l Blvd",
+         "SeaTac/Airport", "Angle Lake",
+     ], "Link Light Rail 1 Line connects Lynnwood with SeaTac/Airport via downtown."),
+    ("los-angeles", "metro-d-line", "LA Metro D Line (Purple)", "D", "LA Metro", "subway", "#A05DA5",
+     "Every 6 min", "Every 12 min", "4:00 AM – 12:30 AM", [
+         "Union Station", "Civic Center/Grand Park", "Pershing Square",
+         "7th St/Metro Center", "Westlake/MacArthur Park",
+         "Wilshire/Vermont", "Wilshire/Normandie", "Wilshire/Western",
+     ], "D Line (Purple) runs along Wilshire Blvd from Union Station."),
+    ("los-angeles", "metro-b-line", "LA Metro B Line (Red)", "B", "LA Metro", "subway", "#E70033",
+     "Every 6 min", "Every 12 min", "4:00 AM – 12:30 AM", [
+         "Union Station", "Civic Center/Grand Park", "Pershing Square",
+         "7th St/Metro Center", "Westlake/MacArthur Park",
+         "Wilshire/Vermont", "Vermont/Beverly", "Vermont/Santa Monica",
+         "Vermont/Sunset", "Hollywood/Western", "Hollywood/Vine",
+         "Hollywood/Highland", "Universal City/Studio City",
+         "North Hollywood",
+     ], "B Line (Red) runs from Union Station to North Hollywood through Hollywood."),
+    ("miami", "metrorail-orange", "Metrorail Orange Line", "O", "Miami-Dade Transit", "subway", "#F58025",
+     "Every 7 min", "Every 15 min", "5:00 AM – 12:00 AM", [
+         "Dadeland South", "Dadeland North", "South Miami",
+         "University", "Douglas Road", "Coconut Grove",
+         "Vizcaya", "Brickell", "Government Center", "Civic Center",
+         "Santa Clara", "Allapattah", "Earlington Heights",
+         "Hialeah Market", "MIA Airport",
+     ], "Orange Line connects MIA Airport with Dadeland via Brickell."),
+]
+
+
+def seed_transit_lines(db, TransitLine, City):
+    """Seed curated transit lines tied to real metro systems."""
+    if TransitLine.query.count() > 0:
+        return
+    cities_by_slug = {c.slug: c for c in City.query.all()}
+    added = 0
+    for entry in _TRANSIT_LINES:
+        (city_slug, slug, name, short_name, agency, mode, color,
+         peak, off, hours, stops, desc) = entry
+        city = cities_by_slug.get(city_slug)
+        if TransitLine.query.filter_by(slug=slug).first():
+            continue
+        notes_seed = int.from_bytes(hashlib.md5(slug.encode()).digest()[:2], "big")
+        notes = ("All stations wheelchair-accessible with elevators."
+                 if notes_seed % 3 == 0 else
+                 ("Most stations have elevators; check station details for accessibility info."
+                  if notes_seed % 3 == 1 else
+                  "Selected stations are accessible; transfer points include elevators."))
+        db.session.add(TransitLine(
+            slug=slug, name=name, short_name=short_name, agency=agency,
+            mode=mode, color=color,
+            city_id=city.id if city else None,
+            frequency_peak=peak, frequency_off=off, hours=hours,
+            stops_json=json.dumps(stops),
+            description=desc, accessibility_notes=notes,
+        ))
+        added += 1
+    db.session.commit()
+    print(f"seed_transit_lines: added {added} transit lines")

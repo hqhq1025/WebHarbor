@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% block title %}Rooms at {{ property.name }} — Booking{% endblock %}
+{% block content %}
+<div class="container">
+    <a href="{{ url_for('property_detail', slug=property.slug) }}" class="text-link"
+       style="font-size:13px;color:#006ce4;">&lsaquo; Back to {{ property.name }}</a>
+    <h1 class="page-title">Rooms at {{ property.name }}</h1>
+    <p style="color:#444;">{{ property.address }} &middot; {{ rooms|length }} room types available.</p>
+
+    <div class="room-accordion" id="roomAccordion">
+        {% for room in rooms %}
+        <details {% if loop.first %}open{% endif %}
+                 style="background:#fff;border:1px solid #e2e2e2;border-radius:8px;margin-bottom:10px;">
+            <summary style="cursor:pointer;padding:14px 16px;font-weight:700;font-size:15px;display:flex;align-items:center;justify-content:space-between;">
+                <span>{{ room.name }} &middot; <span style="font-weight:400;color:#444;">{{ room.beds }}</span></span>
+                <span style="color:#003580;">${{ '%.0f' % room.price }}/night</span>
+            </summary>
+            <div style="padding:0 16px 14px 16px;color:#444;font-size:14px;">
+                <p>Sleeps {{ room.sleeps }} &middot; {{ room.beds }}.</p>
+                <ul class="amenity-list" style="display:grid;grid-template-columns:repeat(2,1fr);gap:4px;">
+                    <li>&#10003; Free WiFi</li>
+                    <li>&#10003; Air conditioning</li>
+                    <li>&#10003; Private bathroom</li>
+                    <li>&#10003; Flat-screen TV</li>
+                    {% if property.breakfast_included %}<li>&#10003; Breakfast included</li>{% endif %}
+                    {% if property.free_cancellation %}<li>&#10003; Free cancellation</li>{% endif %}
+                </ul>
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-top:10px;">
+                    <div>
+                        <strong style="color:#003580;font-size:18px;">${{ '%.0f' % room.price }}</strong>
+                        <span style="font-size:12px;color:#888;">total per night, incl. taxes</span>
+                    </div>
+                    {% if current_user.is_authenticated %}
+                    <form method="POST" action="{{ url_for('cart_add_form', property_id=property.id) }}">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token_value }}">
+                        <input type="hidden" name="room_type" value="{{ room.name }}">
+                        <input type="hidden" name="adults" value="{{ room.sleeps }}">
+                        <input type="hidden" name="rooms" value="1">
+                        <button type="submit" class="btn-primary" style="padding:8px 14px;font-size:13px;">Reserve</button>
+                    </form>
+                    {% else %}
+                    <a href="{{ url_for('login') }}" class="btn-primary" style="padding:8px 14px;font-size:13px;">Sign in to reserve</a>
+                    {% endif %}
+                </div>
+            </div>
+        </details>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

@@ -2077,6 +2077,172 @@ def _seed_pop_topics(db, Topic, SearchResult, PaaQuestion, RelatedQuery, Knowled
         print(f"[seed] _seed_pop_topics inserted {inserted} new topics")
 
 
+# ----------------------------------------------------------------------------
+# R4 enrichment — adds result_type/breadcrumb/favicon to every SearchResult
+# and appends ~5 deeper results per topic so the SERP feels denser and more
+# real (organic, featured, ad). Deterministic — keyed off topic slug + rank.
+# ----------------------------------------------------------------------------
+
+_R4_DEEP_PROVIDERS = [
+    # (provider, domain, title_template, url_template, snippet_template)
+    ('stackoverflow', 'stackoverflow.com',
+     'Questions tagged [{slug}] - Stack Overflow',
+     'https://stackoverflow.com/questions/tagged/{slug}',
+     'Top voted questions tagged [{slug}] on Stack Overflow. {summary_120}'),
+    ('archive', 'archive.org',
+     '{name} : Free Download, Borrow, and Streaming - Internet Archive',
+     'https://archive.org/details/{slug}',
+     'Browse archived books, papers, audio, and video about {name}. {summary_100}'),
+    ('jstor', 'www.jstor.org',
+     '{name} on JSTOR',
+     'https://www.jstor.org/topic/{slug}/',
+     'JSTOR scholarly resources on {name}. Browse 2,400+ articles, primary sources, and chapters.'),
+    ('scholar', 'scholar.google.com',
+     '{name} - Google Scholar',
+     'https://scholar.google.com/scholar?q={slug}',
+     'Search peer-reviewed papers, theses, books, and conference proceedings about {name}.'),
+    ('wayback', 'web.archive.org',
+     'Wayback Machine: {name}',
+     'https://web.archive.org/web/*/{slug}',
+     'Archived web snapshots related to {name}. Over 600 billion captures from 1996-present.'),
+    ('quora', 'www.quora.com',
+     '{name} - Quora',
+     'https://www.quora.com/topic/{slug}',
+     'Read questions and expert answers about {name} on Quora. {summary_100}'),
+    ('substack', 'substack.com',
+     'Best {name} newsletters - Substack',
+     'https://substack.com/discover/category/{slug}',
+     'Independent writers publishing in-depth essays and newsletters about {name}.'),
+    ('hackernews', 'news.ycombinator.com',
+     '{name} - Hacker News',
+     'https://news.ycombinator.com/from?site={slug}',
+     'Recent Hacker News submissions and discussions about {name}.'),
+    ('archdaily', 'www.archdaily.com',
+     '{name} - ArchDaily',
+     'https://www.archdaily.com/tag/{slug}',
+     'Architectural projects, news, and competitions related to {name}.'),
+    ('jstor_daily', 'daily.jstor.org',
+     '{name} | JSTOR Daily',
+     'https://daily.jstor.org/tag/{slug}/',
+     'Long-form essays drawing on JSTOR scholarship about {name}.'),
+    ('researchgate', 'www.researchgate.net',
+     '{name} - ResearchGate',
+     'https://www.researchgate.net/topic/{slug}',
+     'Connect with researchers and access publications about {name} on ResearchGate.'),
+    ('pubmed', 'pubmed.ncbi.nlm.nih.gov',
+     '{name} - PubMed search',
+     'https://pubmed.ncbi.nlm.nih.gov/?term={slug}',
+     'Citations from MEDLINE and life-science journals indexed for {name}.'),
+]
+
+# Featured-result template (rank-0 override). Reused across all topics so
+# every SERP has at least one rich answer-style card.
+_FEATURED_PROVIDER = {
+    'name': 'wikipedia', 'domain': 'en.wikipedia.org',
+}
+
+
+def _breadcrumb_for(display_url, url, slug):
+    """en.wikipedia.org › wiki › Python — Google-style breadcrumb."""
+    if not display_url:
+        return ''
+    try:
+        from urllib.parse import urlparse
+        p = urlparse(url or '')
+        path = p.path.strip('/')
+        if not path:
+            return display_url
+        parts = [seg for seg in path.split('/') if seg][:4]
+        # Title-case the last segment, swap underscores for spaces.
+        if parts:
+            parts[-1] = parts[-1].replace('_', ' ').replace('-', ' ').title()
+        return display_url + ' › ' + ' › '.join(parts)
+    except Exception:
+        return display_url
+
+
+def _favicon_for(display_url):
+    if not display_url:
+        return ''
+    return f'https://www.google.com/s2/favicons?domain={display_url}&sz=32'
+
+
+def _seed_r4_enrichment(db, Topic, SearchResult):
+    """Backfill result_type/breadcrumb/favicon + add ~5 deep results per topic.
+
+    Idempotent: detects existing enrichment by checking if any SearchResult
+    row already has a non-empty favicon and >= rank 10 row.
+    """
+    # Idempotency gate — once enrichment has run, every result has a non-empty
+    # favicon. (Existing rank>=10 rows from scraped_topics.json predate R4 so
+    # we can't gate on rank alone.)
+    sample = SearchResult.query.filter(SearchResult.favicon != '').first()
+    if sample is not None:
+        return
+
+    topics = Topic.query.order_by(Topic.id).all()
+    deep_added = 0
+    enriched = 0
+    for t in topics:
+        existing = list(t.results)
+        # Backfill metadata on existing rows
+        for r in existing:
+            r.breadcrumb = _breadcrumb_for(r.display_url, r.url, t.slug)
+            r.favicon = _favicon_for(r.display_url)
+            if r.rank == 0:
+                r.result_type = 'featured'
+            else:
+                r.result_type = 'organic'
+            enriched += 1
+
+        # Pick 5 deterministic deep providers
+        rng = random.Random(_det_hash(t.slug + '_r4_deep'))
+        # Exclude providers that already match the topic's existing display_urls
+        existing_domains = {r.display_url for r in existing}
+        pool = [p for p in _R4_DEEP_PROVIDERS if p[1] not in existing_domains]
+        deep = rng.sample(pool, min(5, len(pool)))
+
+        name = t.name or t.slug.replace('_', ' ').title()
+        summary = (t.summary or f'{name} — overview, history, and key facts.')
+        s100 = summary[:100]
+        s120 = summary[:120]
+
+        next_rank = max((r.rank for r in existing), default=-1) + 1
+        # rank base for deep results sits at >= max(10, existing_max+1) so we
+        # never collide with rows whose rank already exceeds 9 (some scraped
+        # topics in scraped_topics.json carry rank up to 17).
+        next_rank = max(next_rank, 10)
+        for i, (prov, domain, title_tpl, url_tpl, snip_tpl) in enumerate(deep):
+            title = title_tpl.format(name=name, slug=t.slug)
+            url = url_tpl.format(name=name, slug=t.slug)
+            snippet = snip_tpl.format(
+                name=name, slug=t.slug,
+                summary_100=s100, summary_120=s120,
+            )
+            # 6% of deep results flagged as 'ad' (sponsored). Deterministic.
+            rng2 = random.Random(_det_hash(t.slug + '_r4_type_' + str(i)))
+            is_ad = rng2.random() < 0.06
+            db.session.add(SearchResult(
+                topic_id=t.id,
+                title=title,
+                url=url,
+                display_url=domain,
+                snippet=snippet,
+                source=prov,
+                source_type='web',
+                rank=next_rank + i,
+                image='',
+                result_type='ad' if is_ad else 'organic',
+                breadcrumb=_breadcrumb_for(domain, url, t.slug),
+                favicon=_favicon_for(domain),
+            ))
+            deep_added += 1
+
+    db.session.commit()
+    print(f"[seed] _seed_r4_enrichment enriched {enriched} existing rows, "
+          f"added {deep_added} deep results across {len(topics)} topics")
+
+
 def domain_for(provider):
     return {
         'wikipedia': 'en.wikipedia.org',
@@ -2484,6 +2650,10 @@ def seed_database(db, User, Vertical, Topic, SearchResult, PaaQuestion, RelatedQ
 
     # ---- R2: Pop-topic expansion (programming, science, people, places, etc.) ----
     _seed_pop_topics(db, Topic, SearchResult, PaaQuestion, RelatedQuery, KnowledgeFact)
+
+    # ---- R4: enrich SearchResults (result_type/breadcrumb/favicon) +
+    #          add 5 deep results per topic (rank >= 10) ----
+    _seed_r4_enrichment(db, Topic, SearchResult)
 
     # Demo user
     if not User.query.filter_by(email='demo@google.com').first():

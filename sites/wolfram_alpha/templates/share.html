@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% block title %}Share — {{ comp.input_query }}{% endblock %}
+
+{% block content %}
+<div class="section-inner" style="padding-top: 40px;">
+  <div class="share-page">
+    <div class="share-header">
+      <span class="share-eyebrow">SHARED COMPUTATION</span>
+      <h1 class="share-title">{{ comp.input_query }}</h1>
+      <p class="share-sub">Permalink generated {{ comp.created_at.strftime('%Y-%m-%d') if comp.created_at else '' }}</p>
+    </div>
+
+    <div class="share-result-card">
+      <div class="result-pod result-pod--input">
+        <div class="pod-title">Input interpretation</div>
+        <div class="pod-content"><code class="pod-input-formula">{{ comp.parsed_input or comp.input_query }}</code></div>
+      </div>
+
+      {% for pod in comp.get_pods() %}
+        {% if pod.title|lower != 'input interpretation' %}
+        <div class="result-pod result-pod--extra">
+          <div class="pod-title">{{ pod.title }}</div>
+          <div class="pod-content"><pre class="pod-extra-plaintext">{{ pod.plaintext }}</pre></div>
+        </div>
+        {% endif %}
+      {% endfor %}
+    </div>
+
+    <div class="share-meta">
+      <div class="share-permalink-block">
+        <label for="permalinkBox" class="share-permalink-label">Permalink</label>
+        <input id="permalinkBox" type="text" readonly class="share-permalink-input" value="{{ permalink }}">
+        <button class="btn btn-secondary btn-sm" onclick="navigator.clipboard.writeText(document.getElementById('permalinkBox').value)">Copy</button>
+      </div>
+      <div class="share-actions">
+        <a class="btn btn-secondary btn-sm" href="/input?i={{ comp.input_query|urlencode }}">Open in Wolfram|Alpha</a>
+        <a class="btn btn-secondary btn-sm" href="/widget/builder">Embed as widget</a>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

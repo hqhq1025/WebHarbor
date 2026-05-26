@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block title %}{{ topic.topic }} — Mistake corner | Cambridge Dictionary{% endblock %}
+{% block content %}
+<div class="container mistake-detail-page">
+  <nav class="breadcrumb">
+    <a href="{{ url_for('index') }}">Dictionary</a> &rsaquo;
+    <a href="{{ url_for('mistake_index') }}">Mistake corner</a> &rsaquo;
+    <span>{{ topic.topic }}</span>
+  </nav>
+
+  <header class="mistake-header">
+    <span class="mistake-cat-tag">{{ topic.category }}</span>
+    <h1 class="mistake-title">{{ topic.topic }}</h1>
+  </header>
+
+  <section class="mistake-body">
+    <p class="mistake-rule">{{ topic.body }}</p>
+  </section>
+
+  <section class="mistake-examples">
+    <h2 class="sub-section-title">Examples</h2>
+    {% for ex in examples %}
+      <article class="mistake-example">
+        {% if ex.wrong %}<p class="mistake-wrong"><span class="mistake-mark-wrong">&#x2717;</span> {{ ex.wrong }}</p>{% endif %}
+        {% if ex.right %}<p class="mistake-right"><span class="mistake-mark-right">&#x2713;</span> {{ ex.right }}</p>{% endif %}
+        {% if ex.note %}<p class="mistake-note">{{ ex.note }}</p>{% endif %}
+      </article>
+    {% endfor %}
+  </section>
+
+  <nav class="mistake-nav">
+    {% if prev_topic %}<a class="mistake-nav-prev" href="{{ url_for('mistake_detail', slug=prev_topic.slug) }}">&laquo; {{ prev_topic.topic }}</a>{% endif %}
+    {% if next_topic %}<a class="mistake-nav-next" href="{{ url_for('mistake_detail', slug=next_topic.slug) }}">{{ next_topic.topic }} &raquo;</a>{% endif %}
+  </nav>
+</div>
+{% endblock %}

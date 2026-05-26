@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block title %}Google Images{% endblock %}
+{% block content %}
+<div class="hp-page">
+    <div class="hp-logo">
+        <div class="g-logo">
+            <span>G</span><span>o</span><span>o</span><span>g</span><span>l</span><span>e</span>
+        </div>
+        <div class="hp-subtitle">Images</div>
+    </div>
+    <form action="{{ url_for('search') }}" method="get" class="hp-search" autocomplete="off">
+        <input type="hidden" name="tbm" value="images">
+        <div class="search-box hp-box">
+            <input type="search" name="q" placeholder="Search Google Images" autofocus>
+            <button class="btn-primary" type="submit">Search</button>
+        </div>
+    </form>
+    <p class="hp-hint">Tip: try <a href="{{ url_for('search', q='aurora borealis', tbm='images') }}">aurora borealis</a>,
+       <a href="{{ url_for('search', q='cherry blossom', tbm='images') }}">cherry blossom</a>, or
+       <a href="{{ url_for('search', q='nebula', tbm='images') }}">nebula</a>.</p>
+</div>
+{% endblock %}

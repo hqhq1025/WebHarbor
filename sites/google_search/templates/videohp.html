@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block title %}Google Video Search{% endblock %}
+{% block content %}
+<div class="hp-page">
+    <div class="hp-logo">
+        <div class="g-logo">
+            <span>G</span><span>o</span><span>o</span><span>g</span><span>l</span><span>e</span>
+        </div>
+        <div class="hp-subtitle">Videos</div>
+    </div>
+    <form action="{{ url_for('search') }}" method="get" class="hp-search" autocomplete="off">
+        <input type="hidden" name="tbm" value="videos">
+        <div class="search-box hp-box">
+            <input type="search" name="q" placeholder="Search Google Videos" autofocus>
+            <button class="btn-primary" type="submit">Search</button>
+        </div>
+    </form>
+    <p class="hp-hint">Watch curated clips on topics across science, news, sport, and entertainment.</p>
+</div>
+{% endblock %}

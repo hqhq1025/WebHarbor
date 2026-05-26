@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block title %}Search Help{% endblock %}
+{% block content %}
+<div class="help-page">
+    <h1>Google Search Help</h1>
+    <p class="lead">Tips, troubleshooting, and policies for getting the most out of Search.</p>
+    <ul class="help-index">
+        {% for slug, (title, _summary) in topics.items() %}
+        <li>
+            <a href="{{ url_for('search_help', topic=slug) }}">{{ title }}</a>
+            <span class="help-summary">{{ _summary }}</span>
+        </li>
+        {% endfor %}
+    </ul>
+</div>
+{% endblock %}

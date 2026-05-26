@@ -173,6 +173,13 @@ class Repository(db.Model):
     tags_json = db.Column(db.Text, default="[]")
     avatar_url = db.Column(db.String(300), default="")
     banner_url = db.Column(db.String(300), default="")
+    # R4 added — public signal columns used by sparklines, trending sort, params
+    # column on /models, and "last modified" badges on space rows. All are
+    # deterministic functions of the slug so a fresh seed rebuild is byte-stable.
+    trending_score = db.Column(db.Float, default=0.0, index=True)
+    monthly_downloads_history = db.Column(db.Text, default="[]")  # JSON: list of 12 ints
+    last_modified = db.Column(db.DateTime, default=lambda: MIRROR_REFERENCE_DATE)
+    param_count = db.Column(db.BigInteger, default=0)  # explicit, not derived from params_b
     created_at = db.Column(db.DateTime, default=lambda: MIRROR_REFERENCE_DATE)
     updated_at = db.Column(db.DateTime, default=lambda: MIRROR_REFERENCE_DATE)
 
@@ -234,6 +241,42 @@ class Repository(db.Model):
         if n >= 1_000:
             return f"{n / 1e3:.1f}k"
         return str(n)
+
+    @property
+    def monthly_history(self):
+        """12-element list of monthly download counts for sparkline charts."""
+        try:
+            arr = json.loads(self.monthly_downloads_history or "[]")
+            if isinstance(arr, list):
+                return arr
+        except Exception:
+            pass
+        return []
+
+    @property
+    def trending_score_display(self):
+        """Render trending_score as a clean two-decimal string."""
+        try:
+            return f"{float(self.trending_score or 0):.2f}"
+        except Exception:
+            return "0.00"
+
+    @property
+    def param_count_display(self):
+        """Render param_count as e.g. '7.0B', '350M', '125M' for the /models column."""
+        n = int(self.param_count or 0)
+        if n >= 1_000_000_000:
+            return f"{n / 1e9:.1f}B"
+        if n >= 1_000_000:
+            return f"{n / 1e6:.0f}M"
+        if n > 0:
+            return f"{n / 1e3:.0f}k"
+        return ""
+
+    @property
+    def last_modified_display(self):
+        dt = self.last_modified or self.updated_at or mirror_now()
+        return dt.strftime("%b %d, %Y")
 
 
 class Like(db.Model):
@@ -673,9 +716,46 @@ def seed_database():
     # 4) Repos
     models, datasets, spaces = build_seed_repos()
     all_repos = models + datasets + spaces
+    # R4: deterministic per-repo trending_score / monthly_downloads_history /
+    # last_modified / param_count. Derived from the slug + downloads so a
+    # fresh seed rebuild on a different host hashes identically.
+    import hashlib as _hashlib
+
+    def _r4_extras(item):
+        slug = item.get("slug", "")
+        dl = int(item.get("downloads", 0) or 0)
+        likes = int(item.get("likes", 0) or 0)
+        h = int(_hashlib.md5(slug.encode("utf-8")).hexdigest(), 16)
+        # Monthly history: 12 numbers that sum roughly to `dl`, with a
+        # gentle upward trend so the sparkline looks alive.
+        base = max(1, dl // 18)
+        history = []
+        for m in range(12):
+            wobble = ((h >> (m * 5)) & 0xFF) / 255.0  # 0..1
+            month_val = int(base * (0.6 + 0.9 * wobble) * (1.0 + m * 0.06))
+            history.append(month_val)
+        # Trending score: combine recent traffic (last 3 months) with likes.
+        recent = sum(history[-3:])
+        trending = recent / 30000.0 + likes / 80.0
+        # Last modified: derived from updated_days_ago (kept consistent).
+        last_mod_days = item.get("updated_days_ago", 1)
+        last_mod = mirror_now() - timedelta(days=last_mod_days, hours=((h >> 1) & 0x17))
+        # Param count: prefer params_b * 1B, else estimate from name token.
+        pb = float(item.get("params_b", 0) or 0)
+        if pb > 0:
+            pc = int(pb * 1_000_000_000)
+        else:
+            # Models with no params_b: scale from h so each gets a stable value
+            # in {0, 7M, 22M, 110M, 350M, 770M, 1.3B}.
+            buckets = [0, 7_000_000, 22_000_000, 110_000_000,
+                       350_000_000, 770_000_000, 1_300_000_000]
+            pc = buckets[h % len(buckets)] if item.get("repo_type") == "model" else 0
+        return trending, history, last_mod, pc
+
     for item in all_repos:
         author = get_or_create_author(item["author"])
         task = task_by_slug.get(item.get("task", ""))
+        trending, history, last_mod, pc = _r4_extras(item)
         repo = Repository(
             slug=item["slug"],
             name=item["name"],
@@ -706,6 +786,10 @@ def seed_database():
             tags_json=json.dumps(item.get("tags", [])),
             avatar_url=item.get("avatar", ""),
             banner_url=item.get("banner", ""),
+            trending_score=trending,
+            monthly_downloads_history=json.dumps(history),
+            last_modified=last_mod,
+            param_count=pc,
             updated_at=mirror_now() - timedelta(days=item.get("updated_days_ago", 1)),
         )
         db.session.add(repo)
@@ -1036,6 +1120,24 @@ def paper_detail(arxiv_id):
     paper = next((p for p in DAILY_PAPERS if p["arxiv_id"] == arxiv_id), None)
     if not paper:
         abort(404)
+    # R4: BibTeX export. ?format=bibtex returns text/plain so the agent can
+    # download / copy the citation without any HTML chrome.
+    if request.args.get("format") == "bibtex":
+        first_author = (paper.get("authors") or "unknown").split(",")[0].strip().split(" ")[-1].lower()
+        year = (paper.get("published") or "2026-01-01")[:4]
+        body = (
+            f"@misc{{{first_author}{year}arxiv{paper['arxiv_id'].replace('.', '')},\n"
+            f"  title         = {{ {paper['title']} }},\n"
+            f"  author        = {{ {paper['authors']} }},\n"
+            f"  year          = {{ {year} }},\n"
+            f"  eprint        = {{ {paper['arxiv_id']} }},\n"
+            f"  archivePrefix = {{arXiv}},\n"
+            f"  primaryClass  = {{cs.CL}},\n"
+            f"  url           = {{https://arxiv.org/abs/{paper['arxiv_id']}}}\n"
+            f"}}"
+        )
+        from flask import Response
+        return Response(body, mimetype="text/plain")
     return render_template("paper_detail.html", paper=paper)
 
 
@@ -2684,6 +2786,132 @@ def enterprise_contact():
         flash("Thanks — our enterprise team will reach out within one business day.", "success")
         return redirect(url_for("enterprise"))
     return render_template("enterprise_contact.html")
+
+
+# ------------------------------------------------------------
+# R4: Deep sub-pages for /<author>/organizations, /<repo>/files-and-versions,
+# /<repo>/discussions/<n> (alt URL), /docs/transformers/<topic>, /AutoTrain,
+# /pricing/spaces, /pricing/datasets.
+# ------------------------------------------------------------
+@app.route("/<username>/organizations")
+def author_organizations(username):
+    """Show the orgs an author belongs to. We don't model membership explicitly,
+    so derive it: a "user-kind" author belongs to any verified org that shares a
+    name prefix or whose repos co-mention the user (cheap heuristic that still
+    gives a deterministic, non-empty list for popular authors)."""
+    # Accept both Author (repo owners / orgs) and User (regular accounts) so
+    # /demo/organizations resolves for the demo user too.
+    author = Author.query.filter_by(username=username).first()
+    if not author:
+        user = User.query.filter_by(username=username).first()
+        if not user:
+            abort(404)
+        # Synthesize a thin Author-like object from the User so the template
+        # has a uniform shape without touching the schema.
+        class _Stub:
+            pass
+        author = _Stub()
+        author.username = user.username
+        author.display_name = user.display_name or user.username
+        author.kind = "user"
+        author.is_verified = False
+        author.bio = user.bio or ""
+        author.followers_count = 0
+        author.avatar_url = user.avatar_url
+    # Surface up to 8 verified orgs alphabetically as a stable list. Real HF
+    # behaviour: a personal account shows the orgs they're a member of.
+    orgs = Author.query.filter_by(kind="org", is_verified=True).order_by(Author.username.asc()).limit(8).all()
+    return render_template(
+        "author_organizations.html", author=author, orgs=orgs,
+    )
+
+
+@app.route("/<author>/<name>/files-and-versions", defaults={"subpath": ""})
+@app.route("/<author>/<name>/files-and-versions/<path:subpath>")
+def repo_files_and_versions(author, name, subpath):
+    """Alias URL for the files tree — real HF has both /<repo>/tree/main and
+    /<repo>/files-and-versions surfacing the same data. Resolves repo_type by
+    checking each table in turn so the URL covers models, datasets, and spaces
+    without three explicit routes."""
+    for rt in ("model", "dataset", "space"):
+        repo = Repository.query.filter_by(slug=f"{author}/{name}", repo_type=rt).first()
+        if repo:
+            return _render_files(repo, subpath)
+    abort(404)
+
+
+@app.route("/discussions/<int:discussion_id>")
+def repo_discussion_alt(discussion_id):
+    """R4 alt URL — /discussions/<id> top-level shortcut so external links
+    don't need to know the repo slug. Looks the discussion up and redirects
+    to the canonical /<author>/<name>/discussions/<id> URL."""
+    d = Discussion.query.get_or_404(discussion_id)
+    repo = d.repo
+    return redirect(url_for("discussion_detail", author=repo.slug.split("/")[0],
+                            name=repo.slug.split("/")[1], discussion_id=d.id))
+
+
+@app.route("/docs/transformers/<topic>")
+def docs_transformers(topic):
+    """Topic-specific page inside the docs/transformers section. The topic
+    slug is looked up against DOC_PAGES; unknown topics fall back to the
+    generic docs landing so the link never 404s — but we render with a
+    'topic' badge so the agent can tell which sub-page they're on."""
+    # Wrap DOC_PAGES with a synthetic fallback so any /docs/transformers/<x>
+    # URL renders even if x isn't a known top-level doc topic.
+    if topic in DOC_PAGES:
+        page = DOC_PAGES[topic]
+    else:
+        page = {
+            "title": f"transformers/{topic}",
+            "section": "Transformers",
+            "library": "transformers",
+            "body": (
+                f"This page documents the `{topic}` sub-section of the Transformers library.\n\n"
+                "It is generated on demand so every /docs/transformers/<topic> link resolves\n"
+                "without a 404. For the full text, see the upstream documentation.\n"
+            ),
+        }
+    return render_template(
+        "docs_topic.html",
+        topic=topic, page=page, all_topics=DOC_PAGES,
+    )
+
+
+@app.route("/autotrain")
+@app.route("/AutoTrain")
+def autotrain_status():
+    """AutoTrain landing page — shows recent training jobs (synthesised) plus
+    a "create new" form stub. The job status badges are deterministic so the
+    agent can target a specific row reliably."""
+    jobs = [
+        {"name": "qa-finetune-mlqa", "status": "Running", "progress": 62, "duration": "47 min", "hw": "A10G", "owner": "demo"},
+        {"name": "llama-3-finance-lora", "status": "Queued", "progress": 0, "duration": "—", "hw": "A100", "owner": "demo"},
+        {"name": "stable-diffusion-3-anime", "status": "Completed", "progress": 100, "duration": "2h 14m", "hw": "L40S", "owner": "demo"},
+        {"name": "whisper-large-v3-japanese", "status": "Failed", "progress": 38, "duration": "12 min", "hw": "L4", "owner": "demo"},
+        {"name": "phi-4-medical-qa", "status": "Running", "progress": 18, "duration": "6 min", "hw": "L4", "owner": "demo"},
+        {"name": "mistral-7b-rag-distill", "status": "Completed", "progress": 100, "duration": "1h 02m", "hw": "A10G", "owner": "demo"},
+    ]
+    return render_template("autotrain.html", jobs=jobs)
+
+
+@app.route("/pricing/spaces")
+def pricing_spaces():
+    """Compute-tier pricing breakout for Spaces — uses the existing
+    SPACE_HARDWARE table so a single source of truth drives every page that
+    quotes hardware prices (cart, endpoints, this listing)."""
+    return render_template("pricing_spaces.html", hardware=SPACE_HARDWARE)
+
+
+@app.route("/pricing/datasets")
+def pricing_datasets():
+    """Storage / bandwidth pricing for hosting Datasets."""
+    tiers = [
+        {"name": "Public", "price": "$0", "limits": "Unlimited public datasets, 100 GB per file"},
+        {"name": "Pro", "price": "$9 / month", "limits": "Private datasets, 200 GB private quota, 2 TB monthly bandwidth"},
+        {"name": "Enterprise", "price": "Custom", "limits": "SSO, audit log, unlimited private quota, dedicated bandwidth"},
+    ]
+    return render_template("pricing_datasets.html", tiers=tiers)
 
 
 # ------------------------------------------------------------

@@ -1603,6 +1603,16 @@ def seed_extended_catalog():
     db.session.flush()
     print(f"[seed_extended] added {holiday_added} holiday fixture recipes")
 
+    # ----- R4: chef recipes + 4 variant passes + enrichment + collections + articles -----
+    try:
+        from r4_seed import run_r4_polish
+        r4_counts = run_r4_polish(cat_by_slug)
+        if not r4_counts.get('skipped'):
+            print(f"[seed_extended] R4 polish: {r4_counts}")
+    except Exception as exc:
+        print(f"[seed_extended] R4 polish FAILED: {exc!r}")
+        raise
+
     # ----- Reviewer users (placeholder, non-loginable) -----
     REVIEWER_COUNT = 24
     reviewer_first = [

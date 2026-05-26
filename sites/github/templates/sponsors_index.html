@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block title %}GitHub Sponsors{% endblock %}
+{% block content %}
+<div style="padding:32px;max-width:1100px;margin:0 auto;">
+  <header style="text-align:center;margin-bottom:32px;">
+    <h1 style="font-size:32px;margin:0 0 8px;">GitHub Sponsors</h1>
+    <p style="color:#8b949e;font-size:16px;margin:0;">Invest in the developers and projects you depend on.</p>
+  </header>
+  <h2 style="font-size:18px;margin:0 0 14px;">Featured sponsorable accounts</h2>
+  <div class="sponsor-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:14px;">
+    {% for f in featured %}
+    <a href="/sponsors/{{ f.user.username }}" style="border:1px solid #30363d;border-radius:8px;padding:16px;text-decoration:none;color:inherit;background:#0d1117;display:flex;gap:12px;align-items:center;">
+      <img src="{{ f.user.avatar_url }}" alt="{{ f.user.username }}" width="48" height="48" style="border-radius:50%;" onerror="this.src='/static/images/avatars/avatar_00.jpg'">
+      <div style="flex:1;min-width:0;">
+        <div style="font-weight:600;color:#e6edf3;">{{ f.user.username }}</div>
+        <div style="font-size:12px;color:#7d8590;">{{ f.sponsors }} sponsors · ${{ (f.monthly_cents/100)|int }}/mo</div>
+      </div>
+      <span class="gh-btn gh-btn-sm gh-btn-primary">Sponsor</span>
+    </a>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}

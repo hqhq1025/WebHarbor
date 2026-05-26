@@ -1,0 +1,86 @@
+{% extends "base.html" %}
+{% block title %}Accessibility — {{ place.name }} — Google Maps{% endblock %}
+
+{% block extra_head %}
+<style>
+.acc-wrap{max-width:780px;margin:24px auto;padding:0 24px;font-family:Roboto,Arial,sans-serif;color:#202124;}
+.acc-head{display:flex;align-items:baseline;gap:12px;}
+.acc-head h1{font-size:22px;margin:0;font-weight:500;}
+.acc-back{color:#1a73e8;font-size:13px;text-decoration:none;}
+.acc-back:hover{text-decoration:underline;}
+.acc-sub{color:#5f6368;font-size:13px;margin-bottom:18px;}
+.acc-score{display:flex;align-items:center;gap:14px;background:#e8f0fe;border-radius:10px;padding:14px 18px;margin-bottom:22px;}
+.acc-score .meter{width:140px;height:10px;background:#dadce0;border-radius:6px;overflow:hidden;}
+.acc-score .meter .fill{height:100%;background:#1a73e8;border-radius:6px;}
+.acc-score .pct{font-size:18px;font-weight:500;}
+.acc-section{margin-bottom:22px;}
+.acc-section h3{font-size:14px;color:#5f6368;font-weight:500;text-transform:uppercase;letter-spacing:.4px;margin:0 0 10px;}
+.acc-list{list-style:none;padding:0;margin:0;}
+.acc-row{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid #e8eaed;font-size:14px;}
+.acc-row:last-child{border-bottom:none;}
+.acc-row .ico{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.acc-row.yes .ico{background:#e6f4ea;color:#137333;}
+.acc-row.no .ico{background:#fce8e6;color:#a50e0e;}
+.acc-row .lbl{flex:1;}
+.acc-row .tag{font-size:11px;color:#5f6368;border:1px solid #dadce0;border-radius:10px;padding:2px 6px;}
+.acc-cta{margin-top:18px;font-size:13px;color:#5f6368;}
+.acc-cta a{color:#1a73e8;text-decoration:none;}
+</style>
+{% endblock %}
+
+{% block body %}
+<div class="acc-wrap" id="accessibility-page">
+    <a href="{{ url_for('place_detail', slug=place.slug) }}" class="acc-back">&larr; Back to {{ place.name }}</a>
+    <div class="acc-head"><h1>Accessibility at {{ place.name }}</h1></div>
+    <div class="acc-sub">{{ place.subtitle }} &middot; {{ place.address }}</div>
+
+    <div class="acc-score">
+        <span class="material-icons-outlined" style="font-size:36px;color:#1a73e8;">accessible</span>
+        <div style="flex:1;">
+            <div style="font-size:13px;color:#5f6368;">Accessibility score</div>
+            <div class="meter"><div class="fill" style="width:{{ score }}%;"></div></div>
+        </div>
+        <div class="pct" id="acc-score-pct">{{ score }}/100</div>
+    </div>
+
+    <section class="acc-section" id="acc-available">
+        <h3>Available accessibility features ({{ enabled|length }})</h3>
+        {% if enabled %}
+        <ul class="acc-list">
+            {% for label, _v in enabled %}
+            <li class="acc-row yes" data-feature="{{ label|lower|replace(' ', '-') }}">
+                <span class="ico"><span class="material-icons-outlined" style="font-size:20px;">check</span></span>
+                <span class="lbl">{{ label }}</span>
+                <span class="tag">Available</span>
+            </li>
+            {% endfor %}
+        </ul>
+        {% else %}
+        <p style="color:#5f6368;font-size:13px;">No accessibility features have been verified for this place.</p>
+        {% endif %}
+    </section>
+
+    <section class="acc-section" id="acc-unavailable">
+        <h3>Not reported or unavailable ({{ missing|length }})</h3>
+        {% if missing %}
+        <ul class="acc-list">
+            {% for label, _v in missing %}
+            <li class="acc-row no" data-feature="{{ label|lower|replace(' ', '-') }}">
+                <span class="ico"><span class="material-icons-outlined" style="font-size:20px;">close</span></span>
+                <span class="lbl">{{ label }}</span>
+                <span class="tag">Not reported</span>
+            </li>
+            {% endfor %}
+        </ul>
+        {% else %}
+        <p style="color:#5f6368;font-size:13px;">All standard accessibility features are reported.</p>
+        {% endif %}
+    </section>
+
+    <div class="acc-cta">
+        <p>Accessibility features are crowdsourced and may change. <a href="{{ url_for('contribute') }}">Suggest an edit</a>.</p>
+        <p><a href="{{ url_for('place_detail', slug=place.slug) }}">View full place details</a> &middot;
+           <a href="{{ url_for('place_popular_times', slug=place.slug) }}">Popular times</a></p>
+    </div>
+</div>
+{% endblock %}

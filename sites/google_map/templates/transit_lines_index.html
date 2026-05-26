@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+{% block title %}Transit lines — Google Maps{% endblock %}
+
+{% block extra_head %}
+<style>
+.lns-wrap{max-width:880px;margin:24px auto;padding:0 24px;font-family:Roboto,Arial,sans-serif;color:#202124;}
+.lns-head h1{font-size:22px;margin:0 0 6px;font-weight:500;}
+.lns-sub{color:#5f6368;font-size:13px;margin-bottom:20px;}
+.lns-filter{display:flex;gap:10px;margin-bottom:18px;flex-wrap:wrap;}
+.lns-filter form{display:flex;gap:8px;}
+.lns-filter input,.lns-filter select{border:1px solid #dadce0;border-radius:18px;padding:6px 12px;font-size:13px;font-family:inherit;}
+.lns-filter button{background:#1a73e8;color:#fff;border:none;border-radius:18px;padding:6px 14px;font-size:13px;cursor:pointer;}
+.lns-list{list-style:none;padding:0;margin:0;}
+.lns-card{display:flex;align-items:center;gap:14px;background:#fff;border:1px solid #e8eaed;border-radius:10px;padding:12px 14px;margin-bottom:8px;}
+.lns-card .pill{width:36px;height:36px;border-radius:50%;color:#fff;font-weight:600;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.lns-card .info{flex:1;min-width:0;}
+.lns-card .info .name a{color:#202124;text-decoration:none;font-weight:500;font-size:14px;}
+.lns-card .info .meta{font-size:12px;color:#5f6368;margin-top:2px;}
+.lns-card .freq{font-size:12px;color:#5f6368;text-align:right;}
+.lns-empty{padding:30px 0;color:#5f6368;font-size:14px;text-align:center;}
+</style>
+{% endblock %}
+
+{% block body %}
+<div class="lns-wrap" id="transit-lines-index">
+    <div class="lns-head"><h1>Transit lines</h1></div>
+    <div class="lns-sub">Subway, light-rail, bus and commuter lines tracked on Google Maps.</div>
+
+    <div class="lns-filter">
+        <form method="GET" action="{{ url_for('transit_lines_index') }}">
+            <input type="text" name="city" placeholder="City slug (e.g. new-york)" value="{{ city_slug }}">
+            <select name="mode">
+                <option value="">All modes</option>
+                {% for m in ['subway','light-rail','bus','commuter-rail'] %}
+                <option value="{{ m }}" {% if mode == m %}selected{% endif %}>{{ m|capitalize }}</option>
+                {% endfor %}
+            </select>
+            <button type="submit">Filter</button>
+        </form>
+    </div>
+
+    {% if lines %}
+    <ul class="lns-list">
+        {% for ln in lines %}
+        <li class="lns-card" data-line-slug="{{ ln.slug }}">
+            <span class="pill" style="background:{{ ln.color }};">{{ ln.short_name }}</span>
+            <div class="info">
+                <div class="name"><a href="{{ url_for('transit_line_detail', line_slug=ln.slug) }}">{{ ln.name }}</a></div>
+                <div class="meta">{{ ln.agency }} &middot; {{ ln.mode|capitalize }} &middot; {{ ln.get_stops()|length }} stops</div>
+            </div>
+            <div class="freq">{{ ln.frequency_peak }}<br><span style="color:#9aa0a6;">{{ ln.hours }}</span></div>
+        </li>
+        {% endfor %}
+    </ul>
+    {% else %}
+    <div class="lns-empty">No transit lines match this filter.</div>
+    {% endif %}
+</div>
+{% endblock %}

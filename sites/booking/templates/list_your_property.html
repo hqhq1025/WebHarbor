@@ -1,0 +1,86 @@
+{% extends "base.html" %}
+{% block title %}List your property on Booking{% endblock %}
+{% block content %}
+<div class="container">
+    <h1 class="page-title">List your property on Booking.com</h1>
+    <p style="color:#444;max-width:780px;">
+        Reach 350+ million travellers worldwide. Listing your property is free, and you
+        only pay commission on confirmed stays. Booking handles guest communication,
+        payments, and 24/7 support.
+    </p>
+
+    <div class="onboard-steps" style="display:flex;gap:6px;margin:24px 0;">
+        {% for s in [1,2,3,4,5] %}
+        <div style="flex:1;text-align:center;padding:10px 6px;border-bottom:3px solid {% if step >= s %}#003580{% else %}#dcdcdc{% endif %};font-weight:700;color:{% if step >= s %}#003580{% else %}#888{% endif %};">
+            Step {{ s }} of 5
+        </div>
+        {% endfor %}
+    </div>
+
+    <form method="POST" action="{{ url_for('list_your_property', step=step) }}"
+          style="background:#fff;border:1px solid #e2e2e2;border-radius:8px;padding:24px;">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token_value }}">
+        {% if step == 1 %}
+        <h2 style="margin-top:0;">Tell us about your place</h2>
+        <p>Pick the type of property you want to list. Hotels, apartments, B&amp;Bs,
+           villas — Booking supports them all.</p>
+        <div class="form-field"><label>Property name</label>
+            <input type="text" name="prop_name" placeholder="e.g. Casa del Mar"></div>
+        <div class="form-field"><label>Property type</label>
+            <select name="prop_type">
+                <option>Hotel</option><option>Apartment</option><option>Resort</option>
+                <option>Villa</option><option>Bed and Breakfast</option>
+                <option>Hostel</option><option>Guest House</option><option>Cabin</option>
+            </select></div>
+        {% elif step == 2 %}
+        <h2 style="margin-top:0;">Where is it located?</h2>
+        <div class="form-field"><label>Address</label>
+            <input type="text" name="address" placeholder="Street, building, floor"></div>
+        <div class="form-field"><label>City</label>
+            <input type="text" name="city" placeholder="e.g. Paris"></div>
+        <div class="form-field"><label>Country</label>
+            <input type="text" name="country" placeholder="e.g. France"></div>
+        {% elif step == 3 %}
+        <h2 style="margin-top:0;">What can guests expect?</h2>
+        <p>Pick the facilities you offer. The more, the better — top-rated hosts list 30+ amenities.</p>
+        <div class="form-field"><label>Amenities (comma-separated)</label>
+            <textarea name="amenities" rows="3" placeholder="Free WiFi, Swimming pool, Free parking, ..."></textarea>
+        </div>
+        {% elif step == 4 %}
+        <h2 style="margin-top:0;">Photos &amp; description</h2>
+        <p>Upload at least 8 high-quality photos. Properties with 8+ photos get up to
+           24% more bookings.</p>
+        <div class="form-field"><label>Description</label>
+            <textarea name="description" rows="4" placeholder="Tell guests what makes your place special..."></textarea>
+        </div>
+        {% elif step == 5 %}
+        <h2 style="margin-top:0;">Pricing &amp; payouts</h2>
+        <p>Set your base nightly price and connect a payout method. Booking processes
+           guest payments and pays you out within 24 hours of check-in.</p>
+        <div class="form-field"><label>Base nightly price (USD)</label>
+            <input type="number" name="price" min="10" placeholder="e.g. 150"></div>
+        <div class="form-field"><label>Payout method</label>
+            <select name="payout"><option>Bank transfer</option><option>PayPal</option></select></div>
+        {% endif %}
+
+        <div style="display:flex;justify-content:space-between;margin-top:18px;">
+            {% if step > 1 %}
+            <a href="{{ url_for('list_your_property', step=step-1) }}" class="btn-secondary">Back</a>
+            {% else %}<span></span>{% endif %}
+            {% if step < 5 %}
+            <button type="submit" class="btn-primary">Continue</button>
+            {% else %}
+            <button type="submit" class="btn-primary">Submit your property listing</button>
+            {% endif %}
+        </div>
+    </form>
+
+    {% if step == 5 %}
+    <div style="margin-top:24px;background:#e6f4e6;border:1px solid #99c699;border-radius:8px;padding:16px;">
+        <strong>Welcome aboard!</strong> Your listing will be reviewed by a Booking
+        partner specialist within 24 hours. Once live, you'll get an extranet login
+        to manage rates, availability, and guest messages.
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

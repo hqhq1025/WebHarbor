@@ -2467,3 +2467,1109 @@ def seed_v4(db, models):
     print(f"  + seed_v4: added {created} courses, "
           f"partners now {Partner.query.count()}, "
           f"total courses={Course.query.count()}")
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# seed_v5 — R4 catalog polish:
+#   * +60 partners (specialised research labs, regional universities,
+#     scale-up companies, language institutes)
+#   * +1500 deterministic courses targeting:
+#       - 80 fresh R4 topics × 4 variants  (Foundations / Hands-On /
+#         Mastering / Bootcamp) ≈ 320 courses
+#       - Coursera Classics (MOOC Archive) — 80 entries
+#       - Industry-specials (30 industries × 8 variants) ≈ 240 courses
+#       - Career-pathway module sets (20 roles × 6 modules) = 120 courses
+#       - University intro/applied/seminar trio (60 partners × 3) = 180
+#       - Research seminar shorts (50 topics × 4 dimensions) = 200
+#       - Micro-credentials (80 × 2) = 160
+#       - Lab notebooks (50 × 2) = 100
+#   * All slugs prefixed `r4-…` so they cannot collide with v2/3/4 catalogs.
+# Idempotent: gated on the presence of partner slug 'allen-ai'.
+# ═══════════════════════════════════════════════════════════════════════════
+
+NEW_PARTNERS_V5 = [
+    # Research institutes / labs
+    ('Allen Institute for AI', 'allen-ai', 'United States', 'institution', 'AI2'),
+    ('Max Planck Society', 'maxplanck', 'Germany', 'institution', 'Max Planck'),
+    ('Howard Hughes Medical Institute', 'hhmi', 'United States', 'institution', 'HHMI'),
+    ('Wellcome Trust', 'wellcome', 'United Kingdom', 'institution', 'Wellcome'),
+    ('Lawrence Berkeley National Laboratory', 'lbnl', 'United States', 'institution', 'LBNL'),
+    ('Oak Ridge National Laboratory', 'ornl', 'United States', 'institution', 'ORNL'),
+    ('Fraunhofer Society', 'fraunhofer', 'Germany', 'institution', 'Fraunhofer'),
+    ('National Institutes of Health', 'nih', 'United States', 'institution', 'NIH'),
+    ('European Molecular Biology Laboratory', 'embl', 'Germany', 'institution', 'EMBL'),
+    ('Broad Institute', 'broad', 'United States', 'institution', 'Broad'),
+    # Regional / less-represented universities
+    ('University of Edinburgh', 'edinburgh', 'United Kingdom', 'university', 'Edinburgh'),
+    ('University of Manchester', 'manchester', 'United Kingdom', 'university', 'Manchester'),
+    ('University of Bristol', 'bristol', 'United Kingdom', 'university', 'Bristol'),
+    ('University of Warwick', 'warwick', 'United Kingdom', 'university', 'Warwick'),
+    ('University of Bath', 'bath', 'United Kingdom', 'university', 'Bath'),
+    ('University of Glasgow', 'glasgow', 'United Kingdom', 'university', 'Glasgow'),
+    ('Queen Mary University of London', 'qmul', 'United Kingdom', 'university', 'QMUL'),
+    ('University of Leeds', 'leeds', 'United Kingdom', 'university', 'Leeds'),
+    ('University of Birmingham', 'birmingham', 'United Kingdom', 'university', 'Birmingham'),
+    ('University of Sheffield', 'sheffield', 'United Kingdom', 'university', 'Sheffield'),
+    ('Heidelberg University', 'heidelberg', 'Germany', 'university', 'Heidelberg'),
+    ('Humboldt University of Berlin', 'humboldt', 'Germany', 'university', 'Humboldt'),
+    ('Free University of Berlin', 'fuberlin', 'Germany', 'university', 'FU Berlin'),
+    ('Sorbonne University', 'sorbonne', 'France', 'university', 'Sorbonne'),
+    ('Paris-Saclay University', 'parissaclay', 'France', 'university', 'Paris-Saclay'),
+    ('Université Grenoble Alpes', 'uga', 'France', 'university', 'UGA'),
+    ('University of Helsinki', 'helsinki', 'Finland', 'university', 'Helsinki'),
+    ('Stockholm University', 'stockholm', 'Sweden', 'university', 'Stockholm'),
+    ('University of Bergen', 'bergen', 'Norway', 'university', 'Bergen'),
+    ('Aalborg University', 'aalborg', 'Denmark', 'university', 'Aalborg'),
+    ('University of Iceland', 'iceland', 'Iceland', 'university', 'Iceland'),
+    ('University of Bologna', 'bologna', 'Italy', 'university', 'Bologna'),
+    ('Universidad Carlos III de Madrid', 'uc3m', 'Spain', 'university', 'UC3M'),
+    ('University of Athens', 'uoaclassic', 'Greece', 'university', 'Athens'),
+    ('Lomonosov Moscow State University', 'msu-ru', 'Russia', 'university', 'MSU'),
+    ('Saint Petersburg State University', 'spbu', 'Russia', 'university', 'SPbU'),
+    ('University of Ljubljana', 'uniljubljana', 'Slovenia', 'university', 'Ljubljana'),
+    ('University of Zagreb', 'unizg', 'Croatia', 'university', 'Zagreb'),
+    ('University of Belgrade', 'bgduni', 'Serbia', 'university', 'Belgrade'),
+    ('University of Cyprus', 'ucy', 'Cyprus', 'university', 'UCY'),
+    ('Lebanese American University', 'lau', 'Lebanese Republic', 'university', 'LAU'),
+    ('American University of Beirut', 'aub', 'Lebanese Republic', 'university', 'AUB'),
+    ('Bilkent University', 'bilkent', 'Turkey', 'university', 'Bilkent'),
+    ('METU', 'metu', 'Turkey', 'university', 'METU'),
+    # Latin America deep cuts
+    ('Universidad de Chile', 'uchile', 'Chile', 'university', 'U. Chile'),
+    ('Universidad Nacional de Córdoba', 'unc-ar', 'Argentina', 'university', 'UNC'),
+    ('Universidad Autónoma de Barcelona', 'uab', 'Spain', 'university', 'UAB'),
+    # African deep cuts
+    ('Stellenbosch University', 'stellenbosch', 'South Africa', 'university', 'Stellenbosch'),
+    ('University of the Witwatersrand', 'wits', 'South Africa', 'university', 'Wits'),
+    ('Cairo University', 'cairouni', 'Egypt', 'university', 'Cairo'),
+    # Asian deep cuts
+    ('Indian Institute of Technology Kharagpur', 'iitkgp', 'India', 'university', 'IIT Kharagpur'),
+    ('Indian Institute of Technology Kanpur', 'iitk', 'India', 'university', 'IIT Kanpur'),
+    ('BITS Pilani', 'bits', 'India', 'university', 'BITS'),
+    ('Yonsei University', 'yonsei', 'South Korea', 'university', 'Yonsei'),
+    ('Korea University', 'koreauni', 'South Korea', 'university', 'Korea U.'),
+    ('Tohoku University', 'tohoku', 'Japan', 'university', 'Tohoku'),
+    ('Osaka University', 'osaka', 'Japan', 'university', 'Osaka'),
+    ('Zhejiang University', 'zju', 'China', 'university', 'ZJU'),
+    ('Nankai University', 'nankai', 'China', 'university', 'Nankai'),
+    # Scale-ups / industry
+    ('Anthropic', 'anthropic', 'United States', 'company', 'Anthropic'),
+    ('OpenAI', 'openai', 'United States', 'company', 'OpenAI'),
+    ('Cohere', 'cohere', 'Canada', 'company', 'Cohere'),
+    ('Mistral AI', 'mistral', 'France', 'company', 'Mistral'),
+    ('Stability AI', 'stability', 'United Kingdom', 'company', 'Stability'),
+]
+
+
+# Fresh R4 topics — not overlapping with existing CS/DS/etc topic lists
+R4_TOPICS = [
+    # Generative AI / Agents
+    ('Agentic AI Engineering', 'AI Agents', 'Computer Science', 'anthropic'),
+    ('Multimodal Foundation Models', 'Multimodal AI', 'Computer Science', 'openai'),
+    ('Tool-Use and Function Calling for LLMs', 'LLM Tools', 'Computer Science', 'anthropic'),
+    ('RAG at Scale', 'RAG Systems', 'Data Science', 'mongodb'),
+    ('Retrieval Evaluation Methodology', 'Retrieval Evaluation', 'Data Science', 'allen-ai'),
+    ('Prompt Optimisation and Eval Harnesses', 'Prompt Eval', 'Data Science', 'cohere'),
+    ('LLM Guardrails and Red-Teaming', 'AI Safety', 'Computer Science', 'anthropic'),
+    ('Open-Source LLMs from Scratch', 'Open LLMs', 'Computer Science', 'mistral'),
+    ('Diffusion Models for Vision', 'Diffusion Models', 'Computer Science', 'stability'),
+    ('Speech Foundation Models', 'Speech Models', 'Computer Science', 'openai'),
+    ('Long-Context Transformers', 'Long Context', 'Computer Science', 'allen-ai'),
+    ('Mixture-of-Experts Models', 'MoE Models', 'Computer Science', 'mistral'),
+    # Quantum / Frontier
+    ('Quantum Error Correction', 'Quantum Computing', 'Physical Science and Engineering', 'ibm'),
+    ('Quantum Sensing for Engineers', 'Quantum Sensing', 'Physical Science and Engineering', 'mit'),
+    ('Topological Qubits', 'Quantum Computing', 'Physical Science and Engineering', 'ethz'),
+    # Sustainability / Climate
+    ('Lifecycle Assessment for Products', 'LCA', 'Physical Science and Engineering', 'tudelft'),
+    ('Circular Economy Design', 'Circular Economy', 'Physical Science and Engineering', 'tudelft'),
+    ('Decarbonising Industry', 'Industrial Decarbonisation', 'Physical Science and Engineering', 'siemens'),
+    ('Carbon Accounting for Businesses', 'Carbon Accounting', 'Business', 'mckinsey'),
+    ('Green Hydrogen Engineering', 'Green Hydrogen', 'Physical Science and Engineering', 'siemens'),
+    ('Energy Storage Systems', 'Energy Storage', 'Physical Science and Engineering', 'mit'),
+    # BioTech / HealthTech
+    ('CRISPR Genome Editing', 'Genome Editing', 'Health', 'broad'),
+    ('Single-Cell Genomics', 'Single-Cell Omics', 'Health', 'embl'),
+    ('Protein Design with AI', 'AI for Proteins', 'Health', 'embl'),
+    ('Clinical Decision Support Systems', 'Clinical DSS', 'Health', 'nih'),
+    ('Wearable Health Analytics', 'Wearables', 'Health', 'jhu'),
+    ('Mental Health Tech Design', 'Mental Health Tech', 'Health', 'nih'),
+    ('AI for Drug Discovery', 'AI for Drugs', 'Health', 'broad'),
+    # Robotics / Spatial
+    ('Humanoid Robotics', 'Humanoid Robots', 'Physical Science and Engineering', 'cmu'),
+    ('Soft Robotics', 'Soft Robotics', 'Physical Science and Engineering', 'epfl'),
+    ('Drone Engineering', 'UAV Engineering', 'Physical Science and Engineering', 'ethz'),
+    ('Autonomous Vehicle Perception', 'AV Perception', 'Computer Science', 'nvidia'),
+    ('Mixed-Reality Interaction Design', 'MR Design', 'Arts and Humanities', 'meta'),
+    ('Spatial Computing Foundations', 'Spatial Computing', 'Computer Science', 'meta'),
+    # Data Engineering / Platform
+    ('Lakehouse Architecture', 'Lakehouse', 'Data Science', 'databricks'),
+    ('Data Contracts and Quality', 'Data Contracts', 'Data Science', 'snowflake'),
+    ('Modern dbt Patterns', 'dbt Patterns', 'Data Science', 'snowflake'),
+    ('Real-Time Analytics with Flink', 'Apache Flink', 'Data Science', 'databricks'),
+    ('Feature Stores in Practice', 'Feature Stores', 'Data Science', 'databricks'),
+    # Cybersecurity
+    ('Cloud Security Posture Management', 'CSPM', 'Information Technology', 'cloudflare'),
+    ('Supply-Chain Security', 'Supply-Chain Security', 'Information Technology', 'github'),
+    ('Identity and Access Management', 'IAM', 'Information Technology', 'oktasoftware' if False else 'cisco'),
+    ('Threat Hunting with eBPF', 'eBPF', 'Information Technology', 'datadog'),
+    ('Cryptographic Engineering', 'Crypto Engineering', 'Information Technology', 'cloudflare'),
+    # Business / Operations
+    ('Pricing in B2B SaaS', 'B2B Pricing', 'Business', 'hubspot'),
+    ('Product-Led Growth', 'PLG', 'Business', 'hubspot'),
+    ('Customer Success Operations', 'CS Ops', 'Business', 'salesforce'),
+    ('B2B Demand Generation', 'B2B DemandGen', 'Business', 'hubspot'),
+    ('Revenue Operations', 'RevOps', 'Business', 'salesforce'),
+    ('Enterprise Sales Methodology', 'Enterprise Sales', 'Business', 'salesforce'),
+    # Finance / FinTech
+    ('Open Banking Engineering', 'Open Banking', 'Business', 'stripe'),
+    ('Risk Management for Crypto Assets', 'Crypto Risk', 'Business', 'jpmorgan'),
+    ('Embedded Finance Foundations', 'Embedded Finance', 'Business', 'stripe'),
+    ('Fraud Detection with ML', 'Fraud Detection', 'Data Science', 'klarna'),
+    # Education / Communication
+    ('Learning Engineering', 'Learning Engineering', 'Social Sciences', 'stanford'),
+    ('Inclusive Pedagogy', 'Pedagogy', 'Social Sciences', 'oxford'),
+    ('Online Teaching at Scale', 'Online Teaching', 'Social Sciences', 'meta'),
+    ('Science Communication for Researchers', 'SciComm', 'Personal Development', 'wellcome'),
+    ('Data-Driven Journalism', 'Data Journalism', 'Arts and Humanities', 'nyu'),
+    ('Documentary Filmmaking', 'Documentary', 'Arts and Humanities', 'usc'),
+    # Personal development / Career
+    ('Async Communication for Distributed Teams', 'Async Comms', 'Personal Development', 'atlassian'),
+    ('Performance Reviews Done Right', 'Performance Reviews', 'Personal Development', 'workday'),
+    ('Interview Calibration for Hiring Managers', 'Interview Calibration', 'Personal Development', 'workday'),
+    ('Personal Branding for Engineers', 'Personal Branding', 'Personal Development', 'github'),
+    # Math
+    ('Convex Optimisation', 'Convex Optimisation', 'Math and Logic', 'stanford'),
+    ('Information Theory', 'Information Theory', 'Math and Logic', 'mit'),
+    ('Numerical Linear Algebra', 'Numerical LA', 'Math and Logic', 'cmu'),
+    ('Stochastic Processes', 'Stochastic Processes', 'Math and Logic', 'princeton'),
+    # Languages — under-represented
+    ('Swahili Conversation', 'Swahili', 'Language Learning', 'uon'),
+    ('Vietnamese for Travellers', 'Vietnamese', 'Language Learning', 'vnu'),
+    ('Modern Greek Foundations', 'Greek', 'Language Learning', 'uoaclassic'),
+    ('Polish for Beginners', 'Polish', 'Language Learning', 'uw-pl'),
+    ('Czech for Beginners', 'Czech', 'Language Learning', 'cuni'),
+    ('Modern Hebrew', 'Hebrew', 'Language Learning', 'tau'),
+    ('Turkish Conversation', 'Turkish', 'Language Learning', 'bilkent'),
+    ('Indonesian for Beginners', 'Indonesian', 'Language Learning', 'ui-id'),
+    # Arts
+    ('Sound Design for Games', 'Sound Design', 'Arts and Humanities', 'usc'),
+    ('Type Design Foundations', 'Type Design', 'Arts and Humanities', 'sony'),
+    ('Watercolour Foundations', 'Watercolour', 'Arts and Humanities', 'louvre'),
+    ('History of Photography', 'Photography History', 'Arts and Humanities', 'smithsonian'),
+    ('Choreography for Beginners', 'Choreography', 'Arts and Humanities', 'usc'),
+    ('Curating Modern Art', 'Curatorial Practice', 'Arts and Humanities', 'moma' if False else 'smithsonian'),
+]
+
+
+R4_VARIANTS = [
+    # (prefix,           level,         course_type, hours, weeks, weeks_for_mods, base_enrolled, base_reviews)
+    ('Foundations of',   'Beginner',    'Course',    12.0, 3.0, 3, 26000, 1800),
+    ('Hands-On',         'Beginner',    'Course',    14.0, 3.5, 3, 30000, 2300),
+    ('Mastering',        'Intermediate','Course',    24.0, 6.0, 5, 22000, 1700),
+    ('Bootcamp:',        'Intermediate','Course',    36.0, 9.0, 6, 18000, 1500),
+    ('Capstone in',      'Advanced',    'Course',    32.0, 8.0, 6, 14000, 1100),
+]
+
+
+# Foundation_topics from seed_v4 is reused here for partner-keyed extras.
+_R4_FOUND_TOPICS = [
+    ('Generative AI', 'Computer Science', 'deeplearningai'),
+    ('Large Language Models', 'Computer Science', 'deeplearningai'),
+    ('Prompt Engineering', 'Computer Science', 'deeplearningai'),
+    ('Vector Databases', 'Data Science', 'mongodb'),
+    ('Quantum Computing', 'Physical Science and Engineering', 'ibm'),
+    ('Computer Vision', 'Computer Science', 'nvidia'),
+    ('Natural Language Processing', 'Computer Science', 'deeplearningai'),
+    ('Reinforcement Learning', 'Data Science', 'deeplearningai'),
+    ('Linear Algebra', 'Math and Logic', 'mit'),
+    ('Cryptography', 'Computer Science', 'stanford'),
+    ('Distributed Systems', 'Computer Science', 'mit'),
+    ('Algorithms', 'Computer Science', 'stanford'),
+    ('Python for Everybody', 'Computer Science', 'umich'),
+    ('TypeScript Mastery', 'Computer Science', 'meta'),
+    ('Microservices Patterns', 'Information Technology', 'redhat'),
+    ('Site Reliability Engineering', 'Information Technology', 'google'),
+    ('Cloud Native Architecture', 'Information Technology', 'redhat'),
+    ('Snowflake Data Cloud', 'Data Science', 'snowflake'),
+    ('Databricks Lakehouse', 'Data Science', 'databricks'),
+    ('ML Ops on AWS', 'Data Science', 'aws'),
+    ('Renewable Energy Systems', 'Physical Science and Engineering', 'tudelft'),
+    ('Solar Engineering', 'Physical Science and Engineering', 'tudelft'),
+    ('Materials Science', 'Physical Science and Engineering', 'mit'),
+    ('Drug Discovery', 'Health', 'jhu'),
+    ('Telemedicine', 'Health', 'jhu'),
+    ('Public Speaking', 'Personal Development', 'georgetown'),
+    ('Behavioral Economics', 'Social Sciences', 'duke'),
+    ('Game Theory', 'Social Sciences', 'stanford'),
+    ('Sustainable Cities', 'Social Sciences', 'tudelft'),
+    ('Climate Policy', 'Social Sciences', 'oxford'),
+]
+
+
+# MOOC Classics (free, marquee Coursera courses across the platform)
+R4_CLASSICS = [
+    # (title, primary, category, partner, hours)
+    ('Machine Learning by Andrew Ng (Classic)', 'Machine Learning', 'Data Science', 'stanford', 55.0),
+    ('Algorithms Part I (Classic)', 'Algorithms', 'Computer Science', 'princeton', 60.0),
+    ('Algorithms Part II (Classic)', 'Algorithms', 'Computer Science', 'princeton', 60.0),
+    ('Programming Languages (Dan Grossman)', 'Programming Languages', 'Computer Science', 'uwashington', 50.0),
+    ('Cryptography I (Boneh)', 'Cryptography', 'Computer Science', 'stanford', 48.0),
+    ('Introduction to Computer Science', 'Computer Science', 'Computer Science', 'harvard' if False else 'mit', 100.0),
+    ('Software Construction', 'Software Construction', 'Computer Science', 'mit', 60.0),
+    ('Discrete Optimization', 'Optimization', 'Math and Logic', 'umelbourne', 50.0),
+    ('Linear and Integer Programming', 'Optimization', 'Math and Logic', 'cuboulder', 36.0),
+    ('Bayesian Statistics: From Concept to Data Analysis', 'Bayesian Statistics', 'Math and Logic', 'ucsc' if False else 'cuboulder', 24.0),
+    ('Probabilistic Graphical Models', 'PGM', 'Math and Logic', 'stanford', 50.0),
+    ('Game Theory I (Stanford)', 'Game Theory', 'Social Sciences', 'stanford', 30.0),
+    ('Game Theory II: Advanced Applications', 'Game Theory', 'Social Sciences', 'stanford', 30.0),
+    ('Calculus One', 'Calculus', 'Math and Logic', 'osu' if False else 'umich', 40.0),
+    ('Calculus Two: Sequences and Series', 'Calculus', 'Math and Logic', 'umich', 40.0),
+    ('Coding the Matrix: Linear Algebra', 'Linear Algebra', 'Math and Logic', 'brown', 35.0),
+    ('Theoretical Astrophysics', 'Astrophysics', 'Physical Science and Engineering', 'caltech', 35.0),
+    ('Geometry Foundations', 'Geometry', 'Math and Logic', 'edinburgh', 30.0),
+    ('Number Theory and Cryptography', 'Number Theory', 'Math and Logic', 'ucsd', 35.0),
+    ('Introduction to Logic', 'Logic', 'Math and Logic', 'stanford', 30.0),
+    ('Image and Video Processing', 'Image Processing', 'Computer Science', 'duke', 36.0),
+    ('Functional Programming Principles in Scala', 'Scala', 'Computer Science', 'epfl', 36.0),
+    ('Parallel Programming with Scala', 'Parallel Programming', 'Computer Science', 'epfl', 30.0),
+    ('Compilers (Aiken)', 'Compilers', 'Computer Science', 'stanford', 80.0),
+    ('Computer Architecture (Patterson)', 'Computer Architecture', 'Computer Science', 'berkeley', 60.0),
+    ('Operating Systems and Systems Programming', 'Operating Systems', 'Computer Science', 'berkeley', 60.0),
+    ('Programming Mobile Apps for Android', 'Android', 'Computer Science', 'umd', 36.0),
+    ('Programming Cloud Services for Android', 'Android Cloud', 'Computer Science', 'vanderbilt', 30.0),
+    ('Hadoop Platform and Application Framework', 'Hadoop', 'Data Science', 'ucsd', 30.0),
+    ('Introduction to Big Data (Older)', 'Big Data', 'Data Science', 'ucsd', 24.0),
+    ('Recommender Systems Specialization (Classic)', 'Recommender Systems', 'Data Science', 'umn', 80.0),
+    ('Practical Machine Learning', 'Machine Learning', 'Data Science', 'jhu', 24.0),
+    ('Data Analysis and Statistical Inference', 'Statistical Inference', 'Data Science', 'duke', 30.0),
+    ('Drugs and the Brain (Classic)', 'Pharmacology', 'Health', 'caltech', 24.0),
+    ('Vital Signs: Understanding What the Body Is Telling Us', 'Clinical Skills', 'Health', 'upenn', 18.0),
+    ('Songwriting (Berklee Classic)', 'Songwriting', 'Arts and Humanities', 'usc', 24.0),
+    ('Music Production (Berklee Classic)', 'Music Production', 'Arts and Humanities', 'usc', 24.0),
+    ('The Modern World (Yale Classic)', 'Modern History', 'Arts and Humanities', 'yale', 35.0),
+    ('Roman Architecture (Yale Classic)', 'Architecture', 'Arts and Humanities', 'yale', 24.0),
+    ('Greek and Roman Mythology (Penn)', 'Mythology', 'Arts and Humanities', 'upenn', 28.0),
+    ('A History of the World Since 1300', 'World History', 'Arts and Humanities', 'princeton', 28.0),
+    ('Astrobiology and the Search for Extraterrestrial Life', 'Astrobiology', 'Physical Science and Engineering', 'edinburgh', 18.0),
+    ('Volcanic Eruptions', 'Volcanology', 'Physical Science and Engineering', 'manchester', 14.0),
+    ('Dinosaur Paleobiology', 'Paleobiology', 'Physical Science and Engineering', 'alberta' if False else 'edinburgh', 14.0),
+    ('Forensic Psychology', 'Forensic Psychology', 'Social Sciences', 'manchester', 24.0),
+    ('Internet History, Technology and Security', 'Internet History', 'Information Technology', 'umich', 28.0),
+    ('Networks Friends Money and Bytes', 'Networking', 'Information Technology', 'princeton', 30.0),
+    ('Bitcoin and Cryptocurrency Technologies', 'Cryptocurrency', 'Information Technology', 'princeton', 24.0),
+    ('Internet Giants: The Law and Economics of Media Platforms', 'Tech Policy', 'Social Sciences', 'columbia', 24.0),
+    ('Buddhism and Modern Psychology', 'Buddhism', 'Arts and Humanities', 'princeton', 18.0),
+    ('Moralities of Everyday Life', 'Moral Psychology', 'Social Sciences', 'yale', 30.0),
+    ('Justice (Sandel Classic)', 'Political Philosophy', 'Social Sciences', 'harvard' if False else 'yale', 35.0),
+    ('Critical Issues in Urban Education', 'Urban Education', 'Social Sciences', 'upenn', 30.0),
+    ('Foundations of Teaching for Learning', 'Pedagogy', 'Social Sciences', 'ucl' if False else 'ulondon', 35.0),
+    ('Reading Behind the Lines', 'Literary Studies', 'Arts and Humanities', 'edinburgh', 20.0),
+    ('Modern and Contemporary American Poetry', 'Poetry', 'Arts and Humanities', 'upenn', 28.0),
+    ('Shakespeare in Community', 'Shakespeare', 'Arts and Humanities', 'wisc', 24.0),
+    ('Comic Books and Graphic Novels', 'Comics Studies', 'Arts and Humanities', 'cuboulder', 18.0),
+    ('Plagues, Witches and War', 'Historical Fiction', 'Arts and Humanities', 'uva' if False else 'uoaclassic', 18.0),
+    ('Property and Liability', 'Law', 'Social Sciences', 'upenn', 35.0),
+    ('American Capitalism: A History', 'Economic History', 'Social Sciences', 'cornell', 30.0),
+    ('Energy 101', 'Energy Systems', 'Physical Science and Engineering', 'gatech', 28.0),
+    ('Wind Energy (DTU Classic)', 'Wind Energy', 'Physical Science and Engineering', 'tudelft', 35.0),
+    ('Solar Energy: Photovoltaic Systems', 'Solar PV', 'Physical Science and Engineering', 'tudelft', 30.0),
+    ('Hadron Collider Physics', 'Particle Physics', 'Physical Science and Engineering', 'epfl', 24.0),
+    ('Gravity!', 'General Relativity', 'Physical Science and Engineering', 'parissaclay', 30.0),
+    ('Mountains 101', 'Geomorphology', 'Physical Science and Engineering', 'mcgill', 28.0),
+    ('Wildlife Ecology', 'Ecology', 'Physical Science and Engineering', 'ualberta' if False else 'wits', 20.0),
+    ('Tropical Coastal Ecosystems', 'Marine Ecology', 'Physical Science and Engineering', 'uq', 24.0),
+    ('Genomic Data Science Specialization (Classic)', 'Genomics', 'Data Science', 'jhu', 80.0),
+    ('Systems Biology and Biotechnology (Classic)', 'Systems Biology', 'Health', 'mit', 60.0),
+    ('Bioinformatics Specialization (Classic)', 'Bioinformatics', 'Data Science', 'ucsd', 80.0),
+    ('Chinese for Beginners (PKU Classic)', 'Mandarin', 'Language Learning', 'pku', 36.0),
+    ('English Composition I', 'English Composition', 'Language Learning', 'duke', 28.0),
+    ('Tricky English Grammar', 'English Grammar', 'Language Learning', 'uci', 18.0),
+    ('Better Business Writing', 'Business Writing', 'Language Learning', 'gatech', 12.0),
+    ('Effective Communication', 'Communication', 'Personal Development', 'georgia-tech' if False else 'gatech', 16.0),
+    ('Successful Negotiation', 'Negotiation', 'Business', 'umich', 16.0),
+    ('Inspiring Leadership through Emotional Intelligence', 'Emotional Intelligence', 'Business', 'cwru' if False else 'umich', 24.0),
+    ('On Strategy: What Managers Can Learn from Philosophy', 'Strategy', 'Business', 'hec', 28.0),
+    ('Foundations of Modern Finance', 'Finance', 'Business', 'mit', 30.0),
+    ('Financial Markets (Shiller Classic)', 'Financial Markets', 'Business', 'yale', 35.0),
+]
+
+
+def _v5_make_topic_course(prefix, level, course_type, hours, weeks,
+                          module_weeks, base_enrolled, base_reviews,
+                          topic, primary, category, partner_slug, idx, pid):
+    """Build a single deterministic course spec for an R4 topic variant."""
+    title = f'{prefix} {topic}'.strip()
+    slug = _slugify(f'r4-{prefix.lower().rstrip(":")}-{topic}')
+    skills = [primary, 'Hands-on Practice', 'Portfolio Project']
+    learn = [
+        f'Apply {primary} to real problems',
+        f'Practice {topic.lower()} through graded labs',
+        f'Build a portfolio piece in {primary}',
+        f'Earn a shareable certificate in {primary}',
+    ]
+    rating = round(4.5 + (idx % 5) * 0.06, 2)
+    is_new = (idx % 3 == 0)
+    is_free = (idx % 19 == 0)
+    days_back = 8 + (idx * 7) % 380
+    sort_dt = SEED_REF_DATE - timedelta(days=days_back)
+    tags = [primary.lower().replace(' ', '-').replace('/', '-'),
+            level.lower(), partner_slug, 'r4-catalog',
+            prefix.lower().rstrip(':').replace(' ', '-')]
+    return dict(
+        title=title, slug=slug,
+        partner_id=pid.get(partner_slug),
+        partner_slug=partner_slug,
+        course_type=course_type, level=level,
+        category=category,
+        duration_text=(f'Approx. {int(hours)} hours' if hours < 80
+                       else f'{int(weeks)} weeks at 6 hrs/wk'),
+        duration_weeks=weeks, duration_hours=hours,
+        rating=rating,
+        review_count=base_reviews + (idx % 11) * 250,
+        enrolled_count=base_enrolled + (idx % 17) * 1900,
+        is_free=is_free, has_certificate=True,
+        credit_eligible=(prefix == 'Capstone in' and idx % 7 == 0),
+        instructor=f'{partner_slug.upper()} Faculty',
+        instructor_title=f'Faculty, {partner_slug.upper()}',
+        description=(
+            f'{title}. A {level.lower()} {course_type.lower()} in {topic}. '
+            f'Built around {primary} with hands-on labs, graded assignments, '
+            f'and a portfolio-grade final project.'),
+        skills=skills, what_you_learn=learn,
+        feature_tags=tags,
+        is_featured=(idx % 31 == 0),
+        is_new=is_new,
+        sort_date=sort_dt.strftime('%Y-%m-%d'),
+        color_class=CATEGORY_COLORS.get(category, 'cat-cs'),
+        primary=primary, module_weeks=module_weeks,
+    )
+
+
+def seed_v5(db, models):
+    """R4 catalog polish — adds ~1500 deterministic courses + 60 partners.
+    Idempotent — gated on the presence of partner slug 'allen-ai'."""
+    User = models['User']
+    Partner = models['Partner']
+    Course = models['Course']
+    CourseModule = models['CourseModule']
+    SubCourse = models['SubCourse']
+    Enrollment = models['Enrollment']
+    SavedCourse = models['SavedCourse']
+    Review = models['Review']
+
+    if Partner.query.filter_by(slug='allen-ai').first():
+        return  # already seeded
+
+    # 1) Partners ──────────────────────────────────────────────────────────
+    for name, slug, country, ptype, short in NEW_PARTNERS_V5:
+        if Partner.query.filter_by(slug=slug).first():
+            continue
+        db.session.add(Partner(name=name, slug=slug, country=country,
+                               partner_type=ptype, short_name=short))
+    db.session.commit()
+
+    pid = {p.slug: p.id for p in Partner.query.all()}
+    created = 0
+
+    def _add_modules(course_id, course_title, primary, weeks):
+        """Add deterministic weekly modules with rich video titles."""
+        for w in range(1, weeks + 1):
+            if w == 1:
+                mt = f'Week {w}: {primary} Foundations'
+                md = (f'Orientation: mental model, prerequisites, and the '
+                      f'first {primary} concept in action.')
+            elif w == weeks:
+                mt = f'Week {w}: Capstone — Ship Your {primary} Project'
+                md = (f'Capstone: take everything you learned and build a '
+                      f'portfolio-grade {primary} artefact.')
+            else:
+                mt = f'Week {w}: Applied {primary}'
+                md = (f'Hands-on lab + graded assignment exercising your '
+                      f'{primary} skills.')
+            vts = [
+                f'Lesson {w}.1: {mt}',
+                f'Lesson {w}.2: Worked example for {primary}',
+                f'Lesson {w}.3: Practice drill ({course_title})',
+                f'Lesson {w}.4: Office-hour clip — common pitfalls',
+            ]
+            db.session.add(CourseModule(
+                course_id=course_id, week_number=w, title=mt, description=md,
+                videos_count=5, readings_count=3, quizzes_count=1,
+                video_titles=json.dumps(vts)))
+
+    # 2) Fresh R4 topics × 5 variants ──────────────────────────────────────
+    idx = 0
+    for topic, primary, category, partner_slug in R4_TOPICS:
+        partner_eff = partner_slug if pid.get(partner_slug) else 'stanford'
+        for (prefix, level, ctype, hours, weeks, mod_weeks,
+             base_enrolled, base_reviews) in R4_VARIANTS:
+            spec = _v5_make_topic_course(
+                prefix, level, ctype, hours, weeks, mod_weeks,
+                base_enrolled, base_reviews, topic, primary, category,
+                partner_eff, idx, pid)
+            idx += 1
+            if Course.query.filter_by(slug=spec['slug']).first():
+                continue
+            c = Course(
+                title=spec['title'], slug=spec['slug'],
+                partner_id=spec['partner_id'], course_type=spec['course_type'],
+                level=spec['level'], category=spec['category'],
+                duration_text=spec['duration_text'],
+                duration_weeks=spec['duration_weeks'],
+                duration_hours=spec['duration_hours'],
+                rating=spec['rating'], review_count=spec['review_count'],
+                enrolled_count=spec['enrolled_count'],
+                is_free=spec['is_free'], has_certificate=spec['has_certificate'],
+                credit_eligible=spec['credit_eligible'],
+                instructor=spec['instructor'],
+                instructor_title=spec['instructor_title'],
+                description=spec['description'],
+                skills=json.dumps(spec['skills']),
+                what_you_learn=json.dumps(spec['what_you_learn']),
+                feature_tags=json.dumps(spec['feature_tags']),
+                is_featured=spec['is_featured'], is_new=spec['is_new'],
+                sort_date=spec['sort_date'],
+                color_class=spec['color_class'])
+            db.session.add(c)
+            db.session.flush()
+            _add_modules(c.id, c.title, spec['primary'], spec['module_weeks'])
+            created += 1
+    db.session.commit()
+
+    # 3) MOOC Classics (one course per entry) ──────────────────────────────
+    for c_idx, (title, primary, category, partner_slug, hours) in enumerate(
+            R4_CLASSICS):
+        partner_eff = partner_slug if pid.get(partner_slug) else 'stanford'
+        slug = _slugify(f'r4-classic-{title}')
+        if Course.query.filter_by(slug=slug).first():
+            continue
+        weeks = max(3.0, min(20.0, hours / 8.0))
+        c = Course(
+            title=f'{title}', slug=slug,
+            partner_id=pid.get(partner_eff),
+            course_type='Course', level='Intermediate',
+            category=category,
+            duration_text=f'Approx. {int(hours)} hours',
+            duration_weeks=weeks, duration_hours=hours,
+            rating=round(4.7 + (c_idx % 3) * 0.05, 2),
+            review_count=8000 + c_idx * 130,
+            enrolled_count=240000 + c_idx * 4500,
+            is_free=True, has_certificate=True,
+            credit_eligible=False,
+            instructor=f'{partner_eff.upper()} Faculty',
+            instructor_title=f'Faculty, {partner_eff.upper()}',
+            description=(
+                f'{title} — a Coursera Classic. A free, marquee course from '
+                f'{partner_eff.upper()} originally launched in the early '
+                f'MOOC era and continually refreshed. Hands-on assignments, '
+                f'graded discussions, and a portfolio capstone.'),
+            skills=json.dumps([primary, 'Critical Thinking',
+                                'Problem Solving']),
+            what_you_learn=json.dumps([
+                f'Master the fundamentals of {primary}',
+                f'Apply {primary} to canonical problems',
+                f'Earn a shareable Coursera Classic certificate',
+                f'Join the alumni network for {primary} learners',
+            ]),
+            feature_tags=json.dumps([primary.lower().replace(' ', '-'),
+                                      'classic', 'mooc-archive', 'free',
+                                      partner_eff, 'r4-catalog']),
+            is_featured=(c_idx % 11 == 0),
+            is_new=False,
+            sort_date=(SEED_REF_DATE - timedelta(
+                days=200 + c_idx * 4)).strftime('%Y-%m-%d'),
+            color_class=CATEGORY_COLORS.get(category, 'cat-cs'))
+        db.session.add(c)
+        db.session.flush()
+        _add_modules(c.id, title, primary, max(3, int(min(weeks, 6))))
+        created += 1
+    db.session.commit()
+
+    # 4) Industry-specials — 30 industries × 8 variants ────────────────────
+    R4_INDUSTRIES = [
+        ('AI Safety', 'Computer Science', ['anthropic', 'openai', 'allen-ai']),
+        ('AgriTech', 'Physical Science and Engineering', ['tudelft', 'wageningen' if False else 'tudelft', 'siemens']),
+        ('AutoTech', 'Physical Science and Engineering', ['bmw', 'mercedes', 'toyota']),
+        ('Aerospace', 'Physical Science and Engineering', ['nasa', 'esa', 'mit']),
+        ('Biotech', 'Health', ['broad', 'embl', 'jhu']),
+        ('Climate Tech', 'Physical Science and Engineering', ['tudelft', 'siemens', 'mit']),
+        ('Construction Tech', 'Physical Science and Engineering', ['siemens', 'gatech', 'tudelft']),
+        ('Crypto / Web3', 'Computer Science', ['github', 'stripe', 'jpmorgan']),
+        ('Defence Tech', 'Information Technology', ['cmu', 'mit', 'gatech']),
+        ('EdTech', 'Social Sciences', ['stanford', 'meta', 'google']),
+        ('EV / Battery', 'Physical Science and Engineering', ['bmw', 'mit', 'siemens']),
+        ('Enterprise SaaS', 'Information Technology', ['servicenow', 'salesforce', 'workday']),
+        ('FinTech', 'Business', ['stripe', 'klarna', 'jpmorgan']),
+        ('GovTech', 'Social Sciences', ['worldbank', 'oecd', 'imf']),
+        ('GreenTech', 'Physical Science and Engineering', ['tudelft', 'mit', 'siemens']),
+        ('HealthTech', 'Health', ['jhu', 'nih', 'broad']),
+        ('Hospitality Tech', 'Business', ['booking', 'hubspot', 'salesforce']),
+        ('Insurance Tech', 'Business', ['nyu', 'cornell', 'mckinsey']),
+        ('Legal Tech', 'Social Sciences', ['georgetown', 'oxford', 'nyu']),
+        ('Logistics Tech', 'Business', ['mit', 'gatech', 'sap']),
+        ('MarTech', 'Business', ['hubspot', 'meta', 'salesforce']),
+        ('Media Tech', 'Arts and Humanities', ['nyu', 'sony', 'spotify']),
+        ('NeuroTech', 'Health', ['mit', 'ki', 'embl']),
+        ('PropTech', 'Business', ['mit', 'cornell', 'columbia']),
+        ('Public Health Tech', 'Health', ['who', 'jhu', 'nih']),
+        ('RetailTech', 'Business', ['shopify', 'salesforce', 'meta']),
+        ('Sports Analytics', 'Data Science', ['cornell', 'mit', 'umich']),
+        ('Supply Chain Tech', 'Business', ['sap', 'mit', 'gatech']),
+        ('TravelTech', 'Business', ['booking', 'stripe', 'aws']),
+        ('Workforce Tech', 'Business', ['workday', 'salesforce', 'sap']),
+    ]
+    INDUSTRY_VARIANTS = [
+        ('Foundations',   'Beginner',    'Course',                  12.0, 3.0, 3),
+        ('Engineering',   'Intermediate','Course',                  24.0, 6.0, 5),
+        ('Architecture',  'Intermediate','Course',                  20.0, 5.0, 4),
+        ('Leadership',    'Intermediate','Course',                  14.0, 3.5, 3),
+        ('Capstone',      'Advanced',    'Course',                  30.0, 7.5, 6),
+        ('Specialization','Intermediate','Specialization',          90.0, 18.0, 5),
+        ('Cert',          'Beginner',    'Professional Certificate',110.0, 26.0, 5),
+        ('Workshop',      'Beginner',    'Guided Project',           1.5, 0.25, 1),
+    ]
+    for i_idx, (industry, category, partners) in enumerate(R4_INDUSTRIES):
+        for p_idx, partner_slug in enumerate(partners):
+            partner_eff = partner_slug if pid.get(partner_slug) else 'stanford'
+            for v_idx, (variant, level, ctype, hours, weeks, mod_weeks) in enumerate(INDUSTRY_VARIANTS):
+                title = f'{industry} {variant} ({partner_eff.upper()})'
+                slug = _slugify(f'r4-industry-{industry}-{variant}-{partner_eff}-{p_idx}-{v_idx}')
+                if Course.query.filter_by(slug=slug).first():
+                    continue
+                idx = i_idx * 100 + p_idx * 10 + v_idx
+                c = Course(
+                    title=title, slug=slug,
+                    partner_id=pid.get(partner_eff),
+                    course_type=ctype, level=level,
+                    category=category, subcategory=industry,
+                    duration_text=(f'Less Than 2 Hours' if ctype == 'Guided Project'
+                                   else (f'Approx. {int(hours)} hours' if hours < 60
+                                         else f'{int(weeks)} weeks at 5 hrs/wk')),
+                    duration_weeks=weeks, duration_hours=hours,
+                    rating=round(4.4 + (idx % 5) * 0.07, 2),
+                    review_count=500 + idx * 7,
+                    enrolled_count=12000 + idx * 230,
+                    is_free=(idx % 23 == 0 and ctype != 'Professional Certificate'),
+                    has_certificate=(ctype != 'Guided Project'),
+                    credit_eligible=(ctype == 'Professional Certificate' and idx % 5 == 0),
+                    instructor=f'{partner_eff.upper()} Practice Lead',
+                    instructor_title=f'Practice Lead, {partner_eff.upper()}',
+                    description=(
+                        f'{title}. A {level.lower()} program in {industry}. '
+                        f'Built with {partner_eff.upper()} subject-matter experts. '
+                        f'Real datasets, hands-on labs, and a graded capstone.'),
+                    skills=json.dumps([industry, f'{industry} Engineering',
+                                       f'{industry} Strategy']),
+                    what_you_learn=json.dumps([
+                        f'Map the {industry} value chain',
+                        f'Apply {industry} tools to a portfolio piece',
+                        f'Earn a verifiable {industry} credential',
+                        f'Network with the {industry} community',
+                    ]),
+                    feature_tags=json.dumps([industry.lower().replace(' ', '-').replace('/', '-'),
+                                              level.lower(), partner_eff,
+                                              variant.lower(), 'r4-industry']),
+                    is_featured=(v_idx == 6 and p_idx == 0),
+                    is_new=((i_idx + p_idx + v_idx) % 7 == 0),
+                    sort_date=(SEED_REF_DATE - timedelta(
+                        days=10 + i_idx * 5 + p_idx * 3 + v_idx)).strftime('%Y-%m-%d'),
+                    color_class=CATEGORY_COLORS.get(category, 'cat-cs'))
+                db.session.add(c)
+                db.session.flush()
+                n_weeks = max(1, min(int(weeks), 6)) if ctype != 'Guided Project' else 1
+                _add_modules(c.id, title, industry, n_weeks)
+                if ctype == 'Specialization':
+                    for s_i in range(5):
+                        db.session.add(SubCourse(
+                            specialization_id=c.id, order_index=s_i + 1,
+                            title=f'{industry} Block {s_i + 1}',
+                            description=f'Block {s_i + 1} of the {industry} Specialization.',
+                            duration_text='Approx. 4 weeks'))
+                created += 1
+    db.session.commit()
+
+    # 5) Career-pathway modules — 20 careers × 6 sub-modules ───────────────
+    R4_CAREER_PATHS = [
+        ('AI Engineer', 'ai-engineer', 'Computer Science', 'anthropic',
+         ['LLM Foundations', 'Agentic Systems', 'Eval Pipelines',
+          'Production LLMOps', 'Prompt Security', 'Capstone']),
+        ('Prompt Engineer', 'prompt-engineer', 'Computer Science', 'anthropic',
+         ['Prompt Patterns', 'Few-Shot Design', 'Chain-of-Thought',
+          'Tool Use', 'Eval Loops', 'Capstone']),
+        ('Solutions Architect', 'solutions-architect', 'Information Technology', 'aws',
+         ['Cloud Foundations', 'Networking', 'Compute', 'Storage',
+          'Security', 'Capstone']),
+        ('Platform Engineer', 'platform-engineer', 'Information Technology', 'redhat',
+         ['Kubernetes Foundations', 'GitOps', 'Service Mesh',
+          'Observability', 'Platform UX', 'Capstone']),
+        ('Site Reliability Engineer', 'sre', 'Information Technology', 'google',
+         ['SLI/SLO/SLA', 'Incident Response', 'Toil Reduction',
+          'Capacity Planning', 'Postmortems', 'Capstone']),
+        ('Security Engineer', 'security-engineer', 'Information Technology', 'cloudflare',
+         ['Threat Modeling', 'AppSec', 'Network Security',
+          'IAM', 'Detection Engineering', 'Capstone']),
+        ('Data Engineer', 'data-engineer', 'Data Science', 'databricks',
+         ['Data Modelling', 'Pipelines', 'Lakehouse', 'Streaming',
+          'Data Contracts', 'Capstone']),
+        ('Analytics Engineer', 'analytics-engineer', 'Data Science', 'snowflake',
+         ['SQL Mastery', 'Modelling with dbt', 'Quality',
+          'BI Layer', 'Documentation', 'Capstone']),
+        ('Quantitative Analyst', 'quant-analyst', 'Math and Logic', 'jpmorgan',
+         ['Probability', 'Stochastic Calculus', 'Modelling',
+          'Python for Quants', 'Risk', 'Capstone']),
+        ('Research Scientist', 'research-scientist', 'Data Science', 'allen-ai',
+         ['Reading the Literature', 'Experimental Design',
+          'Open-source Releases', 'Reproducibility',
+          'Publishing', 'Capstone']),
+        ('Software Architect', 'software-architect', 'Computer Science', 'cmu',
+         ['Patterns', 'Distributed Systems', 'API Design',
+          'Performance', 'Cost', 'Capstone']),
+        ('Engineering Manager', 'engineering-manager', 'Business', 'github',
+         ['1:1s', 'Performance', 'Hiring', 'Strategy',
+          'Conflict', 'Capstone']),
+        ('Director of Engineering', 'director-engineering', 'Business', 'meta',
+         ['Org Design', 'Roadmaps', 'Hiring Bar', 'Vendor Mgmt',
+          'Exec Communication', 'Capstone']),
+        ('Tech Lead', 'tech-lead', 'Computer Science', 'github',
+         ['Mentorship', 'Tech Vision', 'Reviews',
+          'Influence', 'Sprint Planning', 'Capstone']),
+        ('Engineering Recruiter', 'engineering-recruiter', 'Business', 'workday',
+         ['Sourcing', 'Interview Loops', 'Bar Calibration',
+          'Diversity Hiring', 'Closing', 'Capstone']),
+        ('Customer Success Manager', 'csm', 'Business', 'salesforce',
+         ['Onboarding', 'Adoption', 'Renewals', 'Expansion',
+          'Voice of Customer', 'Capstone']),
+        ('Solutions Engineer', 'solutions-engineer', 'Business', 'salesforce',
+         ['Discovery', 'Demos', 'POCs', 'Architecture Notes',
+          'Handoffs', 'Capstone']),
+        ('Technical Writer', 'technical-writer', 'Arts and Humanities', 'github',
+         ['Audience Modelling', 'Information Architecture',
+          'Tooling', 'Editing', 'Diagrams', 'Capstone']),
+        ('Game Producer', 'game-producer', 'Arts and Humanities', 'usc',
+         ['Pre-Production', 'Scheduling', 'Live-Ops',
+          'Localization', 'Marketing', 'Capstone']),
+        ('Product Designer', 'product-designer', 'Arts and Humanities', 'meta',
+         ['Discovery', 'Wireframing', 'Visual Design',
+          'Prototyping', 'Critique', 'Capstone']),
+    ]
+    for r_idx, (role, role_slug, category, partner_slug, modules) in enumerate(
+            R4_CAREER_PATHS):
+        partner_eff = partner_slug if pid.get(partner_slug) else 'meta'
+        for m_idx, module in enumerate(modules):
+            title = f'{role} Pathway: {module}'
+            slug = _slugify(f'r4-pathway-{role_slug}-{module}')
+            if Course.query.filter_by(slug=slug).first():
+                continue
+            ctype = 'Course'
+            hours = 18.0 if m_idx < 5 else 26.0
+            weeks = 4.0 if m_idx < 5 else 6.0
+            c = Course(
+                title=title, slug=slug,
+                partner_id=pid.get(partner_eff),
+                course_type=ctype, level='Intermediate',
+                category=category, subcategory=role,
+                duration_text=f'Approx. {int(hours)} hours',
+                duration_weeks=weeks, duration_hours=hours,
+                rating=round(4.5 + ((r_idx + m_idx) % 5) * 0.06, 2),
+                review_count=900 + r_idx * 30 + m_idx * 110,
+                enrolled_count=15000 + r_idx * 600 + m_idx * 2700,
+                is_free=False, has_certificate=True,
+                credit_eligible=(m_idx == 5 and r_idx % 4 == 0),
+                instructor=f'{partner_eff.upper()} Career Coach',
+                instructor_title=f'Career Coach, {partner_eff.upper()}',
+                description=(
+                    f'{title}. Module {m_idx + 1} of the {role} career path. '
+                    f'A {("capstone" if m_idx == 5 else "skills")}-focused '
+                    f'course building on prior modules with hands-on labs '
+                    f'and feedback from {partner_eff.upper()} engineers.'),
+                skills=json.dumps([module, role, 'Career Development']),
+                what_you_learn=json.dumps([
+                    f'Master {module} for the {role} role',
+                    f'Apply {module} to a portfolio project',
+                    f'Receive feedback from {partner_eff.upper()} coaches',
+                    f'Earn a verifiable pathway credential',
+                ]),
+                feature_tags=json.dumps([role_slug, module.lower().replace(' ', '-'),
+                                          partner_eff, 'r4-pathway']),
+                is_featured=(m_idx == 0),
+                is_new=(r_idx % 3 == m_idx % 3),
+                sort_date=(SEED_REF_DATE - timedelta(
+                    days=15 + r_idx * 4 + m_idx * 2)).strftime('%Y-%m-%d'),
+                color_class=CATEGORY_COLORS.get(category, 'cat-cs'))
+            db.session.add(c)
+            db.session.flush()
+            _add_modules(c.id, title, module, int(weeks))
+            created += 1
+    db.session.commit()
+
+    # 6) University intros — 60 partners × 3 (intro/applied/seminar) ───────
+    R4_UNIV_INTROS = [
+        # Spread across new + existing partners; safe slugs only.
+        ('edinburgh', 'Computer Science', 'Algorithms'),
+        ('manchester', 'Computer Science', 'Software Engineering'),
+        ('bristol', 'Physical Science and Engineering', 'Robotics'),
+        ('warwick', 'Math and Logic', 'Statistics'),
+        ('bath', 'Business', 'Operations'),
+        ('glasgow', 'Health', 'Public Health'),
+        ('qmul', 'Computer Science', 'Data Structures'),
+        ('leeds', 'Social Sciences', 'Politics'),
+        ('birmingham', 'Information Technology', 'Networking'),
+        ('sheffield', 'Physical Science and Engineering', 'Materials Science'),
+        ('heidelberg', 'Health', 'Genetics'),
+        ('humboldt', 'Arts and Humanities', 'Philosophy'),
+        ('fuberlin', 'Social Sciences', 'Political Theory'),
+        ('sorbonne', 'Arts and Humanities', 'Literature'),
+        ('parissaclay', 'Physical Science and Engineering', 'Particle Physics'),
+        ('uga', 'Computer Science', 'AI'),
+        ('helsinki', 'Computer Science', 'Programming'),
+        ('stockholm', 'Social Sciences', 'Economics'),
+        ('bergen', 'Health', 'Marine Biology'),
+        ('aalborg', 'Physical Science and Engineering', 'Wind Energy'),
+        ('iceland', 'Physical Science and Engineering', 'Geophysics'),
+        ('bologna', 'Arts and Humanities', 'Medieval History'),
+        ('uc3m', 'Business', 'Economics'),
+        ('uoaclassic', 'Arts and Humanities', 'Ancient Greek'),
+        ('msu-ru', 'Math and Logic', 'Pure Mathematics'),
+        ('spbu', 'Physical Science and Engineering', 'Theoretical Physics'),
+        ('uniljubljana', 'Social Sciences', 'Anthropology'),
+        ('unizg', 'Computer Science', 'Software Testing'),
+        ('bgduni', 'Math and Logic', 'Probability'),
+        ('ucy', 'Computer Science', 'Cybersecurity'),
+        ('lau', 'Business', 'Entrepreneurship'),
+        ('aub', 'Arts and Humanities', 'Middle East Studies'),
+        ('bilkent', 'Computer Science', 'Algorithms'),
+        ('metu', 'Physical Science and Engineering', 'Mechanical Engineering'),
+        ('uchile', 'Social Sciences', 'Latin American Studies'),
+        ('unc-ar', 'Health', 'Tropical Medicine'),
+        ('uab', 'Arts and Humanities', 'Catalan Studies'),
+        ('stellenbosch', 'Business', 'African Markets'),
+        ('wits', 'Social Sciences', 'African History'),
+        ('cairouni', 'Arts and Humanities', 'Arabic Linguistics'),
+        ('iitkgp', 'Computer Science', 'Algorithms'),
+        ('iitk', 'Computer Science', 'Compilers'),
+        ('bits', 'Information Technology', 'Cloud Computing'),
+        ('yonsei', 'Business', 'Asian Markets'),
+        ('koreauni', 'Social Sciences', 'East Asian Politics'),
+        ('tohoku', 'Physical Science and Engineering', 'Robotics'),
+        ('osaka', 'Health', 'Drug Discovery'),
+        ('zju', 'Computer Science', 'AI Systems'),
+        ('nankai', 'Math and Logic', 'Number Theory'),
+        # Reuse a handful of original partners for cross-coverage
+        ('mit', 'Computer Science', 'Distributed Systems'),
+        ('stanford', 'Computer Science', 'Algorithms'),
+        ('berkeley', 'Computer Science', 'Operating Systems'),
+        ('cmu', 'Computer Science', 'Software Engineering'),
+        ('upenn', 'Business', 'Finance'),
+        ('columbia', 'Business', 'Marketing'),
+        ('umich', 'Health', 'Public Health'),
+        ('jhu', 'Health', 'Epidemiology'),
+        ('utoronto', 'Computer Science', 'AI'),
+        ('mcgill', 'Health', 'Neuroscience'),
+        ('ubc', 'Computer Science', 'HCI'),
+        ('ulondon', 'Business', 'Finance'),
+    ]
+    UNIV_VARIANTS = [
+        ('Intro to', 'Beginner', 12.0, 3.0, 3),
+        ('Applied', 'Intermediate', 22.0, 5.0, 5),
+        ('Seminar in', 'Advanced', 14.0, 3.5, 3),
+    ]
+    for u_idx, (partner_slug, category, topic) in enumerate(R4_UNIV_INTROS):
+        partner_eff = partner_slug if pid.get(partner_slug) else 'stanford'
+        for v_idx, (variant, level, hours, weeks, mod_weeks) in enumerate(UNIV_VARIANTS):
+            title = f'{variant} {topic} ({partner_eff.upper()})'
+            slug = _slugify(f'r4-univ-{partner_eff}-{topic}-{variant}-{u_idx}-{v_idx}')
+            if Course.query.filter_by(slug=slug).first():
+                continue
+            idx = u_idx * 10 + v_idx
+            c = Course(
+                title=title, slug=slug,
+                partner_id=pid.get(partner_eff),
+                course_type='Course', level=level,
+                category=category,
+                duration_text=f'Approx. {int(hours)} hours',
+                duration_weeks=weeks, duration_hours=hours,
+                rating=round(4.5 + (idx % 5) * 0.06, 2),
+                review_count=600 + idx * 12,
+                enrolled_count=14000 + idx * 480,
+                is_free=(idx % 17 == 0),
+                has_certificate=True,
+                credit_eligible=False,
+                instructor=f'{partner_eff.upper()} Senior Instructor',
+                instructor_title=f'Senior Instructor, {partner_eff.upper()}',
+                description=(
+                    f'{title}. A {level.lower()} course in {topic} delivered '
+                    f'by {partner_eff.upper()}. Combines lectures, recitations, '
+                    f'and weekly graded labs.'),
+                skills=json.dumps([topic, 'Critical Thinking', 'Problem Solving']),
+                what_you_learn=json.dumps([
+                    f'Master {topic} fundamentals at {partner_eff.upper()}',
+                    f'Apply {topic} through graded labs',
+                    f'Earn a shareable certificate',
+                    f'Build a portfolio piece in {topic}',
+                ]),
+                feature_tags=json.dumps([topic.lower().replace(' ', '-'),
+                                          level.lower(), partner_eff,
+                                          'r4-university-intro']),
+                is_featured=(v_idx == 0 and u_idx % 11 == 0),
+                is_new=(u_idx % 5 == v_idx),
+                sort_date=(SEED_REF_DATE - timedelta(
+                    days=12 + u_idx * 3 + v_idx * 2)).strftime('%Y-%m-%d'),
+                color_class=CATEGORY_COLORS.get(category, 'cat-cs'))
+            db.session.add(c)
+            db.session.flush()
+            _add_modules(c.id, title, topic, int(weeks))
+            created += 1
+    db.session.commit()
+
+    # 7) Research seminars — 50 topics × 4 partners (seminar shorts) ───────
+    R4_RESEARCH_TOPICS = [
+        ('LLM Alignment Seminar', 'AI Alignment', 'Computer Science'),
+        ('Mechanistic Interpretability Seminar', 'Interpretability', 'Computer Science'),
+        ('Diffusion Models Seminar', 'Diffusion Models', 'Computer Science'),
+        ('Reinforcement Learning from Human Feedback Seminar', 'RLHF', 'Computer Science'),
+        ('Cryptographic Protocols Seminar', 'Cryptography', 'Computer Science'),
+        ('Privacy-Preserving ML Seminar', 'Privacy ML', 'Computer Science'),
+        ('Federated Learning Seminar', 'Federated Learning', 'Data Science'),
+        ('Causal Inference Seminar', 'Causal Inference', 'Data Science'),
+        ('Bayesian Optimisation Seminar', 'Bayesian Optimisation', 'Data Science'),
+        ('Robust Statistics Seminar', 'Robust Statistics', 'Math and Logic'),
+        ('High-Dimensional Probability Seminar', 'High-Dim Probability', 'Math and Logic'),
+        ('Algebraic Topology Seminar', 'Topology', 'Math and Logic'),
+        ('Quantum Information Seminar', 'Quantum Information', 'Physical Science and Engineering'),
+        ('Plasma Physics Seminar', 'Plasma Physics', 'Physical Science and Engineering'),
+        ('Astrophysics Seminar', 'Astrophysics', 'Physical Science and Engineering'),
+        ('Climate Modelling Seminar', 'Climate Modelling', 'Physical Science and Engineering'),
+        ('Synthetic Biology Seminar', 'Synthetic Biology', 'Health'),
+        ('Single-Cell Omics Seminar', 'Single-Cell Omics', 'Health'),
+        ('Neuroscience Seminar', 'Neuroscience', 'Health'),
+        ('Health Policy Seminar', 'Health Policy', 'Health'),
+        ('Behavioural Economics Seminar', 'Behavioural Economics', 'Social Sciences'),
+        ('Political Theory Seminar', 'Political Theory', 'Social Sciences'),
+        ('Migration Studies Seminar', 'Migration Studies', 'Social Sciences'),
+        ('Gender Studies Seminar', 'Gender Studies', 'Social Sciences'),
+        ('Postcolonial Studies Seminar', 'Postcolonial Studies', 'Arts and Humanities'),
+        ('Renaissance Art Seminar', 'Renaissance Art', 'Arts and Humanities'),
+        ('Cinema Studies Seminar', 'Cinema Studies', 'Arts and Humanities'),
+        ('Sound Studies Seminar', 'Sound Studies', 'Arts and Humanities'),
+        ('Computational Linguistics Seminar', 'Computational Linguistics', 'Arts and Humanities'),
+        ('Distributed Systems Seminar', 'Distributed Systems', 'Computer Science'),
+        ('Software Verification Seminar', 'Verification', 'Computer Science'),
+        ('Programming Language Theory Seminar', 'PL Theory', 'Computer Science'),
+        ('Type Systems Seminar', 'Type Systems', 'Computer Science'),
+        ('Database Systems Seminar', 'Database Systems', 'Computer Science'),
+        ('Computer Graphics Seminar', 'Computer Graphics', 'Computer Science'),
+        ('Human-Computer Interaction Seminar', 'HCI', 'Computer Science'),
+        ('Accessibility Seminar', 'Accessibility', 'Computer Science'),
+        ('Game Studies Seminar', 'Game Studies', 'Arts and Humanities'),
+        ('Music Information Retrieval Seminar', 'MIR', 'Data Science'),
+        ('Computational Social Science Seminar', 'CSS', 'Social Sciences'),
+        ('Epidemiology Methods Seminar', 'Epidemiology Methods', 'Health'),
+        ('Sustainable Cities Seminar', 'Sustainable Cities', 'Social Sciences'),
+        ('Circular Economy Seminar', 'Circular Economy', 'Physical Science and Engineering'),
+        ('AgriTech Seminar', 'AgriTech', 'Physical Science and Engineering'),
+        ('EdTech Seminar', 'EdTech', 'Social Sciences'),
+        ('GovTech Seminar', 'GovTech', 'Social Sciences'),
+        ('FinTech Seminar', 'FinTech', 'Business'),
+        ('HealthTech Seminar', 'HealthTech', 'Health'),
+        ('SpaceTech Seminar', 'SpaceTech', 'Physical Science and Engineering'),
+        ('Robotics Seminar', 'Robotics', 'Physical Science and Engineering'),
+    ]
+    seminar_partners = ['mit', 'stanford', 'berkeley', 'cmu', 'oxford',
+                         'cambridge', 'ethz', 'epfl', 'tudelft', 'allen-ai',
+                         'maxplanck', 'broad']
+    for s_idx, (title, primary, category) in enumerate(R4_RESEARCH_TOPICS):
+        for p_idx in range(4):
+            partner_slug = seminar_partners[(s_idx * 7 + p_idx * 11) % len(seminar_partners)]
+            partner_eff = partner_slug if pid.get(partner_slug) else 'mit'
+            slug = _slugify(f'r4-seminar-{title}-{partner_eff}-{p_idx}')
+            if Course.query.filter_by(slug=slug).first():
+                continue
+            idx = s_idx * 20 + p_idx
+            c = Course(
+                title=f'{title} ({partner_eff.upper()})', slug=slug,
+                partner_id=pid.get(partner_eff),
+                course_type='Course', level='Advanced',
+                category=category,
+                duration_text='Approx. 10 hours',
+                duration_weeks=2.5, duration_hours=10.0,
+                rating=round(4.5 + (idx % 5) * 0.07, 2),
+                review_count=320 + idx * 5,
+                enrolled_count=4500 + idx * 130,
+                is_free=False, has_certificate=True,
+                credit_eligible=False,
+                instructor=f'{partner_eff.upper()} Faculty Panel',
+                instructor_title=f'Faculty Panel, {partner_eff.upper()}',
+                description=(
+                    f'{title} from {partner_eff.upper()}. A short, advanced '
+                    f'seminar in {primary}: weekly papers, live discussions, '
+                    f'and a graded reading response. Open to motivated '
+                    f'learners with prior background in the area.'),
+                skills=json.dumps([primary, 'Research Reading',
+                                    'Critical Analysis']),
+                what_you_learn=json.dumps([
+                    f'Read modern papers in {primary}',
+                    f'Defend a position in {primary}',
+                    f'Write a focused research note in {primary}',
+                    f'Build a network of {primary} peers',
+                ]),
+                feature_tags=json.dumps([primary.lower().replace(' ', '-'),
+                                          'advanced', partner_eff,
+                                          'r4-seminar', 'research']),
+                is_featured=False,
+                is_new=(idx % 4 == 0),
+                sort_date=(SEED_REF_DATE - timedelta(
+                    days=8 + s_idx * 2 + p_idx)).strftime('%Y-%m-%d'),
+                color_class=CATEGORY_COLORS.get(category, 'cat-cs'))
+            db.session.add(c)
+            db.session.flush()
+            _add_modules(c.id, title, primary, 3)
+            created += 1
+    db.session.commit()
+
+    # 8) Micro-credentials — 80 short, ≤6h badge courses ───────────────────
+    R4_MICRO_TOPICS = [
+        ('Pandas Power-Ups', 'Pandas', 'Data Science', 'ibm'),
+        ('Excel Mastery Drills', 'Excel', 'Business', 'microsoft'),
+        ('Notion for Knowledge Work', 'Notion', 'Personal Development', 'workday'),
+        ('Linear Regression Refresher', 'Statistics', 'Math and Logic', 'duke'),
+        ('SQL Window Functions', 'SQL', 'Data Science', 'snowflake'),
+        ('Pivot Tables in Depth', 'Excel', 'Business', 'microsoft'),
+        ('Regex Crash Course', 'Regex', 'Computer Science', 'github'),
+        ('Bash for Engineers', 'Bash', 'Information Technology', 'redhat'),
+        ('Git Power Moves', 'Git', 'Computer Science', 'github'),
+        ('Docker in 90 Minutes', 'Docker', 'Information Technology', 'redhat'),
+        ('Kubernetes Quick Start', 'Kubernetes', 'Information Technology', 'redhat'),
+        ('Terraform Basics', 'Terraform', 'Information Technology', 'aws'),
+        ('JIRA Workflow Patterns', 'Jira', 'Business', 'atlassian'),
+        ('Slack Bot Mini-Project', 'Slack', 'Computer Science', 'github'),
+        ('Stripe Checkout Drill', 'Stripe', 'Business', 'stripe'),
+        ('AWS S3 Mini-Lab', 'AWS S3', 'Information Technology', 'aws'),
+        ('Azure DevOps Pipelines', 'Azure DevOps', 'Information Technology', 'microsoft'),
+        ('GCP Cloud Run Quickstart', 'Cloud Run', 'Information Technology', 'google'),
+        ('Power BI Mini-Lab', 'Power BI', 'Data Science', 'microsoft'),
+        ('Tableau Mini-Lab', 'Tableau', 'Data Science', 'tableau'),
+        ('Looker Quickstart', 'Looker', 'Data Science', 'google'),
+        ('GA4 Drill', 'GA4', 'Business', 'google'),
+        ('SEO Audit Workflow', 'SEO', 'Business', 'hubspot'),
+        ('Content Calendar Workflow', 'Content', 'Business', 'hubspot'),
+        ('LinkedIn Recruiting Power Moves', 'LinkedIn Recruiter', 'Business', 'workday'),
+        ('Sourcing Boolean Strings', 'Boolean Sourcing', 'Business', 'workday'),
+        ('A/B Testing Drill', 'A/B Testing', 'Business', 'meta'),
+        ('Looker Studio Quickstart', 'Looker Studio', 'Data Science', 'google'),
+        ('Apache Airflow DAG Basics', 'Airflow', 'Data Science', 'snowflake'),
+        ('dbt Cloud Quickstart', 'dbt', 'Data Science', 'databricks'),
+        ('Streamlit App in 90 Minutes', 'Streamlit', 'Data Science', 'snowflake'),
+        ('Plotly Dash Drill', 'Plotly', 'Data Science', 'ibm'),
+        ('Matplotlib Drill', 'Matplotlib', 'Data Science', 'ibm'),
+        ('seaborn Cookbook', 'Seaborn', 'Data Science', 'ibm'),
+        ('SciPy Stats Drill', 'SciPy', 'Data Science', 'ibm'),
+        ('Hugging Face Pipelines', 'Hugging Face', 'Data Science', 'deeplearningai'),
+        ('LangChain Quickstart', 'LangChain', 'Computer Science', 'deeplearningai'),
+        ('LlamaIndex Drill', 'LlamaIndex', 'Computer Science', 'deeplearningai'),
+        ('OpenAI API Drill', 'OpenAI API', 'Computer Science', 'openai'),
+        ('Anthropic Claude API Drill', 'Anthropic API', 'Computer Science', 'anthropic'),
+        ('Cohere Embeddings Drill', 'Cohere', 'Computer Science', 'cohere'),
+        ('Mistral API Quickstart', 'Mistral API', 'Computer Science', 'mistral'),
+        ('Stable Diffusion Drill', 'Stable Diffusion', 'Arts and Humanities', 'stability'),
+        ('Whisper Speech Drill', 'Whisper', 'Computer Science', 'openai'),
+        ('Stable Audio Drill', 'Stable Audio', 'Arts and Humanities', 'stability'),
+        ('Midjourney Workflow', 'Midjourney', 'Arts and Humanities', 'meta'),
+        ('Figma Auto-Layout Drill', 'Figma', 'Arts and Humanities', 'meta'),
+        ('Sketch Plugin Workflow', 'Sketch', 'Arts and Humanities', 'meta'),
+        ('Storybook for Designers', 'Storybook', 'Arts and Humanities', 'github'),
+        ('Webflow Mini-Lab', 'Webflow', 'Arts and Humanities', 'meta'),
+        ('Framer Mini-Lab', 'Framer', 'Arts and Humanities', 'meta'),
+        ('Salesforce Trail Mini-Module', 'Salesforce', 'Business', 'salesforce'),
+        ('Workday Studio Mini-Module', 'Workday', 'Business', 'workday'),
+        ('ServiceNow Flow Designer', 'ServiceNow Flow', 'Business', 'servicenow'),
+        ('HubSpot Workflow Builder', 'HubSpot', 'Business', 'hubspot'),
+        ('Zendesk Triggers Mini-Lab', 'Zendesk', 'Business', 'zendesk'),
+        ('Datadog APM Drill', 'Datadog APM', 'Information Technology', 'datadog'),
+        ('PagerDuty Incident Drill', 'PagerDuty', 'Information Technology', 'datadog'),
+        ('Sentry Setup Drill', 'Sentry', 'Information Technology', 'github'),
+        ('GitHub Actions Mini-Pipeline', 'GitHub Actions', 'Information Technology', 'github'),
+        ('GitLab CI Mini-Pipeline', 'GitLab CI', 'Information Technology', 'github'),
+        ('Argo CD Quickstart', 'Argo CD', 'Information Technology', 'redhat'),
+        ('Helm Chart Drill', 'Helm', 'Information Technology', 'redhat'),
+        ('Istio Traffic Splitting', 'Istio', 'Information Technology', 'redhat'),
+        ('OpenTelemetry Setup', 'OpenTelemetry', 'Information Technology', 'datadog'),
+        ('Prometheus Mini-Lab', 'Prometheus', 'Information Technology', 'datadog'),
+        ('Grafana Dashboards Drill', 'Grafana', 'Information Technology', 'datadog'),
+        ('Loki Logs Drill', 'Loki', 'Information Technology', 'datadog'),
+        ('Spark Streaming Drill', 'Spark Streaming', 'Data Science', 'databricks'),
+        ('Kafka Connect Drill', 'Kafka Connect', 'Data Science', 'databricks'),
+        ('Schema Registry Drill', 'Schema Registry', 'Data Science', 'databricks'),
+        ('Iceberg Tables Drill', 'Apache Iceberg', 'Data Science', 'snowflake'),
+        ('Delta Lake Drill', 'Delta Lake', 'Data Science', 'databricks'),
+        ('Unity Catalog Drill', 'Unity Catalog', 'Data Science', 'databricks'),
+        ('Snowpark Drill', 'Snowpark', 'Data Science', 'snowflake'),
+        ('Materialised Views Drill', 'Materialised Views', 'Data Science', 'snowflake'),
+        ('Vertex AI Pipeline Drill', 'Vertex AI', 'Data Science', 'google'),
+        ('SageMaker Pipelines Drill', 'SageMaker', 'Data Science', 'aws'),
+        ('Azure ML Pipeline Drill', 'Azure ML', 'Data Science', 'microsoft'),
+        ('MLflow Tracking Drill', 'MLflow', 'Data Science', 'databricks'),
+        ('Weights & Biases Drill', 'Weights & Biases', 'Data Science', 'databricks'),
+    ]
+    for m_idx, (title, primary, category, partner_slug) in enumerate(R4_MICRO_TOPICS):
+        partner_eff = partner_slug if pid.get(partner_slug) else 'github'
+        for v_idx, (variant, hours) in enumerate([('Drill', 1.5), ('Lab', 3.0)]):
+            full_title = f'{title} ({variant})' if variant != 'Drill' or 'Drill' not in title else title
+            slug = _slugify(f'r4-micro-{title}-{variant}-{m_idx}-{v_idx}')
+            if Course.query.filter_by(slug=slug).first():
+                continue
+            c = Course(
+                title=full_title, slug=slug,
+                partner_id=pid.get(partner_eff),
+                course_type=('Guided Project' if hours < 2 else 'Course'),
+                level='Beginner', category=category,
+                duration_text=('Less Than 2 Hours' if hours < 2
+                               else f'Approx. {int(hours)} hours'),
+                duration_weeks=(0.25 if hours < 2 else 1.0),
+                duration_hours=hours,
+                rating=round(4.6 + ((m_idx + v_idx) % 4) * 0.05, 2),
+                review_count=180 + (m_idx + v_idx) * 6,
+                enrolled_count=3500 + (m_idx + v_idx) * 110,
+                is_free=False,
+                has_certificate=(hours >= 2),
+                credit_eligible=False,
+                instructor=f'{partner_eff.upper()} Mentor',
+                instructor_title=f'Mentor, {partner_eff.upper()}',
+                description=(
+                    f'{full_title}. A {int(hours * 60)}-minute drill on '
+                    f'{primary}. Walk through a hands-on workflow with an '
+                    f'{partner_eff.upper()} mentor in split-screen and finish '
+                    f'with a portfolio-ready artefact.'),
+                skills=json.dumps([primary, 'Hands-on Practice']),
+                what_you_learn=json.dumps([
+                    f'Run a focused {primary} workflow end-to-end',
+                    f'Apply {primary} to a real artefact',
+                    f'Walk away with a portfolio sample',
+                ]),
+                feature_tags=json.dumps([primary.lower().replace(' ', '-'),
+                                          'micro-credential', partner_eff,
+                                          variant.lower(), 'r4-catalog']),
+                is_featured=False,
+                is_new=((m_idx + v_idx) % 5 == 0),
+                sort_date=(SEED_REF_DATE - timedelta(
+                    days=4 + m_idx + v_idx * 2)).strftime('%Y-%m-%d'),
+                color_class=CATEGORY_COLORS.get(category, 'cat-cs'))
+            db.session.add(c)
+            db.session.flush()
+            db.session.add(CourseModule(
+                course_id=c.id, week_number=1,
+                title=f'Drill: {primary}',
+                description=f'A single {int(hours * 60)}-minute hands-on drill.',
+                videos_count=4, readings_count=1, quizzes_count=0,
+                video_titles=json.dumps([
+                    f'Step 1: Set up the {primary} workspace',
+                    f'Step 2: Run the core {primary} task',
+                    f'Step 3: Inspect the output',
+                    f'Step 4: Polish and ship',
+                ])))
+            created += 1
+    db.session.commit()
+
+    print(f"  + seed_v5: added {created} courses, "
+          f"partners now {Partner.query.count()}, "
+          f"total courses={Course.query.count()}")

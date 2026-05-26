@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+{% block title %}Value Checker — Booking{% endblock %}
+{% block content %}
+<div class="container">
+    <h1 class="page-title">Value Checker</h1>
+    <p style="color:#444;max-width:740px;">
+        Compare nightly prices in a destination against the global average so you
+        know if you're getting a great deal. Pick a city and your check-in dates,
+        and we'll show the verdict.
+    </p>
+
+    <form method="GET" action="{{ url_for('value_checker') }}"
+          style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;margin:18px 0 24px 0;background:#f5fafe;border:1px solid #cce0f3;border-radius:6px;padding:14px 16px;">
+        <div class="form-field">
+            <label>City</label>
+            <select name="city">
+                <option value="">Choose city</option>
+                {% for c in cities %}
+                <option value="{{ c.key }}" {% if city_key == c.key %}selected{% endif %}>{{ c.display }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="form-field">
+            <label>Check-in</label>
+            <input type="text" name="checkin" value="{{ checkin }}" placeholder="YYYY-MM-DD"
+                   data-datepicker="checkin">
+        </div>
+        <div class="form-field">
+            <label>Check-out</label>
+            <input type="text" name="checkout" value="{{ checkout }}" placeholder="YYYY-MM-DD"
+                   data-datepicker="checkout">
+        </div>
+        <button class="btn-primary" type="submit">Check value</button>
+    </form>
+
+    {% if city and avg_price is not none %}
+    <div class="vc-summary"
+         style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin-bottom:16px;">
+        <div style="background:#fff;border:1px solid #e2e2e2;border-radius:6px;padding:14px;">
+            <div style="color:#444;font-size:12px;">Average nightly price</div>
+            <div style="font-size:28px;font-weight:800;color:#003580;">${{ '%.2f'|format(avg_price) }}</div>
+            <div style="font-size:12px;color:#888;">Based on {{ sample_size }} properties in {{ city.display }}</div>
+        </div>
+        <div style="background:#fff;border:1px solid #e2e2e2;border-radius:6px;padding:14px;">
+            <div style="color:#444;font-size:12px;">Verdict</div>
+            <div style="font-weight:700;color:#008009;">{{ verdict }}</div>
+        </div>
+        <div style="background:#fff;border:1px solid #e2e2e2;border-radius:6px;padding:14px;">
+            <div style="color:#444;font-size:12px;">Country</div>
+            <div style="font-weight:700;">{{ city.country }}</div>
+            <div style="font-size:12px;color:#888;">Currency-converted ranges:
+                &euro;{{ '%.0f'|format(avg_price * 0.92) }}
+                / &pound;{{ '%.0f'|format(avg_price * 0.79) }}
+                / &yen;{{ '%.0f'|format(avg_price * 7.2) }}</div>
+        </div>
+    </div>
+    <p style="font-size:13px;color:#444;">The Value Checker compares <strong>{{ city.display }}</strong>'s
+       average nightly price to the global Booking average across all destinations. Use the verdict
+       as a quick reference — the Booking.com Genius programme can shave another 10–20% off.</p>
+    {% else %}
+    <p class="text-muted">Pick a city to see the average nightly price and value verdict.</p>
+    {% endif %}
+</div>
+{% endblock %}

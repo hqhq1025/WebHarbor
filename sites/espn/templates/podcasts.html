@@ -16,6 +16,13 @@
     {% endfor %}
   </div>
 
+  <form method="get" action="/podcasts/search" class="podcast-search">
+    <input type="text" name="q" placeholder="Search podcast transcripts and titles..."
+           value="{{ search_q or '' }}">
+    <button type="submit" class="btn-red">Search</button>
+  </form>
+  {% if search_q %}<div class="search-summary">Results for &ldquo;{{ search_q }}&rdquo;: {{ podcasts|length }} matches.</div>{% endif %}
+
   <div class="podcast-grid">
     {% for p in podcasts %}
     <article class="podcast-card">

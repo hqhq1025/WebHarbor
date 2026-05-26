@@ -1,0 +1,90 @@
+{% extends "base.html" %}
+{% block title %}AutoTrain · Hugging Face{% endblock %}
+
+{% block content %}
+<div class="container-wide page">
+    <nav class="docs-breadcrumb">
+        <a href="{{ url_for('index') }}">Home</a><span>/</span><span>AutoTrain</span>
+    </nav>
+    <h1>AutoTrain — no-code model fine-tuning</h1>
+    <p class="muted">Train and fine-tune transformer, diffusion, and vision models on your data without writing a line of code. Pricing scales with the GPU hours you consume.</p>
+
+    <section class="autotrain-jobs" style="margin-top:18px;">
+        <header style="display:flex;justify-content:space-between;align-items:center;">
+            <h2 style="margin:0;font-size:18px;">Recent jobs</h2>
+            <a class="btn btn-primary" href="{{ url_for('autotrain_status') }}#new-job">+ New training job</a>
+        </header>
+        <table class="files-table" style="margin-top:10px;">
+            <thead>
+                <tr>
+                    <th>Job name</th>
+                    <th>Status</th>
+                    <th>Progress</th>
+                    <th>Hardware</th>
+                    <th>Duration</th>
+                    <th>Owner</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for j in jobs %}
+                <tr>
+                    <td><strong>{{ j.name }}</strong></td>
+                    <td>
+                        {% if j.status == 'Running' %}<span class="tag tag-green">● {{ j.status }}</span>
+                        {% elif j.status == 'Queued' %}<span class="tag tag-yellow">⏸ {{ j.status }}</span>
+                        {% elif j.status == 'Completed' %}<span class="tag tag-blue">✓ {{ j.status }}</span>
+                        {% elif j.status == 'Failed' %}<span class="tag" style="background:#fee2e2;color:#991b1b;">✗ {{ j.status }}</span>
+                        {% else %}<span class="tag">{{ j.status }}</span>{% endif %}
+                    </td>
+                    <td>
+                        <div style="background:#e5e7eb;border-radius:3px;height:8px;width:120px;overflow:hidden;">
+                            <div style="background:#3b82f6;height:8px;width:{{ j.progress }}%;"></div>
+                        </div>
+                        <span class="muted" style="font-size:11.5px;">{{ j.progress }}%</span>
+                    </td>
+                    <td><code>{{ j.hw }}</code></td>
+                    <td class="muted">{{ j.duration }}</td>
+                    <td>{{ j.owner }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </section>
+
+    <section id="new-job" style="margin-top:36px;border-top:1px solid var(--border,#e5e7eb);padding-top:24px;">
+        <h2 style="font-size:18px;">Start a new AutoTrain job</h2>
+        <form action="#" style="max-width:640px;display:grid;grid-template-columns:1fr 1fr;gap:14px;">
+            <label style="display:block;">
+                <span style="font-size:13px;font-weight:600;">Job name</span>
+                <input type="text" placeholder="my-awesome-model" style="width:100%;padding:8px 10px;border-radius:6px;border:1px solid var(--border,#e5e7eb);">
+            </label>
+            <label style="display:block;">
+                <span style="font-size:13px;font-weight:600;">Task</span>
+                <select style="width:100%;padding:8px 10px;border-radius:6px;border:1px solid var(--border,#e5e7eb);">
+                    <option>text-classification</option>
+                    <option>token-classification</option>
+                    <option>text-generation</option>
+                    <option>image-classification</option>
+                    <option>llm-sft</option>
+                    <option>llm-orpo</option>
+                </select>
+            </label>
+            <label style="display:block;">
+                <span style="font-size:13px;font-weight:600;">Base model</span>
+                <input type="text" placeholder="meta-llama/Llama-3.2-3B" style="width:100%;padding:8px 10px;border-radius:6px;border:1px solid var(--border,#e5e7eb);">
+            </label>
+            <label style="display:block;">
+                <span style="font-size:13px;font-weight:600;">Hardware</span>
+                <select style="width:100%;padding:8px 10px;border-radius:6px;border:1px solid var(--border,#e5e7eb);">
+                    <option>L4 (24GB) — $0.80/hr</option>
+                    <option>A10G (24GB) — $1.05/hr</option>
+                    <option>A100 (40GB) — $4.00/hr</option>
+                    <option>L40S (48GB) — $1.80/hr</option>
+                </select>
+            </label>
+            <button type="submit" class="btn btn-primary" style="grid-column:span 2;justify-self:start;">Launch training</button>
+        </form>
+        <p class="muted" style="font-size:12.5px;margin-top:10px;">By launching, you agree to be billed for GPU hours consumed. Idle jobs auto-pause after 10 minutes.</p>
+    </section>
+</div>
+{% endblock %}

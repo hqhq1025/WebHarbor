@@ -1,0 +1,59 @@
+{% extends 'base.html' %}
+{% block title %}Seat selection - Trip {{ booking.pnr }}{% endblock %}
+{% block content %}
+<div class="info-page">
+  <div class="info-page-inner">
+    <h1>Choose your seat</h1>
+    <div style="color:#5f6368;margin-bottom:18px;">
+      Booking <strong>{{ booking.pnr }}</strong> &middot;
+      {{ flight.airline }} {{ flight.flight_number }} &middot;
+      {{ flight.origin.iata }} &rarr; {{ flight.destination.iata }} &middot;
+      {{ flight.departure_date }}
+    </div>
+
+    <form method="POST" action="{{ url_for('trip_seat_map', booking_id=booking.id) }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <div class="seat-map" style="background:#fff;border:1px solid #dadce0;border-radius:8px;padding:18px;display:inline-block;">
+        <div style="text-align:center;margin-bottom:8px;color:#5f6368;font-size:12px;">Front of cabin</div>
+        {% for row in seat_rows %}
+          <div class="seat-row" style="display:flex;gap:6px;margin-bottom:6px;">
+            <span style="display:inline-flex;align-items:center;justify-content:center;width:24px;color:#5f6368;font-size:12px;">{{ row.number }}</span>
+            {% for seat in row.seats %}
+              {% if seat.code is none %}
+                <span style="display:inline-block;width:28px;"></span>
+              {% else %}
+                <label style="position:relative;">
+                  <input type="radio" name="seat" value="{{ seat.code }}"
+                         {% if seat.taken %}disabled{% endif %}
+                         {% if seat.code == current_seat %}checked{% endif %}
+                         style="position:absolute;opacity:0;">
+                  <span class="seat-cell"
+                        style="display:inline-flex;align-items:center;justify-content:center;
+                               width:28px;height:28px;border-radius:4px;font-size:11px;cursor:pointer;
+                               {% if seat.taken %}background:#dadce0;color:#80868b;cursor:not-allowed;
+                               {% elif seat.extra_legroom %}background:#e8f0fe;border:1px solid #1a73e8;color:#1a73e8;
+                               {% else %}background:#f1f3f4;border:1px solid #dadce0;{% endif %}">
+                    {{ seat.code[-1] }}
+                  </span>
+                </label>
+              {% endif %}
+            {% endfor %}
+          </div>
+        {% endfor %}
+      </div>
+
+      <div style="margin-top:16px;display:flex;gap:18px;font-size:13px;color:#5f6368;">
+        <span><span style="display:inline-block;width:12px;height:12px;background:#f1f3f4;border:1px solid #dadce0;vertical-align:middle;"></span> Available</span>
+        <span><span style="display:inline-block;width:12px;height:12px;background:#e8f0fe;border:1px solid #1a73e8;vertical-align:middle;"></span> Extra legroom (+$45)</span>
+        <span><span style="display:inline-block;width:12px;height:12px;background:#dadce0;vertical-align:middle;"></span> Taken</span>
+      </div>
+
+      <p style="margin-top:18px;">
+        Selected seat: <strong id="current-selection">{{ current_seat or 'None' }}</strong>
+      </p>
+      <button type="submit" class="btn-primary" style="margin-top:8px;">Confirm seat</button>
+      <a href="{{ url_for('trip_manage', booking_id=booking.id) }}" style="margin-left:8px;">Back to trip</a>
+    </form>
+  </div>
+</div>
+{% endblock %}

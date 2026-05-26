@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+{% block title %}Questions & Answers — {{ product.name }} - Amazon.com{% endblock %}
+
+{% block content %}
+<div class="account-page" style="max-width:1200px">
+    <div style="background:#fff;padding:20px;border-radius:4px;margin-bottom:14px">
+        <div style="display:flex;gap:18px;align-items:flex-start">
+            <img src="{{ product.image }}" alt="{{ product.name }}"
+                 style="width:120px;height:120px;object-fit:contain;background:#f7f7f7;border-radius:4px"
+                 onerror="this.style.display='none'">
+            <div style="flex:1">
+                <a href="{{ url_for('product_detail', slug=product.slug) }}" class="text-link" style="font-size:18px">{{ product.name }}</a>
+                <div style="color:#565959;font-size:13px;margin-top:4px">{{ product.brand }} · {{ product.category_slug|capitalize }}</div>
+                <div class="rating" style="margin-top:6px">
+                    <span class="stars" style="color:#ffa41c">{% for i in range(product.rating|int) %}★{% endfor %}{% for i in range(5 - product.rating|int) %}☆{% endfor %}</span>
+                    <span>{{ product.rating }} · {{ product.review_count }} ratings</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <h1 style="font-size:24px;margin:0 0 16px">Customer Questions &amp; Answers</h1>
+
+    <div style="background:#fff;padding:16px 20px;border-radius:4px;display:flex;gap:18px;align-items:center;margin-bottom:14px">
+        <div style="font-size:13px;color:#565959">Sort by:</div>
+        <a href="{{ url_for('product_questions', slug=product.slug, sort='helpful') }}"
+           class="text-link{% if current_sort == 'helpful' %} active{% endif %}"
+           style="font-weight:{% if current_sort == 'helpful' %}700{% else %}400{% endif %}">Most helpful</a>
+        <a href="{{ url_for('product_questions', slug=product.slug, sort='recent') }}"
+           class="text-link"
+           style="font-weight:{% if current_sort == 'recent' %}700{% else %}400{% endif %}">Most recent</a>
+        <div style="flex:1"></div>
+        <div style="font-size:13px;color:#565959">Showing {{ qna|length }} questions</div>
+    </div>
+
+    {% for q in qna %}
+    <div style="background:#fff;padding:18px 20px;border-radius:4px;margin-bottom:12px" id="q-{{ q.id }}">
+        <div style="display:flex;gap:14px;align-items:flex-start">
+            <div style="font-weight:700;color:#cc6600;font-size:14px;min-width:60px">Question:</div>
+            <div style="flex:1">
+                <div style="font-size:15px;font-weight:500">{{ q.question }}</div>
+                <div style="color:#565959;font-size:12px;margin-top:4px">
+                    Asked by {{ q.asked_by }} on {{ q.asked_on.strftime('%B %d, %Y') }}
+                </div>
+            </div>
+        </div>
+        {% for a in q.answers %}
+        <div style="display:flex;gap:14px;align-items:flex-start;margin-top:16px;padding-top:14px;border-top:1px solid #e7e7e7">
+            <div style="font-weight:700;color:#007185;font-size:14px;min-width:60px">Answer:</div>
+            <div style="flex:1">
+                <div style="font-size:14px;line-height:1.5">{{ a.body }}</div>
+                <div style="margin-top:6px;font-size:12px;color:#565959">
+                    By <strong>{{ a.name }}</strong>
+                    {% if a.is_seller %}<span style="color:#007600;font-weight:700"> · SELLER</span>{% endif %}
+                    · {{ a.helpful }} people found this helpful
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% endfor %}
+
+    <div style="background:#fff;padding:16px 20px;border-radius:4px;margin-top:14px;text-align:center">
+        <a href="{{ url_for('product_detail', slug=product.slug) }}" class="btn btn-outline">← Back to product</a>
+    </div>
+</div>
+{% endblock %}

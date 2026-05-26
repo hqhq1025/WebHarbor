@@ -1,0 +1,53 @@
+{% extends 'base.html' %}
+{% block title %}CO2 comparison - Tools{% endblock %}
+{% block content %}
+<div class="info-page">
+  <div class="info-page-inner">
+    <h1>CO2 emissions comparison</h1>
+    <p>Estimate how a flight stacks up vs. driving, training, or another carrier.
+       Compare per-passenger CO2 emissions for a given route.</p>
+
+    <form method="GET" class="filter-bar" style="display:flex;gap:8px;margin-bottom:18px;flex-wrap:wrap;">
+      <label>From <input type="text" name="from" value="{{ origin or '' }}" placeholder="JFK" style="width:90px;padding:6px;border:1px solid #dadce0;border-radius:4px;"></label>
+      <label>To <input type="text" name="to" value="{{ dest or '' }}" placeholder="LHR" style="width:90px;padding:6px;border:1px solid #dadce0;border-radius:4px;"></label>
+      <button type="submit" class="btn-primary">Compare</button>
+    </form>
+
+    {% if rows %}
+      <h2>{{ origin }} &rarr; {{ dest }} (about {{ distance_km }} km)</h2>
+      <table class="data-table" style="width:100%;border-collapse:collapse;">
+        <thead>
+          <tr style="text-align:left;border-bottom:1px solid #dadce0;">
+            <th style="padding:8px 12px;">Mode / Carrier</th>
+            <th style="padding:8px 12px;">CO2 / passenger</th>
+            <th style="padding:8px 12px;">vs typical flight</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for r in rows %}
+          <tr style="border-bottom:1px solid #f1f3f4;">
+            <td style="padding:8px 12px;">{{ r.label }}</td>
+            <td style="padding:8px 12px;">{{ r.co2 }} kg</td>
+            <td style="padding:8px 12px;">
+              {% if r.delta_pct == 0 %}
+                <span>baseline</span>
+              {% elif r.delta_pct < 0 %}
+                <span style="color:#137333;">{{ r.delta_pct }}% lower</span>
+              {% else %}
+                <span style="color:#c5221f;">+{{ r.delta_pct }}% higher</span>
+              {% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      <p style="color:#5f6368;margin-top:14px;">
+        The lowest-emission carrier on this route is <strong>{{ best_carrier }}</strong>
+        at <strong>{{ best_co2 }} kg</strong> per passenger.
+      </p>
+    {% else %}
+      <p style="color:#5f6368;">Enter an origin and destination to see CO2 comparison.</p>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

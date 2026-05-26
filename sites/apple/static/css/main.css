@@ -1997,3 +1997,117 @@ img {
     text-align: center;
     padding: 8px;
 }
+
+/* ---------------------------------------------------------------------
+   R4 polish — environmental badge, hero parallax, lazy-load fade-in,
+   sticky configure rail. Touched by sites/apple templates and is
+   purely additive (no side effects on existing layouts).
+   --------------------------------------------------------------------- */
+
+.env-badge {
+    display: flex;
+    gap: 18px;
+    align-items: flex-start;
+    max-width: 980px;
+    margin: 0 auto 48px auto;
+    padding: 20px 26px;
+    border-radius: 18px;
+    background: linear-gradient(135deg, #f1f7f1 0%, #e7f0e8 100%);
+    border: 1px solid #cee0d2;
+    color: #1d3a24;
+    font-size: 15px;
+    line-height: 1.5;
+    box-shadow: 0 1px 0 rgba(0,0,0,0.02);
+}
+
+.env-badge--refurbished {
+    background: linear-gradient(135deg, #f1f4fb 0%, #e6ecf7 100%);
+    border: 1px solid #c8d3ea;
+    color: #1a2c52;
+}
+
+.env-badge p {
+    margin: 4px 0 0 0;
+    font-size: 14px;
+    color: inherit;
+    opacity: 0.85;
+}
+
+.env-badge-icon {
+    flex: 0 0 36px;
+    height: 36px;
+    width: 36px;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255,255,255,0.6);
+    font-size: 18px;
+    color: #1a7a3a;
+}
+.env-badge--refurbished .env-badge-icon { color: #1a4ea7; }
+
+/* Hero parallax — gentle slow zoom for hero image (respects reduced-motion). */
+.hero-parallax {
+    overflow: hidden;
+    will-change: transform;
+    transform: translateZ(0);
+}
+.hero-parallax img {
+    transition: transform 1200ms cubic-bezier(0.21, 0.61, 0.35, 1);
+}
+.hero-parallax:hover img,
+.hero-parallax:focus-within img {
+    transform: scale(1.035);
+}
+@media (prefers-reduced-motion: reduce) {
+    .hero-parallax img { transition: none; }
+    .hero-parallax:hover img { transform: none; }
+}
+
+/* Lazy-loading images: gentle fade-in when the image decodes. */
+img[loading="lazy"] {
+    opacity: 0;
+    transition: opacity 350ms ease-out;
+}
+img[loading="lazy"].is-loaded,
+img[loading="lazy"][src][complete] {
+    opacity: 1;
+}
+@supports (content-visibility: auto) {
+    .product-grid > * { content-visibility: auto; contain-intrinsic-size: 380px 480px; }
+}
+
+/* Sticky configure rail — keeps "Add to Bag" pinned on configurator + product pages. */
+.configure-rail-sticky {
+    position: sticky;
+    top: 84px;
+    align-self: flex-start;
+    background: var(--color-background, #fff);
+    padding: 24px 28px;
+    border-radius: 18px;
+    box-shadow: 0 8px 28px rgba(0,0,0,0.06);
+    max-height: calc(100vh - 120px);
+    overflow-y: auto;
+    z-index: 5;
+}
+@media (max-width: 900px) {
+    .configure-rail-sticky { position: static; max-height: none; box-shadow: none; padding: 0; }
+}
+
+/* Refurbished / education / business badges on product cards. */
+.product-card .tag-refurbished,
+.product-card .tag-education,
+.product-card .tag-business {
+    display: inline-block;
+    margin-top: 6px;
+    font-size: 11px;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+}
+.product-card .tag-refurbished { background: #e6ecf7; color: #1a4ea7; }
+.product-card .tag-education   { background: #fdf3e2; color: #8a4a04; }
+.product-card .tag-business    { background: #f2e7fb; color: #5a298d; }

@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block title %}Waiver Wire — {{ sport.name }}{% endblock %}
+{% block content %}
+<div class="container">
+  <h1>Waiver Wire — {{ sport.name }}</h1>
+  <p>Top adds for the upcoming week. Streamers and emergent role players highlighted.</p>
+  <table class="waiver-table">
+    <thead>
+      <tr>
+        <th>Player</th><th>Pos</th><th>Season</th><th>Key Stat</th><th>Add %</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for p, st in rows %}
+      <tr>
+        <td><a href="/player/{{ p.sport_slug }}/{{ p.slug }}">{{ p.name }}</a></td>
+        <td>{{ p.position }}</td>
+        <td>{{ st.season }}</td>
+        <td>
+          {% if sport.slug == 'nba' %}{{ st.points_per_game or '—' }} PPG
+          {% elif sport.slug == 'nfl' %}{{ st.passing_yards or st.rushing_yards or st.receiving_yards or '—' }} yds
+          {% elif sport.slug == 'mlb' %}{{ st.home_runs or 0 }} HR / {{ st.rbi or 0 }} RBI
+          {% elif sport.slug == 'nhl' %}{{ st.hockey_points or 0 }} PTS
+          {% elif sport.slug == 'soccer' %}{{ st.soccer_goals or 0 }} G / {{ st.soccer_assists or 0 }} A
+          {% else %}—
+          {% endif %}
+        </td>
+        <td>{{ (loop.index * 3) % 90 + 5 }}%</td>
+      </tr>
+      {% else %}
+      <tr><td colspan="5">No waiver options available.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

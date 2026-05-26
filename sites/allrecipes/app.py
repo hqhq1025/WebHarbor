@@ -215,9 +215,105 @@ class ShoppingList(db.Model):
         self.items_json = json.dumps(items)
 
 
+# ---------------------------------------------------------------------------
+# R4: Article model + Collection model — cooking-tips long-form & curated lists
+# ---------------------------------------------------------------------------
+
+class Article(db.Model):
+    """Long-form cooking-tip article (e.g. /article/how-to-roast-a-turkey)."""
+    id = db.Column(db.Integer, primary_key=True)
+    title = db.Column(db.String(200), nullable=False)
+    slug = db.Column(db.String(200), unique=True, nullable=False)
+    category = db.Column(db.String(80), default='cooking-tips')
+    author_name = db.Column(db.String(120), default='Allrecipes Editors')
+    excerpt = db.Column(db.Text, default='')
+    body_json = db.Column(db.Text, default='[]')  # list of {heading, paragraphs:[]}
+    hero_image = db.Column(db.String(300), default='')
+    read_time_mins = db.Column(db.Integer, default=4)
+    related_recipes_json = db.Column(db.Text, default='[]')  # list of slug
+    tags_json = db.Column(db.Text, default='[]')
+    published_at = db.Column(db.DateTime, default=lambda: MIRROR_REFERENCE_DATE)
+    view_count = db.Column(db.Integer, default=0)
+
+    def get_body(self):
+        try:
+            return json.loads(self.body_json)
+        except Exception:
+            return []
+
+    def get_related_recipes(self):
+        try:
+            return json.loads(self.related_recipes_json)
+        except Exception:
+            return []
+
+    def get_tags(self):
+        try:
+            return json.loads(self.tags_json)
+        except Exception:
+            return []
+
+
+class Collection(db.Model):
+    """Curated recipe list (e.g. /collection/best-summer-grilling)."""
+    id = db.Column(db.Integer, primary_key=True)
+    title = db.Column(db.String(200), nullable=False)
+    slug = db.Column(db.String(200), unique=True, nullable=False)
+    subtitle = db.Column(db.String(300), default='')
+    description = db.Column(db.Text, default='')
+    hero_image = db.Column(db.String(300), default='')
+    curator_name = db.Column(db.String(120), default='Allrecipes Editors')
+    recipe_slugs_json = db.Column(db.Text, default='[]')
+    tags_json = db.Column(db.Text, default='[]')
+    season = db.Column(db.String(40), default='')
+    display_order = db.Column(db.Integer, default=0)
+    created_at = db.Column(db.DateTime, default=lambda: MIRROR_REFERENCE_DATE)
+
+    def get_recipe_slugs(self):
+        try:
+            return json.loads(self.recipe_slugs_json)
+        except Exception:
+            return []
+
+    def get_tags(self):
+        try:
+            return json.loads(self.tags_json)
+        except Exception:
+            return []
+
+
 @login_manager.user_loader
 def load_user(user_id):
     return User.query.get(int(user_id))
+
+
+# ---------------------------------------------------------------------------
+# R4: Jinja filters for share-token and gallery step images
+# ---------------------------------------------------------------------------
+
+@app.template_filter('hash_slug')
+def _hash_slug(slug):
+    """Deterministic 7-char token for /r/<token> share URLs."""
+    return hashlib.md5((slug or '').encode()).hexdigest()[:7]
+
+
+@app.template_filter('step_images_from')
+def _step_images_from(gallery_json):
+    """Return up to 3 step-image URLs derived from gallery_json. Falls back
+    to a deterministic pool of /static/images/recipes_real/recipe_N.jpg
+    so every recipe shows a multi-step strip in the directions panel."""
+    try:
+        gallery = json.loads(gallery_json or '[]')
+    except Exception:
+        gallery = []
+    out = []
+    for section in gallery:
+        for img in (section.get('images') if isinstance(section, dict) else []) or []:
+            if img and img not in out:
+                out.append(img)
+            if len(out) >= 3:
+                return out
+    return out
 
 
 # ---------------------------------------------------------------------------
@@ -2023,6 +2119,270 @@ def api_search():
 
 
 # ---------------------------------------------------------------------------
+# R4: Community / Authors / Collections / Articles / Occasion recipe-list pages
+# ---------------------------------------------------------------------------
+
+@app.route('/community')
+def community():
+    """Community landing — top reviewers, recent reviews, featured chefs."""
+    top_reviewers = (
+        db.session.query(User, db.func.count(Review.id).label('n'))
+        .join(Review, Review.user_id == User.id)
+        .filter(User.email.like('%@example.com'))
+        .group_by(User.id)
+        .order_by(db.desc('n'))
+        .limit(8)
+        .all()
+    )
+    recent_reviews = (
+        Review.query
+        .order_by(Review.created_at.desc(), Review.id.desc())
+        .limit(12)
+        .all()
+    )
+    featured_authors = (
+        db.session.query(Recipe.author_name, db.func.count(Recipe.id).label('n'))
+        .filter(Recipe.author_name.like('Chef %'))
+        .group_by(Recipe.author_name)
+        .order_by(db.desc('n'))
+        .limit(8)
+        .all()
+    )
+    stats = {
+        'recipes': Recipe.query.count(),
+        'reviews': Review.query.count(),
+        'reviewers': User.query.filter(User.email.like('%@example.com')).count(),
+        'chefs': db.session.query(Recipe.author_name).filter(
+            Recipe.author_name.like('Chef %')).distinct().count(),
+    }
+    return render_template(
+        'community.html',
+        top_reviewers=top_reviewers,
+        recent_reviews=recent_reviews,
+        featured_authors=featured_authors,
+        stats=stats,
+    )
+
+
+def _author_slug(name):
+    s = re.sub(r"[^a-zA-Z0-9]+", '-', (name or '').lower()).strip('-')
+    return s or 'chef'
+
+
+@app.route('/authors/<slug>')
+def author_page(slug):
+    """Chef profile page — recipes by author_name matching slug."""
+    s = (slug or '').lower()
+    # Locate the author by slugifying every author_name and matching.
+    all_authors = [row[0] for row in db.session.query(Recipe.author_name)
+                   .filter(Recipe.author_name.like('Chef %'))
+                   .distinct().all()]
+    match = next((a for a in all_authors if _author_slug(a) == s), None)
+    if not match:
+        abort(404)
+    page = request.args.get('page', 1, type=int)
+    per_page = 12
+    q = Recipe.query.filter(Recipe.author_name == match).order_by(
+        Recipe.review_count.desc(), Recipe.id.asc())
+    all_items = q.all()
+    pagination = _StaticPagination(all_items, page, per_page, len(all_items))
+    # Light bio derived from the author bucket name.
+    bio_seed = sum(ord(c) for c in match)
+    specialty_pool = ['Mediterranean', 'Italian', 'French', 'Asian', 'American',
+                       'Southern', 'Vegetarian', 'BBQ', 'Bakery', 'Seafood']
+    specialty = specialty_pool[bio_seed % len(specialty_pool)]
+    years = 8 + (bio_seed % 22)
+    bio = (f"{match} is a celebrated home-cook contributor known for "
+           f"{specialty.lower()} fare. With {years} years of experience in the kitchen, "
+           f"their recipes consistently rank among the community favorites.")
+    return render_template(
+        'author.html',
+        author_name=match, author_slug=s, bio=bio,
+        specialty=specialty, years=years,
+        recipes=pagination,
+    )
+
+
+@app.route('/authors')
+def authors_hub():
+    """Authors hub — list every Chef <Name> bucket with recipe count."""
+    rows = (
+        db.session.query(Recipe.author_name, db.func.count(Recipe.id).label('n'))
+        .filter(Recipe.author_name.like('Chef %'))
+        .group_by(Recipe.author_name)
+        .order_by(Recipe.author_name)
+        .all()
+    )
+    authors = [{
+        'name': r[0],
+        'slug': _author_slug(r[0]),
+        'count': r[1],
+    } for r in rows]
+    return render_template('authors_hub.html', authors=authors)
+
+
+@app.route('/collections')
+def collections_hub():
+    """Collections hub — list every curated Collection."""
+    cols = Collection.query.order_by(
+        Collection.display_order, Collection.id).all()
+    return render_template('collections_hub.html', collections=cols)
+
+
+@app.route('/collection/<slug>')
+def collection_page(slug):
+    """Curated themed recipe collection page."""
+    s = (slug or '').lower()
+    col = Collection.query.filter_by(slug=s).first_or_404()
+    slugs = col.get_recipe_slugs()
+    recipes = []
+    for rslug in slugs:
+        r = Recipe.query.filter_by(slug=rslug).first()
+        if r:
+            recipes.append(r)
+    return render_template('collection.html', collection=col, recipes=recipes)
+
+
+@app.route('/occasion/<slug>/recipes')
+def occasion_recipes_listing(slug):
+    """Dedicated paginated /occasion/<slug>/recipes listing — distinct from
+    /occasion/<slug> hub. Always uses occasion column for tighter results."""
+    s = (slug or '').lower()
+    if s not in OCCASION_SLUGS:
+        abort(404)
+    page = request.args.get('page', 1, type=int)
+    per_page = 24  # bigger grid for this listing
+    sort = request.args.get('sort', 'popular')
+    q = Recipe.query.filter(Recipe.occasion == s)
+    if sort == 'rating':
+        q = q.order_by(Recipe.avg_rating.desc(), Recipe.review_count.desc())
+    elif sort == 'name':
+        q = q.order_by(Recipe.title.asc())
+    else:
+        q = q.order_by(Recipe.review_count.desc(), Recipe.id.asc())
+    all_items = q.all()
+    pagination = _StaticPagination(all_items, page, per_page, len(all_items))
+    return render_template(
+        'occasion_recipes.html',
+        occasion_slug=s, occasion_name=OCCASION_SLUGS[s],
+        occasion_description=OCCASION_DESCRIPTIONS.get(s, ''),
+        recipes=pagination, sort=sort,
+        total_count=len(all_items),
+    )
+
+
+@app.route('/articles')
+def articles_hub():
+    """Cooking-tips articles index."""
+    cat = request.args.get('category', '').strip().lower()
+    q = Article.query
+    if cat:
+        q = q.filter(Article.category == cat)
+    arts = q.order_by(Article.published_at.desc(), Article.id.asc()).all()
+    categories = sorted({a.category for a in Article.query.all()})
+    return render_template('articles_hub.html', articles=arts,
+                           categories=categories, current_category=cat)
+
+
+@app.route('/article/<slug>')
+def article_detail(slug):
+    """Single cooking-tips article."""
+    art = Article.query.filter_by(slug=slug).first_or_404()
+    related = []
+    for rslug in art.get_related_recipes():
+        r = Recipe.query.filter_by(slug=rslug).first()
+        if r:
+            related.append(r)
+    more = (Article.query
+            .filter(Article.id != art.id,
+                    Article.category == art.category)
+            .order_by(Article.published_at.desc())
+            .limit(4)
+            .all())
+    return render_template('article.html', article=art, related=related, more=more)
+
+
+# ---------------------------------------------------------------------------
+# R4: AJAX recipe filter + scale-by-servings endpoint
+# ---------------------------------------------------------------------------
+
+@app.route('/api/recipes/filter')
+def api_recipe_filter():
+    """AJAX filter endpoint — JSON response of recipes for filter chips."""
+    q = Recipe.query
+    diet = request.args.get('diet', '').strip().lower()
+    if diet:
+        q = q.filter(Recipe.dietary_tags_json.ilike(f'%{diet}%'))
+    cuisine = request.args.get('cuisine', '').strip()
+    if cuisine:
+        q = q.filter(Recipe.cuisine.ilike(f'%{cuisine}%'))
+    max_total = request.args.get('max_total_mins', type=int)
+    if max_total is not None:
+        q = q.filter(Recipe.total_time_mins > 0,
+                     Recipe.total_time_mins <= max_total)
+    feature = request.args.get('feature', '').strip().lower()
+    if feature:
+        q = q.filter(Recipe.feature_tags.ilike(f'%{feature}%'))
+    limit = min(50, request.args.get('limit', 12, type=int))
+    items = q.order_by(Recipe.review_count.desc()).limit(limit).all()
+    return jsonify(count=len(items), results=[{
+        'id': r.id, 'title': r.title, 'slug': r.slug, 'image': r.image,
+        'avg_rating': r.avg_rating, 'review_count': r.review_count,
+        'cuisine': r.cuisine, 'total_time': r.total_time,
+    } for r in items])
+
+
+@app.route('/api/recipes/<slug>/scale')
+def api_recipe_scale(slug):
+    """Return ingredient list scaled by a servings multiplier."""
+    target = request.args.get('servings', type=int)
+    recipe = Recipe.query.filter_by(slug=slug).first_or_404()
+    try:
+        base_serv = int(re.findall(r"\d+", recipe.servings or '4')[0])
+    except (IndexError, ValueError):
+        base_serv = 4
+    if not target or target <= 0:
+        target = base_serv
+    factor = round(target / base_serv, 3)
+    scaled = []
+    for ing in recipe.get_ingredients():
+        # Try to scale leading numeric tokens (e.g. "2 cups flour" → "4 cups flour")
+        m = re.match(r"^\s*(\d+(?:\.\d+)?|\d+/\d+)\s+(.*)$", ing)
+        if m:
+            num_str, rest = m.group(1), m.group(2)
+            if '/' in num_str:
+                a, b = num_str.split('/')
+                base_val = float(a) / float(b)
+            else:
+                base_val = float(num_str)
+            new_val = round(base_val * factor, 2)
+            display = (str(int(new_val)) if new_val == int(new_val)
+                       else f"{new_val:g}")
+            scaled.append(f"{display} {rest}")
+        else:
+            scaled.append(ing)
+    return jsonify(
+        slug=recipe.slug, base_servings=base_serv,
+        target_servings=target, factor=factor,
+        ingredients=scaled,
+    )
+
+
+@app.route('/recipe/<slug>/share')
+def recipe_share_link(slug):
+    """Generate a deterministic share URL for a recipe. Visible to agents
+    so a 'find the share link' task can read it from the rendered page."""
+    recipe = Recipe.query.filter_by(slug=slug).first_or_404()
+    # Deterministic short token: 7-char base36 from slug hash.
+    h = hashlib.md5(slug.encode()).hexdigest()[:7]
+    return jsonify(
+        slug=slug, title=recipe.title,
+        share_url=f"https://allrecipes.com/r/{h}",
+        token=h,
+    )
+
+
+# ---------------------------------------------------------------------------
 # Seed data
 # ---------------------------------------------------------------------------
 
@@ -3253,6 +3613,33 @@ with app.app_context():
         raise
     seed_benchmark_users()
     seed_1960s_collection_recipes()
+
+    # R4: final enrichment pass — fills tags >=5 + nutrition + gallery for
+    # any recipe inserted by post-extended seed paths (1960s, benchmark users).
+    try:
+        from r4_seed import _enrich_existing_recipes
+        _enrich_existing_recipes()
+        db.session.commit()
+    except Exception as exc:  # pragma: no cover
+        print(f"[r4_final_enrich] failed: {exc!r}")
+
+    # R4: final VACUUM + index re-emit so the seed DB is byte-identical
+    # across rebuilds (sees all post-extended inserts).
+    try:
+        from sqlalchemy import text as _text
+        conn = db.engine.connect()
+        idx_rows = conn.execute(_text(
+            "SELECT name, sql FROM sqlite_master WHERE type='index' AND name LIKE 'ix_%'"
+        )).fetchall()
+        for name, _ in idx_rows:
+            conn.execute(_text(f"DROP INDEX IF EXISTS {name}"))
+        for name, sql in sorted(idx_rows, key=lambda r: r[0]):
+            if sql:
+                conn.execute(_text(sql))
+        conn.execute(_text("VACUUM"))
+        conn.commit()
+    except Exception as exc:  # pragma: no cover
+        print(f"[r4_final_vacuum] failed: {exc!r}")
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 28840))

@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block title %}{{ api.name }} — Wolfram|Alpha{% endblock %}
+
+{% block content %}
+<div class="section-inner" style="padding-top: 40px;">
+  <nav class="resource-nav">
+    {% for sl, a in all_apis.items() %}
+    <a href="/products/{{ sl }}" class="resource-tab {% if sl == slug %}resource-tab--active{% endif %}">{{ a.name }}</a>
+    {% endfor %}
+  </nav>
+
+  <h1 class="section-heading">{{ api.name }}</h1>
+  <p class="api-tagline">{{ api.tagline }}</p>
+
+  <div class="api-spec-card">
+    <div class="api-spec-row">
+      <span class="api-spec-label">Endpoint</span>
+      <code class="api-spec-value">{{ api.endpoint }}</code>
+    </div>
+    <div class="api-spec-row">
+      <span class="api-spec-label">Free tier</span>
+      <span class="api-spec-value">{{ api.rate }}</span>
+    </div>
+    <div class="api-spec-row">
+      <span class="api-spec-label">Authentication</span>
+      <code class="api-spec-value">appid=YOUR_APP_ID</code>
+    </div>
+  </div>
+
+  <h3 class="sidebar-section-title">Sample request</h3>
+  <pre class="builder-embed-code"><code>curl "{{ api.endpoint }}?appid=DEMO&amp;i=integral+of+sin(x)"</code></pre>
+
+  <h3 class="sidebar-section-title">Sample response</h3>
+  <pre class="builder-embed-code"><code>{
+  "queryresult": {
+    "success": true,
+    "numpods": 5,
+    "pods": [ ... ]
+  }
+}</code></pre>
+
+  <a href="/pro/upgrade" class="btn btn-primary" style="margin-top: 20px;">Upgrade for more calls</a>
+</div>
+{% endblock %}

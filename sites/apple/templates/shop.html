@@ -72,6 +72,7 @@
             </div>
             <div class="product-card-image">
                 <img src="{{ product.image }}" alt="{{ product.name }}"
+                     loading="lazy" decoding="async"
                      onerror="this.parentElement.innerHTML='<div class=\'placeholder-img\' style=\'width:200px;height:180px;background:linear-gradient(135deg,#232526,#414345);border-radius:16px\'>{{ product.name }}</div>'">
             </div>
         </a>
@@ -88,12 +89,17 @@
         <a href="{{ url_for('product_detail', slug=product.slug) }}" class="lineup-card">
             <div class="lineup-card-image">
                 <img src="{{ product.image }}" alt="{{ product.name }}"
+                     loading="lazy" decoding="async"
                      onerror="this.parentElement.innerHTML='<div class=\'placeholder-img\' style=\'width:200px;height:200px;background:var(--color-bg-secondary);border-radius:16px;color:#666\'>{{ product.name }}</div>'">
             </div>
             {% if product.is_new %}<span class="badge-new">NEW</span>{% endif %}
             <h3>{{ product.name }}</h3>
             <p class="lineup-subtitle">{{ product.subtitle }}</p>
             <p class="lineup-price">From ${{ "%.2f"|format(product.price) }}</p>
+            {% if product.subcategory == 'refurbished' %}<span class="tag-refurbished">Refurbished</span>
+            {% elif product.subcategory == 'education' %}<span class="tag-education">Education</span>
+            {% elif product.subcategory == 'business' %}<span class="tag-business">Business</span>
+            {% endif %}
             <div class="lineup-cta">
                 <span>Learn more</span>
                 <span>Buy</span>

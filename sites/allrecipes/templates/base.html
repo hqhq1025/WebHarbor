@@ -48,7 +48,9 @@
                 <a href="{{ url_for('category_page', slug='healthy') }}" {% if request.path == '/category/healthy' %}class="active"{% endif %}>Healthy</a>
                 <a href="{{ url_for('diets_hub') }}" {% if request.endpoint == 'diets_hub' or request.path.startswith('/diet/') %}class="active"{% endif %}>Diets</a>
                 <a href="{{ url_for('occasions') }}" {% if request.path == '/occasions' or request.path.startswith('/occasion/') %}class="active"{% endif %}>Occasions</a>
-                <a href="{{ url_for('popular_1960s') }}" {% if request.path == '/collections/popular-1960s' %}class="active"{% endif %}>Collections</a>
+                <a href="{{ url_for('collections_hub') }}" {% if request.endpoint in ['collections_hub','collection_page'] %}class="active"{% endif %}>Collections</a>
+                <a href="{{ url_for('articles_hub') }}" {% if request.endpoint in ['articles_hub','article_detail'] %}class="active"{% endif %}>Articles</a>
+                <a href="{{ url_for('community') }}" {% if request.endpoint in ['community','author_page','authors_hub'] %}class="active"{% endif %}>Community</a>
                 <a href="{{ url_for('newsletter') }}" {% if request.endpoint == 'newsletter' %}class="active"{% endif %}>Newsletter</a>
                 <a href="{{ url_for('about') }}" {% if request.path.startswith('/about') %}class="active"{% endif %}>About</a>
             </div>

@@ -872,6 +872,17 @@ def inject_globals():
                     .order_by(Category.sort_order).all())
     now = datetime.utcnow()
     active_slug = _active_path_for(request.path) if request else ''
+    # Breaking-news banner: pick the freshest is_breaking==1 story, unless
+    # the user has dismissed the banner via cookie.
+    breaking_now = None
+    try:
+        if request and request.cookies.get("bbc_breaking_dismissed") != "1":
+            breaking_now = (Article.query
+                            .filter(Article.is_breaking == 1)
+                            .order_by(Article.published_at.desc())
+                            .first())
+    except Exception:
+        breaking_now = None
     return dict(
         reading_list_count=reading_list_count,
         bookmark_count=bookmark_count,
@@ -882,6 +893,7 @@ def inject_globals():
         current_time_str=now.strftime("%H:%M %Z").strip() or now.strftime("%H:%M GMT"),
         current_date_str=now.strftime("%A %d %B %Y"),
         current_year=now.year,
+        breaking_now=breaking_now,
     )
 
 
@@ -2063,6 +2075,170 @@ def api_stats():
         "total_users": User.query.count(),
         "total_comments": Comment.query.count(),
     })
+
+
+# =======================================================================
+# R4: deep sub-pages, breaking-news banner, postcode weather, share modal
+# =======================================================================
+
+@app.route("/breaking-news")
+def breaking_news_page():
+    """Dedicated breaking-news index page. Lists every article currently
+    flagged is_breaking=1, plus an opt-out cookie to dismiss the pulsing
+    banner site-wide."""
+    breaking = (Article.query
+                .filter(Article.is_breaking == 1)
+                .order_by(Article.published_at.desc())
+                .limit(60).all())
+    return render_template("breaking_news.html", articles=breaking,
+                           page_title="Breaking news")
+
+
+@app.route("/breaking-news/banner-dismiss", methods=["POST"])
+def breaking_news_banner_dismiss():
+    """Set a cookie so the pulsing red banner stops appearing on every page."""
+    resp = redirect(request.referrer or url_for("index"))
+    resp.set_cookie("bbc_breaking_dismissed", "1", max_age=60 * 60 * 24)
+    return resp
+
+
+@app.route("/weather/postcode/<postcode>")
+def weather_postcode(postcode):
+    """7-day forecast keyed by a UK postcode area (SW1A, EH1, CF10, ...)."""
+    key = (postcode or "").upper().strip()
+    art = (Article.query
+           .filter(Article.section_slug == "weather")
+           .filter(or_(
+               Article.feature_tags.ilike(f'%"{key.lower()}"%'),
+               Article.topics_json.ilike(f'%"{key}"%'),
+               Article.headline.ilike(f'%({key})%'),
+           ))
+           .order_by(Article.published_at.desc())
+           .first())
+    if art:
+        return redirect(url_for("article_detail", slug=art.slug))
+    return redirect(url_for("section_page", slug="weather", subsection=key))
+
+
+@app.route("/iplayer/categories")
+@app.route("/iplayer/categories/<cat_slug>")
+def iplayer_categories(cat_slug=None):
+    """List BBC iPlayer programmes by category. With <cat_slug> filters."""
+    if cat_slug:
+        cat_name = (cat_slug or "").replace("-", " ").replace("_", " ").title()
+        return redirect(url_for("section_page", slug="iplayer", subsection=cat_name))
+    return redirect(url_for("section_page", slug="iplayer_categories"))
+
+
+@app.route("/sounds/genres")
+@app.route("/sounds/genres/<genre>")
+def sounds_genres(genre=None):
+    """Browse BBC Sounds podcasts by genre."""
+    if genre:
+        g_name = (genre or "").replace("-", " ").replace("_", " ").title()
+        return redirect(url_for("section_page", slug="podcasts", subsection=g_name))
+    return redirect(url_for("section_page", slug="podcasts_genres"))
+
+
+@app.route("/world/<region>")
+@app.route("/world/<region>/<country>")
+def world_region_country(region, country=None):
+    """Drill down /world/asia/india, /world/europe/germany etc."""
+    region_key = (region or "").lower().replace("-", "_")
+    if country:
+        country_disp = country.replace("-", " ").replace("_", " ").title()
+        return redirect(url_for("section_page", slug=region_key,
+                                subsection=country_disp))
+    return redirect(url_for("section_page", slug=region_key))
+
+
+@app.route("/news/in-pictures")
+def in_pictures_alias():
+    """Hyphen variant — the underscore form /news/in_pictures is already
+    served directly by section_page so no alias needed there."""
+    return redirect(url_for("section_page", slug="in_pictures"))
+
+
+@app.route("/video/<slug>")
+def video_player(slug):
+    """Sticky video player page — same as article_detail but renders the
+    video-player template wrapper."""
+    return redirect(url_for("article_detail", slug=slug))
+
+
+@app.route("/article/<slug>/share", methods=["GET", "POST"])
+def article_share(slug):
+    """Share modal endpoint. POST with method=email|copy|twitter|facebook
+    records the share intent server-side; GET returns the modal HTML
+    fragment for fetch()."""
+    art = get_article_or_404(slug)
+    method = (request.values.get("method") or "copy").strip().lower()
+    share_url = bbc_article_share_url(art)
+    if request.method == "POST" and method == "email":
+        recipient = (request.values.get("recipient") or "").strip()
+        # Record-only; nothing actually mailed in the mirror.
+        return jsonify({
+            "ok": True,
+            "method": "email",
+            "recipient": recipient,
+            "subject": f"BBC News: {art.headline}",
+            "body": f"{art.headline}\n\nRead more: {share_url}",
+        })
+    return jsonify({
+        "ok": True,
+        "method": method,
+        "url": share_url,
+        "title": art.headline,
+        "subtitle": art.subtitle or "",
+    })
+
+
+@app.route("/api/podcast/subscribe", methods=["POST"])
+def api_podcast_subscribe():
+    """Subscribe to a podcast (slug). Anonymous-friendly; if signed in,
+    creates a topic subscription. Always returns ok=True."""
+    slug = (request.values.get("slug") or "").strip()
+    art = Article.query.filter_by(slug=slug).first()
+    podcast_title = art.headline if art else slug
+    if current_user.is_authenticated and podcast_title:
+        existing = TopicSubscription.query.filter_by(
+            user_id=current_user.id, topic=podcast_title
+        ).first()
+        if not existing:
+            sub = TopicSubscription(
+                user_id=current_user.id,
+                topic=podcast_title,
+                frequency="weekly",
+                is_active=True,
+            )
+            db.session.add(sub)
+            db.session.commit()
+    return jsonify({"ok": True, "podcast": podcast_title})
+
+
+@app.route("/api/iplayer/watchlist", methods=["POST"])
+def api_iplayer_watchlist():
+    """Add an iPlayer episode to the watchlist. Re-uses reading_list under
+    the 'iPlayer' folder when the user is signed in."""
+    slug = (request.values.get("slug") or "").strip()
+    art = Article.query.filter_by(slug=slug).first()
+    if not art:
+        return jsonify({"ok": False, "error": "not_found"}), 404
+    if current_user.is_authenticated:
+        existing = ReadingListItem.query.filter_by(
+            user_id=current_user.id, article_id=art.id, folder="iPlayer"
+        ).first()
+        if not existing:
+            item = ReadingListItem(
+                user_id=current_user.id,
+                article_id=art.id,
+                folder="iPlayer",
+                is_read=False,
+                notes="",
+            )
+            db.session.add(item)
+            db.session.commit()
+    return jsonify({"ok": True, "slug": slug, "title": art.headline})
 
 
 # =======================================================================

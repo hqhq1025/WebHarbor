@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% block title %}Datasets storage pricing · Hugging Face{% endblock %}
+
+{% block content %}
+<div class="container-wide page">
+    <nav class="docs-breadcrumb">
+        <a href="{{ url_for('pricing') }}">Pricing</a><span>/</span><span>Datasets storage</span>
+    </nav>
+    <h1>Datasets storage pricing</h1>
+    <p class="muted">Host any size dataset on the Hub. Public datasets are free; private datasets are gated behind a Pro or Enterprise plan with quotas listed below.</p>
+
+    <table class="files-table" style="margin-top:16px;">
+        <thead>
+            <tr>
+                <th>Plan</th>
+                <th>Monthly cost</th>
+                <th>Storage & limits</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for t in tiers %}
+            <tr>
+                <td><strong>{{ t.name }}</strong></td>
+                <td><strong>{{ t.price }}</strong></td>
+                <td class="muted">{{ t.limits }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <section style="margin-top:32px;">
+        <h2 style="font-size:18px;">Overage rates</h2>
+        <ul class="muted" style="font-size:14px;line-height:1.7;">
+            <li>Bandwidth above your monthly quota: <strong>$0.05 / GB</strong></li>
+            <li>Storage above your private quota: <strong>$0.02 / GB / month</strong></li>
+            <li>Region replication (multi-region read): <strong>$0.01 / GB</strong></li>
+        </ul>
+        <h2 style="font-size:18px;margin-top:24px;">FAQ</h2>
+        <details style="margin-top:8px;"><summary><strong>Are public datasets truly free?</strong></summary>
+            <p class="muted">Yes — public datasets carry no storage or bandwidth charge. Only private datasets count against quota.</p>
+        </details>
+        <details style="margin-top:8px;"><summary><strong>What's the largest single file I can upload?</strong></summary>
+            <p class="muted">100 GB per file via LFS. Use <code>huggingface-cli upload-large-folder</code> for sharded uploads.</p>
+        </details>
+        <details style="margin-top:8px;"><summary><strong>Can I bring my own S3 bucket?</strong></summary>
+            <p class="muted">Enterprise plans support bring-your-own-bucket (BYOB) — contact sales.</p>
+        </details>
+    </section>
+</div>
+{% endblock %}

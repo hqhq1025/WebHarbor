@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block title %}{{ tag }} · {{ repo.full_name }} · Release{% endblock %}
+{% block content %}
+<div class="repo-header-bar">
+  <div class="repo-header-inner">
+    <div class="repo-breadcrumb">
+      <a href="/{{ repo.full_name }}" class="repo-breadcrumb-link">{{ repo.full_name }}</a>
+      <span class="repo-breadcrumb-sep">/</span>
+      <a href="/{{ repo.full_name }}/releases" class="repo-breadcrumb-link">Releases</a>
+      <span class="repo-breadcrumb-sep">/</span>
+      <span class="release-pill release-pill--tag" style="background:#21262d;border:1px solid #30363d;padding:2px 8px;border-radius:999px;">{{ tag }}</span>
+    </div>
+  </div>
+</div>
+<div style="padding:24px 32px;max-width:980px;margin:0 auto;">
+  <h1 style="font-size:24px;margin:0 0 6px;">{{ rel.version }}</h1>
+  <div style="font-size:13px;color:#7d8590;margin-bottom:16px;">Released {{ rel.date }} · {{ repo.full_name }}</div>
+  <article style="border:1px solid #30363d;border-radius:8px;padding:18px;">
+    <h2 style="font-size:16px;margin:0 0 10px;">Release notes</h2>
+    <pre style="white-space:pre-wrap;font-family:inherit;color:#c9d1d9;margin:0;">{{ rel.notes }}</pre>
+  </article>
+  <h2 style="font-size:14px;margin:24px 0 8px;">Assets</h2>
+  <ul style="list-style:none;padding:0;margin:0;border:1px solid #30363d;border-radius:8px;">
+    <li style="padding:10px 14px;border-bottom:1px solid #30363d;display:flex;justify-content:space-between;">
+      <span>Source code (zip)</span><span style="color:#7d8590;">{{ rel.version }}.zip</span>
+    </li>
+    <li style="padding:10px 14px;display:flex;justify-content:space-between;">
+      <span>Source code (tar.gz)</span><span style="color:#7d8590;">{{ rel.version }}.tar.gz</span>
+    </li>
+  </ul>
+</div>
+{% endblock %}

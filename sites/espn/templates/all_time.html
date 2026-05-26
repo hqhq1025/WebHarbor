@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block title %}{{ sport.name }} All-Time Leaders{% endblock %}
+{% block content %}
+<div class="container">
+  <h1>{{ sport.name }} All-Time Leaders</h1>
+  <p>Cross-season leaders by sport-specific key metric.</p>
+  <table class="all-time-table">
+    <thead>
+      <tr><th>Rank</th><th>Player</th><th>Pos</th><th>Season</th><th>Value</th></tr>
+    </thead>
+    <tbody>
+      {% for v, p, st in leaders %}
+      <tr>
+        <td>{{ loop.index }}</td>
+        <td><a href="/player/{{ p.sport_slug }}/{{ p.slug }}">{{ p.name }}</a></td>
+        <td>{{ p.position }}</td>
+        <td>{{ st.season }}</td>
+        <td>{{ v|round(2) }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

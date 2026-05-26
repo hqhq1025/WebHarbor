@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block title %}Genius Points Redemption — Booking{% endblock %}
+{% block content %}
+<div class="container">
+    <h1 class="page-title">Redeem frequent-flyer points for stays</h1>
+    <p style="color:#444;max-width:780px;">
+        Genius members can convert frequent-flyer miles into nightly stay credit at
+        partner properties. Pick a destination to see how many points you'd need for
+        a 1-night stay across our top-rated hotels.
+    </p>
+
+    <form method="GET" action="{{ url_for('genius_redeem') }}"
+          style="display:flex;gap:10px;align-items:flex-end;margin:18px 0;background:#f5fafe;border:1px solid #cce0f3;border-radius:6px;padding:14px 16px;">
+        <div class="form-field">
+            <label>Destination</label>
+            <select name="city">
+                {% for c in cities %}
+                <option value="{{ c.key }}" {% if c.key == city.key %}selected{% endif %}>{{ c.display }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <button class="btn-primary" type="submit">Recalculate</button>
+    </form>
+
+    <h2 style="font-size:16px;">Top properties in {{ city.display }} &middot; conversion rate 100 pts / $1</h2>
+    <table class="room-table">
+        <thead>
+            <tr><th>Property</th><th>Rating</th><th>USD / night</th>
+                <th>Points / night</th><th>Book with points</th></tr>
+        </thead>
+        <tbody>
+        {% for q in quotes %}
+            <tr>
+                <td><a href="{{ url_for('property_detail', slug=q.property.slug) }}">{{ q.property.name }}</a></td>
+                <td>{{ '%.1f'|format(q.property.rating) }}</td>
+                <td>${{ '%.0f'|format(q.property.discounted_price) }}</td>
+                <td><strong style="color:#003580;">{{ '{:,}'.format(q.points_per_night) }}</strong> pts</td>
+                <td><a href="{{ url_for('property_detail', slug=q.property.slug) }}" class="btn-secondary" style="padding:4px 10px;font-size:12px;">Redeem</a></td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

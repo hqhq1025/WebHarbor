@@ -1,0 +1,83 @@
+{% extends "base.html" %}
+{% block title %}Related papers — arXiv:{{ paper.arxiv_id }}{% endblock %}
+{% block breadcrumbs %}
+    <span class="sep">&gt;</span>
+    <a href="{{ url_for('paper_detail', arxiv_id=paper.arxiv_id) }}">arXiv:{{ paper.arxiv_id }}</a>
+    <span class="sep">&gt;</span>
+    <span style="color:#fff">related</span>
+{% endblock %}
+{% block content %}
+
+<h1 style="font-size:20px;margin:14px 0 4px;">Related papers · arXiv:{{ paper.arxiv_id }}</h1>
+<div class="muted" style="font-size:13px;margin-bottom:18px;">
+    <b>{{ paper.display_title }}</b> ·
+    primary subject <span class="mono">{{ paper.primary_subject_code or paper.primary_category_code }}</span>
+</div>
+
+<section class="related-bucket" style="margin-bottom:24px;">
+    <h2 style="font-size:15px;border-bottom:2px solid var(--cornell-red);padding-bottom:4px;">
+        Same primary subject ({{ paper.primary_subject_code or paper.primary_category_code }})
+        <span class="muted" style="font-weight:normal;font-size:12px;">— {{ same_subject|length }} matches</span>
+    </h2>
+    {% if same_subject %}
+    <ul style="padding-left:18px;font-size:13px;">
+        {% for p in same_subject %}
+        <li style="margin:4px 0;">
+            <a href="{{ url_for('paper_detail', arxiv_id=p.arxiv_id) }}">arXiv:{{ p.arxiv_id }}</a> —
+            {{ p.display_title }}
+            <span class="muted">· {{ p.view_count }} views</span>
+        </li>
+        {% endfor %}
+    </ul>
+    {% else %}
+    <p class="muted">No same-subject neighbours found.</p>
+    {% endif %}
+</section>
+
+<section class="related-bucket" style="margin-bottom:24px;">
+    <h2 style="font-size:15px;border-bottom:2px solid var(--cornell-red);padding-bottom:4px;">
+        Cross-listed papers
+        <span class="muted" style="font-weight:normal;font-size:12px;">— {{ cross_listed|length }} matches</span>
+    </h2>
+    {% if cross_listed %}
+    <ul style="padding-left:18px;font-size:13px;">
+        {% for p in cross_listed %}
+        <li style="margin:4px 0;">
+            <a href="{{ url_for('paper_detail', arxiv_id=p.arxiv_id) }}">arXiv:{{ p.arxiv_id }}</a> —
+            {{ p.display_title }}
+            <span class="muted">· primary {{ p.primary_subject_code }}</span>
+        </li>
+        {% endfor %}
+    </ul>
+    {% else %}
+    <p class="muted">No cross-listed neighbours found.</p>
+    {% endif %}
+</section>
+
+<section class="related-bucket" style="margin-bottom:24px;">
+    <h2 style="font-size:15px;border-bottom:2px solid var(--cornell-red);padding-bottom:4px;">
+        Papers sharing the lead author
+        <span class="muted" style="font-weight:normal;font-size:12px;">— {{ shared_author|length }} matches (matching "{{ first_author }}")</span>
+    </h2>
+    {% if shared_author %}
+    <ul style="padding-left:18px;font-size:13px;">
+        {% for p in shared_author %}
+        <li style="margin:4px 0;">
+            <a href="{{ url_for('paper_detail', arxiv_id=p.arxiv_id) }}">arXiv:{{ p.arxiv_id }}</a> —
+            {{ p.display_title }}
+            <span class="muted">· {{ p.first_author }}</span>
+        </li>
+        {% endfor %}
+    </ul>
+    {% else %}
+    <p class="muted">No co-author neighbours found.</p>
+    {% endif %}
+</section>
+
+<p class="muted" style="font-size:11px;margin-top:18px;">
+    <a href="{{ url_for('paper_detail', arxiv_id=paper.arxiv_id) }}">Back to abstract</a> ·
+    <a href="{{ url_for('trackback', arxiv_id=paper.arxiv_id) }}">Trackbacks</a> ·
+    <a href="{{ url_for('listing', code=paper.primary_subject_code or paper.primary_category_code, view='recent') }}">Recent in same archive</a>
+</p>
+
+{% endblock %}

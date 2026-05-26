@@ -218,11 +218,30 @@
         <a href="#buy-section" class="cta-link" style="color:#2997ff">Buy</a>
         {% if gallery %}<a href="#features" class="cta-link" style="color:#2997ff">Explore features</a>{% endif %}
     </div>
-    <div class="product-hero-image">
+    <div class="product-hero-image hero-parallax">
         <img src="{{ product.hero_image or product.image }}" alt="{{ product.name }}"
+             loading="lazy" decoding="async"
              onerror="this.parentElement.innerHTML='<div class=\'placeholder-img\' style=\'width:100%;height:400px;background:linear-gradient(135deg,#1a1a2e,#16213e);border-radius:20px;font-size:64px\'>{{ product.name }}</div>'">
     </div>
 </section>
+
+{% if product.subcategory == 'refurbished' %}
+<aside class="env-badge env-badge--refurbished" aria-label="Apple Certified Refurbished">
+    <span class="env-badge-icon" aria-hidden="true">&#10004;</span>
+    <div>
+        <strong>Apple Certified Refurbished.</strong>
+        <p>One-year Apple limited warranty. Fully tested, repackaged, and recycled — every refurbished product reduces e-waste compared with a new device.</p>
+    </div>
+</aside>
+{% elif product.category in ['iphone', 'mac', 'ipad', 'watch', 'airpods'] %}
+<aside class="env-badge" aria-label="Environmental highlights">
+    <span class="env-badge-icon" aria-hidden="true">&#9851;</span>
+    <div>
+        <strong>Designed for the environment.</strong>
+        <p>This product uses 100% recycled aluminum in the enclosure and 100% recycled rare earth elements in key magnets. Packaging is 100% fiber-based. Apple is on track to carbon-neutral products by 2030.</p>
+    </div>
+</aside>
+{% endif %}
 
 <!-- Feature Gallery Sections -->
 {% if gallery %}

@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block title %}Mistake corner | Cambridge Dictionary{% endblock %}
+{% block content %}
+<div class="container mistake-index-page">
+  <nav class="breadcrumb">
+    <a href="{{ url_for('index') }}">Dictionary</a> &rsaquo;
+    <span>Mistake corner</span>
+  </nav>
+
+  <header class="mistake-index-header">
+    <h1>English Mistake Corner</h1>
+    <p>The most common confusions learners and native speakers run into — confusable pairs, register pitfalls, false friends, and tricky spelling/punctuation rules.</p>
+    <p class="mistake-index-count"><strong>{{ topics|length }}</strong> topics across <strong>{{ categories|length }}</strong> categories.</p>
+  </header>
+
+  {% for cat, group in categories.items() %}
+    <section class="mistake-cat-block">
+      <h2 class="mistake-cat-title">{{ cat }}</h2>
+      <ul class="mistake-cat-list">
+        {% for t in group %}
+          <li>
+            <a href="{{ url_for('mistake_detail', slug=t.slug) }}" class="mistake-link">{{ t.topic }}</a>
+            <span class="mistake-list-snippet">{{ t.body[:120] }}{% if t.body|length > 120 %}…{% endif %}</span>
+          </li>
+        {% endfor %}
+      </ul>
+    </section>
+  {% endfor %}
+</div>
+{% endblock %}

@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% block title %}Watch List — ESPN+{% endblock %}
+{% block content %}
+<div class="container">
+  <h1>Watch List — ESPN+</h1>
+  <p>Browse ESPN+ shows, live events, and 30 for 30 documentaries.</p>
+
+  <form method="get" action="/watch/list" class="watch-filter">
+    <label>Sport:
+      <select name="sport">
+        <option value="">All</option>
+        <option value="nba" {% if sport_filter == 'nba' %}selected{% endif %}>NBA</option>
+        <option value="nfl" {% if sport_filter == 'nfl' %}selected{% endif %}>NFL</option>
+        <option value="mlb" {% if sport_filter == 'mlb' %}selected{% endif %}>MLB</option>
+        <option value="nhl" {% if sport_filter == 'nhl' %}selected{% endif %}>NHL</option>
+        <option value="soccer" {% if sport_filter == 'soccer' %}selected{% endif %}>Soccer</option>
+        <option value="ncaaf" {% if sport_filter == 'ncaaf' %}selected{% endif %}>NCAAF</option>
+        <option value="mma" {% if sport_filter == 'mma' %}selected{% endif %}>MMA</option>
+        <option value="tennis" {% if sport_filter == 'tennis' %}selected{% endif %}>Tennis</option>
+        <option value="golf" {% if sport_filter == 'golf' %}selected{% endif %}>Golf</option>
+      </select>
+    </label>
+    <label>Kind:
+      <select name="kind">
+        <option value="">All</option>
+        <option value="documentary" {% if kind_filter == 'documentary' %}selected{% endif %}>Documentary</option>
+        <option value="series" {% if kind_filter == 'series' %}selected{% endif %}>Series</option>
+        <option value="show" {% if kind_filter == 'show' %}selected{% endif %}>Show</option>
+        <option value="live-event" {% if kind_filter == 'live-event' %}selected{% endif %}>Live Event</option>
+        <option value="simulcast" {% if kind_filter == 'simulcast' %}selected{% endif %}>Simulcast</option>
+        <option value="special" {% if kind_filter == 'special' %}selected{% endif %}>Special</option>
+      </select>
+    </label>
+    <button type="submit" class="btn-red">Filter</button>
+  </form>
+
+  <div class="watch-grid">
+    {% for w in items %}
+    <article class="watch-card">
+      {% if w.is_live %}<div class="live-score-widget"><span class="live-dot"></span><span>LIVE</span></div>{% endif %}
+      <h3><a href="/watch/{{ w.slug }}">{{ w.title }}</a></h3>
+      <div class="watch-card__meta">
+        {{ w.kind|capitalize }} &bull; {{ w.sport_slug|upper }} &bull; {{ w.duration_minutes }} min
+      </div>
+      <p class="watch-card__desc">{{ w.description }}</p>
+      <div class="watch-card__host">{{ w.host_or_studio }}</div>
+      {% if w.is_espn_plus %}<span class="espn-plus-badge">ESPN+</span>{% endif %}
+    </article>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}

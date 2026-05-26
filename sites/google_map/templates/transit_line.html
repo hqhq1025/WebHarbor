@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+{% block title %}{{ line.short_name }} {{ line.name }} — Google Maps{% endblock %}
+
+{% block extra_head %}
+<style>
+.ln-wrap{max-width:820px;margin:24px auto;padding:0 24px;font-family:Roboto,Arial,sans-serif;color:#202124;}
+.ln-head{display:flex;align-items:center;gap:14px;margin-bottom:6px;}
+.ln-badge{width:48px;height:48px;border-radius:50%;color:#fff;font-weight:600;font-size:18px;display:flex;align-items:center;justify-content:center;}
+.ln-head h1{font-size:22px;margin:0;font-weight:500;}
+.ln-sub{color:#5f6368;font-size:13px;margin-bottom:18px;}
+.ln-back{color:#1a73e8;font-size:13px;text-decoration:none;display:inline-block;margin-bottom:10px;}
+.ln-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-bottom:24px;}
+.ln-cell{background:#f1f3f4;border-radius:8px;padding:12px 14px;}
+.ln-cell .ttl{font-size:11px;color:#5f6368;text-transform:uppercase;letter-spacing:.4px;}
+.ln-cell .val{font-size:14px;font-weight:500;margin-top:4px;}
+.ln-desc{font-size:14px;line-height:1.6;color:#202124;margin-bottom:24px;}
+.ln-acc{background:#e6f4ea;color:#137333;border-radius:8px;padding:10px 14px;font-size:13px;margin-bottom:24px;display:flex;align-items:center;gap:10px;}
+.ln-section h2{font-size:16px;font-weight:500;margin:0 0 12px;}
+.ln-stops{list-style:none;padding:0;margin:0;position:relative;}
+.ln-stops::before{content:'';position:absolute;left:11px;top:8px;bottom:8px;width:2px;}
+.ln-stop{display:flex;align-items:center;gap:14px;padding:8px 0;}
+.ln-stop .dot{width:14px;height:14px;border-radius:50%;border:3px solid #fff;flex-shrink:0;box-shadow:0 0 0 2px;}
+.ln-stop .stop-name{font-size:14px;color:#202124;}
+.ln-sib{display:flex;flex-wrap:wrap;gap:8px;margin-top:18px;}
+.ln-sib a{display:inline-flex;align-items:center;gap:6px;background:#fff;border:1px solid #dadce0;border-radius:14px;padding:4px 10px;font-size:12px;text-decoration:none;color:#202124;}
+.ln-sib a:hover{background:#f1f3f4;}
+.ln-sib .pill{width:18px;height:18px;border-radius:50%;color:#fff;font-size:11px;font-weight:600;display:flex;align-items:center;justify-content:center;}
+</style>
+{% endblock %}
+
+{% block body %}
+<div class="ln-wrap" id="transit-line-page" data-line="{{ line.slug }}">
+    <a href="{{ url_for('transit_lines_index') }}" class="ln-back">&larr; All transit lines</a>
+    <div class="ln-head">
+        <span class="ln-badge" style="background:{{ line.color }};">{{ line.short_name }}</span>
+        <h1>{{ line.name }}</h1>
+    </div>
+    <div class="ln-sub">{{ line.agency }} &middot; {{ line.mode|capitalize }}{% if city %} &middot; <a href="{{ url_for('city_page', slug=city.slug) }}" style="color:#1a73e8;text-decoration:none;">{{ city.display_name }}</a>{% endif %}</div>
+
+    <div class="ln-grid">
+        <div class="ln-cell"><div class="ttl">Peak frequency</div><div class="val" id="ln-peak">{{ line.frequency_peak or 'n/a' }}</div></div>
+        <div class="ln-cell"><div class="ttl">Off-peak</div><div class="val" id="ln-off">{{ line.frequency_off or 'n/a' }}</div></div>
+        <div class="ln-cell"><div class="ttl">Hours</div><div class="val" id="ln-hours">{{ line.hours or 'n/a' }}</div></div>
+        <div class="ln-cell"><div class="ttl">Stops</div><div class="val" id="ln-stop-count">{{ stops|length }}</div></div>
+    </div>
+
+    <p class="ln-desc">{{ line.description }}</p>
+
+    <div class="ln-acc">
+        <span class="material-icons-outlined">accessible</span>
+        <span>{{ line.accessibility_notes }}</span>
+    </div>
+
+    <section class="ln-section" id="ln-stops-section">
+        <h2>Stops</h2>
+        <ul class="ln-stops">
+            {% for s in stops %}
+            <li class="ln-stop" data-stop-index="{{ loop.index0 }}">
+                <span class="dot" style="background:{{ line.color }};color:{{ line.color }};"></span>
+                <span class="stop-name">{{ s }}</span>
+            </li>
+            {% endfor %}
+        </ul>
+    </section>
+
+    {% if sibling_lines %}
+    <div class="ln-sib">
+        <span style="font-size:13px;color:#5f6368;">More lines in this city:</span>
+        {% for s in sibling_lines %}
+        <a href="{{ url_for('transit_line_detail', line_slug=s.slug) }}">
+            <span class="pill" style="background:{{ s.color }};">{{ s.short_name }}</span>
+            {{ s.name }}
+        </a>
+        {% endfor %}
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

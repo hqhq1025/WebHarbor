@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% block title %}Admissions: {{ course.title }} | Coursera{% endblock %}
+{% block content %}
+<div class="admissions-page" style="background:#F2F5FA;min-height:100vh;">
+  <header style="background:linear-gradient(135deg,#0A1A3D 0%,#0056D2 100%);color:#fff;padding:56px 0;">
+    <div class="container" style="max-width:1100px;margin:0 auto;padding:0 24px;">
+      <div style="font-size:12px;letter-spacing:.6px;text-transform:uppercase;opacity:.85;font-weight:700;">Admissions</div>
+      <h1 style="font-size:34px;margin:8px 0 10px;">{{ course.title }}</h1>
+      {% if course.partner %}<div style="opacity:.92;font-size:15px;">Awarded by <strong>{{ course.partner.name }}</strong> &middot; {{ course.partner.country }}</div>{% endif %}
+    </div>
+  </header>
+
+  <div class="container" style="max-width:1100px;margin:0 auto;padding:32px 24px;display:grid;grid-template-columns:1.4fr 1fr;gap:28px;">
+    <section style="background:#fff;border:1px solid #DAE1ED;border-radius:12px;padding:24px;">
+      <h2 style="font-size:22px;margin:0 0 12px;">How to apply</h2>
+      <ol style="margin:0;padding-left:20px;color:#1F2937;line-height:1.7;">
+        <li>Create your free Coursera account and start the application portal.</li>
+        <li>Upload transcripts and a personal statement (500-750 words).</li>
+        <li>Submit two letters of recommendation.</li>
+        <li>Complete a short online interview with the admissions committee.</li>
+        <li>Pay the application fee (waivers available).</li>
+      </ol>
+      <h3 style="margin-top:22px;font-size:18px;">Admission requirements</h3>
+      <ul style="margin:8px 0;padding-left:20px;line-height:1.7;color:#1F2937;">
+        <li>Undergraduate degree (3.0 GPA equivalent) from an accredited institution.</li>
+        <li>Demonstrated readiness for graduate-level coursework.</li>
+        <li>English-language proficiency (TOEFL 90+ / IELTS 7.0 / Duolingo 115+).</li>
+      </ul>
+      <h3 style="margin-top:22px;font-size:18px;">Tuition & financial aid</h3>
+      <p style="color:#1F2937;line-height:1.6;">Tuition is billed per credit. Coursera-administered need-based aid available; veterans benefits accepted; employer-sponsored discounts honored.</p>
+    </section>
+
+    <aside style="background:#fff;border:1px solid #DAE1ED;border-radius:12px;padding:22px;align-self:start;">
+      <div style="font-size:12px;text-transform:uppercase;letter-spacing:.5px;color:#5B6780;font-weight:800;">Application deadline</div>
+      <div style="font-size:22px;font-weight:700;color:#0056D2;margin:4px 0 14px;">{{ course.application_deadline or 'Rolling admissions' }}</div>
+      <div style="display:flex;flex-direction:column;gap:8px;font-size:14px;color:#1F2937;">
+        <div>&#127979; Program: {{ course.degree_type }}</div>
+        <div>&#9201; {{ course.duration_text }}</div>
+        <div>&#128202; {{ course.level }}</div>
+        {% if course.credit_eligible %}<div>&#127942; Credit eligible</div>{% endif %}
+        <div>&#127758; English &middot; subtitles in 10+ languages</div>
+      </div>
+      <a href="{{ url_for('course_detail', slug=course.slug) }}" style="display:block;text-align:center;margin-top:16px;background:#0056D2;color:#fff;padding:11px 18px;border-radius:6px;text-decoration:none;font-weight:600;">View program page</a>
+    </aside>
+  </div>
+</div>
+{% endblock %}

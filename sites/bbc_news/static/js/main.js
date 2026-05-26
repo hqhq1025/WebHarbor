@@ -158,3 +158,108 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }, 4500);
 });
+
+/* ============================================================
+ * R4: share modal + sticky video player
+ * ============================================================ */
+(function () {
+    const modal = document.getElementById('bbc-share-modal');
+    if (!modal) return;
+    const titleEl   = modal.querySelector('#bbc-share-title');
+    const headEl    = modal.querySelector('#bbc-share-headline');
+    const urlInput  = modal.querySelector('#bbc-share-url');
+    const emailForm = modal.querySelector('.bbc-share-email-form');
+    const emailNote = modal.querySelector('[data-share-result]');
+    const twitterA  = modal.querySelector('.bbc-share-twitter');
+    const facebookA = modal.querySelector('.bbc-share-facebook');
+    const whatsappA = modal.querySelector('.bbc-share-whatsapp');
+
+    function open(opts) {
+        const url = opts.url || window.location.href;
+        const title = opts.title || document.title;
+        const slug = opts.slug || '';
+        titleEl.textContent = 'Share this story';
+        headEl.textContent = title;
+        urlInput.value = url;
+        twitterA.href  = 'https://twitter.com/intent/tweet?text=' + encodeURIComponent(title) + '&url=' + encodeURIComponent(url);
+        facebookA.href = 'https://www.facebook.com/sharer/sharer.php?u=' + encodeURIComponent(url);
+        whatsappA.href = 'https://wa.me/?text=' + encodeURIComponent(title + ' ' + url);
+        if (slug) {
+            emailForm.setAttribute('action', '/article/' + slug + '/share');
+        }
+        if (emailNote) { emailNote.hidden = true; emailNote.textContent = ''; }
+        modal.hidden = false;
+    }
+    function close() { modal.hidden = true; }
+
+    modal.addEventListener('click', function (ev) {
+        if (ev.target.matches('[data-share-close]')) close();
+    });
+    document.addEventListener('keydown', function (ev) {
+        if (ev.key === 'Escape' && !modal.hidden) close();
+    });
+    document.addEventListener('click', function (ev) {
+        const trigger = ev.target.closest('[data-share-trigger]');
+        if (!trigger) return;
+        ev.preventDefault();
+        open({
+            url:   trigger.getAttribute('data-share-url')   || window.location.href,
+            title: trigger.getAttribute('data-share-title') || document.title,
+            slug:  trigger.getAttribute('data-share-slug')  || '',
+        });
+    });
+
+    // Copy-link button
+    modal.querySelector('[data-share-method="copy"]').addEventListener('click', function () {
+        const v = urlInput.value;
+        if (navigator.clipboard) navigator.clipboard.writeText(v);
+        else { urlInput.select(); document.execCommand('copy'); }
+        if (emailNote) {
+            emailNote.hidden = false;
+            emailNote.textContent = 'Link copied to clipboard.';
+        }
+    });
+
+    // Email submit — POST to /article/<slug>/share with fetch
+    if (emailForm) {
+        emailForm.addEventListener('submit', function (ev) {
+            ev.preventDefault();
+            const action = emailForm.getAttribute('action');
+            if (!action) return;
+            const data = new FormData(emailForm);
+            fetch(action, { method: 'POST', body: data, credentials: 'same-origin' })
+                .then(r => r.json())
+                .then(j => {
+                    if (emailNote) {
+                        emailNote.hidden = false;
+                        emailNote.textContent = 'Email prepared: ' + (j.subject || '') + ' (to ' + (j.recipient || '') + ').';
+                    }
+                })
+                .catch(() => {
+                    if (emailNote) {
+                        emailNote.hidden = false;
+                        emailNote.textContent = 'Could not contact server.';
+                    }
+                });
+        });
+    }
+
+    // Sticky video player — toggle a .is-stuck class when the user
+    // scrolls past the original wrapper position.
+    const stickyWraps = document.querySelectorAll('.sticky-video-wrap');
+    if (stickyWraps.length && 'IntersectionObserver' in window) {
+        stickyWraps.forEach(function (wrap) {
+            const observer = new IntersectionObserver(function (entries) {
+                entries.forEach(function (entry) {
+                    wrap.classList.toggle('is-stuck', !entry.isIntersecting);
+                });
+            }, { rootMargin: '-120px 0px 0px 0px', threshold: 0 });
+            observer.observe(wrap);
+            const close = wrap.querySelector('.sticky-video-close');
+            if (close) close.addEventListener('click', function () {
+                wrap.classList.remove('is-stuck');
+                wrap.style.display = 'none';
+            });
+        });
+    }
+})();

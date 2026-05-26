@@ -1,0 +1,94 @@
+{% extends "base.html" %}
+{% block title %}Popular times — {{ place.name }} — Google Maps{% endblock %}
+
+{% block extra_head %}
+<style>
+.pt-wrap{max-width:920px;margin:24px auto;padding:0 24px;font-family:Roboto,Arial,sans-serif;color:#202124;}
+.pt-head{display:flex;align-items:baseline;gap:12px;margin-bottom:6px;}
+.pt-head h1{font-size:22px;margin:0;font-weight:500;}
+.pt-back{color:#1a73e8;font-size:13px;text-decoration:none;}
+.pt-back:hover{text-decoration:underline;}
+.pt-sub{color:#5f6368;font-size:13px;margin-bottom:18px;}
+.pt-summary{display:flex;gap:20px;flex-wrap:wrap;background:#f1f3f4;border-radius:8px;padding:12px 16px;margin-bottom:24px;}
+.pt-summary .item{font-size:13px;color:#5f6368;}
+.pt-summary .item strong{display:block;font-size:16px;color:#202124;font-weight:500;margin-bottom:2px;}
+.pt-day{margin-bottom:18px;}
+.pt-day-head{display:flex;align-items:center;gap:10px;margin-bottom:6px;}
+.pt-day-name{font-weight:500;font-size:14px;width:96px;color:#202124;}
+.pt-day-summary{font-size:12px;color:#5f6368;}
+.pt-bars{display:grid;grid-template-columns:repeat(24,1fr);gap:2px;height:88px;align-items:end;background:#fff;border:1px solid #dadce0;border-radius:6px;padding:6px 8px;}
+.pt-bar{background:#4285f4;border-radius:2px 2px 0 0;min-height:2px;position:relative;}
+.pt-bar.peak{background:#ea4335;}
+.pt-bar.busy{background:#1a73e8;}
+.pt-bar.closed{background:#f1f3f4;border:1px dashed #dadce0;height:6px !important;}
+.pt-bar:hover::after{content:attr(data-tip);position:absolute;bottom:100%;left:50%;transform:translateX(-50%);background:#202124;color:#fff;font-size:11px;padding:3px 6px;border-radius:4px;white-space:nowrap;z-index:5;}
+.pt-axis{display:grid;grid-template-columns:repeat(24,1fr);gap:2px;margin-top:4px;font-size:10px;color:#5f6368;padding:0 8px;}
+.pt-axis span{text-align:center;}
+.pt-axis span:nth-child(odd){visibility:hidden;}
+.pt-legend{display:flex;gap:14px;align-items:center;font-size:12px;color:#5f6368;margin-top:6px;}
+.pt-legend .sw{width:12px;height:12px;border-radius:3px;display:inline-block;margin-right:4px;vertical-align:middle;}
+.pt-meta{margin-top:16px;font-size:13px;color:#5f6368;}
+.pt-meta a{color:#1a73e8;text-decoration:none;}
+.pt-meta a:hover{text-decoration:underline;}
+</style>
+{% endblock %}
+
+{% block body %}
+<div class="pt-wrap" id="popular-times-page">
+    <a href="{{ url_for('place_detail', slug=place.slug) }}" class="pt-back">&larr; Back to {{ place.name }}</a>
+    <div class="pt-head"><h1>Popular times at {{ place.name }}</h1></div>
+    <div class="pt-sub">{{ place.subtitle }} &middot; {{ place.address }}</div>
+
+    <div class="pt-summary" id="popular-times-summary">
+        {% if summary.peak_label %}
+        <div class="item"><strong id="pt-peak">{{ summary.peak_label }}</strong>Busiest moment of the week</div>
+        {% endif %}
+        <div class="item"><strong id="pt-avg-busy">{{ summary.avg_busy }}/100</strong>Average busy-ness while open</div>
+        <div class="item"><strong id="pt-open-hours">{{ summary.open_hours_per_day }} h/day</strong>Open window (avg)</div>
+    </div>
+
+    {% for day_idx in range(7) %}
+    <div class="pt-day" data-day-idx="{{ day_idx }}">
+        <div class="pt-day-head">
+            <span class="pt-day-name">{{ day_names_long[day_idx] }}</span>
+            <span class="pt-day-summary">Daily total: {{ summary.totals_per_day[day_idx] if summary.totals_per_day else 0 }}</span>
+        </div>
+        <div class="pt-bars">
+            {% set row = matrix[day_idx] %}
+            {% for h in range(24) %}
+                {% set v = row[h] %}
+                {% set is_peak = (day_idx == (['mon','tue','wed','thu','fri','sat','sun'].index(place.busiest_day) if place.busiest_day in ['mon','tue','wed','thu','fri','sat','sun'] else 4)) and (h == place.busiest_hour) %}
+                {% if v == 0 %}
+                    <div class="pt-bar closed" data-hour="{{ h }}" data-busy="0" data-tip="{{ h }}:00 - Closed"></div>
+                {% else %}
+                    <div class="pt-bar {% if is_peak %}peak{% elif v >= 60 %}busy{% endif %}"
+                         style="height:{{ v }}%;"
+                         data-hour="{{ h }}" data-busy="{{ v }}"
+                         data-tip="{{ h }}:00 - busy {{ v }}/100"></div>
+                {% endif %}
+            {% endfor %}
+        </div>
+        <div class="pt-axis">
+            {% for h in range(24) %}
+                <span>{{ h }}</span>
+            {% endfor %}
+        </div>
+    </div>
+    {% endfor %}
+
+    <div class="pt-legend">
+        <span><span class="sw" style="background:#4285f4;"></span>Open</span>
+        <span><span class="sw" style="background:#1a73e8;"></span>Busy</span>
+        <span><span class="sw" style="background:#ea4335;"></span>Peak hour</span>
+        <span><span class="sw" style="background:#f1f3f4;border:1px dashed #dadce0;"></span>Closed</span>
+    </div>
+
+    <div class="pt-meta">
+        <p>Estimates are based on aggregate visit patterns from the last 90 days.</p>
+        <p><a href="{{ url_for('place_detail', slug=place.slug) }}">View full place details</a>
+           &middot; <a href="{{ url_for('place_accessibility', slug=place.slug) }}">Accessibility</a>
+           {% if place.get_menu() %} &middot; <a href="{{ url_for('place_menu', slug=place.slug) }}">Menu</a>{% endif %}
+        </p>
+    </div>
+</div>
+{% endblock %}

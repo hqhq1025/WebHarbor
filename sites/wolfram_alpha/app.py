@@ -1125,6 +1125,7 @@ def _find_best_computation(query):
 @app.route('/input')
 def input_result():
     q = request.args.get('i', '').strip()
+    assumption = request.args.get('assumption', '').strip()
     if not q:
         return redirect(url_for('index'))
 
@@ -1146,6 +1147,9 @@ def input_result():
             if matching_topic:
                 break
 
+    # Build assumption pill bar — derive from category/topic, deterministic.
+    pills = _build_assumption_pills(q, computation, matching_topic, assumption)
+
     # Log history if logged in
     if current_user.is_authenticated:
         hist = QueryHistory(user_id=current_user.id, query_text=q,
@@ -1162,7 +1166,140 @@ def input_result():
 
     return render_template('input_result.html', query=q,
                            computation=computation,
-                           matching_topic=matching_topic, related=related)
+                           matching_topic=matching_topic, related=related,
+                           pills=pills, current_assumption=assumption)
+
+
+def _build_assumption_pills(q, comp, topic, current):
+    """Return ordered list of (label, value, is_active) for the assumption bar."""
+    # Category-aware default options. Order is stable per (category, query) pair
+    # so the pill bar is deterministic.
+    cat = (comp.category if comp else (topic.category.slug if topic else '')) or 'general'
+    options_by_cat = {
+        'mathematics':            ['mathematical operation', 'symbolic expression', 'numerical evaluation', 'word'],
+        'science-and-technology': ['physical quantity', 'chemical compound', 'mathematical operation', 'unit'],
+        'everyday-life':          ['everyday concept', 'unit', 'mathematical operation', 'word'],
+        'society-and-culture':    ['entity name', 'word', 'phrase', 'concept'],
+        'general':                ['natural language', 'mathematical operation', 'unit', 'word'],
+    }
+    opts = options_by_cat.get(cat, options_by_cat['general'])
+    return [(o, o, (o == current) if current else (i == 0))
+            for i, o in enumerate(opts)]
+
+
+@app.route('/share/<int:cr_id>')
+def share(cr_id):
+    """Public share-link page for a single computation result."""
+    comp = db.session.get(ComputationResult, cr_id)
+    if not comp:
+        abort(404)
+    permalink = request.host_url.rstrip('/') + url_for('share', cr_id=cr_id)
+    return render_template('share.html', comp=comp, permalink=permalink)
+
+
+@app.route('/widget/builder')
+def widget_builder():
+    """Drag-and-drop widget builder landing page."""
+    return render_template('widget_builder.html', widgets=WIDGET_GALLERY)
+
+
+# Resource catalog — deterministic listing per type
+RESOURCE_CATALOG = {
+    'tutorials': {'label': 'Tutorials', 'desc': 'Guided tours of Wolfram|Alpha features.',
+                  'items': [
+                      ('Getting Started', 'Learn the basics of Wolfram|Alpha.'),
+                      ('Math Input Mode', 'Use the math palette and LaTeX-style entry.'),
+                      ('Step-by-Step Solutions', 'Unlock guided derivations with Pro.'),
+                      ('Data Upload', 'Analyze your own CSV/Excel data.'),
+                      ('Image Input', 'Solve handwritten equations from photos.'),
+                  ]},
+    'examples':  {'label': 'Example Galleries',
+                  'desc': 'Curated example queries by domain.',
+                  'items': [
+                      ('Calculus Examples', '/examples/mathematics/calculus'),
+                      ('Physics Examples', '/examples/science-and-technology/physics'),
+                      ('Chemistry Examples', '/examples/science-and-technology/chemistry'),
+                      ('Personal Finance', '/examples/everyday-life/personal-finance'),
+                      ('Geography', '/examples/society-and-culture/geography'),
+                  ]},
+    'widgets':   {'label': 'Widgets',
+                  'desc': 'Embeddable Wolfram|Alpha widgets for blogs and class pages.',
+                  'items': [
+                      ('Derivative Calculator', '/widget/derivative-calculator'),
+                      ('Integral Calculator', '/widget/integral-calculator'),
+                      ('BMI Calculator', '/widget/bmi-calculator'),
+                      ('Mortgage Calculator', '/widget/mortgage-calculator'),
+                      ('Statistics Summary', '/widget/statistics-summary'),
+                  ]},
+    'api':       {'label': 'API References',
+                  'desc': 'Wolfram|Alpha developer API surface.',
+                  'items': [
+                      ('Short Answers API', '/products/short-answers-api'),
+                      ('Full Results API',  '/products/full-results-api'),
+                      ('Conversational API','/products/conversational-api'),
+                      ('Simple API',        '/products/simple-api'),
+                      ('Spoken Results API','/products/spoken-results-api'),
+                  ]},
+    'datasets':  {'label': 'Datasets',
+                  'desc': 'Curated datasets accessible through Wolfram|Alpha.',
+                  'items': [
+                      ('Country Data', 'Population, GDP, demographics for 200+ countries.'),
+                      ('Element Data', '118 elements with full property tables.'),
+                      ('Astronomical Data', 'Solar system bodies, stars, galaxies.'),
+                      ('Financial Data', 'Stock tickers, indices, currencies.'),
+                      ('Word Data', 'Dictionary, etymology, frequency.'),
+                  ]},
+    'videos':    {'label': 'Videos',
+                  'desc': 'Wolfram TV — tutorial and product videos.',
+                  'items': [
+                      ('Wolfram|Alpha 101', 'Intro video tour.'),
+                      ('Pro Walkthrough', 'Tour of every Pro feature.'),
+                      ('Wolfram Language in 15 Minutes', 'Whirlwind tour of WL.'),
+                  ]},
+}
+
+
+@app.route('/resources/<rtype>')
+def resources(rtype):
+    info = RESOURCE_CATALOG.get(rtype)
+    if not info:
+        abort(404)
+    return render_template('resources.html', rtype=rtype, info=info,
+                           all_types=RESOURCE_CATALOG)
+
+
+# Wolfram|Alpha API product pages — deterministic, slug-driven
+PRODUCT_APIS = {
+    'short-answers-api':  {'name': 'Short Answers API',
+                           'tagline': 'Get a single short-form text answer.',
+                           'endpoint': 'http://api.wolframalpha.com/v1/result',
+                           'rate':     '2000 calls/month free tier'},
+    'full-results-api':   {'name': 'Full Results API',
+                           'tagline': 'Complete result with every pod, image, and asset.',
+                           'endpoint': 'http://api.wolframalpha.com/v2/query',
+                           'rate':     '2000 calls/month free tier'},
+    'conversational-api': {'name': 'Conversational API',
+                           'tagline': 'Multi-turn back-and-forth Wolfram|Alpha conversations.',
+                           'endpoint': 'http://api.wolframalpha.com/v1/conversation.jsp',
+                           'rate':     '500 calls/month free tier'},
+    'simple-api':         {'name': 'Simple API',
+                           'tagline': 'Single static image of the full result page.',
+                           'endpoint': 'http://api.wolframalpha.com/v1/simple',
+                           'rate':     '2000 calls/month free tier'},
+    'spoken-results-api': {'name': 'Spoken Results API',
+                           'tagline': 'Answer optimized for text-to-speech.',
+                           'endpoint': 'http://api.wolframalpha.com/v1/spoken',
+                           'rate':     '2000 calls/month free tier'},
+}
+
+
+@app.route('/products/<api_slug>')
+def product_api(api_slug):
+    api = PRODUCT_APIS.get(api_slug)
+    if not api:
+        abort(404)
+    return render_template('product_api.html', api=api, slug=api_slug,
+                           all_apis=PRODUCT_APIS)
 
 
 @app.route('/pro')

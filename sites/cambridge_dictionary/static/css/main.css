@@ -2180,3 +2180,426 @@ a:hover { text-decoration: underline; color: var(--cd-pink); }
 .narrow { max-width: 920px; }
 .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); border: 0; }
 .empty-note { color: #6b7280; padding: 10px 0; font-style: italic; }
+
+/* ============================================================== */
+/* R4 additions: register chip, freq rank, IPA hover, side-by-side */
+/* pronunciation, mistake corner, collocations, etymology pages.   */
+/* ============================================================== */
+
+/* Register chip — colour-coded by register class. Same height/curve as
+   the CEFR level chip so they line up nicely in the entry header. */
+.register-chip {
+  display: inline-block;
+  padding: 2px 8px;
+  margin-left: 6px;
+  border-radius: 11px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: lowercase;
+  letter-spacing: 0.3px;
+  color: #fff;
+  background: #6b7280;
+}
+.register-chip--formal     { background: #1D2A57; }
+.register-chip--informal   { background: #00BDB6; }
+.register-chip--slang      { background: #f06292; color: #fff; }
+.register-chip--archaic    { background: #8d6e63; }
+.register-chip--technical  { background: #455a64; }
+.register-chip--literary   { background: #5e35b1; }
+.register-chip--humorous   { background: #ef6c00; }
+
+.freq-rank {
+  display: inline-block;
+  padding: 2px 7px;
+  margin-left: 4px;
+  background: #f5f7fa;
+  border: 1px solid #d0d6e0;
+  border-radius: 3px;
+  font-size: 11px;
+  font-weight: 600;
+  color: #4a5874;
+  font-family: 'DejaVu Sans Mono', monospace;
+}
+
+/* IPA hover popup — uses the title= tooltip already, plus a subtle
+   underline cue and dotted decoration to invite hovering. */
+.pron-ipa--hoverable {
+  cursor: help;
+  border-bottom: 1px dotted var(--cd-navy, #1D2A57);
+  transition: background 0.15s ease;
+}
+.pron-ipa--hoverable:hover {
+  background: #fff8e1;
+  border-bottom-color: var(--cd-pink, #db4779);
+}
+
+.pron-side-by-side-inline {
+  align-items: stretch;
+  gap: 16px;
+  padding: 8px 0;
+  border-top: 1px dashed #e0e4ea;
+  border-bottom: 1px dashed #e0e4ea;
+  margin-top: 8px;
+}
+.pron-block--uk { padding-right: 16px; border-right: 1px solid #e0e4ea; }
+.pron-more-link {
+  font-size: 12px;
+  color: var(--cd-teal, #00BDB6);
+  text-decoration: none;
+  margin-left: auto;
+  align-self: center;
+  font-weight: 600;
+}
+.pron-more-link:hover { text-decoration: underline; }
+
+/* Audio waveform mini — pseudo waveform via repeating gradient on
+   the audio element when present. Real waveform would need WebAudio;
+   this is a stable visual cue agents can detect. */
+.pron-audio {
+  width: 64px; height: 18px;
+  background:
+    repeating-linear-gradient(
+      90deg,
+      var(--cd-teal, #00BDB6) 0 2px,
+      transparent 2px 4px
+    );
+  border-radius: 9px;
+  vertical-align: middle;
+  margin-left: 4px;
+}
+
+/* R4 mistake-note inline block on word detail */
+.entry-mistake-note {
+  margin: 24px 0;
+  padding: 14px 16px;
+  background: #fff8e1;
+  border-left: 4px solid #ef6c00;
+  border-radius: 4px;
+}
+.entry-mistake-h {
+  font-size: 13px;
+  margin: 0 0 6px;
+  color: #7d3c00;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+.mistake-mark-wrong { color: #c8102e; font-weight: 700; margin-right: 4px; }
+.mistake-mark-right { color: #00a99d; font-weight: 700; margin-right: 4px; }
+.entry-mistake-more {
+  font-size: 12px;
+  color: var(--cd-pink, #db4779);
+  font-weight: 600;
+  text-decoration: none;
+}
+.entry-mistake-more:hover { text-decoration: underline; }
+
+/* Collocations preview on word detail */
+.entry-collocations {
+  margin: 24px 0;
+  padding: 14px 16px;
+  background: #f6fafc;
+  border-left: 4px solid var(--cd-teal, #00BDB6);
+  border-radius: 4px;
+}
+.entry-coll-list { list-style: none; margin: 0; padding: 0; }
+.entry-coll-item {
+  padding: 6px 0;
+  border-bottom: 1px solid #e6eef0;
+  font-size: 14px;
+}
+.entry-coll-item:last-child { border-bottom: none; }
+.entry-coll-type {
+  display: inline-block;
+  background: var(--cd-navy, #1D2A57);
+  color: #fff;
+  font-size: 10px;
+  padding: 1px 7px;
+  border-radius: 9px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-right: 8px;
+}
+.entry-coll-ex {
+  display: block;
+  color: #4a5874;
+  font-style: italic;
+  font-size: 13px;
+  margin-top: 2px;
+  margin-left: 4px;
+}
+.entry-coll-more {
+  display: inline-block;
+  margin-top: 6px;
+  color: var(--cd-teal, #00BDB6);
+  font-weight: 600;
+  font-size: 13px;
+  text-decoration: none;
+}
+.entry-coll-more:hover { text-decoration: underline; }
+
+/* Etymology preview on word detail */
+.entry-etymology {
+  margin: 24px 0;
+  padding: 14px 16px;
+  background: #f0eef9;
+  border-left: 4px solid #5e35b1;
+  border-radius: 4px;
+}
+.entry-ety-text {
+  margin: 0 0 8px;
+  color: var(--text-primary, #1D2A57);
+  font-size: 14px;
+  line-height: 1.6;
+}
+.entry-ety-more {
+  color: #5e35b1;
+  font-weight: 600;
+  font-size: 13px;
+  text-decoration: none;
+}
+.entry-ety-more:hover { text-decoration: underline; }
+
+/* ── Pronunciation page ─────────────────────────────────────── */
+.pronunciation-page .pron-side-by-side {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 18px;
+  margin-top: 18px;
+}
+.pron-card {
+  padding: 22px;
+  background: #fff;
+  border: 1px solid #e0e4ea;
+  border-radius: 8px;
+  text-align: center;
+}
+.pron-card--uk { border-top: 4px solid #1D2A57; }
+.pron-card--us { border-top: 4px solid #c8102e; }
+.pron-card--hidden { display: none; }
+.pron-card-title {
+  font-size: 18px;
+  margin: 0 0 12px;
+  color: var(--text-primary, #1D2A57);
+}
+.pron-card-flag { font-size: 20px; margin-left: 6px; }
+.pron-btn-large {
+  width: 56px; height: 56px;
+  font-size: 22px;
+  border-radius: 50%;
+  margin: 8px 0;
+}
+.pron-ipa-big {
+  font-size: 24px;
+  margin: 8px 0;
+  color: var(--cd-navy, #1D2A57);
+  font-family: 'DejaVu Sans', 'Arial Unicode MS', sans-serif;
+  font-weight: 600;
+}
+.pron-card-note {
+  font-size: 12px;
+  color: #6b7280;
+  font-style: italic;
+  margin: 4px 0 0;
+}
+.pron-audio-player { width: 100%; margin: 6px 0; }
+.pron-toggle-row { display: flex; gap: 8px; margin: 10px 0 16px; }
+.pron-toggle-btn {
+  padding: 6px 14px;
+  font-size: 13px;
+  background: #fff;
+  border: 1px solid #d0d6e0;
+  border-radius: 16px;
+  cursor: pointer;
+  font-weight: 600;
+  color: var(--cd-navy, #1D2A57);
+}
+.pron-toggle-btn:hover { background: var(--cd-teal, #00BDB6); color: #fff; border-color: var(--cd-teal, #00BDB6); }
+.pron-syl {
+  display: inline-block;
+  margin-left: 8px;
+  padding: 2px 8px;
+  background: #f5f7fa;
+  border-radius: 3px;
+  font-size: 12px;
+  color: #4a5874;
+  font-weight: 600;
+}
+
+/* ── Mistake corner pages ───────────────────────────────────── */
+.mistake-cat-block { margin-bottom: 28px; }
+.mistake-cat-title {
+  font-size: 18px;
+  color: var(--cd-navy, #1D2A57);
+  border-bottom: 2px solid var(--cd-pink, #db4779);
+  padding-bottom: 4px;
+  margin-bottom: 10px;
+}
+.mistake-cat-list { list-style: none; padding-left: 0; margin: 0; }
+.mistake-cat-list li {
+  padding: 8px 0;
+  border-bottom: 1px solid #f0f2f5;
+}
+.mistake-link {
+  font-weight: 700;
+  color: var(--cd-navy, #1D2A57);
+  text-decoration: none;
+  margin-right: 8px;
+}
+.mistake-link:hover { color: var(--cd-pink, #db4779); }
+.mistake-list-snippet { color: #4a5874; font-size: 13px; }
+.mistake-detail-page .mistake-cat-tag {
+  display: inline-block;
+  padding: 3px 10px;
+  background: var(--cd-pink, #db4779);
+  color: #fff;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.mistake-title {
+  font-size: 28px;
+  margin: 8px 0 16px;
+  color: var(--cd-navy, #1D2A57);
+}
+.mistake-rule {
+  font-size: 16px;
+  line-height: 1.6;
+  background: #f5f7fa;
+  padding: 14px 18px;
+  border-left: 4px solid var(--cd-teal, #00BDB6);
+  border-radius: 4px;
+  margin: 0 0 18px;
+}
+.mistake-example {
+  padding: 12px 0;
+  border-bottom: 1px dashed #e0e4ea;
+}
+.mistake-example:last-child { border-bottom: none; }
+.mistake-wrong { color: #c8102e; margin: 0 0 4px; font-size: 15px; }
+.mistake-right { color: #00a99d; margin: 0 0 4px; font-size: 15px; font-weight: 600; }
+.mistake-note { color: #6b7280; font-style: italic; font-size: 13px; margin: 4px 0 0 24px; }
+.mistake-nav { display: flex; justify-content: space-between; margin-top: 24px; padding-top: 14px; border-top: 1px solid #e0e4ea; }
+.mistake-nav a { color: var(--cd-teal, #00BDB6); font-weight: 600; text-decoration: none; }
+.mistake-nav a:hover { text-decoration: underline; }
+
+/* ── Collocation pages ──────────────────────────────────────── */
+.coll-index-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 8px;
+  margin: 16px 0;
+}
+.coll-card-mini {
+  display: block;
+  padding: 10px 12px;
+  background: #fff;
+  border: 1px solid #e0e4ea;
+  border-radius: 4px;
+  text-decoration: none;
+  color: var(--text-primary, #1D2A57);
+  transition: border-color 0.15s, transform 0.15s;
+}
+.coll-card-mini:hover {
+  border-color: var(--cd-teal, #00BDB6);
+  transform: translateY(-1px);
+}
+.coll-card-mini-pos {
+  font-style: italic;
+  font-size: 12px;
+  color: #6b7280;
+  display: block;
+}
+.coll-card {
+  padding: 12px 16px;
+  background: #fff;
+  border: 1px solid #e0e4ea;
+  border-radius: 4px;
+  margin-bottom: 10px;
+}
+.coll-card-head { display: flex; align-items: center; gap: 10px; margin-bottom: 4px; }
+.coll-card-type {
+  display: inline-block;
+  background: var(--cd-teal, #00BDB6);
+  color: #fff;
+  font-size: 11px;
+  padding: 2px 9px;
+  border-radius: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  font-weight: 700;
+}
+.coll-card-phrase {
+  font-weight: 700;
+  font-size: 16px;
+  color: var(--cd-navy, #1D2A57);
+}
+.coll-card-example { margin: 4px 0 0; font-style: italic; color: #4a5874; }
+
+/* ── Etymology pages ────────────────────────────────────────── */
+.ety-index-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 10px;
+  margin-top: 14px;
+}
+.ety-card {
+  display: block;
+  padding: 12px 14px;
+  background: #fff;
+  border: 1px solid #e0e4ea;
+  border-radius: 4px;
+  text-decoration: none;
+  color: var(--text-primary, #1D2A57);
+}
+.ety-card:hover { border-color: #5e35b1; }
+.ety-card-headword { font-weight: 700; font-size: 15px; color: var(--cd-navy, #1D2A57); }
+.ety-card-pos { font-style: italic; font-size: 12px; color: #6b7280; margin-left: 6px; }
+.ety-card-snippet { display: block; margin-top: 4px; font-size: 13px; color: #4a5874; line-height: 1.4; }
+.ety-headword { font-size: 32px; margin: 8px 0 6px; }
+.ety-meta { margin-bottom: 12px; }
+.ety-pron { margin-bottom: 16px; }
+.ety-paragraph {
+  background: #f0eef9;
+  padding: 16px 20px;
+  border-left: 4px solid #5e35b1;
+  border-radius: 4px;
+  line-height: 1.65;
+  font-size: 15px;
+}
+.ety-cross-list { list-style: none; padding-left: 0; }
+.ety-cross-list li { padding: 4px 0; }
+.ety-cross-list a { color: var(--cd-teal, #00BDB6); font-weight: 600; text-decoration: none; }
+.ety-cross-list a:hover { text-decoration: underline; }
+
+/* ── WOTD archive table ─────────────────────────────────────── */
+.wotd-archive-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 14px;
+  font-size: 14px;
+}
+.wotd-archive-table th, .wotd-archive-table td {
+  padding: 8px 10px;
+  text-align: left;
+  border-bottom: 1px solid #e0e4ea;
+}
+.wotd-archive-table th { background: #f5f7fa; color: var(--cd-navy, #1D2A57); font-weight: 700; }
+.wotd-archive-table tr:hover td { background: #fafbfc; }
+.wotd-archive-year-nav { font-size: 14px; color: #4a5874; }
+.wotd-archive-year-nav a { color: var(--cd-teal, #00BDB6); font-weight: 600; text-decoration: none; }
+.wotd-archive-year-nav strong { color: var(--cd-navy, #1D2A57); }
+
+/* Pagination */
+.pager {
+  display: flex;
+  justify-content: center;
+  gap: 14px;
+  margin: 18px 0;
+  font-size: 14px;
+}
+.pager a { color: var(--cd-teal, #00BDB6); font-weight: 600; text-decoration: none; }
+.pager a:hover { text-decoration: underline; }
+.pager-cur { color: #4a5874; }

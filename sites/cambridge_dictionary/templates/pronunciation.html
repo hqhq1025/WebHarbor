@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% block title %}Pronunciation of {{ word.headword }} | Cambridge Dictionary{% endblock %}
+{% block content %}
+<div class="container pronunciation-page">
+  <nav class="breadcrumb">
+    <a href="{{ url_for('index') }}">Dictionary</a> &rsaquo;
+    <a href="{{ url_for('word_detail', slug=word.slug) }}">{{ word.headword }}</a> &rsaquo;
+    <span>Pronunciation</span>
+  </nav>
+
+  <header class="pron-header">
+    <h1 class="pron-page-title">How to pronounce <em>{{ word.headword }}</em></h1>
+    <div class="pron-meta">
+      <span class="entry-pos">{{ word.pos }}</span>
+      {% if word.level %}<span class="entry-level level-{{ word.level|lower }}">{{ word.level }}</span>{% endif %}
+      <span class="pron-syl">{{ syllables }} syllable{{ '' if syllables == 1 else 's' }}</span>
+    </div>
+  </header>
+
+  <section class="pron-side-by-side">
+    <article class="pron-card pron-card--uk">
+      <h2 class="pron-card-title">UK <span class="pron-card-flag">&#127468;&#127463;</span></h2>
+      <button class="pron-btn pron-btn-large" onclick="speakWord('{{ word.headword }}', 'en-GB')" aria-label="Play UK pronunciation">&#x1F50A;</button>
+      {% if word.audio_uk_path %}<audio preload="none" src="{{ word.audio_uk_path }}" controls class="pron-audio-player"></audio>{% endif %}
+      <p class="pron-ipa-big" title="UK IPA transcription">{{ word.phonetic_uk or word.pronunciation_ipa }}</p>
+      <p class="pron-card-note">British English pronunciation</p>
+    </article>
+    <article class="pron-card pron-card--us">
+      <h2 class="pron-card-title">US <span class="pron-card-flag">&#127482;&#127480;</span></h2>
+      <button class="pron-btn pron-btn-large" onclick="speakWord('{{ word.headword }}', 'en-US')" aria-label="Play US pronunciation">&#x1F50A;</button>
+      {% if word.audio_us_path %}<audio preload="none" src="{{ word.audio_us_path }}" controls class="pron-audio-player"></audio>{% endif %}
+      <p class="pron-ipa-big" title="US IPA transcription">{{ word.phonetic_us or word.pronunciation_ipa }}</p>
+      <p class="pron-card-note">American English pronunciation</p>
+    </article>
+  </section>
+
+  <section class="pron-toggle">
+    <h2 class="sub-section-title">Side-by-side toggle</h2>
+    <div class="pron-toggle-row">
+      <button type="button" class="pron-toggle-btn pron-toggle-uk" onclick="document.querySelectorAll('.pron-card').forEach(c=>c.classList.toggle('pron-card--hidden', !c.classList.contains('pron-card--uk')))">UK only</button>
+      <button type="button" class="pron-toggle-btn pron-toggle-us" onclick="document.querySelectorAll('.pron-card').forEach(c=>c.classList.toggle('pron-card--hidden', !c.classList.contains('pron-card--us')))">US only</button>
+      <button type="button" class="pron-toggle-btn pron-toggle-both" onclick="document.querySelectorAll('.pron-card').forEach(c=>c.classList.remove('pron-card--hidden'))">Show both</button>
+    </div>
+  </section>
+
+  <section class="pron-cross">
+    <h2 class="sub-section-title">Continue learning</h2>
+    <ul>
+      <li><a href="{{ url_for('word_detail', slug=word.slug) }}">Full dictionary entry for {{ word.headword }}</a></li>
+      {% if word.etymology %}<li><a href="{{ url_for('etymology_detail', slug=word.slug) }}">Etymology of {{ word.headword }}</a></li>{% endif %}
+      {% if word.get_collocations() %}<li><a href="{{ url_for('collocation_detail', slug=word.slug) }}">Common collocations of {{ word.headword }}</a></li>{% endif %}
+    </ul>
+  </section>
+</div>
+{% endblock %}

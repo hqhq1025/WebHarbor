@@ -29,7 +29,32 @@
                 <div class="readme-callout">
                     📝 {{ repo.description }}
                 </div>
+                {# R4: split the readme into collapsible sections by ## headers.
+                   Each section becomes a <details> block so the agent can
+                   click "expand" to see e.g. usage/training/license. The
+                   first section stays open by default. #}
+                {% set readme_lines = (repo.readme or '').split('\n') %}
+                {% set ns = namespace(sections=[], cur_title='Overview', cur_body=[]) %}
+                {% for line in readme_lines %}
+                    {% if line.startswith('## ') %}
+                        {% set _ = ns.sections.append({'title': ns.cur_title, 'body': '\n'.join(ns.cur_body)}) %}
+                        {% set ns.cur_title = line[3:].strip() %}
+                        {% set ns.cur_body = [] %}
+                    {% else %}
+                        {% set _ = ns.cur_body.append(line) %}
+                    {% endif %}
+                {% endfor %}
+                {% set _ = ns.sections.append({'title': ns.cur_title, 'body': '\n'.join(ns.cur_body)}) %}
+                {% if ns.sections|length > 1 %}
+                    {% for sec in ns.sections %}
+                    <details class="readme-section" {% if loop.first %}open{% endif %} style="margin:6px 0;border:1px solid var(--border,#e5e7eb);border-radius:8px;padding:10px 14px;background:#fff;">
+                        <summary style="cursor:pointer;font-weight:700;font-size:15px;">{{ sec.title }}</summary>
+                        <pre style="white-space:pre-wrap;font-family:inherit;font-size:14px;margin:8px 0 0;">{{ sec.body }}</pre>
+                    </details>
+                    {% endfor %}
+                {% else %}
                 <pre>{{ repo.readme }}</pre>
+                {% endif %}
             </div>
 
             {% if repo.repo_type == 'model' and metrics %}
@@ -197,6 +222,29 @@ Today is a sunny day</textarea>
                 <h4>Downloads last month</h4>
                 <div class="side-card-big">{{ repo.downloads_display }}</div>
                 <div class="side-card-sub">Updated {{ repo.updated_display }}</div>
+                {# R4: monthly download sparkline — inline SVG so no JS is needed
+                   and the bars are inspectable by an agent. Hidden if history
+                   is empty. #}
+                {% set hist = repo.monthly_history %}
+                {% if hist %}
+                {% set max_v = (hist|max) or 1 %}
+                <div class="sparkline" aria-label="Monthly downloads over last 12 months" style="margin-top:10px;">
+                    <svg viewBox="0 0 240 56" preserveAspectRatio="none" style="width:100%;height:56px;display:block;">
+                        {% for v in hist %}
+                            {% set bar_h = ((v * 50) // max_v) %}
+                            {% set x = loop.index0 * 20 %}
+                            <rect x="{{ x + 2 }}" y="{{ 54 - bar_h }}" width="16" height="{{ bar_h }}"
+                                  fill="{% if loop.last %}#1e40af{% else %}#93c5fd{% endif %}" rx="2"/>
+                        {% endfor %}
+                    </svg>
+                    <div class="muted" style="font-size:11px;display:flex;justify-content:space-between;margin-top:2px;">
+                        <span>12 mo ago</span><span>now</span>
+                    </div>
+                </div>
+                <p class="muted" style="font-size:11.5px;margin:6px 0 0;">
+                    Trending score: <strong>{{ repo.trending_score_display }}</strong>
+                </p>
+                {% endif %}
             </div>
 
             <div class="side-card">

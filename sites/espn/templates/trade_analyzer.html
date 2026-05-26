@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block title %}Trade Analyzer{% endblock %}
+{% block content %}
+<div class="container">
+  <h1>Fantasy Trade Analyzer — {{ sport.name }}</h1>
+  <p class="trade-analyzer__intro">
+    Drag two players from the candidate pool into the trade slots. The analyzer
+    projects the rest-of-season delta, factoring playoff schedule strength.
+  </p>
+
+  <div class="trade-analyzer">
+    <div class="trade-side trade-side--you">
+      <h3>You give up</h3>
+      <ul class="trade-slot-list">
+        <li class="trade-slot trade-slot--empty">Drag a player here</li>
+      </ul>
+      <div class="trade-side__value">Projected ROS pts: <span class="trade-side__num">—</span></div>
+    </div>
+    <div class="trade-arrow">&#x21C4;</div>
+    <div class="trade-side trade-side--them">
+      <h3>You receive</h3>
+      <ul class="trade-slot-list">
+        <li class="trade-slot trade-slot--empty">Drag a player here</li>
+      </ul>
+      <div class="trade-side__value">Projected ROS pts: <span class="trade-side__num">—</span></div>
+    </div>
+  </div>
+
+  <section>
+    <h2>Candidate pool</h2>
+    <div class="fantasy-team-grid">
+      {% for p in candidates %}
+      <a href="/player/{{ p.sport_slug }}/{{ p.slug }}" class="fantasy-card" draggable="true">
+        <div class="fantasy-card__name">{{ p.name }}</div>
+        <div class="fantasy-card__meta">{{ p.position }} &bull; {{ p.sport_slug|upper }}</div>
+      </a>
+      {% endfor %}
+    </div>
+  </section>
+</div>
+{% endblock %}

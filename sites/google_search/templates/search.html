@@ -6,18 +6,56 @@
 {% block content %}
 <div class="serp-body">
     <div class="serp-main">
+        {# --- R4: AI Overview / SGE block ----------------------------- #}
+        {% if knowledge and answer_token and vertical == 'all' %}
+        <div class="ai-overview">
+            <div class="ai-overview-head">
+                <svg viewBox="0 0 24 24" width="20" height="20"><path fill="#4285f4" d="M12 2 L13.5 8 L20 9.5 L13.5 11 L12 17 L10.5 11 L4 9.5 L10.5 8 Z"/></svg>
+                <span>AI Overview</span>
+                <span class="ai-overview-tag">Experimental</span>
+            </div>
+            <div class="ai-overview-body">
+                <p>{{ knowledge.summary[:240] }}{% if knowledge.summary|length > 240 %}…{% endif %}</p>
+            </div>
+            <div class="ai-overview-actions">
+                <a href="{{ url_for('search_snapshot', slug=knowledge.slug, q=q) }}">Open full snapshot →</a>
+                <a class="ai-overview-feedback" href="{{ url_for('search_help', topic='basics') }}">About this result</a>
+            </div>
+        </div>
+        {% endif %}
+
+        {# --- R4: similar-search chips just under the AI block ------- #}
+        {% if related %}
+        <div class="similar-chips" aria-label="Refine results">
+            <span class="chips-label">Refine</span>
+            {% for rq in related[:6] %}
+            <a class="chip" href="{{ url_for('search', q=rq.term) }}">{{ rq.term }}</a>
+            {% endfor %}
+        </div>
+        {% endif %}
+
         <div class="serp-meta">
             About {{ result_count|fmt_count }} results ({{ search_time }} seconds)
+            <span class="serp-meta-sep">·</span>
+            <a class="serp-meta-link" href="{{ url_for('preferences_region') }}">Region</a>
+            <span class="serp-meta-sep">·</span>
+            <a class="serp-meta-link" href="{{ url_for('preferences_languages') }}">Languages</a>
         </div>
 
         {% if results %}
             {% for r in results %}
-            <div class="serp-result">
+            <div class="serp-result serp-result-{{ r.result_type or 'organic' }}">
+                {% if r.result_type == 'ad' %}<div class="result-badge result-badge-ad">Sponsored</div>{% endif %}
+                {% if r.result_type == 'featured' %}<div class="result-badge result-badge-featured">Featured snippet</div>{% endif %}
                 <div class="result-site">
-                    <div class="result-favicon">{{ r.source[0]|upper }}</div>
+                    {% if r.favicon %}
+                    <div class="result-favicon"><img src="{{ r.favicon }}" alt="" width="18" height="18" onerror="this.style.display='none'; this.parentElement.textContent='{{ r.source[0]|upper if r.source else 'G' }}';"></div>
+                    {% else %}
+                    <div class="result-favicon">{{ r.source[0]|upper if r.source else 'G' }}</div>
+                    {% endif %}
                     <div class="result-site-info">
                         <span class="result-source">{{ r.display_url }}</span>
-                        <span class="result-url">{{ r.url }}</span>
+                        <span class="result-url">{{ r.breadcrumb or r.url }}</span>
                     </div>
                 </div>
                 <h3 class="result-title">
@@ -69,6 +107,9 @@
             </div>
             <div class="paa-answer">{{ p.answer }}</div>
             {% endfor %}
+            <div class="paa-more">
+                <a href="{{ url_for('search', q=q + ' related questions') }}">See more questions →</a>
+            </div>
         </div>
         {% endif %}
 
@@ -85,6 +126,10 @@
             </div>
         </div>
         {% endif %}
+
+        <div class="see-more-bar">
+            <a class="see-more-btn" href="{{ url_for('search', q=q, tbm=vertical, page=page+1) }}">See more results</a>
+        </div>
 
         <div class="pagination">
             <div class="g-logo g-logo-small">

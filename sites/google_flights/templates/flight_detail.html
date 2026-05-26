@@ -347,6 +347,19 @@
             <span>Rating</span><span>{{ flight.rating }} / 5</span>
           </div>
         </div>
+        <hr style="margin:20px 0;border:none;border-top:1px solid var(--g-grey-200);">
+        <div style="display:flex;flex-wrap:wrap;gap:8px;">
+          <a href="{{ url_for('airline_detail', code=flight.airline_code) }}"
+             style="display:inline-flex;align-items:center;gap:4px;font-size:13px;padding:6px 12px;border:1px solid var(--g-grey-200);border-radius:16px;color:#1a73e8;text-decoration:none;background:#fff;">
+            <span class="material-symbols-outlined" style="font-size:16px;">flight</span>
+            About {{ flight.airline }}
+          </a>
+          <a href="{{ url_for('route_stats', origin=flight.origin.iata, dest=flight.destination.iata) }}"
+             style="display:inline-flex;align-items:center;gap:4px;font-size:13px;padding:6px 12px;border:1px solid var(--g-grey-200);border-radius:16px;color:#1a73e8;text-decoration:none;background:#fff;">
+            <span class="material-symbols-outlined" style="font-size:16px;">trending_up</span>
+            Route stats
+          </a>
+        </div>
       </div>
     </aside>
   </div>

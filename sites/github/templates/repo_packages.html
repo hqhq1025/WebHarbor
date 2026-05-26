@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% block title %}Packages · {{ repo.full_name }} · GitHub{% endblock %}
+{% block content %}
+<div class="repo-header-bar">
+  <div class="repo-header-inner">
+    <div class="repo-breadcrumb">
+      <a href="/{{ repo.full_name.split('/')[0] }}" class="repo-breadcrumb-link">{{ repo.full_name.split('/')[0] }}</a>
+      <span class="repo-breadcrumb-sep">/</span>
+      <a href="/{{ repo.full_name }}" class="repo-breadcrumb-link repo-breadcrumb-repo">{{ repo.name }}</a>
+    </div>
+    <nav class="repo-tabs">
+      <a href="/{{ repo.full_name }}" class="repo-tab">Code</a>
+      <a href="/{{ repo.full_name }}/issues" class="repo-tab">Issues</a>
+      <a href="/{{ repo.full_name }}/pulls" class="repo-tab">Pull requests</a>
+      <a href="/{{ repo.full_name }}/discussions" class="repo-tab">Discussions</a>
+      <a href="/{{ repo.full_name }}/projects" class="repo-tab">Projects</a>
+      <a href="/{{ repo.full_name }}/packages" class="repo-tab repo-tab-active">
+        Packages <span class="repo-tab-count">{{ pkgs|length }}</span>
+      </a>
+    </nav>
+  </div>
+</div>
+<div style="padding:24px 32px;max-width:1100px;margin:0 auto;">
+  <h1 style="font-size:20px;margin:0 0 12px;">Packages</h1>
+  <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;">
+    <a href="/{{ repo.full_name }}/packages" class="gh-btn gh-btn-sm{% if not active_eco %} gh-btn-primary{% endif %}">All</a>
+    {% for e in ecosystems %}
+    <a href="/{{ repo.full_name }}/packages?ecosystem={{ e }}" class="gh-btn gh-btn-sm{% if active_eco==e %} gh-btn-primary{% endif %}">{{ e }}</a>
+    {% endfor %}
+  </div>
+  {% if pkgs %}
+  <ul style="list-style:none;padding:0;margin:0;border:1px solid #30363d;border-radius:8px;overflow:hidden;">
+    {% for p in pkgs %}
+    <li style="padding:14px 16px;border-bottom:1px solid #30363d;display:flex;align-items:center;gap:14px;">
+      <div style="flex:0 0 80px;font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:#7d8590;background:#161b22;border:1px solid #30363d;border-radius:6px;text-align:center;padding:4px 6px;">{{ p.ecosystem }}</div>
+      <div style="flex:1;min-width:0;">
+        <div style="font-weight:600;color:#e6edf3;">{{ p.name }}</div>
+        <div style="font-size:12px;color:#7d8590;margin-top:2px;">v{{ p.version }} · Published {{ p.published_at.strftime('%b %-d, %Y') }} · {{ p.visibility }}</div>
+        {% if p.description %}<div style="font-size:13px;color:#8b949e;margin-top:4px;">{{ p.description }}</div>{% endif %}
+      </div>
+      <div style="font-size:12px;color:#7d8590;flex-shrink:0;">{{ '{:,}'.format(p.downloads_total) }} total downloads</div>
+    </li>
+    {% endfor %}
+  </ul>
+  {% else %}
+  <p style="color:#7d8590;">No packages published.</p>
+  {% endif %}
+</div>
+{% endblock %}

@@ -5,29 +5,41 @@
 <div class="pd-container">
     <!-- Image Column -->
     <div class="pd-image-col">
-        <div class="pd-main-image">
-            <img src="{{ product.image }}" alt="{{ product.name }}" onerror="this.style.display='none'">
+        <div class="pd-main-image" id="pd-main-image"
+             style="position:relative;cursor:zoom-in;overflow:hidden">
+            <img src="{{ product.image }}" id="pd-main-img" alt="{{ product.name }}"
+                 style="transition:transform .25s ease;width:100%"
+                 onerror="this.style.display='none'">
+            <div id="pd-zoom-hint"
+                 style="position:absolute;bottom:8px;right:8px;background:rgba(0,0,0,0.55);color:#fff;font-size:11px;padding:4px 8px;border-radius:3px;pointer-events:none">
+                Hover to zoom · click to fullscreen
+            </div>
         </div>
         <div class="pd-thumbs">
             {% set gallery = product.get_gallery() %}
             {% if gallery %}
-                <div class="pd-thumb active"><img src="{{ product.image }}" alt="thumb" onerror="this.parentElement.style.display='none'"></div>
+                <div class="pd-thumb active" data-src="{{ product.image }}"><img src="{{ product.image }}" alt="thumb" onerror="this.parentElement.style.display='none'"></div>
                 {% for img in gallery[:5] %}
-                <div class="pd-thumb"><img src="{{ img }}" alt="thumb" onerror="this.parentElement.style.display='none'"></div>
+                <div class="pd-thumb" data-src="{{ img }}"><img src="{{ img }}" alt="thumb" onerror="this.parentElement.style.display='none'"></div>
                 {% endfor %}
             {% endif %}
+        </div>
+        <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap">
+            <a href="{{ url_for('product_customer_images', slug=product.slug) }}" class="text-link" style="font-size:13px">📷 See all customer photos</a>
+            <span style="color:#ccc">·</span>
+            <a href="{{ url_for('aplus_content', slug=product.slug) }}" class="text-link" style="font-size:13px">★ From the manufacturer (A+ Content)</a>
         </div>
     </div>
 
     <!-- Info Column -->
     <div class="pd-info-col">
-        {% if product.brand %}<a class="pd-brand" href="#">Visit the {{ product.brand }} Store</a>{% endif %}
+        {% if product.brand %}<a class="pd-brand" href="{% if product.category_slug == 'books' %}{{ url_for('author_page', name=product.brand.lower().replace(' ', '-')) }}{% else %}#{% endif %}">{% if product.category_slug == 'books' %}Visit {{ product.brand }}'s author page{% else %}Visit the {{ product.brand }} Store{% endif %}</a>{% endif %}
         <h1 class="pd-title">{{ product.name }}</h1>
         <div class="pd-rating-row">
             <span class="stars">{% for i in range(product.rating|int) %}★{% endfor %}{% for i in range(5 - product.rating|int) %}☆{% endfor %}</span>
-            <a href="#reviews-section" class="text-link">{{ product.rating }} ({{ product.review_count }} ratings)</a>
+            <a href="{{ url_for('product_reviews', slug=product.slug) }}" class="text-link">{{ product.rating }} ({{ product.review_count }} ratings)</a>
             <span>|</span>
-            <span>{{ product.review_count * 3 }} answered questions</span>
+            <a href="{{ url_for('product_questions', slug=product.slug) }}" class="text-link">{{ product.review_count * 3 }} answered questions</a>
         </div>
 
         <div class="pd-price-row">
@@ -140,10 +152,15 @@
 
         <div style="font-size:12px;margin-top:10px" id="return-policy">
             <div><strong>Ships from:</strong> Amazon.com</div>
-            <div><strong>Sold by:</strong> Amazon.com</div>
+            <div><strong>Sold by:</strong> <a class="text-link" href="{{ url_for('seller_storefront', seller_id=seller_id) }}">{{ seller_name }}</a></div>
             <div><strong>Returns:</strong> {{ product.return_policy }}</div>
             {% if product.free_returns %}<div style="color:#007600"><strong>FREE Returns</strong> — Return this item for free within 30 days.</div>{% endif %}
             {% if product.release_date %}<div><strong>Release date:</strong> {{ product.release_date }}</div>{% endif %}
+            {% if 'climate-pledge-friendly' in (product.get_feature_tags() or []) %}
+            <div style="margin-top:6px;background:#e6f4ea;border:1px solid #34a853;border-radius:4px;padding:8px 10px;color:#1e7d34">
+                <strong>🌱 Climate Pledge Friendly</strong> — Sustainability certifications applied
+            </div>
+            {% endif %}
         </div>
 
         <button type="button" class="btn btn-outline btn-full mt-10" id="wishlist-btn" onclick="toggleWishlist({{ product.id }}, this)">
@@ -338,6 +355,149 @@
         Reviews are sampled; older reviews are archived.
     </p>
     {% endif %}
+
+    <div style="margin-top:14px">
+        <a href="{{ url_for('product_reviews', slug=product.slug) }}" class="btn btn-outline">See all {{ product.review_count }} reviews →</a>
+    </div>
 </div>
+
+<!-- R4: Frequently bought together -->
+{% if fbt %}
+<section style="max-width:1200px;margin:24px auto;padding:18px 20px;background:#fff;border-radius:4px;border:1px solid #e7e7e7" id="frequently-bought-together">
+    <h2 style="font-size:18px;margin:0 0 14px">Frequently bought together</h2>
+    {% set total_price = product.price + (fbt|sum(attribute='price')) %}
+    <div style="display:flex;gap:14px;align-items:center;flex-wrap:wrap">
+        <div style="text-align:center;width:140px">
+            <a href="{{ url_for('product_detail', slug=product.slug) }}">
+                <img src="{{ product.image }}" alt="{{ product.name }}"
+                     style="width:100%;height:120px;object-fit:contain;background:#f7f7f7;border-radius:4px"
+                     onerror="this.style.display='none'">
+            </a>
+            <div style="font-size:11px;margin-top:4px;color:#0066c0">This item</div>
+        </div>
+        {% for p in fbt %}
+        <div style="font-size:22px;color:#888">+</div>
+        <div style="text-align:center;width:140px">
+            <a href="{{ url_for('product_detail', slug=p.slug) }}">
+                <img src="{{ p.image }}" alt="{{ p.name }}"
+                     style="width:100%;height:120px;object-fit:contain;background:#f7f7f7;border-radius:4px"
+                     onerror="this.style.display='none'">
+            </a>
+            <div style="font-size:11px;margin-top:4px;color:#0066c0;line-height:1.3;max-height:30px;overflow:hidden">{{ p.name[:40] }}</div>
+            <div style="font-size:12px;font-weight:700">${{ '%.2f'|format(p.price) }}</div>
+        </div>
+        {% endfor %}
+        <div style="margin-left:20px;border-left:1px solid #e7e7e7;padding-left:20px;min-width:180px">
+            <div style="font-size:14px">Total price:</div>
+            <div style="font-size:24px;font-weight:700;color:#0f1111">${{ '%.2f'|format(total_price) }}</div>
+            <form method="POST" action="{{ url_for('cart_add_form', product_id=product.id) }}" style="margin-top:8px">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token_value }}">
+                <input type="hidden" name="variant" value="Frequently Bought Together bundle">
+                <button type="submit" class="btn">Add all to Cart</button>
+            </form>
+        </div>
+    </div>
+</section>
+{% endif %}
+
+<!-- R4: Q&A accordion -->
+{% if qna %}
+<section style="max-width:1200px;margin:24px auto;padding:18px 20px;background:#fff;border-radius:4px;border:1px solid #e7e7e7" id="questions-section">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+        <h2 style="font-size:18px;margin:0">Customer questions &amp; answers</h2>
+        <a href="{{ url_for('product_questions', slug=product.slug) }}" class="text-link" style="font-size:13px">See all questions →</a>
+    </div>
+    <div class="pd-qna-accordion">
+        {% for q in qna[:3] %}
+        <details style="border-top:1px solid #e7e7e7;padding:10px 0">
+            <summary style="cursor:pointer;font-weight:600;font-size:14px;list-style:none;display:flex;align-items:flex-start;gap:8px">
+                <span style="color:#cc6600;font-weight:700">Q:</span>
+                <span style="flex:1">{{ q.question }}</span>
+            </summary>
+            {% for a in q.answers %}
+            <div style="display:flex;gap:8px;margin:8px 0 0 12px;font-size:13px;line-height:1.5">
+                <span style="color:#007185;font-weight:700;min-width:18px">A:</span>
+                <div>
+                    <div>{{ a.body }}</div>
+                    <div style="font-size:11px;color:#565959;margin-top:3px">
+                        — {{ a.name }}{% if a.is_seller %} <span style="color:#007600;font-weight:700">· SELLER</span>{% endif %} · {{ a.helpful }} found helpful
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </details>
+        {% endfor %}
+    </div>
+</section>
+{% endif %}
+
+<!-- R4: Sticky add-to-cart bar (appears after user scrolls past the buy box) -->
+<div id="sticky-buy" style="position:fixed;left:0;right:0;bottom:0;z-index:99;background:#fff;border-top:1px solid #d5d9d9;box-shadow:0 -2px 8px rgba(0,0,0,0.08);padding:10px 16px;display:none">
+    <div style="max-width:1200px;margin:0 auto;display:flex;gap:14px;align-items:center">
+        <img src="{{ product.image }}" alt="{{ product.name }}"
+             style="width:42px;height:42px;object-fit:contain;background:#f7f7f7;border-radius:3px"
+             onerror="this.style.display='none'">
+        <div style="flex:1;min-width:0">
+            <div style="font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ product.name }}</div>
+            <div style="font-size:13px;color:#0f1111"><span style="color:#0f1111;font-weight:700">${{ '%.2f'|format(product.price) }}</span>{% if product.is_prime %} <span style="color:#007185">· prime</span>{% endif %}</div>
+        </div>
+        <form method="POST" action="{{ url_for('cart_add_form', product_id=product.id) }}" style="margin:0">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token_value }}">
+            <input type="hidden" name="variant" value="">
+            <input type="hidden" name="quantity" value="1">
+            <button type="submit" class="btn">Add to Cart</button>
+        </form>
+        <form method="POST" action="{{ url_for('cart_add_form', product_id=product.id) }}" style="margin:0">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token_value }}">
+            <input type="hidden" name="variant" value="">
+            <input type="hidden" name="quantity" value="1">
+            <input type="hidden" name="next" value="checkout">
+            <button type="submit" class="btn btn-primary">Buy Now</button>
+        </form>
+    </div>
+</div>
+
+<script>
+// Sticky add-to-cart: show only after scrolling past the buy box
+(function() {
+    var buyBox = document.querySelector('.pd-buy-box');
+    var sticky = document.getElementById('sticky-buy');
+    if (!buyBox || !sticky) return;
+    function update() {
+        var rect = buyBox.getBoundingClientRect();
+        sticky.style.display = (rect.bottom < 40) ? 'block' : 'none';
+    }
+    window.addEventListener('scroll', update, {passive:true});
+    update();
+})();
+
+// Image zoom on hover + thumbnail click-to-swap
+(function() {
+    var wrap = document.getElementById('pd-main-image');
+    var img = document.getElementById('pd-main-img');
+    if (!wrap || !img) return;
+    wrap.addEventListener('mousemove', function(e) {
+        var r = wrap.getBoundingClientRect();
+        var x = ((e.clientX - r.left) / r.width) * 100;
+        var y = ((e.clientY - r.top) / r.height) * 100;
+        img.style.transformOrigin = x + '% ' + y + '%';
+        img.style.transform = 'scale(2)';
+    });
+    wrap.addEventListener('mouseleave', function() {
+        img.style.transformOrigin = 'center center';
+        img.style.transform = 'scale(1)';
+    });
+    document.querySelectorAll('.pd-thumb').forEach(function(t) {
+        t.addEventListener('click', function() {
+            var src = t.getAttribute('data-src');
+            if (src) {
+                img.src = src;
+                document.querySelectorAll('.pd-thumb').forEach(function(x) { x.classList.remove('active'); });
+                t.classList.add('active');
+            }
+        });
+    });
+})();
+</script>
 
 {% endblock %}

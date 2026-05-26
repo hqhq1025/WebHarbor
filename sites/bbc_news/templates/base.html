@@ -10,6 +10,21 @@
 </head>
 <body>
 
+{# Breaking-news banner — pulsing red, dismissable via cookie #}
+{% if request.cookies.get('bbc_breaking_dismissed') != '1' and breaking_now %}
+<div class="breaking-banner" role="alert" aria-live="polite">
+    <span class="breaking-banner-dot" aria-hidden="true"></span>
+    <span class="breaking-banner-label">BREAKING</span>
+    <a class="breaking-banner-headline" href="{{ url_for('article_detail', slug=breaking_now.slug) }}">
+        {{ breaking_now.headline }}
+    </a>
+    <form method="POST" action="{{ url_for('breaking_news_banner_dismiss') }}" class="breaking-banner-dismiss-form">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button type="submit" class="breaking-banner-dismiss" aria-label="Dismiss breaking news banner">&times;</button>
+    </form>
+</div>
+{% endif %}
+
 <!-- ============================================================
      TOP "ORB" BAR  (BBC mark + global nav + sign-in + search)
      ============================================================ -->
@@ -194,6 +209,40 @@
                     <a href="{{ url_for('help_page') }}">Help</a>
                     <a href="{{ url_for('contact_page') }}">Contact</a>
                     <a href="{{ url_for('accessibility_page') }}">Accessibility</a>
+                    <a href="{{ url_for('section_page', slug='weather') }}">Weather</a>
+                    <a href="{{ url_for('section_page', slug='iplayer') }}">iPlayer</a>
+                    <a href="{{ url_for('section_page', slug='sounds') }}">Sounds</a>
+                    <a href="{{ url_for('section_page', slug='bitesize') }}">Bitesize</a>
+                </div>
+            </div>
+            <div class="footer-grid footer-grid-regions">
+                <div class="footer-col">
+                    <h3>World editions</h3>
+                    <a href="{{ url_for('section_page', slug='bbc_africa') }}">BBC Africa</a>
+                    <a href="{{ url_for('section_page', slug='bbc_brasil') }}">BBC Brasil</a>
+                    <a href="{{ url_for('section_page', slug='bbc_mundo') }}">BBC News Mundo</a>
+                    <a href="{{ url_for('section_page', slug='bbc_arabic') }}">BBC Arabic</a>
+                </div>
+                <div class="footer-col">
+                    <h3>More world</h3>
+                    <a href="{{ url_for('section_page', slug='bbc_persian') }}">BBC Persian</a>
+                    <a href="{{ url_for('section_page', slug='bbc_russian') }}">BBC Russian</a>
+                    <a href="{{ url_for('section_page', slug='bbc_china') }}">BBC News China</a>
+                    <a href="{{ url_for('section_page', slug='bbc_india') }}">BBC News India</a>
+                </div>
+                <div class="footer-col">
+                    <h3>Discover</h3>
+                    <a href="{{ url_for('breaking_news_page') }}">Breaking news</a>
+                    <a href="{{ url_for('section_page', slug='in_pictures') }}">In Pictures</a>
+                    <a href="{{ url_for('section_page', slug='multi_step') }}">Long reads</a>
+                    <a href="{{ url_for('section_page', slug='video') }}">Video clips</a>
+                </div>
+                <div class="footer-col">
+                    <h3>Connect</h3>
+                    <a href="{{ url_for('subscriptions_page') }}">Notifications</a>
+                    <a href="{{ url_for('section_page', slug='podcasts_genres') }}">Podcast genres</a>
+                    <a href="{{ url_for('section_page', slug='iplayer_categories') }}">iPlayer categories</a>
+                    <a href="{{ url_for('section_page', slug='breaking_news') }}">Newsroom alerts</a>
                 </div>
             </div>
         </div>
@@ -215,6 +264,59 @@
 </footer>
 
 <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+
+{# Share modal — opened by article_detail.html and any other share button #}
+<div id="bbc-share-modal" class="bbc-share-modal" role="dialog" aria-modal="true"
+     aria-labelledby="bbc-share-title" hidden>
+    <div class="bbc-share-backdrop" data-share-close="1"></div>
+    <div class="bbc-share-panel" role="document">
+        <button type="button" class="bbc-share-close" data-share-close="1"
+                aria-label="Close share dialog">&times;</button>
+        <h2 id="bbc-share-title" class="bbc-share-title">Share this story</h2>
+        <p class="bbc-share-headline" id="bbc-share-headline">&nbsp;</p>
+
+        <div class="bbc-share-actions">
+            <button type="button" class="bbc-share-btn" data-share-method="copy">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 4h12a2 2 0 012 2v12M4 8v12a2 2 0 002 2h12M4 4h4v4H4z"/></svg>
+                Copy link
+            </button>
+            <a class="bbc-share-btn bbc-share-twitter" data-share-method="twitter"
+               target="_blank" rel="noopener" href="#">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M22 5.8c-.7.3-1.5.5-2.4.6.9-.5 1.5-1.3 1.8-2.3-.8.5-1.7.8-2.7 1A4.3 4.3 0 0011.5 9 12 12 0 013 4.7a4.2 4.2 0 001.3 5.6 4.2 4.2 0 01-1.9-.5v.1c0 2 1.5 3.8 3.4 4.2-.6.2-1.3.2-2 .1a4.3 4.3 0 004 3 8.6 8.6 0 01-5.4 1.9c-.4 0-.7 0-1-.1A12 12 0 008 21c8 0 12.3-6.6 12.3-12.3v-.6c.8-.6 1.5-1.4 2-2.3z"/></svg>
+                Share on X
+            </a>
+            <a class="bbc-share-btn bbc-share-facebook" data-share-method="facebook"
+               target="_blank" rel="noopener" href="#">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M22 12a10 10 0 10-11.5 9.9v-7H8v-2.9h2.5V9.4c0-2.5 1.5-3.8 3.7-3.8 1.1 0 2.2.2 2.2.2v2.4h-1.2c-1.2 0-1.6.8-1.6 1.6V12h2.7l-.4 2.9h-2.3v7A10 10 0 0022 12z"/></svg>
+                Share on Facebook
+            </a>
+            <a class="bbc-share-btn bbc-share-whatsapp" data-share-method="whatsapp"
+               target="_blank" rel="noopener" href="#">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M20 12a8 8 0 11-15.2-3.5L4 20l3.6-.8A8 8 0 0020 12z"/></svg>
+                Share on WhatsApp
+            </a>
+            <form class="bbc-share-email-form" data-share-method="email"
+                  method="POST" action="">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <input type="hidden" name="method" value="email">
+                <label for="bbc-share-email-input" class="bbc-share-email-label">
+                    Email this to someone:
+                </label>
+                <div class="bbc-share-email-row">
+                    <input type="email" id="bbc-share-email-input" name="recipient"
+                           placeholder="friend@example.com" required>
+                    <button type="submit" class="bbc-share-send">Send</button>
+                </div>
+                <p class="bbc-share-email-note" data-share-result hidden></p>
+            </form>
+        </div>
+
+        <div class="bbc-share-link-row">
+            <input type="text" id="bbc-share-url" readonly value="">
+        </div>
+    </div>
+</div>
+
 {% block extra_js %}{% endblock %}
 </body>
 </html>

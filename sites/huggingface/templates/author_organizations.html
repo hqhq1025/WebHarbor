@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% block title %}{{ author.username }} · Organizations · Hugging Face{% endblock %}
+
+{% block content %}
+<div class="container-wide page">
+    <nav class="docs-breadcrumb">
+        <a href="{{ url_for('author_page', username=author.username) }}">{{ author.username }}</a>
+        <span>/</span>
+        <span>Organizations</span>
+    </nav>
+    <h1>{{ author.display_name or author.username }} — Organizations</h1>
+    <p class="muted">Organizations that {{ author.username }} is a member of or contributes to.</p>
+
+    {% if orgs %}
+    <div class="repo-list" style="margin-top:18px;">
+        {% for o in orgs %}
+        <a class="repo-card" href="{{ url_for('author_page', username=o.username) }}">
+            <div class="repo-card-head">
+                {% if o.avatar_url %}<img src="{{ o.avatar_url }}" alt="" style="width:32px;height:32px;border-radius:6px;margin-right:8px;vertical-align:middle;">{% endif %}
+                <strong>{{ o.display_name or o.username }}</strong>
+                {% if o.is_verified %}<span class="tag tag-blue">verified</span>{% endif %}
+            </div>
+            <div class="repo-card-body">
+                <span class="tag">{{ o.kind }}</span>
+                <span class="tag">{{ o.followers_count }} followers</span>
+            </div>
+            <p class="muted" style="font-size:13px;margin:6px 0 0;">{{ (o.bio or '')[:160] }}</p>
+        </a>
+        {% endfor %}
+    </div>
+    {% else %}
+    <p class="empty-state">No organization memberships yet.</p>
+    {% endif %}
+
+    <section style="margin-top:32px;border-top:1px solid var(--border,#e5e7eb);padding-top:18px;">
+        <h2 style="font-size:18px;">Create new organization</h2>
+        <p class="muted" style="font-size:13.5px;">Organizations let you share private repos, manage billing, and collaborate with your team. Start a new one below.</p>
+        <form action="#" style="max-width:520px;margin-top:12px;">
+            <label style="display:block;font-size:13px;font-weight:600;margin-top:8px;">Organization name</label>
+            <input type="text" name="org_name" placeholder="acme-research" style="width:100%;padding:8px 10px;border-radius:6px;border:1px solid var(--border,#e5e7eb);">
+            <label style="display:block;font-size:13px;font-weight:600;margin-top:8px;">Type</label>
+            <select name="org_kind" style="width:100%;padding:8px 10px;border-radius:6px;border:1px solid var(--border,#e5e7eb);">
+                <option value="company">Company</option>
+                <option value="academic">Academic / Research</option>
+                <option value="community">Community / Non-profit</option>
+            </select>
+            <button type="submit" class="btn btn-primary" style="margin-top:14px;">Create organization</button>
+        </form>
+    </section>
+</div>
+{% endblock %}

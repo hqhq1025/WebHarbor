@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% block title %}Language settings - Google{% endblock %}
+{% block content %}
+<div class="prefs-page">
+    <h1>Languages on Google Search</h1>
+    <p class="lead">Pick the language you'd like Google Search to use, and one or
+       more languages you'd like search results in.</p>
+    {% if saved %}<div class="prefs-saved">Language preference saved.</div>{% endif %}
+    <form method="POST" class="prefs-form">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token_value }}">
+        <label for="language-select">Interface language</label>
+        <select name="language" id="language-select">
+            <option value="en">English</option>
+            <option value="en-GB">English (UK)</option>
+            <option value="en-AU">English (Australia)</option>
+            <option value="es">Español</option>
+            <option value="es-MX">Español (México)</option>
+            <option value="fr">Français</option>
+            <option value="fr-CA">Français (Canada)</option>
+            <option value="de">Deutsch</option>
+            <option value="it">Italiano</option>
+            <option value="pt">Português</option>
+            <option value="pt-BR">Português (Brasil)</option>
+            <option value="nl">Nederlands</option>
+            <option value="sv">Svenska</option>
+            <option value="no">Norsk</option>
+            <option value="da">Dansk</option>
+            <option value="fi">Suomi</option>
+            <option value="pl">Polski</option>
+            <option value="cs">Čeština</option>
+            <option value="el">Ελληνικά</option>
+            <option value="ru">Русский</option>
+            <option value="uk">Українська</option>
+            <option value="tr">Türkçe</option>
+            <option value="ar">العربية</option>
+            <option value="he">עברית</option>
+            <option value="hi">हिन्दी</option>
+            <option value="bn">বাংলা</option>
+            <option value="th">ภาษาไทย</option>
+            <option value="vi">Tiếng Việt</option>
+            <option value="zh-CN">中文（简体）</option>
+            <option value="zh-TW">中文（繁體）</option>
+            <option value="ja">日本語</option>
+            <option value="ko">한국어</option>
+            <option value="id">Bahasa Indonesia</option>
+            <option value="ms">Bahasa Melayu</option>
+            <option value="fil">Filipino</option>
+        </select>
+        <button class="btn-primary" type="submit">Save</button>
+    </form>
+    <p><a href="{{ url_for('preferences_region') }}">Region →</a></p>
+</div>
+{% endblock %}

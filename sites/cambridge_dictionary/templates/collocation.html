@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% block title %}Collocations of {{ word.headword }} | Cambridge Dictionary{% endblock %}
+{% block content %}
+<div class="container collocation-page">
+  <nav class="breadcrumb">
+    <a href="{{ url_for('index') }}">Dictionary</a> &rsaquo;
+    <a href="{{ url_for('collocation_index') }}">Collocations</a> &rsaquo;
+    <span>{{ word.headword }}</span>
+  </nav>
+
+  <header class="coll-header">
+    <h1 class="coll-headword">Collocations of <em>{{ word.headword }}</em></h1>
+    <div class="coll-meta">
+      <span class="entry-pos">{{ word.pos }}</span>
+      {% if word.level %}<span class="entry-level level-{{ word.level|lower }}">{{ word.level }}</span>{% endif %}
+      {% if word.register %}<span class="register-tag">{{ word.register }}</span>{% endif %}
+    </div>
+    <p class="coll-intro">
+      Collocations are partner words that frequently appear with <strong>{{ word.headword }}</strong>.
+      Learning collocations helps you sound natural in English.
+    </p>
+  </header>
+
+  <section class="coll-list">
+    {% for c in collocations %}
+      <article class="coll-card">
+        <div class="coll-card-head">
+          <span class="coll-card-type">{{ c.type }}</span>
+          <span class="coll-card-phrase">{{ c.phrase }}</span>
+        </div>
+        <p class="coll-card-example">&#x25BA; {{ c.example }}</p>
+      </article>
+    {% endfor %}
+  </section>
+
+  <section class="coll-cross">
+    <h2 class="sub-section-title">Related</h2>
+    <ul>
+      <li><a href="{{ url_for('word_detail', slug=word.slug) }}">Full dictionary entry for {{ word.headword }}</a></li>
+      {% if word.etymology %}<li><a href="{{ url_for('etymology_detail', slug=word.slug) }}">Etymology of {{ word.headword }}</a></li>{% endif %}
+      <li><a href="{{ url_for('pronunciation_detail', slug=word.slug) }}">Pronunciation of {{ word.headword }}</a></li>
+    </ul>
+  </section>
+</div>
+{% endblock %}

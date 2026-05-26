@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block title %}{{ help_title }} - Search Help{% endblock %}
+{% block content %}
+<div class="help-page">
+    <nav class="help-breadcrumb"><a href="{{ url_for('search_help_index') }}">Search Help</a> &rsaquo; {{ help_title }}</nav>
+    <h1>{{ help_title }}</h1>
+    <p class="lead">{{ help_body }}</p>
+
+    <h2>Common questions</h2>
+    <ul class="help-faq">
+        <li><strong>Why am I seeing this option?</strong> Google personalises Search results based on your account preferences — region, language, and SafeSearch.</li>
+        <li><strong>How do I reset to defaults?</strong> Visit <a href="{{ url_for('settings') }}">Settings</a> and click <em>Reset all preferences</em>.</li>
+        <li><strong>Where can I file feedback?</strong> Use the <em>Send feedback</em> link at the bottom of any results page.</li>
+    </ul>
+
+    <h2>Related help topics</h2>
+    <ul class="help-related">
+        {% for slug, (title, _summary) in topics.items() if slug != help_topic %}
+        <li><a href="{{ url_for('search_help', topic=slug) }}">{{ title }}</a></li>
+        {% endfor %}
+    </ul>
+</div>
+{% endblock %}

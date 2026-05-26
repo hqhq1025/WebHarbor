@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block title %}Etymology index | Cambridge Dictionary{% endblock %}
+{% block content %}
+<div class="container etymology-index-page">
+  <nav class="breadcrumb">
+    <a href="{{ url_for('index') }}">Dictionary</a> &rsaquo;
+    <span>Etymology</span>
+  </nav>
+
+  <header class="ety-index-header">
+    <h1>Etymology</h1>
+    <p class="ety-index-intro">Explore the historical origins of {{ total }} English words. Each entry traces a word's source language, century of first English attestation, and how the modern sense developed.</p>
+    <p class="ety-index-count">Showing {{ words|length }} of {{ total }} entries on page {{ page }}.</p>
+  </header>
+
+  <div class="ety-index-grid">
+    {% for w in words %}
+      <a href="{{ url_for('etymology_detail', slug=w.slug) }}" class="ety-card">
+        <span class="ety-card-headword">{{ w.headword }}</span>
+        <span class="ety-card-pos">{{ w.pos }}</span>
+        {% if w.level %}<span class="entry-level level-{{ w.level|lower }}">{{ w.level }}</span>{% endif %}
+        <span class="ety-card-snippet">{{ w.etymology[:120] }}{% if w.etymology|length > 120 %}…{% endif %}</span>
+      </a>
+    {% endfor %}
+  </div>
+
+  <nav class="pager">
+    {% if page > 1 %}<a href="{{ url_for('etymology_index') }}?page={{ page - 1 }}">&laquo; Previous</a>{% endif %}
+    <span class="pager-cur">Page {{ page }}</span>
+    {% if page * per < total %}<a href="{{ url_for('etymology_index') }}?page={{ page + 1 }}">Next &raquo;</a>{% endif %}
+  </nav>
+</div>
+{% endblock %}

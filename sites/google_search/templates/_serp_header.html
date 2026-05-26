@@ -37,7 +37,7 @@
             </div>
         </div>
     </div>
-    <div class="serp-tabs">
+    <div class="serp-tabs serp-tabs-sticky">
         {% for v in nav_verticals %}
         <a class="serp-tab {% if v.slug == vertical %}active{% endif %}"
            href="{{ url_for('search', q=q, tbm=v.slug) }}">

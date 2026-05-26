@@ -1128,3 +1128,101 @@ small{ font-size:13px; color:var(--c-muted); }
   .nav-explore{ display:none; }
   h1{ font-size:36px; } h2{ font-size:24px; }
 }
+
+/* ─── R4 polish: progress ring, week accordion, instructor card, cert modal, mobile grid ── */
+
+/* Course progress ring (shown on /learn/<slug>/lecture/<n>) */
+.cd-progress-ring{ display:flex; align-items:center; gap:18px; }
+.cd-progress-ring .ring{
+  position:relative; width:96px; height:96px; border-radius:50%;
+  background:conic-gradient(var(--c-primary,#0056D2) calc(var(--pct,0)*1%), #E5F0FF 0);
+  display:flex; align-items:center; justify-content:center;
+}
+.cd-progress-ring .ring::after{
+  content:''; position:absolute; inset:6px; border-radius:50%; background:#fff;
+}
+.cd-progress-ring .ring-label{
+  position:relative; z-index:1; font-weight:800; font-size:18px;
+  color:var(--c-primary,#0056D2);
+}
+
+/* Week accordion enhancement (course detail syllabus) */
+.syllabus-list .syllabus-item{
+  border:1px solid var(--c-border-soft,#DAE1ED); border-radius:10px;
+  padding:18px 20px; margin-bottom:12px; background:#fff;
+  transition:box-shadow .15s, border-color .15s;
+}
+.syllabus-list .syllabus-item:hover{
+  box-shadow:0 4px 12px rgba(0,86,210,.07);
+  border-color:var(--c-primary,#0056D2);
+}
+.syllabus-list .syllabus-week .week-label{
+  display:inline-block; padding:3px 10px; border-radius:999px;
+  background:#E5F0FF; color:#0056D2; font-size:11px; font-weight:800;
+  text-transform:uppercase; letter-spacing:.5px; margin-right:10px;
+}
+.syllabus-list .module-stats{ display:flex; gap:14px; margin-top:8px; font-size:12px; color:#5B6780; }
+.syllabus-list .module-videos{ margin-top:10px; padding-left:0; list-style:none; }
+.syllabus-list .module-video{
+  padding:5px 0; font-size:13px; color:#1F2937;
+  border-top:1px dashed #EEF1F8;
+}
+.syllabus-list .module-video:first-child{ border-top:0; }
+.syllabus-list .video-icon{ color:#0056D2; font-size:11px; margin-right:6px; }
+
+/* Instructor card with university logo strip */
+.cd-instructor-strip{
+  background:#F8FAFD; border:1px solid var(--c-border-soft,#DAE1ED);
+  border-radius:12px; padding:18px 20px; margin-bottom:24px;
+}
+.cd-instructor-strip img{ box-shadow:0 2px 8px rgba(0,0,0,.08); }
+.cd-instructor-link{ font-size:17px; font-weight:600; }
+
+/* Certificate preview modal styling (uses <dialog> or .cert-modal-overlay) */
+.cert-modal-overlay{
+  position:fixed; inset:0; background:rgba(0,0,0,.5); z-index:1000;
+  display:none; align-items:center; justify-content:center; padding:24px;
+}
+.cert-modal-overlay.open{ display:flex; }
+.cert-modal{
+  background:#fff; border-radius:14px; max-width:760px; width:100%;
+  padding:40px 44px; box-shadow:0 18px 48px rgba(0,0,0,.25);
+}
+.cert-modal .cert-banner{
+  border:2px solid #DD7B0F; padding:20px; border-radius:8px;
+  background:linear-gradient(135deg,#FFF8EE 0%,#FFF1DD 100%);
+}
+.cert-modal h2{ font-size:24px; margin:0 0 8px; }
+.cert-modal .cert-name{ font-size:30px; font-weight:700; color:#0056D2; margin:10px 0; }
+.cert-modal .cert-course{ font-size:16px; color:#1F2937; }
+.cert-modal .cert-foot{
+  margin-top:20px; display:flex; justify-content:space-between; align-items:center;
+  font-size:13px; color:#5B6780;
+}
+
+/* Mobile responsive grid (browse + career + skill pages) */
+@media (max-width: 1100px){
+  .results-list, .career-page .courses-grid, .partner-courses-grid{
+    grid-template-columns:repeat(3, minmax(0,1fr));
+  }
+}
+@media (max-width: 820px){
+  .results-list, .career-page .courses-grid, .partner-courses-grid,
+  .cd-body{
+    grid-template-columns:repeat(2, minmax(0,1fr));
+  }
+  .cd-body{ display:block; }
+  .cd-sidebar{ margin-top:24px; }
+  .cd-hero h1{ font-size:28px; }
+}
+@media (max-width: 540px){
+  .results-list, .career-page .courses-grid, .partner-courses-grid{
+    grid-template-columns:1fr;
+  }
+  .cd-tabs-inner{ overflow-x:auto; gap:18px; -webkit-overflow-scrolling:touch; }
+  .cd-meta-row{ flex-wrap:wrap; gap:10px; }
+  .cd-tags{ gap:6px; }
+  .syllabus-list .syllabus-item{ padding:14px 16px; }
+  .cert-modal{ padding:24px 22px; }
+  .cert-modal .cert-name{ font-size:22px; }
+}

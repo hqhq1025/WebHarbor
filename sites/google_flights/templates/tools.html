@@ -59,6 +59,16 @@
       <h3>Explore map</h3>
       <p>Open the full-screen world map and click pins to start a search.</p>
     </a>
+    <a href="{{ url_for('tools_co2_comparison') }}" class="tool-card">
+      <div class="tool-icon"><span class="material-symbols-outlined">eco</span></div>
+      <h3>CO2 comparison</h3>
+      <p>Compare per-passenger emissions across carriers and travel modes on any route.</p>
+    </a>
+    <a href="{{ url_for('tools_visa_requirements') }}" class="tool-card">
+      <div class="tool-icon"><span class="material-symbols-outlined">badge</span></div>
+      <h3>Visa requirements</h3>
+      <p>Look up entry rules and stay limits for your passport and destination.</p>
+    </a>
   </div>
 </section>
 {% endblock %}

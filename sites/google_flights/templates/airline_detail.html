@@ -1,0 +1,66 @@
+{% extends 'base.html' %}
+{% block title %}{{ airline_name }} ({{ airline_code }}) - Google Flights{% endblock %}
+{% block content %}
+<div class="info-page">
+  <div class="info-page-inner">
+    <div class="airline-detail-header" style="display:flex;align-items:center;gap:18px;margin-bottom:24px;">
+      <img src="{{ logo_url }}" alt="{{ airline_name }} logo" style="width:64px;height:64px;border-radius:12px;border:1px solid #dadce0;background:#fff;padding:8px;">
+      <div>
+        <h1 style="margin:0;">{{ airline_name }}</h1>
+        <div style="color:#5f6368;">IATA <strong>{{ airline_code }}</strong> &middot; {{ alliance }} &middot; Hub {{ primary_hub }}</div>
+      </div>
+    </div>
+
+    <div class="card-grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px;margin-bottom:24px;">
+      <div class="kpi-card" style="background:#fff;border:1px solid #dadce0;border-radius:8px;padding:16px;">
+        <div style="font-size:13px;color:#5f6368;">Flights in catalog</div>
+        <div style="font-size:26px;font-weight:500;">{{ '{:,}'.format(flight_count) }}</div>
+      </div>
+      <div class="kpi-card" style="background:#fff;border:1px solid #dadce0;border-radius:8px;padding:16px;">
+        <div style="font-size:13px;color:#5f6368;">Routes served</div>
+        <div style="font-size:26px;font-weight:500;">{{ '{:,}'.format(route_count) }}</div>
+      </div>
+      <div class="kpi-card" style="background:#fff;border:1px solid #dadce0;border-radius:8px;padding:16px;">
+        <div style="font-size:13px;color:#5f6368;">Average fare (Economy)</div>
+        <div style="font-size:26px;font-weight:500;">${{ avg_price|round(0)|int }}</div>
+      </div>
+      <div class="kpi-card" style="background:#fff;border:1px solid #dadce0;border-radius:8px;padding:16px;">
+        <div style="font-size:13px;color:#5f6368;">Average rating</div>
+        <div style="font-size:26px;font-weight:500;">{{ avg_rating|round(1) }} / 5</div>
+      </div>
+    </div>
+
+    <h2>About {{ airline_name }}</h2>
+    <p>{{ blurb }}</p>
+
+    <h2>Top routes</h2>
+    <table class="data-table" style="width:100%;border-collapse:collapse;margin-top:8px;">
+      <thead>
+        <tr style="text-align:left;border-bottom:1px solid #dadce0;">
+          <th style="padding:8px 12px;">Route</th>
+          <th style="padding:8px 12px;">Flights</th>
+          <th style="padding:8px 12px;">Avg price</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for route in top_routes %}
+        <tr style="border-bottom:1px solid #f1f3f4;">
+          <td style="padding:8px 12px;">
+            <a href="{{ url_for('route_stats', origin=route.o_iata, dest=route.d_iata) }}">
+              {{ route.o_iata }} &rarr; {{ route.d_iata }}
+            </a>
+          </td>
+          <td style="padding:8px 12px;">{{ '{:,}'.format(route.count) }}</td>
+          <td style="padding:8px 12px;">${{ route.avg_price|round(0)|int }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+
+    <h2 style="margin-top:24px;">Fleet</h2>
+    <ul>
+      {% for ac in fleet %}<li>{{ ac }}</li>{% endfor %}
+    </ul>
+  </div>
+</div>
+{% endblock %}

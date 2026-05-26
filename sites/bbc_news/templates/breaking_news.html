@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+{% block title %}Breaking news - BBC News{% endblock %}
+
+{% block content %}
+<nav class="breadcrumb" aria-label="Breadcrumb">
+    <a href="{{ url_for('index') }}">BBC</a>
+    <span class="breadcrumb-sep">&rsaquo;</span>
+    <a href="{{ url_for('section_page', slug='news') }}">News</a>
+    <span class="breadcrumb-sep">&rsaquo;</span>
+    <span class="breadcrumb-current">Breaking news</span>
+</nav>
+
+<div class="page-header breaking-header">
+    <h1>
+        <span class="breaking-dot" aria-hidden="true"></span>
+        Breaking news
+    </h1>
+    <p>Developing stories monitored by the BBC newsroom. This page refreshes hourly.</p>
+    <form method="POST" action="{{ url_for('breaking_news_banner_dismiss') }}" style="margin-top: 12px;">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button class="article-action-btn" type="submit" id="breaking-banner-dismiss">
+            Dismiss breaking-news banner on every page
+        </button>
+    </form>
+</div>
+
+<style>
+.breaking-header h1 {
+    display: flex; align-items: center; gap: 12px;
+}
+.breaking-dot {
+    display: inline-block; width: 14px; height: 14px;
+    border-radius: 50%; background: var(--bbc-red);
+    animation: pulse 1.4s infinite;
+}
+@keyframes pulse {
+    0%   { opacity: 1; transform: scale(1); box-shadow: 0 0 0 0 rgba(187,25,25,0.7); }
+    50%  { opacity: 0.6; transform: scale(0.85); box-shadow: 0 0 0 8px rgba(187,25,25,0); }
+    100% { opacity: 1; transform: scale(1); box-shadow: 0 0 0 0 rgba(187,25,25,0); }
+}
+.breadcrumb {
+    font-size: 13px; color: var(--bbc-text-light); margin: 12px 0 18px;
+}
+.breadcrumb a { color: var(--bbc-text-light); text-decoration: none; }
+.breadcrumb a:hover { color: var(--bbc-red); text-decoration: underline; }
+.breadcrumb-sep { margin: 0 6px; color: #999; }
+.breadcrumb-current { color: var(--bbc-text); font-weight: 600; }
+</style>
+
+<div class="section-grid">
+    {% for art in articles %}
+    <a class="card breaking-card" href="{{ url_for('article_detail', slug=art.slug) }}">
+        <div class="card-image-wrap">
+            {% if art.hero_image %}
+            <img src="{{ art.hero_image }}" alt="{{ art.headline|e }}" class="card-image"
+                 onerror="this.style.display='none'">
+            {% endif %}
+            <div class="card-label" style="background: var(--bbc-red);">BREAKING</div>
+        </div>
+        <h3 class="card-headline">{{ art.headline }}</h3>
+        <p class="card-meta">
+            <span class="card-category">{{ art.subsection or (art.category.name if art.category else 'News') }}</span>
+            <span class="dot">&middot;</span>
+            <span>{{ art.published_date_str }}</span>
+        </p>
+    </a>
+    {% else %}
+    <p>No breaking news at this time.</p>
+    {% endfor %}
+</div>
+{% endblock %}

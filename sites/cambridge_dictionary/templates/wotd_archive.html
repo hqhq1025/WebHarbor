@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% block title %}Word of the Day archive{% if year %} — {{ year }}{% endif %} | Cambridge Dictionary{% endblock %}
+{% block content %}
+<div class="container wotd-archive-page">
+  <nav class="breadcrumb">
+    <a href="{{ url_for('index') }}">Dictionary</a> &rsaquo;
+    <a href="{{ url_for('word_of_the_day') }}">Word of the Day</a> &rsaquo;
+    <span>Archive{% if year %} — {{ year }}{% endif %}</span>
+  </nav>
+
+  <header class="wotd-archive-header">
+    <h1>Word of the Day archive{% if year %} — <em>{{ year }}</em>{% endif %}</h1>
+    <p class="wotd-archive-year-nav">
+      Browse by year:
+      {% for y in years %}
+        {% if year == y %}
+          <strong>{{ y }}</strong>
+        {% else %}
+          <a href="{{ url_for('wotd_archive_year', year=y) }}">{{ y }}</a>
+        {% endif %}
+        {% if not loop.last %} &middot; {% endif %}
+      {% endfor %}
+    </p>
+  </header>
+
+  {% if year %}
+    <p class="wotd-archive-count">{{ entries|length }} entries archived for {{ year }}.</p>
+    <table class="wotd-archive-table">
+      <thead><tr><th>Date</th><th>Word</th><th>POS</th><th>Level</th></tr></thead>
+      <tbody>
+        {% for e in entries %}
+          <tr>
+            <td><a href="{{ url_for('word_of_the_day') }}?date={{ e.date.isoformat() }}">{{ e.date.strftime('%Y-%m-%d') }}</a></td>
+            <td><a href="{{ url_for('word_detail', slug=e.word.slug) }}">{{ e.word.headword }}</a></td>
+            <td>{{ e.word.pos }}</td>
+            <td>{% if e.word.level %}<span class="entry-level level-{{ e.word.level|lower }}">{{ e.word.level }}</span>{% endif %}</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  {% else %}
+    <p class="wotd-archive-intro">Choose a year above to browse every word of the day picked that calendar year. Each archived link opens the live entry exactly as it was first highlighted.</p>
+  {% endif %}
+</div>
+{% endblock %}

@@ -11,10 +11,29 @@
     <h1>Dataset Viewer — {{ repo.slug }}</h1>
     <p class="muted">{{ repo.description }}</p>
 
+    {# R4: ETL config tabs — switch between train/validation/test splits. The
+       active split is sent via ?split=train|validation|test and rendered
+       client-side from a single payload so we keep one viewer template. #}
+    <div class="etl-config-tabs" style="display:flex;gap:0;margin:14px 0 8px;border-bottom:1px solid var(--border,#e5e7eb);">
+        {% set active_split = request.args.get('split', 'train') %}
+        {% for split_name in ['train', 'validation', 'test'] %}
+        <a href="?split={{ split_name }}{% if request.args.get('page') %}&amp;page={{ request.args.get('page') }}{% endif %}"
+           class="etl-tab {% if active_split == split_name %}active{% endif %}"
+           style="padding:8px 16px;border-bottom:2px solid {% if active_split == split_name %}#3b82f6{% else %}transparent{% endif %};color:{% if active_split == split_name %}#1e40af{% else %}#6b7280{% endif %};font-weight:{% if active_split == split_name %}700{% else %}500{% endif %};font-size:13px;text-decoration:none;">
+            <span aria-hidden="true">{% if split_name == 'train' %}🟦{% elif split_name == 'validation' %}🟩{% else %}🟧{% endif %}</span>
+            {{ split_name }}
+            <span class="muted" style="margin-left:6px;font-weight:500;font-size:12px;">
+            {% if split_name == 'train' %}{{ viewer.rows|length }}{% elif split_name == 'validation' %}{{ (viewer.rows|length // 10) or 1 }}{% else %}{{ (viewer.rows|length // 12) or 1 }}{% endif %} rows
+            </span>
+        </a>
+        {% endfor %}
+    </div>
+
     <div class="viewer-meta" style="margin:8px 0 14px;">
-        <span class="tag">Split: <strong>train</strong></span>
+        <span class="tag">Split: <strong>{{ active_split }}</strong></span>
         <span class="tag">Rows: <strong>{{ viewer.rows|length }}</strong></span>
         <span class="tag">Columns: <strong>{{ viewer.columns|join(', ') }}</strong></span>
+        <span class="tag">Modality: <strong>{{ repo.modality or 'Text' }}</strong></span>
     </div>
 
     <div class="viewer-wrap">
@@ -25,7 +44,16 @@
                 </tr>
             </thead>
             <tbody>
-                {% for row in viewer.rows %}
+                {# R4: paginate rows in groups of 10 so the agent can navigate
+                   long preview lists. ?page is 1-indexed. #}
+                {% set page_size = 10 %}
+                {% set page = (request.args.get('page', '1')|int) %}
+                {% if page < 1 %}{% set page = 1 %}{% endif %}
+                {% set total_pages = ((viewer.rows|length + page_size - 1) // page_size) or 1 %}
+                {% if page > total_pages %}{% set page = total_pages %}{% endif %}
+                {% set start_idx = (page - 1) * page_size %}
+                {% set end_idx = start_idx + page_size %}
+                {% for row in viewer.rows[start_idx:end_idx] %}
                 <tr>
                     {% for cell in row %}<td><pre class="viewer-cell">{{ cell }}</pre></td>{% endfor %}
                 </tr>
@@ -33,6 +61,30 @@
             </tbody>
         </table>
     </div>
+
+    {# R4: dataset-viewer page nav — prev / next / numbered. #}
+    <nav class="viewer-pagination" style="display:flex;gap:6px;margin:14px 0 4px;align-items:center;flex-wrap:wrap;">
+        <span class="muted" style="font-size:13px;margin-right:8px;">Page {{ page }} of {{ total_pages }}</span>
+        {% if page > 1 %}
+            <a class="btn btn-sm btn-outline" href="?split={{ active_split }}&amp;page={{ page - 1 }}">‹ Previous</a>
+        {% else %}
+            <button class="btn btn-sm btn-outline" disabled>‹ Previous</button>
+        {% endif %}
+        {% for p in range(1, total_pages + 1) %}
+            {% if p == page %}
+                <button class="btn btn-sm btn-primary" disabled>{{ p }}</button>
+            {% elif p <= 5 or p == total_pages %}
+                <a class="btn btn-sm btn-outline" href="?split={{ active_split }}&amp;page={{ p }}">{{ p }}</a>
+            {% elif p == 6 and total_pages > 7 %}
+                <span class="muted" style="padding:0 4px;">…</span>
+            {% endif %}
+        {% endfor %}
+        {% if page < total_pages %}
+            <a class="btn btn-sm btn-outline" href="?split={{ active_split }}&amp;page={{ page + 1 }}">Next ›</a>
+        {% else %}
+            <button class="btn btn-sm btn-outline" disabled>Next ›</button>
+        {% endif %}
+    </nav>
 
     {# Parsed preview of messages-style rows — helps agents extract the 'user' content clearly. #}
     {% if 'messages' in viewer.columns %}

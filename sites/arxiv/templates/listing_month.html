@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% block title %}{{ subject_code }} · {{ month_label }} — arXiv{% endblock %}
+{% block breadcrumbs %}
+    <span class="sep">&gt;</span>
+    <a href="{{ url_for('category_detail', code=category.code) }}">{{ category.code }}</a>
+    <span class="sep">&gt;</span>
+    <span style="color:#fff">{{ subject_code }} {{ month_label }}</span>
+{% endblock %}
+{% block content %}
+
+<div class="listing-header">
+    <p class="subtitle">Monthly archive · <b>{{ subject_code }}</b></p>
+    <h1>{{ category.name }} <small style="color:var(--text-muted)">— {{ month_label }}</small></h1>
+</div>
+
+<div class="listing-nav">
+    Showing <b>{{ (page-1)*per_page + 1 if total else 0 }}-{{ [page*per_page, total]|min }}</b> of <b>{{ total }}</b> entries in {{ month_label }} |
+    <a href="{{ url_for('listing_year_month', code=subject_code, year=prev_y, month=prev_m) }}">‹ {{ prev_y }}-{{ '%02d' % prev_m }}</a> |
+    <a href="{{ url_for('listing_year_month', code=subject_code, year=next_y, month=next_m) }}">{{ next_y }}-{{ '%02d' % next_m }} ›</a> |
+    <a href="{{ url_for('listing', code=subject_code, view='recent') }}">Back to {{ subject_code }} recent</a>
+</div>
+
+{% if papers %}
+<dl>
+    {% for p in papers %}
+    <dt>
+        <span class="entry-id">[{{ loop.index + (page-1)*per_page }}]&nbsp;<a href="{{ url_for('paper_detail', arxiv_id=p.arxiv_id) }}">arXiv:{{ p.arxiv_id }}</a></span>
+        [<a href="{{ url_for('pdf_view', arxiv_id=p.arxiv_id) }}">pdf</a>,
+         <a href="{{ url_for('html_view', arxiv_id=p.arxiv_id) }}">html</a>,
+         <a href="{{ url_for('format_view', arxiv_id=p.arxiv_id) }}">other</a>]
+        <span class="muted">· submitted {{ p.submitted_date }}</span>
+    </dt>
+    <dd class="paper-entry">
+        <div class="entry-title"><a href="{{ url_for('paper_detail', arxiv_id=p.arxiv_id) }}">{{ p.display_title }}</a></div>
+        <div class="entry-authors"><b>Authors:</b>
+            {% for a in p.get_authors() %}<a href="{{ url_for('author_papers', name=a) }}">{{ a }}</a>{% if not loop.last %}, {% endif %}{% endfor %}
+        </div>
+        {% if p.display_comments %}<div class="entry-comments"><b>Comments:</b> {{ p.display_comments }}</div>{% endif %}
+        <div class="entry-subjects"><b>Subjects:</b> {{ p.subjects }}</div>
+    </dd>
+    {% endfor %}
+</dl>
+<div class="pagination">
+    {% if page > 1 %}<a href="{{ url_for('listing_year_month', code=subject_code, year=year, month=month, page=page-1) }}">« Prev</a>{% endif %}
+    <span class="current">{{ page }}</span>
+    {% if page * per_page < total %}<a href="{{ url_for('listing_year_month', code=subject_code, year=year, month=month, page=page+1) }}">Next »</a>{% endif %}
+</div>
+{% else %}
+<p class="muted">No papers archived in <b>{{ subject_code }}</b> for {{ month_label }}.</p>
+{% endif %}
+
+{% endblock %}

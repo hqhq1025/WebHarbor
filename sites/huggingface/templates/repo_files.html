@@ -82,5 +82,57 @@
         Want to download the full repository?
         <code>git clone https://huggingface.co/{{ repo.slug }}</code>
     </p>
+
+    {# R4: side panel — file-tree expand/collapse. CSS-only details/summary
+       so the agent can see and click "Expand all" without JS. Each top-level
+       directory is its own collapsible group. #}
+    <aside class="file-tree-pane" style="margin-top:24px;border:1px solid var(--border,#e5e7eb);border-radius:10px;padding:14px 16px;background:#fafafa;">
+        <header style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px;">
+            <h3 style="margin:0;font-size:14px;font-weight:700;">File tree</h3>
+            <div class="file-tree-actions" style="font-size:12px;">
+                <a href="#" onclick="document.querySelectorAll('.file-tree-group').forEach(g=>g.open=true);return false;">Expand all</a>
+                ·
+                <a href="#" onclick="document.querySelectorAll('.file-tree-group').forEach(g=>g.open=false);return false;">Collapse all</a>
+            </div>
+        </header>
+        {% set dirs = {} %}
+        {% set top_files = [] %}
+        {% for f in files %}
+            {% if f.kind == 'dir' %}
+                {% set _ = dirs.update({f.display_name: []}) %}
+            {% elif '/' in (f.display_name or '') %}
+                {% set _dir = f.display_name.split('/')[0] %}
+                {% if _dir in dirs %}{% set _ = dirs[_dir].append(f) %}{% endif %}
+            {% else %}
+                {% set _ = top_files.append(f) %}
+            {% endif %}
+        {% endfor %}
+        {% for dir_name in dirs.keys() %}
+            <details class="file-tree-group" style="margin:4px 0;">
+                <summary style="cursor:pointer;font-weight:600;font-size:13px;">📁 {{ dir_name }}</summary>
+                <ul style="margin:4px 0 6px 22px;padding:0;list-style:none;font-size:12.5px;">
+                    {% for child in dirs[dir_name] %}
+                    <li style="margin:2px 0;">📄 <a href="{{ url_for(repo.repo_type ~ '_blob' if repo.repo_type in ['dataset','space'] else 'model_blob', author=repo.slug.split('/')[0], name=repo.slug.split('/')[1], filepath=child.path) }}">{{ child.display_name.split('/')[-1] }}</a></li>
+                    {% else %}
+                    <li class="muted" style="margin:2px 0;font-size:12px;">(empty)</li>
+                    {% endfor %}
+                </ul>
+            </details>
+        {% endfor %}
+        {% if top_files %}
+            <details class="file-tree-group" open style="margin:4px 0;">
+                <summary style="cursor:pointer;font-weight:600;font-size:13px;">📄 Root files</summary>
+                <ul style="margin:4px 0 6px 22px;padding:0;list-style:none;font-size:12.5px;">
+                    {% for f in top_files %}
+                    <li style="margin:2px 0;">📄 <a href="{{ url_for(repo.repo_type ~ '_blob' if repo.repo_type in ['dataset','space'] else 'model_blob', author=repo.slug.split('/')[0], name=repo.slug.split('/')[1], filepath=f.path) }}">{{ f.display_name }}</a></li>
+                    {% endfor %}
+                </ul>
+            </details>
+        {% endif %}
+        <p class="muted" style="font-size:12px;margin:8px 0 0;">
+            Files-and-versions view: <a href="{{ url_for(repo.repo_type ~ '_files' if repo.repo_type in ['dataset','space'] else 'model_files', author=repo.slug.split('/')[0], name=repo.slug.split('/')[1]) }}">tree</a>
+            · <a href="{{ url_for(repo.repo_type ~ '_commits' if repo.repo_type in ['dataset','space'] else 'model_commits', author=repo.slug.split('/')[0], name=repo.slug.split('/')[1]) }}">commits</a>
+        </p>
+    </aside>
 </div>
 {% endblock %}

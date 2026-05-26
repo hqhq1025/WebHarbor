@@ -636,14 +636,17 @@ def _load_scraped():
         ("models",   "hf_models_recent.json"),
         ("models",   "hf_models_more.json"),
         ("models",   "hf_models_r3.json"),
+        ("models",   "hf_models_r4.json"),
         ("datasets", "hf_datasets.json"),
         ("datasets", "hf_datasets_likes.json"),
         ("datasets", "hf_datasets_more.json"),
         ("datasets", "hf_datasets_r3.json"),
+        ("datasets", "hf_datasets_r4.json"),
         ("spaces",   "hf_spaces.json"),
         ("spaces",   "hf_spaces_recent.json"),
         ("spaces",   "hf_spaces_more.json"),
         ("spaces",   "hf_spaces_r3.json"),
+        ("spaces",   "hf_spaces_r4.json"),
     ]
     for kind, fname in supplementary:
         p = ROOT / "scraped_data" / fname
@@ -664,6 +667,16 @@ def _load_scraped():
                 continue
             seen[kind].add(adapted["slug"])
             base[kind].append(adapted)
+
+    # R4: cap each kind so the seed DB stays in the low hundreds of MB. The
+    # R4 scrape returns ~22k spaces / ~19k models / ~26k datasets, but the
+    # benchmark target is 25k models / 27k datasets / 3k spaces. Apply a
+    # deterministic cap (preserving the first N entries — already sorted by
+    # slug at this point, so the same N survive every rebuild).
+    CAPS = {"models": 26000, "datasets": 28000, "spaces": 4000}
+    for k, cap in CAPS.items():
+        if len(base[k]) > cap:
+            base[k] = base[k][:cap]
 
     return base
 

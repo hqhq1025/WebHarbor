@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block title %}Etymology of {{ word.headword }} | Cambridge Dictionary{% endblock %}
+{% block content %}
+<div class="container etymology-page">
+  <nav class="breadcrumb">
+    <a href="{{ url_for('index') }}">Dictionary</a> &rsaquo;
+    <a href="{{ url_for('etymology_index') }}">Etymology</a> &rsaquo;
+    <span>{{ word.headword }}</span>
+  </nav>
+
+  <header class="ety-header">
+    <h1 class="ety-headword">Etymology of <em>{{ word.headword }}</em></h1>
+    <div class="ety-meta">
+      <span class="entry-pos">{{ word.pos }}</span>
+      {% if word.level %}<span class="entry-level level-{{ word.level|lower }}">{{ word.level }}</span>{% endif %}
+      {% if word.register %}<span class="register-tag">{{ word.register }}</span>{% endif %}
+      {% if word.frequency_rank %}<span class="freq-rank">freq #{{ word.frequency_rank }}</span>{% endif %}
+    </div>
+    <div class="ety-pron">
+      {% if word.phonetic_uk %}<span class="pron-block"><span class="pron-label">uk</span> <span class="pron-ipa">{{ word.phonetic_uk }}</span></span>{% endif %}
+      {% if word.phonetic_us %}<span class="pron-block"><span class="pron-label">us</span> <span class="pron-ipa">{{ word.phonetic_us }}</span></span>{% endif %}
+    </div>
+  </header>
+
+  <section class="ety-body">
+    <h2 class="sub-section-title">Origin and history</h2>
+    <p class="ety-paragraph">{{ word.etymology }}</p>
+  </section>
+
+  <section class="ety-cross">
+    <h2 class="sub-section-title">Related dictionary pages</h2>
+    <ul class="ety-cross-list">
+      <li><a href="{{ url_for('word_detail', slug=word.slug) }}">Full dictionary entry for {{ word.headword }}</a></li>
+      <li><a href="{{ url_for('pronunciation_detail', slug=word.slug) }}">UK / US pronunciation for {{ word.headword }}</a></li>
+      {% if word.get_collocations() %}<li><a href="{{ url_for('collocation_detail', slug=word.slug) }}">Common collocations of {{ word.headword }}</a></li>{% endif %}
+    </ul>
+  </section>
+
+  <p class="dict-source">(Etymology compiled from public-domain historical-linguistic sources for the Cambridge Dictionary mirror.)</p>
+</div>
+{% endblock %}

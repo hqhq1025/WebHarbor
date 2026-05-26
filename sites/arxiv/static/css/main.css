@@ -1313,3 +1313,86 @@ footer.main-footer {
     border-bottom: 1px dotted var(--border);
     list-style: none;
 }
+
+/* ============================ R4 — visual polish ============================ */
+
+/* Abstract reading-time badge — small inline pill */
+.abstract-read-badge {
+    display: inline-block;
+    margin-left: 8px;
+    padding: 1px 8px;
+    font-size: 11px;
+    border-radius: 9px;
+    background: var(--bg-cream);
+    color: var(--cornell-red-dark);
+    border: 1px solid var(--border-cream);
+    vertical-align: middle;
+    font-family: var(--mono);
+    letter-spacing: 0.02em;
+}
+
+/* Version history rail — vertical timeline of v1 / v2 / v3 ... */
+.version-rail {
+    margin: 14px 0 6px;
+    padding: 8px 10px;
+    border-left: 3px solid var(--cornell-red);
+    background: linear-gradient(90deg, var(--bg-cream-soft) 0%, transparent 30%);
+    border-radius: 0 4px 4px 0;
+}
+.version-rail-header {
+    font-weight: bold;
+    font-size: 12px;
+    color: var(--cornell-red-dark);
+    margin-bottom: 4px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+}
+.version-rail-list { list-style: none; padding: 0; margin: 0; }
+.version-rail-item {
+    position: relative;
+    padding: 2px 0 2px 18px;
+    font-size: 12px;
+    font-family: var(--mono);
+}
+.version-rail-item .version-dot {
+    position: absolute;
+    left: 4px;
+    top: 8px;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--cornell-red);
+    border: 2px solid #fff;
+    box-shadow: 0 0 0 1px var(--cornell-red);
+}
+.version-rail-item.latest .version-dot { background: #2a8a2a; box-shadow: 0 0 0 1px #2a8a2a; }
+.version-rail-item .version-tag {
+    display: inline-block;
+    min-width: 28px;
+    color: var(--cornell-red-dark);
+    font-weight: bold;
+}
+.version-rail-item .version-date { color: var(--text); }
+.version-rail-item .version-label { color: var(--text-muted); margin-left: 6px; }
+.version-rail-item .version-badge {
+    display: inline-block;
+    margin-left: 8px;
+    padding: 0 6px;
+    font-size: 10px;
+    background: #2a8a2a;
+    color: #fff;
+    border-radius: 8px;
+    font-family: var(--serif);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+/* Trackback table */
+.trackback-table tbody tr:hover { background: var(--bg-grey); }
+
+/* Mono class for monospace inline labels */
+.mono { font-family: var(--mono); }
+
+/* Related-paper page bucket spacing */
+.related-bucket h2 { margin-top: 0; margin-bottom: 10px; }
+.related-bucket ul li:hover { background: var(--bg-cream-soft); }

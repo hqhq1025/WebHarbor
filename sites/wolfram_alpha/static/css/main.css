@@ -1728,3 +1728,212 @@ code, kbd { font-family: var(--font-mono); }
   .wa-pipeline-label { font-size: 0.7rem; }
   .footer-toplinks li, .footer-sublinks li, .footer-corp-links li { padding: 0 8px; font-size: 0.78rem; }
 }
+
+/* =========================================================
+   R4 polish — assumption pill bar, alternate-forms tab,
+   inline SVG plot, share/embed action bar, share page,
+   widget-builder, resources, product-api pages.
+   ========================================================= */
+
+/* Assumption pill bar — appears above the result pods. */
+.wa-assumption-bar {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 8px;
+  padding: 10px 14px; margin: 0 0 16px 0;
+  background: var(--color-orange-soft);
+  border: 1px solid #f8c592;
+  border-radius: var(--radius-md);
+  font-size: 13px;
+}
+.wa-assumption-prefix {
+  font-weight: 600; color: var(--color-orange-hover);
+  text-transform: uppercase; letter-spacing: 0.04em; margin-right: 4px;
+}
+.wa-assumption-pill {
+  display: inline-block; padding: 4px 10px; border-radius: 999px;
+  background: #fff; border: 1px solid #e3aa78; color: var(--color-orange-hover);
+  text-decoration: none; font-weight: 500; font-size: 12.5px; line-height: 1.2;
+  transition: background 80ms ease, color 80ms ease;
+}
+.wa-assumption-pill:hover { background: #ffe2c9; }
+.wa-assumption-pill--active {
+  background: var(--color-orange); color: #fff !important; border-color: var(--color-orange);
+}
+
+/* Alternate-forms tab strip inside a pod */
+.pod-altforms-tabs {
+  display: flex; gap: 0; margin-bottom: 8px; border-bottom: 1px solid var(--color-border-light);
+}
+.pod-altform-tab {
+  padding: 6px 12px; font-size: 12px; color: var(--color-text-secondary);
+  cursor: pointer; border-bottom: 2px solid transparent;
+  text-transform: uppercase; letter-spacing: 0.05em;
+}
+.pod-altform-tab--active {
+  color: var(--color-orange); border-bottom-color: var(--color-orange); font-weight: 600;
+}
+
+/* Code highlight pod (Wolfram Language) */
+.result-pod--wlcode .pod-content { background: #f7f5ff; border-left: 3px solid #5e3aaa; }
+.pod-code-block {
+  font-family: var(--font-mono); font-size: 13px; line-height: 1.45;
+  color: #2a1d57; background: #f7f5ff; padding: 10px 12px;
+  border-radius: var(--radius-sm); white-space: pre-wrap; overflow-x: auto;
+}
+.pod-wl-badge {
+  display: inline-block; margin-left: 8px; padding: 1px 6px;
+  background: #5e3aaa; color: #fff; font-size: 10px; border-radius: 3px;
+  font-weight: 700; letter-spacing: 0.04em; vertical-align: middle;
+}
+
+/* Step-by-step pod */
+.result-pod--step .pod-content { background: #fffdf3; border-left: 3px solid var(--color-orange); }
+.pod-pro-badge {
+  display: inline-block; margin-left: 8px; padding: 1px 6px;
+  background: var(--color-orange); color: #fff; font-size: 10px; border-radius: 3px;
+  font-weight: 700; letter-spacing: 0.04em; vertical-align: middle;
+}
+
+/* Alternate forms pod */
+.result-pod--alternate .pod-content { background: #f5f9ff; border-left: 3px solid #3b82f6; }
+
+/* Inline SVG plot pod */
+.result-pod--svgplot .pod-inline-plot {
+  width: 100%; max-width: 360px; height: auto; display: block;
+  background: #fafafa; border: 1px solid var(--color-border-light); border-radius: var(--radius-sm);
+}
+
+/* Result action bar (share / embed / API / step-by-step) */
+.result-action-bar {
+  display: flex; flex-wrap: wrap; gap: 8px; margin: 14px 0 6px 0;
+  padding: 12px 14px; background: var(--color-bg-tint);
+  border: 1px solid var(--color-border-light); border-radius: var(--radius-md);
+}
+.result-action-btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 7px 12px; border-radius: var(--radius-sm);
+  background: #fff; border: 1px solid var(--color-border-light);
+  color: var(--color-text); text-decoration: none; font-size: 13px; font-weight: 500;
+  transition: background 80ms ease, border-color 80ms ease;
+}
+.result-action-btn:hover {
+  background: var(--color-orange-soft); border-color: var(--color-orange);
+  color: var(--color-orange-hover);
+}
+.result-action-icon { font-size: 14px; line-height: 1; }
+
+/* Share page */
+.share-page { max-width: 760px; margin: 0 auto; }
+.share-header { text-align: center; margin-bottom: 24px; }
+.share-eyebrow {
+  font-size: 11px; letter-spacing: 0.12em; color: var(--color-orange);
+  text-transform: uppercase; font-weight: 700;
+}
+.share-title { font-size: 24px; margin: 8px 0 4px; color: var(--color-text); }
+.share-sub   { color: var(--color-text-muted); font-size: 13px; }
+.share-result-card {
+  background: #fff; border: 1px solid var(--color-border-light);
+  border-radius: var(--radius-md); padding: 20px; margin-bottom: 16px;
+}
+.share-meta {
+  background: var(--color-bg-tint); border: 1px solid var(--color-border-light);
+  border-radius: var(--radius-md); padding: 14px;
+}
+.share-permalink-block { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.share-permalink-label { font-size: 12px; color: var(--color-text-secondary); font-weight: 600; }
+.share-permalink-input {
+  flex: 1 1 260px; padding: 7px 10px; border: 1px solid var(--color-border-light);
+  border-radius: var(--radius-sm); font-family: var(--font-mono); font-size: 12.5px;
+  background: #fff; color: var(--color-text);
+}
+.share-actions { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
+
+/* Widget builder */
+.builder-header { text-align: center; margin-bottom: 30px; }
+.builder-layout {
+  display: grid; grid-template-columns: 280px 1fr; gap: 24px;
+  max-width: 980px; margin: 0 auto;
+}
+@media (max-width: 720px) { .builder-layout { grid-template-columns: 1fr; } }
+.builder-pick {
+  background: var(--color-bg-tint); border: 1px solid var(--color-border-light);
+  border-radius: var(--radius-md); padding: 16px; align-self: start;
+}
+.builder-widget-list { display: flex; flex-direction: column; gap: 4px; margin-top: 8px; }
+.builder-widget-row {
+  display: flex; align-items: center; gap: 8px; padding: 6px 8px;
+  border-radius: var(--radius-sm); text-decoration: none;
+  color: var(--color-text); font-size: 13px;
+}
+.builder-widget-row:hover { background: #fff; }
+.builder-widget-slug {
+  font-family: var(--font-mono); font-size: 11.5px; color: var(--color-text-secondary);
+  background: #fff; padding: 1px 6px; border-radius: 3px;
+  border: 1px solid var(--color-border-light);
+}
+.builder-widget-name { font-weight: 500; }
+.builder-config { background: #fff; padding: 0; }
+.builder-form {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px;
+}
+.builder-label {
+  display: flex; flex-direction: column; gap: 4px; font-size: 12px;
+  color: var(--color-text-secondary); font-weight: 600; text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.builder-input {
+  padding: 7px 10px; border: 1px solid var(--color-border-light);
+  border-radius: var(--radius-sm); font-size: 13px;
+  background: #fff; color: var(--color-text);
+  font-family: var(--font-sans); font-weight: 400; text-transform: none; letter-spacing: 0;
+}
+.builder-embed-code {
+  background: #f7f5ff; border: 1px solid #d8d2ee; padding: 12px;
+  border-radius: var(--radius-sm); font-family: var(--font-mono); font-size: 12.5px;
+  line-height: 1.5; color: #2a1d57; overflow-x: auto;
+}
+.builder-hint { color: var(--color-text-muted); font-size: 12.5px; margin-top: 8px; }
+
+/* Resource pages and product-api pages share the tab nav */
+.resource-nav {
+  display: flex; gap: 4px; flex-wrap: wrap; margin-bottom: 24px;
+  border-bottom: 1px solid var(--color-border-light); padding-bottom: 4px;
+}
+.resource-tab {
+  padding: 8px 14px; text-decoration: none; color: var(--color-text-secondary);
+  font-size: 13px; font-weight: 600; border-radius: var(--radius-sm) var(--radius-sm) 0 0;
+}
+.resource-tab:hover { color: var(--color-orange); background: var(--color-orange-soft); }
+.resource-tab--active {
+  color: var(--color-orange); border-bottom: 2px solid var(--color-orange);
+  background: var(--color-bg-tint);
+}
+.resource-desc { color: var(--color-text-secondary); margin-bottom: 20px; }
+.resource-list { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 8px; }
+.resource-item {
+  padding: 10px 14px; background: #fff; border: 1px solid var(--color-border-light);
+  border-radius: var(--radius-sm);
+}
+.resource-item-link {
+  display: flex; justify-content: space-between; align-items: baseline; gap: 12px;
+  text-decoration: none; color: var(--color-text);
+}
+.resource-item-url {
+  font-family: var(--font-mono); font-size: 12px; color: var(--color-text-muted);
+}
+
+/* Product API spec card */
+.api-tagline { color: var(--color-text-secondary); margin: 4px 0 18px; font-size: 15px; }
+.api-spec-card {
+  background: var(--color-bg-tint); border: 1px solid var(--color-border-light);
+  border-radius: var(--radius-md); padding: 16px; margin-bottom: 20px;
+}
+.api-spec-row {
+  display: flex; justify-content: space-between; align-items: baseline; gap: 16px;
+  padding: 6px 0; border-bottom: 1px dashed var(--color-border-light); font-size: 13px;
+}
+.api-spec-row:last-child { border-bottom: none; }
+.api-spec-label {
+  color: var(--color-text-secondary); font-weight: 600; text-transform: uppercase;
+  letter-spacing: 0.04em; font-size: 11px;
+}
+.api-spec-value { font-family: var(--font-mono); color: var(--color-text); font-size: 12.5px; }

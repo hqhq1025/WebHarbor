@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+{% block title %}Community{% endblock %}
+{% block content %}
+<div class="container" style="margin-top:30px">
+    <div class="breadcrumb" style="font-size:0.8rem;color:#999;margin-bottom:12px">
+        <a href="{{ url_for('index') }}" style="color:#666">Home</a> &rsaquo;
+        Community
+    </div>
+    <div class="community-hero" style="background:linear-gradient(135deg,#fff3e0 0%,#ffe0b2 100%);border-radius:8px;padding:32px;margin-bottom:24px">
+        <h1 class="section-title" style="margin:0 0 8px 0">Allrecipes Community</h1>
+        <p style="color:#444;font-size:1.05rem;margin:0">The home cooks, chefs, and recipe testers who make Allrecipes go.</p>
+        <div class="community-stats" style="display:flex;flex-wrap:wrap;gap:24px;margin-top:20px">
+            <div><strong style="font-size:1.6rem;color:#c62828">{{ stats.recipes }}</strong><div style="color:#666;font-size:0.85rem">Recipes</div></div>
+            <div><strong style="font-size:1.6rem;color:#c62828">{{ stats.reviews }}</strong><div style="color:#666;font-size:0.85rem">Reviews</div></div>
+            <div><strong style="font-size:1.6rem;color:#c62828">{{ stats.reviewers }}</strong><div style="color:#666;font-size:0.85rem">Active Reviewers</div></div>
+            <div><strong style="font-size:1.6rem;color:#c62828">{{ stats.chefs }}</strong><div style="color:#666;font-size:0.85rem">Featured Chefs</div></div>
+        </div>
+    </div>
+
+    <section style="margin-bottom:32px">
+        <h2 class="section-title" style="font-size:1.4rem;margin-bottom:12px">Top Reviewers</h2>
+        <div class="reviewer-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:14px">
+            {% for u, n in top_reviewers %}
+            <div class="reviewer-card" style="border:1px solid #eee;border-radius:8px;padding:14px;background:#fff">
+                <div style="font-weight:600">{{ u.display_name or u.username }}</div>
+                <div style="color:#666;font-size:0.85rem">{{ u.location or 'Allrecipes Community' }}</div>
+                <div style="margin-top:6px;font-size:0.85rem"><strong>{{ n }}</strong> reviews</div>
+            </div>
+            {% endfor %}
+        </div>
+    </section>
+
+    <section style="margin-bottom:32px">
+        <h2 class="section-title" style="font-size:1.4rem;margin-bottom:12px">Featured Chefs</h2>
+        <div style="display:flex;flex-wrap:wrap;gap:10px">
+            {% for name, n in featured_authors %}
+            <a href="{{ url_for('author_page', slug=(name|lower|replace(' ', '-'))) }}"
+               style="padding:8px 16px;border-radius:18px;background:#f7eee0;color:#7b3f00;text-decoration:none;font-size:0.85rem;border:1px solid #e6d2b5">
+                {{ name }} <span style="color:#a47a3a">({{ n }})</span>
+            </a>
+            {% endfor %}
+        </div>
+        <div style="margin-top:14px"><a href="{{ url_for('authors_hub') }}">Browse all chefs &rsaquo;</a></div>
+    </section>
+
+    <section>
+        <h2 class="section-title" style="font-size:1.4rem;margin-bottom:12px">Recent Reviews</h2>
+        <div class="recent-reviews" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px">
+            {% for rv in recent_reviews %}
+            <div class="review-mini" style="border:1px solid #eee;border-radius:8px;padding:14px;background:#fff">
+                <div style="display:flex;justify-content:space-between;align-items:baseline">
+                    <span style="font-weight:600">{{ rv.author.display_name or rv.author.username }}</span>
+                    <span style="color:#999;font-size:0.78rem">{{ rv.created_at.strftime('%b %d, %Y') }}</span>
+                </div>
+                <div style="margin:6px 0">
+                    {% for i in range(5) %}<span class="star {% if i >= rv.rating %}empty{% endif %}">&#9733;</span>{% endfor %}
+                </div>
+                {% if rv.title %}<div style="font-weight:500">{{ rv.title }}</div>{% endif %}
+                <div style="color:#666;font-size:0.9rem;margin-top:4px">{{ rv.body[:140] }}{% if rv.body|length > 140 %}&hellip;{% endif %}</div>
+                <div style="margin-top:6px;font-size:0.8rem"><a href="{{ url_for('recipe_detail', slug=rv.recipe.slug) }}">{{ rv.recipe.title }}</a></div>
+            </div>
+            {% endfor %}
+        </div>
+    </section>
+</div>
+{% endblock %}

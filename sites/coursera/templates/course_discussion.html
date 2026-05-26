@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block title %}Discussion | {{ course.title }} | Coursera{% endblock %}
+{% block content %}
+<div class="discussion-page" style="background:#F2F5FA;min-height:100vh;">
+  <div class="container" style="max-width:1000px;margin:0 auto;padding:32px 24px;">
+    <nav class="cd-breadcrumb" style="margin-bottom:18px;font-size:13px;color:#5B6780;">
+      <a href="{{ url_for('index') }}" style="color:#0056D2;">Home</a> &rsaquo;
+      <a href="{{ url_for('course_detail', slug=course.slug) }}" style="color:#0056D2;">{{ course.title }}</a> &rsaquo;
+      <span>Discussion</span>
+    </nav>
+
+    <header style="background:#fff;border:1px solid #DAE1ED;border-radius:12px;padding:24px;margin-bottom:18px;">
+      <h1 style="font-size:26px;margin:0 0 6px;">Course discussion</h1>
+      <p style="color:#5B6780;font-size:14px;">Threads from this cohort. Posting requires enrollment.</p>
+    </header>
+
+    <ul style="list-style:none;padding:0;margin:0;background:#fff;border:1px solid #DAE1ED;border-radius:12px;overflow:hidden;">
+      {% for t in threads %}
+      <li style="padding:18px 22px;border-bottom:1px solid #EEF1F8;display:flex;gap:14px;align-items:center;">
+        <span style="display:inline-flex;width:42px;height:42px;border-radius:50%;background:#E5F0FF;color:#0056D2;align-items:center;justify-content:center;font-weight:800;">{{ t.author[0]|upper }}</span>
+        <div style="flex:1;">
+          <div style="font-weight:600;font-size:16px;">{{ t.title }}</div>
+          <div style="font-size:12px;color:#5B6780;margin-top:2px;">Started by {{ t.author }} &middot; {{ t.replies }} replies</div>
+        </div>
+        <span style="color:#0056D2;font-weight:600;">View thread &rarr;</span>
+      </li>
+      {% endfor %}
+    </ul>
+  </div>
+</div>
+{% endblock %}

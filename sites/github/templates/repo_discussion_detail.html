@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block title %}{{ d.title }} · {{ repo.full_name }} · Discussion{% endblock %}
+{% block content %}
+<div class="repo-header-bar">
+  <div class="repo-header-inner">
+    <div class="repo-breadcrumb">
+      <a href="/{{ repo.full_name }}" class="repo-breadcrumb-link">{{ repo.full_name }}</a>
+      <span class="repo-breadcrumb-sep">/</span>
+      <a href="/{{ repo.full_name }}/discussions" class="repo-breadcrumb-link">Discussions</a>
+      <span class="repo-breadcrumb-sep">/</span>
+      <span>#{{ d.number }}</span>
+    </div>
+  </div>
+</div>
+<div style="padding:24px 32px;max-width:980px;margin:0 auto;">
+  <h1 style="margin:0 0 4px 0;">{{ d.title }} <span style="color:#7d8590;font-weight:400;">#{{ d.number }}</span></h1>
+  <div style="margin:6px 0 16px;font-size:13px;color:#7d8590;">
+    <span style="font-size:11px;padding:3px 8px;border-radius:999px;background:#21262d;border:1px solid #30363d;">{{ d.category }}</span>
+    · <span class="status status-{{ d.status }}">{{ d.status }}</span>
+    · Opened on {{ d.created_at.strftime('%b %-d, %Y') }}
+    · {{ d.upvotes }} upvotes
+  </div>
+  <article style="border:1px solid #30363d;border-radius:8px;padding:16px;margin-bottom:24px;">
+    <div style="font-weight:600;margin-bottom:6px;">{{ d.body[:80] }}{% if d.body|length > 80 %}…{% endif %}</div>
+    <pre style="white-space:pre-wrap;font-family:inherit;margin:0;color:#c9d1d9;">{{ d.body }}</pre>
+  </article>
+  <h2 style="font-size:16px;margin:0 0 12px 0;">{{ comments|length }} comments</h2>
+  {% for c in comments %}
+  <article style="border:1px solid #30363d;border-radius:8px;padding:14px;margin-bottom:12px;{% if c.is_answer %}border-color:#238636;background:rgba(46,160,67,0.07);{% endif %}">
+    <div style="font-size:12px;color:#7d8590;margin-bottom:6px;">
+      Comment {{ loop.index }} · {{ c.created_at.strftime('%b %-d, %Y') }}
+      {% if c.is_answer %}<span style="color:#3fb950;font-weight:600;margin-left:6px;">✓ Marked as answer</span>{% endif %}
+    </div>
+    <div style="white-space:pre-wrap;color:#c9d1d9;">{{ c.body }}</div>
+  </article>
+  {% else %}
+  <p style="color:#7d8590;">No comments yet.</p>
+  {% endfor %}
+</div>
+{% endblock %}

@@ -1211,3 +1211,17 @@ input, select, textarea { font-family: inherit; font-size: 1rem; }
     .recipe-info-grid { grid-template-columns: repeat(2, 1fr); }
     .nutrition-grid { grid-template-columns: repeat(3, 1fr); }
 }
+
+/* ----- R4: visual polish ----- */
+.related-carousel { scrollbar-width: thin; }
+.related-carousel::-webkit-scrollbar { height: 8px; }
+.related-carousel::-webkit-scrollbar-thumb { background: #ddd; border-radius: 4px; }
+.related-carousel .carousel-card { transition: transform 0.18s ease; }
+.related-carousel .carousel-card:hover { transform: translateY(-3px) scale(1.02); }
+.step-image-strip { scrollbar-width: thin; }
+.step-image-strip::-webkit-scrollbar { height: 6px; }
+.step-image-strip figure img { transition: transform 0.2s ease; }
+.step-image-strip figure:hover img { transform: scale(1.04); }
+.quick-look-modal[hidden] { display: none !important; }
+.servings-scale .scale-btn { transition: background 0.15s, color 0.15s; }
+.recipe-card .recipe-card-image img { will-change: transform; }

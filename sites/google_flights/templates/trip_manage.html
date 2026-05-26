@@ -118,6 +118,31 @@
       </form>
     </section>
 
+    <!-- R4: more trip extras (seat map, eSIM) -->
+    <section style="background:#fff;border:1px solid #dadce0;border-radius:12px;padding:24px;grid-column:span 2;">
+      <h2 style="font-size:16px;font-family:'Google Sans',sans-serif;font-weight:500;margin:0 0 12px;">
+        <span class="material-symbols-outlined" style="vertical-align:middle;">explore</span>
+        More for this trip
+      </h2>
+      <div style="display:flex;gap:12px;flex-wrap:wrap;">
+        <a href="{{ url_for('trip_seat_map', booking_id=booking.id) }}"
+           style="display:inline-flex;align-items:center;gap:6px;padding:10px 16px;border:1px solid #dadce0;border-radius:24px;text-decoration:none;color:#1a73e8;background:#fff;">
+          <span class="material-symbols-outlined">airline_seat_recline_normal</span>
+          Pick from seat map
+        </a>
+        <a href="{{ url_for('trip_esim_add', booking_id=booking.id) }}"
+           style="display:inline-flex;align-items:center;gap:6px;padding:10px 16px;border:1px solid #dadce0;border-radius:24px;text-decoration:none;color:#1a73e8;background:#fff;">
+          <span class="material-symbols-outlined">sim_card</span>
+          Add eSIM for destination
+        </a>
+        <a href="{{ url_for('baggage_calculator') }}"
+           style="display:inline-flex;align-items:center;gap:6px;padding:10px 16px;border:1px solid #dadce0;border-radius:24px;text-decoration:none;color:#1a73e8;background:#fff;">
+          <span class="material-symbols-outlined">luggage</span>
+          Baggage calculator
+        </a>
+      </div>
+    </section>
+
     <!-- Cancel trip -->
     {% if booking.status == 'confirmed' %}
     <section style="background:#fff;border:1px solid #dadce0;border-radius:12px;padding:24px;grid-column:span 2;border-color:#fce8e6;">

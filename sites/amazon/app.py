@@ -589,9 +589,440 @@ def product_detail(slug):
     in_wishlist = False
     if current_user.is_authenticated:
         in_wishlist = WishlistItem.query.filter_by(user_id=current_user.id, product_id=product.id).first() is not None
+    # R4: derived facets used by /product/<slug>/{questions,reviews,customer-images,aplus-content}
+    # and the in-page Q&A accordion / FBT carousel. All are deterministic from
+    # the product slug so they survive byte-id reset without new DB columns.
+    qna = _synth_qna(product)
+    fbt = _frequently_bought_together(product)
+    aplus = _synth_aplus_content(product)
+    seller_id, seller_name = _synth_seller(product)
     return render_template('product_detail.html',
         product=product, related=related, reviews=reviews, top_review=top_review,
-        in_wishlist=in_wishlist, review_form=ReviewForm())
+        in_wishlist=in_wishlist, review_form=ReviewForm(),
+        qna=qna, fbt=fbt, aplus=aplus,
+        seller_id=seller_id, seller_name=seller_name)
+
+
+# ----- R4: Deterministic synthesis helpers for sub-pages -----
+import hashlib as _hashlib
+
+
+def _stable_hash(s):
+    """Deterministic 32-bit unsigned hash. Used in place of Python's hash()
+    which is salted per-process. Stable across builds and machines so synthesized
+    Q&A / sellers / A+ content stay consistent.
+    """
+    return int.from_bytes(_hashlib.md5((s or '').encode('utf-8')).digest()[:4], 'big')
+
+
+# Question / answer templates keyed by category slug. Picked deterministically
+# from slug so each product gets the same five questions every render.
+_QNA_BANK = {
+    'electronics': [
+        ('Does this work with iPhone 15 Pro Max?',
+         'Yes — pairs over Bluetooth 5.x with any iOS 16+ device. Confirmed by the seller.',
+         'Yes, works perfectly. I use mine with the 15 Pro daily.'),
+        ('Is there a USB-C cable included in the box?',
+         'A short USB-C to USB-C cable ships in the box. A wall adapter is sold separately.',
+         'Mine came with a 1m cable, no adapter.'),
+        ('Can I use this on a 220V outlet outside the US?',
+         'The internal power supply is 100-240V auto-switching, so a simple plug adapter is enough.',
+         'Used it in Germany with a 2-prong adapter, no transformer needed.'),
+        ('How long is the warranty?',
+         'Manufacturer warranty is 1 year limited. Amazon offers an optional 2-year protection plan at checkout.',
+         'Mine had a 2-year warranty extension I bought for around $15.'),
+        ('Will firmware updates be supported for older units?',
+         'Yes — the manufacturer pushes firmware OTA for at least 3 years after launch.',
+         'I got an update two months after I bought mine.'),
+    ],
+    'computers': [
+        ('Can the RAM be upgraded after purchase?',
+         'No. The RAM is soldered to the mainboard on this model; choose the configuration you want at purchase.',
+         'I checked — it is soldered. Buy the 16GB if you think you might want it.'),
+        ('Is the SSD user-replaceable?',
+         'Yes, the M.2 NVMe slot is accessible after removing the bottom plate (Torx T5 screws).',
+         'I swapped mine for a 2TB drive in about 10 minutes.'),
+        ('Does it come with Microsoft Office?',
+         'Office is not bundled; a 30-day Microsoft 365 trial is included and can be activated from the Start menu.',
+         'Mine had the trial only — I use the free web apps instead.'),
+        ('Can I use this for video editing in 4K?',
+         'For light 4K editing on Premiere/DaVinci Resolve, yes; sustained color grading benefits from a dedicated GPU.',
+         'I edit 4K footage on mine — proxy workflow makes it smooth.'),
+        ('What ports does it have?',
+         'Two USB-C (Thunderbolt 4), one USB-A 3.2, HDMI 2.1, SD card reader, and a 3.5mm combo jack.',
+         'Plenty of ports for my docking setup.'),
+    ],
+    'home': [
+        ('Is this dishwasher safe?',
+         'The detachable parts are top-rack dishwasher safe. Hand-wash the motor base.',
+         'Top rack only. Mine has held up over two years.'),
+        ('What is the inner pot made of?',
+         'Stainless steel, 18/8 grade, with an aluminum sandwich base for even heat distribution.',
+         'Solid stainless, no nonstick coating to scratch.'),
+        ('Does it fit under a standard kitchen cabinet?',
+         'The total height is under 14 inches, fits standard 18-inch cabinet clearance.',
+         'It fits under my cabinets with the lid open.'),
+        ('What is the wattage / energy use?',
+         'Rated at 1,200W peak; typical cook cycle averages under 0.4 kWh.',
+         'Pulls about 1100W when actively cooking.'),
+        ('Are replacement parts available?',
+         'Yes. Seals, blades, and lid assemblies are sold directly by the manufacturer and via Amazon.',
+         'I ordered a replacement gasket easily on Amazon.'),
+    ],
+    'fashion': [
+        ('How does the sizing run?',
+         'Sizing is true to standard US measurements. If you are between sizes, size up for a relaxed fit.',
+         'I usually wear a Medium and Medium fits me well.'),
+        ('Is the material stretchy?',
+         'Yes — it includes 3% elastane for comfort movement without losing its shape after washing.',
+         'Good 4-way stretch. Comfortable all day.'),
+        ('Can I machine wash this?',
+         'Machine wash cold, tumble dry low. Avoid bleach and fabric softeners.',
+         'Holds up in the wash. No shrinking after several cycles.'),
+        ('Is the color in the photo accurate?',
+         'The product photos are taken in natural light and represent the color accurately within +/- 5% variance.',
+         'Color is exactly what I expected.'),
+        ('Does this run small in the chest or shoulders?',
+         'The cut is slightly trim in the shoulders. Size up one if you have a broader build.',
+         'I went up a size and it fits perfectly.'),
+    ],
+    'books': [
+        ('Is this the most recent edition?',
+         'Yes — this listing reflects the latest edition with updated references and an expanded index.',
+         'I confirmed it matches the latest 4th-edition cover.'),
+        ('Are there exercises or chapter summaries?',
+         'Each chapter ends with a summary and 4-6 practice questions; an answer key is included in the appendix.',
+         'Useful exercises at the end of each chapter.'),
+        ('Is the Kindle version identical in content to the paperback?',
+         'The text is identical. Some color illustrations are rendered in grayscale on non-color Kindles.',
+         'Same content, easier to highlight on Kindle.'),
+        ('Does it include access to online resources?',
+         'A printed access code on the inside cover unlocks a companion website with practice tests for 12 months.',
+         'Mine had a code I used for the practice site.'),
+        ('What reading level is this targeted at?',
+         'High school senior / early college. No prior background in the subject is required.',
+         'Approachable even without prior knowledge.'),
+    ],
+    'beauty': [
+        ('Is this product cruelty-free?',
+         'Yes — Leaping Bunny certified. Not tested on animals at any stage of production.',
+         'Confirmed cruelty-free on the brand site.'),
+        ('Does this work for sensitive skin?',
+         'Formulated without fragrance, alcohol, or sulfates; dermatologist-tested for sensitive skin.',
+         'No irritation on my sensitive skin.'),
+        ('How many uses per bottle?',
+         'Approximately 40-50 applications per bottle when used as directed (twice daily).',
+         'Lasts me about 6 weeks with daily use.'),
+        ('Can I use this with retinol or vitamin C?',
+         'Yes — layer this in the morning under SPF; use your retinol product at night to avoid sensitivity.',
+         'I use it AM under sunscreen, no issues.'),
+        ('Is the shade match accurate?',
+         'The shade range matches Fenty/MAC reference shades. Each shade has a tooltip with undertone notes.',
+         'I matched my MAC NC30 — accurate.'),
+    ],
+    'sports': [
+        ('What is the size of the largest weight increment?',
+         'Increments are 2.5 lb per dial click up to 25 lb, then 5 lb per click up to the max.',
+         'Smooth dial action, easy to switch weights.'),
+        ('Is assembly required?',
+         'Minimal — the legs and handle attach with the included hex wrench in under 15 minutes.',
+         'Assembly took me about 10 minutes.'),
+        ('Is this safe for outdoor use?',
+         'Yes. The frame and bearings are rated for outdoor temperature swings; store covered when not in use.',
+         'I keep mine on a covered patio year-round.'),
+        ('Does it include the subscription / app?',
+         'A 30-day trial of the partner app is included. Full features require a paid subscription afterward.',
+         'Trial worked fine; I subscribed monthly after.'),
+        ('What weight capacity does it support?',
+         'Rated for users up to 300 lb with a 5x safety factor on the frame.',
+         'I am 220 lb and it feels rock solid.'),
+    ],
+    'toys': [
+        ('What age range is this best for?',
+         'Recommended for ages 6+. Some smaller pieces make it unsuitable for children under 3.',
+         'My 7-year-old loved it. Too small for toddlers.'),
+        ('Are the pieces compatible with other sets?',
+         'Yes — all standard LEGO bricks and connectors interchange across themes.',
+         'Mixes with my older Star Wars sets just fine.'),
+        ('How long does assembly take?',
+         'Typical first-time build is 2-3 hours; the included instruction booklet has 200+ steps.',
+         'Took my daughter and me about 2.5 hours.'),
+        ('Are batteries included?',
+         'Three AA batteries are included for the electronic components.',
+         'Came with batteries, started right away.'),
+        ('Is the storage box included?',
+         'A reusable storage box with internal dividers is included for sorting pieces between builds.',
+         'Nice sturdy box, helpful for keeping pieces.'),
+    ],
+}
+
+
+def _synth_qna(product):
+    """Synthesize 5 deterministic Q&A entries for a product.
+
+    Each Q&A is sourced from the category bank, picked deterministically by
+    slug-hash. Helpful counts are also derived from the hash so they stay
+    consistent across renders.
+    """
+    bank = _QNA_BANK.get(product.category_slug or '', _QNA_BANK['electronics'])
+    h = _stable_hash(product.slug)
+    out = []
+    for i, (q, seller_a, customer_a) in enumerate(bank):
+        helpful = (h >> (i * 3)) & 0xFF
+        rolled = (h >> (i * 5)) & 0xFFF
+        out.append({
+            'id': f"{product.id}-{i+1}",
+            'question': q,
+            'asked_by': ['Mark T.', 'Janet S.', 'Christopher L.', 'Priya P.', 'Diego R.'][i],
+            'asked_on': MIRROR_REFERENCE_DATE - timedelta(days=30 + (rolled % 320)),
+            'answers': [
+                {'name': f'Seller ({product.brand or "Manufacturer"})',
+                 'is_seller': True, 'body': seller_a,
+                 'helpful': 5 + (helpful % 80)},
+                {'name': ['Robert P.', 'Lin H.', 'Ana C.', 'Tom W.', 'Mei L.'][i],
+                 'is_seller': False, 'body': customer_a,
+                 'helpful': 1 + ((helpful >> 4) % 40)},
+            ],
+        })
+    return out
+
+
+def _frequently_bought_together(product):
+    """Pick 3 deterministic related products to render in the FBT carousel."""
+    h = _stable_hash(product.slug)
+    # Pull same-category siblings (excluding self), then pick 3 deterministically.
+    siblings = (Product.query
+                .filter(Product.category_slug == product.category_slug,
+                        Product.id != product.id)
+                .order_by(Product.id)
+                .limit(80).all())
+    if not siblings:
+        return []
+    picks = []
+    used = set()
+    for i in range(3):
+        if not siblings:
+            break
+        idx = (h >> (i * 7)) % len(siblings)
+        # Skip duplicates deterministically by walking forward.
+        tries = 0
+        while idx in used and tries < len(siblings):
+            idx = (idx + 1) % len(siblings)
+            tries += 1
+        used.add(idx)
+        picks.append(siblings[idx])
+    return picks
+
+
+def _synth_aplus_content(product):
+    """Deterministic A+ marketing content blocks (Enhanced Brand Content)."""
+    h = _stable_hash(product.slug + 'aplus')
+    benefits_pool = [
+        ('Designed by experts', 'Engineered with input from industry veterans for everyday reliability.'),
+        ('Built to last', 'Premium materials and rigorous quality testing for years of use.'),
+        ('Trusted by millions', f'{(h % 50000) + 50000:,}+ verified five-star reviews across our brand.'),
+        ('Sustainable production', 'Recycled materials and energy-efficient manufacturing certified by SGS.'),
+        ('Award-winning design', f'Recipient of the {2024 + (h % 3)} Red Dot Design Award.'),
+        ('Best-in-class warranty', 'A full {0}-year warranty with 30-day no-questions-asked returns.'.format(2 + (h % 4))),
+        ('Made with care', 'Each unit hand-inspected and assembled by a small team in our certified factory.'),
+        ('Designed for accessibility', 'Voice control, large-print labels, and screen-reader compatibility built in.'),
+    ]
+    picks = []
+    used = set()
+    for i in range(4):
+        idx = (h >> (i * 4)) % len(benefits_pool)
+        tries = 0
+        while idx in used and tries < len(benefits_pool):
+            idx = (idx + 1) % len(benefits_pool)
+            tries += 1
+        used.add(idx)
+        picks.append(benefits_pool[idx])
+    gallery = product.get_gallery() or []
+    return {
+        'hero_title': f'The {product.brand or "premium"} difference',
+        'hero_subtitle': product.description[:160] if product.description else
+                          f'Discover what makes {product.name} stand out.',
+        'benefits': picks,
+        'hero_image': gallery[0] if gallery else product.image,
+        'showcase_images': gallery[1:5] if len(gallery) > 1 else [],
+        'video_url': '',  # No real video; left blank for now.
+    }
+
+
+def _synth_seller(product):
+    """Map product to a synthetic seller (id + name) based on brand/category."""
+    # Brand-anchored seller, with a small per-category disambiguator so the
+    # same brand can have different sellers across categories (mirrors reality).
+    key = (product.brand or 'Amazon.com') + '|' + (product.category_slug or '')
+    sid = _stable_hash(key) % 9000 + 1000
+    # Seller name: brand for branded products, generic third-party for unbranded.
+    if product.brand:
+        suffix = ['Direct', 'Official Store', 'Authorized Reseller',
+                  'Authorized Dealer', 'Brand Outlet'][sid % 5]
+        name = f'{product.brand} {suffix}'
+    else:
+        name = ['NorthBay Marketplace', 'Pacific Trade Co.', 'Atlas Goods',
+                'Bluewave Retail', 'Cascade Supply Co.'][sid % 5]
+    return sid, name
+
+
+# ----- R4: Product sub-pages (Q&A, deep reviews, customer images, seller, A+, author) -----
+
+@app.route('/product/<slug>/questions')
+def product_questions(slug):
+    product = Product.query.filter_by(slug=slug).first_or_404()
+    qna = _synth_qna(product)
+    # Sort by helpful count (descending) so the most-upvoted question floats up,
+    # matching how Amazon orders /ask pages.
+    sort_key = (request.args.get('sort') or '').lower()
+    if sort_key in ('recent', 'newest'):
+        qna = sorted(qna, key=lambda q: q['asked_on'], reverse=True)
+    else:
+        qna = sorted(qna, key=lambda q: q['answers'][0]['helpful'] +
+                                         q['answers'][1]['helpful'], reverse=True)
+    return render_template('product_questions.html', product=product, qna=qna,
+                           current_sort=sort_key or 'helpful')
+
+
+@app.route('/product/<slug>/reviews')
+def product_reviews(slug):
+    product = Product.query.filter_by(slug=slug).first_or_404()
+    page = max(1, request.args.get('page', 1, type=int))
+    per_page = 10
+    star_filter = request.args.get('star', type=int)
+    sort_key = (request.args.get('sort') or '').lower()
+    base = Review.query.filter_by(product_id=product.id)
+    if star_filter and 1 <= star_filter <= 5:
+        base = base.filter_by(rating=star_filter)
+    if sort_key in ('helpful', 'top'):
+        base = base.order_by(Review.rating.desc(), Review.created_at.desc())
+    elif sort_key in ('oldest',):
+        base = base.order_by(Review.created_at.asc())
+    else:
+        base = base.order_by(Review.created_at.desc())
+    total = base.count()
+    pages = max(1, (total + per_page - 1) // per_page)
+    page = min(page, pages)
+    reviews = base.offset((page - 1) * per_page).limit(per_page).all()
+    # Star histogram for filter sidebar
+    star_counts = {i: Review.query.filter_by(product_id=product.id, rating=i).count()
+                   for i in range(1, 6)}
+    return render_template('product_reviews.html', product=product, reviews=reviews,
+                           page=page, pages=pages, total=total,
+                           star_filter=star_filter, current_sort=sort_key or 'recent',
+                           star_counts=star_counts)
+
+
+@app.route('/product/<slug>/customer-images')
+def product_customer_images(slug):
+    product = Product.query.filter_by(slug=slug).first_or_404()
+    gallery = product.get_gallery()
+    # Synthesize uploader names + dates so the page feels like a real customer
+    # photo grid, not just the product's marketing shots.
+    h = _stable_hash(product.slug + 'images')
+    uploaders = ['Sarah K.', 'Marcus L.', 'Devon W.', 'Priya R.', 'Tatsu O.',
+                 'Andrea N.', 'Carlos M.', 'Ben S.', 'Liang H.', 'Olivia P.',
+                 'Hassan A.', 'Yuki M.']
+    image_cards = []
+    for i, path in enumerate([product.image] + gallery[:11]):
+        days_ago = 7 + ((h >> (i * 4)) % 280)
+        image_cards.append({
+            'path': path,
+            'uploader': uploaders[i % len(uploaders)],
+            'uploaded_on': MIRROR_REFERENCE_DATE - timedelta(days=days_ago),
+            'helpful': 2 + ((h >> (i * 3)) % 180),
+        })
+    return render_template('product_customer_images.html', product=product,
+                           image_cards=image_cards)
+
+
+@app.route('/product/<slug>/aplus-content')
+@app.route('/aplus-content/<slug>')
+def aplus_content(slug):
+    product = Product.query.filter_by(slug=slug).first_or_404()
+    aplus = _synth_aplus_content(product)
+    return render_template('aplus_content.html', product=product, aplus=aplus)
+
+
+@app.route('/seller/<int:seller_id>')
+def seller_storefront(seller_id):
+    # Find all products whose synthesized seller_id matches this id.
+    # We scan products grouped by brand (small set ~150 brands) so this is
+    # cheap; the heavy filter is the synth-id match.
+    candidates = (db.session.query(Product.brand, Product.category_slug)
+                  .distinct().all())
+    matching_brands = []
+    for brand, cat in candidates:
+        sid, _ = _synth_seller(_StubProduct(brand, cat))
+        if sid == seller_id:
+            matching_brands.append((brand, cat))
+    if not matching_brands:
+        abort(404)
+    # Build the product list across all matching (brand, category) pairs.
+    seller_name = _synth_seller(_StubProduct(*matching_brands[0]))[1]
+    from sqlalchemy import or_, and_
+    conds = []
+    for brand, cat in matching_brands:
+        conds.append(and_(Product.brand == brand, Product.category_slug == cat))
+    products = (Product.query.filter(or_(*conds))
+                .order_by(Product.is_bestseller.desc(),
+                          Product.review_count.desc()).limit(60).all())
+    # Synthesized seller stats
+    h = _stable_hash(seller_name)
+    seller_stats = {
+        'positive_rating': 90 + (h % 9),  # 90-98%
+        'rating_count': 1000 + (h % 90000),
+        'years_active': 3 + (h % 15),
+        'ships_from': ['Seattle, WA', 'Phoenix, AZ', 'Newark, NJ', 'Atlanta, GA',
+                       'Dallas, TX'][h % 5],
+    }
+    return render_template('seller_storefront.html',
+                           seller_id=seller_id, seller_name=seller_name,
+                           products=products, seller_stats=seller_stats,
+                           brands=sorted({b for b, _ in matching_brands}))
+
+
+class _StubProduct:
+    """Lightweight shim for _synth_seller when we don't have a full Product row."""
+    __slots__ = ('brand', 'category_slug')
+    def __init__(self, brand, category_slug):
+        self.brand = brand
+        self.category_slug = category_slug
+
+
+@app.route('/author/<path:name>')
+def author_page(name):
+    # Books store authors in the brand column. Match on ilike for permissive lookup.
+    decoded = name.replace('-', ' ').strip()
+    books = (Product.query
+             .filter(Product.category_slug == 'books',
+                     Product.brand.ilike(f'%{decoded}%'))
+             .order_by(Product.review_count.desc())
+             .limit(80).all())
+    if not books:
+        abort(404)
+    # Pick a representative book for hero image
+    headline = books[0]
+    # Synthesize a brief author bio (deterministic) from the name.
+    h = _stable_hash(decoded)
+    eras = ['contemporary', 'modern', 'classic', 'best-selling', 'award-winning']
+    countries = ['American', 'British', 'Canadian', 'Australian', 'Irish',
+                 'Indian', 'Nigerian', 'Japanese', 'Spanish', 'Brazilian']
+    bio_themes = ['fiction and non-fiction across multiple genres',
+                  'novels exploring identity, memory, and place',
+                  'thrillers, mysteries, and short-form fiction',
+                  'literary fiction and essays',
+                  'science fiction, fantasy, and speculative work',
+                  'historical fiction and biography']
+    bio = (
+        f'{decoded.title()} is a {eras[h % len(eras)]} '
+        f'{countries[(h >> 4) % len(countries)]} author who has written '
+        f'{bio_themes[(h >> 8) % len(bio_themes)]}. With {len(books)} titles in our '
+        f'catalog and over {sum(b.review_count for b in books):,} verified ratings, '
+        f'their work has been translated into {3 + (h % 25)} languages.'
+    )
+    return render_template('author_page.html', author=decoded.title(),
+                           books=books, headline=headline, bio=bio)
 
 
 STOPWORDS = {'the', 'a', 'an', 'of', 'in', 'on', 'at', 'to', 'for', 'with',

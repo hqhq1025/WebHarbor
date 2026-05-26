@@ -76,6 +76,21 @@
   <div class="result-main">
     <!-- Result panel -->
     <div class="result-panel-col">
+      {# Assumption pill bar — real WA shows "[Assuming X | Use Y instead]" above the result. #}
+      {% if pills %}
+      <div class="wa-assumption-bar" role="tablist" aria-label="Query interpretation">
+        <span class="wa-assumption-prefix">Assuming</span>
+        {% for label, value, active in pills %}
+          {% if active %}
+          <span class="wa-assumption-pill wa-assumption-pill--active" role="tab" aria-selected="true">{{ label }}</span>
+          {% else %}
+          <a class="wa-assumption-pill" role="tab" aria-selected="false"
+             href="/input?i={{ query|urlencode }}&assumption={{ value|urlencode }}">{{ label }}</a>
+          {% endif %}
+        {% endfor %}
+      </div>
+      {% endif %}
+
       <!-- Simulated computation result pods -->
       <div class="result-pods">
         <div class="result-pod result-pod--input">
@@ -107,10 +122,27 @@
            already renders parsed_input under that heading. Avoids duplicate
            headers seen on T24, T32, T37, T40, T41, T44 etc. #}
         {% if pod.title|lower != 'input interpretation' %}
-        <div class="result-pod result-pod--extra">
-          <div class="pod-title">{{ pod.title }}</div>
+        <div class="result-pod result-pod--extra
+                    {% if 'alternate' in (pod.title|lower) %}result-pod--alternate{% endif %}
+                    {% if 'step' in (pod.title|lower) %}result-pod--step{% endif %}
+                    {% if 'wolfram language' in (pod.title|lower) %}result-pod--wlcode{% endif %}">
+          <div class="pod-title">{{ pod.title }}
+            {% if 'step' in (pod.title|lower) %}<span class="pod-pro-badge">PRO</span>{% endif %}
+            {% if 'wolfram language' in (pod.title|lower) %}<span class="pod-wl-badge">WL</span>{% endif %}
+          </div>
           <div class="pod-content">
+            {% if 'wolfram language' in (pod.title|lower) %}
+            <pre class="pod-code-block"><code>{{ pod.plaintext }}</code></pre>
+            {% elif 'alternate' in (pod.title|lower) %}
+            <div class="pod-altforms-tabs" role="tablist">
+              <span class="pod-altform-tab pod-altform-tab--active">Standard</span>
+              <span class="pod-altform-tab">Decimal</span>
+              <span class="pod-altform-tab">Factored</span>
+            </div>
             <pre class="pod-extra-plaintext">{{ pod.plaintext }}</pre>
+            {% else %}
+            <pre class="pod-extra-plaintext">{{ pod.plaintext }}</pre>
+            {% endif %}
             {% if pod.image %}
             <img src="{{ pod.image }}" alt="{{ pod.title }}" class="pod-plot-img"
                  onerror="this.style.display='none'">
@@ -119,6 +151,28 @@
         </div>
         {% endif %}
         {% endfor %}
+
+        {# Inline SVG fallback plot pod — rendered when no separate plot_url is set
+           AND there is no plot pod already present. Pure CSS gradient + axis art. #}
+        {% if not computation.plot_url and computation.category == 'mathematics' %}
+        <div class="result-pod result-pod--plot result-pod--svgplot">
+          <div class="pod-title">Plot</div>
+          <div class="pod-content">
+            <svg class="pod-inline-plot" viewBox="0 0 320 160" xmlns="http://www.w3.org/2000/svg" aria-label="Plot">
+              <rect width="320" height="160" fill="#fafafa" />
+              <g stroke="#cdcdcd" stroke-width="1">
+                <line x1="0" y1="80" x2="320" y2="80" />
+                <line x1="160" y1="0" x2="160" y2="160" />
+              </g>
+              <path d="M0,140 C40,40 80,120 160,80 S280,20 320,30" fill="none" stroke="#f96302" stroke-width="2.5" />
+              <g font-family="Source Sans Pro, sans-serif" font-size="9" fill="#8a8a8a">
+                <text x="306" y="92">x</text>
+                <text x="168" y="12">y</text>
+              </g>
+            </svg>
+          </div>
+        </div>
+        {% endif %}
 
         {% if computation.plot_url %}
         <div class="result-pod result-pod--plot">
@@ -211,6 +265,24 @@
             <a href="/pro" class="btn btn-pro-primary">Go Pro</a>
           </div>
         </div>
+
+        {# Share / embed / export action bar — appears below all result pods. #}
+        {% if computation %}
+        <div class="result-action-bar" aria-label="Result actions">
+          <a href="/share/{{ computation.id }}" class="result-action-btn" title="Share permalink">
+            <span class="result-action-icon">&#128279;</span> Share permalink
+          </a>
+          <a href="/widget/builder" class="result-action-btn" title="Embed as widget">
+            <span class="result-action-icon">&lt;/&gt;</span> Embed widget
+          </a>
+          <a href="/products/full-results-api" class="result-action-btn" title="Use the API">
+            <span class="result-action-icon">{ }</span> Use API
+          </a>
+          <a href="/step-by-step/{{ computation.id }}" class="result-action-btn" title="Step-by-step">
+            <span class="result-action-icon">&#9776;</span> Step-by-step
+          </a>
+        </div>
+        {% endif %}
 
         <!-- Save result -->
         {% if current_user.is_authenticated %}

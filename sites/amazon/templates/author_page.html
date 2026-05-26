@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block title %}{{ author }} - Amazon.com{% endblock %}
+
+{% block content %}
+<div style="max-width:1200px;margin:0 auto;padding:14px 12px">
+    <section style="background:linear-gradient(120deg, #f3a847, #cc7a16);color:#fff;padding:36px 32px;border-radius:6px;margin-bottom:18px">
+        <div style="display:flex;gap:32px;align-items:center;flex-wrap:wrap">
+            <div style="flex:1;min-width:280px">
+                <div style="font-size:13px;opacity:0.9">AUTHOR PAGE</div>
+                <h1 style="font-size:34px;margin:4px 0 12px">{{ author }}</h1>
+                <p style="font-size:14px;line-height:1.5">{{ bio }}</p>
+            </div>
+            {% if headline %}
+            <div style="min-width:160px;text-align:center">
+                <img src="{{ headline.image }}" alt="{{ headline.name }}"
+                     style="width:160px;height:240px;object-fit:cover;border-radius:4px;background:#fff"
+                     onerror="this.style.display='none'">
+                <div style="font-size:11px;margin-top:6px;opacity:0.9">Featured: {{ headline.name }}</div>
+            </div>
+            {% endif %}
+        </div>
+    </section>
+
+    <div style="background:#fff;padding:18px;border-radius:6px">
+        <h2 style="font-size:20px;margin:0 0 12px">Books by {{ author }} ({{ books|length }})</h2>
+        <div style="display:grid;grid-template-columns:repeat(auto-fill, minmax(180px, 1fr));gap:12px">
+            {% for p in books %}
+            <a href="{{ url_for('product_detail', slug=p.slug) }}"
+               style="display:block;background:#fff;border:1px solid #e7e7e7;border-radius:6px;padding:10px;text-decoration:none;color:inherit">
+                <div style="aspect-ratio:2/3;background:#f7f7f7;border-radius:4px;overflow:hidden;margin-bottom:8px">
+                    <img src="{{ p.image }}" alt="{{ p.name }}"
+                         style="width:100%;height:100%;object-fit:cover"
+                         onerror="this.style.display='none'">
+                </div>
+                <div style="font-size:13px;font-weight:500;color:#0066c0;line-height:1.3;max-height:34px;overflow:hidden">{{ p.name }}</div>
+                <div style="margin-top:4px"><span class="price-symbol">$</span><span style="font-size:16px;font-weight:700">{{ p.price|int }}</span><span style="font-size:11px">.{{ '%02d'|format((p.price * 100)|round|int % 100) }}</span></div>
+                <div class="rating" style="font-size:12px"><span class="stars" style="color:#ffa41c">{% for i in range(p.rating|int) %}★{% endfor %}</span> ({{ p.review_count }})</div>
+            </a>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endblock %}

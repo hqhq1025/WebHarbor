@@ -216,6 +216,32 @@ class Place(db.Model):
     is_popular = db.Column(db.Boolean, default=False)
     parking_info = db.Column(db.String(255), default="")  # e.g. "Free parking lot", "Street parking", "Paid garage"
     delivery_available = db.Column(db.Boolean, default=False)
+    # --- R4 additions: service options, accessibility, popular times, menu ---
+    dine_in = db.Column(db.Boolean, default=False, index=True)
+    takeout = db.Column(db.Boolean, default=False, index=True)
+    curbside_pickup = db.Column(db.Boolean, default=False)
+    contactless_pickup = db.Column(db.Boolean, default=False, index=True)
+    accepts_reservations = db.Column(db.Boolean, default=False, index=True)
+    serves_breakfast = db.Column(db.Boolean, default=False)
+    serves_lunch = db.Column(db.Boolean, default=False)
+    serves_dinner = db.Column(db.Boolean, default=False)
+    serves_brunch = db.Column(db.Boolean, default=False)
+    serves_alcohol = db.Column(db.Boolean, default=False)
+    serves_vegetarian = db.Column(db.Boolean, default=False)
+    wheelchair_accessible_entrance = db.Column(db.Boolean, default=False, index=True)
+    wheelchair_accessible_restroom = db.Column(db.Boolean, default=False)
+    wheelchair_accessible_parking = db.Column(db.Boolean, default=False)
+    wheelchair_accessible_seating = db.Column(db.Boolean, default=False)
+    has_braille_menu = db.Column(db.Boolean, default=False)
+    has_assistive_hearing = db.Column(db.Boolean, default=False)
+    has_service_animal_welcome = db.Column(db.Boolean, default=False)
+    accessibility_score = db.Column(db.Integer, default=0)  # 0-100
+    popular_times_json = db.Column(db.Text, default="[]")   # 7×24 matrix
+    busiest_day = db.Column(db.String(16), default="")      # mon..sun
+    busiest_hour = db.Column(db.Integer, default=12)        # 0..23 peak
+    menu_json = db.Column(db.Text, default="[]")            # restaurants only
+    ratings_dist_json = db.Column(db.Text, default="[]")    # [n5,n4,n3,n2,n1]
+    visit_label = db.Column(db.String(32), default="")      # ""/"Home"/"Work"
     created_at = db.Column(db.DateTime, default=lambda: MIRROR_REFERENCE_DATETIME)
 
     reviews = db.relationship("Review", backref="place", cascade="all, delete-orphan", lazy="dynamic")
@@ -250,6 +276,56 @@ class Place(db.Model):
             return json.loads(self.review_snippets_json or "[]")
         except (json.JSONDecodeError, TypeError):
             return []
+
+    def get_popular_times(self):
+        """Return a 7×24 int matrix (0..100). [mon..sun][hour]."""
+        try:
+            data = json.loads(self.popular_times_json or "[]")
+            if isinstance(data, list) and len(data) == 7 and all(
+                    isinstance(r, list) and len(r) == 24 for r in data):
+                return data
+        except (json.JSONDecodeError, TypeError):
+            pass
+        return [[0] * 24 for _ in range(7)]
+
+    def get_menu(self):
+        try:
+            data = json.loads(self.menu_json or "[]")
+            return data if isinstance(data, list) else []
+        except (json.JSONDecodeError, TypeError):
+            return []
+
+    def get_ratings_dist(self):
+        try:
+            data = json.loads(self.ratings_dist_json or "[]")
+            if isinstance(data, list) and len(data) == 5:
+                return data
+        except (json.JSONDecodeError, TypeError):
+            pass
+        return [0, 0, 0, 0, 0]
+
+    def get_accessibility_flags(self):
+        """Return ordered list of (label, enabled) tuples for the UI row."""
+        return [
+            ("Wheelchair-accessible entrance", self.wheelchair_accessible_entrance),
+            ("Wheelchair-accessible restroom", self.wheelchair_accessible_restroom),
+            ("Wheelchair-accessible parking", self.wheelchair_accessible_parking),
+            ("Wheelchair-accessible seating", self.wheelchair_accessible_seating),
+            ("Braille menu", self.has_braille_menu),
+            ("Assistive hearing loop", self.has_assistive_hearing),
+            ("Service animal welcome", self.has_service_animal_welcome),
+        ]
+
+    def get_service_flags(self):
+        """Return ordered list of (label, enabled) for the service-options row."""
+        return [
+            ("Dine-in", self.dine_in),
+            ("Takeout", self.takeout),
+            ("Delivery", self.delivery_available),
+            ("Curbside pickup", self.curbside_pickup),
+            ("Contactless pickup", self.contactless_pickup),
+            ("Reservations", self.accepts_reservations),
+        ]
 
     def get_gallery(self):
         """Load gallery sections.
@@ -312,6 +388,7 @@ class SavedPlace(db.Model):
     list_id = db.Column(db.Integer, db.ForeignKey("saved_list.id"), nullable=False)
     place_id = db.Column(db.Integer, db.ForeignKey("place.id"), nullable=False)
     note = db.Column(db.Text, default="")
+    label = db.Column(db.String(32), default="", index=True)  # "Home"/"Work"/custom
     created_at = db.Column(db.DateTime, default=lambda: MIRROR_REFERENCE_DATETIME)
 
     place = db.relationship("Place")
@@ -395,6 +472,32 @@ class Route(db.Model):
     def get_steps(self):
         try:
             return json.loads(self.steps_json or "[]")
+        except (json.JSONDecodeError, TypeError):
+            return []
+
+
+class TransitLine(db.Model):
+    """A named transit line (subway / bus / light-rail) for the
+    /transit/lines/<line_id> deep page."""
+    id = db.Column(db.Integer, primary_key=True)
+    slug = db.Column(db.String(96), unique=True, nullable=False, index=True)
+    name = db.Column(db.String(128), nullable=False)         # "1 Train", "F Bus", ...
+    short_name = db.Column(db.String(16), default="")        # "1", "F"
+    agency = db.Column(db.String(128), default="")           # MTA, BART, MBTA, ...
+    mode = db.Column(db.String(32), default="subway", index=True)
+    color = db.Column(db.String(16), default="#5f6368")
+    city_id = db.Column(db.Integer, db.ForeignKey("city.id"), nullable=True, index=True)
+    frequency_peak = db.Column(db.String(32), default="")    # "Every 4 min"
+    frequency_off = db.Column(db.String(32), default="")     # "Every 10 min"
+    hours = db.Column(db.String(128), default="")            # "5:00 AM – 1:00 AM"
+    stops_json = db.Column(db.Text, default="[]")            # list of stop names
+    description = db.Column(db.Text, default="")
+    accessibility_notes = db.Column(db.Text, default="")     # wheelchair info
+
+    def get_stops(self):
+        try:
+            data = json.loads(self.stops_json or "[]")
+            return data if isinstance(data, list) else []
         except (json.JSONDecodeError, TypeError):
             return []
 
@@ -2125,6 +2228,198 @@ def settings():
     return render_template("settings.html")
 
 
+# --------------------------------------------------------------------------
+#  R4 deep sub-pages: popular-times, accessibility, menu, booking,
+#  your-places/labeled, your-places/timeline/<date>, transit/lines/<id>
+# --------------------------------------------------------------------------
+_DAY_NAMES = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
+_DAY_NAMES_LONG = ["Monday", "Tuesday", "Wednesday", "Thursday",
+                   "Friday", "Saturday", "Sunday"]
+
+
+def _popular_times_summary(matrix, busiest_day, busiest_hour):
+    """Compute summary stats from a 7×24 matrix for the page header."""
+    if not matrix:
+        return {"peak_label": "", "avg_busy": 0, "open_hours_per_day": 0}
+    totals = [sum(row) for row in matrix]
+    open_count = sum(1 for row in matrix for v in row if v > 0)
+    avg_busy = round(sum(totals) / max(1, sum(1 for row in matrix for v in row if v > 0)))
+    peak_label = ""
+    if 0 <= busiest_hour < 24:
+        h12 = busiest_hour % 12 or 12
+        ampm = "AM" if busiest_hour < 12 else "PM"
+        day_idx = {"mon": 0, "tue": 1, "wed": 2, "thu": 3,
+                   "fri": 4, "sat": 5, "sun": 6}.get((busiest_day or "").lower(), 0)
+        peak_label = f"{_DAY_NAMES_LONG[day_idx]} at {h12}:00 {ampm}"
+    return {
+        "peak_label": peak_label,
+        "avg_busy": avg_busy,
+        "open_hours_per_day": round(open_count / 7, 1),
+        "totals_per_day": totals,
+    }
+
+
+@app.route("/place/<slug>/popular-times")
+@app.route("/place/<slug>/popular_times")
+def place_popular_times(slug):
+    """Standalone deep page rendering the 7×24 popular-times heatmap."""
+    place = Place.query.filter_by(slug=slug).first_or_404()
+    matrix = place.get_popular_times()
+    summary = _popular_times_summary(matrix, place.busiest_day, place.busiest_hour)
+    return render_template(
+        "popular_times.html",
+        place=place, matrix=matrix, summary=summary,
+        day_names=_DAY_NAMES, day_names_long=_DAY_NAMES_LONG,
+    )
+
+
+@app.route("/place/<slug>/accessibility")
+def place_accessibility(slug):
+    """Standalone deep page listing all accessibility features for a place."""
+    place = Place.query.filter_by(slug=slug).first_or_404()
+    flags = place.get_accessibility_flags()
+    enabled = [(k, v) for k, v in flags if v]
+    missing = [(k, v) for k, v in flags if not v]
+    return render_template(
+        "accessibility.html",
+        place=place, enabled=enabled, missing=missing,
+        score=place.accessibility_score,
+    )
+
+
+@app.route("/place/<slug>/menu")
+def place_menu(slug):
+    """Restaurant menu page. 404 for non-restaurant places that have no menu."""
+    place = Place.query.filter_by(slug=slug).first_or_404()
+    menu = place.get_menu()
+    if not menu:
+        return render_template("menu.html", place=place, sections=[]), 200
+    return render_template("menu.html", place=place, sections=menu)
+
+
+@app.route("/place/<slug>/booking", methods=["GET", "POST"])
+def place_booking(slug):
+    """Mock reservation page. POST records a flash + redirect; GET shows form."""
+    place = Place.query.filter_by(slug=slug).first_or_404()
+    if request.method == "POST":
+        date_s = (request.form.get("date") or "").strip()
+        time_s = (request.form.get("time") or "").strip()
+        party = (request.form.get("party") or "").strip()
+        if not date_s or not time_s:
+            flash("Date and time are required.", "error")
+        else:
+            flash(
+                f"Reservation requested at {place.name} on {date_s} {time_s} for {party or '2'}.",
+                "success",
+            )
+            return redirect(url_for("place_detail", slug=slug))
+    return render_template("booking.html", place=place)
+
+
+@app.route("/your-places/labeled")
+@app.route("/your_places/labeled")
+@login_required
+def your_places_labeled():
+    """Personal labeled places — Home / Work / custom."""
+    saved = (SavedPlace.query
+             .filter(SavedPlace.user_id == current_user.id,
+                     SavedPlace.label != "")
+             .order_by(SavedPlace.label.asc(), SavedPlace.created_at.desc())
+             .all())
+    grouped = {}
+    for sp in saved:
+        grouped.setdefault(sp.label, []).append(sp)
+    return render_template(
+        "labeled.html", grouped=grouped, saved=saved,
+    )
+
+
+@app.route("/your-places/labeled/<int:saved_id>/label", methods=["POST"])
+@app.route("/your_places/labeled/<int:saved_id>/label", methods=["POST"])
+@login_required
+def your_places_label_set(saved_id):
+    sp = db.session.get(SavedPlace, saved_id)
+    if not sp or sp.user_id != current_user.id:
+        abort(404)
+    label = (request.form.get("label") or "").strip()[:32]
+    sp.label = label
+    db.session.commit()
+    flash(f"Label updated to {label or '(none)'}.", "success")
+    return redirect(url_for("your_places_labeled"))
+
+
+@app.route("/your-places/timeline/<date>")
+@app.route("/your_places/timeline/<date>")
+@login_required
+def your_places_timeline_date(date):
+    """Day-scoped timeline view. <date> = YYYY-MM-DD."""
+    try:
+        day = datetime.strptime(date, "%Y-%m-%d").date()
+    except ValueError:
+        abort(404)
+    day_start = datetime.combine(day, datetime.min.time())
+    day_end = day_start + timedelta(days=1)
+    entries = (TimelineEntry.query
+               .filter(TimelineEntry.user_id == current_user.id,
+                       TimelineEntry.visited_at >= day_start,
+                       TimelineEntry.visited_at < day_end)
+               .order_by(TimelineEntry.visited_at.asc())
+               .all())
+    # Adjacent dates by querying neighbour entries
+    prev_e = (TimelineEntry.query
+              .filter(TimelineEntry.user_id == current_user.id,
+                      TimelineEntry.visited_at < day_start)
+              .order_by(TimelineEntry.visited_at.desc()).first())
+    next_e = (TimelineEntry.query
+              .filter(TimelineEntry.user_id == current_user.id,
+                      TimelineEntry.visited_at >= day_end)
+              .order_by(TimelineEntry.visited_at.asc()).first())
+    return render_template(
+        "timeline_date.html",
+        day=day, entries=entries,
+        prev_date=prev_e.visited_at.date() if prev_e else None,
+        next_date=next_e.visited_at.date() if next_e else None,
+    )
+
+
+@app.route("/transit/lines/<line_slug>")
+def transit_line_detail(line_slug):
+    """Show a single transit line: stops, frequency, accessibility notes."""
+    line = TransitLine.query.filter_by(slug=line_slug).first_or_404()
+    city = City.query.get(line.city_id) if line.city_id else None
+    sibling_lines = []
+    if line.city_id:
+        sibling_lines = (TransitLine.query
+                         .filter(TransitLine.city_id == line.city_id,
+                                 TransitLine.id != line.id)
+                         .order_by(TransitLine.short_name.asc())
+                         .limit(20).all())
+    return render_template(
+        "transit_line.html",
+        line=line, city=city, sibling_lines=sibling_lines,
+        stops=line.get_stops(),
+    )
+
+
+@app.route("/transit/lines")
+def transit_lines_index():
+    """Index of all known transit lines."""
+    city_slug = (request.args.get("city") or "").strip()
+    mode = (request.args.get("mode") or "").strip()
+    q = TransitLine.query
+    if city_slug:
+        c = City.query.filter_by(slug=city_slug).first()
+        if c:
+            q = q.filter_by(city_id=c.id)
+    if mode:
+        q = q.filter_by(mode=mode)
+    lines = q.order_by(TransitLine.city_id, TransitLine.short_name).limit(200).all()
+    return render_template(
+        "transit_lines_index.html",
+        lines=lines, city_slug=city_slug, mode=mode,
+    )
+
+
 @app.route("/help")
 def help_page():
     return render_template("help.html")
@@ -2756,7 +3051,8 @@ def server_error(e):
 def seed_database():
     from seed_data import (build_categories, build_cities, build_places,
                            seed_task_data, expand_cities, expand_places,
-                           expand_routes)
+                           expand_routes, expand_places_r4, backfill_place_extras,
+                           seed_transit_lines)
     if Category.query.count() == 0:
         build_categories(db, Category)
     if City.query.count() == 0:
@@ -2772,6 +3068,11 @@ def seed_database():
     expand_cities(db, City)
     expand_places(db, Place, Category, City)
     expand_routes(db, Route)
+    # --- R4 ---
+    expand_places_r4(db, Place, Category, City)
+    backfill_place_extras(db, Place, Category)
+    if TransitLine.query.count() == 0:
+        seed_transit_lines(db, TransitLine, City)
 
 
 # --------------------------------------------------------------------------

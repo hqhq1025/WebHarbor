@@ -719,12 +719,18 @@ DESCRIPTIONS = {
 
 
 def seed_all(db, Airport, Flight):
-    # Pull augmented metadata (icao/lat/lng/tz) and the R3 extra-airport list.
+    # Pull augmented metadata (icao/lat/lng/tz) and the R3 + R4 extra-airport
+    # lists. R4 adds another ~450 airports from OpenFlights airports.dat so the
+    # catalog reaches 1200+ for broader benchmark coverage.
     try:
         from airport_extras import AIRPORT_META, EXTRA_AIRPORTS
     except ImportError:
         AIRPORT_META = {}
         EXTRA_AIRPORTS = []
+    try:
+        from airport_extras import R4_EXTRA_AIRPORTS
+    except ImportError:
+        R4_EXTRA_AIRPORTS = []
 
     # 1. Airports
     slug_to_airport_ids = {}
@@ -786,6 +792,36 @@ def seed_all(db, Airport, Flight):
         )
         db.session.add(airport)
         slug_to_airport_ids.setdefault(slug, []).append(iata)
+
+    # R4: append another 450 OpenFlights airports for total 1200+.
+    for entry in R4_EXTRA_AIRPORTS:
+        (iata, slug, city, country, name, region, popular,
+         icao, lat, lng, tz) = entry
+        gallery_dir = BASE_DIR / 'static' / 'images' / 'destinations' / slug
+        gallery = []
+        if gallery_dir.exists():
+            for f in sorted(gallery_dir.glob('img_*.*')):
+                if f.stat().st_size > 10000 and f.suffix.lower() in ['.jpg', '.jpeg', '.png', '.webp']:
+                    gallery.append(f"/static/images/destinations/{slug}/{f.name}")
+        image = gallery[0] if gallery else ''
+        airport = Airport(
+            iata=iata,
+            icao=icao,
+            city_slug=slug,
+            city=city,
+            country=country,
+            name=name,
+            region=region,
+            is_popular=popular,
+            latitude=lat,
+            longitude=lng,
+            timezone=tz,
+            image=image,
+            gallery_json=json.dumps(gallery),
+            description=DESCRIPTIONS.get(slug, f"Explore {city}, {country}."),
+        )
+        db.session.add(airport)
+        slug_to_airport_ids.setdefault(slug, []).append(iata)
     db.session.commit()
 
     # Build iata -> Airport
@@ -794,8 +830,15 @@ def seed_all(db, Airport, Flight):
     # 2. Flight catalog: generate routes between popular airports
     random.seed(42)
     popular_airports = [a for a in Airport.query.filter_by(is_popular=True).all()]
-    # Map iata -> raw tuple so estimate_flight works
+    # Map iata -> raw tuple so estimate_flight works. Include R4 airports too
+    # so make_flight_dict() can resolve any seeded IATA, not just the AIRPORTS
+    # tuple set. The shape mirrors AIRPORTS rows: (iata, slug, city, country,
+    # name, region, popular).
     raw_by_iata = {t[0]: t for t in AIRPORTS}
+    for entry in EXTRA_AIRPORTS:
+        raw_by_iata.setdefault(entry[0], entry[:7])
+    for entry in R4_EXTRA_AIRPORTS:
+        raw_by_iata.setdefault(entry[0], entry[:7])
     today = date.today()
 
     flights_count = 0
@@ -846,9 +889,9 @@ def seed_all(db, Airport, Flight):
         if airline_idx is None:
             airline_idx = random.randint(0, len(AIRLINES) - 1)
         airline_name, airline_code, airline_slug = AIRLINES[airline_idx]
-        fn = f"{airline_code}{random.randint(10, 9999)}"
+        fn = f"{airline_code}{random.randint(10, 99999)}"
         while fn in seen_flight_numbers:
-            fn = f"{airline_code}{random.randint(10, 9999)}"
+            fn = f"{airline_code}{random.randint(10, 99999)}"
         seen_flight_numbers.add(fn)
 
         depart_h = random.choice([5, 6, 7, 8, 9, 10, 11, 13, 15, 16, 17, 18, 19, 20, 22])
@@ -923,9 +966,9 @@ def seed_all(db, Airport, Flight):
         duration, base_price = estimate_flight(origin_raw, dest_raw)
         airline_idx = random.randint(0, len(AIRLINES) - 1)
         airline_name, airline_code, airline_slug = AIRLINES[airline_idx]
-        fn = f"{airline_code}{random.randint(10, 9999)}"
+        fn = f"{airline_code}{random.randint(10, 99999)}"
         while fn in seen_flight_numbers:
-            fn = f"{airline_code}{random.randint(10, 9999)}"
+            fn = f"{airline_code}{random.randint(10, 99999)}"
         seen_flight_numbers.add(fn)
         depart_h = random.choice([5, 6, 7, 8, 9, 10, 11, 13, 15, 16, 17, 18, 19, 20, 22])
         depart_m = random.choice([0, 15, 30, 45])
@@ -1062,15 +1105,50 @@ def seed_all(db, Airport, Flight):
     catalog_anchor = date(2024, 1, 1)
     catalog_rows = []
 
-    # Top-tier: every day for a full leap year (covers Feb 29 too)
+    # Top-tier: every day for two full years (2024-01-01 → 2025-12-31, 731
+    # days including a leap day) so adjacent-day and "next-month" searches in
+    # both years hit something on a real route. R4 extends from 366 → 731
+    # days for ~115k more top-tier rows, bringing flight catalogue past 200k.
+    TOP_TIER_DAYS = 731
+    print(f"[seed] top-tier loop: {len(top_tier_pairs)} pairs × {TOP_TIER_DAYS} days")
+    _pair_idx = 0
     for origin_iata, dest_iata in top_tier_pairs:
-        for d_offset in range(366):
+        _pair_idx += 1
+        for d_offset in range(TOP_TIER_DAYS):
             dep = catalog_anchor + timedelta(days=d_offset)
             row = make_flight_dict(origin_iata, dest_iata, dep)
             if row:
                 catalog_rows.append(row)
                 flights_count += 1
-        if len(catalog_rows) >= 3000:
+        if len(catalog_rows) >= 5000:
+            db.session.execute(text(insert_sql), catalog_rows)
+            db.session.commit()
+            catalog_rows = []
+    print(f"[seed] top-tier done, flights so far ~{flights_count}")
+
+    # R4 future-month coverage: a curated set of mega-hub pairs gets a 2026
+    # window so "fly out next month" tasks (current date 2026-05-26) resolve.
+    # Keep this list short — only the busiest international routes — to avoid
+    # exploding the catalogue.
+    R4_FUTURE_PAIRS = [
+        ('JFK', 'LHR'), ('LHR', 'JFK'), ('JFK', 'CDG'), ('CDG', 'JFK'),
+        ('JFK', 'HND'), ('HND', 'JFK'), ('JFK', 'NRT'), ('JFK', 'DXB'),
+        ('LAX', 'HND'), ('LAX', 'NRT'), ('LAX', 'SYD'), ('SFO', 'NRT'),
+        ('SFO', 'SYD'), ('ORD', 'LHR'), ('ORD', 'CDG'), ('BOS', 'LHR'),
+        ('LHR', 'CDG'), ('CDG', 'AMS'), ('AMS', 'JFK'), ('FRA', 'JFK'),
+        ('DXB', 'LHR'), ('DXB', 'BKK'), ('SIN', 'LHR'), ('HKG', 'LHR'),
+    ]
+    future_anchor = date(2026, 1, 1)
+    for origin_iata, dest_iata in R4_FUTURE_PAIRS:
+        if origin_iata not in airport_by_iata or dest_iata not in airport_by_iata:
+            continue
+        for d_offset in range(365):  # full 2026
+            dep = future_anchor + timedelta(days=d_offset)
+            row = make_flight_dict(origin_iata, dest_iata, dep)
+            if row:
+                catalog_rows.append(row)
+                flights_count += 1
+        if len(catalog_rows) >= 5000:
             db.session.execute(text(insert_sql), catalog_rows)
             db.session.commit()
             catalog_rows = []
@@ -1303,6 +1381,13 @@ def seed_all(db, Airport, Flight):
                         + g.stops * 0.15
                     ))
                     eligible[0].is_best = True
+        # Commit per outer route so the ORM identity map / autoflush stays
+        # small. Without this, 200k+ catalogue flights plus ~30k task-route
+        # ORM inserts pile up in one transaction and the loop runs O(N) per
+        # add. Per-route commit keeps the loop linear and rebuild stays at
+        # ~30s instead of stalling for many minutes (observed in R4 push to
+        # 200k+ flights).
+        db.session.commit()
 
     db.session.commit()
 
@@ -1389,6 +1474,8 @@ def seed_all(db, Airport, Flight):
 
     # ----------------------------------------------------------------
     # Populate Flight.stop_cities for every row where stops > 0.
+    # Pick a plausible layover IATA from a pool of hub airports.
+    # ----------------------------------------------------------------
     # Pick a plausible layover IATA from a pool of hub airports.
     # ----------------------------------------------------------------
     # Populating stop_cities via ORM iteration with relationship lookups was

@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+{% block title %}Menu — {{ place.name }} — Google Maps{% endblock %}
+
+{% block extra_head %}
+<style>
+.menu-wrap{max-width:780px;margin:24px auto;padding:0 24px;font-family:Roboto,Arial,sans-serif;color:#202124;}
+.menu-head{display:flex;align-items:baseline;gap:12px;margin-bottom:6px;}
+.menu-head h1{font-size:22px;margin:0;font-weight:500;}
+.menu-back{color:#1a73e8;font-size:13px;text-decoration:none;}
+.menu-back:hover{text-decoration:underline;}
+.menu-sub{color:#5f6368;font-size:13px;margin-bottom:18px;}
+.menu-flags{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:20px;}
+.menu-flag{background:#e8f0fe;color:#174ea6;border-radius:14px;padding:4px 10px;font-size:12px;}
+.menu-section{margin-bottom:26px;}
+.menu-section h2{font-size:16px;color:#202124;font-weight:500;margin:0 0 10px;padding-bottom:8px;border-bottom:1px solid #e8eaed;}
+.menu-items{list-style:none;padding:0;margin:0;}
+.menu-item{display:flex;justify-content:space-between;gap:18px;padding:10px 0;border-bottom:1px dashed #f1f3f4;}
+.menu-item:last-child{border-bottom:none;}
+.menu-item .name{font-weight:500;color:#202124;font-size:14px;}
+.menu-item .desc{color:#5f6368;font-size:13px;margin-top:2px;}
+.menu-item .price{font-weight:500;color:#137333;flex-shrink:0;white-space:nowrap;}
+.menu-empty{padding:30px 0;color:#5f6368;font-size:14px;text-align:center;}
+.menu-cta{margin-top:18px;font-size:13px;color:#5f6368;}
+.menu-cta a{color:#1a73e8;text-decoration:none;}
+</style>
+{% endblock %}
+
+{% block body %}
+<div class="menu-wrap" id="menu-page" data-place="{{ place.slug }}">
+    <a href="{{ url_for('place_detail', slug=place.slug) }}" class="menu-back">&larr; Back to {{ place.name }}</a>
+    <div class="menu-head"><h1>Menu — {{ place.name }}</h1></div>
+    <div class="menu-sub">{{ place.subtitle }} &middot; {{ place.address }} &middot; {{ place.price_level }}</div>
+
+    <div class="menu-flags">
+        {% if place.serves_breakfast %}<span class="menu-flag">Breakfast</span>{% endif %}
+        {% if place.serves_brunch %}<span class="menu-flag">Brunch</span>{% endif %}
+        {% if place.serves_lunch %}<span class="menu-flag">Lunch</span>{% endif %}
+        {% if place.serves_dinner %}<span class="menu-flag">Dinner</span>{% endif %}
+        {% if place.serves_alcohol %}<span class="menu-flag">Serves alcohol</span>{% endif %}
+        {% if place.serves_vegetarian %}<span class="menu-flag">Vegetarian options</span>{% endif %}
+        {% if place.dine_in %}<span class="menu-flag">Dine-in</span>{% endif %}
+        {% if place.takeout %}<span class="menu-flag">Takeout</span>{% endif %}
+        {% if place.delivery_available %}<span class="menu-flag">Delivery</span>{% endif %}
+        {% if place.accepts_reservations %}<span class="menu-flag">Reservations</span>{% endif %}
+    </div>
+
+    {% if sections %}
+        {% for sec in sections %}
+        <section class="menu-section" data-section="{{ sec.section|lower }}">
+            <h2>{{ sec.section }}</h2>
+            <ul class="menu-items">
+                {% for it in sec['items'] %}
+                <li class="menu-item" data-item="{{ it.name|lower|replace(' ','-') }}">
+                    <div>
+                        <div class="name">{{ it.name }}</div>
+                        <div class="desc">{{ it.desc }}</div>
+                    </div>
+                    <div class="price">${{ it.price }}</div>
+                </li>
+                {% endfor %}
+            </ul>
+        </section>
+        {% endfor %}
+    {% else %}
+        <div class="menu-empty">This place has not published a menu on Google Maps.</div>
+    {% endif %}
+
+    <div class="menu-cta">
+        <p>Menus are submitted by the business and verified contributors. Prices and availability are illustrative.</p>
+        <p>
+            {% if place.accepts_reservations %}
+                <a href="{{ url_for('place_booking', slug=place.slug) }}">Reserve a table</a> &middot;
+            {% endif %}
+            <a href="{{ url_for('place_popular_times', slug=place.slug) }}">Popular times</a> &middot;
+            <a href="{{ url_for('place_accessibility', slug=place.slug) }}">Accessibility</a>
+        </p>
+    </div>
+</div>
+{% endblock %}

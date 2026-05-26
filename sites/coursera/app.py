@@ -1410,6 +1410,154 @@ def course_syllabus(slug):
     course = Course.query.filter_by(slug=slug).first_or_404()
     return redirect(url_for('course_detail', slug=course.slug) + '#modules')
 
+
+# ─── R4 deep sub-pages ────────────────────────────────────────────────────────
+
+@app.route('/learn/<slug>/lecture/<int:n>')
+def course_lecture(slug, n):
+    """Per-week lecture page. Week-N video list + transcript + downloads."""
+    course = Course.query.filter_by(slug=slug).first_or_404()
+    mods = course.modules
+    if not mods or n < 1 or n > len(mods):
+        abort(404)
+    module = mods[n - 1]
+    prev_n = n - 1 if n > 1 else None
+    next_n = n + 1 if n < len(mods) else None
+    return render_template('course_lecture.html', course=course, module=module,
+                           n=n, total=len(mods), prev_n=prev_n, next_n=next_n)
+
+
+@app.route('/learn/<slug>/assignment/<int:n>')
+def course_assignment(slug, n):
+    """Per-week assignment page. Rubric, due date, peer-review pool."""
+    course = Course.query.filter_by(slug=slug).first_or_404()
+    mods = course.modules
+    if not mods or n < 1 or n > len(mods):
+        abort(404)
+    module = mods[n - 1]
+    # Deterministic rubric and due date from week number
+    due_offset = 7 * n
+    return render_template('course_assignment.html', course=course,
+                           module=module, n=n, total=len(mods),
+                           due_days=due_offset)
+
+
+@app.route('/learn/<slug>/discussion')
+def course_discussion(slug):
+    """Course discussion forum. Lists deterministic example threads."""
+    course = Course.query.filter_by(slug=slug).first_or_404()
+    # Seed a few deterministic discussion threads from existing reviews.
+    rvs = Review.query.filter_by(course_id=course.id).order_by(
+        Review.created_at.desc()).limit(8).all()
+    threads = []
+    titles = [
+        'Welcome thread — introduce yourself',
+        'Week 1 — common mistakes',
+        'Office-hour announcements',
+        'Study group sign-ups',
+        'Capstone project showcase',
+        'Career advice from alumni',
+    ]
+    for i, t in enumerate(titles):
+        author = (rvs[i % len(rvs)].user.name if rvs else 'Coursera Mentor')
+        threads.append({'title': t, 'author': author,
+                        'replies': 12 + (i * 17 + course.id) % 60})
+    return render_template('course_discussion.html', course=course,
+                           threads=threads)
+
+
+@app.route('/learn/<slug>/peer-review')
+def course_peer_review(slug):
+    """Peer-review queue for a course. Lists submissions awaiting review."""
+    course = Course.query.filter_by(slug=slug).first_or_404()
+    # Pool of deterministic example submissions
+    pool = []
+    enrolls = Enrollment.query.filter_by(course_id=course.id).order_by(
+        Enrollment.progress.desc()).limit(6).all()
+    for i, e in enumerate(enrolls):
+        u = User.query.get(e.user_id)
+        if not u:
+            continue
+        pool.append({
+            'learner': u.name,
+            'title': f'Capstone submission #{i + 1}: {course.title}',
+            'submitted_days_ago': 1 + (i * 3 + course.id) % 14,
+            'progress': e.progress,
+        })
+    return render_template('course_peer_review.html', course=course,
+                           submissions=pool)
+
+
+@app.route('/degree/<slug>/admissions')
+def degree_admissions(slug):
+    """Admissions page for a degree program."""
+    course = Course.query.filter_by(slug=slug, course_type='Degree').first_or_404()
+    return render_template('degree_admissions.html', course=course)
+
+
+@app.route('/partner/<slug>/courses')
+def partner_courses(slug):
+    """A partner's full course catalog (compact list view)."""
+    partner = Partner.query.filter_by(slug=slug).first_or_404()
+    sort = request.args.get('sort', 'popular')
+    q = Course.query.filter_by(partner_id=partner.id)
+    if sort == 'newest':
+        all_courses = q.order_by(Course.sort_date.desc()).all()
+    elif sort == 'rating':
+        all_courses = q.order_by(Course.rating.desc()).all()
+    else:
+        all_courses = q.order_by(Course.enrolled_count.desc()).all()
+    return render_template('partner_courses.html', partner=partner,
+                           courses=all_courses, sort=sort)
+
+
+@app.route('/skill/<slug>/learner-stories')
+@app.route('/skills/<slug>/learner-stories')
+def skill_learner_stories(slug):
+    """Learner stories anchored on a skill."""
+    pretty = slug.replace('-', ' ').title()
+    needle_dash = slug.replace(' ', '-')
+    needle_words = slug.replace('-', ' ')
+    courses = Course.query.filter(
+        db.or_(
+            Course.feature_tags.like(f'%"{needle_dash}"%'),
+            Course.skills.ilike(f'%{needle_words}%'),
+        )
+    ).limit(20).all()
+    # Pull testimonials + top reviews from these courses
+    stories = []
+    for c in courses:
+        for t in c.get_testimonials()[:1]:
+            stories.append({**t, 'course': c.title, 'slug': c.slug})
+        if len(stories) >= 12:
+            break
+    return render_template('skill_learner_stories.html', skill_name=pretty,
+                           skill_slug=slug, stories=stories, courses=courses)
+
+
+@app.route('/career/<role_slug>/skills')
+@app.route('/careers/<role_slug>/skills')
+def career_skills(role_slug):
+    """Skill map for a career role."""
+    role = next((r for r in CAREER_ROLES_PUB if r[1] == role_slug), None)
+    if not role:
+        abort(404)
+    name, _slug, category, blurb, skills = role
+    # For each skill, find top 3 courses
+    skill_to_courses = {}
+    for sk in skills:
+        cs = Course.query.filter(
+            db.or_(
+                Course.skills.ilike(f'%{sk}%'),
+                Course.feature_tags.like(f'%"{sk.lower().replace(" ", "-")}"%'),
+            )
+        ).order_by(Course.enrolled_count.desc()).limit(3).all()
+        skill_to_courses[sk] = cs
+    return render_template('career_skills.html', role_name=name,
+                           role_slug=role_slug, category=category, blurb=blurb,
+                           skills=skills, skill_to_courses=skill_to_courses)
+
+
 # ─── Error handlers ───────────────────────────────────────────────────────────
 
 @app.errorhandler(404)
@@ -3121,6 +3269,16 @@ with app.app_context():
     # testimonials loop covers v4 courses on the FIRST build.
     from seed_extras import seed_v4 as _seed_v4
     _seed_v4(db, {
+        'User': User, 'Partner': Partner, 'Course': Course,
+        'CourseModule': CourseModule, 'SubCourse': SubCourse,
+        'Enrollment': Enrollment, 'SavedCourse': SavedCourse,
+        'Review': Review,
+    })
+    # R4 polish: +60 partners + ~1500 courses (fresh R4 topics × 5 variants,
+    # MOOC Classics, industry-specials, career pathways, university intros,
+    # research seminars, micro-credentials). Idempotent + deterministic.
+    from seed_extras import seed_v5 as _seed_v5
+    _seed_v5(db, {
         'User': User, 'Partner': Partner, 'Course': Course,
         'CourseModule': CourseModule, 'SubCourse': SubCourse,
         'Enrollment': Enrollment, 'SavedCourse': SavedCourse,

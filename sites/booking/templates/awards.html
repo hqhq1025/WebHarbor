@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block title %}Traveller Review Awards — Booking{% endblock %}
+{% block content %}
+<div class="container">
+    <h1 class="page-title">Traveller Review Awards</h1>
+    <p style="color:#444;max-width:780px;">
+        Every year, Booking.com celebrates partners who go the extra mile for their
+        guests. These properties earned at least a 9.0 rating from real verified
+        stays, and span hotels, apartments, villas, B&amp;Bs, and resorts in
+        every region.
+    </p>
+
+    <div style="margin:18px 0 24px 0;background:#fff8e8;border:1px solid #f0d585;border-radius:8px;padding:14px;">
+        <strong>&#9733; {{ top_props|length }} winning properties</strong> across {{ by_city|length }} cities — see the highlights below.
+    </div>
+
+    {% for city_name, props in by_city.items() %}
+    <section style="margin-bottom:28px;">
+        <h2 style="font-size:18px;margin:0 0 8px 0;">{{ city_name }} <span style="font-weight:400;color:#888;font-size:13px;">&middot; {{ props|length }} winner{% if props|length != 1 %}s{% endif %}</span></h2>
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px;">
+            {% for p in props %}
+            <a href="{{ url_for('property_detail', slug=p.slug) }}" class="city-card"
+               style="background:#fff;border:1px solid #e2e2e2;border-radius:8px;padding:14px;text-decoration:none;color:inherit;">
+                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+                    <strong style="color:#003580;">{{ p.name }}</strong>
+                    <span style="background:#003580;color:#fff;padding:2px 6px;border-radius:4px;font-size:12px;">
+                        {{ '%.1f'|format(p.rating) }}
+                    </span>
+                </div>
+                <div style="font-size:12px;color:#444;">{{ p.neighborhood }}</div>
+                <div style="font-size:12px;color:#888;margin-top:4px;">
+                    {{ p.review_count }} reviews &middot; {{ p.rating_label }}
+                </div>
+                <div style="margin-top:6px;font-size:12px;color:#006ce4;">&#127942; Traveller Review Award winner</div>
+            </a>
+            {% endfor %}
+        </div>
+    </section>
+    {% endfor %}
+</div>
+{% endblock %}

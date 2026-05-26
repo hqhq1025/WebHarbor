@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% block title %}Projects · {{ repo.full_name }} · GitHub{% endblock %}
+{% block content %}
+<div class="repo-header-bar">
+  <div class="repo-header-inner">
+    <div class="repo-breadcrumb">
+      <a href="/{{ repo.full_name.split('/')[0] }}" class="repo-breadcrumb-link">{{ repo.full_name.split('/')[0] }}</a>
+      <span class="repo-breadcrumb-sep">/</span>
+      <a href="/{{ repo.full_name }}" class="repo-breadcrumb-link repo-breadcrumb-repo">{{ repo.name }}</a>
+    </div>
+    <nav class="repo-tabs">
+      <a href="/{{ repo.full_name }}" class="repo-tab">Code</a>
+      <a href="/{{ repo.full_name }}/issues" class="repo-tab">Issues</a>
+      <a href="/{{ repo.full_name }}/pulls" class="repo-tab">Pull requests</a>
+      <a href="/{{ repo.full_name }}/discussions" class="repo-tab">Discussions</a>
+      <a href="/{{ repo.full_name }}/projects" class="repo-tab repo-tab-active">
+        Projects <span class="repo-tab-count">{{ boards|length }}</span>
+      </a>
+      <a href="/{{ repo.full_name }}/packages" class="repo-tab">Packages</a>
+    </nav>
+  </div>
+</div>
+<div style="padding:24px 32px;max-width:1100px;margin:0 auto;">
+  <h1 style="font-size:20px;margin:0 0 16px;">Projects <span style="color:#7d8590;font-weight:400;">({{ boards|length }})</span></h1>
+  {% if boards %}
+  <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px;">
+    {% for b in boards %}
+    <a href="/{{ repo.full_name }}/projects/{{ b.number }}" style="border:1px solid #30363d;border-radius:8px;padding:14px;text-decoration:none;color:inherit;display:block;background:#0d1117;">
+      <div style="display:flex;align-items:center;gap:8px;font-weight:600;color:#e6edf3;">
+        <svg height="16" width="16" viewBox="0 0 16 16" fill="currentColor"><path d="M1.75 0h12.5C15.216 0 16 .784 16 1.75v12.5A1.75 1.75 0 0 1 14.25 16H1.75A1.75 1.75 0 0 1 0 14.25V1.75C0 .784.784 0 1.75 0Z"/></svg>
+        <span>{{ b.name }}</span>
+      </div>
+      <div style="font-size:12px;color:#7d8590;margin-top:4px;">#{{ b.number }} · <span class="status status-{{ b.status }}">{{ b.status }}</span> · {{ b.get_columns()|length }} columns</div>
+      <p style="font-size:13px;color:#8b949e;margin:8px 0 0;">{{ b.description }}</p>
+    </a>
+    {% endfor %}
+  </div>
+  {% else %}
+  <p style="color:#7d8590;">No project boards yet.</p>
+  {% endif %}
+</div>
+{% endblock %}

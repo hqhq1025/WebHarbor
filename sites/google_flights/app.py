@@ -2302,6 +2302,581 @@ def calendar_cheapest():
                            cheapest_price=cheapest_price)
 
 
+# ----------------------------------------------------------------
+# R4 sub-page surfaces: deeper detail pages for benchmark coverage.
+#
+# Each surface mirrors a real Google Flights sub-page or related Google
+# Travel feature (airline detail, aircraft type, route stats, CO2
+# comparison, visa lookup, seat map, eSIM add-on). These exist mainly
+# so benchmark tasks have richer URLs to navigate to and to provide
+# realistic structured data the agent can reason about.
+# ----------------------------------------------------------------
+
+# --- Airline detail -----------------------------------------------------
+# Static facts for the airlines that appear in seed AIRLINES + a handful
+# of overlap entries from the loyalty list. Real airline pages have a
+# huge amount of metadata; we ship the slice that benchmark tasks tend
+# to read (alliance, hub, fleet families).
+_AIRLINE_FACTS = {
+    'AA': dict(name='American Airlines', alliance='oneworld', hub='DFW',
+               blurb='American Airlines is one of the largest US carriers, headquartered in Fort Worth, Texas. It serves over 350 destinations and is a founding member of the oneworld alliance.',
+               fleet=['Boeing 737-800', 'Boeing 777-300ER', 'Airbus A321', 'Airbus A319']),
+    'DL': dict(name='Delta', alliance='SkyTeam', hub='ATL',
+               blurb='Delta Air Lines is an Atlanta-based major carrier and the founding member of the SkyTeam alliance. Known for its operational reliability and Delta One business product.',
+               fleet=['Airbus A350-900', 'Boeing 767-400ER', 'Boeing 737-900ER', 'Airbus A321neo']),
+    'UA': dict(name='United', alliance='Star Alliance', hub='ORD',
+               blurb='United Airlines is a Chicago-based hub-and-spoke carrier and member of the Star Alliance. Polaris business class connects major US hubs with global destinations.',
+               fleet=['Boeing 787-9 Dreamliner', 'Boeing 777-300ER', 'Boeing 737 MAX 9', 'Airbus A320']),
+    'B6': dict(name='JetBlue', alliance='partner network', hub='JFK',
+               blurb='JetBlue is a low-cost-plus carrier with a focus on the US East Coast and growing transatlantic service from JFK and BOS.',
+               fleet=['Airbus A321LR', 'Airbus A320', 'Embraer E190']),
+    'WN': dict(name='Southwest', alliance='None', hub='DAL',
+               blurb='Southwest Airlines is the largest US point-to-point carrier and the only major Boeing 737-exclusive fleet operator.',
+               fleet=['Boeing 737-800', 'Boeing 737 MAX 8']),
+    'AS': dict(name='Alaska Airlines', alliance='oneworld', hub='SEA',
+               blurb='Alaska Airlines connects the Pacific Northwest with the rest of North America and joined oneworld in 2021 after merging operations with Virgin America.',
+               fleet=['Boeing 737-900ER', 'Boeing 737 MAX 9', 'Embraer 175']),
+    'NK': dict(name='Spirit', alliance='None', hub='FLL',
+               blurb='Spirit Airlines is an ultra-low-cost US carrier with a single fleet type and Bare Fare unbundled pricing.',
+               fleet=['Airbus A320', 'Airbus A321', 'Airbus A320neo']),
+    'F9': dict(name='Frontier', alliance='None', hub='DEN',
+               blurb='Frontier Airlines is a Denver-based ultra-low-cost carrier with an all-Airbus narrow-body fleet.',
+               fleet=['Airbus A320neo', 'Airbus A321neo', 'Airbus A320']),
+    'BA': dict(name='British Airways', alliance='oneworld', hub='LHR',
+               blurb='British Airways is the flag carrier of the United Kingdom and one of the founding members of oneworld. London Heathrow is its main hub.',
+               fleet=['Airbus A350-1000', 'Boeing 787-9 Dreamliner', 'Boeing 777-300ER', 'Airbus A320neo']),
+    'LH': dict(name='Lufthansa', alliance='Star Alliance', hub='FRA',
+               blurb='Lufthansa is Germany\'s flag carrier and a founding Star Alliance member, with primary hubs at Frankfurt and Munich.',
+               fleet=['Airbus A380', 'Airbus A350-900', 'Boeing 747-8', 'Airbus A320neo']),
+    'AF': dict(name='Air France', alliance='SkyTeam', hub='CDG',
+               blurb='Air France is the flag carrier of France and operates a global network from Paris CDG, anchoring the SkyTeam alliance with KLM.',
+               fleet=['Airbus A350-900', 'Boeing 777-300ER', 'Airbus A220-300']),
+    'KL': dict(name='KLM', alliance='SkyTeam', hub='AMS',
+               blurb='KLM Royal Dutch Airlines is the world\'s oldest still-operating airline, founded in 1919, with its hub at Amsterdam Schiphol.',
+               fleet=['Boeing 787-10', 'Boeing 777-300ER', 'Embraer 195-E2']),
+    'EK': dict(name='Emirates', alliance='partner network', hub='DXB',
+               blurb='Emirates is a Dubai-based long-haul carrier known for its all-wide-body fleet centered on the Airbus A380 and Boeing 777.',
+               fleet=['Airbus A380-800', 'Boeing 777-300ER', 'Boeing 777-200LR']),
+    'QR': dict(name='Qatar Airways', alliance='oneworld', hub='DOH',
+               blurb='Qatar Airways is the flag carrier of Qatar and a member of oneworld, known for its Qsuite business product.',
+               fleet=['Airbus A350-1000', 'Boeing 777-300ER', 'Airbus A380']),
+    'EY': dict(name='Etihad', alliance='partner network', hub='AUH',
+               blurb='Etihad is the UAE\'s flag carrier based in Abu Dhabi, known for its First Apartment and "The Residence" suite on the A380.',
+               fleet=['Boeing 787-9 Dreamliner', 'Boeing 777-300ER', 'Airbus A350-1000']),
+    'SQ': dict(name='Singapore Airlines', alliance='Star Alliance', hub='SIN',
+               blurb='Singapore Airlines is consistently ranked among the world\'s top carriers and operates the world\'s longest commercial route to Newark.',
+               fleet=['Airbus A380-800', 'Boeing 777-300ER', 'Airbus A350-900ULR']),
+    'CX': dict(name='Cathay Pacific', alliance='oneworld', hub='HKG',
+               blurb='Cathay Pacific is the flag carrier of Hong Kong and a founding member of oneworld.',
+               fleet=['Boeing 777-300ER', 'Airbus A350-1000', 'Airbus A330-300']),
+    'NH': dict(name='ANA', alliance='Star Alliance', hub='HND',
+               blurb='All Nippon Airways is the largest Japanese carrier and a member of Star Alliance, headquartered in Tokyo.',
+               fleet=['Boeing 787-9 Dreamliner', 'Boeing 777-300ER', 'Airbus A380-800']),
+    'JL': dict(name='Japan Airlines', alliance='oneworld', hub='HND',
+               blurb='Japan Airlines is the flag carrier of Japan and a member of oneworld, operating from Tokyo Haneda and Narita.',
+               fleet=['Boeing 787-9 Dreamliner', 'Airbus A350-900', 'Boeing 777-300ER']),
+    'TK': dict(name='Turkish Airlines', alliance='Star Alliance', hub='IST',
+               blurb='Turkish Airlines serves more countries than any other carrier and operates a vast network from Istanbul.',
+               fleet=['Airbus A350-900', 'Boeing 787-9 Dreamliner', 'Boeing 777-300ER']),
+    'AC': dict(name='Air Canada', alliance='Star Alliance', hub='YYZ',
+               blurb='Air Canada is Canada\'s flag carrier and a Star Alliance member, with main hubs at Toronto and Vancouver.',
+               fleet=['Boeing 787-9 Dreamliner', 'Airbus A330-300', 'Boeing 777-300ER']),
+    'IB': dict(name='Iberia', alliance='oneworld', hub='MAD',
+               blurb='Iberia is the flag carrier of Spain and a member of oneworld and part of the International Airlines Group.',
+               fleet=['Airbus A350-900', 'Airbus A330-300', 'Airbus A320neo']),
+    'QF': dict(name='Qantas', alliance='oneworld', hub='SYD',
+               blurb='Qantas is the flag carrier of Australia and operates ultra-long-haul "Project Sunrise" routes from Sydney.',
+               fleet=['Airbus A380-800', 'Boeing 787-9 Dreamliner', 'Airbus A330-300']),
+}
+
+
+@app.route('/airline/<code>')
+def airline_detail(code):
+    """Per-airline summary surface. Aggregates catalog stats for the carrier
+    plus static alliance/fleet facts. Helpful for tasks like "which alliance
+    is JetBlue in" or "average JFK→LHR fare on British Airways"."""
+    code = code.upper()
+    facts = _AIRLINE_FACTS.get(code)
+    if not facts:
+        abort(404)
+    from sqlalchemy import func
+    base_q = Flight.query.filter_by(airline_code=code)
+    flight_count = base_q.count()
+    if flight_count == 0:
+        # No catalog flights for this code — render with zeros rather than 404
+        avg_price = 0.0
+        avg_rating = 0.0
+        route_count = 0
+        top_routes = []
+    else:
+        avg_price = db.session.query(func.avg(Flight.price)).filter(
+            Flight.airline_code == code).scalar() or 0.0
+        avg_rating = db.session.query(func.avg(Flight.rating)).filter(
+            Flight.airline_code == code).scalar() or 0.0
+        route_count = db.session.query(
+            func.count(func.distinct(
+                Flight.origin_id * 100000 + Flight.destination_id))
+        ).filter(Flight.airline_code == code).scalar() or 0
+        # Top 10 routes by flight count for this carrier
+        rows = (db.session.query(
+                    Flight.origin_id,
+                    Flight.destination_id,
+                    func.count(Flight.id).label('c'),
+                    func.avg(Flight.price).label('p'))
+                .filter(Flight.airline_code == code)
+                .group_by(Flight.origin_id, Flight.destination_id)
+                .order_by(func.count(Flight.id).desc())
+                .limit(10)
+                .all())
+        airport_lookup = {a.id: a for a in Airport.query.filter(
+            Airport.id.in_([r[0] for r in rows] + [r[1] for r in rows])).all()}
+        top_routes = [
+            dict(o_iata=airport_lookup[r[0]].iata,
+                 d_iata=airport_lookup[r[1]].iata,
+                 count=r[2], avg_price=float(r[3]))
+            for r in rows if r[0] in airport_lookup and r[1] in airport_lookup
+        ]
+    return render_template('airline_detail.html',
+                           airline_code=code,
+                           airline_name=facts['name'],
+                           alliance=facts['alliance'],
+                           primary_hub=facts['hub'],
+                           blurb=facts['blurb'],
+                           fleet=facts['fleet'],
+                           logo_url=f"/static/images/airlines/{code.lower()}.png",
+                           flight_count=flight_count,
+                           route_count=route_count,
+                           avg_price=float(avg_price),
+                           avg_rating=float(avg_rating),
+                           top_routes=top_routes)
+
+
+# --- Aircraft type detail ----------------------------------------------
+_AIRCRAFT_FACTS = {
+    'B738': dict(name='Boeing 737-800', manufacturer='Boeing', family='737 NG',
+                 seats=189, range_km=5765, co2_per_pax_km=88,
+                 blurb='Workhorse narrow-body of the 737 Next Generation family, in service since 1998. Common short and medium-haul aircraft for major US and European carriers.',
+                 matchers=['Boeing 737-800']),
+    'B38M': dict(name='Boeing 737 MAX 8', manufacturer='Boeing', family='737 MAX',
+                 seats=210, range_km=6570, co2_per_pax_km=72,
+                 blurb='Re-engined evolution of the 737-800 with CFM LEAP-1B engines and Advanced Technology winglets.',
+                 matchers=['Boeing 737 MAX 8']),
+    'B77W': dict(name='Boeing 777-300ER', manufacturer='Boeing', family='777',
+                 seats=396, range_km=13649, co2_per_pax_km=84,
+                 blurb='Long-range wide-body twin used by major intercontinental carriers since 2004.',
+                 matchers=['Boeing 777-300ER']),
+    'B789': dict(name='Boeing 787-9 Dreamliner', manufacturer='Boeing', family='787',
+                 seats=296, range_km=14140, co2_per_pax_km=68,
+                 blurb='Mid-size wide-body twin with composite construction. Lower cabin altitude and higher humidity than legacy types.',
+                 matchers=['Boeing 787-9 Dreamliner']),
+    'A320': dict(name='Airbus A320', manufacturer='Airbus', family='A320',
+                 seats=180, range_km=6150, co2_per_pax_km=86,
+                 blurb='The most-built narrow-body family in history, in service since 1988.',
+                 matchers=['Airbus A320']),
+    'A321': dict(name='Airbus A321', manufacturer='Airbus', family='A320',
+                 seats=220, range_km=5950, co2_per_pax_km=80,
+                 blurb='Stretched variant of the A320, popular for transatlantic and dense domestic routes.',
+                 matchers=['Airbus A321']),
+    'A333': dict(name='Airbus A330-300', manufacturer='Airbus', family='A330',
+                 seats=300, range_km=11750, co2_per_pax_km=78,
+                 blurb='Mid-size wide-body twin from the 1990s, still produced in the A330neo update.',
+                 matchers=['Airbus A330-300']),
+    'A359': dict(name='Airbus A350-900', manufacturer='Airbus', family='A350',
+                 seats=325, range_km=15000, co2_per_pax_km=64,
+                 blurb='Long-range composite wide-body twin, fuel-efficient flagship for many carriers.',
+                 matchers=['Airbus A350-900']),
+    'A388': dict(name='Airbus A380', manufacturer='Airbus', family='A380',
+                 seats=525, range_km=14800, co2_per_pax_km=75,
+                 blurb='The largest passenger airliner ever built, in service since 2007 and now out of production.',
+                 matchers=['Airbus A380']),
+    'E190': dict(name='Embraer E190', manufacturer='Embraer', family='E-Jet',
+                 seats=100, range_km=4537, co2_per_pax_km=110,
+                 blurb='Regional jet seating 100 passengers in single-class, popular for feeder routes.',
+                 matchers=['Embraer E190']),
+    'CRJ9': dict(name='Bombardier CRJ-900', manufacturer='Bombardier', family='CRJ',
+                 seats=90, range_km=2956, co2_per_pax_km=130,
+                 blurb='Regional jet operated by major US carriers under their regional brands.',
+                 matchers=['Bombardier CRJ-900']),
+}
+
+
+@app.route('/aircraft/<icao>')
+def aircraft_detail(icao):
+    """Aircraft-type summary by ICAO type code (B738, A320, B789...).
+    Lists operators and aggregate catalog count."""
+    icao = icao.upper()
+    facts = _AIRCRAFT_FACTS.get(icao)
+    if not facts:
+        abort(404)
+    from sqlalchemy import func
+    # Match Flight.aircraft by any of the matchers (real airline schedules
+    # use long aircraft names, our seed mirrors that).
+    q = Flight.query.filter(Flight.aircraft.in_(facts['matchers']))
+    flight_count = q.count()
+    op_rows = (db.session.query(Flight.airline, Flight.airline_code,
+                                func.count(Flight.id).label('c'))
+               .filter(Flight.aircraft.in_(facts['matchers']))
+               .group_by(Flight.airline, Flight.airline_code)
+               .order_by(func.count(Flight.id).desc())
+               .limit(15).all())
+    operators = [dict(name=r[0], code=r[1], count=r[2]) for r in op_rows]
+    return render_template('aircraft_detail.html',
+                           icao=icao,
+                           aircraft_name=facts['name'],
+                           manufacturer=facts['manufacturer'],
+                           family=facts['family'],
+                           seats=facts['seats'],
+                           range_km=facts['range_km'],
+                           co2_per_pax_km=facts['co2_per_pax_km'],
+                           blurb=facts['blurb'],
+                           flight_count=flight_count,
+                           operators=operators)
+
+
+# --- Route stats --------------------------------------------------------
+def _haversine_km(lat1, lng1, lat2, lng2):
+    import math
+    if None in (lat1, lng1, lat2, lng2):
+        return None
+    r = 6371.0
+    p1, p2 = math.radians(lat1), math.radians(lat2)
+    dphi = math.radians(lat2 - lat1)
+    dlam = math.radians(lng2 - lng1)
+    a = math.sin(dphi/2)**2 + math.cos(p1)*math.cos(p2)*math.sin(dlam/2)**2
+    return int(2 * r * math.asin(math.sqrt(a)))
+
+
+@app.route('/route-stats/<origin>/<dest>')
+def route_stats(origin, dest):
+    """Aggregate statistics for a single (origin, dest) route. Used by tasks
+    like 'what is the average fare on JFK→LHR' or 'how popular is route X'."""
+    origin = origin.upper()
+    dest = dest.upper()
+    o = Airport.query.filter_by(iata=origin).first()
+    d = Airport.query.filter_by(iata=dest).first()
+    if not o or not d:
+        abort(404)
+    from sqlalchemy import func
+    base_q = Flight.query.filter_by(origin_id=o.id, destination_id=d.id)
+    count = base_q.count()
+    if count == 0:
+        stats = dict(count=0, min_price=0, avg_price=0,
+                     avg_duration_h=0, avg_duration_m=0,
+                     nonstop_pct=0, avg_co2=0)
+        carriers = []
+        trend = []
+    else:
+        agg = db.session.query(
+            func.min(Flight.price), func.avg(Flight.price),
+            func.avg(Flight.duration_minutes),
+            func.sum(db.case((Flight.stops == 0, 1), else_=0)),
+            func.avg(Flight.co2_emissions_kg),
+        ).filter_by(origin_id=o.id, destination_id=d.id).first()
+        min_p, avg_p, avg_d, nonstop, avg_co2 = agg
+        avg_d = int(avg_d or 0)
+        stats = dict(count=count,
+                     min_price=float(min_p or 0),
+                     avg_price=float(avg_p or 0),
+                     avg_duration_h=avg_d // 60,
+                     avg_duration_m=avg_d % 60,
+                     nonstop_pct=int(100 * (nonstop or 0) / count),
+                     avg_co2=int(avg_co2 or 0))
+        # Carriers
+        c_rows = (db.session.query(
+                    Flight.airline, Flight.airline_code,
+                    func.count(Flight.id),
+                    func.avg(Flight.price),
+                    func.avg(Flight.rating))
+                  .filter_by(origin_id=o.id, destination_id=d.id)
+                  .group_by(Flight.airline, Flight.airline_code)
+                  .order_by(func.count(Flight.id).desc())
+                  .limit(10).all())
+        carriers = [dict(name=r[0], code=r[1], count=r[2],
+                         avg_price=float(r[3]), avg_rating=float(r[4]))
+                    for r in c_rows]
+        # Trend by year-month (SQLite supports strftime)
+        trend_rows = (db.session.query(
+                        func.strftime('%Y-%m', Flight.departure_date).label('m'),
+                        func.count(Flight.id),
+                        func.avg(Flight.price))
+                      .filter_by(origin_id=o.id, destination_id=d.id)
+                      .group_by(func.strftime('%Y-%m', Flight.departure_date))
+                      .order_by(func.strftime('%Y-%m', Flight.departure_date))
+                      .limit(24).all())
+        trend = [dict(month=r[0], count=r[1], avg_price=float(r[2])) for r in trend_rows]
+    distance_km = _haversine_km(o.latitude, o.longitude, d.latitude, d.longitude) or 0
+    return render_template('route_stats.html',
+                           origin=o, dest=d,
+                           distance_km=distance_km,
+                           stats=stats,
+                           carriers=carriers,
+                           trend=trend)
+
+
+# --- CO2 comparison ----------------------------------------------------
+@app.route('/tools/co2-comparison')
+def tools_co2_comparison():
+    """CO2 comparison across carriers + alternative modes for a single
+    route. Real Google Flights surfaces this inline with results; we add a
+    dedicated comparison surface."""
+    origin = (request.args.get('from') or '').strip().upper()
+    dest = (request.args.get('to') or '').strip().upper()
+    rows = []
+    distance_km = 0
+    best_carrier = ''
+    best_co2 = 0
+    if origin and dest:
+        o = Airport.query.filter_by(iata=origin).first()
+        d = Airport.query.filter_by(iata=dest).first()
+        if o and d:
+            distance_km = _haversine_km(o.latitude, o.longitude,
+                                         d.latitude, d.longitude) or 0
+            from sqlalchemy import func
+            carrier_rows = (db.session.query(
+                                Flight.airline,
+                                func.avg(Flight.co2_emissions_kg))
+                            .filter_by(origin_id=o.id, destination_id=d.id)
+                            .group_by(Flight.airline)
+                            .order_by(func.avg(Flight.co2_emissions_kg))
+                            .limit(8).all())
+            avg_all = (db.session.query(func.avg(Flight.co2_emissions_kg))
+                       .filter_by(origin_id=o.id, destination_id=d.id)
+                       .scalar() or 0)
+            for name, co2 in carrier_rows:
+                co2 = int(co2 or 0)
+                delta = int(round(100 * (co2 - avg_all) / avg_all)) if avg_all else 0
+                rows.append(dict(label=name, co2=co2, delta_pct=delta))
+            if carrier_rows:
+                best_carrier = carrier_rows[0][0]
+                best_co2 = int(carrier_rows[0][1] or 0)
+            # Alternative modes (synthesised emission factors)
+            avg_co2 = int(avg_all or 0)
+            train_co2 = int(distance_km * 0.041) if distance_km else 0
+            car_co2 = int(distance_km * 0.171) if distance_km else 0
+            rows.append(dict(
+                label='Typical flight (this route)',
+                co2=avg_co2, delta_pct=0))
+            if distance_km <= 2500 and distance_km > 0:
+                rows.append(dict(
+                    label='Driving (avg car, 1 passenger)',
+                    co2=car_co2,
+                    delta_pct=int(round(100*(car_co2-avg_co2)/avg_co2)) if avg_co2 else 0))
+            if distance_km <= 1500 and distance_km > 0:
+                rows.append(dict(
+                    label='High-speed rail',
+                    co2=train_co2,
+                    delta_pct=int(round(100*(train_co2-avg_co2)/avg_co2)) if avg_co2 else 0))
+    return render_template('co2_comparison.html',
+                           origin=origin, dest=dest,
+                           rows=rows, distance_km=distance_km,
+                           best_carrier=best_carrier, best_co2=best_co2)
+
+
+# --- Visa requirements ------------------------------------------------
+_VISA_DB = {
+    # passport -> dest_country -> {status, max_stay, notes}
+    'US': {
+        'Japan': dict(status='Visa-free', max_stay='90 days',
+                      notes='Tourist entry only. Passport must be valid for the duration of stay.'),
+        'United Kingdom': dict(status='Visa-free', max_stay='6 months',
+                               notes='Electronic Travel Authorisation (ETA) required from 2025.'),
+        'France': dict(status='Visa-free (Schengen)', max_stay='90 days in 180',
+                       notes='ETIAS required from 2026 for short stays.'),
+        'India': dict(status='e-Visa required', max_stay='60 days (tourist)',
+                      notes='Apply online ahead of travel. Tourist, business, and medical e-Visas available.'),
+        'China': dict(status='Visa required', max_stay='30-60 days',
+                      notes='Visa-on-arrival is no longer available for US passport holders. Apply at consulate.'),
+        'Brazil': dict(status='e-Visa required', max_stay='90 days',
+                       notes='Tourist e-Visa for US, Canada, Australia passport holders from 2024.'),
+        'Australia': dict(status='ETA required', max_stay='3 months per visit',
+                          notes='Apply for an Electronic Travel Authority online.'),
+        'Turkey': dict(status='e-Visa required', max_stay='90 days',
+                       notes='Apply online at evisa.gov.tr ahead of travel.'),
+        'Mexico': dict(status='Visa-free', max_stay='180 days',
+                       notes='FMM tourist permit issued on entry.'),
+    },
+    'UK': {
+        'Japan': dict(status='Visa-free', max_stay='90 days',
+                      notes='Tourist entry only.'),
+        'United States': dict(status='ESTA required (Visa Waiver)', max_stay='90 days',
+                              notes='Apply via the official ESTA site at least 72 hours before travel.'),
+        'France': dict(status='Visa-free (Schengen)', max_stay='90 days in 180',
+                       notes='Maximum 90 days in any 180-day rolling window.'),
+        'India': dict(status='e-Visa required', max_stay='60 days (tourist)',
+                      notes='Apply online ahead of travel.'),
+        'China': dict(status='Visa required', max_stay='30-60 days',
+                      notes='Apply at the Chinese embassy or consulate.'),
+        'Brazil': dict(status='Visa-free', max_stay='90 days',
+                       notes='Extendable for 90 additional days inside Brazil.'),
+        'Australia': dict(status='eVisitor required', max_stay='3 months per visit',
+                          notes='Free eVisitor visa for UK passports.'),
+        'Turkey': dict(status='Visa-free', max_stay='90 days in 180',
+                       notes='UK passport holders do not need an e-Visa for tourism.'),
+    },
+    'EU': {
+        'Japan': dict(status='Visa-free', max_stay='90 days', notes='Tourist entry only.'),
+        'United States': dict(status='ESTA required (Visa Waiver)', max_stay='90 days',
+                              notes='Apply via the official ESTA site.'),
+        'United Kingdom': dict(status='Visa-free', max_stay='6 months',
+                               notes='ETA required from 2025.'),
+        'India': dict(status='e-Visa required', max_stay='60 days',
+                      notes='Apply online ahead of travel.'),
+        'Australia': dict(status='ETA required', max_stay='3 months per visit',
+                          notes='Free for most EU member states.'),
+    },
+}
+
+
+@app.route('/tools/visa-requirements')
+def tools_visa_requirements():
+    passport = (request.args.get('passport') or 'US').upper()
+    dest_raw = (request.args.get('dest') or '').strip()
+    passport_options = sorted(_VISA_DB.keys())
+    result = None
+    if dest_raw:
+        # Case-insensitive lookup
+        for country, info in _VISA_DB.get(passport, {}).items():
+            if country.lower() == dest_raw.lower():
+                result = dict(info, country=country)
+                break
+        if not result:
+            result = dict(country=dest_raw,
+                          status='Information unavailable',
+                          max_stay='-',
+                          notes='Please consult the destination\'s official embassy site for visa requirements.')
+    # "Popular lookups" — a static-ish recent activity list
+    popular_lookups = []
+    for p in passport_options:
+        for country, info in list(_VISA_DB.get(p, {}).items())[:2]:
+            popular_lookups.append(dict(passport=p, country=country,
+                                         status=info['status']))
+    return render_template('visa_requirements.html',
+                           passport=passport, dest=dest_raw,
+                           passport_options=passport_options,
+                           result=result,
+                           popular_lookups=popular_lookups[:8])
+
+
+# --- Seat map -----------------------------------------------------------
+def _booking_owner_or_404(booking_id):
+    b = Booking.query.get_or_404(booking_id)
+    if b.user_id != current_user.id:
+        abort(404)
+    return b
+
+
+def _build_seat_grid(flight, taken_seats):
+    """Generate a deterministic 30-row seat grid for the flight. Wide-body
+    flights use 3-3-3 layout, narrow-body uses 3-3, regional uses 2-2.
+    'taken' is decided by a hash of (flight_id, row_number, letter) so the
+    same flight always shows the same seat map."""
+    import hashlib
+    aircraft = (flight.aircraft or '').lower()
+    if any(x in aircraft for x in ['787', '777', 'a350', 'a380', 'a330']):
+        layout = ['A', 'B', 'C', None, 'D', 'E', 'F', None, 'G', 'H', 'J']
+        n_rows = 35
+    elif any(x in aircraft for x in ['737', 'a320', 'a321', 'a319']):
+        layout = ['A', 'B', 'C', None, 'D', 'E', 'F']
+        n_rows = 28
+    else:
+        layout = ['A', 'B', None, 'C', 'D']
+        n_rows = 18
+    rows = []
+    for r in range(1, n_rows + 1):
+        seats = []
+        for letter in layout:
+            if letter is None:
+                seats.append(dict(code=None, taken=False, extra_legroom=False))
+                continue
+            code = f"{r}{letter}"
+            if code in taken_seats:
+                taken = True
+            else:
+                h = int(hashlib.md5(f"{flight.id}-{code}".encode()).hexdigest(), 16)
+                taken = (h % 5) == 0  # ~20% taken
+            extra = r in (1, 11, 12, 20)  # exit rows + bulkhead
+            seats.append(dict(code=code, taken=taken, extra_legroom=extra))
+        rows.append(dict(number=r, seats=seats))
+    return rows
+
+
+@app.route('/trips/<int:booking_id>/seat-map', methods=['GET', 'POST'])
+@login_required
+def trip_seat_map(booking_id):
+    b = _booking_owner_or_404(booking_id)
+    item = b.items.first()
+    if not item or not item.flight:
+        abort(404)
+    if request.method == 'POST':
+        new_seat = (request.form.get('seat') or '').strip().upper()
+        if new_seat:
+            item.seat = new_seat
+            db.session.commit()
+            flash(f'Seat {new_seat} selected for {b.pnr}.', 'success')
+        return redirect(url_for('trip_seat_map', booking_id=b.id))
+    taken = {bi.seat for bi in b.items.all() if bi.seat and bi.id != item.id}
+    seat_rows = _build_seat_grid(item.flight, taken)
+    return render_template('seat_map.html',
+                           booking=b, flight=item.flight,
+                           seat_rows=seat_rows, current_seat=item.seat)
+
+
+# --- eSIM add ---------------------------------------------------------
+_ESIM_PLANS = [
+    dict(id='small', name='Lite', gb=1, days=7, price=9),
+    dict(id='medium', name='Standard', gb=5, days=15, price=22),
+    dict(id='large', name='Pro', gb=15, days=30, price=44),
+    dict(id='unlimited', name='Unlimited', gb='unlimited', days=14, price=59),
+]
+
+
+@app.route('/trips/<int:booking_id>/esim', methods=['GET', 'POST'])
+@login_required
+def trip_esim_add(booking_id):
+    b = _booking_owner_or_404(booking_id)
+    item = b.items.first()
+    if not item or not item.flight:
+        abort(404)
+    dest_country = item.flight.destination.country if item.flight.destination else 'destination'
+    # Pick a network partner by destination country (deterministic).
+    partners = ['Airalo', 'Holafly', 'Nomad', 'Saily', 'GigSky']
+    network_partner = partners[hash(dest_country) % len(partners)] if dest_country else partners[0]
+    if request.method == 'POST':
+        plan_id = (request.form.get('plan') or '').strip()
+        valid_ids = {p['id'] for p in _ESIM_PLANS}
+        if plan_id in valid_ids:
+            # Stash on contact_phone? No — use passenger_names_json as side-store?
+            # Cleanest: append to passenger_names_json via a sentinel key.
+            try:
+                blob = json.loads(b.passenger_names_json or '[]')
+            except Exception:
+                blob = []
+            # Strip any prior _esim entry, then add fresh.
+            blob = [x for x in blob if not (isinstance(x, dict) and x.get('_esim'))]
+            blob.append({'_esim': plan_id, 'country': dest_country,
+                          'partner': network_partner})
+            b.passenger_names_json = json.dumps(blob)
+            db.session.commit()
+            flash(f'eSIM "{plan_id}" plan added to booking {b.pnr}.', 'success')
+        return redirect(url_for('trip_esim_add', booking_id=b.id))
+    # Look up current eSIM plan
+    current_plan = None
+    try:
+        blob = json.loads(b.passenger_names_json or '[]')
+        for x in blob:
+            if isinstance(x, dict) and x.get('_esim'):
+                current_plan = x['_esim']
+                break
+    except Exception:
+        pass
+    return render_template('esim.html',
+                           booking=b,
+                           destination_country=dest_country,
+                           plans=_ESIM_PLANS,
+                           network_partner=network_partner,
+                           current_plan=current_plan)
+
+
 # ============================================================
 # ERROR HANDLERS
 # ============================================================

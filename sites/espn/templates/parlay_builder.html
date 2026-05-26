@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block title %}Parlay Builder{% endblock %}
+{% block content %}
+<div class="container">
+  <h1>ESPN BET Parlay Builder</h1>
+  <p>Pick from featured parlays below or build your own multi-leg ticket.</p>
+
+  <section>
+    <h2>Featured Parlays</h2>
+    <div class="parlay-grid">
+      {% for p in featured %}
+      <article class="parlay-card parlay-card--featured">
+        <h3>{{ p.title }}</h3>
+        <div class="parlay-card__meta">{{ p.leg_count }} legs &bull; {{ p.sportsbook }} &bull; {{ p.sport_slug|upper }}</div>
+        <div class="parlay-card__odds odds-american {% if p.american_odds < 0 %}odds-american--neg{% else %}odds-american--pos{% endif %}">
+          {% if p.american_odds > 0 %}+{% endif %}{{ p.american_odds }}
+        </div>
+        <div class="parlay-card__decimal">Decimal {{ p.decimal_odds }}</div>
+      </article>
+      {% endfor %}
+    </div>
+  </section>
+
+  <section>
+    <h2>All Parlays</h2>
+    <table class="parlay-table">
+      <thead>
+        <tr><th>Title</th><th>Sport</th><th>Legs</th><th>Odds</th><th>Sportsbook</th></tr>
+      </thead>
+      <tbody>
+        {% for p in all_parlays %}
+        <tr>
+          <td>{{ p.title }}</td>
+          <td>{{ p.sport_slug|upper }}</td>
+          <td>{{ p.leg_count }}</td>
+          <td class="odds-american {% if p.american_odds < 0 %}odds-american--neg{% else %}odds-american--pos{% endif %}">
+            {% if p.american_odds > 0 %}+{% endif %}{{ p.american_odds }}
+          </td>
+          <td>{{ p.sportsbook }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </section>
+</div>
+{% endblock %}

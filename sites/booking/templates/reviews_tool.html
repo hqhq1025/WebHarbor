@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+{% block title %}Reviews Lookup Tool — Booking{% endblock %}
+{% block content %}
+<div class="container">
+    <h1 class="page-title">Reviews lookup tool</h1>
+    <p style="color:#444;max-width:740px;">
+        Search a property by name or city to instantly see its guest review sub-scores —
+        Cleanliness, Comfort, Staff, Facilities, Location, Value, and WiFi — alongside the
+        overall rating. Useful before you book to spot strengths and weaknesses at a glance.
+    </p>
+    <form method="GET" action="{{ url_for('reviews_tool') }}" class="rt-form"
+          style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;margin:18px 0 24px 0;background:#f5fafe;border:1px solid #cce0f3;border-radius:6px;padding:14px 16px;">
+        <div class="form-field">
+            <label>Property or neighborhood</label>
+            <input type="text" name="q" value="{{ q }}" placeholder="e.g. Hilton, Le Marais" style="min-width:240px;">
+        </div>
+        <div class="form-field">
+            <label>City</label>
+            <select name="city">
+                <option value="">Any city</option>
+                {% for c in cities %}
+                <option value="{{ c.key }}" {% if city_key == c.key %}selected{% endif %}>{{ c.display }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <button class="btn-primary" type="submit">Look up reviews</button>
+    </form>
+
+    {% if top_by_cleanliness %}
+    <div class="rt-callout" style="background:#e6f2ff;border:1px solid #b9d8f5;border-radius:8px;padding:14px;margin-bottom:18px;">
+        <strong>Top property by Cleanliness sub-score:</strong>
+        <a href="{{ url_for('property_detail', slug=top_by_cleanliness.property.slug) }}">
+            {{ top_by_cleanliness.property.name }}
+        </a>
+        — <strong>{{ '%.1f'|format(top_by_cleanliness.score) }}</strong> /10
+    </div>
+    {% endif %}
+
+    {% if results %}
+    <table class="room-table">
+        <thead>
+            <tr><th>Property</th><th>City</th><th>Rating</th>
+                <th>Cleanliness</th><th>Comfort</th><th>Staff</th>
+                <th>Facilities</th><th>Location</th><th>Value</th></tr>
+        </thead>
+        <tbody>
+        {% for p in results %}
+            {% set s = p.get_review_scores() %}
+            <tr>
+                <td><a href="{{ url_for('property_detail', slug=p.slug) }}">{{ p.name }}</a></td>
+                <td>{{ p.city.display }}</td>
+                <td><strong>{{ '%.1f'|format(p.rating) }}</strong></td>
+                <td>{{ '%.1f'|format(s.get('Cleanliness',0)) }}</td>
+                <td>{{ '%.1f'|format(s.get('Comfort',0)) }}</td>
+                <td>{{ '%.1f'|format(s.get('Staff',0)) }}</td>
+                <td>{{ '%.1f'|format(s.get('Facilities',0)) }}</td>
+                <td>{{ '%.1f'|format(s.get('Location',0)) }}</td>
+                <td>{{ '%.1f'|format(s.get('Value for money',0)) }}</td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <p class="text-muted">Enter a property name or pick a city to see results.</p>
+    {% endif %}
+</div>
+{% endblock %}

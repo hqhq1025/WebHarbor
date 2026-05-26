@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block title %}Trackbacks for arXiv:{{ paper.arxiv_id }}{% endblock %}
+{% block breadcrumbs %}
+    <span class="sep">&gt;</span>
+    <a href="{{ url_for('paper_detail', arxiv_id=paper.arxiv_id) }}">arXiv:{{ paper.arxiv_id }}</a>
+    <span class="sep">&gt;</span>
+    <span style="color:#fff">trackbacks</span>
+{% endblock %}
+{% block content %}
+
+<h1 style="font-size:20px;margin:14px 0 4px;">Trackbacks for arXiv:{{ paper.arxiv_id }}</h1>
+<div class="muted" style="font-size:13px;margin-bottom:14px;">
+    <b>{{ paper.display_title }}</b><br>
+    External sites that have referenced or discussed this preprint, ordered by most-recent ping.
+</div>
+
+<table class="trackback-table" style="width:100%;border-collapse:collapse;font-size:13px;">
+    <thead>
+        <tr style="background:var(--bg-grey);">
+            <th style="text-align:left;padding:6px 10px;border-bottom:1px solid var(--border);">Date</th>
+            <th style="text-align:left;padding:6px 10px;border-bottom:1px solid var(--border);">Source</th>
+            <th style="text-align:left;padding:6px 10px;border-bottom:1px solid var(--border);">Host</th>
+            <th style="text-align:left;padding:6px 10px;border-bottom:1px solid var(--border);">Kind</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for p in pings %}
+        <tr>
+            <td style="padding:6px 10px;border-bottom:1px solid var(--border-light);"><span class="mono">{{ p.date }}</span></td>
+            <td style="padding:6px 10px;border-bottom:1px solid var(--border-light);"><a href="{{ p.url }}" rel="nofollow">{{ p.title }}</a></td>
+            <td style="padding:6px 10px;border-bottom:1px solid var(--border-light);"><span class="muted">{{ p.host }}</span></td>
+            <td style="padding:6px 10px;border-bottom:1px solid var(--border-light);">{{ p.kind }}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+<p class="muted" style="font-size:11px;margin-top:18px;">
+    Total trackbacks: <b>{{ pings|length }}</b> ·
+    <a href="{{ url_for('paper_detail', arxiv_id=paper.arxiv_id) }}">Back to abstract</a> ·
+    <a href="{{ url_for('paper_related', arxiv_id=paper.arxiv_id) }}">Related papers</a>
+</p>
+
+{% endblock %}

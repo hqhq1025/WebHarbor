@@ -118,7 +118,29 @@
                     <li><span class="check">&#10003;</span> {{ amenity }}</li>
                     {% endfor %}
                 </ul>
+                {% if property.is_eco_certified or property.is_accessible or property.has_virtual_tour %}
+                <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:10px;">
+                    {% if property.is_eco_certified %}<span class="badge" style="background:#e8f4e1;color:#0c6b14;border:1px solid #9ccc94;padding:4px 8px;border-radius:14px;font-size:12px;">&#127757; Travel Sustainable certified</span>{% endif %}
+                    {% if property.is_accessible %}<span class="badge" style="background:#e6f2ff;color:#003580;border:1px solid #b9d8f5;padding:4px 8px;border-radius:14px;font-size:12px;">&#9855; Wheelchair accessible</span>{% endif %}
+                    {% if property.has_virtual_tour %}<a href="{{ url_for('property_virtual_tour', slug=property.slug) }}" class="badge" style="background:#003580;color:#fff;padding:4px 10px;border-radius:14px;font-size:12px;text-decoration:none;">&#9678; Virtual tour available</a>{% endif %}
+                </div>
+                {% endif %}
             </div>
+
+            <!-- Cancellation policy -->
+            {% if property.cancellation_policy %}
+            <div class="pd-section">
+                <h2>Cancellation policy</h2>
+                <p style="margin:0 0 6px 0;"><strong>{{ property.cancellation_label or 'Cancellation' }}</strong></p>
+                <p class="pd-description">{{ property.cancellation_policy }}</p>
+                <p style="font-size:12px;color:#444;">
+                    See the
+                    <a href="{{ url_for('calendar_availability', slug=property.slug) }}">2-month availability calendar</a>
+                    or open the
+                    <a href="{{ url_for('property_rooms', slug=property.slug) }}">rooms-only accordion view</a>.
+                </p>
+            </div>
+            {% endif %}
 
             <!-- Rooms -->
             <div class="pd-section" id="rooms">
@@ -337,6 +359,18 @@
                 {% endif %}
             </div>
         </aside>
+    </div>
+</div>
+
+<!-- R4: sticky bottom price rail — visible when user scrolls past the side widget -->
+<div class="sticky-price-rail" id="stickyPriceRail">
+    <div>
+        <div class="spr-meta">{{ property.name }} &middot; {{ property.city.display }}</div>
+        <div class="spr-price">${{ '%.0f'|format(property.discounted_price) }}<span style="font-size:12px;font-weight:400;color:#444;">/night</span></div>
+    </div>
+    <div style="display:flex;gap:8px;align-items:center;">
+        <span class="map-cluster-pin" title="Cluster: {{ property.review_count }} reviews">{{ property.stars }}&#9733;</span>
+        <a href="#rooms" class="btn-primary" style="padding:8px 14px;">Reserve</a>
     </div>
 </div>
 {% endblock %}

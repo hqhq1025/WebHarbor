@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block title %}Featured Chefs{% endblock %}
+{% block content %}
+<div class="container" style="margin-top:30px">
+    <div class="breadcrumb" style="font-size:0.8rem;color:#999;margin-bottom:12px">
+        <a href="{{ url_for('index') }}" style="color:#666">Home</a> &rsaquo;
+        <a href="{{ url_for('community') }}" style="color:#666">Community</a> &rsaquo;
+        Chefs
+    </div>
+    <h1 class="section-title" style="margin-bottom:14px">Featured Chefs</h1>
+    <p style="color:#444;margin-bottom:24px">Browse {{ authors|length }} Allrecipes featured chefs and the recipes they're known for.</p>
+    <div class="author-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:14px">
+        {% for a in authors %}
+        <a href="{{ url_for('author_page', slug=a.slug) }}"
+           class="author-tile"
+           style="display:block;border:1px solid #eee;border-radius:8px;padding:14px;background:#fff;text-decoration:none;color:inherit;transition:transform 0.15s,box-shadow 0.15s">
+            <div style="display:flex;align-items:center;gap:12px">
+                <div style="width:48px;height:48px;border-radius:50%;background:#f7eee0;display:flex;align-items:center;justify-content:center;font-weight:700;color:#7b3f00">{{ a.name.split(' ')[-1][0]|upper }}</div>
+                <div>
+                    <div style="font-weight:600">{{ a.name }}</div>
+                    <div style="color:#7b3f00;font-size:0.85rem">{{ a.count }} recipes</div>
+                </div>
+            </div>
+        </a>
+        {% endfor %}
+    </div>
+</div>
+<style>
+.author-tile:hover { transform: translateY(-2px); box-shadow: 0 6px 16px rgba(0,0,0,0.08); }
+</style>
+{% endblock %}

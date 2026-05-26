@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block title %}{{ answer_title }} - Google Support{% endblock %}
+{% block content %}
+<div class="support-page">
+    <nav class="help-breadcrumb"><a href="{{ url_for('search_help_index') }}">Help Center</a> &rsaquo; Answer {{ answer_id }}</nav>
+    <h1>{{ answer_title }}</h1>
+    <p class="lead">{{ answer_body }}</p>
+
+    <h2>Step-by-step</h2>
+    <ol class="support-steps">
+        <li>On your computer, go to <a href="{{ url_for('index') }}">Google</a>.</li>
+        <li>Click the gear icon in the bottom-right corner, then <em>Settings</em>.</li>
+        <li>Adjust the preference and click <em>Save</em>.</li>
+    </ol>
+
+    <h2>Was this helpful?</h2>
+    <p>Tell us what you learned about &ldquo;{{ answer_title }}&rdquo; — we use this to improve our docs.</p>
+</div>
+{% endblock %}

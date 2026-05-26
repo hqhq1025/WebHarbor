@@ -16,6 +16,13 @@
         <strong>{{ podcast.latest_episode_title }}</strong><br>
         <span class="muted">{{ podcast.latest_episode_date }} &bull; {{ podcast.duration_minutes }} min</span>
       </p>
+      <div class="podcast-player">
+        <button class="podcast-player__btn" type="button" aria-label="Play">&#x25B6;</button>
+        <div class="podcast-player__track">
+          <div class="podcast-player__progress" style="width: 24%;"></div>
+        </div>
+        <div class="podcast-player__time">12:34 / {{ podcast.duration_minutes }}:00</div>
+      </div>
     </section>
 
     {% if related %}

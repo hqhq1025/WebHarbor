@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% block title %}{{ collection.title }}{% endblock %}
+{% block content %}
+<div class="container" style="margin-top:30px">
+    <div class="breadcrumb" style="font-size:0.8rem;color:#999;margin-bottom:12px">
+        <a href="{{ url_for('index') }}" style="color:#666">Home</a> &rsaquo;
+        <a href="{{ url_for('collections_hub') }}" style="color:#666">Collections</a> &rsaquo;
+        {{ collection.title }}
+    </div>
+
+    <div class="collection-hero" style="background:linear-gradient(135deg,#fff3e0,#ffccbc);border-radius:8px;padding:32px;margin-bottom:24px">
+        <h1 class="section-title" style="margin:0 0 8px 0">{{ collection.title }}</h1>
+        {% if collection.subtitle %}<div style="font-size:1.05rem;color:#5d4037;margin-bottom:8px">{{ collection.subtitle }}</div>{% endif %}
+        {% if collection.description %}<p style="color:#333;margin:0">{{ collection.description }}</p>{% endif %}
+        <div class="collection-meta" style="margin-top:14px;display:flex;flex-wrap:wrap;gap:14px;font-size:0.9rem;color:#5d4037">
+            <span><strong>{{ recipes|length }}</strong> recipes</span>
+            <span>Curated by <strong>{{ collection.curator_name }}</strong></span>
+            {% if collection.season %}<span>{{ collection.season }}</span>{% endif %}
+        </div>
+        {% set tags = collection.get_tags() %}
+        {% if tags %}
+        <div style="margin-top:12px;display:flex;flex-wrap:wrap;gap:6px">
+            {% for t in tags %}<span style="background:#fff;color:#7b3f00;font-size:0.78rem;padding:4px 12px;border-radius:14px;border:1px solid #e6d2b5">{{ t }}</span>{% endfor %}
+        </div>
+        {% endif %}
+    </div>
+
+    {% if recipes %}
+    <div class="recipe-grid recipe-grid-3">
+        {% for recipe in recipes %}
+        <div class="recipe-card">
+            <div class="recipe-card-image">
+                <a href="{{ url_for('recipe_detail', slug=recipe.slug) }}">
+                    <img src="{{ recipe.image }}" alt="{{ recipe.title }}" loading="lazy"
+                         onerror="this.parentElement.innerHTML='<div class=\'placeholder-img\'>{{ recipe.title }}</div>'">
+                </a>
+                <span style="position:absolute;top:8px;left:8px;background:#7b3f00;color:#fff;font-size:0.7rem;padding:3px 10px;border-radius:3px;text-transform:uppercase;font-weight:600">{{ loop.index }} of {{ recipes|length }}</span>
+            </div>
+            <div class="recipe-card-body">
+                <div class="recipe-card-title"><a href="{{ url_for('recipe_detail', slug=recipe.slug) }}">{{ recipe.title }}</a></div>
+                <div class="recipe-card-meta">
+                    <div class="recipe-card-rating">
+                        {% for i in range(5) %}<span class="star {% if i >= recipe.avg_rating|round(0,'floor')|int %}empty{% endif %}">&#9733;</span>{% endfor %}
+                    </div>
+                    <span>({{ recipe.review_count|int }})</span>
+                </div>
+                <div style="margin-top:6px;font-size:0.78rem;color:#666">{{ recipe.total_time }} &middot; {{ recipe.cuisine or 'International' }}</div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <p>This collection has no recipes yet.</p>
+    {% endif %}
+</div>
+{% endblock %}

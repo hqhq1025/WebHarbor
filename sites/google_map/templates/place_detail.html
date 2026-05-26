@@ -135,6 +135,137 @@
             {% endif %}
         </div>
 
+        {# ---- R4 service options chips ---- #}
+        {% set svc_flags = place.get_service_flags() %}
+        {% set svc_yes = [] %}
+        {% for label, v in svc_flags %}{% if v %}{% set _ = svc_yes.append(label) %}{% endif %}{% endfor %}
+        {% if svc_yes %}
+        <div class="pd-block" id="service-options">
+            <h3 class="pd-section-title" style="font-size:16px;">Service options</h3>
+            <div class="pd-svc-row" style="display:flex;flex-wrap:wrap;gap:8px;">
+                {% for label in svc_yes %}
+                <span class="pd-svc-chip" style="background:#e6f4ea;color:#137333;border-radius:14px;padding:4px 10px;font-size:12px;font-weight:500;">
+                    <span class="material-icons-outlined" style="font-size:14px;vertical-align:-2px;">check</span> {{ label }}
+                </span>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+
+        {# ---- R4 hours-by-day expandable ---- #}
+        {% set hours_dict = place.get_hours_dict() %}
+        {% if hours_dict %}
+        <div class="pd-block" id="hours-by-day">
+            <h3 class="pd-section-title" style="font-size:16px;">Hours</h3>
+            <ul class="pd-hours-list" style="list-style:none;padding:0;margin:0;">
+                {% for k, label in [('mon','Monday'),('tue','Tuesday'),('wed','Wednesday'),('thu','Thursday'),('fri','Friday'),('sat','Saturday'),('sun','Sunday')] %}
+                <li class="pd-hours-row" data-day="{{ k }}" style="display:flex;justify-content:space-between;padding:6px 0;font-size:13px;border-bottom:1px dashed #f1f3f4;">
+                    <span style="color:#202124;font-weight:500;">{{ label }}</span>
+                    <span style="color:#5f6368;">{{ hours_dict.get(k, 'Closed') }}</span>
+                </li>
+                {% endfor %}
+            </ul>
+        </div>
+        {% endif %}
+
+        {# ---- R4 popular-times inline mini-heatmap ---- #}
+        {% set pop_times = place.get_popular_times() %}
+        {% set has_pop = pop_times and pop_times[0] and pop_times[0]|sum > 0 %}
+        {% if has_pop %}
+        <div class="pd-block" id="popular-times">
+            <h3 class="pd-section-title" style="font-size:16px;display:flex;justify-content:space-between;align-items:center;">
+                <span>Popular times</span>
+                <a href="{{ url_for('place_popular_times', slug=place.slug) }}" style="font-size:12px;color:#1a73e8;text-decoration:none;font-weight:400;">View full chart &rarr;</a>
+            </h3>
+            <div class="pd-pt-week" style="display:flex;gap:6px;align-items:flex-end;height:60px;margin-top:8px;">
+                {% for day_idx in range(7) %}
+                    {% set day_total = pop_times[day_idx]|sum %}
+                    {% set pct = (day_total // 24) %}
+                    {% set day_label = ['M','T','W','T','F','S','S'][day_idx] %}
+                    {% set is_busiest = place.busiest_day == ['mon','tue','wed','thu','fri','sat','sun'][day_idx] %}
+                    <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;">
+                        <div style="width:100%;height:42px;display:flex;align-items:flex-end;background:#f1f3f4;border-radius:4px;overflow:hidden;">
+                            <div style="width:100%;height:{{ pct }}%;background:{{ '#ea4335' if is_busiest else '#1a73e8' }};"></div>
+                        </div>
+                        <span style="font-size:10px;color:#5f6368;">{{ day_label }}</span>
+                    </div>
+                {% endfor %}
+            </div>
+            <div style="font-size:12px;color:#5f6368;margin-top:6px;">
+                {% if place.busiest_day %}Busiest: {{ {'mon':'Monday','tue':'Tuesday','wed':'Wednesday','thu':'Thursday','fri':'Friday','sat':'Saturday','sun':'Sunday'}.get(place.busiest_day, '') }} at {{ place.busiest_hour }}:00{% endif %}
+            </div>
+        </div>
+        {% endif %}
+
+        {# ---- R4 accessibility quick-row ---- #}
+        {% set acc_flags = place.get_accessibility_flags() %}
+        {% set acc_yes = [] %}
+        {% for label, v in acc_flags %}{% if v %}{% set _ = acc_yes.append(label) %}{% endif %}{% endfor %}
+        {% if acc_yes or place.accessibility_score %}
+        <div class="pd-block" id="accessibility-row">
+            <h3 class="pd-section-title" style="font-size:16px;display:flex;justify-content:space-between;align-items:center;">
+                <span>Accessibility</span>
+                <a href="{{ url_for('place_accessibility', slug=place.slug) }}" style="font-size:12px;color:#1a73e8;text-decoration:none;font-weight:400;">Details &rarr;</a>
+            </h3>
+            <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:6px;">
+                {% for label in acc_yes %}
+                <span style="background:#e8f0fe;color:#174ea6;border-radius:14px;padding:4px 10px;font-size:12px;">
+                    <span class="material-icons-outlined" style="font-size:14px;vertical-align:-2px;">accessible</span> {{ label }}
+                </span>
+                {% endfor %}
+            </div>
+            <div style="font-size:12px;color:#5f6368;">Accessibility score: <strong style="color:#202124;">{{ place.accessibility_score }}/100</strong></div>
+        </div>
+        {% endif %}
+
+        {# ---- R4 menu quick-link ---- #}
+        {% if place.get_menu() %}
+        <div class="pd-block" id="menu-row">
+            <h3 class="pd-section-title" style="font-size:16px;display:flex;justify-content:space-between;align-items:center;">
+                <span>Menu</span>
+                <a href="{{ url_for('place_menu', slug=place.slug) }}" style="font-size:12px;color:#1a73e8;text-decoration:none;font-weight:400;">View menu &rarr;</a>
+            </h3>
+            <div style="font-size:13px;color:#5f6368;">{{ place.get_menu()|length }} section{{ '' if place.get_menu()|length == 1 else 's' }} &middot; {{ place.price_level }}</div>
+        </div>
+        {% endif %}
+
+        {# ---- R4 reservation CTA ---- #}
+        {% if place.accepts_reservations %}
+        <div class="pd-block" id="reservation-cta" style="background:#fff7e0;border:1px solid #fce8b2;border-radius:8px;padding:14px 16px;">
+            <div style="display:flex;align-items:center;gap:10px;">
+                <span class="material-icons-outlined" style="color:#bf8a00;">event_seat</span>
+                <div style="flex:1;">
+                    <div style="font-weight:500;color:#202124;font-size:14px;">Reservations recommended</div>
+                    <div style="font-size:12px;color:#5f6368;">Book ahead to avoid wait at peak times.</div>
+                </div>
+                <a href="{{ url_for('place_booking', slug=place.slug) }}" class="btn btn-sm" style="background:#1a73e8;color:#fff;text-decoration:none;border-radius:6px;padding:8px 14px;font-size:13px;">Reserve</a>
+            </div>
+        </div>
+        {% endif %}
+
+        {# ---- R4 ratings distribution row ---- #}
+        {% set rd = place.get_ratings_dist() %}
+        {% if rd and rd|sum > 0 %}
+        <div class="pd-block" id="ratings-distribution">
+            <h3 class="pd-section-title" style="font-size:16px;">Ratings distribution</h3>
+            {% set total_rd = rd|sum %}
+            <ul style="list-style:none;padding:0;margin:0;">
+                {% for star in [5,4,3,2,1] %}
+                    {% set cnt = rd[5-star] %}
+                    {% set pct_rd = (cnt * 100 // total_rd) if total_rd else 0 %}
+                <li style="display:flex;align-items:center;gap:8px;padding:4px 0;font-size:13px;">
+                    <span style="width:18px;color:#5f6368;">{{ star }}</span>
+                    <span class="material-icons" style="font-size:14px;color:#fbbc04;">star</span>
+                    <div style="flex:1;height:8px;background:#f1f3f4;border-radius:4px;overflow:hidden;">
+                        <div style="width:{{ pct_rd }}%;height:100%;background:#fbbc04;"></div>
+                    </div>
+                    <span style="width:60px;text-align:right;color:#5f6368;font-size:12px;">{{ "{:,}".format(cnt) }}</span>
+                </li>
+                {% endfor %}
+            </ul>
+        </div>
+        {% endif %}
+
         <div class="pd-block">
             <div class="pd-section-title">About</div>
             <p style="color: var(--text-secondary); font-size: 14px; line-height: 1.6;">{{ place.description }}</p>

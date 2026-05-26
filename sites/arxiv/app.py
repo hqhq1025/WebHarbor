@@ -132,6 +132,11 @@ class Paper(db.Model):
     # as JSON list of strings (may contain "" for unknown). Deterministically
     # synthesised at seed time from a hash of the author name.
     author_affiliations_json = db.Column(db.Text, default="[]")
+    # R4 — bulk-harvest extras from OAI-PMH (math/cs classification codes,
+    # report numbers). Optional; empty string for legacy rows.
+    msc_class = db.Column(db.String(400), default="", index=True)
+    acm_class = db.Column(db.String(400), default="", index=True)
+    report_no = db.Column(db.String(200), default="")
     view_count = db.Column(db.Integer, default=0)
     download_count = db.Column(db.Integer, default=0)
     star_count = db.Column(db.Integer, default=0)
@@ -233,6 +238,41 @@ class Paper(db.Model):
             return json.loads(self.versions_json or "[]")
         except Exception:
             return []
+
+    @property
+    def reading_time_min(self) -> int:
+        """Estimated reading time for the abstract, at 200 wpm.
+
+        Caps at 1 minute floor so the badge is always meaningful. Used for the
+        "{N} min read" badge on /abs pages.
+        """
+        text = (self.abstract or "").strip()
+        if not text:
+            return 1
+        n_words = len(re.findall(r"\w+", text))
+        return max(1, (n_words + 199) // 200)
+
+    @property
+    def version_rail(self) -> list:
+        """Return versions as a normalised list of {version, date, label}.
+
+        Falls back to a single synthesised v1 entry on `submitted_date` when
+        the upstream metadata didn't include a versions list.
+        """
+        vs = self.get_versions() or []
+        if not vs and self.submitted_date:
+            vs = [{"version": "v1", "date": self.submitted_date}]
+        out = []
+        for v in vs:
+            ver = (v.get("version") or "").strip()
+            if not ver.startswith("v"):
+                ver = "v" + ver if ver else "v?"
+            out.append({
+                "version": ver,
+                "date": v.get("date", ""),
+                "label": v.get("label", ""),
+            })
+        return out
 
 
 class LibraryItem(db.Model):
@@ -596,6 +636,13 @@ def seed_database():
         # never render a blank author line. Uses arxiv_id as a stable seed.
         if not authors:
             authors = _synthesize_authors(arxiv_id)
+        # R4 — OAI-PMH source ships real `author_affiliations` (parallel list
+        # to `authors`). When present use them verbatim; otherwise synthesise.
+        raw_affs = rp.get("author_affiliations") or []
+        affs = []
+        for i, a in enumerate(authors):
+            real = raw_affs[i] if i < len(raw_affs) and raw_affs[i] else ""
+            affs.append(real or _synthesize_affiliation(a))
         # Parse figures, tables, formulas counts from comments
         cmt = _clean_arxiv_metadata_text(rp.get("comments", ""))
         figs = 0
@@ -627,7 +674,7 @@ def seed_database():
             title=title,
             abstract=abs_text,
             authors_json=json.dumps(authors),
-            author_affiliations_json=json.dumps(_affiliations_for_authors(authors)),
+            author_affiliations_json=json.dumps(affs),
             n_authors=len(authors),
             subjects=subjects,
             primary_subject=primary_subject,
@@ -642,6 +689,9 @@ def seed_database():
             comments=cmt,
             journal_ref=rp.get("journal_ref", ""),
             doi=rp.get("doi", ""),
+            msc_class=(rp.get("msc_class") or "").strip(),
+            acm_class=(rp.get("acm_class") or "").strip(),
+            report_no=(rp.get("report_no") or "").strip(),
             pdf_url=f"https://arxiv.org/pdf/{arxiv_id}",
             html_url=f"https://arxiv.org/abs/{arxiv_id}",
             html_available=True,
@@ -1740,6 +1790,280 @@ def author_recent(name):
                 Paper.arxiv_id.desc())
             .limit(40).all())
     return render_template("author_recent.html", name=name, papers=rows)
+
+
+# -----------------------------------------------------------------------
+# R4 — deeper sub-pages: monthly archive, MSC2020 listing, trackback,
+# related-paper graph, journal-ref search, find_form alias.
+# -----------------------------------------------------------------------
+
+@app.route("/list/<code>/<int:year>-<int:month>")
+def listing_year_month(code, year, month):
+    """Monthly archive: /list/<code>/<YYYY>-<MM>.
+
+    Mirrors arxiv's /list/<archive>/<YYMM> convention. Filters papers by
+    archive code (or subject code) and explicit calendar month, sorted
+    newest-first within the month.
+    """
+    if month < 1 or month > 12 or year < 1990 or year > 2100:
+        abort(404)
+    cat_code = code.split(".")[0] if "." in code else code
+    cat = Category.query.filter_by(code=cat_code).first()
+    if not cat:
+        abort(404)
+    clauses = [
+        Paper.primary_subject_code == code,
+        Paper.primary_subject_code.like(f"{code}.%"),
+        Paper.primary_category_code == code,
+        Paper.subjects.ilike(f"%({code})%"),
+    ]
+    q = (Paper.query
+         .filter(or_(*clauses))
+         .filter(Paper.submitted_year == year)
+         .filter(Paper.submitted_month == month)
+         .order_by(Paper.submitted_day.desc(), Paper.arxiv_id.desc()))
+    total = q.count()
+    page = max(1, int(request.args.get("page", 1)))
+    per_page = int(request.args.get("per_page", 25))
+    papers = q.offset((page - 1) * per_page).limit(per_page).all()
+    month_label = datetime(year, month, 1).strftime("%B %Y")
+    prev_y, prev_m = (year - 1, 12) if month == 1 else (year, month - 1)
+    next_y, next_m = (year + 1, 1) if month == 12 else (year, month + 1)
+    return render_template(
+        "listing_month.html",
+        category=cat, subject_code=code,
+        year=year, month=month, month_label=month_label,
+        papers=papers, total=total, page=page, per_page=per_page,
+        prev_y=prev_y, prev_m=prev_m, next_y=next_y, next_m=next_m,
+    )
+
+
+@app.route("/find_form", methods=["GET", "POST"])
+def find_form():
+    """Alias for advanced search — arxiv used to expose /find_form."""
+    return redirect(url_for("advanced_search"), code=301)
+
+
+@app.route("/tb/<arxiv_id>")
+def trackback(arxiv_id):
+    """Trackback ping listing — historically /tb/<arxiv_id> showed external
+    sites that have referenced the paper. Synthesised here from a fixed
+    referrer table seeded from the arxiv_id digest so every paper has a
+    deterministic non-empty trackback list.
+    """
+    paper = Paper.query.filter_by(arxiv_id=arxiv_id).first_or_404()
+    sources = [
+        ("Hacker News",            "news.ycombinator.com",   "Discussion thread"),
+        ("Reddit /r/MachineLearning", "reddit.com",          "Community post"),
+        ("Two Minute Papers",      "youtube.com",            "Video summary"),
+        ("AlphaSignal Daily",      "alphasignal.ai",         "Newsletter mention"),
+        ("The Gradient",           "thegradient.pub",        "In-depth analysis"),
+        ("Papers With Code",       "paperswithcode.com",     "Linked benchmark"),
+        ("Import AI Newsletter",   "importai.substack.com",  "Roundup item"),
+        ("SemanticScholar Connected Papers", "semanticscholar.org", "Citation graph"),
+        ("Stanford NLP Seminar",   "nlp.stanford.edu",       "Reading-group note"),
+        ("MIT CSAIL Reading List", "csail.mit.edu",          "Course reading"),
+        ("DeepLearning.AI The Batch", "deeplearning.ai",     "Weekly digest"),
+        ("ICML 2025 Workshop Wiki","icml.cc",                "Workshop reference"),
+    ]
+    digest = hashlib.md5(paper.arxiv_id.encode("utf-8")).digest()
+    n_pings = 2 + (digest[0] % 6)
+    pings = []
+    for i in range(n_pings):
+        idx = digest[(i * 3) % len(digest)] % len(sources)
+        title, host, kind = sources[idx]
+        offset_days = 7 + (digest[(i * 5) % len(digest)] % 60)
+        ymd = MIRROR_REFERENCE_DATE - timedelta(days=offset_days + i)
+        pings.append({
+            "title": title,
+            "host": host,
+            "kind": kind,
+            "url": f"https://{host}/discuss/{paper.arxiv_id}/",
+            "date": ymd.strftime("%Y-%m-%d"),
+        })
+    return render_template("trackback.html", paper=paper, pings=pings)
+
+
+@app.route("/papers/<arxiv_id>/related")
+def paper_related(arxiv_id):
+    """A standalone related-papers graph page for /abs/<arxiv_id>.
+
+    Buckets related work into three lists:
+      - Same primary subject
+      - Cross-listed: appears under secondary subjects of this paper
+      - Shared authors: papers sharing the lead author's last name
+    """
+    paper = Paper.query.filter_by(arxiv_id=arxiv_id).first_or_404()
+    primary = paper.primary_subject_code or paper.primary_category_code
+
+    same_subj = (Paper.query
+                 .filter(Paper.primary_subject_code == primary,
+                         Paper.id != paper.id)
+                 .order_by(Paper.view_count.desc(), Paper.arxiv_id.desc())
+                 .limit(12).all())
+
+    secondary_codes = []
+    for s in paper.subject_list:
+        m = re.search(r"\(([a-zA-Z\-]+(?:\.[a-zA-Z\-]+)?)\)", s)
+        if m:
+            code = m.group(1)
+            if code != primary:
+                secondary_codes.append(code)
+    cross_listed = []
+    if secondary_codes:
+        clauses = [Paper.subjects.ilike(f"%({c})%") for c in secondary_codes[:3]]
+        cross_listed = (Paper.query
+                        .filter(or_(*clauses))
+                        .filter(Paper.id != paper.id)
+                        .filter(Paper.primary_subject_code != primary)
+                        .order_by(Paper.arxiv_id.desc())
+                        .limit(10).all())
+
+    shared_author_papers = []
+    first = paper.first_author
+    if first:
+        last_tok = first.split()[-1] if first.split() else first
+        if last_tok and len(last_tok) >= 3:
+            shared_author_papers = (
+                Paper.query
+                .filter(Paper.authors_json.ilike(f"%{last_tok}%"))
+                .filter(Paper.id != paper.id)
+                .order_by(Paper.arxiv_id.desc())
+                .limit(8).all())
+
+    return render_template(
+        "paper_related.html",
+        paper=paper,
+        same_subject=same_subj,
+        cross_listed=cross_listed,
+        shared_author=shared_author_papers,
+        first_author=first,
+    )
+
+
+_MSC_FAMILY_LABELS = {
+    "00": "General", "01": "History and biography",
+    "03": "Mathematical logic and foundations",
+    "05": "Combinatorics", "06": "Order, lattices",
+    "08": "General algebraic systems",
+    "11": "Number theory", "12": "Field theory",
+    "13": "Commutative algebra", "14": "Algebraic geometry",
+    "15": "Linear and multilinear algebra",
+    "16": "Associative rings and algebras",
+    "17": "Nonassociative rings", "18": "Category theory",
+    "19": "K-theory", "20": "Group theory",
+    "22": "Topological groups", "26": "Real functions",
+    "28": "Measure and integration",
+    "30": "Functions of a complex variable",
+    "31": "Potential theory", "32": "Several complex variables",
+    "33": "Special functions", "34": "Ordinary differential equations",
+    "35": "Partial differential equations",
+    "37": "Dynamical systems",
+    "39": "Difference and functional equations",
+    "40": "Sequences, series", "41": "Approximations",
+    "42": "Harmonic analysis", "43": "Abstract harmonic analysis",
+    "44": "Integral transforms", "45": "Integral equations",
+    "46": "Functional analysis", "47": "Operator theory",
+    "49": "Calculus of variations and optimal control",
+    "51": "Geometry", "52": "Convex and discrete geometry",
+    "53": "Differential geometry",
+    "54": "General topology", "55": "Algebraic topology",
+    "57": "Manifolds and cell complexes",
+    "58": "Global analysis", "60": "Probability theory",
+    "62": "Statistics", "65": "Numerical analysis",
+    "68": "Computer science", "70": "Mechanics of particles",
+    "74": "Mechanics of deformable solids",
+    "76": "Fluid mechanics", "78": "Optics, electromagnetic theory",
+    "80": "Classical thermodynamics, heat transfer",
+    "81": "Quantum theory", "82": "Statistical mechanics",
+    "83": "Relativity and gravitation",
+    "85": "Astronomy and astrophysics",
+    "86": "Geophysics", "90": "Operations research",
+    "91": "Game theory, economics, social and behavioral sciences",
+    "92": "Biology and other natural sciences",
+    "93": "Systems theory; control",
+    "94": "Information and communication",
+    "97": "Mathematics education",
+}
+
+
+@app.route("/MSC2020/<path:msc_class>")
+@app.route("/MSC2020/")
+@app.route("/MSC2020")
+def msc_listing(msc_class=None):
+    """Browse papers by Mathematics Subject Classification (MSC2020).
+
+    Index (no class): show top-level MSC family directory.
+    Detail (class supplied): list papers whose msc_class column contains it.
+    """
+    if msc_class is None:
+        rows = db.session.query(Paper.msc_class).filter(
+            Paper.msc_class != "").all()
+        counts = {}
+        for (mc,) in rows:
+            for fam in re.findall(r"\b(\d{2})[A-Z]\d{2}", mc or ""):
+                counts[fam] = counts.get(fam, 0) + 1
+        families = []
+        for fam, n in sorted(counts.items(), key=lambda x: (-x[1], x[0])):
+            families.append({
+                "code": fam,
+                "label": _MSC_FAMILY_LABELS.get(fam, "(unlabeled)"),
+                "count": n,
+            })
+        return render_template("msc_index.html",
+                               families=families,
+                               total_papers=sum(c for _, c in counts.items()))
+    pattern = f"%{msc_class}%"
+    page = max(1, int(request.args.get("page", 1)))
+    per_page = 25
+    q = (Paper.query.filter(Paper.msc_class.ilike(pattern))
+         .order_by(Paper.submitted_year.desc(),
+                   Paper.submitted_month.desc(), Paper.arxiv_id.desc()))
+    total = q.count()
+    papers = q.offset((page - 1) * per_page).limit(per_page).all()
+    family_label = _MSC_FAMILY_LABELS.get(msc_class.strip()[:2], "")
+    return render_template("msc_class.html",
+                           msc_class=msc_class,
+                           family_label=family_label,
+                           papers=papers,
+                           total=total, page=page, per_page=per_page)
+
+
+@app.route("/journal-ref-search", methods=["GET", "POST"])
+def journal_ref_search():
+    """Browse / search papers by journal-ref string.
+
+    Without a query string: show a directory of the top journal-ref
+    prefixes occurring in the corpus.
+    With ?q=<term>: list matching papers.
+    """
+    q = (request.args.get("q") or request.form.get("q") or "").strip()
+    page = max(1, int(request.args.get("page", 1)))
+    per_page = 25
+    if q:
+        query = (Paper.query.filter(Paper.journal_ref != "")
+                 .filter(Paper.journal_ref.ilike(f"%{q}%"))
+                 .order_by(Paper.submitted_year.desc(),
+                           Paper.submitted_month.desc(),
+                           Paper.arxiv_id.desc()))
+        total = query.count()
+        papers = query.offset((page - 1) * per_page).limit(per_page).all()
+        return render_template("journal_ref_search.html",
+                               query=q, papers=papers, total=total,
+                               page=page, per_page=per_page,
+                               directory=None)
+    rows = (db.session.query(Paper.journal_ref)
+            .filter(Paper.journal_ref != "").all())
+    counts = {}
+    for (jr,) in rows:
+        m = re.match(r"^([^0-9]+?)(?:\s*\d+|\,|\;|$)", jr or "")
+        head = (m.group(1).strip().rstrip(",;") if m else jr).strip()
+        if head and 3 <= len(head) <= 60:
+            counts[head] = counts.get(head, 0) + 1
+    directory = sorted(counts.items(), key=lambda x: (-x[1], x[0]))[:40]
+    return render_template("journal_ref_search.html",
+                           query="", papers=[], total=0, page=1,
+                           per_page=per_page, directory=directory)
 
 
 # =======================================================================
@@ -2958,20 +3282,32 @@ def normalize_paper_metadata():
 
 
 def ensure_affiliation_column():
-    """Ensure the author_affiliations_json column exists on older DBs."""
+    """Ensure newer columns exist on older DBs (idempotent migration).
+
+    Covers R3 (author_affiliations_json) plus R4 (msc_class, acm_class,
+    report_no) additions to the papers table.
+    """
     try:
         from sqlalchemy import text
         cols = db.session.execute(text(
             "PRAGMA table_info(papers)"
         )).fetchall()
         have = {c[1] for c in cols}
-        if "author_affiliations_json" not in have:
-            db.session.execute(text(
-                "ALTER TABLE papers ADD COLUMN "
-                "author_affiliations_json TEXT DEFAULT '[]'"
-            ))
+        additions = [
+            ("author_affiliations_json", "TEXT DEFAULT '[]'"),
+            ("msc_class", "VARCHAR(400) DEFAULT ''"),
+            ("acm_class", "VARCHAR(400) DEFAULT ''"),
+            ("report_no", "VARCHAR(200) DEFAULT ''"),
+        ]
+        added = []
+        for col, decl in additions:
+            if col not in have:
+                db.session.execute(text(
+                    f"ALTER TABLE papers ADD COLUMN {col} {decl}"))
+                added.append(col)
+        if added:
             db.session.commit()
-            print("  [+] Added papers.author_affiliations_json column")
+            print(f"  [+] Added papers columns: {', '.join(added)}")
     except Exception as e:
         db.session.rollback()
         print(f"  ! ensure_affiliation_column failed: {e}")

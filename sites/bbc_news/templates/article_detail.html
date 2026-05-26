@@ -4,6 +4,28 @@
 {% block content %}
 <article class="article-page-wide">
 <div>
+    <nav class="breadcrumb" aria-label="Breadcrumb">
+        <a href="{{ url_for('index') }}">BBC</a>
+        <span class="breadcrumb-sep">&rsaquo;</span>
+        <a href="{{ url_for('section_page', slug='news') }}">News</a>
+        {% if article.category and article.category.parent_slug %}
+        <span class="breadcrumb-sep">&rsaquo;</span>
+        <a href="{{ url_for('section_page', slug=article.category.parent_slug) }}">
+            {{ article.category.parent_slug.replace('_', ' ').title() }}
+        </a>
+        {% endif %}
+        {% if article.category %}
+        <span class="breadcrumb-sep">&rsaquo;</span>
+        <a href="{{ url_for('section_page', slug=article.category.slug) }}">
+            {{ article.category.name }}
+        </a>
+        {% endif %}
+        {% if article.subsection %}
+        <span class="breadcrumb-sep">&rsaquo;</span>
+        <span class="breadcrumb-current">{{ article.subsection }}</span>
+        {% endif %}
+    </nav>
+
     <div class="article-category">{{ article.category.name if article.category else 'News' }}</div>
     <h1 class="article-headline">{{ article.headline }}</h1>
     {% if article.subtitle %}
@@ -79,11 +101,27 @@
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
             <span>{{ article.comment_count }} comments</span>
         </a>
-        <button class="article-action-btn" onclick="copyShareUrl()">
+        <button class="article-action-btn" type="button"
+                data-share-trigger="1"
+                data-share-url="{{ article_share_url }}"
+                data-share-title="{{ article.headline|e }}"
+                data-share-slug="{{ article.slug }}">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8M16 6l-4-4-4 4M12 2v13"/></svg>
             <span>Share</span>
         </button>
     </div>
+
+    {% if article.video_url or article.content_type in ('video', 'audio') %}
+    <div class="sticky-video-wrap" data-sticky-video="1">
+        <div class="sticky-video-inner">
+            <span class="play-glyph" aria-hidden="true">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="#fff"><path d="M8 5v14l11-7z"/></svg>
+            </span>
+            <span class="sr-only">Video player for {{ article.headline|e }}</span>
+        </div>
+        <button class="sticky-video-close" type="button" aria-label="Close video">&times;</button>
+    </div>
+    {% endif %}
 
     <div class="article-body">
         {% set paragraphs = article.get_paragraphs() %}

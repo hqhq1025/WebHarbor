@@ -924,6 +924,13 @@ def run_extras(db, User, Product, Category, CartItem, Order, OrderItem,
         seed_matrix(db, Product)
     except Exception as e:
         raise RuntimeError(f"seed_matrix failed: {e}") from e
+    # R4: polish pass — pushes catalog past 5500 products with brand-fresh
+    # SKU suffixes + R4-only templates + an extra Open Library books slice.
+    try:
+        from seed_polish import seed_polish
+        seed_polish(db, Product)
+    except Exception as e:
+        raise RuntimeError(f"seed_polish failed: {e}") from e
     seed_extra_orders(db, User, Order, OrderItem, Product, SavedAddress, PaymentMethod)
     seed_wishlists(db, User, Product, WishlistItem)
     seed_extra_carts(db, User, Product, CartItem)
