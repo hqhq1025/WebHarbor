@@ -2540,6 +2540,372 @@ _R6_KFACT_TEMPLATES = [
 ]
 
 
+# ---------- R7 enrichment ---------------------------------------------------
+# Goals: take search_result 31562 → 45000+, knowledge_fact 13621 → 20000+.
+# Per-topic: +11 deep results @ rank>=40, +5 KFs.  Idempotent (sentinel:
+# '__R7_SEEDED__' on KnowledgeFact.key).  All rebuild paths derive their
+# randomness from `_det_hash(slug + suffix)` so re-runs are byte-identical.
+
+# Locales offered by Google.  Sourced from the public hl=/gl= matrix
+# documented at developers.google.com.  Kept alphabetic for byte-id
+# reproducibility — TOP_LOCALES is consumed by app.py's /locales picker
+# and never written to the DB, so it's purely UI state.
+TOP_LOCALES = [
+    # (hl, gl, label, native_label, rtl)
+    ('af', 'ZA', 'Afrikaans (South Africa)', 'Afrikaans', False),
+    ('am', 'ET', 'Amharic (Ethiopia)', 'አማርኛ', False),
+    ('ar', 'EG', 'Arabic (Egypt)', 'العربية', True),
+    ('ar', 'SA', 'Arabic (Saudi Arabia)', 'العربية', True),
+    ('az', 'AZ', 'Azerbaijani (Azerbaijan)', 'Azərbaycan', False),
+    ('be', 'BY', 'Belarusian (Belarus)', 'Беларуская', False),
+    ('bg', 'BG', 'Bulgarian (Bulgaria)', 'Български', False),
+    ('bn', 'BD', 'Bengali (Bangladesh)', 'বাংলা', False),
+    ('bn', 'IN', 'Bengali (India)', 'বাংলা', False),
+    ('bs', 'BA', 'Bosnian (Bosnia)', 'Bosanski', False),
+    ('ca', 'ES', 'Catalan (Spain)', 'Català', False),
+    ('cs', 'CZ', 'Czech (Czechia)', 'Čeština', False),
+    ('cy', 'GB', 'Welsh (UK)', 'Cymraeg', False),
+    ('da', 'DK', 'Danish (Denmark)', 'Dansk', False),
+    ('de', 'AT', 'German (Austria)', 'Deutsch', False),
+    ('de', 'CH', 'German (Switzerland)', 'Deutsch', False),
+    ('de', 'DE', 'German (Germany)', 'Deutsch', False),
+    ('el', 'GR', 'Greek (Greece)', 'Ελληνικά', False),
+    ('en', 'AU', 'English (Australia)', 'English', False),
+    ('en', 'CA', 'English (Canada)', 'English', False),
+    ('en', 'GB', 'English (United Kingdom)', 'English', False),
+    ('en', 'IE', 'English (Ireland)', 'English', False),
+    ('en', 'IN', 'English (India)', 'English', False),
+    ('en', 'NZ', 'English (New Zealand)', 'English', False),
+    ('en', 'PH', 'English (Philippines)', 'English', False),
+    ('en', 'SG', 'English (Singapore)', 'English', False),
+    ('en', 'US', 'English (United States)', 'English', False),
+    ('en', 'ZA', 'English (South Africa)', 'English', False),
+    ('es', 'AR', 'Spanish (Argentina)', 'Español', False),
+    ('es', 'CL', 'Spanish (Chile)', 'Español', False),
+    ('es', 'CO', 'Spanish (Colombia)', 'Español', False),
+    ('es', 'ES', 'Spanish (Spain)', 'Español', False),
+    ('es', 'MX', 'Spanish (Mexico)', 'Español', False),
+    ('es', 'PE', 'Spanish (Peru)', 'Español', False),
+    ('es', 'US', 'Spanish (United States)', 'Español', False),
+    ('es', 'VE', 'Spanish (Venezuela)', 'Español', False),
+    ('et', 'EE', 'Estonian (Estonia)', 'Eesti', False),
+    ('eu', 'ES', 'Basque (Spain)', 'Euskara', False),
+    ('fa', 'IR', 'Persian (Iran)', 'فارسی', True),
+    ('fi', 'FI', 'Finnish (Finland)', 'Suomi', False),
+    ('fil', 'PH', 'Filipino (Philippines)', 'Filipino', False),
+    ('fr', 'BE', 'French (Belgium)', 'Français', False),
+    ('fr', 'CA', 'French (Canada)', 'Français', False),
+    ('fr', 'CH', 'French (Switzerland)', 'Français', False),
+    ('fr', 'FR', 'French (France)', 'Français', False),
+    ('ga', 'IE', 'Irish (Ireland)', 'Gaeilge', False),
+    ('gl', 'ES', 'Galician (Spain)', 'Galego', False),
+    ('gu', 'IN', 'Gujarati (India)', 'ગુજરાતી', False),
+    ('he', 'IL', 'Hebrew (Israel)', 'עברית', True),
+    ('hi', 'IN', 'Hindi (India)', 'हिन्दी', False),
+    ('hr', 'HR', 'Croatian (Croatia)', 'Hrvatski', False),
+    ('hu', 'HU', 'Hungarian (Hungary)', 'Magyar', False),
+    ('hy', 'AM', 'Armenian (Armenia)', 'Հայերեն', False),
+    ('id', 'ID', 'Indonesian (Indonesia)', 'Bahasa Indonesia', False),
+    ('is', 'IS', 'Icelandic (Iceland)', 'Íslenska', False),
+    ('it', 'CH', 'Italian (Switzerland)', 'Italiano', False),
+    ('it', 'IT', 'Italian (Italy)', 'Italiano', False),
+    ('ja', 'JP', 'Japanese (Japan)', '日本語', False),
+    ('jv', 'ID', 'Javanese (Indonesia)', 'Basa Jawa', False),
+    ('ka', 'GE', 'Georgian (Georgia)', 'ქართული', False),
+    ('kk', 'KZ', 'Kazakh (Kazakhstan)', 'Қазақ', False),
+    ('km', 'KH', 'Khmer (Cambodia)', 'ខ្មែរ', False),
+    ('kn', 'IN', 'Kannada (India)', 'ಕನ್ನಡ', False),
+    ('ko', 'KR', 'Korean (South Korea)', '한국어', False),
+    ('lo', 'LA', 'Lao (Laos)', 'ລາວ', False),
+    ('lt', 'LT', 'Lithuanian (Lithuania)', 'Lietuvių', False),
+    ('lv', 'LV', 'Latvian (Latvia)', 'Latviešu', False),
+    ('mk', 'MK', 'Macedonian (N. Macedonia)', 'Македонски', False),
+    ('ml', 'IN', 'Malayalam (India)', 'മലയാളം', False),
+    ('mn', 'MN', 'Mongolian (Mongolia)', 'Монгол', False),
+    ('mr', 'IN', 'Marathi (India)', 'मराठी', False),
+    ('ms', 'MY', 'Malay (Malaysia)', 'Bahasa Melayu', False),
+    ('mt', 'MT', 'Maltese (Malta)', 'Malti', False),
+    ('my', 'MM', 'Burmese (Myanmar)', 'မြန်မာ', False),
+    ('ne', 'NP', 'Nepali (Nepal)', 'नेपाली', False),
+    ('nl', 'BE', 'Dutch (Belgium)', 'Nederlands', False),
+    ('nl', 'NL', 'Dutch (Netherlands)', 'Nederlands', False),
+    ('no', 'NO', 'Norwegian (Norway)', 'Norsk', False),
+    ('pa', 'IN', 'Punjabi (India)', 'ਪੰਜਾਬੀ', False),
+    ('pl', 'PL', 'Polish (Poland)', 'Polski', False),
+    ('ps', 'AF', 'Pashto (Afghanistan)', 'پښتو', True),
+    ('pt', 'BR', 'Portuguese (Brazil)', 'Português', False),
+    ('pt', 'PT', 'Portuguese (Portugal)', 'Português', False),
+    ('ro', 'RO', 'Romanian (Romania)', 'Română', False),
+    ('ru', 'BY', 'Russian (Belarus)', 'Русский', False),
+    ('ru', 'KZ', 'Russian (Kazakhstan)', 'Русский', False),
+    ('ru', 'RU', 'Russian (Russia)', 'Русский', False),
+    ('si', 'LK', 'Sinhala (Sri Lanka)', 'සිංහල', False),
+    ('sk', 'SK', 'Slovak (Slovakia)', 'Slovenčina', False),
+    ('sl', 'SI', 'Slovenian (Slovenia)', 'Slovenščina', False),
+    ('sq', 'AL', 'Albanian (Albania)', 'Shqip', False),
+    ('sr', 'RS', 'Serbian (Serbia)', 'Српски', False),
+    ('sv', 'FI', 'Swedish (Finland)', 'Svenska', False),
+    ('sv', 'SE', 'Swedish (Sweden)', 'Svenska', False),
+    ('sw', 'KE', 'Swahili (Kenya)', 'Kiswahili', False),
+    ('sw', 'TZ', 'Swahili (Tanzania)', 'Kiswahili', False),
+    ('ta', 'IN', 'Tamil (India)', 'தமிழ்', False),
+    ('ta', 'LK', 'Tamil (Sri Lanka)', 'தமிழ்', False),
+    ('te', 'IN', 'Telugu (India)', 'తెలుగు', False),
+    ('th', 'TH', 'Thai (Thailand)', 'ไทย', False),
+    ('tr', 'TR', 'Turkish (Turkey)', 'Türkçe', False),
+    ('uk', 'UA', 'Ukrainian (Ukraine)', 'Українська', False),
+    ('ur', 'IN', 'Urdu (India)', 'اردو', True),
+    ('ur', 'PK', 'Urdu (Pakistan)', 'اردو', True),
+    ('uz', 'UZ', 'Uzbek (Uzbekistan)', 'Oʻzbek', False),
+    ('vi', 'VN', 'Vietnamese (Vietnam)', 'Tiếng Việt', False),
+    ('zh', 'CN', 'Chinese (China)', '简体中文', False),
+    ('zh', 'HK', 'Chinese (Hong Kong)', '繁體中文', False),
+    ('zh', 'TW', 'Chinese (Taiwan)', '繁體中文', False),
+    ('zu', 'ZA', 'Zulu (South Africa)', 'IsiZulu', False),
+]
+
+
+_R7_DEEP_PROVIDERS = [
+    ('zenodo', 'zenodo.org',
+     '{name} — Zenodo open research repository',
+     'https://zenodo.org/search?q={slug}',
+     'CERN-hosted Zenodo open-science repository entries for {name}: datasets, code, and papers under permanent DOIs.'),
+    ('osf', 'osf.io',
+     '{name} — Open Science Framework projects',
+     'https://osf.io/search/?q={slug}',
+     'OSF research projects, registrations, and preprints touching on {name}.'),
+    ('plos', 'journals.plos.org',
+     '{name} — PLOS open-access articles',
+     'https://journals.plos.org/plosone/search?q={slug}',
+     'Open-access journal articles about {name} in the PLOS family of journals.'),
+    ('biorxiv', 'www.biorxiv.org',
+     '{name} — bioRxiv preprints',
+     'https://www.biorxiv.org/search/{slug}',
+     'Biological-sciences preprints in bioRxiv that reference {name}. {summary_100}'),
+    ('medrxiv', 'www.medrxiv.org',
+     '{name} — medRxiv health-sciences preprints',
+     'https://www.medrxiv.org/search/{slug}',
+     'Health-sciences preprints in medRxiv about {name}.'),
+    ('crossref', 'search.crossref.org',
+     '{name} — Crossref DOI search',
+     'https://search.crossref.org/?q={slug}',
+     'Scholarly citations registered with Crossref that mention {name}.'),
+    ('openalex', 'openalex.org',
+     '{name} — OpenAlex scholarly graph',
+     'https://openalex.org/works?search={slug}',
+     'OpenAlex bibliometric graph entries for {name}: works, authors, institutions, citation network.'),
+    ('semanticscholar', 'www.semanticscholar.org',
+     '{name} — Semantic Scholar AI-curated literature',
+     'https://www.semanticscholar.org/search?q={slug}',
+     'AI-extracted abstracts, citations, and influence metrics for {name} on Semantic Scholar.'),
+    ('googlescholar_r7', 'scholar.google.com',
+     '{name} — Google Scholar results',
+     'https://scholar.google.com/scholar?q={slug}',
+     'Scholarly literature about {name} indexed by Google Scholar: papers, theses, books, abstracts.'),
+    ('zbmath', 'zbmath.org',
+     '{name} — zbMATH Open',
+     'https://zbmath.org/?q={slug}',
+     'Mathematics literature database entries about {name} from zbMATH Open.'),
+    ('mathscinet', 'mathscinet.ams.org',
+     '{name} — MathSciNet (AMS) reviews',
+     'https://mathscinet.ams.org/mathscinet/search/publications.html?query={slug}',
+     'American Mathematical Society MathSciNet review records for {name}.'),
+    ('inspire_hep', 'inspirehep.net',
+     '{name} — INSPIRE-HEP literature',
+     'https://inspirehep.net/search?q={slug}',
+     'High-energy-physics literature from INSPIRE-HEP referencing {name}.'),
+    ('ads_harvard', 'ui.adsabs.harvard.edu',
+     '{name} — NASA ADS abstract service',
+     'https://ui.adsabs.harvard.edu/search/q={slug}',
+     'NASA Astrophysics Data System abstracts and citations for {name}.'),
+    ('jstor_r7', 'www.jstor.org',
+     '{name} — JSTOR archive',
+     'https://www.jstor.org/action/doBasicSearch?Query={slug}',
+     'JSTOR archive of academic journals and books mentioning {name}.'),
+    ('proquest', 'www.proquest.com',
+     '{name} — ProQuest databases',
+     'https://www.proquest.com/results/{slug}',
+     'ProQuest aggregator results for {name}: dissertations, news, scholarly journals.'),
+    ('ebsco', 'search.ebscohost.com',
+     '{name} — EBSCO research databases',
+     'https://search.ebscohost.com/login.aspx?defaultdb=a9h&bquery={slug}',
+     'EBSCO multidisciplinary research database results for {name}.'),
+    ('clarivate_wos', 'www.webofscience.com',
+     '{name} — Web of Science citation index',
+     'https://www.webofscience.com/wos/woscc/basic-search?query={slug}',
+     'Clarivate Web of Science citation database results for {name}.'),
+    ('scopus', 'www.scopus.com',
+     '{name} — Scopus abstract & citation database',
+     'https://www.scopus.com/results/results.uri?src=s&st1={slug}',
+     'Elsevier Scopus abstract and citation database results for {name}.'),
+    ('archive_org_r7', 'archive.org',
+     '{name} — Internet Archive (full collection)',
+     'https://archive.org/search?query={slug}',
+     'Internet Archive search across books, audio, video, software, and the Wayback Machine for {name}.'),
+    ('openlibrary', 'openlibrary.org',
+     '{name} — Open Library',
+     'https://openlibrary.org/search?q={slug}',
+     'Open Library bibliographic records and digitized books mentioning {name}.'),
+    ('goodreads_r7', 'www.goodreads.com',
+     '{name} — Goodreads community reviews',
+     'https://www.goodreads.com/search?q={slug}',
+     'Goodreads books, ratings, and reader reviews tagged with {name}.'),
+    ('wikiquote', 'en.wikiquote.org',
+     '{name} — Wikiquote',
+     'https://en.wikiquote.org/wiki/Special:Search?search={slug}',
+     'Wikiquote sourced quotations involving {name}.'),
+    ('wiktionary', 'en.wiktionary.org',
+     '{name} — Wiktionary',
+     'https://en.wiktionary.org/wiki/Special:Search?search={slug}',
+     'Wiktionary multilingual dictionary entries related to {name}.'),
+    ('wikisource', 'en.wikisource.org',
+     '{name} — Wikisource',
+     'https://en.wikisource.org/wiki/Special:Search?search={slug}',
+     'Wikisource public-domain primary-source documents mentioning {name}.'),
+    ('wikicommons', 'commons.wikimedia.org',
+     '{name} — Wikimedia Commons',
+     'https://commons.wikimedia.org/w/index.php?search={slug}',
+     'Free-to-use images, audio, and video files for {name} on Wikimedia Commons.'),
+    ('wikidata_r7', 'www.wikidata.org',
+     '{name} — Wikidata entity record',
+     'https://www.wikidata.org/w/index.php?search={slug}',
+     'Wikidata structured entity record for {name} with cross-language identifiers and statements.'),
+    ('coursera_r7', 'www.coursera.org',
+     '{name} — Coursera courses',
+     'https://www.coursera.org/search?query={slug}',
+     'Coursera courses and specializations covering {name}.'),
+    ('edx_r7', 'www.edx.org',
+     '{name} — edX courses',
+     'https://www.edx.org/search?q={slug}',
+     'edX online courses from universities about {name}.'),
+    ('khan_r7', 'www.khanacademy.org',
+     '{name} — Khan Academy lessons',
+     'https://www.khanacademy.org/search?page_search_query={slug}',
+     'Free Khan Academy lessons related to {name}.'),
+    ('mit_ocw', 'ocw.mit.edu',
+     '{name} — MIT OpenCourseWare',
+     'https://ocw.mit.edu/search/?q={slug}',
+     'Free MIT OpenCourseWare lecture notes, problem sets, and videos covering {name}.'),
+    ('stanford_online', 'online.stanford.edu',
+     '{name} — Stanford Online',
+     'https://online.stanford.edu/search/{slug}',
+     'Stanford Online courses and programs covering {name}.'),
+    ('stackexchange', 'stackexchange.com',
+     '{name} — Stack Exchange Q&A',
+     'https://stackexchange.com/search?q={slug}',
+     'Community Q&A across the Stack Exchange network on {name}.'),
+    ('quora_r7', 'www.quora.com',
+     '{name} — Quora topic',
+     'https://www.quora.com/topic/{slug}',
+     'Quora topic page collecting answers and discussions about {name}.'),
+    ('hackernews', 'hn.algolia.com',
+     '{name} — Hacker News discussions',
+     'https://hn.algolia.com/?q={slug}',
+     'Hacker News stories and comment threads about {name}.'),
+]
+
+
+_R7_KFACT_TEMPLATES = [
+    ('Cited in Wikidata', 'Q-identifier and multi-lingual labels available'),
+    ('Average reading time', 'Approximately 12 minutes for the main article'),
+    ('Last citation refresh', 'Crossref records re-indexed in the past quarter'),
+    ('Editorial review status', 'Reviewed by domain editors on Wikipedia talk pages'),
+    ('Listed on OpenAlex', 'Yes — works, authors, and venues are linked'),
+    ('Public-domain source coverage', 'Available via Wikisource, Project Gutenberg, and Internet Archive'),
+    ('Educational availability', 'Free courses on Coursera, edX, or MIT OpenCourseWare'),
+    ('Open dataset DOIs', 'Multiple registered DOIs on Zenodo / Figshare / Dryad'),
+    ('Community discussions', 'Active threads on Reddit, Hacker News, and Stack Exchange'),
+    ('Citation popularity', 'Above-median citation count in OpenAlex over the last 5 years'),
+    ('Cross-language coverage', 'Wikipedia article exists in 25+ language editions'),
+]
+
+
+def _seed_r7_enrichment(db, Topic, SearchResult, KnowledgeFact):
+    """R7: +11 deep results / +5 KFs per topic, at rank >= 40.
+
+    Idempotent — gated by sentinel KnowledgeFact ('__R7_SEEDED__').  Every
+    rng is derived from `_det_hash(slug + suffix)` so the row order is
+    reproducible across rebuilds.
+
+    See `.claude/skills/harden-env/gotchas.md` §2 — outer caller MUST also
+    run `normalize_seed_db_layout()` to re-sort CREATE INDEX statements,
+    independent of this function.
+    """
+    sentinel_key = '__R7_SEEDED__'
+    if KnowledgeFact.query.filter_by(key=sentinel_key).first() is not None:
+        return
+
+    topics = Topic.query.order_by(Topic.id).all()
+    added_results = 0
+    added_kf = 0
+
+    for t in topics:
+        existing = list(t.results)
+        existing_domains = {r.display_url for r in existing}
+        existing_kf_keys = {kf.key for kf in t.knowledge_facts}
+
+        rng = random.Random(_det_hash(t.slug + '_r7_deep'))
+        pool = [p for p in _R7_DEEP_PROVIDERS if p[1] not in existing_domains]
+        deep = rng.sample(pool, min(11, len(pool)))
+
+        name = t.name or t.slug.replace('_', ' ').title()
+        summary = (t.summary or f'{name} — overview, history, and key facts.')
+        s100 = summary[:100]
+        s120 = summary[:120]
+
+        # R4 lived at 10..14, R5 at 20+, R6 at 30+. Keep R7 cleanly at >=40.
+        next_rank = max((r.rank for r in existing), default=-1) + 1
+        next_rank = max(next_rank, 40)
+        for i, (prov, domain, title_tpl, url_tpl, snip_tpl) in enumerate(deep):
+            title = title_tpl.format(name=name, slug=t.slug)
+            url = url_tpl.format(name=name, slug=t.slug)
+            snippet = snip_tpl.format(
+                name=name, slug=t.slug,
+                summary_100=s100, summary_120=s120,
+            )
+            db.session.add(SearchResult(
+                topic_id=t.id,
+                title=title,
+                url=url,
+                display_url=domain,
+                snippet=snippet,
+                source=prov,
+                source_type='web',
+                rank=next_rank + i,
+                image='',
+                result_type='organic',
+                breadcrumb=_breadcrumb_for(domain, url, t.slug),
+                favicon=_favicon_for(domain),
+            ))
+            added_results += 1
+
+        # +5 deterministic KFs per topic
+        rng_kf = random.Random(_det_hash(t.slug + '_r7_kf'))
+        kf_pool = list(_R7_KFACT_TEMPLATES)
+        rng_kf.shuffle(kf_pool)
+        kf_next_rank = max((k.rank for k in t.knowledge_facts), default=-1) + 1
+        for k, v in kf_pool[:5]:
+            if k in existing_kf_keys:
+                continue
+            db.session.add(KnowledgeFact(
+                topic_id=t.id, key=k, value=v, rank=kf_next_rank,
+            ))
+            kf_next_rank += 1
+            added_kf += 1
+
+    # Sentinel
+    first_topic = Topic.query.order_by(Topic.id).first()
+    if first_topic is not None:
+        db.session.add(KnowledgeFact(
+            topic_id=first_topic.id, key=sentinel_key,
+            value='r7', rank=9999,
+        ))
+
+    db.session.commit()
+    print(f"[seed] _seed_r7_enrichment added {added_results} results, "
+          f"{added_kf} KFs across {len(topics)} topics")
+
+
 def _seed_r6_enrichment(db, Topic, SearchResult, PaaQuestion, KnowledgeFact):
     """R6: append +5 results / +2 PAA / +1 KF per topic, at rank >= 30.
 
@@ -2836,7 +3202,7 @@ def seed_database(db, User, Vertical, Topic, SearchResult, PaaQuestion, RelatedQ
             and TrendingTerm.query.count() >= len(TRENDING)
             and Doodle.query.count() >= len(DOODLES)
             and Topic.query.count() > 1200
-            and KnowledgeFact.query.filter_by(key='__R6_SEEDED__').first() is not None):
+            and KnowledgeFact.query.filter_by(key='__R7_SEEDED__').first() is not None):
         return  # fully seeded; do not even commit
     # Verticals
     for v in VERTICALS:
@@ -3081,6 +3447,10 @@ def seed_database(db, User, Vertical, Topic, SearchResult, PaaQuestion, RelatedQ
     # ---- R6: append +5 results / +2 PAA / +1 KF per topic (rank >= 30) +
     #          backfill favicon/breadcrumb for new R6 topic rows ----
     _seed_r6_enrichment(db, Topic, SearchResult, PaaQuestion, KnowledgeFact)
+
+    # ---- R7: +11 deep results / +5 KFs per topic (rank >= 40).
+    #          Brings search_result 31562 → 45000+, knowledge_fact 13621 → 20000+.
+    _seed_r7_enrichment(db, Topic, SearchResult, KnowledgeFact)
 
     # Demo user
     if not User.query.filter_by(email='demo@google.com').first():

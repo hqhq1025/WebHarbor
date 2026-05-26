@@ -1,6 +1,46 @@
 {% extends "base.html" %}
 {% block title %}{{ product.name }} - Amazon.com{% endblock %}
 
+{# R7 — per-product SEO overrides. The base template emits the canonical
+   URL + WebSite schema; we extend it with Product-level OG tags and a
+   Product/Offer JSON-LD block (schema.org/Product). #}
+{% block meta_description %}{{ product.name }} by {{ product.brand or 'Amazon' }} — {{ (product.description or '')[:160] }}{% endblock %}
+{% block canonical_url %}{{ site_canonical_host }}/product/{{ product.slug }}{% endblock %}
+{% block og_type %}product{% endblock %}
+{% block og_title %}{{ product.name }} — Amazon.com{% endblock %}
+{% block og_description %}${{ '%.2f'|format(product.price) }} · {{ product.brand or 'Amazon' }} · {{ product.rating }}/5 from {{ product.review_count }} reviews{% endblock %}
+{% block og_image %}{{ site_canonical_host }}{{ product.image }}{% endblock %}
+
+{% block extra_jsonld %}
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org/",
+  "@type": "Product",
+  "name": {{ product.name|tojson }},
+  "sku": "{{ product.id }}",
+  "brand": {"@type": "Brand", "name": {{ (product.brand or 'Amazon')|tojson }}},
+  "image": "{{ site_canonical_host }}{{ product.image }}",
+  "description": {{ (product.description or '')[:1500]|tojson }},
+  "category": "{{ product.category_slug }}",
+  "offers": {
+    "@type": "Offer",
+    "price": "{{ '%.2f'|format(product.price) }}",
+    "priceCurrency": "USD",
+    "availability": "https://schema.org/{% if product.stock and product.stock > 0 %}InStock{% else %}OutOfStock{% endif %}",
+    "url": "{{ site_canonical_host }}/product/{{ product.slug }}",
+    "itemCondition": "https://schema.org/{% if product.condition == 'New' %}NewCondition{% else %}UsedCondition{% endif %}"
+  }{% if product.review_count %},
+  "aggregateRating": {
+    "@type": "AggregateRating",
+    "ratingValue": "{{ '%.1f'|format(product.rating) }}",
+    "reviewCount": {{ product.review_count }},
+    "bestRating": "5",
+    "worstRating": "1"
+  }{% endif %}
+}
+</script>
+{% endblock %}
+
 {% block content %}
 {# R6: Breadcrumb — All Departments > Category > Subcategory > Product #}
 <nav class="pd-breadcrumb" aria-label="Breadcrumb"

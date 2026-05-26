@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block title %}Languages and regions — Google Search{% endblock %}
+
+{% block content %}
+<div class="container" style="max-width: 940px; margin: 32px auto; padding: 0 16px;">
+  <h1 style="font-size: 28px; margin-bottom: 8px;">Languages and regions</h1>
+  <p class="muted">
+    Pick a language (<code>hl</code>) and country (<code>gl</code>) to localise the
+    Search interface. Real Google honours the same URL parameters — see
+    <a href="/search/syntax">Search syntax</a>. Currently active:
+    <strong>{{ hl }}</strong>-<strong>{{ gl }}</strong>.
+  </p>
+
+  <div style="margin: 16px 0; display: flex; gap: 10px; flex-wrap: wrap;">
+    <a class="g-btn" href="/?hl=en&gl=US">Reset to en-US</a>
+    <a class="g-btn" href="/preferences/region">Region settings</a>
+    <a class="g-btn" href="/preferences/languages">Language settings</a>
+  </div>
+
+  <h2 style="font-size: 18px; margin-top: 24px;">Available locales ({{ locales|length }})</h2>
+  <table style="width: 100%; border-collapse: collapse;">
+    <thead>
+      <tr style="text-align: left; border-bottom: 1px solid #dadce0;">
+        <th style="padding: 8px;">Language</th>
+        <th style="padding: 8px;">Country</th>
+        <th style="padding: 8px;">Label</th>
+        <th style="padding: 8px;">Native</th>
+        <th style="padding: 8px;">Apply</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for hl_, gl_, label, native, rtl in locales %}
+      <tr style="border-bottom: 1px solid #eee;{% if rtl %} direction: rtl;{% endif %}">
+        <td style="padding: 6px 8px;"><code>{{ hl_ }}</code></td>
+        <td style="padding: 6px 8px;"><code>{{ gl_ }}</code></td>
+        <td style="padding: 6px 8px;">{{ label }}</td>
+        <td style="padding: 6px 8px;">{{ native }}</td>
+        <td style="padding: 6px 8px;">
+          <a href="/?hl={{ hl_ }}&gl={{ gl_ }}">Use {{ hl_ }}-{{ gl_ }}</a>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

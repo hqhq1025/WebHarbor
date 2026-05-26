@@ -2632,6 +2632,424 @@ def article_transcript(slug):
 
 
 # =======================================================================
+# R7 - SEO + RSS/Atom feeds + AMP + locale switch + sitemap
+# =======================================================================
+# Adds:
+#   * /robots.txt           - crawl-delay, sitemap pointer
+#   * /sitemap-news.xml     - Google News sitemap format, last 48h articles
+#   * /sitemap.xml          - full sitemap (capped) linking to news sitemap
+#   * /rss/<category>.xml   - RSS 2.0 feed per category
+#   * /feed/<category>.atom - Atom 1.0 feed per category
+#   * /article/<slug>/amp   - AMP-style minimal HTML fallback
+#   * /article/<slug>/lang/<locale> - locale switch (en-GB/en-US/zh/es/ar)
+#   * /article/<slug>/schema.json   - NewsArticle JSON-LD standalone
+#   * /api/story/<slug>/email-alert - POST to subscribe to story updates
+#   * /article/<slug>/voiceover-summary - accessibility summary endpoint
+
+R7_LOCALES = {
+    "en-GB": {
+        "name": "English (UK)", "dir": "ltr",
+        "label_read_more": "Read more",
+        "label_share": "Share this article",
+        "label_published": "Published",
+        "label_topics": "Topics",
+        "label_subscribe": "Subscribe to updates",
+    },
+    "en-US": {
+        "name": "English (US)", "dir": "ltr",
+        "label_read_more": "Read more",
+        "label_share": "Share this story",
+        "label_published": "Published",
+        "label_topics": "Topics",
+        "label_subscribe": "Get email alerts",
+    },
+    "zh": {
+        "name": "Chinese", "dir": "ltr",
+        "label_read_more": "Read more (zh)",
+        "label_share": "Share (zh)",
+        "label_published": "Published (zh)",
+        "label_topics": "Topics (zh)",
+        "label_subscribe": "Subscribe (zh)",
+    },
+    "es": {
+        "name": "Spanish", "dir": "ltr",
+        "label_read_more": "Leer mas",
+        "label_share": "Compartir este articulo",
+        "label_published": "Publicado",
+        "label_topics": "Temas",
+        "label_subscribe": "Suscribirse a actualizaciones",
+    },
+    "ar": {
+        "name": "Arabic", "dir": "rtl",
+        "label_read_more": "Read more (ar)",
+        "label_share": "Share (ar)",
+        "label_published": "Published (ar)",
+        "label_topics": "Topics (ar)",
+        "label_subscribe": "Subscribe (ar)",
+    },
+}
+
+# R7 sitemap anchor: timestamps in the synthetic corpus are deterministic
+# relative to this date (matches bake_extras.MIRROR_REFERENCE_DATE).
+R7_MIRROR_REFERENCE_DATE = datetime(2026, 4, 15, 9, 0, 0)
+
+
+def _article_schema_org(article):
+    """Build a NewsArticle JSON-LD dict for an article."""
+    published_iso = (article.published_at.isoformat() + "Z"
+                     if article.published_at else "")
+    topics = article.get_topics() or []
+    return {
+        "@context": "https://schema.org",
+        "@type": "NewsArticle",
+        "headline": article.headline,
+        "description": article.summary or article.subtitle or "",
+        "datePublished": published_iso,
+        "dateModified": published_iso,
+        "author": {
+            "@type": "Person",
+            "name": article.author or "BBC News",
+        },
+        "publisher": {
+            "@type": "Organization",
+            "name": "BBC News",
+            "logo": {
+                "@type": "ImageObject",
+                "url": "https://www.bbc.com/favicon.ico",
+                "width": 64,
+                "height": 64,
+            },
+        },
+        "image": [article.hero_image] if article.hero_image else [],
+        "articleSection": (article.category.name if article.category else ""),
+        "keywords": ", ".join(topics),
+        "mainEntityOfPage": {
+            "@type": "WebPage",
+            "@id": bbc_article_share_url(article),
+        },
+        "wordCount": article.word_count or 0,
+        "inLanguage": "en-GB",
+    }
+
+
+@app.route("/article/<slug>/schema.json")
+def article_schema_json(slug):
+    """Expose the NewsArticle JSON-LD payload as a standalone endpoint."""
+    art = Article.query.filter_by(slug=slug).first_or_404()
+    schema = _article_schema_org(art)
+    resp = jsonify(schema)
+    resp.headers["Content-Type"] = "application/ld+json"
+    return resp
+
+
+@app.route("/article/<slug>/amp")
+def article_amp(slug):
+    """AMP-style minimal HTML fallback."""
+    art = Article.query.filter_by(slug=slug).first_or_404()
+    schema = _article_schema_org(art)
+    paras = art.get_paragraphs()
+    canonical = url_for("article_detail", slug=art.slug, _external=False)
+    body_html = "\n".join(f"<p>{p}</p>" for p in paras)
+    img_html = ""
+    if art.hero_image:
+        img_html = (
+            f'<amp-img src="{art.hero_image}" layout="responsive" '
+            f'width="1024" height="576" alt="{art.headline}"></amp-img>'
+        )
+    schema_json = json.dumps(schema, ensure_ascii=False)
+    html = (
+        '<!doctype html>\n'
+        '<html amp lang="en">\n'
+        '<head>\n'
+        '<meta charset="utf-8">\n'
+        f'<title>{art.headline} - BBC News (AMP)</title>\n'
+        f'<link rel="canonical" href="{canonical}">\n'
+        '<meta name="viewport" content="width=device-width,minimum-scale=1,initial-scale=1">\n'
+        '<style amp-boilerplate>body{-webkit-animation:-amp-start 8s steps(1,end) 0s 1 normal both;animation:-amp-start 8s steps(1,end) 0s 1 normal both}'
+        '@-webkit-keyframes -amp-start{from{visibility:hidden}to{visibility:visible}}'
+        '@keyframes -amp-start{from{visibility:hidden}to{visibility:visible}}</style>'
+        '<noscript><style amp-boilerplate>body{-webkit-animation:none;animation:none}</style></noscript>\n'
+        '<script async src="https://cdn.ampproject.org/v0.js"></script>\n'
+        f'<script type="application/ld+json">{schema_json}</script>\n'
+        '<style amp-custom>body{font-family:Georgia,serif;max-width:680px;margin:auto;padding:1rem;color:#222}'
+        'h1{font-size:1.8rem;margin:0 0 0.5rem;color:#000}'
+        '.byline{color:#666;font-size:0.85rem;margin-bottom:1rem}'
+        'p{font-size:1rem;line-height:1.6}</style>\n'
+        '</head>\n<body>\n'
+        f'<h1>{art.headline}</h1>\n'
+        f'<div class="byline">By {art.author or "BBC News"} | '
+        f'{art.published_at.strftime("%Y-%m-%d %H:%M UTC") if art.published_at else ""}</div>\n'
+        f'{img_html}\n'
+        f'{body_html}\n'
+        '</body></html>\n'
+    )
+    resp = Response(html, mimetype="text/html")
+    resp.headers["Link"] = f'<{canonical}>; rel="canonical"'
+    return resp
+
+
+@app.route("/article/<slug>/lang/<locale>")
+def article_lang_switch(slug, locale):
+    """Locale switch endpoint."""
+    art = Article.query.filter_by(slug=slug).first_or_404()
+    if locale not in R7_LOCALES:
+        return jsonify({
+            "ok": False,
+            "error": "unsupported_locale",
+            "available": sorted(R7_LOCALES.keys()),
+        }), 404
+    cfg = R7_LOCALES[locale]
+    return jsonify({
+        "ok": True,
+        "slug": art.slug,
+        "headline": art.headline,
+        "locale": locale,
+        "locale_name": cfg["name"],
+        "direction": cfg["dir"],
+        "labels": {k: v for k, v in cfg.items() if k.startswith("label_")},
+        "available_locales": sorted(R7_LOCALES.keys()),
+        "canonical_url": url_for("article_detail", slug=art.slug,
+                                 _external=False),
+    })
+
+
+@app.route("/robots.txt")
+def robots_txt():
+    """robots.txt with crawl-delay and sitemap pointer."""
+    lines = [
+        "User-agent: *",
+        "Crawl-delay: 5",
+        "Disallow: /account",
+        "Disallow: /login",
+        "Disallow: /register",
+        "Disallow: /history",
+        "Disallow: /reading-list",
+        "Disallow: /bookmarks",
+        "Allow: /article/",
+        "Allow: /news/",
+        "Allow: /section/",
+        "",
+        f"Sitemap: {url_for('sitemap_xml', _external=False)}",
+        f"Sitemap: {url_for('sitemap_news_xml', _external=False)}",
+        "",
+        "User-agent: GPTBot",
+        "Disallow: /",
+        "",
+        "User-agent: CCBot",
+        "Disallow: /",
+    ]
+    return Response("\n".join(lines) + "\n", mimetype="text/plain")
+
+
+@app.route("/sitemap.xml")
+def sitemap_xml():
+    """Top-level sitemap. Recent article URLs (capped)."""
+    lines = ['<?xml version="1.0" encoding="UTF-8"?>',
+             '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">']
+    base = request.host_url.rstrip("/")
+    recent = (Article.query
+              .order_by(Article.published_at.desc())
+              .limit(500)
+              .all())
+    for art in recent:
+        loc = base + url_for("article_detail", slug=art.slug, _external=False)
+        lastmod = (art.published_at.strftime("%Y-%m-%dT%H:%M:%SZ")
+                   if art.published_at else "")
+        lines.append("  <url>")
+        lines.append(f"    <loc>{loc}</loc>")
+        if lastmod:
+            lines.append(f"    <lastmod>{lastmod}</lastmod>")
+        lines.append("    <changefreq>hourly</changefreq>")
+        lines.append("  </url>")
+    lines.append("</urlset>")
+    return Response("\n".join(lines), mimetype="application/xml")
+
+
+@app.route("/sitemap-news.xml")
+def sitemap_news_xml():
+    """Google News sitemap. Articles from the last 48 hours relative to
+    R7_MIRROR_REFERENCE_DATE (deterministic against the synthetic corpus)."""
+    from datetime import timedelta as _td
+    cutoff = R7_MIRROR_REFERENCE_DATE - _td(hours=48)
+    lines = ['<?xml version="1.0" encoding="UTF-8"?>',
+             '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"',
+             '        xmlns:news="http://www.google.com/schemas/sitemap-news/0.9">']
+    base = request.host_url.rstrip("/")
+    recent = (Article.query
+              .filter(Article.published_at >= cutoff)
+              .order_by(Article.published_at.desc())
+              .limit(1000)
+              .all())
+    for art in recent:
+        loc = base + url_for("article_detail", slug=art.slug, _external=False)
+        pub = (art.published_at.strftime("%Y-%m-%dT%H:%M:%SZ")
+               if art.published_at else "")
+        title = (art.headline or "").replace("&", "&amp;").replace("<", "&lt;")
+        lines.append("  <url>")
+        lines.append(f"    <loc>{loc}</loc>")
+        lines.append("    <news:news>")
+        lines.append("      <news:publication>")
+        lines.append("        <news:name>BBC News</news:name>")
+        lines.append("        <news:language>en</news:language>")
+        lines.append("      </news:publication>")
+        lines.append(f"      <news:publication_date>{pub}</news:publication_date>")
+        lines.append(f"      <news:title>{title}</news:title>")
+        lines.append("    </news:news>")
+        lines.append("  </url>")
+    lines.append("</urlset>")
+    return Response("\n".join(lines), mimetype="application/xml")
+
+
+def _category_or_alias(slug):
+    return Category.query.filter_by(slug=slug).first()
+
+
+@app.route("/rss/<category_slug>.xml")
+def rss_category_xml(category_slug):
+    """RSS 2.0 feed for a category."""
+    cat = _category_or_alias(category_slug)
+    if cat is None:
+        body = ('<?xml version="1.0"?>\n'
+                '<rss version="2.0"><channel>\n'
+                f'<title>BBC News - Unknown ({category_slug})</title>\n'
+                f'<link>{request.host_url.rstrip("/")}</link>\n'
+                '<description>Category not found.</description>\n'
+                '</channel></rss>\n')
+        return Response(body, mimetype="application/rss+xml", status=404)
+    arts = (Article.query
+            .filter_by(category_id=cat.id)
+            .order_by(Article.published_at.desc())
+            .limit(50)
+            .all())
+    base = request.host_url.rstrip("/")
+    out = ['<?xml version="1.0" encoding="UTF-8"?>',
+           '<rss version="2.0">',
+           '  <channel>',
+           f'    <title>BBC News - {cat.name}</title>',
+           f'    <link>{base}/section/{cat.slug}</link>',
+           f'    <description>{(cat.description or "").replace("&", "&amp;")}</description>',
+           '    <language>en-GB</language>',
+           '    <ttl>15</ttl>']
+    for art in arts:
+        url_ = base + url_for("article_detail", slug=art.slug, _external=False)
+        pub = (art.published_at.strftime("%a, %d %b %Y %H:%M:%S GMT")
+               if art.published_at else "")
+        title = (art.headline or "").replace("&", "&amp;").replace("<", "&lt;")
+        desc = (art.summary or art.subtitle or "").replace("&", "&amp;").replace("<", "&lt;")
+        out.append("    <item>")
+        out.append(f"      <title>{title}</title>")
+        out.append(f"      <link>{url_}</link>")
+        out.append(f'      <guid isPermaLink="true">{url_}</guid>')
+        out.append(f"      <pubDate>{pub}</pubDate>")
+        out.append(f"      <description>{desc}</description>")
+        out.append(f"      <category>{cat.name}</category>")
+        out.append("    </item>")
+    out.append("  </channel>")
+    out.append("</rss>")
+    return Response("\n".join(out), mimetype="application/rss+xml")
+
+
+@app.route("/feed/<category_slug>.atom")
+def atom_category_feed(category_slug):
+    """Atom 1.0 feed for a category."""
+    cat = _category_or_alias(category_slug)
+    if cat is None:
+        body = ('<?xml version="1.0" encoding="UTF-8"?>\n'
+                '<feed xmlns="http://www.w3.org/2005/Atom">\n'
+                f'<title>BBC News - Unknown ({category_slug})</title>\n'
+                '</feed>\n')
+        return Response(body, mimetype="application/atom+xml", status=404)
+    arts = (Article.query
+            .filter_by(category_id=cat.id)
+            .order_by(Article.published_at.desc())
+            .limit(50)
+            .all())
+    base = request.host_url.rstrip("/")
+    updated = (arts[0].published_at.isoformat() + "Z"
+               if arts and arts[0].published_at
+               else R7_MIRROR_REFERENCE_DATE.isoformat() + "Z")
+    out = ['<?xml version="1.0" encoding="UTF-8"?>',
+           '<feed xmlns="http://www.w3.org/2005/Atom">',
+           f'  <title>BBC News - {cat.name}</title>',
+           f'  <link href="{base}/section/{cat.slug}" rel="alternate"/>',
+           f'  <link href="{base}/feed/{cat.slug}.atom" rel="self"/>',
+           f'  <id>tag:bbc.com,2026:{cat.slug}</id>',
+           f'  <updated>{updated}</updated>']
+    for art in arts:
+        url_ = base + url_for("article_detail", slug=art.slug, _external=False)
+        upd = (art.published_at.isoformat() + "Z"
+               if art.published_at else updated)
+        title = (art.headline or "").replace("&", "&amp;").replace("<", "&lt;")
+        summary = (art.summary or art.subtitle or "").replace("&", "&amp;").replace("<", "&lt;")
+        out.append("  <entry>")
+        out.append(f"    <title>{title}</title>")
+        out.append(f'    <link href="{url_}" rel="alternate"/>')
+        out.append(f'    <id>tag:bbc.com,2026:article:{art.slug}</id>')
+        out.append(f"    <updated>{upd}</updated>")
+        out.append(f"    <published>{upd}</published>")
+        out.append(f"    <author><name>{art.author or 'BBC News'}</name></author>")
+        out.append(f'    <category term="{cat.slug}" label="{cat.name}"/>')
+        out.append(f"    <summary>{summary}</summary>")
+        out.append("  </entry>")
+    out.append("</feed>")
+    return Response("\n".join(out), mimetype="application/atom+xml")
+
+
+@app.route("/api/story/<slug>/email-alert", methods=["POST"])
+def story_email_alert(slug):
+    """Subscribe to per-story update email alerts. Idempotent."""
+    art = Article.query.filter_by(slug=slug).first_or_404()
+    if not current_user.is_authenticated:
+        return jsonify({
+            "ok": True,
+            "persisted": False,
+            "story_slug": art.slug,
+            "note": "sign in to receive email alerts for this story",
+        })
+    topic_key = f"story:{art.slug}"
+    existing = TopicSubscription.query.filter_by(
+        user_id=current_user.id, topic=topic_key).first()
+    if existing:
+        existing.active = True
+        existing.frequency = "story-update"
+        db.session.commit()
+        return jsonify({"ok": True, "persisted": True,
+                        "story_slug": art.slug, "already_subscribed": True})
+    sub = TopicSubscription(
+        user_id=current_user.id,
+        topic=topic_key,
+        category_slug=(art.category.slug if art.category else ""),
+        frequency="story-update",
+        active=True,
+        created_at=datetime.utcnow(),
+    )
+    db.session.add(sub)
+    db.session.commit()
+    return jsonify({"ok": True, "persisted": True,
+                    "story_slug": art.slug, "already_subscribed": False})
+
+
+@app.route("/article/<slug>/voiceover-summary")
+def voiceover_summary(slug):
+    """Accessibility helper for screen-reader-friendly article summary."""
+    art = Article.query.filter_by(slug=slug).first_or_404()
+    paras = art.get_paragraphs()[:3]
+    summary_text = " ".join(p.split(".")[0] + "." for p in paras if p)
+    return jsonify({
+        "ok": True,
+        "slug": art.slug,
+        "headline": art.headline,
+        "byline": art.author or "BBC News",
+        "published_iso": (art.published_at.isoformat() + "Z"
+                          if art.published_at else ""),
+        "summary_text": summary_text,
+        "reading_time_minutes": art.reading_time or 3,
+        "topics": art.get_topics()[:6],
+        "voiceover_marker": "vo-summary-v1",
+    })
+
+
+# =======================================================================
 # ERROR HANDLERS
 # =======================================================================
 

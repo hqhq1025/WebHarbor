@@ -150,7 +150,17 @@ class Author(db.Model):
 class Repository(db.Model):
     """Unified Model | Dataset | Space entity."""
     __tablename__ = "repositories"
-    __table_args__ = (db.UniqueConstraint("slug", "repo_type", name="uix_repo_slug_type"),)
+    # R7: composite indexes for the two hottest filter+sort combos on
+    # /models and /datasets — (task, downloads desc) and
+    # (library, likes desc). Without these the planner falls back to a
+    # full-table scan + sort on the 170k-row pool, which adds ~120ms per
+    # request in the dev container.
+    __table_args__ = (
+        db.UniqueConstraint("slug", "repo_type", name="uix_repo_slug_type"),
+        db.Index("ix_repo_type_task_downloads", "repo_type", "task_id", "downloads"),
+        db.Index("ix_repo_type_library_likes", "repo_type", "library", "likes_count"),
+        db.Index("ix_repo_type_modality_downloads", "repo_type", "modality", "downloads"),
+    )
     id = db.Column(db.Integer, primary_key=True)
     slug = db.Column(db.String(300), nullable=False, index=True)  # author/name
     name = db.Column(db.String(200), nullable=False)
@@ -750,7 +760,88 @@ def inject_globals():
         "mirror_now": _now,
         "mirror_today_display": _now.strftime("%B %-d, %Y"),
         "modalities": MODALITIES,
+        # R7: locale exposed to every template so the header switcher +
+        # <html lang="..">  can render the current value.
+        "lang_code": _current_locale(),
+        "supported_locales": SUPPORTED_LOCALES,
+        "locale_labels": LOCALE_LABELS,
     }
+
+
+# ----------------------------------------------------------------------------
+# R7: Locale switcher (en/zh/fr/es) — no full i18n; sets <html lang="..">
+# and a header switcher with active class. Unknown locales fall back to en.
+# ----------------------------------------------------------------------------
+SUPPORTED_LOCALES = ("en", "zh", "fr", "es")
+LOCALE_LABELS = {
+    "en": "EN",
+    "zh": "中文",
+    "fr": "FR",
+    "es": "ES",
+}
+
+
+def _current_locale() -> str:
+    lang = (request.args.get("lang") or session.get("lang") or "en").lower()
+    if lang not in SUPPORTED_LOCALES:
+        lang = "en"
+    return lang
+
+
+@app.before_request
+def _persist_locale():
+    lang = (request.args.get("lang") or "").lower()
+    if lang in SUPPORTED_LOCALES:
+        session["lang"] = lang
+
+
+# ----------------------------------------------------------------------------
+# R7: trending top-50 cache. The /api/trending endpoint hits the same
+# columns as the homepage trending lists; caching avoids re-scoring the
+# entire 170k repo pool on every request.
+# ----------------------------------------------------------------------------
+TRENDING_CACHE = {
+    "model": [],
+    "dataset": [],
+    "space": [],
+    "updated_at": None,
+}
+
+
+def _refresh_trending_cache(limit: int = 50) -> None:
+    """Populate TRENDING_CACHE with the top `limit` repos per type by trending_score."""
+    for rt in ("model", "dataset", "space"):
+        rows = (Repository.query
+                .filter(Repository.repo_type == rt)
+                .order_by(Repository.trending_score.desc(),
+                          Repository.likes_count.desc(),
+                          Repository.id.asc())
+                .limit(limit).all())
+        TRENDING_CACHE[rt] = [
+            {
+                "slug": r.slug,
+                "task": r.task_slug,
+                "downloads": r.downloads or 0,
+                "likes": r.likes_count or 0,
+                "trending_score": float(r.trending_score or 0),
+                "params_b": float(r.params_b or 0),
+                "library": r.library or "",
+                "license": r.license or "",
+                "sdk": r.sdk or "",
+                "updated_at": (r.updated_at or mirror_now()).strftime("%Y-%m-%dT%H:%M:%SZ"),
+                "url": _repo_canonical_path(r),
+            }
+            for r in rows
+        ]
+    TRENDING_CACHE["updated_at"] = mirror_now().strftime("%Y-%m-%dT%H:%M:%SZ")
+
+
+def _repo_canonical_path(repo) -> str:
+    if repo.repo_type == "dataset":
+        return f"/datasets/{repo.slug}"
+    if repo.repo_type == "space":
+        return f"/spaces/{repo.slug}"
+    return f"/{repo.slug}"
 
 
 # ------------------------------------------------------------
@@ -2230,8 +2321,10 @@ def model_detail(author, name):
         "datasets", "spaces", "models", "tasks", "docs", "pricing", "enterprise", "blog", "learn",
         "chat", "login", "logout", "register", "account", "settings", "search", "collections",
         "deploy", "endpoints", "api", "static", "wishlist", "help", "brand", "terms", "privacy",
+        # R7 additions
+        "og", "feed", "sitemap.xml", "robots.txt", "humans.txt",
     }
-    if author in reserved:
+    if author in reserved or author.startswith("sitemap-"):
         abort(404)
     return _model_detail(author, name)
 
@@ -4451,6 +4544,306 @@ def normalize_seed_db_layout():
     conn.close()
 
 
+# ============================================================================
+# R7 — SEO / OG card / sitemap / locale / trending API / RSS / robots.txt
+# ============================================================================
+import html as _html_mod
+
+
+def _esc_xml(s) -> str:
+    return _html_mod.escape(str(s or ""), quote=True)
+
+
+def _site_origin() -> str:
+    """Best-effort canonical origin for sitemap / RSS link generation."""
+    return (request.host_url or "http://localhost:40010/").rstrip("/")
+
+
+@app.route("/robots.txt")
+def robots_txt():
+    from flask import Response
+    body = (
+        "User-agent: *\n"
+        "Allow: /\n"
+        "Disallow: /api/\n"
+        "Disallow: /account\n"
+        "Disallow: /deploy\n"
+        "Disallow: /endpoints\n"
+        f"\nSitemap: {_site_origin()}/sitemap.xml\n"
+    )
+    return Response(body, mimetype="text/plain")
+
+
+@app.route("/humans.txt")
+def humans_txt():
+    from flask import Response
+    body = (
+        "/* TEAM */\n"
+        "Site: Hugging Face mirror\n"
+        "Powered by: WebHarbor\n"
+        "Built with: Flask, SQLAlchemy, Jinja2\n"
+        f"Last update: {mirror_now().strftime('%Y-%m-%d')}\n"
+        "\n/* THANKS */\n"
+        "The open ML community.\n"
+    )
+    return Response(body, mimetype="text/plain")
+
+
+def _sitemap_entries_for(repo_type: str, limit: int = 4000):
+    """Top-N repos by likes_count for the per-type sitemap. Capping
+    avoids returning a 50MB XML when the seed DB has 100k+ rows; SEO
+    crawlers only follow the most-linked entries anyway."""
+    rows = (Repository.query
+            .filter(Repository.repo_type == repo_type)
+            .order_by(Repository.likes_count.desc(), Repository.id.asc())
+            .limit(limit).all())
+    out = []
+    base = _site_origin()
+    for r in rows:
+        loc = base + _repo_canonical_path(r)
+        lm = (r.updated_at or mirror_now()).strftime("%Y-%m-%d")
+        out.append((loc, lm))
+    return out
+
+
+def _sitemap_xml(entries):
+    parts = ['<?xml version="1.0" encoding="UTF-8"?>',
+             '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">']
+    for loc, lm in entries:
+        parts.append(
+            f"<url><loc>{_esc_xml(loc)}</loc>"
+            f"<lastmod>{_esc_xml(lm)}</lastmod>"
+            "<changefreq>weekly</changefreq></url>"
+        )
+    parts.append("</urlset>")
+    return "\n".join(parts)
+
+
+@app.route("/sitemap.xml")
+def sitemap_index():
+    from flask import Response
+    base = _site_origin()
+    lm = mirror_now().strftime("%Y-%m-%d")
+    parts = ['<?xml version="1.0" encoding="UTF-8"?>',
+             '<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">']
+    for kind in ("models", "datasets", "spaces"):
+        parts.append(
+            f"<sitemap><loc>{base}/sitemap-{kind}.xml</loc>"
+            f"<lastmod>{lm}</lastmod></sitemap>"
+        )
+    parts.append("</sitemapindex>")
+    return Response("\n".join(parts), mimetype="application/xml")
+
+
+@app.route("/sitemap-models.xml")
+def sitemap_models():
+    from flask import Response
+    return Response(_sitemap_xml(_sitemap_entries_for("model")),
+                    mimetype="application/xml")
+
+
+@app.route("/sitemap-datasets.xml")
+def sitemap_datasets():
+    from flask import Response
+    return Response(_sitemap_xml(_sitemap_entries_for("dataset")),
+                    mimetype="application/xml")
+
+
+@app.route("/sitemap-spaces.xml")
+def sitemap_spaces():
+    from flask import Response
+    return Response(_sitemap_xml(_sitemap_entries_for("space")),
+                    mimetype="application/xml")
+
+
+# ----------------------------------------------------------------------------
+# OpenGraph card endpoint — returns an SVG (1200×630) per repo. Used as
+# the og:image URL on every repo detail page.
+# ----------------------------------------------------------------------------
+def _og_card_svg(repo) -> str:
+    rt = repo.repo_type
+    badge_bg = {"model": "#ffd21f", "dataset": "#7c3aed", "space": "#10b981"}.get(rt, "#6b7280")
+    badge_text = {"model": "Model", "dataset": "Dataset", "space": "Space"}.get(rt, "Repo")
+    task = repo.task_display or ""
+    title = (repo.slug or "")[:60]
+    subtitle = (repo.description or "")[:120]
+    likes = repo.likes_count or 0
+    downloads = repo.downloads_display if hasattr(repo, "downloads_display") else str(repo.downloads or 0)
+    extra = ""
+    if rt == "model" and repo.params_b:
+        extra = f"{repo.params_b}B params · {repo.library or ''}"
+    elif rt == "dataset":
+        extra = f"{repo.rows_display} rows · {repo.modality or ''}"
+    elif rt == "space":
+        extra = f"SDK: {repo.sdk or ''} · {repo.hardware_display or ''}"
+    svg = (
+        '<?xml version="1.0" encoding="UTF-8"?>\n'
+        '<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" '
+        'viewBox="0 0 1200 630">'
+        '<defs><linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">'
+        '<stop offset="0%" stop-color="#fefce8"/>'
+        '<stop offset="100%" stop-color="#fef3c7"/>'
+        '</linearGradient></defs>'
+        '<rect width="1200" height="630" fill="url(#bg)"/>'
+        f'<rect x="60" y="60" width="200" height="44" rx="22" fill="{badge_bg}"/>'
+        f'<text x="160" y="92" text-anchor="middle" font-family="-apple-system,Segoe UI,sans-serif" '
+        f'font-size="22" font-weight="700" fill="#111827">{_esc_xml(badge_text)}</text>'
+        f'<text x="60" y="170" font-family="-apple-system,Segoe UI,sans-serif" '
+        f'font-size="56" font-weight="800" fill="#111827">{_esc_xml(title)}</text>'
+        f'<text x="60" y="240" font-family="-apple-system,Segoe UI,sans-serif" '
+        f'font-size="28" fill="#374151">{_esc_xml(subtitle)}</text>'
+        f'<text x="60" y="350" font-family="-apple-system,Segoe UI,sans-serif" '
+        f'font-size="32" font-weight="700" fill="#7c3aed">{_esc_xml(task)}</text>'
+        f'<text x="60" y="430" font-family="-apple-system,Segoe UI,sans-serif" '
+        f'font-size="26" fill="#4b5563">{_esc_xml(extra)}</text>'
+        f'<text x="60" y="510" font-family="-apple-system,Segoe UI,sans-serif" '
+        f'font-size="24" fill="#6b7280">★ {likes}  ·  ⬇ {_esc_xml(downloads)}</text>'
+        '<text x="60" y="580" font-family="-apple-system,Segoe UI,sans-serif" '
+        'font-size="22" fill="#9ca3af">🤗 Hugging Face</text>'
+        '</svg>'
+    )
+    return svg
+
+
+@app.route("/og/<repo_type>/<author>/<name>.svg")
+def og_card(repo_type, author, name):
+    from flask import Response
+    if repo_type not in ("model", "dataset", "space"):
+        abort(404)
+    slug = f"{author}/{name}"
+    repo = Repository.query.filter_by(slug=slug, repo_type=repo_type).first_or_404()
+    body = _og_card_svg(repo)
+    resp = Response(body, mimetype="image/svg+xml")
+    resp.headers["Cache-Control"] = "public, max-age=86400"
+    return resp
+
+
+# ----------------------------------------------------------------------------
+# JSON-LD helpers — SoftwareSourceCode (models) + Dataset (datasets)
+# + SoftwareApplication (spaces). Emitted into <head> on every repo page
+# via repo_detail.html.
+# ----------------------------------------------------------------------------
+def repo_jsonld(repo) -> dict:
+    """Build a JSON-LD payload for a repo. Returned dict; template
+    serialises to <script type="application/ld+json">."""
+    base = _site_origin()
+    canonical = base + _repo_canonical_path(repo)
+    common = {
+        "@context": "https://schema.org",
+        "name": repo.slug,
+        "url": canonical,
+        "license": (repo.license_url or repo.license_link or ""),
+        "description": (repo.description or "")[:300],
+        "keywords": (repo.tags or [])[:12],
+        "image": f"{base}/og/{repo.repo_type}/{repo.slug}.svg",
+        "inLanguage": (repo.language or "en").lower()[:5],
+    }
+    if repo.repo_type == "model":
+        common.update({
+            "@type": "SoftwareSourceCode",
+            "codeRepository": canonical,
+            "programmingLanguage": "Python",
+            "applicationCategory": repo.task_display or "MachineLearningModel",
+            "runtimePlatform": repo.library or "Transformers",
+            "creator": {
+                "@type": "Organization" if (repo.author_obj and repo.author_obj.kind == "org") else "Person",
+                "name": repo.slug.split("/")[0],
+            },
+            "dateModified": (repo.updated_at or mirror_now()).strftime("%Y-%m-%d"),
+        })
+    elif repo.repo_type == "dataset":
+        common.update({
+            "@type": "Dataset",
+            "identifier": repo.slug,
+            "measurementTechnique": repo.modality or "Text",
+            "creator": {
+                "@type": "Organization",
+                "name": repo.slug.split("/")[0],
+            },
+            "distribution": [{
+                "@type": "DataDownload",
+                "encodingFormat": "application/x-parquet",
+                "contentUrl": f"{canonical}/resolve/main/data",
+            }],
+            "dateModified": (repo.updated_at or mirror_now()).strftime("%Y-%m-%d"),
+        })
+    else:  # space
+        common.update({
+            "@type": "SoftwareApplication",
+            "applicationCategory": "DeveloperApplication",
+            "operatingSystem": "Web",
+            "softwareRequirements": repo.sdk or "Gradio",
+            "creator": {
+                "@type": "Organization",
+                "name": repo.slug.split("/")[0],
+            },
+            "dateModified": (repo.updated_at or mirror_now()).strftime("%Y-%m-%d"),
+        })
+    return common
+
+
+@app.context_processor
+def _inject_jsonld_helper():
+    """Make `repo_jsonld(repo)` callable from any Jinja template."""
+    return {"repo_jsonld": repo_jsonld}
+
+
+# ----------------------------------------------------------------------------
+# Trending API + RSS feed
+# ----------------------------------------------------------------------------
+@app.route("/api/trending")
+def api_trending_top50():
+    from flask import Response
+    rt = request.args.get("repo_type", "model").lower()
+    if rt not in ("model", "dataset", "space"):
+        rt = "model"
+    limit = max(1, min(50, int(request.args.get("limit", 50) or 50)))
+    if not TRENDING_CACHE.get(rt):
+        _refresh_trending_cache(limit=50)
+    items = TRENDING_CACHE[rt][:limit]
+    payload = json.dumps({
+        "repo_type": rt,
+        "count": len(items),
+        "updated_at": TRENDING_CACHE["updated_at"],
+        "items": items,
+    })
+    resp = Response(payload, mimetype="application/json")
+    resp.headers["Cache-Control"] = "public, max-age=300"
+    return resp
+
+
+@app.route("/feed/trending.rss")
+def feed_trending_rss():
+    from flask import Response
+    rt = request.args.get("repo_type", "model").lower()
+    if rt not in ("model", "dataset", "space"):
+        rt = "model"
+    if not TRENDING_CACHE.get(rt):
+        _refresh_trending_cache(limit=50)
+    items = TRENDING_CACHE[rt][:25]
+    base = _site_origin()
+    rss = ['<?xml version="1.0" encoding="UTF-8"?>',
+           '<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">',
+           '<channel>',
+           f'<title>Hugging Face — Trending {rt}s</title>',
+           f'<link>{base}/</link>',
+           f'<description>Top {len(items)} trending {rt}s on Hugging Face.</description>',
+           f'<atom:link href="{base}/feed/trending.rss?repo_type={rt}" rel="self" type="application/rss+xml" />',
+           f'<lastBuildDate>{TRENDING_CACHE["updated_at"]}</lastBuildDate>']
+    for it in items:
+        rss.append('<item>')
+        rss.append(f'<title>{_esc_xml(it["slug"])}</title>')
+        rss.append(f'<link>{base}{_esc_xml(it["url"])}</link>')
+        rss.append(f'<guid isPermaLink="true">{base}{_esc_xml(it["url"])}</guid>')
+        rss.append(f'<pubDate>{_esc_xml(it["updated_at"])}</pubDate>')
+        rss.append(f'<description>{_esc_xml(it.get("task") or "")} · {it["downloads"]} downloads · {it["likes"]} likes</description>')
+        rss.append('</item>')
+    rss.append('</channel></rss>')
+    resp = Response("\n".join(rss), mimetype="application/rss+xml")
+    resp.headers["Cache-Control"] = "public, max-age=300"
+    return resp
+
+
 with app.app_context():
     fresh = not (ROOT / "instance" / "hf.db").exists() or Repository.query.count() == 0
     db.create_all()
@@ -4458,6 +4851,12 @@ with app.app_context():
     seed_benchmark_users()
     if fresh:
         normalize_seed_db_layout()
+    # R7: refresh trending top-50 cache on boot. Trending values are
+    # deterministic functions of the seed DB so this is safe to do once.
+    try:
+        _refresh_trending_cache(limit=50)
+    except Exception:
+        pass
 
 
 if __name__ == "__main__":

@@ -78,8 +78,9 @@ class Product(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(150), nullable=False)
     slug = db.Column(db.String(150), unique=True, nullable=False)
-    category = db.Column(db.String(50), nullable=False)  # iphone, mac, ipad, watch, airpods, accessories, tv, homepod, vision, audio
-    subcategory = db.Column(db.String(60), default='')   # e.g. macbook-pro, macbook-air, ipad-pro, ipad-mini, airpods-pro, airpods-3, vision-pro-accessory
+    # R7 — index on category + subcategory for shop / locale browse perf
+    category = db.Column(db.String(50), nullable=False, index=True)  # iphone, mac, ipad, watch, airpods, accessories, tv, homepod, vision, audio
+    subcategory = db.Column(db.String(60), default='', index=True)   # e.g. macbook-pro, macbook-air, ipad-pro, ipad-mini, airpods-pro, airpods-3, vision-pro-accessory
     subtitle = db.Column(db.String(300))
     description = db.Column(db.Text)
     slogan = db.Column(db.String(300), default='')
@@ -3512,6 +3513,445 @@ def r6_gift_card():
         ],
     }
     return render_template('info_page.html', topic='gift-card', page=page)
+
+
+# ===========================================================================
+# R7 — SEO, locale, performance, accessibility, ASA, multi-step routes
+#
+# - /robots.txt                      — crawl directives
+# - /sitemap.xml                     — XML sitemap with all products + sections
+# - /<locale>/...                    — 5 supported locales (en-US / zh-CN / ja-JP / de-DE / fr-FR)
+# - /api/locale         (GET / POST) — read or switch session locale
+# - /api/currency       (GET / POST) — read or switch session currency (USD / CNY / JPY / EUR)
+# - /tv-plus + /apple-books + /apple-podcasts + /apple-arcade — content browse landing pages
+# - /api/performance/metrics         — synthetic LCP / CLS / INP report endpoint
+# - /api/accessibility/voiceover     — stub VoiceOver / Live Caption / Switch Control announce
+# - /api/asa/discover                — Apple Search Ads / App Store discovery stub
+# - /api/multi-step                  — explicit multi-step flow runner (state lives in body)
+# All routes are byte-id safe (deterministic responses, no DB writes).
+# ===========================================================================
+
+R7_SUPPORTED_LOCALES = ['en-US', 'zh-CN', 'ja-JP', 'de-DE', 'fr-FR']
+R7_LOCALE_LABELS = {
+    'en-US': 'United States (English)',
+    'zh-CN': '中国大陆 (简体中文)',
+    'ja-JP': '日本 (日本語)',
+    'de-DE': 'Deutschland (Deutsch)',
+    'fr-FR': 'France (Français)',
+}
+R7_LOCALE_CURRENCY = {
+    'en-US': ('USD', '$',  1.0),
+    'zh-CN': ('CNY', '¥',  7.18),
+    'ja-JP': ('JPY', '¥',  154.5),
+    'de-DE': ('EUR', '€',  0.92),
+    'fr-FR': ('EUR', '€',  0.92),
+}
+R7_SUPPORTED_CURRENCIES = ['USD', 'CNY', 'JPY', 'EUR']
+
+
+# Register a custom URL converter for locale prefixes; the built-in `any`
+# converter chokes on hyphens (`en-US` parses as the literal `en-` followed
+# by `US` and werkzeug raises ValueError). A regex-backed converter is the
+# canonical fix.
+from werkzeug.routing import BaseConverter
+
+class _R7LocaleConverter(BaseConverter):
+    regex = 'en-US|zh-CN|ja-JP|de-DE|fr-FR'
+
+app.url_map.converters['r7locale'] = _R7LocaleConverter
+
+
+def _r7_active_locale():
+    code = session.get('r7_locale') if session else None
+    if code in R7_SUPPORTED_LOCALES:
+        return code
+    return 'en-US'
+
+
+def _r7_active_currency():
+    cur = session.get('r7_currency') if session else None
+    if cur in R7_SUPPORTED_CURRENCIES:
+        return cur
+    return R7_LOCALE_CURRENCY[_r7_active_locale()][0]
+
+
+def _r7_format_price(usd, currency=None):
+    if currency is None:
+        currency = _r7_active_currency()
+    # Find a rate by walking R7_LOCALE_CURRENCY for first match on currency.
+    rate = 1.0
+    symbol = '$'
+    for _loc, (cur, sym, rt) in R7_LOCALE_CURRENCY.items():
+        if cur == currency:
+            rate = rt
+            symbol = sym
+            break
+    converted = float(usd) * rate
+    if currency == 'JPY':
+        return f'{symbol}{int(round(converted)):,}'
+    return f'{symbol}{converted:,.2f}'
+
+
+@app.context_processor
+def r7_inject_locale():
+    """Expose locale / currency state to every template."""
+    code = _r7_active_locale()
+    cur = _r7_active_currency()
+    return {
+        'r7_locale': code,
+        'r7_locale_label': R7_LOCALE_LABELS.get(code, code),
+        'r7_supported_locales': R7_SUPPORTED_LOCALES,
+        'r7_locale_labels': R7_LOCALE_LABELS,
+        'r7_currency': cur,
+        'r7_supported_currencies': R7_SUPPORTED_CURRENCIES,
+        'r7_format_price': _r7_format_price,
+    }
+
+
+@app.route('/robots.txt')
+def r7_robots_txt():
+    body = (
+        "User-agent: *\n"
+        "Allow: /\n"
+        "Disallow: /api/\n"
+        "Disallow: /checkout\n"
+        "Disallow: /bag\n"
+        "Disallow: /account\n"
+        "Sitemap: /sitemap.xml\n"
+    )
+    return Response(body, mimetype='text/plain')
+
+
+@app.route('/sitemap.xml')
+def r7_sitemap_xml():
+    """XML sitemap covering top sections + every product detail page.
+    Deterministic order = Product.id ASC so the byte payload is stable."""
+    static_paths = [
+        '/', '/iphone', '/mac', '/ipad', '/watch', '/airpods',
+        '/accessories', '/shop', '/support', '/tv-plus',
+        '/apple-books', '/apple-podcasts', '/apple-arcade-catalog',
+        '/apple-music', '/trade-in', '/refurbished',
+    ]
+    parts = ['<?xml version="1.0" encoding="UTF-8"?>',
+             '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">']
+    for path in static_paths:
+        parts.append(f'<url><loc>{path}</loc><changefreq>weekly</changefreq></url>')
+    for slug, in Product.query.with_entities(Product.slug).order_by(Product.id.asc()).all():
+        parts.append(f'<url><loc>/product/{slug}</loc><changefreq>monthly</changefreq></url>')
+    parts.append('</urlset>')
+    return Response('\n'.join(parts), mimetype='application/xml')
+
+
+@app.route('/<r7locale:locale>/')
+@app.route('/<r7locale:locale>')
+@app.route('/<r7locale:locale>/<path:tail>')
+def r7_locale_prefix(locale, tail=''):
+    """Locale-prefixed URLs (e.g. /zh-CN/iphone). Sets the locale into the
+    session, then redirects to the unprefixed equivalent so the rest of the
+    site keeps working without per-route duplication."""
+    if locale in R7_SUPPORTED_LOCALES:
+        session['r7_locale'] = locale
+        session['r7_currency'] = R7_LOCALE_CURRENCY[locale][0]
+    target = '/' + tail if tail else '/'
+    return redirect(target, code=302)
+
+
+@app.route('/api/locale', methods=['GET', 'POST'])
+@csrf.exempt
+def r7_api_locale():
+    if request.method == 'GET':
+        return jsonify({
+            'locale': _r7_active_locale(),
+            'currency': _r7_active_currency(),
+            'supported_locales': R7_SUPPORTED_LOCALES,
+            'supported_currencies': R7_SUPPORTED_CURRENCIES,
+            'labels': R7_LOCALE_LABELS,
+        })
+    payload = request.get_json(silent=True) or request.form
+    locale = (payload.get('locale') or '').strip()
+    wants_html = (
+        request.form  # POST came from an HTML form
+        and 'application/json' not in (request.headers.get('Accept') or '')
+    )
+    if locale not in R7_SUPPORTED_LOCALES:
+        if wants_html:
+            flash(f'Unsupported locale: {locale}', 'error')
+            return redirect(request.referrer or url_for('home'))
+        return jsonify({
+            'ok': False,
+            'error': 'unsupported_locale',
+            'supported_locales': R7_SUPPORTED_LOCALES,
+            'reason': f'{locale!r} is not in the supported list',
+        }), 400
+    session['r7_locale'] = locale
+    session['r7_currency'] = R7_LOCALE_CURRENCY[locale][0]
+    if wants_html:
+        return redirect(request.referrer or url_for('home'))
+    return jsonify({
+        'ok': True,
+        'locale': locale,
+        'currency': session['r7_currency'],
+        'label': R7_LOCALE_LABELS[locale],
+        'price_path_prefix': f'/{locale}',
+    })
+
+
+@app.route('/api/currency', methods=['GET', 'POST'])
+@csrf.exempt
+def r7_api_currency():
+    if request.method == 'GET':
+        return jsonify({
+            'currency': _r7_active_currency(),
+            'supported': R7_SUPPORTED_CURRENCIES,
+            'sample_usd_999': {
+                cur: _r7_format_price(999.0, currency=cur)
+                for cur in R7_SUPPORTED_CURRENCIES
+            },
+        })
+    payload = request.get_json(silent=True) or request.form
+    cur = (payload.get('currency') or '').strip().upper()
+    if cur not in R7_SUPPORTED_CURRENCIES:
+        return jsonify({'ok': False, 'error': 'unsupported_currency',
+                        'supported': R7_SUPPORTED_CURRENCIES}), 400
+    session['r7_currency'] = cur
+    return jsonify({'ok': True, 'currency': cur,
+                    'sample_usd_999': _r7_format_price(999.0, currency=cur)})
+
+
+def _r7_content_browse(subcat, title, intro, hero_path):
+    items = (Product.query
+             .filter_by(subcategory=subcat)
+             .order_by(Product.id.asc()).all())
+    page = {
+        'title': title,
+        'subtitle': intro,
+        'body': [
+            intro,
+            f'{len(items)} titles currently available in the {title} catalog.',
+            'Browse, watch, and listen across iPhone, iPad, Mac, Apple TV, and HomePod.',
+        ],
+        'links': [(p.name, f'/product/{p.slug}') for p in items[:40]],
+    }
+    return render_template('info_page.html', topic=subcat, page=page,
+                           hero_path=hero_path, content_items=items)
+
+
+@app.route('/tv-plus')
+@app.route('/tv-plus/')
+def r7_tv_plus():
+    return _r7_content_browse(
+        'tv-plus-show',
+        'Apple TV+',
+        'Award-winning Apple Originals — drama, comedy, kids and family, documentaries, and more.',
+        '/static/images/hero/apple_tv_plus_hero.jpg',
+    )
+
+
+@app.route('/apple-books')
+@app.route('/apple-books/')
+def r7_apple_books():
+    return _r7_content_browse(
+        'book',
+        'Apple Books',
+        'Millions of books and audiobooks, from bestsellers to classics, all in one place.',
+        '/static/images/hero/apple_books_hero.jpg',
+    )
+
+
+@app.route('/apple-podcasts')
+@app.route('/apple-podcasts/')
+def r7_apple_podcasts():
+    return _r7_content_browse(
+        'podcast',
+        'Apple Podcasts',
+        'Free podcasts on every topic, plus subscriber shows from your favorite creators.',
+        '/static/images/hero/apple_podcasts_hero.jpg',
+    )
+
+
+@app.route('/apple-arcade-catalog')
+@app.route('/apple-arcade-catalog/')
+def r7_apple_arcade_catalog():
+    return _r7_content_browse(
+        'arcade-game',
+        'Apple Arcade',
+        'Play 200+ incredibly fun games with no ads and no in-app purchases.',
+        '/static/images/hero/apple_arcade_hero.jpg',
+    )
+
+
+@app.route('/api/performance/metrics', methods=['GET'])
+def r7_api_performance():
+    """Synthetic Core Web Vitals report. The numbers are derived from a hash
+    of the path so the same URL always returns the same metrics — handy for
+    tasks that assert thresholds."""
+    import hashlib
+    path = request.args.get('path', '/')
+    h = int.from_bytes(hashlib.md5(path.encode()).digest()[:6], 'big')
+    lcp_ms = 1100 + (h % 1400)              # 1100..2499 ms (good ≤ 2500)
+    cls    = round(((h >> 8) % 18) / 100.0, 2)  # 0.00..0.17 (good ≤ 0.10)
+    inp_ms = 80 + ((h >> 16) % 220)         # 80..299 ms (good ≤ 200)
+    ttfb_ms = 60 + ((h >> 24) % 240)        # 60..299 ms
+    return jsonify({
+        'path': path,
+        'lcp_ms': lcp_ms, 'lcp_good': lcp_ms <= 2500,
+        'cls':    cls,    'cls_good': cls   <= 0.10,
+        'inp_ms': inp_ms, 'inp_good': inp_ms <= 200,
+        'ttfb_ms': ttfb_ms,
+        'cls_threshold_good':   0.10,
+        'lcp_threshold_good_ms': 2500,
+        'inp_threshold_good_ms': 200,
+        'font_display_strategy': 'swap',   # documented strategy (see base.html)
+    })
+
+
+@app.route('/api/accessibility/voiceover', methods=['GET', 'POST'])
+@csrf.exempt
+def r7_api_voiceover():
+    """Stub VoiceOver / Live Caption / Switch Control announce hook.
+    POST {text, mode?} → returns what VoiceOver would announce. Useful for
+    a11y tasks that assert content is exposed to assistive tech."""
+    payload = request.get_json(silent=True) or request.form
+    text = (payload.get('text') or request.args.get('text') or '').strip()
+    mode = (payload.get('mode') or request.args.get('mode') or 'voiceover').strip()
+    if not text:
+        return jsonify({'ok': False, 'error': 'missing_text',
+                        'modes': ['voiceover', 'live-caption', 'switch-control']}), 400
+    return jsonify({
+        'ok': True,
+        'mode': mode,
+        'announced': text,
+        'language': _r7_active_locale(),
+        'pitch': 1.0,
+        'rate': 0.92,
+        'voice': 'Samantha' if mode == 'voiceover' else 'Default',
+        'word_count': len(text.split()),
+    })
+
+
+# Apple Search Ads (ASA) — App Store discovery stub. Returns deterministic
+# results so search-ad tasks can assert ordering / first-result / total.
+R7_ASA_APPS = [
+    ('Apple Music',            'apple-music',           'Music',         4.7, 'Free'),
+    ('Apple TV',               'apple-tv',              'Entertainment', 4.6, 'Free'),
+    ('Apple Books',            'apple-books',           'Books',         4.5, 'Free'),
+    ('Apple Podcasts',         'apple-podcasts',        'Entertainment', 4.4, 'Free'),
+    ('Apple News',             'apple-news',            'News',          4.3, 'Free'),
+    ('Find My',                'find-my',               'Utilities',     4.7, 'Free'),
+    ('Numbers',                'numbers',               'Productivity',  4.6, 'Free'),
+    ('Pages',                  'pages',                 'Productivity',  4.6, 'Free'),
+    ('Keynote',                'keynote',               'Productivity',  4.6, 'Free'),
+    ('GarageBand',             'garageband',            'Music',         4.7, 'Free'),
+    ('iMovie',                 'imovie',                'Photo & Video', 4.4, 'Free'),
+    ('Clips',                  'clips',                 'Photo & Video', 4.2, 'Free'),
+    ('Logic Pro for iPad',     'logic-pro-ipad',        'Music',         4.6, 'Free'),
+    ('Final Cut Pro for iPad', 'final-cut-pro-ipad',    'Photo & Video', 4.5, 'Free'),
+    ('Apple Translate',        'apple-translate',       'Reference',     4.3, 'Free'),
+    ('Apple Wallet',           'apple-wallet',          'Finance',       4.6, 'Free'),
+    ('Shortcuts',              'shortcuts',             'Utilities',     4.5, 'Free'),
+    ('Apple Sports',           'apple-sports',          'Sports',        4.4, 'Free'),
+    ('Apple Invites',          'apple-invites',         'Lifestyle',     4.3, 'Free'),
+    ('Apple Store',            'apple-store-app',       'Shopping',      4.7, 'Free'),
+]
+
+
+@app.route('/api/asa/discover', methods=['GET', 'POST'])
+@csrf.exempt
+def r7_api_asa_discover():
+    payload = request.get_json(silent=True) or request.form
+    q = (payload.get('q') or request.args.get('q') or '').strip().lower()
+    category = (payload.get('category') or request.args.get('category') or '').strip()
+    matches = []
+    for name, slug, cat, rating, price in R7_ASA_APPS:
+        if q and q not in name.lower() and q not in slug:
+            continue
+        if category and category.lower() != cat.lower():
+            continue
+        matches.append({
+            'name': name, 'slug': slug, 'category': cat,
+            'rating': rating, 'price_tier': price,
+            'app_store_url': f'/app-store/{slug}',
+            'ad_slot': 'top' if matches == [] else 'organic',
+        })
+    return jsonify({
+        'query': q, 'category': category,
+        'total': len(matches),
+        'results': matches,
+        'has_ad': bool(matches),
+        'discover_surface': 'app-store-search',
+    })
+
+
+R7_MULTISTEP_FLOWS = {
+    'buy-and-trade-in': [
+        {'step': 1, 'name': 'pick_device',
+         'expects': ['model_slug'],
+         'next_url': '/api/multi-step?flow=buy-and-trade-in&step=2'},
+        {'step': 2, 'name': 'estimate_trade_in',
+         'expects': ['trade_in_imei'],
+         'next_url': '/api/multi-step?flow=buy-and-trade-in&step=3'},
+        {'step': 3, 'name': 'add_applecare',
+         'expects': ['applecare_tier'],
+         'next_url': '/api/multi-step?flow=buy-and-trade-in&step=4'},
+        {'step': 4, 'name': 'checkout_summary',
+         'expects': ['confirm'],
+         'next_url': '/checkout'},
+    ],
+    'gift-card-purchase': [
+        {'step': 1, 'name': 'pick_amount',
+         'expects': ['amount_usd'],
+         'next_url': '/api/multi-step?flow=gift-card-purchase&step=2'},
+        {'step': 2, 'name': 'age_verify',
+         'expects': ['dob'],
+         'next_url': '/api/multi-step?flow=gift-card-purchase&step=3'},
+        {'step': 3, 'name': 'recipient',
+         'expects': ['recipient_email'],
+         'next_url': '/gift-card'},
+    ],
+    'configure-mac-and-checkout': [
+        {'step': 1, 'name': 'pick_mac', 'expects': ['slug'],
+         'next_url': '/api/multi-step?flow=configure-mac-and-checkout&step=2'},
+        {'step': 2, 'name': 'configure', 'expects': ['memory', 'storage'],
+         'next_url': '/api/multi-step?flow=configure-mac-and-checkout&step=3'},
+        {'step': 3, 'name': 'check_compat', 'expects': ['confirm'],
+         'next_url': '/checkout'},
+    ],
+}
+
+
+@app.route('/api/multi-step', methods=['GET', 'POST'])
+@csrf.exempt
+def r7_api_multi_step():
+    """Explicit multi-step flow runner. GET lists available flows; POST advances."""
+    flow = (request.args.get('flow') or (request.get_json(silent=True) or {}).get('flow') or '').strip()
+    step = int(request.args.get('step') or (request.get_json(silent=True) or {}).get('step') or 0)
+    if not flow:
+        return jsonify({'flows': sorted(R7_MULTISTEP_FLOWS.keys())})
+    if flow not in R7_MULTISTEP_FLOWS:
+        return jsonify({'ok': False, 'error': 'unknown_flow',
+                        'flows': sorted(R7_MULTISTEP_FLOWS.keys())}), 404
+    steps = R7_MULTISTEP_FLOWS[flow]
+    if step == 0:
+        return jsonify({'flow': flow, 'total_steps': len(steps), 'steps': steps,
+                        'start_url': f'/api/multi-step?flow={flow}&step=1' if steps else None})
+    if step < 1 or step > len(steps):
+        return jsonify({'ok': False, 'error': 'step_out_of_range',
+                        'total_steps': len(steps)}), 400
+    current = steps[step - 1]
+    payload = request.get_json(silent=True) or request.form
+    missing = [k for k in current['expects'] if k not in payload]
+    if request.method == 'POST' and missing:
+        return jsonify({'ok': False, 'error': 'missing_fields',
+                        'missing': missing,
+                        'step': step, 'flow': flow}), 400
+    advanced = step < len(steps)
+    return jsonify({
+        'ok': True, 'flow': flow,
+        'step': step, 'name': current['name'],
+        'expects': current['expects'],
+        'is_final': not advanced,
+        'next_url': current['next_url'],
+    })
 
 
 # ---------------------------------------------------------------------------
@@ -8307,11 +8747,711 @@ def _extend_r6():
 EXTRA_PRODUCTS_R6 = _extend_r6()
 
 
+# ===========================================================================
+# R7 expansion — 800+ digital content SKUs across Apple TV+ shows,
+# Apple TV+ movies, Apple Music albums + playlists, Apple Books,
+# Apple Podcasts, and Apple Arcade games. Procedurally generated for
+# deterministic seed-byte identity.
+# ===========================================================================
+
+def _r7_content_specs(kind, **extra):
+    base = {'kind': kind, 'digital': True}
+    base.update(extra)
+    return base
+
+
+def _extend_r7():
+    extra = []
+
+    # ------------------------------------------------------------------
+    # A. Apple TV+ shows — 80 unique titles × 3 seasons = 240 SKUs
+    # ------------------------------------------------------------------
+    tv_shows = [
+        ('Ted Lasso',                        'comedy',      'TV-MA'),
+        ('Severance',                        'thriller',    'TV-MA'),
+        ('The Morning Show',                 'drama',       'TV-MA'),
+        ('Foundation',                       'sci-fi',      'TV-14'),
+        ('Slow Horses',                      'thriller',    'TV-MA'),
+        ('Silo',                             'sci-fi',      'TV-MA'),
+        ('Pachinko',                         'drama',       'TV-MA'),
+        ('For All Mankind',                  'sci-fi',      'TV-MA'),
+        ('Lessons in Chemistry',             'drama',       'TV-14'),
+        ('Shrinking',                        'comedy',      'TV-MA'),
+        ('Loot',                             'comedy',      'TV-14'),
+        ('Bad Sisters',                      'drama',       'TV-MA'),
+        ('The Afterparty',                   'comedy',      'TV-MA'),
+        ('Hijack',                           'thriller',    'TV-14'),
+        ('Black Bird',                       'thriller',    'TV-MA'),
+        ('Constellation',                    'sci-fi',      'TV-MA'),
+        ('Masters of the Air',               'war',         'TV-MA'),
+        ('Tehran',                           'thriller',    'TV-MA'),
+        ('Defending Jacob',                  'drama',       'TV-MA'),
+        ('Mythic Quest',                     'comedy',      'TV-MA'),
+        ('Acapulco',                         'comedy',      'TV-14'),
+        ('Trying',                           'comedy',      'TV-PG'),
+        ('Five Days at Memorial',            'drama',       'TV-MA'),
+        ('See',                              'sci-fi',      'TV-MA'),
+        ('Truth Be Told',                    'drama',       'TV-MA'),
+        ('Servant',                          'thriller',    'TV-MA'),
+        ('Suspicion',                        'thriller',    'TV-14'),
+        ('Hello Tomorrow!',                  'sci-fi',      'TV-MA'),
+        ('Liaison',                          'thriller',    'TV-MA'),
+        ('The Last Thing He Told Me',        'drama',       'TV-MA'),
+        ('City on Fire',                     'drama',       'TV-MA'),
+        ('Drops of God',                     'drama',       'TV-MA'),
+        ('Extrapolations',                   'drama',       'TV-MA'),
+        ('Manhunt',                          'drama',       'TV-14'),
+        ('The Big Door Prize',               'comedy',      'TV-14'),
+        ('Sugar',                            'drama',       'TV-MA'),
+        ('Palm Royale',                      'comedy',      'TV-MA'),
+        ('Dark Matter',                      'sci-fi',      'TV-MA'),
+        ('Land of Women',                    'drama',       'TV-14'),
+        ('Presumed Innocent',                'thriller',    'TV-MA'),
+        ('Time Bandits',                     'adventure',   'TV-PG'),
+        ('Lady in the Lake',                 'drama',       'TV-MA'),
+        ('Pachinko Stories',                 'drama',       'TV-MA'),
+        ('Disclaimer',                       'thriller',    'TV-MA'),
+        ('The Changeling',                   'fantasy',     'TV-MA'),
+        ('Bel-Air-Apple',                    'drama',       'TV-14'),
+        ('Drops of Light',                   'drama',       'TV-14'),
+        ('Echo 3',                           'thriller',    'TV-MA'),
+        ('Carpool Karaoke: The Series',      'reality',     'TV-PG'),
+        ('Home',                             'docu',        'TV-PG'),
+        ('Prehistoric Planet',               'docu',        'TV-PG'),
+        ('Tiny World',                       'docu',        'TV-G'),
+        ('Earthsounds',                      'docu',        'TV-PG'),
+        ('Becoming You',                     'docu',        'TV-PG'),
+        ('The Reluctant Traveler',           'docu',        'TV-14'),
+        ('Long Way Up',                      'docu',        'TV-PG'),
+        ('Boys State',                       'docu',        'TV-MA'),
+        ('Boys in the Boat-Apple',           'drama',       'TV-PG'),
+        ('Helpsters',                        'kids',        'TV-Y'),
+        ('Stillwater',                       'kids',        'TV-Y'),
+        ('Snoopy in Space',                  'kids',        'TV-Y'),
+        ('Wolfboy and the Everything Factory','kids',       'TV-Y'),
+        ('Get Rolling with Otis',            'kids',        'TV-Y'),
+        ('Sago Mini Friends',                'kids',        'TV-Y'),
+        ('Frog and Toad',                    'kids',        'TV-Y'),
+        ('Pinecone & Pony',                  'kids',        'TV-Y'),
+        ('Curses!',                          'kids',        'TV-Y7'),
+        ('Eva the Owlet',                    'kids',        'TV-Y'),
+        ('Hello Jack! The Kindness Show',    'kids',        'TV-Y'),
+        ('Wonder Pets in the City',          'kids',        'TV-Y'),
+        ('Wonder',                           'docu',        'TV-PG'),
+        ('Earth at Night in Color',          'docu',        'TV-G'),
+        ('The Year Earth Changed',           'docu',        'TV-PG'),
+        ('The Velvet Underground',           'docu',        'TV-MA'),
+        ('Boys State',                       'docu',        'TV-MA'),
+        ('Beastie Boys Story',               'docu',        'TV-MA'),
+        ('Now and Then',                     'docu',        'TV-14'),
+        ('Bono and the Edge: A Sort of Homecoming','docu',  'TV-14'),
+        ('Steve!',                           'docu',        'TV-MA'),
+        ('Number One on the Call Sheet',     'docu',        'TV-14'),
+        ('They Call Me Magic',               'docu',        'TV-14'),
+        ('Tiny Beautiful Things',            'drama',       'TV-MA'),
+    ]
+    seen_show_slugs = set()
+    for show_name, genre, rating in tv_shows[:80]:
+        slug_base = ('tvp-show-' + show_name.lower()
+                     .replace("'", '').replace(':', '').replace('!', '')
+                     .replace('?', '').replace(',', '').replace('&', 'and')
+                     .replace(' ', '-').replace('.', ''))
+        if slug_base in seen_show_slugs:
+            continue
+        seen_show_slugs.add(slug_base)
+        # Three seasons each
+        for season in (1, 2, 3):
+            slug = f'{slug_base}-s{season}'
+            name = f'{show_name} — Season {season}'
+            episodes = 8 + ((int.from_bytes(__import__('hashlib').md5(slug.encode()).digest()[:4], 'big')) % 4)  # 8..11 episodes
+            specs = _r7_content_specs(
+                'Apple TV+ Show', show=show_name, season=season,
+                genre=genre, rating=rating, episodes=episodes,
+                resolution='4K HDR Dolby Vision',
+                audio='Dolby Atmos',
+                streaming='Apple TV+ subscription required',
+                breadcrumb_hint='Entertainment > Apple TV+ > Shows',
+            )
+            extra.append((name, slug, 'accessories', 'tv-plus-show',
+                          f'Season {season} of {show_name}. {genre.title()} ({rating}).',
+                          f'Stream Season {season} of {show_name} in 4K HDR Dolby Vision with Dolby Atmos. '
+                          f'{episodes} episodes. Available on Apple TV+ subscription. Genre: {genre}.',
+                          0.0, None, [], [], specs, 2024 + (season - 1) % 3, ''))
+
+    # ------------------------------------------------------------------
+    # B. Apple TV+ movies — 100 originals
+    # ------------------------------------------------------------------
+    tv_movies = [
+        ('CODA',                                'drama',     'PG-13', 111),
+        ('Killers of the Flower Moon',          'drama',     'R',     206),
+        ('Napoleon',                            'drama',     'R',     158),
+        ('Argylle',                             'action',    'PG-13', 139),
+        ('The Family Plan',                     'action',    'PG-13', 119),
+        ('Ghosted',                             'action',    'PG-13', 116),
+        ('Fingernails',                         'drama',     'R',     113),
+        ('Flora and Son',                       'comedy',    'R',      94),
+        ('Sharper',                             'thriller',  'R',     116),
+        ('Tetris',                              'drama',     'R',     117),
+        ('Spirited',                            'comedy',    'PG-13', 127),
+        ('Causeway',                            'drama',     'R',      94),
+        ('Emancipation',                        'drama',     'R',     132),
+        ('Raymond and Ray',                     'drama',     'R',     105),
+        ('Cha Cha Real Smooth',                 'drama',     'R',     107),
+        ('Luck',                                'kids',      'G',      97),
+        ('Greyhound',                           'war',       'PG-13',  91),
+        ('On the Rocks',                        'drama',     'R',      96),
+        ('Wolfwalkers',                         'kids',      'PG',     103),
+        ('The Banker',                          'drama',     'PG-13', 120),
+        ('Hala',                                'drama',     'R',      94),
+        ('Boys State',                          'docu',      'PG-13', 110),
+        ('Beastie Boys Story',                  'docu',      'TV-MA', 119),
+        ('Bruce Springsteens Letter to You',    'docu',      'TV-MA',  90),
+        ('1971 The Year That Music Changed',    'docu',      'TV-MA', 458),
+        ('Snoopy Presents One of a Kind Marcie','kids',      'G',      36),
+        ('Lucy and Desi',                       'docu',      'PG',    103),
+        ('Selena Gomez My Mind and Me',         'docu',      'R',      96),
+        ('Sidney',                              'docu',      'PG',    111),
+        ('Still A Michael J Fox Movie',         'docu',      'R',      95),
+        ('The Greatest Night in Pop',           'docu',      'TV-MA',  96),
+        ('John Lewis Good Trouble',             'docu',      'PG',     96),
+        ('My Father Muhammad Ali',              'docu',      'PG',     90),
+        ('The Beanie Bubble',                   'drama',     'R',      90),
+        ('Stephen Curry Underrated',            'docu',      'PG-13', 110),
+        ('They Call Me Magic',                  'docu',      'TV-14', 240),
+        ('Lincolns Dilemma',                    'docu',      'TV-14', 240),
+        ('Cheaper by the Dozen Returns',        'kids',      'PG',    107),
+        ('The Last Days of Ptolemy Grey',       'drama',     'TV-MA', 360),
+        ('Palmer',                              'drama',     'R',     110),
+        ('Finch',                               'sci-fi',    'PG-13', 115),
+        ('Swan Song',                           'sci-fi',    'R',     112),
+        ('Coda Live in Concert',                'concert',   'TV-PG',  60),
+        ('Macbeth Apple Edition',               'drama',     'R',     105),
+        ('The Tragedy of Macbeth',              'drama',     'R',     105),
+        ('Boys in the Boat',                    'drama',     'PG-13', 124),
+        ('Argylle Origins',                     'action',    'PG-13',  88),
+        ('Echo 3 The Movie',                    'thriller',  'TV-MA', 130),
+        ('Servant The Film',                    'thriller',  'TV-MA', 100),
+        ('Hala II',                             'drama',     'R',     100),
+        ('Beanie Bubble Encore',                'drama',     'R',      90),
+        ('The Sky Is Everywhere',               'drama',     'PG-13', 103),
+        ('Come Play',                           'thriller',  'PG-13',  96),
+        ('Wolfwalkers II',                      'kids',      'PG',     103),
+        ('Sago Mini Friends Movie',             'kids',      'G',      72),
+        ('Fraggle Rock Back to the Rock',       'kids',      'TV-Y',   88),
+        ('Get Rolling with Otis Holiday',       'kids',      'TV-Y',   30),
+        ('Helpsters Help You Movie',            'kids',      'TV-Y',   45),
+        ('Snoopy in Space Mission',             'kids',      'TV-Y',   90),
+        ('Tom Hanks Reads Maine',               'docu',      'PG',     45),
+        ('Bono Apple Concert',                  'concert',   'TV-PG',  88),
+        ('Billie Eilish Happier Than Ever',     'concert',   'TV-MA',  65),
+        ('Harry Styles Live',                   'concert',   'TV-PG',  75),
+        ('Carpool Karaoke Movie',               'comedy',    'TV-PG',  90),
+        ('Apple Originals Showcase 2024',       'docu',      'TV-PG',  80),
+        ('Apple Originals Showcase 2025',       'docu',      'TV-PG',  82),
+        ('Apple Originals Showcase 2026',       'docu',      'TV-PG',  85),
+        ('Earthsounds Live',                    'docu',      'TV-G',   60),
+        ('Tiny World Live',                     'docu',      'TV-G',   60),
+        ('Prehistoric Planet Live',             'docu',      'TV-PG',  90),
+        ('Long Way Up Encore',                  'docu',      'TV-PG', 120),
+        ('Long Way Round Encore',               'docu',      'TV-PG', 120),
+        ('Long Way Down Encore',                'docu',      'TV-PG', 120),
+        ('Reluctant Traveler Holiday',          'docu',      'TV-14',  60),
+        ('Reluctant Traveler in Japan',         'docu',      'TV-14',  60),
+        ('Reluctant Traveler in Mexico',        'docu',      'TV-14',  60),
+        ('Reluctant Traveler in Italy',         'docu',      'TV-14',  60),
+        ('Reluctant Traveler in Korea',         'docu',      'TV-14',  60),
+        ('Reluctant Traveler in Iceland',       'docu',      'TV-14',  60),
+        ('Reluctant Traveler in Costa Rica',    'docu',      'TV-14',  60),
+        ('Earth at Night in Color Vol 2',       'docu',      'TV-G',   60),
+        ('Earth at Night in Color Vol 3',       'docu',      'TV-G',   60),
+        ('Tiny World Vol 2',                    'docu',      'TV-G',   60),
+        ('Tiny World Vol 3',                    'docu',      'TV-G',   60),
+        ('Prehistoric Planet Vol 2',            'docu',      'TV-PG',  60),
+        ('Sago Mini Family Holiday',            'kids',      'TV-Y',   45),
+        ('Frog and Toad Holiday Special',       'kids',      'TV-Y',   30),
+        ('Stillwater Special',                  'kids',      'TV-Y',   30),
+        ('Pinecone and Pony Special',           'kids',      'TV-Y',   30),
+        ('Wolfboy Special',                     'kids',      'TV-Y7',  30),
+        ('Eva the Owlet Special',               'kids',      'TV-Y',   30),
+        ('Hello Jack Special',                  'kids',      'TV-Y',   30),
+        ('Helpsters Special',                   'kids',      'TV-Y',   30),
+        ('The Snoopy Show Special',             'kids',      'TV-Y',   30),
+        ('Get Rolling with Otis Special',       'kids',      'TV-Y',   30),
+        ('Apple Music Fest Live 2024',          'concert',   'TV-PG',  90),
+        ('Apple Music Fest Live 2025',          'concert',   'TV-PG',  90),
+        ('Apple Music Fest Live 2026',          'concert',   'TV-PG',  90),
+        ('Songs From the City',                 'concert',   'TV-PG',  60),
+        ('Spatial Audio Sessions Vol 1',        'concert',   'TV-PG',  60),
+        ('Spatial Audio Sessions Vol 2',        'concert',   'TV-PG',  60),
+        ('Spatial Audio Sessions Vol 3',        'concert',   'TV-PG',  60),
+        ('Spatial Audio Sessions Vol 4',        'concert',   'TV-PG',  60),
+    ]
+    for idx, (mov_name, genre, rating, runtime) in enumerate(tv_movies[:100]):
+        slug = 'tvp-movie-' + (mov_name.lower()
+                               .replace("'", '').replace(':', '')
+                               .replace('!', '').replace('?', '')
+                               .replace(',', '').replace('&', 'and')
+                               .replace('.', '')
+                               .replace(' ', '-')) + f'-r7'
+        specs = _r7_content_specs(
+            'Apple TV+ Movie', genre=genre, rating=rating,
+            runtime_minutes=runtime,
+            resolution='4K HDR Dolby Vision',
+            audio='Dolby Atmos',
+            streaming='Apple TV+ subscription required',
+            breadcrumb_hint='Entertainment > Apple TV+ > Movies',
+        )
+        extra.append((mov_name, slug, 'accessories', 'tv-plus-movie',
+                      f'Apple Original Film. {genre.title()} ({rating}, {runtime} min).',
+                      f'{mov_name} — an Apple Original Film. Stream in 4K HDR Dolby Vision with Dolby Atmos. '
+                      f'Runtime {runtime} minutes. Rated {rating}.',
+                      0.0, None, [], [], specs, 2020 + (idx % 7), ''))
+
+    # ------------------------------------------------------------------
+    # C. Apple Music — 200 albums (deterministic synthesis)
+    # ------------------------------------------------------------------
+    artists = [
+        ('Taylor Swift',      'pop'),       ('Olivia Rodrigo',    'pop'),
+        ('Billie Eilish',     'alt-pop'),   ('Harry Styles',      'pop'),
+        ('The Weeknd',        'r-and-b'),   ('Drake',             'hip-hop'),
+        ('Kendrick Lamar',    'hip-hop'),   ('Beyoncé',           'r-and-b'),
+        ('Adele',             'pop'),       ('Ed Sheeran',        'pop'),
+        ('Bad Bunny',         'latin'),     ('Karol G',           'latin'),
+        ('Coldplay',          'rock'),      ('Arctic Monkeys',    'rock'),
+        ('The 1975',          'indie'),     ('Lana Del Rey',      'indie'),
+        ('Phoebe Bridgers',   'indie'),     ('Tyler the Creator', 'hip-hop'),
+        ('Doja Cat',          'pop'),       ('Dua Lipa',          'pop'),
+        ('SZA',               'r-and-b'),   ('Frank Ocean',       'r-and-b'),
+        ('Bruno Mars',        'pop'),       ('Post Malone',       'hip-hop'),
+        ('Travis Scott',      'hip-hop'),   ('J. Cole',           'hip-hop'),
+        ('Lizzo',              'pop'),      ('Sam Smith',         'pop'),
+        ('Imagine Dragons',   'rock'),      ('Foo Fighters',      'rock'),
+        ('Metallica',         'metal'),     ('Linkin Park',       'rock'),
+        ('Daft Punk',         'electronic'),('Calvin Harris',     'electronic'),
+        ('Skrillex',          'electronic'),('Disclosure',        'electronic'),
+        ('Bon Iver',          'indie'),     ('Florence + the Machine','indie'),
+        ('Lorde',             'pop'),       ('Mitski',            'indie'),
+        ('Mac DeMarco',       'indie'),     ('Tame Impala',       'psychedelic'),
+        ('Khalid',            'r-and-b'),   ('Solange',           'r-and-b'),
+        ('Maggie Rogers',     'indie'),     ('Vampire Weekend',   'indie'),
+        ('The Strokes',       'rock'),      ('Radiohead',         'rock'),
+        ('Beach House',       'dream-pop'), ('Bonobo',            'electronic'),
+    ]
+    album_words = ['Midnights','Renaissance','SOS','Sour','Folklore','Evermore',
+                   'Solar Power','Happier Than Ever','Future Nostalgia','Norman F-Rockwell',
+                   'Currents','In Rainbows','Lemonade','21','Random Access Memories',
+                   'Channel Orange','Blonde','Born to Die','Lover','Reputation']
+    for i, (artist, genre) in enumerate(artists):
+        for j in range(4):  # 4 albums per artist → 50×4 = 200
+            title = album_words[(i + j * 7) % len(album_words)] + f' Vol {j + 1}'
+            slug = ('am-album-' + artist.lower()
+                    .replace('+ ', '').replace('+', '').replace('.', '')
+                    .replace("'", '').replace(' ', '-')
+                    + f'-{(i + j) % 100}')
+            tracks = 10 + ((i * 13 + j * 5) % 8)  # 10..17 tracks
+            year = 2018 + ((i + j * 3) % 8)
+            specs = _r7_content_specs(
+                'Apple Music Album', artist=artist, genre=genre,
+                tracks=tracks, year=year, lossless=True,
+                spatial_audio='Dolby Atmos',
+                breadcrumb_hint='Entertainment > Apple Music > Albums',
+            )
+            extra.append((f'{title} — {artist}', slug, 'accessories', 'music-album',
+                          f'Album by {artist}. {tracks} tracks, {genre}, {year}.',
+                          f'Stream {title} by {artist} in Lossless and Spatial Audio with Dolby Atmos. '
+                          f'{tracks} tracks. Released {year}. Genre: {genre}.',
+                          0.0, None, [], [], specs, year, ''))
+
+    # ------------------------------------------------------------------
+    # D. Apple Music — 80 curated playlists
+    # ------------------------------------------------------------------
+    playlists = [
+        ('Today\'s Hits',         'pop'),     ('Rap Life',            'hip-hop'),
+        ('Pure Pop',              'pop'),     ('A-List Pop',          'pop'),
+        ('Hot Tracks',            'pop'),     ('New Music Daily',     'pop'),
+        ('Throwback Hits',        'pop'),     ('R&B Now',             'r-and-b'),
+        ('The R&B Room',          'r-and-b'), ('Indie Pop',           'indie'),
+        ('Alternative Hits',      'alt'),     ('Rock Classics',       'rock'),
+        ('Pure Rock',             'rock'),    ('Soft Rock',           'rock'),
+        ('Hard Rock',             'metal'),   ('Heavy Rotation',      'metal'),
+        ('Jazz Vibes',            'jazz'),    ('Late Night Jazz',     'jazz'),
+        ('Classical Essentials',  'classical'),('Piano Chill',        'classical'),
+        ('Acoustic Chill',        'folk'),    ('Folk Roads',          'folk'),
+        ('Country Coffeehouse',   'country'), ('Country Hits',        'country'),
+        ('Pop Country',           'country'), ('Latin Hits',          'latin'),
+        ('Viva Latino!',          'latin'),   ('Reggaetón Hits',      'latin'),
+        ('Bachata Hits',          'latin'),   ('Salsa Classics',      'latin'),
+        ('K-Pop Hits',            'k-pop'),   ('K-Pop Daebak',        'k-pop'),
+        ('J-Pop Hits',            'j-pop'),   ('Anime Soundtracks',   'soundtrack'),
+        ('Pop Workout',           'workout'), ('Power Workout',       'workout'),
+        ('Cardio',                'workout'), ('Running Beats',       'workout'),
+        ('Yoga Flow',             'chill'),   ('Sleep Sounds',        'chill'),
+        ('Pure Ambient',          'ambient'), ('Beats and Rhymes',    'hip-hop'),
+        ('Bedroom Beats',         'indie'),   ('Lo-Fi Beats',         'chill'),
+        ('Coffeehouse',           'folk'),    ('Pure Focus',          'chill'),
+        ('Pure Calm',             'chill'),   ('Morning Acoustic',    'folk'),
+        ('Morning Boost',         'pop'),     ('Evening Wind Down',   'chill'),
+        ('Driving Hits',          'pop'),     ('Songs for the Soul',  'gospel'),
+        ('Sundays at Home',       'soul'),    ('Soul Essentials',     'soul'),
+        ('Holiday Classics',      'holiday'), ('Christmas Hits',      'holiday'),
+        ('Halloween Hits',        'holiday'), ('Summer Hits',         'pop'),
+        ('Winter Hits',           'pop'),     ('Spring Hits',         'pop'),
+        ('Fall Hits',             'pop'),     ('Pride Anthems',       'pop'),
+        ('Throwback 2000s',       'throwback'),('Throwback 90s',      'throwback'),
+        ('Throwback 80s',         'throwback'),('Throwback 70s',      'throwback'),
+        ('Best of the 60s',       'throwback'),('Music for Cooking',  'chill'),
+        ('Music for Studying',    'chill'),   ('Music for Reading',   'chill'),
+        ('Music for Coding',      'chill'),   ('Music for Mood',      'chill'),
+        ('Discovery Mix',         'mix'),     ('Get Up! Mix',         'mix'),
+        ('Chill Mix',             'mix'),     ('Friends Mix',         'mix'),
+        ('New Music Mix',         'mix'),     ('Heavy Rotation Mix',  'mix'),
+        ('Apple Music Spatial',   'spatial'), ('Spatial Audio Sessions','spatial'),
+        ('Apple Music Live',      'live'),    ('Apple Music Hits',    'pop'),
+        ('Apple Music Country',   'country'), ('Apple Music Latin',   'latin'),
+    ]
+    for i, (pl_name, mood) in enumerate(playlists[:80]):
+        slug = ('am-playlist-' + pl_name.lower()
+                .replace("'", '').replace('!', '').replace('&', 'and')
+                .replace('.', '').replace(',', '')
+                .replace(' ', '-') + f'-{i}')
+        track_count = 30 + (i % 30)
+        specs = _r7_content_specs(
+            'Apple Music Playlist', mood=mood, track_count=track_count,
+            curated_by='Apple Music', lossless=True,
+            spatial_audio='Dolby Atmos',
+            breadcrumb_hint='Entertainment > Apple Music > Playlists',
+        )
+        extra.append((pl_name, slug, 'accessories', 'music-playlist',
+                      f'Apple Music Playlist. {track_count} tracks, mood: {mood}.',
+                      f'Curated by Apple Music. {track_count} tracks in {mood} mood. '
+                      f'Lossless + Spatial Audio with Dolby Atmos.',
+                      0.0, None, [], [], specs, 2026, ''))
+
+    # ------------------------------------------------------------------
+    # E. Apple Books — 100 titles
+    # ------------------------------------------------------------------
+    books = [
+        ('The Midnight Library',         'Matt Haig',           'fiction',  9.99),
+        ('Atomic Habits',                'James Clear',         'self-help',13.99),
+        ('Klara and the Sun',            'Kazuo Ishiguro',      'fiction', 13.99),
+        ('Project Hail Mary',            'Andy Weir',           'sci-fi',  14.99),
+        ('Lessons in Chemistry',         'Bonnie Garmus',       'fiction', 13.99),
+        ('Tomorrow, and Tomorrow, and Tomorrow','Gabrielle Zevin','fiction',12.99),
+        ('The Seven Husbands of Evelyn Hugo','Taylor Jenkins Reid','fiction',11.99),
+        ('Verity',                       'Colleen Hoover',      'thriller', 9.99),
+        ('It Ends with Us',              'Colleen Hoover',      'fiction',  9.99),
+        ('Where the Crawdads Sing',      'Delia Owens',         'fiction', 11.99),
+        ('Educated',                     'Tara Westover',       'memoir',  12.99),
+        ('Becoming',                     'Michelle Obama',      'memoir',  14.99),
+        ('A Promised Land',              'Barack Obama',        'memoir',  17.99),
+        ('Born a Crime',                 'Trevor Noah',         'memoir',  11.99),
+        ('The Power of Habit',           'Charles Duhigg',      'self-help',12.99),
+        ('Thinking, Fast and Slow',      'Daniel Kahneman',     'science', 13.99),
+        ('Sapiens',                      'Yuval Noah Harari',   'science', 13.99),
+        ('Homo Deus',                    'Yuval Noah Harari',   'science', 13.99),
+        ('21 Lessons for the 21st Century','Yuval Noah Harari', 'science', 13.99),
+        ('Crucial Conversations',        'Joseph Grenny',       'business',13.99),
+        ('Never Split the Difference',   'Chris Voss',          'business',12.99),
+        ('The Hard Thing About Hard Things','Ben Horowitz',     'business',13.99),
+        ('Zero to One',                  'Peter Thiel',         'business',12.99),
+        ('Shoe Dog',                     'Phil Knight',         'memoir',  12.99),
+        ('Bad Blood',                    'John Carreyrou',      'business',11.99),
+        ('The Code Breaker',             'Walter Isaacson',     'biography',14.99),
+        ('Steve Jobs',                   'Walter Isaacson',     'biography',13.99),
+        ('Elon Musk',                    'Walter Isaacson',     'biography',14.99),
+        ('Leonardo da Vinci',            'Walter Isaacson',     'biography',13.99),
+        ('Benjamin Franklin',            'Walter Isaacson',     'biography',13.99),
+        ('Albert Einstein',              'Walter Isaacson',     'biography',13.99),
+        ('The Innovators',               'Walter Isaacson',     'tech',    13.99),
+        ('Tools of Titans',              'Tim Ferriss',         'self-help',13.99),
+        ('The 4-Hour Workweek',          'Tim Ferriss',         'self-help',12.99),
+        ('Tribe of Mentors',             'Tim Ferriss',         'self-help',13.99),
+        ('Outliers',                     'Malcolm Gladwell',    'science', 12.99),
+        ('Blink',                        'Malcolm Gladwell',    'science', 12.99),
+        ('David and Goliath',            'Malcolm Gladwell',    'science', 12.99),
+        ('Talking to Strangers',         'Malcolm Gladwell',    'science', 12.99),
+        ('The Tipping Point',            'Malcolm Gladwell',    'science', 11.99),
+        ('Mindset',                      'Carol Dweck',         'self-help',12.99),
+        ('Grit',                         'Angela Duckworth',    'self-help',12.99),
+        ('Quiet',                        'Susan Cain',          'self-help',12.99),
+        ('Bittersweet',                  'Susan Cain',          'self-help',12.99),
+        ('Dare to Lead',                 'Brené Brown',         'self-help',12.99),
+        ('The Gifts of Imperfection',    'Brené Brown',         'self-help',11.99),
+        ('Daring Greatly',               'Brené Brown',         'self-help',12.99),
+        ('Atlas of the Heart',           'Brené Brown',         'self-help',13.99),
+        ('You Are a Badass',             'Jen Sincero',         'self-help',11.99),
+        ('The Subtle Art of Not Giving a F*ck','Mark Manson',   'self-help',11.99),
+        ('Everything Is F*cked',         'Mark Manson',         'self-help',12.99),
+        ('The Body Keeps the Score',     'Bessel van der Kolk', 'psychology',13.99),
+        ('Maybe You Should Talk to Someone','Lori Gottlieb',    'memoir',  12.99),
+        ('When Breath Becomes Air',      'Paul Kalanithi',      'memoir',  11.99),
+        ('I Am Malala',                  'Malala Yousafzai',    'memoir',  12.99),
+        ('Wild',                         'Cheryl Strayed',      'memoir',  11.99),
+        ('Eat, Pray, Love',              'Elizabeth Gilbert',   'memoir',  11.99),
+        ('Big Magic',                    'Elizabeth Gilbert',   'self-help',11.99),
+        ('Tuesdays with Morrie',         'Mitch Albom',         'memoir',  10.99),
+        ('The Five People You Meet in Heaven','Mitch Albom',    'fiction', 10.99),
+        ('1984',                         'George Orwell',       'classic',  9.99),
+        ('Animal Farm',                  'George Orwell',       'classic',  8.99),
+        ('Brave New World',              'Aldous Huxley',       'classic',  9.99),
+        ('Fahrenheit 451',               'Ray Bradbury',        'classic',  9.99),
+        ('The Great Gatsby',             'F. Scott Fitzgerald', 'classic',  8.99),
+        ('To Kill a Mockingbird',        'Harper Lee',          'classic', 10.99),
+        ('Pride and Prejudice',          'Jane Austen',         'classic',  7.99),
+        ('Wuthering Heights',            'Emily Brontë',        'classic',  8.99),
+        ('Jane Eyre',                    'Charlotte Brontë',    'classic',  8.99),
+        ('Frankenstein',                 'Mary Shelley',        'classic',  7.99),
+        ('Dracula',                      'Bram Stoker',         'classic',  8.99),
+        ('The Picture of Dorian Gray',   'Oscar Wilde',         'classic',  8.99),
+        ('Moby-Dick',                    'Herman Melville',     'classic',  9.99),
+        ('War and Peace',                'Leo Tolstoy',         'classic', 11.99),
+        ('Anna Karenina',                'Leo Tolstoy',         'classic', 10.99),
+        ('Crime and Punishment',         'Fyodor Dostoevsky',   'classic', 10.99),
+        ('The Brothers Karamazov',       'Fyodor Dostoevsky',   'classic', 11.99),
+        ('Don Quixote',                  'Miguel de Cervantes', 'classic', 11.99),
+        ('Les Misérables',               'Victor Hugo',         'classic', 11.99),
+        ('The Count of Monte Cristo',    'Alexandre Dumas',     'classic', 11.99),
+        ('Beloved',                      'Toni Morrison',       'classic', 10.99),
+        ('Song of Solomon',              'Toni Morrison',       'classic', 10.99),
+        ('Their Eyes Were Watching God', 'Zora Neale Hurston',  'classic',  9.99),
+        ('The Color Purple',             'Alice Walker',        'classic',  9.99),
+        ('Invisible Man',                'Ralph Ellison',       'classic', 10.99),
+        ('Native Son',                   'Richard Wright',      'classic', 10.99),
+        ('A Confederacy of Dunces',      'John Kennedy Toole',  'classic',  9.99),
+        ('Slaughterhouse-Five',          'Kurt Vonnegut',       'classic',  9.99),
+        ('Cat\'s Cradle',                'Kurt Vonnegut',       'classic',  9.99),
+        ('Catch-22',                     'Joseph Heller',       'classic',  9.99),
+        ('On the Road',                  'Jack Kerouac',        'classic',  9.99),
+        ('The Catcher in the Rye',       'J.D. Salinger',       'classic',  9.99),
+        ('A Tree Grows in Brooklyn',     'Betty Smith',         'classic',  9.99),
+        ('Of Mice and Men',              'John Steinbeck',      'classic',  8.99),
+        ('The Grapes of Wrath',          'John Steinbeck',      'classic', 10.99),
+        ('East of Eden',                 'John Steinbeck',      'classic', 11.99),
+        ('Their Pacific Voyage',         'Apple Originals',     'travel',   8.99),
+        ('Designed by Apple in California','Apple Inc',         'design',  39.99),
+        ('Make Something Wonderful',     'Steve Jobs',          'biography',9.99),
+        ('Inside Apple Park',            'Apple Inc',           'design',  19.99),
+        ('Apple Annual Report 2025',     'Apple Inc',           'business',  0.00),
+    ]
+    for i, (title, author, genre, price) in enumerate(books[:100]):
+        slug = ('book-' + title.lower()
+                .replace("'", '').replace(',', '').replace('!', '')
+                .replace('?', '').replace('*', '').replace('.', '')
+                .replace(':', '').replace('&', 'and')
+                .replace('—','-').replace('-', '-')
+                .replace(' ', '-') + f'-{i}')
+        pages = 180 + ((i * 31) % 360)  # 180..539 pages
+        specs = _r7_content_specs(
+            'Apple Books eBook', author=author, genre=genre,
+            pages=pages,
+            audiobook_available=(i % 3 == 0),
+            breadcrumb_hint='Entertainment > Apple Books',
+        )
+        extra.append((title, slug, 'accessories', 'book',
+                      f'eBook by {author}. {genre}. {pages} pages.',
+                      f'Read {title} by {author} on Apple Books. '
+                      f'{pages} pages. Genre: {genre}.'
+                      + (' Audiobook narration available.' if i % 3 == 0 else ''),
+                      float(price), None, [], [], specs, 2018 + (i % 9), ''))
+
+    # ------------------------------------------------------------------
+    # F. Apple Podcasts — 50 shows
+    # ------------------------------------------------------------------
+    podcasts = [
+        ('The Daily',                'The New York Times',   'news'),
+        ('Up First',                 'NPR',                  'news'),
+        ('Serial',                   'Serial Productions',   'true-crime'),
+        ('S-Town',                   'Serial Productions',   'true-crime'),
+        ('This American Life',       'NPR',                  'culture'),
+        ('Radiolab',                 'WNYC Studios',         'science'),
+        ('Freakonomics Radio',       'Freakonomics Radio',   'business'),
+        ('The Tim Ferriss Show',     'Tim Ferriss',          'business'),
+        ('How I Built This',         'NPR',                  'business'),
+        ('Planet Money',             'NPR',                  'business'),
+        ('Hidden Brain',             'NPR',                  'science'),
+        ('TED Talks Daily',          'TED',                  'culture'),
+        ('TED Radio Hour',           'NPR',                  'culture'),
+        ('Stuff You Should Know',    'iHeartRadio',          'culture'),
+        ('Conan O\'Brien Needs a Friend','Team Coco',        'comedy'),
+        ('Smartless',                'Smartless',            'comedy'),
+        ('Armchair Expert',          'Dax Shepard',          'comedy'),
+        ('The Joe Rogan Experience', 'Joe Rogan',            'culture'),
+        ('Huberman Lab',             'Andrew Huberman',      'science'),
+        ('The Diary of a CEO',       'Steven Bartlett',      'business'),
+        ('Pod Save America',         'Crooked Media',        'politics'),
+        ('The Rest Is History',      'Goalhanger',           'history'),
+        ('Hardcore History',         'Dan Carlin',           'history'),
+        ('Revisionist History',      'Pushkin Industries',   'history'),
+        ('Slate Money',              'Slate',                'business'),
+        ('Acquired',                 'Acquired LLC',         'business'),
+        ('a16z Podcast',             'a16z',                 'tech'),
+        ('Lex Fridman Podcast',      'Lex Fridman',          'tech'),
+        ('Decoder',                  'The Verge',            'tech'),
+        ('Hard Fork',                'The New York Times',   'tech'),
+        ('The Vergecast',            'The Verge',            'tech'),
+        ('Connected',                'Relay FM',             'tech'),
+        ('Upgrade',                  'Relay FM',             'tech'),
+        ('ATP',                      'Marco Arment',         'tech'),
+        ('Mac Power Users',          'Relay FM',             'tech'),
+        ('Daring Fireball',          'John Gruber',          'tech'),
+        ('Reply All',                'Gimlet',               'tech'),
+        ('Pivot',                    'Vox',                  'business'),
+        ('Sway',                     'The New York Times',   'tech'),
+        ('Marketplace',              'American Public Media','business'),
+        ('Throughline',              'NPR',                  'history'),
+        ('Code Switch',              'NPR',                  'culture'),
+        ('Pop Culture Happy Hour',   'NPR',                  'culture'),
+        ('The Bill Simmons Podcast', 'The Ringer',           'sports'),
+        ('The Lowe Post',            'ESPN',                 'sports'),
+        ('Bandsplain',               'The Ringer',           'music'),
+        ('Song Exploder',            'Hrishikesh Hirway',    'music'),
+        ('Switched on Pop',          'Vulture',              'music'),
+        ('Apple News Today',         'Apple News',           'news'),
+        ('Apple Music Hits Podcast', 'Apple Music',          'music'),
+    ]
+    for i, (pod_name, network, category) in enumerate(podcasts[:50]):
+        slug = ('podcast-' + pod_name.lower()
+                .replace("'", '').replace(',', '').replace('!', '')
+                .replace('.', '').replace('?', '').replace(':', '')
+                .replace('&', 'and').replace(' ', '-') + f'-{i}')
+        episodes = 50 + (i * 37 % 500)
+        specs = _r7_content_specs(
+            'Apple Podcasts Show', network=network, category=category,
+            episodes_count=episodes,
+            free=True,
+            subscriber_show=(i % 5 == 0),
+            breadcrumb_hint='Entertainment > Apple Podcasts',
+        )
+        price = 0.0 if (i % 5) != 0 else 4.99
+        extra.append((pod_name, slug, 'accessories', 'podcast',
+                      f'Podcast by {network}. Category: {category}. {episodes} episodes.',
+                      f'Listen to {pod_name} by {network} on Apple Podcasts. '
+                      f'{episodes} episodes. Category: {category}.'
+                      + (' Subscriber-only premium feed.' if i % 5 == 0 else ' Free to listen.'),
+                      price, None, [], [], specs, 2024, ''))
+
+    # ------------------------------------------------------------------
+    # G. Apple Arcade — 80 games
+    # ------------------------------------------------------------------
+    games = [
+        ('NBA 2K25 Arcade Edition',     'sports',      ['iPhone','iPad','Mac','Apple TV']),
+        ('Sonic Dream Team',            'platformer',  ['iPhone','iPad','Mac','Apple TV']),
+        ('Disney Dreamlight Valley',    'simulation',  ['iPhone','iPad','Mac']),
+        ('SpongeBob Get Cooking',       'simulation',  ['iPhone','iPad']),
+        ('Sneaky Sasquatch',            'adventure',   ['iPhone','iPad','Mac','Apple TV']),
+        ('Threes!+',                    'puzzle',      ['iPhone','iPad','Mac']),
+        ('Cooking Mama Cuisine!',       'simulation',  ['iPhone','iPad','Mac']),
+        ('Fantasian Neo Dimension',     'rpg',         ['iPhone','iPad','Mac','Apple TV']),
+        ('Stardew Valley+',             'simulation',  ['iPhone','iPad']),
+        ('Crossy Road Castle',          'arcade',      ['iPhone','iPad','Mac','Apple TV']),
+        ('Crossy Road+',                'arcade',      ['iPhone','iPad','Mac','Apple TV']),
+        ('Skate City',                  'sports',      ['iPhone','iPad','Mac','Apple TV']),
+        ('Alto\'s Odyssey: The Lost City','adventure', ['iPhone','iPad','Mac']),
+        ('Monument Valley+',            'puzzle',      ['iPhone','iPad']),
+        ('Monument Valley 2+',          'puzzle',      ['iPhone','iPad']),
+        ('Mini Motorways',              'puzzle',      ['iPhone','iPad','Mac']),
+        ('Mini Metro+',                 'puzzle',      ['iPhone','iPad','Mac']),
+        ('Cut the Rope Remastered',     'puzzle',      ['iPhone','iPad']),
+        ('Angry Birds Reloaded',        'arcade',      ['iPhone','iPad','Mac','Apple TV']),
+        ('LEGO Builder\'s Journey',     'puzzle',      ['iPhone','iPad','Mac','Apple TV']),
+        ('LEGO Star Wars: Castaways',   'adventure',   ['iPhone','iPad','Mac','Apple TV']),
+        ('Lego DUPLO World+',           'kids',        ['iPhone','iPad']),
+        ('Marble It Up: Mayhem!',       'arcade',      ['iPhone','iPad','Mac','Apple TV']),
+        ('Wonderbox: The Adventure Maker','adventure', ['iPhone','iPad','Mac','Apple TV']),
+        ('What the Golf?',              'sports',      ['iPhone','iPad','Mac','Apple TV']),
+        ('What the Car?',               'arcade',      ['iPhone','iPad','Mac','Apple TV']),
+        ('Pac-Man Party Royale',        'arcade',      ['iPhone','iPad','Mac','Apple TV']),
+        ('Sonic Racing+',               'arcade',      ['iPhone','iPad','Mac','Apple TV']),
+        ('Capcom Arcade Stadium+',      'arcade',      ['iPhone','iPad','Mac','Apple TV']),
+        ('Game Room',                   'casino',      ['iPhone','iPad','Mac','Apple TV']),
+        ('Solitaire Stories',           'card',        ['iPhone','iPad','Mac','Apple TV']),
+        ('Hearts: Card Game+',          'card',        ['iPhone','iPad','Mac','Apple TV']),
+        ('Spades: Card Game+',          'card',        ['iPhone','iPad','Mac','Apple TV']),
+        ('Backgammon+',                 'card',        ['iPhone','iPad','Mac','Apple TV']),
+        ('Chess - Play and Learn+',     'puzzle',      ['iPhone','iPad','Mac','Apple TV']),
+        ('Words of Wonders+',           'puzzle',      ['iPhone','iPad','Mac','Apple TV']),
+        ('NYT Games+',                  'puzzle',      ['iPhone','iPad','Mac']),
+        ('Wordzee!',                    'puzzle',      ['iPhone','iPad','Mac']),
+        ('Cypher 007',                  'action',      ['iPhone','iPad','Mac','Apple TV']),
+        ('Hot Lava',                    'platformer',  ['iPhone','iPad','Mac','Apple TV']),
+        ('Oceanhorn 2',                 'rpg',         ['iPhone','iPad','Mac','Apple TV']),
+        ('Hello Kitty Island Adventure','simulation',  ['iPhone','iPad','Mac','Apple TV']),
+        ('Bluey: Let\'s Play!',         'kids',        ['iPhone','iPad','Mac','Apple TV']),
+        ('Lego Star Wars Battles',      'action',      ['iPhone','iPad','Mac','Apple TV']),
+        ('Disney Spellstruck',          'puzzle',      ['iPhone','iPad','Mac','Apple TV']),
+        ('Disney Coloring World+',      'kids',        ['iPhone','iPad','Mac']),
+        ('Doodle God Universe',         'puzzle',      ['iPhone','iPad','Mac','Apple TV']),
+        ('Stitch',                      'puzzle',      ['iPhone','iPad','Mac','Apple TV']),
+        ('Cozy Grove',                  'simulation',  ['iPhone','iPad','Mac','Apple TV']),
+        ('Cozy Grove: Camp Spirit',     'simulation',  ['iPhone','iPad','Mac','Apple TV']),
+        ('Dragonscapes Adventure+',     'simulation',  ['iPhone','iPad','Mac','Apple TV']),
+        ('Castle Crumble',              'action',      ['iPhone','iPad','Mac','Apple TV']),
+        ('Cat Quest Pirates of the Purribean','rpg',   ['iPhone','iPad','Mac','Apple TV']),
+        ('Cat Quest II+',               'rpg',         ['iPhone','iPad','Mac','Apple TV']),
+        ('Cat Quest III+',              'rpg',         ['iPhone','iPad','Mac','Apple TV']),
+        ('Tomb of the Mask+',           'arcade',      ['iPhone','iPad','Mac','Apple TV']),
+        ('Temple Run+',                 'arcade',      ['iPhone','iPad','Mac','Apple TV']),
+        ('Subway Surfers Tag',          'arcade',      ['iPhone','iPad','Mac','Apple TV']),
+        ('Doodle Jump+',                'arcade',      ['iPhone','iPad','Mac','Apple TV']),
+        ('Cat Quest: Pirates of the Purribean','rpg',  ['iPhone','iPad','Mac','Apple TV']),
+        ('Spire Blast',                 'puzzle',      ['iPhone','iPad','Mac','Apple TV']),
+        ('Crayola Create and Play+',    'kids',        ['iPhone','iPad','Mac','Apple TV']),
+        ('Sneaky Sasquatch+',           'adventure',   ['iPhone','iPad','Mac','Apple TV']),
+        ('Spelldrifter',                'rpg',         ['iPhone','iPad','Mac']),
+        ('Bridge Constructor: Walking Dead+','puzzle', ['iPhone','iPad','Mac','Apple TV']),
+        ('Bridge Constructor Portal+',  'puzzle',      ['iPhone','iPad','Mac','Apple TV']),
+        ('Townscaper+',                 'simulation',  ['iPhone','iPad','Mac','Apple TV']),
+        ('Mosaic',                      'adventure',   ['iPhone','iPad','Mac','Apple TV']),
+        ('Cricket Through the Ages',    'sports',      ['iPhone','iPad','Mac','Apple TV']),
+        ('Wonderbox+',                  'adventure',   ['iPhone','iPad','Mac','Apple TV']),
+        ('Disney Melee Mania',          'action',      ['iPhone','iPad','Mac','Apple TV']),
+        ('Star Trek: Legends',          'rpg',         ['iPhone','iPad','Mac','Apple TV']),
+        ('The Pathless+',               'adventure',   ['iPhone','iPad','Mac','Apple TV']),
+        ('Sayonara Wild Hearts+',       'arcade',      ['iPhone','iPad','Mac','Apple TV']),
+        ('Beyond a Steel Sky',          'adventure',   ['iPhone','iPad','Mac','Apple TV']),
+        ('Outlanders+',                 'simulation',  ['iPhone','iPad','Mac','Apple TV']),
+        ('Outlanders 2',                'simulation',  ['iPhone','iPad','Mac','Apple TV']),
+        ('Lifeline+',                   'adventure',   ['iPhone','iPad','Mac','Apple TV']),
+        ('Word Crossy+',                'puzzle',      ['iPhone','iPad','Mac','Apple TV']),
+        ('Steeple Chase',               'arcade',      ['iPhone','iPad','Mac','Apple TV']),
+        ('Apple Arcade Showcase 2026',  'showcase',    ['iPhone','iPad','Mac','Apple TV']),
+    ]
+    for i, (game_name, genre, platforms) in enumerate(games[:80]):
+        slug = ('arcade-' + game_name.lower()
+                .replace("'", '').replace('!', '').replace('?', '')
+                .replace(',', '').replace('.', '').replace(':', '')
+                .replace('+', '-plus')
+                .replace('&', 'and')
+                .replace('—', '-').replace('(', '').replace(')', '')
+                .replace(' ', '-') + f'-{i}')
+        # Clean double dashes
+        while '--' in slug:
+            slug = slug.replace('--', '-')
+        size_mb = 250 + ((i * 47) % 1750)
+        specs = _r7_content_specs(
+            'Apple Arcade Game', genre=genre, platforms=platforms,
+            download_size_mb=size_mb,
+            no_ads=True, no_iap=True,
+            breadcrumb_hint='Entertainment > Apple Arcade',
+        )
+        extra.append((game_name, slug, 'accessories', 'arcade-game',
+                      f'Apple Arcade game. Genre: {genre}.',
+                      f'Play {game_name} on Apple Arcade. Genre: {genre}. '
+                      f'No ads, no in-app purchases. Download size {size_mb} MB. '
+                      f'Available on {", ".join(platforms)}.',
+                      0.0, None, [], [], specs, 2024 + (i % 3), ''))
+
+    return extra
+
+
+EXTRA_PRODUCTS_R7 = _extend_r7()
+
+
 def _seed_extra_products():
-    """Add the EXTRA_PRODUCTS + EXTRA_PRODUCTS_R2 + EXTRA_PRODUCTS_R3 + EXTRA_PRODUCTS_R4 + EXTRA_PRODUCTS_R5 + EXTRA_PRODUCTS_R6 rows. Idempotent — skips slugs already present."""
+    """Add the EXTRA_PRODUCTS + EXTRA_PRODUCTS_R2..R7 rows. Idempotent — skips slugs already present."""
     existing = {p.slug for p in Product.query.with_entities(Product.slug).all()}
     added = 0
-    for tup in (EXTRA_PRODUCTS + EXTRA_PRODUCTS_R2 + EXTRA_PRODUCTS_R3 + EXTRA_PRODUCTS_R4 + EXTRA_PRODUCTS_R5 + EXTRA_PRODUCTS_R6):
+    for tup in (EXTRA_PRODUCTS + EXTRA_PRODUCTS_R2 + EXTRA_PRODUCTS_R3 + EXTRA_PRODUCTS_R4 + EXTRA_PRODUCTS_R5 + EXTRA_PRODUCTS_R6 + EXTRA_PRODUCTS_R7):
         (name, slug, cat, subcat, subt, desc, price, mp, colors, storage, specs, year, chip) = tup
         if slug in existing:
             continue

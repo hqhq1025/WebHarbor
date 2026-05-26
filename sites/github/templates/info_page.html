@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% block title %}{{ page.title }} · GitHub{% endblock %}
+{% block extra_head %}
+  {% if page.meta_description %}
+  <meta name="description" content="{{ page.meta_description }}">
+  {% endif %}
+{% endblock %}
+{% block content %}
+
+<section class="r7-info-hero" style="padding:48px 0 24px;border-bottom:1px solid var(--gh-border,#21262d);">
+  <div class="r7-info-inner" style="max-width:1100px;margin:0 auto;padding:0 24px;">
+    <p class="r7-info-eyebrow" style="text-transform:uppercase;letter-spacing:.08em;font-size:12px;color:#7d8590;margin:0 0 8px;">{{ page.eyebrow or page.title }}</p>
+    <h1 class="r7-info-title" style="margin:0 0 8px;font-size:32px;line-height:1.2;">{{ page.title }}</h1>
+    {% if page.subtitle %}<p class="r7-info-sub" style="margin:0;color:#7d8590;font-size:16px;">{{ page.subtitle }}</p>{% endif %}
+    {% if page.bullets %}
+    <ul class="r7-info-bullets" style="margin:18px 0 0;padding:0;list-style:none;display:flex;flex-wrap:wrap;gap:18px 32px;">
+      {% for b in page.bullets %}<li style="color:#7d8590;font-size:13px;">• {{ b }}</li>{% endfor %}
+    </ul>
+    {% endif %}
+  </div>
+</section>
+
+<section class="r7-info-body" style="padding:32px 0;">
+  <div class="r7-info-inner" style="max-width:1100px;margin:0 auto;padding:0 24px;display:grid;grid-template-columns:1fr;gap:24px;">
+    {% for s in (page.sections or []) %}
+    <article class="r7-info-section" style="background:#0d1117;border:1px solid #21262d;border-radius:8px;padding:18px 22px;">
+      <h2 style="margin:0 0 12px;font-size:18px;">{{ s.h }}</h2>
+      {% if s.p %}<p style="margin:0 0 12px;color:#c9d1d9;">{{ s.p|safe }}</p>{% endif %}
+      {% if s.list %}
+      <ul style="margin:0;padding-left:18px;color:#c9d1d9;">
+        {% for li in s.list %}<li>{{ li|safe }}</li>{% endfor %}
+      </ul>
+      {% endif %}
+      {% if s.table %}
+      <table style="width:100%;border-collapse:collapse;color:#c9d1d9;font-size:14px;">
+        <thead><tr>{% for c in s.table.cols %}<th style="text-align:left;padding:6px 10px;border-bottom:1px solid #30363d;">{{ c }}</th>{% endfor %}</tr></thead>
+        <tbody>
+        {% for row in s.table.rows %}<tr>{% for c in row %}<td style="padding:6px 10px;border-bottom:1px solid #21262d;">{{ c }}</td>{% endfor %}</tr>{% endfor %}
+        </tbody>
+      </table>
+      {% endif %}
+      {% if s.pre %}
+      <pre style="margin:12px 0 0;background:#010409;border:1px solid #21262d;border-radius:6px;padding:14px;overflow:auto;font-size:12px;color:#c9d1d9;"><code>{{ s.pre }}</code></pre>
+      {% endif %}
+    </article>
+    {% endfor %}
+  </div>
+</section>
+
+{% endblock %}

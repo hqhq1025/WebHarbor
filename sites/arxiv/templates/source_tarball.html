@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% block title %}LaTeX source tarball — arXiv:{{ paper.arxiv_id }}{% endblock %}
+{% block content %}
+<div class="page-narrow" style="max-width:760px;margin:24px auto;padding:0 18px;">
+  <h1 style="color:#b31b1b;border-bottom:2px solid #b31b1b;padding-bottom:6px;font-size:22px;">
+    LaTeX source for <a href="{{ url_for('paper_detail', arxiv_id=paper.arxiv_id) }}">arXiv:{{ paper.arxiv_id }}</a>
+  </h1>
+
+  <p style="margin-top:14px;">
+    <b>{{ paper.display_title }}</b><br>
+    <span style="color:#555;font-size:13px;">{{ paper.authors_display }}</span>
+  </p>
+
+  <h2 style="font-size:16px;margin-top:24px;">Source bundle contents</h2>
+  <table style="width:100%;border-collapse:collapse;font-size:14px;">
+    <tr><td style="padding:4px;color:#555;width:200px;">Format</td>
+        <td style="padding:4px;"><code>application/x-eprint-tar</code> (gzipped tarball)</td></tr>
+    <tr><td style="padding:4px;color:#555;">Approximate size</td>
+        <td style="padding:4px;">{{ "{:,}".format(size_kb) }} KB</td></tr>
+    <tr><td style="padding:4px;color:#555;">File count</td>
+        <td style="padding:4px;">{{ file_count }} files</td></tr>
+    <tr><td style="padding:4px;color:#555;">Pre-compiled <code>.bbl</code></td>
+        <td style="padding:4px;">{{ 'yes' if has_bbl else 'no' }}</td></tr>
+    <tr><td style="padding:4px;color:#555;">Bundled figures</td>
+        <td style="padding:4px;">{{ 'yes' if has_figs else 'no' }}</td></tr>
+    <tr><td style="padding:4px;color:#555;">License</td>
+        <td style="padding:4px;">{{ paper.license }}</td></tr>
+    <tr><td style="padding:4px;color:#555;">Submitted</td>
+        <td style="padding:4px;">{{ paper.submitted_date }}</td></tr>
+  </table>
+
+  <h2 style="font-size:16px;margin-top:24px;">Download</h2>
+  <p>
+    <a class="btn-cta" href="{{ url_for('eprint_view', arxiv_id=paper.arxiv_id) }}"
+       style="display:inline-block;background:#b31b1b;color:#fff;padding:8px 16px;text-decoration:none;border-radius:4px;">
+       Download e-print tarball
+    </a>
+    &nbsp;<a href="{{ url_for('pdf_view', arxiv_id=paper.arxiv_id) }}">PDF</a>
+    &nbsp;<a href="{{ url_for('html_view', arxiv_id=paper.arxiv_id) }}">HTML</a>
+    &nbsp;<a href="{{ url_for('format_view', arxiv_id=paper.arxiv_id) }}">Other formats</a>
+  </p>
+
+  <h2 style="font-size:16px;margin-top:24px;">Usage notes</h2>
+  <ul>
+    <li>The tarball is the canonical input to <code>pdflatex</code>; build commands assume
+        a recent TeX Live distribution.</li>
+    <li>If <code>.bbl</code> is shipped, you can skip running BibTeX.</li>
+    <li>For citation tooling, the <a href="{{ url_for('citation_batch') }}?n=1&amp;format=bibtex">BibTeX entry</a>
+        is equivalent to what Zotero / Mendeley import via the arXiv handle.</li>
+  </ul>
+</div>
+{% endblock %}

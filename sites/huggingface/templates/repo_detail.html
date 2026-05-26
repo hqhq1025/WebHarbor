@@ -1,6 +1,15 @@
 {% extends "base.html" %}
 {% from "_macros.html" import repo_card %}
 {% block title %}{{ repo.slug }} · Hugging Face{% endblock %}
+{% block og_title %}{{ repo.slug }} · Hugging Face{% endblock %}
+{% block og_description %}{{ (repo.description or '')[:200] }}{% endblock %}
+{% block og_type %}{% if repo.repo_type == 'space' %}website{% else %}article{% endif %}{% endblock %}
+{% block og_image %}/og/{{ repo.repo_type }}/{{ repo.slug }}.svg{% endblock %}
+{% block jsonld %}
+<script type="application/ld+json">
+{{ repo_jsonld(repo) | tojson }}
+</script>
+{% endblock %}
 
 {% block content %}
 <div class="container-wide page">

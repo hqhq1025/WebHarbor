@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block title %}{{ label|capitalize }} dictionary | Cambridge Dictionary{% endblock %}
+{% block content %}
+<div class="container domain-index-page">
+  <nav class="breadcrumb r6-breadcrumb">
+    <a href="{{ url_for('index') }}" class="r6-crumb r6-crumb--link">Home</a>
+    <span class="r6-crumb-sep">&rsaquo;</span>
+    <a href="{{ url_for('index') }}" class="r6-crumb r6-crumb--link">Dictionary</a>
+    <span class="r6-crumb-sep">&rsaquo;</span>
+    <span class="r6-crumb r6-crumb--current"><strong>{{ label|capitalize }}</strong></span>
+  </nav>
+
+  <h1>{{ label|capitalize }} sub-catalog</h1>
+  <p class="domain-total">
+    Entries in this sub-catalog: <strong>{{ total }}</strong>.
+  </p>
+  <p class="domain-summary">
+    Words tagged with the <code>{{ dom }}</code> domain. Use the alphabetical
+    listing to browse, or jump to the daily
+    <a href="{{ url_for('dictionary_domain_spotlight', dom=dom) }}">{{ label|capitalize }} spotlight</a>.
+  </p>
+
+  <ul class="domain-word-list">
+    {% for w in words %}
+      <li class="domain-word-row">
+        <a href="{{ url_for('word_detail', slug=w.slug) }}" class="domain-word-link">
+          {{ w.headword }}
+        </a>
+        {% if w.level %}<span class="entry-level level-{{ w.level|lower }}">{{ w.level }}</span>{% endif %}
+        <span class="domain-word-gloss">{{ w.guide_word }}</span>
+      </li>
+    {% endfor %}
+  </ul>
+
+  <nav class="domain-pager">
+    {% if page > 1 %}<a href="?page={{ page - 1 }}" class="domain-pager-prev">&laquo; Previous</a>{% endif %}
+    <span class="domain-pager-info">Page {{ page }}</span>
+    {% if (page * per_page) < total %}<a href="?page={{ page + 1 }}" class="domain-pager-next">Next &raquo;</a>{% endif %}
+  </nav>
+</div>
+{% endblock %}

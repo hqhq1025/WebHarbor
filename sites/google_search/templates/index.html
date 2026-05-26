@@ -1,5 +1,7 @@
 {% extends "base.html" %}
 {% block title %}Google{% endblock %}
+{% block og_title %}Google{% endblock %}
+{% block og_description %}Search the web with Google: 100B+ pages, news, images, videos, maps and more. {{ hl|default('en') }}-{{ gl|default('US') }}{% endblock %}
 
 {% block header %}
 <div class="top-header" style="border-bottom: none;">

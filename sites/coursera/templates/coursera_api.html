@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% block title %}Public API (v1) | Coursera{% endblock %}
+{% block content %}
+<div class="api-docs-page" id="main-content" style="max-width:980px;margin:32px auto;padding:0 24px;">
+  <header>
+    <div style="display:inline-block;background:#0056D2;color:#fff;font-weight:800;padding:4px 10px;border-radius:6px;font-size:11px;letter-spacing:.7px;">API V1 &middot; PUBLIC &middot; READ-ONLY</div>
+    <h1 style="font-size:34px;letter-spacing:-.5px;margin:14px 0 6px;">Coursera Public API</h1>
+    <p style="color:#5B6780;font-size:16px;margin:0 0 16px;max-width:720px;">Programmatic, read-only access to the Coursera catalogue. Use it to embed courses, generate localised pages, or build downstream tools. All endpoints are JSON, support <code>?lang=&lt;locale&gt;</code> and obey <code>robots.txt</code>.</p>
+  </header>
+
+  <section style="background:#F2F5FA;border-radius:12px;padding:18px;margin:18px 0;">
+    <h2 style="font-size:16px;margin:0 0 8px;">Quick facts</h2>
+    <ul style="margin:0;padding-left:20px;color:#374151;line-height:1.7;font-size:14px;">
+      <li>Base URL: <code>{{ request.host_url.rstrip('/') }}/api/v1</code></li>
+      <li>Authentication: none required for the read-only endpoints listed below.</li>
+      <li>Rate limits: see per-endpoint table; soft limit returns HTTP 429 with <code>Retry-After</code>.</li>
+      <li>Supported response languages: 16 (use <code>?lang=es</code>, <code>?lang=zh</code>, etc.).</li>
+      <li>Versioning: semantic, in the path (<code>/api/v1</code>). Breaking changes will go to <code>/api/v2</code>.</li>
+    </ul>
+  </section>
+
+  <section style="background:#fff;border:1px solid #DAE1ED;border-radius:12px;padding:0;overflow:hidden;">
+    <table style="width:100%;border-collapse:collapse;font-size:14px;">
+      <thead><tr style="background:#F2F5FA;text-align:left;">
+        <th style="padding:10px;">Method</th><th style="padding:10px;">Path</th>
+        <th style="padding:10px;">Description</th><th style="padding:10px;">Rate</th>
+        <th style="padding:10px;">Auth</th>
+      </tr></thead>
+      <tbody>
+      {% for ep in endpoints %}
+        <tr style="border-top:1px solid #E2E6EE;">
+          <td style="padding:10px;color:#0F5132;font-weight:800;">{{ ep.method }}</td>
+          <td style="padding:10px;"><code>{{ ep.path }}</code></td>
+          <td style="padding:10px;color:#374151;">{{ ep.desc }}</td>
+          <td style="padding:10px;color:#5B6780;">{{ ep.rate_limit }}</td>
+          <td style="padding:10px;color:#5B6780;">{{ ep.auth }}</td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </section>
+
+  <section style="margin-top:24px;background:#fff;border:1px solid #DAE1ED;border-radius:12px;padding:20px;">
+    <h2 style="font-size:18px;margin:0 0 8px;">Example: list categories</h2>
+    <pre style="background:#0F1114;color:#E5E7EB;padding:14px;border-radius:8px;overflow-x:auto;font-size:13px;">$ curl {{ request.host_url.rstrip('/') }}/api/v1/categories
+[{"slug":"computer-science","name":"Computer Science"}, ...]</pre>
+  </section>
+
+  <section style="margin-top:24px;background:#F8FAFD;border-radius:12px;padding:18px;">
+    <h2 style="font-size:16px;margin:0 0 6px;">Need more?</h2>
+    <p style="margin:0;color:#5B6780;font-size:14px;">Enterprise customers can request a higher rate limit via <a href="{{ url_for('business') }}">Coursera for Business</a>. SEO crawlers should prefer the <a href="/sitemap.xml">partner-split sitemap index</a>.</p>
+  </section>
+</div>
+{% endblock %}

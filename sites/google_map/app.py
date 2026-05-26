@@ -547,6 +547,56 @@ class TransitLine(db.Model):
 
 
 # --------------------------------------------------------------------------
+#  R7: composite indexes for hot query paths.
+#  All names start with "ix_" so normalize_seed_db_layout() re-emits them
+#  in alphabetical order during the byte-id finalize pass.
+# --------------------------------------------------------------------------
+db.Index("ix_place_city_id_rating", Place.city_id, Place.rating)
+db.Index("ix_place_category_id_rating", Place.category_id, Place.rating)
+db.Index("ix_place_category_id_lat_lng", Place.category_id, Place.lat, Place.lng)
+db.Index("ix_place_chain_brand_rating", Place.chain_brand, Place.rating)
+db.Index("ix_place_subcategory_rating", Place.subcategory, Place.rating)
+db.Index("ix_place_lat_lng", Place.lat, Place.lng)
+
+
+# --------------------------------------------------------------------------
+#  R7: locale catalog — 25 languages including RTL (ar/he).  Locale paths
+#  alias the homepage and pass `lang_code` + `lang_dir` into the template
+#  so SEO crawlers see <html lang="..."> + correct direction.  UI strings
+#  are loaded from a static dict (no DB table — keeps byte-id stable).
+# --------------------------------------------------------------------------
+R7_LOCALES = [
+    {"code": "en", "name": "English",     "dir": "ltr", "tagline": "Explore the world with Google Maps."},
+    {"code": "es", "name": "Espanol",     "dir": "ltr", "tagline": "Explora el mundo con Google Maps."},
+    {"code": "fr", "name": "Francais",    "dir": "ltr", "tagline": "Explorez le monde avec Google Maps."},
+    {"code": "de", "name": "Deutsch",     "dir": "ltr", "tagline": "Entdecke die Welt mit Google Maps."},
+    {"code": "it", "name": "Italiano",    "dir": "ltr", "tagline": "Esplora il mondo con Google Maps."},
+    {"code": "pt", "name": "Portugues",   "dir": "ltr", "tagline": "Explore o mundo com o Google Maps."},
+    {"code": "nl", "name": "Nederlands",  "dir": "ltr", "tagline": "Ontdek de wereld met Google Maps."},
+    {"code": "sv", "name": "Svenska",     "dir": "ltr", "tagline": "Utforska varlden med Google Maps."},
+    {"code": "da", "name": "Dansk",       "dir": "ltr", "tagline": "Udforsk verden med Google Maps."},
+    {"code": "no", "name": "Norsk",       "dir": "ltr", "tagline": "Utforsk verden med Google Maps."},
+    {"code": "fi", "name": "Suomi",       "dir": "ltr", "tagline": "Tutustu maailmaan Google Mapsilla."},
+    {"code": "pl", "name": "Polski",      "dir": "ltr", "tagline": "Odkrywaj swiat z Mapami Google."},
+    {"code": "cs", "name": "Cestina",     "dir": "ltr", "tagline": "Objevujte svet s Mapami Google."},
+    {"code": "el", "name": "Ellinika",    "dir": "ltr", "tagline": "Eksereunise ton kosmo me to Google Maps."},
+    {"code": "tr", "name": "Turkce",      "dir": "ltr", "tagline": "Dunyayi Google Haritalar ile kesfedin."},
+    {"code": "ru", "name": "Russkij",     "dir": "ltr", "tagline": "Issleduite mir s Kartami Google."},
+    {"code": "ja", "name": "Nihongo",     "dir": "ltr", "tagline": "Google Maps de sekai wo tanken shiyou."},
+    {"code": "ko", "name": "Hangugeo",    "dir": "ltr", "tagline": "Google Maps ro sesangeul tamheomhaseyo."},
+    {"code": "zh", "name": "Zhongwen",    "dir": "ltr", "tagline": "Yong Google Ditu tansuo shijie."},
+    {"code": "hi", "name": "Hindi",       "dir": "ltr", "tagline": "Google Maps ke saath duniya ki khoj karein."},
+    {"code": "th", "name": "Thai",        "dir": "ltr", "tagline": "Khon ha lok kap Google Maps."},
+    {"code": "vi", "name": "Tieng Viet",  "dir": "ltr", "tagline": "Kham pha the gioi cung Google Maps."},
+    {"code": "id", "name": "Indonesia",   "dir": "ltr", "tagline": "Jelajahi dunia dengan Google Maps."},
+    {"code": "ar", "name": "Arabic",      "dir": "rtl", "tagline": "Istakshif al-alam ma'a Khara'it Google."},
+    {"code": "he", "name": "Hebrew",      "dir": "rtl", "tagline": "Galu et ha-olam im Google Maps."},
+]
+R7_LOCALE_CODES = {l["code"] for l in R7_LOCALES}
+R7_LOCALE_BY_CODE = {l["code"]: l for l in R7_LOCALES}
+
+
+# --------------------------------------------------------------------------
 #  Login / helpers
 # --------------------------------------------------------------------------
 @login_manager.user_loader
@@ -593,12 +643,20 @@ def inject_globals():
     saved_count = 0
     if current_user.is_authenticated:
         saved_count = SavedPlace.query.filter_by(user_id=current_user.id).count()
+    # R7: surface active locale (set by /<lang>/ entry route) for base.html
+    # so <html lang=...> + dir attributes flip per locale.  Defaults to en/ltr.
+    lang_code = session.get("lang_code", "en") if session else "en"
+    lang_meta = R7_LOCALE_BY_CODE.get(lang_code, R7_LOCALE_BY_CODE["en"])
     return {
         "global_categories": categories,
         "global_saved_count": saved_count,
         "current_year": datetime.utcnow().year,
         "display_place_website": display_place_website,
         "google_maps_place_url": google_maps_place_url,
+        "r7_lang_code": lang_meta["code"],
+        "r7_lang_dir": lang_meta["dir"],
+        "r7_lang_name": lang_meta["name"],
+        "r7_locales": R7_LOCALES,
     }
 
 
@@ -3381,6 +3439,177 @@ def api_nearby(slug=None):
 
 
 # --------------------------------------------------------------------------
+#  R7: SEO sitemap + locale aliases + business claim flow
+# --------------------------------------------------------------------------
+@app.route("/sitemap.xml")
+def sitemap_xml():
+    """Sitemap index — groups <sitemap> children per city + per category +
+    a top-level URL set for static pages.  Crawler-friendly and lets us
+    expose 290k+ places without dropping a 200MB sitemap.xml on the wire."""
+    cities = City.query.order_by(City.slug).all()
+    cats = Category.query.order_by(Category.slug).all()
+    base = request.url_root.rstrip("/")
+    lines = ['<?xml version="1.0" encoding="UTF-8"?>',
+             '<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">']
+    for c in cities:
+        lines.append("<sitemap><loc>{}/sitemap/city/{}.xml</loc></sitemap>".format(base, c.slug))
+    for cat in cats:
+        lines.append("<sitemap><loc>{}/sitemap/category/{}.xml</loc></sitemap>".format(base, cat.slug))
+    lines.append("<sitemap><loc>{}/sitemap/static.xml</loc></sitemap>".format(base))
+    lines.append("</sitemapindex>")
+    body = "\n".join(lines)
+    return app.response_class(body, mimetype="application/xml")
+
+
+@app.route("/sitemap/city/<slug>.xml")
+def sitemap_city_xml(slug):
+    city = City.query.filter_by(slug=slug).first_or_404()
+    base = request.url_root.rstrip("/")
+    places = (Place.query.filter_by(city_id=city.id)
+              .order_by(Place.rating.desc()).limit(2000).all())
+    out = ['<?xml version="1.0" encoding="UTF-8"?>',
+           '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">']
+    out.append("<url><loc>{}/city/{}</loc><changefreq>weekly</changefreq></url>".format(base, city.slug))
+    for p in places:
+        out.append("<url><loc>{}/place/{}</loc><changefreq>monthly</changefreq></url>".format(base, p.slug))
+    out.append("</urlset>")
+    return app.response_class("\n".join(out), mimetype="application/xml")
+
+
+@app.route("/sitemap/category/<slug>.xml")
+def sitemap_category_xml(slug):
+    cat = Category.query.filter_by(slug=slug).first_or_404()
+    base = request.url_root.rstrip("/")
+    places = (Place.query.filter_by(category_id=cat.id)
+              .order_by(Place.rating.desc()).limit(2000).all())
+    out = ['<?xml version="1.0" encoding="UTF-8"?>',
+           '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">']
+    out.append("<url><loc>{}/category/{}</loc></url>".format(base, cat.slug))
+    for p in places:
+        out.append("<url><loc>{}/place/{}</loc></url>".format(base, p.slug))
+    out.append("</urlset>")
+    return app.response_class("\n".join(out), mimetype="application/xml")
+
+
+@app.route("/sitemap/static.xml")
+def sitemap_static_xml():
+    base = request.url_root.rstrip("/")
+    static_paths = ["/", "/explore", "/about", "/help", "/contribute",
+                    "/lists", "/saved", "/your-places", "/timeline",
+                    "/transit", "/transit/lines", "/transit/realtime"]
+    out = ['<?xml version="1.0" encoding="UTF-8"?>',
+           '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">']
+    for p in static_paths:
+        out.append("<url><loc>{}{}</loc></url>".format(base, p))
+    # Per-locale homepage entries (hreflang signals via separate URLs)
+    for loc in R7_LOCALES:
+        out.append("<url><loc>{}/{}/</loc></url>".format(base, loc["code"]))
+    out.append("</urlset>")
+    return app.response_class("\n".join(out), mimetype="application/xml")
+
+
+@app.route("/robots.txt")
+def robots_txt():
+    base = request.url_root.rstrip("/")
+    body = ("User-agent: *\nAllow: /\nDisallow: /account\nDisallow: /your-places\n"
+            "Sitemap: {}/sitemap.xml\n").format(base)
+    return app.response_class(body, mimetype="text/plain")
+
+
+@app.route("/<lang_code>/")
+def locale_home(lang_code):
+    """Locale alias for the homepage.  Path /<lang>/ exposes a localized
+    landing for 25 languages incl. RTL (ar/he).  Renders the same content
+    as `/` but passes `lang_code` + `lang_dir` to the template via the
+    session so base.html can switch <html lang=...> + dir attributes."""
+    if lang_code not in R7_LOCALE_CODES:
+        abort(404)
+    session["lang_code"] = lang_code
+    locale = R7_LOCALE_BY_CODE[lang_code]
+    featured = Place.query.filter_by(is_featured=True).limit(12).all()
+    popular = Place.query.filter_by(is_popular=True).order_by(Place.rating.desc()).limit(12).all()
+    cities = City.query.order_by(City.display_name).limit(12).all()
+    categories = Category.query.order_by(Category.id).all()
+    return render_template(
+        "index.html",
+        featured=featured,
+        popular=popular,
+        cities=cities,
+        categories=categories,
+        active_locale=locale,
+    )
+
+
+@app.route("/locales")
+def locales_index():
+    """Human-readable list of supported locales (also serves as an
+    hreflang reference page for crawlers)."""
+    base = request.url_root.rstrip("/")
+    rows = [{"href": "{}/{}/".format(base, l["code"]),
+             "code": l["code"], "name": l["name"], "dir": l["dir"],
+             "tagline": l["tagline"]} for l in R7_LOCALES]
+    return app.response_class(
+        "<!DOCTYPE html><html lang=\"en\"><head><meta charset=\"UTF-8\">"
+        "<title>Locales - Google Maps</title></head><body>"
+        "<h1>Supported locales ({})</h1><ul>".format(len(rows))
+        + "".join('<li><a href="{}" hreflang="{}" dir="{}">{} ({}) - {}</a></li>'
+                  .format(r["href"], r["code"], r["dir"], r["name"], r["code"], r["tagline"])
+                  for r in rows)
+        + "</ul></body></html>",
+        mimetype="text/html",
+    )
+
+
+@app.route("/business/claim/<slug>", methods=["GET", "POST"])
+def business_claim(slug):
+    """Business-claim flow: a place owner can claim a listing by
+    submitting verification details.  Multi-step view: GET shows form,
+    POST records a session-scoped confirmation (no DB write — keeps
+    seed deterministic)."""
+    place = Place.query.filter_by(slug=slug).first_or_404()
+    if request.method == "POST":
+        biz_name = (request.form.get("business_name") or "").strip()
+        owner = (request.form.get("owner_name") or "").strip()
+        email = (request.form.get("contact_email") or "").strip()
+        if not (biz_name and owner and email):
+            flash("All fields required.", "error")
+            return redirect(url_for("business_claim", slug=slug))
+        session["business_claim_submitted"] = {
+            "place_slug": place.slug, "business_name": biz_name,
+            "owner_name": owner, "contact_email": email,
+        }
+        flash("Claim submitted — we'll verify within 5 business days.", "success")
+        return redirect(url_for("business_claim", slug=slug))
+    submitted = session.get("business_claim_submitted")
+    body = ("""<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8">
+<title>Claim {name} - Google Maps</title></head><body>
+<h1>Claim this business</h1>
+<p>You are claiming: <strong>{name}</strong> ({addr}).</p>
+{confirm}
+<form method="post">
+  <input type="hidden" name="csrf_token" value="{csrf}">
+  <label>Business name <input name="business_name" required></label><br>
+  <label>Owner name <input name="owner_name" required></label><br>
+  <label>Contact email <input type="email" name="contact_email" required></label><br>
+  <button type="submit">Submit claim</button>
+</form>
+<p><a href="{back}">Back to place</a></p>
+</body></html>""".format(
+        name=place.name,
+        addr=place.address or "",
+        csrf=(request.cookies.get('csrf_token') or ''),
+        confirm=("<p class='ok'>Claim received for "
+                 + submitted["business_name"] + " — confirmation pending.</p>"
+                 if submitted and submitted.get("place_slug") == place.slug else ""),
+        back=url_for("place_detail", slug=place.slug),
+    ))
+    return app.response_class(body, mimetype="text/html")
+
+
+business_claim = csrf.exempt(business_claim)
+
+
+# --------------------------------------------------------------------------
 #  Error handlers
 # --------------------------------------------------------------------------
 @app.errorhandler(404)
@@ -3404,7 +3633,8 @@ def seed_database():
                            backfill_place_extras_r5, expand_routes_r5,
                            backfill_transit_delays,
                            expand_places_r6, backfill_place_edges_r6,
-                           backfill_transit_no_service_r6)
+                           backfill_transit_no_service_r6,
+                           expand_places_r7)
     if Category.query.count() == 0:
         build_categories(db, Category)
     if City.query.count() == 0:
@@ -3434,6 +3664,9 @@ def seed_database():
     expand_places_r6(db, Place, Category, City)
     backfill_place_edges_r6(db, Place)
     backfill_transit_no_service_r6(db, TransitLine)
+    # --- R7: SEO/locale density.  Adds another ~110k venues so the place
+    # table tops 400k; idempotent (no-op once Place.count >= 380000).
+    expand_places_r7(db, Place, Category, City)
 
 
 # --------------------------------------------------------------------------

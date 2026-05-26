@@ -1,6 +1,88 @@
 {% extends "base.html" %}
 {% from '_place_card.html' import place_card %}
 {% block title %}{{ place.name }} - Google Maps{% endblock %}
+{% block og_type %}place{% endblock %}
+{% block og_title %}{{ place.name }} - Google Maps{% endblock %}
+{% block og_description %}{{ place.subtitle or place.description[:160] or place.name }}{% endblock %}
+{% block og_image %}{{ place.hero_image if place.hero_image and place.hero_image.startswith('http') else (request.url_root.rstrip('/') + place.hero_image) if place.hero_image else url_for('static', filename='images/og-default.jpg', _external=True) }}{% endblock %}
+{% block extra_head %}
+    {# ---- R7: schema.org LocalBusiness JSON-LD.  Type is picked from the
+       Place's category slug so SEO bots see Restaurant/Hotel/Hospital/etc.
+       openingHours follows ISO ranges where the seed hours match a pattern. ---- #}
+    {% set _types = {
+        'restaurants': 'Restaurant', 'coffee-shops': 'CafeOrCoffeeShop',
+        'hotels': 'Hotel', 'museums': 'Museum', 'parks': 'Park',
+        'attractions': 'TouristAttraction', 'shopping': 'Store',
+        'entertainment': 'EntertainmentBusiness', 'supermarkets': 'GroceryStore',
+        'pharmacies': 'Pharmacy', 'gas-stations': 'GasStation',
+        'atms': 'AutomatedTeller', 'hospitals': 'Hospital',
+        'dentists': 'Dentist', 'veterinarians': 'VeterinaryCare',
+        'fitness': 'ExerciseGym', 'religious': 'PlaceOfWorship',
+        'libraries': 'Library', 'schools': 'School',
+        'ev-charging': 'AutomotiveBusiness', 'car-rental': 'AutoRental',
+        'beaches': 'TouristAttraction', 'dog-parks': 'Park',
+        'transit': 'BusStation', 'bus-stops': 'BusStop',
+    } %}
+    {% set _schema_type = _types.get(place.category.slug if place.category else '', 'LocalBusiness') %}
+    <script type="application/ld+json">
+    {
+        "@context": "https://schema.org",
+        "@type": "{{ _schema_type }}",
+        "name": {{ place.name | tojson }},
+        "url": "{{ request.url_root.rstrip('/') }}{{ url_for('place_detail', slug=place.slug) }}",
+        "image": {{ (place.hero_image or '') | tojson }},
+        "description": {{ (place.description or place.subtitle or '') | tojson }},
+        "address": {
+            "@type": "PostalAddress",
+            "streetAddress": {{ (place.address or '') | tojson }},
+            "addressLocality": {{ (place.city.display_name if place.city else '') | tojson }},
+            "addressRegion": {{ (place.state or '') | tojson }},
+            "postalCode": {{ (place.zip_code or '') | tojson }},
+            "addressCountry": {{ (place.city.country if place.city else '') | tojson }}
+        },
+        "geo": {
+            "@type": "GeoCoordinates",
+            "latitude": {{ place.lat or 0 }},
+            "longitude": {{ place.lng or 0 }}
+        },
+        "telephone": {{ (place.phone or '') | tojson }},
+        "priceRange": {{ (place.price_level or '') | tojson }},
+        "openingHours": {{ (place.hours or '') | tojson }},
+        "aggregateRating": {
+            "@type": "AggregateRating",
+            "ratingValue": {{ place.rating or 0 }},
+            "reviewCount": {{ place.review_count or 0 }},
+            "bestRating": 5,
+            "worstRating": 1
+        }{% if place.is_closed_permanently %},
+        "isAccessibleForFree": false,
+        "specialOpeningHoursSpecification": {
+            "@type": "OpeningHoursSpecification",
+            "validFrom": "2026-01-01",
+            "validThrough": "2099-12-31",
+            "description": {{ (place.closure_reason or 'Permanently closed') | tojson }}
+        }{% endif %}
+    }
+    </script>
+    {# ---- BreadcrumbList JSON-LD for the same place ---- #}
+    {% if breadcrumb %}
+    <script type="application/ld+json">
+    {
+        "@context": "https://schema.org",
+        "@type": "BreadcrumbList",
+        "itemListElement": [
+            {% for crumb in breadcrumb %}
+            { "@type": "ListItem",
+              "position": {{ loop.index }},
+              "name": {{ crumb.label | tojson }}{% if crumb.href %},
+              "item": "{{ request.url_root.rstrip('/') }}{{ crumb.href }}"{% endif %}
+            }{% if not loop.last %},{% endif %}
+            {% endfor %}
+        ]
+    }
+    </script>
+    {% endif %}
+{% endblock %}
 
 {% block body %}
 <div class="app-shell">

@@ -2,6 +2,46 @@
 {% block title %}{{ query }} — WolframAlpha{% endblock %}
 {% block body_class %}page-input{% endblock %}
 
+{% block r7_meta %}
+{# R7: OpenGraph + meta-description sourced from the SEO snippet pod. #}
+{% set seo_snip = '' %}
+{% if computation %}
+  {% for pod in computation.get_pods() %}
+    {% if pod.title == 'SEO snippet' %}{% set seo_snip = pod.plaintext %}{% endif %}
+  {% endfor %}
+{% endif %}
+<meta name="description" content="{{ seo_snip or query }}">
+<meta property="og:title" content="{{ (computation.parsed_input if computation else query)|truncate(80, true) }}">
+<meta property="og:description" content="{{ seo_snip or query }}">
+<meta property="og:type" content="article">
+{% if computation %}
+<meta property="og:image" content="/og/{{ computation.id }}.svg">
+<meta property="og:image:type" content="image/svg+xml">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+{% endif %}
+{% endblock %}
+
+{% block r7_jsonld %}
+{# R7: MathSolver / QAPage JSON-LD block. Picked up by SearchConsole. #}
+{% if computation %}
+  {% set jsonld_text = '' %}
+  {% for pod in computation.get_pods() %}
+    {% if pod.title == 'JSON-LD MathSolver schema' %}{% set jsonld_text = pod.plaintext %}{% endif %}
+  {% endfor %}
+  {% if jsonld_text %}
+  <script type="application/ld+json">{{ jsonld_text|safe }}</script>
+  {% else %}
+  <script type="application/ld+json">
+  {"@context":"https://schema.org","@type":["MathSolver","QAPage"],
+   "name":"{{ (computation.parsed_input or query)|e }}",
+   "mainEntity":{"@type":"Question","name":"{{ query|e }}",
+                 "acceptedAnswer":{"@type":"Answer","text":"{{ (computation.plaintext or '')[:280]|e }}"}}}
+  </script>
+  {% endif %}
+{% endif %}
+{% endblock %}
+
 {% block nav_logo %}{# /input shares hero with homepage — hide nav logo #}{% endblock %}
 
 {% block content %}

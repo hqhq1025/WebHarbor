@@ -1,6 +1,15 @@
 {% extends "base.html" %}
 {% from "_macros.html" import space_card %}
 {% block title %}{{ repo.slug }} · Hugging Face Spaces{% endblock %}
+{% block og_title %}{{ repo.slug }} · Hugging Face Space{% endblock %}
+{% block og_description %}{{ (repo.description or '')[:200] }}{% endblock %}
+{% block og_type %}website{% endblock %}
+{% block og_image %}/og/space/{{ repo.slug }}.svg{% endblock %}
+{% block jsonld %}
+<script type="application/ld+json">
+{{ repo_jsonld(repo) | tojson }}
+</script>
+{% endblock %}
 
 {% block content %}
 <div class="container-wide page">

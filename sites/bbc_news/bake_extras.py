@@ -5808,6 +5808,990 @@ def bake_r6(con: sqlite3.Connection) -> dict[str, int]:
     return stats
 
 
+# =======================================================================
+# R7 — Radio 4 / 5 Live transcripts, BBC Future/Travel/Worklife/Earth,
+#      SEO indexes, language locale data
+# =======================================================================
+# Targets:
+#   * articles 10367 -> 14000+ (~+3700 new)
+#   * tasks    2713  -> 3500+  (delta lives in tasks.jsonl, not here)
+#   * new feature_tags: radio4-transcript, fivelive-transcript,
+#     bbc-future, bbc-worklife, bbc-earth-deep
+#   * SQL covering indexes for fast section + (published_at) queries
+#
+# Like R3-R6: deterministic RNG, sentinel-gated re-run safety, no
+# wall-clock dependency.
+
+R7_SENTINEL_BODY = "<<R7-baked>>"
+R7_RNG = random.Random(20260720)
+
+
+# New R7 categories. parent_slug points to an existing top-level slug so
+# breadcrumbs render normally. We also add "radio4" and "5live" as parent
+# audio sub-sections so /section/<slug> resolves.
+R7_NEW_CATEGORIES: list[tuple[str, str, str, str, int, str]] = [
+    # slug, name, color, parent, order, description
+    ("radio4",      "BBC Radio 4",  "#bb1919", "audio", 211,
+     "Speech radio: news, drama, comedy and current affairs from Radio 4"),
+    ("fivelive",    "BBC 5 Live",   "#bb1919", "audio", 212,
+     "Live news and sport from BBC Radio 5 Live"),
+    ("bbc_future",  "BBC Future",   "#000000", "culture", 261,
+     "Big ideas, science explainers and the future of humanity from BBC Future"),
+    ("bbc_worklife","BBC Worklife", "#000000", "culture", 262,
+     "Work, careers and the modern professional life from BBC Worklife"),
+    ("bbc_earth_deep","BBC Earth Deep","#005a30","earth", 271,
+     "Long-form nature writing and deep dives from BBC Earth"),
+]
+
+
+def ensure_r7_categories(con: sqlite3.Connection) -> int:
+    cur = con.cursor()
+    existing = {r[0] for r in cur.execute("SELECT slug FROM categories")}
+    added = 0
+    for slug, name, color, parent, order, desc in R7_NEW_CATEGORIES:
+        if slug in existing:
+            continue
+        cur.execute(
+            "INSERT INTO categories (slug, name, color, icon, parent_slug, "
+            "sort_order, description, subtitle) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+            (slug, name, color, "", parent, order, desc, desc[:250]),
+        )
+        added += 1
+    return added
+
+
+# ---- R7 Radio 4 programmes (35 shows x 30 episodes each = 1050) --------
+
+R7_RADIO4_SHOWS: list[tuple[str, str]] = [
+    ("Today",                 "Britain's most influential morning news programme."),
+    ("PM",                    "Drive-time news and analysis at the end of the working day."),
+    ("The World at One",      "Lunchtime news and current affairs."),
+    ("The World Tonight",     "Late evening news from the BBC."),
+    ("Woman's Hour",          "The programme that offers a female perspective on the world."),
+    ("Front Row",             "Live magazine programme on the arts."),
+    ("In Our Time",           "Melvyn Bragg and guests on the history of ideas."),
+    ("More or Less",          "Tim Harford explains, and sometimes debunks, the numbers in the news."),
+    ("Analysis",              "Programme examining the ideas and forces which shape public policy."),
+    ("File on 4",             "Investigative current affairs from BBC News."),
+    ("The Reith Lectures",    "The BBC's annual lecture series on the big issues."),
+    ("Desert Island Discs",   "Castaways are invited to choose eight tracks for a desert island."),
+    ("Just a Minute",         "Panellists are challenged to talk for sixty seconds without hesitation."),
+    ("The News Quiz",         "Topical wit, comment and comedy from BBC Radio 4."),
+    ("Any Questions?",        "Topical discussion with a panel of well-known personalities."),
+    ("From Our Own Correspondent","Insight, wit and analysis from BBC correspondents around the world."),
+    ("The Bottom Line",       "Evan Davis hosts business panellists from around the world."),
+    ("Money Box",             "Personal finance news and views from the BBC."),
+    ("Inside Health",         "Dr Margaret McCartney examines the health of the nation."),
+    ("Material World",        "Science programme with the latest research and discoveries."),
+    ("In Business",           "Insightful, hard-hitting coverage of the workplace."),
+    ("Costing the Earth",     "Tom Heap finds new solutions for problems with our environment."),
+    ("BBC Inside Science",    "Investigations into the topics making science headlines."),
+    ("Crossing Continents",   "Foreign news features series from BBC News."),
+    ("Heart and Soul",        "Personal approaches to spirituality from around the world."),
+    ("Sunday",                "Religious news and current affairs."),
+    ("The Long View",         "Historian Jonathan Freedland takes a long view of contemporary issues."),
+    ("Thinking Allowed",      "Laurie Taylor explores the latest research into how we live."),
+    ("Beyond Belief",         "Ernie Rea discusses the place and nature of faith in today's world."),
+    ("Saturday Live",         "Magazine programme with the best stories from the BBC week."),
+    ("Last Word",             "Series of obituaries celebrating notable lives."),
+    ("Profile",               "Series of biographies of the people behind the headlines."),
+    ("Open Country",          "Helen Mark explores the British countryside."),
+    ("The Food Programme",    "Sheila Dillon presents a programme on the world of food."),
+    ("Farming Today",         "The news of the countryside, agriculture and rural life."),
+]
+
+R7_RADIO4_TOPICS: list[str] = [
+    "UK politics", "the NHS", "education policy", "climate adaptation",
+    "AI in everyday life", "the cost of living", "the housing market",
+    "the war in Ukraine", "Middle East diplomacy", "the future of work",
+    "energy security", "social care", "transport policy", "trade deals",
+    "the criminal justice system", "press freedom", "the creative industries",
+    "rural Britain", "regional devolution", "the union of the United Kingdom",
+    "child poverty", "online safety", "the welfare state", "asylum policy",
+    "the global south", "the central bank rate", "the polling industry",
+    "election forecasts", "civil service reform", "regulatory bodies",
+]
+
+
+def _r7_transcript_body(host: str, guest: str, topic: str, runtime_min: int) -> str:
+    """Eight-paragraph synthesized radio transcript. Words land in
+    approximately the right cadence for a half-hour speech segment."""
+    minutes = max(15, runtime_min)
+    return (
+        f"[Studio. Time-code 00:00:00]\n\n"
+        f"{host}: Welcome to the programme. This week we are looking at "
+        f"{topic} and what it tells us about Britain in the year ahead. With "
+        f"me is {guest}.\n\n"
+        f"{guest}: Thank you. The story on {topic} has been moving quickly, "
+        f"and a lot of what reaches the headlines is partial. I want to walk "
+        f"listeners through the parts that often get missed.\n\n"
+        f"{host}: Let's start with the numbers. What is genuinely new, and "
+        f"what is presentation?\n\n"
+        f"{guest}: The underlying data on {topic} has shifted only modestly "
+        f"in the last quarter. The framing, by contrast, has changed a lot. "
+        f"That gap is the story I think is worth attention.\n\n"
+        f"{host}: We have a clip from one of our correspondents on the "
+        f"ground. After this short break we'll come back and pick up on the "
+        f"policy questions. [Cue beds out. 00:{minutes // 2:02d}:00]\n\n"
+        f"{guest}: ...and that brings me to the point I think gets least "
+        f"airtime. The institutions responding to {topic} were not designed "
+        f"for the pace at which decisions are now being demanded.\n\n"
+        f"{host}: A final thought before we close.\n\n"
+        f"{guest}: Listeners who want to follow this should not look at the "
+        f"headline numbers next month. Look at the second-tier indicators. "
+        f"Those tell the real story.\n\n"
+        f"{host}: {guest}, thank you. That was {host} for BBC Radio 4. "
+        f"[End. Total runtime {minutes:02d}:00]"
+    )
+
+
+def synth_r7_radio4_transcripts(con, hero_pool: list[str]) -> list[dict]:
+    cid = _cat_id(con, "radio4") or _cat_id(con, "audio") or 1
+    base = MIRROR_REFERENCE_DATE
+    out: list[dict] = []
+    for si, (show, blurb) in enumerate(R7_RADIO4_SHOWS):
+        for ei in range(30):
+            topic = R7_RADIO4_TOPICS[(si + ei) % len(R7_RADIO4_TOPICS)]
+            host_pool = ["Mishal Husain", "Amol Rajan", "Justin Webb",
+                         "Mark Mardell", "Martha Kearney", "Evan Davis",
+                         "Anita Anand", "Adam Fleming"]
+            guest_pool = ["Prof. Hannah Pole", "Sir Iain Macleod",
+                          "Dr Yusuf Habib", "Rt Hon. Cara Mendez MP",
+                          "Dame Olivia Tan", "Mx Quentin Marsh",
+                          "Dr Aaliyah Foster", "Prof. Niamh O'Donnell"]
+            host = host_pool[(si * 3 + ei) % len(host_pool)]
+            guest = guest_pool[(si * 5 + ei * 7) % len(guest_pool)]
+            ep_n = ei + 1
+            headline = f"{show}: episode {ep_n} - {topic}"
+            lead = (
+                f"Episode {ep_n} of {show}. {blurb} This week's discussion "
+                f"focuses on {topic}, with {host} in the chair and {guest} "
+                f"as the main guest."
+            )
+            slug = _det_slug("r7-r4", f"{show}|{ei}")
+            hero = hero_pool[(_det_int(slug) + 9 + si) % len(hero_pool)] if hero_pool else ""
+            runtime = 28 + (ei % 4) * 3
+            body = _r7_transcript_body(host, guest, topic, runtime)
+            ts = base - timedelta(days=(si * 4 + ei * 2) % 270 + 1,
+                                  hours=(_det_int(slug) // 7) % 24,
+                                  minutes=(_det_int(slug) // 3) % 60)
+            out.append(_r6_make_row(
+                slug=slug, headline=headline, lead=lead, body=body,
+                category_id=cid, section_slug="radio4",
+                subsection=show, region_label="UK", ts=ts,
+                view_count=300 + (_det_int(slug) % 11000),
+                country="UK", hero=hero, author=host,
+                topics=[show, "BBC Radio 4", topic, "Transcript"],
+                feature_tags=["radio4-transcript", show.lower().replace(" ", "-").replace("?", ""),
+                              "transcript", topic.lower().replace(" ", "-")],
+                content_type="podcast",
+                is_featured=1 if (si + ei) % 23 == 0 else 0,
+            ))
+    return out
+
+
+# ---- R7 5 Live programmes (25 shows x 28 episodes = 700) ---------------
+
+R7_FIVELIVE_SHOWS: list[tuple[str, str]] = [
+    ("5 Live Breakfast",       "Live news, sport and reaction every weekday morning."),
+    ("5 Live Drive",           "Drive-time news, sport and the day's biggest stories."),
+    ("Wake Up to Money",       "The morning's business news and analysis."),
+    ("Question Time Extra",    "Extended discussion off the back of Question Time."),
+    ("5 Live Investigates",    "In-depth investigative reporting."),
+    ("5 Live Sport",           "Live commentary, news and analysis from across UK sport."),
+    ("Monday Night Club",      "Football phone-in for fans."),
+    ("Tuffers and Vaughan",    "Cricket with Phil Tufnell and Michael Vaughan."),
+    ("Rugby Union Daily",      "The daily rugby union podcast."),
+    ("Football Daily",         "The day in football, every day."),
+    ("Anna Foster",            "News, current affairs and listener calls."),
+    ("Nihal Arthanayake",      "Mid-morning conversation with newsmakers."),
+    ("Naga Munchetty",         "Live debate and discussion."),
+    ("Stephen Nolan",          "Late-night current affairs from Belfast."),
+    ("Colin Murray",           "Sport, music and surprise guests."),
+    ("Elis James and John Robins","Comedy and listener stories from a Welsh duo."),
+    ("5 Live Science",         "Science news and the week's big discoveries."),
+    ("5 Live Boxing",          "All the latest from the world of boxing."),
+    ("5 Live F1",              "Race weekends, paddock gossip and driver interviews."),
+    ("Cricket Social",         "Match reaction from BBC Sport's cricket team."),
+    ("Tennis Daily",           "The day in tennis from courtside reporters."),
+    ("Golf Weekly",            "Golf coverage from the BBC Sport team."),
+    ("Premier League Reaction","Post-match reaction every weekend."),
+    ("World Football Phone-in","Listener phone-in on the international game."),
+    ("Sunday Morning Live",    "News, sport and the Sunday papers."),
+]
+
+R7_FIVELIVE_TOPICS: list[str] = [
+    "transfer window deals", "the Premier League title race",
+    "Ashes preparation", "World Cup qualifying",
+    "the Six Nations standings", "Wimbledon seeding",
+    "the Tour de France route", "Olympic build-up",
+    "Champions League draw", "the FA Cup quarterfinals",
+    "England rugby selection", "Scottish football promotion",
+    "Welsh sport funding", "boxing PPV pricing",
+    "F1 sprint format changes", "athletics doping policy",
+    "Paralympics coverage", "women's football funding",
+    "youth academy reform", "VAR controversies",
+    "stadium safety standards", "fixture congestion",
+    "broadcast rights", "salary cap debates",
+    "sports betting regulation", "fan ownership models",
+    "coaching diversity", "the football pyramid",
+]
+
+
+def synth_r7_fivelive_transcripts(con, hero_pool: list[str]) -> list[dict]:
+    cid = _cat_id(con, "fivelive") or _cat_id(con, "audio") or 1
+    base = MIRROR_REFERENCE_DATE
+    out: list[dict] = []
+    for si, (show, blurb) in enumerate(R7_FIVELIVE_SHOWS):
+        for ei in range(28):
+            topic = R7_FIVELIVE_TOPICS[(si * 3 + ei) % len(R7_FIVELIVE_TOPICS)]
+            presenter_pool = ["Anna Foster", "Naga Munchetty",
+                              "Nihal Arthanayake", "Colin Murray",
+                              "Steve Crossman", "Eleanor Oldroyd",
+                              "Mark Chapman", "Caroline Barker"]
+            guest_pool = ["Jermaine Beckford", "Karen Carney",
+                          "Phil Tufnell", "Michael Vaughan",
+                          "Joey Barton", "Sue Smith",
+                          "Eilidh Barbour", "Pat Nevin"]
+            presenter = presenter_pool[(si + ei * 2) % len(presenter_pool)]
+            guest = guest_pool[(si * 7 + ei * 5) % len(guest_pool)]
+            ep_n = ei + 1
+            headline = f"{show} - {topic} (episode {ep_n})"
+            lead = (
+                f"{show}. {blurb} On the programme this episode: {topic}, "
+                f"with {presenter} in the studio and {guest} on the line."
+            )
+            slug = _det_slug("r7-5l", f"{show}|{ei}")
+            hero = hero_pool[(_det_int(slug) + 17 + si) % len(hero_pool)] if hero_pool else ""
+            runtime = 45 + (ei % 5) * 5
+            body = _r7_transcript_body(presenter, guest, topic, runtime)
+            ts = base - timedelta(days=(si * 3 + ei) % 200 + 1,
+                                  hours=(_det_int(slug) // 11) % 24,
+                                  minutes=(_det_int(slug) // 5) % 60)
+            out.append(_r6_make_row(
+                slug=slug, headline=headline, lead=lead, body=body,
+                category_id=cid, section_slug="fivelive",
+                subsection=show, region_label="UK", ts=ts,
+                view_count=200 + (_det_int(slug) % 9000),
+                country="UK", hero=hero, author=presenter,
+                topics=[show, "BBC 5 Live", topic, "Transcript"],
+                feature_tags=["fivelive-transcript",
+                              show.lower().replace(" ", "-"),
+                              "transcript"],
+                content_type="podcast",
+                is_featured=1 if (si + ei) % 19 == 0 else 0,
+            ))
+    return out
+
+
+# ---- R7 BBC Earth Deep (30 essays x 20 angles = 600) -------------------
+
+R7_EARTH_HABITATS: list[tuple[str, str]] = [
+    ("Boreal forest",   "northern hemisphere"),
+    ("Amazon basin",    "South America"),
+    ("Congo basin",     "central Africa"),
+    ("Coral triangle",  "Indo-Pacific"),
+    ("Sahel",           "north Africa"),
+    ("Patagonian steppe","South America"),
+    ("Arctic tundra",   "Arctic"),
+    ("Antarctic peninsula","Antarctica"),
+    ("Mongolian steppe","central Asia"),
+    ("Great Plains",    "North America"),
+    ("Daintree",        "Australia"),
+    ("Galapagos",       "Pacific"),
+    ("Mariana Trench",  "Pacific"),
+    ("Mediterranean basin","southern Europe"),
+    ("Caspian shore",   "central Asia"),
+    ("Okavango Delta",  "southern Africa"),
+    ("Madagascar dry forest","Madagascar"),
+    ("New Guinea highlands","Oceania"),
+    ("Borneo lowland",  "south-east Asia"),
+    ("Siberian taiga",  "Russia"),
+    ("Yellowstone",     "United States"),
+    ("Outer Hebrides",  "Scotland"),
+    ("Cairngorms",      "Scotland"),
+    ("Pembrokeshire coast","Wales"),
+    ("Cape Floristic region","South Africa"),
+    ("Atacama desert",  "Chile"),
+    ("Andes paramo",    "South America"),
+    ("Kalahari",        "southern Africa"),
+    ("Yukon delta",     "Alaska"),
+    ("Svalbard",        "Arctic"),
+]
+
+R7_EARTH_ANGLES: list[tuple[str, str]] = [
+    ("Inside {habitat}: a year of conservation",
+     "A year-long report from {region}'s {habitat}, where rangers, scientists and local communities are rewriting what conservation looks like in 2026."),
+    ("The hidden lives of {habitat} insects",
+     "The smallest residents of {habitat} are the engineers of its ecosystem. We meet the researchers cataloguing them."),
+    ("Climate signals from {habitat}",
+     "Researchers in {region}'s {habitat} say its annual cycle is now visibly drifting. Their evidence and what it could mean."),
+    ("Listening to {habitat}: bioacoustics in the field",
+     "Bioacoustic monitoring is changing how we measure biodiversity in {habitat}. Our team spent a week with the recordists."),
+    ("What {habitat} taught us about resilience",
+     "{habitat} has bounced back from setbacks researchers thought irreversible. The story of how, in {region}."),
+    ("Indigenous knowledge meets {habitat} science",
+     "Traditional stewards of {habitat} in {region} are now leading the science that documents it."),
+    ("Predators of {habitat}: a new census",
+     "A multi-year census of {habitat}'s apex predators is in. The picture is more complex than the headlines suggested."),
+    ("The forgotten rivers of {habitat}",
+     "Small waterways feed {habitat}'s richness. They are also the most vulnerable to land-use change in {region}."),
+    ("Why {habitat} matters to weather thousands of miles away",
+     "{habitat} influences atmospheric patterns far beyond {region}. Atmospheric scientists explain the chain."),
+    ("Walking {habitat}: a 10-day expedition",
+     "A reporter's diary across {habitat}, traveling with a local research team. Day-by-day field notes."),
+    ("Returning {habitat}: rewilding decade later",
+     "A decade after rewilding began in part of {habitat}, the results are visible from the air. We went to look."),
+    ("Beneath {habitat}: soil microbes and the carbon question",
+     "Soil under {habitat} stores more carbon than the canopy above. Researchers in {region} are racing to map it."),
+    ("After the fire: {habitat} one year on",
+     "Fire reshaped a corner of {habitat} last year. The recovery has been faster than feared, and stranger than hoped."),
+    ("Migrations through {habitat}",
+     "Every spring and autumn, animals cross {habitat} in numbers visible from orbit. The science of how, and why."),
+    ("Sounds of {habitat} at dawn",
+     "We sent a small team to record dawn in five corners of {habitat}. The recordings - and what changed since the last time."),
+    ("The botanist's notebook from {habitat}",
+     "A botanist's six-month residency in {habitat} produced 30 newly described species. Her field journal, edited."),
+    ("Bridging cities and {habitat}",
+     "Urban planners in {region} are now treating {habitat} as a partner, not a backdrop. The early evidence."),
+    ("Frozen archives of {habitat}",
+     "Cores drilled in {habitat} tell a story of the last thousand years. The most surprising chapters."),
+    ("The young scientists of {habitat}",
+     "Five early-career researchers, all working in {habitat}, on what their first decade in the field has taught them."),
+    ("Photographing {habitat} responsibly",
+     "Wildlife photographers in {habitat} discuss the ethics of their craft - and where the line now sits."),
+]
+
+
+def synth_r7_earth_deep(con, hero_pool: list[str]) -> list[dict]:
+    cid = _cat_id(con, "bbc_earth_deep") or _cat_id(con, "earth") or 1
+    base = MIRROR_REFERENCE_DATE
+    out: list[dict] = []
+    for hi, (habitat, region) in enumerate(R7_EARTH_HABITATS):
+        for ai, (hl_pat, lead_pat) in enumerate(R7_EARTH_ANGLES):
+            headline = hl_pat.format(habitat=habitat, region=region)
+            lead = lead_pat.format(habitat=habitat, region=region)
+            slug = _det_slug("r7-earth", f"{habitat}|{ai}")
+            hero = hero_pool[(_det_int(slug) + 23 + hi) % len(hero_pool)] if hero_pool else ""
+            ts = base - timedelta(days=(hi * 7 + ai * 3) % 300 + 1,
+                                  hours=(_det_int(slug) // 17) % 24,
+                                  minutes=(_det_int(slug) // 4) % 60)
+            body = _r6_synth_body(lead, region, habitat)
+            out.append(_r6_make_row(
+                slug=slug, headline=headline, lead=lead, body=body,
+                category_id=cid, section_slug="bbc_earth_deep",
+                subsection=habitat, region_label=region, ts=ts,
+                view_count=500 + (_det_int(slug) % 18000),
+                country=region, hero=hero,
+                author="BBC Earth",
+                topics=[habitat, region, "BBC Earth"],
+                feature_tags=["bbc-earth-deep",
+                              habitat.lower().replace(" ", "-"),
+                              "long-read"],
+                content_type="long-read",
+                is_featured=1 if (hi + ai) % 17 == 0 else 0,
+            ))
+    return out
+
+
+# ---- R7 BBC Future (30 themes x 18 stories = 540) ----------------------
+
+R7_FUTURE_THEMES: list[str] = [
+    "the next pandemic", "synthetic biology", "human longevity",
+    "fusion energy", "carbon capture", "quantum computing",
+    "general AI", "neural interfaces", "robotic surgery",
+    "the asteroid economy", "lunar bases", "Mars settlement",
+    "deep ocean cities", "vertical farming", "rewilding cities",
+    "memory editing", "post-quantum cryptography",
+    "personalised medicine", "regenerative agriculture",
+    "space-based solar", "ageless materials",
+    "predictive geology", "smart prosthetics",
+    "biodegradable plastics", "thorium reactors",
+    "tidal power", "ammonia shipping",
+    "cultivated meat", "underground transport",
+    "stratospheric balloons",
+]
+
+R7_FUTURE_ANGLES: list[tuple[str, str]] = [
+    ("The case for {theme}",
+     "Why a growing community of researchers think {theme} is the most underrated idea of the decade."),
+    ("Could {theme} actually work? A reality check",
+     "We separate the hype from the science around {theme}, with help from the people doing the experiments."),
+    ("Inside the lab betting on {theme}",
+     "A six-month residency with the team building the future of {theme} - and the obstacles they have yet to clear."),
+    ("How {theme} will reshape work",
+     "Career strategists and economists weigh in on what {theme} means for the next twenty years of employment."),
+    ("The ethics of {theme}",
+     "When the technology is finally ready, the questions will not be technical. Bioethicists, lawyers and theologians on {theme}."),
+    ("A short history of {theme}",
+     "{theme} has been the next big thing for longer than most people realise. We trace its real origin."),
+    ("Five questions about {theme}, answered",
+     "Reader questions about {theme} that came up most often, put to the specialists."),
+    ("What if {theme} fails?",
+     "We map the consequences of {theme} not delivering, and the alternatives that would suddenly look attractive."),
+    ("Voices around {theme}",
+     "Five researchers, five entrepreneurs and five sceptics on where {theme} is going - and where it should not."),
+    ("{theme}: a beginner's guide",
+     "Everything you need to know about {theme} in a single read. Drawn from BBC Future's full archive on the subject."),
+    ("{theme} and the climate",
+     "How {theme} could change the climate equation - and where the modeling community sits on its real impact."),
+    ("The companies racing on {theme}",
+     "Five companies you may not have heard of are leading the field on {theme}. Profiles of each."),
+    ("What {theme} means for cities",
+     "Urban planners are starting to design around {theme}. The first three projects that bet on it."),
+    ("Should you worry about {theme}?",
+     "We took the most-asked anxieties about {theme} to the people best placed to answer them."),
+    ("The numbers behind {theme}",
+     "Charts and data on {theme}, with caveats. Useful for anyone who wants the underlying picture before reading more."),
+    ("{theme}: ten years from now",
+     "Forecasters and futurists describe what {theme} might look like in 2036 - in their own words, lightly edited."),
+    ("Behind the scenes: reporting on {theme}",
+     "How BBC Future puts together its coverage of {theme}. A note from the editors on sourcing and verification."),
+    ("Listen: the {theme} briefing",
+     "Our editors discuss the latest on {theme} in this week's audio briefing. Transcript available."),
+]
+
+
+def synth_r7_bbc_future(con, hero_pool: list[str]) -> list[dict]:
+    cid = _cat_id(con, "bbc_future") or _cat_id(con, "culture") or 1
+    base = MIRROR_REFERENCE_DATE
+    out: list[dict] = []
+    for ti, theme in enumerate(R7_FUTURE_THEMES):
+        for ai, (hl_pat, lead_pat) in enumerate(R7_FUTURE_ANGLES):
+            headline = hl_pat.format(theme=theme)
+            lead = lead_pat.format(theme=theme)
+            slug = _det_slug("r7-fut", f"{theme}|{ai}")
+            hero = hero_pool[(_det_int(slug) + 29 + ti) % len(hero_pool)] if hero_pool else ""
+            ts = base - timedelta(days=(ti * 5 + ai * 4) % 320 + 1,
+                                  hours=(_det_int(slug) // 19) % 24,
+                                  minutes=(_det_int(slug) // 6) % 60)
+            body = _r6_synth_body(lead, "London", theme)
+            out.append(_r6_make_row(
+                slug=slug, headline=headline, lead=lead, body=body,
+                category_id=cid, section_slug="bbc_future",
+                subsection=theme, region_label="Global", ts=ts,
+                view_count=400 + (_det_int(slug) % 22000),
+                country="", hero=hero,
+                author="BBC Future",
+                topics=[theme, "BBC Future", "Science"],
+                feature_tags=["bbc-future",
+                              theme.lower().replace(" ", "-"),
+                              "deep-read"],
+                content_type="long-read",
+                is_featured=1 if (ti + ai) % 13 == 0 else 0,
+            ))
+    return out
+
+
+# ---- R7 BBC Travel (30 destinations x 18 angles = 540) -----------------
+
+R7_TRAVEL_PLACES: list[tuple[str, str]] = [
+    ("Kyoto",        "Japan"),
+    ("Marrakech",    "Morocco"),
+    ("Reykjavik",    "Iceland"),
+    ("Cusco",        "Peru"),
+    ("Lisbon",       "Portugal"),
+    ("Hanoi",        "Vietnam"),
+    ("Cape Town",    "South Africa"),
+    ("Bergen",       "Norway"),
+    ("Ushuaia",      "Argentina"),
+    ("Tbilisi",      "Georgia"),
+    ("Hobart",       "Australia"),
+    ("Quebec City",  "Canada"),
+    ("Salzburg",     "Austria"),
+    ("Hoi An",       "Vietnam"),
+    ("Antigua",      "Guatemala"),
+    ("Yogyakarta",   "Indonesia"),
+    ("Chefchaouen",  "Morocco"),
+    ("Bhutan",       "Bhutan"),
+    ("Tallinn",      "Estonia"),
+    ("Gjirokaster",  "Albania"),
+    ("Cartagena",    "Colombia"),
+    ("Luang Prabang","Laos"),
+    ("Mostar",       "Bosnia"),
+    ("Zanzibar",     "Tanzania"),
+    ("Lviv",         "Ukraine"),
+    ("Granada",      "Spain"),
+    ("Stone Town",   "Tanzania"),
+    ("Sapa",         "Vietnam"),
+    ("Pingyao",      "China"),
+    ("Mdina",        "Malta"),
+]
+
+R7_TRAVEL_ANGLES: list[tuple[str, str]] = [
+    ("Why {city} should be on your 2027 list",
+     "Travel writers explain what makes {city}, {country} the destination they keep coming back to."),
+    ("48 hours in {city}",
+     "A two-day itinerary in {city} from BBC Travel - cafes, museums and the side streets most guides miss."),
+    ("Eating {city}: a local food guide",
+     "Where to eat in {city}, {country}, with picks from chefs and home cooks."),
+    ("{city} on a budget",
+     "How to enjoy {city}, {country} for under sixty pounds a day, without missing the things that matter."),
+    ("{city} for families",
+     "A family-friendly week in {city}, with kids' attractions, hotel picks and downtime suggestions."),
+    ("Walking {city}",
+     "Three guided walks across {city}, each two to three hours, with the stories of the streets they cover."),
+    ("Day trips from {city}",
+     "Five places worth visiting from a base in {city}, each reachable in under two hours."),
+    ("The story of {city}",
+     "A short cultural history of {city} for travellers who want context before they go."),
+    ("{city} after dark",
+     "Bars, music and the late-night life of {city}, {country}."),
+    ("Off-season {city}",
+     "Why visiting {city} in shoulder season might be the best decision you make this year."),
+    ("Markets of {city}",
+     "Five markets in {city} that locals actually shop at - what to look for, what to skip."),
+    ("Where to stay in {city}",
+     "A hotel guide to {city}, organised by neighbourhood and budget."),
+    ("{city} for art lovers",
+     "Galleries, studios and the artist-led venues changing the cultural map of {city}."),
+    ("How to get around {city}",
+     "Practical transport advice for a first visit to {city}, including which apps actually work."),
+    ("{city} in the rain",
+     "What to do in {city}, {country} when the weather is against you. Locals' favourite indoor escapes."),
+    ("Photographing {city}",
+     "A photographer's guide to the corners of {city} that reward an early start and a patient lens."),
+    ("Bookshops of {city}",
+     "Five bookshops in {city} worth a detour, with picks from each of their owners."),
+    ("Reader replies: your {city} tips",
+     "Travel readers send in their own favourites from {city}. We collected the best."),
+]
+
+
+def synth_r7_bbc_travel(con, hero_pool: list[str]) -> list[dict]:
+    cid = _cat_id(con, "travel") or 1
+    base = MIRROR_REFERENCE_DATE
+    out: list[dict] = []
+    for ci, (city, country) in enumerate(R7_TRAVEL_PLACES):
+        for ai, (hl_pat, lead_pat) in enumerate(R7_TRAVEL_ANGLES):
+            headline = hl_pat.format(city=city, country=country)
+            lead = lead_pat.format(city=city, country=country)
+            slug = _det_slug("r7-trv", f"{city}|{ai}")
+            hero = hero_pool[(_det_int(slug) + 31 + ci) % len(hero_pool)] if hero_pool else ""
+            ts = base - timedelta(days=(ci * 6 + ai * 5) % 350 + 1,
+                                  hours=(_det_int(slug) // 23) % 24,
+                                  minutes=(_det_int(slug) // 5) % 60)
+            body = _r6_synth_body(lead, city, "travel")
+            out.append(_r6_make_row(
+                slug=slug, headline=headline, lead=lead, body=body,
+                category_id=cid, section_slug="travel",
+                subsection=city, region_label=country, ts=ts,
+                view_count=400 + (_det_int(slug) % 16000),
+                country=country, hero=hero,
+                author="BBC Travel",
+                topics=[city, country, "BBC Travel"],
+                feature_tags=["bbc-travel",
+                              city.lower().replace(" ", "-"),
+                              country.lower().replace(" ", "-")],
+                content_type="travel-guide",
+                is_featured=1 if (ci + ai) % 11 == 0 else 0,
+            ))
+    return out
+
+
+# ---- R7 BBC Worklife (25 themes x 22 angles = 550) ---------------------
+
+R7_WORKLIFE_THEMES: list[str] = [
+    "remote work fatigue", "the four-day week",
+    "AI-augmented careers", "the post-degree workforce",
+    "skills-based hiring", "office return policies",
+    "burnout prevention", "salary transparency",
+    "the loneliness epidemic at work", "career switching after 40",
+    "imposter syndrome", "the rise of the portfolio career",
+    "managing up", "team rituals that work",
+    "quiet quitting", "asynchronous communication",
+    "presenteeism", "feedback cultures",
+    "neurodiversity at work", "menopause in the workplace",
+    "men and mental health at work", "parental leave equity",
+    "promotions and the broken rung", "executive coaching",
+    "compensating remote workers fairly",
+]
+
+R7_WORKLIFE_ANGLES: list[tuple[str, str]] = [
+    ("What we got wrong about {theme}",
+     "The early consensus on {theme} no longer holds. We look at the evidence that changed the conversation."),
+    ("Five myths about {theme}",
+     "We tested the most-shared claims about {theme} against what research actually shows."),
+    ("How leaders are tackling {theme}",
+     "We spoke with HR directors and CEOs about their toolkits for {theme}, and what they wish they had known."),
+    ("{theme}: a researcher's view",
+     "An organisational psychologist takes us through the science behind {theme}."),
+    ("Tell us: your experience of {theme}",
+     "Readers share short essays on {theme}. Recurring patterns and unexpected insights."),
+    ("The data on {theme}",
+     "Charts on {theme} drawn from the BBC Worklife reader survey of 4,200 respondents."),
+    ("How to talk about {theme} with your manager",
+     "Career coaches offer four scripts and a checklist for harder conversations on {theme}."),
+    ("{theme} in five sectors",
+     "Healthcare, finance, education, retail and creative services on {theme}."),
+    ("What the youngest workers think about {theme}",
+     "Under-30 employees describe {theme} in their own words. The contrasts with their older colleagues."),
+    ("What the oldest workers think about {theme}",
+     "Over-55 employees on {theme}. Pragmatic, surprising and often less anxious than expected."),
+    ("Why {theme} matters more than it looks",
+     "A common-sense look at why {theme} keeps showing up in employee-engagement surveys."),
+    ("The lawyer's take on {theme}",
+     "Employment lawyers explain where {theme} sits with current UK employment law."),
+    ("Global differences in {theme}",
+     "How {theme} plays out in five major labour markets - what travels, what does not."),
+    ("Companies known for handling {theme} well",
+     "Three case studies of organisations that handle {theme} better than the average."),
+    ("Companies known for handling {theme} badly",
+     "Anonymised case studies of where {theme} was mishandled, and what changed."),
+    ("A first-person essay on {theme}",
+     "A reader's first-person essay on {theme}. Edited for clarity."),
+    ("The HR director's checklist for {theme}",
+     "A practical checklist drawn from interviews with senior HR practitioners."),
+    ("Listen: BBC Worklife on {theme}",
+     "Our team discusses {theme} in this week's audio episode. Transcript included."),
+    ("Reader Q&A: {theme}",
+     "The most-asked questions about {theme} from readers, answered by experts."),
+    ("Behind the research on {theme}",
+     "How we put together our recent feature on {theme} - sources, methods, caveats."),
+    ("Should HR own {theme}?",
+     "Where {theme} sits in an organisation: HR, line managers, or everyone."),
+    ("The ethics of {theme}",
+     "Ethicists and union representatives on the moral dimensions of {theme}."),
+]
+
+
+def synth_r7_bbc_worklife(con, hero_pool: list[str]) -> list[dict]:
+    cid = _cat_id(con, "bbc_worklife") or _cat_id(con, "culture") or 1
+    base = MIRROR_REFERENCE_DATE
+    out: list[dict] = []
+    for ti, theme in enumerate(R7_WORKLIFE_THEMES):
+        for ai, (hl_pat, lead_pat) in enumerate(R7_WORKLIFE_ANGLES):
+            headline = hl_pat.format(theme=theme)
+            lead = lead_pat.format(theme=theme)
+            slug = _det_slug("r7-wl", f"{theme}|{ai}")
+            hero = hero_pool[(_det_int(slug) + 41 + ti) % len(hero_pool)] if hero_pool else ""
+            ts = base - timedelta(days=(ti * 4 + ai * 6) % 360 + 1,
+                                  hours=(_det_int(slug) // 29) % 24,
+                                  minutes=(_det_int(slug) // 7) % 60)
+            body = _r6_synth_body(lead, "London", theme)
+            out.append(_r6_make_row(
+                slug=slug, headline=headline, lead=lead, body=body,
+                category_id=cid, section_slug="bbc_worklife",
+                subsection=theme, region_label="Global", ts=ts,
+                view_count=350 + (_det_int(slug) % 14000),
+                country="", hero=hero,
+                author="BBC Worklife",
+                topics=[theme, "BBC Worklife", "Careers"],
+                feature_tags=["bbc-worklife",
+                              theme.lower().replace(" ", "-")],
+                content_type="long-read",
+                is_featured=1 if (ti + ai) % 14 == 0 else 0,
+            ))
+    return out
+
+
+# ---- R7 SQL indexes ----------------------------------------------------
+
+R7_INDEXES: list[tuple[str, str]] = [
+    # (name, create SQL)
+    ("ix_articles_category_published",
+     "CREATE INDEX IF NOT EXISTS ix_articles_category_published "
+     "ON articles (category_id, published_at DESC)"),
+    ("ix_articles_feature_tags",
+     "CREATE INDEX IF NOT EXISTS ix_articles_feature_tags "
+     "ON articles (feature_tags)"),
+    ("ix_articles_content_type",
+     "CREATE INDEX IF NOT EXISTS ix_articles_content_type "
+     "ON articles (content_type)"),
+    ("ix_comments_article",
+     "CREATE INDEX IF NOT EXISTS ix_comments_article "
+     "ON comments (article_id)"),
+    ("ix_reading_history_user_viewed",
+     "CREATE INDEX IF NOT EXISTS ix_reading_history_user_viewed "
+     "ON reading_history (user_id, viewed_at DESC)"),
+]
+
+
+def apply_r7_indexes(con: sqlite3.Connection) -> int:
+    cur = con.cursor()
+    existing = {r[0] for r in cur.execute(
+        "SELECT name FROM sqlite_master WHERE type='index'")}
+    added = 0
+    # Apply in sorted order so on-disk schema text is deterministic
+    # regardless of dict ordering in this module.
+    for name, sql in sorted(R7_INDEXES, key=lambda x: x[0]):
+        if name in existing:
+            continue
+        cur.execute(sql)
+        added += 1
+    return added
+
+
+# ---- R7 article insert (reuses R6 helpers) -----------------------------
+
+def insert_r7_articles(con: sqlite3.Connection, batch: list[dict]) -> int:
+    cur = con.cursor()
+    existing = {r[0] for r in cur.execute("SELECT slug FROM articles")}
+    rows = [a for a in batch if a["slug"] not in existing]
+    if not rows:
+        return 0
+    cur.executemany(_ART_INSERT_SQL, rows)
+    return len(rows)
+
+
+# ---- R7 supplementary rows ---------------------------------------------
+
+R7_COMMENT_TOP: list[str] = [
+    "The Radio 4 transcript link makes this much easier to follow on the train.",
+    "Good to have the 5 Live discussion written out - I missed the broadcast.",
+    "BBC Future's long-read format is one of the strongest things you do.",
+    "BBC Worklife pieces feel like they are written by people who actually work.",
+    "The new Earth Deep section is what I keep coming back to on weekends.",
+    "Helpful to see the locale switcher on this page - cross-checking with es.",
+    "The NewsArticle schema picked up cleanly in my reader.",
+    "RSS feed by category is exactly what I needed.",
+]
+
+R7_COMMENT_REPLIES: list[str] = [
+    "Same - the transcript option is the single most useful addition this year.",
+    "Agreed; the long-read format suits the topic.",
+    "Cross-checked with the AMP page; renders fine on my older phone.",
+    "RSS feed worked first try in my self-hosted reader.",
+    "Locale switch helped a colleague in Madrid follow along.",
+]
+
+
+def insert_r7_comments(con: sqlite3.Connection) -> int:
+    cur = con.cursor()
+    if cur.execute(
+        "SELECT 1 FROM comments WHERE body=? LIMIT 1", (R7_SENTINEL_BODY,)
+    ).fetchone():
+        return 0
+    user_ids = [r[0] for r in cur.execute("SELECT id FROM users ORDER BY id")]
+    if len(user_ids) < 2:
+        return 0
+
+    pool: list[tuple[int, str]] = []
+    for tag in ("radio4-transcript", "fivelive-transcript", "bbc-future",
+                "bbc-worklife", "bbc-earth-deep"):
+        rows = cur.execute(
+            "SELECT id, headline FROM articles "
+            "WHERE feature_tags LIKE ? ORDER BY view_count DESC LIMIT 30",
+            (f'%\"{tag}\"%',),
+        ).fetchall()
+        pool.extend(rows)
+    seen: set[int] = set()
+    pool = [t for t in pool if not (t[0] in seen or seen.add(t[0]))][:140]
+
+    base_ts = MIRROR_REFERENCE_DATE
+    top_rows: list[tuple] = []
+    for idx, (art_id, _hl) in enumerate(pool):
+        n_top = 1 + (idx % 3)
+        for j in range(n_top):
+            uid = user_ids[(idx * 11 + j * 7) % len(user_ids)]
+            body = R7_COMMENT_TOP[(idx * 3 + j * 5) % len(R7_COMMENT_TOP)]
+            offset_h = (idx * 13 + j * 23) % (24 * 30)
+            ts = base_ts - timedelta(hours=offset_h, minutes=(j + idx * 5) % 60)
+            like = (idx * j + 7) % 28
+            top_rows.append((uid, art_id, None, body, like, 0,
+                             ts.strftime("%Y-%m-%d %H:%M:%S")))
+
+    cur.executemany(
+        "INSERT INTO comments (user_id, article_id, parent_id, body, "
+        "like_count, flagged, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
+        top_rows,
+    )
+    inserted = len(top_rows)
+
+    fresh = list(cur.execute(
+        "SELECT id, article_id, user_id, created_at FROM comments "
+        "WHERE parent_id IS NULL ORDER BY id DESC LIMIT ?",
+        (inserted,),
+    ))
+    fresh.reverse()
+    extra = 0
+    for i, (cid, art_id, parent_uid, parent_created) in enumerate(fresh):
+        if i % 6 != 0:
+            continue
+        ruid = user_ids[(parent_uid + i + 2) % len(user_ids)]
+        if ruid == parent_uid:
+            ruid = user_ids[(parent_uid + i + 3) % len(user_ids)]
+        body = R7_COMMENT_REPLIES[i % len(R7_COMMENT_REPLIES)]
+        ts_parent = datetime.strptime(parent_created, "%Y-%m-%d %H:%M:%S")
+        ts_parent = ts_parent + timedelta(hours=2, minutes=(i * 7) % 60)
+        cur.execute(
+            "INSERT INTO comments (user_id, article_id, parent_id, body, "
+            "like_count, flagged, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
+            (ruid, art_id, cid, body, (i * 3) % 15, 0,
+             ts_parent.strftime("%Y-%m-%d %H:%M:%S")),
+        )
+        extra += 1
+    return inserted + extra
+
+
+def insert_r7_reading_history(con: sqlite3.Connection) -> int:
+    cur = con.cursor()
+    if cur.execute(
+        "SELECT 1 FROM comments WHERE body=? LIMIT 1", (R7_SENTINEL_BODY,)
+    ).fetchone():
+        return 0
+    user_ids = [r[0] for r in cur.execute("SELECT id FROM users ORDER BY id")]
+    if not user_ids:
+        return 0
+    art_ids: list[int] = []
+    for tag in ("radio4-transcript", "fivelive-transcript", "bbc-future",
+                "bbc-worklife", "bbc-earth-deep"):
+        rows = cur.execute(
+            "SELECT id FROM articles WHERE feature_tags LIKE ? "
+            "ORDER BY view_count DESC LIMIT 35",
+            (f'%\"{tag}\"%',),
+        ).fetchall()
+        art_ids.extend(r[0] for r in rows)
+    art_ids = list(dict.fromkeys(art_ids))[:150]
+
+    base_ts = MIRROR_REFERENCE_DATE
+    rows = []
+    for idx, art_id in enumerate(art_ids):
+        for ui, uid in enumerate(user_ids):
+            if (idx * 2 + ui) % 4 != 0:
+                continue
+            ts = base_ts - timedelta(days=(idx + ui * 2) % 32,
+                                     hours=(idx * 3 + ui * 5) % 24)
+            rows.append((uid, art_id, ts.strftime("%Y-%m-%d %H:%M:%S")))
+    if not rows:
+        return 0
+    cur.executemany(
+        "INSERT INTO reading_history (user_id, article_id, viewed_at) "
+        "VALUES (?, ?, ?)", rows,
+    )
+    return len(rows)
+
+
+def insert_r7_bookmarks(con: sqlite3.Connection) -> int:
+    cur = con.cursor()
+    if cur.execute(
+        "SELECT 1 FROM comments WHERE body=? LIMIT 1", (R7_SENTINEL_BODY,)
+    ).fetchone():
+        return 0
+    user_ids = [r[0] for r in cur.execute("SELECT id FROM users ORDER BY id")]
+    if not user_ids:
+        return 0
+    art_ids = [r[0] for r in cur.execute(
+        "SELECT id FROM articles WHERE feature_tags LIKE ? "
+        "ORDER BY view_count DESC LIMIT 80", ('%"radio4-transcript"%',),
+    )]
+    base_ts = MIRROR_REFERENCE_DATE
+    seen = set(cur.execute(
+        "SELECT user_id, article_id FROM bookmarks").fetchall())
+    rows = []
+    for idx, art_id in enumerate(art_ids):
+        uid = user_ids[(idx + 1) % len(user_ids)]
+        if (uid, art_id) in seen:
+            continue
+        ts = base_ts - timedelta(days=(idx % 30) + 1, hours=(idx * 7) % 24)
+        rows.append((uid, art_id, ts.strftime("%Y-%m-%d %H:%M:%S")))
+    if not rows:
+        return 0
+    cur.executemany(
+        "INSERT INTO bookmarks (user_id, article_id, bookmarked_at) "
+        "VALUES (?, ?, ?)", rows,
+    )
+    return len(rows)
+
+
+def insert_r7_subscriptions(con: sqlite3.Connection) -> int:
+    cur = con.cursor()
+    if cur.execute(
+        "SELECT 1 FROM comments WHERE body=? LIMIT 1", (R7_SENTINEL_BODY,)
+    ).fetchone():
+        return 0
+    user_ids = [r[0] for r in cur.execute("SELECT id FROM users ORDER BY id")]
+    if not user_ids:
+        return 0
+    seen = set(cur.execute(
+        "SELECT user_id, topic FROM topic_subscriptions").fetchall())
+    base_ts = MIRROR_REFERENCE_DATE
+    topics = [
+        "BBC Radio 4", "BBC 5 Live", "BBC Future", "BBC Worklife",
+        "BBC Earth", "Transcript", "Long read",
+        "AI in everyday life", "the four-day week", "Cape Town",
+        "Kyoto", "remote work fatigue", "fusion energy", "vertical farming",
+    ]
+    rows = []
+    for ui, uid in enumerate(user_ids):
+        for ti, topic in enumerate(topics):
+            if (ui + ti) % 5 != 0:
+                continue
+            if (uid, topic) in seen:
+                continue
+            ts = base_ts - timedelta(days=(ui * 7 + ti * 3) % 60,
+                                     hours=(ui * 11 + ti) % 24)
+            rows.append((uid, topic, "daily", 1,
+                         ts.strftime("%Y-%m-%d %H:%M:%S")))
+    if not rows:
+        return 0
+    cur.executemany(
+        "INSERT INTO topic_subscriptions "
+        "(user_id, topic, frequency, active, created_at) "
+        "VALUES (?, ?, ?, ?, ?)", rows,
+    )
+    return len(rows)
+
+
+def plant_r7_sentinel(con: sqlite3.Connection) -> None:
+    cur = con.cursor()
+    if cur.execute(
+        "SELECT 1 FROM comments WHERE body=? LIMIT 1", (R7_SENTINEL_BODY,)
+    ).fetchone():
+        return
+    uid_row = cur.execute("SELECT id FROM users ORDER BY id LIMIT 1").fetchone()
+    art_row = cur.execute("SELECT id FROM articles WHERE feature_tags LIKE ? "
+                          "ORDER BY id LIMIT 1",
+                          ('%"radio4-transcript"%',)).fetchone()
+    if not (uid_row and art_row):
+        return
+    cur.execute(
+        "INSERT INTO comments (user_id, article_id, parent_id, body, "
+        "like_count, flagged, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
+        (uid_row[0], art_row[0], None, R7_SENTINEL_BODY, 0, 1,
+         MIRROR_REFERENCE_DATE.strftime("%Y-%m-%d %H:%M:%S")),
+    )
+
+
+def bake_r7(con: sqlite3.Connection) -> dict[str, int]:
+    """Apply all R7 additions. Idempotent (sentinel-gated)."""
+    stats: dict[str, int] = {}
+    cur = con.cursor()
+    if cur.execute(
+        "SELECT 1 FROM comments WHERE body=? LIMIT 1", (R7_SENTINEL_BODY,)
+    ).fetchone():
+        stats["already_baked"] = 1
+        return stats
+
+    stats["new_categories"] = ensure_r7_categories(con)
+
+    hero_pool = _hero_image_pool(con)
+    if not hero_pool:
+        hero_pool = [""]
+
+    batches: list[list[dict]] = [
+        synth_r7_radio4_transcripts(con, hero_pool),
+        synth_r7_fivelive_transcripts(con, hero_pool),
+        synth_r7_earth_deep(con, hero_pool),
+        synth_r7_bbc_future(con, hero_pool),
+        synth_r7_bbc_travel(con, hero_pool),
+        synth_r7_bbc_worklife(con, hero_pool),
+    ]
+    total = 0
+    for batch in batches:
+        total += insert_r7_articles(con, batch)
+    stats["new_articles"] = total
+
+    stats["new_indexes"] = apply_r7_indexes(con)
+    stats["new_comments"] = insert_r7_comments(con)
+    stats["new_reading_history"] = insert_r7_reading_history(con)
+    stats["new_bookmarks"] = insert_r7_bookmarks(con)
+    stats["new_subscriptions"] = insert_r7_subscriptions(con)
+
+    plant_r7_sentinel(con)
+    return stats
+
+
 # -----------------------------------------------------------------------
 # Main
 # -----------------------------------------------------------------------
@@ -5835,6 +6819,7 @@ def main() -> None:
         r4_stats = bake_r4(con)
         r5_stats = bake_r5(con)
         r6_stats = bake_r6(con)
+        r7_stats = bake_r7(con)
         normalize_sqlite_sequence(con)
         con.commit()
     finally:
@@ -5861,8 +6846,12 @@ def main() -> None:
         v for k, v in r6_stats.items()
         if isinstance(v, int) and k not in ("already_baked",)
     )
+    r7_total_inserts = sum(
+        v for k, v in r7_stats.items()
+        if isinstance(v, int) and k not in ("already_baked",)
+    )
     r2_total_inserts = n_art + n_cm + n_rh + n_bm + n_rl + n_ts
-    if r2_total_inserts + r3_total_inserts + r4_total_inserts + r5_total_inserts + r6_total_inserts > 0:
+    if r2_total_inserts + r3_total_inserts + r4_total_inserts + r5_total_inserts + r6_total_inserts + r7_total_inserts > 0:
         con = open_db(DB_PATH)
         try:
             con.execute("VACUUM")
@@ -5880,6 +6869,7 @@ def main() -> None:
     print(f"[bake] R4 stats: {r4_stats}")
     print(f"[bake] R5 stats: {r5_stats}")
     print(f"[bake] R6 stats: {r6_stats}")
+    print(f"[bake] R7 stats: {r7_stats}")
     print(f"[bake] md5 after:  {_db_signature(DB_PATH)}")
 
     con = open_db(DB_PATH)

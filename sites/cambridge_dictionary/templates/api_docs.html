@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+{% block title %}Public API (v1) | Cambridge Dictionary{% endblock %}
+{% block content %}
+<div class="container api-docs-page">
+  <h1>Cambridge Dictionary &mdash; Public API v1</h1>
+  <p class="api-intro">
+    The Cambridge Dictionary mirror exposes a small read-only JSON API for
+    third-party integrations. All endpoints are unauthenticated and rate-
+    limited at the reverse proxy.
+  </p>
+
+  <h2>GET <code>/api/v1/word/&lt;slug&gt;</code></h2>
+  <p>
+    Returns a JSON document describing a single dictionary entry. Example
+    request:
+  </p>
+  <pre class="api-example"><code>GET /api/v1/word/serendipity HTTP/1.1
+Host: dictionary.cambridge.org
+Accept: application/json</code></pre>
+  <p>Example response:</p>
+  <pre class="api-example"><code>{
+  "headword": "serendipity",
+  "slug": "serendipity",
+  "pos": "noun",
+  "level": "C1",
+  "domain": "",
+  "defined_term_id": "dt-legacy-serendipity",
+  "ipa_uk": "/ˌser.ənˈdɪp.ə.ti/",
+  "ipa_us": "/ˌser.ənˈdɪp.ə.ti/",
+  "definitions": [ ... ]
+}</code></pre>
+  <p>
+    The <code>domain</code> key is one of
+    <code>medical</code>, <code>legal</code>, <code>academic</code>,
+    <code>business</code>, <code>it</code>, or the empty string for general
+    entries.
+  </p>
+
+  <h2>GET <code>/api/suggest?q=&lt;prefix&gt;</code></h2>
+  <p>
+    Low-latency autosuggest. Returns up to 8 headword matches plus a
+    <code>latency_ms</code> measurement. Documented performance target:
+    <strong>&lt; 50 ms</strong> on the production catalog.
+  </p>
+  <pre class="api-example"><code>{
+  "q": "ser",
+  "suggestions": [
+    {"headword": "serendipity", "slug": "serendipity", "level": "C1"},
+    ...
+  ],
+  "latency_ms": 4.3,
+  "target_ms": 50,
+  "within_target": true
+}</code></pre>
+
+  <h2>GET <code>/sitemap.xml</code> &amp; <code>/sitemap/letter/&lt;a-z&gt;.xml</code></h2>
+  <p>
+    Per-letter paginated sitemaps; the root sitemap is a sitemap-index that
+    references each per-letter file. Used by search engines for incremental
+    discovery.
+  </p>
+
+  <h2>GET <code>/robots.txt</code></h2>
+  <p>
+    Allow-by-default policy. <code>/api/save-word</code> and
+    <code>/account</code> are disallowed; the file also points crawlers at
+    the sitemap.
+  </p>
+</div>
+{% endblock %}

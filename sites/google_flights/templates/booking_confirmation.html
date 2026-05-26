@@ -2,6 +2,36 @@
 {% from "_airline_icon.html" import airline_icon %}
 {% block title %}Booking confirmed {{ booking.pnr }} | Google Flights{% endblock %}
 
+{% block extra_css %}
+{% set first_item = booking.items.first() %}
+{% set first_flight = first_item.flight if first_item else None %}
+{% if first_flight %}
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FlightReservation",
+  "reservationNumber": "{{ booking.pnr }}",
+  "reservationStatus": "https://schema.org/Reservation{{ booking.status|capitalize }}",
+  "underName": {
+    "@type": "Person",
+    "name": "{{ booking.contact_email }}"
+  },
+  "reservationFor": {
+    "@type": "Flight",
+    "flightNumber": "{{ first_flight.flight_number }}",
+    "airline": {"@type": "Airline", "name": "{{ first_flight.airline }}", "iataCode": "{{ first_flight.airline_code }}"},
+    "departureAirport": {"@type": "Airport", "iataCode": "{{ first_flight.origin.iata }}", "name": "{{ first_flight.origin.name }}"},
+    "arrivalAirport": {"@type": "Airport", "iataCode": "{{ first_flight.destination.iata }}", "name": "{{ first_flight.destination.name }}"},
+    "departureTime": "{{ first_flight.departure_date }}T{{ first_flight.departure_time }}:00",
+    "arrivalTime": "{{ first_flight.arrival_date }}T{{ first_flight.arrival_time }}:00"
+  },
+  "totalPrice": "{{ booking.total_amount }}",
+  "priceCurrency": "{{ booking.currency or 'USD' }}"
+}
+</script>
+{% endif %}
+{% endblock %}
+
 {% block content %}
 <div class="confirmation-wrap">
   <div class="confirmation-card">

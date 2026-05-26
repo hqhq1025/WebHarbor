@@ -83,10 +83,10 @@ class Course(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     title = db.Column(db.String(300), nullable=False)
     slug = db.Column(db.String(300), unique=True, nullable=False, index=True)
-    partner_id = db.Column(db.Integer, db.ForeignKey('partners.id'), nullable=True)
+    partner_id = db.Column(db.Integer, db.ForeignKey('partners.id'), nullable=True, index=True)
     course_type = db.Column(db.String(40), default='Course')
     # Course|Specialization|Guided Project|Professional Certificate|Degree
-    level = db.Column(db.String(30), default='Beginner')
+    level = db.Column(db.String(30), default='Beginner', index=True)
     # Beginner|Intermediate|Advanced|Mixed
     category = db.Column(db.String(100), default='')
     subcategory = db.Column(db.String(100), default='')
@@ -99,7 +99,7 @@ class Course(db.Model):
     is_free = db.Column(db.Boolean, default=False)
     has_certificate = db.Column(db.Boolean, default=True)
     credit_eligible = db.Column(db.Boolean, default=False)
-    instructor = db.Column(db.String(200), default='')
+    instructor = db.Column(db.String(200), default='', index=True)
     instructor_title = db.Column(db.String(200), default='')
     description = db.Column(db.Text, default='')
     what_you_learn = db.Column(db.Text, default='[]')   # JSON list
@@ -733,6 +733,10 @@ def inject_globals():
         ('personal-development', 'Personal Development'),
     ]
     m = _img_manifest()
+    # ── R7 i18n: 16 supported locales for hreflang + UI lang attr ──────────
+    current_lang = session.get('coursera_lang') or request.args.get('lang') or 'en'
+    if current_lang not in R7_LOCALES:
+        current_lang = 'en'
     return dict(saved_ids=saved_ids, enrolled_ids=enrolled_ids,
                 nav_categories=categories,
                 resume_course=resume_course,
@@ -747,7 +751,26 @@ def inject_globals():
                 app_store_badge=('images/' + (m.get('badges') or {}).get('app_store','')) if (m.get('badges') or {}).get('app_store') else None,
                 play_store_badge=('images/' + (m.get('badges') or {}).get('google_play','')) if (m.get('badges') or {}).get('google_play') else None,
                 social_icons={k:'images/'+v for k,v in (m.get('social') or {}).items()},
+                current_lang=current_lang,
+                supported_locales=R7_LOCALES,
+                locale_native_names=R7_LOCALE_NATIVE_NAMES,
                 )
+
+
+# ─── R7 i18n: 16 supported locales (matches real Coursera footer) ────────────
+# (code, English name, native name) — used for hreflang + UI switcher.
+R7_LOCALES = ['en', 'es', 'zh', 'ja', 'ar', 'fr', 'de', 'pt',
+              'ko', 'hi', 'ru', 'it', 'tr', 'vi', 'id', 'pl']
+R7_LOCALE_NATIVE_NAMES = {
+    'en': 'English',           'es': 'Español',
+    'zh': '中文（简体）',         'ja': '日本語',
+    'ar': 'العربية',             'fr': 'Français',
+    'de': 'Deutsch',           'pt': 'Português',
+    'ko': '한국어',              'hi': 'हिन्दी',
+    'ru': 'Русский',            'it': 'Italiano',
+    'tr': 'Türkçe',             'vi': 'Tiếng Việt',
+    'id': 'Bahasa Indonesia',   'pl': 'Polski',
+}
 
 # ─── Routes: Static pages ─────────────────────────────────────────────────────
 
@@ -999,7 +1022,8 @@ def course_detail(slug):
                            sub_courses=sub_courses, related=related,
                            is_enrolled=is_enrolled, is_saved=is_saved,
                            review_form=review_form, rating_breakdown=breakdown,
-                           r6_panels=r6_panels)
+                           r6_panels=r6_panels,
+                           course_jsonld=_course_jsonld(course))
 
 
 def _r6_course_panels(course):
@@ -1664,6 +1688,248 @@ def career_skills(role_slug):
     return render_template('career_skills.html', role_name=name,
                            role_slug=role_slug, category=category, blurb=blurb,
                            skills=skills, skill_to_courses=skill_to_courses)
+
+
+# ─── R7 — SEO, i18n, captions, accessibility, public-API docs ────────────────
+
+@app.route('/lang/<code>')
+def set_language(code):
+    """Switch UI locale by setting a session cookie + redirect back. The
+    cookie is read in `inject_globals()` to drive the <html lang="..">
+    attribute and the hreflang link rotation. 16 locales supported."""
+    if code in R7_LOCALES:
+        session['coursera_lang'] = code
+    return redirect(request.referrer or url_for('index'))
+
+
+@app.route('/robots.txt')
+def robots_txt():
+    """robots.txt — points crawlers at the partner-split sitemap index."""
+    body = (
+        "User-agent: *\n"
+        "Allow: /\n"
+        "Disallow: /account\n"
+        "Disallow: /api/\n"
+        f"Sitemap: {request.host_url.rstrip('/')}/sitemap.xml\n"
+    )
+    return body, 200, {'Content-Type': 'text/plain; charset=utf-8'}
+
+
+@app.route('/sitemap.xml')
+def sitemap_index():
+    """Partner-split sitemap index. Real Coursera also splits its sitemap
+    by publisher (provider); we mirror that — one child sitemap per
+    partner with > 0 published courses, plus a `static` sitemap for the
+    catalogue / category / career / skill surfaces."""
+    base = request.host_url.rstrip('/')
+    partner_slugs = [s for (s,) in db.session.query(Partner.slug)
+                     .join(Course, Course.partner_id == Partner.id)
+                     .distinct().order_by(Partner.slug).all()]
+    children = [f'{base}/sitemap/static.xml']
+    children += [f'{base}/sitemap/partner-{slug}.xml'
+                 for slug in partner_slugs]
+    xml = ['<?xml version="1.0" encoding="UTF-8"?>',
+           '<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">']
+    for loc in children:
+        xml.append(f'  <sitemap><loc>{loc}</loc></sitemap>')
+    xml.append('</sitemapindex>')
+    return '\n'.join(xml), 200, {'Content-Type': 'application/xml'}
+
+
+@app.route('/sitemap/static.xml')
+def sitemap_static():
+    """Static surfaces — home, browse categories, careers, plus, etc."""
+    base = request.host_url.rstrip('/')
+    urls = ['', '/coursera-plus', '/business', '/for-teams',
+            '/for-universities', '/for-government', '/degrees',
+            '/professional-certificates', '/partners', '/careers',
+            '/blog', '/help', '/mobile', '/accessibility',
+            '/api/v1', '/financial-aid']
+    cats = ['computer-science', 'data-science', 'business',
+            'information-technology', 'language-learning', 'math-logic',
+            'physical-science', 'social-sciences', 'arts-humanities',
+            'health', 'personal-development']
+    urls += [f'/browse/{c}' for c in cats]
+    xml = ['<?xml version="1.0" encoding="UTF-8"?>',
+           '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" '
+           'xmlns:xhtml="http://www.w3.org/1999/xhtml">']
+    for path in urls:
+        xml.append(f'  <url><loc>{base}{path}</loc>')
+        for lang in R7_LOCALES:
+            xml.append(f'    <xhtml:link rel="alternate" hreflang="{lang}" '
+                       f'href="{base}{path}?lang={lang}"/>')
+        xml.append('  </url>')
+    xml.append('</urlset>')
+    return '\n'.join(xml), 200, {'Content-Type': 'application/xml'}
+
+
+@app.route('/sitemap/partner-<slug>.xml')
+def sitemap_partner(slug):
+    """Per-partner sitemap. Lists every /learn/<slug> for courses owned
+    by this partner, plus the partner page and its /courses index."""
+    partner = Partner.query.filter_by(slug=slug).first_or_404()
+    base = request.host_url.rstrip('/')
+    courses = Course.query.filter_by(partner_id=partner.id).order_by(
+        Course.id).all()
+    xml = ['<?xml version="1.0" encoding="UTF-8"?>',
+           '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" '
+           'xmlns:xhtml="http://www.w3.org/1999/xhtml">']
+    static_paths = [f'/partner/{slug}', f'/partner/{slug}/courses']
+    for p in static_paths:
+        xml.append(f'  <url><loc>{base}{p}</loc>')
+        for lang in R7_LOCALES:
+            xml.append(f'    <xhtml:link rel="alternate" hreflang="{lang}" '
+                       f'href="{base}{p}?lang={lang}"/>')
+        xml.append('  </url>')
+    for c in courses:
+        xml.append(f'  <url><loc>{base}/learn/{c.slug}</loc>'
+                   f'<lastmod>{c.sort_date}</lastmod></url>')
+    xml.append('</urlset>')
+    return '\n'.join(xml), 200, {'Content-Type': 'application/xml'}
+
+
+def _course_jsonld(course):
+    """Build a schema.org/Course JSON-LD dict for a course. Exposed in
+    the template via context — the SEO-Course-schema tasks check for
+    `provider`, `courseCode`, `timeRequired`, `educationalCredentialAwarded`
+    and `inLanguage` on this object."""
+    provider = {
+        '@type': ('CollegeOrUniversity'
+                  if (course.partner and course.partner.partner_type == 'university')
+                  else 'Organization'),
+        'name': course.partner.name if course.partner else 'Coursera',
+        'sameAs': (f'{request.host_url.rstrip("/")}/partner/'
+                   f'{course.partner.slug}' if course.partner else
+                   request.host_url.rstrip('/')),
+    }
+    # ISO-8601 PT for duration_hours.
+    duration_iso = f'PT{int(course.duration_hours or 1)}H'
+    # courseCode = stable, derived from id — matches /certificate verify code.
+    code = f'COUR-{course.id:06d}'
+    credential = {
+        'Course': 'CompletionCertificate',
+        'Specialization': 'Specialization Certificate',
+        'Professional Certificate': 'Professional Certificate',
+        'Guided Project': 'CompletionCertificate',
+        'Degree': course.degree_type or 'Degree',
+    }.get(course.course_type, 'CompletionCertificate')
+    return {
+        '@context': 'https://schema.org',
+        '@type': 'Course',
+        'name': course.title,
+        'description': (course.description or course.title)[:400],
+        'provider': provider,
+        'courseCode': code,
+        'timeRequired': duration_iso,
+        'educationalCredentialAwarded': credential,
+        'inLanguage': R7_LOCALES,
+        'aggregateRating': {
+            '@type': 'AggregateRating',
+            'ratingValue': course.rating,
+            'reviewCount': course.review_count,
+        },
+        'url': f'{request.host_url.rstrip("/")}/learn/{course.slug}',
+    }
+
+
+@app.route('/learn/<slug>/captions')
+@app.route('/learn/<slug>/captions/<int:week>')
+def course_captions(slug, week=1):
+    """Caption-language picker for a course. Lists all 11 caption tracks
+    (en, es, zh, ja, ar, fr, de, pt, ko, hi, ru) for a given lecture week
+    — the multilingual-captions tasks check this page renders all 11
+    language labels."""
+    course = Course.query.filter_by(slug=slug).first_or_404()
+    mods = course.modules
+    if not mods:
+        abort(404)
+    week = max(1, min(week, len(mods)))
+    module = mods[week - 1]
+    caption_langs = [
+        ('en', 'English',           'English captions reviewed by native speakers.'),
+        ('es', 'Español',           'Subtítulos en español — traducción profesional.'),
+        ('zh', '中文（简体）',         '简体中文字幕 — 由专业团队翻译。'),
+        ('ja', '日本語',              '日本語字幕 — プロの翻訳者による。'),
+        ('ar', 'العربية',             'ترجمة احترافية إلى العربية.'),
+        ('fr', 'Français',           'Sous-titres en français — traduction professionnelle.'),
+        ('de', 'Deutsch',           'Deutsche Untertitel — von Profis übersetzt.'),
+        ('pt', 'Português',         'Legendas em português — tradução profissional.'),
+        ('ko', '한국어',              '한국어 자막 — 전문 번역가 검수.'),
+        ('hi', 'हिन्दी',                'हिन्दी उपशीर्षक — पेशेवर अनुवाद।'),
+        ('ru', 'Русский',            'Русские субтитры — профессиональный перевод.'),
+    ]
+    return render_template('captions.html', course=course, module=module,
+                           week=week, caption_langs=caption_langs)
+
+
+@app.route('/accessibility')
+@app.route('/a11y')
+def accessibility_statement():
+    """WCAG 2.1 AA accessibility statement + per-feature compliance
+    breakdown. Tasks check for the WCAG 2.1 AA badge + the captions /
+    keyboard / screen-reader bullets."""
+    return render_template('accessibility.html')
+
+
+@app.route('/api/v1')
+@app.route('/api/v1/')
+@app.route('/api/v1/docs')
+def public_api_docs():
+    """Public Coursera-API doc landing page. Lists the 6 public read-only
+    endpoints (courses, partners, categories, skills, certificates,
+    sitemaps) with auth + rate-limit notes. The API-doc tasks check this
+    page exposes the documented endpoints."""
+    endpoints = [
+        {'method': 'GET', 'path': '/api/v1/courses',
+         'desc': 'List published courses. Filter by category, level, partner.',
+         'rate_limit': '60 req/min', 'auth': 'public'},
+        {'method': 'GET', 'path': '/api/v1/courses/<slug>',
+         'desc': 'Fetch a single course by slug, with modules + JSON-LD.',
+         'rate_limit': '60 req/min', 'auth': 'public'},
+        {'method': 'GET', 'path': '/api/v1/partners',
+         'desc': 'List publishing partners (universities, companies, institutions).',
+         'rate_limit': '60 req/min', 'auth': 'public'},
+        {'method': 'GET', 'path': '/api/v1/categories',
+         'desc': 'List the 11 top-level Coursera categories.',
+         'rate_limit': '120 req/min', 'auth': 'public'},
+        {'method': 'GET', 'path': '/api/v1/skills/<slug>/courses',
+         'desc': 'List courses tagged with a skill.',
+         'rate_limit': '60 req/min', 'auth': 'public'},
+        {'method': 'GET', 'path': '/api/v1/sitemaps',
+         'desc': 'List per-partner sitemap URLs.',
+         'rate_limit': '30 req/min', 'auth': 'public'},
+    ]
+    return render_template('coursera_api.html', endpoints=endpoints)
+
+
+@app.route('/api/v1/categories')
+@csrf.exempt
+def api_categories():
+    """Public read-only endpoint — list of categories."""
+    return jsonify([{'slug': s, 'name': n} for (s, n) in [
+        ('computer-science', 'Computer Science'),
+        ('data-science', 'Data Science'),
+        ('business', 'Business'),
+        ('information-technology', 'Information Technology'),
+        ('language-learning', 'Language Learning'),
+        ('math-logic', 'Math and Logic'),
+        ('physical-science', 'Physical Science and Engineering'),
+        ('social-sciences', 'Social Sciences'),
+        ('arts-humanities', 'Arts and Humanities'),
+        ('health', 'Health'),
+        ('personal-development', 'Personal Development'),
+    ]])
+
+
+@app.route('/api/v1/partners')
+@csrf.exempt
+def api_partners():
+    """Public read-only endpoint — list of partners."""
+    rows = Partner.query.order_by(Partner.slug).limit(500).all()
+    return jsonify([{
+        'slug': p.slug, 'name': p.name, 'country': p.country,
+        'type': p.partner_type,
+    } for p in rows])
 
 
 # ─── Error handlers ───────────────────────────────────────────────────────────
@@ -3493,12 +3759,14 @@ def _normalize_seed_db_layout():
     """Re-emit indexes in alpha order + VACUUM the SQLite file so two
     independent rebuilds produce byte-identical .db files. Gated on the
     presence of a sentinel pragma so it only runs once (the first build);
-    subsequent warm restarts skip it. See harden-env/gotchas.md item #2."""
+    subsequent warm restarts skip it. Sentinel bumped to 3 in R7 because
+    we added ix_courses_partner_id / ix_courses_level / ix_courses_instructor.
+    See harden-env/gotchas.md item #2."""
     from sqlalchemy import text
     conn = db.engine.connect()
     try:
         sentinel = conn.execute(text("PRAGMA user_version")).scalar()
-        if sentinel == 2:
+        if sentinel == 3:
             return  # already normalized
         idx_rows = conn.execute(text(
             "SELECT name, sql FROM sqlite_master "
@@ -3509,7 +3777,7 @@ def _normalize_seed_db_layout():
         for name, sql in sorted(idx_rows, key=lambda r: r[0]):
             if sql:
                 conn.execute(text(sql))
-        conn.execute(text("PRAGMA user_version = 2"))
+        conn.execute(text("PRAGMA user_version = 3"))
         conn.commit()
         conn.execute(text("VACUUM"))
         conn.commit()
@@ -3590,6 +3858,18 @@ with app.app_context():
     # courses on the FIRST build.
     from seed_extras import seed_v7 as _seed_v7
     _seed_v7(db, {
+        'User': User, 'Partner': Partner, 'Course': Course,
+        'CourseModule': CourseModule, 'SubCourse': SubCourse,
+        'Enrollment': Enrollment, 'SavedCourse': SavedCourse,
+        'Review': Review,
+    })
+    # R7 polish: 2026 catalog round-2 (Agentic AI / Multimodal RAG /
+    # On-Device GenAI / Climate / Fusion / SynBio / Conv UX / L10n) —
+    # adds ~3150 deterministic courses across 15 fresh domains and +12
+    # partners. Must run BEFORE seed_testimonials_and_extras so the
+    # testimonials backfill covers v8 courses on the FIRST build.
+    from seed_extras import seed_v8 as _seed_v8
+    _seed_v8(db, {
         'User': User, 'Partner': Partner, 'Course': Course,
         'CourseModule': CourseModule, 'SubCourse': SubCourse,
         'Enrollment': Enrollment, 'SavedCourse': SavedCourse,

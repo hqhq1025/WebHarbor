@@ -1,5 +1,45 @@
 {% extends "base.html" %}
 {% block title %}{{ repo.full_name }} · GitHub{% endblock %}
+{% block og_type %}object{% endblock %}
+{% block og_title %}{{ repo.full_name }} · GitHub{% endblock %}
+{% block og_description %}{{ (repo.description or ('Repository ' ~ repo.full_name))|e }}{% endblock %}
+{% block og_image %}/static/images/og/repo-card.svg?repo={{ repo.full_name|urlencode }}{% endblock %}
+{% block extra_head %}
+  {# R7 SEO: SoftwareSourceCode JSON-LD so crawlers index the repo correctly. #}
+  <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "SoftwareSourceCode",
+      "name": "{{ repo.full_name|e }}",
+      "alternateName": "{{ repo.name|e }}",
+      "headline": "{{ (repo.description or repo.name)|e }}",
+      "codeRepository": "{{ request.url_root.rstrip('/') }}/{{ repo.full_name }}",
+      "programmingLanguage": "{{ (repo.language or 'Unknown')|e }}",
+      "license": "{{ (repo.license or 'UNLICENSED')|e }}",
+      "dateCreated": "{{ (repo.created_at or now).strftime('%Y-%m-%d') }}",
+      "dateModified": "{{ (repo.updated_at or now).strftime('%Y-%m-%d') }}",
+      "isAccessibleForFree": {{ 'true' if repo.is_public else 'false' }},
+      "author": {
+        "@type": "{{ 'Organization' if repo.owner_type == 'organization' else 'Person' }}",
+        "name": "{{ owner.username|e }}",
+        "url": "{{ request.url_root.rstrip('/') }}/{{ owner.username }}"
+      },
+      "interactionStatistic": [
+        {"@type": "InteractionCounter",
+         "interactionType": "https://schema.org/LikeAction",
+         "userInteractionCount": {{ repo.stars_count or 0 }}},
+        {"@type": "InteractionCounter",
+         "interactionType": "https://schema.org/ShareAction",
+         "userInteractionCount": {{ repo.forks_count or 0 }}}
+      ],
+      "keywords": "{{ (repo.get_topics() or [])|join(', ')|e }}"
+    }
+  </script>
+  <meta name="github:stars" content="{{ repo.stars_count or 0 }}">
+  <meta name="github:language" content="{{ repo.language or '' }}">
+  <meta name="github:license" content="{{ repo.license or '' }}">
+  <link rel="canonical" href="{{ request.url_root.rstrip('/') }}/{{ repo.full_name }}">
+{% endblock %}
 {% block content %}
 
 <div class="repo-header-bar">

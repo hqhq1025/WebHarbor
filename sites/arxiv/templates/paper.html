@@ -1,5 +1,22 @@
 {% extends "base.html" %}
 {% block title %}{{ paper.display_title }} — arXiv:{{ paper.arxiv_id }}{% endblock %}
+{% block head_extra %}
+  {# R7 — Dublin Core meta + Highwire citation_* + JSON-LD ScholarlyArticle.
+     Centralised in app.py's paper_seo_meta() so encoding stays in one
+     place. Visible in `view-source` and harvestable by Google Scholar /
+     Crossref / Semantic Scholar bots. #}
+{{ paper_seo_meta(paper) | safe }}
+  <meta property="og:type" content="article">
+  <meta property="og:title" content="{{ paper.display_title }}">
+  <meta property="og:url" content="https://arxiv.org/abs/{{ paper.arxiv_id }}">
+  <meta property="og:description" content="{{ (paper.abstract or '')[:300] }}">
+  <meta property="og:site_name" content="arXiv.org">
+  <link rel="canonical" href="https://arxiv.org/abs/{{ paper.arxiv_id }}">
+  <link rel="alternate" type="application/pdf"
+        href="/pdf/{{ paper.arxiv_id }}" title="Download PDF">
+  <link rel="alternate" type="application/x-eprint-tar"
+        href="/e-print/{{ paper.arxiv_id }}" title="LaTeX source bundle">
+{% endblock %}
 {% block breadcrumbs %}
     {% if paper.primary_category_code %}
     <span class="sep">&gt;</span>

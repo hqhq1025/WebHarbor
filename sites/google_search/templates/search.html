@@ -1,7 +1,40 @@
 {% from "_serp_header.html" import serp_header with context %}
 {% extends "base.html" %}
 {% block title %}{{ q }} - Google Search{% endblock %}
+{% block og_title %}{{ q }} - Google Search{% endblock %}
+{% block og_description %}{{ result_count|fmt_count }} results for "{{ q }}" on Google Search.{% endblock %}
 {% block header %}{{ serp_header(q, vertical) }}{% endblock %}
+
+{% block jsonld_extra %}
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "SearchResultsPage",
+  "name": {{ (q + ' - Google Search')|tojson }},
+  "url": "{{ canonical_root|default('') }}/search?q={{ q|urlencode }}",
+  "inLanguage": "{{ hl|default('en') }}",
+  "isPartOf": {
+    "@type": "WebSite",
+    "name": "Google",
+    "url": "{{ canonical_root|default('') }}/"
+  },
+  "mainEntity": {
+    "@type": "ItemList",
+    "numberOfItems": {{ results|length }},
+    "itemListElement": [
+      {% for r in results %}
+      {
+        "@type": "ListItem",
+        "position": {{ loop.index }},
+        "url": {{ r.url|tojson }},
+        "name": {{ r.title|tojson }}
+      }{% if not loop.last %},{% endif %}
+      {% endfor %}
+    ]
+  }
+}
+</script>
+{% endblock %}
 
 {% block content %}
 <div class="serp-body" id="main-results">

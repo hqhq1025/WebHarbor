@@ -19,7 +19,7 @@ from pathlib import Path
 
 from flask import (
     Flask, render_template, request, redirect, url_for, flash, jsonify,
-    session, abort, send_from_directory
+    session, abort, send_from_directory, Response, g
 )
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import (
@@ -3182,6 +3182,470 @@ def star_toggle_form(paper_id):
 
 
 # =======================================================================
+# R7 — SEO, OAI-PMH docs, RSS/Atom listings, DOI resolve, source tarball,
+#      citation-batch export, multilingual stubs (/lang/zh, /lang/es).
+# All routes are deterministic / stateless — no DB writes. They round out
+# the SEO and feed surface so agents can exercise arxiv-shaped tasks
+# (sitemap discovery, DOI resolution, OAI-PMH harvesting) entirely inside
+# the mirror without leaving for the real arxiv.org.
+# =======================================================================
+
+LANG_LABELS = {
+    "en": {
+        "search": "Search", "advanced_search": "Advanced Search",
+        "help": "Help", "news": "News", "blog": "Blog",
+        "store": "Store", "login": "Login", "register": "Register",
+        "logout": "Logout", "library": "Library",
+        "today_on_arxiv": "Today on arXiv",
+        "header_banner": "arXiv preprint repository",
+        "language_label": "English",
+    },
+    "zh": {
+        "search": "搜索", "advanced_search": "高级搜索",
+        "help": "帮助", "news": "新闻", "blog": "博客",
+        "store": "商店", "login": "登录", "register": "注册",
+        "logout": "退出", "library": "个人书库",
+        "today_on_arxiv": "今日 arXiv",
+        "header_banner": "arXiv 预印本仓库",
+        "language_label": "中文",
+    },
+    "es": {
+        "search": "Buscar", "advanced_search": "Búsqueda avanzada",
+        "help": "Ayuda", "news": "Noticias", "blog": "Blog",
+        "store": "Tienda", "login": "Acceder", "register": "Registrarse",
+        "logout": "Salir", "library": "Biblioteca",
+        "today_on_arxiv": "Hoy en arXiv",
+        "header_banner": "Repositorio de preprints arXiv",
+        "language_label": "Español",
+    },
+}
+
+# WSGI shim: strip /lang/<code>/ prefix early so URL routing sees the
+# canonical path. Stores chosen language in environ for the request context
+# processor to surface to templates.
+_orig_wsgi_app = app.wsgi_app
+
+
+def _lang_prefix_wsgi(environ, start_response):
+    p = environ.get("PATH_INFO", "")
+    m = re.match(r"^/lang/(zh|es|en)(/.*)?$", p)
+    if m:
+        environ["HTTP_X_ARXIV_LANG"] = m.group(1)
+        environ["PATH_INFO"] = m.group(2) or "/"
+    return _orig_wsgi_app(environ, start_response)
+
+
+app.wsgi_app = _lang_prefix_wsgi
+
+
+@app.context_processor
+def inject_lang_pref():
+    pref = request.environ.get("HTTP_X_ARXIV_LANG", "en")
+    if pref not in LANG_LABELS:
+        pref = "en"
+    return dict(
+        lang_pref=pref,
+        lang_labels=LANG_LABELS[pref],
+        available_languages=[("en", "English"), ("zh", "中文"),
+                             ("es", "Español")],
+    )
+
+
+@app.route("/lang/<code>")
+@app.route("/lang/<code>/")
+def lang_landing(code):
+    """Top-level landing for /lang/<code> — the WSGI shim has already
+    rewritten PATH_INFO to '/' so we just re-dispatch to the index view.
+    This route only fires for paths that come in raw (e.g. via direct
+    Flask test client). With the shim, requests to /lang/zh hit index()
+    directly."""
+    if code not in LANG_LABELS:
+        abort(404)
+    return redirect(url_for("index"))
+
+
+# -----------------------------------------------------------------------
+# SEO — robots.txt, sitemap index, per-year sitemaps
+# -----------------------------------------------------------------------
+
+@app.route("/robots.txt")
+def robots_txt():
+    body = (
+        "User-agent: *\n"
+        "Allow: /\n"
+        "Disallow: /account\n"
+        "Disallow: /library\n"
+        "Disallow: /starred\n"
+        "Disallow: /export/\n"
+        "Disallow: /alerts\n"
+        "\n"
+        "User-agent: GPTBot\n"
+        "Allow: /\n"
+        "\n"
+        "Sitemap: /sitemap.xml\n"
+        "Sitemap: /sitemap-index.xml\n"
+    )
+    return Response(body, mimetype="text/plain")
+
+
+def _sitemap_years():
+    rows = db.session.query(Paper.submitted_year).distinct().filter(
+        Paper.submitted_year > 0).order_by(Paper.submitted_year.desc()).all()
+    return [r[0] for r in rows]
+
+
+@app.route("/sitemap.xml")
+@app.route("/sitemap-index.xml")
+def sitemap_index():
+    years = _sitemap_years()
+    root = request.url_root.rstrip("/")
+    parts = ['<?xml version="1.0" encoding="UTF-8"?>',
+             '<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">']
+    parts.append(f"  <sitemap><loc>{root}/sitemap-static.xml</loc></sitemap>")
+    for y in years:
+        parts.append(f"  <sitemap><loc>{root}/sitemap-{y}.xml</loc></sitemap>")
+    parts.append("</sitemapindex>")
+    return Response("\n".join(parts) + "\n", mimetype="application/xml")
+
+
+@app.route("/sitemap-static.xml")
+def sitemap_static():
+    root = request.url_root.rstrip("/")
+    static_paths = ["/", "/about", "/help", "/news", "/blog", "/store",
+                    "/category_taxonomy", "/advanced", "/oai-pmh",
+                    "/lang/en", "/lang/zh", "/lang/es"]
+    parts = ['<?xml version="1.0" encoding="UTF-8"?>',
+             '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">']
+    for sp in static_paths:
+        parts.append(f"  <url><loc>{root}{sp}</loc><changefreq>weekly</changefreq><priority>0.7</priority></url>")
+    parts.append("</urlset>")
+    return Response("\n".join(parts) + "\n", mimetype="application/xml")
+
+
+@app.route("/sitemap-<int:year>.xml")
+def sitemap_year(year):
+    root = request.url_root.rstrip("/")
+    # Cap at 5000 URLs per sitemap (well under the 50k spec limit) — keeps
+    # render fast and predictable. Agents looking up "how many URLs in
+    # sitemap-2024.xml" get a stable answer per year.
+    rows = (Paper.query.filter_by(submitted_year=year)
+            .order_by(Paper.arxiv_id)
+            .with_entities(Paper.arxiv_id, Paper.submitted_date)
+            .limit(5000).all())
+    if not rows:
+        abort(404)
+    parts = ['<?xml version="1.0" encoding="UTF-8"?>',
+             '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">']
+    for aid, sd in rows:
+        parts.append(
+            f"  <url><loc>{root}/abs/{aid}</loc>"
+            f"<lastmod>{sd or year}</lastmod>"
+            f"<changefreq>monthly</changefreq><priority>0.5</priority></url>"
+        )
+    parts.append("</urlset>")
+    return Response("\n".join(parts) + "\n", mimetype="application/xml")
+
+
+# -----------------------------------------------------------------------
+# OAI-PMH documentation page (read-only HTML overview — agents land here
+# when chasing the OAI-PMH bulk-harvest interface).
+# -----------------------------------------------------------------------
+
+@app.route("/oai-pmh")
+@app.route("/oai2")
+@app.route("/oai")
+@app.route("/help/oai")
+def oai_pmh_doc():
+    sets = [
+        ("cs", "Computer Science"), ("math", "Mathematics"),
+        ("stat", "Statistics"), ("physics", "Physics"),
+        ("astro-ph", "Astrophysics"), ("cond-mat", "Condensed Matter"),
+        ("hep-th", "High Energy Physics - Theory"),
+        ("hep-ph", "High Energy Physics - Phenomenology"),
+        ("hep-ex", "High Energy Physics - Experiment"),
+        ("hep-lat", "High Energy Physics - Lattice"),
+        ("nucl-th", "Nuclear Theory"), ("nucl-ex", "Nuclear Experiment"),
+        ("gr-qc", "General Relativity and Quantum Cosmology"),
+        ("math-ph", "Mathematical Physics"),
+        ("quant-ph", "Quantum Physics"), ("nlin", "Nonlinear Sciences"),
+        ("q-bio", "Quantitative Biology"),
+        ("q-fin", "Quantitative Finance"),
+        ("eess", "Electrical Engineering and Systems Science"),
+        ("econ", "Economics"),
+    ]
+    total = db.session.query(func.count(Paper.id)).scalar() or 0
+    return render_template("oai_pmh.html", sets=sets, paper_total=total)
+
+
+# -----------------------------------------------------------------------
+# DOI resolver — accept either a full DOI (10.xxxx/...) or a URL form.
+# Used by tasks like "resolve DOI 10.1109/foo and open the paper".
+# -----------------------------------------------------------------------
+
+@app.route("/resolve/doi/<path:doi>")
+@app.route("/doi/<path:doi>")
+def doi_resolve(doi):
+    # Strip optional "doi:" prefix and any URL scheme.
+    doi = doi.strip()
+    for prefix in ("doi:", "DOI:", "https://doi.org/", "http://doi.org/",
+                   "https://dx.doi.org/"):
+        if doi.lower().startswith(prefix.lower()):
+            doi = doi[len(prefix):]
+            break
+    p = Paper.query.filter(Paper.doi == doi).first()
+    if not p:
+        # Try a LIKE fallback for tasks that pass the trailing identifier
+        # only (e.g. "1109/foo" instead of "10.1109/foo").
+        p = Paper.query.filter(Paper.doi.like(f"%{doi}")).first()
+    if not p:
+        return render_template("error.html", code=404,
+                               message=f"No paper found for DOI '{doi}'"), 404
+    return redirect(url_for("paper_detail", arxiv_id=p.arxiv_id), code=302)
+
+
+# -----------------------------------------------------------------------
+# LaTeX source tarball info page — explains the e-print bundle layout.
+# -----------------------------------------------------------------------
+
+@app.route("/src/<arxiv_id>")
+@app.route("/src/<arxiv_id>/")
+def source_tarball(arxiv_id):
+    p = Paper.query.filter_by(arxiv_id=arxiv_id).first_or_404()
+    # Deterministic tarball metadata derived from arxiv_id hash. No data on
+    # disk — this is a stub doc page describing what a real harvest would
+    # download.
+    digest = hashlib.sha256(arxiv_id.encode()).digest()
+    size_kb = 32 + (int.from_bytes(digest[:3], "big") % 1480)  # 32..1512 kb
+    file_count = 4 + (digest[3] % 28)                          # 4..31 files
+    has_bbl = (digest[4] % 3) != 0
+    has_figs = (digest[5] % 5) != 0
+    return render_template("source_tarball.html",
+                           paper=p, size_kb=size_kb,
+                           file_count=file_count,
+                           has_bbl=has_bbl, has_figs=has_figs)
+
+
+# -----------------------------------------------------------------------
+# RSS / Atom feeds per category (real arxiv ships these at e.g.
+# rss.arxiv.org/rss/cs and export.arxiv.org/api/query?...).
+# -----------------------------------------------------------------------
+
+def _feed_papers(code, limit=25):
+    return (Paper.query.filter(
+        or_(Paper.primary_subject_code == code,
+            Paper.primary_subject_code.like(f"{code}.%"),
+            Paper.primary_category_code == code))
+        .order_by(Paper.arxiv_id.desc())
+        .limit(limit).all())
+
+
+@app.route("/list/<code>/rss")
+@app.route("/rss/<code>")
+@app.route("/rss/<code>.xml")
+def listing_rss(code):
+    papers = _feed_papers(code)
+    if not papers:
+        abort(404)
+    root = request.url_root.rstrip("/")
+    items = []
+    for p in papers:
+        title = (p.title or "").replace("&", "&amp;").replace("<", "&lt;")
+        desc = (p.short_abstract or "").replace("&", "&amp;").replace("<", "&lt;")
+        items.append(
+            f"  <item>\n"
+            f"    <title>{title}</title>\n"
+            f"    <link>{root}/abs/{p.arxiv_id}</link>\n"
+            f"    <guid isPermaLink=\"true\">{root}/abs/{p.arxiv_id}</guid>\n"
+            f"    <description>{desc}</description>\n"
+            f"    <pubDate>{p.submitted_date}</pubDate>\n"
+            f"    <category>{p.primary_subject_code}</category>\n"
+            f"  </item>"
+        )
+    body = (
+        '<?xml version="1.0" encoding="UTF-8"?>\n'
+        '<rss version="2.0" xmlns:dc="http://purl.org/dc/elements/1.1/">\n'
+        '<channel>\n'
+        f"  <title>arXiv {code} latest preprints</title>\n"
+        f"  <link>{root}/list/{code}/recent</link>\n"
+        f"  <description>Latest {code} submissions to arXiv</description>\n"
+        f"  <language>en-us</language>\n"
+        + "\n".join(items) +
+        "\n</channel>\n</rss>\n"
+    )
+    return Response(body, mimetype="application/rss+xml")
+
+
+@app.route("/list/<code>/atom")
+@app.route("/atom/<code>")
+@app.route("/atom/<code>.xml")
+def listing_atom(code):
+    papers = _feed_papers(code)
+    if not papers:
+        abort(404)
+    root = request.url_root.rstrip("/")
+    entries = []
+    for p in papers:
+        title = (p.title or "").replace("&", "&amp;").replace("<", "&lt;")
+        summ = (p.short_abstract or "").replace("&", "&amp;").replace("<", "&lt;")
+        entries.append(
+            f"  <entry>\n"
+            f"    <title>{title}</title>\n"
+            f"    <id>{root}/abs/{p.arxiv_id}</id>\n"
+            f"    <link href=\"{root}/abs/{p.arxiv_id}\"/>\n"
+            f"    <updated>{p.submitted_date}T00:00:00Z</updated>\n"
+            f"    <summary>{summ}</summary>\n"
+            f"    <category term=\"{p.primary_subject_code}\"/>\n"
+            f"  </entry>"
+        )
+    body = (
+        '<?xml version="1.0" encoding="UTF-8"?>\n'
+        '<feed xmlns="http://www.w3.org/2005/Atom">\n'
+        f"  <title>arXiv {code} latest preprints</title>\n"
+        f"  <id>{root}/atom/{code}</id>\n"
+        f"  <link href=\"{root}/atom/{code}\" rel=\"self\"/>\n"
+        f"  <updated>{papers[0].submitted_date}T00:00:00Z</updated>\n"
+        + "\n".join(entries) +
+        "\n</feed>\n"
+    )
+    return Response(body, mimetype="application/atom+xml")
+
+
+# -----------------------------------------------------------------------
+# Citation batch export — download N citations as BibTeX in one shot.
+# Distinct from /export which is a UI flow with multiple steps.
+# -----------------------------------------------------------------------
+
+@app.route("/citation/batch")
+@app.route("/cite/batch")
+def citation_batch():
+    try:
+        count = int(request.args.get("n", "100"))
+    except ValueError:
+        count = 100
+    count = max(1, min(200, count))
+    fmt = (request.args.get("format") or "bibtex").lower()
+    cat = (request.args.get("cat") or "").strip()
+    q = Paper.query.order_by(Paper.arxiv_id.desc())
+    if cat:
+        q = q.filter(or_(Paper.primary_subject_code == cat,
+                         Paper.primary_subject_code.like(f"{cat}.%"),
+                         Paper.primary_category_code == cat))
+    papers = q.limit(count).all()
+    lines = []
+    if fmt == "ris":
+        for p in papers:
+            lines.append("TY  - JOUR")
+            lines.append(f"TI  - {p.title}")
+            for a in p.get_authors():
+                lines.append(f"AU  - {a}")
+            lines.append(f"PY  - {p.submitted_year}")
+            lines.append(f"UR  - https://arxiv.org/abs/{p.arxiv_id}")
+            if p.doi:
+                lines.append(f"DO  - {p.doi}")
+            lines.append("ER  -")
+            lines.append("")
+        body = "\n".join(lines)
+        mime = "application/x-research-info-systems"
+    else:
+        for p in papers:
+            cite_key = f"arxiv{p.arxiv_id.replace('.', '')}"
+            authors_bib = " and ".join(p.get_authors()) or "Anonymous"
+            lines.append(f"@article{{{cite_key},")
+            lines.append(f"  title = {{{p.title}}},")
+            lines.append(f"  author = {{{authors_bib}}},")
+            lines.append(f"  year = {{{p.submitted_year}}},")
+            lines.append(f"  eprint = {{{p.arxiv_id}}},")
+            lines.append("  archivePrefix = {arXiv},")
+            if p.primary_subject_code:
+                lines.append(f"  primaryClass = {{{p.primary_subject_code}}},")
+            if p.doi:
+                lines.append(f"  doi = {{{p.doi}}},")
+            lines.append(f"  url = {{https://arxiv.org/abs/{p.arxiv_id}}}")
+            lines.append("}")
+            lines.append("")
+        body = "\n".join(lines)
+        mime = "application/x-bibtex"
+    # Surface the count as a visible header line so agents can read
+    # "Exported 100 BibTeX entries" directly from the page.
+    body = f"% Exported {len(papers)} {fmt.upper()} entries from arXiv mirror\n\n" + body
+    return Response(body, mimetype=mime)
+
+
+# -----------------------------------------------------------------------
+# SEO meta block + JSON-LD ScholarlyArticle helper. The template includes
+# the dict via {{ paper_seo_meta(paper) | safe }}; centralising here keeps
+# the encoding rules in one place.
+# -----------------------------------------------------------------------
+
+def _xml_escape(s):
+    return (s or "").replace("&", "&amp;").replace("<", "&lt;") \
+                    .replace(">", "&gt;").replace('"', "&quot;")
+
+
+@app.template_global()
+def paper_seo_meta(paper):
+    """Return a block of Dublin Core meta tags + JSON-LD ScholarlyArticle
+    schema for a single paper. Output is HTML-safe; caller marks |safe."""
+    dc_creators = "\n".join(
+        f'  <meta name="DC.creator" content="{_xml_escape(a)}">'
+        for a in paper.get_authors())
+    dc = [
+        f'  <meta name="DC.title" content="{_xml_escape(paper.title)}">',
+        f'  <meta name="DC.date" content="{_xml_escape(paper.submitted_date)}">',
+        f'  <meta name="DC.identifier" content="arXiv:{paper.arxiv_id}">',
+        f'  <meta name="DC.identifier.uri" content="https://arxiv.org/abs/{paper.arxiv_id}">',
+        f'  <meta name="DC.subject" content="{_xml_escape(paper.primary_subject_code)}">',
+        f'  <meta name="DC.publisher" content="arXiv.org">',
+        f'  <meta name="DC.rights" content="{_xml_escape(paper.license or "arXiv-perpetual")}">',
+        f'  <meta name="DC.language" content="en">',
+        f'  <meta name="DC.type" content="Text.Article">',
+        f'  <meta name="DC.description" content="{_xml_escape((paper.abstract or "")[:300])}">',
+    ]
+    if paper.doi:
+        dc.append(f'  <meta name="DC.identifier.doi" content="{_xml_escape(paper.doi)}">')
+    if paper.journal_ref:
+        dc.append(f'  <meta name="DC.source" content="{_xml_escape(paper.journal_ref)}">')
+    # Highwire Press citation_* meta (Google Scholar / Semantic Scholar).
+    citation = [
+        f'  <meta name="citation_title" content="{_xml_escape(paper.title)}">',
+        f'  <meta name="citation_arxiv_id" content="{paper.arxiv_id}">',
+        f'  <meta name="citation_date" content="{_xml_escape(paper.submitted_date)}">',
+        f'  <meta name="citation_online_date" content="{_xml_escape(paper.submitted_date)}">',
+        f'  <meta name="citation_pdf_url" content="https://arxiv.org/pdf/{paper.arxiv_id}">',
+        f'  <meta name="citation_abstract_html_url" content="https://arxiv.org/abs/{paper.arxiv_id}">',
+    ]
+    for a in paper.get_authors():
+        citation.append(f'  <meta name="citation_author" content="{_xml_escape(a)}">')
+    if paper.doi:
+        citation.append(f'  <meta name="citation_doi" content="{_xml_escape(paper.doi)}">')
+    # JSON-LD ScholarlyArticle (deterministic — sorted keys via json.dumps).
+    json_ld = {
+        "@context": "https://schema.org",
+        "@type": "ScholarlyArticle",
+        "headline": paper.title,
+        "name": paper.title,
+        "identifier": f"arXiv:{paper.arxiv_id}",
+        "url": f"https://arxiv.org/abs/{paper.arxiv_id}",
+        "datePublished": paper.submitted_date,
+        "abstract": (paper.abstract or "")[:1000],
+        "author": [{"@type": "Person", "name": a}
+                   for a in paper.get_authors()],
+        "publisher": {"@type": "Organization", "name": "arXiv",
+                      "url": "https://arxiv.org"},
+        "keywords": paper.primary_subject_code,
+        "inLanguage": "en",
+        "license": paper.license or "arXiv-perpetual",
+    }
+    if paper.doi:
+        json_ld["sameAs"] = f"https://doi.org/{paper.doi}"
+    blob = json.dumps(json_ld, ensure_ascii=False, sort_keys=True, indent=2)
+    return (dc_creators + "\n" + "\n".join(dc) + "\n" + "\n".join(citation)
+            + '\n  <script type="application/ld+json">\n' + blob
+            + "\n  </script>")
+
+
+# =======================================================================
+# =======================================================================
 # BENCHMARK SEED DATA
 # =======================================================================
 
@@ -3981,6 +4445,22 @@ def normalize_seed_db_layout():
     """
     try:
         conn = db.engine.connect()
+        # R7 — composite indexes for the listing-by-category + year hot
+        # paths. CREATE INDEX IF NOT EXISTS so a warm restart is a no-op.
+        # Drop-and-recreate below resets these in alpha order with all the
+        # others, so adding them here doesn't break byte-identical rebuilds.
+        for ddl in (
+            "CREATE INDEX IF NOT EXISTS ix_papers_cat_year "
+            "ON papers(primary_category_code, submitted_year)",
+            "CREATE INDEX IF NOT EXISTS ix_papers_subj_year "
+            "ON papers(primary_subject_code, submitted_year)",
+            "CREATE INDEX IF NOT EXISTS ix_papers_cat_date "
+            "ON papers(primary_category_code, submitted_date)",
+            "CREATE INDEX IF NOT EXISTS ix_papers_arxiv_id_year "
+            "ON papers(arxiv_id, submitted_year)",
+        ):
+            conn.execute(text(ddl))
+        conn.commit()
         idx_rows = conn.execute(text(
             "SELECT name, sql FROM sqlite_master "
             "WHERE type='index' AND name LIKE 'ix_%'"

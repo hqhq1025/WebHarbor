@@ -1,16 +1,60 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="{{ current_lang() }}">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>{% block title %}Allrecipes{% endblock %} | Recipes, How-Tos, Videos and More</title>
+
+    {# R7 SEO: meta description / canonical / robots / Open Graph / Twitter card #}
+    <meta name="description" content="{% block meta_description %}Allrecipes is where home cooks come for trusted recipes, cooking tips, video tutorials, meal plans and seasonal collections — over 18,000 recipes with ratings, reviews and step-by-step instructions.{% endblock %}">
+    <meta name="robots" content="{% block meta_robots %}index, follow{% endblock %}">
+    <link rel="canonical" href="{{ canonical_url() }}">
+    <meta property="og:site_name" content="Allrecipes">
+    <meta property="og:type" content="{% block og_type %}website{% endblock %}">
+    <meta property="og:title" content="{% block og_title %}{{ self.title() }} | Allrecipes{% endblock %}">
+    <meta property="og:description" content="{% block og_description %}{{ self.meta_description() }}{% endblock %}">
+    <meta property="og:url" content="{{ canonical_url() }}">
+    <meta property="og:image" content="{% block og_image %}{{ site_base_url() }}/static/images/og-default.jpg{% endblock %}">
+    <meta property="og:locale" content="{% block og_locale %}en_US{% endblock %}">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="{% block twitter_title %}{{ self.og_title() }}{% endblock %}">
+    <meta name="twitter:description" content="{% block twitter_description %}{{ self.og_description() }}{% endblock %}">
+    <meta name="twitter:image" content="{% block twitter_image %}{{ self.og_image() }}{% endblock %}">
+
+    {# R7 perf: preload the critical CSS so the FCP doesn't wait on a CSSOM rebuild #}
+    <link rel="preload" href="{{ url_for('static', filename='css/main.css') }}" as="style">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
+
+    {# R7 SEO: page-level JSON-LD slot (each template can fill block jsonld) #}
+    {% block jsonld %}
+    <script type="application/ld+json">
+    {
+        "@context": "https://schema.org",
+        "@type": "WebSite",
+        "name": "Allrecipes",
+        "url": "{{ site_base_url() }}/",
+        "potentialAction": {
+            "@type": "SearchAction",
+            "target": "{{ site_base_url() }}/search?q={search_term_string}",
+            "query-input": "required name=search_term_string"
+        }
+    }
+    </script>
+    {% endblock %}
+
     {% block extra_css %}{% endblock %}
 </head>
 <body>
     <!-- Skip-to-content link for keyboard / screen-reader users (R5 a11y) -->
     <a class="skip-link" href="#main-content">Skip to content</a>
+    {# R7: language banner — visible only on /lang/<x>/ paths so it doesn't pollute the default English UX. #}
+    {% if current_lang() != 'en' %}
+    <div class="lang-banner" role="note" aria-live="polite" style="background:#fff7e6;padding:8px 16px;border-bottom:1px solid #e0c97a;font-size:14px;">
+        <strong>{{ lang_label(current_lang()) }}:</strong> {{ lang_banner_text(current_lang()) }}
+        <a href="/" style="margin-left:12px;">Switch to English</a>
+    </div>
+    {% endif %}
     <!-- HEADER -->
     <header class="site-header" role="banner">
         <nav class="nav-top" aria-label="Primary">
@@ -36,6 +80,14 @@
                     <a href="{{ url_for('login') }}">Log In</a>
                     <a href="{{ url_for('register') }}" class="nav-btn">Sign Up</a>
                 {% endif %}
+                {# R7: language switcher — agent can click any of these to land on /lang/<x>/ #}
+                <span class="lang-switcher" aria-label="Language" style="margin-left:12px;font-size:13px;color:#666;">
+                    <a href="/" aria-label="English" {% if current_lang() == 'en' %}style="font-weight:700;"{% endif %}>EN</a>
+                    <a href="/lang/es/" aria-label="Spanish" {% if current_lang() == 'es' %}style="font-weight:700;"{% endif %}>ES</a>
+                    <a href="/lang/fr/" aria-label="French" {% if current_lang() == 'fr' %}style="font-weight:700;"{% endif %}>FR</a>
+                    <a href="/lang/de/" aria-label="German" {% if current_lang() == 'de' %}style="font-weight:700;"{% endif %}>DE</a>
+                    <a href="/lang/zh/" aria-label="Chinese" {% if current_lang() == 'zh' %}style="font-weight:700;"{% endif %}>ZH</a>
+                </span>
             </div>
         </nav>
         <div class="nav-categories" id="nav-categories" aria-label="Recipe categories">

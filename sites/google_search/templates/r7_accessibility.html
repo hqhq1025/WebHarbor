@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block title %}Keyboard navigation — Google Search Accessibility{% endblock %}
+
+{% block content %}
+<div class="container" style="max-width: 940px; margin: 32px auto; padding: 0 16px;">
+  <h1 style="font-size: 28px; margin-bottom: 8px;">Accessibility &amp; keyboard navigation</h1>
+  <p class="muted">
+    Google Search supports keyboard-only navigation of search results,
+    skip-links, ARIA landmarks, and high-contrast theming. This page
+    documents the supported shortcuts. WCAG 2.1 Level AA conformance.
+  </p>
+
+  <h2 style="font-size: 18px; margin-top: 24px;">Keyboard shortcuts</h2>
+  <table style="width: 100%; border-collapse: collapse;">
+    <thead>
+      <tr style="text-align: left; border-bottom: 1px solid #dadce0;">
+        <th style="padding: 8px; width: 180px;">Shortcut</th>
+        <th style="padding: 8px;">Action</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for key, action in shortcuts %}
+      <tr style="border-bottom: 1px solid #eee;">
+        <td style="padding: 8px;"><kbd>{{ key }}</kbd></td>
+        <td style="padding: 8px;">{{ action }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <h2 style="font-size: 18px; margin-top: 28px;">Assistive-technology support</h2>
+  <ul>
+    <li>NVDA / JAWS / VoiceOver — every result card has an aria-label with title, source, snippet, and rank.</li>
+    <li>Skip-to-content link is the first focusable element on every page.</li>
+    <li>Knowledge panel facts use a definition-list (<code>dl/dt/dd</code>) so screen readers announce key→value pairs.</li>
+    <li>Search box honours <code>prefers-reduced-motion</code>; no autocomplete animation when set.</li>
+  </ul>
+
+  <p style="margin-top: 16px;">
+    See also <a href="/search/syntax">Advanced search syntax</a> for
+    operator-driven refinement that pairs well with keyboard navigation.
+  </p>
+</div>
+{% endblock %}

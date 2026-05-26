@@ -1,7 +1,47 @@
 {% extends "base.html" %}
 {% block title %}{{ word.headword|upper }} | English meaning - Cambridge Dictionary{% endblock %}
+{% block og_type %}article{% endblock %}
+{% block og_title %}{{ word.headword }} — Cambridge Dictionary{% endblock %}
+{% block og_image %}/og-image/{{ word.slug }}.svg{% endblock %}
+{% block head_extra %}
+  {# R7: SEO — JSON-LD DefinedTerm schema. Indexed by search engines so the
+     entry shows up as a rich-result dictionary card. inDefinedTermSet points
+     at the catalog root. @id is a stable opaque token from words_r7.json
+     for R7 entries; r0..r6 rows fall back to a slug-derived value. #}
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "DefinedTerm",
+    "@id": "{{ word.defined_term_id or ('dt-legacy-' ~ word.slug) }}",
+    "name": "{{ word.headword }}",
+    "description": "{{ (word.guide_word or word.headword)|e }}",
+    "inDefinedTermSet": "https://dictionary.cambridge.org/dictionary/english/",
+    "termCode": "{{ word.slug }}",
+    "url": "/dictionary/english/{{ word.slug }}"{% if word.r7_domain %},
+    "additionalType": "https://schema.org/{{ word.r7_domain }}Term",
+    "knowsAbout": "{{ word.r7_domain }}"{% endif %}
+  }
+  </script>
+{% endblock %}
 {% block content %}
-<div class="dict-entry">
+<div class="dict-entry"
+     data-dialect="{{ session.get('dialect', 'en-uk') }}"
+     data-domain="{{ word.r7_domain or '' }}"
+     data-defined-term-id="{{ word.defined_term_id or '' }}">
+  {# R7 dialect badge — visible near breadcrumb when a non-default dialect
+     is selected. Makes the "Dictionary mode: en-us" assertion in tasks
+     literally findable in the rendered DOM. #}
+  {% if session.get('dialect') %}
+  <p class="r7-dialect-badge" data-dialect="{{ session.get('dialect') }}">
+    Dictionary mode: {{ session.get('dialect') }}
+  </p>
+  {% endif %}
+  {# R7 domain badge — only present for r7_domain rows. #}
+  {% if word.r7_domain %}
+  <p class="r7-domain-badge" data-domain="{{ word.r7_domain }}">
+    Domain: <a href="{{ url_for('dictionary_domain', dom=word.r7_domain) }}">{{ word.r7_domain }}</a>
+  </p>
+  {% endif %}
   <!-- R6 breadcrumb chain (Home › Dictionary › English › Letter X › word) -->
   {% if breadcrumb %}
   <nav class="breadcrumb r6-breadcrumb r6-breadcrumb-chain" aria-label="Breadcrumb">
@@ -95,6 +135,9 @@
             <audio class="pron-audio" preload="none" src="{{ word.audio_uk_path }}" data-region="uk"></audio>
           {% endif %}
           <span class="pron-ipa pron-ipa--hoverable" data-region="uk" tabindex="0" role="note" aria-label="UK IPA pronunciation" title="UK IPA: {{ word.phonetic_uk or word.pronunciation_ipa }}">{{ word.phonetic_uk or word.pronunciation_ipa }}</span>
+          {# R7: accessibility — screen-reader-only IPA spell-out. #}
+          <span class="sr-only-ipa" aria-label="UK IPA pronunciation spell-out"
+                data-region="uk">{{ word.dialect_uk or word.phonetic_uk or word.pronunciation_ipa }}</span>
         </div>
       {% endif %}
       {% if word.phonetic_us or word.audio_us_path %}
@@ -105,6 +148,9 @@
             <audio class="pron-audio" preload="none" src="{{ word.audio_us_path }}" data-region="us"></audio>
           {% endif %}
           <span class="pron-ipa pron-ipa--hoverable" data-region="us" tabindex="0" role="note" aria-label="US IPA pronunciation" title="US IPA: {{ word.phonetic_us or word.pronunciation_ipa }}">{{ word.phonetic_us or word.pronunciation_ipa }}</span>
+          {# R7: accessibility — screen-reader-only IPA spell-out. #}
+          <span class="sr-only-ipa" aria-label="US IPA pronunciation spell-out"
+                data-region="us">{{ word.dialect_us or word.phonetic_us or word.pronunciation_ipa }}</span>
         </div>
       {% endif %}
       <div class="playback-speed" role="group" aria-label="Playback speed">

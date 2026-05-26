@@ -5876,3 +5876,643 @@ def backfill_transit_no_service_r6(db, TransitLine):
             flagged += 1
     db.session.commit()
     print(f"backfill_transit_no_service_r6: suspended {flagged} transit lines")
+
+
+# ---------------------------------------------------------------------------
+# R7: SEO + locale expansion — additional venue templates that bring the
+# Place table from ~290k (R6 cap) to 400k+.  Each template renders an
+# extra row per city; with 812 cities × ~140 templates we land ~113k more
+# rows.  All R7 templates are designed so the resulting Place rows have
+# enough metadata (price_level, category, lat/lng, rating, openingHours-
+# compatible hours string) to populate the SEO JSON-LD blocks added on
+# place_detail.html.
+# ---------------------------------------------------------------------------
+_R7_TEMPLATES = [
+    # ---- More restaurant sub-styles ----
+    ("restaurants", "{anchor} Neapolitan Pizzeria", "Pizzeria",
+     "Wood-fired Neapolitan pizzeria certified by the AVPN with imported tipo-00 flour and San Marzano tomatoes.",
+     "$$", 4.4, 4.9, "", ""),
+    ("restaurants", "{anchor} Hot Pot House", "Hot pot",
+     "Family-style hot pot with bone-broth, mala, and tomato bases; weekend lunch combos.",
+     "$$", 4.3, 4.8, "", ""),
+    ("restaurants", "{anchor} Crawfish Boil Shack", "Cajun",
+     "Cajun seafood shack with crawfish boils by the pound, gumbo, and beignets for dessert.",
+     "$$", 4.2, 4.7, "", ""),
+    ("restaurants", "{anchor} Ethiopian Mesob", "Ethiopian",
+     "Communal-platter Ethiopian restaurant with injera, vegetarian combo, and honey wine.",
+     "$$", 4.5, 4.9, "", ""),
+    ("restaurants", "{anchor} Peruvian Cevicheria", "Peruvian",
+     "Modern cevicheria with leche de tigre, anticuchos, and a pisco-forward cocktail list.",
+     "$$$", 4.4, 4.9, "", ""),
+    ("restaurants", "{anchor} Filipino Kamayan", "Filipino",
+     "Banana-leaf kamayan feast with lechon, lumpia, and ube halo-halo; reservations encouraged.",
+     "$$$", 4.5, 4.9, "", ""),
+    ("restaurants", "{anchor} Caribbean Jerk House", "Caribbean",
+     "Jerk-spiced Caribbean kitchen with oxtail, curry goat, and rum-based punches.",
+     "$$", 4.3, 4.8, "", ""),
+    ("restaurants", "{anchor} Halal Cart", "Street food",
+     "Halal lunch cart with chicken-over-rice, gyro plates, and white sauce by the bottle.",
+     "$", 4.2, 4.7, "", ""),
+    ("restaurants", "{anchor} Brazilian Churrascaria", "Brazilian",
+     "All-you-can-eat churrascaria with passador service, salad bar, and caipirinha pitchers.",
+     "$$$", 4.3, 4.8, "", ""),
+    ("restaurants", "{anchor} Modern Israeli", "Mediterranean",
+     "Modern Israeli kitchen with hummus, sabich, lamb shawarma, and tahini soft-serve.",
+     "$$", 4.5, 4.9, "", ""),
+    ("restaurants", "{anchor} Oyster Bar", "Seafood",
+     "Marble-counter oyster bar with East Coast and West Coast lineups, mignonette, and bubbles.",
+     "$$$", 4.4, 4.9, "", ""),
+    ("restaurants", "{anchor} Cantonese Roast Hall", "Cantonese",
+     "Cantonese roast hall hanging crispy-skin pork and char siu in the window since 1992.",
+     "$$", 4.4, 4.8, "", ""),
+    ("restaurants", "{anchor} Gluten-Free Bakery Cafe", "Bakery",
+     "Dedicated gluten-free bakery and cafe with breakfast plates and a kids menu.",
+     "$$", 4.4, 4.9, "", ""),
+    ("restaurants", "{anchor} Plant-Based Burger Joint", "Burger joint",
+     "Plant-based burger joint with house-pressed patties, smash style, and oat-milk shakes.",
+     "$$", 4.2, 4.7, "", ""),
+    ("restaurants", "{anchor} Late-Night Wing Spot", "Wings",
+     "Late-night wing spot with 20 sauces, dry rubs, blue-cheese ranch, and karaoke Tuesdays.",
+     "$", 4.0, 4.5, "", ""),
+
+    # ---- Hotels — chain heavy for SEO/JSON-LD Hotel schema ----
+    ("hotels", "Marriott {anchor} Downtown", "Hotel chain",
+     "Full-service Marriott in the central business district with a rooftop bar and 14 meeting rooms.",
+     "$$$", 4.1, 4.7, "lobby", "G"),
+    ("hotels", "Hilton Garden Inn {anchor} Riverside", "Hotel chain",
+     "Mid-scale Hilton Garden Inn with riverside views, a 24-hour pantry, and an indoor pool.",
+     "$$", 4.0, 4.6, "lobby", "G"),
+    ("hotels", "Holiday Inn Express {anchor} Airport", "Hotel chain",
+     "Airport-corridor Holiday Inn Express with free breakfast and a 24/7 shuttle.",
+     "$$", 3.9, 4.5, "lobby", "G"),
+    ("hotels", "Hyatt Place {anchor} Convention Center", "Hotel chain",
+     "Hyatt Place adjacent to the convention center with a 24-hour gym and an open-kitchen breakfast.",
+     "$$$", 4.1, 4.7, "lobby", "G"),
+    ("hotels", "Hampton Inn {anchor} Midtown", "Hotel chain",
+     "Hampton Inn in midtown with a hot breakfast bar and a saltwater indoor pool.",
+     "$$", 4.0, 4.6, "lobby", "G"),
+    ("hotels", "Best Western Plus {anchor}", "Hotel chain",
+     "Best Western Plus with a complimentary breakfast and an outdoor pool deck.",
+     "$$", 3.8, 4.5, "lobby", "G"),
+    ("hotels", "Courtyard by Marriott {anchor}", "Hotel chain",
+     "Courtyard by Marriott with The Bistro service, ergonomic workspaces, and an indoor pool.",
+     "$$$", 4.0, 4.7, "lobby", "G"),
+    ("hotels", "Residence Inn {anchor}", "Extended stay hotel",
+     "Extended-stay Residence Inn with full kitchens, weekday evening receptions, and grocery service.",
+     "$$$", 4.2, 4.7, "lobby", "G"),
+    ("hotels", "{anchor} Boutique Inn", "Boutique hotel",
+     "Independent boutique hotel with 22 individually designed rooms and a cocktail lounge.",
+     "$$$", 4.4, 4.9, "lobby", "G"),
+    ("hotels", "{anchor} Hostel & Capsule", "Hostel",
+     "Modern hostel with capsule pods, female-only dorm floors, and a rooftop common kitchen.",
+     "$", 4.1, 4.6, "lobby", "G"),
+
+    # ---- Coffee chains for SEO chain rail ----
+    ("coffee-shops", "Starbucks — {anchor} Square", "Coffee chain",
+     "Starbucks with a mobile-order pickup shelf, cold-foam menu, and outdoor patio.",
+     "$", 3.9, 4.5, "", ""),
+    ("coffee-shops", "Tim Hortons — {anchor} Plaza", "Coffee chain",
+     "Tim Hortons with Timbits, drive-thru, and a 5am open for early commuters.",
+     "$", 3.8, 4.4, "", ""),
+    ("coffee-shops", "Costa Coffee — {anchor}", "Coffee chain",
+     "Costa Coffee with flat whites, sandwich case, and a quiet study mezzanine.",
+     "$$", 4.0, 4.5, "", ""),
+    ("coffee-shops", "Philz Coffee — {anchor}", "Coffee chain",
+     "Philz Coffee with one-cup pour-overs and customized cream-and-sugar prep.",
+     "$$", 4.3, 4.8, "", ""),
+    ("coffee-shops", "{anchor} Espresso Library", "Specialty coffee",
+     "Espresso bar with library-style benches, single-origin lineup, and a 4-tap nitro coffee.",
+     "$$", 4.4, 4.9, "", ""),
+    ("coffee-shops", "{anchor} Bookshop Cafe", "Bookshop cafe",
+     "Cafe inside an independent bookshop; pours alongside curated staff-pick shelves.",
+     "$$", 4.4, 4.9, "", ""),
+
+    # ---- Supermarkets / convenience ----
+    ("supermarkets", "Aldi {anchor}", "Discount grocery",
+     "Discount grocery with private-label staples, a weekly Aldi Finds aisle, and quarter-cart returns.",
+     "$", 4.3, 4.8, "", ""),
+    ("supermarkets", "Sprouts {anchor}", "Natural grocery",
+     "Natural grocery with bulk bins, vitamin counter, and a fresh-juice bar.",
+     "$$", 4.2, 4.7, "", ""),
+    ("supermarkets", "H Mart {anchor}", "Asian grocery",
+     "Korean-American grocery with live seafood, banchan counter, and a food court mezzanine.",
+     "$$", 4.5, 4.9, "", ""),
+    ("supermarkets", "Patel Brothers {anchor}", "Indian grocery",
+     "Indian grocery with spices in bulk, fresh paneer, and a frozen-snack chest freezer aisle.",
+     "$$", 4.4, 4.9, "", ""),
+    ("supermarkets", "{anchor} Co-op Market", "Co-op grocery",
+     "Member-owned co-op grocery with local produce, bulk pantry, and a community board.",
+     "$$", 4.3, 4.8, "", ""),
+    ("supermarkets", "7-Eleven — {anchor}", "Convenience store",
+     "24/7 convenience store with Slurpees, taquitos, ATM, and lottery counter.",
+     "$", 3.6, 4.2, "", ""),
+
+    # ---- Pharmacies ----
+    ("pharmacies", "Rite Aid — {anchor}", "Pharmacy chain",
+     "Rite Aid with prescription pickup, immunization clinic, and a thrifty wellness aisle.",
+     "$$", 3.7, 4.3, "", ""),
+    ("pharmacies", "Walgreens 24h — {anchor}", "Pharmacy chain",
+     "24-hour Walgreens with drive-thru pharmacy and a photo printing kiosk.",
+     "$$", 3.7, 4.3, "", ""),
+    ("pharmacies", "{anchor} Specialty Compounder", "Compounding pharmacy",
+     "Independent specialty compounder for hormone, dermatology, and veterinary preparations.",
+     "$$$", 4.5, 4.9, "", ""),
+
+    # ---- Health / dentists / vets ----
+    ("dentists", "{anchor} Pediatric Dental", "Pediatric dentistry",
+     "Pediatric dentistry with movie-screen exam rooms, prize chest, and Saturday hours.",
+     "$$$", 4.6, 4.9, "", ""),
+    ("dentists", "{anchor} Implant Center", "Dental implants",
+     "Implant center with in-house CBCT imaging, sedation, and same-day temporary crowns.",
+     "$$$", 4.5, 4.9, "", ""),
+    ("veterinarians", "{anchor} Bird & Exotics Vet", "Exotic vet",
+     "Avian and exotic vet hospital with specialized housing, x-ray, and emergency intake.",
+     "$$$", 4.4, 4.9, "", ""),
+    ("hospitals", "{anchor} Pediatric Walk-In", "Pediatric urgent care",
+     "Pediatric walk-in clinic with kid-friendly exam rooms and weekend appointments.",
+     "$$", 4.3, 4.8, "", ""),
+    ("hospitals", "{anchor} Women's Health Clinic", "Women's health",
+     "Women's health clinic offering OB-GYN, midwifery, lactation support, and mental-health intake.",
+     "$$$", 4.4, 4.9, "", ""),
+    ("health-beauty", "{anchor} Massage Therapy", "Massage spa",
+     "Licensed massage therapy with deep tissue, sports recovery, and prenatal options.",
+     "$$", 4.5, 4.9, "", ""),
+    ("health-beauty", "{anchor} Nail Studio", "Nail salon",
+     "Nail studio with non-toxic polish lineup, gel, and complimentary beverages.",
+     "$$", 4.2, 4.7, "", ""),
+    ("health-beauty", "{anchor} Barbershop", "Barbershop",
+     "Old-school barbershop with hot-towel shaves, beard trims, and walk-in service.",
+     "$$", 4.4, 4.9, "", ""),
+
+    # ---- Fitness ----
+    ("fitness", "{anchor} Boxing Club", "Boxing gym",
+     "Boxing club with heavy-bag rotation, sparring nights, and beginner-friendly footwork.",
+     "$$$", 4.3, 4.8, "", ""),
+    ("fitness", "{anchor} Spin Studio", "Spin studio",
+     "Boutique spin studio with rhythm rides, themed playlists, and shower facilities.",
+     "$$$", 4.4, 4.9, "", ""),
+    ("fitness", "{anchor} Lap Pool & Aqua Fit", "Aquatic center",
+     "Lap pool with daily aqua-fit classes, sauna, and family swim hours.",
+     "$$", 4.3, 4.8, "", ""),
+    ("fitness", "{anchor} Martial Arts Academy", "Martial arts",
+     "Martial arts academy teaching BJJ, muay thai, and kids classes after school.",
+     "$$$", 4.5, 4.9, "", ""),
+
+    # ---- Shopping ----
+    ("shopping", "{anchor} Outlet Mall", "Outlet mall",
+     "Open-air outlet mall with 80 brand-name stores, food court, and a kids carousel.",
+     "$$", 4.0, 4.6, "concourse", "1"),
+    ("shopping", "{anchor} Antique Market", "Antique market",
+     "Indoor antique market with 60 dealer booths, weekend-only and a vintage cafe.",
+     "$$", 4.3, 4.8, "", ""),
+    ("shopping", "{anchor} Farmer's Market Pavilion", "Farmers market",
+     "Saturday farmers market pavilion with 90 vendors, live music, and a cooking demo tent.",
+     "$$", 4.6, 4.9, "", ""),
+    ("shopping", "{anchor} Toy & Hobby Shop", "Toy store",
+     "Family-run toy and hobby shop with model trains, kits, board games, and gift wrap.",
+     "$$", 4.4, 4.9, "", ""),
+    ("shopping", "{anchor} Bicycle Workshop", "Bicycle shop",
+     "Bicycle shop and workshop with tune-ups, e-bike sales, and group ride starts.",
+     "$$", 4.5, 4.9, "", ""),
+    ("shopping", "Apple Store — {anchor}", "Electronics chain",
+     "Apple Store with Today at Apple workshops, Genius Bar appointments, and trade-in.",
+     "$$$", 4.4, 4.9, "concourse", "1"),
+    ("shopping", "Best Buy — {anchor}", "Electronics chain",
+     "Best Buy with Geek Squad service, appliance showroom, and an open-box clearance corner.",
+     "$$", 3.9, 4.5, "", ""),
+    ("shopping", "IKEA {anchor} Showroom", "Furniture store",
+     "IKEA showroom with marketplace, Smaland childcare, and Swedish meatballs at the cafe.",
+     "$$", 4.3, 4.8, "concourse", "1"),
+
+    # ---- Museums ----
+    ("museums", "{anchor} Science Center", "Science museum",
+     "Interactive science center with planetarium, IMAX dome, and a maker workshop floor.",
+     "$$", 4.5, 4.9, "concourse", "1"),
+    ("museums", "{anchor} Children's Museum", "Children's museum",
+     "Hands-on children's museum with role-play stages, a water table, and toddler-only hours.",
+     "$$", 4.6, 4.9, "concourse", "1"),
+    ("museums", "{anchor} Maritime Museum", "Maritime museum",
+     "Maritime museum on the waterfront with a historic schooner tour and lighthouse exhibits.",
+     "$$", 4.4, 4.9, "concourse", "1"),
+    ("museums", "{anchor} African American History", "History museum",
+     "Museum of African American history with rotating exhibits, oral histories, and education center.",
+     "$$", 4.6, 4.9, "concourse", "1"),
+    ("museums", "{anchor} Asian Art Gallery", "Art gallery",
+     "Gallery of Asian art spanning Tang ceramics, Edo woodblocks, and contemporary South Asian artists.",
+     "$$", 4.5, 4.9, "concourse", "1"),
+
+    # ---- Parks ----
+    ("parks", "{anchor} River Greenway", "Park",
+     "Multi-use river greenway with paved trail, kayak launch, and wildflower meadow.",
+     "Free", 4.5, 4.9, "", ""),
+    ("parks", "{anchor} Skate Park", "Skate park",
+     "Concrete skate park with bowls, half-pipes, and beginner street section.",
+     "Free", 4.3, 4.8, "", ""),
+    ("parks", "{anchor} Community Garden", "Community garden",
+     "Volunteer-run community garden with raised beds, demonstration plots, and Saturday workdays.",
+     "Free", 4.4, 4.9, "", ""),
+    ("parks", "{anchor} Disc Golf Course", "Disc golf",
+     "18-hole disc golf course through wooded terrain with cement tee pads and tournament alts.",
+     "Free", 4.3, 4.8, "", ""),
+    ("dog-parks", "{anchor} Off-Leash Dog Run", "Dog park",
+     "Off-leash dog run with separate small-dog area, water fountains, and shade canopies.",
+     "Free", 4.4, 4.9, "", ""),
+
+    # ---- Beaches ----
+    ("beaches", "{anchor} Public Beach", "Public beach",
+     "Lifeguarded public beach with restrooms, snack bar, and a boardwalk concession row.",
+     "Free", 4.3, 4.8, "", ""),
+    ("beaches", "{anchor} Surfing Cove", "Surf beach",
+     "Surfing cove with consistent left break, beginner zone, and a board-rental shack.",
+     "Free", 4.5, 4.9, "", ""),
+
+    # ---- Entertainment ----
+    ("entertainment", "{anchor} Comedy Club", "Comedy club",
+     "Comedy club with weeknight open-mics and a Saturday headliner lineup; 2-item minimum.",
+     "$$", 4.3, 4.8, "", ""),
+    ("entertainment", "{anchor} Jazz Lounge", "Jazz club",
+     "Jazz lounge with house trio, late-night jam session, and a $10 student cover.",
+     "$$$", 4.5, 4.9, "", ""),
+    ("entertainment", "{anchor} Indie Movie House", "Movie theater",
+     "Three-screen indie movie house with art-house lineup, second-run double features, and a bar.",
+     "$$", 4.5, 4.9, "", ""),
+    ("entertainment", "{anchor} Karaoke Box", "Karaoke",
+     "Private-room karaoke with 25,000-song catalog, soju menu, and 2am late-night happy hour.",
+     "$$", 4.2, 4.7, "", ""),
+    ("entertainment", "{anchor} Escape Room Lab", "Escape room",
+     "Escape room lab with 6 rooms across difficulty tiers, team scheduling, and birthday packages.",
+     "$$", 4.5, 4.9, "", ""),
+
+    # ---- Services ----
+    ("services", "{anchor} Notary Public", "Notary",
+     "Walk-in notary public with mobile service, apostille help, and weekend hours.",
+     "$", 4.5, 4.9, "", ""),
+    ("services", "{anchor} UPS Store", "Shipping store",
+     "UPS Store with packaging, mailbox rental, printing, and Amazon returns.",
+     "$$", 4.2, 4.7, "", ""),
+    ("services", "{anchor} FedEx Office", "Shipping store",
+     "FedEx Office with printing, packaging, ship-and-print, and same-day pickup boxes.",
+     "$$", 4.1, 4.6, "", ""),
+    ("services", "{anchor} Dry Cleaner", "Dry cleaner",
+     "Family-run dry cleaner with same-day service, alterations, and pickup-delivery routes.",
+     "$$", 4.3, 4.8, "", ""),
+    ("services", "{anchor} Bank Branch", "Bank branch",
+     "Full-service bank branch with safe deposit, notary, mortgage counselors, and ATM lobby.",
+     "$$", 4.0, 4.5, "", ""),
+
+    # ---- Religious sites ----
+    ("religious", "{anchor} Cathedral", "Cathedral",
+     "Historic cathedral with daily mass, choral vespers Sundays, and free guided tours.",
+     "Free", 4.6, 4.9, "", ""),
+    ("religious", "{anchor} Buddhist Temple", "Buddhist temple",
+     "Buddhist temple with meditation sits, Sunday dharma talk, and a vegetarian Saturday lunch.",
+     "Free", 4.6, 4.9, "", ""),
+    ("religious", "{anchor} Mosque & Community Center", "Mosque",
+     "Mosque and community center with daily prayers, Friday khutba, and weekend schooling.",
+     "Free", 4.7, 4.9, "", ""),
+
+    # ---- Education / libraries / schools ----
+    ("libraries", "{anchor} Branch Library", "Public library",
+     "Public library branch with kids storytime, maker lab, and 24/7 hold pickup lockers.",
+     "Free", 4.6, 4.9, "concourse", "1"),
+    ("libraries", "{anchor} Law Library", "Law library",
+     "Law library with case-reporter shelves, study carrels, and reference librarians.",
+     "Free", 4.4, 4.9, "concourse", "1"),
+    ("schools", "{anchor} Charter Elementary", "Charter school",
+     "Charter elementary with project-based learning, art studio, and STEM enrichment.",
+     "$$$", 4.3, 4.8, "", ""),
+    ("schools", "{anchor} Community College", "Community college",
+     "Community college with associate degree programs, evening classes, and a small business center.",
+     "$$", 4.2, 4.7, "", ""),
+
+    # ---- Public restrooms / playgrounds ----
+    ("public-restrooms", "{anchor} Park Public Restroom", "Public restroom",
+     "Public restroom adjacent to the park entry with accessible stalls and a baby-change station.",
+     "Free", 3.6, 4.2, "", ""),
+    ("playgrounds", "{anchor} Adventure Playground", "Playground",
+     "Adventure playground with climbing structure, splash pad, and shaded picnic tables.",
+     "Free", 4.5, 4.9, "", ""),
+
+    # ---- Transit-adjacent ----
+    ("transit", "{anchor} Park-and-Ride Lot", "Park and ride",
+     "Park-and-ride lot at the rail terminus with bus connections and overnight parking permitted.",
+     "$", 3.9, 4.4, "", ""),
+    ("bus-stops", "{anchor} Express Bus Stop", "Bus stop",
+     "Sheltered express bus stop with real-time arrival board, USB ports, and step-free access.",
+     "Free", 3.8, 4.3, "", ""),
+
+    # ---- Indoor airport shops ----
+    ("indoor-airport-shops", "Hudson News — {anchor} Terminal", "Travel retail",
+     "Hudson News terminal shop with magazines, sundries, and a 5-minute grab-and-go cooler.",
+     "$$", 3.7, 4.3, "concourse", "1"),
+    ("indoor-airport-shops", "TUMI — {anchor} Concourse", "Travel retail",
+     "TUMI concourse shop with carry-on, garment bags, and last-minute travel essentials.",
+     "$$$$", 4.2, 4.7, "concourse", "1"),
+    ("indoor-airport-shops", "Brookstone — {anchor} Gates", "Travel retail",
+     "Brookstone airport store with travel gadgets, neck pillows, and noise-canceling headphones.",
+     "$$$", 4.0, 4.5, "concourse", "1"),
+
+    # ---- Indoor mall shops ----
+    ("indoor-mall-shops", "Sephora — {anchor} Mall", "Beauty store",
+     "Sephora at the mall with skin-scan station, fragrance bar, and beauty studio appointments.",
+     "$$$", 4.3, 4.8, "concourse", "1"),
+    ("indoor-mall-shops", "Lululemon — {anchor} Mall", "Athleisure",
+     "Lululemon mall location with hemming, run-club bulletin board, and weekend yoga.",
+     "$$$", 4.2, 4.7, "concourse", "1"),
+    ("indoor-mall-shops", "Williams Sonoma — {anchor} Mall", "Cookware",
+     "Williams Sonoma cookware shop with chef demos, knife sharpening, and gift registries.",
+     "$$$$", 4.3, 4.8, "concourse", "1"),
+
+    # ---- Parking / EV ----
+    ("parking", "{anchor} Stadium Parking Deck", "Parking deck",
+     "Multi-level stadium parking deck with event surge pricing and a tailgate-friendly tier.",
+     "$", 3.7, 4.3, "parking-deck", "P1"),
+    ("parking", "{anchor} City Hall Garage", "Parking garage",
+     "Public garage attached to city hall with hourly rates and 24/7 access.",
+     "$$", 3.8, 4.4, "parking-deck", "P1"),
+    ("ev-charging", "Tesla Destination Charger — {anchor}", "EV charging",
+     "Tesla Destination Charger with two stalls and a 24/7 lounge-adjacent location.",
+     "$", 4.4, 4.9, "", ""),
+    ("ev-charging", "Wallbox Public Network — {anchor}", "EV charging",
+     "Wallbox Public Network site with four 60kW CCS stalls and a covered canopy.",
+     "$", 4.2, 4.7, "", ""),
+    ("ev-charging", "ChargePoint — {anchor}", "EV charging",
+     "ChargePoint level-2 lot with twelve stalls, app payment, and a 30-minute idle fee.",
+     "$", 4.3, 4.8, "", ""),
+
+    # ---- Gas stations ----
+    ("gas-stations", "Shell {anchor} — Gas & Convenience", "Gas station",
+     "Shell gas station with c-store, fresh-brewed coffee, and a 24/7 car wash bay.",
+     "$$", 3.8, 4.4, "", ""),
+    ("gas-stations", "BP {anchor} — Truck Plaza", "Truck plaza",
+     "BP truck-plaza with diesel lanes, driver lounge, and a sit-down breakfast counter.",
+     "$$", 3.7, 4.3, "", ""),
+
+    # ---- Post offices ----
+    ("post-offices", "USPS — {anchor}", "Post office",
+     "USPS branch with passport intake, PO boxes, and Saturday morning hours.",
+     "$", 3.6, 4.2, "", ""),
+
+    # ---- Police / fire ----
+    ("police-stations", "{anchor} Precinct Station", "Police station",
+     "Neighborhood police precinct with community-affairs office and a fingerprint kiosk.",
+     "Free", 3.8, 4.4, "", ""),
+    ("fire-stations", "{anchor} Fire Engine Co", "Fire station",
+     "Fire engine company with public open-house days and a community CPR classroom.",
+     "Free", 4.5, 4.9, "", ""),
+
+    # ---- Car rental ----
+    ("car-rental", "Enterprise Rent-A-Car — {anchor}", "Car rental",
+     "Enterprise neighborhood car rental with free pickup and an SUV-and-truck row.",
+     "$$$", 4.0, 4.5, "", ""),
+    ("car-rental", "Avis — {anchor} Airport", "Car rental",
+     "Avis airport rental counter with Preferred fast-lane, EV rentals, and skip-the-counter check-in.",
+     "$$$", 3.9, 4.5, "", ""),
+    ("car-rental", "Budget — {anchor}", "Car rental",
+     "Budget rental branch with weekly discounts, weekend deals, and a Sunday return drop box.",
+     "$$", 3.7, 4.3, "", ""),
+
+    # ---- Campus buildings ----
+    ("campus-buildings", "{anchor} Engineering Hall", "Academic building",
+     "University engineering hall with lecture theaters, machine shop, and a maker mezzanine.",
+     "Free", 4.3, 4.8, "wing", "1"),
+    ("campus-buildings", "{anchor} Business School", "Academic building",
+     "Business school building with case-method classrooms, an MBA lounge, and a career office.",
+     "Free", 4.4, 4.9, "wing", "1"),
+
+    # ---- Tail: ATMs ----
+    ("atms", "Chase ATM — {anchor} Square", "Bank ATM",
+     "Chase Bank vestibule ATM with check deposit, cash withdrawal, and 24/7 access.",
+     "Free", 3.7, 4.3, "", ""),
+    ("atms", "Wells Fargo ATM — {anchor}", "Bank ATM",
+     "Wells Fargo street ATM with envelope-free deposit and en-screen Spanish menus.",
+     "Free", 3.6, 4.3, "", ""),
+    ("atms", "Bank of America ATM — {anchor}", "Bank ATM",
+     "Bank of America ATM with cardless access via the mobile app and check deposit.",
+     "Free", 3.7, 4.3, "", ""),
+]
+
+
+def expand_places_r7(db, Place, Category, City):
+    """R7 expansion: SEO/locale density.
+
+    Adds another ~110k venue rows by re-running the same per-city shuffle
+    pattern as R6 but against `_R7_TEMPLATES`.  Gated on Place count
+    >= 380000 so the function is a no-op once the seed has been built once.
+    """
+    if Place.query.count() >= 380000:
+        return
+
+    cat_by_slug = {c.slug: c for c in Category.query.all()}
+    cities = City.query.order_by(City.id).all()
+    if not cities:
+        return
+
+    donor_pool = []
+    for p in (Place.query
+              .filter(Place.hero_image.like("/static/images/places/%"))
+              .order_by(Place.id).limit(80).all()):
+        try:
+            photos = json.loads(p.photos_json or "[]")
+        except Exception:
+            photos = []
+        if p.hero_image:
+            donor_pool.append((p.hero_image, photos or [p.hero_image]))
+    if not donor_pool:
+        donor_pool = [("/static/images/heroes/eiffel-tower.jpg",
+                       ["/static/images/heroes/eiffel-tower.jpg"])]
+
+    _CHAINS = (
+        "Starbucks Reserve", "Starbucks", "Tim Hortons", "Costa Coffee",
+        "Philz Coffee", "Blue Bottle Coffee", "Peet's Coffee", "Dunkin'",
+        "Whole Foods Market", "Trader Joe's", "Costco Wholesale", "Safeway",
+        "Aldi", "Sprouts", "H Mart", "Patel Brothers", "7-Eleven",
+        "CVS Pharmacy", "Walgreens", "Walgreens 24h", "Rite Aid",
+        "Hertz", "Enterprise Rent-A-Car", "Avis", "Budget", "Turo",
+        "Marriott", "Hilton Garden Inn", "Holiday Inn Express", "Hyatt Place",
+        "Hampton Inn", "Best Western Plus", "Courtyard by Marriott",
+        "Residence Inn",
+        "Tesla Destination Charger", "Wallbox Public Network", "ChargePoint",
+        "Shell", "BP", "USPS", "UPS Store", "FedEx Office",
+        "Apple Store", "Best Buy", "IKEA", "Sephora", "Lululemon",
+        "Williams Sonoma", "Hudson News", "TUMI", "Brookstone",
+        "Chase ATM", "Wells Fargo ATM", "Bank of America ATM",
+    )
+
+    added = 0
+    for city in cities:
+        anchor = city.display_name.split(",")[0].split(" ")[0]
+        templates = list(enumerate(_R7_TEMPLATES))
+        for i in range(len(templates) - 1, 0, -1):
+            j = int.from_bytes(
+                hashlib.md5(f"r7sh:{city.slug}:{i}".encode()).digest()[:4],
+                "big") % (i + 1)
+            templates[i], templates[j] = templates[j], templates[i]
+
+        for idx, tpl in templates:
+            (cat_slug, pattern, subtitle, desc, price, rlo, rhi,
+             indoor_zone, floor_num) = tpl
+            cat = cat_by_slug.get(cat_slug)
+            if not cat:
+                continue
+            slug = f"r7-{city.slug}-{cat_slug}-{idx:03d}"
+            if Place.query.filter_by(slug=slug).first():
+                continue
+
+            name = pattern.format(anchor=anchor)
+            local_seed = _seed_int_hex(slug, "r7loc")
+            hero, gallery = donor_pool[local_seed % len(donor_pool)]
+            lat = city.lat + ((local_seed % 800) - 400) / 10000.0
+            lng = city.lng + (((local_seed // 800) % 1000) - 500) / 10000.0
+            rating = round(rlo + (local_seed % 100) / 100.0 * (rhi - rlo), 1)
+            review_count = 12 + (local_seed % 3800)
+
+            chain = ""
+            for brand in _CHAINS:
+                if name.startswith(brand):
+                    chain = brand
+                    break
+
+            hours_pick = (local_seed >> 4) % 6
+            hours_options = [
+                "Mon-Sun: 9:00 AM - 9:00 PM",
+                "Mon-Sat: 10:00 AM - 8:00 PM, Sun 11:00 AM - 6:00 PM",
+                "Tue-Sun: 11:00 AM - 10:00 PM, Closed Mon",
+                "Open 24 hours",
+                "Mon-Fri: 7:00 AM - 7:00 PM, Weekends 8:00 AM - 5:00 PM",
+                "Mon-Sun: 6:00 AM - 10:00 PM",
+            ]
+            tags = [cat_slug, anchor.lower(), city.country.lower()]
+            if indoor_zone:
+                tags.append(indoor_zone)
+            if chain:
+                tags.append(chain.lower().replace(" ", "-"))
+
+            db.session.add(Place(
+                slug=slug, name=name, category_id=cat.id, city_id=city.id,
+                subtitle=subtitle,
+                description=desc,
+                address=f"{15 + (local_seed % 985)} {['Oak','Pine','Elm','Ash','Cherry','Magnolia','Willow','Aspen'][local_seed % 8]} Ave, {city.display_name}",
+                phone=f"+{1 + (local_seed % 9)} {200 + (local_seed % 800)} {1000 + (local_seed % 9000)}",
+                hours=hours_options[hours_pick],
+                website=google_maps_search_url(name, city.display_name),
+                rating=rating,
+                review_count=review_count,
+                price_level=price,
+                hero_image=hero,
+                photos_json=json.dumps(gallery[:5]),
+                lat=lat, lng=lng,
+                tags_json=json.dumps(tags),
+                subcategory=subtitle,
+                chain_brand=chain,
+                is_24h=(hours_pick == 3),
+                is_popular=(rating >= 4.6 and (local_seed % 5) == 0),
+                has_parking_lot=(cat_slug in ("supermarkets", "hotels",
+                                              "shopping", "fitness",
+                                              "hospitals", "schools",
+                                              "religious", "entertainment",
+                                              "car-rental", "parking")
+                                 or (local_seed % 3) == 0),
+                ev_charging=(cat_slug == "ev-charging"
+                              or (cat_slug == "hotels" and "Marriott" in name)
+                              or (cat_slug == "supermarkets" and "Whole Foods" in name)),
+                bicycle_parking=(local_seed % 2) == 0,
+                indoor_zone_type=indoor_zone,
+                floor_number=floor_num,
+                parking_lot_capacity=(60 + (local_seed % 1600)) if cat_slug == "parking" else 0,
+                delivery_available=(cat_slug == "restaurants" and (local_seed % 2) == 0),
+                dine_in=(cat_slug in ("restaurants", "coffee-shops")),
+                takeout=(cat_slug in ("restaurants", "coffee-shops",
+                                       "supermarkets")),
+                accepts_reservations=(cat_slug == "restaurants" and (local_seed % 3) == 0),
+                serves_breakfast=(cat_slug in ("restaurants", "coffee-shops")
+                                   and (local_seed % 2) == 0),
+                serves_lunch=(cat_slug == "restaurants"),
+                serves_dinner=(cat_slug == "restaurants"),
+                serves_alcohol=(cat_slug == "restaurants" and (local_seed % 3) == 0),
+                serves_vegetarian=(cat_slug == "restaurants" and (local_seed % 2) == 0),
+            ))
+            added += 1
+            if added % 1500 == 0:
+                db.session.commit()
+    db.session.commit()
+    print(f"expand_places_r7: added {added} R7 places (total {Place.query.count()})")
+
+# Append more R7 templates so total >= 135 → 135 × 812 ≈ 110k rows.
+_R7_TEMPLATES.extend([
+    ("restaurants", "{anchor} Tapas & Pintxos Bar", "Spanish tapas",
+     "Counter-style Basque pintxos bar with sherry pours, Iberico ham, and small plates till midnight.",
+     "$$$", 4.4, 4.9, "", ""),
+    ("restaurants", "{anchor} Lebanese Kitchen", "Lebanese",
+     "Family-run Lebanese kitchen with shawarma platters, kibbeh, and house-baked man'oushe.",
+     "$$", 4.4, 4.9, "", ""),
+    ("restaurants", "{anchor} Cajun Po-Boy Shop", "Cajun",
+     "Po-boy shop with shrimp, oyster, and roast-beef debris sandwiches on Leidenheimer bread.",
+     "$", 4.3, 4.8, "", ""),
+    ("restaurants", "{anchor} Argentine Steakhouse", "Argentine",
+     "Argentine steakhouse with parrilla, blood-sausage entradas, and a Malbec-forward list.",
+     "$$$", 4.4, 4.9, "", ""),
+    ("restaurants", "{anchor} Vegetarian Thali House", "Indian vegetarian",
+     "South Indian thali house with unlimited refills, lassi, and a kid-friendly mild-spice option.",
+     "$$", 4.4, 4.9, "", ""),
+    ("restaurants", "{anchor} Cuban Sandwich Cafe", "Cuban",
+     "Cuban sandwich cafe with media noche, ropa vieja platters, and Cuban-coffee shots.",
+     "$", 4.3, 4.8, "", ""),
+    ("restaurants", "{anchor} Belgian Frites & Mussels", "Belgian",
+     "Belgian frites and mussels brasserie with 30 sauces, monks-brewed beer, and waffles for dessert.",
+     "$$", 4.3, 4.8, "", ""),
+    ("coffee-shops", "Caribou Coffee — {anchor}", "Coffee chain",
+     "Caribou Coffee with cabin-lodge styling, mocha lineup, and fireside seating.",
+     "$", 4.0, 4.5, "", ""),
+    ("coffee-shops", "Stumptown Coffee — {anchor}", "Specialty coffee",
+     "Stumptown Coffee branch with Hair Bender espresso, cold brew on draft, and merch shelves.",
+     "$$", 4.4, 4.9, "", ""),
+    ("supermarkets", "Lidl {anchor}", "Discount grocery",
+     "Lidl discount grocery with weekly themed aisles, bakery counter, and a Lidl Plus app aisle.",
+     "$", 4.2, 4.7, "", ""),
+    ("supermarkets", "Kroger {anchor}", "Grocery chain",
+     "Kroger grocery with ClickList pickup, pharmacy, fuel center, and a Murray's cheese counter.",
+     "$$", 3.9, 4.5, "", ""),
+    ("supermarkets", "Publix {anchor}", "Grocery chain",
+     "Publix grocery with sub-sandwich counter, in-house bakery, and weekly BOGO promotions.",
+     "$$", 4.4, 4.9, "", ""),
+    ("pharmacies", "{anchor} Cannabis Dispensary", "Dispensary",
+     "Licensed cannabis dispensary with edibles, flower, and budtender consultations.",
+     "$$$", 4.4, 4.9, "", ""),
+    ("shopping", "Target — {anchor}", "Department store",
+     "Target with grocery aisle, Starbucks, electronics counter, and self-checkout banks.",
+     "$$", 4.2, 4.7, "concourse", "1"),
+    ("shopping", "Walmart Supercenter — {anchor}", "Supercenter",
+     "Walmart Supercenter with grocery, auto-care center, pharmacy, and a 24/7 receipt-check exit.",
+     "$", 4.0, 4.5, "concourse", "1"),
+    ("shopping", "Home Depot — {anchor}", "Home improvement",
+     "Home Depot with lumber yard, tool rental, paint mixing, and a Saturday kids' workshop.",
+     "$$", 4.1, 4.6, "concourse", "1"),
+    ("shopping", "Lowe's — {anchor}", "Home improvement",
+     "Lowe's home improvement with garden center, appliance showroom, and pro-desk.",
+     "$$", 4.0, 4.5, "concourse", "1"),
+    ("fitness", "Planet Fitness — {anchor}", "Gym chain",
+     "Planet Fitness with judgement-free zone, hydromassage chairs, and 24/7 access.",
+     "$", 4.0, 4.5, "", ""),
+    ("fitness", "Equinox — {anchor}", "Premium gym",
+     "Equinox premium gym with eucalyptus steam, group fitness, and personal training.",
+     "$$$$", 4.5, 4.9, "", ""),
+    ("fitness", "Orangetheory — {anchor}", "Boutique fitness",
+     "Orangetheory studio with heart-rate zones, 60-minute workouts, and personal-trainer led groups.",
+     "$$$", 4.5, 4.9, "", ""),
+    ("entertainment", "AMC Theatres — {anchor}", "Movie theater",
+     "AMC Theatres multiplex with recliner seats, Dolby Cinema, and an MX4D motion auditorium.",
+     "$$", 4.2, 4.7, "concourse", "1"),
+    ("entertainment", "Regal Cinemas — {anchor}", "Movie theater",
+     "Regal Cinemas multiplex with RPX premium auditorium, dine-in seats, and a kids weekend matinee.",
+     "$$", 4.1, 4.6, "concourse", "1"),
+    ("entertainment", "{anchor} Live Music Venue", "Music venue",
+     "Independent live-music venue with nightly bookings, 600-seat main floor, and a green-room basement.",
+     "$$", 4.5, 4.9, "", ""),
+    ("museums", "{anchor} Modern Art Museum", "Art museum",
+     "Modern art museum with rotating special exhibits, sculpture garden, and a contemporary-photo wing.",
+     "$$", 4.5, 4.9, "concourse", "1"),
+    ("museums", "{anchor} Natural History Museum", "Natural history",
+     "Natural history museum with dinosaur hall, mineral wing, and a planetarium add-on.",
+     "$$", 4.6, 4.9, "concourse", "1"),
+])

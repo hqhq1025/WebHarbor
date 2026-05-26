@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block title %}Search operators and advanced syntax — Google Search{% endblock %}
+
+{% block content %}
+<div class="container" style="max-width: 940px; margin: 32px auto; padding: 0 16px;">
+  <h1 style="font-size: 28px; margin-bottom: 8px;">Advanced search syntax</h1>
+  <p class="muted">
+    Refine your queries with Search operators. Combine multiple operators
+    in a single query. See also <a href="/advanced">Advanced Search</a>
+    and <a href="/accessibility/keyboard">Keyboard shortcuts</a>.
+  </p>
+
+  <table style="width: 100%; border-collapse: collapse; margin-top: 16px;">
+    <thead>
+      <tr style="text-align: left; border-bottom: 1px solid #dadce0;">
+        <th style="padding: 8px; width: 140px;">Operator</th>
+        <th style="padding: 8px;">What it does</th>
+        <th style="padding: 8px;">Example</th>
+        <th style="padding: 8px;">Try</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for op, desc, ex in operators %}
+      <tr style="border-bottom: 1px solid #eee;">
+        <td style="padding: 8px;"><code>{{ op }}</code></td>
+        <td style="padding: 8px;">{{ desc }}</td>
+        <td style="padding: 8px;"><code>{{ ex }}</code></td>
+        <td style="padding: 8px;"><a href="/search?q={{ ex|urlencode }}">Search</a></td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <h2 style="font-size: 18px; margin-top: 28px;">Filter chains</h2>
+  <p>
+    Operators stack — <code>site:nytimes.com intitle:climate after:2024-01-01</code>
+    returns only NYTimes pages with "climate" in the title published after Jan 1 2024.
+  </p>
+  <ul>
+    <li>Stack <code>site:</code> + <code>intitle:</code> + <code>after:</code> for tight news filtering</li>
+    <li>Use <code>-site:</code> to exclude a single domain from broad results</li>
+    <li>Wrap multi-word operands in quotes — <code>intitle:"sea level rise"</code></li>
+    <li><code>filetype:pdf</code> is the fastest way to find primary documents</li>
+  </ul>
+</div>
+{% endblock %}

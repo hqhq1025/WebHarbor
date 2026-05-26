@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block title %}Structured Data | Google Flights{% endblock %}
+{% block meta_description %}Structured data (schema.org JSON-LD) emitted by Google Flights. Flight, FlightReservation, Airport, BreadcrumbList.{% endblock %}
+{% block content %}
+<div class="section" style="max-width:880px;margin:0 auto;padding:24px;">
+  <nav aria-label="Breadcrumb"><a href="{{ url_for('index') }}">Home</a> &rsaquo; Structured Data</nav>
+  <h1 style="font-family:var(--font-sans);font-size:28px;font-weight:500;margin-top:12px;">Structured data (JSON-LD)</h1>
+  <p>Google Flights emits schema.org JSON-LD on every page so search engines, agent crawlers, and
+  travel aggregators can lift structured records without scraping HTML. Below is the public index of
+  schemas the site uses and the routes where each one is embedded.</p>
+  <table role="table" aria-label="Structured data schemas" style="width:100%;border-collapse:collapse;margin-top:12px;">
+    <thead>
+      <tr style="background:#f5f6f7;text-align:left;">
+        <th scope="col" style="padding:10px;border-bottom:1px solid #dadce0;">Schema</th>
+        <th scope="col" style="padding:10px;border-bottom:1px solid #dadce0;">Emitted on</th>
+        <th scope="col" style="padding:10px;border-bottom:1px solid #dadce0;">Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for name, route, desc in schemas %}
+      <tr>
+        <td style="padding:10px;border-bottom:1px solid #f1f3f4;font-family:monospace;">{{ name }}</td>
+        <td style="padding:10px;border-bottom:1px solid #f1f3f4;font-family:monospace;">{{ route }}</td>
+        <td style="padding:10px;border-bottom:1px solid #f1f3f4;">{{ desc }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  <h2 style="font-family:var(--font-sans);font-size:20px;margin-top:24px;">Validation</h2>
+  <p>The Flight and FlightReservation schemas follow the
+  <a href="https://schema.org/Flight">schema.org Flight</a> and
+  <a href="https://schema.org/FlightReservation">FlightReservation</a> specifications. Required
+  properties (flightNumber, airline, departureAirport, arrivalAirport, departureTime) are present
+  on every flight detail page.</p>
+</div>
+{% endblock %}

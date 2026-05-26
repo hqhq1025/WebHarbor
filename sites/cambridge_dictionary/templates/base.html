@@ -5,7 +5,13 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>{% block title %}{{ ui.site_name }}{% endblock %} | {{ ui.site_name }}</title>
   <meta name="csrf-token" content="{{ csrf_token() }}">
+  {# R7: Open Graph image — per-entry pages override og_slug to point at their own SVG. #}
+  <meta property="og:site_name" content="Cambridge Dictionary">
+  <meta property="og:type" content="{% block og_type %}website{% endblock %}">
+  <meta property="og:title" content="{% block og_title %}Cambridge Dictionary{% endblock %}">
+  <meta property="og:image" content="{% block og_image %}/og-image/{{ og_slug|default('default') }}.svg{% endblock %}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
+  {% block head_extra %}{% endblock %}
 </head>
 <body class="a11y-font-{{ a11y_font|default('default') }} a11y-palette-{{ a11y_palette|default('default') }} {% if a11y_ipa_focus == '1' %}a11y-ipa-focus{% endif %}">
   <!-- Main navigation (top teal band) -->
@@ -50,6 +56,16 @@
               {% endfor %}
             </select>
           </form>
+        </div>
+        {# R7: Dictionary dialect (UK / US) switcher. Session-stored. #}
+        <div class="dialect-selector" role="group" aria-label="Dictionary dialect">
+          {% set _cur_dialect = session.get('dialect', 'en-uk') %}
+          <a href="{{ url_for('dictionary_set_dialect', dialect='en-uk') }}"
+             class="dialect-btn {% if _cur_dialect == 'en-uk' %}dialect-btn--active{% endif %}"
+             data-dialect="en-uk" title="UK English">UK English</a>
+          <a href="{{ url_for('dictionary_set_dialect', dialect='en-us') }}"
+             class="dialect-btn {% if _cur_dialect == 'en-us' %}dialect-btn--active{% endif %}"
+             data-dialect="en-us" title="US English">US English</a>
         </div>
       </div>
     </div>

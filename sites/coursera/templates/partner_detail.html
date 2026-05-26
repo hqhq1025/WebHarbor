@@ -1,5 +1,29 @@
 {% extends "base.html" %}
 {% block title %}{{ partner.name }} | Coursera Partner{% endblock %}
+{# ─── R7 SEO: schema.org Organization JSON-LD for the partner ─── #}
+{% block jsonld %}
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "{{ 'CollegeOrUniversity' if partner.partner_type == 'university' else ('Organization' if partner.partner_type == 'company' else 'EducationalOrganization') }}",
+  "name": "{{ partner.name }}",
+  "url": "{{ request.host_url.rstrip('/') }}/partner/{{ partner.slug }}",
+  "address": {"@type": "PostalAddress", "addressCountry": "{{ partner.country }}"},
+  "sameAs": "{{ partner.website or request.host_url.rstrip('/') }}",
+  "subOrganization": {"@type": "Organization", "name": "Coursera"}
+}
+</script>
+{% endblock %}
+{% block og_meta %}
+<meta property="og:site_name" content="Coursera">
+<meta property="og:type" content="profile">
+<meta property="og:title" content="{{ partner.name }} on Coursera">
+<meta property="og:description" content="{{ n_total }} courses from {{ partner.name }} ({{ partner.country }}) on Coursera.">
+<meta property="og:url" content="{{ request.host_url.rstrip('/') }}/partner/{{ partner.slug }}">
+<meta property="og:locale" content="{{ current_lang or 'en' }}_US">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="{{ partner.name }} on Coursera">
+{% endblock %}
 {% block content %}
 <div class="partner-detail">
   <header style="background:#fff;border-bottom:1px solid #DAE1ED;padding:42px 0;">

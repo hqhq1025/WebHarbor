@@ -1,10 +1,28 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="{{ r7_lang_code or 'en' }}" dir="{{ r7_lang_dir or 'ltr' }}">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>{% block title %}Google Maps{% endblock %}</title>
+    {# ---- R7: Open Graph + Twitter card defaults; override in extra_head ---- #}
+    <meta property="og:site_name" content="Google Maps">
+    <meta property="og:type" content="{% block og_type %}website{% endblock %}">
+    <meta property="og:title" content="{% block og_title %}Google Maps{% endblock %}">
+    <meta property="og:description" content="{% block og_description %}Explore places, plan trips, and discover what's around you on Google Maps.{% endblock %}">
+    <meta property="og:image" content="{% block og_image %}{{ url_for('static', filename='images/og-default.jpg', _external=True) }}{% endblock %}">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="{% block tw_title %}{{ self.og_title() }}{% endblock %}">
+    <meta name="twitter:description" content="{% block tw_description %}{{ self.og_description() }}{% endblock %}">
+    <meta name="twitter:image" content="{% block tw_image %}{{ self.og_image() }}{% endblock %}">
+    {# ---- R7: hreflang alternates for the 25 supported locales ---- #}
+    {% if r7_locales %}
+        {% for loc in r7_locales %}
+            <link rel="alternate" hreflang="{{ loc.code }}" href="/{{ loc.code }}/">
+        {% endfor %}
+        <link rel="alternate" hreflang="x-default" href="/">
+    {% endif %}
+    <link rel="sitemap" type="application/xml" href="/sitemap.xml">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Outlined|Material+Icons" rel="stylesheet">
     <style>

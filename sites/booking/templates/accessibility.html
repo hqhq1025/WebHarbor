@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+{% block title %}Accessibility statement — Booking{% endblock %}
+{% block og_title %}Accessibility statement — Booking{% endblock %}
+{% block og_description %}Booking.com is committed to WCAG 2.1 Level AA accessibility.{% endblock %}
+{% block content %}
+<div class="container" style="max-width: 880px; margin: 0 auto; padding: 24px;">
+    <h1>Accessibility statement</h1>
+    <p style="font-size:15px;color:#333;">
+        Booking.com is committed to making its digital products usable by everyone, regardless of ability.
+        This site targets <strong>WCAG 2.1 Level AA</strong> conformance.
+    </p>
+
+    <h2>Conformance status</h2>
+    <p>
+        We aim to meet the Web Content Accessibility Guidelines (WCAG) 2.1 at conformance level
+        <strong>AA</strong>. Most of the site has been audited against this standard, and our last
+        third-party audit was completed on <strong>2026-04-18</strong>.
+    </p>
+
+    <h2>What this means in practice</h2>
+    <ul style="line-height:1.7;">
+        <li>All informational images carry text alternatives (alt text).</li>
+        <li>Colour-contrast ratios meet WCAG-AA thresholds (4.5:1 for body copy, 3:1 for large text).</li>
+        <li>Every interactive control is reachable and operable via keyboard.</li>
+        <li>Forms include explicit labels and accessible validation messages.</li>
+        <li>Pages declare a single primary &lt;h1&gt; and use semantic heading hierarchy.</li>
+        <li>ARIA landmarks (banner, navigation, main, contentinfo) wrap structural regions.</li>
+    </ul>
+
+    <h2>Accessible-room features we support</h2>
+    <p>Booking.com surfaces the following accessibility features on property pages whenever they are confirmed by the host:</p>
+    <ol style="line-height:1.7;">
+        <li>Wheelchair-accessible entrance</li>
+        <li>Accessible parking spaces near entrance</li>
+        <li>Step-free ground-floor access throughout the public areas</li>
+        <li>Lift / elevator</li>
+        <li>Roll-in shower</li>
+        <li>Grab rails in bathrooms and toilets</li>
+        <li>Lowered counters at reception</li>
+        <li>Visual / vibrating fire alarms</li>
+        <li>Hearing-impaired guest equipment</li>
+        <li>Braille signage and lift buttons</li>
+        <li>Service dogs welcome</li>
+        <li>Visual aids in lifts and stairwells</li>
+    </ol>
+
+    <h2>Limitations and feedback</h2>
+    <p>Some third-party content (embedded maps, AMP cross-link badges) may not yet meet full
+       AA conformance. If you encounter an accessibility barrier, please contact
+       <a href="mailto:accessibility@booking.example">accessibility@booking.example</a>.
+    </p>
+
+    <h2>Audit history</h2>
+    <table style="width:100%; border-collapse: collapse; margin-top: 12px;">
+        <thead>
+            <tr style="background:#f5f5f5;"><th style="text-align:left;padding:6px;">Date</th><th style="text-align:left;padding:6px;">Scope</th><th style="text-align:left;padding:6px;">Outcome</th></tr>
+        </thead>
+        <tbody>
+            <tr><td style="padding:6px;border-top:1px solid #eee;">2026-04-18</td><td style="padding:6px;border-top:1px solid #eee;">Full site (sampled)</td><td style="padding:6px;border-top:1px solid #eee;">WCAG 2.1 AA — 4 minor issues remediated</td></tr>
+            <tr><td style="padding:6px;border-top:1px solid #eee;">2025-10-30</td><td style="padding:6px;border-top:1px solid #eee;">Property detail + checkout</td><td style="padding:6px;border-top:1px solid #eee;">WCAG 2.1 AA — passed</td></tr>
+            <tr><td style="padding:6px;border-top:1px solid #eee;">2025-06-22</td><td style="padding:6px;border-top:1px solid #eee;">Search + filters</td><td style="padding:6px;border-top:1px solid #eee;">WCAG 2.1 AA — passed with minor follow-ups</td></tr>
+        </tbody>
+    </table>
+</div>
+{% endblock %}

@@ -1,6 +1,58 @@
 {% extends "base.html" %}
 {% from "_airline_icon.html" import airline_icon %}
 {% block title %}{{ flight.airline }} {{ flight.flight_number }} | Google Flights{% endblock %}
+{% block meta_description %}{{ flight.airline }} {{ flight.flight_number }} from {{ flight.origin.city }} ({{ flight.origin.iata }}) to {{ flight.destination.city }} ({{ flight.destination.iata }}) on {{ flight.departure_date|datefmt }}. {{ flight.duration_minutes }} min, {{ flight.aircraft }}.{% endblock %}
+{% block og_title %}{{ flight.origin.city }} to {{ flight.destination.city }} - {{ flight.airline }} {{ flight.flight_number }}{% endblock %}
+{% block og_description %}{{ flight.airline }} {{ flight.flight_number }} {{ flight.origin.iata }}-{{ flight.destination.iata }} {{ flight.departure_date|datefmt }} from ${{ flight.price|int }}{% endblock %}
+
+{% block extra_css %}
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Flight",
+  "flightNumber": "{{ flight.flight_number }}",
+  "airline": {
+    "@type": "Airline",
+    "name": "{{ flight.airline }}",
+    "iataCode": "{{ flight.airline_code }}"
+  },
+  "departureAirport": {
+    "@type": "Airport",
+    "name": "{{ flight.origin.name }}",
+    "iataCode": "{{ flight.origin.iata }}",
+    "address": {"@type": "PostalAddress", "addressLocality": "{{ flight.origin.city }}", "addressCountry": "{{ flight.origin.country }}"}
+  },
+  "arrivalAirport": {
+    "@type": "Airport",
+    "name": "{{ flight.destination.name }}",
+    "iataCode": "{{ flight.destination.iata }}",
+    "address": {"@type": "PostalAddress", "addressLocality": "{{ flight.destination.city }}", "addressCountry": "{{ flight.destination.country }}"}
+  },
+  "departureTime": "{{ flight.departure_date }}T{{ flight.departure_time }}:00",
+  "arrivalTime": "{{ flight.arrival_date }}T{{ flight.arrival_time }}:00",
+  "estimatedFlightDuration": "PT{{ (flight.duration_minutes // 60) }}H{{ (flight.duration_minutes % 60) }}M",
+  "aircraft": "{{ flight.aircraft }}",
+  "offers": {
+    "@type": "Offer",
+    "price": "{{ flight.price|int }}",
+    "priceCurrency": "{{ current_currency|default('USD') }}",
+    "availability": "https://schema.org/InStock"
+  }
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  "itemListElement": [
+    {"@type": "ListItem", "position": 1, "name": "Flights", "item": "{{ request.url_root }}"},
+    {"@type": "ListItem", "position": 2, "name": "{{ flight.origin.city }} to {{ flight.destination.city }}", "item": "{{ request.url_root }}flights?from={{ flight.origin.iata }}&to={{ flight.destination.iata }}"},
+    {"@type": "ListItem", "position": 3, "name": "{{ flight.airline }}", "item": "{{ request.url_root }}airline/{{ flight.airline_code }}"},
+    {"@type": "ListItem", "position": 4, "name": "{{ flight.flight_number }}"}
+  ]
+}
+</script>
+{% endblock %}
 
 {% block content %}
 <div class="fd-header">

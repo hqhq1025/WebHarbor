@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block title %}Performance | Google Flights{% endblock %}
+{% block meta_description %}Search result performance metrics for Google Flights. Core Web Vitals, LCP, CLS, FID, INP targets.{% endblock %}
+{% block content %}
+<div class="section" style="max-width:880px;margin:0 auto;padding:24px;">
+  <nav aria-label="Breadcrumb"><a href="{{ url_for('index') }}">Home</a> &rsaquo; Performance</nav>
+  <h1 style="font-family:var(--font-sans);font-size:28px;font-weight:500;margin-top:12px;">Search-result performance</h1>
+  <p>Flight search has to feel instant for the result list to be useful. The numbers below are the
+  performance targets the result page (<code>/flights</code>) is engineered to hit on a cold cache
+  with a typical broadband connection.</p>
+  <h2 style="font-family:var(--font-sans);font-size:20px;margin-top:24px;">Core Web Vitals</h2>
+  <table role="table" aria-label="Core Web Vitals" style="width:100%;border-collapse:collapse;margin-top:12px;">
+    <thead>
+      <tr style="background:#f5f6f7;text-align:left;">
+        <th scope="col" style="padding:10px;border-bottom:1px solid #dadce0;">Metric</th>
+        <th scope="col" style="padding:10px;border-bottom:1px solid #dadce0;">Target</th>
+        <th scope="col" style="padding:10px;border-bottom:1px solid #dadce0;">Threshold</th>
+        <th scope="col" style="padding:10px;border-bottom:1px solid #dadce0;">How we meet it</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for metric, value, threshold, note in metrics %}
+      <tr>
+        <td style="padding:10px;border-bottom:1px solid #f1f3f4;">{{ metric }}</td>
+        <td style="padding:10px;border-bottom:1px solid #f1f3f4;font-weight:500;color:#188038;">{{ value }}</td>
+        <td style="padding:10px;border-bottom:1px solid #f1f3f4;">{{ threshold }}</td>
+        <td style="padding:10px;border-bottom:1px solid #f1f3f4;">{{ note }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  <h2 style="font-family:var(--font-sans);font-size:20px;margin-top:24px;">Database indexes</h2>
+  <p>The flight result query filters by (origin, destination, departure date) and (airline, date).
+  Composite indexes <code>ix_flight_origin_dest_date</code> and <code>ix_flight_airline_date</code>
+  turn each query into an index seek instead of a table scan, which is what keeps LCP under 2 s
+  even with 1.5M flight rows in the catalogue.</p>
+</div>
+{% endblock %}

@@ -326,7 +326,16 @@
                         <span class="footer-sep">|</span>
                         <a href="/sitemap">Site Map</a>
                     </div>
-                    <span class="footer-locale">United States</span>
+                    <span class="footer-locale">
+                        <form action="/api/locale" method="post" class="r7-locale-form" id="r7-footer-locale-form">
+                            <select name="locale" aria-label="Country or region" class="r7-locale-select"
+                                    onchange="document.getElementById('r7-footer-locale-form').submit()">
+                                {% for code in r7_supported_locales %}
+                                <option value="{{ code }}" {% if code == r7_locale %}selected{% endif %}>{{ r7_locale_labels.get(code, code) }}</option>
+                                {% endfor %}
+                            </select>
+                        </form>
+                    </span>
                 </div>
             </div>
         </div>

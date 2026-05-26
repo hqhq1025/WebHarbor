@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+{% block title %}ESPN Deportes — Noticias y Análisis{% endblock %}
+
+{% block extra_head %}
+<meta name="description" content="ESPN Deportes — noticias, análisis y resultados en español.">
+<meta property="og:title" content="ESPN Deportes — Noticias y Análisis">
+<meta property="og:type" content="website">
+<meta property="og:locale" content="es_ES">
+<meta name="twitter:card" content="summary">
+<link rel="alternate" hreflang="es" href="/espn-deportes/">
+<link rel="alternate" hreflang="en" href="/">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "WebSite",
+  "name": "ESPN Deportes",
+  "url": "/espn-deportes/",
+  "inLanguage": "es"
+}
+</script>
+{% endblock %}
+
+{% block content %}
+<div class="container espn-deportes" lang="es">
+  <header class="page-header">
+    <h1 lang="es">ESPN Deportes</h1>
+    <p class="subtitle" lang="es">Noticias, análisis y resultados en español.</p>
+    <nav aria-label="ESPN Deportes secciones" class="deportes-nav">
+      <a href="/espn-deportes/nba">NBA</a>
+      <a href="/espn-deportes/nfl">NFL</a>
+      <a href="/espn-deportes/mlb">MLB</a>
+      <a href="/espn-deportes/soccer">Fútbol</a>
+    </nav>
+  </header>
+
+  {% if current_sport %}
+    <h2 lang="es">{{ current_sport.display_name or current_sport.name }} en español</h2>
+  {% endif %}
+
+  {% if not es_articles %}
+    <p class="muted" lang="es">No hay artículos en español todavía.</p>
+  {% else %}
+    {% for sport_slug, items in es_by_sport.items() %}
+      <section class="deportes-section" aria-labelledby="deportes-{{ sport_slug }}">
+        <h3 id="deportes-{{ sport_slug }}" lang="es">{{ sport_slug|upper }}</h3>
+        <ul class="article-list" lang="es">
+          {% for art in items[:12] %}
+            <li class="article-list__item">
+              <a href="/article/{{ art.slug }}">
+                <strong>{{ art.title }}</strong>
+                <span class="muted">— {{ art.author or 'ESPN Deportes' }} • {{ art.published_date or '' }}</span>
+              </a>
+            </li>
+          {% endfor %}
+        </ul>
+      </section>
+    {% endfor %}
+  {% endif %}
+
+  <aside class="deportes-locale" role="complementary" aria-label="Cambio de idioma">
+    <p lang="en">View this site in English: <a href="/">ESPN.com (English)</a></p>
+  </aside>
+</div>
+{% endblock %}

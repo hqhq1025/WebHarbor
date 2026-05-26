@@ -5,6 +5,36 @@
   {{ home_team.abbreviation if home_team else 'HME' }}
 {% endblock %}
 
+{% block extra_head %}
+{% set ev_status_map = {'final': 'EventScheduled', 'scheduled': 'EventScheduled', 'postponed': 'EventPostponed', 'live': 'EventScheduled'} %}
+<meta name="description" content="{{ game.recap[:160] if game.recap else '' }}">
+<meta property="og:title" content="{{ (away_team.full_name if away_team else 'Away') }} at {{ (home_team.full_name if home_team else 'Home') }}">
+<meta property="og:type" content="sports.event">
+<meta property="og:url" content="/game/{{ game.id }}">
+<meta name="twitter:card" content="summary">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "SportsEvent",
+  "name": {{ ((away_team.full_name if away_team else 'Away') ~ ' at ' ~ (home_team.full_name if home_team else 'Home')) | tojson }},
+  "sport": {{ ((sport.display_name if sport else game.sport_slug)) | tojson }},
+  "startDate": {{ (game.date or '') | tojson }},
+  "eventStatus": "https://schema.org/{{ ev_status_map.get(game.status, 'EventScheduled') }}",
+  "eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode",
+  "location": {
+    "@type": "Place",
+    "name": {{ (game.venue or '') | tojson }}
+  },
+  "competitor": [
+    {% if away_team %}{"@type": "SportsTeam", "name": {{ away_team.full_name | tojson }}, "url": "/team/{{ game.sport_slug }}/{{ away_team.slug }}"}{% endif %}
+    {% if away_team and home_team %},{% endif %}
+    {% if home_team %}{"@type": "SportsTeam", "name": {{ home_team.full_name | tojson }}, "url": "/team/{{ game.sport_slug }}/{{ home_team.slug }}"}{% endif %}
+  ]{% if game.network %},
+  "broadcastChannel": {{ game.network | tojson }}{% endif %}
+}
+</script>
+{% endblock %}
+
 {% block content %}
 <div class="container">
   <!-- Game Header / Scoreline -->

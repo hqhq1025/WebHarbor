@@ -128,6 +128,21 @@ class Word(db.Model):
     # filters the definitions list by ``definitions[*].mode``.
     r6_dict = db.Column(db.String(20), default='')
 
+    # R7 extensions ----------------------------------------------------------
+    # Domain bucket: '' (general) | medical | legal | academic | business | it.
+    # Drives the /dictionary/domain/<dom> sub-catalog pages and the domain
+    # badge rendered next to the headword.
+    r7_domain = db.Column(db.String(20), default='', index=True)
+    # Per-dialect IPA transcriptions. ``dialect_uk`` mirrors phonetic_uk by
+    # default; R7 rows populate a slightly different rhotic-aware variant so
+    # the UK/US dictionary-dialect toggle has something to flip.
+    dialect_uk = db.Column(db.String(120), default='')
+    dialect_us = db.Column(db.String(120), default='')
+    # Stable opaque id used as the @id on the JSON-LD DefinedTerm schema
+    # injected into the entry page head. Empty string for r0..r6 rows; R7
+    # rows ship a deterministic 'dt-xxxxxxxxxxxx' value.
+    defined_term_id = db.Column(db.String(40), default='')
+
     saved_by = db.relationship('SavedWord', backref='word', lazy=True,
                                cascade='all, delete-orphan')
 
@@ -1894,6 +1909,217 @@ def wotd_archive_year(year):
 
 
 # ---------------------------------------------------------------------------
+# R7 — SEO, sitemap, robots, OG image, public-API stub, dialect toggle,
+# domain pages, low-latency suggest. Everything new in R7 lives here so the
+# legacy route block above is unchanged.
+# ---------------------------------------------------------------------------
+
+R7_DOMAINS = ('medical', 'legal', 'academic', 'business', 'it')
+R7_DOMAIN_LABEL = {
+    'medical': 'medicine', 'legal': 'law', 'academic': 'academia',
+    'business': 'business', 'it': 'computing',
+}
+
+# Dialect names used by the UK/US toggle. Session-stored, defaults to en-uk.
+R7_DIALECTS = ('en-uk', 'en-us')
+
+
+def current_dialect():
+    """Session-scoped dialect, falling back to en-uk."""
+    try:
+        d = session.get('dialect', 'en-uk')
+    except Exception:
+        d = 'en-uk'
+    return d if d in R7_DIALECTS else 'en-uk'
+
+
+@app.route('/dictionary/dialect/<dialect>')
+def dictionary_set_dialect(dialect):
+    if dialect in R7_DIALECTS:
+        session['dialect'] = dialect
+    return redirect(request.referrer or url_for('index'))
+
+
+# --- robots.txt ------------------------------------------------------------
+
+@app.route('/robots.txt')
+def robots_txt():
+    body = (
+        'User-agent: *\n'
+        'Allow: /\n'
+        'Disallow: /api/save-word\n'
+        'Disallow: /account\n'
+        'Sitemap: /sitemap.xml\n'
+    )
+    return app.response_class(body, mimetype='text/plain')
+
+
+# --- sitemap.xml (root + per-letter pages) ---------------------------------
+
+@app.route('/sitemap.xml')
+def sitemap_root():
+    letters = 'abcdefghijklmnopqrstuvwxyz'
+    urls = ''.join(
+        f'<sitemap><loc>/sitemap/letter/{L}.xml</loc></sitemap>'
+        for L in letters
+    )
+    body = (
+        '<?xml version="1.0" encoding="UTF-8"?>'
+        '<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">'
+        + urls + '</sitemapindex>'
+    )
+    return app.response_class(body, mimetype='application/xml')
+
+
+@app.route('/sitemap/letter/<letter>.xml')
+def sitemap_letter(letter):
+    letter = (letter or '').lower()[:1]
+    if not letter or not letter.isalpha():
+        abort(404)
+    words = (Word.query
+             .filter(Word.headword.ilike(f'{letter}%'),
+                     Word.is_thesaurus_phrase == False)  # noqa
+             .order_by(Word.slug.asc())
+             .limit(1000).all())
+    items = ''.join(
+        f'<url><loc>/dictionary/english/{w.slug}</loc>'
+        f'<changefreq>weekly</changefreq></url>'
+        for w in words
+    )
+    body = (
+        '<?xml version="1.0" encoding="UTF-8"?>'
+        '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">'
+        + items + '</urlset>'
+    )
+    return app.response_class(body, mimetype='application/xml')
+
+
+# --- OG image (deterministic SVG per slug) ---------------------------------
+
+@app.route('/og-image/<slug>.svg')
+def og_image(slug):
+    word = Word.query.filter_by(slug=slug).first()
+    if not word:
+        abort(404)
+    headword = (word.headword or slug)[:32]
+    level = word.level or ''
+    # Deterministic colour derived from slug hash.
+    import hashlib as _hl
+    h = int(_hl.md5(slug.encode()).hexdigest()[:6], 16)
+    bg = '#{:06x}'.format(((h & 0xFFFFFF) | 0x202060) & 0x4F70A0)
+    body = (
+        f'<?xml version="1.0" encoding="UTF-8"?>'
+        f'<svg xmlns="http://www.w3.org/2000/svg" '
+        f'width="1200" height="630" viewBox="0 0 1200 630">'
+        f'<rect width="1200" height="630" fill="{bg}"/>'
+        f'<text x="60" y="280" font-family="Georgia,serif" '
+        f'font-size="120" fill="#ffffff">{headword}</text>'
+        f'<text x="60" y="380" font-family="Helvetica,Arial,sans-serif" '
+        f'font-size="48" fill="#e8eef8">'
+        f'Cambridge Dictionary &#8226; {level}</text>'
+        f'<text x="60" y="560" font-family="Helvetica,Arial,sans-serif" '
+        f'font-size="32" fill="#cfd8e8">dictionary.cambridge.org</text>'
+        f'</svg>'
+    )
+    return app.response_class(body, mimetype='image/svg+xml')
+
+
+# --- /api/suggest (low-latency stub, < 50ms target) ------------------------
+
+@app.route('/api/suggest')
+def api_suggest():
+    import time as _time
+    t0 = _time.perf_counter()
+    q = (request.args.get('q') or '').strip().lower()[:40]
+    if not q:
+        return jsonify({'q': '', 'suggestions': [],
+                        'latency_ms': 0,
+                        'target_ms': 50,
+                        'within_target': True})
+    # Single indexed LIKE query, capped at 8 rows. The headword index keeps
+    # this well under the 50ms ceiling on the 46k-row catalog.
+    rows = (Word.query
+            .with_entities(Word.headword, Word.slug, Word.level)
+            .filter(Word.headword.ilike(f'{q}%'),
+                    Word.is_thesaurus_phrase == False)  # noqa
+            .order_by(Word.headword.asc())
+            .limit(8).all())
+    elapsed_ms = round((_time.perf_counter() - t0) * 1000, 2)
+    return jsonify({
+        'q': q,
+        'suggestions': [
+            {'headword': h, 'slug': s, 'level': lv or ''}
+            for h, s, lv in rows
+        ],
+        'latency_ms': elapsed_ms,
+        'target_ms': 50,
+        'within_target': elapsed_ms < 50,
+    })
+
+
+# --- /api/v1 public-API stub ------------------------------------------------
+
+@app.route('/api/v1/docs')
+def api_v1_docs():
+    return render_template('api_docs.html')
+
+
+@app.route('/api/v1/word/<slug>')
+def api_v1_word(slug):
+    w = Word.query.filter_by(slug=slug).first()
+    if not w:
+        return jsonify({'error': 'not_found', 'slug': slug}), 404
+    return jsonify({
+        'headword': w.headword,
+        'slug': w.slug,
+        'pos': w.pos,
+        'level': w.level,
+        'domain': w.r7_domain or '',
+        'defined_term_id': w.defined_term_id or '',
+        'ipa_uk': w.dialect_uk or w.phonetic_uk or w.pronunciation_ipa,
+        'ipa_us': w.dialect_us or w.phonetic_us or w.pronunciation_ipa,
+        'definitions': w.get_definitions()[:3],
+    })
+
+
+# --- /dictionary/domain/<dom> + spotlight ----------------------------------
+
+@app.route('/dictionary/domain/<dom>')
+def dictionary_domain(dom):
+    if dom not in R7_DOMAINS:
+        abort(404)
+    page = max(1, int(request.args.get('page', 1) or 1))
+    per_page = 60
+    base_q = (Word.query.filter_by(r7_domain=dom)
+              .order_by(Word.headword.asc()))
+    total = base_q.count()
+    words = base_q.offset((page - 1) * per_page).limit(per_page).all()
+    return render_template('domain_index.html',
+                           dom=dom, label=R7_DOMAIN_LABEL[dom],
+                           total=total, page=page,
+                           per_page=per_page, words=words)
+
+
+@app.route('/dictionary/domain/<dom>/spotlight')
+def dictionary_domain_spotlight(dom):
+    if dom not in R7_DOMAINS:
+        abort(404)
+    # Pick a deterministic daily spotlight from the domain's sorted slug list.
+    pool = (Word.query.filter_by(r7_domain=dom)
+            .order_by(Word.slug.asc()).all())
+    if not pool:
+        abort(404)
+    import hashlib as _hl
+    idx = int(_hl.md5((MIRROR_REFERENCE_DATE.date().isoformat()
+                       + '|' + dom).encode()).hexdigest()[:8], 16) % len(pool)
+    spotlight = pool[idx]
+    others = [w for w in pool[:30] if w.id != spotlight.id][:18]
+    return render_template('domain_spotlight.html',
+                           dom=dom, label=R7_DOMAIN_LABEL[dom],
+                           spotlight=spotlight, others=others)
+
+
+# ---------------------------------------------------------------------------
 # Seed data
 # ---------------------------------------------------------------------------
 
@@ -3544,6 +3770,48 @@ def seed_database():
                 roots_json=_j(wd.get('roots', [])),
                 shared_coll_anchor=wd.get('shared_coll_anchor', ''),
                 r6_dict=wd.get('r6_dict', ''),
+            ))
+        # R7 expansion: ~10000 specialised-domain entries (medical / legal /
+        # academic / business / it). Each row carries ``r7_domain``,
+        # ``dialect_uk``/``dialect_us`` IPA pairs, and a ``defined_term_id``
+        # used as the JSON-LD DefinedTerm @id on the entry page. Same
+        # append-after pattern so prior ids stay stable.
+        extra6 = _load_json('words_r7.json') or []
+        for wd in extra6:
+            if wd['slug'] in seen_slugs:
+                continue
+            seen_slugs.add(wd['slug'])
+            db.session.add(Word(
+                headword=wd['headword'], slug=wd['slug'],
+                pos=wd.get('pos', ''), guide_word=wd.get('guide_word', ''),
+                phonetic_uk=wd.get('phonetic_uk', ''),
+                phonetic_us=wd.get('phonetic_us', ''),
+                pronunciation_ipa=(wd.get('pronunciation_ipa')
+                                   or wd.get('phonetic_uk', '')),
+                audio_uk_path=wd.get('audio_uk_path',
+                                     f"/static/audio/uk/{wd['slug']}.mp3"),
+                audio_us_path=wd.get('audio_us_path',
+                                     f"/static/audio/us/{wd['slug']}.mp3"),
+                level=wd.get('level', ''),
+                definitions_json=_j(wd.get('definitions', [])),
+                translations_json=_j(wd.get('translations', {})),
+                related_json=_j(wd.get('related', [])),
+                synonyms_json=_j(wd.get('synonyms', [])),
+                is_thesaurus_phrase=False,
+                created_at=MIRROR_REFERENCE_DATE,
+                register=wd.get('register', ''),
+                frequency_rank=int(wd.get('frequency_rank', 0) or 0),
+                etymology=wd.get('etymology', ''),
+                collocations_json=_j(wd.get('collocations', [])),
+                mistake_note=wd.get('mistake_note', ''),
+                antonyms_json=_j(wd.get('antonyms', [])),
+                roots_json=_j(wd.get('roots', [])),
+                shared_coll_anchor=wd.get('shared_coll_anchor', ''),
+                r6_dict=wd.get('r6_dict', ''),
+                r7_domain=wd.get('r7_domain', ''),
+                dialect_uk=wd.get('dialect_uk', ''),
+                dialect_us=wd.get('dialect_us', ''),
+                defined_term_id=wd.get('defined_term_id', ''),
             ))
     else:
         # Fallback: inline curated lists.

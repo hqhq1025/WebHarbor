@@ -1,5 +1,18 @@
 {% extends "base.html" %}
 {% block title %}{{ property.name }} — Booking{% endblock %}
+{% block og_type %}hotel{% endblock %}
+{% block og_title %}{{ property.name }} ({{ property.stars }}-star) — Booking{% endblock %}
+{% block og_description %}{{ (property.short_desc or property.description or '')[:200] }}{% endblock %}
+{% block og_image %}{{ property.image or '/static/images/og_default.png' }}{% endblock %}
+{% block extra_head %}
+<link rel="canonical" href="/property/{{ property.slug }}">
+<link rel="amphtml" href="/amp/property/{{ property.slug }}">
+<meta property="og:price:amount" content="{{ property.price_per_night }}">
+<meta property="og:price:currency" content="USD">
+<meta property="product:price:amount" content="{{ property.price_per_night }}">
+<meta property="product:price:currency" content="USD">
+<script type="application/ld+json">{{ hotel_jsonld | safe }}</script>
+{% endblock %}
 {% block content %}
 <div class="container">
 
@@ -57,9 +70,31 @@
         <div>
             <!-- Description -->
             <div class="pd-section">
-                <h2>About this property</h2>
+                <h2>{{ locale_labels.about }}</h2>
                 <p class="pd-description">{{ property.description }}</p>
                 <p class="pd-description"><strong>{{ property.name }}</strong> offers guests {{ property.get_rooms() | length }} room types, ranging from comfortable standard rooms to spacious suites. The property is rated <strong>{{ property.rating_label }}</strong> with a {{ property.rating }}/10 score from {{ property.review_count }} reviews.</p>
+                {# R7 — Multi-language description block. Renders a short
+                   localized intro for the 6 main locales so the
+                   multi-language-property-description task category can
+                   verify per-locale strings in page source. #}
+                <div class="pd-multilang" aria-label="Multi-language summary">
+                    <details>
+                        <summary>Description in other languages</summary>
+                        <p lang="de" class="ml-de">Über diese Unterkunft: {{ property.name }} ({{ property.stars }} Sterne) befindet sich in {{ property.city.display }} und bietet kostenloses WLAN und {{ locale_labels.cancel|lower }}.</p>
+                        <p lang="fr" class="ml-fr">À propos de cet hébergement : {{ property.name }} ({{ property.stars }} étoiles), situé à {{ property.city.display }}, propose le Wi-Fi gratuit et l'annulation gratuite.</p>
+                        <p lang="es" class="ml-es">Acerca de este alojamiento: {{ property.name }} ({{ property.stars }} estrellas) en {{ property.city.display }} ofrece Wi-Fi gratis y cancelación gratuita.</p>
+                        <p lang="it" class="ml-it">Informazioni su questa struttura: {{ property.name }} ({{ property.stars }} stelle) a {{ property.city.display }} offre Wi-Fi gratuito e cancellazione gratuita.</p>
+                        <p lang="zh" class="ml-zh">关于此住宿：{{ property.name }}（{{ property.stars }}星）位于{{ property.city.display }}，提供免费 WiFi 与免费取消政策。</p>
+                        <p lang="ja" class="ml-ja">この宿泊施設について：{{ property.city.display }}にある{{ property.name }}（{{ property.stars }}つ星）は、無料Wi-Fiと無料キャンセルを提供します。</p>
+                    </details>
+                </div>
+                {# R7 — Currency conversion disclosure. The locale-currency
+                   tasks verify the disclosed conversion rate. #}
+                {% if currency_code != 'USD' %}
+                <p class="pd-currency-note" style="font-size:12px;color:#555;margin-top:6px;">
+                    Rates shown in {{ currency_code }} at 1 USD = {{ currency_rate }} {{ currency_code }} (conversion rates subject to change).
+                </p>
+                {% endif %}
             </div>
 
             <!-- Gallery sections - multiple -->
@@ -568,4 +603,22 @@
     });
 })();
 </script>
+
+{# R7 — TripAdvisor cross-link stub. Booking.com surfaces a small badge
+   linking out to the same property on TripAdvisor; we capture that as a
+   testable cross-link with a deterministic ratings count. #}
+<div class="pd-tripadvisor" style="margin:24px 0;padding:16px;border:1px solid #ddd;border-radius:6px;background:#fafafa;">
+    <h3 style="margin-top:0;">Compare on TripAdvisor</h3>
+    {% set ta_count = (property.review_count * 27) // 10 + 113 %}
+    {% set ta_stars = 4 if property.rating >= 8.0 else 3 %}
+    <p style="margin:4px 0;">
+        <span style="color:#34e0a1;font-weight:bold;font-size:18px;">
+            {% for i in range(ta_stars) %}&#9679;{% endfor %}{% for i in range(5 - ta_stars) %}&#9675;{% endfor %}
+        </span>
+        <span style="margin-left:6px;font-size:14px;">{{ ta_stars }}.{{ (property.review_count % 9) }} on TripAdvisor &middot; {{ ta_count }} traveller reviews</span>
+    </p>
+    <a class="btn-secondary" href="{{ url_for('tripadvisor_stub', slug=property.slug) }}" rel="nofollow sponsored" data-cross="tripadvisor">
+        Open on TripAdvisor &rarr;
+    </a>
+</div>
 {% endblock %}

@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block title %}Takeout — export your search history{% endblock %}
+
+{% block content %}
+<div class="container" style="max-width: 760px; margin: 32px auto; padding: 0 16px;">
+  <h1 style="font-size: 28px; margin-bottom: 8px;">Google Takeout — Search history</h1>
+  <p class="muted">
+    Export your saved Search activity. This bundles every recorded query
+    on your account into a single downloadable file. Matches the format
+    delivered by takeout.google.com for the
+    <em>My Activity → Search</em> data type.
+  </p>
+
+  <div style="background:#f8f9fa; padding:16px; border-radius:8px; margin: 16px 0;">
+    <div><strong>Account:</strong> {{ payload.export_user }} ({{ payload.export_user_name }})</div>
+    <div><strong>Items:</strong> {{ payload.item_count }} stored queries</div>
+    <div><strong>Generated:</strong> {{ payload.exported_at }}</div>
+  </div>
+
+  <div style="display:flex; gap:12px; margin: 20px 0;">
+    <a class="g-btn" href="/takeout/search-history?format=json">Download .json</a>
+    <a class="g-btn" href="/takeout/search-history?format=csv">Download .csv</a>
+    <a class="g-btn" href="/history">View history page</a>
+  </div>
+
+  <h2 style="font-size: 18px; margin-top: 28px;">What's included</h2>
+  <ul>
+    <li>Every query string you have searched while signed in</li>
+    <li>Which vertical (All / Images / News / Maps / …) you searched in</li>
+    <li>The exact timestamp the query was sent</li>
+    <li>The approximate result count returned</li>
+  </ul>
+
+  <p>
+    Need finer-grained control? Visit
+    <a href="/preferences/region">Region settings</a> or
+    <a href="/preferences/languages">Language settings</a> to scope what
+    gets logged in the first place.
+  </p>
+</div>
+{% endblock %}

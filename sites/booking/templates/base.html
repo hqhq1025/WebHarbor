@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="{{ (locale_info.code if locale_info else 'en') }}" data-locale="{{ locale_code or 'en-us' }}">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -9,12 +9,37 @@
 <link rel="stylesheet" href="{{ url_for('static', filename='css/datepicker.css') }}">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><text x='50%25' y='50%25' text-anchor='middle' dominant-baseline='central' font-size='14' fill='%23003580'>B.</text></svg>">
 <script defer src="{{ url_for('static', filename='js/datepicker.js') }}"></script>
+<!-- R7 — Open Graph defaults (per-page templates may override via block) -->
+<meta property="og:site_name" content="Booking.com">
+<meta property="og:type" content="{% block og_type %}website{% endblock %}">
+<meta property="og:title" content="{% block og_title %}Booking — Hotels, Homes, Flights, Car Hire & More{% endblock %}">
+<meta property="og:description" content="{% block og_description %}Compare deals across millions of stays worldwide.{% endblock %}">
+<meta property="og:image" content="{% block og_image %}/static/images/og_default.png{% endblock %}">
+<meta property="og:locale" content="{{ (locale_code or 'en-us')|replace('-', '_') }}">
+<meta name="twitter:card" content="summary_large_image">
+<!-- R7 — hreflang block: declare a stub link for every supported locale -->
+{% if all_locales %}
+{% for lk, _li in all_locales.items() %}
+<link rel="alternate" hreflang="{{ lk }}" href="/{{ lk }}{{ request.path if request.path.startswith('/property/') else '/' }}">
+{% endfor %}
+<link rel="alternate" hreflang="x-default" href="{{ request.path or '/' }}">
+{% endif %}
+{% block extra_head %}{% endblock %}
 </head>
 <body>
 <header class="header">
     <div class="header-top">
         <a href="{{ url_for('index') }}" class="header-logo">Booking<b>.com</b></a>
         <div class="header-actions">
+            <form method="GET" action="{{ url_for('set_locale') }}" style="display:inline;margin-right:8px;">
+                <label style="color:#fff;font-size:12px;margin-right:4px;">Language</label>
+                <select name="locale" onchange="this.form.submit()"
+                        style="padding:4px 6px;border-radius:4px;border:1px solid #2a5aa8;background:#fff;font-size:12px;">
+                    {% for lk, li in all_locales.items() %}
+                    <option value="{{ lk }}" {% if locale_code == lk %}selected{% endif %}>{{ li.name }}</option>
+                    {% endfor %}
+                </select>
+            </form>
             <form method="GET" action="{{ url_for('set_currency') }}" style="display:inline;margin-right:8px;">
                 <label style="color:#fff;font-size:12px;margin-right:4px;">Currency</label>
                 <select name="currency" onchange="this.form.submit()"

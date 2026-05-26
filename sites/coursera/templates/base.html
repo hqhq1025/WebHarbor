@@ -1,15 +1,44 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="{{ current_lang or 'en' }}">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="csrf-token" content="{{ csrf_token() }}">
 <title>{% block title %}Coursera | Degrees, Certificates, & Free Online Courses{% endblock %}</title>
+{# ─── R7 SEO: Open Graph + Twitter card defaults (pages can override) ─── #}
+{% block og_meta %}
+<meta property="og:site_name" content="Coursera">
+<meta property="og:type" content="website">
+<meta property="og:title" content="{{ self.title() }}">
+<meta property="og:description" content="Learn online and build a career. 13,000+ courses from 330+ partners.">
+<meta property="og:locale" content="{{ current_lang or 'en' }}_US">
+<meta property="og:image" content="{{ request.host_url }}static/images/og-default.png">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="{{ self.title() }}">
+<meta name="twitter:description" content="Learn online and build a career.">
+{% endblock %}
+{# ─── R7 i18n: hreflang for every supported UI locale (16) ─── #}
+{% for lang in supported_locales %}
+<link rel="alternate" hreflang="{{ lang }}" href="{{ request.path }}?lang={{ lang }}">
+{% endfor %}
+<link rel="alternate" hreflang="x-default" href="{{ request.path }}">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
+{# ─── R7 schema.org JSON-LD (pages can inject a Course / Organization graph) ─── #}
+{% block jsonld %}
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Organization",
+  "name": "Coursera",
+  "url": "{{ request.host_url }}",
+  "sameAs": ["https://www.coursera.org"]
+}
+</script>
+{% endblock %}
 </head>
-<body>
+<body data-locale="{{ current_lang or 'en' }}">
 {% with messages = get_flashed_messages(with_categories=true) %}
 {% if messages %}
 <div id="flash-container">
@@ -189,6 +218,15 @@
   </div>
   <div class="footer-bottom">
     <p>&copy; 2024 Coursera Inc. All rights reserved.</p>
+    {# ─── R7 i18n language switcher (16 locales, hreflang aware) ─── #}
+    <div class="footer-language-switcher" aria-label="Language">
+      <span class="lang-current">{{ locale_native_names.get(current_lang or 'en', 'English') }}</span>
+      <select onchange="if(this.value){window.location='/lang/'+this.value;}" aria-label="Switch language">
+        {% for lang in supported_locales %}
+        <option value="{{ lang }}" {% if (current_lang or 'en')==lang %}selected{% endif %}>{{ locale_native_names.get(lang, lang) }}</option>
+        {% endfor %}
+      </select>
+    </div>
     <div class="footer-social" aria-label="Social links">
       {% for key, label in [('facebook','Facebook'),('linkedin','LinkedIn'),('twitter','Twitter'),('youtube','YouTube'),('instagram','Instagram')] %}
       <a href="#" aria-label="{{ label }}">

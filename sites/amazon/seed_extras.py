@@ -947,6 +947,14 @@ def run_extras(db, User, Product, Category, CartItem, Order, OrderItem,
         seed_r6(db, Product)
     except Exception as e:
         raise RuntimeError(f"seed_r6 failed: {e}") from e
+    # R7: push catalog past 29500 by adding Amazon Fresh + Whole Foods +
+    # Audible + Kindle storefront templates, plus replaying prior pools with
+    # R7_SUFFIXES. Adds dietary / narrator / listen-time / KU fields.
+    try:
+        from seed_r7 import seed_r7
+        seed_r7(db, Product)
+    except Exception as e:
+        raise RuntimeError(f"seed_r7 failed: {e}") from e
     seed_extra_orders(db, User, Order, OrderItem, Product, SavedAddress, PaymentMethod)
     seed_wishlists(db, User, Product, WishlistItem)
     seed_extra_carts(db, User, Product, CartItem)

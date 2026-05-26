@@ -1979,3 +1979,30 @@ h1, h2, h3, h4, h5, h6 { color: var(--text); font-weight: 700; line-height: 1.25
 }
 .fantasy-card[aria-grabbed="true"] { outline: 2px solid #d00; }
 .trade-slot:focus { outline: 2px solid #d00; }
+
+/* ─── R7: locale switcher + sound cue + a11y live region ──────────────────── */
+.nav-locale { display: inline-flex; align-items: center; gap: 4px; margin-left: 8px; padding: 2px 6px;
+  border: 1px solid rgba(255,255,255,0.18); border-radius: 4px; font-size: 11px; }
+.nav-locale__link { color: inherit; opacity: 0.7; padding: 0 4px; text-decoration: none; }
+.nav-locale__link:hover { opacity: 1; }
+.nav-locale__link--active { opacity: 1; font-weight: 700; color: #ffd000; }
+.nav-locale__sep { color: rgba(255,255,255,0.4); }
+
+.sound-cue-toggle { position: fixed; right: 12px; bottom: 80px; background: #fff;
+  border: 1px solid #ddd; border-radius: 6px; padding: 8px 10px; font-size: 12px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.06); z-index: 50; }
+.sound-cue-toggle__label { display: inline-flex; align-items: center; gap: 6px; cursor: pointer; }
+.sound-cue-toggle__hint { display: block; font-size: 11px; color: #666; margin-top: 2px; }
+.sound-cue-toggle__input:checked + .sound-cue-toggle__text { color: #d00; font-weight: 700; }
+.sound-cue-toggle__input:checked + .sound-cue-toggle__text::after { content: " ♪"; }
+
+.visually-hidden { position: absolute !important; width: 1px; height: 1px; padding: 0;
+  margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
+
+/* ESPN Deportes layout */
+.espn-deportes .deportes-nav { display: flex; gap: 12px; margin: 8px 0 16px; }
+.espn-deportes .deportes-nav a { padding: 4px 10px; border: 1px solid #d00; color: #d00;
+  border-radius: 4px; text-decoration: none; font-weight: 600; font-size: 13px; }
+.espn-deportes .deportes-nav a:hover { background: #d00; color: #fff; }
+.espn-deportes .deportes-section { border-top: 1px solid #eee; padding-top: 10px; margin-top: 16px; }
+.espn-deportes .deportes-locale { margin-top: 24px; padding-top: 12px; border-top: 1px solid #eee; color: #555; font-size: 13px; }

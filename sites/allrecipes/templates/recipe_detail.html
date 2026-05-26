@@ -1,5 +1,43 @@
 {% extends "base.html" %}
 {% block title %}{{ recipe.title }}{% endblock %}
+{% block meta_description %}{{ (recipe.description or recipe.title)[:200] }} — {{ recipe.review_count }} reviews, {{ recipe.avg_rating }} stars, {{ recipe.total_time or 'quick' }} total time.{% endblock %}
+{% block og_type %}article{% endblock %}
+{% block og_image %}{{ site_base_url() }}{{ recipe.image or '/static/images/og-default.jpg' }}{% endblock %}
+{% block jsonld %}
+<script type="application/ld+json">
+{
+    "@context": "https://schema.org",
+    "@type": "Recipe",
+    "name": "{{ recipe.title|e }}",
+    "image": "{{ site_base_url() }}{{ recipe.image or '/static/images/og-default.jpg' }}",
+    "author": {"@type": "Person", "name": "{{ recipe.author_name|e }}"},
+    "description": "{{ (recipe.description or '')|e }}",
+    "recipeCategory": "{{ (recipe.category.name if recipe.category else recipe.dish_type)|e }}",
+    "recipeCuisine": "{{ recipe.cuisine|e }}",
+    "recipeYield": "{{ recipe.servings|e }}",
+    "prepTime": "{{ recipe.prep_time|e }}",
+    "cookTime": "{{ recipe.cook_time|e }}",
+    "totalTime": "{{ recipe.total_time|e }}",
+    "nutrition": {
+        "@type": "NutritionInformation",
+        "calories": "{{ recipe.calories }} kcal"
+    },
+    "recipeIngredient": {{ recipe.ingredients_json|safe }},
+    "recipeInstructions": [
+        {% for step in recipe.get_instructions() %}
+        {"@type": "HowToStep", "text": "{{ step|e }}"}{{ "," if not loop.last }}
+        {% endfor %}
+    ],
+    "aggregateRating": {
+        "@type": "AggregateRating",
+        "ratingValue": "{{ recipe.avg_rating }}",
+        "reviewCount": "{{ recipe.review_count }}"
+    },
+    "keywords": {{ recipe.feature_tags|safe if recipe.feature_tags else '[]' }},
+    "url": "{{ canonical_url() }}"
+}
+</script>
+{% endblock %}
 
 {% block content %}
 <!-- Header -->

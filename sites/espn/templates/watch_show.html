@@ -1,5 +1,26 @@
 {% extends "base.html" %}
 {% block title %}{{ show.title }} — ESPN+{% endblock %}
+{% block extra_head %}
+<meta name="description" content="{{ (show.description or '')[:160] }}">
+<meta property="og:title" content="{{ show.title }} — ESPN+">
+<meta property="og:type" content="video.tv_show">
+<meta property="og:url" content="/watch/{{ show.slug }}">
+<meta name="twitter:card" content="summary_large_image">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "TVSeries",
+  "name": {{ show.title | tojson }},
+  "url": "/watch/{{ show.slug }}",
+  "description": {{ (show.description or '') | tojson }},
+  "genre": {{ (show.kind or 'Sports') | tojson }},
+  "datePublished": {{ (show.release_date or '') | tojson }},
+  "producer": {"@type": "Organization", "name": {{ (show.host_or_studio or 'ESPN+') | tojson }}},
+  "isAccessibleForFree": {{ 'false' if show.is_espn_plus else 'true' }},
+  "publisher": {"@type": "Organization", "name": "ESPN+"}
+}
+</script>
+{% endblock %}
 {% block content %}
 <div class="container">
   <article class="watch-detail">

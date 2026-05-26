@@ -1,14 +1,73 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="{{ (active_locale or 'en-US').split('-')[0] }}">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token_value }}">
     <title>{% block title %}Amazon.com. Spend less. Smile more.{% endblock %}</title>
+
+    {# R7 — SEO / social / hreflang meta. Per-page tags can be overridden by
+       the `seo_*` blocks below; defaults are tuned for the home / category
+       grid. #}
+    <meta name="description" content="{% block meta_description %}Online shopping from the earth's biggest selection of books, magazines, music, DVDs, videos, electronics, computers, software, apparel & accessories, shoes, jewelry, tools & hardware, housewares, furniture, sporting goods, beauty & personal care, groceries & just about anything else.{% endblock %}">
+    <meta name="robots" content="{% block meta_robots %}index, follow{% endblock %}">
+    <meta name="theme-color" content="#232f3e">
+    <link rel="canonical" href="{% block canonical_url %}{{ site_canonical_host }}{{ request.path }}{% endblock %}">
+
+    {# hreflang alternates — emitted for every supported locale so search
+       engines (and our SEO-validate tasks) see the multilang surface. #}
+    {% for code, label, lang in available_locales %}
+    <link rel="alternate" hreflang="{{ code|lower }}" href="{{ site_canonical_host }}/-/{{ code }}{{ request.path }}">
+    {% endfor %}
+    <link rel="alternate" hreflang="x-default" href="{{ site_canonical_host }}{{ request.path }}">
+
+    {# Open Graph / Twitter Card — base values; product_detail.html overrides. #}
+    <meta property="og:site_name" content="Amazon.com">
+    <meta property="og:type" content="{% block og_type %}website{% endblock %}">
+    <meta property="og:url" content="{{ site_canonical_host }}{{ request.path }}">
+    <meta property="og:title" content="{% block og_title %}Amazon.com. Spend less. Smile more.{% endblock %}">
+    <meta property="og:description" content="{% block og_description %}Free shipping on millions of items. Get the best of Shopping and Entertainment with Prime.{% endblock %}">
+    <meta property="og:image" content="{% block og_image %}{{ site_canonical_host }}/static/images/homepage/og-cover.jpg{% endblock %}">
+    <meta property="og:locale" content="{{ (active_locale or 'en-US').replace('-', '_') }}">
+    {% for code, _label, _lang in available_locales if code != active_locale %}
+    <meta property="og:locale:alternate" content="{{ code.replace('-', '_') }}">
+    {% endfor %}
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="{{ self.og_title() }}">
+    <meta name="twitter:description" content="{{ self.og_description() }}">
+    <meta name="twitter:image" content="{{ self.og_image() }}">
+
+    {# Site-wide WebSite schema — gives Google the sitelinks search box. #}
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebSite",
+      "name": "Amazon.com",
+      "url": "{{ site_canonical_host }}/",
+      "potentialAction": {
+        "@type": "SearchAction",
+        "target": "{{ site_canonical_host }}/s?k={search_term_string}",
+        "query-input": "required name=search_term_string"
+      }
+    }
+    </script>
+    {% block extra_jsonld %}{% endblock %}
+
+    {# R7 — critical CSS stub. Inlines a tiny rule that prevents the
+       above-the-fold layout shift while main.css is being fetched. #}
+    <style>
+      /* critical-css-inline-v1 */
+      body{margin:0;font-family:'Amazon Ember','Helvetica Neue',Arial,sans-serif;background:#fff;color:#0F1111}
+      .nav-top{background:#131921;color:#fff;min-height:60px}
+      .nav-sub{background:#232f3e;color:#fff;min-height:39px}
+      main{min-height:60vh}
+    </style>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='4' fill='%23232f3e'/><text x='16' y='24' text-anchor='middle' font-size='22' fill='%23febd69'>a</text></svg>">
 </head>
 <body>
+    {# R7 — skip link for keyboard / screen-reader accessibility (WCAG 2.4.1). #}
+    <a href="#main-content" class="skip-link" style="position:absolute;left:-9999px;top:auto;width:1px;height:1px;overflow:hidden" onfocus="this.style.cssText='position:fixed;left:8px;top:8px;background:#febd69;color:#111;padding:8px 12px;z-index:9999;text-decoration:none;font-weight:700'">Skip to main content</a>
     <!-- Top Navigation -->
     <nav class="nav-top">
         <div class="nav-top-inner">
@@ -46,12 +105,27 @@
                 <ul id="nav-search-suggest" class="nav-search-suggest" role="listbox" hidden></ul>
             </form>
 
-            <a href="{{ url_for('index') }}" class="nav-item nav-item-small-hide">
-                <div>
-                    <small>EN</small>
-                </div>
-                <span>🌐</span>
-            </a>
+            <details class="nav-item nav-item-small-hide nav-lang" style="position:relative" aria-label="Language switcher">
+                <summary style="list-style:none;cursor:pointer;display:flex;align-items:center;gap:4px">
+                    <div>
+                        <small>{{ (active_locale or 'en-US').split('-')[0]|upper }}</small>
+                    </div>
+                    <span aria-hidden="true">🌐</span>
+                </summary>
+                <ul class="nav-lang-menu" role="menu"
+                    style="position:absolute;top:100%;right:0;background:#fff;color:#111;border:1px solid #ccc;list-style:none;padding:8px 0;margin:0;min-width:200px;z-index:1000;box-shadow:0 2px 8px rgba(0,0,0,.16)">
+                    {% for code, label, lang in available_locales %}
+                    <li role="none">
+                        <a role="menuitem"
+                           href="{{ url_for('lang_switch') }}?locale={{ code }}&next={{ request.path|urlencode }}"
+                           hreflang="{{ code|lower }}"
+                           style="display:block;padding:6px 12px;text-decoration:none;color:{% if code == active_locale %}#cc0c39{% else %}#111{% endif %};font-weight:{% if code == active_locale %}700{% else %}400{% endif %}">
+                            {{ label }}
+                        </a>
+                    </li>
+                    {% endfor %}
+                </ul>
+            </details>
 
             <a href="{% if current_user.is_authenticated %}{{ url_for('account') }}{% else %}{{ url_for('login') }}{% endif %}" class="nav-item">
                 <div>
@@ -111,7 +185,7 @@
     {% endwith %}
 
     <!-- Main Content -->
-    <main role="main">
+    <main role="main" id="main-content">
         {% block content %}{% endblock %}
     </main>
 

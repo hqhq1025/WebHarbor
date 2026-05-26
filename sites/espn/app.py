@@ -1935,6 +1935,127 @@ def podcasts_search():
                            sport_filter='', search_q=q)
 
 
+# ─── R7 Routes: SEO infrastructure (robots, sitemap, RSS) ────────────────────
+
+@app.route('/robots.txt')
+def robots_txt():
+    body = (
+        "User-agent: *\n"
+        "Allow: /\n"
+        "Disallow: /account\n"
+        "Disallow: /account/\n"
+        "Disallow: /api/\n"
+        "Disallow: /login\n"
+        "Disallow: /register\n"
+        "Disallow: /logout\n"
+        "Sitemap: /sitemap.xml\n"
+    )
+    return app.response_class(body, mimetype='text/plain')
+
+
+@app.route('/sitemap.xml')
+def sitemap_xml():
+    """XML sitemap covering games, articles, podcasts, watch shows."""
+    parts = ['<?xml version="1.0" encoding="UTF-8"?>',
+             '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">']
+    # Home + key landing pages.
+    for path in ['/', '/scores', '/bet', '/fantasy', '/podcasts',
+                 '/watch', '/espnplus', '/awards', '/espn-deportes/']:
+        parts.append(f'  <url><loc>{path}</loc></url>')
+    # Sport landing pages.
+    for sp in Sport.query.filter(Sport.is_active == True).order_by(Sport.nav_order).all():  # noqa: E712
+        parts.append(f'  <url><loc>{sp.url_prefix}</loc></url>')
+        parts.append(f'  <url><loc>{sp.url_prefix}scoreboard</loc></url>')
+        parts.append(f'  <url><loc>{sp.url_prefix}standings</loc></url>')
+        parts.append(f'  <url><loc>{sp.url_prefix}news</loc></url>')
+        parts.append(f'  <url><loc>/rss/{sp.slug}.xml</loc></url>')
+    # Articles (cap at 2000 entries to keep XML lean).
+    for a in Article.query.order_by(Article.id.desc()).limit(2000).all():
+        last = (a.published_date or '').replace(' ', 'T') or '2025-01-01'
+        parts.append(f'  <url><loc>/article/{a.slug}</loc>'
+                     f'<lastmod>{last[:10]}</lastmod></url>')
+    # Games (most recent 1500).
+    for g in Game.query.order_by(Game.id.desc()).limit(1500).all():
+        parts.append(f'  <url><loc>/game/{g.id}</loc>'
+                     f'<lastmod>{g.date or "2025-01-01"}</lastmod></url>')
+    # Podcasts.
+    for p in Podcast.query.order_by(Podcast.id).all():
+        parts.append(f'  <url><loc>/podcast/{p.slug}</loc></url>')
+    parts.append('</urlset>')
+    return app.response_class('\n'.join(parts),
+                              mimetype='application/xml')
+
+
+@app.route('/rss/<sport_slug>.xml')
+def rss_feed(sport_slug):
+    """Per-sport RSS feed of recent articles."""
+    sport_slug = _norm_sport(sport_slug)
+    sport = Sport.query.filter_by(slug=sport_slug).first_or_404()
+    arts = (Article.query.filter_by(sport_slug=sport_slug)
+            .order_by(Article.created_at.desc()).limit(40).all())
+    title = f'ESPN {sport.display_name or sport.name} — Latest'
+    items_xml = []
+    for a in arts:
+        pub = a.published_date or '2025-01-01'
+        # crude HTML-strip via Jinja-safe escape on body excerpt
+        excerpt = (a.body or '')[:280].replace('<', '&lt;').replace('>', '&gt;')
+        items_xml.append(
+            f'  <item>'
+            f'<title>{(a.title or "").replace("&", "&amp;")}</title>'
+            f'<link>/article/{a.slug}</link>'
+            f'<guid>/article/{a.slug}</guid>'
+            f'<pubDate>{pub}</pubDate>'
+            f'<author>{a.author or "ESPN Staff"}</author>'
+            f'<description>{excerpt}</description>'
+            f'</item>')
+    rss = (
+        '<?xml version="1.0" encoding="UTF-8"?>\n'
+        '<rss version="2.0">\n'
+        f'  <channel>\n    <title>{title}</title>\n'
+        f'    <link>/{sport_slug}/news</link>\n'
+        f'    <description>{title}</description>\n'
+        + '\n'.join(items_xml) +
+        '\n  </channel>\n</rss>'
+    )
+    return app.response_class(rss, mimetype='application/rss+xml')
+
+
+# ─── R7 Routes: ESPN Deportes (Spanish locale) ───────────────────────────────
+
+@app.route('/espn-deportes')
+@app.route('/espn-deportes/')
+@app.route('/deportes')
+@app.route('/deportes/')
+def espn_deportes():
+    """Spanish-language landing page — articles tagged 'es'."""
+    es_articles = (Article.query
+                   .filter(Article.slug.like('es-%'))
+                   .order_by(Article.created_at.desc()).limit(40).all())
+    es_by_sport = {}
+    for a in es_articles:
+        es_by_sport.setdefault(a.sport_slug, []).append(a)
+    return render_template('espn_deportes.html',
+                           es_articles=es_articles,
+                           es_by_sport=es_by_sport,
+                           locale='es')
+
+
+@app.route('/espn-deportes/<sport_slug>')
+@app.route('/deportes/<sport_slug>')
+def espn_deportes_sport(sport_slug):
+    sport_slug = _norm_sport(sport_slug)
+    sport = Sport.query.filter_by(slug=sport_slug).first_or_404()
+    es_articles = (Article.query
+                   .filter(Article.slug.like('es-%'))
+                   .filter_by(sport_slug=sport_slug)
+                   .order_by(Article.created_at.desc()).limit(40).all())
+    return render_template('espn_deportes.html',
+                           es_articles=es_articles,
+                           es_by_sport={sport_slug: es_articles},
+                           current_sport=sport,
+                           locale='es')
+
+
 # ─── Seed Data ────────────────────────────────────────────────────────────────
 
 def seed_database():

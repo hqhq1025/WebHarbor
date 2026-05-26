@@ -1,6 +1,26 @@
 {% extends "base.html" %}
 {% block title %}{{ podcast.title }}{% endblock %}
 
+{% block extra_head %}
+<meta name="description" content="{{ (podcast.description or '')[:160] }}">
+<meta property="og:title" content="{{ podcast.title }} — ESPN Podcasts">
+<meta property="og:type" content="music.album">
+<meta property="og:url" content="/podcast/{{ podcast.slug }}">
+<meta name="twitter:card" content="summary">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "PodcastSeries",
+  "name": {{ podcast.title | tojson }},
+  "url": "/podcast/{{ podcast.slug }}",
+  "description": {{ (podcast.description or '') | tojson }},
+  "author": {"@type": "Person", "name": {{ (podcast.host or 'ESPN') | tojson }}},
+  "numberOfEpisodes": {{ podcast.episode_count or 0 }},
+  "publisher": {"@type": "Organization", "name": "ESPN"}
+}
+</script>
+{% endblock %}
+
 {% block content %}
 <div class="container">
   <article class="podcast-detail">

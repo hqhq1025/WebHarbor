@@ -1639,6 +1639,19 @@ def seed_extended_catalog():
         print(f"[seed_extended] R6 polish FAILED: {exc!r}")
         raise
 
+    # ----- R7: Korean-Regional / Thai-Regional / Mexican-Regional /
+    # Vegetarian-By-Protein variant passes + 4 new chefs (Korean, Thai,
+    # Mexican, Plant-Based). Adds ~4000+ recipes so the catalog crosses
+    # 18000, broadening international cuisine + plant-protein coverage.
+    try:
+        from r7_seed import run_r7_polish
+        r7_counts = run_r7_polish(cat_by_slug)
+        if not r7_counts.get('skipped'):
+            print(f"[seed_extended] R7 polish: {r7_counts}")
+    except Exception as exc:
+        print(f"[seed_extended] R7 polish FAILED: {exc!r}")
+        raise
+
     # ----- Reviewer users (placeholder, non-loginable) -----
     REVIEWER_COUNT = 24
     reviewer_first = [

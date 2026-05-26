@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block title %}{{ label|capitalize }} spotlight | Cambridge Dictionary{% endblock %}
+{% block content %}
+<div class="container domain-spotlight-page">
+  <nav class="breadcrumb r6-breadcrumb">
+    <a href="{{ url_for('index') }}" class="r6-crumb r6-crumb--link">Home</a>
+    <span class="r6-crumb-sep">&rsaquo;</span>
+    <a href="{{ url_for('dictionary_domain', dom=dom) }}" class="r6-crumb r6-crumb--link">{{ label|capitalize }}</a>
+    <span class="r6-crumb-sep">&rsaquo;</span>
+    <span class="r6-crumb r6-crumb--current"><strong>Spotlight</strong></span>
+  </nav>
+
+  <h1>Daily {{ label|capitalize }} spotlight</h1>
+  <article class="domain-spotlight-card">
+    <h2><a href="{{ url_for('word_detail', slug=spotlight.slug) }}">{{ spotlight.headword }}</a></h2>
+    <p class="domain-spotlight-meta">
+      <span class="entry-pos">{{ spotlight.pos }}</span>
+      {% if spotlight.level %}<span class="entry-level level-{{ spotlight.level|lower }}">{{ spotlight.level }}</span>{% endif %}
+      <span class="domain-spotlight-domain">{{ dom }}</span>
+    </p>
+    <p class="domain-spotlight-gloss">{{ spotlight.guide_word }}</p>
+  </article>
+
+  <h3>Other words from this catalog</h3>
+  <ul class="domain-spotlight-others">
+    {% for w in others %}
+      <li><a href="{{ url_for('word_detail', slug=w.slug) }}">{{ w.headword }}</a></li>
+    {% endfor %}
+  </ul>
+  <p><a href="{{ url_for('dictionary_domain', dom=dom) }}">Browse the full {{ label }} sub-catalog &raquo;</a></p>
+</div>
+{% endblock %}

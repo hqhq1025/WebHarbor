@@ -73,6 +73,30 @@ def normalize_seed_db_layout(db):
     for name, sql in sorted(idx_rows, key=lambda r: r[0]):
         if sql:
             conn.execute(text(sql))
+
+    # 3. R7 composite indexes for search performance / LCP. With ~1.5M flight
+    # rows the result-list query at /flights filters by (origin_id,
+    # destination_id, departure_date) and the price-graph/calendar pages
+    # filter by (airline_id, departure_date). Composite indexes drop result
+    # page time from ~250ms (full scan) to <20ms (index seek). Drop+recreate
+    # so the names land in sorted order in sqlite_master (same byte-identity
+    # constraint as ix_* above).
+    composite_indexes = [
+        ('ix_flight_origin_dest_date',
+         'CREATE INDEX ix_flight_origin_dest_date '
+         'ON flight (origin_id, destination_id, departure_date)'),
+        ('ix_flight_airline_date',
+         'CREATE INDEX ix_flight_airline_date '
+         'ON flight (airline_code, departure_date)'),
+        ('ix_flight_departure_date',
+         'CREATE INDEX ix_flight_departure_date '
+         'ON flight (departure_date)'),
+    ]
+    for name, _ in composite_indexes:
+        conn.execute(text(f"DROP INDEX IF EXISTS {name}"))
+    for name, sql in sorted(composite_indexes, key=lambda r: r[0]):
+        conn.execute(text(sql))
+
     conn.execute(text("VACUUM"))
     conn.commit()
 
@@ -739,6 +763,10 @@ def seed_all(db, Airport, Flight):
         from airport_extras import R6_EXTRA_AIRPORTS
     except ImportError:
         R6_EXTRA_AIRPORTS = []
+    try:
+        from airport_extras import R7_EXTRA_AIRPORTS
+    except ImportError:
+        R7_EXTRA_AIRPORTS = []
 
     # 1. Airports
     slug_to_airport_ids = {}
@@ -895,6 +923,39 @@ def seed_all(db, Airport, Flight):
         )
         db.session.add(airport)
         slug_to_airport_ids.setdefault(slug, []).append(iata)
+
+    # R7: append another 1000 OpenFlights airports for total 4000+. Hash-of-IATA
+    # picks under 'R7:' salt so they don't overlap with R5/R6. All non-popular.
+    # Pushes catalog past 4k for broader benchmark coverage (smaller regional
+    # cities + secondary airports). Sources unchanged (OpenFlights airports.dat).
+    for entry in R7_EXTRA_AIRPORTS:
+        (iata, slug, city, country, name, region, popular,
+         icao, lat, lng, tz) = entry
+        gallery_dir = BASE_DIR / 'static' / 'images' / 'destinations' / slug
+        gallery = []
+        if gallery_dir.exists():
+            for f in sorted(gallery_dir.glob('img_*.*')):
+                if f.stat().st_size > 10000 and f.suffix.lower() in ['.jpg', '.jpeg', '.png', '.webp']:
+                    gallery.append(f"/static/images/destinations/{slug}/{f.name}")
+        image = gallery[0] if gallery else ''
+        airport = Airport(
+            iata=iata,
+            icao=icao,
+            city_slug=slug,
+            city=city,
+            country=country,
+            name=name,
+            region=region,
+            is_popular=popular,
+            latitude=lat,
+            longitude=lng,
+            timezone=tz,
+            image=image,
+            gallery_json=json.dumps(gallery),
+            description=DESCRIPTIONS.get(slug, f"Explore {city}, {country}."),
+        )
+        db.session.add(airport)
+        slug_to_airport_ids.setdefault(slug, []).append(iata)
     db.session.commit()
 
     # Build iata -> Airport
@@ -915,6 +976,8 @@ def seed_all(db, Airport, Flight):
     for entry in R5_EXTRA_AIRPORTS:
         raw_by_iata.setdefault(entry[0], entry[:7])
     for entry in R6_EXTRA_AIRPORTS:
+        raw_by_iata.setdefault(entry[0], entry[:7])
+    for entry in R7_EXTRA_AIRPORTS:
         raw_by_iata.setdefault(entry[0], entry[:7])
     today = date.today()
 
@@ -1182,13 +1245,14 @@ def seed_all(db, Airport, Flight):
     catalog_anchor = date(2024, 1, 1)
     catalog_rows = []
 
-    # Top-tier: every day for three full years (2024-01-01 → 2026-12-31,
-    # 1096 days including 2024 leap day) so adjacent-day and "next-month"
-    # searches in 2024/2025/2026 all hit something on a real route. R5
-    # extends from 731 → 1096 days for ~130k more top-tier rows, bringing
-    # flight catalogue past 400k. Coverage now spans the current benchmark
-    # date (2026-05-26) for every major hub-to-hub pair.
-    TOP_TIER_DAYS = 1096
+    # Top-tier: every day for FIVE full years (2024-01-01 → 2028-12-31,
+    # 1827 days incl. 2024 + 2028 leap days) so adjacent-day and "next-month"
+    # searches in 2024/2025/2026/2027/2028 all hit something on a real route.
+    # R7 extends from 1096 → 1827 days (~262k more top-tier rows), bringing
+    # the flight catalogue past 1.4M (with overlays). Coverage now spans
+    # benchmark "today" (2026-05-26) + 2.5 years of forward inventory for
+    # every major hub-to-hub pair.
+    TOP_TIER_DAYS = 1827
     print(f"[seed] top-tier loop: {len(top_tier_pairs)} pairs × {TOP_TIER_DAYS} days")
     _pair_idx = 0
     for origin_iata, dest_iata in top_tier_pairs:
@@ -1400,6 +1464,73 @@ def seed_all(db, Airport, Flight):
             db.session.commit()
             catalog_rows = []
 
+    # R7 2028 future extension on the R4_FUTURE_PAIRS + R5_CODESHARE_PAIRS set:
+    # gives mega-hub long-haul routes a full 2028 calendar so "fly in two
+    # years", "next-year same-month", and "compare 2027 vs 2028 fares" tasks
+    # all resolve. ~30k rows on top of the new top-tier 2028 coverage.
+    r7_2028_pairs = list(dict.fromkeys(list(R4_FUTURE_PAIRS) + list(R5_CODESHARE_PAIRS)))
+    anchor_2028 = date(2028, 1, 1)
+    for origin_iata, dest_iata in r7_2028_pairs:
+        if origin_iata not in airport_by_iata or dest_iata not in airport_by_iata:
+            continue
+        for d_offset in range(366):  # 2028 is a leap year
+            dep = anchor_2028 + timedelta(days=d_offset)
+            row = make_flight_dict(origin_iata, dest_iata, dep)
+            if row:
+                catalog_rows.append(row)
+                flights_count += 1
+        if len(catalog_rows) >= 5000:
+            db.session.execute(text(insert_sql), catalog_rows)
+            db.session.commit()
+            catalog_rows = []
+
+    # R7 third-airline overlay on the busiest cross-Atlantic and cross-Pacific
+    # mega-pairs across the full top-tier window (5 years). Materialises a
+    # third operating carrier on (route, date) cells so the "Compare 3+
+    # airlines on this route" flight-detail widget and the "majority-airline
+    # rule" multi-step tasks have enough distinct carriers to differentiate.
+    # ~200k rows.
+    R7_THIRD_OVERLAY_PAIRS = [
+        # Top trans-Atlantic
+        ('JFK', 'LHR'), ('LHR', 'JFK'), ('JFK', 'CDG'), ('CDG', 'JFK'),
+        ('JFK', 'AMS'), ('AMS', 'JFK'), ('JFK', 'FRA'), ('FRA', 'JFK'),
+        ('JFK', 'FCO'), ('JFK', 'MAD'), ('JFK', 'DUB'), ('BOS', 'LHR'),
+        ('ORD', 'LHR'), ('ORD', 'CDG'), ('ATL', 'LHR'), ('ATL', 'CDG'),
+        ('IAD', 'LHR'), ('PHL', 'LHR'),
+        # Top trans-Pacific
+        ('LAX', 'HND'), ('LAX', 'NRT'), ('SFO', 'HND'), ('SFO', 'NRT'),
+        ('LAX', 'ICN'), ('SFO', 'ICN'), ('LAX', 'PVG'), ('SFO', 'PVG'),
+        ('LAX', 'HKG'), ('SFO', 'HKG'), ('SEA', 'HND'), ('SEA', 'ICN'),
+        # Top Asia-Asia + Mid-east connectors
+        ('SIN', 'HKG'), ('HKG', 'BKK'), ('SIN', 'BKK'),
+        ('DXB', 'LHR'), ('DXB', 'BKK'), ('DXB', 'SIN'), ('DOH', 'LHR'),
+        # Domestic mega-pairs
+        ('JFK', 'LAX'), ('LAX', 'JFK'), ('JFK', 'SFO'), ('SFO', 'JFK'),
+        ('JFK', 'MIA'), ('JFK', 'BOS'), ('LAX', 'BOS'),
+        # R7 bump: add 25 more pairs to push total past 1.5M rows.
+        ('SFO', 'BOS'), ('BOS', 'SFO'), ('SEA', 'LAX'), ('LAX', 'SEA'),
+        ('SEA', 'SFO'), ('SFO', 'SEA'), ('SEA', 'JFK'), ('JFK', 'SEA'),
+        ('ORD', 'LAX'), ('LAX', 'ORD'), ('ORD', 'SFO'), ('SFO', 'ORD'),
+        ('ATL', 'LAX'), ('LAX', 'ATL'), ('DFW', 'LAX'), ('LAX', 'DFW'),
+        ('MIA', 'LAX'), ('LAX', 'MIA'), ('MIA', 'SFO'), ('SFO', 'MIA'),
+        ('JFK', 'ATL'), ('JFK', 'DFW'), ('JFK', 'ORD'), ('LAX', 'LAS'),
+        ('LAS', 'LAX'),
+    ]
+    print(f"[seed] R7 third overlay: {len(R7_THIRD_OVERLAY_PAIRS)} pairs × {TOP_TIER_DAYS} days")
+    for origin_iata, dest_iata in R7_THIRD_OVERLAY_PAIRS:
+        if origin_iata not in airport_by_iata or dest_iata not in airport_by_iata:
+            continue
+        for d_offset in range(TOP_TIER_DAYS):
+            dep = catalog_anchor + timedelta(days=d_offset)
+            row = make_flight_dict(origin_iata, dest_iata, dep)
+            if row:
+                catalog_rows.append(row)
+                flights_count += 1
+        if len(catalog_rows) >= 5000:
+            db.session.execute(text(insert_sql), catalog_rows)
+            db.session.commit()
+            catalog_rows = []
+
     # Sparse pairs: 6-9 random dates per pair so they're not totally empty
     # but don't bloat the catalog
     for origin_iata, dest_iata in sparse_pairs:
@@ -1417,6 +1548,19 @@ def seed_all(db, Airport, Flight):
     if catalog_rows:
         db.session.execute(text(insert_sql), catalog_rows)
         db.session.commit()
+
+    # R7: pre-create the composite index BEFORE the TASK_ROUTES ranking phase
+    # so the WITH ranked … PARTITION BY (origin_id, destination_id,
+    # departure_date) queries below can index-seek the flight table instead
+    # of full-scanning 1.5M rows × len(TASK_ROUTES) times. Without this index
+    # the ranking phase takes 20+ minutes; with it, <5 seconds. The index is
+    # dropped + recreated in sorted name order by normalize_seed_db_layout
+    # at the end so byte-identity holds.
+    db.session.execute(text(
+        "CREATE INDEX IF NOT EXISTS ix_flight_origin_dest_date "
+        "ON flight (origin_id, destination_id, departure_date)"
+    ))
+    db.session.commit()
 
     # ----------------------------------------------------------------
     # Task-required flights: generate flights for exact route+date

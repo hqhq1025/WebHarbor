@@ -1,6 +1,38 @@
 {% extends "base.html" %}
 {% block title %}{{ article.title }}{% endblock %}
 
+{% block extra_head %}
+<meta name="description" content="{{ (article.body or '')[:160] | striptags }}">
+<meta property="og:title" content="{{ article.title }}">
+<meta property="og:type" content="article">
+<meta property="og:url" content="/article/{{ article.slug }}">
+{% if article.image %}<meta property="og:image" content="{{ article.image }}">{% endif %}
+<meta property="article:published_time" content="{{ article.published_date or '' }}">
+<meta property="article:author" content="{{ article.author or 'ESPN Staff' }}">
+<meta property="article:section" content="{{ (sport.display_name if sport else 'Sports') }}">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="{{ article.title }}">
+{% if article.slug.startswith('es-') %}
+<meta property="og:locale" content="es_ES">
+<link rel="alternate" hreflang="es" href="/article/{{ article.slug }}">
+{% endif %}
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "NewsArticle",
+  "headline": {{ article.title | tojson }},
+  "datePublished": {{ (article.published_date or '') | tojson }},
+  "dateModified": {{ (article.published_date or '') | tojson }},
+  "author": {"@type": "Person", "name": {{ (article.author or 'ESPN Staff') | tojson }}},
+  "publisher": {"@type": "Organization", "name": "ESPN", "logo": {"@type": "ImageObject", "url": "/static/images/espn/logo/espn-wordmark.png"}},
+  "mainEntityOfPage": {"@type": "WebPage", "@id": "/article/{{ article.slug }}"},
+  "articleSection": {{ ((sport.display_name if sport else 'Sports')) | tojson }}{% if article.image %},
+  "image": {{ article.image | tojson }}{% endif %},
+  "inLanguage": "{{ 'es' if article.slug.startswith('es-') else 'en' }}"
+}
+</script>
+{% endblock %}
+
 {% block content %}
 <div class="container">
   <div class="article-layout">

@@ -1,5 +1,24 @@
 {% extends "base.html" %}
 {% block title %}{{ course.title }} | Coursera{% endblock %}
+{# ─── R7 SEO: schema.org/Course JSON-LD with provider, courseCode,
+       timeRequired, educationalCredentialAwarded, inLanguage ─── #}
+{% block jsonld %}
+<script type="application/ld+json">{{ course_jsonld | tojson }}</script>
+{% endblock %}
+{% block og_meta %}
+<meta property="og:site_name" content="Coursera">
+<meta property="og:type" content="article">
+<meta property="og:title" content="{{ course.title }}">
+<meta property="og:description" content="{{ (course.description or course.title)[:200] }}">
+<meta property="og:url" content="{{ request.host_url.rstrip('/') }}/learn/{{ course.slug }}">
+<meta property="og:locale" content="{{ current_lang or 'en' }}_US">
+<meta property="og:image" content="{{ request.host_url }}static/images/og-course.png">
+<meta property="course:provider" content="{{ course.partner.name if course.partner else 'Coursera' }}">
+<meta property="course:code" content="COUR-{{ '%06d' % course.id }}">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="{{ course.title }}">
+<meta name="twitter:description" content="{{ (course.description or course.title)[:160] }}">
+{% endblock %}
 {% block content %}
 <div class="course-detail-page" id="main-content">
   <div class="cd-hero">

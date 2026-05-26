@@ -2,6 +2,22 @@
 {% from "_airline_icon.html" import airline_icon %}
 {% block title %}Flights | Google Flights{% endblock %}
 
+{% block extra_css %}
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "WebSite",
+  "name": "Google Flights",
+  "url": "{{ request.url_root }}",
+  "potentialAction": {
+    "@type": "SearchAction",
+    "target": "{{ request.url_root }}flights?from={from_iata}&to={to_iata}&date={date}",
+    "query-input": "required name=from_iata required name=to_iata required name=date"
+  }
+}
+</script>
+{% endblock %}
+
 {% block content %}
 <section class="hero">
   <div class="hero-illustration"></div>

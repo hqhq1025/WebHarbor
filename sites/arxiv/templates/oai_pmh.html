@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+{% block title %}OAI-PMH bulk metadata interface — arXiv{% endblock %}
+{% block content %}
+<div class="page-narrow" style="max-width:880px;margin:24px auto;padding:0 18px;">
+  <h1 style="color:#b31b1b;border-bottom:2px solid #b31b1b;padding-bottom:6px;">
+    OAI-PMH — bulk metadata harvest interface
+  </h1>
+
+  <p>
+    The arXiv archive exposes the OAI-PMH 2.0 protocol for bulk-harvesting paper
+    metadata. This page describes the supported verbs, sets, and metadata
+    formats. Endpoint base URL:
+    <code>http://export.arxiv.org/oai2</code>.
+  </p>
+
+  <h2>Quick stats</h2>
+  <ul>
+    <li><b>Total records currently harvestable:</b> {{ "{:,}".format(paper_total) }}</li>
+    <li><b>Supported metadata prefixes:</b> <code>arXiv</code>, <code>arXivRaw</code>, <code>oai_dc</code></li>
+    <li><b>Per-request throttle:</b> 3.2 seconds — see arXiv's published rate-limit guidance.</li>
+    <li><b>Resumption token TTL:</b> 1 hour (RFC-3339 timestamps).</li>
+  </ul>
+
+  <h2>Supported verbs</h2>
+  <table style="width:100%;border-collapse:collapse;font-size:14px;">
+    <tr><th style="text-align:left;border-bottom:1px solid #ccc;padding:6px;">Verb</th>
+        <th style="text-align:left;border-bottom:1px solid #ccc;padding:6px;">Description</th></tr>
+    <tr><td style="padding:6px;"><code>Identify</code></td>
+        <td style="padding:6px;">Repository identity, admin email, granularity.</td></tr>
+    <tr><td style="padding:6px;"><code>ListSets</code></td>
+        <td style="padding:6px;">Enumerate available top-level archives.</td></tr>
+    <tr><td style="padding:6px;"><code>ListMetadataFormats</code></td>
+        <td style="padding:6px;">Available record schemas.</td></tr>
+    <tr><td style="padding:6px;"><code>ListIdentifiers</code></td>
+        <td style="padding:6px;">Header-only record listing with resumption tokens.</td></tr>
+    <tr><td style="padding:6px;"><code>ListRecords</code></td>
+        <td style="padding:6px;">Full metadata, paginated via resumption tokens.</td></tr>
+    <tr><td style="padding:6px;"><code>GetRecord</code></td>
+        <td style="padding:6px;">Single record by OAI identifier.</td></tr>
+  </table>
+
+  <h2>Sets ({{ sets|length }} archives)</h2>
+  <p>Sets correspond to top-level arXiv archives. Sub-archives like
+     <code>physics:astro-ph</code> are also valid.</p>
+  <table style="width:100%;border-collapse:collapse;font-size:13px;">
+    <tr><th style="text-align:left;border-bottom:1px solid #ccc;padding:4px;">Set spec</th>
+        <th style="text-align:left;border-bottom:1px solid #ccc;padding:4px;">Name</th></tr>
+    {% for spec, name in sets %}
+    <tr><td style="padding:4px;border-bottom:1px solid #eee;"><code>{{ spec }}</code></td>
+        <td style="padding:4px;border-bottom:1px solid #eee;">{{ name }}</td></tr>
+    {% endfor %}
+  </table>
+
+  <h2>Example request</h2>
+  <pre style="background:#f4f4f4;padding:10px;font-size:12px;border-left:3px solid #b31b1b;">
+GET /oai2?verb=ListRecords&amp;metadataPrefix=arXiv&amp;set=cs&amp;from=2024-01-01&amp;until=2024-01-07</pre>
+
+  <h2>Useful links</h2>
+  <ul>
+    <li><a href="/sitemap.xml">XML sitemap index</a></li>
+    <li><a href="/rss/cs.xml">RSS feed — cs (latest 25)</a></li>
+    <li><a href="/atom/cs.xml">Atom feed — cs (latest 25)</a></li>
+    <li><a href="/cite/batch?n=100&amp;format=bibtex">Batch BibTeX export — 100 latest</a></li>
+    <li><a href="/help">arXiv help</a></li>
+  </ul>
+</div>
+{% endblock %}

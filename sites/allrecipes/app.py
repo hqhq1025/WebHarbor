@@ -82,9 +82,9 @@ class Category(db.Model):
 class Recipe(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     title = db.Column(db.String(200), nullable=False)
-    slug = db.Column(db.String(200), unique=True, nullable=False)
+    slug = db.Column(db.String(200), unique=True, nullable=False, index=True)
     description = db.Column(db.Text, default='')
-    category_id = db.Column(db.Integer, db.ForeignKey('category.id'))
+    category_id = db.Column(db.Integer, db.ForeignKey('category.id'), index=True)
     cuisine = db.Column(db.String(100), default='')
     image = db.Column(db.String(300), default='')
     prep_time = db.Column(db.String(50), default='')
@@ -1654,6 +1654,184 @@ def sitemap():
     ]
     return render_template('sitemap.html', grouped=grouped,
                            static_pages=static_pages)
+
+
+# ---------------------------------------------------------------------------
+# R7: SEO endpoints — sitemap.xml, robots.txt, RSS feed, JSON-LD endpoints
+# ---------------------------------------------------------------------------
+
+SITE_BASE_URL = 'http://localhost:40000'
+
+
+@app.route('/sitemap.xml')
+def sitemap_xml():
+    """Machine-readable XML sitemap (R7). Lists the home page, every category,
+    and the top-1000 recipes by review_count so the file stays under 50k entries
+    (the sitemap protocol limit). Cached implicitly via the deterministic seed."""
+    urls = [(SITE_BASE_URL + url_for('index'), '1.0')]
+    urls.append((SITE_BASE_URL + url_for('all_recipes'), '0.9'))
+    urls.append((SITE_BASE_URL + url_for('articles_hub'), '0.7'))
+    urls.append((SITE_BASE_URL + url_for('collections_hub'), '0.7'))
+    urls.append((SITE_BASE_URL + url_for('cuisines_hub'), '0.7'))
+    urls.append((SITE_BASE_URL + url_for('diets_hub'), '0.7'))
+    urls.append((SITE_BASE_URL + url_for('occasions'), '0.7'))
+    urls.append((SITE_BASE_URL + url_for('sitemap'), '0.5'))
+    for c in Category.query.order_by(Category.id).all():
+        urls.append((SITE_BASE_URL + url_for('category_page', slug=c.slug), '0.7'))
+    top_recipes = (Recipe.query
+                   .order_by(Recipe.review_count.desc(), Recipe.id.asc())
+                   .limit(1000).all())
+    for r in top_recipes:
+        urls.append((SITE_BASE_URL + url_for('recipe_detail', slug=r.slug), '0.6'))
+    body = ['<?xml version="1.0" encoding="UTF-8"?>',
+            '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">']
+    for loc, pri in urls:
+        body.append(f'  <url><loc>{loc}</loc><priority>{pri}</priority></url>')
+    body.append('</urlset>')
+    return '\n'.join(body), 200, {'Content-Type': 'application/xml; charset=utf-8'}
+
+
+@app.route('/robots.txt')
+def robots_txt():
+    """R7: standard robots.txt advertising the XML sitemap."""
+    lines = [
+        'User-agent: *',
+        'Allow: /',
+        'Disallow: /account',
+        'Disallow: /recipe-box',
+        'Disallow: /meal-plan',
+        'Disallow: /shopping-list',
+        'Disallow: /api/',
+        f'Sitemap: {SITE_BASE_URL}/sitemap.xml',
+        f'Sitemap: {SITE_BASE_URL}/feed.rss',
+    ]
+    return '\n'.join(lines) + '\n', 200, {'Content-Type': 'text/plain; charset=utf-8'}
+
+
+@app.route('/feed.rss')
+def feed_rss():
+    """R7: RSS 2.0 feed of the 60 most-recently-published articles. Lets
+    feed-validity tasks parse <item><title> entries without an HTML parser."""
+    arts = (Article.query
+            .order_by(Article.published_at.desc(), Article.id.asc())
+            .limit(60).all())
+    items = []
+    for a in arts:
+        link = SITE_BASE_URL + url_for('article_detail', slug=a.slug)
+        pub = (a.published_at or MIRROR_REFERENCE_DATE).strftime('%a, %d %b %Y %H:%M:%S +0000')
+        desc = (a.excerpt or '')[:300]
+        items.append(
+            '  <item>'
+            f'<title>{a.title}</title>'
+            f'<link>{link}</link>'
+            f'<guid>{link}</guid>'
+            f'<pubDate>{pub}</pubDate>'
+            f'<description>{desc}</description>'
+            '</item>'
+        )
+    body = (
+        '<?xml version="1.0" encoding="UTF-8"?>\n'
+        '<rss version="2.0">\n'
+        '<channel>\n'
+        '  <title>Allrecipes Mirror - Latest Articles</title>\n'
+        f'  <link>{SITE_BASE_URL}/</link>\n'
+        '  <description>Cooking tips, technique deep-dives, and seasonal guides from the Allrecipes editors.</description>\n'
+        '  <language>en-us</language>\n'
+        + '\n'.join(items) +
+        '\n</channel>\n</rss>\n'
+    )
+    return body, 200, {'Content-Type': 'application/rss+xml; charset=utf-8'}
+
+
+# ---------------------------------------------------------------------------
+# R7: Multi-language stub — /lang/<lang>/ prefix renders the same content
+# with a banner indicating the current language. Supports: es, fr, de, zh.
+# Content stays in English (true i18n is out of scope); the prefix exists so
+# language-switch tasks have a real URL to navigate to + extract from.
+# ---------------------------------------------------------------------------
+
+SUPPORTED_LANGS = ('en', 'es', 'fr', 'de', 'zh')
+
+LANG_BANNER = {
+    'en': ('English', 'You are viewing Allrecipes in English.'),
+    'es': ('Español', 'Estás viendo Allrecipes en Español. Contenido en inglés (vista previa).'),
+    'fr': ('Français', 'Vous consultez Allrecipes en Français. Contenu en anglais (aperçu).'),
+    'de': ('Deutsch', 'Sie sehen Allrecipes auf Deutsch. Inhalt auf Englisch (Vorschau).'),
+    'zh': ('中文', '您正在使用中文版 Allrecipes。内容为英文（预览）。'),
+}
+
+
+@app.context_processor
+def _seo_processor():
+    """Inject SEO + lang helpers into every template."""
+    def site_base_url():
+        return SITE_BASE_URL
+
+    def canonical_url():
+        # Strip query string and any /lang/<x> prefix so the canonical points
+        # at the language-neutral page.
+        path = request.path
+        for lang in SUPPORTED_LANGS:
+            if path.startswith(f'/lang/{lang}'):
+                path = path[len(f'/lang/{lang}'):] or '/'
+                break
+        return SITE_BASE_URL + path
+
+    def current_lang():
+        path = request.path
+        for lang in SUPPORTED_LANGS:
+            if path.startswith(f'/lang/{lang}'):
+                return lang
+        return 'en'
+
+    def lang_label(lang):
+        return LANG_BANNER.get(lang, ('English', ''))[0]
+
+    def lang_banner_text(lang):
+        return LANG_BANNER.get(lang, ('English', ''))[1]
+
+    def supported_langs():
+        return SUPPORTED_LANGS
+
+    return dict(
+        site_base_url=site_base_url,
+        canonical_url=canonical_url,
+        current_lang=current_lang,
+        lang_label=lang_label,
+        lang_banner_text=lang_banner_text,
+        supported_langs=supported_langs,
+    )
+
+
+@app.route('/lang/<lang>/')
+@app.route('/lang/<lang>/<path:subpath>')
+def lang_stub(lang, subpath=''):
+    """R7: language-switch stub. Renders the same Allrecipes index/section
+    with a banner indicating the chosen language. Tasks can navigate to
+    /lang/es/ , /lang/fr/recipe/<slug> etc. and extract the banner text."""
+    if lang not in SUPPORTED_LANGS:
+        abort(404)
+    # Match the subpath against known routes; for the common case we just
+    # re-render the index with the lang banner.
+    if not subpath:
+        featured = Recipe.query.filter_by(is_featured=True).limit(6).all()
+        editors_picks = Recipe.query.filter_by(is_editors_pick=True).limit(6).all()
+        latest = Recipe.query.order_by(Recipe.created_at.desc()).limit(12).all()
+        categories = Category.query.order_by(Category.display_order).all()
+        popular = Recipe.query.order_by(Recipe.review_count.desc()).limit(8).all()
+        return render_template('index.html', featured=featured,
+                               editors_picks=editors_picks, latest=latest,
+                               categories=categories, popular=popular)
+    # Recipe path: /lang/<x>/recipe/<slug>
+    if subpath.startswith('recipe/'):
+        slug = subpath[len('recipe/'):].strip('/')
+        return redirect(url_for('recipe_detail', slug=slug))
+    # Category path: /lang/<x>/category/<slug>
+    if subpath.startswith('category/'):
+        slug = subpath[len('category/'):].strip('/')
+        return redirect(url_for('category_page', slug=slug))
+    # Anything else 302s to the canonical English path.
+    return redirect('/' + subpath)
 
 
 POPULAR_1960S = [

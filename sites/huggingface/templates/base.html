@@ -1,22 +1,37 @@
 <!doctype html>
-<html lang="en">
+<html lang="{{ lang_code|default('en') }}">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>{% block title %}Hugging Face – The AI community building the future.{% endblock %}</title>
+    {# R7: SEO meta + OG defaults. Per-repo pages can override via blocks. #}
+    {% block head_meta %}
+    <meta name="description" content="The AI community building the future — share open ML models, datasets, and Spaces.">
+    <meta property="og:title" content="{% block og_title %}Hugging Face{% endblock %}">
+    <meta property="og:description" content="{% block og_description %}The home of machine learning.{% endblock %}">
+    <meta property="og:type" content="{% block og_type %}website{% endblock %}">
+    <meta property="og:image" content="{% block og_image %}{{ url_for('static', filename='images/heroes/hero_001.png') }}{% endblock %}">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    <meta name="twitter:card" content="summary_large_image">
+    <link rel="alternate" type="application/rss+xml" title="Trending models RSS" href="/feed/trending.rss?repo_type=model">
+    {% endblock %}
+    {% block jsonld %}{% endblock %}
     <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
     <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E🤗%3C/text%3E%3C/svg%3E">
 </head>
 <body>
+{# R7: accessibility skip-link — the first focusable element on every page. #}
+<a class="skip-link" href="#main-content" style="position:absolute;left:-9999px;top:0;background:#111827;color:#fff;padding:8px 12px;z-index:9999;" onfocus="this.style.left='8px'" onblur="this.style.left='-9999px'">Skip to main content</a>
 <nav class="gn">
     <div class="gn-inner">
         <a class="gn-logo" href="{{ url_for('index') }}">
             <span class="gn-logo-emoji">🤗</span>
             <span>Hugging Face</span>
         </a>
-        <form class="gn-search" action="/search/full-text" method="get">
-            <input type="text" name="q" placeholder="Search models, datasets, users..." value="{{ request.args.get('q', '') }}">
+        <form class="gn-search" action="/search/full-text" method="get" role="search">
+            <input type="text" name="q" placeholder="Search models, datasets, users..." value="{{ request.args.get('q', '') }}" aria-label="Search Hugging Face">
         </form>
         <div class="gn-nav">
             <a href="{{ url_for('models_list') }}">Models</a>
@@ -28,6 +43,18 @@
             <a href="{{ url_for('docs') }}">Docs</a>
             <a href="{{ url_for('enterprise') }}">Enterprise</a>
             <a href="{{ url_for('pricing') }}">Pricing</a>
+        </div>
+        {# R7: locale switcher — sets ?lang= on the current URL. #}
+        <div class="gn-lang" role="group" aria-label="Language switcher" style="display:flex;gap:4px;font-size:12px;">
+            {% for code in supported_locales %}
+                {% set is_active = (lang_code == code) %}
+                <a class="gn-lang-link {% if is_active %}gn-lang-active{% endif %}"
+                   href="?lang={{ code }}"
+                   aria-current="{% if is_active %}true{% else %}false{% endif %}"
+                   style="padding:4px 8px;border-radius:4px;{% if is_active %}background:#111827;color:#fff;{% else %}color:#374151;{% endif %}text-decoration:none;">
+                    {{ locale_labels[code] }}
+                </a>
+            {% endfor %}
         </div>
         <div class="gn-auth">
             {% if current_user.is_authenticated %}
@@ -58,7 +85,9 @@
     {% endif %}
 {% endwith %}
 
+<main id="main-content" role="main">
 {% block content %}{% endblock %}
+</main>
 
 <footer class="footer">
     <div class="container-wide">

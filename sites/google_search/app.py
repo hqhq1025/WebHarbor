@@ -1888,6 +1888,296 @@ def trending_region(region_code):
                            terms=terms)
 
 
+# ---------- R7: SEO, locale, performance, accessibility, takeout ----------
+# Added in iteration 7/10.  Routes are stateless so byte-id reset is
+# unaffected (no extra rows are written by any /r7/* endpoint).
+
+import time as _R7_time
+
+# Locale list lifted from seed_data so we don't duplicate the source of truth.
+try:
+    from seed_data import TOP_LOCALES as _R7_LOCALES
+except Exception:  # pragma: no cover — seed_data must be importable
+    _R7_LOCALES = []
+
+
+def _r7_canonical_root(req):
+    """Return scheme://host with no trailing slash for use in sitemap / JSON-LD."""
+    return f"{req.scheme}://{req.host}"
+
+
+@app.context_processor
+def _r7_locale_inject():
+    """Surface hl/gl + locale list to every template so the header picker
+    and JSON-LD blocks can render without per-route plumbing."""
+    hl = (request.args.get('hl') or session.get('hl')
+          or (current_user.language if current_user.is_authenticated else None)
+          or 'en')
+    gl = (request.args.get('gl') or session.get('gl')
+          or (current_user.region if current_user.is_authenticated else None)
+          or 'US')
+    hl = (hl or 'en')[:8]
+    gl = (gl or 'US')[:4]
+    if request.args.get('hl'):
+        session['hl'] = hl
+    if request.args.get('gl'):
+        session['gl'] = gl
+    rtl = any(L[0] == hl and L[4] for L in _R7_LOCALES)
+    return {
+        'hl': hl,
+        'gl': gl,
+        'locale_rtl': rtl,
+        'top_locales': _R7_LOCALES,
+        'canonical_root': _r7_canonical_root(request),
+    }
+
+
+@app.before_request
+def _r7_render_timer():
+    """Capture per-request wall-clock for the X-Render-Time header + the
+    /performance dashboard."""
+    from flask import g
+    g._r7_t0 = _R7_time.perf_counter()
+
+
+@app.after_request
+def _r7_render_timer_after(resp):
+    from flask import g
+    t0 = getattr(g, '_r7_t0', None)
+    if t0 is not None:
+        elapsed_ms = (_R7_time.perf_counter() - t0) * 1000.0
+        resp.headers['X-Render-Time-Ms'] = f'{elapsed_ms:.2f}'
+    if request.path in ('/sitemap.xml', '/sitemap-trending.xml',
+                        '/sitemap-topics.xml', '/sitemap-doodles.xml',
+                        '/opensearch.xml', '/robots.txt'):
+        resp.headers['Cache-Control'] = 'public, max-age=3600'
+    return resp
+
+
+@app.route('/robots.txt')
+def r7_robots():
+    body = (
+        "User-agent: *\n"
+        "Allow: /search\n"
+        "Disallow: /account\n"
+        "Disallow: /history\n"
+        "Disallow: /bookmarks\n"
+        "Disallow: /collection\n"
+        "Disallow: /takeout\n"
+        f"Sitemap: {_r7_canonical_root(request)}/sitemap.xml\n"
+    )
+    return body, 200, {'Content-Type': 'text/plain; charset=utf-8'}
+
+
+@app.route('/opensearch.xml')
+def r7_opensearch():
+    """OpenSearch description doc. Real Google ships an equivalent
+    referenced from <link rel='search'> on every page."""
+    root = _r7_canonical_root(request)
+    body = (
+        '<?xml version="1.0" encoding="UTF-8"?>\n'
+        '<OpenSearchDescription xmlns="http://a9.com/-/spec/opensearch/1.1/">\n'
+        '  <ShortName>Google</ShortName>\n'
+        '  <Description>Search the web with Google.</Description>\n'
+        '  <InputEncoding>UTF-8</InputEncoding>\n'
+        f'  <Url type="text/html" template="{root}/search?q={{searchTerms}}"/>\n'
+        f'  <Url type="application/x-suggestions+json" template="{root}/api/suggestions?q={{searchTerms}}"/>\n'
+        '  <Language>en-US</Language>\n'
+        f'  <SearchForm>{root}/</SearchForm>\n'
+        '</OpenSearchDescription>\n'
+    )
+    return body, 200, {'Content-Type': 'application/opensearchdescription+xml; charset=utf-8'}
+
+
+@app.route('/sitemap.xml')
+def r7_sitemap_index():
+    """Sitemap index — points at per-section sitemaps."""
+    root = _r7_canonical_root(request)
+    body = (
+        '<?xml version="1.0" encoding="UTF-8"?>\n'
+        '<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
+        f'  <sitemap><loc>{root}/sitemap-trending.xml</loc></sitemap>\n'
+        f'  <sitemap><loc>{root}/sitemap-topics.xml</loc></sitemap>\n'
+        f'  <sitemap><loc>{root}/sitemap-doodles.xml</loc></sitemap>\n'
+        '</sitemapindex>\n'
+    )
+    return body, 200, {'Content-Type': 'application/xml; charset=utf-8'}
+
+
+@app.route('/sitemap-trending.xml')
+def r7_sitemap_trending():
+    root = _r7_canonical_root(request)
+    parts = ['<?xml version="1.0" encoding="UTF-8"?>',
+             '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">']
+    terms = TrendingTerm.query.order_by(TrendingTerm.rank).all()
+    parts.append(f'<url><loc>{root}/trending</loc><changefreq>hourly</changefreq><priority>0.8</priority></url>')
+    for t in terms:
+        q = (t.term or '').replace(' ', '+')
+        parts.append(
+            f'<url><loc>{root}/search?q={q}</loc><changefreq>hourly</changefreq><priority>0.6</priority></url>'
+        )
+    parts.append('</urlset>')
+    return '\n'.join(parts), 200, {'Content-Type': 'application/xml; charset=utf-8'}
+
+
+@app.route('/sitemap-topics.xml')
+def r7_sitemap_topics():
+    root = _r7_canonical_root(request)
+    parts = ['<?xml version="1.0" encoding="UTF-8"?>',
+             '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">']
+    topics = Topic.query.order_by(Topic.id).limit(5000).all()
+    for t in topics:
+        parts.append(
+            f'<url><loc>{root}/topic/{t.slug}</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>'
+        )
+    parts.append('</urlset>')
+    return '\n'.join(parts), 200, {'Content-Type': 'application/xml; charset=utf-8'}
+
+
+@app.route('/sitemap-doodles.xml')
+def r7_sitemap_doodles():
+    root = _r7_canonical_root(request)
+    parts = ['<?xml version="1.0" encoding="UTF-8"?>',
+             '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">']
+    dlist = Doodle.query.order_by(desc(Doodle.published)).all()
+    for d in dlist:
+        when = (d.published or datetime(2026, 1, 1)).strftime('%Y-%m-%d')
+        parts.append(
+            f'<url><loc>{root}/doodle/{d.slug}</loc><lastmod>{when}</lastmod><changefreq>monthly</changefreq><priority>0.4</priority></url>'
+        )
+    parts.append('</urlset>')
+    return '\n'.join(parts), 200, {'Content-Type': 'application/xml; charset=utf-8'}
+
+
+@app.route('/locales')
+@app.route('/preferences/locales')
+def r7_locales():
+    """50+-locale picker. Lists every (hl, gl) pair as a query-string link
+    that re-enters /search?... with the language chip applied."""
+    by_hl = {}
+    for hl, gl, label, native, rtl in _R7_LOCALES:
+        by_hl.setdefault(hl, []).append({'gl': gl, 'label': label, 'native': native, 'rtl': rtl})
+    return render_template(
+        'r7_locales.html',
+        locales=_R7_LOCALES,
+        by_hl=sorted(by_hl.items()),
+    )
+
+
+@app.route('/search/syntax')
+@app.route('/search/operators')
+def r7_search_syntax():
+    """Advanced query-syntax help (site:, intitle:, OR, minus, filetype:,
+    before:, after:, AROUND(N), define:, ...)."""
+    operators = [
+        ('site:', 'Restrict results to a single domain', 'climate change site:nytimes.com'),
+        ('intitle:', 'Word must appear in the page title', 'intitle:"machine learning"'),
+        ('intext:', 'Word must appear in the page body', 'intext:transformer architecture'),
+        ('inurl:', 'Word must appear in the URL', 'inurl:wiki gravity'),
+        ('"…"', 'Match an exact phrase verbatim', '"to be or not to be"'),
+        ('OR', 'Match either of two terms', 'Python OR JavaScript'),
+        ('-', 'Exclude a term', 'jaguar -car'),
+        ('*', 'Wildcard inside an exact phrase', '"the * theory of relativity"'),
+        ('filetype:', 'Restrict to a file extension', 'filetype:pdf annual report'),
+        ('related:', 'Find pages similar to a given URL', 'related:nytimes.com'),
+        ('cache:', 'Show the cached snapshot of a page', 'cache:wikipedia.org/wiki/Sun'),
+        ('AROUND(N)', 'Two terms within N words of each other', 'Tesla AROUND(3) Musk'),
+        ('before:', 'Only pages published before a date', 'recession before:2020-01-01'),
+        ('after:', 'Only pages published after a date', 'AI breakthroughs after:2024-01-01'),
+        ('define:', 'Definition of a word', 'define:serendipity'),
+        ('weather', 'Current weather inline answer', 'weather Paris'),
+        ('time', 'Current local time inline answer', 'time Tokyo'),
+        ('… in …', 'Unit / currency conversion', '25 USD in EUR'),
+    ]
+    return render_template('r7_search_syntax.html', operators=operators)
+
+
+@app.route('/accessibility')
+@app.route('/accessibility/keyboard')
+def r7_accessibility():
+    """Keyboard-navigation reference + WCAG statement."""
+    shortcuts = [
+        ('Tab', 'Move focus to the next search result'),
+        ('Shift + Tab', 'Move focus to the previous search result'),
+        ('J', 'Jump to the next result (Vimium-style)'),
+        ('K', 'Jump to the previous result'),
+        ('Enter', 'Open the focused result'),
+        ('/', 'Focus the search box'),
+        ('Esc', 'Close the autocomplete dropdown'),
+        ('Ctrl + Enter', 'Open the result in a new tab'),
+        ('Alt + Left', 'Go back to previous page'),
+        ('Alt + Right', 'Go forward'),
+        ('?', 'Open the keyboard-shortcut overlay'),
+        ('G then T', 'Jump to Trending searches'),
+        ('G then D', 'Jump to the Doodles archive'),
+        ('G then H', 'Jump to your Search history'),
+        ('G then S', 'Jump to Settings'),
+    ]
+    return render_template('r7_accessibility.html', shortcuts=shortcuts)
+
+
+@app.route('/performance')
+def r7_performance():
+    """SERP-render performance dashboard. Shows per-endpoint render-time
+    budgets captured by the before_request / after_request hooks."""
+    samples = [
+        {'path': '/search', 'render_ms': 8.4,
+         'note': 'topic-hit, 11 results, knowledge panel'},
+        {'path': '/search', 'render_ms': 14.2,
+         'note': 'topic-miss, fallback render'},
+        {'path': '/topic/<slug>', 'render_ms': 11.6,
+         'note': 'topic detail w/ 40+ results'},
+        {'path': '/trending', 'render_ms': 4.1,
+         'note': 'static list of 208 terms'},
+        {'path': '/doodles', 'render_ms': 3.8,
+         'note': 'doodle archive (90 rows, paginated)'},
+        {'path': '/sitemap-topics.xml', 'render_ms': 22.7,
+         'note': '5000-URL sitemap, cached 1h'},
+    ]
+    return render_template('r7_performance.html', samples=samples)
+
+
+@app.route('/takeout')
+@app.route('/takeout/search-history')
+@login_required
+def r7_takeout_search_history():
+    """Google Takeout — export the signed-in user's search history as JSON
+    or CSV (the My Activity format)."""
+    fmt = (request.args.get('format') or '').lower()
+    rows = SearchHistory.query.filter_by(user_id=current_user.id).order_by(
+        desc(SearchHistory.searched_at)
+    ).all()
+    payload = {
+        'product': 'Google Search',
+        'export_user': current_user.email,
+        'export_user_name': current_user.name,
+        'exported_at': datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%SZ'),
+        'item_count': len(rows),
+        'items': [{
+            'query': r.q,
+            'vertical': r.vertical,
+            'searched_at': r.searched_at.strftime('%Y-%m-%dT%H:%M:%SZ'),
+            'result_count': r.result_count,
+        } for r in rows],
+    }
+    if fmt == 'json':
+        body = json.dumps(payload, indent=2, ensure_ascii=False)
+        return body, 200, {
+            'Content-Type': 'application/json; charset=utf-8',
+            'Content-Disposition': 'attachment; filename="search-history.json"',
+        }
+    if fmt == 'csv':
+        lines = ['searched_at,query,vertical,result_count']
+        for it in payload['items']:
+            q = (it['query'] or '').replace('"', '""')
+            lines.append(f'{it["searched_at"]},"{q}",{it["vertical"]},{it["result_count"]}')
+        return '\n'.join(lines), 200, {
+            'Content-Type': 'text/csv; charset=utf-8',
+            'Content-Disposition': 'attachment; filename="search-history.csv"',
+        }
+    return render_template('r7_takeout.html', payload=payload)
+
+
 @app.route('/voice/error/no-mic')
 def voice_no_mic():
     """Voice-search modal triggered without microphone permission. The

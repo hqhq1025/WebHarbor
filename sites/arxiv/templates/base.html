@@ -7,6 +7,17 @@
     <title>{% block title %}arXiv.org e-Print archive{% endblock %}</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
     <link rel="icon" href="{{ url_for('static', filename='images/brand/arxiv-logomark.svg') }}" type="image/svg+xml">
+    {# R7 — alternate language links surface /lang/<code>/ stubs for SEO crawlers. #}
+    <link rel="alternate" hreflang="en" href="/lang/en{{ request.path if request.path != '/' else '' }}">
+    <link rel="alternate" hreflang="zh" href="/lang/zh{{ request.path if request.path != '/' else '' }}">
+    <link rel="alternate" hreflang="es" href="/lang/es{{ request.path if request.path != '/' else '' }}">
+    <link rel="alternate" hreflang="x-default" href="{{ request.path }}">
+    <link rel="alternate" type="application/rss+xml" title="arXiv RSS"
+          href="/rss/cs.xml">
+    <link rel="alternate" type="application/atom+xml" title="arXiv Atom"
+          href="/atom/cs.xml">
+    <link rel="sitemap" type="application/xml" href="/sitemap.xml">
+    {% block head_extra %}{% endblock %}
 </head>
 <body>
 
@@ -123,6 +134,19 @@
             <span aria-hidden="true">Aa</span>
             <span class="a11y-label">Dyslexia-friendly font</span>
           </button>
+    </span>
+    {# R7 — language switcher. Surfaces /lang/<code>/ paths so agents can
+       verify multilingual stubs without leaving the mirror. The current
+       language label is sourced from the lang_labels context dict. #}
+    <span class="lang-switcher" aria-label="Language"
+          style="margin-left:14px;font-size:11px;">
+        | <span class="lang-current" style="color:#555;">{{ lang_labels.language_label }}</span>
+        {% for code, label in available_languages %}
+            {% if code != lang_pref %}
+                | <a class="lang-link" data-lang="{{ code }}"
+                     href="/lang/{{ code }}{{ request.path if request.path != '/' else '' }}">{{ label }}</a>
+            {% endif %}
+        {% endfor %}
     </span>
 </div>
 

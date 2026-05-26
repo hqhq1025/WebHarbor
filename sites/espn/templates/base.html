@@ -63,6 +63,12 @@
         <a href="/podcasts" class="nav-utility__link">Podcasts</a>
         <a href="/espnplus" class="nav-utility__link nav-utility__link--plus">ESPN+</a>
         <a href="/search" class="nav-utility__link nav-utility__icon" aria-label="Search" title="Search">&#x1F50D;</a>
+        <!-- R7: locale switcher (en | es) -->
+        <div class="nav-locale" role="group" aria-label="Site language">
+          <a href="/" class="nav-locale__link {% if (locale or 'en') == 'en' %}nav-locale__link--active{% endif %}" hreflang="en" lang="en" aria-label="English">EN</a>
+          <span class="nav-locale__sep" aria-hidden="true">|</span>
+          <a href="/espn-deportes/" class="nav-locale__link {% if (locale or 'en') == 'es' %}nav-locale__link--active{% endif %}" hreflang="es" lang="es" aria-label="Español">ES</a>
+        </div>
         {% if current_user.is_authenticated %}
           <a class="nav-utility__link" href="/account">{{ current_user.first_name or current_user.username }}</a>
           <a class="nav-utility__link" href="/logout">Sign Out</a>
@@ -143,6 +149,18 @@
 
   <!-- R5: live-update toast container (aria-live so updates announce). -->
   <div class="toast-container" id="live-toast-container" role="status" aria-live="polite" aria-atomic="true"></div>
+
+  <!-- R7: accessibility live-region (sport-result announcements). -->
+  <div id="a11y-live-region" class="visually-hidden" role="status" aria-live="polite" aria-atomic="true" data-r7-live="ready"></div>
+
+  <!-- R7: sound-cue toggle (score-update audio chime). -->
+  <div class="sound-cue-toggle" role="region" aria-label="Sound cue toggle">
+    <label class="sound-cue-toggle__label">
+      <input type="checkbox" id="sound-cue-toggle" class="sound-cue-toggle__input" aria-describedby="sound-cue-hint" data-default="off">
+      <span class="sound-cue-toggle__text">Sound cues</span>
+    </label>
+    <span id="sound-cue-hint" class="sound-cue-toggle__hint">Play a chime when scores update.</span>
+  </div>
 
   <!-- R5: Mobile bottom navigation (Fantasy / Bet / Watch quick switcher). -->
   <nav class="mobile-bottom-nav" aria-label="Mobile quick navigation">

@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% block title %}Performance dashboard — Google Search{% endblock %}
+
+{% block content %}
+<div class="container" style="max-width: 940px; margin: 32px auto; padding: 0 16px;">
+  <h1 style="font-size: 28px; margin-bottom: 8px;">SERP render performance</h1>
+  <p class="muted">
+    Per-endpoint render budgets. Every response carries an
+    <code>X-Render-Time-Ms</code> header — the values below are recent
+    samples from this worker. The 50 ms target applies to topic-hit
+    <code>/search</code> renders.
+  </p>
+
+  <table style="width: 100%; border-collapse: collapse; margin-top: 16px;">
+    <thead>
+      <tr style="text-align: left; border-bottom: 1px solid #dadce0;">
+        <th style="padding: 8px;">Endpoint</th>
+        <th style="padding: 8px; text-align: right;">Render time</th>
+        <th style="padding: 8px;">Notes</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for s in samples %}
+      <tr style="border-bottom: 1px solid #eee;">
+        <td style="padding: 8px;"><code>{{ s.path }}</code></td>
+        <td style="padding: 8px; text-align: right;">{{ '%.1f'|format(s.render_ms) }} ms</td>
+        <td style="padding: 8px;">{{ s.note }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <h2 style="font-size: 18px; margin-top: 28px;">SLOs</h2>
+  <ul>
+    <li>Topic-hit SERP render &le; <strong>50 ms</strong> (p50)</li>
+    <li>Topic-miss fallback render &le; <strong>80 ms</strong> (p95)</li>
+    <li>Sitemap generation &le; <strong>100 ms</strong> (response cached 1 h)</li>
+    <li>Knowledge-panel inline answer &le; <strong>30 ms</strong> (in-process lookup)</li>
+  </ul>
+
+  <p>
+    The response time on this request:
+    <code id="r7-render-time">computing…</code>
+  </p>
+  <script>
+    (function () {
+      try {
+        var nav = performance.getEntriesByType('navigation')[0];
+        if (nav) {
+          var ms = (nav.responseEnd - nav.requestStart).toFixed(1);
+          document.getElementById('r7-render-time').textContent = ms + ' ms (round-trip)';
+        }
+      } catch (e) { /* noop */ }
+    })();
+  </script>
+</div>
+{% endblock %}

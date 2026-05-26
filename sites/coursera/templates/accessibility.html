@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block title %}Accessibility Statement | Coursera{% endblock %}
+{% block content %}
+<div class="accessibility-page" id="main-content" style="max-width:880px;margin:32px auto;padding:0 24px;">
+  <h1 style="font-size:34px;letter-spacing:-.5px;margin:0 0 8px;">Accessibility at Coursera</h1>
+  <p style="color:#5B6780;font-size:16px;margin:0 0 24px;">We design Coursera to meet <strong>WCAG 2.1 Level AA</strong> across every learner-facing surface. This statement summarises our current compliance posture and how to report an issue.</p>
+
+  <section style="background:#fff;border:1px solid #DAE1ED;border-radius:12px;padding:22px;margin-bottom:20px;">
+    <div style="display:inline-block;background:#0F5132;color:#fff;font-weight:800;padding:4px 10px;border-radius:6px;font-size:12px;letter-spacing:.6px;">WCAG 2.1 AA &middot; CONFORMANT</div>
+    <h2 style="font-size:20px;margin:16px 0 8px;">Conformance summary</h2>
+    <ul style="margin:0;padding-left:20px;color:#374151;line-height:1.7;">
+      <li><strong>Perceivable</strong> — every video lesson ships captions in 11 languages; every image has alt text.</li>
+      <li><strong>Operable</strong> — keyboard navigation across all interactive elements; visible focus rings; skip-to-main-content link on every page.</li>
+      <li><strong>Understandable</strong> — UI strings translated into 16 locales (see footer switcher); reading level checked per category.</li>
+      <li><strong>Robust</strong> — semantic HTML, ARIA labels on nav / search / dialog regions; tested with NVDA, JAWS, and VoiceOver.</li>
+    </ul>
+  </section>
+
+  <section style="background:#fff;border:1px solid #DAE1ED;border-radius:12px;padding:22px;margin-bottom:20px;">
+    <h2 style="font-size:20px;margin:0 0 10px;">Feature-level support</h2>
+    <table style="width:100%;border-collapse:collapse;font-size:14px;">
+      <thead><tr style="background:#F2F5FA;text-align:left;"><th style="padding:8px;">Feature</th><th style="padding:8px;">Status</th></tr></thead>
+      <tbody>
+        <tr><td style="padding:8px;border-top:1px solid #E2E6EE;">Video captions (11 languages)</td><td style="padding:8px;border-top:1px solid #E2E6EE;color:#0F5132;font-weight:700;">Full</td></tr>
+        <tr><td style="padding:8px;border-top:1px solid #E2E6EE;">Video transcripts</td><td style="padding:8px;border-top:1px solid #E2E6EE;color:#0F5132;font-weight:700;">Full</td></tr>
+        <tr><td style="padding:8px;border-top:1px solid #E2E6EE;">Keyboard navigation</td><td style="padding:8px;border-top:1px solid #E2E6EE;color:#0F5132;font-weight:700;">Full</td></tr>
+        <tr><td style="padding:8px;border-top:1px solid #E2E6EE;">Screen-reader (NVDA / JAWS / VoiceOver)</td><td style="padding:8px;border-top:1px solid #E2E6EE;color:#0F5132;font-weight:700;">Full</td></tr>
+        <tr><td style="padding:8px;border-top:1px solid #E2E6EE;">Reduced-motion CSS preference</td><td style="padding:8px;border-top:1px solid #E2E6EE;color:#0F5132;font-weight:700;">Full</td></tr>
+        <tr><td style="padding:8px;border-top:1px solid #E2E6EE;">RTL layout (Arabic, Hebrew)</td><td style="padding:8px;border-top:1px solid #E2E6EE;color:#0F5132;font-weight:700;">Full</td></tr>
+        <tr><td style="padding:8px;border-top:1px solid #E2E6EE;">High-contrast theme</td><td style="padding:8px;border-top:1px solid #E2E6EE;color:#8A6300;font-weight:700;">Partial (rolling out Q3 2026)</td></tr>
+        <tr><td style="padding:8px;border-top:1px solid #E2E6EE;">Sign-language overlay tracks</td><td style="padding:8px;border-top:1px solid #E2E6EE;color:#8A6300;font-weight:700;">Pilot (12 courses)</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section style="background:#fff;border:1px solid #DAE1ED;border-radius:12px;padding:22px;">
+    <h2 style="font-size:20px;margin:0 0 10px;">Report an accessibility barrier</h2>
+    <p style="margin:0;color:#374151;line-height:1.6;">Email <a href="mailto:accessibility@coursera-mirror.local">accessibility@coursera-mirror.local</a>. We respond within 5 business days. See the <a href="{{ url_for('help_center') }}">help centre</a> for general support.</p>
+  </section>
+</div>
+{% endblock %}

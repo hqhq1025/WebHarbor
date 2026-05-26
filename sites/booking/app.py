@@ -221,6 +221,16 @@ class Property(db.Model):
 
     created_at = db.Column(db.DateTime, default=lambda: MIRROR_REFERENCE_DATE)
 
+    # R7 — composite indexes for hot filter patterns (city + price, city + stars).
+    # Index names are alphabetically stable so normalize_seed_db_layout sees a
+    # deterministic CREATE INDEX order across rebuilds. The single-column
+    # `slug` index is already declared above via index=True.
+    __table_args__ = (
+        db.Index('ix_property_city_id_price', 'city_id', 'price_per_night'),
+        db.Index('ix_property_city_id_stars_desc', 'city_id', 'stars'),
+        db.Index('ix_property_dest_category', 'dest_category'),
+    )
+
     reviews = db.relationship('Review', backref='property', lazy=True, cascade='all, delete-orphan')
 
     def get_gallery(self):
@@ -311,6 +321,56 @@ class Property(db.Model):
         if self.discount_percent:
             return round(self.price_per_night * (100 - self.discount_percent) / 100, 2)
         return self.price_per_night
+
+    def to_hotel_jsonld(self):
+        """Return a schema.org Hotel JSON-LD dict for SEO.
+        Renders inside the property detail template's <head> block."""
+        amenities = self.get_amenities()
+        rooms = self.get_rooms()
+        if rooms:
+            prices = [r.get('price', self.price_per_night) for r in rooms]
+            price_range = f"${min(prices):.0f}-${max(prices):.0f}"
+        else:
+            price_range = f"${self.price_per_night:.0f}"
+        return {
+            '@context': 'https://schema.org',
+            '@type': 'Hotel',
+            'name': self.name,
+            'description': self.short_desc or (self.description or '')[:200],
+            'image': self.image or '',
+            'priceRange': price_range,
+            'starRating': {
+                '@type': 'Rating',
+                'ratingValue': self.stars,
+                'bestRating': 5,
+            },
+            'aggregateRating': {
+                '@type': 'AggregateRating',
+                'ratingValue': self.rating,
+                'reviewCount': self.review_count,
+                'bestRating': 10,
+                'worstRating': 0,
+            },
+            'address': {
+                '@type': 'PostalAddress',
+                'streetAddress': self.address or '',
+                'addressLocality': self.city.display if self.city else '',
+                'addressRegion': self.neighborhood or '',
+                'addressCountry': self.city.country_code.upper() if self.city else '',
+            },
+            'geo': {
+                '@type': 'GeoCoordinates',
+                'latitude': self.lat or (self.city.lat if self.city else 0.0),
+                'longitude': self.lng or (self.city.lng if self.city else 0.0),
+            },
+            'amenityFeature': [
+                {'@type': 'LocationFeatureSpecification', 'name': a, 'value': True}
+                for a in amenities[:30]
+            ],
+            'brand': {'@type': 'Brand', 'name': self.brand or 'Independent'},
+            'checkinTime': '15:00',
+            'checkoutTime': '11:00',
+        }
 
 
 class Landmark(db.Model):
@@ -623,21 +683,201 @@ def slugify(text):
     return s[:200]
 
 
-# Static currency conversion rates (1 USD = ...)
+# Static currency conversion rates (1 USD = ...). R7 polish expanded the
+# pool to 30 currencies so the locale-currency task surface has real ground
+# truth to compare against.
 CURRENCY_RATES = {
     'USD': 1.0,
     'EUR': 0.92,
     'GBP': 0.79,
+    'AUD': 1.52,
+    'CAD': 1.36,
+    'CHF': 0.88,
     'CNY': 7.2,
     'JPY': 151.3,
+    'HKD': 7.83,
+    'SGD': 1.34,
+    'KRW': 1340.0,
+    'INR': 83.4,
+    'BRL': 5.02,
+    'MXN': 17.1,
+    'ZAR': 18.6,
+    'NZD': 1.66,
+    'SEK': 10.5,
+    'NOK': 10.7,
+    'DKK': 6.86,
+    'PLN': 3.98,
+    'CZK': 23.1,
+    'HUF': 360.0,
+    'TRY': 32.4,
+    'AED': 3.67,
+    'SAR': 3.75,
+    'THB': 36.2,
+    'MYR': 4.71,
+    'IDR': 15750.0,
+    'PHP': 56.3,
+    'VND': 24650.0,
 }
 CURRENCY_SYMBOLS = {
     'USD': '$',
     'EUR': '\u20ac',
     'GBP': '\u00a3',
+    'AUD': 'A$',
+    'CAD': 'C$',
+    'CHF': 'CHF',
     'CNY': '\u00a5',
     'JPY': '\u00a5',
+    'HKD': 'HK$',
+    'SGD': 'S$',
+    'KRW': '\u20a9',
+    'INR': '\u20b9',
+    'BRL': 'R$',
+    'MXN': 'MX$',
+    'ZAR': 'R',
+    'NZD': 'NZ$',
+    'SEK': 'kr',
+    'NOK': 'kr',
+    'DKK': 'kr',
+    'PLN': 'z\u0142',
+    'CZK': 'K\u010d',
+    'HUF': 'Ft',
+    'TRY': '\u20ba',
+    'AED': 'AED',
+    'SAR': 'SAR',
+    'THB': '\u0e3f',
+    'MYR': 'RM',
+    'IDR': 'Rp',
+    'PHP': '\u20b1',
+    'VND': '\u20ab',
 }
+
+# R7 \u2014 supported locale paths (/en-us/, /de-de/, ...). The booking.com
+# upstream serves the same content with translated labels and a hreflang
+# block per locale. We keep the canonical content identical but expose a
+# label dictionary so the multi-language tasks have real ground truth.
+LOCALES = {
+    'en-us': {'name': 'English (US)', 'code': 'en', 'region': 'US'},
+    'en-gb': {'name': 'English (UK)', 'code': 'en', 'region': 'GB'},
+    'en-au': {'name': 'English (AU)', 'code': 'en', 'region': 'AU'},
+    'en-ca': {'name': 'English (CA)', 'code': 'en', 'region': 'CA'},
+    'en-in': {'name': 'English (IN)', 'code': 'en', 'region': 'IN'},
+    'en-sg': {'name': 'English (SG)', 'code': 'en', 'region': 'SG'},
+    'de-de': {'name': 'Deutsch', 'code': 'de', 'region': 'DE'},
+    'de-at': {'name': 'Deutsch (\u00d6sterreich)', 'code': 'de', 'region': 'AT'},
+    'de-ch': {'name': 'Deutsch (Schweiz)', 'code': 'de', 'region': 'CH'},
+    'fr-fr': {'name': 'Fran\u00e7ais', 'code': 'fr', 'region': 'FR'},
+    'fr-ca': {'name': 'Fran\u00e7ais (Canada)', 'code': 'fr', 'region': 'CA'},
+    'fr-ch': {'name': 'Fran\u00e7ais (Suisse)', 'code': 'fr', 'region': 'CH'},
+    'fr-be': {'name': 'Fran\u00e7ais (Belgique)', 'code': 'fr', 'region': 'BE'},
+    'es-es': {'name': 'Espa\u00f1ol', 'code': 'es', 'region': 'ES'},
+    'es-mx': {'name': 'Espa\u00f1ol (M\u00e9xico)', 'code': 'es', 'region': 'MX'},
+    'es-ar': {'name': 'Espa\u00f1ol (Argentina)', 'code': 'es', 'region': 'AR'},
+    'it-it': {'name': 'Italiano', 'code': 'it', 'region': 'IT'},
+    'pt-pt': {'name': 'Portugu\u00eas', 'code': 'pt', 'region': 'PT'},
+    'pt-br': {'name': 'Portugu\u00eas (Brasil)', 'code': 'pt', 'region': 'BR'},
+    'nl-nl': {'name': 'Nederlands', 'code': 'nl', 'region': 'NL'},
+    'sv-se': {'name': 'Svenska', 'code': 'sv', 'region': 'SE'},
+    'no-no': {'name': 'Norsk', 'code': 'no', 'region': 'NO'},
+    'da-dk': {'name': 'Dansk', 'code': 'da', 'region': 'DK'},
+    'fi-fi': {'name': 'Suomi', 'code': 'fi', 'region': 'FI'},
+    'pl-pl': {'name': 'Polski', 'code': 'pl', 'region': 'PL'},
+    'cs-cz': {'name': '\u010ce\u0161tina', 'code': 'cs', 'region': 'CZ'},
+    'hu-hu': {'name': 'Magyar', 'code': 'hu', 'region': 'HU'},
+    'el-gr': {'name': '\u0395\u03bb\u03bb\u03b7\u03bd\u03b9\u03ba\u03ac', 'code': 'el', 'region': 'GR'},
+    'tr-tr': {'name': 'T\u00fcrk\u00e7e', 'code': 'tr', 'region': 'TR'},
+    'ru-ru': {'name': '\u0420\u0443\u0441\u0441\u043a\u0438\u0439', 'code': 'ru', 'region': 'RU'},
+    'ar-ae': {'name': '\u0627\u0644\u0639\u0631\u0628\u064a\u0629', 'code': 'ar', 'region': 'AE'},
+    'he-il': {'name': '\u05e2\u05d1\u05e8\u05d9\u05ea', 'code': 'he', 'region': 'IL'},
+    'zh-cn': {'name': '\u4e2d\u6587 (\u7b80\u4f53)', 'code': 'zh', 'region': 'CN'},
+    'zh-tw': {'name': '\u4e2d\u6587 (\u7e41\u9ad4)', 'code': 'zh', 'region': 'TW'},
+    'ja-jp': {'name': '\u65e5\u672c\u8a9e', 'code': 'ja', 'region': 'JP'},
+    'ko-kr': {'name': '\ud55c\uad6d\uc5b4', 'code': 'ko', 'region': 'KR'},
+    'th-th': {'name': '\u0e44\u0e17\u0e22', 'code': 'th', 'region': 'TH'},
+    'vi-vn': {'name': 'Ti\u1ebfng Vi\u1ec7t', 'code': 'vi', 'region': 'VN'},
+    'id-id': {'name': 'Bahasa Indonesia', 'code': 'id', 'region': 'ID'},
+    'ms-my': {'name': 'Bahasa Melayu', 'code': 'ms', 'region': 'MY'},
+    'hi-in': {'name': '\u0939\u093f\u0928\u094d\u0926\u0940', 'code': 'hi', 'region': 'IN'},
+}
+
+# Per-locale label dictionary \u2014 translates section headings and a sample
+# cancellation-policy phrase. Multi-language tasks verify these against
+# page source. Locales without an explicit entry fall back to en-us.
+LOCALE_LABELS = {
+    'en-us': {'about': 'About this property', 'amenities': 'Amenities',
+              'reviews': 'Reviews', 'cancel': 'Free cancellation',
+              'tagline': 'Find your next stay'},
+    'en-gb': {'about': 'About this property', 'amenities': 'Amenities',
+              'reviews': 'Reviews', 'cancel': 'Free cancellation',
+              'tagline': 'Find your next stay'},
+    'de-de': {'about': '\u00dcber diese Unterkunft',
+              'amenities': 'Ausstattung',
+              'reviews': 'Bewertungen',
+              'cancel': 'Kostenlose Stornierung',
+              'tagline': 'Finden Sie Ihre n\u00e4chste Unterkunft'},
+    'fr-fr': {'about': '\u00c0 propos de cet h\u00e9bergement',
+              'amenities': '\u00c9quipements',
+              'reviews': 'Avis',
+              'cancel': 'Annulation gratuite',
+              'tagline': 'Trouvez votre prochain s\u00e9jour'},
+    'es-es': {'about': 'Acerca de este alojamiento',
+              'amenities': 'Servicios',
+              'reviews': 'Opiniones',
+              'cancel': 'Cancelaci\u00f3n gratuita',
+              'tagline': 'Encuentra tu pr\u00f3ximo alojamiento'},
+    'it-it': {'about': 'Informazioni su questa struttura',
+              'amenities': 'Servizi',
+              'reviews': 'Recensioni',
+              'cancel': 'Cancellazione gratuita',
+              'tagline': 'Trova il tuo prossimo soggiorno'},
+    'pt-pt': {'about': 'Sobre esta acomoda\u00e7\u00e3o',
+              'amenities': 'Comodidades',
+              'reviews': 'Coment\u00e1rios',
+              'cancel': 'Cancelamento gratuito',
+              'tagline': 'Encontre a sua pr\u00f3xima estadia'},
+    'pt-br': {'about': 'Sobre esta acomoda\u00e7\u00e3o',
+              'amenities': 'Comodidades',
+              'reviews': 'Avalia\u00e7\u00f5es',
+              'cancel': 'Cancelamento gratuito',
+              'tagline': 'Encontre sua pr\u00f3xima estadia'},
+    'nl-nl': {'about': 'Over deze accommodatie',
+              'amenities': 'Voorzieningen',
+              'reviews': 'Beoordelingen',
+              'cancel': 'Gratis annulering',
+              'tagline': 'Vind je volgende verblijf'},
+    'zh-cn': {'about': '\u5173\u4e8e\u6b64\u4f4f\u5bbf',
+              'amenities': '\u8bbe\u65bd',
+              'reviews': '\u70b9\u8bc4',
+              'cancel': '\u514d\u8d39\u53d6\u6d88',
+              'tagline': '\u5bfb\u627e\u4f60\u7684\u4e0b\u4e00\u6b21\u4f4f\u5bbf'},
+    'zh-tw': {'about': '\u95dc\u65bc\u6b64\u4f4f\u5bbf',
+              'amenities': '\u8a2d\u65bd',
+              'reviews': '\u8a55\u5206',
+              'cancel': '\u514d\u8cbb\u53d6\u6d88',
+              'tagline': '\u5c0b\u627e\u4e0b\u4e00\u500b\u4f4f\u5bbf'},
+    'ja-jp': {'about': '\u3053\u306e\u5bbf\u6cca\u65bd\u8a2d\u306b\u3064\u3044\u3066',
+              'amenities': '\u30a2\u30e1\u30cb\u30c6\u30a3',
+              'reviews': '\u30af\u30c1\u30b3\u30df',
+              'cancel': '\u7121\u6599\u30ad\u30e3\u30f3\u30bb\u30eb',
+              'tagline': '\u6b21\u306e\u5bbf\u6cca\u5148\u3092\u898b\u3064\u3051\u308b'},
+    'ko-kr': {'about': '\uc774 \uc228\uc18c \uc18c\uac1c',
+              'amenities': '\ud3b8\uc758\uc2dc\uc124',
+              'reviews': '\ub9ac\ubdf0',
+              'cancel': '\ubb34\ub8cc \ucde8\uc18c',
+              'tagline': '\ub2e4\uc74c \uc228\uc18c \ucc3e\uae30'},
+    'ar-ae': {'about': '\u062d\u0648\u0644 \u0647\u0630\u0627 \u0627\u0644\u0645\u0643\u0627\u0646',
+              'amenities': '\u0627\u0644\u0645\u0631\u0627\u0641\u0642',
+              'reviews': '\u0627\u0644\u062a\u0642\u064a\u064a\u0645\u0627\u062a',
+              'cancel': '\u0625\u0644\u063a\u0627\u0621 \u0645\u062c\u0627\u0646\u064a',
+              'tagline': '\u0627\u0628\u062d\u062b \u0639\u0646 \u0625\u0642\u0627\u0645\u062a\u0643 \u0627\u0644\u0642\u0627\u062f\u0645\u0629'},
+    'tr-tr': {'about': 'Bu konaklama yeri hakk\u0131nda',
+              'amenities': '\u00d6zellikler',
+              'reviews': 'De\u011ferlendirmeler',
+              'cancel': '\u00dccretsiz iptal',
+              'tagline': 'Bir sonraki konaklama yerinizi bulun'},
+}
+# Locales without a custom dictionary fall back to English.
+for _lk in LOCALES:
+    LOCALE_LABELS.setdefault(_lk, LOCALE_LABELS['en-us'])
 
 
 @app.context_processor
@@ -655,6 +895,14 @@ def inject_global():
     currency_code = session.get('currency', 'USD')
     if currency_code not in CURRENCY_RATES:
         currency_code = 'USD'
+    # R7 — locale handling. ?locale=de-de or g.locale (set by /<locale>/...)
+    # overrides session. Fallback is en-us.
+    loc_req = (request.args.get('locale') or '').lower()
+    if loc_req in LOCALES:
+        session['locale'] = loc_req
+    locale_code = getattr(g, 'locale', None) or session.get('locale', 'en-us')
+    if locale_code not in LOCALES:
+        locale_code = 'en-us'
     return {
         'cart_count': cart_count,
         'saved_count': saved_count,
@@ -665,6 +913,10 @@ def inject_global():
         'currency_rate': CURRENCY_RATES[currency_code],
         'currency_symbol': CURRENCY_SYMBOLS[currency_code],
         'currency_rates': CURRENCY_RATES,
+        'locale_code': locale_code,
+        'locale_info': LOCALES[locale_code],
+        'locale_labels': LOCALE_LABELS[locale_code],
+        'all_locales': LOCALES,
     }
 
 
@@ -685,6 +937,147 @@ def set_currency():
     if code in CURRENCY_RATES:
         session['currency'] = code
     return redirect(request.referrer or url_for('index'))
+
+
+# =====================================================================
+# R7 — SEO / locale / AMP / robots / sitemap / accessibility / TripAdvisor
+# =====================================================================
+
+@app.route('/set-locale', methods=['GET', 'POST'])
+def set_locale():
+    code = (request.values.get('locale') or 'en-us').lower()
+    if code in LOCALES:
+        session['locale'] = code
+    return redirect(request.referrer or url_for('index'))
+
+
+@app.route('/<locale>/property/<slug>')
+def property_detail_localized(locale, slug):
+    """Locale-prefixed property page (/de-de/property/<slug>).
+    Renders the same template with locale_labels overridden, and
+    declares an `og:locale` meta + `hreflang` block. Falls through
+    to the canonical page when the locale is unknown."""
+    if locale.lower() not in LOCALES:
+        abort(404)
+    g.locale = locale.lower()
+    return property_detail(slug)
+
+
+@app.route('/robots.txt')
+def robots_txt():
+    base = request.url_root.rstrip('/')
+    body = (
+        "User-agent: *\n"
+        "Allow: /\n"
+        "Allow: /amp/\n"
+        "Disallow: /checkout\n"
+        "Disallow: /api/\n"
+        "Disallow: /account\n"
+        f"Sitemap: {base}/sitemap.xml\n"
+        f"Sitemap: {base}/sitemap-properties.xml\n"
+        f"Sitemap: {base}/sitemap-cities.xml\n"
+    )
+    from flask import Response
+    return Response(body, mimetype='text/plain')
+
+
+@app.route('/sitemap.xml')
+def sitemap_index():
+    from flask import Response
+    base = request.url_root.rstrip('/')
+    parts = [
+        '<?xml version="1.0" encoding="UTF-8"?>',
+        '<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">',
+        f'<sitemap><loc>{base}/sitemap-properties.xml</loc></sitemap>',
+        f'<sitemap><loc>{base}/sitemap-cities.xml</loc></sitemap>',
+        f'<sitemap><loc>{base}/sitemap-attractions.xml</loc></sitemap>',
+        '</sitemapindex>',
+    ]
+    return Response('\n'.join(parts), mimetype='application/xml')
+
+
+@app.route('/sitemap-properties.xml')
+def sitemap_properties():
+    """Grouped property sitemap. Pages of 200 properties per <urlset>;
+    the index above points at this URL which itself enumerates all
+    properties grouped by city (city anchor comments separate the
+    blocks for human readability)."""
+    from flask import Response
+    base = request.url_root.rstrip('/')
+    parts = ['<?xml version="1.0" encoding="UTF-8"?>',
+             '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">']
+    cities = City.query.order_by(City.key).all()
+    for city in cities:
+        parts.append(f'<!-- city: {city.key} ({city.display}) -->')
+        props = (Property.query.filter_by(city_id=city.id)
+                 .order_by(Property.slug).limit(500).all())
+        for p in props:
+            parts.append('<url>'
+                         f'<loc>{base}/property/{p.slug}</loc>'
+                         '<changefreq>weekly</changefreq>'
+                         '<priority>0.7</priority>'
+                         '</url>')
+    parts.append('</urlset>')
+    return Response('\n'.join(parts), mimetype='application/xml')
+
+
+@app.route('/sitemap-cities.xml')
+def sitemap_cities():
+    from flask import Response
+    base = request.url_root.rstrip('/')
+    parts = ['<?xml version="1.0" encoding="UTF-8"?>',
+             '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">']
+    for city in City.query.order_by(City.slug).all():
+        parts.append(f'<url><loc>{base}/city/{city.slug}</loc>'
+                     '<changefreq>weekly</changefreq>'
+                     '<priority>0.8</priority></url>')
+    parts.append('</urlset>')
+    return Response('\n'.join(parts), mimetype='application/xml')
+
+
+@app.route('/sitemap-attractions.xml')
+def sitemap_attractions():
+    from flask import Response
+    base = request.url_root.rstrip('/')
+    parts = ['<?xml version="1.0" encoding="UTF-8"?>',
+             '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">']
+    parts.append(f'<url><loc>{base}/attractions</loc>'
+                 '<changefreq>weekly</changefreq>'
+                 '<priority>0.6</priority></url>')
+    parts.append('</urlset>')
+    return Response('\n'.join(parts), mimetype='application/xml')
+
+
+@app.route('/amp/property/<slug>')
+def amp_property(slug):
+    """AMP stub for a property page. Renders a slim HTML template
+    declaring `<html amp>`, the AMP boilerplate, and a canonical link
+    back to /property/<slug>."""
+    prop = Property.query.filter_by(slug=slug).first_or_404()
+    reviews = (Review.query.filter_by(property_id=prop.id)
+               .order_by(Review.created_at.desc()).limit(5).all())
+    return render_template('amp_property.html', property=prop, reviews=reviews)
+
+
+@app.route('/accessibility')
+@app.route('/accessibility-statement')
+@app.route('/wcag')
+def accessibility_statement():
+    return render_template('accessibility.html')
+
+
+@app.route('/tripadvisor/<slug>')
+def tripadvisor_stub(slug):
+    """TripAdvisor cross-link stub. Redirects to an off-site URL while
+    capturing the click for analytics (in upstream booking.com this is a
+    sponsored cross-link). The redirect target is a TripAdvisor search
+    URL keyed off the property's name + city."""
+    prop = Property.query.filter_by(slug=slug).first_or_404()
+    import urllib.parse
+    q = urllib.parse.quote(f"{prop.name} {prop.city.display}")
+    target = f"https://www.tripadvisor.com/Search?q={q}"
+    return render_template('tripadvisor_stub.html', property=prop,
+                           target=target)
 
 
 # =====================================================================
@@ -1003,6 +1396,7 @@ def property_detail(slug):
     review_scores = prop.get_review_scores()
     review_scores_high = {k: v for k, v in review_scores.items() if v >= 9.0}
     review_scores_low = {k: v for k, v in review_scores.items() if v < 9.0}
+    hotel_jsonld = json.dumps(prop.to_hotel_jsonld(), ensure_ascii=False)
     return render_template(
         'property_detail.html',
         property=prop,
@@ -1018,6 +1412,7 @@ def property_detail(slug):
         review_scores=review_scores,
         review_scores_high=review_scores_high,
         review_scores_low=review_scores_low,
+        hotel_jsonld=hotel_jsonld,
     )
 
 

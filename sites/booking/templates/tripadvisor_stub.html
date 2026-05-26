@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block title %}Compare on TripAdvisor — {{ property.name }} — Booking{% endblock %}
+{% block og_title %}Compare {{ property.name }} on TripAdvisor{% endblock %}
+{% block content %}
+<div class="container" style="max-width:720px;margin:0 auto;padding:24px;">
+    <h1 style="margin-bottom:12px;">Opening TripAdvisor for {{ property.name }}</h1>
+    <p>You're being taken to TripAdvisor to compare reviews for this property.</p>
+    <p style="margin-top:18px;">
+        Destination URL:
+        <code style="display:block;background:#f5f5f5;padding:10px;border-radius:4px;margin-top:6px;word-break:break-all;">{{ target }}</code>
+    </p>
+    <p style="margin-top:18px;">
+        <a class="btn-primary" href="{{ target }}" rel="nofollow sponsored noopener" target="_blank">Continue to TripAdvisor &rarr;</a>
+        &nbsp;
+        <a class="btn-secondary" href="/property/{{ property.slug }}">Back to {{ property.name }}</a>
+    </p>
+    <p style="font-size:12px;color:#666;margin-top:24px;">
+        TripAdvisor is a third-party site. Booking.com may receive a commission on completed bookings made via this link.
+    </p>
+</div>
+{% endblock %}

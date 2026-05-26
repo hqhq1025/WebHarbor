@@ -6,7 +6,8 @@ from pathlib import Path
 from functools import wraps
 
 from flask import (Flask, render_template, request, redirect, url_for,
-                   flash, session, jsonify, abort, g)
+                   flash, session, jsonify, abort, g, make_response,
+                   Response)
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import (LoginManager, UserMixin, login_user, logout_user,
                          login_required, current_user)
@@ -2125,6 +2126,287 @@ def widget_embed_blocked(slug):
     referer = request.args.get('parent', '(unknown parent)')
     return render_template('edge_widget_blocked.html', widget=widget,
                            referer=referer)
+
+
+# ---------------------------------------------------------------------------
+# R7 surface extensions: SEO, i18n locale switcher, performance,
+# accessibility, Wolfram Language export with OpenAPI, takeout, popular cache
+# ---------------------------------------------------------------------------
+
+R7_LOCALES = ('en', 'de', 'es', 'jp')
+R7_LOCALE_NAME = {'en': 'English', 'de': 'Deutsch',
+                  'es': 'Espanol', 'jp': 'Nihongo'}
+
+
+@app.context_processor
+def _inject_r7_locale():
+    """Make the active locale + the four supported locales visible to
+    every template (used by base.html's header switcher and JSON-LD
+    hreflang block)."""
+    active = request.cookies.get('locale', 'en') if request else 'en'
+    if active not in R7_LOCALES:
+        active = 'en'
+    return {
+        'r7_locale': active,
+        'r7_locales': R7_LOCALES,
+        'r7_locale_names': R7_LOCALE_NAME,
+    }
+
+
+@app.route('/locale/<lang>')
+def locale_switch(lang):
+    """R7: switch the locale cookie and redirect back."""
+    if lang not in R7_LOCALES:
+        abort(404)
+    nxt = request.args.get('next') or request.referrer or url_for('index')
+    resp = make_response(redirect(nxt))
+    resp.set_cookie('locale', lang, max_age=60 * 60 * 24 * 365,
+                    samesite='Lax')
+    return resp
+
+
+@app.route('/sitemap.xml')
+def sitemap_index():
+    """R7: top-level sitemap index referencing per-category sitemaps."""
+    cats = Category.query.order_by(Category.sort_order).all()
+    parts = ['<?xml version="1.0" encoding="UTF-8"?>',
+             '<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">']
+    for c in cats:
+        parts.append('<sitemap>')
+        parts.append(f'<loc>{request.url_root.rstrip("/")}/sitemap/{c.slug}.xml</loc>')
+        parts.append('<lastmod>2026-05-26</lastmod>')
+        parts.append('</sitemap>')
+    parts.append('</sitemapindex>')
+    return Response('\n'.join(parts), mimetype='application/xml')
+
+
+@app.route('/sitemap/<cat_slug>.xml')
+def sitemap_category(cat_slug):
+    """R7: per-category sitemap covering topic pages in that category."""
+    cat = Category.query.filter_by(slug=cat_slug).first_or_404()
+    topics = Topic.query.filter_by(category_id=cat.id).order_by(Topic.id).all()
+    root = request.url_root.rstrip('/')
+    parts = ['<?xml version="1.0" encoding="UTF-8"?>',
+             '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" '
+             'xmlns:xhtml="http://www.w3.org/1999/xhtml">']
+    for t in topics:
+        parts.append('<url>')
+        parts.append(f'<loc>{root}/topic/{t.slug}</loc>')
+        parts.append('<lastmod>2026-05-26</lastmod>')
+        parts.append('<changefreq>weekly</changefreq>')
+        for loc in R7_LOCALES:
+            parts.append(f'<xhtml:link rel="alternate" hreflang="{loc}" '
+                         f'href="{root}/topic/{t.slug}?locale={loc}"/>')
+        parts.append('</url>')
+    parts.append('</urlset>')
+    return Response('\n'.join(parts), mimetype='application/xml')
+
+
+@app.route('/og/<int:cr_id>.svg')
+def og_card_svg(cr_id):
+    """R7: OG share card rendered as 1200x630 SVG with the parsed input
+    and the first line of the plaintext result."""
+    comp = db.session.get(ComputationResult, cr_id)
+    if not comp:
+        abort(404)
+    title = (comp.parsed_input or comp.input_query or 'Computation')[:80]
+    body_line = (comp.plaintext or '').splitlines()[0] if comp.plaintext else ''
+    body_line = body_line[:140]
+    safe = lambda s: (s.replace('&', '&amp;').replace('<', '&lt;')
+                       .replace('>', '&gt;').replace('"', '&quot;'))
+    svg = (
+        '<?xml version="1.0" encoding="UTF-8"?>'
+        '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630" '
+        'width="1200" height="630" role="img" aria-label="WolframAlpha share card">'
+        '<rect width="1200" height="630" fill="#f96302"/>'
+        '<rect x="60" y="60" width="1080" height="510" rx="20" fill="#ffffff"/>'
+        f'<text x="100" y="160" font-family="Source Sans Pro, sans-serif" '
+        f'font-size="48" font-weight="700" fill="#222">WolframAlpha</text>'
+        f'<text x="100" y="280" font-family="Source Sans Pro, sans-serif" '
+        f'font-size="56" font-weight="600" fill="#111">{safe(title)}</text>'
+        f'<text x="100" y="380" font-family="Source Sans Pro, sans-serif" '
+        f'font-size="36" fill="#444">{safe(body_line)}</text>'
+        f'<text x="100" y="540" font-family="Source Sans Pro, sans-serif" '
+        f'font-size="24" fill="#888">[{comp.category}/{comp.subcategory}] '
+        f'-- cr#{comp.id}</text>'
+        '</svg>'
+    )
+    return Response(svg, mimetype='image/svg+xml')
+
+
+@app.route('/computation/<int:cr_id>/wolfram.txt')
+def computation_wolfram(cr_id):
+    """R7: Wolfram Language code export as plain text."""
+    comp = db.session.get(ComputationResult, cr_id)
+    if not comp:
+        abort(404)
+    wl_src = None
+    for pod in comp.get_pods():
+        title = str(pod.get('title', '')).lower()
+        if 'wolfram language' in title:
+            wl_src = pod.get('plaintext')
+            break
+    if not wl_src:
+        wl_src = (f"(* Wolfram Language stub for cr#{comp.id} *)\n"
+                  f"ToExpression[\"{comp.parsed_input or comp.input_query}\"]\n")
+    return Response(wl_src, mimetype='text/plain; charset=utf-8')
+
+
+@app.route('/computation/<int:cr_id>/openapi.json')
+def computation_openapi(cr_id):
+    """R7: OpenAPI 3.1 document describing the WL solve endpoint that
+    would produce this computation's result."""
+    comp = db.session.get(ComputationResult, cr_id)
+    if not comp:
+        abort(404)
+    expr = comp.parsed_input or comp.input_query
+    spec = {
+        "openapi": "3.1.0",
+        "info": {
+            "title": "WolframAlpha Solve API",
+            "version": "1.0.0",
+            "description": (f"Auto-generated OpenAPI spec for computation "
+                            f"cr#{comp.id} ({comp.category}/{comp.subcategory})."),
+        },
+        "servers": [{"url": request.url_root.rstrip('/')}],
+        "paths": {
+            "/v1/solve": {
+                "post": {
+                    "summary": "Solve a Wolfram Language expression",
+                    "operationId": "solveExpression",
+                    "requestBody": {
+                        "required": True,
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "expression": {
+                                            "type": "string",
+                                            "example": expr,
+                                        },
+                                    },
+                                    "required": ["expression"],
+                                }
+                            }
+                        }
+                    },
+                    "responses": {
+                        "200": {
+                            "description": "Solved",
+                            "content": {
+                                "application/json": {
+                                    "schema": {
+                                        "type": "object",
+                                        "properties": {
+                                            "plaintext": {"type": "string"},
+                                            "parsed": {"type": "string"},
+                                            "category": {"type": "string"},
+                                            "subcategory": {"type": "string"},
+                                        },
+                                    },
+                                    "example": {
+                                        "plaintext": (comp.plaintext or '')[:200],
+                                        "parsed": expr,
+                                        "category": comp.category,
+                                        "subcategory": comp.subcategory,
+                                    },
+                                }
+                            }
+                        }
+                    },
+                }
+            }
+        },
+    }
+    return jsonify(spec)
+
+
+@app.route('/account/takeout')
+@login_required
+def account_takeout():
+    """R7: GDPR-style data takeout -- exports the current user's saved
+    queries, history, and notebook entries as a JSON archive."""
+    fmt = request.args.get('format', 'json')
+    saved = SavedQuery.query.filter_by(user_id=current_user.id).all()
+    history = (QueryHistory.query
+               .filter_by(user_id=current_user.id)
+               .order_by(QueryHistory.created_at.desc()).all())
+    notebooks = Notebook.query.filter_by(user_id=current_user.id).all()
+    nb_entries = []
+    for nb in notebooks:
+        ents = (NotebookEntry.query.filter_by(notebook_id=nb.id)
+                .order_by(NotebookEntry.sort_order).all())
+        for e in ents:
+            nb_entries.append({
+                'notebook_id': nb.id, 'notebook_title': nb.title,
+                'query_text': e.query_text, 'notes': e.notes,
+                'result_summary': e.result_summary,
+                'created_at': str(e.created_at),
+            })
+    archive = {
+        'schema': 'wolfram-takeout-v1',
+        'generated_at': '2026-05-26T12:00:00',
+        'user': {
+            'id': current_user.id,
+            'email': current_user.email,
+            'username': current_user.username,
+            'created_at': str(current_user.created_at),
+        },
+        'saved_queries': [
+            {'id': s.id, 'query_text': s.query_text, 'notes': s.notes,
+             'topic_id': s.topic_id, 'created_at': str(s.created_at)}
+            for s in saved
+        ],
+        'history': [
+            {'id': h.id, 'query_text': h.query_text,
+             'topic_id': h.topic_id, 'created_at': str(h.created_at)}
+            for h in history
+        ],
+        'notebooks': [
+            {'id': n.id, 'title': n.title, 'description': n.description,
+             'is_public': n.is_public, 'created_at': str(n.created_at)}
+            for n in notebooks
+        ],
+        'notebook_entries': nb_entries,
+    }
+    if fmt == 'json':
+        resp = jsonify(archive)
+        resp.headers['Content-Disposition'] = (
+            'attachment; filename=wolfram-takeout.json')
+        return resp
+    return Response(json.dumps(archive, indent=2),
+                    mimetype='application/json')
+
+
+# In-process cache for the popular-queries endpoint. Deterministic content
+# is recomputed lazily once per process; later requests serve from the
+# cache to keep LCP low for the homepage.
+_R7_POPULAR_CACHE = {'data': None}
+
+
+@app.route('/api/cached/popular')
+def api_cached_popular():
+    """R7: cached popular queries (used by homepage to keep LCP low)."""
+    limit = request.args.get('limit', '20')
+    try:
+        limit = max(1, min(100, int(limit)))
+    except ValueError:
+        limit = 20
+    if _R7_POPULAR_CACHE['data'] is None:
+        rows = (ComputationResult.query
+                .order_by(ComputationResult.id.asc())
+                .limit(200).all())
+        _R7_POPULAR_CACHE['data'] = [
+            {'id': r.id, 'input_query': r.input_query,
+             'category': r.category, 'subcategory': r.subcategory}
+            for r in rows
+        ]
+    data = _R7_POPULAR_CACHE['data'][:limit]
+    resp = jsonify({'cached': True, 'count': len(data),
+                    'items': data, 'snapshot': '2026-05-26'})
+    resp.headers['Cache-Control'] = 'public, max-age=300'
+    return resp
 
 
 # ---------------------------------------------------------------------------

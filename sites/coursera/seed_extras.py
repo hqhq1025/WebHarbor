@@ -4639,3 +4639,220 @@ def seed_v7(db, models):
     print(f"  + seed_v7: added {created} courses (R6), "
           f"partners now {Partner.query.count()}, "
           f"total courses={Course.query.count()}")
+
+
+# ─── R7 — 2026 polish (catalog 10k → 13k+) ──────────────────────────────────
+# 12 new partners + anchor. Mix of AI labs, climate / fusion / biotech orgs,
+# localisation specialists — chosen to make hreflang / multilingual / SEO
+# tasks land on a realistic publisher.
+R7_NEW_PARTNERS = [
+    ('OpenAI Education',        'openai-edu-r7',         'United States', 'company',     'OpenAI Edu'),
+    ('Anthropic Labs',          'anthropic-labs-r7',     'United States', 'company',     'Anthropic Labs'),
+    ('Hugging Face Academy',    'huggingface-r7',        'United States', 'company',     'HF Academy'),
+    ('Stability AI',            'stability-r7',          'United Kingdom','company',     'Stability AI'),
+    ('Replicate',               'replicate-r7',          'United States', 'company',     'Replicate'),
+    ('Vercel Learn',            'vercel-r7',             'United States', 'company',     'Vercel Learn'),
+    ('LangChain Academy',       'langchain-r7',          'United States', 'company',     'LangChain'),
+    ('LlamaIndex Labs',         'llamaindex-r7',         'United States', 'company',     'LlamaIndex'),
+    ('ClimateWorks Foundation', 'climateworks-r7',       'United States', 'institution', 'ClimateWorks'),
+    ('Commonwealth Fusion',     'commonwealth-fusion-r7','United States', 'company',     'CFS'),
+    ('Ginkgo Bioworks',         'ginkgo-r7',             'United States', 'company',     'Ginkgo'),
+    ('Localization Institute',  'loc-institute-r7',      'Switzerland',   'institution', 'Loc Inst'),
+    ('R7 2026 Anchor',          'r7-2026-anchor',        'United States', 'institution', 'R7 Anchor'),
+]
+
+# 15 broad domains × 6 subtopics × 5 partners × 7 variants = 3150 unique
+# 2026 courses. Reuses `_v6_make_course` so every R5/R6 invariant
+# (deterministic textbook ISBN, preview URL, workload, ratings) holds.
+R7_DOMAINS = [
+    # (domain_title, primary_skill, category, [5 partner slugs])
+    ('Agentic AI 2026',                  'Agentic AI',               'Computer Science',
+     ['openai-edu-r7', 'anthropic-labs-r7', 'huggingface-r7', 'langchain-r7', 'deeplearningai']),
+    ('Multimodal RAG Systems',           'Multimodal RAG',           'Computer Science',
+     ['huggingface-r7', 'openai-edu-r7', 'llamaindex-r7', 'databricks', 'aws']),
+    ('Robotics Foundation Models',       'Robotics FM',              'Computer Science',
+     ['deeplearningai', 'cmu', 'mit', 'nvidia', 'google']),
+    ('On-Device Generative AI',          'On-Device GenAI',          'Computer Science',
+     ['apple', 'huggingface-r7', 'stability-r7', 'meta', 'replicate-r7']),
+    ('Climate-Tech Data Platforms',      'ClimateTech',              'Data Science',
+     ['climateworks-r7', 'databricks', 'aws', 'google', 'ethz']),
+    ('Personalised Health AI',           'Personalised Health AI',   'Health',
+     ['jhu', 'ginkgo-r7', 'google', 'mit', 'who']),
+    ('Synthetic Biology Workflows',      'SynBio',                   'Health',
+     ['ginkgo-r7', 'jhu', 'mit', 'caltech', 'huggingface-r7']),
+    ('Quantum Software 2026',            'Quantum Software',         'Physical Science and Engineering',
+     ['mit', 'caltech', 'ethz', 'nvidia', 'ibm']),
+    ('Fusion Energy Engineering',        'Fusion Engineering',       'Physical Science and Engineering',
+     ['commonwealth-fusion-r7', 'mit', 'caltech', 'ethz', 'imperial']),
+    ('Space-Resource Economics',         'Space Economics',          'Business',
+     ['mit', 'caltech', 'georgetown', 'nasa', 'oxford']),
+    ('Web3 Compliance and Policy',       'Web3 Policy',              'Business',
+     ['georgetown', 'oxford', 'sciencespo', 'duke', 'hec']),
+    ('Cyber-Physical Defence',           'Cyber-Physical',           'Information Technology',
+     ['cmu', 'mit', 'cisco', 'nasa', 'crowdstrike-r6']),
+    ('Sustainable Aviation Fuels',       'SAF',                      'Physical Science and Engineering',
+     ['ethz', 'imperial', 'mit', 'caltech', 'climateworks-r7']),
+    ('Conversational UX Design',         'Conversational UX',        'Arts and Humanities',
+     ['vercel-r7', 'google', 'meta', 'adobe', 'nyu']),
+    ('Localisation Engineering 2026',    'L10n Engineering',         'Computer Science',
+     ['loc-institute-r7', 'vercel-r7', 'github', 'meta', 'google']),
+]
+
+R7_SUBTOPICS = [
+    'Foundations',
+    'Applied Pipelines',
+    'Evaluation and Benchmarking',
+    'Governance and Compliance',
+    'Industry Case Studies',
+    'Career Transition Pathways',
+]
+
+
+def seed_v8(db, models):
+    """R7 catalog polish — adds ~3150 deterministic 2026 courses across
+    15 fresh domains × 6 subtopics × 5 partners × 7 variants, plus +12
+    partners. Backfills R5 columns on any new rows. Idempotent — gated
+    on partner slug `r7-2026-anchor`."""
+    Partner = models['Partner']
+    Course = models['Course']
+    CourseModule = models['CourseModule']
+
+    if Partner.query.filter_by(slug='r7-2026-anchor').first():
+        return  # already seeded
+
+    # 1) Partners ─────────────────────────────────────────────────────────────
+    for name, slug, country, ptype, short in R7_NEW_PARTNERS:
+        if Partner.query.filter_by(slug=slug).first():
+            continue
+        db.session.add(Partner(name=name, slug=slug, country=country,
+                               partner_type=ptype, short_name=short))
+    db.session.commit()
+
+    pid = {p.slug: p.id for p in Partner.query.all()}
+    created = 0
+
+    def _add_modules(course_id, course_title, primary, weeks, workload):
+        weeks = max(1, int(weeks))
+        for w in range(1, weeks + 1):
+            if w == 1:
+                mt = f'Week {w}: {primary} — 2026 Landscape'
+                md = (f'Orientation: today\'s {primary} releases, mental model, '
+                      f'baseline workflow.')
+            elif w == weeks:
+                mt = f'Week {w}: Capstone — Ship a {primary} Artefact'
+                md = (f'Capstone: deliver a portfolio-grade {primary} project '
+                      f'with a 5-minute video walk-through.')
+            else:
+                mt = f'Week {w}: Applied {primary}'
+                md = (f'Hands-on lab + graded assignment exercising {primary} '
+                      f'on a realistic 2026 workload.')
+            # R7: every video lesson advertises captions in 11 languages,
+            # which is what the multilingual-captions tasks check.
+            vts = [
+                f'Lesson {w}.1: {mt}',
+                f'Lesson {w}.2: Worked example for {primary}',
+                f'Lesson {w}.3: Practice drill ({course_title})',
+                f'Lesson {w}.4: 2026 trends to watch',
+                f'Lesson {w}.5: Captions: en, es, zh, ja, ar, fr, de, pt, ko, hi, ru',
+            ]
+            db.session.add(CourseModule(
+                course_id=course_id, week_number=w, title=mt, description=md,
+                videos_count=5, readings_count=3, quizzes_count=1,
+                video_titles=json.dumps(vts)))
+
+    def _persist(spec):
+        c = Course(
+            title=spec['title'], slug=spec['slug'],
+            partner_id=spec['partner_id'], course_type=spec['course_type'],
+            level=spec['level'], category=spec['category'],
+            subcategory=spec['subcategory'],
+            duration_text=spec['duration_text'],
+            duration_weeks=spec['duration_weeks'],
+            duration_hours=spec['duration_hours'],
+            rating=spec['rating'], review_count=spec['review_count'],
+            enrolled_count=spec['enrolled_count'],
+            is_free=spec['is_free'], has_certificate=spec['has_certificate'],
+            credit_eligible=spec['credit_eligible'],
+            instructor=spec['instructor'],
+            instructor_title=spec['instructor_title'],
+            description=spec['description'],
+            skills=json.dumps(spec['skills']),
+            what_you_learn=json.dumps(spec['what_you_learn']),
+            feature_tags=json.dumps(spec['feature_tags']),
+            is_featured=spec['is_featured'], is_new=spec['is_new'],
+            sort_date=spec['sort_date'],
+            color_class=spec['color_class'],
+            testimonials_json='[]',
+            preview_video_url=spec['preview_video_url'],
+            textbook_isbn=spec['textbook_isbn'],
+            estimated_workload_hours_per_week=spec[
+                'estimated_workload_hours_per_week'],
+        )
+        db.session.add(c)
+        db.session.flush()
+        _add_modules(c.id, c.title, spec['primary'], spec['module_weeks'],
+                     spec['workload'])
+
+    for d_idx, (domain, primary, category, partners) in enumerate(R7_DOMAINS):
+        for s_idx, subtopic in enumerate(R7_SUBTOPICS):
+            topic_title = f'{domain} {subtopic}'
+            for p_idx, partner_slug in enumerate(partners):
+                partner_eff = (partner_slug if pid.get(partner_slug)
+                               else 'r7-2026-anchor')
+                for v_idx, variant in enumerate(R5_VARIANTS):
+                    idx = (d_idx * 1000 + s_idx * 100
+                           + p_idx * 10 + v_idx)
+                    spec = _v6_make_course(
+                        R5_VARIANT=variant, topic=topic_title,
+                        primary=primary, category=category,
+                        partner_eff=partner_eff, pid=pid,
+                        idx=idx, anchor_tag='r7-2026',
+                        prefix_slug='r7-2026')
+                    spec['is_new'] = True
+                    spec['sort_date'] = (SEED_REF_DATE - timedelta(
+                        days=(d_idx * 7 + s_idx + v_idx) % 60
+                    )).strftime('%Y-%m-%d')
+                    if Course.query.filter_by(slug=spec['slug']).first():
+                        continue
+                    _persist(spec)
+                    created += 1
+        db.session.commit()
+
+    # Backfill R5 columns on any rows still missing them (safety net) ──────
+    from sqlalchemy import text
+    conn = db.engine.connect()
+    try:
+        rows = conn.execute(text(
+            "SELECT id, slug, course_type, duration_hours, duration_weeks "
+            "FROM courses "
+            "WHERE preview_video_url IS NULL OR preview_video_url = '' "
+            "   OR textbook_isbn IS NULL OR textbook_isbn = '' "
+            "   OR estimated_workload_hours_per_week IS NULL "
+            "   OR estimated_workload_hours_per_week = 0 "
+            "ORDER BY id"
+        )).fetchall()
+        for row in rows:
+            cid, slug, ctype, d_hours, d_weeks = row
+            preview = _v6_preview_url(slug or f'course-{cid}', ctype or 'course')
+            isbn    = _v6_textbook_isbn(slug or f'course-{cid}')
+            try:
+                workload = round((d_hours or 0) / (d_weeks or 1), 1)
+            except ZeroDivisionError:
+                workload = 4.0
+            if workload <= 0:
+                workload = 4.0
+            workload = max(1.0, min(20.0, workload))
+            conn.execute(text(
+                "UPDATE courses "
+                "   SET preview_video_url = :p, "
+                "       textbook_isbn = :i, "
+                "       estimated_workload_hours_per_week = :w "
+                " WHERE id = :c"
+            ), {'p': preview, 'i': isbn, 'w': workload, 'c': cid})
+        conn.commit()
+    finally:
+        conn.close()
+
+    print(f"  + seed_v8: added {created} courses (R7 2026), "
+          f"partners now {Partner.query.count()}, "
+          f"total courses={Course.query.count()}")

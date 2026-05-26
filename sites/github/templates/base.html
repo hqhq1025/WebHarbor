@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en" data-color-mode="dark" data-dark-theme="dark" data-light-theme="light">
+<html lang="{{ current_locale or 'en' }}" data-color-mode="dark" data-dark-theme="dark" data-light-theme="light">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -8,6 +8,20 @@
   <link rel="icon" href="/static/images/homepage/logo-duolingo-14477f9e54a6_ac9c3841.svg" type="image/svg+xml">
   <link rel="stylesheet" href="/static/css/main.css">
   <meta name="csrf-token" content="{{ csrf_token() }}">
+  {# R7: SEO defaults — pages can override via the extra_head block. #}
+  <meta property="og:site_name" content="GitHub">
+  <meta property="og:type" content="{% block og_type %}website{% endblock %}">
+  <meta property="og:locale" content="{{ (current_locale or 'en')|replace('-', '_') }}">
+  <meta property="og:title" content="{% block og_title %}GitHub: Let's build from here{% endblock %}">
+  <meta property="og:description" content="{% block og_description %}GitHub is where over 100 million developers shape the future of software, together.{% endblock %}">
+  <meta property="og:image" content="{% block og_image %}/static/images/homepage/logo-duolingo-14477f9e54a6_ac9c3841.svg{% endblock %}">
+  <meta name="twitter:card" content="summary_large_image">
+  {# Alternate language hrefs help crawlers see the i18n surface. #}
+  {% for code, info in locales.items() %}
+  <link rel="alternate" hreflang="{{ code }}" href="{{ request.path }}?lang={{ code }}">
+  {% endfor %}
+  <link rel="alternate" hreflang="x-default" href="{{ request.path }}">
+  {% block extra_head %}{% endblock %}
   <script>
     // Persist user's light/dark choice across nav.
     (function() {
@@ -111,6 +125,38 @@
           </div>
         </div>
       </form>
+
+      {# R7 language dropdown — keyboard-accessible via <form> submission. #}
+      <div class="gh-nav-dropdown gh-lang-dropdown" data-r7-locale="{{ current_locale }}">
+        <button class="gh-nav-link gh-nav-dropdown-btn gh-lang-btn"
+                type="button"
+                aria-haspopup="listbox"
+                aria-expanded="false"
+                aria-label="{{ t('lang.choose') }}">
+          <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" fill="currentColor">
+            <path d="M8 0a8 8 0 1 0 0 16A8 8 0 0 0 8 0Zm5.95 7H11.5a17.9 17.9 0 0 0-.65-3.99 6.5 6.5 0 0 1 3.1 3.99ZM10 8a16.8 16.8 0 0 1-.78 4.95C8.85 13.6 8.43 14 8 14s-.85-.4-1.22-1.05A16.8 16.8 0 0 1 6 8a16.8 16.8 0 0 1 .78-4.95C7.15 2.4 7.57 2 8 2s.85.4 1.22 1.05A16.8 16.8 0 0 1 10 8ZM5.15 3.01A17.9 17.9 0 0 0 4.5 7H2.05a6.5 6.5 0 0 1 3.1-3.99ZM2.05 9H4.5a17.9 17.9 0 0 0 .65 3.99A6.5 6.5 0 0 1 2.05 9Zm8.8 3.99A17.9 17.9 0 0 0 11.5 9h2.45a6.5 6.5 0 0 1-3.1 3.99Z"/>
+          </svg>
+          <span class="gh-lang-current">{{ (locales[current_locale] or locales['en']).flag }}</span>
+          <svg width="12" height="12" viewBox="0 0 16 16" aria-hidden="true" fill="currentColor"><path d="M4.427 7.427l3.396 3.396a.25.25 0 00.354 0l3.396-3.396A.25.25 0 0011.396 7H4.604a.25.25 0 00-.177.427z"/></svg>
+        </button>
+        <div class="gh-nav-dropdown-menu gh-lang-menu" role="listbox" aria-label="{{ t('lang.label') }}">
+          {% for code, info in locales.items() %}
+          <form action="/i18n/set" method="post" class="gh-lang-form">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <input type="hidden" name="lang" value="{{ code }}">
+            <input type="hidden" name="next" value="{{ request.full_path }}">
+            <button type="submit"
+                    class="gh-nav-dropdown-item gh-lang-item{% if code == current_locale %} gh-lang-item-active{% endif %}"
+                    role="option"
+                    aria-selected="{{ 'true' if code == current_locale else 'false' }}"
+                    lang="{{ code }}">
+              <span class="gh-lang-flag" aria-hidden="true">{{ info.flag }}</span>
+              <span class="gh-lang-name">{{ info.name }}</span>
+            </button>
+          </form>
+          {% endfor %}
+        </div>
+      </div>
 
       {% if current_user.is_authenticated %}
         <button class="gh-color-mode-btn" type="button" id="gh-color-mode-toggle"

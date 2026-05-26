@@ -51,6 +51,10 @@ CATEGORIES = [
     ('Beauty', 'beauty', '💄'),
     ('Sports', 'sports', '⚽'),
     ('Toys', 'toys', '🧸'),
+    # R7 — Amazon Fresh + Whole Foods + Audible + Kindle storefronts.
+    ('Grocery', 'grocery', '🛒'),
+    ('Audible', 'audible', '🎧'),
+    ('Kindle Store', 'kindle', '📖'),
 ]
 
 

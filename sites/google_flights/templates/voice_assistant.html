@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% block title %}Voice Assistant | Google Flights{% endblock %}
+{% block meta_description %}Voice assistant integration for Google Flights. Search and book flights with Alexa, Google Assistant, and Siri voice commands.{% endblock %}
+{% block content %}
+<div class="section" style="max-width:880px;margin:0 auto;padding:24px;">
+  <nav aria-label="Breadcrumb"><a href="{{ url_for('index') }}">Home</a> &rsaquo; Voice Assistant</nav>
+  <h1 style="font-family:var(--font-sans);font-size:28px;font-weight:500;margin-top:12px;">Voice assistant integration</h1>
+  <p>Search flights, manage trips, and set price alerts hands-free. Google Flights exposes a stable
+  voice intent surface that smart assistants (Alexa, Google Assistant, Siri) can dispatch to.</p>
+  <h2 style="font-family:var(--font-sans);font-size:20px;margin-top:24px;">Supported assistants</h2>
+  <ul style="line-height:1.8;">
+    <li><strong>Alexa</strong> — say <em>"Alexa, ask Google Flights to find a flight from New York to London tomorrow."</em></li>
+    <li><strong>Google Assistant</strong> — say <em>"Hey Google, find me cheap flights to Tokyo next month."</em></li>
+    <li><strong>Siri</strong> — say <em>"Hey Siri, what's the cheapest flight from Boston to Paris this weekend?"</em></li>
+  </ul>
+  <h2 style="font-family:var(--font-sans);font-size:20px;margin-top:24px;">Supported intents</h2>
+  <p>The following intents map onto stable URL routes so any voice integration that emits an intent
+  + slot payload can deep-link the user into the right page.</p>
+  <table role="table" aria-label="Voice intent map" style="width:100%;border-collapse:collapse;margin-top:12px;">
+    <thead>
+      <tr style="background:#f5f6f7;text-align:left;">
+        <th scope="col" style="padding:10px;border-bottom:1px solid #dadce0;">Intent</th>
+        <th scope="col" style="padding:10px;border-bottom:1px solid #dadce0;">Sample utterance</th>
+        <th scope="col" style="padding:10px;border-bottom:1px solid #dadce0;">Route</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for name, utterance, route in intents %}
+      <tr>
+        <td style="padding:10px;border-bottom:1px solid #f1f3f4;font-family:monospace;">{{ name }}</td>
+        <td style="padding:10px;border-bottom:1px solid #f1f3f4;">"{{ utterance }}"</td>
+        <td style="padding:10px;border-bottom:1px solid #f1f3f4;font-family:monospace;">{{ route }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  <h2 style="font-family:var(--font-sans);font-size:20px;margin-top:24px;">Privacy</h2>
+  <p>Voice queries are transcribed by the assistant platform, never by Google Flights itself.
+  We only see the dispatched intent + slot values. See the <a href="{{ url_for('privacy') }}">privacy
+  policy</a> for details on what data we retain.</p>
+</div>
+{% endblock %}

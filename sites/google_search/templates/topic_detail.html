@@ -1,5 +1,29 @@
 {% extends "base.html" %}
 {% block title %}{{ topic.name }} - Google{% endblock %}
+{% block og_type %}article{% endblock %}
+{% block og_title %}{{ topic.name }}{% endblock %}
+{% block og_description %}{{ (topic.summary or topic.name)|truncate(180, true) }}{% endblock %}
+
+{% block jsonld_extra %}
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Article",
+  "headline": {{ (topic.wiki_title or topic.name)|tojson }},
+  "name": {{ topic.name|tojson }},
+  "description": {{ (topic.summary or topic.name)|truncate(280, true)|tojson }},
+  "url": "{{ canonical_root|default('') }}/topic/{{ topic.slug }}",
+  "image": {{ (topic.hero_image or '')|tojson }},
+  "publisher": {
+    "@type": "Organization",
+    "name": "Google",
+    "url": "{{ canonical_root|default('') }}/"
+  },
+  "mainEntityOfPage": "{{ canonical_root|default('') }}/topic/{{ topic.slug }}",
+  "inLanguage": "{{ hl|default('en') }}"
+}
+</script>
+{% endblock %}
 
 {% block content %}
 <div class="topic-page">
