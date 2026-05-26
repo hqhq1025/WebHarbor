@@ -212,93 +212,39 @@ def seed_database(db, User, Category, Article, Comment, bcrypt):
     with open(DATA_FILE) as f:
         items = json.load(f)
 
-    rng = random.Random(20260513)
-
-    # Determine featured article ids ahead of time so the same items are
-    # picked across rebuilds.
-    item_keys = [it.get('link') or it.get('title') for it in items]
-    featured_count = min(8, len(items))
-    featured_keys = set(rng.sample(item_keys, featured_count)) if item_keys else set()
-
-    next_id = 1
-    seen_slugs = set()
+    # Pre-baked format: every field (slug, body, author_name, journal,
+    # institution, doi_url, image_filename, subsection, category_slug,
+    # published_at, views, featured, id) is stored verbatim in the JSON.
+    # Rationale: keeping the JSON pre-baked is what enforces the
+    # byte-identical reset invariant. The original RSS-scrape pipeline used
+    # multiple seeded random.Random streams to pick journals / institutions
+    # / view counts / featured ids; any drift in Python's PRNG, in the
+    # category-pool ordering, or in the input RSS would silently shift
+    # those values. Freezing the post-synthesis result instead means a
+    # rebuild only depends on this single committed JSON.
     for it in items:
-        title = (it.get('title') or '').strip()
-        if not title:
-            continue
-        slug = it.get('slug') or _slugify(title)
-        original = slug
-        n = 2
-        while slug in seen_slugs:
-            slug = f"{original}-{n}"
-            n += 1
-        seen_slugs.add(slug)
-
+        published = datetime.strptime(it['published_at'], '%Y-%m-%d %H:%M:%S.%f')
         cat_slug = it.get('category_slug') or 'other'
         if cat_slug not in cat_id_map:
             cat_slug = 'other'
-        cat_id = cat_id_map[cat_slug]
-
-        published = _parse_pub(it.get('pub_date') or '')
-        # Subsection from RSS categories (e.g. "Optics & Photonics")
-        rss_cats = it.get('rss_categories') or []
-        subsection = (rss_cats[0] if rss_cats else '').strip()
-
-        # Author: real RSS dc:creator if present, else synthesized.
-        author_real = (it.get('author') or '').strip()
-        if author_real:
-            author_name = author_real
-        else:
-            # Reproducible synthesized author per article slug.
-            r2 = random.Random(slug + ':author')
-            firsts = ['Sarah', 'Michael', 'Ananya', 'Jorge', 'Mei', 'David',
-                      'Priya', 'Liam', 'Fatima', 'Hiroshi', 'Olivia', 'Karim',
-                      'Nina', 'Oluwa', 'Bjorn', 'Elena']
-            lasts = ['Patel', 'Garcia', 'Nguyen', 'Kowalski', 'Rossi', 'Tanaka',
-                     'Andersen', 'Okafor', 'Singh', 'Yamamoto', 'Hernandez',
-                     'Mueller', 'Ahmed', 'Park']
-            author_name = f"{r2.choice(firsts)} {r2.choice(lasts)}"
-
-        # Journal / institution synthesized per article (deterministic by slug)
-        r3 = random.Random(slug + ':source')
-        journal = r3.choice(JOURNALS_BY_CATEGORY.get(cat_slug, JOURNALS_BY_CATEGORY['other']))
-        institution = r3.choice(INSTITUTIONS_BY_CATEGORY.get(cat_slug, INSTITUTIONS_BY_CATEGORY['other']))
-        # DOI: synthesize a stable but fake-looking DOI per article id.
-        doi = f"https://doi.org/10.{1000 + next_id}/phys.{published.year}.{next_id:05d}"
-
-        body = _build_body(it.get('description') or '', title, rng=rng)
-        subtitle = _strip_html(it.get('description') or '')[:240]
-
-        image_filename = it.get('local_image') or ''
-
-        # Deterministic view counts so trending lists are stable across
-        # rebuilds (only changes when new articles are added). Range chosen
-        # to give a clear winner: ~1500-9000 with one popular article in
-        # each category capped near the top.
-        rv = random.Random(slug + ':views')
-        views = rv.randint(150, 9000)
-
-        is_featured = (it.get('link') or it.get('title')) in featured_keys
-
         art = Article(
-            id=next_id,
-            slug=slug,
-            title=title,
-            subtitle=subtitle,
-            body=body,
-            author_name=author_name,
-            source_journal=journal,
-            source_institution=institution,
-            doi_url=doi,
-            image_filename=image_filename,
-            subsection=subsection,
-            category_id=cat_id,
+            id=it['id'],
+            slug=it['slug'],
+            title=it['title'],
+            subtitle=it.get('subtitle') or '',
+            body=it.get('body') or '',
+            author_name=it.get('author_name') or 'Phys.org Staff',
+            source_journal=it.get('source_journal') or '',
+            source_institution=it.get('source_institution') or '',
+            doi_url=it.get('doi_url') or '',
+            image_filename=it.get('image_filename') or '',
+            subsection=it.get('subsection') or '',
+            category_id=cat_id_map[cat_slug],
             published_at=published,
-            views=views,
-            featured=is_featured,
+            views=int(it.get('views') or 0),
+            featured=bool(it.get('featured')),
         )
         db.session.add(art)
-        next_id += 1
 
     db.session.commit()
 
@@ -520,6 +466,266 @@ def seed_benchmark_users(db, User, Category, Article, Comment, SavedArticle, Sea
                 query_text=q,
                 created_at=MIRROR_REFERENCE_DATE - timedelta(days=1 + j * 2,
                                                              hours=j * 5),
+            )
+            db.session.add(sh)
+            next_sh_id += 1
+
+    # -------------------------------------------------------------------
+    # Extended seed data (added 2026-05-26).
+    #
+    # The original seed gives us 15 comments and 10 search-history rows,
+    # which is too thin for richer benchmark coverage:
+    #   * Pagination on user profile / per-article threads never triggers.
+    #   * "How many comments by user X on category Y" tasks reduce to
+    #     trivial 0/1/2 lookups.
+    #   * Search-history widget tasks always show the same 2-3 entries.
+    #
+    # We therefore extend (rather than replace) the original tables so the
+    # first 15 comment ids and 10 search ids stay byte-identical, keeping
+    # any existing benchmark task that pinned IDs / counts still valid.
+    #
+    # All timestamps are derived from MIRROR_REFERENCE_DATE — never
+    # datetime.now() — to preserve the byte-identical reset invariant.
+    # -------------------------------------------------------------------
+
+    extended_comments_by_user = {
+        'alice_j': [
+            ('astronomy', "The mass distribution in figure 2 is consistent with the EDR3 prior — nice independent cross-check."),
+            ('astronomy', "JWST observation windows for this target are listed on STScI; would love to see follow-up at 4.5 microns."),
+            ('astronomy', "Their treatment of dust extinction is more careful than the 2023 paper that triggered the controversy."),
+            ('astronomy', "Eager to see this re-run with the next Gaia data release — angular precision should drop by a factor of two."),
+            ('astronomy', "The accretion-disc inclination assumption probably swallows half the systematic error budget."),
+            ('astronomy', "Lovely figure 6 — it finally makes the spin-orbit alignment story intuitive."),
+            ('astronomy', "Footnote 14 quietly admits the calibration uncertainty doubles their headline error bar. Worth reading."),
+            ('astronomy', "Has anyone reproduced this with the open-source pipeline on Zenodo? My runs disagreed by ~8%."),
+            ('astronomy', "The radial velocity residuals are suspiciously low — I would push them to publish the raw RV timeseries."),
+            ('astronomy', "If the proposed mechanism is correct, the next eclipse window should produce a measurable polarization signal."),
+            ('astronomy', "Comparing this with the MNRAS letter from last spring, the two methods now bracket the same parameter space."),
+            ('astronomy', "Saving this one for the orals reading list — a clean worked example of Bayesian model comparison."),
+            ('physics', "The lattice spacing they use here is just below the threshold where finite-size effects start to dominate."),
+            ('physics', "I wish the figure 3 inset showed the raw spectra, not just the fitted peaks."),
+            ('physics', "Their bootstrap uncertainty is conservative — the systematic from the magnet calibration is probably larger."),
+            ('physics', "Beautiful agreement between the perturbative prediction and the measured branching ratio."),
+            ('physics', "The quoted coherence time is impressive — twice what was reported by the Princeton group last summer."),
+            ('physics', "I would have liked one paragraph on why the alternative gauge-fixing was ruled out — currently it is a footnote."),
+            ('physics', "Cross-posted this to the lab Slack — section 4.3 is exactly what we have been arguing about."),
+            ('physics', "The supplementary material is the real paper; the main text is a roadmap."),
+            ('physics', "An elegant proof, but the assumption that the noise is Gaussian breaks down in our setup."),
+            ('physics', "Reads like the natural sequel to the 2024 PRL — nice continuity in the experimental program."),
+        ],
+        'bob_c': [
+            ('earth', "Source check: the methane flux number here is 3x higher than the latest IPCC working-group draft. Asking around."),
+            ('earth', "If this holds up under peer review, half the climate models will need recalibrating before AR7."),
+            ('earth', "The ocean-acidification rate they report contradicts last week's NOAA statement. Story angle."),
+            ('earth', "Good explainer for general audience — pulling the figure 1 graphic for my Tuesday newsletter."),
+            ('earth', "Funding disclosure is buried at the bottom; the lead PI sits on the BP advisory board. Worth flagging."),
+            ('earth', "The Antarctic ice-shelf timeline is the strongest part of this paper. The Arctic discussion feels rushed."),
+            ('earth', "Cross-referenced with the European Drought Observatory; the regional numbers line up."),
+            ('earth', "Need to call Wood Mackenzie on the cost-curve assumptions before I write this up."),
+            ('earth', "Methodology is solid but the policy implications section is undisciplined — way overreaches the data."),
+            ('earth', "The satellite-derived emission factor is a nice independent check on the bottom-up inventory."),
+            ('earth', "Worth a longer feature: who funded the field campaign and why now?"),
+            ('technology', "The energy-per-inference number is the only thing the venture crowd will read, and they will misuse it."),
+            ('technology', "If the model card is honest about the training data, then the benchmark numbers are even more impressive."),
+            ('technology', "Pitch idea: 'why your home solar installer is suddenly an AI shop' — this is the supply-chain story."),
+            ('technology', "The robotics demo on YouTube undersells the actual paper — the planning algorithm is the contribution."),
+            ('technology', "Calling the press office tomorrow to ask why they buried the negative ablation result on page 11."),
+            ('technology', "The cost-per-watt projection assumes 2019-era subsidy regime — would not bet on it surviving the next term."),
+            ('technology', "Asking my source at ARPA-E whether this fits the active solicitation."),
+            ('technology', "Solid engineering paper, but framing it as 'AGI' in the press release is irresponsible."),
+            ('technology', "Battery cycle-life data is the only metric utilities actually care about; nice that they led with it."),
+            ('technology', "Following up on the open-source release — last time these authors promised code and shipped a notebook."),
+            ('technology', "Quoting the lead author in this week's column. Their take on grid-scale storage is the most measured I have read."),
+        ],
+        'carol_d': [
+            ('biology', "Off-target rates this low usually mean the guide library was hand-curated. Worth asking."),
+            ('biology', "The ChIP-seq peaks in figure 4 do not look reproducible across the three biological replicates."),
+            ('biology', "Why no Wilcoxon on the survival data? The t-test assumption is clearly violated."),
+            ('biology', "Beautiful single-cell trajectory — exactly the kind of dataset I want for the next thesis chapter."),
+            ('biology', "The polyploid edge case is genuinely hard; I would not penalise them too heavily for skipping it."),
+            ('biology', "Their negative controls are weak. A scrambled guide is not the same as a true non-targeting condition."),
+            ('biology', "Re-running their analysis on our dataset — preliminary numbers agree within 5%."),
+            ('biology', "The protein-folding prediction matches the cryo-EM map within 1.8 Å, which is genuinely surprising."),
+            ('biology', "Posting this on the lab Slack channel for journal club next Tuesday."),
+            ('biology', "Authors deserve credit for releasing the raw counts table — almost no one does this for spatial data."),
+            ('biology', "Glad to see the conservation comparison includes a non-vertebrate outgroup."),
+            ('biology', "The transcription-factor knockout phenotype is the cleanest I have seen in a long time."),
+            ('chemistry', "The yield optimization is impressive, but the catalyst loading is still industrially unviable."),
+            ('chemistry', "Their crystal-structure data deposit is the only reason I trust the regiochemistry claim."),
+            ('chemistry', "The kinetic isotope effect they report rules out the alternative mechanism in figure 7."),
+            ('chemistry', "Need to compare this with the Sigma-Aldrich product spec before believing the purity claim."),
+            ('chemistry', "Lovely application of the new dual-catalysis concept. Hard to disagree with the conclusion."),
+            ('chemistry', "Footnote 9 admits a 12-hour reaction time — that is the metric most reviewers will jump on."),
+            ('chemistry', "Worth re-reading after the next polymer-physics deadline; the analogy with our system is striking."),
+            ('chemistry', "Their failed-attempts table at the end of the SI is the most useful figure in the paper."),
+            ('chemistry', "I would love to see this scaled to a flow-chemistry setup — should be straightforward."),
+            ('chemistry', "Solid paper, but the introduction is twice as long as it needs to be."),
+        ],
+        'david_k': [
+            ('nanotechnology', "The mobility-vs-thickness curve in figure 3 is the real headline; the press release missed it."),
+            ('nanotechnology', "Their ALD process is essentially the one we tried in 2024 — would love a side-by-side defect-density comparison."),
+            ('nanotechnology', "Anyone able to access the SI without an institutional login? Asking for the patent team."),
+            ('nanotechnology', "If the contact resistance numbers hold, this beats the IBM Zurich record from last quarter."),
+            ('nanotechnology', "Worth flagging to the materials-procurement folks: this substrate is on the restricted-import list."),
+            ('nanotechnology', "Cleanest TEM cross-sections I have seen for this material system in years."),
+            ('nanotechnology', "Their wafer-scale uniformity number is the only metric a fab will care about."),
+            ('nanotechnology', "Internal report draft cites this — please flag if anyone sees the retraction notice."),
+            ('nanotechnology', "The lithography step they hand-wave in section 2.3 is actually the hardest part of the process."),
+            ('nanotechnology', "If the bandgap engineering is reproducible, the photodetector market is up for grabs in 3 years."),
+            ('nanotechnology', "The yield numbers in table 2 imply they got lucky on the last batch — would want to see 50 more devices."),
+            ('nanotechnology', "Beautiful work, but framing it as a 'breakthrough' in the abstract undersells the careful incremental engineering."),
+            ('physics', "The phonon-coupling analysis is the part of the paper that will actually generalise."),
+            ('physics', "Their Hall measurement protocol is non-standard — would want to see the raw IV curves."),
+            ('physics', "The reported coherence at room temperature is suspicious. What is the dephasing channel?"),
+            ('physics', "Comparing with our internal benchmarks: their device area is 4x smaller, so the noise floor reads better."),
+            ('physics', "Section 5 finally explains the temperature-dependent shift we have been chasing for a year."),
+            ('physics', "Worth re-reading alongside the 2023 Nature Materials paper from Tsinghua — different scaling, same physics."),
+            ('physics', "If the magnon-drag picture is right, the predicted angle-dependence should be easy to test."),
+            ('physics', "Their figure 8 is essentially a textbook plot — would be great teaching material for the graduate course."),
+            ('physics', "Lab-notebook reference: this is the source for the modified Drude fit we have been using."),
+            ('physics', "The error bars on figure 5 are not properly propagated through the Bayesian step. Bothers me."),
+        ],
+    }
+    # Track per-article inventory so a single follow-up reply can target a
+    # known top-level by article. ``ext_top_level_by_user`` lists comment
+    # objects keyed by username in insertion order, mirroring how the
+    # reply seeds reference them.
+    ext_top_level_by_user = {u: [] for u in extended_comments_by_user}
+    # Time spacing: spread these comments back from MIRROR_REFERENCE_DATE
+    # over ~120 days so the user profile timeline is non-degenerate.
+    # ``offset_days`` formula: deterministic per (user_index, position).
+    user_order = ['alice_j', 'bob_c', 'carol_d', 'david_k']
+    for u_idx, username in enumerate(user_order):
+        u = user_objs[username]
+        plan = extended_comments_by_user[username]
+        # Per-user deterministic article picks: for each (cat_slug, text)
+        # entry we pick one article from that category, walking the
+        # shuffled list to avoid hitting the same article twice within
+        # this user's extended batch.
+        used_article_ids_per_cat = {}
+        for pos, (cat_slug, text) in enumerate(plan):
+            cat = Category.query.filter_by(slug=cat_slug).first()
+            if cat is None:
+                continue
+            if cat_slug not in used_article_ids_per_cat:
+                pool = _pick_articles(
+                    Article,
+                    where={'category_id': cat.id},
+                    n=max(13, len(plan)),
+                    seed=f"ext:{username}:{cat_slug}",
+                )
+                used_article_ids_per_cat[cat_slug] = (pool, 0)
+            pool, cursor = used_article_ids_per_cat[cat_slug]
+            if cursor >= len(pool):
+                # Wrap around if the category has fewer articles than
+                # requested entries; reuse is acceptable here.
+                cursor = 0
+            target_article = pool[cursor]
+            used_article_ids_per_cat[cat_slug] = (pool, cursor + 1)
+            offset_days = 15 + u_idx * 2 + pos * 5
+            offset_hours = (pos * 7 + u_idx * 3) % 24
+            c = Comment(
+                id=next_comment_id,
+                text=text,
+                user_id=u.id,
+                article_id=target_article.id,
+                parent_id=None,
+                score=0,
+                created_at=MIRROR_REFERENCE_DATE - timedelta(
+                    days=offset_days, hours=offset_hours),
+            )
+            db.session.add(c)
+            ext_top_level_by_user[username].append(c)
+            next_comment_id += 1
+
+    # 12 additional cross-user reply chains. ``target_idx`` indexes into
+    # ext_top_level_by_user[target_username], so each reply is tied to a
+    # known parent comment from the extended batch.
+    ext_reply_seeds = [
+        ('bob_c',   'alice_j', 0,  "Filed your dark-matter take for the Sunday roundup — thanks for the pointer."),
+        ('alice_j', 'bob_c',   2,  "Worth following up on; the NOAA contradiction is the most interesting angle."),
+        ('carol_d', 'alice_j', 5,  "Echoing this from a biology perspective — the dust-extinction caveat applies to our spectra too."),
+        ('david_k', 'carol_d', 14, "Same observation on the materials side — the catalyst-loading story is repeated everywhere."),
+        ('alice_j', 'david_k', 13, "Will steal the substrate caveat for our next group meeting, thanks."),
+        ('carol_d', 'bob_c',   11, "Energy-per-inference comparisons cross over into our compute-bound bioinformatics workloads."),
+        ('bob_c',   'david_k', 9,  "Photodetector market call is bold — keeping an eye on it for the technology beat."),
+        ('david_k', 'alice_j', 19, "Section 4.3 is also the source of the half the lab arguments here. Welcome to the club."),
+        ('alice_j', 'carol_d', 4,  "Same complaint about negative controls in astrophysics papers, just different sample."),
+        ('carol_d', 'david_k', 20, "The Drude-fit reference is useful — citing in tomorrow's draft."),
+        ('bob_c',   'carol_d', 7,  "The cryo-EM accuracy claim is the kind of headline number my editors love. May reach out."),
+        ('david_k', 'bob_c',   18, "Battery cycle-life is exactly the wedge issue between research and procurement at our shop."),
+    ]
+    for replier_username, target_username, target_idx, text in ext_reply_seeds:
+        replier = user_objs[replier_username]
+        parents = ext_top_level_by_user.get(target_username, [])
+        if target_idx >= len(parents):
+            continue
+        parent = parents[target_idx]
+        c = Comment(
+            id=next_comment_id,
+            text=text,
+            user_id=replier.id,
+            article_id=parent.article_id,
+            parent_id=parent.id,
+            score=0,
+            created_at=parent.created_at + timedelta(hours=9 + (target_idx % 5)),
+        )
+        db.session.add(c)
+        next_comment_id += 1
+
+    # Extended search-history: 48 more rows so the account-page widget,
+    # search auto-suggest, and any "Nth recent query" benchmark have real
+    # content to work with. Queries are real science topics covering a
+    # broad span of phys.org categories so they are plausible per user.
+    extended_search_plan = {
+        'alice_j': [
+            'pulsar timing array', 'gravitational wave detection',
+            'supernova remnant cassiopeia', 'JWST mid-infrared spectroscopy',
+            'binary neutron star merger', 'cosmic microwave background polarization',
+            'lithium depletion young stars', 'magnetar burst rate',
+            'exoplanet biosignature methane', 'astrochemistry interstellar medium',
+            'TESS planet candidate vetting', 'dark energy survey y6',
+        ],
+        'bob_c': [
+            'permafrost thaw siberia', 'atlantic meridional overturning',
+            'great barrier reef bleaching', 'electric grid battery storage',
+            'green hydrogen electrolysis cost', 'wildfire smoke air quality',
+            'small modular reactor licensing', 'direct air capture pilot',
+            'arctic shipping routes 2030', 'EV charging infrastructure rural',
+            'IPCC AR7 working group', 'carbon offset verification market',
+        ],
+        'carol_d': [
+            'base editing safety profile', 'organoid drug screening',
+            'microbiome inflammatory bowel disease', 'mRNA vaccine influenza',
+            'AlphaFold multimer prediction', 'cancer neoantigen identification',
+            'cryo-electron tomography subtomogram', 'antibiotic resistance gene transfer',
+            'CRISPR base editor prime', 'embryo gene therapy ethics',
+            'gut-brain axis dopamine', 'enzyme directed evolution',
+        ],
+        'david_k': [
+            'twisted bilayer graphene moire', 'quantum dot LED efficiency',
+            'topological insulator surface states', 'high entropy alloy hardness',
+            'metal-organic framework gas separation', 'silicon photonics integration',
+            'wearable sensor flexible substrate', 'memristor neuromorphic computing',
+            'thermoelectric generator nanowire', 'ferroelectric capacitor scaling',
+            'spintronics magnetic tunnel junction', 'EUV photoresist roughness',
+        ],
+    }
+    for u_idx, username in enumerate(user_order):
+        u = user_objs[username]
+        queries = extended_search_plan[username]
+        for j, q in enumerate(queries):
+            sh = SearchHistory(
+                id=next_sh_id,
+                user_id=u.id,
+                query_text=q,
+                # Spread back from day 15..130 to interleave with comment
+                # timeline and avoid colliding with the original
+                # search_plan timestamps (which sit in day 1..7).
+                created_at=MIRROR_REFERENCE_DATE - timedelta(
+                    days=15 + u_idx + j * 2,
+                    hours=(j * 11 + u_idx * 5) % 24,
+                ),
             )
             db.session.add(sh)
             next_sh_id += 1

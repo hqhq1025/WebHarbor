@@ -1206,6 +1206,12 @@ def lottery():
     return redirect(url_for("category", inventory_type="lottery"))
 
 
+@app.route("/facility/<int:facility_id>")
+def facility_detail_by_id(facility_id: int):
+    facility = Facility.query.get_or_404(facility_id)
+    return redirect(url_for("facility_detail", slug=facility.slug))
+
+
 @app.route("/facility/<slug>")
 def facility_detail(slug: str):
     facility = Facility.query.filter_by(slug=slug).first_or_404()

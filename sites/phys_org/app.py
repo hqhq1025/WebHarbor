@@ -295,6 +295,24 @@ def index():
                            by_cat=by_cat, sidebar_trending=sidebar_trending)
 
 
+# Real phys.org URLs use the plural form (e.g. /news/physics-news.html, but
+# external link tools and benchmark prompts sometimes hit /categories/<slug>).
+# Keep both spellings working with a 301 redirect to the canonical singular.
+@app.route('/categories/<slug>')
+def category_alias(slug):
+    return redirect(url_for('category', slug=slug), code=301)
+
+
+# Some tasks / external links reference articles by numeric id (e.g.
+# /article/42) instead of the canonical slug. Map id -> slug here so those
+# URLs don't 404. Flask matches the int converter before the string route,
+# so /article/<slug> still handles non-numeric slugs unchanged.
+@app.route('/article/<int:article_id>')
+def article_by_id(article_id):
+    art = Article.query.get_or_404(article_id)
+    return redirect(url_for('article_detail', slug=art.slug), code=301)
+
+
 @app.route('/category/<slug>')
 def category(slug):
     cat = Category.query.filter_by(slug=slug).first_or_404()

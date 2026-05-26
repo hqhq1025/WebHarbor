@@ -176,6 +176,184 @@ EXTRA_NAMES = [
     ("Biscayne National Park Heritage Tours", "tickets", "NPS", "Biscayne National Park", "Homestead", "FL", ["Tours", "Boating", "Snorkeling"]),
 ]
 
+# v2 catalogue expansion: a broader set of real-world facilities sourced from
+# public Recreation.gov / NPS / USFS / USACE / BLM / FWS inventory listings.
+# Predominantly camping to lift the per-facility campsite count alongside the
+# overall facility count. Tuple shape matches EXTRA_NAMES.
+EXTRA_NAMES_V2 = [
+    # --- Camping: West / Pacific ---
+    ("Upper Pines Campground", "camping", "NPS", "Yosemite National Park", "Yosemite Valley", "CA", ["Camping", "Waterfalls", "Hiking"]),
+    ("Lower Pines Campground", "camping", "NPS", "Yosemite National Park", "Yosemite Valley", "CA", ["Camping", "River Access", "Hiking"]),
+    ("North Pines Campground", "camping", "NPS", "Yosemite National Park", "Yosemite Valley", "CA", ["Camping", "River Access", "Photography"]),
+    ("Wawona Campground", "camping", "NPS", "Yosemite National Park", "Wawona", "CA", ["Camping", "Hiking", "Giant Sequoias"]),
+    ("Hodgdon Meadow Campground", "camping", "NPS", "Yosemite National Park", "Big Oak Flat", "CA", ["Camping", "Hiking", "Forest"]),
+    ("Crane Flat Campground", "camping", "NPS", "Yosemite National Park", "Crane Flat", "CA", ["Camping", "Stargazing", "Forest"]),
+    ("Tuolumne Meadows Campground", "camping", "NPS", "Yosemite National Park", "Tuolumne Meadows", "CA", ["Camping", "Wildflowers", "Hiking"]),
+    ("Devils Postpile Campground", "camping", "USFS", "Inyo National Forest", "Mammoth Lakes", "CA", ["Camping", "Waterfalls", "Hiking"]),
+    ("Convict Lake Campground", "camping", "USFS", "Inyo National Forest", "Mammoth Lakes", "CA", ["Camping", "Fishing", "Lake"]),
+    ("Lone Rock Beach Campground", "camping", "NPS", "Glen Canyon National Recreation Area", "Page", "AZ", ["Camping", "Beach", "Boating"]),
+    ("Wahweap Campground", "camping", "NPS", "Glen Canyon National Recreation Area", "Page", "AZ", ["Camping", "Boating", "Fishing"]),
+    ("Mather Campground", "camping", "NPS", "Grand Canyon National Park", "Grand Canyon Village", "AZ", ["Camping", "Canyon Views", "Hiking"]),
+    ("Desert View Campground", "camping", "NPS", "Grand Canyon National Park", "Desert View", "AZ", ["Camping", "Stargazing", "Canyon Views"]),
+    ("North Rim Campground", "camping", "NPS", "Grand Canyon National Park", "North Rim", "AZ", ["Camping", "Forest", "Canyon Views"]),
+    ("Watchman Campground", "camping", "NPS", "Zion National Park", "Springdale", "UT", ["Camping", "Canyons", "Shuttle Access"]),
+    ("South Campground", "camping", "NPS", "Zion National Park", "Springdale", "UT", ["Camping", "River Access", "Canyons"]),
+    ("Bridge Bay Campground", "camping", "NPS", "Yellowstone National Park", "Lake Village", "WY", ["Camping", "Lake", "Wildlife Viewing"]),
+    ("Madison Campground", "camping", "NPS", "Yellowstone National Park", "Madison", "WY", ["Camping", "Geysers", "Fishing"]),
+    ("Grant Village Campground", "camping", "NPS", "Yellowstone National Park", "Grant Village", "WY", ["Camping", "Lake", "Geysers"]),
+    ("Canyon Campground", "camping", "NPS", "Yellowstone National Park", "Canyon Village", "WY", ["Camping", "Canyons", "Wildlife Viewing"]),
+    ("Fishing Bridge RV Park", "camping", "NPS", "Yellowstone National Park", "Lake Village", "WY", ["Camping", "RV Hookups", "Lake"]),
+    ("Slough Creek Campground", "camping", "NPS", "Yellowstone National Park", "Tower Junction", "WY", ["Camping", "Fishing", "Wildlife Viewing"]),
+    ("Colter Bay Campground", "camping", "NPS", "Grand Teton National Park", "Colter Bay Village", "WY", ["Camping", "Lake", "Boating"]),
+    ("Jenny Lake Campground", "camping", "NPS", "Grand Teton National Park", "Moose", "WY", ["Camping", "Mountains", "Hiking"]),
+    ("Signal Mountain Campground", "camping", "NPS", "Grand Teton National Park", "Moran", "WY", ["Camping", "Lake", "Scenic Views"]),
+    ("Aspenglen Campground", "camping", "NPS", "Rocky Mountain National Park", "Estes Park", "CO", ["Camping", "Mountains", "Wildlife Viewing"]),
+    ("Moraine Park Campground", "camping", "NPS", "Rocky Mountain National Park", "Estes Park", "CO", ["Camping", "Elk Viewing", "Hiking"]),
+    ("Timber Creek Campground", "camping", "NPS", "Rocky Mountain National Park", "Grand Lake", "CO", ["Camping", "River Access", "Wildlife Viewing"]),
+    ("Glacier Basin Campground", "camping", "NPS", "Rocky Mountain National Park", "Estes Park", "CO", ["Camping", "Mountains", "Hiking"]),
+    ("Apgar Campground", "camping", "NPS", "Glacier National Park", "West Glacier", "MT", ["Camping", "Lake", "Hiking"]),
+    ("Fish Creek Campground", "camping", "NPS", "Glacier National Park", "West Glacier", "MT", ["Camping", "Forest", "Lake"]),
+    ("Many Glacier Campground", "camping", "NPS", "Glacier National Park", "Babb", "MT", ["Camping", "Mountains", "Wildlife Viewing"]),
+    ("Two Medicine Campground", "camping", "NPS", "Glacier National Park", "East Glacier Park", "MT", ["Camping", "Lake", "Hiking"]),
+    ("St. Mary Campground", "camping", "NPS", "Glacier National Park", "St. Mary", "MT", ["Camping", "Lake", "Scenic Drives"]),
+    ("Riley Creek Campground", "camping", "NPS", "Denali National Park and Preserve", "Healy", "AK", ["Camping", "Wildlife Viewing", "Forest"]),
+    ("Savage River Campground", "camping", "NPS", "Denali National Park and Preserve", "Healy", "AK", ["Camping", "Wildlife Viewing", "Hiking"]),
+    ("Teklanika River Campground", "camping", "NPS", "Denali National Park and Preserve", "Healy", "AK", ["Camping", "Wildlife Viewing", "River Access"]),
+    ("Wonder Lake Campground", "camping", "NPS", "Denali National Park and Preserve", "Kantishna", "AK", ["Camping", "Mountains", "Photography"]),
+    ("Ohanapecosh Campground", "camping", "NPS", "Mount Rainier National Park", "Packwood", "WA", ["Camping", "Forest", "Hot Springs"]),
+    ("Cougar Rock Campground", "camping", "NPS", "Mount Rainier National Park", "Ashford", "WA", ["Camping", "Forest", "Hiking"]),
+    ("White River Campground", "camping", "NPS", "Mount Rainier National Park", "Enumclaw", "WA", ["Camping", "Glaciers", "Hiking"]),
+    ("Mora Campground", "camping", "NPS", "Olympic National Park", "Forks", "WA", ["Camping", "Beach", "Rainforest"]),
+    ("Kalaloch Campground", "camping", "NPS", "Olympic National Park", "Forks", "WA", ["Camping", "Beach", "Tidepools"]),
+    ("Hoh Campground", "camping", "NPS", "Olympic National Park", "Forks", "WA", ["Camping", "Rainforest", "Hiking"]),
+    ("Sol Duc Hot Springs Campground", "camping", "NPS", "Olympic National Park", "Port Angeles", "WA", ["Camping", "Hot Springs", "Hiking"]),
+    ("Heart O' the Hills Campground", "camping", "NPS", "Olympic National Park", "Port Angeles", "WA", ["Camping", "Forest", "Hiking"]),
+    ("Lost Creek Campground", "camping", "NPS", "Crater Lake National Park", "Crater Lake", "OR", ["Camping", "Forest", "Lake"]),
+    ("Mazama Campground", "camping", "NPS", "Crater Lake National Park", "Crater Lake", "OR", ["Camping", "Lake", "Stargazing"]),
+
+    # --- Camping: Mountain / Desert / Southwest ---
+    ("Furnace Creek Campground", "camping", "NPS", "Death Valley National Park", "Death Valley", "CA", ["Camping", "Desert", "Stargazing"]),
+    ("Mesquite Spring Campground", "camping", "NPS", "Death Valley National Park", "Death Valley", "CA", ["Camping", "Desert", "Hiking"]),
+    ("Texas Spring Campground", "camping", "NPS", "Death Valley National Park", "Death Valley", "CA", ["Camping", "Desert", "Wildflowers"]),
+    ("Black Rock Campground", "camping", "NPS", "Joshua Tree National Park", "Yucca Valley", "CA", ["Camping", "Desert", "Rock Climbing"]),
+    ("Cottonwood Campground", "camping", "NPS", "Joshua Tree National Park", "Twentynine Palms", "CA", ["Camping", "Desert", "Stargazing"]),
+    ("Jumbo Rocks Campground", "camping", "NPS", "Joshua Tree National Park", "Twentynine Palms", "CA", ["Camping", "Rock Climbing", "Stargazing"]),
+    ("Indian Cove Campground", "camping", "NPS", "Joshua Tree National Park", "Twentynine Palms", "CA", ["Camping", "Rock Climbing", "Hiking"]),
+    ("Devils Garden Campground", "camping", "NPS", "Arches National Park", "Moab", "UT", ["Camping", "Canyons", "Photography"]),
+    ("Squaw Flat Campground", "camping", "NPS", "Canyonlands National Park", "Monticello", "UT", ["Camping", "Canyons", "Hiking"]),
+    ("Willow Flat Campground", "camping", "NPS", "Canyonlands National Park", "Moab", "UT", ["Camping", "Canyons", "Stargazing"]),
+    ("Fruita Campground", "camping", "NPS", "Capitol Reef National Park", "Torrey", "UT", ["Camping", "Orchards", "Canyons"]),
+    ("Sunset Campground", "camping", "NPS", "Bryce Canyon National Park", "Bryce", "UT", ["Camping", "Canyons", "Stargazing"]),
+    ("North Campground", "camping", "NPS", "Bryce Canyon National Park", "Bryce", "UT", ["Camping", "Canyons", "Hiking"]),
+    ("Chisos Basin Campground", "camping", "NPS", "Big Bend National Park", "Big Bend National Park", "TX", ["Camping", "Mountains", "Stargazing"]),
+    ("Rio Grande Village Campground", "camping", "NPS", "Big Bend National Park", "Big Bend National Park", "TX", ["Camping", "Desert", "Birding"]),
+    ("Gulpha Gorge Campground", "camping", "NPS", "Hot Springs National Park", "Hot Springs", "AR", ["Camping", "Forest", "Hot Springs"]),
+    ("Pinyon Flats Campground", "camping", "NPS", "Great Sand Dunes National Park and Preserve", "Mosca", "CO", ["Camping", "Sand Dunes", "Stargazing"]),
+
+    # --- Camping: USFS / USACE Lakes ---
+    ("Holiday Park Campground", "camping", "USACE", "Lake Sonoma", "Geyserville", "CA", ["Camping", "Lake", "Boating"]),
+    ("Pleasant Cove Campground", "camping", "USACE", "Center Hill Lake", "Smithville", "TN", ["Camping", "Lake", "Fishing"]),
+    ("Floating Mill Campground", "camping", "USACE", "Center Hill Lake", "Silver Point", "TN", ["Camping", "Lake", "Boating"]),
+    ("Lillydale Campground", "camping", "USACE", "Dale Hollow Lake", "Allons", "TN", ["Camping", "Lake", "Fishing"]),
+    ("Willow Grove Campground", "camping", "USACE", "Dale Hollow Lake", "Allons", "TN", ["Camping", "Lake", "Boating"]),
+    ("Long Branch Campground", "camping", "USACE", "Lake Cumberland", "Albany", "KY", ["Camping", "Lake", "Boating"]),
+    ("Kendall Campground", "camping", "USACE", "Lake Cumberland", "Burnside", "KY", ["Camping", "Lake", "Fishing"]),
+    ("Salt Creek Campground", "camping", "USACE", "Lake Cumberland", "Russell Springs", "KY", ["Camping", "Lake", "Boating"]),
+    ("Bluestem Point Campground", "camping", "USACE", "El Dorado Lake", "El Dorado", "KS", ["Camping", "Lake", "Hiking"]),
+    ("Walnut River Campground", "camping", "USACE", "El Dorado Lake", "El Dorado", "KS", ["Camping", "Lake", "Boating"]),
+    ("Outlet Park Campground", "camping", "USACE", "Council Grove Lake", "Council Grove", "KS", ["Camping", "Lake", "Fishing"]),
+    ("Mill Creek Park Campground", "camping", "USACE", "Tuttle Creek Lake", "Manhattan", "KS", ["Camping", "Lake", "Boating"]),
+    ("Spillway Campground", "camping", "USACE", "Tuttle Creek Lake", "Manhattan", "KS", ["Camping", "Lake", "Fishing"]),
+    ("Tailwater Campground", "camping", "USACE", "Berlin Lake", "Berlin Center", "OH", ["Camping", "Lake", "Fishing"]),
+    ("Lakeside Campground", "camping", "USACE", "Berlin Lake", "Deerfield", "OH", ["Camping", "Lake", "Boating"]),
+    ("Sims Flat Campground", "camping", "USFS", "Shasta-Trinity National Forest", "Castella", "CA", ["Camping", "River Access", "Fishing"]),
+    ("Castle Lake Campground", "camping", "USFS", "Shasta-Trinity National Forest", "Mount Shasta", "CA", ["Camping", "Lake", "Hiking"]),
+    ("Panther Meadows Campground", "camping", "USFS", "Shasta-Trinity National Forest", "Mount Shasta", "CA", ["Camping", "Wildflowers", "Hiking"]),
+    ("Ackerman Campground", "camping", "USFS", "Shasta-Trinity National Forest", "Trinity Center", "CA", ["Camping", "River Access", "Fishing"]),
+    ("Pinecrest Campground", "camping", "USFS", "Stanislaus National Forest", "Pinecrest", "CA", ["Camping", "Lake", "Swimming"]),
+    ("Lodgepole Campground", "camping", "USFS", "Stanislaus National Forest", "Pinecrest", "CA", ["Camping", "Forest", "Hiking"]),
+    ("Sweetwater Campground", "camping", "USFS", "Stanislaus National Forest", "Groveland", "CA", ["Camping", "River Access", "Fishing"]),
+    ("Lake Alpine Campground", "camping", "USFS", "Stanislaus National Forest", "Bear Valley", "CA", ["Camping", "Lake", "Boating"]),
+    ("Big Meadows Campground", "camping", "USFS", "Sequoia National Forest", "Hume", "CA", ["Camping", "Forest", "Hiking"]),
+    ("Hume Lake Campground", "camping", "USFS", "Sequoia National Forest", "Hume", "CA", ["Camping", "Lake", "Swimming"]),
+    ("Princess Campground", "camping", "USFS", "Sequoia National Forest", "Hume", "CA", ["Camping", "Forest", "Wildflowers"]),
+    ("Cold Springs Campground", "camping", "USFS", "Sequoia National Forest", "Mineral King", "CA", ["Camping", "Mountains", "Hiking"]),
+    ("Three Creek Lake Campground", "camping", "USFS", "Deschutes National Forest", "Sisters", "OR", ["Camping", "Lake", "Fishing"]),
+    ("Tumalo Falls Campground", "camping", "USFS", "Deschutes National Forest", "Bend", "OR", ["Camping", "Waterfalls", "Hiking"]),
+    ("Lava Lake Campground", "camping", "USFS", "Deschutes National Forest", "Bend", "OR", ["Camping", "Lake", "Fishing"]),
+    ("Elk Lake Campground", "camping", "USFS", "Deschutes National Forest", "Bend", "OR", ["Camping", "Lake", "Sailing"]),
+    ("Sherman Pass Campground", "camping", "USFS", "Colville National Forest", "Republic", "WA", ["Camping", "Mountains", "Hiking"]),
+    ("Sullivan Lake Campground", "camping", "USFS", "Colville National Forest", "Metaline Falls", "WA", ["Camping", "Lake", "Swimming"]),
+    ("Lakeshore Campground", "camping", "USFS", "Wenatchee National Forest", "Chelan", "WA", ["Camping", "Lake", "Boating"]),
+
+    # --- Camping: Midwest / South / East ---
+    ("Devils Lake Campground", "camping", "USFS", "Hoosier National Forest", "Bedford", "IN", ["Camping", "Lake", "Hiking"]),
+    ("Indian Boundary Campground", "camping", "USFS", "Cherokee National Forest", "Tellico Plains", "TN", ["Camping", "Lake", "Hiking"]),
+    ("Cosby Campground", "camping", "NPS", "Great Smoky Mountains National Park", "Cosby", "TN", ["Camping", "Forest", "Hiking"]),
+    ("Cades Cove Campground", "camping", "NPS", "Great Smoky Mountains National Park", "Townsend", "TN", ["Camping", "Wildlife Viewing", "History"]),
+    ("Elkmont Campground", "camping", "NPS", "Great Smoky Mountains National Park", "Gatlinburg", "TN", ["Camping", "River Access", "Hiking"]),
+    ("Smokemont Campground", "camping", "NPS", "Great Smoky Mountains National Park", "Cherokee", "NC", ["Camping", "River Access", "Hiking"]),
+    ("Linville Falls Campground", "camping", "NPS", "Blue Ridge Parkway", "Spruce Pine", "NC", ["Camping", "Waterfalls", "Hiking"]),
+    ("Julian Price Campground", "camping", "NPS", "Blue Ridge Parkway", "Blowing Rock", "NC", ["Camping", "Lake", "Hiking"]),
+    ("Mt. Pisgah Campground", "camping", "NPS", "Blue Ridge Parkway", "Canton", "NC", ["Camping", "Mountains", "Hiking"]),
+    ("Big Meadows Campground (Shenandoah)", "camping", "NPS", "Shenandoah National Park", "Stanley", "VA", ["Camping", "Wildflowers", "Wildlife Viewing"]),
+    ("Lewis Mountain Campground", "camping", "NPS", "Shenandoah National Park", "Stanardsville", "VA", ["Camping", "Forest", "Hiking"]),
+    ("Loft Mountain Campground", "camping", "NPS", "Shenandoah National Park", "Crozet", "VA", ["Camping", "Forest", "Hiking"]),
+    ("Mathews Arm Campground", "camping", "NPS", "Shenandoah National Park", "Luray", "VA", ["Camping", "Forest", "Hiking"]),
+    ("Black Woods Campground", "camping", "NPS", "Acadia National Park", "Otter Creek", "ME", ["Camping", "Forest", "Beach"]),
+    ("Seawall Campground", "camping", "NPS", "Acadia National Park", "Southwest Harbor", "ME", ["Camping", "Forest", "Tidepools"]),
+    ("Schoodic Woods Campground", "camping", "NPS", "Acadia National Park", "Winter Harbor", "ME", ["Camping", "Forest", "Biking"]),
+    ("Wright Brothers Park Campground", "camping", "NPS", "Cape Hatteras National Seashore", "Nags Head", "NC", ["Camping", "Beach", "History"]),
+    ("Oregon Inlet Campground", "camping", "NPS", "Cape Hatteras National Seashore", "Nags Head", "NC", ["Camping", "Beach", "Fishing"]),
+    ("Cape Point Campground", "camping", "NPS", "Cape Hatteras National Seashore", "Buxton", "NC", ["Camping", "Beach", "Lighthouses"]),
+    ("Frisco Campground", "camping", "NPS", "Cape Hatteras National Seashore", "Frisco", "NC", ["Camping", "Beach", "Fishing"]),
+    ("Long Pine Key Campground", "camping", "NPS", "Everglades National Park", "Homestead", "FL", ["Camping", "Wildlife Viewing", "Birding"]),
+    ("Flamingo Campground", "camping", "NPS", "Everglades National Park", "Flamingo", "FL", ["Camping", "Wildlife Viewing", "Paddling"]),
+    ("Bear Lake Campground", "camping", "USFS", "Chippewa National Forest", "Cass Lake", "MN", ["Camping", "Lake", "Fishing"]),
+    ("Norway Beach Campground", "camping", "USFS", "Chippewa National Forest", "Cass Lake", "MN", ["Camping", "Beach", "Swimming"]),
+    ("Twin Lakes Campground", "camping", "USFS", "Superior National Forest", "Ely", "MN", ["Camping", "Lake", "Canoeing"]),
+    ("Sawbill Lake Campground", "camping", "USFS", "Superior National Forest", "Tofte", "MN", ["Camping", "Lake", "Canoeing"]),
+    ("Fall River Campground", "camping", "USFS", "Black Hills National Forest", "Hot Springs", "SD", ["Camping", "Forest", "History"]),
+
+    # --- Permits / Tickets / Passes / Day Use mix ---
+    ("Half Dome Cables Permit", "permits", "NPS", "Yosemite National Park", "Yosemite Valley", "CA", ["Climbing", "Wilderness", "Day Use"]),
+    ("Angels Landing Permit", "permits", "NPS", "Zion National Park", "Springdale", "UT", ["Hiking", "Canyons", "Day Use Permit"]),
+    ("The Wave Lottery", "lottery", "BLM", "Vermilion Cliffs National Monument", "Kanab", "UT", ["Lottery", "Hiking", "Photography"]),
+    ("Coyote Buttes South Permit", "permits", "BLM", "Vermilion Cliffs National Monument", "Kanab", "AZ", ["Lottery", "Hiking", "Photography"]),
+    ("Subway Slot Canyon Permit", "permits", "NPS", "Zion National Park", "Springdale", "UT", ["Canyoneering", "Permits", "Wilderness"]),
+    ("Cedar Mesa Backcountry Permit", "permits", "BLM", "Bears Ears National Monument", "Blanding", "UT", ["Backpacking", "Archeology", "Wilderness"]),
+    ("Paria Canyon Permit", "permits", "BLM", "Vermilion Cliffs National Monument", "Kanab", "UT", ["Backpacking", "Canyons", "Wilderness"]),
+    ("Mt. St. Helens Climbing Permit", "permits", "USFS", "Gifford Pinchot National Forest", "Cougar", "WA", ["Climbing", "Volcanoes", "Permits"]),
+    ("Alcatraz Island Tour Tickets", "tickets", "NPS", "Golden Gate National Recreation Area", "San Francisco", "CA", ["Tours", "History", "Ferries"]),
+    ("Statue of Liberty Pedestal Tickets", "tickets", "NPS", "Statue of Liberty National Monument", "New York", "NY", ["Tours", "History", "Ferries"]),
+    ("Independence Hall Tour Tickets", "tickets", "NPS", "Independence National Historical Park", "Philadelphia", "PA", ["Tours", "History"]),
+    ("Carlsbad Caverns Guided Tour Tickets", "tickets", "NPS", "Carlsbad Caverns National Park", "Carlsbad", "NM", ["Tours", "Caves", "Ranger Program"]),
+    ("Wind Cave Tour Tickets", "tickets", "NPS", "Wind Cave National Park", "Hot Springs", "SD", ["Tours", "Caves", "Ranger Program"]),
+    ("Lewis and Clark Caverns Tours", "tickets", "USFS", "Beaverhead-Deerlodge National Forest", "Three Forks", "MT", ["Tours", "Caves", "History"]),
+    ("Haleakala Summit Sunrise Reservation", "passes", "NPS", "Haleakala National Park", "Kula", "HI", ["Timed Entry", "Volcanoes", "Sunrise"]),
+    ("Acadia Cadillac Summit Vehicle Reservation", "passes", "NPS", "Acadia National Park", "Bar Harbor", "ME", ["Timed Entry", "Mountains", "Sunrise"]),
+    ("Glacier Going-to-the-Sun Vehicle Pass", "passes", "NPS", "Glacier National Park", "West Glacier", "MT", ["Timed Entry", "Scenic Drives", "Mountains"]),
+    ("Arches Timed Entry Vehicle Pass", "passes", "NPS", "Arches National Park", "Moab", "UT", ["Timed Entry", "Canyons", "Photography"]),
+    ("Lake Mead Day Use Pass", "passes", "NPS", "Lake Mead National Recreation Area", "Boulder City", "NV", ["Day Use", "Boating", "Swimming"]),
+    ("Cape Lookout Ferry Tickets", "tickets", "NPS", "Cape Lookout National Seashore", "Harkers Island", "NC", ["Ferries", "Beach", "Lighthouses"]),
+    ("Channel Islands Boat Transportation", "tickets", "NPS", "Channel Islands National Park", "Ventura", "CA", ["Ferries", "Island", "Wildlife Viewing"]),
+    ("Dry Tortugas Ferry Tickets", "tickets", "NPS", "Dry Tortugas National Park", "Key West", "FL", ["Ferries", "Snorkeling", "History"]),
+    ("Glacier Bay Day Cruise Tickets", "tickets", "NPS", "Glacier Bay National Park", "Gustavus", "AK", ["Tours", "Wildlife Viewing", "Glaciers"]),
+    ("Sleeping Bear Dunes Day Use Pass", "day_use", "NPS", "Sleeping Bear Dunes National Lakeshore", "Empire", "MI", ["Day Use", "Beach", "Scenic Drives"]),
+    ("Indiana Dunes Beach Parking Pass", "day_use", "NPS", "Indiana Dunes National Park", "Porter", "IN", ["Day Use", "Beach", "Parking Reservation"]),
+    ("Assateague Island Beach Parking", "day_use", "NPS", "Assateague Island National Seashore", "Berlin", "MD", ["Day Use", "Beach", "Wildlife Viewing"]),
+    ("Catoctin Mountain Picnic Pavilion", "day_use", "NPS", "Catoctin Mountain Park", "Thurmont", "MD", ["Day Use", "Picnicking", "Forest"]),
+    ("Prince William Forest Picnic Pavilion", "day_use", "NPS", "Prince William Forest Park", "Triangle", "VA", ["Day Use", "Picnicking", "Forest"]),
+    ("Lake Mead Boulder Beach Parking", "day_use", "NPS", "Lake Mead National Recreation Area", "Boulder City", "NV", ["Day Use", "Beach", "Parking Reservation"]),
+    ("San Juan Wilderness Permits", "permits", "USFS", "San Juan National Forest", "Durango", "CO", ["Wilderness", "Backpacking", "Mountains"]),
+    ("Pecos Wilderness Permits", "permits", "USFS", "Santa Fe National Forest", "Pecos", "NM", ["Wilderness", "Backpacking", "Mountains"]),
+    ("Three Sisters Wilderness Permits", "permits", "USFS", "Willamette National Forest", "Sisters", "OR", ["Wilderness", "Backpacking", "Mountains"]),
+    ("Alpine Lakes Wilderness Permits", "permits", "USFS", "Mount Baker-Snoqualmie National Forest", "Skykomish", "WA", ["Wilderness", "Backpacking", "Lakes"]),
+    ("Olympic Wilderness Coast Permit", "permits", "NPS", "Olympic National Park", "Forks", "WA", ["Wilderness", "Beach", "Backpacking"]),
+    ("Lake Chelan Stehekin Boat Tickets", "tickets", "NPS", "Lake Chelan National Recreation Area", "Chelan", "WA", ["Ferries", "Lake", "Hiking"]),
+    ("Cuyahoga Valley Scenic Railroad Tickets", "tickets", "NPS", "Cuyahoga Valley National Park", "Peninsula", "OH", ["Tours", "Train", "Scenic"]),
+]
+
 REVIEW_AUTHORS = [
     "Maya R.", "Jordan P.", "Sam K.", "Taylor M.", "Avery L.", "Cameron J.",
     "Riley S.", "Logan W.", "Harper T.", "Casey N.", "Morgan E.", "Dakota F.",
@@ -275,6 +453,42 @@ def _extra_facilities() -> list[tuple]:
         else:
             amenities += ["Quota Details", "Date Entry"]
         rows.append((name, inventory_type, agency, parent, city, state, 70 + idx * 43, price, unit, 4.1 + (idx % 8) / 10, 40 + idx * 23, idx % 5 != 0, idx % 4 == 0, activities, amenities))
+    # v2 expansion: deterministic numeric fields based on index so the resulting
+    # rows are stable across rebuilds and produce a byte-identical seed DB.
+    for idx, (name, inventory_type, agency, parent, city, state, activities) in enumerate(EXTRA_NAMES_V2):
+        unit_map = {"permits": "permit", "tickets": "ticket", "passes": "pass", "day_use": "day", "lottery": "permit", "camping": "night"}
+        unit = unit_map.get(inventory_type, "night")
+        if inventory_type == "camping":
+            price = [22, 28, 32, 38, 45, 55, 65][idx % 7]
+        elif inventory_type == "tickets":
+            price = [12, 18, 25, 32, 40][idx % 5]
+        elif inventory_type == "permits":
+            price = [6, 10, 15, 20, 25][idx % 5]
+        elif inventory_type == "passes":
+            price = [15, 25, 35, 45][idx % 4]
+        elif inventory_type == "day_use":
+            price = [5, 8, 10, 12][idx % 4]
+        else:
+            price = 10
+        amenities = ["Reservable", "Map View", "Mobile Confirmation"]
+        if inventory_type == "camping":
+            amenities += ["Picnic Tables", "Drinking Water", "Vault Toilets"]
+        elif inventory_type == "permits":
+            amenities += ["Quota Details", "Date Entry", "Printable Permit"]
+        elif inventory_type == "tickets":
+            amenities += ["Timed Entry", "Accessible Seating"]
+        elif inventory_type == "passes":
+            amenities += ["Digital Pass", "Entrance Station"]
+        elif inventory_type == "day_use":
+            amenities += ["Parking Reservation", "Picnic Tables"]
+        else:
+            amenities += ["Date Entry"]
+        distance = 60 + idx * 31
+        rating = round(4.0 + (idx % 9) / 10, 1)
+        review_count = 35 + idx * 19
+        available = idx % 6 != 0
+        accessible = idx % 3 == 0
+        rows.append((name, inventory_type, agency, parent, city, state, distance, price, unit, rating, review_count, available, accessible, activities, amenities))
     return rows
 
 
