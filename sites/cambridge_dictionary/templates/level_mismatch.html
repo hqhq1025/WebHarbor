@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block title %}{{ word.headword }} — level mismatch, try an easier word{% endblock %}
+{% block content %}
+<div class="container level-mismatch-page">
+  <nav class="breadcrumb r6-breadcrumb" aria-label="Breadcrumb">
+    <a href="{{ url_for('index') }}">Home</a> &rsaquo;
+    <a href="{{ url_for('word_detail', slug=word.slug) }}">{{ word.headword }}</a> &rsaquo;
+    <span>Level mismatch</span>
+  </nav>
+
+  <h1>This word might be above your level</h1>
+  <p class="r6-help">
+    <strong>{{ word.headword }}</strong> is tagged
+    <span class="r6-tag r6-tag--level">{{ word.level or 'C1' }}</span>.
+    If that feels too hard, try a same-root alternative below
+    (sorted from easiest to harder).
+  </p>
+
+  <ul class="r6-list easier-list">
+    {% for w in easier %}
+      <li class="r6-list-row">
+        <a href="{{ url_for('word_detail', slug=w.slug) }}" class="r6-list-head">{{ w.headword }}</a>
+        {% if w.level %}<span class="r6-tag r6-tag--level">{{ w.level }}</span>{% endif %}
+        {% if w.pos %}<span class="r6-tag r6-tag--pos">{{ w.pos }}</span>{% endif %}
+        <span class="r6-list-gloss">{{ w.guide_word }}</span>
+      </li>
+    {% else %}
+      <li class="r6-empty">No easier same-root alternatives found.</li>
+    {% endfor %}
+  </ul>
+
+  <p class="r6-bottom">
+    <a href="{{ url_for('word_detail', slug=word.slug) }}">&laquo; Stick with {{ word.headword }}</a>
+    &nbsp;&middot;&nbsp;
+    <a href="{{ url_for('level_test') }}">Take the level test &raquo;</a>
+  </p>
+</div>
+{% endblock %}

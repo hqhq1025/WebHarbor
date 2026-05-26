@@ -176,6 +176,17 @@
     </div>
     {% else %}
     <p class="muted">No results found. Try a different query or <a href="{{ url_for('advanced_search') }}">advanced search</a>.</p>
+    {% if broader_suggestions %}
+    <div class="search-broader-suggestions" aria-label="Broader-search suggestions"
+         style="border:1px solid var(--border-light);border-radius:6px;padding:10px 14px;margin-top:10px;font-size:13px;">
+        <b>Broaden your search:</b>
+        <ul style="margin:6px 0 0 18px;">
+            {% for s in broader_suggestions %}
+            <li><a href="{{ s.url }}">{{ s.label }}</a></li>
+            {% endfor %}
+        </ul>
+    </div>
+    {% endif %}
     {% endif %}
 {% else %}
     <p class="muted">Enter a search query above, or <a href="{{ url_for('advanced_search') }}">use advanced search</a>.</p>

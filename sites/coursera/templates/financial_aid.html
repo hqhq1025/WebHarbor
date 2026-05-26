@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% block title %}Financial Aid Application{% if status %} — {{ status|title }}{% endif %} | Coursera{% endblock %}
+{% block content %}
+<div class="container fin-aid-page" id="main-content" style="padding:32px 0;max-width:780px;">
+  <nav class="cd-breadcrumb" style="font-size:13px;color:var(--c-muted);margin-bottom:18px;">
+    <a href="{{ url_for('index') }}">Home</a> &rsaquo;
+    <a href="{{ url_for('account') }}">Account</a> &rsaquo;
+    <span>Financial Aid</span>
+  </nav>
+
+  <h1 style="margin:0 0 6px 0;font-size:28px;">Financial Aid Application</h1>
+  <p style="color:var(--c-muted);font-size:13px;margin:0 0 22px 0;">
+    Application reference window: {{ reference_date }}.
+    Coursera reviews each application within 15 business days.
+  </p>
+
+  <div class="fin-aid-status"
+       style="background:#fff;border:1px solid #e5e7eb;border-radius:12px;padding:28px;box-shadow:0 1px 2px rgba(0,0,0,.04);">
+    {% if status == 'approved' %}
+      <span style="display:inline-block;padding:4px 10px;border-radius:999px;font-size:12px;font-weight:700;letter-spacing:.3px;text-transform:uppercase;background:#d1fae5;color:#065f46;">Approved</span>
+      <h2 style="margin:14px 0 8px 0;">Your application has been approved.</h2>
+      <p>You can now enroll in the eligible course with the certificate track included. Approval is valid for 180 days.</p>
+    {% elif status == 'pending' %}
+      <span style="display:inline-block;padding:4px 10px;border-radius:999px;font-size:12px;font-weight:700;letter-spacing:.3px;text-transform:uppercase;background:#dbeafe;color:#1e40af;">Under review</span>
+      <h2 style="margin:14px 0 8px 0;">Your application is under review.</h2>
+      <p>Coursera typically responds within 15 business days. You can keep auditing the course while you wait — your progress will be preserved.</p>
+    {% elif status == 'partial' %}
+      <span style="display:inline-block;padding:4px 10px;border-radius:999px;font-size:12px;font-weight:700;letter-spacing:.3px;text-transform:uppercase;background:#fef3c7;color:#92400e;">Partial</span>
+      <h2 style="margin:14px 0 8px 0;">Partial financial aid granted.</h2>
+      <p>Your application qualifies for a 50% discount on the certificate track. The remainder is due before submitting the graded capstone.</p>
+    {% else %}
+      <span style="display:inline-block;padding:4px 10px;border-radius:999px;font-size:12px;font-weight:700;letter-spacing:.3px;text-transform:uppercase;background:#fee2e2;color:#b91c1c;">Rejected</span>
+      <h2 style="margin:14px 0 8px 0;">Your financial aid application was not approved.</h2>
+      <p>The reviewers were unable to verify the supporting information you submitted. You can re-apply after 30 days with updated documentation, or audit the course for free.</p>
+      <ul style="padding-left:20px;line-height:1.7;color:#374151;">
+        <li>Common reasons: incomplete income statement, missing learning goal, vague career outcome.</li>
+        <li>Many learners audit Coursera courses for free indefinitely — the certificate is the paid extra.</li>
+        <li>If you qualify for sponsor programmes (e.g. Coursera for Government), apply via your sponsor portal.</li>
+      </ul>
+    {% endif %}
+    <div style="margin-top:18px;">
+      <a href="{{ url_for('coursera_plus') }}" class="btn-primary"
+         style="padding:10px 18px;background:#0056d2;color:#fff;border-radius:6px;text-decoration:none;font-weight:600;">Compare Coursera Plus</a>
+      <a href="{{ url_for('help_center') }}" class="btn-secondary"
+         style="padding:10px 18px;border:1px solid #d1d5db;border-radius:6px;color:#1f2937;text-decoration:none;margin-left:10px;">Contact support</a>
+    </div>
+  </div>
+
+  <p style="margin-top:18px;font-size:12px;color:var(--c-muted);">
+    Status keys you can navigate directly: <code>approved</code> / <code>pending</code> /
+    <code>partial</code> / <code>rejected</code>. Append the status to the URL, e.g.
+    <code>/financial-aid/rejected</code>.
+  </p>
+</div>
+{% endblock %}

@@ -7,6 +7,11 @@
     <p><a href="{{ url_for('addresses_list') }}">&larr; Back to your addresses</a></p>
 
     <div style="max-width:600px">
+        {% if addr_error %}
+        <div id="address-validation-error" style="background:#fde8e8;border:1px solid #c0392b;color:#7f1d1d;padding:12px;border-radius:4px;margin-bottom:14px">
+            <strong>We couldn't verify this address.</strong> {{ addr_error }}
+        </div>
+        {% endif %}
         <form method="POST" novalidate>
             {{ form.csrf_token }}
 

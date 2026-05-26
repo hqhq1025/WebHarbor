@@ -4,6 +4,64 @@
 {% set _active_tab = active_tab|default('card') %}
 {% set _author = repo.slug.split('/')[0] %}
 {% set _name = repo.slug.split('/')[1] %}
+{# R6: breadcrumb — surfaces the repo's place in the hierarchy
+   (Home / Models|Datasets|Spaces / author / name). Each segment is a
+   navigable link so the agent can jump back to the list view. #}
+<nav class="repo-breadcrumb" aria-label="Repository breadcrumb"
+     style="font-size: 13px; color: #6b7280; margin: 0 0 10px;">
+    <a href="{{ url_for('index') }}">Home</a>
+    <span aria-hidden="true">/</span>
+    {% if repo.repo_type == 'dataset' %}
+        <a href="{{ url_for('datasets_list') }}">Datasets</a>
+    {% elif repo.repo_type == 'space' %}
+        <a href="{{ url_for('spaces_list') }}">Spaces</a>
+    {% else %}
+        <a href="{{ url_for('models_list') }}">Models</a>
+    {% endif %}
+    <span aria-hidden="true">/</span>
+    <a href="{{ url_for('author_page', username=_author) }}">{{ _author }}</a>
+    <span aria-hidden="true">/</span>
+    <span aria-current="page">{{ _name }}</span>
+</nav>
+
+{# R6 edge banners — not_for_production warning + gated access notice +
+   dataset disclaimer + space build-error short link. Each carries a
+   stable id so an agent can target it by id rather than text matching. #}
+{% if repo.not_for_production %}
+<div role="alert" id="not-for-production-warning"
+     style="margin: 0 0 10px; padding: 10px 14px; background: #fef3c7; border: 1px solid #fbbf24; border-radius: 8px; font-size: 13.5px;">
+    <strong>⚠️ Not for production use.</strong>
+    This {{ repo.repo_type }} is released for research and evaluation. Outputs may
+    contain hallucinations, biased content, or unsafe code. Do not deploy in
+    a customer-facing or safety-critical setting without additional review.
+</div>
+{% endif %}
+{% if repo.is_gated %}
+<div role="alert" id="gated-banner"
+     style="margin: 0 0 10px; padding: 10px 14px; background: #fee2e2; border: 1px solid #fca5a5; border-radius: 8px; font-size: 13.5px;">
+    <strong>🔒 Gated repository.</strong>
+    {{ repo.gated_reason }}
+    <a class="btn btn-sm btn-primary" href="/{{ repo.slug }}/access" style="margin-left: 10px;">Request access →</a>
+</div>
+{% endif %}
+{% if repo.repo_type == 'dataset' %}
+<div role="note" id="dataset-license-disclaimer"
+     style="margin: 0 0 10px; padding: 10px 14px; background: #f3f4f6; border: 1px solid #d1d5db; border-radius: 8px; font-size: 13px;">
+    <strong>Dataset license disclaimer:</strong>
+    This dataset is licensed under <a class="license-link" href="{{ repo.license_link }}">{{ repo.license_display }}</a>.
+    You are responsible for reviewing the license terms before redistribution
+    or commercial use. Some samples may contain copyrighted material aggregated
+    under fair-use research carve-outs.
+</div>
+{% endif %}
+{% if repo.repo_type == 'space' and repo.space_build_status == 'build-error' %}
+<div role="alert" id="space-build-error-banner"
+     style="margin: 0 0 10px; padding: 10px 14px; background: #fee2e2; border: 1px solid #f87171; border-radius: 8px; font-size: 13.5px;">
+    <strong>❌ Build failed.</strong>
+    The latest deploy of this Space did not start cleanly.
+    <a href="/spaces/{{ repo.slug }}/logs" style="font-weight: 600;">View build logs →</a>
+</div>
+{% endif %}
 <div class="repo-head">
     <div class="repo-head-title">
         <div class="repo-head-avatar">

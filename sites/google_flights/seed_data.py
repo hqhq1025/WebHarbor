@@ -735,6 +735,10 @@ def seed_all(db, Airport, Flight):
         from airport_extras import R5_EXTRA_AIRPORTS
     except ImportError:
         R5_EXTRA_AIRPORTS = []
+    try:
+        from airport_extras import R6_EXTRA_AIRPORTS
+    except ImportError:
+        R6_EXTRA_AIRPORTS = []
 
     # 1. Airports
     slug_to_airport_ids = {}
@@ -858,6 +862,39 @@ def seed_all(db, Airport, Flight):
         )
         db.session.add(airport)
         slug_to_airport_ids.setdefault(slug, []).append(iata)
+
+    # R6: append another 1000 OpenFlights airports for total 3000+. Same
+    # hash-of-IATA scheme as R5 but with a separate 'R6:' salt so the picks
+    # don't overlap. Region buckets cleaned up so every row gets a real
+    # region label (R5 had ~250 'Other'). All non-popular.
+    for entry in R6_EXTRA_AIRPORTS:
+        (iata, slug, city, country, name, region, popular,
+         icao, lat, lng, tz) = entry
+        gallery_dir = BASE_DIR / 'static' / 'images' / 'destinations' / slug
+        gallery = []
+        if gallery_dir.exists():
+            for f in sorted(gallery_dir.glob('img_*.*')):
+                if f.stat().st_size > 10000 and f.suffix.lower() in ['.jpg', '.jpeg', '.png', '.webp']:
+                    gallery.append(f"/static/images/destinations/{slug}/{f.name}")
+        image = gallery[0] if gallery else ''
+        airport = Airport(
+            iata=iata,
+            icao=icao,
+            city_slug=slug,
+            city=city,
+            country=country,
+            name=name,
+            region=region,
+            is_popular=popular,
+            latitude=lat,
+            longitude=lng,
+            timezone=tz,
+            image=image,
+            gallery_json=json.dumps(gallery),
+            description=DESCRIPTIONS.get(slug, f"Explore {city}, {country}."),
+        )
+        db.session.add(airport)
+        slug_to_airport_ids.setdefault(slug, []).append(iata)
     db.session.commit()
 
     # Build iata -> Airport
@@ -876,6 +913,8 @@ def seed_all(db, Airport, Flight):
     for entry in R4_EXTRA_AIRPORTS:
         raw_by_iata.setdefault(entry[0], entry[:7])
     for entry in R5_EXTRA_AIRPORTS:
+        raw_by_iata.setdefault(entry[0], entry[:7])
+    for entry in R6_EXTRA_AIRPORTS:
         raw_by_iata.setdefault(entry[0], entry[:7])
     today = date.today()
 
@@ -1230,6 +1269,128 @@ def seed_all(db, Airport, Flight):
             continue
         for d_offset in range(365):  # full 2026 codeshare overlay
             dep = future_anchor + timedelta(days=d_offset)
+            row = make_flight_dict(origin_iata, dest_iata, dep)
+            if row:
+                catalog_rows.append(row)
+                flights_count += 1
+        if len(catalog_rows) >= 5000:
+            db.session.execute(text(insert_sql), catalog_rows)
+            db.session.commit()
+            catalog_rows = []
+
+    # R6 second-airline overlay on top-tier pairs across the full top-tier
+    # window. Adds ~50k rows so every top-tier (route, date) cell ends up with
+    # at least 2 distinct operating carriers — which is what allows the new
+    # flight-detail "Other airlines this route" widget (and the
+    # "different-airline-same-route" task family) to find > 1 result on the
+    # exact date the agent searches. Same make_flight_dict path so columns
+    # match byte-for-byte.
+    print(f"[seed] R6 top-tier overlay: {len(top_tier_pairs)} pairs × {TOP_TIER_DAYS} days")
+    for origin_iata, dest_iata in top_tier_pairs:
+        for d_offset in range(TOP_TIER_DAYS):
+            dep = catalog_anchor + timedelta(days=d_offset)
+            row = make_flight_dict(origin_iata, dest_iata, dep)
+            if row:
+                catalog_rows.append(row)
+                flights_count += 1
+        if len(catalog_rows) >= 5000:
+            db.session.execute(text(insert_sql), catalog_rows)
+            db.session.commit()
+            catalog_rows = []
+
+    # R6 top-tier 2027 extension: another full year of inventory on the
+    # mega-hub pairs from R4_FUTURE_PAIRS + R5_CODESHARE_PAIRS. With the
+    # benchmark "today" pinned to 2026-05-26, this gives 19+ months of
+    # forward inventory so "next year" / "12 months out" / "fly January 2027"
+    # tasks all resolve. ~30k rows.
+    r6_2027_pairs = list(dict.fromkeys(list(R4_FUTURE_PAIRS) + list(R5_CODESHARE_PAIRS)))
+    anchor_2027 = date(2027, 1, 1)
+    for origin_iata, dest_iata in r6_2027_pairs:
+        if origin_iata not in airport_by_iata or dest_iata not in airport_by_iata:
+            continue
+        for d_offset in range(365):
+            dep = anchor_2027 + timedelta(days=d_offset)
+            row = make_flight_dict(origin_iata, dest_iata, dep)
+            if row:
+                catalog_rows.append(row)
+                flights_count += 1
+        if len(catalog_rows) >= 5000:
+            db.session.execute(text(insert_sql), catalog_rows)
+            db.session.commit()
+            catalog_rows = []
+
+    # R6 budget-tier pairs: 60 mid-density US-domestic + intra-Europe routes
+    # the current intl_dests / us_hubs lists don't cover. 2025-2026 only
+    # (730 days each) so tasks targeting these specific pairs always have
+    # an exact-date hit. ~40k rows.
+    R6_BUDGET_PAIRS = [
+        # US domestic gaps
+        ('LAX', 'PHX'), ('LAX', 'SAN'), ('LAX', 'PDX'), ('LAX', 'SLC'),
+        ('SFO', 'PDX'), ('SFO', 'SLC'), ('SFO', 'PHX'), ('SFO', 'SAN'),
+        ('JFK', 'PHL'), ('JFK', 'IAD'), ('JFK', 'DCA'), ('JFK', 'BWI'),
+        ('JFK', 'CLT'), ('JFK', 'RDU'), ('JFK', 'PIT'), ('JFK', 'CMH'),
+        ('ORD', 'MSP'), ('ORD', 'MCI'), ('ORD', 'STL'), ('ORD', 'IND'),
+        ('ATL', 'CLT'), ('ATL', 'TPA'), ('ATL', 'MCO'), ('ATL', 'FLL'),
+        ('DFW', 'IAH'), ('DFW', 'AUS'), ('DFW', 'SAT'), ('DFW', 'OKC'),
+        ('DEN', 'SLC'), ('DEN', 'PHX'), ('DEN', 'LAS'), ('DEN', 'ABQ'),
+        # Intra-Europe gaps
+        ('LHR', 'MUC'), ('LHR', 'VIE'), ('LHR', 'PRG'), ('LHR', 'CPH'),
+        ('LHR', 'BRU'), ('LHR', 'EDI'), ('LHR', 'MAN'), ('LHR', 'GLA'),
+        ('CDG', 'MUC'), ('CDG', 'VIE'), ('CDG', 'PRG'), ('CDG', 'CPH'),
+        ('CDG', 'NCE'), ('CDG', 'LYS'), ('CDG', 'MRS'),
+        ('FRA', 'MUC'), ('FRA', 'HAM'), ('FRA', 'BER'), ('FRA', 'DUS'),
+        ('FRA', 'CGN'), ('AMS', 'BRU'), ('AMS', 'CPH'),
+        # Intra-Asia gaps
+        ('SIN', 'KUL'), ('SIN', 'CGK'), ('SIN', 'MNL'), ('SIN', 'DPS'),
+        ('HKG', 'TPE'), ('HKG', 'MNL'), ('HKG', 'CGK'),
+        ('PEK', 'PVG'), ('PEK', 'CAN'), ('PEK', 'CTU'), ('PEK', 'SZX'),
+        ('NRT', 'KIX'), ('NRT', 'CTS'), ('NRT', 'FUK'),
+        # Mexico / Caribbean from US
+        ('MIA', 'NAS'), ('MIA', 'SJU'), ('MIA', 'PUJ'), ('MIA', 'STT'),
+        ('JFK', 'PUJ'), ('JFK', 'NAS'), ('JFK', 'SJU'),
+    ]
+    anchor_budget = date(2025, 1, 1)
+    for origin_iata, dest_iata in R6_BUDGET_PAIRS:
+        if origin_iata not in airport_by_iata or dest_iata not in airport_by_iata:
+            continue
+        for d_offset in range(730):  # 2025-01-01 through 2026-12-31
+            dep = anchor_budget + timedelta(days=d_offset)
+            row = make_flight_dict(origin_iata, dest_iata, dep)
+            if row:
+                catalog_rows.append(row)
+                flights_count += 1
+        if len(catalog_rows) >= 5000:
+            db.session.execute(text(insert_sql), catalog_rows)
+            db.session.commit()
+            catalog_rows = []
+
+    # R6 connection-hub thickening: for the "Connections via X city" widget on
+    # flight-detail to find real alternative routings, every premium long-haul
+    # route gets a 2026 second-overlay flight via one of three connecting hub
+    # candidates (LHR / DXB / SIN routings are visible from data already, this
+    # just adds capacity on the connecting legs that map to the same date).
+    R6_HUB_LEG_PAIRS = [
+        # LHR connecting legs
+        ('LHR', 'DXB'), ('DXB', 'BKK'), ('DXB', 'DEL'), ('DXB', 'BOM'),
+        ('DXB', 'SIN'), ('DXB', 'HKG'), ('SIN', 'SYD'), ('SIN', 'MEL'),
+        ('SIN', 'DPS'), ('SIN', 'CGK'),
+        # DOH connecting legs
+        ('DOH', 'SIN'), ('DOH', 'BKK'), ('DOH', 'DEL'), ('DOH', 'CPT'),
+        # IST connecting legs
+        ('IST', 'DXB'), ('IST', 'BKK'), ('IST', 'DEL'),
+        # AMS connecting legs
+        ('AMS', 'BOM'), ('AMS', 'DEL'), ('AMS', 'NBO'),
+        # NRT connecting legs
+        ('NRT', 'SIN'), ('NRT', 'BKK'), ('NRT', 'SYD'),
+        # PEK connecting legs
+        ('PEK', 'SIN'), ('PEK', 'BKK'),
+    ]
+    anchor_hub = date(2025, 6, 1)
+    for origin_iata, dest_iata in R6_HUB_LEG_PAIRS:
+        if origin_iata not in airport_by_iata or dest_iata not in airport_by_iata:
+            continue
+        for d_offset in range(580):  # 2025-06-01 through 2026-12-31 plus 2027 spill
+            dep = anchor_hub + timedelta(days=d_offset)
             row = make_flight_dict(origin_iata, dest_iata, dep)
             if row:
                 catalog_rows.append(row)

@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block title %}DMCA notice #{{ notice.id }} - Google{% endblock %}
+{% block content %}
+<div class="help-page">
+    <nav class="help-breadcrumb"><a href="{{ url_for('index') }}">Google</a> &rsaquo; <a href="{{ url_for('privacy') }}">Legal</a> &rsaquo; DMCA notice #{{ notice.id }}</nav>
+    <h1>Result removed in response to legal request</h1>
+    <p class="lead">In response to a DMCA takedown notice, one or more results have been
+        removed from this page. You can read the notice details below or visit
+        <a href="https://lumendatabase.org/" rel="nofollow">Lumen Database</a> for the
+        complete record.</p>
+
+    <h2>Notice details</h2>
+    <table class="kn-facts" style="width:100%; max-width:560px;">
+        <tr><td><strong>Notice ID</strong></td><td>{{ notice.id }}</td></tr>
+        <tr><td><strong>Title removed</strong></td><td>{{ notice.title }}</td></tr>
+        <tr><td><strong>Complainant</strong></td><td>{{ notice.complainant }}</td></tr>
+        <tr><td><strong>Filed on</strong></td><td>{{ notice.filed_on }}</td></tr>
+        <tr><td><strong>URLs removed</strong></td><td>{{ notice.urls_removed }}</td></tr>
+        <tr><td><strong>Jurisdiction</strong></td><td>{{ notice.jurisdiction }}</td></tr>
+    </table>
+
+    <h2 style="margin-top:24px;">What can I do?</h2>
+    <ul class="help-faq">
+        <li>If you believe this removal was made in error, you may submit a counter-notification.</li>
+        <li>Read the <a href="{{ url_for('terms') }}">Google Terms of Service</a> for more information.</li>
+        <li>Visit <a href="{{ url_for('search_help', topic='basics') }}">Search Help</a> for assistance.</li>
+    </ul>
+</div>
+{% endblock %}

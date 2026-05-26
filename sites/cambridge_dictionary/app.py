@@ -111,6 +111,23 @@ class Word(db.Model):
     # Common-mistake hint shown on the word entry page.
     mistake_note = db.Column(db.Text, default='')
 
+    # R6 extensions ----------------------------------------------------------
+    # JSON list of antonym slugs. Surfaced on word_detail in the "What's the
+    # antonym?" double-jump panel and on the standalone /dictionary/<slug>/
+    # antonyms page.
+    antonyms_json = db.Column(db.Text, default='[]')
+    # JSON list of derivationally-related-root slugs. Used by the "Words from
+    # same root" panel together with a slug-prefix union at request time.
+    roots_json = db.Column(db.Text, default='[]')
+    # Two-token anchor extracted from this word's first collocation phrase.
+    # Used by the "Words that share collocation" panel to find peers without
+    # an expensive cross-row scan.
+    shared_coll_anchor = db.Column(db.String(80), default='')
+    # 'learner' | 'academic' | '' — drives the learner-vs-academic dictionary
+    # toggle on word_detail. Both modes share the same row; the toggle just
+    # filters the definitions list by ``definitions[*].mode``.
+    r6_dict = db.Column(db.String(20), default='')
+
     saved_by = db.relationship('SavedWord', backref='word', lazy=True,
                                cascade='all, delete-orphan')
 
@@ -141,6 +158,18 @@ class Word(db.Model):
     def get_collocations(self):
         try:
             return json.loads(self.collocations_json or '[]')
+        except Exception:
+            return []
+
+    def get_antonyms(self):
+        try:
+            return json.loads(self.antonyms_json or '[]')
+        except Exception:
+            return []
+
+    def get_roots(self):
+        try:
+            return json.loads(self.roots_json or '[]')
         except Exception:
             return []
 
@@ -415,6 +444,112 @@ def index():
 
 # --- Dictionary routes ---
 
+# ---------------------------------------------------------------------------
+# R6 helpers — same-root union, shared-collocation lookup, slug resolver.
+# ---------------------------------------------------------------------------
+
+def _r6_same_root_words(word, limit=8):
+    """Union of (a) explicit ``roots`` slugs on the word and (b) other
+    words whose slug shares the first 4 chars with this one. Excludes the
+    word itself and returns at most ``limit`` real Word rows, ordered
+    deterministically by (level rank, frequency_rank, headword)."""
+    out = []
+    seen = {word.id}
+    # (a) explicit roots
+    for r in word.get_roots():
+        w = Word.query.filter_by(slug=r, is_thesaurus_phrase=False).first()
+        if w and w.id not in seen:
+            out.append(w)
+            seen.add(w.id)
+            if len(out) >= limit:
+                return out
+    # (b) prefix union — 4-char stem
+    stem = (word.slug or '')[:4]
+    if len(stem) >= 4:
+        peers = (Word.query
+                 .filter(Word.is_thesaurus_phrase == False,  # noqa
+                         Word.slug.like(stem + '%'),
+                         Word.id != word.id)
+                 .order_by(Word.frequency_rank.asc(),
+                           Word.headword.asc())
+                 .limit(limit * 3).all())
+        for w in peers:
+            if w.id in seen:
+                continue
+            out.append(w)
+            seen.add(w.id)
+            if len(out) >= limit:
+                break
+    return out
+
+
+def _r6_shared_coll_words(word, limit=6):
+    """Words sharing the collocation anchor of this word. Looks up by the
+    ``shared_coll_anchor`` column when populated, falls back to scanning
+    other rows whose collocation phrases contain the word's headword
+    token."""
+    out = []
+    anchor = (word.shared_coll_anchor or '').strip().lower()
+    if anchor:
+        peers = (Word.query
+                 .filter(Word.is_thesaurus_phrase == False,  # noqa
+                         Word.shared_coll_anchor == anchor,
+                         Word.id != word.id)
+                 .order_by(Word.frequency_rank.asc(),
+                           Word.headword.asc())
+                 .limit(limit).all())
+        out.extend(peers)
+    if len(out) < limit:
+        head = (word.headword or '').lower().split()[0]
+        if head and len(head) >= 4:
+            more = (Word.query
+                    .filter(Word.is_thesaurus_phrase == False,  # noqa
+                            Word.collocations_json.like(f'%{head}%'),
+                            Word.id != word.id)
+                    .order_by(Word.frequency_rank.asc(),
+                              Word.headword.asc())
+                    .limit(limit * 3).all())
+            seen = {w.id for w in out}
+            for w in more:
+                if w.id in seen:
+                    continue
+                out.append(w)
+                seen.add(w.id)
+                if len(out) >= limit:
+                    break
+    return out[:limit]
+
+
+def _r6_resolve_slugs(slugs):
+    """Resolve a list of slugs to (rows, missing). Missing items are kept
+    as raw slug strings so templates can render greyed "no entry yet"
+    placeholders without breaking the page."""
+    rows = []
+    missing = []
+    for s in slugs:
+        w = Word.query.filter_by(slug=s, is_thesaurus_phrase=False).first()
+        if w:
+            rows.append(w)
+        else:
+            missing.append(s)
+    return rows, missing
+
+
+def _r6_audio_cooldown(slug, region='uk'):
+    """Deterministic per-slug audio cooldown gate. Hashes the slug+region
+    into a 24-bucket modulo; 2 of the buckets (~8%) are flagged as
+    "cooldown" so the audio-rate-limit fallback is reachable from a
+    stable, named slug subset rather than a wall-clock check."""
+    import hashlib as _hl
+    b = int(_hl.md5(f'{slug}|{region}'.encode()).hexdigest()[:4],
+            16) % 24
+    return b in (3, 17)  # ~8% — stable across rebuilds
+
+
+# ---------------------------------------------------------------------------
+# Word detail — Cambridge canonical URL.
+# ---------------------------------------------------------------------------
+
 @app.route('/dictionary/english/<slug>')
 def word_detail(slug):
     word = Word.query.filter_by(slug=slug).first_or_404()
@@ -422,6 +557,22 @@ def word_detail(slug):
     translations = word.get_translations()
     related = word.get_related()
     synonyms = word.get_synonyms()
+
+    # R6 learner-vs-academic toggle. Stored in session so navigation between
+    # word pages remembers the choice; default 'learner' (Cambridge's
+    # Advanced Learner's Dictionary). Per-definition ``mode`` field filters
+    # the rendered list; entries without a mode tag (R0..R5) always show.
+    dict_mode = (request.args.get('mode')
+                 or session.get('dict_mode')
+                 or 'learner')
+    if dict_mode not in ('learner', 'academic'):
+        dict_mode = 'learner'
+    if request.args.get('mode') in ('learner', 'academic'):
+        session['dict_mode'] = request.args['mode']
+    visible_defs = [
+        d for d in definitions
+        if not d.get('mode') or d.get('mode') == dict_mode
+    ]
 
     # Save to search history if logged in
     if current_user.is_authenticated:
@@ -449,18 +600,61 @@ def word_detail(slug):
     # Corpus-style examples: collected across all sense examples for the
     # "Examples of X" section — mirrors the real entry's corpus block.
     corpus_examples = []
-    for d in definitions:
+    for d in visible_defs:
         for ex in (d.get('examples') or []):
             corpus_examples.append(ex)
 
+    # R6: breadcrumb chain — Home / Dictionary / English / <letter> / <word>.
+    letter = (word.headword[:1] or '').upper()
+    breadcrumb = [
+        {'label': 'Home', 'url': url_for('index')},
+        {'label': 'Dictionary',
+         'url': url_for('search', q='', type='dictionary')},
+        {'label': 'English',
+         'url': url_for('search', q='', type='dictionary')},
+        {'label': f'Letter {letter}',
+         'url': url_for('search', q=letter.lower())},
+        {'label': word.headword, 'url': None},
+    ]
+
+    # R6: same-root panel — union of (a) explicit roots field and (b) other
+    # words whose slug shares the first ``prefix_len`` chars. Cap at 8 to
+    # keep the panel compact and the SQL cheap.
+    same_root_words = _r6_same_root_words(word)
+
+    # R6: shared-collocation panel — peers that have the same anchor token.
+    shared_coll_words = _r6_shared_coll_words(word)
+
+    # R6: antonyms panel — actual Word rows where available, slug strings
+    # otherwise (rendered as "no entry yet" greyed link).
+    antonym_slugs = word.get_antonyms()
+    antonym_rows, antonym_misses = _r6_resolve_slugs(antonym_slugs)
+
+    # R6: level-mismatch hint — when this word is C1/C2 we surface an
+    # easier alternative from the same root set, biased toward B1/B2.
+    level_mismatch_alt = None
+    if word.level in ('C1', 'C2'):
+        for cand in same_root_words:
+            if cand.level in ('A2', 'B1', 'B2'):
+                level_mismatch_alt = cand
+                break
+
     return render_template('word_detail.html', word=word,
-                           definitions=definitions,
+                           definitions=visible_defs,
+                           all_definitions=definitions,
                            translations=translations,
                            related=related,
                            synonyms=synonyms,
                            is_saved=is_saved,
                            nearby_words=nearby_words,
-                           corpus_examples=corpus_examples)
+                           corpus_examples=corpus_examples,
+                           breadcrumb=breadcrumb,
+                           same_root_words=same_root_words,
+                           shared_coll_words=shared_coll_words,
+                           antonym_rows=antonym_rows,
+                           antonym_misses=antonym_misses,
+                           level_mismatch_alt=level_mismatch_alt,
+                           dict_mode=dict_mode)
 
 
 @app.route('/search')
@@ -510,6 +704,12 @@ def search():
         h = SearchHistory(user_id=current_user.id, term=q)
         db.session.add(h)
         db.session.commit()
+
+    # R6: when nothing came back, redirect to the word-not-found suggest
+    # page so the agent has a dedicated landing for the
+    # "word-not-found-suggest-similar" flow rather than a bare empty list.
+    if not results and q and search_type != 'thesaurus':
+        return redirect(url_for('word_not_found', q=q))
 
     return render_template('search.html', q=q, results=results,
                            search_type=search_type)
@@ -711,7 +911,19 @@ def plus_index():
 def quiz_detail(slug):
     quiz = Quiz.query.filter_by(slug=slug).first_or_404()
     questions = quiz.get_questions()
-    return render_template('quiz.html', quiz=quiz, questions=questions)
+    # R6: ``?timeup=1`` surfaces the quiz-attempt-time-up overlay so the
+    # quiz-attempt-time-up edge case is reachable via a stable URL. The
+    # overlay still renders the quiz body underneath; the template gates
+    # the submit buttons.
+    time_up = request.args.get('timeup') in ('1', 'true', 'yes')
+    # ``?attempt=<n>`` lets tasks reference a specific attempt deterministically
+    # without needing session state.
+    try:
+        attempt = max(1, int(request.args.get('attempt') or 1))
+    except ValueError:
+        attempt = 1
+    return render_template('quiz.html', quiz=quiz, questions=questions,
+                           time_up=time_up, attempt=attempt)
 
 
 @app.route('/plus/word-scramble')
@@ -1453,6 +1665,185 @@ def pronunciation_detail(slug):
     syllables = max(1, len(re.findall(r'[aeiouy]+', head)))
     return render_template('pronunciation.html', word=word,
                            syllables=syllables)
+
+
+# ---------------------------------------------------------------------------
+# R6 routes: cross-page jump targets + edge-case surfaces.
+# ---------------------------------------------------------------------------
+
+@app.route('/dictionary/<slug>/same-root')
+def same_root_full(slug):
+    """Full "Words from same root" page — same set the word_detail panel
+    summarises but uncapped (up to 80 rows) and with a CEFR filter."""
+    word = Word.query.filter_by(slug=slug,
+                                is_thesaurus_phrase=False).first_or_404()
+    level = (request.args.get('level') or '').upper()
+    candidates = _r6_same_root_words(word, limit=80)
+    if level:
+        candidates = [w for w in candidates if w.level == level]
+    return render_template('same_root.html', word=word,
+                           candidates=candidates, level=level,
+                           cefr_levels=CEFR_LEVELS_ORDERED)
+
+
+@app.route('/dictionary/<slug>/shared-collocation')
+def shared_collocation_full(slug):
+    """Full "Words that share collocation" page. Surfaces the collocation
+    phrase anchor and the peer list together."""
+    word = Word.query.filter_by(slug=slug,
+                                is_thesaurus_phrase=False).first_or_404()
+    peers = _r6_shared_coll_words(word, limit=40)
+    anchor = (word.shared_coll_anchor
+              or (word.headword or '').split()[0].lower())
+    return render_template('shared_collocation.html', word=word,
+                           peers=peers, anchor=anchor)
+
+
+@app.route('/dictionary/<slug>/antonyms')
+def antonyms_full(slug):
+    """Full antonyms page. If the word has none in WordNet, we look up the
+    word's antonym counterparts via the reverse lookup (any word whose
+    antonyms include this slug)."""
+    word = Word.query.filter_by(slug=slug,
+                                is_thesaurus_phrase=False).first_or_404()
+    direct = word.get_antonyms()
+    rows, missing = _r6_resolve_slugs(direct)
+    if not rows and not missing:
+        # Reverse lookup: words that name this slug as their antonym.
+        rev = (Word.query
+               .filter(Word.is_thesaurus_phrase == False,  # noqa
+                       Word.antonyms_json.like(f'%"{slug}"%'))
+               .order_by(Word.frequency_rank.asc(),
+                         Word.headword.asc())
+               .limit(8).all())
+        rows = rev
+    return render_template('antonyms.html', word=word,
+                           antonym_rows=rows, antonym_misses=missing)
+
+
+@app.route('/dictionary/mode/<mode>')
+def dictionary_set_mode(mode):
+    """Toggle learner-vs-academic dictionary mode in the session, then
+    redirect back to the referrer (or home)."""
+    if mode not in ('learner', 'academic'):
+        abort(404)
+    session['dict_mode'] = mode
+    flash(f'Switched to {mode} dictionary mode.', 'info')
+    return redirect(request.referrer or url_for('index'))
+
+
+@app.route('/audio-fallback/<slug>')
+def audio_fallback(slug):
+    """Text-only fallback when the MP3 file is missing / errors out. The
+    real Cambridge site shows a "Audio unavailable" notice; we render a
+    full page so agents can land on a stable URL.
+
+    Accepts ``?reason=missing|cooldown|format-unsupported`` to tailor the
+    message; defaults to ``missing``."""
+    word = Word.query.filter_by(slug=slug,
+                                is_thesaurus_phrase=False).first_or_404()
+    reason = (request.args.get('reason') or 'missing').lower()
+    if reason not in ('missing', 'cooldown', 'format-unsupported'):
+        reason = 'missing'
+    return render_template('audio_fallback.html', word=word, reason=reason)
+
+
+@app.route('/api/audio-status/<slug>')
+@csrf.exempt
+def api_audio_status(slug):
+    """JSON gate for the per-region audio player. Returns ``ready`` for
+    most slugs, ``cooldown`` for the ~8% stable bucket. Agents can hit
+    this URL directly and use the response to navigate the cooldown
+    flow."""
+    region = (request.args.get('region') or 'uk').lower()
+    if region not in ('uk', 'us'):
+        region = 'uk'
+    if _r6_audio_cooldown(slug, region):
+        return jsonify({
+            'slug': slug,
+            'region': region,
+            'status': 'cooldown',
+            'retry_after_s': 90,
+            'fallback_url': url_for('audio_fallback', slug=slug,
+                                    reason='cooldown'),
+        })
+    return jsonify({
+        'slug': slug,
+        'region': region,
+        'status': 'ready',
+    })
+
+
+@app.route('/audio-cooldown/<slug>')
+def audio_cooldown_page(slug):
+    """Standalone page that explains the audio rate-limit cooldown and
+    surfaces the text fallback. Stable per slug — the same slug always
+    shows the same retry-after countdown."""
+    word = Word.query.filter_by(slug=slug,
+                                is_thesaurus_phrase=False).first_or_404()
+    region = (request.args.get('region') or 'uk').lower()
+    if region not in ('uk', 'us'):
+        region = 'uk'
+    on_cooldown = _r6_audio_cooldown(slug, region)
+    return render_template('audio_cooldown.html', word=word, region=region,
+                           on_cooldown=on_cooldown, retry_after_s=90)
+
+
+@app.route('/level-mismatch/<slug>')
+def level_mismatch(slug):
+    """When the current word is above the learner's level, show easier
+    same-root alternatives + a "switch to easier list" link. Pure
+    deterministic view."""
+    word = Word.query.filter_by(slug=slug,
+                                is_thesaurus_phrase=False).first_or_404()
+    same_root = _r6_same_root_words(word, limit=40)
+    easier_pool = [w for w in same_root if w.level in ('A1', 'A2', 'B1', 'B2')]
+    easier_pool = sorted(easier_pool,
+                         key=lambda w: (CEFR_LEVELS_ORDERED.index(w.level)
+                                        if w.level in CEFR_LEVELS_ORDERED
+                                        else 6,
+                                        w.frequency_rank or 99999,
+                                        w.headword))[:10]
+    return render_template('level_mismatch.html', word=word,
+                           easier=easier_pool)
+
+
+@app.route('/word-not-found')
+def word_not_found():
+    """Suggest similar words for an unknown query.
+
+    Surfaces (a) prefix matches, (b) suffix matches, (c) edit-distance-1
+    matches against the catalog (bounded scan). Deterministic and
+    rebuild-safe — we never call random or wall-clock."""
+    q = (request.args.get('q', '') or '').strip().lower()
+    suggestions = []
+    if q:
+        # Prefix matches first
+        prefix = (Word.query
+                  .filter(Word.is_thesaurus_phrase == False,  # noqa
+                          Word.headword.ilike(f'{q[:max(1,len(q)-1)]}%'))
+                  .order_by(Word.frequency_rank.asc(),
+                            Word.headword.asc())
+                  .limit(10).all())
+        suggestions.extend(prefix)
+        if len(suggestions) < 10:
+            seen = {w.id for w in suggestions}
+            # Suffix matches as a secondary signal
+            suffix = (Word.query
+                      .filter(Word.is_thesaurus_phrase == False,  # noqa
+                              Word.headword.ilike(f'%{q[-3:]}'))
+                      .order_by(Word.frequency_rank.asc(),
+                                Word.headword.asc())
+                      .limit(10).all())
+            for w in suffix:
+                if w.id in seen:
+                    continue
+                suggestions.append(w)
+                seen.add(w.id)
+                if len(suggestions) >= 10:
+                    break
+    return render_template('word_not_found.html', q=q,
+                           suggestions=suggestions[:10])
 
 
 @app.route('/word-of-the-day/archive')
@@ -3116,6 +3507,43 @@ def seed_database():
                 etymology=wd.get('etymology', ''),
                 collocations_json=_j(wd.get('collocations', [])),
                 mistake_note=wd.get('mistake_note', ''),
+            ))
+        # R6 expansion: ~10000 further WordNet entries dual-mode-defined
+        # (learner + academic), plus the new R6 columns ``antonyms_json``,
+        # ``roots_json``, ``shared_coll_anchor`` and ``r6_dict``. Same
+        # append-after pattern so prior ids stay stable.
+        extra5 = _load_json('words_r6.json') or []
+        for wd in extra5:
+            if wd['slug'] in seen_slugs:
+                continue
+            seen_slugs.add(wd['slug'])
+            db.session.add(Word(
+                headword=wd['headword'], slug=wd['slug'],
+                pos=wd.get('pos', ''), guide_word=wd.get('guide_word', ''),
+                phonetic_uk=wd.get('phonetic_uk', ''),
+                phonetic_us=wd.get('phonetic_us', ''),
+                pronunciation_ipa=(wd.get('pronunciation_ipa')
+                                   or wd.get('phonetic_uk', '')),
+                audio_uk_path=wd.get('audio_uk_path',
+                                     f"/static/audio/uk/{wd['slug']}.mp3"),
+                audio_us_path=wd.get('audio_us_path',
+                                     f"/static/audio/us/{wd['slug']}.mp3"),
+                level=wd.get('level', ''),
+                definitions_json=_j(wd.get('definitions', [])),
+                translations_json=_j(wd.get('translations', {})),
+                related_json=_j(wd.get('related', [])),
+                synonyms_json=_j(wd.get('synonyms', [])),
+                is_thesaurus_phrase=False,
+                created_at=MIRROR_REFERENCE_DATE,
+                register=wd.get('register', ''),
+                frequency_rank=int(wd.get('frequency_rank', 0) or 0),
+                etymology=wd.get('etymology', ''),
+                collocations_json=_j(wd.get('collocations', [])),
+                mistake_note=wd.get('mistake_note', ''),
+                antonyms_json=_j(wd.get('antonyms', [])),
+                roots_json=_j(wd.get('roots', [])),
+                shared_coll_anchor=wd.get('shared_coll_anchor', ''),
+                r6_dict=wd.get('r6_dict', ''),
             ))
     else:
         # Fallback: inline curated lists.

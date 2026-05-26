@@ -81,6 +81,18 @@ def _fromjson_filter(value):
         return []
 
 
+@app.template_filter("hash_md5_int")
+def _hash_md5_int_filter(value):
+    """Return an int derived from md5(str(value)). Used by templates to
+    derive deterministic per-id state without round-tripping to Python."""
+    import hashlib as _h
+    try:
+        s = str(value)
+        return int(_h.md5(s.encode("utf-8")).hexdigest(), 16)
+    except Exception:
+        return 0
+
+
 # ------------------------------------------------------------
 # Database models
 # ------------------------------------------------------------
@@ -189,6 +201,19 @@ class Repository(db.Model):
     eval_results_json = db.Column(db.Text, default="[]")          # JSON list of {benchmark,score,split}
     hardware_used = db.Column(db.String(120), default="")          # e.g. "256× A100 80GB"
     training_compute_hours = db.Column(db.Integer, default=0)
+    # R6 added — provenance + gating + state-edge columns surfacing
+    # production-readiness warnings, gated-access flag, space build-error
+    # log fingerprint, base-model lineage for "Fine-tuned versions" sidebar,
+    # and a deterministic-flag for endpoint quota exceeded. Used by
+    # /<a>/<n>/access, /spaces/<a>/<n>/logs, sidebar "Fine-tuned versions",
+    # leaderboard pending-eval rows. Every value derives from slug md5.
+    not_for_production = db.Column(db.Boolean, default=False, index=True)
+    is_gated = db.Column(db.Boolean, default=False, index=True)
+    gated_reason = db.Column(db.String(160), default="")
+    base_model_slug = db.Column(db.String(300), default="", index=True)
+    space_build_status = db.Column(db.String(40), default="")     # "" | "build-error" | "build-running"
+    space_build_log = db.Column(db.Text, default="")
+    citing_paper_ids = db.Column(db.Text, default="[]")           # JSON list of arxiv ids
     created_at = db.Column(db.DateTime, default=lambda: MIRROR_REFERENCE_DATE)
     updated_at = db.Column(db.DateTime, default=lambda: MIRROR_REFERENCE_DATE)
 
@@ -329,6 +354,16 @@ class Repository(db.Model):
             "gpl-3.0": "https://www.gnu.org/licenses/gpl-3.0.en.html",
         }
         return defaults.get(slug, f"/license/{slug or 'other'}")
+
+    # R6 helpers ------------------------------------------------------
+    @property
+    def citing_papers(self):
+        """Parsed citing_paper_ids — list of arxiv ids referencing this repo."""
+        try:
+            arr = json.loads(self.citing_paper_ids or "[]")
+            return arr if isinstance(arr, list) else []
+        except Exception:
+            return []
 
 
 class Like(db.Model):
@@ -768,6 +803,9 @@ def seed_database():
     # 4) Repos
     models, datasets, spaces = build_seed_repos()
     all_repos = models + datasets + spaces
+    # R6: snapshot of paper arxiv ids — used by _r6_extras to assign a
+    # deterministic citing-paper list to a small fraction of models.
+    _PAPERS_FOR_CITING = sorted([p["arxiv_id"] for p in DAILY_PAPERS])
     # R4: deterministic per-repo trending_score / monthly_downloads_history /
     # last_modified / param_count. Derived from the slug + downloads so a
     # fresh seed rebuild on a different host hashes identically.
@@ -932,11 +970,120 @@ def seed_database():
 
         return license_url, json.dumps(evals, sort_keys=True), hardware_used, tch
 
+    def _r6_extras(item):
+        """R6: not_for_production, gated, base_model_slug, build-error logs,
+        citing_papers. Deterministic per slug so rebuilds are byte-stable.
+
+        Buckets (md5(slug)[mod 100]):
+          0..3   -> not_for_production = True (~4% of repos)
+          4..6   -> is_gated = True (~3%; only models / some datasets)
+          7..8   -> space_build_status = "build-error" (~5% of spaces)
+          9      -> space_build_status = "build-running" (~1% of spaces)
+        base_model_slug — only for models whose slug contains a known
+          family prefix ("-ft", "-finetune", "-instruct", "-chat",
+          "-dpo", "-sft"). The base is the same slug with that suffix
+          stripped, IFF such a base exists in the seed pool — but we
+          can't query mid-seed, so we store the would-be base slug and
+          let the route filter at read-time.
+        citing_paper_ids — pick 0..2 arxiv ids from DAILY_PAPERS for
+          models whose md5(slug) is in the right bucket. About 6% of
+          models get >=1 citing paper.
+        """
+        slug = item.get("slug", "")
+        rt = item.get("repo_type", "")
+        h = int(_hashlib.md5(slug.encode("utf-8")).hexdigest(), 16)
+        bucket = h % 100
+
+        not_for_production = False
+        gated_reason = ""
+        is_gated = False
+        space_build_status = ""
+        space_build_log = ""
+        base_model_slug = ""
+        citing = []
+
+        # not_for_production: experimental / research-only flag
+        if bucket < 4:
+            not_for_production = True
+
+        # gated access: only for models and a few datasets; mutually
+        # exclusive with not_for_production so flags don't pile up.
+        elif bucket in (4, 5, 6) and rt in ("model", "dataset"):
+            is_gated = True
+            gated_reasons = [
+                "Author requires acceptance of the community license",
+                "Restricted by upstream license terms",
+                "Manual review required by the maintainer team",
+                "Available to verified researchers only",
+            ]
+            gated_reason = gated_reasons[(h >> 2) % len(gated_reasons)]
+
+        # space build status
+        if rt == "space":
+            if bucket in (7, 8):
+                space_build_status = "build-error"
+                err_msgs = [
+                    "ModuleNotFoundError: No module named 'gradio'",
+                    "RuntimeError: CUDA out of memory. Tried to allocate 4.00 GiB",
+                    "ImportError: cannot import name 'pipeline' from 'transformers'",
+                    "OSError: [Errno 28] No space left on device",
+                    "ValueError: hardware tier 't4-small' exceeds free quota",
+                ]
+                msg = err_msgs[(h >> 3) % len(err_msgs)]
+                space_build_log = (
+                    "=== Build started ===\n"
+                    "Installing requirements from requirements.txt...\n"
+                    "Collecting transformers==4.46.2\n"
+                    "Collecting torch==2.4.0\n"
+                    f"  Building wheel for {slug.split('/')[1]}...\n"
+                    "ERROR: " + msg + "\n"
+                    "=== Build FAILED with exit code 1 ===\n"
+                )
+            elif bucket == 9:
+                space_build_status = "build-running"
+                space_build_log = (
+                    "=== Build started ===\n"
+                    "Installing requirements from requirements.txt...\n"
+                    "Collecting transformers==4.46.2\n"
+                    "Downloading torch-2.4.0...\n"
+                    "[in progress]\n"
+                )
+
+        # base_model_slug — fine-tuned-version lineage. We look at the
+        # slug for known fine-tune suffix tokens.
+        if rt == "model":
+            ln = slug.lower()
+            ft_tokens = ("-ft", "-finetune", "-finetuned", "-instruct",
+                         "-chat", "-dpo", "-sft", "-rlhf", "-orpo")
+            for tok in ft_tokens:
+                if tok in ln:
+                    # Take everything before the suffix as the base name.
+                    base_name = slug[:ln.index(tok)]
+                    if "/" in base_name and base_name.endswith(tuple("abcdefghijklmnopqrstuvwxyz0123456789")):
+                        base_model_slug = base_name
+                    break
+
+        # citing_papers — assign deterministic subset for models
+        if rt == "model" and bucket >= 90:
+            ids = _PAPERS_FOR_CITING
+            if ids:
+                # pick 1..2 papers
+                k = 1 + (bucket - 90) // 5  # 1 or 2
+                start = (h >> 4) % max(1, len(ids))
+                for j in range(k):
+                    citing.append(ids[(start + j) % len(ids)])
+
+        return (not_for_production, is_gated, gated_reason,
+                base_model_slug, space_build_status, space_build_log,
+                json.dumps(citing, sort_keys=True))
+
     for item in all_repos:
         author = get_or_create_author(item["author"])
         task = task_by_slug.get(item.get("task", ""))
         trending, history, last_mod, pc = _r4_extras(item)
         license_url, eval_json, hw_used, tch = _r5_extras(item)
+        (not_for_production, is_gated, gated_reason, base_model_slug,
+         space_build_status, space_build_log, citing_paper_ids) = _r6_extras(item)
         repo = Repository(
             slug=item["slug"],
             name=item["name"],
@@ -975,6 +1122,13 @@ def seed_database():
             eval_results_json=eval_json,
             hardware_used=hw_used,
             training_compute_hours=tch,
+            not_for_production=not_for_production,
+            is_gated=is_gated,
+            gated_reason=gated_reason,
+            base_model_slug=base_model_slug,
+            space_build_status=space_build_status,
+            space_build_log=space_build_log,
+            citing_paper_ids=citing_paper_ids,
             updated_at=mirror_now() - timedelta(days=item.get("updated_days_ago", 1)),
         )
         db.session.add(repo)
@@ -1823,6 +1977,33 @@ def _model_detail(author: str, name: str):
         user_collections = Collection.query.filter_by(user_id=current_user.id).all()
     metrics = _compute_model_metrics(repo)
     spaces_using = _spaces_using_model(repo)
+    # R6: sidebar lineage cards. Fine-tuned versions (models whose
+    # base_model_slug points back to this repo), trained-on datasets
+    # (heuristic by tag overlap), and citing papers (from
+    # citing_paper_ids).
+    fine_tuned = (Repository.query
+                  .filter_by(repo_type="model", base_model_slug=repo.slug)
+                  .order_by(Repository.likes_count.desc(), Repository.id.asc())
+                  .limit(8).all())
+    same_task_models = (Repository.query
+                        .filter(Repository.repo_type == "model",
+                                Repository.task_id == repo.task_id,
+                                Repository.id != repo.id)
+                        .order_by(Repository.likes_count.desc())
+                        .limit(6).all())
+    # Datasets this model was likely trained on — match on language +
+    # task. Cap at 6 deterministic top-by-likes results.
+    trained_on_datasets = (Repository.query
+                           .filter(Repository.repo_type == "dataset",
+                                   Repository.task_id == repo.task_id)
+                           .order_by(Repository.likes_count.desc(),
+                                     Repository.id.asc())
+                           .limit(6).all())
+    citing_papers = []
+    for pid in repo.citing_papers:
+        p = next((p for p in DAILY_PAPERS if p["arxiv_id"] == pid), None)
+        if p:
+            citing_papers.append(p)
     return render_template(
         "repo_detail.html",
         repo=repo,
@@ -1835,6 +2016,10 @@ def _model_detail(author: str, name: str):
         inference_providers=INFERENCE_PROVIDERS,
         metrics=metrics,
         spaces_using=spaces_using,
+        fine_tuned=fine_tuned,
+        same_task_models=same_task_models,
+        trained_on_datasets=trained_on_datasets,
+        citing_papers=citing_papers,
     )
 
 
@@ -2948,7 +3133,37 @@ def leaderboard_detail(slug):
     lb = LEADERBOARDS.get(slug)
     if not lb:
         abort(404)
-    return render_template("leaderboard_detail.html", slug=slug, leaderboard=lb)
+    # R6: synthesise 2-3 "eval-running" / "eval-queued" rows below the
+    # ranked table — surfaces the in-progress state of a live leaderboard.
+    # Picks are deterministic per leaderboard slug.
+    import hashlib as _h
+    seed = int(_h.md5(slug.encode("utf-8")).hexdigest(), 16)
+    candidates = [
+        "OpenLLM-Lab/Falcon3-180B-Instruct",
+        "Qwen/Qwen3-32B-Preview",
+        "deepseek-ai/DeepSeek-V3.5-Preview",
+        "meta-llama/Llama-3.4-70B-Instruct-Preview",
+        "google/gemma-3-27b-it-preview",
+        "mistralai/Mistral-Large-3-Instruct",
+        "01-ai/Yi-34B-Chat-v2",
+        "tiiuae/Falcon-Math-7B",
+    ]
+    pending = []
+    for i in range(3):
+        idx = (seed >> (i * 4)) % len(candidates)
+        state = ["eval-running", "eval-queued", "eval-running"][i]
+        eta = ["~12 min remaining", "queued behind 4 jobs",
+               "~3 min remaining"][i]
+        pending.append({
+            "slug": candidates[idx],
+            "params": ["72B", "32B", "180B"][i % 3],
+            "state": state,
+            "eta": eta,
+        })
+    return render_template(
+        "leaderboard_detail.html", slug=slug, leaderboard=lb,
+        pending_rows=pending,
+    )
 
 
 # ------------------------------------------------------------
@@ -3481,6 +3696,122 @@ def author_billing(username):
         history=history,
         month_label="May 2026",
     )
+
+
+# ============================================================
+# R6 routes — gated-access, space build logs, fine-tuned versions,
+# leaderboard pending-eval rows, endpoint quota errors, paper-not-on-arxiv
+# fallback. Every value the route returns is deterministic per slug so
+# byte-identical rebuilds still pass the md5 invariant.
+# ============================================================
+@app.route("/<author>/<name>/access", methods=["GET", "POST"])
+def repo_access_request(author, name):
+    """Gated-access request form. For repos with is_gated=True, the
+    primary repo route shows a banner; this is the dedicated request page
+    the agent navigates to when filling the form."""
+    slug = f"{author}/{name}"
+    repo = Repository.query.filter_by(slug=slug).first()
+    if not repo:
+        abort(404)
+    submitted = False
+    if request.method == "POST":
+        # Don't actually persist — keep the endpoint side-effect-free so
+        # repeated rebuilds stay byte-identical.
+        submitted = True
+    return render_template(
+        "access_request.html",
+        repo=repo, submitted=submitted,
+    )
+
+
+@app.route("/spaces/<author>/<name>/logs")
+def space_build_logs(author, name):
+    """Build / runtime log viewer for a Space. Most spaces show an empty
+    log placeholder; ~5% surface a deterministic build-error trace and
+    ~1% are still building. Lets the agent answer 'why isn't this Space
+    running?' without an external API call."""
+    slug = f"{author}/{name}"
+    repo = Repository.query.filter_by(slug=slug, repo_type="space").first()
+    if not repo:
+        abort(404)
+    status = repo.space_build_status or "build-ok"
+    log = repo.space_build_log or (
+        "=== Build started ===\n"
+        "Installing requirements from requirements.txt...\n"
+        "Build complete. Starting application...\n"
+        "=== Build SUCCESS — application running ===\n"
+    )
+    return render_template(
+        "space_logs.html",
+        repo=repo, status=status, log=log,
+    )
+
+
+@app.route("/papers/arxiv/<arxiv_id>")
+def paper_arxiv_fallback(arxiv_id):
+    """Fallback page for arxiv ids we did not seed into DAILY_PAPERS.
+
+    Linked from /papers and /papers/<id>/implementations whenever the
+    paper id is not in our curated set. Shows a placeholder card pointing
+    at the upstream arxiv URL so the agent can still answer 'what's at
+    paper X' without the route 404ing.
+    """
+    paper = next((p for p in DAILY_PAPERS if p["arxiv_id"] == arxiv_id), None)
+    if paper:
+        # Real paper exists — redirect to the canonical route.
+        return redirect(url_for("paper_detail", arxiv_id=arxiv_id))
+    return render_template(
+        "paper_fallback.html",
+        arxiv_id=arxiv_id,
+        upstream_url=f"https://arxiv.org/abs/{arxiv_id}",
+    )
+
+
+@app.route("/api/repo/<int:repo_id>/fine-tuned")
+def api_fine_tuned(repo_id):
+    """Return up to 12 models whose base_model_slug matches this repo's slug.
+    Powers the 'Fine-tuned versions' sidebar card on model detail pages."""
+    repo = db.session.get(Repository, repo_id)
+    if not repo:
+        abort(404)
+    children = (Repository.query
+                .filter_by(repo_type="model", base_model_slug=repo.slug)
+                .order_by(Repository.likes_count.desc(), Repository.id.asc())
+                .limit(12).all())
+    return jsonify({
+        "ok": True,
+        "base_slug": repo.slug,
+        "count": len(children),
+        "items": [{"slug": c.slug, "likes": c.likes_count or 0,
+                   "downloads": c.downloads or 0} for c in children],
+    })
+
+
+# Endpoint quota — when an endpoint is in 'quota-exceeded' state we surface
+# a dedicated error banner. Status is derived deterministically from the
+# endpoint id so the same endpoint always reports the same flag.
+@app.route("/endpoints/<int:endpoint_id>/quota")
+def endpoint_quota_status(endpoint_id):
+    ep = db.session.get(InferenceEndpoint, endpoint_id)
+    if not ep:
+        abort(404)
+    import hashlib as _h
+    h = int(_h.md5((ep.endpoint_id or str(ep.id)).encode("utf-8")).hexdigest(), 16)
+    over_quota = (h % 10) == 0   # ~10% of endpoints
+    return jsonify({
+        "ok": True,
+        "endpoint_id": ep.endpoint_id,
+        "quota_state": "exceeded" if over_quota else "ok",
+        "quota_used_gb_hours": (h % 9000) + 1000,
+        "quota_limit_gb_hours": 10_000,
+        "next_reset_utc": "2026-06-01T00:00:00Z",
+        "message": (
+            "Your organization has exceeded its monthly inference quota. "
+            "Upgrade the plan or wait until the quota resets on the 1st of next month."
+            if over_quota else
+            "Within plan limits — no action required."
+        ),
+    })
 
 
 # ------------------------------------------------------------

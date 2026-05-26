@@ -17,6 +17,7 @@
 <div class="paper-detail-layout">
     <div class="paper-main">
         <div class="breadcrumb">
+            <a href="{{ url_for('index') }}">arXiv</a> &gt;
             {% if paper.primary_category_code %}
             <a href="{{ url_for('category_detail', code=paper.primary_category_code) }}">{{ paper.primary_category_code }}</a> &gt;
             {% endif %}
@@ -25,6 +26,33 @@
             {% endif %}
             arXiv:{{ paper.arxiv_id }}
         </div>
+
+        {# R6 — withdrawal / replacement banners. Drive agents toward edge
+           cases that occur on real arXiv (withdrawn papers carry a note
+           in place of a PDF; replaced papers point at a newer arxiv_id). #}
+        {% if paper.is_withdrawn %}
+        <div class="paper-banner withdrawn-banner" role="alert"
+             style="border:1px solid #b31b1b;background:#fdecec;color:#7a0e0e;padding:10px 14px;border-radius:6px;margin:10px 0;font-size:13px;">
+            <b>Paper withdrawn.</b>
+            This submission was {{ paper.withdrawal_reason }}
+            The PDF is no longer available for download; the abstract is kept
+            for the historical record.
+        </div>
+        {% endif %}
+        {% if replacement_id %}
+        <div class="paper-banner replaced-banner" role="status"
+             style="border:1px solid #d9a300;background:#fff8e0;color:#5a4500;padding:10px 14px;border-radius:6px;margin:10px 0;font-size:13px;">
+            <b>This version has been superseded.</b>
+            A newer revision is available at
+            {% if replacement_target %}
+            <a href="{{ url_for('paper_detail', arxiv_id=replacement_target.arxiv_id) }}"><b>arXiv:{{ replacement_target.arxiv_id }}</b></a>
+            ({{ replacement_target.display_title|truncate(70) }}).
+            {% else %}
+            <span class="mono">arXiv:{{ replacement_id }}</span>
+            <span class="muted">(not yet ingested by this mirror — link will activate once it is)</span>.
+            {% endif %}
+        </div>
+        {% endif %}
 
         <div class="paper-label">
             {% if paper.submitted_date %}[Submitted on {{ paper.submitted_date }}]{% endif %}
@@ -229,7 +257,13 @@
             </h3>
             {% if comments %}
                 {% for c in comments %}
-                <div class="comment">
+                {# R6 — surface moderation status on a deterministic minority
+                   so agents can practise reading moderator notes. ~6% are
+                   tagged "moderated" (flagged-but-kept) and ~2% "removed". #}
+                {% set _mod_h = (c.id * 17 + c.paper_id * 7) % 100 %}
+                {% set _is_moderated = (_mod_h < 6) %}
+                {% set _is_removed = (_mod_h >= 6 and _mod_h < 8) %}
+                <div class="comment{% if _is_moderated %} comment-moderated{% endif %}{% if _is_removed %} comment-removed{% endif %}">
                     <div class="comment-head">
                         <b>{{ c.user.full_name or c.user.username }}</b>
                         {% if c.user.affiliation %}<span class="muted">· {{ c.user.affiliation }}</span>{% endif %}
@@ -237,9 +271,28 @@
                         {% if c.rating and c.rating > 0 %}
                             <span class="comment-rating">{{ '★' * c.rating }}{{ '☆' * (5 - c.rating) }}</span>
                         {% endif %}
+                        {% if _is_moderated %}
+                        <span class="moderation-badge"
+                              title="A moderator reviewed this comment and let it stand."
+                              style="display:inline-block;margin-left:6px;font-size:10px;background:#fff5d9;border:1px solid #d9a300;color:#705100;padding:1px 6px;border-radius:10px;">
+                            ⚖ moderated
+                        </span>
+                        {% endif %}
+                        {% if _is_removed %}
+                        <span class="moderation-badge"
+                              style="display:inline-block;margin-left:6px;font-size:10px;background:#fdecec;border:1px solid #b31b1b;color:#7a0e0e;padding:1px 6px;border-radius:10px;">
+                            ✕ removed by moderator
+                        </span>
+                        {% endif %}
                     </div>
                     {% if c.title %}<div class="comment-title">{{ c.title }}</div>{% endif %}
-                    <div class="comment-body">{{ c.body }}</div>
+                    <div class="comment-body">
+                        {% if _is_removed %}
+                            <i class="muted">[This comment was removed by a moderator for violating the discussion guidelines.]</i>
+                        {% else %}
+                            {{ c.body }}
+                        {% endif %}
+                    </div>
                     {% if current_user.is_authenticated and current_user.id == c.user_id %}
                     <form method="post" action="{{ url_for('delete_comment', comment_id=c.id) }}" style="margin-top:6px;">
                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
@@ -285,12 +338,20 @@
     <aside class="paper-sidebar">
         <div class="sidebar-box">
             <h3>Access Paper:</h3>
+            {% if paper.is_withdrawn %}
+            <p class="muted" style="font-size:12px;border-left:3px solid #b31b1b;padding-left:8px;">
+                PDF and source downloads are disabled because this paper has
+                been withdrawn. The abstract above is preserved for the
+                historical record.
+            </p>
+            {% else %}
             <ul class="sidebar-access-list">
                 <li class="access-primary"><a href="{{ url_for('pdf_view', arxiv_id=paper.arxiv_id) }}">View PDF</a></li>
                 <li><a href="{{ url_for('html_view', arxiv_id=paper.arxiv_id) }}">HTML (experimental)</a></li>
                 <li><a href="{{ url_for('eprint_view', arxiv_id=paper.arxiv_id) }}">TeX Source</a></li>
                 <li><a href="{{ url_for('format_view', arxiv_id=paper.arxiv_id) }}">Other Formats</a></li>
             </ul>
+            {% endif %}
             <p style="font-size:11px;color:var(--text-muted);margin-top:8px;border-top:1px solid var(--border-light);padding-top:6px;">
                 <a href="{{ url_for('help_page_sub', page='license') }}">view license</a>
             </p>
@@ -310,9 +371,11 @@
         </div>
 
         <div class="sidebar-box">
-            <h3>References & Citations</h3>
+            <h3>References &amp; Citations</h3>
             <ul>
+                <li><a href="{{ url_for('paper_citing_list', arxiv_id=paper.arxiv_id) }}"><b>Cited by {{ paper.citing_count }} papers</b></a></li>
                 <li><a href="{{ url_for('paper_related', arxiv_id=paper.arxiv_id) }}">Related Papers (full)</a></li>
+                <li><a href="{{ url_for('paper_authors_also', arxiv_id=paper.arxiv_id) }}">Authors who also published in {{ paper.primary_subject_code or paper.primary_category_code }}</a></li>
                 <li><a href="{{ url_for('trackback', arxiv_id=paper.arxiv_id) }}">Trackbacks</a></li>
                 <li><a href="https://ui.adsabs.harvard.edu" target="_blank">NASA ADS</a></li>
                 <li><a href="https://scholar.google.com" target="_blank">Google Scholar</a></li>

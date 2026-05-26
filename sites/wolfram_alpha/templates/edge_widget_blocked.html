@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block title %}Widget embed blocked — {{ widget.name }}{% endblock %}
+{% block body_class %}page-edge-widget-blocked{% endblock %}
+{% block content %}
+<div class="section-inner" style="padding: 40px 20px;">
+  <div class="edge-card edge-card--iframe-block">
+    <span class="edge-eyebrow">IFRAME EMBED BLOCKED</span>
+    <h1 class="edge-title">{{ widget.name }} can't be embedded here</h1>
+    <p class="edge-sub">The page at <code>{{ referer }}</code> uses a Content-Security-Policy that disallows our iframe. The widget can still be used directly on WolframAlpha.</p>
+
+    <div class="edge-detail">
+      <div class="edge-detail-row">
+        <span class="edge-detail-label">Widget:</span>
+        <code>{{ widget.name }}</code>
+      </div>
+      <div class="edge-detail-row">
+        <span class="edge-detail-label">Category:</span>
+        <code>{{ widget.category }}</code>
+      </div>
+      <div class="edge-detail-row">
+        <span class="edge-detail-label">Block reason:</span>
+        <code>X-Frame-Options: DENY  /  CSP frame-ancestors</code>
+      </div>
+    </div>
+
+    <div class="edge-actions">
+      <a href="/widget/{{ widget.slug }}" class="edge-cta-primary">Open widget directly</a>
+      <a href="/widget/builder?source={{ widget.slug }}" class="edge-cta-secondary">Rebuild with embeddable settings</a>
+      <a href="/resources/widgets" class="edge-cta-link">All widgets</a>
+    </div>
+
+    <p class="edge-help">Tip: Ask your site admin to allow <code>iframe-src https://www.wolframalpha.com</code> in their CSP header.</p>
+  </div>
+</div>
+{% endblock %}

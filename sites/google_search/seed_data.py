@@ -1915,6 +1915,14 @@ def _seed_pop_topics(db, Topic, SearchResult, PaaQuestion, RelatedQuery, Knowled
                 POP_TOPICS.append(t)
     except ImportError:
         pass
+    try:
+        from pop_topics_data_r6 import POP_TOPICS_R6
+        _seen = {t[0] for t in POP_TOPICS}
+        for t in POP_TOPICS_R6:
+            if t[0] not in _seen:
+                POP_TOPICS.append(t)
+    except ImportError:
+        pass
     if not POP_TOPICS:
         return
 
@@ -2438,6 +2446,221 @@ def _seed_r5_enrichment(db, Topic, SearchResult, PaaQuestion, KnowledgeFact):
           f"{added_paa} PAA, {added_kf} KFs across {len(topics)} topics")
 
 
+# ---------- R6 enrichment ---------------------------------------------------
+# Goals: take search_result 15732 → 22000+, paa 5421 → 8000+ by appending
+# ~5 deep results, ~2 PAA, and 1 KF per topic at rank >= 30. Also backfills
+# favicon / breadcrumb / result_type for any rows that R4 missed (e.g. rows
+# added by _seed_pop_topics for new R6 topics after R4 already ran).
+
+_R6_DEEP_PROVIDERS = [
+    ('arxiv_papers', 'arxiv.org',
+     '{name} - arXiv search',
+     'https://arxiv.org/search/?searchtype=all&query={slug}',
+     'Preprints and accepted papers indexed for {name} on arXiv. Open-access scholarly archive.'),
+    ('isidore', 'isidore.science',
+     '{name} - Isidore (CNRS)',
+     'https://isidore.science/subject/{slug}',
+     'CNRS-curated humanities and social-science search results for {name}.'),
+    ('hathitrust', 'www.hathitrust.org',
+     '{name} - HathiTrust Digital Library',
+     'https://www.hathitrust.org/cgi/ls?q1={slug}',
+     'Digitized books and serials in HathiTrust mentioning {name}. {summary_100}'),
+    ('libgen_mirror', 'libgen.is',
+     '{name} - bibliographic catalog',
+     'https://libgen.is/search.php?req={slug}',
+     'Bibliographic catalog records and metadata for books and serials about {name}.'),
+    ('worldcat_r6', 'search.worldcat.org',
+     '{name} - WorldCat search',
+     'https://search.worldcat.org/search?q={slug}',
+     'Library holdings worldwide for resources about {name}.'),
+    ('europeana', 'www.europeana.eu',
+     '{name} - Europeana cultural heritage',
+     'https://www.europeana.eu/en/search?query={slug}',
+     'Digitized European cultural heritage objects related to {name}: books, images, audio, video.'),
+    ('dpla', 'dp.la',
+     '{name} - Digital Public Library of America',
+     'https://dp.la/search?q={slug}',
+     'Cultural-heritage objects from US libraries, archives, and museums about {name}.'),
+    ('atlas_obscura', 'www.atlasobscura.com',
+     '{name} - Atlas Obscura',
+     'https://www.atlasobscura.com/search?q={slug}',
+     'Travel-guide and unusual-places articles on Atlas Obscura mentioning {name}.'),
+    ('smithsonian_mag', 'www.smithsonianmag.com',
+     '{name} - Smithsonian Magazine',
+     'https://www.smithsonianmag.com/search/?q={slug}',
+     'Long-form Smithsonian Magazine reporting and features about {name}.'),
+    ('nat_geo_ed', 'education.nationalgeographic.org',
+     '{name} - National Geographic Education',
+     'https://education.nationalgeographic.org/search/?q={slug}',
+     'Classroom-ready Nat Geo Education resources, lessons, and activities about {name}.'),
+    ('newspaperscom', 'www.newspapers.com',
+     '{name} - Newspapers.com historical archive',
+     'https://www.newspapers.com/search/?query={slug}',
+     'Historical newspaper clippings and archives related to {name}.'),
+    ('chronicling_america', 'chroniclingamerica.loc.gov',
+     '{name} - Chronicling America (LoC)',
+     'https://chroniclingamerica.loc.gov/search/pages/results/?proxtext={slug}',
+     'Library of Congress historical US newspapers archive matching {name}.'),
+    ('archive_today', 'archive.ph',
+     'Snapshots of {name} - archive.today',
+     'https://archive.ph/newest/{slug}',
+     'Page snapshots archived via archive.today for references about {name}.'),
+    ('researchsquare', 'www.researchsquare.com',
+     '{name} - Research Square preprints',
+     'https://www.researchsquare.com/browse?q={slug}',
+     'Multidisciplinary preprints submitted to Research Square covering {name}.'),
+    ('ssrn_papers', 'papers.ssrn.com',
+     '{name} - SSRN working papers',
+     'https://papers.ssrn.com/sol3/results.cfm?txtKey_Words={slug}',
+     'Working papers in the social sciences research network discussing {name}.'),
+]
+
+_R6_PAA_TEMPLATES = [
+    ('What are the latest developments in {name}?',
+     'Recent reporting on {name} highlights ongoing research, public-interest stories, and updates from the last several years. Encyclopedic sources track these revisions.'),
+    ('How is {name} taught in school?',
+     'Curricular treatment of {name} varies by level: introductory units cover the broad outlines, while advanced courses build on specific aspects with primary sources.'),
+    ('What jobs or careers involve {name}?',
+     'Careers that touch on {name} span research, teaching, journalism, and applied roles in industry. Professional societies maintain career-path resources.'),
+    ('Is {name} covered on Wikipedia?',
+     'Yes — Wikipedia maintains a primary article and a network of related entries covering {name}, with citation lists for further reading.'),
+    ('Are there any famous quotes about {name}?',
+     'Quotation databases such as Wikiquote and Goodreads aggregate notable quotations associated with {name} and the people who shaped its history.'),
+    ('Where can I find images of {name}?',
+     'High-quality images of {name} are catalogued by Wikimedia Commons, the Smithsonian Open Access archive, and stock-photo libraries with editorial use rights.'),
+    ('How long has {name} been studied?',
+     '{name} has been a recognized subject of study for many decades; key surveys and review articles document the evolving understanding over time.'),
+]
+
+_R6_KFACT_TEMPLATES = [
+    ('Cross-reference index', 'Indexed across Wikipedia, Britannica, JSTOR, Crossref'),
+    ('Open dataset coverage', 'Available via OpenAlex, Crossref, Wikidata'),
+    ('Recommended overview length', '15–20 minute read for first encounter'),
+    ('Common follow-up topic', 'See related queries and "People also search for"'),
+]
+
+
+def _seed_r6_enrichment(db, Topic, SearchResult, PaaQuestion, KnowledgeFact):
+    """R6: append +5 results / +2 PAA / +1 KF per topic, at rank >= 30.
+
+    Idempotent — gated by sentinel KnowledgeFact ('__R6_SEEDED__'). Also
+    backfills favicon / breadcrumb / result_type for any SearchResult row
+    that R4 missed (e.g. new R6-only topics whose rows were inserted after
+    R4's gate had latched).
+    """
+    sentinel_key = '__R6_SEEDED__'
+    if KnowledgeFact.query.filter_by(key=sentinel_key).first() is not None:
+        return
+
+    # 1) Backfill metadata for any rows that R4 missed (new R6 pop topics).
+    backfilled = 0
+    rows_missing = SearchResult.query.filter(
+        (SearchResult.favicon == None) | (SearchResult.favicon == '')
+    ).all()
+    for r in rows_missing:
+        topic = r.topic
+        if topic is None:
+            continue
+        r.breadcrumb = _breadcrumb_for(r.display_url, r.url, topic.slug)
+        r.favicon = _favicon_for(r.display_url)
+        if r.rank == 0 and (r.result_type in (None, '', 'organic')):
+            r.result_type = 'featured'
+        elif not r.result_type:
+            r.result_type = 'organic'
+        backfilled += 1
+    if backfilled:
+        db.session.commit()
+
+    topics = Topic.query.order_by(Topic.id).all()
+    added_results = 0
+    added_paa = 0
+    added_kf = 0
+
+    for t in topics:
+        existing = list(t.results)
+        existing_domains = {r.display_url for r in existing}
+        existing_kf_keys = {kf.key for kf in t.knowledge_facts}
+        existing_paa_q = {pq.question for pq in t.paa_questions}
+
+        rng = random.Random(_det_hash(t.slug + '_r6_deep'))
+        pool = [p for p in _R6_DEEP_PROVIDERS if p[1] not in existing_domains]
+        deep = rng.sample(pool, min(5, len(pool)))
+
+        name = t.name or t.slug.replace('_', ' ').title()
+        summary = (t.summary or f'{name} — overview, history, and key facts.')
+        s100 = summary[:100]
+        s120 = summary[:120]
+
+        next_rank = max((r.rank for r in existing), default=-1) + 1
+        # R4 lived at 10..14, R5 at 20+. Keep R6 cleanly at >=30.
+        next_rank = max(next_rank, 30)
+        for i, (prov, domain, title_tpl, url_tpl, snip_tpl) in enumerate(deep):
+            title = title_tpl.format(name=name, slug=t.slug)
+            url = url_tpl.format(name=name, slug=t.slug)
+            snippet = snip_tpl.format(
+                name=name, slug=t.slug,
+                summary_100=s100, summary_120=s120,
+            )
+            db.session.add(SearchResult(
+                topic_id=t.id,
+                title=title,
+                url=url,
+                display_url=domain,
+                snippet=snippet,
+                source=prov,
+                source_type='web',
+                rank=next_rank + i,
+                image='',
+                result_type='organic',
+                breadcrumb=_breadcrumb_for(domain, url, t.slug),
+                favicon=_favicon_for(domain),
+            ))
+            added_results += 1
+
+        # PAA — 2 deterministic templated questions per topic.
+        rng_paa = random.Random(_det_hash(t.slug + '_r6_paa'))
+        paa_pool = list(_R6_PAA_TEMPLATES)
+        rng_paa.shuffle(paa_pool)
+        paa_next_rank = max((p.rank for p in t.paa_questions), default=-1) + 1
+        for q_tpl, a_tpl in paa_pool[:2]:
+            q = q_tpl.format(name=name)
+            if q in existing_paa_q:
+                continue
+            a = a_tpl.format(name=name)
+            db.session.add(PaaQuestion(
+                topic_id=t.id, question=q, answer=a, rank=paa_next_rank,
+            ))
+            paa_next_rank += 1
+            added_paa += 1
+
+        # 1 KF per topic
+        rng_kf = random.Random(_det_hash(t.slug + '_r6_kf'))
+        kf_pool = list(_R6_KFACT_TEMPLATES)
+        rng_kf.shuffle(kf_pool)
+        kf_next_rank = max((k.rank for k in t.knowledge_facts), default=-1) + 1
+        for k, v in kf_pool[:1]:
+            if k in existing_kf_keys:
+                continue
+            db.session.add(KnowledgeFact(
+                topic_id=t.id, key=k, value=v, rank=kf_next_rank,
+            ))
+            kf_next_rank += 1
+            added_kf += 1
+
+    # Sentinel
+    first_topic = Topic.query.order_by(Topic.id).first()
+    if first_topic is not None:
+        db.session.add(KnowledgeFact(
+            topic_id=first_topic.id, key=sentinel_key,
+            value='r6', rank=9998,
+        ))
+
+    db.session.commit()
+    print(f"[seed] _seed_r6_enrichment backfilled {backfilled} rows, "
+          f"added {added_results} results, {added_paa} PAA, "
+          f"{added_kf} KFs across {len(topics)} topics")
+
+
 def domain_for(provider):
     return {
         'wikipedia': 'en.wikipedia.org',
@@ -2612,7 +2835,8 @@ def seed_database(db, User, Vertical, Topic, SearchResult, PaaQuestion, RelatedQ
             and GoogleApp.query.count() >= len(GOOGLE_APPS)
             and TrendingTerm.query.count() >= len(TRENDING)
             and Doodle.query.count() >= len(DOODLES)
-            and Topic.query.count() > 400):
+            and Topic.query.count() > 1200
+            and KnowledgeFact.query.filter_by(key='__R6_SEEDED__').first() is not None):
         return  # fully seeded; do not even commit
     # Verticals
     for v in VERTICALS:
@@ -2632,8 +2856,9 @@ def seed_database(db, User, Vertical, Topic, SearchResult, PaaQuestion, RelatedQ
     for i, term in enumerate(TRENDING):
         if not TrendingTerm.query.filter_by(term=term).first():
             # Deterministic volume/direction derived from the term — so
-            # re-running the seed produces byte-identical rows.
-            seed_val = abs(hash(term)) % (2**31)
+            # re-running the seed produces byte-identical rows. Built-in
+            # hash() is per-process randomised; use _det_hash (md5).
+            seed_val = _det_hash(term)
             rng = random.Random(seed_val)
             db.session.add(TrendingTerm(
                 term=term, rank=i+1,
@@ -2852,6 +3077,10 @@ def seed_database(db, User, Vertical, Topic, SearchResult, PaaQuestion, RelatedQ
 
     # ---- R5: append +6 results / +3 PAA / +4 KFs per topic (rank >= 20) ----
     _seed_r5_enrichment(db, Topic, SearchResult, PaaQuestion, KnowledgeFact)
+
+    # ---- R6: append +5 results / +2 PAA / +1 KF per topic (rank >= 30) +
+    #          backfill favicon/breadcrumb for new R6 topic rows ----
+    _seed_r6_enrichment(db, Topic, SearchResult, PaaQuestion, KnowledgeFact)
 
     # Demo user
     if not User.query.filter_by(email='demo@google.com').first():

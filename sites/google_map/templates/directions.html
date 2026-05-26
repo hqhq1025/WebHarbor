@@ -134,6 +134,24 @@
             {% endif %}
 
             <h2 style="margin-top:18px;">Route summary</h2>
+            {% if no_route_found %}
+            <div class="pd-banner" role="alert"
+                 style="margin:8px 0 12px;padding:12px 14px;border-radius:8px;background:#fce8e6;color:#a50e0e;border-left:4px solid #c5221f;font-size:13px;">
+                <strong>No route found</strong> from "{{ from_q }}" to "{{ to_q }}" via {{ mode }}.
+                Try one of the suggested alternatives below.
+            </div>
+            {% if route_suggestions %}
+            <div class="route-alt-suggestions" style="display:flex;flex-direction:column;gap:8px;margin-bottom:12px;">
+                {% for sug in route_suggestions %}
+                <a class="ra-item" href="{{ sug.href }}"
+                   style="display:flex;align-items:center;gap:10px;padding:10px 12px;border:1px solid var(--divider);border-radius:8px;background:#fff;text-decoration:none;color:#202124;font-size:13px;">
+                    <span class="material-icons-outlined" style="color:#1a73e8;">alt_route</span>
+                    {{ sug.label }}
+                </a>
+                {% endfor %}
+            </div>
+            {% endif %}
+            {% endif %}
             <div class="direction-result">
                 <div class="dr-headline">{{ _from_name }} → {{ _to_name }}</div>
                 <div class="dr-meta">

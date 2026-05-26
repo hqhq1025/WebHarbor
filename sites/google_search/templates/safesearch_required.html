@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block title %}About this page - Google{% endblock %}
+{% block content %}
+<div class="help-page">
+    <nav class="help-breadcrumb"><a href="{{ url_for('index') }}">Google</a> &rsaquo; SafeSearch confirmation</nav>
+    <h1>Confirm your search</h1>
+    {% if reason == 'safesearch' %}
+    <p class="lead">Our systems have detected that this query may return explicit content.
+        To continue, please confirm that SafeSearch should be relaxed for this session,
+        or return to the previous page.</p>
+    {% else %}
+    <p class="lead">Our systems have detected unusual traffic from your network.
+        To continue, please confirm that you are not a robot.</p>
+    {% endif %}
+    {% if q %}
+    <p>Your query: <strong>{{ q }}</strong></p>
+    {% endif %}
+    <div class="help-related" style="margin-top:24px;">
+        <a class="btn-primary" href="{{ continue_url }}">Continue with SafeSearch</a>
+        <a class="btn-secondary" href="{{ url_for('settings') }}">Adjust SafeSearch settings</a>
+        <a class="btn-secondary" href="{{ url_for('index') }}">Return to Google</a>
+    </div>
+    <h2 style="margin-top:24px;">Why am I seeing this?</h2>
+    <ul class="help-faq">
+        <li>Google occasionally requires safe-search confirmation for queries that match adult, sensitive, or restricted-content patterns.</li>
+        <li>You can manage your default SafeSearch level under <a href="{{ url_for('settings') }}">Search settings</a>.</li>
+        <li>Children's accounts and managed school accounts cannot disable SafeSearch.</li>
+    </ul>
+</div>
+{% endblock %}

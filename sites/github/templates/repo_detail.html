@@ -52,6 +52,40 @@
 </div>
 
 <div class="repo-layout">
+  {% if dmca_taken_down %}
+  <div class="repo-dmca-banner" style="background:#ffebe9;border:1px solid #ff8182;border-radius:6px;padding:24px;margin:16px 0;color:#82071e;text-align:center;">
+    <h2 style="margin:0 0 8px;">Repository unavailable due to DMCA takedown</h2>
+    <p style="margin:0;">Access to <code>{{ repo.full_name }}</code> has been disabled. The repository owner can <a href="/contact">contact GitHub Support</a> to dispute the takedown notice.</p>
+  </div>
+  {% else %}
+  {% if fork_rate_limited %}
+  <div class="repo-banner-warn" style="background:#fff8c5;border:1px solid #d4a72c;border-radius:6px;padding:12px 16px;margin:12px 0;color:#7d4e00;">
+    <strong>Fork rate limit hit.</strong> You have created too many forks recently. Wait a few minutes and try again.
+  </div>
+  {% endif %}
+  {% if edge_archived_ro or repo.is_archived %}
+  <div class="repo-banner-archived" style="background:#fff8c5;border:1px solid #d4a72c;border-radius:6px;padding:12px 16px;margin:12px 0;color:#7d4e00;">
+    <strong>This repository has been archived by the owner</strong> on {{ repo.updated_at.strftime('%b %-d, %Y') }}. It is now read-only — issues, pulls, and pushes are disabled.
+  </div>
+  {% endif %}
+  {% if edge_branch_protected %}
+  <div class="repo-banner-branch" style="background:#ddf4ff;border:1px solid #54aeff;border-radius:6px;padding:12px 16px;margin:12px 0;color:#0969da;">
+    <strong>Branch <code>{{ repo.default_branch or 'main' }}</code> is protected.</strong> Direct pushes are blocked; all changes must come in via reviewed pull requests.
+  </div>
+  {% endif %}
+  {% if edge_action_failed %}
+  <div class="repo-banner-actions" style="background:#ffebe9;border:1px solid #ff8182;border-radius:6px;padding:12px 16px;margin:12px 0;color:#82071e;">
+    <strong>The latest workflow run on <code>{{ repo.default_branch or 'main' }}</code> failed.</strong>
+    <a href="/{{ repo.full_name }}/actions" style="color:#0969da;">View failure logs →</a>
+  </div>
+  {% endif %}
+  {% if edge_pr_conflict %}
+  <div class="repo-banner-pr" style="background:#fff8c5;border:1px solid #d4a72c;border-radius:6px;padding:12px 16px;margin:12px 0;color:#7d4e00;">
+    <strong>An open pull request has merge conflicts</strong> that must be resolved before it can be merged.
+    <a href="/{{ repo.full_name }}/pulls" style="color:#0969da;">Review open PRs →</a>
+  </div>
+  {% endif %}
+  {% endif %}
   <!-- Main content -->
   <div class="repo-main">
     <!-- File tree placeholder -->
@@ -383,6 +417,68 @@
         </div>
       </div>
       {% endfor %}
+    </div>
+    {% endif %}
+
+    <!-- R6: Topic-based related repos -->
+    {% if topic_related %}
+    <div class="sidebar-box">
+      <h3 class="sidebar-box-title">Related by topic</h3>
+      {% for r in topic_related %}
+      <div class="sidebar-related-repo">
+        <a href="/{{ r.full_name }}" class="sidebar-related-name">{{ r.full_name }}</a>
+        <div class="sidebar-related-meta">
+          <span class="repo-stars-sm">⭐ {{ r.stars_count | number_format }}</span>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+    {% endif %}
+
+    <!-- R6: More from this owner -->
+    {% if owner_other_repos %}
+    <div class="sidebar-box">
+      <h3 class="sidebar-box-title">More from @{{ owner.username }}</h3>
+      {% for r in owner_other_repos %}
+      <div class="sidebar-related-repo">
+        <a href="/{{ r.full_name }}" class="sidebar-related-name">{{ r.name }}</a>
+        <p class="sidebar-related-desc">{{ r.description[:60] }}{% if r.description|length > 60 %}…{% endif %}</p>
+        <div class="sidebar-related-meta">
+          {% if r.language %}
+          <span class="repo-lang">
+            <span class="repo-lang-dot" style="background-color: {{ lang_colors.get(r.language, '#8f9ba8') }}"></span>
+            {{ r.language }}
+          </span>
+          {% endif %}
+          <span class="repo-stars-sm">⭐ {{ r.stars_count | number_format }}</span>
+        </div>
+      </div>
+      {% endfor %}
+      <a href="/{{ owner.username }}?tab=repositories" class="sidebar-more-link">View all by @{{ owner.username }} →</a>
+    </div>
+    {% endif %}
+
+    <!-- R6: Used by -->
+    {% if used_by %}
+    <div class="sidebar-box">
+      <h3 class="sidebar-box-title">
+        Used by <span class="sidebar-box-count">{{ used_by_total | number_format if used_by_total else used_by|length }}</span>
+      </h3>
+      <ul class="sidebar-contributors-grid">
+        {% for r in used_by %}
+        <li class="sidebar-contributor-cell">
+          <a href="/{{ r.full_name }}" title="{{ r.full_name }}">
+            <img src="{{ avatar_for(r.full_name.split('/')[0]) }}"
+                 alt="{{ r.full_name }}"
+                 class="sidebar-contributor-avatar"
+                 onerror="this.src='/static/images/avatars/avatar_00.jpg'">
+          </a>
+        </li>
+        {% endfor %}
+      </ul>
+      {% if used_by_total and used_by_total > used_by|length %}
+      <a href="/{{ repo.full_name }}/network/dependents" class="sidebar-contributors-more">+ {{ (used_by_total - used_by|length) | number_format }} dependents</a>
+      {% endif %}
     </div>
     {% endif %}
   </aside>

@@ -16,6 +16,16 @@
                 Live status across {{ lines|length }} lines{% if selected_city %} in {{ selected_city.display_name }}{% endif %}. Updated every minute.
             </div>
 
+            {% if no_service_after_hours %}
+            <div class="pd-banner" role="alert"
+                 style="margin:12px 0;padding:12px 14px;border-radius:8px;background:#fce8e6;color:#a50e0e;border-left:4px solid #c5221f;font-size:13px;">
+                <strong>No service after hours.</strong>
+                {{ no_service_after_hours|length }} line{{ '' if no_service_after_hours|length == 1 else 's' }} suspended for the night:
+                {% for l in no_service_after_hours %}<a href="{{ url_for('transit_line_detail', line_slug=l.slug) }}" style="color:#a50e0e;text-decoration:underline;">{{ l.short_name or l.name }}</a>{% if not loop.last %}, {% endif %}{% endfor %}.
+                First train resumes at the start of service.
+            </div>
+            {% endif %}
+
             <div class="filter-chips" style="display:flex;flex-wrap:wrap;gap:8px;margin:12px 0;">
                 <a class="chip {% if not selected_city %}active{% endif %}" href="{{ url_for('transit_realtime') }}">All cities</a>
                 {% for c in cities[:12] %}

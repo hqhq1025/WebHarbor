@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block title %}{{ q }} - No results - Google{% endblock %}
+{% block content %}
+<div class="help-page">
+    <nav class="help-breadcrumb"><a href="{{ url_for('index') }}">Google</a> &rsaquo; No results found</nav>
+    <h1>Your search — "{{ q }}" — did not match any documents</h1>
+    <p class="lead">Make sure all words are spelled correctly. Try different keywords,
+        more general keywords, or fewer keywords. You can also try the suggestions below.</p>
+
+    {% if alts %}
+    <h2>Did you mean one of these?</h2>
+    <div class="related-grid" style="margin-top:8px;">
+        {% for a in alts %}
+        <a class="related-item" href="{{ url_for('search', q=a.q) }}" style="flex-direction:column; align-items:flex-start; gap:6px;">
+            <strong>{{ a.q }}</strong>
+            <span style="color:var(--color-text-secondary); font-size:13px;">{{ a.snippet }}</span>
+        </a>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <h2 style="margin-top:24px;">Refine your search</h2>
+    <div class="similar-chips" aria-label="Refine results">
+        <span class="chips-label">Refine</span>
+        <a class="chip" href="{{ url_for('search', q=q + ' definition') }}">{{ q }} definition</a>
+        <a class="chip" href="{{ url_for('search', q=q + ' overview') }}">{{ q }} overview</a>
+        <a class="chip" href="{{ url_for('search', q=q, tbm='news') }}">News</a>
+        <a class="chip" href="{{ url_for('search', q=q, tbm='images') }}">Images</a>
+    </div>
+
+    <h2 style="margin-top:24px;">Search tips</h2>
+    <ul class="help-faq">
+        <li>Try one of <a href="{{ url_for('trending') }}">today's trending searches</a>.</li>
+        <li>Visit the <a href="{{ url_for('search_help', topic='basics') }}">Search basics</a> page for tips.</li>
+        <li>Use the <a href="{{ url_for('advanced_search') }}">Advanced search</a> form to narrow by language, date, or domain.</li>
+    </ul>
+</div>
+{% endblock %}

@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% block title %}Cited by {{ synthetic_total }} papers — arXiv:{{ paper.arxiv_id }}{% endblock %}
+{% block breadcrumbs %}
+    {% if paper.primary_category_code %}
+    <span class="sep">&gt;</span>
+    <a href="{{ url_for('category_detail', code=paper.primary_category_code) }}">{{ paper.primary_category_code }}</a>
+    {% endif %}
+    <span class="sep">&gt;</span>
+    <a href="{{ url_for('paper_detail', arxiv_id=paper.arxiv_id) }}">arXiv:{{ paper.arxiv_id }}</a>
+    <span class="sep">&gt;</span>
+    <span style="color:#fff">Cited by</span>
+{% endblock %}
+{% block content %}
+<div class="citing-list-page">
+    <h1 style="font-size:18px;">Cited by {{ synthetic_total }} papers</h1>
+    <p class="muted" style="font-size:13px;">
+        Papers that cite
+        <a href="{{ url_for('paper_detail', arxiv_id=paper.arxiv_id) }}"><b>arXiv:{{ paper.arxiv_id }}</b></a>
+        — <i>{{ paper.display_title }}</i>.
+        Citation counts are sourced from the mirror's bibliographic graph.
+    </p>
+
+    {% if rows %}
+    <ol class="citing-list" style="padding-left:18px;line-height:1.5;">
+        {% for r in rows %}
+        <li style="margin:10px 0;border-bottom:1px solid var(--border-light);padding-bottom:8px;">
+            <a href="{{ url_for('paper_detail', arxiv_id=r.paper.arxiv_id) }}"><b>{{ r.paper.display_title }}</b></a>
+            <div style="font-size:12px;color:var(--text-muted);">
+                arXiv:{{ r.paper.arxiv_id }} · {{ r.paper.primary_subject_code }}
+                {% if r.paper.submitted_year %} · {{ r.paper.submitted_year }}{% endif %}
+                {% if r.venue %} · {{ r.venue }}{% endif %}
+            </div>
+            <div style="font-size:12px;">
+                <i class="muted">{{ r.context }}</i>
+            </div>
+        </li>
+        {% endfor %}
+    </ol>
+    <div class="paging" style="margin-top:14px;">
+        {% if page > 1 %}
+        <a href="{{ url_for('paper_citing_list', arxiv_id=paper.arxiv_id, page=page-1) }}">&laquo; Prev</a>
+        {% endif %}
+        <span class="current">Page {{ page }}</span>
+        {% if page * per_page < total %}
+        <a href="{{ url_for('paper_citing_list', arxiv_id=paper.arxiv_id, page=page+1) }}">Next &raquo;</a>
+        {% endif %}
+    </div>
+    {% else %}
+    <p class="muted">No citations have been indexed for this paper yet.</p>
+    {% endif %}
+
+    <p style="margin-top:18px;font-size:12px;">
+        <a href="{{ url_for('paper_detail', arxiv_id=paper.arxiv_id) }}">&laquo; Back to paper</a>
+        ·
+        <a href="{{ url_for('paper_related', arxiv_id=paper.arxiv_id) }}">Related papers</a>
+        ·
+        <a href="{{ url_for('paper_authors_also', arxiv_id=paper.arxiv_id) }}">Authors who also published in {{ paper.primary_subject_code }}</a>
+    </p>
+</div>
+{% endblock %}

@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% block title %}Share on LinkedIn — {{ course.title }} | Coursera{% endblock %}
+{% block content %}
+<div class="container linkedin-share-page" id="main-content" style="padding:32px 0;max-width:780px;">
+  <nav class="cd-breadcrumb" style="font-size:13px;color:var(--c-muted);margin-bottom:18px;">
+    <a href="{{ url_for('index') }}">Home</a> &rsaquo;
+    <a href="{{ url_for('course_detail', slug=course.slug) }}">{{ course.title|truncate(48) }}</a> &rsaquo;
+    <a href="{{ url_for('certificate_verify', course_id=course.id) }}">Certificate</a> &rsaquo;
+    <span>Share to LinkedIn</span>
+  </nav>
+
+  <h1 style="margin:0 0 8px 0;font-size:28px;">Share your completion on LinkedIn</h1>
+  <p style="color:var(--c-muted);font-size:14px;margin:0 0 22px 0;">
+    You just finished “{{ course.title }}”. Add it to your LinkedIn profile
+    so recruiters can see your verified Coursera credential.
+  </p>
+
+  <div style="background:#fff;border:1px solid #e5e7eb;border-radius:12px;padding:24px;">
+    <div style="display:flex;align-items:center;gap:14px;border-bottom:1px solid #f3f4f6;padding-bottom:14px;margin-bottom:14px;">
+      <span style="background:#0a66c2;color:#fff;font-weight:700;font-size:13px;padding:6px 12px;border-radius:4px;letter-spacing:.5px;">in</span>
+      <strong>Add to LinkedIn Profile</strong>
+    </div>
+
+    <label style="font-size:12px;text-transform:uppercase;color:var(--c-muted);font-weight:700;letter-spacing:.3px;">Suggested post text</label>
+    <textarea readonly rows="6"
+              style="width:100%;margin-top:8px;font-family:inherit;font-size:14px;line-height:1.6;padding:12px;border:1px solid #d1d5db;border-radius:6px;background:#f9fafb;color:#1f2937;">I just finished “{{ course.title }}” on Coursera — offered by {% if course.partner %}{{ course.partner.name }}{% else %}Coursera{% endif %}. Excited to apply {{ course.level|lower }}-level skills in {{ course.category }} to my next role. Verified certificate attached. #Coursera #{{ course.category|replace(' ','') }} #LifelongLearning</textarea>
+
+    <div style="margin:18px 0;font-size:13px;color:#374151;">
+      <strong>Credential summary</strong>
+      <ul style="padding-left:20px;line-height:1.7;">
+        <li>Certificate ID: <code>COURSERA-{{ course.id }}-{{ course.slug[:12] }}</code></li>
+        <li>Issued by: {% if course.partner %}{{ course.partner.name }}{% else %}Coursera{% endif %}</li>
+        <li>Course duration: {{ course.duration_text }}</li>
+        <li>Verifiable at: <a href="{{ url_for('certificate_verify', course_id=course.id, _external=False) }}">/certificate/{{ course.id }}</a></li>
+      </ul>
+    </div>
+
+    <div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:18px;">
+      <a href="#" class="btn-primary"
+         style="padding:10px 18px;background:#0a66c2;color:#fff;border-radius:6px;text-decoration:none;font-weight:600;">
+        Share to LinkedIn
+      </a>
+      <a href="{{ url_for('certificate_verify', course_id=course.id) }}" class="btn-secondary"
+         style="padding:10px 18px;border:1px solid #d1d5db;border-radius:6px;color:#1f2937;text-decoration:none;">
+        View certificate
+      </a>
+      <a href="{{ url_for('course_detail', slug=course.slug) }}" class="btn-secondary"
+         style="padding:10px 18px;border:1px solid #d1d5db;border-radius:6px;color:#1f2937;text-decoration:none;">
+        Back to course
+      </a>
+    </div>
+  </div>
+</div>
+{% endblock %}

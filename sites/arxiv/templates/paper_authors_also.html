@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block title %}Authors who also published in {{ primary }} — arXiv:{{ paper.arxiv_id }}{% endblock %}
+{% block breadcrumbs %}
+    <span class="sep">&gt;</span>
+    <a href="{{ url_for('paper_detail', arxiv_id=paper.arxiv_id) }}">arXiv:{{ paper.arxiv_id }}</a>
+    <span class="sep">&gt;</span>
+    <span style="color:#fff">Co-publications</span>
+{% endblock %}
+{% block content %}
+<h1 style="font-size:18px;">Authors who also published in {{ primary }}</h1>
+<p class="muted" style="font-size:13px;">
+    Other papers in <a href="{{ url_for('listing', code=primary, view='recent') }}"><b>{{ primary }}</b></a>
+    that share at least one author with
+    <a href="{{ url_for('paper_detail', arxiv_id=paper.arxiv_id) }}">arXiv:{{ paper.arxiv_id }}</a>.
+    Matching on surnames: {% for s in surnames %}<span class="mono">{{ s }}</span>{% if not loop.last %}, {% endif %}{% endfor %}.
+</p>
+
+{% if co_papers %}
+<ol style="padding-left:18px;line-height:1.5;">
+    {% for p in co_papers %}
+    <li style="margin:8px 0;">
+        <a href="{{ url_for('paper_detail', arxiv_id=p.arxiv_id) }}"><b>{{ p.display_title }}</b></a>
+        <div style="font-size:12px;color:var(--text-muted);">
+            arXiv:{{ p.arxiv_id }} — {{ p.authors_display }}
+            {% if p.submitted_year %} · {{ p.submitted_year }}{% endif %}
+        </div>
+    </li>
+    {% endfor %}
+</ol>
+{% else %}
+<p class="muted">No co-publications found for these surnames in {{ primary }}.</p>
+{% endif %}
+
+<p style="margin-top:18px;font-size:12px;">
+    <a href="{{ url_for('paper_detail', arxiv_id=paper.arxiv_id) }}">&laquo; Back to paper</a>
+    ·
+    <a href="{{ url_for('paper_citing_list', arxiv_id=paper.arxiv_id) }}">Citing-list</a>
+</p>
+{% endblock %}

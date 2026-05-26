@@ -383,6 +383,78 @@
 </div>
 {% endif %}
 
+<!-- R6: Recipes from the same chef -->
+{% if same_chef_recipes %}
+<div class="recipe-section same-chef-section" aria-label="Recipes from the same chef">
+    <h2>Recipes from {{ recipe.author_name }}</h2>
+    <p style="color:#666;font-size:0.88rem;margin-top:-6px">
+        More signature dishes from this chef &mdash;
+        <a href="{{ url_for('author_page', slug=recipe.author_name|lower|replace(' ', '-')) }}">visit the chef&rsquo;s page</a>.
+    </p>
+    <div class="same-chef-carousel" style="display:flex;gap:14px;overflow-x:auto;padding-bottom:12px;scroll-snap-type:x mandatory">
+        {% for r in same_chef_recipes %}
+        <div class="recipe-card carousel-card same-chef-card" style="flex:0 0 220px;scroll-snap-align:start">
+            <div class="recipe-card-image">
+                <a href="{{ url_for('recipe_detail', slug=r.slug) }}">
+                    <img src="{{ r.image }}" alt="{{ r.title }}" loading="lazy"
+                         onerror="this.parentElement.innerHTML='<div class=\'placeholder-img\'>{{ r.title }}</div>'">
+                </a>
+            </div>
+            <div class="recipe-card-body">
+                <div class="recipe-card-title"><a href="{{ url_for('recipe_detail', slug=r.slug) }}">{{ r.title }}</a></div>
+                <div class="recipe-card-meta">
+                    <div class="recipe-card-rating">
+                        {% for i in range(5) %}
+                        <span class="star {% if i >= r.avg_rating|round(0,'floor')|int %}empty{% endif %}">&#9733;</span>
+                        {% endfor %}
+                    </div>
+                    <span>{{ r.cuisine or r.meal_type or '' }}</span>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endif %}
+
+<!-- R6: More like this — cross-category "更像 X 的菜谱" -->
+{% if more_like_recipes %}
+<div class="recipe-section more-like-section" aria-label="More recipes like this one">
+    <h2>More Like {{ recipe.title }}</h2>
+    <p style="color:#666;font-size:0.88rem;margin-top:-6px">
+        Same flavor profile, a different category &mdash; try one of these for a change of pace.
+    </p>
+    <div class="more-like-carousel" style="display:flex;gap:14px;overflow-x:auto;padding-bottom:12px;scroll-snap-type:x mandatory">
+        {% for r in more_like_recipes %}
+        <div class="recipe-card carousel-card more-like-card" style="flex:0 0 220px;scroll-snap-align:start">
+            <div class="recipe-card-image">
+                <a href="{{ url_for('recipe_detail', slug=r.slug) }}">
+                    <img src="{{ r.image }}" alt="{{ r.title }}" loading="lazy"
+                         onerror="this.parentElement.innerHTML='<div class=\'placeholder-img\'>{{ r.title }}</div>'">
+                </a>
+            </div>
+            <div class="recipe-card-body">
+                <div class="recipe-card-title"><a href="{{ url_for('recipe_detail', slug=r.slug) }}">{{ r.title }}</a></div>
+                <div class="recipe-card-meta">
+                    <div class="recipe-card-rating">
+                        {% for i in range(5) %}
+                        <span class="star {% if i >= r.avg_rating|round(0,'floor')|int %}empty{% endif %}">&#9733;</span>
+                        {% endfor %}
+                    </div>
+                    <span>({{ r.review_count | int }})</span>
+                </div>
+                {% if r.category %}
+                <div style="font-size:0.78rem;color:#888;margin-top:4px">
+                    <a href="{{ url_for('category_page', slug=r.category.slug) }}">{{ r.category.name }}</a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endif %}
+
 <!-- R4: quick-look modal placeholder (hidden by default, shown via JS) -->
 <div id="recipe-quick-look" class="quick-look-modal" hidden
      style="position:fixed;inset:0;background:rgba(0,0,0,0.55);z-index:1000;align-items:center;justify-content:center;display:none">

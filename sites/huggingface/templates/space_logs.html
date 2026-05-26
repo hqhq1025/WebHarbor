@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% block title %}Build logs — {{ repo.slug }}{% endblock %}
+
+{% block content %}
+<div class="container-wide page">
+    <nav class="docs-breadcrumb" aria-label="Breadcrumb">
+        <a href="{{ url_for('index') }}">Home</a>
+        <span>/</span>
+        <a href="{{ url_for('spaces_list') }}">Spaces</a>
+        <span>/</span>
+        <a href="{{ url_for('author_page', username=repo.slug.split('/')[0]) }}">{{ repo.slug.split('/')[0] }}</a>
+        <span>/</span>
+        <a href="/spaces/{{ repo.slug }}">{{ repo.slug.split('/')[1] }}</a>
+        <span>/</span>
+        <span>Logs</span>
+    </nav>
+
+    <h1 style="margin: 4px 0 12px;">Build logs — <code>{{ repo.slug }}</code></h1>
+
+    <div class="status-line" style="margin: 8px 0; display: flex; gap: 10px; align-items: center;">
+        <span>Build status:</span>
+        {% if status == 'build-error' %}
+        <span class="tag" id="build-status-pill" style="background: #fee2e2; color: #991b1b; font-weight: 600;">● Build failed</span>
+        {% elif status == 'build-running' %}
+        <span class="tag" id="build-status-pill" style="background: #fef3c7; color: #92400e; font-weight: 600;">● Building</span>
+        {% else %}
+        <span class="tag" id="build-status-pill" style="background: #d1fae5; color: #065f46; font-weight: 600;">● Running</span>
+        {% endif %}
+    </div>
+
+    {% if status == 'build-error' %}
+    <div role="alert" id="build-error-banner" style="margin: 8px 0 14px; padding: 12px 16px; background: #fef2f2; border: 1px solid #fca5a5; border-radius: 8px;">
+        <strong style="color: #991b1b;">⚠️ This Space failed to build.</strong>
+        <p style="margin: 6px 0 0; font-size: 13.5px;">
+            Review the log below for the failing line. Common fixes: pin
+            <code>transformers</code> / <code>torch</code> versions,
+            upgrade to a larger hardware tier, or add the missing module to
+            <code>requirements.txt</code>.
+        </p>
+    </div>
+    {% elif status == 'build-running' %}
+    <div role="status" id="build-running-banner" style="margin: 8px 0 14px; padding: 12px 16px; background: #fff7ed; border: 1px solid #fdba74; border-radius: 8px;">
+        <strong style="color: #92400e;">⏳ Build in progress.</strong>
+        <p style="margin: 6px 0 0; font-size: 13.5px;">This page auto-refreshes every 10 s while building. ETA varies with hardware tier.</p>
+    </div>
+    {% endif %}
+
+    <pre id="build-log" style="background: #0f172a; color: #f1f5f9; padding: 16px; border-radius: 8px; font-size: 12.5px; line-height: 1.55; max-height: 480px; overflow: auto; white-space: pre-wrap;">{{ log }}</pre>
+
+    <div style="margin-top: 14px; display: flex; gap: 10px;">
+        <a class="btn btn-outline" href="/spaces/{{ repo.slug }}">← Back to Space</a>
+        {% if status == 'build-error' %}
+        <a class="btn btn-primary" href="/spaces/{{ repo.slug }}/tree/main">View files</a>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

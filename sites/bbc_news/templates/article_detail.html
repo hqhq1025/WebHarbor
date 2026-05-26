@@ -4,6 +4,23 @@
 {% block content %}
 <article class="article-page-wide">
 <div>
+    {% if edge_banner %}
+    {# R6: editorial status banner for edge-case stories. The data-status #}
+    {# attribute carries the structured tag so tasks can assert on it.    #}
+    <div class="edge-status-banner edge-status-{{ edge_status }}" role="status"
+         data-edge-status="{{ edge_status }}">
+        <span class="edge-status-icon" aria-hidden="true">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
+                 stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10"></circle>
+                <line x1="12" y1="8" x2="12" y2="12"></line>
+                <line x1="12" y1="16" x2="12.01" y2="16"></line>
+            </svg>
+        </span>
+        <span class="edge-status-label">{{ edge_banner }}</span>
+    </div>
+    {% endif %}
+
     <nav class="breadcrumb" aria-label="Breadcrumb">
         <a href="{{ url_for('index') }}">BBC</a>
         <span class="breadcrumb-sep">&rsaquo;</span>
@@ -215,6 +232,24 @@
     </div>
     {% endif %}
 
+    {% if related_topic_chips %}
+    {# R6: explicit "Related topics" block. Bigger, labeled, and rendered  #}
+    {# below the article body so readers can jump to a /topic/ page.       #}
+    <section class="related-topics-section" aria-label="Related topics">
+        <h2 class="related-topics-title">Related topics</h2>
+        <ul class="related-topics-list">
+            {% for topic in related_topic_chips %}
+            <li>
+                <a class="related-topic-tag" href="{{ url_for('topic_page', topic=topic) }}"
+                   data-related-topic="{{ topic }}">
+                    {{ topic }}
+                </a>
+            </li>
+            {% endfor %}
+        </ul>
+    </section>
+    {% endif %}
+
     {# Gallery sections from article_galleries.json #}
     {% set gallery_data = article_gallery %}
     {% if article_gallery and article_gallery.sections %}
@@ -270,7 +305,14 @@
             </button>
             {% endif %}
         </h2>
-        {% if current_user.is_authenticated %}
+        {% if edge_status in ('r6-comments-locked', 'r6-user-blocked') %}
+        {# R6: comments locked or user blocked — show notice in place of    #}
+        {# the form. Existing comments remain visible below.                #}
+        <div class="comments-locked-notice" data-comments-locked="{{ edge_status }}"
+             style="padding: 16px; background: var(--bbc-bg-alt); margin-bottom: 20px; font-size: 14px;">
+            {{ edge_banner }}
+        </div>
+        {% elif current_user.is_authenticated %}
         <form class="comment-form" method="post" action="{{ url_for('submit_comment', slug=article.slug) }}">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <textarea name="body" placeholder="Share your thoughts on this story..." required></textarea>
@@ -318,6 +360,51 @@
 </div>
 
 <aside>
+    {% if top_story_today %}
+    {# R6: Top story today — featured-flagged most-recent article that      #}
+    {# isn't the current one. Renders at the very top of the sidebar so    #}
+    {# the agent can navigate to it from any article page.                  #}
+    <div class="side-block top-story-today" data-top-story-today="1">
+        <h3 class="side-title" style="border-left: 4px solid var(--bbc-red); padding-left: 8px;">
+            Top story today
+        </h3>
+        <a class="top-story-card" href="{{ url_for('article_detail', slug=top_story_today.slug) }}"
+           data-top-story-slug="{{ top_story_today.slug }}">
+            {% if top_story_today.hero_image %}
+            <img src="{{ top_story_today.hero_image }}" alt="{{ top_story_today.headline|e }}"
+                 class="top-story-image"
+                 onerror="this.style.display='none'">
+            {% endif %}
+            <div class="top-story-body">
+                <div class="top-story-headline">{{ top_story_today.headline }}</div>
+                <div class="top-story-meta">
+                    <span>{{ top_story_today.category.name if top_story_today.category else 'News' }}</span>
+                    <span class="dot"></span>
+                    <span>{{ top_story_today.published_date_str }}</span>
+                </div>
+            </div>
+        </a>
+    </div>
+    {% endif %}
+
+    {% if more_from_reporter %}
+    {# R6: "More from this reporter" — only populated for named bylines.   #}
+    <div class="side-block more-from-reporter" data-more-from-reporter="1"
+         data-reporter-name="{{ article.author }}">
+        <h3 class="side-title">More from {{ article.author }}</h3>
+        {% for art in more_from_reporter[:5] %}
+        <a class="side-item" href="{{ url_for('article_detail', slug=art.slug) }}"
+           data-reporter-link="{{ art.slug }}">
+            <div class="side-item-num">{{ loop.index }}</div>
+            <div>
+                <div class="side-item-title">{{ art.headline }}</div>
+                <div class="hero-side-meta">{{ art.category.name if art.category else 'News' }} · {{ art.published_date_str }}</div>
+            </div>
+        </a>
+        {% endfor %}
+    </div>
+    {% endif %}
+
     <div class="side-block recommended">
         <h3 class="side-title" style="border-left: 4px solid var(--bbc-red); padding-left: 8px;">Recommended</h3>
         {% for art in more_articles[:5] %}

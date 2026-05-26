@@ -331,6 +331,75 @@ pipe = pipeline("{{ repo.task_slug or 'text-generation' }}",
                 </table>
             </div>
             {% endif %}
+
+            {# R6: lineage cards — only meaningful for models. Each card has
+               a stable id so an agent can target it without text-matching. #}
+            {% if repo.repo_type == 'model' and same_task_models %}
+            <div class="side-card" id="same-task-card">
+                <h4>Models for same task</h4>
+                <p class="muted" style="font-size: 12px; margin: 0 0 8px;">
+                    Other top {{ repo.task_display|lower }} models on the Hub.
+                </p>
+                <ul style="list-style: none; padding: 0; margin: 0;">
+                {% for m in same_task_models %}
+                    <li style="margin: 4px 0; font-size: 13px;">
+                        <a href="/{{ m.slug }}"><strong>{{ m.slug }}</strong></a>
+                        <span class="muted" style="font-size: 11.5px;">· ♥ {{ m.likes_count }}</span>
+                    </li>
+                {% endfor %}
+                </ul>
+            </div>
+            {% endif %}
+
+            {% if repo.repo_type == 'model' and trained_on_datasets %}
+            <div class="side-card" id="trained-on-card">
+                <h4>Datasets this model trained on</h4>
+                <p class="muted" style="font-size: 12px; margin: 0 0 8px;">
+                    Top public datasets for {{ repo.task_display|lower }} — likely candidates from the training mix.
+                </p>
+                <ul style="list-style: none; padding: 0; margin: 0;">
+                {% for d in trained_on_datasets %}
+                    <li style="margin: 4px 0; font-size: 13px;">
+                        <a href="/datasets/{{ d.slug }}"><strong>{{ d.slug }}</strong></a>
+                        <span class="muted" style="font-size: 11.5px;">· {{ d.rows_display }} rows</span>
+                    </li>
+                {% endfor %}
+                </ul>
+            </div>
+            {% endif %}
+
+            {% if repo.repo_type == 'model' and citing_papers %}
+            <div class="side-card" id="citing-papers-card">
+                <h4>Papers citing this model</h4>
+                <ul style="list-style: none; padding: 0; margin: 0;">
+                {% for p in citing_papers %}
+                    <li style="margin: 6px 0; font-size: 13px;">
+                        <a href="{{ url_for('paper_detail', arxiv_id=p.arxiv_id) }}">
+                            <strong>{{ p.title }}</strong>
+                        </a>
+                        <div class="muted" style="font-size: 11.5px;">arXiv:{{ p.arxiv_id }}</div>
+                    </li>
+                {% endfor %}
+                </ul>
+            </div>
+            {% endif %}
+
+            {% if repo.repo_type == 'model' and fine_tuned %}
+            <div class="side-card" id="fine-tuned-card">
+                <h4>Fine-tuned versions ({{ fine_tuned|length }})</h4>
+                <p class="muted" style="font-size: 12px; margin: 0 0 8px;">
+                    Downstream models derived from <code>{{ repo.slug }}</code>.
+                </p>
+                <ul style="list-style: none; padding: 0; margin: 0;">
+                {% for f in fine_tuned %}
+                    <li style="margin: 4px 0; font-size: 13px;">
+                        <a href="/{{ f.slug }}"><strong>{{ f.slug }}</strong></a>
+                        <span class="muted" style="font-size: 11.5px;">· ♥ {{ f.likes_count }}</span>
+                    </li>
+                {% endfor %}
+                </ul>
+            </div>
+            {% endif %}
         </aside>
     </div>
 </div>

@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block title %}{{ title }} - Disambiguation - Google{% endblock %}
+{% block content %}
+<div class="help-page">
+    <nav class="help-breadcrumb"><a href="{{ url_for('index') }}">Google</a> &rsaquo; Disambiguation</nav>
+    <h1>"{{ title }}" — multiple meanings</h1>
+    <p class="lead">The term "{{ title }}" matches more than one well-known topic.
+        Choose the one you want to see the knowledge card for.</p>
+
+    {% if matches %}
+    <div class="related-grid" style="margin-top:16px;">
+        {% for t in matches %}
+        <a class="related-item" href="{{ url_for('topic_detail', slug=t.slug) }}" style="flex-direction:column; align-items:flex-start; gap:6px;">
+            <strong>{{ t.name }}</strong>
+            <span style="color:var(--color-text-secondary); font-size:13px;">
+                {{ (t.summary or '')[:140] }}{% if (t.summary or '')|length > 140 %}…{% endif %}
+            </span>
+            <span style="color:#1a73e8; font-size:12px;">View knowledge card →</span>
+        </a>
+        {% endfor %}
+    </div>
+    {% else %}
+    <p>No matching topics found.
+        <a href="{{ url_for('search', q=title) }}">Search Google for "{{ title }}"</a> instead.</p>
+    {% endif %}
+
+    <h2 style="margin-top:24px;">Refine your search</h2>
+    <div class="similar-chips" aria-label="Refine results">
+        <span class="chips-label">Refine</span>
+        <a class="chip" href="{{ url_for('search', q=title + ' history') }}">{{ title }} history</a>
+        <a class="chip" href="{{ url_for('search', q=title + ' definition') }}">{{ title }} definition</a>
+        <a class="chip" href="{{ url_for('search', q=title + ' examples') }}">{{ title }} examples</a>
+        <a class="chip" href="{{ url_for('search', q=title + ' images', tbm='images') }}">Images</a>
+        <a class="chip" href="{{ url_for('search', q=title + ' news', tbm='news') }}">News</a>
+    </div>
+</div>
+{% endblock %}

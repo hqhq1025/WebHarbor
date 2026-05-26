@@ -11,7 +11,13 @@
             <h2>{{ place.name }} — floor selector</h2>
             <div class="sub">Choose a floor to see what's there. The currently-rendered place is on floor <strong>{{ place.floor_number or 'G' }}</strong>.</div>
 
-            {% if floors %}
+            {% if unmapped_banner %}
+            <div class="pd-banner" role="alert"
+                 style="margin:14px 0;padding:12px 14px;border-radius:8px;background:#feefc3;color:#856200;border-left:4px solid #f29900;font-size:13px;">
+                <strong>Indoor floor plan not yet available.</strong>
+                This building is multi-floor but its interior hasn't been mapped yet. Use directions to the main entrance instead.
+            </div>
+            {% elif floors %}
             <ul class="floor-selector" role="listbox" aria-label="Floor selector"
                 style="list-style:none;padding:0;margin:18px 0 0;display:flex;flex-direction:column;gap:8px;">
                 {% for f in floors %}

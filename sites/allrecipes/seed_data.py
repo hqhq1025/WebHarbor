@@ -1626,6 +1626,19 @@ def seed_extended_catalog():
         print(f"[seed_extended] R5 polish FAILED: {exc!r}")
         raise
 
+    # ----- R6: copycat-restaurant / budget-friendly / holiday-entertaining /
+    # air-fryer-shortcut variant passes + 4 new chefs (Brazilian, Greek,
+    # Vietnamese, Cajun) + more-like-this enrichment so the recipe detail
+    # page can compute the "更像 X" carousel.
+    try:
+        from r6_seed import run_r6_polish
+        r6_counts = run_r6_polish(cat_by_slug)
+        if not r6_counts.get('skipped'):
+            print(f"[seed_extended] R6 polish: {r6_counts}")
+    except Exception as exc:
+        print(f"[seed_extended] R6 polish FAILED: {exc!r}")
+        raise
+
     # ----- Reviewer users (placeholder, non-loginable) -----
     REVIEWER_COUNT = 24
     reviewer_first = [

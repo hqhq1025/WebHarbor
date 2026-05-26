@@ -8,12 +8,29 @@
     <span>{{ quiz.title }}</span>
   </nav>
 
+  {% if time_up %}
+  <div class="quiz-timeup-overlay" id="quizTimeupOverlay" role="alert"
+       data-quiz-slug="{{ quiz.slug }}" data-attempt="{{ attempt }}">
+    <h2 class="quiz-timeup-h">&#x23F1; Time's up</h2>
+    <p class="quiz-timeup-msg">
+      You've reached the time limit for this quiz attempt (attempt #{{ attempt }}).
+      Your answers are no longer accepted; submit to view the score, or
+      <a href="{{ url_for('quiz_detail', slug=quiz.slug, attempt=attempt + 1) }}">retry as attempt #{{ attempt + 1 }}</a>.
+    </p>
+    <ul class="quiz-timeup-actions">
+      <li><a href="{{ url_for('plus_index') }}">&laquo; Back to Plus index</a></li>
+      <li><a href="{{ url_for('quiz_detail', slug=quiz.slug) }}">Restart this quiz</a></li>
+    </ul>
+  </div>
+  {% endif %}
+
   <h1 class="quiz-title">{{ quiz.title }}</h1>
   <p class="quiz-desc">{{ quiz.description }}</p>
   <div class="quiz-meta">
     <span class="quiz-difficulty difficulty-{{ quiz.difficulty }}">{{ quiz.difficulty|capitalize }}</span>
     <span class="quiz-type-badge">{{ quiz.quiz_type|capitalize }} Quiz</span>
     <span class="quiz-count">{{ questions|length }} questions</span>
+    <span class="quiz-attempt-badge">Attempt #{{ attempt or 1 }}</span>
   </div>
 
   <div id="quiz-container" class="quiz-container" data-total="{{ questions|length }}" data-quiz-slug="{{ quiz.slug }}">

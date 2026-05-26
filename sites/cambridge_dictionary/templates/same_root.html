@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block title %}Words from the same root as {{ word.headword }}{% endblock %}
+{% block content %}
+<div class="container">
+  <nav class="breadcrumb r6-breadcrumb" aria-label="Breadcrumb">
+    <a href="{{ url_for('index') }}">Home</a> &rsaquo;
+    <a href="{{ url_for('word_detail', slug=word.slug) }}">{{ word.headword }}</a> &rsaquo;
+    <span>Words from same root</span>
+  </nav>
+
+  <h1>Words from the same root as <em>{{ word.headword }}</em></h1>
+  <p class="r6-help">These entries share a root with <strong>{{ word.headword }}</strong>
+    (slug stem <code>{{ word.slug[:4] }}</code>). Showing {{ candidates|length }}
+    result{{ '' if candidates|length == 1 else 's' }}.</p>
+
+  <form method="GET" class="r6-filter">
+    <label for="lvl">Filter by CEFR level:</label>
+    <select id="lvl" name="level" onchange="this.form.submit()">
+      <option value="" {% if not level %}selected{% endif %}>All</option>
+      {% for lvl in cefr_levels %}
+        <option value="{{ lvl }}" {% if lvl == level %}selected{% endif %}>{{ lvl }}</option>
+      {% endfor %}
+    </select>
+    {% if level %}
+      <a href="{{ url_for('same_root_full', slug=word.slug) }}" class="r6-clear">Clear filter</a>
+    {% endif %}
+  </form>
+
+  <ul class="r6-list same-root-list">
+    {% for w in candidates %}
+      <li class="r6-list-row">
+        <a href="{{ url_for('word_detail', slug=w.slug) }}" class="r6-list-head">{{ w.headword }}</a>
+        {% if w.level %}<span class="r6-tag r6-tag--level">{{ w.level }}</span>{% endif %}
+        {% if w.pos %}<span class="r6-tag r6-tag--pos">{{ w.pos }}</span>{% endif %}
+        <span class="r6-list-gloss">{{ w.guide_word }}</span>
+      </li>
+    {% else %}
+      <li class="r6-empty">No same-root words found at this level.</li>
+    {% endfor %}
+  </ul>
+
+  <p class="r6-bottom"><a href="{{ url_for('word_detail', slug=word.slug) }}">&laquo; Back to {{ word.headword }}</a></p>
+</div>
+{% endblock %}

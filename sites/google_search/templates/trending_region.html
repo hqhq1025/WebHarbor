@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block title %}Trending in {{ region_code }} - Google{% endblock %}
+{% block content %}
+<div class="help-page">
+    <nav class="help-breadcrumb"><a href="{{ url_for('trending') }}">Trending</a> &rsaquo; Region {{ region_code }}</nav>
+    <h1>Trending searches in {{ region_code }}</h1>
+    {% if is_restricted %}
+    <div class="serp-result" style="background:#fef7e0; border-color:#feefc3;">
+        <h3 class="result-title" style="margin-left:0;">Trending data is restricted in this region</h3>
+        <p class="result-snippet" style="margin-left:0;">
+            Google does not surface region-specific trending searches for {{ region_code }} because of
+            local-law restrictions on certain query categories. The global trending list is
+            available instead — visit the <a href="{{ url_for('trending') }}">main Trending page</a>.
+        </p>
+        <p class="result-snippet" style="margin-left:0;">
+            Learn more about regional restrictions in <a href="{{ url_for('search_help', topic='basics') }}">Search Help</a>.
+        </p>
+    </div>
+    {% elif terms %}
+    <ol class="trending-list">
+        {% for t in terms %}
+        <li>
+            <a href="{{ url_for('search', q=t.term) }}" class="trending-term">{{ t.term }}</a>
+            <span class="trending-volume">{{ t.volume }} searches</span>
+        </li>
+        {% endfor %}
+    </ol>
+    {% else %}
+    <p>No trending data available for "{{ region_code }}".</p>
+    {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block title %}Share link expired{% endblock %}
+{% block body_class %}page-edge-share-expired{% endblock %}
+{% block content %}
+<div class="section-inner" style="padding: 40px 20px;">
+  <div class="edge-card edge-card--expired">
+    <span class="edge-eyebrow">LINK EXPIRED</span>
+    <h1 class="edge-title">This share link has expired</h1>
+    <p class="edge-sub">Share links from free accounts expire after {{ ttl_days }} days for privacy. The original computation may have been deleted.</p>
+
+    <div class="edge-detail">
+      <div class="edge-detail-row">
+        <span class="edge-detail-label">Token:</span>
+        <code>{{ token }}</code>
+      </div>
+      <div class="edge-detail-row">
+        <span class="edge-detail-label">TTL:</span>
+        <code>{{ ttl_days }} days</code>
+      </div>
+    </div>
+
+    <div class="edge-actions">
+      <a href="/" class="edge-cta-primary">Start a new computation</a>
+      <a href="/pro" class="edge-cta-secondary">Get permanent share links (Pro)</a>
+      <a href="/history" class="edge-cta-link">My computation history</a>
+    </div>
+
+    <p class="edge-help">Tip: Wolfram|Alpha Pro share links never expire and can be password-protected.</p>
+  </div>
+</div>
+{% endblock %}

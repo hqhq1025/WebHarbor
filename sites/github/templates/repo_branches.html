@@ -13,6 +13,12 @@
   </div>
 </div>
 <div class="branches-page">
+  {% if protection_error %}
+  <div class="branch-protection-banner" style="background:#fff8c5;border:1px solid #d4a72c;border-radius:6px;padding:16px;margin-bottom:16px;color:#7d4e00;">
+    <strong>Branch protection rule rejected your push.</strong>
+    <p style="margin:6px 0 0;">{{ protection_error }}</p>
+  </div>
+  {% endif %}
   <h2>{{ branches|length }} branches</h2>
   <table class="branches-table">
     <thead><tr><th>Branch</th><th>Last commit</th><th>Behind / Ahead</th><th>Last activity</th></tr></thead>
@@ -22,10 +28,11 @@
       <td>
         <a href="/{{ repo.full_name }}/tree/{{ b.name }}" class="branch-name">{{ b.name }}</a>
         {% if b.is_default %}<span class="branch-default-badge">default</span>{% endif %}
+        {% if b.is_protected %}<span class="branch-protected-badge" style="background:#dafbe1;color:#1a7f37;border-radius:10px;padding:2px 8px;margin-left:6px;font-size:11px;">Protected</span>{% endif %}
       </td>
       <td><code class="branch-sha">{{ b.last_commit_sha }}</code></td>
       <td><span class="branch-behind">{{ b.behind }}</span> / <span class="branch-ahead">{{ b.ahead }}</span></td>
-      <td class="muted">{{ b.last_pushed_at|time_ago }}</td>
+      <td class="muted">{{ b.last_pushed_at|time_ago if b.last_pushed_at else '—' }}</td>
     </tr>
     {% endfor %}
     </tbody>

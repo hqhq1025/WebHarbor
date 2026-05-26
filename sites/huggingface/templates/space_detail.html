@@ -4,6 +4,41 @@
 
 {% block content %}
 <div class="container-wide page">
+    {# R6: breadcrumb + space-build edge banners. Mirrors what
+       _repo_head.html provides for model/dataset detail pages. #}
+    <nav class="repo-breadcrumb" aria-label="Repository breadcrumb"
+         style="font-size: 13px; color: #6b7280; margin: 0 0 10px;">
+        <a href="{{ url_for('index') }}">Home</a>
+        <span aria-hidden="true">/</span>
+        <a href="{{ url_for('spaces_list') }}">Spaces</a>
+        <span aria-hidden="true">/</span>
+        <a href="{{ url_for('author_page', username=repo.slug.split('/')[0]) }}">{{ repo.slug.split('/')[0] }}</a>
+        <span aria-hidden="true">/</span>
+        <span aria-current="page">{{ repo.slug.split('/')[1] }}</span>
+    </nav>
+
+    {% if repo.not_for_production %}
+    <div role="alert" id="not-for-production-warning"
+         style="margin: 0 0 10px; padding: 10px 14px; background: #fef3c7; border: 1px solid #fbbf24; border-radius: 8px; font-size: 13.5px;">
+        <strong>⚠️ Not for production use.</strong>
+        This Space is released for demo and evaluation only. Outputs may be
+        unreliable; do not deploy in a safety-critical context.
+    </div>
+    {% endif %}
+    {% if repo.space_build_status == 'build-error' %}
+    <div role="alert" id="space-build-error-banner"
+         style="margin: 0 0 10px; padding: 10px 14px; background: #fee2e2; border: 1px solid #f87171; border-radius: 8px; font-size: 13.5px;">
+        <strong>❌ Build failed.</strong>
+        The latest deploy of this Space did not start cleanly.
+        <a href="/spaces/{{ repo.slug }}/logs" style="font-weight: 600;">View build logs →</a>
+    </div>
+    {% elif repo.space_build_status == 'build-running' %}
+    <div role="status" id="space-build-running-banner"
+         style="margin: 0 0 10px; padding: 10px 14px; background: #fff7ed; border: 1px solid #fdba74; border-radius: 8px; font-size: 13.5px;">
+        <strong>⏳ Build in progress.</strong>
+        <a href="/spaces/{{ repo.slug }}/logs" style="font-weight: 600;">Watch build logs →</a>
+    </div>
+    {% endif %}
     <div class="repo-head">
         <div class="repo-head-title">
             <div class="repo-head-avatar" style="background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);color:#fff;font-size:24px;">{{ repo.emoji or '🚀' }}</div>

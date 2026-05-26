@@ -939,6 +939,14 @@ def run_extras(db, User, Product, Category, CartItem, Order, OrderItem,
         seed_r5(db, Product)
     except Exception as e:
         raise RuntimeError(f"seed_r5 failed: {e}") from e
+    # R6: push catalog past 18000 by replaying every prior template pool
+    # with R6_SUFFIXES + R6_NEW_TEMPLATES long-tail categories. Adds
+    # low-stock (~12%) + notify-when-back (~6%) coverage on top of R5.
+    try:
+        from seed_r6 import seed_r6
+        seed_r6(db, Product)
+    except Exception as e:
+        raise RuntimeError(f"seed_r6 failed: {e}") from e
     seed_extra_orders(db, User, Order, OrderItem, Product, SavedAddress, PaymentMethod)
     seed_wishlists(db, User, Product, WishlistItem)
     seed_extra_carts(db, User, Product, CartItem)

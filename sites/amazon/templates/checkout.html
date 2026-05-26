@@ -68,6 +68,14 @@
 
             <div class="checkout-section">
                 <h2>2. Payment Method</h2>
+                {% if payment_error %}
+                <div id="payment-decline-banner" style="background:#fde8e8;border:1px solid #c0392b;color:#7f1d1d;padding:12px;border-radius:4px;margin-bottom:14px">
+                    <strong>Payment declined.</strong> {{ payment_error }}
+                    {% if payment_attempts and payment_attempts > 1 %}
+                    <div style="font-size:12px;margin-top:6px">This was attempt #{{ payment_attempts }}. Try a different card or use a saved payment method to retry.</div>
+                    {% endif %}
+                </div>
+                {% endif %}
                 {% if saved_payments %}
                 <div class="form-group">
                     <label for="saved_payment_id">Use a saved card</label>

@@ -297,6 +297,65 @@
         {% endfor %}
       </div>
       {% endif %}
+
+      {# ── R6: Specialization that includes this course ─────────────────── #}
+      {% if r6_panels and r6_panels.specialization_includes %}
+      {% set _sp = r6_panels.specialization_includes %}
+      <div class="cd-r6-panel cd-spec-includes"
+           style="background:#fff;border:1px solid #e5e7eb;border-radius:10px;padding:16px;margin-top:18px;">
+        <h4 style="margin:0 0 8px 0;font-size:14px;text-transform:uppercase;letter-spacing:.5px;color:var(--c-muted);">Specialization that includes this course</h4>
+        <a href="{{ url_for('course_detail', slug=_sp.slug) }}"
+           style="font-size:15px;font-weight:600;color:#0056d2;text-decoration:none;">{{ _sp.title }}</a>
+        <div style="font-size:12px;color:var(--c-muted);margin-top:4px;">{{ _sp.course_type }} &middot; {{ _sp.duration_text }}</div>
+      </div>
+      {% endif %}
+
+      {# ── R6: Courses by same instructor ────────────────────────────────── #}
+      {% if r6_panels and r6_panels.by_same_instructor %}
+      <div class="cd-r6-panel cd-by-instructor"
+           style="background:#fff;border:1px solid #e5e7eb;border-radius:10px;padding:16px;margin-top:18px;">
+        <h4 style="margin:0 0 8px 0;font-size:14px;text-transform:uppercase;letter-spacing:.5px;color:var(--c-muted);">Courses by same instructor</h4>
+        <div style="font-size:13px;color:#374151;margin-bottom:6px;">More from <strong>{{ course.instructor }}</strong>:</div>
+        {% for ci in r6_panels.by_same_instructor %}
+        <a href="{{ url_for('course_detail', slug=ci.slug) }}"
+           style="display:block;padding:6px 0;border-bottom:1px solid #f3f4f6;color:#1f2937;text-decoration:none;font-size:13px;">
+          {{ ci.title|truncate(58) }}
+          <span style="float:right;color:var(--c-muted);font-size:12px;">{{ ci.level }}</span>
+        </a>
+        {% endfor %}
+      </div>
+      {% endif %}
+
+      {# ── R6: Next recommended after completion ─────────────────────────── #}
+      {% if r6_panels and r6_panels.next_recommended %}
+      {% set _nr = r6_panels.next_recommended %}
+      <div class="cd-r6-panel cd-next-recommended"
+           style="background:#fff;border:1px solid #e5e7eb;border-radius:10px;padding:16px;margin-top:18px;">
+        <h4 style="margin:0 0 8px 0;font-size:14px;text-transform:uppercase;letter-spacing:.5px;color:var(--c-muted);">Next recommended after completion</h4>
+        <a href="{{ url_for('course_detail', slug=_nr.slug) }}"
+           style="font-size:15px;font-weight:600;color:#0056d2;text-decoration:none;">{{ _nr.title }}</a>
+        <div style="font-size:12px;color:var(--c-muted);margin-top:4px;">{{ _nr.level }} &middot; {{ _nr.course_type }} &middot; {{ _nr.duration_text }}</div>
+      </div>
+      {% endif %}
+
+      {# ── R6: Required prerequisite path ────────────────────────────────── #}
+      {% if r6_panels and r6_panels.prereq_path %}
+      <div class="cd-r6-panel cd-prereq-path"
+           style="background:#fff;border:1px solid #e5e7eb;border-radius:10px;padding:16px;margin-top:18px;">
+        <h4 style="margin:0 0 8px 0;font-size:14px;text-transform:uppercase;letter-spacing:.5px;color:var(--c-muted);">Required prerequisite path</h4>
+        <ol style="margin:0;padding-left:18px;line-height:1.7;font-size:13px;">
+          {% for pp in r6_panels.prereq_path %}
+          <li>
+            <a href="{{ url_for('course_detail', slug=pp.slug) }}"
+               style="color:#1f2937;text-decoration:none;">
+              {{ pp.title|truncate(56) }}
+            </a>
+            <span style="color:var(--c-muted);font-size:12px;">— {{ pp.level }}</span>
+          </li>
+          {% endfor %}
+        </ol>
+      </div>
+      {% endif %}
     </aside>
   </div>
 </div>

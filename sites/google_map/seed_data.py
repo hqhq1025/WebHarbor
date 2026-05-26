@@ -5207,3 +5207,672 @@ def backfill_transit_delays(db, TransitLine):
     db.session.commit()
     print(f"backfill_transit_delays: updated {len(rows)} transit lines")
 
+
+
+# ---------------------------------------------------------------------------
+# R6 expansion: cross-page density. ~120 templates × 812 cities = ~97k places
+# bringing the Place table from ~200k to ~280k+. Categories mix high-traffic
+# everyday venues (groceries, drugstores, dental, vet, fitness) with
+# experience-rich destinations (food halls, breweries, performance venues)
+# so cross-page tasks (search -> place -> /menu -> /photos -> /reviews) all
+# land on rows with rich content rather than stubs.
+# ---------------------------------------------------------------------------
+_R6_TEMPLATES = [
+    # ---- Restaurants — more concrete sub-styles for menu/booking flows ----
+    ("restaurants", "{anchor} Harbor Seafood House", "Seafood restaurant",
+     "Waterfront seafood house with raw bar, daily oyster selection, and a 4-course tasting menu.",
+     "$$$", 4.2, 4.8, "", ""),
+    ("restaurants", "{anchor} Smokestack BBQ", "BBQ joint",
+     "Slow-smoked Texas-style BBQ with brisket, burnt ends, and house-made sides; counter service.",
+     "$$", 4.3, 4.8, "", ""),
+    ("restaurants", "{anchor} Garden Vegan Kitchen", "Vegan restaurant",
+     "Plant-based kitchen with seasonal bowls, house-made cashew cheese, and zero-waste sourcing.",
+     "$$", 4.4, 4.9, "", ""),
+    ("restaurants", "{anchor} Late-Night Diner", "24-hour diner",
+     "Classic American diner open 24 hours; pancakes, milkshakes, and a counter that fills after midnight.",
+     "$", 4.0, 4.6, "", ""),
+    ("restaurants", "{anchor} Dim Sum Palace", "Dim sum",
+     "Cart-service dim sum palace with weekend brunch lines and a 60-item menu.",
+     "$$", 4.3, 4.8, "", ""),
+    ("restaurants", "{anchor} Pho House", "Vietnamese",
+     "Family-run pho house with bone-broth simmered overnight and a build-your-own herb plate.",
+     "$", 4.4, 4.9, "", ""),
+    ("restaurants", "{anchor} Greek Taverna", "Greek",
+     "Taverna with charcoal-grilled meats, mezze platters, and patio seating under string lights.",
+     "$$", 4.3, 4.8, "", ""),
+    ("restaurants", "{anchor} Curry House", "Indian",
+     "South Indian curry house with house-ground spices, dosas, and a weekday lunch thali.",
+     "$$", 4.2, 4.7, "", ""),
+    ("restaurants", "{anchor} Korean BBQ Counter", "Korean BBQ",
+     "Tabletop Korean BBQ with banchan parade, marinated short ribs, and soju cocktails.",
+     "$$$", 4.3, 4.8, "", ""),
+    ("restaurants", "{anchor} Pasta Workshop", "Italian",
+     "Open-kitchen pasta workshop where every shape is rolled, cut, and finished to order.",
+     "$$$", 4.5, 4.9, "", ""),
+
+    # ---- Coffee shops ----
+    ("coffee-shops", "{anchor} Third Wave Roasters", "Specialty coffee",
+     "Third-wave specialty roaster with single-origin pour-overs and a cupping bar.",
+     "$$", 4.4, 4.9, "", ""),
+    ("coffee-shops", "{anchor} Cafe Latte Bar", "Cafe",
+     "Neighborhood cafe specialising in latte art and house-baked pastries; laptop-friendly hours.",
+     "$", 4.2, 4.7, "", ""),
+    ("coffee-shops", "{anchor} Drive-Thru Espresso", "Espresso drive-thru",
+     "Drive-thru espresso stand on the morning commute; quick lane and bike window.",
+     "$", 3.9, 4.4, "", ""),
+    ("coffee-shops", "{anchor} Co-Working Brewbar", "Co-working cafe",
+     "Co-working cafe with bottomless drip, private call booths, and day-pass desks.",
+     "$$", 4.1, 4.6, "", ""),
+    ("coffee-shops", "{anchor} Tea House", "Tea house",
+     "Loose-leaf tea house with 80+ teas, matcha service, and quiet reading benches.",
+     "$$", 4.5, 4.9, "", ""),
+
+    # ---- Coffee chains — populate chain_brand so "same chain" surfaces ----
+    ("coffee-shops", "Starbucks Reserve — {anchor} Roastery", "Coffee chain",
+     "Starbucks Reserve roastery with a 4-bar coffee experience and small-lot tastings.",
+     "$$", 4.0, 4.6, "", ""),
+    ("coffee-shops", "Blue Bottle Coffee — {anchor}", "Coffee chain",
+     "Blue Bottle Coffee shop with single-origin pour-overs and minimalist ceramic mugs.",
+     "$$", 4.2, 4.7, "", ""),
+    ("coffee-shops", "Peet's Coffee — {anchor} Avenue", "Coffee chain",
+     "Peet's Coffee location with dark roasts and a community brew bar.",
+     "$", 4.0, 4.6, "", ""),
+    ("coffee-shops", "Dunkin' — {anchor} Plaza", "Coffee chain",
+     "Dunkin' donut and coffee shop with a drive-thru and 24-hour weekend service.",
+     "$", 3.9, 4.4, "", ""),
+
+    # ---- Supermarkets ----
+    ("supermarkets", "{anchor} Whole Foods Market", "Organic grocery",
+     "Organic grocery with a hot bar, in-house bakery, and a curbside pickup lane.",
+     "$$", 4.1, 4.7, "", ""),
+    ("supermarkets", "{anchor} Trader Joe's", "Specialty grocery",
+     "Specialty grocery with private-label snacks, frozen meals, and a $3 wine wall.",
+     "$", 4.5, 4.9, "", ""),
+    ("supermarkets", "{anchor} Costco Wholesale", "Warehouse club",
+     "Membership warehouse club with bulk grocery, electronics, and a gas station.",
+     "$", 4.4, 4.9, "", ""),
+    ("supermarkets", "{anchor} Safeway", "Grocery chain",
+     "Full-service Safeway grocery with deli, pharmacy, and a Starbucks counter.",
+     "$$", 3.9, 4.4, "", ""),
+    ("supermarkets", "{anchor} Asian Market", "Asian grocery",
+     "Pan-Asian grocery with fresh produce, live seafood tanks, and a hot-food counter.",
+     "$$", 4.3, 4.8, "", ""),
+
+    # ---- Pharmacies ----
+    ("pharmacies", "{anchor} CVS Pharmacy", "Pharmacy chain",
+     "CVS Pharmacy with 24-hour prescriptions, MinuteClinic, and a photo center.",
+     "$$", 3.8, 4.4, "", ""),
+    ("pharmacies", "{anchor} Walgreens", "Pharmacy chain",
+     "Walgreens drugstore with 24-hour pharmacy, beauty aisle, and a balcony patio.",
+     "$$", 3.7, 4.3, "", ""),
+    ("pharmacies", "{anchor} Compounding Pharmacy", "Compounding pharmacy",
+     "Independent compounding pharmacy for custom dosages, pet meds, and topical creams.",
+     "$$", 4.4, 4.9, "", ""),
+
+    # ---- Dentists / vets / urgent care — high-traffic 'real life' venues ----
+    ("dentists", "{anchor} Smile Studio Dental", "Dental office",
+     "General and cosmetic dentistry with sedation options, digital X-rays, and a kids' room.",
+     "$$$", 4.4, 4.9, "", ""),
+    ("dentists", "{anchor} Family Dentistry", "Family dentistry",
+     "Family dentist accepting most insurance; weekend appointments and emergency slots.",
+     "$$", 4.3, 4.8, "", ""),
+    ("dentists", "{anchor} Orthodontics", "Orthodontist",
+     "Orthodontist offering invisible aligners, traditional braces, and free consultations.",
+     "$$$", 4.5, 4.9, "", ""),
+    ("veterinarians", "{anchor} Animal Hospital", "Animal hospital",
+     "Full-service veterinary hospital with surgery, dental, and 24-hour emergency intake.",
+     "$$$", 4.4, 4.9, "", ""),
+    ("veterinarians", "{anchor} Cat Specialty Vet", "Cat-only vet",
+     "Cat-only veterinary clinic with quiet exam rooms and a feline-only boarding floor.",
+     "$$$", 4.6, 4.9, "", ""),
+    ("hospitals", "{anchor} Urgent Care Center", "Urgent care",
+     "Walk-in urgent care for non-emergencies; X-ray, labs, and most insurance accepted.",
+     "$$", 4.0, 4.6, "", ""),
+
+    # ---- Fitness ----
+    ("fitness", "{anchor} CrossFit Box", "CrossFit gym",
+     "CrossFit affiliate with daily group WODs, open-gym hours, and a coaching team.",
+     "$$$", 4.4, 4.9, "", ""),
+    ("fitness", "{anchor} Yoga & Pilates Studio", "Yoga studio",
+     "Heated yoga and Pilates studio with vinyasa, yin, and a Saturday community class.",
+     "$$", 4.5, 4.9, "", ""),
+    ("fitness", "{anchor} Climbing Gym", "Climbing gym",
+     "Indoor climbing gym with bouldering, top-rope routes, and a kids' learn-to-climb area.",
+     "$$$", 4.5, 4.9, "", ""),
+    ("fitness", "{anchor} Boxing Club", "Boxing gym",
+     "Boxing club with heavy bags, sparring ring, and beginner classes.",
+     "$$", 4.4, 4.9, "", ""),
+    ("fitness", "{anchor} Lap Pool & Aquatics", "Aquatic center",
+     "Aquatic center with a 25 m lap pool, family pool, and accessible chair lift.",
+     "$$", 4.3, 4.8, "", ""),
+
+    # ---- Parks & Nature ----
+    ("parks", "{anchor} River Greenway Trailhead", "Greenway trail",
+     "River greenway trailhead with paved path, water fountains, and a bike-share dock.",
+     "Free", 4.5, 4.9, "", ""),
+    ("parks", "{anchor} Botanical Garden", "Botanical garden",
+     "Botanical garden with native plant collections, seasonal exhibits, and a tea pavilion.",
+     "$$", 4.6, 4.9, "", ""),
+    ("parks", "{anchor} Off-Leash Dog Park", "Dog park",
+     "Off-leash dog park with shaded benches, separate small-dog area, and a wash station.",
+     "Free", 4.3, 4.8, "", ""),
+    ("parks", "{anchor} Skate Plaza", "Skate park",
+     "Public skate plaza with bowl, street section, and lights on until 10 PM.",
+     "Free", 4.4, 4.9, "", ""),
+
+    # ---- Attractions / sightseeing ----
+    ("attractions", "{anchor} Observatory Deck", "Observation deck",
+     "Indoor-outdoor observation deck with telescopes, audio guide, and a glass-floor section.",
+     "$$$", 4.5, 4.9, "", ""),
+    ("attractions", "{anchor} Aquarium", "Aquarium",
+     "Aquarium with a Pacific reef tunnel, touch tide-pool, and behind-the-scenes tours.",
+     "$$$", 4.4, 4.9, "", ""),
+    ("attractions", "{anchor} Zoo", "Zoo",
+     "Family zoo with a giraffe-feeding deck, primate house, and a zip-line over the lagoon.",
+     "$$$", 4.3, 4.8, "", ""),
+    ("attractions", "{anchor} Historic Lighthouse", "Lighthouse",
+     "Working historic lighthouse with a 100-step climb to the lamp room.",
+     "$", 4.5, 4.9, "", ""),
+
+    # ---- Entertainment ----
+    ("entertainment", "{anchor} Indie Cinema", "Movie theater",
+     "Indie cinema showing first-run, foreign, and revival films; reclining seats.",
+     "$$", 4.4, 4.9, "", ""),
+    ("entertainment", "{anchor} Comedy Cellar", "Comedy club",
+     "Below-grade comedy club with nightly stand-up sets and a two-drink minimum.",
+     "$$$", 4.5, 4.9, "", ""),
+    ("entertainment", "{anchor} Live Music Hall", "Music venue",
+     "Mid-size live music hall hosting touring bands; balcony reserved seating and a pit area.",
+     "$$$", 4.5, 4.9, "", ""),
+    ("entertainment", "{anchor} Escape Room Co.", "Escape room",
+     "Escape-room venue with 6 themed rooms; team sizes 2-8, online booking required.",
+     "$$$", 4.6, 4.9, "", ""),
+
+    # ---- Shopping ----
+    ("shopping", "{anchor} Independent Bookstore", "Bookstore",
+     "Independent bookstore with curated staff picks, author events, and an espresso bar.",
+     "$$", 4.6, 4.9, "", ""),
+    ("shopping", "{anchor} Vinyl Records", "Record store",
+     "Vinyl record store with new pressings, used bins, and an in-store listening booth.",
+     "$$", 4.5, 4.9, "", ""),
+    ("shopping", "{anchor} Outdoor Outfitter", "Outdoor gear",
+     "Outdoor gear shop with rental skis, paddleboards, and an in-house boot fitter.",
+     "$$$", 4.4, 4.9, "", ""),
+    ("shopping", "{anchor} Vintage Thrift", "Thrift store",
+     "Curated vintage thrift store with hand-picked denim, leather, and vintage tees.",
+     "$$", 4.3, 4.8, "", ""),
+
+    # ---- Health & beauty ----
+    ("health-beauty", "{anchor} Day Spa", "Day spa",
+     "Day spa with massage suites, sauna, eucalyptus steam room, and bridal packages.",
+     "$$$$", 4.5, 4.9, "", ""),
+    ("health-beauty", "{anchor} Nail Salon", "Nail salon",
+     "Nail salon with gel, dip, and natural-nail manicures; same-day appointments welcome.",
+     "$$", 4.3, 4.8, "", ""),
+    ("health-beauty", "{anchor} Barbershop", "Barbershop",
+     "Classic barbershop with straight-razor shaves, beard trims, and walk-in service.",
+     "$$", 4.5, 4.9, "", ""),
+    ("health-beauty", "{anchor} Tattoo Studio", "Tattoo parlor",
+     "Tattoo studio with appointment-only sessions, flash days, and a guest-artist calendar.",
+     "$$$", 4.6, 4.9, "", ""),
+
+    # ---- Services ----
+    ("services", "{anchor} Bike Repair Co-Op", "Bike repair",
+     "Member-supported bike repair co-op with stand rentals, tune-ups, and used parts.",
+     "$", 4.5, 4.9, "", ""),
+    ("services", "{anchor} Print & Copy Shop", "Print shop",
+     "Print and copy shop with same-day binding, posters, and shipping kiosk.",
+     "$$", 4.0, 4.5, "", ""),
+    ("services", "{anchor} Laundromat & Drop-Off", "Laundromat",
+     "Self-service laundromat with drop-off wash-and-fold and free Wi-Fi.",
+     "$", 3.9, 4.4, "", ""),
+    ("services", "{anchor} Locksmith 24/7", "Locksmith",
+     "Mobile locksmith providing 24-hour emergency lockout service for home, auto, and office.",
+     "$$", 4.4, 4.9, "", ""),
+
+    # ---- Libraries ----
+    ("libraries", "{anchor} Public Library Branch", "Public library",
+     "Public library branch with children's storytime, a maker lab, and 12 quiet study rooms.",
+     "Free", 4.6, 4.9, "", ""),
+    ("libraries", "{anchor} Law Library", "Law library",
+     "Reference law library open to the public; secondary sources and reading rooms.",
+     "Free", 4.4, 4.9, "", ""),
+
+    # ---- Schools / campus ----
+    ("schools", "{anchor} Montessori Academy", "Montessori school",
+     "Montessori academy for ages 3-12 with mixed-age classrooms and a garden program.",
+     "$$$$", 4.5, 4.9, "", ""),
+    ("campus-buildings", "{anchor} University — Student Union", "Student union",
+     "Student union with a food court, study lounges, a game room, and event ballrooms.",
+     "$", 4.3, 4.8, "lounge", "1"),
+    ("campus-buildings", "{anchor} University — Performing Arts Center", "Performing arts",
+     "Campus performing arts center with a 1200-seat theater and rehearsal halls.",
+     "$$", 4.6, 4.9, "wing", "1"),
+
+    # ---- Religious ----
+    ("religious", "{anchor} Community Church", "Church",
+     "Community church with weekend services, choir loft, and a neighborhood food pantry.",
+     "Free", 4.5, 4.9, "", ""),
+    ("religious", "{anchor} Mosque", "Mosque",
+     "Neighborhood mosque with daily prayers, Friday khutbah, and a Quran-study program.",
+     "Free", 4.6, 4.9, "", ""),
+    ("religious", "{anchor} Temple", "Temple",
+     "Hindu temple with daily aarti, monthly puja calendar, and community kitchen.",
+     "Free", 4.7, 4.9, "", ""),
+    ("religious", "{anchor} Synagogue", "Synagogue",
+     "Reform synagogue with Shabbat services, religious school, and a small library.",
+     "Free", 4.6, 4.9, "", ""),
+
+    # ---- ATMs / banks ----
+    ("atms", "{anchor} Chase ATM Branch", "ATM",
+     "Chase ATM with cardless cash, deposit envelopes, and 24-hour drive-up access.",
+     "Free", 3.8, 4.3, "", ""),
+    ("atms", "{anchor} Bank of America Drive-Up", "ATM",
+     "Bank of America drive-up ATM with stacked-bill deposits and a withdrawals quick-cash button.",
+     "Free", 3.7, 4.3, "", ""),
+
+    # ---- Car rental ----
+    ("car-rental", "Hertz — {anchor} Airport", "Car rental",
+     "Hertz rental counter at the airport with gold-club fast-lane and EV options.",
+     "$$", 3.8, 4.4, "", ""),
+    ("car-rental", "Enterprise Rent-A-Car — {anchor} Downtown", "Car rental",
+     "Enterprise downtown branch with free pickup, weekend specials, and a moving-truck lot.",
+     "$$", 4.1, 4.7, "", ""),
+    ("car-rental", "Turo Host Garage — {anchor}", "Peer-to-peer car rental",
+     "Turo peer-to-peer host garage; instant book, contactless key handoff, and EV listings.",
+     "$$", 4.5, 4.9, "", ""),
+
+    # ---- Public restrooms ----
+    ("public-restrooms", "{anchor} Park Public Restroom", "Public restroom",
+     "Public restroom inside the city park with baby-changing station and a 24/7 attendant.",
+     "Free", 3.7, 4.3, "", ""),
+    ("public-restrooms", "{anchor} Transit Hub Restroom", "Transit restroom",
+     "Transit-hub public restroom open during station hours; wheelchair-accessible stall.",
+     "Free", 3.6, 4.2, "", ""),
+
+    # ---- Beaches ----
+    ("beaches", "{anchor} North Beach Lifeguard Tower 5", "Lifeguard tower",
+     "Lifeguard tower 5 on the north beach with rip-current advisories and a first-aid kit.",
+     "Free", 4.4, 4.9, "", ""),
+    ("beaches", "{anchor} Pier Beach Volleyball Courts", "Volleyball courts",
+     "Pier beach with 8 volleyball courts, equipment rental, and tournament Sundays.",
+     "Free", 4.5, 4.9, "", ""),
+
+    # ---- Hotels — more variety for chain + better-rated tests ----
+    ("hotels", "Marriott — {anchor} Downtown", "Hotel chain",
+     "Marriott downtown hotel with executive lounge, rooftop bar, and a Bonvoy desk.",
+     "$$$$", 4.2, 4.7, "", ""),
+    ("hotels", "Hilton Garden Inn — {anchor}", "Hotel chain",
+     "Hilton Garden Inn with a 24-hour pavilion pantry and indoor pool.",
+     "$$$", 4.1, 4.7, "", ""),
+    ("hotels", "Holiday Inn Express — {anchor} North", "Hotel chain",
+     "Holiday Inn Express north branch with free breakfast and a small fitness room.",
+     "$$", 4.0, 4.6, "", ""),
+    ("hotels", "Hyatt Place — {anchor}", "Hotel chain",
+     "Hyatt Place with a 24-hour gallery menu, free Wi-Fi, and meeting rooms.",
+     "$$$", 4.1, 4.7, "", ""),
+    ("hotels", "{anchor} Boutique Inn", "Boutique hotel",
+     "Boutique inn in a converted historic building with 18 rooms and a courtyard bar.",
+     "$$$$", 4.6, 4.9, "", ""),
+
+    # ---- Bus stops ----
+    ("bus-stops", "{anchor} University Loop Bus Stop", "Bus stop",
+     "University loop bus stop with sheltered seating, route map, and a real-time arrival board.",
+     "Free", 3.7, 4.3, "", ""),
+    ("bus-stops", "{anchor} Riverside Express Stop", "Bus stop",
+     "Riverside express bus stop served by commuter routes during peak hours only.",
+     "Free", 3.6, 4.2, "", ""),
+
+    # ---- Transit hubs ----
+    ("transit", "{anchor} Greyhound Station", "Bus terminal",
+     "Greyhound intercity bus terminal with overnight bays, package counter, and ticket kiosks.",
+     "$", 3.5, 4.1, "", ""),
+    ("transit", "{anchor} Amtrak Station", "Train station",
+     "Amtrak station with regional and long-distance service, Quik-Trak kiosks, and an enclosed waiting room.",
+     "$", 3.9, 4.5, "", ""),
+
+    # ---- Police / fire / post ----
+    ("police-stations", "{anchor} Precinct 12 Station", "Police precinct",
+     "Precinct 12 police station with public lobby, records counter, and a 24-hour desk.",
+     "Free", 3.7, 4.3, "", ""),
+    ("fire-stations", "{anchor} Fire Station 7", "Fire station",
+     "Fire station 7 with truck bays, open-house Saturdays, and CPR class sign-ups.",
+     "Free", 4.5, 4.9, "", ""),
+    ("post-offices", "{anchor} Downtown Post Office", "Post office",
+     "Downtown post office with passport applications, PO boxes, and Saturday hours.",
+     "$", 3.6, 4.2, "", ""),
+
+    # ---- Playgrounds ----
+    ("playgrounds", "{anchor} Adventure Playground", "Adventure playground",
+     "Adventure playground with rope climbing structures, ziplines, and a sand-and-water area.",
+     "Free", 4.5, 4.9, "", ""),
+    ("playgrounds", "{anchor} Inclusive Sensory Playground", "Inclusive playground",
+     "Inclusive sensory playground with wheelchair-accessible equipment and quiet sensory pods.",
+     "Free", 4.7, 4.9, "", ""),
+
+    # ---- Dog parks ----
+    ("dog-parks", "{anchor} Riverside Dog Park", "Dog park",
+     "Riverside dog park with a separate small-dog area, water fountains, and shaded benches.",
+     "Free", 4.4, 4.9, "", ""),
+
+    # ---- More EV chargers + parking variety to feed parking-ev tasks ----
+    ("ev-charging", "Tesla Destination Charger — {anchor} Hotel Row", "Tesla destination",
+     "Tesla Destination Charger at hotel row; guest-only J1772 ports during stay.",
+     "$", 4.1, 4.6, "charger-bay", ""),
+    ("ev-charging", "Wallbox Public Network — {anchor}", "Wallbox public",
+     "Wallbox Public Network 22 kW chargers in the city employee lot; weekends public.",
+     "$", 4.0, 4.5, "charger-bay", ""),
+    ("parking", "{anchor} Convention Lot B Overflow", "Surface lot",
+     "Convention center overflow lot B; opens game days and conventions with shuttle.",
+     "$$", 3.7, 4.3, "", ""),
+    ("parking", "{anchor} Garage 7 EV Roof Level", "Parking garage",
+     "Garage 7 roof level dedicated EV charging row; 60 stalls with CCS connectors.",
+     "$$", 4.1, 4.7, "parking-deck", "R"),
+    ("parking", "{anchor} Stadium Tailgate Lot", "Tailgate lot",
+     "Stadium tailgate lot opens 4 hours before kickoff; pull-through RV spaces.",
+     "$$$", 4.0, 4.6, "", ""),
+
+    # ---- Food halls / breweries (for cross-page menu+booking flows) ----
+    ("restaurants", "{anchor} Food Hall — Central Stalls", "Food hall",
+     "Central food hall housing 18 stalls — tacos, pho, pizza, dosas, and shave ice.",
+     "$$", 4.3, 4.8, "food-court", "1"),
+    ("restaurants", "{anchor} Riverside Brewery", "Brewery",
+     "Riverside brewery with 12 taps, beer-garden patio, and a wood-fired pizza oven.",
+     "$$", 4.4, 4.9, "", ""),
+    ("restaurants", "{anchor} Cidery & Tasting Room", "Cidery",
+     "Cidery tasting room with single-orchard varietals, flights, and farm-fresh charcuterie.",
+     "$$", 4.5, 4.9, "", ""),
+    ("restaurants", "{anchor} Wine Country Tasting Room", "Wine tasting",
+     "In-town tasting room pouring 8 of the region's small-batch wineries; reservations welcome.",
+     "$$$", 4.6, 4.9, "", ""),
+
+    # ---- More museums ----
+    ("museums", "{anchor} Children's Museum", "Children's museum",
+     "Children's museum with hands-on exhibits, a climbable city block, and a sensory-friendly hour.",
+     "$$", 4.6, 4.9, "wing", "1"),
+    ("museums", "{anchor} Natural History Museum", "Natural history",
+     "Natural history museum with dinosaur hall, mineral gallery, and a planetarium.",
+     "$$$", 4.5, 4.9, "wing", "1"),
+    ("museums", "{anchor} Science Center", "Science center",
+     "Hands-on science center with an IMAX dome, lightning show, and a butterfly atrium.",
+     "$$$", 4.5, 4.9, "wing", "1"),
+
+    # ---- More schools / education ----
+    ("schools", "{anchor} High School", "High school",
+     "Public high school with AP courses, JROTC, and a 1000-seat auditorium.",
+     "Free", 3.9, 4.5, "", ""),
+    ("schools", "{anchor} Community College", "Community college",
+     "Community college campus with workforce training, transfer programs, and a culinary arts kitchen.",
+     "$$", 4.2, 4.7, "", ""),
+
+    # ---- Cinema / events ----
+    ("entertainment", "{anchor} Drive-In Theater", "Drive-in theater",
+     "Drive-in theater open spring through fall; double features and FM-radio audio.",
+     "$$", 4.6, 4.9, "", ""),
+    ("entertainment", "{anchor} Bowling Alley", "Bowling alley",
+     "32-lane bowling alley with cosmic lanes Fridays, arcade, and a 16-seat sports bar.",
+     "$$", 4.2, 4.7, "", ""),
+]
+# ~120 templates above — slug index is per-city deterministic.
+
+
+def expand_places_r6(db, Place, Category, City):
+    """R6 expansion: cross-page density (everyday venues + chains).
+
+    Idempotent: gated on Place count >= 275000.  Aims to add ~80-100k
+    rows so the table sits comfortably above 280k.
+    """
+    if Place.query.count() >= 275000:
+        return
+
+    cat_by_slug = {c.slug: c for c in Category.query.all()}
+    cities = City.query.order_by(City.id).all()
+    if not cities:
+        return
+
+    # Re-use donor image pool from existing places.
+    donor_pool = []
+    for p in (Place.query
+              .filter(Place.hero_image.like("/static/images/places/%"))
+              .order_by(Place.id).limit(80).all()):
+        try:
+            photos = json.loads(p.photos_json or "[]")
+        except Exception:
+            photos = []
+        if p.hero_image:
+            donor_pool.append((p.hero_image, photos or [p.hero_image]))
+    if not donor_pool:
+        donor_pool = [("/static/images/heroes/eiffel-tower.jpg",
+                       ["/static/images/heroes/eiffel-tower.jpg"])]
+
+    # Brand extraction: when the template name starts with a known
+    # brand prefix, populate chain_brand so the place_detail page's
+    # "From the same chain" rail can find siblings.
+    _CHAINS = (
+        "Starbucks Reserve", "Blue Bottle Coffee", "Peet's Coffee", "Dunkin'",
+        "Whole Foods Market", "Trader Joe's", "Costco Wholesale", "Safeway",
+        "CVS Pharmacy", "Walgreens",
+        "Hertz", "Enterprise Rent-A-Car", "Turo",
+        "Marriott", "Hilton Garden Inn", "Holiday Inn Express", "Hyatt Place",
+        "Tesla Destination Charger", "Wallbox Public Network",
+    )
+
+    added = 0
+    for city in cities:
+        anchor = city.display_name.split(",")[0].split(" ")[0]
+        templates = list(enumerate(_R6_TEMPLATES))
+        # Fisher-Yates deterministic shuffle keyed by city slug.
+        for i in range(len(templates) - 1, 0, -1):
+            j = int.from_bytes(
+                hashlib.md5(f"r6sh:{city.slug}:{i}".encode()).digest()[:4],
+                "big") % (i + 1)
+            templates[i], templates[j] = templates[j], templates[i]
+
+        for idx, tpl in templates:
+            (cat_slug, pattern, subtitle, desc, price, rlo, rhi,
+             indoor_zone, floor_num) = tpl
+            cat = cat_by_slug.get(cat_slug)
+            if not cat:
+                continue
+            slug = f"r6-{city.slug}-{cat_slug}-{idx:02d}"
+            if Place.query.filter_by(slug=slug).first():
+                continue
+
+            name = pattern.format(anchor=anchor)
+            local_seed = _seed_int_hex(slug, "r6loc")
+            hero, gallery = donor_pool[local_seed % len(donor_pool)]
+            lat = city.lat + ((local_seed % 800) - 400) / 10000.0
+            lng = city.lng + (((local_seed // 800) % 1000) - 500) / 10000.0
+            rating = round(rlo + (local_seed % 100) / 100.0 * (rhi - rlo), 1)
+            review_count = 18 + (local_seed % 4200)
+
+            # Resolve chain_brand from the rendered name (preserves the
+            # original prefix even after the {anchor} substitution).
+            chain = ""
+            for brand in _CHAINS:
+                if name.startswith(brand):
+                    chain = brand
+                    break
+
+            hours_pick = (local_seed >> 4) % 6
+            hours_options = [
+                "Mon-Sun: 9:00 AM - 9:00 PM",
+                "Mon-Sat: 10:00 AM - 8:00 PM, Sun 11:00 AM - 6:00 PM",
+                "Tue-Sun: 11:00 AM - 10:00 PM, Closed Mon",
+                "Open 24 hours",
+                "Mon-Fri: 7:00 AM - 7:00 PM, Weekends 8:00 AM - 5:00 PM",
+                "Mon-Sun: 6:00 AM - 10:00 PM",
+            ]
+            tags = [cat_slug, anchor.lower(), city.country.lower()]
+            if indoor_zone:
+                tags.append(indoor_zone)
+            if chain:
+                tags.append(chain.lower().replace(" ", "-"))
+
+            db.session.add(Place(
+                slug=slug, name=name, category_id=cat.id, city_id=city.id,
+                subtitle=subtitle,
+                description=desc,
+                address=f"{15 + (local_seed % 985)} {['Cedar','Maple','Spruce','Birch','Walnut','Chestnut','Hickory','Sycamore'][local_seed % 8]} St, {city.display_name}",
+                phone=f"+{1 + (local_seed % 9)} {200 + (local_seed % 800)} {1000 + (local_seed % 9000)}",
+                hours=hours_options[hours_pick],
+                website=google_maps_search_url(name, city.display_name),
+                rating=rating,
+                review_count=review_count,
+                price_level=price,
+                hero_image=hero,
+                photos_json=json.dumps(gallery[:5]),
+                lat=lat, lng=lng,
+                tags_json=json.dumps(tags),
+                subcategory=subtitle,
+                chain_brand=chain,
+                is_24h=(hours_pick == 3),
+                is_popular=(rating >= 4.6 and (local_seed % 4) == 0),
+                has_parking_lot=(cat_slug in ("supermarkets", "hotels",
+                                              "shopping", "fitness",
+                                              "hospitals", "schools",
+                                              "religious", "entertainment",
+                                              "car-rental", "parking")
+                                 or (local_seed % 3) == 0),
+                ev_charging=(cat_slug == "ev-charging"
+                              or (cat_slug == "hotels" and "Marriott" in name)
+                              or (cat_slug == "supermarkets" and "Whole Foods" in name)),
+                bicycle_parking=(local_seed % 2) == 0,
+                indoor_zone_type=indoor_zone,
+                floor_number=floor_num,
+                parking_lot_capacity=(60 + (local_seed % 1600)) if cat_slug == "parking" else 0,
+                delivery_available=(cat_slug == "restaurants" and (local_seed % 2) == 0),
+                dine_in=(cat_slug in ("restaurants", "coffee-shops")),
+                takeout=(cat_slug in ("restaurants", "coffee-shops",
+                                       "supermarkets")),
+                accepts_reservations=(cat_slug == "restaurants" and (local_seed % 3) == 0),
+                serves_breakfast=(cat_slug in ("restaurants", "coffee-shops")
+                                   and (local_seed % 2) == 0),
+                serves_lunch=(cat_slug == "restaurants"),
+                serves_dinner=(cat_slug == "restaurants"),
+                serves_alcohol=(cat_slug == "restaurants" and (local_seed % 3) == 0),
+                serves_vegetarian=(cat_slug == "restaurants" and (local_seed % 2) == 0),
+            ))
+            added += 1
+            if added % 1500 == 0:
+                db.session.commit()
+    db.session.commit()
+    print(f"expand_places_r6: added {added} R6 places (total {Place.query.count()})")
+
+
+# ---------------------------------------------------------------------------
+# R6 edge banners — backfill closure flags + accessibility warnings on a
+# deterministic minority of rows so each edge case is observable but the
+# overall site doesn't look broken.  All gating is by md5(slug) so the
+# same rows get flagged across rebuilds.
+# ---------------------------------------------------------------------------
+def backfill_place_edges_r6(db, Place):
+    """Deterministically flag a small fraction of places with R6 edge
+    banners: permanently closed, temporarily closed (with reopen ETA),
+    accessibility warning, indoor-floor-unmapped.
+
+    Idempotent: skip rows that already carry a banner.
+    """
+    # If the column doesn't exist yet (schema older than R6), bail.
+    if not hasattr(Place, "is_closed_permanently"):
+        return
+
+    BATCH = 2000
+    offset = 0
+    flagged = {"perm": 0, "temp": 0, "a11y": 0, "unmapped": 0}
+    while True:
+        rows = (Place.query
+                .order_by(Place.id)
+                .offset(offset).limit(BATCH).all())
+        if not rows:
+            break
+        offset += BATCH
+        for p in rows:
+            if (p.is_closed_permanently or p.is_temporarily_closed
+                    or p.accessibility_warning or p.indoor_floor_unmapped):
+                continue
+            slug = p.slug or ""
+            seed = _seed_int_hex(slug, "r6edge")
+            bucket = seed % 1000
+            # ~0.4% permanently closed (≈ ~1k rows on a 280k table)
+            if bucket < 4:
+                p.is_closed_permanently = True
+                reasons = [
+                    "Business has ceased operations.",
+                    "Lease expired; the location has shut down.",
+                    "Owners retired; this branch is closed for good.",
+                    "Operation moved to a new address.",
+                ]
+                p.closure_reason = reasons[(seed >> 4) % len(reasons)]
+                flagged["perm"] += 1
+            # ~1.2% temporarily closed with a reopen ETA
+            elif bucket < 16:
+                p.is_temporarily_closed = True
+                tmp_reasons = [
+                    "Closed for renovation.",
+                    "Closed for staff training.",
+                    "Closed after fire damage; cleanup in progress.",
+                    "Seasonal closure.",
+                    "Inventory transition between owners.",
+                ]
+                p.closure_reason = tmp_reasons[(seed >> 4) % len(tmp_reasons)]
+                # Reopen window 3-90 days out, deterministic
+                days_out = 3 + ((seed >> 8) % 88)
+                reopen = MIRROR_REFERENCE_DATE + timedelta(days=days_out)
+                p.reopen_eta = f"Reopens {reopen.strftime('%b %d, %Y')}"
+                flagged["temp"] += 1
+            # ~2.5% have an accessibility warning visible at the top
+            elif bucket < 41:
+                a11y_warnings = [
+                    "Entrance has a 3-step front stoop; no step-free entry yet.",
+                    "Wheelchair ramp is around the side; ask staff for the keyed gate.",
+                    "Upstairs dining only; main floor is reservations counter.",
+                    "Restroom is on a different floor with no elevator.",
+                    "Tactile signage not yet installed at the front desk.",
+                    "Service-animal access is restricted to the patio area.",
+                ]
+                p.accessibility_warning = a11y_warnings[(seed >> 4) % len(a11y_warnings)]
+                flagged["a11y"] += 1
+            # ~1.6% multi-floor venues missing indoor floor plans
+            elif bucket < 57 and (p.indoor_zone_type in ("wing", "concourse",
+                                                          "food-court", "lounge",
+                                                          "parking-deck")):
+                p.indoor_floor_unmapped = True
+                flagged["unmapped"] += 1
+        db.session.commit()
+    print(
+        "backfill_place_edges_r6: flagged "
+        f"{flagged['perm']} permanently closed, "
+        f"{flagged['temp']} temporarily closed, "
+        f"{flagged['a11y']} accessibility warnings, "
+        f"{flagged['unmapped']} unmapped floor plans"
+    )
+
+
+def backfill_transit_no_service_r6(db, TransitLine):
+    """Deterministically suspend service on ~15% of transit lines so the
+    realtime dashboard surfaces a 'no service after hours' banner.
+
+    Idempotent: only updates lines whose delay_reason currently isn't a
+    no-service marker.  Safe to call alongside backfill_transit_delays.
+    """
+    rows = TransitLine.query.order_by(TransitLine.id).all()
+    if not rows:
+        return
+    NO_SERVICE_PHRASES = [
+        "No service — after hours",
+        "No service — overnight maintenance window",
+        "No service — special event closure",
+    ]
+    flagged = 0
+    for r in rows:
+        if (r.delay_reason or "").lower().startswith("no service"):
+            continue
+        seed = _seed_int_hex(r.slug or r.name or str(r.id), "r6nosvc")
+        if (seed % 100) < 15:  # ~15% suspended
+            r.delay_reason = NO_SERVICE_PHRASES[(seed >> 4) % len(NO_SERVICE_PHRASES)]
+            r.current_delay_min = 0  # not "delayed", flat-suspended
+            r.last_update = f"{2 + ((seed >> 8) % 25)} min ago"
+            flagged += 1
+    db.session.commit()
+    print(f"backfill_transit_no_service_r6: suspended {flagged} transit lines")

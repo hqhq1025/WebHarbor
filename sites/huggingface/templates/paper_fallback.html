@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block title %}Paper {{ arxiv_id }} — not on Hugging Face{% endblock %}
+
+{% block content %}
+<div class="container page" style="max-width: 720px;">
+    <nav class="docs-breadcrumb" aria-label="Breadcrumb">
+        <a href="{{ url_for('index') }}">Home</a>
+        <span>/</span>
+        <a href="{{ url_for('papers_index') }}">Papers</a>
+        <span>/</span>
+        <span>arXiv {{ arxiv_id }}</span>
+    </nav>
+
+    <h1 style="margin: 6px 0 8px;">Paper not on Hugging Face</h1>
+    <p class="muted" style="margin: 0 0 14px;">
+        <code>arXiv:{{ arxiv_id }}</code> has not been imported into the Daily Papers feed.
+        You can still read it on arXiv directly.
+    </p>
+
+    <div id="fallback-card" class="callout" style="padding: 14px 16px; background: #f8fafc; border: 1px solid var(--border, #e5e7eb); border-radius: 8px;">
+        <strong>Read on arXiv ↗</strong>
+        <p style="margin: 6px 0 10px;">The full PDF and metadata are available on the upstream arXiv abstract page.</p>
+        <a class="btn btn-primary" href="{{ upstream_url }}" rel="noopener noreferrer">Open arXiv {{ arxiv_id }} ↗</a>
+    </div>
+
+    <h3 style="margin-top: 24px;">What you can do here</h3>
+    <ul style="font-size: 14px; line-height: 1.6;">
+        <li>Search the Hub for repositories whose readme or description mentions <code>{{ arxiv_id }}</code> — try <a href="{{ url_for('search', q=arxiv_id) }}">/search?q={{ arxiv_id }}</a>.</li>
+        <li>Browse <a href="{{ url_for('papers_index') }}">/papers</a> for related, indexed papers.</li>
+        <li>If you authored this paper, submit it to the Daily Papers feed from <a href="{{ url_for('docs') }}">the docs</a>.</li>
+    </ul>
+</div>
+{% endblock %}

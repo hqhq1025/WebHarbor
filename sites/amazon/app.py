@@ -664,7 +664,12 @@ def product_detail(slug):
         in_wishlist=in_wishlist, review_form=ReviewForm(),
         qna=qna, fbt=fbt, aplus=aplus,
         seller_id=seller_id, seller_name=seller_name,
-        oos_alternatives=oos_alternatives, sns_eligible=sns_eligible)
+        oos_alternatives=oos_alternatives, sns_eligible=sns_eligible,
+        breadcrumb=_breadcrumb_for(product),
+        recently_viewed=_record_and_get_recently_viewed(product),
+        compare_similar=_compare_with_similar(product),
+        compare_attrs=_COMPARE_ATTRS,
+        low_stock=(0 < (product.stock or 0) <= 4))
 
 
 # ----- R4: Deterministic synthesis helpers for sub-pages -----
@@ -677,6 +682,172 @@ def _stable_hash(s):
     Q&A / sellers / A+ content stay consistent.
     """
     return int.from_bytes(_hashlib.md5((s or '').encode('utf-8')).digest()[:4], 'big')
+
+
+# ----- R6: breadcrumb / recently-viewed / compare-similar helpers -----
+
+def _breadcrumb_for(product):
+    """Return a list of (label, url) tuples for the product detail breadcrumb.
+
+    Breadcrumb: All Departments > Category > Subcategory (search link) > Product.
+    """
+    crumbs = [('All Departments', url_for('departments'))]
+    cat = Category.query.filter_by(slug=product.category_slug).first()
+    if cat:
+        crumbs.append((cat.name, url_for('category', slug=cat.slug)))
+    elif product.category_slug:
+        crumbs.append((product.category_slug.capitalize(),
+                       url_for('category', slug=product.category_slug)))
+    if product.subcategory:
+        crumbs.append((product.subcategory,
+                       url_for('search', q=product.subcategory)))
+    crumbs.append((product.name, None))
+    return crumbs
+
+
+def _record_and_get_recently_viewed(product, max_items=8):
+    """Push current product onto session-backed Recently Viewed deque,
+    return up to `max_items` other-product cards (excluding current).
+
+    Stored as a list of product ids in session['recent_views']. Capped at
+    24 entries; oldest evicted via FIFO.
+    """
+    rv = list(session.get('recent_views') or [])
+    if product.id in rv:
+        rv.remove(product.id)
+    rv.insert(0, product.id)
+    if len(rv) > 24:
+        rv = rv[:24]
+    session['recent_views'] = rv
+    other_ids = [pid for pid in rv if pid != product.id][:max_items]
+    if not other_ids:
+        return []
+    items = Product.query.filter(Product.id.in_(other_ids)).all()
+    by_id = {p.id: p for p in items}
+    return [by_id[pid] for pid in other_ids if pid in by_id]
+
+
+# Comparison attributes shown in the "Compare with similar items" table.
+_COMPARE_ATTRS = ['Price', 'Customer Rating', 'Brand', 'Subcategory',
+                  'Country of Origin', 'Climate Pledge Friendly',
+                  'Prime Eligible', 'Free Returns']
+
+
+def _compare_with_similar(product, n=4):
+    """Build a side-by-side comparison set: current product + 3 deterministic
+    same-subcategory siblings (fallback to same-category) with parallel attrs.
+
+    Deterministic pick via _stable_hash so the same product always shows the
+    same comparison row; agent tasks can reference exact rows in the table.
+    """
+    siblings = (Product.query
+                .filter(Product.subcategory == product.subcategory,
+                        Product.id != product.id)
+                .order_by(Product.review_count.desc())
+                .limit(40).all())
+    if len(siblings) < n - 1:
+        # widen to category
+        extras = (Product.query
+                  .filter(Product.category_slug == product.category_slug,
+                          Product.id != product.id)
+                  .order_by(Product.review_count.desc())
+                  .limit(40).all())
+        for e in extras:
+            if e.id != product.id and all(e.id != s.id for s in siblings):
+                siblings.append(e)
+            if len(siblings) >= 30:
+                break
+    if not siblings:
+        return []
+    # Deterministic 3-pick from siblings keyed by current slug.
+    h = _stable_hash(product.slug + 'compare')
+    used, picks = set(), []
+    for i in range(n - 1):
+        idx = (h >> (i * 5)) % len(siblings)
+        tries = 0
+        while idx in used and tries < len(siblings):
+            idx = (idx + 1) % len(siblings)
+            tries += 1
+        used.add(idx)
+        picks.append(siblings[idx])
+    return [product] + picks
+
+
+def _compare_value(p, attr):
+    """Return the display value for one cell in the compare table."""
+    if attr == 'Price':
+        return f"${p.price:.2f}"
+    if attr == 'Customer Rating':
+        return f"{p.rating} ({p.review_count})"
+    if attr == 'Brand':
+        return p.brand or '-'
+    if attr == 'Subcategory':
+        return p.subcategory or '-'
+    if attr == 'Country of Origin':
+        specs = p.get_specs()
+        return specs.get('Country of Origin', 'Imported')
+    if attr == 'Climate Pledge Friendly':
+        return 'Yes' if 'climate-pledge-friendly' in (p.get_feature_tags() or []) else 'No'
+    if attr == 'Prime Eligible':
+        return 'Yes' if p.is_prime else 'No'
+    if attr == 'Free Returns':
+        return 'Yes' if p.free_returns else 'No'
+    return '-'
+
+
+app.jinja_env.globals['compare_value'] = _compare_value
+
+
+# ----- R6: out-of-stock notify-when-back / low-stock urgency -----
+
+@app.route('/product/<slug>/notify-when-back', methods=['GET', 'POST'])
+@csrf.exempt
+def product_notify_when_back(slug):
+    """Sign up to be notified when a sold-out product is back in stock.
+
+    Anon-friendly: stores email in session['notify_signups'] keyed by slug.
+    On GET renders a form, on POST stores the signup + flashes success.
+    """
+    product = Product.query.filter_by(slug=slug).first_or_404()
+    if request.method == 'POST':
+        email = (request.form.get('email') or '').strip()
+        if current_user.is_authenticated and not email:
+            email = current_user.email
+        if not email or '@' not in email:
+            flash('Please enter a valid email address to be notified.', 'error')
+            return render_template('notify_when_back.html', product=product,
+                                   error='Please enter a valid email address.',
+                                   submitted=False)
+        signups = dict(session.get('notify_signups') or {})
+        signups[product.slug] = email
+        session['notify_signups'] = signups
+        flash(f"We'll email {email} when {product.name} is back in stock.", 'success')
+        return render_template('notify_when_back.html', product=product,
+                               submitted=True, email=email, error=None)
+    already = (session.get('notify_signups') or {}).get(product.slug)
+    return render_template('notify_when_back.html', product=product,
+                           submitted=False, error=None, already=already)
+
+
+# ----- R6: Compare full-page (multi-product, query-string) -----
+
+@app.route('/compare')
+def compare_products():
+    """Multi-product comparison page. Accepts ?slugs=a,b,c (max 5).
+
+    No DB writes. Renders a side-by-side table for up to 5 products using
+    the same attribute set as the inline product_detail "Compare with
+    similar items" widget, plus stock + delivery + features.
+    """
+    slugs_raw = request.args.get('slugs') or ''
+    slugs = [s.strip() for s in slugs_raw.split(',') if s.strip()][:5]
+    products = []
+    for s in slugs:
+        p = Product.query.filter_by(slug=s).first()
+        if p:
+            products.append(p)
+    return render_template('compare.html', products=products,
+                           attrs=_COMPARE_ATTRS)
 
 
 # Question / answer templates keyed by category slug. Picked deterministically
@@ -1746,6 +1917,87 @@ def delete_account():
 
 # ----- Routes: Saved Addresses -----
 
+# R6: address validator. Returns an error string or None.
+US_STATE_CODES = {
+    'AL', 'AK', 'AZ', 'AR', 'CA', 'CO', 'CT', 'DE', 'FL', 'GA', 'HI', 'ID',
+    'IL', 'IN', 'IA', 'KS', 'KY', 'LA', 'ME', 'MD', 'MA', 'MI', 'MN', 'MS',
+    'MO', 'MT', 'NE', 'NV', 'NH', 'NJ', 'NM', 'NY', 'NC', 'ND', 'OH', 'OK',
+    'OR', 'PA', 'RI', 'SC', 'SD', 'TN', 'TX', 'UT', 'VT', 'VA', 'WA', 'WV',
+    'WI', 'WY', 'DC',
+}
+_STATE_NAME_TO_CODE = {
+    'alabama': 'AL', 'alaska': 'AK', 'arizona': 'AZ', 'arkansas': 'AR',
+    'california': 'CA', 'colorado': 'CO', 'connecticut': 'CT', 'delaware': 'DE',
+    'florida': 'FL', 'georgia': 'GA', 'hawaii': 'HI', 'idaho': 'ID',
+    'illinois': 'IL', 'indiana': 'IN', 'iowa': 'IA', 'kansas': 'KS',
+    'kentucky': 'KY', 'louisiana': 'LA', 'maine': 'ME', 'maryland': 'MD',
+    'massachusetts': 'MA', 'michigan': 'MI', 'minnesota': 'MN', 'mississippi': 'MS',
+    'missouri': 'MO', 'montana': 'MT', 'nebraska': 'NE', 'nevada': 'NV',
+    'new hampshire': 'NH', 'new jersey': 'NJ', 'new mexico': 'NM',
+    'new york': 'NY', 'north carolina': 'NC', 'north dakota': 'ND',
+    'ohio': 'OH', 'oklahoma': 'OK', 'oregon': 'OR', 'pennsylvania': 'PA',
+    'rhode island': 'RI', 'south carolina': 'SC', 'south dakota': 'SD',
+    'tennessee': 'TN', 'texas': 'TX', 'utah': 'UT', 'vermont': 'VT',
+    'virginia': 'VA', 'washington': 'WA', 'west virginia': 'WV',
+    'wisconsin': 'WI', 'wyoming': 'WY', 'district of columbia': 'DC',
+}
+
+
+def _validate_address_fields(zip_code, state, line1):
+    """Return human-readable error if any address field is invalid; else None.
+
+    Rules (deterministic, no external API):
+    - ZIP must be 5 digits or 5+4 (e.g. 94102 or 94102-1234).
+    - State must be a valid US 2-letter postal code or recognized full name.
+    - Street address must include at least one digit (no PO-box-only filler).
+    """
+    z = (zip_code or '').strip()
+    if not re.match(r'^\d{5}(-\d{4})?$', z):
+        return ('Invalid ZIP code. Please enter 5 digits (e.g. 94102) or '
+                'ZIP+4 (e.g. 94102-1234).')
+    st = (state or '').strip()
+    st_norm = st.upper() if len(st) == 2 else _STATE_NAME_TO_CODE.get(st.lower(), '')
+    if st_norm not in US_STATE_CODES:
+        return ('Invalid state. Please enter a valid US 2-letter state code '
+                '(e.g. CA, NY, TX).')
+    if not any(c.isdigit() for c in (line1 or '')):
+        return ('Invalid street address. Please include a street number, '
+                'e.g. "123 Main St".')
+    return None
+
+
+# R6: payment decline simulator. Returns (declined: bool, message: str|None).
+# Triggers when the card number contains "0000" anywhere — a deterministic
+# pattern agents can opt into. Real card validation also rejects all-zero
+# numbers; this matches that intuition.
+def _payment_declined(card_number):
+    if not card_number:
+        return False, None
+    digits = re.sub(r'\D', '', card_number)
+    if '0000' in digits or digits.startswith('4000'):
+        return True, ('Your card was declined by the issuing bank '
+                      '(error: DECLINED_DO_NOT_HONOR). Please try a '
+                      'different card or contact your bank.')
+    if len(digits) < 13 or len(digits) > 19:
+        return True, 'Card number must be 13–19 digits.'
+    return False, None
+
+
+@app.route('/session-expired')
+def session_expired():
+    """Standalone page shown when a user's session has been invalidated.
+
+    Triggered by ?next=<path> query so the re-login flow can bounce the
+    user back to where they came from. Agent tasks can navigate here
+    directly to exercise the re-login flow without depending on real
+    session timeouts.
+    """
+    next_url = request.args.get('next') or url_for('index')
+    logout_user()
+    session.pop('anon_cart', None)
+    return render_template('session_expired.html', next_url=next_url), 401
+
+
 @app.route('/account/addresses')
 @login_required
 def addresses_list():
@@ -1758,7 +2010,12 @@ def addresses_list():
 @login_required
 def address_add():
     form = AddressForm()
+    addr_error = None
     if form.validate_on_submit():
+        addr_error = _validate_address_fields(form.zip_code.data,
+                                              form.state.data,
+                                              form.address_line1.data)
+    if form.validate_on_submit() and not addr_error:
         addr = SavedAddress(
             user_id=current_user.id,
             label=form.label.data,
@@ -1776,7 +2033,8 @@ def address_add():
         db.session.commit()
         flash('Address added.', 'success')
         return redirect(url_for('addresses_list'))
-    return render_template('address_form.html', form=form, editing=False)
+    return render_template('address_form.html', form=form, editing=False,
+                           addr_error=addr_error)
 
 
 @app.route('/account/addresses/<int:addr_id>/edit', methods=['GET', 'POST'])
@@ -1785,7 +2043,12 @@ def address_add():
 def address_edit(addr_id):
     addr = SavedAddress.query.filter_by(id=addr_id, user_id=current_user.id).first_or_404()
     form = AddressForm(obj=addr)
+    addr_error = None
     if form.validate_on_submit():
+        addr_error = _validate_address_fields(form.zip_code.data,
+                                              form.state.data,
+                                              form.address_line1.data)
+    if form.validate_on_submit() and not addr_error:
         addr.label = form.label.data
         addr.full_name = form.full_name.data
         addr.phone = form.phone.data or ''
@@ -1798,7 +2061,8 @@ def address_edit(addr_id):
         db.session.commit()
         flash('Address updated.', 'success')
         return redirect(url_for('addresses_list'))
-    return render_template('address_form.html', form=form, editing=True, addr=addr)
+    return render_template('address_form.html', form=form, editing=True,
+                           addr=addr, addr_error=addr_error)
 
 
 @app.route('/account/addresses/<int:addr_id>/delete', methods=['POST'])
@@ -2077,6 +2341,7 @@ def checkout():
             form.zip_code.data = current_user.zip_code
             form.phone.data = current_user.phone
 
+    payment_error = None
     if form.validate_on_submit():
         # Determine payment info from saved method or form entry
         selected_pm_id = request.form.get('saved_payment_id')
@@ -2087,6 +2352,18 @@ def checkout():
         else:
             pay_method = 'Visa'
             pay_last4 = form.card_number.data[-4:] if form.card_number.data else '1234'
+            # R6: simulate payment decline for cards containing "0000" or
+            # starting with 4000. User stays on /checkout with retry banner.
+            declined, msg = _payment_declined(form.card_number.data)
+            if declined:
+                payment_error = msg
+                # Track retry count so an agent can see "this is your 2nd attempt".
+                attempts = int(session.get('payment_retry_count') or 0) + 1
+                session['payment_retry_count'] = attempts
+                return render_template('checkout.html', form=form, items=items,
+                    subtotal=subtotal, shipping=shipping, tax=tax, total=total,
+                    saved_addrs=saved_addrs, saved_payments=saved_payments,
+                    payment_error=payment_error, payment_attempts=attempts)
 
         # Determine shipping address from saved address or form entry
         selected_addr_id = request.form.get('saved_address_id')
@@ -2142,11 +2419,15 @@ def checkout():
             db.session.delete(item)
 
         db.session.commit()
+        # R6: clear payment retry counter on successful order.
+        session.pop('payment_retry_count', None)
         return redirect(url_for('order_confirmation', order_id=order.id))
 
     return render_template('checkout.html', form=form, items=items,
         subtotal=subtotal, shipping=shipping, tax=tax, total=total,
-        saved_addrs=saved_addrs, saved_payments=saved_payments)
+        saved_addrs=saved_addrs, saved_payments=saved_payments,
+        payment_error=payment_error,
+        payment_attempts=int(session.get('payment_retry_count') or 0))
 
 
 @app.route('/order/<int:order_id>/confirmation')

@@ -6,9 +6,11 @@
     <div class="pd-header">
         <div class="pd-breadcrumb">
             <a href="{{ url_for('index') }}">Home</a> &rsaquo;
-            <a href="{{ url_for('stays') }}">Stays</a> &rsaquo;
             <a href="{{ url_for('city_page', slug=property.city.slug) }}">{{ property.city.display }}</a> &rsaquo;
-            {{ property.name }}
+            {% if property.neighborhood %}
+            <a href="{{ url_for('search') }}?city={{ property.city.key }}&amp;neighborhood={{ property.neighborhood|urlencode }}">{{ property.neighborhood }}</a> &rsaquo;
+            {% endif %}
+            <span class="pd-crumb-current">{{ property.name }}</span>
         </div>
         <div class="pd-title-row">
             <div>
@@ -327,6 +329,94 @@
                 </div>
             </div>
             {% endif %}
+
+            {# R6 — Other properties in same area (same neighbourhood). #}
+            {% if same_area %}
+            <div class="pd-section" id="same-area" aria-labelledby="same-area-h2">
+                <h2 id="same-area-h2">Other properties in same area</h2>
+                <p class="text-muted" style="font-size:13px;margin-top:-6px;">
+                    {{ same_area|length }} more {% if property.neighborhood %}in {{ property.neighborhood }}{% endif %} — close by, easy to compare.
+                </p>
+                <div class="card-grid cards-3">
+                    {% for prop in same_area %}
+                    <a href="{{ url_for('property_detail', slug=prop.slug) }}" class="city-card">
+                        {% if prop.image %}
+                        <img src="{{ prop.image }}" alt="{{ prop.name }}" class="city-card-img"
+                             onerror="this.style.background='linear-gradient(135deg,#003580,#006ce4)';this.alt=''">
+                        {% endif %}
+                        <div class="city-card-body">
+                            <h3>{{ prop.name }}</h3>
+                            <span class="flag">{{ prop.neighborhood }}</span>
+                            <div style="margin-top:4px;">
+                                <strong>${{ '%.0f' % prop.discounted_price }}</strong>
+                                <span style="font-size:11px;color:#6b6b6b;">/night</span>
+                                <span style="font-size:11px;color:#008009;">&middot; {{ prop.rating }}/10</span>
+                                {% if prop.free_cancellation %}<span style="font-size:11px;color:#008009;">&middot; Free cancellation</span>{% endif %}
+                            </div>
+                        </div>
+                    </a>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+
+            {# R6 — You might also like (different city, same dest_category). #}
+            {% if you_might_also_like %}
+            <div class="pd-section" id="you-might-also-like" aria-labelledby="you-might-h2">
+                <h2 id="you-might-h2">You might also like</h2>
+                <p class="text-muted" style="font-size:13px;margin-top:-6px;">
+                    Other {{ property.dest_category|replace('-', ' ') }} stays travellers booked after viewing this property.
+                </p>
+                <div class="card-grid cards-3">
+                    {% for prop in you_might_also_like %}
+                    <a href="{{ url_for('property_detail', slug=prop.slug) }}" class="city-card">
+                        {% if prop.image %}
+                        <img src="{{ prop.image }}" alt="{{ prop.name }}" class="city-card-img"
+                             onerror="this.style.background='linear-gradient(135deg,#003580,#006ce4)';this.alt=''">
+                        {% endif %}
+                        <div class="city-card-body">
+                            <h3>{{ prop.name }}</h3>
+                            <span class="flag">{{ prop.city.display if prop.city else '' }}</span>
+                            <div style="margin-top:4px;">
+                                <strong>${{ '%.0f' % prop.discounted_price }}</strong>
+                                <span style="font-size:11px;color:#6b6b6b;">/night</span>
+                                <span style="font-size:11px;color:#003580;">&middot; {{ prop.rating_label }}</span>
+                            </div>
+                        </div>
+                    </a>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+
+            {# R6 — Compare 3 + Wishlist cross-links. Both surface as a single,
+                visually distinct band so they don't compete with the cards. #}
+            <div class="pd-section pd-crosslinks" id="cross-links" aria-labelledby="cross-links-h2">
+                <h2 id="cross-links-h2">Quick actions</h2>
+                <div style="display:flex;gap:14px;flex-wrap:wrap;margin-top:8px;">
+                    {% if compare_set and compare_set|length >= 2 %}
+                    <a href="{{ url_for('search') }}?city={{ property.city.key }}&amp;compare={{ compare_set|map(attribute='slug')|join(',') }}"
+                       class="btn-secondary" id="compare3Link" data-compare-count="{{ compare_set|length }}">
+                        Compare 3 properties &rsaquo;
+                    </a>
+                    {% endif %}
+                    {% if current_user.is_authenticated %}
+                    <a href="{{ url_for('saved') }}" class="btn-secondary" id="wishlistLink">
+                        View Wishlist ({{ saved_count or 0 }}) &rsaquo;
+                    </a>
+                    {% else %}
+                    <a href="{{ url_for('login') }}?next={{ url_for('saved') }}" class="btn-secondary" id="wishlistLink">
+                        Sign in to view Wishlist &rsaquo;
+                    </a>
+                    {% endif %}
+                    <a href="{{ url_for('search') }}?city={{ property.city.key }}" class="btn-secondary">
+                        See all properties in {{ property.city.display }} &rsaquo;
+                    </a>
+                </div>
+                <p style="font-size:12px;color:#6b6b6b;margin-top:8px;">
+                    Tip: Compare lets you stack three properties side-by-side; Wishlist saves them across sessions.
+                </p>
+            </div>
         </div>
 
         <!-- Booking widget -->

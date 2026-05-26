@@ -4746,6 +4746,1068 @@ def bake_r4(con: sqlite3.Connection) -> dict[str, int]:
 
     plant_r4_sentinel(con)
     return stats
+
+
+# =======================================================================
+# R6 — reporter beats, country drills, long-running stories, edge cases
+# =======================================================================
+# R6 lifts the corpus to 10000+ articles by adding deterministic
+# beats-and-bylines content. All synth functions are independent of R2-R5
+# data and gated by the R6_SENTINEL_BODY comment.
+
+R6_SENTINEL_BODY = "<<R6-baked>>"
+R6_RNG = random.Random(20260626)
+
+
+# ---- R6 reporter roster (50 reporters, each with a beat) ---------------
+# Each tuple is (full_name, beat_slug, beat_label, section_slug, regions).
+# `regions` is a small list of country/region tokens the reporter "covers";
+# we cycle through them deterministically per article so each reporter's
+# 30-article series visits 3-6 places naturally.
+
+R6_REPORTERS: list[tuple[str, str, str, str, list[str]]] = [
+    ("Adaeze Okafor",      "africa-economy",      "Africa economy",          "africa",        ["Nigeria", "Ghana", "Senegal", "Kenya"]),
+    ("Bao Lin",            "china-tech",          "China technology",        "asia",          ["Beijing", "Shanghai", "Shenzhen", "Hong Kong"]),
+    ("Cathal O'Riordan",   "ireland-politics",    "Ireland politics",        "europe",        ["Dublin", "Belfast", "Galway"]),
+    ("Dawit Mengesha",     "horn-of-africa",      "Horn of Africa",          "africa",        ["Ethiopia", "Somalia", "Eritrea", "Djibouti"]),
+    ("Elena Petrova",      "russia-society",      "Russia and society",      "europe",        ["Moscow", "St Petersburg", "Vladivostok"]),
+    ("Fatima Khoury",      "middle-east-business","Middle East business",    "middle_east",   ["Dubai", "Riyadh", "Doha", "Cairo"]),
+    ("Gita Rangarajan",    "south-asia",          "South Asia",              "asia",          ["Delhi", "Mumbai", "Dhaka", "Colombo"]),
+    ("Henrik Lindqvist",   "nordic",              "Nordic affairs",          "europe",        ["Stockholm", "Oslo", "Copenhagen", "Helsinki"]),
+    ("Isla Macdonald",     "scotland-politics",   "Scotland politics",       "scotland",      ["Edinburgh", "Glasgow", "Aberdeen"]),
+    ("Jamal Carter",       "us-justice",          "US justice",              "us_canada",     ["Washington", "New York", "Atlanta"]),
+    ("Kiran Patel",        "uk-health",           "UK health",               "uk",            ["London", "Manchester", "Birmingham"]),
+    ("Lior Adler",         "tel-aviv-bureau",     "Tel Aviv bureau",         "middle_east",   ["Tel Aviv", "Jerusalem", "Haifa"]),
+    ("Marek Wojcik",       "central-europe",      "Central Europe",          "europe",        ["Warsaw", "Prague", "Budapest", "Bratislava"]),
+    ("Nadia Belkacem",     "north-africa",        "North Africa",            "africa",        ["Algiers", "Tunis", "Rabat", "Tripoli"]),
+    ("Olivia Tan",         "se-asia",             "South East Asia",         "asia",          ["Singapore", "Jakarta", "Bangkok", "Manila"]),
+    ("Pablo Restrepo",     "andean",              "Andean correspondent",    "latin_america", ["Lima", "Bogota", "Quito", "La Paz"]),
+    ("Qadira Hassan",      "gulf-energy",         "Gulf energy",             "middle_east",   ["Abu Dhabi", "Kuwait City", "Manama"]),
+    ("Rohan Mehta",        "asia-markets",        "Asia markets",            "business",      ["Tokyo", "Seoul", "Singapore", "Mumbai"]),
+    ("Sara Larsen",        "climate-policy",      "Climate policy",          "science",       ["Geneva", "Brussels", "Nairobi"]),
+    ("Tomas Aguirre",      "southern-cone",       "Southern Cone",           "latin_america", ["Buenos Aires", "Santiago", "Montevideo"]),
+    ("Una Davies",         "wales-affairs",       "Wales affairs",           "wales",         ["Cardiff", "Swansea", "Wrexham"]),
+    ("Viktor Novak",       "balkans",             "Balkans",                 "europe",        ["Belgrade", "Sarajevo", "Pristina", "Zagreb"]),
+    ("Wei Zhao",           "greater-china",       "Greater China",           "asia",          ["Taipei", "Hong Kong", "Macau"]),
+    ("Xavi Costa",         "iberia",              "Iberian peninsula",       "europe",        ["Madrid", "Barcelona", "Lisbon"]),
+    ("Yara El-Sayed",      "egypt-bureau",        "Egypt bureau",            "africa",        ["Cairo", "Alexandria", "Aswan"]),
+    ("Zach Holloway",      "westminster",         "Westminster",             "politics",      ["London", "Edinburgh", "Cardiff", "Belfast"]),
+    ("Aamir Sheikh",       "pakistan",            "Pakistan",                "asia",          ["Islamabad", "Karachi", "Lahore"]),
+    ("Beata Kowalska",     "poland-economy",      "Poland economy",          "business",      ["Warsaw", "Krakow", "Gdansk"]),
+    ("Cleo Mavroudis",     "greece-cyprus",       "Greece and Cyprus",       "europe",        ["Athens", "Thessaloniki", "Nicosia"]),
+    ("Daniel Okeke",       "west-africa",         "West Africa",             "africa",        ["Lagos", "Accra", "Abidjan", "Dakar"]),
+    ("Emma Whitfield",     "tech-startups",       "Tech startups",           "technology",    ["London", "San Francisco", "Berlin"]),
+    ("Felipe Duarte",      "brazil-politics",     "Brazil politics",         "latin_america", ["Brasilia", "Sao Paulo", "Rio de Janeiro"]),
+    ("Grace Tembo",        "southern-africa",     "Southern Africa",         "africa",        ["Johannesburg", "Cape Town", "Harare"]),
+    ("Hiroshi Tanaka",     "japan-bureau",        "Japan bureau",            "asia",          ["Tokyo", "Osaka", "Sapporo", "Fukuoka"]),
+    ("Iulia Stancu",       "romania-moldova",     "Romania and Moldova",     "europe",        ["Bucharest", "Cluj-Napoca", "Chisinau"]),
+    ("Joon Park",          "korea-affairs",       "Korea affairs",           "asia",          ["Seoul", "Busan", "Incheon"]),
+    ("Kemi Adeyemi",       "lagos-bureau",        "Lagos bureau",            "africa",        ["Lagos", "Abuja", "Port Harcourt"]),
+    ("Lucia Romero",       "mexico-bureau",       "Mexico bureau",           "latin_america", ["Mexico City", "Monterrey", "Guadalajara"]),
+    ("Mariana Costa",      "lisbon-bureau",       "Lisbon bureau",           "europe",        ["Lisbon", "Porto", "Coimbra"]),
+    ("Niamh O'Brien",      "northern-ireland",    "Northern Ireland",        "northern_ireland",["Belfast", "Derry", "Armagh"]),
+    ("Omar Saleh",         "levant",              "Levant",                  "middle_east",   ["Beirut", "Damascus", "Amman"]),
+    ("Priya Iyer",         "india-business",      "India business",          "business",      ["Mumbai", "Bengaluru", "Hyderabad", "Delhi"]),
+    ("Quentin Marsh",      "europe-economy",      "Europe economy",          "business",      ["Frankfurt", "Paris", "Amsterdam"]),
+    ("Rashida Bello",      "sahel",               "Sahel",                   "africa",        ["Bamako", "Niamey", "Ouagadougou", "N'Djamena"]),
+    ("Stefan Becker",      "berlin-bureau",       "Berlin bureau",           "europe",        ["Berlin", "Munich", "Hamburg"]),
+    ("Thiago Souza",       "rio-bureau",          "Rio bureau",              "latin_america", ["Rio de Janeiro", "Salvador", "Belo Horizonte"]),
+    ("Una Cassidy",        "irish-economy",       "Irish economy",           "business",      ["Dublin", "Cork", "Limerick"]),
+    ("Vihaan Joshi",       "delhi-bureau",        "Delhi bureau",            "asia",          ["Delhi", "Jaipur", "Lucknow"]),
+    ("Wendy Ofori",        "accra-bureau",        "Accra bureau",            "africa",        ["Accra", "Kumasi", "Tamale"]),
+    ("Yuki Watanabe",      "japan-economy",       "Japan economy",           "business",      ["Tokyo", "Osaka", "Nagoya"]),
+]
+
+
+# ---- R6 story angles cycled per reporter -------------------------------
+# Each entry expands {region} (a city/country from the reporter's `regions`)
+# and {beat} (the reporter's beat label) into a headline + lead.
+
+R6_BEAT_ANGLES: list[tuple[str, str]] = [
+    ("{region}: inside the policy shift driving {beat}",
+     "A months-long investigation reveals how {region} officials reshaped {beat} after a series of closed-door reviews. Insiders describe the trade-offs."),
+    ("Why {beat} matters this week in {region}",
+     "Our correspondent unpacks the local context behind the headline numbers — what changed, who pays, and what comes next."),
+    ("{region} explained: the five things to know about {beat}",
+     "A short primer for readers catching up. Five clear take-aways drawn from BBC reporting in {region}."),
+    ("Reaction in {region}: communities respond to the latest {beat} announcement",
+     "We spoke to teachers, traders and civic groups across {region}. Their answers were mixed, and rarely matched the official line."),
+    ("Analysis: how the {beat} debate is playing out on the ground in {region}",
+     "Beyond the press releases, the real argument is being made in town halls and bus queues. Here is what our reporter found."),
+    ("{region} hospital chiefs warn over winter pressures linked to {beat}",
+     "Senior NHS-equivalent leaders in {region} say staffing decisions made twelve months ago are now visible in admissions data."),
+    ("Numbers behind the story: {beat} in {region}, charted",
+     "We break down the latest official statistics from {region}. The trend has shifted; the underlying drivers have not."),
+    ("Long read: a year of {beat} reporting from {region}",
+     "Twelve months of our coverage, pulled together. What changed, what stalled, and what readers told us mattered most."),
+    ("{region} elections: candidates on {beat}",
+     "We compared every major candidate's published position on {beat}. Differences appeared sharper than the headline rhetoric suggests."),
+    ("{region} business briefing: how firms are pricing in {beat}",
+     "Quarterly updates from {region}-listed companies show a pattern of conservative guidance. Analysts say that may be deliberate."),
+    ("{region} weather and {beat}: the unexpected connection",
+     "Seasonal forecasts are influencing decisions in unexpected places. Our team explains the loop."),
+    ("Verify: what is true and what is not in this week's {beat} coverage",
+     "The team at BBC Verify checked four widely-shared claims about {beat} in {region}. Two stand up; two do not."),
+    ("Voices from {region}: '{beat} reshaped how we live this year'",
+     "We collected first-person accounts from readers in {region}. Their words, lightly edited for clarity."),
+    ("{region}: court ruling changes the {beat} landscape",
+     "A judgment handed down this week reshapes the rules. Lawyers say the ripple will be slow but real."),
+    ("Q&A: the {beat} questions readers in {region} keep asking",
+     "We collected the most-asked reader questions from our recent {region} coverage and answered them in plain language."),
+    ("Behind the scenes: how we reported on {beat} in {region}",
+     "A note from our editors on sourcing, verification and the choices behind this week's package."),
+    ("{region} youth perspective: how under-25s see {beat}",
+     "Newsround's older-readers edition gathered views from sixth-formers and apprentices in {region}. Highlights here."),
+    ("Climate angle: {beat} and the changing season in {region}",
+     "BBC Climate Watch examines the overlap between {beat} policy and shifting weather patterns observed in {region}."),
+    ("Profile: the person now leading {beat} reform in {region}",
+     "A close look at the official tasked with delivering the new programme. Colleagues describe a quiet but determined operator."),
+    ("Watch: a five-minute primer on {beat} in {region}",
+     "Our explainer video walks viewers through the big moving parts. Closed captions and a full transcript are available."),
+    ("Listen: the {beat} podcast — this week in {region}",
+     "Our weekly podcast convenes correspondents in {region} and the regional desk to take stock."),
+    ("{region}: opposition demands inquiry into {beat} decisions",
+     "Opposition figures called for a formal review citing transparency concerns. The government says existing oversight is adequate."),
+    ("Fact check: are the {beat} numbers in {region} really up?",
+     "Two competing data sets give two different answers. We walked through both and show our work."),
+    ("In pictures: a day of {beat} reporting in {region}",
+     "A photo essay following our reporting team through one day across the region."),
+    ("Reader replies: your responses to last week's {beat} story in {region}",
+     "Hundreds of you wrote in. We chose a representative cross-section, then ran them past our specialist correspondent."),
+    ("{region} budget: what {beat} got, and what it did not",
+     "The annual budget allocation for {beat} held steady in nominal terms. Inflation may tell a different story."),
+    ("Investigation: a six-month look at {beat} contracts in {region}",
+     "We obtained procurement records covering the last two financial years. The patterns surprised some seasoned analysts."),
+    ("Opinion: a {region} academic on the next phase of {beat}",
+     "A guest contribution from a researcher who has tracked the field for fifteen years. The view from the seminar room."),
+    ("Live update summary: a day of {beat} news in {region}",
+     "A consolidated summary of our live blog coverage. Every key update, time-stamped and contextualised."),
+    ("{region}: the {beat} story you may have missed this week",
+     "A small story with outsized consequences. Our correspondent walks through why this one mattered."),
+]
+
+
+def _r6_synth_body(lead: str, region: str, beat: str) -> str:
+    """Six-paragraph deterministic body keyed off the lead + region + beat.
+    The body never references real-time data; it weaves the lead phrase
+    through six narrative paragraphs that look like a real BBC report."""
+    return (
+        f"{lead}\n\n"
+        f"In {region}, the story has been building for several weeks. Our team "
+        f"spoke to local officials, civic groups and businesses about how "
+        f"the latest developments around {beat} are being felt on the ground.\n\n"
+        f"The headline numbers tell only part of the story. Behind them sit "
+        f"choices made over the past year — choices that are now visible in "
+        f"daily life across {region}. We document those choices, and the "
+        f"people they touch.\n\n"
+        f"Critics argue the pace of change has been too quick; supporters say "
+        f"the alternative was already failing. Both sides cite evidence drawn "
+        f"from the same official data sets. Reading between them is now part "
+        f"of the job for anyone tracking {beat}.\n\n"
+        f"BBC Verify has separately checked three of the most-shared claims "
+        f"circulating about {beat} this week. Their working is published in "
+        f"a sister piece linked from this article.\n\n"
+        f"More from our {region} bureau in the coming days. Readers who want "
+        f"to follow this story can subscribe to the relevant topic from this "
+        f"page; updates will arrive in the dashboard digest."
+    )
+
+
+def _r6_make_row(*, slug, headline, lead, body, category_id, section_slug,
+                 subsection, region_label, ts, view_count, country=None,
+                 hero="", topics=None, feature_tags=None, content_type="article",
+                 author="BBC News", is_featured=0, is_breaking=0, is_live=0,
+                 video_url=""):
+    return {
+        "slug": slug,
+        "headline": headline,
+        "subtitle": lead[:300],
+        "summary": lead[:300],
+        "body": body,
+        "author": author,
+        "category_id": category_id,
+        "hero_image": hero,
+        "gallery_json": "[]",
+        "gallery_full_json": "{}",
+        "topics_json": json.dumps(topics or [region_label]),
+        "published_at": ts.strftime("%Y-%m-%d %H:%M:%S"),
+        "reading_time": max(2, len(body.split()) // 200),
+        "word_count": len(body.split()),
+        "view_count": view_count,
+        "is_featured": is_featured,
+        "is_breaking": is_breaking,
+        "is_live": is_live,
+        "location": country or region_label,
+        "source_url": f"https://www.bbc.com/news/articles/{slug}",
+        "section_slug": section_slug,
+        "subsection": subsection,
+        "region": region_label,
+        "video_url": video_url,
+        "feature_tags": json.dumps(feature_tags or [section_slug]),
+        "content_type": content_type,
+    }
+
+
+def _r6_cat_id(con, slug: str) -> int | None:
+    row = con.execute("SELECT id FROM categories WHERE slug=?", (slug,)).fetchone()
+    return row[0] if row else None
+
+
+def synth_r6_reporter_beats(con, hero_pool: list[str]) -> list[dict]:
+    """50 reporters × 30 stories = 1500 articles. Each reporter cycles
+    through their region list and the angle list deterministically."""
+    base = MIRROR_REFERENCE_DATE
+    out: list[dict] = []
+    for rep_idx, (name, beat_slug, beat_label, section_slug, regions) in enumerate(R6_REPORTERS):
+        cid = _r6_cat_id(con, section_slug) or _r6_cat_id(con, "news") or 1
+        for ai, (hl_pat, lead_pat) in enumerate(R6_BEAT_ANGLES):
+            region = regions[ai % len(regions)]
+            headline = hl_pat.format(region=region, beat=beat_label)
+            lead = lead_pat.format(region=region, beat=beat_label)
+            slug = _det_slug("r6-rep", f"{name}|{ai}")
+            hero = hero_pool[(_det_int(slug) + 7 + rep_idx) % len(hero_pool)] if hero_pool else ""
+            ts = base - timedelta(
+                days=(rep_idx * 2 + ai) % 180 + 1,
+                hours=(_det_int(slug) // 7) % 24,
+                minutes=(_det_int(slug) // 3) % 60,
+            )
+            body = _r6_synth_body(lead, region, beat_label)
+            topics = [beat_label, region, name.split()[-1] + " beat"]
+            feature_tags = ["reporter-series", beat_slug, region.lower().replace(" ", "-")]
+            view_count = 200 + (_det_int(slug) % 18000)
+            out.append(_r6_make_row(
+                slug=slug, headline=headline, lead=lead, body=body,
+                category_id=cid, section_slug=section_slug,
+                subsection=region, region_label=region, ts=ts,
+                view_count=view_count, country=region, hero=hero,
+                topics=topics, feature_tags=feature_tags, author=name,
+                is_featured=1 if (rep_idx + ai) % 11 == 0 else 0,
+            ))
+    return out
+
+
+# ---- R6 country drill — 60 countries × 12 stories each = 720 -----------
+
+R6_COUNTRIES: list[tuple[str, str, str, str]] = [
+    # (country, capital, region_label, section_slug)
+    ("Argentina",   "Buenos Aires", "Latin America", "latin_america"),
+    ("Australia",   "Canberra",     "Asia Pacific",  "asia"),
+    ("Austria",     "Vienna",       "Europe",        "europe"),
+    ("Bangladesh",  "Dhaka",        "Asia",          "asia"),
+    ("Belgium",     "Brussels",     "Europe",        "europe"),
+    ("Bolivia",     "La Paz",       "Latin America", "latin_america"),
+    ("Botswana",    "Gaborone",     "Africa",        "africa"),
+    ("Brazil",      "Brasilia",     "Latin America", "latin_america"),
+    ("Bulgaria",    "Sofia",        "Europe",        "europe"),
+    ("Cambodia",    "Phnom Penh",   "Asia",          "asia"),
+    ("Canada",      "Ottawa",       "US & Canada",   "us_canada"),
+    ("Chile",       "Santiago",     "Latin America", "latin_america"),
+    ("Colombia",    "Bogota",       "Latin America", "latin_america"),
+    ("Croatia",     "Zagreb",       "Europe",        "europe"),
+    ("Czechia",     "Prague",       "Europe",        "europe"),
+    ("Denmark",     "Copenhagen",   "Europe",        "europe"),
+    ("Ecuador",     "Quito",        "Latin America", "latin_america"),
+    ("Egypt",       "Cairo",        "Africa",        "africa"),
+    ("Estonia",     "Tallinn",      "Europe",        "europe"),
+    ("Ethiopia",    "Addis Ababa",  "Africa",        "africa"),
+    ("Finland",     "Helsinki",     "Europe",        "europe"),
+    ("France",      "Paris",        "Europe",        "europe"),
+    ("Germany",     "Berlin",       "Europe",        "europe"),
+    ("Ghana",       "Accra",        "Africa",        "africa"),
+    ("Greece",      "Athens",       "Europe",        "europe"),
+    ("Hungary",     "Budapest",     "Europe",        "europe"),
+    ("India",       "Delhi",        "Asia",          "asia"),
+    ("Indonesia",   "Jakarta",      "Asia",          "asia"),
+    ("Ireland",     "Dublin",       "Europe",        "europe"),
+    ("Italy",       "Rome",         "Europe",        "europe"),
+    ("Japan",       "Tokyo",        "Asia",          "asia"),
+    ("Jordan",      "Amman",        "Middle East",   "middle_east"),
+    ("Kazakhstan",  "Astana",       "Asia",          "asia"),
+    ("Kenya",       "Nairobi",      "Africa",        "africa"),
+    ("Latvia",      "Riga",         "Europe",        "europe"),
+    ("Lithuania",   "Vilnius",      "Europe",        "europe"),
+    ("Malaysia",    "Kuala Lumpur", "Asia",          "asia"),
+    ("Mexico",      "Mexico City",  "Latin America", "latin_america"),
+    ("Morocco",     "Rabat",        "Africa",        "africa"),
+    ("Netherlands", "Amsterdam",    "Europe",        "europe"),
+    ("New Zealand", "Wellington",   "Asia Pacific",  "asia"),
+    ("Nigeria",     "Abuja",        "Africa",        "africa"),
+    ("Norway",      "Oslo",         "Europe",        "europe"),
+    ("Pakistan",    "Islamabad",    "Asia",          "asia"),
+    ("Peru",        "Lima",         "Latin America", "latin_america"),
+    ("Philippines", "Manila",       "Asia",          "asia"),
+    ("Poland",      "Warsaw",       "Europe",        "europe"),
+    ("Portugal",    "Lisbon",       "Europe",        "europe"),
+    ("Romania",     "Bucharest",    "Europe",        "europe"),
+    ("Senegal",     "Dakar",        "Africa",        "africa"),
+    ("Singapore",   "Singapore",    "Asia",          "asia"),
+    ("Slovakia",    "Bratislava",   "Europe",        "europe"),
+    ("South Korea", "Seoul",        "Asia",          "asia"),
+    ("Spain",       "Madrid",       "Europe",        "europe"),
+    ("Sweden",      "Stockholm",    "Europe",        "europe"),
+    ("Switzerland", "Bern",         "Europe",        "europe"),
+    ("Thailand",    "Bangkok",      "Asia",          "asia"),
+    ("Tunisia",     "Tunis",        "Africa",        "africa"),
+    ("Turkey",      "Ankara",       "Europe",        "europe"),
+    ("Vietnam",     "Hanoi",        "Asia",          "asia"),
+]
+
+R6_COUNTRY_ANGLES: list[tuple[str, str]] = [
+    ("{country}: parliament debates the year's biggest policy shift",
+     "Lawmakers in {capital} returned to a packed agenda. Our correspondent walks through the four most contested clauses."),
+    ("{country} central bank holds rate as inflation drift slows",
+     "The decision was widely expected. The accompanying statement was not — analysts dissected three subtle changes in language."),
+    ("Inside {capital}: the planning fight reshaping the city",
+     "A multi-block redevelopment is dividing residents. We visited five different streets and three planning meetings."),
+    ("{country} health service publishes annual review",
+     "The report tracks 14 indicators. Five improved year-on-year; two worsened. The remaining seven held steady."),
+    ("Reaction from {capital} to the regional security summit",
+     "Officials in {country} struck a careful tone. Civil society groups were less restrained."),
+    ("{country}: a week in education policy",
+     "Three announcements, two consultations and a leaked memo. We piece together what they mean for schools."),
+    ("{capital} climate plan: who pays, and when",
+     "The funding mix is unusual: a third national, a third municipal, a third private. We map the moving parts."),
+    ("Court ruling in {country} reshapes employment law",
+     "A long-running case ended with a unanimous decision. Employers and unions both claimed elements of victory."),
+    ("{country} elections: latest polling, with context",
+     "Our team looked at five reputable pollsters. Their averages agree on the direction; their spreads tell a richer story."),
+    ("{capital} transport: the new ticketing scheme, explained",
+     "A short reader-friendly guide to the rollout. Common questions answered; common complaints noted."),
+    ("Voices from {country}: a year on, what changed?",
+     "We returned to ten readers we first interviewed twelve months ago. Their updates form this long-read."),
+    ("{country} business briefing: results week round-up",
+     "Five major listings reported this week. Three beat expectations; two issued cautious guidance."),
+]
+
+
+def synth_r6_country_drill(con, hero_pool: list[str]) -> list[dict]:
+    base = MIRROR_REFERENCE_DATE
+    out: list[dict] = []
+    for ci, (country, capital, region_label, section_slug) in enumerate(R6_COUNTRIES):
+        cid = _r6_cat_id(con, section_slug) or _r6_cat_id(con, "world") or 1
+        for ai, (hl_pat, lead_pat) in enumerate(R6_COUNTRY_ANGLES):
+            headline = hl_pat.format(country=country, capital=capital)
+            lead = lead_pat.format(country=country, capital=capital)
+            slug = _det_slug("r6-ctry", f"{country}|{ai}")
+            hero = hero_pool[(_det_int(slug) + 23 + ci) % len(hero_pool)] if hero_pool else ""
+            ts = base - timedelta(
+                days=(ci * 3 + ai * 5) % 200 + 1,
+                hours=(_det_int(slug) // 11) % 24,
+            )
+            body = _r6_synth_body(lead, country, capital)
+            topics = [country, capital, region_label]
+            feature_tags = ["country-drill", country.lower().replace(" ", "-"),
+                            region_label.lower().replace(" ", "-").replace("&", "and")]
+            out.append(_r6_make_row(
+                slug=slug, headline=headline, lead=lead, body=body,
+                category_id=cid, section_slug=section_slug,
+                subsection=country, region_label=region_label, ts=ts,
+                view_count=300 + (_det_int(slug) % 15000),
+                country=country, hero=hero,
+                topics=topics, feature_tags=feature_tags,
+            ))
+    return out
+
+
+# ---- R6 long-running stories — 30 arcs × 25 updates = 750 --------------
+
+R6_LONGRUN_ARCS: list[tuple[str, str, str, str]] = [
+    # (arc_slug, headline_root, region_label, section_slug)
+    ("nairobi-floods-2026",      "Nairobi floods recovery",              "Africa",        "africa"),
+    ("manila-typhoon-2026",      "Manila typhoon response",              "Asia",          "asia"),
+    ("athens-wildfires-2026",    "Greece wildfire watch",                "Europe",        "europe"),
+    ("lima-protests-2026",       "Peru's political crisis",              "Latin America", "latin_america"),
+    ("delhi-air-quality-2026",   "Delhi air-quality emergency",          "Asia",          "asia"),
+    ("dublin-housing-bill-2026", "Dublin housing bill in committee",     "Europe",        "europe"),
+    ("nashville-storm-2026",     "Tennessee storm clean-up",             "US & Canada",   "us_canada"),
+    ("dakar-elections-2026",     "Senegal presidential election",        "Africa",        "africa"),
+    ("istanbul-quake-2026",      "Aegean earthquake recovery",           "Europe",        "europe"),
+    ("seoul-strike-2026",        "South Korea transport strike",         "Asia",          "asia"),
+    ("london-budget-2026",       "London budget consultation",           "UK",            "uk"),
+    ("rio-favela-program-2026",  "Rio housing programme rollout",        "Latin America", "latin_america"),
+    ("madrid-rail-strike-2026",  "Spain rail dispute",                   "Europe",        "europe"),
+    ("nyc-subway-plan-2026",     "New York subway plan",                 "US & Canada",   "us_canada"),
+    ("tunis-water-2026",         "Tunisia water rationing",              "Africa",        "africa"),
+    ("warsaw-court-2026",        "Poland constitutional case",           "Europe",        "europe"),
+    ("brasilia-amazon-2026",     "Amazon legislation in Brasilia",       "Latin America", "latin_america"),
+    ("kuala-lumpur-floods-2026", "Malaysia monsoon floods",              "Asia",          "asia"),
+    ("kigali-summit-2026",       "African Union summit",                 "Africa",        "africa"),
+    ("oslo-arctic-2026",         "Norway Arctic deployment",             "Europe",        "europe"),
+    ("mumbai-monorail-2026",     "Mumbai monorail expansion",            "Asia",          "asia"),
+    ("manchester-tram-2026",     "Manchester tram extension",            "UK",            "uk"),
+    ("cardiff-language-2026",    "Welsh language bill",                  "UK",            "wales"),
+    ("edinburgh-budget-2026",    "Holyrood budget timeline",             "UK",            "scotland"),
+    ("belfast-power-2026",       "Northern Ireland power-sharing",       "UK",            "northern_ireland"),
+    ("singapore-housing-2026",   "Singapore HDB review",                 "Asia",          "asia"),
+    ("addis-rail-2026",          "Ethiopia rail expansion",              "Africa",        "africa"),
+    ("johannesburg-water-2026",  "Johannesburg water crisis",            "Africa",        "africa"),
+    ("buenos-aires-strike-2026", "Buenos Aires general strike",          "Latin America", "latin_america"),
+    ("hanoi-floods-2026",        "Hanoi flood defences",                 "Asia",          "asia"),
+]
+
+
+def synth_r6_long_running(con, hero_pool: list[str]) -> list[dict]:
+    """For each arc: 1 parent live-blog summary + 24 chronological updates =
+    25 articles. Updates are linked back via slug prefix matching."""
+    base = MIRROR_REFERENCE_DATE
+    out: list[dict] = []
+    for arc_idx, (arc_slug, root, region_label, section_slug) in enumerate(R6_LONGRUN_ARCS):
+        cid = _r6_cat_id(con, section_slug) or _r6_cat_id(con, "live_updates") or 1
+        # Parent live-blog summary (after the arc concludes).
+        parent_slug = _det_slug("r6-arc", arc_slug)
+        parent_ts = base - timedelta(days=(arc_idx * 5) % 100 + 2)
+        parent_headline = f"{root}: live updates and full summary"
+        parent_lead = (f"Three days of fast-moving coverage in one place. "
+                       f"Read our chronological log, or jump to the summary "
+                       f"now that the situation has stabilised.")
+        parent_body = _r6_synth_body(parent_lead, region_label, root)
+        out.append(_r6_make_row(
+            slug=parent_slug, headline=parent_headline, lead=parent_lead,
+            body=parent_body, category_id=cid, section_slug=section_slug,
+            subsection=root, region_label=region_label, ts=parent_ts,
+            view_count=5000 + (_det_int(parent_slug) % 50000),
+            country=region_label, hero=hero_pool[arc_idx % len(hero_pool)] if hero_pool else "",
+            topics=[root, region_label, "Live updates"],
+            feature_tags=["long-running-arc", "live-blog-parent", "r6-live-ended",
+                          arc_slug],
+            content_type="live", is_live=1, is_featured=1 if arc_idx % 4 == 0 else 0,
+        ))
+
+        # 24 updates spanning ~3 days (8 per day).
+        for ui in range(24):
+            slug = _det_slug("r6-arc-u", f"{arc_slug}|{ui:02d}")
+            day = ui // 8 + 1
+            hour = (ui % 8) * 3 + 1
+            ts = parent_ts - timedelta(days=(3 - day), hours=24 - hour,
+                                       minutes=(_det_int(slug) // 5) % 60)
+            update_label = f"Day {day} update {ui % 8 + 1}"
+            headline = f"{root}: {update_label}"
+            lead = (f"Latest from our team on the ground: a quick "
+                    f"chronological update from {region_label}.")
+            body = _r6_synth_body(lead, region_label, root)
+            out.append(_r6_make_row(
+                slug=slug, headline=headline, lead=lead, body=body,
+                category_id=cid, section_slug=section_slug,
+                subsection=root, region_label=region_label, ts=ts,
+                view_count=200 + (_det_int(slug) % 8000),
+                country=region_label,
+                hero=hero_pool[(arc_idx * 31 + ui) % len(hero_pool)] if hero_pool else "",
+                topics=[root, region_label, "Live updates", update_label],
+                feature_tags=["long-running-arc", "live-update", arc_slug,
+                              f"day-{day}"],
+                content_type="live_update",
+            ))
+    return out
+
+
+# ---- R6 topic explainers (40 hot topics × 12 explainers = 480) ---------
+
+R6_HOT_TOPICS: list[tuple[str, str]] = [
+    ("artificial-intelligence", "Artificial intelligence"),
+    ("climate-change",          "Climate change"),
+    ("cost-of-living",          "Cost of living"),
+    ("electric-vehicles",       "Electric vehicles"),
+    ("food-security",           "Food security"),
+    ("global-supply-chains",    "Global supply chains"),
+    ("housing-affordability",   "Housing affordability"),
+    ("immigration-policy",      "Immigration policy"),
+    ("interest-rates",          "Interest rates"),
+    ("mental-health",           "Mental health"),
+    ("nato",                    "NATO and security"),
+    ("offshore-wind",           "Offshore wind"),
+    ("public-transport",        "Public transport"),
+    ("quantum-computing",       "Quantum computing"),
+    ("renewable-energy",        "Renewable energy"),
+    ("space-launches",          "Space launches"),
+    ("trade-tariffs",           "Trade tariffs"),
+    ("urban-air-quality",       "Urban air quality"),
+    ("vaccine-rollouts",        "Vaccine rollouts"),
+    ("water-scarcity",          "Water scarcity"),
+    ("xi-jinping-era",          "China leadership"),
+    ("youth-employment",        "Youth employment"),
+    ("zero-carbon-cities",      "Zero-carbon cities"),
+    ("aviation-emissions",      "Aviation emissions"),
+    ("biotech-investing",       "Biotech investing"),
+    ("crypto-regulation",       "Crypto regulation"),
+    ("digital-id",              "Digital ID"),
+    ("election-disinformation", "Election disinformation"),
+    ("flood-defence",           "Flood defence"),
+    ("green-skills",            "Green skills"),
+    ("higher-education",        "Higher education"),
+    ("industrial-policy",       "Industrial policy"),
+    ("journalism-safety",       "Journalism safety"),
+    ("kindergarten-funding",    "Early years funding"),
+    ("local-news",              "Local news ecosystem"),
+    ("museum-funding",          "Museum funding"),
+    ("northern-rail",           "Northern rail"),
+    ("ocean-plastics",          "Ocean plastics"),
+    ("pension-reform",          "Pension reform"),
+    ("rare-earth-mining",       "Rare-earth mining"),
+]
+
+R6_EXPLAINER_FORMS: list[tuple[str, str]] = [
+    ("Explained: how {label} works in 2026",
+     "A clear, jargon-light primer for readers catching up on {label}."),
+    ("Five charts: the state of {label}, briefly",
+     "Five concise visuals that capture where {label} stands and how it shifted this quarter."),
+    ("Q&A: your questions on {label}, answered",
+     "We collected the most-asked reader questions on {label} and put them to our specialist correspondent."),
+    ("Watch: a six-minute primer on {label}",
+     "Our explainer video walks viewers through the moving parts. Closed captions and a full transcript are linked."),
+    ("Long read: the year in {label}",
+     "Twelve months of coverage, pulled together. What changed, what stalled, and what readers told us mattered most."),
+    ("Verify: four claims about {label} fact-checked",
+     "We checked widely-shared claims about {label}. Two stood up; two did not. Working shown."),
+    ("Voices: readers on how {label} touches their week",
+     "First-person accounts from across the UK and beyond. Lightly edited for clarity."),
+    ("Numbers behind the story: {label}, charted",
+     "We break down the latest official statistics around {label}. The trend has shifted; the drivers have not."),
+    ("Opinion: a specialist on the next phase of {label}",
+     "A guest contribution from a researcher who has tracked {label} for fifteen years."),
+    ("Analysis: how the {label} debate is playing out worldwide",
+     "Beyond the press releases, the real argument is being made in town halls and trading floors."),
+    ("In pictures: a global day on {label}",
+     "A photo essay following our reporting team across three continents for one day."),
+    ("Live discussion: experts on {label}",
+     "A consolidated summary of yesterday's live blog hosted by the BBC News specialist desk."),
+]
+
+
+def synth_r6_topic_explainers(con, hero_pool: list[str]) -> list[dict]:
+    base = MIRROR_REFERENCE_DATE
+    out: list[dict] = []
+    for ti, (tag, label) in enumerate(R6_HOT_TOPICS):
+        # Map topic to a sensible category bucket.
+        sec_map = {
+            "interest-rates": "business", "trade-tariffs": "business",
+            "biotech-investing": "business", "industrial-policy": "business",
+            "crypto-regulation": "business", "pension-reform": "business",
+            "rare-earth-mining": "business",
+            "artificial-intelligence": "technology", "quantum-computing": "technology",
+            "digital-id": "technology", "election-disinformation": "technology",
+            "climate-change": "science", "offshore-wind": "science",
+            "renewable-energy": "science", "ocean-plastics": "science",
+            "flood-defence": "science", "aviation-emissions": "science",
+            "zero-carbon-cities": "science", "water-scarcity": "science",
+            "urban-air-quality": "health", "mental-health": "health",
+            "vaccine-rollouts": "health", "food-security": "health",
+            "nato": "world", "immigration-policy": "world",
+            "xi-jinping-era": "asia",
+            "youth-employment": "uk", "housing-affordability": "uk",
+            "cost-of-living": "uk", "higher-education": "uk",
+            "kindergarten-funding": "uk", "local-news": "uk",
+            "northern-rail": "uk", "museum-funding": "uk",
+            "green-skills": "uk", "journalism-safety": "uk",
+            "public-transport": "uk", "electric-vehicles": "business",
+            "global-supply-chains": "business", "space-launches": "science",
+        }
+        section_slug = sec_map.get(tag, "news")
+        cid = _r6_cat_id(con, section_slug) or _r6_cat_id(con, "news") or 1
+        for fi, (hl_pat, lead_pat) in enumerate(R6_EXPLAINER_FORMS):
+            headline = hl_pat.format(label=label)
+            lead = lead_pat.format(label=label)
+            slug = _det_slug("r6-topic", f"{tag}|{fi}")
+            hero = hero_pool[(_det_int(slug) + 19 + ti) % len(hero_pool)] if hero_pool else ""
+            ts = base - timedelta(
+                days=(ti * 4 + fi * 3) % 220 + 1,
+                hours=(_det_int(slug) // 9) % 24,
+            )
+            body = _r6_synth_body(lead, "the United Kingdom", label)
+            topics = [label, tag.replace("-", " ").title(), "Explainer"]
+            feature_tags = ["topic-explainer", tag, section_slug]
+            out.append(_r6_make_row(
+                slug=slug, headline=headline, lead=lead, body=body,
+                category_id=cid, section_slug=section_slug,
+                subsection=label, region_label="Global", ts=ts,
+                view_count=500 + (_det_int(slug) % 22000),
+                country="Global", hero=hero,
+                topics=topics, feature_tags=feature_tags,
+                content_type="article",
+            ))
+    return out
+
+
+# ---- R6 edge-case articles (6 statuses × 12 articles = 72) -------------
+
+R6_EDGE_CASES: list[tuple[str, str, str, str]] = [
+    # (status_tag, banner_label, headline_pat, lead_pat)
+    ("r6-removed-legal",
+     "This article has been removed for legal reasons",
+     "Court ruling: {topic} report withdrawn",
+     "The original report on {topic} has been removed following a legal order. We are unable to republish until the case concludes."),
+    ("r6-region-blocked",
+     "This video is not available in your region",
+     "Watch: {topic} — restricted in some regions",
+     "Due to broadcast rights, the embedded video about {topic} is not available in your region. A full transcript is provided below."),
+    ("r6-live-ended",
+     "This live blog has ended. Read our summary.",
+     "{topic}: live blog ended — full summary inside",
+     "Our live coverage of {topic} concluded this morning. We have consolidated the key updates into the summary below."),
+    ("r6-superseded",
+     "An updated version of this story is available.",
+     "{topic}: updated reporting now available",
+     "This story has been superseded by newer reporting on {topic}. The updated piece supersedes this version."),
+    ("r6-comments-locked",
+     "Comments are closed on this story.",
+     "{topic}: comments closed after sustained moderation",
+     "Following high-volume discussion, the comments thread for this {topic} story has been locked. Earlier comments remain visible."),
+    ("r6-user-blocked",
+     "You have been blocked from commenting on this story.",
+     "{topic}: moderation note for some readers",
+     "A small number of readers have been blocked from commenting after repeated violations of our house rules on {topic} coverage."),
+]
+
+
+def synth_r6_edge_cases(con, hero_pool: list[str]) -> list[dict]:
+    base = MIRROR_REFERENCE_DATE
+    topics = [
+        "high-profile defamation case", "court injunction ruling",
+        "ongoing inquest", "data breach investigation",
+        "minor identification ruling", "named-person publication order",
+        "Premier League rights dispute", "Olympics broadcast embargo",
+        "Eurovision regional restriction", "iPlayer-only documentary",
+        "regional sport blackout", "studio-recorded interview embargo",
+    ]
+    out: list[dict] = []
+    for si, (status_tag, _banner, hl_pat, lead_pat) in enumerate(R6_EDGE_CASES):
+        section_slug = "news"
+        cid = _r6_cat_id(con, section_slug) or 1
+        # 12 articles per edge case, each tied to one topic.
+        for ti, topic in enumerate(topics):
+            headline = hl_pat.format(topic=topic)
+            lead = lead_pat.format(topic=topic)
+            slug = _det_slug("r6-edge", f"{status_tag}|{ti}")
+            hero = hero_pool[(_det_int(slug) + si * 5 + ti) % len(hero_pool)] if hero_pool else ""
+            ts = base - timedelta(days=(si * 7 + ti) % 60 + 1,
+                                  hours=(_det_int(slug) // 5) % 24)
+            body = _r6_synth_body(lead, "the United Kingdom", topic)
+            content_type = ("video" if status_tag == "r6-region-blocked"
+                            else "live" if status_tag == "r6-live-ended"
+                            else "article")
+            video_url = ("https://www.bbc.com/video/restricted"
+                         if status_tag == "r6-region-blocked" else "")
+            out.append(_r6_make_row(
+                slug=slug, headline=headline, lead=lead, body=body,
+                category_id=cid, section_slug=section_slug,
+                subsection="Editorial note", region_label="UK", ts=ts,
+                view_count=100 + (_det_int(slug) % 5000),
+                country="UK", hero=hero,
+                topics=[topic, "Editorial note", status_tag],
+                feature_tags=["edge-case", status_tag, topic.lower().replace(" ", "-")],
+                content_type=content_type, video_url=video_url,
+                is_live=1 if status_tag == "r6-live-ended" else 0,
+            ))
+    return out
+
+
+# ---- R6 tag anchor articles (40 named tags × 8 = 320 articles) ---------
+# These exist mainly so /topic/<tag> tag pages return rich results.
+
+R6_TAGS: list[tuple[str, str]] = [
+    ("Westminster", "politics"),       ("Holyrood", "scotland"),
+    ("Senedd", "wales"),                ("Stormont", "northern_ireland"),
+    ("White House", "us_canada"),       ("Wall Street", "business"),
+    ("Silicon Valley", "technology"),   ("European Parliament", "europe"),
+    ("United Nations", "world"),        ("World Bank", "business"),
+    ("IMF", "business"),                ("WHO", "health"),
+    ("WTO", "business"),                ("OPEC", "business"),
+    ("ECB", "business"),                ("Bank of England", "business"),
+    ("Federal Reserve", "business"),    ("Bundesbank", "business"),
+    ("Pentagon", "us_canada"),          ("Kremlin", "europe"),
+    ("African Union", "africa"),        ("ASEAN", "asia"),
+    ("G7", "world"),                    ("G20", "world"),
+    ("COP29", "science"),               ("COP30", "science"),
+    ("Premier League", "football"),     ("Champions League", "football"),
+    ("World Cup", "football"),          ("Wimbledon", "tennis"),
+    ("Open Championship", "golf"),      ("Ashes Test", "cricket"),
+    ("Six Nations", "rugby"),           ("Olympics 2028", "sport"),
+    ("Glastonbury", "music"),           ("Cannes Film Festival", "film"),
+    ("BAFTA Awards", "film"),           ("Booker Prize", "books"),
+    ("Royal Shakespeare", "art_design"),("Edinburgh Festival", "art_design"),
+]
+
+R6_TAG_ANGLES: list[tuple[str, str]] = [
+    ("{tag}: this week's developments",
+     "What happened, what it means, and which voices to listen to as the {tag} story continues."),
+    ("{tag} explained: a reader's primer",
+     "A short primer for readers new to the {tag} story. Five take-aways from our recent reporting."),
+    ("{tag}: five questions our reporters keep getting",
+     "Reader questions answered by the BBC team covering {tag}."),
+    ("Voices around {tag}: how the conversation has changed",
+     "We tracked language and sentiment around {tag} over the last quarter. The shift surprised some seasoned observers."),
+    ("Long read: a year of {tag} reporting",
+     "Twelve months of BBC coverage, pulled together. The patterns now look clearer than at the time."),
+    ("Numbers behind {tag}, charted",
+     "We break down the latest published numbers around {tag}."),
+    ("Verify: four claims about {tag} fact-checked",
+     "BBC Verify checked widely-shared claims related to {tag}. Working shown."),
+    ("Watch: a six-minute briefing on {tag}",
+     "Our explainer video walks viewers through the {tag} story so far."),
+]
+
+
+def synth_r6_tag_anchors(con, hero_pool: list[str]) -> list[dict]:
+    base = MIRROR_REFERENCE_DATE
+    out: list[dict] = []
+    for ti, (tag, section_slug) in enumerate(R6_TAGS):
+        cid = _r6_cat_id(con, section_slug) or _r6_cat_id(con, "news") or 1
+        for ai, (hl_pat, lead_pat) in enumerate(R6_TAG_ANGLES):
+            headline = hl_pat.format(tag=tag)
+            lead = lead_pat.format(tag=tag)
+            slug = _det_slug("r6-tag", f"{tag}|{ai}")
+            hero = hero_pool[(_det_int(slug) + 37 + ti) % len(hero_pool)] if hero_pool else ""
+            ts = base - timedelta(days=(ti * 6 + ai * 2) % 240 + 1,
+                                  hours=(_det_int(slug) // 13) % 24)
+            body = _r6_synth_body(lead, tag, section_slug)
+            tag_slug = tag.lower().replace(" ", "-")
+            out.append(_r6_make_row(
+                slug=slug, headline=headline, lead=lead, body=body,
+                category_id=cid, section_slug=section_slug,
+                subsection=tag, region_label=tag, ts=ts,
+                view_count=400 + (_det_int(slug) % 20000),
+                country=tag, hero=hero,
+                topics=[tag, section_slug.title()],
+                feature_tags=["tag-anchor", tag_slug, section_slug],
+                is_featured=1 if (ti + ai) % 9 == 0 else 0,
+            ))
+    return out
+
+
+# ---- R6 article insert ------------------------------------------------
+
+def insert_r6_articles(con: sqlite3.Connection, batch: list[dict]) -> int:
+    cur = con.cursor()
+    existing = {r[0] for r in cur.execute("SELECT slug FROM articles")}
+    rows = [a for a in batch if a["slug"] not in existing]
+    if not rows:
+        return 0
+    cur.executemany(_ART_INSERT_SQL, rows)
+    return len(rows)
+
+
+# ---- R6 supplementary inserts (comments / RH / bookmarks / etc.) -------
+
+R6_COMMENT_TOP: list[str] = [
+    "The 'More from this reporter' block is a great addition.",
+    "Followed the byline to find three more pieces — exactly what I wanted.",
+    "Long-running arcs with the day-by-day jump are far more readable.",
+    "The country drill pages give a useful base before the headline news.",
+    "Glad to see the editorial banner explaining why this video is restricted.",
+    "Comment lock was needed; thread had drifted off topic.",
+    "Top story today sidebar is a smart navigation aid.",
+    "Tag pages are now actually populated — useful for casual readers.",
+    "Reporter beats make the bylines feel meaningful again.",
+    "Multi-day summary links from the parent live blog are well executed.",
+]
+
+R6_COMMENT_REPLIES: list[str] = [
+    "Same — the related-topics chips finally lead somewhere rich.",
+    "Agreed. Day-by-day jump is a substantial improvement.",
+    "Found the followup via the byline links too. Nice work, BBC.",
+    "Top story today is now my landing point each morning.",
+    "Country drill saved me when prepping for a meeting on this region.",
+]
+
+
+def insert_r6_comments(con: sqlite3.Connection) -> int:
+    cur = con.cursor()
+    if cur.execute(
+        "SELECT 1 FROM comments WHERE body=? LIMIT 1", (R6_SENTINEL_BODY,)
+    ).fetchone():
+        return 0
+    user_ids = [r[0] for r in cur.execute("SELECT id FROM users ORDER BY id")]
+    if len(user_ids) < 2:
+        return 0
+
+    pool: list[tuple[int, str]] = []
+    for tag in ("reporter-series", "long-running-arc", "topic-explainer",
+                "country-drill", "tag-anchor"):
+        rows = cur.execute(
+            "SELECT id, headline FROM articles "
+            "WHERE feature_tags LIKE ? ORDER BY view_count DESC LIMIT 40",
+            (f'%\"{tag}\"%',),
+        ).fetchall()
+        pool.extend(rows)
+    seen: set[int] = set()
+    pool = [t for t in pool if not (t[0] in seen or seen.add(t[0]))][:180]
+
+    base_ts = MIRROR_REFERENCE_DATE
+    top_rows: list[tuple] = []
+    for idx, (art_id, _hl) in enumerate(pool):
+        n_top = 2 + (idx % 3)
+        for j in range(n_top):
+            uid = user_ids[(idx * 7 + j * 5) % len(user_ids)]
+            body = R6_COMMENT_TOP[(idx * 5 + j * 3) % len(R6_COMMENT_TOP)]
+            offset_h = (idx * 11 + j * 19) % (24 * 28)
+            ts = base_ts - timedelta(hours=offset_h, minutes=(j + idx * 7) % 60)
+            like = (idx * j + 5) % 30
+            top_rows.append((uid, art_id, None, body, like, 0,
+                             ts.strftime("%Y-%m-%d %H:%M:%S")))
+
+    cur.executemany(
+        "INSERT INTO comments (user_id, article_id, parent_id, body, "
+        "like_count, flagged, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
+        top_rows,
+    )
+    inserted = len(top_rows)
+
+    # Replies (depth 2) on every 5th top-level comment
+    fresh = list(cur.execute(
+        "SELECT id, article_id, user_id, created_at FROM comments "
+        "WHERE parent_id IS NULL ORDER BY id DESC LIMIT ?",
+        (inserted,),
+    ))
+    fresh.reverse()
+    extra = 0
+    for i, (cid, art_id, parent_uid, parent_created) in enumerate(fresh):
+        if i % 5 != 0:
+            continue
+        cur_parent = cid
+        cur_parent_uid = parent_uid
+        ts_parent = datetime.strptime(parent_created, "%Y-%m-%d %H:%M:%S")
+        for depth in range(1, 3):
+            ruid = user_ids[(cur_parent_uid + depth + i + 1) % len(user_ids)]
+            if ruid == cur_parent_uid:
+                ruid = user_ids[(cur_parent_uid + depth + i + 2) % len(user_ids)]
+            body = R6_COMMENT_REPLIES[(i * 5 + depth * 3) % len(R6_COMMENT_REPLIES)]
+            ts_parent = ts_parent + timedelta(hours=depth + 1,
+                                              minutes=(depth * 11) % 60)
+            cur.execute(
+                "INSERT INTO comments (user_id, article_id, parent_id, body, "
+                "like_count, flagged, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
+                (ruid, art_id, cur_parent, body, (depth * 5 + i) % 20, 0,
+                 ts_parent.strftime("%Y-%m-%d %H:%M:%S")),
+            )
+            cur_parent = cur.lastrowid
+            cur_parent_uid = ruid
+            extra += 1
+    return inserted + extra
+
+
+def insert_r6_reading_history(con: sqlite3.Connection) -> int:
+    cur = con.cursor()
+    if cur.execute(
+        "SELECT 1 FROM comments WHERE body=? LIMIT 1", (R6_SENTINEL_BODY,)
+    ).fetchone():
+        return 0
+    user_ids = [r[0] for r in cur.execute("SELECT id FROM users ORDER BY id")]
+    if not user_ids:
+        return 0
+
+    # Pull a curated slice: the most-read article per reporter beat,
+    # plus the parent live-blog of each arc. Gives 'More from this reporter'
+    # and 'follow-the-arc' tasks a populated history surface.
+    art_ids: list[int] = []
+    for tag in ("reporter-series", "long-running-arc", "topic-explainer",
+                "tag-anchor", "country-drill"):
+        rows = cur.execute(
+            "SELECT id FROM articles WHERE feature_tags LIKE ? "
+            "ORDER BY view_count DESC LIMIT 50",
+            (f'%\"{tag}\"%',),
+        ).fetchall()
+        art_ids.extend(r[0] for r in rows)
+    art_ids = list(dict.fromkeys(art_ids))[:200]
+
+    base_ts = MIRROR_REFERENCE_DATE
+    rows = []
+    for idx, art_id in enumerate(art_ids):
+        for ui, uid in enumerate(user_ids):
+            if (idx + ui) % 3 != 0:
+                continue
+            ts = base_ts - timedelta(days=(idx + ui * 3) % 35,
+                                     hours=(idx * 5 + ui * 7) % 24)
+            rows.append((uid, art_id, ts.strftime("%Y-%m-%d %H:%M:%S")))
+    if not rows:
+        return 0
+    cur.executemany(
+        "INSERT INTO reading_history (user_id, article_id, viewed_at) "
+        "VALUES (?, ?, ?)", rows,
+    )
+    return len(rows)
+
+
+def insert_r6_bookmarks(con: sqlite3.Connection) -> int:
+    cur = con.cursor()
+    if cur.execute(
+        "SELECT 1 FROM comments WHERE body=? LIMIT 1", (R6_SENTINEL_BODY,)
+    ).fetchone():
+        return 0
+    user_ids = [r[0] for r in cur.execute("SELECT id FROM users ORDER BY id")]
+    if not user_ids:
+        return 0
+    art_ids = [r[0] for r in cur.execute(
+        "SELECT id FROM articles WHERE feature_tags LIKE ? "
+        "ORDER BY view_count DESC LIMIT 90", ('%"reporter-series"%',),
+    )]
+    base_ts = MIRROR_REFERENCE_DATE
+    seen = set(cur.execute(
+        "SELECT user_id, article_id FROM bookmarks").fetchall())
+    rows = []
+    for idx, art_id in enumerate(art_ids):
+        uid = user_ids[idx % len(user_ids)]
+        if (uid, art_id) in seen:
+            continue
+        ts = base_ts - timedelta(days=(idx % 40) + 1, hours=idx % 24)
+        rows.append((uid, art_id, ts.strftime("%Y-%m-%d %H:%M:%S")))
+    if not rows:
+        return 0
+    cur.executemany(
+        "INSERT INTO bookmarks (user_id, article_id, bookmarked_at) "
+        "VALUES (?, ?, ?)", rows,
+    )
+    return len(rows)
+
+
+def insert_r6_subscriptions(con: sqlite3.Connection) -> int:
+    cur = con.cursor()
+    if cur.execute(
+        "SELECT 1 FROM comments WHERE body=? LIMIT 1", (R6_SENTINEL_BODY,)
+    ).fetchone():
+        return 0
+    user_ids = [r[0] for r in cur.execute("SELECT id FROM users ORDER BY id")]
+    if not user_ids:
+        return 0
+    # Subscribe each user to a handful of reporter beats + topic tags.
+    beats = [b[1] for b in R6_REPORTERS]
+    topics = [t[0] for t in R6_HOT_TOPICS]
+    seen = set(cur.execute(
+        "SELECT user_id, topic FROM topic_subscriptions").fetchall())
+    base_ts = MIRROR_REFERENCE_DATE
+    rows = []
+    for ui, uid in enumerate(user_ids):
+        for offset in range(8):
+            beat = beats[(ui * 5 + offset) % len(beats)]
+            if (uid, beat) not in seen:
+                ts = base_ts - timedelta(days=(ui * 3 + offset) % 60 + 1)
+                rows.append((uid, beat, ts.strftime("%Y-%m-%d %H:%M:%S"), 1))
+                seen.add((uid, beat))
+        for offset in range(6):
+            topic = topics[(ui * 7 + offset) % len(topics)]
+            if (uid, topic) not in seen:
+                ts = base_ts - timedelta(days=(ui * 4 + offset) % 70 + 1)
+                rows.append((uid, topic, ts.strftime("%Y-%m-%d %H:%M:%S"), 1))
+                seen.add((uid, topic))
+    if not rows:
+        return 0
+    # topic_subscriptions schema differs across sites; introspect columns.
+    cols = [r[1] for r in cur.execute("PRAGMA table_info(topic_subscriptions)")]
+    if "is_active" in cols or "active" in cols:
+        active_col = "is_active" if "is_active" in cols else "active"
+        cur.executemany(
+            f"INSERT INTO topic_subscriptions (user_id, topic, created_at, "
+            f"{active_col}) VALUES (?, ?, ?, ?)",
+            rows,
+        )
+    else:
+        cur.executemany(
+            "INSERT INTO topic_subscriptions (user_id, topic, created_at) "
+            "VALUES (?, ?, ?)",
+            [(r[0], r[1], r[2]) for r in rows],
+        )
+    return len(rows)
+
+
+def insert_r6_reading_list(con: sqlite3.Connection) -> int:
+    cur = con.cursor()
+    if cur.execute(
+        "SELECT 1 FROM comments WHERE body=? LIMIT 1", (R6_SENTINEL_BODY,)
+    ).fetchone():
+        return 0
+    user_ids = [r[0] for r in cur.execute("SELECT id FROM users ORDER BY id")]
+    if not user_ids:
+        return 0
+
+    art_ids = [r[0] for r in cur.execute(
+        "SELECT id FROM articles WHERE feature_tags LIKE ? "
+        "ORDER BY view_count DESC LIMIT 60", ('%"long-running-arc"%',),
+    )]
+    seen = set(cur.execute(
+        "SELECT user_id, article_id FROM reading_list_items").fetchall())
+    cols = [r[1] for r in cur.execute("PRAGMA table_info(reading_list_items)")]
+    base_ts = MIRROR_REFERENCE_DATE
+    rows = []
+    folders = ["Follow this arc", "Read this weekend", "Read Later"]
+    for idx, art_id in enumerate(art_ids):
+        uid = user_ids[idx % len(user_ids)]
+        if (uid, art_id) in seen:
+            continue
+        folder = folders[idx % len(folders)]
+        ts = base_ts - timedelta(days=(idx % 28) + 1,
+                                 hours=(idx * 13) % 24)
+        row = {"user_id": uid, "article_id": art_id,
+               "folder": folder, "added_at": ts.strftime("%Y-%m-%d %H:%M:%S"),
+               "read": 1 if idx % 7 == 0 else 0}
+        rows.append(row)
+    if not rows:
+        return 0
+    insert_cols = [c for c in
+                   ("user_id", "article_id", "folder", "added_at", "read")
+                   if c in cols]
+    placeholders = ", ".join(":" + c for c in insert_cols)
+    cur.executemany(
+        f"INSERT INTO reading_list_items ({', '.join(insert_cols)}) "
+        f"VALUES ({placeholders})",
+        [{c: r[c] for c in insert_cols} for r in rows],
+    )
+    return len(rows)
+
+
+def plant_r6_sentinel(con: sqlite3.Connection) -> None:
+    cur = con.cursor()
+    if cur.execute(
+        "SELECT 1 FROM comments WHERE body=? LIMIT 1", (R6_SENTINEL_BODY,)
+    ).fetchone():
+        return
+    uid_row = cur.execute("SELECT id FROM users ORDER BY id LIMIT 1").fetchone()
+    art_row = cur.execute("SELECT id FROM articles WHERE feature_tags LIKE ? "
+                          "ORDER BY id LIMIT 1",
+                          ('%"reporter-series"%',)).fetchone()
+    if not (uid_row and art_row):
+        return
+    cur.execute(
+        "INSERT INTO comments (user_id, article_id, parent_id, body, "
+        "like_count, flagged, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
+        (uid_row[0], art_row[0], None, R6_SENTINEL_BODY, 0, 1,
+         MIRROR_REFERENCE_DATE.strftime("%Y-%m-%d %H:%M:%S")),
+    )
+
+
+def bake_r6(con: sqlite3.Connection) -> dict[str, int]:
+    """Apply all R6 additions. Idempotent (sentinel-gated)."""
+    stats: dict[str, int] = {}
+    if con.execute(
+        "SELECT 1 FROM comments WHERE body=? LIMIT 1", (R6_SENTINEL_BODY,)
+    ).fetchone():
+        stats["already_baked"] = 1
+        return stats
+
+    hero_pool = _hero_image_pool(con)
+    if not hero_pool:
+        hero_pool = [""]
+
+    batches: list[list[dict]] = [
+        synth_r6_reporter_beats(con, hero_pool),
+        synth_r6_country_drill(con, hero_pool),
+        synth_r6_long_running(con, hero_pool),
+        synth_r6_topic_explainers(con, hero_pool),
+        synth_r6_tag_anchors(con, hero_pool),
+        synth_r6_edge_cases(con, hero_pool),
+    ]
+    total = 0
+    for batch in batches:
+        total += insert_r6_articles(con, batch)
+    stats["new_articles"] = total
+
+    stats["new_comments"] = insert_r6_comments(con)
+    stats["new_reading_history"] = insert_r6_reading_history(con)
+    stats["new_bookmarks"] = insert_r6_bookmarks(con)
+    stats["new_subscriptions"] = insert_r6_subscriptions(con)
+    stats["new_reading_list"] = insert_r6_reading_list(con)
+
+    plant_r6_sentinel(con)
+    return stats
+
+
 # -----------------------------------------------------------------------
 # Main
 # -----------------------------------------------------------------------
@@ -4772,6 +5834,7 @@ def main() -> None:
         r3_stats = bake_r3(con)
         r4_stats = bake_r4(con)
         r5_stats = bake_r5(con)
+        r6_stats = bake_r6(con)
         normalize_sqlite_sequence(con)
         con.commit()
     finally:
@@ -4794,8 +5857,12 @@ def main() -> None:
         v for k, v in r5_stats.items()
         if isinstance(v, int) and k not in ("already_baked",)
     )
+    r6_total_inserts = sum(
+        v for k, v in r6_stats.items()
+        if isinstance(v, int) and k not in ("already_baked",)
+    )
     r2_total_inserts = n_art + n_cm + n_rh + n_bm + n_rl + n_ts
-    if r2_total_inserts + r3_total_inserts + r4_total_inserts + r5_total_inserts > 0:
+    if r2_total_inserts + r3_total_inserts + r4_total_inserts + r5_total_inserts + r6_total_inserts > 0:
         con = open_db(DB_PATH)
         try:
             con.execute("VACUUM")
@@ -4812,6 +5879,7 @@ def main() -> None:
     print(f"[bake] R3 stats: {r3_stats}")
     print(f"[bake] R4 stats: {r4_stats}")
     print(f"[bake] R5 stats: {r5_stats}")
+    print(f"[bake] R6 stats: {r6_stats}")
     print(f"[bake] md5 after:  {_db_signature(DB_PATH)}")
 
     con = open_db(DB_PATH)

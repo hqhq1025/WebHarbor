@@ -284,6 +284,89 @@ class Paper(db.Model):
             })
         return out
 
+    # ----------------------------------------------------------------- R6
+    # Derived (digest-driven) status flags. None of these need a DB column —
+    # they are pure functions of arxiv_id so rebuilds stay byte-identical
+    # while still letting agents land on withdrawn/replaced/citation pages.
+
+    @property
+    def _digest(self):
+        return hashlib.md5((self.arxiv_id or "").encode("utf-8")).digest()
+
+    @property
+    def is_withdrawn(self) -> bool:
+        """A deterministic ~1.4% slice is treated as withdrawn by author.
+        Authors withdraw papers occasionally on real arXiv; we surface a
+        banner so agents can practise reading withdraw notices."""
+        if not self.arxiv_id:
+            return False
+        return self._digest[0] % 71 == 0
+
+    @property
+    def withdrawal_reason(self) -> str:
+        """Reason string for the withdrawal banner. Deterministic per paper."""
+        reasons = [
+            "withdrawn by the author due to an error in the main proof "
+            "(Section 3). A revised version will be uploaded separately.",
+            "withdrawn at the author's request because the result was already "
+            "obtained in earlier work that was not cited.",
+            "withdrawn pending major revision after community feedback.",
+            "withdrawn by the author; the algorithmic guarantee was found to "
+            "be incorrect after re-examination of the proof.",
+            "withdrawn by the author pending an updated reproducibility "
+            "appendix.",
+        ]
+        d = self._digest
+        return reasons[d[1] % len(reasons)]
+
+    @property
+    def replaced_by_arxiv_id(self) -> str:
+        """A small deterministic slice has a 'replaced by newer version'
+        pointer to another arxiv_id (constructed from the same prefix +
+        a fixed increment). For most papers this returns empty string.
+        """
+        if not self.arxiv_id:
+            return ""
+        d = self._digest
+        if d[2] % 47 != 13:
+            return ""
+        # Synthesise a follow-up id by bumping the suffix; never actually
+        # need a DB row to back it — the route knows how to render a
+        # tombstone if the target doesn't exist.
+        m = re.match(r"(\d{4}\.\d{2,})(v\d+)?", self.arxiv_id)
+        if not m:
+            return ""
+        base = m.group(1)
+        # bump by a small deterministic offset
+        try:
+            head, tail = base.split(".")
+            new_tail = str(int(tail) + 1 + (d[3] % 5)).zfill(len(tail))
+            return f"{head}.{new_tail}"
+        except Exception:
+            return ""
+
+    @property
+    def is_replaced(self) -> bool:
+        return bool(self.replaced_by_arxiv_id)
+
+    @property
+    def citing_count(self) -> int:
+        """Synthetic 'cited by N' number, deterministic per arxiv_id.
+
+        Ranges from 5 to ~205 so the abs sidebar always has a meaningful
+        citing-list link. Older papers (by submitted_year) get a small
+        recency bonus so the distribution matches user expectations.
+        """
+        if not self.arxiv_id:
+            return 0
+        d = self._digest
+        base = 5 + ((d[4] << 8 | d[5]) % 200)
+        try:
+            age = max(0, 2026 - int(self.submitted_year or 2024))
+            return base + age * 3
+        except Exception:
+            return base
+
 
 class LibraryItem(db.Model):
     """A paper saved to a user's Library (the 'cart' analog)."""
@@ -1405,6 +1488,14 @@ def paper_detail(arxiv_id):
             user_id=current_user.id, paper_id=paper.id).first() is not None
         is_notified = PaperUpdateNotification.query.filter_by(
             user_id=current_user.id, paper_id=paper.id).first() is not None
+    # R6 — resolve a "replaced by newer version" pointer when present. If the
+    # target arxiv_id doesn't exist in the corpus the pointer is still shown
+    # but flagged as "not yet ingested".
+    replacement_target = None
+    replacement_id = paper.replaced_by_arxiv_id
+    if replacement_id:
+        replacement_target = Paper.query.filter_by(
+            arxiv_id=replacement_id).first()
     return render_template(
         "paper.html",
         paper=paper,
@@ -1413,6 +1504,8 @@ def paper_detail(arxiv_id):
         in_library=in_library,
         is_starred=is_starred,
         is_notified=is_notified,
+        replacement_target=replacement_target,
+        replacement_id=replacement_id,
     )
 
 
@@ -1750,9 +1843,51 @@ def search():
     total = len(results)
     paged = results[(page - 1) * per_page: page * per_page]
 
+    # R6 — when a query returned nothing, compute "suggest-broader" hints so
+    # the no-results page can offer concrete next steps. Three ideas: drop
+    # the most-restrictive token, switch field=all, and recommend the top
+    # category whose titles do contain any of the tokens.
+    broader_suggestions = []
+    if q and total == 0:
+        toks = _tokenize_query(q)
+        if len(toks) > 1:
+            broader_suggestions.append({
+                "label": f"Broaden to just \"{toks[0]}\"",
+                "url": url_for("search", query=toks[0], searchtype=field),
+            })
+        if field != "all":
+            broader_suggestions.append({
+                "label": "Search all fields instead of just " + field,
+                "url": url_for("search", query=q, searchtype="all"),
+            })
+        # Find a category whose papers mention at least one token in title.
+        cand_cat = None
+        if toks:
+            for tok in toks:
+                row = (db.session.query(Paper.primary_category_code,
+                                        func.count(Paper.id))
+                       .filter(Paper.title.ilike(f"%{tok}%"))
+                       .filter(Paper.primary_category_code != "")
+                       .group_by(Paper.primary_category_code)
+                       .order_by(func.count(Paper.id).desc())
+                       .first())
+                if row and row[0]:
+                    cand_cat = row[0]
+                    break
+        if cand_cat:
+            broader_suggestions.append({
+                "label": f"Browse the {cand_cat} archive",
+                "url": url_for("category_detail", code=cand_cat),
+            })
+        broader_suggestions.append({
+            "label": "Open the advanced search form",
+            "url": url_for("advanced_search"),
+        })
+
     return render_template(
         "search.html",
         query=q, field=field, results=paged, total=total, page=page, per_page=per_page,
+        broader_suggestions=broader_suggestions,
     )
 
 
@@ -2131,6 +2266,106 @@ def paper_related(arxiv_id):
         cross_listed=cross_listed,
         shared_author=shared_author_papers,
         first_author=first,
+    )
+
+
+# ----------------------------------------------------------------- R6
+# Citing-list page: a fixed, deterministic list of "papers that cite this
+# work". Synthesised on the fly so we never need a citation table — the
+# arxiv_id digest picks `citing_count` plausible-looking citing papers from
+# adjacent subject codes.
+
+@app.route("/papers/<arxiv_id>/citing-list")
+def paper_citing_list(arxiv_id):
+    paper = Paper.query.filter_by(arxiv_id=arxiv_id).first_or_404()
+    page = max(1, int(request.args.get("page", 1)))
+    per_page = 25
+    total = paper.citing_count
+    primary = paper.primary_subject_code or paper.primary_category_code
+    # Anchor pool: same primary subject, different paper. Ordered by arxiv_id
+    # desc so the list is stable. We slice the pool by a digest-derived
+    # rotation so two papers in the same subject get different "citing"
+    # lists.
+    pool = (Paper.query
+            .filter(Paper.primary_subject_code == primary,
+                    Paper.id != paper.id)
+            .order_by(Paper.arxiv_id.desc())
+            .all())
+    if not pool:
+        pool = (Paper.query.filter(Paper.id != paper.id)
+                .order_by(Paper.arxiv_id.desc())
+                .limit(500).all())
+    d = paper._digest
+    if pool:
+        rot = (d[6] << 8 | d[7]) % len(pool)
+        ordered = pool[rot:] + pool[:rot]
+    else:
+        ordered = []
+    capped_total = min(total, len(ordered))
+    citing_slice = ordered[(page - 1) * per_page: page * per_page]
+    # Decorate each row with a deterministic citation-context snippet so the
+    # page reads like a citing-list rather than a generic listing.
+    context_templates = [
+        "cites this work in Section 2 (related work)",
+        "cites this work in Section 4 (experimental setup)",
+        "extends the method introduced here",
+        "compares against the baseline proposed in this paper",
+        "uses the dataset released with this paper",
+        "cites this paper in the introduction",
+        "discusses the limitations identified here",
+    ]
+    decorated = []
+    for i, p in enumerate(citing_slice):
+        ctx_idx = (d[(i * 3) % len(d)]) % len(context_templates)
+        decorated.append({
+            "paper": p,
+            "context": context_templates[ctx_idx],
+            "venue": (p.journal_ref or "arXiv preprint")[:80],
+        })
+    return render_template(
+        "paper_citing_list.html",
+        paper=paper,
+        rows=decorated,
+        total=capped_total,
+        synthetic_total=total,
+        page=page,
+        per_page=per_page,
+    )
+
+
+@app.route("/papers/<arxiv_id>/authors-also")
+def paper_authors_also(arxiv_id):
+    """'Authors who also published in <subject>' co-publication page.
+
+    Lists papers in the same primary subject that share *any* author surname
+    with the source paper but are not the same paper.
+    """
+    paper = Paper.query.filter_by(arxiv_id=arxiv_id).first_or_404()
+    primary = paper.primary_subject_code or paper.primary_category_code
+    authors = paper.get_authors()
+    surnames = []
+    for a in authors:
+        toks = a.strip().split()
+        if toks:
+            tail = toks[-1]
+            if len(tail) >= 3 and tail.isalpha():
+                surnames.append(tail)
+    if not surnames:
+        co_papers = []
+    else:
+        clauses = [Paper.authors_json.ilike(f"%{s}%") for s in surnames[:4]]
+        co_papers = (Paper.query
+                     .filter(or_(*clauses))
+                     .filter(Paper.primary_subject_code == primary)
+                     .filter(Paper.id != paper.id)
+                     .order_by(Paper.arxiv_id.desc())
+                     .limit(30).all())
+    return render_template(
+        "paper_authors_also.html",
+        paper=paper,
+        co_papers=co_papers,
+        surnames=surnames,
+        primary=primary,
     )
 
 
@@ -2848,6 +3083,28 @@ def api_stats():
 
 @app.errorhandler(404)
 def not_found(e):
+    # R6 — when the missing URL looks like /abs/<id>, render a richer "paper
+    # not found" page that suggests adjacent arxiv_ids in the corpus instead
+    # of the generic error page. Agents land here when a /abs/<bogus> link is
+    # followed; surfacing nearby ids gives them a recovery path.
+    p = request.path or ""
+    m = re.match(r"/abs/([^/]+)$", p)
+    if m:
+        target = m.group(1)
+        # Build a "nearby ids" suggestion list using the yymm prefix.
+        prefix_match = re.match(r"(\d{4}\.)\d+", target)
+        nearby = []
+        if prefix_match:
+            prefix = prefix_match.group(1)
+            nearby = (Paper.query
+                      .filter(Paper.arxiv_id.like(f"{prefix}%"))
+                      .order_by(Paper.arxiv_id)
+                      .limit(8).all())
+        return render_template("error.html",
+                               code=404,
+                               message=f"Paper arXiv:{target} not found",
+                               missing_paper=target,
+                               nearby=nearby), 404
     return render_template("error.html", code=404, message="Page not found"), 404
 
 

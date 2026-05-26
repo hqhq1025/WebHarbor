@@ -8,7 +8,8 @@
     <div class="fd-breadcrumb">
       <a href="{{ url_for('index') }}">Flights</a> &rsaquo;
       <a href="{{ url_for('flights_list', **{'from': flight.origin.iata, 'to': flight.destination.iata}) }}">{{ flight.origin.city }} to {{ flight.destination.city }}</a> &rsaquo;
-      {{ flight.airline }} {{ flight.flight_number }}
+      <a href="{{ url_for('airline_detail', code=flight.airline_code) }}">{{ flight.airline }}</a> &rsaquo;
+      {{ flight.flight_number }}
     </div>
     <h1 class="fd-title">{{ flight.origin.city }} ({{ flight.origin.iata }}) to {{ flight.destination.city }} ({{ flight.destination.iata }})</h1>
     <p class="fd-subtitle">{{ flight.airline }} &middot; {{ flight.flight_number }} &middot; {{ flight.aircraft }}</p>
@@ -274,6 +275,108 @@
               </div>
             </a>
           {% endfor %}
+        </div>
+      {% endif %}
+
+      {% if other_airlines %}
+        <div class="fd-card" id="other-airlines-card">
+          <h2 class="fd-card-title">Other airlines this route</h2>
+          <p style="color:var(--g-grey-700);margin-bottom:14px;">
+            Same {{ flight.origin.iata }} &rarr; {{ flight.destination.iata }} route on
+            {{ flight.departure_date|datefmt('%b %d, %Y') }} from a different operating carrier.
+          </p>
+          {% for f in other_airlines %}
+            <a href="{{ url_for('flight_detail', flight_id=f.id) }}" class="flight-row">
+              {{ airline_icon(f) }}
+              <div class="flight-row-main">
+                <div>
+                  <div class="flight-time">{{ f.departure_time }}</div>
+                  <div class="flight-time-sub">{{ f.origin.iata }}</div>
+                </div>
+                <div class="flight-duration">
+                  <div>{{ f.duration_str }}</div>
+                  <div class="flight-line"></div>
+                  <div class="flight-stops-info">{{ f.stops_str }}</div>
+                </div>
+                <div>
+                  <div class="flight-time">{{ f.arrival_time }}</div>
+                  <div class="flight-time-sub">{{ f.destination.iata }}</div>
+                </div>
+                <div class="flight-emissions">
+                  <div>{{ f.airline }}</div>
+                </div>
+              </div>
+              <div></div>
+              <div>
+                <div class="flight-price">{{ f.price|money }}</div>
+              </div>
+            </a>
+          {% endfor %}
+        </div>
+      {% endif %}
+
+      {% if different_dates %}
+        <div class="fd-card" id="different-dates-card">
+          <h2 class="fd-card-title">Different dates, same route</h2>
+          <p style="color:var(--g-grey-700);margin-bottom:14px;">
+            Other {{ flight.airline }} {{ flight.origin.iata }} &rarr; {{ flight.destination.iata }}
+            departures within a week of {{ flight.departure_date|datefmt('%b %d') }}.
+          </p>
+          <div style="display:flex;flex-wrap:wrap;gap:10px;">
+            {% for f in different_dates %}
+              <a href="{{ url_for('flight_detail', flight_id=f.id) }}"
+                 style="flex:0 0 calc(25% - 8px);min-width:160px;border:1px solid var(--g-grey-200);border-radius:8px;padding:10px 12px;text-decoration:none;color:inherit;background:#fff;">
+                <div style="font-size:12px;color:var(--g-grey-700);">{{ f.departure_date|datefmt('%a, %b %d') }}</div>
+                <div style="font-weight:500;margin:4px 0;">{{ f.departure_time }} &rarr; {{ f.arrival_time }}</div>
+                <div style="font-size:12px;color:var(--g-grey-700);">{{ f.stops_str }} &middot; {{ f.duration_str }}</div>
+                <div style="margin-top:6px;font-size:14px;font-weight:600;color:#1a73e8;">{{ f.price|money }}</div>
+              </a>
+            {% endfor %}
+          </div>
+        </div>
+      {% endif %}
+
+      {% if connections %}
+        <div class="fd-card" id="connections-card">
+          <h2 class="fd-card-title">Connections via {{ connections|map(attribute='hub')|join(', ') }}</h2>
+          <p style="color:var(--g-grey-700);margin-bottom:14px;">
+            Alternative single-stop routings to {{ flight.destination.city }} ({{ flight.destination.iata }})
+            through a connecting hub. Bookable as two segments.
+          </p>
+          <table style="width:100%;border-collapse:collapse;font-size:14px;">
+            <thead>
+              <tr style="background:var(--g-grey-100,#f1f3f4);text-align:left;">
+                <th style="padding:10px 12px;">Connect at</th>
+                <th style="padding:10px 12px;">Leg 1</th>
+                <th style="padding:10px 12px;">Leg 2</th>
+                <th style="padding:10px 12px;">Total fare</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for c in connections %}
+                <tr style="border-bottom:1px solid var(--g-grey-200,#e8eaed);">
+                  <td style="padding:10px 12px;font-weight:500;">
+                    {{ c.hub_city }} ({{ c.hub }})
+                  </td>
+                  <td style="padding:10px 12px;">
+                    <a href="{{ url_for('flight_detail', flight_id=c.leg1.id) }}">
+                      {{ c.leg1.airline }} &middot; {{ c.leg1.flight_number }}
+                    </a><br>
+                    <span style="font-size:12px;color:var(--g-grey-700);">{{ c.leg1.departure_time }} {{ c.leg1.origin.iata }} &rarr; {{ c.leg1.arrival_time }} {{ c.leg1.destination.iata }}</span>
+                  </td>
+                  <td style="padding:10px 12px;">
+                    <a href="{{ url_for('flight_detail', flight_id=c.leg2.id) }}">
+                      {{ c.leg2.airline }} &middot; {{ c.leg2.flight_number }}
+                    </a><br>
+                    <span style="font-size:12px;color:var(--g-grey-700);">{{ c.leg2.departure_time }} {{ c.leg2.origin.iata }} &rarr; {{ c.leg2.arrival_time }} {{ c.leg2.destination.iata }}</span>
+                  </td>
+                  <td style="padding:10px 12px;font-weight:600;color:#1a73e8;">
+                    {{ c.total_price|money }}
+                  </td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
         </div>
       {% endif %}
     </div>

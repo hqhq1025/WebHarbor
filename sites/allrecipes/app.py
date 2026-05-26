@@ -368,6 +368,41 @@ def _err_500(e):
     return render_template('404.html', suggestions=[], server_error=True), 500
 
 
+@app.errorhandler(429)
+def _err_429(e):
+    """Rate-limit page (R6). Triggered manually via /__rate-limit-demo
+    or by middleware when bots over-request. Polished 'try again later'."""
+    return render_template('rate_limit.html'), 429
+
+
+# R6: demo endpoints for edge cases (polished UX for slow-loading,
+# rate-limited, expired-session, empty-cart). These are deterministic and
+# never affect non-demo traffic — they live behind clearly-named paths.
+
+@app.route('/__rate-limit-demo')
+def rate_limit_demo():
+    """Polished 429 page for the harness to screenshot."""
+    return render_template('rate_limit.html'), 429
+
+
+@app.route('/__session-expired-demo')
+def session_expired_demo():
+    """Polished expired-session page (R6 edge case)."""
+    return render_template('session_expired.html'), 401
+
+
+@app.route('/__loading-demo')
+def loading_demo():
+    """Polished slow-network loading skeleton (R6 edge case)."""
+    return render_template('loading_skeleton.html')
+
+
+@app.route('/__server-error-demo')
+def server_error_demo():
+    """Polished 5xx page (R6 edge case)."""
+    return render_template('404.html', suggestions=[], server_error=True), 500
+
+
 def safe_redirect_target(target, default_endpoint='index'):
     if target and target.startswith('/') and not target.startswith('//'):
         return target
@@ -1038,9 +1073,39 @@ def recipe_detail(slug):
     if not related:
         related = Recipe.query.filter(Recipe.id != recipe.id).order_by(
             Recipe.review_count.desc()).limit(6).all()
+    # R6: "Recipes from the same chef" — only if the recipe is authored by
+    # a chef (author starts with "Chef "). Up to 6 picks, highest-rated.
+    same_chef_recipes = []
+    if recipe.author_name and recipe.author_name.startswith('Chef '):
+        same_chef_recipes = (Recipe.query
+                             .filter(Recipe.author_name == recipe.author_name,
+                                     Recipe.id != recipe.id)
+                             .order_by(Recipe.avg_rating.desc(),
+                                       Recipe.id.asc())
+                             .limit(6).all())
+    # R6: "更像 X 的菜谱" — recipes sharing the more-like-this bucket tags
+    # (meal_type / main_ingredient / cuisine) but in a DIFFERENT category
+    # so the carousel doesn't echo the "You Might Also Like" rail above.
+    more_like_recipes = []
+    if recipe.cuisine or recipe.meal_type or recipe.main_ingredient:
+        q = Recipe.query.filter(Recipe.id != recipe.id)
+        if recipe.category_id:
+            q = q.filter(Recipe.category_id != recipe.category_id)
+        if recipe.cuisine:
+            q = q.filter(Recipe.cuisine == recipe.cuisine)
+        elif recipe.main_ingredient:
+            q = q.filter(Recipe.main_ingredient == recipe.main_ingredient)
+        elif recipe.meal_type:
+            q = q.filter(Recipe.meal_type == recipe.meal_type)
+        more_like_recipes = (q.order_by(Recipe.avg_rating.desc(),
+                                        Recipe.review_count.desc(),
+                                        Recipe.id.asc())
+                              .limit(6).all())
     gallery = recipe.get_gallery()
     return render_template('recipe_detail.html', recipe=recipe, reviews=reviews,
-                           related=related, gallery=gallery)
+                           related=related, gallery=gallery,
+                           same_chef_recipes=same_chef_recipes,
+                           more_like_recipes=more_like_recipes)
 
 
 STOPWORDS = {'the', 'a', 'an', 'of', 'in', 'on', 'at', 'to', 'for', 'with',
@@ -3656,6 +3721,16 @@ with app.app_context():
         db.session.commit()
     except Exception as exc:  # pragma: no cover
         print(f"[r5_final_enrich] failed: {exc!r}")
+
+    # R6: final enrichment pass — re-derive more-like-this bucket tags on
+    # the post-extended inserts (1960s collection, benchmark fixtures) so
+    # the recipe detail "更像 X" carousel has rich tags to query against.
+    try:
+        from r6_seed import _enrich_r6_more_like_features
+        _enrich_r6_more_like_features(sentinel_check=False)
+        db.session.commit()
+    except Exception as exc:  # pragma: no cover
+        print(f"[r6_final_enrich] failed: {exc!r}")
 
     # R4: final VACUUM + index re-emit so the seed DB is byte-identical
     # across rebuilds (sees all post-extended inserts).

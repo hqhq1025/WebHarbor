@@ -2586,3 +2586,110 @@ body[data-darkmode="on"] .hover-preview-pop {
         transition-duration: 0.001ms !important;
     }
 }
+
+/* ===========================================================
+   R6 — edge-case banners, Top story today, More from reporter,
+   Related topics callout.
+   =========================================================== */
+
+.edge-status-banner {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 16px;
+    margin-bottom: 16px;
+    border-radius: 4px;
+    border-left: 6px solid #bb1919;
+    background: #fff7f7;
+    color: #1a1a1a;
+    font-size: 14px;
+    font-weight: 500;
+}
+.edge-status-banner .edge-status-icon {
+    color: #bb1919;
+    flex: 0 0 auto;
+    display: inline-flex;
+    align-items: center;
+}
+.edge-status-r6-region-blocked  { border-left-color: #555; background: #f5f5f5; }
+.edge-status-r6-region-blocked  .edge-status-icon { color: #555; }
+.edge-status-r6-live-ended      { border-left-color: #0a6b2e; background: #f3faf5; }
+.edge-status-r6-live-ended      .edge-status-icon { color: #0a6b2e; }
+.edge-status-r6-superseded      { border-left-color: #0066c8; background: #f3f8fd; }
+.edge-status-r6-superseded      .edge-status-icon { color: #0066c8; }
+.edge-status-r6-comments-locked { border-left-color: #555; background: #f5f5f5; }
+.edge-status-r6-comments-locked .edge-status-icon { color: #555; }
+.edge-status-r6-user-blocked    { border-left-color: #bb1919; background: #fff7f7; }
+
+.related-topics-section {
+    margin: 24px 0 12px;
+    padding: 16px;
+    background: var(--bbc-bg-alt);
+    border-radius: 4px;
+}
+.related-topics-title {
+    font-size: 14px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    margin: 0 0 10px;
+    color: var(--bbc-text);
+}
+.related-topics-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+.related-topics-list .related-topic-tag {
+    display: inline-block;
+    padding: 6px 12px;
+    border-radius: 999px;
+    background: #fff;
+    color: var(--bbc-red);
+    border: 1px solid #d4d4d4;
+    font-size: 13px;
+    font-weight: 600;
+    text-decoration: none;
+    transition: background 0.12s, color 0.12s, border-color 0.12s;
+}
+.related-topics-list .related-topic-tag:hover {
+    background: var(--bbc-red);
+    color: #fff;
+    border-color: var(--bbc-red);
+}
+
+.top-story-today { margin-bottom: 18px; }
+.top-story-today .top-story-card {
+    display: block;
+    text-decoration: none;
+    color: var(--bbc-text);
+}
+.top-story-today .top-story-image {
+    width: 100%;
+    height: auto;
+    border-radius: 4px;
+    margin-bottom: 8px;
+}
+.top-story-today .top-story-headline {
+    font-weight: 700;
+    font-size: 15px;
+    line-height: 1.3;
+}
+.top-story-today .top-story-meta {
+    margin-top: 4px;
+    font-size: 12px;
+    color: var(--bbc-text-light);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+.top-story-today .top-story-meta .dot {
+    width: 3px;
+    height: 3px;
+    background: var(--bbc-text-light);
+    border-radius: 50%;
+}
+
+.more-from-reporter { border-top: 2px solid var(--bbc-red); padding-top: 8px; }

@@ -1802,6 +1802,120 @@ def api_suggestions():
     })
 
 
+# ---------- R6 edge-case routes --------------------------------------------
+# Each one renders a small dedicated template so the agent gets a real
+# page (HTTP 200) rather than a silent 404 when navigating from a SERP
+# notice / safe-search prompt / voice modal etc.
+
+@app.route('/sorry/index')
+def safesearch_required():
+    """Google's classic 'sorry' interstitial — query flagged as needing
+    safe-search confirmation. Returns 200 with an explicit page so the
+    agent can read the explanation and pick a continuation.
+    """
+    cont = request.args.get('continue') or url_for('index')
+    q = request.args.get('q') or ''
+    reason = request.args.get('reason', 'safesearch')
+    return render_template('safesearch_required.html',
+                           continue_url=cont, q=q, reason=reason)
+
+
+@app.route('/dmca/notice/<int:notice_id>')
+def dmca_notice(notice_id):
+    """DMCA takedown notice page — describes a removed result. Notice
+    fields are derived deterministically from the URL id so tasks can
+    target a specific complainant/title."""
+    # Deterministic synthesis — same id always renders the same record.
+    titles = [
+        'The Complete History of Modern Photography (2019 ed.)',
+        'Hidden Cuisines: A Chef\'s Atlas (2021)',
+        'Architectural Marvels of the 20th Century',
+        'Field Guide to North American Mammals',
+        'The Definitive Encyclopaedia of Mythology',
+    ]
+    complainants = [
+        'Atlas Heritage Press, LLC',
+        'Northwoods Publishing Group',
+        'Skybridge Editorial Services',
+        'Beacon House Publishers',
+        'Meridian University Press',
+    ]
+    idx = notice_id % len(titles)
+    notice = {
+        'id': notice_id,
+        'title': titles[idx],
+        'complainant': complainants[idx],
+        'filed_on': '2026-03-14',
+        'urls_removed': 1 + (notice_id % 4),
+        'jurisdiction': 'United States (17 U.S.C. § 512)',
+    }
+    return render_template('dmca_notice.html', notice=notice)
+
+
+@app.route('/search/disambiguate')
+def disambiguate():
+    """Multiple-meaning disambiguation page. Looks up topics whose
+    `name` field overlaps the requested title and renders a list with
+    knowledge-card thumbnails for each candidate."""
+    title = (request.args.get('title') or '').strip()
+    if not title:
+        return redirect(url_for('index'))
+    matches = (Topic.query
+               .filter(func.lower(Topic.name).like(f'%{title.lower()}%'))
+               .order_by(Topic.id)
+               .limit(8).all())
+    return render_template('disambiguate.html', title=title, matches=matches)
+
+
+@app.route('/trending/region/<region_code>')
+def trending_region(region_code):
+    """Trending-by-region page. Some regions are flagged as restricted;
+    a banner explains the local-law restriction without revealing the
+    underlying terms."""
+    restricted = {'CN', 'IR', 'KP', 'SY', 'RU'}
+    code = (region_code or '').upper()
+    is_restricted = code in restricted
+    terms = []
+    if not is_restricted:
+        # Deterministic slice keyed off region code so re-renders match.
+        all_terms = TrendingTerm.query.order_by(TrendingTerm.rank).all()
+        if all_terms:
+            start = (sum(ord(c) for c in code) % max(1, len(all_terms) - 12))
+            terms = all_terms[start:start + 12]
+    return render_template('trending_region.html',
+                           region_code=code,
+                           is_restricted=is_restricted,
+                           terms=terms)
+
+
+@app.route('/voice/error/no-mic')
+def voice_no_mic():
+    """Voice-search modal triggered without microphone permission. The
+    agent navigating to /voice without mic access should land here so it
+    can confirm the failure mode."""
+    return render_template('voice_no_mic.html')
+
+
+@app.route('/search/zero-results')
+def zero_results():
+    """Explicit 'zero results found' page with three suggested alternative
+    queries derived deterministically from the input string. Reachable
+    when the SERP determines no topic match (the /search route also
+    inlines a zero-state, but this one is its own URL for cross-page
+    chains)."""
+    q = (request.args.get('q') or '').strip()
+    if not q:
+        return redirect(url_for('index'))
+    # Pick three deterministic alternatives from existing topic names.
+    rng = random.Random(sum(ord(c) for c in q) or 1)
+    pool = Topic.query.order_by(Topic.id).limit(80).all()
+    alts = []
+    if pool:
+        sample = rng.sample(pool, min(3, len(pool)))
+        alts = [{'q': t.name, 'snippet': (t.summary or '')[:160]} for t in sample]
+    return render_template('zero_results.html', q=q, alts=alts)
+
+
 # ---------- error handlers --------------------------------------------------
 
 @app.errorhandler(404)

@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block title %}Words that share a collocation with {{ word.headword }}{% endblock %}
+{% block content %}
+<div class="container">
+  <nav class="breadcrumb r6-breadcrumb" aria-label="Breadcrumb">
+    <a href="{{ url_for('index') }}">Home</a> &rsaquo;
+    <a href="{{ url_for('word_detail', slug=word.slug) }}">{{ word.headword }}</a> &rsaquo;
+    <span>Shared collocations</span>
+  </nav>
+
+  <h1>Words that share a collocation with <em>{{ word.headword }}</em></h1>
+  <p class="r6-help">Anchor token: <code class="r6-anchor">{{ anchor }}</code>.
+    These {{ peers|length }} words collocate with the same token, so they
+    tend to appear in similar phrasal frames.</p>
+
+  {% set my_coll = word.get_collocations() %}
+  {% if my_coll %}
+  <section class="r6-anchor-coll">
+    <h2 class="sub-section-title">{{ word.headword }} collocations</h2>
+    <ul>
+      {% for c in my_coll[:4] %}
+        <li><strong>{{ c.phrase }}</strong>
+          {% if c.type %}<span class="r6-tag r6-tag--pos">{{ c.type }}</span>{% endif %}
+          &mdash; {{ c.example }}</li>
+      {% endfor %}
+    </ul>
+  </section>
+  {% endif %}
+
+  <h2 class="sub-section-title">Peers</h2>
+  <ul class="r6-list shared-coll-list">
+    {% for w in peers %}
+      <li class="r6-list-row">
+        <a href="{{ url_for('word_detail', slug=w.slug) }}" class="r6-list-head">{{ w.headword }}</a>
+        {% if w.level %}<span class="r6-tag r6-tag--level">{{ w.level }}</span>{% endif %}
+        {% if w.shared_coll_anchor %}<span class="r6-tag r6-tag--anchor">anchor: {{ w.shared_coll_anchor }}</span>{% endif %}
+        <span class="r6-list-gloss">{{ w.guide_word }}</span>
+      </li>
+    {% else %}
+      <li class="r6-empty">No collocation peers for this anchor.</li>
+    {% endfor %}
+  </ul>
+
+  <p class="r6-bottom"><a href="{{ url_for('word_detail', slug=word.slug) }}">&laquo; Back to {{ word.headword }}</a></p>
+</div>
+{% endblock %}

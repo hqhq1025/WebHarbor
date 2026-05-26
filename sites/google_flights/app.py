@@ -1060,13 +1060,83 @@ def flight_detail(flight_id):
         with db.session.no_autoflush:
             _shift_flight_year(return_flight, ret_d, dep_target)
 
+    # R6: "Other airlines this route" — same route + same departure date,
+    # different airline. Powers tasks like "show me a different operating
+    # carrier on the same route same day" without re-running the search.
+    other_airlines = Flight.query.filter(
+        Flight.id != flight_id,
+        Flight.origin_id == flight.origin_id,
+        Flight.destination_id == flight.destination_id,
+        Flight.departure_date == flight.departure_date,
+        Flight.airline_code != flight.airline_code,
+    ).order_by(Flight.price.asc()).limit(5).all()
+
+    # R6: "Different dates same route" — same operating carrier + route in a
+    # ±7-day window around the flight's date, sorted by departure_date so the
+    # widget renders as a date-sliding strip. Covers "fly a day earlier/later"
+    # tasks driven from the detail page.
+    from datetime import timedelta as _td
+    win_lo = flight.departure_date - _td(days=7)
+    win_hi = flight.departure_date + _td(days=7)
+    different_dates = Flight.query.filter(
+        Flight.id != flight_id,
+        Flight.origin_id == flight.origin_id,
+        Flight.destination_id == flight.destination_id,
+        Flight.airline_code == flight.airline_code,
+        Flight.departure_date >= win_lo,
+        Flight.departure_date <= win_hi,
+    ).order_by(Flight.departure_date.asc()).limit(8).all()
+
+    # R6: "Connections via X city" — surface up to 3 plausible single-hub
+    # routings to the same destination when the agent might prefer (or be
+    # forced into) a stopover routing. Pick hubs the catalogue actually has
+    # connecting capacity on, anchored on the flight's departure date. We
+    # only need *one* exemplar leg per hub for the widget — the second leg
+    # is shown by IATA only (the row links into a search the agent can run).
+    HUB_CANDIDATES = ['LHR', 'AMS', 'CDG', 'FRA', 'DXB', 'DOH', 'IST', 'SIN',
+                      'HKG', 'NRT', 'ICN', 'ATL', 'ORD', 'DFW']
+    connections = []
+    origin_iata = flight.origin.iata
+    dest_iata = flight.destination.iata
+    for hub in HUB_CANDIDATES:
+        if hub == origin_iata or hub == dest_iata:
+            continue
+        leg1 = Flight.query.join(Airport, Flight.origin_id == Airport.id).filter(
+            Flight.origin_id == flight.origin_id,
+            Flight.departure_date == flight.departure_date,
+        ).filter(
+            Flight.destination.has(iata=hub)
+        ).order_by(Flight.price.asc()).first()
+        if leg1 is None:
+            continue
+        leg2 = Flight.query.filter(
+            Flight.destination_id == flight.destination_id,
+            Flight.origin.has(iata=hub),
+            Flight.departure_date >= flight.departure_date,
+            Flight.departure_date <= flight.departure_date + _td(days=2),
+        ).order_by(Flight.departure_date.asc(), Flight.price.asc()).first()
+        if leg2 is None:
+            continue
+        connections.append({
+            'hub': hub,
+            'hub_city': leg1.destination.city,
+            'leg1': leg1,
+            'leg2': leg2,
+            'total_price': round(leg1.price + leg2.price, 0),
+        })
+        if len(connections) >= 3:
+            break
+
     return render_template('flight_detail.html',
                            flight=flight,
                            reviews=reviews,
                            avg_rating=avg_rating,
                            related=related,
                            booking_sites=booking_sites,
-                           return_flight=return_flight)
+                           return_flight=return_flight,
+                           other_airlines=other_airlines,
+                           different_dates=different_dates,
+                           connections=connections)
 
 
 @app.route('/destination/<slug>')

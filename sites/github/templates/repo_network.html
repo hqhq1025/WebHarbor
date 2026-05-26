@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}Forks · {{ repo.full_name }}{% endblock %}
+{% block title %}{% if dependents_view %}Dependents{% else %}Forks{% endif %} · {{ repo.full_name }}{% endblock %}
 {% block content %}
 <div class="repo-header-bar">
   <div class="repo-header-inner">
@@ -8,10 +8,30 @@
       <span class="repo-breadcrumb-sep">/</span>
       <a href="/{{ repo.full_name }}" class="repo-breadcrumb-link repo-breadcrumb-repo">{{ repo.name }}</a>
       <span class="repo-breadcrumb-sep">/</span>
-      <span>Forks</span>
+      <span>{% if dependents_view %}Dependents{% else %}Forks{% endif %}</span>
     </div>
   </div>
 </div>
+{% if dependents_view %}
+<div class="network-page">
+  <h2>Repositories that depend on {{ repo.full_name }}</h2>
+  <p class="muted">{{ dependents_total|number_format }} dependents total · showing {{ dependents|length }} most relevant.</p>
+  <ul class="network-list">
+    {% for r in dependents %}
+    <li class="network-item">
+      <img src="{{ avatar_for(r.full_name.split('/')[0]) }}" class="network-avatar" alt="" width="32" height="32">
+      <div class="network-info">
+        <a href="/{{ r.full_name }}" class="network-username">{{ r.full_name }}</a>
+        <div class="network-meta">
+          {% if r.description %}{{ r.description[:80] }}{% if r.description|length > 80 %}…{% endif %}{% endif %}
+          · ⭐ {{ r.stars_count|number_format }} · {{ r.language or '' }}
+        </div>
+      </div>
+    </li>
+    {% endfor %}
+  </ul>
+</div>
+{% else %}
 <div class="network-page">
   <h2>Members &amp; forks of {{ repo.full_name }}</h2>
   <p class="muted">{{ repo.forks_count|number_format }} forks total · showing {{ forkers|length }} most recent.</p>
@@ -20,7 +40,7 @@
     <li class="network-item">
       <img src="{{ avatar_for(f.user.username) }}" class="network-avatar" alt="" width="32" height="32">
       <div class="network-info">
-        <a href="/{{ f.user.username }}" class="network-username">{{ f.user.username }}</a>
+        <a href="/{{ f.user.username }}/{{ repo.name }}" class="network-username">{{ f.user.username }}/{{ repo.name }}</a>
         <div class="network-meta">
           {{ f.ahead }} commits ahead, {{ f.behind }} behind · last pushed {{ f.pushed_at|time_ago }}
         </div>
@@ -29,4 +49,5 @@
     {% endfor %}
   </ul>
 </div>
+{% endif %}
 {% endblock %}

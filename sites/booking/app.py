@@ -949,6 +949,28 @@ def property_detail(slug):
         Property.city_id == prop.city_id,
         Property.id != prop.id
     ).order_by(Property.rating.desc()).limit(4).all()
+    # R6 — cross-link sections on the property detail page.
+    # "Other properties in same area" — same neighbourhood, same city.
+    same_area = []
+    if prop.neighborhood:
+        same_area = Property.query.filter(
+            Property.city_id == prop.city_id,
+            Property.id != prop.id,
+            Property.neighborhood == prop.neighborhood,
+        ).order_by(Property.rating.desc()).limit(6).all()
+    # "You might also like" — same dest_category but a *different* city, so
+    # the recommendation feels like a discovery rather than a duplicate of
+    # the similar-nearby block above.
+    you_might_also_like = []
+    if prop.dest_category:
+        you_might_also_like = Property.query.filter(
+            Property.dest_category == prop.dest_category,
+            Property.city_id != prop.city_id,
+        ).order_by(Property.rating.desc()).limit(6).all()
+    # "Compare 3" pre-selection — the property itself + two top peers in the
+    # same city, so the cross-link lands on a meaningful comparison set even
+    # when no extra picks have been made.
+    compare_set = [prop] + (similar[:2] if similar else [])
     # Rating breakdowns
     avg_rating = db.session.query(func.avg(Review.rating)).filter_by(property_id=prop.id).scalar()
     if not avg_rating:
@@ -986,6 +1008,9 @@ def property_detail(slug):
         property=prop,
         reviews=reviews,
         similar=similar,
+        same_area=same_area,
+        you_might_also_like=you_might_also_like,
+        compare_set=compare_set,
         avg_rating=round(avg_rating, 1),
         default_checkin=default_checkin,
         default_checkout=default_checkout,

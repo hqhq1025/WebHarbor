@@ -3,6 +3,15 @@
 {% block content %}
 <div class="codespaces-new-page">
   <h1>Create a codespace for {{ repo.full_name }}</h1>
+  {% if quota_exceeded %}
+  <div class="codespaces-quota-error" style="background:#ffebe9;border:1px solid #ff8182;border-radius:6px;padding:16px;margin-bottom:16px;color:#82071e;">
+    <strong>You have exceeded your codespaces quota.</strong>
+    <p style="margin:8px 0 0;">Your account has reached its monthly core-hours allowance for codespaces.
+       Stop or delete an existing codespace, or upgrade your plan, before creating a new one.</p>
+    <p style="margin:8px 0 0;"><a href="/settings" class="gh-btn gh-btn-secondary gh-btn-sm">Manage billing</a>
+       <a href="/codespaces" class="gh-btn gh-btn-secondary gh-btn-sm">Existing codespaces</a></p>
+  </div>
+  {% endif %}
   <form class="codespaces-new-form">
     <label>Branch
       <select name="branch">
@@ -24,7 +33,7 @@
         <option>8-core · 16 GB RAM · 64 GB</option>
       </select>
     </label>
-    <button type="button" class="gh-btn gh-btn-primary">Create codespace</button>
+    <button type="button" class="gh-btn gh-btn-primary" {% if quota_exceeded %}disabled{% endif %}>Create codespace</button>
   </form>
 </div>
 {% endblock %}

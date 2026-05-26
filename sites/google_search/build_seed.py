@@ -2,12 +2,15 @@
 
 Run inside a python:3.12-slim-bookworm container with deps pinned.
 Output: instance/google_search.db (then copied to instance_seed/).
+
+NOTE: setting os.environ['PYTHONHASHSEED'] HERE has no effect on this
+process — PYTHONHASHSEED must be set before the interpreter starts. All
+seed code derives its randomness from `_det_hash` (md5) instead of the
+built-in hash(), so this script is byte-identical without -e
+PYTHONHASHSEED=0.
 """
 import os
 import sys
-
-# Ensure deterministic hashing across processes
-os.environ.setdefault('PYTHONHASHSEED', '0')
 
 import importlib
 import app as appmod

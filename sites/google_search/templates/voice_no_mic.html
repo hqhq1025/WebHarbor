@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block title %}Voice search unavailable - Google{% endblock %}
+{% block content %}
+<div class="help-page">
+    <nav class="help-breadcrumb"><a href="{{ url_for('index') }}">Google</a> &rsaquo; Voice search</nav>
+    <h1>Microphone access needed</h1>
+    <p class="lead">Google can't hear you. Voice search requires permission to use your
+        microphone, but the browser denied or revoked access.</p>
+
+    <h2>How to fix this</h2>
+    <ol class="help-faq">
+        <li>Click the lock icon in your browser's address bar.</li>
+        <li>Open the <em>Site permissions</em> menu.</li>
+        <li>Set <em>Microphone</em> to <strong>Allow</strong>.</li>
+        <li>Reload this page and click the microphone icon again.</li>
+    </ol>
+
+    <h2 style="margin-top:24px;">Search without voice</h2>
+    <form action="{{ url_for('search') }}" method="get" class="no-mic-form">
+        <input type="text" name="q" placeholder="Type your query"
+               style="width:60%; padding:10px; border:1px solid var(--color-border); border-radius:24px;">
+        <button type="submit" class="btn-primary" style="padding:10px 18px;">Google Search</button>
+    </form>
+
+    <h2 style="margin-top:24px;">Related help</h2>
+    <ul class="help-related">
+        <li><a href="{{ url_for('search_help', topic='basics') }}">Search basics</a></li>
+        <li><a href="{{ url_for('settings') }}">Search settings</a></li>
+    </ul>
+</div>
+{% endblock %}

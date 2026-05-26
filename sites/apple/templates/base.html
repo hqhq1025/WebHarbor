@@ -75,6 +75,49 @@
       input[aria-invalid="true"], select[aria-invalid="true"] {
         border-color: var(--r5-toast-error) !important;
       }
+      /* ============ R6 — Breadcrumb + Why-people-compare + You-may-also-like + Back-to-top ============ */
+      .r6-breadcrumb {
+        max-width: 1200px; margin: 12px auto 0; padding: 8px 20px;
+        font-size: 13px; color: #6e6e73;
+      }
+      .r6-breadcrumb a { color: #6e6e73; text-decoration: none; }
+      .r6-breadcrumb a:hover { color: #0071e3; text-decoration: underline; }
+      .r6-breadcrumb .sep { margin: 0 6px; color: #c2c2c7; }
+      .r6-breadcrumb .current { color: #1d1d1f; font-weight: 500; }
+      .r6-why-compare, .r6-you-may-like {
+        max-width: 1200px; margin: 36px auto 0; padding: 24px 20px;
+        background: #f5f5f7; border-radius: 18px;
+      }
+      .r6-why-compare h3, .r6-you-may-like h3 {
+        font-size: 19px; font-weight: 600; margin: 0 0 12px; color: #1d1d1f;
+      }
+      .r6-why-compare ul { margin: 0; padding-left: 20px; color: #424245; font-size: 14px; line-height: 1.6; }
+      .r6-you-may-like .r6-cards {
+        display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+        gap: 12px; margin-top: 6px;
+      }
+      .r6-you-may-like a {
+        display: block; background: #fff; border-radius: 12px; padding: 14px;
+        text-decoration: none; color: #1d1d1f; border: 1px solid transparent;
+        transition: border-color 0.15s ease, box-shadow 0.15s ease;
+      }
+      .r6-you-may-like a:hover { border-color: #d2d2d7; box-shadow: 0 4px 12px rgba(0,0,0,0.06); }
+      .r6-you-may-like .r6-name { font-size: 14px; font-weight: 600; margin: 0 0 4px; }
+      .r6-you-may-like .r6-price { font-size: 13px; color: #6e6e73; }
+      .r6-back-to-top {
+        position: fixed; right: 22px; bottom: 88px; z-index: 60;
+        background: rgba(29,29,31,0.78); color: #fff; border: 0;
+        width: 44px; height: 44px; border-radius: 50%; cursor: pointer;
+        display: none; align-items: center; justify-content: center;
+        font-size: 22px; backdrop-filter: blur(10px);
+        box-shadow: 0 6px 18px rgba(0,0,0,0.18);
+      }
+      .r6-back-to-top.visible { display: flex; }
+      .r6-back-to-top:focus-visible { outline: 3px solid #0071e3; outline-offset: 2px; }
+      @media (max-width: 767px) {
+        .r6-back-to-top { right: 12px; bottom: 78px; width: 40px; height: 40px; }
+        .r6-why-compare, .r6-you-may-like { margin: 20px 12px 0; }
+      }
     </style>
     {% block extra_head %}{% endblock %}
 </head>
@@ -146,8 +189,52 @@
 
     <!-- Main content -->
     <main id="main-content">
+        {# R6 — Breadcrumb (rendered from context processor when r6_breadcrumb is set) #}
+        {% if r6_breadcrumb %}
+        <nav class="r6-breadcrumb" aria-label="Breadcrumb">
+            {% for crumb in r6_breadcrumb %}
+                {% if loop.last %}
+                    <span class="current" aria-current="page">{{ crumb.label }}</span>
+                {% else %}
+                    <a href="{{ crumb.url }}">{{ crumb.label }}</a><span class="sep">&rsaquo;</span>
+                {% endif %}
+            {% endfor %}
+        </nav>
+        {% endif %}
+
         {% block content %}{% endblock %}
+
+        {# R6 — Why people compare (rendered when r6_why_compare is set) #}
+        {% if r6_why_compare %}
+        <aside class="r6-why-compare" aria-labelledby="r6-why-compare-h">
+            <h3 id="r6-why-compare-h">Why people compare</h3>
+            <ul>
+                {% for reason in r6_why_compare %}<li>{{ reason }}</li>{% endfor %}
+            </ul>
+        </aside>
+        {% endif %}
+
+        {# R6 — You may also like (rendered when r6_you_may_like is set) #}
+        {% if r6_you_may_like %}
+        <aside class="r6-you-may-like" aria-labelledby="r6-you-may-like-h">
+            <h3 id="r6-you-may-like-h">You may also like</h3>
+            <div class="r6-cards">
+                {% for item in r6_you_may_like %}
+                <a href="{{ item.url }}">
+                    <p class="r6-name">{{ item.name }}</p>
+                    {% if item.price %}<p class="r6-price">From ${{ "%.2f"|format(item.price) }}</p>{% endif %}
+                </a>
+                {% endfor %}
+            </div>
+        </aside>
+        {% endif %}
     </main>
+
+    <!-- R6 — Back-to-top sticky -->
+    <button type="button" id="r6-back-to-top" class="r6-back-to-top"
+            aria-label="Back to top" onclick="window.scrollTo({top: 0, behavior: 'smooth'})">
+        &uarr;
+    </button>
 
     <!-- Footer -->
     <footer class="footer">
@@ -365,6 +452,17 @@
             }
           }
         });
+      }
+
+      // R6 — Back-to-top sticky visibility
+      var r6BackTop = document.getElementById('r6-back-to-top');
+      if(r6BackTop){
+        var toggleBackTop = function(){
+          if(window.scrollY > 600) r6BackTop.classList.add('visible');
+          else r6BackTop.classList.remove('visible');
+        };
+        window.addEventListener('scroll', toggleBackTop, { passive: true });
+        toggleBackTop();
       }
     })();
     </script>

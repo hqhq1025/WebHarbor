@@ -2036,6 +2036,98 @@ def api_autocomplete():
 
 
 # ---------------------------------------------------------------------------
+# R6: edge-case routes
+# ---------------------------------------------------------------------------
+
+@app.route('/input/ambiguous')
+def input_ambiguous():
+    """Edge case: input-ambiguous-pick-assumption.
+
+    Shows a side-by-side interpretation picker for queries that have multiple
+    valid interpretations (mercury, python, java, pi, e, factor 12, …).
+    """
+    q = request.args.get('i', '').strip()
+    if not q:
+        return redirect(url_for('index'))
+    # Find an ambiguous-slug computation result first (R6 added these).
+    comp = ComputationResult.query.filter_by(
+        topic_slug='edge-ambiguous-input').filter(
+        ComputationResult.input_query.ilike(f'{q}%')).first()
+    if not comp:
+        comp = ComputationResult.query.filter(
+            ComputationResult.input_query.ilike(f'{q}%')).first()
+    interpretations = []
+    if comp:
+        for pod in comp.get_pods():
+            if pod.get('title') == 'Pick an interpretation':
+                for line in (pod.get('plaintext') or '').splitlines():
+                    line = line.strip()
+                    if line.startswith('[') and ']' in line:
+                        lbl, _, desc = line.partition(']')
+                        interpretations.append((lbl.lstrip('[').strip(), desc.strip()))
+                break
+    return render_template('edge_ambiguous.html', query=q, comp=comp,
+                           interpretations=interpretations)
+
+
+@app.route('/computation/<int:cr_id>/timeout')
+def computation_timeout(cr_id):
+    """Edge case: computation-timeout-fallback page."""
+    comp = db.session.get(ComputationResult, cr_id)
+    if not comp:
+        abort(404)
+    return render_template('edge_timeout.html', comp=comp,
+                           pro_url=url_for('pro_upgrade'))
+
+
+@app.route('/step-by-step/<int:cr_id>/locked')
+def step_by_step_locked(cr_id):
+    """Edge case: pro-required-step-by-step-paywall page."""
+    comp = db.session.get(ComputationResult, cr_id)
+    if not comp:
+        abort(404)
+    # show first 2 steps as preview only
+    pods = comp.get_pods() if comp else []
+    preview_steps = [p for p in pods if str(p.get('title', '')).lower().startswith('step')][:2]
+    return render_template('edge_step_locked.html', comp=comp,
+                           preview_steps=preview_steps,
+                           pro_url=url_for('pro_upgrade'))
+
+
+@app.route('/notebook/<int:nb_id>/quota')
+@login_required
+def notebook_quota(nb_id):
+    """Edge case: notebook-quota-exceeded page (free plan limit reached)."""
+    nb = Notebook.query.filter_by(id=nb_id, user_id=current_user.id).first_or_404()
+    entry_count = NotebookEntry.query.filter_by(notebook_id=nb.id).count()
+    # Free plan limit: 50 entries; Pro: unlimited
+    free_limit = 50
+    is_pro = getattr(current_user, 'is_pro', False)
+    return render_template('edge_notebook_quota.html', nb=nb,
+                           entry_count=entry_count, free_limit=free_limit,
+                           is_pro=is_pro, pro_url=url_for('pro_upgrade'))
+
+
+@app.route('/share/<token>/expired')
+def share_expired(token):
+    """Edge case: share-link-expired page (link past 90-day TTL)."""
+    # Token is opaque; show a fixed expired-page with help text.
+    return render_template('edge_share_expired.html', token=token,
+                           ttl_days=90)
+
+
+@app.route('/widget/<slug>/embed-blocked')
+def widget_embed_blocked(slug):
+    """Edge case: widget-embed-blocked-by-iframe-policy page."""
+    widget = next((w for w in WIDGET_GALLERY if w['slug'] == slug), None)
+    if not widget:
+        abort(404)
+    referer = request.args.get('parent', '(unknown parent)')
+    return render_template('edge_widget_blocked.html', widget=widget,
+                           referer=referer)
+
+
+# ---------------------------------------------------------------------------
 # Error handlers
 # ---------------------------------------------------------------------------
 

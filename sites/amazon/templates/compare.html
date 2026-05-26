@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+{% block title %}Compare Products - Amazon.com{% endblock %}
+
+{% block content %}
+<div style="max-width:1200px;margin:24px auto;padding:0 16px">
+    <h1 style="font-size:24px;margin-bottom:6px">Compare products</h1>
+    <p style="font-size:13px;color:#565959;margin-bottom:16px">
+        Add up to 5 items to the <code>?slugs=a,b,c</code> URL to compare them side-by-side.
+        Today you are comparing <strong>{{ products|length }}</strong> {{ 'item' if products|length == 1 else 'items' }}.
+    </p>
+
+    {% if not products %}
+    <div style="background:#fff8e1;border:1px solid #f0c36d;color:#5a4400;padding:14px;border-radius:4px">
+        No products selected. Open a product detail page and click <em>"Compare with similar items"</em>
+        to start a comparison.
+    </div>
+    {% else %}
+    <div style="overflow-x:auto;background:#fff;border:1px solid #d5d9d9;border-radius:6px">
+        <table class="compare-table" style="width:100%;border-collapse:collapse;font-size:13px">
+            <thead>
+                <tr>
+                    <th style="padding:14px;background:#f7f7f7;text-align:left;border-bottom:1px solid #d5d9d9;width:160px">&nbsp;</th>
+                    {% for p in products %}
+                    <th style="padding:14px;background:#f7f7f7;text-align:left;border-bottom:1px solid #d5d9d9;vertical-align:top">
+                        <a href="{{ url_for('product_detail', slug=p.slug) }}" style="text-decoration:none;color:#0f1111">
+                            <img src="{{ p.image }}" alt="{{ p.name }}"
+                                 style="width:120px;height:120px;object-fit:contain;background:#f7f7f7;border-radius:4px;display:block"
+                                 onerror="this.style.display='none'">
+                            <div style="font-size:13px;margin-top:8px;line-height:1.3">{{ p.name }}</div>
+                        </a>
+                    </th>
+                    {% endfor %}
+                </tr>
+            </thead>
+            <tbody>
+                {% for attr in attrs %}
+                <tr>
+                    <th style="padding:10px 14px;background:#fafafa;text-align:left;border-bottom:1px solid #f0f0f0;font-weight:600">{{ attr }}</th>
+                    {% for p in products %}
+                    <td style="padding:10px 14px;border-bottom:1px solid #f0f0f0">{{ compare_value(p, attr) }}</td>
+                    {% endfor %}
+                </tr>
+                {% endfor %}
+                <tr>
+                    <th style="padding:10px 14px;background:#fafafa;text-align:left;border-bottom:1px solid #f0f0f0">Stock</th>
+                    {% for p in products %}
+                    <td style="padding:10px 14px;border-bottom:1px solid #f0f0f0">
+                        {% if p.stock <= 0 %}
+                        <span style="color:#b12704">Currently unavailable</span>
+                        {% elif p.stock <= 4 %}
+                        <span style="color:#b12704">Only {{ p.stock }} left</span>
+                        {% else %}
+                        <span style="color:#007600">In Stock</span>
+                        {% endif %}
+                    </td>
+                    {% endfor %}
+                </tr>
+                <tr>
+                    <th style="padding:10px 14px;background:#fafafa;text-align:left">&nbsp;</th>
+                    {% for p in products %}
+                    <td style="padding:10px 14px">
+                        <a href="{{ url_for('product_detail', slug=p.slug) }}" class="btn btn-outline" style="display:inline-block">See details</a>
+                    </td>
+                    {% endfor %}
+                </tr>
+            </tbody>
+        </table>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

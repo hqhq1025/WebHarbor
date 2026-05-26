@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% block title %}Step-by-step locked — Pro required{% endblock %}
+{% block body_class %}page-edge-step-locked{% endblock %}
+{% block content %}
+<div class="section-inner" style="padding: 40px 20px;">
+  <div class="edge-card edge-card--paywall">
+    <span class="edge-eyebrow">PRO FEATURE</span>
+    <h1 class="edge-title">Step-by-step solution is locked</h1>
+    <p class="edge-sub">Full step-by-step walkthroughs of "{{ comp.input_query }}" require Wolfram|Alpha Pro.</p>
+
+    <div class="edge-preview">
+      <p class="edge-preview-label">PREVIEW (first 2 of 7 steps):</p>
+      {% for p in preview_steps %}
+      <div class="edge-preview-step">
+        <strong>{{ p.title }}</strong>
+        <pre>{{ p.plaintext }}</pre>
+      </div>
+      {% endfor %}
+      {% if not preview_steps %}
+      <p class="edge-empty">Step preview not available for this computation.</p>
+      {% endif %}
+      <div class="edge-preview-locked">
+        <span>&#128274;</span> 5 more steps hidden — unlock with Pro
+      </div>
+    </div>
+
+    <div class="edge-actions">
+      <a href="{{ pro_url }}" class="edge-cta-primary">Unlock with Pro — $5.49/mo</a>
+      <a href="/share/{{ comp.id }}" class="edge-cta-secondary">Share this problem</a>
+      <a href="/input?i={{ comp.input_query|urlencode }}" class="edge-cta-link">Back to result</a>
+    </div>
+  </div>
+</div>
+{% endblock %}

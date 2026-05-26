@@ -1116,6 +1116,64 @@ def article_detail(slug):
     # Load gallery sections
     article_gallery = load_article_gallery(slug)
 
+    # R6: More from this reporter — articles by the same author. Only
+    # populated when the article carries a real byline (not the generic
+    # "BBC News" / "BBC Sport" placeholders) so the block does not turn
+    # into a near-random side-list on legacy rows.
+    more_from_reporter = []
+    generic_authors = {
+        "BBC News", "BBC Sport", "BBC Weather", "BBC Travel", "BBC Food",
+        "BBC Sounds", "BBC iPlayer", "BBC Business", "BBC Bitesize",
+    }
+    if art.author and art.author not in generic_authors:
+        more_from_reporter = (Article.query
+                              .filter(Article.author == art.author,
+                                      Article.id != art.id)
+                              .order_by(Article.published_at.desc())
+                              .limit(5).all())
+
+    # R6: Top story today — the most-recent featured article, distinct
+    # from the current one. Renders as a sidebar block.
+    top_story_today = (Article.query
+                       .filter(Article.is_featured == True,
+                               Article.id != art.id)
+                       .order_by(Article.published_at.desc())
+                       .first())
+
+    # R6: Related topics — surface real /topic/<tag> destinations.
+    # Pulls the article's own topics_json and supplements with any
+    # subsection or region. Capped at 8 to keep the UI tidy.
+    related_topic_chips: list[str] = []
+    seen_chips: set[str] = set()
+    for chip in (art.get_topics() or []):
+        c = (chip or "").strip()
+        if c and c.lower() not in seen_chips:
+            related_topic_chips.append(c)
+            seen_chips.add(c.lower())
+    for extra in (art.subsection, art.region):
+        if extra and extra.lower() not in seen_chips:
+            related_topic_chips.append(extra)
+            seen_chips.add(extra.lower())
+    related_topic_chips = related_topic_chips[:8]
+
+    # R6: edge-case status banner. Decoded from feature_tags so the
+    # logic stays close to the data.
+    edge_status = None
+    edge_banner = None
+    edge_status_map = {
+        "r6-removed-legal":   "This article has been removed for legal reasons.",
+        "r6-region-blocked":  "This video is not available in your region.",
+        "r6-live-ended":      "This live blog has ended. Read our summary below.",
+        "r6-superseded":      "An updated version of this story is available.",
+        "r6-comments-locked": "Comments are closed on this story.",
+        "r6-user-blocked":    "You have been blocked from commenting on this story.",
+    }
+    for tag_code, banner_text in edge_status_map.items():
+        if art.feature_tags and tag_code in art.feature_tags:
+            edge_status = tag_code
+            edge_banner = banner_text
+            break
+
     return render_template(
         "article_detail.html",
         article=art,
@@ -1127,6 +1185,11 @@ def article_detail(slug):
         in_reading_list=in_reading_list,
         reading_list_item=reading_list_item,
         is_bookmarked=is_bookmarked,
+        more_from_reporter=more_from_reporter,
+        top_story_today=top_story_today,
+        related_topic_chips=related_topic_chips,
+        edge_status=edge_status,
+        edge_banner=edge_banner,
     )
 
 

@@ -2,10 +2,43 @@
 {% block title %}{{ word.headword|upper }} | English meaning - Cambridge Dictionary{% endblock %}
 {% block content %}
 <div class="dict-entry">
-  <!-- Breadcrumb (Cambridge style: "Meaning of X in English") -->
+  <!-- R6 breadcrumb chain (Home › Dictionary › English › Letter X › word) -->
+  {% if breadcrumb %}
+  <nav class="breadcrumb r6-breadcrumb r6-breadcrumb-chain" aria-label="Breadcrumb">
+    {% for b in breadcrumb %}
+      {% if b.url %}
+        <a href="{{ b.url }}" class="r6-crumb r6-crumb--link">{{ b.label }}</a>
+      {% else %}
+        <span class="r6-crumb r6-crumb--current"><strong>{{ b.label }}</strong></span>
+      {% endif %}
+      {% if not loop.last %}<span class="r6-crumb-sep" aria-hidden="true">&rsaquo;</span>{% endif %}
+    {% endfor %}
+  </nav>
+  {% endif %}
+
+  <!-- Legacy breadcrumb (Cambridge style: "Meaning of X in English") -->
   <nav class="breadcrumb">
     Meaning of <strong style="color:#1D2A57;font-weight:700;font-style:normal">{{ word.headword }}</strong> in English
   </nav>
+
+  <!-- R6 learner-vs-academic dictionary mode toggle -->
+  <div class="r6-mode-toggle" data-current-mode="{{ dict_mode }}">
+    <span class="r6-mode-label">Dictionary:</span>
+    <a href="{{ url_for('word_detail', slug=word.slug, mode='learner') }}"
+       class="r6-mode-btn {% if dict_mode == 'learner' %}r6-mode-btn--active{% endif %}"
+       data-mode="learner">Learner</a>
+    <a href="{{ url_for('word_detail', slug=word.slug, mode='academic') }}"
+       class="r6-mode-btn {% if dict_mode == 'academic' %}r6-mode-btn--active{% endif %}"
+       data-mode="academic">Academic</a>
+    <span class="r6-mode-hint">
+      {% if dict_mode == 'learner' %}
+        Showing the Cambridge Advanced Learner's Dictionary entry.
+      {% else %}
+        Showing the academic-register entry.
+      {% endif %}
+    </span>
+  </div>
+
 
   <div class="entry-header">
     {% if current_user.is_authenticated %}
@@ -193,6 +226,87 @@
   </details>
     {% endif %}
   {% endif %}
+
+  <!-- R6: Antonyms — "What's the antonym?" double-jump panel -->
+  {% if antonym_rows or antonym_misses %}
+  <section class="r6-panel antonym-panel">
+    <h3 class="sub-section-title">What's the antonym?</h3>
+    {% if antonym_rows %}
+    <div class="r6-chips antonym-chips">
+      {% for w in antonym_rows %}
+        <a href="{{ url_for('word_detail', slug=w.slug) }}"
+           class="r6-chip antonym-chip">
+          {{ w.headword }}{% if w.level %}
+            <span class="r6-tag r6-tag--level">{{ w.level }}</span>{% endif %}
+        </a>
+      {% endfor %}
+    </div>
+    {% endif %}
+    {% if antonym_misses %}
+    <p class="r6-misses-line">Also referenced (no entry yet):
+      {% for s in antonym_misses %}<span class="r6-miss-slug">{{ s }}</span>{% if not loop.last %}, {% endif %}{% endfor %}
+    </p>
+    {% endif %}
+    <a class="r6-more" href="{{ url_for('antonyms_full', slug=word.slug) }}">See all antonyms &raquo;</a>
+  </section>
+  {% endif %}
+
+  <!-- R6: Words from same root — double-jump panel -->
+  {% if same_root_words %}
+  <section class="r6-panel same-root-panel">
+    <h3 class="sub-section-title">Words from the same root</h3>
+    <div class="r6-chips same-root-chips">
+      {% for w in same_root_words %}
+        <a href="{{ url_for('word_detail', slug=w.slug) }}"
+           class="r6-chip same-root-chip">
+          {{ w.headword }}{% if w.level %}
+            <span class="r6-tag r6-tag--level">{{ w.level }}</span>{% endif %}
+        </a>
+      {% endfor %}
+    </div>
+    <a class="r6-more" href="{{ url_for('same_root_full', slug=word.slug) }}">More same-root words &raquo;</a>
+  </section>
+  {% endif %}
+
+  <!-- R6: Words that share collocation -->
+  {% if shared_coll_words %}
+  <section class="r6-panel shared-coll-panel">
+    <h3 class="sub-section-title">Words that share a collocation</h3>
+    <p class="r6-help-inline">Anchor: <code>{{ word.shared_coll_anchor or word.headword|lower }}</code></p>
+    <div class="r6-chips shared-coll-chips">
+      {% for w in shared_coll_words %}
+        <a href="{{ url_for('word_detail', slug=w.slug) }}"
+           class="r6-chip shared-coll-chip">
+          {{ w.headword }}{% if w.level %}
+            <span class="r6-tag r6-tag--level">{{ w.level }}</span>{% endif %}
+        </a>
+      {% endfor %}
+    </div>
+    <a class="r6-more" href="{{ url_for('shared_collocation_full', slug=word.slug) }}">All collocation peers &raquo;</a>
+  </section>
+  {% endif %}
+
+  <!-- R6: Level-mismatch hint (only for C1/C2 words with an easier root peer) -->
+  {% if level_mismatch_alt %}
+  <aside class="r6-panel level-mismatch-hint">
+    <h3 class="sub-section-title level-mismatch-h">Too hard? Try an easier word</h3>
+    <p>"{{ word.headword }}" is {{ word.level }}. A {{ level_mismatch_alt.level }} alternative
+      from the same root is
+      <a href="{{ url_for('word_detail', slug=level_mismatch_alt.slug) }}"
+         class="level-mismatch-link">{{ level_mismatch_alt.headword }}</a>.
+      <a href="{{ url_for('level_mismatch', slug=word.slug) }}" class="r6-more">More alternatives &raquo;</a>
+    </p>
+  </aside>
+  {% endif %}
+
+  <!-- R6: audio cooldown / fallback links (always reachable from the entry) -->
+  <p class="r6-audio-status-links">
+    <a href="{{ url_for('audio_fallback', slug=word.slug, reason='missing') }}"
+       class="r6-link r6-link--audio">Audio not loading?</a>
+    &nbsp;&middot;&nbsp;
+    <a href="{{ url_for('audio_cooldown_page', slug=word.slug) }}"
+       class="r6-link r6-link--cooldown">Audio cooldown status</a>
+  </p>
 
   <!-- Cross-references: "Related word: innovator" -->
   {% set xref_words = [] %}

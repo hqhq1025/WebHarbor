@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block title %}Too Many Requests &mdash; Please Try Again in a Moment{% endblock %}
+
+{% block content %}
+<div class="container error-page" role="main" aria-labelledby="rl-title">
+    <div class="error-status" aria-hidden="true">429</div>
+    <h1 id="rl-title">Slow down &mdash; we&rsquo;re catching up</h1>
+    <p class="error-lead">
+        You&rsquo;ve sent a lot of requests in a short window. Our servers
+        need a moment to catch up. Please wait <strong>about 60 seconds</strong>
+        and try again.
+    </p>
+
+    <div class="error-actions">
+        <a class="error-btn-primary" href="{{ url_for('index') }}">Back to homepage</a>
+        <a class="error-btn-secondary" href="{{ url_for('all_recipes') }}">Browse all recipes</a>
+    </div>
+
+    <section class="error-suggestions" aria-labelledby="rl-tips">
+        <h2 id="rl-tips">What you can do</h2>
+        <ul class="error-suggestions-grid" style="grid-template-columns:1fr;text-align:left">
+            <li style="padding:14px 18px">
+                <strong>Wait a minute.</strong> Most rate-limit windows clear within 60 seconds.
+            </li>
+            <li style="padding:14px 18px">
+                <strong>Sign in.</strong> Logged-in users get a higher request budget than anonymous traffic.
+            </li>
+            <li style="padding:14px 18px">
+                <strong>Save searches.</strong> Use the Recipe Box (heart icon) so you don&rsquo;t have to re-search later.
+            </li>
+            <li style="padding:14px 18px">
+                <strong>Still stuck?</strong> Try a single specific URL instead of repeated searches &mdash; a permalink never rate-limits.
+            </li>
+        </ul>
+    </section>
+
+    <p style="margin-top:30px;color:#999;font-size:0.85rem">
+        Request id: <code style="background:#f4f4f4;padding:2px 6px;border-radius:3px">rl-{{ request.path|hash_slug }}</code>
+    </p>
+</div>
+{% endblock %}

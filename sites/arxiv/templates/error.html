@@ -4,10 +4,31 @@
 <div class="error-page">
     <p class="code">{{ code }}</p>
     <h1>{{ message }}</h1>
+    {% if missing_paper %}
+    <p class="muted">
+        The paper <span class="mono">arXiv:{{ missing_paper }}</span> is not in
+        this mirror. It may have been withdrawn, replaced, or never registered.
+    </p>
+    {% if nearby %}
+    <div class="error-suggestions" aria-label="Nearby paper suggestions">
+        <h3 style="font-size:14px;margin-top:14px;">Nearby papers in this submission cycle</h3>
+        <ul style="text-align:left;display:inline-block;">
+            {% for p in nearby %}
+            <li>
+                <a href="{{ url_for('paper_detail', arxiv_id=p.arxiv_id) }}">arXiv:{{ p.arxiv_id }}</a>
+                — {{ p.display_title|truncate(70) }}
+            </li>
+            {% endfor %}
+        </ul>
+    </div>
+    {% endif %}
+    {% else %}
     <p class="muted">Sorry, something went wrong. Try the homepage or search.</p>
+    {% endif %}
     <p>
         <a class="btn btn-primary" href="{{ url_for('index') }}">Home</a>
         <a class="btn" href="{{ url_for('search') }}">Search</a>
+        <a class="btn" href="{{ url_for('help_page') }}">Help</a>
     </p>
 </div>
 {% endblock %}

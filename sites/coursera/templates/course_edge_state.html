@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+{% block title %}{{ copy.title }} — {{ course.title }} | Coursera{% endblock %}
+{% block content %}
+<div class="container edge-state-page" id="main-content" style="padding:32px 0;max-width:880px;">
+  <nav class="cd-breadcrumb" style="font-size:13px;color:var(--c-muted);margin-bottom:18px;">
+    <a href="{{ url_for('index') }}">Home</a> &rsaquo;
+    <a href="{{ url_for('browse', category_slug=course.category|lower|replace(' ','-')|replace('/','-')) }}">{{ course.category }}</a> &rsaquo;
+    <a href="{{ url_for('course_detail', slug=course.slug) }}">{{ course.title|truncate(48) }}</a> &rsaquo;
+    <span>{{ copy.title }}</span>
+  </nav>
+
+  <div class="edge-card" style="background:#fff;border:1px solid #e5e7eb;border-radius:12px;padding:32px;box-shadow:0 1px 2px rgba(0,0,0,.04);">
+    <span class="edge-badge {{ copy.badge_class }}"
+          style="display:inline-block;padding:4px 10px;border-radius:999px;font-size:12px;font-weight:700;letter-spacing:.3px;text-transform:uppercase;
+            {% if copy.badge_class == 'edge-bad' %}background:#fee2e2;color:#b91c1c;{% endif %}
+            {% if copy.badge_class == 'edge-warn' %}background:#fef3c7;color:#92400e;{% endif %}
+            {% if copy.badge_class == 'edge-info' %}background:#dbeafe;color:#1e40af;{% endif %}">
+      {{ copy.badge }}
+    </span>
+    <h1 style="margin:14px 0 6px 0;font-size:28px;">{{ copy.title }}</h1>
+    <p class="edge-course" style="color:var(--c-muted);font-size:13px;margin:0 0 18px 0;">
+      Course: <strong>{{ course.title }}</strong>
+      {% if course.partner %} &middot; offered by {{ course.partner.name }}{% endif %}
+    </p>
+    <p class="edge-lede" style="font-size:16px;line-height:1.55;color:#1f2937;">{{ lede }}</p>
+
+    {% if state == 'peer-review-pending' %}
+    <div class="edge-queue" style="margin:18px 0;padding:14px 16px;background:#f3f4f6;border-radius:8px;">
+      <div><strong>Your queue position:</strong> #{{ queue_position }} of cohort</div>
+      <div><strong>Estimated time to first review:</strong> {{ estimated_days }} days</div>
+      <div><strong>Reviewers required:</strong> 3 (independent)</div>
+    </div>
+    {% endif %}
+
+    <ul class="edge-bullets" style="padding-left:20px;line-height:1.7;color:#374151;">
+      {% for b in bullets %}
+      <li>{{ b }}</li>
+      {% endfor %}
+    </ul>
+
+    <div class="edge-actions" style="margin-top:24px;display:flex;gap:12px;flex-wrap:wrap;">
+      <a href="{{ url_for('course_detail', slug=course.slug) }}" class="btn-secondary"
+         style="padding:10px 18px;border:1px solid #d1d5db;border-radius:6px;color:#1f2937;text-decoration:none;">
+        Back to course
+      </a>
+      {% if state == 'audit-vs-paid' %}
+      <a href="{{ url_for('coursera_plus') }}" class="btn-primary"
+         style="padding:10px 18px;background:#0056d2;color:#fff;border-radius:6px;text-decoration:none;font-weight:600;">
+        {{ copy.remediation_action }}
+      </a>
+      {% elif state == 'certificate-not-eligible' %}
+      <a href="{{ url_for('course_assignment', slug=course.slug, n=4) }}" class="btn-primary"
+         style="padding:10px 18px;background:#0056d2;color:#fff;border-radius:6px;text-decoration:none;font-weight:600;">
+        {{ copy.remediation_action }}
+      </a>
+      {% elif state == 'peer-review-pending' %}
+      <a href="{{ url_for('course_peer_review', slug=course.slug) }}" class="btn-primary"
+         style="padding:10px 18px;background:#0056d2;color:#fff;border-radius:6px;text-decoration:none;font-weight:600;">
+        {{ copy.remediation_action }}
+      </a>
+      {% else %}
+      <a href="{{ url_for('browse', category_slug=course.category|lower|replace(' ','-')|replace('/','-')) }}"
+         class="btn-primary"
+         style="padding:10px 18px;background:#0056d2;color:#fff;border-radius:6px;text-decoration:none;font-weight:600;">
+        {{ copy.remediation_action }}
+      </a>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="edge-footnote" style="margin-top:18px;font-size:12px;color:var(--c-muted);">
+    <p>If you believe this is in error, <a href="{{ url_for('help_center') }}">contact Coursera support</a>.</p>
+  </div>
+</div>
+{% endblock %}

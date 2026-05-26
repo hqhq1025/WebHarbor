@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% block title %}Audio unavailable for {{ word.headword }}{% endblock %}
+{% block content %}
+<div class="container audio-fallback-page">
+  <nav class="breadcrumb r6-breadcrumb" aria-label="Breadcrumb">
+    <a href="{{ url_for('index') }}">Home</a> &rsaquo;
+    <a href="{{ url_for('word_detail', slug=word.slug) }}">{{ word.headword }}</a> &rsaquo;
+    <span>Audio unavailable</span>
+  </nav>
+
+  <h1>Audio unavailable for <em>{{ word.headword }}</em></h1>
+
+  <div class="audio-fallback-banner audio-fallback-banner--{{ reason }}">
+    {% if reason == 'missing' %}
+      <p><strong>The audio file for this entry could not be loaded.</strong>
+        Showing the text-only pronunciation panel instead.</p>
+    {% elif reason == 'cooldown' %}
+      <p><strong>Audio playback is temporarily on cooldown for this entry.</strong>
+        Please wait about 90 seconds before trying the speaker again, or use
+        the text fallback below.</p>
+    {% elif reason == 'format-unsupported' %}
+      <p><strong>Your browser does not support the MP3 format used for this entry.</strong>
+        Showing the IPA-only text fallback.</p>
+    {% endif %}
+  </div>
+
+  <section class="audio-fallback-ipa">
+    <h2 class="sub-section-title">Text pronunciation</h2>
+    <dl class="ipa-grid">
+      <dt>UK IPA</dt>
+      <dd><code>{{ word.phonetic_uk or '/—/' }}</code></dd>
+      <dt>US IPA</dt>
+      <dd><code>{{ word.phonetic_us or '/—/' }}</code></dd>
+      <dt>Headword</dt>
+      <dd>{{ word.headword }}</dd>
+      <dt>Part of speech</dt>
+      <dd>{{ word.pos or '—' }}</dd>
+      {% if word.level %}
+      <dt>CEFR level</dt>
+      <dd>{{ word.level }}</dd>
+      {% endif %}
+    </dl>
+  </section>
+
+  <p class="r6-bottom">
+    <a href="{{ url_for('word_detail', slug=word.slug) }}">&laquo; Back to {{ word.headword }}</a>
+    &nbsp;&middot;&nbsp;
+    <a href="{{ url_for('pronunciation_detail', slug=word.slug) }}">Side-by-side pronunciation &raquo;</a>
+  </p>
+</div>
+{% endblock %}

@@ -2,6 +2,19 @@
 {% block title %}{{ product.name }} - Amazon.com{% endblock %}
 
 {% block content %}
+{# R6: Breadcrumb — All Departments > Category > Subcategory > Product #}
+<nav class="pd-breadcrumb" aria-label="Breadcrumb"
+     style="max-width:1200px;margin:8px auto 0;padding:8px 16px;font-size:12px;color:#565959" id="pd-breadcrumb">
+    {% for label, link in breadcrumb %}
+        {% if link %}
+        <a class="text-link" href="{{ link }}" style="color:#0066c0">{{ label }}</a>
+        {% else %}
+        <span style="color:#0f1111">{{ label }}</span>
+        {% endif %}
+        {% if not loop.last %}<span style="margin:0 6px;color:#a0a0a0">&rsaquo;</span>{% endif %}
+    {% endfor %}
+</nav>
+
 <div class="pd-container">
     <!-- Image Column -->
     <div class="pd-image-col">
@@ -100,7 +113,13 @@
         </div>
 
         <div class="pd-stock{% if product.stock <= 0 %} sold-out{% endif %}">
-            {% if product.stock > 0 %}In Stock{% else %}Currently unavailable.<br><span style="font-weight:400;color:#565959;font-size:13px">We don't know when or if this item will be back in stock.</span>{% endif %}
+            {% if product.stock > 0 %}
+                {% if low_stock %}
+                <span style="color:#b12704;font-weight:700" id="low-stock-banner">Only {{ product.stock }} left in stock - order soon!</span>
+                {% else %}
+                In Stock
+                {% endif %}
+            {% else %}Currently unavailable.<br><span style="font-weight:400;color:#565959;font-size:13px">We don't know when or if this item will be back in stock.</span>{% endif %}
             {% if product.condition and product.condition != 'New' %}
             &nbsp;·&nbsp; Condition: <strong>{{ product.condition }}</strong>
             {% endif %}
@@ -147,6 +166,11 @@
         </div>
         <button type="button" class="btn btn-outline btn-full" disabled aria-disabled="true"
                 style="opacity:0.55;cursor:not-allowed">Add to Cart (Sold out)</button>
+        <a href="{{ url_for('product_notify_when_back', slug=product.slug) }}"
+           class="btn btn-orange btn-full mt-10" id="notify-when-back-btn"
+           style="display:block;text-align:center">
+            🔔 Notify me when back in stock
+        </a>
         {% endif %}
 
         <script>
@@ -468,6 +492,78 @@
             </div>
             {% endfor %}
         </details>
+        {% endfor %}
+    </div>
+</section>
+{% endif %}
+
+{# R6: Compare with similar items - side-by-side attribute table #}
+{% if compare_similar and compare_similar|length > 1 %}
+<section style="max-width:1200px;margin:24px auto;padding:18px 20px;background:#fff;border-radius:4px;border:1px solid #e7e7e7" id="compare-similar">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+        <h2 style="font-size:18px;margin:0">Compare with similar items</h2>
+        <a class="text-link" style="font-size:13px"
+           href="{{ url_for('compare_products') }}?slugs={{ compare_similar|map(attribute='slug')|join(',') }}">Open full comparison &rarr;</a>
+    </div>
+    <div style="overflow-x:auto">
+        <table style="width:100%;border-collapse:collapse;font-size:13px;min-width:720px">
+            <thead>
+                <tr>
+                    <th style="text-align:left;padding:10px;background:#fafafa;border-bottom:1px solid #e7e7e7;width:150px">&nbsp;</th>
+                    {% for p in compare_similar %}
+                    <th style="text-align:left;padding:10px;background:#fafafa;border-bottom:1px solid #e7e7e7;vertical-align:top">
+                        {% if p.id == product.id %}<div style="font-size:11px;color:#007185;font-weight:700;margin-bottom:4px">THIS ITEM</div>{% endif %}
+                        <a href="{{ url_for('product_detail', slug=p.slug) }}" style="text-decoration:none;color:#0f1111">
+                            <img src="{{ p.image }}" alt="{{ p.name }}"
+                                 style="width:90px;height:90px;object-fit:contain;background:#f7f7f7;border-radius:4px;display:block"
+                                 onerror="this.style.display='none'">
+                            <div style="font-size:12px;margin-top:6px;line-height:1.3;max-height:48px;overflow:hidden">{{ p.name }}</div>
+                        </a>
+                        {% if p.stock > 0 %}
+                        <form method="POST" action="{{ url_for('cart_add_form', product_id=p.id) }}" style="margin-top:6px">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token_value }}">
+                            <input type="hidden" name="variant" value="">
+                            <input type="hidden" name="quantity" value="1">
+                            <button type="submit" class="btn btn-outline" style="font-size:11px;padding:4px 8px">Add to Cart</button>
+                        </form>
+                        {% endif %}
+                    </th>
+                    {% endfor %}
+                </tr>
+            </thead>
+            <tbody>
+                {% for attr in compare_attrs %}
+                <tr>
+                    <th style="text-align:left;padding:8px 10px;background:#fafafa;border-bottom:1px solid #f0f0f0;font-weight:600">{{ attr }}</th>
+                    {% for p in compare_similar %}
+                    <td style="padding:8px 10px;border-bottom:1px solid #f0f0f0">{{ compare_value(p, attr) }}</td>
+                    {% endfor %}
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>
+{% endif %}
+
+{# R6: Recently viewed history (session-backed) #}
+{% if recently_viewed %}
+<section style="max-width:1200px;margin:24px auto;padding:18px 20px;background:#fff;border-radius:4px;border:1px solid #e7e7e7" id="recently-viewed">
+    <h2 style="font-size:18px;margin:0 0 12px">Your recently viewed items</h2>
+    <div class="row-scroll">
+        {% for p in recently_viewed %}
+        <a class="row-card" href="{{ url_for('product_detail', slug=p.slug) }}">
+            <img src="{{ p.image }}" alt="{{ p.name }}" onerror="this.style.display='none'">
+            <div class="row-card-brand">{{ p.brand }}</div>
+            <div class="row-card-title">{{ p.name }}</div>
+            <div class="row-card-price">
+                <span class="price-symbol">$</span><span class="price-whole">{{ p.price|int }}</span><span class="price-fraction">{{ '%02d'|format((p.price * 100)|round|int % 100) }}</span>
+            </div>
+            <div class="rating">
+                <span class="stars">{% for i in range(p.rating|int) %}★{% endfor %}{% for i in range(5 - p.rating|int) %}☆{% endfor %}</span>
+                <span>({{ p.review_count }})</span>
+            </div>
+        </a>
         {% endfor %}
     </div>
 </section>

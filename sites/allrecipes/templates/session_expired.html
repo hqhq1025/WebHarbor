@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block title %}Your Session Has Expired{% endblock %}
+
+{% block content %}
+<div class="container error-page" role="main" aria-labelledby="se-title">
+    <div class="error-status" aria-hidden="true">&#128274;</div>
+    <h1 id="se-title">Your session has expired</h1>
+    <p class="error-lead">
+        For your safety, we sign you out after a long period of inactivity.
+        Sign back in to keep cooking &mdash; your Recipe Box, meal plan, and shopping
+        lists are all still saved.
+    </p>
+
+    <div class="error-actions">
+        <a class="error-btn-primary" href="{{ url_for('login') }}">Sign in again</a>
+        <a class="error-btn-secondary" href="{{ url_for('index') }}">Browse without signing in</a>
+    </div>
+
+    <section class="error-suggestions" aria-labelledby="se-saved">
+        <h2 id="se-saved">Your saved content is safe</h2>
+        <ul class="error-suggestions-grid" style="grid-template-columns:repeat(3,1fr);text-align:center">
+            <li style="padding:18px 12px">
+                <div style="font-size:2.4rem">&#129505;</div>
+                <strong>Recipe Box</strong>
+                <p style="font-size:0.85rem;color:#666">All saved recipes are still in your box.</p>
+            </li>
+            <li style="padding:18px 12px">
+                <div style="font-size:2.4rem">&#128197;</div>
+                <strong>Meal Plan</strong>
+                <p style="font-size:0.85rem;color:#666">Your weekly meal plan is preserved.</p>
+            </li>
+            <li style="padding:18px 12px">
+                <div style="font-size:2.4rem">&#128722;</div>
+                <strong>Shopping Lists</strong>
+                <p style="font-size:0.85rem;color:#666">Every list and item is right where you left it.</p>
+            </li>
+        </ul>
+    </section>
+</div>
+{% endblock %}

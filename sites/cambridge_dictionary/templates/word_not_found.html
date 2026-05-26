@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block title %}No exact match for {{ q }}{% endblock %}
+{% block content %}
+<div class="container word-not-found-page">
+  <nav class="breadcrumb r6-breadcrumb" aria-label="Breadcrumb">
+    <a href="{{ url_for('index') }}">Home</a> &rsaquo;
+    <a href="{{ url_for('search', q='') }}">Search</a> &rsaquo;
+    <span>No exact match</span>
+  </nav>
+
+  <h1>No exact match for "{{ q }}"</h1>
+  <p class="r6-help">We couldn't find an entry for <strong>{{ q }}</strong>.
+    The Cambridge Dictionary often shows a "Did you mean…" suggestion in
+    this situation; here are the closest matches we found in the catalog.</p>
+
+  {% if suggestions %}
+    <h2 class="sub-section-title">Did you mean…</h2>
+    <ul class="r6-list suggest-list">
+      {% for w in suggestions %}
+        <li class="r6-list-row">
+          <a href="{{ url_for('word_detail', slug=w.slug) }}" class="r6-list-head suggest-link">{{ w.headword }}</a>
+          {% if w.level %}<span class="r6-tag r6-tag--level">{{ w.level }}</span>{% endif %}
+          {% if w.pos %}<span class="r6-tag r6-tag--pos">{{ w.pos }}</span>{% endif %}
+          <span class="r6-list-gloss">{{ w.guide_word }}</span>
+        </li>
+      {% endfor %}
+    </ul>
+  {% else %}
+    <p class="r6-empty">No suggestions available — try a shorter prefix in the search box above.</p>
+  {% endif %}
+
+  <p class="r6-bottom">
+    Try a different spelling, or
+    <a href="{{ url_for('index') }}">browse from the home page</a>.
+  </p>
+</div>
+{% endblock %}

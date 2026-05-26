@@ -51,6 +51,40 @@
         </tbody>
     </table>
 
+    {# R6: pending evaluation rows — surfaces "in-progress" entries that
+       have been submitted but don't yet have a score. Lets the agent
+       reason about leaderboard staleness without re-running an eval. #}
+    {% if pending_rows %}
+    <section id="pending-evals" style="margin-top: 18px; padding: 12px 14px; background: #fff7ed; border: 1px solid #fdba74; border-radius: 8px;">
+        <h3 style="margin: 0 0 6px;">⏳ Pending evaluations</h3>
+        <p class="muted" style="font-size: 12.5px; margin: 0 0 8px;">
+            These submissions are currently being scored. They will show up in the
+            ranked table once the eval harness finishes.
+        </p>
+        <table class="lb-table" style="width: 100%; font-size: 13px;">
+            <thead>
+                <tr><th>Model</th><th>Params</th><th>Status</th><th>ETA</th></tr>
+            </thead>
+            <tbody>
+            {% for p in pending_rows %}
+                <tr id="pending-{{ loop.index }}">
+                    <td><a href="/{{ p.slug }}"><code>{{ p.slug }}</code></a></td>
+                    <td>{{ p.params }}</td>
+                    <td>
+                        {% if p.state == 'eval-running' %}
+                        <span class="tag" style="background: #fef3c7; color: #92400e;">● Running</span>
+                        {% else %}
+                        <span class="tag" style="background: #e5e7eb; color: #374151;">○ Queued</span>
+                        {% endif %}
+                    </td>
+                    <td class="muted">{{ p.eta }}</td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </section>
+    {% endif %}
+
     <p class="muted" style="font-size: 12px;">Last refreshed {{ mirror_today_display }} · methodology and submission instructions in <a href="{{ url_for('docs') }}">/docs</a>.</p>
 </div>
 {% endblock %}

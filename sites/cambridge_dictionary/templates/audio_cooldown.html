@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block title %}Audio cooldown for {{ word.headword }}{% endblock %}
+{% block content %}
+<div class="container audio-cooldown-page">
+  <nav class="breadcrumb r6-breadcrumb" aria-label="Breadcrumb">
+    <a href="{{ url_for('index') }}">Home</a> &rsaquo;
+    <a href="{{ url_for('word_detail', slug=word.slug) }}">{{ word.headword }}</a> &rsaquo;
+    <span>Audio cooldown ({{ region|upper }})</span>
+  </nav>
+
+  <h1>Audio cooldown for <em>{{ word.headword }}</em></h1>
+
+  {% if on_cooldown %}
+    <div class="audio-cooldown-active">
+      <p class="audio-cooldown-status"><strong>Status:</strong> on cooldown for {{ region|upper }} audio.</p>
+      <p class="audio-cooldown-wait">Retry available in <strong>{{ retry_after_s }}s</strong>.
+        This is a per-entry rate limit applied to repeated audio plays from
+        the same client.</p>
+    </div>
+  {% else %}
+    <div class="audio-cooldown-clear">
+      <p class="audio-cooldown-status"><strong>Status:</strong> {{ region|upper }} audio is ready (no cooldown).</p>
+      <p>You can play the audio normally. This page is reachable for any
+        entry; the cooldown only triggers for the small subset of entries
+        currently rate-limited.</p>
+    </div>
+  {% endif %}
+
+  <p>
+    <a href="{{ url_for('audio_fallback', slug=word.slug, reason='cooldown') }}">View text fallback &raquo;</a>
+    &nbsp;&middot;&nbsp;
+    <a href="{{ url_for('api_audio_status', slug=word.slug, region=region) }}">Audio status API &raquo;</a>
+  </p>
+
+  <p class="r6-bottom"><a href="{{ url_for('word_detail', slug=word.slug) }}">&laquo; Back to {{ word.headword }}</a></p>
+</div>
+{% endblock %}

@@ -993,10 +993,103 @@ def course_detail(slug):
         breakdown = {'5': 45, '4': 30, '3': 15, '2': 6, '1': 4}
     else:
         breakdown = {'5': 30, '4': 30, '3': 20, '2': 12, '1': 8}
+    # ── R6 contextual panels (deterministic — derived from existing fields) ──
+    r6_panels = _r6_course_panels(course)
     return render_template('course_detail.html', course=course, reviews=reviews,
                            sub_courses=sub_courses, related=related,
                            is_enrolled=is_enrolled, is_saved=is_saved,
-                           review_form=review_form, rating_breakdown=breakdown)
+                           review_form=review_form, rating_breakdown=breakdown,
+                           r6_panels=r6_panels)
+
+
+def _r6_course_panels(course):
+    """Compute 4 contextual panels for the R6 course-detail layout.
+
+    All four lookups are pure read-only ORM queries against existing
+    columns — no schema changes, no DB writes, fully deterministic
+    (queries are bounded and ordered by stable keys).
+    """
+    primary_skill = ''
+    try:
+        sk = json.loads(course.skills or '[]')
+        if sk:
+            primary_skill = sk[0]
+    except Exception:
+        pass
+
+    # 1) Specialization that includes this course — pick a Specialization /
+    #    Professional Certificate in the same category that shares the
+    #    primary skill or instructor.
+    spec_q = Course.query.filter(
+        Course.course_type.in_(['Specialization', 'Professional Certificate']),
+        Course.id != course.id,
+        Course.category == course.category,
+    )
+    if primary_skill:
+        spec_q = spec_q.filter(Course.skills.like(f'%{primary_skill}%'))
+    spec_includes = spec_q.order_by(Course.enrolled_count.desc()).first()
+    if spec_includes is None:
+        spec_includes = Course.query.filter(
+            Course.course_type.in_(['Specialization', 'Professional Certificate']),
+            Course.category == course.category,
+            Course.id != course.id,
+        ).order_by(Course.id).first()
+
+    # 2) Courses by same instructor (cap 4, excluding self).
+    by_same_instructor = []
+    if course.instructor:
+        by_same_instructor = Course.query.filter(
+            Course.instructor == course.instructor,
+            Course.id != course.id,
+        ).order_by(Course.id).limit(4).all()
+
+    # 3) Next recommended after completion — same category, one step up in
+    #    level if possible, otherwise a Specialization fallback.
+    level_order = ['Beginner', 'Intermediate', 'Advanced']
+    next_recommended = None
+    cur_level = course.level if course.level in level_order else 'Beginner'
+    next_idx = min(level_order.index(cur_level) + 1, len(level_order) - 1)
+    target_level = level_order[next_idx]
+    next_recommended = Course.query.filter(
+        Course.category == course.category,
+        Course.level == target_level,
+        Course.id != course.id,
+    ).order_by(Course.rating.desc(), Course.id).first()
+    if next_recommended is None:
+        next_recommended = Course.query.filter(
+            Course.category == course.category,
+            Course.course_type == 'Specialization',
+            Course.id != course.id,
+        ).order_by(Course.id).first()
+
+    # 4) Required prerequisite path — pick up to 2 Beginner-level
+    #    Foundations-style courses in the same category (skip if current
+    #    course is already Beginner with no Advanced peers).
+    prereq_q = Course.query.filter(
+        Course.category == course.category,
+        Course.level == 'Beginner',
+        Course.id != course.id,
+    )
+    if cur_level == 'Beginner':
+        # When viewing a beginner course, surface Foundations-tagged peers
+        # in adjacent categories as prep, but keep within Coursera taxonomy.
+        prereq_q = prereq_q.filter(Course.slug.like('foundations-of-%'))
+    prereq_path = prereq_q.order_by(Course.enrolled_count.desc()).limit(2).all()
+    # Fallback: any 2 lower-level peers if none match Foundations filter
+    if not prereq_path and cur_level != 'Beginner':
+        prereq_path = Course.query.filter(
+            Course.category == course.category,
+            Course.level == 'Beginner',
+            Course.id != course.id,
+        ).order_by(Course.enrolled_count.desc()).limit(2).all()
+
+    return {
+        'specialization_includes': spec_includes,
+        'by_same_instructor': by_same_instructor,
+        'next_recommended': next_recommended,
+        'prereq_path': prereq_path,
+        'primary_skill': primary_skill,
+    }
 
 
 @app.route('/specializations/<path:slug>')
@@ -1582,6 +1675,171 @@ def not_found(e):
 @app.errorhandler(500)
 def server_error(e):
     return render_template('500.html'), 500
+
+
+# ─── R6 edge-case routes ─────────────────────────────────────────────────────
+# Six common "failure / blocked" states a learner can hit on Coursera, each
+# rendered with a shared lightweight template so the agent can verify the
+# message + the canonical remediation link.
+
+R6_EDGE_CASE_COPY = {
+    'deadline-passed': {
+        'title': 'Enrollment Deadline Passed',
+        'badge': 'Enrollment closed',
+        'badge_class': 'edge-bad',
+        'lede': (
+            'The enrollment window for the current session of '
+            '“{course}” closed on the listed application deadline. '
+            'New enrollments are paused until the next cohort opens.'
+        ),
+        'bullets': [
+            'Join the waitlist to be notified when the next cohort opens.',
+            'Browse self-paced alternatives in {category} that you can start today.',
+            'If you previously enrolled, your existing progress is preserved.',
+        ],
+        'remediation_action': 'Join waitlist',
+    },
+    'certificate-not-eligible': {
+        'title': 'Certificate not yet eligible',
+        'badge': 'Graded assignment required',
+        'badge_class': 'edge-warn',
+        'lede': (
+            'You finished all videos in “{course}”, but the shareable '
+            'Coursera certificate requires submitting and passing the '
+            'graded capstone assignment.'
+        ),
+        'bullets': [
+            'Submit the Week-4 graded assignment to unlock the certificate.',
+            'Audit learners need to upgrade to the paid track before submission.',
+            'After passing, your certificate ID is auto-issued and verifiable.',
+        ],
+        'remediation_action': 'Open graded assignment',
+    },
+    'audit-vs-paid': {
+        'title': 'This feature is paid-track only',
+        'badge': 'Audit track limit',
+        'badge_class': 'edge-warn',
+        'lede': (
+            '“{course}” is available on the free Audit track, but the '
+            'feature you tried to use (graded assignments, peer review, '
+            'shareable certificate) is only included on the paid track '
+            'or with a Coursera Plus subscription.'
+        ),
+        'bullets': [
+            'Upgrade to the paid track to unlock graded assignments.',
+            'Coursera Plus includes this course plus 7,000+ others.',
+            'Auditing remains free — you keep access to lectures and readings.',
+        ],
+        'remediation_action': 'Compare tracks',
+    },
+    'peer-review-pending': {
+        'title': 'Waiting on peer reviewers',
+        'badge': '3 reviews needed',
+        'badge_class': 'edge-info',
+        'lede': (
+            'Your submission to “{course}” has been queued for peer '
+            'review. Coursera requires three independent reviewers '
+            'before a grade is finalized — your queue position is '
+            'shown below.'
+        ),
+        'bullets': [
+            'Estimated review time: 5–10 days, depending on cohort size.',
+            'Reviewing 3 peers in return moves your submission up the queue.',
+            'You can update your submission until the third reviewer locks it.',
+        ],
+        'remediation_action': 'Review a peer',
+    },
+}
+
+
+@app.route('/learn/<slug>/edge/<state>')
+def course_edge_case(slug, state):
+    """Render one of the per-course edge states (deadline, cert-not-eligible,
+    audit-vs-paid, peer-review-pending) for the given course."""
+    course = Course.query.filter_by(slug=slug).first_or_404()
+    copy = R6_EDGE_CASE_COPY.get(state)
+    if not copy:
+        from flask import abort
+        abort(404)
+    lede = copy['lede'].format(course=course.title, category=course.category or 'this category')
+    bullets = [b.format(course=course.title, category=course.category or 'this category')
+               for b in copy['bullets']]
+    queue_position = 1 + (course.id * 7 + len(state)) % 12
+    estimated_days = 4 + (course.id * 3 + len(state)) % 8
+    return render_template('course_edge_state.html',
+                           course=course, state=state, copy=copy,
+                           lede=lede, bullets=bullets,
+                           queue_position=queue_position,
+                           estimated_days=estimated_days)
+
+
+# Convenience aliases — direct slugs are easier for an agent to compose.
+@app.route('/learn/<slug>/deadline-passed')
+def course_deadline_passed(slug):
+    return course_edge_case(slug, 'deadline-passed')
+
+
+@app.route('/learn/<slug>/certificate-not-eligible')
+def course_cert_not_eligible(slug):
+    return course_edge_case(slug, 'certificate-not-eligible')
+
+
+@app.route('/learn/<slug>/audit-vs-paid')
+def course_audit_vs_paid(slug):
+    return course_edge_case(slug, 'audit-vs-paid')
+
+
+@app.route('/learn/<slug>/peer-review-pending')
+def course_peer_review_pending(slug):
+    return course_edge_case(slug, 'peer-review-pending')
+
+
+# Profile-level financial-aid edge — a learner's application is reviewed and
+# either approved, pending, or rejected. Deterministic outcome keyed on user id.
+@app.route('/financial-aid')
+@app.route('/financial-aid/<status>')
+def financial_aid(status=None):
+    """Financial-aid application status page. Without an explicit status,
+    derive it deterministically from the current user id (if logged in)
+    or from the day-of-year of the seed reference date for anonymous
+    viewers — keeps reset/byte identity intact."""
+    valid = {'approved', 'pending', 'rejected', 'partial'}
+    if status and status not in valid:
+        status = None
+    if status is None:
+        if current_user.is_authenticated:
+            keyed = (current_user.id * 11 + 5) % 4
+        else:
+            keyed = 2  # default to rejected for anon (mirrors the most
+            # common task-able failure state without needing login)
+        status = ['approved', 'pending', 'partial', 'rejected'][keyed]
+    return render_template('financial_aid.html', status=status,
+                           reference_date='2026-05-01')
+
+
+# Partial credit transfer — when one Coursera course gives partial credit
+# towards another (e.g. finishing the Foundations course unlocks 20% of
+# the Advanced Specialization). Mirrors the "partial-credit-from-other-course"
+# scenario in the task brief.
+@app.route('/credit-transfer/<int:from_id>/<int:to_id>')
+def credit_transfer(from_id, to_id):
+    src = Course.query.get_or_404(from_id)
+    dst = Course.query.get_or_404(to_id)
+    # Deterministic credit percentage keyed on ids — between 10 and 50%.
+    pct = 10 + ((from_id * 7 + to_id * 13) % 9) * 5
+    transferable = (src.category == dst.category)
+    return render_template('credit_transfer.html',
+                           src=src, dst=dst, pct=pct,
+                           transferable=transferable)
+
+
+# Completion celebration / LinkedIn-share landing — the last step in the
+# canonical "complete the course → share it" navigation chain. Auth not
+# required so an agent can verify the share copy without logging in.
+@app.route('/learn/<slug>/linkedin-share')
+def course_linkedin_share(slug):
+    course = Course.query.filter_by(slug=slug).first_or_404()
+    return render_template('linkedin_share.html', course=course)
 
 # ─── Seed data ────────────────────────────────────────────────────────────────
 
@@ -3320,6 +3578,18 @@ with app.app_context():
     # the testimonials backfill covers v6 courses on the FIRST build.
     from seed_extras import seed_v6 as _seed_v6
     _seed_v6(db, {
+        'User': User, 'Partner': Partner, 'Course': Course,
+        'CourseModule': CourseModule, 'SubCourse': SubCourse,
+        'Enrollment': Enrollment, 'SavedCourse': SavedCourse,
+        'Review': Review,
+    })
+    # R6 polish: 2026 catalog (Sustainability / BioTech / FinTech /
+    # Cyber+PostQuantum / SpaceTech) — adds ~3500 deterministic courses
+    # across 5 fresh clusters and +27 partners. Must run BEFORE
+    # seed_testimonials_and_extras so the testimonials backfill covers v7
+    # courses on the FIRST build.
+    from seed_extras import seed_v7 as _seed_v7
+    _seed_v7(db, {
         'User': User, 'Partner': Partner, 'Course': Course,
         'CourseModule': CourseModule, 'SubCourse': SubCourse,
         'Enrollment': Enrollment, 'SavedCourse': SavedCourse,

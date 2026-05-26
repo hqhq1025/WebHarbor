@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block title %}Sign in again - Amazon.com{% endblock %}
+
+{% block content %}
+<div style="max-width:520px;margin:60px auto;padding:24px;background:#fff;border:1px solid #d5d9d9;border-radius:6px">
+    <h1 style="font-size:22px;margin:0 0 12px">Your session has expired</h1>
+    <p style="font-size:14px;color:#565959;line-height:1.5">
+        For your security, your sign-in session has timed out. Please sign in again to continue
+        where you left off.
+    </p>
+
+    <div style="background:#fff8e1;border:1px solid #f0c36d;color:#5a4400;padding:12px;border-radius:4px;margin:16px 0;font-size:13px" id="session-expired-banner">
+        <strong>Session expired (HTTP 401).</strong> Any unsaved changes have been discarded.
+        Your shopping cart for guest sessions has been cleared.
+    </div>
+
+    <div style="display:flex;gap:10px;margin-top:14px">
+        <a class="btn btn-orange" href="{{ url_for('login', next=next_url) }}">Sign in again</a>
+        <a class="btn btn-outline" href="{{ url_for('index') }}">Go to homepage</a>
+    </div>
+
+    <p style="font-size:12px;color:#767676;margin-top:18px">
+        Need help? Visit
+        <a href="{{ url_for('customer_service') }}" class="text-link">Customer Service</a>
+        or
+        <a href="{{ url_for('register') }}" class="text-link">create a new account</a>.
+    </p>
+</div>
+{% endblock %}

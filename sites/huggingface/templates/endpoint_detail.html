@@ -3,6 +3,26 @@
 
 {% block content %}
 <div class="container-wide page">
+    {# R6: deterministic quota-exceeded banner. md5(endpoint_id)[mod 10] == 0
+       triggers the banner so ~10% of endpoints surface the over-quota
+       state — agents can answer 'is this endpoint over quota?' by id alone. #}
+    {% set _ep_seed = ((endpoint.endpoint_id or endpoint.id|string) | hash_md5_int) %}
+    {% set _over_quota = (_ep_seed % 10) == 0 %}
+    {% if _over_quota %}
+    <div role="alert" id="quota-exceeded-banner"
+         style="margin: 0 0 14px; padding: 12px 16px; background: #fee2e2; border: 1px solid #f87171; border-radius: 8px;">
+        <strong style="color: #991b1b;">🚫 Quota exceeded.</strong>
+        <p style="margin: 6px 0 0; font-size: 13.5px;">
+            This endpoint has consumed all available inference hours for the
+            current billing cycle. The endpoint is rate-limited until the quota
+            resets on the 1st of next month, or you can upgrade the plan from
+            <a href="{{ url_for('pricing') }}">/pricing</a>.
+        </p>
+        <p style="margin: 6px 0 0; font-size: 12.5px;" class="muted">
+            Live status: <a href="/endpoints/{{ endpoint.id }}/quota">/endpoints/{{ endpoint.id }}/quota</a>
+        </p>
+    </div>
+    {% endif %}
     <div class="endpoint-head">
         <div>
             <h1>{{ endpoint.name }}</h1>

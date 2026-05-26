@@ -2458,6 +2458,20 @@ def repo_detail(username, reponame):
     user = User.query.filter_by(username=username).first_or_404()
     repo = Repository.query.filter_by(full_name=f"{username}/{reponame}").first_or_404()
     if not repo.is_public and (not current_user.is_authenticated or current_user.id != repo.owner_id):
+        # R6 edge: DMCA-takedown repos render a takedown notice instead
+        # of a generic 404 — tasks need a stable surface to assert on.
+        if _r6_has_sentinel(repo, 'dmca'):
+            return render_template('repo_detail.html', repo=repo, owner=user,
+                                   gallery=[], topics=repo.get_topics(),
+                                   recent_issues=[], is_starred=False,
+                                   is_watching=False, related=[],
+                                   open_count=0, open_pr_count=0,
+                                   commit_count=0,
+                                   latest_author=username,
+                                   dmca_taken_down=True,
+                                   owner_other_repos=[], used_by=[],
+                                   topic_related=[],
+                                   forkers_preview=[]), 451
         abort(404)
     gallery = repo.get_gallery()
     topics = repo.get_topics()
@@ -2470,6 +2484,37 @@ def repo_detail(username, reponame):
         Repository.id != repo.id,
         Repository.is_public == True
     ).order_by(Repository.stars_count.desc()).limit(4).all()
+    # R6: extra sidebar widgets.
+    owner_other_repos = (Repository.query
+                         .filter(Repository.owner_id == repo.owner_id,
+                                 Repository.id != repo.id,
+                                 Repository.is_public == True)
+                         .order_by(Repository.stars_count.desc())
+                         .limit(5).all())
+    # Topic-based "Related repos" — distinct from the language-based block.
+    topic_related = []
+    if topics:
+        primary_topic = next((t for t in topics if not t.startswith('_r6-')),
+                             topics[0])
+        topic_related = (Repository.query
+                         .filter(Repository.topics_text.like(f'%"{primary_topic}"%'),
+                                 Repository.id != repo.id,
+                                 Repository.is_public == True)
+                         .order_by(Repository.stars_count.desc())
+                         .limit(5).all())
+    # "Used by" — deterministic synthesis from repo.id. Pulls other repos
+    # from the same language family and pretends they depend on this one.
+    used_by_pool = (Repository.query
+                    .filter(Repository.language == repo.language,
+                            Repository.id != repo.id,
+                            Repository.is_public == True)
+                    .order_by(Repository.id.asc())
+                    .limit(120).all())
+    used_by = []
+    if used_by_pool:
+        for i in range(min(6, len(used_by_pool))):
+            used_by.append(used_by_pool[(repo.id * 13 + i * 17) % len(used_by_pool)])
+    used_by_total = max(0, (repo.stars_count or 0) // 11)
     # Live open-issue count so the Issues tab badge matches the
     # /issues page (which filters the issue table directly).
     open_count = repo.issues.filter_by(status='open', is_pr=0).count()
@@ -2477,6 +2522,11 @@ def repo_detail(username, reponame):
     all_commits = repo.get_commits()
     commit_count = len(all_commits) if all_commits else (1 if repo.latest_commit_sha else 0)
     latest_author = (all_commits[0].get('author') if all_commits else user.username)
+    # R6 edge flags exposed to template so it can render banners.
+    edge_archived_ro = _r6_has_sentinel(repo, 'archived-ro') or repo.is_archived
+    edge_branch_protected = _r6_has_sentinel(repo, 'branch-protected')
+    edge_action_failed = _r6_has_sentinel(repo, 'action-run-failed')
+    edge_pr_conflict = _r6_has_sentinel(repo, 'pr-conflict')
     return render_template('repo_detail.html', repo=repo, owner=user,
                            gallery=gallery, topics=topics,
                            recent_issues=recent_issues,
@@ -2484,7 +2534,14 @@ def repo_detail(username, reponame):
                            related=related, open_count=open_count,
                            open_pr_count=open_pr_count,
                            commit_count=commit_count,
-                           latest_author=latest_author)
+                           latest_author=latest_author,
+                           owner_other_repos=owner_other_repos,
+                           topic_related=topic_related,
+                           used_by=used_by, used_by_total=used_by_total,
+                           edge_archived_ro=edge_archived_ro,
+                           edge_branch_protected=edge_branch_protected,
+                           edge_action_failed=edge_action_failed,
+                           edge_pr_conflict=edge_pr_conflict)
 
 
 def _first_commit(repo, owner_username):
@@ -3072,6 +3129,28 @@ def fork_form(repo_id):
     repo = db.session.get(Repository, repo_id)
     if not repo or not repo.is_public:
         abort(404)
+    # R6 edge: fork-rate-limit demo repos reject with 429.
+    if _r6_has_sentinel(repo, 'fork-rate-limit'):
+        flash('Fork failed: you have hit the fork rate limit for this '
+              'account. Try again in a few minutes.', 'error')
+        return (render_template('repo_detail.html', repo=repo,
+                                owner=db.session.get(User, repo.owner_id),
+                                gallery=repo.get_gallery(),
+                                topics=repo.get_topics(),
+                                recent_issues=[], is_starred=False,
+                                is_watching=False, related=[],
+                                open_count=0, open_pr_count=0,
+                                commit_count=0,
+                                latest_author=repo.full_name.split('/')[0],
+                                fork_rate_limited=True),
+                429)
+    # R6 edge: archived repos are read-only.
+    if _r6_has_sentinel(repo, 'archived-ro') or repo.is_archived:
+        flash('This repository is archived and is read-only. Forking is '
+              'disabled.', 'error')
+        return redirect(url_for('repo_detail',
+                                username=repo.full_name.split('/')[0],
+                                reponame=repo.name))
     fork_name = f"{current_user.username}/{repo.name}"
     existing = Repository.query.filter_by(full_name=fork_name).first()
     if existing:
@@ -3733,10 +3812,17 @@ def _deterministic_workflow_runs(repo, branch='main', n=20):
                  'docs.yml', 'codeql.yml']
     statuses = ['success', 'success', 'success', 'failure',
                 'success', 'cancelled', 'success', 'success']
+    # R6 edge: pin the latest run on main to a failure for the
+    # action-run-failed demo repos so the Actions tab + run page
+    # consistently surface the failed state tasks reference.
+    force_first_failure = _r6_has_sentinel(repo, 'action-run-failed')
     out = []
     for i in range(n):
         wf = workflows[(repo.id * 3 + i * 7) % len(workflows)]
         status = statuses[(repo.id + i * 5) % len(statuses)]
+        if force_first_failure and i == 0:
+            status = 'failure'
+            wf = 'ci.yml'
         ts = base - timedelta(hours=i * 4 + (repo.id % 8))
         duration_s = 30 + ((repo.id * 11 + i * 17) % 540)
         sha = hashlib.sha1(f"{repo.full_name}|run|{i}".encode()).hexdigest()
@@ -3897,6 +3983,31 @@ def repo_network(username, reponame):
     return render_template('repo_network.html', repo=repo, forkers=forkers)
 
 
+@app.route('/<username>/<reponame>/network/dependents')
+def repo_network_dependents(username, reponame):
+    """R6: 'Used by' / dependents listing. Deterministic synthesis from
+    other repos in the same language family; not stored on disk."""
+    repo = _require_repo(username, reponame)
+    pool = (Repository.query
+            .filter(Repository.language == repo.language,
+                    Repository.id != repo.id,
+                    Repository.is_public == True)
+            .order_by(Repository.id.asc())
+            .limit(300).all())
+    seen = set()
+    dependents = []
+    for i in range(min(60, len(pool))):
+        idx = (repo.id * 13 + i * 17) % len(pool)
+        if idx in seen:
+            continue
+        seen.add(idx)
+        dependents.append(pool[idx])
+    total = max(len(dependents), (repo.stars_count or 0) // 11)
+    return render_template('repo_network.html', repo=repo, forkers=[],
+                           dependents=dependents, dependents_total=total,
+                           dependents_view=True)
+
+
 def _blame_lines_for(repo, file_path):
     """Build a deterministic 'blame' for a fake file inside a repo."""
     body_templates = {
@@ -4012,11 +4123,13 @@ def repo_branches(username, reponame):
     for p in pulls:
         if p.pr_head_branch:
             branch_names.add(p.pr_head_branch)
+    protected = _r6_has_sentinel(repo, 'branch-protected')
     branches = []
     for i, name in enumerate(sorted(branch_names)):
         branches.append({
             'name': name,
             'is_default': name == base,
+            'is_protected': protected and name == base,
             'last_commit_sha': hashlib.sha1(
                 f"{repo.full_name}|branch|{name}".encode()).hexdigest()[:7],
             'last_pushed_at': _BULK_REF - timedelta(days=(repo.id + i) % 200),
@@ -4078,7 +4191,34 @@ def codespaces_index():
 @app.route('/<username>/<reponame>/codespaces/new')
 def codespaces_new(username, reponame):
     repo = _require_repo(username, reponame)
-    return render_template('codespaces_new.html', repo=repo)
+    quota_exceeded = _r6_has_sentinel(repo, 'codespace-quota')
+    return render_template('codespaces_new.html', repo=repo,
+                           quota_exceeded=quota_exceeded)
+
+
+@app.route('/<username>/<reponame>/branches/<branch>/push', methods=['GET', 'POST'])
+def repo_branch_push_check(username, reponame, branch):
+    """R6 edge: branch-protection demo. POSTing here represents attempting
+    a direct push to <branch>. For repos with the branch-protected sentinel
+    AND for `branch` == default branch, this 403s and renders a notice;
+    for everything else it redirects back to /branches as a no-op.
+
+    This is intentionally a synthetic route — the mirror doesn't model real
+    git push, but tasks need a discoverable surface to assert the failure
+    mode on."""
+    repo = _require_repo(username, reponame)
+    is_protected = (_r6_has_sentinel(repo, 'branch-protected')
+                    and branch == (repo.default_branch or 'main'))
+    if is_protected:
+        msg = (f"Branch `{branch}` is protected. Direct pushes are not "
+               f"allowed; open a pull request that targets `{branch}` and "
+               f"wait for at least one approving review.")
+        return render_template('repo_branches.html', repo=repo,
+                               branches=[{'name': branch, 'is_default': True,
+                                          'is_protected': True}],
+                               protection_error=msg), 403
+    return redirect(url_for('repo_branches', username=username,
+                            reponame=reponame))
 
 
 @app.route('/copilot')
@@ -6511,6 +6651,435 @@ def seed_r5_extra_pulls():
     return added
 
 
+# ─────────────────────────── R6 Polish ───────────────────────────
+# Iteration 6: grow catalog 18200 → 25000+, mint additional cross-page
+# task scaffolding (Related repos by topic, Owner's other repos, Used-by
+# dependency synthesis, expanded Forks list, breadcrumb everywhere), and
+# add seven "edge state" repo variants encoded via sentinel topic slugs:
+#
+#   _r6-edge-archived-ro            archived, read-only (write paths refuse)
+#   _r6-edge-branch-protected       direct push / non-PR changes blocked
+#   _r6-edge-pr-conflict            PR list contains a "needs conflict
+#                                   resolution" entry (rendered via
+#                                   /pull/<n>/conflicts which already exists)
+#   _r6-edge-action-run-failed      Actions tab pin a failure run
+#   _r6-edge-codespace-quota        /codespaces/new returns quota-exceeded
+#   _r6-edge-dmca                   repo detail returns "DMCA Takedown" page
+#   _r6-edge-fork-rate-limit        fork POST returns 429
+#
+# All edge state is encoded in topics_text (JSON list, no schema change).
+# Helpers below read it; routes early-exit accordingly.
+
+_R6_REPO_TARGET = 25000
+_R6_REPO_SUFFIXES = [
+    'kernel', 'mesh', 'broker', 'shard', 'replicator', 'sidecar', 'proxy',
+    'tunnel', 'controller', 'manager', 'orchestrator', 'optimizer',
+    'discovery', 'registry', 'audit', 'rotator', 'rate-limit',
+    'feature-flags', 'experiments', 'rollouts', 'telemetry-collector',
+    'log-shipper', 'event-bus', 'state-store', 'leader-election',
+    'consensus', 'snapshot-restore', 'health-prober', 'sampler', 'lineage',
+]
+_R6_REPO_DESC = [
+    "{a} subsystem extracted from {org}'s production stack — zero-deps, "
+    "well-tested, ready to drop in.",
+    "Hardened {a} layer with property-based tests and a stable wire format. "
+    "Used in {org}'s critical path.",
+    "Production-grade {a} component with backpressure, retries, and "
+    "first-class observability hooks.",
+    "Composable {a} primitive — pairs with the rest of the {org} stack but "
+    "stands on its own.",
+    "Self-hosted {a} reference implementation with conformance suite and "
+    "load-test harness.",
+    "Edge-aware {a} engine optimised for partial connectivity and noisy "
+    "links; built for {org}'s field deployments.",
+    "Schema-evolving {a} core that survives breaking changes without "
+    "downstream churn.",
+    "Predictable {a} runtime — bounded latency, no GC pauses on the hot path.",
+]
+_R6_README_BANK = [
+    "# {full}\n\n> {desc}\n\n## Why\n\n- {feature1}\n- {feature2}\n- "
+    "Designed to compose with the rest of {org}'s open-source surface.\n\n"
+    "## Install\n\n```bash\n{cmd}\n```\n\n## Quickstart\n\nSee "
+    "`examples/{area}-basic` for a 30-line walkthrough. The hot path is "
+    "intentionally small and boring — most of the code lives in the "
+    "extension surface.\n\n## License\n\n{license_} — matches the rest of "
+    "the {org} ecosystem.\n",
+    "# {full}\n\n{desc}\n\nStatus: **stable**, currently on v{maj}.{min}. "
+    "Used in production by {org} and adopters listed in `USERS.md`.\n\n"
+    "## Highlights\n\n- {feature1}\n- {feature2}\n- Backwards-compatible "
+    "since v{maj}.0 — see `docs/compat.md` for the policy.\n\n## "
+    "Architecture\n\nThe {area} pipeline is single-writer; readers fan out "
+    "via copy-on-write snapshots. Full diagram in `docs/architecture.svg`.\n",
+]
+_R6_FEATURE_BANK = [
+    "Lock-free hot path with bounded p99",
+    "Built-in chaos hooks (latency / drop / corrupt)",
+    "Zero-allocation steady state",
+    "Schema migrations via append-only deltas",
+    "First-class replay and time-travel debugging",
+    "Cooperative shutdown with deadline propagation",
+    "Pluggable codec layer (json / msgpack / cbor / proto)",
+    "Adaptive batching tuned by downstream pressure",
+    "Configurable failure injection for fuzz tests",
+    "Snapshot-restore that survives partial corruption",
+]
+_R6_INSTALL_BANK = {
+    'Python': 'pip install {name}',
+    'JavaScript': 'npm install {name}',
+    'TypeScript': 'pnpm add {name}',
+    'Go': 'go get github.com/{full}',
+    'Rust': 'cargo add {name}',
+    'Java': 'mvn dependency:get -Dartifact=com.{org}:{name}:LATEST',
+    'Ruby': 'gem install {name}',
+    'Kotlin': 'gradle dependencies --add {name}',
+    'Swift': 'swift package add {name}',
+    'C#': 'dotnet add package {name}',
+}
+
+
+def _r6_hash(*parts) -> int:
+    """Stable cross-process SHA-1 hash — mirrors _r4_hash / _r5_hash."""
+    key = '|'.join(str(p) for p in parts)
+    return int(hashlib.sha1(key.encode()).hexdigest()[:10], 16)
+
+
+# Sentinel topic slugs for the seven R6 edge states.
+_R6_EDGE_KINDS = (
+    'archived-ro', 'branch-protected', 'pr-conflict', 'action-run-failed',
+    'codespace-quota', 'dmca', 'fork-rate-limit',
+)
+
+
+def _r6_sentinel(kind: str) -> str:
+    return f'_r6-edge-{kind}'
+
+
+def _r6_has_sentinel(repo, kind: str) -> bool:
+    """True if `kind` is in this repo's topics_text JSON array."""
+    if repo is None:
+        return False
+    try:
+        topics = json.loads(repo.topics_text or '[]')
+    except Exception:
+        return False
+    return _r6_sentinel(kind) in topics
+
+
+def seed_r6_user_repos():
+    """Grow the catalog from 18200 → 25000 with R6-flavoured repos under
+    existing owners. Deterministic via SHA-1 of (owner.username, slot).
+    Idempotent: stops once total repo count ≥ _R6_REPO_TARGET."""
+    have = Repository.query.count()
+    if have >= _R6_REPO_TARGET:
+        return 0
+
+    owners = (User.query
+              .join(Repository, Repository.owner_id == User.id)
+              .order_by(User.username.asc())
+              .distinct()
+              .all())
+    if not owners:
+        return 0
+
+    existing_full = {r.full_name for r in
+                     Repository.query.with_entities(Repository.full_name).all()}
+    topic_by_slug = {t.slug: t for t in Topic.query.all()}
+
+    topics_pool = [
+        'platform-engineering', 'distributed-systems', 'reliability',
+        'load-balancing', 'service-mesh', 'caching', 'queueing',
+        'consensus', 'replication', 'scheduling', 'cli', 'sdk',
+        'devtools', 'production-ready', 'observability', 'tracing',
+        'sre', 'incident-response', 'data-pipeline', 'streaming',
+        'storage-engine', 'embeddings', 'inference', 'agents',
+        'workflow', 'event-driven', 'state-machines', 'rust', 'go',
+    ]
+
+    added = 0
+    # Each owner can take up to ~70 R6 repos before we move on.
+    for slot in range(len(_R6_REPO_SUFFIXES)):
+        if have + added >= _R6_REPO_TARGET:
+            break
+        for owner in owners:
+            if have + added >= _R6_REPO_TARGET:
+                break
+            existing_for_owner = sum(1 for fn in existing_full
+                                     if fn.startswith(owner.username + '/'))
+            if existing_for_owner >= 70:
+                continue
+            suffix = _R6_REPO_SUFFIXES[
+                (slot + _r6_hash(owner.username)) % len(_R6_REPO_SUFFIXES)]
+            base_name = f"r6-{suffix}-{slot}"
+            full = f"{owner.username}/{base_name}"
+            if full in existing_full:
+                base_name = (
+                    f"r6-{suffix}-{slot}-{_r6_hash(owner.username, slot) % 9999}")
+                full = f"{owner.username}/{base_name}"
+                if full in existing_full:
+                    continue
+            h = _r6_hash(full)
+            lang = _R4_LANG_POOL[h % len(_R4_LANG_POOL)]
+            area = ['routing', 'storage', 'transport', 'consensus',
+                    'replication', 'observability', 'auth', 'rate-limit',
+                    'config', 'scheduling'][(h >> 3) % 10]
+            desc = _R6_REPO_DESC[(h >> 5) % len(_R6_REPO_DESC)].format(
+                a=area, org=owner.username)[:255]
+            feature1 = _R6_FEATURE_BANK[(h >> 7) % len(_R6_FEATURE_BANK)]
+            feature2 = _R6_FEATURE_BANK[(h >> 11) % len(_R6_FEATURE_BANK)]
+            install_tmpl = _R6_INSTALL_BANK.get(lang, 'cargo install {name}')
+            cmd = install_tmpl.format(name=base_name, full=full,
+                                      org=owner.username.lower())
+            license_ = _R4_LICENSE_BAND[(h >> 6) % len(_R4_LICENSE_BAND)]
+            readme = _R6_README_BANK[(h >> 13) % len(_R6_README_BANK)].format(
+                full=full, desc=desc, org=owner.username, area=area,
+                feature1=feature1, feature2=feature2,
+                cmd=cmd, license_=license_,
+                maj=1 + (h % 5), min=(h >> 2) % 20)
+
+            default_branch = _R4_BRANCH_BAND[(h >> 8) % len(_R4_BRANCH_BAND)]
+            stars = 5 + (h % 2400)
+            forks = max(0, stars // (3 + (h % 6)))
+            watchers = max(1, stars // 4)
+            open_issues = (h >> 4) % 12
+            is_archived = ((h >> 9) % 16 == 0)
+
+            topic_slugs = []
+            for k in range(3 + (h % 3)):
+                ts = topics_pool[(h * 7 + k * 19) % len(topics_pool)]
+                if ts not in topic_slugs:
+                    topic_slugs.append(ts)
+
+            created = _BULK_REF - timedelta(days=160 + (h % 1400),
+                                            hours=(h >> 4) % 24)
+            pushed = _BULK_REF - timedelta(days=(h % 180),
+                                           hours=(h >> 5) % 24)
+            updated = pushed
+            sha = hashlib.sha1(f"r6|{full}".encode()).hexdigest()
+
+            repo = Repository(
+                owner_id=owner.id,
+                name=base_name,
+                full_name=full,
+                description=desc,
+                language=lang,
+                license=license_,
+                stars_count=stars,
+                forks_count=forks,
+                watchers_count=watchers,
+                open_issues_count=open_issues,
+                is_public=True,
+                is_fork=False,
+                is_template=((h >> 12) % 30 == 0),
+                is_archived=is_archived,
+                has_readme=True,
+                has_wiki=((h >> 3) % 4 == 0),
+                has_issues=True,
+                owner_type='organization' if (h >> 14) % 3 == 0 else 'user',
+                default_branch=default_branch,
+                size_kb=160 + (h % 22000),
+                readme=readme,
+                topics_text=json.dumps(topic_slugs),
+                gallery_json='[]',
+                created_at=created,
+                updated_at=updated,
+                pushed_at=pushed,
+                latest_release_version=(
+                    f"v{1 + (h % 6)}.{(h >> 2) % 24}.{(h >> 4) % 20}"),
+                latest_release_date=pushed - timedelta(days=8 + (h % 70)),
+                latest_release_notes=(
+                    f"R6 polish on the {area} subsystem: tighter invariants, "
+                    "new property tests, and a couple of perf wins. "
+                    "See CHANGELOG."),
+                latest_commit_sha=sha,
+                latest_commit_message=(
+                    f"Harden {area} guards and prune dead branches ({base_name})"),
+                latest_commit_date=pushed,
+                latest_commit_additions=24 + (h % 320),
+                latest_commit_deletions=8 + ((h >> 1) % 160),
+            )
+            db.session.add(repo)
+            db.session.flush()
+            for slug in topic_slugs:
+                t = topic_by_slug.get(slug)
+                if t is not None:
+                    repo.topics.append(t)
+            existing_full.add(full)
+            added += 1
+            if added % 1000 == 0:
+                db.session.commit()
+    db.session.commit()
+    return added
+
+
+_R6_EDGE_LAB_OWNER = 'r6lab'  # synthesized organisation hosting the edge fleet
+
+
+def seed_r6_edge_repos():
+    """Mint ~14 named edge-state repos (2 per kind) under a dedicated
+    organisation `r6lab` so tasks can deterministically reference them.
+    Idempotent — bails if the org already has its edge repos."""
+    org = User.query.filter_by(username=_R6_EDGE_LAB_OWNER).first()
+    if org is None:
+        org = User(
+            username=_R6_EDGE_LAB_OWNER,
+            email=f'{_R6_EDGE_LAB_OWNER}@r6lab.test',
+            name='R6 Edge Lab',
+            bio='Edge-state mirror lab — every repo demonstrates one '
+                'documented GitHub failure mode.',
+            location='Mirror Cluster',
+            avatar='/static/images/avatars/avatar_05.jpg',
+            plan='enterprise',
+            created_at=_BULK_REF - timedelta(days=900),
+        )
+        org.password_hash = PINNED_PASSWORD_HASH_BULK
+        db.session.add(org)
+        db.session.flush()
+
+    # Already minted?
+    have = Repository.query.filter_by(owner_id=org.id).count()
+    if have >= len(_R6_EDGE_KINDS) * 2:
+        return 0
+
+    topic_by_slug = {t.slug: t for t in Topic.query.all()}
+    # Make sure every sentinel topic actually exists so /topics/<slug> works.
+    for kind in _R6_EDGE_KINDS:
+        slug = _r6_sentinel(kind)
+        if slug not in topic_by_slug:
+            t = Topic(slug=slug,
+                      display_name=f'Edge: {kind}',
+                      description=f'R6 edge-state demo: {kind}',
+                      short_desc=f'Edge state: {kind}',
+                      is_featured=False)
+            db.session.add(t)
+            db.session.flush()
+            topic_by_slug[slug] = t
+
+    added = 0
+    for kind in _R6_EDGE_KINDS:
+        for variant in (0, 1):
+            base = f'edge-{kind}-{variant}'
+            full = f'{org.username}/{base}'
+            if Repository.query.filter_by(full_name=full).first():
+                continue
+            h = _r6_hash('edge', kind, variant)
+            lang = _R4_LANG_POOL[h % len(_R4_LANG_POOL)]
+            desc = {
+                'archived-ro': ('This repository is archived and is now '
+                                'read-only. Issues / PRs / pushes are '
+                                'disabled.'),
+                'branch-protected': ('Demo: `main` is protected. Direct '
+                                     'pushes and non-reviewed merges are '
+                                     'rejected.'),
+                'pr-conflict': ('Demo: the open PR cannot be merged — '
+                                'conflicts must be resolved first.'),
+                'action-run-failed': ('Demo: the latest workflow run on '
+                                      '`main` failed; logs available under '
+                                      'the Actions tab.'),
+                'codespace-quota': ('Demo: opening a codespace on this repo '
+                                    'exceeds the account quota.'),
+                'dmca': ('This repository is unavailable due to a DMCA '
+                         'takedown notice.'),
+                'fork-rate-limit': ('Demo: forking this repository is '
+                                    'temporarily rate-limited.'),
+            }[kind]
+            topic_slugs = [_r6_sentinel(kind), 'edge-cases', 'demo']
+            is_archived = (kind == 'archived-ro')
+            is_public = (kind != 'dmca')
+            created = _BULK_REF - timedelta(days=500 + h % 200)
+            pushed = _BULK_REF - timedelta(days=4 + h % 30)
+            sha = hashlib.sha1(f"r6edge|{full}".encode()).hexdigest()
+            repo = Repository(
+                owner_id=org.id,
+                name=base,
+                full_name=full,
+                description=desc[:255],
+                language=lang,
+                license='MIT',
+                stars_count=40 + (h % 800),
+                forks_count=3 + (h % 60),
+                watchers_count=10 + (h % 90),
+                open_issues_count=2 + (h % 5),
+                is_public=is_public,
+                is_fork=False,
+                is_template=False,
+                is_archived=is_archived,
+                has_readme=True,
+                has_wiki=False,
+                has_issues=(not is_archived),
+                owner_type='organization',
+                default_branch='main',
+                size_kb=400 + (h % 4000),
+                readme=(f"# {full}\n\n> {desc}\n\n"
+                        "This is a deliberately broken-state demo repo. "
+                        "WebVoyager tasks reference it to exercise the "
+                        "matching failure path in the GitHub mirror.\n"),
+                topics_text=json.dumps(topic_slugs),
+                gallery_json='[]',
+                created_at=created,
+                updated_at=pushed,
+                pushed_at=pushed,
+                latest_release_version='v0.9.0',
+                latest_release_date=pushed - timedelta(days=12),
+                latest_release_notes=(
+                    f"Pre-release; demonstrates the `{kind}` failure mode."),
+                latest_commit_sha=sha,
+                latest_commit_message=(
+                    f"docs: explain the {kind} edge case"),
+                latest_commit_date=pushed,
+                latest_commit_additions=20 + (h % 80),
+                latest_commit_deletions=4 + (h % 30),
+            )
+            db.session.add(repo)
+            db.session.flush()
+            for slug in topic_slugs:
+                t = topic_by_slug.get(slug)
+                if t is None and slug == 'edge-cases':
+                    t = Topic(slug='edge-cases', display_name='Edge Cases',
+                              description='Demonstrations of repo failure modes',
+                              short_desc='Edge cases',
+                              is_featured=False)
+                    db.session.add(t)
+                    db.session.flush()
+                    topic_by_slug[slug] = t
+                elif t is None and slug == 'demo':
+                    t = Topic(slug='demo', display_name='Demo',
+                              description='Demonstration repositories',
+                              short_desc='Demo', is_featured=False)
+                    db.session.add(t)
+                    db.session.flush()
+                    topic_by_slug[slug] = t
+                if t is not None:
+                    repo.topics.append(t)
+            # If this is the pr-conflict variant, mint a PR row so
+            # /pull/<n>/conflicts has something to resolve.
+            if kind == 'pr-conflict':
+                pr = Issue(
+                    repo_id=repo.id,
+                    author_id=org.id,
+                    number=1,
+                    title='feat(core): switch internal codec to msgpack',
+                    body=('This PR migrates the wire format to msgpack. '
+                          'There are merge conflicts in `src/codec.py` '
+                          'and `README.md` that need resolution before '
+                          'merge.'),
+                    status='open',
+                    labels_json=json.dumps(['enhancement', 'needs-resolution']),
+                    created_at=pushed - timedelta(days=3),
+                    closed_at=None,
+                    is_pr=1,
+                    pr_head_branch='feat/msgpack-codec',
+                    pr_base_branch='main',
+                    pr_changed_files=2,
+                    pr_additions=84,
+                    pr_deletions=37,
+                    pr_commits_count=4,
+                )
+                db.session.add(pr)
+            added += 1
+    db.session.commit()
+    return added
+
+
 def normalize_seed_db_layout(dirty: bool = False):
     """Re-emit indexes in alpha order + VACUUM so seed rebuilds match
     byte-for-byte across processes (see harden-env/gotchas.md #2).
@@ -6619,10 +7188,14 @@ def create_app():
         c1b = seed_extra_commits() or 0
         c10 = seed_r5_topup_commits() or 0
         c11 = seed_r5_extra_pulls() or 0
+        # R6: edge-state lab + 6800 more catalog repos.
+        c12 = seed_r6_edge_repos() or 0
+        c13 = seed_r6_user_repos() or 0
+        c1c = seed_extra_commits() or 0
         ct = post_seed_tweaks() or 0
         normalize_seed_db_layout(
-            dirty=(c0 + c1 + c1b + c2 + c3 + c4 + c5 + c6 + c7 + c8
-                   + c9 + c10 + c11 + ct) > 0)
+            dirty=(c0 + c1 + c1b + c1c + c2 + c3 + c4 + c5 + c6 + c7 + c8
+                   + c9 + c10 + c11 + c12 + c13 + ct) > 0)
     return app
 
 
@@ -6652,10 +7225,14 @@ with app.app_context():
         c1b = seed_extra_commits() or 0
         c10 = seed_r5_topup_commits() or 0
         c11 = seed_r5_extra_pulls() or 0
+        # R6
+        c12 = seed_r6_edge_repos() or 0
+        c13 = seed_r6_user_repos() or 0
+        c1c = seed_extra_commits() or 0
         ct = post_seed_tweaks() or 0
         normalize_seed_db_layout(
-            dirty=(c0 + c1 + c1b + c2 + c3 + c4 + c5 + c6 + c7 + c8
-                   + c9 + c10 + c11 + ct) > 0)
+            dirty=(c0 + c1 + c1b + c1c + c2 + c3 + c4 + c5 + c6 + c7 + c8
+                   + c9 + c10 + c11 + c12 + c13 + ct) > 0)
         ct = post_seed_tweaks() or 0
         normalize_seed_db_layout(
             dirty=(c0 + c1 + c2 + c3 + c4 + c5 + c6 + c7 + c8 + ct) > 0)

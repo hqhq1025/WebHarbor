@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block title %}Notebook quota exceeded{% endblock %}
+{% block body_class %}page-edge-notebook-quota{% endblock %}
+{% block content %}
+<div class="section-inner" style="padding: 40px 20px;">
+  <div class="edge-card edge-card--quota">
+    <span class="edge-eyebrow">NOTEBOOK LIMIT REACHED</span>
+    <h1 class="edge-title">{{ nb.title }} is at capacity</h1>
+    <p class="edge-sub">Your notebook has {{ entry_count }} entries (free-plan cap: {{ free_limit }}). Pro accounts have unlimited notebook entries.</p>
+
+    <div class="edge-progress">
+      <div class="edge-progress-bar">
+        <div class="edge-progress-fill" style="width: 100%"></div>
+      </div>
+      <div class="edge-progress-label">{{ entry_count }} / {{ free_limit }} entries</div>
+    </div>
+
+    <div class="edge-actions">
+      {% if not is_pro %}
+      <a href="{{ pro_url }}" class="edge-cta-primary">Upgrade to Pro for unlimited notebooks</a>
+      {% endif %}
+      <a href="/notebook/{{ nb.id }}" class="edge-cta-secondary">Manage existing entries</a>
+      <a href="/notebooks" class="edge-cta-link">All notebooks</a>
+    </div>
+
+    <p class="edge-help">Tip: You can move entries between notebooks, or rename and archive. Pro removes this limit entirely.</p>
+  </div>
+</div>
+{% endblock %}

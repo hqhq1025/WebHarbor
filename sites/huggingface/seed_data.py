@@ -637,16 +637,19 @@ def _load_scraped():
         ("models",   "hf_models_more.json"),
         ("models",   "hf_models_r3.json"),
         ("models",   "hf_models_r4.json"),
+        ("models",   "hf_models_r6.json"),
         ("datasets", "hf_datasets.json"),
         ("datasets", "hf_datasets_likes.json"),
         ("datasets", "hf_datasets_more.json"),
         ("datasets", "hf_datasets_r3.json"),
         ("datasets", "hf_datasets_r4.json"),
+        ("datasets", "hf_datasets_r6.json"),
         ("spaces",   "hf_spaces.json"),
         ("spaces",   "hf_spaces_recent.json"),
         ("spaces",   "hf_spaces_more.json"),
         ("spaces",   "hf_spaces_r3.json"),
         ("spaces",   "hf_spaces_r4.json"),
+        ("spaces",   "hf_spaces_r6.json"),
     ]
     for kind, fname in supplementary:
         p = ROOT / "scraped_data" / fname
@@ -668,11 +671,11 @@ def _load_scraped():
             seen[kind].add(adapted["slug"])
             base[kind].append(adapted)
 
-    # R5: lift caps so total repos clear 80k (model 35k+, dataset 38k+,
-    # space 6k+). Scraped pools already exceed these — see
-    # scraped_data/*.json totals (models ~37k, datasets ~44k, spaces ~23k).
-    # First N entries survive (alpha-sorted above), so rebuilds are byte-stable.
-    CAPS = {"models": 36000, "datasets": 39000, "spaces": 6500}
+    # R6: lift caps so total repos clear 115k (model 45k+, dataset 50k+,
+    # space 22k+). Scraped pools post-R6 fetch exceed these — see
+    # scraped_data/*.json totals. First N entries survive (alpha-sorted
+    # above), so rebuilds are byte-stable.
+    CAPS = {"models": 50000, "datasets": 55000, "spaces": 22000}
     for k, cap in CAPS.items():
         if len(base[k]) > cap:
             base[k] = base[k][:cap]

@@ -381,6 +381,145 @@ def inject_cart_count():
     return {'cart_count': count, 'csrf_token_value': generate_csrf()}
 
 
+# R6 — Breadcrumb + "Why people compare" + "You may also like" injected globally.
+_R6_CATEGORY_LABELS = {
+    'iphone': ('iPhone', '/iphone'),
+    'mac': ('Mac', '/mac'),
+    'ipad': ('iPad', '/ipad'),
+    'watch': ('Apple Watch', '/watch'),
+    'airpods': ('AirPods', '/airpods'),
+    'accessories': ('Accessories', '/accessories'),
+    'vision': ('Apple Vision Pro', '/vision-pro'),
+    'tv': ('Apple TV', '/tv-home'),
+    'homepod': ('HomePod', '/accessories'),
+    'audio': ('Audio', '/airpods'),
+}
+
+_R6_WHY_COMPARE_HINTS = {
+    'iphone': [
+        'Pro models offer the A19 Pro chip and 48MP telephoto camera; standard models keep the A18 with a dual-camera system.',
+        'Battery life ranges from 28 hours (iPhone 17) to 39 hours (iPhone 17 Pro Max) — a 39% difference on heavy video use.',
+        'Display sizes step from 6.1" (iPhone 17) to 6.9" (Pro Max) — pick the size that fits your daily carry.',
+        'iPhone Air is the thinnest iPhone ever; trade some camera reach for a lighter pocket profile.',
+    ],
+    'mac': [
+        'MacBook Air is fanless and silent; MacBook Pro adds active cooling to sustain peak performance for long renders.',
+        'M3 Pro / M3 Max unlock the GPU horsepower for 8K ProRes editing and ML training — M3 base is plenty for everyday work.',
+        '13-inch favors portability; 14-inch / 16-inch favor screen real estate, speakers, and battery capacity.',
+    ],
+    'ipad': [
+        'iPad Pro M5 supports Apple Pencil Pro hover + ProMotion 120Hz; iPad and iPad Air keep 60Hz with simpler stylus support.',
+        'Cellular variants add eSIM + Find My over LTE/5G — pick Wi-Fi if you mostly tether to iPhone.',
+        'Magic Keyboard upgrades make iPad Pro a near-laptop; iPad mini stays at the Smart Folio tier.',
+    ],
+    'watch': [
+        'Apple Watch Ultra 3 adds dive computer + dual-frequency GPS and the largest battery (36-hour with low-power mode).',
+        'Series 11 adds Sleep Apnea + Hypertension notifications; SE 2 trades these for a $200 price reduction.',
+        'Aluminum vs Stainless Steel vs Titanium changes both weight and finish — pick by sweat and daily wear, not just looks.',
+    ],
+    'airpods': [
+        'AirPods Pro 3 add hearing-aid mode, Hearing Health check, and adaptive ANC tuned for your ear shape.',
+        'AirPods Max 2 offer over-ear comfort + Lossless audio over USB-C; AirPods 4 trade noise cancellation for open-fit comfort.',
+        'AirPods 4 with ANC sits between AirPods 4 standard and AirPods Pro 3 on noise reduction.',
+    ],
+}
+
+
+@app.context_processor
+def inject_r6_context():
+    """Inject R6 breadcrumb, why-people-compare, and you-may-also-like data
+    into every page render. Safe to read on routes that ignore them."""
+    try:
+        path = (request.path or '/').rstrip('/') or '/'
+    except Exception:
+        return {}
+    crumbs = [{'label': 'Apple', 'url': '/'}]
+    why_compare = None
+    you_may_like = None
+    # /product/<slug>
+    if path.startswith('/product/'):
+        slug = path.rsplit('/', 1)[-1]
+        try:
+            p = Product.query.filter_by(slug=slug).first()
+        except Exception:
+            p = None
+        if p:
+            cat_label, cat_url = _R6_CATEGORY_LABELS.get(p.category, (p.category.capitalize(), '/shop'))
+            crumbs.append({'label': cat_label, 'url': cat_url})
+            crumbs.append({'label': p.name, 'url': f'/product/{p.slug}'})
+            why_compare = _R6_WHY_COMPARE_HINTS.get(p.category)
+            try:
+                related = (Product.query.filter_by(category=p.category)
+                                  .filter(Product.id != p.id)
+                                  .order_by(Product.is_featured.desc(), Product.price.desc())
+                                  .limit(4).all())
+                you_may_like = [{'name': r.name, 'url': f'/product/{r.slug}', 'price': r.price}
+                                for r in related]
+            except Exception:
+                you_may_like = None
+    elif path.startswith('/compare/'):
+        cat = path.rsplit('/', 1)[-1]
+        cat_label, cat_url = _R6_CATEGORY_LABELS.get(cat, (cat.capitalize(), '/shop'))
+        crumbs.append({'label': cat_label, 'url': cat_url})
+        crumbs.append({'label': f'Compare {cat_label}', 'url': f'/compare/{cat}'})
+        why_compare = _R6_WHY_COMPARE_HINTS.get(cat)
+    elif path.startswith('/iphone'):
+        crumbs.append({'label': 'iPhone', 'url': '/iphone'})
+        why_compare = _R6_WHY_COMPARE_HINTS.get('iphone')
+    elif path.startswith('/mac'):
+        crumbs.append({'label': 'Mac', 'url': '/mac'})
+        why_compare = _R6_WHY_COMPARE_HINTS.get('mac')
+    elif path.startswith('/ipad'):
+        crumbs.append({'label': 'iPad', 'url': '/ipad'})
+        why_compare = _R6_WHY_COMPARE_HINTS.get('ipad')
+    elif path.startswith('/watch'):
+        crumbs.append({'label': 'Apple Watch', 'url': '/watch'})
+        why_compare = _R6_WHY_COMPARE_HINTS.get('watch')
+    elif path.startswith('/airpods'):
+        crumbs.append({'label': 'AirPods', 'url': '/airpods'})
+        why_compare = _R6_WHY_COMPARE_HINTS.get('airpods')
+    elif path.startswith('/shop/refurbished'):
+        crumbs.append({'label': 'Shop', 'url': '/shop'})
+        crumbs.append({'label': 'Refurbished', 'url': '/shop/refurbished'})
+    elif path.startswith('/shop'):
+        crumbs.append({'label': 'Shop', 'url': '/shop'})
+    elif path.startswith('/accessories'):
+        crumbs.append({'label': 'Accessories', 'url': '/accessories'})
+    elif path.startswith('/support'):
+        crumbs.append({'label': 'Support', 'url': '/support'})
+    elif path.startswith('/trade-in'):
+        crumbs.append({'label': 'Apple Trade In', 'url': '/trade-in'})
+    elif path.startswith('/retail'):
+        crumbs.append({'label': 'Apple Retail', 'url': '/retail'})
+    elif path.startswith('/today'):
+        crumbs.append({'label': 'Today at Apple', 'url': '/today'})
+    elif path.startswith('/applecare'):
+        crumbs.append({'label': 'AppleCare+', 'url': '/applecare'})
+    elif path.startswith('/repair'):
+        crumbs.append({'label': 'Repair', 'url': '/repair/status'})
+    elif path.startswith('/gift-card'):
+        crumbs.append({'label': 'Apple Gift Card', 'url': '/gift-card'})
+    elif path.startswith('/notify-arrival'):
+        crumbs.append({'label': 'Notify When Available', 'url': path})
+    elif path.startswith('/configure'):
+        crumbs.append({'label': 'Configure', 'url': path})
+    elif path.startswith('/wallet'):
+        crumbs.append({'label': 'Apple Wallet', 'url': '/wallet/add'})
+    elif path.startswith('/family-sharing'):
+        crumbs.append({'label': 'Family Sharing', 'url': '/family-sharing'})
+    elif path.startswith('/find-my'):
+        crumbs.append({'label': 'Find My', 'url': '/find-my'})
+    elif path == '/':
+        crumbs = None
+    if crumbs and len(crumbs) < 2:
+        crumbs = None  # don't show "Apple >" alone
+    return {
+        'r6_breadcrumb': crumbs,
+        'r6_why_compare': why_compare,
+        'r6_you_may_like': you_may_like,
+    }
+
+
 # ---------------------------------------------------------------------------
 # Routes - Pages
 # ---------------------------------------------------------------------------
@@ -3009,6 +3148,370 @@ def promo_validate():
     else:
         savings = 'Free gift with purchase'
     return jsonify({'valid': True, 'code': code, 'description': desc, 'savings': savings}), 200
+
+
+# ===========================================================================
+# R6 — edge-case routes
+#   - /notify-arrival/<slug>            out-of-stock notify-arrival
+#   - /configure/<slug>/check           configuration-incompatible warning
+#   - /trade-in/imei/verify             trade-in IMEI invalid (strict, no fallback)
+#   - /applecare/eligibility            AppleCare-not-eligible
+#   - /repair/lookup                    repair-status-not-found (strict)
+#   - /gift-card                        age-verification for $500+
+# All routes are byte-id safe (deterministic, no DB writes).
+# ===========================================================================
+
+R6_OUT_OF_STOCK_SLUGS = {
+    'apple-vision-pro', 'mac-pro-tower', 'mac-studio-m2-ultra',
+    'airpods-max-2', 'iphone-17-pro-max', 'apple-watch-ultra-3',
+    'pro-display-xdr-standard', 'studio-display-nano-tilt',
+}
+
+
+@app.route('/notify-arrival/<slug>', methods=['GET', 'POST'])
+@csrf.exempt
+def r6_notify_arrival(slug):
+    """Out-of-stock notify-arrival flow. POST {email} → notification queued."""
+    product = Product.query.filter_by(slug=slug).first_or_404()
+    is_oos = (not product.in_stock) or (slug in R6_OUT_OF_STOCK_SLUGS)
+    if request.method == 'POST':
+        email = (request.values.get('email') or '').strip().lower()
+        if not email or '@' not in email or '.' not in email.split('@')[-1]:
+            return jsonify({'ok': False, 'error': 'Enter a valid email address.'}), 400
+        if not is_oos:
+            return jsonify({
+                'ok': False, 'product_slug': slug, 'product': product.name,
+                'in_stock': True,
+                'message': f'{product.name} is currently in stock — no notify-arrival needed.',
+            }), 200
+        import hashlib
+        h = int.from_bytes(hashlib.md5(slug.encode()).digest()[:4], 'big')
+        eta_days = 7 + (h % 21)
+        return jsonify({
+            'ok': True,
+            'product_slug': slug, 'product': product.name,
+            'email': email,
+            'estimated_restock_days': eta_days,
+            'estimated_restock_date': (MIRROR_REFERENCE_DATE + timedelta(days=eta_days)).date().isoformat(),
+            'priority_queue_position': (h % 500) + 1,
+            'message': f'Notify Me — Apple will email {email} as soon as {product.name} returns to stock.',
+            'next_step_url': '/retail',
+        }), 200
+    page = {
+        'title': f'Notify When Available — {product.name}',
+        'subtitle': ('Currently unavailable.' if is_oos else 'Currently in stock.') +
+                    f' Sign up to be emailed when {product.name} ships.',
+        'body': [
+            f'{product.name} is ' + ('currently out of stock in the requested configuration.' if is_oos else 'in stock today.'),
+            'Apple typically restocks high-demand SKUs within 1-4 weeks. POST your email to /notify-arrival/<slug> to be added to the queue.',
+            'Prefer in-store pickup? Try /retail to find an Apple Store nearby with stock.',
+        ],
+        'links': [
+            (f'Back to {product.name}', f'/product/{slug}'),
+            ('Find an Apple Store', '/retail'),
+            ('Apple Trade In', '/trade-in'),
+            ('Out-of-stock alternatives', f'/compare/{product.category}'),
+        ],
+    }
+    return render_template('info_page.html', topic=f'notify-arrival/{slug}', page=page)
+
+
+# Configuration-incompatibility rules (deterministic).
+R6_CONFIG_INCOMPAT_RULES = [
+    # (slug_prefix, option_a_in_picked, option_b_in_picked, reason)
+    ('macbook-air',  {'8GB'},          {'2TB', '4TB', '8TB'},
+        'Memory below 16GB is not eligible for 2TB or larger SSD on this model.'),
+    ('macbook-pro',  {'18GB', '24GB'}, {'8TB'},
+        'M4 Pro chip requires at least 36GB unified memory for 8TB SSD configurations.'),
+    ('ipad-pro',     {'Wi-Fi'},        {'eSIM', 'Cellular'},
+        'eSIM / Cellular is only available on Wi-Fi + Cellular configurations.'),
+    ('iphone-air',   {'Physical SIM'}, {'eSIM-only'},
+        'iPhone Air is eSIM-only in this region — physical SIM tray is not supported.'),
+    ('apple-watch',  {'GPS'},          {'International Roaming'},
+        'International Roaming requires GPS + Cellular.'),
+    ('mac-studio',   {'M2 Max'},       {'8TB'},
+        '8TB SSD is only available with M2 Ultra. Upgrade chip or choose 4TB.'),
+    ('imac',         {'8GB'},          {'2TB', '4TB'},
+        'iMac 24" 8GB tier is limited to 256GB-512GB SSD. Upgrade memory for 2TB+.'),
+]
+
+
+@app.route('/configure/<slug>/check', methods=['GET', 'POST'])
+@csrf.exempt
+def r6_configure_check(slug):
+    """Validate a candidate configuration. POST {memory, storage, connectivity, chip}
+    → JSON with compatible + warnings list."""
+    product = Product.query.filter_by(slug=slug).first_or_404()
+    if request.method == 'POST':
+        memory = (request.values.get('memory') or '').strip()
+        storage = (request.values.get('storage') or '').strip()
+        connectivity = (request.values.get('connectivity') or '').strip()
+        chip = (request.values.get('chip') or '').strip()
+        picked = {x for x in (memory, storage, connectivity, chip) if x}
+        warnings = []
+        for prefix, set_a, set_b, reason in R6_CONFIG_INCOMPAT_RULES:
+            if not product.slug.startswith(prefix):
+                continue
+            if (set_a & picked) and (set_b & picked):
+                warnings.append({
+                    'rule': f'{sorted(set_a & picked)} + {sorted(set_b & picked)}',
+                    'reason': reason,
+                })
+        if storage in ('4TB', '8TB') and product.category not in ('mac',):
+            warnings.append({
+                'rule': f'{storage} on {product.category}',
+                'reason': f'{storage} SSD is not offered on this {product.category}. Choose 256GB-1TB.',
+            })
+        return jsonify({
+            'slug': slug, 'memory': memory, 'storage': storage,
+            'connectivity': connectivity, 'chip': chip,
+            'compatible': not warnings,
+            'warnings': warnings,
+            'message': ('Configuration is compatible — ready to add to bag.'
+                        if not warnings
+                        else 'Configuration has 1+ incompatibility — see warnings.'),
+            'next_step_url': (f'/configure/{slug}' if warnings else f'/product/{slug}'),
+        }), 200
+    page = {
+        'title': f'Configuration Check — {product.name}',
+        'subtitle': 'Validate your custom configuration before adding to bag.',
+        'body': [
+            f'POST to /configure/{slug}/check with memory + storage + connectivity + chip to validate compatibility.',
+            'Sample incompatibility: macbook-air with memory=8GB + storage=2TB returns a warning.',
+            'Sample valid: macbook-pro with memory=36GB + storage=4TB on M4 Pro returns compatible=true.',
+            'iPad Pro Wi-Fi configurations cannot select eSIM — choose Wi-Fi + Cellular variant.',
+        ],
+        'links': [
+            (f'Configure {product.name}', f'/configure/{slug}'),
+            (f'Compare {product.category}', f'/compare/{product.category}'),
+            ('Apple Trade In', '/trade-in'),
+            ('Financing', '/financing'),
+        ],
+    }
+    return render_template('info_page.html', topic=f'configure/{slug}/check', page=page)
+
+
+@app.route('/trade-in/imei/verify', methods=['GET', 'POST'])
+@csrf.exempt
+def r6_trade_in_imei_verify():
+    """Strict IMEI verifier — unrecognized IMEIs return 404 with invalid message,
+    no fuzzy hash fallback. Complements the existing /trade-in/imei route."""
+    imei = (request.values.get('imei') or '').strip().upper()
+    if request.method == 'POST':
+        if not imei or not imei.isdigit() or len(imei) != 15:
+            return jsonify({
+                'valid': False, 'imei': imei,
+                'error': 'Invalid IMEI format — must be exactly 15 digits.',
+                'fix_hint': 'On iPhone, dial *#06# or open Settings > General > About.',
+            }), 400
+        match = TRADEIN_IMEI_TABLE.get(imei)
+        if not match:
+            return jsonify({
+                'valid': False, 'imei': imei,
+                'error': 'IMEI not recognized in Apple Trade In database.',
+                'next_step_url': '/trade-in',
+                'message': 'Try /trade-in to pick your device manually, or call 1-800-MY-APPLE.',
+            }), 404
+        device, cond, val = match
+        return jsonify({
+            'valid': True, 'imei': imei,
+            'device_matched': device,
+            'condition_default': cond,
+            'estimated_value_usd': val,
+            'next_step_url': f'/trade-in/quote?device={device}&condition={cond}',
+        }), 200
+    page = {
+        'title': 'Trade In — Verify IMEI (strict)',
+        'subtitle': 'Strict IMEI verifier — invalid or unrecognized IMEIs return 404.',
+        'body': [
+            'POST to /trade-in/imei/verify with imei=<15 digits>. Unlike /trade-in/imei, this endpoint does NOT fall back to a fuzzy match.',
+            'Use this when you need an exact match (e.g. fraud-prevention flows).',
+            'Sample valid IMEIs: 353299814617852 (iPhone 13), 358901234567890 (iPhone 15).',
+            'Sample invalid: 000000000000000 returns 404 with error="IMEI not recognized".',
+        ],
+        'links': [
+            ('Standard IMEI lookup (with fuzzy match)', '/trade-in/imei'),
+            ('Trade-in form', '/trade-in'),
+            ('Apple Support', '/support'),
+        ],
+    }
+    return render_template('info_page.html', topic='trade-in/imei/verify', page=page)
+
+
+R6_APPLECARE_NOT_ELIGIBLE_REASONS = [
+    ('expired',            'AppleCare+ enrollment window expired (60 days after purchase).'),
+    ('damaged',            'Device shows signs of unauthorized modification or non-Apple repair.'),
+    ('no-coverage-region', 'AppleCare+ is not available in the registered region.'),
+    ('discontinued',       'Coverage is not available for this product model (manufactured pre-2018).'),
+]
+
+
+@app.route('/applecare/eligibility', methods=['GET', 'POST'])
+@csrf.exempt
+def r6_applecare_eligibility():
+    """Check AppleCare+ purchase eligibility — explicit not-eligible path."""
+    sn = (request.values.get('serial') or request.values.get('imei') or '').strip().upper()
+    if request.method == 'POST':
+        if not sn:
+            return jsonify({'eligible': False, 'error': 'serial or imei required'}), 400
+        import hashlib
+        h = int.from_bytes(hashlib.md5(sn.encode()).digest()[:4], 'big')
+        if h % 4 == 0:
+            key, reason = R6_APPLECARE_NOT_ELIGIBLE_REASONS[h % len(R6_APPLECARE_NOT_ELIGIBLE_REASONS)]
+            return jsonify({
+                'serial_or_imei': sn,
+                'eligible': False,
+                'reason_code': key,
+                'reason': reason,
+                'alternatives': [
+                    {'label': 'Self Service Repair',           'url': '/support/repair'},
+                    {'label': 'Out-of-warranty Genius Bar',    'url': '/retail'},
+                    {'label': 'Apple Limited Warranty info',   'url': '/support/article/warranty'},
+                ],
+                'support_phone': '1-800-275-2273',
+            }), 200
+        tier_idx = (h // 4) % 3
+        tier_name = ['AppleCare+', 'AppleCare+ with Theft and Loss', 'AppleCare Protection Plan'][tier_idx]
+        annual = [149.0, 199.0, 99.0][tier_idx]
+        return jsonify({
+            'serial_or_imei': sn,
+            'eligible': True,
+            'recommended_tier': tier_name,
+            'annual_price_usd': annual,
+            'monthly_price_usd': round(annual / 12, 2),
+            'enroll_url': f'/applecare?serial={sn}',
+        }), 200
+    page = {
+        'title': 'AppleCare+ Eligibility',
+        'subtitle': 'Verify whether your device can still be enrolled in AppleCare+.',
+        'body': [
+            'AppleCare+ enrollment window is 60 days from device purchase.',
+            'POST to /applecare/eligibility with ?serial=<sn> or ?imei=<imei>.',
+            'Common ineligibility reasons: enrollment window expired, unauthorized repair, region not supported, model discontinued.',
+            'If ineligible, alternatives include Self Service Repair, Genius Bar (out-of-warranty), or pay-per-incident service.',
+        ],
+        'links': [
+            ('AppleCare coverage check', '/applecare/coverage'),
+            ('Compare AppleCare plans', '/applecare-compare'),
+            ('Genius Bar (out-of-warranty repair)', '/retail'),
+            ('Self Service Repair', '/support/repair'),
+        ],
+    }
+    return render_template('info_page.html', topic='applecare/eligibility', page=page)
+
+
+@app.route('/repair/lookup', methods=['GET', 'POST'])
+@csrf.exempt
+def r6_repair_lookup():
+    """Strict repair-id lookup — unrecognized IDs return 404 (no hash fallback)."""
+    rid = (request.values.get('repair_id') or '').strip().upper()
+    if request.method == 'POST':
+        if not rid or not rid.startswith('R') or len(rid) != 9 or not rid[1:].isdigit():
+            return jsonify({
+                'found': False, 'repair_id': rid,
+                'error': 'Invalid repair ID format — expected R followed by 8 digits.',
+            }), 400
+        info = REPAIR_STATUS_TABLE.get(rid)
+        if not info:
+            return jsonify({
+                'found': False, 'repair_id': rid,
+                'error': 'Repair ID not found in Apple Service database.',
+                'fix_hint': 'Confirm the repair ID from your service confirmation email.',
+                'next_step_url': '/support',
+            }), 404
+        repair, status, eta, location = info
+        return jsonify({
+            'found': True, 'repair_id': rid,
+            'repair': repair, 'status': status,
+            'estimated_completion': eta, 'current_location': location,
+        }), 200
+    page = {
+        'title': 'Repair Lookup (strict)',
+        'subtitle': 'Look up a repair by ID — unrecognized IDs return 404.',
+        'body': [
+            'POST to /repair/lookup with repair_id=R<8 digits>. Unlike /repair/status, this endpoint does NOT fall back to a deterministic hash.',
+            'Sample valid IDs: R12345678 (iPhone 17 Pro display), R12345679 (MacBook Pro 14 battery).',
+            'Sample invalid: R00000000 returns 404 with error="Repair ID not found".',
+        ],
+        'links': [
+            ('Standard repair status (with fallback)', '/repair/status'),
+            ('Self Service Repair', '/support/repair'),
+            ('Apple Support', '/support'),
+        ],
+    }
+    return render_template('info_page.html', topic='repair/lookup', page=page)
+
+
+R6_AGEVERIFY_REQUIRED_MIN_USD = 500.0
+
+
+@app.route('/gift-card', methods=['GET', 'POST'])
+@csrf.exempt
+def r6_gift_card():
+    """Apple Gift Card purchase. Cards >= $500 require dob age-verification (18+)."""
+    if request.method == 'POST':
+        try:
+            amount = float(request.values.get('amount') or 0)
+        except (ValueError, TypeError):
+            return jsonify({'ok': False, 'error': 'Invalid amount.'}), 400
+        recipient_email = (request.values.get('recipient_email') or '').strip().lower()
+        dob = (request.values.get('dob') or '').strip()
+        if amount <= 0:
+            return jsonify({'ok': False, 'error': 'Amount must be positive.'}), 400
+        if amount > 2000:
+            return jsonify({'ok': False, 'error': 'Maximum gift card value is $2,000 per card.'}), 400
+        if amount >= R6_AGEVERIFY_REQUIRED_MIN_USD:
+            if not dob:
+                return jsonify({
+                    'ok': False,
+                    'age_verification_required': True,
+                    'min_age_years': 18,
+                    'threshold_usd': R6_AGEVERIFY_REQUIRED_MIN_USD,
+                    'reason': f'Apple Gift Cards of ${R6_AGEVERIFY_REQUIRED_MIN_USD:.0f} or more require age verification (18+).',
+                    'next_step': 'POST again with dob=YYYY-MM-DD.',
+                }), 200
+            try:
+                birth = datetime.strptime(dob, '%Y-%m-%d')
+            except ValueError:
+                return jsonify({'ok': False, 'error': 'Invalid dob — use YYYY-MM-DD.'}), 400
+            age = (MIRROR_REFERENCE_DATE - birth).days // 365
+            if age < 18:
+                return jsonify({
+                    'ok': False,
+                    'verified_age': age,
+                    'age_verification_required': True,
+                    'error': f'You must be at least 18 to purchase a gift card of ${amount:.0f}.',
+                }), 200
+        import hashlib
+        code_seed = f'{amount:.2f}|{recipient_email}'
+        code = 'X' + hashlib.md5(code_seed.encode()).hexdigest()[:15].upper()
+        return jsonify({
+            'ok': True,
+            'amount_usd': amount,
+            'recipient_email': recipient_email,
+            'gift_card_code': code,
+            'age_verified': amount >= R6_AGEVERIFY_REQUIRED_MIN_USD,
+            'delivery': ('Email within 24 hours' if recipient_email else 'Available in your Apple account'),
+            'add_to_wallet_url': '/wallet/add?pass=gift-card',
+        }), 200
+    page = {
+        'title': 'Apple Gift Card',
+        'subtitle': f'Send a digital Apple Gift Card by email. Cards ${int(R6_AGEVERIFY_REQUIRED_MIN_USD)}+ require age verification.',
+        'body': [
+            'Apple Gift Cards work for everything Apple — products, accessories, AppleCare, App Store, iCloud+, Apple Music, and more.',
+            'POST to /gift-card with amount + recipient_email to purchase.',
+            f'Cards of ${int(R6_AGEVERIFY_REQUIRED_MIN_USD)} or more require dob (YYYY-MM-DD) for 18+ age verification.',
+            'Maximum gift card value is $2,000 per card. Purchase multiple cards for higher amounts.',
+            'Sample amounts: $25, $50, $100, $250 (no age verify); $500, $1000, $2000 (age verify required).',
+        ],
+        'links': [
+            ('Gift Cards FAQ', '/support/article/gift-cards'),
+            ('Add to Apple Wallet', '/wallet/add?pass=gift-card'),
+            ('Send another gift', '/shop?category=accessories'),
+            ('Apple Card', '/apple-card'),
+        ],
+    }
+    return render_template('info_page.html', topic='gift-card', page=page)
 
 
 # ---------------------------------------------------------------------------
@@ -7310,11 +7813,505 @@ def _extend_r5():
 EXTRA_PRODUCTS_R5 = _extend_r5()
 
 
+# ===========================================================================
+# R6 expansion — 600+ additional SKUs covering iPhone 17 case colorways,
+# Apple Watch band colorways, HomeKit accessories, gift-card denominations,
+# refurbished SKUs, AppleCare bundles, sustainability + pencil/keyboard line.
+# Procedurally generated for deterministic seed-byte identity.
+# ===========================================================================
+
+def _r6_specs(base, env=None, a11y=None, in_box=None, whats_new=None,
+              compatibility=None, breadcrumb=None):
+    out = dict(base) if base else {}
+    if env:           out['environment_report'] = env
+    if a11y:          out['accessibility_features'] = a11y
+    if in_box:        out['in_box'] = in_box
+    if whats_new:     out['whats_new'] = whats_new
+    if compatibility: out['compatibility'] = compatibility
+    if breadcrumb:    out['breadcrumb_hint'] = breadcrumb
+    return out
+
+
+def _extend_r6():
+    """R6 — generate ~620 SKUs across 8 deterministic batches."""
+    extra = []
+
+    # A. iPhone 17 case colorways — 7 styles × 8 colors × 4 models = 224 SKUs
+    iphone_17_models = [
+        ('iPhone 17',         'iphone-17',         '17'),
+        ('iPhone 17 Pro',     'iphone-17-pro',     '17-pro'),
+        ('iPhone 17 Pro Max', 'iphone-17-pro-max', '17-pro-max'),
+        ('iPhone Air',        'iphone-air',        'air'),
+    ]
+    iphone_17_colors = ['Cypress','Lake Green','Sunset Orange','Plum Purple',
+                        'Indigo Sky','Sandstone','Black','Stone Gray']
+    case_styles = [
+        ('Silicone Case (R6)',   'silicone-r6',   49.0, 'Premium silicone with soft microfiber lining.'),
+        ('Clear Case (R6)',      'clear-r6',      49.0, 'Crystal-clear polycarbonate that shows off iPhone color.'),
+        ('FineWoven Case (R6)',  'finewoven-r6',  59.0, 'Recycled twill weave with rich texture and feel.'),
+        ('Beats Case (R6)',      'beats-r6',      69.0, 'Beats x Apple co-design case with shock-absorbent edges.'),
+        ('Crossbody Case (R6)',  'crossbody-r6',  79.0, 'Magnetic case with detachable braided crossbody strap.'),
+        ('Wallet Case (R6)',     'wallet-r6',     99.0, 'Card-holding case with Find My pairing.'),
+        ('Aluminum Bumper (R6)', 'bumper-r6',     69.0, '100% recycled aluminum bumper with MagSafe-compatible interior.'),
+    ]
+    for model_name, _model_slug, model_id in iphone_17_models:
+        for color in iphone_17_colors:
+            for style_name, style_id, price, desc in case_styles:
+                color_slug = color.lower().replace(' ', '-')
+                slug = f'r6-case-{style_id}-{model_id}-{color_slug}'
+                name = f'{style_name} for {model_name} - {color}'
+                specs = _r6_specs(
+                    {'kind': 'iPhone Case', 'compatible_with': model_name,
+                     'material': style_name.split('(')[0].strip(),
+                     'magsafe_compatible': True, 'finish': color},
+                    env=('Recycled polycarbonate and 95% recycled aluminum where applicable.' if 'Bumper' in style_name else '35% recycled silicone and 100% fiber-based packaging.'),
+                    a11y=['Tactile color-coded edges aid identification for low-vision users'],
+                    in_box=[f'{style_name} for {model_name}', 'Apple cleaning notice'],
+                    whats_new='R6 — Adds Find My pairing for case + cross-product color matching with Watch bands.',
+                    compatibility=[model_name],
+                    breadcrumb=f'Shop > iPhone > Accessories > Cases > {model_name}',
+                )
+                extra.append((name, slug, 'accessories', 'iphone-case',
+                              f'{name}. {desc}',
+                              f'{name}. {desc} Designed exclusively for {model_name}. Fully MagSafe compatible.',
+                              price, None, [color], [], specs, 2026, ''))
+
+    # B. Apple Watch band colorways — 5 styles × 8 colors × 2 sizes = 80 SKUs
+    band_styles = [
+        ('Sport Loop (R6)',        'sport-loop-r6',    49.0,  'Soft, breathable, double-layer nylon weave.'),
+        ('Braided Solo Loop (R6)', 'braided-solo-r6',  99.0,  'Recycled yarn woven into a stretchable single piece.'),
+        ('Modern Buckle (R6)',     'modern-buckle-r6', 149.0, 'Granada leather with magnetic clasp.'),
+        ('Milanese Loop (R6)',     'milanese-r6',      149.0, 'Stainless steel mesh with magnetic closure.'),
+        ('Alpine Loop (R6)',       'alpine-loop-r6',   119.0, 'Reinforced loops + G-hook for Apple Watch Ultra.'),
+    ]
+    band_colors = ['Black','Storm Blue','Lake Green','Sand','Plum','Cypress','Ochre','Silver']
+    band_sizes = [('41/42mm','41-42'),('45/49mm','45-49')]
+    for style_name, style_id, price, desc in band_styles:
+        for color in band_colors:
+            for size_label, size_id in band_sizes:
+                color_slug = color.lower().replace(' ', '-')
+                slug = f'r6-band-{style_id}-{size_id}-{color_slug}'
+                name = f'{style_name} - {color} - {size_label}'
+                specs = _r6_specs(
+                    {'kind': 'Apple Watch Band', 'style': style_name.split('(')[0].strip(),
+                     'finish': color, 'case_size_compat': size_label,
+                     'attachment': ('Magnetic' if ('Modern Buckle' in style_name or 'Milanese' in style_name) else 'Standard Apple Watch lug')},
+                    env='Recycled yarn or fluoroelastomer; fiber-based packaging.',
+                    a11y=['Tactile texture differs by style — aids identification by feel'],
+                    in_box=[f'{style_name} band in {color}'],
+                    whats_new=f'R6 — {color} colorway joins the {style_name.split("(")[0].strip()} line.',
+                    compatibility=['Apple Watch Series 9-11','Apple Watch SE 2','Apple Watch Ultra 2-3'],
+                    breadcrumb=f'Shop > Apple Watch > Bands > {style_name.split("(")[0].strip()}',
+                )
+                extra.append((name, slug, 'watch', 'watch-band',
+                              f'{name}. {desc}',
+                              f'{name}. {desc} For {size_label} Apple Watch cases.',
+                              price, None, [color], [size_label], specs, 2026, ''))
+
+    # C. HomeKit / Matter accessories — 50 SKUs.
+    homekit_skus = [
+        ('Aqara Door Sensor P2 - R6',                'r6-hk-aqara-door-p2',           17.99,'sensor'),
+        ('Aqara Motion Sensor P2 - R6',              'r6-hk-aqara-motion-p2',         34.99,'sensor'),
+        ('Aqara Water Leak Sensor - R6',             'r6-hk-aqara-leak',              22.99,'sensor'),
+        ('Aqara Climate Sensor T1 - R6',             'r6-hk-aqara-climate-t1',        29.99,'sensor'),
+        ('Aqara Camera Hub G3 - R6',                 'r6-hk-aqara-cam-g3',           139.99,'camera'),
+        ('Aqara M3 Matter Hub - R6',                 'r6-hk-aqara-m3',                99.99,'hub'),
+        ('Aqara Smart Lock U200 - R6',               'r6-hk-aqara-u200',             249.99,'lock'),
+        ('Eve Energy Smart Plug 2nd Gen - R6',       'r6-hk-eve-energy-2g',           39.95,'plug'),
+        ('Eve Energy Outdoor - R6',                  'r6-hk-eve-energy-outdoor',      49.95,'plug'),
+        ('Eve Door & Window Contact - R6',           'r6-hk-eve-door',                39.95,'sensor'),
+        ('Eve Light Switch - R6',                    'r6-hk-eve-switch',              49.95,'switch'),
+        ('Eve Aqua Hose Controller - R6',            'r6-hk-eve-aqua',               149.95,'irrigation'),
+        ('Eve MotionBlinds Bridge - R6',             'r6-hk-eve-mb-bridge',          129.95,'hub'),
+        ('Eve Thermo Radiator Valve (3pk) - R6',     'r6-hk-eve-thermo-3pk',         179.85,'thermo'),
+        ('Eve Weather Outdoor Station - R6',         'r6-hk-eve-weather',             69.95,'sensor'),
+        ('Philips Hue White Starter Kit (4pk) - R6', 'r6-hk-hue-white-4pk',           99.99,'light'),
+        ('Philips Hue Color Starter Kit (3pk) - R6', 'r6-hk-hue-color-3pk',          179.99,'light'),
+        ('Philips Hue Lightstrip Plus 2m - R6',      'r6-hk-hue-strip-2m',            89.99,'light'),
+        ('Philips Hue Play Light Bar (2pk) - R6',    'r6-hk-hue-play-2pk',           139.99,'light'),
+        ('Philips Hue Bridge 2nd Gen - R6',          'r6-hk-hue-bridge-2g',           59.99,'hub'),
+        ('Philips Hue Tap Dial Switch - R6',         'r6-hk-hue-tap-dial',            49.99,'switch'),
+        ('Philips Hue Motion Outdoor - R6',          'r6-hk-hue-motion-out',          59.99,'sensor'),
+        ('Logitech Circle View Doorbell - R6',       'r6-hk-circle-doorbell',        199.99,'doorbell'),
+        ('Logitech Circle View Camera 2nd Gen - R6', 'r6-hk-circle-cam-2g',          179.99,'camera'),
+        ('Logitech Pop Smart Button (3pk) - R6',     'r6-hk-pop-3pk',                 79.99,'switch'),
+        ('Yale Assure Lock 2 Plus HomeKit - R6',     'r6-hk-yale-assure-plus',       299.99,'lock'),
+        ('Yale Smart Cabinet Lock - R6',             'r6-hk-yale-cabinet',            89.99,'lock'),
+        ('August WiFi Smart Lock 4th Gen - R6',      'r6-hk-august-4g',              229.99,'lock'),
+        ('Schlage Encode Plus HomeKit - R6',         'r6-hk-schlage-encode-plus',    349.99,'lock'),
+        ('Lutron Caseta Dimmer Kit HomeKit - R6',    'r6-hk-lutron-caseta',           99.95,'switch'),
+        ('Lutron Caseta Fan Speed Control - R6',     'r6-hk-lutron-fan',              69.95,'switch'),
+        ('Nanoleaf Shapes Mini Triangles (5pk) - R6','r6-hk-nano-mini-tri',           89.99,'light'),
+        ('Nanoleaf Skylight Modular (3pk) - R6',     'r6-hk-nano-skylight-3pk',      299.99,'light'),
+        ('Nanoleaf Lines 60 Square Lights - R6',     'r6-hk-nano-lines-60',          499.99,'light'),
+        ('Nanoleaf 4D Screen Mirror Kit - R6',       'r6-hk-nano-4d',                119.99,'light'),
+        ('LIFX Mini White HomeKit - R6',             'r6-hk-lifx-mini',               24.99,'light'),
+        ('LIFX A19 Color HomeKit - R6',              'r6-hk-lifx-a19',                44.99,'light'),
+        ('LIFX Beam HomeKit Lightstrip - R6',        'r6-hk-lifx-beam',              199.99,'light'),
+        ('Meross Smart Plug Mini 4pk HomeKit - R6',  'r6-hk-meross-plug-4pk',         29.99,'plug'),
+        ('Meross Garage Door Opener HomeKit - R6',   'r6-hk-meross-garage',           49.99,'garage'),
+        ('Meross Smart Curtain Motor HomeKit - R6',  'r6-hk-meross-curtain',          89.99,'motor'),
+        ('VOCOlinc Smart Bulb A19 (4pk) - R6',       'r6-hk-vocolinc-a19-4pk',        59.99,'light'),
+        ('VOCOlinc Smart Strip HomeKit - R6',        'r6-hk-vocolinc-strip',          34.99,'light'),
+        ('Onvis HomeKit Smart Plug EU - R6',         'r6-hk-onvis-plug-eu',           21.99,'plug'),
+        ('Onvis Air Quality Sensor S5 - R6',         'r6-hk-onvis-air',               79.99,'sensor'),
+        ('Tempo Bedroom Air Quality Monitor - R6',   'r6-hk-tempo-bedroom',           99.99,'sensor'),
+        ('Netatmo Smart Doorbell HomeKit - R6',      'r6-hk-netatmo-doorbell',       299.99,'doorbell'),
+        ('Netatmo Smart Weather Station - R6',       'r6-hk-netatmo-weather',        179.99,'sensor'),
+        ('Ecobee Smart Thermostat Premium - R6',     'r6-hk-ecobee-premium',         249.99,'thermo'),
+        ('Roborock S8 MaxV Ultra - R6',              'r6-hk-roborock-s8',           1799.99,'vacuum'),
+    ]
+    for name, slug, price, kind in homekit_skus:
+        specs = _r6_specs(
+            {'kind': 'HomeKit Accessory', 'category': kind,
+             'compatible_with': 'iPhone, iPad, Mac, Apple Watch, HomePod',
+             'protocols': (['HomeKit','Matter over Thread'] if kind in ('lock','sensor','plug','switch') else ['HomeKit'])},
+            env='Fiber-based packaging. Apple-required end-of-life recycling supported.',
+            a11y=['Voice control via Siri','Automations support haptic Lock Screen notifications'],
+            in_box=[name,'HomeKit setup code card','Quick start guide'],
+            whats_new='R6 — Adds Matter 1.3 support and Find My pairing where applicable.',
+            compatibility=['iOS 18+','macOS 15+','HomePod (any)'],
+            breadcrumb=f'Shop > Accessories > Smart Home > {kind.capitalize()}',
+        )
+        extra.append((name, slug, 'accessories', 'homekit',
+                      f'{name}. HomeKit + Matter accessory.',
+                      f'{name}. Adds Matter 1.3 support and Find My pairing where applicable.',
+                      price, None, ['White'], [], specs, 2026, ''))
+
+    # D. Apple Gift Card denominations — 14 amounts × 4 designs = 56.
+    gift_amounts = [25,50,75,100,150,200,250,300,500,750,1000,1250,1500,2000]
+    gift_designs = [('Classic','classic'),('Birthday','birthday'),
+                    ('Holiday','holiday'),('Thank You','thanks')]
+    for amt in gift_amounts:
+        for design_name, design_id in gift_designs:
+            slug = f'r6-giftcard-{design_id}-{amt}'
+            name = f'Apple Gift Card - {design_name} - ${amt}'
+            req_age = amt >= int(R6_AGEVERIFY_REQUIRED_MIN_USD)
+            specs = _r6_specs(
+                {'kind': 'Apple Gift Card', 'amount_usd': amt, 'design': design_name,
+                 'delivery': 'Email within 24 hours',
+                 'age_verification_required': req_age,
+                 'redemption': 'apple.com, App Store, Apple Music, iCloud+, AppleCare'},
+                env='Digital gift cards have zero physical packaging.',
+                a11y=['Voice redemption via Siri','Large-print code option'],
+                in_box=['Digital code via email'],
+                whats_new='R6 — Adds Thank You + Holiday designs; age-verification flow at /gift-card.',
+                compatibility=['Apple ID','Apple Wallet'],
+                breadcrumb='Shop > Gift Cards',
+            )
+            extra.append((name, slug, 'accessories', 'gift-card',
+                          f'{name}. ' + ('Age verification (18+) required at checkout.' if req_age else 'No age verification.'),
+                          f'{name}. Digital Apple Gift Card. Use for any Apple product, service, or subscription. ' +
+                          ('Cards $500+ require age verification at /gift-card.' if req_age else ''),
+                          float(amt), None, [design_name], [], specs, 2026, ''))
+
+    # E. Refurbished R6 — ~42 SKUs.
+    refurb_seeds = [
+        ('iPhone 15 (Refurbished) - 128GB - Black','iphone-15-refurb-128-black',629.0,'iphone','refurbished'),
+        ('iPhone 15 (Refurbished) - 256GB - Blue','iphone-15-refurb-256-blue',729.0,'iphone','refurbished'),
+        ('iPhone 15 Pro (Refurbished) - 128GB - Natural Titanium','iphone-15-pro-refurb-128-natural',849.0,'iphone','refurbished'),
+        ('iPhone 15 Pro Max (Refurbished) - 256GB - Black Titanium','iphone-15-pro-max-refurb-256-black',1049.0,'iphone','refurbished'),
+        ('iPhone 14 (Refurbished) - 128GB - Midnight','iphone-14-refurb-128-midnight',499.0,'iphone','refurbished'),
+        ('iPhone 14 Pro (Refurbished) - 256GB - Deep Purple','iphone-14-pro-refurb-256-purple',799.0,'iphone','refurbished'),
+        ('iPhone 13 (Refurbished) - 128GB - Starlight','iphone-13-refurb-128-starlight',399.0,'iphone','refurbished'),
+        ('iPhone SE 3 (Refurbished) - 64GB - PRODUCT(RED)','iphone-se3-refurb-64-red',329.0,'iphone','refurbished'),
+        ('MacBook Air M2 (Refurbished) - 8GB/256GB','macbook-air-m2-refurb-8-256',849.0,'mac','refurbished'),
+        ('MacBook Air M2 (Refurbished) - 16GB/512GB','macbook-air-m2-refurb-16-512',1099.0,'mac','refurbished'),
+        ('MacBook Air M3 (Refurbished) - 8GB/256GB','macbook-air-m3-refurb-8-256',929.0,'mac','refurbished'),
+        ('MacBook Pro 14 M3 (Refurbished) - 16GB/512GB','macbook-pro-14-m3-refurb-16-512',1499.0,'mac','refurbished'),
+        ('MacBook Pro 14 M3 Pro (Refurbished) - 18GB/512GB','macbook-pro-14-m3-pro-refurb-18-512',1799.0,'mac','refurbished'),
+        ('MacBook Pro 16 M3 Max (Refurbished) - 36GB/1TB','macbook-pro-16-m3-max-refurb-36-1tb',2899.0,'mac','refurbished'),
+        ('Mac mini M2 (Refurbished) - 8GB/256GB','mac-mini-m2-refurb-8-256',509.0,'mac','refurbished'),
+        ('Mac mini M2 Pro (Refurbished) - 16GB/512GB','mac-mini-m2-pro-refurb-16-512',1099.0,'mac','refurbished'),
+        ('iPad Pro M2 11-inch (Refurbished) - 256GB Wi-Fi','ipad-pro-m2-11-refurb-256-wifi',759.0,'ipad','refurbished'),
+        ('iPad Pro M2 12.9-inch (Refurbished) - 256GB','ipad-pro-m2-129-refurb-256',959.0,'ipad','refurbished'),
+        ('iPad Air M2 (Refurbished) - 128GB Wi-Fi','ipad-air-m2-refurb-128-wifi',509.0,'ipad','refurbished'),
+        ('iPad 10th Gen (Refurbished) - 64GB Wi-Fi','ipad-10-refurb-64-wifi',299.0,'ipad','refurbished'),
+        ('iPad mini 6 (Refurbished) - 64GB','ipad-mini-6-refurb-64',389.0,'ipad','refurbished'),
+        ('Apple Watch Series 9 (Refurbished) - 41mm GPS','watch-s9-refurb-41mm-gps',299.0,'watch','refurbished'),
+        ('Apple Watch Series 9 (Refurbished) - 45mm Cell','watch-s9-refurb-45mm-cell',429.0,'watch','refurbished'),
+        ('Apple Watch Ultra 2 (Refurbished) - 49mm','watch-ultra-2-refurb-49mm',699.0,'watch','refurbished'),
+        ('AirPods Pro 2 (Refurbished) - USB-C','airpods-pro-2-refurb-usbc',189.0,'airpods','refurbished'),
+        ('AirPods Max (Refurbished) - Silver','airpods-max-refurb-silver',449.0,'airpods','refurbished'),
+        ('AirPods 3rd Gen (Refurbished)','airpods-3-refurb',139.0,'airpods','refurbished'),
+        ('HomePod 2nd Gen (Refurbished) - White','homepod-2-refurb-white',249.0,'homepod','refurbished'),
+        ('HomePod mini (Refurbished) - Space Gray','homepod-mini-refurb-spacegray',89.0,'homepod','refurbished'),
+        ('Apple TV 4K (Refurbished) - 128GB Wi-Fi+Eth','apple-tv-4k-refurb-128',149.0,'tv','refurbished'),
+        ('Apple TV 4K (Refurbished) - 64GB Wi-Fi','apple-tv-4k-refurb-64',119.0,'tv','refurbished'),
+        ('Apple Vision Pro (Refurbished) - 256GB','vision-pro-refurb-256',2999.0,'vision','refurbished'),
+        ('Studio Display Standard Tilt (Refurbished)','studio-display-st-refurb',1349.0,'mac','refurbished'),
+        ('Pro Display XDR Standard (Refurbished)','pro-display-xdr-refurb',4499.0,'mac','refurbished'),
+        ('Mac Studio M2 Max (Refurbished) - 32GB/512GB','mac-studio-m2-max-refurb-32-512',1699.0,'mac','refurbished'),
+        ('Mac Studio M2 Ultra (Refurbished) - 64GB/1TB','mac-studio-m2-ultra-refurb-64-1tb',3699.0,'mac','refurbished'),
+        ('Mac Pro Tower M2 Ultra (Refurbished) - 64GB/1TB','mac-pro-m2-ultra-refurb-64-1tb',5599.0,'mac','refurbished'),
+        ('iMac 24-inch M3 (Refurbished) - 8GB/256GB','imac-24-m3-refurb-8-256',1099.0,'mac','refurbished'),
+        ('iMac 24-inch M3 (Refurbished) - 16GB/512GB','imac-24-m3-refurb-16-512',1349.0,'mac','refurbished'),
+        ('iPhone 16 (Refurbished) - 128GB - Black','iphone-16-refurb-128-black',679.0,'iphone','refurbished'),
+        ('iPhone 16 Plus (Refurbished) - 256GB - Pink','iphone-16-plus-refurb-256-pink',829.0,'iphone','refurbished'),
+        ('iPhone 16 Pro (Refurbished) - 128GB - Desert Titanium','iphone-16-pro-refurb-128-desert',899.0,'iphone','refurbished'),
+        ('iPhone 16 Pro Max (Refurbished) - 256GB - Black Titanium','iphone-16-pro-max-refurb-256-black',1099.0,'iphone','refurbished'),
+    ]
+    for name, slug_base, price, cat, sub in refurb_seeds:
+        slug = f'r6-refurb-{slug_base}'
+        specs = _r6_specs(
+            {'kind': 'Apple Certified Refurbished', 'condition': 'Excellent',
+             'warranty': '1-year Apple Limited Warranty', 'returns': '14-day return window',
+             'savings_vs_new': f'~${int(price * 0.18)} savings vs new'},
+            env='Refurbished devices reduce e-waste. Tested, repackaged, reseated.',
+            a11y=['Same accessibility features as new device'],
+            in_box=[name,'USB-C cable','Refurbished documentation pack'],
+            whats_new='R6 — Refurbished inventory now includes Vision Pro and Mac Pro Tower.',
+            compatibility=[],
+            breadcrumb=f'Shop > Refurbished > {cat.capitalize()}',
+        )
+        extra.append((name, slug, cat, sub,
+                      f'{name}. Apple Certified Refurbished — 1-year warranty.',
+                      f'{name}. Apple Certified Refurbished. Includes 1-year Apple limited warranty and 14-day returns.',
+                      price, None, ['Refurbished'], [], specs, 2025, ''))
+
+    # F. AppleCare R6 bundles — 32 SKUs.
+    applecare_r6 = [
+        ('AppleCare+ for iPhone 17 (24-month) - R6',                    'r6-ac-iphone-17-24m',       149.0,'iphone'),
+        ('AppleCare+ for iPhone 17 Pro (24-month) - R6',                'r6-ac-iphone-17-pro-24m',   199.0,'iphone'),
+        ('AppleCare+ for iPhone 17 Pro Max (24-month) - R6',            'r6-ac-iphone-17-pro-max-24m',229.0,'iphone'),
+        ('AppleCare+ for iPhone Air (24-month) - R6',                   'r6-ac-iphone-air-24m',      169.0,'iphone'),
+        ('AppleCare+ with Theft & Loss for iPhone 17 (24-month) - R6',  'r6-ac-iphone-17-tnl-24m',   219.0,'iphone'),
+        ('AppleCare+ with Theft & Loss for iPhone 17 Pro (24-month) R6','r6-ac-iphone-17-pro-tnl-24m',269.0,'iphone'),
+        ('AppleCare+ for iPhone 17 (monthly) - R6',                     'r6-ac-iphone-17-mo',          8.99,'iphone'),
+        ('AppleCare+ for iPhone 17 Pro (monthly) - R6',                 'r6-ac-iphone-17-pro-mo',     11.99,'iphone'),
+        ('AppleCare+ for MacBook Air 13 M3 (3-year) - R6',              'r6-ac-mba-13-m3',           199.0,'mac'),
+        ('AppleCare+ for MacBook Air 15 M3 (3-year) - R6',              'r6-ac-mba-15-m3',           229.0,'mac'),
+        ('AppleCare+ for MacBook Pro 14 (3-year) - R6',                 'r6-ac-mbp-14',              279.0,'mac'),
+        ('AppleCare+ for MacBook Pro 16 (3-year) - R6',                 'r6-ac-mbp-16',              399.0,'mac'),
+        ('AppleCare+ for iMac (3-year) - R6',                           'r6-ac-imac',                169.0,'mac'),
+        ('AppleCare+ for Mac mini (3-year) - R6',                       'r6-ac-mac-mini',             99.0,'mac'),
+        ('AppleCare+ for Mac Studio (3-year) - R6',                     'r6-ac-mac-studio',          199.0,'mac'),
+        ('AppleCare+ for Mac Pro (3-year) - R6',                        'r6-ac-mac-pro',             299.0,'mac'),
+        ('AppleCare+ for iPad Pro M5 (2-year) - R6',                    'r6-ac-ipad-pro-m5',         149.0,'ipad'),
+        ('AppleCare+ for iPad Air M4 (2-year) - R6',                    'r6-ac-ipad-air-m4',          99.0,'ipad'),
+        ('AppleCare+ for iPad (2-year) - R6',                           'r6-ac-ipad',                 79.0,'ipad'),
+        ('AppleCare+ for iPad mini (2-year) - R6',                      'r6-ac-ipad-mini',            79.0,'ipad'),
+        ('AppleCare+ for Apple Watch Series 11 (2-year) - R6',          'r6-ac-watch-s11',            49.0,'watch'),
+        ('AppleCare+ for Apple Watch Ultra 3 (2-year) - R6',            'r6-ac-watch-ultra-3',        99.0,'watch'),
+        ('AppleCare+ for Apple Watch SE 2 (2-year) - R6',               'r6-ac-watch-se-2',           49.0,'watch'),
+        ('AppleCare+ for AirPods Pro 3 (2-year) - R6',                  'r6-ac-airpods-pro-3',        29.0,'airpods'),
+        ('AppleCare+ for AirPods 4 (2-year) - R6',                      'r6-ac-airpods-4',            29.0,'airpods'),
+        ('AppleCare+ for AirPods Max 2 (2-year) - R6',                  'r6-ac-airpods-max-2',        59.0,'airpods'),
+        ('AppleCare+ for HomePod (2-year) - R6',                        'r6-ac-homepod-2',            39.0,'homepod'),
+        ('AppleCare+ for HomePod mini (2-year) - R6',                   'r6-ac-homepod-mini',         15.0,'homepod'),
+        ('AppleCare+ for Apple Vision Pro (2-year) - R6',               'r6-ac-vision-pro',          499.0,'vision'),
+        ('AppleCare+ for Apple TV 4K (2-year) - R6',                    'r6-ac-tv-4k',                29.0,'tv'),
+        ('AppleCare Bundle — Family (iPhone+Watch+iPad+Mac) - R6',      'r6-ac-bundle-family',       799.0,'accessories'),
+        ('AppleCare Bundle — Pro Studio (Mac+Display+Pencil) - R6',     'r6-ac-bundle-pro-studio',   599.0,'accessories'),
+    ]
+    for name, slug, price, target_cat in applecare_r6:
+        specs = _r6_specs(
+            {'kind': 'AppleCare+', 'target': target_cat,
+             'coverage': '2-3 years of accidental damage protection + 24/7 Apple expert support',
+             'theft_and_loss': ('tnl' in slug)},
+            env='Service shipping uses carbon-neutral logistics.',
+            a11y=['Service appointments accept VoiceOver bookings'],
+            in_box=['Coverage certificate (digital)'],
+            whats_new='R6 — Adds monthly billing option for iPhone AppleCare and Theft & Loss for Pro models.',
+            compatibility=[target_cat],
+            breadcrumb=f'Shop > AppleCare+ > {target_cat.capitalize()}',
+        )
+        extra.append((name, slug, 'accessories', 'applecare',
+                      f'{name}. Apple-trained service + accidental damage coverage.',
+                      f'{name}. Full coverage from Apple-trained specialists. 24/7 priority access to Apple support.',
+                      price, None, ['Service'], [], specs, 2026, ''))
+
+    # G. Sustainability — 20 SKUs.
+    sustain_skus = [
+        ('100% Recycled USB-C Cable 1m - R6','r6-sustain-usbc-1m',19.0,'cable'),
+        ('100% Recycled USB-C Cable 2m - R6','r6-sustain-usbc-2m',29.0,'cable'),
+        ('100% Recycled MagSafe Charger 1m - R6','r6-sustain-magsafe-1m',39.0,'charger'),
+        ('100% Recycled MagSafe Charger 2m - R6','r6-sustain-magsafe-2m',49.0,'charger'),
+        ('Recycled Aluminum Stand - iPhone - R6','r6-sustain-stand-iphone',49.0,'stand'),
+        ('Recycled Aluminum Stand - iPad - R6','r6-sustain-stand-ipad',69.0,'stand'),
+        ('Recycled Aluminum Stand - MacBook - R6','r6-sustain-stand-macbook',79.0,'stand'),
+        ('Recycled Polishing Cloth (R6) - 3 pack','r6-sustain-cloth-3pk',39.0,'cleaning'),
+        ('Recycled Apple Pencil Carry Pouch (R6)','r6-sustain-pencil-pouch',29.0,'case'),
+        ('Recycled FineWoven Sleeve - 13-inch (R6)','r6-sustain-sleeve-13',99.0,'sleeve'),
+        ('Recycled FineWoven Sleeve - 14-inch (R6)','r6-sustain-sleeve-14',109.0,'sleeve'),
+        ('Recycled FineWoven Sleeve - 15-inch (R6)','r6-sustain-sleeve-15',119.0,'sleeve'),
+        ('Recycled FineWoven Sleeve - 16-inch (R6)','r6-sustain-sleeve-16',129.0,'sleeve'),
+        ('Carbon-neutral Apple Watch Sport Band - R6','r6-sustain-watch-sport',49.0,'band'),
+        ('Carbon-neutral Apple Watch Solo Loop - R6','r6-sustain-watch-solo',99.0,'band'),
+        ('Recycled MagSafe Wallet (R6)','r6-sustain-magsafe-wallet',59.0,'wallet'),
+        ('Recycled FineWoven AirTag Loop - R6','r6-sustain-airtag-loop',39.0,'loop'),
+        ('Recycled FineWoven AirTag Key Ring - R6','r6-sustain-airtag-keyring',35.0,'loop'),
+        ('Recycled iPad Smart Folio - R6','r6-sustain-ipad-folio',79.0,'folio'),
+        ('Recycled Mac Magic Keyboard Sleeve - R6','r6-sustain-keyboard-sleeve',59.0,'sleeve'),
+    ]
+    for name, slug, price, kind in sustain_skus:
+        specs = _r6_specs(
+            {'kind': 'Sustainable Accessory', 'material': '100% recycled or carbon-neutral',
+             'product_category': kind},
+            env='Apple 2030 net-zero carbon. Fiber-based packaging.',
+            a11y=['Tactile labels indicating recycled origin'],
+            in_box=[name,'Apple Environmental Responsibility Report card'],
+            whats_new='R6 — Joins Apple 2030 carbon-neutral lineup.',
+            compatibility=['MagSafe','iPad Smart Connector','Apple Watch lugs'],
+            breadcrumb=f'Shop > Apple Values > Environment > {kind.capitalize()}',
+        )
+        extra.append((name, slug, 'accessories', 'sustainable',
+                      f'{name}. Carbon-neutral.',
+                      f'{name}. Built with 100% recycled materials where applicable. Part of the Apple 2030 carbon-neutral lineup.',
+                      price, None, ['Recycled'], [], specs, 2026, ''))
+
+    # H. Apple Pencil tips + iPad keyboards — ~25 SKUs.
+    pencil_models = [
+        ('Apple Pencil Pro Replacement Tip','pencil-pro-tip',19.0),
+        ('Apple Pencil USB-C Replacement Tip','pencil-usbc-tip',15.0),
+        ('Apple Pencil (Gen 2) Replacement Tip','pencil-2-tip',19.0),
+    ]
+    pack_sizes = [('Single','single',1.0),('4-pack','4pk',3.5),('10-pack','10pk',8.0)]
+    for pname, pslug, base in pencil_models:
+        for size_label, size_id, mult in pack_sizes:
+            slug = f'r6-acc-{pslug}-{size_id}'
+            name = f'{pname} - {size_label} (R6)'
+            specs = _r6_specs(
+                {'kind': 'Apple Pencil Accessory', 'pack_size': size_label,
+                 'compatible_with': pname.split(' Replacement')[0]},
+                env='Tip housing uses 30% recycled plastic.',
+                a11y=['Tactile pack-size markings'],
+                in_box=[f'{size_label} of replacement tips'],
+                whats_new='R6 — 10-pack bundles offered for fleet use.',
+                compatibility=[pname.split(' Replacement')[0]],
+                breadcrumb='Shop > Accessories > Apple Pencil > Tips',
+            )
+            extra.append((name, slug, 'accessories', 'pencil-tip',
+                          f'{name}.', f'{name}. Replacement tips.',
+                          round(base * mult, 2), None, ['White'], [size_label], specs, 2026, ''))
+
+    mk_languages = ['US English','UK English','French','German','Spanish','Japanese','Korean','Italian',
+                    'Portuguese (BR)','Chinese (Pinyin)','Arabic','Hebrew']
+    mk_models = [
+        ('Magic Keyboard for iPad Pro 11 (M4)','mk-ipp-11-m4',299.0),
+        ('Magic Keyboard for iPad Pro 13 (M4)','mk-ipp-13-m4',349.0),
+        ('Magic Keyboard for iPad Air 11 (M4)','mk-ia-11-m4',269.0),
+        ('Magic Keyboard for iPad Air 13 (M4)','mk-ia-13-m4',319.0),
+    ]
+    for mname, mslug, price in mk_models:
+        for lang in mk_languages:
+            lang_slug = lang.lower().replace(' ', '-').replace('(', '').replace(')', '')
+            slug = f'r6-{mslug}-{lang_slug}'
+            name = f'{mname} - {lang}'
+            specs = _r6_specs(
+                {'kind':'iPad Keyboard','language':lang,'model':mname,
+                 'glass_trackpad':True,'function_row':True},
+                env='Recycled aluminum palm rest. Fiber-based packaging.',
+                a11y=['Backlit keys','Adjustable trackpad sensitivity','Accessibility shortcuts row'],
+                in_box=[mname,'USB-C-to-USB-C cable'],
+                whats_new='R6 — Adds 12 keyboard layouts including Arabic and Hebrew.',
+                compatibility=[mname.split(' for ')[1]],
+                breadcrumb='Shop > iPad > Accessories > Keyboards',
+            )
+            extra.append((name, slug, 'accessories', 'ipad-keyboard',
+                          f'{name}.', f'{name}. With glass trackpad and function row.',
+                          price, None, ['Black','White'], [], specs, 2026, ''))
+
+    # I. Apple Watch case finish matrix — 3 case lines × 4 finishes × 2 sizes = 24 SKUs.
+    watch_cases = [
+        ('Apple Watch Series 11', 'watch-s11', 399.0),
+        ('Apple Watch SE 2',      'watch-se-2', 249.0),
+        ('Apple Watch Ultra 3',   'watch-ultra-3', 799.0),
+    ]
+    watch_finishes = [
+        ('Aluminum',        'aluminum'),
+        ('Stainless Steel', 'steel'),
+        ('Titanium',        'titanium'),
+        ('Polished Black',  'black-polish'),
+    ]
+    watch_case_sizes = [('41mm', '41'), ('45mm', '45')]
+    for wname, wslug, base_price in watch_cases:
+        for finish, finish_id in watch_finishes:
+            for size_label, size_id in watch_case_sizes:
+                # Ultra is 49mm only — skip 41/45 for Ultra.
+                if 'Ultra' in wname and size_id == '41':
+                    continue
+                slug = f'r6-watchcase-{wslug}-{finish_id}-{size_id}'
+                # Pricing delta by finish.
+                delta = {'aluminum':0, 'steel':200, 'titanium':300, 'black-polish':250}.get(finish_id, 0)
+                if 'Ultra' in wname:
+                    size_label = '49mm'
+                price = base_price + delta
+                name = f'{wname} - {finish} Case - {size_label}'
+                specs = _r6_specs(
+                    {'kind':'Apple Watch Case', 'series':wname, 'finish':finish, 'case_size':size_label,
+                     'sapphire_crystal': finish != 'Aluminum'},
+                    env='Aluminum case is 100% recycled. Stainless Steel and Titanium use ≥50% recycled content.',
+                    a11y=['VoiceOver fully supported','Always-On retina display','AssistiveTouch'],
+                    in_box=[wname, 'Sport Loop band','USB-C Magnetic Charging Cable'],
+                    whats_new=f'R6 — {finish} finish joins the {wname} line.',
+                    compatibility=['iPhone XS or later (iOS 18+)'],
+                    breadcrumb=f'Shop > Apple Watch > {wname} > {finish}',
+                )
+                extra.append((name, slug, 'watch', 'watch-case',
+                              f'{name}.', f'{name}. {finish} finish with sapphire crystal where applicable.',
+                              price, round(price/24, 2), [finish], [size_label], specs, 2026, ''))
+
+    # J. MagSafe + Find My peripherals — 30 SKUs.
+    magsafe_skus = [
+        ('MagSafe Battery Pack 10000mAh - R6',          'r6-mag-battery-10k',          99.0),
+        ('MagSafe Battery Pack 5000mAh - R6',           'r6-mag-battery-5k',           69.0),
+        ('MagSafe Duo Charger 2nd Gen - R6',            'r6-mag-duo-2g',              129.0),
+        ('MagSafe 3-in-1 Charging Stand - R6',          'r6-mag-3in1-stand',          149.0),
+        ('MagSafe Travel Charger Foldable - R6',        'r6-mag-travel-fold',          79.0),
+        ('MagSafe Car Vent Mount Qi2 - R6',             'r6-mag-car-vent',             49.0),
+        ('MagSafe Car Dash Mount Qi2 - R6',             'r6-mag-car-dash',             59.0),
+        ('MagSafe Car Wireless Charger - R6',           'r6-mag-car-wireless',         89.0),
+        ('MagSafe Bedside Stand Black - R6',            'r6-mag-bedside-black',        69.0),
+        ('MagSafe Bedside Stand Walnut - R6',           'r6-mag-bedside-walnut',       79.0),
+        ('AirTag 4-pack with FineWoven Loops - R6',     'r6-mag-airtag-4pk-loops',    129.0),
+        ('AirTag 8-pack with Key Rings - R6',           'r6-mag-airtag-8pk-keyrings', 199.0),
+        ('AirTag Luggage Tag Genuine Leather - R6',     'r6-mag-airtag-luggage',       39.0),
+        ('AirTag Pet Collar Mount - R6',                'r6-mag-airtag-pet',           29.0),
+        ('AirTag Bike Mount with Lock - R6',            'r6-mag-airtag-bike',          39.0),
+        ('Find My Beacon Wallet (Leather) - R6',        'r6-fm-wallet-leather',        99.0),
+        ('Find My Beacon Backpack Insert - R6',         'r6-fm-bp-insert',             49.0),
+        ('Find My Beacon Headphone Strap - R6',         'r6-fm-headphone-strap',       29.0),
+        ('Find My Beacon Smart Tag (5pk) - R6',         'r6-fm-tag-5pk',              149.0),
+        ('Find My Tile-compatible Beacon - R6',         'r6-fm-tile-compat',           34.0),
+        ('Qi2 Wireless Charger 15W Round - R6',         'r6-qi2-15w-round',            49.0),
+        ('Qi2 Wireless Charger 15W Square - R6',        'r6-qi2-15w-square',           49.0),
+        ('Qi2 Tabletop Wireless Charger - R6',          'r6-qi2-tabletop',             79.0),
+        ('Qi2 Stand for AirPods + iPhone - R6',         'r6-qi2-airpods-stand',        69.0),
+        ('Qi2 Pocket Wireless Charger USB-C - R6',      'r6-qi2-pocket-usbc',          39.0),
+        ('USB-C 5K Display Cable 1m - R6',              'r6-usbc-5k-1m',               29.0),
+        ('USB-C 5K Display Cable 2m - R6',              'r6-usbc-5k-2m',               39.0),
+        ('USB-C Thunderbolt 4 Pro Cable 3m - R6',       'r6-usbc-tb4-3m',             159.0),
+        ('USB-C Thunderbolt 4 Pro Cable 5m - R6',       'r6-usbc-tb4-5m',             199.0),
+        ('USB-C to Lightning Adapter Bundle - R6',      'r6-usbc-lightning-bundle',    39.0),
+    ]
+    for name, slug, price in magsafe_skus:
+        kind = 'MagSafe' if 'MagSafe' in name else ('Find My' if 'Find My' in name else ('Qi2' if 'Qi2' in name else 'USB-C'))
+        specs = _r6_specs(
+            {'kind': kind, 'wattage': ('15W' if 'Qi2 15W' in name or 'MagSafe' in name else 'N/A'),
+             'find_my_compatible': ('Find My' in kind or 'AirTag' in name)},
+            env='Body uses 30%+ recycled plastics. Fiber-based retail packaging.',
+            a11y=['Tactile alignment dot to aid sightless placement'],
+            in_box=[name,'USB-C to USB-C cable','Apple safety + recycling notice'],
+            whats_new='R6 — Adds Qi2 15W universal stand line and Find My beacon SKUs.',
+            compatibility=['iPhone 12+','AirPods (any)','Apple Watch with Qi2 module'],
+            breadcrumb=f'Shop > Accessories > Power & Cables > {kind}',
+        )
+        extra.append((name, slug, 'accessories', 'magsafe',
+                      f'{name}.', f'{name}. {kind} accessory.',
+                      price, None, ['Black','White'], [], specs, 2026, ''))
+
+    return extra
+
+
+EXTRA_PRODUCTS_R6 = _extend_r6()
+
+
 def _seed_extra_products():
-    """Add the EXTRA_PRODUCTS + EXTRA_PRODUCTS_R2 + EXTRA_PRODUCTS_R3 + EXTRA_PRODUCTS_R4 + EXTRA_PRODUCTS_R5 rows. Idempotent — skips slugs already present."""
+    """Add the EXTRA_PRODUCTS + EXTRA_PRODUCTS_R2 + EXTRA_PRODUCTS_R3 + EXTRA_PRODUCTS_R4 + EXTRA_PRODUCTS_R5 + EXTRA_PRODUCTS_R6 rows. Idempotent — skips slugs already present."""
     existing = {p.slug for p in Product.query.with_entities(Product.slug).all()}
     added = 0
-    for tup in (EXTRA_PRODUCTS + EXTRA_PRODUCTS_R2 + EXTRA_PRODUCTS_R3 + EXTRA_PRODUCTS_R4 + EXTRA_PRODUCTS_R5):
+    for tup in (EXTRA_PRODUCTS + EXTRA_PRODUCTS_R2 + EXTRA_PRODUCTS_R3 + EXTRA_PRODUCTS_R4 + EXTRA_PRODUCTS_R5 + EXTRA_PRODUCTS_R6):
         (name, slug, cat, subcat, subt, desc, price, mp, colors, storage, specs, year, chip) = tup
         if slug in existing:
             continue

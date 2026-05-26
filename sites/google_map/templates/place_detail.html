@@ -10,6 +10,44 @@
         {% set search_value = place.name %}
         {% include '_search_bar.html' %}
 
+        {# ---- R6 breadcrumb: Maps > Category > City > Place ---- #}
+        {% if breadcrumb %}
+        <nav class="pd-breadcrumb" aria-label="Breadcrumb"
+             style="display:flex;flex-wrap:wrap;gap:4px;align-items:center;font-size:12px;color:#5f6368;padding:8px 16px 0;">
+            {% for crumb in breadcrumb %}
+                {% if crumb.href and not loop.last %}
+                    <a href="{{ crumb.href }}" style="color:#1a73e8;text-decoration:none;">{{ crumb.label }}</a>
+                {% else %}
+                    <span aria-current="page" style="color:#202124;">{{ crumb.label }}</span>
+                {% endif %}
+                {% if not loop.last %}<span aria-hidden="true">›</span>{% endif %}
+            {% endfor %}
+        </nav>
+        {% endif %}
+
+        {# ---- R6 edge banners: permanently closed / temporarily closed / accessibility warning ---- #}
+        {% if place.is_closed_permanently %}
+        <div class="pd-banner pd-banner-closed" role="alert"
+             style="margin:12px 16px;padding:12px 14px;border-radius:8px;background:#fce8e6;color:#a50e0e;border-left:4px solid #c5221f;font-size:13px;">
+            <strong>Permanently closed.</strong>
+            {% if place.closure_reason %}{{ place.closure_reason }}{% else %}This location has shut down. Look for alternatives nearby.{% endif %}
+        </div>
+        {% elif place.is_temporarily_closed %}
+        <div class="pd-banner pd-banner-temp-closed" role="alert"
+             style="margin:12px 16px;padding:12px 14px;border-radius:8px;background:#feefc3;color:#856200;border-left:4px solid #f29900;font-size:13px;">
+            <strong>Temporarily closed.</strong>
+            {% if place.closure_reason %}{{ place.closure_reason }}{% endif %}
+            {% if place.reopen_eta %}<br><em>{{ place.reopen_eta }}</em>{% endif %}
+        </div>
+        {% endif %}
+        {% if place.accessibility_warning %}
+        <div class="pd-banner pd-banner-a11y" role="alert"
+             style="margin:12px 16px;padding:12px 14px;border-radius:8px;background:#e8f0fe;color:#174ea6;border-left:4px solid #4285f4;font-size:13px;">
+            <span class="material-icons-outlined" style="font-size:16px;vertical-align:-3px;">accessibility_new</span>
+            <strong>Accessibility notice:</strong> {{ place.accessibility_warning }}
+        </div>
+        {% endif %}
+
         <div class="pd-hero">
             <a href="{{ url_for('category_page', slug=place.category.slug) }}" class="pd-back" title="Back">
                 <span class="material-icons-outlined">arrow_back</span>
@@ -572,6 +610,58 @@
         {% for p in nearby %}
             {{ place_card(p) }}
         {% endfor %}
+
+        {# ---- R6: Similar nearby (same category, within 15 mi) ---- #}
+        {% if similar_nearby %}
+        <div class="pd-block" id="similar-nearby">
+            <div class="pd-section-title">Similar nearby</div>
+            <div class="sub" style="font-size:12px; color:var(--text-secondary); padding:4px 0 8px;">
+                {{ similar_nearby|length }} {{ place.category.name|lower if place.category else 'place' }} within 15 mi, ordered by distance
+            </div>
+        </div>
+        {% for p in similar_nearby %}
+            {{ place_card(p) }}
+        {% endfor %}
+        {% endif %}
+
+        {# ---- R6: From the same chain ---- #}
+        {% if same_chain %}
+        <div class="pd-block" id="same-chain">
+            <div class="pd-section-title">From the same chain · {{ place.chain_brand }}</div>
+            <div class="sub" style="font-size:12px; color:var(--text-secondary); padding:4px 0 8px;">
+                {{ same_chain|length }} other {{ place.chain_brand }} location{{ '' if same_chain|length == 1 else 's' }}
+            </div>
+        </div>
+        {% for p in same_chain %}
+            {{ place_card(p) }}
+        {% endfor %}
+        {% endif %}
+
+        {# ---- R6: Reviewers also visited ---- #}
+        {% if reviewers_also %}
+        <div class="pd-block" id="reviewers-also">
+            <div class="pd-section-title">Reviewers also visited</div>
+            <div class="sub" style="font-size:12px; color:var(--text-secondary); padding:4px 0 8px;">
+                Top-rated places visited by people who reviewed {{ place.name }}
+            </div>
+        </div>
+        {% for p in reviewers_also %}
+            {{ place_card(p) }}
+        {% endfor %}
+        {% endif %}
+
+        {# ---- R6: Better-rated within 1 mi ---- #}
+        {% if better_rated_1mi %}
+        <div class="pd-block" id="better-rated-1mi">
+            <div class="pd-section-title">Better-rated {{ place.category.name|lower if place.category else 'place' }} within 1 mi</div>
+            <div class="sub" style="font-size:12px; color:var(--text-secondary); padding:4px 0 8px;">
+                {{ better_rated_1mi|length }} option{{ '' if better_rated_1mi|length == 1 else 's' }} with rating &gt; {{ "%.1f"|format(place.rating) }}
+            </div>
+        </div>
+        {% for p in better_rated_1mi %}
+            {{ place_card(p) }}
+        {% endfor %}
+        {% endif %}
 
         {# R5 mobile bottom-sheet hint — collapsed by default on desktop; on
            mobile this becomes the place panel's bottom sheet handle. #}

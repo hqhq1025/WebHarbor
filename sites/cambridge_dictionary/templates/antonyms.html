@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% block title %}Antonyms of {{ word.headword }}{% endblock %}
+{% block content %}
+<div class="container">
+  <nav class="breadcrumb r6-breadcrumb" aria-label="Breadcrumb">
+    <a href="{{ url_for('index') }}">Home</a> &rsaquo;
+    <a href="{{ url_for('word_detail', slug=word.slug) }}">{{ word.headword }}</a> &rsaquo;
+    <span>Antonyms</span>
+  </nav>
+
+  <h1>What's the antonym of <em>{{ word.headword }}</em>?</h1>
+
+  {% if antonym_rows %}
+  <ul class="r6-list antonyms-list">
+    {% for w in antonym_rows %}
+      <li class="r6-list-row antonym-row">
+        <a href="{{ url_for('word_detail', slug=w.slug) }}" class="r6-list-head antonym-link">{{ w.headword }}</a>
+        {% if w.level %}<span class="r6-tag r6-tag--level">{{ w.level }}</span>{% endif %}
+        {% if w.pos %}<span class="r6-tag r6-tag--pos">{{ w.pos }}</span>{% endif %}
+        <span class="r6-list-gloss">{{ w.guide_word }}</span>
+      </li>
+    {% endfor %}
+  </ul>
+  {% else %}
+    <p class="r6-empty antonym-empty">No antonym entries available yet for "{{ word.headword }}".</p>
+  {% endif %}
+
+  {% if antonym_misses %}
+  <section class="r6-misses">
+    <h2 class="sub-section-title">Not yet in the dictionary</h2>
+    <p class="r6-help">These antonyms were referenced but don't have their own entry:</p>
+    <ul>
+      {% for s in antonym_misses %}
+        <li><span class="r6-miss-slug">{{ s }}</span></li>
+      {% endfor %}
+    </ul>
+  </section>
+  {% endif %}
+
+  <p class="r6-bottom"><a href="{{ url_for('word_detail', slug=word.slug) }}">&laquo; Back to {{ word.headword }}</a></p>
+</div>
+{% endblock %}

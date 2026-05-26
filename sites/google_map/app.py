@@ -252,6 +252,13 @@ class Place(db.Model):
     parking_lot_capacity = db.Column(db.Integer, default=0)
     ev_connector_type = db.Column(db.String(32), default="")  # CCS/CHAdeMO/Tesla/J1772
     ev_charger_kw = db.Column(db.Integer, default=0)
+    # --- R6 additions: edge banners, accessibility warnings, indoor mapping gap ---
+    is_closed_permanently = db.Column(db.Boolean, default=False, index=True)
+    is_temporarily_closed = db.Column(db.Boolean, default=False, index=True)
+    closure_reason = db.Column(db.String(160), default="")
+    reopen_eta = db.Column(db.String(80), default="")  # e.g. "Reopens Jun 18, 2026"
+    accessibility_warning = db.Column(db.String(255), default="")  # e.g. "No step-free entrance"
+    indoor_floor_unmapped = db.Column(db.Boolean, default=False, index=True)  # floors known but not yet mapped
     created_at = db.Column(db.DateTime, default=lambda: MIRROR_REFERENCE_DATETIME)
 
     reviews = db.relationship("Review", backref="place", cascade="all, delete-orphan", lazy="dynamic")
@@ -759,6 +766,75 @@ def place_detail(slug):
         ).first() is not None
         user_lists = SavedList.query.filter_by(user_id=current_user.id).all()
 
+    # ------------------------------------------------------------------
+    # R6 sections — surface secondary recommendations on every place page.
+    # All are deterministic from the existing rows (no DB writes), so they
+    # never re-randomise across hot restarts and cost nothing to compute.
+    # ------------------------------------------------------------------
+    similar_nearby = []   # same category, geographic neighbours
+    same_chain = []       # same chain_brand, any city
+    reviewers_also = []   # heuristic: same category cluster + popular
+    better_rated_1mi = [] # strictly better rating within 1.0 mile
+    if place.lat and place.lng:
+        cand = Place.query.filter(Place.id != place.id, Place.lat != 0)
+        # Same category narrowing for the "Similar nearby" rail
+        sim_q = cand.filter(Place.category_id == place.category_id)
+        for p in sim_q.limit(1500).all():
+            d = _haversine_mi(place.lat, place.lng, p.lat, p.lng)
+            if d <= 15:
+                p.distance_mi = d
+                similar_nearby.append(p)
+        similar_nearby.sort(key=lambda p: (p.distance_mi, -(p.rating or 0)))
+        similar_nearby = similar_nearby[:6]
+
+        # Better-rated within 1 mile (strictly higher rating, same category)
+        for p in similar_nearby:
+            pass  # placeholder, recomputed below from a broader sweep
+        better = []
+        sweep = Place.query.filter(
+            Place.id != place.id, Place.lat != 0,
+            Place.category_id == place.category_id,
+            Place.rating > (place.rating or 0),
+        ).limit(800).all()
+        for p in sweep:
+            d = _haversine_mi(place.lat, place.lng, p.lat, p.lng)
+            if d <= 1.0:
+                p.distance_mi = d
+                better.append(p)
+        better.sort(key=lambda p: (-(p.rating or 0), p.distance_mi))
+        better_rated_1mi = better[:6]
+
+        # Reviewers also visited: top-rated other-category places within 8 mi
+        # (a coarse "co-visit" stand-in derived from popularity, not real edges)
+        ra = []
+        for p in (cand.filter(Place.category_id != place.category_id,
+                              Place.rating >= 4.5).limit(2000).all()):
+            d = _haversine_mi(place.lat, place.lng, p.lat, p.lng)
+            if d <= 8.0:
+                p.distance_mi = d
+                rel = (p.rating or 4.0) * math.log(max(p.review_count or 1, 1) + 2)
+                ra.append((rel, p))
+        ra.sort(key=lambda kv: -kv[0])
+        reviewers_also = [p for _, p in ra[:6]]
+
+    # Same chain — independent of geography
+    if place.chain_brand:
+        same_chain = (Place.query
+                      .filter(Place.chain_brand == place.chain_brand,
+                              Place.id != place.id)
+                      .order_by(Place.rating.desc().nullslast(), Place.review_count.desc())
+                      .limit(8).all())
+
+    # Breadcrumb crumbs — Home > Category > City > Place
+    breadcrumb = [
+        {"label": "Maps", "href": url_for("index")},
+        {"label": place.category.name if place.category else "Places",
+         "href": url_for("category_page", slug=place.category.slug) if place.category else "#"},
+        {"label": place.city.display_name if place.city else "",
+         "href": url_for("city_page", slug=place.city.slug) if place.city else "#"},
+        {"label": place.name, "href": ""},
+    ]
+
     return render_template(
         "place_detail.html",
         place=place,
@@ -768,6 +844,11 @@ def place_detail(slug):
         nearby_cat_chips=nearby_cat_chips,
         is_saved=is_saved,
         user_lists=user_lists,
+        similar_nearby=similar_nearby,
+        same_chain=same_chain,
+        reviewers_also=reviewers_also,
+        better_rated_1mi=better_rated_1mi,
+        breadcrumb=breadcrumb,
     )
 
 
@@ -2126,6 +2207,43 @@ def directions(route_query=""):
         steps = selected_alt["steps"]
         summary = selected_alt["summary"]
 
+    # ------------------------------------------------------------------
+    # R6 edge: no-route-found with suggested alternatives.
+    # Fires when both endpoints resolved but no alternatives could be
+    # synthesised (e.g. trans-oceanic driving query), or when the user
+    # asked for "transit" mode between two endpoints with no nearby
+    # transit_line rows. We then surface 3 fallback suggestions:
+    # change mode, route via the nearer of either endpoint's city, or
+    # break into a multi-leg trip.
+    # ------------------------------------------------------------------
+    no_route_found = False
+    route_suggestions = []
+    if from_endpoint and to_endpoint and not alternatives:
+        no_route_found = True
+    elif (eff_mode == "transit" and from_endpoint and to_endpoint and
+          alternatives and selected_alt and
+          selected_alt.get("distance_mi", 0) > 200):
+        # Transit beyond ~200 mi is unrealistic; flag as no-route-found
+        # so the agent has to consider a mode switch.
+        no_route_found = True
+    if no_route_found:
+        alt_modes = ["driving", "transit", "walking", "bicycling"]
+        for m in alt_modes:
+            if m != eff_mode:
+                route_suggestions.append({
+                    "kind": "mode",
+                    "label": f"Try {m} instead",
+                    "href": url_for("directions",
+                                    **{"from": from_q, "to": to_q, "mode": m}),
+                })
+            if len(route_suggestions) >= 3:
+                break
+        route_suggestions.append({
+            "kind": "via-city",
+            "label": "Plan as a multi-leg trip",
+            "href": url_for("trip_create") if "trip_create" in app.view_functions else url_for("index"),
+        })
+
     return render_template(
         "directions.html",
         from_q=from_q, to_q=to_q,
@@ -2136,6 +2254,7 @@ def directions(route_query=""):
         distance_label=distance_label, duration_label=duration_label,
         mode=eff_mode,
         alternatives=alternatives, selected_alt=selected_alt,
+        no_route_found=no_route_found, route_suggestions=route_suggestions,
     )
 
 
@@ -2514,19 +2633,38 @@ def transit_realtime(city_slug=None):
         if c.id not in seen:
             seen.add(c.id)
             ordered_cities.append(c)
+    # R6: surface "no service after hours" for lines whose delay_reason
+    # was deterministically set to a service-suspended phrase. Picks up
+    # whichever lines backfill_transit_delays_r6 flagged.
+    no_service_after_hours = [
+        l for l in delayed_first
+        if (l.delay_reason or "").lower().startswith("no service")
+    ]
     return render_template(
         "transit_realtime.html",
         lines=delayed_first, cities=ordered_cities, selected_city=selected_city,
+        no_service_after_hours=no_service_after_hours,
     )
 
 
 @app.route("/place/<slug>/floors")
 def place_floors(slug):
-    """Indoor floor selector for multi-floor venues (malls, airports, hospitals)."""
+    """Indoor floor selector for multi-floor venues (malls, airports, hospitals).
+
+    R6 edge: if the venue is known to have floors but they haven't been
+    indoor-mapped yet, we render a "Indoor floor plan not yet available"
+    notice instead of an empty list.
+    """
     place = Place.query.filter_by(slug=slug).first_or_404()
     floors = place.get_floors()
+    # R6: when indoor_floor_unmapped is true, suppress the floor list and
+    # show a banner so the agent can read "indoor floor plan not mapped".
+    unmapped_banner = bool(place.indoor_floor_unmapped)
+    if unmapped_banner:
+        floors = []
     return render_template(
         "place_floors.html", place=place, floors=floors,
+        unmapped_banner=unmapped_banner,
     )
 
 
@@ -3264,7 +3402,9 @@ def seed_database():
                            expand_routes, expand_places_r4, backfill_place_extras,
                            seed_transit_lines, expand_places_r5,
                            backfill_place_extras_r5, expand_routes_r5,
-                           backfill_transit_delays)
+                           backfill_transit_delays,
+                           expand_places_r6, backfill_place_edges_r6,
+                           backfill_transit_no_service_r6)
     if Category.query.count() == 0:
         build_categories(db, Category)
     if City.query.count() == 0:
@@ -3290,6 +3430,10 @@ def seed_database():
     backfill_place_extras_r5(db, Place, Category)
     expand_routes_r5(db, Route)
     backfill_transit_delays(db, TransitLine)
+    # --- R6: cross-page density + edge banners + transit no-service ---
+    expand_places_r6(db, Place, Category, City)
+    backfill_place_edges_r6(db, Place)
+    backfill_transit_no_service_r6(db, TransitLine)
 
 
 # --------------------------------------------------------------------------

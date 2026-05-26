@@ -4150,3 +4150,492 @@ def seed_v6(db, models):
     print(f"  + seed_v6: added {created} courses (R5), "
           f"partners now {Partner.query.count()}, "
           f"total courses={Course.query.count()}")
+
+
+# ───────────────────────────────────────────────────────────────────────────
+# seed_v7 — R6 catalog polish (2026 anchor: Sustainability / BioTech /
+# FinTech / Cyber+PostQuantum / SpaceTech). Targets +3,500 deterministic
+# courses to bring total over 10,000. Reuses _v6_make_course / R5_VARIANTS
+# so byte-id reset stays intact. Idempotent — gated on partner slug
+# `r6-2026-anchor`.
+# ───────────────────────────────────────────────────────────────────────────
+
+R6_NEW_PARTNERS = [
+    # Sustainability / climate (8)
+    ('Climate Policy Initiative', 'cpi-r6', 'United States', 'institution', 'CPI'),
+    ('Rocky Mountain Institute', 'rmi-r6', 'United States', 'institution', 'RMI'),
+    ('International Energy Agency', 'iea-r6', 'France', 'institution', 'IEA'),
+    ('Schmidt Futures', 'schmidt-r6', 'United States', 'institution', 'Schmidt Futures'),
+    ('Patagonia Provisions Lab', 'patagonia-r6', 'United States', 'company', 'Patagonia Lab'),
+    ('Climeworks', 'climeworks-r6', 'Switzerland', 'company', 'Climeworks'),
+    ('Stripe Climate', 'stripe-climate-r6', 'United States', 'company', 'Stripe Climate'),
+    ('Project Drawdown', 'drawdown-r6', 'United States', 'institution', 'Drawdown'),
+    # BioTech / Pharma (6)
+    ('Moderna', 'moderna-r6', 'United States', 'company', 'Moderna'),
+    ('Genentech', 'genentech-r6', 'United States', 'company', 'Genentech'),
+    ('Beam Therapeutics', 'beam-r6', 'United States', 'company', 'Beam Tx'),
+    ('Ginkgo Bioworks', 'ginkgo-r6', 'United States', 'company', 'Ginkgo'),
+    ('Insitro', 'insitro-r6', 'United States', 'company', 'Insitro'),
+    ('Wellcome Sanger Institute', 'sanger-r6', 'United Kingdom', 'institution', 'Sanger'),
+    # FinTech / Stablecoin (5)
+    ('Circle', 'circle-r6', 'United States', 'company', 'Circle'),
+    ('Plaid', 'plaid-r6', 'United States', 'company', 'Plaid'),
+    ('Ramp', 'ramp-r6', 'United States', 'company', 'Ramp'),
+    ('Mercado Pago', 'mercadopago-r6', 'Argentina', 'company', 'Mercado Pago'),
+    ('Wise', 'wise-r6', 'United Kingdom', 'company', 'Wise'),
+    # Cyber + PQC (3)
+    ('CrowdStrike', 'crowdstrike-r6', 'United States', 'company', 'CrowdStrike'),
+    ('Cloudflare Research', 'cloudflare-r6', 'United States', 'company', 'Cloudflare'),
+    ('Open Quantum Safe', 'oqs-r6', 'Canada', 'institution', 'OQS'),
+    # SpaceTech (4) + sentinel
+    ('SpaceX Education', 'spacex-edu-r6', 'United States', 'company', 'SpaceX Edu'),
+    ('European Space Agency', 'esa-r6', 'France', 'institution', 'ESA'),
+    ('Planet Labs', 'planet-r6', 'United States', 'company', 'Planet'),
+    ('Relativity Space', 'relativity-r6', 'United States', 'company', 'Relativity'),
+    # Sentinel partner — used to gate seed_v7 idempotency.
+    ('R6 2026 Anchor', 'r6-2026-anchor', 'United States', 'institution', 'R6 Anchor'),
+]
+
+# (topic, primary_skill, category, [preferred_partner_slugs])
+R6_SUSTAINABILITY_TOPICS = [
+    ('Net-Zero Strategy for Enterprises 2026', 'Net Zero', 'Business',
+     ['cpi-r6', 'rmi-r6', 'mckinsey', 'iea-r6', 'deloitte']),
+    ('Corporate Carbon Accounting (Scope 1-3)', 'Carbon Accounting', 'Business',
+     ['cpi-r6', 'deloitte', 'sap', 'rmi-r6', 'mckinsey']),
+    ('Voluntary Carbon Markets 2026', 'Carbon Markets', 'Business',
+     ['stripe-climate-r6', 'cpi-r6', 'rmi-r6', 'drawdown-r6']),
+    ('Direct Air Capture Engineering', 'Direct Air Capture', 'Physical Science and Engineering',
+     ['climeworks-r6', 'mit', 'cmu', 'iea-r6']),
+    ('Green Hydrogen Production', 'Green Hydrogen', 'Physical Science and Engineering',
+     ['iea-r6', 'mit', 'ethz', 'rmi-r6', 'cmu']),
+    ('Battery Storage Systems for the Grid', 'Battery Storage', 'Physical Science and Engineering',
+     ['rmi-r6', 'mit', 'caltech', 'iea-r6']),
+    ('Offshore Wind Engineering 2026', 'Offshore Wind', 'Physical Science and Engineering',
+     ['iea-r6', 'mit', 'imperial', 'ethz']),
+    ('Climate Risk Disclosure (TCFD/CSRD)', 'Climate Disclosure', 'Business',
+     ['cpi-r6', 'sap', 'deloitte', 'jpmorgan']),
+    ('Circular Economy Design', 'Circular Economy', 'Business',
+     ['drawdown-r6', 'patagonia-r6', 'imperial', 'rmi-r6']),
+    ('Sustainable Supply Chains', 'Sustainable Supply Chain', 'Business',
+     ['sap', 'mckinsey', 'patagonia-r6', 'deloitte']),
+    ('Climate Tech VC Diligence', 'Climate Investing', 'Business',
+     ['stripe-climate-r6', 'jpmorgan', 'schmidt-r6', 'mckinsey']),
+    ('Climate Resilient Infrastructure', 'Climate Resilience', 'Physical Science and Engineering',
+     ['cmu', 'mit', 'imperial', 'iea-r6']),
+    ('Sustainable Aviation Fuels', 'SAF', 'Physical Science and Engineering',
+     ['iea-r6', 'mit', 'imperial', 'rmi-r6']),
+    ('Climate Adaptation for Cities', 'Climate Adaptation', 'Social Sciences',
+     ['drawdown-r6', 'iea-r6', 'oxford', 'georgetown']),
+    ('Climate Justice and Policy', 'Climate Justice', 'Social Sciences',
+     ['cpi-r6', 'georgetown', 'oxford', 'drawdown-r6']),
+    ('Carbon Removal Portfolio Design', 'Carbon Removal', 'Business',
+     ['stripe-climate-r6', 'cpi-r6', 'climeworks-r6']),
+    ('Sustainability Reporting with GRI/ESRS', 'Sustainability Reporting', 'Business',
+     ['sap', 'deloitte', 'mckinsey', 'cpi-r6']),
+    ('Geothermal Energy Engineering', 'Geothermal', 'Physical Science and Engineering',
+     ['iea-r6', 'mit', 'caltech', 'cmu']),
+    ('Sustainable Materials Science', 'Sustainable Materials', 'Physical Science and Engineering',
+     ['mit', 'ethz', 'imperial', 'patagonia-r6']),
+    ('AI for Climate Action', 'Climate AI', 'Data Science',
+     ['schmidt-r6', 'stanford', 'mit', 'rmi-r6']),
+    ('Earth Observation with Satellite Data', 'Earth Observation', 'Data Science',
+     ['planet-r6', 'esa-r6', 'schmidt-r6', 'mit']),
+    ('Climate Data Engineering', 'Climate Data', 'Data Science',
+     ['schmidt-r6', 'cpi-r6', 'planet-r6', 'snowflake']),
+    ('Lifecycle Assessment Methods', 'Lifecycle Assessment', 'Physical Science and Engineering',
+     ['ethz', 'imperial', 'patagonia-r6', 'mit']),
+    ('Building Decarbonisation Retrofits', 'Building Retrofit', 'Physical Science and Engineering',
+     ['rmi-r6', 'iea-r6', 'mit', 'ethz']),
+]
+
+R6_BIOTECH_TOPICS = [
+    ('mRNA Therapeutics 2026', 'mRNA', 'Health',
+     ['moderna-r6', 'genentech-r6', 'jhu', 'broad']),
+    ('CRISPR 2.0 — Base & Prime Editing', 'Base Editing', 'Health',
+     ['beam-r6', 'broad', 'sanger-r6', 'mit']),
+    ('Synthetic Biology Engineering', 'Synthetic Biology', 'Health',
+     ['ginkgo-r6', 'mit', 'sanger-r6', 'broad']),
+    ('GLP-1 Drug Development', 'GLP-1', 'Health',
+     ['moderna-r6', 'genentech-r6', 'jhu']),
+    ('Antibody Drug Conjugates', 'ADCs', 'Health',
+     ['genentech-r6', 'beam-r6', 'jhu', 'broad']),
+    ('Computational Drug Discovery 2026', 'Computational Drugs', 'Health',
+     ['insitro-r6', 'broad', 'genentech-r6', 'jhu']),
+    ('AlphaFold-Powered Structural Biology', 'AlphaFold', 'Health',
+     ['google', 'broad', 'sanger-r6', 'mit']),
+    ('Cell & Gene Therapy Manufacturing', 'Cell Therapy', 'Health',
+     ['genentech-r6', 'beam-r6', 'sanger-r6']),
+    ('Bioprocess Engineering at Scale', 'Bioprocess', 'Physical Science and Engineering',
+     ['ginkgo-r6', 'genentech-r6', 'mit', 'imperial']),
+    ('Genomic Data Pipelines', 'Genomic Pipelines', 'Data Science',
+     ['sanger-r6', 'broad', 'insitro-r6', 'jhu']),
+    ('Long-Read Sequencing Workflows', 'Long-Read Seq', 'Health',
+     ['sanger-r6', 'broad', 'insitro-r6']),
+    ('Spatial Transcriptomics', 'Spatial Transcriptomics', 'Health',
+     ['sanger-r6', 'broad', 'jhu', 'insitro-r6']),
+    ('Single-Cell Analysis 2026', 'Single-Cell', 'Health',
+     ['sanger-r6', 'broad', 'insitro-r6', 'jhu']),
+    ('Xenotransplantation Frontiers', 'Xenotransplant', 'Health',
+     ['jhu', 'genentech-r6', 'broad']),
+    ('Personalized Cancer Vaccines', 'Cancer Vaccines', 'Health',
+     ['moderna-r6', 'genentech-r6', 'jhu', 'broad']),
+    ('Lab Automation with Opentrons', 'Lab Automation', 'Health',
+     ['ginkgo-r6', 'insitro-r6', 'broad', 'sanger-r6']),
+    ('Microbiome Engineering', 'Microbiome', 'Health',
+     ['ginkgo-r6', 'broad', 'sanger-r6', 'jhu']),
+    ('Wearable Biosensor Design', 'Biosensors', 'Physical Science and Engineering',
+     ['mit', 'cmu', 'imperial', 'jhu']),
+    ('Foundation Models for Biology', 'Bio Foundation Models', 'Computer Science',
+     ['insitro-r6', 'google', 'broad', 'sanger-r6']),
+    ('Clinical Genomics for Physicians', 'Clinical Genomics', 'Health',
+     ['jhu', 'broad', 'sanger-r6', 'genentech-r6']),
+    ('Regulatory Affairs for Cell Therapy', 'Regulatory Affairs', 'Health',
+     ['genentech-r6', 'jhu', 'mckinsey']),
+    ('Biomanufacturing Quality Assurance', 'Biomfg QA', 'Health',
+     ['genentech-r6', 'moderna-r6', 'ginkgo-r6']),
+    ('Precision Oncology Trial Design', 'Precision Oncology', 'Health',
+     ['jhu', 'broad', 'genentech-r6', 'moderna-r6']),
+    ('Aging Biology and Geroscience', 'Geroscience', 'Health',
+     ['jhu', 'broad', 'sanger-r6', 'insitro-r6']),
+]
+
+R6_FINTECH_TOPICS = [
+    ('Stablecoin Infrastructure 2026', 'Stablecoin', 'Business',
+     ['circle-r6', 'plaid-r6', 'jpmorgan', 'stripe']),
+    ('CBDC Architecture & Pilots', 'CBDC', 'Business',
+     ['jpmorgan', 'worldbank', 'circle-r6', 'iea-r6']),
+    ('Real-World Asset Tokenization', 'RWA Tokenization', 'Business',
+     ['jpmorgan', 'circle-r6', 'mckinsey', 'plaid-r6']),
+    ('Open Banking with FAPI 2.0', 'Open Banking', 'Information Technology',
+     ['plaid-r6', 'wise-r6', 'cloudflare-r6', 'jpmorgan']),
+    ('Embedded Finance Patterns', 'Embedded Finance', 'Business',
+     ['plaid-r6', 'ramp-r6', 'stripe', 'mercadopago-r6']),
+    ('Cross-Border Payments 2026', 'Cross-Border Payments', 'Business',
+     ['wise-r6', 'circle-r6', 'mercadopago-r6', 'jpmorgan']),
+    ('Buy Now Pay Later Risk Modeling', 'BNPL Risk', 'Business',
+     ['ramp-r6', 'plaid-r6', 'jpmorgan']),
+    ('FinTech Compliance Engineering', 'FinTech Compliance', 'Business',
+     ['plaid-r6', 'ramp-r6', 'jpmorgan', 'deloitte']),
+    ('AML Transaction Monitoring with ML', 'AML', 'Business',
+     ['jpmorgan', 'plaid-r6', 'deloitte', 'mckinsey']),
+    ('Fraud Detection at Scale', 'Fraud Detection', 'Data Science',
+     ['stripe', 'plaid-r6', 'jpmorgan', 'cloudflare-r6']),
+    ('Corporate Card Programs', 'Corporate Cards', 'Business',
+     ['ramp-r6', 'plaid-r6', 'stripe']),
+    ('Treasury Automation with Stablecoins', 'Treasury Automation', 'Business',
+     ['circle-r6', 'ramp-r6', 'wise-r6']),
+    ('Latin America FinTech 2026', 'LATAM FinTech', 'Business',
+     ['mercadopago-r6', 'wise-r6', 'jpmorgan']),
+    ('DeFi Lending Protocol Design', 'DeFi Lending', 'Business',
+     ['circle-r6', 'mit', 'jpmorgan']),
+    ('On-Chain Identity & Proof of Personhood', 'On-Chain Identity', 'Information Technology',
+     ['circle-r6', 'cloudflare-r6', 'github']),
+    ('Crypto Custody for Institutions', 'Crypto Custody', 'Business',
+     ['circle-r6', 'jpmorgan', 'deloitte']),
+    ('Tax Reporting for Digital Assets', 'Crypto Tax', 'Business',
+     ['ramp-r6', 'deloitte', 'jpmorgan']),
+    ('Risk-Weighted Capital with Basel IV', 'Basel IV', 'Business',
+     ['jpmorgan', 'deloitte', 'mckinsey']),
+    ('FinTech Product Management 2026', 'FinTech PM', 'Business',
+     ['ramp-r6', 'plaid-r6', 'stripe', 'wise-r6']),
+    ('Robo-Advisory Platforms', 'Robo-Advisory', 'Business',
+     ['plaid-r6', 'jpmorgan', 'wise-r6']),
+    ('ISO 20022 Migration', 'ISO 20022', 'Information Technology',
+     ['jpmorgan', 'wise-r6', 'plaid-r6']),
+    ('Payment Orchestration Layers', 'Payment Orchestration', 'Information Technology',
+     ['stripe', 'plaid-r6', 'ramp-r6']),
+    ('Real-Time Payments (FedNow / RTP)', 'Real-Time Payments', 'Business',
+     ['jpmorgan', 'plaid-r6', 'wise-r6']),
+    ('FinTech Cybersecurity Foundations', 'FinTech Security', 'Information Technology',
+     ['crowdstrike-r6', 'cloudflare-r6', 'plaid-r6']),
+]
+
+R6_CYBER_TOPICS = [
+    ('Post-Quantum Cryptography Migration', 'PQC Migration', 'Information Technology',
+     ['oqs-r6', 'cloudflare-r6', 'cmu', 'mit']),
+    ('CRYSTALS-Kyber and Dilithium Deployment', 'Kyber & Dilithium', 'Information Technology',
+     ['oqs-r6', 'cloudflare-r6', 'ibm-quantum-r5', 'mit']),
+    ('Quantum-Safe TLS at Scale', 'Quantum-Safe TLS', 'Information Technology',
+     ['cloudflare-r6', 'oqs-r6', 'github']),
+    ('Zero Trust Architecture 2026', 'Zero Trust', 'Information Technology',
+     ['crowdstrike-r6', 'cloudflare-r6', 'cisco']),
+    ('Endpoint Detection and Response', 'EDR', 'Information Technology',
+     ['crowdstrike-r6', 'cisco', 'cloudflare-r6']),
+    ('Cloud Security Posture Management', 'CSPM', 'Information Technology',
+     ['cloudflare-r6', 'crowdstrike-r6', 'aws']),
+    ('Supply Chain Security with SLSA', 'Supply Chain Security', 'Information Technology',
+     ['github', 'cloudflare-r6', 'redhat']),
+    ('SBOM and CycloneDX in Production', 'SBOM', 'Information Technology',
+     ['github', 'redhat', 'cloudflare-r6']),
+    ('LLM Application Security (OWASP LLM Top 10)', 'LLM Security', 'Information Technology',
+     ['anthropic', 'cloudflare-r6', 'crowdstrike-r6']),
+    ('Threat Intelligence with MITRE ATT&CK', 'Threat Intel', 'Information Technology',
+     ['crowdstrike-r6', 'cisco', 'cloudflare-r6']),
+    ('Identity Threat Detection & Response', 'ITDR', 'Information Technology',
+     ['crowdstrike-r6', 'cisco', 'cloudflare-r6']),
+    ('SOC 2026 Engineering', 'SOC Engineering', 'Information Technology',
+     ['crowdstrike-r6', 'cloudflare-r6', 'datadog']),
+    ('Hardware Security with TPM 2.0', 'Hardware Security', 'Information Technology',
+     ['intel', 'cisco', 'cmu']),
+    ('Cryptographic Agility Patterns', 'Crypto Agility', 'Information Technology',
+     ['oqs-r6', 'cloudflare-r6', 'cmu']),
+    ('Quantum Key Distribution Networks', 'QKD', 'Information Technology',
+     ['oqs-r6', 'ibm-quantum-r5', 'mit']),
+    ('Privacy-Preserving ML (DP, MPC, FHE)', 'Privacy ML', 'Data Science',
+     ['cloudflare-r6', 'mit', 'cmu']),
+    ('Confidential Computing with TEEs', 'Confidential Computing', 'Information Technology',
+     ['intel', 'cloudflare-r6', 'aws']),
+    ('Mobile App Security 2026', 'Mobile Security', 'Information Technology',
+     ['apple', 'cloudflare-r6', 'crowdstrike-r6']),
+    ('OT and ICS Cybersecurity', 'OT Security', 'Information Technology',
+     ['crowdstrike-r6', 'cisco', 'cmu']),
+    ('Cyber Incident Response Playbooks', 'Incident Response', 'Information Technology',
+     ['crowdstrike-r6', 'cisco', 'cloudflare-r6']),
+    ('GenAI for Defenders', 'GenAI Defense', 'Information Technology',
+     ['crowdstrike-r6', 'cloudflare-r6', 'anthropic']),
+    ('Adversarial Machine Learning', 'Adversarial ML', 'Computer Science',
+     ['allen-ai', 'mit', 'cmu', 'anthropic']),
+    ('Cybersecurity for Critical Infrastructure', 'Critical Infrastructure', 'Information Technology',
+     ['crowdstrike-r6', 'cisco', 'iea-r6']),
+    ('Privacy Engineering with PETs', 'Privacy Engineering', 'Information Technology',
+     ['cloudflare-r6', 'apple', 'mit']),
+]
+
+R6_SPACETECH_TOPICS = [
+    ('Smallsat Mission Engineering', 'Smallsat', 'Physical Science and Engineering',
+     ['esa-r6', 'planet-r6', 'mit', 'cmu']),
+    ('Orbital Mechanics 2026', 'Orbital Mechanics', 'Physical Science and Engineering',
+     ['esa-r6', 'mit', 'caltech', 'nasa']),
+    ('Liquid Rocket Propulsion', 'Liquid Propulsion', 'Physical Science and Engineering',
+     ['relativity-r6', 'spacex-edu-r6', 'mit', 'caltech']),
+    ('Additive Manufacturing for Aerospace', 'Aerospace AM', 'Physical Science and Engineering',
+     ['relativity-r6', 'mit', 'gatech', 'esa-r6']),
+    ('Satellite Communications 2026', 'SatCom', 'Information Technology',
+     ['esa-r6', 'planet-r6', 'cisco', 'caltech']),
+    ('Earth Observation Image Pipelines', 'EO Pipelines', 'Data Science',
+     ['planet-r6', 'esa-r6', 'schmidt-r6', 'nasa']),
+    ('Space Sustainability and Debris', 'Space Debris', 'Physical Science and Engineering',
+     ['esa-r6', 'nasa', 'mit', 'planet-r6']),
+    ('Lunar Surface Operations', 'Lunar Ops', 'Physical Science and Engineering',
+     ['nasa', 'esa-r6', 'mit', 'caltech']),
+    ('In-Space Manufacturing 2026', 'In-Space Manufacturing', 'Physical Science and Engineering',
+     ['nasa', 'mit', 'caltech', 'relativity-r6']),
+    ('Astrodynamics for Smallsats', 'Astrodynamics', 'Physical Science and Engineering',
+     ['esa-r6', 'caltech', 'mit', 'planet-r6']),
+    ('Mission Operations Software', 'Mission Ops Software', 'Information Technology',
+     ['esa-r6', 'nasa', 'planet-r6', 'github']),
+    ('Space Radiation Hardening', 'Radiation Hardening', 'Physical Science and Engineering',
+     ['nasa', 'esa-r6', 'caltech', 'mit']),
+    ('Spacecraft Attitude Control', 'Attitude Control', 'Physical Science and Engineering',
+     ['esa-r6', 'caltech', 'mit', 'cmu']),
+    ('Solar Sail Propulsion', 'Solar Sail', 'Physical Science and Engineering',
+     ['esa-r6', 'caltech', 'nasa', 'mit']),
+    ('Quantum Communication from Space', 'Space Quantum Comms', 'Physical Science and Engineering',
+     ['ibm-quantum-r5', 'esa-r6', 'mit', 'caltech']),
+    ('Mars Mission Architecture', 'Mars Missions', 'Physical Science and Engineering',
+     ['nasa', 'esa-r6', 'mit', 'spacex-edu-r6']),
+    ('Asteroid Mining Foundations', 'Asteroid Mining', 'Physical Science and Engineering',
+     ['nasa', 'caltech', 'mit', 'planet-r6']),
+    ('Space Law and Policy 2026', 'Space Law', 'Social Sciences',
+     ['georgetown', 'oxford', 'esa-r6', 'nasa']),
+    ('Constellation Operations at Scale', 'Constellation Ops', 'Information Technology',
+     ['planet-r6', 'esa-r6', 'nasa', 'cloudflare-r6']),
+    ('GNC for Lunar Landers', 'GNC', 'Physical Science and Engineering',
+     ['nasa', 'esa-r6', 'mit', 'cmu']),
+    ('Space Weather and Forecasting', 'Space Weather', 'Physical Science and Engineering',
+     ['nasa', 'esa-r6', 'caltech', 'planet-r6']),
+    ('Cryogenic Propellant Storage', 'Cryogenic Propellants', 'Physical Science and Engineering',
+     ['nasa', 'relativity-r6', 'caltech', 'mit']),
+    ('Optical Inter-Satellite Links', 'OISL', 'Information Technology',
+     ['esa-r6', 'planet-r6', 'caltech', 'cisco']),
+    ('Spacecraft Cyber Defense', 'Space Cybersecurity', 'Information Technology',
+     ['esa-r6', 'crowdstrike-r6', 'cloudflare-r6', 'nasa']),
+]
+
+# Sixth cluster — EdgeAI / On-Device Models 2026. Compact (15 topics) so the
+# total catalog ticks safely over 10,000 with margin.
+R6_EDGEAI_TOPICS = [
+    ('On-Device LLMs with Apple Foundation Models', 'On-Device LLMs', 'Computer Science',
+     ['apple', 'deeplearningai', 'meta', 'github']),
+    ('TinyML for Microcontrollers 2026', 'TinyML', 'Computer Science',
+     ['cmu', 'mit', 'github', 'cloudflare-r6']),
+    ('Edge Inference with TensorRT-LLM', 'Edge Inference', 'Information Technology',
+     ['nvidia', 'meta', 'together']),
+    ('Quantisation-Aware Training', 'Quantisation', 'Computer Science',
+     ['meta', 'mistral', 'together', 'deeplearningai']),
+    ('Mobile NPU Programming (Apple ANE / Qualcomm)', 'Mobile NPU', 'Computer Science',
+     ['apple', 'cmu', 'nvidia']),
+    ('Federated Learning at the Edge', 'Federated Learning', 'Computer Science',
+     ['google', 'apple', 'mit', 'cmu']),
+    ('Streaming Speech Models for Wearables', 'Wearable Speech', 'Computer Science',
+     ['apple', 'meta', 'google']),
+    ('On-Device Recommender Systems', 'On-Device Recsys', 'Data Science',
+     ['apple', 'meta', 'google']),
+    ('LLM Routing — Cloud vs Edge', 'LLM Routing', 'Information Technology',
+     ['cloudflare-r6', 'together', 'github']),
+    ('Edge GenAI for Cameras', 'Edge GenAI', 'Computer Science',
+     ['nvidia', 'apple', 'meta']),
+    ('Battery-Aware Model Scheduling', 'Battery-Aware ML', 'Computer Science',
+     ['apple', 'cmu', 'mit']),
+    ('Memory-Mapped Model Loading', 'mmap Models', 'Information Technology',
+     ['together', 'github', 'cloudflare-r6']),
+    ('Edge Vector Databases', 'Edge Vector DBs', 'Computer Science',
+     ['pinecone', 'weaviate', 'cloudflare-r6']),
+    ('Embedded Vision for Drones', 'Embedded Vision', 'Computer Science',
+     ['nvidia', 'cmu', 'mit', 'esa-r6']),
+    ('Privacy-First On-Device Personalisation', 'On-Device Privacy', 'Computer Science',
+     ['apple', 'cloudflare-r6', 'cmu']),
+]
+
+# Use the same 7 variants from R5 — keeps make_course signature unchanged.
+# (suffix, level, course_type, hours, weeks, mod_weeks,
+#  base_enrolled, base_reviews, recommended_workload)
+R6_VARIANTS = R5_VARIANTS
+
+
+def seed_v7(db, models):
+    """R6 catalog polish — adds ~3500 deterministic 2026 courses across
+    Sustainability / BioTech / FinTech / Cyber+PQC / SpaceTech, plus +27
+    fresh partners. Backfills R5 columns on any new rows. Idempotent —
+    gated on partner slug `r6-2026-anchor`."""
+    Partner = models['Partner']
+    Course = models['Course']
+    CourseModule = models['CourseModule']
+
+    if Partner.query.filter_by(slug='r6-2026-anchor').first():
+        return  # already seeded
+
+    # 1) Partners ─────────────────────────────────────────────────────────────
+    for name, slug, country, ptype, short in R6_NEW_PARTNERS:
+        if Partner.query.filter_by(slug=slug).first():
+            continue
+        db.session.add(Partner(name=name, slug=slug, country=country,
+                               partner_type=ptype, short_name=short))
+    db.session.commit()
+
+    pid = {p.slug: p.id for p in Partner.query.all()}
+    created = 0
+
+    def _add_modules(course_id, course_title, primary, weeks, workload):
+        weeks = max(1, int(weeks))
+        for w in range(1, weeks + 1):
+            if w == 1:
+                mt = f'Week {w}: {primary} — 2026 Landscape'
+                md = (f'Orientation: today\'s {primary} releases, mental model, '
+                      f'baseline workflow.')
+            elif w == weeks:
+                mt = f'Week {w}: Capstone — Ship a {primary} Artefact'
+                md = (f'Capstone: deliver a portfolio-grade {primary} project '
+                      f'and present a 5-minute deck.')
+            else:
+                mt = f'Week {w}: Applied {primary}'
+                md = (f'Hands-on lab + graded assignment exercising {primary} '
+                      f'on a realistic workload.')
+            vts = [
+                f'Lesson {w}.1: {mt}',
+                f'Lesson {w}.2: Worked example for {primary}',
+                f'Lesson {w}.3: Practice drill ({course_title})',
+                f'Lesson {w}.4: 2026 trends — what to watch',
+                f'Lesson {w}.5: Captions stub (en, es, fr, de, zh, ja, ar, pt, ru, ko, hi)',
+            ]
+            db.session.add(CourseModule(
+                course_id=course_id, week_number=w, title=mt, description=md,
+                videos_count=5, readings_count=3, quizzes_count=1,
+                video_titles=json.dumps(vts)))
+
+    def _persist(spec):
+        c = Course(
+            title=spec['title'], slug=spec['slug'],
+            partner_id=spec['partner_id'], course_type=spec['course_type'],
+            level=spec['level'], category=spec['category'],
+            subcategory=spec['subcategory'],
+            duration_text=spec['duration_text'],
+            duration_weeks=spec['duration_weeks'],
+            duration_hours=spec['duration_hours'],
+            rating=spec['rating'], review_count=spec['review_count'],
+            enrolled_count=spec['enrolled_count'],
+            is_free=spec['is_free'], has_certificate=spec['has_certificate'],
+            credit_eligible=spec['credit_eligible'],
+            instructor=spec['instructor'],
+            instructor_title=spec['instructor_title'],
+            description=spec['description'],
+            skills=json.dumps(spec['skills']),
+            what_you_learn=json.dumps(spec['what_you_learn']),
+            feature_tags=json.dumps(spec['feature_tags']),
+            is_featured=spec['is_featured'], is_new=spec['is_new'],
+            sort_date=spec['sort_date'],
+            color_class=spec['color_class'],
+            testimonials_json='[]',
+            preview_video_url=spec['preview_video_url'],
+            textbook_isbn=spec['textbook_isbn'],
+            estimated_workload_hours_per_week=spec[
+                'estimated_workload_hours_per_week'],
+        )
+        db.session.add(c)
+        db.session.flush()
+        _add_modules(c.id, c.title, spec['primary'], spec['module_weeks'],
+                     spec['workload'])
+
+    clusters = [
+        ('r6-sustainability', 'sustainability-2026', R6_SUSTAINABILITY_TOPICS, 'cpi-r6'),
+        ('r6-biotech',        'biotech-2026',        R6_BIOTECH_TOPICS,        'broad'),
+        ('r6-fintech',        'fintech-2026',        R6_FINTECH_TOPICS,        'plaid-r6'),
+        ('r6-cyber',          'cyber-2026',          R6_CYBER_TOPICS,          'crowdstrike-r6'),
+        ('r6-spacetech',      'spacetech-2026',      R6_SPACETECH_TOPICS,      'nasa'),
+        ('r6-edgeai',         'edgeai-2026',         R6_EDGEAI_TOPICS,         'apple'),
+    ]
+    for prefix, anchor_tag, topics, fallback_partner in clusters:
+        for t_idx, (topic, primary, category, partners) in enumerate(topics):
+            for p_idx, partner_slug in enumerate(partners):
+                partner_eff = partner_slug if pid.get(partner_slug) else fallback_partner
+                for v_idx, variant in enumerate(R6_VARIANTS):
+                    idx = t_idx * 100 + p_idx * 10 + v_idx
+                    spec = _v6_make_course(
+                        R5_VARIANT=variant, topic=topic, primary=primary,
+                        category=category, partner_eff=partner_eff, pid=pid,
+                        idx=idx, anchor_tag=anchor_tag,
+                        prefix_slug=prefix)
+                    if Course.query.filter_by(slug=spec['slug']).first():
+                        continue
+                    _persist(spec)
+                    created += 1
+        db.session.commit()
+
+    # 2) Backfill R5 columns on any rows still missing them (safety net) ───
+    from sqlalchemy import text
+    conn = db.engine.connect()
+    try:
+        rows = conn.execute(text(
+            "SELECT id, slug, course_type, duration_hours, duration_weeks "
+            "FROM courses "
+            "WHERE preview_video_url IS NULL OR preview_video_url = '' "
+            "   OR textbook_isbn IS NULL OR textbook_isbn = '' "
+            "   OR estimated_workload_hours_per_week IS NULL "
+            "   OR estimated_workload_hours_per_week = 0 "
+            "ORDER BY id"
+        )).fetchall()
+        for row in rows:
+            cid, slug, ctype, d_hours, d_weeks = row
+            preview = _v6_preview_url(slug or f'course-{cid}', ctype or 'course')
+            isbn    = _v6_textbook_isbn(slug or f'course-{cid}')
+            try:
+                workload = round((d_hours or 0) / (d_weeks or 1), 1)
+            except ZeroDivisionError:
+                workload = 4.0
+            if workload <= 0:
+                workload = 4.0
+            workload = max(1.0, min(20.0, workload))
+            conn.execute(text(
+                "UPDATE courses "
+                "   SET preview_video_url = :p, "
+                "       textbook_isbn = :i, "
+                "       estimated_workload_hours_per_week = :w "
+                " WHERE id = :c"
+            ), {'p': preview, 'i': isbn, 'w': workload, 'c': cid})
+        conn.commit()
+    finally:
+        conn.close()
+
+    print(f"  + seed_v7: added {created} courses (R6), "
+          f"partners now {Partner.query.count()}, "
+          f"total courses={Course.query.count()}")
