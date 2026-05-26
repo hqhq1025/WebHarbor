@@ -892,6 +892,17 @@ def course_detail(slug):
                            is_enrolled=is_enrolled, is_saved=is_saved,
                            review_form=review_form, rating_breakdown=breakdown)
 
+
+@app.route('/specializations/<path:slug>')
+def specialization_detail_alias(slug):
+    """Real Coursera specialization URLs resolve to the mirrored course page."""
+    course = Course.query.filter_by(slug=slug).first()
+    if not course and not slug.endswith('-specialization'):
+        course = Course.query.filter_by(slug=f'{slug}-specialization').first()
+    if not course:
+        abort(404)
+    return redirect(url_for('course_detail', slug=course.slug))
+
 # ─── Routes: Auth ─────────────────────────────────────────────────────────────
 
 @app.route('/login', methods=['GET', 'POST'])

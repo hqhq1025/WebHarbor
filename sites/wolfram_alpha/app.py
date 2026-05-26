@@ -844,6 +844,9 @@ def seed_database():
 
 @app.route('/')
 def index():
+    home_query = request.args.get('i', '').strip()
+    if home_query:
+        return redirect(url_for('input_result', i=home_query))
     categories = Category.query.order_by(Category.sort_order).all()
     featured   = Topic.query.filter_by(is_featured=True).limit(8).all()
     new_topics = Topic.query.filter_by(is_new=True).limit(4).all()
@@ -853,6 +856,14 @@ def index():
 
 @app.route('/examples/<cat_slug>')
 def examples(cat_slug):
+    normalized = _slugify_human_path(cat_slug)
+    if normalized != cat_slug:
+        topic = Topic.query.filter_by(slug=normalized).first()
+        if topic:
+            return redirect(url_for('topic_detail', slug=topic.slug))
+        category = Category.query.filter_by(slug=normalized).first()
+        if category:
+            return redirect(url_for('examples', cat_slug=category.slug))
     category = Category.query.filter_by(slug=cat_slug).first_or_404()
     subcategories = Subcategory.query.filter_by(
         category_id=category.id).order_by(Subcategory.sort_order).all()
@@ -861,6 +872,16 @@ def examples(cat_slug):
         topics_by_sub[sub.slug] = Topic.query.filter_by(subcategory_id=sub.id).all()
     return render_template('examples.html', category=category,
                            subcategories=subcategories, topics_by_sub=topics_by_sub)
+
+
+@app.route('/examples/<cat_slug>/<path:topic_slug>')
+def examples_topic_alias(cat_slug, topic_slug):
+    """Accept real/example nested topic URLs and route to the topic page."""
+    normalized = _slugify_human_path(topic_slug)
+    topic = Topic.query.filter_by(slug=normalized).first()
+    if topic:
+        return redirect(url_for('topic_detail', slug=topic.slug))
+    return redirect(url_for('examples', cat_slug=_slugify_human_path(cat_slug)))
 
 
 @app.route('/topic/<slug>')
@@ -879,6 +900,13 @@ def topic_detail(slug):
     db.session.commit()
     return render_template('topic_detail.html', topic=topic, gallery=gallery,
                            related=related, feedback=feedback, is_fav=is_fav)
+
+
+def _slugify_human_path(value):
+    value = (value or '').strip().lower()
+    value = value.replace('&', ' and ')
+    value = re.sub(r'[^a-z0-9]+', '-', value)
+    return value.strip('-')
 
 
 STOPWORDS = {

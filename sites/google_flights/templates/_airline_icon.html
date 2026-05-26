@@ -1,0 +1,16 @@
+{% macro airline_icon(flight, size='md') -%}
+  {% set code = flight.airline_code or flight.airline[:2]|upper %}
+  {% set real_logo_codes = ['AA', 'DL', 'UA', 'B6', 'WN', 'BA', 'LH', 'AF', 'KL', 'EK', 'QR', 'EY', 'SQ', 'NH', 'JL', 'TK', 'AC', 'IB', 'QF'] %}
+  <div class="airline-logo airline-logo-{{ size }}"
+       title="{{ flight.airline }}{% if flight.flight_number %} {{ flight.flight_number }}{% endif %}"
+       aria-label="{{ flight.airline }}{% if flight.flight_number %} {{ flight.flight_number }}{% endif %}">
+    {% if code in real_logo_codes %}
+      <img src="{{ url_for('static', filename='icons/airlines/' ~ code|lower ~ '.svg') }}"
+           alt=""
+           loading="lazy"
+           decoding="async"
+           onerror="this.remove();this.parentElement.classList.add('logo-missing')">
+    {% endif %}
+    <span class="airline-logo-code" aria-hidden="true">{{ code }}</span>
+  </div>
+{%- endmacro %}

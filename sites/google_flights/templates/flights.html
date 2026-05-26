@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% from "_airline_icon.html" import airline_icon %}
 {% block title %}
   {% if origin and destination %}{{ origin.city }} to {{ destination.city }} flights | Google Flights
   {% else %}Flights | Google Flights{% endif %}
@@ -156,9 +157,7 @@
           <a href="{{ url_for('flight_detail', flight_id=f.id, dep=depart, **({'return': return_date} if return_date else {})) }}" class="flight-row result-card {% if f.is_best %}best{% endif %}"
              data-flight-id="{{ f.id }}" data-price="{{ display_price }}" data-duration="{{ f.duration_minutes }}"
              data-stops="{{ f.stops }}" data-cabin="{{ f.cabin_class }}" data-airline="{{ f.airline }}">
-            <div class="airline-logo">
-              <img src="{{ f.airline_logo }}" alt="{{ f.airline }}" onerror="this.style.display='none'">
-            </div>
+            {{ airline_icon(f) }}
             <div class="flight-row-main">
               <div>
                 <div class="flight-time">{{ f.departure_time }}</div>

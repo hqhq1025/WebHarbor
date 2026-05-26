@@ -932,6 +932,12 @@ def index():
     )
 
 
+@app.route("/news")
+def news_root_alias():
+    """Real bbc.com/news section root resolves to the mirror homepage."""
+    return redirect(url_for("index"))
+
+
 @app.route("/section/<slug>")
 @app.route("/news/<slug>")
 def section_page(slug):

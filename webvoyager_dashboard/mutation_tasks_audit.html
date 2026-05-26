@@ -1,0 +1,145 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>WebHarbor 登录态任务质量审计</title>
+  <link rel="stylesheet" href="styles.css">
+  <script src="mutation_tasks_audit_data.js"></script>
+  <style>
+    .mutation-hero { min-height: auto; grid-template-columns: minmax(0, 1fr); }
+    .mutation-summary { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; margin: 18px 0 24px; }
+    .audit-metric { background: rgba(var(--paper-rgb), .9); border: 1px solid var(--line); padding: 18px; box-shadow: var(--shadow); }
+    .audit-metric b { display: block; font: 800 34px/1 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; color: var(--green); }
+    .audit-metric span { display:block; margin-top: 8px; color: var(--muted); font-size: 13px; }
+    .audit-toolbar { display:flex; gap: 10px; align-items:center; margin: 12px 0 18px; flex-wrap: wrap; }
+    .audit-toolbar input, .audit-toolbar select { min-height: 42px; border: 1px solid var(--line); background: var(--input-bg); color: var(--ink); padding: 0 12px; }
+    .audit-toolbar input { min-width: min(460px, 100%); flex: 1; }
+    .site-audit-grid { display:grid; gap: 18px; }
+    .site-audit-card { background: rgba(var(--paper-rgb), .9); border: 1px solid var(--line); box-shadow: var(--shadow); padding: 18px; }
+    .site-audit-head { display:flex; align-items:flex-start; justify-content:space-between; gap: 18px; border-bottom: 1px solid var(--line); padding-bottom: 14px; }
+    .site-audit-head h2 { margin: 0; font-size: 26px; }
+    .site-audit-head code { color: var(--muted); font-size: 12px; }
+    .status-row { display:flex; flex-wrap:wrap; gap: 8px; margin-top: 10px; }
+    .audit-pill { display:inline-flex; align-items:center; min-height: 28px; padding: 4px 9px; border:1px solid var(--line); font: 700 11px/1.2 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; text-transform: uppercase; }
+    .audit-pill.ok { background: color-mix(in srgb, var(--green) 14%, transparent); color: var(--green); }
+    .audit-pill.warn { background: color-mix(in srgb, var(--amber) 15%, transparent); color: var(--amber); }
+    .audit-pill.fail { background: color-mix(in srgb, var(--red) 14%, transparent); color: var(--red); }
+    .login-url { display:block; margin-top: 8px; color: var(--blue); word-break: break-all; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 12px; }
+    .task-table-wrap { overflow:auto; margin-top: 14px; border:1px solid var(--line); }
+    .task-table { width:100%; min-width: 1100px; border-collapse: collapse; background: var(--card); }
+    .task-table th, .task-table td { text-align:left; vertical-align: top; padding: 11px 12px; border-bottom:1px solid var(--line); font-size: 13px; }
+    .task-table th { position: sticky; top:0; background: var(--paper); z-index:1; color: var(--muted); font: 800 11px/1.2 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; text-transform: uppercase; }
+    .task-table tr:last-child td { border-bottom:0; }
+    .task-id { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; color: var(--green); font-size: 12px; word-break: break-all; }
+    .instruction { max-width: 460px; color: var(--panel-text); }
+    .json-mini { margin:0; white-space: pre-wrap; font: 12px/1.45 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; color: var(--muted); }
+    .validator-box { display:grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 12px; }
+    .validator-box pre { margin:0; padding: 10px; border: 1px solid var(--line); background: var(--card); overflow:auto; max-height: 100px; font: 12px/1.35 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+    @media (max-width: 900px) { .mutation-summary { grid-template-columns: 1fr 1fr; } .site-audit-head { display:block; } .validator-box { grid-template-columns: 1fr; } }
+    @media (max-width: 620px) { .mutation-summary { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body>
+  <div class="page-shell">
+    <aside class="rail">
+      <div class="mark"><span class="mark-dot"></span><div><strong>Mutation</strong><small>login task audit</small></div></div>
+      <nav>
+        <a href="index.html">Main Dashboard</a>
+        <a href="#overview">Overview</a>
+        <a href="#sites">Sites</a>
+      </nav>
+      <div class="rail-note"><span>Generated</span><time id="generatedAt">-</time></div>
+    </aside>
+    <main>
+      <section class="hero mutation-hero" id="overview">
+        <div class="hero-copy">
+          <p class="eyebrow">Authenticated structured tasks</p>
+          <h1>登录态任务质量审计</h1>
+          <p class="hero-lede">每个 supported WebHarbor site 生成 5 条 mutation task。这里检查真实上游登录 URL、actor 注入、before/after DB oracle，以及任务文本质量。</p>
+        </div>
+      </section>
+      <section class="mutation-summary" id="summary"></section>
+      <section id="sites">
+        <div class="section-title"><p class="eyebrow">Samples</p><h2>逐站登录任务样例</h2></div>
+        <div class="audit-toolbar">
+          <input id="searchBox" type="search" placeholder="搜索 site / family / target / instruction">
+          <select id="statusFilter"><option value="all">全部状态</option><option value="clean">质量通过</option><option value="issue">有问题</option></select>
+        </div>
+        <div class="site-audit-grid" id="siteGrid"></div>
+      </section>
+    </main>
+  </div>
+<script>
+const data = window.MUTATION_TASK_AUDIT;
+const $ = (sel) => document.querySelector(sel);
+const esc = (v) => String(v ?? '').replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
+const compactJson = (obj) => JSON.stringify(obj, null, 2);
+function quality(site) {
+  const issues = [];
+  if (!site.login_real_url) issues.push('login URL is not real upstream HTTPS');
+  if (!site.before.ok) issues.push('before validator failed');
+  if (site.after.ok) issues.push('after validator passed before browser action');
+  for (const task of site.tasks) {
+    if (!task.actor?.email || !task.actor?.password) issues.push(`${task.id}: missing actor credentials`);
+    if (!task.state_transition?.before || !task.state_transition?.after) issues.push(`${task.id}: missing state transition`);
+  }
+  return issues;
+}
+function renderSummary() {
+  $('#generatedAt').textContent = new Date(data.generated_at).toLocaleString();
+  const cards = [
+    ['Sites', data.site_count, '覆盖 supported mutation sites'],
+    ['Specs', data.total_specs, `每站点 ${data.sample_limit} 条样例`],
+    ['Before Pass', data.summary.before_pass, '初始状态 absent 校验通过'],
+    ['Expected After Fail', data.summary.after_expected_fail, '未执行动作前 after 应失败'],
+  ];
+  $('#summary').innerHTML = cards.map(([label, value, desc]) => `<div class="audit-metric"><b>${esc(value)}</b><span>${esc(label)} · ${esc(desc)}</span></div>`).join('');
+}
+function renderSites() {
+  const q = $('#searchBox').value.trim().toLowerCase();
+  const mode = $('#statusFilter').value;
+  $('#siteGrid').innerHTML = data.sites.map(site => ({site, issues: quality(site)}))
+    .filter(({site, issues}) => mode === 'all' || (mode === 'clean' ? issues.length === 0 : issues.length > 0))
+    .filter(({site}) => {
+      const blob = JSON.stringify(site).toLowerCase();
+      return !q || blob.includes(q);
+    })
+    .map(({site, issues}) => {
+      const rows = site.tasks.map(task => `<tr>
+        <td><div class="task-id">${esc(task.id)}</div></td>
+        <td class="instruction">${esc(task.instruction)}</td>
+        <td><pre class="json-mini">${esc(compactJson(task.actor))}</pre></td>
+        <td><pre class="json-mini">${esc(compactJson(task.target_entity))}</pre></td>
+        <td><pre class="json-mini">${esc(compactJson(task.expected_answer))}</pre></td>
+      </tr>`).join('');
+      return `<article class="site-audit-card">
+        <div class="site-audit-head">
+          <div>
+            <h2>${esc(site.web_name)}</h2>
+            <code>${esc(site.site)} / ${esc(site.family)} / ${site.count} tasks</code>
+            <a class="login-url" href="${esc(site.login_url)}" target="_blank" rel="noreferrer">${esc(site.login_url)}</a>
+            <div class="status-row">
+              <span class="audit-pill ${site.login_real_url ? 'ok' : 'fail'}">real login URL</span>
+              <span class="audit-pill ${site.before.ok ? 'ok' : 'fail'}">before ${site.before.ok ? 'pass' : 'fail'}</span>
+              <span class="audit-pill ${!site.after.ok ? 'ok' : 'fail'}">after pre-run ${!site.after.ok ? 'fails' : 'passes'}</span>
+              <span class="audit-pill ${issues.length ? 'warn' : 'ok'}">${issues.length ? `${issues.length} issue(s)` : 'quality clean'}</span>
+            </div>
+          </div>
+        </div>
+        ${issues.length ? `<ul class="risk-list">${issues.map(i => `<li>${esc(i)}</li>`).join('')}</ul>` : ''}
+        <div class="validator-box">
+          <pre>before\n${esc(site.before.stdout || site.before.stderr)}</pre>
+          <pre>after before browser action\n${esc(site.after.stderr || site.after.stdout)}</pre>
+        </div>
+        <div class="task-table-wrap"><table class="task-table"><thead><tr><th>ID</th><th>Instruction</th><th>Actor</th><th>Target</th><th>Expected</th></tr></thead><tbody>${rows}</tbody></table></div>
+      </article>`;
+    }).join('');
+}
+renderSummary();
+renderSites();
+$('#searchBox').addEventListener('input', renderSites);
+$('#statusFilter').addEventListener('change', renderSites);
+</script>
+</body>
+</html>

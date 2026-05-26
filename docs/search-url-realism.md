@@ -23,6 +23,25 @@ WebHarbor consumers.
 | Cambridge Dictionary | `/search/direct/?datasetsearch=english&q=<query>` | `/search?q=<query>` |
 | Cambridge Thesaurus | `/search/english-thesaurus/direct/?datasetsearch=english-thesaurus&q=<query>` | `/thesaurus?q=<query>` |
 
+## Canonical Non-search Entry Aliases
+
+Some upstream sites expose task-critical pages under common paths that are not
+pure search forms. These aliases should resolve in the mirror so browser agents
+can use realistic URLs and so generated tasks do not need mirror-only path
+knowledge.
+
+| Site | Realistic URL | Mirror target |
+| --- | --- | --- |
+| Booking | `/searchresults?ss=<query>` | same handler as `/searchresults.html?ss=<query>` |
+| Apple | `/shop/bag` | `/bag` |
+| Coursera | `/specializations/<slug>` | `/learn/<slug>` |
+| BBC News | `/news` | `/` |
+| WolframAlpha | `/?i=<query>` | `/input?i=<query>` |
+
+The root cause for these aliases is mismatch between real upstream public URLs
+and earlier mirror-only route names. The fix belongs in the Flask route layer,
+not in task generators; generators should be allowed to use realistic URLs.
+
 Some sites already matched their upstream search shape closely and are
 documented rather than changed here:
 

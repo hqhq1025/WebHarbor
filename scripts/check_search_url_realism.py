@@ -23,6 +23,16 @@ REQUIRED = [
         ["@app.route('/searchresults.html')", "request.args.get('ss')"],
     ),
     (
+        "Booking accepts real-world /searchresults alias",
+        "sites/booking/app.py",
+        ["@app.route('/searchresults')"],
+    ),
+    (
+        "Booking accepts real-world /my/bag alias",
+        "sites/booking/app.py",
+        ["@app.route('/my/bag')"],
+    ),
+    (
         "Booking search UI emits ss=",
         "sites/booking/templates/index.html",
         ['action="/searchresults.html"', 'name="ss"'],
@@ -31,6 +41,11 @@ REQUIRED = [
         "Google Maps supports canonical /maps/search/<query>",
         "sites/google_map/app.py",
         ['@app.route("/maps/search/")', '@app.route("/maps/search/<path:maps_query>")'],
+    ),
+    (
+        "Google Maps accepts common /search/<query> and /dir/<from>/<to> aliases",
+        "sites/google_map/app.py",
+        ['@app.route("/search/<path:maps_query>")', '@app.route("/dir/<path:route_query>")', '@app.route("/maps/dir/<path:route_query>")'],
     ),
     (
         "Google Maps search UI emits path search",
@@ -63,6 +78,11 @@ REQUIRED = [
         ["@app.route('/search/<path:apple_query>')"],
     ),
     (
+        "Apple accepts real-world /shop/bag bag URL",
+        "sites/apple/app.py",
+        ["@app.route('/shop/bag')"],
+    ),
+    (
         "Apple search UI emits path search",
         "sites/apple/templates/search.html",
         ['action="/search/"', 'data-path-search="apple"'],
@@ -76,6 +96,11 @@ REQUIRED = [
         "Coursera supports canonical query= search",
         "sites/coursera/app.py",
         ["request.args.get('query')"],
+    ),
+    (
+        "Coursera accepts real-world /specializations/<slug> URLs",
+        "sites/coursera/app.py",
+        ["@app.route('/specializations/<path:slug>')", "f'{slug}-specialization'"],
     ),
     (
         "Coursera search UI emits query=",
@@ -105,6 +130,21 @@ REQUIRED = [
             'name="datasetsearch"',
             "'english-thesaurus' if _is_thes else 'english'",
         ],
+    ),
+    (
+        "BBC accepts real-world /news section root",
+        "sites/bbc_news/app.py",
+        ['@app.route("/news")'],
+    ),
+    (
+        "Wolfram Alpha accepts homepage ?i= query URLs",
+        "sites/wolfram_alpha/app.py",
+        ["home_query = request.args.get", "return redirect(url_for('input_result', i=home_query))"],
+    ),
+    (
+        "Wolfram Alpha accepts nested examples topic URLs",
+        "sites/wolfram_alpha/app.py",
+        ["@app.route('/examples/<cat_slug>/<path:topic_slug>')", "def _slugify_human_path(value):"],
     ),
 ]
 

@@ -1033,6 +1033,7 @@ def _apply_place_sort(results, sort):
 
 
 @app.route("/search")
+@app.route("/search/<path:maps_query>")
 @app.route("/maps/search/")
 @app.route("/maps/search/<path:maps_query>")
 def search(maps_query=""):
@@ -1838,9 +1839,12 @@ def _find_route(from_q, to_q, mode=""):
 
 
 @app.route("/directions")
-def directions():
-    from_q = request.args.get("from", "").strip()
-    to_q = request.args.get("to", "").strip()
+@app.route("/dir/<path:route_query>")
+@app.route("/maps/dir/<path:route_query>")
+def directions(route_query=""):
+    route_parts = [part.strip() for part in route_query.split("/") if part.strip()]
+    from_q = (request.args.get("from", "") or (route_parts[0] if len(route_parts) >= 1 else "")).strip()
+    to_q = (request.args.get("to", "") or (route_parts[1] if len(route_parts) >= 2 else "")).strip()
     mode = request.args.get("mode", "").strip().lower()
 
     from_place = None

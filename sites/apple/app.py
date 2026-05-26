@@ -458,6 +458,7 @@ def product_detail(slug):
 # ---------------------------------------------------------------------------
 
 @app.route('/bag')
+@app.route('/shop/bag')
 def bag():
     if current_user.is_authenticated:
         items = CartItem.query.filter_by(user_id=current_user.id).all()

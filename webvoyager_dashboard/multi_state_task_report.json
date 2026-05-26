@@ -1,0 +1,114 @@
+{
+  "schema_version": "webharbor_multi_state_report.v1",
+  "rows": [
+    {
+      "site": "allrecipes",
+      "family": "recipe_box_save_multiple",
+      "generated_count": 10,
+      "generator_ok": true,
+      "before_validator_ok": true,
+      "error": ""
+    },
+    {
+      "site": "amazon",
+      "family": "cart_add_multiple_products",
+      "generated_count": 10,
+      "generator_ok": true,
+      "before_validator_ok": true,
+      "error": ""
+    },
+    {
+      "site": "apple",
+      "family": "bag_add_multiple_products",
+      "generated_count": 10,
+      "generator_ok": true,
+      "before_validator_ok": true,
+      "error": ""
+    },
+    {
+      "site": "arxiv",
+      "family": "library_add_multiple_papers",
+      "generated_count": 10,
+      "generator_ok": true,
+      "before_validator_ok": true,
+      "error": ""
+    },
+    {
+      "site": "booking",
+      "family": "bag_add_multiple_stays",
+      "generated_count": 10,
+      "generator_ok": true,
+      "before_validator_ok": true,
+      "error": ""
+    },
+    {
+      "site": "cambridge_dictionary",
+      "family": "saved_words_add_multiple",
+      "generated_count": 10,
+      "generator_ok": true,
+      "before_validator_ok": true,
+      "error": ""
+    },
+    {
+      "site": "coursera",
+      "family": "saved_courses_add_multiple",
+      "generated_count": 10,
+      "generator_ok": true,
+      "before_validator_ok": true,
+      "error": ""
+    },
+    {
+      "site": "espn",
+      "family": "favorite_teams_add_multiple",
+      "generated_count": 10,
+      "generator_ok": true,
+      "before_validator_ok": true,
+      "error": ""
+    },
+    {
+      "site": "github",
+      "family": "repo_star_add_multiple",
+      "generated_count": 10,
+      "generator_ok": true,
+      "before_validator_ok": true,
+      "error": ""
+    },
+    {
+      "site": "google_flights",
+      "family": "tracked_flights_add_multiple",
+      "generated_count": 10,
+      "generator_ok": true,
+      "before_validator_ok": true,
+      "error": ""
+    },
+    {
+      "site": "google_map",
+      "family": "saved_places_add_multiple",
+      "generated_count": 10,
+      "generator_ok": true,
+      "before_validator_ok": true,
+      "error": ""
+    },
+    {
+      "site": "huggingface",
+      "family": "repo_like_add_multiple",
+      "generated_count": 10,
+      "generator_ok": true,
+      "before_validator_ok": true,
+      "error": ""
+    },
+    {
+      "site": "wolfram_alpha",
+      "family": "favorite_topics_add_multiple",
+      "generated_count": 10,
+      "generator_ok": true,
+      "before_validator_ok": true,
+      "error": ""
+    }
+  ],
+  "summary": {
+    "families": 13,
+    "generated_total": 130,
+    "validator_pass": 13
+  }
+}

@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% from "_airline_icon.html" import airline_icon %}
 {% block title %}Search | Google Flights{% endblock %}
 
 {% block content %}
@@ -38,9 +39,7 @@
       <h2 style="font-family:var(--font-sans);font-size:18px;font-weight:500;margin-top:32px;margin-bottom:12px;">Flights ({{ flights|length }})</h2>
       {% for f in flights %}
         <a href="{{ url_for('flight_detail', flight_id=f.id) }}" class="flight-row">
-          <div class="airline-logo">
-            <img src="{{ f.airline_logo }}" alt="{{ f.airline }}" onerror="this.style.display='none'">
-          </div>
+          {{ airline_icon(f) }}
           <div class="flight-row-main">
             <div>
               <div class="flight-time">{{ f.departure_time }}</div>

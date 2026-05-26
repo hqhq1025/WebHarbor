@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% from "_airline_icon.html" import airline_icon %}
 {% block title %}{{ airport.city }} flights | Google Flights{% endblock %}
 
 {% block content %}
@@ -59,9 +60,10 @@
               {% endif %}
             </div>
             <div class="deal-body">
+              <div class="deal-airline">{{ airline_icon(f, 'sm') }}<span>{{ f.airline }}</span></div>
               <div class="deal-route">From {{ f.origin.city }}</div>
               <div class="deal-dates">{{ f.departure_date|datefmt }}</div>
-              <div class="deal-stops">{{ f.airline }} &middot; {{ f.stops_str }}</div>
+              <div class="deal-stops">{{ f.stops_str }}</div>
               <div class="deal-price"><span class="deal-price-label">from</span> {{ f.price|money }}</div>
             </div>
           </a>
@@ -84,9 +86,10 @@
               {% endif %}
             </div>
             <div class="deal-body">
+              <div class="deal-airline">{{ airline_icon(f, 'sm') }}<span>{{ f.airline }}</span></div>
               <div class="deal-route">To {{ f.destination.city }}</div>
               <div class="deal-dates">{{ f.departure_date|datefmt }}</div>
-              <div class="deal-stops">{{ f.airline }} &middot; {{ f.stops_str }}</div>
+              <div class="deal-stops">{{ f.stops_str }}</div>
               <div class="deal-price"><span class="deal-price-label">from</span> {{ f.price|money }}</div>
             </div>
           </a>

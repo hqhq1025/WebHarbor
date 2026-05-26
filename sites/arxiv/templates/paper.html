@@ -139,6 +139,21 @@
 
         <div class="sidebar-box">
             <h3>Bookmark</h3>
+            {% if current_user.is_authenticated %}
+            <form method="post" action="{{ url_for('library_add_form', paper_id=paper.id) }}" style="margin-bottom:8px;">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <input type="hidden" name="folder" value="Reading List">
+                <button type="submit" class="btn btn-primary" style="width:100%;">Add to Library</button>
+            </form>
+            <form method="post" action="{{ url_for('star_toggle_form', paper_id=paper.id) }}" style="margin-bottom:10px;">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button type="submit" class="btn" style="width:100%;">
+                    {% if is_starred %}Remove Star{% else %}Star Paper{% endif %}
+                </button>
+            </form>
+            {% else %}
+            <p><a href="{{ url_for('login', next=request.path) }}">Log in</a> to save this paper to your library or starred papers.</p>
+            {% endif %}
             <p style="text-align:center;">
                 <img src="{{ url_for('static', filename='images/brand/bibsonomy.png') }}" alt="BibSonomy"
                      style="width:40px;"

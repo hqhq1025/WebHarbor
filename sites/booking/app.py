@@ -953,6 +953,7 @@ def _is_beach_relevant_city(city):
 
 
 @app.route('/search')
+@app.route('/searchresults')
 @app.route('/searchresults.html')
 def search():
     q = (request.args.get('q') or request.args.get('ss') or '').strip()
@@ -1389,6 +1390,7 @@ def my_bookings():
 # =====================================================================
 
 @app.route('/bag')
+@app.route('/my/bag')
 @login_required
 def bag():
     items = CartItem.query.filter_by(user_id=current_user.id).all()

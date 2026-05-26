@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% from "_airline_icon.html" import airline_icon %}
 {% block title %}Booking {{ booking.pnr }} | Google Flights{% endblock %}
 
 {% block content %}
@@ -45,7 +46,10 @@
     {% for bi in booking.items %}
       {% if bi.flight %}
         <div class="booking-flight-card">
-          <div class="bfc-leg-label">{{ bi.leg|capitalize }}</div>
+          <div class="bfc-leg-header">
+            {{ airline_icon(bi.flight, 'sm') }}
+            <div class="bfc-leg-label">{{ bi.leg|capitalize }}</div>
+          </div>
           <div class="bfc-route">
             <div>
               <div class="flight-time">{{ bi.flight.departure_time }}</div>
