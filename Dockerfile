@@ -19,7 +19,8 @@ RUN pip3 install --no-cache-dir \
     SQLAlchemy==2.0.36 \
     WTForms==3.2.1 \
     email-validator==2.2.0 \
-    Pillow==11.0.0
+    Pillow==11.0.0 \
+    requests==2.32.3
 
 WORKDIR /opt/WebSyn
 
@@ -39,6 +40,6 @@ COPY control_server.py  /opt/control_server.py
 COPY site_runner.py     /opt/site_runner.py
 RUN chmod +x /opt/websyn_start.sh
 
-EXPOSE 8101 40000-40016
+EXPOSE 8101 40000-40017
 
 CMD ["/opt/websyn_start.sh"]

@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+{% block title %}Sign in to Drugs.com | {{ site_name }}{% endblock %}
+{% block content %}
+<nav class="breadcrumb">
+  <a href="{{ url_for('index') }}">Home</a> &rsaquo;
+  <span>Sign In</span>
+</nav>
+
+<div class="auth-box is-288">
+  <div class="is-289">
+    <a class="is-290" href="{{ url_for('index') }}">
+      <span class="is-291">Drugs<span class="is-292">.com</span></span>
+    </a>
+    <p class="muted is-293">Know more. Live healthier.</p>
+  </div>
+
+  <h1 class="is-294">Sign In</h1>
+
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+      {% for category, message in messages %}
+        <p class="flash flash-{{ category }} is-295">{{ message }}</p>
+      {% endfor %}
+    {% endif %}
+  {% endwith %}
+
+  <form method="post" action="{{ url_for('login') }}">
+    <div class="is-296">
+      <label class="is-016" for="email">Email address</label>
+      <input class="is-018" id="email" type="email" name="email" required autocomplete="email">
+    </div>
+
+    <div class="is-297">
+      <label class="is-298" for="password">
+        <span>Password</span>
+        <a href="#" class="forgot-link is-299">Forgot your password?</a>
+      </label>
+      <input class="is-018" id="password" type="password" name="password" required autocomplete="current-password">
+    </div>
+
+    <label class="is-300">
+      <input type="checkbox" name="remember_me" value="1"> Remember me on this device
+    </label>
+
+    <button type="submit" class="btn btn-primary is-301">Sign in</button>
+  </form>
+
+  <div class="auth-divider is-302">
+    <span class="is-303">or continue with</span>
+    <div class="is-304"></div>
+  </div>
+
+  <div class="is-305">
+    <button type="button" class="btn btn-outline is-306">
+      <span class="is-307"></span>
+      <span class="is-308">Google</span>
+    </button>
+    <button type="button" class="btn btn-outline is-309">
+      <strong class="is-310">f</strong>
+      <span class="is-308">Facebook</span>
+    </button>
+    <button type="button" class="btn btn-outline is-309">
+      <span class="is-307">&#63743;</span>
+      <span class="is-308">Apple</span>
+    </button>
+  </div>
+
+  <p class="auth-switch is-311">
+    Don't have an account? <a class="is-312" href="{{ url_for('register') }}">Sign up</a>
+  </p>
+
+  <p class="auth-note is-313">
+    <em>Any credentials work in this demo environment.</em>
+  </p>
+</div>
+{% endblock %}
