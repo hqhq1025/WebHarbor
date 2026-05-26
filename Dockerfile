@@ -40,6 +40,6 @@ COPY control_server.py  /opt/control_server.py
 COPY site_runner.py     /opt/site_runner.py
 RUN chmod +x /opt/websyn_start.sh
 
-EXPOSE 8101 40000-40017
+EXPOSE 8101 40000-40018
 
 CMD ["/opt/websyn_start.sh"]
