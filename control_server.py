@@ -27,7 +27,7 @@ SITES = [
     'github', 'google_flights', 'google_map', 'google_search',
     'huggingface', 'wolfram_alpha', 'cambridge_dictionary',
     'coursera', 'espn', 'phet_simulations', 'berkeley', 'drugs_com', 'rotten_tomatoes',
-    'imdb', 'recreation_gov', 'carmax',
+    'imdb', 'recreation_gov', 'carmax', 'phys_org',
 ]
 BASE_PORT = 40000
 WEBSYN_DIR = '/opt/WebSyn'
