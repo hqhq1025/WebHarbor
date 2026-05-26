@@ -29,14 +29,16 @@ WORKDIR /opt/WebSyn
 # run scripts/fetch_assets.sh to pull them from Hugging Face first.
 COPY sites/ /opt/WebSyn/
 
-# Berkeley + IMDb: data is code-generated (no scraped images → no HF asset).
+# Berkeley: data is code-generated (no scraped images → no HF asset).
 # Build the seed DB once at image-build time so websyn_start.sh can copy it on boot.
 RUN cd /opt/WebSyn/berkeley && \
     python3 -c "from app import app" && \
     cp instance/berkeley.db instance_seed/berkeley.db
-RUN cd /opt/WebSyn/imdb && \
-    python3 -c "from app import app" && \
-    cp instance/imdb.db instance_seed/imdb.db
+# IMDb is in-progress (seed_data.py not written yet). Skip build-time seed —
+# imdb will boot dead in the container; restore this RUN once seed_data is in.
+# RUN cd /opt/WebSyn/imdb && \
+#     python3 -c "from app import app" && \
+#     cp instance/imdb.db instance_seed/imdb.db
 
 COPY websyn_start.sh    /opt/websyn_start.sh
 COPY control_server.py  /opt/control_server.py
