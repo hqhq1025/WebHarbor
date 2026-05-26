@@ -121,7 +121,74 @@
         </div>
         <button class="sticky-video-close" type="button" aria-label="Close video">&times;</button>
     </div>
+
+    {# R5: chapter markers on the inline player. Auto-generated from #}
+    {# the article body — every paragraph maps to a chapter at 60s   #}
+    {# intervals so 'jump to chapter N' tasks are solvable.          #}
+    <nav class="video-chapters" aria-label="Video chapters" data-video-chapters="1">
+        <h3 class="vc-title">Chapters</h3>
+        <ol class="vc-list">
+            {% for para in article.get_paragraphs()[:8] %}
+            {% set t = loop.index0 * 60 %}
+            {% set mm = (t // 60)|int %}
+            {% set ss = (t % 60)|int %}
+            <li class="vc-item">
+                <button type="button" class="vc-jump"
+                        data-vc-time="{{ t }}"
+                        data-vc-label="{{ para[:60]|e }}">
+                    <span class="vc-time">{{ '%02d:%02d'|format(mm, ss) }}</span>
+                    <span class="vc-label">{{ para[:60] }}{% if para|length > 60 %}…{% endif %}</span>
+                </button>
+            </li>
+            {% endfor %}
+        </ol>
+        <details class="vc-transcript">
+            <summary>Transcript</summary>
+            <div class="vc-transcript-body" data-transcript-slug="{{ article.slug }}">
+                {% for para in article.get_paragraphs()[:4] %}
+                <p><span class="vc-transcript-time">{{ '%02d:%02d'|format((loop.index0 * 30) // 60, (loop.index0 * 30) % 60) }}</span> {{ para }}</p>
+                {% endfor %}
+                <p class="vc-transcript-more">
+                    <a href="{{ url_for('article_transcript', slug=article.slug) }}">Open full machine-generated transcript →</a>
+                </p>
+            </div>
+        </details>
+    </nav>
     {% endif %}
+
+    {% if article.is_live or article.content_type in ('live', 'live_update') %}
+    {# R5: auto-refresh indicator for live-blog parents. The badge spins  #}
+    {# while updates are pulled; the data-* attribute carries the live    #}
+    {# blog slug suffix used by /api/live-blog/<suffix>/updates.          #}
+    {% set live_suffix = '' %}
+    {% if article.feature_tags %}
+        {% for tag in article.get_topics() %}{% endfor %}
+    {% endif %}
+    <div class="live-refresh-bar" role="status" aria-live="polite"
+         data-live-refresh="1"
+         data-live-slug="{{ article.slug }}">
+        <span class="lrb-dot" aria-hidden="true"></span>
+        <span class="lrb-label">Live updates · auto-refresh on</span>
+        <button type="button" class="lrb-toggle" aria-pressed="true">Pause</button>
+        <span class="lrb-counter" aria-hidden="true">— last checked
+            <time class="lrb-time"></time>
+        </span>
+    </div>
+    {% endif %}
+
+    {# R5: reaction emoji bar for any article. Each button POSTs to       #}
+    {# /article/<slug>/react and updates the count inline.                #}
+    <div class="reaction-bar" aria-label="React to this story">
+        {% for emoji in ['👍', '❤', '😂', '😮', '😢', '🔥'] %}
+        <button type="button" class="reaction-btn"
+                data-react-slug="{{ article.slug }}"
+                data-react-emoji="{{ emoji }}"
+                aria-label="React with {{ emoji }}">
+            <span class="rxn-emoji">{{ emoji }}</span>
+            <span class="rxn-count">0</span>
+        </button>
+        {% endfor %}
+    </div>
 
     <div class="article-body">
         {% set paragraphs = article.get_paragraphs() %}
@@ -171,7 +238,11 @@
         <h2>More from BBC News</h2>
         <div class="related-grid">
             {% for art in related[:6] %}
-            <a class="card" href="{{ url_for('article_detail', slug=art.slug) }}">
+            <a class="card hover-preview" href="{{ url_for('article_detail', slug=art.slug) }}"
+               data-preview-slug="{{ art.slug }}"
+               data-preview-headline="{{ art.headline|e }}"
+               data-preview-subtitle="{{ (art.subtitle or '')[:160]|e }}"
+               data-preview-image="{{ art.hero_image }}">
                 <div class="card-image-wrap">
                     {% if art.hero_image %}
                     <img src="{{ art.hero_image }}" alt="{{ art.headline|e }}" class="card-image"
@@ -189,8 +260,16 @@
         </div>
     </section>
 
-    <section class="comments-section" id="comments">
-        <h2>Comments ({{ article.comment_count }})</h2>
+    <section class="comments-section" id="comments" data-comment-thread="1">
+        <h2>Comments ({{ article.comment_count }})
+            {% if comments and comments|length > 3 %}
+            <button type="button" class="comment-thread-toggle" aria-expanded="false"
+                    data-thread-toggle="1" data-thread-visible="3"
+                    data-thread-total="{{ comments|length }}">
+                Show all {{ comments|length }}
+            </button>
+            {% endif %}
+        </h2>
         {% if current_user.is_authenticated %}
         <form class="comment-form" method="post" action="{{ url_for('submit_comment', slug=article.slug) }}">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
@@ -204,7 +283,8 @@
         {% endif %}
 
         {% for c in comments %}
-        <div class="comment">
+        <div class="comment {% if loop.index > 3 %}comment-hidden{% endif %}"
+             data-comment-row="1">
             <div class="comment-header">
                 <div class="comment-avatar">{{ (c.user.username[:1] if c.user else 'U').upper() }}</div>
                 <div>
@@ -216,6 +296,12 @@
             <div class="comment-actions">
                 <button onclick="likeComment({{ c.id }}, this)">
                     <span class="like-text">Like</span> (<span class="like-count">{{ c.like_count }}</span>)
+                </button>
+                <button type="button" class="comment-react-btn"
+                        data-comment-id="{{ c.id }}"
+                        data-react-slug="{{ article.slug }}"
+                        aria-label="React to this comment">
+                    React
                 </button>
                 {% if current_user.is_authenticated and current_user.id == c.user_id %}
                 <form method="post" action="{{ url_for('delete_comment', comment_id=c.id) }}" style="display:inline">

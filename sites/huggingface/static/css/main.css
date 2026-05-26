@@ -1999,3 +1999,135 @@ textarea.form-control { min-height: 96px; resize: vertical; }
     display: flex; align-items: flex-start; gap: 10px;
 }
 .plan-detail-features li::before { content: "✓"; color: var(--hf-green); font-weight: 700; }
+
+/* ============================================================
+   R5 — accessibility + responsive polish
+   ============================================================ */
+
+/* Color-blind-safe code-block palette. The old scheme used
+   green/red for additions/deletions which fails for ~5% of
+   users. Switch to blue (#2563eb) / orange (#ea580c) anchors
+   that are distinguishable for protanopia + deuteranopia. */
+.code-block, pre.code-block {
+    background: #0b1020;
+    color: #e2e8f0;
+    border-radius: 8px;
+    padding: 10px 12px;
+    font-size: 12.5px;
+    overflow-x: auto;
+    line-height: 1.55;
+    border: 1px solid #1e293b;
+}
+.code-block .tok-keyword, .code-block .kw { color: #93c5fd; font-weight: 600; }   /* blue */
+.code-block .tok-string,  .code-block .str { color: #fdba74; }                    /* orange */
+.code-block .tok-comment, .code-block .cm  { color: #94a3b8; font-style: italic; }
+.code-block .tok-number,  .code-block .num { color: #f9a8d4; }                    /* pink, not red */
+.code-block .tok-fn       { color: #fef08a; }                                     /* yellow */
+.code-block::selection { background: rgba(99,102,241,.45); }
+
+/* Snippet copy button — visible focus ring for keyboard users. */
+.copy-snippet-btn:focus, .copy-snippet-btn:focus-visible {
+    outline: 2px solid #2563eb;
+    outline-offset: 2px;
+}
+
+/* Like-burst overlay — small floating "+N" particle from the heart. */
+.like-burst {
+    margin-left: 6px;
+    font-weight: 700;
+    font-size: 12px;
+    animation: like-burst-float 0.55s ease-out forwards;
+}
+@keyframes like-burst-float {
+    0%   { transform: translateY(0) scale(0.8); opacity: 0; }
+    20%  { transform: translateY(-6px) scale(1.2); opacity: 1; }
+    100% { transform: translateY(-22px) scale(1.0); opacity: 0; }
+}
+
+/* Tab strip ARIA roles — keep visual look but add a focus outline so
+   keyboard users see the active tab. */
+.repo-tabs [role="tab"]:focus-visible {
+    outline: 2px solid #2563eb;
+    outline-offset: -2px;
+}
+.repo-tabs [aria-selected="true"] { font-weight: 700; }
+
+/* File-tree pane focus styles + keyboard ring. */
+.file-tree-pane summary:focus-visible {
+    outline: 2px solid #2563eb;
+    outline-offset: 2px;
+    border-radius: 4px;
+}
+.file-tree-pane details[open] > summary { color: #1e3a8a; }
+
+/* Discussion thread cards — clearer reply indentation. */
+.discussion-thread .thread-reply {
+    border-left-color: #60a5fa;
+}
+.discussion-thread .thread-reply:focus-within {
+    box-shadow: 0 0 0 2px rgba(37, 99, 235, .25);
+}
+
+/* Mobile (< 720px) — model-card sidebar collapses below main; repo tabs
+   render as a bottom sheet on touch devices. */
+@media (max-width: 720px) {
+    .repo-layout {
+        grid-template-columns: 1fr;
+    }
+    .repo-side {
+        order: 2;
+        margin-top: 18px;
+    }
+    .repo-main { order: 1; }
+
+    /* Tabs become a bottom-sheet style nav: stick to the bottom of the
+       viewport with a top border for clarity. */
+    .repo-tabs[role="tablist"] {
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        z-index: 50;
+        background: #ffffff;
+        border-top: 1px solid var(--hf-border, #e5e7eb);
+        box-shadow: 0 -4px 12px rgba(15,23,42,.05);
+        padding: 6px 10px;
+        display: flex;
+        gap: 4px;
+        overflow-x: auto;
+    }
+    .repo-tabs[role="tablist"] .repo-tab {
+        flex: 1 1 auto;
+        text-align: center;
+        font-size: 12px;
+        padding: 8px 4px;
+    }
+    /* Push page content above the bottom-sheet. */
+    .page { padding-bottom: 68px; }
+
+    /* Collapse the readme sidebar tags row on narrow screens. */
+    .repo-head-badges .tag { font-size: 11px; padding: 2px 6px; }
+    .like-btn { font-size: 13px; padding: 4px 8px; }
+    .deploy-btn { font-size: 12px; padding: 4px 10px; }
+}
+
+/* Prefers-reduced-motion — kill the like-burst animation. */
+@media (prefers-reduced-motion: reduce) {
+    .like-burst { animation: none; }
+}
+
+/* High-contrast license-link affordance. */
+a.license-link {
+    color: #1d4ed8;
+    text-decoration: underline;
+}
+a.license-link:hover, a.license-link:focus-visible {
+    color: #1e3a8a;
+}
+
+/* R5 — billing line items. */
+.billing-current .files-table td code,
+.billing-history .files-table td code { font-weight: 600; color: #1e3a8a; }
+
+/* R5 — paper implementations table. */
+.implementations-list .files-table tbody tr:hover { background: #f3f4f6; }

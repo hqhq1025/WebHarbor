@@ -4423,3 +4423,787 @@ def seed_transit_lines(db, TransitLine, City):
         added += 1
     db.session.commit()
     print(f"seed_transit_lines: added {added} transit lines")
+
+
+# ===========================================================================
+# R5: indoor sub-zones + outdoor sub-zones + parking lots + EV stations +
+# fueling stations. Backfills new ambient columns (noise/crowd/mask) for
+# every Place row. All seeded deterministically from md5(slug + salt) so
+# byte-identical reset still holds.
+# ===========================================================================
+# Each template: (cat_slug, name_pattern, subtitle, desc, price, rlo, rhi,
+#                 indoor_zone_type, floor_number)
+# indoor_zone_type values: food-court / concourse / lounge / wing /
+# platform / restroom / parking-deck / charger-bay / pump-island / "" (outdoor)
+_R5_TEMPLATES = [
+    # ---- Indoor sub-zones: airport concourse ----
+    ("indoor-airport-shops", "{anchor} Airport — Gate A12 Lounge", "Departure lounge",
+     "Quiet boarding lounge near Gate A12 with charging stations and a snack bar.",
+     "$", 4.1, 4.7, "lounge", "2"),
+    ("indoor-airport-shops", "{anchor} Airport — Concourse C Food Court", "Airport food court",
+     "Open seating food court on Concourse C with 12 quick-service restaurants and a kids' play area.",
+     "$$", 3.8, 4.4, "food-court", "2"),
+    ("indoor-airport-shops", "{anchor} Airport — Terminal 1 Family Restroom", "Family restroom",
+     "Wheelchair-accessible family restroom in Terminal 1 with adult-size changing table and nursing alcove.",
+     "Free", 4.0, 4.7, "restroom", "1"),
+    ("indoor-airport-shops", "{anchor} Airport — Quiet Meditation Room", "Meditation room",
+     "Multi-faith quiet meditation room in the post-security mezzanine; open 24/7, masks recommended.",
+     "Free", 4.5, 4.9, "lounge", "M"),
+    ("indoor-airport-shops", "{anchor} Airport — Gate B7 Charging Cluster", "Power station",
+     "Cluster of 24 outlets and 8 USB-C charging stations between Gates B5 and B9.",
+     "Free", 4.2, 4.7, "concourse", "2"),
+
+    # ---- Indoor sub-zones: shopping mall ----
+    ("indoor-mall-shops", "{anchor} Mall — Level 1 Food Court", "Mall food court",
+     "Ground-floor food court with 14 cuisines, accessible seating, and a kids' play table.",
+     "$$", 3.9, 4.5, "food-court", "1"),
+    ("indoor-mall-shops", "{anchor} Mall — Level 2 Fashion Wing", "Fashion wing",
+     "Upper-level fashion wing with anchor stores, denim row, and an accessory marketplace.",
+     "$$$", 4.1, 4.6, "wing", "2"),
+    ("indoor-mall-shops", "{anchor} Mall — Lower Level Family Restroom", "Family restroom",
+     "Multi-stall family restroom with stroller parking, baby-changing tables, and nursing pods.",
+     "Free", 4.1, 4.7, "restroom", "B1"),
+    ("indoor-mall-shops", "{anchor} Mall — Rooftop Garden Court", "Rooftop garden",
+     "Rooftop garden court with cafe seating, herb planters, and a small concert stage.",
+     "$$", 4.4, 4.9, "lounge", "R"),
+
+    # ---- Indoor sub-zones: hospital ----
+    ("hospitals", "{anchor} Medical Center — Pediatric Wing", "Pediatric wing",
+     "Pediatric wing with child-life rooms, sensory-friendly hallway, and family overnight suites.",
+     "$$$", 4.4, 4.9, "wing", "3"),
+    ("hospitals", "{anchor} Medical Center — Cardiology Wing", "Cardiology wing",
+     "Cardiology wing with cath labs, echocardiography suite, and cardiac-rehab gym.",
+     "$$$$", 4.3, 4.8, "wing", "4"),
+    ("hospitals", "{anchor} Medical Center — Maternity Wing", "Maternity wing",
+     "Maternity wing with private LDR rooms, NICU, and a quiet lactation lounge.",
+     "$$$$", 4.5, 4.9, "wing", "5"),
+    ("hospitals", "{anchor} Medical Center — ER Triage Lobby", "Emergency lobby",
+     "Emergency-room triage lobby with 24/7 walk-in registration and isolation pods.",
+     "$$$$", 3.8, 4.4, "lounge", "1"),
+
+    # ---- Indoor sub-zones: museum ----
+    ("museums", "{anchor} Museum — North Wing (Impressionists)", "Museum wing",
+     "North wing devoted to Impressionist and Post-Impressionist paintings; quiet hours 10am-noon.",
+     "$$", 4.5, 4.9, "wing", "2"),
+    ("museums", "{anchor} Museum — South Wing (Modern Art)", "Museum wing",
+     "South wing showcasing modern and contemporary art with rotating installations.",
+     "$$", 4.4, 4.9, "wing", "2"),
+    ("museums", "{anchor} Museum — Family Education Center", "Family room",
+     "Hands-on family education center with maker stations, story hours, and stroller-friendly aisles.",
+     "$", 4.6, 4.9, "lounge", "1"),
+
+    # ---- Indoor sub-zones: transit station platforms ----
+    ("transit", "{anchor} Central Station — Platform 1 (Inbound)", "Station platform",
+     "Inbound platform with wheelchair ramp, tactile guide strip, and digital arrival board.",
+     "Free", 3.9, 4.5, "platform", "1"),
+    ("transit", "{anchor} Central Station — Platform 4 (Express)", "Station platform",
+     "Express train platform served by inter-city services; accessible from the north mezzanine.",
+     "Free", 3.8, 4.4, "platform", "1"),
+    ("transit", "{anchor} Central Station — Bike & Stroller Storage", "Storage area",
+     "Secure bike and stroller storage on the lower concourse, accessible with transit pass.",
+     "Free", 4.0, 4.6, "concourse", "B1"),
+
+    # ---- Indoor: stadium / arena ----
+    ("entertainment", "{anchor} Arena — Section 117 Concourse", "Arena concourse",
+     "Lower-bowl Section 117 concourse with concession row, accessible seating, and mobile-order pickup.",
+     "$$", 4.0, 4.6, "concourse", "1"),
+    ("entertainment", "{anchor} Arena — Sensory Room", "Sensory room",
+     "Calming sensory room for guests with sensory sensitivities; weighted blankets and noise-canceling headphones.",
+     "Free", 4.7, 4.9, "lounge", "2"),
+
+    # ---- Indoor: university campus building ----
+    ("campus-buildings", "{anchor} University — Engineering Atrium", "Campus atrium",
+     "Engineering atrium with collaborative seating, soldering benches, and a 24/7 maker space.",
+     "Free", 4.4, 4.8, "lounge", "1"),
+    ("campus-buildings", "{anchor} University — Library Quiet Floor 4", "Quiet floor",
+     "Silent fourth-floor reading area, no talking, no calls; individual carrels available.",
+     "Free", 4.6, 4.9, "wing", "4"),
+
+    # ---- Indoor: government building ----
+    ("services", "{anchor} City Hall — Permit Office 2F", "Permit office",
+     "Second-floor permit office for building, business, and special-event permits.",
+     "$", 3.6, 4.2, "wing", "2"),
+    ("services", "{anchor} City Hall — Public Notary Counter", "Notary counter",
+     "Walk-in notary counter for residents; bring ID and the document to be notarized.",
+     "$", 4.0, 4.6, "wing", "1"),
+
+    # ---- Outdoor sub-zones: scenic viewpoints, intersections ----
+    ("attractions", "{anchor} Scenic Overlook", "Scenic viewpoint",
+     "Hillside scenic overlook with city skyline panorama; busiest at sunset.",
+     "Free", 4.6, 4.9, "", ""),
+    ("attractions", "{anchor} Riverside Promenade Mile 3", "Outdoor promenade",
+     "Mile 3 marker on the riverside promenade with a water fountain and benches.",
+     "Free", 4.4, 4.8, "", ""),
+    ("attractions", "{anchor} Cherry Blossom Walk", "Outdoor walk",
+     "Spring cherry-blossom walking path; petals peak in early April.",
+     "Free", 4.7, 4.9, "", ""),
+    ("transit", "{anchor} Main & 5th Bus Stop", "Bus stop",
+     "Main Street & 5th Avenue bus stop served by routes 12, 14, and 22.",
+     "Free", 3.6, 4.2, "", ""),
+    ("transit", "{anchor} Civic Center Plaza Bike Hub", "Bike share station",
+     "Civic Center Plaza bike-share station with 28 docks and a covered repair stand.",
+     "$", 4.1, 4.7, "", ""),
+
+    # ---- Parking lots / decks (real category 'parking') ----
+    ("parking", "{anchor} City Center Multi-Level Garage", "Parking garage",
+     "Multi-level downtown parking garage with EV stalls on level 2 and bicycle racks at the entrance.",
+     "$$", 3.9, 4.5, "parking-deck", "1"),
+    ("parking", "{anchor} Convention Center Lot A", "Surface lot",
+     "Convention Center Lot A surface parking; event-day pricing in effect.",
+     "$$", 3.8, 4.4, "", ""),
+    ("parking", "{anchor} Stadium West Lot", "Stadium lot",
+     "Stadium West Lot reserved for season passholders on game days; tailgating allowed in marked rows.",
+     "$$$", 3.7, 4.3, "", ""),
+    ("parking", "{anchor} Hospital Visitor Garage", "Hospital parking",
+     "Hospital visitor parking garage; first hour free, then $3/hour.",
+     "$$", 3.7, 4.3, "parking-deck", "1"),
+    ("parking", "{anchor} Mall Customer Parking", "Mall parking",
+     "Customer parking deck with 2200 spaces, EV stalls on level 3, and motorcycle row.",
+     "Free", 4.2, 4.7, "parking-deck", "1"),
+    ("parking", "{anchor} Beach Day-Use Lot", "Beach parking",
+     "Day-use beach parking with restrooms and outdoor showers; $10 flat fee.",
+     "$$", 4.0, 4.6, "", ""),
+
+    # ---- EV charging stations (mix of connectors / speeds) ----
+    ("ev-charging", "Tesla Supercharger — {anchor} V4", "Tesla Supercharger V4",
+     "Tesla Supercharger V4 with 24 stalls; up to 250 kW; restrooms and dining within 200 m.",
+     "$$", 4.3, 4.8, "charger-bay", ""),
+    ("ev-charging", "Electrify America — {anchor} Hyperfast", "EV fast charging",
+     "Electrify America hyperfast plaza with CCS connectors up to 350 kW; covered canopy.",
+     "$$", 4.0, 4.6, "charger-bay", ""),
+    ("ev-charging", "ChargePoint Express 250 — {anchor}", "ChargePoint Express",
+     "ChargePoint Express 250 plaza with CCS and CHAdeMO connectors; 24/7 access.",
+     "$", 4.1, 4.7, "charger-bay", ""),
+    ("ev-charging", "EVgo Fast Charging — {anchor} Plaza", "EV fast charging",
+     "EVgo plaza with CCS and CHAdeMO connectors up to 350 kW; PlugShare check-in.",
+     "$$", 4.0, 4.6, "charger-bay", ""),
+    ("ev-charging", "Blink Level 2 — {anchor} Center", "Level 2 charger",
+     "Blink Level 2 charger row at the parking center; ideal for 2-hour shopping or dining stops.",
+     "$", 3.8, 4.4, "charger-bay", ""),
+    ("ev-charging", "Rivian Adventure Network — {anchor}", "Rivian charger",
+     "Rivian Adventure Network DC fast chargers with CCS connectors for all EVs.",
+     "$$", 4.4, 4.9, "charger-bay", ""),
+
+    # ---- Fueling stations (gas + EV combo) ----
+    ("gas-stations", "{anchor} Shell Recharge — Gas + EV", "Combined fuel",
+     "Shell Recharge station with 6 gas pumps and 4 DC fast EV chargers; 24-hour convenience store.",
+     "$$", 4.1, 4.7, "pump-island", ""),
+    ("gas-stations", "{anchor} BP Pulse Station", "BP Pulse",
+     "BP Pulse station offering regular gas plus 150 kW EV fast-charge stalls under a covered canopy.",
+     "$$", 4.0, 4.6, "pump-island", ""),
+    ("gas-stations", "{anchor} Sunoco Express", "Gas station",
+     "Sunoco Express full-service gas station with truck-friendly diesel lane and lottery kiosk.",
+     "$", 3.7, 4.4, "pump-island", ""),
+    ("gas-stations", "{anchor} 7-Eleven Fuel Mart", "Fuel + convenience",
+     "7-Eleven fuel mart with 24-hour Slurpee bar and grab-and-go food case.",
+     "$", 3.8, 4.5, "pump-island", ""),
+    ("gas-stations", "{anchor} Wawa Travel Center", "Fuel + travel center",
+     "Wawa travel center with made-to-order hoagies, fresh coffee, and 24-hour fuel.",
+     "$$", 4.5, 4.9, "pump-island", ""),
+    ("gas-stations", "{anchor} Sheetz Mega Plaza", "Travel plaza",
+     "Sheetz mega plaza with MTO food, gas, EV chargers, and a drive-thru pickup window.",
+     "$$", 4.4, 4.9, "pump-island", ""),
+
+    # ---- Indoor: hotels (skybridge / pool / spa zones) ----
+    ("hotels", "{anchor} Grand Hotel — Sky Lounge Bar", "Sky lounge",
+     "Top-floor sky lounge bar with floor-to-ceiling skyline views; cocktail-attire dress code.",
+     "$$$$", 4.5, 4.9, "lounge", "R"),
+    ("hotels", "{anchor} Grand Hotel — Pool Deck Cabana", "Pool deck",
+     "Heated pool deck with private cabanas, towel service, and an all-day bar.",
+     "$$$", 4.3, 4.8, "lounge", "3"),
+    ("hotels", "{anchor} Grand Hotel — Quiet Spa Floor", "Spa floor",
+     "Quiet spa floor with sauna, steam room, and an adults-only relaxation room; masks recommended in steam areas.",
+     "$$$$", 4.6, 4.9, "wing", "4"),
+
+    # ---- Extra parking sub-zones for higher density ----
+    ("parking", "{anchor} Library Visitor Lot", "Library parking",
+     "Public library visitor lot with two-hour limit; accessible spaces near the main entrance.",
+     "Free", 3.8, 4.4, "", ""),
+    ("parking", "{anchor} University Garage P3", "Campus parking garage",
+     "University parking garage P3; permit required Mon-Fri 7am-5pm, free evenings and weekends.",
+     "$$", 3.7, 4.3, "parking-deck", "1"),
+    ("parking", "{anchor} Trailhead Day Lot", "Trailhead parking",
+     "Trailhead day-use lot with pit toilets and a paid kiosk; arrive early on weekends.",
+     "$", 4.2, 4.7, "", ""),
+    ("parking", "{anchor} Park & Ride East Lot", "Park and ride",
+     "Park-and-ride east lot served by 4 commuter bus lines; first 200 stalls have EV chargers.",
+     "Free", 4.0, 4.5, "", ""),
+
+    # ---- Extra EV connectors ----
+    ("ev-charging", "Ionna Reliable Charge — {anchor}", "EV fast charging",
+     "Ionna joint-venture charging hub with CCS connectors up to 400 kW; covered canopy and pull-through stalls.",
+     "$$", 4.3, 4.8, "charger-bay", ""),
+    ("ev-charging", "Mercedes-Benz HPC — {anchor}", "EV fast charging",
+     "Mercedes-Benz high-power charging hub with 320 kW CCS stalls and a premium lounge.",
+     "$$$", 4.4, 4.9, "charger-bay", ""),
+    ("ev-charging", "EV Connect Level 2 — {anchor} City Hall", "Level 2 charger",
+     "EV Connect Level 2 chargers at City Hall employee parking; public access weekends.",
+     "$", 3.9, 4.5, "charger-bay", ""),
+    ("ev-charging", "FLO Network — {anchor} Civic Plaza", "Level 2 charger",
+     "FLO Network curbside Level 2 chargers along Civic Plaza; 4-hour stay limit.",
+     "$", 4.0, 4.6, "charger-bay", ""),
+    ("ev-charging", "Volta Free Level 2 — {anchor} Mall", "Level 2 charger",
+     "Volta free Level 2 charger row at the mall parking deck; ad-supported, no fee.",
+     "Free", 4.2, 4.7, "charger-bay", ""),
+
+    # ---- Extra fuel / travel center ----
+    ("gas-stations", "{anchor} Speedway Travel Center", "Travel center",
+     "Speedway travel center with diesel lane, RV-friendly bays, and a 24-hour deli.",
+     "$$", 4.0, 4.6, "pump-island", ""),
+    ("gas-stations", "{anchor} Pilot Flying J", "Truck stop",
+     "Pilot Flying J truck stop with showers, laundry, and the Cinnabon counter.",
+     "$$", 3.9, 4.6, "pump-island", ""),
+    ("gas-stations", "{anchor} Murphy USA Station", "Discount fuel",
+     "Murphy USA discount fuel station adjacent to a Walmart Supercenter; cash-discount pricing.",
+     "$", 3.7, 4.3, "pump-island", ""),
+    ("gas-stations", "{anchor} ARCO ampm", "Gas + convenience",
+     "ARCO ampm with cash-discount pricing and a famous taquito-and-pizza counter.",
+     "$", 3.7, 4.3, "pump-island", ""),
+
+    # ---- Extra indoor: more food courts / restrooms / lounges / wings ----
+    ("indoor-mall-shops", "{anchor} Mall — Cinema Wing", "Cinema wing",
+     "Cinema wing with 12 screens, a Dolby Atmos auditorium, and recliner seating.",
+     "$$$", 4.2, 4.7, "wing", "3"),
+    ("indoor-mall-shops", "{anchor} Mall — Indoor Playground", "Indoor playground",
+     "Free indoor playground with soft-play structures and stroller parking; closes at 8 PM.",
+     "Free", 4.5, 4.9, "lounge", "1"),
+    ("indoor-airport-shops", "{anchor} Airport — International Arrivals Concourse", "Arrivals concourse",
+     "International arrivals concourse with currency exchange, SIM kiosks, and ground-transport info.",
+     "$$", 3.7, 4.3, "concourse", "1"),
+    ("indoor-airport-shops", "{anchor} Airport — Pet Relief Area Terminal 2", "Pet relief area",
+     "Indoor pet relief area in Terminal 2 with a fenced grassy patch and water bowls.",
+     "Free", 4.2, 4.7, "lounge", "1"),
+    ("hospitals", "{anchor} Medical Center — Imaging Wing", "Imaging wing",
+     "Diagnostic imaging wing with MRI, CT, ultrasound, and a quiet waiting alcove.",
+     "$$$$", 4.2, 4.7, "wing", "2"),
+    ("museums", "{anchor} Museum — Sculpture Garden", "Sculpture garden",
+     "Outdoor sculpture garden adjacent to the museum's south wing; free with admission.",
+     "$", 4.6, 4.9, "wing", ""),
+    ("museums", "{anchor} Museum — Quiet Reading Room", "Quiet reading room",
+     "Member-only quiet reading room with art books and a panoramic view of the central court.",
+     "$$", 4.7, 4.9, "lounge", "3"),
+    ("entertainment", "{anchor} Arena — Family Restroom Section 218", "Family restroom",
+     "Family restroom with adult-size changing table and nursing pod, Section 218 upper bowl.",
+     "Free", 4.0, 4.6, "restroom", "2"),
+
+    # ---- Extra outdoor sub-zones ----
+    ("attractions", "{anchor} Sunset Cliff Lookout", "Scenic viewpoint",
+     "Sunset cliff lookout with safety railing; the only legal drone-launch zone in the park.",
+     "Free", 4.8, 4.9, "", ""),
+    ("attractions", "{anchor} Heritage Walking Tour Start", "Walking tour",
+     "Self-guided heritage walking-tour starting point with QR-code stops.",
+     "Free", 4.5, 4.9, "", ""),
+    ("transit", "{anchor} Bay Ferry Dock", "Ferry dock",
+     "Bay ferry dock with covered waiting area, ticket vending, and bike racks.",
+     "$", 4.2, 4.7, "", ""),
+    ("transit", "{anchor} Light Rail Park Stop", "Light rail stop",
+     "Park-side light rail stop with sheltered seating and a tactile guide strip.",
+     "Free", 4.1, 4.7, "", ""),
+]
+
+
+def _seed_int_hex(slug, salt):
+    return int.from_bytes(
+        hashlib.md5((salt + ":" + slug).encode()).digest()[:4], "big")
+
+
+def _r5_amenities(cat_slug, indoor_zone, ev_connector, ev_kw):
+    """Return amenity list tailored to the R5 sub-zone type."""
+    base = []
+    if cat_slug == "ev-charging":
+        if ev_connector:
+            base.append(f"{ev_connector} connector")
+        if ev_kw:
+            base.append(f"{ev_kw} kW peak")
+        base += ["24/7 access", "Covered canopy", "PlugShare check-in"]
+    elif cat_slug == "parking":
+        base += ["EV stalls", "Bicycle racks", "Motorcycle row", "Wheelchair-accessible parking"]
+    elif cat_slug == "gas-stations":
+        base += ["Convenience store", "Air pump", "Restroom",
+                 "Diesel lane" if "diesel" in indoor_zone else "Regular fuel"]
+    elif indoor_zone == "food-court":
+        base += ["Free Wi-Fi", "Family seating", "Wheelchair-accessible seating",
+                 "Stroller-friendly aisles", "Mobile order pickup"]
+    elif indoor_zone == "lounge":
+        base += ["Quiet seating", "Charging outlets", "Wheelchair-accessible entrance"]
+    elif indoor_zone == "wing":
+        base += ["Elevator access", "Wheelchair-accessible restroom", "Information desk"]
+    elif indoor_zone == "restroom":
+        base += ["Baby-changing table", "Family stall", "Wheelchair-accessible entrance"]
+    elif indoor_zone == "platform":
+        base += ["Tactile guide strip", "Audio announcements", "Digital arrival board"]
+    elif indoor_zone == "concourse":
+        base += ["Concession row", "Charging outlets", "Wheelchair-accessible seating"]
+    elif indoor_zone == "parking-deck":
+        base += ["EV stalls", "Wheelchair-accessible parking", "Lighted stairwell"]
+    elif indoor_zone == "charger-bay":
+        base += ["Covered canopy", "Restroom within 200 m", "Pull-through stalls"]
+    elif indoor_zone == "pump-island":
+        base += ["EV fast charge", "Convenience store", "Restroom"]
+    else:
+        base += ["Outdoor seating", "Bicycle racks"]
+    return base
+
+
+def expand_places_r5(db, Place, Category, City):
+    """R5 expansion: indoor sub-zones, outdoor sub-zones, parking lots,
+    EV chargers, fueling stations. Adds ~80 templates per city for ~65k rows.
+
+    Idempotent: gated on Place count >= 195000.
+    """
+    if Place.query.count() >= 195000:
+        return
+
+    random.seed(20260520)  # not actually used; all values derived from md5(slug)
+    cat_by_slug = {c.slug: c for c in Category.query.all()}
+    cities = City.query.order_by(City.id).all()
+    if not cities:
+        return
+
+    donor_pool = []
+    for p in Place.query.filter(Place.hero_image.like("/static/images/places/%")).order_by(Place.id).limit(80).all():
+        try:
+            photos = json.loads(p.photos_json or "[]")
+        except Exception:
+            photos = []
+        if p.hero_image:
+            donor_pool.append((p.hero_image, photos or [p.hero_image]))
+    if not donor_pool:
+        donor_pool = [("/static/images/heroes/eiffel-tower.jpg",
+                       ["/static/images/heroes/eiffel-tower.jpg"])]
+
+    # EV connector / kW rotation per template index — deterministic.
+    _EV_VARIANTS = [
+        ("Tesla", 250), ("CCS", 350), ("CCS+CHAdeMO", 350),
+        ("CCS+CHAdeMO", 350), ("J1772", 11), ("CCS", 200),
+    ]
+
+    added = 0
+    for city in cities:
+        anchor = city.display_name.split(",")[0].split(" ")[0]
+        # Deterministic per-city shuffle of templates so different cities get
+        # rotation but the city always produces the same order on rebuild.
+        templates = list(enumerate(_R5_TEMPLATES))
+        slug_seed = int.from_bytes(
+            hashlib.md5(("r5-" + city.slug).encode()).digest()[:4], "big")
+        # In-place deterministic shuffle (Fisher-Yates with md5-derived swaps).
+        for i in range(len(templates) - 1, 0, -1):
+            j = int.from_bytes(
+                hashlib.md5(f"r5sh:{city.slug}:{i}".encode()).digest()[:4],
+                "big") % (i + 1)
+            templates[i], templates[j] = templates[j], templates[i]
+
+        for idx, tpl in templates:
+            (cat_slug, pattern, subtitle, desc, price, rlo, rhi,
+             indoor_zone, floor_num) = tpl
+            cat = cat_by_slug.get(cat_slug)
+            if not cat:
+                continue
+            slug = f"r5-{city.slug}-{cat_slug}-{idx:02d}"
+            if Place.query.filter_by(slug=slug).first():
+                continue
+
+            name = pattern.format(anchor=anchor)
+            local_seed = _seed_int_hex(slug, "r5loc")
+            hero, gallery = donor_pool[local_seed % len(donor_pool)]
+            lat = city.lat + ((local_seed % 800) - 400) / 10000.0
+            lng = city.lng + (((local_seed // 800) % 1000) - 500) / 10000.0
+            rating = round(rlo + (local_seed % 100) / 100.0 * (rhi - rlo), 1)
+            review_count = 12 + (local_seed % 3600)
+
+            # EV-specific: connector + kW from variant rotation
+            ev_connector = ""
+            ev_kw = 0
+            if cat_slug == "ev-charging":
+                v_idx = (_seed_int_hex(slug, "evv")) % len(_EV_VARIANTS)
+                ev_connector, ev_kw = _EV_VARIANTS[v_idx]
+
+            # Multi-floor json for indoor venues (mall / airport / hospital /
+            # museum / hotel) — gives the indoor-floor-selector something to
+            # render even on a single-row preview.
+            floors = []
+            if indoor_zone in ("wing", "concourse", "lounge", "food-court",
+                                "restroom", "parking-deck") and cat_slug in (
+                    "indoor-mall-shops", "indoor-airport-shops",
+                    "hospitals", "museums", "hotels", "entertainment"):
+                floors = _r5_floor_map(cat_slug)
+
+            hours_pick = (local_seed >> 4) % 6
+            hours_options = [
+                "Mon-Sun: 9:00 AM - 9:00 PM",
+                "Mon-Sat: 10:00 AM - 8:00 PM, Sun 11:00 AM - 6:00 PM",
+                "Tue-Sun: 11:00 AM - 10:00 PM, Closed Mon",
+                "Open 24 hours",
+                "Mon-Fri: 7:00 AM - 7:00 PM, Weekends 8:00 AM - 5:00 PM",
+                "Mon-Sun: 6:00 AM - 10:00 PM",
+            ]
+            tags = [cat_slug, anchor.lower(), city.country.lower()]
+            if indoor_zone:
+                tags.append(indoor_zone)
+            amenities = _r5_amenities(cat_slug, indoor_zone, ev_connector, ev_kw)
+
+            db.session.add(Place(
+                slug=slug, name=name, category_id=cat.id, city_id=city.id,
+                subtitle=subtitle,
+                description=desc,
+                address=f"{20 + (local_seed % 980)} {['Main','Oak','Park','Elm','Pine','Cedar','Birch','Maple'][local_seed % 8]} St, {city.display_name}",
+                phone=f"+{1 + (local_seed % 9)} {200 + (local_seed % 800)} {1000 + (local_seed % 9000)}",
+                hours=hours_options[hours_pick],
+                website=google_maps_search_url(name, city.display_name),
+                rating=rating,
+                review_count=review_count,
+                price_level=price,
+                hero_image=hero,
+                photos_json=json.dumps(gallery[:5]),
+                lat=lat, lng=lng,
+                tags_json=json.dumps(tags),
+                amenities_json=json.dumps(amenities),
+                subcategory=subtitle,
+                is_24h=(hours_pick == 3) or cat_slug in ("ev-charging", "gas-stations"),
+                is_popular=(rating >= 4.6 and (local_seed % 4) == 0),
+                has_parking_lot=(cat_slug in (
+                    "parking", "gas-stations", "indoor-mall-shops",
+                    "hospitals") or indoor_zone == "parking-deck"),
+                ev_charging=(cat_slug == "ev-charging" or
+                              cat_slug == "gas-stations" and "Recharge" in name),
+                bicycle_parking=(cat_slug in ("parking",) or "bike" in name.lower()
+                                  or (local_seed % 3) == 0),
+                motorcycle_parking=(cat_slug == "parking" and (local_seed % 3) == 0),
+                indoor_zone_type=indoor_zone,
+                floor_number=floor_num,
+                floors_json=json.dumps(floors),
+                parking_lot_capacity=(80 + (local_seed % 2400)) if cat_slug == "parking" else 0,
+                ev_connector_type=ev_connector,
+                ev_charger_kw=ev_kw,
+            ))
+            added += 1
+            if added % 1000 == 0:
+                db.session.commit()
+    db.session.commit()
+    print(f"expand_places_r5: added {added} R5 sub-zone places (total {Place.query.count()})")
+
+
+def _r5_floor_map(cat_slug):
+    """Canonical multi-floor map shown in the indoor-floor selector."""
+    if cat_slug == "indoor-mall-shops":
+        return [
+            {"code": "B1", "label": "Lower Level", "summary": "Restrooms, family room, supermarket entrance"},
+            {"code": "1",  "label": "Level 1",     "summary": "Food court, anchor stores, customer service"},
+            {"code": "2",  "label": "Level 2",     "summary": "Fashion wing, electronics, beauty"},
+            {"code": "3",  "label": "Level 3",     "summary": "Cinema, restaurants, kids' zone"},
+            {"code": "R",  "label": "Roof",        "summary": "Rooftop garden court"},
+        ]
+    if cat_slug == "indoor-airport-shops":
+        return [
+            {"code": "1",  "label": "Arrivals (Level 1)", "summary": "Baggage claim, ground transport"},
+            {"code": "2",  "label": "Departures (Level 2)", "summary": "Check-in, security, gates A-D"},
+            {"code": "M",  "label": "Mezzanine", "summary": "Quiet meditation room, lounges"},
+        ]
+    if cat_slug == "hospitals":
+        return [
+            {"code": "1",  "label": "Lobby / ER",          "summary": "Emergency triage, registration, gift shop"},
+            {"code": "2",  "label": "Surgical Suites",     "summary": "OR, recovery, ambulatory surgery"},
+            {"code": "3",  "label": "Pediatric Wing",      "summary": "Child-life rooms, family overnight suites"},
+            {"code": "4",  "label": "Cardiology Wing",     "summary": "Cath labs, echo suite, cardiac rehab"},
+            {"code": "5",  "label": "Maternity Wing",      "summary": "LDR rooms, NICU, lactation lounge"},
+        ]
+    if cat_slug == "museums":
+        return [
+            {"code": "1",  "label": "Floor 1",  "summary": "Entry hall, family education center, gift shop"},
+            {"code": "2",  "label": "Floor 2",  "summary": "North wing (Impressionists), south wing (Modern Art)"},
+            {"code": "3",  "label": "Floor 3",  "summary": "Special exhibitions, archive"},
+        ]
+    if cat_slug == "hotels":
+        return [
+            {"code": "1",  "label": "Lobby",         "summary": "Check-in, concierge, lobby bar"},
+            {"code": "3",  "label": "Pool Deck",     "summary": "Heated pool, cabanas, all-day bar"},
+            {"code": "4",  "label": "Spa Floor",     "summary": "Sauna, steam, relaxation room"},
+            {"code": "R",  "label": "Sky Lounge",    "summary": "Top-floor cocktail bar with skyline views"},
+        ]
+    if cat_slug == "entertainment":
+        return [
+            {"code": "1",  "label": "Lower Bowl Concourse", "summary": "Sections 100-120, mobile-order pickup"},
+            {"code": "2",  "label": "Upper Bowl + Sensory", "summary": "Sections 200-220, sensory room"},
+        ]
+    return []
+
+
+def backfill_place_extras_r5(db, Place, Category):
+    """Deterministic backfill of R5 ambient columns on every Place row.
+
+    Skips rows that already have noise_level set so warm restarts are no-ops.
+    All values derive from md5(slug + salt) so byte-identical reset holds.
+    """
+    total = Place.query.count()
+    if total == 0:
+        return
+    filled = Place.query.filter(Place.noise_level != "").count()
+    if filled >= total * 0.9:
+        return
+
+    cat_by_id = {c.id: c.slug for c in Category.query.all()}
+    # noise / crowd defaults per category
+    _NOISE_BY_CAT = {
+        "restaurants":          ["moderate", "lively", "lively", "loud", "moderate"],
+        "entertainment":        ["lively", "loud", "loud", "lively", "moderate"],
+        "coffee-shops":         ["moderate", "quiet", "moderate", "moderate", "lively"],
+        "hotels":               ["quiet", "quiet", "moderate", "moderate"],
+        "libraries":            ["quiet", "quiet", "quiet"],
+        "museums":              ["quiet", "moderate", "quiet", "moderate"],
+        "parks":                ["quiet", "moderate", "lively"],
+        "shopping":             ["moderate", "lively", "moderate"],
+        "indoor-mall-shops":    ["lively", "moderate", "lively", "loud"],
+        "indoor-airport-shops": ["lively", "loud", "moderate", "lively"],
+        "transit":              ["moderate", "lively", "loud", "moderate"],
+        "bus-stops":            ["lively", "loud", "moderate"],
+        "hospitals":            ["quiet", "moderate", "quiet"],
+        "schools":              ["lively", "moderate", "loud"],
+        "campus-buildings":     ["moderate", "lively", "quiet"],
+        "gas-stations":         ["moderate", "lively", "moderate"],
+        "parking":              ["quiet", "moderate", "quiet"],
+        "ev-charging":          ["quiet", "moderate", "quiet"],
+        "fitness":              ["lively", "loud", "moderate"],
+        "religious":            ["quiet", "moderate"],
+        "playgrounds":          ["lively", "loud"],
+        "beaches":              ["moderate", "lively", "moderate"],
+        "dog-parks":            ["lively", "moderate"],
+        "supermarkets":         ["moderate", "lively"],
+        "pharmacies":           ["moderate", "quiet"],
+        "atms":                 ["moderate", "quiet"],
+        "post-offices":         ["moderate", "quiet"],
+        "police-stations":      ["quiet", "moderate"],
+        "fire-stations":        ["quiet", "moderate"],
+        "car-rental":           ["moderate", "lively"],
+        "veterinarians":        ["moderate", "lively"],
+        "dentists":             ["quiet", "moderate"],
+        "public-restrooms":     ["moderate", "quiet"],
+        "attractions":          ["moderate", "lively", "loud"],
+        "health-beauty":        ["quiet", "moderate"],
+        "services":             ["moderate", "quiet"],
+    }
+    _CROWD_BY_CAT = {
+        "restaurants":          ["moderate", "high", "moderate", "low", "very-high"],
+        "entertainment":        ["high", "very-high", "moderate", "high"],
+        "coffee-shops":         ["moderate", "high", "low", "moderate"],
+        "hotels":               ["moderate", "low", "moderate"],
+        "libraries":            ["low", "moderate", "low"],
+        "museums":              ["moderate", "high", "low"],
+        "parks":                ["low", "moderate", "high"],
+        "shopping":             ["moderate", "high", "very-high"],
+        "indoor-mall-shops":    ["high", "very-high", "moderate"],
+        "indoor-airport-shops": ["very-high", "high", "moderate"],
+        "transit":              ["high", "very-high", "moderate"],
+        "bus-stops":            ["high", "very-high"],
+        "hospitals":            ["high", "very-high", "moderate"],
+        "schools":              ["high", "very-high", "moderate"],
+        "campus-buildings":     ["moderate", "high", "low"],
+        "gas-stations":         ["low", "moderate", "low"],
+        "parking":              ["moderate", "high", "very-high"],
+        "ev-charging":          ["low", "moderate", "high"],
+        "fitness":              ["moderate", "high"],
+        "religious":            ["moderate", "low"],
+        "playgrounds":          ["high", "moderate"],
+        "beaches":              ["high", "very-high", "moderate"],
+        "dog-parks":            ["moderate", "high"],
+        "supermarkets":         ["moderate", "high", "very-high"],
+        "pharmacies":           ["moderate", "low"],
+        "atms":                 ["low", "moderate"],
+        "post-offices":         ["moderate", "high"],
+        "police-stations":      ["low", "moderate"],
+        "fire-stations":        ["low", "moderate"],
+        "car-rental":           ["moderate", "high"],
+        "veterinarians":        ["moderate", "low"],
+        "dentists":             ["low", "moderate"],
+        "public-restrooms":     ["moderate", "low"],
+        "attractions":          ["high", "very-high"],
+        "health-beauty":        ["low", "moderate"],
+        "services":             ["low", "moderate"],
+    }
+    _MASK_PROB_BY_CAT = {
+        "hospitals": 95, "pharmacies": 35, "dentists": 80,
+        "veterinarians": 25, "indoor-mall-shops": 8, "indoor-airport-shops": 12,
+        "transit": 15, "bus-stops": 12, "museums": 10, "schools": 15,
+        "religious": 18, "campus-buildings": 12,
+    }
+
+    BATCH = 1500
+    offset = 0
+    written = 0
+    while True:
+        rows = (Place.query
+                .order_by(Place.id)
+                .offset(offset).limit(BATCH).all())
+        if not rows:
+            break
+        offset += BATCH
+        for p in rows:
+            if p.noise_level:
+                continue  # already filled
+            slug = p.slug or ""
+            cat_slug = cat_by_id.get(p.category_id, "")
+            noise_options = _NOISE_BY_CAT.get(cat_slug, ["moderate", "quiet", "lively"])
+            crowd_options = _CROWD_BY_CAT.get(cat_slug, ["moderate", "low", "high"])
+            p.noise_level = noise_options[_seed_int(slug, "n5n") % len(noise_options)]
+            p.crowd_level = crowd_options[_seed_int(slug, "n5c") % len(crowd_options)]
+            mask_prob = _MASK_PROB_BY_CAT.get(cat_slug, 4)
+            p.mask_required = (_seed_int(slug, "n5m") % 100) < mask_prob
+            written += 1
+            if written % 2000 == 0:
+                db.session.commit()
+    db.session.commit()
+    print(f"backfill_place_extras_r5: filled noise/crowd/mask on {written} place rows")
+
+
+# ---------------------------------------------------------------------------
+# R5 routes: walking indoor routes, EV-route charging stops, multi-modal.
+# ---------------------------------------------------------------------------
+_R5_ROUTES = [
+    # (origin_query, dest_query, mode, distance, duration, summary, steps)
+    ("LAX Terminal 1", "LAX Tom Bradley International",
+     "walking", "0.4 mi", "8 min",
+     "Indoor walking route via the post-security connector tunnel.", [
+        {"instruction": "Head east through the Terminal 1 mezzanine", "distance": "150 m"},
+        {"instruction": "Take the moving walkway through the connector", "distance": "300 m"},
+        {"instruction": "Follow signs to Tom Bradley International (TBIT)", "distance": "100 m"},
+        {"instruction": "Arrive at TBIT departures level 3", "distance": "30 m"},
+     ]),
+    ("JFK Terminal 4", "JFK Terminal 5",
+     "walking", "0.6 mi", "12 min",
+     "Indoor walking route via the AirTrain post-security walkway.",
+     [{"instruction": "Take AirTrain Terminal-4 stop", "distance": "150 m"},
+      {"instruction": "Transfer at JFK Federal Circle", "distance": "Air"},
+      {"instruction": "AirTrain to Terminal 5", "distance": "Air"},
+      {"instruction": "Walk into Terminal 5 arrivals", "distance": "120 m"}]),
+    ("San Francisco", "Reno",
+     "driving", "220 mi", "3h 45min",
+     "EV route from San Francisco to Reno via I-80 E with charging stop at Truckee.",
+     [{"instruction": "Take I-80 E from SF", "distance": "60 mi"},
+      {"instruction": "EV stop: Electrify America Vacaville (350 kW)", "distance": "5 km"},
+      {"instruction": "Continue on I-80 E through Sierra Nevada", "distance": "120 mi"},
+      {"instruction": "EV stop: Tesla Supercharger Truckee (V3)", "distance": "5 km"},
+      {"instruction": "Arrive in Reno via I-580 N", "distance": "35 mi"}]),
+    ("Boston", "Cape Cod",
+     "driving", "75 mi", "1h 35min",
+     "EV route from Boston to Cape Cod with mid-route fast charge at Plymouth.",
+     [{"instruction": "Take I-93 S out of Boston", "distance": "12 mi"},
+      {"instruction": "Merge onto MA-3 S toward Cape Cod", "distance": "30 mi"},
+      {"instruction": "EV stop: Electrify America Plymouth (350 kW)", "distance": "5 km"},
+      {"instruction": "Continue on US-6 across the Sagamore Bridge", "distance": "25 mi"},
+      {"instruction": "Arrive in Cape Cod", "distance": "3 mi"}]),
+    ("Chicago Union Station", "O'Hare International Airport",
+     "transit", "18 mi", "55 min",
+     "Multi-modal transit route from Union Station to O'Hare via CTA Blue Line.",
+     [{"instruction": "Walk from Union Station to Clinton Blue Line stop", "distance": "0.3 mi"},
+      {"instruction": "Board CTA Blue Line toward O'Hare", "distance": "—"},
+      {"instruction": "Stay on Blue Line for 22 stops (~45 min)", "distance": "—"},
+      {"instruction": "Exit at O'Hare terminal station", "distance": "—"},
+      {"instruction": "Follow signs to your departure terminal", "distance": "0.2 mi"}]),
+    ("Seattle Convention Center", "Pike Place Market",
+     "walking", "0.7 mi", "14 min",
+     "Accessibility-route-preferred walk with curb cuts and elevators only.",
+     [{"instruction": "Exit Convention Center via south-side elevator", "distance": "50 m"},
+      {"instruction": "Cross Pike St at marked crosswalk with curb ramp", "distance": "30 m"},
+      {"instruction": "Continue west on Pike St (sidewalk, level grade)", "distance": "650 m"},
+      {"instruction": "Cross 1st Ave using audible signal", "distance": "30 m"},
+      {"instruction": "Enter Pike Place Market via the accessible north entrance", "distance": "40 m"}]),
+    ("San Francisco", "Los Angeles",
+     "driving", "382 mi", "5h 50min",
+     "Two-stop EV route SF to LA via I-5 S with fast-charge plazas at Kettleman City and Tejon Ranch.",
+     [{"instruction": "Take US-101 S out of SF to I-5 S", "distance": "40 mi"},
+      {"instruction": "Continue south on I-5 through Central Valley", "distance": "160 mi"},
+      {"instruction": "EV stop: Tesla Supercharger Kettleman City (V3, 250 kW)", "distance": "5 km"},
+      {"instruction": "Continue south on I-5 across the Grapevine", "distance": "100 mi"},
+      {"instruction": "EV stop: Electrify America Tejon Ranch (350 kW)", "distance": "5 km"},
+      {"instruction": "Continue I-5 S into LA", "distance": "75 mi"}]),
+    ("Penn Station", "MetLife Stadium",
+     "transit", "8 mi", "40 min",
+     "Group-meetup transit route via NJ Transit train to Secaucus Junction and Meadowlands shuttle.",
+     [{"instruction": "Board NJ Transit train at Penn Station NY", "distance": "—"},
+      {"instruction": "Transfer at Secaucus Junction", "distance": "—"},
+      {"instruction": "Take Meadowlands Sports Complex shuttle", "distance": "—"},
+      {"instruction": "Arrive at MetLife Stadium", "distance": "—"}]),
+]
+
+
+def expand_routes_r5(db, Route):
+    """Add curated R5 routes (indoor walking, EV stops, multi-modal,
+    accessibility-preferred). Idempotent: gated on route count >= 108."""
+    if Route.query.count() >= 108:
+        return
+    added = 0
+    for entry in _R5_ROUTES:
+        origin_q, dest_q, mode, dist_label, dur_label, summary, steps = entry
+        if Route.query.filter_by(
+                origin_query=origin_q, destination_query=dest_q, mode=mode).first():
+            continue
+        # Parse km from distance label (best-effort)
+        try:
+            if "mi" in dist_label:
+                km = float(dist_label.split()[0]) * 1.609
+            else:
+                km = float(dist_label.split()[0])
+        except (ValueError, IndexError):
+            km = 0.0
+        # Parse minutes from duration label
+        dur_min = 0
+        try:
+            if "h" in dur_label:
+                parts = dur_label.replace("min", "").split("h")
+                dur_min = int(parts[0]) * 60 + int(parts[1].strip() or 0)
+            else:
+                dur_min = int(dur_label.split()[0])
+        except (ValueError, IndexError):
+            dur_min = 0
+        db.session.add(Route(
+            origin_query=origin_q, destination_query=dest_q,
+            origin_name=origin_q, destination_name=dest_q,
+            mode=mode, distance=dist_label, distance_km=round(km, 2),
+            duration=dur_label, duration_min=dur_min,
+            steps_json=json.dumps(steps),
+            summary=summary,
+            origin_address=origin_q, destination_address=dest_q,
+        ))
+        added += 1
+    db.session.commit()
+    print(f"expand_routes_r5: added {added} R5 routes (total {Route.query.count()})")
+
+
+def backfill_transit_delays(db, TransitLine):
+    """Deterministic realtime-style delay backfill on every TransitLine row.
+
+    Skips rows that already have last_update set so warm restarts are no-ops.
+    """
+    rows = TransitLine.query.order_by(TransitLine.id).all()
+    if not rows:
+        return
+    filled = sum(1 for r in rows if r.last_update)
+    if filled >= len(rows) * 0.9:
+        return
+    _REASONS = [
+        "On schedule",
+        "Signal problem at next station",
+        "Construction near terminal",
+        "Heavy passenger volume",
+        "Earlier train ahead",
+        "Track work in progress",
+        "Weather slowdown",
+        "Crew change at terminal",
+    ]
+    for r in rows:
+        if r.last_update:
+            continue
+        seed = _seed_int(r.slug, "delay")
+        # 35% on-schedule, otherwise delay 1-12 min
+        is_on_time = (seed % 100) < 35
+        if is_on_time:
+            r.current_delay_min = 0
+            r.delay_reason = "On schedule"
+        else:
+            r.current_delay_min = 1 + (seed % 12)
+            r.delay_reason = _REASONS[1 + ((seed >> 4) % (len(_REASONS) - 1))]
+        # last_update is a fixed-string snapshot (no datetime.now); the
+        # tens-of-minutes part is deterministic from slug.
+        r.last_update = f"{1 + ((seed >> 8) % 12)} min ago"
+    db.session.commit()
+    print(f"backfill_transit_delays: updated {len(rows)} transit lines")
+

@@ -1,16 +1,17 @@
 {% extends "base.html" %}
 {% block title %}Share — {{ comp.input_query }}{% endblock %}
+{% block body_class %}{% if as_image %}page-share-image{% else %}page-share{% endif %}{% endblock %}
 
 {% block content %}
 <div class="section-inner" style="padding-top: 40px;">
-  <div class="share-page">
+  <div class="share-page {% if as_image %}share-page--image{% endif %}">
     <div class="share-header">
-      <span class="share-eyebrow">SHARED COMPUTATION</span>
+      <span class="share-eyebrow">{% if as_image %}IMAGE SHARE PREVIEW{% else %}SHARED COMPUTATION{% endif %}</span>
       <h1 class="share-title">{{ comp.input_query }}</h1>
       <p class="share-sub">Permalink generated {{ comp.created_at.strftime('%Y-%m-%d') if comp.created_at else '' }}</p>
     </div>
 
-    <div class="share-result-card">
+    <div class="share-result-card" role="region" aria-label="Shared computation card">
       <div class="result-pod result-pod--input">
         <div class="pod-title">Input interpretation</div>
         <div class="pod-content"><code class="pod-input-formula">{{ comp.parsed_input or comp.input_query }}</code></div>
@@ -18,25 +19,51 @@
 
       {% for pod in comp.get_pods() %}
         {% if pod.title|lower != 'input interpretation' %}
-        <div class="result-pod result-pod--extra">
+        <div class="result-pod result-pod--extra
+                    {% if 'plot' in (pod.title|lower) %}result-pod--svgplot{% endif %}">
           <div class="pod-title">{{ pod.title }}</div>
-          <div class="pod-content"><pre class="pod-extra-plaintext">{{ pod.plaintext }}</pre></div>
+          <div class="pod-content">
+            {% if 'plot' in (pod.title|lower) and '<svg' in (pod.plaintext or '') %}
+              <div class="pod-plot-svg-host">{{ pod.plaintext|safe }}</div>
+            {% else %}
+              <pre class="pod-extra-plaintext">{{ pod.plaintext }}</pre>
+            {% endif %}
+          </div>
         </div>
         {% endif %}
       {% endfor %}
+
+      {% if as_image %}
+      <div class="share-image-stamp" aria-hidden="true">
+        <img src="/static/images/pro/wolfram_alpha_spikey_icon_5e9b37fe41.svg" alt="" class="share-image-spikey">
+        <span class="share-image-brand">WolframAlpha</span>
+      </div>
+      {% endif %}
     </div>
 
+    {% if not as_image %}
     <div class="share-meta">
       <div class="share-permalink-block">
         <label for="permalinkBox" class="share-permalink-label">Permalink</label>
         <input id="permalinkBox" type="text" readonly class="share-permalink-input" value="{{ permalink }}">
-        <button class="btn btn-secondary btn-sm" onclick="navigator.clipboard.writeText(document.getElementById('permalinkBox').value)">Copy</button>
+        <button class="btn btn-secondary btn-sm" type="button"
+                onclick="navigator.clipboard.writeText(document.getElementById('permalinkBox').value)">Copy</button>
+      </div>
+      <div class="share-permalink-block">
+        <label for="permalinkImageBox" class="share-permalink-label">Image-share URL</label>
+        <input id="permalinkImageBox" type="text" readonly class="share-permalink-input" value="{{ permalink_image }}">
+        <button class="btn btn-secondary btn-sm" type="button"
+                onclick="navigator.clipboard.writeText(document.getElementById('permalinkImageBox').value)">Copy</button>
       </div>
       <div class="share-actions">
         <a class="btn btn-secondary btn-sm" href="/input?i={{ comp.input_query|urlencode }}">Open in Wolfram|Alpha</a>
-        <a class="btn btn-secondary btn-sm" href="/widget/builder">Embed as widget</a>
+        <a class="btn btn-secondary btn-sm" href="{{ permalink_image }}">Preview as image</a>
+        <a class="btn btn-secondary btn-sm" href="/widget/builder?source={{ comp.id }}">Embed as widget</a>
       </div>
     </div>
+    {% else %}
+    <p class="share-image-hint">Right-click the card above and choose <strong>Save image</strong> to download as PNG, or use your browser's screenshot tool.</p>
+    {% endif %}
   </div>
 </div>
 {% endblock %}

@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% block title %}Page Not Found{% endblock %}
+
+{% block content %}
+<div class="container error-page" role="main" aria-labelledby="error-title">
+    {% if server_error %}
+        <div class="error-status" aria-hidden="true">500</div>
+        <h1 id="error-title">Something went wrong on our end</h1>
+        <p class="error-lead">Our cooks slipped on a banana peel. Please try again in a moment.</p>
+    {% elif method_not_allowed %}
+        <div class="error-status" aria-hidden="true">405</div>
+        <h1 id="error-title">That request was not allowed</h1>
+        <p class="error-lead">You can't reach this page that way — try following a link from the homepage instead.</p>
+    {% else %}
+        <div class="error-status" aria-hidden="true">404</div>
+        <h1 id="error-title">We can't find that recipe</h1>
+        <p class="error-lead">The page you're looking for might have moved, or you may have followed a broken link.</p>
+    {% endif %}
+
+    <div class="error-actions">
+        <a class="error-btn-primary" href="{{ url_for('index') }}">Back to homepage</a>
+        <a class="error-btn-secondary" href="{{ url_for('all_recipes') }}">Browse all recipes</a>
+        <a class="error-btn-secondary" href="{{ url_for('search') }}">Search recipes</a>
+    </div>
+
+    {% if suggestions %}
+    <section class="error-suggestions" aria-labelledby="error-sugg-title">
+        <h2 id="error-sugg-title">You might be looking for…</h2>
+        <ul class="error-suggestions-grid">
+            {% for r in suggestions %}
+            <li>
+                <a href="{{ url_for('recipe_detail', slug=r.slug) }}" aria-label="Recipe: {{ r.title }}">
+                    {% if r.image %}
+                        <img src="{{ r.image }}" alt="{{ r.title }}" loading="lazy">
+                    {% else %}
+                        <div class="placeholder-img" role="img" aria-label="{{ r.title }} placeholder image">Recipe photo</div>
+                    {% endif %}
+                    <span class="error-sugg-title">{{ r.title }}</span>
+                    {% if r.avg_rating %}
+                    <span class="error-sugg-meta">{{ '%.1f'|format(r.avg_rating) }} stars · {{ r.review_count }} reviews</span>
+                    {% endif %}
+                </a>
+            </li>
+            {% endfor %}
+        </ul>
+    </section>
+    {% endif %}
+</div>
+{% endblock %}

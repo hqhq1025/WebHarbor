@@ -7,8 +7,29 @@
     <title>{% block title %}BBC News{% endblock %}</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect fill='%23000' width='100' height='100'/%3E%3Ctext x='50' y='68' font-family='Arial Black' font-size='40' fill='white' text-anchor='middle' font-weight='900'%3EBBC%3C/text%3E%3C/svg%3E">
+    {# R5: BBC Reith fallback chain. We declare a hosted @font-face stub so #}
+    {# the local CSS variable --font-reith picks up Reith if the network has #}
+    {# loaded a copy (the mirror does not ship Reith binaries).             #}
+    <style>
+        @font-face {
+            font-family: "ReithSans";
+            src: local("Helvetica Neue"), local("Helvetica"), local("Arial");
+            font-display: swap;
+        }
+        @font-face {
+            font-family: "ReithSerif";
+            src: local("Georgia"), local("Times New Roman");
+            font-display: swap;
+        }
+    </style>
 </head>
-<body>
+<body data-darkmode="{{ request.cookies.get('bbc_dark_mode', 'off') }}"
+      data-highcontrast="{{ request.cookies.get('bbc_high_contrast', 'off') }}">
+
+{# R5: ARIA live region for breaking-news announcements. Empty by default; #}
+{# main.js writes the latest headline here so screen readers announce it.  #}
+<div id="bbc-live-region" class="sr-only" aria-live="polite" aria-atomic="true"
+     data-breaking-headline="{{ (breaking_now.headline if breaking_now else '')|e }}"></div>
 
 {# Breaking-news banner — pulsing red, dismissable via cookie #}
 {% if request.cookies.get('bbc_breaking_dismissed') != '1' and breaking_now %}
@@ -48,6 +69,31 @@
             <a href="{{ url_for('live_page') }}" {% if active_nav_slug == 'live' %}class="active"{% endif %}>Live</a>
         </nav>
         <div class="orb-actions">
+            {# R5: dark-mode + high-contrast accessibility toggles. State is #}
+            {# kept in localStorage and synced to a cookie via /api/*.       #}
+            <button type="button" class="orb-btn orb-btn-dark" id="darkmode-toggle"
+                    data-current="{{ request.cookies.get('bbc_dark_mode', 'off') }}"
+                    aria-pressed="{{ 'true' if request.cookies.get('bbc_dark_mode') == 'on' else 'false' }}"
+                    aria-label="Toggle dark mode" title="Toggle dark mode">
+                <span class="dm-icon" aria-hidden="true">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/>
+                    </svg>
+                </span>
+                <span class="dm-label">Dark</span>
+            </button>
+            <button type="button" class="orb-btn orb-btn-contrast" id="contrast-toggle"
+                    data-current="{{ request.cookies.get('bbc_high_contrast', 'off') }}"
+                    aria-pressed="{{ 'true' if request.cookies.get('bbc_high_contrast') == 'on' else 'false' }}"
+                    aria-label="Toggle high contrast" title="Toggle high contrast">
+                <span class="hc-icon" aria-hidden="true">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M12 2a10 10 0 100 20V2z"/>
+                        <circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.5"/>
+                    </svg>
+                </span>
+                <span class="hc-label">A11y</span>
+            </button>
             {% if current_user.is_authenticated %}
                 <a href="{{ url_for('account') }}" class="orb-btn orb-btn-account">
                     <span class="orb-avatar">{{ current_user.initials }}</span>
@@ -58,11 +104,17 @@
                 <a href="{{ url_for('register') }}" class="orb-btn orb-btn-register">Register</a>
                 <a href="{{ url_for('login') }}" class="orb-btn orb-btn-signin">Sign In</a>
             {% endif %}
-            <form action="{{ url_for('search') }}" method="get" class="orb-search">
-                <input type="text" name="q" placeholder="Search news, topics, sections" value="{{ request.args.get('q', '') }}">
+            <form action="{{ url_for('search') }}" method="get" class="orb-search" autocomplete="off"
+                  data-search-autosuggest="1">
+                <input type="text" name="q" placeholder="Search news, topics, sections"
+                       value="{{ request.args.get('q', '') }}"
+                       aria-label="Search BBC News"
+                       aria-autocomplete="list" aria-controls="bbc-search-suggest"
+                       id="bbc-search-input">
                 <button type="submit" aria-label="Search">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
                 </button>
+                <div id="bbc-search-suggest" class="orb-suggest" role="listbox" hidden></div>
             </form>
         </div>
     </div>
@@ -89,6 +141,7 @@
             <a href="{{ url_for('section_page', slug='earth') }}" {% if active_nav_slug == 'earth' %}class="active"{% endif %}>Earth</a>
             <a href="{{ url_for('section_page', slug='in_pictures') }}" {% if active_nav_slug == 'in_pictures' %}class="active"{% endif %}>In Pictures</a>
             <a href="{{ url_for('section_page', slug='bbcverify') }}" {% if active_nav_slug == 'bbcverify' %}class="active"{% endif %}>BBC Verify</a>
+            <a href="{{ url_for('section_page', slug='newsround') }}" {% if active_nav_slug == 'newsround' %}class="active"{% endif %}>Newsround</a>
             <a href="{{ url_for('section_page', slug='weather') }}" {% if active_nav_slug == 'weather' %}class="active"{% endif %}>Weather</a>
             <a href="{{ url_for('section_page', slug='war') }}" {% if active_nav_slug == 'war' %}class="active"{% endif %}>War</a>
         </nav>
@@ -236,6 +289,8 @@
                     <a href="{{ url_for('section_page', slug='in_pictures') }}">In Pictures</a>
                     <a href="{{ url_for('section_page', slug='multi_step') }}">Long reads</a>
                     <a href="{{ url_for('section_page', slug='video') }}">Video clips</a>
+                    <a href="{{ url_for('section_page', slug='newsround') }}">Newsround</a>
+                    <a href="{{ url_for('section_page', slug='quizzes') }}">Quizzes</a>
                 </div>
                 <div class="footer-col">
                     <h3>Connect</h3>

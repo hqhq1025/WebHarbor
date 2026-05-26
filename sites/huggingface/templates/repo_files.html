@@ -83,10 +83,10 @@
         <code>git clone https://huggingface.co/{{ repo.slug }}</code>
     </p>
 
-    {# R4: side panel — file-tree expand/collapse. CSS-only details/summary
-       so the agent can see and click "Expand all" without JS. Each top-level
-       directory is its own collapsible group. #}
-    <aside class="file-tree-pane" style="margin-top:24px;border:1px solid var(--border,#e5e7eb);border-radius:10px;padding:14px 16px;background:#fafafa;">
+    {# R4: side panel — file-tree expand/collapse. R5 adds ARIA tree
+       semantics + keyboard navigation (Left/Right collapse/expand, Up/Down
+       moves focus across groups). #}
+    <aside class="file-tree-pane" aria-label="File tree" style="margin-top:24px;border:1px solid var(--border,#e5e7eb);border-radius:10px;padding:14px 16px;background:#fafafa;">
         <header style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px;">
             <h3 style="margin:0;font-size:14px;font-weight:700;">File tree</h3>
             <div class="file-tree-actions" style="font-size:12px;">
@@ -107,12 +107,13 @@
                 {% set _ = top_files.append(f) %}
             {% endif %}
         {% endfor %}
+        <div role="tree" aria-label="Repository file tree">
         {% for dir_name in dirs.keys() %}
-            <details class="file-tree-group" style="margin:4px 0;">
-                <summary style="cursor:pointer;font-weight:600;font-size:13px;">📁 {{ dir_name }}</summary>
-                <ul style="margin:4px 0 6px 22px;padding:0;list-style:none;font-size:12.5px;">
+            <details class="file-tree-group" role="treeitem" aria-expanded="false" tabindex="-1" style="margin:4px 0;">
+                <summary tabindex="0" style="cursor:pointer;font-weight:600;font-size:13px;">📁 {{ dir_name }}</summary>
+                <ul role="group" style="margin:4px 0 6px 22px;padding:0;list-style:none;font-size:12.5px;">
                     {% for child in dirs[dir_name] %}
-                    <li style="margin:2px 0;">📄 <a href="{{ url_for(repo.repo_type ~ '_blob' if repo.repo_type in ['dataset','space'] else 'model_blob', author=repo.slug.split('/')[0], name=repo.slug.split('/')[1], filepath=child.path) }}">{{ child.display_name.split('/')[-1] }}</a></li>
+                    <li role="treeitem" style="margin:2px 0;">📄 <a href="{{ url_for(repo.repo_type ~ '_blob' if repo.repo_type in ['dataset','space'] else 'model_blob', author=repo.slug.split('/')[0], name=repo.slug.split('/')[1], filepath=child.path) }}">{{ child.display_name.split('/')[-1] }}</a></li>
                     {% else %}
                     <li class="muted" style="margin:2px 0;font-size:12px;">(empty)</li>
                     {% endfor %}
@@ -120,15 +121,35 @@
             </details>
         {% endfor %}
         {% if top_files %}
-            <details class="file-tree-group" open style="margin:4px 0;">
-                <summary style="cursor:pointer;font-weight:600;font-size:13px;">📄 Root files</summary>
-                <ul style="margin:4px 0 6px 22px;padding:0;list-style:none;font-size:12.5px;">
+            <details class="file-tree-group" role="treeitem" aria-expanded="true" tabindex="-1" open style="margin:4px 0;">
+                <summary tabindex="0" style="cursor:pointer;font-weight:600;font-size:13px;">📄 Root files</summary>
+                <ul role="group" style="margin:4px 0 6px 22px;padding:0;list-style:none;font-size:12.5px;">
                     {% for f in top_files %}
-                    <li style="margin:2px 0;">📄 <a href="{{ url_for(repo.repo_type ~ '_blob' if repo.repo_type in ['dataset','space'] else 'model_blob', author=repo.slug.split('/')[0], name=repo.slug.split('/')[1], filepath=f.path) }}">{{ f.display_name }}</a></li>
+                    <li role="treeitem" style="margin:2px 0;">📄 <a href="{{ url_for(repo.repo_type ~ '_blob' if repo.repo_type in ['dataset','space'] else 'model_blob', author=repo.slug.split('/')[0], name=repo.slug.split('/')[1], filepath=f.path) }}">{{ f.display_name }}</a></li>
                     {% endfor %}
                 </ul>
             </details>
         {% endif %}
+        </div>
+        <script>
+        (function(){
+            // R5: keyboard navigation for file-tree summaries.
+            // ArrowRight expands, ArrowLeft collapses, ArrowDown/Up move focus.
+            var summaries = document.querySelectorAll('.file-tree-pane summary');
+            summaries.forEach(function(s, i){
+                s.addEventListener('keydown', function(e){
+                    var det = s.parentElement;
+                    if (e.key === 'ArrowRight'){ e.preventDefault(); det.open = true; det.setAttribute('aria-expanded','true'); }
+                    else if (e.key === 'ArrowLeft'){ e.preventDefault(); det.open = false; det.setAttribute('aria-expanded','false'); }
+                    else if (e.key === 'ArrowDown'){ e.preventDefault(); var n = summaries[i+1]; if (n) n.focus(); }
+                    else if (e.key === 'ArrowUp'){ e.preventDefault(); var p = summaries[i-1]; if (p) p.focus(); }
+                });
+                s.addEventListener('click', function(){
+                    setTimeout(function(){ s.parentElement.setAttribute('aria-expanded', s.parentElement.open ? 'true' : 'false'); }, 0);
+                });
+            });
+        })();
+        </script>
         <p class="muted" style="font-size:12px;margin:8px 0 0;">
             Files-and-versions view: <a href="{{ url_for(repo.repo_type ~ '_files' if repo.repo_type in ['dataset','space'] else 'model_files', author=repo.slug.split('/')[0], name=repo.slug.split('/')[1]) }}">tree</a>
             · <a href="{{ url_for(repo.repo_type ~ '_commits' if repo.repo_type in ['dataset','space'] else 'model_commits', author=repo.slug.split('/')[0], name=repo.slug.split('/')[1]) }}">commits</a>

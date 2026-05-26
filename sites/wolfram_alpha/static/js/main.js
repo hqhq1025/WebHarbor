@@ -75,3 +75,91 @@ if (gnSearchBtn) {
     }
   });
 }
+
+/* ========== R5 interactive polish ========== */
+
+// Plot pod — zoom in/out/reset/pan via data attribute on wrapper.
+document.addEventListener('click', (e) => {
+  const btn = e.target.closest('.pod-plot-btn');
+  if (!btn) return;
+  const wrap = btn.closest('.pod-plot-wrapper');
+  if (!wrap) return;
+  const cur = parseFloat(wrap.dataset.zoom || '1.0');
+  const action = btn.dataset.action;
+  let next = cur;
+  if (action === 'zoom-in') next = Math.min(2.0, cur + 0.25);
+  else if (action === 'zoom-out') next = Math.max(0.5, cur - 0.25);
+  else if (action === 'zoom-reset') next = 1.0;
+  else if (action === 'pan-left' || action === 'pan-right') {
+    const host = wrap.querySelector('.pod-plot-svg-host');
+    const delta = action === 'pan-left' ? -20 : 20;
+    const cx = parseInt(host.dataset.pan || '0', 10) + delta;
+    host.dataset.pan = String(cx);
+    const svg = host.querySelector('svg');
+    if (svg) svg.style.transform = `translateX(${cx}px) scale(${cur})`;
+    return;
+  }
+  wrap.dataset.zoom = next.toFixed(2);
+  // Map to CSS via attribute selectors for predefined steps,
+  // and also style.transform for in-between steps.
+  const host = wrap.querySelector('.pod-plot-svg-host');
+  const svg = host && host.querySelector('svg');
+  if (svg) {
+    const px = parseInt(host.dataset.pan || '0', 10);
+    svg.style.transform = `translateX(${px}px) scale(${next})`;
+  }
+});
+
+// Alternate-forms tab switching with smooth opacity transition.
+document.addEventListener('click', (e) => {
+  const tab = e.target.closest('.pod-altform-tab');
+  if (!tab) return;
+  const container = tab.closest('.result-pod--alternate');
+  if (!container) return;
+  container.querySelectorAll('.pod-altform-tab').forEach((t) => {
+    t.classList.remove('pod-altform-tab--active');
+    t.setAttribute('aria-selected', 'false');
+  });
+  tab.classList.add('pod-altform-tab--active');
+  tab.setAttribute('aria-selected', 'true');
+  const body = container.querySelector('.pod-altform-body');
+  if (body) {
+    const form = tab.dataset.form || 'standard';
+    body.style.opacity = '0';
+    setTimeout(() => {
+      body.dataset.active = form;
+      body.style.opacity = '1';
+    }, 150);
+  }
+});
+
+// Keyboard activation for span-based tabs / pills.
+document.addEventListener('keydown', (e) => {
+  if (e.key !== 'Enter' && e.key !== ' ') return;
+  const t = document.activeElement;
+  if (!t) return;
+  if (t.matches('.pod-altform-tab, .wa-assumption-pill[role="tab"]:not(a), .builder-size-btn')) {
+    e.preventDefault();
+    t.click();
+  }
+});
+
+// Embed size picker — sync the iframe code with chosen preset.
+document.addEventListener('click', (e) => {
+  const btn = e.target.closest('.builder-size-btn');
+  if (!btn) return;
+  document.querySelectorAll('.builder-size-btn').forEach((b) =>
+    b.classList.remove('builder-size-btn--active'));
+  btn.classList.add('builder-size-btn--active');
+  const w = btn.dataset.w, h = btn.dataset.h;
+  const wInput = document.getElementById('bf-width');
+  const hInput = document.getElementById('bf-height');
+  if (wInput) wInput.value = w;
+  if (hInput) hInput.value = h;
+  const code = document.getElementById('bf-embed');
+  if (code) {
+    code.innerHTML = code.innerHTML
+      .replace(/width="\d+"/, `width="${w}"`)
+      .replace(/height="\d+"/, `height="${h}"`);
+  }
+});

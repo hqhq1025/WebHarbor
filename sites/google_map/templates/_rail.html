@@ -34,6 +34,14 @@
         <span class="material-icons-outlined icon">add_location_alt</span>
         <span class="label">Contribute</span>
     </a>
+    <a href="{{ url_for('transit_realtime') }}" class="rail-item {% if request.endpoint == 'transit_realtime' %}active{% endif %}" title="Realtime transit">
+        <span class="material-icons-outlined icon">commute</span>
+        <span class="label">Realtime</span>
+    </a>
+    <a href="{{ url_for('group_meetup') }}" class="rail-item {% if request.endpoint == 'group_meetup' %}active{% endif %}" title="Group meetup">
+        <span class="material-icons-outlined icon">groups</span>
+        <span class="label">Meetup</span>
+    </a>
     <a href="{{ url_for('your_data') }}" class="rail-item {% if request.endpoint == 'your_data' %}active{% endif %}" title="Your data">
         <span class="material-icons-outlined icon">shield</span>
         <span class="label">Your data</span>

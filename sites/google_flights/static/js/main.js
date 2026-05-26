@@ -189,3 +189,239 @@
     });
   });
 })();
+
+// ===========================================================
+// R5 progressive enhancements
+//   - Airport autocomplete (city-expand) on search inputs
+//   - Saved-search heart animation
+//   - Calendar grid drag-select range + ARIA
+//   - Sticky filter toolbar with chip clear-all
+//   - Mobile bottom-sheet filter panel
+//   - Screen-reader live announcements on filter change
+//   - Seat-map keyboard navigation
+// All idempotent; safe if R5 hooks (.r5-*) are absent.
+// ===========================================================
+(function() {
+  // Live region for screen-reader announcements
+  let liveRegion = document.getElementById('r5-live');
+  if (!liveRegion) {
+    liveRegion = document.createElement('div');
+    liveRegion.id = 'r5-live';
+    liveRegion.setAttribute('aria-live', 'polite');
+    liveRegion.setAttribute('aria-atomic', 'true');
+    liveRegion.className = 'visually-hidden';
+    document.body.appendChild(liveRegion);
+  }
+  function announce(msg) {
+    if (!msg) return;
+    liveRegion.textContent = '';
+    setTimeout(() => { liveRegion.textContent = msg; }, 50);
+  }
+  window.r5Announce = announce;
+
+  // ---- Airport autocomplete on search inputs ----
+  function attachAutocomplete(input) {
+    if (!input || input.__r5_autocomplete) return;
+    input.__r5_autocomplete = true;
+    input.setAttribute('autocomplete', 'off');
+    input.setAttribute('aria-autocomplete', 'list');
+    const list = document.createElement('ul');
+    list.className = 'r5-autocomplete';
+    list.setAttribute('role', 'listbox');
+    list.hidden = true;
+    input.insertAdjacentElement('afterend', list);
+    let activeIndex = -1;
+    let lastQuery = '';
+    let timer = null;
+
+    function render(items) {
+      list.innerHTML = '';
+      if (!items.length) { list.hidden = true; return; }
+      items.forEach((it, i) => {
+        const li = document.createElement('li');
+        li.setAttribute('role', 'option');
+        li.dataset.iata = it.iata;
+        li.innerHTML = '<span class="r5-ac-iata">' + it.iata + '</span>' +
+          '<span class="r5-ac-city">' + it.city + '</span>' +
+          '<span class="r5-ac-country">' + it.country + '</span>';
+        li.addEventListener('mousedown', (e) => {
+          e.preventDefault();
+          input.value = it.city + ' (' + it.iata + ')';
+          list.hidden = true;
+          announce('Selected ' + it.city + ' ' + it.iata);
+        });
+        list.appendChild(li);
+      });
+      list.hidden = false;
+      activeIndex = -1;
+    }
+    async function lookup(q) {
+      if (q === lastQuery) return;
+      lastQuery = q;
+      if (q.length < 2) { list.hidden = true; return; }
+      try {
+        const r = await fetch('/api/airports?q=' + encodeURIComponent(q));
+        if (!r.ok) return;
+        const data = await r.json();
+        render(data.slice(0, 8));
+      } catch (e) {}
+    }
+    input.addEventListener('input', () => {
+      clearTimeout(timer);
+      timer = setTimeout(() => lookup(input.value.trim()), 180);
+    });
+    input.addEventListener('keydown', (e) => {
+      const opts = list.querySelectorAll('li');
+      if (!opts.length || list.hidden) return;
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        activeIndex = (activeIndex + 1) % opts.length;
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        activeIndex = (activeIndex - 1 + opts.length) % opts.length;
+      } else if (e.key === 'Enter' && activeIndex >= 0) {
+        e.preventDefault();
+        opts[activeIndex].dispatchEvent(new MouseEvent('mousedown'));
+        return;
+      } else if (e.key === 'Escape') {
+        list.hidden = true; return;
+      } else { return; }
+      opts.forEach((o, i) => o.classList.toggle('active', i === activeIndex));
+    });
+    input.addEventListener('blur', () => setTimeout(() => { list.hidden = true; }, 150));
+  }
+  document.querySelectorAll('input[name="from"], input[name="to"], input.r5-airport-input').forEach(attachAutocomplete);
+
+  // ---- Save-search heart animation ----
+  document.querySelectorAll('[data-save-search]').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      btn.classList.add('r5-heart-pop');
+      setTimeout(() => btn.classList.remove('r5-heart-pop'), 600);
+      announce('Search saved');
+    });
+  });
+
+  // ---- Sticky filter toolbar: chip clear ----
+  document.querySelectorAll('.r5-filter-chip [data-clear-filter]').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.preventDefault();
+      const param = btn.dataset.clearFilter;
+      const u = new URL(window.location.href);
+      u.searchParams.delete(param);
+      announce(param + ' filter removed');
+      window.location.href = u.toString();
+    });
+  });
+
+  // ---- Filter form: announce on change ----
+  document.querySelectorAll('form.r5-filter-form, form.filters-form').forEach(form => {
+    form.addEventListener('change', (e) => {
+      const label = e.target.closest('label')?.textContent?.trim() || e.target.name || 'filter';
+      announce('Filter updated: ' + label);
+    });
+  });
+
+  // ---- Mobile bottom-sheet toggle ----
+  document.querySelectorAll('[data-bottom-sheet-toggle]').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.preventDefault();
+      const target = document.querySelector(btn.dataset.bottomSheetToggle);
+      if (!target) return;
+      const isOpen = target.classList.toggle('r5-sheet-open');
+      target.setAttribute('aria-hidden', isOpen ? 'false' : 'true');
+      announce(isOpen ? 'Filters opened' : 'Filters closed');
+    });
+  });
+
+  // ---- Calendar grid: drag-select range + ARIA ----
+  document.querySelectorAll('.r5-calendar-grid, .calendar-cheapest-grid').forEach(grid => {
+    const cells = grid.querySelectorAll('[data-cal-date]');
+    let dragStart = null;
+    cells.forEach((cell, idx) => {
+      cell.setAttribute('role', 'gridcell');
+      cell.setAttribute('tabindex', cell.classList.contains('selected') ? '0' : '-1');
+      const dateStr = cell.dataset.calDate;
+      const priceEl = cell.querySelector('.price, .cal-price');
+      const priceTxt = priceEl ? priceEl.textContent.trim() : '';
+      cell.setAttribute('aria-label', dateStr + (priceTxt ? ', ' + priceTxt : ''));
+      cell.addEventListener('mousedown', (e) => {
+        dragStart = idx;
+        cells.forEach(c => c.classList.remove('range-start', 'range-end', 'in-range'));
+        cell.classList.add('range-start');
+      });
+      cell.addEventListener('mouseenter', (e) => {
+        if (dragStart === null) return;
+        const lo = Math.min(dragStart, idx), hi = Math.max(dragStart, idx);
+        cells.forEach((c, i) => {
+          c.classList.toggle('in-range', i > lo && i < hi);
+          c.classList.toggle('range-end', i === hi && i !== lo);
+        });
+      });
+      cell.addEventListener('mouseup', (e) => {
+        if (dragStart === null) return;
+        const lo = Math.min(dragStart, idx), hi = Math.max(dragStart, idx);
+        const a = cells[lo].dataset.calDate;
+        const b = cells[hi].dataset.calDate;
+        dragStart = null;
+        if (a && b) announce('Range selected ' + a + ' to ' + b);
+      });
+      cell.addEventListener('keydown', (e) => {
+        let target = null;
+        if (e.key === 'ArrowRight') target = cells[idx + 1];
+        else if (e.key === 'ArrowLeft') target = cells[idx - 1];
+        else if (e.key === 'ArrowDown') target = cells[idx + 7];
+        else if (e.key === 'ArrowUp') target = cells[idx - 7];
+        else if (e.key === 'Enter' || e.key === ' ') {
+          cell.click();
+          announce('Picked ' + cell.dataset.calDate);
+          e.preventDefault();
+          return;
+        }
+        if (target) {
+          cell.setAttribute('tabindex', '-1');
+          target.setAttribute('tabindex', '0');
+          target.focus();
+          e.preventDefault();
+        }
+      });
+    });
+    document.addEventListener('mouseup', () => { dragStart = null; });
+  });
+
+  // ---- Seat map: keyboard navigation + ARIA ----
+  document.querySelectorAll('.seat-map, .r5-seat-map').forEach(map => {
+    const seats = map.querySelectorAll('[data-seat]');
+    seats.forEach((seat, idx) => {
+      seat.setAttribute('role', 'button');
+      seat.setAttribute('tabindex', idx === 0 ? '0' : '-1');
+      const occupied = seat.classList.contains('occupied') || seat.dataset.occupied === '1';
+      const label = seat.dataset.seat + (occupied ? ', occupied' : ', available');
+      seat.setAttribute('aria-label', label);
+      seat.setAttribute('aria-pressed', seat.classList.contains('selected') ? 'true' : 'false');
+      seat.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          seat.click();
+          announce('Seat ' + seat.dataset.seat + ' selected');
+          e.preventDefault();
+        }
+      });
+    });
+  });
+
+  // ---- Swipe between dates (mobile) ----
+  document.querySelectorAll('.r5-date-swipe').forEach(el => {
+    let sx = 0, sy = 0;
+    el.addEventListener('touchstart', (e) => {
+      sx = e.touches[0].clientX; sy = e.touches[0].clientY;
+    }, { passive: true });
+    el.addEventListener('touchend', (e) => {
+      const dx = e.changedTouches[0].clientX - sx;
+      const dy = e.changedTouches[0].clientY - sy;
+      if (Math.abs(dx) > 60 && Math.abs(dy) < 40) {
+        const dir = dx < 0 ? 'next' : 'prev';
+        const target = el.querySelector('[data-swipe-' + dir + ']');
+        if (target) { announce(dir === 'next' ? 'Next day' : 'Previous day'); target.click(); }
+      }
+    });
+  });
+})();

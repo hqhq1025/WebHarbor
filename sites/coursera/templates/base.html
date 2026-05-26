@@ -20,7 +20,9 @@
 {% endif %}
 {% endwith %}
 
-<nav class="global-nav">
+<a class="skip-link" href="#main-content">Skip to main content</a>
+
+<nav class="global-nav" aria-label="Primary">
   <div class="nav-topbar" style="background:#f3f4f6;border-bottom:1px solid #e5e7eb;font-size:13px;">
     <div class="nav-inner" style="max-width:1200px;margin:0 auto;display:flex;justify-content:flex-end;gap:18px;padding:6px 16px;">
       <a href="{{ url_for('index') }}" style="color:#374151;text-decoration:none;">For Individuals</a>
@@ -93,6 +95,29 @@
 </nav>
 
 {% block content %}{% endblock %}
+
+{# ─── R5 Continue Learning panel (logged-in only, idempotent) ─── #}
+{% if current_user.is_authenticated and resume_course %}
+<aside class="continue-learning-panel" role="complementary" aria-label="Continue learning">
+  <button class="clp-close" aria-label="Dismiss">&times;</button>
+  <div class="clp-eyebrow">Continue learning</div>
+  <div class="clp-title">{{ resume_course.title[:60] }}{% if resume_course.title|length > 60 %}…{% endif %}</div>
+  <a class="clp-cta" href="{{ url_for('course_detail', slug=resume_course.slug) }}">Resume &rarr;</a>
+</aside>
+{% endif %}
+
+{# ─── R5 mobile bottom-nav for ≤540 viewports ─── #}
+<nav class="mobile-bottom-nav" aria-label="Mobile primary">
+  <a href="{{ url_for('index') }}" aria-label="Home"><span class="mbn-icon" aria-hidden="true">&#127968;</span>Home</a>
+  <a href="/search" aria-label="Search"><span class="mbn-icon" aria-hidden="true">&#128269;</span>Search</a>
+  <a href="{{ url_for('coursera_plus') }}" aria-label="Coursera Plus"><span class="mbn-icon" aria-hidden="true">&#127942;</span>Plus</a>
+  {% if current_user.is_authenticated %}
+  <a href="{{ url_for('wishlist') }}" aria-label="Saved"><span class="mbn-icon" aria-hidden="true">&#9825;</span>Saved</a>
+  <a href="{{ url_for('account') }}" aria-label="Account"><span class="mbn-icon" aria-hidden="true">&#128100;</span>Me</a>
+  {% else %}
+  <a href="{{ url_for('login') }}" aria-label="Sign in"><span class="mbn-icon" aria-hidden="true">&#128274;</span>Log in</a>
+  {% endif %}
+</nav>
 
 <footer class="site-footer">
   <div class="footer-inner">

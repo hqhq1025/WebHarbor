@@ -131,4 +131,119 @@
       });
     }, 300);
   }
+
+  /* ─── R5 polish ─────────────────────────────────────────────────────── */
+
+  // Course-card hover preview (800ms intent delay so it doesn't fire on
+  // accidental mouse-over).
+  var previewTimer = null;
+  document.querySelectorAll('.result-card[data-preview-url]').forEach(function(card) {
+    card.addEventListener('mouseenter', function() {
+      if (previewTimer) clearTimeout(previewTimer);
+      previewTimer = setTimeout(function() {
+        card.classList.add('is-preview-on');
+      }, 800);
+    });
+    card.addEventListener('mouseleave', function() {
+      if (previewTimer) clearTimeout(previewTimer);
+      card.classList.remove('is-preview-on');
+    });
+    card.addEventListener('focusin', function() {
+      card.classList.add('is-preview-on');
+    });
+    card.addEventListener('focusout', function() {
+      card.classList.remove('is-preview-on');
+    });
+  });
+
+  // Sticky filter pill row — drop a shadow once it sticks.
+  var pillFormSticky = document.querySelector('.search-page .filter-pill-row');
+  if (pillFormSticky && 'IntersectionObserver' in window) {
+    var sentinel = document.createElement('div');
+    sentinel.style.height = '1px';
+    pillFormSticky.parentNode.insertBefore(sentinel, pillFormSticky);
+    var stickObs = new IntersectionObserver(function(entries) {
+      entries.forEach(function(e) {
+        pillFormSticky.classList.toggle('is-stuck', !e.isIntersecting);
+      });
+    });
+    stickObs.observe(sentinel);
+  }
+
+  // In-quiz timer with auto-save (assignment page only).
+  var qBar = document.querySelector('.quiz-timer-bar');
+  var qAns = document.querySelector('.quiz-answer');
+  if (qBar && qAns) {
+    var qKey = 'coursera_quiz_' + (qBar.dataset.quizKey || 'default');
+    var qClock = qBar.querySelector('.qt-clock');
+    var qState = qBar.querySelector('.qt-state');
+    // Restore prior draft
+    try {
+      var saved = JSON.parse(localStorage.getItem(qKey) || 'null');
+      if (saved && typeof saved.body === 'string') {
+        qAns.value = saved.body;
+        qState.textContent = 'Restored draft from ' + new Date(saved.t).toLocaleTimeString();
+      }
+    } catch (e) { /* ignore */ }
+    // Tick clock (counts up; due in N minutes shown alongside).
+    var startT = Date.now();
+    function tick() {
+      var s = Math.floor((Date.now() - startT) / 1000);
+      var mm = String(Math.floor(s / 60)).padStart(2, '0');
+      var ss = String(s % 60).padStart(2, '0');
+      qClock.textContent = mm + ':' + ss;
+    }
+    tick();
+    setInterval(tick, 1000);
+    // Auto-save every 30s + every input pause.
+    var saveTimer = null;
+    function persist() {
+      try {
+        localStorage.setItem(qKey, JSON.stringify({
+          body: qAns.value, t: Date.now()
+        }));
+        qState.classList.add('is-saved');
+        qState.textContent = 'Auto-saved at ' + new Date().toLocaleTimeString();
+        setTimeout(function() { qState.classList.remove('is-saved'); }, 1500);
+      } catch (e) { /* quota or disabled */ }
+    }
+    qAns.addEventListener('input', function() {
+      if (saveTimer) clearTimeout(saveTimer);
+      saveTimer = setTimeout(persist, 1000);
+    });
+    setInterval(persist, 30000);
+  }
+
+  // Certificate share modal trigger.
+  var shareBtn = document.querySelector('[data-share-cert]');
+  var shareModal = document.querySelector('.cert-share-modal');
+  if (shareBtn && shareModal) {
+    shareBtn.addEventListener('click', function() {
+      shareModal.classList.add('is-open');
+    });
+    shareModal.addEventListener('click', function(e) {
+      if (e.target === shareModal || e.target.classList.contains('csm-close')) {
+        shareModal.classList.remove('is-open');
+      }
+    });
+    document.addEventListener('keydown', function(e) {
+      if (e.key === 'Escape') shareModal.classList.remove('is-open');
+    });
+  }
+
+  // Continue Learning panel — dismiss button persists choice in localStorage.
+  var clp = document.querySelector('.continue-learning-panel');
+  if (clp) {
+    var dismissed = false;
+    try { dismissed = localStorage.getItem('coursera_clp_dismissed') === '1'; }
+    catch (e) { /* ignore */ }
+    if (dismissed) clp.style.display = 'none';
+    var closeBtn = clp.querySelector('.clp-close');
+    if (closeBtn) {
+      closeBtn.addEventListener('click', function() {
+        clp.style.display = 'none';
+        try { localStorage.setItem('coursera_clp_dismissed', '1'); } catch (e) {}
+      });
+    }
+  }
 })();

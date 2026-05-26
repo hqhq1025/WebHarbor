@@ -206,6 +206,12 @@ class Property(db.Model):
     has_virtual_tour = db.Column(db.Boolean, default=False)
     virtual_tour_url = db.Column(db.String(300))
 
+    # R5 — sustainability detail, payment options, languages, neighborhood blurb
+    sustainability_certification = db.Column(db.String(80))
+    payment_options_json = db.Column(db.Text)
+    languages_json = db.Column(db.Text)
+    neighborhood_summary = db.Column(db.Text)
+
     max_guests = db.Column(db.Integer, default=4)
     landmark_tags = db.Column(db.Text)  # JSON list of nearby landmark tokens
 
@@ -277,6 +283,28 @@ class Property(db.Model):
             except Exception:
                 return []
         return []
+
+    def get_payment_options(self):
+        """Return list of payment options accepted at the property."""
+        if self.payment_options_json:
+            try:
+                v = json.loads(self.payment_options_json)
+                if isinstance(v, list):
+                    return v
+            except Exception:
+                pass
+        return ['Visa', 'Mastercard']
+
+    def get_languages_spoken(self):
+        """Return list of languages spoken at the property's front desk."""
+        if self.languages_json:
+            try:
+                v = json.loads(self.languages_json)
+                if isinstance(v, list):
+                    return v
+            except Exception:
+                pass
+        return ['English']
 
     @property
     def discounted_price(self):
@@ -2620,7 +2648,9 @@ def seed_database():
         CITY_INFO, DESTINATION_CATEGORIES, PROPERTY_TYPES,
         EXTRA_HOTELS, TRENDING_DESTINATIONS, AMENITIES,
         CANCELLATION_POLICIES,
-        build_hotel_description, get_hotel_data, get_image_map
+        build_hotel_description, get_hotel_data, get_image_map,
+        derive_sustainability_certification, derive_payment_options,
+        derive_languages, derive_neighborhood_summary,
     )
 
     # Don't re-seed if already present
@@ -2879,6 +2909,11 @@ def seed_database():
             is_accessible=_acc,
             has_virtual_tour=_vt,
             virtual_tour_url=(f"/property/{slug}/virtual-tour" if _vt else None),
+            sustainability_certification=derive_sustainability_certification(name, _eco),
+            payment_options_json=json.dumps(derive_payment_options(name, stars)),
+            languages_json=json.dumps(derive_languages(name, city.country_code, stars)),
+            neighborhood_summary=derive_neighborhood_summary(
+                name, city_key, city.display, neighborhood),
             **flags,
         )
         db.session.add(prop)
@@ -3814,6 +3849,11 @@ def _migrate_schema():
                 ('is_eco_certified', 'BOOLEAN', '0'),
                 ('has_virtual_tour', 'BOOLEAN', '0'),
                 ('virtual_tour_url', 'VARCHAR(300)', None),
+                # R5 polish — quality fields
+                ('sustainability_certification', 'VARCHAR(80)', None),
+                ('payment_options_json', 'TEXT', None),
+                ('languages_json', 'TEXT', None),
+                ('neighborhood_summary', 'TEXT', None),
             ]:
                 if cname not in cols:
                     default_sql = f" DEFAULT {cdefault}" if cdefault else ''
@@ -3890,6 +3930,33 @@ def _migrate_schema():
                 p.lng = city.lng + (rng.random() - 0.5) * 0.08
             db.session.commit()
             print(f"[migrate] backfilled lat/lng for {len(no_geo)} properties")
+
+        # R5 — backfill sustainability_certification / payment_options_json /
+        # languages_json / neighborhood_summary for any property missing them.
+        # Detection: payment_options_json IS NULL → R5 was never seeded for it.
+        try:
+            from seed_data import (
+                derive_sustainability_certification as _dsc,
+                derive_payment_options as _dpo,
+                derive_languages as _dlg,
+                derive_neighborhood_summary as _dns,
+            )
+            no_r5 = Property.query.filter(Property.payment_options_json.is_(None)).all()
+            if no_r5:
+                # Reverse-lookup city_key from City to feed neighborhood summary.
+                city_key_by_id = {c.id: c.key for c in City.query.all()}
+                for p in no_r5:
+                    ck = city_key_by_id.get(p.city_id, '')
+                    city_disp = (p.city.display if p.city else '')
+                    cc = (p.city.country_code if p.city else 'us')
+                    p.sustainability_certification = _dsc(p.name, bool(p.is_eco_certified))
+                    p.payment_options_json = json.dumps(_dpo(p.name, p.stars or 4))
+                    p.languages_json = json.dumps(_dlg(p.name, cc, p.stars or 4))
+                    p.neighborhood_summary = _dns(p.name, ck, city_disp, p.neighborhood or '')
+                db.session.commit()
+                print(f"[migrate] backfilled R5 quality fields for {len(no_r5)} properties")
+        except Exception as _e5:
+            print(f"[migrate] R5 backfill warning: {_e5}")
 
         # Seed landmark table if empty
         if Landmark.query.count() == 0:

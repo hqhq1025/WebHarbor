@@ -1,12 +1,16 @@
-<section class="main-map">
-    <div class="map-canvas">
+<section class="main-map" role="region" aria-label="Map canvas"
+         tabindex="0"
+         data-zoom="12" data-map-type="map" data-active-layers="">
+    <div class="map-canvas" id="map-canvas">
         <div class="map-label" style="top: 22%; left: 26%;">North</div>
         <div class="map-label" style="top: 46%; left: 60%;">Downtown</div>
         <div class="map-label" style="top: 72%; left: 20%;">Riverfront</div>
         <div class="map-label" style="top: 30%; left: 70%;">East District</div>
         {% block map_pins %}
             {% for p in (featured or popular or places or [])[:10] %}
-                <div class="map-pin" style="top: {{ 25 + loop.index0 * 7 }}%; left: {{ 30 + (loop.index0 * 6) % 50 }}%;">
+                <div class="map-pin" style="top: {{ 25 + loop.index0 * 7 }}%; left: {{ 30 + (loop.index0 * 6) % 50 }}%;"
+                     tabindex="0" role="button"
+                     aria-label="{{ p.name }}{% if p.subtitle %} — {{ p.subtitle }}{% endif %}{% if p.rating %}, rating {{ '%.1f'|format(p.rating) }}{% endif %}">
                     <div class="pin-head {% if loop.index0 % 5 == 0 %}blue{% elif loop.index0 % 5 == 1 %}green{% elif loop.index0 % 5 == 2 %}yellow{% elif loop.index0 % 5 == 3 %}purple{% endif %}"></div>
                     <div class="pin-label">{{ p.name }}</div>
                 </div>
@@ -23,18 +27,95 @@
         {% endif %}
     </div>
 
-    <div class="map-controls">
+    <div class="map-controls" role="toolbar" aria-label="Map controls">
         <div class="map-ctrl-group">
-            <button class="map-ctrl-btn" title="Zoom in">+</button>
-            <button class="map-ctrl-btn" title="Zoom out">−</button>
+            <button class="map-ctrl-btn" type="button" title="Zoom in" aria-label="Zoom in"
+                    data-action="zoom-in" accesskey="+">+</button>
+            <button class="map-ctrl-btn" type="button" title="Zoom out" aria-label="Zoom out"
+                    data-action="zoom-out" accesskey="-">−</button>
         </div>
         <div class="map-ctrl-group">
-            <button class="map-ctrl-btn" title="My location"><span class="material-icons-outlined">my_location</span></button>
+            <button class="map-ctrl-btn" type="button" title="My location" aria-label="Center on my location"
+                    data-action="locate">
+                <span class="material-icons-outlined">my_location</span>
+            </button>
+        </div>
+        <div class="map-ctrl-group">
+            <button class="map-ctrl-btn" type="button" title="Pinch to zoom in"
+                    aria-label="Pinch zoom in (mobile gesture)" data-action="pinch-in">
+                <span class="material-icons-outlined">zoom_in</span>
+            </button>
+            <button class="map-ctrl-btn" type="button" title="Pinch to zoom out"
+                    aria-label="Pinch zoom out (mobile gesture)" data-action="pinch-out">
+                <span class="material-icons-outlined">zoom_out</span>
+            </button>
+        </div>
+        <div class="map-ctrl-group">
+            <button class="map-ctrl-btn" type="button" title="Two-finger rotate"
+                    aria-label="Rotate map two-finger gesture" data-action="rotate">
+                <span class="material-icons-outlined">rotate_right</span>
+            </button>
+            <button class="map-ctrl-btn" type="button" title="High-contrast map"
+                    aria-label="Toggle high-contrast map style" data-action="contrast" aria-pressed="false">
+                <span class="material-icons-outlined">contrast</span>
+            </button>
         </div>
     </div>
 
-    <div class="map-layers">
-        <div class="layer-icon"></div>
-        <span>Layers</span>
+    {# Map / Satellite toggle — like real Google Maps bottom-left. #}
+    <div class="map-typeswitch" role="tablist" aria-label="Map type">
+        <button class="map-type-btn active" type="button" role="tab"
+                aria-selected="true" data-map-type="map" data-action="set-map-type">
+            <span class="material-icons-outlined">map</span> Map
+        </button>
+        <button class="map-type-btn" type="button" role="tab"
+                aria-selected="false" data-map-type="satellite" data-action="set-map-type">
+            <span class="material-icons-outlined">satellite_alt</span> Satellite
+        </button>
+        <button class="map-type-btn" type="button" role="tab"
+                aria-selected="false" data-map-type="terrain" data-action="set-map-type">
+            <span class="material-icons-outlined">terrain</span> Terrain
+        </button>
+    </div>
+
+    {# Layer picker — traffic / transit / cycling / 3D. Each layer button is
+       a real toggleable control with aria-pressed, so keyboard users can
+       enable/disable each layer. #}
+    <div class="map-layers" role="group" aria-label="Map layers">
+        <button class="layer-toggle" type="button" data-layer="traffic"
+                aria-pressed="false" title="Traffic layer"
+                aria-label="Toggle traffic layer">
+            <span class="material-icons-outlined" style="color:#ea4335;">traffic</span>
+            <span class="layer-label">Traffic</span>
+        </button>
+        <button class="layer-toggle" type="button" data-layer="transit"
+                aria-pressed="false" title="Transit layer"
+                aria-label="Toggle transit layer">
+            <span class="material-icons-outlined" style="color:#1a73e8;">directions_transit</span>
+            <span class="layer-label">Transit</span>
+        </button>
+        <button class="layer-toggle" type="button" data-layer="cycling"
+                aria-pressed="false" title="Cycling layer"
+                aria-label="Toggle cycling layer">
+            <span class="material-icons-outlined" style="color:#34a853;">pedal_bike</span>
+            <span class="layer-label">Cycling</span>
+        </button>
+        <button class="layer-toggle" type="button" data-layer="walking"
+                aria-pressed="false" title="Walking layer"
+                aria-label="Toggle walking paths layer">
+            <span class="material-icons-outlined" style="color:#8e44ad;">directions_walk</span>
+            <span class="layer-label">Walking</span>
+        </button>
+        <button class="layer-toggle" type="button" data-layer="3d"
+                aria-pressed="false" title="3D buildings"
+                aria-label="Toggle 3D buildings">
+            <span class="material-icons-outlined">view_in_ar</span>
+            <span class="layer-label">3D</span>
+        </button>
+    </div>
+
+    {# Keyboard navigation hint (screen-reader visible). #}
+    <div class="sr-only" aria-live="polite" id="map-keyboard-hint">
+        Use arrow keys to pan, + and − to zoom, T for traffic, S for satellite.
     </div>
 </section>

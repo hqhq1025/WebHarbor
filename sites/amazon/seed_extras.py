@@ -931,6 +931,14 @@ def run_extras(db, User, Product, Category, CartItem, Order, OrderItem,
         seed_polish(db, Product)
     except Exception as e:
         raise RuntimeError(f"seed_polish failed: {e}") from e
+    # R5: push catalog past 8000 with quality fields (climate-pledge,
+    # made-in, recyclable-packaging, age-range, one-day-shipping,
+    # subscribe-and-save) + ~7% sold-out coverage for OOS tasks.
+    try:
+        from seed_r5 import seed_r5
+        seed_r5(db, Product)
+    except Exception as e:
+        raise RuntimeError(f"seed_r5 failed: {e}") from e
     seed_extra_orders(db, User, Order, OrderItem, Product, SavedAddress, PaymentMethod)
     seed_wishlists(db, User, Product, WishlistItem)
     seed_extra_carts(db, User, Product, CartItem)

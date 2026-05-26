@@ -1,6 +1,12 @@
-/* Cambridge Dictionary Mirror — main.js */
+/* Cambridge Dictionary Mirror — main.js
+ * R5: adds inline autocomplete definition preview, audio playback-speed,
+ * recently-viewed badge (localStorage), swipe-to-flashcard, smart-folder
+ * dropdown, quiz progress save/resume. All client-side — no schema change.
+ */
 
-// Autocomplete
+// ---------------------------------------------------------------------------
+// Autocomplete — with optional inline definition preview (R5)
+// ---------------------------------------------------------------------------
 (function() {
   const input = document.getElementById('searchInput');
   const list = document.getElementById('autocomplete-list');
@@ -12,17 +18,42 @@
     const q = this.value.trim();
     if (q.length < 2) { list.innerHTML = ''; return; }
     debounceTimer = setTimeout(function() {
-      fetch('/autocomplete?q=' + encodeURIComponent(q))
+      // R5: ask for detail=1 so the dropdown shows a definition preview.
+      fetch('/autocomplete?detail=1&q=' + encodeURIComponent(q))
         .then(r => r.json())
-        .then(words => {
+        .then(items => {
           list.innerHTML = '';
-          if (!words.length) return;
-          words.forEach(w => {
+          if (!items.length) return;
+          items.forEach(it => {
+            // Support both legacy (string) and R5 (object) shapes.
+            const isObj = typeof it === 'object' && it !== null;
+            const headword = isObj ? it.headword : it;
+            const preview  = isObj ? (it.preview || '') : '';
+            const level    = isObj ? (it.level || '') : '';
             const div = document.createElement('div');
             div.className = 'ac-item';
-            div.textContent = w;
+            if (preview) div.classList.add('ac-item--with-preview');
+            const top = document.createElement('div');
+            top.className = 'ac-item-top';
+            const hw = document.createElement('span');
+            hw.className = 'ac-item-hw';
+            hw.textContent = headword;
+            top.appendChild(hw);
+            if (level) {
+              const badge = document.createElement('span');
+              badge.className = 'ac-item-level cefr cefr-' + level.toLowerCase();
+              badge.textContent = level;
+              top.appendChild(badge);
+            }
+            div.appendChild(top);
+            if (preview) {
+              const p = document.createElement('div');
+              p.className = 'ac-item-preview';
+              p.textContent = preview;
+              div.appendChild(p);
+            }
             div.addEventListener('click', function() {
-              input.value = w;
+              input.value = headword;
               list.innerHTML = '';
               input.form.submit();
             });
@@ -40,16 +71,35 @@
   });
 })();
 
-// TTS pronunciation
-function speakWord(word, lang) {
+// ---------------------------------------------------------------------------
+// TTS pronunciation with playback-speed (R5)
+// ---------------------------------------------------------------------------
+window.__pronSpeed = 1.0;
+function setPlaybackSpeed(btn, speed) {
+  window.__pronSpeed = speed;
+  document.querySelectorAll('.ps-btn').forEach(b => b.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+  // Apply to any preload <audio> elements on the page.
+  document.querySelectorAll('audio.pron-audio').forEach(a => {
+    try { a.playbackRate = speed; } catch (e) {}
+  });
+}
+
+function speakWord(word, lang, btn) {
   if (!window.speechSynthesis) return;
+  // Cancel any in-flight utterance to avoid queue pile-up.
+  window.speechSynthesis.cancel();
   const utt = new SpeechSynthesisUtterance(word);
   utt.lang = lang || 'en-GB';
-  utt.rate = 0.85;
+  // R5: respect the current playback speed control.
+  const base = 0.85;
+  utt.rate = Math.max(0.3, Math.min(2.0, base * (window.__pronSpeed || 1)));
   window.speechSynthesis.speak(utt);
 }
 
-// Save word toggle
+// ---------------------------------------------------------------------------
+// Save word toggle (XHR — kept for compatibility with /api/save-word)
+// ---------------------------------------------------------------------------
 function toggleSaveWord(wordId) {
   const btn = document.getElementById('saveWordBtn');
   if (!btn) return;
@@ -77,9 +127,120 @@ function toggleSaveWord(wordId) {
   .catch(() => {});
 }
 
-// Quiz logic
+// ---------------------------------------------------------------------------
+// R5: Smart-folder dropdown — folder names live in localStorage; a server
+// round-trip is intentionally skipped so we don't add a schema column. The
+// "Saved" button (above) still POSTs to /words/save/<id> for the canonical
+// SavedWord row.
+// ---------------------------------------------------------------------------
+function addToSmartFolder(sel, headword, slug) {
+  let folder = sel.value;
+  if (!folder) return;
+  if (folder === '__new__') {
+    folder = (window.prompt('Folder name?') || '').trim();
+    if (!folder) { sel.value = ''; return; }
+  }
+  const KEY = 'cd_smart_folders';
+  let store = {};
+  try { store = JSON.parse(localStorage.getItem(KEY) || '{}'); } catch (e) {}
+  if (!store[folder]) store[folder] = [];
+  if (!store[folder].find(x => x.slug === slug)) {
+    store[folder].push({slug: slug, headword: headword, added: Date.now()});
+  }
+  try { localStorage.setItem(KEY, JSON.stringify(store)); } catch (e) {}
+  const status = document.getElementById('smartFolderStatus');
+  if (status) {
+    status.textContent = '✓ Added to "' + folder + '" (' + store[folder].length + ' words).';
+  }
+  sel.value = '';
+}
+
+// ---------------------------------------------------------------------------
+// R5: Recently-viewed badge — counts unique slugs seen this device, capped
+// at 50. Updated on every word_detail render via the .recently-viewed-beacon.
+// ---------------------------------------------------------------------------
+(function() {
+  const beacon = document.querySelector('.recently-viewed-beacon');
+  const KEY = 'cd_recently_viewed';
+  let store = [];
+  try { store = JSON.parse(localStorage.getItem(KEY) || '[]'); } catch (e) {}
+  if (beacon) {
+    const slug = beacon.dataset.slug;
+    const headword = beacon.dataset.headword;
+    const ipa = beacon.dataset.ipa;
+    const level = beacon.dataset.level;
+    // Move-to-front behaviour: drop existing, prepend new.
+    store = store.filter(x => x.slug !== slug);
+    store.unshift({slug: slug, headword: headword, ipa: ipa, level: level, ts: Date.now()});
+    if (store.length > 50) store = store.slice(0, 50);
+    try { localStorage.setItem(KEY, JSON.stringify(store)); } catch (e) {}
+    // Tell server so footer/back-nav can also surface a number without
+    // peeking at localStorage (server-rendered badge then matches).
+    const csrf = document.querySelector('meta[name="csrf-token"]');
+    fetch('/api/recently-viewed', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(csrf ? {'X-CSRFToken': csrf.content} : {}),
+      },
+      body: JSON.stringify({count: store.length}),
+    }).catch(() => {});
+  }
+  const badge = document.getElementById('rvBadge');
+  if (badge) {
+    const count = store.length || parseInt(badge.dataset.serverCount || '0', 10);
+    badge.textContent = String(count);
+    badge.classList.toggle('rv-badge--empty', count === 0);
+  }
+})();
+
+// ---------------------------------------------------------------------------
+// Quiz logic — with R5 progress save/resume via localStorage
+// ---------------------------------------------------------------------------
 var quizScore = 0;
 var totalQuestions = 0;
+
+(function() {
+  // On quiz load, if there's a saved partial session, restore it.
+  const quizRoot = document.querySelector('[data-quiz-slug]');
+  if (!quizRoot) return;
+  const slug = quizRoot.dataset.quizSlug;
+  const KEY = 'cd_quiz_progress::' + slug;
+  let saved = null;
+  try { saved = JSON.parse(localStorage.getItem(KEY) || 'null'); } catch (e) {}
+  if (saved && typeof saved.idx === 'number' && saved.idx > 0) {
+    // Show "Resume from question N?" banner.
+    const banner = document.createElement('div');
+    banner.className = 'quiz-resume-banner';
+    banner.innerHTML = 'You have a saved attempt at question ' + (saved.idx + 1) +
+      ' with ' + (saved.score || 0) + ' correct so far. ' +
+      '<button class="quiz-resume-yes" type="button">Resume</button> ' +
+      '<button class="quiz-resume-no" type="button">Start over</button>';
+    quizRoot.insertBefore(banner, quizRoot.firstChild);
+    banner.querySelector('.quiz-resume-yes').addEventListener('click', function() {
+      quizScore = saved.score || 0;
+      const cur = document.getElementById('q0');
+      if (cur) cur.style.display = 'none';
+      const next = document.getElementById('q' + saved.idx);
+      if (next) next.style.display = 'block';
+      banner.remove();
+    });
+    banner.querySelector('.quiz-resume-no').addEventListener('click', function() {
+      localStorage.removeItem(KEY);
+      banner.remove();
+    });
+  }
+})();
+
+function _quizSaveProgress(idx) {
+  const quizRoot = document.querySelector('[data-quiz-slug]');
+  if (!quizRoot) return;
+  const slug = quizRoot.dataset.quizSlug;
+  try {
+    localStorage.setItem('cd_quiz_progress::' + slug,
+      JSON.stringify({idx: idx, score: quizScore, ts: Date.now()}));
+  } catch (e) {}
+}
 
 function selectAnswer(btn, optIdx, correctIdx, qIdx) {
   const qDiv = document.getElementById('q' + qIdx);
@@ -108,6 +269,7 @@ function selectAnswer(btn, optIdx, correctIdx, qIdx) {
     }
   }
   if (nextBtn) nextBtn.style.display = 'inline-block';
+  _quizSaveProgress(qIdx);
 }
 
 function nextQuestion(currentIdx, total) {
@@ -118,8 +280,8 @@ function nextQuestion(currentIdx, total) {
   if (nextIdx < total) {
     const next = document.getElementById('q' + nextIdx);
     if (next) next.style.display = 'block';
+    _quizSaveProgress(nextIdx);
   } else {
-    // Show results
     const result = document.getElementById('quiz-result');
     if (result) {
       result.style.display = 'block';
@@ -133,10 +295,17 @@ function nextQuestion(currentIdx, total) {
         else msgEl.textContent = 'Keep practising! You\'ll improve with more study.';
       }
     }
+    // Quiz complete — wipe the resume snapshot.
+    const quizRoot = document.querySelector('[data-quiz-slug]');
+    if (quizRoot) {
+      try { localStorage.removeItem('cd_quiz_progress::' + quizRoot.dataset.quizSlug); } catch (e) {}
+    }
   }
 }
 
-// Word Scramble
+// ---------------------------------------------------------------------------
+// Word Scramble (unchanged from R4)
+// ---------------------------------------------------------------------------
 var scrambleTimer = null;
 var scrambleTime = 30;
 
@@ -175,7 +344,7 @@ function checkScramble(correctWord) {
   const answer = input.value.trim().toLowerCase();
   if (answer === correctWord.toLowerCase()) {
     clearInterval(scrambleTimer);
-    fb.textContent = '🎉 Correct! Well done!';
+    fb.textContent = '\u{1F389} Correct! Well done!';
     fb.className = 'scramble-feedback correct';
     input.disabled = true;
   } else {
@@ -194,7 +363,109 @@ function showHint(word) {
   }
 }
 
+// ---------------------------------------------------------------------------
+// R5: Swipe-to-flashcard (touch + click + arrow keys)
+// ---------------------------------------------------------------------------
+window.__fcKnown = 0;
+window.__fcUnknown = 0;
+window.__fcIdx = 0;
+
+function flipCard(btn) {
+  const card = btn.closest('.fc-card');
+  if (card) card.classList.toggle('fc-flipped');
+}
+
+function swipeCard(direction) {
+  const deck = document.getElementById('flashcardDeck');
+  if (!deck) return;
+  const cards = deck.querySelectorAll('.fc-card');
+  const idx = window.__fcIdx;
+  if (idx >= cards.length) return;
+  const card = cards[idx];
+  card.classList.add(direction === 'left' ? 'fc-swipe-out-left' : 'fc-swipe-out-right');
+  if (direction === 'right') window.__fcKnown++; else window.__fcUnknown++;
+  setTimeout(function() {
+    card.style.display = 'none';
+    window.__fcIdx++;
+    const next = cards[window.__fcIdx];
+    if (next) {
+      next.style.display = 'block';
+      const prog = document.getElementById('fcProgress');
+      if (prog) prog.textContent = (window.__fcIdx + 1);
+    } else {
+      const results = document.getElementById('fcResults');
+      if (results) results.style.display = 'block';
+      const k = document.getElementById('fcKnown');
+      const u = document.getElementById('fcUnknown');
+      if (k) k.textContent = window.__fcKnown;
+      if (u) u.textContent = window.__fcUnknown;
+    }
+  }, 220);
+}
+
+(function initFlashcards() {
+  const deck = document.getElementById('flashcardDeck');
+  if (!deck) return;
+  const cards = deck.querySelectorAll('.fc-card');
+  cards.forEach(function(card, i) {
+    if (i !== 0) card.style.display = 'none';
+
+    // Touch swipe — track start X and decide direction on release.
+    let startX = null;
+    let curX = null;
+    card.addEventListener('touchstart', function(e) {
+      startX = e.touches[0].clientX;
+    }, {passive: true});
+    card.addEventListener('touchmove', function(e) {
+      if (startX === null) return;
+      curX = e.touches[0].clientX;
+      const dx = curX - startX;
+      card.style.transform = 'translateX(' + dx + 'px) rotate(' + (dx / 20) + 'deg)';
+    }, {passive: true});
+    card.addEventListener('touchend', function() {
+      if (startX === null || curX === null) {
+        card.style.transform = '';
+        startX = curX = null;
+        return;
+      }
+      const dx = curX - startX;
+      card.style.transform = '';
+      if (Math.abs(dx) > 80) {
+        swipeCard(dx < 0 ? 'left' : 'right');
+      }
+      startX = curX = null;
+    });
+  });
+
+  // Arrow keys
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'ArrowLeft') swipeCard('left');
+    else if (e.key === 'ArrowRight') swipeCard('right');
+    else if (e.key === ' ' || e.key === 'Enter') {
+      const visible = Array.from(cards).find(c => c.style.display !== 'none');
+      if (visible) visible.classList.toggle('fc-flipped');
+      e.preventDefault();
+    }
+  });
+
+  // If a focus slug was requested, jump straight to it.
+  const focus = deck.dataset.focus;
+  if (focus) {
+    let target = -1;
+    cards.forEach(function(c, i) { if (c.dataset.slug === focus) target = i; });
+    if (target > 0) {
+      cards.forEach((c, i) => { if (i !== target) c.style.display = 'none'; });
+      cards[target].style.display = 'block';
+      window.__fcIdx = target;
+      const prog = document.getElementById('fcProgress');
+      if (prog) prog.textContent = (target + 1);
+    }
+  }
+})();
+
+// ---------------------------------------------------------------------------
 // Flash message auto-dismiss
+// ---------------------------------------------------------------------------
 document.querySelectorAll('.flash').forEach(function(el) {
   setTimeout(function() {
     el.style.opacity = '0';

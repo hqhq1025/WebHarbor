@@ -2242,6 +2242,333 @@ def api_iplayer_watchlist():
 
 
 # =======================================================================
+# R5: BBC Verify / Newsround / live-blog jump-to-update / quiz / reactions
+# =======================================================================
+
+@app.route("/newsround")
+@app.route("/newsround/")
+def newsround_alias():
+    """Top-level /newsround alias -> Newsround section page."""
+    return redirect(url_for("section_page", slug="newsround"))
+
+
+@app.route("/verify")
+@app.route("/verify/")
+def verify_alias():
+    """Convenience /verify -> bbcverify section page."""
+    return redirect(url_for("section_page", slug="bbcverify"))
+
+
+@app.route("/quizzes")
+@app.route("/quiz")
+def quizzes_alias():
+    """Browse all quiz attempts available on BBC News."""
+    return redirect(url_for("section_page", slug="quizzes"))
+
+
+@app.route("/quiz/<slug>", methods=["GET"])
+def quiz_detail(slug):
+    """A specific quiz article rendered through the article_detail
+    template. The body already contains the multiple-choice questions
+    inline, so we just redirect to the canonical article URL."""
+    art = Article.query.filter_by(slug=slug).first_or_404()
+    return redirect(url_for("article_detail", slug=art.slug))
+
+
+@app.route("/quiz/<slug>/attempt", methods=["POST"])
+def quiz_attempt(slug):
+    """Record a quiz attempt. Anonymous-friendly; if signed in, persists
+    via reading_list under folder='Quizzes' with note='Attempt: <score>'.
+    The body accepts JSON or form-encoded `score` (int 0..10) and
+    `answers` (string)."""
+    art = Article.query.filter_by(slug=slug).first()
+    if not art:
+        return jsonify({"ok": False, "error": "not_found"}), 404
+    try:
+        score = int(request.values.get("score") or 0)
+    except ValueError:
+        score = 0
+    score = max(0, min(10, score))
+    answers = (request.values.get("answers") or "")[:200]
+    if current_user.is_authenticated:
+        existing = ReadingListItem.query.filter_by(
+            user_id=current_user.id, article_id=art.id, folder="Quizzes"
+        ).first()
+        if existing:
+            existing.note = f"Attempt: {score}/10 ({answers})"
+        else:
+            item = ReadingListItem(
+                user_id=current_user.id,
+                article_id=art.id,
+                folder="Quizzes",
+                read=True,
+                note=f"Attempt: {score}/10 ({answers})",
+            )
+            db.session.add(item)
+        db.session.commit()
+    return jsonify({
+        "ok": True,
+        "slug": art.slug,
+        "score": score,
+        "max": 10,
+        "message": f"Recorded attempt: {score}/10",
+    })
+
+
+@app.route("/article/<slug>/react", methods=["POST"])
+def article_react(slug):
+    """Apply an emoji reaction to an article. Persisted as a comment row
+    with body = '[reaction] <emoji>' so the existing comment_count surface
+    keeps working. Idempotent per user+emoji."""
+    art = Article.query.filter_by(slug=slug).first_or_404()
+    emoji = (request.values.get("emoji") or "").strip()[:8]
+    valid = {"👍", "❤", "😂", "😮", "😢", "👎", ":+1:", ":heart:", ":smile:",
+             "thumbs_up", "love", "haha", "wow", "sad", "thumbs_down",
+             "like", "fire", "🔥", "🎉", "celebrate"}
+    if emoji not in valid:
+        return jsonify({"ok": False, "error": "invalid_emoji",
+                        "allowed": sorted(valid)}), 400
+    if current_user.is_authenticated:
+        body = f"[reaction] {emoji}"
+        existing = Comment.query.filter_by(
+            user_id=current_user.id, article_id=art.id, body=body
+        ).first()
+        if not existing:
+            cm = Comment(
+                user_id=current_user.id,
+                article_id=art.id,
+                body=body,
+                like_count=0,
+                flagged=False,
+            )
+            db.session.add(cm)
+            db.session.commit()
+    # Always-on counter from existing reactions on this article.
+    n = Comment.query.filter(
+        Comment.article_id == art.id,
+        Comment.body.like("[reaction] %"),
+    ).count()
+    return jsonify({"ok": True, "slug": art.slug, "emoji": emoji,
+                    "reaction_count": n})
+
+
+# Supported translation language codes (stub — we do not actually
+# translate the body, we just record the request and return a payload
+# the client can render with a "translated" label).
+R5_TRANSLATE_LANGS = {
+    "es": "Spanish", "fr": "French", "de": "German", "it": "Italian",
+    "pt": "Portuguese", "zh": "Chinese (Simplified)", "ja": "Japanese",
+    "ar": "Arabic", "fa": "Persian", "ru": "Russian", "hi": "Hindi",
+    "ur": "Urdu", "ko": "Korean", "tr": "Turkish", "sw": "Swahili",
+    "id": "Indonesian", "vi": "Vietnamese", "th": "Thai", "pl": "Polish",
+    "nl": "Dutch",
+}
+
+
+@app.route("/article/<slug>/translate/<lang>", methods=["GET", "POST"])
+def article_translate(slug, lang):
+    """Render an article with a 'translated' badge for one of the
+    supported languages. The mirror does not actually translate text; the
+    endpoint exists so /article/<slug>/translate/<lang> is solvable as a
+    task surface."""
+    art = Article.query.filter_by(slug=slug).first_or_404()
+    code = (lang or "").strip().lower()
+    if code not in R5_TRANSLATE_LANGS:
+        return jsonify({"ok": False, "error": "unsupported_language",
+                        "supported": sorted(R5_TRANSLATE_LANGS.keys())}), 400
+    payload = {
+        "ok": True,
+        "slug": art.slug,
+        "language_code": code,
+        "language_name": R5_TRANSLATE_LANGS[code],
+        "headline": art.headline,
+        "subtitle": art.subtitle or "",
+        "preview": (art.body or "")[:400],
+        "note": (
+            f"This is a {R5_TRANSLATE_LANGS[code]} translation preview. The "
+            f"mirror does not invoke an external translation service — the "
+            f"original article text is shown."
+        ),
+    }
+    if (request.values.get("format") or "").lower() == "json":
+        return jsonify(payload)
+    # HTML rendering: re-use article_detail but pass a translated_label flag.
+    return redirect(url_for(
+        "article_detail", slug=art.slug, _anchor="comments"
+    ))
+
+
+@app.route("/topic/<topic>/follow", methods=["POST"])
+def follow_topic(topic):
+    """Subscribe the signed-in user to a topic via TopicSubscription. The
+    same topic survives across pageviews and is shown on the
+    Subscriptions page. Anonymous users are redirected to login."""
+    t = (topic or "").strip()
+    if not t:
+        return jsonify({"ok": False, "error": "no_topic"}), 400
+    if not current_user.is_authenticated:
+        return redirect(url_for("login", next=request.referrer
+                                or url_for("topic_page", topic=t)))
+    existing = TopicSubscription.query.filter_by(
+        user_id=current_user.id, topic=t
+    ).first()
+    if not existing:
+        sub = TopicSubscription(
+            user_id=current_user.id,
+            topic=t,
+            frequency="instant",
+            active=True,
+        )
+        db.session.add(sub)
+        db.session.commit()
+    flash(f"Now following {t}", "success")
+    return redirect(request.referrer or url_for("subscriptions_page"))
+
+
+@app.route("/live/<slug_suffix>/update/<int:update_n>")
+def live_blog_jump_to_update(slug_suffix, update_n):
+    """Jump-to-update endpoint on a live blog. Looks up the update by its
+    feature_tags = ['live_update', <slug_suffix>, 'update_<N>'] and
+    redirects to the corresponding article. Falls back to the parent
+    live-blog page if the requested update is out of range."""
+    update_n = max(1, min(30, int(update_n)))
+    tag = f'"update_{update_n}"'
+    target = (Article.query
+              .filter(Article.feature_tags.ilike(f'%{tag}%'))
+              .filter(Article.feature_tags.ilike(f'%"{slug_suffix}"%'))
+              .first())
+    if target:
+        return redirect(url_for("article_detail", slug=target.slug))
+    # Fall back: find the parent live-blog itself.
+    parent = (Article.query
+              .filter(Article.feature_tags.ilike(f'%"{slug_suffix}"%'))
+              .filter(Article.feature_tags.ilike('%"live_blog_parent"%'))
+              .first())
+    if parent:
+        return redirect(url_for("article_detail", slug=parent.slug))
+    abort(404)
+
+
+@app.route("/api/live-blog/<slug_suffix>/updates")
+def api_live_blog_updates(slug_suffix):
+    """JSON feed of all timestamped updates for a live blog, newest first.
+    Powers the live-blog auto-refresh indicator in the client."""
+    tag = f'"{slug_suffix}"'
+    updates = (Article.query
+               .filter(Article.feature_tags.ilike(f'%{tag}%'))
+               .filter(Article.feature_tags.ilike('%"live_update"%'))
+               .order_by(Article.published_at.desc())
+               .limit(60).all())
+    return jsonify({
+        "ok": True,
+        "slug": slug_suffix,
+        "count": len(updates),
+        "updates": [{
+            "slug": a.slug,
+            "headline": a.headline,
+            "subsection": a.subsection,
+            "published_at": a.published_at.isoformat() if a.published_at else None,
+            "url": url_for("article_detail", slug=a.slug),
+        } for a in updates],
+    })
+
+
+@app.route("/api/search/suggest")
+def api_search_suggest():
+    """Type-ahead suggestions for the global search box. Returns up to
+    eight article headlines + three topic chips + the matching section
+    name (if any)."""
+    q = (request.args.get("q") or "").strip()
+    if len(q) < 2:
+        return jsonify({"ok": True, "query": q, "articles": [],
+                        "topics": [], "section": None})
+    like = f"%{q}%"
+    arts = (Article.query
+            .filter(Article.headline.ilike(like))
+            .order_by(Article.view_count.desc())
+            .limit(8).all())
+    cat = Category.query.filter(Category.name.ilike(like)).first()
+    # Topic suggestions: take top section_slug / subsection matches.
+    topic_rows = (db.session.query(Article.subsection)
+                  .filter(Article.subsection.ilike(like))
+                  .filter(Article.subsection != "")
+                  .group_by(Article.subsection)
+                  .limit(3).all())
+    return jsonify({
+        "ok": True,
+        "query": q,
+        "articles": [{
+            "slug": a.slug,
+            "headline": a.headline,
+            "category": a.category.name if a.category else "",
+            "url": url_for("article_detail", slug=a.slug),
+        } for a in arts],
+        "topics": [t[0] for t in topic_rows if t[0]],
+        "section": {
+            "slug": cat.slug, "name": cat.name,
+            "url": url_for("section_page", slug=cat.slug),
+        } if cat else None,
+    })
+
+
+@app.route("/api/dark-mode", methods=["POST"])
+def api_dark_mode():
+    """Persist the user's dark-mode preference via a server-side cookie.
+    The client also caches the value in localStorage so the toggle works
+    before the cookie round-trips."""
+    val = (request.values.get("value") or "").strip().lower()
+    if val not in ("on", "off"):
+        return jsonify({"ok": False, "error": "invalid_value"}), 400
+    resp = jsonify({"ok": True, "value": val})
+    resp.set_cookie("bbc_dark_mode", val, max_age=60 * 60 * 24 * 365,
+                    samesite="Lax")
+    return resp
+
+
+@app.route("/api/high-contrast", methods=["POST"])
+def api_high_contrast():
+    """Persist the user's high-contrast preference. Same shape as
+    /api/dark-mode."""
+    val = (request.values.get("value") or "").strip().lower()
+    if val not in ("on", "off"):
+        return jsonify({"ok": False, "error": "invalid_value"}), 400
+    resp = jsonify({"ok": True, "value": val})
+    resp.set_cookie("bbc_high_contrast", val, max_age=60 * 60 * 24 * 365,
+                    samesite="Lax")
+    return resp
+
+
+@app.route("/article/<slug>/transcript")
+def article_transcript(slug):
+    """Plain-text transcript stub for audio/video articles. Returns the
+    article body broken into ~10-second segments so the page is solvable
+    for transcript-based tasks."""
+    art = Article.query.filter_by(slug=slug).first_or_404()
+    paras = art.get_paragraphs()
+    segments = []
+    sec = 0
+    for p in paras:
+        words = p.split()
+        # ~150 words per minute = 25 words per 10s
+        for i in range(0, len(words), 25):
+            chunk = " ".join(words[i:i + 25])
+            t_mm = sec // 60
+            t_ss = sec % 60
+            segments.append({
+                "t": f"{t_mm:02d}:{t_ss:02d}",
+                "text": chunk,
+            })
+            sec += 10
+    return jsonify({
+        "ok": True,
+        "slug": art.slug,
+        "headline": art.headline,
+        "duration_seconds": sec,
+        "segments": segments,
+    })
+
+
+# =======================================================================
 # ERROR HANDLERS
 # =======================================================================
 

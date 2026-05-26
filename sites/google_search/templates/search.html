@@ -4,8 +4,15 @@
 {% block header %}{{ serp_header(q, vertical) }}{% endblock %}
 
 {% block content %}
-<div class="serp-body">
-    <div class="serp-main">
+<div class="serp-body" id="main-results">
+    <div class="serp-main serp-main-compact-mobile">
+        {# --- R5: scroll-mode toggle ---------------------------------- #}
+        <div class="scroll-mode-toggle" role="group" aria-label="Result scroll mode">
+            <button type="button" class="scroll-mode-btn active" data-scroll-mode="paged"
+                    aria-pressed="true">Paginated</button>
+            <button type="button" class="scroll-mode-btn" data-scroll-mode="infinite"
+                    aria-pressed="false">Infinite scroll</button>
+        </div>
         {# --- R4: AI Overview / SGE block ----------------------------- #}
         {% if knowledge and answer_token and vertical == 'all' %}
         <div class="ai-overview">
@@ -98,14 +105,22 @@
         {% endif %}
 
         {% if paa %}
-        <div class="paa-block">
-            <div class="paa-header">People also ask</div>
+        <div class="paa-block" aria-labelledby="paa-heading">
+            <h2 class="paa-header" id="paa-heading">People also ask</h2>
             {% for p in paa %}
-            <div class="paa-item">
+            <button type="button"
+                    class="paa-item"
+                    aria-expanded="false"
+                    aria-controls="paa-ans-{{ loop.index }}"
+                    id="paa-q-{{ loop.index }}">
                 <span>{{ p.question }}</span>
-                <span class="paa-arrow">▾</span>
-            </div>
-            <div class="paa-answer">{{ p.answer }}</div>
+                <span class="paa-arrow" aria-hidden="true">▾</span>
+            </button>
+            <div class="paa-answer"
+                 id="paa-ans-{{ loop.index }}"
+                 role="region"
+                 aria-labelledby="paa-q-{{ loop.index }}"
+                 hidden>{{ p.answer }}</div>
             {% endfor %}
             <div class="paa-more">
                 <a href="{{ url_for('search', q=q + ' related questions') }}">See more questions →</a>

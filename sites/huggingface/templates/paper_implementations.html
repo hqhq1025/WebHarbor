@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+{% block title %}Implementations of arXiv:{{ paper.arxiv_id }}{% endblock %}
+
+{% block content %}
+<div class="container-wide page">
+    <nav class="docs-breadcrumb" aria-label="Breadcrumb">
+        <a href="{{ url_for('papers_index') }}">Daily Papers</a>
+        <span>/</span>
+        <a href="{{ url_for('paper_detail', arxiv_id=paper.arxiv_id) }}">arXiv:{{ paper.arxiv_id }}</a>
+        <span>/</span>
+        <span aria-current="page">Implementations</span>
+    </nav>
+    <h1>Code implementations of <em>{{ paper.title }}</em></h1>
+    <p class="muted">All repositories that implement or evaluate this paper. arXiv: <code>{{ paper.arxiv_id }}</code>.</p>
+
+    {% if implementations %}
+    <section class="implementations-list" aria-label="Paper implementations" style="margin-top:18px;">
+        <h2>{{ implementations|length }} implementation{{ '' if implementations|length == 1 else 's' }} found</h2>
+        <table class="files-table" style="margin-top:8px;">
+            <thead>
+                <tr>
+                    <th>Type</th>
+                    <th>Repository</th>
+                    <th>Library / Modality</th>
+                    <th>Downloads</th>
+                    <th>Likes</th>
+                    <th>Source</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for impl in implementations %}
+                {% set r = impl.repo %}
+                <tr>
+                    <td>{% if impl.kind == 'model' %}<span class="tag tag-blue">Model</span>
+                        {% elif impl.kind == 'dataset' %}<span class="tag tag-green">Dataset</span>
+                        {% else %}<span class="tag">Space</span>{% endif %}</td>
+                    <td>
+                        {% if r.repo_type == 'model' %}
+                            <a href="{{ url_for('model_detail', author=r.slug.split('/')[0], name=r.slug.split('/')[1]) }}"><strong>{{ r.slug }}</strong></a>
+                        {% elif r.repo_type == 'dataset' %}
+                            <a href="{{ url_for('dataset_detail', author=r.slug.split('/')[0], name=r.slug.split('/')[1]) }}"><strong>{{ r.slug }}</strong></a>
+                        {% else %}
+                            <a href="{{ url_for('space_detail', author=r.slug.split('/')[0], name=r.slug.split('/')[1]) }}"><strong>{{ r.slug }}</strong></a>
+                        {% endif %}
+                        <div class="muted" style="font-size:12.5px;">{{ (r.description or '')[:140] }}</div>
+                    </td>
+                    <td><code>{{ r.library or r.modality or r.sdk or '—' }}</code></td>
+                    <td>{{ r.downloads_display }}</td>
+                    <td>{{ r.likes_display }}</td>
+                    <td class="muted" style="font-size:12px;">{{ impl.source }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </section>
+    {% else %}
+    <p class="empty-state">No implementations registered for this paper yet.</p>
+    {% endif %}
+
+    <section class="paper-impl-actions" style="margin-top:18px;">
+        <a class="btn btn-outline" href="{{ url_for('paper_detail', arxiv_id=paper.arxiv_id) }}">← Back to paper</a>
+        <a class="btn btn-outline" href="https://arxiv.org/abs/{{ paper.arxiv_id }}" rel="noopener noreferrer" target="_blank">View on arXiv ↗</a>
+    </section>
+</div>
+{% endblock %}

@@ -69,7 +69,15 @@
         {% set _rail = paper.version_rail %}
         {% if _rail %}
         <div class="version-rail" aria-label="Version history">
-            <div class="version-rail-header">Submission history</div>
+            <div class="version-rail-header">
+                Submission history
+                {% if _rail|length > 1 %}
+                <button type="button" class="version-modal-trigger" data-version-modal-open
+                        aria-controls="version-history-modal" aria-haspopup="dialog">
+                    View all {{ _rail|length }} versions
+                </button>
+                {% endif %}
+            </div>
             <ol class="version-rail-list">
                 {% for v in _rail %}
                 <li class="version-rail-item{% if loop.last %} latest{% endif %}">
@@ -81,6 +89,43 @@
                 </li>
                 {% endfor %}
             </ol>
+        </div>
+
+        {# R5 — version history modal. Hidden by default; main.js wires the
+           trigger above. The dialog itself uses ARIA dialog semantics so
+           screen readers announce it on open. #}
+        <div id="version-history-modal" class="modal-overlay" role="dialog"
+             aria-modal="true" aria-labelledby="version-modal-title" hidden>
+            <div class="modal-box">
+                <div class="modal-head">
+                    <h3 id="version-modal-title">Full version history — arXiv:{{ paper.arxiv_id }}</h3>
+                    <button type="button" class="modal-close" data-version-modal-close
+                            aria-label="Close version history dialog">×</button>
+                </div>
+                <div class="modal-body">
+                    <p class="muted" style="font-size:12px;">Current shipped version: <b>{{ paper.paper_version }}</b>.
+                        License: <span class="license-tag">{{ paper.license }}</span>.
+                    </p>
+                    <table class="version-history-table">
+                        <thead>
+                            <tr><th>Version</th><th>Submitted</th><th>Notes</th></tr>
+                        </thead>
+                        <tbody>
+                        {% for v in _rail %}
+                            <tr{% if loop.last %} class="latest"{% endif %}>
+                                <td><b>{{ v.version }}</b>{% if loop.last and _rail|length > 1 %} <span class="version-badge">current</span>{% endif %}</td>
+                                <td>{{ v.date or 'n/a' }}</td>
+                                <td>{{ v.label or ('First public version' if loop.first else 'Revision') }}</td>
+                            </tr>
+                        {% endfor %}
+                        </tbody>
+                    </table>
+                    <p style="font-size:11px;margin-top:8px;" class="muted">
+                        To download a specific version, append it to the arXiv ID:
+                        <code>arxiv.org/abs/{{ paper.arxiv_id }}{{ paper.paper_version }}</code>
+                    </p>
+                </div>
+            </div>
         </div>
         {% endif %}
 
@@ -123,6 +168,28 @@
             <div class="row"><span class="lab">Cite as:</span>
                 arXiv:{{ paper.arxiv_id }} [{{ paper.primary_subject_code or paper.primary_category_code }}]
             </div>
+            {% if paper.paper_version %}
+            <div class="row"><span class="lab">Version:</span> <b>{{ paper.paper_version }}</b>
+                <span class="muted" style="font-size:11px;">(current shipped revision)</span>
+            </div>
+            {% endif %}
+            {% if paper.license %}
+            <div class="row"><span class="lab">License:</span>
+                <span class="license-tag">{{ paper.license }}</span>
+                <a class="muted" style="font-size:11px;" href="{{ url_for('help_page_sub', page='license') }}">view license terms</a>
+            </div>
+            {% endif %}
+            {% if paper.submitter_email_masked %}
+            <div class="row"><span class="lab">Submitted by:</span>
+                <span class="mono">{{ paper.submitter_email_masked }}</span>
+                <span class="muted" style="font-size:11px;">(visible address masked)</span>
+            </div>
+            {% endif %}
+            {% if paper.computer_classification %}
+            <div class="row"><span class="lab">Computer classification:</span>
+                <span class="mono">{{ paper.computer_classification }}</span>
+            </div>
+            {% endif %}
             {% if paper.doi %}
             <div class="row"><span class="lab">DOI:</span> <a href="https://doi.org/{{ paper.doi }}" target="_blank">{{ paper.doi }}</a></div>
             {% endif %}
@@ -275,6 +342,42 @@
                      style="width:40px;"
                      onerror="this.outerHTML='<span class=&quot;tag&quot;>BibSonomy</span>'">
             </p>
+        </div>
+
+        {# R5 — "Notify me when a new version is posted" form. Captures an
+           email + creates a PaperUpdateNotification row. Visible to all users
+           (anonymous → login redirect; logged-in → live form). #}
+        <div class="sidebar-box notify-me-box">
+            <h3>Notify me of updates</h3>
+            {% if current_user.is_authenticated %}
+                {% if is_notified %}
+                <p class="muted" style="font-size:12px;">
+                    ✔ You're subscribed — we'll email you at <span class="mono">{{ current_user.email }}</span>
+                    when a new version of arXiv:{{ paper.arxiv_id }} is posted.
+                </p>
+                <form method="post" action="{{ url_for('notify_paper_cancel', arxiv_id=paper.arxiv_id) }}">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button type="submit" class="btn" style="width:100%;font-size:12px;">Cancel subscription</button>
+                </form>
+                {% else %}
+                <form method="post" action="{{ url_for('notify_paper_update', arxiv_id=paper.arxiv_id) }}"
+                      aria-label="Subscribe to paper version updates">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <label for="notify-email" class="muted" style="font-size:11px;">Email</label>
+                    <input id="notify-email" type="email" name="email"
+                           value="{{ current_user.email }}" required
+                           style="width:100%;margin-bottom:6px;">
+                    <button type="submit" class="btn btn-primary" style="width:100%;font-size:12px;">
+                        Notify me when v2 lands
+                    </button>
+                </form>
+                {% endif %}
+            {% else %}
+            <p style="font-size:12px;">
+                <a href="{{ url_for('login', next=request.path) }}">Log in</a>
+                to be notified when a new version of this paper is posted.
+            </p>
+            {% endif %}
         </div>
     </aside>
 </div>

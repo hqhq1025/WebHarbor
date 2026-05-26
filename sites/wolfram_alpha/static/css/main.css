@@ -1937,3 +1937,248 @@ code, kbd { font-family: var(--font-mono); }
   letter-spacing: 0.04em; font-size: 11px;
 }
 .api-spec-value { font-family: var(--font-mono); color: var(--color-text); font-size: 12.5px; }
+
+/* =========================================================
+   R5 polish — hover-preview pills, alt-form smooth tabs,
+   interactive plot zoom/pan, share image rendition,
+   embed size picker, ARIA-friendly responsive pods,
+   sticky-first-col tables, mobile pod stacking.
+   ========================================================= */
+
+/* Screen-reader-only helper (math content fallback). */
+.sr-only {
+  position: absolute; width: 1px; height: 1px; padding: 0;
+  margin: -1px; overflow: hidden; clip: rect(0,0,0,0);
+  white-space: nowrap; border: 0;
+}
+
+/* Assumption pill hover-preview — a tooltip under the focused/hovered pill. */
+.wa-assumption-pill { position: relative; }
+.wa-assumption-pill[data-preview]:hover::after,
+.wa-assumption-pill[data-preview]:focus-visible::after {
+  content: attr(data-preview);
+  position: absolute; left: 0; top: calc(100% + 6px);
+  z-index: 30; min-width: 220px; max-width: 360px;
+  padding: 8px 10px;
+  background: #1a1a1a; color: #fff;
+  border-radius: var(--radius-sm);
+  font-size: 12px; font-weight: 400; line-height: 1.4;
+  white-space: normal;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  pointer-events: none;
+}
+.wa-assumption-pill[data-preview]:hover::before,
+.wa-assumption-pill[data-preview]:focus-visible::before {
+  content: ''; position: absolute; left: 18px; top: calc(100% + 0px);
+  border: 6px solid transparent; border-bottom-color: #1a1a1a;
+  z-index: 31;
+}
+
+/* Alternate-forms tab — smooth transitions for active state + body swap. */
+.pod-altform-tab {
+  transition: color 200ms ease, border-bottom-color 200ms ease, background-color 200ms ease;
+}
+.pod-altform-tab:hover { background: var(--color-orange-soft); }
+.pod-altform-tab:focus-visible {
+  outline: 2px solid var(--color-orange); outline-offset: 2px; border-radius: var(--radius-sm) var(--radius-sm) 0 0;
+}
+.pod-altform-body {
+  transition: opacity 200ms ease;
+}
+.pod-altform-body[data-active="decimal"] { opacity: 0.95; }
+.pod-altform-body[data-active="factored"] { opacity: 0.9; }
+
+/* Interactive plot pod — zoom/pan controls + transform target. */
+.pod-plot-wrapper {
+  position: relative; padding: 8px 0 4px;
+  border-radius: var(--radius-sm); overflow: hidden;
+  background: var(--color-bg-tint);
+  border: 1px solid var(--color-border-light);
+}
+.pod-plot-controls {
+  display: flex; gap: 4px; padding: 4px 8px;
+  border-bottom: 1px solid var(--color-border-light);
+  background: #fff;
+}
+.pod-plot-btn {
+  width: 26px; height: 26px;
+  display: inline-flex; align-items: center; justify-content: center;
+  background: #fff; border: 1px solid var(--color-border-light);
+  border-radius: var(--radius-sm); cursor: pointer;
+  font-size: 13px; font-weight: 600; color: var(--color-text-secondary);
+  transition: background 80ms ease, color 80ms ease, border-color 80ms ease;
+}
+.pod-plot-btn:hover, .pod-plot-btn:focus-visible {
+  background: var(--color-orange-soft); border-color: var(--color-orange);
+  color: var(--color-orange-hover); outline: none;
+}
+.pod-plot-svg-host {
+  padding: 8px; display: flex; justify-content: center; align-items: center;
+  min-height: 140px; overflow: hidden;
+}
+.pod-plot-svg-host svg {
+  max-width: 100%; height: auto;
+  transition: transform 250ms ease;
+  transform-origin: center center;
+}
+.pod-plot-wrapper[data-zoom="1.5"] .pod-plot-svg-host svg { transform: scale(1.5); }
+.pod-plot-wrapper[data-zoom="2.0"] .pod-plot-svg-host svg { transform: scale(2.0); }
+.pod-plot-wrapper[data-zoom="0.75"] .pod-plot-svg-host svg { transform: scale(0.75); }
+
+/* Python code pod (new R5 sibling of wlcode). */
+.result-pod--pycode .pod-content { background: #f7fff5; border-left: 3px solid #3b8e5f; }
+.pod-code-block--py {
+  font-family: var(--font-mono); font-size: 13px; line-height: 1.45;
+  color: #1d3e2a; background: #f7fff5; padding: 10px 12px;
+  border-radius: var(--radius-sm); white-space: pre-wrap; overflow-x: auto;
+}
+.pod-py-badge {
+  display: inline-block; margin-left: 8px; padding: 1px 6px;
+  background: #3b8e5f; color: #fff; font-size: 10px; border-radius: 3px;
+  font-weight: 700; letter-spacing: 0.04em; vertical-align: middle;
+}
+
+/* Comparison-with-related pod. */
+.result-pod--comparison .pod-content { background: #fff7f0; border-left: 3px solid var(--color-orange); }
+.pod-cmp-badge {
+  display: inline-block; margin-left: 8px; padding: 1px 6px;
+  background: var(--color-orange); color: #fff; font-size: 10px;
+  border-radius: 3px; font-weight: 700; vertical-align: middle;
+}
+
+/* Result action bar — toolbar keyboard support. */
+.result-action-bar[role="toolbar"] .result-action-btn:focus-visible {
+  outline: 2px solid var(--color-orange); outline-offset: 2px;
+}
+.result-action-form { display: inline; }
+.result-action-form .result-action-btn {
+  border: 1px solid var(--color-border-light);
+  cursor: pointer; font: inherit;
+}
+
+/* Share-as-image rendition — print-friendly framed card. */
+.page-share-image { background: var(--color-bg-strip); }
+.share-page--image .share-result-card {
+  box-shadow: 0 8px 30px rgba(0,0,0,0.08);
+  border: 1px solid #cdcdcd; padding: 32px;
+  background: #fff;
+}
+.share-image-stamp {
+  display: flex; align-items: center; gap: 8px;
+  margin-top: 16px; padding-top: 16px;
+  border-top: 1px dashed var(--color-border-light);
+}
+.share-image-spikey { width: 24px; height: 24px; }
+.share-image-brand {
+  font-weight: 700; color: var(--color-text-secondary);
+  font-size: 13px; letter-spacing: 0.04em;
+}
+.share-image-hint {
+  margin-top: 16px; padding: 12px;
+  background: var(--color-bg-tint); border: 1px solid var(--color-border-light);
+  border-radius: var(--radius-sm); font-size: 13px;
+  color: var(--color-text-secondary); text-align: center;
+}
+
+/* Widget builder — source card + size picker. */
+.builder-source-card {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 12px; margin-bottom: 14px;
+  background: var(--color-orange-soft); border: 1px solid #f8c592;
+  border-radius: var(--radius-sm); font-size: 13px;
+}
+.builder-source-eyebrow {
+  font-size: 10px; font-weight: 700; letter-spacing: 0.08em;
+  color: var(--color-orange-hover); text-transform: uppercase;
+}
+.builder-source-q {
+  font-family: var(--font-mono); font-size: 12.5px;
+  background: #fff; padding: 2px 6px; border-radius: 3px;
+  border: 1px solid #f8c592;
+}
+.builder-source-link {
+  margin-left: auto; font-size: 12px;
+  color: var(--color-orange-hover); text-decoration: none;
+}
+.builder-source-link:hover { text-decoration: underline; }
+
+.builder-size-picker {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 8px; margin-top: 8px;
+}
+.builder-size-btn {
+  display: flex; flex-direction: column; align-items: center; gap: 6px;
+  padding: 12px 10px;
+  background: #fff; border: 1px solid var(--color-border-light);
+  border-radius: var(--radius-sm); cursor: pointer; font: inherit;
+  transition: background 80ms ease, border-color 80ms ease;
+}
+.builder-size-btn:hover, .builder-size-btn:focus-visible {
+  background: var(--color-orange-soft); border-color: var(--color-orange);
+  outline: none;
+}
+.builder-size-btn--active {
+  background: var(--color-orange-soft); border-color: var(--color-orange);
+}
+.builder-size-shape {
+  display: block;
+  background: linear-gradient(135deg, var(--color-orange) 0%, var(--color-orange-hover) 100%);
+  border-radius: 2px;
+}
+.builder-size-label {
+  font-size: 12px; color: var(--color-text-secondary);
+  font-weight: 600; text-align: center;
+}
+.builder-size-label small {
+  font-weight: 400; color: var(--color-text-muted); font-size: 11px;
+}
+
+/* Table sticky-first-column for wide stats tables. */
+.wa-stats-table {
+  display: block; width: 100%; max-width: 100%;
+  overflow-x: auto;
+  border: 1px solid var(--color-border-light); border-radius: var(--radius-sm);
+}
+.wa-stats-table table {
+  border-collapse: collapse; min-width: 100%;
+}
+.wa-stats-table th, .wa-stats-table td {
+  padding: 8px 12px; font-size: 13px;
+  border-bottom: 1px solid var(--color-border-light);
+  white-space: nowrap;
+}
+.wa-stats-table thead th { background: var(--color-bg-tint); font-weight: 600; }
+.wa-stats-table th:first-child, .wa-stats-table td:first-child {
+  position: sticky; left: 0; background: #fff; z-index: 2;
+  border-right: 1px solid var(--color-border-light);
+}
+.wa-stats-table thead th:first-child { background: var(--color-bg-tint); }
+
+/* Mobile responsive — pods stack, action bar wraps, plot smaller. */
+@media (max-width: 720px) {
+  .result-main { grid-template-columns: 1fr !important; }
+  .result-pod, .result-pod--extra { padding: 12px !important; }
+  .result-pods { gap: 12px; }
+  .pod-altforms-tabs { flex-wrap: wrap; }
+  .pod-plot-svg-host { min-height: 120px; }
+  .result-action-bar { padding: 8px; }
+  .result-action-btn { padding: 6px 10px; font-size: 12px; }
+  .wa-assumption-bar { padding: 8px; gap: 6px; }
+  .wa-assumption-pill { font-size: 11.5px; padding: 3px 8px; }
+  .builder-size-picker { grid-template-columns: repeat(2, 1fr); }
+  .share-page--image .share-result-card { padding: 16px; }
+}
+
+@media (max-width: 480px) {
+  .pod-altform-tab { padding: 5px 8px; font-size: 11px; }
+  .pod-plot-controls { flex-wrap: wrap; }
+}
+
+/* Focus-visible polish across interactive elements (keyboard tab order). */
+.wa-assumption-pill:focus-visible,
+.pod-altform-tab:focus-visible,
+.builder-size-btn:focus-visible,
+.result-action-btn:focus-visible,
+.pod-plot-btn:focus-visible {
+  outline: 2px solid var(--color-orange); outline-offset: 2px;
+}

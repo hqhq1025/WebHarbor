@@ -15,7 +15,26 @@
           {% if is_saved %}&#x2713; Saved{% else %}+ Add to word list{% endif %}
         </button>
       </form>
+      <div class="smart-folder-widget" id="smartFolderWidget">
+        <label for="smartFolderSelect" class="sf-label">Smart folder:</label>
+        <select id="smartFolderSelect" class="sf-select" data-slug="{{ word.slug }}"
+                onchange="addToSmartFolder(this, '{{ word.headword|e }}', '{{ word.slug }}')">
+          <option value="">— pick or create —</option>
+          <option value="Daily Review">Daily Review</option>
+          <option value="Exam Prep">Exam Prep</option>
+          <option value="Reading Practice">Reading Practice</option>
+          <option value="__new__">+ New folder…</option>
+        </select>
+        <span class="sf-status" id="smartFolderStatus" role="status" aria-live="polite"></span>
+      </div>
     {% endif %}
+
+    <span class="recently-viewed-beacon"
+          data-slug="{{ word.slug }}"
+          data-headword="{{ word.headword|e }}"
+          data-ipa="{{ (word.phonetic_uk or word.pronunciation_ipa)|e }}"
+          data-level="{{ word.level }}"
+          aria-hidden="true"></span>
 
     <h1 class="entry-headword">{{ word.headword }}</h1>
 
@@ -32,28 +51,36 @@
       {% endif %}
     </div>
 
-    <!-- Pronunciation: side-by-side UK/US with IPA hover popup -->
+    <!-- Pronunciation: side-by-side UK/US with IPA hover popup (R5: keyboard-
+         focusable IPA + playback-speed buttons) -->
     <div class="entry-pronunciation pron-side-by-side-inline">
       {% if word.phonetic_uk or word.audio_uk_path %}
         <div class="pron-block pron-block--uk" data-region="uk">
           <span class="pron-label">uk</span>
-          <button class="pron-btn" onclick="speakWord('{{ word.headword }}', 'en-GB')" title="UK pronunciation" aria-label="UK pronunciation">&#x1F50A;</button>
+          <button class="pron-btn" onclick="speakWord('{{ word.headword }}', 'en-GB', this)" title="UK pronunciation" aria-label="UK pronunciation">&#x1F50A;</button>
           {% if word.audio_uk_path %}
             <audio class="pron-audio" preload="none" src="{{ word.audio_uk_path }}" data-region="uk"></audio>
           {% endif %}
-          <span class="pron-ipa pron-ipa--hoverable" data-region="uk" title="UK IPA: {{ word.phonetic_uk or word.pronunciation_ipa }}">{{ word.phonetic_uk or word.pronunciation_ipa }}</span>
+          <span class="pron-ipa pron-ipa--hoverable" data-region="uk" tabindex="0" role="note" aria-label="UK IPA pronunciation" title="UK IPA: {{ word.phonetic_uk or word.pronunciation_ipa }}">{{ word.phonetic_uk or word.pronunciation_ipa }}</span>
         </div>
       {% endif %}
       {% if word.phonetic_us or word.audio_us_path %}
         <div class="pron-block pron-block--us" data-region="us">
           <span class="pron-label">us</span>
-          <button class="pron-btn" onclick="speakWord('{{ word.headword }}', 'en-US')" title="US pronunciation" aria-label="US pronunciation">&#x1F50A;</button>
+          <button class="pron-btn" onclick="speakWord('{{ word.headword }}', 'en-US', this)" title="US pronunciation" aria-label="US pronunciation">&#x1F50A;</button>
           {% if word.audio_us_path %}
             <audio class="pron-audio" preload="none" src="{{ word.audio_us_path }}" data-region="us"></audio>
           {% endif %}
-          <span class="pron-ipa pron-ipa--hoverable" data-region="us" title="US IPA: {{ word.phonetic_us or word.pronunciation_ipa }}">{{ word.phonetic_us or word.pronunciation_ipa }}</span>
+          <span class="pron-ipa pron-ipa--hoverable" data-region="us" tabindex="0" role="note" aria-label="US IPA pronunciation" title="US IPA: {{ word.phonetic_us or word.pronunciation_ipa }}">{{ word.phonetic_us or word.pronunciation_ipa }}</span>
         </div>
       {% endif %}
+      <div class="playback-speed" role="group" aria-label="Playback speed">
+        <span class="ps-label">Speed:</span>
+        <button class="ps-btn" type="button" data-speed="0.5" onclick="setPlaybackSpeed(this, 0.5)">0.5x</button>
+        <button class="ps-btn" type="button" data-speed="0.75" onclick="setPlaybackSpeed(this, 0.75)">0.75x</button>
+        <button class="ps-btn active" type="button" data-speed="1" onclick="setPlaybackSpeed(this, 1)">1x</button>
+        <button class="ps-btn" type="button" data-speed="1.25" onclick="setPlaybackSpeed(this, 1.25)">1.25x</button>
+      </div>
       <a href="{{ url_for('pronunciation_detail', slug=word.slug) }}" class="pron-more-link">Side-by-side &raquo;</a>
     </div>
     {% if word.definitions_count %}

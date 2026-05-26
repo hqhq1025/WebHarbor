@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% block title %}Row {{ idx }} · {{ repo.slug }} viewer{% endblock %}
+
+{% block content %}
+<div class="container-wide page">
+    <nav class="docs-breadcrumb" aria-label="Breadcrumb">
+        <a href="{{ url_for('dataset_detail', author=repo.slug.split('/')[0], name=repo.slug.split('/')[1]) }}">{{ repo.slug }}</a>
+        <span>/</span>
+        <a href="{{ url_for('dataset_viewer', author=repo.slug.split('/')[0], name=repo.slug.split('/')[1]) }}">Viewer</a>
+        <span>/</span>
+        <span aria-current="page">Row {{ idx }}</span>
+    </nav>
+
+    <h1>Row {{ idx }} of {{ total }}</h1>
+    <p class="muted">Single-row view from <strong>{{ repo.slug }}</strong>. Use the navigation below to step through rows one at a time, or open the
+        <a href="{{ url_for('dataset_viewer', author=repo.slug.split('/')[0], name=repo.slug.split('/')[1]) }}">full table viewer</a>.</p>
+
+    <div class="viewer-meta" style="margin:8px 0 14px;">
+        <span class="tag">Row index: <strong>{{ idx }}</strong></span>
+        <span class="tag">Total rows: <strong>{{ total }}</strong></span>
+        <span class="tag">Columns: <strong>{{ columns|length }}</strong></span>
+        <span class="tag">Modality: <strong>{{ repo.modality or 'Text' }}</strong></span>
+    </div>
+
+    <section class="viewer-row-card" aria-labelledby="row-fields"
+             style="border:1px solid var(--border,#e5e7eb);border-radius:10px;padding:14px 16px;background:#fff;">
+        <h2 id="row-fields" style="font-size:16px;margin-top:0;">Fields</h2>
+        <dl class="viewer-row-fields" style="display:grid;grid-template-columns:160px 1fr;gap:8px 18px;margin:0;">
+        {% for col, cell in pairs %}
+            <dt style="font-weight:600;color:#374151;">{{ col }}</dt>
+            <dd style="margin:0;"><pre class="viewer-cell" style="white-space:pre-wrap;font-family:inherit;font-size:13.5px;margin:0;">{{ cell }}</pre></dd>
+        {% endfor %}
+        </dl>
+    </section>
+
+    <nav class="viewer-row-pager" aria-label="Row pagination"
+         style="display:flex;gap:8px;margin-top:18px;align-items:center;">
+        {% if idx > 1 %}
+            <a class="btn btn-sm btn-outline" rel="prev"
+               href="{{ url_for('dataset_viewer_row', author=repo.slug.split('/')[0], name=repo.slug.split('/')[1], idx=idx - 1) }}">‹ Previous row</a>
+        {% else %}
+            <button class="btn btn-sm btn-outline" disabled aria-disabled="true">‹ Previous row</button>
+        {% endif %}
+        <span class="muted" style="font-size:13px;">Row {{ idx }} / {{ total }}</span>
+        {% if idx < total %}
+            <a class="btn btn-sm btn-outline" rel="next"
+               href="{{ url_for('dataset_viewer_row', author=repo.slug.split('/')[0], name=repo.slug.split('/')[1], idx=idx + 1) }}">Next row ›</a>
+        {% else %}
+            <button class="btn btn-sm btn-outline" disabled aria-disabled="true">Next row ›</button>
+        {% endif %}
+        <a class="btn btn-sm btn-outline" style="margin-left:auto;"
+           href="{{ url_for('dataset_viewer', author=repo.slug.split('/')[0], name=repo.slug.split('/')[1]) }}">Back to table viewer</a>
+    </nav>
+</div>
+{% endblock %}

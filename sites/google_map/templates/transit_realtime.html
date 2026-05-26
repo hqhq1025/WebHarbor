@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+{% block title %}Realtime transit delays - Google Maps{% endblock %}
+
+{% block body %}
+<div class="app-shell">
+    {% include '_rail.html' %}
+    <aside class="left-panel">
+        {% set search_value = "Transit realtime" %}
+        {% include '_search_bar.html' %}
+        <div class="panel-section">
+            <h2 style="display:flex;align-items:center;gap:10px;">
+                <span class="material-icons-outlined" style="color:#ea4335;">commute</span>
+                Realtime transit delays
+            </h2>
+            <div class="sub" id="realtime-sub" aria-live="polite">
+                Live status across {{ lines|length }} lines{% if selected_city %} in {{ selected_city.display_name }}{% endif %}. Updated every minute.
+            </div>
+
+            <div class="filter-chips" style="display:flex;flex-wrap:wrap;gap:8px;margin:12px 0;">
+                <a class="chip {% if not selected_city %}active{% endif %}" href="{{ url_for('transit_realtime') }}">All cities</a>
+                {% for c in cities[:12] %}
+                <a class="chip {% if selected_city and selected_city.id == c.id %}active{% endif %}"
+                   href="{{ url_for('transit_realtime', city_slug=c.slug) }}">{{ c.display_name.split(',')[0] }}</a>
+                {% endfor %}
+            </div>
+
+            <ul class="rt-list" role="list" style="list-style:none;padding:0;margin:0;">
+                {% for l in lines %}
+                <li class="rt-row" data-delay="{{ l.current_delay_min }}"
+                    style="display:flex;align-items:center;gap:12px;padding:12px 14px;border:1px solid var(--divider);border-radius:10px;margin-bottom:8px;background:#fff;">
+                    <div class="rt-badge"
+                         style="background:{{ l.color or '#5f6368' }};color:#fff;min-width:42px;height:42px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-weight:700;">
+                        {{ l.short_name or l.name[0] }}
+                    </div>
+                    <div style="flex:1;">
+                        <div style="font-weight:500;color:#202124;">
+                            <a href="{{ url_for('transit_line_detail', line_slug=l.slug) }}" style="color:inherit;text-decoration:none;">{{ l.name }}</a>
+                        </div>
+                        <div style="font-size:12px;color:#5f6368;">{{ l.agency }} &middot; {{ l.mode }} &middot; updated {{ l.last_update }}</div>
+                    </div>
+                    {% if l.current_delay_min == 0 %}
+                    <span class="rt-status ok" role="status"
+                          style="background:#e6f4ea;color:#137333;padding:4px 10px;border-radius:14px;font-size:12px;font-weight:500;">
+                        On schedule
+                    </span>
+                    {% else %}
+                    <span class="rt-status delay" role="status"
+                          style="background:#fce8e6;color:#c5221f;padding:4px 10px;border-radius:14px;font-size:12px;font-weight:500;">
+                        +{{ l.current_delay_min }} min &middot; {{ l.delay_reason }}
+                    </span>
+                    {% endif %}
+                </li>
+                {% else %}
+                <li style="padding:24px;color:var(--text-secondary);text-align:center;">No transit lines for this city.</li>
+                {% endfor %}
+            </ul>
+        </div>
+    </aside>
+    {% include '_mapcanvas.html' %}
+</div>
+{% endblock %}

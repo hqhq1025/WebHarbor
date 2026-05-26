@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block title %}{{ discussion.title }} — threads · {{ repo.slug }}{% endblock %}
+
+{% block content %}
+<div class="container-wide page">
+    <a class="back-link" href="{{ url_for('discussion_detail', author=repo.slug.split('/')[0], name=repo.slug.split('/')[1], discussion_id=discussion.id) }}">← Back to discussion</a>
+    <div class="discussion-head">
+        <span class="tag tag-blue">{{ discussion.kind }}</span>
+        <h1>{{ discussion.title }} <small class="muted" style="font-weight:400;">— threaded view</small></h1>
+        <div class="discussion-meta">by {{ discussion.author.username if discussion.author else 'unknown' }} · {{ discussion.created_at.strftime('%b %d, %Y') }} · {{ replies|length }} repl{{ 'y' if replies|length == 1 else 'ies' }} across {{ threads|length }} threads</div>
+    </div>
+
+    <div class="discussion-body-card">
+        <p>{{ discussion.body }}</p>
+    </div>
+
+    <h3>Threads ({{ threads|length }})</h3>
+    {% for thread in threads %}
+    <section class="discussion-thread" aria-labelledby="thread-{{ loop.index }}-heading"
+             style="border:1px solid var(--border,#e5e7eb);border-radius:10px;margin:14px 0;padding:12px 14px;background:#fafafa;">
+        <h4 id="thread-{{ loop.index }}-heading" style="font-size:14px;margin:0 0 8px;color:#1f2937;">Thread {{ loop.index }} · {{ thread|length }} repl{{ 'y' if thread|length == 1 else 'ies' }}</h4>
+        {% if thread %}
+        <ol class="thread-replies" style="list-style:none;padding-left:0;margin:0;">
+            {% for r in thread %}
+            <li class="thread-reply" style="margin:6px 0 6px {{ loop.index0 * 18 }}px;padding:8px 12px;background:#fff;border-left:3px solid #93c5fd;border-radius:0 6px 6px 0;">
+                <div style="display:flex;align-items:center;gap:8px;">
+                    <strong>{{ r.user.username if r.user else 'unknown' }}</strong>
+                    <span class="muted" style="font-size:11.5px;">{{ r.created_at.strftime('%b %d, %Y %H:%M') }}</span>
+                </div>
+                <p style="margin:4px 0 0;">{{ r.body }}</p>
+            </li>
+            {% endfor %}
+        </ol>
+        {% else %}
+        <p class="muted" style="margin:0;">No replies in this thread yet.</p>
+        {% endif %}
+    </section>
+    {% endfor %}
+
+    <p class="muted" style="margin-top:18px;font-size:13px;">Threads are grouped by reply id modulo {{ threads|length }}. Open the
+        <a href="{{ url_for('discussion_detail', author=repo.slug.split('/')[0], name=repo.slug.split('/')[1], discussion_id=discussion.id) }}">flat view</a> to read all replies in posting order.</p>
+</div>
+{% endblock %}

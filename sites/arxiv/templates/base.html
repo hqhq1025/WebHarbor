@@ -10,6 +10,10 @@
 </head>
 <body>
 
+{# R5 — accessibility: skip-link lets keyboard / screen-reader users jump
+   past the masthead nav straight to main content. #}
+<a class="skip-to-main" href="#main-content">Skip to main content</a>
+
 <!-- ROW 1: Cornell identity bar (black background) — Cornell logo + announcement banner + donate -->
 <div class="cu-identity">
     <div class="cu-identity-inner">
@@ -109,6 +113,17 @@
         <a href="{{ url_for('login') }}">Login</a> |
         <a href="{{ url_for('register') }}">Register</a>
     {% endif %}
+    {# R5 — accessibility toggle: dyslexia-friendly font. Persists choice in
+       localStorage (see main.js). Visible inline so users without a screen
+       reader can find it too. #}
+    <span class="a11y-tools" aria-label="Accessibility tools">
+        | <button type="button" id="a11y-dyslexia-toggle"
+                  class="a11y-toggle" aria-pressed="false"
+                  title="Toggle dyslexia-friendly font (high-letter-spacing, sans-serif)">
+            <span aria-hidden="true">Aa</span>
+            <span class="a11y-label">Dyslexia-friendly font</span>
+          </button>
+    </span>
 </div>
 
 <!-- Flash messages -->
@@ -125,7 +140,7 @@
     {% endif %}
 {% endwith %}
 
-<main class="page-wrap">
+<main class="page-wrap" id="main-content" role="main" tabindex="-1">
     {% block content %}{% endblock %}
 </main>
 

@@ -242,6 +242,16 @@ class Place(db.Model):
     menu_json = db.Column(db.Text, default="[]")            # restaurants only
     ratings_dist_json = db.Column(db.Text, default="[]")    # [n5,n4,n3,n2,n1]
     visit_label = db.Column(db.String(32), default="")      # ""/"Home"/"Work"
+    # --- R5 additions: ambient signals + indoor positioning ---
+    noise_level = db.Column(db.String(16), default="", index=True)  # quiet/moderate/lively/loud
+    crowd_level = db.Column(db.String(16), default="", index=True)  # low/moderate/high/very-high
+    mask_required = db.Column(db.Boolean, default=False, index=True)
+    indoor_zone_type = db.Column(db.String(32), default="", index=True)  # food-court/lounge/concourse/wing/...
+    floor_number = db.Column(db.String(8), default="")  # "G"/"1"/"2"/"B1"/"R" (roof)
+    floors_json = db.Column(db.Text, default="[]")  # multi-floor map for the indoor-floor selector
+    parking_lot_capacity = db.Column(db.Integer, default=0)
+    ev_connector_type = db.Column(db.String(32), default="")  # CCS/CHAdeMO/Tesla/J1772
+    ev_charger_kw = db.Column(db.Integer, default=0)
     created_at = db.Column(db.DateTime, default=lambda: MIRROR_REFERENCE_DATETIME)
 
     reviews = db.relationship("Review", backref="place", cascade="all, delete-orphan", lazy="dynamic")
@@ -326,6 +336,29 @@ class Place(db.Model):
             ("Contactless pickup", self.contactless_pickup),
             ("Reservations", self.accepts_reservations),
         ]
+
+    def get_floors(self):
+        """Return ordered floor list for the indoor-floor selector.
+
+        Each entry: {"code": "G", "label": "Ground floor", "summary": "..."}.
+        Empty list for places that aren't multi-floor indoor venues.
+        """
+        try:
+            data = json.loads(self.floors_json or "[]")
+            return data if isinstance(data, list) else []
+        except (json.JSONDecodeError, TypeError):
+            return []
+
+    def get_ambient_chips(self):
+        """Return UI chips for noise/crowd/mask (R5)."""
+        chips = []
+        if self.noise_level:
+            chips.append(("noise", "volume_up", self.noise_level.capitalize() + " noise"))
+        if self.crowd_level:
+            chips.append(("crowd", "groups", self.crowd_level.replace("-", " ").capitalize() + " crowd"))
+        if self.mask_required:
+            chips.append(("mask", "masks", "Mask required"))
+        return chips
 
     def get_gallery(self):
         """Load gallery sections.
@@ -493,6 +526,10 @@ class TransitLine(db.Model):
     stops_json = db.Column(db.Text, default="[]")            # list of stop names
     description = db.Column(db.Text, default="")
     accessibility_notes = db.Column(db.Text, default="")     # wheelchair info
+    # --- R5: realtime-style delays for transit-realtime-delay tasks ---
+    current_delay_min = db.Column(db.Integer, default=0)     # minutes vs schedule
+    delay_reason = db.Column(db.String(128), default="")     # "Signal problem", "Construction", ...
+    last_update = db.Column(db.String(32), default="")       # "2 min ago" / "Updated at 14:35"
 
     def get_stops(self):
         try:
@@ -1135,6 +1172,31 @@ def _apply_place_filters(query, args):
     amenity = args.get("amenity", "").strip()
     if amenity:
         query = query.filter(Place.amenities_json.ilike(f"%{amenity.lower()}%"))
+    # --- R5 filters: noise, crowd, mask, indoor zone, floor, EV connector ---
+    noise = args.get("noise_level", "").strip().lower()
+    if noise in ("quiet", "moderate", "lively", "loud"):
+        query = query.filter(Place.noise_level == noise)
+    crowd = args.get("crowd_level", "").strip().lower()
+    if crowd in ("low", "moderate", "high", "very-high"):
+        query = query.filter(Place.crowd_level == crowd)
+    mask = args.get("mask_required", "")
+    if mask in ("1", "true", "yes"):
+        query = query.filter(Place.mask_required.is_(True))
+    indoor = args.get("indoor_zone_type", "").strip().lower()
+    if indoor:
+        query = query.filter(Place.indoor_zone_type == indoor)
+    floor = args.get("floor", "").strip()
+    if floor:
+        query = query.filter(Place.floor_number == floor)
+    ev_conn = args.get("ev_connector_type", "").strip()
+    if ev_conn:
+        query = query.filter(Place.ev_connector_type.ilike(f"%{ev_conn}%"))
+    try:
+        min_kw = int(args.get("min_kw", "") or 0)
+    except ValueError:
+        min_kw = 0
+    if min_kw:
+        query = query.filter(Place.ev_charger_kw >= min_kw)
     return query
 
 
@@ -2426,6 +2488,154 @@ def help_page():
 
 
 # --------------------------------------------------------------------------
+#  R5 additions: indoor floor selector, realtime transit, location-history
+#  export, group-meetup coordinate, place QR share.
+# --------------------------------------------------------------------------
+@app.route("/transit/realtime")
+@app.route("/transit/realtime/<city_slug>")
+def transit_realtime(city_slug=None):
+    """Realtime transit delays dashboard. Reads `current_delay_min` and
+    `delay_reason` columns seeded by backfill_transit_delays."""
+    q = TransitLine.query
+    selected_city = None
+    if city_slug:
+        selected_city = City.query.filter_by(slug=city_slug).first()
+        if selected_city:
+            q = q.filter_by(city_id=selected_city.id)
+    delayed_first = sorted(
+        q.all(), key=lambda l: (-(l.current_delay_min or 0), l.name)
+    )
+    cities = (City.query
+              .join(TransitLine, TransitLine.city_id == City.id)
+              .order_by(City.display_name).all())
+    # Dedup cities while preserving order.
+    seen, ordered_cities = set(), []
+    for c in cities:
+        if c.id not in seen:
+            seen.add(c.id)
+            ordered_cities.append(c)
+    return render_template(
+        "transit_realtime.html",
+        lines=delayed_first, cities=ordered_cities, selected_city=selected_city,
+    )
+
+
+@app.route("/place/<slug>/floors")
+def place_floors(slug):
+    """Indoor floor selector for multi-floor venues (malls, airports, hospitals)."""
+    place = Place.query.filter_by(slug=slug).first_or_404()
+    floors = place.get_floors()
+    return render_template(
+        "place_floors.html", place=place, floors=floors,
+    )
+
+
+@app.route("/your-data/export")
+def your_data_export():
+    """Location-history export — returns a downloadable JSON of timeline entries
+    for the signed-in user (or an empty stub for guests). Mirrors the
+    `Takeout` Maps timeline export."""
+    if not current_user.is_authenticated:
+        payload = {
+            "format": "google-maps-timeline-v1",
+            "exported_at": MIRROR_REFERENCE_DATETIME.isoformat(),
+            "entries": [],
+            "note": "Sign in to export your full location history.",
+        }
+    else:
+        entries = (TimelineEntry.query
+                   .filter_by(user_id=current_user.id)
+                   .order_by(TimelineEntry.visited_at.asc())
+                   .all())
+        payload = {
+            "format": "google-maps-timeline-v1",
+            "user": current_user.email,
+            "exported_at": MIRROR_REFERENCE_DATETIME.isoformat(),
+            "entries": [
+                {
+                    "place": e.place.name if e.place else "",
+                    "city": e.place.city.display_name if e.place and e.place.city else "",
+                    "visited_at": e.visited_at.isoformat() if e.visited_at else "",
+                    "note": e.note or "",
+                }
+                for e in entries
+            ],
+        }
+    fmt = (request.args.get("format") or "").lower()
+    if fmt == "download":
+        from flask import Response
+        body = json.dumps(payload, indent=2)
+        return Response(
+            body,
+            mimetype="application/json",
+            headers={"Content-Disposition": "attachment; filename=timeline-export.json"},
+        )
+    return render_template("your_data_export.html", payload=payload)
+
+
+@app.route("/meetup", methods=["GET", "POST"])
+def group_meetup():
+    """Group-meetup coordinator: paste 2-5 addresses, suggest a midpoint
+    place that's a coffee shop or restaurant near the geometric center."""
+    addresses = []
+    suggestion = None
+    midpoint = None
+    if request.method == "POST":
+        raw = request.form.get("addresses", "")
+        addresses = [a.strip() for a in raw.split("\n") if a.strip()]
+        # Resolve each to a Place by name match; midpoint = mean lat/lng
+        resolved = []
+        for a in addresses[:5]:
+            p = (Place.query
+                 .filter(Place.name.ilike(f"%{a}%"))
+                 .order_by(Place.review_count.desc())
+                 .first())
+            if p:
+                resolved.append(p)
+        if len(resolved) >= 2:
+            avg_lat = sum(p.lat for p in resolved) / len(resolved)
+            avg_lng = sum(p.lng for p in resolved) / len(resolved)
+            midpoint = {"lat": round(avg_lat, 4), "lng": round(avg_lng, 4)}
+            # Suggest a coffee-shop or restaurant near the midpoint
+            cands = (Place.query
+                     .join(Category, Category.id == Place.category_id)
+                     .filter(Category.slug.in_(["coffee-shops", "restaurants"]),
+                             Place.rating >= 4.4)
+                     .all())
+            if cands:
+                def _d(p):
+                    return ((p.lat - avg_lat) ** 2 + (p.lng - avg_lng) ** 2)
+                cands.sort(key=_d)
+                suggestion = cands[0]
+    return render_template(
+        "meetup.html",
+        addresses=addresses, suggestion=suggestion, midpoint=midpoint,
+    )
+
+
+@app.route("/place/<slug>/qr")
+def place_qr(slug):
+    """Place QR share — render an ASCII QR placeholder + the shareable URL."""
+    place = Place.query.filter_by(slug=slug).first_or_404()
+    share_url = google_maps_place_url(place)
+    # Deterministic ASCII "QR" pattern from the slug for the demo render.
+    grid = []
+    seed = hash(slug) & 0xFFFFFFFF
+    for r in range(11):
+        row = []
+        for c in range(11):
+            v = (seed >> ((r * 11 + c) % 31)) & 1
+            # Always set corner finder squares like a real QR.
+            if (r < 3 and c < 3) or (r < 3 and c > 7) or (r > 7 and c < 3):
+                v = 1
+            row.append(v)
+        grid.append(row)
+    return render_template(
+        "place_qr.html", place=place, share_url=share_url, grid=grid,
+    )
+
+
+# --------------------------------------------------------------------------
 #  Auth
 # --------------------------------------------------------------------------
 @app.route("/login", methods=["GET", "POST"])
@@ -3052,7 +3262,9 @@ def seed_database():
     from seed_data import (build_categories, build_cities, build_places,
                            seed_task_data, expand_cities, expand_places,
                            expand_routes, expand_places_r4, backfill_place_extras,
-                           seed_transit_lines)
+                           seed_transit_lines, expand_places_r5,
+                           backfill_place_extras_r5, expand_routes_r5,
+                           backfill_transit_delays)
     if Category.query.count() == 0:
         build_categories(db, Category)
     if City.query.count() == 0:
@@ -3073,6 +3285,11 @@ def seed_database():
     backfill_place_extras(db, Place, Category)
     if TransitLine.query.count() == 0:
         seed_transit_lines(db, TransitLine, City)
+    # --- R5: indoor sub-zones + outdoor sub-zones + parking + EV + fueling ---
+    expand_places_r5(db, Place, Category, City)
+    backfill_place_extras_r5(db, Place, Category)
+    expand_routes_r5(db, Route)
+    backfill_transit_delays(db, TransitLine)
 
 
 # --------------------------------------------------------------------------

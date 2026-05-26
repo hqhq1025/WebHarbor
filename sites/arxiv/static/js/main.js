@@ -270,3 +270,73 @@ function setRating(n) {
     const input = document.getElementById('rating-input');
     if (input) input.value = n;
 }
+
+// =====================================================================
+// R5 — version-history modal, dyslexia-friendly font toggle.
+// =====================================================================
+
+(function () {
+    "use strict";
+
+    // ---- Version history modal ---------------------------------------
+    function setupVersionModal() {
+        var modal = document.getElementById("version-history-modal");
+        if (!modal) return;
+        var openers = document.querySelectorAll("[data-version-modal-open]");
+        var closer = modal.querySelector("[data-version-modal-close]");
+        var previouslyFocused = null;
+
+        function open(e) {
+            if (e) e.preventDefault();
+            previouslyFocused = document.activeElement;
+            modal.hidden = false;
+            document.body.style.overflow = "hidden";
+            if (closer) closer.focus();
+        }
+        function close() {
+            modal.hidden = true;
+            document.body.style.overflow = "";
+            if (previouslyFocused && previouslyFocused.focus) {
+                previouslyFocused.focus();
+            }
+        }
+
+        openers.forEach(function (btn) { btn.addEventListener("click", open); });
+        if (closer) closer.addEventListener("click", close);
+        modal.addEventListener("click", function (ev) {
+            if (ev.target === modal) close();
+        });
+        document.addEventListener("keydown", function (ev) {
+            if (!modal.hidden && ev.key === "Escape") close();
+        });
+    }
+
+    // ---- Dyslexia-friendly font toggle --------------------------------
+    function setupDyslexiaToggle() {
+        var btn = document.getElementById("a11y-dyslexia-toggle");
+        if (!btn) return;
+        var STORAGE_KEY = "arxiv_a11y_dyslexia";
+        function apply(on) {
+            document.body.classList.toggle("dyslexia-friendly", on);
+            btn.setAttribute("aria-pressed", on ? "true" : "false");
+        }
+        var stored = null;
+        try { stored = window.localStorage.getItem(STORAGE_KEY); } catch (e) {}
+        apply(stored === "1");
+        btn.addEventListener("click", function () {
+            var on = !document.body.classList.contains("dyslexia-friendly");
+            apply(on);
+            try { window.localStorage.setItem(STORAGE_KEY, on ? "1" : "0"); } catch (e) {}
+        });
+    }
+
+    if (document.readyState === "loading") {
+        document.addEventListener("DOMContentLoaded", function () {
+            setupVersionModal();
+            setupDyslexiaToggle();
+        });
+    } else {
+        setupVersionModal();
+        setupDyslexiaToggle();
+    }
+})();

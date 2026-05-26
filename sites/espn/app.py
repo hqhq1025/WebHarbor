@@ -1529,6 +1529,7 @@ def sport_odds(sport_slug):
 # ─── R3 Routes: Awards ───────────────────────────────────────────────────────
 
 @app.route('/<sport_slug>/awards')
+@app.route('/awards/<sport_slug>')  # R5 alias — accept either path order
 def sport_awards(sport_slug):
     sport_slug = _norm_sport(sport_slug)
     sport = Sport.query.filter_by(slug=sport_slug).first_or_404()
@@ -1811,6 +1812,8 @@ def parlay_builder():
 
 @app.route('/recruiting/<sport_slug>/247-composite')
 @app.route('/<sport_slug>/recruiting/247-composite')
+@app.route('/recruiting/<sport_slug>')  # R5 alias — redirect to 247-composite
+@app.route('/<sport_slug>/recruiting')  # R5 alias for ncaaf/etc.
 def recruiting_247(sport_slug):
     sport_slug = _norm_sport(sport_slug)
     sport = Sport.query.filter_by(slug=sport_slug).first_or_404()

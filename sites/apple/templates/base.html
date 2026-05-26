@@ -9,9 +9,78 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+      /* R5 — accessibility + reduced motion + dynamic type */
+      :root { --r5-toast-error: #b00020; --r5-toast-success: #1d6a37; }
+      @media (prefers-reduced-motion: reduce) {
+        *, *::before, *::after {
+          animation-duration: 0.01ms !important;
+          animation-iteration-count: 1 !important;
+          transition-duration: 0.01ms !important;
+          scroll-behavior: auto !important;
+        }
+      }
+      /* Respect Dynamic Type sizing via root font-size scaling */
+      @media (min-resolution: 1.5dppx) { html { font-size: 17px; } }
+      /* Focus styles for keyboard navigation (VoiceOver / Switch Control) */
+      a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible {
+        outline: 3px solid #0071e3; outline-offset: 2px; border-radius: 4px;
+      }
+      /* Skip-to-content link for keyboard users */
+      .r5-skip-link {
+        position: absolute; left: -9999px; top: 0; z-index: 9999;
+        background: #1d1d1f; color: #fff; padding: 12px 18px; text-decoration: none;
+      }
+      .r5-skip-link:focus { left: 12px; top: 12px; }
+      /* Toast notifications (validation errors, promo failures) */
+      .r5-toast-container {
+        position: fixed; top: 70px; right: 20px; z-index: 9000;
+        display: flex; flex-direction: column; gap: 12px; max-width: 360px;
+      }
+      .r5-toast {
+        background: #fff; border-left: 4px solid var(--r5-toast-error);
+        border-radius: 8px; padding: 14px 18px; box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+        font-size: 15px; color: #1d1d1f;
+      }
+      .r5-toast.success { border-left-color: var(--r5-toast-success); }
+      .r5-toast .r5-toast-close {
+        background: none; border: 0; font-size: 22px; cursor: pointer;
+        color: #6e6e73; margin-left: 12px; float: right; line-height: 1;
+      }
+      /* Sticky CTA bar for long product pages */
+      .r5-sticky-cta {
+        position: sticky; bottom: 0; left: 0; right: 0; z-index: 50;
+        background: rgba(255,255,255,0.96); backdrop-filter: saturate(180%) blur(20px);
+        border-top: 1px solid #d2d2d7; padding: 14px 20px;
+        display: flex; align-items: center; justify-content: space-between; gap: 16px;
+      }
+      .r5-sticky-cta .r5-cta-price { font-size: 17px; font-weight: 600; }
+      .r5-sticky-cta .r5-cta-btn {
+        padding: 10px 22px; border-radius: 980px; background: #0071e3;
+        color: #fff; border: 0; cursor: pointer; font-weight: 500;
+      }
+      /* Step indicator (configurator) */
+      .r5-step-indicator { display: flex; gap: 8px; margin: 18px 0 28px; }
+      .r5-step-indicator .step {
+        flex: 1; padding: 10px 8px; border-radius: 8px;
+        background: #f5f5f7; color: #6e6e73; text-align: center;
+        font-size: 13px; font-weight: 500;
+      }
+      .r5-step-indicator .step.active { background: #0071e3; color: #fff; }
+      .r5-step-indicator .step.done { background: #30d158; color: #fff; }
+      /* In-place form validation hint */
+      .r5-field-error {
+        color: var(--r5-toast-error); font-size: 13px; margin-top: 4px; display: block;
+      }
+      input[aria-invalid="true"], select[aria-invalid="true"] {
+        border-color: var(--r5-toast-error) !important;
+      }
+    </style>
     {% block extra_head %}{% endblock %}
 </head>
 <body>
+    <a href="#main-content" class="r5-skip-link">Skip to main content</a>
+    <div id="r5-toast-container" class="r5-toast-container" aria-live="polite" aria-atomic="true"></div>
     <!-- Global Nav -->
     <nav class="globalnav" id="globalnav">
         <div class="gn-content">
@@ -177,6 +246,128 @@
     </footer>
 
     <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    <script>
+    (function(){
+      // R5 — Toast notifications (used by promo validator + form errors)
+      window.r5Toast = function(msg, kind){
+        kind = kind || 'error';
+        var c = document.getElementById('r5-toast-container');
+        if(!c) return;
+        var d = document.createElement('div');
+        d.className = 'r5-toast ' + (kind === 'success' ? 'success' : '');
+        d.setAttribute('role', 'alert');
+        d.innerHTML = '<button class="r5-toast-close" aria-label="Dismiss">&times;</button><span>' +
+                      (msg || '').replace(/[<>]/g, '') + '</span>';
+        d.querySelector('.r5-toast-close').onclick = function(){ d.remove(); };
+        c.appendChild(d);
+        setTimeout(function(){ if(d.parentNode) d.remove(); }, 5000);
+      };
+
+      // R5 — Promo code AJAX validator (wires to any <form data-r5-promo>)
+      document.addEventListener('submit', function(ev){
+        var f = ev.target.closest('form[data-r5-promo]');
+        if(!f) return;
+        ev.preventDefault();
+        var code = (f.querySelector('input[name=code]') || {}).value || '';
+        var fd = new FormData();
+        fd.append('code', code);
+        fetch('/api/promo/validate', { method: 'POST', body: fd })
+          .then(function(r){ return r.json().then(function(j){ return { ok: r.ok, j: j }; }); })
+          .then(function(res){
+            if(res.ok && res.j.valid){
+              r5Toast('Promo "' + res.j.code + '": ' + res.j.savings + '.', 'success');
+            } else {
+              r5Toast(res.j.error || 'Invalid promo code.', 'error');
+            }
+          })
+          .catch(function(){ r5Toast('Network error validating promo code.', 'error'); });
+      });
+
+      // R5 — AJAX zip-code shipping estimate (wires to any <form data-r5-shipping>)
+      document.addEventListener('submit', function(ev){
+        var f = ev.target.closest('form[data-r5-shipping]');
+        if(!f) return;
+        ev.preventDefault();
+        var zip = (f.querySelector('input[name=zip]') || {}).value || '';
+        var method = (f.querySelector('select[name=method]') || f.querySelector('input[name=method]') || {}).value || 'standard';
+        if(!/^\d{5}$/.test(zip)){
+          r5Toast('Enter a valid 5-digit ZIP code.', 'error');
+          return;
+        }
+        var fd = new FormData();
+        fd.append('zip', zip);
+        fd.append('method', method);
+        fetch('/api/shipping/estimate', { method: 'POST', body: fd })
+          .then(function(r){ return r.json(); })
+          .then(function(j){
+            if(j && !j.error){
+              var t = f.querySelector('[data-r5-shipping-result]');
+              if(t){
+                t.textContent = method + ': $' + (j.cost_usd||0).toFixed(2) +
+                                ' — arrives ~' + j.estimated_delivery_days + ' days (' +
+                                (j.delivery_date_estimate || '') + ')';
+              }
+              r5Toast('Shipping to ' + zip + ': $' + (j.cost_usd||0).toFixed(2) + ' (' +
+                      j.estimated_delivery_days + ' days)', 'success');
+            } else {
+              r5Toast(j.error || 'Could not compute shipping.', 'error');
+            }
+          })
+          .catch(function(){ r5Toast('Network error fetching shipping estimate.', 'error'); });
+      });
+
+      // R5 — In-place form validation: mark required fields aria-invalid on blur
+      document.addEventListener('blur', function(ev){
+        var t = ev.target;
+        if(!t || !(t.matches && t.matches('input[required], select[required], textarea[required]'))) return;
+        if(!t.value || (t.type === 'email' && !/^\S+@\S+\.\S+$/.test(t.value))){
+          t.setAttribute('aria-invalid', 'true');
+          var hint = t.parentNode && t.parentNode.querySelector('.r5-field-error');
+          if(!hint){
+            hint = document.createElement('span');
+            hint.className = 'r5-field-error';
+            hint.textContent = t.type === 'email' ? 'Enter a valid email address.' : 'This field is required.';
+            t.parentNode && t.parentNode.appendChild(hint);
+          }
+        } else {
+          t.removeAttribute('aria-invalid');
+          var hint2 = t.parentNode && t.parentNode.querySelector('.r5-field-error');
+          if(hint2) hint2.remove();
+        }
+      }, true);
+
+      // R5 — Focus trap for nav menu when expanded
+      var menuBtn = document.getElementById('gn-menubutton');
+      var nav = document.getElementById('globalnav');
+      if(menuBtn && nav){
+        var lastFocused = null;
+        menuBtn.addEventListener('click', function(){
+          if(nav.classList.contains('expanded')){
+            lastFocused = document.activeElement;
+            var focusables = nav.querySelectorAll('a, button');
+            if(focusables.length){
+              focusables[0].focus();
+              nav.addEventListener('keydown', function trap(e){
+                if(e.key === 'Escape'){
+                  nav.classList.remove('expanded');
+                  if(lastFocused) lastFocused.focus();
+                  nav.removeEventListener('keydown', trap);
+                  return;
+                }
+                if(e.key !== 'Tab') return;
+                var first = focusables[0], last = focusables[focusables.length - 1];
+                if(e.shiftKey && document.activeElement === first){
+                  e.preventDefault(); last.focus();
+                } else if(!e.shiftKey && document.activeElement === last){
+                  e.preventDefault(); first.focus();
+                }
+              });
+            }
+          }
+        });
+      }
+    })();
+    </script>
     {% block extra_js %}{% endblock %}
 </body>
 </html>

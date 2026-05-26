@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% block title %}{{ q or 'All Courses' }} | Coursera{% endblock %}
 {% block content %}
-<div class="search-page">
+<div class="search-page" id="main-content">
   <div class="search-results-shell container">
     <h2 class="results-title">{% if q %}Results for "{{ q }}"{% else %}All Results{% endif %}</h2>
 
@@ -161,9 +161,12 @@
 
     {# ---- Results grid ---- #}
     {% if results %}
-    <div class="results-list">
+    <div class="results-list" role="list">
       {% for c in results %}
-      <a href="{{ url_for('course_detail', slug=c.slug) }}" class="result-card">
+      <a href="{{ url_for('course_detail', slug=c.slug) }}" class="result-card"
+         role="listitem"
+         {% if c.preview_video_url %}data-preview-url="{{ c.preview_video_url }}"{% endif %}
+         aria-label="{{ c.title }} by {{ c.partner.name if c.partner else 'Coursera' }}">
         <div class="result-thumb {{ c.color_class }}">
           {% if course_thumb(c) %}<img class="cct-img" src="{{ url_for('static', filename=course_thumb(c)) }}" alt="">{% endif %}
         </div>
@@ -199,6 +202,16 @@
             {% if c.credit_eligible %}<span class="status-pill status-credit">Credit offered</span>{% endif %}
           </div>
         </div>
+        {% if c.preview_video_url %}
+        <div class="card-preview" aria-hidden="true">
+          <div class="cp-icon">&#9654;</div>
+          <div>
+            <div class="cp-eyebrow">Preview</div>
+            <div class="cp-title">{{ c.title[:70] }}{% if c.title|length > 70 %}…{% endif %}</div>
+            <div class="cp-meta">{{ c.partner.name if c.partner else '' }} &middot; {{ c.duration_text }} &middot; ~{{ '%.1f'|format(c.estimated_workload_hours_per_week or 4.0) }} hrs/wk</div>
+          </div>
+        </div>
+        {% endif %}
       </a>
       {% endfor %}
     </div>

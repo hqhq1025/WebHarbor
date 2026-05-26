@@ -731,6 +731,10 @@ def seed_all(db, Airport, Flight):
         from airport_extras import R4_EXTRA_AIRPORTS
     except ImportError:
         R4_EXTRA_AIRPORTS = []
+    try:
+        from airport_extras import R5_EXTRA_AIRPORTS
+    except ImportError:
+        R5_EXTRA_AIRPORTS = []
 
     # 1. Airports
     slug_to_airport_ids = {}
@@ -822,6 +826,38 @@ def seed_all(db, Airport, Flight):
         )
         db.session.add(airport)
         slug_to_airport_ids.setdefault(slug, []).append(iata)
+
+    # R5: append another 800 OpenFlights airports for total 2000+. Hash-of-IATA
+    # sampled globally so coverage spans every region. All non-popular so the
+    # popular-hub flight catalog isn't inflated.
+    for entry in R5_EXTRA_AIRPORTS:
+        (iata, slug, city, country, name, region, popular,
+         icao, lat, lng, tz) = entry
+        gallery_dir = BASE_DIR / 'static' / 'images' / 'destinations' / slug
+        gallery = []
+        if gallery_dir.exists():
+            for f in sorted(gallery_dir.glob('img_*.*')):
+                if f.stat().st_size > 10000 and f.suffix.lower() in ['.jpg', '.jpeg', '.png', '.webp']:
+                    gallery.append(f"/static/images/destinations/{slug}/{f.name}")
+        image = gallery[0] if gallery else ''
+        airport = Airport(
+            iata=iata,
+            icao=icao,
+            city_slug=slug,
+            city=city,
+            country=country,
+            name=name,
+            region=region,
+            is_popular=popular,
+            latitude=lat,
+            longitude=lng,
+            timezone=tz,
+            image=image,
+            gallery_json=json.dumps(gallery),
+            description=DESCRIPTIONS.get(slug, f"Explore {city}, {country}."),
+        )
+        db.session.add(airport)
+        slug_to_airport_ids.setdefault(slug, []).append(iata)
     db.session.commit()
 
     # Build iata -> Airport
@@ -838,6 +874,8 @@ def seed_all(db, Airport, Flight):
     for entry in EXTRA_AIRPORTS:
         raw_by_iata.setdefault(entry[0], entry[:7])
     for entry in R4_EXTRA_AIRPORTS:
+        raw_by_iata.setdefault(entry[0], entry[:7])
+    for entry in R5_EXTRA_AIRPORTS:
         raw_by_iata.setdefault(entry[0], entry[:7])
     today = date.today()
 
@@ -1105,11 +1143,13 @@ def seed_all(db, Airport, Flight):
     catalog_anchor = date(2024, 1, 1)
     catalog_rows = []
 
-    # Top-tier: every day for two full years (2024-01-01 → 2025-12-31, 731
-    # days including a leap day) so adjacent-day and "next-month" searches in
-    # both years hit something on a real route. R4 extends from 366 → 731
-    # days for ~115k more top-tier rows, bringing flight catalogue past 200k.
-    TOP_TIER_DAYS = 731
+    # Top-tier: every day for three full years (2024-01-01 → 2026-12-31,
+    # 1096 days including 2024 leap day) so adjacent-day and "next-month"
+    # searches in 2024/2025/2026 all hit something on a real route. R5
+    # extends from 731 → 1096 days for ~130k more top-tier rows, bringing
+    # flight catalogue past 400k. Coverage now spans the current benchmark
+    # date (2026-05-26) for every major hub-to-hub pair.
+    TOP_TIER_DAYS = 1096
     print(f"[seed] top-tier loop: {len(top_tier_pairs)} pairs × {TOP_TIER_DAYS} days")
     _pair_idx = 0
     for origin_iata, dest_iata in top_tier_pairs:
@@ -1143,6 +1183,52 @@ def seed_all(db, Airport, Flight):
         if origin_iata not in airport_by_iata or dest_iata not in airport_by_iata:
             continue
         for d_offset in range(365):  # full 2026
+            dep = future_anchor + timedelta(days=d_offset)
+            row = make_flight_dict(origin_iata, dest_iata, dep)
+            if row:
+                catalog_rows.append(row)
+                flights_count += 1
+        if len(catalog_rows) >= 5000:
+            db.session.execute(text(insert_sql), catalog_rows)
+            db.session.commit()
+            catalog_rows = []
+
+    # R5 codeshare layer: overlay a second 2026 flight per day per route across
+    # a broader set of pairs. Because top-tier already covers these dates with
+    # one airline, the new rows materialise as codeshares (same route+date,
+    # different airline number from random.choice(AIRLINES)). Adds ~22k rows
+    # so the catalogue clears 400k while keeping the data realistic — codeshare
+    # listings are how Google Flights shows multi-airline operating-carrier
+    # relationships on big metropolitan pairs.
+    R5_CODESHARE_PAIRS = [
+        # Trans-atlantic premium
+        ('JFK', 'LHR'), ('JFK', 'CDG'), ('JFK', 'AMS'), ('JFK', 'FRA'),
+        ('JFK', 'FCO'), ('JFK', 'MAD'), ('JFK', 'BCN'), ('JFK', 'MUC'),
+        ('JFK', 'ZRH'), ('JFK', 'DUB'), ('BOS', 'LHR'), ('BOS', 'CDG'),
+        ('BOS', 'AMS'), ('ORD', 'LHR'), ('ORD', 'CDG'), ('ORD', 'FRA'),
+        ('DFW', 'LHR'), ('DFW', 'CDG'), ('ATL', 'LHR'), ('ATL', 'CDG'),
+        ('IAD', 'LHR'), ('PHL', 'LHR'),
+        # Trans-pacific
+        ('LAX', 'HND'), ('LAX', 'NRT'), ('LAX', 'ICN'), ('LAX', 'PVG'),
+        ('LAX', 'HKG'), ('SFO', 'HND'), ('SFO', 'NRT'), ('SFO', 'ICN'),
+        ('SFO', 'PVG'), ('SFO', 'HKG'), ('SEA', 'HND'), ('SEA', 'NRT'),
+        ('SEA', 'ICN'),
+        # Middle-east / Asia hub
+        ('JFK', 'DXB'), ('JFK', 'DOH'), ('JFK', 'IST'),
+        ('LAX', 'DXB'), ('LAX', 'DOH'),
+        ('LHR', 'DXB'), ('LHR', 'DOH'), ('LHR', 'SIN'), ('LHR', 'HKG'),
+        ('CDG', 'DXB'), ('FRA', 'SIN'),
+        # Pacific
+        ('LAX', 'SYD'), ('LAX', 'MEL'), ('SFO', 'SYD'), ('SFO', 'AKL'),
+        # Domestic mega-pairs (codeshare US carriers)
+        ('JFK', 'LAX'), ('JFK', 'SFO'), ('JFK', 'SEA'), ('JFK', 'MIA'),
+        ('JFK', 'BOS'), ('LAX', 'JFK'), ('LAX', 'BOS'), ('SFO', 'JFK'),
+        ('ORD', 'JFK'), ('ATL', 'JFK'), ('DFW', 'JFK'),
+    ]
+    for origin_iata, dest_iata in R5_CODESHARE_PAIRS:
+        if origin_iata not in airport_by_iata or dest_iata not in airport_by_iata:
+            continue
+        for d_offset in range(365):  # full 2026 codeshare overlay
             dep = future_anchor + timedelta(days=d_offset)
             row = make_flight_dict(origin_iata, dest_iata, dep)
             if row:

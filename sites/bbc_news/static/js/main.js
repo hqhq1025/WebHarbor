@@ -263,3 +263,360 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 })();
+
+/* ============================================================
+ * R5: dark-mode + high-contrast toggles (cookie + localStorage)
+ * ============================================================ */
+(function () {
+    function setPref(name, value) {
+        try { localStorage.setItem(name, value); } catch (e) {}
+        document.body.setAttribute('data-' + name.replace('bbc_', '').replace('_', ''), value);
+        const endpoint = name === 'bbc_dark_mode'
+            ? '/api/dark-mode' : '/api/high-contrast';
+        const form = new FormData();
+        form.append('value', value);
+        form.append('csrf_token', csrfToken());
+        fetch(endpoint, { method: 'POST', body: form, credentials: 'same-origin' })
+            .catch(() => {});
+    }
+
+    function loadPref(name) {
+        try { return localStorage.getItem(name); } catch (e) { return null; }
+    }
+
+    document.addEventListener('DOMContentLoaded', function () {
+        // Hydrate from localStorage (sync ahead of cookie round-trip).
+        const dm = loadPref('bbc_dark_mode');
+        if (dm) document.body.setAttribute('data-darkmode', dm);
+        const hc = loadPref('bbc_high_contrast');
+        if (hc) document.body.setAttribute('data-highcontrast', hc);
+
+        const dmBtn = document.getElementById('darkmode-toggle');
+        if (dmBtn) dmBtn.addEventListener('click', function () {
+            const next = document.body.getAttribute('data-darkmode') === 'on' ? 'off' : 'on';
+            setPref('bbc_dark_mode', next);
+            dmBtn.setAttribute('aria-pressed', next === 'on' ? 'true' : 'false');
+            dmBtn.setAttribute('data-current', next);
+        });
+
+        const hcBtn = document.getElementById('contrast-toggle');
+        if (hcBtn) hcBtn.addEventListener('click', function () {
+            const next = document.body.getAttribute('data-highcontrast') === 'on' ? 'off' : 'on';
+            setPref('bbc_high_contrast', next);
+            hcBtn.setAttribute('aria-pressed', next === 'on' ? 'true' : 'false');
+            hcBtn.setAttribute('data-current', next);
+        });
+    });
+})();
+
+/* ============================================================
+ * R5: ARIA live region — announce breaking news to screen readers
+ * ============================================================ */
+(function () {
+    document.addEventListener('DOMContentLoaded', function () {
+        const region = document.getElementById('bbc-live-region');
+        if (!region) return;
+        const headline = region.getAttribute('data-breaking-headline');
+        if (headline) {
+            // Wait a tick so the page has settled before the announcement.
+            setTimeout(function () {
+                region.textContent = 'Breaking: ' + headline;
+            }, 600);
+        }
+    });
+})();
+
+/* ============================================================
+ * R5: search auto-suggest (uses /api/search/suggest)
+ * ============================================================ */
+(function () {
+    document.addEventListener('DOMContentLoaded', function () {
+        const form = document.querySelector('[data-search-autosuggest]');
+        if (!form) return;
+        const input = form.querySelector('#bbc-search-input');
+        const dropdown = form.querySelector('#bbc-search-suggest');
+        if (!input || !dropdown) return;
+        let timer = null;
+        let lastQ = '';
+
+        function render(payload) {
+            if (!payload || !payload.ok) { dropdown.hidden = true; return; }
+            const parts = [];
+            if (payload.section) {
+                parts.push('<div class="suggest-section">Section</div>');
+                parts.push(
+                    '<a class="suggest-item" href="' + payload.section.url + '">' +
+                    payload.section.name +
+                    ' <span class="suggest-cat">section</span></a>'
+                );
+            }
+            if (payload.topics && payload.topics.length) {
+                parts.push('<div class="suggest-section">Topics</div>');
+                payload.topics.forEach(function (t) {
+                    parts.push(
+                        '<a class="suggest-item" href="/search?q=' +
+                        encodeURIComponent(t) + '">' + t + '</a>'
+                    );
+                });
+            }
+            if (payload.articles && payload.articles.length) {
+                parts.push('<div class="suggest-section">Stories</div>');
+                payload.articles.forEach(function (a) {
+                    parts.push(
+                        '<a class="suggest-item" href="' + a.url + '">' +
+                        a.headline +
+                        '<span class="suggest-cat">' + (a.category || '') + '</span>' +
+                        '</a>'
+                    );
+                });
+            }
+            if (!parts.length) { dropdown.hidden = true; return; }
+            dropdown.innerHTML = parts.join('');
+            dropdown.hidden = false;
+        }
+
+        input.addEventListener('input', function () {
+            const q = (input.value || '').trim();
+            if (q === lastQ) return;
+            lastQ = q;
+            if (timer) clearTimeout(timer);
+            if (q.length < 2) { dropdown.hidden = true; return; }
+            timer = setTimeout(function () {
+                fetch('/api/search/suggest?q=' + encodeURIComponent(q), {
+                    credentials: 'same-origin',
+                })
+                    .then(function (r) { return r.json(); })
+                    .then(render)
+                    .catch(function () { dropdown.hidden = true; });
+            }, 180);
+        });
+
+        document.addEventListener('click', function (ev) {
+            if (!form.contains(ev.target)) dropdown.hidden = true;
+        });
+        input.addEventListener('focus', function () {
+            if (lastQ.length >= 2) dropdown.hidden = false;
+        });
+    });
+})();
+
+/* ============================================================
+ * R5: emoji reactions on articles
+ * ============================================================ */
+(function () {
+    document.addEventListener('click', function (ev) {
+        const btn = ev.target.closest('.reaction-btn');
+        if (!btn) return;
+        ev.preventDefault();
+        const slug = btn.getAttribute('data-react-slug');
+        const emoji = btn.getAttribute('data-react-emoji');
+        if (!slug || !emoji) return;
+        const form = new FormData();
+        form.append('emoji', emoji);
+        form.append('csrf_token', csrfToken());
+        fetch('/article/' + slug + '/react', {
+            method: 'POST', body: form, credentials: 'same-origin',
+        })
+            .then(function (r) { return r.json(); })
+            .then(function (data) {
+                if (!data || !data.ok) return;
+                btn.classList.add('is-active');
+                const counter = btn.querySelector('.rxn-count');
+                if (counter) counter.textContent = data.reaction_count;
+                showToast('Reacted ' + emoji, 'success');
+            })
+            .catch(function () {});
+    });
+})();
+
+/* ============================================================
+ * R5: comment thread expand/collapse
+ * ============================================================ */
+(function () {
+    document.addEventListener('click', function (ev) {
+        const btn = ev.target.closest('[data-thread-toggle]');
+        if (!btn) return;
+        ev.preventDefault();
+        const section = btn.closest('[data-comment-thread]');
+        if (!section) return;
+        const total = parseInt(btn.getAttribute('data-thread-total') || '0', 10);
+        const hidden = section.querySelectorAll('.comment.comment-hidden');
+        const expanded = btn.getAttribute('aria-expanded') === 'true';
+        if (expanded) {
+            section.querySelectorAll('[data-comment-row]').forEach(function (row, i) {
+                row.classList.toggle('comment-hidden', i >= 3);
+            });
+            btn.setAttribute('aria-expanded', 'false');
+            btn.textContent = 'Show all ' + total;
+        } else {
+            hidden.forEach(function (row) { row.classList.remove('comment-hidden'); });
+            btn.setAttribute('aria-expanded', 'true');
+            btn.textContent = 'Show fewer';
+        }
+    });
+})();
+
+/* ============================================================
+ * R5: video chapter markers — jump current player time
+ * ============================================================ */
+(function () {
+    document.addEventListener('click', function (ev) {
+        const btn = ev.target.closest('.vc-jump');
+        if (!btn) return;
+        ev.preventDefault();
+        const t = parseInt(btn.getAttribute('data-vc-time') || '0', 10);
+        const label = btn.getAttribute('data-vc-label') || '';
+        // The mirror does not ship a real <video> element, so we simply
+        // surface the jump for tasks via a toast + scroll the body to the
+        // sticky player wrap.
+        showToast('Jumped to ' + Math.floor(t / 60) + ':' +
+                  String(t % 60).padStart(2, '0') +
+                  (label ? ' — ' + label : ''), 'info');
+        const wrap = document.querySelector('.sticky-video-wrap');
+        if (wrap) wrap.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    });
+})();
+
+/* ============================================================
+ * R5: live-blog auto-refresh indicator (per-page + per-article)
+ * ============================================================ */
+(function () {
+    function attachRefresher(bar) {
+        if (!bar || bar.__bbc_attached) return;
+        bar.__bbc_attached = true;
+        const slug = bar.getAttribute('data-live-slug') || '';
+        const timeEl = bar.querySelector('.lrb-time');
+        const toggle = bar.querySelector('.lrb-toggle');
+        const liveRegion = document.getElementById('bbc-live-region');
+        let interval = null;
+        let lastSeen = null;
+
+        function checkOnce() {
+            const now = new Date();
+            if (timeEl) timeEl.textContent = now.toLocaleTimeString();
+            // Only call the API when we have a live-blog slug suffix.
+            if (!slug) return;
+            // Pick the slug suffix from data-live-slug — bake_extras stores
+            // it inside feature_tags but the parent article's slug is the
+            // shortest stable identifier.
+            const url = '/api/live-blog/' + encodeURIComponent(slug) + '/updates';
+            fetch(url, { credentials: 'same-origin' })
+                .then(function (r) { return r.json(); })
+                .then(function (data) {
+                    if (!data || !data.ok) return;
+                    if (data.updates && data.updates.length) {
+                        const top = data.updates[0];
+                        if (top.slug !== lastSeen) {
+                            lastSeen = top.slug;
+                            if (liveRegion) {
+                                liveRegion.textContent =
+                                    'New live update: ' + top.headline;
+                            }
+                        }
+                    }
+                })
+                .catch(function () {});
+        }
+
+        function start() {
+            if (interval) return;
+            checkOnce();
+            interval = setInterval(checkOnce, 30000);
+            bar.classList.remove('is-paused');
+            if (toggle) {
+                toggle.textContent = 'Pause';
+                toggle.setAttribute('aria-pressed', 'true');
+            }
+        }
+        function stop() {
+            if (interval) { clearInterval(interval); interval = null; }
+            bar.classList.add('is-paused');
+            if (toggle) {
+                toggle.textContent = 'Resume';
+                toggle.setAttribute('aria-pressed', 'false');
+            }
+        }
+
+        if (toggle) {
+            toggle.addEventListener('click', function () {
+                if (interval) stop(); else start();
+            });
+        }
+        start();
+    }
+
+    document.addEventListener('DOMContentLoaded', function () {
+        document.querySelectorAll('[data-live-refresh], [data-live-refresh-global]')
+            .forEach(attachRefresher);
+    });
+})();
+
+/* ============================================================
+ * R5: hover-preview on related-link cards (desktop only)
+ * ============================================================ */
+(function () {
+    let popEl = null;
+    let timer = null;
+
+    function buildPop() {
+        if (popEl) return popEl;
+        popEl = document.createElement('div');
+        popEl.className = 'hover-preview-pop';
+        document.body.appendChild(popEl);
+        return popEl;
+    }
+
+    function showPreview(card) {
+        if (window.innerWidth < 768) return;
+        const pop = buildPop();
+        const head = card.getAttribute('data-preview-headline') || '';
+        const sub  = card.getAttribute('data-preview-subtitle') || '';
+        const img  = card.getAttribute('data-preview-image') || '';
+        pop.innerHTML =
+            (img ? '<img class="hpp-image" src="' + img + '" alt="">' : '') +
+            '<div class="hpp-title">' + head + '</div>' +
+            '<div class="hpp-summary">' + sub + '</div>';
+        const rect = card.getBoundingClientRect();
+        pop.style.left = (rect.left + window.scrollX) + 'px';
+        pop.style.top  = (rect.top + window.scrollY - 8) + 'px';
+        pop.style.width = Math.min(320, rect.width + 40) + 'px';
+        pop.classList.add('is-visible');
+    }
+    function hidePreview() {
+        if (popEl) popEl.classList.remove('is-visible');
+    }
+
+    document.addEventListener('mouseover', function (ev) {
+        const card = ev.target.closest('.hover-preview');
+        if (!card) return;
+        if (timer) clearTimeout(timer);
+        timer = setTimeout(function () { showPreview(card); }, 220);
+    });
+    document.addEventListener('mouseout', function (ev) {
+        const card = ev.target.closest('.hover-preview');
+        if (!card) return;
+        if (timer) clearTimeout(timer);
+        hidePreview();
+    });
+})();
+
+/* ============================================================
+ * R5: srcset stub — attach responsive image hints to card images
+ * ============================================================ */
+(function () {
+    document.addEventListener('DOMContentLoaded', function () {
+        document.querySelectorAll('.card-image').forEach(function (img) {
+            if (img.srcset) return;
+            const src = img.getAttribute('src') || '';
+            if (!src || src.startsWith('data:')) return;
+            // Three pixel-density / width hints. The mirror does not
+            // actually serve resized variants — these are advisory only.
+            img.setAttribute('sizes',
+                '(max-width: 480px) 100vw, (max-width: 960px) 50vw, 33vw');
+            img.setAttribute('srcset',
+                src + ' 1x, ' + src + ' 2x');
+            img.setAttribute('loading', 'lazy');
+            img.setAttribute('decoding', 'async');
+        });
+    });
+})();

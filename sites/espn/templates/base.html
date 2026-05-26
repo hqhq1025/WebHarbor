@@ -24,7 +24,7 @@
   </div>
 
   <!-- Scorebar (top light-gray ticker) -->
-  <section class="scorebar" id="global-scoreboard">
+  <section class="scorebar" id="global-scoreboard" aria-live="polite" aria-label="Live scores ticker">
     <ul class="scorebar__list">
       {% for sp in nav_sports[:7] %}
       <li class="scorebar__item">
@@ -140,6 +140,29 @@
       </div>
     </div>
   </footer>
+
+  <!-- R5: live-update toast container (aria-live so updates announce). -->
+  <div class="toast-container" id="live-toast-container" role="status" aria-live="polite" aria-atomic="true"></div>
+
+  <!-- R5: Mobile bottom navigation (Fantasy / Bet / Watch quick switcher). -->
+  <nav class="mobile-bottom-nav" aria-label="Mobile quick navigation">
+    <a class="mobile-bottom-nav__item" href="/fantasy" aria-label="Fantasy">
+      <span class="mobile-bottom-nav__icon" aria-hidden="true">&#127944;</span>
+      <span class="mobile-bottom-nav__text">Fantasy</span>
+    </a>
+    <a class="mobile-bottom-nav__item" href="/bet" aria-label="ESPN BET">
+      <span class="mobile-bottom-nav__icon" aria-hidden="true">&#128181;</span>
+      <span class="mobile-bottom-nav__text">Bet</span>
+    </a>
+    <a class="mobile-bottom-nav__item" href="/watch" aria-label="Watch">
+      <span class="mobile-bottom-nav__icon" aria-hidden="true">&#127909;</span>
+      <span class="mobile-bottom-nav__text">Watch</span>
+    </a>
+    <a class="mobile-bottom-nav__item" href="/scores" aria-label="Scores">
+      <span class="mobile-bottom-nav__icon" aria-hidden="true">&#128200;</span>
+      <span class="mobile-bottom-nav__text">Scores</span>
+    </a>
+  </nav>
 
   {% block extra_js %}{% endblock %}
 </body>

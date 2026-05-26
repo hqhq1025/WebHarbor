@@ -116,6 +116,10 @@ class Course(db.Model):
     # Learner testimonials shown prominently on course page
     # JSON list of {quote, name, role, date}
     testimonials_json = db.Column(db.Text, default='[]')
+    # R5 extension columns — hover preview, recommended textbook, weekly load.
+    preview_video_url = db.Column(db.String(300), default='')
+    textbook_isbn = db.Column(db.String(40), default='')
+    estimated_workload_hours_per_week = db.Column(db.Float, default=4.0)
 
     enrollments = db.relationship('Enrollment', backref='course', lazy=True, cascade='all, delete-orphan')
     saved_by = db.relationship('SavedCourse', backref='course', lazy=True, cascade='all, delete-orphan')
@@ -702,9 +706,19 @@ def static_image(rel_path):
 def inject_globals():
     saved_ids = set()
     enrolled_ids = set()
+    resume_course = None
     if current_user.is_authenticated:
         saved_ids = {s.course_id for s in current_user.saved_courses}
         enrolled_ids = {e.course_id for e in current_user.enrollments}
+        # R5: pick the most recent enrollment as the Continue Learning target.
+        # Deterministic across reloads (orders by enrollment id desc, which is
+        # itself seeded deterministically).
+        latest_enrollment = (Enrollment.query
+                             .filter_by(user_id=current_user.id)
+                             .order_by(Enrollment.id.desc())
+                             .first())
+        if latest_enrollment:
+            resume_course = Course.query.get(latest_enrollment.course_id)
     categories = [
         ('computer-science', 'Computer Science'),
         ('data-science', 'Data Science'),
@@ -721,6 +735,7 @@ def inject_globals():
     m = _img_manifest()
     return dict(saved_ids=saved_ids, enrolled_ids=enrolled_ids,
                 nav_categories=categories,
+                resume_course=resume_course,
                 course_thumb=course_thumb,
                 partner_logo=partner_logo,
                 instructor_photo=instructor_photo,
@@ -3082,6 +3097,20 @@ def run_startup_migrations():
             cur.execute("ALTER TABLE courses ADD COLUMN testimonials_json TEXT DEFAULT '[]'")
             conn.commit()
             print("  + courses.testimonials_json")
+        # R5: hover-preview video URL, recommended textbook ISBN, weekly load.
+        cols = {r[1] for r in cur.execute("PRAGMA table_info(courses)").fetchall()}
+        if 'preview_video_url' not in cols:
+            cur.execute("ALTER TABLE courses ADD COLUMN preview_video_url VARCHAR(300) DEFAULT ''")
+            conn.commit()
+            print("  + courses.preview_video_url")
+        if 'textbook_isbn' not in cols:
+            cur.execute("ALTER TABLE courses ADD COLUMN textbook_isbn VARCHAR(40) DEFAULT ''")
+            conn.commit()
+            print("  + courses.textbook_isbn")
+        if 'estimated_workload_hours_per_week' not in cols:
+            cur.execute("ALTER TABLE courses ADD COLUMN estimated_workload_hours_per_week FLOAT DEFAULT 4.0")
+            conn.commit()
+            print("  + courses.estimated_workload_hours_per_week")
         cols = {r[1] for r in cur.execute("PRAGMA table_info(partners)").fetchall()}
         # country already exists — no-op, defensive check
     finally:
@@ -3279,6 +3308,18 @@ with app.app_context():
     # research seminars, micro-credentials). Idempotent + deterministic.
     from seed_extras import seed_v5 as _seed_v5
     _seed_v5(db, {
+        'User': User, 'Partner': Partner, 'Course': Course,
+        'CourseModule': CourseModule, 'SubCourse': SubCourse,
+        'Enrollment': Enrollment, 'SavedCourse': SavedCourse,
+        'Review': Review,
+    })
+    # R5 polish: 2024-2025 trending topics (GenAI / LLM / Agentic AI / Quantum
+    # / Robotics) × deep partner+variant matrix + new preview_video_url,
+    # textbook_isbn and estimated_workload_hours_per_week columns populated
+    # for every catalog row. Must run BEFORE seed_testimonials_and_extras so
+    # the testimonials backfill covers v6 courses on the FIRST build.
+    from seed_extras import seed_v6 as _seed_v6
+    _seed_v6(db, {
         'User': User, 'Partner': Partner, 'Course': Course,
         'CourseModule': CourseModule, 'SubCourse': SubCourse,
         'Enrollment': Enrollment, 'SavedCourse': SavedCourse,

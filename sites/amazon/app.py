@@ -514,6 +514,50 @@ def _apply_filters(query_obj):
     if year and year.isdigit() and len(year) == 4:
         query_obj = query_obj.filter(Product.release_date.ilike(f'%{year}%'))
 
+    # R5: One-Day shipping eligibility (encoded as `one-day-shipping-eligible`
+    # feature_tag during seed). Accept multiple aliases for the agent.
+    if request.args.get('one_day') == '1' or request.args.get('one_day_shipping') == '1':
+        query_obj = query_obj.filter(
+            Product.feature_tags.ilike('%one-day-shipping-eligible%'))
+
+    # R5: Climate Pledge Friendly filter.
+    if request.args.get('climate_pledge') == '1':
+        query_obj = query_obj.filter(
+            Product.feature_tags.ilike('%climate-pledge-friendly%'))
+
+    # R5: Subscribe & Save filter.
+    if request.args.get('sns') == '1' or request.args.get('subscribe_save') == '1':
+        query_obj = query_obj.filter(
+            Product.feature_tags.ilike('%subscribe-and-save%'))
+
+    # R5: Small Business badge filter.
+    if request.args.get('small_business') == '1':
+        query_obj = query_obj.filter(
+            Product.feature_tags.ilike('%small-business%'))
+
+    # R5: In stock only (used by sold-out tasks).
+    if request.args.get('in_stock') == '1':
+        query_obj = query_obj.filter(Product.stock > 0)
+
+    # R5: Made-in country filter — accepts country word or full tag.
+    made_in_raw = (request.args.get('made_in') or '').strip().lower()
+    if made_in_raw:
+        # Allow either "USA" / "United States" / "Japan" or "made-in-usa"
+        country_to_tag = {
+            'usa': 'made-in-usa', 'united states': 'made-in-usa',
+            'us': 'made-in-usa', 'america': 'made-in-usa',
+            'germany': 'made-in-germany', 'deutsche': 'made-in-germany',
+            'japan': 'made-in-japan',
+            'italy': 'made-in-italy', 'italia': 'made-in-italy',
+            'vietnam': 'made-in-vietnam',
+            'china': 'made-in-china',
+            'mexico': 'made-in-mexico',
+        }
+        tag = country_to_tag.get(made_in_raw, made_in_raw)
+        if not tag.startswith('made-in-'):
+            tag = f'made-in-{tag}'
+        query_obj = query_obj.filter(Product.feature_tags.ilike(f'%{tag}%'))
+
     return query_obj
 
 
@@ -596,11 +640,31 @@ def product_detail(slug):
     fbt = _frequently_bought_together(product)
     aplus = _synth_aplus_content(product)
     seller_id, seller_name = _synth_seller(product)
+    # R5: Out-of-stock alternative recommendations. When stock<=0, surface
+    # 6 in-stock items from the same subcategory (fallback to category).
+    oos_alternatives = []
+    if product.stock <= 0:
+        oos_alternatives = (Product.query
+                            .filter(Product.subcategory == product.subcategory,
+                                    Product.id != product.id,
+                                    Product.stock > 0)
+                            .order_by(Product.review_count.desc())
+                            .limit(6).all())
+        if not oos_alternatives:
+            oos_alternatives = (Product.query
+                                .filter(Product.category_slug == product.category_slug,
+                                        Product.id != product.id,
+                                        Product.stock > 0)
+                                .order_by(Product.review_count.desc())
+                                .limit(6).all())
+    # R5: Subscribe & Save eligibility — derived from feature_tags.
+    sns_eligible = 'subscribe-and-save' in (product.get_feature_tags() or [])
     return render_template('product_detail.html',
         product=product, related=related, reviews=reviews, top_review=top_review,
         in_wishlist=in_wishlist, review_form=ReviewForm(),
         qna=qna, fbt=fbt, aplus=aplus,
-        seller_id=seller_id, seller_name=seller_name)
+        seller_id=seller_id, seller_name=seller_name,
+        oos_alternatives=oos_alternatives, sns_eligible=sns_eligible)
 
 
 # ----- R4: Deterministic synthesis helpers for sub-pages -----
@@ -1141,7 +1205,28 @@ def search():
     sort_raw = request.args.get('sort', '')
     results = _apply_sort(results, sort_raw)
     current_sort = _normalize_sort_key(sort_raw)
-    return render_template('search.html', query=q, results=results, current_sort=current_sort)
+
+    # R5: Sponsored vs organic toggle. By default the first 3 high-rating
+    # products are flagged "Sponsored" — passing ?sponsored=hide strips them
+    # so callers can compare organic-only output.
+    sponsored_mode = (request.args.get('sponsored') or '').strip().lower()
+    sponsored_ids = set()
+    if results and sponsored_mode != 'hide':
+        # Deterministic: top 3 by (rating, review_count). Skip if too few.
+        top_for_ads = sorted(results, key=lambda p: (p.rating, p.review_count),
+                              reverse=True)[:3]
+        sponsored_ids = {p.id for p in top_for_ads}
+    elif sponsored_mode == 'hide':
+        # Drop the same 3 candidates so the answer set genuinely differs.
+        top_for_ads = sorted(results, key=lambda p: (p.rating, p.review_count),
+                              reverse=True)[:3]
+        drop_ids = {p.id for p in top_for_ads}
+        results = [p for p in results if p.id not in drop_ids]
+
+    return render_template('search.html', query=q, results=results,
+                           current_sort=current_sort,
+                           sponsored_ids=sponsored_ids,
+                           sponsored_mode=sponsored_mode)
 
 
 @app.route('/deals')
@@ -1362,6 +1447,172 @@ def amazon_business():
 @app.route('/registry')
 def registry():
     return render_template('registry.html')
+
+
+# ----- R5: Registry creation flows (Wedding / Baby) -----
+# Stored in `session` so tasks can verify post-conditions without
+# needing a full Registry table. The form has explicit server-side
+# validation so the "missing field" task variants exercise error UI.
+
+_REGISTRY_VALID_EVENTS = {'wedding', 'baby', 'birthday', 'housewarming', 'graduation'}
+
+
+def _normalize_event_slug(event):
+    return (event or '').strip().lower()
+
+
+@app.route('/registry/<event>/create', methods=['GET', 'POST'])
+@csrf.exempt
+def registry_create(event):
+    event = _normalize_event_slug(event)
+    if event not in _REGISTRY_VALID_EVENTS:
+        abort(404)
+    errors = {}
+    saved = None
+    if request.method == 'POST':
+        partner1 = (request.form.get('partner1') or '').strip()
+        partner2 = (request.form.get('partner2') or '').strip()  # optional for non-wedding
+        event_date = (request.form.get('event_date') or '').strip()
+        city = (request.form.get('city') or '').strip()
+        state = (request.form.get('state') or '').strip()
+        # Required fields per event type
+        if not partner1:
+            errors['partner1'] = 'Registrant name is required.'
+        if event == 'wedding' and not partner2:
+            errors['partner2'] = 'Co-registrant (partner) name is required for a wedding registry.'
+        if not event_date:
+            errors['event_date'] = 'Event date is required (YYYY-MM-DD).'
+        elif not re.match(r'^\d{4}-\d{2}-\d{2}$', event_date):
+            errors['event_date'] = 'Use YYYY-MM-DD format.'
+        if not city:
+            errors['city'] = 'City is required.'
+        if not state:
+            errors['state'] = 'State is required.'
+        if not errors:
+            saved = {
+                'event': event, 'partner1': partner1, 'partner2': partner2,
+                'event_date': event_date, 'city': city, 'state': state,
+            }
+            # Persist most-recent registry per session for downstream verification.
+            session['registry'] = saved
+            flash(f'Your {event.title()} Registry has been created.', 'success')
+            return redirect(url_for('registry_view'))
+    return render_template('registry_create.html', event=event, errors=errors,
+                           form_data=request.form)
+
+
+@app.route('/registry/view')
+def registry_view():
+    reg = session.get('registry')
+    return render_template('registry_view.html', registry=reg)
+
+
+# ----- R5: Departments browse + Gift Finder + Subscribe & Save -----
+
+@app.route('/departments')
+def departments():
+    """Browse all departments (categories) with item counts + featured picks."""
+    cats = Category.query.order_by(Category.name).all()
+    by_cat = {}
+    for c in cats:
+        products = Product.query.filter_by(category_slug=c.slug).limit(6).all()
+        count = Product.query.filter_by(category_slug=c.slug).count()
+        by_cat[c.slug] = {'category': c, 'products': products, 'count': count}
+    return render_template('departments.html', by_cat=by_cat, cats=cats)
+
+
+@app.route('/gift-finder', methods=['GET', 'POST'])
+def gift_finder():
+    """Recipient + budget + occasion → curated product list."""
+    recipient = (request.args.get('recipient') or '').strip().lower()
+    occasion = (request.args.get('occasion') or '').strip().lower()
+    try:
+        budget = int(request.args.get('budget') or 0)
+    except ValueError:
+        budget = 0
+    recipients = ['her', 'him', 'kids', 'baby', 'teens', 'parents', 'pet']
+    occasions = ['birthday', 'wedding', 'baby-shower', 'graduation', 'holiday', 'anniversary']
+    results = []
+    if recipient or occasion or budget:
+        q = Product.query
+        if budget > 0:
+            q = q.filter(Product.price <= budget)
+        # Map recipient → category hints
+        cat_hints = {
+            'kids': ['toys'], 'baby': ['toys'], 'teens': ['electronics', 'fashion'],
+            'her': ['beauty', 'fashion'], 'him': ['electronics', 'fashion'],
+            'parents': ['home', 'books'], 'pet': ['home'],
+        }
+        hints = cat_hints.get(recipient, [])
+        if hints:
+            q = q.filter(Product.category_slug.in_(hints))
+        results = q.order_by(Product.review_count.desc()).limit(24).all()
+    return render_template('gift_finder.html',
+                           recipients=recipients, occasions=occasions,
+                           recipient=recipient, occasion=occasion, budget=budget,
+                           results=results)
+
+
+@app.route('/subscribe-save', methods=['GET', 'POST'])
+def subscribe_save():
+    """Landing page + frequency change form. Selections stored in session for
+    deterministic post-condition checks."""
+    valid_freq = {'1-month', '2-month', '3-month', '6-month'}
+    if request.method == 'POST':
+        slug = (request.form.get('slug') or '').strip()
+        freq = (request.form.get('frequency') or '').strip()
+        if not slug:
+            flash('Choose a product to subscribe to.', 'error')
+        elif freq not in valid_freq:
+            flash('Pick a valid delivery frequency (1, 2, 3, or 6 months).', 'error')
+        else:
+            prod = Product.query.filter_by(slug=slug).first()
+            if not prod:
+                flash('That product was not found.', 'error')
+            else:
+                sns = session.get('subscribe_save', {})
+                sns[slug] = freq
+                session['subscribe_save'] = sns
+                flash(f'Subscribe & Save: {prod.name} → {freq} delivery.', 'success')
+                return redirect(url_for('subscribe_save'))
+    # GET — list S&S-eligible products + current user subscriptions
+    sns_products = Product.query.filter(
+        Product.feature_tags.ilike('%subscribe-and-save%')
+    ).order_by(Product.review_count.desc()).limit(40).all()
+    active = session.get('subscribe_save', {})
+    return render_template('subscribe_save.html',
+                           products=sns_products, active=active,
+                           frequencies=['1-month', '2-month', '3-month', '6-month'])
+
+
+# ----- R5: AJAX search suggest -----
+
+@app.route('/api/search/suggest')
+def api_search_suggest():
+    q = (request.args.get('q') or '').strip().lower()
+    if len(q) < 2:
+        return jsonify({'suggestions': []})
+    # Match product name OR brand prefix; cap at 8. Also include category
+    # auto-complete entries so 'ele…' suggests 'in Electronics'.
+    name_matches = (Product.query
+                    .filter(or_(Product.name.ilike(f'{q}%'),
+                                Product.name.ilike(f'% {q}%'),
+                                Product.brand.ilike(f'{q}%')))
+                    .order_by(Product.review_count.desc())
+                    .limit(8).all())
+    cats = Category.query.filter(Category.name.ilike(f'{q}%')).limit(4).all()
+    out = []
+    seen = set()
+    for c in cats:
+        out.append({'text': c.name, 'kind': 'category',
+                    'href': url_for('category', slug=c.slug)})
+    for p in name_matches:
+        if p.name.lower() in seen:
+            continue
+        seen.add(p.name.lower())
+        out.append({'text': p.name, 'kind': 'product',
+                    'href': url_for('product_detail', slug=p.slug)})
+    return jsonify({'suggestions': out[:10]})
 
 
 @app.route('/sell')
@@ -1917,12 +2168,25 @@ def order_detail(order_id):
 @login_required
 def order_cancel(order_id):
     order = Order.query.filter_by(id=order_id, user_id=current_user.id).first_or_404()
-    if order.status == 'processing':
-        order.status = 'cancelled'
-        db.session.commit()
-        flash('Order cancelled.', 'success')
+    # R5: explicit cancellation-window policy. Orders can be cancelled
+    # while still 'processing' AND within 30 minutes of placement.
+    # Beyond that they're locked even if not shipped — matches Amazon UX.
+    CANCEL_WINDOW_MIN = 30
+    if order.status != 'processing':
+        flash(f'This order is "{order.status}" and can no longer be cancelled. '
+              f'Cancellation is only available for orders in "processing" status.',
+              'error')
     else:
-        flash('Only processing orders can be cancelled.', 'error')
+        elapsed = (MIRROR_REFERENCE_DATE - order.created_at).total_seconds() / 60.0
+        if elapsed > CANCEL_WINDOW_MIN:
+            flash(f'The {CANCEL_WINDOW_MIN}-minute cancellation window has expired '
+                  f'({int(elapsed)} min since order placement). Please request a '
+                  f'return after delivery instead.', 'error')
+        else:
+            order.status = 'cancelled'
+            db.session.commit()
+            flash('Order cancelled. A refund will appear within 3–5 business days.',
+                  'success')
     return redirect(url_for('order_detail', order_id=order.id))
 
 

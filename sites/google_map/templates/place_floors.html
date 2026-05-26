@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% block title %}Floor selector - {{ place.name }} - Google Maps{% endblock %}
+
+{% block body %}
+<div class="app-shell">
+    {% include '_rail.html' %}
+    <aside class="left-panel">
+        {% set search_value = place.name %}
+        {% include '_search_bar.html' %}
+        <div class="panel-section">
+            <h2>{{ place.name }} — floor selector</h2>
+            <div class="sub">Choose a floor to see what's there. The currently-rendered place is on floor <strong>{{ place.floor_number or 'G' }}</strong>.</div>
+
+            {% if floors %}
+            <ul class="floor-selector" role="listbox" aria-label="Floor selector"
+                style="list-style:none;padding:0;margin:18px 0 0;display:flex;flex-direction:column;gap:8px;">
+                {% for f in floors %}
+                <li role="option" aria-selected="{{ 'true' if f.code == place.floor_number else 'false' }}"
+                    data-floor-code="{{ f.code }}"
+                    class="floor-row {% if f.code == place.floor_number %}selected{% endif %}"
+                    style="display:flex;align-items:center;gap:14px;padding:12px 14px;border:1px solid {% if f.code == place.floor_number %}#1a73e8{% else %}var(--divider){% endif %};border-radius:10px;background:#fff;cursor:pointer;">
+                    <div class="floor-code"
+                         style="min-width:44px;height:44px;border-radius:8px;background:#f1f3f4;color:#202124;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;">
+                        {{ f.code }}
+                    </div>
+                    <div style="flex:1;">
+                        <div style="font-weight:500;color:#202124;">{{ f.label }}</div>
+                        <div style="font-size:12px;color:#5f6368;">{{ f.summary }}</div>
+                    </div>
+                    <a class="btn btn-sm ghost"
+                       href="{{ url_for('search', q=place.name + ' floor ' + f.code) }}#nearby"
+                       aria-label="Browse places on floor {{ f.code }}">Browse</a>
+                </li>
+                {% endfor %}
+            </ul>
+            {% else %}
+            <div class="empty-state" style="margin-top:18px;">
+                <div class="empty-ico"><span class="material-icons-outlined">layers</span></div>
+                <h3>Single-floor venue</h3>
+                <p>This place is on a single level — no floor selector available.</p>
+            </div>
+            {% endif %}
+        </div>
+        <div class="panel-section" style="margin-top:8px;">
+            <a class="btn ghost btn-sm" href="{{ url_for('place_detail', slug=place.slug) }}">Back to {{ place.name }}</a>
+        </div>
+    </aside>
+    {% include '_mapcanvas.html' %}
+</div>
+{% endblock %}

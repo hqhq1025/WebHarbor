@@ -26,15 +26,21 @@
     </div>
     <div class="repo-head-actions">
         {% if current_user.is_authenticated %}
-        <form method="POST" action="{{ url_for('like_toggle_form', repo_id=repo.id) }}" style="display:inline">
+        <form method="POST" action="{{ url_for('like_toggle_form', repo_id=repo.id) }}" style="display:inline" data-like-form>
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <input type="hidden" name="next" value="{{ request.path }}">
-            <button type="submit" class="like-btn {% if is_liked %}is-liked{% endif %}" data-like-toggle data-repo-id="{{ repo.id }}">
-                ♥ <span data-like-count>{{ repo.likes_count }}</span>
+            <button type="submit" class="like-btn {% if is_liked %}is-liked{% endif %}"
+                    data-like-toggle data-repo-id="{{ repo.id }}"
+                    data-animate-url="{{ url_for('api_like_animate', repo_id=repo.id) }}"
+                    aria-pressed="{{ 'true' if is_liked else 'false' }}"
+                    aria-label="Like this repository">
+                <span class="like-icon" aria-hidden="true">♥</span>
+                <span data-like-count>{{ repo.likes_count }}</span>
+                <span class="like-burst" aria-hidden="true" style="display:none;"></span>
             </button>
         </form>
         {% else %}
-        <a class="like-btn" href="{{ url_for('login') }}">♥ {{ repo.likes_count }}</a>
+        <a class="like-btn" href="{{ url_for('login') }}" aria-label="Log in to like">♥ {{ repo.likes_count }}</a>
         {% endif %}
         {% if current_user.is_authenticated %}
         <form method="POST" action="{{ url_for('deploy_add_form', repo_id=repo.id) }}" style="display:inline">
@@ -49,18 +55,82 @@
     </div>
 </div>
 
+{# R5: like animation — when the like-btn is clicked, fire /api/repo/<id>/like-animate
+   and render a heart-burst overlay using the server-provided palette + count. #}
+<script>
+(function(){
+    document.querySelectorAll('button[data-like-toggle][data-animate-url]').forEach(function(btn){
+        if (btn.dataset.bound) return;
+        btn.dataset.bound = '1';
+        btn.addEventListener('click', function(){
+            try {
+                var form = btn.closest('form');
+                var token = form ? form.querySelector('input[name="csrf_token"]') : null;
+                var headers = {'Content-Type':'application/json'};
+                if (token) { headers['X-CSRF-Token'] = token.value; }
+                fetch(btn.getAttribute('data-animate-url'),
+                      {method:'POST', headers:headers, body:'{}'})
+                  .then(function(r){ return r.json(); })
+                  .then(function(d){
+                      if (!d || !d.ok) return;
+                      var burst = btn.querySelector('.like-burst');
+                      var icon = btn.querySelector('.like-icon');
+                      if (icon){ icon.style.color = d.animation && d.animation.color || '#ef4444'; }
+                      if (burst){
+                          burst.style.display = 'inline-block';
+                          burst.style.color = d.animation && d.animation.color || '#ef4444';
+                          burst.textContent = '+' + (d.animation ? d.animation.particles : 6);
+                          setTimeout(function(){ burst.style.display = 'none'; }, (d.animation && d.animation.duration_ms) || 600);
+                      }
+                      var counter = btn.querySelector('[data-like-count]');
+                      if (counter && typeof d.likes_count === 'number'){ counter.textContent = d.likes_count; }
+                      btn.setAttribute('aria-pressed', d.liked ? 'true' : 'false');
+                  })
+                  .catch(function(){});
+            } catch(e){}
+        });
+    });
+})();
+</script>
+
 {% set _files_url = (
     url_for('dataset_files', author=_author, name=_name) if repo.repo_type == 'dataset'
     else url_for('space_files', author=_author, name=_name) if repo.repo_type == 'space'
     else url_for('model_files', author=_author, name=_name)
 ) %}
-<div class="repo-tabs">
-    <a class="repo-tab {% if _active_tab == 'card' %}is-active{% endif %}" href="{{ url_for('dataset_detail', author=_author, name=_name) if repo.repo_type == 'dataset' else url_for('space_detail', author=_author, name=_name) if repo.repo_type == 'space' else url_for('model_detail', author=_author, name=_name) }}">{{ 'Dataset card' if repo.repo_type == 'dataset' else ('Space card' if repo.repo_type == 'space' else 'Model card') }}</a>
-    <a class="repo-tab {% if _active_tab == 'files' %}is-active{% endif %}" href="{{ _files_url }}">Files</a>
+{# R5: ARIA roles on the tab strip so keyboard / screen-reader users can
+   move between Card / Files / Viewer / Community without re-grouping the DOM. #}
+<div class="repo-tabs" role="tablist" aria-label="Repository sections">
+    <a class="repo-tab {% if _active_tab == 'card' %}is-active{% endif %}"
+       role="tab" aria-selected="{{ 'true' if _active_tab == 'card' else 'false' }}" tabindex="{{ '0' if _active_tab == 'card' else '-1' }}"
+       href="{{ url_for('dataset_detail', author=_author, name=_name) if repo.repo_type == 'dataset' else url_for('space_detail', author=_author, name=_name) if repo.repo_type == 'space' else url_for('model_detail', author=_author, name=_name) }}">{{ 'Dataset card' if repo.repo_type == 'dataset' else ('Space card' if repo.repo_type == 'space' else 'Model card') }}</a>
+    <a class="repo-tab {% if _active_tab == 'files' %}is-active{% endif %}"
+       role="tab" aria-selected="{{ 'true' if _active_tab == 'files' else 'false' }}" tabindex="{{ '0' if _active_tab == 'files' else '-1' }}"
+       href="{{ _files_url }}">Files</a>
     {% if repo.repo_type == 'dataset' %}
-    <a class="repo-tab {% if _active_tab == 'dataset_viewer' %}is-active{% endif %}" href="{{ url_for('dataset_viewer', author=_author, name=_name) }}">Dataset viewer</a>
+    <a class="repo-tab {% if _active_tab == 'dataset_viewer' %}is-active{% endif %}"
+       role="tab" aria-selected="{{ 'true' if _active_tab == 'dataset_viewer' else 'false' }}" tabindex="{{ '0' if _active_tab == 'dataset_viewer' else '-1' }}"
+       href="{{ url_for('dataset_viewer', author=_author, name=_name) }}">Dataset viewer</a>
     {% else %}
-    <a class="repo-tab" href="{{ url_for('dataset_detail', author=_author, name=_name) if repo.repo_type == 'dataset' else (url_for('space_detail', author=_author, name=_name) if repo.repo_type == 'space' else url_for('model_detail', author=_author, name=_name)) }}#metrics">Metrics</a>
+    <a class="repo-tab" role="tab" aria-selected="false" tabindex="-1"
+       href="{{ url_for('dataset_detail', author=_author, name=_name) if repo.repo_type == 'dataset' else (url_for('space_detail', author=_author, name=_name) if repo.repo_type == 'space' else url_for('model_detail', author=_author, name=_name)) }}#metrics">Metrics</a>
     {% endif %}
-    <a class="repo-tab {% if _active_tab == 'community' %}is-active{% endif %}" href="{{ url_for('repo_discussions', author=_author, name=_name) }}">Community {% if discussions is defined %}<span class="tab-count">{{ discussions|length }}</span>{% endif %}</a>
+    <a class="repo-tab {% if _active_tab == 'community' %}is-active{% endif %}"
+       role="tab" aria-selected="{{ 'true' if _active_tab == 'community' else 'false' }}" tabindex="{{ '0' if _active_tab == 'community' else '-1' }}"
+       href="{{ url_for('repo_discussions', author=_author, name=_name) }}">Community {% if discussions is defined %}<span class="tab-count">{{ discussions|length }}</span>{% endif %}</a>
 </div>
+<script>
+(function(){
+    // Arrow-key navigation across tabs (left/right). R5 accessibility.
+    var tabs = document.querySelectorAll('.repo-tabs[role="tablist"] [role="tab"]');
+    if (!tabs.length) return;
+    tabs.forEach(function(t, idx){
+        t.addEventListener('keydown', function(e){
+            if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return;
+            e.preventDefault();
+            var next = e.key === 'ArrowRight' ? (idx + 1) % tabs.length : (idx - 1 + tabs.length) % tabs.length;
+            tabs[next].focus();
+        });
+    });
+})();
+</script>

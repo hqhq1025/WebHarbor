@@ -16,7 +16,7 @@
     <span class="quiz-count">{{ questions|length }} questions</span>
   </div>
 
-  <div id="quiz-container" class="quiz-container" data-total="{{ questions|length }}">
+  <div id="quiz-container" class="quiz-container" data-total="{{ questions|length }}" data-quiz-slug="{{ quiz.slug }}">
     {% for q_item in questions %}
     {% set qnum = loop.index0 %}
     <div class="quiz-question" id="q{{ qnum }}" {% if not loop.first %}style="display:none"{% endif %}>

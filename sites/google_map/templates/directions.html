@@ -102,23 +102,34 @@
         <div class="panel-section" data-route-mode="{{ mode }}">
 
             {% if alternatives and alternatives|length > 1 %}
-            <div class="route-alternatives">
-                <div class="ra-heading">{{ alternatives|length }} routes — {{ mode }}</div>
-                {% for a in alternatives %}
-                <a class="ra-item {% if selected_alt and selected_alt.id == a.id %}selected{% endif %}"
-                   href="{{ url_for('directions', **{'from': from_q, 'to': to_q, 'mode': mode, 'route': a.id}) }}">
-                    <div class="ra-radio">
-                        <span class="material-icons-outlined">{% if selected_alt and selected_alt.id == a.id %}radio_button_checked{% else %}radio_button_unchecked{% endif %}</span>
+            <div class="route-alternatives route-alternatives-accordion"
+                 role="region" aria-label="Route alternatives">
+                <details open class="ra-accordion">
+                    <summary class="ra-heading"
+                             style="cursor:pointer;padding:8px 0;font-weight:500;list-style:none;display:flex;align-items:center;gap:8px;">
+                        <span class="material-icons-outlined" style="font-size:18px;">expand_more</span>
+                        {{ alternatives|length }} route alternatives — {{ mode }}
+                    </summary>
+                    <div class="ra-content">
+                        {% for a in alternatives %}
+                        <a class="ra-item {% if selected_alt and selected_alt.id == a.id %}selected{% endif %}"
+                           href="{{ url_for('directions', **{'from': from_q, 'to': to_q, 'mode': mode, 'route': a.id}) }}"
+                           role="radio"
+                           aria-checked="{{ 'true' if (selected_alt and selected_alt.id == a.id) else 'false' }}">
+                            <div class="ra-radio">
+                                <span class="material-icons-outlined">{% if selected_alt and selected_alt.id == a.id %}radio_button_checked{% else %}radio_button_unchecked{% endif %}</span>
+                            </div>
+                            <div class="ra-text">
+                                <div class="ra-line1">
+                                    <span class="ra-duration">{{ a.duration_label }}</span>
+                                    <span class="ra-distance">({{ a.distance_label }})</span>
+                                </div>
+                                <div class="ra-line2">{{ a.name }}</div>
+                            </div>
+                        </a>
+                        {% endfor %}
                     </div>
-                    <div class="ra-text">
-                        <div class="ra-line1">
-                            <span class="ra-duration">{{ a.duration_label }}</span>
-                            <span class="ra-distance">({{ a.distance_label }})</span>
-                        </div>
-                        <div class="ra-line2">{{ a.name }}</div>
-                    </div>
-                </a>
-                {% endfor %}
+                </details>
             </div>
             {% endif %}
 

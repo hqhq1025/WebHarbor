@@ -25,6 +25,23 @@
       </div>
     </section>
 
+    <!-- R5: Playlist / queue (next-up episodes) -->
+    <section class="section-block podcast-queue" aria-label="Podcast playlist queue">
+      <h2 class="section-heading">Up Next in the Queue</h2>
+      <ol class="podcast-queue__list">
+        {% for n in range(1, 6) %}
+        <li class="podcast-queue__item">
+          <button class="podcast-queue__play" type="button" aria-label="Play episode {{ podcast.episode_count - n }}">&#x25B6;</button>
+          <div class="podcast-queue__meta">
+            <span class="podcast-queue__title">Episode {{ podcast.episode_count - n }}</span>
+            <span class="podcast-queue__sub">{{ podcast.duration_minutes }} min &bull; {{ podcast.host }}</span>
+          </div>
+          <button class="podcast-queue__add" type="button" aria-label="Add to queue">+ Queue</button>
+        </li>
+        {% endfor %}
+      </ol>
+    </section>
+
     {% if related %}
     <section class="section-block">
       <h2 class="section-heading">More from this league</h2>

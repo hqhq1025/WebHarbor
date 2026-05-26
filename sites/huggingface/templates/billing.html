@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+{% block title %}Billing · {{ author.display_name }}{% endblock %}
+
+{% block content %}
+<div class="container-wide page">
+    <nav class="docs-breadcrumb" aria-label="Breadcrumb">
+        <a href="{{ url_for('author_page', username=author.username) }}">{{ author.username }}</a>
+        <span>/</span>
+        <span aria-current="page">Billing</span>
+    </nav>
+    <h1>Billing — {{ author.display_name }}</h1>
+    <p class="muted">Current usage and invoice history for <strong>{{ author.username }}</strong> ({{ author.kind }}). Owner of {{ repo_count }} repositor{{ 'y' if repo_count == 1 else 'ies' }}.</p>
+
+    <section class="billing-current" aria-labelledby="current-heading" style="margin-top:18px;">
+        <h2 id="current-heading">Current month — {{ month_label }}</h2>
+        <table class="files-table" style="margin-top:8px;">
+            <thead>
+                <tr><th>Line item</th><th>Quantity</th><th style="text-align:right;">Amount (USD)</th></tr>
+            </thead>
+            <tbody>
+                {% for item in line_items %}
+                <tr>
+                    <td><strong>{{ item.label }}</strong></td>
+                    <td>{{ item.qty }}</td>
+                    <td style="text-align:right;"><code>${{ "%.2f"|format(item.amount) }}</code></td>
+                </tr>
+                {% endfor %}
+                <tr style="border-top:2px solid var(--border,#e5e7eb);font-weight:700;">
+                    <td>Total</td>
+                    <td></td>
+                    <td style="text-align:right;"><code>${{ "%.2f"|format(total_cost) }}</code></td>
+                </tr>
+            </tbody>
+        </table>
+    </section>
+
+    <section class="billing-history" aria-labelledby="history-heading" style="margin-top:24px;">
+        <h2 id="history-heading">Invoice history</h2>
+        <table class="files-table" style="margin-top:8px;">
+            <thead>
+                <tr><th>Invoice ID</th><th>Period</th><th>Amount</th><th>Status</th></tr>
+            </thead>
+            <tbody>
+                {% for inv in history %}
+                <tr>
+                    <td><code>{{ inv.invoice_id }}</code></td>
+                    <td>{{ inv.period }}</td>
+                    <td><code>${{ "%.2f"|format(inv.amount) }}</code></td>
+                    <td>
+                        {% if inv.status == 'Paid' %}
+                            <span class="tag tag-green">✓ {{ inv.status }}</span>
+                        {% else %}
+                            <span class="tag tag-yellow">⏳ {{ inv.status }}</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </section>
+
+    <section class="billing-actions" style="margin-top:18px;">
+        <a class="btn btn-outline" href="{{ url_for('pricing') }}">View pricing</a>
+        <a class="btn btn-outline" href="{{ url_for('pricing_spaces') }}">Spaces hardware pricing</a>
+        <a class="btn btn-outline" href="{{ url_for('autotrain_status') }}">AutoTrain</a>
+    </section>
+</div>
+{% endblock %}

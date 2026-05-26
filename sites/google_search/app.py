@@ -1723,6 +1723,85 @@ def api_topics():
     ])
 
 
+@app.route('/api/suggestions')
+@csrf.exempt
+def api_suggestions():
+    """R5: autocomplete payload — history (when logged in) + topic matches
+    + trending fallback + naive spelling-correction hint.
+
+    Deterministic ordering keyed off the query string so identical queries
+    produce identical responses (helps recording / replay).
+    """
+    q = request.args.get('q', '').strip()
+    qlow = q.lower()
+    limit = max(1, min(int(request.args.get('limit', 10)), 20))
+
+    history_terms = []
+    if current_user.is_authenticated and qlow:
+        hist = (SearchHistory.query
+                .filter_by(user_id=current_user.id)
+                .filter(func.lower(SearchHistory.q).like(f'{qlow}%'))
+                .order_by(desc(SearchHistory.searched_at))
+                .limit(5).all())
+        history_terms = [{'kind': 'history', 'text': h.q} for h in hist]
+
+    topic_terms = []
+    if qlow:
+        topics = (Topic.query
+                  .filter(func.lower(Topic.name).like(f'%{qlow}%'))
+                  .limit(limit).all())
+        topic_terms = [{'kind': 'topic', 'text': t.name, 'slug': t.slug} for t in topics]
+
+    related_terms = []
+    if qlow:
+        rqs = (RelatedQuery.query
+               .filter(func.lower(RelatedQuery.term).like(f'%{qlow}%'))
+               .order_by(RelatedQuery.rank)
+               .limit(limit).all())
+        related_terms = [{'kind': 'related', 'text': rq.term} for rq in rqs]
+
+    trending = []
+    if not qlow:
+        tr = TrendingTerm.query.order_by(TrendingTerm.rank).limit(limit).all()
+        trending = [{'kind': 'trending', 'text': t.term} for t in tr]
+
+    # Naive spelling-correct: when no topic_terms match, look for the
+    # closest topic by trigram-ish overlap. Deterministic.
+    spelling = None
+    if qlow and not topic_terms and len(qlow) >= 4:
+        # cheap: any topic whose lowercased name shares the first 3 chars
+        cand = (Topic.query
+                .filter(func.lower(Topic.name).like(f'{qlow[:3]}%'))
+                .limit(5).all())
+        if cand:
+            # pick the one with the smallest length-difference (stable tiebreak by slug)
+            best = min(cand, key=lambda c: (abs(len(c.name) - len(q)), c.slug))
+            if best.name.lower() != qlow:
+                spelling = {'kind': 'spelling', 'text': best.name,
+                            'original': q}
+
+    # Merge: history first, then topic, then related; cap by limit.
+    merged = []
+    seen = set()
+    for grp in (history_terms, topic_terms, related_terms, trending):
+        for item in grp:
+            key = item['text'].lower()
+            if key in seen:
+                continue
+            seen.add(key)
+            merged.append(item)
+            if len(merged) >= limit:
+                break
+        if len(merged) >= limit:
+            break
+
+    return jsonify({
+        'query': q,
+        'suggestions': merged,
+        'spelling': spelling,
+    })
+
+
 # ---------- error handlers --------------------------------------------------
 
 @app.errorhandler(404)

@@ -1445,3 +1445,137 @@ main {
     .nav-top-inner { flex-wrap: wrap; min-height: auto; padding: 8px; }
     .nav-search { order: 99; width: 100%; margin: 8px 0 0; }
 }
+
+/* R5: Mobile-first stacked layout for narrow viewports (≤480px). */
+@media (max-width: 480px) {
+    .nav-top-inner { padding: 6px; gap: 4px; }
+    .nav-logo { font-size: 22px; }
+    .nav-sub-inner { flex-wrap: wrap; gap: 4px; padding: 4px 6px; }
+    .nav-sub-item { font-size: 12px; padding: 4px 6px; }
+    h1 { font-size: 22px; }
+    h2 { font-size: 18px; }
+    .pd-buy-box { padding: 12px; }
+    .card-grid { grid-template-columns: 1fr; }
+    .results-grid { grid-template-columns: 1fr; }
+    .checkout-layout, .bag-layout { grid-template-columns: 1fr; gap: 12px; }
+    .bag-item { grid-template-columns: 70px 1fr; gap: 8px; }
+    .bag-actions { flex-wrap: wrap; gap: 6px; }
+    .form-row { flex-direction: column; gap: 8px; }
+    .auth-box { padding: 16px; }
+    .nav-search-input { font-size: 16px; /* prevents iOS auto-zoom */ }
+    .nav-search-dropdown { display: none; }
+    .footer-cols { grid-template-columns: 1fr 1fr; gap: 16px; }
+}
+
+/* R5: Accessibility — visually hidden helper for screen-reader-only labels. */
+.visually-hidden {
+    position: absolute !important;
+    width: 1px; height: 1px;
+    padding: 0; margin: -1px; overflow: hidden;
+    clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0;
+}
+
+/* R5: Focus rings — high-contrast Amazon orange so keyboard nav is visible. */
+:focus-visible {
+    outline: 2px solid #ff9900;
+    outline-offset: 2px;
+}
+.btn:focus-visible,
+.btn-orange:focus-visible,
+.btn-outline:focus-visible {
+    box-shadow: 0 0 0 3px rgba(255, 153, 0, 0.35);
+}
+
+/* R5: AJAX search-suggest dropdown */
+.nav-search { position: relative; }
+.nav-search-suggest {
+    position: absolute;
+    top: 100%; left: 0; right: 0;
+    margin: 2px 0 0;
+    padding: 4px 0;
+    background: #fff;
+    border: 1px solid #d5d9d9;
+    border-radius: 0 0 4px 4px;
+    list-style: none;
+    box-shadow: 0 2px 5px rgba(15, 17, 17, 0.15);
+    z-index: 9000;
+    max-height: 380px;
+    overflow-y: auto;
+}
+.nav-search-suggest-item {
+    padding: 8px 12px;
+    font-size: 14px;
+    cursor: pointer;
+    color: #0f1111;
+    display: flex;
+    align-items: baseline;
+    gap: 4px;
+}
+.nav-search-suggest-item.active,
+.nav-search-suggest-item:hover {
+    background: #f3f3f3;
+}
+.nav-search-suggest-item .suggest-kind {
+    color: #565959; font-size: 12px;
+}
+
+/* R5: Sold-out / out-of-stock affordances */
+.pd-stock.sold-out { color: #b12704; font-weight: 700; }
+.sold-out-badge {
+    display: inline-block;
+    background: #fff3cd; color: #856404;
+    border: 1px solid #ffe09a;
+    padding: 2px 8px; border-radius: 12px;
+    font-size: 12px; font-weight: 700;
+    margin-left: 6px;
+}
+.oos-alternatives {
+    max-width: 1200px; margin: 24px auto;
+    padding: 20px; background: #fffbe6;
+    border: 1px solid #f0c36d; border-radius: 4px;
+}
+.oos-alternatives h2 { margin: 0 0 12px; font-size: 18px; }
+.oos-alternatives .alt-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 12px;
+}
+.oos-alternatives .alt-card {
+    background: #fff; border: 1px solid #eee; padding: 10px;
+    border-radius: 4px; text-decoration: none; color: inherit;
+    display: block;
+}
+.oos-alternatives .alt-card img {
+    width: 100%; aspect-ratio: 1; object-fit: contain; background: #fafafa;
+}
+
+/* R5: Sponsored badge in search results */
+.sponsored-badge {
+    display: inline-block;
+    background: #f3f3f3; color: #565959;
+    border: 1px solid #ddd;
+    padding: 1px 6px; border-radius: 3px;
+    font-size: 11px; font-weight: 600;
+    margin-bottom: 4px;
+}
+
+/* R5: form-error consistency for ARIA-described invalid inputs */
+.form-error {
+    color: #b12704;
+    font-size: 13px;
+    margin-top: 4px;
+}
+[aria-invalid="true"] {
+    border-color: #b12704 !important;
+    box-shadow: 0 0 0 1px #b12704;
+}
+
+/* R5: empty-cart polish */
+.bag-main .empty-state {
+    background: #fff; border: 1px solid #eee; border-radius: 4px;
+    text-align: center;
+}
+.bag-main .empty-state::before {
+    content: "🛒";
+    display: block; font-size: 48px; margin-bottom: 10px;
+}

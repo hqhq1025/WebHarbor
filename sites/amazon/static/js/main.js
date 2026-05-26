@@ -6,8 +6,107 @@ function getCsrfToken() {
     return meta ? meta.getAttribute('content') : '';
 }
 
+// R5: AJAX search suggest dropdown.
+// Activates on the header search box; uses /api/search/suggest.
+// Supports keyboard navigation (ArrowDown / ArrowUp / Enter / Escape).
+function initSearchSuggest() {
+    const input = document.getElementById('nav-search-input');
+    const list = document.getElementById('nav-search-suggest');
+    if (!input || !list) return;
+
+    let activeIdx = -1;
+    let lastQ = '';
+    let inflightAbort = null;
+    let debounceTimer = null;
+
+    function closeList() {
+        list.hidden = true;
+        list.innerHTML = '';
+        input.setAttribute('aria-expanded', 'false');
+        activeIdx = -1;
+    }
+    function render(items) {
+        if (!items.length) { closeList(); return; }
+        list.innerHTML = items.map((it, i) =>
+            '<li role="option" data-href="' + it.href + '" id="suggest-opt-' + i + '"' +
+            ' class="nav-search-suggest-item">' +
+            '<span class="suggest-kind">' + (it.kind === 'category' ? 'in ' : '') + '</span>' +
+            '<span class="suggest-text">' + escapeHtml(it.text) + '</span>' +
+            '</li>'
+        ).join('');
+        list.hidden = false;
+        input.setAttribute('aria-expanded', 'true');
+        // Click handlers
+        list.querySelectorAll('li').forEach((li, i) => {
+            li.addEventListener('mousedown', (e) => {
+                e.preventDefault();
+                window.location.href = li.getAttribute('data-href');
+            });
+            li.addEventListener('mouseenter', () => setActive(i));
+        });
+    }
+    function setActive(i) {
+        const items = list.querySelectorAll('li');
+        items.forEach(el => el.classList.remove('active'));
+        activeIdx = i;
+        if (i >= 0 && items[i]) {
+            items[i].classList.add('active');
+            input.setAttribute('aria-activedescendant', items[i].id);
+        } else {
+            input.removeAttribute('aria-activedescendant');
+        }
+    }
+    function escapeHtml(s) {
+        return String(s).replace(/[&<>"']/g, c => ({
+            '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;','\'':'&#39;'
+        })[c]);
+    }
+    function fetchSuggest(q) {
+        if (inflightAbort) inflightAbort.abort();
+        inflightAbort = new AbortController();
+        fetch('/api/search/suggest?q=' + encodeURIComponent(q),
+              {signal: inflightAbort.signal, credentials: 'same-origin'})
+            .then(r => r.json())
+            .then(d => {
+                if (q !== lastQ) return;
+                render(d.suggestions || []);
+            })
+            .catch(() => {});
+    }
+
+    input.addEventListener('input', () => {
+        const q = input.value.trim();
+        lastQ = q;
+        if (debounceTimer) clearTimeout(debounceTimer);
+        if (q.length < 2) { closeList(); return; }
+        debounceTimer = setTimeout(() => fetchSuggest(q), 120);
+    });
+    input.addEventListener('keydown', (e) => {
+        const items = list.querySelectorAll('li');
+        if (list.hidden || !items.length) return;
+        if (e.key === 'ArrowDown') {
+            e.preventDefault();
+            setActive((activeIdx + 1) % items.length);
+        } else if (e.key === 'ArrowUp') {
+            e.preventDefault();
+            setActive(activeIdx <= 0 ? items.length - 1 : activeIdx - 1);
+        } else if (e.key === 'Enter') {
+            if (activeIdx >= 0 && items[activeIdx]) {
+                e.preventDefault();
+                window.location.href = items[activeIdx].getAttribute('data-href');
+            }
+        } else if (e.key === 'Escape') {
+            closeList();
+        }
+    });
+    document.addEventListener('click', (e) => {
+        if (!list.contains(e.target) && e.target !== input) closeList();
+    });
+}
+
 // Auto-dismiss flash messages
 document.addEventListener('DOMContentLoaded', () => {
+    initSearchSuggest();
     document.querySelectorAll('.flash-msg').forEach(msg => {
         setTimeout(() => {
             msg.style.transition = 'opacity 0.4s';

@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+{% block title %}Flashcards | Cambridge Dictionary{% endblock %}
+{% block content %}
+<div class="container fc-container">
+  <nav class="breadcrumb">
+    <a href="{{ url_for('plus_index') }}">Plus</a> &raquo;
+    <strong>Flashcards</strong>
+  </nav>
+
+  <header class="fc-header">
+    <h1 class="fc-title">Vocab study flashcards</h1>
+    <p class="fc-subtitle">
+      Swipe left for "I don't know", right for "I know it".
+      {% if level %}Showing <strong>{{ level }}</strong> level only.{% endif %}
+    </p>
+    <div class="fc-level-filter">
+      Level:
+      {% for l in ['A1','A2','B1','B2','C1','C2'] %}
+        <a class="fc-level-pill cefr cefr-{{ l|lower }} {% if level == l %}active{% endif %}"
+           href="{{ url_for('flashcards', level=l) }}">{{ l }}</a>
+      {% endfor %}
+      <a class="fc-level-pill {% if not level %}active{% endif %}"
+         href="{{ url_for('flashcards') }}">All</a>
+    </div>
+  </header>
+
+  <div id="flashcardDeck" class="fc-deck" data-total="{{ cards|length }}" data-focus="{{ focus_slug }}">
+    {% for c in cards %}
+    <article class="fc-card" data-index="{{ loop.index0 }}" data-slug="{{ c.slug }}">
+      <div class="fc-card-inner">
+        <div class="fc-card-face fc-card-front">
+          <div class="fc-card-top">
+            <span class="fc-card-pos">{{ c.pos }}</span>
+            {% if c.level %}<span class="cefr cefr-{{ c.level|lower }}">{{ c.level }}</span>{% endif %}
+          </div>
+          <h2 class="fc-card-headword">{{ c.headword }}</h2>
+          <p class="fc-card-ipa">{{ c.ipa }}</p>
+          <button class="fc-card-flip-btn" type="button" onclick="flipCard(this)">Show definition</button>
+        </div>
+        <div class="fc-card-face fc-card-back">
+          <p class="fc-card-def">{{ c.definition or '—' }}</p>
+          {% if c.example %}
+            <p class="fc-card-ex">"{{ c.example }}"</p>
+          {% endif %}
+          <p class="fc-card-ipa-back">IPA: {{ c.ipa }}</p>
+          <button class="fc-card-flip-btn" type="button" onclick="flipCard(this)">Back to word</button>
+        </div>
+      </div>
+      <div class="fc-card-actions">
+        <button class="fc-btn fc-btn-no" type="button" onclick="swipeCard('left')" aria-label="Don't know">&larr; Don't know</button>
+        <a class="fc-btn fc-btn-link" href="{{ url_for('word_detail', slug=c.slug) }}">Open entry</a>
+        <button class="fc-btn fc-btn-yes" type="button" onclick="swipeCard('right')" aria-label="Know it">Know it &rarr;</button>
+      </div>
+    </article>
+    {% endfor %}
+  </div>
+
+  <footer class="fc-footer">
+    <div class="fc-progress">
+      <span id="fcProgress">1</span> / {{ cards|length }}
+    </div>
+    <div id="fcResults" class="fc-results" style="display:none">
+      <h3>Session complete</h3>
+      <p>Known: <strong id="fcKnown">0</strong> &middot; Reviewing: <strong id="fcUnknown">0</strong></p>
+      <a class="fc-btn" href="{{ url_for('flashcards') }}">Restart</a>
+    </div>
+  </footer>
+</div>
+{% endblock %}

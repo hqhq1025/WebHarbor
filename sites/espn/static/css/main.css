@@ -1905,3 +1905,77 @@ h1, h2, h3, h4, h5, h6 { color: var(--text); font-weight: 700; line-height: 1.25
 .podcast-search input { flex: 1; padding: 8px 12px; border: 1px solid #ccc;
                         border-radius: 4px; font-size: 14px; }
 .search-summary { color: #555; font-size: 13px; margin: 6px 0 14px; }
+
+/* ─── R5 polish: toast, mobile bottom nav, line-shift, queue, date-swiper ─── */
+
+.toast-container {
+  position: fixed; top: 84px; right: 16px; z-index: 9999;
+  display: flex; flex-direction: column; gap: 8px; pointer-events: none;
+}
+.toast-container .toast {
+  background: #111; color: #fff; padding: 10px 14px; border-radius: 6px;
+  font-size: 13px; box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+  pointer-events: auto; min-width: 240px;
+}
+.toast-container .toast--score { border-left: 3px solid #d00; }
+.toast-container .toast--news { border-left: 3px solid #2476d2; }
+
+.mobile-bottom-nav {
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 100;
+  background: #111; display: none; justify-content: space-around;
+  border-top: 1px solid #333; padding: 6px 0 8px;
+}
+.mobile-bottom-nav__item {
+  flex: 1; color: #fff; text-decoration: none; text-align: center;
+  font-size: 11px; padding: 4px 0; display: flex; flex-direction: column;
+  align-items: center; gap: 2px;
+}
+.mobile-bottom-nav__icon { font-size: 18px; line-height: 1; }
+.mobile-bottom-nav__text { line-height: 1.1; }
+.mobile-bottom-nav__item:hover { color: #d00; }
+@media (max-width: 720px) {
+  .mobile-bottom-nav { display: flex; }
+  main.main-content { padding-bottom: 60px; }
+}
+
+.line-shift--up { color: #009639; font-weight: 600; }
+.line-shift--down { color: #d00; font-weight: 600; }
+.line-shift--flat { color: #888; }
+.odds-table .line-shift { white-space: nowrap; }
+
+.podcast-queue__list { list-style: none; padding: 0; margin: 0; }
+.podcast-queue__item {
+  display: flex; align-items: center; gap: 12px; padding: 10px 0;
+  border-bottom: 1px solid #eee;
+}
+.podcast-queue__play {
+  width: 32px; height: 32px; border-radius: 50%; border: 1px solid #d00;
+  background: #fff; color: #d00; cursor: pointer; font-size: 12px;
+}
+.podcast-queue__play:hover { background: #d00; color: #fff; }
+.podcast-queue__meta { flex: 1; display: flex; flex-direction: column; }
+.podcast-queue__title { font-weight: 600; font-size: 14px; }
+.podcast-queue__sub { color: #666; font-size: 12px; }
+.podcast-queue__add {
+  background: transparent; border: 1px solid #ccc; padding: 4px 8px;
+  border-radius: 4px; font-size: 12px; cursor: pointer;
+}
+.podcast-queue__add:hover { border-color: #d00; color: #d00; }
+
+.date-swiper { display: inline-flex; align-items: center; gap: 6px; }
+.date-swiper__nav {
+  width: 28px; height: 32px; background: #f4f4f4; border: 1px solid #ccc;
+  border-radius: 4px; cursor: pointer; font-size: 14px; color: #333;
+}
+.date-swiper__nav:hover { background: #d00; color: #fff; border-color: #d00; }
+
+.trade-analyzer__a11y {
+  font-size: 12px; color: #555; background: #f7f7f7;
+  border-left: 3px solid #d00; padding: 6px 10px; margin: 4px 0 16px;
+}
+.trade-analyzer__a11y kbd {
+  background: #fff; border: 1px solid #ccc; border-radius: 3px;
+  padding: 1px 5px; font-family: inherit; font-size: 11px;
+}
+.fantasy-card[aria-grabbed="true"] { outline: 2px solid #d00; }
+.trade-slot:focus { outline: 2px solid #d00; }

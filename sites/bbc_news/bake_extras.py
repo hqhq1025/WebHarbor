@@ -3863,6 +3863,842 @@ def plant_r4_sentinel(con: sqlite3.Connection) -> None:
     )
 
 
+# =======================================================================
+# R5: BBC Verify / Newsround sub-channels + 24x24 live blog timestamped
+# updates + quiz articles. All deterministic and idempotent via the
+# R5_SENTINEL_BODY planted in `comments`.
+# =======================================================================
+
+R5_SENTINEL_BODY = "<<R5-baked>>"
+R5_RNG = random.Random(20260601)
+
+R5_NEW_CATEGORIES: list[tuple[str, str, str, str, int, str]] = [
+    # slug, name, color, parent_slug, sort_order, description
+    ("newsround",    "Newsround",           "#ffd230", "news",         12,
+     "BBC Newsround: news for younger audiences, clear language with quizzes and explainers."),
+    ("live_updates", "Live updates",        "#bb1919", "live",         13,
+     "Rolling live-blog updates streamed from BBC News reporters: timestamped, jump-to-update navigation."),
+    ("quizzes",      "Quizzes",             "#306ec4", "newsround",    14,
+     "Take-attempt quizzes attached to BBC News stories — explainers and weekly news rounds."),
+]
+
+
+def ensure_r5_categories(con: sqlite3.Connection) -> int:
+    """Idempotent insert of R5 categories. Returns number added."""
+    cur = con.cursor()
+    existing = {r[0] for r in cur.execute("SELECT slug FROM categories")}
+    added = 0
+    for slug, name, color, parent, order, desc in R5_NEW_CATEGORIES:
+        if slug in existing:
+            continue
+        cur.execute(
+            "INSERT INTO categories (slug, name, color, icon, parent_slug, "
+            "sort_order, description, subtitle) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+            (slug, name, color, "", parent, order, desc, desc[:250]),
+        )
+        added += 1
+    return added
+
+
+# ---- BBC Verify fact-check pool ----------------------------------------
+
+R5_VERIFY_TOPICS: list[tuple[str, str]] = [
+    ("climate", "climate disinformation"),
+    ("election", "election misinformation"),
+    ("ukraine", "Ukraine war footage"),
+    ("middle_east", "Middle East conflict claims"),
+    ("ai_image", "AI-generated images"),
+    ("ai_video", "deepfake videos"),
+    ("vaccine", "vaccine claims"),
+    ("nhs", "NHS funding claims"),
+    ("immigration", "immigration statistics"),
+    ("brexit", "Brexit aftermath statistics"),
+    ("tax", "UK tax claims"),
+    ("economy", "economic forecast claims"),
+    ("crime", "crime statistics"),
+    ("housing", "housing market claims"),
+    ("energy", "energy bill claims"),
+    ("pension", "pension policy claims"),
+    ("school", "school standards data"),
+    ("water", "water pollution data"),
+    ("flood", "flood-area footage"),
+    ("wildfire", "wildfire scale claims"),
+    ("celebrity", "celebrity death hoaxes"),
+    ("royal", "royal-family photo claims"),
+    ("sports", "sports betting fraud claims"),
+    ("scam", "online scam advert claims"),
+    ("crypto", "crypto investment ads"),
+    ("ai_chat", "AI chatbot output claims"),
+    ("petition", "viral petition claims"),
+    ("court", "court verdict claims"),
+    ("policing", "policing-tactic videos"),
+    ("protest", "protest crowd-size claims"),
+]
+
+R5_VERIFY_VERDICTS: list[tuple[str, str]] = [
+    ("False",            "We rate this claim FALSE."),
+    ("Misleading",       "We rate this claim MISLEADING — context omitted."),
+    ("Partly true",      "Partly true — the underlying figure is right, the spin is not."),
+    ("Unverified",       "We have not been able to verify this claim independently."),
+    ("Out of context",   "Out of context — the footage is real but the date and place are wrong."),
+    ("Doctored",         "Doctored — the image has been digitally altered."),
+    ("Synthetic",        "Synthetic — this is an AI-generated image, not a photograph."),
+    ("Accurate",         "We rate this claim ACCURATE — figures match official sources."),
+]
+
+
+def synth_bbc_verify(con, hero_pool: list[str]) -> list[dict]:
+    """~700 BBC Verify fact-check articles in the existing 'bbcverify' section."""
+    cid = _cat_id(con, "bbcverify")
+    if cid is None:
+        return []
+    out: list[dict] = []
+    base = MIRROR_REFERENCE_DATE
+    for ti, (topic_key, topic_label) in enumerate(R5_VERIFY_TOPICS):
+        for vi, (verdict, verdict_line) in enumerate(R5_VERIFY_VERDICTS):
+            for k in range(3):  # 30 topics × 8 verdicts × 3 = 720
+                claim_n = ti * 24 + vi * 3 + k + 1
+                slug = _det_slug("r5-verify", f"{topic_key}|{verdict.replace(' ','-').lower()}|{k}")
+                headline = (
+                    f"BBC Verify: claim about {topic_label} rated {verdict.lower()} (#{claim_n:03d})"
+                )
+                lead = (
+                    f"A claim circulating about {topic_label} has been investigated by "
+                    f"BBC Verify's open-source team. {verdict_line}"
+                )
+                body = (
+                    f"{lead}\n\n"
+                    f"What the claim says. Posts on social media assert that {topic_label} "
+                    f"will have a dramatic effect within the next few weeks. The post was shared "
+                    f"more than 12,000 times before BBC Verify began to look at it.\n\n"
+                    f"What the evidence shows. We examined the original source data, cross-checked "
+                    f"with the Office for National Statistics, the relevant government department, "
+                    f"and at least one independent academic specialist. The numbers BBC Verify "
+                    f"obtained do not match the figures shared online.\n\n"
+                    f"Our verdict. {verdict_line} Readers should be cautious when these claims "
+                    f"appear on viral threads — and check the date on every video or screenshot "
+                    f"that is presented as 'happening now'.\n\n"
+                    f"How to spot this yourself. Reverse-image-search any photo before sharing. "
+                    f"Look up the original quote in a transcript. If the claim is a statistic, "
+                    f"check the underlying dataset — usually one click away from the press release.\n\n"
+                    f"BBC Verify is the team at BBC News dedicated to investigating disinformation, "
+                    f"AI-generated content and viral misinformation. We publish our working, including "
+                    f"the source URLs we used and the dates we checked them."
+                )
+                ts = base - timedelta(
+                    days=(claim_n * 3) % 240,
+                    hours=(_det_int(slug) // 7) % 24,
+                    minutes=(_det_int(slug) // 11) % 60,
+                )
+                hero = hero_pool[(_det_int(slug) + 41) % len(hero_pool)] if hero_pool else ""
+                out.append(_r4_make_row(
+                    slug=slug, headline=headline, lead=lead, body=body,
+                    category_id=cid, section_slug="bbcverify",
+                    subsection=verdict, region="Verify", ts=ts,
+                    view_count=4000 + (_det_int(slug) % 80000),
+                    country="", hero=hero,
+                    topics=["BBC Verify", topic_label, verdict],
+                    feature_tags=["bbc_verify", "fact_check", topic_key, verdict.lower().replace(" ", "_")],
+                    content_type="article",
+                ))
+    return out
+
+
+# ---- BBC Newsround pool -------------------------------------------------
+
+R5_NEWSROUND_THEMES: list[tuple[str, str]] = [
+    ("animals",     "wildlife and pets stories for kids"),
+    ("schools",     "what schools across the UK are up to"),
+    ("space",       "space missions, rockets and stars"),
+    ("sport",       "kid-friendly sport stories"),
+    ("environment", "what kids can do to help the planet"),
+    ("technology",  "tech news for younger audiences"),
+    ("music",       "music chart and concert stories"),
+    ("film",        "new films and TV shows reviewed"),
+    ("books",       "great new books for kids"),
+    ("games",       "game launches and esports"),
+    ("history",     "interesting moments from history"),
+    ("science",     "fun science discoveries explained"),
+    ("food",        "food and cooking stories"),
+    ("weather",     "weather and seasons explainers"),
+    ("health",      "staying healthy as a kid"),
+    ("art",         "art, museums and exhibitions"),
+    ("politics",    "how the UK government works, explained"),
+    ("travel",      "places around the world to read about"),
+    ("oceans",      "stories from beneath the waves"),
+    ("explainers",  "Newsround explains the big news"),
+]
+
+
+def synth_newsround(con, hero_pool: list[str]) -> list[dict]:
+    """~800 BBC Newsround articles (kid-friendly news + explainers)."""
+    cid = _cat_id(con, "newsround")
+    if cid is None:
+        return []
+    out: list[dict] = []
+    base = MIRROR_REFERENCE_DATE - timedelta(days=2)
+    angles = [
+        "How {label} works, explained",
+        "Five things to know about {label}",
+        "Newsround quiz: what do you know about {label}?",
+        "Kids' take: why {label} matters",
+        "The big story: {label} this week",
+    ]
+    for ti, (theme, label) in enumerate(R5_NEWSROUND_THEMES):
+        for ai, angle in enumerate(angles):
+            for k in range(8):  # 20 × 5 × 8 = 800
+                idx = ti * 40 + ai * 8 + k + 1
+                slug = _det_slug("r5-nr", f"{theme}|{ai}|{k}")
+                headline = angle.format(label=label) + f" — Newsround #{idx:03d}"
+                lead = (
+                    f"Newsround explains {label} in clear, kid-friendly language. "
+                    f"This story is part of a regular Newsround series for ages 6 to 12."
+                )
+                body = (
+                    f"{lead}\n\n"
+                    f"What's happening? Newsround reporters have been looking into {label}. "
+                    f"There's lots going on — and grown-ups are talking about it too — so we asked "
+                    f"experts to help explain things in a way that makes sense for younger viewers.\n\n"
+                    f"Why does it matter? The story affects kids in different ways depending on where "
+                    f"they live in the UK. Some schools are running special lessons about it. "
+                    f"We spoke to pupils in three classrooms — one in England, one in Scotland, and "
+                    f"one in Wales — to hear what they think.\n\n"
+                    f"What do the experts say? \"It's normal to have questions about big news stories,\" "
+                    f"a child psychologist told Newsround. \"Talking to a grown-up you trust always helps.\"\n\n"
+                    f"Take the Newsround quiz attached to this story to test what you've learned. "
+                    f"And tell us your questions — Newsround answers a new viewer question every Friday."
+                )
+                ts = base - timedelta(
+                    days=(idx * 2) % 220,
+                    hours=(_det_int(slug) // 5) % 24,
+                    minutes=(_det_int(slug) // 13) % 60,
+                )
+                hero = hero_pool[(_det_int(slug) + 23) % len(hero_pool)] if hero_pool else ""
+                out.append(_r4_make_row(
+                    slug=slug, headline=headline, lead=lead, body=body,
+                    category_id=cid, section_slug="newsround",
+                    subsection=theme.replace("_", " ").title(),
+                    region="UK", ts=ts,
+                    view_count=2000 + (_det_int(slug) % 25000),
+                    country="UK", hero=hero,
+                    topics=["Newsround", theme, "kids"],
+                    feature_tags=["newsround", "kids", theme,
+                                  "quiz" if ai == 2 else "explainer"],
+                    content_type="article",
+                ))
+    return out
+
+
+# ---- Live blogs: 24 blogs × 24+ timestamped updates --------------------
+
+R5_LIVE_BLOG_TOPICS: list[tuple[str, str, str, str]] = [
+    # slug suffix, headline, topic_label, section_slug
+    ("uk-budget-2026",            "Chancellor's Spring Budget 2026 live",                     "UK Budget",        "politics"),
+    ("commons-pmqs",              "PMQs live: Prime Minister faces opposition",               "PMQs",             "politics"),
+    ("us-election-night",         "US presidential election night live",                      "US election",      "us_canada"),
+    ("eu-summit",                 "EU summit live: leaders meet in Brussels",                 "EU summit",        "europe"),
+    ("cop-summit",                "COP climate summit live updates",                          "COP climate",      "science"),
+    ("ukraine-war",               "Ukraine war live: latest from the front line",             "Ukraine",          "europe"),
+    ("middle-east-crisis",        "Middle East live: latest reaction and ceasefire talks",    "Middle East",      "middle_east"),
+    ("autumn-statement",          "Autumn Statement live: Chancellor's economic update",      "Autumn Statement", "business"),
+    ("interest-rate-decision",    "Bank of England rate decision live",                       "BoE rate",         "business"),
+    ("fed-decision-day",          "US Federal Reserve decision day live",                     "Fed decision",     "business"),
+    ("storm-tracker",             "Storm tracker live: latest weather warnings",              "Storm",            "weather"),
+    ("by-election-night",         "By-election results live",                                 "By-election",      "politics"),
+    ("local-elections-uk",        "UK local elections live results",                          "Local elections",  "politics"),
+    ("nhs-strike-day",            "NHS strikes live: latest from picket lines",               "NHS strike",       "health"),
+    ("rail-strike-day",           "Rail strikes live: travel disruption updates",             "Rail strike",      "uk"),
+    ("oscars-night",              "Oscars live: ceremony updates from Hollywood",             "Oscars",           "culture"),
+    ("eurovision-final",          "Eurovision Song Contest grand final live",                 "Eurovision",       "entertainment"),
+    ("glastonbury-festival",      "Glastonbury Festival live updates",                        "Glastonbury",      "entertainment"),
+    ("world-cup-final",           "World Cup Final live updates",                             "World Cup",        "football"),
+    ("super-bowl-night",          "Super Bowl live: half-time and key plays",                 "Super Bowl",       "sport"),
+    ("formula1-race-day",         "Formula 1 race day live: lap-by-lap updates",              "F1 race",          "formula1"),
+    ("apple-keynote-live",        "Apple keynote live: new product launch",                   "Apple keynote",    "technology"),
+    ("rocket-launch-day",         "Rocket launch live: countdown and lift-off",               "Rocket launch",    "science"),
+    ("royal-event-day",           "Royal event live: ceremony and procession",                "Royal event",      "uk"),
+]
+
+
+def synth_r5_live_blogs(con, hero_pool: list[str]) -> list[dict]:
+    """24 parent live-blog articles. Each will get 30 timestamped update
+    rows in synth_r5_live_blog_updates()."""
+    cid = _cat_id(con, "live_updates") or _cat_id(con, "live")
+    if cid is None:
+        return []
+    out: list[dict] = []
+    base = MIRROR_REFERENCE_DATE
+    for bi, (slug_suffix, headline, topic, section) in enumerate(R5_LIVE_BLOG_TOPICS):
+        slug = _det_slug("r5-live", slug_suffix)
+        lead = (
+            f"Rolling coverage from BBC News reporters on the {topic} story. "
+            f"Updates appear at the top of this page — refresh to see the latest, "
+            f"or jump straight to an update by number using the index on the right."
+        )
+        body = (
+            f"{lead}\n\n"
+            f"Our team is following the story across multiple sources. Live blog "
+            f"updates are timestamped, numbered, and accessible by URL "
+            f"(jump to update N at /live/{slug_suffix}/update/N).\n\n"
+            f"You can subscribe to instant push notifications for this live "
+            f"blog from the Subscriptions page. Toggle the auto-refresh "
+            f"indicator at the top of the page to control how often new "
+            f"updates are pulled.\n\n"
+            f"All times shown are UK time. This is the lead post for the live "
+            f"blog; individual update entries are listed below in reverse "
+            f"chronological order (newest first)."
+        )
+        ts = base - timedelta(
+            days=bi % 60,
+            hours=(_det_int(slug) // 3) % 24,
+        )
+        hero = hero_pool[(_det_int(slug) + 17) % len(hero_pool)] if hero_pool else ""
+        out.append(_r4_make_row(
+            slug=slug, headline=headline, lead=lead, body=body,
+            category_id=cid, section_slug=section,
+            subsection="Live blog", region=topic, ts=ts,
+            view_count=20000 + (_det_int(slug) % 200000),
+            country="", hero=hero,
+            topics=["Live blog", topic],
+            feature_tags=["live_blog", "live_blog_parent", slug_suffix],
+            content_type="live",
+            is_live=1, is_featured=1,
+        ))
+    return out
+
+
+def synth_r5_live_blog_updates(con, hero_pool: list[str]) -> list[dict]:
+    """24 live blogs × ~30 updates each = ~720 timestamped child rows.
+    Each update has feature_tags = ['live_update', '<parent slug suffix>'],
+    subsection = 'Update #N', and a deterministic published_at."""
+    cid = _cat_id(con, "live_updates") or _cat_id(con, "live")
+    if cid is None:
+        return []
+    out: list[dict] = []
+    base = MIRROR_REFERENCE_DATE
+    # Reusable angle templates for each numbered update.
+    update_angles = [
+        ("Reporter on the ground confirms {topic} development",
+         "Our correspondent on the ground in the area reports new movement around the {topic} story."),
+        ("Government statement issued on {topic}",
+         "The government has just issued a statement responding to the latest {topic} developments."),
+        ("Opposition reaction to {topic} announcement",
+         "The leader of the opposition has weighed in on the {topic} story with a fresh statement."),
+        ("Market reaction: {topic} pushes index lower",
+         "The FTSE 100 has moved on news related to {topic}; we're watching pound and gilts too."),
+        ("Live picture: {topic} crowd gathers outside",
+         "A live picture from the scene shows a growing crowd connected to the {topic} story."),
+        ("Eyewitness account of {topic}",
+         "An eyewitness has just told BBC News what they saw at the scene of the {topic} story."),
+        ("Expert analysis on {topic}",
+         "A specialist analyst from the LSE breaks down what the {topic} news really means."),
+        ("Social media reaction to {topic}",
+         "Hashtags related to {topic} are trending — BBC Verify is checking the most-shared posts."),
+        ("Police confirm details around {topic}",
+         "Police have now formally confirmed key details that had been swirling around the {topic} story."),
+        ("International reaction to {topic}",
+         "Reaction from foreign capitals is starting to come in on the {topic} story."),
+        ("Behind the scenes on {topic}",
+         "What our team is hearing inside the room — a quick behind-the-scenes note on {topic}."),
+        ("Fact-check: viral claim about {topic} rated false",
+         "BBC Verify has just rated a viral claim about {topic} as false; full write-up follows."),
+        ("Quote of the moment on {topic}",
+         "\"This changes everything.\" A pointed quote from a senior figure on the {topic} story."),
+        ("Photo gallery: {topic} in pictures",
+         "We're publishing a fresh gallery from BBC photographers covering the {topic} story."),
+        ("Schedule update: {topic} timings shift",
+         "A scheduling note: the next set of {topic} events has moved by 20 minutes."),
+        ("Watch: {topic} key moment recap",
+         "We've cut a 90-second video that recaps the key moment in the {topic} story so far."),
+        ("Listen: BBC Sounds clip on {topic}",
+         "A short BBC Sounds clip drops summarising where the {topic} story has reached."),
+        ("Background: how the {topic} story unfolded",
+         "If you're joining us, here's a short backgrounder on the {topic} story to catch you up."),
+        ("Correction: earlier {topic} note updated",
+         "We've corrected an earlier note in this live blog about {topic}; details below."),
+        ("Numbers behind {topic}",
+         "The hard numbers — the latest figures we're using on the {topic} story right now."),
+        ("Reporter Q&A on {topic}",
+         "Our correspondent takes three viewer questions on what's happening with {topic}."),
+        ("Diaspora reaction to {topic}",
+         "Communities affected by the {topic} story share their reaction with our diaspora team."),
+        ("Children's perspective on {topic}",
+         "Newsround has spoken to pupils about how they are following the {topic} story."),
+        ("Sounds bite from {topic}",
+         "A two-line audio bite has just dropped from the {topic} press conference."),
+        ("Weather update affecting {topic}",
+         "A weather warning has been issued that could affect how the {topic} story unfolds."),
+        ("Sports angle on {topic}",
+         "We're checking how the {topic} story will affect Saturday's planned sporting fixture."),
+        ("Local impact of {topic} in Scotland",
+         "From Holyrood: how Scottish institutions are responding to the {topic} story."),
+        ("Local impact of {topic} in Wales",
+         "From Cardiff: a quick Welsh angle on the unfolding {topic} story."),
+        ("Local impact of {topic} in Northern Ireland",
+         "From Belfast: how Stormont sees the unfolding {topic} story."),
+        ("Editor's note: closing the live blog on {topic} for now",
+         "We are pausing this live blog on {topic} — final summary follows. Thanks for following."),
+    ]
+    for bi, (slug_suffix, headline, topic, section) in enumerate(R5_LIVE_BLOG_TOPICS):
+        for ui, (ang_h, ang_b) in enumerate(update_angles):
+            update_n = ui + 1
+            slug = _det_slug("r5-up", f"{slug_suffix}|{update_n:02d}")
+            update_headline = ang_h.format(topic=topic) + f" (Update #{update_n:02d})"
+            lead = ang_b.format(topic=topic)
+            body = (
+                f"{lead}\n\n"
+                f"This is update #{update_n} on the {topic} live blog. The parent "
+                f"live blog can be found at /live/{section} or by clicking the "
+                f"live-stream link on the homepage.\n\n"
+                f"Posted at UK time. Refresh the live blog to see further updates "
+                f"after this one. You can also jump directly to a specific update "
+                f"by appending /update/{update_n} to the live blog URL."
+            )
+            # Update timestamps step backwards from MIRROR_REFERENCE_DATE so
+            # newer updates have higher published_at than older ones, but all
+            # are deterministic from R5 inputs alone.
+            ts = base - timedelta(
+                days=bi % 60,
+                hours=(update_angles.__len__() - ui) // 2,
+                minutes=(update_n * 3 + bi * 7) % 60,
+                seconds=(_det_int(slug) % 60),
+            )
+            hero = hero_pool[(_det_int(slug) + 71) % len(hero_pool)] if hero_pool else ""
+            out.append(_r4_make_row(
+                slug=slug, headline=update_headline, lead=lead, body=body,
+                category_id=cid, section_slug=section,
+                subsection=f"Update #{update_n:02d}",
+                region=topic, ts=ts,
+                view_count=400 + (_det_int(slug) % 9000),
+                country="", hero=hero,
+                topics=["Live update", topic, slug_suffix],
+                feature_tags=["live_update", slug_suffix, f"update_{update_n}"],
+                content_type="live_update",
+            ))
+    return out
+
+
+# ---- Quiz articles -----------------------------------------------------
+
+R5_QUIZ_TOPICS: list[tuple[str, str]] = [
+    ("weekly_news",      "Weekly news quiz"),
+    ("uk_politics",      "UK politics quiz"),
+    ("world_history",    "World history quiz"),
+    ("uk_history",       "UK history quiz"),
+    ("science",          "Science quiz"),
+    ("space",            "Space quiz"),
+    ("oceans",           "Oceans quiz"),
+    ("animals",          "Animals quiz"),
+    ("sport",            "Sport quiz"),
+    ("music",            "Music quiz"),
+    ("film",             "Film quiz"),
+    ("books",            "Books quiz"),
+    ("food",             "Food quiz"),
+    ("travel",           "Travel quiz"),
+    ("weather",          "Weather quiz"),
+    ("ai",               "AI explainer quiz"),
+    ("climate",          "Climate quiz"),
+    ("health",           "Health and the body quiz"),
+    ("tech",             "Technology quiz"),
+    ("languages",        "Languages quiz"),
+    ("games",            "Games quiz"),
+    ("arts",             "Arts and design quiz"),
+    ("euro_football",    "European football quiz"),
+    ("world_football",   "World football quiz"),
+    ("cricket",          "Cricket quiz"),
+]
+
+
+def synth_r5_quizzes(con, hero_pool: list[str]) -> list[dict]:
+    """~250 quiz article rows (25 topics × 10 weekly instalments)."""
+    cid = _cat_id(con, "quizzes") or _cat_id(con, "newsround")
+    if cid is None:
+        return []
+    out: list[dict] = []
+    base = MIRROR_REFERENCE_DATE - timedelta(days=4)
+    for ti, (theme, label) in enumerate(R5_QUIZ_TOPICS):
+        for wk in range(10):
+            slug = _det_slug("r5-quiz", f"{theme}|{wk:02d}")
+            headline = f"Take the {label}: week {wk + 1:02d}"
+            lead = (
+                f"This week's {label.lower()} from BBC News. Ten multiple-choice "
+                f"questions, scored at the end. Tap an answer to lock it in — "
+                f"there are no time limits."
+            )
+            body = (
+                f"{lead}\n\n"
+                f"How to play. Read each question, tap the answer you think is "
+                f"right, then move on. At the end, your score is shown out of 10. "
+                f"You can re-take the quiz to try and beat your previous best.\n\n"
+                f"Question 1. Which of these stories led BBC News this week? "
+                f"(a) {label} angle one. (b) {label} angle two. (c) {label} angle "
+                f"three. (d) {label} angle four.\n\n"
+                f"Question 2. True or false? The {label.lower()} category has been "
+                f"running on BBC News for more than a decade.\n\n"
+                f"Question 3. Pick the correct {label.lower()} fact from this "
+                f"week's news. Answers and explanations are revealed after you "
+                f"submit your attempt.\n\n"
+                f"Submit your attempt with the button at the bottom of the page. "
+                f"Quiz attempts are saved when you are signed in, so you can see "
+                f"how your scores change over the year. Don't worry if you do not "
+                f"score full marks — the goal is to learn something new."
+            )
+            ts = base - timedelta(
+                days=(ti * 7 + wk * 14) % 240,
+                hours=(_det_int(slug) // 11) % 24,
+                minutes=(_det_int(slug) // 7) % 60,
+            )
+            hero = hero_pool[(_det_int(slug) + 59) % len(hero_pool)] if hero_pool else ""
+            out.append(_r4_make_row(
+                slug=slug, headline=headline,
+                lead=lead, body=body,
+                category_id=cid, section_slug="quizzes",
+                subsection=label, region="UK", ts=ts,
+                view_count=1500 + (_det_int(slug) % 20000),
+                country="UK", hero=hero,
+                topics=["Quiz", label, theme],
+                feature_tags=["quiz", theme, f"week_{wk + 1:02d}"],
+                content_type="article",
+            ))
+    return out
+
+
+# ---- R5 inserts (articles / comments / reading_history / ...) ----------
+
+def insert_r5_articles(con: sqlite3.Connection, batch: list[dict]) -> int:
+    cur = con.cursor()
+    existing = {r[0] for r in cur.execute("SELECT slug FROM articles")}
+    rows = [a for a in batch if a["slug"] not in existing]
+    if not rows:
+        return 0
+    cur.executemany(_ART_INSERT_SQL, rows)
+    return len(rows)
+
+
+R5_COMMENT_TOP: list[str] = [
+    "BBC Verify checked this; the verdict surprised me.",
+    "Live-blog auto-refresh is a great addition — was waiting for this.",
+    "Newsround quizzes were always my favourite. Glad to see them back.",
+    "Jumped straight to update 12 — saved me ten minutes scrolling.",
+    "The transcript link is exactly what I needed for accessibility.",
+    "Dark mode finally! Reading at night is so much easier now.",
+    "Hover-preview on related links is so useful. Nicely done.",
+    "Saved for later — sync across my phone and laptop works smoothly.",
+    "Followed this topic so I get push alerts next time.",
+    "Helpful explainer for the kids in my class.",
+    "The chapter markers on the video are spot on.",
+    "High-contrast mode is much appreciated — readability is excellent.",
+]
+
+R5_COMMENT_REPLIES: list[str] = [
+    "Agreed — the design polish is noticeable across the site.",
+    "Same here. Auto-refresh badge means I do not have to keep refreshing.",
+    "Thanks for the tip — I'll use the /update/N jump-to next time.",
+    "Was looking for the same accessibility option. Pleasantly surprised.",
+    "Good point — the comment expand/collapse helps long threads load faster.",
+]
+
+
+def insert_r5_comments(con: sqlite3.Connection) -> int:
+    cur = con.cursor()
+    if cur.execute(
+        "SELECT 1 FROM comments WHERE body=? LIMIT 1", (R5_SENTINEL_BODY,)
+    ).fetchone():
+        return 0
+    user_ids = [r[0] for r in cur.execute("SELECT id FROM users ORDER BY id")]
+    if len(user_ids) < 2:
+        return 0
+    # Pool of R5-new articles for the comment seeding.
+    pool: list[tuple[int, str]] = []
+    for tag in ("bbc_verify", "newsround", "live_blog_parent",
+                "live_update", "quiz"):
+        rows = cur.execute(
+            "SELECT id, headline FROM articles "
+            "WHERE feature_tags LIKE ? ORDER BY view_count DESC LIMIT 30",
+            (f'%\"{tag}\"%',),
+        ).fetchall()
+        pool.extend(rows)
+    seen: set[int] = set()
+    pool = [t for t in pool if not (t[0] in seen or seen.add(t[0]))][:120]
+
+    base_ts = MIRROR_REFERENCE_DATE
+    top_rows: list[tuple] = []
+    for idx, (art_id, _headline) in enumerate(pool):
+        n_top = 2 + (idx % 3)
+        for j in range(n_top):
+            uid = user_ids[(idx * 11 + j * 3) % len(user_ids)]
+            body = R5_COMMENT_TOP[(idx * 5 + j * 7) % len(R5_COMMENT_TOP)]
+            offset_h = (idx * 13 + j * 17) % (24 * 25)
+            ts = base_ts - timedelta(hours=offset_h, minutes=(j + idx * 3) % 60)
+            like = (idx * j + 3) % 24
+            top_rows.append((uid, art_id, None, body, like, 0,
+                             ts.strftime("%Y-%m-%d %H:%M:%S")))
+
+    cur.executemany(
+        "INSERT INTO comments (user_id, article_id, parent_id, body, "
+        "like_count, flagged, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
+        top_rows,
+    )
+    inserted = len(top_rows)
+
+    # 2-deep replies on every 4th top-level comment
+    fresh = list(cur.execute(
+        "SELECT id, article_id, user_id, created_at FROM comments "
+        "WHERE parent_id IS NULL ORDER BY id DESC LIMIT ?",
+        (inserted,),
+    ))
+    fresh.reverse()
+    for i, (cid, art_id, parent_uid, parent_created) in enumerate(fresh):
+        if i % 4 != 0:
+            continue
+        cur_parent = cid
+        cur_parent_uid = parent_uid
+        ts_parent = datetime.strptime(parent_created, "%Y-%m-%d %H:%M:%S")
+        for depth in range(1, 3):
+            ruid = user_ids[(cur_parent_uid + depth + i + 2) % len(user_ids)]
+            if ruid == cur_parent_uid:
+                ruid = user_ids[(cur_parent_uid + depth + i + 3) % len(user_ids)]
+            body = R5_COMMENT_REPLIES[(i * 7 + depth * 5) % len(R5_COMMENT_REPLIES)]
+            ts_parent = ts_parent + timedelta(hours=depth, minutes=(depth * 13) % 60)
+            cur.execute(
+                "INSERT INTO comments (user_id, article_id, parent_id, body, "
+                "like_count, flagged, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
+                (ruid, art_id, cur_parent, body, (depth * (i + 1)) % 17, 0,
+                 ts_parent.strftime("%Y-%m-%d %H:%M:%S")),
+            )
+            inserted += 1
+            cur_parent = cur.lastrowid
+            cur_parent_uid = ruid
+    return inserted
+
+
+def insert_r5_reading_history(con: sqlite3.Connection) -> int:
+    cur = con.cursor()
+    if cur.execute(
+        "SELECT 1 FROM comments WHERE body=? LIMIT 1", (R5_SENTINEL_BODY,)
+    ).fetchone():
+        return 0
+    users = [r[0] for r in cur.execute("SELECT id FROM users ORDER BY id")]
+    if not users:
+        return 0
+    art_pool = [r[0] for r in cur.execute(
+        "SELECT id FROM articles WHERE feature_tags LIKE '%bbc_verify%' "
+        "OR feature_tags LIKE '%newsround%' OR feature_tags LIKE '%live_update%' "
+        "OR feature_tags LIKE '%quiz%' "
+        "ORDER BY view_count DESC LIMIT 200"
+    )]
+    base_ts = MIRROR_REFERENCE_DATE
+    existing = set(cur.execute(
+        "SELECT user_id, article_id FROM reading_history"
+    ).fetchall())
+    rows: list[tuple] = []
+    for u_idx, uid in enumerate(users):
+        per_user = 32 + (u_idx * 4) % 10
+        for a_idx in range(min(per_user, len(art_pool))):
+            art_id = art_pool[(u_idx * 19 + a_idx * 13) % len(art_pool)]
+            if (uid, art_id) in existing:
+                continue
+            existing.add((uid, art_id))
+            ts = base_ts - timedelta(
+                hours=(u_idx * 23 + a_idx * 7) % (24 * 70),
+                minutes=(a_idx * 11) % 60,
+            )
+            rows.append((uid, art_id, ts.strftime("%Y-%m-%d %H:%M:%S")))
+    cur.executemany(
+        "INSERT INTO reading_history (user_id, article_id, viewed_at) "
+        "VALUES (?, ?, ?)",
+        rows,
+    )
+    return len(rows)
+
+
+def insert_r5_bookmarks(con: sqlite3.Connection) -> int:
+    cur = con.cursor()
+    if cur.execute(
+        "SELECT 1 FROM comments WHERE body=? LIMIT 1", (R5_SENTINEL_BODY,)
+    ).fetchone():
+        return 0
+    users = [r[0] for r in cur.execute("SELECT id FROM users ORDER BY id")]
+    if not users:
+        return 0
+    art_pool = [r[0] for r in cur.execute(
+        "SELECT id FROM articles WHERE feature_tags LIKE '%bbc_verify%' "
+        "OR feature_tags LIKE '%newsround%' OR feature_tags LIKE '%quiz%' "
+        "OR feature_tags LIKE '%live_blog_parent%' "
+        "ORDER BY view_count DESC LIMIT 160"
+    )]
+    base_ts = MIRROR_REFERENCE_DATE
+    existing = set(cur.execute(
+        "SELECT user_id, article_id FROM bookmarks"
+    ).fetchall())
+    rows: list[tuple] = []
+    for u_idx, uid in enumerate(users):
+        per_user = 18 + (u_idx * 3) % 8
+        for a_idx in range(min(per_user, len(art_pool))):
+            art_id = art_pool[(u_idx * 17 + a_idx * 19) % len(art_pool)]
+            if (uid, art_id) in existing:
+                continue
+            existing.add((uid, art_id))
+            ts = base_ts - timedelta(
+                hours=(u_idx * 13 + a_idx * 7) % (24 * 60),
+                minutes=(a_idx * 9) % 60,
+            )
+            rows.append((uid, art_id, ts.strftime("%Y-%m-%d %H:%M:%S")))
+    cur.executemany(
+        "INSERT INTO bookmarks (user_id, article_id, bookmarked_at) "
+        "VALUES (?, ?, ?)",
+        rows,
+    )
+    return len(rows)
+
+
+def insert_r5_subscriptions(con: sqlite3.Connection) -> int:
+    cur = con.cursor()
+    if cur.execute(
+        "SELECT 1 FROM comments WHERE body=? LIMIT 1", (R5_SENTINEL_BODY,)
+    ).fetchone():
+        return 0
+    users = [r[0] for r in cur.execute("SELECT id FROM users ORDER BY id")]
+    if not users:
+        return 0
+    new_topics = [
+        "BBC Verify", "Newsround", "Quizzes",
+        "UK Budget live", "PMQs live", "US election live",
+        "EU summit live", "COP climate live", "Ukraine live",
+        "Middle East live", "Storm tracker live",
+        "Royal event live", "Apple keynote live",
+        "F1 race day live", "Eurovision live",
+    ]
+    rows: list[tuple] = []
+    existing = set(cur.execute(
+        "SELECT user_id, topic FROM topic_subscriptions"
+    ).fetchall())
+    base_ts = MIRROR_REFERENCE_DATE
+    for u_idx, uid in enumerate(users):
+        for t_idx, topic in enumerate(new_topics):
+            if (u_idx + t_idx) % 2 != 1:
+                continue
+            if (uid, topic) in existing:
+                continue
+            existing.add((uid, topic))
+            freq = ("instant", "daily", "weekly")[(u_idx + t_idx) % 3]
+            ts = base_ts - timedelta(
+                days=(u_idx * 7 + t_idx) % 70,
+                hours=(t_idx * 5) % 24,
+            )
+            rows.append((
+                uid, "", topic, freq, 1,
+                ts.strftime("%Y-%m-%d %H:%M:%S"),
+            ))
+    cur.executemany(
+        "INSERT INTO topic_subscriptions (user_id, category_slug, topic, "
+        "frequency, active, created_at) VALUES (?, ?, ?, ?, ?, ?)",
+        rows,
+    )
+    return len(rows)
+
+
+def insert_r5_reading_list(con: sqlite3.Connection) -> int:
+    cur = con.cursor()
+    if cur.execute(
+        "SELECT 1 FROM comments WHERE body=? LIMIT 1", (R5_SENTINEL_BODY,)
+    ).fetchone():
+        return 0
+    users = [r[0] for r in cur.execute("SELECT id FROM users ORDER BY id")]
+    if not users:
+        return 0
+    pool = [r[0] for r in cur.execute(
+        "SELECT id FROM articles WHERE feature_tags LIKE '%bbc_verify%' "
+        "OR feature_tags LIKE '%newsround%' OR feature_tags LIKE '%quiz%' "
+        "ORDER BY view_count DESC LIMIT 140"
+    )]
+    folders = ["Read Later", "BBC Verify", "Newsround", "Quizzes", "Cross-device"]
+    existing = set(cur.execute(
+        "SELECT user_id, article_id FROM reading_list_items"
+    ).fetchall())
+    base_ts = MIRROR_REFERENCE_DATE
+    rows: list[tuple] = []
+    for u_idx, uid in enumerate(users):
+        per_user = 10 + (u_idx * 3) % 7
+        for a_idx in range(min(per_user, len(pool))):
+            art_id = pool[(u_idx * 9 + a_idx * 11) % len(pool)]
+            folder = folders[(u_idx + a_idx) % len(folders)]
+            if (uid, art_id) in existing:
+                continue
+            existing.add((uid, art_id))
+            ts = base_ts - timedelta(
+                hours=(u_idx * 13 + a_idx * 7) % (24 * 55),
+            )
+            rows.append((
+                uid, art_id, folder, "", 0,
+                ts.strftime("%Y-%m-%d %H:%M:%S"), 0,
+            ))
+    cols = [r[1] for r in cur.execute("PRAGMA table_info(reading_list_items)")]
+    if {"user_id", "article_id", "folder", "note", "priority", "added_at", "read"}.issubset(set(cols)):
+        cur.executemany(
+            "INSERT INTO reading_list_items (user_id, article_id, folder, "
+            "note, priority, added_at, read) VALUES (?, ?, ?, ?, ?, ?, ?)",
+            rows,
+        )
+        return len(rows)
+    return 0
+
+
+def plant_r5_sentinel(con: sqlite3.Connection) -> None:
+    cur = con.cursor()
+    if cur.execute(
+        "SELECT 1 FROM comments WHERE body=? LIMIT 1", (R5_SENTINEL_BODY,)
+    ).fetchone():
+        return
+    uid_row = cur.execute("SELECT id FROM users ORDER BY id LIMIT 1").fetchone()
+    art_row = cur.execute("SELECT id FROM articles ORDER BY id LIMIT 1").fetchone()
+    if not (uid_row and art_row):
+        return
+    cur.execute(
+        "INSERT INTO comments (user_id, article_id, parent_id, body, "
+        "like_count, flagged, created_at) VALUES (?, ?, NULL, ?, 0, 1, ?)",
+        (uid_row[0], art_row[0], R5_SENTINEL_BODY,
+         MIRROR_REFERENCE_DATE.strftime("%Y-%m-%d %H:%M:%S")),
+    )
+
+
+def bake_r5(con: sqlite3.Connection) -> dict[str, int]:
+    """Apply all R5 additions. Idempotent."""
+    stats: dict[str, int] = {}
+    stats["new_categories"] = ensure_r5_categories(con)
+
+    if con.execute(
+        "SELECT 1 FROM comments WHERE body=? LIMIT 1", (R5_SENTINEL_BODY,)
+    ).fetchone():
+        stats["already_baked"] = 1
+        return stats
+
+    hero_pool = _hero_image_pool(con)
+    if not hero_pool:
+        hero_pool = [""]
+
+    batches: list[list[dict]] = [
+        synth_bbc_verify(con, hero_pool),
+        synth_newsround(con, hero_pool),
+        synth_r5_live_blogs(con, hero_pool),
+        synth_r5_live_blog_updates(con, hero_pool),
+        synth_r5_quizzes(con, hero_pool),
+    ]
+    total = 0
+    for batch in batches:
+        total += insert_r5_articles(con, batch)
+    stats["new_articles"] = total
+
+    stats["new_comments"] = insert_r5_comments(con)
+    stats["new_reading_history"] = insert_r5_reading_history(con)
+    stats["new_bookmarks"] = insert_r5_bookmarks(con)
+    stats["new_subscriptions"] = insert_r5_subscriptions(con)
+    stats["new_reading_list"] = insert_r5_reading_list(con)
+
+    plant_r5_sentinel(con)
+    return stats
+
+
 def bake_r4(con: sqlite3.Connection) -> dict[str, int]:
     """Apply all R4 additions. Idempotent."""
     stats: dict[str, int] = {}
@@ -3935,6 +4771,7 @@ def main() -> None:
         plant_sentinel(con)
         r3_stats = bake_r3(con)
         r4_stats = bake_r4(con)
+        r5_stats = bake_r5(con)
         normalize_sqlite_sequence(con)
         con.commit()
     finally:
@@ -3953,8 +4790,12 @@ def main() -> None:
         v for k, v in r4_stats.items()
         if isinstance(v, int) and k not in ("already_baked",)
     )
+    r5_total_inserts = sum(
+        v for k, v in r5_stats.items()
+        if isinstance(v, int) and k not in ("already_baked",)
+    )
     r2_total_inserts = n_art + n_cm + n_rh + n_bm + n_rl + n_ts
-    if r2_total_inserts + r3_total_inserts + r4_total_inserts > 0:
+    if r2_total_inserts + r3_total_inserts + r4_total_inserts + r5_total_inserts > 0:
         con = open_db(DB_PATH)
         try:
             con.execute("VACUUM")
@@ -3970,6 +4811,7 @@ def main() -> None:
           f"+{n_ts} subscriptions")
     print(f"[bake] R3 stats: {r3_stats}")
     print(f"[bake] R4 stats: {r4_stats}")
+    print(f"[bake] R5 stats: {r5_stats}")
     print(f"[bake] md5 after:  {_db_signature(DB_PATH)}")
 
     con = open_db(DB_PATH)

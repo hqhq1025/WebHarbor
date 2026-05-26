@@ -5,6 +5,15 @@
   <h1 style="font-size:40px;font-weight:700;">Configure your {{ product.name }}</h1>
   <p style="color:#6e6e73;font-size:19px;margin:12px 0 24px;">{{ product.subtitle }}</p>
 
+  <!-- R5 — step indicator -->
+  <nav class="r5-step-indicator" id="r5-step-indicator" aria-label="Configuration steps">
+    <div class="step done"  data-step="1">1. Pick model</div>
+    <div class="step active" data-step="2">2. Color</div>
+    <div class="step"        data-step="3">3. Storage / Memory</div>
+    <div class="step"        data-step="4">4. Keyboard</div>
+    <div class="step"        data-step="5">5. Review</div>
+  </nav>
+
   <div class="config-summary" style="background:#f5f5f7;border-radius:18px;padding:22px 26px;margin-bottom:28px;">
     <p style="margin:0 0 6px 0;"><strong>Base price:</strong> <span id="base-price" data-base="{{ product.price }}">${{ "%.2f"|format(product.price) }}</span></p>
     {% if product.chip_family %}<p style="margin:0 0 6px 0;"><strong>Chip:</strong> {{ product.chip_family }}</p>{% endif %}
@@ -15,12 +24,12 @@
   </div>
 
   {% if product.get_colors() %}
-  <section class="config-section" data-dim="color" style="margin:28px 0;">
-    <h2 style="font-size:22px;font-weight:700;margin:0 0 14px;">Color</h2>
-    <div class="config-option-row" style="display:flex;flex-wrap:wrap;gap:10px;">
+  <section class="config-section" data-dim="color" style="margin:28px 0;" aria-labelledby="r5-h-color">
+    <h2 id="r5-h-color" style="font-size:22px;font-weight:700;margin:0 0 14px;">Color</h2>
+    <div class="config-option-row" style="display:flex;flex-wrap:wrap;gap:10px;" role="radiogroup" aria-label="Color">
       {% for color in product.get_colors() %}
       <label class="config-option-pill" style="display:inline-flex;align-items:center;gap:10px;padding:10px 18px;border:1px solid #d2d2d7;border-radius:12px;cursor:pointer;">
-        <input type="radio" name="color" value="{{ color }}" data-delta="0" {% if loop.first %}checked{% endif %} style="margin:0;">
+        <input type="radio" name="color" value="{{ color }}" data-delta="0" {% if loop.first %}checked{% endif %} style="margin:0;" aria-label="Color {{ color }}">
         <span>{{ color }}</span>
       </label>
       {% endfor %}
@@ -30,13 +39,13 @@
 
   {% if upgrades %}
     {% for dim_key, options in upgrades.items() %}
-    <section class="config-section" data-dim="{{ dim_key }}" style="margin:28px 0;">
-      <h2 style="font-size:22px;font-weight:700;margin:0 0 14px;">{{ dim_key|replace('_', ' ')|capitalize }}</h2>
-      <div class="config-option-row" style="display:flex;flex-direction:column;gap:10px;">
+    <section class="config-section" data-dim="{{ dim_key }}" style="margin:28px 0;" aria-labelledby="r5-h-{{ dim_key }}">
+      <h2 id="r5-h-{{ dim_key }}" style="font-size:22px;font-weight:700;margin:0 0 14px;">{{ dim_key|replace('_', ' ')|capitalize }}</h2>
+      <div class="config-option-row" style="display:flex;flex-direction:column;gap:10px;" role="radiogroup" aria-label="{{ dim_key|replace('_', ' ')|capitalize }}">
         {% for opt in options %}
         <label class="config-option" style="display:flex;align-items:center;justify-content:space-between;padding:14px 18px;border:1px solid #d2d2d7;border-radius:12px;cursor:pointer;">
           <span style="display:inline-flex;align-items:center;gap:10px;">
-            <input type="radio" name="config_{{ dim_key }}" value="{{ opt.label }}" data-delta="{{ opt.price or 0 }}" {% if loop.first %}checked{% endif %}>
+            <input type="radio" name="config_{{ dim_key }}" value="{{ opt.label }}" data-delta="{{ opt.price or 0 }}" {% if loop.first %}checked{% endif %} aria-label="{{ dim_key }} {{ opt.label }}">
             <span>{{ opt.label }}</span>
           </span>
           <span class="config-delta" style="color:#6e6e73;">{% if opt.price and opt.price > 0 %}+${{ "%.2f"|format(opt.price) }}{% else %}Included{% endif %}</span>
@@ -48,12 +57,12 @@
   {% endif %}
 
   {% if keyboards %}
-  <section class="config-section" data-dim="keyboard" style="margin:28px 0;">
-    <h2 style="font-size:22px;font-weight:700;margin:0 0 14px;">Keyboard</h2>
-    <div class="config-option-row" style="display:flex;flex-direction:column;gap:10px;">
+  <section class="config-section" data-dim="keyboard" style="margin:28px 0;" aria-labelledby="r5-h-kb">
+    <h2 id="r5-h-kb" style="font-size:22px;font-weight:700;margin:0 0 14px;">Keyboard</h2>
+    <div class="config-option-row" style="display:flex;flex-direction:column;gap:10px;" role="radiogroup" aria-label="Keyboard">
       {% for kb in keyboards %}
       <label class="config-option keyboard-option" style="display:flex;align-items:center;padding:14px 18px;border:1px solid #d2d2d7;border-radius:12px;cursor:pointer;">
-        <input type="radio" name="config_keyboard" value="{{ kb }}" data-delta="0" {% if loop.first %}checked{% endif %} style="margin-right:10px;">
+        <input type="radio" name="config_keyboard" value="{{ kb }}" data-delta="0" {% if loop.first %}checked{% endif %} style="margin-right:10px;" aria-label="Keyboard {{ kb }}">
         <span>{{ kb }}</span>
       </label>
       {% endfor %}
@@ -74,15 +83,30 @@
   </table>
   {% endif %}
 
-  <div style="margin-top:36px;display:flex;gap:12px;align-items:center;">
-    <a href="{{ url_for('product_detail', slug=product.slug) }}" class="btn btn-secondary" style="padding:12px 22px;border-radius:980px;border:1px solid #d2d2d7;text-decoration:none;color:#1d1d1f;">Back to product</a>
+  <!-- R5 — back / forward navigation between configuration sections -->
+  <div class="r5-config-nav" style="margin:24px 0;display:flex;gap:12px;align-items:center;justify-content:space-between;">
+    <button type="button" id="r5-step-back"
+            style="padding:10px 18px;border-radius:980px;border:1px solid #d2d2d7;background:#fff;cursor:pointer;"
+            aria-label="Previous configuration step">&larr; Back</button>
+    <button type="button" id="r5-step-forward"
+            style="padding:10px 18px;border-radius:980px;border:1px solid #d2d2d7;background:#fff;cursor:pointer;"
+            aria-label="Next configuration step">Continue &rarr;</button>
+  </div>
+
+  <!-- R5 — sticky CTA bar with live price + Add to Bag -->
+  <div class="r5-sticky-cta" id="r5-sticky-cta" role="region" aria-label="Add to bag">
+    <span class="r5-cta-price">Your price: <span id="r5-sticky-price">${{ "%.2f"|format(product.price) }}</span></span>
     <form method="POST" action="/cart/add/{{ product.id }}" id="atb-form" style="margin:0;">
       <input type="hidden" name="csrf_token" value="{{ csrf_token_value }}">
       <input type="hidden" name="color" id="form-color" value="{{ (product.get_colors()[0] if product.get_colors() else '') }}">
       <input type="hidden" name="storage" id="form-storage" value="">
       <input type="hidden" name="quantity" value="1">
-      <button type="submit" class="btn btn-primary" style="padding:12px 22px;border-radius:980px;background:#0071e3;color:#fff;border:none;cursor:pointer;">Add to Bag &mdash; <span id="cta-price">${{ "%.2f"|format(product.price) }}</span></button>
+      <button type="submit" class="r5-cta-btn">Add to Bag &mdash; <span id="cta-price">${{ "%.2f"|format(product.price) }}</span></button>
     </form>
+  </div>
+
+  <div style="margin-top:36px;display:flex;gap:12px;align-items:center;">
+    <a href="{{ url_for('product_detail', slug=product.slug) }}" class="btn btn-secondary" style="padding:12px 22px;border-radius:980px;border:1px solid #d2d2d7;text-decoration:none;color:#1d1d1f;">Back to product</a>
   </div>
 </div>
 
@@ -94,6 +118,7 @@
   const total = root.querySelector('#price-total');
   const monthly = root.querySelector('#monthly-total');
   const ctaPrice = root.querySelector('#cta-price');
+  const stickyPrice = document.getElementById('r5-sticky-price');
   const base = parseFloat(baseEl.dataset.base || '0');
 
   const formColor = document.getElementById('form-color');
@@ -112,6 +137,7 @@
     if(total){ total.textContent = txt; total.dataset.priceTotal = t.toFixed(2); }
     if(monthly){ monthly.textContent = '$' + (t/24).toFixed(2); }
     if(ctaPrice){ ctaPrice.textContent = txt; }
+    if(stickyPrice){ stickyPrice.textContent = txt; }
     // Sync hidden form inputs with current selections
     const cc = root.querySelector('input[name=color]:checked');
     if(cc && formColor) formColor.value = cc.value;
@@ -126,6 +152,28 @@
   });
   // Also recompute on initial load, and when clicking the outer label
   recompute();
+
+  // R5 — step indicator: advance/recede the active step using back/forward buttons
+  const sections = root.querySelectorAll('.config-section');
+  const steps = root.querySelectorAll('#r5-step-indicator .step');
+  let stepIx = 1; // start on "Color"
+  function setStep(ix){
+    if(ix < 0) ix = 0;
+    if(ix > sections.length) ix = sections.length;
+    stepIx = ix;
+    steps.forEach(function(s, i){
+      s.classList.remove('active', 'done');
+      if(i < ix) s.classList.add('done');
+      if(i === ix) s.classList.add('active');
+    });
+    if(sections[ix]){
+      sections[ix].scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  }
+  const backBtn = document.getElementById('r5-step-back');
+  const fwdBtn  = document.getElementById('r5-step-forward');
+  if(backBtn) backBtn.addEventListener('click', function(){ setStep(stepIx - 1); });
+  if(fwdBtn)  fwdBtn.addEventListener('click', function(){ setStep(stepIx + 1); });
 })();
 </script>
 {% endblock %}

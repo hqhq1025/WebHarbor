@@ -1,0 +1,83 @@
+{% extends "base.html" %}
+{% block title %}Create {{ event|capitalize }} Registry - Amazon.com{% endblock %}
+
+{% block content %}
+<div class="account-page" style="max-width:700px">
+    {# Event-specific copy + emoji #}
+    {% set evt_copy = {
+        'wedding': ('👰', 'Wedding Registry', 'Build your dream wedding list. Add up to 1,000 items and share with friends and family.'),
+        'baby': ('👶', 'Baby Registry', 'Free welcome box for new parents. Up to 365-day return window.'),
+        'birthday': ('🎂', 'Birthday Registry', 'Share what you would love this year.'),
+        'housewarming': ('🏠', 'Housewarming Registry', 'Items to settle into your new home.'),
+        'graduation': ('🎓', 'Graduation Registry', 'Celebrate the milestone — picked by you.'),
+    } %}
+    {% set emoji, title, sub = evt_copy[event] %}
+    <h1>{{ emoji }} Create your {{ title }}</h1>
+    <p style="color:#565959;margin-bottom:20px">{{ sub }}</p>
+
+    <form method="POST" novalidate aria-labelledby="registry-create-heading">
+        <h2 id="registry-create-heading" class="visually-hidden">Registry details</h2>
+
+        <div class="form-group">
+            <label for="partner1">{% if event == 'wedding' %}Registrant 1 (Your name){% else %}Registrant name{% endif %} <span aria-hidden="true" style="color:#b12704">*</span></label>
+            <input type="text" id="partner1" name="partner1" class="form-control"
+                   value="{{ form_data.get('partner1', '') }}"
+                   {% if errors.get('partner1') %}aria-invalid="true" aria-describedby="err-partner1"{% endif %}
+                   required>
+            {% if errors.get('partner1') %}<div class="form-error" id="err-partner1" role="alert">{{ errors['partner1'] }}</div>{% endif %}
+        </div>
+
+        {% if event == 'wedding' %}
+        <div class="form-group">
+            <label for="partner2">Registrant 2 (Partner) <span aria-hidden="true" style="color:#b12704">*</span></label>
+            <input type="text" id="partner2" name="partner2" class="form-control"
+                   value="{{ form_data.get('partner2', '') }}"
+                   {% if errors.get('partner2') %}aria-invalid="true" aria-describedby="err-partner2"{% endif %}
+                   required>
+            {% if errors.get('partner2') %}<div class="form-error" id="err-partner2" role="alert">{{ errors['partner2'] }}</div>{% endif %}
+        </div>
+        {% else %}
+        <div class="form-group">
+            <label for="partner2">Co-registrant (optional)</label>
+            <input type="text" id="partner2" name="partner2" class="form-control"
+                   value="{{ form_data.get('partner2', '') }}">
+        </div>
+        {% endif %}
+
+        <div class="form-row">
+            <div class="form-group">
+                <label for="event_date">Event date (YYYY-MM-DD) <span aria-hidden="true" style="color:#b12704">*</span></label>
+                <input type="text" id="event_date" name="event_date" class="form-control"
+                       placeholder="2026-09-15"
+                       value="{{ form_data.get('event_date', '') }}"
+                       {% if errors.get('event_date') %}aria-invalid="true" aria-describedby="err-event_date"{% endif %}
+                       required>
+                {% if errors.get('event_date') %}<div class="form-error" id="err-event_date" role="alert">{{ errors['event_date'] }}</div>{% endif %}
+            </div>
+        </div>
+
+        <div class="form-row">
+            <div class="form-group">
+                <label for="city">City <span aria-hidden="true" style="color:#b12704">*</span></label>
+                <input type="text" id="city" name="city" class="form-control"
+                       value="{{ form_data.get('city', '') }}"
+                       {% if errors.get('city') %}aria-invalid="true" aria-describedby="err-city"{% endif %}
+                       required>
+                {% if errors.get('city') %}<div class="form-error" id="err-city" role="alert">{{ errors['city'] }}</div>{% endif %}
+            </div>
+            <div class="form-group">
+                <label for="state">State <span aria-hidden="true" style="color:#b12704">*</span></label>
+                <input type="text" id="state" name="state" class="form-control"
+                       value="{{ form_data.get('state', '') }}"
+                       {% if errors.get('state') %}aria-invalid="true" aria-describedby="err-state"{% endif %}
+                       required>
+                {% if errors.get('state') %}<div class="form-error" id="err-state" role="alert">{{ errors['state'] }}</div>{% endif %}
+            </div>
+        </div>
+
+        <button type="submit" class="btn btn-orange btn-full" style="margin-top:14px">
+            Create my {{ title }}
+        </button>
+    </form>
+</div>
+{% endblock %}

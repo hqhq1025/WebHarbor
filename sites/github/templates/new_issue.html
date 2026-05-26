@@ -17,16 +17,27 @@
     <img src="{{ current_user.avatar_url }}" alt="{{ current_user.username }}" class="issue-form-avatar"
          onerror="this.src='/static/images/avatars/avatar_00.jpg'">
     <div class="new-issue-form-wrap">
+      <div class="issue-template-picker" role="group" aria-label="Pick an issue template">
+        <label for="issue-template-picker">Pick a template:</label>
+        <select id="issue-template-picker" aria-controls="issue-title-field">
+          <option value="">— No template —</option>
+          <option value="bug">Bug report</option>
+          <option value="feature">Feature request</option>
+          <option value="docs">Documentation</option>
+          <option value="question">Question</option>
+          <option value="security">Security advisory</option>
+        </select>
+      </div>
       <form method="POST" action="/{{ repo.full_name }}/issues/new">
         {{ form.hidden_tag() }}
         <div class="form-group">
-          <label class="form-label">Title</label>
-          {{ form.title(class="form-input form-input-lg", placeholder="Title") }}
+          <label class="form-label" for="issue-title-field">Title</label>
+          {{ form.title(class="form-input form-input-lg", placeholder="Title", id="issue-title-field") }}
           {% for e in form.title.errors %}<span class="form-error">{{ e }}</span>{% endfor %}
         </div>
         <div class="form-group">
-          <label class="form-label">Leave a comment</label>
-          {{ form.body(class="form-textarea-issue", rows="10", placeholder="Describe the issue...") }}
+          <label class="form-label" for="issue-body-field">Leave a comment</label>
+          {{ form.body(class="form-textarea-issue", rows="10", placeholder="Describe the issue...", id="issue-body-field") }}
         </div>
         <div class="issue-form-actions">
           <a href="/{{ repo.full_name }}/issues" class="gh-btn gh-btn-secondary">Cancel</a>

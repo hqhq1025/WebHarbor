@@ -9,22 +9,25 @@
     {% block extra_css %}{% endblock %}
 </head>
 <body>
+    <!-- Skip-to-content link for keyboard / screen-reader users (R5 a11y) -->
+    <a class="skip-link" href="#main-content">Skip to content</a>
     <!-- HEADER -->
-    <header class="site-header">
-        <nav class="nav-top">
-            <button class="nav-toggle" aria-label="Menu">&#9776;</button>
-            <a href="{{ url_for('index') }}" class="nav-logo">
+    <header class="site-header" role="banner">
+        <nav class="nav-top" aria-label="Primary">
+            <button class="nav-toggle" aria-label="Open menu" aria-controls="nav-categories" aria-expanded="false">&#9776;</button>
+            <a href="{{ url_for('index') }}" class="nav-logo" aria-label="Allrecipes home">
                 <span class="logo-all">all</span><span class="logo-recipes">recipes</span>
             </a>
-            <form class="nav-search" action="{{ url_for('search') }}" method="GET">
-                <input type="text" name="q" placeholder="Find a recipe or ingredient" value="{{ request.args.get('q', '') }}" autocomplete="off">
-                <button type="submit">&#128269;</button>
+            <form class="nav-search" action="{{ url_for('search') }}" method="GET" role="search">
+                <label for="nav-search-input" class="visually-hidden">Search recipes</label>
+                <input id="nav-search-input" type="text" name="q" placeholder="Find a recipe or ingredient" value="{{ request.args.get('q', '') }}" autocomplete="off">
+                <button type="submit" aria-label="Submit search">&#128269;</button>
             </form>
             <div class="nav-actions">
                 {% if current_user.is_authenticated %}
-                    <a href="{{ url_for('recipe_box') }}">Recipe Box
+                    <a href="{{ url_for('recipe_box') }}" aria-label="Recipe box">Recipe Box
                         {% set rbc = recipe_box_count() %}
-                        {% if rbc > 0 %}<span class="recipe-box-badge">{{ rbc }}</span>{% endif %}
+                        {% if rbc > 0 %}<span class="recipe-box-badge" aria-label="{{ rbc }} items">{{ rbc }}</span>{% endif %}
                     </a>
                     <a href="{{ url_for('meal_plan') }}">Meal Plan</a>
                     <a href="{{ url_for('account') }}">{{ current_user.display_name or current_user.username }}</a>
@@ -35,7 +38,7 @@
                 {% endif %}
             </div>
         </nav>
-        <div class="nav-categories">
+        <div class="nav-categories" id="nav-categories" aria-label="Recipe categories">
             <div class="nav-categories-inner">
                 <a href="{{ url_for('all_recipes') }}" {% if request.endpoint == 'all_recipes' %}class="active"{% endif %}>All Recipes</a>
                 <a href="{{ url_for('meals_hub') }}" {% if request.endpoint == 'meals_hub' %}class="active"{% endif %}>Meals</a>
@@ -60,11 +63,11 @@
     <!-- FLASH MESSAGES -->
     {% with messages = get_flashed_messages(with_categories=true) %}
     {% if messages %}
-    <div class="flash-messages">
+    <div class="flash-messages" role="status" aria-live="polite">
         {% for category, message in messages %}
         <div class="flash-msg {{ category }}">
             {{ message }}
-            <button class="flash-close">&times;</button>
+            <button class="flash-close" aria-label="Dismiss message">&times;</button>
         </div>
         {% endfor %}
     </div>
@@ -72,7 +75,7 @@
     {% endwith %}
 
     <!-- MAIN CONTENT -->
-    <main>
+    <main id="main-content" tabindex="-1">
         {% block content %}{% endblock %}
     </main>
 

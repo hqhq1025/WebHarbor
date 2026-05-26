@@ -1189,18 +1189,33 @@ def _build_assumption_pills(q, comp, topic, current):
 
 @app.route('/share/<int:cr_id>')
 def share(cr_id):
-    """Public share-link page for a single computation result."""
+    """Public share-link page for a single computation result.
+
+    R5: also handles ?as=image to render a printable "image" rendition of the
+    result that the user can right-click → 'save as image' to download as PNG.
+    The HTML uses CSS print-style framing so screenshots/share-as-PNG look clean.
+    """
     comp = db.session.get(ComputationResult, cr_id)
     if not comp:
         abort(404)
     permalink = request.host_url.rstrip('/') + url_for('share', cr_id=cr_id)
-    return render_template('share.html', comp=comp, permalink=permalink)
+    permalink_image = request.host_url.rstrip('/') + url_for('share', cr_id=cr_id) + '?as=image'
+    as_image = (request.args.get('as') == 'image')
+    return render_template('share.html', comp=comp, permalink=permalink,
+                           permalink_image=permalink_image, as_image=as_image)
 
 
 @app.route('/widget/builder')
 def widget_builder():
-    """Drag-and-drop widget builder landing page."""
-    return render_template('widget_builder.html', widgets=WIDGET_GALLERY)
+    """Drag-and-drop widget builder landing page.
+
+    R5: also accepts ?source=<computation_id> to pre-populate the builder with
+    a result from the input page. Returns a size-picker (4 presets + custom).
+    """
+    source_id = request.args.get('source', type=int)
+    source_comp = db.session.get(ComputationResult, source_id) if source_id else None
+    return render_template('widget_builder.html', widgets=WIDGET_GALLERY,
+                           source_comp=source_comp)
 
 
 # Resource catalog — deterministic listing per type

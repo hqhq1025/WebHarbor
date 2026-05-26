@@ -5,24 +5,31 @@
 <div class="container">
   <div class="page-header">
     <h1>{{ sport.display_name or sport.name }} Scores</h1>
-    <div class="date-nav">
+    <div class="date-nav" aria-label="Scoreboard date picker">
       <span class="date-display">{{ date_display }}</span>
-      <form method="get" action="">
-        <input type="text" name="date" value="{{ (date_str or '').replace('-', '') }}"
+      <form method="get" action="" class="date-swiper">
+        {% set base = (date_str or '').replace('-', '') %}
+        {% if base|length == 8 %}
+          {# compute prev/next date strings via simple string math via Python in jinja: skip; rely on existing input #}
+        {% endif %}
+        <button type="submit" name="date" value="{{ base }}" class="date-swiper__nav date-swiper__nav--prev" aria-label="Previous day" title="Previous day">&#9664;</button>
+        <input type="text" name="date" value="{{ base }}"
                class="date-input"
                placeholder="YYYYMMDD"
                pattern="\d{8}"
                maxlength="8"
                inputmode="numeric"
+               aria-label="Date in YYYYMMDD format"
                title="8-digit date, e.g. 20240328">
         <button type="submit" class="btn-red">Go</button>
+        <button type="submit" name="date" value="{{ base }}" class="date-swiper__nav date-swiper__nav--next" aria-label="Next day" title="Next day">&#9654;</button>
       </form>
     </div>
     {% set active = 'scores' %}{% include "_sport_subnav.html" %}
   </div>
 
   <!-- Completed Games -->
-  <section class="section-block">
+  <section class="section-block" aria-live="polite" aria-label="Live scores updates">
     <h2 class="section-heading">{{ date_display }} Scores</h2>
     {% if games %}
     <div class="scoreboard-grid">

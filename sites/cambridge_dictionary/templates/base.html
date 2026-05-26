@@ -7,7 +7,7 @@
   <meta name="csrf-token" content="{{ csrf_token() }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
 </head>
-<body>
+<body class="a11y-font-{{ a11y_font|default('default') }} a11y-palette-{{ a11y_palette|default('default') }} {% if a11y_ipa_focus == '1' %}a11y-ipa-focus{% endif %}">
   <!-- Main navigation (top teal band) -->
   <nav class="globalnav">
     <div class="container nav-inner">
@@ -29,6 +29,11 @@
       </ul>
 
       <div class="nav-right">
+        <a href="{{ url_for('flashcards') }}" class="nav-recently" id="navRecentlyViewed"
+           title="Recently viewed words" aria-label="Recently viewed words">
+          <span class="rv-icon" aria-hidden="true">&#x1F4D6;</span>
+          <span class="rv-badge" id="rvBadge" data-server-count="{{ recently_viewed_count|default(0) }}">0</span>
+        </a>
         {% if current_user.is_authenticated %}
           <a href="{{ url_for('account') }}" class="nav-user">{{ current_user.name.split()[0] }}</a>
           <a href="{{ url_for('logout') }}" class="nav-signout">{{ ui.nav_signout }}</a>
@@ -146,6 +151,8 @@
               <li><a href="{{ url_for('login') }}">Sign In</a></li>
               <li><a href="{{ url_for('register') }}">Register</a></li>
             {% endif %}
+            <li><a href="{{ url_for('flashcards') }}">Flashcards</a></li>
+            <li><a href="{{ url_for('settings_accessibility') }}">Accessibility</a></li>
           </ul>
         </div>
       </div>

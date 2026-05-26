@@ -675,6 +675,173 @@ def build_hotel_description(name, city_name, stars, prop_type, amenities):
 
 
 # -----------------------------------------------------------------
+# R5 quality fields — sustainability cert / payment options /
+# languages / neighborhood summary.
+# Each helper is fully deterministic from (name, city_name, stars).
+# Use hashlib.sha256 (not random/datetime) so two rebuilds match.
+# -----------------------------------------------------------------
+import hashlib as _hashlib
+
+SUSTAINABILITY_CERTS = [
+    'Travel Sustainable Level 1',
+    'Travel Sustainable Level 2',
+    'Travel Sustainable Level 3',
+    'Green Key Eco-Label',
+    'EarthCheck Bronze',
+    'EarthCheck Silver',
+    'EarthCheck Gold',
+    'LEED Silver',
+    'LEED Gold',
+    'Green Globe Certified',
+    'Biosphere Responsible Tourism',
+]
+
+PAYMENT_POOL_BASE = ['Visa', 'Mastercard', 'American Express']
+PAYMENT_POOL_EXTRA = [
+    'Discover', 'JCB', 'UnionPay', 'Diners Club', 'Maestro',
+    'Apple Pay', 'Google Pay', 'PayPal', 'Cash', 'Bank transfer',
+    'Booking.com gift card', 'Alipay', 'WeChat Pay',
+]
+
+LANGUAGE_POOL = {
+    'us': ['English', 'Spanish'],
+    'gb': ['English', 'French'],
+    'fr': ['French', 'English', 'Spanish'],
+    'it': ['Italian', 'English', 'French'],
+    'es': ['Spanish', 'English', 'Catalan', 'French'],
+    'de': ['German', 'English', 'French'],
+    'at': ['German', 'English', 'Italian'],
+    'cz': ['Czech', 'English', 'German'],
+    'nl': ['Dutch', 'English', 'German'],
+    'pt': ['Portuguese', 'English', 'Spanish'],
+    'gr': ['Greek', 'English', 'Italian'],
+    'tr': ['Turkish', 'English', 'Arabic'],
+    'ae': ['Arabic', 'English', 'Hindi', 'Urdu'],
+    'jp': ['Japanese', 'English', 'Chinese'],
+    'cn': ['Mandarin Chinese', 'English', 'Cantonese'],
+    'hk': ['Cantonese', 'Mandarin Chinese', 'English'],
+    'sg': ['English', 'Mandarin Chinese', 'Malay', 'Tamil'],
+    'in': ['Hindi', 'English', 'Tamil', 'Bengali'],
+    'id': ['Indonesian', 'English', 'Javanese'],
+    'th': ['Thai', 'English', 'Mandarin Chinese'],
+    'au': ['English', 'Mandarin Chinese'],
+    'ca': ['English', 'French', 'Mandarin Chinese'],
+    'br': ['Portuguese', 'English', 'Spanish'],
+    'mx': ['Spanish', 'English'],
+    'mv': ['Dhivehi', 'English', 'Arabic'],
+}
+
+
+def _r5_hkey(*parts):
+    h = _hashlib.sha256('|'.join(str(p) for p in parts).encode('utf-8')).digest()
+    return int.from_bytes(h[:6], 'big')
+
+
+def derive_sustainability_certification(name, is_eco_certified):
+    """Return a cert label only when the property is eco-certified.
+    Deterministic from the property name."""
+    if not is_eco_certified:
+        return None
+    idx = _r5_hkey('sustcert', name) % len(SUSTAINABILITY_CERTS)
+    return SUSTAINABILITY_CERTS[idx]
+
+
+def derive_payment_options(name, stars):
+    """5 to 9 payment methods, deterministic per property."""
+    n_extra = 2 + (_r5_hkey('payn', name) % 5) + (1 if stars and stars >= 4 else 0)
+    pool = list(PAYMENT_POOL_EXTRA)
+    chosen = []
+    # Deterministic shuffle via key sort
+    pool.sort(key=lambda x: _r5_hkey('paysort', name, x))
+    chosen = list(PAYMENT_POOL_BASE) + pool[:n_extra]
+    return chosen
+
+
+def derive_languages(name, country_code, stars):
+    """Front-desk languages — base from country plus optional extras."""
+    cc = (country_code or 'us').lower()
+    base = list(LANGUAGE_POOL.get(cc, ['English']))
+    # 5-star properties get +1 extra
+    extras_pool = ['English', 'French', 'Spanish', 'Mandarin Chinese',
+                   'Arabic', 'Japanese', 'German', 'Italian', 'Russian',
+                   'Portuguese', 'Korean']
+    n_extra = (_r5_hkey('langn', name) % 3) + (1 if stars and stars >= 4 else 0)
+    extras_pool.sort(key=lambda x: _r5_hkey('langsort', name, x))
+    out = list(base)
+    for v in extras_pool:
+        if len(out) >= len(base) + n_extra:
+            break
+        if v not in out:
+            out.append(v)
+    return out
+
+
+_NEIGHBORHOOD_TEMPLATES = [
+    "{neigh} is one of {city}'s most walkable districts, with the {anchor1} and {anchor2} both within a short stroll.",
+    "Set in {neigh}, the property sits between {anchor1} and {anchor2}, surrounded by independent cafes and boutique shops.",
+    "{neigh} blends quiet residential streets with easy access to {anchor1}; the local metro reaches {anchor2} in under 15 minutes.",
+    "Guests enjoy {neigh}'s leafy avenues, a tight cluster of restaurants, and a 10-minute walk to {anchor1}.",
+    "Lively after dark, {neigh} hosts bistros and rooftop bars; {anchor1} and {anchor2} are popular morning excursions.",
+    "{neigh} is a calm pocket inside {city}, with {anchor1} on one side and {anchor2} on the other — perfect for a centrally located stay.",
+]
+
+_ANCHORS_BY_CITY = {
+    'nyc': ['Central Park', 'Times Square', 'the Empire State Building', 'the High Line'],
+    'paris': ['the Louvre', 'the Eiffel Tower', 'Notre-Dame', 'the Marais'],
+    'london': ['the British Museum', 'Hyde Park', 'Covent Garden', 'the Thames'],
+    'tokyo': ['Shibuya Crossing', 'the Imperial Palace', 'Tokyo Tower', 'Asakusa'],
+    'rome': ['the Colosseum', 'the Trevi Fountain', 'Piazza Navona', 'the Pantheon'],
+    'barcelona': ['La Rambla', 'the Sagrada Familia', 'Park Guell', 'the Gothic Quarter'],
+    'dubai': ['the Burj Khalifa', 'Dubai Mall', 'the Marina', 'Palm Jumeirah'],
+    'singapore': ['Marina Bay Sands', 'Gardens by the Bay', 'Chinatown', 'Orchard Road'],
+    'amsterdam': ['the Rijksmuseum', 'the Anne Frank House', 'Vondelpark', 'the Jordaan'],
+    'bali': ['Seminyak Beach', 'the Monkey Forest', 'Tanah Lot Temple', 'Ubud rice terraces'],
+    'maldives': ['the house reef', 'the overwater jetty', 'the dive school', 'the spa pavilion'],
+    'bangkok': ['the Grand Palace', 'Khao San Road', 'Chatuchak Market', 'Wat Pho'],
+    'istanbul': ['Hagia Sophia', 'the Blue Mosque', 'Topkapi Palace', 'the Grand Bazaar'],
+    'sydney': ['the Opera House', 'Harbour Bridge', 'Bondi Beach', 'the Botanic Garden'],
+    'losangeles': ['Hollywood Boulevard', 'Santa Monica Pier', 'Griffith Observatory', 'Venice Beach'],
+    'berlin': ['the Brandenburg Gate', 'Museum Island', 'Alexanderplatz', 'Tiergarten'],
+    'prague': ['Prague Castle', 'Charles Bridge', 'Old Town Square', 'the Jewish Quarter'],
+    'vienna': ['Schoenbrunn Palace', 'Stephansdom', 'the Ringstrasse', 'the Naschmarkt'],
+    'venice': ['St Mark’s Square', 'the Rialto Bridge', 'the Doge’s Palace', 'the Grand Canal'],
+    'santorini': ['Oia village', 'Fira', 'Red Beach', 'the caldera viewpoint'],
+    'mexicocity': ['the Zocalo', 'Chapultepec Park', 'Frida Kahlo Museum', 'Roma Norte'],
+    'rio': ['Copacabana Beach', 'Christ the Redeemer', 'Sugarloaf Mountain', 'Ipanema'],
+    'jakarta': ['Monas', 'Kota Tua', 'Grand Indonesia Mall', 'Ancol Dreamland'],
+    'ohio': ['Easton Town Center', 'Cleveland Museum of Art', 'the Riverwalk', 'the Statehouse'],
+    'varanasi': ['Dashashwamedh Ghat', 'Kashi Vishwanath Temple', 'Banaras Hindu University', 'Sarnath'],
+    'chennai': ['Marina Beach', 'Kapaleeshwarar Temple', 'Fort St George', 'Anna Salai'],
+    'chicago': ['Millennium Park', 'Navy Pier', 'the Magnificent Mile', 'the Riverwalk'],
+    'lisbon': ['Belem Tower', 'Praca do Comercio', 'the Bairro Alto', 'the Alfama'],
+    'melbourne': ['Federation Square', 'the Royal Botanic Gardens', 'the laneways', 'St Kilda Beach'],
+    'toronto': ['the CN Tower', 'Distillery District', 'the Eaton Centre', 'Harbourfront'],
+    'shenzhen': ['Window of the World', 'Splendid China', 'OCT-LOFT', 'the Bay Area waterfront'],
+    'sapporo': ['Odori Park', 'the Clock Tower', 'Mount Moiwa', 'Susukino district'],
+    'hongkong': ['Victoria Peak', 'Tsim Sha Tsui promenade', 'Lan Kwai Fong', 'Central Market'],
+    'beijing': ['the Forbidden City', 'Tiananmen Square', 'the Summer Palace', 'Houhai Lake'],
+    'shanghai': ['the Bund', 'Yu Garden', 'Nanjing Road', 'Xintiandi'],
+}
+
+
+def derive_neighborhood_summary(name, city_key, city_display, neighborhood):
+    """Return a short neighborhood blurb. Deterministic per property."""
+    anchors = _ANCHORS_BY_CITY.get(city_key, [
+        f'the {city_display} old town', f'{city_display} central station',
+        f'the {city_display} riverside', f'the {city_display} cultural quarter'])
+    a_sorted = sorted(anchors, key=lambda x: _r5_hkey('anchor', name, x))
+    a1 = a_sorted[0]
+    a2 = a_sorted[1] if len(a_sorted) > 1 else a_sorted[0]
+    tmpl = _NEIGHBORHOOD_TEMPLATES[_r5_hkey('nbtmpl', name) % len(_NEIGHBORHOOD_TEMPLATES)]
+    return tmpl.format(neigh=neighborhood or city_display, city=city_display,
+                       anchor1=a1, anchor2=a2)
+
+
+def build_hotel_description_orig(name, city_name, stars, prop_type, amenities):
+    pass
+
+
+# -----------------------------------------------------------------
 # EXPANSION (2026-05): fold scraped_data/expansion_*.json into the
 # canonical CITY_INFO / EXTRA_HOTELS dicts so seed_database() picks
 # them up without changes. Each expansion city row is:
@@ -712,4 +879,9 @@ for _h in _load_expansion('hotels'):
 # Generated by scripts/gen_r4_expansion.py — deterministic from city_key +
 # index, so the seed DB stays byte-identical across rebuilds.
 for _h in _load_expansion('hotels_r4'):
+    EXTRA_HOTELS.append(_h)
+
+# R5 polish (2026-05): even more procedural hotels (quality + density boost).
+# Generated by scripts/gen_r5_expansion.py — deterministic, distinct from R4.
+for _h in _load_expansion('hotels_r5'):
     EXTRA_HOTELS.append(_h)

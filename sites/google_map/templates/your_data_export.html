@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% block title %}Export your timeline - Google Maps{% endblock %}
+
+{% block body %}
+<div class="app-shell">
+    {% include '_rail.html' %}
+    <aside class="left-panel">
+        {% set search_value = "Timeline export" %}
+        {% include '_search_bar.html' %}
+        <div class="panel-section">
+            <h2>Export your location history</h2>
+            <div class="sub">Download a JSON copy of your timeline visits. Includes place names, cities, and timestamps. Mirrors the Google Takeout Maps timeline export.</div>
+
+            <div class="export-stats" style="display:grid;grid-template-columns:repeat(3, 1fr);gap:12px;margin:18px 0;">
+                <div class="stat-card" style="background:#f8f9fa;border:1px solid var(--divider);border-radius:10px;padding:12px;">
+                    <div style="font-size:12px;color:#5f6368;">Format</div>
+                    <div style="font-size:14px;font-weight:500;">{{ payload.format }}</div>
+                </div>
+                <div class="stat-card" style="background:#f8f9fa;border:1px solid var(--divider);border-radius:10px;padding:12px;">
+                    <div style="font-size:12px;color:#5f6368;">Entries</div>
+                    <div style="font-size:20px;font-weight:700;color:#1a73e8;">{{ payload.entries|length }}</div>
+                </div>
+                <div class="stat-card" style="background:#f8f9fa;border:1px solid var(--divider);border-radius:10px;padding:12px;">
+                    <div style="font-size:12px;color:#5f6368;">Snapshot</div>
+                    <div style="font-size:13px;font-weight:500;">{{ payload.exported_at[:10] }}</div>
+                </div>
+            </div>
+
+            <a class="btn" href="{{ url_for('your_data_export', format='download') }}"
+               download="timeline-export.json"
+               style="display:inline-flex;align-items:center;gap:8px;">
+                <span class="material-icons-outlined">download</span>
+                Download timeline JSON
+            </a>
+
+            <h3 style="margin-top:24px;font-size:14px;color:#5f6368;">Preview ({{ payload.entries|length }} entries)</h3>
+            <ol style="max-height:340px;overflow:auto;padding-left:20px;font-size:13px;color:#202124;">
+                {% for e in payload.entries[:25] %}
+                <li style="padding:4px 0;">
+                    <strong>{{ e.place }}</strong>{% if e.city %} <span style="color:#5f6368;">— {{ e.city }}</span>{% endif %}
+                    <span style="color:#5f6368;font-size:12px;">({{ e.visited_at[:10] }})</span>
+                </li>
+                {% endfor %}
+                {% if not payload.entries %}
+                <li style="color:#5f6368;">{{ payload.note or 'No timeline entries yet.' }}</li>
+                {% endif %}
+            </ol>
+        </div>
+    </aside>
+    {% include '_mapcanvas.html' %}
+</div>
+{% endblock %}

@@ -37,6 +37,32 @@
                 <span><a href="{{ url_for('city_page', slug=place.city.slug) }}">{{ place.city.display_name }}</a></span>
             </div>
             <div class="pd-sub" style="margin-top:8px;">{{ place.subtitle }}</div>
+
+            {# ---- R5 ambient chips: noise / crowd / mask / indoor zone / floor ---- #}
+            {% set ambient = place.get_ambient_chips() %}
+            {% if ambient or place.indoor_zone_type or place.floor_number %}
+            <div class="pd-ambient" role="region" aria-label="Ambient conditions"
+                 style="display:flex;flex-wrap:wrap;gap:6px;margin-top:10px;">
+                {% for kind, icon, label in ambient %}
+                <span class="pd-ambient-chip" data-ambient-kind="{{ kind }}"
+                      style="background:{% if kind == 'mask' %}#fce8e6;color:#c5221f{% elif kind == 'noise' %}#fff7e0;color:#b86e00{% else %}#e8f0fe;color:#174ea6{% endif %};border-radius:14px;padding:4px 10px;font-size:12px;font-weight:500;display:inline-flex;align-items:center;gap:4px;">
+                    <span class="material-icons-outlined" style="font-size:14px;">{{ icon }}</span>{{ label }}
+                </span>
+                {% endfor %}
+                {% if place.indoor_zone_type %}
+                <span class="pd-ambient-chip" data-ambient-kind="indoor-zone"
+                      style="background:#e6f4ea;color:#137333;border-radius:14px;padding:4px 10px;font-size:12px;font-weight:500;display:inline-flex;align-items:center;gap:4px;">
+                    <span class="material-icons-outlined" style="font-size:14px;">domain</span>{{ place.indoor_zone_type.replace('-', ' ').capitalize() }}
+                </span>
+                {% endif %}
+                {% if place.floor_number %}
+                <span class="pd-ambient-chip" data-ambient-kind="floor"
+                      style="background:#f1f3f4;color:#202124;border-radius:14px;padding:4px 10px;font-size:12px;font-weight:500;display:inline-flex;align-items:center;gap:4px;">
+                    <span class="material-icons-outlined" style="font-size:14px;">layers</span>Floor {{ place.floor_number }}
+                </span>
+                {% endif %}
+            </div>
+            {% endif %}
         </div>
 
         <div class="pd-actions">
@@ -69,6 +95,10 @@
                 <div class="ico"><span class="material-icons-outlined">share</span></div>
                 <span class="lbl">Share</span>
             </button>
+            <a href="{{ url_for('place_qr', slug=place.slug) }}" class="pd-action" aria-label="Show QR code">
+                <div class="ico"><span class="material-icons-outlined">qr_code_2</span></div>
+                <span class="lbl">QR</span>
+            </a>
             {% if current_user.is_authenticated %}
             <form method="POST" action="{{ url_for('place_checkin', slug=place.slug) }}" style="display:inline;">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
@@ -229,6 +259,82 @@
         </div>
         {% endif %}
 
+        {# ---- R5 EV connector info ---- #}
+        {% if place.ev_charging or place.ev_connector_type or place.ev_charger_kw %}
+        <div class="pd-block" id="ev-info">
+            <h3 class="pd-section-title" style="font-size:16px;">EV charging</h3>
+            <ul style="list-style:none;padding:0;margin:0;font-size:13px;">
+                {% if place.ev_connector_type %}
+                <li style="display:flex;justify-content:space-between;padding:4px 0;">
+                    <span style="color:#5f6368;">Connector type</span>
+                    <span style="color:#202124;font-weight:500;">{{ place.ev_connector_type }}</span>
+                </li>
+                {% endif %}
+                {% if place.ev_charger_kw %}
+                <li style="display:flex;justify-content:space-between;padding:4px 0;">
+                    <span style="color:#5f6368;">Peak charging speed</span>
+                    <span style="color:#202124;font-weight:500;">{{ place.ev_charger_kw }} kW</span>
+                </li>
+                {% endif %}
+                {% if place.is_24h %}
+                <li style="display:flex;justify-content:space-between;padding:4px 0;">
+                    <span style="color:#5f6368;">Availability</span>
+                    <span style="color:#137333;font-weight:500;">24/7</span>
+                </li>
+                {% endif %}
+            </ul>
+        </div>
+        {% endif %}
+
+        {# ---- R5 parking lot capacity ---- #}
+        {% if place.parking_lot_capacity %}
+        <div class="pd-block" id="parking-info">
+            <h3 class="pd-section-title" style="font-size:16px;">Parking</h3>
+            <div style="font-size:13px;color:#5f6368;">
+                Capacity: <strong style="color:#202124;">{{ "{:,}".format(place.parking_lot_capacity) }} spaces</strong>
+            </div>
+        </div>
+        {% endif %}
+
+        {# ---- R5 indoor floor selector (compact strip) ---- #}
+        {% set floors = place.get_floors() %}
+        {% if floors %}
+        <div class="pd-block" id="floor-selector">
+            <h3 class="pd-section-title" style="font-size:16px;display:flex;justify-content:space-between;align-items:center;">
+                <span>Indoor floor selector</span>
+                <a href="{{ url_for('place_floors', slug=place.slug) }}"
+                   style="font-size:12px;color:#1a73e8;text-decoration:none;font-weight:400;">All floors &rarr;</a>
+            </h3>
+            <div class="floor-strip" role="tablist" aria-label="Indoor floor selector"
+                 style="display:flex;gap:6px;overflow-x:auto;padding:8px 0;">
+                {% for f in floors %}
+                <button type="button" role="tab"
+                        class="floor-strip-btn {% if f.code == place.floor_number %}selected{% endif %}"
+                        data-floor-code="{{ f.code }}"
+                        aria-selected="{{ 'true' if f.code == place.floor_number else 'false' }}"
+                        title="{{ f.label }}"
+                        style="min-width:48px;height:48px;border:1px solid {% if f.code == place.floor_number %}#1a73e8{% else %}var(--divider){% endif %};border-radius:8px;background:{% if f.code == place.floor_number %}#e8f0fe{% else %}#fff{% endif %};color:#202124;font-weight:600;flex-shrink:0;cursor:pointer;">
+                    {{ f.code }}
+                </button>
+                {% endfor %}
+            </div>
+            <div style="font-size:12px;color:#5f6368;margin-top:4px;">
+                {% for f in floors %}{% if f.code == place.floor_number %}{{ f.label }} — {{ f.summary }}{% endif %}{% endfor %}
+            </div>
+        </div>
+        {% endif %}
+
+        {# ---- R5 screen-reader place description ---- #}
+        <div class="sr-only" id="sr-place-description" aria-live="polite">
+            {{ place.name }}, {{ place.category.name }} in {{ place.city.display_name }}.
+            Rated {{ "%.1f"|format(place.rating) }} out of 5 from {{ place.review_count }} reviews.
+            {% if place.noise_level %}Noise level: {{ place.noise_level }}.{% endif %}
+            {% if place.crowd_level %}Crowd level: {{ place.crowd_level.replace('-', ' ') }}.{% endif %}
+            {% if place.mask_required %}Mask required.{% endif %}
+            {% if place.floor_number %}Located on floor {{ place.floor_number }}.{% endif %}
+            {% if place.accessibility_score %}Accessibility score {{ place.accessibility_score }} out of 100.{% endif %}
+        </div>
+
         {# ---- R4 reservation CTA ---- #}
         {% if place.accepts_reservations %}
         <div class="pd-block" id="reservation-cta" style="background:#fff7e0;border:1px solid #fce8b2;border-radius:8px;padding:14px 16px;">
@@ -328,13 +434,39 @@
             <section class="pd-gallery-section">
                 <h3>{{ sec.title }}</h3>
                 <p>{{ sec.desc }}</p>
-                <div class="pd-gallery-images">
-                    {% for img in sec.images %}
-                    <div class="pd-gallery-img">
-                        <img src="{{ img }}" alt="{{ sec.title }}"
-                             onerror="this.parentElement.style.display='none';">
+                {# R5 swipe carousel — horizontal scroll-snap with keyboard
+                   pagination buttons. Each image is focusable so screen
+                   readers can navigate one by one. #}
+                <div class="pd-gallery-carousel" role="region"
+                     aria-label="{{ sec.title }} photo carousel"
+                     data-carousel="{{ loop.index0 }}"
+                     style="position:relative;">
+                    <div class="pd-gallery-images carousel-track"
+                         style="display:flex;gap:8px;overflow-x:auto;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;padding-bottom:8px;">
+                        {% for img in sec.images %}
+                        <div class="pd-gallery-img carousel-slide"
+                             tabindex="0" role="group"
+                             aria-label="Photo {{ loop.index }} of {{ sec.images|length }}"
+                             style="scroll-snap-align:start;flex:0 0 80%;min-width:240px;">
+                            <img src="{{ img }}" alt="{{ sec.title }} photo {{ loop.index }}"
+                                 onerror="this.parentElement.style.display='none';">
+                        </div>
+                        {% endfor %}
                     </div>
-                    {% endfor %}
+                    <button type="button" class="carousel-prev"
+                            aria-label="Previous photo"
+                            data-carousel-action="prev"
+                            data-carousel-target="{{ loop.index0 }}"
+                            style="position:absolute;left:4px;top:50%;transform:translateY(-50%);background:#fff;border:1px solid var(--divider);border-radius:50%;width:32px;height:32px;display:flex;align-items:center;justify-content:center;cursor:pointer;">
+                        <span class="material-icons-outlined">chevron_left</span>
+                    </button>
+                    <button type="button" class="carousel-next"
+                            aria-label="Next photo"
+                            data-carousel-action="next"
+                            data-carousel-target="{{ loop.index0 }}"
+                            style="position:absolute;right:4px;top:50%;transform:translateY(-50%);background:#fff;border:1px solid var(--divider);border-radius:50%;width:32px;height:32px;display:flex;align-items:center;justify-content:center;cursor:pointer;">
+                        <span class="material-icons-outlined">chevron_right</span>
+                    </button>
                 </div>
             </section>
             {% endfor %}
@@ -440,6 +572,16 @@
         {% for p in nearby %}
             {{ place_card(p) }}
         {% endfor %}
+
+        {# R5 mobile bottom-sheet hint — collapsed by default on desktop; on
+           mobile this becomes the place panel's bottom sheet handle. #}
+        <div class="pd-bottom-sheet-handle" role="button" tabindex="0"
+             aria-label="Drag up for full details (mobile)"
+             data-bottom-sheet="place-{{ place.id }}"
+             style="display:none;position:sticky;bottom:0;left:0;right:0;background:#fff;border-top:1px solid var(--divider);padding:10px;text-align:center;">
+            <div style="width:36px;height:4px;background:#bdc1c6;border-radius:2px;margin:0 auto 6px;"></div>
+            <span style="font-size:12px;color:#5f6368;">Drag up for full details</span>
+        </div>
     </aside>
 
     {% include '_mapcanvas.html' %}

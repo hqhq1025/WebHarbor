@@ -13,16 +13,18 @@
 
     <form method="POST" action="{{ url_for('trip_seat_map', booking_id=booking.id) }}">
       <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-      <div class="seat-map" style="background:#fff;border:1px solid #dadce0;border-radius:8px;padding:18px;display:inline-block;">
+      <div class="seat-map" role="grid" aria-label="Seat map for {{ flight.flight_number }}" style="background:#fff;border:1px solid #dadce0;border-radius:8px;padding:18px;display:inline-block;">
         <div style="text-align:center;margin-bottom:8px;color:#5f6368;font-size:12px;">Front of cabin</div>
         {% for row in seat_rows %}
-          <div class="seat-row" style="display:flex;gap:6px;margin-bottom:6px;">
+          <div class="seat-row" role="row" style="display:flex;gap:6px;margin-bottom:6px;">
             <span style="display:inline-flex;align-items:center;justify-content:center;width:24px;color:#5f6368;font-size:12px;">{{ row.number }}</span>
             {% for seat in row.seats %}
               {% if seat.code is none %}
-                <span style="display:inline-block;width:28px;"></span>
+                <span style="display:inline-block;width:28px;" aria-hidden="true"></span>
               {% else %}
-                <label style="position:relative;">
+                <label style="position:relative;" data-seat="{{ seat.code }}"
+                       {% if seat.taken %}data-occupied="1"{% endif %}
+                       aria-label="Seat {{ seat.code }}{% if seat.taken %}, taken{% elif seat.extra_legroom %}, extra legroom{% else %}, available{% endif %}">
                   <input type="radio" name="seat" value="{{ seat.code }}"
                          {% if seat.taken %}disabled{% endif %}
                          {% if seat.code == current_seat %}checked{% endif %}

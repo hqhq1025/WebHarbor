@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block title %}{{ section.title }} · {{ repo.slug }}{% endblock %}
+
+{% block content %}
+<div class="container-wide page">
+    {% set active_tab = 'card' %}
+    {% include "_repo_head.html" %}
+
+    <nav class="docs-breadcrumb" aria-label="Breadcrumb">
+        <a href="{{ url_for('model_detail' if repo.repo_type == 'model' else (repo.repo_type ~ '_detail'),
+                            author=repo.slug.split('/')[0], name=repo.slug.split('/')[1]) }}">{{ repo.slug }}</a>
+        <span>/</span>
+        <span>README</span>
+        <span>/</span>
+        <span aria-current="page">{{ section.title }}</span>
+    </nav>
+
+    <article class="readme-section-page" aria-labelledby="section-title" style="margin-top:18px;">
+        <h1 id="section-title">{{ section.title }}</h1>
+        <p class="muted">Section anchor <code>#{{ section.slug }}</code> of <strong>{{ repo.slug }}</strong>'s README.</p>
+        <pre style="white-space:pre-wrap;font-family:inherit;font-size:14px;background:#f9fafb;border:1px solid var(--border,#e5e7eb);border-radius:8px;padding:14px 16px;">{{ section.body }}</pre>
+    </article>
+
+    <nav class="readme-section-nav" aria-label="Other sections" style="margin-top:24px;border-top:1px solid var(--border,#e5e7eb);padding-top:14px;">
+        <h2 style="font-size:15px;">All sections</h2>
+        <ul style="list-style:none;padding:0;margin:0;display:flex;flex-wrap:wrap;gap:8px;">
+        {% for s in sections %}
+            <li>
+                {% if s.slug == section.slug %}
+                    <span class="tag tag-blue" aria-current="true">{{ s.title }}</span>
+                {% else %}
+                    <a class="tag" href="{{ url_for('repo_readme_section', author=repo.slug.split('/')[0], name=repo.slug.split('/')[1], section_slug=s.slug, repo_type=repo.repo_type) }}">{{ s.title }}</a>
+                {% endif %}
+            </li>
+        {% endfor %}
+        </ul>
+    </nav>
+</div>
+{% endblock %}

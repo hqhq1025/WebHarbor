@@ -50,11 +50,20 @@
         {% endfor %}
     </div>
     {% elif query and not static_matches %}
-    <div class="empty-state">
-        <div class="empty-state-icon">&#128270;</div>
-        <h3>No recipes found</h3>
-        <p>Try different keywords or browse our categories.</p>
-        <a href="{{ url_for('all_recipes') }}" class="btn btn-primary">Browse All Recipes</a>
+    <div class="search-empty" role="region" aria-label="No search results">
+        <div class="search-empty-icon" aria-hidden="true">&#128270;</div>
+        <h2>No recipes found for "{{ query }}"</h2>
+        <p>Try different keywords or explore one of these popular categories.</p>
+        <div class="search-empty-suggestions">
+            <a href="{{ url_for('category_page', slug='dinner') }}">Dinner</a>
+            <a href="{{ url_for('category_page', slug='chicken') }}">Chicken</a>
+            <a href="{{ url_for('category_page', slug='pasta') }}">Pasta</a>
+            <a href="{{ url_for('category_page', slug='desserts') }}">Desserts</a>
+            <a href="{{ url_for('category_page', slug='breakfast') }}">Breakfast</a>
+            <a href="{{ url_for('category_page', slug='salads') }}">Salads</a>
+            <a href="{{ url_for('diets_hub') }}">Diets</a>
+            <a href="{{ url_for('all_recipes') }}">Browse all recipes</a>
+        </div>
     </div>
     {% endif %}
 </div>

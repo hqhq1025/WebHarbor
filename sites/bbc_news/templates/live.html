@@ -10,6 +10,18 @@
     <p>Breaking news and live event coverage from BBC News.</p>
 </div>
 
+{# R5: page-level auto-refresh badge. Toggleable, persists last-checked  #}
+{# time, and announces new updates to the ARIA live region in base.html. #}
+<div class="live-refresh-bar live-refresh-bar-page" role="status" aria-live="polite"
+     data-live-refresh-global="1">
+    <span class="lrb-dot" aria-hidden="true"></span>
+    <span class="lrb-label">Auto-refresh on · checking every 30s</span>
+    <button type="button" class="lrb-toggle" aria-pressed="true">Pause</button>
+    <span class="lrb-counter" aria-hidden="true">— last checked
+        <time class="lrb-time"></time>
+    </span>
+</div>
+
 <style>
 @keyframes pulse {
     0% { opacity: 1; transform: scale(1); }

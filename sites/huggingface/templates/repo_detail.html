@@ -250,10 +250,69 @@ Today is a sunny day</textarea>
             <div class="side-card">
                 <h4>Use in libraries</h4>
                 {% if repo.library %}<span class="tag tag-yellow">{{ repo.library }}</span>{% endif %}
-                <pre class="code-block">from transformers import pipeline
+                {# R5: code snippet with copy-to-clipboard button. The snippet
+                   is the same string returned by /api/snippet/<repo>?format=text
+                   so an agent can compare what was rendered with what gets
+                   copied. #}
+                <div class="code-snippet-wrap" style="position:relative;">
+                    <pre class="code-block" id="snippet-{{ repo.id }}" data-snippet="{{ repo.id }}">from transformers import pipeline
 pipe = pipeline("{{ repo.task_slug or 'text-generation' }}",
     model="{{ repo.slug }}")</pre>
+                    <button type="button"
+                            class="btn btn-sm btn-outline copy-snippet-btn"
+                            aria-label="Copy code snippet"
+                            data-copy-target="snippet-{{ repo.id }}"
+                            style="position:absolute;top:6px;right:6px;font-size:11.5px;padding:3px 8px;">
+                        <span class="copy-snippet-label">Copy</span>
+                    </button>
+                </div>
+                <script>
+                (function(){
+                    document.querySelectorAll('.copy-snippet-btn').forEach(function(btn){
+                        if (btn.dataset.bound) return;
+                        btn.dataset.bound = '1';
+                        btn.addEventListener('click', function(){
+                            var id = btn.getAttribute('data-copy-target');
+                            var pre = document.getElementById(id);
+                            if (!pre) return;
+                            var text = pre.textContent;
+                            var done = function(){
+                                var lbl = btn.querySelector('.copy-snippet-label');
+                                if (lbl){ lbl.textContent = 'Copied!'; setTimeout(function(){ lbl.textContent = 'Copy'; }, 1500); }
+                            };
+                            if (navigator.clipboard && navigator.clipboard.writeText){
+                                navigator.clipboard.writeText(text).then(done, done);
+                            } else {
+                                try { var ta = document.createElement('textarea'); ta.value = text; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); ta.remove(); } catch(e){}
+                                done();
+                            }
+                        });
+                    });
+                })();
+                </script>
             </div>
+
+            {# R5: license link card — surfaces the SPDX license URL the
+               agent / user can follow to read the actual terms. #}
+            <div class="side-card">
+                <h4>License</h4>
+                <p style="margin:0 0 6px;"><span class="tag">{{ repo.license_display }}</span></p>
+                <p style="margin:0;font-size:13px;">
+                    <a class="license-link" href="{{ repo.license_link }}" rel="noopener noreferrer">Read full {{ repo.license_display }} text →</a>
+                </p>
+            </div>
+
+            {% if repo.repo_type == 'model' and (repo.hardware_used or repo.training_compute_hours) %}
+            {# R5: training provenance — hardware used + compute hours. #}
+            <div class="side-card">
+                <h4>Training</h4>
+                <table class="specs-table">
+                    {% if repo.hardware_used %}<tr><td>Hardware</td><td><code>{{ repo.hardware_used }}</code></td></tr>{% endif %}
+                    {% if repo.training_compute_hours %}<tr><td>Compute</td><td>{{ repo.training_compute_display }}</td></tr>{% endif %}
+                    {% if repo.param_count_display %}<tr><td>Parameters</td><td>{{ repo.param_count_display }}</td></tr>{% endif %}
+                </table>
+            </div>
+            {% endif %}
 
             <div class="side-card">
                 <h4>Tags</h4>

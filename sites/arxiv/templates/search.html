@@ -5,8 +5,8 @@
 <h1>Search arXiv</h1>
 
 <div class="search-box-main">
-    <form action="{{ url_for('search') }}" method="get">
-        <input type="text" name="query" value="{{ query }}" placeholder="Search arXiv...">
+    <form action="{{ url_for('search') }}" method="get" role="search" aria-label="Paper search">
+        <input type="text" name="query" value="{{ query }}" placeholder="Search arXiv..." aria-label="Search query">
         {% set search_type_options = [
             ('all', 'All fields'),
             ('title', 'Title'),
@@ -39,15 +39,62 @@
         {% if _cur_cat %}
             <input type="hidden" name="category" value="{{ _cur_cat }}">
         {% endif %}
-        {% if request.args.get('sort') %}
-            <input type="hidden" name="sort" value="{{ request.args.get('sort') }}">
-        {% endif %}
         {% if request.args.get('author') %}
             <input type="hidden" name="author" value="{{ request.args.get('author') }}">
         {% endif %}
+
+        {# R5 — sort dropdown surfaces relevance/date/citations/version as
+           first-class options. Persists via the `sort` query arg, which
+           _apply_paper_sort reads. #}
+        {% set _sort_options = [
+            ('', 'Relevance'),
+            ('date', 'Newest first'),
+            ('date_asc', 'Oldest first'),
+            ('views', 'Most viewed'),
+            ('stars', 'Most starred'),
+        ] %}
+        {% set _cur_sort = request.args.get('sort', '') %}
+        <label for="sort-select" class="sort-label">Sort:</label>
+        <select id="sort-select" name="sort" class="sort-dropdown" aria-label="Sort results">
+            {% for v, l in _sort_options %}
+            <option value="{{ v }}"{% if v == _cur_sort %} selected{% endif %}>{{ l }}</option>
+            {% endfor %}
+        </select>
+
         <button type="submit" class="btn btn-primary">Search</button>
         <a href="{{ url_for('advanced_search') }}" class="btn">Advanced</a>
     </form>
+
+    {# R5 — active-filter chips. Each chip links to the same search with the
+       filter removed. Helps the agent (and humans) see what's narrowing the
+       result set at a glance. #}
+    {% set _chip_pairs = [] %}
+    {% if _cur_cat %}{% set _ = _chip_pairs.append(('Category', _cur_cat, 'category')) %}{% endif %}
+    {% if request.args.get('author') %}{% set _ = _chip_pairs.append(('Author', request.args.get('author'), 'author')) %}{% endif %}
+    {% if request.args.get('year') %}{% set _ = _chip_pairs.append(('Year', request.args.get('year'), 'year')) %}{% endif %}
+    {% if request.args.get('last_days') %}{% set _ = _chip_pairs.append(('Last', request.args.get('last_days') ~ ' days', 'last_days')) %}{% endif %}
+    {% if request.args.get('min_authors') %}{% set _ = _chip_pairs.append(('Min authors', request.args.get('min_authors'), 'min_authors')) %}{% endif %}
+    {% if request.args.get('journal_ref') %}{% set _ = _chip_pairs.append(('Journal', request.args.get('journal_ref'), 'journal_ref')) %}{% endif %}
+    {% if request.args.get('sort') %}{% set _ = _chip_pairs.append(('Sort', request.args.get('sort'), 'sort')) %}{% endif %}
+    {% if _chip_pairs %}
+    <div class="filter-chips" aria-label="Active filters">
+        <span class="filter-chips-label">Filters:</span>
+        {% for label, value, key in _chip_pairs %}
+            {% set _strip = dict(request.args) %}
+            {% set _ = _strip.pop(key, None) %}
+            <a class="filter-chip" href="{{ url_for('search', **_strip) }}"
+               aria-label="Remove {{ label }} filter {{ value }}">
+                <span class="chip-label">{{ label }}:</span>
+                <span class="chip-value">{{ value }}</span>
+                <span class="chip-remove" aria-hidden="true">×</span>
+            </a>
+        {% endfor %}
+        {% set _bare = {} %}
+        {% if query %}{% set _ = _bare.update({'query': query, 'searchtype': field}) %}{% endif %}
+        <a class="filter-chip filter-chip-clear" href="{{ url_for('search', **_bare) }}">Clear all</a>
+    </div>
+    {% endif %}
+
     {% if _cur_cat and query %}
     <p style="font-size:12px;margin-top:6px;" class="muted">
         Currently filtered to <b>{{ _cur_cat }}</b>.
@@ -64,6 +111,32 @@
     {% endif %}
 </div>
 
+{# R5 — save-this-search form. Lets the user persist the current query+filter
+   pair as a SavedSearch with an alert frequency. Only shown when there's
+   actually a query or category to save. #}
+{% if current_user.is_authenticated and (query or _cur_cat) %}
+<form method="post" action="{{ url_for('save_search') }}" class="save-search-form" aria-label="Save this search">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <input type="hidden" name="query" value="{{ query }}">
+    <input type="hidden" name="field" value="{{ field }}">
+    <input type="hidden" name="category" value="{{ _cur_cat }}">
+    <label for="ss-name" class="muted" style="font-size:12px;">Save this search:</label>
+    <input id="ss-name" type="text" name="name" maxlength="120"
+           placeholder="Name (optional)" value="{{ query[:60] or _cur_cat }}">
+    <label for="ss-freq" class="muted" style="font-size:12px;">Notify</label>
+    <select id="ss-freq" name="frequency">
+        <option value="daily">Daily</option>
+        <option value="weekly" selected>Weekly</option>
+        <option value="monthly">Monthly</option>
+    </select>
+    <button type="submit" class="btn">Save &amp; Notify me</button>
+</form>
+{% elif (query or _cur_cat) %}
+<p style="font-size:12px;margin-top:6px;" class="muted">
+    <a href="{{ url_for('login', next=request.full_path) }}">Log in</a> to save this search and get notified when new papers match.
+</p>
+{% endif %}
+
 {% if query or total > 0 %}
     {% set _cat_arg = request.args.get('category') or request.args.get('primary_category') or '' %}
     {% set _cat_label = _cat_arg if _cat_arg else 'all archives' %}
@@ -75,7 +148,7 @@
     {% if results %}
     {% for p in results %}
     <div class="search-result">
-        <div class="muted" style="font-size:11px;">arXiv:{{ p.arxiv_id }}
+        <div class="muted" style="font-size:11px;">arXiv:{{ p.arxiv_id }}{% if p.paper_version %} <span class="version-badge-inline">{{ p.paper_version }}</span>{% endif %}
             [<a href="{{ url_for('pdf_view', arxiv_id=p.arxiv_id) }}">pdf</a>,
             <a href="{{ url_for('html_view', arxiv_id=p.arxiv_id) }}">html</a>,
             <a href="{{ url_for('format_view', arxiv_id=p.arxiv_id) }}">other</a>]
@@ -83,7 +156,7 @@
         <div class="rtitle"><a href="{{ url_for('paper_detail', arxiv_id=p.arxiv_id) }}">{{ p.display_title }}</a></div>
         <div class="rauthors">Authors: {{ p.authors_display }}</div>
         <div class="rsnippet">{{ p.short_abstract }}</div>
-        <div class="muted" style="font-size:11px;">{{ p.primary_subject }}{% if p.display_journal_ref %} &middot; {{ p.display_journal_ref }}{% endif %}{% if p.display_comments %} &middot; {{ p.display_comments }}{% endif %}</div>
+        <div class="muted" style="font-size:11px;">{{ p.primary_subject }}{% if p.display_journal_ref %} &middot; {{ p.display_journal_ref }}{% endif %}{% if p.display_comments %} &middot; {{ p.display_comments }}{% endif %}{% if p.license %} &middot; <span class="license-tag">{{ p.license }}</span>{% endif %}</div>
     </div>
     {% endfor %}
 

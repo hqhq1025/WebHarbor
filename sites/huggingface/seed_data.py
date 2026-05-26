@@ -668,12 +668,11 @@ def _load_scraped():
             seen[kind].add(adapted["slug"])
             base[kind].append(adapted)
 
-    # R4: cap each kind so the seed DB stays in the low hundreds of MB. The
-    # R4 scrape returns ~22k spaces / ~19k models / ~26k datasets, but the
-    # benchmark target is 25k models / 27k datasets / 3k spaces. Apply a
-    # deterministic cap (preserving the first N entries — already sorted by
-    # slug at this point, so the same N survive every rebuild).
-    CAPS = {"models": 26000, "datasets": 28000, "spaces": 4000}
+    # R5: lift caps so total repos clear 80k (model 35k+, dataset 38k+,
+    # space 6k+). Scraped pools already exceed these — see
+    # scraped_data/*.json totals (models ~37k, datasets ~44k, spaces ~23k).
+    # First N entries survive (alpha-sorted above), so rebuilds are byte-stable.
+    CAPS = {"models": 36000, "datasets": 39000, "spaces": 6500}
     for k, cap in CAPS.items():
         if len(base[k]) > cap:
             base[k] = base[k][:cap]

@@ -88,7 +88,7 @@
         </div>
         <div class="bag-summary-row">
             <span>Shipping</span>
-            <span style="color:var(--color-success)">FREE</span>
+            <span style="color:var(--color-success)" data-r5-shipping-result>FREE</span>
         </div>
         <div class="bag-summary-row">
             <span>Estimated Tax</span>
@@ -98,6 +98,28 @@
             <span>Total</span>
             <span>${{ "%.2f"|format(subtotal.total * 1.0875) }}</span>
         </div>
+
+        <!-- R5 — AJAX zip-code shipping estimate -->
+        <form data-r5-shipping style="display:flex;gap:8px;margin:18px 0;align-items:center;flex-wrap:wrap;" aria-label="Shipping estimate form">
+            <label for="r5-zip-bag" style="font-size:14px;color:#6e6e73;">Estimate shipping:</label>
+            <input id="r5-zip-bag" name="zip" type="text" inputmode="numeric" maxlength="5" placeholder="ZIP code" required
+                   style="padding:8px 10px;border:1px solid #d2d2d7;border-radius:8px;width:100px;">
+            <select name="method" aria-label="Shipping method"
+                    style="padding:8px;border:1px solid #d2d2d7;border-radius:8px;">
+                <option value="standard">Standard</option>
+                <option value="express">Express</option>
+                <option value="overnight">Overnight</option>
+            </select>
+            <button type="submit" style="padding:8px 14px;border-radius:980px;border:0;background:#0071e3;color:#fff;cursor:pointer;">Estimate</button>
+        </form>
+
+        <!-- R5 — AJAX promo code validator with toast feedback -->
+        <form data-r5-promo style="display:flex;gap:8px;margin:12px 0;align-items:center;" aria-label="Promo code form">
+            <label for="r5-promo-bag" style="font-size:14px;color:#6e6e73;">Promo code:</label>
+            <input id="r5-promo-bag" name="code" type="text" placeholder="Promo code" required
+                   style="padding:8px 10px;border:1px solid #d2d2d7;border-radius:8px;flex:1;">
+            <button type="submit" style="padding:8px 14px;border-radius:980px;border:0;background:#1d1d1f;color:#fff;cursor:pointer;">Apply</button>
+        </form>
 
         {% if current_user.is_authenticated %}
         <a href="{{ url_for('checkout') }}" class="btn-checkout">Check Out</a>

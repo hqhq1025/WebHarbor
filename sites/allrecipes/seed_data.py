@@ -1613,6 +1613,19 @@ def seed_extended_catalog():
         print(f"[seed_extended] R4 polish FAILED: {exc!r}")
         raise
 
+    # ----- R5: make-ahead / kid-friendly / global-fusion variant passes
+    # + 3 new chefs + per-recipe enrichment with cuisine-origin, time tier,
+    # calorie tier, equipment hint, and 5-flag allergen-free roster. Runs
+    # AFTER R4 so the new tag enrichment covers R4 variants too.
+    try:
+        from r5_seed import run_r5_polish
+        r5_counts = run_r5_polish(cat_by_slug)
+        if not r5_counts.get('skipped'):
+            print(f"[seed_extended] R5 polish: {r5_counts}")
+    except Exception as exc:
+        print(f"[seed_extended] R5 polish FAILED: {exc!r}")
+        raise
+
     # ----- Reviewer users (placeholder, non-loginable) -----
     REVIEWER_COUNT = 24
     reviewer_first = [

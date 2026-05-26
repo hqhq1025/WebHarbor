@@ -180,6 +180,15 @@ class Repository(db.Model):
     monthly_downloads_history = db.Column(db.Text, default="[]")  # JSON: list of 12 ints
     last_modified = db.Column(db.DateTime, default=lambda: MIRROR_REFERENCE_DATE)
     param_count = db.Column(db.BigInteger, default=0)  # explicit, not derived from params_b
+    # R5 added — license link, structured eval-results payload, training-hardware
+    # provenance, and training compute hours. Used by /<repo>/section/<sid>,
+    # /api/snippet/..., /api/autotrain/estimate, billing pages, and the new
+    # readme-anchor / paper-implementations routes. Every value is a
+    # deterministic function of the slug so a fresh rebuild is byte-stable.
+    license_url = db.Column(db.String(300), default="")
+    eval_results_json = db.Column(db.Text, default="[]")          # JSON list of {benchmark,score,split}
+    hardware_used = db.Column(db.String(120), default="")          # e.g. "256× A100 80GB"
+    training_compute_hours = db.Column(db.Integer, default=0)
     created_at = db.Column(db.DateTime, default=lambda: MIRROR_REFERENCE_DATE)
     updated_at = db.Column(db.DateTime, default=lambda: MIRROR_REFERENCE_DATE)
 
@@ -277,6 +286,49 @@ class Repository(db.Model):
     def last_modified_display(self):
         dt = self.last_modified or self.updated_at or mirror_now()
         return dt.strftime("%b %d, %Y")
+
+    # R5 helpers ------------------------------------------------------
+    @property
+    def eval_results(self):
+        """Parsed eval_results_json — list of {benchmark, score, split}."""
+        try:
+            arr = json.loads(self.eval_results_json or "[]")
+            return arr if isinstance(arr, list) else []
+        except Exception:
+            return []
+
+    @property
+    def training_compute_display(self):
+        """Render training_compute_hours as e.g. '12.0k GPU-hours' / '845 GPU-hours'."""
+        n = int(self.training_compute_hours or 0)
+        if n >= 1_000_000:
+            return f"{n / 1e6:.1f}M GPU-hours"
+        if n >= 1_000:
+            return f"{n / 1e3:.1f}k GPU-hours"
+        if n > 0:
+            return f"{n} GPU-hours"
+        return ""
+
+    @property
+    def license_link(self):
+        """Return license_url or fall back to a sensible default per license slug."""
+        if self.license_url:
+            return self.license_url
+        slug = (self.license or "").lower()
+        defaults = {
+            "apache-2.0": "https://www.apache.org/licenses/LICENSE-2.0",
+            "mit": "https://opensource.org/license/mit/",
+            "cc-by-4.0": "https://creativecommons.org/licenses/by/4.0/",
+            "cc-by-sa-4.0": "https://creativecommons.org/licenses/by-sa/4.0/",
+            "cc-by-nc-4.0": "https://creativecommons.org/licenses/by-nc/4.0/",
+            "openrail": "https://www.licenses.ai/open-rail",
+            "creativeml-openrail-m": "https://huggingface.co/spaces/CompVis/stable-diffusion-license",
+            "llama-3.3": "https://llama.meta.com/llama3/license/",
+            "gemma": "https://ai.google.dev/gemma/terms",
+            "bsd-3-clause": "https://opensource.org/license/bsd-3-clause/",
+            "gpl-3.0": "https://www.gnu.org/licenses/gpl-3.0.en.html",
+        }
+        return defaults.get(slug, f"/license/{slug or 'other'}")
 
 
 class Like(db.Model):
@@ -752,10 +804,139 @@ def seed_database():
             pc = buckets[h % len(buckets)] if item.get("repo_type") == "model" else 0
         return trending, history, last_mod, pc
 
+    def _r5_extras(item):
+        """R5: license_url, eval_results_json, hardware_used, training_compute_hours.
+
+        Every value is a deterministic function of the slug (md5 hash) so a
+        fresh seed rebuild on any host produces identical bytes."""
+        slug = item.get("slug", "")
+        h = int(_hashlib.md5(slug.encode("utf-8")).hexdigest(), 16)
+        license_slug = (item.get("license") or "apache-2.0").lower()
+        # license_url — explicit mapping; falls back to in-tree /license/<slug>.
+        license_map = {
+            "apache-2.0": "https://www.apache.org/licenses/LICENSE-2.0",
+            "mit": "https://opensource.org/license/mit/",
+            "cc-by-4.0": "https://creativecommons.org/licenses/by/4.0/",
+            "cc-by-sa-4.0": "https://creativecommons.org/licenses/by-sa/4.0/",
+            "cc-by-nc-4.0": "https://creativecommons.org/licenses/by-nc/4.0/",
+            "openrail": "https://www.licenses.ai/open-rail",
+            "creativeml-openrail-m": "https://huggingface.co/spaces/CompVis/stable-diffusion-license",
+            "llama-3.3": "https://llama.meta.com/llama3/license/",
+            "gemma": "https://ai.google.dev/gemma/terms",
+            "bsd-3-clause": "https://opensource.org/license/bsd-3-clause/",
+            "gpl-3.0": "https://www.gnu.org/licenses/gpl-3.0.en.html",
+        }
+        license_url = license_map.get(license_slug, f"/license/{license_slug or 'other'}")
+
+        # eval_results — deterministic per-task benchmark scores. Only models
+        # carry meaningful evals; datasets and spaces get an empty list.
+        repo_type = item.get("repo_type", "")
+        task = (item.get("task") or "").lower()
+        evals = []
+        def _v(lo, hi, step=0):
+            span = hi - lo
+            r = ((h >> (step * 5)) & 0xFFFF) / 0xFFFF
+            return round(lo + span * r, 2)
+        if repo_type == "model":
+            if task in ("text-generation", "text2text-generation"):
+                evals = [
+                    {"benchmark": "MMLU",      "score": _v(40.0, 78.0, 0), "split": "test"},
+                    {"benchmark": "HellaSwag", "score": _v(58.0, 88.0, 1), "split": "val"},
+                    {"benchmark": "ARC-Challenge", "score": _v(34.0, 72.0, 2), "split": "test"},
+                    {"benchmark": "TruthfulQA-MC2", "score": _v(38.0, 65.0, 3), "split": "val"},
+                ]
+            elif task == "text-classification":
+                evals = [
+                    {"benchmark": "GLUE/SST-2",   "score": _v(82.0, 95.0, 0), "split": "validation"},
+                    {"benchmark": "GLUE/MRPC-F1", "score": _v(80.0, 93.0, 1), "split": "validation"},
+                ]
+            elif task == "translation":
+                evals = [
+                    {"benchmark": "FLORES-200 BLEU", "score": _v(22.5, 42.8, 0), "split": "devtest"},
+                    {"benchmark": "WMT21 chrF",      "score": _v(48.0, 65.0, 1), "split": "test"},
+                ]
+            elif task == "summarization":
+                evals = [
+                    {"benchmark": "CNN/DM ROUGE-1", "score": _v(38.0, 48.5, 0), "split": "test"},
+                    {"benchmark": "XSum ROUGE-L",   "score": _v(28.0, 42.0, 1), "split": "test"},
+                ]
+            elif task == "question-answering":
+                evals = [
+                    {"benchmark": "SQuAD v2 F1", "score": _v(78.0, 92.0, 0), "split": "validation"},
+                    {"benchmark": "SQuAD v2 EM", "score": _v(70.0, 88.0, 1), "split": "validation"},
+                ]
+            elif task == "automatic-speech-recognition":
+                evals = [
+                    {"benchmark": "LibriSpeech WER (clean)", "score": _v(3.5, 12.0, 0), "split": "test"},
+                    {"benchmark": "LibriSpeech WER (other)", "score": _v(8.0, 22.0, 1), "split": "test"},
+                ]
+            elif task == "image-classification":
+                evals = [
+                    {"benchmark": "ImageNet-1k Top-1", "score": _v(72.0, 88.0, 0), "split": "val"},
+                ]
+            elif task == "sentence-similarity" or (item.get("library") or "").lower() == "sentence-transformers":
+                evals = [
+                    {"benchmark": "MTEB Retrieval-AVG",  "score": _v(40.0, 62.0, 0), "split": "test"},
+                    {"benchmark": "STS-B Spearman",      "score": _v(78.0, 88.0, 1), "split": "test"},
+                ]
+            elif task == "object-detection":
+                evals = [
+                    {"benchmark": "COCO mAP",     "score": _v(34.0, 58.0, 0), "split": "val"},
+                ]
+            elif task == "image-segmentation":
+                evals = [
+                    {"benchmark": "ADE20k mIoU",  "score": _v(38.0, 56.0, 0), "split": "val"},
+                ]
+            elif task == "fill-mask":
+                evals = [
+                    {"benchmark": "Wikitext-103 PPL", "score": _v(8.0, 24.0, 0), "split": "test"},
+                ]
+            elif task == "text-to-image":
+                evals = [
+                    {"benchmark": "MS-COCO FID",  "score": _v(8.5, 22.0, 0), "split": "val"},
+                    {"benchmark": "GenEval Overall", "score": _v(0.35, 0.72, 1), "split": "test"},
+                ]
+
+        # hardware_used + training_compute_hours — derived from params_b /
+        # bucketed hardware so larger models get more compute.
+        pb = float(item.get("params_b", 0) or 0)
+        if repo_type == "model":
+            if pb >= 60:
+                hw_choices = ["1024× H100 80GB", "512× H100 80GB", "768× A100 80GB"]
+                tch = 240_000 + (h % 320_000)
+            elif pb >= 13:
+                hw_choices = ["256× A100 80GB", "128× H100 80GB", "192× A100 80GB"]
+                tch = 60_000 + (h % 120_000)
+            elif pb >= 6:
+                hw_choices = ["64× A100 80GB", "32× H100 80GB", "96× A100 40GB"]
+                tch = 12_000 + (h % 36_000)
+            elif pb >= 1:
+                hw_choices = ["16× A100 40GB", "8× H100 80GB", "32× V100 32GB"]
+                tch = 1_200 + (h % 8_000)
+            elif pb > 0:
+                hw_choices = ["8× A100 40GB", "4× A10G", "4× V100 32GB"]
+                tch = 240 + (h % 1_500)
+            else:
+                hw_choices = ["8× V100 32GB", "4× A10G", "8× T4"]
+                tch = 80 + (h % 800)
+            hardware_used = hw_choices[(h >> 2) % len(hw_choices)]
+        elif repo_type == "space":
+            # Spaces reuse their runtime hardware as the "used" hardware.
+            hw_display = item.get("hardware_display") or "Nvidia T4"
+            hw_specs = item.get("hardware_specs") or ""
+            hardware_used = f"{hw_display} ({hw_specs})" if hw_specs else hw_display
+            tch = 0
+        else:
+            hardware_used = ""
+            tch = 0
+
+        return license_url, json.dumps(evals, sort_keys=True), hardware_used, tch
+
     for item in all_repos:
         author = get_or_create_author(item["author"])
         task = task_by_slug.get(item.get("task", ""))
         trending, history, last_mod, pc = _r4_extras(item)
+        license_url, eval_json, hw_used, tch = _r5_extras(item)
         repo = Repository(
             slug=item["slug"],
             name=item["name"],
@@ -790,6 +971,10 @@ def seed_database():
             monthly_downloads_history=json.dumps(history),
             last_modified=last_mod,
             param_count=pc,
+            license_url=license_url,
+            eval_results_json=eval_json,
+            hardware_used=hw_used,
+            training_compute_hours=tch,
             updated_at=mirror_now() - timedelta(days=item.get("updated_days_ago", 1)),
         )
         db.session.add(repo)
@@ -2934,6 +3119,368 @@ def space_discussions(author, name):
     repo = Repository.query.filter_by(slug=slug, repo_type="space").first_or_404()
     discussions = Discussion.query.filter_by(repo_id=repo.id).order_by(Discussion.created_at.desc()).all()
     return render_template("discussions.html", repo=repo, discussions=discussions)
+
+
+# ------------------------------------------------------------
+# R5 routes — copy snippets, dataset row pagination, readme section
+# anchors, like animation, discussion reply threading, AutoTrain billing
+# estimate, paper implementations, organization billing.
+# ------------------------------------------------------------
+def _section_slug(title: str) -> str:
+    s = (title or "").strip().lower()
+    out = []
+    for ch in s:
+        if ch.isalnum():
+            out.append(ch)
+        elif out and out[-1] != "-":
+            out.append("-")
+    while out and out[-1] == "-":
+        out.pop()
+    return "".join(out) or "section"
+
+
+def _split_readme_sections(readme: str):
+    """Split a markdown-ish readme into sections by `## ` headers.
+
+    Returns a list of {slug, title, body} so /<a>/<n>/readme/<slug> can
+    return one section at a time without re-parsing on every request."""
+    sections = []
+    cur_title = "Overview"
+    cur_body = []
+    for line in (readme or "").split("\n"):
+        if line.startswith("## "):
+            sections.append({
+                "slug": _section_slug(cur_title),
+                "title": cur_title,
+                "body": "\n".join(cur_body).strip(),
+            })
+            cur_title = line[3:].strip()
+            cur_body = []
+        else:
+            cur_body.append(line)
+    sections.append({
+        "slug": _section_slug(cur_title),
+        "title": cur_title,
+        "body": "\n".join(cur_body).strip(),
+    })
+    return sections
+
+
+@app.route("/<author>/<name>/readme/<section_slug>")
+def repo_readme_section(author, name, section_slug):
+    """Return a single readme section by its anchor slug. Supports model,
+    dataset and space repos — repo_type is detected from `repo_type`
+    query param, otherwise falls back to the first match."""
+    slug = f"{author}/{name}"
+    repo_type = request.args.get("repo_type") or None
+    q = Repository.query.filter_by(slug=slug)
+    if repo_type:
+        q = q.filter_by(repo_type=repo_type)
+    repo = q.first()
+    if not repo:
+        abort(404)
+    sections = _split_readme_sections(repo.readme or "")
+    section = next((s for s in sections if s["slug"] == section_slug), None)
+    if not section:
+        abort(404)
+    return render_template(
+        "repo_readme_section.html",
+        repo=repo, section=section, sections=sections,
+    )
+
+
+@app.route("/api/snippet/<repo_type>/<author>/<name>")
+def api_repo_snippet(repo_type, author, name):
+    """Return a copy-to-clipboard code snippet for the given repo.
+
+    Optional ?lang=python|bash|js — default python. The snippet is fully
+    deterministic so the copy-to-clipboard interaction has a stable target."""
+    if repo_type not in ("model", "dataset", "space"):
+        abort(404)
+    slug = f"{author}/{name}"
+    repo = Repository.query.filter_by(slug=slug, repo_type=repo_type).first()
+    if not repo:
+        abort(404)
+    lang = (request.args.get("lang") or "python").lower()
+    task = repo.task_slug or ("text-generation" if repo_type == "model" else "")
+    library = repo.library or ("Transformers" if repo_type == "model" else "")
+    if repo_type == "dataset":
+        if lang == "bash":
+            body = f"huggingface-cli download --repo-type dataset {slug}"
+        elif lang == "js":
+            body = (f"import {{ load }} from '@huggingface/datasets';\n"
+                    f"const ds = await load('{slug}');")
+        else:
+            body = (f"from datasets import load_dataset\n"
+                    f"ds = load_dataset('{slug}')\n"
+                    f"print(ds)")
+    elif repo_type == "space":
+        if lang == "bash":
+            body = f"curl -s https://{author}-{name}.hf.space/predict -X POST -d '{{}}'"
+        elif lang == "js":
+            body = (f"import {{ Client }} from '@gradio/client';\n"
+                    f"const app = await Client.connect('{slug}');")
+        else:
+            body = (f"from gradio_client import Client\n"
+                    f"client = Client('{slug}')\n"
+                    f"result = client.predict(api_name='/predict')")
+    else:
+        if lang == "bash":
+            body = (f"huggingface-cli download {slug}\n"
+                    f"# Or via git lfs: git clone https://huggingface.co/{slug}")
+        elif lang == "js":
+            body = (f"import {{ pipeline }} from '@huggingface/transformers';\n"
+                    f"const pipe = await pipeline('{task or 'text-generation'}', '{slug}');")
+        else:
+            body = (f"from transformers import pipeline\n"
+                    f"pipe = pipeline('{task or 'text-generation'}', model='{slug}')")
+    payload = {
+        "ok": True,
+        "slug": slug,
+        "repo_type": repo_type,
+        "lang": lang,
+        "library": library,
+        "snippet": body,
+        "bytes": len(body),
+    }
+    if request.args.get("format") == "text":
+        return body, 200, {"Content-Type": "text/plain; charset=utf-8"}
+    return jsonify(payload)
+
+
+@app.route("/datasets/<author>/<name>/viewer/row/<int:idx>")
+def dataset_viewer_row(author, name, idx):
+    """Return a single row from a dataset viewer (1-indexed), with prev/next
+    navigation links. Lets agents step through rows one at a time."""
+    slug = f"{author}/{name}"
+    repo = Repository.query.filter_by(slug=slug, repo_type="dataset").first()
+    if not repo:
+        abort(404)
+    data = DATASET_VIEWER_DATA.get(slug, {
+        "columns": ["id", "text"],
+        "rows": [[1, "Sample row"]],
+    })
+    rows = data.get("rows", [])
+    total = len(rows)
+    if total == 0:
+        abort(404)
+    # Clamp 1..total (1-indexed).
+    if idx < 1:
+        idx = 1
+    if idx > total:
+        idx = total
+    row = rows[idx - 1]
+    columns = data.get("columns", [])
+    pairs = list(zip(columns, row))
+    return render_template(
+        "dataset_viewer_row.html",
+        repo=repo, idx=idx, total=total, columns=columns, row=row, pairs=pairs,
+    )
+
+
+@app.route("/api/repo/<int:repo_id>/like-animate", methods=["POST"])
+@csrf.exempt
+def api_like_animate(repo_id):
+    """Return an animation hint for the like button. Toggles when logged in;
+    otherwise just emits the hint (so the animation is testable without a
+    session). Used by the heart-burst JS in repo_card / repo_detail."""
+    repo = db.session.get(Repository, repo_id)
+    if not repo:
+        return jsonify({"ok": False, "error": "not-found"}), 404
+    liked = False
+    new_count = repo.likes_count or 0
+    if current_user.is_authenticated:
+        existing = Like.query.filter_by(user_id=current_user.id, repo_id=repo.id).first()
+        if existing:
+            db.session.delete(existing)
+            repo.likes_count = max(0, (repo.likes_count or 1) - 1)
+            liked = False
+        else:
+            db.session.add(Like(user_id=current_user.id, repo_id=repo.id))
+            repo.likes_count = (repo.likes_count or 0) + 1
+            liked = True
+        db.session.commit()
+        new_count = repo.likes_count
+    # Animation hint — deterministic per-repo so the burst is repeatable.
+    import hashlib as _h
+    seed = int(_h.md5(repo.slug.encode("utf-8")).hexdigest(), 16)
+    palette = ["#ef4444", "#f97316", "#f59e0b", "#ec4899"]
+    return jsonify({
+        "ok": True,
+        "repo_id": repo.id,
+        "slug": repo.slug,
+        "liked": liked,
+        "likes_count": new_count,
+        "animation": {
+            "kind": "heart-burst",
+            "duration_ms": 600,
+            "particles": 6 + (seed % 4),  # 6..9
+            "color": palette[seed % len(palette)],
+        },
+    })
+
+
+@app.route("/<author>/<name>/discussions/<int:discussion_id>/thread")
+def discussion_thread(author, name, discussion_id):
+    """Threaded view of a discussion — replies grouped into N indented threads
+    deterministically by (i mod N). Lets the agent navigate a thread tree."""
+    slug = f"{author}/{name}"
+    repo = Repository.query.filter_by(slug=slug).first()
+    if not repo:
+        abort(404)
+    d = db.session.get(Discussion, discussion_id)
+    if not d or d.repo_id != repo.id:
+        abort(404)
+    replies = DiscussionReply.query.filter_by(discussion_id=d.id).order_by(DiscussionReply.id.asc()).all()
+    # Group into 3 threads — each reply's thread index = (reply.id mod 3).
+    threads = [[], [], []]
+    for r in replies:
+        threads[r.id % 3].append(r)
+    return render_template(
+        "discussion_thread.html",
+        repo=repo, discussion=d, threads=threads, replies=replies,
+    )
+
+
+# AutoTrain hardware pricing table — shared between /AutoTrain and the
+# billing estimate endpoint.
+AUTOTRAIN_HW_PRICING = [
+    ("L4",   "Nvidia L4 (24GB)",   0.80),
+    ("A10G", "Nvidia A10G (24GB)", 1.05),
+    ("A100", "Nvidia A100 (40GB)", 4.00),
+    ("L40S", "Nvidia L40S (48GB)", 1.80),
+    ("H100", "Nvidia H100 (80GB)", 6.50),
+    ("CPU",  "CPU Upgrade",        0.03),
+]
+
+
+@app.route("/api/autotrain/estimate", methods=["GET", "POST"])
+@csrf.exempt
+def api_autotrain_estimate():
+    """Estimate AutoTrain billing — accepts hardware slug + hours and returns
+    a price quote. GET reads ?hardware=A100&hours=24; POST reads JSON body."""
+    if request.method == "POST":
+        payload = request.get_json(silent=True) or {}
+        hardware = (payload.get("hardware") or "L4").upper()
+        try:
+            hours = int(payload.get("hours") or 1)
+        except (TypeError, ValueError):
+            hours = 1
+    else:
+        hardware = (request.args.get("hardware") or "L4").upper()
+        try:
+            hours = int(request.args.get("hours") or 1)
+        except ValueError:
+            hours = 1
+    hours = max(1, min(hours, 24 * 30))  # cap at one month
+    row = next((r for r in AUTOTRAIN_HW_PRICING if r[0].upper() == hardware), None)
+    if not row:
+        return jsonify({"ok": False, "error": "unknown-hardware",
+                        "supported": [r[0] for r in AUTOTRAIN_HW_PRICING]}), 400
+    slug, display, rate = row
+    subtotal = round(rate * hours, 2)
+    # 8% platform fee on top — matches /pricing/spaces FAQ.
+    fee = round(subtotal * 0.08, 2)
+    total = round(subtotal + fee, 2)
+    return jsonify({
+        "ok": True,
+        "hardware": slug,
+        "hardware_display": display,
+        "rate_per_hour": rate,
+        "hours": hours,
+        "subtotal": subtotal,
+        "platform_fee": fee,
+        "total": total,
+        "currency": "USD",
+        "breakdown": [
+            {"label": display,        "amount": subtotal, "qty": f"{hours} hr @ ${rate:.2f}/hr"},
+            {"label": "Platform fee (8%)", "amount": fee, "qty": "—"},
+        ],
+    })
+
+
+@app.route("/papers/<arxiv_id>/implementations")
+def paper_implementations(arxiv_id):
+    """List of code implementations / models / spaces that reference a given
+    arXiv paper. Pulled from the paper's `related_models` plus any repo whose
+    description mentions the arxiv id."""
+    paper = next((p for p in DAILY_PAPERS if p["arxiv_id"] == arxiv_id), None)
+    if not paper:
+        abort(404)
+    impls = []
+    seen_ids = set()
+    for slug in paper.get("related_models", []):
+        r = Repository.query.filter_by(slug=slug, repo_type="model").first()
+        if r and r.id not in seen_ids:
+            impls.append({"kind": "model", "repo": r, "source": "paper-card"})
+            seen_ids.add(r.id)
+    for slug in paper.get("related_datasets", []):
+        r = Repository.query.filter_by(slug=slug, repo_type="dataset").first()
+        if r and r.id not in seen_ids:
+            impls.append({"kind": "dataset", "repo": r, "source": "paper-card"})
+            seen_ids.add(r.id)
+    # Plus any repo whose readme/description mentions the arxiv id.
+    matches = Repository.query.filter(
+        Repository.description.contains(arxiv_id) | Repository.readme.contains(arxiv_id)
+    ).limit(20).all()
+    for r in matches:
+        if r.id not in seen_ids:
+            impls.append({"kind": r.repo_type, "repo": r, "source": "readme-mention"})
+            seen_ids.add(r.id)
+    return render_template(
+        "paper_implementations.html",
+        paper=paper, implementations=impls,
+    )
+
+
+@app.route("/<username>/billing")
+def author_billing(username):
+    """Organization / user billing summary — current MTD usage + invoice
+    history. Numbers are deterministic per username so the page is stable."""
+    author = Author.query.filter_by(username=username).first()
+    if not author:
+        abort(404)
+    import hashlib as _h
+    seed = int(_h.md5(username.encode("utf-8")).hexdigest(), 16)
+    repo_count = Repository.query.filter_by(author_id=author.id).count()
+    # Current month usage (deterministic).
+    spaces_hours = (seed & 0xFF) + 12              # 12..267
+    endpoints_hours = ((seed >> 8) & 0xFF) + 8     # 8..263
+    autotrain_hours = ((seed >> 16) & 0x7F) + 4    # 4..131
+    storage_gb = ((seed >> 24) & 0x1FF) + 50       # 50..561
+    bandwidth_gb = ((seed >> 32) & 0x3FF) + 100    # 100..1123
+    spaces_cost = round(spaces_hours * 0.80, 2)
+    endpoints_cost = round(endpoints_hours * 1.05, 2)
+    autotrain_cost = round(autotrain_hours * 4.00, 2)
+    storage_cost = round(max(0, storage_gb - 100) * 0.04, 2)
+    bandwidth_cost = round(max(0, bandwidth_gb - 200) * 0.09, 2)
+    total_cost = round(spaces_cost + endpoints_cost + autotrain_cost
+                       + storage_cost + bandwidth_cost, 2)
+    line_items = [
+        {"label": "Spaces compute",        "qty": f"{spaces_hours} hr",    "amount": spaces_cost},
+        {"label": "Inference endpoints",   "qty": f"{endpoints_hours} hr", "amount": endpoints_cost},
+        {"label": "AutoTrain GPU hours",   "qty": f"{autotrain_hours} hr", "amount": autotrain_cost},
+        {"label": "Storage (over 100 GB)", "qty": f"{storage_gb} GB",      "amount": storage_cost},
+        {"label": "Bandwidth (over 200 GB)", "qty": f"{bandwidth_gb} GB",  "amount": bandwidth_cost},
+    ]
+    # Synthetic 3-month invoice history.
+    history = []
+    for m in range(1, 4):
+        s = (seed >> (m * 7)) & 0xFFFF
+        amt = round(80 + (s % 480) + (s & 0xF) * 0.13, 2)
+        history.append({
+            "invoice_id": f"INV-{username.upper()[:4]}-{2026:04d}{m:02d}",
+            "period": f"2026-{(5 - m):02d}",
+            "amount": amt,
+            "status": ("Paid" if m > 1 else "Pending"),
+        })
+    return render_template(
+        "billing.html",
+        author=author, repo_count=repo_count,
+        line_items=line_items, total_cost=total_cost,
+        history=history,
+        month_label="May 2026",
+    )
 
 
 # ------------------------------------------------------------

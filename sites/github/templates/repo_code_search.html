@@ -17,11 +17,11 @@
   </form>
   {% if q %}
     <h3>Results for "{{ q }}" on branch {{ branch }} — {{ hits|length }} match{{ 'es' if hits|length != 1 else '' }}</h3>
-    <ul class="code-search-results">
+    <ul class="code-search-results" role="list" tabindex="0" aria-label="Code search results">
       {% for h in hits %}
       <li class="code-search-hit">
         <a href="/{{ repo.full_name }}/blob/{{ branch }}/{{ h.path }}#L{{ h.line }}" class="code-search-path">{{ h.path }}</a>
-        <pre class="code-search-snippet">{{ h.snippet }}</pre>
+        <pre class="code-search-snippet" tabindex="0" aria-label="Code snippet from {{ h.path }} line {{ h.line }}">{{ h.snippet }}</pre>
       </li>
       {% else %}
       <li class="muted">No matches.</li>

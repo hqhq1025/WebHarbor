@@ -1,9 +1,9 @@
 {% extends "base.html" %}
 {% block title %}Assignment {{ n }}: {{ module.title }} | {{ course.title }} | Coursera{% endblock %}
 {% block content %}
-<div class="assignment-page" style="background:#F2F5FA;min-height:100vh;">
+<div class="assignment-page" id="main-content" style="background:#F2F5FA;min-height:100vh;">
   <div class="container" style="max-width:1000px;margin:0 auto;padding:32px 24px;">
-    <nav class="cd-breadcrumb" style="margin-bottom:18px;font-size:13px;color:#5B6780;">
+    <nav class="cd-breadcrumb" aria-label="Breadcrumb" style="margin-bottom:18px;font-size:13px;color:#5B6780;">
       <a href="{{ url_for('index') }}" style="color:#0056D2;">Home</a> &rsaquo;
       <a href="{{ url_for('course_detail', slug=course.slug) }}" style="color:#0056D2;">{{ course.title }}</a> &rsaquo;
       <a href="{{ url_for('course_lecture', slug=course.slug, n=n) }}" style="color:#0056D2;">Week {{ n }}</a> &rsaquo;
@@ -30,6 +30,21 @@
         <li><strong>Critical reflection</strong> — 20 points</li>
         <li><strong>Originality of analysis</strong> — 20 points</li>
       </ul>
+    </section>
+
+    {# ─── R5 in-quiz timer with autosave ─── #}
+    <section style="background:#fff;border:1px solid #DAE1ED;border-radius:12px;padding:24px;margin-bottom:22px;" aria-labelledby="quiz-heading">
+      <h2 id="quiz-heading" style="font-size:20px;margin:0 0 12px;">Your submission</h2>
+      <div class="quiz-timer-bar" data-quiz-key="{{ course.slug }}-{{ n }}" role="status" aria-live="polite">
+        <span aria-hidden="true">&#9201;</span>
+        <span class="qt-clock" aria-label="Elapsed time">00:00</span>
+        <span class="qt-state">Draft auto-saves every 30s. <strong>Due in {{ due_days }} days.</strong></span>
+      </div>
+      <label for="quiz-answer" style="font-size:13px;font-weight:700;color:#374151;display:block;margin-bottom:6px;">Write your response (Markdown allowed)</label>
+      <textarea id="quiz-answer" class="quiz-answer" name="response"
+                placeholder="Draft your peer-reviewed response here. Autosaves locally every 30 seconds."
+                aria-describedby="quiz-rubric-hint"></textarea>
+      <p id="quiz-rubric-hint" style="font-size:12px;color:#5B6780;margin-top:6px;">Your draft is saved to your browser only. Submit when ready.</p>
     </section>
 
     <section style="background:#fff;border:1px solid #DAE1ED;border-radius:12px;padding:24px;margin-bottom:22px;">

@@ -81,6 +81,7 @@
                 <li><label><input type="checkbox" name="prime" value="1" {% if qs.get('prime')=='1' %}checked{% endif %} onchange="this.form.submit()"> ✓ Prime Eligible</label></li>
                 <li><label><input type="checkbox" name="free_shipping" value="1" {% if qs.get('free_shipping')=='1' %}checked{% endif %} onchange="this.form.submit()"> FREE Shipping</label></li>
                 <li><label><input type="checkbox" name="free_returns" value="1" {% if qs.get('free_returns')=='1' %}checked{% endif %} onchange="this.form.submit()"> FREE Returns</label></li>
+                <li><label><input type="checkbox" name="one_day" value="1" {% if qs.get('one_day')=='1' %}checked{% endif %} onchange="this.form.submit()"> FREE One-Day Shipping</label></li>
             </ul>
 
             <h3 style="margin-top:20px">Deals</h3>
@@ -88,6 +89,24 @@
                 <li><label><input type="checkbox" name="deal" value="1" {% if qs.get('deal')=='1' %}checked{% endif %} onchange="this.form.submit()"> Today's Deals</label></li>
                 <li><label><input type="checkbox" name="bestseller" value="1" {% if qs.get('bestseller')=='1' %}checked{% endif %} onchange="this.form.submit()"> Best Sellers</label></li>
             </ul>
+
+            <h3 style="margin-top:20px">Sustainability</h3>
+            <ul class="filter-radio">
+                <li><label><input type="checkbox" name="climate_pledge" value="1" {% if qs.get('climate_pledge')=='1' %}checked{% endif %} onchange="this.form.submit()"> 🌱 Climate Pledge Friendly</label></li>
+            </ul>
+
+            <h3 style="margin-top:20px">Programs</h3>
+            <ul class="filter-radio">
+                <li><label><input type="checkbox" name="sns" value="1" {% if qs.get('sns')=='1' %}checked{% endif %} onchange="this.form.submit()"> 🔁 Subscribe &amp; Save</label></li>
+                <li><label><input type="checkbox" name="small_business" value="1" {% if qs.get('small_business')=='1' %}checked{% endif %} onchange="this.form.submit()"> Small Business</label></li>
+                <li><label><input type="checkbox" name="in_stock" value="1" {% if qs.get('in_stock')=='1' %}checked{% endif %} onchange="this.form.submit()"> In Stock Only</label></li>
+            </ul>
+
+            <h3 style="margin-top:20px">Made in</h3>
+            <div class="filter-row">
+                <input type="text" name="made_in" placeholder="USA, Japan, Germany, …" value="{{ qs.get('made_in','') }}">
+                <button type="submit" class="btn-go">Apply</button>
+            </div>
 
         </form>
     </aside>
@@ -99,7 +118,14 @@
             {% else %}
             <h1>{{ results|length }} results</h1>
             {% endif %}
-            <div>
+            <div style="display:flex;gap:14px;align-items:center;flex-wrap:wrap">
+                {# R5: sponsored toggle #}
+                <label style="font-size:13px">
+                    <input type="checkbox" id="sponsored-toggle"
+                           {% if sponsored_mode == 'hide' %}checked{% endif %}
+                           onchange="var u=new window.URL(window.location.href);if(this.checked){u.searchParams.set('sponsored','hide');}else{u.searchParams.delete('sponsored');}window.location.href=u.toString()">
+                    Hide sponsored results
+                </label>
                 <label for="sort-select">Sort by:</label>
                 {% set cs = current_sort or '' %}
                 <select id="sort-select" onchange="var u=new window.URL(window.location.href);u.searchParams.set('sort',this.value);window.location.href=u.toString()">
@@ -121,6 +147,9 @@
                     <img src="{{ p.image }}" alt="{{ p.name }}" onerror="this.style.display='none'">
                 </a>
                 <div>
+                    {% if sponsored_ids and p.id in sponsored_ids %}
+                    <div class="sponsored-badge">Sponsored</div>
+                    {% endif %}
                     <h2 class="result-card-title"><a href="{{ url_for('product_detail', slug=p.slug) }}">{{ p.name }}</a></h2>
                     <div class="result-card-brand">by <a href="{{ url_for('search', k=p.brand) }}">{{ p.brand }}</a></div>
                     <div class="result-card-rating rating">
@@ -131,8 +160,12 @@
                         <span class="price-symbol">$</span><span class="price-whole">{{ p.price|int }}</span><span class="price-fraction">{{ '%02d'|format((p.price * 100)|round|int % 100) }}</span>
                         {% if p.list_price > p.price %}<span class="list-price">${{ '%.2f'|format(p.list_price) }}</span>{% endif %}
                     </div>
+                    {% if p.stock <= 0 %}<div class="sold-out-badge">Sold Out</div>{% endif %}
                     {% if p.is_prime %}<div style="color:#00a8e1;font-size:13px;font-weight:700">✓ prime {{ p.delivery_estimate or 'FREE Delivery' }}</div>{% endif %}
                     {% if p.free_shipping %}<div class="free-delivery-badge" style="color:#007600;font-size:13px;font-weight:700;margin-top:2px">&#10003; FREE Delivery</div>{% else %}<div style="color:#565959;font-size:12px;margin-top:2px">Delivery fee applies</div>{% endif %}
+                    {% set tags = p.get_feature_tags() or [] %}
+                    {% if 'one-day-shipping-eligible' in tags %}<div style="color:#0073bb;font-size:12px;font-weight:700">⚡ Eligible for One-Day Shipping</div>{% endif %}
+                    {% if 'climate-pledge-friendly' in tags %}<div style="color:#1e7d34;font-size:12px;font-weight:700">🌱 Climate Pledge Friendly</div>{% endif %}
                     {% if p.condition and p.condition != 'New' %}<div style="color:#c45500;font-size:12px;font-weight:700">Condition: {{ p.condition }}</div>{% endif %}
                     {% if p.release_date %}<div style="font-size:12px;color:#565959">Released: {{ p.release_date }}</div>{% endif %}
                     {% set colors = p.get_colors() %}
@@ -141,12 +174,16 @@
                     {% if sizes %}<div style="font-size:12px;color:#565959">Sizes: {{ sizes|join(', ') }}</div>{% endif %}
                 </div>
                 <div class="result-card-buy">
+                    {% if p.stock > 0 %}
                     <form method="POST" action="{{ url_for('cart_add_form', product_id=p.id) }}" style="margin:0">
                         <input type="hidden" name="csrf_token" value="{{ csrf_token_value }}">
                         <input type="hidden" name="variant" value="">
                         <input type="hidden" name="quantity" value="1">
                         <button type="submit" class="btn btn-full">Add to Cart</button>
                     </form>
+                    {% else %}
+                    <button type="button" class="btn btn-outline btn-full" disabled aria-disabled="true" style="opacity:.55;cursor:not-allowed">Sold Out</button>
+                    {% endif %}
                     <a href="{{ url_for('product_detail', slug=p.slug) }}" class="btn btn-outline btn-full">View Details</a>
                 </div>
             </div>

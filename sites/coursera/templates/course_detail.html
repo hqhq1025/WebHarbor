@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% block title %}{{ course.title }} | Coursera{% endblock %}
 {% block content %}
-<div class="course-detail-page">
+<div class="course-detail-page" id="main-content">
   <div class="cd-hero">
     <div class="container">
       <div class="cd-hero-inner">
@@ -270,11 +270,14 @@
         <div class="enroll-details">
           <div class="ed-item"><span>&#128337;</span> {{ course.duration_text }}</div>
           <div class="ed-item"><span>&#128202;</span> {{ course.level }}</div>
+          {% if course.estimated_workload_hours_per_week %}<div class="ed-item"><span>&#128340;</span> Approx. <strong>{{ '%.1f'|format(course.estimated_workload_hours_per_week) }} hrs/week</strong></div>{% endif %}
           {% if course.has_certificate %}<div class="ed-item"><span>&#127941;</span> Certificate on completion</div>{% endif %}
           {% if course.credit_eligible %}<div class="ed-item"><span>&#127979;</span> Earn college credit</div>{% endif %}
           {% if course.course_type == 'Degree' and course.application_deadline %}
           <div class="ed-item"><span>&#128197;</span> Application deadline: <strong>{{ course.application_deadline }}</strong></div>
           {% endif %}
+          {% if course.textbook_isbn %}<div class="ed-item"><span>&#128214;</span> Recommended textbook ISBN: <code style="font-size:12px;">{{ course.textbook_isbn }}</code></div>{% endif %}
+          {% if course.preview_video_url %}<div class="ed-item"><span>&#9654;</span> <a href="{{ course.preview_video_url }}" rel="noopener">Watch preview</a> (muted, with captions)</div>{% endif %}
           <div class="ed-item"><span>&#127758;</span> English &middot; Subtitles available</div>
         </div>
       </div>

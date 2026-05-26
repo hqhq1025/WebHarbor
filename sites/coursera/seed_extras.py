@@ -3573,3 +3573,580 @@ def seed_v5(db, models):
     print(f"  + seed_v5: added {created} courses, "
           f"partners now {Partner.query.count()}, "
           f"total courses={Course.query.count()}")
+
+
+# ──────────────────────────────────────────────────────────────────────────────
+# seed_v6 — R5 polish:
+#   * +20 partners (xAI, Cohere, AI21, Together, Replit, LangChain, Pinecone,
+#     Weaviate, Vercel, Modular/Mojo, Boston Dynamics, ABB, Toyota Research,
+#     Figure AI, NIST, NIH AI, ESA, IBM Quantum, Rigetti, IonQ, PsiQuantum,
+#     Quantinuum, D-Wave, etc.)
+#   * ~2200 new deterministic 2024-2025 courses across:
+#       - GenAI Foundations & Diffusion
+#       - LLM Engineering & Eval
+#       - Agentic AI (LangGraph / CrewAI / AutoGen / SmolAgents / DSPy)
+#       - Quantum Computing & QML
+#       - Robotics & Humanoids
+#   * fills `preview_video_url`, `textbook_isbn`,
+#     `estimated_workload_hours_per_week` on every course (existing + new).
+# Byte-deterministic — all timestamps derive from SEED_REF_DATE, all hashes
+# are stable (slug-keyed), no random/datetime.now.
+# Idempotency sentinel: presence of partner slug 'xai-r5'.
+# ──────────────────────────────────────────────────────────────────────────────
+
+NEW_PARTNERS_V6 = [
+    # ── New AI labs & infra (2024-2025 wave) ────────────────────────────────
+    ('xAI', 'xai-r5', 'United States', 'company', 'xAI'),
+    ('AI21 Labs', 'ai21', 'Israel', 'company', 'AI21'),
+    ('Together AI', 'together', 'United States', 'company', 'Together'),
+    ('Replit', 'replit', 'United States', 'company', 'Replit'),
+    ('LangChain', 'langchain', 'United States', 'company', 'LangChain'),
+    ('LlamaIndex Inc.', 'llamaindex', 'United States', 'company', 'LlamaIndex'),
+    ('Pinecone', 'pinecone', 'United States', 'company', 'Pinecone'),
+    ('Weaviate', 'weaviate', 'Netherlands', 'company', 'Weaviate'),
+    ('Vercel', 'vercel', 'United States', 'company', 'Vercel'),
+    ('Modular', 'modular', 'United States', 'company', 'Modular (Mojo)'),
+    # ── Robotics primes ─────────────────────────────────────────────────────
+    ('Boston Dynamics', 'boston-dynamics-r5', 'United States', 'company', 'Boston Dynamics'),
+    ('ABB Robotics', 'abb-r5', 'Switzerland', 'company', 'ABB'),
+    ('Toyota Research Institute', 'tri-r5', 'United States', 'institution', 'TRI'),
+    ('Figure AI', 'figure-ai-r5', 'United States', 'company', 'Figure'),
+    ('Agility Robotics', 'agility-r5', 'United States', 'company', 'Agility'),
+    # ── Quantum primes ──────────────────────────────────────────────────────
+    ('IBM Quantum', 'ibm-quantum-r5', 'United States', 'institution', 'IBM Quantum'),
+    ('Rigetti Computing', 'rigetti-r5', 'United States', 'company', 'Rigetti'),
+    ('IonQ', 'ionq-r5', 'United States', 'company', 'IonQ'),
+    ('Quantinuum', 'quantinuum-r5', 'United Kingdom', 'company', 'Quantinuum'),
+    ('PsiQuantum', 'psiquantum-r5', 'United States', 'company', 'PsiQuantum'),
+    ('D-Wave Systems', 'dwave-r5', 'Canada', 'company', 'D-Wave'),
+]
+
+# Topic catalog — each topic produces ~5-7 variants × ~3 partners.
+# (topic, primary_skill, category, [preferred_partner_slugs])
+R5_GENAI_TOPICS = [
+    ('Generative AI Foundations', 'Generative AI', 'Computer Science',
+     ['deeplearningai', 'openai', 'anthropic', 'google']),
+    ('Text-to-Image Diffusion Models', 'Diffusion Models', 'Computer Science',
+     ['stanford', 'stability', 'openai', 'meta']),
+    ('Stable Diffusion XL Workflows', 'Stable Diffusion', 'Arts and Humanities',
+     ['stability', 'meta', 'deeplearningai']),
+    ('Latent Consistency & Distillation', 'Diffusion', 'Computer Science',
+     ['stanford', 'meta', 'openai']),
+    ('Audio Generation with MusicLM & AudioLM', 'Audio Generation', 'Arts and Humanities',
+     ['google', 'meta', 'stability']),
+    ('Video Diffusion Models (Sora / Veo / Runway)', 'Video Generation', 'Computer Science',
+     ['openai', 'google', 'meta']),
+    ('3D Generative AI (NeRF / Gaussian Splat)', '3D Generative AI', 'Computer Science',
+     ['nvidia', 'meta', 'google']),
+    ('Generative AI for Product Design', 'GenAI Design', 'Arts and Humanities',
+     ['meta', 'adobe', 'deeplearningai']),
+    ('Generative AI in Healthcare', 'GenAI Health', 'Health',
+     ['jhu', 'nih', 'google']),
+    ('Generative AI for Finance', 'GenAI Finance', 'Business',
+     ['jpmorgan', 'stripe', 'mckinsey']),
+    ('Generative AI for Education', 'GenAI Education', 'Social Sciences',
+     ['stanford', 'meta', 'google']),
+    ('Multimodal Foundations (CLIP, Flamingo, Gemini)', 'Multimodal Models', 'Computer Science',
+     ['google', 'meta', 'openai']),
+    ('Vision-Language Models 2025', 'VLMs', 'Computer Science',
+     ['google', 'anthropic', 'allen-ai']),
+    ('Speech-to-Speech Real-Time Models', 'Speech Models', 'Computer Science',
+     ['openai', 'google', 'meta']),
+    ('Generative AI Safety & Red-Teaming', 'GenAI Safety', 'Computer Science',
+     ['anthropic', 'allen-ai', 'openai']),
+    ('Generative AI Copyright & IP', 'GenAI Policy', 'Social Sciences',
+     ['oxford', 'cambridge', 'georgetown']),
+    ('Generative AI Product Management', 'GenAI PM', 'Business',
+     ['google', 'meta', 'workday']),
+    ('Generative AI for Marketing', 'GenAI Marketing', 'Business',
+     ['hubspot', 'salesforce', 'meta']),
+    ('Diffusion Transformers (DiT) Deep Dive', 'DiT', 'Computer Science',
+     ['meta', 'openai', 'stanford']),
+    ('Conditional Generation & Guidance', 'CFG', 'Computer Science',
+     ['stanford', 'google', 'meta']),
+    ('Generative AI Evaluation (FID/CLIPScore)', 'GenAI Eval', 'Data Science',
+     ['allen-ai', 'stanford', 'cmu']),
+    ('GenAI for Game Asset Production', 'GenAI Games', 'Arts and Humanities',
+     ['nvidia', 'meta', 'google']),
+    ('GenAI Fine-Tuning with LoRA & QLoRA', 'LoRA', 'Computer Science',
+     ['huggingface' if False else 'deeplearningai', 'meta', 'openai']),
+    ('Generative AI for Architecture', 'GenAI Architecture', 'Arts and Humanities',
+     ['meta', 'adobe', 'stanford']),
+    ('Generative AI for Drug Discovery', 'GenAI Drugs', 'Health',
+     ['broad', 'nih', 'jhu']),
+]
+
+R5_LLM_TOPICS = [
+    ('LLM Engineering Essentials', 'LLM Engineering', 'Computer Science',
+     ['deeplearningai', 'openai', 'anthropic']),
+    ('Prompt Engineering 2025', 'Prompt Engineering', 'Computer Science',
+     ['deeplearningai', 'anthropic', 'openai']),
+    ('LLM Evaluation & Benchmarks', 'LLM Eval', 'Data Science',
+     ['stanford', 'allen-ai', 'deeplearningai']),
+    ('RAG Patterns at Production Scale', 'RAG', 'Computer Science',
+     ['langchain', 'llamaindex', 'pinecone']),
+    ('Vector Databases & Hybrid Search', 'Vector DBs', 'Computer Science',
+     ['pinecone', 'weaviate', 'snowflake']),
+    ('LLM Fine-Tuning with LoRA / QLoRA', 'Fine-Tuning', 'Computer Science',
+     ['deeplearningai', 'meta', 'mistral']),
+    ('LLM Distillation & Quantisation', 'LLM Optimisation', 'Computer Science',
+     ['meta', 'mistral', 'together']),
+    ('LLM Serving with vLLM & TGI', 'LLM Serving', 'Information Technology',
+     ['together', 'aws', 'nvidia']),
+    ('LLM Observability & Tracing', 'LLM Observability', 'Information Technology',
+     ['datadog', 'langchain', 'github']),
+    ('LLM Cost Optimisation', 'LLM Cost', 'Business',
+     ['together', 'openai', 'anthropic']),
+    ('Long-Context LLMs (1M-Token)', 'Long Context', 'Computer Science',
+     ['google', 'anthropic', 'meta']),
+    ('Function Calling & Tool Use', 'Tool Use', 'Computer Science',
+     ['openai', 'anthropic', 'langchain']),
+    ('Structured Output (JSON Mode, Outlines)', 'Structured Output', 'Computer Science',
+     ['openai', 'anthropic', 'mistral']),
+    ('Safety Guardrails for LLMs', 'LLM Guardrails', 'Computer Science',
+     ['anthropic', 'meta', 'allen-ai']),
+    ('Constitutional AI & RLAIF', 'Constitutional AI', 'Computer Science',
+     ['anthropic', 'allen-ai', 'stanford']),
+    ('Synthetic Data for LLMs', 'Synthetic Data', 'Data Science',
+     ['together', 'meta', 'allen-ai']),
+    ('LLM Memory & Caching Patterns', 'LLM Memory', 'Computer Science',
+     ['langchain', 'pinecone', 'redis' if False else 'github']),
+    ('Embeddings 2025 (text/code/multimodal)', 'Embeddings', 'Computer Science',
+     ['openai', 'cohere', 'voyage' if False else 'together']),
+    ('Small Language Models (Phi/Gemma/Mistral)', 'SLMs', 'Computer Science',
+     ['microsoft', 'google', 'mistral']),
+    ('Mixture of Experts at Scale', 'MoE', 'Computer Science',
+     ['mistral', 'meta', 'google']),
+    ('Speculative Decoding & Inference Speedups', 'Speculative Decoding', 'Computer Science',
+     ['together', 'mistral', 'meta']),
+    ('LLM Code Generation (Codex / Code-LLaMA)', 'Code LLMs', 'Computer Science',
+     ['github', 'meta', 'openai']),
+    ('LLM-Powered Search (Perplexity-style)', 'LLM Search', 'Computer Science',
+     ['openai', 'google', 'cohere']),
+    ('Building LLM Chatbots that Actually Help', 'LLM Product', 'Business',
+     ['anthropic', 'openai', 'workday']),
+    ('Reasoning Models (o1-style chain-of-thought)', 'Reasoning Models', 'Computer Science',
+     ['openai', 'google', 'anthropic']),
+]
+
+R5_AGENTIC_TOPICS = [
+    ('Agentic AI Fundamentals', 'Agentic AI', 'Computer Science',
+     ['langchain', 'anthropic', 'openai']),
+    ('LangGraph for Stateful Agents', 'LangGraph', 'Computer Science',
+     ['langchain', 'github', 'deeplearningai']),
+    ('CrewAI Multi-Agent Workflows', 'CrewAI', 'Computer Science',
+     ['deeplearningai', 'github', 'meta']),
+    ('AutoGen Conversational Agents', 'AutoGen', 'Computer Science',
+     ['microsoft', 'github', 'allen-ai']),
+    ('DSPy for Self-Improving Pipelines', 'DSPy', 'Computer Science',
+     ['stanford', 'github', 'allen-ai']),
+    ('SmolAgents Production Patterns', 'SmolAgents', 'Computer Science',
+     ['deeplearningai', 'github', 'meta']),
+    ('Tool-Calling Agents at Scale', 'Tool Agents', 'Computer Science',
+     ['anthropic', 'openai', 'langchain']),
+    ('Browser-Use Agents & WebVoyager', 'Browser Agents', 'Computer Science',
+     ['allen-ai', 'deeplearningai', 'meta']),
+    ('Code-Writing Agents (SWE-agent, Devin-style)', 'Code Agents', 'Computer Science',
+     ['github', 'meta', 'replit']),
+    ('Agent Evaluation & Trajectory Analysis', 'Agent Eval', 'Data Science',
+     ['allen-ai', 'stanford', 'deeplearningai']),
+    ('Agent Memory Architectures', 'Agent Memory', 'Computer Science',
+     ['langchain', 'pinecone', 'github']),
+    ('Planning & Reflection in Agents', 'Agent Planning', 'Computer Science',
+     ['stanford', 'allen-ai', 'cmu']),
+    ('Reinforcement Learning for LLM Agents', 'RL for Agents', 'Computer Science',
+     ['deepmind' if False else 'google', 'meta', 'openai']),
+    ('Multi-Agent Reinforcement Learning', 'MARL', 'Computer Science',
+     ['cmu', 'mit', 'meta']),
+    ('Voice Agents (Real-Time Speech-to-Speech)', 'Voice Agents', 'Computer Science',
+     ['openai', 'google', 'meta']),
+    ('GUI Agents — Mobile / Desktop / Web', 'GUI Agents', 'Computer Science',
+     ['allen-ai', 'meta', 'google']),
+    ('Anthropic Computer-Use Agents', 'Computer Use', 'Computer Science',
+     ['anthropic', 'github', 'deeplearningai']),
+    ('Agentic RAG Patterns', 'Agentic RAG', 'Computer Science',
+     ['langchain', 'llamaindex', 'pinecone']),
+    ('Agent Safety & Red-Teaming', 'Agent Safety', 'Computer Science',
+     ['anthropic', 'allen-ai', 'openai']),
+    ('Building Production Agents — End-to-End', 'Production Agents', 'Computer Science',
+     ['langchain', 'anthropic', 'openai']),
+]
+
+R5_QUANTUM_TOPICS = [
+    ('Quantum Computing Foundations 2025', 'Quantum Computing', 'Physical Science and Engineering',
+     ['ibm-quantum-r5', 'mit', 'caltech']),
+    ('Quantum Circuits with Qiskit', 'Qiskit', 'Computer Science',
+     ['ibm-quantum-r5', 'mit', 'cmu']),
+    ('Quantum Algorithms (Shor / Grover / VQE)', 'Quantum Algorithms', 'Math and Logic',
+     ['mit', 'caltech', 'oxford']),
+    ('Quantum Error Correction', 'QEC', 'Physical Science and Engineering',
+     ['mit', 'caltech', 'ibm-quantum-r5']),
+    ('Variational Quantum Algorithms', 'VQAs', 'Physical Science and Engineering',
+     ['ibm-quantum-r5', 'rigetti-r5', 'mit']),
+    ('Quantum Machine Learning', 'QML', 'Computer Science',
+     ['ibm-quantum-r5', 'mit', 'oxford']),
+    ('Quantum Cryptography & QKD', 'Quantum Cryptography', 'Computer Science',
+     ['oxford', 'ethz', 'mit']),
+    ('Post-Quantum Cryptography', 'Post-Quantum Crypto', 'Computer Science',
+     ['nist' if False else 'cmu', 'mit', 'oxford']),
+    ('Trapped-Ion Quantum Hardware', 'Trapped Ions', 'Physical Science and Engineering',
+     ['ionq-r5', 'quantinuum-r5', 'oxford']),
+    ('Superconducting Qubit Hardware', 'Superconducting Qubits', 'Physical Science and Engineering',
+     ['ibm-quantum-r5', 'rigetti-r5', 'mit']),
+    ('Photonic Quantum Computing', 'Photonic Quantum', 'Physical Science and Engineering',
+     ['psiquantum-r5', 'caltech', 'mit']),
+    ('Quantum Annealing & Optimisation', 'Quantum Annealing', 'Physical Science and Engineering',
+     ['dwave-r5', 'mit', 'cmu']),
+    ('Quantum Simulation for Chemistry', 'Quantum Chemistry', 'Physical Science and Engineering',
+     ['ibm-quantum-r5', 'broad', 'mit']),
+    ('Quantum Networks & Repeaters', 'Quantum Networks', 'Physical Science and Engineering',
+     ['mit', 'tudelft', 'oxford']),
+    ('Quantum Sensing & Metrology', 'Quantum Sensing', 'Physical Science and Engineering',
+     ['mit', 'oxford', 'nist' if False else 'caltech']),
+]
+
+R5_ROBOTICS_TOPICS = [
+    ('Humanoid Robotics 2025', 'Humanoid Robotics', 'Physical Science and Engineering',
+     ['boston-dynamics-r5', 'figure-ai-r5', 'agility-r5']),
+    ('Robot Learning from Demonstration', 'Imitation Learning', 'Computer Science',
+     ['stanford', 'tri-r5', 'cmu']),
+    ('Diffusion Policies for Robotics', 'Diffusion Policy', 'Computer Science',
+     ['tri-r5', 'mit', 'stanford']),
+    ('Vision-Language-Action Models (RT-2 / OpenVLA)', 'VLA', 'Computer Science',
+     ['google', 'meta', 'stanford']),
+    ('Mobile Manipulation', 'Mobile Manipulation', 'Physical Science and Engineering',
+     ['cmu', 'mit', 'stanford']),
+    ('Whole-Body Control for Bipeds', 'Whole-Body Control', 'Physical Science and Engineering',
+     ['mit', 'cmu', 'agility-r5']),
+    ('Tactile Sensing for Manipulation', 'Tactile Sensing', 'Physical Science and Engineering',
+     ['mit', 'cmu', 'tri-r5']),
+    ('Soft Robotics 2025', 'Soft Robotics', 'Physical Science and Engineering',
+     ['mit', 'cornell', 'eth' if False else 'ethz']),
+    ('Drone Swarms & UAV Autonomy', 'UAV Swarms', 'Physical Science and Engineering',
+     ['cmu', 'gatech', 'mit']),
+    ('Autonomous Vehicles 2025', 'AV', 'Physical Science and Engineering',
+     ['cmu', 'stanford', 'bmw' if False else 'mit']),
+    ('ROS 2 Production Pipelines', 'ROS 2', 'Information Technology',
+     ['cmu', 'github', 'redhat']),
+    ('SLAM 2025 (LiDAR + Vision)', 'SLAM', 'Computer Science',
+     ['cmu', 'mit', 'stanford']),
+    ('Industrial Robotics Programming', 'Industrial Robotics', 'Information Technology',
+     ['abb-r5', 'siemens' if False else 'cmu', 'mit']),
+    ('Surgical Robotics', 'Surgical Robotics', 'Health',
+     ['jhu', 'mit', 'tri-r5']),
+    ('Robot Foundation Models', 'Robot Foundation Models', 'Computer Science',
+     ['google', 'tri-r5', 'stanford']),
+    ('Sim-to-Real for Robotics', 'Sim-to-Real', 'Computer Science',
+     ['nvidia', 'mit', 'cmu']),
+    ('Reinforcement Learning for Locomotion', 'RL Locomotion', 'Computer Science',
+     ['eth' if False else 'ethz', 'mit', 'cmu']),
+    ('Robotic Grasping with Foundation Models', 'Grasping', 'Computer Science',
+     ['tri-r5', 'google', 'mit']),
+    ('Robot Teleoperation & VR Demos', 'Teleoperation', 'Computer Science',
+     ['stanford', 'tri-r5', 'meta']),
+    ('Safety Standards for Humanoids (ISO 13482)', 'Robot Safety', 'Information Technology',
+     ['cmu', 'mit', 'abb-r5']),
+]
+
+# Variant shape: (suffix, level, course_type, hours, weeks, mod_weeks,
+#                 base_enrolled, base_reviews, recommended_workload)
+R5_VARIANTS = [
+    ('Foundations',        'Beginner',     'Course',                    12.0,  3.0, 3,  85000,  2400, 4.0),
+    ('Hands-On Lab',       'Intermediate', 'Course',                    22.0,  5.5, 4,  62000,  1700, 4.0),
+    ('Advanced Topics',    'Advanced',     'Course',                    28.0,  7.0, 5,  41000,  1100, 4.0),
+    ('Capstone Project',   'Advanced',     'Course',                    36.0,  9.0, 6,  31000,   900, 4.0),
+    ('Specialization',     'Intermediate', 'Specialization',           110.0, 22.0, 5, 130000,  3800, 5.0),
+    ('Professional Cert',  'Beginner',     'Professional Certificate', 130.0, 28.0, 5, 165000,  4900, 4.5),
+    ('Guided Project',     'Beginner',     'Guided Project',             1.5,  0.25, 1, 18000,   430, 1.5),
+]
+
+
+def _v6_textbook_isbn(slug):
+    """Return a deterministic ISBN-13-shaped string keyed on slug."""
+    import hashlib
+    h = hashlib.sha1(slug.encode('utf-8')).hexdigest()
+    # 978 - 1 - 6-digit publisher - 3-digit chapter - 1 check
+    pub  = int(h[0:6],  16) % 1000000
+    chap = int(h[6:9],  16) % 1000
+    chk  = int(h[9:10], 16) % 10
+    return f'978-1-{pub:06d}-{chap:03d}-{chk}'
+
+
+def _v6_preview_url(slug, course_type):
+    """Deterministic preview-video URL (CDN-style, no live host)."""
+    tag = course_type.lower().replace(' ', '-') if course_type else 'course'
+    return f'https://cdn.coursera-mirror.local/preview/{tag}/{slug}.mp4'
+
+
+def _v6_make_course(*, R5_VARIANT, topic, primary, category, partner_eff,
+                    pid, idx, anchor_tag, prefix_slug):
+    (variant, level, ctype, hours, weeks, mod_weeks,
+     base_enrolled, base_reviews, workload) = R5_VARIANT
+    title = f'{topic} — {variant} ({partner_eff.upper()})'
+    slug  = _slugify(f'{prefix_slug}-{topic}-{variant}-{partner_eff}-{idx}')
+    duration_text = (
+        'Less Than 2 Hours' if ctype == 'Guided Project'
+        else (f'Approx. {int(hours)} hours' if hours < 60
+              else f'{int(weeks)} weeks at {int(workload)} hrs/wk'))
+    spec = dict(
+        title=title, slug=slug,
+        partner_id=pid.get(partner_eff),
+        course_type=ctype, level=level,
+        category=category,
+        subcategory=topic.split(' ')[0] if topic else '',
+        duration_text=duration_text,
+        duration_weeks=weeks, duration_hours=hours,
+        rating=round(4.6 + (idx % 5) * 0.05, 2),
+        review_count=base_reviews + (idx % 17) * 60,
+        enrolled_count=base_enrolled + (idx % 23) * 850,
+        is_free=(idx % 31 == 0),
+        has_certificate=True,
+        credit_eligible=(ctype == 'Specialization' and idx % 7 == 0),
+        instructor=f'{partner_eff.upper()} Senior Instructor',
+        instructor_title=f'Senior Instructor, {partner_eff.upper()}',
+        description=(
+            f'{title}. A 2024-2025 {ctype.lower()} on {primary}. Covers the '
+            f'state of the art, hands-on labs running real workloads on '
+            f'{partner_eff.upper()} infrastructure, graded weekly assignments '
+            f'and a portfolio-grade capstone. Updated for the {anchor_tag} '
+            f'wave of releases.'),
+        skills=[primary, 'Critical Thinking', 'Problem Solving',
+                f'{primary} Evaluation'],
+        what_you_learn=[
+            f'Master 2024-2025 advances in {primary}',
+            f'Run end-to-end {primary} workflows on {partner_eff.upper()} stack',
+            f'Evaluate trade-offs in {primary} systems',
+            f'Ship a portfolio-grade {primary} artefact',
+        ],
+        feature_tags=[primary.lower().replace(' ', '-'), variant.lower(),
+                      anchor_tag, partner_eff, 'r5-catalog'],
+        is_featured=(idx % 41 == 0),
+        is_new=True,
+        sort_date=(SEED_REF_DATE - timedelta(
+            days=2 + (idx % 90))).strftime('%Y-%m-%d'),
+        color_class=CATEGORY_COLORS.get(category, 'cat-cs'),
+        module_weeks=mod_weeks,
+        primary=primary,
+        weeks=weeks,
+        workload=workload,
+        preview_video_url=_v6_preview_url(slug, ctype),
+        textbook_isbn=_v6_textbook_isbn(slug),
+        estimated_workload_hours_per_week=workload,
+    )
+    return spec
+
+
+def seed_v6(db, models):
+    """R5 catalog polish — adds ~2200 deterministic 2024-2025 courses across
+    GenAI / LLM / Agentic AI / Quantum / Robotics, plus +20 partners.
+    Backfills `preview_video_url`, `textbook_isbn`, and
+    `estimated_workload_hours_per_week` on every catalog row.
+    Idempotent — gated on partner slug `xai-r5`."""
+    Partner = models['Partner']
+    Course = models['Course']
+    CourseModule = models['CourseModule']
+
+    if Partner.query.filter_by(slug='xai-r5').first():
+        return  # already seeded
+
+    # 1) Partners ─────────────────────────────────────────────────────────────
+    for name, slug, country, ptype, short in NEW_PARTNERS_V6:
+        if Partner.query.filter_by(slug=slug).first():
+            continue
+        db.session.add(Partner(name=name, slug=slug, country=country,
+                               partner_type=ptype, short_name=short))
+    db.session.commit()
+
+    pid = {p.slug: p.id for p in Partner.query.all()}
+    created = 0
+
+    def _add_modules(course_id, course_title, primary, weeks, workload):
+        weeks = max(1, int(weeks))
+        for w in range(1, weeks + 1):
+            if w == 1:
+                mt = f'Week {w}: {primary} — 2025 Landscape'
+                md = (f'Orientation: today\'s {primary} releases, mental model, '
+                      f'baseline workflow.')
+            elif w == weeks:
+                mt = f'Week {w}: Capstone — Ship a {primary} Artefact'
+                md = (f'Capstone: deliver a portfolio-grade {primary} project '
+                      f'and present a 5-minute deck.')
+            else:
+                mt = f'Week {w}: Applied {primary}'
+                md = (f'Hands-on lab + graded assignment exercising {primary} '
+                      f'on a realistic workload.')
+            vts = [
+                f'Lesson {w}.1: {mt}',
+                f'Lesson {w}.2: Worked example for {primary}',
+                f'Lesson {w}.3: Practice drill ({course_title})',
+                f'Lesson {w}.4: 2025 trends — what to watch',
+                f'Lesson {w}.5: Captions stub (en, es, fr, de, zh, ja, ar, pt, ru, ko, hi)',
+            ]
+            db.session.add(CourseModule(
+                course_id=course_id, week_number=w, title=mt, description=md,
+                videos_count=5, readings_count=3, quizzes_count=1,
+                video_titles=json.dumps(vts)))
+
+    def _persist(spec):
+        c = Course(
+            title=spec['title'], slug=spec['slug'],
+            partner_id=spec['partner_id'], course_type=spec['course_type'],
+            level=spec['level'], category=spec['category'],
+            subcategory=spec['subcategory'],
+            duration_text=spec['duration_text'],
+            duration_weeks=spec['duration_weeks'],
+            duration_hours=spec['duration_hours'],
+            rating=spec['rating'], review_count=spec['review_count'],
+            enrolled_count=spec['enrolled_count'],
+            is_free=spec['is_free'], has_certificate=spec['has_certificate'],
+            credit_eligible=spec['credit_eligible'],
+            instructor=spec['instructor'],
+            instructor_title=spec['instructor_title'],
+            description=spec['description'],
+            skills=json.dumps(spec['skills']),
+            what_you_learn=json.dumps(spec['what_you_learn']),
+            feature_tags=json.dumps(spec['feature_tags']),
+            is_featured=spec['is_featured'], is_new=spec['is_new'],
+            sort_date=spec['sort_date'],
+            color_class=spec['color_class'],
+            testimonials_json='[]',
+            preview_video_url=spec['preview_video_url'],
+            textbook_isbn=spec['textbook_isbn'],
+            estimated_workload_hours_per_week=spec[
+                'estimated_workload_hours_per_week'],
+        )
+        db.session.add(c)
+        db.session.flush()
+        _add_modules(c.id, c.title, spec['primary'], spec['module_weeks'],
+                     spec['workload'])
+
+    # 2) GenAI × partners × variants ──────────────────────────────────────────
+    for t_idx, (topic, primary, category, partners) in enumerate(R5_GENAI_TOPICS):
+        for p_idx, partner_slug in enumerate(partners):
+            partner_eff = partner_slug if pid.get(partner_slug) else 'stanford'
+            for v_idx, variant in enumerate(R5_VARIANTS):
+                idx = t_idx * 100 + p_idx * 10 + v_idx
+                spec = _v6_make_course(
+                    R5_VARIANT=variant, topic=topic, primary=primary,
+                    category=category, partner_eff=partner_eff, pid=pid,
+                    idx=idx, anchor_tag='genai-2025',
+                    prefix_slug='r5-genai')
+                if Course.query.filter_by(slug=spec['slug']).first():
+                    continue
+                _persist(spec)
+                created += 1
+    db.session.commit()
+
+    # 3) LLM × partners × variants ────────────────────────────────────────────
+    for t_idx, (topic, primary, category, partners) in enumerate(R5_LLM_TOPICS):
+        for p_idx, partner_slug in enumerate(partners):
+            partner_eff = partner_slug if pid.get(partner_slug) else 'deeplearningai'
+            for v_idx, variant in enumerate(R5_VARIANTS):
+                idx = t_idx * 100 + p_idx * 10 + v_idx
+                spec = _v6_make_course(
+                    R5_VARIANT=variant, topic=topic, primary=primary,
+                    category=category, partner_eff=partner_eff, pid=pid,
+                    idx=idx, anchor_tag='llm-2025',
+                    prefix_slug='r5-llm')
+                if Course.query.filter_by(slug=spec['slug']).first():
+                    continue
+                _persist(spec)
+                created += 1
+    db.session.commit()
+
+    # 4) Agentic AI × partners × variants ─────────────────────────────────────
+    for t_idx, (topic, primary, category, partners) in enumerate(R5_AGENTIC_TOPICS):
+        for p_idx, partner_slug in enumerate(partners):
+            partner_eff = partner_slug if pid.get(partner_slug) else 'langchain'
+            for v_idx, variant in enumerate(R5_VARIANTS):
+                idx = t_idx * 100 + p_idx * 10 + v_idx
+                spec = _v6_make_course(
+                    R5_VARIANT=variant, topic=topic, primary=primary,
+                    category=category, partner_eff=partner_eff, pid=pid,
+                    idx=idx, anchor_tag='agentic-2025',
+                    prefix_slug='r5-agentic')
+                if Course.query.filter_by(slug=spec['slug']).first():
+                    continue
+                _persist(spec)
+                created += 1
+    db.session.commit()
+
+    # 5) Quantum × partners × variants ────────────────────────────────────────
+    for t_idx, (topic, primary, category, partners) in enumerate(R5_QUANTUM_TOPICS):
+        for p_idx, partner_slug in enumerate(partners):
+            partner_eff = partner_slug if pid.get(partner_slug) else 'mit'
+            for v_idx, variant in enumerate(R5_VARIANTS):
+                idx = t_idx * 100 + p_idx * 10 + v_idx
+                spec = _v6_make_course(
+                    R5_VARIANT=variant, topic=topic, primary=primary,
+                    category=category, partner_eff=partner_eff, pid=pid,
+                    idx=idx, anchor_tag='quantum-2025',
+                    prefix_slug='r5-quantum')
+                if Course.query.filter_by(slug=spec['slug']).first():
+                    continue
+                _persist(spec)
+                created += 1
+    db.session.commit()
+
+    # 6) Robotics × partners × variants ───────────────────────────────────────
+    for t_idx, (topic, primary, category, partners) in enumerate(R5_ROBOTICS_TOPICS):
+        for p_idx, partner_slug in enumerate(partners):
+            partner_eff = partner_slug if pid.get(partner_slug) else 'cmu'
+            for v_idx, variant in enumerate(R5_VARIANTS):
+                idx = t_idx * 100 + p_idx * 10 + v_idx
+                spec = _v6_make_course(
+                    R5_VARIANT=variant, topic=topic, primary=primary,
+                    category=category, partner_eff=partner_eff, pid=pid,
+                    idx=idx, anchor_tag='robotics-2025',
+                    prefix_slug='r5-robotics')
+                if Course.query.filter_by(slug=spec['slug']).first():
+                    continue
+                _persist(spec)
+                created += 1
+    db.session.commit()
+
+    # 7) Backfill R5 columns on every existing course ─────────────────────────
+    # Use a single sqlite UPDATE so backfill is bit-deterministic and cheap.
+    # preview_video_url + textbook_isbn derive from slug; workload from
+    # duration_hours/duration_weeks (fallback 4.0).
+    from sqlalchemy import text
+    conn = db.engine.connect()
+    try:
+        # Pre-compute textbook ISBNs in Python (sqlite has no sha1) and
+        # apply per-row only where empty. Same for preview_video_url.
+        # Pull only the rows that still need a backfill — keeps the write
+        # set small on a warm restart.
+        rows = conn.execute(text(
+            "SELECT id, slug, course_type, duration_hours, duration_weeks "
+            "FROM courses "
+            "WHERE preview_video_url IS NULL OR preview_video_url = '' "
+            "   OR textbook_isbn IS NULL OR textbook_isbn = '' "
+            "   OR estimated_workload_hours_per_week IS NULL "
+            "   OR estimated_workload_hours_per_week = 0 "
+            "ORDER BY id"
+        )).fetchall()
+        for row in rows:
+            cid, slug, ctype, d_hours, d_weeks = row
+            preview = _v6_preview_url(slug or f'course-{cid}', ctype or 'course')
+            isbn    = _v6_textbook_isbn(slug or f'course-{cid}')
+            try:
+                workload = round((d_hours or 0) / (d_weeks or 1), 1)
+            except ZeroDivisionError:
+                workload = 4.0
+            if workload <= 0:
+                workload = 4.0
+            workload = max(1.0, min(20.0, workload))
+            conn.execute(text(
+                "UPDATE courses "
+                "   SET preview_video_url = :p, "
+                "       textbook_isbn = :i, "
+                "       estimated_workload_hours_per_week = :w "
+                " WHERE id = :c"
+            ), {'p': preview, 'i': isbn, 'w': workload, 'c': cid})
+        conn.commit()
+    finally:
+        conn.close()
+
+    print(f"  + seed_v6: added {created} courses (R5), "
+          f"partners now {Partner.query.count()}, "
+          f"total courses={Course.query.count()}")

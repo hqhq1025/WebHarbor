@@ -2153,3 +2153,231 @@ img { max-width: 100%; height: auto; display: block; }
   border-right: 5px solid transparent;
   border-top: 6px solid var(--g-blue, #1a73e8);
 }
+
+/* ============================================================
+   R5 progressive enhancements - layout
+   ============================================================ */
+
+/* Visually hidden but reachable to screen readers */
+.visually-hidden, #r5-live {
+  position: absolute !important;
+  width: 1px; height: 1px;
+  padding: 0; margin: -1px;
+  overflow: hidden;
+  clip: rect(0,0,0,0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* Airport autocomplete dropdown */
+.r5-autocomplete {
+  position: absolute;
+  z-index: 50;
+  background: #fff;
+  border: 1px solid #dadce0;
+  border-radius: 10px;
+  box-shadow: 0 6px 24px rgba(60,64,67,0.15);
+  min-width: 280px;
+  max-width: 420px;
+  list-style: none;
+  margin: 4px 0 0;
+  padding: 6px 0;
+  font-family: 'Google Sans', Roboto, Arial, sans-serif;
+}
+.r5-autocomplete li {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 16px;
+  cursor: pointer;
+  font-size: 14px;
+}
+.r5-autocomplete li.active,
+.r5-autocomplete li:hover {
+  background: #e8f0fe;
+}
+.r5-ac-iata {
+  font-weight: 600;
+  color: #1a73e8;
+  min-width: 38px;
+}
+.r5-ac-city {
+  color: #202124;
+  flex: 1;
+}
+.r5-ac-country {
+  color: #5f6368;
+  font-size: 12px;
+}
+
+/* Save-search heart animation */
+@keyframes r5-heart-pop {
+  0%   { transform: scale(1); }
+  35%  { transform: scale(1.45); }
+  60%  { transform: scale(0.85); }
+  100% { transform: scale(1); }
+}
+.r5-heart-pop {
+  animation: r5-heart-pop 0.6s ease-out;
+  color: #d93025;
+}
+
+/* Sticky filter toolbar with chips */
+.r5-filter-toolbar {
+  position: sticky;
+  top: 56px;
+  z-index: 20;
+  background: #fff;
+  border-bottom: 1px solid #e0e0e0;
+  padding: 10px 24px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  box-shadow: 0 2px 4px rgba(60,64,67,0.06);
+}
+.r5-filter-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border-radius: 16px;
+  background: #e8f0fe;
+  color: #1a73e8;
+  font-size: 13px;
+  font-weight: 500;
+  border: 1px solid transparent;
+  transition: background 0.18s, border-color 0.18s;
+}
+.r5-filter-chip:hover {
+  background: #d2e3fc;
+}
+.r5-filter-chip [data-clear-filter] {
+  background: none;
+  border: none;
+  color: #1a73e8;
+  cursor: pointer;
+  font-size: 18px;
+  line-height: 1;
+  padding: 0;
+}
+
+/* Calendar grid range selection */
+.r5-calendar-grid [data-cal-date] {
+  cursor: pointer;
+  transition: background 0.12s;
+}
+.r5-calendar-grid [data-cal-date]:focus-visible,
+.calendar-cheapest-grid [data-cal-date]:focus-visible {
+  outline: 2px solid #1a73e8;
+  outline-offset: 2px;
+}
+.r5-calendar-grid .range-start,
+.r5-calendar-grid .range-end,
+.calendar-cheapest-grid .range-start,
+.calendar-cheapest-grid .range-end {
+  background: #1a73e8;
+  color: #fff;
+}
+.r5-calendar-grid .in-range,
+.calendar-cheapest-grid .in-range {
+  background: #d2e3fc;
+}
+
+/* Seat map keyboard focus */
+.seat-map [data-seat]:focus-visible,
+.r5-seat-map [data-seat]:focus-visible {
+  outline: 2px solid #1a73e8;
+  outline-offset: 2px;
+}
+
+/* Bottom-sheet modal (mobile filter panel) */
+.r5-bottom-sheet {
+  position: fixed;
+  left: 0; right: 0; bottom: 0;
+  background: #fff;
+  border-top-left-radius: 16px;
+  border-top-right-radius: 16px;
+  box-shadow: 0 -8px 32px rgba(60,64,67,0.18);
+  transform: translateY(100%);
+  transition: transform 0.25s ease-out;
+  z-index: 60;
+  max-height: 85vh;
+  overflow-y: auto;
+  padding: 24px 16px 32px;
+}
+.r5-bottom-sheet.r5-sheet-open {
+  transform: translateY(0);
+}
+.r5-bottom-sheet::before {
+  content: '';
+  display: block;
+  width: 40px;
+  height: 4px;
+  border-radius: 2px;
+  background: #dadce0;
+  margin: 0 auto 16px;
+}
+
+/* Map cluster pin (zoom-to-fit feedback) */
+.r5-map-cluster {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: #1a73e8;
+  color: #fff;
+  border-radius: 50%;
+  width: 36px;
+  height: 36px;
+  font-weight: 600;
+  font-size: 13px;
+  box-shadow: 0 2px 8px rgba(26,115,232,0.4);
+  cursor: pointer;
+  transition: transform 0.18s;
+}
+.r5-map-cluster:hover {
+  transform: scale(1.1);
+}
+.r5-map-cluster:focus-visible {
+  outline: 2px solid #fff;
+  outline-offset: 2px;
+}
+
+/* Mobile responsive: filter panel becomes bottom sheet */
+@media (max-width: 768px) {
+  .r5-filter-toolbar {
+    display: none;
+  }
+  .r5-mobile-filter-trigger {
+    display: inline-flex !important;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 16px;
+    border-radius: 20px;
+    background: #fff;
+    border: 1px solid #dadce0;
+    font-weight: 500;
+    color: #1a73e8;
+    cursor: pointer;
+  }
+  .r5-bottom-sheet {
+    display: block;
+  }
+}
+@media (min-width: 769px) {
+  .r5-mobile-filter-trigger {
+    display: none !important;
+  }
+  .r5-bottom-sheet {
+    position: static;
+    transform: none;
+    box-shadow: none;
+    border-radius: 0;
+    padding: 0;
+    background: transparent;
+    max-height: none;
+  }
+  .r5-bottom-sheet::before {
+    display: none;
+  }
+}

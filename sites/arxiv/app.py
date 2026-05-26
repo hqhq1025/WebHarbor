@@ -137,6 +137,16 @@ class Paper(db.Model):
     msc_class = db.Column(db.String(400), default="", index=True)
     acm_class = db.Column(db.String(400), default="", index=True)
     report_no = db.Column(db.String(200), default="")
+    # R5 — per-paper provenance fields. paper_version is the current shipped
+    # version (v1/v2/v3 — derived from versions_json if populated, else from
+    # a hash of arxiv_id so each paper has a stable version label). license
+    # is one of arXiv's five accepted licenses. submitter_email_masked shows
+    # the visible part of the (masked) submitter email. computer_classification
+    # is a coarse CCS/CR-class tag (e.g. "I.2.7 Natural Language Processing").
+    paper_version = db.Column(db.String(8), default="v1", index=True)
+    license = db.Column(db.String(80), default="arXiv-perpetual")
+    submitter_email_masked = db.Column(db.String(120), default="")
+    computer_classification = db.Column(db.String(200), default="")
     view_count = db.Column(db.Integer, default=0)
     download_count = db.Column(db.Integer, default=0)
     star_count = db.Column(db.Integer, default=0)
@@ -342,6 +352,35 @@ class Alert(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
 
+class SavedSearch(db.Model):
+    """A user-saved search query — combined with an Alert it powers the
+    'Notify me when new papers match this query' feature.
+    """
+    __tablename__ = "saved_searches"
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
+    name = db.Column(db.String(120), default="")
+    query = db.Column(db.String(400), default="")
+    field = db.Column(db.String(40), default="all")
+    category = db.Column(db.String(40), default="")
+    frequency = db.Column(db.String(20), default="weekly")
+    last_seen_arxiv_id = db.Column(db.String(40), default="")
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+
+class PaperUpdateNotification(db.Model):
+    """A 'Notify me when this paper has a new version' subscription."""
+    __tablename__ = "paper_update_notifications"
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
+    paper_id = db.Column(db.Integer, db.ForeignKey("papers.id"), nullable=False)
+    email = db.Column(db.String(200), default="")
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    __table_args__ = (
+        db.UniqueConstraint("user_id", "paper_id", name="_user_paper_notify_uc"),
+    )
+
+
 # =======================================================================
 # LOGIN MANAGER
 # =======================================================================
@@ -518,6 +557,145 @@ def _clean_arxiv_metadata_text(text):
     return clean_arxiv_metadata_text(text)
 
 
+# R5 — deterministic per-paper provenance fields. All derive from arxiv_id /
+# author name so byte-identical rebuilds are preserved.
+
+_LICENSE_POOL = [
+    "CC-BY-4.0",
+    "CC-BY-SA-4.0",
+    "CC-BY-NC-SA-4.0",
+    "CC-BY-NC-ND-4.0",
+    "CC0-1.0",
+    "arXiv-perpetual",
+]
+
+_LICENSE_WEIGHTS = [
+    # Most arxiv papers ship under the perpetual non-exclusive license.
+    "arXiv-perpetual", "arXiv-perpetual", "arXiv-perpetual", "arXiv-perpetual",
+    "arXiv-perpetual", "arXiv-perpetual", "arXiv-perpetual",
+    "CC-BY-4.0", "CC-BY-4.0", "CC-BY-4.0",
+    "CC-BY-SA-4.0",
+    "CC-BY-NC-SA-4.0",
+    "CC-BY-NC-ND-4.0",
+    "CC0-1.0",
+]
+
+# Mapping from arxiv primary-category prefix → ACM CCS / CR-class label.
+_CCS_BY_PREFIX = {
+    "cs.AI": "I.2.0 Artificial Intelligence — General",
+    "cs.CL": "I.2.7 Natural Language Processing",
+    "cs.CV": "I.4.0 Image Processing and Computer Vision",
+    "cs.LG": "I.2.6 Learning",
+    "cs.RO": "I.2.9 Robotics",
+    "cs.CR": "K.6.5 Security and Protection",
+    "cs.IR": "H.3.3 Information Search and Retrieval",
+    "cs.SE": "D.2.0 Software Engineering — General",
+    "cs.HC": "H.5.2 User Interfaces",
+    "cs.DC": "C.2.4 Distributed Systems",
+    "cs.DB": "H.2 Database Management",
+    "cs.DS": "F.2 Analysis of Algorithms",
+    "cs.NE": "I.2.6 Neural Networks",
+    "cs.SI": "H.3.4 Systems and Software",
+    "cs.GT": "F.1.1 Models of Computation",
+    "cs.SY": "I.6 Simulation, Modeling, and Visualization",
+    "cs.PL": "D.3 Programming Languages",
+    "cs.OS": "D.4 Operating Systems",
+    "cs.NI": "C.2 Computer-Communication Networks",
+    "cs.GR": "I.3 Computer Graphics",
+    "stat.ML": "G.3 Probability and Statistics — Learning",
+    "stat.ME": "G.3 Probability and Statistics — Methodology",
+    "stat.AP": "G.3 Probability and Statistics — Applications",
+    "stat.TH": "G.3 Probability and Statistics — Theory",
+    "math.OC": "G.1.6 Optimization",
+    "math.NA": "G.1 Numerical Analysis",
+    "math.PR": "G.3 Probability and Statistics",
+    "math.ST": "G.3 Statistics Theory",
+    "math.CO": "G.2 Discrete Mathematics — Combinatorics",
+    "math.NT": "G.2.1 Number Theory",
+    "math.AG": "F.4 Mathematical Logic and Formal Languages",
+    "eess.SP": "I.5 Pattern Recognition — Signal Processing",
+    "eess.IV": "I.4 Image Processing",
+    "eess.AS": "H.5.1 Multimedia Information Systems — Audio",
+    "eess.SY": "I.6 Simulation, Modeling, and Visualization",
+    "quant-ph": "F.1.2 Modes of Computation — Quantum",
+    "q-bio.NC": "J.3 Life and Medical Sciences — Neuroscience",
+    "q-bio.QM": "J.3 Life and Medical Sciences — Quantitative Methods",
+    "q-fin.ST": "J.1 Administration and Business — Statistical Finance",
+    "econ.EM": "J.4 Social and Behavioral Sciences — Econometrics",
+}
+
+# Common submitter email domains, picked deterministically from a per-paper hash.
+_SUBMITTER_DOMAINS = [
+    "mit.edu", "stanford.edu", "berkeley.edu", "cmu.edu", "princeton.edu",
+    "harvard.edu", "ox.ac.uk", "cam.ac.uk", "ethz.ch", "epfl.ch",
+    "u-tokyo.ac.jp", "tsinghua.edu.cn", "pku.edu.cn", "ust.hk", "nus.edu.sg",
+    "tum.de", "kth.se", "uva.nl", "imperial.ac.uk", "ucl.ac.uk",
+    "google.com", "research.microsoft.com", "fb.com", "deepmind.com",
+    "openai.com", "anthropic.com", "ibm.com", "nvidia.com",
+    "gmail.com", "outlook.com",
+]
+
+
+def _derive_paper_version(arxiv_id: str, versions: list) -> str:
+    """Use the OAI-supplied versions list when present; otherwise hash-derive
+    a stable v1/v2/v3 label so each paper has a version even when upstream
+    metadata didn't ship one. Distribution: ~70% v1, ~22% v2, ~6% v3, ~2% v4.
+    """
+    if versions:
+        # Latest entry wins. Strip leading 'v' just in case.
+        last = (versions[-1].get("version") or "").lstrip("v").strip()
+        try:
+            n = max(1, int(last))
+        except Exception:
+            n = 1
+        return f"v{min(n, 9)}"
+    if not arxiv_id:
+        return "v1"
+    n = hashlib.md5(arxiv_id.encode("utf-8")).digest()[0] % 100
+    if n < 70:
+        return "v1"
+    if n < 92:
+        return "v2"
+    if n < 98:
+        return "v3"
+    return "v4"
+
+
+def _derive_license(arxiv_id: str) -> str:
+    if not arxiv_id:
+        return "arXiv-perpetual"
+    h = hashlib.md5(("lic-" + arxiv_id).encode("utf-8")).digest()
+    return _LICENSE_WEIGHTS[h[0] % len(_LICENSE_WEIGHTS)]
+
+
+def _derive_submitter_email(arxiv_id: str, first_author: str) -> str:
+    """Produce a masked email like 'j****@mit.edu' that is stable per paper."""
+    if not arxiv_id:
+        return ""
+    base = (first_author or "").strip().split()
+    if base:
+        # Take last name as the local part anchor; first character only is kept.
+        local_anchor = base[-1].lower()
+    else:
+        local_anchor = "author"
+    local_anchor = re.sub(r"[^a-z0-9]", "", local_anchor) or "author"
+    masked_local = local_anchor[0] + "*" * max(3, len(local_anchor) - 1)
+    domain_idx = hashlib.md5(("dom-" + arxiv_id).encode("utf-8")).digest()[0]
+    domain = _SUBMITTER_DOMAINS[domain_idx % len(_SUBMITTER_DOMAINS)]
+    return f"{masked_local}@{domain}"
+
+
+def _derive_computer_classification(subject_code: str, primary_category: str) -> str:
+    if subject_code and subject_code in _CCS_BY_PREFIX:
+        return _CCS_BY_PREFIX[subject_code]
+    # Fallback: try the parent category, then a generic label.
+    if subject_code:
+        return _CCS_BY_PREFIX.get(subject_code, "")
+    if primary_category and primary_category in _CCS_BY_PREFIX:
+        return _CCS_BY_PREFIX[primary_category]
+    return ""
+
+
 def seed_database():
     """Populate the DB from categories.json + papers.json."""
     if Category.query.first() is not None:
@@ -659,6 +837,13 @@ def seed_database():
             frms = int(frm.group(1))
         # Versions
         versions = rp.get("versions", [])
+        # R5 — derived provenance fields. All deterministic per arxiv_id so
+        # rebuilds stay byte-identical.
+        _paper_version = _derive_paper_version(arxiv_id, versions)
+        _paper_license = _derive_license(arxiv_id)
+        _first_author = authors[0] if authors else ""
+        _submitter_email = _derive_submitter_email(arxiv_id, _first_author)
+        _ccs = _derive_computer_classification(subject_code, primary_category)
         # Loss function from abstract
         loss_fn = ""
         abs_text = _clean_arxiv_metadata_text(rp.get("abstract", "") or "")
@@ -692,6 +877,10 @@ def seed_database():
             msc_class=(rp.get("msc_class") or "").strip(),
             acm_class=(rp.get("acm_class") or "").strip(),
             report_no=(rp.get("report_no") or "").strip(),
+            paper_version=_paper_version,
+            license=_paper_license,
+            submitter_email_masked=_submitter_email,
+            computer_classification=_ccs,
             pdf_url=f"https://arxiv.org/pdf/{arxiv_id}",
             html_url=f"https://arxiv.org/abs/{arxiv_id}",
             html_available=True,
@@ -1208,10 +1397,13 @@ def paper_detail(arxiv_id):
     # Is in library / starred?
     in_library = False
     is_starred = False
+    is_notified = False
     if current_user.is_authenticated:
         in_library = LibraryItem.query.filter_by(
             user_id=current_user.id, paper_id=paper.id).first() is not None
         is_starred = StarredPaper.query.filter_by(
+            user_id=current_user.id, paper_id=paper.id).first() is not None
+        is_notified = PaperUpdateNotification.query.filter_by(
             user_id=current_user.id, paper_id=paper.id).first() is not None
     return render_template(
         "paper.html",
@@ -1220,6 +1412,7 @@ def paper_detail(arxiv_id):
         comments=comments,
         in_library=in_library,
         is_starred=is_starred,
+        is_notified=is_notified,
     )
 
 
@@ -2529,7 +2722,10 @@ def alerts_page():
             db.session.commit()
         return redirect(url_for("alerts_page"))
     user_alerts = Alert.query.filter_by(user_id=current_user.id).all()
-    return render_template("alerts.html", alerts=user_alerts)
+    saved_searches = SavedSearch.query.filter_by(
+        user_id=current_user.id).order_by(SavedSearch.id.desc()).all()
+    return render_template(
+        "alerts.html", alerts=user_alerts, saved_searches=saved_searches)
 
 
 @app.route("/alerts/<int:alert_id>/delete", methods=["POST"])
@@ -2540,6 +2736,79 @@ def delete_alert(alert_id):
     db.session.commit()
     flash("Alert removed.", "success")
     return redirect(url_for("alerts_page"))
+
+
+# =======================================================================
+# ROUTES — SAVED SEARCHES + PAPER UPDATE NOTIFICATIONS  (R5)
+# =======================================================================
+
+@app.route("/alerts/save_search", methods=["POST"])
+@login_required
+def save_search():
+    """Persist a query+filter pair as a SavedSearch so the user can re-run it
+    later and (optionally) get notified when new papers match.
+    """
+    query = (request.form.get("query") or "").strip()
+    field = (request.form.get("field") or request.form.get("searchtype") or "all").strip()
+    category = (request.form.get("category") or "").strip()
+    frequency = (request.form.get("frequency") or "weekly").strip()
+    name = (request.form.get("name") or "").strip() or (query[:60] or "Untitled search")
+    if not query and not category:
+        flash("Cannot save an empty search.", "error")
+        return redirect(request.referrer or url_for("search"))
+    db.session.add(SavedSearch(
+        user_id=current_user.id,
+        name=name,
+        query=query,
+        field=field,
+        category=category,
+        frequency=frequency,
+    ))
+    db.session.commit()
+    flash(f"Saved search '{name}' — you'll be notified {frequency}.", "success")
+    return redirect(url_for("alerts_page"))
+
+
+@app.route("/alerts/save_search/<int:saved_id>/delete", methods=["POST"])
+@login_required
+def delete_saved_search(saved_id):
+    s = SavedSearch.query.filter_by(id=saved_id, user_id=current_user.id).first_or_404()
+    db.session.delete(s)
+    db.session.commit()
+    flash("Saved search removed.", "success")
+    return redirect(url_for("alerts_page"))
+
+
+@app.route("/abs/<arxiv_id>/notify", methods=["POST"])
+@login_required
+def notify_paper_update(arxiv_id):
+    """Subscribe current user to update notifications for one specific paper."""
+    paper = Paper.query.filter_by(arxiv_id=arxiv_id).first_or_404()
+    email = (request.form.get("email") or current_user.email or "").strip()
+    existing = PaperUpdateNotification.query.filter_by(
+        user_id=current_user.id, paper_id=paper.id).first()
+    if existing:
+        existing.email = email
+        flash(f"Already subscribed — updated email to {email}.", "success")
+    else:
+        db.session.add(PaperUpdateNotification(
+            user_id=current_user.id, paper_id=paper.id, email=email))
+        flash(f"You'll be notified at {email} when arXiv:{arxiv_id} has a new version.", "success")
+    db.session.commit()
+    return redirect(url_for("paper_detail", arxiv_id=arxiv_id))
+
+
+@app.route("/abs/<arxiv_id>/notify/cancel", methods=["POST"])
+@login_required
+def notify_paper_cancel(arxiv_id):
+    paper = Paper.query.filter_by(arxiv_id=arxiv_id).first_or_404()
+    sub = PaperUpdateNotification.query.filter_by(
+        user_id=current_user.id, paper_id=paper.id).first()
+    if sub:
+        db.session.delete(sub)
+        db.session.commit()
+        flash("Update notification cancelled.", "success")
+    return redirect(url_for("paper_detail", arxiv_id=arxiv_id))
 
 
 # =======================================================================
@@ -3106,7 +3375,8 @@ def seed_community_extras():
     # R3 — wider coverage: ~250 distinct papers × ~2.2 comments avg
     # → ~550 comments total. Plus reply-style chains (Re: prefix +
     # @user mention) to make threads feel conversational.
-    n_papers = min(250, len(candidate_papers))
+    # R5 — push comments past 2000 across ~950 distinct papers (avg ~2.2 per paper).
+    n_papers = min(950, len(candidate_papers))
     target_papers = rng.sample(candidate_papers, n_papers)
 
     comment_idx = 0
@@ -3183,7 +3453,7 @@ def seed_community_extras():
         picks = candidate_papers[offset:offset + window]
         rng2 = _r.Random(20260602 + user.id)
         rng2.shuffle(picks)
-        want = rng2.randint(38, 50)
+        want = rng2.randint(160, 195)
         added_for_user = 0
         for paper in picks:
             if added_for_user >= want:
@@ -3221,6 +3491,72 @@ def seed_community_extras():
     n_lib = LibraryItem.query.count()
     print(f"  [+] Seeded {extra_added} extra library items (total {n_lib})")
 
+    # ------------------------------------------------------------------
+    # R5 — saved searches + paper-update subscriptions across the
+    # benchmark users so the /alerts and /abs notify surfaces aren't
+    # empty by default. All timestamps anchored to MIRROR_REFERENCE_DATE.
+    # ------------------------------------------------------------------
+    saved_search_specs = [
+        ("alice_j",  "Quantum-inspired transformers", "quantum", "all",      "cs",       "weekly"),
+        ("alice_j",  "SimCSE follow-ups",             "contrastive learning sentence embeddings", "all", "cs.CL", "daily"),
+        ("alice_j",  "Retrieval-augmented LLMs",      "retrieval augmented generation", "abstract", "cs.CL", "weekly"),
+        ("bob_c",    "Visual prompting",              "visual prompting", "title", "cs.CV",     "weekly"),
+        ("bob_c",    "3D Gaussian splatting",         "gaussian splatting", "all", "cs.CV",    "daily"),
+        ("carol_d",  "Flow matching surveys",         "flow matching", "all", "stat.ML",       "monthly"),
+        ("carol_d",  "Diffusion convergence",         "diffusion model convergence", "all", "stat", "weekly"),
+        ("david_k",  "Surface code thresholds",       "surface code threshold", "all", "quant-ph", "weekly"),
+        ("david_k",  "Quantum error correction",      "quantum error correction", "abstract", "quant-ph", "daily"),
+        ("demouser", "ML for healthcare",             "medical imaging", "all", "cs",           "weekly"),
+    ]
+    ss_added = 0
+    for ui, (uname, name, q, field, cat, freq) in enumerate(saved_search_specs):
+        u = by_name.get(uname)
+        if not u:
+            continue
+        db.session.add(SavedSearch(
+            user_id=u.id,
+            name=name,
+            query=q,
+            field=field,
+            category=cat,
+            frequency=freq,
+            created_at=MIRROR_REFERENCE_DATE - timedelta(days=(ui * 7) % 90 + 3),
+        ))
+        ss_added += 1
+    db.session.commit()
+    print(f"  [+] Seeded {ss_added} saved searches")
+
+    # Paper update subscriptions: pin a handful per user to known seed papers
+    notify_specs = [
+        ("alice_j", "2104.08821"), ("alice_j", "2303.08774"),
+        ("alice_j", "2011.05864"),
+        ("bob_c",   "2303.11234"), ("bob_c",   "2401.00123"),
+        ("bob_c",   "2604.08209"),
+        ("carol_d", "2412.03134"), ("carol_d", "2602.22486"),
+        ("david_k", "2401.00789"),
+        ("demouser","2104.08821"),
+    ]
+    pun_added = 0
+    for ui, (uname, aid) in enumerate(notify_specs):
+        u = by_name.get(uname)
+        if not u:
+            continue
+        p = Paper.query.filter_by(arxiv_id=aid).first()
+        if not p:
+            continue
+        existing = PaperUpdateNotification.query.filter_by(
+            user_id=u.id, paper_id=p.id).first()
+        if existing:
+            continue
+        db.session.add(PaperUpdateNotification(
+            user_id=u.id,
+            paper_id=p.id,
+            email=u.email,
+            created_at=MIRROR_REFERENCE_DATE - timedelta(days=(ui * 5) % 60 + 1),
+        ))
+        pun_added += 1
+    db.session.commit()
+    print(f"  [+] Seeded {pun_added} paper-update notifications")
 
 def backfill_paper_gaps():
     """Patch pre-existing Paper rows with empty authors / abstract so the
@@ -3298,6 +3634,10 @@ def ensure_affiliation_column():
             ("msc_class", "VARCHAR(400) DEFAULT ''"),
             ("acm_class", "VARCHAR(400) DEFAULT ''"),
             ("report_no", "VARCHAR(200) DEFAULT ''"),
+            ("paper_version", "VARCHAR(8) DEFAULT 'v1'"),
+            ("license", "VARCHAR(80) DEFAULT 'arXiv-perpetual'"),
+            ("submitter_email_masked", "VARCHAR(120) DEFAULT ''"),
+            ("computer_classification", "VARCHAR(200) DEFAULT ''"),
         ]
         added = []
         for col, decl in additions:
@@ -3336,6 +3676,38 @@ def backfill_affiliations():
     except Exception as e:
         db.session.rollback()
         print(f"  ! backfill_affiliations failed: {e}")
+
+
+def backfill_provenance_fields():
+    """R5 — populate paper_version / license / submitter_email_masked /
+    computer_classification for every paper that still has empty / default
+    values. Deterministic; idempotent (no-op once filled).
+    """
+    try:
+        rows = Paper.query.filter(
+            or_(Paper.submitter_email_masked == "",
+                Paper.submitter_email_masked.is_(None))
+        ).all()
+        n = 0
+        for p in rows:
+            authors = p.get_authors()
+            first_author = authors[0] if authors else ""
+            versions = p.get_versions()
+            p.paper_version = _derive_paper_version(p.arxiv_id or "", versions)
+            p.license = _derive_license(p.arxiv_id or "")
+            p.submitter_email_masked = _derive_submitter_email(
+                p.arxiv_id or "", first_author
+            )
+            p.computer_classification = _derive_computer_classification(
+                p.primary_subject_code or "", p.primary_category_code or ""
+            )
+            n += 1
+        if n:
+            db.session.commit()
+            print(f"  [+] Backfilled R5 provenance for {n} papers")
+    except Exception as e:
+        db.session.rollback()
+        print(f"  ! backfill_provenance_fields failed: {e}")
 
 
 def normalize_seed_db_layout():
@@ -3393,6 +3765,7 @@ with app.app_context():
     backfill_paper_gaps()
     normalize_paper_metadata()
     backfill_affiliations()
+    backfill_provenance_fields()
     normalize_seed_db_layout()
 
 

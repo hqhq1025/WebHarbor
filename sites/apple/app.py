@@ -2513,6 +2513,505 @@ def api_products(category):
 
 
 # ---------------------------------------------------------------------------
+# R5 — trade-in IMEI lookup
+# ---------------------------------------------------------------------------
+
+# Deterministic lookup by IMEI/serial — derives device + condition from the
+# checksum of the IMEI string so that the same IMEI always returns the same
+# answer (byte-id reset safe).
+TRADEIN_IMEI_TABLE = {
+    # canonical sample IMEIs that benchmarks can hard-code
+    '353299814617852': ('iPhone 13',              'good',      240.00),
+    '356789012345678': ('iPhone 14',              'good',      340.00),
+    '358901234567890': ('iPhone 15',              'excellent', 470.00),
+    '351234567890123': ('iPhone 15 Pro',          'excellent', 650.00),
+    '352345678901234': ('iPhone 16',              'good',      540.00),
+    '353456789012345': ('iPhone 16 Pro',          'excellent', 720.00),
+    '354567890123456': ('iPhone 16 Pro Max',      'excellent', 840.00),
+    '355678901234567': ('iPhone 17',              'good',      640.00),
+    '356678901234567': ('iPhone 17 Pro',          'excellent', 820.00),
+    '357678901234567': ('iPhone 17 Pro Max',      'excellent', 940.00),
+    'C02ZL0VKLVDR':    ('MacBook Air M2',         'good',      430.00),
+    'C02ZL0VKLVDQ':    ('MacBook Pro M3',         'good',      900.00),
+    'WW9G2LL/A':       ('Apple Watch Ultra 2',    'good',      280.00),
+    'F2LWG4LD92':      ('iPad Pro M2 11-inch',    'good',      410.00),
+}
+
+
+@app.route('/trade-in/imei', methods=['GET', 'POST'])
+@csrf.exempt
+def trade_in_imei():
+    """Trade-in by IMEI/serial number lookup.
+
+    R5 — Adds an instant-credit lookup flow. POST {imei, condition?} returns
+    the recognized device + an Apple Gift Card / instant-credit estimate.
+    GET renders an explanatory page with sample IMEIs.
+    """
+    imei = (request.values.get('imei') or '').strip().upper()
+    condition = (request.values.get('condition') or 'good').strip().lower()
+    if request.method == 'POST' and imei:
+        # 1) Exact-match table.
+        match = TRADEIN_IMEI_TABLE.get(imei)
+        if not match:
+            # 2) Fuzzy match — hash the IMEI to a stable bucket, fall through
+            # to whichever TradeInValue row has the closest device tier.
+            import hashlib
+            h = int.from_bytes(hashlib.md5(imei.encode()).digest()[:4], 'big')
+            rows = TradeInValue.query.all()
+            if rows:
+                row = rows[h % len(rows)]
+                match = (row.device, condition, float(row.value))
+        if match:
+            device, _cond, base_value = match
+            mult = {'excellent': 1.05, 'good': 1.0, 'fair': 0.7, 'broken': 0.3}.get(condition, 1.0)
+            quoted = round(float(base_value) * mult, 2)
+            return jsonify({
+                'eligible': True,
+                'imei': imei,
+                'device_matched': device,
+                'condition': condition,
+                'estimated_value_usd': quoted,
+                'max_value_usd': float(base_value),
+                'instant_credit': True,
+                'delivery': 'Apple Gift Card via email within 24 hours',
+                'next_step_url': f'/trade-in/quote?device={device}&condition={condition}',
+            }), 200
+        return jsonify({
+            'eligible': False, 'imei': imei,
+            'message': 'IMEI not recognized. Verify the 15-digit IMEI on your device under Settings > General > About.',
+        }), 200
+
+    # GET → explanatory page with sample IMEIs the agent can use.
+    page = {
+        'title': 'Trade In — IMEI Lookup',
+        'subtitle': 'Look up your trade-in credit with your IMEI or serial number.',
+        'body': [
+            'On iPhone, dial *#06# or open Settings > General > About to find your 15-digit IMEI.',
+            'On Mac, open Apple menu > About This Mac to find your serial number.',
+            'On Apple Watch, open the Watch app > General > About on your paired iPhone.',
+            'Submit your IMEI/serial below to receive an instant trade-in credit estimate. '
+            'Credit is delivered as an Apple Gift Card via email within 24 hours.',
+            'Sample IMEIs you can try: 353299814617852 (iPhone 13), 356789012345678 (iPhone 14), '
+            '358901234567890 (iPhone 15).',
+        ],
+        'links': [
+            ('Look up another device', '/trade-in'),
+            ('Trade-in promos', '/shop?category=accessories'),
+            ('Apple Trade In FAQ', '/support/article/apple-trade-in'),
+        ],
+    }
+    return render_template('info_page.html', topic='trade-in/imei', page=page)
+
+
+# ---------------------------------------------------------------------------
+# R5 — AppleCare coverage check by serial / IMEI
+# ---------------------------------------------------------------------------
+
+# Deterministic AppleCare coverage table. Each serial returns a stable result.
+APPLECARE_COVERAGE_TABLE = {
+    'C02ZL0VKLVDR': ('MacBook Air M2',     'AppleCare+',          '2026-08-12', True),
+    'C02ZL0VKLVDQ': ('MacBook Pro M3',     'AppleCare+',          '2027-02-04', True),
+    'WW9G2LL/A':    ('Apple Watch Ultra 2','AppleCare+',          '2026-11-30', True),
+    'F2LWG4LD92':   ('iPad Pro M2 11-inch','Apple Limited Warranty','2025-06-15', False),
+    '353299814617852': ('iPhone 13',       'AppleCare+ with Theft and Loss', '2025-11-15', True),
+    '358901234567890': ('iPhone 15',       'AppleCare+',          '2026-09-12', True),
+    '356678901234567': ('iPhone 17 Pro',   'AppleCare+ with Theft and Loss', '2027-09-22', True),
+    'XGD2Y0J6Z9':      ('Apple Vision Pro','AppleCare+',          '2026-02-02', True),
+    'AB1234CDEFGH':    ('AirPods Pro 3',   'No Coverage',         '',            False),
+}
+
+
+@app.route('/applecare/coverage', methods=['GET', 'POST'])
+@csrf.exempt
+def applecare_coverage():
+    """AppleCare coverage lookup by serial number or IMEI.
+
+    R5 — Returns AppleCare+ tier, expiration date, and Theft & Loss status.
+    """
+    sn = (request.values.get('serial') or request.values.get('imei') or '').strip().upper()
+    if request.method == 'POST' and sn:
+        info = APPLECARE_COVERAGE_TABLE.get(sn)
+        if not info:
+            # Deterministic fallback so multi-step agents always make progress.
+            import hashlib
+            h = int.from_bytes(hashlib.md5(sn.encode()).digest()[:4], 'big')
+            tiers = list(APPLECARE_COVERAGE_TABLE.values())
+            info = tiers[h % len(tiers)]
+        device, tier, expiry, theft = info
+        return jsonify({
+            'serial_or_imei': sn,
+            'device': device,
+            'coverage_tier': tier,
+            'expiration_date': expiry,
+            'theft_and_loss': theft,
+            'covered': tier != 'No Coverage',
+            'support_phone': '1-800-275-2273',
+            'manage_url': '/applecare/manage',
+        }), 200
+
+    page = {
+        'title': 'AppleCare+ Coverage Check',
+        'subtitle': 'Look up your AppleCare+ coverage by serial or IMEI.',
+        'body': [
+            'Enter the serial number (Mac, iPad, AirPods) or IMEI (iPhone, Cellular iPad, Apple Watch) of your Apple device.',
+            'AppleCare+ covers unlimited incidents of accidental damage and priority 24/7 access to Apple Specialists.',
+            'AppleCare+ with Theft and Loss is available for iPhone — adds coverage for up to two theft/loss incidents per term.',
+            'Sample serials you can try: C02ZL0VKLVDR (MacBook Air M2), WW9G2LL/A (Apple Watch Ultra 2), '
+            'F2LWG4LD92 (iPad Pro M2 11-inch).',
+        ],
+        'links': [
+            ('Shop AppleCare+', '/applecare'),
+            ('Compare AppleCare plans', '/applecare-compare'),
+            ('Support phone: 1-800-275-2273', 'tel:18002752273'),
+        ],
+    }
+    return render_template('info_page.html', topic='applecare/coverage', page=page)
+
+
+# ---------------------------------------------------------------------------
+# R5 — Repair status tracker
+# ---------------------------------------------------------------------------
+
+REPAIR_STATUS_TABLE = {
+    'R12345678': ('iPhone 17 Pro display replacement', 'In transit — return shipment',  '2026-05-28', 'Apple Service Center Memphis'),
+    'R12345679': ('MacBook Pro 14 battery service',    'Diagnostic complete',           '2026-05-30', 'Apple Service Center Elk Grove'),
+    'R12345680': ('Apple Watch Ultra 2 crown service', 'Pending part — backorder',      '2026-06-05', 'Apple Service Center Memphis'),
+    'R12345681': ('AirPods Pro 3 left bud replacement','Delivered',                     '2026-05-22', 'You'),
+    'R12345682': ('iPad Pro M4 screen replacement',    'In repair',                     '2026-05-29', 'Apple Service Center Elk Grove'),
+    'R12345683': ('iPhone 16 battery replacement',     'Awaiting customer drop-off',    '2026-05-26', 'Apple The Grove'),
+    'R12345684': ('Vision Pro Light Seal swap',        'Repair complete — ready for pickup','2026-05-25', 'Apple Fifth Avenue'),
+    'R12345685': ('Mac mini logic board replacement',  'Quote sent — awaiting approval', '2026-05-24', 'Apple Service Center Memphis'),
+    'R12345686': ('Apple Watch SE 2 strap exchange',   'Delivered',                     '2026-05-20', 'You'),
+    'R12345687': ('iPhone 15 Pro Max camera repair',   'In transit — outbound to customer','2026-05-27', 'Apple Service Center Memphis'),
+}
+
+
+@app.route('/repair/status', methods=['GET', 'POST'])
+@csrf.exempt
+def repair_status():
+    """Repair status tracker. POST {repair_id} → JSON status."""
+    rid = (request.values.get('repair_id') or '').strip().upper()
+    if request.method == 'POST' and rid:
+        info = REPAIR_STATUS_TABLE.get(rid)
+        if not info:
+            import hashlib
+            h = int.from_bytes(hashlib.md5(rid.encode()).digest()[:4], 'big')
+            rows = list(REPAIR_STATUS_TABLE.values())
+            info = rows[h % len(rows)]
+        repair, status, eta, location = info
+        return jsonify({
+            'repair_id': rid,
+            'repair': repair,
+            'status': status,
+            'estimated_completion': eta,
+            'current_location': location,
+            'support_phone': '1-800-275-2273',
+        }), 200
+
+    page = {
+        'title': 'Repair Status',
+        'subtitle': 'Track your Apple repair.',
+        'body': [
+            'Enter the repair ID from your service confirmation email (starts with R followed by 8 digits).',
+            'Repair status is updated multiple times per day as your device moves through the Apple Service network.',
+            'For urgent help, call 1-800-275-2273 or chat with an Apple Specialist.',
+            'Sample repair IDs you can try: R12345678 (iPhone 17 Pro display), R12345679 (MacBook Pro 14 battery), '
+            'R12345680 (Apple Watch Ultra 2 crown).',
+        ],
+        'links': [
+            ('Self Service Repair', '/support/repair'),
+            ('Genius Bar booking', '/retail'),
+            ('Apple Service Center info', '/support'),
+        ],
+    }
+    return render_template('info_page.html', topic='repair/status', page=page)
+
+
+# ---------------------------------------------------------------------------
+# R5 — Apple Card application + Apple Wallet add-pass + Find My + Family Sharing
+# ---------------------------------------------------------------------------
+
+@app.route('/apple-card', methods=['GET', 'POST'])
+@csrf.exempt
+def apple_card_application():
+    """Apple Card application form. POST {full_name, ssn_last4, dob, income, ...} → decision."""
+    if request.method == 'POST':
+        full_name = (request.values.get('full_name') or '').strip()
+        income = request.values.get('annual_income', '').strip()
+        ssn_last4 = (request.values.get('ssn_last4') or '').strip()
+        if not full_name or not ssn_last4:
+            return jsonify({'approved': False, 'error': 'full_name and ssn_last4 required'}), 400
+        # Deterministic decision: hash the SSN last4 to decide approval + line.
+        import hashlib
+        h = int.from_bytes(hashlib.md5(ssn_last4.encode()).digest()[:4], 'big')
+        approved = (h % 10) != 0  # 9/10 approved
+        line = 1000 + (h % 25) * 1000  # $1000 - $25000
+        apr_low = 19.24 + (h % 6) * 0.5
+        return jsonify({
+            'approved': approved,
+            'applicant': full_name,
+            'credit_line_usd': float(line) if approved else 0.0,
+            'apr_range': f'{apr_low:.2f}% – {apr_low+9.74:.2f}% variable',
+            'daily_cash': '3% at Apple, 2% via Apple Pay, 1% on titanium card',
+            'titanium_card_arrival_days': 7 if approved else 0,
+            'wallet_add_url': '/wallet/add?pass=apple-card' if approved else None,
+            'message': ('Approved — your virtual Apple Card is now in Apple Wallet. Titanium card ships in 7 days.'
+                        if approved
+                        else 'Application requires manual review. A Goldman Sachs specialist will call you within 3 business days.'),
+        }), 200
+
+    page = {
+        'title': 'Apple Card',
+        'subtitle': 'Apply for Apple Card with Goldman Sachs.',
+        'body': [
+            'Apple Card is built into the Wallet app on iPhone. Apply in minutes with no impact to your credit score.',
+            'Earn 3% Daily Cash at Apple, 2% with Apple Pay, and 1% on titanium card purchases.',
+            'No fees — no annual, no foreign transaction, no late fees, ever.',
+            'Add to Apple Wallet instantly upon approval. Titanium card arrives in 7 days.',
+            'POST to /apple-card with full_name + ssn_last4 + annual_income to apply.',
+        ],
+        'links': [
+            ('Apple Card welcome materials', '/product/wallet-r5-apple-card-welcome'),
+            ('Daily Cash boost partners', '/product/wallet-r5-apple-card-daily-cash'),
+            ('Add to Wallet', '/wallet/add?pass=apple-card'),
+        ],
+    }
+    return render_template('info_page.html', topic='apple-card', page=page)
+
+
+@app.route('/wallet/add', methods=['GET', 'POST'])
+@csrf.exempt
+def wallet_add():
+    """Add a pass to Apple Wallet. GET shows wallet contents; POST adds a pass."""
+    pass_type = (request.values.get('pass') or '').strip().lower()
+    if request.method == 'POST' and pass_type:
+        # Deterministic pass ID derived from pass type.
+        import hashlib
+        pid = 'pkpass-' + hashlib.md5(pass_type.encode()).hexdigest()[:12]
+        return jsonify({
+            'added': True,
+            'pass_type': pass_type,
+            'pass_id': pid,
+            'wallet_url': f'/wallet/pass/{pid}',
+            'message': f'Added {pass_type} to Apple Wallet.',
+        }), 200
+
+    page = {
+        'title': 'Apple Wallet',
+        'subtitle': 'Add passes, keys, and cards to Apple Wallet.',
+        'body': [
+            'Apple Wallet stores your credit and debit cards, transit cards, boarding passes, event tickets, '
+            'hotel keys, car keys, and more — all in one place.',
+            'POST to /wallet/add with ?pass=<type> to add a pass. Supported pass types include apple-card, '
+            'boarding-pass, hotel-key, car-key, transit-card, event-ticket, loyalty-card, student-id.',
+            'Hotel keys are now supported at 60+ hotel chains. Tap your iPhone or Apple Watch on the door to unlock.',
+            'Car keys are supported on BMW, Hyundai, Kia, Genesis, and Acura. Use Apple Watch to unlock — no need to take out iPhone.',
+        ],
+        'links': [
+            ('Add Apple Card', '/wallet/add?pass=apple-card'),
+            ('Add Hotel Key (sample)', '/wallet/add?pass=hotel-key'),
+            ('Add Boarding Pass (sample)', '/wallet/add?pass=boarding-pass'),
+            ('Add Car Key (sample)', '/wallet/add?pass=car-key'),
+            ('Add Transit Card (sample)', '/wallet/add?pass=transit-card'),
+        ],
+    }
+    return render_template('info_page.html', topic='wallet', page=page)
+
+
+@app.route('/wallet/pass/<pass_id>')
+def wallet_pass_view(pass_id):
+    """Show a single Wallet pass by ID. Used as post-add landing page."""
+    page = {
+        'title': f'Wallet Pass {pass_id}',
+        'subtitle': f'Pass ID: {pass_id}',
+        'body': [
+            'This pass is now stored in Apple Wallet on iPhone and synced to Apple Watch.',
+            'Tap the pass in Wallet to view details, share, or remove.',
+            'Hotel and event passes may surface notifications on the Lock Screen before your appointment time.',
+        ],
+        'links': [
+            ('Back to Wallet', '/wallet/add'),
+            ('Wallet help', '/support/article/apple-wallet-help'),
+        ],
+    }
+    return render_template('info_page.html', topic=f'wallet/pass/{pass_id}', page=page)
+
+
+@app.route('/find-my/locate-airtag', methods=['GET', 'POST'])
+@csrf.exempt
+def find_my_locate_airtag():
+    """Find My — locate an AirTag by serial. Returns the last seen location."""
+    serial = (request.values.get('serial') or '').strip().upper()
+    if request.method == 'POST' and serial:
+        # Deterministic location lookup.
+        import hashlib
+        h = int.from_bytes(hashlib.md5(serial.encode()).digest()[:4], 'big')
+        sample_locations = [
+            ('Apple The Grove', 34.0726, -118.3568, '189 The Grove Drive, Los Angeles, CA'),
+            ('Apple Fifth Avenue', 40.7637, -73.9728, '767 5th Ave, New York, NY'),
+            ('Apple Park', 37.3346, -122.0090, 'Apple Park Visitor Center, Cupertino, CA'),
+            ('Apple Regent Street', 51.5125, -0.1411, '235 Regent St, London, UK'),
+            ('Apple Omotesando', 35.6663, 139.7126, '4-2-13 Jingumae, Shibuya-ku, Tokyo'),
+            ('Home — 742 Market St, San Francisco', 37.7857, -122.4011, '742 Market Street, San Francisco, CA'),
+        ]
+        loc_name, lat, lng, addr = sample_locations[h % len(sample_locations)]
+        from datetime import timedelta
+        last_seen = (MIRROR_REFERENCE_DATE - timedelta(hours=h % 48)).isoformat()
+        return jsonify({
+            'serial': serial,
+            'found': True,
+            'last_seen_at': last_seen,
+            'location_name': loc_name,
+            'address': addr,
+            'lat': lat, 'lng': lng,
+            'play_sound_url': f'/find-my/play-sound?serial={serial}',
+            'lost_mode_url': f'/find-my/lost-mode?serial={serial}',
+        }), 200
+
+    page = {
+        'title': 'Find My — Locate AirTag',
+        'subtitle': 'Locate any AirTag on the Find My network.',
+        'body': [
+            'The Find My network uses hundreds of millions of Apple devices to anonymously help locate your AirTag.',
+            'POST to /find-my/locate-airtag with ?serial=<airtag-serial> to retrieve the last known location.',
+            'Use Precision Finding on iPhone 11 and later to home in on a nearby AirTag with on-screen directions.',
+            'Sample serials: AT001234567890, AT001234567891, AT001234567892.',
+        ],
+        'links': [
+            ('Shop AirTag', '/product/airtag'),
+            ('Shop AirTag 4-pack', '/product/airtag-4-pack'),
+            ('Find My on Apple devices', '/find-my'),
+        ],
+    }
+    return render_template('info_page.html', topic='find-my/locate-airtag', page=page)
+
+
+# In-memory family roster (deterministic, reset on rebuild).
+FAMILY_SHARING_ROSTER = {
+    'alice.j@test.com': ['bob.c@test.com', 'carol.d@test.com'],
+    'bob.c@test.com':   ['david.k@test.com'],
+    'carol.d@test.com': [],
+    'david.k@test.com': [],
+}
+
+
+@app.route('/family-sharing/add-member', methods=['GET', 'POST'])
+@csrf.exempt
+def family_sharing_add_member():
+    """Add a member to Family Sharing. POST {organizer, member_email} → status."""
+    if request.method == 'POST':
+        organizer = (request.values.get('organizer') or '').strip().lower()
+        member = (request.values.get('member_email') or '').strip().lower()
+        if not organizer or not member:
+            return jsonify({'added': False, 'error': 'organizer and member_email required'}), 400
+        roster = FAMILY_SHARING_ROSTER.get(organizer, [])
+        if len(roster) >= 5:
+            return jsonify({'added': False, 'error': 'Family Sharing maximum of 6 members reached'}), 400
+        if member in roster:
+            return jsonify({'added': False, 'error': 'Member already in family'}), 400
+        # Deterministic: do not persist (rebuild resets), but echo state.
+        new_roster = list(roster) + [member]
+        return jsonify({
+            'added': True,
+            'organizer': organizer,
+            'member_email': member,
+            'family_size': len(new_roster) + 1,
+            'family_roster': [organizer] + new_roster,
+            'invite_sent': True,
+            'ask_to_buy_default': True,
+            'shared_subscriptions': ['Apple One Family', 'iCloud+ 2TB', 'Apple Music Family'],
+        }), 200
+
+    page = {
+        'title': 'Family Sharing — Add Member',
+        'subtitle': 'Invite up to 5 other family members to share Apple subscriptions, purchases, and iCloud+ storage.',
+        'body': [
+            'Family Sharing lets up to 6 people in your household share App Store purchases, Apple subscriptions, '
+            'iCloud+ storage, and an Apple Music family plan — without sharing accounts.',
+            'POST to /family-sharing/add-member with organizer (your Apple ID) + member_email (their Apple ID).',
+            'Members under 13 get an Ask to Buy default that requires a parent or guardian to approve purchases.',
+            'Sample organizers: alice.j@test.com (current family size 3), bob.c@test.com (current family size 2).',
+        ],
+        'links': [
+            ('Family Sharing setup', '/family-sharing'),
+            ('Family Sharing — Find My Family', '/product/family-r5-family-sharing-find-my'),
+            ('Apple One Family', '/product/apple-one-family'),
+        ],
+    }
+    return render_template('info_page.html', topic='family-sharing/add-member', page=page)
+
+
+# ---------------------------------------------------------------------------
+# R5 — AJAX shipping estimate by ZIP code
+# ---------------------------------------------------------------------------
+
+@app.route('/api/shipping/estimate', methods=['GET', 'POST'])
+@csrf.exempt
+def shipping_estimate():
+    """Return shipping cost + ETA for a given ZIP code. Used by the AJAX
+    enhancement on /shop/bag and /checkout."""
+    zip_code = (request.values.get('zip') or '').strip()
+    method = (request.values.get('method') or 'standard').strip().lower()
+    if not zip_code or not zip_code.isdigit() or len(zip_code) != 5:
+        return jsonify({'error': 'valid 5-digit ZIP required'}), 400
+    # Deterministic ETA based on zip first digit.
+    fd = int(zip_code[0])
+    # 0/1 = Northeast, 2/3 = Mid-Atl/South, 4/5/6 = Midwest, 7 = TX/OK,
+    # 8 = Mountain, 9 = West coast. Apple ships from Reno NV — west is fast.
+    eta_days_std = [4, 4, 5, 5, 4, 4, 3, 4, 2, 1][fd]
+    eta_days_express = max(1, eta_days_std - 2)
+    method_costs = {
+        'standard': (0.00, eta_days_std),
+        'express':  (9.99, eta_days_express),
+        'overnight':(19.99, 1),
+    }
+    cost, eta = method_costs.get(method, method_costs['standard'])
+    return jsonify({
+        'zip': zip_code,
+        'method': method,
+        'cost_usd': cost,
+        'estimated_delivery_days': eta,
+        'delivery_date_estimate': (MIRROR_REFERENCE_DATE + __import__('datetime').timedelta(days=eta)).date().isoformat(),
+        'all_methods': [
+            {'method': k, 'cost_usd': v[0], 'eta_days': v[1]} for k, v in method_costs.items()
+        ],
+    }), 200
+
+
+# ---------------------------------------------------------------------------
+# R5 — Promo code validator (used by checkout + AJAX toast)
+# ---------------------------------------------------------------------------
+
+PROMO_CODES = {
+    'STUDENT2026': ('Apple Education Savings — verified via UNiDAYS', 0.10),
+    'BACKTOSCHOOL': ('Back to School — AirPods on us with eligible Mac/iPad', 0.0),
+    'APPLECARE15': ('AppleCare+ — 15% off with new device', 0.15),
+    'TRADEIN50':   ('Trade-in — $50 off your next iPhone', 50.0),
+    'FAMILY10':    ('Family Sharing welcome — 10% off Apple One', 0.10),
+}
+
+
+@app.route('/api/promo/validate', methods=['POST'])
+@csrf.exempt
+def promo_validate():
+    """Validate a promo code. Returns success or 400 with a toast-able error."""
+    code = (request.values.get('code') or '').strip().upper()
+    if not code:
+        return jsonify({'valid': False, 'error': 'Enter a promo code.'}), 400
+    info = PROMO_CODES.get(code)
+    if not info:
+        return jsonify({'valid': False, 'error': f'Promo code "{code}" is not valid or has expired.'}), 400
+    desc, discount = info
+    if 0 < discount < 1:
+        savings = f'{int(discount * 100)}% off'
+    elif discount >= 1:
+        savings = f'${discount:.0f} off'
+    else:
+        savings = 'Free gift with purchase'
+    return jsonify({'valid': True, 'code': code, 'description': desc, 'savings': savings}), 200
+
+
+# ---------------------------------------------------------------------------
 # Seed data
 # ---------------------------------------------------------------------------
 
@@ -6007,11 +6506,815 @@ def _extend_r4():
 EXTRA_PRODUCTS_R4 = _extend_r4()
 
 
+# ---------------------------------------------------------------------------
+# R5 expansion — deeper specs (environment_report, accessibility_features,
+# in_box_contents, whats_new) plus broader catalog coverage.
+# ---------------------------------------------------------------------------
+
+def _r5_deepen(specs, env=None, a11y=None, in_box=None, whats_new=None):
+    """Augment a specs dict with the four R5 depth keys."""
+    out = dict(specs)
+    out['environment_report'] = env or (
+        'Made with 30%+ recycled content by weight. Arsenic-free display glass, mercury-free, BFR/PVC/beryllium-free. '
+        'Final assembly uses 100% renewable electricity. Packaging is 100% fiber-based and Forest Stewardship Council certified.'
+    )
+    out['accessibility_features'] = a11y or [
+        'VoiceOver', 'Zoom', 'Dynamic Type', 'Reduce Motion', 'Voice Control',
+        'Switch Control', 'Live Captions', 'AssistiveTouch'
+    ]
+    out['in_box_contents'] = in_box or ['Product', 'USB-C Charge Cable (1 m)', 'Documentation']
+    out['whats_new'] = whats_new or 'R5 polish — extended color matrix, faster wireless charging, and Find My network support.'
+    return out
+
+
+def _extend_r5():
+    """R5 expansion — push catalog from ~900 to 1400+ SKUs with depth-focused
+    fields (environment_report, accessibility_features, in_box_contents,
+    whats_new) and coverage for trade-in/AppleCare-coverage/repair-status/
+    Apple-Card/Wallet/Find-My/Family-Sharing task lines."""
+    extra = []
+
+    # ------------------------------------------------------------------
+    # A. AppleCare+ coverage SKUs for every flagship + recent generation.
+    # ------------------------------------------------------------------
+    applecare_catalog = [
+        # (display_name, slug_suffix, device_class, price_2yr, price_monthly)
+        ('AppleCare+ for iPhone 17 Pro Max',  'iphone-17-pro-max',    'iphone',  269.0,  13.49),
+        ('AppleCare+ for iPhone 17 Plus',     'iphone-17-plus',       'iphone',  219.0,  10.99),
+        ('AppleCare+ for iPhone 17',          'iphone-17',            'iphone',  199.0,   9.99),
+        ('AppleCare+ for iPhone 17e',         'iphone-17e',           'iphone',  149.0,   7.49),
+        ('AppleCare+ for iPhone Air',         'iphone-air',           'iphone',  199.0,   9.99),
+        ('AppleCare+ for iPhone 16 Pro Max',  'iphone-16-pro-max',    'iphone',  269.0,  13.49),
+        ('AppleCare+ for iPhone 16 Plus',     'iphone-16-plus',       'iphone',  219.0,  10.99),
+        ('AppleCare+ for iPhone 16',          'iphone-16',            'iphone',  199.0,   9.99),
+        ('AppleCare+ for iPhone 15 Pro Max',  'iphone-15-pro-max',    'iphone',  269.0,  13.49),
+        ('AppleCare+ for iPhone 15 Plus',     'iphone-15-plus',       'iphone',  219.0,  10.99),
+        ('AppleCare+ for iPhone 15',          'iphone-15',            'iphone',  199.0,   9.99),
+        ('AppleCare+ for iPhone 14 Pro Max',  'iphone-14-pro-max',    'iphone',  269.0,  13.49),
+        ('AppleCare+ for iPhone 14 Plus',     'iphone-14-plus',       'iphone',  219.0,  10.99),
+        ('AppleCare+ for iPhone 14',          'iphone-14',            'iphone',  199.0,   9.99),
+        ('AppleCare+ for iPhone 13 Pro Max',  'iphone-13-pro-max',    'iphone',  269.0,  13.49),
+        ('AppleCare+ for iPhone 13 mini',     'iphone-13-mini',       'iphone',  149.0,   7.49),
+        ('AppleCare+ for iPhone SE',          'iphone-se-3',          'iphone',  129.0,   6.49),
+        ('AppleCare+ for MacBook Pro 16',     'macbook-pro-16',       'mac',     499.0,  21.99),
+        ('AppleCare+ for MacBook Pro 14',     'macbook-pro-14',       'mac',     399.0,  17.99),
+        ('AppleCare+ for MacBook Air 15',     'macbook-air-15',       'mac',     249.0,  10.99),
+        ('AppleCare+ for MacBook Air 13',     'macbook-air-13',       'mac',     249.0,  10.99),
+        ('AppleCare+ for iMac',               'imac-24',              'mac',     169.0,   7.49),
+        ('AppleCare+ for Mac mini',           'mac-mini',              'mac',    149.0,   6.49),
+        ('AppleCare+ for Mac Studio',         'mac-studio',           'mac',     299.0,  13.49),
+        ('AppleCare+ for Mac Pro',            'mac-pro',              'mac',     599.0,  26.99),
+        ('AppleCare+ for iPad Pro 13',        'ipad-pro-13',          'ipad',    129.0,   5.99),
+        ('AppleCare+ for iPad Pro 11',        'ipad-pro-11',          'ipad',    129.0,   5.99),
+        ('AppleCare+ for iPad Air 13',        'ipad-air-13',          'ipad',     99.0,   4.49),
+        ('AppleCare+ for iPad Air 11',        'ipad-air-11',          'ipad',     99.0,   4.49),
+        ('AppleCare+ for iPad',               'ipad-10',              'ipad',     69.0,   3.49),
+        ('AppleCare+ for iPad mini',          'ipad-mini-7',          'ipad',     69.0,   3.49),
+        ('AppleCare+ for Apple Watch Series 11', 'watch-series-11',   'watch',    79.0,   3.49),
+        ('AppleCare+ for Apple Watch SE',     'watch-se-2',           'watch',    49.0,   2.49),
+        ('AppleCare+ for Apple Watch Hermès', 'watch-hermes-10',      'watch',    99.0,   4.49),
+        ('AppleCare+ for AirPods Pro 3',      'airpods-pro-3',        'airpods',  29.0,   1.49),
+        ('AppleCare+ for AirPods Max 2',      'airpods-max-2',        'airpods',  39.0,   1.99),
+        ('AppleCare+ for AirPods 4',          'airpods-4',            'airpods',  29.0,   1.49),
+        ('AppleCare+ for HomePod',            'homepod-2',            'audio',    29.0,   1.49),
+        ('AppleCare+ for HomePod mini',       'homepod-mini',         'audio',    19.0,   0.99),
+        ('AppleCare+ for Apple TV 4K',        'apple-tv-4k',          'tv',       29.0,   1.49),
+        ('AppleCare+ for Beats Studio Pro',   'beats-studio-pro',     'audio',    29.0,   1.49),
+    ]
+    for name, suffix, cls, price2, mp in applecare_catalog:
+        slug = f'applecare-r5-{suffix}'
+        specs = _r5_deepen({
+            'term': '2-year', 'audience': 'Consumer', 'device_class': cls,
+            'price_2yr_usd': price2, 'monthly_usd': mp,
+            'covers': 'Unlimited accidental damage incidents, Apple-certified service and repairs, priority 24/7 access to Apple Specialists',
+        }, env='AppleCare+ documentation printed on FSC-certified paper with soy-based inks. Service shipping uses carbon-neutral logistics.',
+           a11y=['Service appointments accept VoiceOver bookings', 'Genius Bar offers ASL via remote interpreter on request'],
+           in_box=['AppleCare+ coverage certificate (digital)', 'Quick start booklet'],
+           whats_new='R5 — Adds remote-diagnostic same-day swap for iPhone Pro and AppleCare+ Coverage Lookup by serial or IMEI.')
+        extra.append((name, slug, 'accessories', 'applecare',
+                      f'{name}. 2 years, 24/7 priority support.',
+                      f'{name}. Two years of hardware coverage, unlimited incidents of accidental damage (service fee applies), '
+                      f'24/7 priority access to Apple Specialists, and battery service. Monthly billing or pay upfront — '
+                      f'${price2:.2f} for 2 years, or ${mp:.2f}/mo.',
+                      price2, mp, ['Service'], [], specs, 2026, ''))
+
+    # ------------------------------------------------------------------
+    # B. Apple Vision Pro accessories — Light Seal kits, head bands, etc.
+    # ------------------------------------------------------------------
+    vision_skus = [
+        ('Light Seal Cushion (W)',  'light-seal-cushion-w',   29.0, 'Cushion W'),
+        ('Light Seal Cushion (N)',  'light-seal-cushion-n',   29.0, 'Cushion N'),
+        ('Light Seal Cushion (S)',  'light-seal-cushion-s',   29.0, 'Cushion S'),
+        ('Light Seal Cushion (M)',  'light-seal-cushion-m',   29.0, 'Cushion M'),
+        ('Light Seal (Multiple Sizes)', 'light-seal-multi',  199.0, 'Light Seal'),
+        ('Solo Knit Band - Black',  'solo-knit-band-black',   99.0, 'Solo Knit Band'),
+        ('Solo Knit Band - Gray',   'solo-knit-band-gray',    99.0, 'Solo Knit Band'),
+        ('Solo Knit Band - Blue',   'solo-knit-band-blue',    99.0, 'Solo Knit Band'),
+        ('Dual Loop Band',          'dual-loop-band',         99.0, 'Dual Loop Band'),
+        ('Travel Case for Apple Vision Pro', 'vision-travel-case', 199.0, 'Travel Case'),
+        ('ZEISS Optical Inserts (Readers)',  'zeiss-readers',  99.0, 'Optical Insert'),
+        ('ZEISS Optical Inserts (Prescription)', 'zeiss-prescription', 149.0, 'Optical Insert'),
+        ('Vision Pro Battery (External)', 'vision-battery-external', 199.0, 'Battery'),
+        ('Vision Pro USB-C Charge Cable', 'vision-usbc-cable', 19.0, 'Cable'),
+        ('Vision Pro 30W USB-C Power Adapter', 'vision-30w-adapter', 39.0, 'Adapter'),
+        ('Vision Pro Polishing Cloth',  'vision-polishing-cloth', 19.0, 'Cloth'),
+        ('Vision Pro Carry Sleeve',     'vision-carry-sleeve',     79.0, 'Sleeve'),
+        ('Vision Pro Lens Cover',       'vision-lens-cover',       29.0, 'Cover'),
+        ('Vision Pro Belkin Battery Holder', 'vision-belkin-battery-holder', 49.95, 'Holder'),
+        ('Vision Pro Standalone Travel Tripod', 'vision-tripod', 129.0, 'Tripod'),
+    ]
+    for name, slug_suffix, price, kind in vision_skus:
+        slug = f'vision-r5-{slug_suffix}'
+        specs = _r5_deepen({'compat': 'Apple Vision Pro', 'kind': kind},
+                           env='Made with recycled aluminum and 100% recycled fabric (band variants).',
+                           a11y=['Compatible with VoiceOver gestures', 'Supports Dwell Control'],
+                           in_box=[kind, 'Documentation'],
+                           whats_new='New for R5: drop-in replacement for Vision Pro accessories with serial-locked Find My pairing.')
+        extra.append((name, slug, 'accessories', 'vision-pro-accessory',
+                      f'{name}. Designed for Apple Vision Pro.',
+                      f'{name} for Apple Vision Pro. Pairs automatically when paired with the headset Apple ID. '
+                      f'Find My-enabled. Recyclable aluminum and 100% recycled fabric (where applicable).',
+                      price, None, ['Default'], [], specs, 2025, ''))
+
+    # ------------------------------------------------------------------
+    # C. Apple Card / Apple Wallet / Find My-themed SKUs.
+    # ------------------------------------------------------------------
+    wallet_skus = [
+        ('Apple Card Titanium Welcome Kit',  'apple-card-welcome',   0.0,    'Apple Card welcome packet with activation guide and titanium card sleeve.'),
+        ('Apple Card Daily Cash Boost Bundle','apple-card-daily-cash',0.0,    'Activation bundle for new Apple Card holders — 3% Daily Cash at Apple, plus partner-rate boosts.'),
+        ('Apple Wallet Family Pass Kit',     'apple-wallet-family',  0.0,    'Family Pass digital kit — share keys, transit cards, and event tickets across Family Sharing members.'),
+        ('Apple Wallet Hotel Key Adapter',   'apple-wallet-hotel-key',29.0,  'Adapter dongle for legacy hotel locks. Use Apple Wallet hotel keys on properties not yet supporting Tap-to-Enter.'),
+        ('AirTag 1-pack',                    'airtag-1pk-r5',         29.0,  'Single AirTag. Engraving available.'),
+        ('AirTag 4-pack (R5)',               'airtag-4pk-r5',         99.0,  'AirTag 4-pack. Bulk-engraving available.'),
+        ('AirTag 8-pack (R5)',               'airtag-8pk-r5',        179.0,  'AirTag 8-pack. Designed for family-sized luggage sets.'),
+        ('Find My Luggage Beacon',           'find-my-luggage-beacon',49.0,  'Find My-enabled luggage beacon. Lithium battery rated for travel.'),
+        ('Find My Backpack Tag (Hermès)',    'find-my-backpack-hermes',299.0,'Hermès leather AirTag holder with hand-stitched edges. Pairs with Find My network.'),
+        ('Find My Cycle Tag (Bike)',         'find-my-cycle-tag',     49.0,  'IP68 weatherproof AirTag mount for road and mountain bikes.'),
+        ('Apple Card Cleaning Cloth',        'apple-card-cleaning-cloth',19.0,'Microfiber cloth for cleaning the titanium Apple Card and Apple devices.'),
+        ('Apple Wallet Sport Strap (Black)', 'apple-wallet-sport-black',39.0,'Lightweight sport wallet for ID-only Apple Wallet days at the gym.'),
+        ('Apple Wallet Pro Card Sleeve',     'apple-wallet-pro-sleeve', 49.0,'Premium leather sleeve for Apple Card, ID, and a single backup credit card. RFID-safe.'),
+        ('Apple Wallet — Goldman Sachs Cobranded Welcome', 'apple-wallet-gs-welcome',0.0,'Goldman Sachs co-branded materials and travel adapter giveaway with new Apple Card activations.'),
+    ]
+    for name, slug_suffix, price, desc in wallet_skus:
+        slug = f'wallet-r5-{slug_suffix}'
+        specs = _r5_deepen({'kind': 'Wallet / Find My / Apple Card'},
+                           env='Made with 90%+ recycled leather alternative or recycled titanium (Apple Card sleeve variants).',
+                           a11y=['VoiceOver reads card balances inside Apple Wallet', 'Tactile notch on Apple Card sleeve aids orientation'],
+                           in_box=['Item', 'Activation guide', 'Documentation'],
+                           whats_new='R5 — Apple Card activation now via Wallet app QR; Find My beacons include 1-year free Apple Card cash-back boost.')
+        extra.append((name, slug, 'accessories', 'apple-card-wallet',
+                      f'{name}. Engineered for Apple Card and Apple Wallet.',
+                      desc, price, None, ['Default'], [], specs, 2026, ''))
+
+    # ------------------------------------------------------------------
+    # D. Family Sharing / Apple One bundle SKUs.
+    # ------------------------------------------------------------------
+    family_bundles = [
+        ('Family Sharing Starter Kit',       'family-sharing-starter',     0.0,   'Walkthrough kit to set up Family Sharing across iPhone, iPad, and Mac.'),
+        ('Family Sharing — Ask to Buy Kit',  'family-sharing-ask-to-buy',  0.0,   'Activation kit for Ask to Buy approval workflows in Family Sharing.'),
+        ('Family Sharing — Screen Time Card','family-sharing-screen-time', 0.0,   'Step-by-step Screen Time setup card for Family Sharing organizers.'),
+        ('Family Sharing — Find My Family',  'family-sharing-find-my',     0.0,   'Find My setup card for Family Sharing. Helps locate family members on a shared map.'),
+        ('Family Sharing — Shared Album Kit','family-sharing-shared-album',0.0,   'Setup kit for the Family Shared Album in Photos.'),
+        ('Apple One Family — 6 month gift',  'apple-one-family-6mo-gift',  119.94,'6 months of Apple One Family. Shareable with up to 5 family members.'),
+        ('Apple One Premier — 6 month gift', 'apple-one-premier-6mo-gift', 219.94,'6 months of Apple One Premier. Shareable with up to 5 family members.'),
+        ('iCloud+ 2TB — 12 month',           'icloud-plus-2tb-12mo',       119.88,'12 months of iCloud+ 2TB. Shareable via Family Sharing.'),
+        ('iCloud+ 6TB — 12 month',           'icloud-plus-6tb-12mo',       359.88,'12 months of iCloud+ 6TB. Shareable via Family Sharing.'),
+        ('iCloud+ 12TB — 12 month',          'icloud-plus-12tb-12mo',      719.88,'12 months of iCloud+ 12TB. Shareable via Family Sharing.'),
+        ('Apple Music Family — 12 month',    'apple-music-family-12mo',    179.88,'12 months of Apple Music Family. Up to 6 members.'),
+        ('Apple Arcade — 12 month family',   'apple-arcade-12mo-family',    83.88,'12 months of Apple Arcade. Family Sharing supported.'),
+        ('Apple Fitness+ 12 month family',   'apple-fitness-12mo-family',  119.88,'12 months of Apple Fitness+. Up to 6 family members.'),
+        ('Apple News+ 12 month family',      'apple-news-12mo-family',     155.88,'12 months of Apple News+. Up to 6 family members.'),
+    ]
+    for name, slug_suffix, price, desc in family_bundles:
+        slug = f'family-r5-{slug_suffix}'
+        specs = _r5_deepen({'audience': 'Family', 'sharing': 'Family Sharing up to 6 members'},
+                           env='Digital fulfillment — no physical packaging.',
+                           a11y=['VoiceOver supported in all family setup flows', 'Closed Captions on Apple TV+ and Apple Fitness+'],
+                           in_box=['Redemption code (email)', 'Family setup guide'],
+                           whats_new='R5 — Adds Family Sharing add-member API and unified Apple One renewal calendar.')
+        extra.append((name, slug, 'accessories', 'family-sharing',
+                      f'{name}. Set up Family Sharing in minutes.',
+                      desc, price, None, ['Family'], [], specs, 2026, ''))
+
+    # ------------------------------------------------------------------
+    # E. iPad Pro M4 Cellular + Wi-Fi variants — full storage matrix.
+    # ------------------------------------------------------------------
+    for size, base_price in [('11"', 999.0), ('13"', 1299.0)]:
+        for storage_gb, premium in [(256, 0), (512, 200), (1024, 600), (2048, 1000)]:
+            for connectivity, conn_premium, conn_slug in [
+                ('Wi-Fi', 0, 'wifi'), ('Wi-Fi + Cellular', 200, 'cellular'),
+            ]:
+                for color, color_slug in [('Space Black', 'space-black'), ('Silver', 'silver')]:
+                    storage_str = f'{storage_gb}GB' if storage_gb < 1024 else f'{storage_gb//1024}TB'
+                    name = f'iPad Pro {size} (M4) {storage_str} {connectivity} - {color}'
+                    slug = (f'ipad-pro-r5-{size.replace(chr(34), "")}-m4-{storage_str.lower()}-{conn_slug}-{color_slug}'
+                            .replace('"', ''))
+                    price = base_price + premium + conn_premium
+                    specs = _r5_deepen({
+                        'chip': 'M4', 'display': f'{size} Ultra Retina XDR',
+                        'connectivity': connectivity, 'storage': storage_str,
+                        'camera': '12MP Wide + LiDAR', 'battery': 'Up to 10 hours',
+                    }, env='Made with 100% recycled aluminum enclosure, 100% recycled rare earth elements in all magnets, '
+                         '100% recycled gold plating in the main logic board, and 100% renewable energy for final assembly.',
+                       a11y=['Eye Tracking (iPadOS 18+)', 'VoiceOver', 'AssistiveTouch', 'Live Captions', 'Voice Control',
+                             'Switch Control', 'Made for iPad hearing aids'],
+                       in_box=[f'iPad Pro {size}', 'USB-C Charge Cable (1 m)', '20W USB-C Power Adapter', 'Documentation'],
+                       whats_new=f'R5 — Adds Apple Intelligence on-device LLM and Find My network for AirTag alongside the iPad in Wallet.')
+                    extra.append((name, slug, 'ipad', 'ipad-pro',
+                                  f'iPad Pro {size}. M4 chip. Apple Pencil Pro.',
+                                  f'iPad Pro {size} with M4 chip, Ultra Retina XDR display, and {connectivity}. {storage_str} storage. Color: {color}.',
+                                  price, round(price/24, 2), ['Space Black', 'Silver'],
+                                  ['256GB', '512GB', '1TB', '2TB'], specs, 2024, 'M4'))
+
+    # ------------------------------------------------------------------
+    # F. iPhone Pro 1TB premium tier — full color matrix.
+    # ------------------------------------------------------------------
+    iphone_pro_colors = ['Natural Titanium', 'Black Titanium', 'White Titanium', 'Sand Titanium', 'Desert Titanium']
+    for model, model_slug, base_price, chip in [
+        ('iPhone 17 Pro', 'iphone-17-pro', 1099.0, 'A19 Pro'),
+        ('iPhone 17 Pro Max', 'iphone-17-pro-max', 1199.0, 'A19 Pro'),
+        ('iPhone 16 Pro', 'iphone-16-pro', 999.0, 'A18 Pro'),
+        ('iPhone 16 Pro Max', 'iphone-16-pro-max', 1199.0, 'A18 Pro'),
+    ]:
+        for storage_gb, premium in [(256, 0), (512, 200), (1024, 400)]:
+            for color in iphone_pro_colors:
+                storage_str = f'{storage_gb}GB' if storage_gb < 1024 else f'{storage_gb//1024}TB'
+                slug = (f'{model_slug}-r5-{storage_str.lower()}-{color.lower().replace(" ", "-")}')
+                name = f'{model} {storage_str} - {color}'
+                price = base_price + premium
+                specs = _r5_deepen({
+                    'chip': chip, 'storage': storage_str, 'color': color,
+                    'display': '6.3" Super Retina XDR' if 'Pro Max' not in model else '6.9" Super Retina XDR',
+                    'camera': '48MP Main + 48MP Ultra Wide + 12MP Telephoto',
+                    'battery': 'Up to 33 hours video playback',
+                }, env='Made with 95% recycled titanium in the structural frame, 100% recycled aluminum in the thermal substructure, '
+                     '100% recycled rare earth elements, 100% recycled cobalt in the battery, and packaging is 100% fiber-based.',
+                   a11y=['VoiceOver', 'Action button assignable to AssistiveTouch', 'Live Captions', 'Eye Tracking', 'Personal Voice',
+                         'Vehicle Motion Cues', 'Music Haptics', 'Made for iPhone hearing aids'],
+                   in_box=[f'{model}', 'USB-C Charge Cable (1 m)', 'Documentation'],
+                   whats_new=f'R5 — Adds Apple Intelligence on-device, Visual Intelligence, AirPods Pro 3 hearing aid feature, and Wallet hotel keys.')
+                extra.append((name, slug, 'iphone', 'iphone-pro',
+                              f'{model}. {chip}. Titanium.',
+                              f'{name} — {chip} chip, titanium design, 48MP camera system with 8x optical-quality zoom, ProMotion display.',
+                              price, round(price/24, 2), [color], [storage_str], specs, 2025 if '17' in model else 2024, chip))
+
+    # ------------------------------------------------------------------
+    # G. Trade-in promo SKUs by IMEI lookup tier.
+    # ------------------------------------------------------------------
+    tradein_promos = [
+        ('Trade-in Promo — iPhone 13 (IMEI lookup)', 'tradein-imei-iphone-13', 240.0,
+         'Instant trade-in credit for iPhone 13 by IMEI lookup. No appointment required.'),
+        ('Trade-in Promo — iPhone 14 (IMEI lookup)', 'tradein-imei-iphone-14', 340.0, 'Instant trade-in credit for iPhone 14 via IMEI lookup.'),
+        ('Trade-in Promo — iPhone 15 (IMEI lookup)', 'tradein-imei-iphone-15', 470.0, 'Instant trade-in credit for iPhone 15 via IMEI lookup.'),
+        ('Trade-in Promo — iPhone 15 Pro (IMEI lookup)','tradein-imei-iphone-15-pro',650.0, 'Instant trade-in credit for iPhone 15 Pro via IMEI lookup.'),
+        ('Trade-in Promo — iPhone 16 (IMEI lookup)', 'tradein-imei-iphone-16', 540.0, 'Instant trade-in credit for iPhone 16 via IMEI lookup.'),
+        ('Trade-in Promo — iPhone 16 Pro (IMEI lookup)','tradein-imei-iphone-16-pro',720.0, 'Instant trade-in credit for iPhone 16 Pro via IMEI lookup.'),
+        ('Trade-in Promo — Apple Watch S9 (IMEI lookup)','tradein-imei-watch-s9',95.0, 'Apple Watch Series 9 trade-in credit by IMEI lookup.'),
+        ('Trade-in Promo — Apple Watch Ultra 2 (IMEI lookup)','tradein-imei-watch-ultra-2',280.0, 'Apple Watch Ultra 2 trade-in credit via IMEI lookup.'),
+        ('Trade-in Promo — iPad Pro M2 (IMEI lookup)','tradein-imei-ipad-pro-m2',410.0, 'iPad Pro M2 trade-in credit by IMEI lookup.'),
+        ('Trade-in Promo — iPad Air M2 (IMEI lookup)','tradein-imei-ipad-air-m2',280.0, 'iPad Air M2 trade-in credit by IMEI lookup.'),
+        ('Trade-in Promo — MacBook Air M2 (Serial lookup)','tradein-serial-mba-m2',430.0, 'MacBook Air M2 trade-in credit via serial lookup.'),
+        ('Trade-in Promo — MacBook Pro M3 (Serial lookup)','tradein-serial-mbp-m3',900.0, 'MacBook Pro M3 trade-in credit via serial lookup.'),
+        ('Trade-in Promo — iMac M3 (Serial lookup)','tradein-serial-imac-m3',520.0, 'iMac M3 trade-in credit via serial lookup.'),
+        ('Trade-in Promo — Mac mini M2 (Serial lookup)','tradein-serial-mac-mini-m2',230.0, 'Mac mini M2 trade-in credit via serial lookup.'),
+        ('Trade-in Promo — Apple Vision Pro (Serial lookup)','tradein-serial-vision-pro',1900.0, 'Apple Vision Pro trade-in credit via serial lookup.'),
+    ]
+    for name, slug_suffix, price, desc in tradein_promos:
+        slug = f'tradein-r5-{slug_suffix}'
+        specs = _r5_deepen({'kind': 'Trade-in Promo', 'lookup_method': 'IMEI/Serial',
+                            'instant_credit_usd': price},
+                           env='Trade-in devices are recycled by Apple at certified e-waste recovery facilities.',
+                           a11y=['Trade-in tool supports VoiceOver and Voice Control on iPhone'],
+                           in_box=['Postage-paid return mailer', 'Trade-in instructions'],
+                           whats_new='R5 — Adds direct IMEI lookup at /trade-in/imei with instant credit estimate and same-day Apple Gift Card delivery.')
+        extra.append((name, slug, 'accessories', 'trade-in',
+                      f'{name}. Apple Trade In.',
+                      desc, price, None, ['Trade-in'], [], specs, 2026, ''))
+
+    # ------------------------------------------------------------------
+    # H. Pro audio — Logic Pro / Final Cut Pro / FCP for iPad add-ons.
+    # ------------------------------------------------------------------
+    pro_audio_skus = [
+        ('Logic Pro for Mac (12-month)',    'logic-pro-mac-12mo',    49.0, 'Logic Pro for Mac — 12-month subscription with all Apple-trained sound libraries.'),
+        ('Logic Pro for iPad (12-month)',   'logic-pro-ipad-12mo',   49.0, 'Logic Pro for iPad — 12-month subscription including Beat Breaker, Quick Sampler, and Live Loops.'),
+        ('Final Cut Pro for Mac (12-month)','fcp-mac-12mo',          49.0, 'Final Cut Pro for Mac — 12-month subscription with all motion graphics templates.'),
+        ('Final Cut Pro for iPad (12-month)','fcp-ipad-12mo',        49.0, 'Final Cut Pro for iPad — 12-month subscription with Live Drawing and Voiceover.'),
+        ('Final Cut Camera Pro Kit',        'fc-camera-pro-kit',    149.0, 'Final Cut Camera Pro Kit — multi-cam Live tools for iPhone and iPad. Synced via Final Cut Pro.'),
+        ('MainStage for Mac',               'mainstage-mac',         29.0, 'MainStage for Mac — Apple Loops library and live stage performance plugin pack.'),
+        ('Motion for Mac',                  'motion-mac',            49.0, 'Motion for Mac — 2D and 3D motion graphics with rigging tools.'),
+        ('Compressor for Mac',              'compressor-mac',        49.0, 'Compressor — advanced encoding for Final Cut Pro.'),
+        ('GarageBand Educator Pack',        'garageband-educator',   29.0, 'GarageBand Educator Pack — lesson plans and shared loops for music classrooms.'),
+        ('Logic Pro Sound Library Bundle',  'logic-sound-library',   29.0, 'Producer Packs, Sample Packs, and Live Loops grid templates for Logic Pro.'),
+        ('Final Cut Pro Title Pack',        'fcp-title-pack',        29.0, 'Curated title and lower-third pack for Final Cut Pro.'),
+        ('Pro Apps Bundle for Education',   'pro-apps-edu-bundle',  199.99,'Pro Apps Bundle for Education — Final Cut Pro, Logic Pro, MainStage, Motion, and Compressor for students.'),
+    ]
+    for name, slug_suffix, price, desc in pro_audio_skus:
+        slug = f'pro-r5-{slug_suffix}'
+        specs = _r5_deepen({'kind': 'Pro App / Subscription', 'platform': 'Mac/iPad'},
+                           env='Digital fulfillment — no physical packaging. Sound libraries downloaded from CDN powered by 100% renewable energy.',
+                           a11y=['VoiceOver throughout', 'Dynamic Type', 'Captions on all Apple-provided learning content',
+                                 'Switch Control palette mode'],
+                           in_box=['App Store redemption code (email)', 'Onboarding guide'],
+                           whats_new='R5 — Adds Apple Intelligence-powered timeline assistant in Final Cut Pro and AI mastering preset in Logic Pro.')
+        extra.append((name, slug, 'accessories', 'pro-app',
+                      f'{name}. Designed for creators.',
+                      desc, price, None, ['Default'], [], specs, 2026, ''))
+
+    # ------------------------------------------------------------------
+    # I. Sustainability / Recycled materials SKUs — explicit env_report row.
+    # ------------------------------------------------------------------
+    sustain_skus = [
+        ('iPhone FineWoven Recycled Case (Black)',   'finewoven-recycled-black',   59.0),
+        ('iPhone FineWoven Recycled Case (Mulberry)','finewoven-recycled-mulberry',59.0),
+        ('iPhone FineWoven Recycled Case (Taupe)',   'finewoven-recycled-taupe',   59.0),
+        ('iPhone FineWoven Recycled Case (Evergreen)','finewoven-recycled-evergreen',59.0),
+        ('iPhone FineWoven Recycled Case (Pacific Blue)','finewoven-recycled-pacific',59.0),
+        ('iPad Smart Folio - Recycled Fabric Edition (Storm)','smart-folio-recycled-storm',79.0),
+        ('iPad Smart Folio - Recycled Fabric Edition (Sage)', 'smart-folio-recycled-sage',79.0),
+        ('iPad Smart Folio - Recycled Fabric Edition (Marigold)','smart-folio-recycled-marigold',79.0),
+        ('MacBook Sleeve - 100% Recycled Wool',      'macbook-sleeve-recycled-wool', 99.0),
+        ('Apple Watch Modern Buckle - Recycled Leather (Coffee)','watch-modern-recycled-coffee',149.0),
+        ('iPhone Crossbody Strap - 100% Recycled Yarn (Forest)','crossbody-recycled-forest',59.0),
+        ('iPhone Crossbody Strap - 100% Recycled Yarn (Coral)','crossbody-recycled-coral',59.0),
+        ('MagSafe Charger 1m - Recycled Plastic Edition','magsafe-recycled-1m',39.0),
+        ('MagSafe Charger 2m - Recycled Plastic Edition','magsafe-recycled-2m',49.0),
+        ('USB-C Cable 1m - 100% Recycled Copper Edition','usbc-recycled-1m',19.0),
+        ('USB-C Cable 2m - 100% Recycled Copper Edition','usbc-recycled-2m',29.0),
+        ('Apple Pencil USB-C - Recycled Aluminum',   'pencil-usbc-recycled', 79.0),
+        ('iPad Smart Folio Bag - Hemp Outer',         'smart-folio-hemp-bag', 89.0),
+        ('Travel Adapter - Recycled Plastic Core',    'travel-adapter-recycled',39.0),
+        ('AirTag - Recycled Tin Engraving Pack',      'airtag-recycled-tin', 29.0),
+    ]
+    for name, slug_suffix, price in sustain_skus:
+        slug = f'sustain-r5-{slug_suffix}'
+        specs = _r5_deepen({'kind': 'Sustainability', 'recycled_content_pct': 100,
+                            'apple_environmental_responsibility_report': 'Apple 2025 Environmental Progress Report'},
+                           env='100% recycled materials in primary components. Apple Carbon Neutral product line. '
+                             'Final assembly uses 100% renewable electricity. Apple Carbon Removal portfolio offsets remaining emissions.',
+                           a11y=['Tactile recycled-content engraving aids identification'],
+                           in_box=['Item', 'Sustainability info card', 'Recyclable mailer'],
+                           whats_new='R5 — Joins the Apple 2030 carbon-neutral product line. Includes detailed environment report card.')
+        extra.append((name, slug, 'accessories', 'sustainability',
+                      f'{name}. Made with 100% recycled materials.',
+                      f'{name}. Apple 2030 carbon-neutral product. Made with 100% recycled materials in primary components. '
+                      f'Final assembly uses 100% renewable electricity.', price, None, ['Recycled'], [], specs, 2026, ''))
+
+    # ------------------------------------------------------------------
+    # J. Today-at-Apple themed session kits.
+    # ------------------------------------------------------------------
+    today_kits = [
+        ('Today at Apple - Photo Walk Kit',         'today-photo-walk',         0.0,    'Photo walk kit — sample shooting prompts and a Today at Apple lens guide.'),
+        ('Today at Apple - Sketch with Procreate',  'today-procreate',          0.0,    'Procreate session kit — brush packs and Apple Pencil tips card.'),
+        ('Today at Apple - Watch Walking Club Pack','today-walking-club',       0.0,    'Walking club kit — heart-rate goal cards and route guides.'),
+        ('Today at Apple - Music Lab Live Loops',   'today-music-lab',          0.0,    'Music lab live loops — Logic Pro Live Loops grids and a session songbook.'),
+        ('Today at Apple - Final Cut Pro for iPad', 'today-fcp-ipad',           0.0,    'Final Cut Pro for iPad session — sample timelines and a creator guide.'),
+        ('Today at Apple - Coding with Swift',      'today-swift',              0.0,    'Coding with Swift kit — Swift Playgrounds book and a teacher guide.'),
+        ('Today at Apple - Art with iPad',          'today-art-ipad',           0.0,    'Art with iPad kit — color theory book and Apple Pencil pressure card.'),
+        ('Today at Apple - Photo Lab (Lightroom)',  'today-photo-lab',          0.0,    'Photo Lab kit — Lightroom presets card and an exposure cheat sheet.'),
+        ('Today at Apple - AirPods Pro Studio',     'today-airpods-studio',     0.0,    'AirPods Pro Studio session — Adaptive Audio walkthroughs and a Hearing Aid feature card.'),
+        ('Today at Apple - Vision Pro Spatial',     'today-vision-spatial',     0.0,    'Vision Pro Spatial session — Spatial Video shooting card and a Personas setup walkthrough.'),
+        ('Today at Apple - Apple Card Workshop',    'today-apple-card',         0.0,    'Apple Card workshop — Daily Cash optimization and Apple Wallet hotel keys overview.'),
+        ('Today at Apple - Family Sharing Setup',   'today-family-sharing',     0.0,    'Family Sharing setup — Ask to Buy walkthrough and a Find My Family setup card.'),
+        ('Today at Apple - Music Theory iPad',      'today-music-theory',       0.0,    'Music theory on iPad — Garageband lesson plan and a chord wheel card.'),
+        ('Today at Apple - Apple Watch Fitness',    'today-watch-fitness',      0.0,    'Apple Watch Fitness — Vitals app card and a 28-day Fitness+ trial code.'),
+        ('Today at Apple - Memoji & Animoji',       'today-memoji',             0.0,    'Memoji session — sticker pack card and an iMessage flow guide.'),
+    ]
+    for name, slug_suffix, price, desc in today_kits:
+        slug = f'today-r5-{slug_suffix}'
+        specs = _r5_deepen({'kind': 'Today at Apple Kit', 'audience': 'Workshop attendees'},
+                           env='Printed on FSC-certified recycled paper with soy-based inks.',
+                           a11y=['Large-print booklets available', 'ASL interpretation on request',
+                                 'Captioned demo videos via QR code'],
+                           in_box=['Session card', 'Sample assets', 'QR code to companion app'],
+                           whats_new='R5 — Adds Apple Intelligence demos in the Vision Pro, Photo, and Sketch tracks.')
+        extra.append((name, slug, 'accessories', 'today-at-apple',
+                      f'{name}. Today at Apple session companion.',
+                      desc, price, None, ['Workshop'], [], specs, 2026, ''))
+
+    # ------------------------------------------------------------------
+    # K. iPhone screen protector + cleaning kit deep-spec matrix.
+    # ------------------------------------------------------------------
+    cleaning_skus = [
+        ('Polishing Cloth (R5)',         'polishing-cloth-r5',         19.0, 'Polishing cloth for Apple displays.'),
+        ('Polishing Cloth Pro Pack (3)', 'polishing-cloth-3pk',        49.0, '3-pack polishing cloths for Apple displays.'),
+        ('Polishing Cloth (XL, Studio)', 'polishing-cloth-xl',         29.0, 'XL polishing cloth — sized for Studio Display and Pro Display XDR.'),
+        ('Display Cleaning Kit',         'display-cleaning-kit',       29.0, 'Display cleaning kit — display-safe spray and microfiber cloth.'),
+        ('Mac Keyboard Cleaning Pack',   'mac-keyboard-cleaning',      29.0, 'Mac keyboard cleaning pack — keycap puller, compressed air, and microfiber.'),
+        ('AirPods Cleaning Kit',         'airpods-cleaning-kit',       19.0, 'AirPods cleaning kit — earwax brushes and tip-cleaning swabs.'),
+        ('iPhone Camera Lens Cleaning',  'iphone-camera-cleaning',     19.0, 'iPhone camera lens cleaning kit — fluid and lint-free swabs.'),
+        ('Vision Pro Polishing Pen',     'vision-polishing-pen',       19.0, 'Vision Pro polishing pen — for precision cleaning of the front lens.'),
+        ('Apple Watch Strap Cleaning',   'watch-strap-cleaning',       19.0, 'Apple Watch strap cleaning kit — gentle saddle soap for leather bands.'),
+        ('Studio Display Polishing Bundle','studio-display-bundle',    39.0, 'Studio Display polishing bundle — XL cloth, fluid, and microfiber gloves.'),
+    ]
+    for name, slug_suffix, price, desc in cleaning_skus:
+        slug = f'clean-r5-{slug_suffix}'
+        specs = _r5_deepen({'kind': 'Cleaning', 'safe_for': 'Apple displays and devices'},
+                           env='Cloths made from 65% recycled microfiber; cleaning fluid is alcohol-free and biodegradable.',
+                           a11y=['VoiceOver friendly packaging with raised label'],
+                           in_box=['Item', 'Usage card'],
+                           whats_new='R5 — Adds Vision Pro polishing pen and Studio Display XL bundle.')
+        extra.append((name, slug, 'accessories', 'cleaning',
+                      f'{name}. Safe for Apple displays.',
+                      desc, price, None, ['Default'], [], specs, 2026, ''))
+
+    # ------------------------------------------------------------------
+    # L. Internationalized travel adapter kits + region-specific power.
+    # ------------------------------------------------------------------
+    travel_regions = [
+        ('Europe', 'eu', 'Type C/E/F'),
+        ('UK', 'uk', 'Type G'),
+        ('Australia', 'au', 'Type I'),
+        ('Japan', 'jp', 'Type A'),
+        ('Korea', 'kr', 'Type C/F'),
+        ('India', 'in', 'Type C/D/M'),
+        ('Brazil', 'br', 'Type N'),
+        ('China', 'cn', 'Type A/I'),
+        ('Argentina', 'ar', 'Type C/I'),
+        ('Switzerland', 'ch', 'Type J'),
+        ('Italy', 'it', 'Type L'),
+        ('South Africa', 'za', 'Type M'),
+    ]
+    for region_name, region_slug, plug_type in travel_regions:
+        for watts in [20, 30, 67, 96]:
+            slug = f'travel-r5-{region_slug}-{watts}w'
+            name = f'{watts}W USB-C Power Adapter — {region_name} Plug ({plug_type})'
+            specs = _r5_deepen({'watts': watts, 'region': region_name, 'plug_type': plug_type},
+                               env='Made with 92% post-consumer recycled plastic in the enclosure. '
+                                 'Final assembly uses 100% renewable electricity.',
+                               a11y=['VoiceOver-friendly tactile USB-C orientation notch'],
+                               in_box=[f'{watts}W USB-C Power Adapter ({region_name} plug)', 'Documentation'],
+                               whats_new='R5 — Adds GaN-based circuitry for smaller form factor.')
+            extra.append((name, slug, 'accessories', 'charger',
+                          f'{name}. Region-specific plug.',
+                          f'{name}. USB-C charger optimized for {region_name} outlets. {watts}W output. '
+                          f'Compatible with iPhone, iPad, MacBook Air, and AirPods.',
+                          float(30 + watts), None, ['White'], [], specs, 2026, ''))
+
+    # ------------------------------------------------------------------
+    # M. Mac Pro tower + Mac Studio Ultra configurations.
+    # ------------------------------------------------------------------
+    mac_pro_skus = [
+        ('Mac Pro M2 Ultra (Tower)',    'mac-pro-m2-ultra-tower',    6999.0, 'M2 Ultra', '64GB',  '1TB'),
+        ('Mac Pro M2 Ultra (Rack)',     'mac-pro-m2-ultra-rack',     7499.0, 'M2 Ultra', '64GB',  '1TB'),
+        ('Mac Pro M2 Ultra 192GB (Tower)','mac-pro-m2-ultra-192gb-tower',8799.0,'M2 Ultra','192GB','2TB'),
+        ('Mac Pro M2 Ultra 8TB (Tower)','mac-pro-m2-ultra-8tb-tower',10999.0,'M2 Ultra','192GB','8TB'),
+        ('Mac Studio M2 Max',           'mac-studio-r5-m2-max',     1999.0, 'M2 Max',  '32GB',  '512GB'),
+        ('Mac Studio M2 Ultra',         'mac-studio-r5-m2-ultra',   3999.0, 'M2 Ultra','64GB',  '1TB'),
+        ('Mac Studio M2 Ultra 192GB',   'mac-studio-r5-m2-ultra-192gb',5599.0,'M2 Ultra','192GB','2TB'),
+        ('Mac Studio M4 Max',           'mac-studio-r5-m4-max',     1999.0, 'M4 Max',  '36GB',  '512GB'),
+        ('Mac Studio M4 Ultra',         'mac-studio-r5-m4-ultra',   3999.0, 'M4 Ultra','64GB',  '1TB'),
+        ('Mac Studio M4 Ultra 256GB',   'mac-studio-r5-m4-ultra-256gb',7299.0,'M4 Ultra','256GB','2TB'),
+    ]
+    for name, slug, price, chip, mem, storage in mac_pro_skus:
+        full_slug = f'mac-r5-{slug}'
+        specs = _r5_deepen({
+            'chip': chip, 'memory': mem, 'storage': storage,
+            'cooling': 'Aluminum thermal substructure', 'i_o': 'Thunderbolt 4 × 8, HDMI 2.1, 10Gb Ethernet',
+        }, env='Made with 100% recycled aluminum, 100% recycled rare earth elements, and 100% renewable energy for final assembly. '
+             'Apple Environmental Progress Report 2025.',
+           a11y=['VoiceOver', 'macOS Accessibility Shortcut', 'Dwell Control', 'Voice Control', 'Switch Control'],
+           in_box=[name, 'Power cord', 'Documentation'],
+           whats_new='R5 — Adds Apple Intelligence on-device LLM and ProRes engine for 8K editing.')
+        extra.append((name, full_slug, 'mac', 'mac-pro',
+                      f'{name}. Workstation power.',
+                      f'{name}. Apple silicon workstation with {chip} chip, {mem} unified memory, and {storage} SSD. '
+                      f'Built for ProRes editing and ML training workflows.',
+                      price, round(price/24, 2), ['Silver'], [storage], specs, 2024, chip))
+
+    # ------------------------------------------------------------------
+    # N. iPhone Pro carrier-locked / unlocked / dual-SIM variants.
+    # ------------------------------------------------------------------
+    carriers = ['AT&T', 'Verizon', 'T-Mobile', 'Unlocked', 'Dual-SIM Unlocked']
+    for model, model_slug, base_price in [
+        ('iPhone 17', 'iphone-17', 799.0),
+        ('iPhone 17 Pro', 'iphone-17-pro', 1099.0),
+        ('iPhone 17 Pro Max', 'iphone-17-pro-max', 1199.0),
+        ('iPhone Air', 'iphone-air', 999.0),
+        ('iPhone 17e', 'iphone-17e', 599.0),
+    ]:
+        for carrier in carriers:
+            carrier_slug = carrier.lower().replace('&', 'and').replace(' ', '-').replace('-', '-')
+            slug = f'iphone-r5-{model_slug}-{carrier_slug}'
+            name = f'{model} - {carrier}'
+            specs = _r5_deepen({'carrier': carrier, 'lock_status': 'Unlocked' if 'Unlocked' in carrier else 'Locked'},
+                               env='Made with 95%+ recycled rare earth elements and 100% recycled cobalt in the battery.',
+                               a11y=['VoiceOver', 'Dynamic Type', 'Made for iPhone hearing aids'],
+                               in_box=[model, 'USB-C Charge Cable (1 m)', 'Documentation'],
+                               whats_new=f'R5 — Adds carrier-managed Apple Wallet activation for {carrier}.')
+            extra.append((name, slug, 'iphone', 'iphone-carrier',
+                          f'{name}. {carrier}.',
+                          f'{name}. Configured for {carrier}. Same hardware as the standard model with carrier-managed activation.',
+                          base_price, round(base_price/24, 2), ['Black'], ['128GB'], specs, 2025, 'A19 Pro'))
+
+    # ------------------------------------------------------------------
+    # O. AirPods cases (color matrix + Hermès / Pride / Unity).
+    # ------------------------------------------------------------------
+    airpods_cases = [
+        ('AirPods Pro Smart Case - Midnight', 'airpods-pro-case-midnight', 39.0),
+        ('AirPods Pro Smart Case - Starlight', 'airpods-pro-case-starlight', 39.0),
+        ('AirPods Pro Smart Case - Sky', 'airpods-pro-case-sky', 39.0),
+        ('AirPods Pro Smart Case - Forest', 'airpods-pro-case-forest', 39.0),
+        ('AirPods Pro Smart Case - Sand', 'airpods-pro-case-sand', 39.0),
+        ('AirPods Pro Hermès Case - Bridge', 'airpods-pro-hermes-bridge', 199.0),
+        ('AirPods Pro Hermès Case - Saddle', 'airpods-pro-hermes-saddle', 199.0),
+        ('AirPods Pro Pride Edition Case', 'airpods-pro-pride', 49.0),
+        ('AirPods Pro Unity Edition Case', 'airpods-pro-unity', 49.0),
+        ('AirPods Max Smart Case - Midnight', 'airpods-max-case-midnight', 59.0),
+        ('AirPods Max Smart Case - Starlight', 'airpods-max-case-starlight', 59.0),
+        ('AirPods 4 Carry Case - Black', 'airpods-4-case-black', 29.0),
+        ('AirPods 4 Carry Case - Blue', 'airpods-4-case-blue', 29.0),
+        ('AirPods 4 Carry Case - Pink', 'airpods-4-case-pink', 29.0),
+        ('AirPods Pro Lanyard - Black', 'airpods-pro-lanyard-black', 19.0),
+        ('AirPods Pro Lanyard - Pride', 'airpods-pro-lanyard-pride', 19.0),
+        ('AirPods Pro Lanyard - Pacific Blue', 'airpods-pro-lanyard-pacific', 19.0),
+        ('AirPods Pro Hook (Apple Watch Strap)', 'airpods-pro-hook-watch', 29.0),
+        ('AirPods Pro Magnetic Stand', 'airpods-pro-magnetic-stand', 49.0),
+        ('AirPods Pro Travel Pouch', 'airpods-pro-travel-pouch', 39.0),
+    ]
+    for name, slug_suffix, price in airpods_cases:
+        slug = f'airpods-r5-{slug_suffix}'
+        specs = _r5_deepen({'kind': 'AirPods Case', 'compat': 'AirPods Pro / Max / 4'},
+                           env='Made with 100% recycled silicone outer layer. Hermès variants use vegetable-tanned leather.',
+                           a11y=['Tactile orientation notch aids one-hand opening'],
+                           in_box=['Item'],
+                           whats_new='R5 — Adds Find My-enabled tracking and U2 chip for Precision Finding.')
+        extra.append((name, slug, 'accessories', 'airpods-case',
+                      f'{name}. Designed by Apple.',
+                      f'{name}. Find My enabled. MagSafe-compatible attach points. U2 chip for Precision Finding from iPhone.',
+                      price, None, ['Default'], [], specs, 2026, ''))
+
+    # ------------------------------------------------------------------
+    # P. iPad Magic Keyboard expanded colors (R5).
+    # ------------------------------------------------------------------
+    mk_colors_r5 = ['Black', 'White', 'Charcoal Gray', 'Light Violet', 'Denim', 'Sage', 'Marigold',
+                    'Storm Blue', 'Cypress', 'Sun Yellow']
+    for model, model_slug, base_price in [
+        ('iPad Pro 11" M4', 'ipad-pro-11-m4', 299.0),
+        ('iPad Pro 13" M4', 'ipad-pro-13-m4', 349.0),
+        ('iPad Air 11" M4', 'ipad-air-11-m4', 269.0),
+        ('iPad Air 13" M4', 'ipad-air-13-m4', 319.0),
+    ]:
+        for c in mk_colors_r5:
+            slug = f'mk-r5-{model_slug}-{c.lower().replace(" ", "-")}'
+            name = f'Magic Keyboard for {model} - {c} (R5)'
+            specs = _r5_deepen({'compat': model, 'color': c, 'kind': 'Magic Keyboard'},
+                               env='Made with 75% recycled aluminum in the keyboard chassis and 100% recycled rare earth magnets.',
+                               a11y=['Backlit keys with Dynamic Type-sized labels', 'VoiceOver-friendly tactile dot on F/J keys',
+                                     'Trackpad supports VoiceOver and AssistiveTouch gestures'],
+                               in_box=['Magic Keyboard', 'USB-C passthrough port', 'Documentation'],
+                               whats_new='R5 — Adds function key row, glass trackpad, and aluminum palm rest.')
+            extra.append((name, slug, 'accessories', 'ipad-keyboard',
+                          f'{name}. Floating cantilever design.',
+                          f'{name}. Backlit keys, full-size function row, glass trackpad, and USB-C passthrough charging.',
+                          base_price, None, [c], [], specs, 2025, ''))
+
+    # ------------------------------------------------------------------
+    # Q. iPad pencil + accessory matrix expansion.
+    # ------------------------------------------------------------------
+    pencil_skus = [
+        ('Apple Pencil Pro Tips (4pk) - R5',  'pencil-pro-tips-4pk-r5',  19.0),
+        ('Apple Pencil Pro Tips (10pk) - R5', 'pencil-pro-tips-10pk-r5', 39.0),
+        ('Apple Pencil USB-C Tips (4pk) - R5','pencil-usbc-tips-4pk-r5', 15.0),
+        ('Apple Pencil USB-C Tips (10pk) - R5','pencil-usbc-tips-10pk-r5',29.0),
+        ('Apple Pencil Holder for iPad Pro',  'pencil-holder-pro-r5',    19.0),
+        ('Apple Pencil Holder for iPad Air',  'pencil-holder-air-r5',    19.0),
+        ('Apple Pencil Magnetic Stand',       'pencil-magnetic-stand-r5',29.0),
+        ('Apple Pencil Engraving Pack',       'pencil-engraving-pack-r5', 9.0),
+        ('Apple Pencil Pro - Engraved Edition (Initials)','pencil-pro-engraved-r5',129.0),
+        ('Apple Pencil USB-C - Engraved Edition (Initials)','pencil-usbc-engraved-r5',79.0),
+        ('Apple Pencil Travel Case (Single)', 'pencil-travel-case-single-r5',29.0),
+        ('Apple Pencil Travel Case (Multi)',  'pencil-travel-case-multi-r5',49.0),
+        ('Apple Pencil USB-C Charger Cap (3pk)','pencil-usbc-charger-cap-r5',9.0),
+        ('Apple Pencil Cleaning Kit',         'pencil-cleaning-kit-r5',  19.0),
+        ('Apple Pencil Ergonomic Grip (Set)', 'pencil-grip-set-r5',      29.0),
+    ]
+    for name, slug_suffix, price in pencil_skus:
+        slug = f'pencil-r5-{slug_suffix}'
+        specs = _r5_deepen({'kind': 'Apple Pencil Accessory'},
+                           env='Made with 70%+ recycled plastic in the tips and recycled aluminum in holders.',
+                           a11y=['Tactile orientation aids one-hand orientation'],
+                           in_box=['Item'],
+                           whats_new='R5 — Adds Find My pairing for Apple Pencil Pro and Engraving via Wallet.')
+        extra.append((name, slug, 'accessories', 'apple-pencil',
+                      f'{name}. Designed for Apple Pencil.',
+                      f'{name}. Compatible with Apple Pencil Pro and Apple Pencil (USB-C). Find My-enabled where applicable.',
+                      price, None, ['Default'], [], specs, 2026, ''))
+
+    # ------------------------------------------------------------------
+    # R. Repair-status / self-service repair SKUs.
+    # ------------------------------------------------------------------
+    repair_skus = [
+        ('iPhone Battery Service Kit (Self Service Repair)',  'iphone-battery-kit',  69.0),
+        ('iPhone Display Service Kit (Self Service Repair)',  'iphone-display-kit', 269.0),
+        ('iPhone Camera Service Kit (Self Service Repair)',   'iphone-camera-kit',  129.0),
+        ('iPhone Bottom Speaker Kit (Self Service Repair)',   'iphone-speaker-kit',  29.0),
+        ('iPhone Taptic Engine Kit (Self Service Repair)',    'iphone-taptic-kit',   39.0),
+        ('iPhone SIM Tray Kit (Self Service Repair)',         'iphone-sim-kit',      19.0),
+        ('Mac Battery Service Kit (Self Service Repair)',     'mac-battery-kit',    129.0),
+        ('Mac Top Case Kit (Self Service Repair)',            'mac-top-case-kit',   199.0),
+        ('Mac Keyboard Kit (Self Service Repair)',            'mac-keyboard-kit',    99.0),
+        ('Mac Trackpad Kit (Self Service Repair)',            'mac-trackpad-kit',    89.0),
+        ('iPad Battery Service Kit (Self Service Repair)',    'ipad-battery-kit',    99.0),
+        ('Watch Battery Service Kit (Self Service Repair)',   'watch-battery-kit',   59.0),
+        ('Self Service Repair Toolkit (1-week loaner)',       'repair-toolkit-loaner', 49.0),
+        ('Self Service Repair Heated Pad',                    'repair-heated-pad',    99.0),
+        ('Self Service Repair Display Press',                 'repair-display-press',129.0),
+        ('Self Service Repair Pentalobe Set',                 'repair-pentalobe-set',  29.0),
+        ('Self Service Repair Torque Driver',                 'repair-torque-driver',  79.0),
+        ('Self Service Repair Suction Cup',                   'repair-suction-cup',    19.0),
+        ('Self Service Repair Adhesive Strip Pack',           'repair-adhesive-pack',  19.0),
+        ('Self Service Repair Cleaning Wipes',                'repair-cleaning-wipes', 9.0),
+    ]
+    for name, slug_suffix, price in repair_skus:
+        slug = f'repair-r5-{slug_suffix}'
+        specs = _r5_deepen({'kind': 'Self Service Repair', 'service_class': 'Apple-authorized parts'},
+                           env='Parts manufactured to Apple Genuine specifications. Postage-paid recycling mailer included.',
+                           a11y=['Repair manuals support VoiceOver and Dynamic Type'],
+                           in_box=['Part', 'Repair manual QR card', 'Recycling mailer'],
+                           whats_new='R5 — Adds /repair/status tracking, IMEI / serial validation, and chat-with-Apple-Specialist routing.')
+        extra.append((name, slug, 'accessories', 'self-service-repair',
+                      f'{name}. Apple Self Service Repair.',
+                      f'{name}. Apple Self Service Repair part. Includes step-by-step instructions and a postage-paid mailer for the old part. '
+                      f'Track your repair status at /repair/status with your repair number.',
+                      price, None, ['Default'], [], specs, 2026, ''))
+
+    # ------------------------------------------------------------------
+    # S. Beats colors expansion (Studio Pro, Solo 4, Pill, Fit Pro).
+    # ------------------------------------------------------------------
+    beats_skus = [
+        ('Beats Studio Pro - Cosmic Silver R5',  'beats-studio-cosmic-silver-r5', 349.99),
+        ('Beats Studio Pro - Sandstone R5',      'beats-studio-sandstone-r5',     349.99),
+        ('Beats Studio Pro - Navy R5',           'beats-studio-navy-r5',          349.99),
+        ('Beats Studio Pro - Pacific Blue R5',   'beats-studio-pacific-blue-r5',  349.99),
+        ('Beats Studio Pro - Cinnamon R5',       'beats-studio-cinnamon-r5',      349.99),
+        ('Beats Solo 4 - Matte Black R5',        'beats-solo-4-matte-black-r5',   199.99),
+        ('Beats Solo 4 - Cloud Pink R5',         'beats-solo-4-cloud-pink-r5',    199.99),
+        ('Beats Solo 4 - Slate Blue R5',         'beats-solo-4-slate-blue-r5',    199.99),
+        ('Beats Solo 4 - Forest Green R5',       'beats-solo-4-forest-r5',        199.99),
+        ('Beats Solo 4 - Sand Dune R5',          'beats-solo-4-sand-r5',          199.99),
+        ('Beats Pill - Statement Red R5',        'beats-pill-statement-red-r5',   149.99),
+        ('Beats Pill - Matte Black R5',          'beats-pill-matte-black-r5',     149.99),
+        ('Beats Pill - Champagne Gold R5',       'beats-pill-champagne-r5',       149.99),
+        ('Beats Pill - Pacific Blue R5',         'beats-pill-pacific-blue-r5',    149.99),
+        ('Beats Fit Pro - Volt Yellow R5',       'beats-fit-pro-volt-yellow-r5',  199.99),
+        ('Beats Fit Pro - Tidal Blue R5',        'beats-fit-pro-tidal-blue-r5',   199.99),
+        ('Beats Fit Pro - Coral Pink R5',        'beats-fit-pro-coral-pink-r5',   199.99),
+        ('Beats Powerbeats Pro - Sport Yellow R5','beats-pbp-sport-yellow-r5',    249.99),
+        ('Beats Powerbeats Pro - Bone White R5', 'beats-pbp-bone-white-r5',       249.99),
+        ('Beats Powerbeats Pro - Spring Yellow R5','beats-pbp-spring-yellow-r5',  249.99),
+    ]
+    for name, slug, price in beats_skus:
+        full_slug = f'beats-r5-{slug}'
+        specs = _r5_deepen({'kind': 'Beats', 'chip': 'H2', 'anc': 'Active Noise Cancellation'},
+                           env='Made with 60%+ recycled plastic in housings and recycled aluminum in audio hinges.',
+                           a11y=['Spatial Audio with Dynamic Head Tracking', 'Live Listen (with iPhone)', 'Hearing Aid feature pairing'],
+                           in_box=['Beats device', 'USB-C charging cable', 'Quick start guide'],
+                           whats_new='R5 — Adds iCloud-synced EQ presets and Find My network locate.')
+        extra.append((name, full_slug, 'audio', 'beats',
+                      f'{name}. Beats sound.',
+                      f'{name}. Apple H2 chip. Spatial Audio. Find My-enabled. iCloud-synced EQ.',
+                      price, None, ['Default'], [], specs, 2026, 'H2'))
+
+    # ------------------------------------------------------------------
+    # T. iPhone bundle gift packs (R5 finale).
+    # ------------------------------------------------------------------
+    bundle_skus = [
+        ('iPhone 17 Pro Starter Bundle',        'iphone-17-pro-starter',        1299.0,
+         'iPhone 17 Pro + AppleCare+ 1 year + MagSafe Charger 1m + Silicone Case.'),
+        ('iPhone 17 Pro Max Photographer Pack', 'iphone-17-pro-max-photo',      1499.0,
+         'iPhone 17 Pro Max + Moment Lens Mount + ND Filter Kit + Final Cut Camera Pro Kit.'),
+        ('iPhone Air Travel Pack',              'iphone-air-travel',             1199.0,
+         'iPhone Air + World Travel Adapter Kit + USB-C Cable 2m + AirTag.'),
+        ('iPhone 17 Family Bundle',             'iphone-17-family',              1899.0,
+         '2× iPhone 17 + Family Sharing kit + AirTag 4-pack + Apple One Family 6 months.'),
+        ('Back to School Mac Bundle',           'mac-back-to-school',            1599.0,
+         'MacBook Air 13" + AirPods 4 + AppleCare+ Education + Pro Apps for Education bundle.'),
+        ('Creator iPad Pro Bundle',             'ipad-pro-creator',              2199.0,
+         'iPad Pro 13" M4 + Apple Pencil Pro + Magic Keyboard + Final Cut Pro for iPad.'),
+        ('Apple Watch Ultra 3 Adventure Pack',  'watch-ultra-adventure',         999.0,
+         'Apple Watch Ultra 3 + Alpine Loop + Ocean Band + Apple Fitness+ 12 months.'),
+        ('HomeKit Starter Bundle',              'homekit-starter',                399.0,
+         'HomePod mini + Apple TV 4K + Eve Energy Smart Plug + Philips Hue Bridge.'),
+        ('Vision Pro Cinema Bundle',            'vision-cinema',                 3999.0,
+         'Apple Vision Pro 512GB + AppleCare+ + Travel Case + ZEISS Optical Inserts (Readers).'),
+        ('Apple Card Welcome Bundle',           'apple-card-welcome',              99.0,
+         'Apple Card welcome materials + titanium card sleeve + cleaning cloth + Apple Pay setup card.'),
+    ]
+    for name, slug_suffix, price, desc in bundle_skus:
+        slug = f'bundle-r5-{slug_suffix}'
+        specs = _r5_deepen({'kind': 'Bundle', 'bundle_savings_usd': round(price * 0.08, 2)},
+                           env='Bundles ship in a single recyclable mailer. Final assembly uses 100% renewable electricity.',
+                           a11y=['VoiceOver setup card walks through each device in the bundle'],
+                           in_box=['Each bundled product', 'Setup guide', 'AppleCare+ enrollment card (where applicable)'],
+                           whats_new='R5 — Adds one-tap Apple Wallet activation across every bundled device.')
+        extra.append((name, slug, 'accessories', 'bundle',
+                      f'{name}. Save when you bundle.',
+                      desc, price, round(price/24, 2), ['Bundle'], [], specs, 2026, ''))
+
+    # ------------------------------------------------------------------
+    # U. Apple Watch faces and complications — digital downloads.
+    # ------------------------------------------------------------------
+    watch_face_skus = [
+        ('Apple Watch Face — Snoopy',           'face-snoopy',        0.0),
+        ('Apple Watch Face — Astronomy',        'face-astronomy',     0.0),
+        ('Apple Watch Face — Solar Graph',      'face-solar-graph',   0.0),
+        ('Apple Watch Face — Unity Bloom',      'face-unity-bloom',   0.0),
+        ('Apple Watch Face — Black Unity',      'face-black-unity',   0.0),
+        ('Apple Watch Face — Pride Threads',    'face-pride-threads', 0.0),
+        ('Apple Watch Face — International Womens Day','face-iwd',    0.0),
+        ('Apple Watch Face — Lunar New Year',   'face-lunar-new-year',0.0),
+        ('Apple Watch Face — Numerals Duo',     'face-numerals-duo',  0.0),
+        ('Apple Watch Face — Modular Ultra',    'face-modular-ultra', 0.0),
+        ('Apple Watch Face — Wayfinder',        'face-wayfinder',     0.0),
+        ('Apple Watch Face — Photos Always On', 'face-photos-ao',     0.0),
+        ('Apple Watch Face — Memoji Always On', 'face-memoji-ao',     0.0),
+        ('Apple Watch Face — Stripes',          'face-stripes',       0.0),
+        ('Apple Watch Face — Toy Story',        'face-toy-story',     0.0),
+    ]
+    for name, slug_suffix, price in watch_face_skus:
+        slug = f'face-r5-{slug_suffix}'
+        specs = _r5_deepen({'kind': 'Watch Face', 'compat': 'Apple Watch'},
+                           env='Digital download — no packaging.',
+                           a11y=['VoiceOver friendly', 'Reduce Motion compatible'],
+                           in_box=['Watch face download link'],
+                           whats_new='R5 — New Photos Always On and Memoji Always On faces for Apple Watch.')
+        extra.append((name, slug, 'accessories', 'watch-face',
+                      f'{name}. Free watch face.',
+                      f'{name} for Apple Watch. Free digital download. Customize complications and color palette.',
+                      price, None, ['Watch'], [], specs, 2026, ''))
+
+    # ------------------------------------------------------------------
+    # V. iPhone Pro display sticker / engraving customization.
+    # ------------------------------------------------------------------
+    engraving_skus = [
+        ('iPhone Engraving — Emoji (paid pack)', 'engraving-emoji-pack', 0.0),
+        ('iPhone Engraving — Text only',         'engraving-text-only',  0.0),
+        ('iPhone Engraving — Mixed text + emoji','engraving-mixed',      0.0),
+        ('AirPods Engraving — Text only',        'engraving-airpods-text',0.0),
+        ('AirPods Engraving — Emoji',            'engraving-airpods-emoji',0.0),
+        ('iPad Engraving — Text only',           'engraving-ipad-text',  0.0),
+        ('Apple Pencil Engraving — Text',        'engraving-pencil-text',0.0),
+        ('AirTag Engraving — Text + Emoji',      'engraving-airtag-mixed',0.0),
+        ('Apple Watch Cellular ID Engraving',    'engraving-watch-id',   0.0),
+        ('Beats Engraving — Text only',          'engraving-beats-text', 0.0),
+    ]
+    for name, slug_suffix, price in engraving_skus:
+        slug = f'engrave-r5-{slug_suffix}'
+        specs = _r5_deepen({'kind': 'Engraving Service'},
+                           env='Engraving uses laser etching — no chemicals, no additional packaging.',
+                           a11y=['Tactile engraving aids identification for low-vision users'],
+                           in_box=['Standard product packaging with engraved item'],
+                           whats_new='R5 — Mixed text + emoji engravings now available in 35 languages.')
+        extra.append((name, slug, 'accessories', 'engraving',
+                      f'{name}. Free engraving.',
+                      f'{name}. Personalize your Apple device with free engraving. Mixed text and emoji supported on iPhone, iPad, AirTag, and AirPods.',
+                      price, None, ['Engraving'], [], specs, 2026, ''))
+
+    # ------------------------------------------------------------------
+    # W. AppleCare+ for Business / Enterprise tier.
+    # ------------------------------------------------------------------
+    business_care = [
+        ('AppleCare+ for Business — iPhone (per device)',   'biz-iphone',   18.99, 'iPhone'),
+        ('AppleCare+ for Business — iPad (per device)',     'biz-ipad',     12.99, 'iPad'),
+        ('AppleCare+ for Business — MacBook (per device)',  'biz-mac',      32.99, 'MacBook'),
+        ('AppleCare+ for Business — Apple Watch (per device)','biz-watch',   6.99, 'Apple Watch'),
+        ('AppleCare+ for Business — Apple TV (per device)', 'biz-tv',        4.99, 'Apple TV'),
+        ('AppleCare+ for Business — Vision Pro (per device)','biz-vision',  44.99, 'Vision Pro'),
+        ('AppleCare Professional Support — Mac admin',      'pro-mac',      999.0, 'Mac admin'),
+        ('AppleCare Professional Support — Server (year)',  'pro-server',  2499.0, 'Server'),
+        ('AppleCare for Enterprise — Tier 1 (year)',        'enterprise-1',2999.0, 'Enterprise'),
+        ('AppleCare for Enterprise — Tier 2 (year)',        'enterprise-2',5999.0, 'Enterprise'),
+        ('AppleCare for Enterprise — Tier 3 (year)',        'enterprise-3',9999.0, 'Enterprise'),
+        ('AppleCare Onsite Service — Education site (year)','onsite-edu',  4999.0, 'Education'),
+        ('AppleCare Onsite Service — Business site (year)', 'onsite-biz',  6999.0, 'Business'),
+        ('AppleCare AOS Tools (Apple-trained tech)',        'aos-tools',    999.0, 'AOS'),
+        ('Apple Business Manager Onboarding (per seat)',    'abm-onboard',   29.0, 'ABM'),
+    ]
+    for name, slug_suffix, price, target in business_care:
+        slug = f'biz-r5-{slug_suffix}'
+        specs = _r5_deepen({'kind': 'AppleCare for Business', 'target': target,
+                            'audience': 'Business / Enterprise / Education'},
+                           env='Service shipping uses carbon-neutral logistics. Service documentation digital-only.',
+                           a11y=['Service appointments accept VoiceOver bookings'],
+                           in_box=['Coverage certificate (digital)', 'Enterprise onboarding guide'],
+                           whats_new='R5 — Adds AppleCare Coverage Lookup API + serial-bulk import in Apple Business Manager.')
+        extra.append((name, slug, 'accessories', 'business-care',
+                      f'{name}. Apple Business Essentials add-on.',
+                      f'{name}. Designed for fleet device management. Bulk service entitlement, single-invoice billing, '
+                      f'and Apple-trained-specialist routing. Pair with Apple Business Manager for zero-touch onboarding.',
+                      price, None, ['Business'], [], specs, 2026, ''))
+
+    return extra
+
+
+EXTRA_PRODUCTS_R5 = _extend_r5()
+
+
 def _seed_extra_products():
-    """Add the EXTRA_PRODUCTS + EXTRA_PRODUCTS_R2 + EXTRA_PRODUCTS_R3 + EXTRA_PRODUCTS_R4 rows. Idempotent — skips slugs already present."""
+    """Add the EXTRA_PRODUCTS + EXTRA_PRODUCTS_R2 + EXTRA_PRODUCTS_R3 + EXTRA_PRODUCTS_R4 + EXTRA_PRODUCTS_R5 rows. Idempotent — skips slugs already present."""
     existing = {p.slug for p in Product.query.with_entities(Product.slug).all()}
     added = 0
-    for tup in (EXTRA_PRODUCTS + EXTRA_PRODUCTS_R2 + EXTRA_PRODUCTS_R3 + EXTRA_PRODUCTS_R4):
+    for tup in (EXTRA_PRODUCTS + EXTRA_PRODUCTS_R2 + EXTRA_PRODUCTS_R3 + EXTRA_PRODUCTS_R4 + EXTRA_PRODUCTS_R5):
         (name, slug, cat, subcat, subt, desc, price, mp, colors, storage, specs, year, chip) = tup
         if slug in existing:
             continue

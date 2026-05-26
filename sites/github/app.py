@@ -1437,8 +1437,11 @@ def trending_developers():
 
 @app.route('/topics')
 def topics():
-    featured = Topic.query.filter_by(is_featured=True).all()
-    all_topics = Topic.query.order_by(Topic.repos_count.desc()).all()
+    # Hide internal sentinels (slug starting with '_').
+    featured = (Topic.query.filter_by(is_featured=True)
+                .filter(~Topic.slug.startswith('_')).all())
+    all_topics = (Topic.query.filter(~Topic.slug.startswith('_'))
+                  .order_by(Topic.repos_count.desc()).all())
     return render_template('topics.html', featured=featured, all_topics=all_topics)
 
 
@@ -6038,6 +6041,476 @@ def seed_r4_teams():
     return added
 
 
+# ─────────────────────────── R5 bulk seeders ───────────────────────────
+# Synthesize additional repos under existing owners (user + org), top off the
+# commit log to cross 200k, and mint fresh PR rows directly so /pulls stays
+# busy. Each value derives from hashlib.sha1(...) of a stable key so md5×2
+# stays identical across rebuilds.
+
+_R5_REPO_TARGET = 18200
+_R5_PULL_TARGET = 7200
+_R5_COMMIT_TARGET = 205000
+
+_R5_REPO_SUFFIXES = [
+    'api', 'client', 'server', 'engine', 'runtime', 'compiler', 'linter',
+    'formatter', 'bench', 'fuzz', 'migrate', 'snapshot', 'dashboard',
+    'replicator', 'pipeline', 'inference', 'embeddings', 'indexer',
+    'planner', 'scheduler', 'syncer', 'webhook', 'gateway', 'router',
+    'agent', 'collector', 'analyzer', 'profiler', 'tracer', 'metrics',
+]
+_R5_REPO_DESC = [
+    "Production {a} service used inside {org}'s infra mesh.",
+    "Reference implementation of the {a} spec, with extensive tests.",
+    "High-throughput {a} module — handles 1M ops/sec on commodity boxes.",
+    "Drop-in {a} replacement for legacy {org} pipelines.",
+    "Cross-platform {a} runtime for embedded + cloud deployments.",
+    "Schema-first {a} toolkit maintained by {org} contributors.",
+    "Streaming {a} library with backpressure and replay support.",
+    "Zero-config {a} starter for greenfield {org} projects.",
+    "Lock-free {a} primitives optimised for ARM and x86_64.",
+    "Plugin-friendly {a} core with a hot-reload dev loop.",
+]
+_R5_README_BANK = [
+    "# {full}\n\n> {desc}\n\n## Highlights\n\n- {feature1}\n- {feature2}\n- "
+    "Battle-tested in {org}'s production stack since v{maj}.{min}.\n\n"
+    "## Install\n\n```bash\n{cmd}\n```\n\n## Usage\n\nSee `examples/` for "
+    "runnable demos. Bug reports welcome — open an issue with the `bug` "
+    "label and a minimal repro.\n\n## License\n\n{license_} — same as the "
+    "rest of the {org} ecosystem.\n",
+    "# {full}\n\n{desc}\n\n## Status\n\nStable. Used by {org}'s internal "
+    "{area} pipeline; we cut a release roughly every two weeks.\n\n## "
+    "Why\n\n- {feature1}\n- {feature2}\n- Tree-shakeable, zero runtime "
+    "dependencies.\n\n## Architecture\n\nSee `docs/architecture.md` for a "
+    "system overview. The hot path is intentionally boring.\n\n## "
+    "Contributing\n\nWe squash-merge PRs. Small, focused changes get "
+    "reviewed fastest. Add tests for any non-trivial behaviour change.\n",
+]
+_R5_FEATURE_BANK = [
+    "Idempotent retries with exponential backoff",
+    "First-class OpenTelemetry traces and metrics",
+    "Structured logging with sampling controls",
+    "Type-safe public API with stability guarantees",
+    "Streaming responses for large payloads",
+    "Pluggable storage backends (S3, GCS, local)",
+    "Built-in circuit breaker for downstream calls",
+    "Cooperative cancellation across async boundaries",
+    "Cache-aware read paths with stale-while-revalidate",
+    "Sandboxed plugin execution with resource caps",
+]
+_R5_INSTALL_BANK = {
+    'Python': 'pip install {name}',
+    'JavaScript': 'npm install {name}',
+    'TypeScript': 'npm install {name}',
+    'Go': 'go get github.com/{full}',
+    'Rust': 'cargo add {name}',
+    'Java': 'mvn dependency:get -Dartifact=com.{org}:{name}:LATEST',
+    'Ruby': 'gem install {name}',
+    'Kotlin': 'gradle dependencies --add {name}',
+    'Swift': 'swift package add {name}',
+    'C#': 'dotnet add package {name}',
+}
+
+
+def _r5_hash(*parts) -> int:
+    """Stable cross-process hash. Mirrors _r4_hash."""
+    key = '|'.join(str(p) for p in parts)
+    return int(hashlib.sha1(key.encode()).hexdigest()[:10], 16)
+
+
+def seed_r5_user_repos():
+    """Grow the catalog from ~12000 → 18200 by adding R5 repos under existing
+    owners (both user and organization). Deterministic via SHA-1 of owner +
+    slot. Idempotent: stops once total repo count ≥ _R5_REPO_TARGET."""
+    have = Repository.query.count()
+    if have >= _R5_REPO_TARGET:
+        return 0
+
+    owners = (User.query
+              .join(Repository, Repository.owner_id == User.id)
+              .order_by(User.username.asc())
+              .distinct()
+              .all())
+    if not owners:
+        return 0
+
+    existing_full = {r.full_name for r in
+                     Repository.query.with_entities(Repository.full_name).all()}
+    topic_by_slug = {t.slug: t for t in Topic.query.all()}
+
+    topics_pool = [
+        'api', 'sdk', 'library', 'framework', 'tooling', 'cli',
+        'observability', 'monitoring', 'distributed-systems', 'devtools',
+        'developer-experience', 'cloud-native', 'serverless', 'microservices',
+        'open-source', 'production-ready', 'embeddings', 'inference',
+        'data-engineering', 'streaming', 'pipeline', 'workflow',
+        'kubernetes', 'docker', 'rust', 'python', 'typescript', 'go',
+    ]
+
+    added = 0
+    # Multiple passes; in each pass give every owner one more R5 repo if we
+    # still need more. Stops on target hit.
+    for slot in range(len(_R5_REPO_SUFFIXES)):
+        if have + added >= _R5_REPO_TARGET:
+            break
+        for owner in owners:
+            if have + added >= _R5_REPO_TARGET:
+                break
+            existing_for_owner = sum(1 for fn in existing_full
+                                     if fn.startswith(owner.username + '/'))
+            # Cap at 50 repos per owner so the catalogue stays balanced.
+            if existing_for_owner >= 50:
+                continue
+            suffix = _R5_REPO_SUFFIXES[
+                (slot + _r5_hash(owner.username)) % len(_R5_REPO_SUFFIXES)]
+            base_name = f"r5-{suffix}-{slot}"
+            full = f"{owner.username}/{base_name}"
+            if full in existing_full:
+                # Try a salted variant; if still collides, skip.
+                base_name = f"r5-{suffix}-{slot}-{_r5_hash(owner.username, slot) % 9999}"
+                full = f"{owner.username}/{base_name}"
+                if full in existing_full:
+                    continue
+            h = _r5_hash(full)
+            lang = _R4_LANG_POOL[h % len(_R4_LANG_POOL)]
+            area = ['ingestion', 'parser', 'cache', 'auth', 'routing',
+                    'transport', 'config', 'telemetry', 'storage',
+                    'streaming'][(h >> 3) % 10]
+            desc_org = owner.username
+            desc = _R5_REPO_DESC[(h >> 5) % len(_R5_REPO_DESC)].format(
+                a=area, org=desc_org)[:255]
+            feature1 = _R5_FEATURE_BANK[(h >> 7) % len(_R5_FEATURE_BANK)]
+            feature2 = _R5_FEATURE_BANK[(h >> 11) % len(_R5_FEATURE_BANK)]
+            install_tmpl = _R5_INSTALL_BANK.get(lang, 'cargo install {name}')
+            cmd = install_tmpl.format(name=base_name, full=full,
+                                      org=owner.username.lower())
+            license_ = _R4_LICENSE_BAND[(h >> 6) % len(_R4_LICENSE_BAND)]
+            readme = _R5_README_BANK[(h >> 13) % len(_R5_README_BANK)].format(
+                full=full, desc=desc, org=desc_org, area=area,
+                feature1=feature1, feature2=feature2,
+                cmd=cmd, license_=license_,
+                maj=1 + (h % 5), min=(h >> 2) % 18)
+
+            default_branch = _R4_BRANCH_BAND[(h >> 8) % len(_R4_BRANCH_BAND)]
+            stars = 3 + (h % 1700)
+            forks = max(0, stars // (4 + (h % 5)))
+            watchers = max(1, stars // 5)
+            open_issues = (h >> 4) % 14
+            is_archived = ((h >> 9) % 14 == 0)
+
+            topic_slugs = []
+            for k in range(2 + (h % 3)):
+                ts = topics_pool[(h * 5 + k * 17) % len(topics_pool)]
+                if ts not in topic_slugs:
+                    topic_slugs.append(ts)
+
+            created = _BULK_REF - timedelta(days=200 + (h % 1300),
+                                            hours=(h >> 4) % 24)
+            pushed = _BULK_REF - timedelta(days=(h % 220),
+                                           hours=(h >> 5) % 24)
+            updated = pushed
+            sha = hashlib.sha1(f"r5|{full}".encode()).hexdigest()
+
+            repo = Repository(
+                owner_id=owner.id,
+                name=base_name,
+                full_name=full,
+                description=desc,
+                language=lang,
+                license=license_,
+                stars_count=stars,
+                forks_count=forks,
+                watchers_count=watchers,
+                open_issues_count=open_issues,
+                is_public=True,
+                is_fork=False,
+                is_template=((h >> 12) % 28 == 0),
+                is_archived=is_archived,
+                has_readme=True,
+                has_wiki=((h >> 3) % 5 == 0),
+                has_issues=True,
+                owner_type='organization' if (h >> 14) % 3 == 0 else 'user',
+                default_branch=default_branch,
+                size_kb=120 + (h % 18000),
+                readme=readme,
+                topics_text=json.dumps(topic_slugs),
+                gallery_json='[]',
+                created_at=created,
+                updated_at=updated,
+                pushed_at=pushed,
+                latest_release_version=f"v{1 + (h % 6)}.{(h >> 2) % 22}.{(h >> 4) % 18}",
+                latest_release_date=pushed - timedelta(days=10 + (h % 80)),
+                latest_release_notes=(
+                    f"Performance + correctness fixes in the {area} subsystem; "
+                    "see CHANGELOG for the full list."),
+                latest_commit_sha=sha,
+                latest_commit_message=(
+                    f"Tighten {area} validation and add fuzz cases ({base_name})"),
+                latest_commit_date=pushed,
+                latest_commit_additions=18 + (h % 280),
+                latest_commit_deletions=6 + ((h >> 1) % 140),
+            )
+            db.session.add(repo)
+            db.session.flush()
+            for slug in topic_slugs:
+                t = topic_by_slug.get(slug)
+                if t is not None:
+                    repo.topics.append(t)
+            existing_full.add(full)
+            added += 1
+            if added % 800 == 0:
+                db.session.commit()
+    db.session.commit()
+    return added
+
+
+# Sentinel topic: presence indicates seed_r5_topup_commits already ran. Lets
+# us skip the (mildly expensive) sum-of-JSON-lengths probe on warm rebuilds.
+_R5_COMMITS_SENTINEL_SLUG = '_r5-commit-topup'
+
+
+def seed_r5_topup_commits():
+    """Top off the per-repo commit history so the catalogue crosses
+    _R5_COMMIT_TARGET (~205k). Runs once. After seed_extra_commits has filled
+    every repo with 8-18 commits, this appends 3-5 more commits per repo
+    (deterministic SHA-1 keyed on repo.full_name + r5 + slot) starting from
+    the lowest repo id until the target is met.
+
+    Idempotent: drops a sentinel Topic row on first run; subsequent runs
+    detect it and bail."""
+    if Topic.query.filter_by(slug=_R5_COMMITS_SENTINEL_SLUG).first() is not None:
+        return 0
+
+    # Quick check: do we already have enough commits in JSON?
+    total = 0
+    repos = (Repository.query
+             .filter(Repository.commits_json != None,  # noqa: E711
+                     Repository.commits_json != '',
+                     Repository.commits_json != '[]')
+             .order_by(Repository.id.asc())
+             .all())
+    repo_commits = {}
+    for repo in repos:
+        try:
+            cl = json.loads(repo.commits_json or '[]')
+        except Exception:
+            cl = []
+        repo_commits[repo.id] = cl
+        total += len(cl)
+
+    if total >= _R5_COMMIT_TARGET:
+        # Drop sentinel anyway so we skip the probe next time.
+        db.session.add(Topic(
+            slug=_R5_COMMITS_SENTINEL_SLUG,
+            display_name='R5 Commit Top-Up',
+            description='Internal sentinel — do not surface in UI.',
+            short_desc='internal',
+            is_featured=False,
+        ))
+        db.session.commit()
+        return 0
+
+    need = _R5_COMMIT_TARGET - total
+    added = 0
+    for repo in repos:
+        if added >= need:
+            break
+        existing = repo_commits.get(repo.id, [])
+        base_dt = repo.pushed_at or repo.updated_at or _BULK_REF
+        if base_dt > _BULK_REF:
+            base_dt = _BULK_REF
+        owner_name = repo.full_name.split('/', 1)[0]
+        extra_n = 4 + (repo.id % 4)  # 4..7 more commits
+        new_commits = []
+        for i in range(extra_n):
+            slot = len(existing) + i
+            area = _COMMIT_AREAS[
+                (repo.id * 11 + i * 13 + 5) % len(_COMMIT_AREAS)]
+            msg = _COMMIT_MSG_TEMPLATES[
+                (repo.id * 5 + i * 23 + 7) % len(_COMMIT_MSG_TEMPLATES)
+            ].format(area=area)
+            # Place the new commits slightly older than the existing tail so
+            # ordering newest-first is preserved.
+            base_offset = (len(existing) * 2) + i * 2 + (repo.id % 3)
+            ts = base_dt - timedelta(days=base_offset,
+                                     hours=(i * 7 + repo.id) % 24)
+            sha_seed = f"r5|{repo.full_name}|{slot}|{repo.id}"
+            sha = hashlib.sha1(sha_seed.encode()).hexdigest()
+            files = _commit_files_for(repo.language or '', area, repo.id + slot)
+            adds = sum(f['additions'] for f in files)
+            dels = sum(f['deletions'] for f in files)
+            new_commits.append({
+                'sha': sha,
+                'message': msg,
+                'author': owner_name,
+                'date': ts.isoformat(),
+                'files': files,
+                'additions': adds,
+                'deletions': dels,
+            })
+            added += 1
+            if added >= need:
+                break
+        if new_commits:
+            # Newest-first ordering: keep existing list first, append older.
+            merged = existing + new_commits
+            repo.commits_json = json.dumps(merged)
+
+    # Drop sentinel topic.
+    db.session.add(Topic(
+        slug=_R5_COMMITS_SENTINEL_SLUG,
+        display_name='R5 Commit Top-Up',
+        description='Internal sentinel — do not surface in UI.',
+        short_desc='internal',
+        is_featured=False,
+    ))
+    db.session.commit()
+    return added
+
+
+_R5_PR_TITLES = [
+    "feat({a}): pluggable {a} backend with retry budgets",
+    "fix({a}): handle EOF in streaming {a} consumer",
+    "perf({a}): cache {a} lookups, avoid per-request decode",
+    "refactor({a}): split {a} core out of {a}-runtime",
+    "docs({a}): document {a} migration from v{maj} → v{nx}",
+    "chore({a}): bump {a} deps + regenerate snapshots",
+    "test({a}): add property-based tests for {a} parser",
+    "ci({a}): parallelise the {a} integration matrix",
+    "security({a}): pin {a} TLS cipher list per advisory",
+    "build({a}): switch {a} target to musl for static binaries",
+]
+_R5_PR_BODIES = [
+    "Closes #{ref}. Re-introduces the {a} retry budgets we discussed in "
+    "{a}-design.md. Includes a regression test that previously panicked on "
+    "an empty input.",
+    "Follow-up to #{ref}. The {a} fast path was allocating on every call; "
+    "this PR caches the decoded value behind a sync.Once. Benchmarks in "
+    "the comments below.",
+    "Replaces the ad-hoc {a} channel with a buffered ring; smoke tests show "
+    "p99 latency drops by ~22%. No public API changes.",
+    "Documentation pass for the {a} subsystem: clarifies the difference "
+    "between {a}-strict and {a}-lenient modes, adds a migration table.",
+]
+_R5_PR_BRANCHES = [
+    'feat/r5-{a}-{n}', 'fix/r5-{a}-{n}', 'perf/r5-{a}',
+    'chore/r5-bump-{a}', 'refactor/r5-{a}', 'docs/r5-{a}',
+    'security/r5-{a}-{n}', 'ci/r5-{a}',
+]
+
+
+def seed_r5_extra_pulls():
+    """Mint fresh PR rows for the R5 repo slice (slugs starting with 'r5-')
+    plus any older repo whose PR count is still zero. Brings total PRs from
+    3000 → ~7200. Deterministic against (repo.id, slot)."""
+    have_pr = Issue.query.filter_by(is_pr=1).count()
+    if have_pr >= _R5_PULL_TARGET:
+        return 0
+    need = _R5_PULL_TARGET - have_pr
+
+    # Candidate repos: those without any existing PR. Process in id order
+    # so iteration is deterministic across processes.
+    repos_with_pr = {row[0] for row in
+                     db.session.query(Issue.repo_id)
+                     .filter(Issue.is_pr == 1).distinct().all()}
+    cand_repos = (Repository.query
+                  .filter(~Repository.id.in_(list(repos_with_pr) or [-1]))
+                  .order_by(Repository.id.asc())
+                  .all())
+    if not cand_repos:
+        return 0
+
+    pool_unames = ['alice_j', 'bob_c', 'carol_d', 'david_k',
+                   'octocat', 'gaearon', 'sindresorhus', 'tj',
+                   'antirez', 'mxcl', 'mitchellh', 'fabpot',
+                   'wycats', 'yyx990803', 'dhh']
+    pool = []
+    for uname in pool_unames:
+        u = User.query.filter_by(username=uname).first()
+        if u:
+            pool.append(u)
+    if not pool:
+        return 0
+    pool_size = len(pool)
+
+    added = 0
+    for repo in cand_repos:
+        if added >= need:
+            break
+        # Per-repo PR count: 1-3 depending on stars.
+        s = repo.stars_count or 0
+        if s >= 1000:
+            n = 3
+        elif s >= 100:
+            n = 2
+        else:
+            n = 1
+        base_dt = repo.pushed_at or repo.updated_at or _BULK_REF
+        if base_dt > _BULK_REF:
+            base_dt = _BULK_REF
+        # Use the repo's existing issue number max + 1 as starting number,
+        # so /<repo>/issues/<num> URIs don't collide.
+        max_num = (db.session.query(func.max(Issue.number))
+                   .filter(Issue.repo_id == repo.id).scalar()) or 0
+        for i in range(n):
+            if added >= need:
+                break
+            h = _r5_hash('r5pr', repo.full_name, i)
+            area = _COMMIT_AREAS[h % len(_COMMIT_AREAS)]
+            maj = 1 + (h % 5)
+            nx = maj + 1
+            title = _R5_PR_TITLES[(h >> 2) % len(_R5_PR_TITLES)].format(
+                a=area, maj=maj, nx=nx)
+            body = _R5_PR_BODIES[(h >> 5) % len(_R5_PR_BODIES)].format(
+                a=area, ref=((h >> 7) % 9000) + 100)
+            branch = _R5_PR_BRANCHES[(h >> 8) % len(_R5_PR_BRANCHES)].format(
+                a=area, n=(h % 9000))
+            author = pool[(h >> 9) % pool_size]
+            offset_days = i * 5 + (h % 90)
+            created = base_dt - timedelta(days=offset_days,
+                                          hours=(h >> 10) % 24)
+            bucket = h % 100
+            if bucket < 40:
+                status = 'merged'
+                closed_at = created + timedelta(days=2 + (h % 11),
+                                                hours=(h >> 4) % 24)
+                if closed_at > _BULK_REF:
+                    closed_at = _BULK_REF - timedelta(hours=(h % 36))
+            elif bucket < 55:
+                status = 'closed'
+                closed_at = created + timedelta(days=4 + (h % 20))
+                if closed_at > _BULK_REF:
+                    closed_at = _BULK_REF - timedelta(hours=(h % 48))
+            else:
+                status = 'open'
+                closed_at = None
+            issue = Issue(
+                repo_id=repo.id,
+                author_id=author.id,
+                number=max_num + i + 1,
+                title=title[:255],
+                body=body,
+                status=status,
+                labels_json=json.dumps(
+                    [['enhancement'], ['bug'], ['performance'],
+                     ['documentation'], ['security'], ['chore']][h % 6]),
+                created_at=created,
+                closed_at=closed_at,
+                is_pr=1,
+                pr_head_branch=branch[:120],
+                pr_base_branch=repo.default_branch or 'main',
+                pr_changed_files=1 + (h % 9),
+                pr_additions=14 + (h % 480),
+                pr_deletions=4 + ((h >> 1) % 220),
+                pr_commits_count=1 + (h % 6),
+            )
+            db.session.add(issue)
+            added += 1
+        if added and added % 600 == 0:
+            db.session.commit()
+    db.session.commit()
+    return added
+
+
 def normalize_seed_db_layout(dirty: bool = False):
     """Re-emit indexes in alpha order + VACUUM so seed rebuilds match
     byte-for-byte across processes (see harden-env/gotchas.md #2).
@@ -6138,9 +6611,18 @@ def create_app():
         c6 = seed_r4_project_boards() or 0
         c7 = seed_r4_packages() or 0
         c8 = seed_r4_teams() or 0
+        # R5: add ~6k repos, top off commits past 200k, mint fresh PRs.
+        # seed_r5_user_repos() must run before seed_extra_commits() can fill
+        # in their commit history; we call seed_extra_commits() again to
+        # process the R5 slice. Then seed_r5_topup_commits() tops off.
+        c9 = seed_r5_user_repos() or 0
+        c1b = seed_extra_commits() or 0
+        c10 = seed_r5_topup_commits() or 0
+        c11 = seed_r5_extra_pulls() or 0
         ct = post_seed_tweaks() or 0
         normalize_seed_db_layout(
-            dirty=(c0 + c1 + c2 + c3 + c4 + c5 + c6 + c7 + c8 + ct) > 0)
+            dirty=(c0 + c1 + c1b + c2 + c3 + c4 + c5 + c6 + c7 + c8
+                   + c9 + c10 + c11 + ct) > 0)
     return app
 
 
@@ -6165,6 +6647,15 @@ with app.app_context():
         c6 = seed_r4_project_boards() or 0
         c7 = seed_r4_packages() or 0
         c8 = seed_r4_teams() or 0
+        # R5
+        c9 = seed_r5_user_repos() or 0
+        c1b = seed_extra_commits() or 0
+        c10 = seed_r5_topup_commits() or 0
+        c11 = seed_r5_extra_pulls() or 0
+        ct = post_seed_tweaks() or 0
+        normalize_seed_db_layout(
+            dirty=(c0 + c1 + c1b + c2 + c3 + c4 + c5 + c6 + c7 + c8
+                   + c9 + c10 + c11 + ct) > 0)
         ct = post_seed_tweaks() or 0
         normalize_seed_db_layout(
             dirty=(c0 + c1 + c2 + c3 + c4 + c5 + c6 + c7 + c8 + ct) > 0)

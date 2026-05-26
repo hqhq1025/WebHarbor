@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+{% block title %}Gift Finder - Amazon.com{% endblock %}
+
+{% block content %}
+<div class="account-page" style="max-width:1100px">
+    <h1>🎁 Gift Finder</h1>
+    <p style="color:#565959;margin-bottom:20px">Tell us who you are shopping for and we will find ideas under your budget.</p>
+
+    <form method="GET" action="{{ url_for('gift_finder') }}" novalidate
+          style="background:#fff;padding:20px;border:1px solid #ddd;border-radius:4px;margin-bottom:20px">
+        <div class="form-row" style="display:flex;flex-wrap:wrap;gap:16px">
+            <div class="form-group" style="flex:1;min-width:160px">
+                <label for="recipient">Who is the gift for?</label>
+                <select id="recipient" name="recipient" class="form-control">
+                    <option value="">— Anyone —</option>
+                    {% for r in recipients %}
+                    <option value="{{ r }}" {% if recipient == r %}selected{% endif %}>{{ r|capitalize }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="form-group" style="flex:1;min-width:160px">
+                <label for="occasion">Occasion</label>
+                <select id="occasion" name="occasion" class="form-control">
+                    <option value="">— Any occasion —</option>
+                    {% for o in occasions %}
+                    <option value="{{ o }}" {% if occasion == o %}selected{% endif %}>{{ o|replace('-',' ')|capitalize }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="form-group" style="flex:1;min-width:160px">
+                <label for="budget">Budget (USD, max)</label>
+                <input type="number" id="budget" name="budget" class="form-control"
+                       value="{{ budget or '' }}" min="0" step="1" placeholder="e.g. 50">
+            </div>
+            <div class="form-group" style="align-self:flex-end">
+                <button type="submit" class="btn btn-orange">Find gifts</button>
+            </div>
+        </div>
+    </form>
+
+    {% if results %}
+    <h2 style="font-size:18px;margin:14px 0">{{ results|length }} gift idea{% if results|length != 1 %}s{% endif %} for
+        {% if recipient %}{{ recipient }}{% endif %}{% if occasion %} • {{ occasion|replace('-',' ') }}{% endif %}{% if budget %} • under ${{ budget }}{% endif %}</h2>
+    <div class="card-grid">
+        {% for p in results %}
+        <a href="{{ url_for('product_detail', slug=p.slug) }}" class="dept-card"
+           style="display:block;text-decoration:none;color:inherit;background:#fff;padding:10px;border:1px solid #eee;border-radius:4px">
+            <img src="{{ p.image }}" alt="{{ p.name }}" style="width:100%;aspect-ratio:1;object-fit:contain" onerror="this.style.display='none'">
+            <div style="font-size:13px;margin-top:6px;line-height:1.3">{{ p.name }}</div>
+            <div style="font-weight:700">${{ '%.2f'|format(p.price) }}</div>
+            <div style="font-size:12px;color:#565959">{{ p.brand }} · ★ {{ p.rating }}</div>
+        </a>
+        {% endfor %}
+    </div>
+    {% elif recipient or occasion or budget %}
+    <div class="empty-state" style="padding:40px 20px">
+        <h2>No matching gift ideas — try a higher budget or a different recipient.</h2>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

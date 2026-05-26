@@ -1902,3 +1902,102 @@ code.lang-rust, code.lang-ruby, code.lang-c, code.lang-c\+\+ {
 [data-color-mode="light"] .label-chip-bug { background: #ffebe9; border-color: #ffaba8; color: #82071e; }
 [data-color-mode="light"] .label-chip-enhancement { background: #ddf4ff; border-color: #54aeff; color: #0969da; }
 [data-color-mode="light"] .label-chip-documentation { background: #dafbe1; border-color: #2da44e; color: #1a7f37; }
+
+/* ─────────────── R5 polish: a11y, mobile, animations ─────────────── */
+
+/* Star burst animation — fires when .star-action-btn.starred is freshly added.
+   Uses 'animation' so the class addition replays it. */
+@keyframes gh-star-burst {
+  0%   { transform: scale(1);    filter: drop-shadow(0 0 0 #d29922); }
+  35%  { transform: scale(1.35); filter: drop-shadow(0 0 6px #f7b955); }
+  60%  { transform: scale(0.92); }
+  100% { transform: scale(1);    filter: drop-shadow(0 0 0 transparent); }
+}
+.star-action-btn.starred svg { color: #d29922; animation: gh-star-burst 480ms ease-out; }
+.star-action-btn.star-burst svg { animation: gh-star-burst 480ms ease-out; }
+
+/* File-tree async expand — child rows render in-place under their folder. */
+.repo-file-row[data-ftype="folder"] { cursor: pointer; }
+.repo-file-row[data-ftype="folder"]:focus-visible {
+  outline: 2px solid #58a6ff; outline-offset: -2px;
+}
+.repo-file-row[data-ftype="folder"][aria-expanded="true"] .repo-file-icon svg path {
+  fill: #58a6ff;
+}
+.repo-file-children {
+  display: none;
+  padding-left: 22px;
+  border-left: 2px solid #21262d;
+  margin-left: 14px;
+}
+.repo-file-row[aria-expanded="true"] + .repo-file-children { display: block; }
+.repo-file-children .repo-file-row { background: #0d1117; }
+
+/* Code-search syntax highlight + ARIA live region */
+.code-search-snippet mark {
+  background: rgba(247, 185, 85, 0.28);
+  color: inherit;
+  border-radius: 3px;
+  padding: 0 2px;
+}
+.code-search-snippet { font-family: ui-monospace, 'SFMono-Regular', Menlo, monospace; }
+.code-search-results:focus-visible { outline: 2px solid #58a6ff; outline-offset: 4px; }
+
+/* Diff view: screen-reader-friendly markers for +/- lines */
+.diff-line[data-diff-kind="add"]::before { content: 'Added line: '; position: absolute; left: -9999px; }
+.diff-line[data-diff-kind="del"]::before { content: 'Removed line: '; position: absolute; left: -9999px; }
+
+/* Issue templates dropdown */
+.issue-template-picker {
+  margin: 0 0 12px 0;
+  display: flex; gap: 8px; align-items: center; flex-wrap: wrap;
+}
+.issue-template-picker label { font-size: 12px; color: #7d8590; }
+.issue-template-picker select {
+  background: #0d1117; color: #e6edf3; border: 1px solid #30363d;
+  border-radius: 6px; padding: 4px 8px; font-size: 13px;
+}
+
+/* PR review comment threading — nested replies indent + connector line */
+.pr-review-thread { border-left: 2px solid #30363d; padding-left: 12px; margin: 8px 0 8px 18px; }
+.pr-review-thread + .pr-review-thread { margin-top: 4px; }
+
+/* Mobile collapsible nav */
+.gh-mobile-nav-toggle {
+  display: none;
+  background: transparent; border: 1px solid #30363d; color: #e6edf3;
+  border-radius: 6px; padding: 4px 8px; font-size: 13px; cursor: pointer;
+}
+.gh-mobile-nav-toggle:focus-visible { outline: 2px solid #58a6ff; outline-offset: 2px; }
+
+@media (max-width: 768px) {
+  .gh-mobile-nav-toggle { display: inline-block; }
+  .gh-header-left .gh-nav {
+    display: none; flex-direction: column;
+    position: absolute; left: 0; right: 0; top: 56px;
+    background: #161b22; border-bottom: 1px solid #30363d; padding: 12px 16px;
+    gap: 8px; z-index: 50;
+  }
+  .gh-header-left .gh-nav.gh-nav-mobile-open { display: flex; }
+  .gh-nav .gh-nav-dropdown-menu { position: static; box-shadow: none; }
+
+  /* Diff stacked layout: side-by-side becomes single column on phones */
+  .pr-diff-side-by-side { display: block !important; }
+  .pr-diff-side-by-side > * { width: 100% !important; }
+
+  /* File tree: shrink date column so the path still wraps cleanly */
+  .repo-file-row { grid-template-columns: 22px 1fr auto !important; }
+  .repo-file-row .repo-file-date,
+  .repo-file-row .repo-file-msg { display: none; }
+}
+
+/* Keyboard focus for file-tree navigation */
+.repo-file-row:focus-visible {
+  outline: 2px solid #58a6ff; outline-offset: -2px;
+}
+
+/* ARIA-friendly code block focus */
+pre[role="region"]:focus-visible,
+.code-block[tabindex]:focus-visible {
+  outline: 2px solid #58a6ff; outline-offset: 2px;
+}

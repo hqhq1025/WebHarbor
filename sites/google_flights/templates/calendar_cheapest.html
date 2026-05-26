@@ -46,9 +46,12 @@
     <h2 style="font-size:16px;font-family:'Google Sans',sans-serif;font-weight:500;margin:0 0 16px;">
       30-day price calendar - {{ origin }} to {{ dest }}
     </h2>
-    <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:6px;">
+    <div class="calendar-cheapest-grid" role="grid" aria-label="30-day price calendar from {{ origin }} to {{ dest }}" style="display:grid;grid-template-columns:repeat(7,1fr);gap:6px;">
       {% for d, p in grid_rows %}
       <a href="{{ url_for('flights_list', **{'from':origin,'to':dest,'departure_date':d.isoformat()}) }}"
+         data-cal-date="{{ d.isoformat() }}"
+         aria-label="{{ d.strftime('%A %B %d') }}, fare ${{ '%.0f'|format(p) }}{% if d == cheapest_date %}, cheapest day{% endif %}"
+         class="{% if d == cheapest_date %}selected{% endif %}"
          style="text-decoration:none;color:inherit;display:block;padding:10px 8px;border:1px solid {% if d == cheapest_date %}#137333{% else %}#dadce0{% endif %};
                 border-radius:8px;text-align:center;background:{% if d == cheapest_date %}#e6f4ea{% endif %};">
         <div style="font-size:11px;color:#5f6368;">{{ d.strftime('%a') }}</div>

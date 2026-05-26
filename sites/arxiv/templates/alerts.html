@@ -59,4 +59,35 @@
     {% endif %}
 </div>
 
+<div class="dash-card">
+    <h2>Saved Searches</h2>
+    <p class="muted" style="font-size:12px;">A saved search re-runs the same query and notifies you when matching new papers appear.</p>
+    {% if saved_searches %}
+    <table class="data">
+        <tr><th>Name</th><th>Query</th><th>Category</th><th>Field</th><th>Frequency</th><th></th></tr>
+        {% for s in saved_searches %}
+        <tr>
+            <td>{{ s.name }}</td>
+            <td>
+                <a href="{{ url_for('search', query=s.query, searchtype=s.field, category=s.category) }}">
+                    {{ s.query or '(filter only)' }}
+                </a>
+            </td>
+            <td>{{ s.category or '—' }}</td>
+            <td>{{ s.field }}</td>
+            <td>{{ s.frequency }}</td>
+            <td>
+                <form method="post" action="{{ url_for('delete_saved_search', saved_id=s.id) }}" style="display:inline">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button type="submit" class="btn" style="font-size:11px;padding:2px 8px;">Remove</button>
+                </form>
+            </td>
+        </tr>
+        {% endfor %}
+    </table>
+    {% else %}
+    <p class="muted">No saved searches yet. Save one from the <a href="{{ url_for('search') }}">Search</a> page.</p>
+    {% endif %}
+</div>
+
 {% endblock %}

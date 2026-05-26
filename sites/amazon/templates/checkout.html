@@ -45,11 +45,22 @@
                 <div class="form-row">
                     <div class="form-group">
                         <label for="zip_code">ZIP Code</label>
-                        <input type="text" id="zip_code" name="zip_code" class="form-control" value="{{ form.zip_code.data or '' }}" required>
+                        <input type="text" id="zip_code" name="zip_code" class="form-control"
+                               value="{{ form.zip_code.data or '' }}"
+                               autocomplete="postal-code"
+                               pattern="\d{5}(-\d{4})?"
+                               inputmode="numeric"
+                               aria-describedby="zip-help"
+                               required>
+                        <small id="zip-help" style="font-size:12px;color:#565959">5 digits or 5+4 (e.g. 94102 or 94102-1234)</small>
                     </div>
                     <div class="form-group">
                         <label for="phone">Phone (optional)</label>
-                        <input type="text" id="phone" name="phone" class="form-control" value="{{ form.phone.data or '' }}">
+                        <input type="text" id="phone" name="phone" class="form-control"
+                               value="{{ form.phone.data or '' }}"
+                               autocomplete="tel"
+                               pattern="[0-9()+\- ]*"
+                               inputmode="tel">
                     </div>
                 </div>
                 </div>
@@ -72,16 +83,32 @@
                 <div id="payment-manual-fields">
                 <div class="form-group">
                     <label for="card_number">Card Number</label>
-                    <input type="text" id="card_number" name="card_number" class="form-control" placeholder="1234 5678 9012 3456" value="4111111111111111" required>
+                    <input type="text" id="card_number" name="card_number" class="form-control"
+                           placeholder="1234 5678 9012 3456" value="4111111111111111"
+                           autocomplete="cc-number"
+                           pattern="[0-9 \-]{13,19}"
+                           inputmode="numeric"
+                           aria-describedby="card-help"
+                           required>
+                    <small id="card-help" style="font-size:12px;color:#565959">13–19 digits, spaces/dashes OK.</small>
                 </div>
                 <div class="form-row">
                     <div class="form-group">
                         <label for="card_exp">Expiration</label>
-                        <input type="text" id="card_exp" name="card_exp" class="form-control" placeholder="MM/YY" value="12/28" required>
+                        <input type="text" id="card_exp" name="card_exp" class="form-control"
+                               placeholder="MM/YY" value="12/28"
+                               autocomplete="cc-exp"
+                               pattern="(0[1-9]|1[0-2])\/\d{2}"
+                               required>
                     </div>
                     <div class="form-group">
                         <label for="card_cvv">CVV</label>
-                        <input type="text" id="card_cvv" name="card_cvv" class="form-control" placeholder="123" value="123" required>
+                        <input type="text" id="card_cvv" name="card_cvv" class="form-control"
+                               placeholder="123" value="123"
+                               autocomplete="cc-csc"
+                               pattern="\d{3,4}"
+                               inputmode="numeric"
+                               required>
                     </div>
                 </div>
                 </div>

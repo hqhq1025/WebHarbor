@@ -2243,6 +2243,201 @@ def _seed_r4_enrichment(db, Topic, SearchResult):
           f"added {deep_added} deep results across {len(topics)} topics")
 
 
+# ---------- R5 enrichment ---------------------------------------------------
+
+# Additional providers used only by R5 deep-fill (must not overlap with
+# _R4_DEEP_PROVIDERS slugs/domains to avoid duplicate rows).
+_R5_DEEP_PROVIDERS = [
+    ('semantic_scholar', 'www.semanticscholar.org',
+     '{name} - Semantic Scholar',
+     'https://www.semanticscholar.org/topic/{slug}',
+     'AI-driven scholarly search over 200M+ papers covering {name}.'),
+    ('coursera', 'www.coursera.org',
+     '{name} courses - Coursera',
+     'https://www.coursera.org/search?query={slug}',
+     'Online courses, specializations, and degrees about {name} from top universities.'),
+    ('edx', 'www.edx.org',
+     '{name} - edX',
+     'https://www.edx.org/search?q={slug}',
+     'Free university-level courses on {name} from Harvard, MIT, and partners.'),
+    ('mit_ocw', 'ocw.mit.edu',
+     '{name} | MIT OpenCourseWare',
+     'https://ocw.mit.edu/search/?q={slug}',
+     'Lecture notes, assignments, and exams from MIT classes that cover {name}.'),
+    ('khan_advanced', 'www.khanacademy.org',
+     '{name} | Khan Academy practice',
+     'https://www.khanacademy.org/search?page_search_query={slug}',
+     'Self-paced exercises and short videos that walk through {name}.'),
+    ('medium_topic', 'medium.com',
+     '{name} - Medium tag',
+     'https://medium.com/tag/{slug}',
+     'Trending essays on {name} from Medium writers and indie publishers.'),
+    ('devto', 'dev.to',
+     '{name} posts - DEV Community',
+     'https://dev.to/t/{slug}',
+     'Developer-written tutorials, walk-throughs, and discussions about {name}.'),
+    ('lobsters', 'lobste.rs',
+     '{name} - Lobsters',
+     'https://lobste.rs/search?q={slug}',
+     'Technical link aggregator threads about {name}.'),
+    ('crossref', 'search.crossref.org',
+     '{name} - Crossref metadata',
+     'https://search.crossref.org/?q={slug}',
+     'Cross-publisher citation graph and DOI metadata for {name}.'),
+    ('orcid', 'orcid.org',
+     '{name} authors - ORCID',
+     'https://orcid.org/orcid-search/quick-search?searchQuery={slug}',
+     'Researcher records indexed under {name} on ORCID.'),
+    ('biorxiv', 'www.biorxiv.org',
+     '{name} preprints - bioRxiv',
+     'https://www.biorxiv.org/search/{slug}',
+     'Open-access biology preprints discussing {name}.'),
+    ('inaturalist', 'www.inaturalist.org',
+     '{name} observations - iNaturalist',
+     'https://www.inaturalist.org/observations?q={slug}',
+     'Citizen science observations and identifications tagged {name}.'),
+    ('zenodo', 'zenodo.org',
+     '{name} - Zenodo record search',
+     'https://zenodo.org/search?q={slug}',
+     'Open research datasets, software releases, and figures about {name}.'),
+    ('openalex', 'openalex.org',
+     '{name} - OpenAlex',
+     'https://openalex.org/works?search={slug}',
+     'Open scholarly graph of works, authors, and venues mentioning {name}.'),
+    ('worldcat', 'www.worldcat.org',
+     '{name} - WorldCat catalog',
+     'https://www.worldcat.org/search?q={slug}',
+     'Library catalog records and book editions related to {name}.'),
+]
+
+# Additional PAA questions templated per topic — keyed off topic.name.
+_R5_PAA_TEMPLATES = [
+    ('How do I get started with {name}?',
+     'A typical first step is to read an overview article on {name} (Wikipedia is a good starting point), then move on to a hands-on tutorial or course.'),
+    ('Is {name} suitable for beginners?',
+     'Beginner-friendly material on {name} is widely available, but expect to spend a few sessions on the fundamentals before tackling advanced topics.'),
+    ('What are common misconceptions about {name}?',
+     'A handful of misconceptions about {name} keep coming up; reading multiple sources side by side is the fastest way to spot them.'),
+    ('Where can I discuss {name} with others?',
+     'Active communities about {name} live on Reddit, Stack Exchange, and dedicated Discord servers. Most welcome newcomer questions.'),
+    ('How has {name} changed over time?',
+     'Coverage of {name} has evolved across decades; histories of the term often surface in Britannica and JSTOR Daily long-form essays.'),
+]
+
+# Additional knowledge facts templated per topic. Kept generic so they
+# never leak per-task answer tokens.
+_R5_KFACT_TEMPLATES = [
+    ('Wikipedia language editions', '300+ languages cover this topic'),
+    ('Average reading level', 'College-introductory'),
+    ('Last broad survey', '2024 — see linked academic reviews'),
+    ('Related Wikidata QID', 'See linked open-data graph'),
+    ('Open-access papers', '4,200+ indexed in Crossref'),
+    ('Active community discussions', '180+ threads in the last 30 days'),
+    ('Suggested next reading', 'Britannica overview, MIT OCW lecture notes'),
+]
+
+
+def _seed_r5_enrichment(db, Topic, SearchResult, PaaQuestion, KnowledgeFact):
+    """R5: append +6 results, +3 PAA, +4 KFs per topic deterministically.
+
+    Idempotent — gated by a sentinel KnowledgeFact ('__R5_SEEDED__') so a warm
+    `/reset` never re-runs this. The byte-identical guarantee is preserved by
+    the outer `normalize_seed_db_layout()` (VACUUM + index re-emit) executed
+    by build_seed.py after this function returns.
+    """
+    sentinel_key = '__R5_SEEDED__'
+    if KnowledgeFact.query.filter_by(key=sentinel_key).first() is not None:
+        return
+
+    topics = Topic.query.order_by(Topic.id).all()
+    added_results = 0
+    added_paa = 0
+    added_kf = 0
+
+    for t in topics:
+        existing = list(t.results)
+        existing_domains = {r.display_url for r in existing}
+        existing_kf_keys = {kf.key for kf in t.knowledge_facts}
+        existing_paa_q = {pq.question for pq in t.paa_questions}
+
+        rng = random.Random(_det_hash(t.slug + '_r5_deep'))
+        pool = [p for p in _R5_DEEP_PROVIDERS if p[1] not in existing_domains]
+        deep = rng.sample(pool, min(6, len(pool)))
+
+        name = t.name or t.slug.replace('_', ' ').title()
+        summary = (t.summary or f'{name} — overview, history, and key facts.')
+        s100 = summary[:100]
+        s120 = summary[:120]
+
+        next_rank = max((r.rank for r in existing), default=-1) + 1
+        # R4 used rank 10..14; sit R5 rows at rank 20+ to keep blocks separate.
+        next_rank = max(next_rank, 20)
+        for i, (prov, domain, title_tpl, url_tpl, snip_tpl) in enumerate(deep):
+            title = title_tpl.format(name=name, slug=t.slug)
+            url = url_tpl.format(name=name, slug=t.slug)
+            snippet = snip_tpl.format(
+                name=name, slug=t.slug,
+                summary_100=s100, summary_120=s120,
+            )
+            db.session.add(SearchResult(
+                topic_id=t.id,
+                title=title,
+                url=url,
+                display_url=domain,
+                snippet=snippet,
+                source=prov,
+                source_type='web',
+                rank=next_rank + i,
+                image='',
+                result_type='organic',
+                breadcrumb=_breadcrumb_for(domain, url, t.slug),
+                favicon=_favicon_for(domain),
+            ))
+            added_results += 1
+
+        # PAA — deterministic 3-question subset, skipping any duplicate.
+        rng_paa = random.Random(_det_hash(t.slug + '_r5_paa'))
+        paa_pool = list(_R5_PAA_TEMPLATES)
+        rng_paa.shuffle(paa_pool)
+        paa_next_rank = max((p.rank for p in t.paa_questions), default=-1) + 1
+        for q_tpl, a_tpl in paa_pool[:3]:
+            q = q_tpl.format(name=name)
+            if q in existing_paa_q:
+                continue
+            a = a_tpl.format(name=name)
+            db.session.add(PaaQuestion(
+                topic_id=t.id, question=q, answer=a, rank=paa_next_rank,
+            ))
+            paa_next_rank += 1
+            added_paa += 1
+
+        # KFs — deterministic 4-fact subset.
+        rng_kf = random.Random(_det_hash(t.slug + '_r5_kf'))
+        kf_pool = list(_R5_KFACT_TEMPLATES)
+        rng_kf.shuffle(kf_pool)
+        kf_next_rank = max((k.rank for k in t.knowledge_facts), default=-1) + 1
+        for k, v in kf_pool[:4]:
+            if k in existing_kf_keys:
+                continue
+            db.session.add(KnowledgeFact(
+                topic_id=t.id, key=k, value=v, rank=kf_next_rank,
+            ))
+            kf_next_rank += 1
+            added_kf += 1
+
+    # Sentinel — one row keyed off topic 1 (always exists post-R4).
+    first_topic = Topic.query.order_by(Topic.id).first()
+    if first_topic is not None:
+        db.session.add(KnowledgeFact(
+            topic_id=first_topic.id, key=sentinel_key,
+            value='r5', rank=9999,
+        ))
+
+    db.session.commit()
+    print(f"[seed] _seed_r5_enrichment added {added_results} results, "
+          f"{added_paa} PAA, {added_kf} KFs across {len(topics)} topics")
+
+
 def domain_for(provider):
     return {
         'wikipedia': 'en.wikipedia.org',
@@ -2654,6 +2849,9 @@ def seed_database(db, User, Vertical, Topic, SearchResult, PaaQuestion, RelatedQ
     # ---- R4: enrich SearchResults (result_type/breadcrumb/favicon) +
     #          add 5 deep results per topic (rank >= 10) ----
     _seed_r4_enrichment(db, Topic, SearchResult)
+
+    # ---- R5: append +6 results / +3 PAA / +4 KFs per topic (rank >= 20) ----
+    _seed_r5_enrichment(db, Topic, SearchResult, PaaQuestion, KnowledgeFact)
 
     # Demo user
     if not User.query.filter_by(email='demo@google.com').first():

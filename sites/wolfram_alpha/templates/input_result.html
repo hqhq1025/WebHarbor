@@ -82,9 +82,11 @@
         <span class="wa-assumption-prefix">Assuming</span>
         {% for label, value, active in pills %}
           {% if active %}
-          <span class="wa-assumption-pill wa-assumption-pill--active" role="tab" aria-selected="true">{{ label }}</span>
+          <span class="wa-assumption-pill wa-assumption-pill--active" role="tab" aria-selected="true" tabindex="0"
+                data-preview="Selected interpretation — applied to this result.">{{ label }}</span>
           {% else %}
-          <a class="wa-assumption-pill" role="tab" aria-selected="false"
+          <a class="wa-assumption-pill" role="tab" aria-selected="false" tabindex="0"
+             data-preview="Re-interpret '{{ query|truncate(40, true) }}' as {{ label }}"
              href="/input?i={{ query|urlencode }}&assumption={{ value|urlencode }}">{{ label }}</a>
           {% endif %}
         {% endfor %}
@@ -92,11 +94,14 @@
       {% endif %}
 
       <!-- Simulated computation result pods -->
-      <div class="result-pods">
-        <div class="result-pod result-pod--input">
-          <div class="pod-title">Input interpretation</div>
+      <div class="result-pods" role="region" aria-label="Computation results">
+        <div class="result-pod result-pod--input" role="group" aria-labelledby="pod-input-title">
+          <div class="pod-title" id="pod-input-title">Input interpretation</div>
           <div class="pod-content pod-content--input">
             <code class="pod-input-formula">{% if computation and computation.parsed_input %}{{ computation.parsed_input }}{% else %}{{ query }}{% endif %}</code>
+            <span class="sr-only" aria-label="Mathematical expression">
+              Parsed expression: {% if computation and computation.parsed_input %}{{ computation.parsed_input }}{% else %}{{ query }}{% endif %}
+            </span>
           </div>
         </div>
 
@@ -125,21 +130,44 @@
         <div class="result-pod result-pod--extra
                     {% if 'alternate' in (pod.title|lower) %}result-pod--alternate{% endif %}
                     {% if 'step' in (pod.title|lower) %}result-pod--step{% endif %}
-                    {% if 'wolfram language' in (pod.title|lower) %}result-pod--wlcode{% endif %}">
-          <div class="pod-title">{{ pod.title }}
+                    {% if 'comparison' in (pod.title|lower) %}result-pod--comparison{% endif %}
+                    {% if 'plot' in (pod.title|lower) %}result-pod--svgplot result-pod--plot{% endif %}
+                    {% if 'wolfram language' in (pod.title|lower) %}result-pod--wlcode{% endif %}
+                    {% if 'python' in (pod.title|lower) %}result-pod--pycode{% endif %}"
+             role="group" aria-labelledby="pod-{{ loop.index }}-title">
+          <div class="pod-title" id="pod-{{ loop.index }}-title">{{ pod.title }}
             {% if 'step' in (pod.title|lower) %}<span class="pod-pro-badge">PRO</span>{% endif %}
             {% if 'wolfram language' in (pod.title|lower) %}<span class="pod-wl-badge">WL</span>{% endif %}
+            {% if 'python' in (pod.title|lower) %}<span class="pod-py-badge">Py</span>{% endif %}
+            {% if 'comparison' in (pod.title|lower) %}<span class="pod-cmp-badge">Δ</span>{% endif %}
           </div>
           <div class="pod-content">
             {% if 'wolfram language' in (pod.title|lower) %}
             <pre class="pod-code-block"><code>{{ pod.plaintext }}</code></pre>
+            <span class="sr-only">Wolfram Language code: {{ pod.plaintext }}</span>
+            {% elif 'python' in (pod.title|lower) %}
+            <pre class="pod-code-block pod-code-block--py"><code>{{ pod.plaintext }}</code></pre>
+            <span class="sr-only">Python code: {{ pod.plaintext }}</span>
             {% elif 'alternate' in (pod.title|lower) %}
             <div class="pod-altforms-tabs" role="tablist">
-              <span class="pod-altform-tab pod-altform-tab--active">Standard</span>
-              <span class="pod-altform-tab">Decimal</span>
-              <span class="pod-altform-tab">Factored</span>
+              <span class="pod-altform-tab pod-altform-tab--active" role="tab" aria-selected="true" tabindex="0" data-form="standard">Standard</span>
+              <span class="pod-altform-tab" role="tab" aria-selected="false" tabindex="0" data-form="decimal">Decimal</span>
+              <span class="pod-altform-tab" role="tab" aria-selected="false" tabindex="0" data-form="factored">Factored</span>
             </div>
-            <pre class="pod-extra-plaintext">{{ pod.plaintext }}</pre>
+            <pre class="pod-extra-plaintext pod-altform-body" data-active="standard">{{ pod.plaintext }}</pre>
+            {% elif 'plot' in (pod.title|lower) %}
+            {# Interactive plot pod — pods' plaintext may contain raw SVG markup. #}
+            <div class="pod-plot-wrapper" data-zoom="1.0">
+              <div class="pod-plot-controls" aria-label="Plot controls">
+                <button type="button" class="pod-plot-btn" data-action="zoom-in" aria-label="Zoom in">+</button>
+                <button type="button" class="pod-plot-btn" data-action="zoom-out" aria-label="Zoom out">−</button>
+                <button type="button" class="pod-plot-btn" data-action="zoom-reset" aria-label="Reset zoom">⌂</button>
+                <button type="button" class="pod-plot-btn" data-action="pan-left" aria-label="Pan left">◄</button>
+                <button type="button" class="pod-plot-btn" data-action="pan-right" aria-label="Pan right">►</button>
+              </div>
+              <div class="pod-plot-svg-host">{{ pod.plaintext|safe if '<svg' in pod.plaintext else '' }}</div>
+              {% if '<svg' not in pod.plaintext %}<pre class="pod-extra-plaintext">{{ pod.plaintext }}</pre>{% endif %}
+            </div>
             {% else %}
             <pre class="pod-extra-plaintext">{{ pod.plaintext }}</pre>
             {% endif %}
@@ -268,19 +296,30 @@
 
         {# Share / embed / export action bar — appears below all result pods. #}
         {% if computation %}
-        <div class="result-action-bar" aria-label="Result actions">
-          <a href="/share/{{ computation.id }}" class="result-action-btn" title="Share permalink">
+        <div class="result-action-bar" role="toolbar" aria-label="Result actions">
+          <a href="/share/{{ computation.id }}" class="result-action-btn" title="Share permalink" tabindex="0">
             <span class="result-action-icon">&#128279;</span> Share permalink
           </a>
-          <a href="/widget/builder" class="result-action-btn" title="Embed as widget">
+          <a href="/share/{{ computation.id }}?as=image" class="result-action-btn" title="Share as PNG image" tabindex="0">
+            <span class="result-action-icon">&#128247;</span> Share as image
+          </a>
+          <a href="/widget/builder?source={{ computation.id }}" class="result-action-btn" title="Embed as widget" tabindex="0">
             <span class="result-action-icon">&lt;/&gt;</span> Embed widget
           </a>
-          <a href="/products/full-results-api" class="result-action-btn" title="Use the API">
+          <a href="/products/full-results-api" class="result-action-btn" title="Use the API" tabindex="0">
             <span class="result-action-icon">{ }</span> Use API
           </a>
-          <a href="/step-by-step/{{ computation.id }}" class="result-action-btn" title="Step-by-step">
+          <a href="/step-by-step/{{ computation.id }}" class="result-action-btn" title="Step-by-step" tabindex="0">
             <span class="result-action-icon">&#9776;</span> Step-by-step
           </a>
+          {% if current_user.is_authenticated %}
+          <form action="/notebooks" method="get" class="result-action-form" style="display:inline">
+            <input type="hidden" name="prefill_query" value="{{ query }}">
+            <button type="submit" class="result-action-btn" title="Embed in notebook" tabindex="0">
+              <span class="result-action-icon">&#128195;</span> Embed in notebook
+            </button>
+          </form>
+          {% endif %}
         </div>
         {% endif %}
 

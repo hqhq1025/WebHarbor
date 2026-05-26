@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% block title %}Group meetup planner - Google Maps{% endblock %}
+
+{% block body %}
+<div class="app-shell">
+    {% include '_rail.html' %}
+    <aside class="left-panel">
+        {% set search_value = "Group meetup planner" %}
+        {% include '_search_bar.html' %}
+        <div class="panel-section">
+            <h2>Group meetup coordinate</h2>
+            <div class="sub">Paste 2-5 starting points (one per line). We'll compute the geometric midpoint and suggest a coffee shop or restaurant nearby.</div>
+
+            <form method="POST" action="{{ url_for('group_meetup') }}" style="margin-top:14px;">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <label for="meetup-addresses" style="font-size:13px;color:#5f6368;display:block;margin-bottom:6px;">Starting places (one per line)</label>
+                <textarea name="addresses" id="meetup-addresses" rows="5"
+                          placeholder="Central Park&#10;Empire State Building&#10;Brooklyn Bridge"
+                          style="width:100%;font-family:monospace;font-size:13px;padding:10px;border:1px solid var(--divider);border-radius:8px;">{% for a in addresses %}{{ a }}
+{% endfor %}</textarea>
+                <button class="btn" type="submit" style="margin-top:10px;">
+                    <span class="material-icons-outlined" style="font-size:18px;vertical-align:-3px;">person_pin_circle</span>
+                    Find midpoint
+                </button>
+            </form>
+
+            {% if midpoint %}
+            <div class="midpoint-card" role="region" aria-label="Midpoint result"
+                 style="margin-top:18px;background:#fff7e0;border:1px solid #fce8b2;border-radius:10px;padding:14px;">
+                <div style="font-size:13px;color:#5f6368;">Geometric midpoint of your {{ addresses|length }} starting points</div>
+                <div style="font-size:16px;font-weight:600;color:#202124;">{{ midpoint.lat }}, {{ midpoint.lng }}</div>
+                {% if suggestion %}
+                <div style="margin-top:10px;border-top:1px dashed #fce8b2;padding-top:10px;">
+                    <div style="font-size:12px;color:#5f6368;text-transform:uppercase;letter-spacing:.5px;">Suggested meetup spot</div>
+                    <div style="font-weight:500;color:#202124;font-size:15px;margin-top:2px;">
+                        <a href="{{ url_for('place_detail', slug=suggestion.slug) }}" style="color:inherit;">{{ suggestion.name }}</a>
+                    </div>
+                    <div style="font-size:13px;color:#5f6368;">★ {{ '%.1f'|format(suggestion.rating) }} · {{ suggestion.city.display_name }} · {{ suggestion.subtitle }}</div>
+                </div>
+                {% endif %}
+            </div>
+            {% elif addresses %}
+            <div class="empty-state" style="margin-top:18px;">
+                <p>Could not resolve enough of your inputs to known places. Try using exact place names.</p>
+            </div>
+            {% endif %}
+        </div>
+    </aside>
+    {% include '_mapcanvas.html' %}
+</div>
+{% endblock %}

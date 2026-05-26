@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block title %}Your Registry - Amazon.com{% endblock %}
+
+{% block content %}
+<div class="account-page" style="max-width:900px">
+    <h1>Your Registry</h1>
+    {% if not registry %}
+    <div class="empty-state" style="padding:40px 20px">
+        <h2>You haven't created a registry yet.</h2>
+        <p>Pick a milestone to celebrate.</p>
+        <a href="{{ url_for('registry') }}" class="btn btn-orange">Browse registry types</a>
+    </div>
+    {% else %}
+    <div style="background:#fff;padding:24px;border:1px solid #ddd;border-radius:4px">
+        <h2 style="margin:0 0 10px;font-size:22px">{{ registry.event|capitalize }} Registry</h2>
+        <table style="width:100%;font-size:14px">
+            <tr><th style="text-align:left;padding:6px 0;width:180px">Registrant</th>
+                <td>{{ registry.partner1 }}{% if registry.partner2 %} &amp; {{ registry.partner2 }}{% endif %}</td></tr>
+            <tr><th style="text-align:left;padding:6px 0">Event date</th>
+                <td>{{ registry.event_date }}</td></tr>
+            <tr><th style="text-align:left;padding:6px 0">Location</th>
+                <td>{{ registry.city }}, {{ registry.state }}</td></tr>
+        </table>
+        <div style="margin-top:18px;display:flex;gap:10px;flex-wrap:wrap">
+            <a href="{{ url_for('search') }}" class="btn btn-orange">Add items</a>
+            <a href="{{ url_for('registry') }}" class="btn btn-outline">Browse registry hub</a>
+            <a href="{{ url_for('registry_create', event=registry.event) }}" class="btn btn-outline">Edit details</a>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

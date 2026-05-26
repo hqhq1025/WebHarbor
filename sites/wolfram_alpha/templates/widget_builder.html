@@ -23,27 +23,61 @@
 
     <section class="builder-config">
       <h3 class="sidebar-section-title">Widget configuration</h3>
-      <form class="builder-form" onsubmit="return false;">
-        <label class="builder-label">Title <input type="text" class="builder-input" value="My Wolfram Widget"></label>
-        <label class="builder-label">Width <input type="number" class="builder-input" value="400" min="200" max="1200"></label>
-        <label class="builder-label">Height <input type="number" class="builder-input" value="500" min="200" max="900"></label>
+
+      {% if source_comp %}
+      <div class="builder-source-card" role="status">
+        <span class="builder-source-eyebrow">SOURCE COMPUTATION</span>
+        <code class="builder-source-q">{{ source_comp.input_query }}</code>
+        <a class="builder-source-link" href="/input?i={{ source_comp.input_query|urlencode }}">Open result</a>
+      </div>
+      {% endif %}
+
+      <form class="builder-form" onsubmit="return false;" id="builderForm">
+        <label class="builder-label">Title <input type="text" class="builder-input" value="My Wolfram Widget" id="bf-title"></label>
+        <label class="builder-label">Width <input type="number" class="builder-input" value="400" min="200" max="1200" id="bf-width"></label>
+        <label class="builder-label">Height <input type="number" class="builder-input" value="500" min="200" max="900" id="bf-height"></label>
         <label class="builder-label">Theme
-          <select class="builder-input">
+          <select class="builder-input" id="bf-theme">
             <option>light</option><option>dark</option><option>auto</option>
           </select>
         </label>
         <label class="builder-label">Show Pro CTA
-          <select class="builder-input">
+          <select class="builder-input" id="bf-pro">
             <option>yes</option><option>no</option>
           </select>
         </label>
       </form>
 
+      {# R5: size picker — common presets that auto-fill the width/height fields. #}
+      <h3 class="sidebar-section-title" style="margin-top: 18px;">Size presets</h3>
+      <div class="builder-size-picker" role="radiogroup" aria-label="Size preset">
+        <button type="button" class="builder-size-btn" data-w="320" data-h="240"
+                tabindex="0" aria-label="Compact 320 by 240">
+          <span class="builder-size-shape" style="width:48px;height:36px"></span>
+          <span class="builder-size-label">Compact<br><small>320 × 240</small></span>
+        </button>
+        <button type="button" class="builder-size-btn builder-size-btn--active" data-w="400" data-h="500"
+                tabindex="0" aria-label="Default 400 by 500">
+          <span class="builder-size-shape" style="width:48px;height:60px"></span>
+          <span class="builder-size-label">Default<br><small>400 × 500</small></span>
+        </button>
+        <button type="button" class="builder-size-btn" data-w="640" data-h="360"
+                tabindex="0" aria-label="Wide 640 by 360">
+          <span class="builder-size-shape" style="width:64px;height:36px"></span>
+          <span class="builder-size-label">Wide<br><small>640 × 360</small></span>
+        </button>
+        <button type="button" class="builder-size-btn" data-w="800" data-h="600"
+                tabindex="0" aria-label="Large 800 by 600">
+          <span class="builder-size-shape" style="width:64px;height:48px"></span>
+          <span class="builder-size-label">Large<br><small>800 × 600</small></span>
+        </button>
+      </div>
+
       <h3 class="sidebar-section-title" style="margin-top: 24px;">Embed code</h3>
-      <pre class="builder-embed-code"><code>&lt;iframe src="https://www.wolframalpha.com/widgets/embed/?widget=&lt;slug&gt;&amp;theme=light"
+      <pre class="builder-embed-code" id="bf-embed"><code>&lt;iframe src="https://www.wolframalpha.com/widgets/embed/?widget={% if source_comp %}{{ source_comp.id }}{% else %}&lt;slug&gt;{% endif %}&amp;theme=light"
         width="400" height="500" frameborder="0" scrolling="no"
         title="Wolfram|Alpha Widget"&gt;&lt;/iframe&gt;</code></pre>
-      <p class="builder-hint">Paste this snippet into any HTML page. Widgets respect your site's color scheme via CSS variables.</p>
+      <p class="builder-hint">Paste this snippet into any HTML page. Widgets respect your site's color scheme via CSS variables. Use a size preset above to auto-fill the iframe dimensions.</p>
     </section>
   </div>
 </div>

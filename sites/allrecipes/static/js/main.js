@@ -214,4 +214,197 @@ document.addEventListener('DOMContentLoaded', function() {
             observer.observe(el);
         });
     }
+
+    // ==========================================================
+    // R5: nav-toggle drawer + form validation + meal-plan AJAX
+    // ==========================================================
+
+    // --- Mobile nav drawer toggle ---
+    var navToggle = document.querySelector('.nav-toggle');
+    var navCategories = document.querySelector('.nav-categories');
+    if (navToggle && navCategories) {
+        navToggle.addEventListener('click', function() {
+            var isOpen = navCategories.classList.toggle('is-open');
+            navToggle.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+            navToggle.setAttribute('aria-label', isOpen ? 'Close menu' : 'Open menu');
+        });
+        // Close on outside click.
+        document.addEventListener('click', function(e) {
+            if (!navCategories.contains(e.target) && !navToggle.contains(e.target)) {
+                if (navCategories.classList.contains('is-open')) {
+                    navCategories.classList.remove('is-open');
+                    navToggle.setAttribute('aria-expanded', 'false');
+                    navToggle.setAttribute('aria-label', 'Open menu');
+                }
+            }
+        });
+    }
+
+    // --- Inline form validation helpers ---
+    function showFieldError(field, message) {
+        if (!field) return;
+        field.setAttribute('aria-invalid', 'true');
+        var id = field.id || ('f_' + Math.random().toString(36).slice(2, 8));
+        field.id = id;
+        var errId = id + '__err';
+        var existing = document.getElementById(errId);
+        if (!existing) {
+            existing = document.createElement('span');
+            existing.id = errId;
+            existing.className = 'form-error-msg';
+            existing.setAttribute('role', 'alert');
+            field.setAttribute('aria-describedby', errId);
+            if (field.parentNode) field.parentNode.insertBefore(existing, field.nextSibling);
+        }
+        existing.textContent = message;
+        existing.removeAttribute('hidden');
+    }
+    function clearFieldError(field) {
+        if (!field) return;
+        field.removeAttribute('aria-invalid');
+        var id = field.id;
+        if (!id) return;
+        var existing = document.getElementById(id + '__err');
+        if (existing) existing.setAttribute('hidden', 'hidden');
+    }
+    function validateEmail(v) {
+        return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test((v || '').trim());
+    }
+
+    // --- Register form client-side validation ---
+    var registerForm = document.querySelector('form[action*="register"], form[data-form="register"]');
+    if (!registerForm) {
+        // Fallback: locate by field set.
+        var maybe = document.querySelector('input[name="confirm_password"]');
+        if (maybe) registerForm = maybe.closest('form');
+    }
+    if (registerForm) {
+        var usernameField = registerForm.querySelector('input[name="username"]');
+        var emailField = registerForm.querySelector('input[name="email"]');
+        var passwordField = registerForm.querySelector('input[name="password"]');
+        var confirmField = registerForm.querySelector('input[name="confirm_password"]');
+
+        [usernameField, emailField, passwordField, confirmField].forEach(function(f) {
+            if (!f) return;
+            f.addEventListener('blur', function() {
+                if (f === usernameField) {
+                    if (!f.value.trim()) showFieldError(f, 'Username is required.');
+                    else if (f.value.trim().length < 3) showFieldError(f, 'Username must be at least 3 characters.');
+                    else clearFieldError(f);
+                } else if (f === emailField) {
+                    if (!validateEmail(f.value)) showFieldError(f, 'Please enter a valid email address.');
+                    else clearFieldError(f);
+                } else if (f === passwordField) {
+                    if (!f.value || f.value.length < 6) showFieldError(f, 'Password must be at least 6 characters.');
+                    else clearFieldError(f);
+                } else if (f === confirmField) {
+                    if (passwordField && f.value !== passwordField.value) showFieldError(f, 'Passwords do not match.');
+                    else clearFieldError(f);
+                }
+            });
+            f.addEventListener('input', function() {
+                if (f.getAttribute('aria-invalid') === 'true') {
+                    // Re-validate as user types so the error clears once fixed.
+                    f.dispatchEvent(new Event('blur'));
+                }
+            });
+        });
+
+        registerForm.addEventListener('submit', function(e) {
+            var bad = false;
+            if (usernameField && (!usernameField.value.trim() || usernameField.value.trim().length < 3)) {
+                showFieldError(usernameField, 'Username must be at least 3 characters.');
+                bad = true;
+            }
+            if (emailField && !validateEmail(emailField.value)) {
+                showFieldError(emailField, 'Please enter a valid email address.');
+                bad = true;
+            }
+            if (passwordField && passwordField.value.length < 6) {
+                showFieldError(passwordField, 'Password must be at least 6 characters.');
+                bad = true;
+            }
+            if (confirmField && passwordField && confirmField.value !== passwordField.value) {
+                showFieldError(confirmField, 'Passwords do not match.');
+                bad = true;
+            }
+            if (bad) {
+                e.preventDefault();
+                var firstBad = registerForm.querySelector('[aria-invalid="true"]');
+                if (firstBad) firstBad.focus();
+            }
+        });
+    }
+
+    // --- Review / comment form client-side validation ---
+    document.querySelectorAll('form[data-form="review"], form.review-form').forEach(function(rf) {
+        rf.addEventListener('submit', function(e) {
+            var bodyField = rf.querySelector('textarea[name="body"], textarea[name="comment"]');
+            var ratingChosen = rf.querySelector('input[name="rating"]:checked');
+            var bad = false;
+            if (!ratingChosen) {
+                var ratingFieldset = rf.querySelector('.star-rating-input') || rf;
+                showFieldError(ratingFieldset, 'Please choose a star rating before submitting.');
+                bad = true;
+            }
+            if (bodyField && bodyField.value.trim().length < 8) {
+                showFieldError(bodyField, 'Reviews must be at least 8 characters long.');
+                bad = true;
+            }
+            if (bad) e.preventDefault();
+        });
+    });
+
+    // --- AJAX add-to-meal-plan from recipe detail page ---
+    document.querySelectorAll('.add-to-meal-plan').forEach(function(widget) {
+        var btn = widget.querySelector('.add-to-meal-plan-btn');
+        var daySel = widget.querySelector('select[name="day"]');
+        var mealSel = widget.querySelector('select[name="meal_type"]');
+        var status = widget.querySelector('.add-to-meal-plan-status');
+        var recipeId = widget.dataset.recipeId;
+        if (!btn || !recipeId) return;
+        btn.addEventListener('click', function() {
+            var day = daySel ? daySel.value : 'monday';
+            var mealType = mealSel ? mealSel.value : 'dinner';
+            if (status) {
+                status.textContent = 'Adding…';
+                status.dataset.state = '';
+            }
+            fetch('/api/meal-plan/add', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({recipe_id: parseInt(recipeId), day: day, meal_type: mealType})
+            })
+            .then(function(r) { return r.json().then(function(d) { return {ok: r.ok, body: d}; }); })
+            .then(function(res) {
+                if (res.ok && res.body.success) {
+                    if (status) {
+                        status.textContent = 'Added to meal plan for ' + day + ' ' + mealType + '.';
+                        status.dataset.state = '';
+                    }
+                    showToast(res.body.message || 'Added to meal plan');
+                } else {
+                    if (status) {
+                        status.textContent = res.body.message || 'Please log in to add to your meal plan.';
+                        status.dataset.state = 'error';
+                    }
+                }
+            })
+            .catch(function() {
+                if (status) {
+                    status.textContent = 'Network error — please try again.';
+                    status.dataset.state = 'error';
+                }
+            });
+        });
+    });
+
+    // --- Make all alt-less recipe-card images get a sensible alt at runtime ---
+    document.querySelectorAll('.recipe-card img').forEach(function(img) {
+        if (!img.alt || img.alt === '') {
+            var title = img.closest('.recipe-card');
+            var titleEl = title && (title.querySelector('.recipe-card-title') || title.querySelector('h3') || title.querySelector('h2'));
+            if (titleEl) img.alt = titleEl.textContent.trim() + ' recipe photo';
+        }
+    });
 });

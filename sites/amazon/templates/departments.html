@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block title %}Shop by Department - Amazon.com{% endblock %}
+
+{% block content %}
+<div class="account-page" style="max-width:1300px">
+    <h1>Shop by Department</h1>
+    <p style="color:#565959;margin-bottom:20px">Browse all categories on Amazon. Click a department to see every product in stock.</p>
+
+    <nav aria-label="Departments index" style="margin-bottom:20px">
+        <ul style="list-style:none;padding:0;display:flex;flex-wrap:wrap;gap:8px">
+            {% for c in cats %}
+            <li><a href="#dept-{{ c.slug }}" class="text-link" style="padding:6px 10px;background:#f3f3f3;border-radius:14px;font-size:13px">{{ c.name }}</a></li>
+            {% endfor %}
+        </ul>
+    </nav>
+
+    {% for slug, blk in by_cat.items() %}
+    <section id="dept-{{ slug }}" style="background:#fff;padding:20px;border:1px solid #eee;border-radius:4px;margin-bottom:18px">
+        <div style="display:flex;justify-content:space-between;align-items:baseline;flex-wrap:wrap;gap:8px">
+            <h2 style="margin:0;font-size:22px">{{ blk.category.icon }} {{ blk.category.name }}</h2>
+            <a href="{{ url_for('category', slug=slug) }}" class="text-link">See all {{ blk.count }} items ▸</a>
+        </div>
+        <p style="color:#565959;margin:6px 0 14px;font-size:14px">{{ blk.category.description }}</p>
+        <div class="card-grid">
+            {% for p in blk.products %}
+            <a href="{{ url_for('product_detail', slug=p.slug) }}" class="dept-card" style="display:block;text-decoration:none;color:inherit">
+                <img src="{{ p.image }}" alt="{{ p.name }}" style="width:100%;aspect-ratio:1;object-fit:contain;background:#fafafa" onerror="this.style.display='none'">
+                <div style="font-size:13px;margin-top:6px;line-height:1.3">{{ p.name }}</div>
+                <div style="font-weight:700;margin-top:4px">${{ '%.2f'|format(p.price) }}</div>
+            </a>
+            {% endfor %}
+        </div>
+    </section>
+    {% endfor %}
+</div>
+{% endblock %}

@@ -344,6 +344,30 @@ def utility_processor():
     )
 
 
+# ---------------------------------------------------------------------------
+# Error handlers — R5 polish for unknown routes / methods / server errors
+# ---------------------------------------------------------------------------
+
+@app.errorhandler(404)
+def _err_404(e):
+    # Top 6 most popular recipes as suggested fallbacks.
+    suggestions = (
+        Recipe.query.order_by(Recipe.review_count.desc())
+        .limit(6).all()
+    )
+    return render_template('404.html', suggestions=suggestions), 404
+
+
+@app.errorhandler(405)
+def _err_405(e):
+    return render_template('404.html', suggestions=[], method_not_allowed=True), 405
+
+
+@app.errorhandler(500)
+def _err_500(e):
+    return render_template('404.html', suggestions=[], server_error=True), 500
+
+
 def safe_redirect_target(target, default_endpoint='index'):
     if target and target.startswith('/') and not target.startswith('//'):
         return target
@@ -3622,6 +3646,16 @@ with app.app_context():
         db.session.commit()
     except Exception as exc:  # pragma: no cover
         print(f"[r4_final_enrich] failed: {exc!r}")
+
+    # R5: final enrichment pass — top up cuisine-origin / time / calorie /
+    # equipment / allergen-free flags on every recipe (including the
+    # post-extended 1960s + benchmark inserts).
+    try:
+        from r5_seed import _enrich_r5_fields
+        _enrich_r5_fields()
+        db.session.commit()
+    except Exception as exc:  # pragma: no cover
+        print(f"[r5_final_enrich] failed: {exc!r}")
 
     # R4: final VACUUM + index re-emit so the seed DB is byte-identical
     # across rebuilds (sees all post-extended inserts).

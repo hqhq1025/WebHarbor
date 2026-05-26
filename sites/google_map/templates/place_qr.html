@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block title %}Share via QR - {{ place.name }} - Google Maps{% endblock %}
+
+{% block body %}
+<div class="app-shell">
+    {% include '_rail.html' %}
+    <aside class="left-panel">
+        {% set search_value = place.name %}
+        {% include '_search_bar.html' %}
+        <div class="panel-section">
+            <h2>Share {{ place.name }} via QR</h2>
+            <div class="sub">Scan the code below from another device, or copy the share URL.</div>
+
+            <div class="qr-block" role="img" aria-label="QR code for {{ place.name }}"
+                 style="display:flex;justify-content:center;margin:18px 0;">
+                <div class="qr-grid"
+                     style="display:grid;grid-template-columns:repeat(11, 16px);grid-template-rows:repeat(11, 16px);gap:0;background:#fff;border:1px solid #dadce0;padding:12px;border-radius:10px;">
+                    {% for row in grid %}
+                        {% for v in row %}
+                        <div style="width:16px;height:16px;background:{% if v %}#202124{% else %}#fff{% endif %};"></div>
+                        {% endfor %}
+                    {% endfor %}
+                </div>
+            </div>
+
+            <div class="qr-url" style="background:#f1f3f4;border:1px solid #dadce0;border-radius:8px;padding:12px;font-family:monospace;font-size:13px;color:#1a73e8;word-break:break-all;">
+                <strong style="display:block;color:#202124;margin-bottom:6px;font-family:Roboto, sans-serif;">Share URL</strong>
+                {{ share_url }}
+            </div>
+
+            <div style="margin-top:18px;display:flex;gap:8px;">
+                <a class="btn ghost btn-sm" href="{{ url_for('place_detail', slug=place.slug) }}">Back to place</a>
+                <a class="btn btn-sm" href="{{ share_url }}" target="_blank" rel="noopener">Open Google Maps</a>
+            </div>
+        </div>
+    </aside>
+    {% include '_mapcanvas.html' %}
+</div>
+{% endblock %}

@@ -183,14 +183,43 @@
                 {% endif %}
 
                 <noscript><button type="submit" class="btn-primary" style="width:100%;">Apply filters</button></noscript>
+                {# R5 — explicit apply CTA, sticks to bottom of filter sidebar on mobile #}
+                <button type="submit" class="btn-primary apply-filters-cta" id="applyFiltersCta"
+                        aria-label="Apply selected filters" style="width:100%;margin-top:6px;">
+                    Apply filters
+                </button>
             </form>
         </aside>
 
         {# =========== RESULTS =========== #}
         <div>
+            {# R5 — map view toggle + "Search this area" floating CTA. JS-only;
+               does not change result list, just demonstrates the map overlay. #}
+            <div class="map-view-bar" role="region" aria-label="Map view controls">
+                <button type="button" id="toggleMapView" class="btn-secondary"
+                        aria-pressed="false" aria-controls="mapClusterPane">
+                    &#128506; Show on map
+                </button>
+                <span style="font-size:12px;color:#666;">View all properties as map clusters</span>
+            </div>
+            <div class="map-cluster-pane" id="mapClusterPane" aria-hidden="true">
+                <div class="map-cluster-grid">
+                    {% for prop in results[:24] %}
+                    <span class="map-cluster-pin"
+                          style="left:{{ ((loop.index0 * 37) % 90 + 5) }}%;top:{{ ((loop.index0 * 53) % 80 + 8) }}%;"
+                          aria-label="Cluster {{ loop.index }}: {{ prop.name }} at ${{ '%.0f' % prop.discounted_price }} per night">
+                        ${{ '%.0f' % prop.discounted_price }}
+                    </span>
+                    {% endfor %}
+                </div>
+                <button type="button" class="map-search-here-btn" id="mapSearchHereBtn"
+                        aria-label="Re-search this map area">
+                    &#128270; Search this area
+                </button>
+            </div>
             {% if results %}
             {% for prop in results %}
-            <div class="property-card">
+            <div class="property-card" role="article" aria-labelledby="prop-title-{{ prop.id }}">
                 <div class="property-card-img">
                     {% if prop.image %}
                     <img src="{{ prop.image }}" alt="{{ prop.name }}"
@@ -200,10 +229,10 @@
                 <div class="property-card-body">
                     <div class="property-card-header">
                         <div>
-                            <h3 class="property-card-title">
+                            <h3 class="property-card-title" id="prop-title-{{ prop.id }}">
                                 <a href="{{ url_for('property_detail', slug=prop.slug, checkin=q_checkin, checkout=q_checkout) }}">{{ prop.name }}</a>
                             </h3>
-                            <div class="stars">{% for i in range(prop.stars) %}&#9733;{% endfor %}</div>
+                            <div class="stars" aria-label="{{ prop.stars }} star property">{% for i in range(prop.stars) %}&#9733;{% endfor %}</div>
                             <div class="neighborhood">{{ prop.neighborhood }} &middot; {{ prop.city.display }}{% if prop.brand %} &middot; <span style="color:#006ce4;">{{ prop.brand }}</span>{% endif %}</div>
                             {% if prop.miles_from_query is not none and miles_label_name %}
                             <div class="distance-from-landmark" style="margin-top:4px;font-size:13px;color:#262626;display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
@@ -241,7 +270,8 @@
                         </div>
                     </div>
                     <div class="property-card-footer">
-                        <span class="price">${{ '%.0f' % prop.discounted_price }}</span>
+                        <span class="price" aria-hidden="true">${{ '%.0f' % prop.discounted_price }}</span>
+                        <span class="sr-only">from ${{ '%.0f' % prop.discounted_price }} per night</span>
                         <div class="price-includes">per night
                             {% if currency_code == 'CNY' %}
                                 <span style="color:#444;"> &asymp; &yen;{{ '%.0f' % (prop.discounted_price * currency_rate) }}</span>
@@ -272,4 +302,30 @@
         </div>
     </div>
 </div>
+
+<script>
+// R5 — Map view toggle + "Search this area" CTA. Pure client-side demo,
+// no backend dependency. Keyboard-accessible (Enter/Space trigger via native).
+(function () {
+    var btn = document.getElementById('toggleMapView');
+    var pane = document.getElementById('mapClusterPane');
+    var search = document.getElementById('mapSearchHereBtn');
+    if (!btn || !pane) return;
+    btn.addEventListener('click', function () {
+        var open = pane.classList.toggle('open');
+        btn.setAttribute('aria-pressed', open ? 'true' : 'false');
+        pane.setAttribute('aria-hidden', open ? 'false' : 'true');
+    });
+    if (search) {
+        search.addEventListener('click', function () {
+            search.disabled = true;
+            search.textContent = '✓ Searching this area...';
+            setTimeout(function () {
+                search.disabled = false;
+                search.textContent = '\u{1F50E} Search this area';
+            }, 900);
+        });
+    }
+})();
+</script>
 {% endblock %}

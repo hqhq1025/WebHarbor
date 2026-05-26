@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+{% block title %}Accessibility settings | Cambridge Dictionary{% endblock %}
+{% block content %}
+<div class="container a11y-container">
+  <nav class="breadcrumb">
+    <a href="{{ url_for('about') }}">About</a> &raquo;
+    <strong>Accessibility</strong>
+  </nav>
+
+  <h1 class="a11y-title">Accessibility settings</h1>
+  <p class="a11y-lede">
+    Cambridge Dictionary works hard to stay usable for every reader.
+    Choose the options that help you read, hear, and navigate the dictionary.
+    Preferences are stored locally on this device.
+  </p>
+
+  <form method="POST" class="a11y-form">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+    <fieldset class="a11y-field">
+      <legend>Reading font</legend>
+      <label class="a11y-option">
+        <input type="radio" name="font" value="default"
+               {% if a11y_font != 'dyslexic' %}checked{% endif %}>
+        <span>Standard (system sans-serif)</span>
+      </label>
+      <label class="a11y-option">
+        <input type="radio" name="font" value="dyslexic"
+               {% if a11y_font == 'dyslexic' %}checked{% endif %}>
+        <span>Dyslexia-friendly (OpenDyslexic-style spacing)</span>
+      </label>
+      <p class="a11y-hint">Increases letter spacing, line height, and bottom-weighted letters to reduce flipping.</p>
+    </fieldset>
+
+    <fieldset class="a11y-field">
+      <legend>CEFR colour palette</legend>
+      <label class="a11y-option">
+        <input type="radio" name="palette" value="default"
+               {% if a11y_palette != 'cb-safe' %}checked{% endif %}>
+        <span>Standard Cambridge palette (red→blue)</span>
+      </label>
+      <label class="a11y-option">
+        <input type="radio" name="palette" value="cb-safe"
+               {% if a11y_palette == 'cb-safe' %}checked{% endif %}>
+        <span>Colour-blind safe palette (yellow→purple, paired with shape labels)</span>
+      </label>
+      <p class="a11y-hint">Replaces the A1–C2 swatches with an Okabe–Ito-derived ramp distinguishable under deuteranopia and protanopia.</p>
+    </fieldset>
+
+    <fieldset class="a11y-field">
+      <legend>IPA tooltip</legend>
+      <label class="a11y-option">
+        <input type="checkbox" name="ipa_focus" value="1"
+               {% if a11y_ipa_focus == '1' %}checked{% endif %}>
+        <span>Make IPA characters keyboard-focusable (Tab to focus, Esc to dismiss tooltip)</span>
+      </label>
+      <p class="a11y-hint">Adds tabindex=0 to every IPA span so screen-reader / keyboard users can review pronunciation.</p>
+    </fieldset>
+
+    <button class="btn btn-primary" type="submit">Save preferences</button>
+  </form>
+</div>
+{% endblock %}

@@ -9,27 +9,39 @@
 
     <div class="auth-box">
         <h1>Create account</h1>
-        <form method="POST" novalidate>
+        <form method="POST" novalidate aria-labelledby="register-heading">
+            <h2 id="register-heading" class="visually-hidden">Create your Amazon account</h2>
             {{ form.csrf_token }}
             <div class="form-group">
                 <label for="name">Your name</label>
-                <input type="text" id="name" name="name" class="form-control" placeholder="First and last name" required>
-                {% for e in form.name.errors %}<div class="form-error">{{ e }}</div>{% endfor %}
+                <input type="text" id="name" name="name" class="form-control" placeholder="First and last name"
+                       autocomplete="name" minlength="2" maxlength="120"
+                       {% if form.name.errors %}aria-invalid="true" aria-describedby="err-name"{% endif %} required>
+                {% for e in form.name.errors %}<div class="form-error" id="err-name" role="alert">{{ e }}</div>{% endfor %}
             </div>
             <div class="form-group">
                 <label for="email">Email</label>
-                <input type="email" id="email" name="email" class="form-control" required>
-                {% for e in form.email.errors %}<div class="form-error">{{ e }}</div>{% endfor %}
+                <input type="email" id="email" name="email" class="form-control"
+                       autocomplete="email"
+                       pattern="[^@\s]+@[^@\s]+\.[^@\s]+"
+                       {% if form.email.errors %}aria-invalid="true" aria-describedby="err-email"{% endif %} required>
+                {% for e in form.email.errors %}<div class="form-error" id="err-email" role="alert">{{ e }}</div>{% endfor %}
             </div>
             <div class="form-group">
                 <label for="password">Password</label>
-                <input type="password" id="password" name="password" class="form-control" placeholder="At least 6 characters" required>
-                {% for e in form.password.errors %}<div class="form-error">{{ e }}</div>{% endfor %}
+                <input type="password" id="password" name="password" class="form-control"
+                       placeholder="At least 6 characters"
+                       autocomplete="new-password" minlength="6"
+                       {% if form.password.errors %}aria-invalid="true" aria-describedby="err-password pw-help"{% else %}aria-describedby="pw-help"{% endif %} required>
+                <small id="pw-help" style="display:block;font-size:12px;color:#565959;margin-top:4px">Passwords must be at least 6 characters.</small>
+                {% for e in form.password.errors %}<div class="form-error" id="err-password" role="alert">{{ e }}</div>{% endfor %}
             </div>
             <div class="form-group">
                 <label for="confirm">Re-enter password</label>
-                <input type="password" id="confirm" name="confirm" class="form-control" required>
-                {% for e in form.confirm.errors %}<div class="form-error">{{ e }}</div>{% endfor %}
+                <input type="password" id="confirm" name="confirm" class="form-control"
+                       autocomplete="new-password" minlength="6"
+                       {% if form.confirm.errors %}aria-invalid="true" aria-describedby="err-confirm"{% endif %} required>
+                {% for e in form.confirm.errors %}<div class="form-error" id="err-confirm" role="alert">{{ e }}</div>{% endfor %}
             </div>
             <button type="submit" class="btn btn-orange btn-full">Create your Amazon account</button>
         </form>

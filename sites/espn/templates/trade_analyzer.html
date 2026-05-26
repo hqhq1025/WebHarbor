@@ -7,20 +7,24 @@
     Drag two players from the candidate pool into the trade slots. The analyzer
     projects the rest-of-season delta, factoring playoff schedule strength.
   </p>
+  <p class="trade-analyzer__a11y" role="note">
+    Keyboard: focus a player card and press <kbd>Space</kbd> to grab,
+    <kbd>&larr;</kbd>/<kbd>&rarr;</kbd> to switch sides, <kbd>Enter</kbd> to drop.
+  </p>
 
-  <div class="trade-analyzer">
-    <div class="trade-side trade-side--you">
+  <div class="trade-analyzer" role="region" aria-label="Trade builder">
+    <div class="trade-side trade-side--you" aria-label="Players you give up">
       <h3>You give up</h3>
-      <ul class="trade-slot-list">
-        <li class="trade-slot trade-slot--empty">Drag a player here</li>
+      <ul class="trade-slot-list" role="list">
+        <li class="trade-slot trade-slot--empty" tabindex="0" role="button" aria-grabbed="false" aria-label="Empty trade slot, drop player here">Drag a player here</li>
       </ul>
       <div class="trade-side__value">Projected ROS pts: <span class="trade-side__num">—</span></div>
     </div>
-    <div class="trade-arrow">&#x21C4;</div>
-    <div class="trade-side trade-side--them">
+    <div class="trade-arrow" aria-hidden="true">&#x21C4;</div>
+    <div class="trade-side trade-side--them" aria-label="Players you receive">
       <h3>You receive</h3>
-      <ul class="trade-slot-list">
-        <li class="trade-slot trade-slot--empty">Drag a player here</li>
+      <ul class="trade-slot-list" role="list">
+        <li class="trade-slot trade-slot--empty" tabindex="0" role="button" aria-grabbed="false" aria-label="Empty trade slot, drop player here">Drag a player here</li>
       </ul>
       <div class="trade-side__value">Projected ROS pts: <span class="trade-side__num">—</span></div>
     </div>
@@ -28,9 +32,9 @@
 
   <section>
     <h2>Candidate pool</h2>
-    <div class="fantasy-team-grid">
+    <div class="fantasy-team-grid" role="listbox" aria-label="Draggable player candidates">
       {% for p in candidates %}
-      <a href="/player/{{ p.sport_slug }}/{{ p.slug }}" class="fantasy-card" draggable="true">
+      <a href="/player/{{ p.sport_slug }}/{{ p.slug }}" class="fantasy-card" draggable="true" tabindex="0" role="option" aria-grabbed="false" aria-label="{{ p.name }}, {{ p.position }}, draggable">
         <div class="fantasy-card__name">{{ p.name }}</div>
         <div class="fantasy-card__meta">{{ p.position }} &bull; {{ p.sport_slug|upper }}</div>
       </a>

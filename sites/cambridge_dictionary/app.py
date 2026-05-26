@@ -518,14 +518,35 @@ def search():
 @app.route('/autocomplete')
 @csrf.exempt
 def autocomplete():
+    """Search auto-suggest endpoint.
+
+    Default response (legacy): JSON list of headwords. When ``?detail=1`` is
+    passed, returns a list of dicts ``[{headword, slug, level, preview}]`` so
+    the search box can render the R5 inline definition preview.
+    """
     q = request.args.get('q', '').strip().lower()
+    detail = request.args.get('detail') in ('1', 'true', 'yes')
     if len(q) < 2:
         return jsonify([])
     words = Word.query.filter(
         Word.headword.ilike(f'{q}%'),
         Word.is_thesaurus_phrase == False  # noqa
     ).limit(8).all()
-    return jsonify([w.headword for w in words])
+    if not detail:
+        return jsonify([w.headword for w in words])
+    out = []
+    for w in words:
+        defs = w.get_definitions()
+        preview = ''
+        if defs:
+            preview = (defs[0].get('definition') or '')[:140]
+        out.append({
+            'headword': w.headword,
+            'slug': w.slug,
+            'level': w.level or '',
+            'preview': preview,
+        })
+    return jsonify(out)
 
 
 # --- Thesaurus ---
@@ -1062,6 +1083,111 @@ def remove_saved_word(sw_id):
     db.session.commit()
     flash('Word removed from saved list.', 'info')
     return redirect(url_for('account'))
+
+
+# ---------------------------------------------------------------------------
+# R5: Flashcards study mode + accessibility settings + recently-viewed feed
+# ---------------------------------------------------------------------------
+
+@app.route('/flashcards')
+@app.route('/flashcards/')
+def flashcards():
+    """Swipe-to-flashcard vocab study mode.
+
+    Picks a deterministic 20-card deck so the same URL always shows the same
+    cards (snapshot-friendly for tasks). Optional ``?level=B2`` filters by
+    CEFR band, ``?slug=foo`` jumps to a specific card.
+    """
+    level = (request.args.get('level') or '').upper()
+    focus_slug = (request.args.get('slug') or '').strip()
+
+    base_q = Word.query.filter(Word.is_thesaurus_phrase == False)  # noqa
+    if level in ('A1', 'A2', 'B1', 'B2', 'C1', 'C2'):
+        base_q = base_q.filter(Word.level == level)
+
+    # Deterministic ordering: by id ASC so the deck is stable.
+    cards_q = base_q.order_by(Word.id.asc())
+
+    deck = cards_q.limit(60).all()
+    # If a specific slug was requested and isn't in the first 60, look it up
+    # and prepend it so it's the first card shown.
+    if focus_slug:
+        focus = Word.query.filter_by(slug=focus_slug).first()
+        if focus and focus not in deck:
+            deck = [focus] + deck[:59]
+
+    cards = []
+    for w in deck[:20]:
+        defs = w.get_definitions()
+        cards.append({
+            'slug': w.slug,
+            'headword': w.headword,
+            'pos': w.pos,
+            'level': w.level,
+            'ipa': w.phonetic_uk or w.pronunciation_ipa,
+            'definition': (defs[0].get('definition') if defs else ''),
+            'example': ((defs[0].get('examples') or [''])[0] if defs else ''),
+            'audio_uk': w.audio_uk_path,
+            'audio_us': w.audio_us_path,
+        })
+    return render_template('flashcards.html', cards=cards, level=level,
+                           focus_slug=focus_slug)
+
+
+@app.route('/settings/accessibility', methods=['GET', 'POST'])
+def settings_accessibility():
+    """Server-rendered accessibility settings page.
+
+    Persists three preferences in cookies (no DB column added — keeps the
+    seed DB byte-id stable):
+      - ``a11y_font``  ``default`` | ``dyslexic``
+      - ``a11y_palette`` ``default`` | ``cb-safe``  (color-blind safe CEFR)
+      - ``a11y_ipa_focus`` ``0`` | ``1``  (keyboard-focusable IPA tooltips)
+    """
+    if request.method == 'POST':
+        font = request.form.get('font', 'default')
+        palette = request.form.get('palette', 'default')
+        ipa_focus = '1' if request.form.get('ipa_focus') else '0'
+        resp = redirect(url_for('settings_accessibility'))
+        # 1-year cookie so the toggle persists across reset/seeds.
+        max_age = 60 * 60 * 24 * 365
+        resp.set_cookie('a11y_font', font, max_age=max_age, samesite='Lax')
+        resp.set_cookie('a11y_palette', palette, max_age=max_age, samesite='Lax')
+        resp.set_cookie('a11y_ipa_focus', ipa_focus, max_age=max_age, samesite='Lax')
+        flash('Accessibility preferences saved.', 'success')
+        return resp
+    return render_template('settings_accessibility.html')
+
+
+@app.route('/api/recently-viewed', methods=['POST'])
+@csrf.exempt
+def api_recently_viewed():
+    """Lightweight echo endpoint — the client maintains the actual list in
+    localStorage; this endpoint exists so server-rendered badges can read
+    the latest-known count via a session cookie roundtrip without forcing a
+    schema change. Body: ``{"count": N}``. Stores N in the session and
+    returns it back.
+    """
+    data = request.get_json(silent=True) or {}
+    try:
+        n = max(0, min(int(data.get('count', 0)), 999))
+    except (TypeError, ValueError):
+        n = 0
+    session['recently_viewed_count'] = n
+    return jsonify({'ok': True, 'count': n})
+
+
+@app.context_processor
+def inject_a11y_prefs():
+    """Surface accessibility cookie state + recently-viewed count to all
+    templates so base.html can render the body class + the navbar badge
+    without per-route plumbing."""
+    return {
+        'a11y_font':    request.cookies.get('a11y_font', 'default'),
+        'a11y_palette': request.cookies.get('a11y_palette', 'default'),
+        'a11y_ipa_focus': request.cookies.get('a11y_ipa_focus', '0'),
+        'recently_viewed_count': session.get('recently_viewed_count', 0),
+    }
 
 
 # --- Error handlers ---
@@ -2946,6 +3072,44 @@ def seed_database():
                 related_json=_j(wd.get('related', [])),
                 synonyms_json=_j(wd.get('synonyms', [])),
                 is_thesaurus_phrase=bool(wd.get('is_thesaurus_phrase', False)),
+                created_at=MIRROR_REFERENCE_DATE,
+                register=wd.get('register', ''),
+                frequency_rank=int(wd.get('frequency_rank', 0) or 0),
+                etymology=wd.get('etymology', ''),
+                collocations_json=_j(wd.get('collocations', [])),
+                mistake_note=wd.get('mistake_note', ''),
+            ))
+        # R5 expansion: ~8000 entries split across three sub-dictionaries —
+        # phrasal-verb dictionary (~2400), idiom dictionary (~2600), and a
+        # last sweep of WordNet single-word entries (~3000). Each carries an
+        # ``r5_category`` tag and a ``word_family`` list that templates
+        # surface as the new "Word family" / "Phrasal verbs" / "Idioms"
+        # panels. Same append-after-r4 pattern — legacy ids stay stable.
+        extra4 = _load_json('words_r5.json') or []
+        for wd in extra4:
+            if wd['slug'] in seen_slugs:
+                continue
+            seen_slugs.add(wd['slug'])
+            # ``related`` may arrive as a list of plain slugs (R5 shape) or
+            # as the legacy list of dicts. Templates accept either via
+            # Word.get_related — we serialize whatever was given.
+            db.session.add(Word(
+                headword=wd['headword'], slug=wd['slug'],
+                pos=wd.get('pos', ''), guide_word=wd.get('guide_word', ''),
+                phonetic_uk=wd.get('phonetic_uk', ''),
+                phonetic_us=wd.get('phonetic_us', ''),
+                pronunciation_ipa=(wd.get('pronunciation_ipa')
+                                   or wd.get('phonetic_uk', '')),
+                audio_uk_path=wd.get('audio_uk_path',
+                                     f"/static/audio/uk/{wd['slug']}.mp3"),
+                audio_us_path=wd.get('audio_us_path',
+                                     f"/static/audio/us/{wd['slug']}.mp3"),
+                level=wd.get('level', ''),
+                definitions_json=_j(wd.get('definitions', [])),
+                translations_json=_j(wd.get('translations', {})),
+                related_json=_j(wd.get('related', [])),
+                synonyms_json=_j(wd.get('synonyms', [])),
+                is_thesaurus_phrase=False,
                 created_at=MIRROR_REFERENCE_DATE,
                 register=wd.get('register', ''),
                 frequency_rank=int(wd.get('frequency_rank', 0) or 0),

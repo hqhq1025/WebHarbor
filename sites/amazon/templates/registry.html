@@ -9,21 +9,21 @@
     <div style="background:#fff;padding:30px;border-radius:4px;margin-bottom:24px">
         <h2 style="margin-bottom:16px">Create a registry</h2>
         <div class="account-grid">
-            <a class="account-tile" href="{{ url_for('index') }}">
+            <a class="account-tile" href="{{ url_for('registry_create', event='wedding') }}">
                 <div class="account-tile-icon">👰</div>
                 <div class="account-tile-info">
                     <h3>Wedding Registry</h3>
                     <p>Build your dream wedding list</p>
                 </div>
             </a>
-            <a class="account-tile" href="{{ url_for('index') }}">
+            <a class="account-tile" href="{{ url_for('registry_create', event='baby') }}">
                 <div class="account-tile-icon">👶</div>
                 <div class="account-tile-info">
                     <h3>Baby Registry</h3>
                     <p>Free welcome box for new parents</p>
                 </div>
             </a>
-            <a class="account-tile" href="{{ url_for('index') }}">
+            <a class="account-tile" href="{{ url_for('registry_create', event='birthday') }}">
                 <div class="account-tile-icon">🎂</div>
                 <div class="account-tile-info">
                     <h3>Birthday Registry</h3>
@@ -38,6 +38,12 @@
                 </div>
             </a>
         </div>
+        {% if session.get('registry') %}
+        <p style="margin-top:14px;font-size:13px;color:#565959">
+            You have an active {{ session['registry']['event']|capitalize }} Registry.
+            <a href="{{ url_for('registry_view') }}" class="text-link">View it ▸</a>
+        </p>
+        {% endif %}
     </div>
 
     <div style="background:#fff;padding:30px;border-radius:4px">
