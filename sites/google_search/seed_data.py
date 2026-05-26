@@ -12,7 +12,9 @@ from datetime import datetime, timedelta
 HERE = os.path.dirname(os.path.abspath(__file__))
 TOPICS_JSON = os.path.join(HERE, 'scraped_data', 'topics.json')
 
-# The 7 Google verticals (categories)
+# Google verticals — the search-result category tabs.
+# Real Google exposes far more than the original 7; expand to cover the
+# full real-world surface so navigation queries don't 404.
 VERTICALS = [
     {'slug': 'all', 'name': 'All', 'icon': 'search', 'is_default': True, 'sort_order': 0},
     {'slug': 'images', 'name': 'Images', 'icon': 'image', 'is_default': False, 'sort_order': 1},
@@ -22,6 +24,15 @@ VERTICALS = [
     {'slug': 'shopping', 'name': 'Shopping', 'icon': 'shopping', 'is_default': False, 'sort_order': 5},
     {'slug': 'books', 'name': 'Books', 'icon': 'book', 'is_default': False, 'sort_order': 6},
     {'slug': 'finance', 'name': 'Finance', 'icon': 'chart', 'is_default': False, 'sort_order': 7},
+    {'slug': 'flights', 'name': 'Flights', 'icon': 'plane', 'is_default': False, 'sort_order': 8},
+    {'slug': 'hotels', 'name': 'Hotels', 'icon': 'hotel', 'is_default': False, 'sort_order': 9},
+    {'slug': 'travel', 'name': 'Travel', 'icon': 'globe', 'is_default': False, 'sort_order': 10},
+    {'slug': 'scholar', 'name': 'Scholar', 'icon': 'school', 'is_default': False, 'sort_order': 11},
+    {'slug': 'patents', 'name': 'Patents', 'icon': 'badge', 'is_default': False, 'sort_order': 12},
+    {'slug': 'recipes', 'name': 'Recipes', 'icon': 'utensils', 'is_default': False, 'sort_order': 13},
+    {'slug': 'forums', 'name': 'Forums', 'icon': 'chat', 'is_default': False, 'sort_order': 14},
+    {'slug': 'web', 'name': 'Web', 'icon': 'web', 'is_default': False, 'sort_order': 15},
+    {'slug': 'podcasts', 'name': 'Podcasts', 'icon': 'mic', 'is_default': False, 'sort_order': 16},
 ]
 
 # Google apps for the top-right launcher grid
@@ -52,40 +63,115 @@ GOOGLE_APPS = [
     ('Play', 'play', '#FBBC05', '/play'),
 ]
 
-# Trending searches for homepage / trends page
+# Trending searches for the homepage / trends page.
+# Spans sports, tech, entertainment, business — sourced from publicly
+# reported Google Trends headlines / Wikipedia year-in-search summaries.
 TRENDING = [
+    # General / breaking
     'AI news',
     'SpaceX launch',
     'Olympics 2026',
-    'ChatGPT vs Gemini',
-    'Python 4',
-    'Mars rover',
-    'Taylor Swift tour',
-    'stock market today',
-    'NBA finals',
-    'World Cup',
     'climate summit',
-    'new iPhone',
     'recipe ideas',
     'workout routine',
     'best books 2026',
     'nearby coffee shops',
     'flight deals',
     'weather forecast',
+    # Tech
+    'ChatGPT vs Gemini',
+    'Python 4',
+    'new iPhone',
     'tech layoffs',
     'Apple Vision Pro',
+    'GPT-5 release',
+    'Tesla robotaxi',
+    'Microsoft Build 2026',
+    'Google I/O 2026',
+    'OpenAI DevDay',
+    'Meta Quest 4',
+    'Samsung Galaxy S26',
+    'Android 16 features',
+    'iOS 19 release date',
+    'NVIDIA RTX 5090 review',
+    'Anthropic Claude 4',
+    'Apple Intelligence',
+    'Bluesky vs X',
+    'Reddit IPO update',
+    # Sports
+    'Mars rover',
+    'NBA finals',
+    'World Cup',
+    'NBA playoffs bracket',
+    'Super Bowl LX score',
+    'Premier League standings',
+    'Champions League final',
+    'Wimbledon 2026',
+    'US Open tennis 2026',
+    'Tour de France stage',
+    'F1 standings 2026',
+    'Masters golf leaderboard',
+    'MLB opening day',
+    'Stanley Cup playoffs',
+    # Entertainment
+    'Taylor Swift tour',
+    'Oscars 2026 winners',
+    'Grammys 2026 best album',
+    'Met Gala 2026 looks',
+    'Coachella 2026 lineup',
+    'Cannes 2026 winners',
+    'Marvel Phase 6 schedule',
+    'DC Studios reboot',
+    'Netflix top 10 shows',
+    'Spotify Wrapped 2025',
+    'Game of Thrones spinoff',
+    'Beyonce world tour',
+    'Drake new album',
+    # Business / finance
+    'stock market today',
+    'Fed rate decision',
+    'Bitcoin price today',
+    'Tesla earnings report',
+    'IPO calendar 2026',
+    'gold prices today',
+    'mortgage rates 2026',
+    'recession forecast 2026',
 ]
 
-# Google doodles
+# Google Doodles archive.
+# Mix of recurring holidays + birthday / anniversary doodles drawn from the
+# real Google Doodle archive (en.wikipedia.org/wiki/Google_Doodle).
 DOODLES = [
+    # 2026
     ('Earth Day 2026', 'earth_day_2026', 'Celebrating our planet', '2026-04-22'),
     ('International Women\'s Day 2026', 'iwd_2026', 'Celebrating women worldwide', '2026-03-08'),
+    ('Pi Day 2026', 'pi_day_2026', 'Celebrating mathematics on 3.14', '2026-03-14'),
     ('Spring Equinox', 'spring_2026', 'First day of spring', '2026-03-20'),
     ('Valentine\'s Day 2026', 'valentines_2026', 'A day of love', '2026-02-14'),
+    ('Lunar New Year 2026', 'lunar_new_year_2026', 'Year of the Horse', '2026-02-17'),
     ('New Year\'s Day 2026', 'nye_2026', 'Welcome 2026!', '2026-01-01'),
-    ('Marie Curie Birthday', 'marie_curie_doodle', 'Honoring a pioneer', '2025-11-07'),
-    ('Ada Lovelace Day', 'ada_day', 'Celebrating women in STEM', '2025-10-14'),
+    # Late 2025
+    ('Diwali 2025', 'diwali_2025', 'Festival of lights', '2025-11-12'),
+    ('Marie Curie Birthday', 'marie_curie_doodle', 'Honoring a pioneer in physics and chemistry', '2025-11-07'),
+    ('Veterans Day 2025', 'veterans_day_2025', 'Honoring those who served', '2025-11-11'),
     ('Halloween 2025', 'halloween_2025', 'Spooky season!', '2025-10-31'),
+    ('Ada Lovelace Day', 'ada_day', 'Celebrating women in STEM', '2025-10-14'),
+    ('Mahatma Gandhi 156th Birthday', 'gandhi_156', 'Honoring the leader of the Indian independence movement', '2025-10-02'),
+    ('Hispanic Heritage Month', 'hispanic_heritage_2025', 'Celebrating Hispanic and Latino contributions', '2025-09-15'),
+    # Earlier 2025
+    ('Pride Month 2025', 'pride_2025', 'Celebrating LGBTQ+ love and community', '2025-06-01'),
+    ('Father\'s Day 2025', 'fathers_day_2025', 'Honoring fathers everywhere', '2025-06-15'),
+    ('Mother\'s Day 2025', 'mothers_day_2025', 'Honoring mothers everywhere', '2025-05-11'),
+    ('Cinco de Mayo 2025', 'cinco_de_mayo_2025', 'Commemorating the Battle of Puebla', '2025-05-05'),
+    ('Earth Day 2025', 'earth_day_2025', '55th anniversary of Earth Day', '2025-04-22'),
+    # Historical anniversary doodles
+    ('Beethoven 255th Birthday', 'beethoven_255', 'Celebrating the composer\'s legacy', '2025-12-17'),
+    ('Frida Kahlo Birthday', 'frida_kahlo', 'Honoring the iconic Mexican painter', '2025-07-06'),
+    ('Hedy Lamarr Birthday', 'hedy_lamarr', 'Actress and inventor of frequency hopping', '2025-11-09'),
+    ('Stephen Hawking Tribute', 'hawking_tribute', 'Tribute to the legendary physicist', '2025-03-14'),
+    ('Maya Angelou Birthday', 'maya_angelou', 'Poet, author, and civil rights activist', '2025-04-04'),
+    ('Pac-Man 45th Anniversary', 'pacman_45', 'Playable doodle celebrating the arcade classic', '2025-05-21'),
+    ('Vincent van Gogh Doodle', 'van_gogh', 'A starry night tribute to Van Gogh', '2025-03-30'),
 ]
 
 # Knowledge panels: featured topics that get a richer display
@@ -1667,7 +1753,20 @@ def build_related(topic, topics_data):
 
 def seed_database(db, User, Vertical, Topic, SearchResult, PaaQuestion, RelatedQuery,
                   Doodle, GoogleApp, TrendingTerm, KnowledgeFact, bcrypt):
-    """Populate the database."""
+    """Populate the database.
+
+    Top-level idempotency gate: once every "static" table has its full
+    expected row count, return immediately. This protects the byte-identical
+    `/reset/<site>` invariant — a no-op `db.session.commit()` still bumps
+    SQLite metadata and would break the md5sum match across container
+    restarts. See `.claude/skills/seed-database/SKILL.md` Phase 5 §1.
+    """
+    if (Vertical.query.count() >= len(VERTICALS)
+            and GoogleApp.query.count() >= len(GOOGLE_APPS)
+            and TrendingTerm.query.count() >= len(TRENDING)
+            and Doodle.query.count() >= len(DOODLES)
+            and Topic.query.count() > 100):
+        return  # fully seeded; do not even commit
     # Verticals
     for v in VERTICALS:
         existing = Vertical.query.filter_by(slug=v['slug']).first()
@@ -1682,22 +1781,32 @@ def seed_database(db, User, Vertical, Topic, SearchResult, PaaQuestion, RelatedQ
     db.session.commit()
 
     # Trending
+    _direction_pool = ['up', 'up', 'up', 'flat', 'down']
     for i, term in enumerate(TRENDING):
         if not TrendingTerm.query.filter_by(term=term).first():
+            # Deterministic volume/direction derived from the term — so
+            # re-running the seed produces byte-identical rows.
+            seed_val = abs(hash(term)) % (2**31)
+            rng = random.Random(seed_val)
             db.session.add(TrendingTerm(
                 term=term, rank=i+1,
-                volume=random.randint(50000, 5000000),
-                trend_direction=random.choice(['up', 'up', 'up', 'flat', 'down']),
+                volume=rng.randint(50000, 5000000),
+                trend_direction=rng.choice(_direction_pool),
             ))
     db.session.commit()
 
     # Doodles
-    for title, slug, desc, date in DOODLES:
+    _doodle_imgs = ['paris', 'mars', 'moon', 'galaxy', 'sunflower', 'ada_lovelace',
+                    'marie_curie', 'albert_einstein', 'aurora_borealis', 'cherry_blossom']
+    for idx, (title, slug, desc, date) in enumerate(DOODLES):
         if not Doodle.query.filter_by(slug=slug).first():
+            # Deterministic image pick keyed off the slug index so rebuilds
+            # are reproducible (no random.choice non-determinism).
+            img = _doodle_imgs[idx % len(_doodle_imgs)]
             db.session.add(Doodle(
                 title=title, slug=slug, description=desc,
                 published=datetime.strptime(date, '%Y-%m-%d'),
-                image_url=f'/static/images/topics/{random.choice(["paris", "mars", "moon", "galaxy", "sunflower", "ada_lovelace"])}/img_hero.jpg',
+                image_url=f'/static/images/topics/{img}/img_hero.jpg',
             ))
     db.session.commit()
 

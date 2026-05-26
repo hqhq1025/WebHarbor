@@ -55,6 +55,33 @@ CITY_BLURBS = {
 
 CITY_HERO_DEFAULT = "/static/images/hero-compass.svg"
 
+# Extra US metros (from US Census 2020 MSA top 35), no listings attached yet —
+# they appear on the browse-by-city pages so agents can browse a broader US
+# market footprint. Each row is (name, state, blurb, is_featured). Slugs are
+# derived deterministically via _city_slug(name, state).
+EXTRA_CITIES = [
+    ("Houston",      "TX", "Sprawling neighborhoods, energy-corridor estates, and a fast-growing condo market inside the Loop.", True),
+    ("Phoenix",      "AZ", "Desert-modern homes, mountain-preserve lots, and a wave of master-planned communities on the city's edges.", True),
+    ("Philadelphia", "PA", "Federal-style row houses, brick trinities, and walkable historic neighborhoods rich with culture.", False),
+    ("San Antonio",  "TX", "Spanish-colonial bungalows, hill-country acreage, and an affordable inner-loop housing stock.", False),
+    ("San Diego",    "CA", "Coastal canyons, mid-century gems, and ocean-view properties from La Jolla to Coronado.", True),
+    ("Dallas",       "TX", "Park Cities estates, Uptown high-rises, and master-planned suburbs that anchor North Texas's housing market.", True),
+    ("San Jose",     "CA", "Heart of Silicon Valley, with mid-century ranches, Willow Glen bungalows, and Almaden hillside estates.", False),
+    ("Jacksonville", "FL", "Riverfront craftsman bungalows, Atlantic Beach cottages, and a sprawling, affordable single-family market.", False),
+    ("Fort Worth",   "TX", "Historic Westside estates, Texas-modern new builds, and a thriving cultural district.", False),
+    ("Columbus",     "OH", "Brick German Village homes, Short North condos, and a steady, family-friendly market.", False),
+    ("Charlotte",    "NC", "Tree-lined Myers Park estates, Uptown condos, and lake-access homes north of the city.", False),
+    ("Indianapolis", "IN", "Meridian-Kessler historics, Mass Ave lofts, and pockets of high-design new construction.", False),
+    ("Atlanta",      "GA", "Buckhead estates, intown bungalows, and walkable BeltLine-adjacent townhouses.", True),
+    ("Portland",     "OR", "Craftsman bungalows, Pearl District lofts, and forested west-hills properties with city skyline views.", True),
+    ("Nashville",    "TN", "Belle Meade estates, restored East Nashville cottages, and a fast-growing condo skyline.", False),
+    ("Las Vegas",    "NV", "Resort-style master-planned communities, Strip-view high-rises, and Red Rock guard-gated estates.", False),
+    ("Minneapolis",  "MN", "Lake-district bungalows, Mill District condos, and a stable, well-built single-family market.", False),
+    ("Detroit",      "MI", "Historic Boston-Edison mansions, Midtown lofts, and a regenerating urban core full of architectural character.", False),
+    ("Tampa",        "FL", "Hyde Park bungalows, Davis Islands waterfront homes, and a fast-growing downtown condo market.", False),
+    ("Sacramento",   "CA", "Tree-lined Land Park craftsman, East Sac tudors, and an affordable alternative to the Bay Area.", False),
+]
+
 PROPERTY_TYPES = ["Single Family", "Condo", "Co-op", "Townhouse",
                   "Multi-Family", "Land", "Apartment"]
 
@@ -171,6 +198,22 @@ def seed_cities():
         db.session.add(c)
     db.session.commit()
 
+    # Extra US metros — no listings yet, but they appear on the
+    # browse-by-city page so the geographic surface area matches Compass's
+    # real footprint. Same deterministic slug scheme as the listings-derived
+    # cities; idempotency is already handled by the count() gate above.
+    existing_slugs = {c.slug for c in City.query.all()}
+    for name, state, blurb, is_featured in EXTRA_CITIES:
+        slug = _city_slug(name, state)
+        if slug in existing_slugs:
+            continue
+        db.session.add(City(
+            slug=slug, name=name, state=state,
+            hero_image=CITY_HERO_DEFAULT, blurb=blurb,
+            is_featured=is_featured,
+        ))
+    db.session.commit()
+
 
 # ─── Seed: agents ──────────────────────────────────────────────────────────────
 
@@ -221,6 +264,31 @@ def seed_agents():
         for j in range(3):
             i = ci * 3 + j
             agents.append(_build_agent(i, city, state))
+
+    # Extra agents in major existing markets — gives the agent directory
+    # more depth and lets benchmark tasks distinguish between agents in the
+    # same city by specialty / volume / years_experience.
+    EXTRA_PER_EXISTING = {
+        "New York": 4, "Los Angeles": 3, "Miami": 2, "San Francisco": 2,
+        "Boston": 1, "Austin": 1, "Aspen": 1, "Washington": 1,
+    }
+    base_idx = len(city_pairs) * 3
+    extra_count = 0
+    for city, n in EXTRA_PER_EXISTING.items():
+        state = next((s for (c, s) in city_pairs if c == city), None)
+        if not state:
+            continue
+        for j in range(n):
+            agents.append(_build_agent(base_idx + extra_count, city, state))
+            extra_count += 1
+
+    # Agents in EXTRA_CITIES (the metros without listings) — one agent each
+    # so the agents directory has nationwide coverage even though those
+    # markets carry no current inventory.
+    base_idx2 = base_idx + extra_count
+    for k, (name, state, _blurb, _feat) in enumerate(EXTRA_CITIES):
+        agents.append(_build_agent(base_idx2 + k, name, state))
+
     for a in agents:
         db.session.add(a)
     db.session.commit()
@@ -518,6 +586,113 @@ BENCHMARK_USERS = [
 ]
 
 
+# Inquiry copy — kept generic so the seed has no answer-leak patterns.
+INQUIRY_SUBJECTS = [
+    "Available for a tour next weekend?",
+    "Question about HOA and recent assessments",
+    "Open house follow-up — still available?",
+    "Negotiability and seller motivation",
+    "Pet policy and parking details",
+    "Tax history and last sale info",
+    "School-district zoning question",
+    "Renovation permits on record?",
+]
+INQUIRY_BODIES = [
+    "Hi — I came across this listing and would love to know a bit more before scheduling a visit. Any chance you have availability for a weekend showing?",
+    "Hello, I'm working with my partner on narrowing our shortlist. Could you share the most recent HOA disclosures and any pending special assessments?",
+    "I stopped by the open house and have been thinking about it since. Is the property still available, and have there been any offers?",
+    "Quick question on flexibility — is the seller open to a 60-day close, and would you have a sense of where they'd land on price?",
+    "Hi — we have a small dog and a hybrid car. Could you confirm the pet policy and whether parking is deeded or rented?",
+    "Could you share the tax assessment history and the date and price of the last recorded sale on this property?",
+    "Hi! We're relocating with school-age kids — could you confirm the zoned schools at every level and any boundary changes coming up?",
+    "I noticed some recent updates in the photos. Are there permits on record for the kitchen and bath work?",
+]
+
+
+def seed_inquiries():
+    from app import Agent, Inquiry, Listing, User, db
+    if Inquiry.query.count() > 0:
+        return
+
+    INQ_BASE = datetime(2026, 4, 5, 9, 30, 0)
+    users = [User.query.filter_by(email=u["email"]).first()
+             for u in BENCHMARK_USERS]
+    users = [u for u in users if u is not None]
+    if not users:
+        return
+
+    # 5 inquiries per benchmark user → 20. Mix: 3 in the user's tour_city,
+    # 2 elsewhere. Listings chosen deterministically by hash so reseed is
+    # byte-identical.
+    inquiry_idx = 0
+    for u_idx, user in enumerate(users):
+        cfg = BENCHMARK_USERS[u_idx]
+        in_city = (Listing.query
+                   .filter_by(city=cfg["tour_city"], status="for-sale")
+                   .order_by(Listing.id).all())
+        elsewhere = (Listing.query
+                     .filter(Listing.city != cfg["tour_city"],
+                             Listing.status == "for-sale")
+                     .order_by(Listing.id).all())
+        picks = []
+        # 3 in-city
+        for k in range(3):
+            if not in_city:
+                break
+            idx = _h("inq_in", user.email, k) % len(in_city)
+            picks.append(in_city[idx])
+        # 2 elsewhere
+        for k in range(2):
+            if not elsewhere:
+                break
+            idx = _h("inq_out", user.email, k) % len(elsewhere)
+            picks.append(elsewhere[idx])
+
+        for k, L in enumerate(picks):
+            subj_i = _h("subj", user.email, k) % len(INQUIRY_SUBJECTS)
+            body_i = _h("body", user.email, k) % len(INQUIRY_BODIES)
+            db.session.add(Inquiry(
+                user_id=user.id,
+                listing_id=L.id,
+                agent_id=L.agent_id,
+                name=user.name,
+                email=user.email,
+                phone=user.phone,
+                subject=INQUIRY_SUBJECTS[subj_i],
+                message=INQUIRY_BODIES[body_i],
+                sent_at=INQ_BASE + timedelta(days=u_idx, hours=k * 7,
+                                             minutes=_h("im", user.email, k) % 60),
+            ))
+            inquiry_idx += 1
+
+    # 3 anonymous lead inquiries (no user_id) — represents prospective
+    # buyers who haven't created an account yet but contacted the agent
+    # through a listing page. Names/emails are fixed and deterministic.
+    ANON_LEADS = [
+        ("Morgan Reilly",  "morgan.r@example.com",  "(415) 555-0211"),
+        ("Patrick O'Shea", "patrick.o@example.com", "(212) 555-0233"),
+        ("Vivian Tran",    "vivian.t@example.com",  "(305) 555-0288"),
+    ]
+    all_listings = (Listing.query.filter_by(status="for-sale")
+                    .order_by(Listing.id).all())
+    for k, (nm, em, ph) in enumerate(ANON_LEADS):
+        if not all_listings:
+            break
+        L = all_listings[_h("anon", em) % len(all_listings)]
+        db.session.add(Inquiry(
+            user_id=None,
+            listing_id=L.id,
+            agent_id=L.agent_id,
+            name=nm, email=em, phone=ph,
+            subject=INQUIRY_SUBJECTS[_h("asub", em) % len(INQUIRY_SUBJECTS)],
+            message=INQUIRY_BODIES[_h("abody", em) % len(INQUIRY_BODIES)],
+            sent_at=INQ_BASE + timedelta(days=20 + k,
+                                         minutes=_h("am", em) % 720),
+        ))
+
+    db.session.commit()
+
+
 def seed_benchmark_users():
     from app import (Collection, Inquiry, Listing, SavedHome, SavedSearch,
                      Tour, User, db)
@@ -657,3 +832,6 @@ def seed_benchmark_users():
                 requested_at=datetime(2026, 5, 3) + timedelta(hours=_h("ta2", user.email) % 96),
             ))
     db.session.commit()
+
+    # Inquiries — last so they reference users (and listings already exist).
+    seed_inquiries()

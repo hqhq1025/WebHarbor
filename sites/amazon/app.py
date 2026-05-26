@@ -1665,5 +1665,8 @@ if __name__ == '__main__':
         if Product.query.count() == 0:
             seed_database()
         seed_benchmark_users()
+        from seed_extras import run_extras
+        run_extras(db, User, Product, Category, CartItem, Order, OrderItem,
+                   WishlistItem, SavedAddress, PaymentMethod, Return, ReturnItem)
     port = int(os.environ.get('PORT', 28841))
     app.run(host='0.0.0.0', port=port, debug=False)

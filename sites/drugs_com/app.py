@@ -7066,6 +7066,85 @@ def seed_pregnancy_risks():
         db.session.commit()
 
 
+def _load_supplemental_seed_data():
+    """Extend DRUGS_DATA / CONDITIONS_DATA / INTERACTIONS_DATA with entries
+    from sites/drugs_com/scraped_data/*.json before seeding runs.
+
+    The JSON files are intermediate scrape products (gitignored, dockerignored)
+    used at build time to fold a bulk drug catalog into the seed DB.
+    Idempotent: dedupes against in-memory lists and is a no-op when the files
+    are absent. Runtime data still lives entirely in instance_seed/drugs_com.db.
+    """
+    global DRUGS_DATA, CONDITIONS_DATA, INTERACTIONS_DATA
+    scraped_dir = os.path.join(BASE_DIR, "scraped_data")
+    if not os.path.isdir(scraped_dir):
+        return
+
+    drugs_path = os.path.join(scraped_dir, "drugs.json")
+    if os.path.exists(drugs_path):
+        try:
+            with open(drugs_path) as f:
+                extra = json.load(f)
+            existing_names = {row[0] for row in DRUGS_DATA}
+            added = 0
+            for row in extra:
+                if not isinstance(row, (list, tuple)) or len(row) != 7:
+                    continue
+                gname = row[0]
+                if gname in existing_names:
+                    continue
+                DRUGS_DATA.append((row[0], row[1], row[2], row[3], row[4],
+                                   list(row[5]), list(row[6])))
+                existing_names.add(gname)
+                added += 1
+            print(f"[drugs_com] +{added} drugs from drugs.json")
+        except Exception as e:
+            print(f"[drugs_com] failed to load drugs.json: {e}")
+
+    cond_path = os.path.join(scraped_dir, "conditions.json")
+    if os.path.exists(cond_path):
+        try:
+            with open(cond_path) as f:
+                extra = json.load(f)
+            existing_slugs = {row[0] for row in CONDITIONS_DATA}
+            added = 0
+            for row in extra:
+                if not isinstance(row, (list, tuple)) or len(row) != 3:
+                    continue
+                slug = row[0]
+                if slug in existing_slugs:
+                    continue
+                CONDITIONS_DATA.append((row[0], row[1], row[2]))
+                existing_slugs.add(slug)
+                added += 1
+            print(f"[drugs_com] +{added} conditions from conditions.json")
+        except Exception as e:
+            print(f"[drugs_com] failed to load conditions.json: {e}")
+
+    inter_path = os.path.join(scraped_dir, "interactions.json")
+    if os.path.exists(inter_path):
+        try:
+            with open(inter_path) as f:
+                extra = json.load(f)
+            existing_pairs = {frozenset([row[0], row[1]]) for row in INTERACTIONS_DATA}
+            added = 0
+            for row in extra:
+                if not isinstance(row, (list, tuple)) or len(row) != 4:
+                    continue
+                pair = frozenset([row[0], row[1]])
+                if pair in existing_pairs:
+                    continue
+                INTERACTIONS_DATA.append((row[0], row[1], row[2], row[3]))
+                existing_pairs.add(pair)
+                added += 1
+            print(f"[drugs_com] +{added} interactions from interactions.json")
+        except Exception as e:
+            print(f"[drugs_com] failed to load interactions.json: {e}")
+
+
+_load_supplemental_seed_data()
+
+
 def init_app():
     with app.app_context():
         db.create_all()

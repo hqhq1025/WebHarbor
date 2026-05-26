@@ -1074,6 +1074,43 @@ def news():
     return render_template('app_news.html')
 
 
+# --- Additional app-launcher stubs ---------------------------------------
+# The Google apps grid links to /meet, /docs, /sheets etc. — without these
+# routes every click out of the launcher hits a 404. Each renders the
+# shared `app_placeholder.html` template parameterised by name/color.
+
+_APP_STUBS = [
+    ('meet',     'Google Meet',     '#00897b', 'Premium video meetings for everyone. Stay in touch with HD video calls.'),
+    ('chat',     'Google Chat',     '#34a853', 'Streamlined messaging for teams that supercharges collaboration.'),
+    ('docs',     'Google Docs',     '#4285f4', 'Create and edit documents online, for free. Built-in collaboration tools.'),
+    ('sheets',   'Google Sheets',   '#0f9d58', 'Online spreadsheets with built-in formulas, pivot tables, and conditional formatting.'),
+    ('slides',   'Google Slides',   '#f4b400', 'Create and edit beautiful presentations directly in your browser.'),
+    ('photos',   'Google Photos',   '#4285f4', 'Your photos and videos, organised and easy to find.'),
+    ('contacts', 'Google Contacts', '#4285f4', 'Sync, back up, and organise your contacts across every device.'),
+    ('keep',     'Google Keep',     '#f4b400', 'Capture, edit, and share notes from anywhere on any device.'),
+    ('books',    'Google Books',    '#4285f4', 'Search the full text of millions of books from libraries and publishers worldwide.'),
+    ('shopping', 'Google Shopping', '#4285f4', 'Search, compare, and shop for products across thousands of retailers.'),
+    ('finance',  'Google Finance',  '#34a853', 'Real-time quotes, financial news, and personalised watchlists.'),
+    ('earth',    'Google Earth',    '#4285f4', 'Explore the world from above with high-resolution satellite imagery.'),
+    ('arts',     'Arts & Culture',  '#ea4335', 'Discover artworks, collections, and stories from over 2,000 museums.'),
+    ('lens',     'Google Lens',     '#4285f4', 'Search what you see — translate text, identify plants, and learn more.'),
+    ('play',     'Google Play',     '#f4b400', 'Apps, games, movies, books, and more — all in one place.'),
+]
+
+
+def _make_app_stub(slug, name, color, desc):
+    def view():
+        return render_template('app_placeholder.html',
+                               app_name=name, app_color=color, app_desc=desc)
+    view.__name__ = slug  # endpoint name = slug, e.g. url_for('meet')
+    return view
+
+
+for _slug, _name, _color, _desc in _APP_STUBS:
+    app.add_url_rule(f'/{_slug}', _slug,
+                     _make_app_stub(_slug, _name, _color, _desc))
+
+
 # ---------- routes: auth ----------------------------------------------------
 
 @app.route('/login', methods=['GET', 'POST'])
@@ -1838,9 +1875,104 @@ def seed_benchmark_users():
     print('  Benchmark users seeded: alice, bob, carol, david')
 
 
+def seed_result_feedback():
+    """Idempotent: seed thumbs-up / thumbs-down feedback for benchmark users.
+
+    Runs independently of `seed_benchmark_users` because the original seed DB
+    was generated before the result_feedback table was populated. Early-
+    returns once ANY feedback row exists so subsequent boots stay byte
+    identical (per `.claude/skills/seed-database/SKILL.md` Phase 5 §1).
+    """
+    if ResultFeedback.query.count() > 0:
+        return
+
+    users = {u.email: u for u in User.query.filter(User.email.in_([
+        'alice.j@test.com', 'bob.c@test.com',
+        'carol.d@test.com', 'david.k@test.com',
+    ])).all()}
+    if len(users) < 4:
+        return  # benchmark users not present yet
+
+    alice = users['alice.j@test.com']
+    bob = users['bob.c@test.com']
+    carol = users['carol.d@test.com']
+    david = users['david.k@test.com']
+
+    # Pinned reference date so seed regen is reproducible.
+    ref = datetime(2026, 4, 15, 12, 0, 0)
+
+    def first_result(slug):
+        t = Topic.query.filter_by(slug=slug).first()
+        if t and t.results:
+            return t.results[0]
+        return None
+
+    # (user, topic_slug, rating, comment, hours_ago)
+    # 8-9 feedbacks per user × 4 users == 34 rows. Slugs verified against
+    # the existing seed DB to ensure each Topic + first_result exists.
+    plan = [
+        # Alice — researcher / science
+        (alice, 'chatgpt',              'helpful',     'Great overview of how the model is used today.', 2),
+        (alice, 'claude_ai',            'helpful',     'Clear explanation of Constitutional AI.', 6),
+        (alice, 'marie_curie',          'helpful',     'Best Marie Curie biography I have found online.', 12),
+        (alice, 'albert_einstein',      'helpful',     'Solid summary of general relativity.', 24),
+        (alice, 'nvidia_h100',          'not_helpful', 'Too vendor-marketing-y, light on benchmarks.', 30),
+        (alice, 'iphone_15',            'helpful',     'Useful spec comparison vs the 14 Pro.', 48),
+        (alice, 'apple_vision_pro',     'helpful',     'Honest take on the form factor.', 72),
+        (alice, 'moon_landing_apollo_11_1969', 'helpful', 'Beautifully sourced timeline.', 96),
+        (alice, 'fall_of_the_berlin_wall_1989', 'helpful', 'Great archival photos.', 120),
+        # Bob — sports / entertainment
+        (bob,   'lebron_james',         'helpful',     'Good career summary, updated stats.', 3),
+        (bob,   'stephen_curry',        'helpful',     'Three-point record section is well written.', 9),
+        (bob,   'michael_jordan',       'helpful',     'Definitive career retrospective.', 15),
+        (bob,   'kobe_bryant',          'helpful',     'Respectful tribute and stats.', 22),
+        (bob,   'serena_williams',      'helpful',     'Covers her full Grand Slam history.', 40),
+        (bob,   'super_bowl_lviii',     'spam',        'Tons of pop-up ads on this result page.', 60),
+        (bob,   'wimbledon_2024',       'helpful',     'Bracket recap was accurate.', 80),
+        (bob,   'formula_1_2024_season','helpful',     'Driver standings table is up to date.', 110),
+        # Carol — travel / culture
+        (carol, 'paris',                'helpful',     'Perfect for my Eurostar weekend.', 4),
+        (carol, 'tokyo',                'helpful',     'Loved the neighbourhood map.', 11),
+        (carol, 'london',               'helpful',     'Solid first-time visitor guide.', 19),
+        (carol, 'new_york_city',        'not_helpful', 'Restaurant list is from 2018.', 28),
+        (carol, 'sydney',               'helpful',     'Bondi to Coogee walk write-up is great.', 36),
+        (carol, 'stranger_things',      'helpful',     'Tonally on-point episode guide.', 55),
+        (carol, 'breaking_bad',         'helpful',     'No-spoiler season summaries — thanks.', 78),
+        (carol, 'game_of_thrones',      'not_helpful', 'Spoilers in the first paragraph.', 100),
+        # David — tech / space
+        (david, 'chatgpt',              'helpful',     'Good pointer to OpenAI cookbook.', 5),
+        (david, 'claude_ai',            'helpful',     'Up to date with the Claude 3 family.', 14),
+        (david, 'nvidia_h100',          'helpful',     'Helpful TCO comparison vs A100.', 21),
+        (david, 'iphone_15',            'not_helpful', 'Missing benchmark numbers.', 34),
+        (david, 'oppenheimer_2023',     'helpful',     'Great historical context section.', 50),
+        (david, 'barbie_2023',          'helpful',     'Surprisingly insightful film analysis.', 70),
+        (david, 'dune_part_two_2024',   'helpful',     'Visual effects breakdown is gold.', 90),
+        (david, 'elden_ring',           'helpful',     'Late-game build guide saved me hours.', 115),
+        (david, 'baldur_s_gate_3',      'spam',        'Article is a thinly veiled key-reseller ad.', 140),
+    ]
+
+    added = 0
+    for user, slug, rating, comment, hours in plan:
+        r = first_result(slug)
+        if r is None:
+            continue
+        db.session.add(ResultFeedback(
+            user_id=user.id,
+            result_id=r.id,
+            rating=rating,
+            comment=comment,
+            created=ref - timedelta(hours=hours),
+        ))
+        added += 1
+
+    db.session.commit()
+    print(f'  Result feedback seeded: {added} rows across 4 users')
+
+
 if __name__ == '__main__':
     init_db()
     with app.app_context():
         seed_benchmark_users()
+        seed_result_feedback()
     port = int(os.environ.get('PORT', 28851))
     app.run(host='0.0.0.0', port=port, debug=False)

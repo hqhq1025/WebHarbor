@@ -791,7 +791,17 @@ def build_seed_repos():
             "inference_provider": rng.choice(INFERENCE_PROVIDERS),
         })
 
-    # ---- 2) scraped models (wider variety)
+    # ---- 2) scraped models (wider variety) — pipeline_tag/library_name come
+    # from the HF API dump when present; otherwise fall back to name-based hints.
+    VALID_TASKS = {t[0] for t in TASKS}
+    LIB_NORMALIZE = {
+        "transformers": "Transformers", "diffusers": "Diffusers", "safetensors": "Safetensors",
+        "pytorch": "PyTorch", "tensorflow": "TensorFlow", "jax": "JAX", "onnx": "ONNX",
+        "gguf": "GGUF", "sentence-transformers": "sentence-transformers",
+        "transformers.js": "Transformers.js", "mlx": "MLX", "peft": "PEFT", "timm": "timm",
+        "keras": "Keras", "flax": "Flax", "paddlepaddle": "PaddlePaddle", "paddlenlp": "PaddlePaddle",
+        "stable-baselines3": "stable-baselines3",
+    }
     for i, m in enumerate(scraped["models"]):
         slug = m["slug"]
         if "/" not in slug or slug.count("/") > 1 or slug in seen_slugs:
@@ -799,36 +809,50 @@ def build_seed_repos():
         seen_slugs.add(slug)
         author = slug.split("/")[0]
         name = slug.split("/")[1]
-        # Infer task from name hints
-        nl = name.lower()
-        if "ocr" in nl:
-            task = "image-text-to-text"
-        elif "voice" in nl or "tts" in nl or "speech" in nl:
-            task = "text-to-speech"
-        elif "asr" in nl or "whisper" in nl:
-            task = "automatic-speech-recognition"
-        elif "image" in nl or "diffusion" in nl or "sd" in nl or "flux" in nl:
-            task = "text-to-image"
-        elif "video" in nl:
-            task = "text-to-video"
-        elif "depth" in nl:
-            task = "depth-estimation"
-        elif "detect" in nl or "yolo" in nl:
-            task = "object-detection"
-        elif "segment" in nl or "sam" in nl:
-            task = "image-segmentation"
-        elif "embed" in nl or "sentence" in nl:
-            task = "feature-extraction"
+
+        api_task = (m.get("pipeline_tag") or "").strip()
+        api_lib = (m.get("library_name") or "").strip().lower()
+
+        if api_task in VALID_TASKS:
+            task = api_task
         else:
-            task = "text-generation"
-        library = "Diffusers" if task in ("text-to-image", "text-to-video") else "Transformers"
-        if "gguf" in nl:
-            library = "GGUF"
+            # Infer task from name hints
+            nl = name.lower()
+            if "ocr" in nl:
+                task = "image-text-to-text"
+            elif "voice" in nl or "tts" in nl or "speech" in nl:
+                task = "text-to-speech"
+            elif "asr" in nl or "whisper" in nl:
+                task = "automatic-speech-recognition"
+            elif "image" in nl or "diffusion" in nl or "sd" in nl or "flux" in nl:
+                task = "text-to-image"
+            elif "video" in nl:
+                task = "text-to-video"
+            elif "depth" in nl:
+                task = "depth-estimation"
+            elif "detect" in nl or "yolo" in nl:
+                task = "object-detection"
+            elif "segment" in nl or "sam" in nl:
+                task = "image-segmentation"
+            elif "embed" in nl or "sentence" in nl:
+                task = "feature-extraction"
+            else:
+                task = "text-generation"
+
+        if api_lib in LIB_NORMALIZE:
+            library = LIB_NORMALIZE[api_lib]
+        else:
+            library = "Diffusers" if task in ("text-to-image", "text-to-video", "image-to-video", "unconditional-image-generation") else "Transformers"
+            if "gguf" in name.lower():
+                library = "GGUF"
         license_slug, license_display = rng.choice(LICENSES[:8])
         desc = pick_description(task, rng)
         updated_days = rng.randint(1, 120)
-        downloads = rng.randint(200, 150_000)
-        likes = rng.randint(3, 400)
+        # Prefer API counts (real-world signal) when present; fall back to randomized.
+        api_dl = int(m.get("downloads") or 0)
+        api_lk = int(m.get("likes") or 0)
+        downloads = api_dl if api_dl > 0 else rng.randint(200, 150_000)
+        likes = api_lk if api_lk > 0 else rng.randint(3, 400)
         # Estimate params from name
         params = 0.0
         import re
@@ -912,12 +936,33 @@ def build_seed_repos():
         seen_ds.add(slug)
         author = slug.split("/")[0]
         name = slug.split("/")[1]
-        desc = rng.choice(DATASET_DESCRIPTIONS)
-        modality = rng.choice(["Text", "Image", "Audio", "Video", "Tabular"])
-        task = rng.choice(["text-generation", "text-classification", "image-classification", "question-answering"])
+        # Prefer the dataset card's own short description if the scrape provided one
+        scraped_desc = (d.get("description") or "").strip()
+        desc = scraped_desc[:280] if scraped_desc else rng.choice(DATASET_DESCRIPTIONS)
+        # Infer modality / task from API tags when possible
+        api_tags = [str(t).lower() for t in d.get("tags", [])]
+        modality = "Text"
+        if any("audio" in t or "speech" in t for t in api_tags):
+            modality = "Audio"
+        elif any("image" in t or "vision" in t for t in api_tags):
+            modality = "Image"
+        elif any("video" in t for t in api_tags):
+            modality = "Video"
+        elif any("tabular" in t for t in api_tags):
+            modality = "Tabular"
+        # Heuristic task pick from tags
+        task = "text-generation"
+        for t in api_tags:
+            if t.startswith("task_categories:"):
+                cand = t.split(":", 1)[1]
+                if cand in {x[0] for x in TASKS}:
+                    task = cand
+                    break
         license_slug, license_display = rng.choice(LICENSES[:6])
         updated_days = rng.randint(1, 60)
         rows_est = rng.choice([5_000, 50_000, 500_000, 2_000_000, 20_000_000])
+        api_dl = int(d.get("downloads") or 0)
+        api_lk = int(d.get("likes") or 0)
         datasets_out.append({
             "repo_type": "dataset",
             "slug": slug,
@@ -931,8 +976,8 @@ def build_seed_repos():
             "description": desc,
             "readme": _make_readme(slug, "dataset", desc, modality, "datasets", 0, license_display),
             "rows": rows_est,
-            "downloads": rng.randint(100, 80_000),
-            "likes": rng.randint(2, 500),
+            "downloads": api_dl if api_dl > 0 else rng.randint(100, 80_000),
+            "likes": api_lk if api_lk > 0 else rng.randint(2, 500),
             "updated_days_ago": updated_days,
             "is_featured": i < 4,
             "is_new": updated_days < 3,
@@ -1006,9 +1051,11 @@ def build_seed_repos():
         else:
             task = "text-generation"
         hw_row = rng.choice(SPACE_HARDWARE)
-        sdk = rng.choice(["gradio", "gradio", "streamlit", "docker"])
+        api_sdk = (s.get("sdk") or "").strip().lower()
+        sdk = api_sdk if api_sdk in {"gradio", "streamlit", "docker", "static"} else rng.choice(["gradio", "gradio", "streamlit", "docker"])
         emoji = rng.choice(["🚀", "🔥", "✨", "🎨", "🎬", "🌀", "💫", "🎯", "🧠", "🤖"])
         desc = rng.choice(SPACE_DESCRIPTIONS)
+        api_lk = int(s.get("likes") or 0)
         spaces_out.append({
             "repo_type": "space",
             "slug": slug,
@@ -1025,7 +1072,7 @@ def build_seed_repos():
             "readme": _make_readme(slug, "space", desc, next((t[1] for t in TASKS if t[0] == task), task), sdk, 0, "MIT"),
             "status": rng.choice(["Running", "Running on Zero", "Running on A10G", "Paused"]),
             "downloads": 0,
-            "likes": rng.randint(20, 2500),
+            "likes": api_lk if api_lk > 0 else rng.randint(20, 2500),
             "updated_days_ago": rng.randint(1, 30),
             "is_featured": i < 6,
             "is_new": rng.random() < 0.4,

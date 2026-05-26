@@ -3154,6 +3154,42 @@ def seed_benchmark_users():
             user_id=carlos.id, property_id=nyc_props[0].id,
             list_name='NYC stays'))
 
+    # -------------------------------------------------------------
+    # Extra saved properties (expansion pass): give each benchmark
+    # user a beefier wishlist so /saved is realistic and tasks like
+    # "remove the Tokyo stay from your saved list" have material.
+    # Targets ~5 saves per user (20+ total).
+    # -------------------------------------------------------------
+    def _saved(user_id, city_keys, list_name, count=1):
+        added = 0
+        for ck in city_keys:
+            if added >= count:
+                break
+            c = City.query.filter_by(key=ck).first()
+            if not c:
+                continue
+            for p in Property.query.filter_by(city_id=c.id).order_by(Property.rating.desc()).limit(3).all():
+                already = SavedProperty.query.filter_by(
+                    user_id=user_id, property_id=p.id
+                ).first()
+                if already:
+                    continue
+                db.session.add(SavedProperty(
+                    user_id=user_id, property_id=p.id, list_name=list_name))
+                added += 1
+                if added >= count:
+                    break
+        return added
+
+    # Sophie — Europe enthusiast
+    _saved(sophie.id, ['rome', 'barcelona', 'amsterdam'], 'European weekends', count=3)
+    # Kenji — Japan + Southeast Asia explorer
+    _saved(kenji.id, ['kyoto', 'osaka', 'taipei'], 'Japan trip ideas', count=3)
+    # Emma — family-friendly long lists
+    _saved(emma.id, ['copenhagen', 'edinburgh', 'dublin'], 'Family city breaks', count=3)
+    # Carlos — luxury business + Americas
+    _saved(carlos.id, ['boston', 'miami', 'sanfrancisco'], 'US business stays', count=3)
+
     db.session.commit()
     print(f"[+] Seeded benchmark users: Sophie, Kenji, Emma, Carlos")
 
@@ -3315,7 +3351,17 @@ LANDMARK_SEED = [
 def _seed_landmarks():
     keys = {c.key: c.id for c in City.query.all()}
     n = 0
-    for slug, name, aliases, city_key, lat, lng, subway, kind in LANDMARK_SEED:
+    # Fold in expansion landmarks (scraped_data/expansion_landmarks.json)
+    seed_rows = list(LANDMARK_SEED)
+    expansion_path = BASE_DIR / 'scraped_data' / 'expansion_landmarks.json'
+    if expansion_path.exists():
+        try:
+            with open(expansion_path) as _f:
+                for row in json.load(_f):
+                    seed_rows.append(tuple(row))
+        except Exception as _e:
+            print(f"[landmarks] could not load expansion: {_e}")
+    for slug, name, aliases, city_key, lat, lng, subway, kind in seed_rows:
         if Landmark.query.filter_by(slug=slug).first():
             continue
         db.session.add(Landmark(
@@ -3382,8 +3428,18 @@ def _seed_beaches():
     Idempotent: only fills cities that have no beach yet.
     """
     by_key = {c.key: c for c in City.query.all()}
+    # Fold in expansion beaches (scraped_data/expansion_beaches.json)
+    seed_rows = list(BEACH_SEED)
+    expansion_path = BASE_DIR / 'scraped_data' / 'expansion_beaches.json'
+    if expansion_path.exists():
+        try:
+            with open(expansion_path) as _f:
+                for row in json.load(_f):
+                    seed_rows.append(tuple(row))
+        except Exception as _e:
+            print(f"[beaches] could not load expansion: {_e}")
     n = 0
-    for city_key, name, lat, lng in BEACH_SEED:
+    for city_key, name, lat, lng in seed_rows:
         c = by_key.get(city_key)
         if c is None:
             continue

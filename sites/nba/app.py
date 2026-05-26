@@ -2,6 +2,7 @@
 """NBA.com mirror - Flask app with teams, scores, news, tickets, shop, and account flows."""
 import json
 import os
+import random as _rand
 import re
 from datetime import datetime, timedelta
 
@@ -1914,6 +1915,394 @@ PLAYER_SEED = [
 ]
 
 
+# EXTRA_ROSTERS — supplementary rosters per team. Stats are within plausible NBA
+# ranges. Image left empty so the per-player render falls back to team logo.
+EXTRA_ROSTERS = {
+    "celtics": [
+        ("Jrue Holiday", "G", "4", "6-4", 205, 34, "USA", "UCLA", 12.5, 5.4, 4.8, 0.9, 0.7, 48.2, 39.0, "Two-way guard who handles primary defensive assignments."),
+        ("Kristaps Porzingis", "C", "8", "7-3", 240, 28, "Latvia", "International", 20.1, 7.2, 2.0, 0.7, 1.9, 51.6, 37.5, "Stretch big with rim protection and pick-and-pop range."),
+        ("Derrick White", "G", "9", "6-4", 190, 30, "USA", "Colorado", 15.2, 4.2, 5.2, 1.0, 1.1, 46.1, 39.6, "Connector guard with elite off-ball shot-blocking."),
+        ("Payton Pritchard", "G", "11", "6-1", 195, 26, "USA", "Oregon", 14.3, 3.8, 3.4, 0.9, 0.2, 47.2, 40.7, "Microwave bench scorer and movement shooter."),
+        ("Al Horford", "C", "42", "6-9", 240, 38, "Dominican Rep.", "Florida", 9.0, 6.4, 2.6, 0.6, 1.0, 48.0, 41.9, "Veteran stretch five with elite team-defense IQ."),
+        ("Sam Hauser", "F", "30", "6-7", 217, 26, "USA", "Virginia", 9.0, 3.5, 1.0, 0.5, 0.3, 45.5, 41.9, "Specialist wing who rains catch-and-shoot threes."),
+    ],
+    "knicks": [
+        ("OG Anunoby", "F", "8", "6-7", 232, 27, "USA", "Indiana", 18.0, 4.8, 2.2, 1.6, 0.7, 48.6, 39.3, "Versatile two-way wing who switches across positions."),
+        ("Mikal Bridges", "F", "25", "6-6", 209, 28, "USA", "Villanova", 17.2, 3.2, 3.6, 0.9, 0.5, 45.7, 37.2, "Iron-man wing scorer and point-of-attack defender."),
+        ("Josh Hart", "G-F", "3", "6-4", 215, 29, "USA", "Villanova", 14.0, 9.4, 5.5, 1.0, 0.4, 49.9, 33.8, "Glass-cleaning guard who fills every line of the box score."),
+        ("Donte DiVincenzo", "G", "0", "6-4", 203, 27, "USA", "Villanova", 12.7, 3.8, 2.7, 1.2, 0.4, 43.9, 39.5, "Sharpshooting combo guard with playoff experience."),
+        ("Karl-Anthony Towns", "C", "32", "7-0", 248, 28, "Dominican Rep.", "Kentucky", 22.9, 11.6, 3.2, 0.7, 0.7, 53.0, 41.0, "Skilled center who pairs three-point range with post scoring."),
+        ("Mitchell Robinson", "C", "23", "7-0", 240, 26, "USA", "International", 6.0, 8.4, 0.5, 0.5, 1.6, 61.2, 0.0, "Rim-protecting center who feasts on lob finishes."),
+    ],
+    "seventysixers": [
+        ("Andre Drummond", "C", "5", "6-10", 279, 30, "USA", "Connecticut", 7.5, 9.0, 1.0, 0.9, 0.8, 56.2, 0.0, "Veteran rebounding center anchoring the second unit."),
+        ("Kelly Oubre Jr.", "G-F", "9", "6-7", 203, 28, "USA", "Kansas", 15.4, 5.0, 1.5, 1.3, 0.5, 47.5, 32.3, "Slashing wing with multi-positional defensive tools."),
+        ("Jared McCain", "G", "20", "6-3", 197, 20, "USA", "Duke", 15.3, 2.4, 2.6, 0.9, 0.2, 46.0, 38.6, "Rookie sharpshooter who quickly earned rotation minutes."),
+        ("Caleb Martin", "F", "16", "6-5", 205, 28, "USA", "Nevada", 9.8, 4.5, 1.7, 0.7, 0.4, 45.0, 35.5, "Hard-playing wing who chases shooters and finishes in transition."),
+        ("Eric Gordon", "G", "23", "6-3", 215, 35, "USA", "Indiana", 7.5, 1.7, 1.7, 0.4, 0.2, 39.9, 39.1, "Veteran spacer with playoff shot-making pedigree."),
+        ("Guerschon Yabusele", "F-C", "28", "6-8", 260, 28, "France", "International", 11.0, 5.4, 2.1, 0.7, 0.3, 50.4, 38.0, "Skilled big who passes and shoots from the elbow."),
+    ],
+    "bucks": [
+        ("Brook Lopez", "C", "11", "7-0", 282, 36, "USA", "Stanford", 12.5, 5.2, 1.6, 0.7, 2.4, 50.0, 36.5, "Rim-protecting stretch five who anchors the drop."),
+        ("Khris Middleton", "F", "22", "6-7", 222, 32, "USA", "Texas A&M", 15.0, 4.7, 5.3, 0.9, 0.3, 49.5, 38.1, "Three-level scoring wing with late-clock pedigree."),
+        ("Bobby Portis", "F-C", "9", "6-10", 250, 29, "USA", "Arkansas", 13.8, 7.4, 1.2, 0.7, 0.4, 47.5, 40.7, "Energy big who attacks the offensive glass."),
+        ("Pat Connaughton", "G-F", "24", "6-5", 209, 31, "USA", "Notre Dame", 5.8, 3.6, 1.3, 0.6, 0.3, 43.2, 34.2, "Bench wing who plays both ends with maximum effort."),
+        ("Andre Jackson Jr.", "G", "44", "6-6", 207, 22, "USA", "Connecticut", 4.4, 2.5, 1.5, 0.7, 0.3, 45.6, 33.3, "Athletic on-ball pest who pressures the ball-handler."),
+        ("Taurean Prince", "F", "12", "6-7", 218, 30, "USA", "Baylor", 8.4, 3.0, 1.6, 0.7, 0.5, 44.5, 36.5, "Veteran 3-and-D wing who fills out the rotation."),
+    ],
+    "cavaliers": [
+        ("Darius Garland", "G", "10", "6-1", 192, 24, "USA", "Vanderbilt", 20.7, 2.7, 6.5, 1.3, 0.1, 46.6, 39.8, "Quick guard who runs the pick-and-roll with finesse."),
+        ("Jarrett Allen", "C", "31", "6-9", 243, 26, "USA", "Texas", 16.5, 10.5, 2.7, 0.7, 1.0, 63.4, 0.0, "Rim runner and lob threat with elite rebounding."),
+        ("Evan Mobley", "C-F", "4", "7-0", 215, 23, "USA", "USC", 18.5, 9.3, 3.2, 0.9, 1.6, 55.0, 37.0, "Switchable big with developing perimeter game."),
+        ("De'Andre Hunter", "F", "12", "6-8", 221, 27, "USA", "Virginia", 18.8, 3.5, 1.4, 0.6, 0.3, 46.5, 39.5, "Physical wing scorer added at the deadline for depth."),
+        ("Sam Merrill", "G", "5", "6-5", 205, 28, "USA", "Utah State", 8.5, 2.2, 1.4, 0.6, 0.1, 41.5, 39.0, "Movement shooter who lifts second-unit spacing."),
+        ("Caris LeVert", "G", "3", "6-6", 205, 29, "USA", "Michigan", 12.2, 3.7, 4.1, 0.9, 0.4, 43.2, 35.3, "Bench creator who keeps the offense flowing."),
+    ],
+    "pacers": [
+        ("Pascal Siakam", "F", "43", "6-8", 245, 30, "Cameroon", "New Mexico State", 21.3, 6.9, 3.7, 0.9, 0.6, 51.4, 38.7, "Versatile forward who scores in the post and in transition."),
+        ("Myles Turner", "C", "33", "6-11", 250, 28, "USA", "Texas", 17.4, 6.9, 1.4, 0.8, 1.9, 50.8, 39.6, "Stretch five and rim protector for the Pacers."),
+        ("Bennedict Mathurin", "G-F", "00", "6-6", 210, 22, "Canada", "Arizona", 16.1, 4.4, 1.7, 0.6, 0.3, 45.7, 38.4, "Downhill scoring wing with three-level shot diet."),
+        ("Andrew Nembhard", "G", "2", "6-4", 191, 24, "Canada", "Gonzaga", 9.7, 3.4, 4.3, 0.8, 0.1, 45.1, 38.0, "Steady combo guard who runs bench units."),
+        ("Aaron Nesmith", "F", "23", "6-5", 215, 25, "USA", "Vanderbilt", 12.2, 3.8, 1.4, 0.8, 0.6, 50.2, 41.9, "Three-and-D wing with playoff-tested toughness."),
+        ("T.J. McConnell", "G", "9", "6-1", 190, 32, "USA", "Arizona", 9.1, 2.5, 4.3, 1.1, 0.1, 50.5, 33.0, "Ball-pressure veteran who organizes the bench."),
+    ],
+    "magic": [
+        ("Franz Wagner", "F", "22", "6-10", 220, 23, "Germany", "Michigan", 19.7, 5.3, 3.7, 1.1, 0.4, 48.0, 28.1, "Skilled wing creator who attacks closeouts."),
+        ("Jalen Suggs", "G", "4", "6-4", 205, 23, "USA", "Gonzaga", 12.9, 3.1, 2.7, 1.5, 0.5, 47.0, 31.4, "Point-of-attack defender with growing offensive role."),
+        ("Wendell Carter Jr.", "C", "34", "6-10", 270, 25, "USA", "Duke", 11.0, 6.9, 2.3, 0.7, 0.9, 50.5, 36.7, "Stretch center with passing chops."),
+        ("Kentavious Caldwell-Pope", "G", "5", "6-5", 204, 31, "USA", "Georgia", 9.5, 2.5, 1.8, 1.1, 0.2, 43.5, 34.7, "Veteran wing shooter and on-ball defender."),
+        ("Cole Anthony", "G", "50", "6-2", 185, 24, "USA", "North Carolina", 10.6, 3.4, 3.9, 0.7, 0.2, 43.8, 35.0, "Energy bench guard who creates downhill."),
+        ("Goga Bitadze", "C", "35", "6-11", 250, 25, "Georgia", "International", 7.9, 5.2, 1.5, 0.5, 1.2, 56.6, 35.0, "Reliable rim-protecting backup center."),
+    ],
+    "heat": [
+        ("Bam Adebayo", "C", "13", "6-9", 255, 27, "USA", "Kentucky", 19.3, 10.4, 4.1, 1.1, 0.9, 51.8, 35.7, "All-defense center who runs DHO offense."),
+        ("Tyler Herro", "G", "14", "6-5", 195, 24, "USA", "Kentucky", 23.9, 5.3, 5.5, 0.8, 0.4, 47.2, 37.5, "Lead scoring guard with deep shot-making range."),
+        ("Terry Rozier", "G", "2", "6-1", 190, 30, "USA", "Louisville", 15.5, 4.2, 4.4, 0.9, 0.4, 41.5, 35.0, "Ball-handling combo guard with pull-up range."),
+        ("Duncan Robinson", "F", "55", "6-7", 215, 30, "USA", "Michigan", 12.6, 2.6, 3.0, 0.5, 0.2, 47.0, 39.5, "Movement shooter pulling defenders all over the floor."),
+        ("Jaime Jaquez Jr.", "F", "11", "6-7", 226, 23, "USA", "UCLA", 12.5, 3.8, 2.4, 1.0, 0.4, 49.2, 32.6, "Crafty wing who finishes through contact."),
+        ("Nikola Jovic", "F", "5", "6-10", 223, 21, "Serbia", "International", 7.7, 3.6, 1.8, 0.6, 0.3, 44.0, 33.8, "Skilled tall wing developing into a connective playmaker."),
+    ],
+    "hawks": [
+        ("Trae Young", "G", "11", "6-1", 164, 26, "USA", "Oklahoma", 25.7, 2.8, 11.1, 1.4, 0.2, 43.0, 38.0, "Deep-range pick-and-roll guard who creates for teammates."),
+        ("Jalen Johnson", "F", "1", "6-8", 219, 23, "USA", "Duke", 18.9, 10.0, 5.0, 1.1, 1.0, 51.0, 35.6, "Athletic point-forward with rebounding and transition tools."),
+        ("Dyson Daniels", "G", "5", "6-7", 199, 21, "Australia", "G League Ignite", 14.1, 5.7, 4.5, 3.0, 0.6, 46.3, 34.0, "All-Defensive guard with elite hands and disruption rate."),
+        ("Onyeka Okongwu", "C", "17", "6-8", 240, 24, "USA", "USC", 11.3, 8.0, 1.8, 0.7, 1.3, 56.0, 34.5, "Mobile rim protector who switches across screens."),
+        ("Bogdan Bogdanovic", "G-F", "13", "6-5", 215, 32, "Serbia", "International", 14.0, 3.0, 3.0, 1.1, 0.2, 41.2, 37.2, "Veteran shot-maker with secondary creation chops."),
+        ("Zaccharie Risacher", "F", "10", "6-9", 200, 19, "France", "International", 12.6, 3.6, 1.3, 0.7, 0.6, 45.6, 35.5, "No. 1 overall rookie wing with smooth shot mechanics."),
+    ],
+    "bulls": [
+        ("Coby White", "G", "0", "6-5", 195, 24, "USA", "North Carolina", 20.4, 4.5, 5.1, 0.9, 0.3, 44.9, 37.0, "Pull-up shooting guard who creates for himself."),
+        ("Nikola Vucevic", "C", "9", "6-11", 260, 34, "Montenegro", "USC", 18.4, 10.5, 3.0, 0.7, 0.7, 56.0, 39.0, "Skilled center with stretch range and post passing."),
+        ("Patrick Williams", "F", "44", "6-7", 215, 23, "USA", "Florida State", 9.0, 3.5, 1.3, 0.6, 1.0, 43.0, 39.6, "Long forward with promising defensive tools."),
+        ("Ayo Dosunmu", "G", "12", "6-5", 215, 25, "USA", "Illinois", 12.1, 3.0, 3.6, 1.0, 0.4, 49.5, 33.5, "Connective combo guard with sound shot diet."),
+        ("Josh Giddey", "G", "3", "6-8", 215, 22, "Australia", "International", 14.6, 8.1, 7.5, 1.0, 0.6, 48.0, 33.7, "Jumbo playmaker with rebounding upside."),
+        ("Matas Buzelis", "F", "14", "6-10", 209, 20, "USA", "G League Ignite", 8.6, 3.9, 1.3, 0.7, 1.0, 44.5, 35.8, "Rookie wing with shooting and shot-blocking flashes."),
+    ],
+    "mavericks": [
+        ("PJ Washington", "F", "25", "6-7", 230, 26, "USA", "Kentucky", 12.5, 6.2, 1.8, 0.7, 1.0, 47.4, 37.0, "Versatile combo forward who switches on defense."),
+        ("Daniel Gafford", "C", "21", "6-10", 234, 26, "USA", "Arkansas", 10.5, 6.8, 1.2, 0.6, 1.8, 70.0, 0.0, "Lob-finishing center who anchors the dunker spot."),
+        ("Klay Thompson", "G", "31", "6-6", 215, 35, "USA", "Washington State", 14.3, 3.6, 2.0, 0.6, 0.5, 43.3, 38.0, "Iconic movement shooter still feasting off catch-and-shoot looks."),
+        ("Naji Marshall", "F", "13", "6-7", 220, 26, "USA", "Xavier", 9.2, 4.0, 2.2, 0.8, 0.3, 46.6, 37.0, "Switchable wing with confident pull-up shooting."),
+        ("Spencer Dinwiddie", "G", "26", "6-5", 215, 31, "USA", "Colorado", 9.0, 2.0, 4.0, 0.5, 0.3, 41.5, 32.8, "Veteran combo guard who runs second-unit offense."),
+        ("Dereck Lively II", "C", "2", "7-1", 230, 21, "USA", "Duke", 8.4, 7.0, 1.1, 0.5, 1.4, 73.0, 0.0, "Long rim protector and athletic lob threat."),
+    ],
+    "nuggets": [
+        ("Aaron Gordon", "F", "32", "6-8", 235, 29, "USA", "Arizona", 13.9, 6.5, 3.4, 0.8, 0.6, 56.7, 29.0, "Athletic forward who handles toughest defensive matchups."),
+        ("Michael Porter Jr.", "F", "1", "6-10", 218, 26, "USA", "Missouri", 16.7, 7.0, 1.5, 0.7, 0.6, 48.4, 39.7, "Towering shooter with elite catch-and-shoot range."),
+        ("Christian Braun", "G-F", "0", "6-6", 220, 23, "USA", "Kansas", 15.4, 5.1, 2.7, 0.9, 0.6, 57.7, 39.7, "Cutter and connector wing who plays in straight lines."),
+        ("Russell Westbrook", "G", "4", "6-3", 200, 36, "USA", "UCLA", 13.0, 5.0, 6.0, 1.4, 0.4, 44.9, 32.0, "All-time triple-double leader running bench units."),
+        ("Peyton Watson", "F", "8", "6-8", 200, 22, "USA", "UCLA", 8.8, 3.9, 1.4, 0.9, 1.7, 42.4, 32.7, "Long defensive wing with shot-blocking instincts."),
+        ("Julian Strawther", "G-F", "3", "6-7", 205, 23, "USA", "Gonzaga", 7.0, 2.1, 1.0, 0.4, 0.2, 41.8, 37.5, "Spot-up shooter on a developing offensive role."),
+    ],
+    "timberwolves": [
+        ("Julius Randle", "F", "30", "6-9", 250, 30, "USA", "Kentucky", 20.1, 9.0, 4.7, 0.7, 0.4, 47.0, 34.4, "Bullish forward with bruising post game and stepout range."),
+        ("Rudy Gobert", "C", "27", "7-1", 258, 32, "France", "International", 13.0, 12.0, 2.0, 0.7, 2.1, 65.5, 0.0, "Four-time DPOY anchor of the Wolves defense."),
+        ("Mike Conley", "G", "10", "6-1", 175, 37, "USA", "Ohio State", 11.4, 3.0, 5.6, 1.0, 0.2, 44.0, 41.0, "Veteran floor general who steadies late-game offense."),
+        ("Naz Reid", "C-F", "11", "6-9", 264, 25, "USA", "LSU", 14.6, 5.4, 1.7, 0.9, 1.0, 49.7, 41.4, "Sixth Man stretch big who scores at all three levels."),
+        ("Jaden McDaniels", "F", "3", "6-9", 200, 24, "USA", "Washington", 10.6, 5.3, 2.0, 1.4, 1.4, 49.0, 33.7, "Long perimeter defender with switchability across one through four."),
+        ("Nickeil Alexander-Walker", "G", "9", "6-5", 205, 26, "Canada", "Virginia Tech", 8.2, 2.0, 2.0, 1.1, 0.5, 44.1, 39.0, "Plus on-ball defender and reliable corner shooter."),
+    ],
+    "thunder": [
+        ("Jalen Williams", "F", "8", "6-6", 211, 23, "USA", "Santa Clara", 19.0, 4.0, 4.5, 1.4, 0.6, 53.5, 39.0, "All-around wing who creates and defends multiple positions."),
+        ("Lu Dort", "G-F", "5", "6-4", 222, 25, "Canada", "Arizona State", 10.6, 4.5, 1.7, 0.9, 0.4, 41.6, 39.4, "Physical point-of-attack stopper with corner-three confidence."),
+        ("Isaiah Hartenstein", "C", "55", "7-0", 250, 26, "USA", "International", 11.2, 10.5, 3.7, 1.1, 1.2, 58.0, 0.0, "Offensive-rebounding big who tightens the OKC interior."),
+        ("Cason Wallace", "G", "22", "6-4", 195, 21, "USA", "Kentucky", 8.4, 2.7, 1.7, 1.8, 0.3, 47.0, 41.7, "Defensive-minded combo guard with growing offensive role."),
+        ("Aaron Wiggins", "G-F", "21", "6-6", 200, 26, "USA", "Maryland", 12.0, 4.6, 1.9, 0.8, 0.4, 49.0, 38.0, "Two-way wing who scores in transition."),
+        ("Alex Caruso", "G", "9", "6-5", 186, 30, "USA", "Texas A&M", 8.0, 3.4, 2.7, 1.7, 0.7, 45.5, 40.0, "All-Defense guard who lifts winning lineups."),
+    ],
+    "suns": [
+        ("Bradley Beal", "G", "3", "6-4", 207, 31, "USA", "Florida", 17.6, 4.3, 4.7, 0.9, 0.3, 50.5, 43.0, "Three-level scoring guard sharing creation duties."),
+        ("Tyus Jones", "G", "21", "6-0", 196, 28, "USA", "Duke", 12.5, 2.7, 7.3, 0.8, 0.1, 48.9, 41.4, "High-assist, low-turnover point guard."),
+        ("Royce O'Neale", "F", "00", "6-4", 226, 31, "USA", "Baylor", 7.5, 3.9, 3.0, 1.0, 0.4, 41.0, 37.0, "Veteran 3-and-D wing with playmaking touch."),
+        ("Grayson Allen", "G", "8", "6-4", 198, 29, "USA", "Duke", 13.5, 3.9, 3.0, 0.8, 0.2, 49.9, 46.1, "Spacer who connects pick-and-roll actions with the corners."),
+        ("Mason Plumlee", "C", "22", "7-0", 254, 34, "USA", "Duke", 7.0, 6.7, 2.7, 0.6, 0.6, 65.0, 0.0, "Energy big who finishes and short-roll passes."),
+        ("Jusuf Nurkic", "C", "20", "7-0", 290, 30, "Bosnia and Herzegovina", "International", 10.5, 9.0, 3.0, 0.8, 0.9, 52.0, 32.0, "Bruising center with elite passing for the position."),
+    ],
+    "lakers": [
+        ("D'Angelo Russell", "G", "1", "6-4", 193, 28, "USA", "Ohio State", 17.0, 3.1, 6.4, 0.9, 0.4, 45.6, 41.5, "Shooting guard with deep pull-up range."),
+        ("Austin Reaves", "G", "15", "6-5", 197, 26, "USA", "Oklahoma", 18.5, 4.4, 5.5, 0.8, 0.3, 48.6, 36.7, "Crafty combo guard who can lead an offense."),
+        ("Rui Hachimura", "F", "28", "6-8", 230, 26, "Japan", "Gonzaga", 13.5, 5.0, 1.4, 0.5, 0.3, 53.0, 42.0, "Reliable mid-range forward and timely scorer."),
+        ("Jaxson Hayes", "C", "11", "7-0", 220, 24, "USA", "Texas", 5.9, 4.4, 0.5, 0.5, 0.9, 73.0, 0.0, "Athletic backup center who finishes lobs."),
+        ("Gabe Vincent", "G", "7", "6-2", 193, 28, "USA", "UC Santa Barbara", 5.5, 1.5, 1.7, 0.6, 0.1, 39.0, 31.8, "Veteran combo guard with playoff experience."),
+        ("Max Christie", "G-F", "10", "6-6", 190, 21, "USA", "Michigan State", 6.0, 2.5, 1.0, 0.4, 0.3, 44.0, 41.0, "Long wing developing 3-and-D profile."),
+    ],
+    "clippers": [
+        ("James Harden", "G", "1", "6-5", 220, 35, "USA", "Arizona State", 21.0, 5.0, 8.5, 1.0, 0.7, 42.8, 37.6, "Iso-and-stepback maestro running the Clippers offense."),
+        ("Norman Powell", "G-F", "24", "6-3", 215, 31, "USA", "UCLA", 21.0, 3.0, 2.0, 1.1, 0.3, 49.0, 42.0, "Three-level scoring wing playing the best ball of his career."),
+        ("Ivica Zubac", "C", "40", "7-0", 240, 27, "Croatia", "International", 16.7, 12.6, 2.5, 0.6, 1.1, 63.0, 0.0, "Drop-coverage center crashing the offensive glass."),
+        ("Terance Mann", "G-F", "14", "6-5", 215, 28, "USA", "Florida State", 8.0, 3.7, 2.2, 0.7, 0.4, 49.0, 36.5, "Versatile connector wing who guards bigger forwards."),
+        ("Nicolas Batum", "F", "33", "6-8", 230, 36, "France", "International", 4.6, 2.8, 1.9, 0.7, 0.6, 41.0, 39.0, "Veteran corner shooter with smart help defense."),
+        ("Kris Dunn", "G", "8", "6-4", 205, 30, "USA", "Providence", 6.4, 2.7, 3.0, 1.3, 0.4, 44.0, 32.0, "On-ball defender who pressures lead guards."),
+    ],
+    "warriors": [
+        ("Andrew Wiggins", "F", "22", "6-7", 197, 29, "Canada", "Kansas", 17.0, 4.5, 1.8, 0.7, 0.7, 45.2, 35.9, "Athletic wing with playoff-tested two-way game."),
+        ("Jonathan Kuminga", "F", "00", "6-7", 225, 22, "DR Congo", "G League Ignite", 16.5, 4.8, 2.2, 0.7, 0.5, 52.9, 32.1, "Explosive young forward who attacks the rim."),
+        ("Brandin Podziemski", "G", "2", "6-4", 205, 21, "USA", "Santa Clara", 11.7, 5.8, 3.7, 0.8, 0.3, 45.4, 38.5, "Rookie guard with mature offensive feel."),
+        ("Buddy Hield", "G", "7", "6-4", 220, 32, "Bahamas", "Oklahoma", 12.0, 2.8, 2.1, 0.6, 0.2, 43.4, 38.5, "Career sharpshooter feasting on movement looks."),
+        ("Gary Payton II", "G", "8", "6-2", 195, 32, "USA", "Oregon State", 5.5, 2.9, 1.7, 1.0, 0.5, 56.0, 36.0, "Defensive specialist guard who pressures the ball."),
+        ("Trayce Jackson-Davis", "C", "32", "6-9", 240, 25, "USA", "Indiana", 7.0, 5.0, 2.4, 0.5, 1.1, 70.0, 0.0, "Lob threat and rim protector off the bench."),
+    ],
+    "kings": [
+        ("De'Aaron Fox", "G", "5", "6-3", 185, 27, "USA", "Kentucky", 26.5, 4.6, 6.1, 2.0, 0.4, 46.5, 36.9, "Lightning quick lead guard who pressures the rim."),
+        ("Domantas Sabonis", "C-F", "10", "6-11", 240, 28, "Lithuania", "Gonzaga", 19.2, 13.7, 8.1, 0.7, 0.4, 60.5, 41.7, "Triple-double machine and elbow-passing hub."),
+        ("DeMar DeRozan", "F", "10", "6-6", 220, 35, "USA", "USC", 23.5, 4.0, 4.5, 1.1, 0.4, 47.7, 32.8, "Midrange master providing veteran shot creation."),
+        ("Keegan Murray", "F", "13", "6-8", 225, 24, "USA", "Iowa", 13.4, 6.4, 1.8, 0.9, 0.7, 45.5, 36.3, "Stretch four with switchable defensive size."),
+        ("Malik Monk", "G", "0", "6-3", 200, 27, "USA", "Kentucky", 15.0, 3.0, 5.6, 1.0, 0.5, 44.7, 35.0, "Sixth Man finalist who scores in bunches."),
+        ("Trey Lyles", "F", "41", "6-9", 234, 29, "Canada", "Kentucky", 6.5, 4.4, 1.4, 0.5, 0.4, 47.5, 36.8, "Stretch big who switches across screens."),
+    ],
+    "pelicans": [
+        ("Zion Williamson", "F", "1", "6-6", 284, 24, "USA", "Duke", 22.9, 5.8, 5.0, 1.1, 0.5, 56.8, 33.3, "Bullish forward who breaks paint with downhill drives."),
+        ("Brandon Ingram", "F", "14", "6-8", 190, 27, "USA", "Duke", 21.0, 5.0, 5.0, 0.7, 0.6, 47.0, 36.0, "Long wing scorer who balances midrange and threes."),
+        ("CJ McCollum", "G", "3", "6-3", 195, 33, "USA", "Lehigh", 18.0, 4.4, 4.8, 0.9, 0.3, 44.0, 39.6, "Pull-up shooting guard with playoff scoring chops."),
+        ("Herbert Jones", "F", "5", "6-7", 206, 26, "USA", "Alabama", 11.0, 3.6, 2.6, 1.5, 0.7, 47.0, 38.0, "All-Defense wing who guards every position."),
+        ("Trey Murphy III", "F", "25", "6-9", 206, 24, "USA", "Virginia", 14.8, 5.0, 1.7, 1.0, 0.6, 48.0, 38.3, "Long perimeter shooter with vertical pop."),
+        ("Jose Alvarado", "G", "15", "6-0", 179, 26, "Puerto Rico", "Georgia Tech", 8.0, 1.9, 3.3, 1.5, 0.1, 41.0, 35.0, "Pesky on-ball defender who creates turnovers."),
+    ],
+    "spurs": [
+        ("Devin Vassell", "G-F", "24", "6-5", 205, 24, "USA", "Florida State", 16.5, 3.7, 4.1, 1.1, 0.4, 41.5, 36.8, "Smooth wing scorer with three-level shot diet."),
+        ("Keldon Johnson", "F", "3", "6-5", 220, 25, "USA", "Kentucky", 16.0, 5.8, 2.4, 0.7, 0.3, 47.0, 35.6, "Energy wing who attacks the offensive glass."),
+        ("Chris Paul", "G", "3", "6-0", 175, 39, "USA", "Wake Forest", 9.4, 3.6, 7.5, 1.4, 0.1, 43.0, 36.8, "Hall-of-Fame floor general mentoring the young core."),
+        ("Stephon Castle", "G", "5", "6-6", 215, 20, "USA", "Connecticut", 13.5, 3.4, 4.0, 0.9, 0.3, 42.0, 30.0, "Rookie combo guard with point-of-attack defensive tools."),
+        ("Jeremy Sochan", "F", "10", "6-9", 230, 21, "Poland", "Baylor", 11.4, 6.4, 2.7, 0.7, 0.4, 47.0, 32.5, "Versatile defensive forward with developing offense."),
+        ("Harrison Barnes", "F", "40", "6-8", 225, 32, "USA", "North Carolina", 12.0, 4.0, 1.6, 0.7, 0.3, 48.0, 39.0, "Veteran spacer playing winning corner-three basketball."),
+    ],
+    "grizzlies": [
+        ("Desmond Bane", "G", "22", "6-5", 215, 26, "USA", "TCU", 23.0, 5.0, 5.5, 1.0, 0.4, 46.5, 39.0, "Three-level shot creator and tough closeout attacker."),
+        ("Jaren Jackson Jr.", "F-C", "13", "7-0", 242, 25, "USA", "Michigan State", 22.5, 5.5, 2.3, 1.2, 1.7, 47.0, 32.8, "Defensive Player anchor with stretch range."),
+        ("Marcus Smart", "G", "36", "6-4", 220, 30, "USA", "Oklahoma State", 14.5, 2.7, 4.4, 1.5, 0.3, 42.7, 33.0, "Hard-nosed point-of-attack defender."),
+        ("Luke Kennard", "G", "10", "6-5", 206, 28, "USA", "Duke", 8.5, 2.0, 2.0, 0.4, 0.1, 45.0, 43.4, "Elite catch-and-shoot specialist."),
+        ("Brandon Clarke", "F-C", "15", "6-8", 215, 28, "Canada", "Gonzaga", 9.5, 5.5, 1.1, 0.5, 1.1, 65.0, 33.0, "Bouncy forward with high finishing percentages."),
+        ("Santi Aldama", "F", "7", "6-11", 224, 24, "Spain", "Loyola Maryland", 12.0, 6.2, 2.5, 0.7, 0.8, 47.0, 35.0, "Skilled big who shoots and passes."),
+    ],
+    "rockets": [
+        ("Alperen Sengun", "C", "28", "6-11", 243, 22, "Turkey", "International", 21.0, 9.3, 5.0, 1.1, 0.8, 53.7, 30.5, "Elbow playmaking center with elite touch."),
+        ("Jalen Green", "G", "4", "6-6", 186, 23, "USA", "G League Ignite", 19.6, 4.4, 3.2, 0.9, 0.3, 42.3, 35.0, "Athletic scoring guard with explosive transition."),
+        ("Fred VanVleet", "G", "5", "6-1", 197, 30, "USA", "Wichita State", 14.0, 3.7, 8.3, 1.5, 0.5, 41.4, 34.5, "Defensive-minded floor general and pull-up shooter."),
+        ("Jabari Smith Jr.", "F", "10", "6-11", 220, 21, "USA", "Auburn", 13.5, 8.0, 1.4, 0.7, 1.0, 45.0, 36.3, "Stretch forward with rim-protection upside."),
+        ("Dillon Brooks", "F", "9", "6-7", 225, 28, "Canada", "Oregon", 14.0, 3.4, 1.5, 0.9, 0.4, 45.0, 39.5, "Combative wing who chases best opposing scorers."),
+        ("Amen Thompson", "G-F", "1", "6-7", 199, 22, "USA", "Overtime Elite", 13.5, 8.0, 3.8, 1.4, 1.2, 55.6, 28.0, "Hyper-athletic point-forward with defensive playmaking."),
+    ],
+    "raptors": [
+        ("Scottie Barnes", "F", "4", "6-7", 225, 23, "USA", "Florida State", 20.0, 8.0, 6.0, 1.4, 1.4, 47.0, 34.5, "All-around forward with growing shooting profile."),
+        ("RJ Barrett", "G-F", "9", "6-6", 214, 24, "Canada", "Duke", 21.5, 6.0, 5.4, 0.8, 0.4, 44.5, 36.0, "Downhill scoring wing acclimated to Toronto."),
+        ("Immanuel Quickley", "G", "5", "6-3", 190, 25, "USA", "Kentucky", 17.5, 4.0, 6.5, 0.8, 0.4, 43.6, 38.5, "Sixth Man finalist who runs pick-and-roll."),
+        ("Jakob Poeltl", "C", "19", "7-1", 245, 29, "Austria", "Utah", 12.0, 9.5, 2.6, 0.7, 1.4, 64.0, 0.0, "Drop-coverage anchor with elite rim deterrence."),
+        ("Gradey Dick", "G", "1", "6-7", 205, 21, "USA", "Kansas", 14.0, 4.0, 2.5, 0.8, 0.3, 45.5, 38.0, "Sharpshooting wing with off-ball relocation."),
+        ("Ochai Agbaji", "G-F", "30", "6-5", 217, 24, "USA", "Kansas", 9.0, 2.6, 1.4, 0.7, 0.4, 44.0, 37.5, "Two-way wing with corner shooting."),
+    ],
+    "nets": [
+        ("Cam Thomas", "G", "24", "6-3", 210, 23, "USA", "LSU", 22.5, 3.0, 3.5, 0.8, 0.2, 43.0, 36.0, "Shot-making guard who scores in volume."),
+        ("Nic Claxton", "C", "33", "6-11", 215, 25, "USA", "Georgia", 11.0, 9.5, 2.0, 0.6, 2.0, 65.5, 0.0, "Rim-running center who switches across screens."),
+        ("Cameron Johnson", "F", "2", "6-8", 210, 28, "USA", "North Carolina", 14.5, 4.0, 2.8, 0.9, 0.3, 45.5, 40.5, "Tall sharpshooting wing with closeout attack."),
+        ("Dorian Finney-Smith", "F", "28", "6-7", 220, 31, "USA", "Florida", 8.0, 4.0, 1.3, 0.8, 0.5, 45.0, 39.0, "Three-and-D wing who guards multiple positions."),
+        ("Dennis Schroder", "G", "17", "6-1", 172, 31, "Germany", "International", 13.0, 2.5, 6.0, 0.8, 0.2, 42.5, 34.0, "Veteran ball-handler running both units."),
+        ("Day'Ron Sharpe", "C", "20", "6-9", 265, 23, "USA", "North Carolina", 8.5, 7.5, 1.5, 0.6, 0.7, 56.0, 0.0, "Rebounding big off the bench."),
+    ],
+    "hornets": [
+        ("LaMelo Ball", "G", "1", "6-7", 180, 23, "USA", "Australia", 23.9, 5.1, 8.0, 1.8, 0.3, 43.0, 37.5, "Magnetic point guard with deep pull-up range."),
+        ("Brandon Miller", "G-F", "24", "6-9", 200, 22, "USA", "Alabama", 21.0, 4.8, 3.5, 0.9, 0.7, 44.0, 37.3, "Skilled scoring wing with three-level shot diet."),
+        ("Mark Williams", "C", "5", "7-0", 240, 23, "USA", "Duke", 12.7, 9.5, 1.4, 0.4, 1.2, 62.0, 0.0, "Long lob threat and rim protector."),
+        ("Miles Bridges", "F", "0", "6-7", 225, 26, "USA", "Michigan State", 20.0, 7.0, 3.0, 1.0, 0.7, 46.5, 34.0, "Athletic wing scorer with rebounding chops."),
+        ("Tre Mann", "G", "23", "6-4", 184, 23, "USA", "Florida", 11.5, 2.5, 4.0, 0.7, 0.2, 42.5, 35.5, "Combo guard with pull-up shooting range."),
+        ("Tidjane Salaun", "F", "21", "6-9", 212, 19, "France", "International", 6.0, 3.5, 1.0, 0.7, 0.5, 39.0, 31.0, "Long wing rookie with shot-blocking flashes."),
+    ],
+    "pistons": [
+        ("Cade Cunningham", "G", "2", "6-6", 220, 23, "USA", "Oklahoma State", 22.7, 4.3, 7.5, 0.9, 0.6, 45.5, 35.5, "Jumbo point guard who runs the Pistons offense."),
+        ("Jaden Ivey", "G", "23", "6-4", 200, 23, "USA", "Purdue", 17.6, 4.0, 4.0, 0.8, 0.5, 45.5, 37.0, "Explosive guard with downhill driving force."),
+        ("Jalen Duren", "C", "0", "6-10", 250, 21, "USA", "Memphis", 11.5, 11.5, 2.0, 0.8, 1.0, 64.0, 0.0, "Athletic rebounding center with screen-set craft."),
+        ("Ausar Thompson", "F", "9", "6-7", 215, 22, "USA", "Overtime Elite", 11.5, 6.5, 2.5, 1.3, 1.2, 49.0, 28.0, "Defensive-minded two-way wing."),
+        ("Tobias Harris", "F", "12", "6-8", 226, 32, "USA", "Tennessee", 13.0, 5.5, 2.4, 0.6, 0.6, 48.0, 35.0, "Veteran scoring forward providing wing depth."),
+        ("Malik Beasley", "G", "5", "6-4", 187, 28, "USA", "Florida State", 15.5, 3.0, 1.6, 0.7, 0.2, 43.0, 41.0, "Catch-and-shoot specialist with off-ball gravity."),
+    ],
+    "trail_blazers": [
+        ("Scoot Henderson", "G", "00", "6-2", 195, 21, "USA", "G League Ignite", 14.0, 3.0, 5.0, 0.8, 0.3, 41.0, 33.0, "Explosive young point guard with downhill burst."),
+        ("Shaedon Sharpe", "G-F", "17", "6-6", 200, 21, "Canada", "Kentucky", 18.5, 5.0, 2.5, 0.7, 0.6, 45.0, 34.5, "Highlight-reel wing scorer with athletic upside."),
+        ("Anfernee Simons", "G", "1", "6-3", 180, 25, "USA", "IMG Academy", 19.0, 3.0, 4.5, 0.7, 0.3, 42.5, 36.0, "Lead guard with deep pull-up range."),
+        ("Deni Avdija", "F", "8", "6-9", 240, 24, "Israel", "International", 15.5, 7.0, 4.0, 0.9, 0.4, 47.0, 35.5, "Point-forward with rebounding and passing chops."),
+        ("Donovan Clingan", "C", "23", "7-2", 280, 21, "USA", "Connecticut", 11.5, 9.5, 2.0, 0.5, 2.0, 56.0, 0.0, "Massive rookie rim protector and lob threat."),
+        ("Toumani Camara", "F", "33", "6-7", 220, 25, "Belgium", "Dayton", 11.5, 5.5, 2.0, 1.0, 0.6, 45.0, 35.0, "Versatile defensive wing who plays multiple spots."),
+    ],
+    "jazz": [
+        ("Lauri Markkanen", "F", "23", "7-0", 240, 27, "Finland", "Arizona", 21.0, 7.5, 1.7, 0.6, 0.5, 48.0, 38.0, "All-Star stretch four with three-level scoring."),
+        ("Collin Sexton", "G", "2", "6-1", 190, 26, "USA", "Alabama", 19.5, 2.7, 4.0, 1.0, 0.1, 48.0, 39.0, "Downhill scoring guard with paint pressure."),
+        ("Walker Kessler", "C", "24", "7-1", 245, 23, "USA", "Auburn", 10.0, 9.0, 1.0, 0.4, 2.4, 66.0, 0.0, "Elite shot-blocking center protecting the paint."),
+        ("Keyonte George", "G", "3", "6-4", 206, 21, "USA", "Baylor", 16.5, 3.0, 5.0, 0.8, 0.2, 39.5, 34.0, "Young combo guard developing as primary creator."),
+        ("John Collins", "F-C", "20", "6-9", 226, 27, "USA", "Wake Forest", 18.0, 8.5, 2.0, 0.5, 1.0, 53.0, 38.0, "Vertical spacer and lob threat."),
+        ("Cody Williams", "F", "5", "6-7", 190, 19, "USA", "Colorado", 6.5, 2.5, 1.4, 0.5, 0.4, 41.0, 31.0, "Long rookie wing with two-way flashes."),
+    ],
+    "wizards": [
+        ("Jordan Poole", "G", "13", "6-4", 194, 25, "USA", "Michigan", 19.0, 3.0, 4.5, 0.8, 0.3, 41.5, 35.0, "Shooting guard with pull-up range and bench scoring."),
+        ("Kyle Kuzma", "F", "33", "6-9", 221, 29, "USA", "Utah", 18.0, 6.5, 4.5, 0.7, 0.5, 45.0, 31.0, "Veteran scoring forward providing leadership."),
+        ("Bilal Coulibaly", "F", "0", "6-8", 230, 20, "France", "International", 12.0, 5.0, 3.0, 1.1, 0.8, 45.5, 35.0, "Long-armed wing with two-way defensive upside."),
+        ("Alex Sarr", "C-F", "20", "7-1", 224, 19, "France", "International", 9.5, 5.0, 1.5, 0.7, 1.6, 41.0, 30.0, "No. 2 overall rookie big developing as rim protector."),
+        ("Corey Kispert", "F", "24", "6-7", 224, 26, "USA", "Gonzaga", 13.5, 3.0, 2.0, 0.5, 0.2, 47.0, 39.0, "Catch-and-shoot wing punishing closeouts."),
+        ("Bub Carrington", "G", "8", "6-5", 190, 19, "USA", "Pittsburgh", 9.0, 3.5, 4.5, 0.7, 0.3, 39.0, 34.0, "Rookie combo guard with passing feel."),
+    ],
+}
+
+
+# EXTRA_ARTICLES — supplemental newsroom items rotated across categories.
+EXTRA_ARTICLES = [
+    ("Power Rankings: Contenders sort themselves after deadline", "Top Stories", "celtics", "jayson-tatum", "articles/harris-levert-051426-scaled.jpg"),
+    ("Power Rankings: West playoff race heats up to the wire", "Top Stories", "thunder", "shai-gilgeous-alexander", "articles/edwards-spurs-gm5-051426-scaled.jpg"),
+    ("Power Rankings: East middle tier reshuffles after All-Star", "Top Stories", "magic", "paolo-banchero", "articles/brunson-iso-051426-scaled.jpg"),
+    ("Power Rankings: Spurs surge into national TV slots", "Top Stories", "spurs", "victor-wembanyama", "articles/wembanyama-gm5.jpg"),
+    ("In-season tournament returns with revamped bracket", "Top Stories", "lakers", "lebron-james", "articles/okc-lal-recap.jpg"),
+    ("All-Star reserves announced ahead of weekend in San Francisco", "Top Stories", "celtics", "jaylen-brown", "articles/harden-game5.jpg"),
+    ("League announces new schedule format for 2026-27 season", "Top Stories", "warriors", "stephen-curry", "articles/nba-official-finals-logo.png"),
+    ("Coach of the Year ladder shakes up with five games left", "Top Stories", "thunder", "shai-gilgeous-alexander", "articles/nba-official-chasing-thunder.jpeg"),
+    ("Sixth Man race tightens between Naz Reid and Malik Monk", "Top Stories", "timberwolves", "naz-reid", "articles/nba-official-fantasy-spurs.jpg"),
+    ("Trade deadline grades: best moves across both conferences", "Top Stories", "mavericks", "luka-doncic", "articles/morey.jpg"),
+
+    ("Mock draft 4.0: post-combine board moves on prospects", "Draft", "wizards", "", "articles/peterson-dybantsa.jpg"),
+    ("AJ Dybantsa breaks down film with NBA scouts", "Draft", "wizards", "", "articles/draft-combine-2026.jpg"),
+    ("International watch: stash candidates rising up boards", "Draft", "spurs", "", "articles/combine-knueppel.jpg"),
+    ("Combine measurements: full wingspan and standing reach data", "Draft", "raptors", "", "articles/nba-official-draft-combine-hero.jpg"),
+    ("Draft history quiz: name every No. 1 overall pick since 2000", "Draft", "lakers", "", "articles/lebron-stern-draft-night.jpg"),
+    ("Two-round mock: lottery scenarios across all 14 teams", "Draft", "hornets", "", "articles/nba-official-draft-banner.png"),
+    ("Lottery odds explained: what each team is rooting for", "Draft", "pistons", "cade-cunningham", "articles/nba-official-draft-lottery.jpg"),
+    ("Top 20 prospect rankings update after college season", "Draft", "wizards", "", "articles/nba-official-draft-logo.png"),
+
+    ("Playoffs preview: Cavaliers-Knicks Eastern Conference Finals", "Playoffs", "cavaliers", "donovan-mitchell", "articles/nba-official-knicks-cavs.jpg"),
+    ("Playoffs preview: Thunder-Spurs Western Conference Finals", "Playoffs", "thunder", "shai-gilgeous-alexander", "articles/nba-official-spurs-thunder.jpg"),
+    ("Playoffs film: how the Knicks defend the pick-and-roll", "Playoffs", "knicks", "jalen-brunson", "articles/nba-official-cavs-game7.jpg"),
+    ("Playoffs film: Cavaliers half-court actions break the paint", "Playoffs", "cavaliers", "evan-mobley", "articles/cle-det-recap.jpg"),
+    ("Playoffs leaders: top scorers through the second round", "Playoffs", "thunder", "shai-gilgeous-alexander", "articles/nba-official-chasing-thunder.jpeg"),
+    ("Conference Finals schedule: every game, every time slot", "Playoffs", "thunder", "", "articles/nba-official-playoffs-banner.png"),
+    ("Playoff villains: which heel role players are stealing the show", "Playoffs", "heat", "jimmy-butler", "articles/harden-game5.jpg"),
+    ("Game 7 history: every road team to win a winner-take-all", "Playoffs", "cavaliers", "donovan-mitchell", "articles/pistons-cavs-game6.jpg"),
+
+    ("MVP ladder: Jokic, Gilgeous-Alexander remain at the top", "Awards", "nuggets", "nikola-jokic", "articles/wizards-no1.jpg"),
+    ("DPOY race: Wembanyama vs. Bam Adebayo down the stretch", "Awards", "spurs", "victor-wembanyama", "articles/wembanyama-gm5.jpg"),
+    ("Rookie of the Year shifts after late-season Risacher surge", "Awards", "hawks", "zaccharie-risacher", "articles/nba-official-castle.jpg"),
+    ("Most Improved Player: five candidates with strong cases", "Awards", "magic", "franz-wagner", "articles/nba-official-chasing-spurs.png"),
+    ("All-NBA First Team predictions and final tracking", "Awards", "celtics", "jayson-tatum", "articles/cavs-playoffs.jpg"),
+    ("Clutch Player of the Year: regular season closing numbers", "Awards", "knicks", "jalen-brunson", "articles/brunson-iso-051426-scaled.jpg"),
+
+    ("Transactions tracker: buyout market kicks off after deadline", "Transactions", "lakers", "lebron-james", "articles/morey.jpg"),
+    ("Transactions tracker: ten-day contract signings across the league", "Transactions", "rockets", "", "articles/ian-eagle-noah-eagle.jpg"),
+    ("Transactions tracker: hardship exceptions for injury-hit teams", "Transactions", "grizzlies", "ja-morant", "articles/morey.jpg"),
+    ("Transactions tracker: two-way conversions before postseason", "Transactions", "warriors", "stephen-curry", "articles/nba-official-fantasy-rookies.jpg"),
+    ("Transactions tracker: contender adds wing depth via trade", "Transactions", "celtics", "jrue-holiday", "articles/og-anunoby.jpg"),
+
+    ("History: every team to come back from a 3-1 deficit", "History", "warriors", "stephen-curry", "articles/lebron-stern-draft-night.jpg"),
+    ("History: best playoff buzzer-beaters of the last decade", "History", "lakers", "lebron-james", "articles/collins-obituary.png"),
+    ("History: top 10 most legendary triple-doubles in playoff history", "History", "nuggets", "nikola-jokic", "articles/nba-official-finals-logo.png"),
+    ("History: revisiting the 2016 Finals comeback game-by-game", "History", "cavaliers", "lebron-james", "articles/lebron-stern-draft-night.jpg"),
+    ("History: how the three-point line transformed offense", "History", "warriors", "stephen-curry", "articles/nba-official-fantasy-power.jpg"),
+
+    ("Around the NBA: bench mobs that are turning games around", "Around the NBA", "kings", "malik-monk", "articles/peterson-dybantsa.jpg"),
+    ("Around the NBA: small-market storylines worth following", "Around the NBA", "thunder", "shai-gilgeous-alexander", "articles/nba-official-chasing-thunder.jpeg"),
+    ("Around the NBA: rookie wall watch heading into spring", "Around the NBA", "spurs", "stephon-castle", "articles/nba-official-castle.jpg"),
+    ("Around the NBA: load management decisions across contenders", "Around the NBA", "clippers", "kawhi-leonard", "articles/draft-combine-2026.jpg"),
+    ("Around the NBA: international scouting trip from Belgrade", "Around the NBA", "magic", "franz-wagner", "articles/nba-official-draft-video-1.jpg"),
+
+    ("Preview: Lakers vs. Warriors with playoff seeding on the line", "Preview", "lakers", "lebron-james", "articles/okc-lal-recap.jpg"),
+    ("Preview: Celtics-Knicks rivalry game with East implications", "Preview", "celtics", "jayson-tatum", "articles/harris-levert-051426-scaled.jpg"),
+    ("Preview: Thunder host Nuggets in possible playoff matchup", "Preview", "thunder", "shai-gilgeous-alexander", "articles/nba-official-spurs-thunder.jpg"),
+    ("Preview: Heat-Bucks pace clash heading into national TV", "Preview", "heat", "bam-adebayo", "articles/harden-game5.jpg"),
+
+    ("Analysis: how Wembanyama is bending offensive shot charts", "Analysis", "spurs", "victor-wembanyama", "articles/wembanyama-gm5.jpg"),
+    ("Analysis: Jokic's elbow passing creates record-setting assists", "Analysis", "nuggets", "nikola-jokic", "articles/nba-official-chasing-cavs.png"),
+    ("Analysis: how Cleveland's defense forces opponents off the line", "Analysis", "cavaliers", "evan-mobley", "articles/cle-det-recap.jpg"),
+    ("Analysis: the Wolves switching scheme that powers their defense", "Analysis", "timberwolves", "jaden-mcdaniels", "articles/edwards-game5-051426-scaled.jpg"),
+
+    ("Features: a day in the life of Anthony Edwards", "Features", "timberwolves", "anthony-edwards", "articles/edwards-game5-051426-scaled.jpg"),
+    ("Features: the rebuild blueprint paying off in Oklahoma City", "Features", "thunder", "chet-holmgren", "articles/nba-official-chasing-thunder.jpeg"),
+    ("Features: how Spurs are integrating Castle alongside Wembanyama", "Features", "spurs", "stephon-castle", "articles/nba-official-castle.jpg"),
+    ("Features: Pistons' Cade Cunningham finally healthy and unleashed", "Features", "pistons", "cade-cunningham", "articles/nba-official-cade-duren.jpg"),
+
+    ("Video: top 10 plays from the second round", "Video", "thunder", "shai-gilgeous-alexander", "articles/johnson-iso-051426-scaled.jpg"),
+    ("Video: every Wembanyama block from the Game 5 win", "Video", "spurs", "victor-wembanyama", "articles/wembanyama-gm5.jpg"),
+    ("Video: Cade Cunningham and Jalen Duren two-man game breakdown", "Video", "pistons", "cade-cunningham", "articles/nba-official-cade-duren.jpg"),
+    ("Highlights: Knicks bounce back in pivotal Game 4", "Highlights", "knicks", "jalen-brunson", "articles/brunson-iso-051426-scaled.jpg"),
+    ("Highlights: Indiana's transition offense torches Milwaukee", "Highlights", "pacers", "tyrese-haliburton", "articles/harden-game5.jpg"),
+    ("Highlights: every made three from a 22-three barrage", "Highlights", "celtics", "payton-pritchard", "articles/nba-official-fantasy-power.jpg"),
+]
+
+
+# EXTRA_PRODUCTS — adds team-by-team merch and accessories.
+EXTRA_PRODUCTS = [
+    ("Atlanta Hawks Statement Edition Jersey", "Jerseys", "hawks", 109.99, 129.99, "Red", "hawks.svg", ["Nike Dri-FIT fabric", "Heat-applied name and number", "Statement Edition trim"]),
+    ("Chicago Bulls Icon Edition Jersey", "Jerseys", "bulls", 109.99, 129.99, "Red", "bulls.svg", ["Nike Dri-FIT fabric", "Iconic team striping", "Tagless interior"]),
+    ("Cleveland Cavaliers Association Jersey", "Jerseys", "cavaliers", 109.99, 129.99, "White", "cavaliers.svg", ["Lightweight mesh", "Heat transfer name", "Official sideline cut"]),
+    ("Detroit Pistons Hardwood Classics Jersey", "Jerseys", "pistons", 119.99, 139.99, "Red", "pistons.svg", ["Throwback graphics", "Mesh body", "Official team detailing"]),
+    ("Brooklyn Nets City Edition Jersey", "Jerseys", "nets", 119.99, 134.99, "Black", "nets.svg", ["Mesh build", "City Edition colorways", "Reflective trim"]),
+    ("Toronto Raptors Statement Jersey", "Jerseys", "raptors", 109.99, 129.99, "Red", "raptors.svg", ["Lightweight knit", "Embroidered team mark", "Athletic fit"]),
+    ("Charlotte Hornets Icon Edition Jersey", "Jerseys", "hornets", 99.99, 119.99, "Teal", "hornets.svg", ["Two-tone body", "Heat-applied numbers", "Sideline cut"]),
+    ("Houston Rockets Statement Edition Jersey", "Jerseys", "rockets", 109.99, 129.99, "Red", "rockets.svg", ["Lightweight mesh", "Embroidered Houston wordmark", "Player-issued cut"]),
+    ("Memphis Grizzlies Association Edition Jersey", "Jerseys", "grizzlies", 109.99, 129.99, "White", "grizzlies.svg", ["Lightweight knit", "Front and back number sets", "Tagless collar"]),
+    ("New Orleans Pelicans Icon Edition Jersey", "Jerseys", "pelicans", 109.99, 129.99, "Navy", "pelicans.svg", ["Nike Dri-FIT", "Team color trim", "Official sideline cut"]),
+    ("Portland Trail Blazers Statement Jersey", "Jerseys", "trail_blazers", 109.99, 129.99, "Red", "trail_blazers.svg", ["Lightweight mesh", "Heat transfer numbers", "Player-issued cut"]),
+    ("Sacramento Kings Icon Edition Jersey", "Jerseys", "kings", 109.99, 129.99, "Purple", "kings.svg", ["Smooth knit body", "Embroidered crown", "Official sideline cut"]),
+    ("Utah Jazz Association Edition Jersey", "Jerseys", "jazz", 109.99, 129.99, "White", "jazz.svg", ["Lightweight knit", "Heat transfer team mark", "Tagless interior"]),
+    ("Washington Wizards Statement Edition Jersey", "Jerseys", "wizards", 109.99, 129.99, "Red", "wizards.svg", ["Lightweight mesh", "Embroidered team mark", "Authentic cut"]),
+
+    ("Atlanta Hawks Performance Tee", "T-Shirts", "hawks", 34.99, 39.99, "Red", "hawks.svg", ["Cotton blend", "Screen print logo", "Athletic fit"]),
+    ("Chicago Bulls Logo Hoodie", "Hoodies", "bulls", 79.99, 89.99, "Black", "bulls.svg", ["Midweight fleece", "Embroidered chest logo", "Drawstring hood"]),
+    ("Detroit Pistons Snapback Cap", "Hats", "pistons", 31.99, 35.99, "Navy", "pistons.svg", ["Snapback closure", "Embroidered team mark", "Flat brim"]),
+    ("Houston Rockets Cotton Tee", "T-Shirts", "rockets", 32.99, 37.99, "Red", "rockets.svg", ["Soft cotton", "Crew neck", "Screen print"]),
+    ("Memphis Grizzlies Practice Shorts", "Shorts", "grizzlies", 49.99, 59.99, "Navy", "grizzlies.svg", ["Elastic waistband", "Side pockets", "Team color panels"]),
+    ("Sacramento Kings Pullover Hoodie", "Hoodies", "kings", 74.99, 89.99, "Purple", "kings.svg", ["Heavyweight fleece", "Kangaroo pocket", "Embroidered crown"]),
+    ("Toronto Raptors Track Jacket", "Outerwear", "raptors", 99.99, 119.99, "Red", "raptors.svg", ["Lightweight shell", "Full zip", "Ribbed cuffs"]),
+    ("Utah Jazz City Edition Cap", "Hats", "jazz", 32.99, 36.99, "Black", "jazz.svg", ["Adjustable strap", "City Edition graphic", "Curved brim"]),
+    ("Washington Wizards Long Sleeve Tee", "T-Shirts", "wizards", 39.99, 44.99, "Red", "wizards.svg", ["Soft jersey knit", "Ribbed cuffs", "Screen print"]),
+    ("Portland Trail Blazers Crewneck Sweatshirt", "Hoodies", "trail_blazers", 64.99, 74.99, "Black", "trail_blazers.svg", ["French terry fabric", "Ribbed cuffs", "Front chest logo"]),
+
+    ("NBA Authentic Spalding Game Basketball", "Accessories", "", 159.99, 179.99, "Brown", "league/nba-logo.svg", ["Indoor leather", "Official 29.5\" size", "Game-ready grip"]),
+    ("NBA League Pass 12-Month Subscription", "Accessories", "", 99.99, 129.99, "Multi", "league/nba-logo.svg", ["All games live and on demand", "Multi-device access", "Includes condensed games"]),
+    ("Brooklyn Nets Backpack", "Accessories", "nets", 54.99, 64.99, "Black", "nets.svg", ["Padded laptop sleeve", "Reinforced straps", "Embroidered team mark"]),
+    ("Boston Celtics Replica Banner", "Accessories", "celtics", 39.99, 49.99, "Green", "celtics.svg", ["Two-sided print", "Hanging cord included", "Officially licensed"]),
+    ("Denver Nuggets Throwback Hoodie", "Hoodies", "nuggets", 79.99, 94.99, "Navy", "nuggets.svg", ["Heavyweight fleece", "Throwback rainbow graphic", "Ribbed hem"]),
+    ("New Orleans Pelicans Performance Tank", "T-Shirts", "pelicans", 32.99, 39.99, "Navy", "pelicans.svg", ["Moisture-wicking fabric", "Sleeveless cut", "Screen print team mark"]),
+    ("Charlotte Hornets Travel Mug", "Accessories", "hornets", 22.99, 26.99, "Teal", "hornets.svg", ["Stainless steel", "Spill-resistant lid", "Wraparound team logo"]),
+]
+
+
+def _generate_regular_games(teams_by_slug, target_count=95):
+    rng = _rand.Random(20260515)
+    slugs = list(teams_by_slug.keys())
+    out = []
+    for i in range(target_count):
+        home, away = rng.sample(slugs, 2)
+        # Spread across the prior ~150 days (regular season window)
+        offset_days = -1 * rng.randint(7, 175)
+        hour = rng.choice([18, 19, 20, 21])
+        home_score = rng.randint(95, 132)
+        away_score = rng.randint(95, 132)
+        if home_score == away_score:
+            home_score += 1
+        diff = home_score - away_score
+        if diff > 0:
+            recap = f"{teams_by_slug[home].full_name} held off {teams_by_slug[away].full_name} {home_score}-{away_score} at home."
+        else:
+            recap = f"{teams_by_slug[away].full_name} edged {teams_by_slug[home].full_name} {away_score}-{home_score} on the road."
+        broadcast = rng.choice(["NBA TV", "ESPN", "TNT", "ABC", "League Pass", "Bally Sports"])
+        out.append((home, away, offset_days, hour, 0, "Final", home_score, away_score,
+                    teams_by_slug[home].arena, broadcast, recap, 0))
+    return out
+
+
 def seed_database():
     if Team.query.count() > 0:
         return
@@ -1938,6 +2327,19 @@ def seed_database():
             bio=bio, image=f"/static/images/players/{image_slug}.png",
         ))
 
+    # Append the broader roster — image falls back to team logo to avoid 404s.
+    for team_slug, roster in EXTRA_ROSTERS.items():
+        team = teams_by_slug.get(team_slug)
+        if not team:
+            continue
+        for name, pos, jersey, h, w, age, country, college, ppg, rpg, apg, spg, bpg, fg, three, bio in roster:
+            db.session.add(Player(
+                team_id=team.id, name=name, slug=slugify(name), position=pos,
+                jersey=jersey, height=h, weight=w, age=age, country=country, college=college,
+                ppg=ppg, rpg=rpg, apg=apg, spg=spg, bpg=bpg, fg_pct=fg, three_pct=three,
+                bio=bio, image=team.logo,
+            ))
+
     games = [
         ("cavaliers", "pistons", 0, 7, 0, "Scheduled", None, None, "Rocket Arena", "Now TV", "East semifinal Game 6 with Cleveland leading 3-2."),
         ("timberwolves", "spurs", 0, 9, 30, "Scheduled", None, None, "Target Center", "Viu TV", "West semifinal Game 6 with San Antonio leading 3-2."),
@@ -1956,6 +2358,16 @@ def seed_database():
             game_date=MIRROR_REFERENCE_DATE.replace(hour=hour, minute=minute) + timedelta(days=offset),
             status=status, home_score=home_score, away_score=away_score, arena=arena,
             broadcast=broadcast, recap=recap, ticket_price=55 + offset * 4,
+        ))
+
+    # Generate ~95 regular-season Final games to make schedule, standings,
+    # team_schedule and search pages feel populated.
+    for home_slug, away_slug, offset, hour, minute, status, home_score, away_score, arena, broadcast, recap, ticket_price in _generate_regular_games(teams_by_slug):
+        db.session.add(Game(
+            home_team_id=teams_by_slug[home_slug].id, away_team_id=teams_by_slug[away_slug].id,
+            game_date=MIRROR_REFERENCE_DATE.replace(hour=hour, minute=minute) + timedelta(days=offset),
+            status=status, home_score=home_score, away_score=away_score, arena=arena,
+            broadcast=broadcast, recap=recap, ticket_price=ticket_price,
         ))
 
     articles = [
@@ -1989,6 +2401,21 @@ def seed_database():
             image=f"/static/images/{image}", related_team_slug=team_slug, related_player_slug=player_slug,
         ))
 
+    # Append a deeper newsroom — generic dek/body keyed off the title so
+    # category pages, search, and section landings have enough variety.
+    base_articles = len(articles)
+    for j, (title, category, team_slug, player_slug, image) in enumerate(EXTRA_ARTICLES):
+        dek = f"{title} — featured coverage from the NBA.com newsroom."
+        body = (
+            f"{title}. Latest reporting includes context on the matchup, recent performance trends, "
+            "key player availability and what to watch as the storyline develops."
+        )
+        db.session.add(Article(
+            title=title, slug=slugify(title), category=category, dek=dek, body=body,
+            published_at=MIRROR_REFERENCE_DATE - timedelta(hours=(base_articles + j) * 5),
+            image=f"/static/images/{image}", related_team_slug=team_slug, related_player_slug=player_slug,
+        ))
+
     product_defs = [
         ("Los Angeles Lakers Icon Swingman Jersey", "Jerseys", "lakers", 119.99, 139.99, "Gold", "lakers.svg", ["Nike Dri-FIT fabric", "Heat-applied name and number", "Classic Icon Edition colors"]),
         ("Boston Celtics Association Edition Jersey", "Jerseys", "celtics", 109.99, 129.99, "White", "celtics.svg", ["Lightweight double-knit mesh", "Woven jock tag", "Official team detailing"]),
@@ -2014,6 +2441,26 @@ def seed_database():
             image=f"/static/images/teams/{logo}", description=f"Official NBA Store gear for {teams_by_slug[team_slug].full_name} fans.",
             features=json.dumps(features), sizes="S,M,L,XL,2XL" if category != "Hats" else "One Size",
         ))
+
+    for name, category, team_slug, price, list_price, color, logo, features in EXTRA_PRODUCTS:
+        if team_slug and team_slug in teams_by_slug:
+            description = f"Official NBA Store gear for {teams_by_slug[team_slug].full_name} fans."
+            image_path = f"/static/images/teams/{logo}"
+        else:
+            description = "Officially licensed NBA fan gear available on NBA Store."
+            image_path = f"/static/images/{logo}"
+        if category == "Hats":
+            sizes = "One Size"
+        elif category == "Accessories":
+            sizes = "One Size"
+        else:
+            sizes = "S,M,L,XL,2XL"
+        db.session.add(Product(
+            name=name, slug=slugify(name), category=category, team_slug=team_slug, price=price,
+            list_price=list_price, rating=4.2 + (price % 7) / 10, stock=22, color=color,
+            image=image_path, description=description,
+            features=json.dumps(features), sizes=sizes,
+        ))
     db.session.commit()
 
 
@@ -2028,13 +2475,17 @@ def seed_benchmark_users():
         ("david_k", "david.k@test.com", "David Kim", "212-555-0117", "4 Pennsylvania Plaza", "New York", "NY", "10001", "knicks", "7777"),
     ]
     created = []
+    # PINNED bcrypt hash for "TestPass123!" — bcrypt.generate_password_hash()
+    # is non-deterministic (per-call salt), which breaks the byte-identical
+    # reset invariant. Pinning the hash keeps seed runs reproducible.
+    PINNED_HASH = "$2b$12$RwAC/sfwDHtccU//A20fde.uKkZK4Ptnjjyua2l2ktwI6uysAp3Ou"
     for username, email, name, phone, address, city, state, zip_code, fav_team, card in users:
         user = User(
             username=username, email=email, display_name=name, phone=phone,
             address_line1=address, city=city, state=state, zip_code=zip_code,
             favorite_team_slug=fav_team, payment_last4=card,
         )
-        user.set_password("TestPass123!")
+        user.password_hash = PINNED_HASH
         db.session.add(user)
         created.append(user)
     db.session.flush()
@@ -2067,6 +2518,39 @@ def seed_benchmark_users():
         db.session.add(order)
         db.session.flush()
         db.session.add(OrderItem(order_id=order.id, product_name="Official NBA team gear bundle", quantity=2, price=77.49, size="L"))
+    # Seed a deterministic set of saved ticket requests so the /account page
+    # and ticket_request tasks have realistic data without depending on
+    # runtime POSTs.
+    upcoming_games = (
+        Game.query.filter(Game.status == "Scheduled")
+        .order_by(Game.game_date, Game.id)
+        .all()
+    )
+    if upcoming_games:
+        ticket_plans = [
+            ("alice_j", 0, 2, "Lower bowl - sideline"),
+            ("alice_j", 2, 4, "Suite level"),
+            ("alice_j", 4, 2, "Courtside upgrade"),
+            ("bob_c", 1, 2, "Loge balcony"),
+            ("bob_c", 3, 3, "Lower bowl - baseline"),
+            ("carol_d", 0, 2, "Center court"),
+            ("carol_d", 5, 4, "Mezzanine"),
+            ("david_k", 1, 2, "Lower bowl - corner"),
+            ("david_k", 2, 3, "Upper bowl"),
+            ("david_k", 4, 2, "Floor seats"),
+        ]
+        users_by_username = {user.username: user for user in created}
+        for username, game_idx, seats, preference in ticket_plans:
+            user = users_by_username.get(username)
+            if not user or game_idx >= len(upcoming_games):
+                continue
+            db.session.add(TicketRequest(
+                user_id=user.id,
+                game_id=upcoming_games[game_idx].id,
+                seats=seats,
+                section_preference=preference,
+                status="Saved",
+            ))
     db.session.commit()
 
 

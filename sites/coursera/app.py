@@ -2663,6 +2663,59 @@ def seed_testimonials_and_extras():
                                partner_type='company', short_name='Canva'))
         db.session.commit()
 
+    # Ensure Gautam Kaul teaches more than one course (Task 16).
+    # Must run BEFORE the testimonials loop so the loop covers the
+    # Kaul course on the FIRST build — otherwise the 2nd build would
+    # add testimonials and break byte-identical reset.
+    kaul_courses = Course.query.filter(Course.instructor.like('%Gautam Kaul%')).all()
+    if len(kaul_courses) < 2:
+        umich = Partner.query.filter_by(slug='umich').first()
+        new_slug = 'finance-for-non-finance-professionals'
+        if not Course.query.filter_by(slug=new_slug).first():
+            c2 = Course(
+                title='Finance for Non-Finance Professionals',
+                slug=new_slug,
+                partner_id=umich.id if umich else None,
+                course_type='Course',
+                level='Beginner',
+                category='Business',
+                subcategory='Finance',
+                duration_text='Approx. 9 hours',
+                duration_weeks=2.0, duration_hours=9.0,
+                rating=4.7, review_count=9800, enrolled_count=210000,
+                is_free=False, has_certificate=True, credit_eligible=False,
+                instructor='Gautam Kaul',
+                instructor_title='Professor of Finance, University of Michigan',
+                description=(
+                    'A concise primer for professionals without a finance background. '
+                    'Covers core principles of valuation, risk, and capital markets.'),
+                skills=json.dumps(['Finance', 'Valuation', 'Risk', 'Capital Markets']),
+                what_you_learn=json.dumps([
+                    'Explain time value of money',
+                    'Assess financial risk',
+                    'Interpret corporate finance decisions',
+                ]),
+                feature_tags=json.dumps(['finance', 'non-finance', 'beginner', 'umich']),
+                is_featured=False, is_new=False,
+                sort_date='2024-08-01',
+                color_class='cat-biz',
+                testimonials_json=json.dumps([]),
+            )
+            db.session.add(c2)
+            db.session.flush()
+            # Backfill modules so this course matches the rest of the catalog.
+            for w, (title, desc, vids, reads, quizzes) in enumerate([
+                ('Time Value of Money', 'Discounting, compounding, and the mechanics of valuing future cash flows.', 4, 2, 1),
+                ('Risk and Return', 'How risk is priced, the role of diversification, and CAPM intuition.', 4, 2, 1),
+                ('Corporate Finance Decisions', 'NPV, IRR, capital budgeting and how firms allocate capital.', 4, 2, 1),
+            ], 1):
+                db.session.add(CourseModule(course_id=c2.id, week_number=w,
+                    title=title, description=desc,
+                    videos_count=vids, readings_count=reads, quizzes_count=quizzes,
+                    video_titles=json.dumps([f'Lesson {w}.1: {title}', f'Lesson {w}.2: Worked examples'])))
+            db.session.commit()
+            print("  + added Gautam Kaul second course")
+
     # Seed testimonials for Specializations (and Professional Certificates)
     # that currently have no testimonials. We synthesize 3 per course using the
     # existing Review rows so everything is self-consistent and on-page.
@@ -2714,57 +2767,6 @@ def seed_testimonials_and_extras():
         db.session.commit()
         print(f"  + seeded testimonials on {updated} courses")
 
-    # Ensure Gautam Kaul teaches more than one course (Task 16).
-    # If only one course exists for him, add a second so "other courses" is answerable.
-    kaul_courses = Course.query.filter(Course.instructor.like('%Gautam Kaul%')).all()
-    if len(kaul_courses) < 2:
-        umich = Partner.query.filter_by(slug='umich').first()
-        new_slug = 'finance-for-non-finance-professionals'
-        if not Course.query.filter_by(slug=new_slug).first():
-            c2 = Course(
-                title='Finance for Non-Finance Professionals',
-                slug=new_slug,
-                partner_id=umich.id if umich else None,
-                course_type='Course',
-                level='Beginner',
-                category='Business',
-                subcategory='Finance',
-                duration_text='Approx. 9 hours',
-                duration_weeks=2.0, duration_hours=9.0,
-                rating=4.7, review_count=9800, enrolled_count=210000,
-                is_free=False, has_certificate=True, credit_eligible=False,
-                instructor='Gautam Kaul',
-                instructor_title='Professor of Finance, University of Michigan',
-                description=(
-                    'A concise primer for professionals without a finance background. '
-                    'Covers core principles of valuation, risk, and capital markets.'),
-                skills=json.dumps(['Finance', 'Valuation', 'Risk', 'Capital Markets']),
-                what_you_learn=json.dumps([
-                    'Explain time value of money',
-                    'Assess financial risk',
-                    'Interpret corporate finance decisions',
-                ]),
-                feature_tags=json.dumps(['finance', 'non-finance', 'beginner', 'umich']),
-                is_featured=False, is_new=False,
-                sort_date='2024-08-01',
-                color_class='cat-biz',
-                testimonials_json=json.dumps([]),
-            )
-            db.session.add(c2)
-            db.session.flush()
-            # Backfill modules so this course matches the rest of the catalog.
-            for w, (title, desc, vids, reads, quizzes) in enumerate([
-                ('Time Value of Money', 'Discounting, compounding, and the mechanics of valuing future cash flows.', 4, 2, 1),
-                ('Risk and Return', 'How risk is priced, the role of diversification, and CAPM intuition.', 4, 2, 1),
-                ('Corporate Finance Decisions', 'NPV, IRR, capital budgeting and how firms allocate capital.', 4, 2, 1),
-            ], 1):
-                db.session.add(CourseModule(course_id=c2.id, week_number=w,
-                    title=title, description=desc,
-                    videos_count=vids, readings_count=reads, quizzes_count=quizzes,
-                    video_titles=json.dumps([f'Lesson {w}.1: {title}', f'Lesson {w}.2: Worked examples'])))
-            db.session.commit()
-            print("  + added Gautam Kaul second course")
-
 
 with app.app_context():
     # Schema migration must run BEFORE ORM queries hit the new column.
@@ -2776,6 +2778,18 @@ with app.app_context():
     run_startup_migrations()
     seed_database()
     seed_benchmark_users()
+    # Phase 2 bulk seed extension: extra reviewer users, partners,
+    # courses, reviews, enrollments and saves. Idempotent + deterministic.
+    # Must run BEFORE seed_testimonials_and_extras so that testimonials
+    # cover the v2 courses on the FIRST build (otherwise the second run
+    # would add testimonials and break byte-identical reset).
+    from seed_extras import seed_v2 as _seed_v2
+    _seed_v2(db, {
+        'User': User, 'Partner': Partner, 'Course': Course,
+        'CourseModule': CourseModule, 'SubCourse': SubCourse,
+        'Enrollment': Enrollment, 'SavedCourse': SavedCourse,
+        'Review': Review,
+    })
     seed_testimonials_and_extras()
 
 if __name__ == '__main__':

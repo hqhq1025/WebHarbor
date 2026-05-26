@@ -5,6 +5,13 @@ import json
 import os
 import re
 
+from bulk_listings import (
+    BULK_MESSAGES,
+    BULK_RECORDS,
+    BULK_SAVES,
+    NEIGHBORHOODS_BY_AREA,
+)
+
 
 FIXED_NOW = datetime(2026, 5, 12, 9, 30, 0)
 
@@ -765,6 +772,23 @@ def build_listing_records(base_dir):
                 "image": pick_image(pools, category_slug, idx),
             }
             records.append(finalize_record(row, pools, idx))
+
+    # Bulk records from bulk_listings.py — round-robin area / neighborhood so we
+    # don't hand-pin every row. Cycle through all 6 regions and the per-region
+    # neighborhood pool deterministically.
+    area_cycle_bulk = list(NEIGHBORHOODS_BY_AREA.keys())
+    bulk_offset = len(records)
+    for i, item in enumerate(BULK_RECORDS):
+        row = dict(item)
+        area = row.get("area")
+        if not area:
+            area = area_cycle_bulk[i % len(area_cycle_bulk)]
+        neighborhoods = NEIGHBORHOODS_BY_AREA.get(area, ["san francisco"])
+        if not row.get("neighborhood"):
+            row["neighborhood"] = neighborhoods[i % len(neighborhoods)]
+        row["area"] = area
+        row["image"] = pick_image(pools, row["category_slug"], bulk_offset + i)
+        records.append(finalize_record(row, pools, bulk_offset + i))
     return records
 
 
@@ -902,6 +926,44 @@ def seed_benchmark_users(db, User, Listing, SavedListing, SavedSearch, Message):
             direction="outbound",
             created_at=FIXED_NOW - timedelta(hours=10),
             is_read=True,
+        ))
+
+    # Bulk extras: cross-user saves and conversation chains.
+    user_by_email = {u.email: u for u in created}
+
+    def _find_listing(keyword):
+        return (
+            Listing.query.filter(Listing.title.ilike(f"%{keyword}%"))
+            .order_by(Listing.id.asc())
+            .first()
+        )
+
+    for save_idx, (email, keyword, note) in enumerate(BULK_SAVES):
+        user = user_by_email.get(email)
+        listing = _find_listing(keyword)
+        if not user or not listing:
+            continue
+        db.session.add(SavedListing(
+            user_id=user.id,
+            listing_id=listing.id,
+            note=note,
+            created_at=FIXED_NOW - timedelta(days=4, hours=save_idx),
+        ))
+
+    for email, keyword, sender_name, sender_email, body, direction, hours_ago, is_read in BULK_MESSAGES:
+        user = user_by_email.get(email)
+        listing = _find_listing(keyword)
+        if not user or not listing:
+            continue
+        db.session.add(Message(
+            user_id=user.id,
+            listing_id=listing.id,
+            sender_name=sender_name,
+            sender_email=sender_email,
+            body=body,
+            direction=direction,
+            created_at=FIXED_NOW - timedelta(hours=hours_ago),
+            is_read=is_read,
         ))
 
     db.session.commit()

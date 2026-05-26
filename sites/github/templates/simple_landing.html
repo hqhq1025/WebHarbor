@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+{% block title %}{{ page.title }} · GitHub{% endblock %}
+{% block content %}
+
+<section class="sec-hero">
+  <div class="sec-hero-inner">
+    <div class="sec-hero-text">
+      <span class="sec-eyebrow">
+        <svg aria-hidden="true" height="16" viewBox="0 0 16 16" width="16" fill="currentColor">
+          <path d="M8 0a8 8 0 1 0 0 16A8 8 0 0 0 8 0Zm0 14.5A6.5 6.5 0 1 1 8 1.5a6.5 6.5 0 0 1 0 13Z"/>
+        </svg>
+        {{ page.eyebrow }}
+      </span>
+      <h1 class="sec-hero-headline">{{ page.headline }}</h1>
+      <p class="sec-hero-sub">{{ page.sub }}</p>
+      <div class="sec-hero-cta">
+        {% for cta in page.ctas %}
+          <a href="{{ cta.href }}" class="gh-btn {{ cta.cls or 'gh-btn-primary' }}">{{ cta.label }}</a>
+        {% endfor %}
+      </div>
+      {% if page.bullets %}
+      <ul class="sec-hero-bullets">
+        {% for b in page.bullets %}<li>{{ b }}</li>{% endfor %}
+      </ul>
+      {% endif %}
+    </div>
+    {% if page.card_rows %}
+    <div class="sec-hero-art" aria-hidden="true">
+      <div class="sec-hero-card">
+        {% for row in page.card_rows %}
+        <div class="sec-hero-card-row sec-row-fix">
+          <span class="sec-row-icon">{{ row.icon }}</span>
+          <span class="sec-row-msg">{{ row.msg|safe }}</span>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+    {% endif %}
+  </div>
+</section>
+
+{% if page.sections %}
+<section class="sec-features">
+  <div class="sec-features-inner">
+    <h2 class="sec-section-title">{{ page.sections_title or 'Highlights' }}</h2>
+    <div class="sec-feature-grid">
+      {% for s in page.sections %}
+      <article class="sec-feature-card">
+        <h3>{{ s.title }}</h3>
+        <p>{{ s.body }}</p>
+        {% if s.href %}<a href="{{ s.href }}" class="sec-feature-link">{{ s.link_label or 'Learn more' }} →</a>{% endif %}
+      </article>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+{% endif %}
+
+{% if page.faq %}
+<section class="sec-faq">
+  <div class="sec-features-inner">
+    <h2 class="sec-section-title">Frequently asked</h2>
+    {% for q in page.faq %}
+    <details class="sec-faq-item">
+      <summary>{{ q.q }}</summary>
+      <p>{{ q.a }}</p>
+    </details>
+    {% endfor %}
+  </div>
+</section>
+{% endif %}
+
+{% endblock %}

@@ -2238,6 +2238,340 @@ def seed_benchmark_users():
     db.session.add(PriceAlert(user_id=david.id, origin_iata='JFK', destination_iata='CDG',
                                threshold_price=450.0, active=True))
 
+    # ----------------------------------------------------------------
+    # Phase 2 expansion: populate previously-empty tables
+    # (saved_search, cart_item, review) and densify price_alert /
+    # tracked_flight so account pages feel realistically populated for
+    # benchmark scenarios that read or modify these entities.
+    # ----------------------------------------------------------------
+    REF_DATE = date(2026, 4, 15)  # pinned reference date for seed timestamps
+
+    def _add_saved(user, label, origin, dest, departure_offset=None,
+                   return_offset=None, passengers=1, cabin='Economy'):
+        ss = SavedSearch(
+            user_id=user.id,
+            label=label,
+            origin_iata=origin,
+            destination_iata=dest,
+            passengers=passengers,
+            cabin_class=cabin,
+        )
+        if departure_offset is not None:
+            ss.departure_date = REF_DATE + timedelta(days=departure_offset)
+        if return_offset is not None:
+            ss.return_date = REF_DATE + timedelta(days=return_offset)
+        db.session.add(ss)
+        return ss
+
+    def _add_cart(user, origin, dest, cabin='Economy', passengers=1):
+        f = _get_flight(origin, dest)
+        if not f:
+            return None
+        ci = CartItem(
+            user_id=user.id,
+            flight_id=f.id,
+            passengers=passengers,
+            cabin_class=cabin,
+        )
+        db.session.add(ci)
+        return ci
+
+    def _add_tracked(user, origin, dest, discount=0.85):
+        f = _get_flight(origin, dest)
+        if not f:
+            return None
+        # Skip duplicates (TrackedFlight has no unique constraint but we
+        # don't want noisy doubles for the same user+flight).
+        existing = TrackedFlight.query.filter_by(
+            user_id=user.id, flight_id=f.id).first()
+        if existing:
+            return existing
+        tf = TrackedFlight(
+            user_id=user.id,
+            flight_id=f.id,
+            starting_price=f.price,
+            target_price=round(f.price * discount, 2),
+        )
+        db.session.add(tf)
+        return tf
+
+    def _add_alert(user, origin, dest, threshold, active=True):
+        db.session.add(PriceAlert(
+            user_id=user.id,
+            origin_iata=origin,
+            destination_iata=dest,
+            threshold_price=float(threshold),
+            active=active,
+        ))
+
+    def _add_review(user, origin, dest, rating, title, body,
+                    punct=None, comfort=None, service=None):
+        f = _get_flight(origin, dest)
+        if not f:
+            return None
+        r = Review(
+            user_id=user.id,
+            flight_id=f.id,
+            rating=rating,
+            title=title,
+            body=body,
+            punctuality=punct if punct is not None else rating,
+            comfort=comfort if comfort is not None else rating,
+            service=service if service is not None else rating,
+        )
+        db.session.add(r)
+        return r
+
+    # ---- Saved searches (16 total: 4 per user) ----
+    _add_saved(alice, 'NYC -> London business trip', 'JFK', 'LHR', 21, 28, 1, 'Business')
+    _add_saved(alice, 'Paris weekend', 'JFK', 'CDG', 35, 39, 1, 'Premium')
+    _add_saved(alice, 'Tokyo cherry blossoms', 'JFK', 'HND', 56, 70, 1, 'Business')
+    _add_saved(alice, 'Dubai stopover', 'JFK', 'DXB', 90, 97, 1, 'Business')
+
+    _add_saved(bob, 'Cheapest SFO -> LHR', 'SFO', 'LHR', 14, 28, 1, 'Economy')
+    _add_saved(bob, 'LA to Tokyo deal hunt', 'LAX', 'HND', 30, 44, 1, 'Economy')
+    _add_saved(bob, 'Paris on a budget', 'SFO', 'CDG', 45, 60, 1, 'Economy')
+    _add_saved(bob, 'Bangkok backpack', 'SFO', 'BKK', 70, 90, 1, 'Economy')
+
+    _add_saved(carol, 'Family trip to Rome', 'ORD', 'FCO', 60, 75, 4, 'Economy')
+    _add_saved(carol, 'School-break London', 'ORD', 'LHR', 28, 42, 4, 'Economy')
+    _add_saved(carol, 'Anniversary Paris', 'ORD', 'CDG', 120, 127, 2, 'Premium')
+    _add_saved(carol, 'Barcelona summer', 'ORD', 'BCN', 100, 114, 4, 'Economy')
+
+    _add_saved(david, 'Frequent Dubai client trips', 'JFK', 'DXB', 7, 11, 1, 'Business')
+    _add_saved(david, 'Paris client meeting', 'JFK', 'CDG', 14, 17, 1, 'Business')
+    _add_saved(david, 'Boston -> Barcelona summit', 'BOS', 'BCN', 21, 25, 1, 'Business')
+    _add_saved(david, 'Seoul investor roadshow', 'JFK', 'ICN', 45, 52, 1, 'First')
+
+    # ---- Cart items (11 total) ----
+    _add_cart(alice, 'JFK', 'LHR', 'Business', 1)
+    _add_cart(alice, 'JFK', 'CDG', 'Economy', 1)
+    _add_cart(alice, 'JFK', 'HND', 'Business', 1)
+
+    _add_cart(bob, 'SFO', 'LHR', 'Economy', 1)
+    _add_cart(bob, 'LAX', 'HND', 'Economy', 1)
+    _add_cart(bob, 'SFO', 'CDG', 'Economy', 1)
+
+    _add_cart(carol, 'ORD', 'FCO', 'Economy', 3)
+    _add_cart(carol, 'ORD', 'LHR', 'Economy', 4)
+    _add_cart(carol, 'ORD', 'BCN', 'Economy', 2)
+
+    _add_cart(david, 'JFK', 'DXB', 'Business', 1)
+    _add_cart(david, 'JFK', 'CDG', 'Business', 1)
+
+    # ---- Reviews (32 total: 8 per user across various routes) ----
+    _add_review(alice, 'JFK', 'LHR', 5,
+                'Exceptional transatlantic experience',
+                'Smooth boarding, lie-flat seat was spotless, and the crew kept the cabin '
+                'quiet for the overnight flight. Arrived rested and ready for meetings.',
+                5, 5, 5)
+    _add_review(alice, 'JFK', 'CDG', 4,
+                'Solid Paris run',
+                'On-time departure and good service. Could use more recent inflight movies '
+                'but the meal was a step above what I expected on this route.',
+                5, 4, 4)
+    _add_review(alice, 'JFK', 'HND', 5,
+                'Best long-haul I have flown this year',
+                'Cabin crew checked in often without hovering. The seat reclined fully and '
+                'the bedding felt almost hotel-grade. Will rebook this airline for Tokyo.',
+                5, 5, 5)
+    _add_review(alice, 'JFK', 'DXB', 4,
+                'Reliable for business travel',
+                'Priority boarding worked as advertised, lounge was crowded but the flight '
+                'itself was punctual. Wi-fi held up for emails the whole way.',
+                5, 4, 4)
+    _add_review(alice, 'JFK', 'LGA', 3,
+                'Fine for what it was',
+                'Quick hop, gate was changed twice which was annoying, but the flight itself '
+                'left within ten minutes of schedule. Nothing memorable either way.',
+                4, 3, 3)
+    _add_review(alice, 'BOS', 'LHR', 5,
+                'Great red-eye option from Boston',
+                'Boarded efficiently, dimmed cabin within an hour, and breakfast was served '
+                'just before landing. Painless arrival into Heathrow Terminal 5.',
+                5, 5, 5)
+    _add_review(alice, 'LAX', 'HND', 4,
+                'Comfortable Pacific crossing',
+                'Seat was wider than I expected and the entertainment selection was deep. '
+                'Only knock is that boarding took longer than necessary.',
+                5, 4, 4)
+    _add_review(alice, 'JFK', 'FCO', 4,
+                'Good value to Rome',
+                'Crew was friendly, food was hit-or-miss, but the flight was on time and '
+                'baggage came out fast at FCO. I would book this fare again.',
+                5, 4, 4)
+
+    _add_review(bob, 'SFO', 'LHR', 3,
+                'You get what you pay for',
+                'Cheapest fare I could find, seat was tight but legroom was acceptable. '
+                'Snacks were sold a la carte. Fine if you sleep through it.',
+                4, 2, 3)
+    _add_review(bob, 'LAX', 'HND', 4,
+                'Solid economy for the price',
+                'Surprised by how decent the meal service was. One-stop routing added two '
+                'hours but the layover at HND was easy to navigate.',
+                4, 4, 4)
+    _add_review(bob, 'SFO', 'CDG', 3,
+                'Average overnight',
+                'Plane felt full and the seat in front reclined into my knees the whole '
+                'flight. Crew was professional but stretched thin in the back of the cabin.',
+                4, 2, 3)
+    _add_review(bob, 'SFO', 'BKK', 4,
+                'Best deal to Thailand right now',
+                'Booked four weeks out for half the price of the direct option. Long layover '
+                'in Tokyo but the connection was smooth and the second leg felt quick.',
+                4, 4, 4)
+    _add_review(bob, 'SFO', 'NRT', 4,
+                'Great window seat to Tokyo',
+                'Decent legroom for economy, free checked bag was a nice surprise. The '
+                'Boeing 787 cabin pressure made the long flight far less draining.',
+                4, 4, 5)
+    _add_review(bob, 'LAX', 'CDG', 3,
+                'OK but boarding was chaotic',
+                'Two separate gate changes and a late inbound aircraft pushed our departure. '
+                'Once airborne the flight was fine, but the start really set the wrong tone.',
+                2, 3, 4)
+    _add_review(bob, 'SFO', 'SEA', 5,
+                'Perfect short hop',
+                'Quick boarding, on-time departure, and the airline did not nickel-and-dime '
+                'me for water. Wish more short-haul carriers worked this smoothly.',
+                5, 5, 5)
+    _add_review(bob, 'LAX', 'JFK', 4,
+                'Transcontinental done right',
+                'Power outlets at every seat actually worked, Wi-fi was usable for video '
+                'calls, and the snack box was generous. Five hours felt like three.',
+                5, 4, 4)
+
+    _add_review(carol, 'ORD', 'FCO', 5,
+                'Family trip made easy',
+                'Travelling with three kids and the crew could not have been more helpful — '
+                'priority boarding, kids meals on request, and patience with our circus.',
+                5, 5, 5)
+    _add_review(carol, 'ORD', 'LHR', 4,
+                'Comfortable to London with the family',
+                'Four of us in economy and the seats felt roomier than other carriers. Kids '
+                'entertainment selection was strong enough to last the whole flight.',
+                5, 4, 4)
+    _add_review(carol, 'ORD', 'CDG', 4,
+                'Romantic getaway, well executed',
+                'Booked premium for our anniversary. Champagne on boarding, attentive crew, '
+                'and the meal was genuinely good. Worth the upgrade for a special trip.',
+                5, 4, 5)
+    _add_review(carol, 'ORD', 'BCN', 4,
+                'Smooth jump to Barcelona',
+                'Late-night arrival but the flight was on time and the kids slept the whole '
+                'way. Bags came out within twenty minutes — could not ask for more.',
+                5, 4, 4)
+    _add_review(carol, 'ATL', 'CDG', 3,
+                'Tight seat pitch hurt this one',
+                'Knees against the seat for nine hours is not the right way to do an Atlantic '
+                'crossing. Crew was kind, food was fine, but I would not rebook this carrier.',
+                4, 2, 4)
+    _add_review(carol, 'DFW', 'LHR', 4,
+                'Reliable transatlantic option',
+                'Family of four, no surprises. Pre-ordering kids meals on the app actually '
+                'worked, which saved us from a meltdown over chicken vs. pasta at 38,000 ft.',
+                5, 4, 4)
+    _add_review(carol, 'ORD', 'BOS', 5,
+                'Easy short-haul',
+                'Quick, on-time, and the kids loved that they got their own snacks. Wish '
+                'more domestic flights ran this smoothly.',
+                5, 5, 5)
+    _add_review(carol, 'ORD', 'MIA', 4,
+                'Vacation-mode flight',
+                'Plane was warm and bright, crew was upbeat, and we landed on time. Great '
+                'start to a Florida trip with the family.',
+                5, 4, 5)
+
+    _add_review(david, 'JFK', 'DXB', 5,
+                'Worth every dollar in business',
+                'Lie-flat seat, attentive service, and a quiet cabin for the full 14 hours. '
+                'Landed in Dubai ready to head straight into client meetings.',
+                5, 5, 5)
+    _add_review(david, 'JFK', 'CDG', 4,
+                'Solid business product',
+                'Cabin crew was polished and the meal pacing was perfect for an overnight. '
+                'Knock half a point for the older seat hardware compared to other long-hauls.',
+                5, 4, 5)
+    _add_review(david, 'BOS', 'BCN', 4,
+                'Good Boston -> Barcelona option',
+                'Direct flight, on time both ways, and the lounge at BOS was actually '
+                'usable. Recommended for anyone heading to the summit next quarter.',
+                5, 4, 4)
+    _add_review(david, 'JFK', 'NRT', 5,
+                'Best first class I have flown',
+                'Private suite, restaurant-style dining on my own schedule, and the crew '
+                'remembered my name across two meal services. Hard to go back to business.',
+                5, 5, 5)
+    _add_review(david, 'JFK', 'ICN', 4,
+                'Reliable for Seoul roadshows',
+                'Punctual, comfortable, and the airline lounge at JFK is excellent. The '
+                'business cabin felt full but the crew never seemed rushed.',
+                5, 4, 4)
+    _add_review(david, 'JFK', 'HND', 5,
+                'Top-tier transpacific',
+                'Boarding by zone actually worked, the seat went fully horizontal, and I '
+                'slept seven hours straight. Best long-haul rest I have had in years.',
+                5, 5, 5)
+    _add_review(david, 'JFK', 'FCO', 4,
+                'Good Rome run',
+                'Crew was friendly and the wine selection was a step above the usual. Only '
+                'gripe is the entertainment system rebooted twice in flight.',
+                5, 4, 4)
+    _add_review(david, 'JFK', 'LHR', 4,
+                'Dependable for London',
+                'Pretty much what you would expect from a flagship business product — quick '
+                'turnaround at JFK, attentive service, and an on-time landing at Heathrow.',
+                5, 4, 5)
+
+    # ---- Extra tracked flights (densify 6 -> 25+) ----
+    _add_tracked(alice, 'JFK', 'CDG', 0.85)
+    _add_tracked(alice, 'BOS', 'LHR', 0.87)
+    _add_tracked(alice, 'JFK', 'FCO', 0.88)
+    _add_tracked(alice, 'JFK', 'DXB', 0.83)
+    _add_tracked(alice, 'JFK', 'HND', 0.85)
+
+    _add_tracked(bob, 'LAX', 'HND', 0.78)
+    _add_tracked(bob, 'SFO', 'CDG', 0.80)
+    _add_tracked(bob, 'SFO', 'NRT', 0.78)
+    _add_tracked(bob, 'SFO', 'BKK', 0.75)
+    _add_tracked(bob, 'LAX', 'CDG', 0.80)
+
+    _add_tracked(carol, 'ORD', 'BCN', 0.88)
+    _add_tracked(carol, 'ORD', 'CDG', 0.85)
+    _add_tracked(carol, 'DFW', 'LHR', 0.85)
+    _add_tracked(carol, 'ATL', 'CDG', 0.87)
+
+    _add_tracked(david, 'JFK', 'CDG', 0.85)
+    _add_tracked(david, 'JFK', 'NRT', 0.85)
+    _add_tracked(david, 'JFK', 'ICN', 0.85)
+    _add_tracked(david, 'JFK', 'HND', 0.83)
+    _add_tracked(david, 'BOS', 'BCN', 0.85)
+
+    # ---- Extra price alerts (densify 6 -> 25+) ----
+    _add_alert(alice, 'JFK', 'HND', 850.0)
+    _add_alert(alice, 'JFK', 'FCO', 480.0)
+    _add_alert(alice, 'BOS', 'LHR', 450.0)
+    _add_alert(alice, 'JFK', 'DXB', 700.0)
+    _add_alert(alice, 'LAX', 'HND', 750.0)
+
+    _add_alert(bob, 'LAX', 'HND', 600.0)
+    _add_alert(bob, 'SFO', 'CDG', 480.0)
+    _add_alert(bob, 'SFO', 'BKK', 720.0)
+    _add_alert(bob, 'SFO', 'NRT', 650.0)
+    _add_alert(bob, 'LAX', 'CDG', 520.0)
+
+    _add_alert(carol, 'ORD', 'LHR', 420.0)
+    _add_alert(carol, 'ORD', 'CDG', 460.0)
+    _add_alert(carol, 'ORD', 'BCN', 500.0)
+    _add_alert(carol, 'DFW', 'LHR', 470.0)
+
+    _add_alert(david, 'JFK', 'NRT', 950.0)
+    _add_alert(david, 'JFK', 'HND', 920.0)
+    _add_alert(david, 'JFK', 'ICN', 880.0)
+    _add_alert(david, 'BOS', 'BCN', 520.0, active=False)
+    _add_alert(david, 'JFK', 'FCO', 500.0)
+
     db.session.commit()
     print('Benchmark users seeded: alice, bob, carol, david')
 

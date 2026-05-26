@@ -3,18 +3,39 @@ import json
 import os
 import re
 import shutil
-from datetime import datetime
+from datetime import datetime, timedelta
 from pathlib import Path
 
 from flask import Flask, abort, flash, redirect, render_template, request, session, url_for
 from flask_sqlalchemy import SQLAlchemy
 from werkzeug.security import check_password_hash, generate_password_hash
 
+
+def _deterministic_password_hash(password, salt_seed):
+    """Byte-deterministic pbkdf2 hash so seed DB is reset-stable.
+
+    werkzeug.generate_password_hash uses a random salt, which breaks the
+    byte-identical reset invariant required by WebHarbor (`/reset/ted` would
+    return a different ted.db every time). We replace it with pbkdf2_hmac
+    where the salt is derived from a stable seed (e.g. the user's email or
+    a request-time username), matching the pattern used in sites/compass.
+    """
+    import hashlib as _hl
+    fixed_salt = _hl.sha1(("salt-" + (salt_seed or "")).encode()).hexdigest()[:8]
+    derived = _hl.pbkdf2_hmac(
+        "sha256", password.encode(), fixed_salt.encode(), 1000, dklen=32
+    ).hex()
+    return f"pbkdf2:sha256:1000${fixed_salt}${derived}"
+
 from seed_data import EVENTS, PLAYLISTS, TALKS
 
 BASE_DIR = Path(__file__).resolve().parent
 DB_PATH = BASE_DIR / "instance" / "ted.db"
 SEED_DB_PATH = BASE_DIR / "instance_seed" / "ted.db"
+
+# Fixed reference time for any seed timestamp; using datetime.utcnow() in seed
+# would break byte-identical reset.
+MIRROR_REFERENCE_DATE = datetime(2026, 4, 15, 12, 0, 0)
 
 app = Flask(__name__)
 app.config["SECRET_KEY"] = "webharbor-ted-dev-key"
@@ -233,12 +254,17 @@ def seed_users():
             role=role,
             city=city,
             newsletter_topic=topic.lower(),
-            password_hash=generate_password_hash("TestPass123!"),
+            password_hash=_deterministic_password_hash("TestPass123!", email),
         )
         db.session.add(user)
         db.session.flush()
-        for talk in talks[index:index + 4]:
-            db.session.add(SavedTalk(user_id=user.id, talk_id=talk.id, note=f"Review for {topic} discussion"))
+        for offset_days, talk in enumerate(talks[index:index + 4]):
+            saved_at = MIRROR_REFERENCE_DATE - timedelta(days=index * 7 + offset_days)
+            db.session.add(SavedTalk(
+                user_id=user.id, talk_id=talk.id,
+                note=f"Review for {topic} discussion",
+                saved_at=saved_at,
+            ))
         db.session.add(Registration(user_id=user.id, event_id=events[index % len(events)].id, status="confirmed"))
     db.session.commit()
 
@@ -403,7 +429,9 @@ def register():
                 email=email,
                 username=username,
                 display_name=request.form.get("display_name", username).strip() or username,
-                password_hash=generate_password_hash(request.form.get("password", "TestPass123!")),
+                password_hash=_deterministic_password_hash(
+                    request.form.get("password", "TestPass123!"), email
+                ),
             )
             db.session.add(user)
             db.session.commit()

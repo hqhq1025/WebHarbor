@@ -185,6 +185,10 @@ def seed():
          'and sustainable infrastructure design.'),
     ]
 
+    from seed_extras import (EXTRA_DEPARTMENTS, EXTRA_PROGRAMS, EXTRA_FACULTY,
+                              _expand_news, _expand_events)
+    dept_data.extend(EXTRA_DEPARTMENTS)
+
     departments = {}
     for name, college_name, chair, phone, loc, desc in dept_data:
         d = Department(
@@ -327,6 +331,8 @@ def seed():
          'and non-thesis options are available.',
          'Graduate core; Electives; Thesis or project; Professional seminar.'),
     ]
+
+    program_data.extend(EXTRA_PROGRAMS)
 
     for (name, deg, college_name, dept_name, units, dur, deadline,
          is_online, gre, desc, reqs) in program_data:
@@ -549,6 +555,8 @@ def seed():
          'drug policy reform. He founded and edits the widely read Sentencing Law and Policy blog '
          'and directs the Drug Enforcement and Policy Center.', False),
     ]
+
+    faculty_data.extend(EXTRA_FACULTY)
 
     for (name, title, dept_name, email, office, phone, interests, bio, emeritus) in faculty_data:
         dept_obj = departments.get(dept_name)
@@ -882,6 +890,8 @@ def seed():
          'laboratory facilities, and collaborative research grants.'),
     ]
 
+    articles.extend(_expand_news(now))
+
     for (title, cat, author, pub_date, featured, tags, summary, content) in articles:
         a = NewsArticle(
             title=title,
@@ -1002,6 +1012,8 @@ def seed():
          'admissions requirements, financial aid, and student experience. Faculty and current '
          'students will be available to answer questions. Registration required to receive Zoom link.'),
     ]
+
+    events.extend(_expand_events(future))
 
     for (title, cat, start, end, location, building, campus, organizer, reg_req, cost, desc) in events:
         e = Event(

@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block title %}{{ app_name }}{% endblock %}
+{% block content %}
+<div class="app-page">
+    <h1 style="color: {{ app_color }};">{{ app_name }}</h1>
+    <p class="lead">{{ app_desc }}</p>
+    <div class="app-hero-img">
+        <img src="/static/images/topics/artificial_intelligence/img_hero.jpg"
+             alt="{{ app_name }}"
+             onerror="this.parentElement.style.display='none'">
+    </div>
+    <p>This is a sandboxed preview of the {{ app_name }} landing page inside
+       the WebHarbor mirror. Sign in to your Google Account to access the
+       full experience.</p>
+    <a class="btn-primary" href="{{ url_for('index') }}"
+       style="text-decoration:none;">Back to Search</a>
+</div>
+{% endblock %}

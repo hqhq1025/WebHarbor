@@ -15,6 +15,21 @@ def get_hotel_data():
         return json.load(f)
 
 
+# -----------------------------------------------------------------
+# Expansion data loaders (cities/hotels/landmarks/beaches added in
+# the 2026-05 expansion pass). Files live in scraped_data/ and are
+# folded into CITY_INFO / EXTRA_HOTELS / LANDMARK_SEED / BEACH_SEED
+# at import time. Keeping the bulk lists in JSON keeps this file
+# readable while still letting `seed_database()` work as before.
+# -----------------------------------------------------------------
+def _load_expansion(name):
+    p = Path(__file__).parent / 'scraped_data' / f'expansion_{name}.json'
+    if not p.exists():
+        return []
+    with open(p) as f:
+        return json.load(f)
+
+
 # Destination categories
 DESTINATION_CATEGORIES = [
     {'slug': 'city-breaks', 'name': 'City breaks', 'description': 'Culture, food, and vibrant nightlife', 'icon': 'city'},
@@ -613,3 +628,33 @@ def build_hotel_description(name, city_name, stars, prop_type, amenities):
     d += f"The property offers rooms featuring modern amenities, high-speed WiFi, and comfortable bedding. "
     d += f"Located in a prime area, {name} is the perfect base for exploring everything {city_name} has to offer."
     return d
+
+
+# -----------------------------------------------------------------
+# EXPANSION (2026-05): fold scraped_data/expansion_*.json into the
+# canonical CITY_INFO / EXTRA_HOTELS dicts so seed_database() picks
+# them up without changes. Each expansion city row is:
+#   (key, display, slug, country, country_code, lat, lng,
+#    properties_count_display, average_rating, gallery_alias,
+#    dest_category_hint, description)
+# Each expansion hotel row matches EXTRA_HOTELS shape exactly.
+# -----------------------------------------------------------------
+for _row in _load_expansion('cities'):
+    (_k, _disp, _slug, _country, _cc, _lat, _lng,
+     _pc, _ar, _gal_alias, _dest_hint, _desc) = _row
+    if _k in CITY_INFO:
+        continue
+    CITY_INFO[_k] = {
+        'display': _disp,
+        'slug': _slug,
+        'country': _country,
+        'country_code': _cc,
+        'description': _desc,
+        'lat': _lat,
+        'lng': _lng,
+        'properties_count': _pc,
+        'average_rating': _ar,
+    }
+
+for _h in _load_expansion('hotels'):
+    EXTRA_HOTELS.append(_h)

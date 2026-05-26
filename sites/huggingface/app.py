@@ -644,11 +644,14 @@ def seed_database():
         ))
     db.session.flush()
 
-    # 3) Demo user
+    # 3) Demo user (pinned bcrypt hash for "password123" — keeps the seed DB
+    # reproducible across rebuilds; bcrypt.generate_password_hash() emits a
+    # fresh salt per call which otherwise drifts the byte snapshot.)
+    PINNED_DEMO_HASH = "$2b$12$AQ4pbTvQ5Dn6yKsxlrqB7uNJY8L7bB5n28CG1fnV6OPhLrOlXJXGu"
     demo = User(
         email="demo@hf.co",
         username="demo",
-        password_hash=bcrypt.generate_password_hash("password123").decode(),
+        password_hash=PINNED_DEMO_HASH,
         display_name="Demo User",
         bio="Just exploring the Hub.",
         avatar_url=f"/static/images/avatars/{avatar_files[0]}" if avatar_files else "",
@@ -2696,9 +2699,13 @@ def seed_benchmark_users():
              bio="MLOps practitioner, runs inference endpoints at scale.", location="Seoul", is_pro=False, idx=4),
     ]
     users = {}
+    # PINNED bcrypt hash for "TestPass123!" — bcrypt.generate_password_hash()
+    # is non-deterministic (per-call salt), which would break the
+    # byte-identical reset invariant if the DB were ever regenerated.
+    PINNED_BENCH_HASH = "$2b$12$RwAC/sfwDHtccU//A20fde.uKkZK4Ptnjjyua2l2ktwI6uysAp3Ou"
     for u in BENCH_USERS:
         idx = u.pop("idx")
-        u["password_hash"] = bcrypt.generate_password_hash("TestPass123!").decode()
+        u["password_hash"] = PINNED_BENCH_HASH
         u["avatar_url"] = _avatar(idx)
         user = User(**u)
         db.session.add(user)
@@ -2916,9 +2923,264 @@ def seed_benchmark_users():
         )
         db.session.add(d)
 
+    # ------------------------------------------------------------------
+    # Follows — each bench user follows several real authors/orgs.
+    # Follow rows are (user_id, author_id). Authors are looked up by
+    # username; missing usernames are skipped silently.
+    # ------------------------------------------------------------------
+    def _follow(user, author_username):
+        a = Author.query.filter_by(username=author_username).first()
+        if not a:
+            return
+        if not Follow.query.filter_by(user_id=user.id, author_id=a.id).first():
+            db.session.add(Follow(user_id=user.id, author_id=a.id))
+
+    FOLLOWS_BY_USER = {
+        "alice_j":  ["huggingface", "meta-llama", "google", "mistralai",
+                     "deepseek-ai", "openai", "intfloat", "sentence-transformers",
+                     "HuggingFaceH4"],
+        "bob_c":    ["stabilityai", "black-forest-labs", "openai", "tencent",
+                     "ByteDance", "dreamfusion-ai", "huggingface", "meta-llama"],
+        "carol_d":  ["Helsinki-NLP", "facebook", "deepset", "GanjinZero",
+                     "google", "Jean-Baptiste", "allenai", "microsoft", "bigscience"],
+        "david_k":  ["Qwen", "BAAI", "sentence-transformers", "intfloat",
+                     "microsoft", "nvidia", "deepseek-ai", "openai", "unsloth"],
+    }
+    for uname, authors_to_follow in FOLLOWS_BY_USER.items():
+        u = users.get(uname)
+        if not u:
+            continue
+        for a_uname in authors_to_follow:
+            _follow(u, a_uname)
+    db.session.flush()
+
+    # ------------------------------------------------------------------
+    # Cart items — staged deployments waiting in each user's cart.
+    # ------------------------------------------------------------------
+    def _cart_add(user, slug_fragment, hw_slug, hw_display, hw_price, hours, region="us-east-1"):
+        repo = _get_repo(slug_fragment)
+        if not repo:
+            return
+        if CartItem.query.filter_by(user_id=user.id, repo_id=repo.id).first():
+            return
+        db.session.add(CartItem(
+            user_id=user.id,
+            repo_id=repo.id,
+            hardware_slug=hw_slug,
+            hardware_display=hw_display,
+            hardware_price=hw_price,
+            hours=hours,
+            region=region,
+        ))
+
+    # Alice — comparing two LLMs before committing to production
+    _cart_add(alice, "DeepSeek-V3", "a100-large", "Nvidia A100", "$2.50/hr", 48, region="us-east-1")
+    _cart_add(alice, "zephyr-7b-story", "l4x1", "Nvidia L4", "$0.80/hr", 24, region="us-east-1")
+    _cart_add(alice, "bge-large-en-v1.5", "t4-small", "Nvidia T4", "$0.40/hr", 168, region="us-west-2")
+    # Bob — image generation experiments
+    _cart_add(bob, "FLUX.1-dev", "a100-large", "Nvidia A100", "$2.50/hr", 12, region="us-east-1")
+    _cart_add(bob, "stable-diffusion-3-medium", "l40sx1", "Nvidia L40S", "$1.80/hr", 24, region="eu-west-1")
+    _cart_add(bob, "stable-cascade", "t4-small", "Nvidia T4", "$0.40/hr", 72, region="us-east-1")
+    # Carol — translation + summarization staging
+    _cart_add(carol, "opus-mt-en-zh", "cpu-upgrade", "CPU Upgrade", "$0.03/hr", 168, region="eu-central-1")
+    _cart_add(carol, "opus-mt-en-fr-2026", "cpu-upgrade", "CPU Upgrade", "$0.03/hr", 168, region="eu-central-1")
+    _cart_add(carol, "biobart", "t4-small", "Nvidia T4", "$0.40/hr", 48, region="us-east-1")
+    # David — MLOps benchmarks
+    _cart_add(david, "Qwen2.5-7B-Instruct", "l40sx1", "Nvidia L40S", "$1.80/hr", 24, region="ap-southeast-1")
+    _cart_add(david, "xlm-roberta-large-squad2", "l4x1", "Nvidia L4", "$0.80/hr", 168, region="us-east-1")
+    _cart_add(david, "whisper-large-v3", "a100-large", "Nvidia A100", "$2.50/hr", 12, region="us-west-2")
+    db.session.flush()
+
+    # ------------------------------------------------------------------
+    # Extra likes — broaden the per-user like graph so "trending"
+    # signals look organic rather than seeded around a handful of repos.
+    # ------------------------------------------------------------------
+    EXTRA_LIKES = {
+        "alice_j":  ["DeepSeek-V3", "Mistral-7B-Instruct", "Phi-3.5-mini-instruct",
+                     "gemma-2-9b-it", "OLMo-2-1124-7B-Instruct",
+                     "starcoder2-15b", "ms_marco", "ultrachat_200k"],
+        "bob_c":    ["paligemma-3b-mix-448", "Florence-2-large", "instruct-pix2pix",
+                     "stable-video-diffusion-img2vid-xt", "shap-e",
+                     "dreamfusion-demo", "Hunyuan3D-2", "FAST-SAM"],
+        "carol_d":  ["nllb-200-distilled", "opus-mt-en-fr-2026", "opus-mt-en-de-2026",
+                     "pegasus-xsum", "coedit-large",
+                     "T0pp-cc-by-sa", "blenderbot-3B-english-chat", "seamless_m4t"],
+        "david_k":  ["paraphrase-multilingual-MiniLM", "multilingual-e5-large",
+                     "roberta-base-squad2", "parakeet-tdt-1.1b", "whisper-small",
+                     "Depth-Anything-V2", "fineweb", "common_voice_17_0"],
+    }
+    for uname, frags in EXTRA_LIKES.items():
+        u = users.get(uname)
+        if not u:
+            continue
+        for frag in frags:
+            _like_repo(u, frag)
+    db.session.flush()
+
+    # ------------------------------------------------------------------
+    # Extra discussions — spread community activity across more repos
+    # so "discussions per repo" and "active community" signals work.
+    # ------------------------------------------------------------------
+    EXTRA_DISCUSSIONS = [
+        # (user, slug_frag, title, body, kind)
+        (alice, "DeepSeek-V3", "MoE routing collapse at long context?",
+         "Has anyone observed expert routing degenerate beyond 32k context? My eval shows accuracy cliff at 40k.", "issue"),
+        (alice, "Mistral-7B-Instruct",
+         "Recommended LoRA rank for coding tasks?",
+         "Trying r=8 vs r=64 for a Python code-completion fine-tune. Curious what others have settled on.", "discussion"),
+        (alice, "Phi-3.5-mini-instruct",
+         "Surprisingly strong on RAG tasks",
+         "Phi-3.5-mini beats my 13B baseline on retrieval-grounded QA. Anyone else seeing this?", "discussion"),
+        (alice, "gemma-2-9b-it",
+         "Eos token misconfig on chat template",
+         "When using `apply_chat_template(... add_generation_prompt=True)` the eos id isn't appended. PR coming.", "pull-request"),
+        (alice, "bert-base-uncased",
+         "Still the strongest sub-200M baseline",
+         "Five years later this is still my go-to embedding base when budget matters. Tip of the hat.", "discussion"),
+        (bob, "FLUX.1-dev",
+         "LoRA training: which optimizer worked for you?",
+         "Prodigy vs AdamW8bit on FLUX.1-dev — Prodigy converged 2x faster for me but burned more VRAM.", "discussion"),
+        (bob, "stable-diffusion-3-medium",
+         "ControlNet weights compatibility?",
+         "Are SDXL ControlNet weights compatible, or do we need SD3-specific control adapters?", "issue"),
+        (bob, "stable-cascade",
+         "Stage-A latent visualization?",
+         "Anyone got a notebook for decoding intermediate Stage-A latents to RGB? Debugging an artifact.", "discussion"),
+        (bob, "paligemma-3b-mix-448",
+         "Document QA accuracy on multi-page PDFs?",
+         "Works great on single pages, but stitched multi-page inputs hallucinate page numbers. Workarounds?", "issue"),
+        (bob, "stable-video-diffusion-img2vid-xt",
+         "Temporal flicker in motion-heavy scenes",
+         "Adding motion_bucket_id=180 helped some, but pans still flicker. Negative prompt tips?", "discussion"),
+        (carol, "nllb-200-distilled",
+         "African languages quality regression?",
+         "Wolof and Lingala outputs are clearly worse than the full NLLB-200. Expected, or distillation bug?", "issue"),
+        (carol, "opus-mt-en-fr-2026",
+         "Glossary support like Marian-NMT?",
+         "Need to force-translate brand names. Any way to inject a glossary at inference time?", "discussion"),
+        (carol, "biobart",
+         "PubMed update — re-eval on 2025 papers?",
+         "The model was trained on a 2022 PubMed snapshot. Has anyone re-evaluated on the 2025 corpus?", "discussion"),
+        (carol, "pegasus-xsum",
+         "Hallucinated entities on news summaries",
+         "Pegasus invents people and dates ~5% of the time on out-of-domain news. Any factuality post-processing?", "issue"),
+        (carol, "coedit-large",
+         "Great for grammar — limited for style rewriting",
+         "Excellent for surface-level edits. Falls over on tone-shift / persuasive rewrites though.", "discussion"),
+        (david, "Qwen2.5-7B-Instruct",
+         "vLLM tensor-parallel scaling",
+         "Going from TP=1 to TP=4 on A100s only gives 2.3x throughput — expected? Or am I bottlenecked on attention?", "discussion"),
+        (david, "multilingual-e5-large",
+         "Prefix `query:` vs `passage:` impact",
+         "Forgetting the asymmetric prefixes silently halves my nDCG@10. Worth surfacing in the README.", "issue"),
+        (david, "Depth-Anything-V2",
+         "Real-time on Jetson Orin?",
+         "Hitting ~12 FPS at 384x384 on Orin NX. Anyone gotten 30 FPS with TensorRT FP16?", "discussion"),
+        (david, "whisper-large-v3",
+         "Diarization pipeline recommendation?",
+         "Best open-source diarizer to pair with Whisper-large-v3 right now? pyannote 3.1?", "discussion"),
+        (david, "parakeet-tdt-1.1b",
+         "Streaming latency vs Whisper",
+         "Measured end-to-end latency 4x lower than whisper-large-v3 at similar WER. Impressive.", "discussion"),
+        (alice, "ms_marco",
+         "Filter for question-only queries?",
+         "Need just the natural-question subset for a QA fine-tune. Easiest split filter?", "discussion"),
+        (bob, "dreamfusion-sd-v1",
+         "Texture seams on exported meshes",
+         "Exported OBJ shows clear seams at UV cuts. Any post-processing recipe?", "issue"),
+        (carol, "T0pp-cc-by-sa",
+         "Re-training on instruction data?",
+         "Has anyone re-instruction-tuned T0pp on FLAN-style data? Curious if it still beats T0 baseline.", "discussion"),
+        (david, "fineweb",
+         "Filter recipe for code-rich subset?",
+         "I want the top-quality code-heavy slice. Are there ready-made dump-level filters?", "discussion"),
+        (alice, "ultrachat_200k",
+         "License clarification on chat outputs",
+         "Outputs distilled from a closed teacher — does redistribution of the fine-tuned model itself raise concerns?", "discussion"),
+        (alice, "starcoder2-15b",
+         "Tokenizer treatment of indentation",
+         "Switched from StarCoder1 — noticed indent-only edits now require fewer tokens. Confirming on your end?", "discussion"),
+        (bob, "Hunyuan3D-2",
+         "Export to glTF instead of OBJ?",
+         "OBJ loses material grouping in Blender. Any way to get glTF straight out of the pipeline?", "issue"),
+        (bob, "FAST-SAM",
+         "ONNX export shape mismatch",
+         "Exporting with dynamic axes produces a model that complains about prompt-encoder shape at runtime. Repo on the way.", "pull-request"),
+        (carol, "blenderbot-3B-english-chat",
+         "Persona conditioning still works after 4 years",
+         "BlenderBot's persona prompts are still the gold standard for short consistent chats. Worth highlighting in the card.", "discussion"),
+        (carol, "T0pp-cc-by-sa",
+         "Reproducibility of held-out scores",
+         "Following the README I'm off by ~2 points on SuperGLUE. Anyone managed to reproduce within 0.5?", "issue"),
+        (david, "common_voice_17_0",
+         "Force-aligned phoneme version?",
+         "Are aligned phoneme labels published alongside this release? Useful for low-resource TTS training.", "discussion"),
+        (david, "Mistral-7B-Instruct",
+         "AWQ quant on consumer GPUs",
+         "4-bit AWQ runs at 30 tok/s on a single 3090. Sharing the recipe for anyone interested.", "discussion"),
+        (alice, "OLMo-2-1124-7B-Instruct",
+         "Training data manifest — is everything reproducible?",
+         "Was hoping the OLMo-2 release would include a one-click corpus rebuild. Did I miss the script?", "discussion"),
+        (bob, "shap-e",
+         "Latent interpolation between two prompts",
+         "Has anyone gotten clean shape interpolation between two text prompts? My results just morph through noise.", "issue"),
+    ]
+    for user, frag, title, body, kind in EXTRA_DISCUSSIONS:
+        repo = _get_repo(frag)
+        if not repo:
+            continue
+        d = Discussion(
+            repo_id=repo.id,
+            user_id=user.id,
+            title=title,
+            body=body,
+            kind=kind,
+            upvotes=rng.randint(1, 40),
+        )
+        db.session.add(d)
+    db.session.flush()
+
+    # ------------------------------------------------------------------
+    # Discussion replies — make threads feel populated. We reply on a
+    # broad fraction of discussions with rotating quotes.
+    # ------------------------------------------------------------------
+    REPLY_TEMPLATES = [
+        "+1 — seeing the same pattern on my side. Happy to share a repro notebook if useful.",
+        "I worked around this by pinning `transformers==4.46.0` and disabling flash-attn. Hacky, but stable.",
+        "Have you tried bumping `max_position_embeddings` and re-RoPE-ing? Worked for me at 64k.",
+        "Quick benchmark on my end: A100 80GB, batch=1, ~38 tok/s. Drops to 22 tok/s at batch=4.",
+        "Confirmed on a clean conda env (Python 3.11). Filed a follow-up upstream.",
+        "Thanks for posting — saved me a few hours of debugging.",
+        "The README needs an update; the suggested chat template here matches my testing.",
+        "Could you share the eval harness? I want to reproduce the numbers locally.",
+        "I think this is the same root cause as the issue from last week. Possibly worth merging.",
+        "Excellent write-up. We're tracking this internally and will reply with findings.",
+        "I'm hitting OOM on a 24GB consumer card — any tip on offloading text encoders to CPU?",
+        "Are you running with `attn_implementation='sdpa'` or `flash_attention_2`? That changes things a lot.",
+        "Worth opening a PR — happy to review.",
+        "Tested on H100 vs A100: roughly 1.6x speedup at FP8, no quality regression I could measure.",
+        "Pinging maintainers — this looks like a real bug, not a config issue.",
+    ]
+    all_disc = Discussion.query.order_by(Discussion.id).all()
+    bench_user_list = [alice, bob, carol, david]
+    for i, d in enumerate(all_disc):
+        # Every discussion gets 2-4 replies so threads feel populated.
+        n_replies = 2 + (i % 3)  # 2, 3, 4, 2, 3, 4, ...
+        for k in range(n_replies):
+            replier = bench_user_list[(i + k + 1) % len(bench_user_list)]
+            # Don't reply to your own discussion in the first slot.
+            if replier.id == d.user_id and n_replies > 1:
+                replier = bench_user_list[(i + k + 2) % len(bench_user_list)]
+            db.session.add(DiscussionReply(
+                discussion_id=d.id,
+                user_id=replier.id,
+                body=REPLY_TEMPLATES[(i * 4 + k) % len(REPLY_TEMPLATES)],
+                created_at=d.created_at + timedelta(hours=2 + k * 5),
+            ))
+
     db.session.commit()
     print(f"  ✓ {len(BENCH_USERS)} benchmark users created")
-    print(f"  ✓ Likes, collections, endpoints, discussions seeded")
+    print(f"  ✓ Likes, follows, cart, collections, endpoints, discussions, replies seeded")
 
 
 # ------------------------------------------------------------

@@ -2608,7 +2608,9 @@ def server_error(e):
 #  DB init / seed
 # --------------------------------------------------------------------------
 def seed_database():
-    from seed_data import build_categories, build_cities, build_places, seed_task_data
+    from seed_data import (build_categories, build_cities, build_places,
+                           seed_task_data, expand_cities, expand_places,
+                           expand_routes)
     if Category.query.count() == 0:
         build_categories(db, Category)
     if City.query.count() == 0:
@@ -2618,6 +2620,12 @@ def seed_database():
         print(f"Seeded {n} places")
     if Route.query.count() == 0:
         seed_task_data(db, Place, Category, City, Route)
+    # Catalog expansion: bring counts up to realistic browsing volume.
+    # Each function is internally gated so it's a no-op once the DB
+    # already exceeds its threshold (preserves byte-identical reset).
+    expand_cities(db, City)
+    expand_places(db, Place, Category, City)
+    expand_routes(db, Route)
 
 
 # --------------------------------------------------------------------------
@@ -2873,5 +2881,7 @@ if __name__ == "__main__":
         db.create_all()
         seed_database()
         seed_benchmark_users()
+        from seed_data import seed_user_content
+        seed_user_content(db, User, Place, Review, Photo, TimelineEntry)
     port = int(os.environ.get("PORT", 5000))
     app.run(host="0.0.0.0", port=port, debug=False)

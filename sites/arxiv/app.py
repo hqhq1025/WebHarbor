@@ -315,6 +315,18 @@ def load_user(uid):
 # SEED DATA
 # =======================================================================
 
+# Reference build date pinned for deterministic timestamps. All seeded
+# created_at / added_at / starred_at values are derived from this anchor via
+# fixed offsets so md5sum(instance_seed/arxiv.db) is stable across rebuilds.
+MIRROR_REFERENCE_DATE = datetime(2026, 4, 15, 12, 0, 0)
+
+# Bcrypt is non-deterministic (random salt per call), so seed-time password
+# hashing would break byte-identical rebuilds. We pin pre-computed hashes
+# generated once with a fixed salt and reuse them at seed time. Verified to
+# `bcrypt.checkpw` against the documented test passwords.
+PINNED_HASH_TESTPASS = "$2b$10$WebHarborSeedSalt22BC.MBZLtrk3/oO0p9i7oB1qRs8m8RsIo2W"
+PINNED_HASH_DEMODEMO = "$2b$10$WebHarborSeedSalt22BC.E1aBBgXR/FiqJQNugGMetTJFJykYe9a"
+
 # Deterministic stub banks for filling in missing author lists / abstracts.
 _STUB_FIRST_NAMES = [
     "Alex", "Wei", "Yuki", "Maya", "Rahul", "Sofia", "Hiroshi", "Priya",
@@ -524,9 +536,24 @@ def seed_database():
         return
 
     raw_papers = json.load(open(papers_path))
+    # --- Extra papers fetched live from the arXiv API (optional source). ---
+    # `sites/arxiv/scraped_data/` is .gitignored / .dockerignored, so this file
+    # only exists on the build host; once folded into instance_seed/arxiv.db it
+    # ships in the image. Dedup happens further down via the arxiv_id check.
+    extras_path = BASE_DIR / "scraped_data" / "papers_extra.json"
+    if extras_path.exists():
+        try:
+            extra_raw = json.load(open(extras_path))
+            print(f"  [+] Loaded {len(extra_raw)} extra papers from scraped_data/papers_extra.json")
+            raw_papers.extend(extra_raw)
+        except Exception as exc:
+            print(f"  ! Failed to load papers_extra.json: {exc}")
     # Order: papers with abstracts first
     raw_papers.sort(key=lambda p: (0 if p.get("abstract") else 1, p.get("arxiv_id", "")))
 
+    # Seed RNG so that view/download/star counts are deterministic across
+    # rebuilds — this is what makes md5sum(instance_seed/arxiv.db) stable.
+    random.seed(20260415)
     created = 0
     for rp in raw_papers:
         arxiv_id = rp.get("arxiv_id", "").strip()
@@ -626,6 +653,11 @@ def seed_database():
             view_count=random.randint(50, 5000),
             download_count=random.randint(20, 2000),
             star_count=random.randint(0, 200),
+            # Deterministic pseudo-timestamp so md5 of instance_seed/arxiv.db
+            # is stable across rebuilds. Spread across a 1-year window.
+            created_at=MIRROR_REFERENCE_DATE - timedelta(
+                minutes=(created * 7) % (365 * 24 * 60)
+            ),
         )
         db.session.add(paper)
         created += 1
@@ -643,16 +675,25 @@ def seed_database():
             affiliation="Example University",
             bio="A demo researcher exploring topics in machine learning.",
             orcid="0000-0000-0000-0000",
+            created_at=MIRROR_REFERENCE_DATE - timedelta(days=180),
+            password_hash=PINNED_HASH_DEMODEMO,
         )
-        u.set_password("demodemo")
         db.session.add(u)
         db.session.commit()
-        # Add a few library/starred items for demo flavor
-        sample_papers = Paper.query.filter(Paper.abstract != "").limit(5).all()
+        # Add a few library/starred items for demo flavor. Order by arxiv_id
+        # so the picks are stable across rebuilds even if insert order shifts.
+        sample_papers = (Paper.query.filter(Paper.abstract != "")
+                         .order_by(Paper.arxiv_id).limit(5).all())
         for i, p in enumerate(sample_papers[:3]):
-            db.session.add(LibraryItem(user_id=u.id, paper_id=p.id, folder="Reading List"))
-        for p in sample_papers[3:5]:
-            db.session.add(StarredPaper(user_id=u.id, paper_id=p.id))
+            db.session.add(LibraryItem(
+                user_id=u.id, paper_id=p.id, folder="Reading List",
+                added_at=MIRROR_REFERENCE_DATE - timedelta(days=30 - i),
+            ))
+        for j, p in enumerate(sample_papers[3:5]):
+            db.session.add(StarredPaper(
+                user_id=u.id, paper_id=p.id,
+                starred_at=MIRROR_REFERENCE_DATE - timedelta(days=20 - j),
+            ))
         db.session.commit()
         print("  [+] Created demo user (demo@arxiv.local / demodemo)")
 
@@ -2143,6 +2184,10 @@ def seed_benchmark_users():
     if User.query.filter_by(email="alice.j@test.com").first():
         return  # already seeded
 
+    # Pin RNG + clock so library/star/export timestamps are deterministic.
+    random.seed(20260501)
+    NOW = MIRROR_REFERENCE_DATE
+
     def _get_paper(arxiv_id: str):
         return Paper.query.filter_by(arxiv_id=arxiv_id).first()
 
@@ -2156,8 +2201,10 @@ def seed_benchmark_users():
         affiliation="MIT CSAIL",
         bio="NLP researcher focused on contrastive learning and sentence embeddings.",
         orcid="0000-0001-0001-0001",
+        password_hash=PINNED_HASH_TESTPASS,
+        created_at=NOW - timedelta(days=365),
     )
-    alice.set_password("TestPass123!")
+    # password pinned via password_hash=PINNED_HASH_TESTPASS on the User(...) constructor
     db.session.add(alice)
     db.session.flush()
 
@@ -2176,14 +2223,14 @@ def seed_benchmark_users():
         if p:
             db.session.add(LibraryItem(
                 user_id=alice.id, paper_id=p.id, folder=folder,
-                added_at=datetime.utcnow() - timedelta(days=random.randint(1, 30))))
+                added_at=NOW - timedelta(days=random.randint(1, 30))))
 
     alice_stars = ["2104.08821", "2011.05864", "2303.08774", "2401.00123"]
     for arxiv_id in alice_stars:
         p = _get_paper(arxiv_id)
         if p:
             db.session.add(StarredPaper(user_id=alice.id, paper_id=p.id,
-                                        starred_at=datetime.utcnow() - timedelta(days=random.randint(1, 20))))
+                                        starred_at=NOW - timedelta(days=random.randint(1, 20))))
 
     db.session.commit()
 
@@ -2200,7 +2247,7 @@ def seed_benchmark_users():
             status="ready",
             paper_count=len(alice_research_ids),
             notes="Research papers export",
-            created_at=datetime.utcnow() - timedelta(days=5),
+            created_at=NOW - timedelta(days=5),
         )
         db.session.add(ex_alice)
         db.session.flush()
@@ -2218,8 +2265,10 @@ def seed_benchmark_users():
         affiliation="Stanford AI Lab",
         bio="Deep learning researcher specializing in computer vision and graph networks.",
         orcid="0000-0002-0002-0002",
+        password_hash=PINNED_HASH_TESTPASS,
+        created_at=NOW - timedelta(days=365),
     )
-    bob.set_password("TestPass123!")
+    # password pinned via password_hash=PINNED_HASH_TESTPASS on the User(...) constructor
     db.session.add(bob)
     db.session.flush()
 
@@ -2236,14 +2285,14 @@ def seed_benchmark_users():
         if p:
             db.session.add(LibraryItem(
                 user_id=bob.id, paper_id=p.id, folder=folder,
-                added_at=datetime.utcnow() - timedelta(days=random.randint(1, 45))))
+                added_at=NOW - timedelta(days=random.randint(1, 45))))
 
     bob_stars = ["2303.11234", "2401.00123", "2401.00456"]
     for arxiv_id in bob_stars:
         p = _get_paper(arxiv_id)
         if p:
             db.session.add(StarredPaper(user_id=bob.id, paper_id=p.id,
-                                        starred_at=datetime.utcnow() - timedelta(days=random.randint(1, 15))))
+                                        starred_at=NOW - timedelta(days=random.randint(1, 15))))
 
     db.session.commit()
 
@@ -2260,7 +2309,7 @@ def seed_benchmark_users():
             status="ready",
             paper_count=len(bob_fav_ids),
             notes="Favorites RIS export",
-            created_at=datetime.utcnow() - timedelta(days=10),
+            created_at=NOW - timedelta(days=10),
         )
         db.session.add(ex_bob)
         db.session.flush()
@@ -2278,8 +2327,10 @@ def seed_benchmark_users():
         affiliation="UC Berkeley Statistics",
         bio="Statistical ML researcher. Interested in Bayesian methods and diffusion models.",
         orcid="0000-0003-0003-0003",
+        password_hash=PINNED_HASH_TESTPASS,
+        created_at=NOW - timedelta(days=365),
     )
-    carol.set_password("TestPass123!")
+    # password pinned via password_hash=PINNED_HASH_TESTPASS on the User(...) constructor
     db.session.add(carol)
     db.session.flush()
 
@@ -2297,14 +2348,14 @@ def seed_benchmark_users():
         if p:
             db.session.add(LibraryItem(
                 user_id=carol.id, paper_id=p.id, folder=folder,
-                added_at=datetime.utcnow() - timedelta(days=random.randint(1, 60))))
+                added_at=NOW - timedelta(days=random.randint(1, 60))))
 
     carol_stars = ["2412.03134", "2602.22486", "2510.23199"]
     for arxiv_id in carol_stars:
         p = _get_paper(arxiv_id)
         if p:
             db.session.add(StarredPaper(user_id=carol.id, paper_id=p.id,
-                                        starred_at=datetime.utcnow() - timedelta(days=random.randint(1, 25))))
+                                        starred_at=NOW - timedelta(days=random.randint(1, 25))))
 
     db.session.commit()
 
@@ -2325,7 +2376,7 @@ def seed_benchmark_users():
             status="ready",
             paper_count=len(carol_nlp_ids),
             notes="NLP papers RIS",
-            created_at=datetime.utcnow() - timedelta(days=15),
+            created_at=NOW - timedelta(days=15),
         )
         db.session.add(ex_carol_nlp)
         db.session.flush()
@@ -2340,7 +2391,7 @@ def seed_benchmark_users():
             status="ready",
             paper_count=len(carol_theory_ids),
             notes="ML Theory papers BibTeX",
-            created_at=datetime.utcnow() - timedelta(days=3),
+            created_at=NOW - timedelta(days=3),
         )
         db.session.add(ex_carol_ready)
         db.session.flush()
@@ -2358,8 +2409,10 @@ def seed_benchmark_users():
         affiliation="Caltech Physics",
         bio="Quantum information and quantum computing researcher.",
         orcid="0000-0004-0004-0004",
+        password_hash=PINNED_HASH_TESTPASS,
+        created_at=NOW - timedelta(days=365),
     )
-    david.set_password("TestPass123!")
+    # password pinned via password_hash=PINNED_HASH_TESTPASS on the User(...) constructor
     db.session.add(david)
     db.session.flush()
 
@@ -2375,14 +2428,14 @@ def seed_benchmark_users():
         if p:
             db.session.add(LibraryItem(
                 user_id=david.id, paper_id=p.id, folder=folder,
-                added_at=datetime.utcnow() - timedelta(days=random.randint(1, 30))))
+                added_at=NOW - timedelta(days=random.randint(1, 30))))
 
     david_stars = ["2312.17719", "2402.17148"]
     for arxiv_id in david_stars:
         p = _get_paper(arxiv_id)
         if p:
             db.session.add(StarredPaper(user_id=david.id, paper_id=p.id,
-                                        starred_at=datetime.utcnow() - timedelta(days=random.randint(1, 10))))
+                                        starred_at=NOW - timedelta(days=random.randint(1, 10))))
 
     db.session.commit()
 
@@ -2398,7 +2451,7 @@ def seed_benchmark_users():
             status="ready",
             paper_count=len(david_star_ids),
             notes="Starred quantum papers",
-            created_at=datetime.utcnow() - timedelta(days=7),
+            created_at=NOW - timedelta(days=7),
         )
         db.session.add(ex_david)
         db.session.flush()
@@ -2414,9 +2467,10 @@ def seed_benchmark_users():
         (bob, [("cs", "daily"), ("physics", "weekly")]),
         (david, [("physics", "daily"), ("math", "weekly")]),
     ]:
-        for cat_code, freq in alerts_list:
+        for j, (cat_code, freq) in enumerate(alerts_list):
             db.session.add(Alert(
                 user_id=u.id, category_code=cat_code, frequency=freq,
+                created_at=NOW - timedelta(days=90 + u.id * 10 + j),
             ))
     db.session.commit()
 
@@ -2424,8 +2478,204 @@ def seed_benchmark_users():
 
 
 # =======================================================================
-# MAIN
+# COMMUNITY COMMENTS + LIBRARY DEPTH
 # =======================================================================
+
+# Reference build date — defined near top of file; re-state here for
+# context only. All seeded created_at / added_at values use this anchor.
+
+# Academic-style comment templates with {title-keyword} placeholders.
+# Phrased to read like real arXiv-style researcher feedback, not generic
+# "great paper" filler.
+_COMMENT_TEMPLATES = [
+    ("Crisp framing", "Section 3 is the cleanest exposition of this problem I've seen in a while — would love to see the proof of Theorem 1 extended to the non-convex case."),
+    ("Reproducibility?", "Has anyone managed to reproduce the headline numbers? My runs on a single A100 are about 4 points lower; curious whether it's the LR schedule."),
+    ("Connection to prior work", "There seems to be a strong link with the line of work on amortised inference (e.g. Le et al., 2018). A brief comparison in the related work would help."),
+    ("Ablation request", "Curious about the effect of removing the auxiliary loss in Section 4.2. The current Table 3 only varies the encoder depth."),
+    ("Notation nitpick", "Minor — in eq. (7), the index j is reused for both the attention head and the layer. Cost me ten minutes to disentangle."),
+    ("Code release?", "Is there a code release planned? The trick in §3.4 sounds straightforward but the devil tends to be in the bucketed batching."),
+    ("Theoretical concern", "The assumption that the noise is sub-Gaussian seems strong for the application domain you cite. Does the bound still hold under heavier tails?"),
+    ("Empirical robustness", "Would love to see error bars across seeds. With a baseline this close, single-seed numbers are hard to interpret."),
+    ("Excellent figures", "Figures 2 and 5 are really effective at conveying the geometric intuition. I'll be stealing this presentation style for my next paper."),
+    ("Extension idea", "Have you thought about combining this with importance sampling? It would address the variance issue raised in the discussion."),
+    ("Potential issue", "I think the proof of Lemma 2 implicitly requires the kernel to be Mercer; this should probably be stated explicitly."),
+    ("Followup question", "What would change if the loss were replaced by a Wasserstein distance? The current KL formulation might be unnecessarily restrictive."),
+    ("Cross-domain relevance", "Coming from a computer vision background, I found §5 surprisingly applicable to optical flow estimation. Have the authors considered that setting?"),
+    ("Compute budget", "Out of curiosity, what was the total compute for the experiments? The appendix only reports per-run cost."),
+    ("Limitation acknowledged", "Glad to see the failure mode in Figure 8 honestly reported. Many recent papers would have buried this."),
+    ("Survey-worthy", "Could become the canonical reference for this subtopic. I've started recommending it to graduate students in my reading group."),
+    ("Statistical significance", "With n=3 seeds and overlapping confidence intervals on CIFAR-100, the claim of 'consistent improvement' may be overstated."),
+    ("Baseline choice", "The comparison against [Liu 2024] is a strong baseline, but the authors omit the more recent [Chen 2025] which reports better numbers."),
+    ("Lovely analysis", "The asymptotic analysis in Appendix B is the highlight of the paper for me. Reminds me of the classical Sieve estimator literature."),
+    ("Confusing notation", "The use of \\theta for two different parameter spaces in Sections 3 and 4 was confusing on first read."),
+    ("Real-world deployment", "We tried a variant of this approach in production. The big practical issue is calibration drift over a 2-week window."),
+    ("Thanks for sharing", "Thanks for posting the v2 with the corrected proof — that helps a lot. Looking forward to the journal version."),
+    ("Dataset bias", "I worry the conclusions are dataset-specific. The phenomenon described in §6 disappears on our internal benchmark."),
+    ("Suggested baseline", "A simple nearest-neighbour baseline with the same features achieves ~85% of the reported accuracy in our hands; might be worth including."),
+    ("Hardware constraints", "Have you tried a quantised version? The memory footprint as currently described is prohibitive for edge deployment."),
+    ("Implementation detail", "If anyone is trying to reimplement: gradient clipping is essential, even though it's only mentioned in passing on page 6."),
+    ("Conceptual clarity", "This is the first paper that has clarified for me the difference between the two interpretations of the regularisation term. Excellent writing."),
+    ("Open question", "Does the analysis extend to non-stationary distributions? That seems the obvious next step."),
+    ("Possible bug", "Equation (15) might have a sign error — running the published code I had to flip the gradient to reproduce Table 2."),
+    ("Practitioner perspective", "Speaking as a practitioner: the proposed method is roughly 3x slower at inference than the baseline. Worth weighing against the accuracy gains."),
+    ("Citation missing", "An earlier formulation of this idea appears in [Goodfellow et al., 2014, Appendix C]. Worth a citation."),
+    ("Beautiful proof", "Proof of Proposition 5 is elegant — the use of the duality argument really clarifies why the result holds."),
+    ("Empirical questions", "Curious how the method behaves under distribution shift. The IID assumption in §2 might be too strong for many applications."),
+    ("Documentation request", "The hyperparameter table in the appendix is a model for how to report experimental details. Thank you."),
+    ("Cross-validation", "Did the authors consider k-fold CV instead of a single train/val/test split? With this dataset size, single-split numbers can be noisy."),
+    ("Reproducibility kit", "Released a Docker image reproducing the main table at github.com/example/repro — happy to take pull requests."),
+    ("Initialisation matters", "We found the proposed method very sensitive to the choice of initialisation. Worth a stability paragraph in the camera-ready."),
+    ("Sample efficiency", "The sample-efficiency claim in §7 looks promising. Have you measured the regret bound empirically?"),
+    ("Excellent overview", "This paper now sits at the top of my reading list for new students entering the field. Concise yet thorough."),
+    ("Energy/efficiency", "Would be valuable to report the energy cost of training. Camera-ready maybe?"),
+]
+
+
+def _comment_offset_days(idx: int) -> int:
+    """Deterministic, evenly spread offsets so comments don't all share a date."""
+    # 1..30 days back from reference, but skip the canonical 0
+    return (idx * 7 + 3) % 30 + 1
+
+
+def seed_community_extras():
+    """Populate community comments + extra library items so the discussion
+    and library surfaces feel populated.
+
+    Gated so a fully-seeded DB skips this entirely (preserves byte-identical
+    reset). Uses MIRROR_REFERENCE_DATE for all timestamps.
+    """
+    if Comment.query.first() is not None:
+        return  # already seeded
+
+    users = User.query.order_by(User.id).all()
+    if not users:
+        return
+    # Map by username for stable selection. seed_benchmark_users runs first
+    # so we get demouser + alice/bob/carol/david.
+    by_name = {u.username: u for u in users}
+    commenter_pool = [
+        by_name.get(n) for n in
+        ("alice_j", "bob_c", "carol_d", "david_k", "demouser")
+        if by_name.get(n) is not None
+    ]
+    if not commenter_pool:
+        return
+
+    # ------------------------------------------------------------------
+    # Pick papers to host comments. Stable ordering by arxiv_id so the
+    # selection doesn't drift across rebuilds.
+    # ------------------------------------------------------------------
+    candidate_papers = (
+        Paper.query
+        .filter(Paper.abstract != "")
+        .order_by(Paper.arxiv_id)
+        .limit(2000)
+        .all()
+    )
+    if not candidate_papers:
+        return
+
+    import random as _r
+    rng = _r.Random(20260601)
+
+    # Choose ~85 distinct papers; 1-3 comments each → ~120-140 comments total
+    n_papers = min(85, len(candidate_papers))
+    target_papers = rng.sample(candidate_papers, n_papers)
+
+    comment_idx = 0
+    for paper in target_papers:
+        n_comments = rng.choices([1, 1, 1, 2, 2, 3], k=1)[0]
+        last_user_id = None
+        for ci in range(n_comments):
+            tmpl = _COMMENT_TEMPLATES[comment_idx % len(_COMMENT_TEMPLATES)]
+            title, body = tmpl
+            # Avoid two consecutive comments from the same user on one paper
+            avail = [u for u in commenter_pool if u.id != last_user_id] or commenter_pool
+            user = rng.choice(avail)
+            last_user_id = user.id
+            offset_days = _comment_offset_days(comment_idx)
+            created_at = MIRROR_REFERENCE_DATE - timedelta(
+                days=offset_days, hours=(comment_idx * 13) % 24,
+                minutes=(comment_idx * 7) % 60,
+            )
+            # Pull out a short keyword from the paper title to make the body
+            # feel tied to its host paper (purely cosmetic; no semantic logic).
+            title_words = [w for w in re.split(r"\W+", paper.title or "") if len(w) > 5]
+            anchor = title_words[comment_idx % len(title_words)] if title_words else ""
+            body_final = body
+            if anchor and ci == 0:
+                body_final = f"On '{anchor}': {body}"
+            rating = rng.choice([0, 0, 0, 3, 4, 4, 5])
+            db.session.add(Comment(
+                user_id=user.id,
+                paper_id=paper.id,
+                title=title,
+                body=body_final,
+                rating=rating,
+                created_at=created_at,
+            ))
+            comment_idx += 1
+    db.session.commit()
+    n_comments_total = Comment.query.count()
+    print(f"  [+] Seeded {n_comments_total} community comments on {n_papers} papers")
+
+    # ------------------------------------------------------------------
+    # Extra library depth — bring library_items from ~29 to 60+.
+    # Each commenter gets 6-10 additional saves spread across folders so
+    # the /library view actually looks lived-in.
+    # ------------------------------------------------------------------
+    folder_choices_by_user = {
+        "alice_j": ["Reading List", "Research", "To Read", "NLP"],
+        "bob_c":   ["Reading List", "Favorites", "To Review", "Vision"],
+        "carol_d": ["Reading List", "ML Theory", "Diffusion", "Stats"],
+        "david_k": ["Reading List", "Quantum", "Physics", "Cross-domain"],
+        "demouser": ["Reading List", "Favorites", "To Read"],
+    }
+    # Skip papers users already have so the UniqueConstraint never fires.
+    extra_added = 0
+    for user in commenter_pool:
+        folders = folder_choices_by_user.get(user.username, ["Reading List"])
+        existing_pids = {li.paper_id for li in user.library_items}
+        # Take a deterministic page of papers from a user-specific offset to
+        # avoid all users saving the same first few rows.
+        offset = (user.id * 137) % max(1, len(candidate_papers) - 60)
+        picks = candidate_papers[offset:offset + 80]
+        rng2 = _r.Random(20260602 + user.id)
+        rng2.shuffle(picks)
+        want = rng2.randint(6, 10)
+        added_for_user = 0
+        for paper in picks:
+            if added_for_user >= want:
+                break
+            if paper.id in existing_pids:
+                continue
+            folder = folders[added_for_user % len(folders)]
+            note_idx = (added_for_user + user.id) % 5
+            note = [
+                "",
+                "Re-read for the lit review",
+                "Possible related work for current project",
+                "Mentioned at last week's reading group",
+                "Check the appendix for the proof technique",
+            ][note_idx]
+            added_at = MIRROR_REFERENCE_DATE - timedelta(
+                days=(added_for_user * 5 + user.id) % 60,
+                hours=(added_for_user * 11) % 24,
+            )
+            db.session.add(LibraryItem(
+                user_id=user.id,
+                paper_id=paper.id,
+                folder=folder,
+                note=note,
+                added_at=added_at,
+            ))
+            existing_pids.add(paper.id)
+            added_for_user += 1
+            extra_added += 1
+    db.session.commit()
+    n_lib = LibraryItem.query.count()
+    print(f"  [+] Seeded {extra_added} extra library items (total {n_lib})")
+
 
 def backfill_paper_gaps():
     """Patch pre-existing Paper rows with empty authors / abstract so the
@@ -2534,8 +2784,14 @@ def backfill_affiliations():
 with app.app_context():
     db.create_all()
     ensure_affiliation_column()
+    # `random.seed` makes the per-row randint() calls in seed_database() and
+    # seed_benchmark_users() reproducible. Column defaults that wrap
+    # datetime.utcnow() are pinned by passing explicit created_at / added_at
+    # arguments inside the seed functions themselves.
+    random.seed(20260415)
     seed_database()
     seed_benchmark_users()
+    seed_community_extras()
     backfill_paper_gaps()
     normalize_paper_metadata()
     backfill_affiliations()

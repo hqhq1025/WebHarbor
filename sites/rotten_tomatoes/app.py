@@ -375,6 +375,23 @@ def browse_all():
     return _browse_movies(Movie.query, 'All Movies', 'movies')
 
 
+# Aliases — real-site URLs that visitors guess but the canonical routes use
+# /browse/movies/ and /m/<slug>. Redirect rather than duplicating handlers so
+# share-links don't multiply.
+@app.route('/browse')
+@app.route('/browse/')
+@app.route('/movies')
+@app.route('/movies/')
+def browse_alias():
+    return redirect('/browse/movies/', code=301)
+
+
+@app.route('/movie/<slug>')
+@app.route('/movies/<slug>')
+def movie_detail_alias(slug):
+    return redirect(f'/m/{slug}', code=301)
+
+
 def _browse_movies(base_query, title, browse_type):
     """Common browse logic with filters."""
     # Genre filter

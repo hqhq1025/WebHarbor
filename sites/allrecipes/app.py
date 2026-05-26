@@ -460,6 +460,129 @@ def _category_match_clause(slug):
             title.ilike('%avocado%'), title.ilike('%cauliflower%'),
             title.ilike('%low-carb%'), title.ilike('%gluten-free%'),
         )
+    # ---- Extended catalog cuisines ----
+    if s == 'british':
+        return db.or_(
+            Recipe.cuisine.ilike('%british%'),
+            Recipe.cuisine.ilike('%irish%'),
+            title.ilike('%shepherd%'), title.ilike('%fish and chip%'),
+            title.ilike('%bangers%'), title.ilike('%pudding%'),
+            title.ilike('%scone%'), title.ilike('%trifle%'),
+        )
+    if s == 'french':
+        return db.or_(
+            Recipe.cuisine.ilike('%french%'),
+            title.ilike('%crepe%'), title.ilike('%souffle%'),
+            title.ilike('%ratatouille%'), title.ilike('%bouillabaisse%'),
+            title.ilike('%coq au vin%'), title.ilike('%tarte%'),
+            title.ilike('%croissant%'), title.ilike('%quiche%'),
+        )
+    if s == 'indian':
+        return db.or_(
+            Recipe.cuisine.ilike('%indian%'),
+            title.ilike('%curry%'), title.ilike('%tikka%'),
+            title.ilike('%masala%'), title.ilike('%biryani%'),
+            title.ilike('%naan%'), title.ilike('%tandoori%'),
+            title.ilike('%dal%'), title.ilike('%samosa%'),
+            title.ilike('%vindaloo%'),
+        )
+    if s == 'chinese':
+        return db.or_(
+            Recipe.cuisine.ilike('%chinese%'),
+            title.ilike('%kung pao%'), title.ilike('%lo mein%'),
+            title.ilike('%chow mein%'), title.ilike('%dumpling%'),
+            title.ilike('%dim sum%'), title.ilike('%mapo%'),
+            title.ilike('%wonton%'), title.ilike('%bao%'),
+        )
+    if s == 'japanese':
+        return db.or_(
+            Recipe.cuisine.ilike('%japanese%'),
+            title.ilike('%sushi%'), title.ilike('%ramen%'),
+            title.ilike('%teriyaki%'), title.ilike('%tempura%'),
+            title.ilike('%udon%'), title.ilike('%soba%'),
+            title.ilike('%miso%'), title.ilike('%sashimi%'),
+            title.ilike('%katsu%'), title.ilike('%donburi%'),
+        )
+    if s == 'thai':
+        return db.or_(
+            Recipe.cuisine.ilike('%thai%'),
+            title.ilike('%pad thai%'), title.ilike('%tom yum%'),
+            title.ilike('%tom kha%'), title.ilike('%green curry%'),
+            title.ilike('%red curry%'), title.ilike('%satay%'),
+            title.ilike('%massaman%'),
+        )
+    if s == 'mediterranean':
+        return db.or_(
+            Recipe.cuisine.ilike('%mediterranean%'),
+            Recipe.cuisine.ilike('%greek%'),
+            Recipe.cuisine.ilike('%turkish%'),
+            Recipe.cuisine.ilike('%moroccan%'),
+            Recipe.cuisine.ilike('%spanish%'),
+            title.ilike('%hummus%'), title.ilike('%falafel%'),
+            title.ilike('%tabbouleh%'), title.ilike('%tagine%'),
+            title.ilike('%paella%'), title.ilike('%gyro%'),
+            title.ilike('%shawarma%'), title.ilike('%kebab%'),
+            title.ilike('%moussaka%'),
+        )
+    if s == 'american':
+        return db.or_(
+            Recipe.cuisine.ilike('%american%'),
+            title.ilike('%burger%'), title.ilike('%bbq%'),
+            title.ilike('%mac and cheese%'), title.ilike('%cornbread%'),
+            title.ilike('%apple pie%'), title.ilike('%pulled pork%'),
+            title.ilike('%fried chicken%'), title.ilike('%cobbler%'),
+        )
+    if s == 'beef':
+        return db.or_(
+            Recipe.main_ingredient.ilike('%beef%'),
+            title.ilike('%beef%'), title.ilike('%steak%'),
+            title.ilike('%burger%'), title.ilike('%brisket%'),
+            title.ilike('%meatball%'), title.ilike('%meatloaf%'),
+            title.ilike('%stroganoff%'),
+        )
+    if s == 'pork':
+        return db.or_(
+            Recipe.main_ingredient.ilike('%pork%'),
+            title.ilike('%pork%'), title.ilike('%bacon%'),
+            title.ilike('%ham%'), title.ilike('%sausage%'),
+            title.ilike('%pulled pork%'), title.ilike('%ribs%'),
+        )
+    if s == 'lamb':
+        return db.or_(
+            Recipe.main_ingredient.ilike('%lamb%'),
+            title.ilike('%lamb%'), title.ilike('%kebab%'),
+            title.ilike('%shepherd%'), title.ilike('%goat%'),
+        )
+    if s == 'vegetarian':
+        return db.or_(
+            Recipe.dietary_tags_json.ilike('%vegetarian%'),
+            Recipe.dietary_tags_json.ilike('%vegan%'),
+            title.ilike('%vegetarian%'), title.ilike('%veggie%'),
+            title.ilike('%tofu%'), title.ilike('%paneer%'),
+            title.ilike('%eggplant%'), title.ilike('%chickpea%'),
+        )
+    if s == 'vegan':
+        return db.or_(
+            Recipe.dietary_tags_json.ilike('%vegan%'),
+            title.ilike('%vegan%'), title.ilike('%tofu%'),
+            title.ilike('%tempeh%'), title.ilike('%lentil%'),
+        )
+    if s == 'side-dishes':
+        return db.or_(
+            Recipe.dish_type.ilike('%side%'),
+            Recipe.meal_type.ilike('%side%'),
+            title.ilike('%mashed potato%'), title.ilike('%coleslaw%'),
+            title.ilike('%roasted vegetable%'), title.ilike('%pilaf%'),
+            title.ilike('%risotto%'), title.ilike('%dressing%'),
+        )
+    if s == 'slow-cooker':
+        return db.or_(
+            Recipe.cooking_method.ilike('%slow cooker%'),
+            Recipe.cooking_method.ilike('%crock%'),
+            title.ilike('%slow cooker%'), title.ilike('%crock pot%'),
+            title.ilike('%pulled pork%'), title.ilike('%stew%'),
+            title.ilike('%pot roast%'),
+        )
     return None
 
 
@@ -561,6 +684,10 @@ _TOP_LEVEL_CATEGORY_SLUGS = {
     'appetizers', 'appetizer', 'snacks', 'snack',
     'chicken', 'pasta', 'salads', 'salad', 'soups', 'soup',
     'seafood', 'baking', 'italian', 'mexican', 'asian', 'healthy',
+    # Extended catalog
+    'british', 'french', 'indian', 'chinese', 'japanese', 'thai',
+    'mediterranean', 'american', 'beef', 'pork', 'lamb',
+    'vegetarian', 'vegan', 'side-dishes', 'slow-cooker',
 }
 
 
@@ -572,12 +699,10 @@ def top_level_category_alias(slug):
         'brunch': 'breakfast', 'dessert': 'desserts',
         'appetizer': 'appetizers', 'snacks': 'appetizers',
         'snack': 'appetizers', 'salad': 'salads', 'soup': 'soups',
+        'sides': 'side-dishes', 'side': 'side-dishes',
     }
     target = aliases.get(s, s)
-    if target in _TOP_LEVEL_CATEGORY_SLUGS or target in {
-            'breakfast', 'dinner', 'desserts', 'appetizers', 'chicken',
-            'pasta', 'salads', 'soups', 'seafood', 'baking', 'italian',
-            'mexican', 'asian', 'healthy'}:
+    if target in _TOP_LEVEL_CATEGORY_SLUGS:
         cat = Category.query.filter_by(slug=target).first()
         if cat is not None:
             return redirect(url_for('category_page', slug=target), code=302)
@@ -2835,6 +2960,16 @@ def seed_1960s_collection_recipes():
 with app.app_context():
     db.create_all()
     seed_database()
+    # Extended catalog (TheMealDB + benchmark-fixture recipes) runs
+    # BEFORE seed_benchmark_users so that user recipe-box / meal-plan
+    # lookups by title fragment hit the extended recipe set.
+    # Lives in seed_data.py to keep this file readable.
+    try:
+        from seed_data import seed_extended_catalog
+        seed_extended_catalog()
+    except Exception as exc:  # pragma: no cover - never silently swallow
+        print(f"[seed_extended] FAILED: {exc!r}")
+        raise
     seed_benchmark_users()
     seed_1960s_collection_recipes()
 

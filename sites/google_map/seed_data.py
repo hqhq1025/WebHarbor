@@ -5,9 +5,15 @@ Enriches each place with address, phone, hours, rating, etc.
 """
 import json
 import random
+from datetime import datetime, timedelta
 from pathlib import Path
 from urllib.parse import quote_plus
 from scrape_wiki import PLACES as RAW_PLACES, CITIES as RAW_CITIES
+
+# Pinned reference moment used for all explicit timestamps in seeded
+# user-content (reviews, photos, timeline). Keeps the resulting DB
+# deterministic across builds.
+MIRROR_REFERENCE_DATE = datetime(2026, 4, 15, 12, 0, 0)
 
 BASE = Path(__file__).parent
 
@@ -1367,3 +1373,742 @@ def seed_task_data(db, Place, Category, City, Route):
 
     db.session.commit()
     print(f"Seeded {place_counter[0]} task-specific places and {len(ROUTES)} routes.")
+
+
+# ============================================================================
+# Expansion pass: bring catalog up to volume needed for realistic browsing.
+# Gates are coarse count thresholds so the WHOLE function early-returns
+# on second invocation, preserving byte-identical reset.
+# ============================================================================
+
+EXPAND_CITIES = [
+    # (slug, display, country, lat, lng)
+    # --- USA breadth ---
+    ("houston-tx", "Houston, TX", "United States", 29.7604, -95.3698),
+    ("dallas-tx", "Dallas, TX", "United States", 32.7767, -96.7970),
+    ("austin-tx", "Austin, TX", "United States", 30.2672, -97.7431),
+    ("san-antonio-tx", "San Antonio, TX", "United States", 29.4241, -98.4936),
+    ("fort-worth-tx", "Fort Worth, TX", "United States", 32.7555, -97.3308),
+    ("el-paso-tx", "El Paso, TX", "United States", 31.7619, -106.4850),
+    ("phoenix-az", "Phoenix, AZ", "United States", 33.4484, -112.0740),
+    ("tucson-az", "Tucson, AZ", "United States", 32.2226, -110.9747),
+    ("mesa-az", "Mesa, AZ", "United States", 33.4152, -111.8315),
+    ("san-diego-ca", "San Diego, CA", "United States", 32.7157, -117.1611),
+    ("san-jose-ca", "San Jose, CA", "United States", 37.3382, -121.8863),
+    ("sacramento-ca", "Sacramento, CA", "United States", 38.5816, -121.4944),
+    ("fresno-ca", "Fresno, CA", "United States", 36.7378, -119.7871),
+    ("long-beach-ca", "Long Beach, CA", "United States", 33.7701, -118.1937),
+    ("oakland-ca", "Oakland, CA", "United States", 37.8044, -122.2712),
+    ("bakersfield-ca", "Bakersfield, CA", "United States", 35.3733, -119.0187),
+    ("portland-or", "Portland, OR", "United States", 45.5152, -122.6784),
+    ("eugene-or", "Eugene, OR", "United States", 44.0521, -123.0868),
+    ("salt-lake-city-ut", "Salt Lake City, UT", "United States", 40.7608, -111.8910),
+    ("las-vegas-nv", "Las Vegas, NV", "United States", 36.1699, -115.1398),
+    ("reno-nv", "Reno, NV", "United States", 39.5296, -119.8138),
+    ("boise-id", "Boise, ID", "United States", 43.6150, -116.2023),
+    ("colorado-springs-co", "Colorado Springs, CO", "United States", 38.8339, -104.8214),
+    ("boulder-co", "Boulder, CO", "United States", 40.0150, -105.2705),
+    ("albuquerque-nm", "Albuquerque, NM", "United States", 35.0844, -106.6504),
+    ("santa-fe-nm", "Santa Fe, NM", "United States", 35.6870, -105.9378),
+    ("minneapolis-mn", "Minneapolis, MN", "United States", 44.9778, -93.2650),
+    ("saint-paul-mn", "St. Paul, MN", "United States", 44.9537, -93.0900),
+    ("milwaukee-wi", "Milwaukee, WI", "United States", 43.0389, -87.9065),
+    ("madison-wi", "Madison, WI", "United States", 43.0731, -89.4012),
+    ("des-moines-ia", "Des Moines, IA", "United States", 41.5868, -93.6250),
+    ("omaha-ne", "Omaha, NE", "United States", 41.2565, -95.9345),
+    ("lincoln-ne", "Lincoln, NE", "United States", 40.8136, -96.7026),
+    ("kansas-city-mo", "Kansas City, MO", "United States", 39.0997, -94.5786),
+    ("saint-louis-mo", "St. Louis, MO", "United States", 38.6270, -90.1994),
+    ("oklahoma-city-ok", "Oklahoma City, OK", "United States", 35.4676, -97.5164),
+    ("tulsa-ok", "Tulsa, OK", "United States", 36.1540, -95.9928),
+    ("little-rock-ar", "Little Rock, AR", "United States", 34.7465, -92.2896),
+    ("new-orleans-la", "New Orleans, LA", "United States", 29.9511, -90.0715),
+    ("baton-rouge-la", "Baton Rouge, LA", "United States", 30.4515, -91.1871),
+    ("jackson-ms", "Jackson, MS", "United States", 32.2988, -90.1848),
+    ("birmingham-al", "Birmingham, AL", "United States", 33.5186, -86.8104),
+    ("montgomery-al", "Montgomery, AL", "United States", 32.3668, -86.3000),
+    ("mobile-al", "Mobile, AL", "United States", 30.6954, -88.0399),
+    ("nashville-tn", "Nashville, TN", "United States", 36.1627, -86.7816),
+    ("memphis-tn", "Memphis, TN", "United States", 35.1495, -90.0490),
+    ("knoxville-tn", "Knoxville, TN", "United States", 35.9606, -83.9207),
+    ("chattanooga-tn", "Chattanooga, TN", "United States", 35.0456, -85.3097),
+    ("jacksonville-fl", "Jacksonville, FL", "United States", 30.3322, -81.6557),
+    ("tampa-fl", "Tampa, FL", "United States", 27.9506, -82.4572),
+    ("miami-beach-fl", "Miami Beach, FL", "United States", 25.7907, -80.1300),
+    ("tallahassee-fl", "Tallahassee, FL", "United States", 30.4383, -84.2807),
+    ("fort-lauderdale-fl", "Fort Lauderdale, FL", "United States", 26.1224, -80.1373),
+    ("savannah-ga", "Savannah, GA", "United States", 32.0809, -81.0912),
+    ("charleston-sc", "Charleston, SC", "United States", 32.7765, -79.9311),
+    ("columbia-sc", "Columbia, SC", "United States", 34.0007, -81.0348),
+    ("raleigh-nc", "Raleigh, NC", "United States", 35.7796, -78.6382),
+    ("charlotte-nc", "Charlotte, NC", "United States", 35.2271, -80.8431),
+    ("asheville-nc", "Asheville, NC", "United States", 35.5951, -82.5515),
+    ("richmond-va", "Richmond, VA", "United States", 37.5407, -77.4360),
+    ("virginia-beach-va", "Virginia Beach, VA", "United States", 36.8529, -75.9780),
+    ("norfolk-va", "Norfolk, VA", "United States", 36.8508, -76.2859),
+    ("annapolis-md", "Annapolis, MD", "United States", 38.9784, -76.4922),
+    ("baltimore-md", "Baltimore, MD", "United States", 39.2904, -76.6122),
+    ("philadelphia-pa", "Philadelphia, PA", "United States", 39.9526, -75.1652),
+    ("harrisburg-pa", "Harrisburg, PA", "United States", 40.2732, -76.8867),
+    ("buffalo-ny", "Buffalo, NY", "United States", 42.8864, -78.8784),
+    ("albany-ny", "Albany, NY", "United States", 42.6526, -73.7562),
+    ("rochester-ny", "Rochester, NY", "United States", 43.1566, -77.6088),
+    ("syracuse-ny", "Syracuse, NY", "United States", 43.0481, -76.1474),
+    ("hartford-ct", "Hartford, CT", "United States", 41.7658, -72.6734),
+    ("new-haven-ct", "New Haven, CT", "United States", 41.3083, -72.9279),
+    ("providence-ri", "Providence, RI", "United States", 41.8240, -71.4128),
+    ("manchester-nh", "Manchester, NH", "United States", 42.9956, -71.4548),
+    ("portland-me", "Portland, ME", "United States", 43.6591, -70.2568),
+    ("burlington-vt", "Burlington, VT", "United States", 44.4759, -73.2121),
+    ("cleveland-oh", "Cleveland, OH", "United States", 41.4993, -81.6944),
+    ("cincinnati-oh", "Cincinnati, OH", "United States", 39.1031, -84.5120),
+    ("columbus-oh", "Columbus, OH", "United States", 39.9612, -82.9988),
+    ("indianapolis-in", "Indianapolis, IN", "United States", 39.7684, -86.1581),
+    ("grand-rapids-mi", "Grand Rapids, MI", "United States", 42.9634, -85.6681),
+    ("ann-arbor-mi", "Ann Arbor, MI", "United States", 42.2808, -83.7430),
+    ("anchorage-ak", "Anchorage, AK", "United States", 61.2181, -149.9003),
+    ("honolulu-hi", "Honolulu, HI", "United States", 21.3069, -157.8583),
+    ("juneau-ak", "Juneau, AK", "United States", 58.3019, -134.4197),
+    # --- World breadth ---
+    ("bangkok", "Bangkok", "Thailand", 13.7563, 100.5018),
+    ("hanoi", "Hanoi", "Vietnam", 21.0285, 105.8542),
+    ("ho-chi-minh", "Ho Chi Minh City", "Vietnam", 10.8231, 106.6297),
+    ("kuala-lumpur", "Kuala Lumpur", "Malaysia", 3.1390, 101.6869),
+    ("jakarta", "Jakarta", "Indonesia", -6.2088, 106.8456),
+    ("manila", "Manila", "Philippines", 14.5995, 120.9842),
+    ("seoul", "Seoul", "South Korea", 37.5665, 126.9780),
+    ("busan", "Busan", "South Korea", 35.1796, 129.0756),
+    ("osaka", "Osaka", "Japan", 34.6937, 135.5023),
+    ("hong-kong", "Hong Kong", "Hong Kong", 22.3193, 114.1694),
+    ("taipei", "Taipei", "Taiwan", 25.0330, 121.5654),
+    ("auckland", "Auckland", "New Zealand", -36.8485, 174.7633),
+    ("wellington", "Wellington", "New Zealand", -41.2865, 174.7762),
+    ("melbourne", "Melbourne", "Australia", -37.8136, 144.9631),
+    ("brisbane", "Brisbane", "Australia", -27.4698, 153.0251),
+    ("perth", "Perth", "Australia", -31.9505, 115.8605),
+    ("cape-town", "Cape Town", "South Africa", -33.9249, 18.4241),
+    ("johannesburg", "Johannesburg", "South Africa", -26.2041, 28.0473),
+    ("marrakech", "Marrakech", "Morocco", 31.6295, -7.9811),
+    ("cairo", "Cairo", "Egypt", 30.0444, 31.2357),
+    ("tel-aviv", "Tel Aviv", "Israel", 32.0853, 34.7818),
+    ("doha", "Doha", "Qatar", 25.2854, 51.5310),
+    ("abu-dhabi", "Abu Dhabi", "United Arab Emirates", 24.4539, 54.3773),
+    ("riyadh", "Riyadh", "Saudi Arabia", 24.7136, 46.6753),
+    ("delhi", "Delhi", "India", 28.6139, 77.2090),
+    ("bangalore", "Bangalore", "India", 12.9716, 77.5946),
+    ("chennai", "Chennai", "India", 13.0827, 80.2707),
+    ("kolkata", "Kolkata", "India", 22.5726, 88.3639),
+    ("kathmandu", "Kathmandu", "Nepal", 27.7172, 85.3240),
+    ("colombo", "Colombo", "Sri Lanka", 6.9271, 79.8612),
+    ("buenos-aires", "Buenos Aires", "Argentina", -34.6037, -58.3816),
+    ("santiago", "Santiago", "Chile", -33.4489, -70.6693),
+    ("bogota", "Bogotá", "Colombia", 4.7110, -74.0721),
+    ("quito", "Quito", "Ecuador", -0.1807, -78.4678),
+    ("havana", "Havana", "Cuba", 23.1136, -82.3666),
+    ("san-juan", "San Juan", "Puerto Rico", 18.4655, -66.1057),
+    ("montreal", "Montreal", "Canada", 45.5017, -73.5673),
+    ("calgary", "Calgary", "Canada", 51.0447, -114.0719),
+    ("ottawa", "Ottawa", "Canada", 45.4215, -75.6972),
+    ("quebec-city", "Quebec City", "Canada", 46.8139, -71.2080),
+    ("reykjavik", "Reykjavik", "Iceland", 64.1466, -21.9426),
+    ("oslo", "Oslo", "Norway", 59.9139, 10.7522),
+    ("stockholm", "Stockholm", "Sweden", 59.3293, 18.0686),
+    ("copenhagen", "Copenhagen", "Denmark", 55.6761, 12.5683),
+    ("helsinki", "Helsinki", "Finland", 60.1699, 24.9384),
+    ("dublin", "Dublin", "Ireland", 53.3498, -6.2603),
+    ("glasgow", "Glasgow", "United Kingdom", 55.8642, -4.2518),
+    ("manchester-uk", "Manchester", "United Kingdom", 53.4808, -2.2426),
+    ("munich", "Munich", "Germany", 48.1351, 11.5820),
+    ("hamburg", "Hamburg", "Germany", 53.5511, 9.9937),
+    ("frankfurt", "Frankfurt", "Germany", 50.1109, 8.6821),
+    ("cologne", "Cologne", "Germany", 50.9375, 6.9603),
+    ("zurich", "Zurich", "Switzerland", 47.3769, 8.5417),
+    ("geneva", "Geneva", "Switzerland", 46.2044, 6.1432),
+    ("lisbon", "Lisbon", "Portugal", 38.7223, -9.1393),
+    ("porto", "Porto", "Portugal", 41.1579, -8.6291),
+    ("seville", "Seville", "Spain", 37.3891, -5.9845),
+    ("valencia", "Valencia", "Spain", 39.4699, -0.3763),
+    ("naples", "Naples", "Italy", 40.8518, 14.2681),
+    ("bologna", "Bologna", "Italy", 44.4949, 11.3426),
+    ("marseille", "Marseille", "France", 43.2965, 5.3698),
+    ("lyon", "Lyon", "France", 45.7640, 4.8357),
+    ("sofia", "Sofia", "Bulgaria", 42.6977, 23.3219),
+    ("bucharest", "Bucharest", "Romania", 44.4268, 26.1025),
+    ("belgrade", "Belgrade", "Serbia", 44.7866, 20.4489),
+    ("zagreb", "Zagreb", "Croatia", 45.8150, 15.9819),
+    ("krakow", "Kraków", "Poland", 50.0647, 19.9450),
+    ("shanghai", "Shanghai", "China", 31.2304, 121.4737),
+    ("guangzhou", "Guangzhou", "China", 23.1291, 113.2644),
+    ("chengdu", "Chengdu", "China", 30.5728, 104.0668),
+    ("xian", "Xi'an", "China", 34.3416, 108.9398),
+    ("hiroshima", "Hiroshima", "Japan", 34.3853, 132.4553),
+    ("sapporo", "Sapporo", "Japan", 43.0618, 141.3545),
+    ("hakone", "Hakone", "Japan", 35.2329, 139.1075),
+    ("nara", "Nara", "Japan", 34.6851, 135.8048),
+]
+
+
+def expand_cities(db, City):
+    """Add ~160 more well-known cities. Idempotent: gate by count threshold."""
+    if City.query.count() >= 200:
+        return
+    added = 0
+    for slug, display, country, lat, lng in EXPAND_CITIES:
+        if City.query.filter_by(slug=slug).first():
+            continue
+        db.session.add(City(
+            slug=slug, display_name=display, country=country,
+            hero_image="/static/images/heroes/eiffel-tower.jpg",
+            description=f"Explore {display} - one of {country}'s most beloved destinations.",
+            lat=lat, lng=lng,
+        ))
+        added += 1
+    db.session.commit()
+    print(f"expand_cities: added {added} cities (total {City.query.count()})")
+
+
+# --- Templates for catalog-density places per city ---
+_EXPAND_TEMPLATES = [
+    # (category_slug, name_pattern, subtitle, desc, price, rating_lo, rating_hi)
+    ("restaurants", "{anchor} Trattoria", "Italian restaurant",
+     "Family-run trattoria serving handmade pasta, wood-fired pizza, and Italian wines.", "$$", 4.1, 4.7),
+    ("restaurants", "{anchor} Noodle House", "Asian noodle bar",
+     "Asian noodle bar with rich broths, hand-pulled noodles, and small plates.", "$", 4.0, 4.6),
+    ("restaurants", "{anchor} Steakhouse", "Steakhouse",
+     "Classic steakhouse with prime cuts, an extensive wine list, and dim lighting.", "$$$", 4.2, 4.8),
+    ("restaurants", "Cafe {anchor}", "Cafe and bakery",
+     "Neighborhood cafe with single-origin coffee, fresh pastries, and all-day brunch.", "$", 4.3, 4.8),
+    ("restaurants", "{anchor} Tacos", "Taqueria",
+     "Casual taqueria with house-made tortillas, salsas, and street-style tacos.", "$", 4.0, 4.7),
+    ("restaurants", "{anchor} Sushi Bar", "Sushi bar",
+     "Intimate sushi bar with seasonal fish and omakase chef's choice menus.", "$$$", 4.3, 4.9),
+    ("hotels", "{anchor} Boutique Hotel", "Boutique hotel",
+     "Design-forward boutique hotel with individually styled rooms and an in-house bar.", "$$$", 4.2, 4.7),
+    ("hotels", "{anchor} Plaza Inn", "Mid-range hotel",
+     "Comfortable mid-range hotel with full amenities, fitness center, and quick airport shuttle.", "$$", 4.0, 4.5),
+    ("hotels", "{anchor} Suites", "All-suite hotel",
+     "All-suite property with kitchenettes, family-friendly layouts, and free breakfast.", "$$", 4.1, 4.6),
+    ("shopping", "{anchor} Marketplace", "Market",
+     "Open-air marketplace with produce, artisan goods, and street food stalls.", "$", 4.2, 4.7),
+    ("shopping", "{anchor} Bookshop", "Bookstore",
+     "Independent bookshop with thoughtful curation and a cozy reading nook.", "$$", 4.3, 4.8),
+    ("shopping", "{anchor} Outfitters", "Outdoor retailer",
+     "Outdoor retailer with gear for hiking, camping, climbing, and travel.", "$$$", 4.0, 4.6),
+    ("attractions", "{anchor} Observation Point", "Viewpoint",
+     "Scenic observation point with sweeping city views, especially at sunset.", "Free", 4.4, 4.9),
+    ("attractions", "Old Town {anchor}", "Historic district",
+     "Historic district lined with heritage buildings, public squares, and walking tours.", "Free", 4.3, 4.8),
+    ("museums", "{anchor} Museum of Art", "Art museum",
+     "Regional art museum featuring rotating exhibitions and a permanent collection.", "$", 4.2, 4.8),
+    ("museums", "{anchor} History Museum", "History museum",
+     "History museum tracing the city's founding, industries, and notable residents.", "$", 4.1, 4.7),
+    ("parks", "{anchor} City Park", "Public park",
+     "Large urban park with walking trails, a pond, picnic lawns, and playgrounds.", "Free", 4.4, 4.9),
+    ("parks", "{anchor} Botanical Garden", "Botanical garden",
+     "Curated botanical garden featuring native plants, themed greenhouses, and seasonal blooms.", "$", 4.4, 4.9),
+    ("entertainment", "{anchor} Jazz Club", "Live music venue",
+     "Intimate jazz club with nightly sets, craft cocktails, and a relaxed crowd.", "$$", 4.2, 4.7),
+    ("entertainment", "{anchor} Cinema", "Movie theater",
+     "Independent cinema showing arthouse releases, festival picks, and classic revivals.", "$", 4.0, 4.5),
+    ("transit", "{anchor} Transit Hub", "Transit station",
+     "Multi-modal transit hub with bus, rail, and rideshare connections.", "Free", 3.8, 4.4),
+    ("services", "{anchor} Locksmith Services", "Locksmith",
+     "Licensed locksmith offering residential, automotive, and emergency lockout help.", "$$", 4.0, 4.7),
+    ("services", "{anchor} Auto Repair", "Auto repair shop",
+     "Trusted auto repair shop with ASE-certified mechanics and same-day service.", "$$", 4.1, 4.7),
+    ("health-beauty", "{anchor} Day Spa", "Day spa",
+     "Full-service day spa offering massage, facials, and seasonal wellness packages.", "$$$", 4.3, 4.8),
+    ("health-beauty", "{anchor} Hair Studio", "Hair salon",
+     "Full-service hair salon specializing in cuts, color, and extensions.", "$$", 4.1, 4.7),
+    ("fitness", "{anchor} Climbing Gym", "Climbing gym",
+     "Indoor climbing gym with top-rope, lead, and bouldering walls for all levels.", "$$", 4.3, 4.8),
+    ("fitness", "{anchor} Yoga Studio", "Yoga studio",
+     "Drop-in yoga studio with vinyasa, restorative, and hot yoga classes daily.", "$$", 4.3, 4.8),
+    ("ev-charging", "{anchor} EV Charging Plaza", "EV charging station",
+     "Public EV charging plaza with multiple CCS and Tesla connectors.", "$", 4.2, 4.7),
+    ("parking", "{anchor} Public Parking Garage", "Parking garage",
+     "Public parking garage with hourly and daily rates, covered spaces.", "$$", 3.9, 4.5),
+]
+
+# Curated chain brands per category for varied catalog listings
+_EXPAND_CHAINS = {
+    "restaurants": ["Shake Shack", "Chipotle", "Sweetgreen", "Five Guys", "P.F. Chang's"],
+    "hotels": ["Hilton", "Marriott", "Hyatt", "Sheraton", "Holiday Inn", "Best Western"],
+    "shopping": ["Whole Foods Market", "Trader Joe's", "Target", "Costco", "Best Buy", "REI"],
+    "fitness": ["Equinox", "Planet Fitness", "Anytime Fitness", "Orangetheory Fitness"],
+    "ev-charging": ["Tesla Supercharger", "Electrify America", "ChargePoint Station", "EVgo Fast Charging"],
+}
+
+
+def expand_places(db, Place, Category, City):
+    """Densify the catalog so every city has 8-10 places spanning categories.
+
+    Idempotent: gate by Place count threshold.
+    """
+    if Place.query.count() >= 1500:
+        return
+
+    random.seed(20260415)
+    cat_by_slug = {c.slug: c for c in Category.query.all()}
+    cities = City.query.order_by(City.id).all()
+    if not cities:
+        return
+
+    # Donor images: pull from places that already have curated gallery photos
+    donor_pool = []
+    for p in Place.query.filter(Place.hero_image.like("/static/images/places/%")).limit(60).all():
+        try:
+            photos = json.loads(p.photos_json or "[]")
+        except Exception:
+            photos = []
+        if p.hero_image:
+            donor_pool.append((p.hero_image, photos or [p.hero_image]))
+    if not donor_pool:
+        donor_pool = [("/static/images/heroes/eiffel-tower.jpg",
+                       ["/static/images/heroes/eiffel-tower.jpg"])]
+
+    added = 0
+    for city in cities:
+        # Anchor word for naming, derived from display name
+        anchor = city.display_name.split(",")[0].split(" ")[0]
+        # Use templates in deterministic but varied order per city
+        templates = list(_EXPAND_TEMPLATES)
+        random.Random(hash(city.slug) & 0xFFFF_FFFF).shuffle(templates)
+
+        for idx, (cat_slug, pattern, subtitle, desc, price, rlo, rhi) in enumerate(templates):
+            cat = cat_by_slug.get(cat_slug)
+            if not cat:
+                continue
+            # Inject occasional chain brand into the name for realism + distractors
+            chain = ""
+            if idx % 4 == 0 and cat_slug in _EXPAND_CHAINS:
+                chain = random.choice(_EXPAND_CHAINS[cat_slug])
+                name = f"{chain} {anchor}"
+            else:
+                name = pattern.format(anchor=anchor)
+
+            slug = f"x-{city.slug}-{cat_slug}-{idx}"
+            if Place.query.filter_by(slug=slug).first():
+                continue
+
+            hero, gallery = random.choice(donor_pool)
+            lat = city.lat + random.uniform(-0.04, 0.04)
+            lng = city.lng + random.uniform(-0.05, 0.05)
+            rating = round(random.uniform(rlo, rhi), 1)
+            review_count = random.randint(60, 5400)
+
+            tags = [cat_slug, anchor.lower(), city.country.lower()]
+            if chain:
+                tags.append(chain.split()[0].lower())
+
+            db.session.add(Place(
+                slug=slug, name=name, category_id=cat.id, city_id=city.id,
+                subtitle=subtitle,
+                description=desc,
+                address=f"{random.randint(10, 999)} Main St, {city.display_name}",
+                phone=f"+{random.randint(1, 99)} {random.randint(100, 999)} {random.randint(1000, 9999)}",
+                hours=random.choice([
+                    "Mon-Sun: 9:00 AM - 9:00 PM",
+                    "Mon-Sat: 10:00 AM - 8:00 PM, Sun 11:00 AM - 6:00 PM",
+                    "Tue-Sun: 11:00 AM - 10:00 PM, Closed Mon",
+                    "Open 24 hours",
+                    "Mon-Fri: 7:00 AM - 7:00 PM, Weekends 8:00 AM - 5:00 PM",
+                ]),
+                website=google_maps_search_url(name, city.display_name),
+                rating=rating,
+                review_count=review_count,
+                price_level=price,
+                hero_image=hero,
+                photos_json=json.dumps(gallery[:5]),
+                lat=lat, lng=lng,
+                tags_json=json.dumps(tags),
+                chain_brand=chain,
+                subcategory=subtitle,
+                is_24h=(random.random() < 0.06),
+                is_popular=(rating >= 4.5 and random.random() < 0.4),
+                has_parking_lot=(cat_slug in ("shopping", "hotels", "fitness") or random.random() < 0.3),
+                delivery_available=(cat_slug == "restaurants" and random.random() < 0.55),
+                ev_charging=(cat_slug == "ev-charging"),
+            ))
+            added += 1
+            if added % 250 == 0:
+                db.session.commit()
+
+    db.session.commit()
+    print(f"expand_places: added {added} catalog places (total {Place.query.count()})")
+
+
+# --- 22 additional routes between popular destinations ---
+_EXPAND_ROUTES = [
+    ("Eiffel Tower", "Louvre Museum", "walking", "2.4 km", 2.4, "30 min", 30,
+     "Eiffel Tower to Louvre via Quai Branly and Pont Royal",
+     "Eiffel Tower, Champ de Mars, Paris", "Louvre Museum, Rue de Rivoli, Paris", [
+         {"instruction": "Head east on Quai Branly", "distance": "0.8 km"},
+         {"instruction": "Cross Pont de la Concorde", "distance": "0.5 km"},
+         {"instruction": "Walk along Tuileries Garden", "distance": "0.7 km"},
+         {"instruction": "Arrive at Louvre Museum main entrance", "distance": "0.4 km"},
+     ]),
+    ("Colosseum", "Trevi Fountain", "walking", "1.3 km", 1.3, "17 min", 17,
+     "Colosseum to Trevi Fountain via Via dei Fori Imperiali",
+     "Colosseum, Rome", "Trevi Fountain, Rome", [
+         {"instruction": "Head northwest on Via dei Fori Imperiali", "distance": "0.6 km"},
+         {"instruction": "Continue onto Via IV Novembre", "distance": "0.4 km"},
+         {"instruction": "Turn right onto Via del Tritone", "distance": "0.2 km"},
+         {"instruction": "Arrive at Trevi Fountain", "distance": "0.1 km"},
+     ]),
+    ("Big Ben", "London Eye", "walking", "0.7 km", 0.7, "9 min", 9,
+     "Westminster to London Eye via Westminster Bridge",
+     "Big Ben, Westminster, London", "London Eye, South Bank, London", [
+         {"instruction": "Head east across Westminster Bridge", "distance": "0.4 km"},
+         {"instruction": "Take stairs down to South Bank promenade", "distance": "0.2 km"},
+         {"instruction": "Arrive at London Eye ticket office", "distance": "0.1 km"},
+     ]),
+    ("Tokyo Tower", "Tokyo Skytree", "transit", "9.6 km", 9.6, "35 min", 35,
+     "Tokyo Tower to Skytree via Toei Asakusa Line",
+     "Tokyo Tower, Shibakoen, Tokyo", "Tokyo Skytree, Oshiage, Tokyo", [
+         {"instruction": "Walk to Akabanebashi Station (8 min)", "distance": "0.6 km"},
+         {"instruction": "Take Toei Oedo Line to Kuramae", "distance": "5.0 km"},
+         {"instruction": "Transfer to Toei Asakusa Line for Oshiage", "distance": "3.5 km"},
+         {"instruction": "Walk to Tokyo Skytree base", "distance": "0.5 km"},
+     ]),
+    ("Brooklyn Bridge", "Statue of Liberty", "transit", "11 km", 11.0, "55 min", 55,
+     "Brooklyn Bridge to Statue of Liberty via Battery Park ferry",
+     "Brooklyn Bridge, NY", "Statue of Liberty, Liberty Island, NY", [
+         {"instruction": "Walk south along Centre St toward Battery Park", "distance": "2.4 km"},
+         {"instruction": "Board Statue Cruises ferry at Battery Park", "distance": "0.3 km"},
+         {"instruction": "Ferry to Liberty Island", "distance": "8.0 km"},
+         {"instruction": "Disembark and walk to monument base", "distance": "0.3 km"},
+     ]),
+    ("Sydney Opera House", "Bondi Beach", "driving", "7.8 km", 7.8, "20 min", 20,
+     "Opera House to Bondi via Bondi Rd",
+     "Sydney Opera House, Sydney", "Bondi Beach, Sydney", [
+         {"instruction": "Head east on Macquarie St", "distance": "0.6 km"},
+         {"instruction": "Take Cross City Tunnel and William St east", "distance": "2.4 km"},
+         {"instruction": "Continue onto Oxford St then Bondi Rd", "distance": "4.0 km"},
+         {"instruction": "Arrive at Bondi Beach esplanade", "distance": "0.8 km"},
+     ]),
+    ("Houston", "Austin", "driving", "265 km", 265.0, "2 hr 50 min", 170,
+     "Houston to Austin via TX-71 W and US-290 W",
+     "Houston, TX", "Austin, TX", [
+         {"instruction": "Head west on I-10 W out of Houston", "distance": "70 km"},
+         {"instruction": "Take exit toward US-290 W", "distance": "5 km"},
+         {"instruction": "Continue west on US-290 toward Brenham", "distance": "100 km"},
+         {"instruction": "Merge onto TX-71 W toward Bastrop", "distance": "70 km"},
+         {"instruction": "Take exit toward central Austin", "distance": "15 km"},
+         {"instruction": "Arrive in Austin, TX", "distance": "5 km"},
+     ]),
+    ("Seattle-Tacoma International Airport", "Pike Place Market", "driving", "23 km", 23.0, "30 min", 30,
+     "SEA Airport to Pike Place Market via I-5 N",
+     "Seattle-Tacoma International Airport, SeaTac, WA", "Pike Place Market, Seattle, WA", [
+         {"instruction": "Head north on Airport Expressway", "distance": "2 km"},
+         {"instruction": "Merge onto I-5 N", "distance": "16 km"},
+         {"instruction": "Take exit 165 toward Madison St", "distance": "1 km"},
+         {"instruction": "Turn right onto 1st Ave", "distance": "3 km"},
+         {"instruction": "Arrive at Pike Place Market entrance", "distance": "1 km"},
+     ]),
+    ("Golden Gate Park", "Fisherman's Wharf", "driving", "9.2 km", 9.2, "22 min", 22,
+     "Golden Gate Park to Fisherman's Wharf via Park Presidio Blvd",
+     "Golden Gate Park, San Francisco, CA", "Fisherman's Wharf, San Francisco, CA", [
+         {"instruction": "Head north on Park Presidio Blvd", "distance": "2.0 km"},
+         {"instruction": "Continue onto Marina Blvd along the bay", "distance": "4.0 km"},
+         {"instruction": "Turn right onto Bay St", "distance": "2.2 km"},
+         {"instruction": "Arrive at Fisherman's Wharf", "distance": "1.0 km"},
+     ]),
+    ("Dallas", "Fort Worth", "driving", "55 km", 55.0, "45 min", 45,
+     "Dallas to Fort Worth via I-30 W",
+     "Dallas, TX", "Fort Worth, TX", [
+         {"instruction": "Head west on I-30 W from downtown Dallas", "distance": "10 km"},
+         {"instruction": "Continue west on I-30 W through Arlington", "distance": "35 km"},
+         {"instruction": "Take exit 14B toward downtown Fort Worth", "distance": "5 km"},
+         {"instruction": "Arrive in downtown Fort Worth", "distance": "5 km"},
+     ]),
+    ("Las Vegas Strip", "Hoover Dam", "driving", "55 km", 55.0, "50 min", 50,
+     "Las Vegas Strip to Hoover Dam via US-93 S",
+     "Las Vegas Strip, NV", "Hoover Dam, NV", [
+         {"instruction": "Head south on Las Vegas Blvd", "distance": "6 km"},
+         {"instruction": "Merge onto I-215 E toward Henderson", "distance": "15 km"},
+         {"instruction": "Continue onto US-93 S / I-11 S", "distance": "30 km"},
+         {"instruction": "Take exit for Hoover Dam Access Rd", "distance": "3 km"},
+         {"instruction": "Arrive at Hoover Dam visitor center", "distance": "1 km"},
+     ]),
+    ("Denver", "Boulder", "driving", "47 km", 47.0, "40 min", 40,
+     "Denver to Boulder via US-36 W",
+     "Denver, CO", "Boulder, CO", [
+         {"instruction": "Head north on I-25 N out of Denver", "distance": "5 km"},
+         {"instruction": "Take exit 217 onto US-36 W toward Boulder", "distance": "35 km"},
+         {"instruction": "Take exit toward 28th St", "distance": "4 km"},
+         {"instruction": "Continue onto Canyon Blvd", "distance": "2 km"},
+         {"instruction": "Arrive in downtown Boulder", "distance": "1 km"},
+     ]),
+    ("Portland", "Mount Hood", "driving", "100 km", 100.0, "1 hr 25 min", 85,
+     "Portland to Mount Hood via US-26 E",
+     "Portland, OR", "Mount Hood, OR", [
+         {"instruction": "Head east on Burnside St", "distance": "5 km"},
+         {"instruction": "Continue onto US-26 E", "distance": "85 km"},
+         {"instruction": "Take exit toward Timberline Lodge", "distance": "8 km"},
+         {"instruction": "Arrive at Mount Hood Timberline area", "distance": "2 km"},
+     ]),
+    ("Atlanta", "Savannah", "driving", "395 km", 395.0, "4 hr", 240,
+     "Atlanta to Savannah via I-75 S and I-16 E",
+     "Atlanta, GA", "Savannah, GA", [
+         {"instruction": "Head south on I-75 S out of Atlanta", "distance": "150 km"},
+         {"instruction": "Take I-16 E toward Macon", "distance": "10 km"},
+         {"instruction": "Continue on I-16 E for ~225 km", "distance": "225 km"},
+         {"instruction": "Take exit 165 toward downtown Savannah", "distance": "10 km"},
+     ]),
+    ("Philadelphia", "Washington, DC", "transit", "225 km", 225.0, "1 hr 50 min", 110,
+     "Philadelphia to DC via Amtrak Northeast Regional",
+     "30th Street Station, Philadelphia, PA", "Union Station, Washington, DC", [
+         {"instruction": "Board Amtrak Northeast Regional at 30th St Station", "distance": "0.1 km"},
+         {"instruction": "Train stops at Wilmington and Baltimore", "distance": "120 km"},
+         {"instruction": "Continue to BWI Airport stop", "distance": "60 km"},
+         {"instruction": "Arrive at Union Station, Washington DC", "distance": "45 km"},
+     ]),
+    ("Chicago O'Hare International Airport", "Magnificent Mile", "transit", "27 km", 27.0, "50 min", 50,
+     "O'Hare to Mag Mile via CTA Blue Line + Red Line",
+     "Chicago O'Hare International Airport, Chicago, IL", "Magnificent Mile, Chicago, IL", [
+         {"instruction": "Take CTA Blue Line from O'Hare toward Loop", "distance": "22 km"},
+         {"instruction": "Transfer at Jackson to Red Line northbound", "distance": "0.3 km"},
+         {"instruction": "Ride Red Line to Chicago/State", "distance": "3 km"},
+         {"instruction": "Walk east on Chicago Ave to Michigan Ave", "distance": "1.5 km"},
+     ]),
+    ("Berlin Brandenburg Airport", "Brandenburg Gate", "transit", "30 km", 30.0, "45 min", 45,
+     "BER to Brandenburg Gate via S-Bahn",
+     "Berlin Brandenburg Airport, Schönefeld", "Brandenburg Gate, Berlin", [
+         {"instruction": "Board FEX or S9 toward city center", "distance": "20 km"},
+         {"instruction": "Transfer to S1 at Friedrichstraße", "distance": "8 km"},
+         {"instruction": "Walk west to Brandenburger Tor", "distance": "0.8 km"},
+     ]),
+    ("Singapore Changi Airport", "Marina Bay Sands", "transit", "22 km", 22.0, "40 min", 40,
+     "Changi Airport to Marina Bay Sands via MRT",
+     "Singapore Changi Airport", "Marina Bay Sands, Singapore", [
+         {"instruction": "Take MRT East-West Line toward Tanah Merah", "distance": "3 km"},
+         {"instruction": "Transfer to East-West Line city-bound", "distance": "15 km"},
+         {"instruction": "Transfer at Bayfront to walk to MBS", "distance": "0.3 km"},
+         {"instruction": "Walk to Marina Bay Sands lobby", "distance": "0.5 km"},
+     ]),
+    ("Vancouver", "Whistler", "driving", "120 km", 120.0, "1 hr 50 min", 110,
+     "Vancouver to Whistler via Sea-to-Sky Highway",
+     "Vancouver, BC, Canada", "Whistler Village, BC, Canada", [
+         {"instruction": "Head north on BC-99 (Sea-to-Sky)", "distance": "40 km"},
+         {"instruction": "Continue along Howe Sound past Britannia Beach", "distance": "30 km"},
+         {"instruction": "Pass through Squamish", "distance": "20 km"},
+         {"instruction": "Continue toward Whistler Village", "distance": "30 km"},
+     ]),
+    ("Montreal", "Quebec City", "driving", "255 km", 255.0, "2 hr 50 min", 170,
+     "Montreal to Quebec City via Autoroute 20 E",
+     "Montreal, QC, Canada", "Quebec City, QC, Canada", [
+         {"instruction": "Head east on Autoroute 20 from Montreal", "distance": "60 km"},
+         {"instruction": "Continue past Drummondville", "distance": "90 km"},
+         {"instruction": "Pass Lévis on the south shore", "distance": "80 km"},
+         {"instruction": "Cross Pont Pierre-Laporte", "distance": "10 km"},
+         {"instruction": "Arrive in Vieux-Québec", "distance": "15 km"},
+     ]),
+    ("Buenos Aires", "Iguazu Falls", "driving", "1280 km", 1280.0, "15 hr", 900,
+     "Buenos Aires to Iguazu via RN-12 N",
+     "Buenos Aires, Argentina", "Iguazu Falls, Argentina", [
+         {"instruction": "Head north on RN-9 toward Rosario", "distance": "300 km"},
+         {"instruction": "Continue onto RN-12 N", "distance": "550 km"},
+         {"instruction": "Pass through Posadas", "distance": "320 km"},
+         {"instruction": "Take exit toward Puerto Iguazú", "distance": "100 km"},
+         {"instruction": "Arrive at Iguazu National Park entrance", "distance": "10 km"},
+     ]),
+    ("Cape Town International Airport", "Table Mountain", "driving", "30 km", 30.0, "30 min", 30,
+     "Cape Town Airport to Table Mountain via N2 W",
+     "Cape Town International Airport, Cape Town", "Table Mountain Cableway, Cape Town", [
+         {"instruction": "Head west on N2 toward Cape Town", "distance": "20 km"},
+         {"instruction": "Take exit toward Kloof Nek Rd", "distance": "5 km"},
+         {"instruction": "Continue up Tafelberg Rd", "distance": "4 km"},
+         {"instruction": "Arrive at Lower Cableway Station", "distance": "1 km"},
+     ]),
+]
+
+
+def expand_routes(db, Route):
+    """Add 22 more routes for breadth. Idempotent: gate by Route count."""
+    if Route.query.count() >= 30:
+        return
+    added = 0
+    for tup in _EXPAND_ROUTES:
+        (origin_q, dest_q, mode, dist, dist_km, dur, dur_min, summary,
+         origin_addr, dest_addr, steps) = tup
+        existing = Route.query.filter_by(
+            origin_query=origin_q, destination_query=dest_q, mode=mode).first()
+        if existing:
+            continue
+        db.session.add(Route(
+            origin_query=origin_q, destination_query=dest_q,
+            origin_name=origin_q, destination_name=dest_q,
+            mode=mode, distance=dist, distance_km=dist_km,
+            duration=dur, duration_min=dur_min, summary=summary,
+            origin_address=origin_addr, destination_address=dest_addr,
+            steps_json=json.dumps(steps),
+        ))
+        added += 1
+    db.session.commit()
+    print(f"expand_routes: added {added} routes (total {Route.query.count()})")
+
+
+# --- User content: reviews, photos, timeline entries -----------------------
+
+_REVIEW_BODIES = {
+    5: [
+        ("Absolutely fantastic", "One of the best experiences we've had. Staff were attentive, the space was beautiful, and we left already planning our return visit."),
+        ("Highly recommend", "Met expectations and then some. Came on a weekday afternoon and there was no wait, plenty of seating, and clean restrooms."),
+        ("Worth the trip", "Easily worth the detour. We took our time exploring and the photos don't really do it justice."),
+        ("Five stars no notes", "Service was warm, prices were fair, and everything came out exactly as ordered."),
+        ("Memorable visit", "Brought my parents during their visit and they loved it. The little details really make this place stand out."),
+    ],
+    4: [
+        ("Very good overall", "Solid experience. Lost a star because parking was a hassle, but once we were inside we had no complaints."),
+        ("Would come again", "Enjoyable for a couple of hours. A bit crowded on the weekend, but staff handled it well."),
+        ("Better than expected", "Walked in skeptical and walked out impressed. Friendly people, good value."),
+        ("Comfortable spot", "Nothing flashy, but everything you'd want from a place like this. Will be back."),
+        ("Strong showing", "Good food, decent atmosphere, slightly slow service. Would still recommend to a friend."),
+    ],
+    3: [
+        ("Mixed bag", "Some things were great, others felt rushed. Manager was nice when I flagged an issue, which helped."),
+        ("Just okay", "It was fine. Nothing to write home about but nothing terrible either."),
+        ("Has potential", "Concept is interesting and the space is well done. Execution needs a bit of polish."),
+        ("Average", "Reasonable prices, average quality. Crowded at peak hours; quieter mid-week."),
+        ("Three-star experience", "Some highs and lows. The highs were genuinely high; the lows kept it from being a higher rating."),
+    ],
+    2: [
+        ("Disappointing", "Had higher hopes after reading the other reviews. Service was slow and the space felt tired."),
+        ("Not great", "Wouldn't rush back. There are better options nearby for the price."),
+        ("Below expectations", "Felt understaffed when we visited. Took 20 minutes just to get water refills."),
+        ("Two-star visit", "A few small things added up. Not a terrible place, just not for us."),
+    ],
+    1: [
+        ("Would not recommend", "Multiple things went wrong and no one seemed to care. Will not be returning."),
+        ("Bad experience", "Hard to overstate how off the visit felt. Asked to speak with a manager and never got one."),
+        ("One star is generous", "Genuinely the worst experience we've had in months. Save your time and go somewhere else."),
+    ],
+}
+
+
+_PHOTO_CAPTIONS = [
+    "Beautiful afternoon light",
+    "View from the entrance",
+    "Sunset from outside",
+    "Loved the architecture",
+    "Quiet corner we found",
+    "Crowded but worth it",
+    "Snapped this before dinner",
+    "Postcard moment",
+    "Up close on the details",
+    "First-time visitor",
+    "Quick stop on the way",
+    "Couldn't resist a photo",
+    "From our table",
+    "Walking around the perimeter",
+    "Morning view, very peaceful",
+    "Lots to take in",
+    "Wide shot of the area",
+    "Hidden gem",
+    "Family loved this",
+    "Memorable visit",
+]
+
+_TIMELINE_NOTES = [
+    "Stopped by on the way home", "Quick visit during lunch break",
+    "Long-planned trip with friends", "Birthday celebration here",
+    "Anniversary dinner", "First-time visit, will be back",
+    "Weekend wander", "Brought the kids - they loved it",
+    "Met old friends after years", "Recommended by a colleague",
+    "Saw it on a list of must-visit spots", "Tried the new menu",
+    "Beautiful weather, perfect outing", "Hosted a small gathering nearby",
+    "Pulled over while road tripping", "Walked here from the hotel",
+    "", "", "", "",
+]
+
+
+def seed_user_content(db, User, Place, Review, Photo, TimelineEntry):
+    """Populate review / photo / timeline_entry tables with realistic
+    user-generated content across the 4 benchmark users.
+
+    Idempotent: gate by counts on all three tables.
+    Must run AFTER seed_benchmark_users().
+    """
+    if (Review.query.count() > 0 and Photo.query.count() > 0
+            and TimelineEntry.query.count() > 0):
+        return
+
+    users = User.query.order_by(User.id).all()
+    if not users:
+        return
+
+    # Stable ordering - prefer popular & well-known places for content
+    places = (Place.query
+              .order_by(Place.is_popular.desc(), Place.id)
+              .limit(450).all())
+    if not places:
+        return
+
+    rng = random.Random(31415)
+
+    # ---------- REVIEWS (~280) ----------
+    if Review.query.count() == 0:
+        target = 280
+        for i in range(target):
+            user = users[i % len(users)]
+            place = places[(i * 13 + 7) % len(places)]
+            rating = rng.choices([5, 4, 3, 2, 1],
+                                 weights=[44, 30, 14, 8, 4])[0]
+            title, body = rng.choice(_REVIEW_BODIES[rating])
+            # Deterministic created_at offset, but spread over ~18 months
+            days_ago = (i * 5 + (i * i) % 17) % 540 + 3
+            created = MIRROR_REFERENCE_DATE - timedelta(
+                days=days_ago, hours=(i * 7) % 24, minutes=(i * 11) % 60)
+            db.session.add(Review(
+                user_id=user.id, place_id=place.id,
+                rating=rating, title=title, body=body,
+                created_at=created,
+            ))
+            if (i + 1) % 100 == 0:
+                db.session.commit()
+        db.session.commit()
+        print(f"seed_user_content: added {Review.query.count()} reviews")
+
+    # ---------- PHOTOS (~140) ----------
+    if Photo.query.count() == 0:
+        target = 140
+        for i in range(target):
+            user = users[(i + 1) % len(users)]
+            place = places[(i * 19 + 3) % len(places)]
+            # Reuse the place's hero/gallery URLs - no new image files needed
+            try:
+                gallery = json.loads(place.photos_json or "[]")
+            except Exception:
+                gallery = []
+            img = (gallery or [place.hero_image
+                               or "/static/images/heroes/eiffel-tower.jpg"])[i % max(1, len(gallery) or 1)]
+            caption = rng.choice(_PHOTO_CAPTIONS)
+            days_ago = (i * 7 + 5) % 420 + 2
+            created = MIRROR_REFERENCE_DATE - timedelta(
+                days=days_ago, hours=(i * 5) % 24, minutes=(i * 13) % 60)
+            db.session.add(Photo(
+                user_id=user.id, place_id=place.id,
+                image_url=img, caption=caption, created_at=created,
+            ))
+            if (i + 1) % 100 == 0:
+                db.session.commit()
+        db.session.commit()
+        print(f"seed_user_content: added {Photo.query.count()} photos")
+
+    # ---------- TIMELINE ENTRIES (~75) ----------
+    if TimelineEntry.query.count() == 0:
+        target = 75
+        for i in range(target):
+            user = users[(i + 2) % len(users)]
+            place = places[(i * 23 + 11) % len(places)]
+            note = rng.choice(_TIMELINE_NOTES)
+            days_ago = (i * 6 + 2) % 360 + 1
+            visited = MIRROR_REFERENCE_DATE - timedelta(
+                days=days_ago, hours=(i * 4) % 24, minutes=(i * 17) % 60)
+            db.session.add(TimelineEntry(
+                user_id=user.id, place_id=place.id,
+                visited_at=visited, note=note,
+            ))
+        db.session.commit()
+        print(f"seed_user_content: added {TimelineEntry.query.count()} timeline entries")

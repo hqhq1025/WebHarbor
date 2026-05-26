@@ -2266,110 +2266,229 @@ QUIZ_DATA = [
 ]
 
 
+# ---------------------------------------------------------------------------
+# Optional bulk seed data (loaded from scraped_data/ when present at build
+# time; the runtime container ships a prebuilt instance_seed/cambridge.db so
+# these files are NOT required after the seed DB is generated).
+# ---------------------------------------------------------------------------
+
+SCRAPED_DIR = os.path.join(BASE_DIR, 'scraped_data')
+
+# Pinned reference date for all seed-time ``created_at`` columns. This keeps
+# regenerated instance_seed/cambridge.db byte-identical across rebuilds and
+# matches the WebHarbor MIRROR_REFERENCE_DATE convention (mid-April 2026).
+MIRROR_REFERENCE_DATE = datetime(2026, 4, 15, 12, 0, 0)
+
+
+def _load_json(*names):
+    """Return decoded JSON from the first existing file under scraped_data/,
+    or None if no file is found. Used only at build-time seed."""
+    for n in names:
+        p = os.path.join(SCRAPED_DIR, n)
+        if os.path.exists(p):
+            with open(p, encoding='utf-8') as f:
+                return json.load(f)
+    return None
+
+
 def seed_database():
-    """Seed the database with initial data."""
+    """Seed the database with initial data.
+
+    Whole-function gated by ``Word.query.count() > 0`` so /reset stays
+    byte-identical. When scraped_data/*.json files exist they take
+    precedence over the small inline catalog; otherwise the inline lists
+    are used as a fallback.
+    """
     if Word.query.count() > 0:
         return  # Already seeded
 
-    # Seed words (deduplicate by slug)
-    seen_slugs = set()
-    for wd in WORDS_DATA:
-        if wd['slug'] in seen_slugs:
-            continue
-        seen_slugs.add(wd['slug'])
-        w = Word(
-            headword=wd['headword'],
-            slug=wd['slug'],
-            pos=wd['pos'],
-            guide_word=wd['guide_word'],
-            phonetic_uk=wd['phonetic_uk'],
-            phonetic_us=wd['phonetic_us'],
-            level=wd.get('level', ''),
-            definitions_json=_j(wd['definitions']),
-            translations_json=_j(wd['translations']),
-            related_json=_j(wd['related']),
-            synonyms_json=_j(wd['synonyms']),
-            is_thesaurus_phrase=False,
-        )
-        db.session.add(w)
+    # ── Words (regular + thesaurus) ───────────────────────────────────────
+    words_file = _load_json('words_existing.json')
+    if words_file:
+        # Bulk catalog dump (preferred). Already contains both regular and
+        # thesaurus entries, distinguished by the is_thesaurus_phrase flag.
+        seen_slugs = set()
+        for wd in words_file:
+            if wd['slug'] in seen_slugs:
+                continue
+            seen_slugs.add(wd['slug'])
+            db.session.add(Word(
+                headword=wd['headword'], slug=wd['slug'],
+                pos=wd.get('pos', ''), guide_word=wd.get('guide_word', ''),
+                phonetic_uk=wd.get('phonetic_uk', ''),
+                phonetic_us=wd.get('phonetic_us', ''),
+                level=wd.get('level', ''),
+                definitions_json=_j(wd.get('definitions', [])),
+                translations_json=_j(wd.get('translations', {})),
+                related_json=_j(wd.get('related', [])),
+                synonyms_json=_j(wd.get('synonyms', [])),
+                is_thesaurus_phrase=bool(wd.get('is_thesaurus_phrase', False)),
+                created_at=MIRROR_REFERENCE_DATE,
+            ))
+        # Extra catalog words generated from WordNet — append after the
+        # curated existing set so existing ids stay stable.
+        extra = _load_json('words_fetched.json') or []
+        for wd in extra:
+            if wd['slug'] in seen_slugs:
+                continue
+            seen_slugs.add(wd['slug'])
+            db.session.add(Word(
+                headword=wd['headword'], slug=wd['slug'],
+                pos=wd.get('pos', ''), guide_word=wd.get('guide_word', ''),
+                phonetic_uk=wd.get('phonetic_uk', ''),
+                phonetic_us=wd.get('phonetic_us', ''),
+                level=wd.get('level', ''),
+                definitions_json=_j(wd.get('definitions', [])),
+                translations_json=_j(wd.get('translations', {})),
+                related_json=_j(wd.get('related', [])),
+                synonyms_json=_j(wd.get('synonyms', [])),
+                is_thesaurus_phrase=bool(wd.get('is_thesaurus_phrase', False)),
+                created_at=MIRROR_REFERENCE_DATE,
+            ))
+    else:
+        # Fallback: inline curated lists.
+        seen_slugs = set()
+        for wd in WORDS_DATA:
+            if wd['slug'] in seen_slugs:
+                continue
+            seen_slugs.add(wd['slug'])
+            db.session.add(Word(
+                headword=wd['headword'], slug=wd['slug'], pos=wd['pos'],
+                guide_word=wd['guide_word'],
+                phonetic_uk=wd['phonetic_uk'], phonetic_us=wd['phonetic_us'],
+                level=wd.get('level', ''),
+                definitions_json=_j(wd['definitions']),
+                translations_json=_j(wd['translations']),
+                related_json=_j(wd['related']),
+                synonyms_json=_j(wd['synonyms']),
+                is_thesaurus_phrase=False,
+                created_at=MIRROR_REFERENCE_DATE,
+            ))
+        for td in THESAURUS_DATA:
+            db.session.add(Word(
+                headword=td['headword'], slug=td['slug'], pos=td['pos'],
+                guide_word=td['guide_word'],
+                phonetic_uk=td['phonetic_uk'], phonetic_us=td['phonetic_us'],
+                level=td.get('level', ''),
+                definitions_json=_j(td['definitions']),
+                translations_json=_j(td['translations']),
+                related_json=_j(td['related']),
+                synonyms_json=_j(td['synonyms']),
+                is_thesaurus_phrase=True,
+                created_at=MIRROR_REFERENCE_DATE,
+            ))
 
-    # Seed thesaurus entries
-    for td in THESAURUS_DATA:
-        w = Word(
-            headword=td['headword'],
-            slug=td['slug'],
-            pos=td['pos'],
-            guide_word=td['guide_word'],
-            phonetic_uk=td['phonetic_uk'],
-            phonetic_us=td['phonetic_us'],
-            level=td.get('level', ''),
-            definitions_json=_j(td['definitions']),
-            translations_json=_j(td['translations']),
-            related_json=_j(td['related']),
-            synonyms_json=_j(td['synonyms']),
-            is_thesaurus_phrase=True,
-        )
-        db.session.add(w)
+    # ── Grammar topics ────────────────────────────────────────────────────
+    gram_existing = _load_json('grammar_existing.json')
+    if gram_existing is not None:
+        gram_list = list(gram_existing)
+        extras = _load_json('extras.json') or {}
+        gram_list += extras.get('grammar_extra', [])
+    else:
+        gram_list = GRAMMAR_DATA
+    for gd in gram_list:
+        db.session.add(GrammarTopic(
+            title=gd['title'], slug=gd['slug'],
+            category=gd.get('category', ''), summary=gd.get('summary', ''),
+            sort_order=gd.get('sort_order', 0),
+            content_json=_j(gd.get('content', [])),
+        ))
 
-    # Seed grammar topics
-    for gd in GRAMMAR_DATA:
-        t = GrammarTopic(
-            title=gd['title'],
-            slug=gd['slug'],
-            category=gd['category'],
-            summary=gd['summary'],
-            sort_order=gd['sort_order'],
-            content_json=_j(gd['content']),
-        )
-        db.session.add(t)
-
-    # Seed shop items
-    for sd in SHOP_DATA:
-        item = ShopItem(
-            name=sd['name'],
-            slug=sd['slug'],
-            category=sd['category'],
-            price=sd['price'],
-            currency=sd['currency'],
-            description=sd['description'],
+    # ── Shop items ────────────────────────────────────────────────────────
+    shop_existing = _load_json('shop_existing.json')
+    if shop_existing is not None:
+        shop_list = list(shop_existing)
+        extras = _load_json('extras.json') or {}
+        shop_list += extras.get('shop_extra', [])
+    else:
+        shop_list = SHOP_DATA
+    for sd in shop_list:
+        db.session.add(ShopItem(
+            name=sd['name'], slug=sd['slug'],
+            category=sd.get('category', 'books'),
+            price=sd.get('price', 0.0),
+            currency=sd.get('currency', 'GBP'),
+            description=sd.get('description', ''),
             isbn=sd.get('isbn', ''),
             image='',
-            is_featured=sd.get('is_featured', False),
-        )
-        db.session.add(item)
+            is_featured=bool(sd.get('is_featured', False)),
+        ))
 
-    # Seed quizzes
-    for qd in QUIZ_DATA:
-        q = Quiz(
-            title=qd['title'],
-            slug=qd['slug'],
-            quiz_type=qd['quiz_type'],
-            difficulty=qd['difficulty'],
-            category=qd['category'],
-            description=qd['description'],
-            questions_json=_j(qd['questions']),
-        )
-        db.session.add(q)
+    # ── Quizzes ───────────────────────────────────────────────────────────
+    quiz_existing = _load_json('quizzes_existing.json')
+    if quiz_existing is not None:
+        quiz_list = list(quiz_existing)
+        qextra = _load_json('quizzes_extra.json') or {}
+        quiz_list += qextra.get('quizzes_extra', [])
+    else:
+        quiz_list = QUIZ_DATA
+    for qd in quiz_list:
+        db.session.add(Quiz(
+            title=qd['title'], slug=qd['slug'],
+            quiz_type=qd.get('quiz_type', 'grammar'),
+            difficulty=qd.get('difficulty', 'easy'),
+            category=qd.get('category', ''),
+            description=qd.get('description', ''),
+            questions_json=_j(qd.get('questions', [])),
+        ))
 
+    db.session.commit()
+
+    # SQLAlchemy iterates Table.indexes (a set) in non-deterministic order
+    # when creating indexes during db.create_all(), which leaves
+    # sqlite_master entries in different orders across rebuilds and breaks
+    # byte-identity. Re-create them in a deterministic (alphabetical) order
+    # so two consecutive seed runs produce md5-identical DB files.
+    from sqlalchemy import text as _sql_text
+    rows = db.session.execute(_sql_text(
+        "SELECT name, sql FROM sqlite_master "
+        "WHERE type='index' AND name NOT LIKE 'sqlite_%' "
+        "ORDER BY name"
+    )).all()
+    for name, _sql in rows:
+        db.session.execute(_sql_text(f'DROP INDEX IF EXISTS "{name}"'))
+    for _name, sql in rows:
+        if sql:
+            db.session.execute(_sql_text(sql))
     db.session.commit()
     print('Database seeded.')
 
 
 def seed_benchmark_users():
-    """Create 4 benchmark users with saved words and search history. Idempotent."""
+    """Create 4 benchmark users with saved words and search history. Idempotent.
+
+    Bcrypt hashes are pinned (the random salt would otherwise change the
+    rendered seed-DB bytes on every regeneration). All ``created_at``
+    columns are pinned to MIRROR_REFERENCE_DATE so a re-seed is
+    byte-identical to the previous one.
+    """
     if User.query.filter_by(email='alice.j@test.com').first():
         return  # already seeded
 
     def _get_word(slug):
         return Word.query.filter_by(slug=slug, is_thesaurus_phrase=False).first()
 
-    PASSWORD = 'TestPass123!'
+    # Plaintext is 'TestPass123!' for all four users (verified against the
+    # hashes below by Flask-Bcrypt's check_password_hash). Hashes are
+    # PINNED so the produced instance_seed/cambridge.db stays
+    # byte-identical across rebuilds.
+    PINNED_HASHES = {
+        'alice.j@test.com':
+            '$2b$12$xZclDqCGheUDzCYbk0bCpeyQr4A14kFaOBWj5a.F8H7akIFp0iPJe',
+        'bob.c@test.com':
+            '$2b$12$qS3evhIcvPo2R4nX6nk.QemDylmWKJLQ0dhoHdYkU/WnOqYh6F6vy',
+        'carol.d@test.com':
+            '$2b$12$Iw42jipwhSoQrF/e3D6KOOYfsEV0AVUiMr9lO8wR2Kl4D5RArdz4i',
+        'david.k@test.com':
+            '$2b$12$B7SU8SzE77hpzBk890p0iuEVxI0RDNxpzgMQZq2p8mvanGmTGJI/y',
+    }
 
     # ------------------------------------------------------------------
     # Alice Johnson — advanced learner, C1/C2 focus
     # ------------------------------------------------------------------
-    alice = User(name='Alice Johnson', email='alice.j@test.com')
-    alice.set_password(PASSWORD)
+    alice = User(name='Alice Johnson', email='alice.j@test.com',
+                 password_hash=PINNED_HASHES['alice.j@test.com'],
+                 created_at=MIRROR_REFERENCE_DATE)
     db.session.add(alice)
     db.session.flush()
 
@@ -2378,18 +2497,21 @@ def seed_benchmark_users():
     for slug in alice_saved_slugs:
         w = _get_word(slug)
         if w:
-            db.session.add(SavedWord(user_id=alice.id, word_id=w.id))
+            db.session.add(SavedWord(user_id=alice.id, word_id=w.id,
+                                     created_at=MIRROR_REFERENCE_DATE))
 
     alice_searches = ['serendipity', 'ubiquitous', 'C2 vocabulary',
                       'ephemeral meaning', 'resilience definition']
     for term in alice_searches:
-        db.session.add(SearchHistory(user_id=alice.id, term=term))
+        db.session.add(SearchHistory(user_id=alice.id, term=term,
+                                     created_at=MIRROR_REFERENCE_DATE))
 
     # ------------------------------------------------------------------
     # Bob Chen — intermediate learner, B2 focus, grammar interest
     # ------------------------------------------------------------------
-    bob = User(name='Bob Chen', email='bob.c@test.com')
-    bob.set_password(PASSWORD)
+    bob = User(name='Bob Chen', email='bob.c@test.com',
+               password_hash=PINNED_HASHES['bob.c@test.com'],
+               created_at=MIRROR_REFERENCE_DATE)
     db.session.add(bob)
     db.session.flush()
 
@@ -2398,18 +2520,21 @@ def seed_benchmark_users():
     for slug in bob_saved_slugs:
         w = _get_word(slug)
         if w:
-            db.session.add(SavedWord(user_id=bob.id, word_id=w.id))
+            db.session.add(SavedWord(user_id=bob.id, word_id=w.id,
+                                     created_at=MIRROR_REFERENCE_DATE))
 
     bob_searches = ['present perfect', 'modal verbs', 'harmony', 'nostalgia',
                     'fewer vs less', 'passive voice']
     for term in bob_searches:
-        db.session.add(SearchHistory(user_id=bob.id, term=term))
+        db.session.add(SearchHistory(user_id=bob.id, term=term,
+                                     created_at=MIRROR_REFERENCE_DATE))
 
     # ------------------------------------------------------------------
     # Carol Diaz — vocabulary builder, mixed levels
     # ------------------------------------------------------------------
-    carol = User(name='Carol Diaz', email='carol.d@test.com')
-    carol.set_password(PASSWORD)
+    carol = User(name='Carol Diaz', email='carol.d@test.com',
+                 password_hash=PINNED_HASHES['carol.d@test.com'],
+                 created_at=MIRROR_REFERENCE_DATE)
     db.session.add(carol)
     db.session.flush()
 
@@ -2419,18 +2544,21 @@ def seed_benchmark_users():
     for slug in carol_saved_slugs:
         w = _get_word(slug)
         if w:
-            db.session.add(SavedWord(user_id=carol.id, word_id=w.id))
+            db.session.add(SavedWord(user_id=carol.id, word_id=w.id,
+                                     created_at=MIRROR_REFERENCE_DATE))
 
     carol_searches = ['C1 words', 'mitigate', 'ambiguous definition',
                       'zeitgeist', 'cryptocurrency meaning', 'B2 vocabulary']
     for term in carol_searches:
-        db.session.add(SearchHistory(user_id=carol.id, term=term))
+        db.session.add(SearchHistory(user_id=carol.id, term=term,
+                                     created_at=MIRROR_REFERENCE_DATE))
 
     # ------------------------------------------------------------------
     # David Kim — grammar-focused learner
     # ------------------------------------------------------------------
-    david = User(name='David Kim', email='david.k@test.com')
-    david.set_password(PASSWORD)
+    david = User(name='David Kim', email='david.k@test.com',
+                 password_hash=PINNED_HASHES['david.k@test.com'],
+                 created_at=MIRROR_REFERENCE_DATE)
     db.session.add(david)
     db.session.flush()
 
@@ -2439,12 +2567,14 @@ def seed_benchmark_users():
     for slug in david_saved_slugs:
         w = _get_word(slug)
         if w:
-            db.session.add(SavedWord(user_id=david.id, word_id=w.id))
+            db.session.add(SavedWord(user_id=david.id, word_id=w.id,
+                                     created_at=MIRROR_REFERENCE_DATE))
 
     david_searches = ['articles grammar', 'indirect speech', 'comparative adjectives',
                       'ameliorate', 'euphoria', 'affect vs effect']
     for term in david_searches:
-        db.session.add(SearchHistory(user_id=david.id, term=term))
+        db.session.add(SearchHistory(user_id=david.id, term=term,
+                                     created_at=MIRROR_REFERENCE_DATE))
 
     db.session.commit()
     print('Benchmark users seeded.')

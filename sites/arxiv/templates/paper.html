@@ -98,6 +98,63 @@
             </div>
         </div>
 
+        <!-- Community comments -->
+        <div class="comments-section">
+            <h3 style="font-size:14px;border-bottom:1px solid var(--border-light);padding-bottom:6px;">
+                Community discussion ({{ comments|length }})
+            </h3>
+            {% if comments %}
+                {% for c in comments %}
+                <div class="comment">
+                    <div class="comment-head">
+                        <b>{{ c.user.full_name or c.user.username }}</b>
+                        {% if c.user.affiliation %}<span class="muted">· {{ c.user.affiliation }}</span>{% endif %}
+                        <span class="muted">· {{ c.created_at.strftime('%Y-%m-%d') }}</span>
+                        {% if c.rating and c.rating > 0 %}
+                            <span class="comment-rating">{{ '★' * c.rating }}{{ '☆' * (5 - c.rating) }}</span>
+                        {% endif %}
+                    </div>
+                    {% if c.title %}<div class="comment-title">{{ c.title }}</div>{% endif %}
+                    <div class="comment-body">{{ c.body }}</div>
+                    {% if current_user.is_authenticated and current_user.id == c.user_id %}
+                    <form method="post" action="{{ url_for('delete_comment', comment_id=c.id) }}" style="margin-top:6px;">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <button type="submit" class="btn" style="font-size:11px;padding:2px 8px;">Delete</button>
+                    </form>
+                    {% endif %}
+                </div>
+                {% endfor %}
+            {% else %}
+                <p class="muted" style="font-size:13px;">No discussion yet — be the first to comment.</p>
+            {% endif %}
+
+            {% if current_user.is_authenticated %}
+            <form method="post" action="{{ url_for('submit_comment', arxiv_id=paper.arxiv_id) }}"
+                  class="comment-form" style="margin-top:14px;">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <div style="margin-bottom:6px;">
+                    <input type="text" name="title" placeholder="Title (optional)" maxlength="200" style="width:60%;">
+                    <select name="rating">
+                        <option value="0">No rating</option>
+                        <option value="5">5 ★</option>
+                        <option value="4">4 ★</option>
+                        <option value="3">3 ★</option>
+                        <option value="2">2 ★</option>
+                        <option value="1">1 ★</option>
+                    </select>
+                </div>
+                <textarea name="body" placeholder="Share feedback, ask a question, or flag an issue with this preprint…" required></textarea>
+                <div style="margin-top:6px;">
+                    <button type="submit" class="btn btn-primary">Post comment</button>
+                </div>
+            </form>
+            {% else %}
+            <p style="font-size:12px;color:var(--text-muted);margin-top:10px;">
+                <a href="{{ url_for('login', next=request.path) }}">Log in</a> to join the discussion.
+            </p>
+            {% endif %}
+        </div>
+
     </div>
 
     <!-- Sidebar -->

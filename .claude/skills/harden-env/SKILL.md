@@ -5,6 +5,8 @@ description: "Phase 4: Harden environment difficulty by eliminating answer leaks
 
 # Harden Environment — Difficulty & Fidelity Hardening
 
+> **See also**: [gotchas.md](gotchas.md) — 13 recurring pitfalls (bcrypt salt, SQLAlchemy index order, empty model tables, template-vs-route 404, build-time seed RUN, multi-subagent worktree clobber, …) with symptom + root cause + fix templates. Skim before authoring or reviewing.
+
 ## When to use
 
 - After Phase 3 (evolve-env) when each task in `tasks.jsonl` is walkable

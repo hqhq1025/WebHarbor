@@ -8,7 +8,7 @@ import re
 import math
 from datetime import datetime, timedelta
 from functools import wraps
-from flask import (Flask, render_template, redirect, url_for, flash,
+from flask import (Flask, render_template, render_template_string, redirect, url_for, flash,
                    request, jsonify, session, abort)
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import (LoginManager, UserMixin, login_user, logout_user,
@@ -1822,6 +1822,223 @@ def about():
     return render_template('about.html')
 
 
+# ─── Marketing stubs for links referenced from templates ───
+# Each of these pages was linked from existing GitHub-clone pages
+# (customer_stories, resources_security, copilot/faq, repo sidebars, index hero)
+# but had no route, so agents hit a 404 mid-flow. Stubs render the shared
+# simple_landing template with realistic-looking marketing content.
+
+_STUB_PAGES = {
+    'contact_sales': {
+        'title': 'Contact Sales',
+        'eyebrow': 'GitHub Sales',
+        'headline': 'Talk to our sales team.',
+        'sub': 'See how GitHub Enterprise, Advanced Security, and Copilot Business '
+               'fit your team. A specialist will follow up within one business day.',
+        'ctas': [
+            {'href': '#form', 'label': 'Request a demo', 'cls': 'gh-btn-primary'},
+            {'href': '/pricing', 'label': 'View pricing', 'cls': 'gh-btn-secondary'},
+        ],
+        'bullets': [
+            'Volume discounts on Enterprise seats',
+            'Single sign-on (SAML, OIDC) and SCIM provisioning',
+            'Dedicated customer success manager for >500 seats',
+        ],
+        'sections_title': 'What you get',
+        'sections': [
+            {'title': 'Custom rollout plan',
+             'body': 'A solutions architect maps GitHub Enterprise to your existing identity provider, audit pipeline, and CI fleet.'},
+            {'title': 'Security review',
+             'body': 'We share SOC 2 Type II, ISO 27001, FedRAMP, and pen-test reports under NDA so your security team can sign off.'},
+            {'title': 'Proof of concept',
+             'body': '30-day pilot on a sample org with white-glove migration help and weekly health checks.'},
+        ],
+    },
+    'enterprise': {
+        'title': 'GitHub Enterprise',
+        'eyebrow': 'GitHub Enterprise',
+        'headline': 'The developer platform built for the enterprise.',
+        'sub': 'Run GitHub on your terms: Enterprise Cloud with data residency, or '
+               'Enterprise Server in your own data centre. Same workflow, hardened controls.',
+        'ctas': [
+            {'href': '/contact-sales', 'label': 'Start a free trial', 'cls': 'gh-btn-primary'},
+            {'href': '/pricing', 'label': 'Compare plans', 'cls': 'gh-btn-secondary'},
+        ],
+        'bullets': [
+            '90% of the Fortune 100 build with GitHub Enterprise',
+            'SAML SSO, SCIM, audit log streaming to Splunk / Datadog',
+            'Data residency in US, EU, and Australia',
+        ],
+        'sections_title': 'Enterprise capabilities',
+        'sections': [
+            {'title': 'Advanced Security',
+             'body': 'Code scanning with CodeQL, secret scanning across 200+ token formats, and Dependabot supply-chain coverage.',
+             'href': '/features/code-scanning', 'link_label': 'Explore CodeQL'},
+            {'title': 'Copilot for Business',
+             'body': 'AI pair programmer with IP indemnification, no training on your code, and central admin policy controls.',
+             'href': '/features/copilot', 'link_label': 'See Copilot'},
+            {'title': 'GitHub Actions runners',
+             'body': 'Self-hosted and GitHub-hosted Linux/Windows/macOS runners with usage caps and per-org concurrency limits.',
+             'href': '/features/actions', 'link_label': 'Read the Actions docs'},
+        ],
+    },
+    'education': {
+        'title': 'GitHub Education',
+        'eyebrow': 'GitHub Education',
+        'headline': 'The tools you need to ship your first project — free.',
+        'sub': 'Verified students and teachers get free access to GitHub Copilot, '
+               'the Student Developer Pack (~100 partner offers), and Campus Experts mentoring.',
+        'ctas': [
+            {'href': '/register', 'label': 'Verify your student status', 'cls': 'gh-btn-primary'},
+            {'href': '/skills', 'label': 'Browse GitHub Skills', 'cls': 'gh-btn-secondary'},
+        ],
+        'bullets': [
+            'Free GitHub Pro account while you study',
+            'Free GitHub Copilot for students, teachers, and maintainers',
+            'Student Developer Pack: DigitalOcean credit, JetBrains, Namecheap, Canva, and more',
+        ],
+        'faq': [
+            {'q': 'Who qualifies?',
+             'a': 'Students aged 13+ enrolled at a degree-granting institution, plus teachers, faculty, and TAs.'},
+            {'q': 'Does Copilot stay free after I graduate?',
+             'a': 'Copilot Free is included in the Student Developer Pack while your verification is active (usually 1-2 years).'},
+            {'q': 'I am an open-source maintainer, not a student.',
+             'a': 'Maintainers of popular open-source projects (>1 active project, >1000 monthly users) get Copilot for Open Source free.'},
+        ],
+    },
+    'feature_code_scanning': {
+        'title': 'Code scanning · CodeQL',
+        'eyebrow': 'Advanced Security',
+        'headline': 'Find vulnerabilities in your code before they ship.',
+        'sub': 'CodeQL is the semantic analysis engine that powers GitHub Code Scanning. '
+               'Write queries once, run them across every PR and every default branch.',
+        'ctas': [
+            {'href': '/features/copilot', 'label': 'Pair with Copilot Autofix', 'cls': 'gh-btn-primary'},
+            {'href': '/resources/security', 'label': 'Security overview', 'cls': 'gh-btn-secondary'},
+        ],
+        'bullets': [
+            '11 supported languages: C, C++, C#, Go, Java, JavaScript, TypeScript, Kotlin, Python, Ruby, Swift',
+            '2,200+ curated CodeQL queries maintained by the GitHub Security Lab',
+            'Integrated SARIF output for Snyk, Semgrep, Trivy, and your own scanners',
+        ],
+        'sections_title': 'How code scanning works',
+        'sections': [
+            {'title': 'Default setup',
+             'body': 'One-click on the Security tab. We pick the right languages, queries, and runner.'},
+            {'title': 'Advanced setup',
+             'body': 'Bring your own workflow file. Pin a CodeQL version, exclude paths, schedule nightly scans.'},
+            {'title': 'PR feedback',
+             'body': 'New alerts show up as PR review comments. Block merge with branch protection if needed.'},
+        ],
+    },
+    'feature_secret_scanning': {
+        'title': 'Secret scanning',
+        'eyebrow': 'Advanced Security',
+        'headline': 'Stop leaked credentials before they reach production.',
+        'sub': 'GitHub scans every push for 200+ token formats from 100+ partners — AWS, '
+               'Stripe, OpenAI, Slack, and more — and notifies the provider so they can revoke.',
+        'ctas': [
+            {'href': '/contact-sales', 'label': 'Enable for your org', 'cls': 'gh-btn-primary'},
+            {'href': '/resources/security', 'label': 'Read the docs', 'cls': 'gh-btn-secondary'},
+        ],
+        'bullets': [
+            '200+ token formats — AWS, Azure, GCP, Stripe, Twilio, OpenAI, Anthropic, Slack',
+            'Push protection blocks the commit before the secret ever lands',
+            'Custom patterns for your internal API keys',
+        ],
+    },
+    'feature_dependency_review': {
+        'title': 'Dependency review',
+        'eyebrow': 'Advanced Security',
+        'headline': 'See exactly what each PR adds to your supply chain.',
+        'sub': 'Dependency review surfaces new and updated packages introduced by a pull '
+               'request, flagging known vulnerabilities and incompatible licenses before merge.',
+        'ctas': [
+            {'href': '/features/supply-chain', 'label': 'Supply-chain overview', 'cls': 'gh-btn-primary'},
+            {'href': '/contact-sales', 'label': 'Talk to sales', 'cls': 'gh-btn-secondary'},
+        ],
+        'bullets': [
+            'Coverage for npm, pip, Maven, NuGet, RubyGems, Go modules, Rust crates, Composer',
+            'Severity-based merge gates configurable in branch protection',
+            'License compatibility checks (MIT, Apache-2.0, GPL families, custom allowlists)',
+        ],
+    },
+    'feature_supply_chain': {
+        'title': 'Software supply chain security',
+        'eyebrow': 'Advanced Security',
+        'headline': 'A signed, attested supply chain — end to end.',
+        'sub': 'Generate SBOMs, sign your artifacts with Sigstore, attest builds with SLSA, '
+               'and verify provenance in deploy — all wired into GitHub Actions.',
+        'ctas': [
+            {'href': '/features/actions', 'label': 'GitHub Actions', 'cls': 'gh-btn-primary'},
+            {'href': '/features/dependency-review', 'label': 'Dependency review', 'cls': 'gh-btn-secondary'},
+        ],
+        'bullets': [
+            'SBOMs in SPDX 2.3 and CycloneDX 1.5 formats',
+            'Keyless signing with Sigstore cosign + GitHub OIDC',
+            'SLSA Build Level 3 provenance attestations',
+        ],
+    },
+    'security_center': {
+        'title': 'Security Center',
+        'eyebrow': 'Enterprise compliance',
+        'headline': 'One place for your compliance attestations.',
+        'sub': 'Available to GitHub Enterprise Cloud customers. Download our SOC 1, SOC 2, '
+               'ISO 27001, FedRAMP, PCI DSS, and HIPAA attestations under NDA.',
+        'ctas': [
+            {'href': '/contact-sales', 'label': 'Request access', 'cls': 'gh-btn-primary'},
+            {'href': '/resources/security', 'label': 'Security overview', 'cls': 'gh-btn-secondary'},
+        ],
+        'bullets': [
+            'SOC 1 Type 2 (audited annually by EY)',
+            'SOC 2 Type 2 — Security, Availability, Confidentiality',
+            'ISO 27001:2022, ISO 27017, ISO 27018',
+            'FedRAMP Moderate (in process), GovCloud roadmap',
+        ],
+    },
+}
+
+
+@app.route('/contact-sales')
+def contact_sales():
+    return render_template('simple_landing.html', page=_STUB_PAGES['contact_sales'])
+
+
+@app.route('/enterprise')
+def enterprise():
+    return render_template('simple_landing.html', page=_STUB_PAGES['enterprise'])
+
+
+@app.route('/education')
+def education():
+    return render_template('simple_landing.html', page=_STUB_PAGES['education'])
+
+
+@app.route('/features/code-scanning')
+def feature_code_scanning():
+    return render_template('simple_landing.html', page=_STUB_PAGES['feature_code_scanning'])
+
+
+@app.route('/features/secret-scanning')
+def feature_secret_scanning():
+    return render_template('simple_landing.html', page=_STUB_PAGES['feature_secret_scanning'])
+
+
+@app.route('/features/dependency-review')
+def feature_dependency_review():
+    return render_template('simple_landing.html', page=_STUB_PAGES['feature_dependency_review'])
+
+
+@app.route('/features/supply-chain')
+def feature_supply_chain():
+    return render_template('simple_landing.html', page=_STUB_PAGES['feature_supply_chain'])
+
+
+@app.route('/security/center')
+def security_center():
+    return render_template('simple_landing.html', page=_STUB_PAGES['security_center'])
+
+
 # ─── Auth ───
 
 @app.route('/login', methods=['GET', 'POST'])
@@ -2054,6 +2271,56 @@ def repo_commit_detail(username, reponame, sha):
     return render_template('repo_commit_detail.html', repo=repo, commit=commit)
 
 
+_NEW_RELEASE_TMPL = """
+{% extends "base.html" %}
+{% block title %}Draft a new release · {{ repo.full_name }}{% endblock %}
+{% block content %}
+<div class="container" style="max-width:900px;margin:32px auto;padding:0 16px;">
+  <nav style="font-size:14px;color:#57606a;margin-bottom:12px;">
+    <a href="/{{ repo.full_name }}">{{ repo.full_name }}</a>
+    &nbsp;/&nbsp;<a href="/{{ repo.full_name }}/releases">Releases</a>
+    &nbsp;/&nbsp;New
+  </nav>
+  <h1 style="font-size:24px;margin:0 0 16px;">Create a new release</h1>
+  <form method="post" action="/{{ repo.full_name }}/releases/new" class="gh-form">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <label style="display:block;font-weight:600;margin-bottom:4px;">Tag</label>
+    <input type="text" name="tag" required maxlength="60" placeholder="v1.0.0"
+           style="width:280px;padding:8px;border:1px solid #d0d7de;border-radius:6px;margin-bottom:16px;">
+    <label style="display:block;font-weight:600;margin-bottom:4px;">Release title</label>
+    <input type="text" name="title" maxlength="120" placeholder="Release title"
+           style="width:100%;padding:8px;border:1px solid #d0d7de;border-radius:6px;margin-bottom:16px;">
+    <label style="display:block;font-weight:600;margin-bottom:4px;">Describe this release</label>
+    <textarea name="body" rows="12" placeholder="Write release notes..."
+              style="width:100%;padding:8px;border:1px solid #d0d7de;border-radius:6px;font-family:monospace;"></textarea>
+    <div style="margin-top:16px;display:flex;gap:8px;">
+      <label style="display:flex;align-items:center;gap:6px;">
+        <input type="checkbox" name="prerelease"> This is a pre-release
+      </label>
+    </div>
+    <div style="margin-top:16px;display:flex;gap:8px;">
+      <button type="submit" name="action" value="publish" class="gh-btn gh-btn-primary">Publish release</button>
+      <button type="submit" name="action" value="draft" class="gh-btn gh-btn-secondary">Save draft</button>
+      <a href="/{{ repo.full_name }}/releases" class="gh-btn gh-btn-secondary">Cancel</a>
+    </div>
+  </form>
+</div>
+{% endblock %}
+"""
+
+
+@app.route('/<username>/<reponame>/releases/new', methods=['GET', 'POST'])
+@login_required
+def repo_releases_new(username, reponame):
+    repo = Repository.query.filter_by(full_name=f"{username}/{reponame}").first_or_404()
+    if request.method == 'POST':
+        # Stub: don't actually persist (would break byte-identical reset).
+        action = request.form.get('action', 'publish')
+        flash('Release saved as draft.' if action == 'draft' else 'Release published.', 'success')
+        return redirect(url_for('repo_releases', username=username, reponame=reponame))
+    return render_template_string(_NEW_RELEASE_TMPL, repo=repo)
+
+
 @app.route('/<username>/<reponame>/releases')
 def repo_releases(username, reponame):
     repo = Repository.query.filter_by(full_name=f"{username}/{reponame}").first_or_404()
@@ -2178,6 +2445,47 @@ def repo_wiki(username, reponame):
     repo = Repository.query.filter_by(full_name=f"{username}/{reponame}").first_or_404()
     pages = repo.get_wiki_pages()
     return render_template('repo_wiki.html', repo=repo, pages=pages)
+
+
+_NEW_WIKI_PAGE_TMPL = """
+{% extends "base.html" %}
+{% block title %}New wiki page · {{ repo.full_name }}{% endblock %}
+{% block content %}
+<div class="container" style="max-width:900px;margin:32px auto;padding:0 16px;">
+  <nav style="font-size:14px;color:#57606a;margin-bottom:12px;">
+    <a href="/{{ repo.full_name }}">{{ repo.full_name }}</a>
+    &nbsp;/&nbsp;<a href="/{{ repo.full_name }}/wiki">Wiki</a>
+    &nbsp;/&nbsp;New page
+  </nav>
+  <h1 style="font-size:24px;margin:0 0 16px;">Create a new wiki page</h1>
+  <form method="post" action="/{{ repo.full_name }}/wiki/_new" class="gh-form">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <label style="display:block;font-weight:600;margin-bottom:4px;">Title</label>
+    <input type="text" name="title" required maxlength="120"
+           placeholder="Enter a title for the page"
+           style="width:100%;padding:8px;border:1px solid #d0d7de;border-radius:6px;margin-bottom:16px;">
+    <label style="display:block;font-weight:600;margin-bottom:4px;">Content</label>
+    <textarea name="body" rows="14" placeholder="Write Markdown..."
+              style="width:100%;padding:8px;border:1px solid #d0d7de;border-radius:6px;font-family:monospace;"></textarea>
+    <div style="margin-top:16px;display:flex;gap:8px;">
+      <button type="submit" class="gh-btn gh-btn-primary">Save page</button>
+      <a href="/{{ repo.full_name }}/wiki" class="gh-btn gh-btn-secondary">Cancel</a>
+    </div>
+  </form>
+</div>
+{% endblock %}
+"""
+
+
+@app.route('/<username>/<reponame>/wiki/_new', methods=['GET', 'POST'])
+@login_required
+def repo_wiki_new(username, reponame):
+    repo = Repository.query.filter_by(full_name=f"{username}/{reponame}").first_or_404()
+    if request.method == 'POST':
+        # Stub: don't actually persist (would break byte-identical reset).
+        flash('Wiki page saved.', 'success')
+        return redirect(url_for('repo_wiki', username=username, reponame=reponame))
+    return render_template_string(_NEW_WIKI_PAGE_TMPL, repo=repo)
 
 
 @app.route('/<username>/<reponame>/wiki/<page_slug>')
@@ -3280,6 +3588,488 @@ def seed_benchmark_users():
     db.session.commit()
 
 
+# ─────────────────────────── Bulk catalog seed (v2) ───────────────────────────
+# These functions augment the shipped instance_seed/github_mirror.db with
+# realistic catalog breadth so search results, stargazers lists, watchers,
+# and issue threads feel populated. They run AFTER seed_database() and
+# seed_benchmark_users() so they never duplicate work, and each is gated by
+# its own sentinel check so re-runs are no-ops (preserves byte-identical reset).
+
+# Deterministic clock used by these seeders. We anchor offsets to
+# MIRROR_REFERENCE_DATE so timestamps don't drift across rebuilds.
+_BULK_REF = MIRROR_REFERENCE_DATE
+
+
+def _bulk_dt(days_back: int, hours: int = 12) -> datetime:
+    return _BULK_REF - timedelta(days=days_back, hours=hours)
+
+
+def _load_repos_extra():
+    path = os.path.join(os.path.dirname(__file__), 'scraped_data', 'repos_extra.json')
+    if not os.path.exists(path):
+        return []
+    try:
+        with open(path) as f:
+            return json.load(f)
+    except Exception:
+        return []
+
+
+def _parse_iso(ts: str):
+    """Parse a GitHub-API ISO timestamp into a tz-naive UTC datetime."""
+    if not ts:
+        return _BULK_REF
+    try:
+        return datetime.strptime(ts.replace('Z', ''), '%Y-%m-%dT%H:%M:%S')
+    except Exception:
+        return _BULK_REF
+
+
+# Sentinel slug for repos seeded by seed_extra_repos. If a repo with this
+# full_name already exists, the bulk loader has run before.
+_BULK_REPO_SENTINEL_OWNER = 'codecrafters-io'  # always first in the API dump
+_BULK_REPO_SENTINEL_NAME = 'build-your-own-x'
+
+
+def seed_extra_repos():
+    """Import the GitHub API trending dump in scraped_data/repos_extra.json.
+
+    Adds the top-N popular repos (deduped against what seed_database and the
+    older fixture script already inserted). Owners are created on demand.
+    Topics are linked into the existing topic table when the slug already
+    exists; otherwise they're stored only as JSON on the repo row (matching
+    how older seed code handled unknown topics)."""
+    sentinel_full = f"{_BULK_REPO_SENTINEL_OWNER}/{_BULK_REPO_SENTINEL_NAME}"
+    if Repository.query.filter_by(full_name=sentinel_full).first():
+        return  # already seeded
+
+    extras = _load_repos_extra()
+    if not extras:
+        return
+
+    # Cap at 500 — enough to push the catalog from 685 -> ~1085 without
+    # bloating the seed DB beyond ~10 MB.
+    target_extras = extras[:500]
+
+    # Pre-load existing owners and repos to dedupe.
+    existing_repo_fullnames = {r.full_name for r in Repository.query.with_entities(
+        Repository.full_name).all()}
+    existing_user_by_name = {u.username: u for u in User.query.all()}
+    topic_by_slug = {t.slug: t for t in Topic.query.all()}
+
+    inserted_repos = 0
+    for rd in target_extras:
+        full_name = rd.get('full_name') or ''
+        if not full_name or full_name in existing_repo_fullnames:
+            continue
+        owner_name = rd.get('owner') or ''
+        if not owner_name:
+            continue
+
+        owner = existing_user_by_name.get(owner_name)
+        if owner is None:
+            owner = User(
+                username=owner_name,
+                email=f"{owner_name}@users.noreply.example.com",
+                name=owner_name.replace('-', ' ').title(),
+                bio='',
+                plan='free',
+            )
+            owner.set_password('password123')
+            db.session.add(owner)
+            db.session.flush()
+            existing_user_by_name[owner_name] = owner
+
+        created = _parse_iso(rd.get('created_at'))
+        pushed = _parse_iso(rd.get('pushed_at'))
+        updated = _parse_iso(rd.get('updated_at'))
+        # Clamp updated_at into [created, MIRROR_REFERENCE_DATE] so relative
+        # time labels stay sane and never appear "in the future".
+        if updated > _BULK_REF:
+            updated = _BULK_REF - timedelta(hours=(hash(full_name) % 240))
+        if pushed > _BULK_REF:
+            pushed = updated
+
+        topics_list = list(rd.get('topics') or [])
+
+        repo = Repository(
+            owner_id=owner.id,
+            name=rd.get('name') or full_name.split('/', 1)[-1],
+            full_name=full_name,
+            description=(rd.get('description') or '')[:255],
+            language=rd.get('language') or '',
+            license=rd.get('license') or '',
+            stars_count=int(rd.get('stars_count') or 0),
+            forks_count=int(rd.get('forks_count') or 0),
+            watchers_count=int(rd.get('watchers_count') or 0),
+            open_issues_count=int(rd.get('open_issues_count') or 0),
+            is_public=True,
+            owner_type=(rd.get('owner_type') or 'user'),
+            homepage=(rd.get('homepage') or '')[:200],
+            default_branch=rd.get('default_branch') or 'main',
+            size_kb=int(rd.get('size_kb') or 1000),
+            readme=f"# {rd.get('name') or full_name}\n\n{(rd.get('description') or '').strip()}\n",
+            topics_text=json.dumps(topics_list),
+            gallery_json=json.dumps(load_gallery(full_name)),
+            is_archived=bool(rd.get('archived')),
+            is_template=bool(rd.get('is_template')),
+            created_at=created,
+            updated_at=updated,
+            pushed_at=pushed,
+        )
+        db.session.add(repo)
+        db.session.flush()
+
+        # Link known topics; unknown ones live only in topics_text JSON.
+        for slug in topics_list:
+            t = topic_by_slug.get(slug)
+            if t is not None and t not in repo.topics:
+                repo.topics.append(t)
+
+        existing_repo_fullnames.add(full_name)
+        inserted_repos += 1
+
+    db.session.commit()
+
+
+# ── Issue comment templates ──────────────────────────────────────────────
+# Bank of realistic-sounding technical replies. Picked deterministically by
+# (issue_id, comment_index). Bodies vary by label so closed/bug/feature
+# comments read appropriately. NO randomness — pure index math keeps the
+# seed DB byte-identical across rebuilds.
+
+_COMMENT_BANK_BUG = [
+    "Thanks for the report — I can reproduce on macOS 14.4 with the latest "
+    "release. Looks like the regression landed in v{minor} after the refactor "
+    "in #{ref_num}. Reopening the related PR for tracking.",
+    "Confirmed on Linux as well. Quick workaround: pin to the previous minor "
+    "until the patch lands. I'll send a fix later this week.",
+    "Looks like the stack trace points at the cache layer. Could you attach "
+    "the output of `--debug` so we can see what hashes are being computed? "
+    "That'll narrow it down a lot.",
+    "I dug into this. The root cause is that we shadow the `state` parameter "
+    "inside the inner closure, so the outer assignment is lost on retry. "
+    "Patch incoming.",
+    "Yeah, this is a known sharp edge. We documented it in #{ref_num} but "
+    "should probably raise a clearer error instead of silently swallowing it.",
+    "This appears to be a duplicate of #{ref_num}. Could you check whether "
+    "the fix from that thread resolves your case before we open a new one?",
+]
+_COMMENT_BANK_ENH = [
+    "Big +1 on this. It would unblock a workflow we've been hacking around "
+    "with shell scripts. Happy to take a stab at the API design if maintainers "
+    "want a sketch first.",
+    "Love the idea. One concern: how does this interact with the existing "
+    "`--strict` flag? We'd want to make sure the defaults stay backwards-compatible.",
+    "Could the new option also accept a glob pattern? That would cover the "
+    "monorepo case where the rule should apply per-package.",
+    "We use this internally with a wrapper. Would be much cleaner upstreamed. "
+    "Naming nit: maybe `--include-tests` rather than `--with-tests`?",
+    "Tagging @maintainers for visibility — this looks like a low-risk addition "
+    "with clear upside. Happy to review a PR if someone picks it up.",
+    "I drafted a proof-of-concept on a fork last weekend. If we agree on the "
+    "shape, I can polish it into a proper PR.",
+]
+_COMMENT_BANK_DOCS = [
+    "Good catch. The README still references the old config key. I'll send "
+    "a small docs PR.",
+    "Agreed — the examples in the docs would also benefit from a real-world "
+    "snippet. Happy to write one if you point me at the right page.",
+    "The migration guide skips this step entirely. Worth a callout box at "
+    "the top of the section.",
+    "I just hit this exact confusion last week. A diagram of the data flow "
+    "would help newcomers a lot.",
+    "FYI the docs site search doesn't surface this page when you search the "
+    "obvious keywords. Might want to bump the meta description.",
+]
+_COMMENT_BANK_QUESTION = [
+    "Try setting `LOG_LEVEL=debug` and re-running — the underlying error is "
+    "usually clearer there. Let us know what you see.",
+    "Which version are you on? `--version` output would help us reproduce.",
+    "This is covered in the FAQ section of the README. Short version: yes, "
+    "but you need to enable the experimental flag first.",
+    "Take a look at the discussion in #{ref_num} — same scenario, with a "
+    "working config example near the bottom.",
+    "Hmm, that's surprising. Could you share a minimal repro? Even a 10-line "
+    "snippet would help us narrow it down.",
+]
+_COMMENT_BANK_CLOSED = [
+    "Closing this — the fix landed in v{minor} and is now in the stable "
+    "channel. Thanks everyone for the investigation.",
+    "Resolved by #{ref_num}. Reopen if you still see it on the latest release.",
+    "Marking this as not-planned. The proposed change would break the public "
+    "API in too many places. Tracking the alternative in a discussion.",
+    "Closing as superseded by the new architecture in #{ref_num}.",
+]
+_COMMENT_BANK_PR = [
+    "LGTM overall. Two small nits inline — feel free to address or wave off.",
+    "Tests pass locally on Linux and macOS. CI is green. Approving once the "
+    "nits are addressed.",
+    "Could you add a changelog entry under `Unreleased`? Otherwise this is "
+    "ready to ship.",
+    "Quick question: does this change the error message format? Anyone "
+    "grepping CI logs for the old text would break.",
+    "Thanks for taking this on! Left some thoughts inline — the core approach "
+    "is right, just need to rework the error path.",
+    "Rebased on main, force-pushed, ready for another look.",
+    "Looks good — one architectural question. Should we hoist the new helper "
+    "into the shared module so the CLI can reuse it?",
+]
+
+
+def _comment_bank_for(labels: list, is_pr: bool, is_closed: bool):
+    """Return the (deterministic) bank list to draw from for a given issue."""
+    if is_pr:
+        return _COMMENT_BANK_PR
+    label_set = {str(l).lower() for l in (labels or [])}
+    if is_closed:
+        return _COMMENT_BANK_CLOSED
+    if 'bug' in label_set or 'regression' in label_set or 'memory' in label_set:
+        return _COMMENT_BANK_BUG
+    if 'enhancement' in label_set or 'feature-request' in label_set or 'feature request' in label_set:
+        return _COMMENT_BANK_ENH
+    if 'documentation' in label_set or 'docs' in label_set:
+        return _COMMENT_BANK_DOCS
+    if 'question' in label_set or 'help wanted' in label_set:
+        return _COMMENT_BANK_QUESTION
+    # Fallback: rotate through the bug bank — most issues are bug-ish.
+    return _COMMENT_BANK_BUG
+
+
+# Sentinel: when seed_extra_issue_comments has run, IssueComment count is
+# well above the original 15.
+_BULK_COMMENT_SENTINEL = 200
+
+
+def seed_extra_issue_comments():
+    """Spread realistic-sounding comment threads across existing issues/PRs.
+
+    Distribution:
+      • ~25% of issues get 0 comments (busy bots / no-reply)
+      • ~45% get 1 comment
+      • ~20% get 2 comments
+      • ~10% get 3 comments
+    Total target: ~500-700 comments. All bodies and authors are picked
+    deterministically by index math — no random.choice — so the resulting
+    seed DB is byte-identical across rebuilds."""
+    if IssueComment.query.count() >= _BULK_COMMENT_SENTINEL:
+        return
+
+    # Sorted query order matters for determinism.
+    issues = Issue.query.order_by(Issue.id.asc()).all()
+    if not issues:
+        return
+
+    # Pool of plausible commenters: real demo accounts + benchmark users +
+    # a fixed slice of synthetic users (sorted by id for stability).
+    pool_usernames = ['octocat', 'torvalds', 'gaearon', 'yyx990803',
+                      'gvanrossum', 'dhh', 'tj', 'brendangregg',
+                      'sindresorhus', 'antirez', 'mitchellh', 'defunkt',
+                      'wycats', 'fabpot', 'mxcl',
+                      'alice_j', 'bob_c', 'carol_d', 'david_k']
+    pool_users = []
+    seen_ids = set()
+    for uname in pool_usernames:
+        u = User.query.filter_by(username=uname).first()
+        if u and u.id not in seen_ids:
+            pool_users.append(u)
+            seen_ids.add(u.id)
+    # Top up with a deterministic slice of other users (synthetic accounts).
+    extras = (User.query
+              .filter(~User.id.in_(seen_ids))
+              .order_by(User.id.asc())
+              .limit(40).all())
+    pool_users.extend(extras)
+    if not pool_users:
+        return
+
+    pool_size = len(pool_users)
+    bulk_added = 0
+
+    for idx, issue in enumerate(issues):
+        # Deterministic comment count: hash by issue id only.
+        bucket = issue.id % 20
+        if bucket < 5:
+            n_comments = 0
+        elif bucket < 14:
+            n_comments = 1
+        elif bucket < 18:
+            n_comments = 2
+        else:
+            n_comments = 3
+
+        if n_comments == 0:
+            continue
+
+        labels = issue.get_labels()
+        is_closed = (issue.status or 'open') in ('closed', 'merged')
+        is_pr = bool(issue.is_pr)
+        bank = _comment_bank_for(labels, is_pr, is_closed)
+
+        # Don't double-comment if some seed code already added one.
+        existing = issue.comments.count()
+        for c_idx in range(existing, n_comments):
+            tmpl_idx = (issue.id * 7 + c_idx * 3) % len(bank)
+            body = bank[tmpl_idx].format(
+                minor=f"{1 + (issue.id % 6)}.{(issue.id // 7) % 12}",
+                ref_num=((issue.id * 13 + c_idx * 31) % 9000) + 100,
+            )
+            author = pool_users[(issue.id * 11 + c_idx * 5) % pool_size]
+            # Skip authoring as the issue opener to avoid weird "OP replies
+            # to itself first" patterns on the first comment.
+            if c_idx == 0 and author.id == issue.author_id and pool_size > 1:
+                author = pool_users[(issue.id * 11 + c_idx * 5 + 1) % pool_size]
+
+            # Stagger timestamps inside the issue's window.
+            base = issue.created_at or _BULK_REF
+            offset_hours = (c_idx + 1) * 6 + (issue.id % 48)
+            ts = base + timedelta(hours=offset_hours)
+            if ts > _BULK_REF:
+                ts = _BULK_REF - timedelta(hours=(issue.id % 72))
+
+            db.session.add(IssueComment(
+                issue_id=issue.id,
+                author_id=author.id,
+                body=body,
+                created_at=ts,
+            ))
+            bulk_added += 1
+
+        # Flush periodically to keep memory bounded.
+        if bulk_added and bulk_added % 200 == 0:
+            db.session.flush()
+
+    db.session.commit()
+
+
+# Sentinel: after running, Star count is well above the original 27.
+_BULK_STAR_SENTINEL = 100
+_BULK_WATCH_SENTINEL = 60
+
+
+def _existing_star_set():
+    return {(s.user_id, s.repo_id) for s in Star.query.all()}
+
+
+def _existing_watch_set():
+    return {(w.user_id, w.repo_id) for w in Watch.query.all()}
+
+
+def seed_extra_stars():
+    """Distribute stars across the most popular repos so /stargazers pages
+    show realistic crowds, and /stars for benchmark users shows breadth."""
+    if Star.query.count() >= _BULK_STAR_SENTINEL:
+        return
+
+    # Pool of starring accounts: benchmark users + demo accounts + a chunk
+    # of synthetic accounts (sorted by id for determinism).
+    starring_usernames = ['alice_j', 'bob_c', 'carol_d', 'david_k',
+                          'octocat', 'torvalds', 'gaearon', 'yyx990803',
+                          'gvanrossum', 'dhh', 'sindresorhus', 'antirez',
+                          'mitchellh', 'defunkt', 'wycats', 'fabpot', 'mxcl',
+                          'tj', 'brendangregg']
+    starrers = []
+    seen_ids = set()
+    for uname in starring_usernames:
+        u = User.query.filter_by(username=uname).first()
+        if u and u.id not in seen_ids:
+            starrers.append(u)
+            seen_ids.add(u.id)
+    extras = (User.query.filter(~User.id.in_(seen_ids))
+              .order_by(User.id.asc()).limit(40).all())
+    starrers.extend(extras)
+    if not starrers:
+        return
+
+    # Repo pool: top 80 repos by stars (most likely to be browsed) plus the
+    # 30 most-recently-pushed repos (for the "active" stargazers feel).
+    top_repos = (Repository.query
+                 .order_by(Repository.stars_count.desc())
+                 .limit(80).all())
+    recent_repos = (Repository.query
+                    .order_by(Repository.pushed_at.desc())
+                    .limit(30).all())
+    repo_pool = []
+    seen_repo = set()
+    for r in top_repos + recent_repos:
+        if r.id not in seen_repo:
+            repo_pool.append(r)
+            seen_repo.add(r.id)
+
+    existing = _existing_star_set()
+    added = 0
+
+    # Each user stars between 6 and 14 repos, picked deterministically by
+    # (user.id, slot) -> repo_pool index. Stars_count on the repo bumps to
+    # keep the displayed badge consistent with the link count.
+    for u in starrers:
+        n_to_star = 6 + (u.id % 9)
+        for slot in range(n_to_star):
+            idx = (u.id * 17 + slot * 41) % len(repo_pool)
+            repo = repo_pool[idx]
+            key = (u.id, repo.id)
+            if key in existing:
+                continue
+            db.session.add(Star(
+                user_id=u.id,
+                repo_id=repo.id,
+                created_at=_bulk_dt(days_back=((u.id + slot * 5) % 365)),
+            ))
+            existing.add(key)
+            repo.stars_count = (repo.stars_count or 0) + 1
+            added += 1
+
+    db.session.commit()
+
+
+def seed_extra_watches():
+    """Same shape as seed_extra_stars but for watches, with smaller fan-out."""
+    if Watch.query.count() >= _BULK_WATCH_SENTINEL:
+        return
+
+    watching_usernames = ['alice_j', 'bob_c', 'carol_d', 'david_k',
+                          'octocat', 'torvalds', 'gaearon', 'yyx990803',
+                          'gvanrossum', 'dhh', 'sindresorhus', 'antirez',
+                          'mitchellh']
+    watchers = []
+    seen_ids = set()
+    for uname in watching_usernames:
+        u = User.query.filter_by(username=uname).first()
+        if u and u.id not in seen_ids:
+            watchers.append(u)
+            seen_ids.add(u.id)
+    extras = (User.query.filter(~User.id.in_(seen_ids))
+              .order_by(User.id.asc()).limit(20).all())
+    watchers.extend(extras)
+    if not watchers:
+        return
+
+    top_repos = (Repository.query
+                 .order_by(Repository.stars_count.desc())
+                 .limit(60).all())
+
+    existing = _existing_watch_set()
+    added = 0
+    for u in watchers:
+        n_to_watch = 2 + (u.id % 4)
+        for slot in range(n_to_watch):
+            idx = (u.id * 23 + slot * 19) % len(top_repos)
+            repo = top_repos[idx]
+            key = (u.id, repo.id)
+            if key in existing:
+                continue
+            db.session.add(Watch(
+                user_id=u.id,
+                repo_id=repo.id,
+                created_at=_bulk_dt(days_back=((u.id * 3 + slot * 7) % 240)),
+            ))
+            existing.add(key)
+            repo.watchers_count = (repo.watchers_count or 0) + 1
+            added += 1
+
+    db.session.commit()
+
+
 def post_seed_tweaks():
     """Idempotent updates that run on every startup to keep WebVoyager-task
     coverage current even if seed_database() short-circuits because users
@@ -3309,6 +4099,10 @@ def create_app():
         db.create_all()
         seed_database()
         seed_benchmark_users()
+        seed_extra_repos()
+        seed_extra_issue_comments()
+        seed_extra_stars()
+        seed_extra_watches()
         post_seed_tweaks()
     return app
 
@@ -3320,6 +4114,10 @@ with app.app_context():
         db.create_all()
         seed_database()
         seed_benchmark_users()
+        seed_extra_repos()
+        seed_extra_issue_comments()
+        seed_extra_stars()
+        seed_extra_watches()
         post_seed_tweaks()
     except Exception:
         # In case of stale schema, skip silently; routes remain available.
