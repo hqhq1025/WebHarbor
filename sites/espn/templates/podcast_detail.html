@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block title %}{{ podcast.title }}{% endblock %}
+
+{% block content %}
+<div class="container">
+  <article class="podcast-detail">
+    <header class="page-header">
+      <h1>{{ podcast.title }}</h1>
+      <p class="subtitle">Hosted by {{ podcast.host }} &bull; {{ podcast.sport_slug|upper }} &bull; {{ podcast.episode_count }} episodes</p>
+    </header>
+    <p>{{ podcast.description }}</p>
+
+    <section class="section-block">
+      <h2 class="section-heading">Latest Episode</h2>
+      <p>
+        <strong>{{ podcast.latest_episode_title }}</strong><br>
+        <span class="muted">{{ podcast.latest_episode_date }} &bull; {{ podcast.duration_minutes }} min</span>
+      </p>
+    </section>
+
+    {% if related %}
+    <section class="section-block">
+      <h2 class="section-heading">More from this league</h2>
+      <ul class="link-list">
+        {% for r in related %}
+        <li><a href="/podcast/{{ r.slug }}">{{ r.title }}</a> — {{ r.host }}</li>
+        {% endfor %}
+      </ul>
+    </section>
+    {% endif %}
+  </article>
+</div>
+{% endblock %}

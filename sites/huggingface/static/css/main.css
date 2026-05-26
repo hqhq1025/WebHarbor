@@ -1799,3 +1799,203 @@ textarea.form-control { min-height: 96px; resize: vertical; }
 .compete-host-link { text-align: center; color: #6b7280; margin-top: 28px; }
 .badge-judging { background: #fef3c7; color: #92400e; }
 .badge-closed  { background: #e5e7eb; color: #374151; }
+
+/* ============================================================
+   R3 polish — yellow accents, task tags, dataset preview, code copy
+   ============================================================ */
+.r3-highlight {
+    background: linear-gradient(180deg, transparent 60%, var(--hf-yellow) 60%);
+    padding: 0 2px;
+}
+.repo-task-tag {
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 3px 10px; border-radius: 999px;
+    font-size: 11.5px; font-weight: 600;
+    border: 1px solid var(--hf-border);
+    background: var(--hf-bg-muted);
+    color: var(--hf-text);
+    line-height: 1.4;
+}
+.repo-task-tag.tt-multimodal      { background: #ede9fe; color: #5b21b6; border-color: #ddd6fe; }
+.repo-task-tag.tt-nlp             { background: #dcfce7; color: #166534; border-color: #bbf7d0; }
+.repo-task-tag.tt-cv              { background: #dbeafe; color: #1d4ed8; border-color: #bfdbfe; }
+.repo-task-tag.tt-audio           { background: #fce7f3; color: #9d174d; border-color: #fbcfe8; }
+.repo-task-tag.tt-tabular         { background: #fef3c7; color: #92400e; border-color: var(--hf-yellow); }
+.repo-task-tag.tt-rl              { background: #fee2e2; color: #b91c1c; border-color: #fecaca; }
+
+/* Yellow accent for primary actions/banners — sharper R3 feel */
+.hf-accent-bar {
+    height: 4px;
+    background: linear-gradient(90deg, var(--hf-yellow) 0%, var(--hf-orange) 100%);
+    border-radius: 4px 4px 0 0;
+}
+.hf-yellow-rule {
+    height: 2px;
+    background: var(--hf-yellow);
+    width: 64px;
+    margin: 14px 0;
+    border-radius: 2px;
+}
+
+/* Dataset-viewer preview improvements */
+.viewer-wrap {
+    border: 1px solid var(--hf-border);
+    border-radius: var(--hf-radius);
+    overflow: auto;
+    max-width: 100%;
+    margin: 16px 0;
+    background: #fff;
+}
+.viewer-table {
+    border-collapse: collapse;
+    width: 100%;
+    font-size: 13px;
+}
+.viewer-table thead {
+    background: var(--hf-bg-muted);
+    position: sticky; top: 0;
+}
+.viewer-table th, .viewer-table td {
+    border-bottom: 1px solid var(--hf-border);
+    padding: 8px 12px;
+    vertical-align: top;
+    text-align: left;
+}
+.viewer-table th {
+    font-weight: 600;
+    color: var(--hf-text);
+    border-top: 3px solid var(--hf-yellow);
+}
+.viewer-table tbody tr:hover { background: var(--hf-bg-subtle); }
+.viewer-cell {
+    margin: 0;
+    background: transparent;
+    border: none;
+    padding: 0;
+    white-space: pre-wrap;
+    max-width: 720px;
+    font-size: 12.5px;
+    line-height: 1.45;
+    font-family: var(--font-mono);
+}
+
+/* Code copy button */
+.code-copy-wrap { position: relative; }
+.code-copy-btn {
+    position: absolute; top: 8px; right: 8px;
+    padding: 4px 10px;
+    font-size: 11px; font-weight: 600;
+    background: var(--hf-yellow);
+    color: var(--hf-dark);
+    border: 1px solid var(--hf-yellow);
+    border-radius: 6px;
+    cursor: pointer;
+    z-index: 2;
+    transition: background .15s ease;
+}
+.code-copy-btn:hover { background: var(--hf-orange); }
+.code-copy-btn.copied { background: var(--hf-green); color: #fff; border-color: var(--hf-green); }
+
+/* Leaderboards */
+.leaderboards-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 16px;
+    margin: 24px 0;
+}
+.lb-card {
+    border: 1px solid var(--hf-border);
+    border-radius: var(--hf-radius);
+    padding: 18px;
+    background: #fff;
+    box-shadow: var(--hf-shadow-sm);
+    text-decoration: none !important;
+    color: inherit;
+    display: block;
+    transition: box-shadow .2s ease, border-color .2s ease;
+}
+.lb-card:hover {
+    border-color: var(--hf-yellow);
+    box-shadow: var(--hf-shadow-lg);
+}
+.lb-card-emoji { font-size: 26px; }
+.lb-card h3 { margin: 8px 0 6px; font-size: 16px; }
+.lb-card p { margin: 0; color: var(--hf-text-muted); font-size: 13px; line-height: 1.5; }
+.lb-card-meta { margin-top: 12px; font-size: 12px; color: var(--hf-text-subtle); }
+
+.lb-detail-head {
+    display: flex; align-items: center; gap: 12px;
+    margin: 20px 0 8px;
+}
+.lb-detail-emoji { font-size: 32px; }
+.lb-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 18px 0;
+    font-size: 13.5px;
+    border: 1px solid var(--hf-border);
+    border-radius: var(--hf-radius);
+    overflow: hidden;
+}
+.lb-table thead {
+    background: linear-gradient(180deg, #fff8d6 0%, #fff4b2 100%);
+}
+.lb-table th, .lb-table td {
+    padding: 10px 14px;
+    text-align: left;
+    border-bottom: 1px solid var(--hf-border);
+}
+.lb-table th { font-weight: 700; font-size: 12px; text-transform: uppercase; letter-spacing: 0.04em; color: #92400e; }
+.lb-table tbody tr:nth-child(odd) { background: #fafbfc; }
+.lb-table tbody tr:nth-child(1) td:first-child::before { content: "🏆 "; }
+.lb-table tbody tr:nth-child(2) td:first-child::before { content: "🥈 "; }
+.lb-table tbody tr:nth-child(3) td:first-child::before { content: "🥉 "; }
+.lb-rank { font-weight: 700; color: var(--hf-text); width: 48px; }
+.lb-score { font-family: var(--font-mono); font-weight: 600; color: var(--hf-green); }
+
+/* Contact form */
+.contact-form-wrap {
+    max-width: 640px;
+    margin: 32px auto;
+    padding: 32px;
+    border: 1px solid var(--hf-border);
+    border-radius: var(--hf-radius-lg);
+    background: #fff;
+    box-shadow: var(--hf-shadow-sm);
+}
+.contact-form-wrap h1 { margin-top: 0; }
+.contact-form-wrap label { display: block; margin: 14px 0 4px; font-weight: 600; font-size: 13px; }
+.contact-form-wrap input, .contact-form-wrap textarea, .contact-form-wrap select {
+    width: 100%;
+    padding: 10px 12px;
+    font-family: inherit; font-size: 14px;
+    border: 1px solid var(--hf-border);
+    border-radius: var(--hf-radius);
+    background: #fff;
+}
+.contact-form-wrap input:focus, .contact-form-wrap textarea:focus, .contact-form-wrap select:focus {
+    outline: none; border-color: var(--hf-yellow); box-shadow: 0 0 0 3px var(--hf-yellow-light);
+}
+
+/* Pricing plan detail */
+.plan-detail-hero {
+    background: linear-gradient(135deg, var(--hf-yellow-light) 0%, #fff 100%);
+    padding: 40px 24px;
+    border-radius: var(--hf-radius-xl);
+    margin: 24px 0;
+    border: 1px solid var(--hf-border);
+}
+.plan-detail-hero h1 { margin: 0 0 8px; }
+.plan-detail-hero .plan-detail-price {
+    font-size: 38px; font-weight: 800;
+    margin: 12px 0;
+}
+.plan-detail-features {
+    list-style: none; padding: 0; margin: 16px 0;
+}
+.plan-detail-features li {
+    padding: 8px 0;
+    border-bottom: 1px solid var(--hf-border);
+    display: flex; align-items: flex-start; gap: 10px;
+}
+.plan-detail-features li::before { content: "✓"; color: var(--hf-green); font-weight: 700; }

@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block title %}Find: group {{ group }} — arXiv{% endblock %}
+{% block breadcrumbs %}
+    <span class="sep">&gt;</span>
+    <a href="{{ url_for('find_group', group=group) }}">find: grp_{{ group }}</a>
+{% endblock %}
+{% block content %}
+
+<div class="listing-header">
+    <p class="subtitle">Group landing</p>
+    <h1>arXiv group: {{ group }}</h1>
+</div>
+
+<p class="muted" style="margin:8px 0 14px;">
+    Total archives in this group: <b>{{ rows|length }}</b> · Total papers indexed:
+    <b>{{ '{:,}'.format(total) }}</b>
+</p>
+
+<table class="group-table">
+    <thead>
+        <tr><th>Archive</th><th>Name</th><th>Papers</th><th>Listings</th></tr>
+    </thead>
+    <tbody>
+        {% for r in rows %}
+        <tr>
+            <td><a href="{{ url_for('category_detail', code=r.code) }}"><b>{{ r.code }}</b></a></td>
+            <td>{{ r.icon }} {{ r.name }}</td>
+            <td>{{ '{:,}'.format(r.count) }}</td>
+            <td>
+                <a href="{{ url_for('listing', code=r.code, view='new') }}">new</a> ·
+                <a href="{{ url_for('listing', code=r.code, view='recent') }}">recent</a> ·
+                <a href="{{ url_for('catchup', code=r.code) }}">catchup</a>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+<p style="margin-top:18px;font-size:13px;">
+    Other groups:
+    {% for g in ['cs', 'math', 'physics', 'stat', 'eess', 'q-bio', 'q-fin', 'econ'] %}
+        {% if g != group %}<a href="{{ url_for('find_group', group=g) }}">grp_{{ g }}</a>{% if not loop.last %} · {% endif %}{% endif %}
+    {% endfor %}
+</p>
+
+{% endblock %}

@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block title %}Copilot Chat · GitHub{% endblock %}
+{% block content %}
+<div class="copilot-page">
+  <header class="copilot-hero">
+    <h1>GitHub Copilot Chat</h1>
+    <p>Ask Copilot anything about code, debugging, or explanation.</p>
+  </header>
+  <div class="copilot-chat">
+    <div class="copilot-thread">
+      {% for role, msg in sample_chat %}
+      <div class="copilot-msg copilot-msg-{{ role }}">
+        <div class="copilot-msg-role">{{ role|capitalize }}</div>
+        <div class="copilot-msg-body"><pre>{{ msg }}</pre></div>
+      </div>
+      {% endfor %}
+    </div>
+    <form class="copilot-input-bar" method="post" action="#">
+      <input type="text" name="prompt" class="copilot-input" placeholder="Ask Copilot a question..." autocomplete="off">
+      <button class="gh-btn gh-btn-primary" type="button">Send</button>
+    </form>
+    <div class="copilot-suggestions">
+      <h3>Suggestions</h3>
+      <ul>
+        {% for s in suggestions %}
+        <li><button class="copilot-suggestion-btn" type="button">{{ s }}</button></li>
+        {% endfor %}
+      </ul>
+    </div>
+  </div>
+</div>
+{% endblock %}

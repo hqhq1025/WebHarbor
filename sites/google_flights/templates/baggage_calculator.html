@@ -1,0 +1,98 @@
+{% extends "base.html" %}
+{% block title %}Baggage fees calculator | Google Flights{% endblock %}
+
+{% block content %}
+<section class="section" style="max-width:1100px;margin:0 auto;padding:32px 24px;">
+  <header style="margin-bottom:24px;">
+    <h1 style="font-family:'Google Sans',sans-serif;font-size:32px;font-weight:500;margin:0;">
+      Baggage fees calculator
+    </h1>
+    <p style="color:#5f6368;margin-top:8px;font-size:15px;">
+      Estimate carry-on, checked, and overweight bag fees across major carriers.
+      Policies update frequently - confirm with the airline before travel.
+    </p>
+  </header>
+
+  <div style="display:grid;grid-template-columns:380px 1fr;gap:32px;align-items:start;">
+    <!-- Calculator -->
+    <form method="post" style="background:#fff;border:1px solid #dadce0;border-radius:12px;padding:24px;box-shadow:0 1px 3px rgba(60,64,67,.08);">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <h2 style="font-size:18px;margin:0 0 16px;font-family:'Google Sans',sans-serif;font-weight:500;">Calculate fees</h2>
+
+      <label style="display:block;font-size:13px;color:#5f6368;margin-bottom:6px;">Airline</label>
+      <select name="airline" required style="width:100%;padding:10px 12px;border:1px solid #dadce0;border-radius:8px;margin-bottom:14px;font-size:14px;">
+        {% for p in policies %}
+        <option value="{{ p[0] }}" {% if result and result.airline == p[0] %}selected{% endif %}>{{ p[0] }} ({{ p[1] }})</option>
+        {% endfor %}
+      </select>
+
+      <label style="display:block;font-size:13px;color:#5f6368;margin-bottom:6px;">Cabin class</label>
+      <select name="cabin" style="width:100%;padding:10px 12px;border:1px solid #dadce0;border-radius:8px;margin-bottom:14px;font-size:14px;">
+        {% for c in ['Economy','Premium','Business','First'] %}
+        <option value="{{ c }}" {% if result and result.cabin == c %}selected{% endif %}>{{ c }}</option>
+        {% endfor %}
+      </select>
+
+      <label style="display:block;font-size:13px;color:#5f6368;margin-bottom:6px;">Number of checked bags</label>
+      <input type="number" name="bags" min="0" max="5" value="{{ result.bags if result else 1 }}"
+             style="width:100%;padding:10px 12px;border:1px solid #dadce0;border-radius:8px;margin-bottom:14px;font-size:14px;">
+
+      <label style="display:block;font-size:13px;color:#5f6368;margin-bottom:6px;">Of those, overweight (over 50 lb / 23 kg)</label>
+      <input type="number" name="overweight" min="0" max="5" value="{{ result.overweight if result else 0 }}"
+             style="width:100%;padding:10px 12px;border:1px solid #dadce0;border-radius:8px;margin-bottom:20px;font-size:14px;">
+
+      <button type="submit" class="btn-primary" style="width:100%;background:#1a73e8;color:#fff;border:0;padding:12px;border-radius:24px;font-size:14px;font-weight:500;cursor:pointer;">
+        Calculate fees
+      </button>
+    </form>
+
+    <!-- Result panel -->
+    <div>
+      {% if result %}
+      <div style="background:#e8f0fe;border-radius:12px;padding:24px;margin-bottom:24px;">
+        <div style="font-size:14px;color:#1a73e8;font-weight:500;margin-bottom:8px;">Estimated total</div>
+        <div style="font-size:36px;font-family:'Google Sans',sans-serif;font-weight:500;color:#202124;">
+          ${{ '%.2f'|format(result.total_fee) }}
+        </div>
+        <div style="margin-top:12px;font-size:14px;color:#3c4043;">
+          {{ result.airline }} - {{ result.cabin }} cabin -
+          {{ result.bags }} checked bag{% if result.bags != 1 %}s{% endif %}
+          ({{ result.chargeable }} chargeable, {{ result.free_count }} included free)
+          {% if result.overweight %} - {{ result.overweight }} overweight @ ${{ result.overweight_each }} each{% endif %}.
+        </div>
+      </div>
+      {% endif %}
+
+      <h2 style="font-size:18px;font-family:'Google Sans',sans-serif;font-weight:500;margin:0 0 12px;">Airline policy summary</h2>
+      <div style="background:#fff;border:1px solid #dadce0;border-radius:12px;overflow:hidden;">
+        <table style="width:100%;border-collapse:collapse;font-size:13px;">
+          <thead>
+            <tr style="background:#f8f9fa;color:#5f6368;text-align:left;">
+              <th style="padding:12px 14px;font-weight:500;">Airline</th>
+              <th style="padding:12px 14px;font-weight:500;">Carry-on</th>
+              <th style="padding:12px 14px;font-weight:500;">1st bag</th>
+              <th style="padding:12px 14px;font-weight:500;">2nd bag</th>
+              <th style="padding:12px 14px;font-weight:500;">Overweight</th>
+              <th style="padding:12px 14px;font-weight:500;">Business free</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for p in policies %}
+            <tr style="border-top:1px solid #f1f3f4;">
+              <td style="padding:10px 14px;font-weight:500;color:#202124;">{{ p[0] }}</td>
+              <td style="padding:10px 14px;color:{% if p[3] %}#188038{% else %}#d93025{% endif %};">
+                {{ 'Free' if p[3] else 'Charged' }}
+              </td>
+              <td style="padding:10px 14px;">{% if p[4] == 0 %}<span style="color:#188038;">Included</span>{% else %}${{ p[4] }}{% endif %}</td>
+              <td style="padding:10px 14px;">{% if p[5] == 0 %}<span style="color:#188038;">Included</span>{% else %}${{ p[5] }}{% endif %}</td>
+              <td style="padding:10px 14px;">${{ p[6] }}</td>
+              <td style="padding:10px 14px;">{{ p[7] }} bags</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</section>
+{% endblock %}

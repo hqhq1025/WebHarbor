@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block title %}Tags · {{ repo.full_name }}{% endblock %}
+{% block content %}
+<div class="repo-header-bar">
+  <div class="repo-header-inner">
+    <div class="repo-breadcrumb">
+      <a href="/{{ repo.full_name.split('/')[0] }}" class="repo-breadcrumb-link">{{ repo.full_name.split('/')[0] }}</a>
+      <span class="repo-breadcrumb-sep">/</span>
+      <a href="/{{ repo.full_name }}" class="repo-breadcrumb-link repo-breadcrumb-repo">{{ repo.name }}</a>
+      <span class="repo-breadcrumb-sep">/</span>
+      <span>Tags</span>
+    </div>
+  </div>
+</div>
+<div class="tags-page">
+  <h2>{{ releases|length }} tags</h2>
+  <ul class="tags-list">
+    {% for r in releases %}
+    <li class="tag-item">
+      <span class="tag-version">{{ r.version }}</span>
+      <span class="muted">released {{ r.date }}</span>
+    </li>
+    {% else %}
+    <li class="muted">No tags yet.</li>
+    {% endfor %}
+  </ul>
+</div>
+{% endblock %}

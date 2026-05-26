@@ -56,10 +56,21 @@
               {% endfor %}
             </div>
             <div class="dropdown-col">
+              <h4>Career Paths</h4>
+              <a href="{{ url_for('career_path', role_slug='data-scientist') }}">Data Scientist</a>
+              <a href="{{ url_for('career_path', role_slug='software-engineer') }}">Software Engineer</a>
+              <a href="{{ url_for('career_path', role_slug='full-stack-web-developer') }}">Full-Stack Web Dev</a>
+              <a href="{{ url_for('career_path', role_slug='cloud-architect') }}">Cloud Architect</a>
+              <a href="{{ url_for('career_path', role_slug='cybersecurity-analyst') }}">Cybersecurity Analyst</a>
+              <a href="{{ url_for('career_path', role_slug='product-manager') }}">Product Manager</a>
+              <a href="{{ url_for('career_path', role_slug='ux-designer') }}">UX Designer</a>
+            </div>
+            <div class="dropdown-col">
               <h4>For Enterprise</h4>
               <a href="{{ url_for('business') }}">Coursera for Business</a>
               <a href="{{ url_for('for_teams') }}">Coursera for Teams</a>
               <a href="{{ url_for('partners') }}">Our Partners</a>
+              <a href="{{ url_for('degrees_list') }}">Degrees List</a>
             </div>
           </div>
         </div>
@@ -87,12 +98,12 @@
   <div class="footer-inner">
     <div class="footer-col">
       <h4>Skills</h4>
-      <a href="{{ url_for('search') }}?query=python">Python Skills</a>
-      <a href="{{ url_for('search') }}?query=excel">Excel Skills</a>
-      <a href="{{ url_for('search') }}?query=data+analysis">Data Analysis</a>
-      <a href="{{ url_for('search') }}?query=machine+learning">Machine Learning</a>
-      <a href="{{ url_for('search') }}?query=cybersecurity">Cybersecurity</a>
-      <a href="{{ url_for('search') }}?query=project+management">Project Management</a>
+      <a href="{{ url_for('skill_detail', slug='python') }}">Python Skills</a>
+      <a href="{{ url_for('skill_detail', slug='excel') }}">Excel Skills</a>
+      <a href="{{ url_for('skill_detail', slug='data-analysis') }}">Data Analysis</a>
+      <a href="{{ url_for('skill_detail', slug='machine-learning') }}">Machine Learning</a>
+      <a href="{{ url_for('skill_detail', slug='cybersecurity') }}">Cybersecurity</a>
+      <a href="{{ url_for('skill_detail', slug='project-management') }}">Project Management</a>
     </div>
     <div class="footer-col">
       <h4>Professional Certificates</h4>

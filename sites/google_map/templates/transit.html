@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+{% block title %}{% if selected_city %}{{ selected_city.display_name }} Transit{% else %}Public Transit - Google Maps{% endif %}{% endblock %}
+
+{% block body %}
+<div class="topbar">
+    <a href="{{ url_for('index') }}" class="brand">
+        <span class="material-icons-outlined" style="font-size:26px;color:#ea4335;">place</span>
+        <span>Google Maps</span>
+    </a>
+    <div class="nav-links">
+        <a href="{{ url_for('explore') }}" class="nav-link">Explore</a>
+        <a href="{{ url_for('directions') }}" class="nav-link">Directions</a>
+        <a href="{{ url_for('transit_page') }}" class="nav-link active">Transit</a>
+    </div>
+</div>
+
+<div class="page">
+    <div class="page-header" style="display:flex; align-items:center; gap:14px;">
+        <span class="material-icons-outlined" style="font-size:36px;color:#1a73e8;">directions_transit</span>
+        <div>
+            <h1 style="margin:0;">{% if selected_city %}Transit in {{ selected_city.display_name }}{% else %}Public Transit{% endif %}</h1>
+            <p class="page-sub" style="margin:4px 0 0;">Bus terminals, light rail, ferry terminals, and bus stops in major cities.</p>
+        </div>
+    </div>
+
+    <div class="card" style="padding:18px; margin-top:18px;">
+        <strong>Pick a city:</strong>
+        <div style="display:flex; flex-wrap:wrap; gap:6px; margin-top:10px;">
+            {% for c in cities %}
+            <a href="{{ url_for('transit_page', city_slug=c.slug) }}"
+               class="chip{% if selected_city and selected_city.id == c.id %} chip-active{% endif %}"
+               style="padding:6px 12px; border-radius:18px; background:#f1f3f4; color:#202124; text-decoration:none; font-size:13px;">
+                {{ c.display_name }}
+            </a>
+            {% endfor %}
+        </div>
+    </div>
+
+    {% if selected_city %}
+    <h2 style="margin-top:28px;">Transit stops & terminals in {{ selected_city.display_name }}</h2>
+    {% if stops %}
+    <div class="grid grid-3" style="margin-top:14px;">
+        {% for s in stops %}
+        <a class="card place-card" href="{{ url_for('place_detail', slug=s.slug) }}" style="text-decoration:none; color:inherit; padding:16px; display:block;">
+            <div style="display:flex; align-items:center; gap:10px;">
+                <span class="material-icons-outlined" style="color:#1a73e8;">directions_transit</span>
+                <strong>{{ s.name }}</strong>
+            </div>
+            <div style="font-size:13px; color:#5f6368; margin-top:6px;">{{ s.subtitle or s.subcategory or 'Transit station' }}</div>
+            <div style="font-size:12px; color:#80868b; margin-top:4px;">{{ s.address or '' }}</div>
+            {% if s.rating %}
+            <div style="margin-top:8px; font-size:13px;">
+                <span style="color:#fbbc04;">&#9733;</span> {{ '%.1f'|format(s.rating) }}
+                <span style="color:#80868b;">({{ s.review_count or 0 }})</span>
+            </div>
+            {% endif %}
+        </a>
+        {% endfor %}
+    </div>
+    {% else %}
+    <p style="color:#5f6368;">No transit stops indexed for {{ selected_city.display_name }} yet.</p>
+    {% endif %}
+
+    <div class="card" style="padding:18px; margin-top:24px;">
+        <strong>Plan a transit trip</strong>
+        <p style="margin:6px 0 12px; color:#5f6368;">Get directions to anywhere from a transit stop in {{ selected_city.display_name }}.</p>
+        <a class="btn btn-primary" href="{{ url_for('directions') }}?mode=transit">Open Directions &rarr;</a>
+    </div>
+    {% else %}
+    <p class="page-sub" style="margin-top:24px;">Select a city above to view its transit network.</p>
+    {% endif %}
+</div>
+{% endblock %}

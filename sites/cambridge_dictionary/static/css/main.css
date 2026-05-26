@@ -678,16 +678,23 @@ a:hover { text-decoration: underline; color: var(--cd-pink); }
 }
 .entry-pos::before { content: ""; }
 .entry-level {
-  padding: 1px 6px;
+  padding: 2px 7px;
   border-radius: 3px;
   font-size: 11px;
   font-weight: 700;
-  letter-spacing: 0.4px;
+  letter-spacing: 0.5px;
   margin-left: 4px;
+  color: #fff;
 }
-.level-a1, .level-a2 { background: #e6f5d0; color: #2c6415; }
-.level-b1, .level-b2 { background: #fef3cf; color: #7d5d10; }
-.level-c1, .level-c2 { background: #fde2e2; color: #922b21; }
+/* R3: distinct CEFR colour per level (A1 → C2). Same palette as .cefr-* so
+   templates can use either class name. Real Cambridge ships a six-step
+   gradient; we honour it here. */
+.level-a1 { background: #c8102e; color: #fff; }
+.level-a2 { background: #e6712d; color: #fff; }
+.level-b1 { background: #f9a626; color: #fff; }
+.level-b2 { background: #76b82a; color: #fff; }
+.level-c1 { background: #00a99d; color: #fff; }
+.level-c2 { background: #0066a1; color: #fff; }
 
 /* Pink "Add to word list" pill, top-right of entry header */
 .btn-save-word {
@@ -752,14 +759,23 @@ a:hover { text-decoration: underline; color: var(--cd-pink); }
 }
 /* IPA value already includes /…/ slashes from the data, so don't add more */
 .pron-btn {
-  background: none;
+  background: var(--cd-teal, #00BDB6);
   border: none;
   cursor: pointer;
-  font-size: 16px;
-  padding: 0 2px;
-  color: var(--cd-navy);
+  font-size: 14px;
+  padding: 0;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  color: #fff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 2px;
+  transition: background 0.15s ease;
+  box-shadow: 0 1px 1px rgba(0,0,0,0.08);
 }
-.pron-btn:hover { color: var(--cd-pink); }
+.pron-btn:hover { background: var(--cd-teal-dark, #009B95); color: #fff; }
 
 /* Guide word — small uppercase label above sense (real "INTRODUCE NEW METHODS") */
 .guide-word {
@@ -1270,7 +1286,7 @@ a:hover { text-decoration: underline; color: var(--cd-pink); }
 .result-card-header { display: flex; align-items: baseline; gap: 10px; margin-bottom: 6px; flex-wrap: wrap; }
 .result-headword { font-size: 22px; font-weight: 700; color: var(--cd-navy); }
 .result-pos { color: var(--text-secondary); font-style: italic; font-size: 13px; }
-.result-level { padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 700; }
+.result-level { padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 700; color: #fff; }
 .result-ipa { font-family: 'DejaVu Sans', sans-serif; color: var(--text-secondary); font-size: 14px; }
 .result-def { font-size: 15px; margin-bottom: 6px; line-height: 1.55; }
 .result-ex { color: var(--text-muted); font-style: italic; font-size: 14px; margin-bottom: 8px; }
@@ -2001,3 +2017,166 @@ a:hover { text-decoration: underline; color: var(--cd-pink); }
   .entry-headword { font-size: 30px; }
   .browse-letter { width: 32px; height: 32px; font-size: 12px; }
 }
+
+/* ---------------------------------------------------------------------------
+   R3: CEFR level color blocks + page polish (level test, word class, translate
+   landing). The CEFR palette follows Cambridge English's published scheme:
+   A1 (red-orange) → C2 (deep green). Real Cambridge prints the badges as
+   solid pill labels next to the headword, which we mirror here.
+   ----------------------------------------------------------------------- */
+
+.cefr {
+  display: inline-block;
+  font-family: 'Source Sans Pro', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1;
+  padding: 3px 6px;
+  border-radius: 3px;
+  color: #fff;
+  letter-spacing: 0.5px;
+  vertical-align: middle;
+}
+.cefr-a1 { background: #c8102e; }   /* deep red */
+.cefr-a2 { background: #e6712d; }   /* orange */
+.cefr-b1 { background: #f9a626; }   /* amber */
+.cefr-b2 { background: #76b82a; }   /* leaf green */
+.cefr-c1 { background: #00a99d; }   /* teal */
+.cefr-c2 { background: #0066a1; }   /* deep blue (also Cambridge blue) */
+
+/* CEFR card grid (used by /level-test) */
+.cefr-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 18px;
+  margin-top: 24px;
+}
+.cefr-card {
+  background: #fff;
+  border: 1px solid var(--border-light, #e5e8ed);
+  border-radius: 8px;
+  padding: 18px 18px 22px;
+  position: relative;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.04);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.cefr-card .cefr-badge {
+  font-size: 14px;
+  padding: 6px 10px;
+  align-self: flex-start;
+}
+.cefr-card-title { font-size: 17px; margin: 4px 0 0; }
+.cefr-card-desc  { color: #4a5874; font-size: 14px; flex-grow: 1; }
+.cefr-card-meta  { color: #6b7280; font-size: 12px; margin: 0; }
+.cefr-card .btn-primary { margin-top: 6px; align-self: flex-start; }
+
+/* Stronger left border per level */
+.cefr-card-a1 { border-left: 5px solid #c8102e; }
+.cefr-card-a2 { border-left: 5px solid #e6712d; }
+.cefr-card-b1 { border-left: 5px solid #f9a626; }
+.cefr-card-b2 { border-left: 5px solid #76b82a; }
+.cefr-card-c1 { border-left: 5px solid #00a99d; }
+.cefr-card-c2 { border-left: 5px solid #0066a1; }
+
+/* Translate landing samples list */
+.lang-samples {
+  list-style: none;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 8px;
+  margin: 12px 0 24px;
+}
+.lang-sample {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #f8f9fb;
+  border: 1px solid var(--border-light, #e5e8ed);
+  border-radius: 6px;
+  padding: 10px 14px;
+  color: var(--text-primary, #1D2A57);
+  text-decoration: none;
+  font-weight: 600;
+}
+.lang-sample:hover { background: #eef3f8; text-decoration: none; }
+.lang-sample-head { font-family: 'Source Serif Pro', Georgia, serif; }
+
+/* Translate input on landing page */
+.translate-form {
+  display: flex;
+  gap: 8px;
+  margin: 18px 0 28px;
+}
+.translate-input {
+  flex-grow: 1;
+  padding: 10px 14px;
+  font-size: 15px;
+  border: 1px solid var(--border-light, #d5dae3);
+  border-radius: 6px;
+}
+
+/* Word class of the day */
+.word-sample-list { list-style: none; padding: 0; margin: 12px 0 26px; }
+.word-sample-item {
+  padding: 10px 0;
+  border-bottom: 1px solid var(--border-light, #e5e8ed);
+  font-size: 15px;
+}
+.word-sample-item:last-child { border-bottom: none; }
+.word-sample-item .ws-head {
+  font-family: 'Source Serif Pro', Georgia, serif;
+  font-weight: 700;
+  margin-right: 8px;
+}
+.word-sample-item .ipa {
+  font-family: 'Lucida Sans Unicode', 'DejaVu Sans', sans-serif;
+  color: #4a5874;
+  margin-left: 6px;
+}
+.wc-other-list { list-style: disc inside; color: #4a5874; }
+
+/* Audio button polish — render the play-sound buttons with a small circular
+   teal background and an inline triangle. The base template already emits
+   <button class="audio-btn"> with an SVG/icon; we just add the visual. */
+.audio-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: none;
+  background: var(--cd-teal, #00BDB6);
+  color: #fff;
+  cursor: pointer;
+  vertical-align: middle;
+  margin-left: 4px;
+  transition: background 0.15s ease;
+  padding: 0;
+}
+.audio-btn:hover { background: var(--cd-teal-dark, #009B95); }
+.audio-btn:before {
+  content: '';
+  display: inline-block;
+  width: 0;
+  height: 0;
+  border-style: solid;
+  border-width: 5px 0 5px 8px;
+  border-color: transparent transparent transparent #fff;
+  margin-left: 2px;
+}
+.audio-btn[aria-disabled="true"],
+.audio-btn:disabled { background: #c5cbd5; cursor: not-allowed; }
+
+.breadcrumb { font-size: 13px; color: #6b7280; margin: 10px 0 16px; }
+.breadcrumb a { color: var(--cd-teal-dark, #009B95); }
+.muted { color: #6b7280; }
+.meta-note { color: #6b7280; font-size: 13px; margin-top: 20px; }
+.page-title { font-family: 'Source Serif Pro', Georgia, serif; font-size: 32px; margin: 4px 0 6px; color: var(--text-primary, #1D2A57); }
+.lead { color: #4a5874; font-size: 15px; line-height: 1.5; }
+.narrow { max-width: 920px; }
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); border: 0; }
+.empty-note { color: #6b7280; padding: 10px 0; font-style: italic; }

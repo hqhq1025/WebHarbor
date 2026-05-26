@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+{% block title %}{{ sport.display_name or sport.name }} Odds &amp; Betting Lines{% endblock %}
+
+{% block content %}
+<div class="container">
+  <div class="clubhouse-header">
+    <span class="clubhouse-header__title">{{ sport.display_name or sport.name }} Odds</span>
+  </div>
+  <div class="page-header">
+    <h1>{{ sport.name }} — Betting Lines</h1>
+    <p class="subtitle">
+      ESPN BET / DraftKings / FanDuel lines for {{ sport.name }} games.
+      Lines updated as of {{ mirror_today_label }}.
+    </p>
+    {% set active = 'home' %}{% include "_sport_subnav.html" %}
+  </div>
+
+  <div class="filter-row">
+    <a class="filter-tab {% if not status_filter %}active{% endif %}"
+       href="{{ sport.url_prefix }}odds">All lines</a>
+    <a class="filter-tab {% if status_filter == 'open' %}active{% endif %}"
+       href="{{ sport.url_prefix }}odds?status=open">Open (upcoming)</a>
+    <a class="filter-tab {% if status_filter == 'closed' %}active{% endif %}"
+       href="{{ sport.url_prefix }}odds?status=closed">Closed (recent)</a>
+  </div>
+
+  {% if rows %}
+  <table class="data-table odds-table">
+    <thead>
+      <tr>
+        <th>Matchup</th>
+        <th>Date</th>
+        <th>Home ML</th>
+        <th>Away ML</th>
+        <th>Spread</th>
+        <th>Total (O/U)</th>
+        <th>Sportsbook</th>
+        <th>Status</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for r in rows %}
+      <tr>
+        <td>
+          {% if r.away_team and r.home_team %}
+          <a href="/game/{{ r.game.id }}">
+            {{ r.away_team.abbreviation }} @ {{ r.home_team.abbreviation }}
+          </a>
+          {% else %}
+          Game #{{ r.game.id }}
+          {% endif %}
+        </td>
+        <td>{{ r.game.date_display or r.game.date }}</td>
+        <td class="stat-val">{{ r.odds.home_moneyline }}</td>
+        <td class="stat-val">{{ r.odds.away_moneyline }}</td>
+        <td class="stat-val">{{ r.odds.spread_favorite }} ({{ r.odds.spread_line }})</td>
+        <td class="stat-val">{{ r.odds.total }} ({{ r.odds.over_odds }}/{{ r.odds.under_odds }})</td>
+        <td>{{ r.odds.sportsbook }}</td>
+        <td>
+          <span class="badge badge-{{ 'open' if r.odds.status == 'open' else 'closed' }}">
+            {{ r.odds.status|title }}
+          </span>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <p class="empty-msg">No {{ sport.name }} lines available right now.</p>
+  {% endif %}
+
+  <p class="bet-disclaimer">21+ &bull; Gambling problem? Call 1-800-GAMBLER.</p>
+</div>
+{% endblock %}

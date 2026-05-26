@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block title %}{{ skill_name }} Courses | Coursera{% endblock %}
+{% block content %}
+<div class="skill-page">
+  <header style="background:#fff;border-bottom:1px solid #DAE1ED;padding:36px 0;">
+    <div class="container" style="max-width:1200px;margin:0 auto;padding:0 24px;">
+      <div style="font-size:12px;color:#0056D2;text-transform:uppercase;letter-spacing:.6px;font-weight:800;">Skill</div>
+      <h1 style="font-size:38px;margin:6px 0 8px;letter-spacing:-.5px;">{{ skill_name }}</h1>
+      <p style="color:#5B6780;font-size:15px;max-width:680px;">Explore the most popular {{ skill_name }} courses on Coursera. Filter by level, duration, certificate or partner.</p>
+    </div>
+  </header>
+
+  <section style="padding:32px 0;background:#F2F5FA;">
+    <div class="container" style="max-width:1200px;margin:0 auto;padding:0 24px;">
+      <p style="margin:0 0 16px;color:#5B6780;font-size:14px;">Showing <strong>{{ courses|length }}</strong> course{{ 's' if courses|length != 1 else '' }} that build {{ skill_name }} skills.</p>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:18px;">
+        {% for c in courses %}
+        <a href="{{ url_for('course_detail', slug=c.slug) }}"
+           style="display:block;background:#fff;border:1px solid #DAE1ED;border-radius:12px;padding:18px;text-decoration:none;color:inherit;">
+          <div style="font-size:11px;color:#0056D2;text-transform:uppercase;font-weight:800;letter-spacing:.5px;">{{ c.course_type }} &middot; {{ c.level }}</div>
+          <h3 style="font-size:16px;margin:6px 0;line-height:1.3;">{{ c.title }}</h3>
+          <div style="color:#5B6780;font-size:13px;">{{ c.partner.short_name if c.partner else '' }} &middot; {{ c.duration_text }}</div>
+          <div style="margin-top:10px;color:#5B6780;font-size:13px;"><span style="color:#DD7B0F;font-weight:700;">{{ '%.1f'|format(c.rating or 0) }}&#9733;</span> &middot; {{ c.enrolled_display() }} enrolled</div>
+        </a>
+        {% else %}
+        <p>No courses found.</p>
+        {% endfor %}
+      </div>
+    </div>
+  </section>
+</div>
+{% endblock %}

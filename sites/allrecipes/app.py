@@ -716,6 +716,197 @@ def top_level_category_alias(slug):
     abort(404)
 
 
+# ---------------------------------------------------------------------------
+# R3: diet / occasion / ingredient sub-page routes
+# ---------------------------------------------------------------------------
+
+DIET_SLUGS = {
+    'vegan': 'Vegan',
+    'vegetarian': 'Vegetarian',
+    'keto': 'Keto',
+    'paleo': 'Paleo',
+    'low-carb': 'Low-Carb',
+    'gluten-free': 'Gluten-Free',
+    'dairy-free': 'Dairy-Free',
+    'whole30': 'Whole30',
+    'low-gi': 'Low-GI',
+    'pescatarian': 'Pescatarian',
+    'high-protein': 'High-Protein',
+}
+
+DIET_DESCRIPTIONS = {
+    'vegan': 'Fully plant-based recipes — no meat, dairy, or eggs. Bold flavors, satisfying meals.',
+    'vegetarian': 'Meat-free mains and sides packed with flavor.',
+    'keto': 'Low-carb, high-fat recipes that keep you in ketosis without sacrificing taste.',
+    'paleo': 'Grain-free, dairy-free recipes built on whole foods.',
+    'low-carb': 'Sub-30g-carb meals — zoodles, cauliflower rice, lettuce wraps and more.',
+    'gluten-free': 'Naturally gluten-free recipes and clever swaps for breads, pastas, desserts.',
+    'dairy-free': 'Creamy, comforting recipes without a drop of dairy.',
+    'whole30': 'Strict-compliant Whole30: no sugar, grain, legume, dairy or alcohol.',
+    'low-gi': 'Low glycemic index meals that keep blood sugar steady.',
+    'pescatarian': 'Fish-and-veggie focused recipes for pescatarian meal planning.',
+    'high-protein': 'Protein-forward recipes with 25g+ of protein per serving.',
+}
+
+OCCASION_SLUGS = {
+    'thanksgiving': "Thanksgiving",
+    'christmas': "Christmas",
+    'easter': "Easter",
+    'valentines': "Valentine's Day",
+    'fourth-of-july': "4th of July",
+    'halloween': "Halloween",
+    'super-bowl': "Super Bowl",
+    'mothers-day': "Mother's Day",
+}
+
+OCCASION_DESCRIPTIONS = {
+    'thanksgiving': "Turkey, stuffing, sweet potato casserole and pumpkin pie.",
+    'christmas': "Prime rib, glazed ham, cookies, eggnog and yule log for Christmas Day.",
+    'easter': "Spring ham, lamb, deviled eggs and carrot cake for the Easter table.",
+    'valentines': "Chocolate-dipped, candle-lit, heart-shaped recipes for your Valentine.",
+    'fourth-of-july': "Backyard BBQ classics: burgers, ribs, slaw, watermelon, apple pie.",
+    'halloween': "Spooky treats, pumpkin everything, and party-friendly finger foods.",
+    'super-bowl': "Wings, dips, sliders, chili and nachos engineered for game day.",
+    'mothers-day': "Brunch favorites: eggs benedict, quiche, pancakes, smoked salmon.",
+}
+
+
+def _query_recipes_by_dietary(diet_slug):
+    """Match recipes whose dietary_tags_json or feature_tags contain diet_slug."""
+    needle = '"' + diet_slug + '"'
+    return Recipe.query.filter(
+        db.or_(
+            Recipe.dietary_tags_json.like('%' + needle + '%'),
+            Recipe.feature_tags.like('%' + needle + '%'),
+        )
+    )
+
+
+@app.route('/diet/<slug>')
+def diet_page(slug):
+    """Dedicated diet landing — vegan/keto/paleo/etc."""
+    s = (slug or '').lower()
+    if s not in DIET_SLUGS:
+        abort(404)
+    page = request.args.get('page', 1, type=int)
+    per_page = 12
+    q = _query_recipes_by_dietary(s).order_by(
+        Recipe.review_count.desc(), Recipe.id.asc())
+    all_items = q.all()
+    pagination = _StaticPagination(all_items, page, per_page, len(all_items))
+    return render_template(
+        'diet.html',
+        diet_slug=s, diet_name=DIET_SLUGS[s],
+        diet_description=DIET_DESCRIPTIONS.get(s, ''),
+        recipes=pagination,
+        all_diets=DIET_SLUGS,
+    )
+
+
+@app.route('/diets')
+def diets_hub():
+    """Top-level diets hub linking each diet page."""
+    diet_counts = {}
+    for s in DIET_SLUGS:
+        diet_counts[s] = _query_recipes_by_dietary(s).count()
+    return render_template(
+        'diets_hub.html',
+        diets=DIET_SLUGS,
+        diet_descriptions=DIET_DESCRIPTIONS,
+        diet_counts=diet_counts,
+    )
+
+
+@app.route('/occasion/<slug>')
+def occasion_page(slug):
+    """Dedicated holiday/occasion landing."""
+    s = (slug or '').lower()
+    if s not in OCCASION_SLUGS:
+        abort(404)
+    page = request.args.get('page', 1, type=int)
+    per_page = 12
+    q = Recipe.query.filter(Recipe.occasion == s).order_by(
+        Recipe.review_count.desc(), Recipe.id.asc())
+    all_items = q.all()
+    if not all_items:
+        needle = '"' + s + '"'
+        q = Recipe.query.filter(
+            Recipe.feature_tags.like('%' + needle + '%')
+        ).order_by(Recipe.review_count.desc(), Recipe.id.asc())
+        all_items = q.all()
+    pagination = _StaticPagination(all_items, page, per_page, len(all_items))
+    return render_template(
+        'occasion.html',
+        occasion_slug=s, occasion_name=OCCASION_SLUGS[s],
+        occasion_description=OCCASION_DESCRIPTIONS.get(s, ''),
+        recipes=pagination,
+        all_occasions=OCCASION_SLUGS,
+    )
+
+
+INGREDIENT_SLUGS = {
+    'chicken':  ('Chicken',  'From easy weeknight chicken breast to slow-cooker shredded chicken.'),
+    'beef':     ('Beef',     'Steaks, stews, ground beef weeknights and Sunday roasts.'),
+    'pork':     ('Pork',     'Pork chops, pulled pork, ribs and tenderloin recipes for every weeknight.'),
+    'lamb':     ('Lamb',     'Slow-roasted lamb shanks, kebabs, stews and curries.'),
+    'seafood':  ('Seafood',  'Salmon, shrimp, cod, tuna and every fish dinner in between.'),
+    'salmon':   ('Salmon',   'Baked, grilled, pan-seared salmon recipes — fast and flavorful.'),
+    'shrimp':   ('Shrimp',   'Quick-cooking shrimp — scampi, stir-fry, tacos and more.'),
+    'tofu':     ('Tofu',     'Crispy, marinated, scrambled — all the ways to make tofu craveable.'),
+    'eggs':     ('Eggs',     'Frittatas, scrambles, quiche, deviled — eggs all day long.'),
+    'pasta':    ('Pasta',    'Weeknight pasta, lasagna, fresh sauces and one-pot favorites.'),
+    'rice':     ('Rice',     'Pilafs, fried rice, risotto, biryani — rice mains and sides.'),
+    'beans':    ('Beans',    'Chili, soups, salads — protein-packed bean recipes for every meal.'),
+    'mushroom': ('Mushroom', 'Sauteed, stuffed, in soups — mushroom magic for vegetarians.'),
+    'avocado':  ('Avocado',  'Toast, guacamole, salads — every which way to enjoy avocados.'),
+    'potato':   ('Potato',   'Mashed, roasted, fried, baked — comfort-food potato recipes.'),
+}
+
+INGREDIENT_TIPS = {
+    'chicken':  [('Brining', 'A 30-min brine in salted water yields juicier chicken breast.'),
+                 ('Resting', 'Let chicken rest 5 min after cooking so juices redistribute.')],
+    'salmon':   [('Skin-on', 'Cooking skin-side-down first keeps the flesh moist.'),
+                 ('Doneness', 'Salmon is medium at 125F internal — gently flaky, not dry.')],
+    'beef':     [('Sear hot', 'Pat steaks dry and sear in a screaming hot cast iron for the best crust.'),
+                 ('Rest 10 min', 'Let roasts rest 10 minutes before slicing — juices redistribute.')],
+    'pasta':    [('Salt the water', '1 tablespoon kosher salt per quart - pasta water should taste like the sea.'),
+                 ('Reserve cooking water', 'Add a splash of starchy cooking water to bind any sauce.')],
+    'eggs':     [('Room temp', 'Bring eggs to room temp 30 min before baking for fluffier results.'),
+                 ('Low and slow', 'Scramble eggs over LOW heat with a rubber spatula for creamy curds.')],
+}
+
+
+@app.route('/ingredient/<slug>')
+def ingredient_page(slug):
+    """Detail page for a single ingredient with recipes that use it."""
+    s = (slug or '').lower()
+    if s not in INGREDIENT_SLUGS:
+        abort(404)
+    name, intro = INGREDIENT_SLUGS[s]
+    page = request.args.get('page', 1, type=int)
+    per_page = 12
+    needle = '"' + s + '"'
+    q = Recipe.query.filter(
+        db.or_(
+            Recipe.main_ingredient == s,
+            Recipe.title.like('%' + s.capitalize() + '%'),
+            Recipe.title.like('%' + s + '%'),
+            Recipe.feature_tags.like('%' + needle + '%'),
+        )
+    ).order_by(Recipe.review_count.desc(), Recipe.id.asc())
+    all_items = q.all()
+    pagination = _StaticPagination(all_items, page, per_page, len(all_items))
+    return render_template(
+        'ingredient.html',
+        ingredient_slug=s,
+        ingredient_name=name,
+        ingredient_intro=intro,
+        ingredient_tips=INGREDIENT_TIPS.get(s, []),
+        recipes=pagination,
+        all_ingredients=INGREDIENT_SLUGS,
+    )
+
+
 @app.route('/recipe/<slug>')
 def recipe_detail(slug):
     recipe = Recipe.query.filter_by(slug=slug).first_or_404()

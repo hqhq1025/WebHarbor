@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% block title %}Branches · {{ repo.full_name }}{% endblock %}
+{% block content %}
+<div class="repo-header-bar">
+  <div class="repo-header-inner">
+    <div class="repo-breadcrumb">
+      <a href="/{{ repo.full_name.split('/')[0] }}" class="repo-breadcrumb-link">{{ repo.full_name.split('/')[0] }}</a>
+      <span class="repo-breadcrumb-sep">/</span>
+      <a href="/{{ repo.full_name }}" class="repo-breadcrumb-link repo-breadcrumb-repo">{{ repo.name }}</a>
+      <span class="repo-breadcrumb-sep">/</span>
+      <span>Branches</span>
+    </div>
+  </div>
+</div>
+<div class="branches-page">
+  <h2>{{ branches|length }} branches</h2>
+  <table class="branches-table">
+    <thead><tr><th>Branch</th><th>Last commit</th><th>Behind / Ahead</th><th>Last activity</th></tr></thead>
+    <tbody>
+    {% for b in branches %}
+    <tr>
+      <td>
+        <a href="/{{ repo.full_name }}/tree/{{ b.name }}" class="branch-name">{{ b.name }}</a>
+        {% if b.is_default %}<span class="branch-default-badge">default</span>{% endif %}
+      </td>
+      <td><code class="branch-sha">{{ b.last_commit_sha }}</code></td>
+      <td><span class="branch-behind">{{ b.behind }}</span> / <span class="branch-ahead">{{ b.ahead }}</span></td>
+      <td class="muted">{{ b.last_pushed_at|time_ago }}</td>
+    </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

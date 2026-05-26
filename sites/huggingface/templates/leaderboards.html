@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}Leaderboards — Hugging Face{% endblock %}
+
+{% block content %}
+<div class="container-wide page">
+    <nav class="docs-breadcrumb">
+        <a href="{{ url_for('index') }}">Home</a>
+        <span>/</span>
+        <span>Leaderboards</span>
+    </nav>
+    <h1>Open Leaderboards</h1>
+    <div class="hf-yellow-rule"></div>
+    <p class="muted">Community-run benchmark rankings spanning text, vision, audio, retrieval and multimodal models.
+        Click any board for the full table — every row links to the corresponding repo page.</p>
+
+    <div class="leaderboards-grid">
+        {% for slug, lb in leaderboards.items() %}
+        <a class="lb-card" href="{{ url_for('leaderboard_detail', slug=slug) }}">
+            <div class="lb-card-emoji">{{ lb.emoji }}</div>
+            <h3>{{ lb.title }}</h3>
+            <p>{{ lb.description }}</p>
+            <div class="lb-card-meta">{{ lb.rows|length }} entries · top: <code>{{ lb.rows[0][1] }}</code></div>
+        </a>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

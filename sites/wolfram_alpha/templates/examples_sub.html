@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% block title %}{{ subcategory.name }} — {{ category.name }} Examples — Wolfram|Alpha{% endblock %}
+
+{% block content %}
+<section class="examples-hero" style="--cat-color: {{ category.color }}">
+  <div class="section-inner">
+    <a href="/examples/{{ category.slug }}" style="color:#fff;opacity:.9">&larr; {{ category.name }}</a>
+    <div class="examples-hero-icon">{{ category.icon }}</div>
+    <h1 class="examples-hero-title">{{ subcategory.name }}</h1>
+    <p class="examples-hero-desc">{{ subcategory.description }}</p>
+    <form class="examples-search-form" action="/input" method="get">
+      <input type="text" name="i" placeholder="Try a {{ subcategory.name|lower }} query..."
+             class="examples-search-input">
+      <button type="submit" class="btn btn-primary">Compute</button>
+    </form>
+  </div>
+</section>
+
+<div class="section-inner examples-main">
+  <p style="color:#545454">Showing {{ topics|length }} topics in {{ subcategory.name }}.</p>
+  <div class="topics-examples-grid">
+    {% for topic in topics %}
+    <div class="topic-example-card">
+      <div class="tec-header">
+        <h3 class="tec-name"><a href="/topic/{{ topic.slug }}">{{ topic.name }}</a></h3>
+        {% if topic.is_new %}<span class="wa-badge-new">NEW</span>{% endif %}
+        {% if topic.is_featured %}<span class="wa-badge-new" style="background:#cc4400">FEATURED</span>{% endif %}
+      </div>
+      <p style="color:#545454">{{ topic.description }}</p>
+      {% set exs = topic.get_examples() %}
+      {% if exs %}
+      <div class="tec-examples">
+        {% for ex in exs[:2] %}
+        <a href="/input?i={{ ex.query|urlencode }}" class="tec-example-row">
+          <code>{{ ex.query }}</code>
+          <span style="color:#cc4400">&#9654;</span>
+        </a>
+        {% endfor %}
+      </div>
+      {% endif %}
+    </div>
+    {% endfor %}
+  </div>
+
+  <div style="margin-top:24px;text-align:center">
+    <a href="/examples/{{ category.slug }}" class="btn btn-secondary">&larr; All {{ category.name }} topics</a>
+  </div>
+</div>
+{% endblock %}

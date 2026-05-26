@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+{% block title %}{{ sport.name }} Live Scores{% endblock %}
+
+{% block content %}
+<div class="container">
+  <div class="clubhouse-header">
+    <span class="clubhouse-header__title">{{ sport.display_name or sport.name }} — Live Scores</span>
+  </div>
+  <div class="page-header">
+    <h1>{{ sport.name }} — Today's Live Scores</h1>
+    <p class="subtitle">All {{ sport.name }} games on {{ mirror_today_label }}.</p>
+    {% set active = 'scores' %}{% include "_sport_subnav.html" %}
+  </div>
+
+  <section class="section-block">
+    <h2 class="section-heading"><span class="live-dot"></span> Today's Games</h2>
+    {% if today_games %}
+    <div class="scoreboard-grid">
+      {% for game in today_games %}
+      <div class="score-card{% if game.status != 'final' %} score-card--live{% endif %}">
+        <a href="/game/{{ game.id }}">
+          <div class="score-row">
+            <span class="team-name">{{ game.away_team.full_name if game.away_team else '—' }}</span>
+            <span class="score">{{ game.away_score }}</span>
+          </div>
+          <div class="score-row">
+            <span class="team-name">{{ game.home_team.full_name if game.home_team else '—' }}</span>
+            <span class="score">{{ game.home_score }}</span>
+          </div>
+          <div class="score-status">{{ game.period }} &bull; {{ game.time }} &bull; {{ game.network }}</div>
+        </a>
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
+    <p class="empty-msg">No games scheduled for today.</p>
+    {% endif %}
+  </section>
+
+  {% if upcoming %}
+  <section class="section-block">
+    <h2 class="section-heading">Upcoming Games</h2>
+    <ul class="upcoming-list">
+      {% for game in upcoming %}
+      <li class="upcoming-card">
+        <div class="upcoming-teams">
+          {{ game.away_team.full_name if game.away_team else '—' }} @
+          {{ game.home_team.full_name if game.home_team else '—' }}
+        </div>
+        <div class="upcoming-time">{{ game.date_display or game.date }} &bull; {{ game.time }}</div>
+        <div class="upcoming-network">{{ game.network }}</div>
+      </li>
+      {% endfor %}
+    </ul>
+  </section>
+  {% endif %}
+
+  {% if recent %}
+  <section class="section-block">
+    <h2 class="section-heading">Recent Finals</h2>
+    <div class="scoreboard-grid">
+      {% for game in recent %}
+      <div class="score-card">
+        <a href="/game/{{ game.id }}">
+          <div class="score-row">
+            <span class="team-name">{{ game.away_team.full_name if game.away_team else '—' }}</span>
+            <span class="score{% if game.away_score > game.home_score %} winner{% endif %}">{{ game.away_score }}</span>
+          </div>
+          <div class="score-row">
+            <span class="team-name">{{ game.home_team.full_name if game.home_team else '—' }}</span>
+            <span class="score{% if game.home_score > game.away_score %} winner{% endif %}">{{ game.home_score }}</span>
+          </div>
+          <div class="score-status">{{ game.period }} &bull; {{ game.date_display or game.date }}</div>
+        </a>
+      </div>
+      {% endfor %}
+    </div>
+  </section>
+  {% endif %}
+</div>
+{% endblock %}

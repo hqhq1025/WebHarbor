@@ -335,6 +335,33 @@ CATEGORY_META = [
     ("natural_wonders","Natural Wonders","#0a6b2e","",        "earth", 240,  "Wildlife, landscapes, and nature"),
     ("ai",            "Artificial Intelligence", "#000000", "", "technology", 250, "AI, machine learning, and the future"),
     ("war",           "War & Conflict", "#bb1919", "",        "world", 260,  "Reports from war zones and conflict updates"),
+    # R3 additions — BBC sub-brands (Food, Sounds, iPlayer, Bitesize)
+    ("food",          "Food",          "#bb1919", "",         "",      300,  "Recipes, food stories and the BBC Food kitchen"),
+    ("sounds",        "Sounds",        "#000000", "",         "audio", 310,  "BBC Sounds podcasts, radio and music"),
+    ("iplayer",       "iPlayer",       "#000000", "",         "",      320,  "BBC iPlayer drama, documentary and entertainment"),
+    ("bitesize",      "Bitesize",      "#0a6b2e", "",         "",      330,  "BBC Bitesize learning for primary and secondary"),
+    ("podcasts",      "Podcasts",      "#000000", "",         "sounds",311,  "Podcasts from the BBC and the wider world"),
+    ("radio",         "Radio",         "#000000", "",         "sounds",312,  "BBC Radio live and on-demand"),
+    ("film",          "Film & TV",     "#000000", "",         "culture",191, "Film and television reviews and features"),
+    ("music",         "Music",         "#000000", "",         "culture",192, "Music news, releases and reviews"),
+    ("books",         "Books",         "#000000", "",         "culture",193, "Books, authors and literary culture"),
+    ("art_design",    "Art & Design",  "#000000", "",         "culture",194, "Art exhibitions, design and visual culture"),
+    ("style",         "Style",         "#000000", "",         "culture",195, "Style, fashion and design"),
+    ("destinations",  "Destinations",  "#000000", "",         "travel", 141, "Destination guides for the world's cities and regions"),
+    ("worlds_table",  "World's Table", "#000000", "",         "travel", 142, "Food and culture from around the world"),
+    ("the_specialist","The SpeciaList","#000000", "",         "travel", 143, "Expert travel picks and itineraries"),
+    ("new_releases",  "New Releases",  "#000000", "",         "audio",  201, "Newly released podcasts from the BBC"),
+    # R3: sport sub-disciplines (so /news/<slug> resolves on fresh builds)
+    ("football",      "Football",      "#bb1919", "",         "sport", 121, "Football news from the UK, Europe and the world"),
+    ("cricket",       "Cricket",       "#bb1919", "",         "sport", 122, "Cricket news, Test, ODI and T20 coverage"),
+    ("rugby",         "Rugby",         "#bb1919", "",         "sport", 123, "Rugby union and league news"),
+    ("tennis",        "Tennis",        "#bb1919", "",         "sport", 124, "Tennis news from the ATP, WTA and Grand Slams"),
+    ("golf",          "Golf",          "#bb1919", "",         "sport", 125, "Golf news from the PGA, DP World and majors"),
+    ("athletics",     "Athletics",     "#bb1919", "",         "sport", 126, "Track and field news and championships"),
+    ("horse_racing",  "Horse Racing",  "#bb1919", "",         "sport", 127, "Flat racing and National Hunt coverage"),
+    ("snooker",       "Snooker",       "#bb1919", "",         "sport", 128, "Snooker news and tournament coverage"),
+    ("boxing",        "Boxing",        "#bb1919", "",         "sport", 129, "Boxing news, world titles and big fights"),
+    ("formula1",      "Formula 1",     "#bb1919", "",         "sport", 130, "Formula 1 races, drivers and constructors"),
 ]
 
 REGIONAL_SUBCATS = [
@@ -1244,6 +1271,121 @@ def live_page():
     live_articles = Article.query.filter_by(is_live=True).all()
     breaking = Article.query.filter_by(is_breaking=True).order_by(Article.published_at.desc()).limit(10).all()
     return render_template("live.html", live=live_articles, breaking=breaking)
+
+
+@app.route("/live/<topic>")
+def live_topic_page(topic):
+    """Per-topic live blog. Lists all live + breaking + most-recent articles
+    related to a section or topic so 'live blog reading' tasks are solvable.
+    Topic can be a section_slug (sport, world, ...) or free-text token."""
+    topic_key = (topic or "").strip().lower().replace("-", "_")
+    # Section lookup first
+    cat = Category.query.filter_by(slug=topic_key).first()
+    live_articles = []
+    breaking = []
+    related = []
+    if cat:
+        section_ids = [cat.id] + [c.id for c in Category.query.filter_by(parent_slug=cat.slug).all()]
+        live_articles = (Article.query
+            .filter(Article.category_id.in_(section_ids))
+            .filter(or_(Article.is_live == True, Article.content_type == 'live'))
+            .order_by(Article.published_at.desc()).limit(15).all())
+        breaking = (Article.query
+            .filter(Article.category_id.in_(section_ids))
+            .filter_by(is_breaking=True)
+            .order_by(Article.published_at.desc()).limit(15).all())
+        related = (Article.query
+            .filter(Article.category_id.in_(section_ids))
+            .order_by(Article.published_at.desc()).limit(20).all())
+    else:
+        like = f'%{topic}%'
+        live_articles = (Article.query
+            .filter(or_(Article.subsection.ilike(like),
+                        Article.topics_json.ilike(like),
+                        Article.feature_tags.ilike(like)))
+            .filter(or_(Article.is_live == True, Article.content_type == 'live'))
+            .order_by(Article.published_at.desc()).limit(15).all())
+        related = (Article.query
+            .filter(or_(Article.subsection.ilike(like),
+                        Article.topics_json.ilike(like),
+                        Article.headline.ilike(like)))
+            .order_by(Article.published_at.desc()).limit(20).all())
+    return render_template("live_topic.html",
+                           topic=topic, category=cat,
+                           live=live_articles, breaking=breaking, related=related)
+
+
+# --- BBC sub-brand aliases (R3) -----------------------------------------
+
+@app.route("/food")
+def food_alias():
+    return redirect(url_for("section_page", slug="food"))
+
+
+@app.route("/food/recipes")
+@app.route("/food/recipes/<recipe_slug>")
+def food_recipe_alias(recipe_slug=None):
+    if recipe_slug:
+        return redirect(url_for("article_detail", slug=recipe_slug))
+    return redirect(url_for("section_page", slug="food"))
+
+
+@app.route("/iplayer")
+def iplayer_alias():
+    return redirect(url_for("section_page", slug="iplayer"))
+
+
+@app.route("/iplayer/episode/<ep_slug>")
+def iplayer_episode_alias(ep_slug):
+    return redirect(url_for("article_detail", slug=ep_slug))
+
+
+@app.route("/sounds")
+def sounds_alias():
+    return redirect(url_for("section_page", slug="sounds"))
+
+
+@app.route("/sounds/play/<ep_slug>")
+def sounds_play_alias(ep_slug):
+    return redirect(url_for("article_detail", slug=ep_slug))
+
+
+@app.route("/bitesize")
+def bitesize_alias():
+    return redirect(url_for("section_page", slug="bitesize"))
+
+
+@app.route("/bitesize/guides/<g_slug>")
+def bitesize_guide_alias(g_slug):
+    return redirect(url_for("article_detail", slug=g_slug))
+
+
+@app.route("/sport/<discipline>")
+def sport_discipline_alias(discipline):
+    """Real bbc.com uses /sport/football, /sport/cricket, etc.
+    Map onto the existing section_page; fall back to filtering 'sport'
+    by subsection when no dedicated category exists."""
+    discipline_key = (discipline or "").strip().lower().replace("-", "_")
+    if Category.query.filter_by(slug=discipline_key).first():
+        return redirect(url_for("section_page", slug=discipline_key))
+    # Fallback: sport section filtered by subsection
+    return redirect(url_for("section_page", slug="sport", subsection=discipline.title()))
+
+
+@app.route("/weather/<location>")
+def weather_location_alias(location):
+    """Per-city weather page. Resolves to the matching forecast article or
+    falls back to the weather section filtered by location."""
+    loc_key = (location or "").replace("-", " ").replace("_", " ")
+    art = (Article.query
+           .filter(Article.section_slug == 'weather')
+           .filter(or_(Article.subsection.ilike(f'%{loc_key}%'),
+                       Article.location.ilike(f'%{loc_key}%')))
+           .order_by(Article.published_at.desc())
+           .first())
+    if art:
+        return redirect(url_for("article_detail", slug=art.slug))
+    return redirect(url_for("section_page", slug="weather", subsection=loc_key))
 
 
 @app.route("/weather")

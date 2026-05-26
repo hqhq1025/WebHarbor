@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block title %}{{ name }} — Recent submissions — arXiv{% endblock %}
+{% block breadcrumbs %}
+    <span class="sep">&gt;</span>
+    <a href="{{ url_for('author_papers', name=name) }}">{{ name }}</a>
+    <span class="sep">&gt;</span>
+    recent
+{% endblock %}
+{% block content %}
+
+<div class="listing-header">
+    <p class="subtitle">Per-author recent feed</p>
+    <h1>{{ name }} — recent submissions</h1>
+</div>
+
+<div class="listing-nav">
+    Showing the {{ papers|length }} most recent submissions by <b>{{ name }}</b> ·
+    <a href="{{ url_for('author_papers', name=name) }}">all submissions ({{ papers|length }})</a> ·
+    <a href="{{ url_for('search', query=name, searchtype='author') }}">search author</a>
+</div>
+
+{% if papers %}
+<dl>
+    {% for p in papers %}
+    <dt>
+        <span class="entry-id">[{{ loop.index }}]&nbsp;<a href="{{ url_for('paper_detail', arxiv_id=p.arxiv_id) }}">arXiv:{{ p.arxiv_id }}</a></span>
+        <span class="muted">{{ p.submitted_date }}</span>
+        [<a href="{{ url_for('pdf_view', arxiv_id=p.arxiv_id) }}">pdf</a>,
+         <a href="{{ url_for('html_view', arxiv_id=p.arxiv_id) }}">html</a>]
+    </dt>
+    <dd class="paper-entry">
+        <div class="entry-title"><a href="{{ url_for('paper_detail', arxiv_id=p.arxiv_id) }}">{{ p.display_title }}</a></div>
+        <div class="entry-authors"><b>Authors:</b>
+            {% for a in p.get_authors() %}<a href="{{ url_for('author_papers', name=a) }}">{{ a }}</a>{% if not loop.last %}, {% endif %}{% endfor %}
+        </div>
+        <div class="entry-subjects"><b>Primary:</b> {{ p.primary_subject_code }}</div>
+    </dd>
+    {% endfor %}
+</dl>
+{% else %}
+<p class="muted">No recent submissions found for "{{ name }}".</p>
+{% endif %}
+
+{% endblock %}

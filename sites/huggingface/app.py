@@ -47,7 +47,10 @@ from seed_data import (
     TASKS, MODALITIES, LIBRARIES, LICENSES, LANGUAGES, SPACE_HARDWARE, INFERENCE_PROVIDERS,  # noqa: F401
     AUTHORS, build_seed_repos,
 )
-from content_data import DOC_PAGES, BLOG_POSTS, DAILY_PAPERS, CLASSROOM_BENEFITS, PRICING_PLANS, DATASET_VIEWER_DATA
+from content_data import (
+    DOC_PAGES, BLOG_POSTS, DAILY_PAPERS, CLASSROOM_BENEFITS, PRICING_PLANS,
+    DATASET_VIEWER_DATA, LEADERBOARDS, PRICING_PLAN_DETAILS,
+)
 
 # ------------------------------------------------------------
 # Flask setup
@@ -709,11 +712,11 @@ def seed_database():
     db.session.commit()
 
     # 5) Seed some discussions on top repos
-    # R2: bumped from 12 → 70 top repos so community signals (discussions
+    # R3: bumped from 70 → 380 top repos so community signals (discussions
     # per repo, recent activity) span more of the catalog. Combined with the
-    # 41 benchmark-user discussions seeded below, total clears the R2 110+
+    # benchmark-user discussions seeded later, total clears the R3 400+
     # threshold.
-    top_repos = Repository.query.order_by(Repository.likes_count.desc(), Repository.id.asc()).limit(70).all()
+    top_repos = Repository.query.order_by(Repository.likes_count.desc(), Repository.id.asc()).limit(380).all()
     sample_titles = [
         "How does this model handle long context?",
         "Model keeps hallucinating tool calls — any fix?",
@@ -2644,6 +2647,68 @@ def help_page():
 
 
 # ------------------------------------------------------------
+# R3: Leaderboards
+# ------------------------------------------------------------
+@app.route("/leaderboards")
+@app.route("/leaderboard")
+def leaderboards_index():
+    return render_template("leaderboards.html", leaderboards=LEADERBOARDS)
+
+
+@app.route("/leaderboards/<slug>")
+@app.route("/leaderboard/<slug>")
+def leaderboard_detail(slug):
+    lb = LEADERBOARDS.get(slug)
+    if not lb:
+        abort(404)
+    return render_template("leaderboard_detail.html", slug=slug, leaderboard=lb)
+
+
+# ------------------------------------------------------------
+# R3: Pricing plan deep pages + Enterprise contact form
+# ------------------------------------------------------------
+@app.route("/pricing/<slug>")
+def pricing_plan(slug):
+    plan = PRICING_PLAN_DETAILS.get(slug)
+    if not plan:
+        abort(404)
+    features = next((p["features"] for p in PRICING_PLANS if plan["name"] in p["name"]), [])
+    return render_template("pricing_plan.html", plan=plan, features=features)
+
+
+@app.route("/enterprise/contact", methods=["GET", "POST"])
+def enterprise_contact():
+    if request.method == "POST":
+        # Mirror behaviour: acknowledge but do not persist the submission.
+        # Captured fields would normally be relayed to sales@hf.co.
+        flash("Thanks — our enterprise team will reach out within one business day.", "success")
+        return redirect(url_for("enterprise"))
+    return render_template("enterprise_contact.html")
+
+
+# ------------------------------------------------------------
+# R3: Discussion shortcuts for datasets/spaces
+# The generic /<author>/<name>/discussions catches model repos already.
+# Add explicit /datasets/<a>/<n>/discussions and /spaces/<a>/<n>/discussions
+# so deep links from the dataset and space detail pages resolve cleanly.
+# ------------------------------------------------------------
+@app.route("/datasets/<author>/<name>/discussions")
+def dataset_discussions(author, name):
+    slug = f"{author}/{name}"
+    repo = Repository.query.filter_by(slug=slug, repo_type="dataset").first_or_404()
+    discussions = Discussion.query.filter_by(repo_id=repo.id).order_by(Discussion.created_at.desc()).all()
+    return render_template("discussions.html", repo=repo, discussions=discussions)
+
+
+@app.route("/spaces/<author>/<name>/discussions")
+def space_discussions(author, name):
+    slug = f"{author}/{name}"
+    repo = Repository.query.filter_by(slug=slug, repo_type="space").first_or_404()
+    discussions = Discussion.query.filter_by(repo_id=repo.id).order_by(Discussion.created_at.desc()).all()
+    return render_template("discussions.html", repo=repo, discussions=discussions)
+
+
+# ------------------------------------------------------------
 # Error handlers
 # ------------------------------------------------------------
 @app.errorhandler(404)
@@ -3230,8 +3295,8 @@ def seed_benchmark_users():
     all_disc = Discussion.query.order_by(Discussion.id).all()
     bench_user_list = [alice, bob, carol, david]
     for i, d in enumerate(all_disc):
-        # Every discussion gets 2-4 replies so threads feel populated.
-        n_replies = 2 + (i % 3)  # 2, 3, 4, 2, 3, 4, ...
+        # R3: every discussion gets 3-5 replies so threads feel populated.
+        n_replies = 3 + (i % 3)  # 3, 4, 5, 3, 4, 5, ...
         for k in range(n_replies):
             replier = bench_user_list[(i + k + 1) % len(bench_user_list)]
             # Don't reply to your own discussion in the first slot.

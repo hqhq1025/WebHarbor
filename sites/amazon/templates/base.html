@@ -76,6 +76,8 @@
                 <a class="nav-sub-item" href="{{ url_for('registry') }}">Registry</a>
                 <a class="nav-sub-item" href="{{ url_for('gift_cards') }}">Gift Cards</a>
                 <a class="nav-sub-item" href="{{ url_for('sell') }}">Sell</a>
+                <a class="nav-sub-item" href="{{ url_for('alexa_skills') }}">Alexa Skills</a>
+                <a class="nav-sub-item" href="{{ url_for('amazon_business') }}">Amazon Business</a>
                 {% for c in nav_categories %}
                 <a class="nav-sub-item" href="{{ url_for('category', slug=c.slug) }}">{{ c.name }}</a>
                 {% endfor %}

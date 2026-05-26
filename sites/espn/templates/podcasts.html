@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block title %}ESPN Podcasts{% endblock %}
+
+{% block content %}
+<div class="container">
+  <div class="page-header">
+    <h1>ESPN Podcasts</h1>
+    <p class="subtitle">Daily and weekly shows from across ESPN's audio network.</p>
+  </div>
+
+  <div class="filter-row">
+    <a class="filter-tab {% if not sport_filter %}active{% endif %}" href="/podcasts">All shows</a>
+    {% for sl in ['nba','nfl','mlb','nhl','soccer','fantasy','ncaaf'] %}
+    <a class="filter-tab {% if sport_filter == sl %}active{% endif %}"
+       href="/podcasts?sport={{ sl }}">{{ sl|upper }}</a>
+    {% endfor %}
+  </div>
+
+  <div class="podcast-grid">
+    {% for p in podcasts %}
+    <article class="podcast-card">
+      <h3><a href="/podcast/{{ p.slug }}">{{ p.title }}</a></h3>
+      <p class="card-meta">Hosted by {{ p.host }} &bull; {{ p.sport_slug|upper }}</p>
+      <p>{{ p.description }}</p>
+      <div class="podcast-card__latest">
+        <strong>Latest:</strong> {{ p.latest_episode_title }}
+        <span class="muted">({{ p.latest_episode_date }} · {{ p.duration_minutes }} min)</span>
+      </div>
+      <div class="card-meta">{{ p.episode_count }} episodes</div>
+    </article>
+    {% else %}
+    <p class="empty-msg">No podcasts in this filter.</p>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}

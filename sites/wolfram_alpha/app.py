@@ -67,7 +67,7 @@ class Category(db.Model):
     name        = db.Column(db.String(80), unique=True, nullable=False)
     slug        = db.Column(db.String(80), unique=True, nullable=False)
     description = db.Column(db.Text, default='')
-    color       = db.Column(db.String(20), default='#cc00cc')  # brand color
+    color       = db.Column(db.String(20), default='#cc4400')  # brand color (WA red-orange)
     icon        = db.Column(db.String(10), default='∑')
     sort_order  = db.Column(db.Integer, default=0)
 
@@ -1173,6 +1173,170 @@ def pro():
 @app.route('/pro/pricing')
 def pro_pricing():
     return render_template('pro_pricing.html')
+
+
+@app.route('/pro/upgrade')
+def pro_upgrade():
+    """Upgrade-CTA landing page emphasising the value of switching to Pro.
+
+    Drives the step-by-step paywall conversion funnel (see /step-by-step/<id>).
+    """
+    return render_template('pro_upgrade.html')
+
+
+@app.route('/pro/features')
+def pro_features():
+    """Detailed feature comparison: Free vs Pro vs Pro Premium."""
+    return render_template('pro_features.html')
+
+
+@app.route('/step-by-step/<int:cr_id>')
+def step_by_step(cr_id):
+    """Pro-gated step-by-step solution display for a computation result."""
+    comp = db.session.get(ComputationResult, cr_id)
+    if not comp:
+        abort(404)
+    # Look at all pods named 'Step ...' as the step content
+    pods = comp.get_pods()
+    step_pods = [p for p in pods if str(p.get('title','')).lower().startswith('step')]
+    is_pro = current_user.is_authenticated and getattr(current_user, 'is_pro', False)
+    return render_template('step_by_step.html',
+                           comp=comp, step_pods=step_pods, is_pro=is_pro)
+
+
+# Static-but-deterministic widget catalogue. Each widget is a self-contained
+# computational mini-app — mirroring developer.wolframalpha.com/widgets.
+WIDGET_GALLERY = [
+    {"slug": "derivative-calculator", "name": "Derivative Calculator",
+     "category": "calculus",
+     "description": "Compute the derivative of any expression with respect to a chosen variable.",
+     "sample_input": "x^2 sin(x)", "sample_output": "2 x sin(x) + x^2 cos(x)"},
+    {"slug": "integral-calculator", "name": "Integral Calculator",
+     "category": "calculus",
+     "description": "Antiderivative and definite-integral evaluation with bounds.",
+     "sample_input": "integrate x^2 from 0 to 3", "sample_output": "9"},
+    {"slug": "matrix-determinant", "name": "Matrix Determinant",
+     "category": "linear-algebra",
+     "description": "Compute the determinant of a square matrix up to 5×5.",
+     "sample_input": "{{1,2},{3,4}}", "sample_output": "-2"},
+    {"slug": "eigenvalue-finder", "name": "Eigenvalue Finder",
+     "category": "linear-algebra",
+     "description": "Find eigenvalues and eigenvectors of any matrix.",
+     "sample_input": "{{4,1},{2,3}}", "sample_output": "λ = 2, 5"},
+    {"slug": "polynomial-roots", "name": "Polynomial Root Finder",
+     "category": "algebra",
+     "description": "Solve polynomial equations symbolically or numerically.",
+     "sample_input": "x^3 - 6x^2 + 11x - 6", "sample_output": "x = 1, 2, 3"},
+    {"slug": "unit-converter", "name": "Unit Converter",
+     "category": "units",
+     "description": "Convert between units across length, mass, volume, energy, and more.",
+     "sample_input": "5 km in miles", "sample_output": "≈ 3.107 mi"},
+    {"slug": "currency-converter", "name": "Currency Converter",
+     "category": "finance",
+     "description": "Convert between major world currencies.",
+     "sample_input": "100 USD to EUR", "sample_output": "≈ €91.74"},
+    {"slug": "mortgage-calculator", "name": "Mortgage Calculator",
+     "category": "finance",
+     "description": "Compute monthly payments, total interest, and amortization.",
+     "sample_input": "$300k 6% 30yr", "sample_output": "Monthly ≈ $1798"},
+    {"slug": "bmi-calculator", "name": "BMI Calculator",
+     "category": "health",
+     "description": "Compute body mass index from height and weight.",
+     "sample_input": "70 kg 175 cm", "sample_output": "BMI ≈ 22.86"},
+    {"slug": "tip-calculator", "name": "Tip Calculator",
+     "category": "everyday",
+     "description": "Compute restaurant tip and split bills.",
+     "sample_input": "20% on $85", "sample_output": "Tip $17, total $102"},
+    {"slug": "compound-interest", "name": "Compound Interest",
+     "category": "finance",
+     "description": "Future-value of investments under monthly compounding.",
+     "sample_input": "$1000 5% 10yr", "sample_output": "≈ $1648.66"},
+    {"slug": "scientific-calc", "name": "Scientific Calculator",
+     "category": "general",
+     "description": "Full scientific calculator with trig, logs, and constants.",
+     "sample_input": "sin(45°) + cos(30°)", "sample_output": "≈ 1.5731"},
+    {"slug": "trig-identities", "name": "Trig Identity Verifier",
+     "category": "trigonometry",
+     "description": "Verify and simplify trigonometric identities.",
+     "sample_input": "sin²(x) + cos²(x)", "sample_output": "1"},
+    {"slug": "statistics-summary", "name": "Statistics Summary",
+     "category": "statistics",
+     "description": "Compute mean, median, mode, σ, and quartiles for a dataset.",
+     "sample_input": "{1, 2, 3, 4, 5, 6, 7}", "sample_output": "x̄=4, σ≈2"},
+    {"slug": "probability-dice", "name": "Dice Probability",
+     "category": "probability",
+     "description": "Compute probabilities for n-dice rolls.",
+     "sample_input": "P(sum=7) with 2d6", "sample_output": "6/36 = 16.67%"},
+    {"slug": "plot-function", "name": "Function Plotter",
+     "category": "calculus",
+     "description": "Plot any 1D function on an interval.",
+     "sample_input": "plot sin(x) from 0 to 2pi", "sample_output": "[chart]"},
+]
+
+
+@app.route('/widgets')
+def widgets_gallery():
+    return render_template('widgets_gallery.html', widgets=WIDGET_GALLERY)
+
+
+@app.route('/widget/<slug>')
+def widget_detail(slug):
+    widget = next((w for w in WIDGET_GALLERY if w['slug'] == slug), None)
+    if not widget:
+        abort(404)
+    return render_template('widget_detail.html', widget=widget,
+                           widgets=WIDGET_GALLERY)
+
+
+# Input tab types: a vertical slice of the Wolfram|Alpha input modes.
+INPUT_TABS = {
+    "math":     {"label": "Math Input",   "icon": "∫",
+                 "blurb": "Use the math palette to enter LaTeX-like expressions, integrals, summations, matrices, and Greek letters.",
+                 "examples": ["integrate sin(x)^2 dx", "matrix {{1,2},{3,4}} determinant",
+                              "limit (1+1/n)^n as n -> infinity"]},
+    "image":    {"label": "Image Input",  "icon": "📷",
+                 "blurb": "Upload a photo to identify objects, read handwritten equations, or extract chemical structures.",
+                 "examples": ["plant identification", "handwritten equation", "chemical structure recognition"]},
+    "audio":    {"label": "Audio Input",  "icon": "🔊",
+                 "blurb": "Upload audio for melody recognition, frequency analysis, or speech transcription.",
+                 "examples": ["song identification", "FFT spectrum", "bird call ID"]},
+    "code":     {"label": "Code / Wolfram Language", "icon": "{}",
+                 "blurb": "Run Wolfram Language expressions directly — Solve, Plot, Integrate, etc.",
+                 "examples": ["Solve[x^2-4==0, x]", "Plot[Sin[x], {x,0,2 Pi}]",
+                              "FactorInteger[2024]"]},
+    "data":     {"label": "Data Input",   "icon": "📊",
+                 "blurb": "Paste CSV or structured data for descriptive statistics, regression, and visualization.",
+                 "examples": ["1,2,3,4,5 statistics", "linear regression {{1,2},{2,3},{3,5}}",
+                              "fit polynomial degree 2"]},
+    "natural":  {"label": "Natural Language", "icon": "💬",
+                 "blurb": "Just type the question. Wolfram interprets ordinary English/math notation.",
+                 "examples": ["distance from New York to Paris",
+                              "calories in an apple", "next solar eclipse"]},
+}
+
+
+@app.route('/input-tab/<tab_type>')
+def input_tab(tab_type):
+    tab = INPUT_TABS.get(tab_type)
+    if not tab:
+        abort(404)
+    return render_template('input_tab.html', tab=tab, tab_type=tab_type,
+                           all_tabs=INPUT_TABS)
+
+
+@app.route('/examples/<cat_slug>/<sub_slug>')
+def examples_sub(cat_slug, sub_slug):
+    """Drill-down view: examples for a single subcategory within a category."""
+    category = Category.query.filter_by(slug=cat_slug).first()
+    if not category:
+        abort(404)
+    subcategory = Subcategory.query.filter_by(slug=sub_slug,
+                                              category_id=category.id).first()
+    if not subcategory:
+        abort(404)
+    topics = Topic.query.filter_by(subcategory_id=subcategory.id).order_by(Topic.name).all()
+    return render_template('examples_sub.html',
+                           category=category, subcategory=subcategory, topics=topics)
 
 
 @app.route('/about')

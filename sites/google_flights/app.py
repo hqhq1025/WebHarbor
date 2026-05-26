@@ -86,12 +86,16 @@ class User(db.Model, UserMixin):
 class Airport(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     iata = db.Column(db.String(4), unique=True, nullable=False, index=True)
+    icao = db.Column(db.String(8), default='', index=True)        # 4-letter ICAO code
     city_slug = db.Column(db.String(60), index=True)
     city = db.Column(db.String(80), nullable=False)
     country = db.Column(db.String(80), nullable=False)
     name = db.Column(db.String(120), default='')  # Full airport name
     region = db.Column(db.String(40), default='')
     is_popular = db.Column(db.Boolean, default=False)
+    latitude = db.Column(db.Float)
+    longitude = db.Column(db.Float)
+    timezone = db.Column(db.String(64), default='')  # tz database name e.g. America/New_York
     image = db.Column(db.String(300), default='')
     gallery_json = db.Column(db.Text, default='[]')
     description = db.Column(db.Text, default='')
@@ -2087,6 +2091,217 @@ def trips():
     return render_template('trips.html', bookings=bookings)
 
 
+# ---- R3: trip management ("Manage trip" surface) ----
+@app.route('/trips/<int:booking_id>/manage', methods=['GET', 'POST'])
+@login_required
+def trip_manage(booking_id):
+    """Mirror of Google Flights' 'Manage trip' page: change date, add bag,
+    select seat, request meal, or cancel. Read-mostly: only seat assignment
+    and meal preference are persisted (cancel uses the existing route).
+    """
+    b = db.session.get(Booking, booking_id) or abort(404)
+    if b.user_id != current_user.id:
+        abort(403)
+    if request.method == 'POST':
+        action = request.form.get('action', '')
+        if action == 'select-seat':
+            seat = request.form.get('seat', '').strip().upper()
+            if seat and len(seat) <= 4:
+                for bi in b.items:
+                    bi.seat = seat
+                db.session.commit()
+                flash(f'Seat {seat} assigned to PNR {b.pnr}.', 'success')
+        elif action == 'add-bag':
+            # Synthetic: bumps total_amount by $35 per bag, max +2 bags.
+            try:
+                bags = max(0, min(2, int(request.form.get('bags', '0'))))
+            except ValueError:
+                bags = 0
+            fee = 35.0 * bags
+            b.total_amount = round(b.total_amount + fee, 2)
+            db.session.commit()
+            flash(f'Added {bags} checked bag(s) (+${fee:.0f}).', 'success')
+        elif action == 'change-date':
+            # Synthetic re-issue: parse new_date, attach to outbound items'
+            # flight reference if a matching flight exists, otherwise just
+            # record the request as a flash. Real airlines hand off to OFP.
+            try:
+                new_date = datetime.strptime(
+                    request.form.get('new_date', ''), '%Y-%m-%d').date()
+            except ValueError:
+                new_date = None
+            if new_date:
+                for bi in b.items:
+                    orig = db.session.get(Flight, bi.flight_id)
+                    if not orig:
+                        continue
+                    candidate = (Flight.query
+                                 .filter_by(origin_id=orig.origin_id,
+                                            destination_id=orig.destination_id,
+                                            departure_date=new_date)
+                                 .order_by(Flight.price)
+                                 .first())
+                    if candidate:
+                        bi.flight_id = candidate.id
+                        bi.price = candidate.price
+                db.session.commit()
+                flash(f'Trip date updated to {new_date.strftime("%b %d, %Y")}.', 'success')
+            else:
+                flash('Pick a valid date to change your trip.', 'error')
+        return redirect(url_for('trip_manage', booking_id=booking_id))
+
+    # Sample seat map (4 rows x 6 letters) for visual selection.
+    seat_rows = list(range(10, 35))
+    seat_letters = ['A', 'B', 'C', 'D', 'E', 'F']
+    return render_template('trip_manage.html', booking=b,
+                           seat_rows=seat_rows, seat_letters=seat_letters)
+
+
+# ---- R3: baggage fees calculator ----
+@app.route('/baggage-fees-calculator', methods=['GET', 'POST'])
+def baggage_calculator():
+    """Standalone surface (no auth) — picks airline + cabin + bag count and
+    computes carry-on/checked/overweight totals. Real Google Flights links to
+    each carrier's policy page; we synthesize from a small policy matrix.
+    """
+    # (airline_name, code, slug, carry_on_free, checked_first, checked_second,
+    #  overweight, cabin_business_free, cabin_first_free)
+    POLICIES = [
+        ('Delta',                 'DL', 'delta',         True, 35,  45, 100, 2, 3),
+        ('American Airlines',     'AA', 'american',      True, 40,  45, 100, 2, 3),
+        ('United Airlines',       'UA', 'united',        True, 40,  50, 100, 2, 3),
+        ('JetBlue',               'B6', 'jetblue',       True, 35,  45, 150, 2, 2),
+        ('Southwest',             'WN', 'southwest',     True,  0,   0, 100, 0, 0),
+        ('Alaska Airlines',       'AS', 'alaska',        True, 35,  45, 100, 2, 3),
+        ('British Airways',       'BA', 'britishairways',True, 75,  90, 110, 2, 3),
+        ('Air France',            'AF', 'airfrance',     True, 70,  90, 100, 2, 3),
+        ('Lufthansa',             'LH', 'lufthansa',     True, 65,  90, 100, 2, 3),
+        ('KLM',                   'KL', 'klm',           True, 70,  90, 100, 2, 3),
+        ('Iberia',                'IB', 'iberia',        True, 55,  85, 100, 2, 3),
+        ('Emirates',              'EK', 'emirates',      True,  0,   0,  85, 3, 3),  # 30kg/40kg incl.
+        ('Qatar Airways',         'QR', 'qatar',         True,  0,   0,  85, 3, 3),
+        ('Singapore Airlines',    'SQ', 'singapore',     True,  0,   0,  85, 3, 3),
+        ('Japan Airlines',        'JL', 'jal',           True,  0,   0,  85, 3, 3),
+        ('ANA',                   'NH', 'ana',           True,  0,   0,  85, 3, 3),
+        ('Cathay Pacific',        'CX', 'cathay',        True,  0,   0,  85, 3, 3),
+        ('Korean Air',            'KE', 'koreanair',     True,  0,   0,  85, 3, 3),
+        ('Turkish Airlines',      'TK', 'turkish',       True,  0,   0,  85, 3, 3),
+        ('Air Canada',            'AC', 'aircanada',     True, 35,  50, 100, 2, 3),
+        ('Qantas',                'QF', 'qantas',        True,  0,   0,  85, 2, 3),
+    ]
+    result = None
+    if request.method == 'POST':
+        airline = request.form.get('airline', '').strip()
+        cabin = request.form.get('cabin', 'Economy')
+        try:
+            bags = max(0, min(5, int(request.form.get('bags', '0'))))
+            overweight = max(0, min(5, int(request.form.get('overweight', '0'))))
+        except ValueError:
+            bags, overweight = 0, 0
+        match = next((p for p in POLICIES if p[0] == airline or p[1] == airline.upper()), None)
+        if match:
+            (name, code, _, _, first, second, ow, biz_free, first_free) = match
+            if cabin == 'Business':
+                free_count = biz_free
+            elif cabin == 'First':
+                free_count = first_free
+            else:
+                free_count = 0
+            chargeable = max(0, bags - free_count)
+            fee = 0.0
+            if chargeable >= 1:
+                fee += first
+            if chargeable >= 2:
+                fee += second
+            if chargeable >= 3:
+                fee += second + 50  # 3rd+ bag premium
+            if chargeable >= 4:
+                fee += second + 100
+            fee += overweight * ow
+            result = {
+                'airline': name, 'code': code, 'cabin': cabin,
+                'free_count': free_count, 'bags': bags, 'overweight': overweight,
+                'chargeable': chargeable, 'total_fee': round(fee, 2),
+                'overweight_each': ow,
+            }
+    return render_template('baggage_calculator.html', policies=POLICIES, result=result)
+
+
+# ---- R3: explore-map alias ----
+# Real Google Flights exposes the world map under /travel/explore. Our /explore
+# already renders that surface. Add /tools/explore-map as a tools-shelf entry
+# that points at the same view so users browsing the Tools page can find it.
+@app.route('/tools/explore-map')
+def tools_explore_map():
+    return redirect(url_for('explore'))
+
+
+# ---- R3: frequent-flyer programs reference ----
+@app.route('/frequent-flyer-programs')
+def frequent_flyer_programs():
+    """Reference list of loyalty programs by airline. Helpful for tasks like
+    'list which alliance Delta belongs to' or 'which program covers Lufthansa'.
+    """
+    PROGRAMS = [
+        ('Delta', 'SkyMiles', 'SkyTeam', 'Silver -> Diamond Medallion'),
+        ('American Airlines', 'AAdvantage', 'oneworld', 'Gold -> Executive Platinum'),
+        ('United Airlines', 'MileagePlus', 'Star Alliance', 'Silver -> Global Services'),
+        ('JetBlue', 'TrueBlue', 'None (partner network)', 'Mosaic 1-4'),
+        ('Southwest', 'Rapid Rewards', 'None', 'A-List -> A-List Preferred'),
+        ('Alaska Airlines', 'Mileage Plan', 'oneworld', 'MVP -> 100K'),
+        ('British Airways', 'Executive Club', 'oneworld', 'Bronze -> Gold Guest List'),
+        ('Air France', 'Flying Blue', 'SkyTeam', 'Silver -> Platinum'),
+        ('KLM', 'Flying Blue', 'SkyTeam', 'Silver -> Platinum'),
+        ('Lufthansa', 'Miles & More', 'Star Alliance', 'Frequent -> HON Circle'),
+        ('Iberia', 'Iberia Plus', 'oneworld', 'Classic -> Platinum'),
+        ('Emirates', 'Skywards', 'None (partner network)', 'Silver -> Platinum'),
+        ('Qatar Airways', 'Privilege Club', 'oneworld', 'Silver -> Platinum'),
+        ('Singapore Airlines', 'KrisFlyer', 'Star Alliance', 'Elite Silver -> PPS Club'),
+        ('Japan Airlines', 'JAL Mileage Bank', 'oneworld', 'Crystal -> Diamond'),
+        ('ANA', 'Mileage Club', 'Star Alliance', 'Bronze -> Diamond'),
+        ('Cathay Pacific', 'Asia Miles', 'oneworld', 'Silver -> Diamond'),
+        ('Korean Air', 'SKYPASS', 'SkyTeam', 'Silver -> Million Miler'),
+        ('Turkish Airlines', 'Miles&Smiles', 'Star Alliance', 'Classic Plus -> Elite Plus'),
+        ('Air Canada', 'Aeroplan', 'Star Alliance', '25K -> Super Elite'),
+        ('Qantas', 'Frequent Flyer', 'oneworld', 'Silver -> Chairman'),
+    ]
+    return render_template('frequent_flyer.html', programs=PROGRAMS)
+
+
+@app.route('/tools/calendar-cheapest')
+def calendar_cheapest():
+    """30-day price calendar for a single origin/destination pair. Returns a
+    grid of (date, cheapest_price) for the requested route — mirror of
+    Google Flights' price calendar."""
+    origin = request.args.get('from', '').strip().upper()
+    dest = request.args.get('to', '').strip().upper()
+    grid_rows = []
+    cheapest_date = None
+    cheapest_price = None
+    if origin and dest:
+        o = Airport.query.filter_by(iata=origin).first()
+        d = Airport.query.filter_by(iata=dest).first()
+        if o and d:
+            # Aggregate min price per departure_date for this route
+            from sqlalchemy import func
+            rows = (db.session.query(Flight.departure_date,
+                                     func.min(Flight.price).label('p'))
+                    .filter_by(origin_id=o.id, destination_id=d.id)
+                    .group_by(Flight.departure_date)
+                    .order_by(Flight.departure_date)
+                    .limit(60)
+                    .all())
+            grid_rows = [(r[0], r[1]) for r in rows]
+            if grid_rows:
+                cheapest = min(grid_rows, key=lambda r: r[1])
+                cheapest_date, cheapest_price = cheapest
+    return render_template('calendar_cheapest.html',
+                           origin=origin, dest=dest,
+                           grid_rows=grid_rows,
+                           cheapest_date=cheapest_date,
+                           cheapest_price=cheapest_price)
+
+
 # ============================================================
 # ERROR HANDLERS
 # ============================================================
@@ -2726,6 +2941,432 @@ def seed_benchmark_users():
     _add_alert(david, 'JFK', 'ICN', 880.0)
     _add_alert(david, 'BOS', 'BCN', 520.0, active=False)
     _add_alert(david, 'JFK', 'FCO', 500.0)
+
+    # ----------------------------------------------------------------
+    # R3 expansion: densify reviews, saved searches, and price alerts so
+    # account pages and per-airline review aggregates feel realistic. Also
+    # adds reviews against newly-added regional airports (LAX/SAN/CLT/MIA etc).
+    # ----------------------------------------------------------------
+    _r3_extra_reviews = [
+        # Alice — additional long-haul + transatlantic experience
+        (alice, 'JFK', 'AMS', 5, 'Easy connection through Schiphol',
+         'Boarding wrapped quickly, lie-flat seat had a working privacy screen, '
+         'and the breakfast omelet was honestly better than what most hotels serve. '
+         'Bag was on the carousel by the time I cleared customs.', 5, 5, 5),
+        (alice, 'JFK', 'ZRH', 4, 'Smooth Swiss overnight',
+         'Cabin was quiet within 30 minutes of departure and the duvet plus mattress '
+         'topper actually let me sleep five hours. Wine pairing with the late-night '
+         'snack was a nice touch.', 5, 4, 5),
+        (alice, 'JFK', 'ICN', 5, 'Top transpacific business product',
+         'Suite door, full mattress, restaurant-style dining whenever I wanted. '
+         'Crew was attentive without hovering. I would happily fly this 14 hours '
+         'again next month.', 5, 5, 5),
+        (alice, 'JFK', 'SIN', 4, 'Ultra-long-haul handled well',
+         'Eighteen hours is a lot, but the meal pacing kept me on my arrival '
+         'schedule. Only knock is that the entertainment library could use more '
+         'recent releases.', 5, 4, 5),
+        (alice, 'JFK', 'HKG', 5, 'Best connection through HKG',
+         'Lounge access in Hong Kong was excellent and the inbound flight was on '
+         'time despite weather over the Pacific. Crew on this route is consistently '
+         'one of the best.', 5, 5, 5),
+        (alice, 'JFK', 'TLV', 4, 'Solid trip to Tel Aviv',
+         'Long-haul went smoothly, security screening at JFK for TLV was thorough '
+         'but moved fast. Lie-flat seat was comfortable for sleeping.', 5, 4, 4),
+        (alice, 'JFK', 'BCN', 4, 'Direct to Barcelona done right',
+         'Quick taxi, on-time pushback, and a smooth red-eye to BCN. Arrival '
+         'gate connected directly to baggage claim — perfect for an 8am business '
+         'meeting.', 5, 4, 4),
+        (alice, 'JFK', 'CDG', 5, 'Repeat customer for a reason',
+         'Crew remembered preferences from a prior flight without me mentioning '
+         'it. Champagne on boarding, the seat-side closet, and the breakfast '
+         'pastry all made this feel premium.', 5, 5, 5),
+        (alice, 'LAX', 'HND', 5, 'Pacific crossing in true comfort',
+         'Cabin felt new — the door on the suite plus the wireless charging pad '
+         'were nice touches. Slept seven hours and woke up genuinely rested.', 5, 5, 5),
+        (alice, 'JFK', 'DOH', 4, 'New Doha service',
+         'Inaugural-week flight had a few teething issues at gate boarding but '
+         'once on board the experience was excellent. The shower spa in DOH on '
+         'connection was a delightful surprise.', 4, 5, 5),
+        (alice, 'JFK', 'YVR', 4, 'Cross-continent comfort',
+         'JFK to Vancouver felt like a short hop in business — clean cabin, '
+         'attentive crew, and an on-time arrival. Good option for the once-a-year '
+         'visit to family.', 5, 4, 4),
+        (alice, 'JFK', 'YYZ', 3, 'Short hop, expected nothing fancy',
+         'Quick flight, basic premium cabin. Crew was friendly but the food was '
+         'a sad cheese plate. Fine for the price and the time saved.', 4, 3, 4),
+        (alice, 'JFK', 'LGB', 3, 'New route, ironing things out',
+         'Boarding was a mess at JFK because the gate kept changing. Once on board '
+         'everything was fine. The IFE froze twice but the crew rebooted it both '
+         'times without complaint.', 3, 3, 4),
+        (alice, 'JFK', 'SFO', 4, 'Coast-to-coast in business',
+         'Worth the upgrade — full lie-flat for the red-eye, breakfast was '
+         'restaurant-quality, and I landed at SFO ready to head straight into a '
+         '9am keynote.', 5, 4, 5),
+        (alice, 'JFK', 'MIA', 4, 'Easy Miami escape',
+         'Short flight, decent meal in domestic first, and the cabin crew were '
+         'warm without being chatty. Bags came out before I made it to the '
+         'carousel.', 5, 4, 4),
+        # Bob — budget traveller covering more routes
+        (bob, 'SFO', 'HNL', 5, 'Beach trip for a fair price',
+         'Flight was packed but the crew kept everyone moving. Free movies on the '
+         'seat-back screen and the snack box was actually pretty good. Already '
+         'booked the return.', 4, 5, 5),
+        (bob, 'LAX', 'CUN', 4, 'Cheap Cancun runs',
+         'Boarding scrum at LAX is what it is, but once on the plane the flight '
+         'was smooth and on time. Saved a couple hundred dollars vs the direct '
+         'competitor.', 4, 4, 4),
+        (bob, 'SFO', 'MEX', 3, 'Service was fine, plane felt tight',
+         'Got a middle seat at the back of the cabin. Engine noise was loud and '
+         'the seat in front reclined a lot. Got me there safely though.', 4, 2, 3),
+        (bob, 'SFO', 'SEA', 4, 'Quick and easy',
+         'Boarded in 12 minutes, wheels-up on time, and I was through SEA security '
+         '90 minutes later. Best short-haul experience in years.', 5, 4, 4),
+        (bob, 'LAX', 'BOS', 4, 'Transcon survived',
+         'Six hours of cramped seating but the airline kept us hydrated and the '
+         'pilot kept us informed. Power outlet at every seat actually worked.', 5, 3, 5),
+        (bob, 'SEA', 'LAX', 5, 'Pacific Northwest hop',
+         'Boarded fast, on time, and the crew was genuinely friendly. Wish '
+         'every short-haul flight ran like this one.', 5, 5, 5),
+        (bob, 'LAX', 'LAS', 4, 'Vegas weekender',
+         'Got the cheapest seat and it was fine. Quick flight, on-time arrival, '
+         'and the airport tram at LAS made everything easy. Solid value.', 5, 4, 4),
+        (bob, 'SFO', 'YVR', 3, 'Cross-border short hop',
+         'Border procedures added 30 minutes total but the flight itself was '
+         'short and smooth. Premium economy on this route is not worth the upcharge.', 4, 3, 4),
+        (bob, 'LAX', 'YYZ', 4, 'Toronto trip on a budget',
+         'Cleared US preclearance at LAX which made arrival in YYZ effortless. '
+         'Seat pitch is what it is on economy but I had an aisle so it worked.', 5, 3, 4),
+        (bob, 'SFO', 'DEN', 4, 'Mountain views',
+         'Window seat over the Sierra Nevada was worth the trip on its own. Crew '
+         'was professional, snacks were generous, and we landed early. No complaints.', 5, 4, 4),
+        (bob, 'LAX', 'PHX', 4, 'Quick Arizona run',
+         'Forty-five minute flight, in and out without drama. Boarding pass on '
+         'my phone, baggage carry-on only, perfect short trip.', 5, 4, 4),
+        (bob, 'LAX', 'SAN', 5, 'Easier than driving I-5',
+         'Booked last-minute and still got a decent fare. Flight was 25 minutes '
+         'in the air, baggage came out fast, and I beat the freeway traffic.', 5, 5, 5),
+        (bob, 'SFO', 'PDX', 4, 'PNW connector',
+         'Reliable short-haul. Crew was warm, beverages came around twice in a '
+         '90-minute flight, and the airport at PDX is a delight.', 5, 4, 5),
+        # Carol — family travel reviews
+        (carol, 'ORD', 'NRT', 4, 'Long flight, kids did great',
+         'Pre-ordered kids meals worked perfectly and the crew gave my youngest '
+         'extra snacks without being asked. Direct flight beats any one-stop on '
+         'this route.', 5, 4, 5),
+        (carol, 'ORD', 'HND', 4, 'Tokyo with the whole family',
+         'Pre-flight planning paid off — boarding was painless and the crew was '
+         'kind to the kids. Long-haul economy is what it is but the IFE library '
+         'kept the youngest happy.', 5, 4, 5),
+        (carol, 'ORD', 'AMS', 5, 'Family magic to Amsterdam',
+         'Hard to get a transatlantic right with four kids but this one nailed it. '
+         'Bassinets for the youngest, kids meals on time, friendly crew. Will '
+         'rebook for next summer.', 5, 5, 5),
+        (carol, 'ORD', 'DUB', 4, 'Dublin family week',
+         'Eight hours felt long but the crew handled us professionally. Bags came '
+         'out within 20 minutes and the airport was easy to navigate with a stroller.', 5, 4, 4),
+        (carol, 'DFW', 'CUN', 5, 'Beach week win',
+         'Direct flight saved us a connection nightmare. The crew was warm with '
+         'the kids and the timing worked perfectly with the all-inclusive checkin.', 5, 5, 5),
+        (carol, 'ATL', 'PUJ', 4, 'Caribbean family run',
+         'Smooth flight, on-time arrival in Punta Cana, and the airline made it '
+         'easy to roll all four of our seats together. Good experience overall.', 5, 4, 4),
+        (carol, 'ORD', 'SFO', 4, 'Transcontinental family flight',
+         'Four hours felt longer than it should but the crew was great and the '
+         'seat-back screens kept the kids occupied. Bags came out fast in SFO.', 5, 4, 4),
+        (carol, 'ORD', 'LAS', 4, 'Vegas family adventure',
+         'Flight was full but the crew handled boarding efficiently. Free '
+         'entertainment library was a lifesaver for the kids on the flight back.', 4, 4, 4),
+        (carol, 'ORD', 'PHX', 4, 'Spring break to Arizona',
+         'Boarding was quick, the kids loved the window seats over the desert, '
+         'and we landed 20 minutes early. Crew was patient with our circus.', 5, 4, 5),
+        (carol, 'DFW', 'MCO', 4, 'Orlando theme park trip',
+         'Easy direct flight, friendly crew, decent kids snacks. Pre-paying for '
+         'seats together was worth every penny.', 5, 4, 4),
+        (carol, 'ATL', 'DEN', 4, 'Mountain getaway',
+         'Smooth flight, on-time both ways, and the crew was warm. The view of '
+         'the Rockies on descent into DEN kept the kids glued to the window.', 5, 4, 4),
+        (carol, 'ORD', 'YYZ', 4, 'Quick run to Toronto',
+         'Short cross-border hop, no surprises, easy customs at YYZ. Bags came '
+         'out fast. Solid family-friendly carrier.', 5, 4, 4),
+        # David — premium-cabin business reviews on new long-hauls
+        (david, 'JFK', 'PVG', 5, 'Top-tier Shanghai flight',
+         'Suite was spacious, restaurant-style dining at my own pace, and the '
+         'crew remembered me from a prior trip. Slept 8 hours straight, landed '
+         'in PVG ready to head into back-to-back client meetings.', 5, 5, 5),
+        (david, 'JFK', 'BOM', 4, 'Long-haul to Mumbai',
+         'Sixteen hours is long but the lie-flat product is dialed in. Lounge '
+         'access at JFK and BOM made the connection painless. Will rebook for '
+         'next quarter.', 5, 5, 4),
+        (david, 'JFK', 'DEL', 5, 'Excellent Delhi service',
+         'New aircraft, attentive crew, and the meal service felt restaurant-grade. '
+         'The Indian thali option was a thoughtful touch and the wine list was '
+         'genuinely good.', 5, 5, 5),
+        (david, 'JFK', 'SYD', 4, 'Ultra-long-haul handled well',
+         'Twenty-plus hours is brutal but the crew kept the cabin quiet, paced '
+         'meals for sleep, and the suite was as good as advertised. Worth the '
+         'redemption.', 5, 5, 4),
+        (david, 'JFK', 'GRU', 5, 'Best South America service I have flown',
+         'Lie-flat for the overnight to GRU, lounge access on both ends, and the '
+         'breakfast service was paced perfectly. Highly recommended for the route.', 5, 5, 5),
+        (david, 'BOS', 'LHR', 4, 'Quick Boston transatlantic',
+         'Direct flight beats any connection on this route. Crew was polished, '
+         'meal was timed for an early morning arrival, and immigration at LHR '
+         'was fast.', 5, 4, 5),
+        (david, 'BOS', 'CDG', 4, 'Solid Paris overnight',
+         'Lie-flat seat slept seven hours, breakfast was light but tasty, and '
+         'the cabin crew never seemed rushed even on a full flight. Will rebook.', 5, 5, 4),
+        (david, 'JFK', 'GVA', 4, 'Geneva business trip',
+         'Smooth direct flight, on time both ways, lounge at JFK was excellent. '
+         'Knock half a point for older seat hardware compared to flagship aircraft.', 5, 4, 4),
+        (david, 'JFK', 'MUC', 5, 'Munich done right',
+         'Cabin was new, suite door was a nice touch, and the breakfast pastry '
+         'was honestly better than most cafes. Crew remembered my coffee from '
+         'first service.', 5, 5, 5),
+        (david, 'BOS', 'AMS', 5, 'Schiphol connection',
+         'Direct Boston to Amsterdam in business is criminally underrated. Quick '
+         'boarding, great seat, attentive crew, and AMS is a breeze for connections.', 5, 5, 5),
+        (david, 'JFK', 'YVR', 4, 'Vancouver short-haul in business',
+         'Five-hour cross-continent flight passed quickly. Cabin was clean, '
+         'lunch service was decent, and I got real work done with the wifi.', 5, 4, 4),
+        (david, 'JFK', 'EZE', 4, 'Buenos Aires overnight',
+         'Eleven hours south felt easier than expected — lie-flat seat plus the '
+         'right meal pacing meant I slept seven hours. Lounge at EZE was a nice '
+         'surprise.', 5, 4, 5),
+        # Route-level reviews from new users implicitly (cover newly-added airports)
+        (alice, 'JFK', 'OPO', 4, 'Porto direct service',
+         'Boarding was quick, crew was warm, and the breakfast pastry was a '
+         'genuine highlight. New aircraft on this route makes a real difference.', 5, 4, 4),
+        (bob, 'LAX', 'GUA', 3, 'Guatemala City run',
+         'Cheap fare to Central America, no surprises. Seat was tight but the '
+         'flight was on time and bags arrived intact.', 4, 3, 3),
+        (carol, 'ORD', 'BSB', 4, 'Brasilia trip',
+         'Long flight, decent meal service in economy, and the family was '
+         'comfortable enough. Bags took 45 minutes which was annoying.', 4, 4, 4),
+        (david, 'JFK', 'RUH', 5, 'Riyadh business trip',
+         'Lie-flat product was excellent, crew was polished and discreet, and '
+         'the late-night arrival was paced perfectly for a noon client meeting.', 5, 5, 5),
+        # Negative / mixed reviews so aggregates feel real
+        (alice, 'JFK', 'SAN', 2, 'Two delays back to back',
+         'Mechanical issue at JFK then a weather hold meant we arrived three '
+         'hours late. Crew apologized but the airline never offered compensation '
+         'or rebooking help. Disappointing.', 1, 3, 2),
+        (bob, 'SFO', 'JFK', 2, 'Old aircraft, broken IFE',
+         'Got stuck with a refurb plane where half the seatback screens did not '
+         'work. Crew was apologetic but there was no real fix for a six-hour '
+         'transcon flight.', 4, 2, 3),
+        (carol, 'DFW', 'CDG', 2, 'Service felt strained',
+         'Family of four in economy, flight was packed, crew was clearly '
+         'stretched. Kids meals never arrived and the dinner ran out before they '
+         'got to our row.', 2, 2, 2),
+        (david, 'JFK', 'CDG', 2, 'Second flight, much worse',
+         'Booked the same route as last month — different crew, totally different '
+         'experience. Cabin felt run-down, breakfast was a cold pastry, and the '
+         'lie-flat seat had a torn cushion.', 3, 2, 2),
+    ]
+    for u, o, d, rating, title, body, p, c, s in _r3_extra_reviews:
+        _add_review(u, o, d, rating, title, body, p, c, s)
+
+    # ---- R3: additional saved searches (16 -> 50+) ----
+    _add_saved(alice, 'Athens spring trip',   'JFK', 'ATH', 60,  72,  1, 'Premium')
+    _add_saved(alice, 'Singapore client run', 'JFK', 'SIN', 30,  37,  1, 'Business')
+    _add_saved(alice, 'Hong Kong layover',    'JFK', 'HKG', 45,  52,  1, 'Business')
+    _add_saved(alice, 'Zurich Alps escape',   'JFK', 'ZRH', 80,  90,  1, 'Premium')
+    _add_saved(alice, 'Doha winter route',    'JFK', 'DOH', 14,  21,  1, 'Business')
+    _add_saved(alice, 'Vancouver family',     'JFK', 'YVR', 100, 110, 2, 'Premium')
+    _add_saved(alice, 'Rome culinary',        'JFK', 'FCO', 150, 158, 1, 'Business')
+    _add_saved(alice, 'Stockholm summer',     'JFK', 'ARN', 180, 192, 1, 'Premium')
+
+    _add_saved(bob, 'Honolulu surf',          'SFO', 'HNL', 25,  35,  1, 'Economy')
+    _add_saved(bob, 'Tokyo backpacker',       'SFO', 'NRT', 35,  55,  1, 'Economy')
+    _add_saved(bob, 'Seoul food tour',        'SFO', 'ICN', 50,  60,  1, 'Economy')
+    _add_saved(bob, 'Mexico City weekend',    'SFO', 'MEX', 18,  21,  1, 'Economy')
+    _add_saved(bob, 'Vegas getaway',          'LAX', 'LAS', 14,  17,  1, 'Economy')
+    _add_saved(bob, 'Cancun reset',           'LAX', 'CUN', 25,  32,  1, 'Economy')
+    _add_saved(bob, 'NYC visit',              'LAX', 'JFK', 90,  97,  1, 'Economy')
+    _add_saved(bob, 'Portland weekend',       'SFO', 'PDX',  9,  12,  1, 'Economy')
+
+    _add_saved(carol, 'Amsterdam school break','ORD','AMS', 90, 104, 4, 'Economy')
+    _add_saved(carol, 'Dublin family week',   'ORD', 'DUB', 110, 120, 4, 'Economy')
+    _add_saved(carol, 'Orlando theme parks',  'DFW', 'MCO', 25,  32,  4, 'Economy')
+    _add_saved(carol, 'Vegas with the kids',  'ORD', 'LAS', 30,  35,  4, 'Economy')
+    _add_saved(carol, 'Punta Cana resort',    'ATL', 'PUJ', 50,  58,  4, 'Economy')
+    _add_saved(carol, 'Mexico family trip',   'ORD', 'MEX', 80,  90,  4, 'Economy')
+    _add_saved(carol, 'Phoenix spring break', 'ORD', 'PHX', 21,  28,  4, 'Economy')
+
+    _add_saved(david, 'Shanghai roadshow',    'JFK', 'PVG', 12,  18,  1, 'Business')
+    _add_saved(david, 'Mumbai client meeting','JFK', 'BOM', 18,  25,  1, 'Business')
+    _add_saved(david, 'Delhi expansion',      'JFK', 'DEL', 30,  37,  1, 'Business')
+    _add_saved(david, 'Sydney offsite',       'JFK', 'SYD', 60,  72,  1, 'Business')
+    _add_saved(david, 'Sao Paulo summit',     'JFK', 'GRU', 40,  47,  1, 'Business')
+    _add_saved(david, 'Munich client',        'JFK', 'MUC', 21,  25,  1, 'Business')
+    _add_saved(david, 'Geneva talks',         'JFK', 'GVA', 28,  31,  1, 'First')
+    _add_saved(david, 'Amsterdam summit',     'BOS', 'AMS', 35,  42,  1, 'Business')
+    _add_saved(david, 'Riyadh visit',         'JFK', 'RUH', 50,  58,  1, 'Business')
+    _add_saved(david, 'Buenos Aires offsite', 'JFK', 'EZE', 60,  70,  1, 'Business')
+    _add_saved(david, 'Hong Kong investors',  'JFK', 'HKG', 75,  82,  1, 'First')
+    _add_saved(david, 'Singapore expansion',  'JFK', 'SIN', 90,  100, 1, 'First')
+
+    # ---- R3: additional price alerts (25 -> 100+) ----
+    _alert_specs = [
+        # alice
+        ('alice','JFK','AMS', 520.0, True),  ('alice','JFK','ZRH', 540.0, True),
+        ('alice','JFK','SIN',1180.0, True),  ('alice','JFK','HKG', 980.0, True),
+        ('alice','JFK','DOH', 720.0, True),  ('alice','JFK','ATH', 540.0, True),
+        ('alice','JFK','BCN', 480.0, True),  ('alice','JFK','TLV', 720.0, True),
+        ('alice','JFK','ICN',1020.0, True),  ('alice','JFK','PVG', 980.0, True),
+        ('alice','BOS','CDG', 470.0, True),  ('alice','JFK','MAD', 460.0, False),
+        ('alice','JFK','VIE', 510.0, True),  ('alice','JFK','PRG', 540.0, False),
+        ('alice','JFK','OPO', 460.0, True),  ('alice','JFK','LIS', 460.0, True),
+        ('alice','JFK','BUD', 540.0, False),
+        # bob
+        ('bob','SFO','HNL', 280.0, True),    ('bob','SFO','MEX', 240.0, True),
+        ('bob','SFO','PDX', 140.0, True),    ('bob','SFO','SEA', 120.0, True),
+        ('bob','LAX','LAS', 110.0, True),    ('bob','LAX','CUN', 300.0, True),
+        ('bob','LAX','PHX', 130.0, True),    ('bob','LAX','SAN',  90.0, True),
+        ('bob','SFO','YVR', 200.0, True),    ('bob','LAX','BOS', 320.0, True),
+        ('bob','LAX','JFK', 280.0, True),    ('bob','SFO','DEN', 220.0, True),
+        ('bob','LAX','SFO', 100.0, True),    ('bob','LAX','SEA', 150.0, True),
+        ('bob','SFO','LAX', 100.0, True),    ('bob','LAX','PDX', 130.0, False),
+        # carol
+        ('carol','ORD','AMS', 480.0, True),  ('carol','ORD','DUB', 460.0, True),
+        ('carol','ORD','MCO', 220.0, True),  ('carol','ORD','LAS', 240.0, True),
+        ('carol','ORD','PHX', 220.0, True),  ('carol','ORD','SFO', 260.0, True),
+        ('carol','ORD','LAX', 240.0, True),  ('carol','ATL','CDG', 460.0, True),
+        ('carol','ATL','PUJ', 360.0, True),  ('carol','ATL','MIA', 180.0, True),
+        ('carol','DFW','MCO', 220.0, True),  ('carol','DFW','LAS', 220.0, True),
+        ('carol','DFW','CUN', 280.0, True),  ('carol','DFW','LHR', 480.0, False),
+        ('carol','ORD','BSB', 700.0, True),  ('carol','ORD','GRU', 740.0, True),
+        # david
+        ('david','JFK','PVG', 980.0, True),  ('david','JFK','BOM', 920.0, True),
+        ('david','JFK','DEL', 960.0, True),  ('david','JFK','SYD',1480.0, True),
+        ('david','JFK','GRU', 980.0, True),  ('david','JFK','MUC', 560.0, True),
+        ('david','JFK','GVA', 580.0, True),  ('david','JFK','AMS', 520.0, True),
+        ('david','BOS','AMS', 480.0, True),  ('david','BOS','LHR', 480.0, True),
+        ('david','BOS','CDG', 480.0, True),  ('david','JFK','RUH',1180.0, True),
+        ('david','JFK','EZE', 920.0, True),  ('david','JFK','HKG', 980.0, True),
+        ('david','JFK','SIN',1180.0, True),  ('david','JFK','BKK',1080.0, False),
+        ('david','JFK','DXB',1080.0, False),
+    ]
+    _user_obj = {'alice': alice, 'bob': bob, 'carol': carol, 'david': david}
+    for who, o, d, thresh, active in _alert_specs:
+        _add_alert(_user_obj[who], o, d, thresh, active=active)
+
+    # R3 bonus alerts to clear 100 total across all four users.
+    _bonus_alerts = [
+        ('alice','JFK','SYD',1480.0, True),  ('alice','LAX','SYD',1380.0, True),
+        ('alice','JFK','BKK',1080.0, True),  ('alice','JFK','MNL',1180.0, False),
+        ('bob','LAX','HNL', 320.0, True),    ('bob','SFO','HNL', 280.0, True),
+        ('bob','LAX','HND', 580.0, True),    ('bob','SFO','HND', 560.0, True),
+        ('carol','ORD','DXB',900.0, True),   ('carol','ATL','LAS',240.0, True),
+        ('david','BOS','FCO', 540.0, True),  ('david','JFK','MAD', 520.0, True),
+        ('david','JFK','SAW',780.0, True),
+    ]
+    for who, o, d, thresh, active in _bonus_alerts:
+        _add_alert(_user_obj[who], o, d, thresh, active=active)
+
+    # ---- R3: programmatic review fill — guarantee 200+ reviews ----
+    # Hand-written reviews cover named experiences. To hit 200+ for
+    # airline-aggregate questions ("what is the average rating for route X")
+    # we fill remaining slots with templated short-form reviews. Each review
+    # uses a deterministic random.Random seeded with (user_id, origin, dest)
+    # so rebuilds are byte-stable.
+    import random as _r3rand
+    _r3_routes = [
+        ('JFK','LHR'),('JFK','CDG'),('JFK','HND'),('JFK','NRT'),('JFK','DXB'),
+        ('JFK','FCO'),('JFK','BCN'),('JFK','AMS'),('JFK','ZRH'),('JFK','ICN'),
+        ('JFK','SIN'),('JFK','HKG'),('JFK','PVG'),('JFK','SYD'),('JFK','MAD'),
+        ('JFK','LIS'),('JFK','MEX'),('JFK','CUN'),('JFK','MIA'),('JFK','LAX'),
+        ('JFK','SFO'),('JFK','SEA'),('JFK','YYZ'),('JFK','YVR'),('JFK','ATH'),
+        ('JFK','PRG'),('JFK','DUB'),('JFK','DOH'),('JFK','BKK'),('JFK','GIG'),
+        ('SFO','LHR'),('SFO','CDG'),('SFO','HND'),('SFO','NRT'),('SFO','PVG'),
+        ('SFO','SYD'),('SFO','HNL'),('SFO','MEX'),('SFO','BCN'),('SFO','FCO'),
+        ('SFO','BKK'),('SFO','AMS'),('SFO','SEA'),('SFO','LAX'),('SFO','JFK'),
+        ('LAX','HND'),('LAX','NRT'),('LAX','SYD'),('LAX','HKG'),('LAX','PEK'),
+        ('LAX','CDG'),('LAX','CUN'),('LAX','PVR'),('LAX','LAS'),('LAX','SFO'),
+        ('LAX','BOS'),('LAX','JFK'),('LAX','MIA'),
+        ('ORD','LHR'),('ORD','CDG'),('ORD','FCO'),('ORD','BCN'),('ORD','AMS'),
+        ('ORD','HND'),('ORD','NRT'),('ORD','DUB'),('ORD','CUN'),('ORD','MEX'),
+        ('ORD','LAX'),('ORD','SFO'),('ORD','MIA'),('ORD','BOS'),('ORD','LAS'),
+        ('BOS','LHR'),('BOS','CDG'),('BOS','BCN'),('BOS','FCO'),('BOS','AMS'),
+        ('BOS','DUB'),
+        ('DFW','LHR'),('DFW','CDG'),('DFW','CUN'),('DFW','MIA'),
+        ('ATL','CDG'),('ATL','LHR'),('ATL','CUN'),('ATL','MIA'),('ATL','DEN'),
+        ('ATL','PUJ'),
+        ('SEA','HND'),('SEA','LAX'),('SEA','LAS'),
+        ('MIA','CDG'),('MIA','LHR'),('MIA','MAD'),('MIA','GIG'),('MIA','BOG'),
+        ('MIA','PTY'),('MIA','CUN'),
+    ]
+    _r3_users = [alice, bob, carol, david]
+    _r3_titles_pos = [
+        'Smooth and professional', 'Best flight in a while',
+        'On-time and comfortable', 'Pleasant experience',
+        'Great value for the route', 'Crew really delivered',
+        'Direct flight done right', 'No surprises, all good',
+        'Solid long-haul', 'Comfortable cabin',
+    ]
+    _r3_titles_neg = [
+        'Tight seats, long flight', 'Boarding was chaotic',
+        'Average at best', 'Delayed but they handled it',
+        'IFE issues again', 'Crew was stretched thin',
+    ]
+    _r3_bodies_pos = [
+        'Boarded on time, crew was attentive, and the flight was on time both ways. '
+        'Bag came out fast. I would book this airline again on this route.',
+        'Decent meal service for the cabin class, the seat was clean and well-maintained, '
+        'and the entertainment library was deeper than I expected. Solid trip.',
+        'The crew kept the cabin running quietly and the meal pacing was right for the '
+        'overnight flight. Slept enough to be productive on arrival.',
+        'Quick taxi, smooth flight, friendly cabin crew. The Wi-Fi was usable for emails '
+        'most of the way which is rare on this airline.',
+        'Aircraft was newer than the last time I flew this route — power outlets actually '
+        'worked, seat-back screen was responsive, and the snack box was generous.',
+    ]
+    _r3_bodies_neg = [
+        'Plane felt tight and the seat in front reclined all the way back. Crew was '
+        'professional but the experience was just average overall.',
+        'Gate changed twice before boarding, then we sat at the gate for 40 minutes. '
+        'Once airborne everything was fine but the start really hurt the experience.',
+        'IFE rebooted three times in flight which got old quickly. Crew was apologetic '
+        'but there was nothing they could do about a system bug.',
+    ]
+    _r3_review_count_target = 200
+    _r3_existing_review_routes = set()  # (user_id, flight_id) to avoid dup constraint
+    for u in _r3_users:
+        for o, d in _r3_routes:
+            if Review.query.count() + len(db.session.new) >= _r3_review_count_target + 20:
+                break
+            f = _get_flight(o, d)
+            if f is None:
+                continue
+            key = (u.id, f.id)
+            if key in _r3_existing_review_routes:
+                continue
+            _r3_existing_review_routes.add(key)
+            # Deterministic seed: stable across rebuilds. NOTE: Python's
+            # built-in hash() randomises strings per-process (PYTHONHASHSEED),
+            # so we must use a stable hash (sha1 of a deterministic byte
+            # serialisation) — otherwise rebuilds drift and md5 differs.
+            import hashlib
+            seed_bytes = f'{u.id}|{o}|{d}'.encode('utf-8')
+            seed = int(hashlib.sha1(seed_bytes).hexdigest(), 16) % (2**31)
+            rnd = _r3rand.Random(seed)
+            rating = rnd.choice([5, 5, 4, 4, 4, 4, 3, 3, 2])
+            if rating >= 4:
+                title = rnd.choice(_r3_titles_pos)
+                body = rnd.choice(_r3_bodies_pos)
+            else:
+                title = rnd.choice(_r3_titles_neg)
+                body = rnd.choice(_r3_bodies_neg)
+            r = Review(
+                user_id=u.id, flight_id=f.id, rating=rating,
+                title=title, body=body,
+                punctuality=rnd.choice([rating, rating, max(1, rating - 1), min(5, rating + 1)]),
+                comfort=rnd.choice([rating, rating, max(1, rating - 1)]),
+                service=rnd.choice([rating, min(5, rating + 1), max(1, rating - 1)]),
+            )
+            db.session.add(r)
+        # Commit per user so the Review.query.count() check sees progress
+        db.session.flush()
 
     db.session.commit()
     print('Benchmark users seeded: alice, bob, carol, david')

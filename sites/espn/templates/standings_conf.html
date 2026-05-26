@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block title %}{{ sport.name }} {{ conf.name }} Standings{% endblock %}
+
+{% block content %}
+<div class="container">
+  <div class="clubhouse-header">
+    <span class="clubhouse-header__title">{{ sport.name }} — {{ conf.name }}</span>
+  </div>
+  <div class="page-header">
+    <h1>{{ sport.name }} {{ conf.name }} Standings</h1>
+    <p class="subtitle">Filtered view of the {{ conf.name }} conference. <a href="{{ sport.url_prefix }}standings">Full league standings →</a></p>
+    {% set active = 'standings' %}{% include "_sport_subnav.html" %}
+  </div>
+
+  {% for d in divisions_data %}
+  <section class="standings-section">
+    <h2 class="section-heading">{{ d.division.name if d.division else conf.name }}</h2>
+    <table class="data-table standings-table">
+      <thead>
+        <tr>
+          <th>Rk</th><th>Team</th><th>W</th><th>L</th><th>Pct</th><th>GB</th><th>Streak</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for t in d.teams %}
+        <tr>
+          <td class="rank-col">{{ t.standing_rank }}</td>
+          <td><a href="/team/{{ sport.slug }}/{{ t.slug }}">{{ t.full_name }}</a></td>
+          <td class="stat-val">{{ t.wins }}</td>
+          <td class="stat-val">{{ t.losses }}</td>
+          <td class="stat-val">{{ '%.3f'|format(t.win_pct or 0) }}</td>
+          <td class="stat-val">{{ '%.1f'|format(t.games_back or 0) }}</td>
+          <td>{{ t.streak }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </section>
+  {% endfor %}
+</div>
+{% endblock %}

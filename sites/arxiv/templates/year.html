@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+{% block title %}{{ year }}{% if archive_code %} ({{ archive_code }}){% endif %} — arXiv Year View{% endblock %}
+{% block breadcrumbs %}
+    <span class="sep">&gt;</span>
+    <a href="{{ url_for('year_index', year=year) }}">year {{ year }}</a>
+    {% if archive_code %}
+    <span class="sep">&gt;</span>
+    <a href="{{ url_for('year_index', year=year, code=archive_code) }}">{{ archive_code }}</a>
+    {% endif %}
+{% endblock %}
+{% block content %}
+
+<div class="listing-header">
+    <p class="subtitle">Browse by year</p>
+    <h1>arXiv submissions — {{ year }}{% if archive_code %} · {{ archive_code }}{% endif %}</h1>
+</div>
+
+<div class="listing-nav">
+    {{ total }} entries across {{ months|length }} months
+    {% if not archive_code %}
+        | Filter by archive:
+        <a href="{{ url_for('year_index', year=year, code='cs') }}">cs</a> ·
+        <a href="{{ url_for('year_index', year=year, code='math') }}">math</a> ·
+        <a href="{{ url_for('year_index', year=year, code='physics') }}">physics</a> ·
+        <a href="{{ url_for('year_index', year=year, code='stat') }}">stat</a> ·
+        <a href="{{ url_for('year_index', year=year, code='eess') }}">eess</a>
+    {% else %}
+        | <a href="{{ url_for('year_index', year=year) }}">All archives</a>
+    {% endif %}
+    | Other years:
+    {% for y in [year - 2, year - 1, year + 1, year + 2] %}
+        <a href="{{ url_for('year_index', year=y) }}">{{ y }}</a>{% if not loop.last %} · {% endif %}
+    {% endfor %}
+</div>
+
+{% if months %}
+    {% for m in months %}
+    <h3 class="announce-day">{{ m.month_label }} {{ year }} ({{ m.total }} entries)</h3>
+    <dl>
+        {% for p in m.papers %}
+        <dt>
+            <span class="entry-id">[{{ loop.index }}]&nbsp;<a href="{{ url_for('paper_detail', arxiv_id=p.arxiv_id) }}">arXiv:{{ p.arxiv_id }}</a></span>
+            [<a href="{{ url_for('pdf_view', arxiv_id=p.arxiv_id) }}">pdf</a>,
+            <a href="{{ url_for('html_view', arxiv_id=p.arxiv_id) }}">html</a>]
+        </dt>
+        <dd class="paper-entry">
+            <div class="entry-title"><a href="{{ url_for('paper_detail', arxiv_id=p.arxiv_id) }}">{{ p.display_title }}</a></div>
+            <div class="entry-authors"><b>Authors:</b>
+                {% for a in p.get_authors() %}
+                    <a href="{{ url_for('author_papers', name=a) }}">{{ a }}</a>{% if not loop.last %}, {% endif %}
+                {% endfor %}
+            </div>
+            <div class="entry-subjects"><b>Subjects:</b> {{ p.subjects }}</div>
+        </dd>
+        {% endfor %}
+    </dl>
+    {% endfor %}
+{% else %}
+<p class="muted">No papers found for {{ year }}{% if archive_code %} in {{ archive_code }}{% endif %}.</p>
+{% endif %}
+
+{% endblock %}

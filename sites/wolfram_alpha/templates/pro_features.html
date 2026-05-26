@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% block title %}Pro Features — Free vs Pro vs Premium{% endblock %}
+
+{% block content %}
+<section class="pro-hero">
+  <div class="section-inner">
+    <h1 class="pro-hero-title">Pro Features <span class="pro-gold">at a glance</span></h1>
+    <p class="pro-hero-subtitle">Side-by-side comparison: Free &middot; Pro &middot; Pro Premium</p>
+  </div>
+</section>
+
+<div class="section-inner" style="padding:32px 24px">
+  <table class="data-table" style="width:100%;border-collapse:collapse;border:1px solid #e3e3e3">
+    <thead>
+      <tr style="background:#fff2e6">
+        <th style="text-align:left;padding:12px;border:1px solid #e3e3e3">Feature</th>
+        <th style="padding:12px;border:1px solid #e3e3e3">Free</th>
+        <th style="padding:12px;border:1px solid #e3e3e3;color:#cc4400">Pro</th>
+        <th style="padding:12px;border:1px solid #e3e3e3;color:#cc4400">Pro Premium</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% set rows = [
+        ('Basic computational answers',                       '&#10003;', '&#10003;', '&#10003;'),
+        ('Topic explorer + curated examples',                 '&#10003;', '&#10003;', '&#10003;'),
+        ('Saved queries &amp; notebooks',                     'Limited',  'Unlimited','Unlimited'),
+        ('Query history retention',                           '30 days',  '1 year',   'Forever'),
+        ('Step-by-step solutions',                            '&times;',   '&#10003;', '&#10003;'),
+        ('File / image / audio upload',                       '&times;',   '60+ formats', '60+ formats + larger'),
+        ('Extended computation time per query',               '~10 s',     '~60 s',   '~5 min'),
+        ('Custom plots &amp; downloads',                      'PNG only',  'PNG/SVG/PDF', 'PNG/SVG/PDF/CSV'),
+        ('Wolfram Language input',                            'Basic',     'Full',     'Full + Notebook'),
+        ('API access',                                        '&times;',   '2000 calls/mo', '20000 calls/mo'),
+        ('Wolfram|One desktop &amp; cloud',                   '&times;',   '&times;',   '&#10003;'),
+        ('Practice problems &amp; feedback',                  '&times;',   '&#10003;', '&#10003;'),
+        ('Priority support',                                  '&times;',   '&#10003;', '24/7 chat'),
+        ('No advertising',                                    '&times;',   '&#10003;', '&#10003;'),
+      ] %}
+      {% for label, free, pro, prem in rows %}
+      <tr>
+        <td style="padding:10px;border:1px solid #e3e3e3">{{ label|safe }}</td>
+        <td style="padding:10px;border:1px solid #e3e3e3;text-align:center">{{ free|safe }}</td>
+        <td style="padding:10px;border:1px solid #e3e3e3;text-align:center;color:#cc4400">{{ pro|safe }}</td>
+        <td style="padding:10px;border:1px solid #e3e3e3;text-align:center;color:#cc4400">{{ prem|safe }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <div style="text-align:center;margin-top:36px">
+    <a href="/pro/upgrade" class="btn btn-pro-primary btn-lg">Upgrade Now</a>
+    <a href="/pro/pricing" class="btn btn-secondary btn-lg" style="margin-left:12px">See Prices</a>
+  </div>
+</div>
+{% endblock %}

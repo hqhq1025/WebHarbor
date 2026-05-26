@@ -36,6 +36,21 @@
                     </div>
                     <span>({{ recipe.review_count|int }})</span>
                 </div>
+                {% if recipe.total_time or recipe.calories %}
+                <div class="recipe-card-nutrition" style="margin-top:6px;font-size:0.78rem;color:#666">
+                    {% if recipe.total_time %}{{ recipe.total_time }}{% endif %}
+                    {% if recipe.total_time and recipe.calories %} &middot; {% endif %}
+                    {% if recipe.calories %}{{ recipe.calories }} cal{% endif %}
+                </div>
+                {% endif %}
+                {% set dt = recipe.get_dietary_tags() %}
+                {% if dt %}
+                <div class="diet-chips" style="display:flex;flex-wrap:wrap;gap:4px;margin-top:6px">
+                    {% for t in dt[:3] %}
+                    <span class="diet-chip" style="background:#e8f5e9;color:#2e7d32;font-size:0.65rem;padding:2px 7px;border-radius:10px;text-transform:uppercase">{{ t }}</span>
+                    {% endfor %}
+                </div>
+                {% endif %}
             </div>
         </div>
         {% endfor %}

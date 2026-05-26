@@ -1247,6 +1247,169 @@ def api_courses_by_category(category):
         'course_type': c.course_type,
     } for c in courses])
 
+
+# ─── R3 deep sub-pages: /career, /partner, /skill, /degrees-list, /certificate ─
+
+CAREER_ROLES_PUB = [
+    ('Data Analyst', 'data-analyst', 'Data Science',
+     'Analyse data, build dashboards, and tell stories with numbers.',
+     ['SQL', 'Tableau', 'Excel', 'Python']),
+    ('Data Scientist', 'data-scientist', 'Data Science',
+     'Build predictive models and ship machine learning to production.',
+     ['Python', 'Statistics', 'Machine Learning', 'Deep Learning']),
+    ('Machine Learning Engineer', 'machine-learning-engineer', 'Data Science',
+     'Productionise machine-learning systems and own them end-to-end.',
+     ['Python', 'TensorFlow', 'MLOps', 'Cloud Computing']),
+    ('Software Engineer', 'software-engineer', 'Computer Science',
+     'Design, build and maintain reliable software at scale.',
+     ['Java', 'Python', 'Git', 'System Design']),
+    ('Full-Stack Web Developer', 'full-stack-web-developer', 'Computer Science',
+     'Build the end-to-end web stack from database to UI.',
+     ['JavaScript', 'React', 'Node.js', 'SQL']),
+    ('Front-End Developer', 'front-end-developer', 'Computer Science',
+     'Craft beautiful, accessible user interfaces with modern frameworks.',
+     ['HTML', 'CSS', 'JavaScript', 'React']),
+    ('Back-End Developer', 'back-end-developer', 'Computer Science',
+     'Design APIs, queues, and data layers that scale.',
+     ['Python', 'Node.js', 'PostgreSQL', 'REST APIs']),
+    ('Mobile App Developer', 'mobile-app-developer', 'Computer Science',
+     'Ship native and cross-platform mobile apps.',
+     ['Swift', 'Kotlin', 'React Native', 'Flutter']),
+    ('Cloud Architect', 'cloud-architect', 'Information Technology',
+     'Design cloud-native systems on AWS, Azure, or GCP.',
+     ['AWS', 'Azure', 'GCP', 'Kubernetes']),
+    ('DevOps Engineer', 'devops-engineer', 'Information Technology',
+     'Automate the path from code to production.',
+     ['Docker', 'Kubernetes', 'CI/CD', 'Linux']),
+    ('Cybersecurity Analyst', 'cybersecurity-analyst', 'Information Technology',
+     'Defend organisations from threats with proven playbooks.',
+     ['Network Security', 'SIEM', 'Penetration Testing', 'Cryptography']),
+    ('IT Support Specialist', 'it-support-specialist', 'Information Technology',
+     'Keep users productive and infrastructure healthy.',
+     ['Networking', 'Help Desk', 'Hardware', 'Windows Server']),
+    ('UX Designer', 'ux-designer', 'Arts and Humanities',
+     'Research and design human-centred product experiences.',
+     ['Figma', 'User Research', 'Wireframing', 'Prototyping']),
+    ('Product Manager', 'product-manager', 'Business',
+     'Lead the cross-functional team that ships product.',
+     ['Roadmapping', 'Stakeholder Management', 'Analytics', 'Agile']),
+    ('Project Manager', 'project-manager', 'Business',
+     'Deliver on time, on scope, and on budget with proven frameworks.',
+     ['Agile', 'Scrum', 'Risk Management', 'Communication']),
+    ('Digital Marketing Specialist', 'digital-marketing-specialist', 'Business',
+     'Acquire, engage, and retain customers across digital channels.',
+     ['SEO', 'SEM', 'Content Marketing', 'Analytics']),
+    ('Financial Analyst', 'financial-analyst', 'Business',
+     'Model businesses and inform investment decisions.',
+     ['Excel', 'Valuation', 'Modeling', 'Accounting']),
+    ('Business Analyst', 'business-analyst', 'Business',
+     'Translate business needs into shipping requirements.',
+     ['Requirements', 'SQL', 'Process Mapping', 'Stakeholder Management']),
+    ('Game Developer', 'game-developer', 'Computer Science',
+     'Ship interactive entertainment using Unity, Unreal and beyond.',
+     ['Unity', 'C#', '3D Graphics', 'Game Design']),
+    ('Bioinformatician', 'bioinformatician', 'Health',
+     'Apply computation to biology and life sciences research.',
+     ['Python', 'Genomics', 'R', 'Statistics']),
+]
+
+@app.route('/careers/<role_slug>')
+@app.route('/career/<role_slug>')
+def career_path(role_slug):
+    role = next((r for r in CAREER_ROLES_PUB if r[1] == role_slug), None)
+    if not role:
+        abort(404)
+    name, _slug, category, blurb, skills = role
+    # Find related certificate
+    cert = Course.query.filter_by(
+        slug=f'career-certificate-{role_slug}').first()
+    # Find related courses by category + matching skills feature tag
+    related = Course.query.filter(
+        Course.category == category,
+        Course.feature_tags.like(f'%{role_slug}%'),
+    ).order_by(Course.enrolled_count.desc()).limit(24).all()
+    if len(related) < 12:
+        # Augment with category top
+        more = Course.query.filter(
+            Course.category == category,
+            ~Course.id.in_([c.id for c in related]),
+        ).order_by(Course.enrolled_count.desc()).limit(24 - len(related)).all()
+        related = related + more
+    return render_template('career.html', role_name=name, role_slug=role_slug,
+                           category=category, blurb=blurb, skills=skills,
+                           cert=cert, courses=related)
+
+
+@app.route('/partner/<slug>')
+@app.route('/university/<slug>')
+@app.route('/instructor-org/<slug>')
+def partner_detail(slug):
+    partner = Partner.query.filter_by(slug=slug).first_or_404()
+    courses = Course.query.filter_by(partner_id=partner.id).order_by(
+        Course.enrolled_count.desc()).all()
+    n_total = len(courses)
+    by_type = {}
+    for c in courses:
+        by_type.setdefault(c.course_type or 'Course', []).append(c)
+    return render_template('partner_detail.html', partner=partner,
+                           courses=courses, by_type=by_type, n_total=n_total)
+
+
+@app.route('/skill/<slug>')
+@app.route('/skills/<slug>')
+def skill_detail(slug):
+    pretty = slug.replace('-', ' ').title()
+    # Match via feature_tags or skills JSON or title substring
+    needle_dash = slug.replace(' ', '-')
+    needle_words = slug.replace('-', ' ')
+    courses = Course.query.filter(
+        db.or_(
+            Course.feature_tags.like(f'%"{needle_dash}"%'),
+            Course.skills.ilike(f'%{needle_words}%'),
+            Course.title.ilike(f'%{needle_words}%'),
+        )
+    ).order_by(Course.enrolled_count.desc()).limit(96).all()
+    return render_template('skill.html', skill_name=pretty,
+                           skill_slug=slug, courses=courses)
+
+
+@app.route('/degrees-list')
+@app.route('/degrees/list')
+def degrees_list():
+    """Compact list view of all degrees (alias surface)."""
+    degrees_ = Course.query.filter_by(course_type='Degree').order_by(
+        Course.title).all()
+    return render_template('degrees.html', degrees=degrees_, dtype='')
+
+
+@app.route('/certificate/<int:course_id>')
+@app.route('/verify/certificate/<int:course_id>')
+def certificate_verify(course_id):
+    """Public-facing certificate verification page. Shows the verified
+    completion for a course-id and a deterministic verify-code."""
+    course = Course.query.get_or_404(course_id)
+    # Pick the most senior enrollment with >= 100% progress, else fall back
+    enrollment = (Enrollment.query.filter_by(course_id=course.id)
+                  .order_by(Enrollment.progress.desc(),
+                            Enrollment.enrolled_at.asc()).first())
+    learner = User.query.get(enrollment.user_id) if enrollment else None
+    # Deterministic verify code from course id (no clock drift)
+    verify_code = f'COUR-{course.id:06d}-{hashlib.md5(course.slug.encode()).hexdigest()[:6].upper()}'
+    issued = (enrollment.enrolled_at.strftime('%B %d, %Y')
+              if enrollment and enrollment.enrolled_at
+              else course.sort_date)
+    return render_template('certificate.html', course=course,
+                           learner=learner, verify_code=verify_code,
+                           issued=issued)
+
+
+@app.route('/learn/<slug>/syllabus')
+@app.route('/learn/<slug>/modules')
+def course_syllabus(slug):
+    """Deep-link directly to the syllabus section of a course."""
+    course = Course.query.filter_by(slug=slug).first_or_404()
+    return redirect(url_for('course_detail', slug=course.slug) + '#modules')
+
 # ─── Error handlers ───────────────────────────────────────────────────────────
 
 @app.errorhandler(404)
@@ -2946,6 +3109,18 @@ with app.app_context():
     # Guided-Project / extra Specialization variants + 12 new degrees).
     from seed_extras import seed_v3 as _seed_v3
     _seed_v3(db, {
+        'User': User, 'Partner': Partner, 'Course': Course,
+        'CourseModule': CourseModule, 'SubCourse': SubCourse,
+        'Enrollment': Enrollment, 'SavedCourse': SavedCourse,
+        'Review': Review,
+    })
+    # R3 expansion: ~100 new partners (30+ countries), ~1100 courses
+    # (Capstone / Coursera-Plus bundles / Business catalog / Project Network
+    # shorts / Career Certificates / Foundations+Advanced+Capstone trios /
+    # 10 extra degrees). Must run BEFORE seed_testimonials_and_extras so the
+    # testimonials loop covers v4 courses on the FIRST build.
+    from seed_extras import seed_v4 as _seed_v4
+    _seed_v4(db, {
         'User': User, 'Partner': Partner, 'Course': Course,
         'CourseModule': CourseModule, 'SubCourse': SubCourse,
         'Enrollment': Enrollment, 'SavedCourse': SavedCourse,

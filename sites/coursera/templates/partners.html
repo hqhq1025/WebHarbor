@@ -33,7 +33,7 @@
     {% endif %}
     <div class="partners-grid">
       {% for p in partners %}
-      <div class="partner-card">
+      <a class="partner-card" href="{{ url_for('partner_detail', slug=p.slug) }}" style="text-decoration:none;color:inherit;display:block;">
         <div class="partner-logo-circle">
           {% set _pl = partner_logo(p) %}
           {% if _pl %}<img src="{{ url_for('static', filename=_pl) }}" alt="{{ p.name }}">{% else %}<span class="partner-logo-fallback">{{ p.short_name[:2] }}</span>{% endif %}
@@ -43,7 +43,7 @@
           <span class="partner-country">{{ p.country }}</span>
           <span class="partner-type">{{ p.partner_type|title }}</span>
         </div>
-      </div>
+      </a>
       {% endfor %}
     </div>
     {% if not partners %}

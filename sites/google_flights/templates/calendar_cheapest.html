@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+{% block title %}Cheapest day to fly | Google Flights{% endblock %}
+
+{% block content %}
+<section class="section" style="max-width:1100px;margin:0 auto;padding:32px 24px;">
+  <header style="margin-bottom:24px;">
+    <h1 style="font-family:'Google Sans',sans-serif;font-size:32px;font-weight:500;margin:0;">
+      Cheapest day to fly
+    </h1>
+    <p style="color:#5f6368;margin-top:8px;font-size:15px;">
+      Enter a route to see the minimum fare per day across the next two months. The cheapest day is highlighted.
+    </p>
+  </header>
+
+  <form method="get" style="display:flex;gap:12px;margin-bottom:32px;flex-wrap:wrap;align-items:end;">
+    <div>
+      <label style="display:block;font-size:12px;color:#5f6368;margin-bottom:4px;">From (IATA)</label>
+      <input type="text" name="from" value="{{ origin }}" maxlength="3" placeholder="JFK"
+             style="padding:10px 14px;border:1px solid #dadce0;border-radius:8px;font-size:14px;text-transform:uppercase;width:140px;">
+    </div>
+    <div>
+      <label style="display:block;font-size:12px;color:#5f6368;margin-bottom:4px;">To (IATA)</label>
+      <input type="text" name="to" value="{{ dest }}" maxlength="3" placeholder="LHR"
+             style="padding:10px 14px;border:1px solid #dadce0;border-radius:8px;font-size:14px;text-transform:uppercase;width:140px;">
+    </div>
+    <button type="submit" style="background:#1a73e8;color:#fff;border:0;padding:10px 24px;border-radius:24px;font-size:14px;font-weight:500;cursor:pointer;">
+      Search
+    </button>
+  </form>
+
+  {% if cheapest_date %}
+  <div style="background:#e6f4ea;border-radius:12px;padding:20px;margin-bottom:24px;">
+    <div style="font-size:14px;color:#137333;font-weight:500;">Cheapest day</div>
+    <div style="font-size:28px;font-family:'Google Sans',sans-serif;font-weight:500;color:#202124;margin-top:4px;">
+      {{ cheapest_date.strftime('%A, %B %d, %Y') }}
+      <span style="font-size:22px;color:#137333;margin-left:12px;">${{ '%.0f'|format(cheapest_price) }}</span>
+    </div>
+    <div style="margin-top:8px;color:#5f6368;font-size:13px;">
+      Cheapest minimum fare across all carriers on {{ origin }} -> {{ dest }} in the available window.
+    </div>
+  </div>
+  {% endif %}
+
+  {% if grid_rows %}
+  <div style="background:#fff;border:1px solid #dadce0;border-radius:12px;padding:20px;">
+    <h2 style="font-size:16px;font-family:'Google Sans',sans-serif;font-weight:500;margin:0 0 16px;">
+      30-day price calendar - {{ origin }} to {{ dest }}
+    </h2>
+    <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:6px;">
+      {% for d, p in grid_rows %}
+      <a href="{{ url_for('flights_list', **{'from':origin,'to':dest,'departure_date':d.isoformat()}) }}"
+         style="text-decoration:none;color:inherit;display:block;padding:10px 8px;border:1px solid {% if d == cheapest_date %}#137333{% else %}#dadce0{% endif %};
+                border-radius:8px;text-align:center;background:{% if d == cheapest_date %}#e6f4ea{% endif %};">
+        <div style="font-size:11px;color:#5f6368;">{{ d.strftime('%a') }}</div>
+        <div style="font-size:14px;font-weight:500;color:#202124;">{{ d.strftime('%b %d') }}</div>
+        <div style="font-size:13px;color:{% if d == cheapest_date %}#137333{% else %}#1a73e8{% endif %};font-weight:500;margin-top:2px;">
+          ${{ '%.0f'|format(p) }}
+        </div>
+      </a>
+      {% endfor %}
+    </div>
+  </div>
+  {% elif origin and dest %}
+  <div style="background:#fce8e6;color:#a50e0e;padding:16px;border-radius:8px;">
+    No fares found for {{ origin }} -> {{ dest }}. Try a different route.
+  </div>
+  {% endif %}
+</section>
+{% endblock %}

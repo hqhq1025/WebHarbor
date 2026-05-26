@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% block title %}Alexa Skills{% endblock %}
+
+{% block content %}
+<div style="background:linear-gradient(180deg,#00caff,#0084ff);color:#fff;padding:40px 20px;text-align:center">
+    <h1 style="margin:0;font-size:36px">Alexa Skills</h1>
+    <p style="margin:8px 0 0;font-size:16px">Make Alexa even more capable. Free to enable.</p>
+</div>
+
+<div style="max-width:1200px;margin:0 auto;padding:20px">
+    <!-- Filter bar -->
+    <div style="background:#fff;padding:18px;border-radius:6px;margin-bottom:16px;display:flex;gap:12px;flex-wrap:wrap;align-items:center">
+        <strong>Filter:</strong>
+        <form method="get" style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+            <select name="category" onchange="this.form.submit()" class="select">
+                <option value="">All categories</option>
+                {% for c in categories %}
+                <option value="{{ c }}" {% if current_category == c %}selected{% endif %}>{{ c }}</option>
+                {% endfor %}
+            </select>
+            <select name="sort" onchange="this.form.submit()" class="select">
+                <option value="">Sort: Default</option>
+                <option value="rating" {% if current_sort == 'rating' %}selected{% endif %}>Top Rated</option>
+                <option value="reviews" {% if current_sort == 'reviews' %}selected{% endif %}>Most Reviewed</option>
+                <option value="name" {% if current_sort == 'name' %}selected{% endif %}>Name (A-Z)</option>
+            </select>
+        </form>
+        <span class="text-muted" style="margin-left:auto">{{ skills|length }} skills</span>
+    </div>
+
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px">
+        {% for s in skills %}
+        <div style="background:#fff;padding:18px;border-radius:6px;border:1px solid #eaeaea">
+            <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px">
+                <div>
+                    <h3 style="margin:0 0 4px;font-size:17px;color:#0073bb">{{ s.name }}</h3>
+                    <div style="font-size:12px;color:#888">{{ s.category }}</div>
+                </div>
+                <div style="text-align:right;font-size:12px">
+                    <div style="color:#f60">{% for _ in range(s.rating|int) %}★{% endfor %}{% for _ in range(5 - s.rating|int) %}☆{% endfor %}</div>
+                    <div class="text-muted">{{ s.rating }} ({{ '{:,}'.format(s.reviews) }})</div>
+                </div>
+            </div>
+            <p style="margin:10px 0 14px;font-size:13px;color:#333;line-height:1.45">{{ s.desc }}</p>
+            <button class="btn btn-yellow" style="font-size:13px">Enable Skill</button>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

@@ -1,62 +1,86 @@
 {% extends "base.html" %}
 {% block title %}Airport taxis — Booking{% endblock %}
 {% block content %}
-<section class="hero" style="padding:40px 20px 80px;">
+<section class="hero" style="padding:40px 20px 60px;">
     <div class="hero-inner">
-        <h1>Airport taxis — easy door-to-door transfers</h1>
-        <p>Pre-book your ride to your destination for a stress-free start.</p>
+        <h1>Airport taxis</h1>
+        <p>Pre-booked airport transfers — {{ total }} quotes available across {{ airports|length }} airports.</p>
     </div>
-    <form class="search-bar" action="/searchresults.html" method="get">
+    <form class="search-bar" action="{{ url_for('airport_taxis') }}" method="get">
         <div class="search-field">
-            <input type="text" name="ss" placeholder="Airport">
+            <select name="airport">
+                <option value="">Any airport</option>
+                {% for code in airports %}
+                <option value="{{ code }}" {% if filters.airport == code %}selected{% endif %}>{{ code }}</option>
+                {% endfor %}
+            </select>
         </div>
         <div class="search-field">
-            <input type="text" placeholder="Hotel or address">
+            <select name="vehicle">
+                <option value="">Any vehicle</option>
+                {% for v in vehicles %}
+                <option value="{{ v }}" {% if filters.vehicle == v %}selected{% endif %}>{{ v }}</option>
+                {% endfor %}
+            </select>
         </div>
         <div class="search-field">
-            <input type="text" maxlength="10" inputmode="numeric" pattern="\d{4}-\d{2}-\d{2}" placeholder="YYYY-MM-DD" autocomplete="off" data-datepicker="single">
+            <input type="number" name="max_price" value="{{ filters.max_price or '' }}" placeholder="Max price USD" min="0">
         </div>
-        <button class="search-submit" type="submit">Search</button>
+        <button class="search-submit" type="submit">Get quote</button>
     </form>
 </section>
 
 <div class="container">
     <section class="section">
         <div class="section-header">
-            <h2>Why book airport taxis?</h2>
+            <h2>{{ total }} quotes available</h2>
+            <p>Page {{ page }} of {{ pages }}</p>
         </div>
-        <div class="card-grid cards-3">
-            <div class="category-tile">
-                <div class="icon">&#9989;</div>
-                <h4>Meet & greet included</h4>
-                <p>Your driver will be waiting for you at arrivals.</p>
-            </div>
-            <div class="category-tile">
-                <div class="icon">&#128176;</div>
-                <h4>Fixed prices</h4>
-                <p>Know the fare upfront — no surprises.</p>
-            </div>
-            <div class="category-tile">
-                <div class="icon">&#128274;</div>
-                <h4>Flight tracking</h4>
-                <p>We monitor your flight in case of delays.</p>
-            </div>
-        </div>
-    </section>
 
-    <section class="section">
-        <div class="section-header">
-            <h2>Popular pickup locations</h2>
+        {% if taxis %}
+        <table class="data-table" style="width:100%;background:#fff;border:1px solid var(--bk-border);border-radius:8px;border-collapse:separate;border-spacing:0;overflow:hidden;">
+            <thead style="background:var(--bk-blue-lighter);">
+                <tr>
+                    <th style="text-align:left;padding:10px 12px;font-size:12px;color:var(--bk-blue);">Airport</th>
+                    <th style="text-align:left;padding:10px 12px;font-size:12px;color:var(--bk-blue);">City</th>
+                    <th style="text-align:left;padding:10px 12px;font-size:12px;color:var(--bk-blue);">Destination</th>
+                    <th style="text-align:left;padding:10px 12px;font-size:12px;color:var(--bk-blue);">Distance</th>
+                    <th style="text-align:left;padding:10px 12px;font-size:12px;color:var(--bk-blue);">Vehicle</th>
+                    <th style="text-align:left;padding:10px 12px;font-size:12px;color:var(--bk-blue);">Seats</th>
+                    <th style="text-align:left;padding:10px 12px;font-size:12px;color:var(--bk-blue);">Includes</th>
+                    <th style="text-align:right;padding:10px 12px;font-size:12px;color:var(--bk-blue);">Quote</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for t in taxis %}
+                <tr style="border-top:1px solid var(--bk-border);">
+                    <td style="padding:10px 12px;font-weight:600;color:var(--bk-blue);">{{ t.airport_code }}</td>
+                    <td style="padding:10px 12px;">{{ t.city_display }}</td>
+                    <td style="padding:10px 12px;">{{ t.destination }}</td>
+                    <td style="padding:10px 12px;">{{ t.distance_km }} km</td>
+                    <td style="padding:10px 12px;"><strong>{{ t.vehicle }}</strong><br><span style="font-size:11px;color:#666;">{{ t.vehicle_desc }}</span></td>
+                    <td style="padding:10px 12px;">{{ t.seats }}</td>
+                    <td style="padding:10px 12px;font-size:11px;line-height:1.5;">
+                        {% if t.free_cancellation %}<div style="color:var(--bk-green);">&#10004; Free cancellation</div>{% endif %}
+                        {% if t.meet_and_greet %}<div style="color:#444;">&#10004; Meet & greet</div>{% endif %}
+                        {% if t.flight_tracking %}<div style="color:#444;">&#10004; Flight tracking</div>{% endif %}
+                    </td>
+                    <td style="padding:10px 12px;text-align:right;font-weight:700;color:var(--bk-blue);">${{ '%.0f' % t.quote_usd }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <p style="padding:20px;color:#666;">No quotes matched your filters.</p>
+        {% endif %}
+
+        {% if pages > 1 %}
+        <div class="pagination" style="margin-top:20px;text-align:center;">
+            {% if page > 1 %}<a href="?page={{ page-1 }}{% if qs_without_page %}&{{ qs_without_page }}{% endif %}" class="btn-secondary">&laquo; Previous</a>{% endif %}
+            <span style="margin:0 12px;">Page {{ page }} of {{ pages }}</span>
+            {% if page < pages %}<a href="?page={{ page+1 }}{% if qs_without_page %}&{{ qs_without_page }}{% endif %}" class="btn-secondary">Next &raquo;</a>{% endif %}
         </div>
-        <div class="card-grid cards-4">
-            {% for _ in range(8) %}
-            <div class="category-tile">
-                <div class="icon">&#9992;</div>
-                <h4>{% set airports = ['JFK', 'LAX', 'Heathrow', 'CDG', 'Narita', 'DXB', 'Changi', 'HKG'] %}{{ airports[loop.index0] }}</h4>
-                <p>{% set names = ['New York', 'Los Angeles', 'London', 'Paris', 'Tokyo', 'Dubai', 'Singapore', 'Hong Kong'] %}{{ names[loop.index0] }}</p>
-            </div>
-            {% endfor %}
-        </div>
+        {% endif %}
     </section>
 </div>
 {% endblock %}

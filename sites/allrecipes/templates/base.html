@@ -46,7 +46,8 @@
                 <a href="{{ url_for('category_page', slug='desserts') }}" {% if request.path == '/category/desserts' %}class="active"{% endif %}>Desserts</a>
                 <a href="{{ url_for('category_page', slug='chicken') }}" {% if request.path == '/category/chicken' %}class="active"{% endif %}>Chicken</a>
                 <a href="{{ url_for('category_page', slug='healthy') }}" {% if request.path == '/category/healthy' %}class="active"{% endif %}>Healthy</a>
-                <a href="{{ url_for('occasions') }}" {% if request.path == '/occasions' %}class="active"{% endif %}>Occasions</a>
+                <a href="{{ url_for('diets_hub') }}" {% if request.endpoint == 'diets_hub' or request.path.startswith('/diet/') %}class="active"{% endif %}>Diets</a>
+                <a href="{{ url_for('occasions') }}" {% if request.path == '/occasions' or request.path.startswith('/occasion/') %}class="active"{% endif %}>Occasions</a>
                 <a href="{{ url_for('popular_1960s') }}" {% if request.path == '/collections/popular-1960s' %}class="active"{% endif %}>Collections</a>
                 <a href="{{ url_for('newsletter') }}" {% if request.endpoint == 'newsletter' %}class="active"{% endif %}>Newsletter</a>
                 <a href="{{ url_for('about') }}" {% if request.path.startswith('/about') %}class="active"{% endif %}>About</a>

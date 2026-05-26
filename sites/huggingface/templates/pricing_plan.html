@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block title %}{{ plan.name }} plan — Hugging Face{% endblock %}
+
+{% block content %}
+<div class="container-wide page">
+    <nav class="docs-breadcrumb">
+        <a href="{{ url_for('index') }}">Home</a>
+        <span>/</span>
+        <a href="{{ url_for('pricing') }}">Pricing</a>
+        <span>/</span>
+        <span>{{ plan.name }}</span>
+    </nav>
+
+    <section class="plan-detail-hero">
+        <h1>{{ plan.name }}</h1>
+        <div class="plan-detail-price">{{ plan.price }}<span style="font-size:14px;font-weight:500;color:var(--hf-text-muted);"> / {{ plan.cadence }}</span></div>
+        <p class="muted">{{ plan.tagline }}</p>
+        <p style="margin-top:12px;max-width:680px;">{{ plan.blurb }}</p>
+    </section>
+
+    <section>
+        <h2>What's included</h2>
+        <ul class="plan-detail-features">
+            {% for f in features %}
+            <li>{{ f }}</li>
+            {% endfor %}
+        </ul>
+    </section>
+
+    <div style="display:flex;gap:12px;margin:32px 0;">
+        {% if plan.slug == 'enterprise' %}
+            <a href="{{ url_for('enterprise_contact') }}" class="btn btn-yellow btn-lg">Contact sales</a>
+            <a href="{{ url_for('pricing') }}" class="btn btn-outline btn-lg">Back to pricing</a>
+        {% elif plan.slug == 'pro' %}
+            <a href="{{ url_for('register') }}" class="btn btn-yellow btn-lg">Upgrade to PRO</a>
+            <a href="{{ url_for('pricing') }}" class="btn btn-outline btn-lg">Back to pricing</a>
+        {% else %}
+            <a href="{{ url_for('register') }}" class="btn btn-yellow btn-lg">Sign up — it's free</a>
+            <a href="{{ url_for('pricing') }}" class="btn btn-outline btn-lg">Compare plans</a>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

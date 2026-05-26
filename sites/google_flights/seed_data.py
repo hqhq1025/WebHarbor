@@ -719,6 +719,13 @@ DESCRIPTIONS = {
 
 
 def seed_all(db, Airport, Flight):
+    # Pull augmented metadata (icao/lat/lng/tz) and the R3 extra-airport list.
+    try:
+        from airport_extras import AIRPORT_META, EXTRA_AIRPORTS
+    except ImportError:
+        AIRPORT_META = {}
+        EXTRA_AIRPORTS = []
+
     # 1. Airports
     slug_to_airport_ids = {}
     for (iata, slug, city, country, name, region, popular) in AIRPORTS:
@@ -729,14 +736,50 @@ def seed_all(db, Airport, Flight):
                 if f.stat().st_size > 10000 and f.suffix.lower() in ['.jpg', '.jpeg', '.png', '.webp']:
                     gallery.append(f"/static/images/destinations/{slug}/{f.name}")
         image = gallery[0] if gallery else ''
+        meta = AIRPORT_META.get(iata)
+        icao, lat, lng, tz = (meta if meta else ('', None, None, ''))
         airport = Airport(
             iata=iata,
+            icao=icao,
             city_slug=slug,
             city=city,
             country=country,
             name=name,
             region=region,
             is_popular=popular,
+            latitude=lat,
+            longitude=lng,
+            timezone=tz,
+            image=image,
+            gallery_json=json.dumps(gallery),
+            description=DESCRIPTIONS.get(slug, f"Explore {city}, {country}."),
+        )
+        db.session.add(airport)
+        slug_to_airport_ids.setdefault(slug, []).append(iata)
+
+    # R3: append OpenFlights-sourced regional / international airports.
+    for entry in EXTRA_AIRPORTS:
+        (iata, slug, city, country, name, region, popular,
+         icao, lat, lng, tz) = entry
+        gallery_dir = BASE_DIR / 'static' / 'images' / 'destinations' / slug
+        gallery = []
+        if gallery_dir.exists():
+            for f in sorted(gallery_dir.glob('img_*.*')):
+                if f.stat().st_size > 10000 and f.suffix.lower() in ['.jpg', '.jpeg', '.png', '.webp']:
+                    gallery.append(f"/static/images/destinations/{slug}/{f.name}")
+        image = gallery[0] if gallery else ''
+        airport = Airport(
+            iata=iata,
+            icao=icao,
+            city_slug=slug,
+            city=city,
+            country=country,
+            name=name,
+            region=region,
+            is_popular=popular,
+            latitude=lat,
+            longitude=lng,
+            timezone=tz,
             image=image,
             gallery_json=json.dumps(gallery),
             description=DESCRIPTIONS.get(slug, f"Explore {city}, {country}."),
@@ -948,6 +991,32 @@ def seed_all(db, Airport, Flight):
         ('PRG', 'HND'), ('PRG', 'CTS'), ('SEA', 'HND'), ('HKG', 'FCA'),
         ('MEX', 'FRA'), ('JNB', 'YYZ'), ('YYC', 'JFK'), ('PNQ', 'JFK'),
         ('EDI', 'MAN'), ('PHX', 'MIA'),
+        # R3: new pairs needed for the expanded review/task suite. These get
+        # sparse coverage (6-9 dates) which is plenty for benchmark questions
+        # like "find the cheapest fare on route X" without bloating the catalog.
+        ('JFK', 'TLV'), ('JFK', 'OPO'), ('JFK', 'BOM'), ('JFK', 'DEL'),
+        ('JFK', 'GRU'), ('JFK', 'GVA'), ('JFK', 'MUC'), ('JFK', 'RUH'),
+        ('JFK', 'SAN'), ('JFK', 'PDX'), ('JFK', 'PHX'), ('JFK', 'AUS'),
+        ('JFK', 'NAS'), ('JFK', 'PUJ'), ('JFK', 'SJU'),
+        ('LAX', 'PVR'), ('LAX', 'SJD'), ('LAX', 'GDL'), ('LAX', 'CDG'),
+        ('LAX', 'NRT'), ('LAX', 'PEK'), ('LAX', 'HKG'),
+        ('SFO', 'NRT'), ('SFO', 'PEK'), ('SFO', 'AMS'), ('SFO', 'BCN'),
+        ('SFO', 'FCO'), ('SFO', 'BER'), ('SFO', 'SYD'), ('SFO', 'AKL'),
+        ('SFO', 'PVG'),
+        ('ORD', 'NRT'), ('ORD', 'AMS'), ('ORD', 'DUB'), ('ORD', 'BCN'),
+        ('ORD', 'CUN'), ('ORD', 'MEX'), ('ORD', 'GRU'),
+        ('BOS', 'AMS'), ('BOS', 'DUB'), ('BOS', 'LHR'), ('BOS', 'CDG'),
+        ('DFW', 'LHR'), ('DFW', 'CDG'), ('DFW', 'CUN'), ('DFW', 'MCO'),
+        ('ATL', 'CDG'), ('ATL', 'AMS'), ('ATL', 'CUN'), ('ATL', 'PUJ'),
+        ('ATL', 'DEN'), ('ATL', 'MIA'),
+        # Return-leg reciprocals for round-trip "manage" / "rebook" task scenarios
+        ('LHR', 'JFK'), ('CDG', 'JFK'), ('HND', 'JFK'), ('NRT', 'JFK'),
+        ('DXB', 'JFK'), ('FRA', 'MEX'),
+        # Capacity for "explore by budget" / "calendar cheapest day" tasks
+        ('JFK', 'CUN'), ('JFK', 'GIG'), ('JFK', 'LIM'), ('LAX', 'GIG'),
+        ('LAX', 'EZE'), ('MIA', 'GIG'), ('MIA', 'EZE'), ('MIA', 'BOG'),
+        ('MIA', 'PTY'), ('MIA', 'SJO'), ('MIA', 'GUA'), ('MIA', 'CUN'),
+        ('MIA', 'CDG'), ('MIA', 'LHR'), ('MIA', 'MAD'), ('MIA', 'FCO'),
     ]
     for pair in task_extra_pairs:
         if pair not in all_pairs:

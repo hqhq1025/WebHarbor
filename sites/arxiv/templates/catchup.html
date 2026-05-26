@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+{% block title %}Catch-up{% if code %} — {{ code }}{% endif %} — arXiv{% endblock %}
+{% block breadcrumbs %}
+    <span class="sep">&gt;</span>
+    <a href="{{ url_for('catchup') }}">catchup</a>
+    {% if code %}
+    <span class="sep">&gt;</span>
+    <a href="{{ url_for('catchup', code=code) }}">{{ code }}</a>
+    {% endif %}
+{% endblock %}
+{% block content %}
+
+<div class="listing-header">
+    <p class="subtitle">Catch-up listing</p>
+    <h1>Catch up{% if code %} <small style="color:var(--text-muted)">· {{ code }}</small>{% endif %}</h1>
+</div>
+
+<div class="listing-nav">
+    Showing papers submitted between <b>{{ from_iso }}</b> and <b>{{ anchor_date }}</b>
+    ({{ days }}-day window) — <b>{{ total }}</b> entries total.
+    {% set base = url_for('catchup', code=code) if code else url_for('catchup') %}
+    Window: <a href="{{ base }}?days=3">3d</a> ·
+    <a href="{{ base }}?days=7">7d</a> ·
+    <a href="{{ base }}?days=14">14d</a> ·
+    <a href="{{ base }}?days=30">30d</a>
+    {% if not code %}
+    | Archive: <a href="{{ url_for('catchup', code='cs') }}?days={{ days }}">cs</a> ·
+    <a href="{{ url_for('catchup', code='math') }}?days={{ days }}">math</a> ·
+    <a href="{{ url_for('catchup', code='stat') }}?days={{ days }}">stat</a> ·
+    <a href="{{ url_for('catchup', code='physics') }}?days={{ days }}">physics</a>
+    {% endif %}
+</div>
+
+{% if papers %}
+<dl>
+    {% for p in papers %}
+    <dt>
+        <span class="entry-id">[{{ loop.index + (page-1)*per_page }}]&nbsp;<a href="{{ url_for('paper_detail', arxiv_id=p.arxiv_id) }}">arXiv:{{ p.arxiv_id }}</a></span>
+        <span class="muted">{{ p.submitted_date }}</span>
+        [<a href="{{ url_for('pdf_view', arxiv_id=p.arxiv_id) }}">pdf</a>]
+    </dt>
+    <dd class="paper-entry">
+        <div class="entry-title"><a href="{{ url_for('paper_detail', arxiv_id=p.arxiv_id) }}">{{ p.display_title }}</a></div>
+        <div class="entry-authors"><b>Authors:</b>
+            {% for a in p.get_authors() %}<a href="{{ url_for('author_papers', name=a) }}">{{ a }}</a>{% if not loop.last %}, {% endif %}{% endfor %}
+        </div>
+        <div class="entry-subjects"><b>Subjects:</b> {{ p.subjects }}</div>
+    </dd>
+    {% endfor %}
+</dl>
+
+<div class="pagination" style="margin:14px 0;">
+    {% set base = url_for('catchup', code=code) if code else url_for('catchup') %}
+    {% if page > 1 %}<a href="{{ base }}?days={{ days }}&page={{ page-1 }}">‹ prev</a>{% endif %}
+    Page {{ page }}
+    {% if page * per_page < total %}<a href="{{ base }}?days={{ days }}&page={{ page+1 }}">next ›</a>{% endif %}
+</div>
+{% else %}
+<p class="muted">No papers in this window. Widen the window above.</p>
+{% endif %}
+
+{% endblock %}

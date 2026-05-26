@@ -385,6 +385,73 @@ class UserFavorite(db.Model):
     added_at = db.Column(db.DateTime, default=datetime.utcnow)
 
 
+# ─── R3 Models (betting, awards, draft, podcasts) ────────────────────────────
+
+class BettingOdds(db.Model):
+    __tablename__ = 'betting_odds'
+    id = db.Column(db.Integer, primary_key=True)
+    game_id = db.Column(db.Integer, index=True)
+    sport_slug = db.Column(db.String(20), index=True)
+    home_moneyline = db.Column(db.Integer, default=0)
+    away_moneyline = db.Column(db.Integer, default=0)
+    spread_favorite = db.Column(db.String(10), default='')
+    spread_line = db.Column(db.Float, default=0.0)
+    total = db.Column(db.Float, default=0.0)
+    over_odds = db.Column(db.Integer, default=-110)
+    under_odds = db.Column(db.Integer, default=-110)
+    opened_label = db.Column(db.String(40), default='')
+    status = db.Column(db.String(20), default='open')
+    sportsbook = db.Column(db.String(40), default='ESPN BET')
+
+
+class Award(db.Model):
+    __tablename__ = 'awards'
+    id = db.Column(db.Integer, primary_key=True)
+    sport_slug = db.Column(db.String(20), index=True)
+    season = db.Column(db.String(20), default='2023-24')
+    award_name = db.Column(db.String(80))
+    award_slug = db.Column(db.String(80))
+    winner_player_id = db.Column(db.Integer)
+    winner_team_id = db.Column(db.Integer)
+    finalists = db.Column(db.Text, default='[]')
+    voting_share = db.Column(db.Float, default=0.0)
+    announced_date = db.Column(db.String(20), default='')
+
+
+class DraftPick(db.Model):
+    __tablename__ = 'draft_picks'
+    id = db.Column(db.Integer, primary_key=True)
+    sport_slug = db.Column(db.String(20), index=True)
+    season = db.Column(db.String(20))
+    round = db.Column(db.Integer)
+    pick = db.Column(db.Integer)
+    overall_pick = db.Column(db.Integer)
+    team_id = db.Column(db.Integer)
+    player_name = db.Column(db.String(150))
+    position = db.Column(db.String(20))
+    school = db.Column(db.String(120))
+    country = db.Column(db.String(60))
+    height = db.Column(db.String(10))
+    weight = db.Column(db.Integer)
+    scout_grade = db.Column(db.Float)
+    notes = db.Column(db.String(300))
+    is_mock = db.Column(db.Integer, default=1)
+
+
+class Podcast(db.Model):
+    __tablename__ = 'podcasts'
+    id = db.Column(db.Integer, primary_key=True)
+    title = db.Column(db.String(200))
+    slug = db.Column(db.String(200), index=True)
+    host = db.Column(db.String(200))
+    sport_slug = db.Column(db.String(20))
+    description = db.Column(db.Text)
+    episode_count = db.Column(db.Integer, default=0)
+    latest_episode_title = db.Column(db.String(200))
+    latest_episode_date = db.Column(db.String(20))
+    duration_minutes = db.Column(db.Integer, default=0)
+
+
 # ─── Login ────────────────────────────────────────────────────────────────────
 
 @login_manager.user_loader
@@ -396,7 +463,10 @@ def load_user(user_id):
 
 @app.context_processor
 def inject_globals():
-    sports = Sport.query.filter_by(is_active=True).order_by(Sport.nav_order).all()
+    sports = (Sport.query.filter_by(is_active=True)
+              .order_by(Sport.nav_order).all())
+    # Defensive: drop any internal marker rows (slug starts with underscore)
+    sports = [s for s in sports if not (s.slug or '').startswith('_')]
     return {
         'nav_sports': sports,
         'csrf_token_value': generate_csrf(),
@@ -404,6 +474,17 @@ def inject_globals():
         'mirror_today_label': MIRROR_REFERENCE_DATE_LABEL,
         'mirror_today_iso':   mirror_today().strftime('%Y-%m-%d'),
     }
+
+
+@app.template_filter('from_json_safe')
+def _from_json_safe(value):
+    """Parse a JSON string in a template; return [] / {} on failure."""
+    if not value:
+        return []
+    try:
+        return json.loads(value)
+    except (TypeError, ValueError):
+        return []
 
 
 # ─── Forms ────────────────────────────────────────────────────────────────────
@@ -1304,6 +1385,321 @@ def sport_stats(sport_slug):
     leaders = all_stats[:25]
     return render_template('stat_leaders.html', sport=sport, leaders=leaders,
                            stat=stat, season=season, conf_filter=conf_filter)
+
+
+# ─── R3 Routes: Betting / Odds ───────────────────────────────────────────────
+
+SPORT_SLUG_NORM = {
+    'college-football': 'ncaaf',
+    'mens-college-basketball': 'ncaam',
+    'womens-college-basketball': 'ncaaw',
+    'ncaa': 'ncaam',
+}
+
+
+def _norm_sport(sport_slug: str) -> str:
+    return SPORT_SLUG_NORM.get(sport_slug, sport_slug)
+
+
+def _team_lookup(team_ids):
+    """Return {id: Team} for the given iterable of team ids."""
+    if not team_ids:
+        return {}
+    return {t.id: t for t in Team.query.filter(Team.id.in_(team_ids)).all()}
+
+
+@app.route('/bet')
+@app.route('/bet/')
+@app.route('/espn-bet')
+def espn_bet_hub():
+    """ESPN BET hub — featured odds across the top sports."""
+    sports_with_odds = ['nba', 'nfl', 'mlb', 'nhl', 'soccer']
+    cards = []
+    for sl in sports_with_odds:
+        sport = Sport.query.filter_by(slug=sl).first()
+        if not sport:
+            continue
+        odds = (BettingOdds.query.filter_by(sport_slug=sl, status='open')
+                .order_by(BettingOdds.id).limit(4).all())
+        if not odds:
+            odds = (BettingOdds.query.filter_by(sport_slug=sl)
+                    .order_by(BettingOdds.id.desc()).limit(4).all())
+        # Attach game + teams
+        attached = []
+        game_ids = [o.game_id for o in odds]
+        games = {g.id: g for g in Game.query.filter(Game.id.in_(game_ids)).all()}
+        team_ids = set()
+        for g in games.values():
+            team_ids.add(g.home_team_id)
+            team_ids.add(g.away_team_id)
+        teams = _team_lookup(team_ids)
+        for o in odds:
+            g = games.get(o.game_id)
+            if not g:
+                continue
+            attached.append({
+                'odds': o, 'game': g,
+                'home_team': teams.get(g.home_team_id),
+                'away_team': teams.get(g.away_team_id),
+            })
+        cards.append({'sport': sport, 'lines': attached})
+    return render_template('bet_hub.html', cards=cards)
+
+
+@app.route('/<sport_slug>/odds')
+@app.route('/<sport_slug>/betting')
+def sport_odds(sport_slug):
+    sport_slug = _norm_sport(sport_slug)
+    sport = Sport.query.filter_by(slug=sport_slug).first_or_404()
+    status_filter = request.args.get('status', '').strip()
+    q = BettingOdds.query.filter_by(sport_slug=sport_slug)
+    if status_filter in ('open', 'closed'):
+        q = q.filter_by(status=status_filter)
+    odds_rows = q.order_by(BettingOdds.id).all()
+    games = {}
+    if odds_rows:
+        gids = [o.game_id for o in odds_rows]
+        games = {g.id: g for g in Game.query.filter(Game.id.in_(gids)).all()}
+    team_ids = set()
+    for g in games.values():
+        team_ids.add(g.home_team_id)
+        team_ids.add(g.away_team_id)
+    teams = _team_lookup(team_ids)
+    rows = []
+    for o in odds_rows:
+        g = games.get(o.game_id)
+        if not g:
+            continue
+        rows.append({
+            'odds': o, 'game': g,
+            'home_team': teams.get(g.home_team_id),
+            'away_team': teams.get(g.away_team_id),
+        })
+    return render_template('odds.html', sport=sport, rows=rows,
+                           status_filter=status_filter)
+
+
+# ─── R3 Routes: Awards ───────────────────────────────────────────────────────
+
+@app.route('/<sport_slug>/awards')
+def sport_awards(sport_slug):
+    sport_slug = _norm_sport(sport_slug)
+    sport = Sport.query.filter_by(slug=sport_slug).first_or_404()
+    season = request.args.get('season', '').strip()
+    q = Award.query.filter_by(sport_slug=sport_slug)
+    if season:
+        q = q.filter_by(season=season)
+    awards = q.order_by(Award.season.desc(), Award.id).all()
+    # Attach winner player and team
+    pids = [a.winner_player_id for a in awards if a.winner_player_id]
+    tids = [a.winner_team_id for a in awards if a.winner_team_id]
+    players = {p.id: p for p in Player.query.filter(Player.id.in_(pids)).all()}
+    teams = {t.id: t for t in Team.query.filter(Team.id.in_(tids)).all()}
+    seasons = sorted({a.season for a in Award.query.filter_by(
+        sport_slug=sport_slug).all()}, reverse=True)
+    return render_template('awards.html', sport=sport, awards=awards,
+                           players=players, teams=teams, seasons=seasons,
+                           season=season)
+
+
+@app.route('/awards')
+def awards_hub():
+    """All-sport awards index."""
+    sports = (Sport.query.filter_by(is_active=True)
+              .order_by(Sport.nav_order).all())
+    sports = [s for s in sports if not (s.slug or '').startswith('_')]
+    sport_awards_map = {}
+    for sp in sports:
+        latest = (Award.query.filter_by(sport_slug=sp.slug)
+                  .order_by(Award.season.desc(), Award.id).limit(3).all())
+        if latest:
+            sport_awards_map[sp.slug] = (sp, latest)
+    return render_template('awards_hub.html',
+                           sport_awards_map=sport_awards_map)
+
+
+# ─── R3 Routes: Draft ────────────────────────────────────────────────────────
+
+@app.route('/<sport_slug>/draft')
+@app.route('/draft/<sport_slug>')
+def sport_draft(sport_slug):
+    sport_slug = _norm_sport(sport_slug)
+    sport = Sport.query.filter_by(slug=sport_slug).first_or_404()
+    season = request.args.get('season', '2024').strip()
+    round_n = request.args.get('round', type=int)
+    q = DraftPick.query.filter_by(sport_slug=sport_slug, season=season)
+    if round_n:
+        q = q.filter_by(round=round_n)
+    picks = q.order_by(DraftPick.overall_pick).all()
+    tids = [p.team_id for p in picks if p.team_id]
+    teams = {t.id: t for t in Team.query.filter(Team.id.in_(tids)).all()}
+    seasons = sorted({p.season for p in DraftPick.query.filter_by(
+        sport_slug=sport_slug).all()}, reverse=True)
+    is_mock = any(p.is_mock for p in picks)
+    return render_template('draft.html', sport=sport, picks=picks,
+                           teams=teams, seasons=seasons, season=season,
+                           round_n=round_n, is_mock=is_mock)
+
+
+# ─── R3 Routes: Fantasy ──────────────────────────────────────────────────────
+
+@app.route('/fantasy')
+@app.route('/fantasy/')
+def fantasy_hub():
+    fan_articles = (Article.query.filter_by(sport_slug='fantasy')
+                    .order_by(Article.created_at.desc()).limit(15).all())
+    podcasts = Podcast.query.filter_by(sport_slug='fantasy').all()
+    sport_links = [
+        ('football', 'Fantasy Football', '/fantasy/football'),
+        ('basketball', 'Fantasy Basketball', '/fantasy/basketball'),
+        ('baseball', 'Fantasy Baseball', '/fantasy/baseball'),
+        ('hockey', 'Fantasy Hockey', '/fantasy/hockey'),
+    ]
+    return render_template('fantasy_hub.html',
+                           fan_articles=fan_articles,
+                           podcasts=podcasts,
+                           sport_links=sport_links)
+
+
+FANTASY_SLUG_MAP = {
+    'football': 'nfl', 'nfl': 'nfl',
+    'basketball': 'nba', 'nba': 'nba',
+    'baseball': 'mlb', 'mlb': 'mlb',
+    'hockey': 'nhl', 'nhl': 'nhl',
+}
+
+
+@app.route('/fantasy/<sport_slug>')
+def fantasy_sport(sport_slug):
+    """Fantasy hub for a specific sport — top players + waiver list + tips."""
+    canonical = FANTASY_SLUG_MAP.get(sport_slug)
+    if not canonical:
+        abort(404)
+    sport = Sport.query.filter_by(slug=canonical).first_or_404()
+    # Top fantasy players: sort by points_per_game / passing_yards / etc
+    season = '2023-24' if canonical in ('nba', 'nhl') else '2023'
+    stats_q = (db.session.query(Player, PlayerStat)
+               .join(PlayerStat, Player.id == PlayerStat.player_id)
+               .filter(Player.sport_slug == canonical,
+                       PlayerStat.season == season,
+                       PlayerStat.stat_type == 'season'))
+    all_stats = stats_q.all()
+
+    def fpts(item):
+        _, st = item
+        if canonical == 'nba':
+            return (st.points_per_game * 1.0 +
+                    st.rebounds_per_game * 1.2 +
+                    st.assists_per_game * 1.5 +
+                    st.steals_per_game * 3 +
+                    st.blocks_per_game * 3)
+        if canonical == 'nfl':
+            return ((st.passing_yards or 0) * 0.04 +
+                    (st.passing_tds or 0) * 4 +
+                    (st.rushing_yards or 0) * 0.1 +
+                    (st.receiving_yards or 0) * 0.1 +
+                    (st.rushing_tds or 0) * 6 +
+                    (st.receiving_tds or 0) * 6 +
+                    (st.receptions or 0) * 0.5)
+        if canonical == 'mlb':
+            return ((st.home_runs or 0) * 4 + (st.rbi or 0) * 1 +
+                    (st.batting_avg or 0) * 200 + (st.stolen_bases or 0) * 2)
+        if canonical == 'nhl':
+            return ((st.goals or 0) * 3 + (st.hockey_assists or 0) * 2 +
+                    (st.plus_minus or 0) * 0.5)
+        return 0
+
+    all_stats.sort(key=fpts, reverse=True)
+    top = all_stats[:30]
+    waiver = all_stats[30:60]
+    articles = (Article.query
+                .filter((Article.sport_slug == canonical) |
+                        (Article.sport_slug == 'fantasy'))
+                .filter(Article.tags.like('%Fantasy%') |
+                        (Article.sport_slug == 'fantasy'))
+                .order_by(Article.created_at.desc()).limit(10).all())
+    return render_template('fantasy_sport.html', sport=sport,
+                           canonical=canonical, top=top, waiver=waiver,
+                           articles=articles, season=season)
+
+
+# ─── R3 Routes: Podcasts ─────────────────────────────────────────────────────
+
+@app.route('/podcasts')
+@app.route('/podcasts/')
+def podcasts_index():
+    sport_filter = request.args.get('sport', '').strip()
+    q = Podcast.query
+    if sport_filter:
+        q = q.filter_by(sport_slug=sport_filter)
+    podcasts = q.order_by(Podcast.id).all()
+    return render_template('podcasts.html', podcasts=podcasts,
+                           sport_filter=sport_filter)
+
+
+@app.route('/podcast/<slug>')
+def podcast_detail(slug):
+    pod = Podcast.query.filter_by(slug=slug).first_or_404()
+    related = (Podcast.query.filter_by(sport_slug=pod.sport_slug)
+               .filter(Podcast.id != pod.id).limit(4).all())
+    return render_template('podcast_detail.html', podcast=pod,
+                           related=related)
+
+
+# ─── R3 Routes: Conference-filtered standings ────────────────────────────────
+
+@app.route('/<sport_slug>/standings/<conf_slug>')
+def standings_by_conf(sport_slug, conf_slug):
+    sport_slug = _norm_sport(sport_slug)
+    sport = Sport.query.filter_by(slug=sport_slug).first_or_404()
+    # Map nice URL slugs to conference name fragments
+    conf_aliases = {
+        'east': 'East', 'eastern': 'East',
+        'west': 'West', 'western': 'West',
+        'al': 'American', 'american': 'American',
+        'nl': 'National', 'national': 'National',
+        'afc': 'AFC', 'nfc': 'NFC',
+        'epl': 'Premier', 'premier-league': 'Premier',
+    }
+    target = conf_aliases.get(conf_slug.lower(), conf_slug)
+    conf = (Conference.query.filter_by(sport_slug=sport_slug)
+            .filter(Conference.name.ilike(f'%{target}%')).first())
+    if not conf:
+        abort(404)
+    divs = Division.query.filter_by(conference_id=conf.id).all()
+    divisions_data = []
+    if divs:
+        for d in divs:
+            teams = (Team.query.filter_by(division_id=d.id)
+                     .order_by(Team.standing_rank).all())
+            divisions_data.append({'division': d, 'teams': teams})
+    else:
+        teams = (Team.query.filter_by(conference_id=conf.id)
+                 .order_by(Team.standing_rank).all())
+        divisions_data.append({'division': None, 'teams': teams})
+    all_teams = [t for d in divisions_data for t in d['teams']]
+    return render_template('standings_conf.html', sport=sport, conf=conf,
+                           divisions_data=divisions_data,
+                           all_teams=all_teams, conf_slug=conf_slug)
+
+
+# ─── R3 Routes: Live scores alias ────────────────────────────────────────────
+
+@app.route('/<sport_slug>/live')
+@app.route('/<sport_slug>/live-scores')
+def sport_live(sport_slug):
+    sport_slug = _norm_sport(sport_slug)
+    sport = Sport.query.filter_by(slug=sport_slug).first_or_404()
+    # 'Live' on a date-pinned mirror = games scheduled for today + the most
+    # recent finals (so the page is never empty).
+    today = mirror_today().strftime('%Y-%m-%d')
+    today_games = (Game.query.filter_by(sport_slug=sport_slug)
+                   .filter(Game.date == today).all())
+    upcoming = get_upcoming_games(sport_slug, 8)
+    recent = get_recent_scores(sport_slug, 8)
+    return render_template('live_scores.html', sport=sport,
+                           today_games=today_games,
+                           upcoming=upcoming, recent=recent)
 
 
 # ─── Seed Data ────────────────────────────────────────────────────────────────

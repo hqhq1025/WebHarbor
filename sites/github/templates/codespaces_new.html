@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block title %}Create codespace · {{ repo.full_name }}{% endblock %}
+{% block content %}
+<div class="codespaces-new-page">
+  <h1>Create a codespace for {{ repo.full_name }}</h1>
+  <form class="codespaces-new-form">
+    <label>Branch
+      <select name="branch">
+        <option>{{ repo.default_branch or 'main' }}</option>
+        <option>develop</option>
+        <option>staging</option>
+      </select>
+    </label>
+    <label>Dev container configuration
+      <select><option>Default codespaces configuration</option></select>
+    </label>
+    <label>Region
+      <select><option>Automatic</option><option>US West</option><option>Europe West</option><option>Asia East</option></select>
+    </label>
+    <label>Machine type
+      <select>
+        <option>2-core · 4 GB RAM · 32 GB</option>
+        <option>4-core · 8 GB RAM · 32 GB</option>
+        <option>8-core · 16 GB RAM · 64 GB</option>
+      </select>
+    </label>
+    <button type="button" class="gh-btn gh-btn-primary">Create codespace</button>
+  </form>
+</div>
+{% endblock %}

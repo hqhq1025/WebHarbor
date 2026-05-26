@@ -11,6 +11,17 @@
 
   <div class="container plus-content">
 
+    <!-- R3: Level test entry point — Cambridge surfaces a placement test on
+         the Plus landing so learners can pick a level-appropriate quiz. -->
+    <section class="plus-section" id="level-test">
+      <h2 class="plus-section-title">&#x1F4CA; Find your English level</h2>
+      <p class="plus-section-desc">Take a Cambridge-style placement test to find your CEFR level (A1 to C2) and the right quizzes for you.</p>
+      <p>
+        <a href="{{ url_for('level_test') }}" class="btn-primary">Start the level test &raquo;</a>
+        <a href="{{ url_for('word_class_of_the_day') }}" class="btn-primary" style="margin-left:8px;">Word class of the day &raquo;</a>
+      </p>
+    </section>
+
     <!-- Image Quizzes -->
     <section class="plus-section" id="image-quizzes">
       <h2 class="plus-section-title">&#x1F5BC; Image Quizzes</h2>

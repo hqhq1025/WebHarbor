@@ -86,8 +86,19 @@
     </div>
 
     <div class="article-body">
-        {% for para in article.get_paragraphs() %}
+        {% set paragraphs = article.get_paragraphs() %}
+        {% set mid = (paragraphs|length // 2) if paragraphs|length > 2 else 0 %}
+        {% for para in paragraphs %}
         <p>{{ para }}</p>
+        {% if loop.index0 == mid and mid > 0 and article.hero_image %}
+        <figure class="article-inline-figure">
+            <img src="{{ article.hero_image }}" alt="{{ article.headline|e }}"
+                 onerror="this.parentElement.style.display='none'">
+            <figcaption>{{ article.subtitle[:200] if article.subtitle else article.headline }}
+                <span class="figure-credit">Photo: BBC News / Reuters</span>
+            </figcaption>
+        </figure>
+        {% endif %}
         {% endfor %}
     </div>
 
@@ -183,9 +194,22 @@
 </div>
 
 <aside>
+    <div class="side-block recommended">
+        <h3 class="side-title" style="border-left: 4px solid var(--bbc-red); padding-left: 8px;">Recommended</h3>
+        {% for art in more_articles[:5] %}
+        <a class="side-item" href="{{ url_for('article_detail', slug=art.slug) }}">
+            <div class="side-item-num">{{ loop.index }}</div>
+            <div>
+                <div class="side-item-title">{{ art.headline }}</div>
+                <div class="hero-side-meta">{{ art.category.name if art.category else 'News' }} · {{ art.published_date_str }}</div>
+            </div>
+        </a>
+        {% endfor %}
+    </div>
+
     <div class="side-block">
         <h3 class="side-title">More to read</h3>
-        {% for art in more_articles %}
+        {% for art in related[:5] %}
         <a class="side-item" href="{{ url_for('article_detail', slug=art.slug) }}">
             <div class="side-item-num">{{ loop.index }}</div>
             <div>

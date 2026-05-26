@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block title %}{{ run.workflow }} #{{ run.run_number }} · {{ repo.full_name }}{% endblock %}
+{% block content %}
+<div class="repo-header-bar">
+  <div class="repo-header-inner">
+    <div class="repo-breadcrumb">
+      <a href="/{{ repo.full_name.split('/')[0] }}" class="repo-breadcrumb-link">{{ repo.full_name.split('/')[0] }}</a>
+      <span class="repo-breadcrumb-sep">/</span>
+      <a href="/{{ repo.full_name }}" class="repo-breadcrumb-link repo-breadcrumb-repo">{{ repo.name }}</a>
+      <span class="repo-breadcrumb-sep">/</span>
+      <a href="/{{ repo.full_name }}/actions" class="repo-breadcrumb-link">Actions</a>
+    </div>
+  </div>
+</div>
+<div class="actions-run-detail-page">
+  <h1>{{ run.message }}</h1>
+  <div class="actions-run-meta-bar">
+    <span class="actions-run-status status-{{ run.status }}">{{ run.status|capitalize }}</span>
+    <span>#{{ run.run_number }} · {{ run.workflow }}</span>
+    <span>{{ run.branch }}@{{ run.sha_short }}</span>
+    <span>{{ run.started_at|time_ago }}</span>
+    <span>Duration {{ run.duration_human }}</span>
+  </div>
+  <h3>Jobs</h3>
+  <ul class="actions-jobs-list">
+    <li class="status-{{ run.status }}"><span class="actions-status-dot status-{{ run.status }}"></span> build (ubuntu-latest) · {{ run.duration_s // 2 }}s</li>
+    <li class="status-success"><span class="actions-status-dot status-success"></span> test (ubuntu-latest) · {{ run.duration_s // 3 }}s</li>
+    <li class="status-{{ run.status }}"><span class="actions-status-dot status-{{ run.status }}"></span> lint (ubuntu-latest) · {{ run.duration_s // 4 }}s</li>
+  </ul>
+</div>
+{% endblock %}

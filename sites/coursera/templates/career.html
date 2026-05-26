@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% block title %}{{ role_name }} Career Path | Coursera{% endblock %}
+{% block content %}
+<div class="career-page" style="background:#fff;">
+  <header class="career-hero" style="background:linear-gradient(135deg,#0056D2 0%,#0048B0 100%);color:#fff;padding:64px 0;">
+    <div class="container" style="max-width:1200px;margin:0 auto;padding:0 24px;">
+      <div style="font-size:13px;letter-spacing:.6px;text-transform:uppercase;opacity:.85;font-weight:700;">Career Path</div>
+      <h1 style="font-size:42px;margin:8px 0 12px;letter-spacing:-1px;">{{ role_name }}</h1>
+      <p style="font-size:18px;max-width:680px;opacity:.92;line-height:1.5;">{{ blurb }}</p>
+      <div style="margin-top:24px;display:flex;gap:10px;flex-wrap:wrap;">
+        {% for s in skills %}
+        <a class="skill-chip" href="{{ url_for('skill_detail', slug=s.lower().replace(' ', '-').replace('/', '-')) }}"
+           style="background:rgba(255,255,255,.18);color:#fff;padding:6px 14px;border-radius:999px;font-size:13px;font-weight:600;text-decoration:none;border:1px solid rgba(255,255,255,.35);">{{ s }}</a>
+        {% endfor %}
+      </div>
+    </div>
+  </header>
+
+  {% if cert %}
+  <section style="padding:36px 0;background:#F2F5FA;">
+    <div class="container" style="max-width:1200px;margin:0 auto;padding:0 24px;">
+      <h2 style="font-size:24px;margin:0 0 16px;">Recommended Career Certificate</h2>
+      <a href="{{ url_for('course_detail', slug=cert.slug) }}"
+         style="display:flex;gap:22px;background:#fff;border:1px solid #DAE1ED;border-radius:14px;padding:22px;text-decoration:none;color:inherit;align-items:center;">
+        <div style="width:120px;height:120px;border-radius:50%;background:conic-gradient(#0056D2 320deg,#E5F0FF 0);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+          <div style="width:96px;height:96px;border-radius:50%;background:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;">
+            <div style="font-size:22px;font-weight:800;color:#0056D2;">89%</div>
+            <div style="font-size:11px;color:#5B6780;font-weight:600;">match</div>
+          </div>
+        </div>
+        <div style="flex:1;">
+          <div style="color:#0056D2;font-size:12px;text-transform:uppercase;font-weight:800;letter-spacing:.5px;">Professional Certificate</div>
+          <div style="font-size:22px;font-weight:700;margin:4px 0;">{{ cert.title }}</div>
+          <div style="color:#5B6780;font-size:14px;">{{ cert.duration_text }} &middot; {{ '%.1f'|format(cert.rating or 0) }}&#9733; ({{ cert.review_count }} reviews) &middot; {{ cert.enrolled_display() }} enrolled</div>
+        </div>
+      </a>
+    </div>
+  </section>
+  {% endif %}
+
+  <section style="padding:36px 0;">
+    <div class="container" style="max-width:1200px;margin:0 auto;padding:0 24px;">
+      <h2 style="font-size:24px;margin:0 0 16px;">Courses to start with</h2>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:18px;">
+        {% for c in courses %}
+        <a href="{{ url_for('course_detail', slug=c.slug) }}"
+           style="display:block;background:#fff;border:1px solid #DAE1ED;border-radius:12px;padding:18px;text-decoration:none;color:inherit;transition:box-shadow .15s, transform .15s;">
+          <div style="font-size:11px;color:#0056D2;font-weight:800;text-transform:uppercase;letter-spacing:.5px;">{{ c.course_type }}</div>
+          <h3 style="font-size:16px;margin:6px 0 8px;line-height:1.3;">{{ c.title }}</h3>
+          <div style="font-size:13px;color:#5B6780;">{{ c.partner.short_name if c.partner else '' }} &middot; {{ c.level }}</div>
+          <div style="margin-top:10px;font-size:13px;color:#5B6780;"><span style="color:#DD7B0F;font-weight:700;">{{ '%.1f'|format(c.rating or 0) }}&#9733;</span> &middot; {{ c.enrolled_display() }} enrolled</div>
+        </a>
+        {% endfor %}
+      </div>
+    </div>
+  </section>
+</div>
+{% endblock %}

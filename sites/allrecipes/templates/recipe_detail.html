@@ -180,6 +180,52 @@
         </div>
         {% endfor %}
     </div>
+
+    <!-- R3: FDA-style nutrition label -->
+    <div class="nutrition-label" style="max-width:300px;margin:24px 0;border:2px solid #222;padding:14px 16px;background:#fff;font-family:'Helvetica Neue',Helvetica,Arial,sans-serif">
+        <div style="font-size:1.8rem;font-weight:800;line-height:1;border-bottom:8px solid #222;padding-bottom:4px">Nutrition Facts</div>
+        <div style="font-size:0.8rem;margin-top:4px">Per serving &middot; serves {{ recipe.servings or '4' }}</div>
+        <div style="border-bottom:4px solid #222;margin-top:6px;padding-top:6px;display:flex;justify-content:space-between;align-items:baseline">
+            <span style="font-size:0.95rem;font-weight:700">Calories</span>
+            <span style="font-size:1.6rem;font-weight:800">{{ recipe.calories or nutrition.get('Calories', '-') }}</span>
+        </div>
+        <div style="text-align:right;font-size:0.7rem;font-weight:700;margin-top:2px">% Daily Value*</div>
+        {% if nutrition.get('Fat') %}
+        <div style="display:flex;justify-content:space-between;border-bottom:1px solid #ccc;padding:4px 0;font-size:0.85rem"><span><strong>Total Fat</strong> {{ nutrition.get('Fat') }}</span><span><strong>-</strong></span></div>
+        {% endif %}
+        {% if nutrition.get('Carbs') %}
+        <div style="display:flex;justify-content:space-between;border-bottom:1px solid #ccc;padding:4px 0;font-size:0.85rem"><span><strong>Total Carbs</strong> {{ nutrition.get('Carbs') }}</span><span><strong>-</strong></span></div>
+        {% endif %}
+        {% if nutrition.get('Fiber') %}
+        <div style="display:flex;justify-content:space-between;border-bottom:1px solid #ccc;padding:4px 0;font-size:0.8rem;padding-left:14px"><span>Dietary Fiber {{ nutrition.get('Fiber') }}</span><span>-</span></div>
+        {% endif %}
+        {% if nutrition.get('Sugar') %}
+        <div style="display:flex;justify-content:space-between;border-bottom:1px solid #ccc;padding:4px 0;font-size:0.8rem;padding-left:14px"><span>Total Sugars {{ nutrition.get('Sugar') }}</span><span>-</span></div>
+        {% endif %}
+        {% if nutrition.get('Protein') %}
+        <div style="display:flex;justify-content:space-between;border-bottom:4px solid #222;padding:4px 0;font-size:0.85rem"><span><strong>Protein</strong> {{ nutrition.get('Protein') }}</span><span><strong>-</strong></span></div>
+        {% endif %}
+        {% if nutrition.get('Sodium') %}
+        <div style="display:flex;justify-content:space-between;border-bottom:1px solid #ccc;padding:4px 0;font-size:0.85rem"><span>Sodium {{ nutrition.get('Sodium') }}</span><span>-</span></div>
+        {% endif %}
+        <div style="font-size:0.65rem;color:#666;margin-top:6px">* Percent Daily Values based on a 2,000 calorie diet.</div>
+    </div>
+
+    <!-- R3: dietary tag chips -->
+    {% set diet_tags = recipe.get_dietary_tags() %}
+    {% if diet_tags %}
+    <div class="dietary-chips" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px">
+        {% for t in diet_tags %}
+        {% if t in ['vegan','vegetarian','keto','paleo','low-carb','gluten-free','dairy-free','whole30','low-gi','pescatarian','high-protein'] %}
+        <a href="{{ url_for('diet_page', slug=t) }}" class="dietary-chip"
+           style="background:#e8f5e9;color:#2e7d32;font-size:0.78rem;padding:4px 12px;border-radius:14px;text-decoration:none;border:1px solid #a5d6a7">{{ t }}</a>
+        {% else %}
+        <span class="dietary-chip"
+           style="background:#e8f5e9;color:#2e7d32;font-size:0.78rem;padding:4px 12px;border-radius:14px;border:1px solid #a5d6a7">{{ t }}</span>
+        {% endif %}
+        {% endfor %}
+    </div>
+    {% endif %}
 </div>
 {% endif %}
 

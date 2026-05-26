@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% block title %}Contact Enterprise Sales — Hugging Face{% endblock %}
+
+{% block content %}
+<div class="container-wide page">
+    <nav class="docs-breadcrumb">
+        <a href="{{ url_for('index') }}">Home</a>
+        <span>/</span>
+        <a href="{{ url_for('enterprise') }}">Enterprise</a>
+        <span>/</span>
+        <span>Contact sales</span>
+    </nav>
+
+    <div class="contact-form-wrap">
+        <h1>Contact Enterprise Sales</h1>
+        <p class="muted">Tell us about your team and we'll get back within 1 business day. For technical support,
+            please use the <a href="{{ url_for('help_page') }}">Help Center</a> instead.</p>
+        <form method="POST" action="{{ url_for('enterprise_contact') }}">
+            <input type="hidden" name="csrf_token" value="">
+            <label for="full_name">Full name *</label>
+            <input id="full_name" name="full_name" type="text" required>
+
+            <label for="work_email">Work email *</label>
+            <input id="work_email" name="work_email" type="email" required>
+
+            <label for="company">Company</label>
+            <input id="company" name="company" type="text">
+
+            <label for="team_size">Team size</label>
+            <select id="team_size" name="team_size">
+                <option value="1-10">1–10</option>
+                <option value="11-50">11–50</option>
+                <option value="51-200">51–200</option>
+                <option value="201-1000">201–1,000</option>
+                <option value="1000+">1,000+</option>
+            </select>
+
+            <label for="region">Preferred deployment region</label>
+            <select id="region" name="region">
+                <option value="us-east-1">US East (N. Virginia)</option>
+                <option value="us-west-2">US West (Oregon)</option>
+                <option value="eu-west-1">EU West (Ireland)</option>
+                <option value="eu-central-1">EU Central (Frankfurt)</option>
+                <option value="ap-southeast-1">Asia Pacific (Singapore)</option>
+            </select>
+
+            <label for="use_case">Tell us about your use case</label>
+            <textarea id="use_case" name="use_case" rows="5" placeholder="What problem are you solving? Which models or modalities?"></textarea>
+
+            <button type="submit" class="btn btn-yellow btn-lg btn-block" style="margin-top:18px;">Send message</button>
+        </form>
+        <p class="muted" style="text-align:center;font-size:12px;margin-top:14px;">Or email <a href="mailto:sales@hf.co">sales@hf.co</a> · we typically reply within one business day.</p>
+    </div>
+</div>
+{% endblock %}

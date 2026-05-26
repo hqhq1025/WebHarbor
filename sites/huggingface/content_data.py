@@ -482,7 +482,267 @@ DAILY_PAPERS = [
         "related_models": ["openai/whisper-large-v3"],
         "related_datasets": ["mozilla-foundation/common_voice_17_0"],
     },
+    {
+        "arxiv_id": "2504.02810",
+        "title": "DPO-Bench: A Reproducible Suite for Preference Optimization",
+        "authors": "Argilla Research, HuggingFaceH4",
+        "published": "2026-04-05",
+        "upvotes": 132,
+        "abstract": (
+            "We release DPO-Bench, a fully reproducible evaluation suite for preference optimization "
+            "methods. The benchmark covers DPO, IPO, KTO, ORPO, SimPO and 14 derivatives, with frozen "
+            "reference policies, deterministic data splits and a fixed judge model."
+        ),
+        "related_models": ["HuggingFaceH4/zephyr-7b-story-dragon-wizard"],
+        "related_datasets": ["HuggingFaceH4/ultrachat_200k"],
+    },
+    {
+        "arxiv_id": "2504.02645",
+        "title": "Edge-Diffusion: Real-time Text-to-Image on Mobile GPUs",
+        "authors": "Stability AI Mobile",
+        "published": "2026-04-04",
+        "upvotes": 118,
+        "abstract": (
+            "Edge-Diffusion is a distilled rectified-flow transformer that reaches 0.6 sec/image on "
+            "an iPhone 15 Pro GPU at 512×512 — within 2.5 FID of SD3-medium on COCO."
+        ),
+        "related_models": ["stabilityai/stable-diffusion-3-medium-diffusers", "black-forest-labs/FLUX.1-schnell"],
+        "related_datasets": ["LAION/laion2B-en"],
+    },
+    {
+        "arxiv_id": "2504.02501",
+        "title": "Quantization Survival Guide: How Far Can You Push GGUF in 2026?",
+        "authors": "Unsloth AI, TheBloke",
+        "published": "2026-04-02",
+        "upvotes": 104,
+        "abstract": (
+            "A comprehensive evaluation of K-quant, I-matrix and AWQ recipes for the 2026 LLM landscape. "
+            "We measure perplexity, MMLU and JEAR drift across 24 base models and 9 quantization levels."
+        ),
+        "related_models": ["meta-llama/Llama-3.3-70B-Instruct", "Qwen/Qwen2.5-72B-Instruct"],
+        "related_datasets": [],
+    },
+    {
+        "arxiv_id": "2503.18804",
+        "title": "OLMo-2: A Truly Open Multitrillion-token LLM",
+        "authors": "Allen Institute for AI",
+        "published": "2026-03-28",
+        "upvotes": 162,
+        "abstract": (
+            "OLMo-2 ships a fully open release of every training-pipeline artifact: pretraining corpus, "
+            "data recipes, eval suites, optimizer states, and checkpoint diffs. 7B and 13B variants match "
+            "Llama-3 on 8 out of 10 reasoning tasks."
+        ),
+        "related_models": ["allenai/OLMo-2-1124-7B-Instruct"],
+        "related_datasets": ["allenai/dolma"],
+    },
+    {
+        "arxiv_id": "2503.18120",
+        "title": "BGE-M3 Multilingual Embeddings at Trillion Scale",
+        "authors": "BAAI Retrieval Group",
+        "published": "2026-03-22",
+        "upvotes": 89,
+        "abstract": (
+            "BGE-M3 unifies dense, sparse and multi-vector retrieval in a single 567M-parameter encoder. "
+            "MTEB-X covers 24 languages and 8 retrieval slices — state of the art on 19 of 24."
+        ),
+        "related_models": ["BAAI/bge-large-en-v1.5", "intfloat/multilingual-e5-large"],
+        "related_datasets": ["microsoft/ms_marco"],
+    },
+    {
+        "arxiv_id": "2503.17912",
+        "title": "Open-Reasoner: Distilling DeepSeek-R1 into Sub-7B Students",
+        "authors": "DeepSeek-AI, EleutherAI",
+        "published": "2026-03-18",
+        "upvotes": 144,
+        "abstract": (
+            "We release distilled checkpoints of DeepSeek-R1 at 1.5B, 3B and 7B sizes. The students retain "
+            "82% of the teacher's chain-of-thought accuracy on MATH while running 7-12× faster."
+        ),
+        "related_models": ["deepseek-ai/DeepSeek-R1-Distill-Qwen-32B", "deepseek-ai/DeepSeek-V3"],
+        "related_datasets": ["openai/gsm8k"],
+    },
+    {
+        "arxiv_id": "2503.17004",
+        "title": "Florence-3: A General-Purpose Vision Foundation Model",
+        "authors": "Microsoft Florence Team",
+        "published": "2026-03-12",
+        "upvotes": 121,
+        "abstract": (
+            "Florence-3 is a 3.7B vision-language model trained on 1.2B image-text pairs with a unified "
+            "prompt format spanning OCR, grounding, captioning, detection and chart QA."
+        ),
+        "related_models": ["microsoft/Florence-2-large", "google/paligemma-3b-mix-448"],
+        "related_datasets": ["coco"],
+    },
+    {
+        "arxiv_id": "2503.15800",
+        "title": "Long-RAG: Retrieval-Augmented Generation Beyond 1M Tokens",
+        "authors": "Hugging Face Research, DeepSeek, Anthropic",
+        "published": "2026-03-08",
+        "upvotes": 98,
+        "abstract": (
+            "Long-RAG combines hierarchical retrieval with positional re-ranking and exact-match anchors to "
+            "preserve precision over a 1M-token context window. We release retrieval indexes, prompts and "
+            "evals as open-source artifacts."
+        ),
+        "related_models": ["Qwen/Qwen2.5-72B-Instruct", "meta-llama/Llama-3.3-70B-Instruct"],
+        "related_datasets": ["HuggingFaceFW/fineweb"],
+    },
+    {
+        "arxiv_id": "2503.14502",
+        "title": "ZeroGPU at Scale: A Year of Free GPU for Everyone",
+        "authors": "Hugging Face Infra",
+        "published": "2026-03-04",
+        "upvotes": 87,
+        "abstract": (
+            "Operational lessons from running 1.4M weekly Spaces on a shared H200 fleet. We share the "
+            "scheduler design, fairness model and cost breakdown that made ZeroGPU economically viable."
+        ),
+        "related_models": [],
+        "related_datasets": [],
+    },
 ]
+
+
+# ---------------------------------------------------------------------------
+# Leaderboards — public benchmark rankings. Each leaderboard is a dict with
+# columns + rows (already sorted, rank 1 first).
+# ---------------------------------------------------------------------------
+LEADERBOARDS = {
+    "open-llm": {
+        "title": "Open LLM Leaderboard v2",
+        "emoji": "🦙",
+        "description": (
+            "Community evaluation of open-weight large language models on six reasoning, knowledge, "
+            "math and instruction-following benchmarks. Scores are averaged to a single overall metric."
+        ),
+        "tags": ["text-generation", "reasoning", "instruction-tuned"],
+        "columns": ["Rank", "Model", "Params", "Average", "MMLU-Pro", "GPQA", "MATH lvl-5", "MUSR", "IFEval"],
+        "rows": [
+            [1, "meta-llama/Llama-3.3-70B-Instruct",      "70B",  "47.82", "57.04", "16.78", "30.59", "21.81", "75.18"],
+            [2, "Qwen/Qwen2.5-72B-Instruct",              "72B",  "47.31", "55.07", "17.34", "33.10", "20.51", "73.18"],
+            [3, "deepseek-ai/DeepSeek-V3",                "671B", "46.95", "56.42", "18.81", "29.20", "18.40", "72.92"],
+            [4, "Qwen/Qwen2.5-32B-Instruct",              "32B",  "39.41", "47.27", "12.30", "31.93", "21.61", "63.95"],
+            [5, "google/gemma-2-27b-it",                  "27B",  "37.21", "44.93", "11.79", "13.50", "23.57", "78.05"],
+            [6, "tiiuae/Falcon3-10B-Instruct",            "10B",  "32.05", "37.99",  "9.71", "22.05", "11.49", "78.16"],
+            [7, "google/gemma-2-9b-it",                   "9B",   "30.47", "37.94",  "8.50", "11.85", "13.71", "80.40"],
+            [8, "meta-llama/Llama-3.2-3B-Instruct",       "3B",   "21.32", "26.06",  "1.91",  "6.34",  "9.43", "62.94"],
+            [9, "microsoft/Phi-3.5-mini-instruct",        "4B",   "21.04", "31.81",  "6.59", "12.92",  "9.65", "55.21"],
+           [10, "allenai/OLMo-2-1124-7B-Instruct",        "7B",   "20.92", "26.18",  "5.94", "10.41",  "9.40", "53.92"],
+        ],
+    },
+    "open-asr": {
+        "title": "Open ASR Leaderboard",
+        "emoji": "🎙️",
+        "description": (
+            "WER (lower is better) across 8 public speech-recognition test sets. Models are evaluated "
+            "with greedy decoding at 16 kHz mono audio. Average is computed across all 8 splits."
+        ),
+        "tags": ["automatic-speech-recognition", "audio", "benchmark"],
+        "columns": ["Rank", "Model", "Avg WER", "LibriSpeech-clean", "LibriSpeech-other", "TED-LIUM", "Common Voice", "Earnings-22"],
+        "rows": [
+            [1, "openai/whisper-large-v3-turbo-2026", "6.21",  "1.92",  "3.84",  "4.18", "10.42", "12.74"],
+            [2, "openai/whisper-large-v3",            "6.65",  "1.95",  "3.92",  "4.41", "11.07", "13.18"],
+            [3, "nvidia/parakeet-tdt-1.1b",           "6.93",  "1.69",  "3.55",  "4.08", "12.34", "14.12"],
+            [4, "nvidia/parakeet-ctc-1.1b-2026",      "7.04",  "1.74",  "3.61",  "4.21", "12.50", "13.95"],
+            [5, "facebook/seamless-m4t-v2-large-2026","7.81",  "2.18",  "4.45",  "5.07", "12.94", "14.62"],
+            [6, "openai/whisper-small",               "9.74",  "3.42",  "7.61",  "5.94", "14.20", "17.32"],
+        ],
+    },
+    "mteb": {
+        "title": "MTEB English Embedding Leaderboard",
+        "emoji": "🧬",
+        "description": (
+            "Massive Text Embedding Benchmark — 56 tasks covering retrieval, classification, clustering, "
+            "reranking, STS, summarization. Higher = better."
+        ),
+        "tags": ["feature-extraction", "embeddings", "retrieval"],
+        "columns": ["Rank", "Model", "Dim", "Avg", "Retrieval", "STS", "Classification"],
+        "rows": [
+            [1, "BAAI/bge-large-en-v1.5",                                   "1024", "67.83", "54.29", "85.43", "75.92"],
+            [2, "intfloat/multilingual-e5-large",                           "1024", "66.20", "52.71", "84.10", "75.18"],
+            [3, "sentence-transformers/all-MiniLM-L6-v2",                   "384",  "59.45", "41.93", "78.94", "63.20"],
+            [4, "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2", "384", "57.30", "39.50", "76.18", "62.10"],
+            [5, "FacebookAI/roberta-base",                                  "768",  "44.21", "28.74", "70.45", "58.34"],
+        ],
+    },
+    "text-to-image-arena": {
+        "title": "Text-to-Image Arena",
+        "emoji": "🎨",
+        "description": (
+            "Anonymous side-by-side voting on 1.2k prompts covering portrait, landscape, typography, "
+            "and concept art. Elo computed every 4 hours from community votes."
+        ),
+        "tags": ["text-to-image", "generative", "arena"],
+        "columns": ["Rank", "Model", "Elo", "Votes", "License"],
+        "rows": [
+            [1, "black-forest-labs/FLUX.1-dev",                          "1218", "84,217", "FLUX-1-dev (research)"],
+            [2, "black-forest-labs/FLUX.1-schnell",                      "1194", "78,403", "Apache-2.0"],
+            [3, "stabilityai/stable-diffusion-3-medium-diffusers",       "1147", "62,108", "Stability research"],
+            [4, "stabilityai/stable-cascade",                            "1095", "48,925", "Stability research"],
+            [5, "stabilityai/stable-diffusion-xl-base-1.0",              "1042", "92,418", "OpenRAIL-M"],
+        ],
+    },
+    "translation-bleu": {
+        "title": "Open Translation Leaderboard (FLORES-200 devtest)",
+        "emoji": "🌐",
+        "description": (
+            "BLEU on FLORES-200 devtest for selected high-resource pairs. Each cell averages 5 generations "
+            "at beam=5. Higher = better."
+        ),
+        "tags": ["translation", "multilingual", "benchmark"],
+        "columns": ["Rank", "Model", "Avg BLEU", "en→zh", "en→fr", "en→de", "en→ja", "en→es"],
+        "rows": [
+            [1, "facebook/nllb-200-distilled-600M", "31.4", "29.8", "38.5", "32.1", "22.4", "34.2"],
+            [2, "Helsinki-NLP/opus-mt-en-zh",       "30.9", "30.4", "37.6", "31.8", "21.9", "33.0"],
+            [3, "Helsinki-NLP/opus-mt-en-fr-2026",  "30.2",  "—",   "38.4",  "—",    "—",   "—"  ],
+            [4, "Helsinki-NLP/opus-mt-en-de-2026",  "29.8",  "—",    "—",   "31.2",  "—",   "—"  ],
+            [5, "Helsinki-NLP/opus-mt-en-ja",       "22.4",  "—",    "—",    "—",   "22.4",  "—"  ],
+        ],
+    },
+    "vlm-mmmu": {
+        "title": "Open Vision-Language Leaderboard (MMMU)",
+        "emoji": "👁️",
+        "description": (
+            "MMMU benchmark — 11,500 multimodal college-level questions across 30 subjects. Models are "
+            "evaluated with the standard 5-shot CoT protocol."
+        ),
+        "tags": ["image-text-to-text", "multimodal", "benchmark"],
+        "columns": ["Rank", "Model", "Avg", "Art", "Business", "Health", "Humanities", "Science", "Tech"],
+        "rows": [
+            [1, "Qwen/Qwen2-VL-72B-Instruct",       "65.4", "68.2", "62.4", "70.9", "61.5", "60.2", "72.4"],
+            [2, "google/paligemma-3b-mix-448",      "47.8", "52.0", "44.1", "55.7", "44.3", "42.5", "50.3"],
+            [3, "microsoft/Florence-2-large",       "44.2", "48.6", "41.3", "52.4", "40.9", "39.1", "46.7"],
+        ],
+    },
+}
+
+
+# ---------------------------------------------------------------------------
+# Pricing plan deep pages — slug-keyed long copy.
+# ---------------------------------------------------------------------------
+PRICING_PLAN_DETAILS = {
+    "free":   {"slug": "free",   "name": "HF Hub",          "price": "Free",   "cadence": "forever",
+               "tagline": "For individuals, hobbyists, and open-source projects.",
+               "blurb": (
+                   "Get unlimited public models, datasets and Spaces. Push code via Git+LFS, share notebooks, "
+                   "deploy CPU Spaces and use the free-tier Inference API. Perfect for learning and open research."
+               )},
+    "pro":    {"slug": "pro",    "name": "PRO Account",     "price": "$9",     "cadence": "per month",
+               "tagline": "For power users who need more.",
+               "blurb": (
+                   "Everything in Free, plus priority ZeroGPU quota, private models and datasets, and higher "
+                   "Inference API rate limits. A PRO badge is added to your profile so the community can find you."
+               )},
+    "enterprise": {"slug": "enterprise", "name": "Enterprise Hub", "price": "$20", "cadence": "per user/month",
+               "tagline": "For teams and organizations shipping ML in production.",
+               "blurb": (
+                   "SSO/SAML, audit logs, SOC2 Type II compliance, dedicated regional inference endpoints, "
+                   "and a direct support line. Optional bring-your-own-cloud deployments on AWS, GCP or Azure."
+               )},
+}
+
 
 
 # ---------------------------------------------------------------------------

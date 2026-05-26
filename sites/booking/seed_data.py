@@ -654,6 +654,11 @@ for _row in _load_expansion('cities'):
         'lng': _lng,
         'properties_count': _pc,
         'average_rating': _ar,
+        # gallery_alias points at an existing image-map key so new cities
+        # without their own gallery can borrow nearby imagery. Looked up
+        # at seed time in app.seed_database().
+        '_gallery_alias': _gal_alias,
+        '_dest_hint': _dest_hint,
     }
 
 for _h in _load_expansion('hotels'):

@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% block title %}Word class of the day: {{ wc.title }}{% endblock %}
+{% block content %}
+<div class="container narrow">
+  <nav class="breadcrumb">
+    <a href="{{ url_for('index') }}">Cambridge Dictionary</a> &raquo;
+    <span>Word class of the day</span>
+  </nav>
+
+  <p class="meta-note">{{ target_date.strftime('%-d %B %Y') }}</p>
+  <h1 class="page-title">Today's word class: {{ wc.title }}</h1>
+  <p class="lead">{{ wc.description }}</p>
+
+  <h2 class="section-heading">Example words from the catalog</h2>
+  {% if samples %}
+    <ul class="word-sample-list">
+      {% for w in samples %}
+        <li class="word-sample-item">
+          <a href="{{ url_for('word_detail', slug=w.slug) }}" class="ws-head">
+            {{ w.headword }}
+          </a>
+          {% if w.level %}<span class="cefr cefr-{{ w.level|lower }}">{{ w.level }}</span>{% endif %}
+          {% if w.phonetic_uk %}<span class="ipa">{{ w.phonetic_uk }}</span>{% endif %}
+          <span class="muted"> &mdash; {{ w.guide_word }}</span>
+        </li>
+      {% endfor %}
+    </ul>
+  {% else %}
+    <p class="muted">No featured examples for this word class yet.</p>
+  {% endif %}
+
+  <h2 class="section-heading">Browse other word classes</h2>
+  <ul class="wc-other-list">
+    {% for c in all_classes %}
+      <li>
+        {% if c.slug == wc.slug %}
+          <strong>{{ c.title }}</strong> &mdash; today's class
+        {% else %}
+          <span>{{ c.title }}</span> &mdash; {{ c.description }}
+        {% endif %}
+      </li>
+    {% endfor %}
+  </ul>
+</div>
+{% endblock %}

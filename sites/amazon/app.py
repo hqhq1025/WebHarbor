@@ -731,6 +731,118 @@ def prime():
     return render_template('prime.html', products=products)
 
 
+# R3: Individual Prime benefit detail pages — let agents navigate to a specific
+# benefit (Prime Video / Music / Gaming / Reading / Delivery / Photos / Try Before You Buy).
+PRIME_BENEFITS = {
+    'video': {
+        'title': 'Prime Video',
+        'tagline': 'Thousands of movies and TV shows included with Prime.',
+        'icon': '📺',
+        'features': [
+            'Award-winning Amazon Originals',
+            'Watch on TV, phone, tablet, or computer',
+            'Download to watch offline',
+            'Add channels like HBO, SHOWTIME, STARZ for an extra cost',
+            '4K UHD and HDR titles available',
+        ],
+        'monthly': 'Included with Prime ($14.99/mo)',
+        'standalone': '$8.99/mo standalone',
+    },
+    'music': {
+        'title': 'Prime Music',
+        'tagline': '100 million songs and podcasts, ad-free, shuffled.',
+        'icon': '🎵',
+        'features': [
+            'Ad-free music streaming',
+            'Unlimited shuffle play of 100 million songs',
+            'Millions of podcast episodes',
+            'Upgrade to Music Unlimited for on-demand listening',
+            'Cast to Echo and Fire TV devices',
+        ],
+        'monthly': 'Included with Prime ($14.99/mo)',
+        'standalone': 'Music Unlimited: $10.99/mo standalone',
+    },
+    'gaming': {
+        'title': 'Prime Gaming',
+        'tagline': 'Free games every month + in-game content.',
+        'icon': '🎮',
+        'features': [
+            'Free PC games every month',
+            'Free in-game loot for popular titles',
+            'Free monthly Twitch channel subscription',
+            'Linked to your Amazon Prime account',
+        ],
+        'monthly': 'Included with Prime ($14.99/mo)',
+        'standalone': 'Not sold separately',
+    },
+    'reading': {
+        'title': 'Prime Reading',
+        'tagline': 'Rotating catalog of 1,000+ books, magazines, and comics.',
+        'icon': '📚',
+        'features': [
+            'Read on any Kindle device or app',
+            'Borrow up to 10 titles at a time',
+            'Magazine subscriptions included',
+            'Audible Channels available',
+            'No additional cost over Prime',
+        ],
+        'monthly': 'Included with Prime ($14.99/mo)',
+        'standalone': 'Kindle Unlimited: $11.99/mo standalone',
+    },
+    'delivery': {
+        'title': 'Prime Delivery',
+        'tagline': 'FREE One-Day, Two-Day, and Same-Day delivery on eligible items.',
+        'icon': '🚚',
+        'features': [
+            'FREE Two-Day Delivery on millions of items',
+            'FREE One-Day Delivery in eligible ZIP codes',
+            'FREE Same-Day Delivery on $25+ orders in 5,000+ cities',
+            'FREE No-Rush Shipping rewards',
+            'FREE Prime Wardrobe Try Before You Buy on eligible apparel',
+        ],
+        'monthly': 'Included with Prime ($14.99/mo)',
+        'standalone': 'Not sold separately',
+    },
+    'photos': {
+        'title': 'Prime Photos',
+        'tagline': 'Unlimited full-resolution photo storage + 5 GB video storage.',
+        'icon': '🖼️',
+        'features': [
+            'Unlimited full-resolution photo storage',
+            '5 GB free video storage',
+            'Share albums with up to 5 family members',
+            'Auto-save from phone or computer',
+            'Print photos and photo books directly from app',
+        ],
+        'monthly': 'Included with Prime ($14.99/mo)',
+        'standalone': 'Not sold separately',
+    },
+    'wardrobe': {
+        'title': 'Prime Try Before You Buy',
+        'tagline': 'Try eligible clothing, shoes, and accessories for 7 days before paying.',
+        'icon': '👕',
+        'features': [
+            'Try up to 6 items for 7 days',
+            'Pay only for what you keep',
+            'FREE returns via prepaid label',
+            'Includes thousands of brands across apparel and shoes',
+            'No styling fee',
+        ],
+        'monthly': 'Included with Prime ($14.99/mo)',
+        'standalone': 'Not sold separately',
+    },
+}
+
+
+@app.route('/prime/<benefit>')
+def prime_benefit(benefit):
+    b = PRIME_BENEFITS.get(benefit.lower())
+    if not b:
+        abort(404)
+    return render_template('prime_benefit.html', benefit=b, slug=benefit.lower(),
+                           all_benefits=PRIME_BENEFITS)
+
+
 @app.route('/customer-service')
 def customer_service():
     return render_template('customer_service.html')
@@ -743,7 +855,77 @@ def gift_cards():
 
 @app.route('/todays-deals')
 def todays_deals():
-    return redirect(url_for('deals'))
+    # R3: dedicated Today's Deals page with lightning deals, deal categories,
+    # and a "ends in" countdown — distinct from /deals (which is the full deals list).
+    from sqlalchemy.sql import func as _func
+    lightning = (Product.query.filter(Product.is_deal == True, Product.deal_discount >= 20)
+                 .order_by(_func.random()).limit(8).all())
+    deals_under_25 = (Product.query.filter(Product.is_deal == True, Product.price < 25)
+                      .order_by(_func.random()).limit(12).all())
+    deals_electronics = (Product.query.filter_by(is_deal=True, category_slug='electronics')
+                         .order_by(_func.random()).limit(8).all())
+    deals_home = (Product.query.filter_by(is_deal=True, category_slug='home')
+                  .order_by(_func.random()).limit(8).all())
+    deals_fashion = (Product.query.filter_by(is_deal=True, category_slug='fashion')
+                     .order_by(_func.random()).limit(8).all())
+    # Top-discount deals overall
+    biggest = (Product.query.filter(Product.is_deal == True)
+               .order_by(Product.deal_discount.desc()).limit(12).all())
+    return render_template('todays_deals.html',
+                           lightning=lightning, deals_under_25=deals_under_25,
+                           deals_electronics=deals_electronics,
+                           deals_home=deals_home, deals_fashion=deals_fashion,
+                           biggest=biggest)
+
+
+@app.route('/alexa-skills')
+def alexa_skills():
+    # R3: simple Alexa Skills directory page.
+    skills_list = [
+        {'name': 'Spotify',              'category': 'Music & Audio',    'rating': 4.4, 'reviews': 18420, 'desc': 'Stream your playlists from Spotify on any Alexa device.'},
+        {'name': 'Question of the Day',  'category': 'Education',        'rating': 4.6, 'reviews': 92350, 'desc': 'A new trivia question every day from Volley Inc.'},
+        {'name': 'TuneIn Live',          'category': 'News',             'rating': 4.3, 'reviews': 7245,  'desc': 'Live news, sports, music, and radio from around the world.'},
+        {'name': 'Jeopardy!',            'category': 'Games & Trivia',   'rating': 4.5, 'reviews': 36120, 'desc': 'Play the classic answer-and-question game with Alexa.'},
+        {'name': 'Sleep Sounds',         'category': 'Lifestyle',        'rating': 4.7, 'reviews': 142800,'desc': 'White noise, rain, ocean and more for restful sleep.'},
+        {'name': 'Headspace',            'category': 'Health & Fitness', 'rating': 4.6, 'reviews': 5340,  'desc': 'Guided meditation and mindfulness sessions.'},
+        {'name': 'NYT Briefing',         'category': 'News',             'rating': 4.2, 'reviews': 2890,  'desc': 'Latest news briefing from The New York Times.'},
+        {'name': 'My Chef',              'category': 'Food & Drink',     'rating': 4.4, 'reviews': 1820,  'desc': 'Step-by-step recipes you can cook hands-free.'},
+        {'name': 'Big Sky',              'category': 'Weather',          'rating': 4.5, 'reviews': 14250, 'desc': 'Hyper-local weather forecasts down to the minute.'},
+        {'name': 'Skyriver Pro',         'category': 'Smart Home',       'rating': 4.3, 'reviews': 980,   'desc': 'Control smart lighting, locks, and thermostats.'},
+        {'name': 'Animal Sounds',        'category': 'Kids',             'rating': 4.4, 'reviews': 51380, 'desc': 'Hear sounds of 100+ animals — great for kids.'},
+        {'name': 'Bedtime Story',        'category': 'Kids',             'rating': 4.7, 'reviews': 38240, 'desc': 'Original bedtime stories voiced by Alexa.'},
+        {'name': 'Ambient Coffee Shop',  'category': 'Lifestyle',        'rating': 4.5, 'reviews': 11820, 'desc': 'Background coffee shop ambience for working from home.'},
+        {'name': 'Daily Word',           'category': 'Education',        'rating': 4.6, 'reviews': 22480, 'desc': 'Learn a new vocabulary word every day.'},
+        {'name': 'Pizza Hut',            'category': 'Food & Drink',     'rating': 3.9, 'reviews': 4250,  'desc': 'Reorder your favorite Pizza Hut delivery hands-free.'},
+        {'name': 'Domino\'s',            'category': 'Food & Drink',     'rating': 4.0, 'reviews': 5800,  'desc': 'Place a Domino\'s order using your saved Easy Order.'},
+        {'name': 'Uber',                 'category': 'Travel & Transport','rating': 4.2,'reviews': 7920,  'desc': 'Request an Uber ride from your home or office.'},
+        {'name': 'Lyft',                 'category': 'Travel & Transport','rating': 4.1,'reviews': 6480,  'desc': 'Request a Lyft ride to any saved destination.'},
+        {'name': 'Capital One',          'category': 'Finance',          'rating': 3.8, 'reviews': 3120,  'desc': 'Check your account balance, recent transactions, and pay your bill.'},
+        {'name': 'Trivia Hero',          'category': 'Games & Trivia',   'rating': 4.5, 'reviews': 18920, 'desc': 'Quiz yourself on history, science, sports, and pop culture.'},
+    ]
+    category_filter = request.args.get('category', '').strip()
+    if category_filter:
+        skills_list = [s for s in skills_list if s['category'].lower() == category_filter.lower()]
+    sort_key = request.args.get('sort', '').strip().lower()
+    if sort_key in ('rating', 'top_rated'):
+        skills_list = sorted(skills_list, key=lambda s: (s['rating'], s['reviews']), reverse=True)
+    elif sort_key in ('reviews', 'most_reviewed'):
+        skills_list = sorted(skills_list, key=lambda s: s['reviews'], reverse=True)
+    elif sort_key in ('name', 'a_z'):
+        skills_list = sorted(skills_list, key=lambda s: s['name'].lower())
+    categories = sorted({s['category'] for s in [
+        {'category': 'Music & Audio'}, {'category': 'Education'}, {'category': 'News'},
+        {'category': 'Games & Trivia'}, {'category': 'Lifestyle'}, {'category': 'Health & Fitness'},
+        {'category': 'Food & Drink'}, {'category': 'Weather'}, {'category': 'Smart Home'},
+        {'category': 'Kids'}, {'category': 'Travel & Transport'}, {'category': 'Finance'},
+    ]})
+    return render_template('alexa_skills.html', skills=skills_list, categories=categories,
+                           current_category=category_filter, current_sort=sort_key)
+
+
+@app.route('/amazon-business')
+def amazon_business():
+    return render_template('amazon_business.html')
 
 
 @app.route('/registry')

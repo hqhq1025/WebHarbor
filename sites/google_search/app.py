@@ -1022,6 +1022,7 @@ def terms():
 
 
 @app.route('/settings', methods=['GET', 'POST'])
+@app.route('/preferences', methods=['GET', 'POST'])
 @login_required
 def settings():
     if request.method == 'POST':

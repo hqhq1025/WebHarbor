@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block title %}Forks · {{ repo.full_name }}{% endblock %}
+{% block content %}
+<div class="repo-header-bar">
+  <div class="repo-header-inner">
+    <div class="repo-breadcrumb">
+      <a href="/{{ repo.full_name.split('/')[0] }}" class="repo-breadcrumb-link">{{ repo.full_name.split('/')[0] }}</a>
+      <span class="repo-breadcrumb-sep">/</span>
+      <a href="/{{ repo.full_name }}" class="repo-breadcrumb-link repo-breadcrumb-repo">{{ repo.name }}</a>
+      <span class="repo-breadcrumb-sep">/</span>
+      <span>Forks</span>
+    </div>
+  </div>
+</div>
+<div class="network-page">
+  <h2>Members &amp; forks of {{ repo.full_name }}</h2>
+  <p class="muted">{{ repo.forks_count|number_format }} forks total · showing {{ forkers|length }} most recent.</p>
+  <ul class="network-list">
+    {% for f in forkers %}
+    <li class="network-item">
+      <img src="{{ avatar_for(f.user.username) }}" class="network-avatar" alt="" width="32" height="32">
+      <div class="network-info">
+        <a href="/{{ f.user.username }}" class="network-username">{{ f.user.username }}</a>
+        <div class="network-meta">
+          {{ f.ahead }} commits ahead, {{ f.behind }} behind · last pushed {{ f.pushed_at|time_ago }}
+        </div>
+      </div>
+    </li>
+    {% endfor %}
+  </ul>
+</div>
+{% endblock %}

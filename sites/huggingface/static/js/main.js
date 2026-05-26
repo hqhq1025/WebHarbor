@@ -140,3 +140,52 @@
         io.observe(el);
     });
 })();
+
+/* R3: code copy buttons — auto-attach to <pre> blocks inside .repo-readme, .docs, etc. */
+(function() {
+    function attachCopy(pre) {
+        if (pre.dataset.copyAttached) return;
+        var wrap = document.createElement('div');
+        wrap.className = 'code-copy-wrap';
+        pre.parentNode.insertBefore(wrap, pre);
+        wrap.appendChild(pre);
+        var btn = document.createElement('button');
+        btn.className = 'code-copy-btn';
+        btn.type = 'button';
+        btn.textContent = 'Copy';
+        btn.addEventListener('click', function() {
+            var text = pre.innerText;
+            try {
+                navigator.clipboard.writeText(text).then(function() {
+                    btn.textContent = 'Copied!';
+                    btn.classList.add('copied');
+                    setTimeout(function() {
+                        btn.textContent = 'Copy';
+                        btn.classList.remove('copied');
+                    }, 1400);
+                });
+            } catch (e) {
+                /* fallback for older browsers */
+                var ta = document.createElement('textarea');
+                ta.value = text;
+                document.body.appendChild(ta);
+                ta.select();
+                try { document.execCommand('copy'); } catch (_) {}
+                document.body.removeChild(ta);
+                btn.textContent = 'Copied!';
+                btn.classList.add('copied');
+                setTimeout(function() { btn.textContent = 'Copy'; btn.classList.remove('copied'); }, 1400);
+            }
+        });
+        wrap.appendChild(btn);
+        pre.dataset.copyAttached = '1';
+    }
+    function init() {
+        document.querySelectorAll('.repo-readme pre, .docs-body pre, .blog-body pre, .doc-content pre').forEach(attachCopy);
+    }
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', init);
+    } else {
+        init();
+    }
+})();

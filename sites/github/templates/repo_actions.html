@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+{% block title %}Actions · {{ repo.full_name }}{% endblock %}
+{% block content %}
+<div class="repo-header-bar">
+  <div class="repo-header-inner">
+    <div class="repo-breadcrumb">
+      <a href="/{{ repo.full_name.split('/')[0] }}" class="repo-breadcrumb-link">{{ repo.full_name.split('/')[0] }}</a>
+      <span class="repo-breadcrumb-sep">/</span>
+      <a href="/{{ repo.full_name }}" class="repo-breadcrumb-link repo-breadcrumb-repo">{{ repo.name }}</a>
+      <span class="repo-visibility-badge">Public</span>
+    </div>
+    <nav class="repo-tabs">
+      <a href="/{{ repo.full_name }}" class="repo-tab">Code</a>
+      <a href="/{{ repo.full_name }}/issues" class="repo-tab">Issues</a>
+      <a href="/{{ repo.full_name }}/pulls" class="repo-tab">Pull requests</a>
+      <a href="/{{ repo.full_name }}/actions" class="repo-tab repo-tab-active">Actions</a>
+      <a href="/{{ repo.full_name }}/security" class="repo-tab">Security</a>
+      <a href="/{{ repo.full_name }}/insights" class="repo-tab">Insights</a>
+    </nav>
+  </div>
+</div>
+
+<div class="actions-page">
+  <div class="actions-sidebar">
+    <h3 class="actions-side-title">Workflows</h3>
+    <ul class="actions-workflow-list">
+      <li><a href="/{{ repo.full_name }}/actions" class="{{ 'active' if not workflow_filter else '' }}">All workflows</a></li>
+      {% for wf in workflows %}
+      <li>
+        <a href="/{{ repo.full_name }}/actions?workflow={{ wf.name }}" class="{{ 'active' if workflow_filter == wf.name else '' }}">
+          <span class="actions-status-dot status-{{ wf.last_status }}"></span>
+          {{ wf.name }}
+        </a>
+      </li>
+      {% endfor %}
+    </ul>
+  </div>
+  <div class="actions-main">
+    <div class="actions-header">
+      <h2>{{ runs|length }} workflow runs</h2>
+      <input type="search" class="actions-filter-input" placeholder="Filter workflow runs" />
+    </div>
+    <ul class="actions-run-list">
+      {% for run in runs %}
+      <li class="actions-run-item status-{{ run.status }}">
+        <span class="actions-run-status status-{{ run.status }}">{{ run.status }}</span>
+        <div class="actions-run-detail">
+          <a href="/{{ repo.full_name }}/actions/runs/{{ run.run_number }}" class="actions-run-title">{{ run.message }}</a>
+          <div class="actions-run-meta">
+            <span class="actions-workflow-name">{{ run.workflow }}</span>
+            <span>#{{ run.run_number }}: {{ run.event }}</span>
+            <span>{{ run.branch }}@{{ run.sha_short }}</span>
+            <span>{{ run.started_at|time_ago }}</span>
+            <span>Duration: {{ run.duration_human }}</span>
+          </div>
+        </div>
+      </li>
+      {% endfor %}
+    </ul>
+  </div>
+</div>
+{% endblock %}

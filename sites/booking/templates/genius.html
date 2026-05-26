@@ -1,94 +1,60 @@
 {% extends "base.html" %}
 {% block title %}Genius loyalty programme — Booking{% endblock %}
 {% block content %}
-<section class="hero" style="padding:60px 20px 100px; background:linear-gradient(135deg,#003580 0%,#006ce4 100%);">
+<section class="hero" style="padding:60px 20px 80px; background:linear-gradient(135deg,#003580 0%,#006ce4 100%);">
     <div class="hero-inner">
-        <div style="display:inline-block;background:#febb02;color:#000;padding:6px 14px;border-radius:4px;font-weight:700;letter-spacing:0.5px;margin-bottom:16px;">GENIUS</div>
-        <h1>Travel rewards that never expire</h1>
-        <p>Join Genius and unlock discounts, free breakfasts, room upgrades and more — at over 390,000 properties worldwide.</p>
-        {% if not current_user.is_authenticated %}
-        <div style="margin-top:20px;">
-            <a href="{{ url_for('register') }}" class="btn-primary" style="display:inline-block;padding:12px 24px;">Join Genius — it's free</a>
-        </div>
-        {% else %}
-        <div style="margin-top:20px;color:#fff;">
-            <strong>You're a Genius member!</strong> Keep booking to level up.
-        </div>
-        {% endif %}
+        <h1 style="color:#fff;">Genius loyalty programme</h1>
+        <p style="color:#cfe1ff;">Unlock exclusive rewards and discounts when you book your stays with Booking.com.</p>
     </div>
 </section>
 
 <div class="container">
+    {% for tier in [1, 2, 3] %}
     <section class="section">
-        <div class="section-header">
-            <h2>How it works</h2>
-            <p>Three simple levels. Stay more, save more.</p>
+        <div class="section-header" style="display:flex;align-items:center;gap:12px;">
+            <span style="background:var(--bk-blue);color:#fff;border-radius:6px;padding:4px 10px;font-weight:700;font-size:14px;">Level {{ tier }}</span>
+            <div>
+                <h2>{% if tier == 1 %}Get started with Genius{% elif tier == 2 %}Travel more, unlock more{% else %}Top-tier traveller{% endif %}</h2>
+                <p>{% if tier == 1 %}Sign in to unlock Level 1 benefits.{% elif tier == 2 %}Complete 5 stays in 2 years.{% else %}Complete 15 stays in 2 years.{% endif %}</p>
+            </div>
         </div>
-        <div class="card-grid cards-3">
-            <div class="category-tile">
-                <div class="icon" style="font-size:44px;color:#006ce4;">&#9733;</div>
-                <h4>Genius Level 1</h4>
-                <p>10% discounts on selected stays worldwide. Available as soon as you create a free account.</p>
+        <div class="card-grid cards-3" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px;">
+            {% for r in rewards_by_tier.get(tier, []) %}
+            <div class="category-tile" style="padding:18px;border:2px solid var(--bk-blue-lighter);border-radius:10px;background:#fff;">
+                <div class="icon" style="font-size:28px;color:var(--bk-blue);">
+                    {% if r.icon == 'percent' %}&#37;{% elif r.icon == 'phone' %}&#128241;{% elif r.icon == 'breakfast' %}&#127858;{% elif r.icon == 'upgrade' %}&#11014;{% elif r.icon == 'clock' %}&#9203;{% else %}&#11088;{% endif %}
+                </div>
+                <h4 style="margin-top:8px;color:var(--bk-blue);">{{ r.name }}</h4>
+                <p style="font-size:13px;color:#444;margin-top:6px;">{{ r.description }}</p>
+                {% if r.discount_pct %}<div style="margin-top:8px;font-weight:700;color:var(--bk-green);">Save {{ r.discount_pct }}%</div>{% endif %}
             </div>
-            <div class="category-tile">
-                <div class="icon" style="font-size:44px;color:#006ce4;">&#9733;&#9733;</div>
-                <h4>Genius Level 2</h4>
-                <p>Unlock 15% discounts, free breakfasts, and room upgrades after 5 bookings in 2 years.</p>
-            </div>
-            <div class="category-tile">
-                <div class="icon" style="font-size:44px;color:#006ce4;">&#9733;&#9733;&#9733;</div>
-                <h4>Genius Level 3</h4>
-                <p>Enjoy 20% discounts and priority support after 15 bookings in 2 years. Our top tier.</p>
-            </div>
+            {% endfor %}
         </div>
     </section>
+    {% endfor %}
 
+    {% if sample_properties %}
     <section class="section">
         <div class="section-header">
-            <h2>Your Genius benefits</h2>
+            <h2>Featured Genius stays</h2>
+            <p>Selected discounts at Genius properties around the world.</p>
         </div>
         <div class="card-grid cards-4">
-            <div class="category-tile">
-                <div class="icon">&#128176;</div>
-                <h4>Discount on stays</h4>
-                <p>Save 10–20% at participating properties.</p>
-            </div>
-            <div class="category-tile">
-                <div class="icon">&#127859;</div>
-                <h4>Free breakfast</h4>
-                <p>Start the day right at Level 2+ properties.</p>
-            </div>
-            <div class="category-tile">
-                <div class="icon">&#127968;</div>
-                <h4>Room upgrades</h4>
-                <p>Get a better room, free, subject to availability.</p>
-            </div>
-            <div class="category-tile">
-                <div class="icon">&#128241;</div>
-                <h4>Priority support</h4>
-                <p>24/7 fast-track customer service for Level 3.</p>
-            </div>
+            {% for p in sample_properties %}
+            <a href="{{ url_for('property_detail', slug=p.slug) }}" class="city-card">
+                {% if p.image %}<img src="{{ p.image }}" alt="{{ p.name }}" class="city-card-img">{% endif %}
+                <div class="city-card-body">
+                    <h3>{{ p.name }}</h3>
+                    <span class="flag">{{ p.city.display }}</span>
+                    <div style="font-size:13px;margin-top:6px;">
+                        <span class="badge badge-genius">GENIUS &minus;{{ p.discount_percent }}%</span>
+                        <span style="float:right;font-weight:700;color:var(--bk-blue);">${{ '%.0f' % p.discounted_price }}</span>
+                    </div>
+                </div>
+            </a>
+            {% endfor %}
         </div>
     </section>
-
-    <section class="section" style="background:#f5f5f5;padding:40px;border-radius:8px;text-align:center;">
-        <h2 style="margin-bottom:16px;">Ready to unlock your rewards?</h2>
-        <p style="max-width:600px;margin:0 auto 24px;">Start saving on stays in 220+ countries. Genius deals are marked with a blue badge on every listing.</p>
-        <a href="{{ url_for('deals') }}" class="btn-primary" style="display:inline-block;padding:12px 24px;">Browse Genius deals</a>
-    </section>
-
-    <section class="section">
-        <div class="pd-section">
-            <h2>Frequently asked Genius questions</h2>
-            <h3>Is Genius really free?</h3>
-            <p>Yes. Create a free Booking.com account and you're automatically Level 1. There are no membership fees, ever.</p>
-            <h3>Do my Genius rewards expire?</h3>
-            <p>Your discounts do not expire as long as your account stays active. Level progression is based on bookings completed over a rolling 2-year period.</p>
-            <h3>Which properties accept Genius?</h3>
-            <p>Look for the blue Genius badge on property listings. Over 390,000 properties participate worldwide.</p>
-            <h3>Can I use Genius on any room type?</h3>
-            <p>Genius discounts apply to selected room types at participating properties. Eligibility is clearly marked at checkout.</p>
-        </div>
-    </section>
+    {% endif %}
 </div>
 {% endblock %}

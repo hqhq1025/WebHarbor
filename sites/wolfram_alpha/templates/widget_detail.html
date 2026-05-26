@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% block title %}{{ widget.name }} Widget — Wolfram|Alpha{% endblock %}
+
+{% block content %}
+<section class="wa-hero wa-hero--compact">
+  <div class="section-inner">
+    <p class="wa-hero-eyebrow">WIDGET: {{ widget.category|upper }}</p>
+    <h1 style="font-size:1.6rem;color:#1a1a1a">{{ widget.name }}</h1>
+    <p style="color:#545454;max-width:720px">{{ widget.description }}</p>
+  </div>
+</section>
+
+<div class="section-inner" style="padding:24px">
+  <div style="display:grid;grid-template-columns:1.4fr 1fr;gap:24px">
+    <div class="result-pod" style="border:1px solid #e3e3e3;border-radius:8px">
+      <div class="pod-title" style="background:#cc4400;color:#fff;padding:10px">Live widget</div>
+      <div class="pod-content" style="padding:18px">
+        <form action="/input" method="get" class="examples-search-form">
+          <label style="display:block;font-size:.9rem;color:#545454">Input:</label>
+          <input type="text" name="i" value="{{ widget.sample_input }}"
+                 class="examples-search-input">
+          <button type="submit" class="btn btn-primary" style="margin-top:8px">Compute</button>
+        </form>
+        <div style="margin-top:16px;padding:14px;background:#fff2e6;border-radius:6px">
+          <small style="color:#8a8a8a">Sample output:</small>
+          <pre style="margin-top:6px;color:#cc4400">{{ widget.sample_output }}</pre>
+        </div>
+      </div>
+    </div>
+
+    <aside class="sidebar-related" style="background:#f7f7f7;padding:18px;border-radius:8px">
+      <h3 class="sidebar-section-title">Embed code</h3>
+      <pre style="background:#fff;border:1px solid #e3e3e3;padding:10px;font-size:.78rem;overflow:auto"><code>&lt;iframe src="https://www.wolframalpha.com/widget/{{ widget.slug }}"
+        width="500" height="300"&gt;&lt;/iframe&gt;</code></pre>
+
+      <h3 class="sidebar-section-title" style="margin-top:18px">Related widgets</h3>
+      {% for w in widgets %}
+        {% if w.slug != widget.slug and w.category == widget.category %}
+        <a href="/widget/{{ w.slug }}" class="sidebar-related-item">
+          <span class="sidebar-related-icon" style="color:#cc4400">&#9737;</span>
+          <span>{{ w.name }}</span>
+        </a>
+        {% endif %}
+      {% endfor %}
+    </aside>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,101 @@
+{% extends "base.html" %}
+{% block title %}Your places - Google Maps{% endblock %}
+
+{% block body %}
+<div class="topbar">
+    <a href="{{ url_for('index') }}" class="brand">
+        <span class="material-icons-outlined" style="font-size:26px;color:#ea4335;">place</span>
+        <span>Google Maps</span>
+    </a>
+    <div class="nav-links">
+        <a href="{{ url_for('saved_page') }}" class="nav-link">Saved</a>
+        <a href="{{ url_for('lists_page') }}" class="nav-link">Lists</a>
+        <a href="{{ url_for('timeline') }}" class="nav-link">Timeline</a>
+        <a href="{{ url_for('your_places') }}" class="nav-link active">Your places</a>
+    </div>
+</div>
+
+<div class="page">
+    <h1>Your places</h1>
+    <p class="page-sub">All the maps activity for <strong>{{ current_user.email }}</strong> in one view.</p>
+
+    <div class="grid grid-2" style="margin-top:18px;">
+        <div class="card" style="padding:18px;">
+            <h3 style="margin-top:0;"><span class="material-icons-outlined" style="vertical-align:-5px; color:#4285f4;">bookmark</span> Saved lists</h3>
+            {% if lists %}
+            <ul style="list-style:none; padding:0; margin:0;">
+                {% for L in lists %}
+                <li style="padding:8px 0; border-bottom:1px solid #f1f3f4;">
+                    <a href="{{ url_for('list_detail', list_id=L.id) }}" style="text-decoration:none; color:inherit;">
+                        <span class="material-icons-outlined" style="color:{{ L.color or '#4285f4' }}; vertical-align:-5px;">{{ L.icon or 'bookmark' }}</span>
+                        <strong>{{ L.name }}</strong>
+                    </a>
+                    <span style="color:#80868b; font-size:12px; margin-left:6px;">{{ L.places.count() }} place{{ '' if L.places.count() == 1 else 's' }}</span>
+                    <a href="{{ url_for('list_share', list_id=L.id) }}" style="float:right; font-size:12px; color:#1a73e8;">Share</a>
+                </li>
+                {% endfor %}
+            </ul>
+            {% else %}
+            <p style="color:#5f6368;">No lists yet. <a href="{{ url_for('list_create') }}">Create one &rarr;</a></p>
+            {% endif %}
+        </div>
+
+        <div class="card" style="padding:18px;">
+            <h3 style="margin-top:0;"><span class="material-icons-outlined" style="vertical-align:-5px; color:#34a853;">photo_camera</span> Contributions</h3>
+            <p style="margin:6px 0;">You have uploaded <strong>{{ photo_count }}</strong> photo{{ '' if photo_count == 1 else 's' }}.</p>
+            <p style="margin:6px 0;">Latest reviews:</p>
+            {% if recent_reviews %}
+            <ul style="list-style:none; padding:0;">
+                {% for r in recent_reviews[:5] %}
+                <li style="padding:6px 0; border-top:1px solid #f1f3f4;">
+                    <span style="color:#fbbc04;">{{ '★' * r.rating }}{{ '☆' * (5 - r.rating) }}</span>
+                    {% if r.title %}<strong>{{ r.title }}</strong>{% endif %}
+                    <span style="color:#80868b; font-size:12px;">on place #{{ r.place_id }}</span>
+                </li>
+                {% endfor %}
+            </ul>
+            {% else %}
+            <p style="color:#80868b;">No reviews yet.</p>
+            {% endif %}
+        </div>
+
+        <div class="card" style="padding:18px;">
+            <h3 style="margin-top:0;"><span class="material-icons-outlined" style="vertical-align:-5px; color:#ea4335;">history</span> Recent visits</h3>
+            {% if recent_visits %}
+            <ul style="list-style:none; padding:0;">
+                {% for t in recent_visits %}
+                {% set p = none %}
+                <li style="padding:6px 0; border-top:1px solid #f1f3f4;">
+                    <span style="color:#5f6368; font-size:12px;">{{ t.visited_at.strftime('%Y-%m-%d %H:%M') if t.visited_at else '' }}</span>
+                    &middot; Place #{{ t.place_id }}
+                    {% if t.note %}<div style="color:#80868b; font-size:12px;">{{ t.note }}</div>{% endif %}
+                </li>
+                {% endfor %}
+            </ul>
+            {% else %}
+            <p style="color:#80868b;">No visits logged yet. Check in at a place to start your timeline.</p>
+            {% endif %}
+        </div>
+
+        <div class="card" style="padding:18px;">
+            <h3 style="margin-top:0;"><span class="material-icons-outlined" style="vertical-align:-5px; color:#fbbc04;">star</span> Saved places</h3>
+            {% if recent_saved %}
+            <ul style="list-style:none; padding:0;">
+                {% for sp in recent_saved %}
+                <li style="padding:6px 0; border-top:1px solid #f1f3f4;">
+                    {% if sp.place %}
+                    <a href="{{ url_for('place_detail', slug=sp.place.slug) }}" style="text-decoration:none; color:inherit;">
+                        <strong>{{ sp.place.name }}</strong>
+                    </a>
+                    <span style="color:#80868b; font-size:12px;">&middot; {{ sp.place.subtitle or '' }}</span>
+                    {% endif %}
+                </li>
+                {% endfor %}
+            </ul>
+            {% else %}
+            <p style="color:#80868b;">No saved places yet.</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

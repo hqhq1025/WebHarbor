@@ -1,0 +1,139 @@
+{% extends "base.html" %}
+{% block title %}Manage trip | Google Flights{% endblock %}
+
+{% block content %}
+<section class="section" style="max-width:1100px;margin:0 auto;padding:32px 24px;">
+  <a href="{{ url_for('trips') }}" style="color:#1a73e8;text-decoration:none;font-size:14px;">&larr; Back to trips</a>
+
+  <header style="margin:16px 0 24px;display:flex;justify-content:space-between;align-items:flex-end;flex-wrap:wrap;gap:16px;">
+    <div>
+      <div style="font-size:13px;color:#5f6368;font-weight:500;letter-spacing:.5px;">Manage trip</div>
+      <h1 style="font-family:'Google Sans',sans-serif;font-size:32px;font-weight:500;margin:6px 0 0;">
+        PNR {{ booking.pnr }}
+      </h1>
+      <div style="margin-top:6px;color:#5f6368;font-size:14px;">
+        Status: <span style="text-transform:capitalize;color:
+          {% if booking.status == 'cancelled' %}#d93025
+          {% elif booking.status == 'confirmed' %}#188038
+          {% elif booking.status == 'flown' %}#5f6368
+          {% else %}#f9a825{% endif %};font-weight:500;">{{ booking.status }}</span> -
+        Booked {{ booking.booked_at.strftime('%b %d, %Y') }}
+      </div>
+    </div>
+    <div style="text-align:right;">
+      <div style="font-size:13px;color:#5f6368;">Total</div>
+      <div style="font-size:24px;font-family:'Google Sans',sans-serif;font-weight:500;">${{ '%.2f'|format(booking.total_amount) }}</div>
+    </div>
+  </header>
+
+  <!-- Itinerary -->
+  <section style="background:#fff;border:1px solid #dadce0;border-radius:12px;padding:24px;margin-bottom:20px;">
+    <h2 style="font-size:18px;font-family:'Google Sans',sans-serif;font-weight:500;margin:0 0 16px;">Itinerary</h2>
+    {% for bi in booking.items %}
+      {% set fl = bi.flight %}
+      {% if fl %}
+      <div style="display:grid;grid-template-columns:60px 1fr auto;gap:16px;align-items:center;padding:14px 0;border-bottom:1px solid #f1f3f4;">
+        <div>
+          <img src="{{ fl.airline_logo }}" alt="{{ fl.airline }}" style="width:48px;height:48px;border-radius:8px;background:#f8f9fa;object-fit:contain;"
+               onerror="this.style.display='none'">
+        </div>
+        <div>
+          <div style="font-weight:500;color:#202124;">{{ fl.origin.city }} ({{ fl.origin.iata }}) - {{ fl.destination.city }} ({{ fl.destination.iata }})</div>
+          <div style="font-size:13px;color:#5f6368;margin-top:4px;">
+            {{ fl.airline }} {{ fl.flight_number }} - {{ fl.departure_date.strftime('%a %b %d') }} {{ fl.departure_time }} - {{ fl.arrival_time }} - {{ fl.duration_str }} - {{ fl.stops_str }}
+          </div>
+        </div>
+        <div style="text-align:right;font-weight:500;">
+          {{ bi.cabin_class }} - Seat {{ bi.seat or 'unassigned' }}
+        </div>
+      </div>
+      {% endif %}
+    {% endfor %}
+  </section>
+
+  <!-- Actions: change date, select seat, add bag, cancel -->
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">
+
+    <!-- Change date -->
+    <section style="background:#fff;border:1px solid #dadce0;border-radius:12px;padding:24px;">
+      <h2 style="font-size:16px;font-family:'Google Sans',sans-serif;font-weight:500;margin:0 0 12px;">
+        <span class="material-symbols-outlined" style="vertical-align:middle;color:#1a73e8;">calendar_month</span>
+        Change travel date
+      </h2>
+      <p style="color:#5f6368;font-size:13px;margin:0 0 14px;">Pick a new departure date. We'll find the lowest-priced flight on the same route.</p>
+      <form method="post" style="display:flex;gap:10px;align-items:center;">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <input type="hidden" name="action" value="change-date">
+        <input type="date" name="new_date" required
+               style="flex:1;padding:10px;border:1px solid #dadce0;border-radius:8px;font-size:14px;">
+        <button type="submit" style="background:#1a73e8;color:#fff;border:0;padding:10px 18px;border-radius:24px;font-size:14px;font-weight:500;cursor:pointer;">
+          Change date
+        </button>
+      </form>
+    </section>
+
+    <!-- Add checked bag -->
+    <section style="background:#fff;border:1px solid #dadce0;border-radius:12px;padding:24px;">
+      <h2 style="font-size:16px;font-family:'Google Sans',sans-serif;font-weight:500;margin:0 0 12px;">
+        <span class="material-symbols-outlined" style="vertical-align:middle;color:#1a73e8;">luggage</span>
+        Add checked bags
+      </h2>
+      <p style="color:#5f6368;font-size:13px;margin:0 0 14px;">$35 per additional checked bag. Maximum 2 extra.</p>
+      <form method="post" style="display:flex;gap:10px;align-items:center;">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <input type="hidden" name="action" value="add-bag">
+        <select name="bags" style="flex:1;padding:10px;border:1px solid #dadce0;border-radius:8px;font-size:14px;">
+          {% for i in [0, 1, 2] %}
+          <option value="{{ i }}">{{ i }} bag{% if i != 1 %}s{% endif %} ({{ '+$' ~ (i*35)|string }})</option>
+          {% endfor %}
+        </select>
+        <button type="submit" style="background:#1a73e8;color:#fff;border:0;padding:10px 18px;border-radius:24px;font-size:14px;font-weight:500;cursor:pointer;">
+          Add bags
+        </button>
+      </form>
+    </section>
+
+    <!-- Seat map -->
+    <section style="background:#fff;border:1px solid #dadce0;border-radius:12px;padding:24px;grid-column:span 2;">
+      <h2 style="font-size:16px;font-family:'Google Sans',sans-serif;font-weight:500;margin:0 0 12px;">
+        <span class="material-symbols-outlined" style="vertical-align:middle;color:#1a73e8;">event_seat</span>
+        Select seat
+      </h2>
+      <p style="color:#5f6368;font-size:13px;margin:0 0 14px;">Choose an available seat for all legs of this booking.</p>
+      <form method="post">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <input type="hidden" name="action" value="select-seat">
+        <div style="display:grid;grid-template-columns:repeat(6, 56px);gap:6px;margin-bottom:14px;">
+          {% for row in seat_rows %}
+            {% for letter in seat_letters %}
+              {% set seat = row|string ~ letter %}
+              <label style="display:block;text-align:center;border:1px solid #dadce0;border-radius:6px;padding:8px 0;cursor:pointer;font-size:13px;background:#f8f9fa;">
+                <input type="radio" name="seat" value="{{ seat }}" style="display:none;" onchange="this.closest('form').submit()">
+                {{ seat }}
+              </label>
+            {% endfor %}
+          {% endfor %}
+        </div>
+        <div style="font-size:12px;color:#5f6368;">Selecting a seat will auto-submit the form.</div>
+      </form>
+    </section>
+
+    <!-- Cancel trip -->
+    {% if booking.status == 'confirmed' %}
+    <section style="background:#fff;border:1px solid #dadce0;border-radius:12px;padding:24px;grid-column:span 2;border-color:#fce8e6;">
+      <h2 style="font-size:16px;font-family:'Google Sans',sans-serif;font-weight:500;margin:0 0 8px;color:#d93025;">
+        <span class="material-symbols-outlined" style="vertical-align:middle;">cancel</span>
+        Cancel trip
+      </h2>
+      <p style="color:#5f6368;font-size:13px;margin:0 0 14px;">Cancellation may incur a fee depending on fare class.</p>
+      <form method="post" action="{{ url_for('booking_cancel', booking_id=booking.id) }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button type="submit" style="background:#d93025;color:#fff;border:0;padding:10px 18px;border-radius:24px;font-size:14px;font-weight:500;cursor:pointer;">
+          Cancel this trip
+        </button>
+      </form>
+    </section>
+    {% endif %}
+  </div>
+</section>
+{% endblock %}

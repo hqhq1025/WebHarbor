@@ -1542,3 +1542,190 @@ h1, h2, h3, h4, h5, h6 { color: var(--text); font-weight: 700; line-height: 1.25
   .article-title { font-size: 26px; }
   .container { padding: 10px; }
 }
+
+/* ─── R3 polish: brand strip, betting, awards, draft, fantasy, podcasts ── */
+.brand-strip {
+  height: 4px;
+  background: linear-gradient(90deg,
+    var(--espn-red) 0%,
+    var(--espn-red-dark) 40%,
+    var(--espn-red) 100%);
+  position: sticky;
+  top: 0;
+  z-index: 99;
+}
+
+.nav-utility__link--bet {
+  background: var(--espn-red);
+  color: #fff !important;
+  padding: 2px 8px;
+  border-radius: 3px;
+  font-weight: 800;
+  letter-spacing: 0.4px;
+}
+.nav-utility__link--bet:hover { background: var(--espn-red-dark); text-decoration: none; }
+
+.bet-header__brand {
+  display: inline-block;
+  background: var(--espn-red);
+  color: #fff;
+  padding: 3px 10px;
+  font-weight: 900;
+  margin-right: 10px;
+  border-radius: 3px;
+}
+.bet-disclaimer {
+  font-size: 11px;
+  color: var(--text-muted);
+  margin: 12px 0 18px;
+  letter-spacing: 0.3px;
+}
+.bet-section { margin-bottom: 26px; }
+.section-heading-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+
+.filter-row {
+  display: flex;
+  gap: 6px;
+  margin: 10px 0 18px;
+  flex-wrap: wrap;
+}
+.filter-tab {
+  padding: 4px 12px;
+  border: 1px solid #d0d2d4;
+  border-radius: 3px;
+  font-size: 12px;
+  text-decoration: none;
+  color: var(--text);
+  background: #fff;
+}
+.filter-tab:hover { background: #f7f7f8; }
+.filter-tab.active { background: var(--espn-red); color: #fff; border-color: var(--espn-red); }
+
+.badge {
+  display: inline-block;
+  padding: 1px 7px;
+  font-size: 11px;
+  font-weight: 700;
+  border-radius: 2px;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+.badge-open { background: #e6f4ea; color: #186a3b; }
+.badge-closed { background: #f1f2f3; color: var(--text-muted); }
+
+.odds-table .stat-val { font-variant-numeric: tabular-nums; }
+
+/* Awards */
+.awards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 14px;
+}
+.award-card {
+  background: #fff;
+  border: 1px solid #e3e5e8;
+  border-top: 3px solid var(--espn-red);
+  padding: 14px 16px;
+  border-radius: 4px;
+}
+.award-card__header {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+.award-card__name { margin: 0; font-size: 16px; }
+.award-card__season { color: var(--text-muted); font-size: 12px; font-weight: 700; }
+.award-card__label {
+  display: block;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-muted);
+  margin-top: 4px;
+}
+.award-card__finalists ul { margin: 4px 0 0; padding-left: 16px; font-size: 13px; }
+.award-card__date { margin-top: 6px; font-size: 11px; }
+.muted { color: var(--text-muted); }
+
+.awards-hub-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 16px;
+}
+.award-section { background: #fff; padding: 14px; border: 1px solid #e3e5e8; border-radius: 3px; }
+.awards-list { margin: 0; padding-left: 18px; }
+.awards-list li { margin-bottom: 4px; }
+
+/* Draft */
+.draft-table .rank-col { white-space: nowrap; font-weight: 700; }
+.draft-table .stat-val { font-variant-numeric: tabular-nums; }
+
+/* Fantasy */
+.fantasy-sport-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 14px;
+  margin-bottom: 22px;
+}
+.fantasy-sport-card {
+  display: block;
+  background: #fff;
+  border: 1px solid #e3e5e8;
+  border-left: 4px solid var(--espn-red);
+  padding: 18px 20px;
+  text-decoration: none;
+  color: var(--text);
+  border-radius: 3px;
+}
+.fantasy-sport-card:hover { background: #fafafa; text-decoration: none; }
+.fantasy-sport-card h3 { margin: 0 0 6px; }
+.waiver-list { columns: 2; column-gap: 24px; font-size: 14px; }
+.waiver-list li { break-inside: avoid; margin-bottom: 4px; }
+.link-list { list-style: none; padding: 0; margin: 0; }
+.link-list li { padding: 6px 0; border-bottom: 1px solid #eee; }
+.link-list li:last-child { border-bottom: none; }
+
+/* Podcasts */
+.podcast-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 14px;
+}
+.podcast-card {
+  background: #fff;
+  border: 1px solid #e3e5e8;
+  padding: 14px 16px;
+  border-radius: 3px;
+}
+.podcast-card h3 { margin: 0 0 4px; font-size: 17px; }
+.podcast-card__latest { font-size: 13px; margin: 8px 0; }
+.podcast-list { padding-left: 18px; }
+.podcast-list li { margin-bottom: 6px; }
+
+/* Live scores */
+.live-dot {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  background: var(--espn-red);
+  border-radius: 50%;
+  margin-right: 6px;
+  animation: livePulse 1.4s infinite;
+}
+@keyframes livePulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+.score-card--live {
+  border-left: 3px solid var(--espn-red);
+}
+.upcoming-list { list-style: none; padding: 0; margin: 0; }
+
+/* Standings conf table */
+.standings-section { margin-bottom: 20px; }
+.standings-table { width: 100%; }

@@ -2065,3 +2065,40 @@ button { font: inherit; cursor: pointer; border: none; background: none; }
     .history-item { grid-template-columns: 1fr; }
     .history-item img { width: 100%; height: 180px; }
 }
+
+/* ============================================================
+   R3 — inline figures, Recommended sidebar, live-blog stream
+   ============================================================ */
+.article-inline-figure {
+    margin: 28px 0;
+    padding: 0;
+}
+.article-inline-figure img {
+    width: 100%;
+    height: auto;
+    max-height: 460px;
+    object-fit: cover;
+    display: block;
+    border-radius: 2px;
+}
+.article-inline-figure figcaption {
+    font-size: 14px;
+    color: var(--bbc-text-light);
+    padding: 10px 0 0;
+    line-height: 1.4;
+    border-bottom: 1px solid var(--bbc-line, #eee);
+    padding-bottom: 10px;
+}
+.article-inline-figure .figure-credit {
+    display: block;
+    font-size: 12px;
+    margin-top: 4px;
+    color: #999;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+.side-block.recommended {
+    border-top: 4px solid var(--bbc-red);
+    padding-top: 12px;
+    background: linear-gradient(180deg, rgba(187, 25, 25, 0.04) 0%, transparent 50%);
+}

@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+{% block title %}{{ saved_list.name }} (shared) - Google Maps{% endblock %}
+
+{% block body %}
+<div class="topbar">
+    <a href="{{ url_for('index') }}" class="brand">
+        <span class="material-icons-outlined" style="font-size:26px;color:#ea4335;">place</span>
+        <span>Google Maps</span>
+    </a>
+    <div class="nav-links">
+        <a href="{{ url_for('explore') }}" class="nav-link">Explore</a>
+        <a href="{{ url_for('index') }}" class="nav-link">Map</a>
+    </div>
+</div>
+
+<div class="page">
+    <div class="page-header" style="display:flex; align-items:center; gap:14px;">
+        <span class="material-icons-outlined" style="font-size:36px;color:{{ saved_list.color or '#4285f4' }};">{{ saved_list.icon or 'bookmark' }}</span>
+        <div>
+            <h1 style="margin:0;">{{ saved_list.name }}</h1>
+            <p class="page-sub" style="margin:4px 0 0;">{{ saved_list.description or 'Shared saved list' }} &middot; {{ places|length }} place{{ '' if places|length == 1 else 's' }}</p>
+        </div>
+    </div>
+
+    <div class="card" style="padding:14px; margin-top:18px; background:#e8f0fe; border-color:#4285f4;">
+        <strong>Public share link:</strong>
+        <div style="margin-top:6px; display:flex; gap:8px; align-items:center;">
+            <input type="text" value="{{ share_url }}" readonly
+                   style="flex:1; padding:8px 10px; border:1px solid #dadce0; border-radius:6px; font-family:monospace; font-size:13px;"
+                   onclick="this.select();">
+            <button class="btn btn-primary" onclick="navigator.clipboard.writeText('{{ share_url }}'); this.innerText='Copied!';" type="button">Copy</button>
+        </div>
+        <div style="margin-top:8px; font-size:13px; color:#5f6368;">Anyone with this link can view this list without signing in.</div>
+    </div>
+
+    <h2 style="margin-top:28px;">Places in this list</h2>
+    {% if places %}
+    <div class="grid grid-3" style="margin-top:14px;">
+        {% for p in places %}
+        <a class="card place-card" href="{{ url_for('place_detail', slug=p.slug) }}" style="text-decoration:none; color:inherit; padding:0; overflow:hidden; display:block;">
+            {% if p.hero_image %}
+            <div style="height:140px; background-size:cover; background-position:center; background-image:url('{{ p.hero_image }}');"></div>
+            {% endif %}
+            <div style="padding:14px;">
+                <strong>{{ p.name }}</strong>
+                <div style="font-size:13px; color:#5f6368; margin-top:4px;">{{ p.subtitle or p.subcategory or '' }}</div>
+                {% if p.rating %}
+                <div style="margin-top:8px; font-size:13px;">
+                    <span style="color:#fbbc04;">&#9733;</span> {{ '%.1f'|format(p.rating) }}
+                    <span style="color:#80868b;">({{ p.review_count or 0 }})</span>
+                </div>
+                {% endif %}
+            </div>
+        </a>
+        {% endfor %}
+    </div>
+    {% else %}
+    <p style="color:#5f6368;">No places in this list yet.</p>
+    {% endif %}
+</div>
+{% endblock %}

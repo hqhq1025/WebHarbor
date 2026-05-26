@@ -7,8 +7,22 @@
 <section class="hero-section">
     <div class="hero-inner">
         <div class="hero-content">
+            <div class="hero-eyebrow" style="text-transform:uppercase;letter-spacing:2px;font-size:0.75rem;color:#c62828;font-weight:700;margin-bottom:8px">Editor's Pick</div>
             <h1>{{ featured[0].title }}</h1>
+            <div class="hero-rating" style="display:flex;align-items:center;gap:8px;margin:8px 0 12px 0">
+                <div class="rating-stars">
+                    {% for i in range(5) %}
+                    <span class="star {% if i >= featured[0].avg_rating|round(0,'floor')|int %}empty{% endif %}" style="color:#f5a623">&#9733;</span>
+                    {% endfor %}
+                </div>
+                <span style="color:#666;font-size:0.85rem">{{ featured[0].avg_rating }} &middot; {{ featured[0].review_count }} reviews</span>
+            </div>
             <p>{{ featured[0].description[:160] }}...</p>
+            <div class="hero-meta" style="display:flex;gap:16px;margin:12px 0;font-size:0.85rem;color:#555">
+                <span><strong>Prep</strong> {{ featured[0].prep_time or '—' }}</span>
+                <span><strong>Cook</strong> {{ featured[0].cook_time or '—' }}</span>
+                <span><strong>{{ featured[0].calories or '—' }}</strong> cal</span>
+            </div>
             <a href="{{ url_for('recipe_detail', slug=featured[0].slug) }}" class="hero-cta">View Recipe</a>
         </div>
         <div class="hero-image">
@@ -18,6 +32,24 @@
     </div>
 </section>
 {% endif %}
+
+<!-- R3: diet/lifestyle strip -->
+<div class="diets-strip" style="background:#faf8f5;padding:18px 0;border-top:1px solid #f0e0d0;border-bottom:1px solid #f0e0d0">
+    <div class="container" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px">
+        <span style="font-weight:700;color:#c62828;font-size:0.9rem;text-transform:uppercase;letter-spacing:1px">Browse by Diet</span>
+        <div style="display:flex;flex-wrap:wrap;gap:8px">
+            <a href="{{ url_for('diet_page', slug='vegan') }}" style="padding:6px 12px;background:#fff;border:1px solid #c62828;border-radius:18px;color:#c62828;text-decoration:none;font-size:0.85rem">Vegan</a>
+            <a href="{{ url_for('diet_page', slug='vegetarian') }}" style="padding:6px 12px;background:#fff;border:1px solid #c62828;border-radius:18px;color:#c62828;text-decoration:none;font-size:0.85rem">Vegetarian</a>
+            <a href="{{ url_for('diet_page', slug='keto') }}" style="padding:6px 12px;background:#fff;border:1px solid #c62828;border-radius:18px;color:#c62828;text-decoration:none;font-size:0.85rem">Keto</a>
+            <a href="{{ url_for('diet_page', slug='paleo') }}" style="padding:6px 12px;background:#fff;border:1px solid #c62828;border-radius:18px;color:#c62828;text-decoration:none;font-size:0.85rem">Paleo</a>
+            <a href="{{ url_for('diet_page', slug='gluten-free') }}" style="padding:6px 12px;background:#fff;border:1px solid #c62828;border-radius:18px;color:#c62828;text-decoration:none;font-size:0.85rem">Gluten-Free</a>
+            <a href="{{ url_for('diet_page', slug='dairy-free') }}" style="padding:6px 12px;background:#fff;border:1px solid #c62828;border-radius:18px;color:#c62828;text-decoration:none;font-size:0.85rem">Dairy-Free</a>
+            <a href="{{ url_for('diet_page', slug='whole30') }}" style="padding:6px 12px;background:#fff;border:1px solid #c62828;border-radius:18px;color:#c62828;text-decoration:none;font-size:0.85rem">Whole30</a>
+            <a href="{{ url_for('diet_page', slug='low-gi') }}" style="padding:6px 12px;background:#fff;border:1px solid #c62828;border-radius:18px;color:#c62828;text-decoration:none;font-size:0.85rem">Low-GI</a>
+            <a href="{{ url_for('diets_hub') }}" style="padding:6px 12px;background:#c62828;border:1px solid #c62828;border-radius:18px;color:#fff;text-decoration:none;font-size:0.85rem">All Diets &rarr;</a>
+        </div>
+    </div>
+</div>
 
 <div class="container">
     <!-- Categories -->

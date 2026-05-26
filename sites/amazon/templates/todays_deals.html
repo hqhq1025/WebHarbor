@@ -1,0 +1,122 @@
+{% extends "base.html" %}
+{% block title %}Today's Deals - Amazon{% endblock %}
+
+{% block content %}
+<div style="background:#cc0c39;color:#fff;padding:24px 20px;text-align:center">
+    <h1 style="margin:0;font-size:36px;letter-spacing:-1px">Today's Deals</h1>
+    <p style="margin:8px 0 0;font-size:15px">Limited-time savings, refreshed throughout the day. Ends at midnight PT.</p>
+</div>
+
+<div style="max-width:1200px;margin:0 auto;padding:20px">
+
+    <!-- Lightning Deals -->
+    <section style="background:#fff;border-radius:6px;padding:24px;margin-bottom:24px">
+        <h2 style="margin:0 0 8px;display:flex;align-items:center;gap:10px">
+            <span style="background:#cc0c39;color:#fff;padding:4px 10px;border-radius:3px;font-size:14px">⚡ Lightning Deal</span>
+            <span>Up to 50% off — ends in 4h 22m</span>
+        </h2>
+        <p class="text-muted" style="margin:4px 0 16px">Limited inventory at deal price. Hurry while supplies last.</p>
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:16px">
+            {% for p in lightning %}
+            <a href="{{ url_for('product_detail', slug=p.slug) }}" class="row-card" style="text-decoration:none">
+                <img src="{{ p.image }}" alt="{{ p.name }}" onerror="this.style.display='none'">
+                <div style="background:#cc0c39;color:#fff;padding:2px 8px;border-radius:3px;font-size:12px;font-weight:700;display:inline-block">
+                    -{{ p.deal_discount }}% deal
+                </div>
+                <div class="row-card-brand">{{ p.brand }}</div>
+                <div class="row-card-title">{{ p.name }}</div>
+                <div class="row-card-price">
+                    <span class="price-symbol">$</span><span class="price-whole">{{ p.price|int }}</span>
+                    <small style="margin-left:6px;text-decoration:line-through;color:#777">${{ p.list_price|int }}</small>
+                </div>
+                <div style="background:#eee;height:6px;border-radius:3px;margin-top:6px;overflow:hidden">
+                    <div style="background:#cc0c39;height:100%;width:{{ (loop.index * 13) % 90 + 10 }}%"></div>
+                </div>
+                <div style="font-size:11px;color:#666;margin-top:4px">{{ (loop.index * 13) % 90 + 10 }}% claimed</div>
+            </a>
+            {% endfor %}
+        </div>
+    </section>
+
+    <!-- Biggest discounts -->
+    <section style="background:#fff;border-radius:6px;padding:24px;margin-bottom:24px">
+        <h2 style="margin:0 0 16px">Biggest discounts today</h2>
+        <div style="display:grid;grid-template-columns:repeat(6,1fr);gap:14px">
+            {% for p in biggest %}
+            <a href="{{ url_for('product_detail', slug=p.slug) }}" class="row-card" style="text-decoration:none">
+                <img src="{{ p.image }}" alt="{{ p.name }}" onerror="this.style.display='none'">
+                <div style="background:#cc0c39;color:#fff;padding:2px 8px;border-radius:3px;font-size:12px;font-weight:700;display:inline-block">-{{ p.deal_discount }}%</div>
+                <div class="row-card-title" style="font-size:12px;line-height:1.3">{{ p.name }}</div>
+                <div class="row-card-price"><span class="price-symbol">$</span><span class="price-whole">{{ p.price|int }}</span></div>
+            </a>
+            {% endfor %}
+        </div>
+    </section>
+
+    <!-- Under $25 -->
+    <section style="background:#fff;border-radius:6px;padding:24px;margin-bottom:24px">
+        <h2 style="margin:0 0 16px">Deals under $25</h2>
+        <div style="display:grid;grid-template-columns:repeat(6,1fr);gap:14px">
+            {% for p in deals_under_25 %}
+            <a href="{{ url_for('product_detail', slug=p.slug) }}" class="row-card" style="text-decoration:none">
+                <img src="{{ p.image }}" alt="{{ p.name }}" onerror="this.style.display='none'">
+                <div class="row-card-title" style="font-size:12px;line-height:1.3">{{ p.name }}</div>
+                <div class="row-card-price"><span class="price-symbol">$</span><span class="price-whole">{{ p.price|int }}</span><span class="price-decimal">.{{ '%02d'|format(((p.price - p.price|int)*100)|int) }}</span></div>
+            </a>
+            {% endfor %}
+        </div>
+    </section>
+
+    <!-- Electronics deals -->
+    <section style="background:#fff;border-radius:6px;padding:24px;margin-bottom:24px">
+        <h2 style="margin:0 0 16px">Deals in Electronics</h2>
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px">
+            {% for p in deals_electronics %}
+            <a href="{{ url_for('product_detail', slug=p.slug) }}" class="row-card" style="text-decoration:none">
+                <img src="{{ p.image }}" alt="{{ p.name }}" onerror="this.style.display='none'">
+                <div class="row-card-brand">{{ p.brand }}</div>
+                <div class="row-card-title">{{ p.name }}</div>
+                <div class="row-card-price"><span class="price-symbol">$</span><span class="price-whole">{{ p.price|int }}</span>
+                    {% if p.list_price > p.price %}<small style="margin-left:6px;text-decoration:line-through;color:#777">${{ p.list_price|int }}</small>{% endif %}
+                </div>
+                {% if p.deal_discount %}<div style="color:#cc0c39;font-weight:700;font-size:12px">Save {{ p.deal_discount }}%</div>{% endif %}
+            </a>
+            {% endfor %}
+        </div>
+    </section>
+
+    <!-- Home deals -->
+    <section style="background:#fff;border-radius:6px;padding:24px;margin-bottom:24px">
+        <h2 style="margin:0 0 16px">Deals in Home &amp; Kitchen</h2>
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px">
+            {% for p in deals_home %}
+            <a href="{{ url_for('product_detail', slug=p.slug) }}" class="row-card" style="text-decoration:none">
+                <img src="{{ p.image }}" alt="{{ p.name }}" onerror="this.style.display='none'">
+                <div class="row-card-brand">{{ p.brand }}</div>
+                <div class="row-card-title">{{ p.name }}</div>
+                <div class="row-card-price"><span class="price-symbol">$</span><span class="price-whole">{{ p.price|int }}</span></div>
+            </a>
+            {% endfor %}
+        </div>
+    </section>
+
+    <!-- Fashion deals -->
+    <section style="background:#fff;border-radius:6px;padding:24px;margin-bottom:24px">
+        <h2 style="margin:0 0 16px">Deals in Fashion</h2>
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px">
+            {% for p in deals_fashion %}
+            <a href="{{ url_for('product_detail', slug=p.slug) }}" class="row-card" style="text-decoration:none">
+                <img src="{{ p.image }}" alt="{{ p.name }}" onerror="this.style.display='none'">
+                <div class="row-card-brand">{{ p.brand }}</div>
+                <div class="row-card-title">{{ p.name }}</div>
+                <div class="row-card-price"><span class="price-symbol">$</span><span class="price-whole">{{ p.price|int }}</span></div>
+            </a>
+            {% endfor %}
+        </div>
+    </section>
+
+    <div style="text-align:center;margin-top:20px">
+        <a href="{{ url_for('deals') }}" class="btn btn-outline">See all deals →</a>
+    </div>
+</div>
+{% endblock %}

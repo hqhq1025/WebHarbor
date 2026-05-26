@@ -1,21 +1,33 @@
 {% extends "base.html" %}
 {% block title %}Car rentals — Booking{% endblock %}
 {% block content %}
-<section class="hero" style="padding:40px 20px 80px;">
+<section class="hero" style="padding:40px 20px 60px;">
     <div class="hero-inner">
         <h1>Car rentals for any kind of trip</h1>
-        <p>Great deals at over 60,000 locations worldwide.</p>
+        <p>{{ total }} cars available at over 60,000 locations worldwide.</p>
     </div>
-    <form class="search-bar" action="/searchresults.html" method="get">
+    <form class="search-bar" action="{{ url_for('car_rentals') }}" method="get">
         <div class="search-field">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/></svg>
-            <input type="text" name="ss" placeholder="Pick-up location">
+            <input type="text" name="city" value="{{ filters.city or '' }}" placeholder="Pick-up city">
         </div>
         <div class="search-field">
-            <input type="text" maxlength="10" inputmode="numeric" pattern="\d{4}-\d{2}-\d{2}" placeholder="Pick-up (YYYY-MM-DD)" autocomplete="off" data-datepicker="checkin">
+            <select name="class">
+                <option value="">Any class</option>
+                {% for c in ['Economy','Compact','Mid-size','SUV','Luxury','Convertible','Van/MPV','Electric'] %}
+                <option value="{{ c }}" {% if filters['class'] == c %}selected{% endif %}>{{ c }}</option>
+                {% endfor %}
+            </select>
         </div>
         <div class="search-field">
-            <input type="text" maxlength="10" inputmode="numeric" pattern="\d{4}-\d{2}-\d{2}" placeholder="Drop-off (YYYY-MM-DD)" autocomplete="off" data-datepicker="checkout">
+            <select name="transmission">
+                <option value="">Any transmission</option>
+                <option value="Automatic" {% if filters.transmission == 'Automatic' %}selected{% endif %}>Automatic</option>
+                <option value="Manual" {% if filters.transmission == 'Manual' %}selected{% endif %}>Manual</option>
+            </select>
+        </div>
+        <div class="search-field">
+            <input type="number" name="max_price" value="{{ filters.max_price or '' }}" placeholder="Max $ / day" min="0">
         </div>
         <button class="search-submit" type="submit">Search</button>
     </form>
@@ -24,11 +36,54 @@
 <div class="container">
     <section class="section">
         <div class="section-header">
+            <h2>{{ total }} cars available</h2>
+            <p>Page {{ page }} of {{ pages }}</p>
+        </div>
+        <div class="card-grid cars-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px;">
+            {% for car in cars %}
+            <div class="property-card" style="display:flex;flex-direction:column;padding:14px;background:#fff;border:1px solid var(--bk-border);border-radius:8px;">
+                <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+                    <div>
+                        <h3 style="font-size:16px;color:var(--bk-blue);margin-bottom:4px;">{{ car.brand }} &middot; {{ car.vehicle_class }}</h3>
+                        <p style="font-size:13px;color:#444;">{{ car.sample_model }} or similar</p>
+                    </div>
+                    <div class="rating-score">{{ car.rating }}</div>
+                </div>
+                <ul style="list-style:none;padding:8px 0;font-size:13px;color:#555;line-height:1.7;">
+                    <li>&#128205; {{ car.pickup_location }}</li>
+                    <li>&#128737; {{ car.seats }} seats &middot; {{ car.transmission }}</li>
+                    {% if car.unlimited_mileage %}<li>&#10004; Unlimited mileage</li>{% endif %}
+                    {% if car.free_cancellation %}<li style="color:var(--bk-green);">&#10004; Free cancellation</li>{% endif %}
+                </ul>
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-top:auto;padding-top:8px;border-top:1px solid var(--bk-border);">
+                    <div>
+                        <div style="font-size:11px;color:#888;">Per day</div>
+                        <div style="font-size:18px;font-weight:700;color:var(--bk-blue);">${{ '%.0f' % car.daily_price_usd }}</div>
+                    </div>
+                    <a href="{{ url_for('city_page', slug=car.city_display.lower().replace(' ', '-')) }}" class="btn-primary" style="padding:8px 14px;font-size:13px;">Reserve</a>
+                </div>
+            </div>
+            {% else %}
+            <p style="grid-column:1 / -1;padding:20px;color:#666;">No cars matched your filters.</p>
+            {% endfor %}
+        </div>
+
+        {% if pages > 1 %}
+        <div class="pagination" style="margin-top:20px;text-align:center;">
+            {% if page > 1 %}<a href="?page={{ page-1 }}{% if qs_without_page %}&{{ qs_without_page }}{% endif %}" class="btn-secondary">&laquo; Previous</a>{% endif %}
+            <span style="margin:0 12px;">Page {{ page }} of {{ pages }}</span>
+            {% if page < pages %}<a href="?page={{ page+1 }}{% if qs_without_page %}&{{ qs_without_page }}{% endif %}" class="btn-secondary">Next &raquo;</a>{% endif %}
+        </div>
+        {% endif %}
+    </section>
+
+    <section class="section">
+        <div class="section-header">
             <h2>Popular car rental destinations</h2>
         </div>
         <div class="card-grid cards-4">
             {% for c in cities[:8] %}
-            <a href="{{ url_for('city_page', slug=c.slug) }}" class="city-card">
+            <a href="{{ url_for('car_rentals', city=c.key) }}" class="city-card">
                 {% if c.hero_image %}
                 <img src="{{ c.hero_image }}" alt="{{ c.display }}" class="city-card-img"
                      onerror="this.style.background='linear-gradient(135deg,#003580,#006ce4)';this.alt=''">
@@ -36,7 +91,6 @@
                 <div class="city-card-body">
                     <h3>&#128663; {{ c.display }}</h3>
                     <span class="flag">{{ c.country }}</span>
-                    <div style="font-size:12px;margin-top:4px;">From <strong>${{ (25 + loop.index * 7) }}/day</strong></div>
                 </div>
             </a>
             {% endfor %}

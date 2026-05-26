@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+{% block title %}Reviews — {{ property.name }} — Booking{% endblock %}
+{% block content %}
+<div class="container">
+    <div style="margin:18px 0;">
+        <a href="{{ url_for('property_detail', slug=property.slug) }}" style="font-size:13px;color:var(--bk-blue);">&larr; Back to {{ property.name }}</a>
+    </div>
+
+    <section class="section">
+        <div class="section-header" style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:12px;">
+            <div>
+                <h2 style="margin:0;">Guest reviews for {{ property.name }}</h2>
+                <p style="margin:6px 0 0;">{{ property.city.display }} &middot; {{ total }} reviews &middot; Average rating {{ avg }}</p>
+            </div>
+            <div style="display:flex;align-items:center;gap:10px;">
+                <div class="rating-score" style="font-size:18px;padding:8px 12px;">{{ avg }}</div>
+                <div>
+                    <div style="font-weight:700;">{{ property.rating_label }}</div>
+                    <div style="font-size:11px;color:#666;">{{ property.review_count }} reviewers</div>
+                </div>
+            </div>
+        </div>
+
+        <form method="get" action="{{ url_for('property_reviews', slug=property.slug) }}" style="display:flex;gap:10px;margin:14px 0;align-items:center;flex-wrap:wrap;">
+            <label style="font-size:13px;color:#444;">Sort by</label>
+            <select name="sort" onchange="this.form.submit()" style="padding:6px 8px;border:1px solid #ddd;border-radius:4px;">
+                <option value="recent" {% if sort == 'recent' %}selected{% endif %}>Most recent</option>
+                <option value="top" {% if sort == 'top' %}selected{% endif %}>Highest rating</option>
+                <option value="low" {% if sort == 'low' %}selected{% endif %}>Lowest rating</option>
+            </select>
+            <label style="font-size:13px;color:#444;margin-left:10px;">Traveller type</label>
+            <select name="traveller" onchange="this.form.submit()" style="padding:6px 8px;border:1px solid #ddd;border-radius:4px;">
+                <option value="">All travellers</option>
+                {% for t in travellers %}
+                <option value="{{ t }}" {% if traveller == t %}selected{% endif %}>{{ t }}</option>
+                {% endfor %}
+            </select>
+        </form>
+
+        <div class="reviews-list" style="display:grid;grid-template-columns:1fr;gap:14px;">
+            {% for r in reviews %}
+            <div class="review-card" style="background:#fff;border:1px solid var(--bk-border);border-radius:8px;padding:16px;">
+                <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;">
+                    <div>
+                        <div style="font-weight:700;">{{ r.title }}</div>
+                        <div style="font-size:12px;color:#666;margin-top:4px;">
+                            {{ r.user.full_name }} &middot; {{ r.traveller_type or 'Traveller' }} &middot; {{ r.stay_length }} night{% if r.stay_length != 1 %}s{% endif %}
+                            &middot; <span style="color:#888;">{{ r.created_at.strftime('%b %Y') }}</span>
+                        </div>
+                    </div>
+                    <div class="rating-score">{{ r.rating }}</div>
+                </div>
+                {% if r.body_positive %}
+                <div style="margin-top:10px;font-size:13px;line-height:1.5;">
+                    <span style="color:var(--bk-green);font-weight:700;">&#10004; Liked:</span> {{ r.body_positive }}
+                </div>
+                {% endif %}
+                {% if r.body_negative %}
+                <div style="margin-top:6px;font-size:13px;line-height:1.5;">
+                    <span style="color:#a00;font-weight:700;">&minus; Disliked:</span> {{ r.body_negative }}
+                </div>
+                {% endif %}
+            </div>
+            {% else %}
+            <p style="padding:20px;color:#666;">No reviews matched your filters.</p>
+            {% endfor %}
+        </div>
+
+        {% if pages > 1 %}
+        <div class="pagination" style="margin-top:20px;text-align:center;">
+            {% if page > 1 %}<a href="{{ url_for('property_reviews', slug=property.slug, page=page-1, sort=sort, traveller=traveller) }}" class="btn-secondary">&laquo; Previous</a>{% endif %}
+            <span style="margin:0 12px;">Page {{ page }} of {{ pages }}</span>
+            {% if page < pages %}<a href="{{ url_for('property_reviews', slug=property.slug, page=page+1, sort=sort, traveller=traveller) }}" class="btn-secondary">Next &raquo;</a>{% endif %}
+        </div>
+        {% endif %}
+    </section>
+</div>
+{% endblock %}

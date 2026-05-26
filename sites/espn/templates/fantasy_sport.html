@@ -1,0 +1,89 @@
+{% extends "base.html" %}
+{% block title %}Fantasy {{ sport.name }} — Rankings &amp; Waiver{% endblock %}
+
+{% block content %}
+<div class="container">
+  <div class="clubhouse-header">
+    <span class="clubhouse-header__title">Fantasy {{ sport.name }}</span>
+  </div>
+  <div class="page-header">
+    <h1>Fantasy {{ sport.name }} — Top {{ top|length }} &amp; Waiver Targets</h1>
+    <p class="subtitle">Based on {{ season }} season fantasy points. Half-PPR for NFL, standard 9-cat for NBA.</p>
+  </div>
+
+  <div class="two-col-layout">
+    <div class="col-main">
+      <section class="section-block">
+        <h2 class="section-heading">Top Fantasy Players ({{ season }})</h2>
+        <table class="data-table fantasy-rank-table">
+          <thead>
+            <tr><th>Rank</th><th>Player</th><th>Pos</th><th>Team</th><th>Key Stat</th></tr>
+          </thead>
+          <tbody>
+            {% for player, stat in top %}
+            <tr>
+              <td class="rank-col">{{ loop.index }}</td>
+              <td><a href="/player/{{ sport.slug }}/{{ player.slug }}">{{ player.name }}</a></td>
+              <td>{{ player.position }}</td>
+              <td>
+                {% if player.team %}
+                <a href="/team/{{ sport.slug }}/{{ player.team.slug }}">{{ player.team.abbreviation }}</a>
+                {% endif %}
+              </td>
+              <td class="stat-val">
+                {% if canonical == 'nba' %}
+                {{ stat.points_per_game }} PPG · {{ stat.rebounds_per_game }} RPG · {{ stat.assists_per_game }} APG
+                {% elif canonical == 'nfl' %}
+                {{ stat.passing_yards or stat.rushing_yards or stat.receiving_yards or 0 }} yds
+                {% elif canonical == 'mlb' %}
+                {{ stat.home_runs or 0 }} HR · {{ stat.rbi or 0 }} RBI · {{ stat.batting_avg or 0 }} AVG
+                {% elif canonical == 'nhl' %}
+                {{ stat.goals or 0 }} G · {{ stat.hockey_assists or 0 }} A · {{ stat.hockey_points or 0 }} PTS
+                {% endif %}
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </section>
+
+      {% if waiver %}
+      <section class="section-block">
+        <h2 class="section-heading">Waiver Wire Watch</h2>
+        <ul class="waiver-list">
+          {% for player, stat in waiver %}
+          <li>
+            <a href="/player/{{ sport.slug }}/{{ player.slug }}">{{ player.name }}</a>
+            — {{ player.position }}{% if player.team %} · {{ player.team.abbreviation }}{% endif %}
+          </li>
+          {% endfor %}
+        </ul>
+      </section>
+      {% endif %}
+    </div>
+
+    <div class="col-side">
+      <section class="section-block">
+        <h2 class="section-heading">Fantasy Tools</h2>
+        <ul class="link-list">
+          <li><a href="/fantasy">Fantasy Home</a></li>
+          <li><a href="{{ sport.url_prefix }}stats">Full {{ sport.name }} Stat Leaders</a></li>
+          <li><a href="{{ sport.url_prefix }}injuries">Injury Report</a></li>
+          <li><a href="{{ sport.url_prefix }}schedule">{{ sport.name }} Schedule</a></li>
+        </ul>
+      </section>
+
+      {% if articles %}
+      <section class="section-block">
+        <h2 class="section-heading">Fantasy Reads</h2>
+        <ul class="headline-list">
+          {% for art in articles %}
+          <li class="headline-item"><a href="/story/{{ art.slug }}">{{ art.title }}</a></li>
+          {% endfor %}
+        </ul>
+      </section>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}

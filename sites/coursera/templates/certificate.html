@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block title %}Certificate Verification &middot; {{ course.title }} | Coursera{% endblock %}
+{% block content %}
+<div class="cert-page" style="background:#F2F5FA;min-height:80vh;padding:48px 0;">
+  <div class="container" style="max-width:780px;margin:0 auto;padding:0 24px;">
+    <div style="background:#fff;border:1px solid #DAE1ED;border-radius:18px;padding:48px;box-shadow:0 8px 24px rgba(15,17,20,.06);text-align:center;">
+      <div style="display:inline-flex;align-items:center;gap:8px;background:#E5F0FF;color:#0056D2;padding:6px 14px;border-radius:999px;font-size:12px;font-weight:800;letter-spacing:.5px;text-transform:uppercase;">
+        <span style="font-size:14px;">&#10003;</span> Verified Certificate
+      </div>
+
+      <h1 style="font-size:30px;margin:18px 0 6px;letter-spacing:-.5px;">{{ course.title }}</h1>
+      <p style="color:#5B6780;font-size:14px;margin:0 0 28px;">{{ course.course_type }} &middot; issued by {{ course.partner.name if course.partner else 'Coursera' }}</p>
+
+      <div style="margin:28px 0;padding:24px;background:#F2F5FA;border-radius:12px;">
+        <div style="font-size:12px;color:#5B6780;text-transform:uppercase;letter-spacing:.6px;font-weight:700;">Awarded to</div>
+        <div style="font-size:26px;font-weight:700;margin:6px 0;color:#0F1114;">{{ learner.name if learner else 'Coursera Learner' }}</div>
+        <div style="font-size:14px;color:#5B6780;">on {{ issued }}</div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;text-align:left;margin:24px 0;">
+        <div style="border:1px solid #DAE1ED;border-radius:10px;padding:14px;">
+          <div style="font-size:11px;color:#5B6780;text-transform:uppercase;letter-spacing:.5px;font-weight:700;">Verification code</div>
+          <div style="font-family:monospace;font-size:15px;color:#0056D2;font-weight:700;margin-top:4px;">{{ verify_code }}</div>
+        </div>
+        <div style="border:1px solid #DAE1ED;border-radius:10px;padding:14px;">
+          <div style="font-size:11px;color:#5B6780;text-transform:uppercase;letter-spacing:.5px;font-weight:700;">Course duration</div>
+          <div style="font-size:15px;color:#0F1114;font-weight:600;margin-top:4px;">{{ course.duration_text }}</div>
+        </div>
+      </div>
+
+      <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:28px;">
+        <a href="{{ url_for('course_detail', slug=course.slug) }}" style="background:#0056D2;color:#fff;padding:10px 22px;border-radius:8px;text-decoration:none;font-weight:600;">View course page</a>
+        <button onclick="navigator.clipboard&&navigator.clipboard.writeText('{{ verify_code }}')" style="background:#fff;color:#0056D2;border:1px solid #0056D2;padding:10px 22px;border-radius:8px;font-weight:600;cursor:pointer;">Copy verification code</button>
+        <a href="https://www.linkedin.com/sharing/share-offsite/?url={{ request.url|urlencode }}" target="_blank" rel="noopener" style="background:#0A66C2;color:#fff;padding:10px 22px;border-radius:8px;text-decoration:none;font-weight:600;">Share on LinkedIn</a>
+      </div>
+
+      <p style="margin-top:32px;font-size:12px;color:#5B6780;line-height:1.5;">This certificate has been verified against the Coursera registry. Coursera certificates are accredited by issuing partner organisations and may carry academic credit where indicated.</p>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -16,25 +16,41 @@
     {% else %}
       <div class="trips-list">
         {% for b in bookings %}
-          <a href="{{ url_for('booking_detail', booking_id=b.id) }}" class="trip-card status-{{ b.status }}">
-            <div class="trip-card-top">
-              <span class="trip-pnr">PNR {{ b.pnr }}</span>
-              <span class="trip-status">{{ b.status|capitalize }}</span>
+          <div class="trip-card status-{{ b.status }}" style="position:relative;">
+            <a href="{{ url_for('booking_detail', booking_id=b.id) }}" style="text-decoration:none;color:inherit;display:block;">
+              <div class="trip-card-top">
+                <span class="trip-pnr">PNR {{ b.pnr }}</span>
+                <span class="trip-status">{{ b.status|capitalize }}</span>
+              </div>
+              <div class="trip-card-mid">
+                {% set first_item = b.items.first() %}
+                {% if first_item and first_item.flight %}
+                  <strong>{{ first_item.flight.origin.city }}</strong>
+                  <span class="material-symbols-outlined">arrow_right_alt</span>
+                  <strong>{{ first_item.flight.destination.city }}</strong>
+                {% endif %}
+              </div>
+              <div class="trip-card-bot">
+                <span>{{ b.trip_type|capitalize }}</span>
+                <span>{{ '$%.2f'|format(b.total_amount) }}</span>
+                <span>Booked {{ b.booked_at.strftime('%b %d, %Y') }}</span>
+              </div>
+            </a>
+            <div style="display:flex;gap:8px;margin-top:10px;padding-top:10px;border-top:1px solid #f1f3f4;">
+              <a href="{{ url_for('trip_manage', booking_id=b.id) }}"
+                 style="font-size:13px;color:#1a73e8;text-decoration:none;font-weight:500;">
+                <span class="material-symbols-outlined" style="vertical-align:middle;font-size:18px;">tune</span>
+                Manage trip
+              </a>
+              <form method="post" action="{{ url_for('booking_rebook', booking_id=b.id) }}" style="display:inline;margin-left:auto;">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button type="submit" style="background:none;border:0;color:#1a73e8;font-size:13px;cursor:pointer;font-weight:500;">
+                  <span class="material-symbols-outlined" style="vertical-align:middle;font-size:18px;">replay</span>
+                  Rebook
+                </button>
+              </form>
             </div>
-            <div class="trip-card-mid">
-              {% set first_item = b.items.first() %}
-              {% if first_item and first_item.flight %}
-                <strong>{{ first_item.flight.origin.city }}</strong>
-                <span class="material-symbols-outlined">arrow_right_alt</span>
-                <strong>{{ first_item.flight.destination.city }}</strong>
-              {% endif %}
-            </div>
-            <div class="trip-card-bot">
-              <span>{{ b.trip_type|capitalize }}</span>
-              <span>{{ '$%.2f'|format(b.total_amount) }}</span>
-              <span>Booked {{ b.booked_at.strftime('%b %d, %Y') }}</span>
-            </div>
-          </a>
+          </div>
         {% endfor %}
       </div>
     {% endif %}

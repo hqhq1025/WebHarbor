@@ -1583,6 +1583,165 @@ def author_papers(name):
     return render_template("author.html", name=name, papers=papers)
 
 
+# -----------------------------------------------------------------------
+# R3 — extra arxiv-style sub-pages
+# -----------------------------------------------------------------------
+
+# Mapping of arxiv "group" codes (used in /find/grp_<group>) to the set of
+# primary archive codes that compose the group, matching the real
+# arxiv.org grouping.
+GROUP_TO_ARCHIVES = {
+    "cs": ["cs"],
+    "math": ["math", "math-ph"],
+    "physics": [
+        "physics", "astro-ph", "cond-mat", "gr-qc", "hep-ex", "hep-lat",
+        "hep-ph", "hep-th", "math-ph", "nlin", "nucl-ex", "nucl-th",
+        "quant-ph",
+    ],
+    "q-bio": ["q-bio"],
+    "q-fin": ["q-fin"],
+    "stat": ["stat"],
+    "eess": ["eess"],
+    "econ": ["econ"],
+}
+
+
+@app.route("/year/<int:year>")
+@app.route("/year/<int:year>/<code>")
+def year_index(year, code=None):
+    """Browse papers submitted in a given year, optionally filtered by archive.
+
+    Mirrors real arxiv.org /year/<archive>/<YY> style pages — useful for
+    timeline browsing and citation harvesting.
+    """
+    q = Paper.query.filter(Paper.submitted_year == year)
+    if code:
+        clauses = [
+            Paper.primary_subject_code == code,
+            Paper.primary_subject_code.like(f"{code}.%"),
+            Paper.primary_category_code == code,
+        ]
+        q = q.filter(or_(*clauses))
+    by_month = {}
+    for p in q.all():
+        by_month.setdefault(p.submitted_month or 0, []).append(p)
+    # Stable order: month asc, then arxiv_id desc inside
+    months = []
+    for mnum in sorted(by_month.keys()):
+        plist = sorted(by_month[mnum], key=lambda x: x.arxiv_id or "",
+                       reverse=True)
+        months.append({
+            "month_num": mnum,
+            "month_label": (datetime(year, mnum or 1, 1).strftime("%B")
+                            if mnum else "Unknown"),
+            "papers": plist[:60],   # cap so the page stays scannable
+            "total": len(plist),
+        })
+    total = sum(m["total"] for m in months)
+    return render_template(
+        "year.html",
+        year=year,
+        archive_code=code,
+        months=months,
+        total=total,
+    )
+
+
+@app.route("/catchup")
+@app.route("/catchup/<code>")
+def catchup(code=None):
+    """Catch-up listing: show papers from the last N days within a category.
+
+    Mirrors arxiv.org/catchup. The window is configurable via ?days=N
+    (defaults to 7). Picks "latest available" date as the anchor so the
+    page is meaningful even when the seed DB's most-recent paper isn't
+    today.
+    """
+    days = int(request.args.get("days", 7))
+    days = max(1, min(days, 60))
+    anchor_date = (db.session.query(func.max(Paper.submitted_date)).scalar()
+                   or "")
+    # Build "from" date string for filtering
+    try:
+        anchor = datetime.strptime(anchor_date, "%Y-%m-%d")
+    except Exception:
+        anchor = MIRROR_REFERENCE_DATE
+    from_dt = anchor - timedelta(days=days)
+    from_iso = from_dt.strftime("%Y-%m-%d")
+    q = Paper.query.filter(Paper.submitted_date >= from_iso)
+    if code:
+        clauses = [
+            Paper.primary_subject_code == code,
+            Paper.primary_subject_code.like(f"{code}.%"),
+            Paper.primary_category_code == code,
+        ]
+        q = q.filter(or_(*clauses))
+    q = q.order_by(Paper.submitted_date.desc(), Paper.arxiv_id.desc())
+    total = q.count()
+    page = max(1, int(request.args.get("page", 1)))
+    per_page = 25
+    papers = q.offset((page - 1) * per_page).limit(per_page).all()
+    return render_template(
+        "catchup.html",
+        days=days,
+        anchor_date=anchor_date,
+        from_iso=from_iso,
+        code=code,
+        papers=papers,
+        total=total,
+        page=page,
+        per_page=per_page,
+    )
+
+
+@app.route("/find/grp_<group>")
+def find_group(group):
+    """arxiv-style group landing: /find/grp_cs / grp_physics / grp_math ...
+
+    Lists archives under the requested group together with paper counts
+    so the agent can navigate by high-level grouping.
+    """
+    archives = GROUP_TO_ARCHIVES.get(group)
+    if not archives:
+        abort(404)
+    rows = []
+    for arch in archives:
+        cat = Category.query.filter_by(code=arch).first()
+        n = Paper.query.filter(
+            or_(
+                Paper.primary_subject_code == arch,
+                Paper.primary_subject_code.like(f"{arch}.%"),
+                Paper.primary_category_code == arch,
+            )
+        ).count()
+        rows.append({"code": arch, "name": cat.name if cat else arch,
+                     "count": n, "icon": cat.icon if cat else "📚"})
+    return render_template(
+        "find_group.html",
+        group=group,
+        rows=rows,
+        total=sum(r["count"] for r in rows),
+    )
+
+
+@app.route("/a/<path:name>/recent")
+def author_recent(name):
+    """Per-author RSS-style recent feed: /a/<author>/recent.
+
+    Mirrors arxiv's per-author author-listing convention. Sorted by
+    submission date descending so the most recent appears first.
+    """
+    rows = (Paper.query
+            .filter(Paper.authors_json.ilike(f'%{name}%'))
+            .order_by(
+                Paper.submitted_year.desc(),
+                Paper.submitted_month.desc(),
+                Paper.submitted_day.desc(),
+                Paper.arxiv_id.desc())
+            .limit(40).all())
+    return render_template("author_recent.html", name=name, papers=rows)
+
+
 # =======================================================================
 # ROUTES — AUTHENTICATION
 # =======================================================================
@@ -2528,6 +2687,48 @@ _COMMENT_TEMPLATES = [
     ("Sample efficiency", "The sample-efficiency claim in §7 looks promising. Have you measured the regret bound empirically?"),
     ("Excellent overview", "This paper now sits at the top of my reading list for new students entering the field. Concise yet thorough."),
     ("Energy/efficiency", "Would be valuable to report the energy cost of training. Camera-ready maybe?"),
+    # R3 — additional 40 templates so the comment seed has more variety
+    # before it starts wrapping around.
+    ("Theory vs practice", "The §3 bound is tight in theory but for n ~ 10^4 the constants dominate; the empirical regime is far from asymptotic."),
+    ("Choice of metric", "Reporting BLEU alone obscures the fluency drop reviewers flagged at NeurIPS '25. Consider chrF or a human eval."),
+    ("Latent space probe", "Did the authors run a linear probe on the learned representations? That would clarify whether the gains are from features or the head."),
+    ("Domain transfer", "We tried this on medical imaging and the gains shrink to ~0.6%. Domain-specific pretraining matters more than the architecture here."),
+    ("Hyperparameter sensitivity", "Section 6.2 calls the method 'robust' but the search range is narrow. A wider sweep would be more convincing."),
+    ("Distillation candidate", "This would make an excellent teacher for distillation — has anyone tried a smaller student variant?"),
+    ("Calibration concern", "ECE is not reported. The reliability diagram in our reproduction shows the model is over-confident on tail classes."),
+    ("Streaming setting", "Could the algorithm be adapted to a streaming regime? Many real workloads can't afford the full pass."),
+    ("Inductive bias", "It looks like the architectural choice in §4 encodes a strong inductive bias toward locality. Worth foregrounding."),
+    ("Loss landscape", "The Hessian eigenspectrum plot in Appendix D is gorgeous — would love to see this for the baseline too."),
+    ("Annotation quality", "How were the gold labels collected? Some borderline cases in Figure 4 look ambiguous."),
+    ("Pretraining cost", "The 4M GPU-hour pretraining budget makes replication hard. Could the authors release the checkpoint?"),
+    ("Stability question", "Training stability is mentioned in passing — what fraction of seeds diverged? That number matters for downstream users."),
+    ("Length bias", "Models in the family tend to favor longer outputs. Is the length-normalised metric in Table 2 a fair apples-to-apples comparison?"),
+    ("Adversarial robustness", "Have you evaluated against PGD-20 or AutoAttack? Clean accuracy alone is not the right gauge."),
+    ("Information-theoretic view", "Equation (12) is essentially a rate-distortion bound. A pointer to the Tishby line of work would help readers."),
+    ("Tokenizer matters", "Switching the tokenizer from BPE to unigram halved the gap in our hands. Worth an ablation."),
+    ("Inference latency", "End-to-end latency on T4 hardware would be useful — many readers don't have an A100 available."),
+    ("Privacy implications", "If the model memorises training data as Figure 9 suggests, the privacy implications need discussion."),
+    ("Open-vocabulary", "Section 5 hints at an open-vocabulary extension but doesn't fully follow through. Excited for a follow-up."),
+    ("Multi-task transfer", "We tried fine-tuning on three downstream tasks and only one transferred. The pretraining objective may be too narrow."),
+    ("Curriculum design", "The curriculum schedule in §3.5 looks ad-hoc. A principled annealing schedule might help reproducibility."),
+    ("Negative results", "Appreciate that the authors report the failure on the synthetic benchmark — too rare in this venue."),
+    ("Symbolic component", "Combining the neural network with the symbolic solver feels promising. Has anyone benchmarked against pure LLM tool use?"),
+    ("Pruning angle", "The sparsity pattern in Figure 7 suggests a magnitude-pruning baseline would be competitive."),
+    ("Long-context", "Does the method extend beyond the 8k context window? The attention pattern in Appendix C suggests so."),
+    ("Continual learning", "How does the model handle continual streams without catastrophic forgetting? §8 only addresses single-pass training."),
+    ("Multilingual evaluation", "English-only evaluation makes it hard to claim the result generalises. mC4 or FLORES would be welcome additions."),
+    ("Mechanistic interpretation", "The circuit analysis in §6 reminded me of the Anthropic 'IOI circuit' line. Worth a citation."),
+    ("Routing collapse", "We observed routing collapse with the same MoE configuration. Did the authors apply auxiliary load balancing?"),
+    ("Code quality", "The released repo is unusually clean — typed configs, frozen seeds, deterministic mode. Set the bar for the field."),
+    ("Annotation interface", "The interface used to collect annotations is shown in Appendix E. Is it open-sourced anywhere?"),
+    ("Fine-grained eval", "The aggregate score hides a 7-point regression on the hardest split. Worth reporting per-bucket numbers."),
+    ("Memory wall", "Once batch size > 64 the activation memory explodes. Gradient checkpointing should be mentioned for practitioners."),
+    ("Counterfactual probe", "The counterfactual examples in Table 4 are not very natural. Would synthetic edits via LLM rewriting be cleaner?"),
+    ("Long-tail performance", "Performance on the rare-class slice (Figure 10) is what I really care about. Could the authors report mean per-class accuracy?"),
+    ("Compute-equal comparison", "When normalised by FLOPs, baseline B nearly matches the proposed method. The headline gain is mostly extra compute."),
+    ("Annotation noise", "The reported label noise of 3% looks optimistic. We hand-audited 100 examples and saw closer to 9%."),
+    ("Encoder/decoder split", "Have you tried freezing the encoder and only fine-tuning the decoder? The §7 study is suggestive."),
+    ("Stochastic depth", "Stochastic depth at the values reported in Table 6 is unusual. A sweep would help readers transfer to other backbones."),
 ]
 
 
@@ -2569,7 +2770,7 @@ def seed_community_extras():
         Paper.query
         .filter(Paper.abstract != "")
         .order_by(Paper.arxiv_id)
-        .limit(2000)
+        .limit(3500)
         .all()
     )
     if not candidate_papers:
@@ -2578,21 +2779,26 @@ def seed_community_extras():
     import random as _r
     rng = _r.Random(20260601)
 
-    # Choose ~85 distinct papers; 1-3 comments each → ~120-140 comments total
-    n_papers = min(85, len(candidate_papers))
+    # R3 — wider coverage: ~250 distinct papers × ~2.2 comments avg
+    # → ~550 comments total. Plus reply-style chains (Re: prefix +
+    # @user mention) to make threads feel conversational.
+    n_papers = min(250, len(candidate_papers))
     target_papers = rng.sample(candidate_papers, n_papers)
 
     comment_idx = 0
     for paper in target_papers:
-        n_comments = rng.choices([1, 1, 1, 2, 2, 3], k=1)[0]
+        # 1-4 comments per paper, biased toward 1-2 (long tail of 3-4
+        # produces the visible threads).
+        n_comments = rng.choices([1, 1, 2, 2, 2, 3, 3, 4], k=1)[0]
         last_user_id = None
+        prev_user_name = None
+        prev_title = ""
         for ci in range(n_comments):
             tmpl = _COMMENT_TEMPLATES[comment_idx % len(_COMMENT_TEMPLATES)]
             title, body = tmpl
             # Avoid two consecutive comments from the same user on one paper
             avail = [u for u in commenter_pool if u.id != last_user_id] or commenter_pool
             user = rng.choice(avail)
-            last_user_id = user.id
             offset_days = _comment_offset_days(comment_idx)
             created_at = MIRROR_REFERENCE_DATE - timedelta(
                 days=offset_days, hours=(comment_idx * 13) % 24,
@@ -2603,46 +2809,57 @@ def seed_community_extras():
             title_words = [w for w in re.split(r"\W+", paper.title or "") if len(w) > 5]
             anchor = title_words[comment_idx % len(title_words)] if title_words else ""
             body_final = body
-            if anchor and ci == 0:
-                body_final = f"On '{anchor}': {body}"
+            title_final = title
+            # ci==0 → top-level comment anchored to paper keyword.
+            # ci>=1 → reply chain: "Re: <prev title>" + @prev_user mention.
+            if ci == 0:
+                if anchor:
+                    body_final = f"On '{anchor}': {body}"
+            else:
+                title_final = f"Re: {prev_title}" if prev_title else f"Re: comment"
+                body_final = f"@{prev_user_name} {body}"
             rating = rng.choice([0, 0, 0, 3, 4, 4, 5])
             db.session.add(Comment(
                 user_id=user.id,
                 paper_id=paper.id,
-                title=title,
+                title=title_final,
                 body=body_final,
                 rating=rating,
                 created_at=created_at,
             ))
+            last_user_id = user.id
+            prev_user_name = user.username
+            prev_title = title
             comment_idx += 1
     db.session.commit()
     n_comments_total = Comment.query.count()
     print(f"  [+] Seeded {n_comments_total} community comments on {n_papers} papers")
 
     # ------------------------------------------------------------------
-    # Extra library depth — bring library_items from ~29 to 60+.
-    # Each commenter gets 6-10 additional saves spread across folders so
-    # the /library view actually looks lived-in.
+    # R3 — library depth: bring library_items from 72 to ~225.
+    # Each commenter gets 22-32 additional saves spread across folders so
+    # the /library view feels lived-in and large enough to support
+    # find-by-folder / find-by-note tasks.
     # ------------------------------------------------------------------
     folder_choices_by_user = {
-        "alice_j": ["Reading List", "Research", "To Read", "NLP"],
-        "bob_c":   ["Reading List", "Favorites", "To Review", "Vision"],
-        "carol_d": ["Reading List", "ML Theory", "Diffusion", "Stats"],
-        "david_k": ["Reading List", "Quantum", "Physics", "Cross-domain"],
-        "demouser": ["Reading List", "Favorites", "To Read"],
+        "alice_j": ["Reading List", "Research", "To Read", "NLP", "Agents", "Survey"],
+        "bob_c":   ["Reading List", "Favorites", "To Review", "Vision", "3D", "Robotics"],
+        "carol_d": ["Reading List", "ML Theory", "Diffusion", "Stats", "Optimization"],
+        "david_k": ["Reading List", "Quantum", "Physics", "Cross-domain", "Hardware"],
+        "demouser": ["Reading List", "Favorites", "To Read", "Reference"],
     }
     # Skip papers users already have so the UniqueConstraint never fires.
     extra_added = 0
     for user in commenter_pool:
         folders = folder_choices_by_user.get(user.username, ["Reading List"])
         existing_pids = {li.paper_id for li in user.library_items}
-        # Take a deterministic page of papers from a user-specific offset to
-        # avoid all users saving the same first few rows.
-        offset = (user.id * 137) % max(1, len(candidate_papers) - 60)
-        picks = candidate_papers[offset:offset + 80]
+        # Pull a wider window per user so the picks don't overlap heavily.
+        window = 250
+        offset = (user.id * 421) % max(1, len(candidate_papers) - window)
+        picks = candidate_papers[offset:offset + window]
         rng2 = _r.Random(20260602 + user.id)
         rng2.shuffle(picks)
-        want = rng2.randint(6, 10)
+        want = rng2.randint(38, 50)
         added_for_user = 0
         for paper in picks:
             if added_for_user >= want:
@@ -2650,17 +2867,21 @@ def seed_community_extras():
             if paper.id in existing_pids:
                 continue
             folder = folders[added_for_user % len(folders)]
-            note_idx = (added_for_user + user.id) % 5
+            note_idx = (added_for_user + user.id) % 8
             note = [
                 "",
                 "Re-read for the lit review",
                 "Possible related work for current project",
                 "Mentioned at last week's reading group",
                 "Check the appendix for the proof technique",
+                "Recommended by advisor — high priority",
+                "Cited in the recent ICLR position paper",
+                "Useful for the §3 baseline",
             ][note_idx]
             added_at = MIRROR_REFERENCE_DATE - timedelta(
-                days=(added_for_user * 5 + user.id) % 60,
+                days=(added_for_user * 3 + user.id * 11) % 180,
                 hours=(added_for_user * 11) % 24,
+                minutes=(added_for_user * 13) % 60,
             )
             db.session.add(LibraryItem(
                 user_id=user.id,

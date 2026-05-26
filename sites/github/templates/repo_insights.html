@@ -1,0 +1,90 @@
+{% extends "base.html" %}
+{% block title %}Insights · {{ repo.full_name }}{% endblock %}
+{% block content %}
+<div class="repo-header-bar">
+  <div class="repo-header-inner">
+    <div class="repo-breadcrumb">
+      <a href="/{{ repo.full_name.split('/')[0] }}" class="repo-breadcrumb-link">{{ repo.full_name.split('/')[0] }}</a>
+      <span class="repo-breadcrumb-sep">/</span>
+      <a href="/{{ repo.full_name }}" class="repo-breadcrumb-link repo-breadcrumb-repo">{{ repo.name }}</a>
+    </div>
+    <nav class="repo-tabs">
+      <a href="/{{ repo.full_name }}" class="repo-tab">Code</a>
+      <a href="/{{ repo.full_name }}/issues" class="repo-tab">Issues</a>
+      <a href="/{{ repo.full_name }}/pulls" class="repo-tab">Pull requests</a>
+      <a href="/{{ repo.full_name }}/actions" class="repo-tab">Actions</a>
+      <a href="/{{ repo.full_name }}/security" class="repo-tab">Security</a>
+      <a href="/{{ repo.full_name }}/insights" class="repo-tab repo-tab-active">Insights</a>
+    </nav>
+  </div>
+</div>
+<div class="insights-page">
+  <aside class="insights-sidebar">
+    <h3>Insights</h3>
+    <ul>
+      <li><a href="/{{ repo.full_name }}/pulse" class="active">Pulse</a></li>
+      <li><a href="/{{ repo.full_name }}/graphs/contributors">Contributors</a></li>
+      <li><a href="/{{ repo.full_name }}/network">Network</a></li>
+      <li><a href="/{{ repo.full_name }}/forks">Forks</a></li>
+      <li><a href="/{{ repo.full_name }}/branches">Branches</a></li>
+      <li><a href="/{{ repo.full_name }}/tags">Tags</a></li>
+    </ul>
+  </aside>
+  <main class="insights-main">
+    <h2>Pulse for {{ repo.full_name }}</h2>
+    <div class="contrib-graph">
+      <h3>Contribution activity (52 weeks)</h3>
+      <svg width="728" height="60" class="contrib-svg" role="img" aria-label="Contribution graph">
+        {% for w in weeks %}
+          {% set lvl = (w // 3) if w < 12 else 4 %}
+          <rect x="{{ loop.index0 * 14 }}" y="0" width="12" height="40" class="contrib-cell contrib-l{{ lvl }}" />
+        {% endfor %}
+      </svg>
+    </div>
+    <div class="insights-summary">
+      <div class="insights-card">
+        <h3>{{ recent_pulls|length }}</h3>
+        <p>Active pull requests</p>
+      </div>
+      <div class="insights-card">
+        <h3>{{ recent_issues|length }}</h3>
+        <p>Active issues</p>
+      </div>
+      <div class="insights-card">
+        <h3>{{ commits|length }}</h3>
+        <p>Commits in window</p>
+      </div>
+      <div class="insights-card">
+        <h3>{{ repo.forks_count|number_format }}</h3>
+        <p>Forks</p>
+      </div>
+    </div>
+    <section>
+      <h3>Recent pull requests</h3>
+      <ul class="insights-list">
+        {% for p in recent_pulls %}
+        <li>
+          <a href="/{{ repo.full_name }}/issues/{{ p.number }}">#{{ p.number }} {{ p.title }}</a>
+          <span class="muted">{{ p.created_at|time_ago }}</span>
+        </li>
+        {% else %}
+        <li class="muted">No recent pull requests</li>
+        {% endfor %}
+      </ul>
+    </section>
+    <section>
+      <h3>Recent issues</h3>
+      <ul class="insights-list">
+        {% for i in recent_issues %}
+        <li>
+          <a href="/{{ repo.full_name }}/issues/{{ i.number }}">#{{ i.number }} {{ i.title }}</a>
+          <span class="muted">{{ i.created_at|time_ago }}</span>
+        </li>
+        {% else %}
+        <li class="muted">No recent issues</li>
+        {% endfor %}
+      </ul>
+    </section>
+  </main>
+</div>
+{% endblock %}

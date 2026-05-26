@@ -635,12 +635,15 @@ def _load_scraped():
         ("models",   "hf_models_new.json"),
         ("models",   "hf_models_recent.json"),
         ("models",   "hf_models_more.json"),
+        ("models",   "hf_models_r3.json"),
         ("datasets", "hf_datasets.json"),
         ("datasets", "hf_datasets_likes.json"),
         ("datasets", "hf_datasets_more.json"),
+        ("datasets", "hf_datasets_r3.json"),
         ("spaces",   "hf_spaces.json"),
         ("spaces",   "hf_spaces_recent.json"),
         ("spaces",   "hf_spaces_more.json"),
+        ("spaces",   "hf_spaces_r3.json"),
     ]
     for kind, fname in supplementary:
         p = ROOT / "scraped_data" / fname

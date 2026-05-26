@@ -916,6 +916,14 @@ def run_extras(db, User, Product, Category, CartItem, Order, OrderItem,
         seed_bulk_products(db, Product)
     except Exception as e:  # surface error, don't mask
         raise RuntimeError(f"seed_bulk_products failed: {e}") from e
+    # R3: brand × model × color × storage matrix + Open Library books pass 2.
+    # Runs after seed_bulk so it sees the already-inserted products and only
+    # adds genuinely new SKUs (idempotent via slug uniqueness).
+    try:
+        from seed_matrix import seed_matrix
+        seed_matrix(db, Product)
+    except Exception as e:
+        raise RuntimeError(f"seed_matrix failed: {e}") from e
     seed_extra_orders(db, User, Order, OrderItem, Product, SavedAddress, PaymentMethod)
     seed_wishlists(db, User, Product, WishlistItem)
     seed_extra_carts(db, User, Product, CartItem)

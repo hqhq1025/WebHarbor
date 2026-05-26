@@ -1,0 +1,97 @@
+{% extends "base.html" %}
+{% block title %}{{ category.name if category else topic }} live - BBC News{% endblock %}
+
+{% block content %}
+<div class="page-header" style="border-left: 6px solid var(--bbc-red); padding-left: 14px;">
+    <h1>
+        <span style="display: inline-block; width: 12px; height: 12px; border-radius: 50%;
+                     background: var(--bbc-red); margin-right: 10px;
+                     animation: pulse 1.4s infinite;"></span>
+        {{ (category.name if category else topic|title) }} — Live
+    </h1>
+    <p>Rolling coverage and the latest updates on {{ category.name if category else topic }} from BBC News.</p>
+</div>
+
+<style>
+@keyframes pulse {
+    0% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.45; transform: scale(0.85); }
+    100% { opacity: 1; transform: scale(1); }
+}
+.live-stream { border-left: 3px solid var(--bbc-red); padding-left: 16px; margin: 18px 0; }
+.live-entry { padding: 14px 0; border-bottom: 1px solid var(--bbc-line, #ddd); }
+.live-entry:last-child { border-bottom: 0; }
+.live-time { font-weight: 700; color: var(--bbc-red); font-size: 13px; }
+.live-headline { font-size: 18px; font-weight: 700; margin: 6px 0; line-height: 1.3; }
+.live-headline a { color: var(--bbc-text, #1f1f1f); text-decoration: none; }
+.live-headline a:hover { text-decoration: underline; }
+.live-summary { color: var(--bbc-text-light, #555); margin: 0; }
+</style>
+
+{% if breaking %}
+<section style="margin-bottom: 28px;">
+    <h2 style="font-size: 22px; font-weight: 700; border-left: 4px solid var(--bbc-red); padding-left: 12px;">
+        Breaking
+    </h2>
+    <div class="section-grid">
+        {% for art in breaking %}
+        <a class="card" href="{{ url_for('article_detail', slug=art.slug) }}">
+            <div class="card-image-wrap">
+                {% if art.hero_image %}
+                <img src="{{ art.hero_image }}" alt="{{ art.headline|e }}" class="card-image" onerror="this.style.display='none'">
+                {% endif %}
+                <div class="card-label" style="background: var(--bbc-red);">BREAKING</div>
+            </div>
+            <h3 class="card-headline">{{ art.headline }}</h3>
+            <p class="card-meta"><span>{{ art.published_date_str }}</span></p>
+        </a>
+        {% endfor %}
+    </div>
+</section>
+{% endif %}
+
+{% if live %}
+<section style="margin-bottom: 28px;">
+    <h2 style="font-size: 22px; font-weight: 700;">Live now</h2>
+    <div class="live-stream">
+        {% for art in live %}
+        <div class="live-entry">
+            <div class="live-time">LIVE · {{ art.published_date_str }}</div>
+            <h3 class="live-headline"><a href="{{ url_for('article_detail', slug=art.slug) }}">{{ art.headline }}</a></h3>
+            {% if art.subtitle %}<p class="live-summary">{{ art.subtitle[:240] }}</p>{% endif %}
+        </div>
+        {% endfor %}
+    </div>
+</section>
+{% endif %}
+
+{% if related %}
+<section style="margin-bottom: 28px;">
+    <h2 style="font-size: 22px; font-weight: 700;">More on this story</h2>
+    <div class="section-grid">
+        {% for art in related %}
+        <a class="card" href="{{ url_for('article_detail', slug=art.slug) }}">
+            <div class="card-image-wrap">
+                {% if art.hero_image %}
+                <img src="{{ art.hero_image }}" alt="{{ art.headline|e }}" class="card-image" onerror="this.style.display='none'">
+                {% endif %}
+            </div>
+            <h3 class="card-headline">{{ art.headline }}</h3>
+            <p class="card-meta">
+                <span class="card-category">{{ art.category.name if art.category else 'News' }}</span>
+                <span class="dot"></span>
+                <span>{{ art.published_date_str }}</span>
+            </p>
+        </a>
+        {% endfor %}
+    </div>
+</section>
+{% endif %}
+
+{% if not breaking and not live and not related %}
+<div class="empty-state">
+    <h2>No live coverage right now for {{ topic }}</h2>
+    <p>Try the <a href="{{ url_for('live_page') }}">main live page</a> or browse the <a href="{{ url_for('latest_page') }}">latest news</a>.</p>
+</div>
+{% endif %}
+{% endblock %}

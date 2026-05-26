@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% block title %}Security · {{ repo.full_name }}{% endblock %}
+{% block content %}
+<div class="repo-header-bar">
+  <div class="repo-header-inner">
+    <div class="repo-breadcrumb">
+      <a href="/{{ repo.full_name.split('/')[0] }}" class="repo-breadcrumb-link">{{ repo.full_name.split('/')[0] }}</a>
+      <span class="repo-breadcrumb-sep">/</span>
+      <a href="/{{ repo.full_name }}" class="repo-breadcrumb-link repo-breadcrumb-repo">{{ repo.name }}</a>
+    </div>
+    <nav class="repo-tabs">
+      <a href="/{{ repo.full_name }}" class="repo-tab">Code</a>
+      <a href="/{{ repo.full_name }}/issues" class="repo-tab">Issues</a>
+      <a href="/{{ repo.full_name }}/pulls" class="repo-tab">Pull requests</a>
+      <a href="/{{ repo.full_name }}/actions" class="repo-tab">Actions</a>
+      <a href="/{{ repo.full_name }}/security" class="repo-tab repo-tab-active">Security</a>
+      <a href="/{{ repo.full_name }}/insights" class="repo-tab">Insights</a>
+    </nav>
+  </div>
+</div>
+
+<div class="security-page">
+  <aside class="security-sidebar">
+    <h3>Reporting</h3>
+    <ul>
+      <li><a href="/{{ repo.full_name }}/security/policy">Security policy</a></li>
+      <li><a href="/{{ repo.full_name }}/security/advisories" class="{{ 'active' if tab=='advisories' else '' }}">Security advisories</a></li>
+    </ul>
+    <h3>Vulnerability alerts</h3>
+    <ul>
+      <li><a href="/{{ repo.full_name }}/security/dependabot">Dependabot alerts <span class="badge">{{ dependabot_alerts|length }}</span></a></li>
+      <li><a href="/{{ repo.full_name }}/security/secret-scanning">Secret scanning alerts</a></li>
+      <li><a href="/{{ repo.full_name }}/security/code-scanning">Code scanning alerts</a></li>
+    </ul>
+  </aside>
+  <main class="security-main">
+    <h2>Security overview</h2>
+    <p>{{ advisories|length }} security advisor{{ 'ies' if advisories|length != 1 else 'y' }} for {{ repo.full_name }}.</p>
+    <ul class="advisory-list">
+      {% for a in advisories %}
+      <li class="advisory-item severity-{{ a.severity }}">
+        <span class="severity-pill severity-{{ a.severity }}">{{ a.severity|capitalize }}</span>
+        <div class="advisory-detail">
+          <a href="#" class="advisory-title">{{ a.title }}</a>
+          <div class="advisory-meta">
+            <code>{{ a.package }}</code> {{ a.vulnerable_range }} · <code>{{ a.cve }}</code> · {{ a.ghsa }} ·
+            Published {{ a.published_at|time_ago }}
+          </div>
+        </div>
+      </li>
+      {% endfor %}
+    </ul>
+  </main>
+</div>
+{% endblock %}

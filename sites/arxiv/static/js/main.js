@@ -16,6 +16,19 @@ document.addEventListener("DOMContentLoaded", function() {
         });
     });
 
+    // R3 — collapsible abstract toggle on /abs paper pages.
+    document.querySelectorAll('.abs-toggle').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            var targetId = btn.getAttribute('data-target');
+            var box = document.getElementById(targetId);
+            if (!box) return;
+            var expanded = box.classList.toggle('expanded');
+            btn.textContent = expanded
+                ? (btn.getAttribute('data-expanded') || 'Collapse')
+                : (btn.getAttribute('data-collapsed') || 'Read more');
+        });
+    });
+
     // Fade-in on scroll (only activates if JS is available)
     document.documentElement.classList.add('js-fade-ready');
     const observer = new IntersectionObserver(function(entries) {

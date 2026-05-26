@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block title %}Translate English to {{ lang_display }}{% endblock %}
+{% block content %}
+<div class="container narrow">
+  <nav class="breadcrumb">
+    <a href="{{ url_for('index') }}">Cambridge Dictionary</a> &raquo;
+    <a href="{{ url_for('translate') }}">Translate</a> &raquo;
+    <span>English &rarr; {{ lang_display }}</span>
+  </nav>
+
+  <h1 class="page-title">English &rarr; {{ lang_display }} translation</h1>
+  <p class="lead">
+    Use the Cambridge English&ndash;{{ lang_display }} dictionary to translate words and phrases between
+    English and {{ lang_display }}, with audio pronunciation and example sentences in both languages.
+  </p>
+
+  <form class="translate-form" action="{{ url_for('translate') }}" method="get">
+    <input type="hidden" name="src" value="english">
+    <input type="hidden" name="dst" value="{{ lang }}">
+    <label for="translate-q" class="sr-only">Search</label>
+    <input id="translate-q" type="text" name="q"
+           placeholder="Translate to {{ lang_display }}..."
+           class="translate-input" autocomplete="off">
+    <button type="submit" class="btn-primary">Translate</button>
+  </form>
+
+  <h2 class="section-heading">Popular {{ lang_display }} translations</h2>
+  <ul class="lang-samples">
+    {% for w in samples %}
+      <li>
+        <a href="{{ url_for('translate', q=w.headword, src='english', dst=lang) }}"
+           class="lang-sample">
+          <span class="lang-sample-head">{{ w.headword }}</span>
+          {% if w.level %}<span class="cefr cefr-{{ w.level|lower }}">{{ w.level }}</span>{% endif %}
+        </a>
+      </li>
+    {% else %}
+      <li class="empty-note">No featured translations yet for {{ lang_display }}.</li>
+    {% endfor %}
+  </ul>
+
+  <p class="meta-note">
+    Provider: Microsoft Translator. All bilingual entries are reviewed by Cambridge editors.
+  </p>
+</div>
+{% endblock %}

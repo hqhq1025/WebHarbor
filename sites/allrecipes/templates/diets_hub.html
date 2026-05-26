@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block title %}Diets &amp; Lifestyle Recipes{% endblock %}
+{% block content %}
+<div class="container" style="margin-top:30px">
+    <div class="breadcrumb" style="font-size:0.8rem;color:#999;margin-bottom:12px">
+        <a href="{{ url_for('index') }}" style="color:#666">Home</a> &rsaquo; Diets
+    </div>
+    <h1 class="section-title">Diets &amp; Lifestyle</h1>
+    <p style="color:#666;margin-bottom:24px;font-size:1rem">
+        Whether you're going keto, paleo, vegan, gluten-free, or simply trying to eat lower-GI,
+        every recipe below is tagged so you can find the right meal in seconds.
+    </p>
+
+    <div class="diet-grid" style="display:grid;grid-template-columns:repeat(auto-fill, minmax(220px,1fr));gap:16px">
+        {% for slug, name in diets.items() %}
+        <a href="{{ url_for('diet_page', slug=slug) }}" class="diet-tile"
+           style="display:block;padding:20px;border:1px solid #e0e0e0;border-radius:8px;background:#fff;text-decoration:none;color:#222;transition:all 0.2s">
+            <div style="font-size:1.2rem;font-weight:700;color:#c62828;margin-bottom:4px">{{ name }}</div>
+            <div style="font-size:0.85rem;color:#666;margin-bottom:8px">{{ diet_descriptions.get(slug, '') }}</div>
+            <div style="font-size:0.85rem;color:#888"><strong>{{ diet_counts.get(slug, 0) }}</strong> recipes</div>
+        </a>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

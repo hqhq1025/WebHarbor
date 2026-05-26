@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+{% block title %}ESPN BET — Odds, Lines, Picks{% endblock %}
+
+{% block content %}
+<div class="container">
+  <div class="page-header bet-header">
+    <h1 class="bet-header__title">
+      <span class="bet-header__brand">ESPN BET</span>
+      Latest Odds &amp; Lines
+    </h1>
+    <p class="subtitle">Moneyline, spread, and totals across the major leagues. Lines as of {{ mirror_today_label }}.</p>
+  </div>
+
+  <p class="bet-disclaimer">21+ &bull; Gambling problem? Call 1-800-GAMBLER. Bet responsibly. Mirror site for research.</p>
+
+  {% for card in cards %}
+  <section class="bet-section">
+    <div class="section-heading-row">
+      <h2 class="section-heading">{{ card.sport.display_name or card.sport.name }} Odds</h2>
+      <a class="see-all" href="{{ card.sport.url_prefix }}odds">All {{ card.sport.name }} Lines</a>
+    </div>
+    {% if card.lines %}
+    <table class="data-table odds-table">
+      <thead>
+        <tr>
+          <th>Game</th>
+          <th>Date</th>
+          <th>Moneyline (H/A)</th>
+          <th>Spread</th>
+          <th>Total</th>
+          <th>Sportsbook</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in card.lines %}
+        <tr>
+          <td>
+            {% if row.away_team and row.home_team %}
+            <a href="/game/{{ row.game.id }}">{{ row.away_team.abbreviation }} @ {{ row.home_team.abbreviation }}</a>
+            {% endif %}
+          </td>
+          <td>{{ row.game.date_display or row.game.date }}</td>
+          <td class="stat-val">
+            {{ row.odds.home_moneyline }} / {{ row.odds.away_moneyline }}
+          </td>
+          <td class="stat-val">{{ row.odds.spread_favorite }} ({{ row.odds.spread_line }})</td>
+          <td class="stat-val">O/U {{ row.odds.total }}</td>
+          <td>{{ row.odds.sportsbook }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <p class="empty-msg">No open lines available for {{ card.sport.name }} right now.</p>
+    {% endif %}
+  </section>
+  {% endfor %}
+</div>
+{% endblock %}

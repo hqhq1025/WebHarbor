@@ -10,7 +10,13 @@
         <div class="occasion-card" style="border:1px solid #eee;border-radius:8px;padding:20px;background:#fafafa;">
             <h3 class="occasion-title">{{ occ.name }}</h3>
             <p>{{ occ.desc }}</p>
+            {# If this occasion has a dedicated /occasion/<slug> landing, deep-link there. #}
+            {% set occ_pages = {'thanksgiving':'thanksgiving','christmas':'christmas','easter':'easter','valentines-day':'valentines','fourth-of-july':'fourth-of-july','halloween':'halloween','mothers-day':'mothers-day'} %}
+            {% if occ.slug in occ_pages %}
+            <a href="{{ url_for('occasion_page', slug=occ_pages[occ.slug]) }}" class="btn btn-sm">See {{ occ.name }} Recipes &rarr;</a>
+            {% else %}
             <a href="{{ url_for('search', q=occ.name) }}" class="btn btn-sm">See {{ occ.name }} Recipes &rarr;</a>
+            {% endif %}
         </div>
         {% endfor %}
     </div>

@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% block title %}{{ leaderboard.title }} — Leaderboards{% endblock %}
+
+{% block content %}
+<div class="container-wide page">
+    <nav class="docs-breadcrumb">
+        <a href="{{ url_for('index') }}">Home</a>
+        <span>/</span>
+        <a href="{{ url_for('leaderboards_index') }}">Leaderboards</a>
+        <span>/</span>
+        <span>{{ leaderboard.title }}</span>
+    </nav>
+
+    <div class="lb-detail-head">
+        <div class="lb-detail-emoji">{{ leaderboard.emoji }}</div>
+        <div>
+            <h1 style="margin:0;">{{ leaderboard.title }}</h1>
+            <p class="muted" style="margin:4px 0 0;">{{ leaderboard.description }}</p>
+        </div>
+    </div>
+    <div class="hf-yellow-rule"></div>
+
+    <div class="docs-tags" style="margin: 8px 0 16px;">
+        {% for t in leaderboard.tags %}
+        <span class="repo-task-tag">{{ t }}</span>
+        {% endfor %}
+    </div>
+
+    <table class="lb-table">
+        <thead>
+            <tr>
+                {% for col in leaderboard.columns %}<th>{{ col }}</th>{% endfor %}
+            </tr>
+        </thead>
+        <tbody>
+            {% for row in leaderboard.rows %}
+            <tr>
+                {% for cell in row %}
+                    {% if loop.index == 2 and cell is string and '/' in cell %}
+                        <td><a href="/{{ cell }}"><code>{{ cell }}</code></a></td>
+                    {% elif loop.index == 1 %}
+                        <td class="lb-rank">{{ cell }}</td>
+                    {% elif loop.index == 4 %}
+                        <td class="lb-score">{{ cell }}</td>
+                    {% else %}
+                        <td>{{ cell }}</td>
+                    {% endif %}
+                {% endfor %}
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <p class="muted" style="font-size: 12px;">Last refreshed {{ mirror_today_display }} · methodology and submission instructions in <a href="{{ url_for('docs') }}">/docs</a>.</p>
+</div>
+{% endblock %}

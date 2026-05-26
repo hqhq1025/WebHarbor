@@ -35,10 +35,29 @@
             {% for entry in paper.get_authors_with_affiliations() %}<a href="{{ url_for('author_papers', name=entry.name) }}">{{ entry.name }}</a>{% if not loop.last %}, {% endif %}{% endfor %}
         </div>
 
-        <div class="paper-abstract">
+        {% set _affil_entries = paper.get_authors_with_affiliations() %}
+        {% if _affil_entries %}
+        <div class="paper-author-affil-sticky" aria-label="Authors and affiliations">
+            {% for e in _affil_entries[:5] %}
+                <b>{{ e.name }}</b>{% if e.affiliation %} <span class="affil">({{ e.affiliation }})</span>{% endif %}{% if not loop.last %}; {% endif %}
+            {% endfor %}
+            {% if _affil_entries|length > 5 %}
+                <span class="muted">… +{{ _affil_entries|length - 5 }} more</span>
+            {% endif %}
+        </div>
+        {% endif %}
+
+        {% set _is_long_abs = (paper.display_abstract|length) > 720 %}
+        <div class="paper-abstract{% if _is_long_abs %} collapsible{% endif %}" id="paper-abstract">
             <span class="label">Abstract:</span>
             {% if paper.display_abstract %}
-                {{ paper.display_abstract }}
+                <span class="abs-body">{{ paper.display_abstract }}</span>
+                {% if _is_long_abs %}
+                <div><button type="button" class="abs-toggle"
+                        data-target="paper-abstract"
+                        data-collapsed="Read more ↓"
+                        data-expanded="Collapse ↑">Read more ↓</button></div>
+                {% endif %}
             {% else %}
                 <i class="muted">Abstract not currently available for this paper.</i>
             {% endif %}

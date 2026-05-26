@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% block title %}{{ file_path }} · {{ repo.full_name }}{% endblock %}
+{% block content %}
+<div class="repo-header-bar">
+  <div class="repo-header-inner">
+    <div class="repo-breadcrumb">
+      <a href="/{{ repo.full_name.split('/')[0] }}" class="repo-breadcrumb-link">{{ repo.full_name.split('/')[0] }}</a>
+      <span class="repo-breadcrumb-sep">/</span>
+      <a href="/{{ repo.full_name }}" class="repo-breadcrumb-link repo-breadcrumb-repo">{{ repo.name }}</a>
+      <span class="repo-breadcrumb-sep">/</span>
+      <span>blob</span>
+      <span class="repo-breadcrumb-sep">/</span>
+      <span>{{ branch }}</span>
+      <span class="repo-breadcrumb-sep">/</span>
+      <span class="filename">{{ file_path }}</span>
+    </div>
+  </div>
+</div>
+<div class="blob-page">
+  <div class="blob-actions">
+    <a href="/{{ repo.full_name }}/blob/{{ branch }}/{{ file_path }}" class="gh-btn gh-btn-sm gh-btn-primary">Code</a>
+    <a href="/{{ repo.full_name }}/blame/{{ branch }}/{{ file_path }}" class="gh-btn gh-btn-sm">Blame</a>
+    <span class="muted">{{ lines|length }} lines</span>
+  </div>
+  <table class="blob-table"><tbody>
+    {% for line in lines %}
+    <tr class="blob-row">
+      <td class="blob-line-no">{{ line.line_number }}</td>
+      <td class="blob-line"><pre><code class="lang-{{ repo.language|lower }}">{{ line.text }}</code></pre></td>
+    </tr>
+    {% endfor %}
+  </tbody></table>
+</div>
+{% endblock %}

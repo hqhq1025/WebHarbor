@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block title %}Cambridge English Level Test{% endblock %}
+{% block content %}
+<div class="container narrow">
+  <nav class="breadcrumb">
+    <a href="{{ url_for('index') }}">Cambridge Dictionary</a> &raquo;
+    <a href="{{ url_for('plus_index') }}">Plus</a> &raquo;
+    <span>Level test</span>
+  </nav>
+
+  <h1 class="page-title">Find your English level</h1>
+  <p class="lead">
+    Cambridge English uses the Common European Framework of Reference (CEFR)
+    to describe language ability on a six-level scale from A1 (beginner) to
+    C2 (proficient). Pick a level below to start a placement quiz.
+  </p>
+
+  <div class="cefr-grid">
+    {% for lvl in levels %}
+      <div class="cefr-card cefr-card-{{ lvl.cefr|lower }}">
+        <div class="cefr-badge cefr cefr-{{ lvl.cefr|lower }}">{{ lvl.cefr }}</div>
+        <h3 class="cefr-card-title">{{ lvl.cefr }} &mdash; {{ lvl.description.split('—')[0]|trim }}</h3>
+        <p class="cefr-card-desc">{{ lvl.description }}</p>
+        <p class="cefr-card-meta">{{ lvl.word_count }} words tagged at this level.</p>
+        {% if lvl.quiz %}
+          <a href="{{ url_for('quiz_detail', slug=lvl.quiz.slug) }}" class="btn-primary">
+            Start the {{ lvl.cefr }} placement quiz &raquo;
+          </a>
+        {% else %}
+          <span class="muted">Placement quiz coming soon.</span>
+        {% endif %}
+      </div>
+    {% endfor %}
+  </div>
+
+  <p class="meta-note">
+    The CEFR is published by the Council of Europe and is used internationally
+    by universities, employers, and language schools.
+  </p>
+</div>
+{% endblock %}

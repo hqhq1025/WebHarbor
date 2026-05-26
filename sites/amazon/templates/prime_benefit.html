@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% block title %}{{ benefit.title }} - Amazon Prime{% endblock %}
+
+{% block content %}
+<div style="background:linear-gradient(180deg,#232f3e,#37475a);color:#fff;padding:50px 20px;text-align:center">
+    <div style="font-size:64px">{{ benefit.icon }}</div>
+    <h1 style="font-size:40px;margin:10px 0">{{ benefit.title }}</h1>
+    <p style="font-size:18px;margin:10px 0 20px;max-width:720px;margin-left:auto;margin-right:auto">{{ benefit.tagline }}</p>
+    <a href="{{ url_for('prime') }}" class="btn btn-orange" style="padding:12px 30px;font-size:15px;text-decoration:none;display:inline-block">Start your free trial</a>
+    <p style="font-size:13px;margin-top:10px">{{ benefit.monthly }} · {{ benefit.standalone }}</p>
+</div>
+
+<div style="max-width:1100px;margin:30px auto;padding:0 20px;display:grid;grid-template-columns:2fr 1fr;gap:30px">
+    <div style="background:#fff;padding:30px;border-radius:6px">
+        <h2 style="margin-top:0">What's included</h2>
+        <ul style="line-height:1.9;font-size:15px;color:#111">
+            {% for f in benefit.features %}
+            <li>{{ f }}</li>
+            {% endfor %}
+        </ul>
+        <div style="margin-top:24px;padding:16px;background:#f3f3f3;border-radius:4px">
+            <strong>Pricing</strong>
+            <div style="margin-top:6px;font-size:14px">{{ benefit.monthly }}</div>
+            <div style="font-size:14px">{{ benefit.standalone }}</div>
+        </div>
+    </div>
+    <aside style="background:#fff;padding:24px;border-radius:6px">
+        <h3 style="margin-top:0">Other Prime benefits</h3>
+        <ul style="list-style:none;padding:0;margin:0">
+            {% for slug_k, b in all_benefits.items() %}
+            {% if slug_k != slug %}
+            <li style="padding:8px 0;border-bottom:1px solid #eaeaea">
+                <a href="{{ url_for('prime_benefit', benefit=slug_k) }}" style="color:#007185;text-decoration:none">
+                    <span style="margin-right:8px">{{ b.icon }}</span>{{ b.title }}
+                </a>
+            </li>
+            {% endif %}
+            {% endfor %}
+        </ul>
+    </aside>
+</div>
+{% endblock %}

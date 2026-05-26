@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% block title %}Widgets — Wolfram|Alpha{% endblock %}
+
+{% block content %}
+<section class="wa-hero wa-hero--compact">
+  <div class="section-inner">
+    <p class="wa-hero-eyebrow">WOLFRAM|ALPHA WIDGETS</p>
+    <h1 style="font-size:1.6rem;color:#1a1a1a">Embeddable Computational Widgets</h1>
+    <p style="color:#545454;max-width:720px">Drop these into any web page to bring Wolfram|Alpha's computational power to your site, blog, or course.</p>
+  </div>
+</section>
+
+<div class="section-inner" style="padding:24px">
+  <div class="topics-examples-grid">
+    {% for w in widgets %}
+    <div class="topic-example-card">
+      <div class="tec-header">
+        <h3 class="tec-name">
+          <a href="/widget/{{ w.slug }}">{{ w.name }}</a>
+        </h3>
+        <span class="wa-badge-new" style="background:#cc4400;color:#fff">{{ w.category }}</span>
+      </div>
+      <p style="color:#545454;font-size:.95rem">{{ w.description }}</p>
+      <div style="background:#f7f7f7;padding:10px;border-radius:6px;margin-top:10px">
+        <small style="color:#8a8a8a">Sample:</small>
+        <code style="display:block;font-size:.85rem">{{ w.sample_input }}</code>
+        <small style="color:#cc4400">&rarr; {{ w.sample_output }}</small>
+      </div>
+      <a href="/widget/{{ w.slug }}" class="btn btn-secondary" style="margin-top:10px">Try widget</a>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}

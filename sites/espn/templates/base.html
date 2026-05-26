@@ -11,6 +11,9 @@
 </head>
 <body>
 
+  <!-- ESPN Red brand strip (R3 visual polish) -->
+  <div class="brand-strip" role="presentation"></div>
+
   <!-- Anchor date banner -->
   <div class="mirror-clock-banner" role="note">
     <span class="mirror-clock-banner__icon" aria-hidden="true">&#128197;</span>
@@ -55,6 +58,9 @@
       </ul>
       <div class="nav-utility">
         <a href="/scores" class="nav-utility__link">Scores</a>
+        <a href="/bet" class="nav-utility__link nav-utility__link--bet">ESPN BET</a>
+        <a href="/fantasy" class="nav-utility__link">Fantasy</a>
+        <a href="/podcasts" class="nav-utility__link">Podcasts</a>
         <a href="/espnplus" class="nav-utility__link nav-utility__link--plus">ESPN+</a>
         <a href="/search" class="nav-utility__link nav-utility__icon" aria-label="Search" title="Search">&#x1F50D;</a>
         {% if current_user.is_authenticated %}
@@ -91,6 +97,10 @@
           <h4>ESPN</h4>
           <a href="/">Home</a>
           <a href="/scores">Scores</a>
+          <a href="/bet">ESPN BET</a>
+          <a href="/fantasy">Fantasy</a>
+          <a href="/podcasts">Podcasts</a>
+          <a href="/awards">Awards</a>
           <a href="/espnplus">ESPN+</a>
           <a href="/watch">Watch</a>
           <a href="/search">Search</a>

@@ -1031,6 +1031,160 @@ def server_error(e):
 
 
 # ---------------------------------------------------------------------------
+# R3 sub-pages (deeper dictionary surface)
+# ---------------------------------------------------------------------------
+# These routes were added in R3 to give agents real sub-pages that don't yet
+# exist in R2: shallow grammar slugs, language-specific translate landing
+# pages, a CEFR-style level test, a "word class of the day" trivia page, and
+# a thesaurus alias accepting a bare word slug. All read-only, deterministic.
+
+# CEFR levels — used by /level-test and surfaced as colour blocks in
+# templates. Order matters (display + scoring).
+CEFR_LEVELS_ORDERED = ['A1', 'A2', 'B1', 'B2', 'C1', 'C2']
+
+# Word classes for /word-class-of-the-day rotation. Matches the four POS
+# values we generate in seed (noun / verb / adjective / adverb) plus the
+# less common phrase / preposition slots we can introduce via SQL filters.
+WORD_CLASSES = [
+    {'slug': 'noun', 'title': 'Noun',
+     'description': 'A word that names a person, place, thing, or idea.',
+     'pos_match': 'noun'},
+    {'slug': 'verb', 'title': 'Verb',
+     'description': 'A word that expresses an action, occurrence, or state of being.',
+     'pos_match': 'verb'},
+    {'slug': 'adjective', 'title': 'Adjective',
+     'description': 'A word that modifies or describes a noun.',
+     'pos_match': 'adjective'},
+    {'slug': 'adverb', 'title': 'Adverb',
+     'description': 'A word that modifies a verb, adjective, or another adverb.',
+     'pos_match': 'adverb'},
+    {'slug': 'phrase', 'title': 'Phrase',
+     'description': 'A group of words functioning as a unit within a sentence.',
+     'pos_match': 'phrase'},
+]
+
+
+@app.route('/grammar/<slug>')
+def grammar_topic_short(slug):
+    """Shallow alias of /grammar/british-grammar/<slug> — redirects to canonical
+    URL so saved Cambridge bookmarks resolve."""
+    if GrammarTopic.query.filter_by(slug=slug).first():
+        return redirect(url_for('grammar_topic', slug=slug), code=301)
+    abort(404)
+
+
+@app.route('/translate/EN/<lang>')
+def translate_landing(lang):
+    """Per-language translate landing page. Shows the language picker
+    pre-set to <lang> and surfaces a short featured list of words that
+    have a translation into that language."""
+    lang_key_map = {
+        'french': 'french', 'fr': 'french', 'francais': 'french',
+        'spanish': 'spanish', 'es': 'spanish', 'espanol': 'spanish',
+        'german': 'german', 'de': 'german', 'deutsch': 'german',
+        'chinese': 'chinese', 'zh': 'chinese', 'mandarin': 'chinese',
+        'italian': 'italian', 'it': 'italian',
+        'portuguese': 'portuguese', 'pt': 'portuguese',
+        'japanese': 'japanese', 'ja': 'japanese',
+    }
+    lang_lower = lang.lower()
+    canonical = lang_key_map.get(lang_lower)
+    if canonical is None:
+        abort(404)
+
+    display_name = {
+        'french': 'French', 'spanish': 'Spanish', 'german': 'German',
+        'chinese': 'Chinese', 'italian': 'Italian',
+        'portuguese': 'Portuguese', 'japanese': 'Japanese',
+    }[canonical]
+
+    # Pre-pick 10 sample words that DO have a translation into this
+    # language. We can't easily LIKE inside a JSON column generically, so
+    # do a python-side scan over a bounded sample.
+    samples = []
+    candidates = (Word.query
+                  .filter(Word.is_thesaurus_phrase == False,  # noqa
+                          Word.translations_json != '{}')
+                  .order_by(Word.id).limit(400).all())
+    for w in candidates:
+        if len(samples) >= 10:
+            break
+        tr = w.get_translations()
+        if any(k.lower() == canonical for k in tr.keys()):
+            samples.append(w)
+
+    return render_template('translate_landing.html', lang=canonical,
+                           lang_display=display_name, samples=samples)
+
+
+@app.route('/level-test')
+@app.route('/level-test/')
+def level_test():
+    """Cambridge-style placement test landing. Lists CEFR levels with an
+    indicative quiz for each. Read-only — we don't actually score input.
+
+    Real Cambridge has an interactive 25-question test; we just surface
+    the structure so agents can navigate to a per-level quiz."""
+    # Find one quiz per CEFR level (Cambridge Exam quizzes generated in R3)
+    levels = []
+    for lvl in CEFR_LEVELS_ORDERED:
+        # Match either category 'Cambridge Exam <lvl>' or title prefix.
+        quiz = (Quiz.query
+                .filter(or_(Quiz.category == f'Cambridge Exam {lvl}',
+                            Quiz.title.like(f'Cambridge Vocabulary {lvl}%')))
+                .first())
+        word_count = Word.query.filter_by(level=lvl,
+                                          is_thesaurus_phrase=False).count()
+        levels.append({
+            'cefr': lvl,
+            'quiz': quiz,
+            'word_count': word_count,
+            'description': {
+                'A1': 'Beginner — basic everyday expressions.',
+                'A2': 'Elementary — describing your background and immediate needs.',
+                'B1': 'Intermediate — main points on familiar topics.',
+                'B2': 'Upper-intermediate — fluent interaction with native speakers.',
+                'C1': 'Advanced — flexible and effective use for social and academic purposes.',
+                'C2': 'Proficient — virtually everything heard or read.',
+            }[lvl],
+        })
+    return render_template('level_test.html', levels=levels)
+
+
+@app.route('/word-class-of-the-day')
+@app.route('/word-class-of-the-day/')
+def word_class_of_the_day():
+    """Trivia page rotating one word class per day. Deterministic on
+    MIRROR_REFERENCE_DATE so reruns agree."""
+    import hashlib as _hl
+    target_date = MIRROR_REFERENCE_DATE.date()
+    idx = int(_hl.md5(target_date.isoformat().encode()).hexdigest()[:8],
+              16) % len(WORD_CLASSES)
+    today_class = WORD_CLASSES[idx]
+    sample_words = (Word.query
+                    .filter(Word.is_thesaurus_phrase == False,  # noqa
+                            Word.pos == today_class['pos_match'],
+                            Word.phonetic_uk != '')
+                    .order_by(Word.id).limit(8).all())
+    return render_template('word_class.html', wc=today_class,
+                           samples=sample_words, target_date=target_date,
+                           all_classes=WORD_CLASSES)
+
+
+@app.route('/thesaurus/<slug>')
+def thesaurus_word_alias(slug):
+    """Bare /thesaurus/<word> alias for Cambridge URLs. Redirects to the
+    canonical /thesaurus/english/<word> handler so prior bookmarks keep
+    working."""
+    # Avoid colliding with the /thesaurus/articles/ and /thesaurus/english/
+    # prefixes — those have their own routes registered earlier and Flask
+    # matches them first by virtue of being more specific.
+    if slug in {'english', 'articles'}:
+        abort(404)
+    return redirect(url_for('thesaurus_entry', phrase=slug), code=301)
+
+
+# ---------------------------------------------------------------------------
 # Seed data
 # ---------------------------------------------------------------------------
 
@@ -2547,6 +2701,33 @@ def seed_database():
                 is_thesaurus_phrase=bool(wd.get('is_thesaurus_phrase', False)),
                 created_at=MIRROR_REFERENCE_DATE,
             ))
+        # R3 expansion: ~5500 additional WordNet entries to push catalog past
+        # 12000 words. Appended after the existing set so prior ids stay
+        # stable; uses the same schema-level helpers.
+        extra2 = _load_json('words_extra.json') or []
+        for wd in extra2:
+            if wd['slug'] in seen_slugs:
+                continue
+            seen_slugs.add(wd['slug'])
+            db.session.add(Word(
+                headword=wd['headword'], slug=wd['slug'],
+                pos=wd.get('pos', ''), guide_word=wd.get('guide_word', ''),
+                phonetic_uk=wd.get('phonetic_uk', ''),
+                phonetic_us=wd.get('phonetic_us', ''),
+                pronunciation_ipa=(wd.get('pronunciation_ipa')
+                                   or wd.get('phonetic_uk', '')),
+                audio_uk_path=wd.get('audio_uk_path',
+                                     f"/static/audio/uk/{wd['slug']}.mp3"),
+                audio_us_path=wd.get('audio_us_path',
+                                     f"/static/audio/us/{wd['slug']}.mp3"),
+                level=wd.get('level', ''),
+                definitions_json=_j(wd.get('definitions', [])),
+                translations_json=_j(wd.get('translations', {})),
+                related_json=_j(wd.get('related', [])),
+                synonyms_json=_j(wd.get('synonyms', [])),
+                is_thesaurus_phrase=bool(wd.get('is_thesaurus_phrase', False)),
+                created_at=MIRROR_REFERENCE_DATE,
+            ))
     else:
         # Fallback: inline curated lists.
         seen_slugs = set()
@@ -2592,6 +2773,10 @@ def seed_database():
         gram_list = list(gram_existing)
         extras = _load_json('extras.json') or {}
         gram_list += extras.get('grammar_extra', [])
+        # R3: 50 deeper topics — phrasal verbs, conditionals nuance, modal
+        # nuance, prepositions, sentence-level grammar.
+        gram_v2 = _load_json('grammar_v2.json') or []
+        gram_list += gram_v2
     else:
         gram_list = GRAMMAR_DATA
     for gd in gram_list:
@@ -2628,6 +2813,10 @@ def seed_database():
         quiz_list = list(quiz_existing)
         qextra = _load_json('quizzes_extra.json') or {}
         quiz_list += qextra.get('quizzes_extra', [])
+        # R3: 58 new quizzes (IELTS / TOEFL / CEFR A1-C2 / Business / Academic
+        # / Phrasal verbs / Idioms / Phonetics / Grammar deep-dives).
+        quiz_v2 = _load_json('quizzes_v2.json') or []
+        quiz_list += quiz_v2
     else:
         quiz_list = QUIZ_DATA
     for qd in quiz_list:

@@ -1,0 +1,97 @@
+{% extends "base.html" %}
+{% block title %}{{ diet_name }} Recipes{% endblock %}
+{% block content %}
+<div class="container" style="margin-top:30px">
+    <div class="breadcrumb" style="font-size:0.8rem;color:#999;margin-bottom:12px">
+        <a href="{{ url_for('index') }}" style="color:#666">Home</a> &rsaquo;
+        <a href="{{ url_for('diets_hub') }}" style="color:#666">Diets</a> &rsaquo;
+        {{ diet_name }}
+    </div>
+
+    <div class="diet-hero" style="background:linear-gradient(135deg,#fff8e1 0%,#ffe0b2 100%);border-radius:8px;padding:32px;margin-bottom:24px">
+        <h1 class="section-title" style="margin:0 0 8px 0">{{ diet_name }} Recipes</h1>
+        <p style="color:#555;font-size:1.05rem;margin:0">{{ diet_description }}</p>
+        <div class="diet-stats" style="margin-top:16px;display:flex;gap:24px;flex-wrap:wrap">
+            <div><strong>{{ recipes.total }}</strong> recipes</div>
+            <div><strong>Plan-friendly</strong> swaps included</div>
+            <div><strong>Nutrition</strong> per serving on each recipe</div>
+        </div>
+    </div>
+
+    <!-- Other diets nav -->
+    <div class="diet-nav" style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:24px">
+        {% for ds, dname in all_diets.items() %}
+        <a href="{{ url_for('diet_page', slug=ds) }}"
+           class="diet-pill {% if ds == diet_slug %}diet-pill-active{% endif %}"
+           style="padding:6px 14px;border-radius:18px;background:{% if ds == diet_slug %}#c62828{% else %}#f0f0f0{% endif %};color:{% if ds == diet_slug %}#fff{% else %}#333{% endif %};text-decoration:none;font-size:0.85rem">
+            {{ dname }}
+        </a>
+        {% endfor %}
+    </div>
+
+    {% if recipes.items %}
+    <div class="recipe-grid recipe-grid-3">
+        {% for recipe in recipes.items %}
+        <div class="recipe-card">
+            <div class="recipe-card-image">
+                <a href="{{ url_for('recipe_detail', slug=recipe.slug) }}">
+                    <img src="{{ recipe.image }}" alt="{{ recipe.title }}"
+                         onerror="this.parentElement.innerHTML='<div class=\'placeholder-img\'>{{ recipe.title }}</div>'">
+                </a>
+                <button class="recipe-card-save {% if is_in_recipe_box(recipe.id) %}saved{% endif %}"
+                        data-recipe-id="{{ recipe.id }}" data-saved-icon="&#9829;" data-unsaved-icon="&#9825;">
+                    {% if is_in_recipe_box(recipe.id) %}&#9829;{% else %}&#9825;{% endif %}
+                </button>
+                {% set dt = recipe.get_dietary_tags() %}
+                {% if dt %}
+                <div class="diet-chips" style="position:absolute;left:8px;top:8px;display:flex;flex-wrap:wrap;gap:4px;max-width:75%">
+                    {% for t in dt[:3] %}
+                    <span class="diet-chip" style="background:rgba(56,142,60,0.92);color:#fff;font-size:0.65rem;padding:3px 7px;border-radius:10px;text-transform:uppercase">{{ t }}</span>
+                    {% endfor %}
+                </div>
+                {% endif %}
+            </div>
+            <div class="recipe-card-body">
+                <div class="recipe-card-title"><a href="{{ url_for('recipe_detail', slug=recipe.slug) }}">{{ recipe.title }}</a></div>
+                <div class="recipe-card-meta">
+                    <div class="recipe-card-rating">
+                        {% for i in range(5) %}
+                        <span class="star {% if i >= recipe.avg_rating|round(0,'floor')|int %}empty{% endif %}">&#9733;</span>
+                        {% endfor %}
+                    </div>
+                    <span>({{ recipe.review_count|int }})</span>
+                </div>
+                <div class="recipe-card-nutrition" style="margin-top:6px;font-size:0.78rem;color:#666">
+                    {{ recipe.calories }} cal &middot; {{ recipe.total_time }}
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    {% if recipes.pages > 1 %}
+    <div class="pagination">
+        {% if recipes.has_prev %}
+        <a href="{{ url_for('diet_page', slug=diet_slug, page=recipes.prev_num) }}">&laquo;</a>
+        {% endif %}
+        {% for p in recipes.iter_pages() %}
+            {% if p %}
+                <a href="{{ url_for('diet_page', slug=diet_slug, page=p) }}" class="{% if p == recipes.page %}active{% endif %}">{{ p }}</a>
+            {% else %}
+                <span class="disabled">&hellip;</span>
+            {% endif %}
+        {% endfor %}
+        {% if recipes.has_next %}
+        <a href="{{ url_for('diet_page', slug=diet_slug, page=recipes.next_num) }}">&raquo;</a>
+        {% endif %}
+    </div>
+    {% endif %}
+    {% else %}
+    <div class="empty-state">
+        <h3>No {{ diet_name }} recipes match yet.</h3>
+        <p>Try a different diet category or browse all recipes.</p>
+        <a href="{{ url_for('all_recipes') }}" class="btn btn-primary">Browse All Recipes</a>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

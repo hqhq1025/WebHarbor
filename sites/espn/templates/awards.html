@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+{% block title %}{{ sport.name }} Awards{% endblock %}
+
+{% block content %}
+<div class="container">
+  <div class="clubhouse-header">
+    <span class="clubhouse-header__title">{{ sport.display_name or sport.name }} Awards</span>
+  </div>
+  <div class="page-header">
+    <h1>{{ sport.name }} Season Awards</h1>
+    <p class="subtitle">MVP, Rookie of the Year, and other major hardware.</p>
+    {% set active = 'home' %}{% include "_sport_subnav.html" %}
+  </div>
+
+  <div class="filter-row">
+    <a class="filter-tab {% if not season %}active{% endif %}"
+       href="{{ sport.url_prefix }}awards">All seasons</a>
+    {% for sn in seasons %}
+    <a class="filter-tab {% if season == sn %}active{% endif %}"
+       href="{{ sport.url_prefix }}awards?season={{ sn }}">{{ sn }}</a>
+    {% endfor %}
+  </div>
+
+  {% if awards %}
+  <div class="awards-grid">
+    {% for award in awards %}
+    {% set winner = players.get(award.winner_player_id) %}
+    {% set team = teams.get(award.winner_team_id) %}
+    <article class="award-card">
+      <header class="award-card__header">
+        <h3 class="award-card__name">{{ award.award_name }}</h3>
+        <span class="award-card__season">{{ award.season }}</span>
+      </header>
+      <div class="award-card__body">
+        <div class="award-card__winner">
+          <span class="award-card__label">Winner</span>
+          <strong>
+            {% if winner %}
+            <a href="/player/{{ sport.slug }}/{{ winner.slug }}">{{ winner.name }}</a>
+            {% else %}
+            TBD
+            {% endif %}
+          </strong>
+          {% if team %}<div class="award-card__team">{{ team.full_name }}</div>{% endif %}
+        </div>
+        <div class="award-card__stat">
+          <span class="award-card__label">Voting Share</span>
+          <strong>{{ (award.voting_share * 100)|round(1) }}%</strong>
+        </div>
+        {% if award.finalists %}
+        <div class="award-card__finalists">
+          <span class="award-card__label">Finalists</span>
+          <ul>
+            {% for f in (award.finalists|from_json_safe) %}
+            <li>{{ f.name }} <span class="muted">({{ (f.votes_share * 100)|round(1) }}%)</span></li>
+            {% endfor %}
+          </ul>
+        </div>
+        {% endif %}
+        <div class="award-card__date muted">Announced {{ award.announced_date }}</div>
+      </div>
+    </article>
+    {% endfor %}
+  </div>
+  {% else %}
+  <p class="empty-msg">No awards on record for this filter.</p>
+  {% endif %}
+</div>
+{% endblock %}

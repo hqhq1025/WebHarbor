@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+{% block title %}Amazon Business{% endblock %}
+
+{% block content %}
+<div style="background:#232f3e;color:#fff;padding:50px 20px;text-align:center">
+    <h1 style="margin:0;font-size:42px">Amazon <span style="color:#ff9900">Business</span></h1>
+    <p style="margin:12px 0 0;font-size:18px;max-width:760px;margin-left:auto;margin-right:auto">
+        Save money. Save time. Reinvent your business buying with smart purchasing tools, business-only pricing, and shareable accounts.
+    </p>
+    <a href="{{ url_for('register') }}" class="btn btn-orange" style="margin-top:16px;padding:12px 30px;text-decoration:none;display:inline-block">Create a free account</a>
+</div>
+
+<div style="max-width:1200px;margin:30px auto;padding:0 20px">
+    <h2 style="text-align:center;margin-bottom:24px">Built for organizations of every size</h2>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:20px">
+        <div style="background:#fff;padding:24px;border-radius:6px;text-align:center">
+            <div style="font-size:42px">💼</div>
+            <h3>Business-only pricing</h3>
+            <p class="text-muted">Quantity discounts and exclusive prices on millions of products.</p>
+        </div>
+        <div style="background:#fff;padding:24px;border-radius:6px;text-align:center">
+            <div style="font-size:42px">📦</div>
+            <h3>Bulk ordering</h3>
+            <p class="text-muted">Buy in bulk with progressive discounts at 6, 12, and 24+ units.</p>
+        </div>
+        <div style="background:#fff;padding:24px;border-radius:6px;text-align:center">
+            <div style="font-size:42px">🧾</div>
+            <h3>Tax-exempt purchasing</h3>
+            <p class="text-muted">Eligible non-profit, education, and government organizations can buy tax-free.</p>
+        </div>
+        <div style="background:#fff;padding:24px;border-radius:6px;text-align:center">
+            <div style="font-size:42px">👥</div>
+            <h3>Shared accounts</h3>
+            <p class="text-muted">Multi-user accounts with role-based permissions and approval workflows.</p>
+        </div>
+        <div style="background:#fff;padding:24px;border-radius:6px;text-align:center">
+            <div style="font-size:42px">📊</div>
+            <h3>Spend analytics</h3>
+            <p class="text-muted">Reports by user, group, GL code, and project. Export to CSV.</p>
+        </div>
+        <div style="background:#fff;padding:24px;border-radius:6px;text-align:center">
+            <div style="font-size:42px">🚚</div>
+            <h3>Business Prime</h3>
+            <p class="text-muted">Optional add-on: FREE Two-Day delivery on eligible items + Spend Visibility.</p>
+        </div>
+    </div>
+
+    <h2 style="text-align:center;margin:40px 0 20px">Business Prime plans</h2>
+    <table style="width:100%;background:#fff;border-collapse:collapse;border-radius:6px;overflow:hidden">
+        <thead style="background:#f0f2f2;text-align:left">
+            <tr>
+                <th style="padding:14px">Plan</th>
+                <th style="padding:14px">Users</th>
+                <th style="padding:14px">Annual price</th>
+                <th style="padding:14px">Best for</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr style="border-top:1px solid #eaeaea"><td style="padding:14px"><strong>Duo</strong></td><td style="padding:14px">1 user</td><td style="padding:14px">$69 / year</td><td style="padding:14px">Sole proprietors and very small teams</td></tr>
+            <tr style="border-top:1px solid #eaeaea"><td style="padding:14px"><strong>Essentials</strong></td><td style="padding:14px">Up to 3 users</td><td style="padding:14px">$179 / year</td><td style="padding:14px">Small businesses with multiple buyers</td></tr>
+            <tr style="border-top:1px solid #eaeaea"><td style="padding:14px"><strong>Small</strong></td><td style="padding:14px">Up to 10 users</td><td style="padding:14px">$499 / year</td><td style="padding:14px">Growing teams with approval workflows</td></tr>
+            <tr style="border-top:1px solid #eaeaea"><td style="padding:14px"><strong>Medium</strong></td><td style="padding:14px">Up to 100 users</td><td style="padding:14px">$1,299 / year</td><td style="padding:14px">Mid-size organizations and franchises</td></tr>
+            <tr style="border-top:1px solid #eaeaea"><td style="padding:14px"><strong>Enterprise</strong></td><td style="padding:14px">100+ users</td><td style="padding:14px">$10,099 / year</td><td style="padding:14px">Large enterprises with advanced analytics needs</td></tr>
+        </tbody>
+    </table>
+
+    <div style="text-align:center;margin:30px 0 50px">
+        <a href="{{ url_for('register') }}" class="btn btn-yellow" style="padding:12px 28px;text-decoration:none;display:inline-block">Get started — it's free</a>
+        <p class="text-muted" style="margin-top:10px">No credit card required to open a Business account.</p>
+    </div>
+</div>
+{% endblock %}

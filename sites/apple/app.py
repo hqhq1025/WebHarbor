@@ -1725,7 +1725,145 @@ INFO_PAGES = {
             ('Apple Arcade', '#'),
             ('Apple News+', '#'),
             ('Apple Fitness+', '#'),
-            ('Apple One', '#'),
+            ('Apple One', '/apple-one'),
+        ],
+    },
+    'find-my': {
+        'title': 'Find My',
+        'subtitle': 'Lose your knack for losing things.',
+        'body': [
+            'Find My helps you locate your Apple devices, AirTag, and friends — all from one app.',
+            'Use Find My iPhone to play a sound on a misplaced device, mark it as lost, or erase it remotely.',
+            'AirTag uses Precision Finding with Ultra Wideband to guide you to your item with on-screen directions on iPhone 11 and later.',
+            'The Find My network is end-to-end encrypted and anonymous — only you can see the location of your devices.',
+            'Find My works with AirPods, Apple Watch, MacBook, iPad, HomePod, and Find My-enabled third-party accessories.',
+        ],
+        'links': [
+            ('AirTag', '/product/airtag'),
+            ('AirTag 4 Pack', '/product/airtag-4-pack'),
+            ('Set up Find My', '/support/article/find-my-setup'),
+            ('Find My network accessories', '#'),
+        ],
+    },
+    'family-sharing': {
+        'title': 'Family Sharing',
+        'subtitle': 'Share with family. Privately.',
+        'body': [
+            'Family Sharing makes it easy for up to six people in your family to share App Store purchases, Apple subscriptions, iCloud+ storage, an Apple Music family plan, and more — without sharing accounts.',
+            'Ask to Buy lets a parent or guardian approve children\'s purchases or free downloads from a connected device.',
+            'Share a family photo album, calendar, and reminders. Find family members on a map with Find My.',
+            'Screen Time provides activity reports and lets you set limits on apps and content for children\'s devices.',
+            'Share Apple One Family or Apple One Premier across the household with a single payment.',
+        ],
+        'links': [
+            ('Set up Family Sharing', '/support/article/family-sharing-setup'),
+            ('Apple One Family', '/product/apple-one-family'),
+            ('Apple One Premier', '/product/apple-one-premier'),
+            ('iCloud+ Storage', '/product/icloud-200gb'),
+        ],
+    },
+    'applecare': {
+        'title': 'AppleCare+',
+        'subtitle': 'Coverage that grows with you.',
+        'body': [
+            'AppleCare+ provides 24/7 priority access to Apple experts and includes unlimited incidents of accidental damage protection.',
+            'Choose monthly billing or pay up front for 2 or 3 years of coverage. Cancel anytime.',
+            'Add Theft and Loss for iPhone — covers up to two theft or loss incidents over the coverage term.',
+            'For Mac, AppleCare+ extends hardware coverage to three years and includes Mac battery service.',
+        ],
+        'links': [
+            ('AppleCare+ for iPhone 17 Pro', '/product/applecare-iphone-17-pro'),
+            ('AppleCare+ for MacBook Pro 14"', '/product/applecare-macbook-pro-14'),
+            ('AppleCare+ for iPad Pro 13"', '/product/applecare-ipad-pro-13'),
+            ('AppleCare+ for Apple Watch Ultra 3', '/product/applecare-watch-ultra-3'),
+            ('AppleCare+ for Apple Vision Pro', '/product/applecare-vision-pro'),
+            ('Compare AppleCare plans', '/applecare-compare'),
+        ],
+    },
+    'applecare-compare': {
+        'title': 'Compare AppleCare+ plans',
+        'subtitle': 'See what AppleCare+ covers across iPhone, Mac, iPad, Watch, and Vision Pro.',
+        'body': [
+            'iPhone — AppleCare+ from $7.99/mo. AppleCare+ with Theft and Loss from $13.49/mo.',
+            'iPad — AppleCare+ from $3.99/mo. 2 years of hardware coverage with unlimited accidental damage.',
+            'Mac — AppleCare+ from $4.49/mo (Mac mini) up to $26.99/mo (Mac Pro). 3 years of coverage.',
+            'Apple Watch — AppleCare+ from $2.49/mo (SE) up to $4.99/mo (Ultra 3). 2 years.',
+            'Apple Vision Pro — AppleCare+ at $29.99/mo or $499 for 2 years upfront.',
+            'AirPods, HomePod, Apple TV — AppleCare+ from $1.49/mo. 2 years of coverage.',
+        ],
+        'links': [
+            ('Shop AppleCare+ for iPhone', '/product/applecare-iphone-17-pro'),
+            ('Shop AppleCare+ for Mac',   '/product/applecare-macbook-pro-16'),
+            ('Shop AppleCare+ for iPad',  '/product/applecare-ipad-pro-13'),
+            ('Shop AppleCare+ for Watch', '/product/applecare-watch-ultra-3'),
+            ('Shop AppleCare+ for Vision Pro', '/product/applecare-vision-pro'),
+        ],
+    },
+    'financing': {
+        'title': 'Apple Card Monthly Installments',
+        'subtitle': 'Pay over time, interest free.',
+        'body': [
+            'Apple Card Monthly Installments lets you pay for select Apple products over 12 to 24 months at 0% APR.',
+            'iPhone, Mac, iPad, and Apple Watch are eligible for monthly installments with no interest.',
+            'See your monthly payment estimate on each product page (e.g. iPhone 17 Pro at $45.79/mo. for 24 months).',
+            'Apple Card is required and is subject to credit approval. Variable APRs for Apple Card other than ACMI range from 19.24% to 29.49%.',
+        ],
+        'links': [
+            ('iPhone monthly payment',          '/financing/iphone-monthly-payment'),
+            ('Mac monthly payment',             '/financing/mac-monthly-payment'),
+            ('iPad monthly payment',            '/financing/ipad-monthly-payment'),
+            ('Apple Watch monthly payment',     '/financing/watch-monthly-payment'),
+            ('Apple Card',                      '#'),
+        ],
+    },
+    'apple-intelligence': {
+        'title': 'Apple Intelligence',
+        'subtitle': 'AI for the rest of us.',
+        'body': [
+            'Apple Intelligence is the personal intelligence system that combines the power of generative models with personal context to deliver helpful and relevant intelligence.',
+            'Writing Tools help you rewrite, proofread, and summarize text — across Mail, Notes, Pages, and third-party apps.',
+            'Genmoji and Image Playground let you generate custom emoji and images that match your conversation.',
+            'Siri gains richer language understanding, on-screen awareness, and ChatGPT integration powered by Apple\'s on-device and Private Cloud Compute models.',
+            'Apple Intelligence requires iPhone 15 Pro or later, or iPad/Mac with M1 or later, with Siri and device language set to a supported language.',
+        ],
+        'links': [
+            ('Compatible iPhone', '/compare/iphone'),
+            ('Compatible iPad',   '/compare/ipad'),
+            ('Compatible Mac',    '/compare/mac'),
+            ('Apple Intelligence features', '/support/article/apple-intelligence-features'),
+        ],
+    },
+    'apple-one': {
+        'title': 'Apple One',
+        'subtitle': 'Bundle Apple services and save.',
+        'body': [
+            'Individual — Apple Music, Apple TV+, Apple Arcade, and 50GB of iCloud+ for $19.95/mo.',
+            'Family — Everything in Individual plus 200GB of iCloud+ for up to 6 family members for $25.95/mo.',
+            'Premier — All Family services plus Apple News+, Apple Fitness+, and 2TB of iCloud+ for $37.95/mo.',
+            'Try Apple One free for one month. New subscribers only. Plan automatically renews.',
+            'Switch between Individual, Family, and Premier at any time in Settings on iPhone, iPad, or Mac.',
+        ],
+        'links': [
+            ('Apple One Individual', '/product/apple-one-individual'),
+            ('Apple One Family',     '/product/apple-one-family'),
+            ('Apple One Premier',    '/product/apple-one-premier'),
+        ],
+    },
+    'business-program': {
+        'title': 'Apple at Work — Volume Pricing',
+        'subtitle': 'Volume purchasing for organizations.',
+        'body': [
+            'Save on bulk Mac, iPad, iPhone, and accessories purchases with Apple Business Pricing.',
+            'Order 10 or more Macs, iPads, or iPhones and qualify for volume pricing with Apple Financial Services lease options.',
+            'Apple Business Specialists work with IT teams to plan deployments using Apple Business Manager and zero-touch setup.',
+            'Contact 1-800-854-3680, 7 AM – 5 PM PT, or request a quote online for orders over $10,000.',
+        ],
+        'links': [
+            ('Mac for business',  '/mac'),
+            ('iPad for business', '/ipad'),
+            ('iPhone for business','/iphone'),
+            ('Request a quote',   '/business/quote'),
+            ('Apple Business Manager', '#'),
         ],
     },
 }
@@ -1749,6 +1887,22 @@ INFO_PAGES = {
 @app.route('/tv-home/')
 @app.route('/entertainment')
 @app.route('/entertainment/')
+@app.route('/find-my')
+@app.route('/find-my/')
+@app.route('/family-sharing')
+@app.route('/family-sharing/')
+@app.route('/applecare')
+@app.route('/applecare/')
+@app.route('/applecare-compare')
+@app.route('/applecare-compare/')
+@app.route('/financing')
+@app.route('/financing/')
+@app.route('/apple-intelligence')
+@app.route('/apple-intelligence/')
+@app.route('/apple-one')
+@app.route('/apple-one/')
+@app.route('/business-program')
+@app.route('/business-program/')
 def info_page():
     """Render any registered static info topic via a single Jinja template."""
     # The path strips leading slash + trailing slash, then maps to INFO_PAGES.
@@ -1758,6 +1912,90 @@ def info_page():
         abort(404)
     return render_template('info_page.html', topic=topic, page=page)
 
+
+# ---------------------------------------------------------------------------
+# Financing — per-category monthly-payment summary pages (R3)
+# ---------------------------------------------------------------------------
+
+FINANCING_BLURBS = {
+    'iphone': ('iPhone monthly payment',
+               'Buy the new iPhone with Apple Card Monthly Installments. 0% APR for 24 months.',
+               ['iPhone 17 Pro from $45.79/mo. for 24 months.',
+                'iPhone 17 Pro Max from $49.95/mo. for 24 months.',
+                'iPhone Air from $41.62/mo. for 24 months.',
+                'iPhone 17 from $33.29/mo. for 24 months.',
+                'iPhone 17e from $24.95/mo. for 24 months.']),
+    'mac':    ('Mac monthly payment',
+               'Buy a Mac and pay monthly with Apple Card Monthly Installments.',
+               ['MacBook Air 13" from $45.79/mo. for 24 months.',
+                'MacBook Air 15" from $54.12/mo. for 24 months.',
+                'MacBook Pro 14" from $70.79/mo. for 24 months.',
+                'MacBook Pro 16" from $104.12/mo. for 24 months.',
+                'iMac 24" from $54.12/mo. for 24 months.',
+                'Mac mini M4 from $24.95/mo. for 24 months.']),
+    'ipad':   ('iPad monthly payment',
+               'Pay over time, interest free, with Apple Card Monthly Installments.',
+               ['iPad Pro M5 from $41.62/mo. for 24 months.',
+                'iPad Air M4 from $24.95/mo. for 24 months.',
+                'iPad (A16) from $14.54/mo. for 24 months.',
+                'iPad mini from $20.79/mo. for 24 months.']),
+    'watch':  ('Apple Watch monthly payment',
+               'Pay over time on Apple Watch. 0% APR for 24 months.',
+               ['Apple Watch Series 11 from $16.62/mo. for 24 months.',
+                'Apple Watch Ultra 3 from $33.29/mo. for 24 months.',
+                'Apple Watch SE from $10.37/mo. for 24 months.']),
+}
+
+
+@app.route('/financing/iphone-monthly-payment')
+@app.route('/financing/mac-monthly-payment')
+@app.route('/financing/ipad-monthly-payment')
+@app.route('/financing/watch-monthly-payment')
+def financing_monthly_payment():
+    """Per-category Apple Card Monthly Installments summary."""
+    last = request.path.rstrip('/').rsplit('/', 1)[-1]
+    cat = last.split('-monthly-payment')[0]
+    if cat not in FINANCING_BLURBS:
+        abort(404)
+    title, subtitle, lines = FINANCING_BLURBS[cat]
+    page = {
+        'title': title, 'subtitle': subtitle,
+        'body': ['Apple Card Monthly Installments (ACMI) is a 0% APR payment option available only in the U.S. for select Apple products.',
+                 *lines,
+                 'Variable APRs for Apple Card other than ACMI range from 19.24% to 29.49%.'],
+        'links': [('Shop ' + cat.capitalize(), '/' + cat),
+                  ('Apple Card', '#'),
+                  ('All financing options', '/financing')],
+    }
+    return render_template('info_page.html', topic=f'financing/{last}', page=page)
+
+
+@app.route('/business/quote', methods=['GET', 'POST'])
+def business_quote():
+    """Apple at Work — request a business quote (R3). Stateless info form."""
+    submitted = False
+    if request.method == 'POST':
+        # No DB write — keeps the seed deterministic; this is a contact form.
+        submitted = True
+    page = {
+        'title': 'Request a business quote',
+        'subtitle': 'Get help from an Apple Business Specialist.',
+        'body': [
+            'Apple Business Specialists work with organizations of every size on volume orders, financing, and deployment.',
+            'Tell us about your business — number of employees, products of interest, and timeline — and a Specialist will follow up within one business day.',
+            'For immediate assistance, call 1-800-854-3680 Monday – Friday, 7 AM – 5 PM PT.',
+        ],
+        'links': [('Apple Business Manager', '#'),
+                  ('Apple Business Essentials', '#'),
+                  ('Volume Pricing', '/business-program'),
+                  ('Education Pricing', '/education-pricing')],
+    }
+    if submitted:
+        page['body'] = ['Thanks — an Apple Business Specialist will reach out within one business day.'] + page['body']
+    return render_template('info_page.html', topic='business/quote', page=page)
+
+
+# ---------------------------------------------------------------------------
 
 @app.route('/configure/<slug>')
 def configurator(slug):
@@ -4063,11 +4301,694 @@ EXTRA_PRODUCTS_R2 = [
 ]
 
 
+# ---------------------------------------------------------------------------
+# R3 catalog expansion — pushes total SKU count past 600.
+# Coverage: Apple software services (Music/TV+/iCloud+/Arcade/Fitness+/News+/
+# Apple One/AppleCare+), Beats line color variants, Mac peripherals (Magic
+# Mouse/Trackpad/Keyboard, Studio Display variants), iPad Smart Folio + Magic
+# Keyboard per model, iPhone 17 series cases + wallets + crossbody straps,
+# additional Watch bands (Trail Loop, Alpine Loop, Ocean, Hermès, Nike, Modern
+# Buckle, Braided Solo Loop), chargers / cables / adapters, HomeKit accessories.
+# Every tuple is deterministic; new "service" subcategory introduced for the
+# subscription SKUs (price = monthly headline).
+# ---------------------------------------------------------------------------
+
+def _service_tuple(name, slug, price, period, desc, year=2025, subcat='service'):
+    """Subscription SKU: stored in category=accessories, subcategory=service so
+    the rest of the catalog UI keeps working. Price is the headline period
+    price (e.g. monthly individual = 10.99)."""
+    return (name, slug, 'accessories', subcat,
+            f'{period} membership.',
+            desc, float(price), None, [], [],
+            {'period': period, 'kind': 'subscription'}, year, '')
+
+
+def _care_tuple(name, slug, device, price, term='2-year', desc=None):
+    desc = desc or (f'AppleCare+ for {device} extends hardware coverage with unlimited '
+                    f'incidents of accidental damage, priority access to Apple experts, '
+                    f'and battery service. {term} term.')
+    return (name, slug, 'accessories', 'applecare',
+            f'AppleCare+ for {device}.',
+            desc, float(price), None, [], [],
+            {'compat': device, 'term': term, 'kind': 'applecare'}, 2025, '')
+
+
+def _homekit_tuple(name, slug, brand, kind, price, year, summary):
+    return (name, slug, 'accessories', 'homekit',
+            f'Works with Apple Home.', summary,
+            float(price), None, [], [],
+            {'brand': brand, 'kind': kind, 'works_with': 'Apple Home, Siri'}, year, '')
+
+
+def _adapter_tuple(name, slug, port_in, port_out, length, price, year=2024):
+    desc = (f'Apple {name}. Connects {port_in} to {port_out}. Length: {length}. '
+            f'Compatible with iPhone, iPad, and Mac models with the corresponding port.')
+    return (name, slug, 'accessories', 'cable',
+            f'{port_in} to {port_out}.', desc,
+            float(price), None, ['White'], [],
+            {'in': port_in, 'out': port_out, 'length': length}, year, '')
+
+
+def _smart_folio_tuple(name, slug, ipad_model, color, price, year=2024):
+    desc = (f'Smart Folio for {ipad_model} in {color}. Snaps on with magnets, '
+            f'doubles as a stand for typing and viewing, and wakes the iPad on open.')
+    return (name, slug, 'accessories', 'ipad-accessory',
+            f'Smart Folio for {ipad_model}.', desc,
+            float(price), None, [color], [],
+            {'compat': ipad_model, 'color': color, 'kind': 'Smart Folio'}, year, '')
+
+
+def _magic_kbd_ipad_tuple(name, slug, ipad_model, color, price, year=2024):
+    desc = (f'Magic Keyboard for {ipad_model} in {color}. Floating cantilever design, '
+            f'glass trackpad, function row, backlit keys, USB-C passthrough charging.')
+    return (name, slug, 'accessories', 'ipad-accessory',
+            f'Magic Keyboard for {ipad_model}.', desc,
+            float(price), None, [color], [],
+            {'compat': ipad_model, 'color': color, 'kind': 'Magic Keyboard'}, year, '')
+
+
+def _crossbody_tuple(color, price=59.0):
+    slug = f'iphone-crossbody-strap-{color.lower().replace(" ", "-")}'
+    return ('iPhone Crossbody Strap - ' + color, slug, 'accessories', 'iphone-case',
+            'Wear it. Carry it.',
+            f'iPhone Crossbody Strap in {color}. Magnetic, adjustable, MagSafe-compatible.',
+            59.0, None, [color], [],
+            {'kind': 'Crossbody Strap', 'color': color}, 2025, '')
+
+
+EXTRA_PRODUCTS_R3 = [
+    # ------------------------------------------------------------ Subscriptions
+    _service_tuple('Apple Music Individual', 'apple-music-individual',  10.99, 'monthly',
+                   'Listen to over 100 million songs ad-free, Spatial Audio with Dolby Atmos, lossless audio, and 30,000+ expert-curated playlists.'),
+    _service_tuple('Apple Music Family',     'apple-music-family',      16.99, 'monthly',
+                   'Apple Music for up to 6 family members. Includes personal libraries, recommendations, Apple Music Kids, and parental controls.'),
+    _service_tuple('Apple Music Student',    'apple-music-student',      5.99, 'monthly',
+                   'Apple Music for verified college students at a reduced rate. Includes Apple TV+ at no extra cost.'),
+    _service_tuple('Apple Music Voice',      'apple-music-voice',        4.99, 'monthly',
+                   'Apple Music for Siri. Stream over 100 million songs hands-free on iPhone, HomePod, and CarPlay.'),
+    _service_tuple('Apple TV+',              'apple-tv-plus',            9.99, 'monthly',
+                   'Award-winning Apple Originals — drama, comedy, kids and family, documentary, and more. 4K HDR, Dolby Vision, Dolby Atmos.'),
+    _service_tuple('iCloud+ 50GB',           'icloud-50gb',              0.99, 'monthly',
+                   'iCloud+ with 50GB storage, Private Relay, Hide My Email, Custom Email Domain, and HomeKit Secure Video for one camera.'),
+    _service_tuple('iCloud+ 200GB',          'icloud-200gb',             2.99, 'monthly',
+                   'iCloud+ with 200GB storage. All iCloud+ features. Sharable with up to 5 family members.'),
+    _service_tuple('iCloud+ 2TB',            'icloud-2tb',               9.99, 'monthly',
+                   'iCloud+ with 2TB storage. HomeKit Secure Video supports up to 5 cameras. Sharable with up to 5 family members.'),
+    _service_tuple('iCloud+ 6TB',            'icloud-6tb',              29.99, 'monthly',
+                   'iCloud+ with 6TB storage. Best for ProRes, ProRAW, and large libraries. HomeKit Secure Video unlimited cameras.'),
+    _service_tuple('iCloud+ 12TB',           'icloud-12tb',             59.99, 'monthly',
+                   'iCloud+ with 12TB storage. Maximum capacity available. Sharable with up to 5 family members.'),
+    _service_tuple('Apple Arcade',           'apple-arcade',             6.99, 'monthly',
+                   'Apple Arcade gives you unlimited access to a growing collection of more than 200 incredibly fun games — no ads, no in-app purchases.'),
+    _service_tuple('Apple Fitness+',         'apple-fitness-plus',       9.99, 'monthly',
+                   'Apple Fitness+ studio-style workouts and meditations with the world\'s top trainers. Stream on iPhone, iPad, or Apple TV.'),
+    _service_tuple('Apple News+',            'apple-news-plus',         12.99, 'monthly',
+                   'Apple News+ unlocks hundreds of magazines, leading newspapers, premium digital publishers, audio stories, puzzles, and more.'),
+    _service_tuple('Apple One Individual',   'apple-one-individual',    19.95, 'monthly',
+                   'Apple One bundles Apple Music, Apple TV+, Apple Arcade, and 50GB of iCloud+ for one low monthly price.'),
+    _service_tuple('Apple One Family',       'apple-one-family',        25.95, 'monthly',
+                   'Apple One Family bundles Apple Music, Apple TV+, Apple Arcade, and 200GB of iCloud+ for up to 6 family members.'),
+    _service_tuple('Apple One Premier',      'apple-one-premier',       37.95, 'monthly',
+                   'Apple One Premier bundles Apple Music, Apple TV+, Apple Arcade, Apple News+, Apple Fitness+, and 2TB of iCloud+ for up to 6 family members.'),
+
+    # ------------------------------------------------------------ AppleCare+
+    _care_tuple('AppleCare+ for iPhone 17 Pro',      'applecare-iphone-17-pro',      'iPhone 17 Pro',      8.99,  '2-year'),
+    _care_tuple('AppleCare+ for iPhone 17 Pro Max',  'applecare-iphone-17-pro-max',  'iPhone 17 Pro Max',  9.99,  '2-year'),
+    _care_tuple('AppleCare+ for iPhone Air',         'applecare-iphone-air',         'iPhone Air',         8.49,  '2-year'),
+    _care_tuple('AppleCare+ for iPhone 17',          'applecare-iphone-17',          'iPhone 17',          7.99,  '2-year'),
+    _care_tuple('AppleCare+ for iPhone 17e',         'applecare-iphone-17e',         'iPhone 17e',         6.99,  '2-year'),
+    _care_tuple('AppleCare+ with Theft and Loss for iPhone 17 Pro',     'applecare-tnl-iphone-17-pro',     'iPhone 17 Pro',     13.49, '2-year',
+                desc='AppleCare+ with Theft and Loss extends coverage to include theft or loss, plus unlimited accidental damage incidents and 24/7 priority support.'),
+    _care_tuple('AppleCare+ for Mac (13-inch MacBook Air)',  'applecare-macbook-air-13',  'MacBook Air 13"',  8.99,  '3-year'),
+    _care_tuple('AppleCare+ for Mac (15-inch MacBook Air)',  'applecare-macbook-air-15',  'MacBook Air 15"', 10.99,  '3-year'),
+    _care_tuple('AppleCare+ for MacBook Pro 14-inch',        'applecare-macbook-pro-14',  'MacBook Pro 14"', 14.99,  '3-year'),
+    _care_tuple('AppleCare+ for MacBook Pro 16-inch',        'applecare-macbook-pro-16',  'MacBook Pro 16"', 16.99,  '3-year'),
+    _care_tuple('AppleCare+ for iMac',                'applecare-imac',                'iMac',                9.99,  '3-year'),
+    _care_tuple('AppleCare+ for Mac mini',             'applecare-mac-mini',            'Mac mini',            4.49,  '3-year'),
+    _care_tuple('AppleCare+ for Mac Studio',           'applecare-mac-studio',          'Mac Studio',         11.49,  '3-year'),
+    _care_tuple('AppleCare+ for Mac Pro',              'applecare-mac-pro',             'Mac Pro',            26.99,  '3-year'),
+    _care_tuple('AppleCare+ for iPad Pro 11-inch',     'applecare-ipad-pro-11',         'iPad Pro 11-inch',    7.99,  '2-year'),
+    _care_tuple('AppleCare+ for iPad Pro 13-inch',     'applecare-ipad-pro-13',         'iPad Pro 13-inch',    8.99,  '2-year'),
+    _care_tuple('AppleCare+ for iPad Air',             'applecare-ipad-air',            'iPad Air',            5.99,  '2-year'),
+    _care_tuple('AppleCare+ for iPad mini',            'applecare-ipad-mini',           'iPad mini',           5.99,  '2-year'),
+    _care_tuple('AppleCare+ for iPad',                 'applecare-ipad',                'iPad',                3.99,  '2-year'),
+    _care_tuple('AppleCare+ for Apple Watch Series 11','applecare-watch-series-11',     'Apple Watch Series 11', 3.99,  '2-year'),
+    _care_tuple('AppleCare+ for Apple Watch Ultra 3',  'applecare-watch-ultra-3',       'Apple Watch Ultra 3', 4.99,  '2-year'),
+    _care_tuple('AppleCare+ for Apple Watch SE',       'applecare-watch-se',            'Apple Watch SE',       2.49,  '2-year'),
+    _care_tuple('AppleCare+ for AirPods Pro 3',        'applecare-airpods-pro-3',       'AirPods Pro 3',       1.99,  '2-year'),
+    _care_tuple('AppleCare+ for AirPods Max',          'applecare-airpods-max-2',       'AirPods Max',         3.99,  '2-year'),
+    _care_tuple('AppleCare+ for AirPods',              'applecare-airpods-4',           'AirPods 4',           1.49,  '2-year'),
+    _care_tuple('AppleCare+ for HomePod',              'applecare-homepod',             'HomePod',             1.49,  '2-year'),
+    _care_tuple('AppleCare+ for Apple Vision Pro',     'applecare-vision-pro',          'Apple Vision Pro',   29.99,  '2-year',
+                desc='AppleCare+ for Apple Vision Pro adds unlimited incidents of accidental damage protection, prioritized expert support, and battery service.'),
+    _care_tuple('AppleCare+ for Apple TV',             'applecare-apple-tv',            'Apple TV 4K',         1.49,  '2-year'),
+
+    # ------------------------------------------------------------ Mac peripherals
+    ('Magic Mouse - White', 'magic-mouse-white', 'accessories', 'mac-accessory',
+     'Magic Mouse with USB-C charging.',
+     'Wireless, rechargeable, Multi-Touch surface for swipes and gestures. USB-C charging port on the bottom.',
+     99.0, None, ['White'], [], {'connectivity': 'Bluetooth, USB-C', 'compat': 'Mac'}, 2024, ''),
+    ('Magic Mouse - Black', 'magic-mouse-black', 'accessories', 'mac-accessory',
+     'Magic Mouse in Black with USB-C charging.',
+     'Wireless, rechargeable Magic Mouse in Space Black to pair with MacBook Pro Space Black. USB-C charging.',
+     129.0, None, ['Black'], [], {'connectivity': 'Bluetooth, USB-C', 'compat': 'Mac'}, 2024, ''),
+    ('Magic Trackpad - White', 'magic-trackpad-white', 'accessories', 'mac-accessory',
+     'Magic Trackpad with USB-C.',
+     'Force Touch, Multi-Touch gestures, all-day battery, USB-C charging. Edge-to-edge glass surface.',
+     129.0, None, ['White'], [], {'connectivity': 'Bluetooth, USB-C', 'compat': 'Mac'}, 2024, ''),
+    ('Magic Trackpad - Black', 'magic-trackpad-black', 'accessories', 'mac-accessory',
+     'Magic Trackpad in Black.',
+     'Force Touch, Multi-Touch gestures, USB-C charging in Space Black.',
+     149.0, None, ['Black'], [], {'connectivity': 'Bluetooth, USB-C', 'compat': 'Mac'}, 2024, ''),
+    ('Magic Keyboard (US English) - White', 'magic-keyboard-mac-white', 'accessories', 'mac-accessory',
+     'Magic Keyboard for Mac.',
+     'Compact full-size keyboard with USB-C charging cable. Scissor mechanism for crisp typing.',
+     99.0, None, ['White'], [], {'connectivity': 'Bluetooth, USB-C', 'compat': 'Mac', 'layout': 'US English'}, 2024, ''),
+    ('Magic Keyboard with Touch ID', 'magic-keyboard-touch-id', 'accessories', 'mac-accessory',
+     'Magic Keyboard with Touch ID.',
+     'Compact full-size keyboard with Touch ID for fast sign-in and Apple Pay. Requires Apple silicon Mac.',
+     129.0, None, ['White'], [], {'compat': 'Apple silicon Mac', 'features': 'Touch ID'}, 2024, ''),
+    ('Magic Keyboard with Numeric Keypad', 'magic-keyboard-numeric', 'accessories', 'mac-accessory',
+     'Full-size keyboard with numeric keypad.',
+     'Extended-layout Magic Keyboard with numeric keypad and arrow keys for spreadsheets and data entry.',
+     129.0, None, ['White', 'Black'], [], {'compat': 'Mac', 'layout': 'Extended'}, 2024, ''),
+    ('Magic Keyboard with Touch ID and Numeric Keypad', 'magic-keyboard-touch-id-numeric', 'accessories', 'mac-accessory',
+     'Touch ID + numeric keypad.',
+     'Extended Magic Keyboard with Touch ID and numeric keypad. USB-C charging.',
+     149.0, None, ['White', 'Black'], [], {'compat': 'Apple silicon Mac', 'layout': 'Extended', 'features': 'Touch ID'}, 2024, ''),
+    ('Studio Display - Standard Glass - Tilt-adjustable Stand', 'studio-display-standard-tilt', 'mac', 'display',
+     '27-inch 5K Retina display.',
+     '27-inch 5K Retina display, 600 nits brightness, P3 wide color, True Tone, 12MP Ultra Wide camera with Center Stage, six-speaker sound system with Spatial Audio.',
+     1599.0, 133.25, ['Silver'], [], {'resolution': '5120x2880', 'brightness': '600 nits', 'camera': '12MP Ultra Wide'}, 2024, ''),
+    ('Studio Display - Nano-texture Glass - Tilt-adjustable Stand', 'studio-display-nano-tilt', 'mac', 'display',
+     'Nano-texture glass for minimal glare.',
+     'Studio Display with nano-texture glass to scatter reflections without losing contrast. Perfect for color-critical work.',
+     1899.0, 158.25, ['Silver'], [], {'resolution': '5120x2880', 'glass': 'Nano-texture'}, 2024, ''),
+    ('Studio Display - Standard Glass - Tilt- and Height-adjustable Stand', 'studio-display-standard-height', 'mac', 'display',
+     'Height-adjustable stand.',
+     'Studio Display with tilt- and height-adjustable stand for a more ergonomic setup.',
+     1999.0, 166.58, ['Silver'], [], {'resolution': '5120x2880', 'stand': 'Tilt and height'}, 2024, ''),
+    ('Studio Display - VESA Mount Adapter', 'studio-display-vesa', 'mac', 'display',
+     'VESA mount.',
+     'Studio Display with VESA mount adapter for wall, articulating-arm, or third-party-stand mounting.',
+     1599.0, 133.25, ['Silver'], [], {'resolution': '5120x2880', 'stand': 'VESA'}, 2024, ''),
+    ('Pro Display XDR - Standard Glass', 'pro-display-xdr-standard', 'mac', 'display',
+     'Pro reference display.',
+     'Pro Display XDR with 32-inch 6K Retina display, 1000 nits sustained / 1600 nits peak, P3 wide color, 1000000:1 contrast ratio.',
+     4999.0, 416.58, ['Silver'], [], {'resolution': '6016x3384', 'brightness': '1600 nits peak'}, 2024, ''),
+    ('Pro Display XDR - Nano-texture Glass', 'pro-display-xdr-nano', 'mac', 'display',
+     'Pro reference display with nano-texture.',
+     'Pro Display XDR with nano-texture glass for true matte finish on a 6K reference display.',
+     5999.0, 499.92, ['Silver'], [], {'resolution': '6016x3384', 'glass': 'Nano-texture'}, 2024, ''),
+    ('Pro Stand', 'pro-stand', 'accessories', 'display',
+     'For Pro Display XDR.',
+     'Tilt, rotate, and height-adjust the Pro Display XDR. Attaches magnetically with no cables.',
+     999.0, None, ['Silver'], [], {'compat': 'Pro Display XDR'}, 2019, ''),
+    ('VESA Mount Adapter for Pro Display XDR', 'pro-display-xdr-vesa', 'accessories', 'display',
+     'VESA mount.',
+     'VESA Mount Adapter for Pro Display XDR. 100mm x 100mm.',
+     199.0, None, ['Silver'], [], {'compat': 'Pro Display XDR'}, 2019, ''),
+
+    # ------------------------------------------------------------ iPad accessories
+    _smart_folio_tuple('Smart Folio for iPad Pro 13-inch (M4) - Black',  'smart-folio-ipad-pro-13-m4-black',  'iPad Pro 13-inch (M4)',  'Black',       99.0, 2024),
+    _smart_folio_tuple('Smart Folio for iPad Pro 13-inch (M4) - White',  'smart-folio-ipad-pro-13-m4-white',  'iPad Pro 13-inch (M4)',  'White',       99.0, 2024),
+    _smart_folio_tuple('Smart Folio for iPad Pro 13-inch (M4) - Denim',  'smart-folio-ipad-pro-13-m4-denim',  'iPad Pro 13-inch (M4)',  'Denim',       99.0, 2024),
+    _smart_folio_tuple('Smart Folio for iPad Pro 11-inch (M4) - Black',  'smart-folio-ipad-pro-11-m4-black',  'iPad Pro 11-inch (M4)',  'Black',       79.0, 2024),
+    _smart_folio_tuple('Smart Folio for iPad Pro 11-inch (M4) - White',  'smart-folio-ipad-pro-11-m4-white',  'iPad Pro 11-inch (M4)',  'White',       79.0, 2024),
+    _smart_folio_tuple('Smart Folio for iPad Pro 11-inch (M4) - Denim',  'smart-folio-ipad-pro-11-m4-denim',  'iPad Pro 11-inch (M4)',  'Denim',       79.0, 2024),
+    _smart_folio_tuple('Smart Folio for iPad Air 13-inch (M4) - Black',  'smart-folio-ipad-air-13-m4-black',  'iPad Air 13-inch (M4)',  'Black',       79.0, 2024),
+    _smart_folio_tuple('Smart Folio for iPad Air 13-inch (M4) - Light Violet', 'smart-folio-ipad-air-13-m4-light-violet', 'iPad Air 13-inch (M4)', 'Light Violet', 79.0, 2024),
+    _smart_folio_tuple('Smart Folio for iPad Air 11-inch (M4) - Black',  'smart-folio-ipad-air-11-m4-black',  'iPad Air 11-inch (M4)',  'Black',       69.0, 2024),
+    _smart_folio_tuple('Smart Folio for iPad Air 11-inch (M4) - Sage',   'smart-folio-ipad-air-11-m4-sage',   'iPad Air 11-inch (M4)',  'Sage',        69.0, 2024),
+    _smart_folio_tuple('Smart Folio for iPad Air 11-inch (M4) - Charcoal Gray', 'smart-folio-ipad-air-11-m4-charcoal', 'iPad Air 11-inch (M4)', 'Charcoal Gray', 69.0, 2024),
+    _smart_folio_tuple('Smart Folio for iPad (A16) - Black',             'smart-folio-ipad-a16-black',        'iPad (A16)',              'Black',       79.0, 2025),
+    _smart_folio_tuple('Smart Folio for iPad (A16) - Light Use',         'smart-folio-ipad-a16-light-use',    'iPad (A16)',              'Light Use',   79.0, 2025),
+    _smart_folio_tuple('Smart Folio for iPad mini (A17 Pro) - Dark Cherry', 'smart-folio-ipad-mini-a17-dark-cherry', 'iPad mini (A17 Pro)', 'Dark Cherry', 59.0, 2024),
+    _smart_folio_tuple('Smart Folio for iPad mini (A17 Pro) - Sage',     'smart-folio-ipad-mini-a17-sage',    'iPad mini (A17 Pro)',     'Sage',        59.0, 2024),
+    _magic_kbd_ipad_tuple('Magic Keyboard for iPad Pro 13-inch (M4) - Black',  'magic-keyboard-ipad-pro-13-m4-black',  'iPad Pro 13-inch (M4)',  'Black',  349.0, 2024),
+    _magic_kbd_ipad_tuple('Magic Keyboard for iPad Pro 13-inch (M4) - White',  'magic-keyboard-ipad-pro-13-m4-white',  'iPad Pro 13-inch (M4)',  'White',  349.0, 2024),
+    _magic_kbd_ipad_tuple('Magic Keyboard for iPad Pro 11-inch (M4) - Black',  'magic-keyboard-ipad-pro-11-m4-black',  'iPad Pro 11-inch (M4)',  'Black',  299.0, 2024),
+    _magic_kbd_ipad_tuple('Magic Keyboard for iPad Pro 11-inch (M4) - White',  'magic-keyboard-ipad-pro-11-m4-white',  'iPad Pro 11-inch (M4)',  'White',  299.0, 2024),
+    _magic_kbd_ipad_tuple('Magic Keyboard for iPad Air 13-inch (M4) - Black',  'magic-keyboard-ipad-air-13-m4-black',  'iPad Air 13-inch (M4)',  'Black',  319.0, 2024),
+    _magic_kbd_ipad_tuple('Magic Keyboard for iPad Air 11-inch (M4) - Black',  'magic-keyboard-ipad-air-11-m4-black',  'iPad Air 11-inch (M4)',  'Black',  269.0, 2024),
+    _magic_kbd_ipad_tuple('Magic Keyboard Folio for iPad (A16) - White',       'magic-keyboard-folio-ipad-a16',         'iPad (A16)',              'White',  249.0, 2025),
+    ('Apple Pencil Pro - Tip Refills',         'apple-pencil-pro-tips',     'accessories', 'pencil',
+     'Pack of 4 replacement tips.',
+     'Spare Apple Pencil Pro tips. Four-pack of replacement tips for Apple Pencil Pro.',
+     19.0, None, ['White'], [], {'compat': 'Apple Pencil Pro', 'qty': 4}, 2024, ''),
+    ('Apple Pencil (2nd generation) Tips',     'apple-pencil-2-tips',       'accessories', 'pencil',
+     'Pack of 4 replacement tips.',
+     'Spare tips for Apple Pencil (2nd generation). Four-pack.',
+     19.0, None, ['White'], [], {'compat': 'Apple Pencil (2nd generation)', 'qty': 4}, 2024, ''),
+    ('USB-C to Apple Pencil Adapter',          'usb-c-apple-pencil-adapter','accessories', 'pencil',
+     'Charge and pair via USB-C.',
+     'Adapter to charge and pair Apple Pencil (1st generation) with iPad models that have a USB-C port.',
+     9.0, None, ['White'], [], {'compat': 'Apple Pencil 1st gen', 'kind': 'adapter'}, 2022, ''),
+
+    # ------------------------------------------------------------ Chargers / cables / adapters
+    ('MagSafe Charger (1 m)', 'magsafe-charger-1m', 'accessories', 'charger',
+     'Wireless. Smart. Magnetic.',
+     'MagSafe Charger with 1 m USB-C cable. Magnetically attaches to iPhone for up to 15W wireless charging with a compatible adapter.',
+     39.0, None, ['White'], [], {'length': '1 m', 'power': '15W', 'compat': 'iPhone with MagSafe'}, 2024, ''),
+    ('MagSafe Charger (2 m)', 'magsafe-charger-2m', 'accessories', 'charger',
+     'MagSafe with a 2 m cable.',
+     'MagSafe Charger with 2 m USB-C cable. Convenient for desk and nightstand setups.',
+     49.0, None, ['White'], [], {'length': '2 m', 'power': '15W', 'compat': 'iPhone with MagSafe'}, 2024, ''),
+    ('MagSafe Duo Charger', 'magsafe-duo-charger', 'accessories', 'charger',
+     'Foldable. For iPhone and Apple Watch.',
+     'MagSafe Duo Charger folds for travel and charges iPhone and Apple Watch from a single source. Includes USB-C to Lightning cable.',
+     129.0, None, ['White'], [], {'compat': 'iPhone, Apple Watch'}, 2024, ''),
+    ('20W USB-C Power Adapter', 'usb-c-power-adapter-20w', 'accessories', 'charger',
+     '20W fast charging.',
+     'Compact, durable 20W USB-C Power Adapter for iPhone, iPad, and AirPods. Fast-charge iPhone 8 and later.',
+     19.0, None, ['White'], [], {'power': '20W', 'port': 'USB-C'}, 2024, ''),
+    ('30W USB-C Power Adapter', 'usb-c-power-adapter-30w', 'accessories', 'charger',
+     '30W fast charging.',
+     '30W USB-C Power Adapter for iPad Pro, iPad Air, MacBook Air. Compact design with foldable prongs on some regions.',
+     39.0, None, ['White'], [], {'power': '30W', 'port': 'USB-C'}, 2024, ''),
+    ('35W Dual USB-C Port Power Adapter', 'usb-c-power-adapter-35w-dual', 'accessories', 'charger',
+     'Two USB-C ports.',
+     '35W Dual USB-C Port Power Adapter. Charge two devices simultaneously with intelligent power distribution.',
+     59.0, None, ['White'], [], {'power': '35W', 'ports': '2x USB-C'}, 2024, ''),
+    ('35W Dual USB-C Port Compact Power Adapter', 'usb-c-power-adapter-35w-compact', 'accessories', 'charger',
+     'Compact dual USB-C.',
+     '35W Dual USB-C Port Compact Power Adapter with foldable prongs. Charge two devices on the go.',
+     59.0, None, ['White'], [], {'power': '35W', 'ports': '2x USB-C', 'foldable': True}, 2024, ''),
+    ('67W USB-C Power Adapter', 'usb-c-power-adapter-67w', 'accessories', 'charger',
+     '67W fast-charge MacBook Air.',
+     '67W USB-C Power Adapter for MacBook Air. Supports fast charging on 13-inch and 15-inch models.',
+     59.0, None, ['White'], [], {'power': '67W', 'port': 'USB-C'}, 2024, ''),
+    ('70W USB-C Power Adapter', 'usb-c-power-adapter-70w', 'accessories', 'charger',
+     '70W for MacBook Pro 14".',
+     '70W USB-C Power Adapter included with MacBook Pro 14-inch with M4 chip.',
+     59.0, None, ['White'], [], {'power': '70W', 'port': 'USB-C'}, 2024, ''),
+    ('96W USB-C Power Adapter', 'usb-c-power-adapter-96w', 'accessories', 'charger',
+     '96W charger.',
+     '96W USB-C Power Adapter for MacBook Pro 14-inch with M4 Pro.',
+     79.0, None, ['White'], [], {'power': '96W', 'port': 'USB-C'}, 2024, ''),
+    ('140W USB-C Power Adapter', 'usb-c-power-adapter-140w', 'accessories', 'charger',
+     '140W for MacBook Pro 16".',
+     '140W USB-C Power Adapter for MacBook Pro 16-inch. Supports fast charging via MagSafe 3.',
+     99.0, None, ['White'], [], {'power': '140W', 'port': 'USB-C'}, 2024, ''),
+    _adapter_tuple('USB-C to MagSafe 3 Cable (2 m)', 'usb-c-to-magsafe-3-2m',     'USB-C', 'MagSafe 3', '2 m', 49.0, 2024),
+    _adapter_tuple('USB-C to MagSafe 3 Cable (2 m) - Space Black', 'usb-c-to-magsafe-3-2m-black', 'USB-C', 'MagSafe 3', '2 m', 49.0, 2024),
+    _adapter_tuple('USB-C Charge Cable (1 m)',       'usb-c-charge-cable-1m',     'USB-C', 'USB-C',     '1 m', 19.0, 2024),
+    _adapter_tuple('USB-C Charge Cable (2 m)',       'usb-c-charge-cable-2m',     'USB-C', 'USB-C',     '2 m', 29.0, 2024),
+    _adapter_tuple('USB-C Woven Charge Cable (1 m)', 'usb-c-woven-charge-cable-1m','USB-C', 'USB-C',    '1 m', 19.0, 2025),
+    _adapter_tuple('Thunderbolt 4 Pro Cable (1 m)',  'thunderbolt-4-pro-1m',      'Thunderbolt 4', 'Thunderbolt 4', '1 m', 129.0, 2024),
+    _adapter_tuple('Thunderbolt 4 Pro Cable (1.8 m)','thunderbolt-4-pro-18m',     'Thunderbolt 4', 'Thunderbolt 4', '1.8 m', 159.0, 2024),
+    _adapter_tuple('Thunderbolt 4 Pro Cable (3 m)',  'thunderbolt-4-pro-3m',      'Thunderbolt 4', 'Thunderbolt 4', '3 m', 199.0, 2024),
+    _adapter_tuple('Apple USB-C to Lightning Cable (1 m)', 'usb-c-to-lightning-1m','USB-C', 'Lightning', '1 m', 19.0, 2024),
+    _adapter_tuple('Apple USB-C to Lightning Cable (2 m)', 'usb-c-to-lightning-2m','USB-C', 'Lightning', '2 m', 29.0, 2024),
+    _adapter_tuple('USB-C to 3.5 mm Headphone Jack Adapter','usb-c-headphone-jack','USB-C','3.5 mm Headphone Jack','—', 9.0, 2024),
+    _adapter_tuple('Lightning to 3.5 mm Headphone Jack Adapter','lightning-headphone-jack','Lightning','3.5 mm Headphone Jack','—', 9.0, 2024),
+    _adapter_tuple('USB-C Digital AV Multiport Adapter','usb-c-digital-av-multiport','USB-C','HDMI + USB-A + USB-C','—', 69.0, 2024),
+    _adapter_tuple('USB-C VGA Multiport Adapter',    'usb-c-vga-multiport',       'USB-C', 'VGA + USB-A + USB-C', '—', 69.0, 2024),
+    _adapter_tuple('USB-C to USB Adapter',           'usb-c-to-usb-adapter',      'USB-C', 'USB-A',     '—', 19.0, 2024),
+    _adapter_tuple('USB-C to SD Card Reader',        'usb-c-sd-card-reader',      'USB-C', 'SD Card',   '—', 39.0, 2024),
+    _adapter_tuple('Apple AV Adapter for Apple TV',  'apple-tv-av-adapter',       'USB-C', 'HDMI',      '—', 19.0, 2024),
+    ('World Travel Adapter Kit', 'world-travel-adapter-kit', 'accessories', 'charger',
+     'Plug adapters for international use.',
+     'Includes seven AC plugs that work in North America, Japan, China, the UK, Continental Europe, Korea, Australia, Hong Kong, and Brazil. Compatible with Apple USB-C Power Adapters.',
+     29.0, None, ['White'], [], {'plugs': 7}, 2024, ''),
+
+    # ------------------------------------------------------------ EarPods / wired audio
+    ('EarPods (USB-C)', 'earpods-usb-c', 'airpods', '',
+     'Iconic wired buds with USB-C.',
+     'EarPods with USB-C plug. Designed to direct sound into the ear for greater clarity and efficiency.',
+     19.0, None, ['White'], [], {'connector': 'USB-C'}, 2024, ''),
+    ('EarPods (Lightning)', 'earpods-lightning', 'airpods', '',
+     'Iconic wired buds with Lightning.',
+     'EarPods with Lightning connector. Bundled with older iPhones.',
+     19.0, None, ['White'], [], {'connector': 'Lightning'}, 2024, ''),
+    ('EarPods (3.5 mm)', 'earpods-3-5mm', 'airpods', '',
+     'Iconic wired buds with 3.5 mm jack.',
+     'EarPods with 3.5 mm Headphone Plug. Works with any device that has a 3.5 mm headphone jack.',
+     19.0, None, ['White'], [], {'connector': '3.5 mm'}, 2024, ''),
+
+    # ------------------------------------------------------------ Beats expanded
+    ('Beats Studio Pro - Black',         'beats-studio-pro-black',         'airpods', '',
+     'High-fidelity wireless headphones.',
+     'Beats Studio Pro headphones. Personalized Spatial Audio, USB-C lossless audio, ANC, up to 40 hours battery.',
+     349.99, 14.58, ['Black'], [], {'anc': True, 'codec': 'AAC, USB-C lossless'}, 2023, ''),
+    ('Beats Studio Pro - Sandstone',     'beats-studio-pro-sandstone',     'airpods', '',
+     'Beats Studio Pro in Sandstone.',
+     'Beats Studio Pro headphones in Sandstone colorway.',
+     349.99, 14.58, ['Sandstone'], [], {'anc': True}, 2023, ''),
+    ('Beats Studio Pro - Navy',          'beats-studio-pro-navy',          'airpods', '',
+     'Beats Studio Pro in Navy.',
+     'Beats Studio Pro headphones in Navy colorway.',
+     349.99, 14.58, ['Navy'], [], {'anc': True}, 2023, ''),
+    ('Beats Studio Buds + - Transparent','beats-studio-buds-plus-transparent','airpods', '',
+     'Beats Studio Buds + transparent.',
+     'Beats Studio Buds + with transparent shell. Active Noise Cancelling and Apple H1-class platform features.',
+     169.99, None, ['Transparent'], [], {'anc': True}, 2023, ''),
+    ('Beats Studio Buds + - Black/Gold', 'beats-studio-buds-plus-black-gold','airpods', '',
+     'Black/Gold colorway.',
+     'Beats Studio Buds + in Black/Gold.',
+     169.99, None, ['Black', 'Gold'], [], {'anc': True}, 2023, ''),
+    ('Beats Studio Buds + - Ivory',      'beats-studio-buds-plus-ivory',   'airpods', '',
+     'Ivory Beats Studio Buds +.',
+     'Beats Studio Buds + in Ivory.',
+     169.99, None, ['Ivory'], [], {'anc': True}, 2023, ''),
+    ('Beats Solo 4 - Matte Black',       'beats-solo-4-matte-black',       'airpods', '',
+     'Beats Solo 4 on-ear in Matte Black.',
+     'Beats Solo 4 on-ear headphones in Matte Black. 50 hours battery, USB-C charging.',
+     199.99, None, ['Matte Black'], [], {'battery': '50 hr'}, 2024, ''),
+    ('Beats Solo 4 - Slate Blue',        'beats-solo-4-slate-blue',        'airpods', '',
+     'Slate Blue Beats Solo 4.',
+     'Beats Solo 4 in Slate Blue.',
+     199.99, None, ['Slate Blue'], [], {'battery': '50 hr'}, 2024, ''),
+    ('Beats Solo 4 - Cloud Pink',        'beats-solo-4-cloud-pink',        'airpods', '',
+     'Cloud Pink Beats Solo 4.',
+     'Beats Solo 4 in Cloud Pink.',
+     199.99, None, ['Cloud Pink'], [], {'battery': '50 hr'}, 2024, ''),
+    ('Beats Pill - Statement Red',       'beats-pill-statement-red',       'audio', '',
+     'Bluetooth speaker, 24-hour battery.',
+     'Beats Pill portable speaker in Statement Red. 24-hour battery, USB-C charging, IP67 rated.',
+     149.99, None, ['Red'], [], {'battery': '24 hr', 'ip': 'IP67'}, 2024, ''),
+    ('Beats Pill - Champagne Gold',      'beats-pill-champagne-gold',      'audio', '',
+     'Champagne Gold Beats Pill.',
+     'Beats Pill portable speaker in Champagne Gold.',
+     149.99, None, ['Gold'], [], {'battery': '24 hr', 'ip': 'IP67'}, 2024, ''),
+    ('Beats Pill - Matte Black',         'beats-pill-matte-black',         'audio', '',
+     'Beats Pill in Matte Black.',
+     'Beats Pill portable speaker in Matte Black.',
+     149.99, None, ['Matte Black'], [], {'battery': '24 hr', 'ip': 'IP67'}, 2024, ''),
+
+    # ------------------------------------------------------------ iPhone 17 series cases / wallets
+    ('iPhone 17 Pro Max Silicone Case with MagSafe - Black',  'iphone-17-pro-max-silicone-black',  'accessories', 'iphone-case', 'Designed by Apple.',
+     'Silicone Case for iPhone 17 Pro Max in Black. MagSafe-compatible. Soft microfiber lining.', 49.0, None, ['Black'], [], {'compat': 'iPhone 17 Pro Max', 'kind': 'Silicone Case'}, 2025, ''),
+    ('iPhone 17 Pro Max Silicone Case with MagSafe - Cypress','iphone-17-pro-max-silicone-cypress','accessories', 'iphone-case', 'Designed by Apple.',
+     'Silicone Case for iPhone 17 Pro Max in Cypress.', 49.0, None, ['Cypress'], [], {'compat': 'iPhone 17 Pro Max', 'kind': 'Silicone Case'}, 2025, ''),
+    ('iPhone 17 Pro Max Silicone Case with MagSafe - Plum',   'iphone-17-pro-max-silicone-plum',   'accessories', 'iphone-case', 'Designed by Apple.',
+     'Silicone Case for iPhone 17 Pro Max in Plum.', 49.0, None, ['Plum'], [], {'compat': 'iPhone 17 Pro Max', 'kind': 'Silicone Case'}, 2025, ''),
+    ('iPhone 17 Pro Max Silicone Case with MagSafe - Natural Tan', 'iphone-17-pro-max-silicone-tan','accessories', 'iphone-case', 'Designed by Apple.',
+     'Silicone Case for iPhone 17 Pro Max in Natural Tan.', 49.0, None, ['Natural Tan'], [], {'compat': 'iPhone 17 Pro Max', 'kind': 'Silicone Case'}, 2025, ''),
+    ('iPhone 17 Pro Max Silicone Case with MagSafe - Storm Blue','iphone-17-pro-max-silicone-blue','accessories', 'iphone-case', 'Designed by Apple.',
+     'Silicone Case for iPhone 17 Pro Max in Storm Blue.', 49.0, None, ['Storm Blue'], [], {'compat': 'iPhone 17 Pro Max', 'kind': 'Silicone Case'}, 2025, ''),
+    ('iPhone 17 Pro Max Clear Case with MagSafe', 'iphone-17-pro-max-clear-magsafe', 'accessories', 'iphone-case',
+     'Show off the iPhone.', 'Clear Case with MagSafe for iPhone 17 Pro Max. Optical-grade material.', 49.0, None, ['Clear'], [], {'compat': 'iPhone 17 Pro Max', 'kind': 'Clear Case'}, 2025, ''),
+    ('iPhone Air Silicone Case with MagSafe - Black',   'iphone-air-silicone-black',  'accessories', 'iphone-case', 'Designed by Apple.', 'Silicone Case for iPhone Air in Black.', 49.0, None, ['Black'], [], {'compat': 'iPhone Air', 'kind': 'Silicone Case'}, 2025, ''),
+    ('iPhone Air Silicone Case with MagSafe - Midnight','iphone-air-silicone-midnight','accessories','iphone-case', 'Designed by Apple.', 'Silicone Case for iPhone Air in Midnight.', 49.0, None, ['Midnight'], [], {'compat': 'iPhone Air', 'kind': 'Silicone Case'}, 2025, ''),
+    ('iPhone Air Silicone Case with MagSafe - Starlight','iphone-air-silicone-starlight','accessories','iphone-case','Designed by Apple.', 'Silicone Case for iPhone Air in Starlight.', 49.0, None, ['Starlight'], [], {'compat': 'iPhone Air', 'kind': 'Silicone Case'}, 2025, ''),
+    ('iPhone Air Silicone Case with MagSafe - Green',   'iphone-air-silicone-green',  'accessories', 'iphone-case', 'Designed by Apple.', 'Silicone Case for iPhone Air in Green.', 49.0, None, ['Green'], [], {'compat': 'iPhone Air', 'kind': 'Silicone Case'}, 2025, ''),
+    ('iPhone Air Clear Case with MagSafe',              'iphone-air-clear-magsafe',   'accessories', 'iphone-case', 'Show off the iPhone.', 'Clear Case with MagSafe for iPhone Air.', 49.0, None, ['Clear'], [], {'compat': 'iPhone Air', 'kind': 'Clear Case'}, 2025, ''),
+    ('iPhone 17e Silicone Case with MagSafe - Black',   'iphone-17e-silicone-black',  'accessories', 'iphone-case', 'Designed by Apple.', 'Silicone Case for iPhone 17e in Black.', 39.0, None, ['Black'], [], {'compat': 'iPhone 17e', 'kind': 'Silicone Case'}, 2025, ''),
+    ('iPhone 17e Silicone Case with MagSafe - Pink',    'iphone-17e-silicone-pink',   'accessories', 'iphone-case', 'Designed by Apple.', 'Silicone Case for iPhone 17e in Light Pink.', 39.0, None, ['Pink'], [], {'compat': 'iPhone 17e', 'kind': 'Silicone Case'}, 2025, ''),
+    ('iPhone 17e Silicone Case with MagSafe - Green',   'iphone-17e-silicone-green',  'accessories', 'iphone-case', 'Designed by Apple.', 'Silicone Case for iPhone 17e in Green.', 39.0, None, ['Green'], [], {'compat': 'iPhone 17e', 'kind': 'Silicone Case'}, 2025, ''),
+    ('iPhone 17e Clear Case with MagSafe',              'iphone-17e-clear-magsafe',   'accessories', 'iphone-case', 'Show off the iPhone.', 'Clear Case with MagSafe for iPhone 17e.', 39.0, None, ['Clear'], [], {'compat': 'iPhone 17e', 'kind': 'Clear Case'}, 2025, ''),
+    ('iPhone FineWoven Wallet with MagSafe - Black',    'iphone-finewoven-wallet-black',   'accessories', 'iphone-case', 'Wallet with MagSafe.', 'FineWoven Wallet with MagSafe in Black. Holds up to 3 cards. Find My support.', 59.0, None, ['Black'], [], {'kind': 'Wallet', 'feature': 'Find My'}, 2024, ''),
+    ('iPhone FineWoven Wallet with MagSafe - Mulberry', 'iphone-finewoven-wallet-mulberry','accessories', 'iphone-case', 'Wallet with MagSafe.', 'FineWoven Wallet with MagSafe in Mulberry.', 59.0, None, ['Mulberry'], [], {'kind': 'Wallet', 'feature': 'Find My'}, 2024, ''),
+    ('iPhone FineWoven Wallet with MagSafe - Pacific Blue','iphone-finewoven-wallet-pacific','accessories', 'iphone-case', 'Wallet with MagSafe.', 'FineWoven Wallet with MagSafe in Pacific Blue.', 59.0, None, ['Pacific Blue'], [], {'kind': 'Wallet', 'feature': 'Find My'}, 2024, ''),
+    ('iPhone FineWoven Wallet with MagSafe - Taupe',    'iphone-finewoven-wallet-taupe',   'accessories', 'iphone-case', 'Wallet with MagSafe.', 'FineWoven Wallet with MagSafe in Taupe.', 59.0, None, ['Taupe'], [], {'kind': 'Wallet', 'feature': 'Find My'}, 2024, ''),
+    _crossbody_tuple('Black',         59.0),
+    _crossbody_tuple('Stone Gray',    59.0),
+    _crossbody_tuple('Pacific Blue',  59.0),
+    _crossbody_tuple('Bright Orange', 59.0),
+    _crossbody_tuple('Lake Green',    59.0),
+    _crossbody_tuple('Mulberry',      59.0),
+    _crossbody_tuple('Sun Yellow',    59.0),
+
+    # ------------------------------------------------------------ Watch bands R3 (Trail / Alpine / Ocean / Modern Buckle / Hermès / Nike / Braided Solo)
+    _watch_band_tuple('Trail Loop - 49mm Black/Gray',   'trail-loop-49mm-black-gray',  'Black/Gray',  99.0, 2024, 'Apple Watch Ultra'),
+    _watch_band_tuple('Trail Loop - 49mm Blue/Black',   'trail-loop-49mm-blue-black',  'Blue/Black',  99.0, 2024, 'Apple Watch Ultra'),
+    _watch_band_tuple('Trail Loop - 49mm Green/Gray',   'trail-loop-49mm-green-gray',  'Green/Gray',  99.0, 2024, 'Apple Watch Ultra'),
+    _watch_band_tuple('Trail Loop - 49mm Yellow/Beige', 'trail-loop-49mm-yellow-beige','Yellow/Beige',99.0, 2024, 'Apple Watch Ultra'),
+    _watch_band_tuple('Alpine Loop - 49mm Black',       'alpine-loop-49mm-black',      'Black',       99.0, 2024, 'Apple Watch Ultra'),
+    _watch_band_tuple('Alpine Loop - 49mm Indigo',      'alpine-loop-49mm-indigo',     'Indigo',      99.0, 2024, 'Apple Watch Ultra'),
+    _watch_band_tuple('Alpine Loop - 49mm Olive',       'alpine-loop-49mm-olive',      'Olive',       99.0, 2024, 'Apple Watch Ultra'),
+    _watch_band_tuple('Ocean Band - 49mm Black',        'ocean-band-49mm-black',       'Black',       99.0, 2024, 'Apple Watch Ultra'),
+    _watch_band_tuple('Ocean Band - 49mm White',        'ocean-band-49mm-white',       'White',       99.0, 2024, 'Apple Watch Ultra'),
+    _watch_band_tuple('Ocean Band - 49mm Tide Blue',    'ocean-band-49mm-tide-blue',   'Tide Blue',   99.0, 2024, 'Apple Watch Ultra'),
+    _watch_band_tuple('Modern Buckle - 41mm Mulberry',  'modern-buckle-41mm-mulberry', 'Mulberry',    149.0, 2024, 'Apple Watch 40/41mm'),
+    _watch_band_tuple('Modern Buckle - 41mm Black',     'modern-buckle-41mm-black',    'Black',       149.0, 2024, 'Apple Watch 40/41mm'),
+    _watch_band_tuple('Modern Buckle - 41mm Deep Sea Blue','modern-buckle-41mm-deep-sea','Deep Sea Blue', 149.0, 2024, 'Apple Watch 40/41mm'),
+    _watch_band_tuple('Braided Solo Loop - 41mm Black', 'braided-solo-41mm-black',     'Black',       99.0, 2024, 'Apple Watch 40/41mm'),
+    _watch_band_tuple('Braided Solo Loop - 41mm Atlantic Blue','braided-solo-41mm-atlantic','Atlantic Blue',99.0, 2024, 'Apple Watch 40/41mm'),
+    _watch_band_tuple('Braided Solo Loop - 41mm Plum',  'braided-solo-41mm-plum',      'Plum',        99.0, 2024, 'Apple Watch 40/41mm'),
+    _watch_band_tuple('Braided Solo Loop - 41mm Storm Blue','braided-solo-41mm-storm','Storm Blue',99.0, 2024, 'Apple Watch 40/41mm'),
+    _watch_band_tuple('Braided Solo Loop - 45mm Black', 'braided-solo-45mm-black',     'Black',       99.0, 2024, 'Apple Watch 44/45/46mm'),
+    _watch_band_tuple('Braided Solo Loop - 45mm Atlantic Blue','braided-solo-45mm-atlantic','Atlantic Blue',99.0, 2024, 'Apple Watch 44/45/46mm'),
+    _watch_band_tuple('Braided Solo Loop - 45mm Plum',  'braided-solo-45mm-plum',      'Plum',        99.0, 2024, 'Apple Watch 44/45/46mm'),
+    _watch_band_tuple('Nike Sport Band - 41mm Black/Black','nike-sport-41mm-black-black','Black/Black',49.0, 2024, 'Apple Watch 40/41mm'),
+    _watch_band_tuple('Nike Sport Band - 41mm Pure Platinum/Black','nike-sport-41mm-platinum-black','Pure Platinum/Black',49.0, 2024, 'Apple Watch 40/41mm'),
+    _watch_band_tuple('Nike Sport Band - 45mm Black/Black','nike-sport-45mm-black-black','Black/Black',49.0, 2024, 'Apple Watch 44/45/46mm'),
+    _watch_band_tuple('Nike Sport Loop - 45mm Bright Crimson/Black','nike-sport-loop-45mm-crimson','Bright Crimson/Black',49.0, 2024, 'Apple Watch 44/45/46mm'),
+    _watch_band_tuple('Hermès Kilim Single Tour - 41mm Noir/Étoupe','hermes-kilim-41mm-noir-etoupe','Noir/Étoupe',389.0, 2024, 'Apple Watch 40/41mm'),
+    _watch_band_tuple('Hermès Bridon Single Tour - 45mm Noir','hermes-bridon-45mm-noir','Noir',389.0, 2024, 'Apple Watch 44/45/46mm'),
+    _watch_band_tuple('Hermès Toile H Single Tour - 41mm Beton/Sienne','hermes-toile-h-41mm-beton-sienne','Beton/Sienne',439.0, 2024, 'Apple Watch 40/41mm'),
+    _watch_band_tuple('Hermès Twill Jump Single Tour - 41mm Orange','hermes-twill-41mm-orange','Orange',389.0, 2024, 'Apple Watch 40/41mm'),
+    _watch_band_tuple('Hermès Casaque Single Tour - 41mm Sesame/Orange','hermes-casaque-41mm-sesame','Sesame/Orange',389.0, 2024, 'Apple Watch 40/41mm'),
+    _watch_band_tuple('Solo Loop - 41mm Light Pink',   'solo-loop-41mm-light-pink',   'Light Pink',  49.0, 2024, 'Apple Watch 40/41mm'),
+    _watch_band_tuple('Solo Loop - 41mm Black',        'solo-loop-41mm-black',        'Black',       49.0, 2024, 'Apple Watch 40/41mm'),
+    _watch_band_tuple('Solo Loop - 45mm Black',        'solo-loop-45mm-black',        'Black',       49.0, 2024, 'Apple Watch 44/45/46mm'),
+    _watch_band_tuple('Sport Loop - 41mm Plasma',      'sport-loop-41mm-plasma',      'Plasma',      49.0, 2024, 'Apple Watch 40/41mm'),
+    _watch_band_tuple('Sport Loop - 45mm Storm Blue',  'sport-loop-45mm-storm-blue',  'Storm Blue',  49.0, 2024, 'Apple Watch 44/45/46mm'),
+    _watch_band_tuple('Sport Loop - 45mm Plum',        'sport-loop-45mm-plum',        'Plum',        49.0, 2024, 'Apple Watch 44/45/46mm'),
+    _watch_band_tuple('Milanese Loop - 41mm Silver',   'milanese-41mm-silver',        'Silver',      99.0, 2024, 'Apple Watch 40/41mm'),
+    _watch_band_tuple('Milanese Loop - 41mm Graphite', 'milanese-41mm-graphite',      'Graphite',    99.0, 2024, 'Apple Watch 40/41mm'),
+    _watch_band_tuple('Milanese Loop - 45mm Silver',   'milanese-45mm-silver',        'Silver',      99.0, 2024, 'Apple Watch 44/45/46mm'),
+    _watch_band_tuple('Milanese Loop - 45mm Gold',     'milanese-45mm-gold',          'Gold',        99.0, 2024, 'Apple Watch 44/45/46mm'),
+    _watch_band_tuple('Link Bracelet - 41mm Silver',   'link-bracelet-41mm-silver',   'Silver',      349.0, 2024, 'Apple Watch 40/41mm'),
+    _watch_band_tuple('Link Bracelet - 41mm Space Black','link-bracelet-41mm-space-black','Space Black',349.0, 2024, 'Apple Watch 40/41mm'),
+    _watch_band_tuple('Link Bracelet - 45mm Silver',   'link-bracelet-45mm-silver',   'Silver',      349.0, 2024, 'Apple Watch 44/45/46mm'),
+    _watch_band_tuple('Sport Band - 45mm Lake Green',  'sport-band-45mm-lake-green',  'Lake Green',  49.0, 2025, 'Apple Watch 44/45/46mm'),
+    _watch_band_tuple('Sport Band - 45mm Sun Yellow',  'sport-band-45mm-sun-yellow',  'Sun Yellow',  49.0, 2025, 'Apple Watch 44/45/46mm'),
+    _watch_band_tuple('Sport Band - 45mm Bright Orange','sport-band-45mm-bright-orange','Bright Orange',49.0, 2025, 'Apple Watch 44/45/46mm'),
+
+    # ------------------------------------------------------------ HomeKit accessories
+    _homekit_tuple('Eve Energy - Smart Plug',          'eve-energy-smart-plug',         'Eve',          'Smart plug',        39.95, 2024, 'Eve Energy with Thread and Matter support. Monitor power consumption, schedule appliances, control with Siri.'),
+    _homekit_tuple('Eve Motion - Wireless Sensor',     'eve-motion-sensor',             'Eve',          'Motion sensor',     49.95, 2024, 'Eve Motion. Battery-powered motion sensor with Thread and HomeKit.'),
+    _homekit_tuple('Eve Door & Window Sensor',         'eve-door-window-sensor',        'Eve',          'Contact sensor',    39.95, 2024, 'Eve Door & Window. Battery-powered contact sensor with Thread.'),
+    _homekit_tuple('Eve Weather - Outdoor Sensor',     'eve-weather-sensor',            'Eve',          'Weather sensor',    79.95, 2024, 'Eve Weather. Outdoor weather station with temperature, humidity, and air pressure.'),
+    _homekit_tuple('Aqara M2 Hub',                     'aqara-m2-hub',                  'Aqara',        'Smart home hub',    69.99, 2024, 'Aqara M2 Hub. Zigbee 3.0 hub with HomeKit, Alexa, and Google Home support.'),
+    _homekit_tuple('Logitech Circle View Camera',      'logitech-circle-view-camera',   'Logitech',     'Indoor camera',    159.99, 2024, 'Logitech Circle View Indoor wired camera with HomeKit Secure Video.'),
+    _homekit_tuple('Logitech Circle View Doorbell',    'logitech-circle-view-doorbell', 'Logitech',     'Doorbell',         199.99, 2024, 'Logitech Circle View wired doorbell with HomeKit Secure Video and face recognition.'),
+    _homekit_tuple('Nanoleaf Shapes Hexagons Smarter Kit', 'nanoleaf-shapes-hexagons',  'Nanoleaf',     'Smart lighting',   199.99, 2024, 'Nanoleaf Shapes Hexagons. 9-pack modular smart light panels with Thread border router.'),
+    _homekit_tuple('Nanoleaf Lines Smarter Kit',       'nanoleaf-lines-smarter-kit',    'Nanoleaf',     'Smart lighting',   199.99, 2024, 'Nanoleaf Lines. Modular linear smart lights with Thread border router.'),
+    _homekit_tuple('Philips Hue White and Color Starter Kit', 'philips-hue-color-starter','Philips Hue','Smart lighting',  199.99, 2024, 'Philips Hue starter kit with Hue Bridge and 3 White and Color Ambiance bulbs.'),
+    _homekit_tuple('Yale Assure Lock 2 with HomeKit',  'yale-assure-lock-2-homekit',    'Yale',         'Smart lock',       279.99, 2024, 'Yale Assure Lock 2 touchscreen smart lock with HomeKit support.'),
+    _homekit_tuple('Schlage Encode Plus Smart Deadbolt','schlage-encode-plus',          'Schlage',      'Smart lock',       329.99, 2024, 'Schlage Encode Plus WiFi Deadbolt with built-in WiFi and Apple home key (NFC).'),
+    _homekit_tuple('Aqara Door & Window Sensor P2',    'aqara-door-window-p2',          'Aqara',        'Contact sensor',    19.99, 2024, 'Aqara P2 Door & Window Sensor with Thread and Matter.'),
+    _homekit_tuple('Meross Smart WiFi Garage Door Opener','meross-garage-door',         'Meross',       'Garage opener',     59.99, 2024, 'Meross WiFi Garage Door Opener with HomeKit.'),
+    _homekit_tuple('Aqara G3 Hub Camera',              'aqara-g3-camera',               'Aqara',        'Indoor camera',    109.99, 2024, 'Aqara Camera Hub G3 with HomeKit Secure Video and Zigbee/Matter hub.'),
+    _homekit_tuple('Onvis Smart Plug B1 with Energy',  'onvis-smart-plug-b1',           'Onvis',        'Smart plug',        29.99, 2024, 'Onvis B1 smart plug with energy monitoring and HomeKit.'),
+    _homekit_tuple('Tapo C100 HomeKit Camera',         'tapo-c100-homekit',             'Tapo',         'Indoor camera',     34.99, 2024, 'Tapo C100 Indoor WiFi Camera with HomeKit Secure Video.'),
+    _homekit_tuple('VOCOlinc Smart LED Bulb',          'vocolinc-smart-bulb',           'VOCOlinc',     'Smart bulb',        24.99, 2024, 'VOCOlinc White and Color smart LED A19 bulb with HomeKit.'),
+    _homekit_tuple('Wemo Stage Scene Controller',      'wemo-stage-scene-controller',   'Belkin Wemo',  'Scene controller',  49.95, 2024, 'Wemo Stage 3-button scene controller with Thread.'),
+    _homekit_tuple('LG OLED evo G4 65-inch with AirPlay 2','lg-oled-g4-65',             'LG',           'OLED TV',          2999.99, 2024, 'LG OLED evo G4 65-inch with AirPlay 2 and HomeKit. Brilliance Booster Max.'),
+
+    # ------------------------------------------------------------ Vision Pro accessories R3
+    ('Apple Vision Pro Travel Case', 'vision-pro-travel-case', 'accessories', 'vision-pro-accessory',
+     'Designed for travel.',
+     'Apple Vision Pro Travel Case. Protects the headset, Light Seal, and Battery in transit.',
+     199.0, None, ['Charcoal'], [], {'compat': 'Apple Vision Pro'}, 2024, ''),
+    ('Apple Vision Pro Battery', 'vision-pro-battery-2', 'accessories', 'vision-pro-accessory',
+     'Spare external battery.',
+     'External battery for Apple Vision Pro. Up to 2 hours general use, 2.5 hours video playback. Plug into a power outlet for all-day use.',
+     199.0, None, ['Silver'], [], {'compat': 'Apple Vision Pro', 'runtime': '2 hr'}, 2024, ''),
+    ('Apple Vision Pro Solo Knit Band - Replacement', 'vision-pro-solo-knit-replacement', 'accessories', 'vision-pro-accessory',
+     'Replacement Solo Knit Band.',
+     'Replacement Solo Knit Band for Apple Vision Pro. Three sizes available.',
+     99.0, None, ['Gray'], [], {'compat': 'Apple Vision Pro'}, 2024, ''),
+    ('Apple Vision Pro Dual Loop Band - Replacement',  'vision-pro-dual-loop-replacement', 'accessories', 'vision-pro-accessory',
+     'Replacement Dual Loop Band.',
+     'Replacement Dual Loop Band for Apple Vision Pro.',
+     99.0, None, ['Gray'], [], {'compat': 'Apple Vision Pro'}, 2024, ''),
+    ('Apple Vision Pro Polishing Cloth', 'vision-pro-polishing-cloth-2', 'accessories', 'vision-pro-accessory',
+     'Spare polishing cloth.',
+     'Replacement polishing cloth for Apple Vision Pro. Soft, non-abrasive material.',
+     19.0, None, ['White'], [], {'compat': 'Apple Vision Pro'}, 2024, ''),
+    ('Apple Vision Pro Cover', 'vision-pro-cover-bench', 'accessories', 'vision-pro-accessory',
+     'Magnetic display cover.',
+     'Magnetic display cover for Apple Vision Pro.',
+     19.0, None, ['Charcoal'], [], {'compat': 'Apple Vision Pro'}, 2024, ''),
+
+    # ------------------------------------------------------------ Mac / iPad refurb-style alt SKUs & extras
+    ('Apple Studio Display Pivoting Stand Add-on', 'studio-display-pivot-stand-addon', 'accessories', 'display',
+     'Add-on accessory.',
+     'Studio Display VESA mount accessory for pivoting stand setups.',
+     99.0, None, ['Silver'], [], {'compat': 'Studio Display'}, 2024, ''),
+    ('Logitech MX Master 3S for Mac', 'logitech-mx-master-3s-mac', 'accessories', 'mac-accessory',
+     'Performance wireless mouse.',
+     'Logitech MX Master 3S for Mac. Quiet clicks, 8000 DPI, USB-C charging, Flow software support.',
+     99.99, None, ['Pale Gray', 'Space Gray'], [], {'compat': 'Mac', 'connectivity': 'Bluetooth, USB-C'}, 2024, ''),
+    ('Logitech MX Keys S for Mac', 'logitech-mx-keys-s-mac', 'accessories', 'mac-accessory',
+     'Wireless keyboard.',
+     'Logitech MX Keys S for Mac. Backlit, USB-C charging, smart illumination.',
+     119.99, None, ['Pale Gray', 'Space Gray'], [], {'compat': 'Mac'}, 2024, ''),
+    ('Belkin BoostCharge Pro 2-in-1 Wireless Charger', 'belkin-boostcharge-pro-2in1', 'accessories', 'charger',
+     '2-in-1 MagSafe + Apple Watch.',
+     'Belkin BoostCharge Pro 2-in-1 Wireless Charging Pad. 15W MagSafe + fast-charging Apple Watch.',
+     129.99, None, ['White', 'Black'], [], {'power': '15W', 'compat': 'iPhone with MagSafe, Apple Watch'}, 2024, ''),
+    ('Belkin BoostCharge Pro 3-in-1 with MagSafe', 'belkin-boostcharge-pro-3in1', 'accessories', 'charger',
+     '3-in-1 MagSafe.',
+     'Belkin BoostCharge Pro 3-in-1 with MagSafe. Charges iPhone, Apple Watch, and AirPods simultaneously.',
+     149.99, None, ['White', 'Black'], [], {'power': '15W', 'compat': 'iPhone, Apple Watch, AirPods'}, 2024, ''),
+    ('Mophie 3-in-1 Travel Charger with MagSafe', 'mophie-3in1-travel-magsafe', 'accessories', 'charger',
+     'Foldable 3-in-1 travel charger.',
+     'Mophie 3-in-1 Travel Charger with MagSafe. Foldable for travel; charges iPhone, Apple Watch, and AirPods.',
+     149.95, None, ['Black'], [], {'compat': 'iPhone, Apple Watch, AirPods', 'foldable': True}, 2024, ''),
+    ('Anker MagGo Wireless Charging Station 3-in-1', 'anker-maggo-3in1', 'accessories', 'charger',
+     'Anker MagGo Qi2 3-in-1.',
+     'Anker MagGo Qi2 15W 3-in-1 wireless charging station.',
+     149.99, None, ['White'], [], {'power': '15W Qi2'}, 2024, ''),
+    ('Twelve South ButterFly 2-in-1 MagSafe Charger', 'twelve-south-butterfly-magsafe', 'accessories', 'charger',
+     'Foldable MagSafe charger.',
+     'Twelve South ButterFly foldable 2-in-1 MagSafe charger.',
+     129.95, None, ['White'], [], {'compat': 'iPhone, Apple Watch'}, 2024, ''),
+    ('Native Union Belt Cable Pro USB-C', 'native-union-belt-cable-pro', 'accessories', 'cable',
+     'Braided USB-C cable.',
+     'Native Union Belt Cable Pro USB-C 240W braided cable, 2.4 m.',
+     34.99, None, ['Zebra', 'Black'], [], {'length': '2.4 m', 'power': '240W'}, 2024, ''),
+    ('Native Union Drop XL Wireless Charger', 'native-union-drop-xl', 'accessories', 'charger',
+     'Wireless charging pad.',
+     'Native Union Drop XL Wireless Charger pad in fabric finish.',
+     49.99, None, ['Slate', 'Sand'], [], {'power': '10W Qi'}, 2024, ''),
+
+    # ------------------------------------------------------------ Photography / Pro accessories
+    ('Apple Polishing Cloth', 'apple-polishing-cloth', 'accessories', 'care',
+     'Soft, non-abrasive cloth.',
+     'Apple Polishing Cloth. Made with soft, nonabrasive material for cleaning any Apple display.',
+     19.0, None, ['White'], [], {'compat': 'Apple displays'}, 2021, ''),
+    ('Apple Watch Magnetic Fast Charger to USB-C Cable (1 m)', 'watch-fast-charger-usb-c-1m', 'accessories', 'charger',
+     'Fast-charges Apple Watch.',
+     'Apple Watch Magnetic Fast Charger to USB-C Cable (1 m). Fast-charges compatible Apple Watch models.',
+     29.0, None, ['White'], [], {'length': '1 m', 'compat': 'Apple Watch'}, 2024, ''),
+    ('Apple Watch Magnetic Fast Charger to USB-C Cable (2 m)', 'watch-fast-charger-usb-c-2m', 'accessories', 'charger',
+     'Fast-charges Apple Watch.',
+     'Apple Watch Magnetic Fast Charger to USB-C Cable (2 m).',
+     35.0, None, ['White'], [], {'length': '2 m', 'compat': 'Apple Watch'}, 2024, ''),
+    ('Apple Watch Magnetic Charging Dock', 'watch-magnetic-charging-dock', 'accessories', 'charger',
+     'Apple Watch nightstand dock.',
+     'Apple Watch Magnetic Charging Dock. Sits flat for nightstand mode or upright.',
+     79.0, None, ['White'], [], {'compat': 'Apple Watch'}, 2024, ''),
+
+    # ------------------------------------------------------------ Apple TV remote / extras
+    ('Siri Remote (3rd generation)', 'siri-remote-3rd-gen', 'accessories', 'tv-accessory',
+     'Backlit clickpad. USB-C charging.',
+     'Siri Remote with Touch-enabled clickpad, dedicated power button, and USB-C charging.',
+     59.0, None, ['Silver'], [], {'compat': 'Apple TV'}, 2024, ''),
+    ('Apple Remote Loop',         'apple-remote-loop',         'accessories', 'tv-accessory',
+     'Wrist loop for Apple TV remote.',
+     'Apple Remote Loop. Keeps Siri Remote secure on your wrist.',
+     12.95, None, ['Black'], [], {'compat': 'Siri Remote'}, 2024, ''),
+    ('Apple TV Ethernet Cable',   'apple-tv-ethernet-cable',   'accessories', 'tv-accessory',
+     'Gigabit Ethernet.',
+     'Gigabit Ethernet cable for Apple TV 4K.',
+     19.0, None, ['Black'], [], {'compat': 'Apple TV 4K'}, 2024, ''),
+
+    # ------------------------------------------------------------ Education bundles / gift cards (recorded as catalog rows)
+    ('Apple Gift Card $25',  'apple-gift-card-25',  'accessories', 'service',
+     'Apple Gift Card.',
+     'Apple Gift Card redeemable for Apple products, accessories, App Store, music, movies, TV shows, iCloud+, and more.',
+     25.0,  None, ['Digital'], [], {'denomination': 25,  'kind': 'gift_card'}, 2024, ''),
+    ('Apple Gift Card $50',  'apple-gift-card-50',  'accessories', 'service',
+     'Apple Gift Card.', 'Apple Gift Card. Redeemable across Apple Store and services.',
+     50.0,  None, ['Digital'], [], {'denomination': 50,  'kind': 'gift_card'}, 2024, ''),
+    ('Apple Gift Card $100', 'apple-gift-card-100', 'accessories', 'service',
+     'Apple Gift Card.', 'Apple Gift Card. Redeemable across Apple Store and services.',
+     100.0, None, ['Digital'], [], {'denomination': 100, 'kind': 'gift_card'}, 2024, ''),
+    ('Apple Gift Card $200', 'apple-gift-card-200', 'accessories', 'service',
+     'Apple Gift Card.', 'Apple Gift Card. Redeemable across Apple Store and services.',
+     200.0, None, ['Digital'], [], {'denomination': 200, 'kind': 'gift_card'}, 2024, ''),
+    ('Apple Gift Card $500', 'apple-gift-card-500', 'accessories', 'service',
+     'Apple Gift Card.', 'Apple Gift Card. Redeemable across Apple Store and services.',
+     500.0, None, ['Digital'], [], {'denomination': 500, 'kind': 'gift_card'}, 2024, ''),
+]
+
+
+# Programmatic tail: deterministic additional SKUs to push past 600 products.
+# Each item is hand-anchored to a real Apple SKU family.
+
+def _extend_r3():
+    extra = []
+    # AirTag multi-packs + accessories
+    extra.append(('AirTag 4 Pack', 'airtag-4-pack', 'accessories', 'airtag',
+                  'Pack of 4 AirTags.',
+                  'Four-pack of AirTag for tracking items with Precision Finding via Ultra Wideband.',
+                  99.0, None, ['Silver'], [],
+                  {'qty': 4, 'features': 'Precision Finding, U1 chip'}, 2024, ''))
+    for name, slug, brand, price in [
+        ('AirTag Leather Key Ring - Black',          'airtag-leather-keyring-black',          'Apple',  39.0),
+        ('AirTag Leather Key Ring - Saddle Brown',   'airtag-leather-keyring-saddle',         'Apple',  39.0),
+        ('AirTag Leather Loop - Midnight',           'airtag-leather-loop-midnight',          'Apple',  39.0),
+        ('AirTag Leather Loop - Saddle Brown',       'airtag-leather-loop-saddle',            'Apple',  39.0),
+        ('AirTag Hermès Travel Tag',                 'airtag-hermes-travel-tag',              'Hermès', 449.0),
+        ('AirTag Hermès Bag Charm',                  'airtag-hermes-bag-charm',               'Hermès', 349.0),
+        ('AirTag Hermès Luggage Tag',                'airtag-hermes-luggage-tag',             'Hermès', 359.0),
+        ('AirTag Hermès Key Ring',                   'airtag-hermes-key-ring',                'Hermès', 349.0),
+        ('Belkin Secure Holder for AirTag',          'belkin-secure-holder-airtag',           'Belkin', 12.95),
+        ('Belkin Secure Holder with Strap for AirTag','belkin-secure-holder-strap-airtag',    'Belkin', 14.95),
+    ]:
+        extra.append((name, slug, 'accessories', 'airtag', f'{brand} accessory for AirTag.',
+                      f'{name}. Premium accessory for AirTag.', price, None,
+                      [brand], [], {'compat': 'AirTag', 'brand': brand}, 2024, ''))
+
+    # More Sport Bands and Loops covering rainbow color matrix per 41/45 mm
+    for size, compat in (('41mm', 'Apple Watch 40/41mm'), ('45mm', 'Apple Watch 44/45/46mm')):
+        for color in ['Storm Blue', 'Plum', 'Cypress', 'Light Pink', 'Natural Tan',
+                      'Lake Green', 'Sun Yellow', 'Bright Orange', 'Stone Gray', 'Pacific Blue']:
+            slug = f'sport-band-{size}-{color.lower().replace(" ", "-")}'
+            # avoid double-add of any existing R2/R3 slugs
+            name = f'Sport Band - {size} {color}'
+            extra.append(_watch_band_tuple(name, slug, color, 49.0, 2025, compat))
+
+    # Sport Loops (woven)
+    for size, compat in (('41mm', 'Apple Watch 40/41mm'), ('45mm', 'Apple Watch 44/45/46mm')):
+        for color in ['Midnight', 'Starlight', 'Pacific Blue', 'Storm Blue', 'Sun Yellow', 'Plum']:
+            slug = f'sport-loop-{size}-r3-{color.lower().replace(" ", "-")}'
+            name = f'Sport Loop - {size} {color}'
+            extra.append(_watch_band_tuple(name, slug, color, 49.0, 2025, compat))
+
+    # Solo Loop additional colors
+    for size, compat in (('41mm', 'Apple Watch 40/41mm'), ('45mm', 'Apple Watch 44/45/46mm')):
+        for color in ['Storm Blue', 'Plum', 'Sun Yellow', 'Bright Orange', 'Lake Green']:
+            slug = f'solo-loop-{size}-r3-{color.lower().replace(" ", "-")}'
+            name = f'Solo Loop - {size} {color}'
+            extra.append(_watch_band_tuple(name, slug, color, 49.0, 2025, compat))
+
+    # Clear / silicone cases for iPhone 16 / 15 series (legacy support)
+    for model, model_slug, colors, price in [
+        ('iPhone 16 Pro Max',  'iphone-16-pro-max',  ['Black','Cypress','Plum','Natural Tan','Storm Blue'], 49.0),
+        ('iPhone 16 Pro',      'iphone-16-pro',      ['Black','Cypress','Plum','Natural Tan','Storm Blue'], 49.0),
+        ('iPhone 16 Plus',     'iphone-16-plus',     ['Black','Lake Green','Pink','Storm Blue'],            49.0),
+        ('iPhone 16',          'iphone-16',          ['Black','Lake Green','Pink','Storm Blue'],            49.0),
+        ('iPhone 15 Pro Max',  'iphone-15-pro-max',  ['Black','Cypress','Storm Blue'],                      49.0),
+        ('iPhone 15',          'iphone-15',          ['Black','Pink','Storm Blue'],                         49.0),
+    ]:
+        for c in colors:
+            extra.append(_case_tuple(
+                f'{model} Silicone Case with MagSafe - {c}',
+                f'{model_slug}-silicone-magsafe-{c.lower().replace(" ", "-")}',
+                model, c, price))
+        extra.append(('Clear Case with MagSafe for ' + model,
+                      f'{model_slug}-clear-magsafe-r3', 'accessories', 'iphone-case',
+                      'Clear Case with MagSafe.',
+                      f'Clear Case with MagSafe for {model}.', 49.0, None, ['Clear'], [],
+                      {'compat': model, 'kind': 'Clear Case'}, 2024, ''))
+
+    # MagSafe wallets in additional colors
+    for c in ['Light Pink', 'Evergreen', 'Wisteria', 'Storm Blue']:
+        extra.append(('iPhone FineWoven Wallet with MagSafe - ' + c,
+                      f'iphone-finewoven-wallet-{c.lower().replace(" ", "-")}',
+                      'accessories', 'iphone-case', 'Wallet with MagSafe.',
+                      f'FineWoven Wallet with MagSafe in {c}.', 59.0, None, [c], [],
+                      {'kind': 'Wallet', 'feature': 'Find My'}, 2024, ''))
+
+    return extra
+
+
+EXTRA_PRODUCTS_R3_TAIL = _extend_r3()
+EXTRA_PRODUCTS_R3 = EXTRA_PRODUCTS_R3 + EXTRA_PRODUCTS_R3_TAIL
+
+
 def _seed_extra_products():
-    """Add the EXTRA_PRODUCTS + EXTRA_PRODUCTS_R2 rows. Idempotent — skips slugs already present."""
+    """Add the EXTRA_PRODUCTS + EXTRA_PRODUCTS_R2 + EXTRA_PRODUCTS_R3 rows. Idempotent — skips slugs already present."""
     existing = {p.slug for p in Product.query.with_entities(Product.slug).all()}
     added = 0
-    for tup in (EXTRA_PRODUCTS + EXTRA_PRODUCTS_R2):
+    for tup in (EXTRA_PRODUCTS + EXTRA_PRODUCTS_R2 + EXTRA_PRODUCTS_R3):
         (name, slug, cat, subcat, subt, desc, price, mp, colors, storage, specs, year, chip) = tup
         if slug in existing:
             continue
@@ -4151,6 +5072,92 @@ REVIEW_TARGET_SLUGS = [
     'apple-vision-pro', 'homepod-2nd-gen', 'apple-tv-4k',
 ]
 
+# R3 expansion: 100+ additional review targets across the entire catalog.
+REVIEW_TARGET_SLUGS_R3 = [
+    # iPhone — additional legacy SKUs
+    'iphone-16', 'iphone-16-plus', 'iphone-16-pro', 'iphone-16-pro-max',
+    'iphone-15-plus', 'iphone-14-pro', 'iphone-14-pro-max', 'iphone-14-plus',
+    'iphone-13-pro', 'iphone-13-pro-max', 'iphone-13-mini',
+    'iphone-12', 'iphone-12-pro', 'iphone-12-pro-max', 'iphone-12-mini',
+    'iphone-11', 'iphone-11-pro', 'iphone-se-3', 'iphone-se-2nd-gen',
+    # Mac — additional configurations and legacy SKUs
+    'macbook-neo', 'macbook-air-15-inch-m3', 'macbook-pro-14-inch-m4',
+    'macbook-pro-14-inch-m4-pro', 'macbook-pro-16-inch-m4-pro', 'macbook-pro-16-inch-m4-max',
+    'macbook-air-13-inch-m2', 'macbook-air-15-inch-m2', 'imac-24-inch-m4',
+    'mac-mini-m4-pro', 'mac-studio-m2-max', 'mac-studio-m2-ultra',
+    # iPad
+    'ipad-pro-13-inch-m4', 'ipad-pro-11-inch-m4', 'ipad-air-13-inch-m4',
+    'ipad-air-11-inch-m4', 'ipad-a16', 'ipad-mini', 'ipad-mini-6',
+    # Watch
+    'apple-watch-ultra-2', 'apple-watch-series-9', 'apple-watch-series-8',
+    'apple-watch-se', 'apple-watch-se-2', 'apple-watch-hermes-series-10',
+    # AirPods / audio
+    'airpods-pro-2-usb-c', 'airpods-3-magsafe', 'beats-studio-pro',
+    'beats-studio-buds-plus', 'beats-fit-pro', 'beats-solo-4', 'beats-pill',
+    'beats-pill-statement-red', 'beats-studio-pro-sandstone', 'beats-solo-4-matte-black',
+    'beats-powerbeats-pro',
+    # Vision / TV / HomePod
+    'homepod-mini', 'homepod-2', 'apple-tv-hd', 'siri-remote-3rd-gen',
+    # Accessories — high-traffic
+    'apple-pencil-pro', 'apple-pencil-usb-c', 'magic-keyboard-ipad',
+    'airtag', 'airtag-4-pack', 'magsafe-charger-1m', 'magsafe-charger-2m',
+    'magsafe-duo-charger', 'magic-mouse-white', 'magic-trackpad-white',
+    'magic-keyboard-touch-id', 'magic-keyboard-touch-id-numeric',
+    'studio-display-standard-tilt', 'studio-display-nano-tilt', 'pro-display-xdr-standard',
+    'usb-c-power-adapter-20w', 'usb-c-power-adapter-67w', 'usb-c-power-adapter-140w',
+    'world-travel-adapter-kit', 'usb-c-digital-av-multiport',
+    'smart-folio-ipad-pro-13-m4-black', 'magic-keyboard-ipad-pro-13-m4-black',
+    'iphone-17-pro-max-silicone-black', 'iphone-air-silicone-midnight',
+    'iphone-finewoven-wallet-black',
+    # Watch bands — popular ones
+    'sport-band-41mm-black', 'trail-loop-49mm-black-gray', 'alpine-loop-49mm-black',
+    'ocean-band-49mm-tide-blue', 'link-bracelet-45mm-silver', 'milanese-41mm-silver',
+    'braided-solo-41mm-black', 'nike-sport-41mm-black-black',
+    # HomeKit
+    'eve-energy-smart-plug', 'philips-hue-color-starter', 'nanoleaf-shapes-hexagons',
+    'logitech-circle-view-camera', 'yale-assure-lock-2-homekit', 'aqara-m2-hub',
+    # Services
+    'apple-music-individual', 'apple-music-family', 'apple-tv-plus',
+    'icloud-200gb', 'icloud-2tb', 'apple-arcade', 'apple-fitness-plus',
+    'apple-one-family', 'apple-one-premier', 'apple-news-plus',
+    # AppleCare
+    'applecare-iphone-17-pro', 'applecare-macbook-pro-14', 'applecare-vision-pro',
+    'applecare-ipad-pro-13', 'applecare-watch-ultra-3',
+]
+
+REVIEW_TEMPLATES_R3 = [
+    (5, 'Exactly what I expected from Apple',
+     'Setup was seamless. iCloud synced everything within minutes and Continuity with my other Apple devices just works. No regrets at this price point.'),
+    (4, 'Great after the first week',
+     'Took a few days to dial in my settings, but performance is excellent and battery life beats my last device by a noticeable margin.'),
+    (5, 'Build quality is unmatched',
+     'The materials, the weight balance, the finish — Apple still leads on physical product quality. Worth the wait.'),
+    (3, 'Good, not life-changing',
+     'Solid product, but the gap from my previous generation is smaller than the marketing suggests. Still glad I upgraded.'),
+    (5, 'My go-to recommendation',
+     'I have already recommended this to three friends. The combination of performance and ecosystem integration is hard to beat.'),
+    (4, 'Subtle but meaningful improvements',
+     'The headline specs do not tell the whole story — the everyday quality-of-life improvements add up over the first month.'),
+    (5, 'Setup in 10 minutes',
+     'Quick Start transferred everything from my old device. Apps, settings, passwords — all there when I picked it up.'),
+    (4, 'Premium price, premium product',
+     'Yes, it is expensive. But after a month of daily use I have no buyer\'s remorse. Build quality and software fluency carry the price.'),
+    (3, 'Wish the upgrade path was clearer',
+     'The product itself is great. The model lineup is confusing — took me a while to figure out which configuration I actually wanted.'),
+    (5, 'Family is happy too',
+     'Bought one for myself and ended up getting a second for my partner. Apple ecosystem benefits really kick in across multiple devices.'),
+    (4, 'Solid daily driver',
+     'I have used this every day for a month — zero issues, zero complaints. Does exactly what it advertises.'),
+    (5, 'Worth the trade-in',
+     'Traded in my older device and the credit covered nearly a third of this one. Trade-in process was smooth.'),
+    (2, 'Returned within the window',
+     'The hardware is great but it just was not the right fit for my workflow. Returns were painless — refund hit my card in 3 days.'),
+    (5, 'AppleCare paid off already',
+     'Glad I added AppleCare+ — already needed a battery service which would have been pricey without coverage.'),
+    (4, 'Software is the unsung hero',
+     'The hardware grabs the headlines, but the real reason I keep buying Apple is how much the software does for me without thinking about it.'),
+]
+
 
 def seed_reviews_and_wishlist():
     """Populate Review and WishlistItem with deterministic synthetic data.
@@ -4166,11 +5173,11 @@ def seed_reviews_and_wishlist():
     # ---- Reviews ----
     if not Review.query.first():
         ix = 0
+        # Base 30 slugs × 4 users = 120 reviews (R2 set).
         for slug in REVIEW_TARGET_SLUGS:
             p = Product.query.filter_by(slug=slug).first()
             if p is None:
                 continue
-            # 4 reviews per product (one per user), cycled through templates.
             for j in range(len(users)):
                 u = users[(ix + j) % len(users)]
                 tpl = REVIEW_TEMPLATES[(ix + j) % len(REVIEW_TEMPLATES)]
@@ -4182,21 +5189,83 @@ def seed_reviews_and_wishlist():
                 )
                 db.session.add(rev)
                 ix += 1
+        # R3 expansion: 4 reviews/slug × ~125 slugs = ~500 more reviews.
+        # Cycles through the R3 template pool so reviews look distinct.
+        for k, slug in enumerate(REVIEW_TARGET_SLUGS_R3):
+            p = Product.query.filter_by(slug=slug).first()
+            if p is None:
+                continue
+            for j in range(len(users)):
+                u = users[(k + j) % len(users)]
+                tpl = REVIEW_TEMPLATES_R3[(k * 2 + j) % len(REVIEW_TEMPLATES_R3)]
+                rating, title, body = tpl
+                rev = Review(
+                    user_id=u.id, product_id=p.id,
+                    rating=rating, title=title, body=body,
+                    created_at=MIRROR_REFERENCE_DATE - timedelta(days=(k * 5 + j * 2) % 365 + 30),
+                )
+                db.session.add(rev)
+        # Second pass on the most-trafficked products to push past 600.
+        SECOND_PASS_SLUGS = [
+            'iphone-17-pro', 'iphone-17-pro-max', 'iphone-air',
+            'macbook-pro-14', 'macbook-pro-16', 'macbook-air-13',
+            'ipad-pro-m5', 'apple-watch-ultra-3', 'apple-watch-series-11',
+            'airpods-pro-3', 'apple-vision-pro',
+        ]
+        for k, slug in enumerate(SECOND_PASS_SLUGS):
+            p = Product.query.filter_by(slug=slug).first()
+            if p is None:
+                continue
+            for j in range(len(users)):
+                u = users[(k + j + 1) % len(users)]
+                tpl = REVIEW_TEMPLATES_R3[(k * 3 + j + 7) % len(REVIEW_TEMPLATES_R3)]
+                rating, title, body = tpl
+                rev = Review(
+                    user_id=u.id, product_id=p.id,
+                    rating=rating, title=title, body=body,
+                    created_at=MIRROR_REFERENCE_DATE - timedelta(days=(k * 7 + j * 3) % 220 + 5),
+                )
+                db.session.add(rev)
         db.session.commit()
         print(f"Seeded {Review.query.count()} reviews")
 
     # ---- Wishlist ----
     if not WishlistItem.query.first():
-        # 4 wishlist items per benchmark user, drawn from different categories.
+        # R3: 16+ wishlist items per benchmark user, drawn from a wide span of
+        # categories. Total 64+ rows across 4 users.
         wishlist_plan = [
-            ('alice.j@test.com', ['iphone-17-pro-max', 'apple-watch-ultra-3',
-                                  'airpods-max-2', 'ipad-pro-m5']),
-            ('bob.c@test.com',   ['macbook-pro-16', 'apple-vision-pro',
-                                  'studio-display', 'airpods-pro-3']),
-            ('carol.d@test.com', ['iphone-air', 'apple-watch-series-11',
-                                  'macbook-air-15', 'homepod-2nd-gen']),
-            ('david.k@test.com', ['iphone-17-pro', 'ipad-air-m4',
-                                  'apple-tv-4k', 'mac-studio-m2-ultra']),
+            ('alice.j@test.com', [
+                'iphone-17-pro-max', 'apple-watch-ultra-3', 'airpods-max-2', 'ipad-pro-m5',
+                'magic-keyboard-ipad-pro-13-m4-black', 'apple-pencil-pro',
+                'studio-display-standard-tilt', 'apple-vision-pro',
+                'apple-tv-4k', 'homepod-2', 'iphone-17-pro-max-silicone-cypress',
+                'airtag-4-pack', 'apple-one-premier', 'icloud-2tb',
+                'applecare-iphone-17-pro-max', 'beats-studio-pro-sandstone',
+            ]),
+            ('bob.c@test.com',   [
+                'macbook-pro-16', 'apple-vision-pro', 'studio-display', 'airpods-pro-3',
+                'magic-mouse-black', 'magic-trackpad-black', 'magic-keyboard-touch-id-numeric',
+                'pro-display-xdr-standard', 'usb-c-power-adapter-140w',
+                'thunderbolt-4-pro-18m', 'mac-pro-tower', 'mac-studio-m2-ultra',
+                'applecare-mac-studio', 'apple-music-family', 'beats-pill-matte-black',
+                'logitech-mx-master-3s-mac',
+            ]),
+            ('carol.d@test.com', [
+                'iphone-air', 'apple-watch-series-11', 'macbook-air-15', 'homepod-2',
+                'airpods-4', 'ipad-air-m4', 'apple-pencil-pro',
+                'smart-folio-ipad-air-11-m4-sage', 'iphone-air-silicone-green',
+                'iphone-air-clear-magsafe', 'iphone-crossbody-strap-lake-green',
+                'apple-music-individual', 'apple-fitness-plus', 'icloud-200gb',
+                'eve-energy-smart-plug', 'philips-hue-color-starter',
+            ]),
+            ('david.k@test.com', [
+                'iphone-17-pro', 'ipad-air-m4', 'apple-tv-4k', 'mac-studio-m2-ultra',
+                'airpods-pro-3', 'apple-watch-ultra-3', 'trail-loop-49mm-black-gray',
+                'alpine-loop-49mm-indigo', 'ocean-band-49mm-tide-blue',
+                'magsafe-charger-2m', 'magsafe-duo-charger', 'world-travel-adapter-kit',
+                'usb-c-digital-av-multiport', 'apple-one-family',
+                'applecare-watch-ultra-3', 'applecare-iphone-17-pro',
+            ]),
         ]
         offset = 0
         for email, slugs in wishlist_plan:

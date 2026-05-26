@@ -32,8 +32,15 @@
             <span>{{ e.course.partner.name if e.course.partner else '' }}</span>
           </div>
           <h3>{{ e.course.title }}</h3>
-          <div class="progress-bar"><div class="progress-fill" style="width:{{ e.progress }}%"></div></div>
-          <span class="progress-pct">{{ e.progress }}% complete</span>
+          <div style="display:flex;align-items:center;gap:14px;margin-top:8px;">
+            <div class="progress-ring" style="width:54px;height:54px;border-radius:50%;background:conic-gradient(#0056D2 calc({{ e.progress }}% * 3.6deg),#E5F0FF 0);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+              <div style="width:42px;height:42px;border-radius:50%;background:#fff;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;color:#0056D2;">{{ e.progress }}%</div>
+            </div>
+            <div style="flex:1;">
+              <div class="progress-bar"><div class="progress-fill" style="width:{{ e.progress }}%"></div></div>
+              <span class="progress-pct">{{ e.progress }}% complete</span>
+            </div>
+          </div>
         </div>
       </a>
       {% endfor %}

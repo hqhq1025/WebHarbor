@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% block title %}Code search · {{ repo.full_name }}{% endblock %}
+{% block content %}
+<div class="repo-header-bar">
+  <div class="repo-header-inner">
+    <div class="repo-breadcrumb">
+      <a href="/{{ repo.full_name.split('/')[0] }}" class="repo-breadcrumb-link">{{ repo.full_name.split('/')[0] }}</a>
+      <span class="repo-breadcrumb-sep">/</span>
+      <a href="/{{ repo.full_name }}" class="repo-breadcrumb-link repo-breadcrumb-repo">{{ repo.name }}</a>
+    </div>
+  </div>
+</div>
+<div class="code-search-page">
+  <form class="code-search-form" action="/{{ repo.full_name }}/code-search" method="get">
+    <input type="search" name="q" class="code-search-input" placeholder="Search code in {{ repo.full_name }}" value="{{ q }}">
+    <button class="gh-btn gh-btn-primary">Search</button>
+  </form>
+  {% if q %}
+    <h3>Results for "{{ q }}" on branch {{ branch }} — {{ hits|length }} match{{ 'es' if hits|length != 1 else '' }}</h3>
+    <ul class="code-search-results">
+      {% for h in hits %}
+      <li class="code-search-hit">
+        <a href="/{{ repo.full_name }}/blob/{{ branch }}/{{ h.path }}#L{{ h.line }}" class="code-search-path">{{ h.path }}</a>
+        <pre class="code-search-snippet">{{ h.snippet }}</pre>
+      </li>
+      {% else %}
+      <li class="muted">No matches.</li>
+      {% endfor %}
+    </ul>
+  {% else %}
+    <p class="muted">Enter a query above to search the repository's source.</p>
+  {% endif %}
+</div>
+{% endblock %}

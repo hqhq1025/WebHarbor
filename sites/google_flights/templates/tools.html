@@ -39,6 +39,26 @@
       <h3>Cheapest deals</h3>
       <p>Find the best flight deals from your home airport.</p>
     </a>
+    <a href="{{ url_for('baggage_calculator') }}" class="tool-card">
+      <div class="tool-icon"><span class="material-symbols-outlined">luggage</span></div>
+      <h3>Baggage fees calculator</h3>
+      <p>Estimate carry-on, checked, and overweight bag fees across 20+ airlines.</p>
+    </a>
+    <a href="{{ url_for('frequent_flyer_programs') }}" class="tool-card">
+      <div class="tool-icon"><span class="material-symbols-outlined">card_membership</span></div>
+      <h3>Frequent flyer programs</h3>
+      <p>Compare loyalty programs, alliances, and elite tiers across major carriers.</p>
+    </a>
+    <a href="{{ url_for('calendar_cheapest') }}" class="tool-card">
+      <div class="tool-icon"><span class="material-symbols-outlined">event_available</span></div>
+      <h3>Cheapest day to fly</h3>
+      <p>30-day price calendar to find the cheapest day to depart on any route.</p>
+    </a>
+    <a href="{{ url_for('tools_explore_map') }}" class="tool-card">
+      <div class="tool-icon"><span class="material-symbols-outlined">map</span></div>
+      <h3>Explore map</h3>
+      <p>Open the full-screen world map and click pins to start a search.</p>
+    </a>
   </div>
 </section>
 {% endblock %}

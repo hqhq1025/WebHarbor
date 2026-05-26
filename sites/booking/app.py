@@ -27,6 +27,30 @@ BASE_DIR = Path(__file__).parent
 INSTANCE = BASE_DIR / 'instance'
 INSTANCE.mkdir(exist_ok=True)
 
+# ---------------------------------------------------------------------------
+# Determinism constants — see .claude/skills/harden-env/gotchas.md
+# Used inside seed paths so that two fresh rebuilds of instance/booking.db
+# produce byte-identical SQLite files (md5 invariant).
+# ---------------------------------------------------------------------------
+MIRROR_REFERENCE_DATE = datetime(2026, 5, 12, 12, 0, 0)
+# bcrypt('test1234') and bcrypt('demo1234') hashes pinned so the seed path
+# never mixes a fresh random salt into users.password_hash. Werkzeug /
+# Flask-Bcrypt's check_password_hash accepts any valid $2b$ literal.
+PINNED_HASH_TEST1234 = '$2b$12$Oi0plj9XBSbuCcjmrSVmje2AWKXN99Xpa7J2O6tjYvquZPTqNXN6i'
+PINNED_HASH_DEMO1234 = '$2b$12$BookingDemoSaltAaBbCc.l59ZA7X2KbZXhjYe.oMUy01kqnB5d3G'
+PINNED_HASH_TESTPASS123 = '$2b$12$RwAC/sfwDHtccU//A20fde.uKkZK4Ptnjjyua2l2ktwI6uysAp3Ou'
+
+def _qs_without_page():
+    """Return current request's query string with 'page' removed, suitable
+    for appending to a paginated URL."""
+    parts = []
+    for k, v in request.args.items(multi=True):
+        if k == 'page' or v == '' or v is None:
+            continue
+        parts.append(f'{k}={v}')
+    return '&'.join(parts)
+
+
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'booking-mirror-secret-key-change-in-production'
 app.config['SQLALCHEMY_DATABASE_URI'] = f'sqlite:///{INSTANCE}/booking.db'
@@ -39,6 +63,14 @@ login_manager = LoginManager(app)
 login_manager.login_view = 'login'
 login_manager.login_message_category = 'info'
 csrf = CSRFProtect(app)
+
+
+@app.context_processor
+def _inject_qs_helpers():
+    try:
+        return {'qs_without_page': _qs_without_page()}
+    except Exception:
+        return {'qs_without_page': ''}
 
 
 # =====================================================================
@@ -57,7 +89,7 @@ class User(db.Model, UserMixin):
     address = db.Column(db.String(200))
     postal_code = db.Column(db.String(20))
     genius_level = db.Column(db.Integer, default=1)  # 1-3, loyalty tier
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=lambda: MIRROR_REFERENCE_DATE)
 
     bookings = db.relationship('Booking', backref='user', lazy=True, cascade='all, delete-orphan')
     cart_items = db.relationship('CartItem', backref='user', lazy=True, cascade='all, delete-orphan')
@@ -173,7 +205,7 @@ class Property(db.Model):
     lat = db.Column(db.Float)
     lng = db.Column(db.Float)
 
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=lambda: MIRROR_REFERENCE_DATE)
 
     reviews = db.relationship('Review', backref='property', lazy=True, cascade='all, delete-orphan')
 
@@ -280,7 +312,7 @@ class CartItem(db.Model):
     children = db.Column(db.Integer, default=0)
     rooms = db.Column(db.Integer, default=1)
     room_type = db.Column(db.String(100), default='Standard Double Room')
-    added_at = db.Column(db.DateTime, default=datetime.utcnow)
+    added_at = db.Column(db.DateTime, default=lambda: MIRROR_REFERENCE_DATE)
 
     @property
     def nights(self):
@@ -309,7 +341,7 @@ class Booking(db.Model):
     special_requests = db.Column(db.Text)
     payment_method = db.Column(db.String(50), default='Credit Card')
     card_last4 = db.Column(db.String(4))
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=lambda: MIRROR_REFERENCE_DATE)
 
     items = db.relationship('BookingItem', backref='booking', lazy=True, cascade='all, delete-orphan')
 
@@ -336,7 +368,7 @@ class SavedProperty(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     property_id = db.Column(db.Integer, db.ForeignKey('property.id'), nullable=False)
     list_name = db.Column(db.String(100), default='My next trip')
-    saved_at = db.Column(db.DateTime, default=datetime.utcnow)
+    saved_at = db.Column(db.DateTime, default=lambda: MIRROR_REFERENCE_DATE)
 
     property = db.relationship('Property')
 
@@ -351,7 +383,7 @@ class Review(db.Model):
     body_negative = db.Column(db.Text)
     traveller_type = db.Column(db.String(40))  # Couple, Family, Business, Solo
     stay_length = db.Column(db.Integer, default=2)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=lambda: MIRROR_REFERENCE_DATE)
 
 
 class PaymentMethod(db.Model):
@@ -364,7 +396,87 @@ class PaymentMethod(db.Model):
     exp_year = db.Column(db.Integer, nullable=False)
     cardholder_name = db.Column(db.String(120), default='')
     is_default = db.Column(db.Boolean, default=False)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=lambda: MIRROR_REFERENCE_DATE)
+
+
+# ---------------------------------------------------------------------------
+# R3: additional verticals — Flights / Cars / Attractions / Airport Taxis /
+# Genius Rewards. Each is a flat table seeded from scraped_data/aux_*.json.
+# Routes below render them; templates are fully data-driven.
+# ---------------------------------------------------------------------------
+class Flight(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    flight_number = db.Column(db.String(20), index=True)
+    airline = db.Column(db.String(80), index=True)
+    origin_city_key = db.Column(db.String(50), index=True)
+    origin_display = db.Column(db.String(100))
+    dest_city_key = db.Column(db.String(50), index=True)
+    dest_display = db.Column(db.String(100))
+    depart_time = db.Column(db.String(8))
+    arrive_time = db.Column(db.String(8))
+    duration_minutes = db.Column(db.Integer)
+    cabin_class = db.Column(db.String(40))
+    stops = db.Column(db.Integer, default=0)
+    price_usd = db.Column(db.Float)
+    free_cancellation = db.Column(db.Boolean, default=False)
+    checked_bag_included = db.Column(db.Boolean, default=False)
+
+
+class CarRental(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    city_key = db.Column(db.String(50), index=True)
+    city_display = db.Column(db.String(100))
+    brand = db.Column(db.String(80))
+    vehicle_class = db.Column(db.String(40))
+    sample_model = db.Column(db.String(100))
+    daily_price_usd = db.Column(db.Float)
+    transmission = db.Column(db.String(20))
+    seats = db.Column(db.Integer)
+    pickup_location = db.Column(db.String(160))
+    free_cancellation = db.Column(db.Boolean, default=False)
+    unlimited_mileage = db.Column(db.Boolean, default=False)
+    rating = db.Column(db.Float)
+
+
+class Attraction(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    city_key = db.Column(db.String(50), index=True)
+    city_display = db.Column(db.String(100))
+    category = db.Column(db.String(40), index=True)
+    name = db.Column(db.String(200))
+    description_short = db.Column(db.String(400))
+    price_usd = db.Column(db.Float)
+    duration_hours = db.Column(db.Integer)
+    rating = db.Column(db.Float)
+    review_count = db.Column(db.Integer)
+    instant_confirmation = db.Column(db.Boolean, default=False)
+    free_cancellation = db.Column(db.Boolean, default=False)
+    mobile_voucher = db.Column(db.Boolean, default=False)
+
+
+class AirportTaxi(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    airport_code = db.Column(db.String(8), index=True)
+    city_key = db.Column(db.String(50), index=True)
+    city_display = db.Column(db.String(100))
+    destination = db.Column(db.String(160))
+    distance_km = db.Column(db.Integer)
+    vehicle = db.Column(db.String(40))
+    vehicle_desc = db.Column(db.String(160))
+    seats = db.Column(db.Integer)
+    quote_usd = db.Column(db.Float)
+    free_cancellation = db.Column(db.Boolean, default=True)
+    meet_and_greet = db.Column(db.Boolean, default=False)
+    flight_tracking = db.Column(db.Boolean, default=True)
+
+
+class GeniusReward(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    tier = db.Column(db.Integer, index=True)
+    name = db.Column(db.String(120))
+    description = db.Column(db.String(400))
+    discount_pct = db.Column(db.Integer, default=0)
+    icon = db.Column(db.String(40))
 
 
 # =====================================================================
@@ -600,25 +712,166 @@ def stays():
 
 @app.route('/flights')
 def flights():
-    cities = City.query.all()
-    return render_template('flights.html', cities=cities)
+    """Real flights mock — filter by ?from=&to=&cabin=&max_price=&sort=."""
+    cities = City.query.order_by(City.display).all()
+    q = Flight.query
+    origin = (request.args.get('from') or '').strip().lower()
+    dest = (request.args.get('to') or '').strip().lower()
+    cabin = (request.args.get('cabin') or '').strip()
+    max_price = request.args.get('max_price', type=float)
+    nonstop = request.args.get('nonstop') == '1'
+    sort = (request.args.get('sort') or 'price').strip()
+    if origin:
+        q = q.filter(db.or_(Flight.origin_city_key == origin,
+                            Flight.origin_display.ilike(f"%{origin}%")))
+    if dest:
+        q = q.filter(db.or_(Flight.dest_city_key == dest,
+                            Flight.dest_display.ilike(f"%{dest}%")))
+    if cabin:
+        q = q.filter(Flight.cabin_class == cabin)
+    if max_price:
+        q = q.filter(Flight.price_usd <= max_price)
+    if nonstop:
+        q = q.filter(Flight.stops == 0)
+    if sort == 'duration':
+        q = q.order_by(Flight.duration_minutes.asc())
+    elif sort == 'price-desc':
+        q = q.order_by(Flight.price_usd.desc())
+    else:
+        q = q.order_by(Flight.price_usd.asc())
+    page = max(1, request.args.get('page', type=int) or 1)
+    per_page = 30
+    total = q.count()
+    flights_list = q.offset((page - 1) * per_page).limit(per_page).all()
+    pages = max(1, (total + per_page - 1) // per_page)
+    return render_template('flights.html', cities=cities, flights=flights_list,
+                           total=total, page=page, pages=pages,
+                           filters={'from': origin, 'to': dest, 'cabin': cabin,
+                                    'max_price': max_price, 'nonstop': nonstop,
+                                    'sort': sort})
 
 
 @app.route('/car-rentals')
 def car_rentals():
-    cities = City.query.all()
-    return render_template('car_rentals.html', cities=cities)
+    """Real car rental mock — filter by ?city=&klass=&max_price=."""
+    cities = City.query.order_by(City.display).all()
+    q = CarRental.query
+    city_q = (request.args.get('city') or '').strip().lower()
+    klass = (request.args.get('class') or '').strip()
+    max_price = request.args.get('max_price', type=float)
+    transmission = (request.args.get('transmission') or '').strip()
+    if city_q:
+        q = q.filter(db.or_(CarRental.city_key == city_q,
+                            CarRental.city_display.ilike(f"%{city_q}%")))
+    if klass:
+        q = q.filter(CarRental.vehicle_class == klass)
+    if max_price:
+        q = q.filter(CarRental.daily_price_usd <= max_price)
+    if transmission:
+        q = q.filter(CarRental.transmission == transmission)
+    q = q.order_by(CarRental.daily_price_usd.asc())
+    page = max(1, request.args.get('page', type=int) or 1)
+    per_page = 24
+    total = q.count()
+    cars_list = q.offset((page - 1) * per_page).limit(per_page).all()
+    pages = max(1, (total + per_page - 1) // per_page)
+    return render_template('car_rentals.html', cities=cities, cars=cars_list,
+                           total=total, page=page, pages=pages,
+                           filters={'city': city_q, 'class': klass,
+                                    'max_price': max_price,
+                                    'transmission': transmission})
 
 
 @app.route('/attractions')
 def attractions():
-    cities = City.query.all()
-    return render_template('attractions.html', cities=cities)
+    """Attractions catalogue — filter ?city=&category=&max_price=&sort=."""
+    cities = City.query.order_by(City.display).all()
+    q = Attraction.query
+    city_q = (request.args.get('city') or '').strip().lower()
+    cat = (request.args.get('category') or '').strip()
+    max_price = request.args.get('max_price', type=float)
+    sort = (request.args.get('sort') or 'rating').strip()
+    if city_q:
+        q = q.filter(db.or_(Attraction.city_key == city_q,
+                            Attraction.city_display.ilike(f"%{city_q}%")))
+    if cat:
+        q = q.filter(Attraction.category == cat)
+    if max_price:
+        q = q.filter(Attraction.price_usd <= max_price)
+    if sort == 'price':
+        q = q.order_by(Attraction.price_usd.asc())
+    elif sort == 'price-desc':
+        q = q.order_by(Attraction.price_usd.desc())
+    elif sort == 'reviews':
+        q = q.order_by(Attraction.review_count.desc())
+    else:
+        q = q.order_by(Attraction.rating.desc())
+    categories = [c[0] for c in db.session.query(Attraction.category).distinct().order_by(Attraction.category).all()]
+    page = max(1, request.args.get('page', type=int) or 1)
+    per_page = 24
+    total = q.count()
+    attractions_list = q.offset((page - 1) * per_page).limit(per_page).all()
+    pages = max(1, (total + per_page - 1) // per_page)
+    return render_template('attractions.html', cities=cities,
+                           attractions=attractions_list, categories=categories,
+                           total=total, page=page, pages=pages,
+                           filters={'city': city_q, 'category': cat,
+                                    'max_price': max_price, 'sort': sort})
 
 
 @app.route('/airport-taxis')
 def airport_taxis():
-    return render_template('airport_taxis.html')
+    """Airport taxi quotes — filter ?airport=&vehicle=&max_price=."""
+    q = AirportTaxi.query
+    airport = (request.args.get('airport') or '').strip().upper()
+    vehicle = (request.args.get('vehicle') or '').strip()
+    max_price = request.args.get('max_price', type=float)
+    if airport:
+        q = q.filter(AirportTaxi.airport_code == airport)
+    if vehicle:
+        q = q.filter(AirportTaxi.vehicle == vehicle)
+    if max_price:
+        q = q.filter(AirportTaxi.quote_usd <= max_price)
+    q = q.order_by(AirportTaxi.quote_usd.asc())
+    airports = [r[0] for r in db.session.query(AirportTaxi.airport_code).distinct().order_by(AirportTaxi.airport_code).all()]
+    vehicles = [r[0] for r in db.session.query(AirportTaxi.vehicle).distinct().order_by(AirportTaxi.vehicle).all()]
+    page = max(1, request.args.get('page', type=int) or 1)
+    per_page = 30
+    total = q.count()
+    taxis_list = q.offset((page - 1) * per_page).limit(per_page).all()
+    pages = max(1, (total + per_page - 1) // per_page)
+    return render_template('airport_taxis.html', taxis=taxis_list,
+                           airports=airports, vehicles=vehicles,
+                           total=total, page=page, pages=pages,
+                           filters={'airport': airport, 'vehicle': vehicle,
+                                    'max_price': max_price})
+
+
+@app.route('/property/<slug>/reviews')
+def property_reviews(slug):
+    """All reviews for a property — paginated."""
+    prop = Property.query.filter_by(slug=slug).first_or_404()
+    page = max(1, request.args.get('page', type=int) or 1)
+    per_page = 20
+    q = Review.query.filter_by(property_id=prop.id)
+    sort = (request.args.get('sort') or 'recent').strip()
+    if sort == 'top':
+        q = q.order_by(Review.rating.desc())
+    elif sort == 'low':
+        q = q.order_by(Review.rating.asc())
+    else:
+        q = q.order_by(Review.created_at.desc())
+    traveller = (request.args.get('traveller') or '').strip()
+    if traveller:
+        q = q.filter(Review.traveller_type == traveller)
+    total = q.count()
+    reviews = q.offset((page - 1) * per_page).limit(per_page).all()
+    pages = max(1, (total + per_page - 1) // per_page)
+    travellers = [r[0] for r in db.session.query(Review.traveller_type).filter_by(property_id=prop.id).distinct().all() if r[0]]
+    avg = db.session.query(func.avg(Review.rating)).filter_by(property_id=prop.id).scalar() or prop.rating
+    return render_template('property_reviews.html', property=prop, reviews=reviews,
+                           total=total, page=page, pages=pages, avg=round(avg, 1),
+                           travellers=travellers, sort=sort, traveller=traveller)
 
 
 @app.route('/city/<slug>')
@@ -2115,7 +2368,21 @@ def article_detail(slug):
 
 @app.route('/genius')
 def genius():
-    return render_template('genius.html')
+    """Genius loyalty programme — rewards grouped by tier."""
+    rewards = GeniusReward.query.order_by(GeniusReward.tier, GeniusReward.id).all()
+    by_tier = {1: [], 2: [], 3: []}
+    for r in rewards:
+        by_tier.setdefault(r.tier, []).append(r)
+    # Sample Genius-deal properties
+    sample_properties = Property.query.filter_by(is_genius_deal=True).order_by(
+        Property.discount_percent.desc()).limit(8).all()
+    return render_template('genius.html', rewards_by_tier=by_tier,
+                           sample_properties=sample_properties)
+
+
+@app.route('/genius-rewards')
+def genius_rewards_alias():
+    return redirect(url_for('genius'), code=301)
 
 
 @app.route('/deals')
@@ -2179,6 +2446,7 @@ def seed_database():
     # Don't re-seed if already present
     if Property.query.first():
         _ensure_amenity_combos()
+        _seed_aux_tables()
         return
     random.seed(20260518)
 
@@ -2192,8 +2460,15 @@ def seed_database():
     image_map = get_image_map()
     city_objs = {}
     for key, info in CITY_INFO.items():
-        imgs = image_map.get('cities', {}).get(key, [])
-        gallery_imgs = image_map.get('gallery', {}).get(key, [])
+        # Expansion cities have no native gallery — fall back to a
+        # `_gallery_alias` (set in seed_data.py's expansion fold) pointing
+        # at a sister city. Lets 300-city catalogue ship without 300
+        # separate scrape jobs.
+        alias = info.get('_gallery_alias') or key
+        imgs = image_map.get('cities', {}).get(key, []) or \
+               image_map.get('cities', {}).get(alias, [])
+        gallery_imgs = image_map.get('gallery', {}).get(key, []) or \
+                       image_map.get('gallery', {}).get(alias, [])
         c = City(
             key=key,
             display=info['display'],
@@ -2219,7 +2494,7 @@ def seed_database():
     # Create a default user for reviews
     default_user = User(
         email='demo@booking.example',
-        password_hash=bcrypt.generate_password_hash('demo1234').decode('utf-8'),
+        password_hash=PINNED_HASH_DEMO1234,
         first_name='Demo',
         last_name='User',
     )
@@ -2239,7 +2514,7 @@ def seed_database():
     for fn, ln, em in reviewer_names:
         u = User(
             email=em,
-            password_hash=bcrypt.generate_password_hash('test1234').decode('utf-8'),
+            password_hash=PINNED_HASH_TEST1234,
             first_name=fn, last_name=ln,
         )
         db.session.add(u)
@@ -2423,7 +2698,7 @@ def seed_database():
                 body_negative=template[2],
                 traveller_type=random.choice(traveller_types),
                 stay_length=random.randint(1, 7),
-                created_at=datetime.utcnow() - timedelta(days=random.randint(5, 365)),
+                created_at=MIRROR_REFERENCE_DATE - timedelta(days=random.randint(5, 365)),
             )
             db.session.add(review)
 
@@ -2432,6 +2707,83 @@ def seed_database():
 
     # --- Post-seed: ensure amenity combos for tasks ---
     _ensure_amenity_combos()
+    _seed_aux_tables()
+    _normalize_seed_db_layout()
+
+
+def _normalize_seed_db_layout():
+    """Re-emit indexes in alpha order + VACUUM so rebuilds match byte-for-byte.
+    Counters #2 in .claude/skills/harden-env/gotchas.md (SQLAlchemy index set
+    iteration order is non-deterministic across processes).
+    """
+    from sqlalchemy import text
+    conn = db.engine.connect()
+    idx_rows = conn.execute(text(
+        "SELECT name, sql FROM sqlite_master WHERE type='index' AND name LIKE 'ix_%'"
+    )).fetchall()
+    for name, _ in idx_rows:
+        conn.execute(text(f"DROP INDEX IF EXISTS {name}"))
+    for name, sql in sorted(idx_rows, key=lambda r: r[0]):
+        if sql:
+            conn.execute(text(sql))
+    conn.execute(text("VACUUM"))
+    conn.commit()
+
+
+def _seed_aux_tables():
+    """Seed Flight / CarRental / Attraction / AirportTaxi / GeniusReward from
+    scraped_data/aux_*.json files. Idempotent: skips when tables non-empty."""
+    src = BASE_DIR / 'scraped_data'
+
+    if Flight.query.first() is None:
+        path = src / 'aux_flights.json'
+        if path.exists():
+            with open(path) as f:
+                rows = json.load(f)
+            for r in rows:
+                db.session.add(Flight(**r))
+            db.session.commit()
+            print(f"[aux] seeded {Flight.query.count()} flights")
+
+    if CarRental.query.first() is None:
+        path = src / 'aux_cars.json'
+        if path.exists():
+            with open(path) as f:
+                rows = json.load(f)
+            for r in rows:
+                db.session.add(CarRental(**r))
+            db.session.commit()
+            print(f"[aux] seeded {CarRental.query.count()} car rentals")
+
+    if Attraction.query.first() is None:
+        path = src / 'aux_attractions.json'
+        if path.exists():
+            with open(path) as f:
+                rows = json.load(f)
+            for r in rows:
+                db.session.add(Attraction(**r))
+            db.session.commit()
+            print(f"[aux] seeded {Attraction.query.count()} attractions")
+
+    if AirportTaxi.query.first() is None:
+        path = src / 'aux_taxis.json'
+        if path.exists():
+            with open(path) as f:
+                rows = json.load(f)
+            for r in rows:
+                db.session.add(AirportTaxi(**r))
+            db.session.commit()
+            print(f"[aux] seeded {AirportTaxi.query.count()} airport taxi quotes")
+
+    if GeniusReward.query.first() is None:
+        path = src / 'aux_genius.json'
+        if path.exists():
+            with open(path) as f:
+                rows = json.load(f)
+            for r in rows:
+                db.session.add(GeniusReward(**r))
+            db.session.commit()
+            print(f"[aux] seeded {GeniusReward.query.count()} Genius rewards")
 
 
 def _ensure_amenity_combos():
@@ -2722,11 +3074,11 @@ def seed_benchmark_users():
             existing.address = address
             existing.postal_code = postal
             existing.genius_level = genius
-            existing.password_hash = bcrypt.generate_password_hash(PASS).decode('utf-8')
+            existing.password_hash = PINNED_HASH_TESTPASS123
             return existing
         return User(
             email=email,
-            password_hash=bcrypt.generate_password_hash(PASS).decode('utf-8'),
+            password_hash=PINNED_HASH_TESTPASS123,
             first_name=fn,
             last_name=ln,
             phone=phone,
@@ -2782,7 +3134,7 @@ def seed_benchmark_users():
             guest_country='France',
             payment_method='Visa ending 4242',
             card_last4='4242',
-            created_at=datetime.utcnow() - timedelta(days=60),
+            created_at=MIRROR_REFERENCE_DATE - timedelta(days=60),
         )
         db.session.add(bk)
         db.session.flush()
@@ -2809,7 +3161,7 @@ def seed_benchmark_users():
             guest_country='France',
             payment_method='Mastercard ending 5555',
             card_last4='5555',
-            created_at=datetime.utcnow() - timedelta(days=120),
+            created_at=MIRROR_REFERENCE_DATE - timedelta(days=120),
         )
         db.session.add(bk2)
         db.session.flush()
@@ -2835,7 +3187,7 @@ def seed_benchmark_users():
             guest_country='France',
             payment_method='Amex ending 3782',
             card_last4='3782',
-            created_at=datetime.utcnow() - timedelta(days=10),
+            created_at=MIRROR_REFERENCE_DATE - timedelta(days=10),
         )
         db.session.add(bk3)
         db.session.flush()
@@ -2906,7 +3258,7 @@ def seed_benchmark_users():
             guest_country='Japan',
             payment_method='Visa ending 1111',
             card_last4='1111',
-            created_at=datetime.utcnow() - timedelta(days=30),
+            created_at=MIRROR_REFERENCE_DATE - timedelta(days=30),
         )
         db.session.add(bk_k1)
         db.session.flush()
@@ -2932,7 +3284,7 @@ def seed_benchmark_users():
             guest_country='Japan',
             payment_method='Visa ending 1111',
             card_last4='1111',
-            created_at=datetime.utcnow() - timedelta(days=90),
+            created_at=MIRROR_REFERENCE_DATE - timedelta(days=90),
         )
         db.session.add(bk_k2)
         db.session.flush()
@@ -3008,7 +3360,7 @@ def seed_benchmark_users():
             guest_country='United Kingdom',
             payment_method='Visa ending 3333',
             card_last4='3333',
-            created_at=datetime.utcnow() - timedelta(days=45),
+            created_at=MIRROR_REFERENCE_DATE - timedelta(days=45),
         )
         db.session.add(bk_e1)
         db.session.flush()
@@ -3034,7 +3386,7 @@ def seed_benchmark_users():
             guest_country='United Kingdom',
             payment_method='Mastercard ending 6666',
             card_last4='6666',
-            created_at=datetime.utcnow() - timedelta(days=200),
+            created_at=MIRROR_REFERENCE_DATE - timedelta(days=200),
         )
         db.session.add(bk_e2)
         db.session.flush()
@@ -3108,7 +3460,7 @@ def seed_benchmark_users():
             special_requests='Early check-in if possible. Quiet room preferred.',
             payment_method='Amex ending 7777',
             card_last4='7777',
-            created_at=datetime.utcnow() - timedelta(days=5),
+            created_at=MIRROR_REFERENCE_DATE - timedelta(days=5),
         )
         db.session.add(bk_c1)
         db.session.flush()
@@ -3134,7 +3486,7 @@ def seed_benchmark_users():
             guest_country='United States',
             payment_method='Visa ending 8888',
             card_last4='8888',
-            created_at=datetime.utcnow() - timedelta(days=150),
+            created_at=MIRROR_REFERENCE_DATE - timedelta(days=150),
         )
         db.session.add(bk_c2)
         db.session.flush()
@@ -3159,7 +3511,7 @@ def seed_benchmark_users():
             guest_country='United States',
             payment_method='Amex ending 7777',
             card_last4='7777',
-            created_at=datetime.utcnow() - timedelta(days=2),
+            created_at=MIRROR_REFERENCE_DATE - timedelta(days=2),
         )
         db.session.add(bk_c3)
         db.session.flush()

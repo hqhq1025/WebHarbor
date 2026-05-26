@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+{% block title %}{{ sport.name }} Draft {{ season }}{% endblock %}
+
+{% block content %}
+<div class="container">
+  <div class="clubhouse-header">
+    <span class="clubhouse-header__title">{{ sport.display_name or sport.name }} Draft {{ season }}</span>
+  </div>
+  <div class="page-header">
+    <h1>{{ sport.name }} {{ season }} {{ 'Mock Draft' if is_mock else 'Draft Results' }}</h1>
+    <p class="subtitle">
+      {% if is_mock %}
+      Projected first- and second-round selections by ESPN draft analysts.
+      {% else %}
+      Final draft order from the {{ season }} {{ sport.name }} Draft.
+      {% endif %}
+    </p>
+    {% set active = 'home' %}{% include "_sport_subnav.html" %}
+  </div>
+
+  <div class="filter-row">
+    {% for sn in seasons %}
+    <a class="filter-tab {% if sn == season %}active{% endif %}"
+       href="{{ sport.url_prefix }}draft?season={{ sn }}">{{ sn }}</a>
+    {% endfor %}
+    {% if not round_n %}
+    <a class="filter-tab" href="{{ sport.url_prefix }}draft?season={{ season }}&round=1">Round 1</a>
+    <a class="filter-tab" href="{{ sport.url_prefix }}draft?season={{ season }}&round=2">Round 2</a>
+    {% else %}
+    <a class="filter-tab active" href="{{ sport.url_prefix }}draft?season={{ season }}&round={{ round_n }}">Round {{ round_n }}</a>
+    <a class="filter-tab" href="{{ sport.url_prefix }}draft?season={{ season }}">All Rounds</a>
+    {% endif %}
+  </div>
+
+  <table class="data-table draft-table">
+    <thead>
+      <tr>
+        <th>Pick</th>
+        <th>Team</th>
+        <th>Player</th>
+        <th>Pos</th>
+        <th>School / Club</th>
+        <th>Country</th>
+        <th>HT / WT</th>
+        <th>Grade</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for p in picks %}
+      {% set team = teams.get(p.team_id) %}
+      <tr>
+        <td class="rank-col">#{{ p.overall_pick }} (R{{ p.round }}.{{ p.pick }})</td>
+        <td>
+          {% if team %}
+          <a href="/team/{{ sport.slug }}/{{ team.slug }}">{{ team.full_name }}</a>
+          {% else %}—{% endif %}
+        </td>
+        <td><strong>{{ p.player_name }}</strong></td>
+        <td>{{ p.position }}</td>
+        <td>{{ p.school }}</td>
+        <td>{{ p.country }}</td>
+        <td>{{ p.height }} / {{ p.weight }} lbs</td>
+        <td class="stat-val">{{ '%.2f'|format(p.scout_grade) }}</td>
+      </tr>
+      {% else %}
+      <tr><td colspan="8" class="empty-msg">No picks for this filter.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

@@ -153,6 +153,161 @@ TRENDING = [
     'gold prices today',
     'mortgage rates 2026',
     'recession forecast 2026',
+    # R3 expansion — news / breaking
+    'earthquake today',
+    'wildfire map California',
+    'hurricane tracker 2026',
+    'severe weather alerts',
+    'gas prices near me',
+    'midterm elections 2026',
+    'Supreme Court ruling today',
+    'NATO summit 2026',
+    'UN General Assembly 2026',
+    'WHO statement today',
+    'COP31 climate summit',
+    'CES 2026 highlights',
+    'Apple WWDC 2026 keynote',
+    'Tesla Cybertruck review',
+    'Rivian R3 release',
+    'Polestar 5 launch',
+    'BYD vs Tesla',
+    'Lucid Air range',
+    'EV charging map',
+    'Boeing 737 MAX news',
+    'SpaceX Starship launch',
+    'James Webb telescope discovery',
+    'Artemis 3 mission',
+    'China lunar mission',
+    'ISS deorbit timeline',
+    # Tech & AI
+    'Gemini 2 release',
+    'Claude 4.5 review',
+    'GPT-5.4 features',
+    'Llama 4 weights',
+    'Mistral Large 2',
+    'DeepSeek V3',
+    'open source AI models',
+    'AI agents',
+    'AI coding assistants',
+    'AI image generator free',
+    'Sora video AI',
+    'Suno AI music',
+    'Anthropic Claude Computer Use',
+    'NVIDIA GTC 2026',
+    'TSMC 2nm node',
+    'Intel 18A roadmap',
+    'AMD Ryzen 9000',
+    'M5 MacBook Pro',
+    'Pixel 10 review',
+    'OnePlus 13 release',
+    'foldable phones 2026',
+    'Vision Pro 2',
+    'PlayStation 6 rumours',
+    'Xbox handheld console',
+    'Nintendo Switch 2 games',
+    'Steam Deck 2',
+    'GTA 6 release date',
+    'Elder Scrolls 6 trailer',
+    # Sports
+    'NFL draft 2026',
+    'NBA MVP race',
+    'NHL standings',
+    'MLS Cup 2026',
+    'UEFA Euro 2028 hosts',
+    'Copa America 2026',
+    'Asian Cup 2027 schedule',
+    'World Athletics Championship',
+    'IndyCar 500 winner',
+    'Tour de France 2026 route',
+    'Cricket World Cup 2027',
+    'Rugby Six Nations',
+    'Ryder Cup 2026 teams',
+    'WNBA finals MVP',
+    'PGA Championship leaderboard',
+    'UFC 300 results',
+    'Boxing PPV tonight',
+    # Entertainment
+    'Best movies 2026',
+    'Box office this week',
+    'Oscars 2026 nominations',
+    'Sundance 2026 winners',
+    'Tony Awards 2026',
+    'Emmy nominations 2026',
+    'Met Gala dress code',
+    'Cannes red carpet',
+    'Coachella weekend 2',
+    'Glastonbury 2026 lineup',
+    'Taylor Swift Eras tour dates',
+    'BTS comeback',
+    'Bad Bunny new song',
+    'Billboard Hot 100',
+    'Album of the Year nominees',
+    'Netflix new releases',
+    'Disney Plus new shows',
+    'HBO Max premieres',
+    'Apple TV+ original',
+    'Hulu top 10',
+    'House of the Dragon season 3',
+    'Stranger Things season 5',
+    'Severance season 2',
+    'The Last of Us season 2',
+    # Lifestyle / Wellness
+    'best running shoes 2026',
+    'home workout no equipment',
+    'Mediterranean diet recipes',
+    'meal prep ideas',
+    'protein powder reviews',
+    'sleep tracking apps',
+    'mental health awareness',
+    'mindfulness meditation app',
+    'yoga for back pain',
+    'sourdough recipe',
+    # Travel
+    'cheap flights to Europe',
+    'best places to visit 2026',
+    'Iceland northern lights tour',
+    'Japan cherry blossom forecast',
+    'Bali travel restrictions',
+    'visa waiver program update',
+    'Schengen visa 2026',
+    'Eurail pass review',
+    'cruise deals 2026',
+    'hotel rewards programs',
+    # Finance
+    'savings account rates',
+    'CD rates today',
+    'student loan forgiveness 2026',
+    'tax brackets 2026',
+    'IRS refund tracker',
+    '401k contribution limit 2026',
+    'crypto regulation news',
+    'Ethereum staking yield',
+    'Solana price prediction',
+    'gold vs silver investment',
+    # Education / kids
+    'best online courses',
+    'AP test results',
+    'SAT score 2026',
+    'college admissions 2026',
+    'FAFSA deadline',
+    'scholarship search engine',
+    # Health / medical
+    'flu shot 2026',
+    'RSV vaccine guidance',
+    'GLP-1 weight loss',
+    'Ozempic shortage',
+    'mpox outbreak update',
+    'CDC travel advisories',
+    # Cars / tech reviews
+    'Toyota RAV4 hybrid review',
+    'Honda Civic 2026',
+    'Ford F-150 Lightning',
+    'best minivan 2026',
+    # Misc
+    'word of the year 2025',
+    'most searched 2025',
+    'how to use AI for resume',
+    'how to fix slow Wi-Fi',
 ]
 
 # Google Doodles archive.
@@ -189,6 +344,71 @@ DOODLES = [
     ('Maya Angelou Birthday', 'maya_angelou', 'Poet, author, and civil rights activist', '2025-04-04'),
     ('Pac-Man 45th Anniversary', 'pacman_45', 'Playable doodle celebrating the arcade classic', '2025-05-21'),
     ('Vincent van Gogh Doodle', 'van_gogh', 'A starry night tribute to Van Gogh', '2025-03-30'),
+    # R3 expansion — additional 60 doodles
+    ('Thanksgiving 2025', 'thanksgiving_2025', 'Celebrating Thanksgiving Day', '2025-11-27'),
+    ('Hanukkah 2025', 'hanukkah_2025', 'Festival of Lights', '2025-12-14'),
+    ('Christmas Eve 2025', 'christmas_eve_2025', 'Holiday season greetings', '2025-12-24'),
+    ('Boxing Day 2025', 'boxing_day_2025', 'Day after Christmas tradition', '2025-12-26'),
+    ('Kwanzaa 2025', 'kwanzaa_2025', 'A week of cultural celebration', '2025-12-26'),
+    ('New Year\'s Eve 2025', 'nye_eve_2025', 'Goodbye 2025!', '2025-12-31'),
+    ('Martin Luther King Jr. Day', 'mlk_2026', 'Honoring the civil rights leader', '2026-01-19'),
+    ('Australia Day 2026', 'australia_day_2026', 'National day of Australia', '2026-01-26'),
+    ('Groundhog Day 2026', 'groundhog_2026', 'A peek at the prediction', '2026-02-02'),
+    ('Super Bowl LX', 'super_bowl_60', 'NFL championship doodle', '2026-02-08'),
+    ('Presidents\' Day 2026', 'presidents_day_2026', 'Honoring U.S. presidents', '2026-02-16'),
+    ('Mardi Gras 2026', 'mardi_gras_2026', 'Carnival celebration', '2026-02-17'),
+    ('Holi 2026', 'holi_2026', 'Festival of colors', '2026-03-04'),
+    ('St. Patrick\'s Day 2026', 'st_patricks_2026', 'Celebrating Irish heritage', '2026-03-17'),
+    ('Ramadan begins 2026', 'ramadan_2026', 'Month of fasting and reflection', '2026-02-17'),
+    ('Eid al-Fitr 2026', 'eid_al_fitr_2026', 'End of Ramadan celebration', '2026-03-20'),
+    ('April Fools 2026', 'april_fools_2026', 'Pranks and playful surprises', '2026-04-01'),
+    ('World Health Day 2026', 'world_health_day_2026', 'Public health awareness', '2026-04-07'),
+    ('Passover 2026', 'passover_2026', 'Jewish festival of liberation', '2026-04-01'),
+    ('Easter 2026', 'easter_2026', 'Spring renewal and celebration', '2026-04-05'),
+    ('Anzac Day 2026', 'anzac_day_2026', 'Australian and New Zealand remembrance', '2026-04-25'),
+    ('Labor Day International 2026', 'labor_day_intl_2026', 'May Day workers\' rights', '2026-05-01'),
+    ('Star Wars Day 2026', 'star_wars_day_2026', 'May the Fourth be with you', '2026-05-04'),
+    ('Eurovision 2026 final', 'eurovision_2026', 'Continental song contest', '2026-05-16'),
+    ('Memorial Day 2026', 'memorial_day_2026', 'Honoring fallen service members', '2026-05-25'),
+    ('World Environment Day 2026', 'env_day_2026', 'Protecting our planet', '2026-06-05'),
+    ('FIFA World Cup 2026 kickoff', 'wc_2026_kickoff', 'Kick-off in North America', '2026-06-11'),
+    ('Juneteenth 2026', 'juneteenth_2026', 'Freedom and emancipation day', '2026-06-19'),
+    ('Summer Solstice 2026', 'summer_solstice_2026', 'First day of summer', '2026-06-21'),
+    ('Canada Day 2026', 'canada_day_2026', 'National day of Canada', '2026-07-01'),
+    ('Independence Day 2026', 'independence_day_2026', 'U.S. national holiday', '2026-07-04'),
+    ('Bastille Day 2026', 'bastille_day_2026', 'French national holiday', '2026-07-14'),
+    ('Moon Landing Anniversary', 'moon_landing_57', '57th anniversary of Apollo 11', '2026-07-20'),
+    ('Olympics 2026 Opening', 'olympics_opening_2026', 'Winter Olympics opening ceremony', '2026-02-06'),
+    ('Olympics 2026 Closing', 'olympics_closing_2026', 'Winter Olympics closing ceremony', '2026-02-22'),
+    ('International Friendship Day', 'friendship_day_2026', 'Friendships around the world', '2026-07-30'),
+    ('Indian Independence Day', 'india_independence_2026', '79th Independence Day of India', '2026-08-15'),
+    ('World Photography Day', 'photo_day_2026', 'Celebrating photography', '2026-08-19'),
+    ('Mexican Independence Day', 'mexico_independence_2026', '216th anniversary', '2026-09-16'),
+    ('Autumnal Equinox', 'autumn_2026', 'First day of autumn', '2026-09-22'),
+    ('Rosh Hashanah 2026', 'rosh_hashanah_2026', 'Jewish New Year', '2026-09-12'),
+    ('Mid-Autumn Festival 2026', 'mid_autumn_2026', 'Chinese moon festival', '2026-09-25'),
+    ('Yom Kippur 2026', 'yom_kippur_2026', 'Day of Atonement', '2026-09-21'),
+    ('International Day of Peace', 'peace_day_2026', 'Promoting global harmony', '2026-09-21'),
+    ('International Day of the Girl', 'girl_day_2026', 'Empowering girls worldwide', '2026-10-11'),
+    ('Indigenous Peoples\' Day 2026', 'indigenous_day_2026', 'Honoring Native heritage', '2026-10-12'),
+    ('World Teachers\' Day 2026', 'teachers_day_2026', 'Celebrating educators', '2026-10-05'),
+    ('Bach Birthday Doodle', 'bach_341', 'J.S. Bach 341st birthday', '2026-03-21'),
+    ('Mozart Birthday Doodle', 'mozart_270', 'Mozart 270th birthday', '2026-01-27'),
+    ('Tesla Birthday Doodle', 'tesla_170', 'Nikola Tesla 170th birthday', '2026-07-10'),
+    ('Alan Turing Birthday', 'turing_114', 'Alan Turing 114th birthday', '2026-06-23'),
+    ('Sally Ride Birthday Doodle', 'sally_ride', 'First American woman in space', '2026-05-26'),
+    ('Rosalind Franklin Birthday', 'rosalind_franklin', 'Chemist and DNA pioneer', '2026-07-25'),
+    ('Octavia Butler Birthday', 'octavia_butler', 'Award-winning science-fiction author', '2026-06-22'),
+    ('Jane Goodall Doodle', 'jane_goodall', 'Primatologist and conservationist', '2026-04-03'),
+    ('Buzz Aldrin Birthday Doodle', 'buzz_aldrin', 'Astronaut and Apollo 11 pilot', '2026-01-20'),
+    ('Neil Armstrong Tribute', 'armstrong_tribute', 'First man on the Moon', '2026-08-05'),
+    ('Ansel Adams Birthday', 'ansel_adams', 'Landscape photographer of Yosemite', '2026-02-20'),
+    ('Georgia O\'Keeffe Doodle', 'okeeffe_doodle', 'Pioneering American modernist painter', '2026-11-15'),
+    ('Jorge Luis Borges Birthday', 'borges_127', 'Argentine writer of labyrinths', '2026-08-24'),
+    ('Doodle for Google 2026', 'doodle_for_google_2026', 'Student doodle competition winner', '2026-10-15'),
+    ('World Book Day 2026', 'world_book_day_2026', 'Celebrating books and reading', '2026-04-23'),
+    ('Earth Hour 2026', 'earth_hour_2026', 'Lights off for the planet', '2026-03-28'),
+    ('International Dance Day', 'dance_day_2026', 'Movement and rhythm worldwide', '2026-04-29'),
 ]
 
 # Knowledge panels: featured topics that get a richer display
@@ -1675,27 +1895,42 @@ def _seed_scraped_topics(db, Topic, SearchResult, PaaQuestion, RelatedQuery, Kno
 
 
 def _seed_pop_topics(db, Topic, SearchResult, PaaQuestion, RelatedQuery, KnowledgeFact):
-    """R2 expansion: seed ~200 popular general-interest topics.
+    """R2/R3 expansion: seed 600+ popular general-interest topics.
 
-    Each pop topic gets 6 synthetic results from a fixed provider list, 2 PAA
+    Each pop topic gets 8 synthetic results from a fixed provider list, 4 PAA
     questions, 6 related queries, plus knowledge facts. Everything is
     derived deterministically from the slug so rebuilds are byte-identical.
     """
+    POP_TOPICS = []
     try:
-        from pop_topics_data import POP_TOPICS
+        from pop_topics_data import POP_TOPICS as _R2_TOPICS
+        POP_TOPICS = list(_R2_TOPICS)
     except ImportError:
+        pass
+    try:
+        from pop_topics_data_r3 import POP_TOPICS_R3
+        _seen = {t[0] for t in POP_TOPICS}
+        for t in POP_TOPICS_R3:
+            if t[0] not in _seen:
+                POP_TOPICS.append(t)
+    except ImportError:
+        pass
+    if not POP_TOPICS:
         return
 
-    # Per-topic providers: deterministic 6-provider pick from a stable pool.
+    # Per-topic providers: deterministic pick from a stable pool.
     _PROVIDERS = ['wikipedia', 'britannica', 'youtube', 'reddit', 'nytimes', 'bbc',
-                  'medium', 'github', 'quanta', 'khan', 'nature']
+                  'medium', 'github', 'quanta', 'khan', 'nature', 'guardian',
+                  'forbes', 'imdb', 'goodreads', 'allmusic']
     _PROVIDER_DOMAIN = {
         'wikipedia': 'en.wikipedia.org', 'britannica': 'www.britannica.com',
         'youtube': 'www.youtube.com', 'reddit': 'www.reddit.com',
         'nytimes': 'www.nytimes.com', 'bbc': 'www.bbc.com',
         'medium': 'medium.com', 'github': 'github.com',
         'quanta': 'www.quantamagazine.org', 'khan': 'www.khanacademy.org',
-        'nature': 'www.nature.com',
+        'nature': 'www.nature.com', 'guardian': 'www.theguardian.com',
+        'forbes': 'www.forbes.com', 'imdb': 'www.imdb.com',
+        'goodreads': 'www.goodreads.com', 'allmusic': 'www.allmusic.com',
     }
     _TITLE_TPL = {
         'wikipedia': '{name} - Wikipedia',
@@ -1709,6 +1944,11 @@ def _seed_pop_topics(db, Topic, SearchResult, PaaQuestion, RelatedQuery, Knowled
         'quanta': '{name} - Quanta Magazine',
         'khan': '{name} | Khan Academy',
         'nature': '{name} | Nature',
+        'guardian': '{name} | The Guardian',
+        'forbes': '{name} - Forbes',
+        'imdb': '{name} - IMDb',
+        'goodreads': '{name} - Goodreads',
+        'allmusic': '{name} - AllMusic',
     }
     _URL_TPL = {
         'wikipedia': 'https://en.wikipedia.org/wiki/{slug}',
@@ -1722,6 +1962,11 @@ def _seed_pop_topics(db, Topic, SearchResult, PaaQuestion, RelatedQuery, Knowled
         'quanta': 'https://www.quantamagazine.org/tag/{slug}/',
         'khan': 'https://www.khanacademy.org/{slug}',
         'nature': 'https://www.nature.com/subjects/{slug}',
+        'guardian': 'https://www.theguardian.com/world/{slug}',
+        'forbes': 'https://www.forbes.com/profile/{slug}',
+        'imdb': 'https://www.imdb.com/find?q={slug}',
+        'goodreads': 'https://www.goodreads.com/search?q={slug}',
+        'allmusic': 'https://www.allmusic.com/search/all/{slug}',
     }
 
     inserted = 0
@@ -1731,9 +1976,9 @@ def _seed_pop_topics(db, Topic, SearchResult, PaaQuestion, RelatedQuery, Knowled
 
         rng = random.Random(_det_hash(slug + '_pop'))
 
-        # Build a 6-provider permutation (wikipedia always first)
+        # Build an 8-provider permutation (wikipedia always first)
         providers = ['wikipedia'] + rng.sample(
-            [p for p in _PROVIDERS if p != 'wikipedia'], 5
+            [p for p in _PROVIDERS if p != 'wikipedia'], 7
         )
 
         topic = Topic(
@@ -1760,7 +2005,7 @@ def _seed_pop_topics(db, Topic, SearchResult, PaaQuestion, RelatedQuery, Knowled
         db.session.add(topic)
         db.session.flush()
 
-        # 6 results
+        # 8 results
         for rank, prov in enumerate(providers):
             title = _TITLE_TPL[prov].format(name=name, slug=slug)
             url = _URL_TPL[prov].format(slug=slug)
@@ -1772,6 +2017,8 @@ def _seed_pop_topics(db, Topic, SearchResult, PaaQuestion, RelatedQuery, Knowled
                 f'Browse the latest about {name}. {summary[:150]}',
                 f'Everything you need to know about {name}. {summary[:170]}',
                 f'r/{slug}: community discussion of {name}. {summary[:140]}',
+                f'{name} overview - origin, timeline, and notable facts. {summary[:150]}',
+                f'A deep dive into {name}. {summary[:170]}',
             ]
             snippet = snippet_pool[rank % len(snippet_pool)]
             db.session.add(SearchResult(
@@ -1780,11 +2027,15 @@ def _seed_pop_topics(db, Topic, SearchResult, PaaQuestion, RelatedQuery, Knowled
                 source=prov, rank=rank, image=''
             ))
 
-        # 2 PAA
+        # 4 PAA
         paa_qs = [
             (f'What is {name}?', f'{name}: {summary[:280]}'),
             (f'Why is {name} important?',
              f'{name} is significant because of its role and influence as described in the available references. {summary[:200]}'),
+            (f'Where can I learn more about {name}?',
+             f'Reliable references for {name} include Wikipedia, Britannica, and major news outlets. {summary[:160]}'),
+            (f'What are the key facts about {name}?',
+             f'The knowledge panel for {name} lists the most-asked attributes. {summary[:180]}'),
         ]
         for i, (q, a) in enumerate(paa_qs):
             db.session.add(PaaQuestion(
@@ -1806,6 +2057,18 @@ def _seed_pop_topics(db, Topic, SearchResult, PaaQuestion, RelatedQuery, Knowled
             db.session.add(KnowledgeFact(
                 topic_id=topic.id, key=k, value=v, rank=i
             ))
+        # R3: Always append two derived reference facts so every pop topic
+        # has at least 2 entries even when the curated kfacts list is empty.
+        # Deterministic — derived from slug only.
+        base_rank = len(kfacts)
+        db.session.add(KnowledgeFact(
+            topic_id=topic.id, key='Wikipedia',
+            value=f'en.wikipedia.org/wiki/{slug}', rank=base_rank,
+        ))
+        db.session.add(KnowledgeFact(
+            topic_id=topic.id, key='Reference',
+            value=f'Britannica, Wikipedia, primary sources', rank=base_rank + 1,
+        ))
 
         inserted += 1
 

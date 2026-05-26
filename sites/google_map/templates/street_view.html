@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+{% block title %}Street View{% if place %} - {{ place.name }}{% endif %}{% endblock %}
+
+{% block body %}
+<div class="topbar">
+    <a href="{{ url_for('index') }}" class="brand">
+        <span class="material-icons-outlined" style="font-size:26px;color:#ea4335;">place</span>
+        <span>Google Maps</span>
+    </a>
+    <div class="nav-links">
+        <a href="{{ url_for('explore') }}" class="nav-link">Explore</a>
+        <a href="{{ url_for('index') }}" class="nav-link">Map</a>
+    </div>
+</div>
+
+<div class="streetview-shell" style="position:relative; min-height:calc(100vh - 56px); background:#1f1f1f; color:#e8eaed;">
+    {# Faux Street View viewer — a 360 panorama mock with compass + zoom + back-to-map controls #}
+    <div class="sv-pano" style="
+        background: linear-gradient(180deg, #6ab0ff 0%, #b6d6f5 38%, #c9b58d 38%, #6b4c2b 100%);
+        height: 70vh; position:relative; overflow:hidden;
+        background-size: 200% 100%;
+        background-position: {{ heading or 0 }}% 50%;
+    ">
+        <div class="sv-overlay" style="position:absolute; inset:0; display:flex; align-items:center; justify-content:center; flex-direction:column;">
+            <span class="material-icons-outlined" style="font-size:72px; color:rgba(255,255,255,0.85);">360</span>
+            <h2 style="margin:8px 0; color:#fff;">Street View</h2>
+            {% if place %}
+            <div style="color:#fff; font-size:18px; max-width:520px; text-align:center; padding:0 16px;">
+                Looking at <strong>{{ place.name }}</strong><br>
+                <span style="opacity:0.85; font-size:14px;">{{ place.address or '' }}</span>
+            </div>
+            {% endif %}
+            {% if lat is not none and lng is not none %}
+            <div style="margin-top:10px; font-size:14px; color:rgba(255,255,255,0.75);">
+                <span class="material-icons-outlined" style="font-size:14px; vertical-align:-3px;">my_location</span>
+                {{ '%.6f'|format(lat) }}, {{ '%.6f'|format(lng) }}
+            </div>
+            {% endif %}
+        </div>
+
+        {# Compass widget #}
+        <div class="sv-compass" style="position:absolute; top:14px; right:14px; background:rgba(0,0,0,0.55); padding:10px; border-radius:50%; width:54px; height:54px; display:flex; align-items:center; justify-content:center;">
+            <span class="material-icons-outlined" style="color:#fff; transform: rotate({{ heading or 0 }}deg);">navigation</span>
+        </div>
+
+        {# Zoom controls #}
+        <div class="sv-zoom" style="position:absolute; bottom:14px; right:14px; display:flex; flex-direction:column; gap:4px;">
+            <button type="button" style="width:36px; height:36px; border-radius:6px; border:0; background:rgba(0,0,0,0.6); color:#fff; font-size:20px; cursor:pointer;">+</button>
+            <button type="button" style="width:36px; height:36px; border-radius:6px; border:0; background:rgba(0,0,0,0.6); color:#fff; font-size:20px; cursor:pointer;">&minus;</button>
+        </div>
+
+        {# Drag-to-pan hint #}
+        <div class="sv-hint" style="position:absolute; bottom:14px; left:14px; background:rgba(0,0,0,0.55); padding:8px 12px; border-radius:6px; color:#fff; font-size:13px;">
+            <span class="material-icons-outlined" style="font-size:14px; vertical-align:-3px;">open_with</span>
+            Drag to look around &middot; Scroll to zoom
+        </div>
+    </div>
+
+    <div style="padding:18px; max-width:960px; margin:0 auto;">
+        <h3>{% if place %}{{ place.name }}{% else %}Street View{% endif %}</h3>
+        {% if place %}
+        <p style="color:#9aa0a6;">{{ place.description or '' }}</p>
+        <a class="btn btn-primary" href="{{ url_for('place_detail', slug=place.slug) }}">Open place page</a>
+        {% else %}
+        <p style="color:#9aa0a6;">No place selected. Open a place from the map or pass a coordinate.</p>
+        {% endif %}
+        <a class="btn" href="{{ url_for('index') }}" style="margin-left:8px;">Back to map</a>
+    </div>
+</div>
+{% endblock %}

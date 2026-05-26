@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}ESPN Awards Hub{% endblock %}
+
+{% block content %}
+<div class="container">
+  <div class="page-header">
+    <h1>ESPN Awards</h1>
+    <p class="subtitle">MVPs, Cy Youngs, Harts, Ballons d'Or, and more across every league.</p>
+  </div>
+
+  <div class="awards-hub-grid">
+    {% for slug, (sport, awards) in sport_awards_map.items() %}
+    <section class="award-section">
+      <div class="section-heading-row">
+        <h2 class="section-heading">{{ sport.display_name or sport.name }}</h2>
+        <a class="see-all" href="{{ sport.url_prefix }}awards">All {{ sport.name }} Awards</a>
+      </div>
+      <ul class="awards-list">
+        {% for a in awards %}
+        <li><strong>{{ a.award_name }}</strong> <span class="muted">({{ a.season }})</span></li>
+        {% endfor %}
+      </ul>
+    </section>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}

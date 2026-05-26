@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% block title %}{{ tab.label }} Input — Wolfram|Alpha{% endblock %}
+
+{% block content %}
+<section class="wa-hero wa-hero--compact">
+  <div class="section-inner">
+    <p class="wa-hero-eyebrow">INPUT MODE</p>
+    <h1 style="font-size:1.6rem;color:#1a1a1a">{{ tab.icon }} {{ tab.label }}</h1>
+    <p style="color:#545454;max-width:720px">{{ tab.blurb }}</p>
+  </div>
+</section>
+
+<div class="section-inner" style="padding:24px">
+  <nav class="subcategory-tabs" aria-label="Input modes" style="margin-bottom:18px">
+    {% for slug, info in all_tabs.items() %}
+    <a href="/input-tab/{{ slug }}"
+       class="subcat-tab {% if slug == tab_type %}subcat-tab--active{% endif %}">
+       {{ info.icon }} {{ info.label }}
+    </a>
+    {% endfor %}
+  </nav>
+
+  <div class="result-pod">
+    <div class="pod-title">Try a {{ tab.label|lower }} query</div>
+    <div class="pod-content">
+      <form action="/input" method="get" class="examples-search-form">
+        <input type="text" name="i" value="{{ tab.examples[0] }}" class="examples-search-input">
+        <button type="submit" class="btn btn-primary">Compute</button>
+      </form>
+    </div>
+  </div>
+
+  <div class="result-pod" style="margin-top:18px">
+    <div class="pod-title">Example queries</div>
+    <div class="pod-content">
+      <div class="pod-examples-list">
+        {% for ex in tab.examples %}
+        <a href="/input?i={{ ex|urlencode }}" class="pod-example-row">
+          <span class="pod-ex-type">{{ tab.label }}</span>
+          <code class="pod-ex-query">{{ ex }}</code>
+          <span class="pod-ex-arrow">&#9654;</span>
+        </a>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

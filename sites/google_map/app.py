@@ -2003,6 +2003,123 @@ def your_data():
     return render_template("your_data.html")
 
 
+# ----- R3 additions: transit, street-view, business alias, list share, your-places -----
+
+@app.route("/transit")
+@app.route("/transit/<city_slug>")
+def transit_page(city_slug=None):
+    """Transit overview for a city — bus terminals, light rail, ferry, etc.
+
+    Reads from real Place rows in the transit/bus-stops categories.
+    """
+    cities = City.query.order_by(City.display_name).limit(50).all()
+    transit_cats = Category.query.filter(
+        Category.slug.in_(["transit", "bus-stops"])
+    ).all()
+    transit_cat_ids = [c.id for c in transit_cats]
+    selected_city = None
+    stops = []
+    if city_slug:
+        selected_city = City.query.filter_by(slug=city_slug).first_or_404()
+        if transit_cat_ids:
+            stops = Place.query.filter(
+                Place.city_id == selected_city.id,
+                Place.category_id.in_(transit_cat_ids),
+            ).order_by(Place.rating.desc().nullslast(), Place.review_count.desc()).limit(40).all()
+    return render_template(
+        "transit.html",
+        cities=cities,
+        selected_city=selected_city,
+        stops=stops,
+    )
+
+
+@app.route("/street-view")
+@app.route("/streetview")
+@app.route("/maps/@<coords>/streetview")
+def street_view(coords=None):
+    """Mock Street View viewer page. Accepts ?lat=&lng=&heading= or a place slug."""
+    lat = request.args.get("lat", type=float)
+    lng = request.args.get("lng", type=float)
+    heading = request.args.get("heading", default=0, type=int)
+    place_slug = request.args.get("place")
+    place = None
+    if place_slug:
+        place = Place.query.filter_by(slug=place_slug).first()
+        if place:
+            lat = lat or place.lat
+            lng = lng or place.lng
+    if coords:
+        try:
+            parts = coords.split(",")
+            lat = float(parts[0]); lng = float(parts[1])
+        except Exception:
+            pass
+    return render_template(
+        "street_view.html",
+        lat=lat, lng=lng, heading=heading, place=place,
+    )
+
+
+@app.route("/business/<int:place_id>")
+@app.route("/biz/<int:place_id>")
+def business_alias(place_id):
+    """Numeric alias for a place page — mirrors google.com/maps/place/<biz-id>."""
+    p = Place.query.get_or_404(place_id)
+    return redirect(url_for("place_detail", slug=p.slug), code=301)
+
+
+@app.route("/lists/<int:list_id>/share")
+def list_share(list_id):
+    """Public share view of a saved list. No auth required."""
+    from sqlalchemy import desc
+    sl = SavedList.query.get_or_404(list_id)
+    saved_places = (SavedPlace.query
+                    .filter_by(list_id=sl.id)
+                    .order_by(desc(SavedPlace.created_at))
+                    .all())
+    places = [Place.query.get(sp.place_id) for sp in saved_places if sp.place_id]
+    places = [p for p in places if p]
+    share_url = url_for("list_share", list_id=sl.id, _external=True)
+    return render_template(
+        "list_share.html",
+        saved_list=sl,
+        places=places,
+        share_url=share_url,
+    )
+
+
+@app.route("/your-places")
+@app.route("/your_places")
+@app.route("/yourplaces")
+def your_places():
+    """Personal overview: saved lists, recent visits, reviews, photos."""
+    if not current_user.is_authenticated:
+        return redirect(url_for("login"))
+    lists = SavedList.query.filter_by(user_id=current_user.id).all()
+    recent_saved = (SavedPlace.query
+                    .filter_by(user_id=current_user.id)
+                    .order_by(SavedPlace.created_at.desc())
+                    .limit(12).all())
+    recent_visits = (TimelineEntry.query
+                     .filter_by(user_id=current_user.id)
+                     .order_by(TimelineEntry.visited_at.desc())
+                     .limit(12).all())
+    recent_reviews = (Review.query
+                      .filter_by(user_id=current_user.id)
+                      .order_by(Review.created_at.desc())
+                      .limit(12).all())
+    photo_count = Photo.query.filter_by(user_id=current_user.id).count()
+    return render_template(
+        "your_places.html",
+        lists=lists,
+        recent_saved=recent_saved,
+        recent_visits=recent_visits,
+        recent_reviews=recent_reviews,
+        photo_count=photo_count,
+    )
+
+
 @app.route("/settings")
 def settings():
     return render_template("settings.html")

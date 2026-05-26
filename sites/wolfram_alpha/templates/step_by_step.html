@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+{% block title %}Step-by-step: {{ comp.input_query }} — Wolfram|Alpha{% endblock %}
+
+{% block content %}
+<section class="wa-hero wa-hero--compact">
+  <div class="section-inner">
+    <p class="wa-hero-eyebrow">STEP-BY-STEP SOLUTION</p>
+    <h1 style="font-size:1.4rem;color:#1a1a1a">{{ comp.input_query }}</h1>
+  </div>
+</section>
+
+<div class="section-inner" style="padding:24px">
+  <div class="result-pods">
+    <div class="result-pod result-pod--input">
+      <div class="pod-title">Input interpretation</div>
+      <div class="pod-content">
+        <code class="pod-input-formula">{{ comp.parsed_input or comp.input_query }}</code>
+      </div>
+    </div>
+
+    {% if is_pro %}
+      {% for p in step_pods %}
+      <div class="result-pod result-pod--extra" style="border-left:4px solid #cc4400">
+        <div class="pod-title" style="color:#cc4400">{{ p.title }}</div>
+        <div class="pod-content"><pre class="pod-extra-plaintext">{{ p.plaintext }}</pre></div>
+      </div>
+      {% endfor %}
+      <div class="result-pod result-pod--result">
+        <div class="pod-title">Final result</div>
+        <div class="pod-content">
+          <pre class="pod-result-plaintext" style="font-size:1.2rem;color:#cc4400">{{ comp.plaintext }}</pre>
+        </div>
+      </div>
+    {% else %}
+      <div class="result-pod result-pod--pro" style="background:#fff2e6;border:2px solid #cc4400">
+        <div class="pod-content pod-pro-cta">
+          <div class="pod-pro-icon" style="font-size:2.5rem">&#128274;</div>
+          <div class="pod-pro-text">
+            <strong style="font-size:1.2rem;color:#cc4400">Pro feature</strong>
+            <p>Step-by-step solutions are exclusive to Wolfram|Alpha Pro subscribers. Upgrade to see all {{ step_pods|length }} steps for this computation.</p>
+          </div>
+          <a href="/pro/upgrade" class="btn btn-pro-primary btn-lg">Unlock Steps with Pro</a>
+        </div>
+      </div>
+      <div class="result-pod">
+        <div class="pod-title">Preview</div>
+        <div class="pod-content">
+          <p style="color:#545454">First step (preview):</p>
+          {% if step_pods %}
+          <strong>{{ step_pods[0].title }}</strong>
+          <pre class="pod-extra-plaintext" style="filter:blur(0)">{{ step_pods[0].plaintext }}</pre>
+          <p style="color:#8a8a8a;margin-top:12px;font-style:italic">
+            {{ step_pods|length - 1 }} more steps available with Pro.
+          </p>
+          {% else %}
+          <em>No step-by-step is available for this query.</em>
+          {% endif %}
+        </div>
+      </div>
+    {% endif %}
+  </div>
+
+  <p style="text-align:center;margin-top:24px">
+    <a href="/input?i={{ comp.input_query|urlencode }}">&larr; Back to result</a>
+  </p>
+</div>
+{% endblock %}

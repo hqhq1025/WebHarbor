@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% block title %}ESPN Fantasy Sports{% endblock %}
+
+{% block content %}
+<div class="container">
+  <div class="page-header">
+    <h1>ESPN Fantasy</h1>
+    <p class="subtitle">Fantasy Football, Basketball, Baseball, and Hockey: rankings, waiver tips, and league tools.</p>
+  </div>
+
+  <section class="fantasy-sport-cards">
+    {% for slug, label, href in sport_links %}
+    <a class="fantasy-sport-card" href="{{ href }}">
+      <h3>{{ label }}</h3>
+      <span class="see-all">Open hub →</span>
+    </a>
+    {% endfor %}
+  </section>
+
+  {% if fan_articles %}
+  <section class="section-block">
+    <h2 class="section-heading">Latest Fantasy Articles</h2>
+    <div class="article-grid">
+      {% for art in fan_articles %}
+      <div class="article-card">
+        <a href="/story/{{ art.slug }}">
+          <h4 class="card-title">{{ art.title }}</h4>
+          <p class="card-meta">{{ art.author }} &bull; {{ art.published_date }}</p>
+        </a>
+      </div>
+      {% endfor %}
+    </div>
+  </section>
+  {% endif %}
+
+  {% if podcasts %}
+  <section class="section-block">
+    <h2 class="section-heading">Fantasy Podcasts</h2>
+    <ul class="podcast-list">
+      {% for p in podcasts %}
+      <li>
+        <a href="/podcast/{{ p.slug }}"><strong>{{ p.title }}</strong></a>
+        — {{ p.host }} · Latest: {{ p.latest_episode_title }} ({{ p.latest_episode_date }})
+      </li>
+      {% endfor %}
+    </ul>
+  </section>
+  {% endif %}
+</div>
+{% endblock %}

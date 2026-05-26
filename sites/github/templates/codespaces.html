@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block title %}Your codespaces · GitHub{% endblock %}
+{% block content %}
+<div class="codespaces-page">
+  <h1>Your codespaces</h1>
+  <p class="muted">Cloud development environments ready in seconds — see <a href="/features/codespaces">GitHub Codespaces</a>.</p>
+  {% if spaces %}
+  <table class="codespaces-table">
+    <thead><tr><th>Codespace</th><th>Repository</th><th>Branch</th><th>Machine</th><th>State</th><th>Last used</th></tr></thead>
+    <tbody>
+      {% for s in spaces %}
+      <tr>
+        <td><a href="#" class="codespace-name">{{ s.name }}</a></td>
+        <td><a href="/{{ s.repo.full_name }}">{{ s.repo.full_name }}</a></td>
+        <td>{{ s.branch }}</td>
+        <td>{{ s.machine }}</td>
+        <td><span class="codespace-state state-{{ s.state|lower }}">{{ s.state }}</span></td>
+        <td class="muted">{{ s.last_used|time_ago }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <div class="codespaces-empty">
+    <h2>No codespaces yet</h2>
+    <p>Sign in and click <strong>&lt;&gt; Code</strong> → <strong>Create codespace</strong> on any repository to launch your first dev environment.</p>
+    <a href="/login" class="gh-btn gh-btn-primary">Sign in to create one</a>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}
