@@ -33,8 +33,21 @@ from flask_login import (LoginManager, UserMixin, login_user, logout_user,
                          login_required, current_user)
 from flask_bcrypt import Bcrypt
 from flask_wtf import CSRFProtect
-from sqlalchemy import or_, and_, func
+from sqlalchemy import or_, and_, func, text
 from werkzeug.middleware.proxy_fix import ProxyFix
+
+# --------------------------------------------------------------------------
+#  Deterministic-seed constants
+# --------------------------------------------------------------------------
+# Pinned bcrypt hash for "TestPass123!" — bcrypt.gensalt() uses a fresh
+# random salt every call, which breaks byte-identical seed-DB rebuilds.
+# Generated once via:
+#   python3 -c "import bcrypt; print(bcrypt.hashpw(b'TestPass123!', bcrypt.gensalt(rounds=12)).decode())"
+# bcrypt.check_password_hash accepts any valid $2b$... hash, so login
+# behaviour is unchanged.
+PINNED_PASSWORD_HASH = '$2b$12$RwAC/sfwDHtccU//A20fde.uKkZK4Ptnjjyua2l2ktwI6uysAp3Ou'
+# Reference moment for all explicit timestamps in benchmark seeding.
+MIRROR_REFERENCE_DATETIME = datetime(2026, 4, 15, 12, 0, 0)
 
 BASE_DIR = Path(__file__).parent
 
@@ -130,7 +143,7 @@ class User(db.Model, UserMixin):
     avatar_letter = db.Column(db.String(1), default="U")
     home_city = db.Column(db.String(128), default="")
     bio = db.Column(db.Text, default="")
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=lambda: MIRROR_REFERENCE_DATETIME)
 
     saved_lists = db.relationship("SavedList", backref="user", cascade="all, delete-orphan", lazy="dynamic")
     saved_places = db.relationship("SavedPlace", backref="user", cascade="all, delete-orphan", lazy="dynamic")
@@ -203,7 +216,7 @@ class Place(db.Model):
     is_popular = db.Column(db.Boolean, default=False)
     parking_info = db.Column(db.String(255), default="")  # e.g. "Free parking lot", "Street parking", "Paid garage"
     delivery_available = db.Column(db.Boolean, default=False)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=lambda: MIRROR_REFERENCE_DATETIME)
 
     reviews = db.relationship("Review", backref="place", cascade="all, delete-orphan", lazy="dynamic")
     photos = db.relationship("Photo", backref="place", cascade="all, delete-orphan", lazy="dynamic")
@@ -288,7 +301,7 @@ class SavedList(db.Model):
     icon = db.Column(db.String(32), default="bookmark")
     color = db.Column(db.String(16), default="#4285f4")
     is_default = db.Column(db.Boolean, default=False)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=lambda: MIRROR_REFERENCE_DATETIME)
 
     places = db.relationship("SavedPlace", backref="saved_list", cascade="all, delete-orphan", lazy="dynamic")
 
@@ -299,7 +312,7 @@ class SavedPlace(db.Model):
     list_id = db.Column(db.Integer, db.ForeignKey("saved_list.id"), nullable=False)
     place_id = db.Column(db.Integer, db.ForeignKey("place.id"), nullable=False)
     note = db.Column(db.Text, default="")
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=lambda: MIRROR_REFERENCE_DATETIME)
 
     place = db.relationship("Place")
 
@@ -314,7 +327,7 @@ class Trip(db.Model):
     end_date = db.Column(db.Date, nullable=True)
     status = db.Column(db.String(32), default="planning")  # planning, upcoming, active, completed, cancelled
     notes = db.Column(db.Text, default="")
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=lambda: MIRROR_REFERENCE_DATETIME)
 
     stops = db.relationship("TripStop", backref="trip", cascade="all, delete-orphan", lazy="dynamic", order_by="TripStop.order_idx")
 
@@ -336,7 +349,7 @@ class Review(db.Model):
     rating = db.Column(db.Integer, nullable=False)
     title = db.Column(db.String(255), default="")
     body = db.Column(db.Text, default="")
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=lambda: MIRROR_REFERENCE_DATETIME)
 
 
 class Photo(db.Model):
@@ -345,14 +358,14 @@ class Photo(db.Model):
     place_id = db.Column(db.Integer, db.ForeignKey("place.id"), nullable=False)
     image_url = db.Column(db.String(255), nullable=False)
     caption = db.Column(db.String(255), default="")
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=lambda: MIRROR_REFERENCE_DATETIME)
 
 
 class TimelineEntry(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=False)
     place_id = db.Column(db.Integer, db.ForeignKey("place.id"), nullable=False)
-    visited_at = db.Column(db.DateTime, default=datetime.utcnow)
+    visited_at = db.Column(db.DateTime, default=lambda: MIRROR_REFERENCE_DATETIME)
     note = db.Column(db.Text, default="")
 
     place = db.relationship("Place")
@@ -1974,6 +1987,22 @@ def about():
     return render_template("about.html")
 
 
+@app.route("/contribute")
+def contribute():
+    """Static 'Contribute' page describing how users add places, reviews,
+    photos. Mirrors google.com/maps/contrib/<id>/about style."""
+    return render_template("contribute.html")
+
+
+@app.route("/your-data")
+@app.route("/your_data")
+@app.route("/data")
+def your_data():
+    """Static 'Your data in Maps' page (Location history, Web & app activity,
+    Timeline data). Mirrors google.com/maps/timeline -> data page."""
+    return render_template("your_data.html")
+
+
 @app.route("/settings")
 def settings():
     return render_template("settings.html")
@@ -2640,10 +2669,15 @@ def seed_benchmark_users():
     if User.query.filter_by(email="alice.j@test.com").first():
         return  # already seeded
 
-    PW = "TestPass123!"
+    # Deterministic RNG for gen_trip_code() and any other random.* below.
+    random.seed("gmaps-benchmark-users")
+
+    PW = "TestPass123!"  # noqa: F841 — kept for documentation; hash is pinned
 
     def _make_user(email, name, home_city):
-        pw_hash = bcrypt.generate_password_hash(PW).decode("utf-8")
+        # Pinned bcrypt hash for "TestPass123!" keeps the seed DB
+        # byte-identical across rebuilds (bcrypt.gensalt() is random).
+        pw_hash = PINNED_PASSWORD_HASH
         u = User(
             email=email,
             password_hash=pw_hash,
@@ -2666,7 +2700,8 @@ def seed_benchmark_users():
         return City.query.filter_by(slug=slug).first()
 
     def _make_trip(user, title, city_name, status, start_delta_days, end_delta_days, notes=""):
-        today = datetime.utcnow().date()
+        # Pinned reference date — datetime.utcnow() would drift each build day.
+        today = MIRROR_REFERENCE_DATETIME.date()
         start = today + timedelta(days=start_delta_days)
         end = today + timedelta(days=end_delta_days)
         trip = Trip(
@@ -2876,6 +2911,33 @@ def seed_benchmark_users():
 
 
 # --------------------------------------------------------------------------
+#  Byte-id helper: stabilize index + page layout for deterministic rebuilds.
+# --------------------------------------------------------------------------
+def normalize_seed_db_layout():
+    """Re-emit indexes in alpha order + VACUUM so rebuilds match byte-for-byte.
+
+    SQLAlchemy emits CREATE INDEX from a Python set; iteration order depends
+    on Index object id() and shifts per process. Drop + recreate in sorted
+    order, then VACUUM, so sqlite_master text + page layout are deterministic.
+    Must run AFTER every other write — anything writing after this VACUUM
+    re-fragments pages and re-introduces drift.
+    """
+    conn = db.engine.connect()
+    idx_rows = conn.execute(text(
+        "SELECT name, sql FROM sqlite_master "
+        "WHERE type='index' AND name LIKE 'ix_%'"
+    )).fetchall()
+    for name, _ in idx_rows:
+        conn.execute(text(f"DROP INDEX IF EXISTS {name}"))
+    for name, sql in sorted(idx_rows, key=lambda r: r[0]):
+        if sql:
+            conn.execute(text(sql))
+    conn.execute(text("VACUUM"))
+    conn.commit()
+    conn.close()
+
+
+# --------------------------------------------------------------------------
 if __name__ == "__main__":
     with app.app_context():
         db.create_all()
@@ -2883,5 +2945,7 @@ if __name__ == "__main__":
         seed_benchmark_users()
         from seed_data import seed_user_content
         seed_user_content(db, User, Place, Review, Photo, TimelineEntry)
+        # Final byte-id pass: must be the last write.
+        normalize_seed_db_layout()
     port = int(os.environ.get("PORT", 5000))
     app.run(host="0.0.0.0", port=port, debug=False)

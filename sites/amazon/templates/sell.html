@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% block title %}Sell on Amazon - Amazon.com{% endblock %}
+
+{% block content %}
+<div class="account-page" style="max-width:1200px">
+    <h1>Become an Amazon Seller</h1>
+    <p style="margin-bottom:24px;color:#565959">More than half of the units sold in our stores are from independent sellers. Open your account today.</p>
+
+    <div style="background:#fff;padding:30px;border-radius:4px;margin-bottom:24px">
+        <h2 style="margin-bottom:16px">How it works</h2>
+        <div class="account-grid">
+            <div class="account-tile">
+                <div class="account-tile-icon">📝</div>
+                <div class="account-tile-info">
+                    <h3>1. Create your account</h3>
+                    <p>Free to sign up. Professional plan: $39.99/mo or Individual: $0.99/item</p>
+                </div>
+            </div>
+            <div class="account-tile">
+                <div class="account-tile-icon">📦</div>
+                <div class="account-tile-info">
+                    <h3>2. List your products</h3>
+                    <p>Match existing listings or create new ones</p>
+                </div>
+            </div>
+            <div class="account-tile">
+                <div class="account-tile-icon">🚚</div>
+                <div class="account-tile-info">
+                    <h3>3. Ship through FBA</h3>
+                    <p>We pick, pack, ship, and handle returns</p>
+                </div>
+            </div>
+            <div class="account-tile">
+                <div class="account-tile-icon">💰</div>
+                <div class="account-tile-info">
+                    <h3>4. Get paid</h3>
+                    <p>Funds settled to your bank every 14 days</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div style="background:#fff;padding:30px;border-radius:4px">
+        <h2 style="margin-bottom:16px">Selling plans</h2>
+        <table style="width:100%;border-collapse:collapse">
+            <thead>
+                <tr style="background:#f3f3f3"><th style="text-align:left;padding:12px">Plan</th><th style="text-align:left;padding:12px">Monthly fee</th><th style="text-align:left;padding:12px">Per-item fee</th><th style="text-align:left;padding:12px">Best for</th></tr>
+            </thead>
+            <tbody>
+                <tr><td style="padding:12px;border-bottom:1px solid #e5e5e5">Individual</td><td style="padding:12px;border-bottom:1px solid #e5e5e5">$0.00</td><td style="padding:12px;border-bottom:1px solid #e5e5e5">$0.99 per sale</td><td style="padding:12px;border-bottom:1px solid #e5e5e5">Fewer than 40 items / month</td></tr>
+                <tr><td style="padding:12px">Professional</td><td style="padding:12px">$39.99</td><td style="padding:12px">No per-item fee</td><td style="padding:12px">More than 40 items / month + Buy Box eligibility</td></tr>
+            </tbody>
+        </table>
+        <p style="margin-top:16px;color:#565959;font-size:13px">Referral fees vary by category (typically 8% – 15%). FBA fees calculated by weight and dimensions.</p>
+        <div style="margin-top:24px">
+            <a href="{{ url_for('register') }}" class="btn-primary" style="display:inline-block;padding:10px 24px;background:#ffd814;border-radius:8px;text-decoration:none;color:#0F1111">Sign up to sell</a>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block title %}Customer Service — Booking{% endblock %}
+{% block content %}
+<div class="container">
+    <h1 class="page-title">Customer Service</h1>
+
+    <div class="pd-section" style="max-width:900px;margin:auto;">
+        <h2>How can we help?</h2>
+        <p>Our Customer Service team is available 24 hours a day, 7 days a week in 40+ languages. Whether you need help with an existing reservation, want to modify a booking, or simply have a question — we're here for you.</p>
+
+        <h3>Contact us by phone</h3>
+        <ul>
+            <li><strong>International:</strong> +44 20 3320 2609</li>
+            <li><strong>US &amp; Canada:</strong> +1 888 850 3958</li>
+            <li><strong>UK:</strong> 0203 320 2609</li>
+            <li><strong>Australia:</strong> +61 2 8066 2929</li>
+        </ul>
+
+        <h3>Email support</h3>
+        <p>Reach us at <a href="mailto:customer.service@booking.example">customer.service@booking.example</a>. We typically respond within 24 hours.</p>
+
+        <h3>Common topics</h3>
+        <ul>
+            <li><a href="{{ url_for('help_page') }}#cancel">How to cancel a reservation</a></li>
+            <li><a href="{{ url_for('help_page') }}#modify">Modify a booking — change dates or guests</a></li>
+            <li><a href="{{ url_for('help_page') }}#refund">Refund and payment questions</a></li>
+            <li><a href="{{ url_for('help_page') }}#contact-property">Contacting your property directly</a></li>
+            <li><a href="{{ url_for('genius') }}">Genius loyalty programme</a></li>
+        </ul>
+
+        <h3>Safety resources</h3>
+        <p>Travelling soon? Visit our <a href="{{ url_for('help_page') }}#travel-safety">travel safety hub</a> for the latest advice on health, insurance and emergency contacts.</p>
+
+        <h3>Report a problem</h3>
+        <p>If something went wrong with your stay, use the <a href="{% if current_user.is_authenticated %}{{ url_for('my_bookings') }}{% else %}{{ url_for('login') }}{% endif %}">Bookings page</a> to file a report directly with the property and our trust &amp; safety team.</p>
+    </div>
+</div>
+{% endblock %}

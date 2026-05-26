@@ -863,3 +863,422 @@ def seed_v2(db, models):
           f"reviews={Review.query.count()}, "
           f"enrollments={Enrollment.query.count()}, "
           f"saved={SavedCourse.query.count()}")
+
+
+# ───────────────────────────────────────────────────────────────────────────
+# seed_v3 — R2 catalog expansion (Advanced / Pro-Cert / Guided-Project /
+# extra Specialization variants) targeting 1200+ total courses. Idempotent.
+# ───────────────────────────────────────────────────────────────────────────
+
+# Sub-2-hour guided projects need duration_hours < 2 so the
+# `duration=less_2_hours` filter actually returns rows.
+GUIDED_PROJECT_HOURS = 1.5
+GUIDED_PROJECT_WEEKS = 0.5
+
+# Extra degrees: each tuple is
+# (title, slug, partner_slug, degree_type, category, deadline, hours_offset)
+EXTRA_DEGREES = [
+    ('Bachelor of Science in Computer Science',
+     'bsc-computer-science-illinois', 'uiuc', 'Bachelor',
+     'Computer Science', '', 1300),
+    ('Bachelor of Arts in Liberal Studies',
+     'bachelor-liberal-studies', 'georgetown', 'Bachelor',
+     'Arts and Humanities', '', 1280),
+    ('Bachelor of Science in General Business',
+     'bachelor-general-business', 'utaustin', 'Bachelor',
+     'Business', '', 1240),
+    ('Bachelor of Science in Marketing',
+     'bachelor-marketing', 'asu', 'Bachelor',
+     'Business', '', 1260),
+    ('Master of Business Administration (iMBA)',
+     'master-imba-illinois', 'uiuc', 'Master',
+     'Business', '', 580),
+    ('Master of Public Health',
+     'master-public-health-michigan', 'umich', 'Master',
+     'Health', '', 540),
+    ('Master of Science in Data Science',
+     'master-data-science-cuboulder', 'cuboulder', 'Master',
+     'Data Science', '', 720),
+    ('Master of Science in Electrical Engineering',
+     'master-electrical-engineering', 'cuboulder', 'Master',
+     'Physical Science and Engineering', '', 720),
+    ('Master of Advanced Study in Engineering Management',
+     'master-advanced-engineering-management', 'gatech',
+     'MasterAdvancedStudy', 'Physical Science and Engineering',
+     'June 30, 2026', 760),
+    ('Master of Advanced Study in Sustainable Engineering',
+     'master-advanced-sustainable-engineering', 'gatech',
+     'MasterAdvancedStudy', 'Physical Science and Engineering',
+     'September 15, 2026', 760),
+    ('Master of Computer and Information Technology',
+     'master-mcit-pennsylvania', 'upenn', 'Master',
+     'Computer Science', '', 700),
+    ('Master of Innovation and Entrepreneurship',
+     'master-innovation-entrepreneurship', 'hec', 'Master',
+     'Business', '', 540),
+]
+
+
+def _section_iter():
+    """Yield (category, topics_list) tuples — must match _generate_course_specs."""
+    return [
+        ('Computer Science', CS_TOPICS),
+        ('Data Science', DS_TOPICS),
+        ('Business', BIZ_TOPICS),
+        ('Health', HEALTH_TOPICS),
+        ('Math and Logic', MATH_TOPICS),
+        ('Physical Science and Engineering', ENG_TOPICS),
+        ('Social Sciences', SOC_TOPICS),
+        ('Arts and Humanities', ARTS_TOPICS),
+        ('Language Learning', LANG_TOPICS),
+        ('Information Technology', IT_TOPICS),
+        ('Personal Development', PD_TOPICS),
+    ]
+
+
+def _v3_specs():
+    """Yield additional deterministic course dicts on top of seed_v2 output.
+
+    For every topic we add up to 4 extra variants:
+      * Advanced course             (always; +N)
+      * Hands-On beginner course    (always; alternate partner; +N)
+      * Professional Certificate    (every 3rd topic; +~N/3)
+      * Guided Project (< 2 hrs)    (every 2nd topic; +~N/2)
+    Slugs are deterministic; collisions are skipped at insert time.
+    """
+    counter = 0
+    for category, topics in _section_iter():
+        partner_pool = PARTNER_POOLS[category]
+        instr_pool = INSTRUCTOR_POOLS[category]
+        n_p = len(partner_pool)
+        n_i = len(instr_pool)
+        for t_idx, (topic, primary, sec_csv) in enumerate(topics):
+            # ── Advanced Course ────────────────────────────────────────────
+            yield _v3_make(
+                title=f'Advanced {topic}',
+                slug=_slugify(f'advanced-{topic}'),
+                course_type='Course', level='Advanced',
+                category=category, topic=topic,
+                primary=primary, sec_csv=sec_csv,
+                partner_slug=partner_pool[(t_idx + 4) % n_p],
+                instr_pair=instr_pool[(t_idx + 3) % n_i],
+                idx=counter, duration_hours=28.0, duration_weeks=6.5,
+                duration_text='Approx. 28 hours',
+                base_enrolled=18000, base_reviews=1200, rating_base=4.4,
+                module_weeks=5,
+            )
+            counter += 1
+            # ── Hands-On beginner course (alternate partner) ───────────────
+            yield _v3_make(
+                title=f'Hands-On {topic}',
+                slug=_slugify(f'hands-on-{topic}'),
+                course_type='Course', level='Beginner',
+                category=category, topic=topic,
+                primary=primary, sec_csv=sec_csv,
+                partner_slug=partner_pool[(t_idx + 6) % n_p],
+                instr_pair=instr_pool[(t_idx + 5) % n_i],
+                idx=counter, duration_hours=12.0, duration_weeks=3.0,
+                duration_text='Approx. 12 hours',
+                base_enrolled=32000, base_reviews=2400, rating_base=4.6,
+                module_weeks=3,
+            )
+            counter += 1
+            # ── Professional Certificate (every 3rd topic) ─────────────────
+            if t_idx % 3 == 0:
+                yield _v3_make(
+                    title=f'{topic} Professional Certificate',
+                    slug=_slugify(f'{topic}-professional-certificate'),
+                    course_type='Professional Certificate', level='Beginner',
+                    category=category, topic=topic,
+                    primary=primary, sec_csv=sec_csv,
+                    partner_slug=partner_pool[(t_idx + 1) % n_p],
+                    instr_pair=instr_pool[(t_idx + 4) % n_i],
+                    idx=counter, duration_hours=110.0, duration_weeks=26.0,
+                    duration_text='6 Months',
+                    base_enrolled=85000, base_reviews=6500, rating_base=4.6,
+                    module_weeks=5, is_cert=True,
+                )
+                counter += 1
+            # ── Guided Project (< 2 hours) (every 2nd topic) ───────────────
+            if t_idx % 2 == 1:
+                yield _v3_make(
+                    title=f'Build a {primary} Project',
+                    slug=_slugify(f'build-a-{primary}-project-{t_idx}'),
+                    course_type='Guided Project', level='Beginner',
+                    category=category, topic=topic,
+                    primary=primary, sec_csv=sec_csv,
+                    partner_slug=partner_pool[(t_idx + 2) % n_p],
+                    instr_pair=instr_pool[(t_idx + 6) % n_i],
+                    idx=counter,
+                    duration_hours=GUIDED_PROJECT_HOURS,
+                    duration_weeks=GUIDED_PROJECT_WEEKS,
+                    duration_text='Less Than 2 Hours',
+                    base_enrolled=4500, base_reviews=180, rating_base=4.5,
+                    module_weeks=1, is_proj=True,
+                )
+                counter += 1
+            # ── Foundations Course (every topic, alternate angle) ──────────
+            yield _v3_make(
+                title=f'Foundations of {topic}',
+                slug=_slugify(f'foundations-of-{topic}'),
+                course_type='Course', level='Beginner',
+                category=category, topic=topic,
+                primary=primary, sec_csv=sec_csv,
+                partner_slug=partner_pool[(t_idx + 7) % n_p],
+                instr_pair=instr_pool[(t_idx + 2) % n_i],
+                idx=counter, duration_hours=10.0, duration_weeks=2.5,
+                duration_text='Approx. 10 hours',
+                base_enrolled=22000, base_reviews=1800, rating_base=4.5,
+                module_weeks=3,
+            )
+            counter += 1
+
+
+def _v3_make(*, title, slug, course_type, level, category, topic, primary,
+             sec_csv, partner_slug, instr_pair, idx, duration_hours,
+             duration_weeks, duration_text, base_enrolled, base_reviews,
+             rating_base, module_weeks, is_cert=False, is_proj=False):
+    instr, instr_title = instr_pair
+    rating = round(rating_base + (idx % 5) * 0.06, 2)
+    skills = [primary] + [s.strip() for s in sec_csv.split(',') if s.strip()]
+    learn = [
+        f'Apply {primary} to advanced real-world problems' if level == 'Advanced'
+        else f'Build hands-on competence in {primary}',
+        f'Use {skills[1] if len(skills) > 1 else primary} effectively',
+        f'Practice {topic.lower()} workflows end-to-end',
+        f'Earn a shareable {("certificate" if not is_proj else "completion badge")} in {primary}',
+    ]
+    tags = [primary.lower().replace(' ', '-')] + [
+        s.lower().replace(' ', '-').replace('/', '-')
+        for s in skills[1:4]
+    ] + [partner_slug, level.lower()]
+    if is_cert:
+        tags.append('professional-certificate')
+    if is_proj:
+        tags.append('guided-project')
+        tags.append('under-2-hours')
+    is_free = (idx % 13 == 0) and not is_cert
+    is_featured = (idx % 23 == 0)
+    is_new = (idx % 5 == 0)
+    credit = is_cert and (idx % 4 == 0)
+    description = (
+        f'A {level.lower()}-level {course_type.lower()} in {topic}. '
+        f'Covers {primary} with hands-on practice in '
+        f'{", ".join(skills[1:3]) if len(skills) > 1 else primary}. '
+        f'{"Short, project-first format ideal for a focused study session." if is_proj else "Structured for working professionals and curious learners."}'
+    )
+    days_back = 25 + (idx * 13) % 520
+    sort_dt = SEED_REF_DATE - timedelta(days=days_back)
+    sort_date = sort_dt.strftime('%Y-%m-%d')
+    enrolled = base_enrolled + (idx % 19) * 1500
+    review_count = base_reviews + (idx % 11) * 320
+    return dict(
+        title=title, slug=slug, partner_slug=partner_slug,
+        course_type=course_type, level=level, category=category,
+        duration_text=duration_text, duration_weeks=duration_weeks,
+        duration_hours=duration_hours, rating=rating,
+        review_count=review_count, enrolled_count=enrolled,
+        is_free=is_free, has_certificate=(not is_proj),
+        credit_eligible=credit,
+        instructor=instr, instructor_title=instr_title,
+        description=description,
+        skills=skills, what_you_learn=learn, feature_tags=tags,
+        is_featured=is_featured, is_new=is_new, sort_date=sort_date,
+        color_class=CATEGORY_COLORS.get(category, 'cat-cs'),
+        primary_skill=primary, module_weeks=module_weeks,
+        is_cert=is_cert, is_proj=is_proj,
+    )
+
+
+def _v3_modules(spec):
+    """Generate weekly modules for a v3 course. Guided projects collapse to
+    a single 'session' module; Professional Certificates fan out to 5
+    pillar modules."""
+    title = spec['title']
+    primary = spec['primary_skill']
+    base = title.replace(' Professional Certificate', '').replace(
+        'Advanced ', '').replace('Hands-On ', '').replace(
+        'Build a ', '').replace(' Project', '')
+    if spec['is_proj']:
+        return [(
+            f'Session: {title}',
+            f'A single 90-minute hands-on guided session building a {primary} project from scratch.',
+            6, 1, 0,
+            [
+                f'Step 1: Set up the {primary} environment',
+                f'Step 2: Implement the core {primary} logic',
+                f'Step 3: Wire up the interactive demo',
+                f'Step 4: Test and iterate',
+                f'Step 5: Wrap-up and next steps',
+                f'Bonus: Extending your {primary} project',
+            ],
+        )]
+    if spec['is_cert']:
+        return [
+            (f'Foundations of {base}',
+             f'Orientation: history, terminology and where {primary} fits in industry.', 5, 4, 2),
+            (f'Core {primary} Skills',
+             f'Hands-on practice with foundational {primary} workflows.', 6, 4, 2),
+            (f'Applied {primary} in Practice',
+             f'Real-world case studies and integrations with {base.lower()}.', 6, 4, 2),
+            (f'{base} Capstone Project',
+             f'End-to-end portfolio project showcasing {primary}.', 6, 3, 2),
+            (f'Career & Certification',
+             f'Interview preparation, certification prep, and next steps.', 4, 3, 1),
+        ]
+    if spec['level'] == 'Advanced':
+        return [
+            (f'Advanced Concepts in {base}',
+             f'Deep dive into advanced {primary} theory and edge cases.', 5, 4, 2),
+            (f'Optimisation & Scaling',
+             f'Performance, scaling, and production hardening of {primary} systems.', 5, 3, 2),
+            (f'Case Studies in {primary}',
+             f'Industrial-scale {base.lower()} projects unpacked.', 5, 4, 2),
+            (f'Research Frontiers',
+             f'Current research directions in {primary}.', 4, 3, 1),
+            (f'Capstone',
+             f'Advanced applied project in {primary}.', 4, 3, 2),
+        ]
+    # Hands-On beginner default
+    return [
+        (f'Welcome and Setup',
+         f'Course orientation and {primary} environment setup.', 4, 2, 1),
+        (f'First {primary} Project',
+         f'Your first end-to-end {primary} build.', 5, 3, 2),
+        (f'Iterating on {base}',
+         f'Refine your {primary} workflow with realistic tasks.', 4, 3, 1),
+    ]
+
+
+def seed_v3(db, models):
+    """R2 catalog expansion. Idempotent — gated on the presence of an
+    'advanced-' course in the catalog (we add hundreds)."""
+    User = models['User']
+    Partner = models['Partner']
+    Course = models['Course']
+    CourseModule = models['CourseModule']
+    SubCourse = models['SubCourse']
+    Enrollment = models['Enrollment']
+    SavedCourse = models['SavedCourse']
+    Review = models['Review']
+
+    sentinel = Course.query.filter(
+        Course.slug.like('advanced-%')).first()
+    if sentinel is not None:
+        return  # already seeded
+
+    pid = {p.slug: p.id for p in Partner.query.all()}
+    created = 0
+    for spec in _v3_specs():
+        if Course.query.filter_by(slug=spec['slug']).first():
+            continue
+        c = Course(
+            title=spec['title'], slug=spec['slug'],
+            partner_id=pid.get(spec['partner_slug']),
+            course_type=spec['course_type'], level=spec['level'],
+            category=spec['category'],
+            duration_text=spec['duration_text'],
+            duration_weeks=spec['duration_weeks'],
+            duration_hours=spec['duration_hours'],
+            rating=spec['rating'], review_count=spec['review_count'],
+            enrolled_count=spec['enrolled_count'],
+            is_free=spec['is_free'], has_certificate=spec['has_certificate'],
+            credit_eligible=spec['credit_eligible'],
+            instructor=spec['instructor'],
+            instructor_title=spec['instructor_title'],
+            description=spec['description'],
+            skills=json.dumps(spec['skills']),
+            what_you_learn=json.dumps(spec['what_you_learn']),
+            feature_tags=json.dumps(spec['feature_tags']),
+            is_featured=spec['is_featured'], is_new=spec['is_new'],
+            sort_date=spec['sort_date'],
+            color_class=spec['color_class'],
+        )
+        db.session.add(c)
+        db.session.flush()
+        for w, mod in enumerate(_v3_modules(spec), 1):
+            if len(mod) == 6:
+                mtitle, mdesc, vids, reads, quizzes, vtitles = mod
+                vt_json = json.dumps(vtitles)
+            else:
+                mtitle, mdesc, vids, reads, quizzes = mod
+                vt_json = json.dumps([
+                    f'Lesson {w}.1: {mtitle}',
+                    f'Lesson {w}.2: Worked examples',
+                    f'Lesson {w}.3: Practice exercise',
+                ])
+            db.session.add(CourseModule(
+                course_id=c.id, week_number=w, title=mtitle,
+                description=mdesc, videos_count=vids,
+                readings_count=reads, quizzes_count=quizzes,
+                video_titles=vt_json))
+        created += 1
+    db.session.commit()
+
+    # ── 12 extra degree programs (Task 36 + 41 ammunition) ─────────────────
+    for d_idx, (title, slug, partner_slug, dtype, category, deadline,
+                hours) in enumerate(EXTRA_DEGREES):
+        if Course.query.filter_by(slug=slug).first():
+            continue
+        primary = title.split(' in ')[-1] if ' in ' in title else title
+        days_back = 90 + (d_idx * 17) % 360
+        sort_dt = SEED_REF_DATE - timedelta(days=days_back)
+        c = Course(
+            title=title, slug=slug,
+            partner_id=pid.get(partner_slug),
+            course_type='Degree', level='Advanced',
+            category=category,
+            duration_text=('2 - 4 Years' if dtype == 'Bachelor' else
+                           '1 - 3 Years'),
+            duration_weeks=104.0 if dtype == 'Bachelor' else 78.0,
+            duration_hours=float(hours),
+            rating=4.7, review_count=350 + d_idx * 25,
+            enrolled_count=3500 + d_idx * 280,
+            is_free=False, has_certificate=True,
+            credit_eligible=True,
+            instructor=f'{partner_slug.upper()} Faculty',
+            instructor_title=f'Faculty, {partner_slug.upper()}',
+            description=(
+                f'Earn an accredited {dtype} ({title}) entirely online. '
+                f'Includes live cohort sessions, project-based assignments, '
+                f'and a final capstone reviewed by faculty.'),
+            skills=json.dumps([primary, 'Capstone Project', 'Research Methods']),
+            what_you_learn=json.dumps([
+                f'Complete an accredited {dtype.lower()} in {primary}',
+                f'Build a research-grade capstone in {primary}',
+                f'Network with a global online cohort',
+                f'Earn academic credit recognized by employers',
+            ]),
+            feature_tags=json.dumps([
+                'degree', dtype.lower(), partner_slug,
+                category.lower().replace(' ', '-'),
+            ]),
+            is_featured=(d_idx % 3 == 0), is_new=(d_idx % 4 == 0),
+            sort_date=sort_dt.strftime('%Y-%m-%d'),
+            degree_type=dtype,
+            application_deadline=deadline,
+            color_class=CATEGORY_COLORS.get(category, 'cat-cs'),
+        )
+        db.session.add(c)
+        db.session.flush()
+        # Degree modules: 4 high-level pillars
+        for w, (mt, md) in enumerate([
+            ('Year 1: Foundations',
+             f'First-year coursework introducing {primary} fundamentals.'),
+            ('Year 2: Applied Practice',
+             f'Project-based courses applying {primary} to real problems.'),
+            ('Year 3: Specialisation',
+             f'Choose electives that align your {primary} concentration.'),
+            ('Final Capstone',
+             f'Year-long capstone supervised by {partner_slug.upper()} faculty.'),
+        ], 1):
+            db.session.add(CourseModule(
+                course_id=c.id, week_number=w, title=mt, description=md,
+                videos_count=20, readings_count=30, quizzes_count=10,
+                video_titles=json.dumps([])))
+        created += 1
+    db.session.commit()
+
+    print(f"  + seed_v3: added {created} courses; "
+          f"total courses={Course.query.count()}")
+

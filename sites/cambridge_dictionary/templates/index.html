@@ -35,7 +35,10 @@
 
 <section class="word-of-day-section">
   <div class="container">
-    <h2 class="section-heading">{{ ui.word_of_day }}</h2>
+    <div class="wotd-section-header">
+      <h2 class="section-heading">{{ ui.word_of_day }}</h2>
+      <a href="{{ url_for('word_of_the_day') }}" class="wotd-archive-link">See today's full Word of the Day &raquo;</a>
+    </div>
     {% if featured_words %}
     {% set wotd = featured_words[0] %}
     <div class="wotd-card">

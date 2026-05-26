@@ -1,0 +1,64 @@
+{% extends 'base.html' %}
+{% block title %}{% if _terms %}Terms of Service{% else %}Privacy{% endif %} - Google Flights{% endblock %}
+{% block content %}
+<div class="info-page">
+  <div class="info-page-inner">
+    {% if _terms %}
+      <h1>Terms of Service</h1>
+      <p class="lead">
+        By using Google Flights you agree to the terms outlined below. This
+        mirror is an educational project; it does not sell tickets or
+        process payments to real airlines.
+      </p>
+
+      <h2>Use of the service</h2>
+      <p>
+        Search results, prices, and inventory shown on this site are
+        synthetic and are intended for benchmarking AI agents. Do not rely
+        on this site for actual travel planning.
+      </p>
+
+      <h2>Limitation of liability</h2>
+      <p>
+        Google Flights mirror is provided "as is" without warranty of any
+        kind. We are not liable for any losses arising from use of this
+        site.
+      </p>
+    {% else %}
+      <h1>Privacy</h1>
+      <p class="lead">
+        Your privacy matters. This page explains what data Google Flights
+        collects and how it is used.
+      </p>
+
+      <h2>Data we collect</h2>
+      <ul>
+        <li>Account information you provide (name, email, phone, passport
+          number for booking, frequent flyer numbers).</li>
+        <li>Search history and saved searches when you are signed in.</li>
+        <li>Tracked flights, price alerts, and bookings.</li>
+      </ul>
+
+      <h2>How we use your data</h2>
+      <p>
+        We use the data you provide to power your bookings, track prices on
+        flights you save, and send alerts you have opted into. We do not
+        sell your information.
+      </p>
+
+      <h2>Cookies</h2>
+      <p>
+        We use cookies to keep you signed in and to remember your search
+        preferences. You can clear cookies at any time from your browser
+        settings.
+      </p>
+
+      <h2>Contact</h2>
+      <p>
+        Questions about your data? Visit
+        <a href="{{ url_for('help_page', topic='privacy') }}">Help &gt; Privacy</a>.
+      </p>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

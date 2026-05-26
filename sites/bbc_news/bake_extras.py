@@ -1,16 +1,21 @@
 """
-One-off baker: enrich sites/bbc_news/instance_seed/bbc_news.db with
+One-off baker: enrich sites/bbc_news/instance_seed/bbc_news.db with extra
+deterministic content on top of the seed produced by app.py:seed_database.
 
-  * ~140 fresh articles parsed from public BBC RSS feeds (cached locally
-    at /tmp/bbc_rss/*.xml so we never re-fetch during this script).
-  * 100+ comments distributed across 5 users and 60+ articles, including
-    reply chains.
-  * 200+ reading_history rows for the 5 demo/benchmark users.
+R2 scope (May 2026):
+  * Article corpus extended via ~25 additional BBC RSS sub-feeds (world
+    regions, UK nations, business/health/science verticals, all the sport
+    disciplines). Cached at /tmp/bbc_rss/*.xml; we never re-fetch here.
+  * ~120 comments distributed across users + articles (reply chains).
+  * ~250 reading_history rows across the 5 demo/benchmark users.
+  * Top-up of bookmarks, reading_list_items and topic_subscriptions so
+    task surface (search / filter / bookmark CRUD / digest) is rich.
 
-All inserts are gated by sentinel checks against a copy of the existing
-DB; running the script twice produces byte-identical output (idempotent).
-Timestamps are pinned to MIRROR_REFERENCE_DATE (2026-04-15) for new
-synthetic rows; new articles get the real RSS pubDate when present.
+Everything is gated by row-count sentinels — second run is a no-op. All
+new synthetic rows are timestamped relative to MIRROR_REFERENCE_DATE
+(2026-04-15) so two rebuilds on different days produce byte-identical
+DBs. The shipped DB at sites/bbc_news/instance_seed/bbc_news.db is the
+canonical artefact; the runtime `/reset` endpoint copies it.
 
 Run from /home/v-haoqiwang/repos/WebHarbor with:
 
@@ -18,10 +23,8 @@ Run from /home/v-haoqiwang/repos/WebHarbor with:
 """
 from __future__ import annotations
 
-import glob
 import hashlib
 import json
-import os
 import random
 import re
 import sqlite3
@@ -36,27 +39,71 @@ RSS_DIR = Path("/tmp/bbc_rss")
 
 MIRROR_REFERENCE_DATE = datetime(2026, 4, 15, 9, 0, 0)
 
-# Map RSS feed file -> primary category slug used in our DB
-FEED_TO_CAT = {
-    "news_rss.xml": "world",
-    "news_world_rss.xml": "world",
-    "news_uk_rss.xml": "uk",
-    "news_politics_rss.xml": "politics",
-    "news_business_rss.xml": "business",
-    "news_technology_rss.xml": "technology",
-    "news_health_rss.xml": "health",
-    "news_science_and_environment_rss.xml": "science",
-    "news_entertainment_and_arts_rss.xml": "entertainment",
-    "sport_rss.xml": "sport",
-}
-
-# Deterministic randomness — same outputs across runs
+# Deterministic randomness — same outputs across runs.
 RNG = random.Random(20260415)
 
+# Sentinel: a single planted flagged-comment we use to detect "R2 top-up
+# has already run". Cheap, ASCII, won't collide with any real comment.
+R2_SENTINEL_BODY = "<<R2-baked>>"
 
-# -----------------------------------------------------------------------
-# RSS parsing
-# -----------------------------------------------------------------------
+# Map RSS file -> (primary category slug, optional subsection label).
+# Specialised feeds first so their slugs win when an article appears in
+# both a sub-feed (e.g. world/africa) and the generic news feed.
+FEED_MAP: list[tuple[str, str, str]] = [
+    # --- World regions ---
+    ("news_world_africa.xml",        "africa",        "Africa"),
+    ("news_world_asia.xml",          "asia",          "Asia"),
+    ("news_world_europe.xml",        "europe",        "Europe"),
+    ("news_world_latin_america.xml", "latin_america", "Latin America"),
+    ("news_world_middle_east.xml",   "middle_east",   "Middle East"),
+    ("news_world_us_and_canada.xml", "us_canada",     "US & Canada"),
+    # --- UK nations ---
+    ("news_england.xml",             "england",          "England"),
+    ("news_scotland.xml",            "scotland",         "Scotland"),
+    ("news_wales.xml",               "wales",            "Wales"),
+    ("news_northern_ireland.xml",    "northern_ireland", "N. Ireland"),
+    # --- Verticals ---
+    ("news_business_economy.xml",        "business",      "Economy"),
+    ("news_business_companies.xml",      "business",      "Companies"),
+    ("news_business_your_money.xml",     "business",      "Your Money"),
+    ("news_science_and_environment.xml", "science",       "Science & Environment"),
+    ("news_health.xml",                  "health",        "Health"),
+    ("news_education.xml",               "uk",            "Education"),
+    ("news_world_radio_and_tv.xml",      "entertainment", "Radio & TV"),
+    # --- Sport sub-disciplines ---
+    ("sport_football.xml",     "football",  "Football"),
+    ("sport_cricket.xml",      "cricket",   "Cricket"),
+    ("sport_rugby-union.xml",  "rugby",     "Rugby Union"),
+    ("sport_tennis.xml",       "tennis",    "Tennis"),
+    ("sport_golf.xml",         "golf",      "Golf"),
+    ("sport_athletics.xml",    "athletics", "Athletics"),
+    ("sport_cycling.xml",      "sport",     "Cycling"),
+    ("sport_formula1.xml",     "sport",     "Formula 1"),
+    ("sport_boxing.xml",       "sport",     "Boxing"),
+    ("sport_horse-racing.xml", "horse_racing", "Horse Racing"),
+    ("sport_snooker.xml",      "sport",     "Snooker"),
+    ("sport_swimming.xml",     "sport",     "Swimming"),
+    ("sport_disability-sport.xml", "sport", "Disability Sport"),
+    ("sport_winter-sports.xml", "sport",    "Winter Sports"),
+    ("sport_basketball.xml",   "sport",     "Basketball"),
+    ("sport_gymnastics.xml",   "sport",     "Gymnastics"),
+    ("sport_olympics.xml",     "sport",     "Olympics"),
+    # --- Extra news verticals ---
+    ("news_in_pictures.xml",   "in_pictures", "In Pictures"),
+    ("news_disability.xml",    "uk",        "Disability"),
+    # --- Original R1 feeds (kept last; lowest priority) ---
+    ("news_technology_rss.xml",              "technology",    ""),
+    ("news_science_and_environment_rss.xml", "science",       ""),
+    ("news_health_rss.xml",                  "health",        ""),
+    ("news_business_rss.xml",                "business",      ""),
+    ("news_politics_rss.xml",                "politics",      ""),
+    ("news_entertainment_and_arts_rss.xml",  "entertainment", ""),
+    ("sport_rss.xml",                        "sport",         ""),
+    ("news_uk_rss.xml",                      "uk",            ""),
+    ("news_world_rss.xml",                   "world",         ""),
+    ("news_rss.xml",                         "world",         ""),
+]
+
 
 NS = {
     "media": "http://search.yahoo.com/mrss/",
@@ -64,21 +111,20 @@ NS = {
 }
 
 
+# -----------------------------------------------------------------------
+# RSS parsing
+# -----------------------------------------------------------------------
+
 def _slug_from_link(link: str) -> str | None:
-    """Extract the BBC article id from a /news/articles/<id> URL."""
     m = re.search(r"/articles/([a-z0-9]{8,16})", link)
-    if m:
-        return m.group(1)
-    return None
+    return m.group(1) if m else None
 
 
-def parse_rss(path: Path, cat_slug: str) -> list[dict]:
-    """Return parsed items from one RSS file. Skips Tech Life / Tech Now
-    audio + iPlayer entries (they don't have /articles/<id> permalinks)."""
+def parse_rss(path: Path, cat_slug: str, subsection: str) -> list[dict]:
     out: list[dict] = []
     try:
         tree = ET.parse(path)
-    except ET.ParseError:
+    except (ET.ParseError, FileNotFoundError):
         return out
     for item in tree.getroot().iter("item"):
         title = (item.findtext("title") or "").strip()
@@ -88,7 +134,6 @@ def parse_rss(path: Path, cat_slug: str) -> list[dict]:
         slug = _slug_from_link(link)
         if not slug or not title:
             continue
-        # Try media:thumbnail first; fallback to media:content
         thumb_el = item.find("media:thumbnail", NS)
         if thumb_el is None:
             thumb_el = item.find("media:content", NS)
@@ -99,7 +144,6 @@ def parse_rss(path: Path, cat_slug: str) -> list[dict]:
                 pub_dt = pub_dt.replace(tzinfo=None)
         except Exception:
             pub_dt = MIRROR_REFERENCE_DATE
-        # Strip tracking params from canonical URL
         clean_link = re.sub(r"\?at_.*$", "", link)
         out.append({
             "slug": slug,
@@ -107,6 +151,7 @@ def parse_rss(path: Path, cat_slug: str) -> list[dict]:
             "subtitle": desc[:300],
             "summary": desc[:300],
             "category": cat_slug,
+            "subsection": subsection,
             "thumb": thumb,
             "source_url": clean_link,
             "published_at": pub_dt,
@@ -115,30 +160,12 @@ def parse_rss(path: Path, cat_slug: str) -> list[dict]:
 
 
 def collect_rss_articles() -> list[dict]:
-    """Read every cached feed; de-dupe by slug; assign each article to its
-    *first-seen* category so the feed order matches BBC's own taxonomy
-    (Tech beats World for an AI item that appears in both)."""
+    """Iterate FEED_MAP in priority order; first-seen slug wins."""
     seen: set[str] = set()
     bucket: list[dict] = []
-    # Priority: specialized feeds first, generic last
-    priority = [
-        "news_technology_rss.xml",
-        "news_science_and_environment_rss.xml",
-        "news_health_rss.xml",
-        "news_business_rss.xml",
-        "news_politics_rss.xml",
-        "news_entertainment_and_arts_rss.xml",
-        "sport_rss.xml",
-        "news_uk_rss.xml",
-        "news_world_rss.xml",
-        "news_rss.xml",
-    ]
-    for fname in priority:
+    for fname, cat, subsection in FEED_MAP:
         path = RSS_DIR / fname
-        if not path.exists():
-            continue
-        cat = FEED_TO_CAT[fname]
-        for art in parse_rss(path, cat):
+        for art in parse_rss(path, cat, subsection):
             if art["slug"] in seen:
                 continue
             seen.add(art["slug"])
@@ -147,7 +174,7 @@ def collect_rss_articles() -> list[dict]:
 
 
 # -----------------------------------------------------------------------
-# Body synthesis from RSS title + description
+# Body synthesis
 # -----------------------------------------------------------------------
 
 BODY_TEMPLATES = [
@@ -240,6 +267,15 @@ COMMENT_REPLIES = [
 ]
 
 
+USER_INTERESTS = {
+    "alice.j@test.com":   ["technology", "science", "ai", "business"],
+    "bob.c@test.com":     ["business", "world", "politics", "uk"],
+    "carol.d@test.com":   ["health", "science", "earth", "uk"],
+    "david.k@test.com":   ["sport", "entertainment", "arts", "culture"],
+    "demo@bbcnews.local": ["world", "uk", "technology", "business", "health"],
+}
+
+
 # -----------------------------------------------------------------------
 # DB helpers
 # -----------------------------------------------------------------------
@@ -268,17 +304,24 @@ def existing_article_slugs(con: sqlite3.Connection) -> set[str]:
     return {r[0] for r in con.execute("SELECT slug FROM articles")}
 
 
+def _sentinel_planted(con: sqlite3.Connection) -> bool:
+    row = con.execute(
+        "SELECT 1 FROM comments WHERE body=? LIMIT 1", (R2_SENTINEL_BODY,)
+    ).fetchone()
+    return bool(row)
+
+
 # -----------------------------------------------------------------------
-# Insert: articles
+# Insert: articles from RSS
 # -----------------------------------------------------------------------
 
 def insert_new_articles(con: sqlite3.Connection, rss: list[dict]) -> int:
-    """Insert RSS-derived articles whose slug is not already in the DB.
-    Returns # rows inserted."""
+    """Insert RSS-derived articles whose slug is not in the DB. Order is
+    `rss` order (= FEED_MAP priority), so AUTOINCREMENT ids are stable
+    across rebuilds."""
     existing = existing_article_slugs(con)
     cat_map = cat_id_by_slug(con)
-    # Some RSS feeds map to slugs we don't have; default to 'world'
-    default_cid = cat_map["world"]
+    default_cid = cat_map.get("world") or next(iter(cat_map.values()))
 
     rows = []
     for art in rss:
@@ -288,6 +331,9 @@ def insert_new_articles(con: sqlite3.Connection, rss: list[dict]) -> int:
         body = synth_body(art["headline"], art["subtitle"])
         word_count = len(body.split())
         reading_time = max(2, word_count // 200)
+        topics = [art["category"].replace("_", " ").title()]
+        if art["subsection"]:
+            topics.append(art["subsection"])
         rows.append({
             "slug": art["slug"],
             "headline": art["headline"],
@@ -299,11 +345,10 @@ def insert_new_articles(con: sqlite3.Connection, rss: list[dict]) -> int:
             "hero_image": art["thumb"],
             "gallery_json": "[]",
             "gallery_full_json": "{}",
-            "topics_json": json.dumps([art["category"].title()]),
+            "topics_json": json.dumps(topics),
             "published_at": art["published_at"].strftime("%Y-%m-%d %H:%M:%S"),
             "reading_time": reading_time,
             "word_count": word_count,
-            # Deterministic but spread-out view counts (RNG seeded once)
             "view_count": 500 + RNG.randrange(40000),
             "is_featured": 0,
             "is_breaking": 0,
@@ -311,7 +356,7 @@ def insert_new_articles(con: sqlite3.Connection, rss: list[dict]) -> int:
             "location": "",
             "source_url": art["source_url"],
             "section_slug": art["category"],
-            "subsection": "",
+            "subsection": art["subsection"],
             "region": "",
             "video_url": "",
             "feature_tags": "[]",
@@ -320,7 +365,6 @@ def insert_new_articles(con: sqlite3.Connection, rss: list[dict]) -> int:
 
     if not rows:
         return 0
-
     con.executemany(
         """
         INSERT INTO articles (
@@ -345,27 +389,20 @@ def insert_new_articles(con: sqlite3.Connection, rss: list[dict]) -> int:
 
 
 # -----------------------------------------------------------------------
-# Insert: comments + reading_history
+# Insert: comments
 # -----------------------------------------------------------------------
 
 def insert_comments(con: sqlite3.Connection) -> int:
-    """Distribute ~120 top-level comments + replies across a diverse pool
-    of articles. Idempotent: skips if any comment already exists.
-
-    Approach:
-      * Pick 60 articles (10 from each of: top viewed, random tech,
-        random world, random uk, random sport, random business).
-      * Assign 1-3 top-level comments per article (round-robin users).
-      * For ~30% of top-level comments, add 1-2 replies from a
-        different user.
-    """
+    """Top-level + replies. Idempotent: skips if any real comment rows
+    exist (we count non-sentinel rows)."""
     cur = con.cursor()
-    if cur.execute("SELECT COUNT(*) FROM comments").fetchone()[0] > 0:
+    real = cur.execute(
+        "SELECT COUNT(*) FROM comments WHERE body<>?", (R2_SENTINEL_BODY,)
+    ).fetchone()[0]
+    if real > 0:
         return 0
 
     user_ids = [r[0] for r in cur.execute("SELECT id FROM users ORDER BY id")]
-    # Pull a diverse article pool. We want spread across sections so the
-    # task surface is rich, not just popular tech articles.
     article_pool: list[int] = []
     for section in ("technology", "world", "uk", "sport", "business",
                     "health", "science", "politics", "entertainment", "arts"):
@@ -374,11 +411,9 @@ def insert_comments(con: sqlite3.Connection) -> int:
             "ORDER BY view_count DESC LIMIT 8", (section,)
         )]
         article_pool.extend(ids)
-    # De-dupe while keeping order
     seen: set[int] = set()
     article_pool = [x for x in article_pool if not (x in seen or seen.add(x))]
 
-    # If somehow we got too few, top up with random articles
     if len(article_pool) < 60:
         extra = [r[0] for r in cur.execute(
             "SELECT id FROM articles WHERE id NOT IN ({}) "
@@ -389,17 +424,12 @@ def insert_comments(con: sqlite3.Connection) -> int:
         article_pool.extend(extra[: 60 - len(article_pool)])
 
     base_ts = MIRROR_REFERENCE_DATE
-    inserted = 0
-    top_level_ids: list[tuple[int, int, int]] = []  # (article_id, user_id, comment_id placeholder)
-
-    # Phase 1: top-level comments
     rows_top = []
     for idx, art_id in enumerate(article_pool):
         n_top = RNG.choice([1, 2, 2, 3])
         for j in range(n_top):
             uid = user_ids[(idx + j) % len(user_ids)]
             body = COMMENT_TOP_LEVEL[(idx * 3 + j) % len(COMMENT_TOP_LEVEL)]
-            # Spread timestamps within the last 30 days before reference
             offset_hours = (idx * 7 + j * 11) % (24 * 30)
             ts = base_ts - timedelta(hours=offset_hours, minutes=(idx + j) % 60)
             rows_top.append((uid, art_id, None, body,
@@ -411,12 +441,12 @@ def insert_comments(con: sqlite3.Connection) -> int:
         "like_count, flagged, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
         rows_top,
     )
-    inserted += len(rows_top)
+    inserted = len(rows_top)
 
-    # Phase 2: replies — for every 3rd top-level comment, add 1-2 replies
     new_top = list(cur.execute(
         "SELECT id, article_id, user_id, created_at FROM comments "
-        "WHERE parent_id IS NULL ORDER BY id"
+        "WHERE parent_id IS NULL AND body<>? ORDER BY id",
+        (R2_SENTINEL_BODY,),
     ))
     rows_replies = []
     for i, (cid, art_id, uid, created_at) in enumerate(new_top):
@@ -424,7 +454,6 @@ def insert_comments(con: sqlite3.Connection) -> int:
             continue
         n_replies = RNG.choice([1, 1, 2])
         for k in range(n_replies):
-            # reply user must differ from parent's user
             ruid = user_ids[(uid + k + 1) % len(user_ids)]
             if ruid == uid:
                 ruid = user_ids[(uid + k + 2) % len(user_ids)]
@@ -443,20 +472,11 @@ def insert_comments(con: sqlite3.Connection) -> int:
     return inserted
 
 
-# Topic affinity per user — drives realistic reading_history selection
-USER_INTERESTS = {
-    "alice.j@test.com": ["technology", "science", "ai", "business"],
-    "bob.c@test.com":   ["business", "world", "politics", "uk"],
-    "carol.d@test.com": ["health", "science", "earth", "uk"],
-    "david.k@test.com": ["sport", "entertainment", "arts", "culture"],
-    "demo@bbcnews.local": ["world", "uk", "technology", "business", "health"],
-}
-
+# -----------------------------------------------------------------------
+# Insert: reading_history
+# -----------------------------------------------------------------------
 
 def insert_reading_history(con: sqlite3.Connection) -> int:
-    """Generate ~50 reading_history rows per user (250 total) — articles
-    drawn primarily from each user's interest sections, with a small mix
-    of cross-topic exploration. Idempotent: skips if any row exists."""
     cur = con.cursor()
     if cur.execute("SELECT COUNT(*) FROM reading_history").fetchone()[0] > 0:
         return 0
@@ -473,7 +493,6 @@ def insert_reading_history(con: sqlite3.Connection) -> int:
                 "ORDER BY published_at DESC LIMIT 15", (sec,)
             )]
             primary.extend(ids)
-        # A small slice of cross-topic exploration (10 random articles)
         cross = [r[0] for r in cur.execute(
             "SELECT id FROM articles ORDER BY id LIMIT 1000"
         )]
@@ -490,7 +509,6 @@ def insert_reading_history(con: sqlite3.Connection) -> int:
             if len(chosen) >= 50:
                 break
 
-        # Assign timestamps — spread over the 21 days before reference
         for j, art_id in enumerate(chosen):
             ts = base_ts - timedelta(
                 hours=(j * 9 + uid * 3) % (24 * 21),
@@ -499,11 +517,188 @@ def insert_reading_history(con: sqlite3.Connection) -> int:
             rows.append((uid, art_id, ts.strftime("%Y-%m-%d %H:%M:%S")))
 
     cur.executemany(
-        "INSERT INTO reading_history (user_id, article_id, viewed_at) "
-        "VALUES (?, ?, ?)",
+        "INSERT INTO reading_history (user_id, article_id, viewed_at) VALUES (?, ?, ?)",
         rows,
     )
     return len(rows)
+
+
+# -----------------------------------------------------------------------
+# Top-up: bookmarks, reading_list_items, topic_subscriptions
+# Gated on the R2 sentinel so we don't double-insert.
+# -----------------------------------------------------------------------
+
+def insert_extra_bookmarks(con: sqlite3.Connection) -> int:
+    if _sentinel_planted(con):
+        return 0
+    cur = con.cursor()
+    users = list(cur.execute("SELECT id, email FROM users ORDER BY id"))
+    sections = ["technology", "business", "world", "uk", "sport",
+                "health", "science", "politics", "entertainment"]
+    base_ts = MIRROR_REFERENCE_DATE
+    rows = []
+    for uid, email in users:
+        chosen: list[int] = []
+        for k, sec in enumerate(sections[:6]):
+            row = cur.execute(
+                "SELECT id FROM articles WHERE section_slug=? "
+                "ORDER BY view_count DESC LIMIT 1 OFFSET ?",
+                (sec, (uid * 2 + k) % 5),
+            ).fetchone()
+            if row:
+                chosen.append(row[0])
+        for k, art_id in enumerate(chosen):
+            existing = cur.execute(
+                "SELECT 1 FROM bookmarks WHERE user_id=? AND article_id=?",
+                (uid, art_id),
+            ).fetchone()
+            if existing:
+                continue
+            ts = base_ts - timedelta(days=(k + uid) % 10, hours=k * 3)
+            rows.append((uid, art_id, ts.strftime("%Y-%m-%d %H:%M:%S")))
+    cur.executemany(
+        "INSERT INTO bookmarks (user_id, article_id, bookmarked_at) VALUES (?, ?, ?)",
+        rows,
+    )
+    return len(rows)
+
+
+def insert_extra_reading_list(con: sqlite3.Connection) -> int:
+    if _sentinel_planted(con):
+        return 0
+    cur = con.cursor()
+    cols = [r[1] for r in cur.execute("PRAGMA table_info(reading_list_items)")]
+    has_folder = "folder" in cols
+    has_notes = "notes" in cols
+    has_is_read = "is_read" in cols
+
+    users = list(cur.execute("SELECT id, email FROM users ORDER BY id"))
+    base_ts = MIRROR_REFERENCE_DATE
+    rows = []
+    for uid, email in users:
+        interests = USER_INTERESTS.get(email, ["world", "uk", "business"])
+        pool = []
+        for sec in interests[:3]:
+            ids = [r[0] for r in cur.execute(
+                "SELECT id FROM articles WHERE section_slug=? "
+                "ORDER BY published_at DESC LIMIT 3", (sec,)
+            )]
+            pool.extend(ids)
+        seen_l: set[int] = set()
+        pool = [x for x in pool if not (x in seen_l or seen_l.add(x))][:6]
+        for k, art_id in enumerate(pool):
+            already = cur.execute(
+                "SELECT 1 FROM reading_list_items WHERE user_id=? AND article_id=?",
+                (uid, art_id),
+            ).fetchone()
+            if already:
+                continue
+            folder = "Work" if k % 2 == 0 else "Weekend"
+            ts_str = (base_ts - timedelta(days=(k + uid) % 14, hours=k * 2)
+                      ).strftime("%Y-%m-%d %H:%M:%S")
+            cols_used = ["user_id", "article_id"]
+            vals: list = [uid, art_id]
+            if has_folder:
+                cols_used.append("folder"); vals.append(folder)
+            if has_notes:
+                cols_used.append("notes"); vals.append("")
+            if has_is_read:
+                cols_used.append("is_read"); vals.append(0)
+            cols_used.append("added_at"); vals.append(ts_str)
+            rows.append((cols_used, tuple(vals)))
+
+    if not rows:
+        return 0
+    # All rows have the same column order (derived from PRAGMA once);
+    # build the SQL once from the first row.
+    cols_used = rows[0][0]
+    sql = (
+        f"INSERT INTO reading_list_items ({', '.join(cols_used)}) "
+        f"VALUES ({', '.join(['?'] * len(cols_used))})"
+    )
+    cur.executemany(sql, [r[1] for r in rows])
+    return len(rows)
+
+
+def insert_extra_subscriptions(con: sqlite3.Connection) -> int:
+    if _sentinel_planted(con):
+        return 0
+    cur = con.cursor()
+    cols = [r[1] for r in cur.execute("PRAGMA table_info(topic_subscriptions)")]
+    topic_col = "topic" if "topic" in cols else ("topic_slug" if "topic_slug" in cols else None)
+    if topic_col is None:
+        return 0
+    has_freq = "frequency" in cols
+    has_created = "created_at" in cols
+
+    users = list(cur.execute("SELECT id, email FROM users ORDER BY id"))
+    base_ts = MIRROR_REFERENCE_DATE
+    rows = []
+    for uid, email in users:
+        interests = USER_INTERESTS.get(email, ["world", "uk", "business"])
+        for k, sec in enumerate(interests[:3]):
+            existing = cur.execute(
+                f"SELECT 1 FROM topic_subscriptions WHERE user_id=? AND {topic_col}=?",
+                (uid, sec),
+            ).fetchone()
+            if existing:
+                continue
+            freq = ["daily", "weekly", "weekly"][k % 3]
+            ts = base_ts - timedelta(days=(k + uid) % 20)
+            row = [uid, sec]
+            if has_freq:
+                row.append(freq)
+            if has_created:
+                row.append(ts.strftime("%Y-%m-%d %H:%M:%S"))
+            rows.append(tuple(row))
+
+    if not rows:
+        return 0
+    placeholders = ["user_id", topic_col]
+    if has_freq:
+        placeholders.append("frequency")
+    if has_created:
+        placeholders.append("created_at")
+    sql = (
+        f"INSERT INTO topic_subscriptions ({', '.join(placeholders)}) "
+        f"VALUES ({', '.join(['?'] * len(placeholders))})"
+    )
+    cur.executemany(sql, rows)
+    return len(rows)
+
+
+def plant_sentinel(con: sqlite3.Connection) -> None:
+    cur = con.cursor()
+    if _sentinel_planted(con):
+        return
+    cur.execute(
+        "INSERT INTO comments (user_id, article_id, parent_id, body, "
+        "like_count, flagged, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
+        (1, 1, None, R2_SENTINEL_BODY, 0, 1,
+         MIRROR_REFERENCE_DATE.strftime("%Y-%m-%d %H:%M:%S")),
+    )
+
+
+# -----------------------------------------------------------------------
+# sqlite_sequence + VACUUM normalisation
+# -----------------------------------------------------------------------
+
+def normalize_sqlite_sequence(con: sqlite3.Connection) -> None:
+    """If the schema uses AUTOINCREMENT, pin sqlite_sequence.seq to
+    MAX(id) per table. SQLite only creates the sqlite_sequence table
+    when at least one table declares AUTOINCREMENT — if it's absent the
+    schema uses plain INTEGER PRIMARY KEY ROWID and no normalisation is
+    needed."""
+    cur = con.cursor()
+    has_seq = cur.execute(
+        "SELECT name FROM sqlite_master WHERE type='table' AND name='sqlite_sequence'"
+    ).fetchone()
+    if not has_seq:
+        return
+    rows = cur.execute("SELECT name FROM sqlite_sequence").fetchall()
+    for (tbl,) in rows:
+        max_id = cur.execute(f"SELECT COALESCE(MAX(id), 0) FROM {tbl}").fetchone()[0]
+        cur.execute("UPDATE sqlite_sequence SET seq=? WHERE name=?", (max_id, tbl))
 
 
 # -----------------------------------------------------------------------
@@ -525,14 +720,28 @@ def main() -> None:
         n_art = insert_new_articles(con, rss_articles)
         n_cm = insert_comments(con)
         n_rh = insert_reading_history(con)
+        n_bm = insert_extra_bookmarks(con)
+        n_rl = insert_extra_reading_list(con)
+        n_ts = insert_extra_subscriptions(con)
+        plant_sentinel(con)
+        normalize_sqlite_sequence(con)
         con.commit()
     finally:
         con.close()
 
-    print(f"[bake] inserted: +{n_art} articles, +{n_cm} comments, +{n_rh} reading_history")
+    # VACUUM on a separate connection to clean page layout
+    con = open_db(DB_PATH)
+    try:
+        con.execute("VACUUM")
+        con.commit()
+    finally:
+        con.close()
+
+    print(f"[bake] inserted: +{n_art} articles, +{n_cm} comments, "
+          f"+{n_rh} reading_history, +{n_bm} bookmarks, +{n_rl} reading_list, "
+          f"+{n_ts} subscriptions")
     print(f"[bake] md5 after:  {_db_signature(DB_PATH)}")
 
-    # Quick post-condition summary
     con = open_db(DB_PATH)
     try:
         for table in ("users", "categories", "articles", "comments",

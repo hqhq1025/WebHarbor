@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% block title %}Terms of Use - BBC News{% endblock %}
+
+{% block content %}
+<div class="static-page">
+    <h1>Terms of Use</h1>
+    <p><em>Last updated: 4 March 2026.</em></p>
+
+    <p>
+        These terms govern your use of this BBC News mirror. By visiting the site or creating
+        an account you agree to be bound by them. The mirror exists for research and learning
+        purposes; it is not a live BBC service.
+    </p>
+
+    <h2>Acceptable use</h2>
+    <p>
+        You may browse, search, comment, bookmark and create digests using your account. You agree
+        not to:
+    </p>
+    <ul>
+        <li>Post unlawful, defamatory or abusive comments.</li>
+        <li>Attempt to bypass authentication, scrape at abusive rates, or interfere with the
+            availability of the service.</li>
+        <li>Impersonate another person, including any BBC News reporter.</li>
+        <li>Upload malware or attempt to exploit any feature of the site.</li>
+    </ul>
+
+    <h2>Your content</h2>
+    <p>
+        You retain ownership of comments you post. By posting you grant us a non-exclusive
+        licence to display them on the site alongside the article you commented on. We may
+        remove comments that violate the acceptable-use rules above.
+    </p>
+
+    <h2>BBC content</h2>
+    <p>
+        Article text on this mirror is provided for educational purposes and is sourced from
+        the public BBC News RSS feeds. The BBC retains all rights in its journalism; reuse of
+        BBC content outside this mirror requires explicit BBC permission.
+    </p>
+
+    <h2>Account termination</h2>
+    <p>
+        We may suspend accounts that violate these terms. You can delete your own account at any
+        time from <a href="{{ url_for('account') }}">My Account</a>.
+    </p>
+
+    <h2>Changes</h2>
+    <p>
+        We may update these terms; the date at the top of this page reflects the most recent
+        revision. Continued use after a change constitutes acceptance.
+    </p>
+</div>
+{% endblock %}

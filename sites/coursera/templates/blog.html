@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block title %}Coursera Blog | Stories from learners, partners, and educators{% endblock %}
+{% block content %}
+<div class="container" style="padding:48px 16px;">
+  <h1>The Coursera Blog</h1>
+  <p class="muted">Stories from learners, partners, and educators around the world.</p>
+
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:24px;margin-top:32px;">
+    {% for post in posts %}
+    <article class="benefit-card" style="text-align:left;">
+      <span style="color:#2a73cc;font-size:13px;text-transform:uppercase;letter-spacing:.5px;">{{ post.category }}</span>
+      <h3 style="margin:8px 0 12px;"><a href="{{ url_for('blog', slug=post.slug) }}" style="text-decoration:none;color:inherit;">{{ post.title }}</a></h3>
+      <p>{{ post.excerpt }}</p>
+      <p class="muted" style="font-size:13px;">{{ post.date }}</p>
+    </article>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}

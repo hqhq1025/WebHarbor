@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+{% block title %}Watch on ESPN{% endblock %}
+
+{% block content %}
+<div class="watch-page container">
+  <header class="page-header">
+    <h1>Watch on ESPN</h1>
+    <p class="lede">Live games, ESPN+ originals, replays, and on-demand documentaries. Sign in with your TV provider or ESPN+ subscription to start watching.</p>
+  </header>
+
+  <section class="watch-shelves">
+    <h2 class="section-heading">Live Now</h2>
+    <div class="watch-grid">
+      <div class="watch-card">
+        <div class="watch-thumb watch-thumb--live"><span class="watch-live-badge">LIVE</span></div>
+        <h3>NBA: Bucks vs. Pacers</h3>
+        <p class="watch-meta">ESPN &middot; 2nd Quarter &middot; National TV</p>
+      </div>
+      <div class="watch-card">
+        <div class="watch-thumb watch-thumb--live"><span class="watch-live-badge">LIVE</span></div>
+        <h3>NHL: Bruins vs. Rangers</h3>
+        <p class="watch-meta">ESPN+ &middot; 1st Period</p>
+      </div>
+      <div class="watch-card">
+        <div class="watch-thumb watch-thumb--live"><span class="watch-live-badge">LIVE</span></div>
+        <h3>MLB: Yankees vs. Astros</h3>
+        <p class="watch-meta">ESPN+ &middot; Top 5th</p>
+      </div>
+      <div class="watch-card">
+        <div class="watch-thumb watch-thumb--live"><span class="watch-live-badge">LIVE</span></div>
+        <h3>UFC Fight Night Prelims</h3>
+        <p class="watch-meta">ESPN+ &middot; Welterweight Bout</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="watch-shelves">
+    <h2 class="section-heading">ESPN Originals</h2>
+    <div class="watch-grid">
+      <div class="watch-card">
+        <div class="watch-thumb"></div>
+        <h3>30 for 30: The Last Dance</h3>
+        <p class="watch-meta">10 Episodes &middot; Documentary</p>
+      </div>
+      <div class="watch-card">
+        <div class="watch-thumb"></div>
+        <h3>E:60 &mdash; Untold Stories</h3>
+        <p class="watch-meta">Series &middot; New episode weekly</p>
+      </div>
+      <div class="watch-card">
+        <div class="watch-thumb"></div>
+        <h3>SportsCenter</h3>
+        <p class="watch-meta">Daily &middot; 6:00 AM, 12:00 PM, 11:00 PM ET</p>
+      </div>
+      <div class="watch-card">
+        <div class="watch-thumb"></div>
+        <h3>Get Up</h3>
+        <p class="watch-meta">Weekdays &middot; 8:00 AM ET</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="watch-shelves">
+    <h2 class="section-heading">Featured Stories</h2>
+    <div class="watch-grid">
+      {% for art in featured_articles %}
+        <a class="watch-card watch-card--link" href="/article/{{ art.slug }}">
+          <div class="watch-thumb"></div>
+          <h3>{{ art.title }}</h3>
+          <p class="watch-meta">{{ art.sport_slug|upper }} &middot; {{ art.published_date }}</p>
+        </a>
+      {% endfor %}
+    </div>
+  </section>
+
+  <section class="watch-shelves">
+    <h2 class="section-heading">How to Watch</h2>
+    <ul class="bullet-grid">
+      <li><strong>ESPN+</strong> &mdash; Subscribe at $10.99/month or get the Disney Bundle.</li>
+      <li><strong>TV provider</strong> &mdash; Sign in with cable, satellite, or YouTube TV credentials.</li>
+      <li><strong>Devices</strong> &mdash; iOS, Android, Roku, Fire TV, Apple TV, Chromecast, Xbox, PlayStation.</li>
+    </ul>
+  </section>
+</div>
+{% endblock %}

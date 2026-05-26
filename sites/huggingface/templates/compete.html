@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% block title %}Competitions – Hugging Face{% endblock %}
+{% block content %}
+<div class="container-wide section">
+  <header class="page-head">
+    <h1>Competitions</h1>
+    <p class="page-subtitle">Open ML competitions hosted on the Hub. Train, submit, and climb the leaderboard.</p>
+  </header>
+
+  <div class="compete-grid">
+    {% set comps = [
+      ("Open LLM Leaderboard – 2026 Spring",   "Submit your fine-tune; auto-evaluated on MMLU-Pro, GPQA, MATH, HumanEval+.", "$25,000",  "open",   "5,890"),
+      ("Vision-Language Reasoning Challenge",   "Best-of-100 sampled judging on a held-out VQA test set.",                    "$10,000",  "open",   "1,243"),
+      ("Tiny Models Cup (≤3B params)",          "Highest MMLU/sec under 3B parameters. Latency factored in.",                "$8,000",   "open",   "987"),
+      ("Speech-to-Speech Translation Track",    "Pair-wise human eval on 12 directional pairs across 9 languages.",          "$15,000",  "open",   "612"),
+      ("Code Generation: Python Standard Library Only", "Solve LiveCodeBench-2026 without external packages.",               "$12,000",  "closed", "2,104"),
+      ("Image Generation: Style Preservation",  "Match target style with minimum CLIP-distance drift across 50 prompts.",   "$20,000",  "judging","1,755"),
+    ] %}
+    {% for title, desc, prize, status, entrants in comps %}
+      <article class="compete-card status-{{ status }}">
+        <header>
+          <h3>{{ title }}</h3>
+          <span class="compete-status">{{ status }}</span>
+        </header>
+        <p>{{ desc }}</p>
+        <dl class="compete-meta">
+          <dt>Prize</dt><dd>{{ prize }}</dd>
+          <dt>Entrants</dt><dd>{{ entrants }}</dd>
+        </dl>
+        {% if sample_repos and loop.index0 < sample_repos|length %}
+        <div class="compete-dataset">
+          Official dataset: <a href="{{ url_for('dataset_detail', author=sample_repos[loop.index0].slug.split('/')[0], name=sample_repos[loop.index0].slug.split('/')[1]) }}">{{ sample_repos[loop.index0].slug }}</a>
+        </div>
+        {% endif %}
+        <div class="compete-actions">
+          {% if status == "open" %}
+            <a class="btn btn-sm btn-primary" href="{{ url_for('docs') }}">Submit entry</a>
+          {% elif status == "judging" %}
+            <span class="badge badge-judging">Judging in progress</span>
+          {% else %}
+            <span class="badge badge-closed">View results</span>
+          {% endif %}
+        </div>
+      </article>
+    {% endfor %}
+  </div>
+
+  <p class="compete-host-link">
+    Host your own competition with us — <a href="{{ url_for('enterprise') }}">contact the team</a>.
+  </p>
+</div>
+{% endblock %}

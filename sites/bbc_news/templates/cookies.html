@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block title %}Cookies - BBC News{% endblock %}
+
+{% block content %}
+<div class="static-page">
+    <h1>Cookies on BBC News</h1>
+    <p><em>Last updated: 4 March 2026.</em></p>
+
+    <p>
+        Cookies are small text files that the site asks your browser to store. We use a small
+        number of them to keep the site working. There are no advertising or third-party
+        analytics cookies on this mirror.
+    </p>
+
+    <h2>Strictly necessary cookies</h2>
+    <ul>
+        <li><strong>session</strong> — keeps you signed in across page loads. Expires when you
+            sign out or close your browser.</li>
+        <li><strong>csrf_token</strong> — protects form submissions from cross-site request
+            forgery. Expires with the session.</li>
+        <li><strong>nav_state</strong> — remembers which side-navigation groups you have expanded.
+            Optional; the site works without it.</li>
+    </ul>
+
+    <h2>Functional cookies</h2>
+    <ul>
+        <li><strong>reading_pref</strong> — remembers your preferred font size and theme between
+            visits. Lifetime: 1 year. Cleared when you log out.</li>
+    </ul>
+
+    <h2>Analytics and advertising</h2>
+    <p>
+        None are set on this mirror. Tasks that ask you to "accept all cookies" or to dismiss
+        a tracking banner do not apply here.
+    </p>
+
+    <h2>Managing cookies</h2>
+    <p>
+        You can clear or block these cookies through your browser's settings. Doing so may sign
+        you out and reset your reading preferences, but will not affect your stored account data.
+    </p>
+</div>
+{% endblock %}

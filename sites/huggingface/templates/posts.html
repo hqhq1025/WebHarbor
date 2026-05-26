@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% block title %}Posts – Hugging Face{% endblock %}
+{% block content %}
+<div class="container-wide section">
+  <header class="page-head">
+    <h1>Community Posts</h1>
+    <p class="page-subtitle">Short updates from authors and orgs across the Hub. Like, comment, and follow — discover what the community is shipping.</p>
+  </header>
+
+  <div class="posts-feed">
+    {% set sample_posts = [
+      ("New release: 4-bit quantized weights are up. Single-3090 friendly. Benchmarks in the README.", "release"),
+      ("We just shipped a 200B-token cleaner training subset. Filter recipe + dedup script in the dataset card.", "dataset"),
+      ("Tiny patch: chat template now honors `add_generation_prompt=False`. Sorry for the churn 🙏", "patch"),
+      ("Cool experiment — distilled a 70B teacher down to 3B with a 1.4-point gap on MMLU. Writeup soon.", "research"),
+      ("RFC: would you use a streaming inference endpoint with per-token billing? Reply to this post.", "rfc"),
+      ("Space deploy tip: keep `requirements.txt` ASCII-only — non-ASCII deps choke pip in the docker stage.", "tip"),
+      ("Pinning `transformers==4.46.0` fixed a 3% accuracy drop we saw with 4.47. Tracking it upstream.", "tip"),
+      ("Two new Spaces using our depth-estimation model — link in replies. Loving the variety of demos.", "show"),
+    ] %}
+    {% for body, kind in sample_posts %}
+      {% set author = sample_authors[loop.index0 % sample_authors|length] if sample_authors else None %}
+      <article class="post-card">
+        <div class="post-card-head">
+          {% if author %}
+          <a href="{{ url_for('author_page', username=author.username) }}" class="post-author">
+            <img src="{{ author.avatar_url }}" alt="" onerror="this.style.display='none'">
+            <strong>{{ author.display_name }}</strong>
+            <span class="post-author-handle">@{{ author.username }}</span>
+          </a>
+          {% endif %}
+          <span class="badge badge-{{ kind }}">{{ kind }}</span>
+        </div>
+        <p class="post-body">{{ body }}</p>
+        <div class="post-card-foot">
+          <span class="post-meta">♥ {{ (loop.index * 23 + 11) % 320 }} · 💬 {{ loop.index * 3 + 2 }}</span>
+        </div>
+      </article>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}

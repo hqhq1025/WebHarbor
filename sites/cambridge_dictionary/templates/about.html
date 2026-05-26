@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block title %}About Cambridge Dictionary{% endblock %}
+{% block content %}
+<div class="container static-page">
+  <nav class="breadcrumb">
+    <a href="{{ url_for('index') }}">Dictionary</a> &rsaquo;
+    <span>About Cambridge Dictionary</span>
+  </nav>
+  <h1>About Cambridge Dictionary</h1>
+  <p class="lede">The Cambridge Dictionary is the world's most popular online
+     dictionary for learners of English, with definitions, translations,
+     pronunciations, and example sentences across more than a hundred
+     languages.</p>
+  <h2>Our editorial principles</h2>
+  <p>Every entry is written and reviewed by professional lexicographers based
+     at Cambridge University Press &amp; Assessment. Definitions are grounded
+     in the Cambridge English Corpus &mdash; a 2-billion-word collection of
+     real, spoken and written English.</p>
+  <h2>What you'll find here</h2>
+  <ul class="static-list">
+    <li><strong>Dictionary:</strong> meanings, pronunciations (UK &amp; US),
+        examples, and CEFR levels (A1&ndash;C2).</li>
+    <li><strong>Thesaurus:</strong> synonyms, antonyms, and near-meanings.</li>
+    <li><strong>Grammar:</strong> over 200 topic pages covering present-day
+        usage with example sentences.</li>
+    <li><strong>Translate:</strong> instant translations powered by Microsoft.</li>
+    <li><strong>Plus:</strong> quizzes, word lists, and word games for free.</li>
+  </ul>
+  <h2>Contact</h2>
+  <p>Editorial enquiries should be addressed to the lexicography team at
+     Cambridge University Press &amp; Assessment, Cambridge, United Kingdom.</p>
+</div>
+{% endblock %}

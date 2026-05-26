@@ -3,6 +3,7 @@ Seed data for Google Maps mirror.
 Loads PLACES and CITIES from scrape_wiki so every entity has real images on disk.
 Enriches each place with address, phone, hours, rating, etc.
 """
+import hashlib
 import json
 import random
 from datetime import datetime, timedelta
@@ -58,6 +59,31 @@ CATEGORIES = [
         "slug": "transit", "name": "Transit", "icon": "directions_transit",
         "color": "#616161",
         "description": "Airports, train stations, and transportation hubs to help you get around.",
+    },
+    {
+        "slug": "pharmacies", "name": "Pharmacies", "icon": "local_pharmacy",
+        "color": "#26a69a",
+        "description": "24-hour pharmacies and neighborhood drugstores for prescriptions and essentials.",
+    },
+    {
+        "slug": "atms", "name": "ATMs", "icon": "local_atm",
+        "color": "#9e9d24",
+        "description": "Cash machines and bank ATMs from major networks across every neighborhood.",
+    },
+    {
+        "slug": "gas-stations", "name": "Gas Stations", "icon": "local_gas_station",
+        "color": "#ff7043",
+        "description": "Fuel stations from major brands with convenience stores and air pumps.",
+    },
+    {
+        "slug": "supermarkets", "name": "Supermarkets", "icon": "shopping_cart",
+        "color": "#5e35b1",
+        "description": "Full-service grocery stores, food markets, and warehouse retailers.",
+    },
+    {
+        "slug": "coffee-shops", "name": "Coffee Shops", "icon": "local_cafe",
+        "color": "#8d6e63",
+        "description": "Neighborhood coffee shops, specialty roasters, and chain cafes.",
     },
 ]
 
@@ -1545,12 +1571,214 @@ EXPAND_CITIES = [
     ("sapporo", "Sapporo", "Japan", 43.0618, 141.3545),
     ("hakone", "Hakone", "Japan", 35.2329, 139.1075),
     ("nara", "Nara", "Japan", 34.6851, 135.8048),
+    # --- R2 expansion: additional US metros ---
+    ("anaheim-ca", "Anaheim, CA", "United States", 33.8366, -117.9143),
+    ("riverside-ca", "Riverside, CA", "United States", 33.9533, -117.3962),
+    ("santa-barbara-ca", "Santa Barbara, CA", "United States", 34.4208, -119.6982),
+    ("monterey-ca", "Monterey, CA", "United States", 36.6002, -121.8947),
+    ("napa-ca", "Napa, CA", "United States", 38.2975, -122.2869),
+    ("palm-springs-ca", "Palm Springs, CA", "United States", 33.8303, -116.5453),
+    ("fort-collins-co", "Fort Collins, CO", "United States", 40.5853, -105.0844),
+    ("aspen-co", "Aspen, CO", "United States", 39.1911, -106.8175),
+    ("vail-co", "Vail, CO", "United States", 39.6403, -106.3742),
+    ("flagstaff-az", "Flagstaff, AZ", "United States", 35.1983, -111.6513),
+    ("scottsdale-az", "Scottsdale, AZ", "United States", 33.4942, -111.9261),
+    ("sedona-az", "Sedona, AZ", "United States", 34.8697, -111.7610),
+    ("park-city-ut", "Park City, UT", "United States", 40.6461, -111.4980),
+    ("moab-ut", "Moab, UT", "United States", 38.5733, -109.5498),
+    ("santa-fe-tx", "Galveston, TX", "United States", 29.3013, -94.7977),
+    ("corpus-christi-tx", "Corpus Christi, TX", "United States", 27.8006, -97.3964),
+    ("waco-tx", "Waco, TX", "United States", 31.5493, -97.1467),
+    ("lubbock-tx", "Lubbock, TX", "United States", 33.5779, -101.8552),
+    ("amarillo-tx", "Amarillo, TX", "United States", 35.2220, -101.8313),
+    ("durham-nc", "Durham, NC", "United States", 35.9940, -78.8986),
+    ("wilmington-nc", "Wilmington, NC", "United States", 34.2257, -77.9447),
+    ("greensboro-nc", "Greensboro, NC", "United States", 36.0726, -79.7920),
+    ("winston-salem-nc", "Winston-Salem, NC", "United States", 36.0999, -80.2442),
+    ("greenville-sc", "Greenville, SC", "United States", 34.8526, -82.3940),
+    ("myrtle-beach-sc", "Myrtle Beach, SC", "United States", 33.6891, -78.8867),
+    ("hilton-head-sc", "Hilton Head, SC", "United States", 32.2163, -80.7526),
+    ("athens-ga", "Athens, GA", "United States", 33.9519, -83.3576),
+    ("augusta-ga", "Augusta, GA", "United States", 33.4735, -82.0105),
+    ("orlando-fl", "Orlando, FL", "United States", 28.5383, -81.3792),
+    ("st-petersburg-fl", "St. Petersburg, FL", "United States", 27.7676, -82.6403),
+    ("naples-fl", "Naples, FL", "United States", 26.1420, -81.7948),
+    ("key-west-fl", "Key West, FL", "United States", 24.5551, -81.7800),
+    ("sarasota-fl", "Sarasota, FL", "United States", 27.3364, -82.5307),
+    ("pittsburgh-pa", "Pittsburgh, PA", "United States", 40.4406, -79.9959),
+    ("scranton-pa", "Scranton, PA", "United States", 41.4090, -75.6624),
+    ("lancaster-pa", "Lancaster, PA", "United States", 40.0379, -76.3055),
+    ("erie-pa", "Erie, PA", "United States", 42.1292, -80.0851),
+    ("toledo-oh", "Toledo, OH", "United States", 41.6528, -83.5379),
+    ("dayton-oh", "Dayton, OH", "United States", 39.7589, -84.1916),
+    ("akron-oh", "Akron, OH", "United States", 41.0814, -81.5190),
+    ("louisville-ky", "Louisville, KY", "United States", 38.2527, -85.7585),
+    ("lexington-ky", "Lexington, KY", "United States", 38.0406, -84.5037),
+    ("fort-wayne-in", "Fort Wayne, IN", "United States", 41.0793, -85.1394),
+    ("bloomington-in", "Bloomington, IN", "United States", 39.1653, -86.5264),
+    ("detroit-mi", "Detroit, MI", "United States", 42.3314, -83.0458),
+    ("lansing-mi", "Lansing, MI", "United States", 42.7325, -84.5555),
+    ("traverse-city-mi", "Traverse City, MI", "United States", 44.7631, -85.6206),
+    ("st-louis-mo", "Springfield, MO", "United States", 37.2089, -93.2923),
+    ("branson-mo", "Branson, MO", "United States", 36.6437, -93.2185),
+    ("wichita-ks", "Wichita, KS", "United States", 37.6872, -97.3301),
+    ("topeka-ks", "Topeka, KS", "United States", 39.0473, -95.6752),
+    ("sioux-falls-sd", "Sioux Falls, SD", "United States", 43.5446, -96.7311),
+    ("rapid-city-sd", "Rapid City, SD", "United States", 44.0805, -103.2310),
+    ("fargo-nd", "Fargo, ND", "United States", 46.8772, -96.7898),
+    ("bismarck-nd", "Bismarck, ND", "United States", 46.8083, -100.7837),
+    ("billings-mt", "Billings, MT", "United States", 45.7833, -108.5007),
+    ("bozeman-mt", "Bozeman, MT", "United States", 45.6770, -111.0429),
+    ("missoula-mt", "Missoula, MT", "United States", 46.8721, -113.9940),
+    ("cheyenne-wy", "Cheyenne, WY", "United States", 41.1400, -104.8202),
+    ("jackson-wy", "Jackson, WY", "United States", 43.4799, -110.7624),
+    ("idaho-falls-id", "Idaho Falls, ID", "United States", 43.4926, -112.0408),
+    ("spokane-wa", "Spokane, WA", "United States", 47.6588, -117.4260),
+    ("tacoma-wa", "Tacoma, WA", "United States", 47.2529, -122.4443),
+    ("bellevue-wa", "Bellevue, WA", "United States", 47.6101, -122.2015),
+    ("anchorage-ak-2", "Fairbanks, AK", "United States", 64.8378, -147.7164),
+    ("salem-or", "Salem, OR", "United States", 44.9429, -123.0351),
+    ("bend-or", "Bend, OR", "United States", 44.0582, -121.3153),
+    ("hilo-hi", "Hilo, HI", "United States", 19.7297, -155.0900),
+    ("maui-hi", "Maui, HI", "United States", 20.7984, -156.3319),
+    ("kona-hi", "Kailua-Kona, HI", "United States", 19.6400, -155.9969),
+    # --- R2 expansion: additional world cities ---
+    ("rotterdam", "Rotterdam", "Netherlands", 51.9244, 4.4777),
+    ("hague", "The Hague", "Netherlands", 52.0705, 4.3007),
+    ("utrecht", "Utrecht", "Netherlands", 52.0907, 5.1214),
+    ("antwerp", "Antwerp", "Belgium", 51.2194, 4.4025),
+    ("ghent", "Ghent", "Belgium", 51.0543, 3.7174),
+    ("luxembourg-city", "Luxembourg City", "Luxembourg", 49.6116, 6.1319),
+    ("bern", "Bern", "Switzerland", 46.9480, 7.4474),
+    ("basel", "Basel", "Switzerland", 47.5596, 7.5886),
+    ("lausanne", "Lausanne", "Switzerland", 46.5197, 6.6323),
+    ("salzburg", "Salzburg", "Austria", 47.8095, 13.0550),
+    ("innsbruck", "Innsbruck", "Austria", 47.2692, 11.4041),
+    ("graz", "Graz", "Austria", 47.0707, 15.4395),
+    ("nice", "Nice", "France", 43.7102, 7.2620),
+    ("bordeaux", "Bordeaux", "France", 44.8378, -0.5792),
+    ("strasbourg", "Strasbourg", "France", 48.5734, 7.7521),
+    ("toulouse", "Toulouse", "France", 43.6047, 1.4442),
+    ("cannes", "Cannes", "France", 43.5528, 7.0174),
+    ("granada", "Granada", "Spain", 37.1773, -3.5986),
+    ("malaga", "Málaga", "Spain", 36.7213, -4.4216),
+    ("bilbao", "Bilbao", "Spain", 43.2630, -2.9350),
+    ("palma", "Palma de Mallorca", "Spain", 39.5696, 2.6502),
+    ("turin", "Turin", "Italy", 45.0703, 7.6869),
+    ("verona", "Verona", "Italy", 45.4384, 10.9916),
+    ("genoa", "Genoa", "Italy", 44.4056, 8.9463),
+    ("palermo", "Palermo", "Italy", 38.1157, 13.3615),
+    ("dubrovnik", "Dubrovnik", "Croatia", 42.6507, 18.0944),
+    ("split", "Split", "Croatia", 43.5081, 16.4402),
+    ("ljubljana", "Ljubljana", "Slovenia", 46.0569, 14.5058),
+    ("bratislava", "Bratislava", "Slovakia", 48.1486, 17.1077),
+    ("riga", "Riga", "Latvia", 56.9496, 24.1052),
+    ("tallinn", "Tallinn", "Estonia", 59.4370, 24.7536),
+    ("vilnius", "Vilnius", "Lithuania", 54.6872, 25.2797),
+    ("gdansk", "Gdańsk", "Poland", 54.3520, 18.6466),
+    ("wroclaw", "Wrocław", "Poland", 51.1079, 17.0385),
+    ("poznan", "Poznań", "Poland", 52.4064, 16.9252),
+    ("thessaloniki", "Thessaloniki", "Greece", 40.6401, 22.9444),
+    ("santorini", "Santorini", "Greece", 36.3932, 25.4615),
+    ("mykonos", "Mykonos", "Greece", 37.4467, 25.3289),
+    ("malta-valletta", "Valletta", "Malta", 35.8989, 14.5146),
+    ("nicosia", "Nicosia", "Cyprus", 35.1856, 33.3823),
+    ("tbilisi", "Tbilisi", "Georgia", 41.7151, 44.8271),
+    ("yerevan", "Yerevan", "Armenia", 40.1792, 44.4991),
+    ("baku", "Baku", "Azerbaijan", 40.4093, 49.8671),
+    ("almaty", "Almaty", "Kazakhstan", 43.2220, 76.8512),
+    ("astana", "Astana", "Kazakhstan", 51.1605, 71.4704),
+    ("tashkent", "Tashkent", "Uzbekistan", 41.2995, 69.2401),
+    ("ulaanbaatar", "Ulaanbaatar", "Mongolia", 47.8864, 106.9057),
+    ("phnom-penh", "Phnom Penh", "Cambodia", 11.5564, 104.9282),
+    ("vientiane", "Vientiane", "Laos", 17.9757, 102.6331),
+    ("yangon", "Yangon", "Myanmar", 16.8661, 96.1951),
+    ("siem-reap", "Siem Reap", "Cambodia", 13.3671, 103.8448),
+    ("chiang-mai", "Chiang Mai", "Thailand", 18.7883, 98.9853),
+    ("bali", "Denpasar (Bali)", "Indonesia", -8.6500, 115.2167),
+    ("yogyakarta", "Yogyakarta", "Indonesia", -7.7956, 110.3695),
+    ("cebu", "Cebu City", "Philippines", 10.3157, 123.8854),
+    ("davao", "Davao City", "Philippines", 7.1907, 125.4553),
+    ("nagoya", "Nagoya", "Japan", 35.1815, 136.9066),
+    ("fukuoka", "Fukuoka", "Japan", 33.5904, 130.4017),
+    ("kobe", "Kobe", "Japan", 34.6901, 135.1955),
+    ("yokohama", "Yokohama", "Japan", 35.4437, 139.6380),
+    ("incheon", "Incheon", "South Korea", 37.4563, 126.7052),
+    ("daegu", "Daegu", "South Korea", 35.8722, 128.6025),
+    ("jeju", "Jeju City", "South Korea", 33.4996, 126.5312),
+    ("macau", "Macau", "Macau", 22.1987, 113.5439),
+    ("kaohsiung", "Kaohsiung", "Taiwan", 22.6273, 120.3014),
+    ("taichung", "Taichung", "Taiwan", 24.1477, 120.6736),
+    ("xiamen", "Xiamen", "China", 24.4798, 118.0894),
+    ("hangzhou", "Hangzhou", "China", 30.2741, 120.1551),
+    ("nanjing", "Nanjing", "China", 32.0603, 118.7969),
+    ("suzhou", "Suzhou", "China", 31.2989, 120.5853),
+    ("kunming", "Kunming", "China", 24.8801, 102.8329),
+    ("lhasa", "Lhasa", "China", 29.6520, 91.1721),
+    ("kolkata-in", "Hyderabad", "India", 17.3850, 78.4867),
+    ("jaipur", "Jaipur", "India", 26.9124, 75.7873),
+    ("varanasi", "Varanasi", "India", 25.3176, 82.9739),
+    ("pune", "Pune", "India", 18.5204, 73.8567),
+    ("goa", "Panaji (Goa)", "India", 15.4909, 73.8278),
+    ("dhaka", "Dhaka", "Bangladesh", 23.8103, 90.4125),
+    ("karachi", "Karachi", "Pakistan", 24.8607, 67.0011),
+    ("lahore", "Lahore", "Pakistan", 31.5497, 74.3436),
+    ("tehran", "Tehran", "Iran", 35.6892, 51.3890),
+    ("amman", "Amman", "Jordan", 31.9454, 35.9284),
+    ("beirut", "Beirut", "Lebanon", 33.8938, 35.5018),
+    ("muscat", "Muscat", "Oman", 23.5859, 58.4059),
+    ("manama", "Manama", "Bahrain", 26.2235, 50.5876),
+    ("kuwait-city", "Kuwait City", "Kuwait", 29.3759, 47.9774),
+    ("nairobi", "Nairobi", "Kenya", -1.2864, 36.8172),
+    ("mombasa", "Mombasa", "Kenya", -4.0435, 39.6682),
+    ("zanzibar", "Zanzibar City", "Tanzania", -6.1659, 39.2026),
+    ("addis-ababa", "Addis Ababa", "Ethiopia", 9.0320, 38.7469),
+    ("accra", "Accra", "Ghana", 5.6037, -0.1870),
+    ("lagos", "Lagos", "Nigeria", 6.5244, 3.3792),
+    ("dakar", "Dakar", "Senegal", 14.7167, -17.4677),
+    ("tunis", "Tunis", "Tunisia", 36.8065, 10.1815),
+    ("algiers", "Algiers", "Algeria", 36.7538, 3.0588),
+    ("casablanca", "Casablanca", "Morocco", 33.5731, -7.5898),
+    ("fes", "Fes", "Morocco", 34.0181, -5.0078),
+    ("durban", "Durban", "South Africa", -29.8587, 31.0218),
+    ("victoria-falls", "Victoria Falls", "Zimbabwe", -17.9243, 25.8572),
+    ("luanda", "Luanda", "Angola", -8.8390, 13.2894),
+    ("antananarivo", "Antananarivo", "Madagascar", -18.8792, 47.5079),
+    ("port-louis", "Port Louis", "Mauritius", -20.1640, 57.5031),
+    ("port-of-spain", "Port of Spain", "Trinidad", 10.6549, -61.5019),
+    ("kingston-jm", "Kingston", "Jamaica", 17.9712, -76.7929),
+    ("nassau", "Nassau", "Bahamas", 25.0343, -77.3963),
+    ("panama-city", "Panama City", "Panama", 8.9824, -79.5199),
+    ("san-jose-cr", "San José", "Costa Rica", 9.9281, -84.0907),
+    ("medellin", "Medellín", "Colombia", 6.2476, -75.5709),
+    ("cartagena", "Cartagena", "Colombia", 10.3910, -75.4794),
+    ("guayaquil", "Guayaquil", "Ecuador", -2.1709, -79.9224),
+    ("la-paz", "La Paz", "Bolivia", -16.4897, -68.1193),
+    ("asuncion", "Asunción", "Paraguay", -25.2637, -57.5759),
+    ("montevideo", "Montevideo", "Uruguay", -34.9011, -56.1645),
+    ("salvador-br", "Salvador", "Brazil", -12.9714, -38.5014),
+    ("sao-paulo", "São Paulo", "Brazil", -23.5505, -46.6333),
+    ("recife", "Recife", "Brazil", -8.0476, -34.8770),
+    ("manaus", "Manaus", "Brazil", -3.1190, -60.0217),
+    ("curitiba", "Curitiba", "Brazil", -25.4284, -49.2733),
+    ("cuzco", "Cusco", "Peru", -13.5320, -71.9675),
+    ("ushuaia", "Ushuaia", "Argentina", -54.8019, -68.3030),
+    ("queenstown", "Queenstown", "New Zealand", -45.0312, 168.6626),
+    ("hobart", "Hobart", "Australia", -42.8821, 147.3272),
+    ("darwin", "Darwin", "Australia", -12.4634, 130.8456),
+    ("adelaide", "Adelaide", "Australia", -34.9285, 138.6007),
+    ("gold-coast", "Gold Coast", "Australia", -28.0167, 153.4000),
+    ("cairns", "Cairns", "Australia", -16.9186, 145.7781),
+    ("guam", "Hagåtña", "Guam", 13.4745, 144.7504),
+    ("apia", "Apia", "Samoa", -13.8333, -171.7667),
+    ("nuuk", "Nuuk", "Greenland", 64.1814, -51.6941),
 ]
 
 
 def expand_cities(db, City):
-    """Add ~160 more well-known cities. Idempotent: gate by count threshold."""
-    if City.query.count() >= 200:
+    """Add more well-known cities. Idempotent: per-slug skip protects warm
+    restarts; threshold gate is a fast short-circuit once R2 target is hit."""
+    if City.query.count() >= 340:
         return
     added = 0
     for slug, display, country, lat, lng in EXPAND_CITIES:
@@ -1628,6 +1856,27 @@ _EXPAND_TEMPLATES = [
      "Public EV charging plaza with multiple CCS and Tesla connectors.", "$", 4.2, 4.7),
     ("parking", "{anchor} Public Parking Garage", "Parking garage",
      "Public parking garage with hourly and daily rates, covered spaces.", "$$", 3.9, 4.5),
+    # --- R2 additions: pharmacies / atms / gas / supermarkets / coffee ---
+    ("pharmacies", "{anchor} Pharmacy 24h", "24-hour pharmacy",
+     "24-hour pharmacy with prescription drop-off, OTC essentials, and a pickup window.", "$", 4.0, 4.7),
+    ("pharmacies", "{anchor} Family Pharmacy", "Neighborhood pharmacy",
+     "Family-run neighborhood pharmacy with friendly pharmacists and same-day refills.", "$", 4.2, 4.8),
+    ("atms", "{anchor} Bank ATM", "ATM",
+     "Bank-owned ATM inside the branch lobby; accepts most major debit and credit networks.", "Free", 3.8, 4.5),
+    ("atms", "{anchor} 24h ATM Kiosk", "24-hour ATM",
+     "Standalone 24-hour ATM kiosk in a well-lit, camera-monitored vestibule.", "Free", 3.6, 4.3),
+    ("gas-stations", "{anchor} Shell Station", "Gas station",
+     "Shell-branded gas station with convenience store, air pumps, and free Wi-Fi.", "$$", 4.0, 4.5),
+    ("gas-stations", "{anchor} Chevron Station", "Gas station",
+     "Chevron service station offering Techron-treated fuel and a clean restroom.", "$$", 4.0, 4.5),
+    ("supermarkets", "{anchor} Whole Foods Market", "Supermarket",
+     "Whole Foods Market with organic produce, prepared foods, and an in-store cafe.", "$$$", 4.2, 4.7),
+    ("supermarkets", "{anchor} Trader Joe's", "Grocery store",
+     "Trader Joe's neighborhood grocery with private-label staples and a famous frozen aisle.", "$$", 4.4, 4.8),
+    ("coffee-shops", "{anchor} Starbucks Reserve", "Coffee shop",
+     "Starbucks Reserve location with single-origin roasts, nitro cold brew, and pour-over service.", "$$", 4.2, 4.7),
+    ("coffee-shops", "{anchor} Blue Bottle Coffee", "Specialty coffee",
+     "Blue Bottle Coffee specialty bar with single-origin pour-overs and minimalist decor.", "$$", 4.3, 4.8),
 ]
 
 # Curated chain brands per category for varied catalog listings
@@ -1637,6 +1886,11 @@ _EXPAND_CHAINS = {
     "shopping": ["Whole Foods Market", "Trader Joe's", "Target", "Costco", "Best Buy", "REI"],
     "fitness": ["Equinox", "Planet Fitness", "Anytime Fitness", "Orangetheory Fitness"],
     "ev-charging": ["Tesla Supercharger", "Electrify America", "ChargePoint Station", "EVgo Fast Charging"],
+    "pharmacies": ["CVS Pharmacy", "Walgreens", "Rite Aid", "Walmart Pharmacy"],
+    "atms": ["Chase ATM", "Bank of America ATM", "Wells Fargo ATM", "Citibank ATM", "Allpoint ATM"],
+    "gas-stations": ["Shell", "Chevron", "ExxonMobil", "BP", "76", "Sunoco"],
+    "supermarkets": ["Kroger", "Safeway", "Publix", "Whole Foods", "Trader Joe's", "Aldi"],
+    "coffee-shops": ["Starbucks", "Peet's Coffee", "Blue Bottle Coffee", "Dunkin'", "Philz Coffee"],
 }
 
 
@@ -1673,7 +1927,12 @@ def expand_places(db, Place, Category, City):
         anchor = city.display_name.split(",")[0].split(" ")[0]
         # Use templates in deterministic but varied order per city
         templates = list(_EXPAND_TEMPLATES)
-        random.Random(hash(city.slug) & 0xFFFF_FFFF).shuffle(templates)
+        # NOTE: Python's built-in hash() is PYTHONHASHSEED-randomized per
+        # process; using it here breaks byte-identical seed-DB rebuilds.
+        # md5 is portable and deterministic.
+        slug_seed = int.from_bytes(
+            hashlib.md5(city.slug.encode()).digest()[:4], "big")
+        random.Random(slug_seed).shuffle(templates)
 
         for idx, (cat_slug, pattern, subtitle, desc, price, rlo, rhi) in enumerate(templates):
             cat = cat_by_slug.get(cat_slug)
@@ -2041,15 +2300,15 @@ def seed_user_content(db, User, Place, Review, Photo, TimelineEntry):
     # Stable ordering - prefer popular & well-known places for content
     places = (Place.query
               .order_by(Place.is_popular.desc(), Place.id)
-              .limit(450).all())
+              .limit(1200).all())
     if not places:
         return
 
     rng = random.Random(31415)
 
-    # ---------- REVIEWS (~280) ----------
+    # ---------- REVIEWS (~1050) ----------
     if Review.query.count() == 0:
-        target = 280
+        target = 1050
         for i in range(target):
             user = users[i % len(users)]
             place = places[(i * 13 + 7) % len(places)]
@@ -2065,14 +2324,14 @@ def seed_user_content(db, User, Place, Review, Photo, TimelineEntry):
                 rating=rating, title=title, body=body,
                 created_at=created,
             ))
-            if (i + 1) % 100 == 0:
+            if (i + 1) % 200 == 0:
                 db.session.commit()
         db.session.commit()
         print(f"seed_user_content: added {Review.query.count()} reviews")
 
-    # ---------- PHOTOS (~140) ----------
+    # ---------- PHOTOS (~440) ----------
     if Photo.query.count() == 0:
-        target = 140
+        target = 440
         for i in range(target):
             user = users[(i + 1) % len(users)]
             place = places[(i * 19 + 3) % len(places)]
@@ -2091,14 +2350,14 @@ def seed_user_content(db, User, Place, Review, Photo, TimelineEntry):
                 user_id=user.id, place_id=place.id,
                 image_url=img, caption=caption, created_at=created,
             ))
-            if (i + 1) % 100 == 0:
+            if (i + 1) % 200 == 0:
                 db.session.commit()
         db.session.commit()
         print(f"seed_user_content: added {Photo.query.count()} photos")
 
-    # ---------- TIMELINE ENTRIES (~75) ----------
+    # ---------- TIMELINE ENTRIES (~225) ----------
     if TimelineEntry.query.count() == 0:
-        target = 75
+        target = 225
         for i in range(target):
             user = users[(i + 2) % len(users)]
             place = places[(i * 23 + 11) % len(places)]

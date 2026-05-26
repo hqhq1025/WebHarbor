@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block title %}Accessibility - BBC News{% endblock %}
+
+{% block content %}
+<div class="static-page">
+    <h1>Accessibility</h1>
+    <p><em>Last updated: 4 March 2026.</em></p>
+
+    <p>
+        We aim to make this BBC News mirror usable for everyone, regardless of ability. This
+        page describes what we have done so far and how to get in touch if you find a barrier
+        we have missed.
+    </p>
+
+    <h2>Standards</h2>
+    <p>
+        The site targets WCAG 2.2 Level AA. Pages are designed to be keyboard navigable, work at
+        200% zoom, and pass automated colour-contrast checks. Form fields carry labels, and
+        landmark roles are used to mark up the header, navigation, main content and footer.
+    </p>
+
+    <h2>Known gaps</h2>
+    <ul>
+        <li>Some article hero images are still missing descriptive alt text.</li>
+        <li>The Live page does not yet expose status updates to screen readers.</li>
+        <li>The Reading List drag-and-drop reorder is not keyboard accessible.</li>
+    </ul>
+
+    <h2>Reporting a barrier</h2>
+    <p>
+        If something on the site does not work for you, please use the
+        <a href="{{ url_for('contact_page') }}">Contact</a> page and choose the
+        "Accessibility" subject so the message reaches the right person. We aim to respond
+        within five working days.
+    </p>
+
+    <h2>Alternative formats</h2>
+    <p>
+        Articles can be exported as plain-text digests from the
+        <a href="{{ url_for('digest_create') }}">Digest</a> page if you prefer to read without
+        site styling.
+    </p>
+</div>
+{% endblock %}

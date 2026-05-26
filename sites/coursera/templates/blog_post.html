@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% block title %}{{ post.title }} | Coursera Blog{% endblock %}
+{% block content %}
+<div class="container" style="padding:48px 16px;max-width:780px;">
+  <p style="color:#2a73cc;font-size:13px;text-transform:uppercase;letter-spacing:.5px;">{{ post.category }}</p>
+  <h1>{{ post.title }}</h1>
+  <p class="muted">Published {{ post.date }} · Coursera Editorial Team</p>
+
+  <article style="line-height:1.7;font-size:17px;margin-top:24px;">
+    <p>{{ post.excerpt }}</p>
+    <p>
+      Across our learner community we see the same pattern: the people who finish
+      what they start are the ones who block out 45 minutes, three times a week,
+      and treat their learning the way they treat their best work meetings —
+      protected, prepared, and consistent.
+    </p>
+    <p>
+      The good news is that you do not need to overhaul your calendar to make
+      that happen. In the rest of this post we walk through the playbook a
+      handful of our most successful learners use to keep momentum, hold
+      themselves accountable, and finish strong.
+    </p>
+    <h2>Block calendar time before you enrol</h2>
+    <p>
+      Before clicking <em>Enroll</em>, look at the next 8 weeks of your calendar
+      and place three 45-minute holds per week. The act of pre-committing to
+      time is the single biggest predictor of completion in our internal data.
+    </p>
+    <h2>Use the mobile app on transit</h2>
+    <p>
+      Download two weeks of content to your phone. A 20-minute commute that used
+      to be doom-scroll time becomes the home of your refresher lectures.
+    </p>
+    <h2>Tell one person what you are working on</h2>
+    <p>
+      A learning buddy — even one you only text once a week — increases the
+      probability you finish by roughly 1.6× in our cohort analyses. Find your
+      buddy before week 1 is over.
+    </p>
+    <p style="margin-top:32px;">
+      Want more? Browse the <a href="{{ url_for('blog') }}">Coursera Blog</a>
+      or jump straight into a relevant <a href="{{ url_for('search') }}">course
+      catalogue search</a> if you already know what you want to learn.
+    </p>
+  </article>
+
+  <hr style="margin:48px 0;border:0;border-top:1px solid #d4d4d8;">
+
+  <h2>More from the blog</h2>
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px;margin-top:16px;">
+    {% for p in posts if p.slug != post.slug %}
+    <a href="{{ url_for('blog', slug=p.slug) }}" class="benefit-card" style="display:block;text-decoration:none;color:inherit;text-align:left;">
+      <span style="color:#2a73cc;font-size:12px;text-transform:uppercase;">{{ p.category }}</span>
+      <strong style="display:block;margin-top:8px;">{{ p.title }}</strong>
+      <span class="muted" style="font-size:12px;">{{ p.date }}</span>
+    </a>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}

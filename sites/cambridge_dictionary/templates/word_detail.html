@@ -28,21 +28,33 @@
 
     <!-- Pronunciation -->
     <div class="entry-pronunciation">
-      {% if word.phonetic_uk %}
+      {% if word.phonetic_uk or word.audio_uk_path %}
         <div class="pron-block">
           <span class="pron-label">uk</span>
           <button class="pron-btn" onclick="speakWord('{{ word.headword }}', 'en-GB')" title="UK pronunciation" aria-label="UK pronunciation">&#x1F50A;</button>
-          <span class="pron-ipa">{{ word.phonetic_uk }}</span>
+          {% if word.audio_uk_path %}
+            <audio class="pron-audio" preload="none" src="{{ word.audio_uk_path }}" data-region="uk"></audio>
+          {% endif %}
+          <span class="pron-ipa" data-region="uk">{{ word.phonetic_uk or word.pronunciation_ipa }}</span>
         </div>
       {% endif %}
-      {% if word.phonetic_us %}
+      {% if word.phonetic_us or word.audio_us_path %}
         <div class="pron-block">
           <span class="pron-label">us</span>
           <button class="pron-btn" onclick="speakWord('{{ word.headword }}', 'en-US')" title="US pronunciation" aria-label="US pronunciation">&#x1F50A;</button>
-          <span class="pron-ipa">{{ word.phonetic_us }}</span>
+          {% if word.audio_us_path %}
+            <audio class="pron-audio" preload="none" src="{{ word.audio_us_path }}" data-region="us"></audio>
+          {% endif %}
+          <span class="pron-ipa" data-region="us">{{ word.phonetic_us or word.pronunciation_ipa }}</span>
         </div>
       {% endif %}
     </div>
+    {% if word.definitions_count %}
+      <p class="entry-meta-count" data-defcount="{{ word.definitions_count }}">
+        <strong>{{ word.definitions_count }}</strong>
+        meaning{{ '' if word.definitions_count == 1 else 's' }} of "{{ word.headword }}" in this dictionary.
+      </p>
+    {% endif %}
   </div>
 
   <!-- Definitions -->

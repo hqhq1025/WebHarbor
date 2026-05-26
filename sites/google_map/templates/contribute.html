@@ -1,0 +1,111 @@
+{% extends "base.html" %}
+{% block title %}Contribute - Google Maps{% endblock %}
+
+{% block body %}
+<div class="app-shell">
+    {% include '_rail.html' %}
+
+    <aside class="left-panel">
+        {% include '_search_bar.html' %}
+
+        <div class="panel-section">
+            <h2>Contribute to Google Maps</h2>
+            <div class="sub">Help others by sharing what you know about the places around you</div>
+        </div>
+
+        <div style="padding: 0 16px 16px;">
+            <p style="font-size:14px; color:var(--text-secondary); line-height:1.6;">
+                Your contributions make Google Maps more useful for everyone. Whether you're sharing a photo of a great meal, writing a review of your favorite spot, or adding a missing place, every contribution helps travelers and locals alike.
+            </p>
+        </div>
+
+        <div class="panel-section">
+            <h2>Ways to contribute</h2>
+        </div>
+
+        <div style="padding: 0 16px 16px; display: grid; gap: 12px;">
+            <div style="background:#f8f9fa; border-radius:12px; padding:14px 16px; border:1px solid var(--divider);">
+                <div style="display:flex; align-items:center; gap:10px;">
+                    <span class="material-icons-outlined" style="color:#fbbc04;">star_outline</span>
+                    <strong>Write reviews</strong>
+                </div>
+                <p style="font-size:13px; color:var(--text-secondary); margin:8px 0 0;">
+                    Rate a place from 1 to 5 stars and share your experience. Your honest review helps others decide where to go.
+                </p>
+            </div>
+            <div style="background:#f8f9fa; border-radius:12px; padding:14px 16px; border:1px solid var(--divider);">
+                <div style="display:flex; align-items:center; gap:10px;">
+                    <span class="material-icons-outlined" style="color:#34a853;">add_a_photo</span>
+                    <strong>Add photos</strong>
+                </div>
+                <p style="font-size:13px; color:var(--text-secondary); margin:8px 0 0;">
+                    Upload photos of food, interiors, exteriors, and views. Photos give places a richer visual story.
+                </p>
+            </div>
+            <div style="background:#f8f9fa; border-radius:12px; padding:14px 16px; border:1px solid var(--divider);">
+                <div style="display:flex; align-items:center; gap:10px;">
+                    <span class="material-icons-outlined" style="color:#4285f4;">edit_location_alt</span>
+                    <strong>Edit place details</strong>
+                </div>
+                <p style="font-size:13px; color:var(--text-secondary); margin:8px 0 0;">
+                    Suggest corrections to hours, phone numbers, addresses, or descriptions when something's out of date.
+                </p>
+            </div>
+            <div style="background:#f8f9fa; border-radius:12px; padding:14px 16px; border:1px solid var(--divider);">
+                <div style="display:flex; align-items:center; gap:10px;">
+                    <span class="material-icons-outlined" style="color:#ea4335;">add_location_alt</span>
+                    <strong>Add missing places</strong>
+                </div>
+                <p style="font-size:13px; color:var(--text-secondary); margin:8px 0 0;">
+                    If a place isn't on the map, you can add it. Include name, address, category, and hours.
+                </p>
+            </div>
+            <div style="background:#f8f9fa; border-radius:12px; padding:14px 16px; border:1px solid var(--divider);">
+                <div style="display:flex; align-items:center; gap:10px;">
+                    <span class="material-icons-outlined" style="color:#a142f4;">question_answer</span>
+                    <strong>Answer questions</strong>
+                </div>
+                <p style="font-size:13px; color:var(--text-secondary); margin:8px 0 0;">
+                    Help travelers by answering questions about places you know — wheelchair access, vegetarian options, kid-friendliness.
+                </p>
+            </div>
+        </div>
+
+        <div class="panel-section">
+            <h2>Local Guides program</h2>
+            <div class="sub">Earn points and unlock perks as you contribute</div>
+        </div>
+        <div style="padding: 0 16px 16px;">
+            <p style="font-size:13px; color:var(--text-secondary); line-height:1.6;">
+                Reviews, photos, answers, and edits earn points toward Local Guide levels. Higher levels unlock features like early access to new Google products and occasional Google Drive storage upgrades.
+            </p>
+            <ul style="font-size:13px; color:var(--text-secondary); margin:8px 0; padding-left:20px;">
+                <li>Level 1: 0 points</li>
+                <li>Level 4: 250 points + 1-month Google One trial</li>
+                <li>Level 6: 1,500 points + early access to new features</li>
+                <li>Level 10: 100,000 points + invitation to the annual Local Guides Summit</li>
+            </ul>
+        </div>
+
+        {% if current_user.is_authenticated %}
+        <div style="padding: 16px;">
+            <a href="{{ url_for('explore') }}" class="btn outlined">Find a place to review</a>
+        </div>
+        {% else %}
+        <div style="padding: 16px;">
+            <a href="{{ url_for('login') }}" class="btn outlined">Sign in to contribute</a>
+        </div>
+        {% endif %}
+
+        <div class="app-footer" style="padding:20px;">
+            <div class="footer-links">
+                <a href="{{ url_for('about') }}">About</a>
+                <a href="{{ url_for('help_page') }}">Help</a>
+                <a href="{{ url_for('your_data') }}">Your data</a>
+            </div>
+        </div>
+    </aside>
+
+    {% include '_mapcanvas.html' %}
+</div>
+{% endblock %}

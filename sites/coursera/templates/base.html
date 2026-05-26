@@ -21,6 +21,14 @@
 {% endwith %}
 
 <nav class="global-nav">
+  <div class="nav-topbar" style="background:#f3f4f6;border-bottom:1px solid #e5e7eb;font-size:13px;">
+    <div class="nav-inner" style="max-width:1200px;margin:0 auto;display:flex;justify-content:flex-end;gap:18px;padding:6px 16px;">
+      <a href="{{ url_for('index') }}" style="color:#374151;text-decoration:none;">For Individuals</a>
+      <a href="{{ url_for('business') }}" style="color:#374151;text-decoration:none;">For Businesses</a>
+      <a href="{{ url_for('for_universities') }}" style="color:#374151;text-decoration:none;">For Universities</a>
+      <a href="{{ url_for('for_government') }}" style="color:#374151;text-decoration:none;">For Governments</a>
+    </div>
+  </div>
   <div class="nav-inner">
     <a href="{{ url_for('index') }}" class="nav-logo" aria-label="Coursera home">
       {% if site_logo %}
@@ -102,6 +110,16 @@
       <a href="/search?free=1">Free Courses</a>
       <a href="{{ url_for('coursera_plus') }}">Coursera Plus</a>
       <a href="{{ url_for('degrees') }}">Online Degrees</a>
+    </div>
+    <div class="footer-col">
+      <h4>Coursera</h4>
+      <a href="{{ url_for('careers') }}">Careers</a>
+      <a href="{{ url_for('blog') }}">Blog</a>
+      <a href="{{ url_for('help_center') }}">Help Center</a>
+      <a href="{{ url_for('mobile') }}">Mobile App</a>
+      <a href="{{ url_for('partners') }}">Partners</a>
+      <a href="{{ url_for('for_universities') }}">For Universities</a>
+      <a href="{{ url_for('for_government') }}">For Governments</a>
     </div>
     <div class="footer-col">
       <h4>Career Resources</h4>

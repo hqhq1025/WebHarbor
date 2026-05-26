@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block title %}{{ page.title }} - Apple{% endblock %}
+{% block content %}
+<div class="info-page" style="max-width:980px;margin:48px auto;padding:0 20px;">
+  <h1 style="font-size:48px;font-weight:700;letter-spacing:-0.5px;color:#1d1d1f;">{{ page.title }}</h1>
+  <p style="color:#6e6e73;font-size:21px;margin:14px 0 36px;">{{ page.subtitle }}</p>
+  <section style="display:flex;flex-direction:column;gap:18px;font-size:17px;line-height:1.55;color:#1d1d1f;">
+    {% for para in page.body %}
+    <p>{{ para }}</p>
+    {% endfor %}
+  </section>
+  {% if page.links %}
+  <h2 style="font-size:28px;font-weight:700;margin:48px 0 16px;color:#1d1d1f;">Quick links</h2>
+  <ul class="info-page-links" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:8px 24px;list-style:none;padding:0;margin:0;">
+    {% for label, href in page.links %}
+    <li><a href="{{ href }}" style="color:#0071e3;text-decoration:none;">{{ label }} &rsaquo;</a></li>
+    {% endfor %}
+  </ul>
+  {% endif %}
+  <p style="margin-top:48px;color:#6e6e73;font-size:13px;">More information at <a href="https://www.apple.com/{{ topic }}/" style="color:#0071e3;">apple.com/{{ topic }}/</a>.</p>
+</div>
+{% endblock %}

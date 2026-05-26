@@ -6,6 +6,7 @@ import os
 import json
 import re
 import math
+import hashlib
 from datetime import datetime, timedelta
 from functools import wraps
 from flask import (Flask, render_template, render_template_string, redirect, url_for, flash,
@@ -19,6 +20,7 @@ from flask_wtf.csrf import CSRFProtect, generate_csrf
 from wtforms import StringField, PasswordField, TextAreaField, SelectField, BooleanField
 from wtforms.validators import DataRequired, Email, Length, EqualTo, Optional, URL
 from sqlalchemy import or_, func
+from sqlalchemy.sql import text
 
 # ───────────────────────── Mirror Clock ─────────────────────────
 # The github mirror is a frozen snapshot. Every "now"-dependent value
@@ -33,6 +35,15 @@ MIRROR_REFERENCE_DATE = datetime(2024, 5, 15, 12, 0, 0)
 
 def mirror_now():
     return MIRROR_REFERENCE_DATE
+
+
+# Pinned bcrypt('password123') hash. Bcrypt salts on every call which
+# breaks seed byte-identity across rebuilds (see harden-env/gotchas.md #1).
+# All seed paths that create bulk users use this directly; only real-runtime
+# code paths (login/register) keep calling User.set_password().
+PINNED_PASSWORD_HASH_BULK = (
+    '$2b$12$Oi0plj9XBSbuCcjmrSVmje2AWKXN99Xpa7J2O6tjYvquZPTqNXN6i'  # password123
+)
 
 
 # ─────────────────────────── App Setup ───────────────────────────
@@ -547,7 +558,8 @@ def seed_database():
     for i, (uname, email, name, bio, loc, web, company, twitter, plan) in enumerate(users_data):
         u = User(username=uname, email=email, name=name, bio=bio,
                  location=loc, website=web, company=company, twitter=twitter, plan=plan)
-        u.set_password("password123")
+        # Use pinned hash for seed determinism (bcrypt has random salt).
+        u.password_hash = PINNED_PASSWORD_HASH_BULK
         u.avatar = f"/static/images/avatars/avatar_{i:02d}.jpg"
         db.session.add(u)
         users.append(u)
@@ -1082,7 +1094,7 @@ Deno is a *simple*, *modern* and *secure* runtime for **JavaScript** and **TypeS
         if owner_name not in user_map:
             u = User(username=owner_name, email=f"{owner_name}@example.com",
                      name=owner_name.title(), plan='free')
-            u.set_password("password123")
+            u.password_hash = PINNED_PASSWORD_HASH_BULK
             u.avatar = "/static/images/avatars/avatar_00.jpg"
             db.session.add(u)
             db.session.flush()
@@ -1195,11 +1207,16 @@ Deno is a *simple*, *modern* and *secure* runtime for **JavaScript** and **TypeS
             )
             db.session.add(comment)
 
-    # Seed some follows
+    # Seed some follows — insert directly via the association table so
+    # ROWID order matches the (i, j) loop order regardless of SQLAlchemy's
+    # internal unordered identity-map iteration during flush.
     for i in range(min(5, len(users))):
         for j in range(min(3, len(users))):
             if i != j:
-                users[i].following.append(users[j])
+                db.session.execute(
+                    follows.insert().values(follower_id=users[i].id,
+                                            followed_id=users[j].id)
+                )
 
     # Seed some stars for the demo user
     if demo_user and all_repos:
@@ -2037,6 +2054,188 @@ def feature_supply_chain():
 @app.route('/security/center')
 def security_center():
     return render_template('simple_landing.html', page=_STUB_PAGES['security_center'])
+
+
+# ── R2: extra stub pages referenced from footer/nav (Solutions tier) ──
+
+_R2_STUBS = {
+    'solutions_enterprise': {
+        'title': 'Enterprise solutions', 'eyebrow': 'Solutions',
+        'headline': 'Built for the world\'s largest engineering teams.',
+        'sub': 'GitHub Enterprise scales from 100 to 100,000 developers with '
+               'SAML SSO, audit log streaming, and data residency.',
+        'ctas': [{'href': '/contact-sales', 'label': 'Talk to sales', 'cls': 'gh-btn-primary'},
+                 {'href': '/pricing', 'label': 'Compare plans', 'cls': 'gh-btn-secondary'}],
+        'bullets': ['Used by 90% of the Fortune 100',
+                    'SAML SSO, SCIM, audit log streaming',
+                    'Data residency in US, EU, AU'],
+    },
+    'solutions_team': {
+        'title': 'Solutions for teams', 'eyebrow': 'Solutions',
+        'headline': 'Ship faster with a team that trusts each other.',
+        'sub': 'Code review, branch protection, and Actions CI for every team size.',
+        'ctas': [{'href': '/pricing', 'label': 'See Team pricing', 'cls': 'gh-btn-primary'}],
+        'bullets': ['Unlimited private repos with 3,000 Actions minutes/month',
+                    'Code owners + required reviews', 'Team-scoped secrets'],
+    },
+    'solutions_startups': {
+        'title': 'GitHub for Startups', 'eyebrow': 'Solutions',
+        'headline': 'Build your company on GitHub — free for 12 months.',
+        'sub': '20 seats of Enterprise free for one year for verified startups.',
+        'ctas': [{'href': '/contact-sales', 'label': 'Apply now', 'cls': 'gh-btn-primary'}],
+        'bullets': ['20 GitHub Enterprise seats, free for 12 months',
+                    'Free GitHub Copilot for Business seats',
+                    'Access to the Startups community'],
+    },
+    'solutions_devsecops': {
+        'title': 'DevSecOps with GitHub', 'eyebrow': 'Solutions',
+        'headline': 'Shift security left without slowing developers down.',
+        'sub': 'CodeQL, secret scanning, Dependabot, and Advisory Database in one place.',
+        'ctas': [{'href': '/features/code-scanning', 'label': 'Code scanning', 'cls': 'gh-btn-primary'},
+                 {'href': '/features/secret-scanning', 'label': 'Secret scanning', 'cls': 'gh-btn-secondary'}],
+        'bullets': ['CodeQL queries for 11 languages',
+                    '200+ partner secret formats covered',
+                    'Dependabot patches across 8 ecosystems'],
+    },
+    'solutions_devops': {
+        'title': 'DevOps on GitHub', 'eyebrow': 'Solutions',
+        'headline': 'Plan, build, ship — all in one place.',
+        'sub': 'GitHub Issues, Actions, Packages, and Environments give every team a single pane of glass.',
+        'ctas': [{'href': '/features/actions', 'label': 'GitHub Actions', 'cls': 'gh-btn-primary'}],
+        'bullets': ['GitHub-hosted Linux, macOS, Windows runners',
+                    'OIDC federation with AWS, Azure, GCP',
+                    'Environments with protection rules'],
+    },
+    'docs': {
+        'title': 'GitHub Docs', 'eyebrow': 'Documentation',
+        'headline': 'Everything you need to build on GitHub.',
+        'sub': 'Tutorials, reference, and guides for GitHub, Copilot, Actions, and the REST and GraphQL APIs.',
+        'ctas': [{'href': '/api', 'label': 'API reference', 'cls': 'gh-btn-primary'},
+                 {'href': '/features/actions', 'label': 'Actions docs', 'cls': 'gh-btn-secondary'}],
+        'bullets': ['REST and GraphQL APIs',
+                    'CLI: `gh`', 'Webhooks and Apps'],
+    },
+    'api': {
+        'title': 'GitHub REST & GraphQL APIs', 'eyebrow': 'Developer',
+        'headline': 'Build on top of GitHub.',
+        'sub': 'A REST API and a GraphQL endpoint for every resource on the platform.',
+        'ctas': [{'href': '/docs', 'label': 'Read the docs', 'cls': 'gh-btn-primary'}],
+        'bullets': ['REST API at api.github.com', 'GraphQL at api.github.com/graphql',
+                    '5,000 req/hr authenticated, 60 req/hr unauth'],
+    },
+    'status': {
+        'title': 'GitHub Status', 'eyebrow': 'Service status',
+        'headline': 'All systems operational.',
+        'sub': 'Real-time and historical status of every GitHub service: Git operations, '
+               'API requests, Pages, Actions, Packages, Webhooks, Codespaces, Copilot.',
+        'ctas': [{'href': '/about', 'label': 'About this mirror', 'cls': 'gh-btn-secondary'}],
+        'bullets': ['Git operations: operational',
+                    'API requests: operational',
+                    'GitHub Actions: operational',
+                    'GitHub Pages: operational',
+                    'Webhooks: operational'],
+    },
+    'blog': {
+        'title': 'The GitHub Blog', 'eyebrow': 'Updates and stories',
+        'headline': 'News from the GitHub team.',
+        'sub': 'Product launches, engineering deep-dives, and open-source highlights.',
+        'ctas': [{'href': '/customer-stories', 'label': 'Customer stories', 'cls': 'gh-btn-primary'}],
+        'bullets': ['Copilot Workspace generally available',
+                    'GitHub Actions adds Apple Silicon runners',
+                    'CodeQL coverage extended to Kotlin and Swift'],
+    },
+    'contact': {
+        'title': 'Contact GitHub', 'eyebrow': 'Help',
+        'headline': 'How can we help?',
+        'sub': 'Reach billing, sales, abuse, security, or community support — every team has a dedicated channel.',
+        'ctas': [{'href': '/contact-sales', 'label': 'Contact sales', 'cls': 'gh-btn-primary'}],
+        'bullets': ['Billing: through your Settings → Billing page',
+                    'Security: security@github.com',
+                    'Abuse: support.github.com/contact/report-abuse'],
+    },
+    'privacy': {
+        'title': 'GitHub Privacy Statement', 'eyebrow': 'Legal',
+        'headline': 'Your privacy matters to us.',
+        'sub': 'We process your data to provide the GitHub services. We are SOC 2 audited '
+               'and GDPR + CCPA compliant.',
+        'bullets': ['SOC 2 Type II', 'ISO 27001:2022',
+                    'GDPR and CCPA compliant',
+                    'Data residency available for Enterprise Cloud'],
+    },
+    'terms': {
+        'title': 'GitHub Terms of Service', 'eyebrow': 'Legal',
+        'headline': 'The rules of the road.',
+        'sub': 'By using GitHub you agree to the Terms of Service, the Acceptable Use Policies, '
+               'and the Privacy Statement.',
+        'bullets': ['Acceptable Use Policies',
+                    'Corporate Terms of Service for Enterprise',
+                    'Site policies on github.com/site-policy'],
+    },
+}
+
+
+def _r2_stub(slug):
+    return render_template('simple_landing.html', page=_R2_STUBS[slug])
+
+
+@app.route('/solutions/enterprise')
+def solutions_enterprise():
+    return _r2_stub('solutions_enterprise')
+
+
+@app.route('/solutions/team')
+def solutions_team():
+    return _r2_stub('solutions_team')
+
+
+@app.route('/solutions/startups')
+def solutions_startups():
+    return _r2_stub('solutions_startups')
+
+
+@app.route('/solutions/devsecops')
+def solutions_devsecops():
+    return _r2_stub('solutions_devsecops')
+
+
+@app.route('/solutions/devops')
+def solutions_devops():
+    return _r2_stub('solutions_devops')
+
+
+@app.route('/docs')
+def docs():
+    return _r2_stub('docs')
+
+
+@app.route('/api')
+def api_docs():
+    return _r2_stub('api')
+
+
+@app.route('/status')
+def status():
+    return _r2_stub('status')
+
+
+@app.route('/blog')
+def blog():
+    return _r2_stub('blog')
+
+
+@app.route('/contact')
+def contact():
+    return _r2_stub('contact')
+
+
+@app.route('/privacy')
+def privacy():
+    return _r2_stub('privacy')
+
+
+@app.route('/terms')
+def terms():
+    return _r2_stub('terms')
 
 
 # ─── Auth ───
@@ -3420,7 +3619,8 @@ def seed_benchmark_users():
     for i, (uname, email, name, bio, loc, web, company, twitter, plan) in enumerate(benchmark_users_data):
         u = User(username=uname, email=email, name=name, bio=bio,
                  location=loc, website=web, company=company, twitter=twitter, plan=plan)
-        u.set_password("TestPass123!")
+        # Pinned bcrypt hash for "TestPass123!" — keeps seed byte-identical.
+        u.password_hash = '$2b$12$RwAC/sfwDHtccU//A20fde.uKkZK4Ptnjjyua2l2ktwI6uysAp3Ou'
         u.avatar = f"/static/images/avatars/avatar_{(i % 15):02d}.jpg"
         db.session.add(u)
         new_users.append(u)
@@ -3477,43 +3677,46 @@ def seed_benchmark_users():
     db.session.flush()
 
     # ── Follows ──
+    # Insert via the association table directly so ROWID order matches the
+    # listed sequence regardless of SQLAlchemy's internal flush order.
     def _get_user(username):
         return User.query.filter_by(username=username).first()
 
+    def _add_follow(src, dst):
+        if not (src and dst) or src.id == dst.id:
+            return
+        existing = db.session.execute(
+            follows.select().where(
+                (follows.c.follower_id == src.id) &
+                (follows.c.followed_id == dst.id))
+        ).first()
+        if existing:
+            return
+        db.session.execute(
+            follows.insert().values(follower_id=src.id, followed_id=dst.id))
+
     # Alice follows: gaearon, yyx990803, torvalds, bob, carol
     for uname in ['gaearon', 'yyx990803', 'torvalds']:
-        t = _get_user(uname)
-        if t and not alice.is_following(t):
-            alice.following.append(t)
+        _add_follow(alice, _get_user(uname))
     for t in [bob, carol]:
-        if not alice.is_following(t):
-            alice.following.append(t)
+        _add_follow(alice, t)
 
     # Bob follows: gvanrossum, torvalds, alice, david
     for uname in ['gvanrossum', 'torvalds']:
-        t = _get_user(uname)
-        if t and not bob.is_following(t):
-            bob.following.append(t)
+        _add_follow(bob, _get_user(uname))
     for t in [alice, david]:
-        if not bob.is_following(t):
-            bob.following.append(t)
+        _add_follow(bob, t)
 
     # Carol follows: gaearon, yyx990803, alice, bob
     for uname in ['gaearon', 'yyx990803']:
-        t = _get_user(uname)
-        if t and not carol.is_following(t):
-            carol.following.append(t)
+        _add_follow(carol, _get_user(uname))
     for t in [alice, bob]:
-        if not carol.is_following(t):
-            carol.following.append(t)
+        _add_follow(carol, t)
 
     # David follows: torvalds, mitchellh, antirez, alice
     for uname in ['torvalds', 'mitchellh', 'antirez']:
-        t = _get_user(uname)
-        if t and not david.is_following(t):
-            david.following.append(t)
-    if not david.is_following(alice):
-        david.following.append(alice)
+        _add_follow(david, _get_user(uname))
+    _add_follow(david, alice)
 
     db.session.flush()
 
@@ -3625,10 +3828,12 @@ def _parse_iso(ts: str):
         return _BULK_REF
 
 
-# Sentinel slug for repos seeded by seed_extra_repos. If a repo with this
-# full_name already exists, the bulk loader has run before.
-_BULK_REPO_SENTINEL_OWNER = 'codecrafters-io'  # always first in the API dump
-_BULK_REPO_SENTINEL_NAME = 'build-your-own-x'
+# Sentinel slug for repos seeded by seed_extra_repos. The R2 import bumped
+# the cap from 500 → 2200, so we anchor on a repo that only lives in the
+# expanded slice (well past index 500 in the JSON). If this fixture exists,
+# the new bulk loader has run before; otherwise, run it to top off the catalog.
+_BULK_REPO_SENTINEL_OWNER = 'authy'  # from the stars:500..800 scrape, idx ~2500
+_BULK_REPO_SENTINEL_NAME = 'authy-ssh'
 
 
 def seed_extra_repos():
@@ -3647,9 +3852,10 @@ def seed_extra_repos():
     if not extras:
         return
 
-    # Cap at 500 — enough to push the catalog from 685 -> ~1085 without
-    # bloating the seed DB beyond ~10 MB.
-    target_extras = extras[:500]
+    # R2: bump cap to 2200 so we reach ~2500+ total repos after dedup against
+    # the ~660-row base catalog. JSON now ships ~2800 entries covering
+    # star bands >500 — see scrape_repos.py.
+    target_extras = extras[:2200]
 
     # Pre-load existing owners and repos to dedupe.
     existing_repo_fullnames = {r.full_name for r in Repository.query.with_entities(
@@ -3675,7 +3881,8 @@ def seed_extra_repos():
                 bio='',
                 plan='free',
             )
-            owner.set_password('password123')
+            # Avoid set_password() — bcrypt random salt would break byte-id.
+            owner.password_hash = PINNED_PASSWORD_HASH_BULK
             db.session.add(owner)
             db.session.flush()
             existing_user_by_name[owner_name] = owner
@@ -3983,11 +4190,13 @@ def seed_extra_stars():
 
     # Repo pool: top 80 repos by stars (most likely to be browsed) plus the
     # 30 most-recently-pushed repos (for the "active" stargazers feel).
+    # Tiebreak on Repository.id so the pool is deterministic across rebuilds —
+    # the catalog has many repos sharing the same stars_count / pushed_at.
     top_repos = (Repository.query
-                 .order_by(Repository.stars_count.desc())
+                 .order_by(Repository.stars_count.desc(), Repository.id.asc())
                  .limit(80).all())
     recent_repos = (Repository.query
-                    .order_by(Repository.pushed_at.desc())
+                    .order_by(Repository.pushed_at.desc(), Repository.id.asc())
                     .limit(30).all())
     repo_pool = []
     seen_repo = set()
@@ -4045,7 +4254,7 @@ def seed_extra_watches():
         return
 
     top_repos = (Repository.query
-                 .order_by(Repository.stars_count.desc())
+                 .order_by(Repository.stars_count.desc(), Repository.id.asc())
                  .limit(60).all())
 
     existing = _existing_watch_set()
@@ -4068,6 +4277,227 @@ def seed_extra_watches():
             added += 1
 
     db.session.commit()
+
+
+# ── R2: deterministic commit history for repos that lack commits_json ────
+_BULK_COMMIT_SENTINEL_FULL = 'codecrafters-io/build-your-own-x'  # newly-imported repo
+
+_COMMIT_MSG_TEMPLATES = [
+    "Fix off-by-one in {area} pagination",
+    "Bump {area} dependencies to latest",
+    "Add tests for {area} edge cases",
+    "Refactor {area} module for readability",
+    "Document {area} configuration options",
+    "Optimize {area} hot path",
+    "Drop deprecated {area} helper",
+    "Handle empty input in {area}",
+    "Improve {area} error message",
+    "Clean up unused {area} imports",
+    "Tighten {area} type hints",
+    "Wire up {area} CI matrix",
+    "Patch {area} security advisory",
+    "Restore {area} backwards compatibility",
+    "Cache {area} lookups",
+]
+_COMMIT_AREAS = ['cli', 'api', 'core', 'docs', 'router', 'parser', 'cache',
+                 'auth', 'config', 'tests', 'build', 'logging', 'metrics',
+                 'storage', 'worker', 'utils']
+_COMMIT_FILE_HINTS = {
+    'Python': ['src/{a}.py', 'tests/test_{a}.py', 'docs/{a}.md', 'README.md',
+               'pyproject.toml'],
+    'JavaScript': ['src/{a}.js', 'tests/{a}.spec.js', 'package.json',
+                   'README.md', 'eslint.config.js'],
+    'TypeScript': ['src/{a}.ts', 'src/{a}.test.ts', 'tsconfig.json',
+                   'README.md', 'package.json'],
+    'Go': ['{a}.go', '{a}_test.go', 'go.mod', 'README.md', 'cmd/main.go'],
+    'Rust': ['src/{a}.rs', 'tests/{a}.rs', 'Cargo.toml', 'README.md'],
+    'Java': ['src/main/java/{a}/{a}.java', 'src/test/java/{a}/{a}Test.java',
+             'pom.xml', 'README.md'],
+    'C++': ['src/{a}.cpp', 'include/{a}.h', 'tests/{a}_test.cpp',
+            'CMakeLists.txt', 'README.md'],
+    'C': ['src/{a}.c', 'include/{a}.h', 'Makefile', 'README.md'],
+    'Ruby': ['lib/{a}.rb', 'spec/{a}_spec.rb', 'Gemfile', 'README.md'],
+}
+_COMMIT_FILE_DEFAULT = ['src/{a}', 'tests/{a}_test', 'docs/{a}.md',
+                        'README.md', 'CHANGELOG.md']
+
+
+def _commit_files_for(language: str, area: str, idx: int):
+    """Pick 1-3 plausible filenames for a commit deterministically."""
+    tmpl = _COMMIT_FILE_HINTS.get(language) or _COMMIT_FILE_DEFAULT
+    n = 1 + (idx % 3)
+    out = []
+    for k in range(n):
+        path = tmpl[(idx + k) % len(tmpl)].format(a=area)
+        # plausible per-file diff sizes
+        adds = 4 + ((idx * 7 + k * 13) % 80)
+        dels = ((idx * 5 + k * 11) % 50)
+        out.append({'name': path, 'additions': adds, 'deletions': dels})
+    return out
+
+
+def seed_extra_commits():
+    """Generate deterministic commit history for every repo that doesn't
+    already have commits_json populated. Targets ~5000+ extra commits across
+    the catalog so the /<repo>/commits page is never empty.
+
+    All values derive from repo.id + repo.full_name, never wall-clock or
+    random, so md5×2 stays stable. Idempotent: the WHERE filter only picks
+    up repos whose commits_json is still empty, so re-runs are no-ops once
+    every repo has been processed.
+
+    Returns the number of repos that were actually mutated this call (0 on
+    a warm rebuild, used by normalize_seed_db_layout() to skip VACUUM)."""
+    # Touch every repo whose commits_json is empty/missing.
+    repos = (Repository.query
+             .filter((Repository.commits_json == None) |  # noqa: E711
+                     (Repository.commits_json == '') |
+                     (Repository.commits_json == '[]'))
+             .order_by(Repository.id.asc())
+             .all())
+    if not repos:
+        return 0
+
+    total_added = 0
+    for repo in repos:
+        # Number of commits scales gently with stars but is bounded.
+        s = repo.stars_count or 0
+        if s >= 50000:
+            n = 12
+        elif s >= 10000:
+            n = 10
+        elif s >= 1000:
+            n = 8
+        else:
+            n = 5
+
+        base_dt = repo.pushed_at or repo.updated_at or _BULK_REF
+        if base_dt > _BULK_REF:
+            base_dt = _BULK_REF
+        owner_name = repo.full_name.split('/', 1)[0]
+
+        commit_list = []
+        for i in range(n):
+            area = _COMMIT_AREAS[(repo.id * 7 + i * 11) % len(_COMMIT_AREAS)]
+            msg = _COMMIT_MSG_TEMPLATES[
+                (repo.id * 3 + i * 17) % len(_COMMIT_MSG_TEMPLATES)].format(area=area)
+            # Spread commits 1-3 days apart, newest first.
+            ts = base_dt - timedelta(days=i * 2 + (repo.id % 3),
+                                     hours=(i * 5 + repo.id) % 24)
+            sha_seed = f"{repo.full_name}|{i}|{repo.id}"
+            sha = hashlib.sha1(sha_seed.encode()).hexdigest()
+            files = _commit_files_for(repo.language or '', area, repo.id + i)
+            adds = sum(f['additions'] for f in files)
+            dels = sum(f['deletions'] for f in files)
+            commit_list.append({
+                'sha': sha,
+                'message': msg,
+                'author': owner_name,
+                'date': ts.isoformat(),
+                'files': files,
+                'additions': adds,
+                'deletions': dels,
+            })
+        # Persist
+        repo.commits_json = json.dumps(commit_list)
+        # Mirror index 0 onto the latest_commit_* legacy columns.
+        first = commit_list[0]
+        repo.latest_commit_sha = first['sha']
+        repo.latest_commit_message = first['message']
+        repo.latest_commit_date = datetime.fromisoformat(first['date'])
+        repo.latest_commit_files = json.dumps(first['files'])
+        repo.latest_commit_additions = first['additions']
+        repo.latest_commit_deletions = first['deletions']
+        total_added += n
+
+    db.session.commit()
+    return len(repos)
+
+
+# ── R2: turn a slice of open-status issues into real pull requests ───────
+_BULK_PR_SENTINEL_TITLE_PREFIX = 'R2-bulk-pr:'
+
+_PR_BRANCH_PATTERNS = [
+    'fix/{a}-{n}', 'feat/{a}-{n}', 'chore/bump-{a}', 'refactor/{a}',
+    'docs/{a}', 'deps/{a}-update', 'hotfix/{a}-{n}', 'release/{a}',
+]
+
+
+def seed_extra_pulls():
+    """Promote ~1500 existing open issues into pull requests (is_pr=1) and
+    fill the PR metadata columns. Deterministic against issue.id. Returns
+    the number of issues promoted, so normalize_seed_db_layout() can skip
+    VACUUM on warm rebuilds."""
+    existing_pr = Issue.query.filter_by(is_pr=1).count()
+    if existing_pr >= 1500:
+        return 0
+
+    target_total = 1500
+    need = max(0, target_total - existing_pr)
+    if need == 0:
+        return 0
+
+    # Pick open, non-PR issues with the lowest IDs (deterministic order).
+    candidates = (Issue.query
+                  .filter(Issue.is_pr == 0, Issue.status == 'open')
+                  .order_by(Issue.id.asc())
+                  .limit(need)
+                  .all())
+    if not candidates:
+        return 0
+
+    promoted = 0
+    for issue in candidates:
+        area = _COMMIT_AREAS[issue.id % len(_COMMIT_AREAS)]
+        branch_tmpl = _PR_BRANCH_PATTERNS[issue.id % len(_PR_BRANCH_PATTERNS)]
+        head = branch_tmpl.format(a=area, n=issue.id % 1000)[:120]
+        issue.is_pr = 1
+        issue.pr_head_branch = head
+        issue.pr_base_branch = 'main'
+        issue.pr_changed_files = 1 + (issue.id % 7)
+        issue.pr_additions = 12 + (issue.id * 7 % 480)
+        issue.pr_deletions = 4 + (issue.id * 11 % 200)
+        issue.pr_commits_count = 1 + (issue.id % 5)
+        # Roughly 35% of PRs are merged (status='merged') to make the UI feel
+        # alive. Use issue.id % 100 deterministically.
+        bucket = issue.id % 100
+        if bucket < 35:
+            issue.status = 'merged'
+            issue.closed_at = (issue.created_at or _BULK_REF) + timedelta(
+                days=2 + (issue.id % 10), hours=(issue.id % 24))
+            if issue.closed_at > _BULK_REF:
+                issue.closed_at = _BULK_REF - timedelta(hours=(issue.id % 48))
+        promoted += 1
+
+    db.session.commit()
+    return promoted
+
+
+def normalize_seed_db_layout(dirty: bool = False):
+    """Re-emit indexes in alpha order + VACUUM so seed rebuilds match
+    byte-for-byte across processes (see harden-env/gotchas.md #2).
+
+    Gated on `dirty` — only re-indexes and VACUUMs when a prior seeder
+    actually wrote rows this run. Warm rebuilds (where everything was
+    already seeded) skip this, so the SQLite file change counter stays
+    stable and md5×2 matches across runs."""
+    if not dirty:
+        return
+    try:
+        conn = db.engine.connect()
+        idx_rows = conn.execute(text(
+            "SELECT name, sql FROM sqlite_master "
+            "WHERE type='index' AND name LIKE 'ix_%'"
+        )).fetchall()
+        for name, _ in idx_rows:
+            conn.execute(text(f"DROP INDEX IF EXISTS {name}"))
+        for name, sql in sorted(idx_rows, key=lambda r: r[0]):
+            if sql:
+                conn.execute(text(sql))
+        conn.execute(text("VACUUM"))
+        conn.commit()
+    except Exception:
+        db.session.rollback()
 
 
 def post_seed_tweaks():
@@ -4103,7 +4533,10 @@ def create_app():
         seed_extra_issue_comments()
         seed_extra_stars()
         seed_extra_watches()
+        c1 = seed_extra_commits() or 0
+        c2 = seed_extra_pulls() or 0
         post_seed_tweaks()
+        normalize_seed_db_layout(dirty=(c1 + c2) > 0)
     return app
 
 
@@ -4118,7 +4551,10 @@ with app.app_context():
         seed_extra_issue_comments()
         seed_extra_stars()
         seed_extra_watches()
+        c1 = seed_extra_commits() or 0
+        c2 = seed_extra_pulls() or 0
         post_seed_tweaks()
+        normalize_seed_db_layout(dirty=(c1 + c2) > 0)
     except Exception:
         # In case of stale schema, skip silently; routes remain available.
         db.session.rollback()

@@ -11,10 +11,17 @@ Adapted from the commerce skeleton to a search/reference engine:
 
 import os
 import json
+import hashlib
 import random
 import re
 from datetime import datetime, timedelta
 from urllib.parse import urlparse
+
+
+def hash_int(s):
+    """Stable deterministic hash for byte-id seeding (replaces hash() which
+    is randomized per process unless PYTHONHASHSEED=0)."""
+    return int(hashlib.md5(s.encode('utf-8')).hexdigest()[:8], 16)
 
 from flask import (
     Flask, render_template, request, redirect, url_for, flash,
@@ -734,15 +741,28 @@ def search():
     # Panel visibility: only show for bio / fact-lookup tasks.
     show_panel = should_show_panel(topic, q)
 
+    # Pagination: 10 results per page (Google default). Always show 10 page
+    # links if total results suggest it — synthetic but matches real Google.
+    per_page = 10
+    total_pages = max(1, min(10, (len(annotated) + per_page - 1) // per_page))
+    if total_pages == 1 and topic:
+        # Topic-anchored SERPs always show 10 page tabs so paginate tasks are
+        # navigable even when the local mirror only has 8 real results.
+        total_pages = 10
+    page_results = annotated[(page - 1) * per_page : page * per_page]
+    has_prev = page > 1
+    has_next = page < total_pages
+
     return render_template(
         template,
         q=q, page=page, vertical=vertical,
-        topic=topic, results=annotated,
+        topic=topic, results=page_results, all_results=annotated,
         paa=paa, related=related, knowledge=knowledge,
         result_count=result_count, search_time=search_time,
         answer_token=answer_token,
         knowledge_panel=knowledge_panel,
         show_panel=show_panel,
+        total_pages=total_pages, has_prev=has_prev, has_next=has_next, per_page=per_page,
     )
 
 
@@ -1587,6 +1607,31 @@ def init_db():
                       Doodle, GoogleApp, TrendingTerm, KnowledgeFact, bcrypt)
 
 
+def normalize_seed_db_layout():
+    """Re-emit indexes in alpha order + VACUUM so rebuilds match byte-for-byte.
+
+    SQLAlchemy emits CREATE INDEX from Table.indexes (a Python set) whose
+    iteration order is allocator-dependent. See harden-env/gotchas section 2.
+    """
+    from sqlalchemy import text
+    with app.app_context():
+        conn = db.engine.connect()
+        try:
+            idx_rows = conn.execute(text(
+                "SELECT name, sql FROM sqlite_master WHERE type='index' AND name LIKE 'ix_%'"
+            )).fetchall()
+            for name, _ in idx_rows:
+                conn.execute(text(f'DROP INDEX IF EXISTS "{name}"'))
+            for name, sql in sorted(idx_rows, key=lambda r: r[0]):
+                if sql:
+                    conn.execute(text(sql))
+            conn.commit()
+            # VACUUM cannot run in a transaction
+            conn.execute(text('VACUUM'))
+        finally:
+            conn.close()
+
+
 def seed_benchmark_users():
     """Idempotent: create 4 benchmark users with history, bookmarks, collections, alerts.
 
@@ -1595,28 +1640,34 @@ def seed_benchmark_users():
     if User.query.filter_by(email='alice.j@test.com').first():
         return  # already seeded
 
-    _PASS = 'TestPass123!'
+    # Pinned bcrypt hash for 'TestPass123!' - random salt would break byte-id
+    # rebuilds. See harden-env/gotchas.
+    _PINNED = '$2b$12$RwAC/sfwDHtccU//A20fde.uKkZK4Ptnjjyua2l2ktwI6uysAp3Ou'
 
     # ------------------------------------------------------------------ users
     alice = User(email='alice.j@test.com', name='Alice Johnson',
                  avatar_letter='A', safe_search='moderate', region='US',
-                 language='en', results_per_page=10)
-    alice.set_password(_PASS)
+                 language='en', results_per_page=10,
+                 created=datetime(2026, 1, 5, 12, 0, 0))
+    alice.password_hash = _PINNED
 
     bob = User(email='bob.c@test.com', name='Bob Chen',
                avatar_letter='B', safe_search='strict', region='US',
-               language='en', results_per_page=20)
-    bob.set_password(_PASS)
+               language='en', results_per_page=20,
+               created=datetime(2026, 1, 12, 12, 0, 0))
+    bob.password_hash = _PINNED
 
     carol = User(email='carol.d@test.com', name='Carol Davis',
                  avatar_letter='C', safe_search='off', region='GB',
-                 language='en', results_per_page=10)
-    carol.set_password(_PASS)
+                 language='en', results_per_page=10,
+                 created=datetime(2026, 2, 14, 12, 0, 0))
+    carol.password_hash = _PINNED
 
     david = User(email='david.k@test.com', name='David Kim',
                  avatar_letter='D', safe_search='moderate', region='KR',
-                 language='en', results_per_page=10)
-    david.set_password(_PASS)
+                 language='en', results_per_page=10,
+                 created=datetime(2026, 3, 20, 12, 0, 0))
+    david.password_hash = _PINNED
 
     db.session.add_all([alice, bob, carol, david])
     db.session.commit()
@@ -1631,7 +1682,7 @@ def seed_benchmark_users():
             return t.results[0]
         return None
 
-    now = datetime.utcnow()
+    now = datetime(2026, 5, 12, 12, 0, 0)  # pinned ref for byte-id seeds
 
     # ------------------------------------------------------------------ alice: researcher / science enthusiast
     # Search history
@@ -1647,7 +1698,7 @@ def seed_benchmark_users():
     for i, (q, vert) in enumerate(alice_queries):
         db.session.add(SearchHistory(
             user_id=alice.id, q=q, vertical=vert,
-            result_count=random.randint(100000, 5000000),
+            result_count=100000 + (hash_int(q) % 4900000),
             searched_at=now - timedelta(hours=i * 3 + 1),
         ))
 
@@ -1719,7 +1770,7 @@ def seed_benchmark_users():
     for i, (q, vert) in enumerate(bob_queries):
         db.session.add(SearchHistory(
             user_id=bob.id, q=q, vertical=vert,
-            result_count=random.randint(50000, 3000000),
+            result_count=50000 + (hash_int(q) % 2950000),
             searched_at=now - timedelta(hours=i * 4 + 2),
         ))
 
@@ -1773,7 +1824,7 @@ def seed_benchmark_users():
     for i, (q, vert) in enumerate(carol_queries):
         db.session.add(SearchHistory(
             user_id=carol.id, q=q, vertical=vert,
-            result_count=random.randint(200000, 8000000),
+            result_count=200000 + (hash_int(q) % 7800000),
             searched_at=now - timedelta(hours=i * 5 + 1),
         ))
 
@@ -1830,7 +1881,7 @@ def seed_benchmark_users():
     for i, (q, vert) in enumerate(david_queries):
         db.session.add(SearchHistory(
             user_id=david.id, q=q, vertical=vert,
-            result_count=random.randint(100000, 6000000),
+            result_count=100000 + (hash_int(q) % 5900000),
             searched_at=now - timedelta(hours=i * 2 + 3),
         ))
 
@@ -1872,6 +1923,25 @@ def seed_benchmark_users():
     ])
 
     db.session.commit()
+
+    # Pin every default-datetime column we just inserted to deterministic
+    # offsets from `now` so rebuilds are byte-identical (Column defaults
+    # `datetime.utcnow` would otherwise capture wall-clock at insert time).
+    user_ids = [alice.id, bob.id, carol.id, david.id]
+    # Bookmarks
+    bms = Bookmark.query.filter(Bookmark.user_id.in_(user_ids)).order_by(Bookmark.id).all()
+    for idx, b in enumerate(bms):
+        b.created = now - timedelta(hours=idx * 2 + 1)
+    # Collections
+    cols = Collection.query.filter(Collection.user_id.in_(user_ids)).order_by(Collection.id).all()
+    for idx, c in enumerate(cols):
+        c.created = now - timedelta(days=idx + 1)
+    # Alerts
+    als = Alert.query.filter(Alert.user_id.in_(user_ids)).order_by(Alert.id).all()
+    for idx, a in enumerate(als):
+        a.created = now - timedelta(days=idx + 1, hours=3)
+    db.session.commit()
+
     print('  Benchmark users seeded: alice, bob, carol, david')
 
 
@@ -1974,5 +2044,6 @@ if __name__ == '__main__':
     with app.app_context():
         seed_benchmark_users()
         seed_result_feedback()
+    normalize_seed_db_layout()
     port = int(os.environ.get('PORT', 28851))
     app.run(host='0.0.0.0', port=port, debug=False)

@@ -193,13 +193,22 @@
                     <a href="{{ url_for('about_page') }}">About the BBC</a>
                     <a href="{{ url_for('help_page') }}">Help</a>
                     <a href="{{ url_for('contact_page') }}">Contact</a>
-                    <a href="#">Privacy Policy</a>
+                    <a href="{{ url_for('accessibility_page') }}">Accessibility</a>
                 </div>
             </div>
         </div>
     </div>
     <div class="footer-bottom">
         <div class="footer-inner">
+            <nav class="footer-legal" aria-label="Legal">
+                <a href="{{ url_for('terms_page') }}">Terms of Use</a>
+                <span aria-hidden="true">·</span>
+                <a href="{{ url_for('privacy_page') }}">Privacy Notice</a>
+                <span aria-hidden="true">·</span>
+                <a href="{{ url_for('cookies_page') }}">Cookies</a>
+                <span aria-hidden="true">·</span>
+                <a href="{{ url_for('accessibility_page') }}">Accessibility</a>
+            </nav>
             <p>Copyright © {{ current_year }} BBC. The BBC is not responsible for the content of external sites. This is a learning mirror — no content is real BBC output.</p>
         </div>
     </div>

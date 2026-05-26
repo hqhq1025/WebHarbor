@@ -1,0 +1,117 @@
+{% extends "base.html" %}
+{% block title %}Your data in Maps - Google Maps{% endblock %}
+
+{% block body %}
+<div class="app-shell">
+    {% include '_rail.html' %}
+
+    <aside class="left-panel">
+        {% include '_search_bar.html' %}
+
+        <div class="panel-section">
+            <h2>Your data in Maps</h2>
+            <div class="sub">A summary of the data Google Maps stores for your account and how to control it</div>
+        </div>
+
+        {% if current_user.is_authenticated %}
+        <div style="padding: 0 16px 16px;">
+            <div style="background:#e8f0fe; border-radius:12px; padding:14px 16px; border:1px solid #d2e3fc;">
+                <div style="display:flex; align-items:center; gap:10px;">
+                    <span class="material-icons-outlined" style="color:#1a73e8;">account_circle</span>
+                    <strong>Signed in as {{ current_user.name }} ({{ current_user.email }})</strong>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <div class="panel-section">
+            <h2>Data categories</h2>
+        </div>
+
+        <div style="padding: 0 16px 16px; display: grid; gap: 12px;">
+            <div style="background:#f8f9fa; border-radius:12px; padding:14px 16px; border:1px solid var(--divider);">
+                <div style="display:flex; align-items:center; gap:10px;">
+                    <span class="material-icons-outlined" style="color:#4285f4;">schedule</span>
+                    <strong>Timeline (Location History)</strong>
+                </div>
+                <p style="font-size:13px; color:var(--text-secondary); margin:8px 0;">
+                    A private map of places you've visited, recorded only when you have Location History turned on.
+                </p>
+                <a href="{{ url_for('timeline') if current_user.is_authenticated else url_for('login') }}" style="font-size:13px; color:#1a73e8;">Go to your timeline &rarr;</a>
+            </div>
+            <div style="background:#f8f9fa; border-radius:12px; padding:14px 16px; border:1px solid var(--divider);">
+                <div style="display:flex; align-items:center; gap:10px;">
+                    <span class="material-icons-outlined" style="color:#34a853;">bookmark</span>
+                    <strong>Saved places &amp; lists</strong>
+                </div>
+                <p style="font-size:13px; color:var(--text-secondary); margin:8px 0;">
+                    Places you've saved to Want to go, Favorites, Starred, and any custom lists you've made.
+                </p>
+                <a href="{{ url_for('saved_page') if current_user.is_authenticated else url_for('login') }}" style="font-size:13px; color:#1a73e8;">View your saved places &rarr;</a>
+            </div>
+            <div style="background:#f8f9fa; border-radius:12px; padding:14px 16px; border:1px solid var(--divider);">
+                <div style="display:flex; align-items:center; gap:10px;">
+                    <span class="material-icons-outlined" style="color:#fbbc04;">star_outline</span>
+                    <strong>Your reviews</strong>
+                </div>
+                <p style="font-size:13px; color:var(--text-secondary); margin:8px 0;">
+                    Reviews and ratings you've contributed for places you've visited.
+                </p>
+            </div>
+            <div style="background:#f8f9fa; border-radius:12px; padding:14px 16px; border:1px solid var(--divider);">
+                <div style="display:flex; align-items:center; gap:10px;">
+                    <span class="material-icons-outlined" style="color:#ea4335;">photo_library</span>
+                    <strong>Photos</strong>
+                </div>
+                <p style="font-size:13px; color:var(--text-secondary); margin:8px 0;">
+                    Photos you've uploaded for places. Public photos can be viewed by anyone; you can delete them at any time.
+                </p>
+            </div>
+            <div style="background:#f8f9fa; border-radius:12px; padding:14px 16px; border:1px solid var(--divider);">
+                <div style="display:flex; align-items:center; gap:10px;">
+                    <span class="material-icons-outlined" style="color:#a142f4;">luggage</span>
+                    <strong>Trips</strong>
+                </div>
+                <p style="font-size:13px; color:var(--text-secondary); margin:8px 0;">
+                    Trips you've planned with stops and notes. Trips you've completed are kept for your reference.
+                </p>
+                <a href="{{ url_for('trips_page') if current_user.is_authenticated else url_for('login') }}" style="font-size:13px; color:#1a73e8;">View your trips &rarr;</a>
+            </div>
+            <div style="background:#f8f9fa; border-radius:12px; padding:14px 16px; border:1px solid var(--divider);">
+                <div style="display:flex; align-items:center; gap:10px;">
+                    <span class="material-icons-outlined" style="color:#616161;">search</span>
+                    <strong>Maps search activity</strong>
+                </div>
+                <p style="font-size:13px; color:var(--text-secondary); margin:8px 0;">
+                    Recent searches in Maps appear as suggestions when you start typing. You can clear search history any time.
+                </p>
+            </div>
+        </div>
+
+        <div class="panel-section">
+            <h2>Privacy controls</h2>
+        </div>
+        <div style="padding: 0 16px 24px;">
+            <ul style="font-size:13px; color:var(--text-secondary); line-height:1.7; padding-left:20px;">
+                <li><strong>Pause Location History</strong> &mdash; stop recording places you visit at any time.</li>
+                <li><strong>Auto-delete</strong> &mdash; choose to have Maps data older than 3, 18, or 36 months auto-removed.</li>
+                <li><strong>Incognito mode in Maps</strong> &mdash; browse and navigate without saving activity to your account.</li>
+                <li><strong>Delete your data</strong> &mdash; remove individual items or all data from a category.</li>
+            </ul>
+            <div style="margin-top:12px;">
+                <a href="{{ url_for('settings') }}" class="btn outlined">Manage settings</a>
+            </div>
+        </div>
+
+        <div class="app-footer" style="padding:20px;">
+            <div class="footer-links">
+                <a href="{{ url_for('about') }}">About</a>
+                <a href="{{ url_for('help_page') }}">Help</a>
+                <a href="{{ url_for('contribute') }}">Contribute</a>
+            </div>
+        </div>
+    </aside>
+
+    {% include '_mapcanvas.html' %}
+</div>
+{% endblock %}

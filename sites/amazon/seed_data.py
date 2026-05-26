@@ -1218,7 +1218,8 @@ def run_seed(db, Category, Product, User, Review):
         demo = User(email='demo@amazon.com', name='Demo Customer',
             phone='555-0100', address_line1='410 Terry Ave N',
             city='Seattle', state='WA', zip_code='98109')
-        demo.set_password('demo1234')
+        # Pinned bcrypt('demo1234') for byte-identical reset (see harden-env/gotchas.md).
+        demo.password_hash = '$2b$12$J0Uv8FcB6BYbjUbI.0vy1uWyLVlC8Dazqq0.iQ.xnebVkCz83hS4O'
         db.session.add(demo)
         db.session.commit()
 

@@ -1,0 +1,86 @@
+{% extends 'base.html' %}
+{% block title %}Help - Google Flights{% endblock %}
+{% block content %}
+<div class="info-page">
+  <div class="info-page-inner">
+    <h1>Help Center</h1>
+    <p class="lead">Browse common questions or jump to a section.</p>
+
+    <nav class="help-toc">
+      <a href="#search">Searching flights</a>
+      <a href="#booking">Booking and checkout</a>
+      <a href="#cancel">Cancelling a booking</a>
+      <a href="#track">Tracking prices</a>
+      <a href="#alerts">Price alerts</a>
+      <a href="#account">Account and payment</a>
+    </nav>
+
+    <section id="search">
+      <h2>Searching flights</h2>
+      <p>
+        Enter an origin and destination (city name, country, or IATA code),
+        pick your dates, then click <strong>Search</strong>. Results can be
+        sorted by Best, Cheapest, or Fastest, and filtered by stops, airline,
+        cabin class, and price.
+      </p>
+      <p>
+        For multi-airport cities like New York or Tokyo, searching the city
+        name returns flights from all airports in that city. Search a
+        specific IATA code (JFK, NRT) to narrow down to one airport.
+      </p>
+    </section>
+
+    <section id="booking">
+      <h2>Booking and checkout</h2>
+      <p>
+        Add a flight to your bag from any flight detail page or search
+        result, then go to <strong>Checkout</strong>. You can use a saved
+        payment method or enter a new card. After confirming, you'll
+        receive a PNR you can use to manage your booking from
+        <strong>Trips</strong>.
+      </p>
+    </section>
+
+    <section id="cancel">
+      <h2>Cancelling a booking</h2>
+      <p>
+        Open the booking from <a href="{{ url_for('trips') }}">Trips</a> and
+        click <strong>Cancel</strong>. Cancellations are processed
+        immediately; refund timing depends on the fare rules of the airline
+        that operates the flight.
+      </p>
+    </section>
+
+    <section id="track">
+      <h2>Tracking prices</h2>
+      <p>
+        On a flight detail page, click <strong>Track price</strong> to
+        follow that itinerary. Your tracked flights are listed under
+        <a href="{{ url_for('tracked_flights') }}">Tracked</a>.
+      </p>
+    </section>
+
+    <section id="alerts">
+      <h2>Price alerts</h2>
+      <p>
+        Set a target price for any route from the <strong>Price alerts</strong>
+        tab. We'll notify you when fares drop below your threshold.
+      </p>
+    </section>
+
+    <section id="account">
+      <h2>Account and payment</h2>
+      <p>
+        Edit your profile, change your password, or manage saved payment
+        methods from <a href="{{ url_for('account') }}">My account</a>.
+      </p>
+    </section>
+
+    {% if topic %}
+    <div class="help-deep-link">
+      Showing help for: <strong>{{ topic }}</strong>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

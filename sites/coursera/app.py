@@ -759,6 +759,97 @@ def for_teams():
     return render_template('for_teams.html')
 
 
+@app.route('/for-universities')
+@app.route('/universities')
+def for_universities():
+    """Coursera for Campus — pitch page for universities."""
+    return render_template('for_universities.html')
+
+
+@app.route('/for-government')
+@app.route('/government')
+def for_government():
+    """Coursera for Government — pitch page for public sector buyers."""
+    return render_template('for_government.html')
+
+
+@app.route('/help')
+@app.route('/support')
+def help_center():
+    """Static help / support page with grouped FAQ."""
+    return render_template('help.html')
+
+
+@app.route('/careers')
+@app.route('/jobs')
+def careers():
+    """Coursera careers / open-roles page."""
+    return render_template('careers.html')
+
+
+@app.route('/mobile')
+@app.route('/app')
+def mobile():
+    """Mobile app landing — App Store + Play Store links."""
+    return render_template('mobile.html')
+
+
+@app.route('/blog')
+@app.route('/blog/<slug>')
+def blog(slug=None):
+    """Coursera blog — index of recent posts and a stub article view."""
+    posts = [
+        {
+            'slug': 'top-skills-2026',
+            'title': 'Top 10 Skills Employers Will Look For in 2026',
+            'date': 'Apr 18, 2026',
+            'category': 'Career advice',
+            'excerpt': 'AI literacy, data fluency, and collaboration top the list this year — here is how to build them online.',
+        },
+        {
+            'slug': 'how-to-finish-a-specialization',
+            'title': 'How to Finish a Specialization Without Losing Your Weekends',
+            'date': 'Mar 11, 2026',
+            'category': 'Learning tips',
+            'excerpt': 'A four-week framework borrowed from working professionals who balance Coursera with a day job.',
+        },
+        {
+            'slug': 'professional-certificate-roi',
+            'title': 'Are Professional Certificates Worth It? Three Learners Share Their ROI',
+            'date': 'Feb 02, 2026',
+            'category': 'Outcomes',
+            'excerpt': 'Real numbers from three career-switchers who finished Google, IBM, and Meta certificates last year.',
+        },
+        {
+            'slug': 'ai-for-non-engineers',
+            'title': 'AI For Non-Engineers: A Reading List From Andrew Ng',
+            'date': 'Jan 17, 2026',
+            'category': 'AI',
+            'excerpt': 'The five courses, two specializations, and one Coursera Plus track Andrew recommends for product teams.',
+        },
+        {
+            'slug': 'global-degree-trends',
+            'title': 'Global Online-Degree Trends: Enrolment Hits a New High',
+            'date': 'Dec 09, 2025',
+            'category': 'Industry',
+            'excerpt': 'Online enrolments grew 23 % year-over-year. Here is which programs drove the spike.',
+        },
+        {
+            'slug': 'employer-driven-skills',
+            'title': 'How Companies Use Coursera for Business to Close Skill Gaps',
+            'date': 'Nov 21, 2025',
+            'category': 'Enterprise',
+            'excerpt': 'Inside the Coursera for Business playbook: skill assessments, learning paths, and measurable impact.',
+        },
+    ]
+    if slug:
+        post = next((p for p in posts if p['slug'] == slug), None)
+        if not post:
+            abort(404)
+        return render_template('blog_post.html', post=post, posts=posts)
+    return render_template('blog.html', posts=posts)
+
+
 @app.route('/instructor/<slug>')
 def instructor_profile(slug):
     """Instructor profile page: shows all courses taught by an instructor."""
@@ -2431,11 +2522,23 @@ def seed_database():
 
 # ─── Benchmark users seed ─────────────────────────────────────────────────────
 
+# Pinned reference date used for byte-identical seed reproducibility.
+# Any seed-time `datetime.utcnow()` must be replaced with offsets from this
+# so two independent rebuilds produce the same bytes (harden-env gotcha #3).
+SEED_REF_DATE = datetime(2025, 11, 1, 12, 0, 0)
+
+
 def seed_benchmark_users():
     """Idempotent. Creates 4 benchmark users with enrollments, saved courses,
-    and reviews. Safe to call multiple times — skips if users already exist."""
+    and reviews. Safe to call multiple times — skips if users already exist.
+
+    Determinism: `random.seed(...)` is pinned and `SEED_REF_DATE` replaces
+    `datetime.utcnow()` so every rebuild yields the same DB bytes."""
     if User.query.filter_by(email='alice.j@test.com').first():
         return  # already seeded
+
+    # Pin RNG so progress / date offsets are deterministic across rebuilds.
+    random.seed(20251101)
 
     def _get_course(slug_fragment):
         return Course.query.filter(Course.slug.ilike(f'%{slug_fragment}%')).first()
@@ -2451,9 +2554,17 @@ def seed_benchmark_users():
         ('David Kim', 'david.k@test.com', 'TestPass123!'),
     ]
     users = {}
+    # Pinned bcrypt hash for "TestPass123!" — required for byte-identical
+    # rebuilds. bcrypt.generate_password_hash() mixes a random salt every
+    # call, which would shift the users.password_hash bytes per process and
+    # break the seed-DB md5 invariant. See harden-env/gotchas.md item #1.
+    PINNED_TESTPASS_HASH = (
+        '$2b$12$RwAC/sfwDHtccU//A20fde.uKkZK4Ptnjjyua2l2ktwI6uysAp3Ou'
+    )
     for name, email, pw in users_data:
-        u = User(name=name, email=email)
-        u.set_password(pw)
+        u = User(name=name, email=email,
+                 password_hash=PINNED_TESTPASS_HASH,
+                 created_at=SEED_REF_DATE - timedelta(days=180))
         db.session.add(u)
         db.session.flush()
         users[email] = u
@@ -2473,7 +2584,9 @@ def seed_benchmark_users():
     for sl in alice_enrolled_slugs:
         c = _get_course(sl)
         if c:
-            e = Enrollment(user_id=alice.id, course_id=c.id, progress=random.randint(10, 80))
+            e = Enrollment(user_id=alice.id, course_id=c.id,
+                           progress=random.randint(10, 80),
+                           enrolled_at=SEED_REF_DATE - timedelta(days=random.randint(20, 200)))
             db.session.add(e)
             alice_enrolled_ids.append(c.id)
 
@@ -2488,7 +2601,8 @@ def seed_benchmark_users():
     for sl in alice_saved_slugs:
         c = _get_course(sl)
         if c and c.id not in alice_enrolled_ids:
-            db.session.add(SavedCourse(user_id=alice.id, course_id=c.id))
+            db.session.add(SavedCourse(user_id=alice.id, course_id=c.id,
+                saved_at=SEED_REF_DATE - timedelta(days=random.randint(5, 90))))
 
     # Reviews for enrolled courses
     alice_reviews = [
@@ -2501,7 +2615,7 @@ def seed_benchmark_users():
         if c:
             db.session.add(Review(user_id=alice.id, course_id=c.id,
                                   rating=rating, body=body,
-                                  created_at=datetime.utcnow() - timedelta(days=random.randint(10, 90))))
+                                  created_at=SEED_REF_DATE - timedelta(days=random.randint(10, 90))))
 
     # ── Bob: Web Dev + JavaScript focus, intermediate ─────────────────────────
     bob = users['bob.c@test.com']
@@ -2517,7 +2631,9 @@ def seed_benchmark_users():
     for sl in bob_enrolled_slugs:
         c = _get_course(sl)
         if c:
-            e = Enrollment(user_id=bob.id, course_id=c.id, progress=random.randint(20, 95))
+            e = Enrollment(user_id=bob.id, course_id=c.id,
+                           progress=random.randint(20, 95),
+                           enrolled_at=SEED_REF_DATE - timedelta(days=random.randint(20, 200)))
             db.session.add(e)
             bob_enrolled_ids.append(c.id)
 
@@ -2531,7 +2647,8 @@ def seed_benchmark_users():
     for sl in bob_saved_slugs:
         c = _get_course(sl)
         if c and c.id not in bob_enrolled_ids:
-            db.session.add(SavedCourse(user_id=bob.id, course_id=c.id))
+            db.session.add(SavedCourse(user_id=bob.id, course_id=c.id,
+                saved_at=SEED_REF_DATE - timedelta(days=random.randint(5, 90))))
 
     bob_reviews = [
         ('html-css-javascript', 4.5, 'Great foundation course. Covers HTML, CSS and JS in a balanced way.'),
@@ -2542,7 +2659,7 @@ def seed_benchmark_users():
         if c:
             db.session.add(Review(user_id=bob.id, course_id=c.id,
                                   rating=rating, body=body,
-                                  created_at=datetime.utcnow() - timedelta(days=random.randint(5, 60))))
+                                  created_at=SEED_REF_DATE - timedelta(days=random.randint(5, 60))))
 
     # ── Carol: Business + Project Management + HR focus, beginner ────────────
     carol = users['carol.d@test.com']
@@ -2558,7 +2675,9 @@ def seed_benchmark_users():
     for sl in carol_enrolled_slugs:
         c = _get_course(sl)
         if c:
-            e = Enrollment(user_id=carol.id, course_id=c.id, progress=random.randint(30, 100))
+            e = Enrollment(user_id=carol.id, course_id=c.id,
+                           progress=random.randint(30, 100),
+                           enrolled_at=SEED_REF_DATE - timedelta(days=random.randint(20, 200)))
             db.session.add(e)
             carol_enrolled_ids.append(c.id)
 
@@ -2572,7 +2691,8 @@ def seed_benchmark_users():
     for sl in carol_saved_slugs:
         c = _get_course(sl)
         if c and c.id not in carol_enrolled_ids:
-            db.session.add(SavedCourse(user_id=carol.id, course_id=c.id))
+            db.session.add(SavedCourse(user_id=carol.id, course_id=c.id,
+                saved_at=SEED_REF_DATE - timedelta(days=random.randint(5, 90))))
 
     carol_reviews = [
         ('introduction-to-project-management', 5.0, 'Perfect for aspiring project managers. Great real-world examples.'),
@@ -2584,7 +2704,7 @@ def seed_benchmark_users():
         if c:
             db.session.add(Review(user_id=carol.id, course_id=c.id,
                                   rating=rating, body=body,
-                                  created_at=datetime.utcnow() - timedelta(days=random.randint(15, 120))))
+                                  created_at=SEED_REF_DATE - timedelta(days=random.randint(15, 120))))
 
     # ── David: AI/ML + Advanced topics focus, intermediate/advanced ───────────
     david = users['david.k@test.com']
@@ -2600,7 +2720,9 @@ def seed_benchmark_users():
     for sl in david_enrolled_slugs:
         c = _get_course(sl)
         if c:
-            e = Enrollment(user_id=david.id, course_id=c.id, progress=random.randint(40, 100))
+            e = Enrollment(user_id=david.id, course_id=c.id,
+                           progress=random.randint(40, 100),
+                           enrolled_at=SEED_REF_DATE - timedelta(days=random.randint(20, 200)))
             db.session.add(e)
             david_enrolled_ids.append(c.id)
 
@@ -2614,7 +2736,8 @@ def seed_benchmark_users():
     for sl in david_saved_slugs:
         c = _get_course(sl)
         if c and c.id not in david_enrolled_ids:
-            db.session.add(SavedCourse(user_id=david.id, course_id=c.id))
+            db.session.add(SavedCourse(user_id=david.id, course_id=c.id,
+                saved_at=SEED_REF_DATE - timedelta(days=random.randint(5, 90))))
 
     david_reviews = [
         ('machine-learning-specialization', 5.0, 'The best ML course I have taken. Andrew Ng explains complex concepts clearly.'),
@@ -2627,7 +2750,7 @@ def seed_benchmark_users():
         if c:
             db.session.add(Review(user_id=david.id, course_id=c.id,
                                   rating=rating, body=body,
-                                  created_at=datetime.utcnow() - timedelta(days=random.randint(5, 180))))
+                                  created_at=SEED_REF_DATE - timedelta(days=random.randint(5, 180))))
 
     db.session.commit()
     print(f"Seeded benchmark users: {[u.email for u in users.values()]}")
@@ -2768,6 +2891,35 @@ def seed_testimonials_and_extras():
         print(f"  + seeded testimonials on {updated} courses")
 
 
+def _normalize_seed_db_layout():
+    """Re-emit indexes in alpha order + VACUUM the SQLite file so two
+    independent rebuilds produce byte-identical .db files. Gated on the
+    presence of a sentinel pragma so it only runs once (the first build);
+    subsequent warm restarts skip it. See harden-env/gotchas.md item #2."""
+    from sqlalchemy import text
+    conn = db.engine.connect()
+    try:
+        sentinel = conn.execute(text("PRAGMA user_version")).scalar()
+        if sentinel == 2:
+            return  # already normalized
+        idx_rows = conn.execute(text(
+            "SELECT name, sql FROM sqlite_master "
+            "WHERE type='index' AND name LIKE 'ix_%'"
+        )).fetchall()
+        for name, _ in idx_rows:
+            conn.execute(text(f"DROP INDEX IF EXISTS {name}"))
+        for name, sql in sorted(idx_rows, key=lambda r: r[0]):
+            if sql:
+                conn.execute(text(sql))
+        conn.execute(text("PRAGMA user_version = 2"))
+        conn.commit()
+        conn.execute(text("VACUUM"))
+        conn.commit()
+        print("  + normalized index order + VACUUM")
+    finally:
+        conn.close()
+
+
 with app.app_context():
     # Schema migration must run BEFORE ORM queries hit the new column.
     # (sqlite `ALTER TABLE ... ADD COLUMN` on an existing DB.)
@@ -2790,7 +2942,20 @@ with app.app_context():
         'Enrollment': Enrollment, 'SavedCourse': SavedCourse,
         'Review': Review,
     })
+    # R2 Phase: expand catalog to 1200+ courses (Advanced / Pro-Cert /
+    # Guided-Project / extra Specialization variants + 12 new degrees).
+    from seed_extras import seed_v3 as _seed_v3
+    _seed_v3(db, {
+        'User': User, 'Partner': Partner, 'Course': Course,
+        'CourseModule': CourseModule, 'SubCourse': SubCourse,
+        'Enrollment': Enrollment, 'SavedCourse': SavedCourse,
+        'Review': Review,
+    })
     seed_testimonials_and_extras()
+    # Re-emit indexes alphabetically + VACUUM so two independent rebuilds
+    # produce byte-identical sqlite files (SQLAlchemy index emission order
+    # depends on Python set iteration → id(); harden-env gotcha #2).
+    _normalize_seed_db_layout()
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))

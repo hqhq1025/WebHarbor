@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+{% block title %}Coursera for Government | Workforce Development for Public Sector{% endblock %}
+{% block content %}
+<div class="enterprise-page">
+  <div class="enterprise-hero">
+    <div class="container">
+      <div class="hero-with-art">
+        <div class="hero-text">
+          <h1>Coursera for Government</h1>
+          <p>Build workforce capability across federal, state and local agencies with
+             accredited online courses, professional certificates, and degree pathways.</p>
+          <div style="display:flex;gap:12px;margin-top:24px;flex-wrap:wrap;">
+            <a href="{{ url_for('register') }}" class="btn-primary">Contact public sector team</a>
+            <a href="{{ url_for('professional_certificates') }}" class="btn-outline-white">Explore certificates</a>
+          </div>
+        </div>
+        {% set _h = hero_image('business') %}
+        {% if _h %}<div class="hero-photo"><img src="{{ url_for('static', filename=_h) }}" alt=""></div>{% endif %}
+      </div>
+    </div>
+  </div>
+  <div class="container">
+    <section class="enterprise-benefits">
+      <h2>How Coursera supports public sector missions</h2>
+      <div class="benefits-grid">
+        <div class="benefit-card">
+          <span class="benefit-icon">&#127963;</span>
+          <h3>Reskill the public workforce</h3>
+          <p>Equip civil servants with current data, AI, cybersecurity, and management
+             competencies through industry-recognised programs.</p>
+        </div>
+        <div class="benefit-card">
+          <span class="benefit-icon">&#128737;</span>
+          <h3>Security and compliance</h3>
+          <p>FedRAMP-aligned hosting, SOC 2 Type II controls, and role-based access for
+             agency administrators.</p>
+        </div>
+        <div class="benefit-card">
+          <span class="benefit-icon">&#127757;</span>
+          <h3>Citizen-facing programs</h3>
+          <p>Power workforce development initiatives — partner with us to deliver free
+             or subsidised learning to job seekers.</p>
+        </div>
+        <div class="benefit-card">
+          <span class="benefit-icon">&#128202;</span>
+          <h3>Skill measurement</h3>
+          <p>Track agency-wide skill development with our Skills Dashboard and benchmark
+             against peer agencies.</p>
+        </div>
+        <div class="benefit-card">
+          <span class="benefit-icon">&#127942;</span>
+          <h3>Industry credentials</h3>
+          <p>Offer learners stackable credentials from Google, IBM, Meta, AWS, and over
+             350 university partners.</p>
+        </div>
+        <div class="benefit-card">
+          <span class="benefit-icon">&#128101;</span>
+          <h3>Cohort-based delivery</h3>
+          <p>Run cohort programs with private discussion forums, custom learning paths,
+             and live office hours from instructors.</p>
+        </div>
+      </div>
+    </section>
+    <section class="enterprise-cta">
+      <h2>Bring world-class learning to your agency</h2>
+      <a href="{{ url_for('register') }}" class="btn-primary">Request a briefing</a>
+    </section>
+  </div>
+</div>
+{% endblock %}

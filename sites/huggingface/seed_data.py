@@ -592,11 +592,77 @@ def pick_description(task_slug: str, rng: random.Random) -> str:
 
 
 def _load_scraped():
-    path = ROOT / "scraped_data" / "repos.json"
-    if path.exists():
-        with open(path) as f:
-            return json.load(f)
-    return {"models": [], "datasets": [], "spaces": []}
+    """Merge repos.json (curated bulk) with the trending/likes/new/recent dumps
+    so the seed DB covers ~4500 unique repos (~3x R1 baseline).
+
+    All supplementary dumps use HF Hub API shape (`id` = "author/name") instead
+    of repos.json's `slug`. Translate to the shape expected by
+    build_seed_repos() and only append truly new slugs. Sort each dump before
+    merging so byte order is deterministic across rebuilds.
+    """
+    base = {"models": [], "datasets": [], "spaces": []}
+    repos_path = ROOT / "scraped_data" / "repos.json"
+    if repos_path.exists():
+        with open(repos_path) as f:
+            base = json.load(f)
+
+    seen = {
+        "models": {m.get("slug") for m in base["models"] if isinstance(m, dict)},
+        "datasets": {d.get("slug") for d in base["datasets"] if isinstance(d, dict)},
+        "spaces": {s.get("slug") for s in base["spaces"] if isinstance(s, dict)},
+    }
+
+    def _adapt(item):
+        slug = item.get("id") or item.get("slug") or ""
+        if not slug or "/" not in slug or slug.count("/") > 1:
+            return None
+        return {
+            "slug": slug,
+            "pipeline_tag": item.get("pipeline_tag", ""),
+            "library_name": item.get("library_name", ""),
+            "tags": item.get("tags", []),
+            "downloads": item.get("downloads", 0),
+            "likes": item.get("likes", 0),
+            "sdk": item.get("sdk", ""),
+            "description": item.get("description", ""),
+            "createdAt": item.get("createdAt", ""),
+            "lastModified": item.get("lastModified", ""),
+        }
+
+    supplementary = [
+        ("models",   "hf_models_dl.json"),
+        ("models",   "hf_models_likes.json"),
+        ("models",   "hf_models_new.json"),
+        ("models",   "hf_models_recent.json"),
+        ("models",   "hf_models_more.json"),
+        ("datasets", "hf_datasets.json"),
+        ("datasets", "hf_datasets_likes.json"),
+        ("datasets", "hf_datasets_more.json"),
+        ("spaces",   "hf_spaces.json"),
+        ("spaces",   "hf_spaces_recent.json"),
+        ("spaces",   "hf_spaces_more.json"),
+    ]
+    for kind, fname in supplementary:
+        p = ROOT / "scraped_data" / fname
+        if not p.exists():
+            continue
+        try:
+            with open(p) as f:
+                arr = json.load(f)
+        except Exception:
+            continue
+        if not isinstance(arr, list):
+            continue
+        for raw in sorted(arr, key=lambda r: (r.get("id") or r.get("slug") or "")):
+            adapted = _adapt(raw)
+            if not adapted:
+                continue
+            if adapted["slug"] in seen[kind]:
+                continue
+            seen[kind].add(adapted["slug"])
+            base[kind].append(adapted)
+
+    return base
 
 
 def _list_files(folder: Path, exts={".jpg", ".jpeg", ".png", ".webp", ".svg"}):

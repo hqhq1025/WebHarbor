@@ -7,9 +7,75 @@ import random
 import os
 from datetime import date, timedelta, datetime
 from pathlib import Path
-from sqlalchemy import text
+from sqlalchemy import text, inspect as _sa_inspect
 
 BASE_DIR = Path(__file__).parent
+
+# Pinned reference timestamp used for every created_at / cancelled_at / updated_at
+# field that the seed path writes. Required so a rebuild on machine B at a
+# different wall-clock time yields the same byte sequence as the shipped seed DB.
+# See ~/repos/WebHarbor/.claude/skills/harden-env/gotchas.md #3.
+MIRROR_REFERENCE_DATE = datetime(2026, 5, 12, 12, 0, 0)
+
+# Pinned bcrypt hash for the canonical benchmark password 'TestPass123!'.
+# bcrypt.generate_password_hash() mixes a fresh salt every call, which breaks
+# byte-identical rebuild (gotcha #1). seed_benchmark_users() reuses this string
+# verbatim instead of calling set_password / generate_password_hash.
+PINNED_PASSWORD_HASH = '$2b$12$RwAC/sfwDHtccU//A20fde.uKkZK4Ptnjjyua2l2ktwI6uysAp3Ou'
+
+
+def normalize_seed_db_layout(db):
+    """Re-emit indexes in alpha order + VACUUM so rebuilds match byte-for-byte.
+    SQLAlchemy emits CREATE INDEX from `Table.indexes`, a Python set whose iteration
+    order depends on object id() — so the schema text inside sqlite_schema shifts
+    every rebuild even when row data is identical. Drop + reinsert in sorted name
+    order + VACUUM so the SQLite page bytes are stable across processes.
+
+    Also freezes all rebuild-volatile timestamp columns to MIRROR_REFERENCE_DATE.
+    Every `Column(DateTime, default=datetime.utcnow)` fires at row insert and would
+    otherwise capture wall-clock time per build (gotcha #3). We sweep the affected
+    columns to MIRROR_REFERENCE_DATE after seed, except booking.booked_at /
+    booking.cancelled_at which are pinned with deliberate offsets (so the Trips
+    listing sorts sensibly).
+    """
+    conn = db.engine.connect()
+
+    # 1. Freeze volatile timestamps. Skip the booking table — those columns are
+    # already set with deliberate per-row offsets in app.py:_make_booking.
+    pinned = MIRROR_REFERENCE_DATE.isoformat(sep=' ')
+    freeze_targets = [
+        ('user', 'created_at'),
+        ('flight', 'created_at'),
+        ('cart_item', 'added_at'),
+        ('booking_item', None),  # no timestamp column
+        ('tracked_flight', 'added_at'),
+        ('review', 'created_at'),
+        ('price_alert', 'created_at'),
+        ('saved_search', 'created_at'),
+        ('payment_methods', 'created_at'),
+    ]
+    for table, col in freeze_targets:
+        if not col:
+            continue
+        try:
+            conn.execute(text(f"UPDATE {table} SET {col} = :ts"), {'ts': pinned})
+        except Exception:
+            # Column may not exist on every table (forward-compat).
+            pass
+    conn.commit()
+
+    # 2. Normalize CREATE INDEX order.
+    idx_rows = conn.execute(text(
+        "SELECT name, sql FROM sqlite_master WHERE type='index' AND name LIKE 'ix_%'"
+    )).fetchall()
+    for name, _ in idx_rows:
+        conn.execute(text(f"DROP INDEX IF EXISTS {name}"))
+    for name, sql in sorted(idx_rows, key=lambda r: r[0]):
+        if sql:
+            conn.execute(text(sql))
+    conn.execute(text("VACUUM"))
+    conn.commit()
+
 
 # (iata, city_slug, city, country, airport_name, region, is_popular)
 AIRPORTS = [
@@ -203,6 +269,212 @@ AIRPORTS = [
     ('YOW', 'ottawa', 'Ottawa', 'Canada', 'Macdonald-Cartier International', 'North America', False),
     ('YHZ', 'halifax', 'Halifax', 'Canada', 'Stanfield International', 'North America', False),
     ('YEG', 'edmonton', 'Edmonton', 'Canada', 'Edmonton International', 'North America', False),
+    # ------------------------------------------------------------------
+    # R2 expansion - 199 additional airports sourced from OpenFlights
+    # airports.dat (jpatokal/openflights). Appended so existing
+    # autoincrement airport.id values stay stable. All flagged
+    # is_popular=False so the popular-hub flight catalog stays untouched.
+    # Brings the total catalog from 166 to ~365 airports.
+    # ------------------------------------------------------------------
+    ('ABQ', 'albuquerque', 'Albuquerque', 'United States', 'Albuquerque International Sunport', 'North America', False),
+    ('ABV', 'abuja', 'Abuja', 'Nigeria', 'Nnamdi Azikiwe International Airport', 'Africa', False),
+    ('AER', 'sochi', 'Sochi', 'Russia', 'Sochi International Airport', 'Europe', False),
+    ('AGT', 'ciudad-del-este', 'Ciudad del Este', 'Paraguay', 'Guarani International Airport', 'Latin America', False),
+    ('ALA', 'alma-ata', 'Alma-ata', 'Kazakhstan', 'Almaty Airport', 'Asia', False),
+    ('ALC', 'alicante', 'Alicante', 'Spain', 'Alicante International Airport', 'Europe', False),
+    ('ALG', 'algier', 'Algier', 'Algeria', 'Houari Boumediene Airport', 'Africa', False),
+    ('AMD', 'ahmedabad', 'Ahmedabad', 'India', 'Sardar Vallabhbhai Patel International Airport', 'Asia', False),
+    ('ANC', 'anchorage', 'Anchorage', 'United States', 'Ted Stevens Anchorage International Airport', 'North America', False),
+    ('APW', 'faleolo', 'Faleolo', 'Samoa', 'Faleolo International Airport', 'Oceania', False),
+    ('ASU', 'asuncion', 'Asuncion', 'Paraguay', 'Silvio Pettirossi International Airport', 'Latin America', False),
+    ('AUA', 'oranjestad', 'Oranjestad', 'Aruba', 'Queen Beatrix International Airport', 'Latin America', False),
+    ('BAH', 'bahrain', 'Bahrain', 'Bahrain', 'Bahrain International Airport', 'Middle East', False),
+    ('BDA', 'bermuda', 'Bermuda', 'Bermuda', 'L.F. Wade International Airport', 'Latin America', False),
+    ('BEG', 'belgrade', 'Belgrade', 'Serbia', 'Belgrade Nikola Tesla Airport', 'Europe', False),
+    ('BEL', 'belem', 'Belem', 'Brazil', 'Val de Cans/Julio Cezar Ribeiro International Airport', 'Latin America', False),
+    ('BFS', 'belfast', 'Belfast', 'United Kingdom', 'Belfast International Airport', 'Europe', False),
+    ('BGI', 'bridgetown', 'Bridgetown', 'Barbados', 'Sir Grantley Adams International Airport', 'Latin America', False),
+    ('BGO', 'bergen', 'Bergen', 'Norway', 'Bergen Airport Flesland', 'Europe', False),
+    ('BGW', 'baghdad', 'Baghdad', 'Iraq', 'Baghdad International Airport', 'Middle East', False),
+    ('BHX', 'birmingham', 'Birmingham', 'United Kingdom', 'Birmingham International Airport', 'Europe', False),
+    ('BIO', 'bilbao', 'Bilbao', 'Spain', 'Bilbao Airport', 'Europe', False),
+    ('BOD', 'bordeaux', 'Bordeaux', 'France', 'Bordeaux-Merignac Airport', 'Europe', False),
+    ('BOI', 'boise', 'Boise', 'United States', 'Boise Air Terminal/Gowen Field', 'North America', False),
+    ('BRE', 'bremen', 'Bremen', 'Germany', 'Bremen Airport', 'Europe', False),
+    ('BRN', 'bern', 'Bern', 'Switzerland', 'Bern Belp Airport', 'Europe', False),
+    ('BRS', 'bristol', 'Bristol', 'United Kingdom', 'Bristol Airport', 'Europe', False),
+    ('BSL', 'mulhouse', 'Mulhouse', 'France', 'EuroAirport Basel-Mulhouse-Freiburg Airport', 'Europe', False),
+    ('BTS', 'bratislava', 'Bratislava', 'Slovakia', 'M. R. tefanik Airport', 'Europe', False),
+    ('BUF', 'buffalo', 'Buffalo', 'United States', 'Buffalo Niagara International Airport', 'North America', False),
+    ('BUR', 'burbank', 'Burbank', 'United States', 'Bob Hope Airport', 'North America', False),
+    ('CCS', 'caracas', 'Caracas', 'Venezuela', 'Simon Bolivar International Airport', 'Latin America', False),
+    ('CCU', 'kolkata', 'Kolkata', 'India', 'Netaji Subhash Chandra Bose International Airport', 'Asia', False),
+    ('CHS', 'charleston', 'Charleston', 'United States', 'Charleston Air Force Base-International Airport', 'North America', False),
+    ('CIA', 'rome-cia', 'Rome', 'Italy', 'CiampinoG. B. Pastine International Airport', 'Europe', False),
+    ('CJU', 'cheju', 'Cheju', 'South Korea', 'Jeju International Airport', 'Asia', False),
+    ('CKG', 'chongqing', 'Chongqing', 'China', 'Chongqing Jiangbei International Airport', 'Asia', False),
+    ('CLE', 'cleveland', 'Cleveland', 'United States', 'Cleveland Hopkins International Airport', 'North America', False),
+    ('CLO', 'cali', 'Cali', 'Colombia', 'Alfonso Bonilla Aragon International Airport', 'Latin America', False),
+    ('CMH', 'columbus', 'Columbus', 'United States', 'John Glenn Columbus International Airport', 'North America', False),
+    ('CNS', 'cairns', 'Cairns', 'Australia', 'Cairns International Airport', 'Oceania', False),
+    ('COK', 'kochi', 'Kochi', 'India', 'Cochin International Airport', 'Asia', False),
+    ('CSX', 'changcha', 'Changcha', 'China', 'Changsha Huanghua International Airport', 'Asia', False),
+    ('CTA', 'catania', 'Catania', 'Italy', 'Catania-Fontanarossa Airport', 'Europe', False),
+    ('CTG', 'cartagena', 'Cartagena', 'Colombia', 'Rafael Nunez International Airport', 'Latin America', False),
+    ('CUR', 'willemstad', 'Willemstad', 'Curacao', 'Hato International Airport', 'Latin America', False),
+    ('CWB', 'curitiba', 'Curitiba', 'Brazil', 'Afonso Pena Airport', 'Latin America', False),
+    ('CWL', 'cardiff', 'Cardiff', 'United Kingdom', 'Cardiff International Airport', 'Europe', False),
+    ('DAD', 'danang', 'Danang', 'Vietnam', 'Da Nang International Airport', 'Asia', False),
+    ('DAR', 'dar-es-salaam', 'Dar Es Salaam', 'Tanzania', 'Julius Nyerere International Airport', 'Africa', False),
+    ('DBV', 'dubrovnik', 'Dubrovnik', 'Croatia', 'Dubrovnik Airport', 'Europe', False),
+    ('DKR', 'dakar', 'Dakar', 'Senegal', 'Leopold Sedar Senghor International Airport', 'Africa', False),
+    ('DLC', 'dalian', 'Dalian', 'China', 'Zhoushuizi Airport', 'Asia', False),
+    ('DME', 'moscow', 'Moscow', 'Russia', 'Domodedovo International Airport', 'Europe', False),
+    ('DMK', 'bangkok-dmk', 'Bangkok', 'Thailand', 'Don Mueang International Airport', 'Asia', False),
+    ('DRW', 'darwin', 'Darwin', 'Australia', 'Darwin International Airport', 'Oceania', False),
+    ('DUD', 'dunedin', 'Dunedin', 'New Zealand', 'Dunedin Airport', 'Oceania', False),
+    ('EBB', 'entebbe', 'Entebbe', 'Uganda', 'Entebbe International Airport', 'Africa', False),
+    ('ELP', 'el-paso', 'El Paso', 'United States', 'El Paso International Airport', 'North America', False),
+    ('EVN', 'yerevan', 'Yerevan', 'Armenia', 'Zvartnots International Airport', 'Europe', False),
+    ('FAI', 'fairbanks', 'Fairbanks', 'United States', 'Fairbanks International Airport', 'North America', False),
+    ('FAO', 'faro', 'Faro', 'Portugal', 'Faro Airport', 'Europe', False),
+    ('FOR', 'fortaleza', 'Fortaleza', 'Brazil', 'Pinto Martins International Airport', 'Latin America', False),
+    ('FUK', 'fukuoka', 'Fukuoka', 'Japan', 'Fukuoka Airport', 'Asia', False),
+    ('GBE', 'gaberone', 'Gaberone', 'Botswana', 'Sir Seretse Khama International Airport', 'Africa', False),
+    ('GCM', 'georgetown', 'Georgetown', 'Cayman Islands', 'Owen Roberts International Airport', 'Latin America', False),
+    ('GDL', 'guadalajara', 'Guadalajara', 'Mexico', 'Don Miguel Hidalgo Y Costilla International Airport', 'Latin America', False),
+    ('GMP', 'seoul-gmp', 'Seoul', 'South Korea', 'Gimpo International Airport', 'Asia', False),
+    ('GOI', 'goa', 'Goa', 'India', 'Dabolim Airport', 'Asia', False),
+    ('GOT', 'gothenborg', 'Gothenborg', 'Sweden', 'Gothenburg-Landvetter Airport', 'Europe', False),
+    ('GYE', 'guayaquil', 'Guayaquil', 'Ecuador', 'Jose Joaquin de Olmedo International Airport', 'Latin America', False),
+    ('HBA', 'hobart', 'Hobart', 'Australia', 'Hobart International Airport', 'Oceania', False),
+    ('HGH', 'hangzhou', 'Hangzhou', 'China', 'Hangzhou Xiaoshan International Airport', 'Asia', False),
+    ('HKD', 'hakodate', 'Hakodate', 'Japan', 'Hakodate Airport', 'Asia', False),
+    ('HRB', 'harbin', 'Harbin', 'China', 'Taiping Airport', 'Asia', False),
+    ('HRE', 'harare', 'Harare', 'Zimbabwe', 'Robert Gabriel Mugabe International Airport', 'Africa', False),
+    ('IBZ', 'ibiza', 'Ibiza', 'Spain', 'Ibiza Airport', 'Europe', False),
+    ('IKA', 'tehran', 'Tehran', 'Iran', 'Imam Khomeini International Airport', 'Middle East', False),
+    ('IND', 'indianapolis', 'Indianapolis', 'United States', 'Indianapolis International Airport', 'North America', False),
+    ('ISB', 'islamabad', 'Islamabad', 'Pakistan', 'New Islamabad International Airport', 'Asia', False),
+    ('IXC', 'chandigarh', 'Chandigarh', 'India', 'Chandigarh Airport', 'Asia', False),
+    ('JAX', 'jacksonville', 'Jacksonville', 'United States', 'Jacksonville International Airport', 'North America', False),
+    ('KBP', 'kiev', 'Kiev', 'Ukraine', 'Boryspil International Airport', 'Europe', False),
+    ('KGL', 'kigali', 'Kigali', 'Rwanda', 'Kigali International Airport', 'Africa', False),
+    ('KHI', 'karachi', 'Karachi', 'Pakistan', 'Jinnah International Airport', 'Asia', False),
+    ('KIN', 'kingston', 'Kingston', 'Jamaica', 'Norman Manley International Airport', 'Latin America', False),
+    ('KJA', 'krasnoyarsk', 'Krasnoyarsk', 'Russia', 'Yemelyanovo Airport', 'Europe', False),
+    ('KMG', 'kunming', 'Kunming', 'China', 'Kunming Changshui International Airport', 'Asia', False),
+    ('KOA', 'kona', 'Kona', 'United States', 'Ellison Onizuka Kona International At Keahole Airport', 'North America', False),
+    ('KUN', 'kaunas', 'Kaunas', 'Lithuania', 'Kaunas International Airport', 'Europe', False),
+    ('KZN', 'kazan', 'Kazan', 'Russia', 'Kazan International Airport', 'Europe', False),
+    ('LAD', 'luanda', 'Luanda', 'Angola', 'Quatro de Fevereiro Airport', 'Africa', False),
+    ('LBA', 'leeds', 'Leeds', 'United Kingdom', 'Leeds Bradford Airport', 'Europe', False),
+    ('LED', 'st-petersburg', 'St. Petersburg', 'Russia', 'Pulkovo Airport', 'Europe', False),
+    ('LGB', 'long-beach', 'Long Beach', 'United States', 'Long Beach /Daugherty Field/ Airport', 'North America', False),
+    ('LHE', 'lahore', 'Lahore', 'Pakistan', 'Alama Iqbal International Airport', 'Asia', False),
+    ('LIH', 'lihue', 'Lihue', 'United States', 'Lihue Airport', 'North America', False),
+    ('LJU', 'ljubljana', 'Ljubljana', 'Slovenia', 'Ljubljana Joze Pucnik Airport', 'Europe', False),
+    ('LPA', 'gran-canaria', 'Gran Canaria', 'Spain', 'Gran Canaria Airport', 'Europe', False),
+    ('LPB', 'la-paz', 'La Paz', 'Bolivia', 'El Alto International Airport', 'Latin America', False),
+    ('LPL', 'liverpool', 'Liverpool', 'United Kingdom', 'Liverpool John Lennon Airport', 'Europe', False),
+    ('LTN', 'london-ltn', 'London', 'United Kingdom', 'London Luton Airport', 'Europe', False),
+    ('LWO', 'lvov', 'Lvov', 'Ukraine', 'Lviv International Airport', 'Europe', False),
+    ('MAO', 'manaus', 'Manaus', 'Brazil', 'Eduardo Gomes International Airport', 'Latin America', False),
+    ('MBJ', 'montego-bay', 'Montego Bay', 'Jamaica', 'Sangster International Airport', 'Latin America', False),
+    ('MCI', 'kansas-city', 'Kansas City', 'United States', 'Kansas City International Airport', 'North America', False),
+    ('MCT', 'muscat', 'Muscat', 'Oman', 'Muscat International Airport', 'Middle East', False),
+    ('MEM', 'memphis', 'Memphis', 'United States', 'Memphis International Airport', 'North America', False),
+    ('MFM', 'macau', 'Macau', 'Macau', 'Macau International Airport', 'Asia', False),
+    ('MKE', 'milwaukee', 'Milwaukee', 'United States', 'General Mitchell International Airport', 'North America', False),
+    ('MLA', 'malta', 'Malta', 'Malta', 'Malta International Airport', 'Europe', False),
+    ('MPL', 'montpellier', 'Montpellier', 'France', 'Montpellier-Mediterranee Airport', 'Europe', False),
+    ('MPM', 'maputo', 'Maputo', 'Mozambique', 'Maputo Airport', 'Africa', False),
+    ('MRS', 'marseille', 'Marseille', 'France', 'Marseille Provence Airport', 'Europe', False),
+    ('MRU', 'plaisance', 'Plaisance', 'Mauritius', 'Sir Seewoosagur Ramgoolam International Airport', 'Africa', False),
+    ('MTY', 'monterrey', 'Monterrey', 'Mexico', 'General Mariano Escobedo International Airport', 'Latin America', False),
+    ('MVD', 'montevideo', 'Montevideo', 'Uruguay', 'Carrasco International /General C L Berisso Airport', 'Latin America', False),
+    ('MYR', 'myrtle-beach', 'Myrtle Beach', 'United States', 'Myrtle Beach International Airport', 'North America', False),
+    ('NCL', 'newcastle', 'Newcastle', 'United Kingdom', 'Newcastle Airport', 'Europe', False),
+    ('NGO', 'nagoya', 'Nagoya', 'Japan', 'Chubu Centrair International Airport', 'Asia', False),
+    ('NKG', 'nanjing', 'Nanjing', 'China', 'Nanjing Lukou Airport', 'Asia', False),
+    ('NOU', 'noumea', 'Noumea', 'New Caledonia', 'La Tontouta International Airport', 'Oceania', False),
+    ('NTE', 'nantes', 'Nantes', 'France', 'Nantes Atlantique Airport', 'Europe', False),
+    ('NUE', 'nuernberg', 'Nuernberg', 'Germany', 'Nuremberg Airport', 'Europe', False),
+    ('OAK', 'oakland', 'Oakland', 'United States', 'Metropolitan Oakland International Airport', 'North America', False),
+    ('OGG', 'kahului', 'Kahului', 'United States', 'Kahului Airport', 'North America', False),
+    ('OKA', 'okinawa', 'Okinawa', 'Japan', 'Naha Airport', 'Asia', False),
+    ('OKC', 'oklahoma-city', 'Oklahoma City', 'United States', 'Will Rogers World Airport', 'North America', False),
+    ('OMA', 'omaha', 'Omaha', 'United States', 'Eppley Airfield', 'North America', False),
+    ('ONT', 'ontario', 'Ontario', 'United States', 'Ontario International Airport', 'North America', False),
+    ('OOL', 'coolangatta', 'Coolangatta', 'Australia', 'Gold Coast Airport', 'Oceania', False),
+    ('OVB', 'novosibirsk', 'Novosibirsk', 'Russia', 'Tolmachevo Airport', 'Europe', False),
+    ('PAP', 'port-au-prince', 'Port-au-prince', 'Haiti', 'Toussaint Louverture International Airport', 'Latin America', False),
+    ('PIT', 'pittsburgh', 'Pittsburgh', 'United States', 'Pittsburgh International Airport', 'North America', False),
+    ('PMO', 'palermo', 'Palermo', 'Italy', 'FalconeBorsellino Airport', 'Europe', False),
+    ('PNH', 'phnom-penh', 'Phnom-penh', 'Cambodia', 'Phnom Penh International Airport', 'Asia', False),
+    ('POA', 'porto-alegre', 'Porto Alegre', 'Brazil', 'Salgado Filho Airport', 'Latin America', False),
+    ('POM', 'port-moresby', 'Port Moresby', 'Papua New Guinea', 'Port Moresby Jacksons International Airport', 'Oceania', False),
+    ('POS', 'port-of-spain', 'Port-of-spain', 'Trinidad and Tobago', 'Piarco International Airport', 'Latin America', False),
+    ('PSA', 'pisa', 'Pisa', 'Italy', 'Pisa International Airport', 'Europe', False),
+    ('PVD', 'providence', 'Providence', 'United States', 'Theodore Francis Green State Airport', 'North America', False),
+    ('PVR', 'puerto-vallarta', 'Puerto Vallarta', 'Mexico', 'Licenciado Gustavo Diaz Ordaz International Airport', 'Latin America', False),
+    ('RDU', 'raleigh-durham', 'Raleigh-durham', 'United States', 'Raleigh Durham International Airport', 'North America', False),
+    ('REC', 'recife', 'Recife', 'Brazil', 'Guararapes - Gilberto Freyre International Airport', 'Latin America', False),
+    ('RGN', 'yangon', 'Yangon', 'Myanmar', 'Yangon International Airport', 'Asia', False),
+    ('RIC', 'richmond', 'Richmond', 'United States', 'Richmond International Airport', 'North America', False),
+    ('ROT', 'rotorua', 'Rotorua', 'New Zealand', 'Rotorua Regional Airport', 'Oceania', False),
+    ('SAT', 'san-antonio', 'San Antonio', 'United States', 'San Antonio International Airport', 'North America', False),
+    ('SAV', 'savannah', 'Savannah', 'United States', 'Savannah Hilton Head International Airport', 'North America', False),
+    ('SDQ', 'santo-domingo', 'Santo Domingo', 'Dominican Republic', 'Las Americas International Airport', 'Latin America', False),
+    ('SEZ', 'mahe', 'Mahe', 'Seychelles', 'Seychelles International Airport', 'Africa', False),
+    ('SGN', 'ho-chi-minh-city', 'Ho Chi Minh City', 'Vietnam', 'Tan Son Nhat International Airport', 'Asia', False),
+    ('SHJ', 'sharjah', 'Sharjah', 'United Arab Emirates', 'Sharjah International Airport', 'Middle East', False),
+    ('SJC', 'san-jose', 'San Jose', 'United States', 'Norman Y. Mineta San Jose International Airport', 'North America', False),
+    ('SJD', 'san-jose-del-cabo', 'San Jose Del Cabo', 'Mexico', 'Los Cabos International Airport', 'Latin America', False),
+    ('SKP', 'skopje', 'Skopje', 'Macedonia', 'Skopje Alexander the Great Airport', 'Europe', False),
+    ('SMF', 'sacramento', 'Sacramento', 'United States', 'Sacramento International Airport', 'North America', False),
+    ('SNA', 'santa-ana', 'Santa Ana', 'United States', 'John Wayne Airport-Orange County Airport', 'North America', False),
+    ('SPU', 'split', 'Split', 'Croatia', 'Split Airport', 'Europe', False),
+    ('SSA', 'salvador', 'Salvador', 'Brazil', 'Deputado Luiz Eduardo Magalhaes International Airport', 'Latin America', False),
+    ('STL', 'st-louis', 'St. Louis', 'United States', 'St Louis Lambert International Airport', 'North America', False),
+    ('STN', 'london-stn', 'London', 'United Kingdom', 'London Stansted Airport', 'Europe', False),
+    ('STR', 'stuttgart', 'Stuttgart', 'Germany', 'Stuttgart Airport', 'Europe', False),
+    ('STT', 'st-thomas', 'St. Thomas', 'Virgin Islands', 'Cyril E. King Airport', 'Latin America', False),
+    ('SVO', 'moscow-svo', 'Moscow', 'Russia', 'Sheremetyevo International Airport', 'Europe', False),
+    ('SVQ', 'sevilla', 'Sevilla', 'Spain', 'Sevilla Airport', 'Europe', False),
+    ('TAO', 'qingdao', 'Qingdao', 'China', 'Liuting Airport', 'Asia', False),
+    ('TAS', 'tashkent', 'Tashkent', 'Uzbekistan', 'Tashkent International Airport', 'Asia', False),
+    ('TBS', 'tbilisi', 'Tbilisi', 'Georgia', 'Tbilisi International Airport', 'Europe', False),
+    ('TFS', 'tenerife', 'Tenerife', 'Spain', 'Tenerife South Airport', 'Europe', False),
+    ('TIA', 'tirana', 'Tirana', 'Albania', 'Tirana International Airport Mother Teresa', 'Europe', False),
+    ('TIJ', 'tijuana', 'Tijuana', 'Mexico', 'General Abelardo L. Rodriguez International Airport', 'Latin America', False),
+    ('TLS', 'toulouse', 'Toulouse', 'France', 'Toulouse-Blagnac Airport', 'Europe', False),
+    ('TNR', 'antananarivo', 'Antananarivo', 'Madagascar', 'Ivato Airport', 'Africa', False),
+    ('TRD', 'trondheim', 'Trondheim', 'Norway', 'Trondheim Airport Vaernes', 'Europe', False),
+    ('TRV', 'trivandrum', 'Trivandrum', 'India', 'Trivandrum International Airport', 'Asia', False),
+    ('TSA', 'taipei-tsa', 'Taipei', 'Taiwan', 'Taipei Songshan Airport', 'Asia', False),
+    ('TSN', 'tianjin', 'Tianjin', 'China', 'Tianjin Binhai International Airport', 'Asia', False),
+    ('TUN', 'tunis', 'Tunis', 'Tunisia', 'Tunis Carthage International Airport', 'Africa', False),
+    ('TUS', 'tucson', 'Tucson', 'United States', 'Tucson International Airport', 'North America', False),
+    ('TXL', 'berlin-txl', 'Berlin', 'Germany', 'Berlin-Tegel Airport', 'Europe', False),
+    ('ULN', 'ulan-bator', 'Ulan Bator', 'Mongolia', 'Chinggis Khaan International Airport', 'Asia', False),
+    ('VLC', 'valencia', 'Valencia', 'Spain', 'Valencia Airport', 'Europe', False),
+    ('VNO', 'vilnius', 'Vilnius', 'Lithuania', 'Vilnius International Airport', 'Europe', False),
+    ('VTE', 'vientiane', 'Vientiane', 'Laos', 'Wattay International Airport', 'Asia', False),
+    ('VVI', 'santa-cruz', 'Santa Cruz', 'Bolivia', 'Viru Viru International Airport', 'Latin America', False),
+    ('VVO', 'vladivostok', 'Vladivostok', 'Russia', 'Vladivostok International Airport', 'Europe', False),
+    ('WDH', 'windhoek', 'Windhoek', 'Namibia', 'Hosea Kutako International Airport', 'Africa', False),
+    ('WLG', 'wellington', 'Wellington', 'New Zealand', 'Wellington International Airport', 'Oceania', False),
+    ('WUH', 'wuhan', 'Wuhan', 'China', 'Wuhan Tianhe International Airport', 'Asia', False),
+    ('XMN', 'xiamen', 'Xiamen', 'China', 'Xiamen Gaoqi International Airport', 'Asia', False),
+    ('YQB', 'quebec', 'Quebec', 'Canada', 'Quebec Jean Lesage International Airport', 'North America', False),
+    ('YQR', 'regina', 'Regina', 'Canada', 'Regina International Airport', 'North America', False),
+    ('YWG', 'winnipeg', 'Winnipeg', 'Canada', 'Winnipeg / James Armstrong Richardson International Airport', 'North America', False),
+    ('YXE', 'saskatoon', 'Saskatoon', 'Canada', 'Saskatoon John G. Diefenbaker International Airport', 'North America', False),
+    ('ZAG', 'zagreb', 'Zagreb', 'Croatia', 'Zagreb Airport', 'Europe', False),
+    ('ZQN', 'queenstown-international', 'Queenstown International', 'New Zealand', 'Queenstown International Airport', 'Oceania', False),
+    ('XIY', 'xi-an', 'Xian', 'China', 'Xian Xianyang International Airport', 'Asia', False),
+    ('PPT', 'papeete', 'Papeete', 'French Polynesia', 'Faaa International Airport', 'Oceania', False),
 ]
 
 AIRLINES = [
@@ -664,7 +936,7 @@ def seed_all(db, Airport, Flight):
             'is_best': False,
             'is_cheapest': False,
             'is_fastest': False,
-            'created_at': datetime.utcnow(),
+            'created_at': MIRROR_REFERENCE_DATE,
         }
 
     # Additional intl -> intl and reverse routes needed by tasks

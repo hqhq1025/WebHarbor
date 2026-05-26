@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+{% block title %}Careers at Coursera | Open Roles{% endblock %}
+{% block content %}
+<div class="container" style="padding:48px 16px;">
+  <h1>Build the future of learning with us</h1>
+  <p class="muted" style="font-size:18px;max-width:720px;">
+    Coursera helps anyone, anywhere transform their life through learning.
+    Join 1,000+ Courserians around the world working to make universal access
+    to world-class learning a reality.
+  </p>
+
+  <section style="margin:36px 0;">
+    <h2>Our values</h2>
+    <div class="benefits-grid">
+      <div class="benefit-card"><h3>Learners first</h3><p>Every decision starts with the learner — measurable outcomes, accessible pricing, transparent quality.</p></div>
+      <div class="benefit-card"><h3>Play long-term</h3><p>We invest in the durable advantage: world-class content, partner relationships, and a learning platform that compounds over decades.</p></div>
+      <div class="benefit-card"><h3>Build great teams</h3><p>We hire for craft, curiosity, and kindness. We invest in growth.</p></div>
+      <div class="benefit-card"><h3>Make it better</h3><p>Continuous improvement is everyone's job. Bias toward iteration over perfection.</p></div>
+    </div>
+  </section>
+
+  <section style="margin:36px 0;">
+    <h2>Open roles</h2>
+    <table style="width:100%;border-collapse:collapse;margin-top:16px;">
+      <thead>
+        <tr style="text-align:left;border-bottom:1px solid #d4d4d8;">
+          <th style="padding:10px 8px;">Role</th>
+          <th style="padding:10px 8px;">Team</th>
+          <th style="padding:10px 8px;">Location</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for role, team, loc in [
+          ('Senior Software Engineer, Learning Platform','Engineering','Mountain View, CA / Remote'),
+          ('Staff Machine Learning Engineer','Engineering','Mountain View, CA'),
+          ('Senior Product Manager, Coursera Plus','Product','New York, NY / Remote'),
+          ('Curriculum Engineer, Generative AI','Content','Remote — Americas'),
+          ('Data Scientist, Outcomes','Data','Toronto, ON'),
+          ('Enterprise Account Executive, EMEA','Sales','London, UK'),
+          ('Senior UX Researcher','Design','Mountain View, CA'),
+          ('University Partnerships Manager, APAC','Partnerships','Singapore'),
+          ('Customer Support Lead, Spanish','Support','Mexico City'),
+          ('Recruiter, Engineering','People','Remote — Americas')] %}
+        <tr style="border-bottom:1px solid #f4f4f5;">
+          <td style="padding:12px 8px;"><strong>{{ role }}</strong></td>
+          <td style="padding:12px 8px;">{{ team }}</td>
+          <td style="padding:12px 8px;">{{ loc }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </section>
+
+  <section style="margin:36px 0;">
+    <h2>Benefits</h2>
+    <ul style="line-height:1.9;">
+      <li>Comprehensive medical, dental and vision insurance.</li>
+      <li>Generous parental leave and flexible time off.</li>
+      <li>Unlimited learning on Coursera, including degrees.</li>
+      <li>Annual wellness and home-office stipends.</li>
+      <li>Equity grants for every full-time employee.</li>
+    </ul>
+  </section>
+</div>
+{% endblock %}

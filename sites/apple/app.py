@@ -1449,6 +1449,56 @@ def trade_in_device(device_slug):
                            matches=[best])
 
 
+@app.route('/trade-in/quote', methods=['GET', 'POST'])
+@csrf.exempt
+def trade_in_quote():
+    """JSON trade-in quote. Real Apple has a POST -> JSON quote flow; we mirror
+    it. Accepts ?device=<model>&condition=<good|fair|broken|excellent>.
+
+    Returns a deterministic value derived from the TradeInValue table — never
+    'unknown' for a device we recognize, so multi-step agent tasks always make
+    forward progress.
+    """
+    device = (request.values.get('device') or '').strip()
+    condition = (request.values.get('condition') or 'good').strip().lower()
+    if not device:
+        return jsonify({'error': 'device parameter required',
+                        'example': '/trade-in/quote?device=iPhone+13+Pro+Max'}), 400
+    # Score every row, pick the best. Single-digit tokens (e.g. "8" in
+    # "iPhone 8") are kept — they are the disambiguator between SKUs.
+    raw = re.findall(r'[a-z0-9]+', device.lower())
+    tokens = [t for t in raw if t not in STOPWORDS and (len(t) >= 2 or t.isdigit())]
+    best, best_score = None, 0
+    for row in TradeInValue.query.all():
+        hay = set(re.findall(r'[a-z0-9]+', row.device.lower()))
+        s = sum(1 for t in tokens if t in hay)
+        # Tie-breaker: prefer the row whose hay length most-closely matches the
+        # query token count (avoids "iPhone 13" matching "iPhone 13 Pro Max").
+        if s > best_score or (s == best_score and best is not None
+                              and abs(len(hay) - len(tokens)) <
+                                  abs(len(set(re.findall(r'[a-z0-9]+', best.device.lower()))) - len(tokens))):
+            best, best_score = row, s
+    if not best or best_score < max(1, len(tokens) // 2):
+        return jsonify({
+            'eligible': False,
+            'device_query': device,
+            'message': 'No trade-in match. Apple recycles this device for free.',
+        }), 200
+    # Condition multiplier (good = 1.0, excellent = 1.05, fair = 0.7, broken = 0.3).
+    mult = {'excellent': 1.05, 'good': 1.0, 'fair': 0.7, 'broken': 0.3}.get(condition, 1.0)
+    quoted = round(float(best.value) * mult, 2)
+    return jsonify({
+        'eligible': True,
+        'device_query': device,
+        'device_matched': best.device,
+        'condition': condition,
+        'estimated_value_usd': quoted,
+        'max_value_usd': float(best.value),
+        'gift_card_or_credit': 'Apple Gift Card or instant credit toward a new Apple product',
+        'notes': best.notes or '',
+    }), 200
+
+
 @app.route('/store/pickup')
 def store_pickup():
     zip_code = request.args.get('zip', '').strip()
@@ -1516,6 +1566,197 @@ def vision_pro():
     product = Product.query.filter_by(slug='apple-vision-pro').first()
     accessories_list = Product.query.filter_by(subcategory='vision-pro-accessory').all()
     return render_template('vision_pro.html', product=product, accessories=accessories_list)
+
+
+# ---------------------------------------------------------------------------
+# Static info pages (about / business / education / sitemap / help / ...).
+# Real apple.com surfaces them under top-level slugs; we provide a single
+# template (info_page.html) keyed on the requested topic so every link in the
+# footer / global nav resolves to a real, content-bearing page.
+# ---------------------------------------------------------------------------
+
+INFO_PAGES = {
+    'about': {
+        'title': 'About Apple',
+        'subtitle': 'Innovation is in our DNA.',
+        'body': [
+            'Apple revolutionized personal technology with the introduction of the Macintosh in 1984.',
+            'Today, Apple leads the world in innovation with iPhone, iPad, Mac, Apple Watch, and Apple Vision Pro.',
+            "Apple's five software platforms — iOS, iPadOS, macOS, watchOS, and visionOS — provide seamless experiences across all Apple devices.",
+            'Apple is committed to leaving the world better than we found it. By 2030, every Apple product will be carbon neutral.',
+        ],
+        'links': [
+            ('Apple Leadership', '#'),
+            ('Career Opportunities', '#'),
+            ('Investor Relations', '#'),
+            ('Apple Newsroom', '#'),
+        ],
+    },
+    'business': {
+        'title': 'Apple at Work',
+        'subtitle': 'Empowering every person to do their best work.',
+        'body': [
+            'Apple products give every employee the freedom to work the way they work best, while saving IT time and budget.',
+            'Apple Business Manager lets IT manage devices, apps, and content from a single web-based portal.',
+            'Apple Business Essentials is an all-in-one subscription that combines device management, 24/7 Apple support, and iCloud storage for up to 500 employees.',
+            'Contact an Apple Business Specialist at 1-800-854-3680, Monday – Friday 7 AM – 5 PM PT.',
+        ],
+        'links': [
+            ('Apple Business Manager', '#'),
+            ('Apple Business Essentials', '#'),
+            ('Volume Purchase Program', '#'),
+            ('Custom Apps for Business', '#'),
+        ],
+    },
+    'education-pricing': {
+        'title': 'Education Pricing',
+        'subtitle': 'Save on Mac and iPad.',
+        'body': [
+            'College students, parents buying for college students, and teachers are eligible for education pricing on Mac, iPad, AppleCare, and accessories.',
+            'Save up to $200 on Mac and up to $100 on iPad with education pricing.',
+            'Get AirPods on us when you buy an eligible Mac or iPad with education pricing.',
+            'Verify your status using UNiDAYS at checkout; eligibility is verified automatically.',
+        ],
+        'links': [
+            ('Shop Mac for Education', '/mac'),
+            ('Shop iPad for Education', '/ipad'),
+            ('Apple Pencil for Students', '/product/apple-pencil-pro'),
+            ('AppleCare for Education', '#'),
+        ],
+    },
+    'help': {
+        'title': 'Shopping Help',
+        'subtitle': 'Get help from a Specialist.',
+        'body': [
+            'Chat with an Apple Specialist online or call 1-800-MY-APPLE (1-800-692-7753) for advice and ordering.',
+            'Returns: All purchases include free 14-day returns. Apple Card customers may pay nothing up front and choose monthly installments.',
+            'Shipping: Standard shipping is free on every order. Order before 5 PM for next-day delivery on most in-stock items.',
+            'Trade In: Get credit toward a new Apple product when you trade in your eligible device.',
+        ],
+        'links': [
+            ('Order Status', '/account'),
+            ('Apple Trade In', '/trade-in'),
+            ('Find a Store', '/shop'),
+            ('Sign in to Apple ID', '/login'),
+        ],
+    },
+    'accessibility': {
+        'title': 'Accessibility',
+        'subtitle': 'Made for everyone.',
+        'body': [
+            'Apple products are designed to give everyone the power to create, learn, communicate, and stay healthy.',
+            'Vision features include VoiceOver, Zoom, Magnifier, Spoken Content, and Live Speech.',
+            'Hearing features include Made for iPhone Hearing Aids, Live Captions, Sound Recognition, and RTT/TTY support.',
+            'Mobility features include AssistiveTouch, Voice Control, Switch Control, and Eye Tracking on iPad and iPhone.',
+            'Cognitive features include Assistive Access, Guided Access, Background Sounds, and Personal Voice.',
+        ],
+        'links': [
+            ('Vision Accessibility', '/support/article/accessibility-features'),
+            ('Hearing Accessibility', '/support/article/accessibility-features'),
+            ('Mobility Accessibility', '/support/article/accessibility-features'),
+            ('Cognitive Accessibility', '/support/article/accessibility-features'),
+        ],
+    },
+    'environment': {
+        'title': 'Environment',
+        'subtitle': 'Carbon neutral by 2030.',
+        'body': [
+            'Apple is committed to being carbon neutral across our entire footprint, including supply chain and product life cycle, by 2030.',
+            'Every Apple product has a smaller carbon footprint than the previous generation.',
+            'Apple Vision Pro, Apple Watch, MacBook Air, and iMac use 100% recycled aluminum in the enclosure.',
+            'Apple uses 100% recycled rare earth elements in many magnets, including those in iPhone, MacBook, and Apple Watch.',
+        ],
+        'links': [
+            ('Apple Trade In', '/trade-in'),
+            ('Recycle for free', '#'),
+            ('Environmental Progress Report', '#'),
+            ('Materials and Resources', '#'),
+        ],
+    },
+    'sitemap': {
+        'title': 'Apple Sitemap',
+        'subtitle': 'Every section of apple.com.',
+        'body': [
+            'A complete index of Apple product pages, support, and services.',
+        ],
+        'links': [
+            ('Store', '/shop'), ('Mac', '/mac'), ('iPad', '/ipad'),
+            ('iPhone', '/iphone'), ('Apple Watch', '/watch'), ('AirPods', '/airpods'),
+            ('Apple Vision Pro', '/vision-pro'), ('Accessories', '/accessories'),
+            ('Apple TV+', '#'), ('Apple Music', '/music'), ('Apple Arcade', '#'),
+            ('Support', '/support'), ('Repair', '/support/repair'),
+            ('Apple Trade In', '/trade-in'), ('Compare iPhone', '/compare/iphone'),
+            ('Compare Mac', '/compare/mac'), ('Compare iPad', '/compare/ipad'),
+            ('Compare Apple Watch', '/compare/watch'), ('About Apple', '/about'),
+            ('Apple at Work', '/business'), ('Education Pricing', '/education-pricing'),
+            ('Accessibility', '/accessibility'), ('Environment', '/environment'),
+            ('Privacy', '#'), ('Apple Leadership', '#'),
+            ('Career Opportunities', '#'), ('Investor Relations', '#'),
+        ],
+    },
+    'tv-home': {
+        'title': 'TV & Home',
+        'subtitle': 'A whole new way to enjoy entertainment.',
+        'body': [
+            'Apple TV 4K delivers cinematic experiences with 4K HDR, Dolby Vision, and Dolby Atmos.',
+            'HomePod fills the room with high-fidelity audio that adapts to its surroundings.',
+            'HomePod mini delivers room-filling sound from a compact design.',
+            'Use the Home app to control HomeKit-enabled accessories with Siri.',
+        ],
+        'links': [
+            ('Apple TV 4K', '/product/apple-tv-4k'),
+            ('HomePod (2nd generation)', '/product/homepod-2'),
+            ('HomePod mini', '/product/homepod-mini'),
+            ('Siri Remote', '/product/apple-tv-remote'),
+        ],
+    },
+    'entertainment': {
+        'title': 'Entertainment',
+        'subtitle': 'Movies, TV, music, games, news, and more.',
+        'body': [
+            'Apple TV+ is home to award-winning Apple Originals.',
+            'Apple Music has more than 100 million songs and 30,000 expertly curated playlists.',
+            'Apple Arcade offers a growing collection of more than 200 incredibly fun games — no ads, no in-app purchases.',
+            'News+ unlocks hundreds of premium magazines and leading newspapers.',
+        ],
+        'links': [
+            ('Apple TV+', '#'),
+            ('Apple Music', '/music'),
+            ('Apple Arcade', '#'),
+            ('Apple News+', '#'),
+            ('Apple Fitness+', '#'),
+            ('Apple One', '#'),
+        ],
+    },
+}
+
+
+@app.route('/about')
+@app.route('/about/')
+@app.route('/business')
+@app.route('/business/')
+@app.route('/education-pricing')
+@app.route('/education-pricing/')
+@app.route('/help')
+@app.route('/help/')
+@app.route('/accessibility')
+@app.route('/accessibility/')
+@app.route('/environment')
+@app.route('/environment/')
+@app.route('/sitemap')
+@app.route('/sitemap/')
+@app.route('/tv-home')
+@app.route('/tv-home/')
+@app.route('/entertainment')
+@app.route('/entertainment/')
+def info_page():
+    """Render any registered static info topic via a single Jinja template."""
+    # The path strips leading slash + trailing slash, then maps to INFO_PAGES.
+    topic = request.path.strip('/').rstrip('/')
+    page = INFO_PAGES.get(topic)
+    if not page:
+        abort(404)
+    return render_template('info_page.html', topic=topic, page=page)
 
 
 @app.route('/configure/<slug>')
@@ -2719,14 +2960,98 @@ def seed_database():
                      notes='Trade in your iPhone 11 Pro Max for credit toward a new iPhone.'),
         TradeInValue(device='iPhone 11 Pro', condition='good', value=200.00,
                      notes='Trade in your iPhone 11 Pro for credit toward a new iPhone.'),
-        TradeInValue(device='MacBook Pro', condition='good', value=500.00,
-                     notes='Trade in your MacBook Pro for credit toward a new Mac.'),
-        TradeInValue(device='MacBook Air', condition='good', value=350.00,
-                     notes='Trade in your MacBook Air for credit toward a new Mac.'),
-        TradeInValue(device='iPad Pro', condition='good', value=380.00,
-                     notes='Trade in your iPad Pro for credit toward a new iPad.'),
-        TradeInValue(device='Apple Watch', condition='good', value=120.00,
-                     notes='Trade in your Apple Watch for credit toward a new Watch.'),
+        TradeInValue(device='iPhone 16 Pro Max', condition='good', value=750.00,
+                     notes='Trade in your iPhone 16 Pro Max for credit toward a new iPhone.'),
+        TradeInValue(device='iPhone 16 Pro', condition='good', value=650.00,
+                     notes='Trade in your iPhone 16 Pro for credit toward a new iPhone.'),
+        TradeInValue(device='iPhone 16 Plus', condition='good', value=470.00,
+                     notes='Trade in your iPhone 16 Plus for credit toward a new iPhone.'),
+        TradeInValue(device='iPhone 16', condition='good', value=420.00,
+                     notes='Trade in your iPhone 16 for credit toward a new iPhone.'),
+        TradeInValue(device='iPhone 15 Plus', condition='good', value=400.00,
+                     notes='Trade in your iPhone 15 Plus for credit toward a new iPhone.'),
+        TradeInValue(device='iPhone 15', condition='good', value=350.00,
+                     notes='Trade in your iPhone 15 for credit toward a new iPhone.'),
+        TradeInValue(device='iPhone 14 Plus', condition='good', value=330.00,
+                     notes='Trade in your iPhone 14 Plus for credit toward a new iPhone.'),
+        TradeInValue(device='iPhone 14', condition='good', value=290.00,
+                     notes='Trade in your iPhone 14 for credit toward a new iPhone.'),
+        TradeInValue(device='iPhone 13', condition='good', value=240.00,
+                     notes='Trade in your iPhone 13 for credit toward a new iPhone.'),
+        TradeInValue(device='iPhone 13 mini', condition='good', value=190.00,
+                     notes='Trade in your iPhone 13 mini for credit toward a new iPhone.'),
+        TradeInValue(device='iPhone 12', condition='good', value=170.00,
+                     notes='Trade in your iPhone 12 for credit toward a new iPhone.'),
+        TradeInValue(device='iPhone 12 mini', condition='good', value=130.00,
+                     notes='Trade in your iPhone 12 mini for credit toward a new iPhone.'),
+        TradeInValue(device='iPhone 11', condition='good', value=140.00,
+                     notes='Trade in your iPhone 11 for credit toward a new iPhone.'),
+        TradeInValue(device='iPhone XR', condition='good', value=80.00,
+                     notes='Trade in your iPhone XR for credit toward a new iPhone.'),
+        TradeInValue(device='iPhone XS Max', condition='good', value=100.00,
+                     notes='Trade in your iPhone XS Max for credit toward a new iPhone.'),
+        TradeInValue(device='iPhone XS', condition='good', value=80.00,
+                     notes='Trade in your iPhone XS for credit toward a new iPhone.'),
+        TradeInValue(device='iPhone X', condition='good', value=60.00,
+                     notes='Trade in your iPhone X for credit toward a new iPhone.'),
+        TradeInValue(device='iPhone 8 Plus', condition='good', value=40.00,
+                     notes='Trade in your iPhone 8 Plus for credit toward a new iPhone.'),
+        TradeInValue(device='iPhone 8', condition='good', value=30.00,
+                     notes='Trade in your iPhone 8 for credit toward a new iPhone.'),
+        TradeInValue(device='iPhone SE (3rd generation)', condition='good', value=120.00,
+                     notes='Trade in your iPhone SE (3rd generation) for credit toward a new iPhone.'),
+        TradeInValue(device='iPhone SE (2nd generation)', condition='good', value=70.00,
+                     notes='Trade in your iPhone SE (2nd generation) for credit toward a new iPhone.'),
+        # Mac variants
+        TradeInValue(device='MacBook Pro 16-inch', condition='good', value=900.00,
+                     notes='Trade in your MacBook Pro 16-inch for credit toward a new Mac.'),
+        TradeInValue(device='MacBook Pro 14-inch', condition='good', value=700.00,
+                     notes='Trade in your MacBook Pro 14-inch for credit toward a new Mac.'),
+        TradeInValue(device='MacBook Pro 13-inch', condition='good', value=380.00,
+                     notes='Trade in your MacBook Pro 13-inch for credit toward a new Mac.'),
+        TradeInValue(device='MacBook Air M3', condition='good', value=560.00,
+                     notes='Trade in your MacBook Air (M3) for credit toward a new Mac.'),
+        TradeInValue(device='MacBook Air M2', condition='good', value=430.00,
+                     notes='Trade in your MacBook Air (M2) for credit toward a new Mac.'),
+        TradeInValue(device='MacBook Air M1', condition='good', value=300.00,
+                     notes='Trade in your MacBook Air (M1) for credit toward a new Mac.'),
+        TradeInValue(device='iMac', condition='good', value=400.00,
+                     notes='Trade in your iMac for credit toward a new Mac.'),
+        TradeInValue(device='Mac mini', condition='good', value=240.00,
+                     notes='Trade in your Mac mini for credit toward a new Mac.'),
+        TradeInValue(device='Mac Studio', condition='good', value=900.00,
+                     notes='Trade in your Mac Studio for credit toward a new Mac.'),
+        TradeInValue(device='Mac Pro', condition='good', value=1800.00,
+                     notes='Trade in your Mac Pro for credit toward a new Mac.'),
+        # iPad variants
+        TradeInValue(device='iPad Pro 12.9-inch', condition='good', value=480.00,
+                     notes='Trade in your iPad Pro 12.9-inch for credit toward a new iPad.'),
+        TradeInValue(device='iPad Pro 11-inch', condition='good', value=380.00,
+                     notes='Trade in your iPad Pro 11-inch for credit toward a new iPad.'),
+        TradeInValue(device='iPad Air', condition='good', value=230.00,
+                     notes='Trade in your iPad Air for credit toward a new iPad.'),
+        TradeInValue(device='iPad', condition='good', value=130.00,
+                     notes='Trade in your iPad for credit toward a new iPad.'),
+        TradeInValue(device='iPad mini', condition='good', value=160.00,
+                     notes='Trade in your iPad mini for credit toward a new iPad.'),
+        # Apple Watch variants
+        TradeInValue(device='Apple Watch Ultra 2', condition='good', value=300.00,
+                     notes='Trade in your Apple Watch Ultra 2 for credit toward a new Watch.'),
+        TradeInValue(device='Apple Watch Ultra', condition='good', value=240.00,
+                     notes='Trade in your Apple Watch Ultra for credit toward a new Watch.'),
+        TradeInValue(device='Apple Watch Series 10', condition='good', value=180.00,
+                     notes='Trade in your Apple Watch Series 10 for credit toward a new Watch.'),
+        TradeInValue(device='Apple Watch Series 9', condition='good', value=160.00,
+                     notes='Trade in your Apple Watch Series 9 for credit toward a new Watch.'),
+        TradeInValue(device='Apple Watch SE (2nd generation)', condition='good', value=80.00,
+                     notes='Trade in your Apple Watch SE for credit toward a new Watch.'),
+        # AirPods / Vision Pro
+        TradeInValue(device='AirPods Pro (2nd generation)', condition='good', value=60.00,
+                     notes='Trade in your AirPods Pro (2nd generation) for credit.'),
+        TradeInValue(device='AirPods Max', condition='good', value=130.00,
+                     notes='Trade in your AirPods Max for credit.'),
+        TradeInValue(device='Apple Vision Pro', condition='good', value=1500.00,
+                     notes='Trade in your Apple Vision Pro for credit toward a new Apple Vision Pro.'),
     ]
     for tv in trade_in_values:
         db.session.add(tv)
@@ -3300,11 +3625,449 @@ EXTRA_PRODUCTS = [
 ]
 
 
+# ---------------------------------------------------------------------------
+# R2 catalog expansion — adds ~150 more products (watch bands, cases, cables,
+# adapters, legacy iPhones/iPads, Vision Pro accessories) to push the catalog
+# past 300 SKUs while staying inside the authentic Apple lineup envelope.
+# Every tuple here is hand-written + deterministic; no random timestamps,
+# no scraped URLs (images point at /static/images/<category>/<slug>.jpg
+# which serves a graceful 404 — the agent benchmarks key off text fields).
+# ---------------------------------------------------------------------------
+
+def _watch_band_tuple(name, slug, color, price, year, compat='Apple Watch'):
+    return (name, slug, 'accessories', 'watch-band', f'{color} band.',
+            f'Apple Watch band in {color}. Compatible with {compat}.',
+            price, None, [color], [],
+            {'compat': compat, 'color': color}, year, '')
+
+
+def _case_tuple(name, slug, model, color, price, kind='Silicone Case'):
+    return (name, slug, 'accessories', 'iphone-case', f'Designed by Apple.',
+            f'{kind} for {model} in {color}. MagSafe-compatible.',
+            price, None, [color], [],
+            {'compat': model, 'color': color, 'kind': kind}, 2024, '')
+
+
+def _power_tuple(name, slug, watts, color='White', year=2024):
+    return (name, slug, 'accessories', 'charger',
+            f'{watts}W fast-charge adapter.',
+            f'{watts}W USB-C Power Adapter for iPhone, iPad, MacBook. Fast-charge supported.',
+            float({20:19,30:39,35:59,67:59,70:59,96:79,140:99}.get(watts, 39)),
+            None, [color], [], {'output': f'{watts}W USB-C'}, year, '')
+
+
+EXTRA_PRODUCTS_R2 = [
+    # ------------------------------------------------------------------ Watch
+    # Sport Band (41/45/49mm) — color-specific SKUs (real Apple Store layout)
+    _watch_band_tuple('Sport Band - 41mm Black',          'sport-band-41mm-black',          'Black',         49.00, 2024, 'Apple Watch 40/41mm'),
+    _watch_band_tuple('Sport Band - 41mm White',          'sport-band-41mm-white',          'White',         49.00, 2024, 'Apple Watch 40/41mm'),
+    _watch_band_tuple('Sport Band - 41mm Storm Blue',     'sport-band-41mm-storm-blue',     'Storm Blue',    49.00, 2024, 'Apple Watch 40/41mm'),
+    _watch_band_tuple('Sport Band - 41mm Plum',           'sport-band-41mm-plum',           'Plum',          49.00, 2024, 'Apple Watch 40/41mm'),
+    _watch_band_tuple('Sport Band - 41mm Cypress',        'sport-band-41mm-cypress',        'Cypress',       49.00, 2024, 'Apple Watch 40/41mm'),
+    _watch_band_tuple('Sport Band - 41mm Lake Green',     'sport-band-41mm-lake-green',     'Lake Green',    49.00, 2024, 'Apple Watch 40/41mm'),
+    _watch_band_tuple('Sport Band - 45mm Black',          'sport-band-45mm-black',          'Black',         49.00, 2024, 'Apple Watch 44/45/46mm'),
+    _watch_band_tuple('Sport Band - 45mm White',          'sport-band-45mm-white',          'White',         49.00, 2024, 'Apple Watch 44/45/46mm'),
+    _watch_band_tuple('Sport Band - 45mm Storm Blue',     'sport-band-45mm-storm-blue',     'Storm Blue',    49.00, 2024, 'Apple Watch 44/45/46mm'),
+    _watch_band_tuple('Sport Band - 45mm Plum',           'sport-band-45mm-plum',           'Plum',          49.00, 2024, 'Apple Watch 44/45/46mm'),
+    _watch_band_tuple('Sport Band - 45mm Cypress',        'sport-band-45mm-cypress',        'Cypress',       49.00, 2024, 'Apple Watch 44/45/46mm'),
+    _watch_band_tuple('Sport Band - 45mm Denim',          'sport-band-45mm-denim',          'Denim',         49.00, 2024, 'Apple Watch 44/45/46mm'),
+    _watch_band_tuple('Sport Band - 49mm Black Ultra',    'sport-band-49mm-black-ultra',    'Black',         49.00, 2024, 'Apple Watch Ultra 49mm'),
+    _watch_band_tuple('Sport Band - 49mm Orange Ultra',   'sport-band-49mm-orange-ultra',   'Orange',        49.00, 2024, 'Apple Watch Ultra 49mm'),
+    _watch_band_tuple('Sport Band - 49mm Yellow Ultra',   'sport-band-49mm-yellow-ultra',   'Yellow',        49.00, 2024, 'Apple Watch Ultra 49mm'),
+    # Sport Loop
+    _watch_band_tuple('Sport Loop - 41mm Jet Black',      'sport-loop-41mm-jet-black',      'Jet Black',     49.00, 2024, 'Apple Watch 40/41mm'),
+    _watch_band_tuple('Sport Loop - 41mm Lake Green',     'sport-loop-41mm-lake-green',     'Lake Green',    49.00, 2024, 'Apple Watch 40/41mm'),
+    _watch_band_tuple('Sport Loop - 41mm Beige',          'sport-loop-41mm-beige',          'Beige',         49.00, 2024, 'Apple Watch 40/41mm'),
+    _watch_band_tuple('Sport Loop - 41mm Lavender',       'sport-loop-41mm-lavender',       'Lavender',      49.00, 2024, 'Apple Watch 40/41mm'),
+    _watch_band_tuple('Sport Loop - 45mm Jet Black',      'sport-loop-45mm-jet-black',      'Jet Black',     49.00, 2024, 'Apple Watch 44/45/46mm'),
+    _watch_band_tuple('Sport Loop - 45mm Cerulean',       'sport-loop-45mm-cerulean',       'Cerulean',      49.00, 2024, 'Apple Watch 44/45/46mm'),
+    _watch_band_tuple('Sport Loop - 45mm Sage',           'sport-loop-45mm-sage',           'Sage',          49.00, 2024, 'Apple Watch 44/45/46mm'),
+    # Braided Solo Loop / Solo Loop
+    _watch_band_tuple('Braided Solo Loop - 41mm Charcoal','braided-solo-loop-41mm-charcoal','Charcoal',      99.00, 2024, 'Apple Watch 40/41mm'),
+    _watch_band_tuple('Braided Solo Loop - 41mm Beige',   'braided-solo-loop-41mm-beige',   'Beige',         99.00, 2024, 'Apple Watch 40/41mm'),
+    _watch_band_tuple('Braided Solo Loop - 41mm Cerulean','braided-solo-loop-41mm-cerulean','Cerulean',      99.00, 2024, 'Apple Watch 40/41mm'),
+    _watch_band_tuple('Braided Solo Loop - 45mm Charcoal','braided-solo-loop-45mm-charcoal','Charcoal',      99.00, 2024, 'Apple Watch 44/45/46mm'),
+    _watch_band_tuple('Braided Solo Loop - 45mm Beige',   'braided-solo-loop-45mm-beige',   'Beige',         99.00, 2024, 'Apple Watch 44/45/46mm'),
+    _watch_band_tuple('Solo Loop - 41mm Black',           'solo-loop-41mm-black',           'Black',         49.00, 2024, 'Apple Watch 40/41mm'),
+    _watch_band_tuple('Solo Loop - 41mm Storm Blue',      'solo-loop-41mm-storm-blue',      'Storm Blue',    49.00, 2024, 'Apple Watch 40/41mm'),
+    _watch_band_tuple('Solo Loop - 41mm Red',             'solo-loop-41mm-red',             'Red',           49.00, 2024, 'Apple Watch 40/41mm'),
+    # Leather Link / Milanese / Modern Buckle / Nike / Hermes
+    _watch_band_tuple('Leather Link - Medium Midnight',   'leather-link-medium-midnight',   'Midnight',      99.00, 2023, 'Apple Watch 40/41mm'),
+    _watch_band_tuple('Leather Link - Large Saddle Brown','leather-link-large-saddle-brown','Saddle Brown',  99.00, 2023, 'Apple Watch 44/45/46mm'),
+    _watch_band_tuple('Milanese Loop - 41mm Silver',      'milanese-loop-41mm-silver',      'Silver',        99.00, 2024, 'Apple Watch 40/41mm'),
+    _watch_band_tuple('Milanese Loop - 41mm Graphite',    'milanese-loop-41mm-graphite',    'Graphite',      99.00, 2024, 'Apple Watch 40/41mm'),
+    _watch_band_tuple('Milanese Loop - 45mm Silver',      'milanese-loop-45mm-silver',      'Silver',        99.00, 2024, 'Apple Watch 44/45/46mm'),
+    _watch_band_tuple('Modern Buckle - Medium Black',     'modern-buckle-medium-black',     'Black',         149.00, 2023, 'Apple Watch 40/41mm'),
+    _watch_band_tuple('Nike Sport Band - 41mm Black',     'nike-sport-band-41mm-black',     'Black/Volt',    49.00, 2024, 'Apple Watch 40/41mm'),
+    _watch_band_tuple('Nike Sport Band - 45mm Summit White','nike-sport-band-45mm-summit-white','Summit White', 49.00, 2024, 'Apple Watch 44/45/46mm'),
+    _watch_band_tuple('Hermes Single Tour Attelage',      'hermes-single-tour-attelage',    'Noir/Gold',     349.00, 2024, 'Apple Watch Hermes 41mm'),
+    _watch_band_tuple('Hermes Single Tour H Pattern',     'hermes-single-tour-h-pattern',   'Noir/Blanc',    389.00, 2024, 'Apple Watch Hermes 45mm'),
+    _watch_band_tuple('Ocean Band 49mm Ice Blue',         'ocean-band-49mm-ice-blue',       'Ice Blue',      99.00, 2024, 'Apple Watch Ultra 49mm'),
+    _watch_band_tuple('Ocean Band 49mm Deep Orange',      'ocean-band-49mm-deep-orange',    'Deep Orange',   99.00, 2024, 'Apple Watch Ultra 49mm'),
+
+    # ------------------------------------------------------------------ iPhone cases
+    _case_tuple('iPhone 17 Pro Silicone Case - Black',          'iphone-17-pro-silicone-case-black',         'iPhone 17 Pro',     'Black',         49.00, 'Silicone Case with MagSafe'),
+    _case_tuple('iPhone 17 Pro Silicone Case - Storm Blue',     'iphone-17-pro-silicone-case-storm-blue',    'iPhone 17 Pro',     'Storm Blue',    49.00, 'Silicone Case with MagSafe'),
+    _case_tuple('iPhone 17 Pro Silicone Case - Plum',           'iphone-17-pro-silicone-case-plum',          'iPhone 17 Pro',     'Plum',          49.00, 'Silicone Case with MagSafe'),
+    _case_tuple('iPhone 17 Pro Silicone Case - Cypress',        'iphone-17-pro-silicone-case-cypress',       'iPhone 17 Pro',     'Cypress',       49.00, 'Silicone Case with MagSafe'),
+    _case_tuple('iPhone 17 Pro Silicone Case - Natural Tan',    'iphone-17-pro-silicone-case-natural-tan',   'iPhone 17 Pro',     'Natural Tan',   49.00, 'Silicone Case with MagSafe'),
+    _case_tuple('iPhone 17 Silicone Case - Black',              'iphone-17-silicone-case-black',             'iPhone 17',         'Black',         49.00, 'Silicone Case with MagSafe'),
+    _case_tuple('iPhone 17 Silicone Case - Storm Blue',         'iphone-17-silicone-case-storm-blue',        'iPhone 17',         'Storm Blue',    49.00, 'Silicone Case with MagSafe'),
+    _case_tuple('iPhone 17 Silicone Case - Light Pink',         'iphone-17-silicone-case-light-pink',        'iPhone 17',         'Light Pink',    49.00, 'Silicone Case with MagSafe'),
+    _case_tuple('iPhone 17 Silicone Case - Cypress',            'iphone-17-silicone-case-cypress',           'iPhone 17',         'Cypress',       49.00, 'Silicone Case with MagSafe'),
+    _case_tuple('iPhone 17 Pro Clear Case with MagSafe',        'iphone-17-pro-clear-case-magsafe',          'iPhone 17 Pro',     'Clear',         49.00, 'Clear Case with MagSafe'),
+    _case_tuple('iPhone 16 Pro Silicone Case - Black',          'iphone-16-pro-silicone-case-black',         'iPhone 16 Pro',     'Black',         49.00, 'Silicone Case with MagSafe'),
+    _case_tuple('iPhone 16 Pro Silicone Case - Lake Green',     'iphone-16-pro-silicone-case-lake-green',    'iPhone 16 Pro',     'Lake Green',    49.00, 'Silicone Case with MagSafe'),
+    _case_tuple('iPhone 16 Fine Woven Case - Natural',          'iphone-16-fine-woven-case-natural',         'iPhone 16',         'Natural',       59.00, 'Fine Woven Case with MagSafe'),
+    _case_tuple('iPhone 16 Fine Woven Case - Evergreen',        'iphone-16-fine-woven-case-evergreen',       'iPhone 16',         'Evergreen',     59.00, 'Fine Woven Case with MagSafe'),
+    _case_tuple('iPhone 16 Fine Woven Case - Mulberry',         'iphone-16-fine-woven-case-mulberry',        'iPhone 16',         'Mulberry',      59.00, 'Fine Woven Case with MagSafe'),
+    _case_tuple('iPhone 15 Leather Case - Midnight',            'iphone-15-leather-case-midnight',           'iPhone 15',         'Midnight',      59.00, 'Leather Case (legacy)'),
+    _case_tuple('iPhone 15 Leather Case - Evergreen',           'iphone-15-leather-case-evergreen',          'iPhone 15',         'Evergreen',     59.00, 'Leather Case (legacy)'),
+    ('iPhone FineWoven Wallet - Mulberry', 'iphone-finewoven-wallet-mulberry', 'accessories', 'iphone-case',
+     'MagSafe-attached card wallet.',
+     'FineWoven Wallet attaches magnetically to MagSafe iPhones. Holds up to 3 cards.',
+     59.00, None, ['Mulberry'], [], {'features': 'MagSafe, FineWoven'}, 2024, ''),
+    ('iPhone FineWoven Wallet - Evergreen', 'iphone-finewoven-wallet-evergreen', 'accessories', 'iphone-case',
+     'MagSafe-attached card wallet.',
+     'FineWoven Wallet attaches magnetically to MagSafe iPhones. Holds up to 3 cards.',
+     59.00, None, ['Evergreen'], [], {'features': 'MagSafe, FineWoven'}, 2024, ''),
+    ('iPhone FineWoven Wallet - Twilight', 'iphone-finewoven-wallet-twilight', 'accessories', 'iphone-case',
+     'MagSafe-attached card wallet.',
+     'FineWoven Wallet attaches magnetically to MagSafe iPhones. Holds up to 3 cards.',
+     59.00, None, ['Twilight'], [], {'features': 'MagSafe, FineWoven'}, 2024, ''),
+
+    # ------------------------------------------------------------------ iPad accessories
+    ('Magic Keyboard Folio for iPad (10th generation)', 'magic-keyboard-folio-ipad-10', 'accessories', 'ipad-accessory',
+     'Two-piece detachable keyboard.',
+     'Magic Keyboard Folio for iPad (10th generation) with full-size keys and a trackpad.',
+     249.00, None, ['White'], [], {'compat': 'iPad (10th generation)'}, 2022, ''),
+    ('Apple Pencil USB-C Charge Cable', 'pencil-usb-c-charge-cable', 'accessories', 'pencil',
+     'Charge Apple Pencil (USB-C) and Pencil Pro.',
+     'Short USB-C cable for charging Apple Pencil USB-C and Apple Pencil Pro.',
+     19.00, None, ['White'], [], {'compat': 'Apple Pencil USB-C / Pro'}, 2023, ''),
+    ('Apple Pencil Tips (4 pack)', 'apple-pencil-tip-pack-4', 'accessories', 'pencil',
+     'Replacement tips for Apple Pencil.',
+     '4-pack of replacement tips for Apple Pencil (1st generation, 2nd generation, Pro).',
+     19.00, None, ['White'], [], {'compat': 'Apple Pencil'}, 2018, ''),
+    ('Magic Keyboard for iPad Air 11-inch M4 - Black', 'magic-keyboard-ipad-air-11-m4-black', 'accessories', 'ipad-accessory',
+     'Floating cantilever design.',
+     'Magic Keyboard for iPad Air 11-inch (M4) with backlit keys and trackpad.',
+     299.00, None, ['Black'], [], {'compat': 'iPad Air 11-inch (M4)'}, 2024, ''),
+    ('Magic Keyboard for iPad Air 13-inch M4 - White', 'magic-keyboard-ipad-air-13-m4-white', 'accessories', 'ipad-accessory',
+     'Floating cantilever design.',
+     'Magic Keyboard for iPad Air 13-inch (M4) with backlit keys and trackpad.',
+     349.00, None, ['White'], [], {'compat': 'iPad Air 13-inch (M4)'}, 2024, ''),
+
+    # ------------------------------------------------------------------ Mac accessories
+    ('Magic Mouse (USB-C) - Black',         'magic-mouse-usb-c-black',         'accessories', 'mac-accessory',
+     'Multi-Touch surface, USB-C charging.', 'Magic Mouse with Multi-Touch surface in Black. USB-C rechargeable.',
+     99.00, None, ['Black'], [], {'features': 'Multi-Touch, USB-C'}, 2024, ''),
+    ('Magic Trackpad (USB-C) - Black',      'magic-trackpad-usb-c-black',      'accessories', 'mac-accessory',
+     'Force Touch, edge-to-edge glass.', 'Magic Trackpad with Force Touch in Black. USB-C rechargeable.',
+     149.00, None, ['Black'], [], {'features': 'Force Touch, USB-C'}, 2024, ''),
+    ('Magic Keyboard with Touch ID (USB-C) - Black', 'magic-keyboard-touch-id-usb-c-black', 'accessories', 'mac-accessory',
+     'Touch ID, USB-C charging.', 'Magic Keyboard with Touch ID in Black. USB-C rechargeable.',
+     129.00, None, ['Black'], [], {'features': 'Touch ID, USB-C'}, 2024, ''),
+    ('Magic Keyboard with Touch ID and Numeric Keypad (USB-C) - Black', 'magic-keyboard-touch-id-numeric-usb-c-black', 'accessories', 'mac-accessory',
+     'Touch ID, Numeric Keypad, USB-C.', 'Magic Keyboard with Touch ID and Numeric Keypad in Black. USB-C rechargeable.',
+     199.00, None, ['Black'], [], {'features': 'Touch ID, Numeric Keypad, USB-C'}, 2024, ''),
+    ('Studio Display - Nano-texture Glass', 'studio-display-nano-texture', 'accessories', 'display',
+     '27-inch 5K Retina with nano-texture.', '27-inch 5K Retina Studio Display with nano-texture glass for low-glare environments.',
+     1899.00, None, ['Silver'], [], {'display': '27" 5K Retina', 'glass': 'Nano-texture'}, 2022, ''),
+    ('Studio Display - Tilt and Height Adjustable Stand', 'studio-display-tilt-height-stand', 'accessories', 'display',
+     'Counterbalanced tilt + height.', 'Studio Display with tilt and height-adjustable stand. Standard glass.',
+     1999.00, None, ['Silver'], [], {'stand': 'Tilt and Height Adjustable'}, 2022, ''),
+    ('Pro Display XDR Pro Stand',           'pro-display-pro-stand',           'accessories', 'display',
+     'Counterbalanced arm for Pro Display XDR.', 'Optional Pro Stand for Pro Display XDR providing tilt, rotation, height adjustment, and portrait mode.',
+     999.00, None, ['Silver'], [], {'compat': 'Pro Display XDR'}, 2019, ''),
+    ('Pro Display VESA Mount Adapter',      'pro-display-vesa-mount-adapter',  'accessories', 'display',
+     'VESA mount for Pro Display XDR / Studio Display.', 'VESA Mount Adapter attaches Pro Display XDR or Studio Display to a third-party VESA arm.',
+     199.00, None, ['Silver'], [], {'compat': 'Pro Display XDR, Studio Display'}, 2019, ''),
+
+    # ------------------------------------------------------------------ Cables / Adapters / Power
+    ('USB-C to 3.5 mm Headphone Jack Adapter', 'usb-c-to-3-5mm-jack-adapter', 'accessories', 'cable',
+     'Listen with 3.5 mm headphones.',
+     'Connect 3.5 mm headphones to a USB-C device. Supports stereo audio in and out.',
+     9.00, None, ['White'], [], {'features': '3.5 mm jack'}, 2018, ''),
+    ('Lightning to 3.5 mm Headphone Jack Adapter', 'lightning-to-3-5mm-jack-adapter', 'accessories', 'cable',
+     'Listen with 3.5 mm headphones.',
+     'Connect 3.5 mm headphones to a Lightning device.',
+     9.00, None, ['White'], [], {'features': '3.5 mm jack'}, 2016, ''),
+    ('USB-C VGA Multiport Adapter',     'usb-c-vga-multiport-adapter',   'accessories', 'cable',
+     'VGA, USB-A and USB-C charging.',
+     'Connect a VGA display, a USB-A device, and a USB-C power adapter at the same time.',
+     69.00, None, ['White'], [], {'features': 'VGA + USB-A + USB-C PD'}, 2018, ''),
+    ('USB-C Digital AV Multiport Adapter', 'usb-c-digital-av-multiport', 'accessories', 'cable',
+     'HDMI 4K, USB-A and USB-C charging.',
+     'Connect an HDMI display (up to 4K@60Hz with HDR), a USB-A device, and a USB-C power adapter.',
+     69.00, None, ['White'], [], {'features': 'HDMI 4K + USB-A + USB-C PD'}, 2022, ''),
+    ('USB-C to USB Adapter',            'usb-c-to-usb-adapter',          'accessories', 'cable',
+     'Use USB-A peripherals.',
+     'Connect a USB-A device such as a flash drive, camera, or hub to a USB-C Mac.',
+     19.00, None, ['White'], [], {'features': 'USB-A to USB-C'}, 2017, ''),
+    ('USB-C to SD Card Reader',         'usb-c-to-sd-card-reader',       'accessories', 'cable',
+     'Read SD cards at UHS-II speeds.',
+     'USB-C SD Card Reader supports SD UHS-II cards at up to 312 MB/s.',
+     39.00, None, ['White'], [], {'features': 'UHS-II 312 MB/s'}, 2017, ''),
+    ('USB-C Charge Cable (1m)',         'usb-c-charge-cable-1m',         'accessories', 'cable',
+     'Charge USB-C devices.',
+     '1-metre USB-C Charge Cable for iPad, MacBook and other USB-C devices.',
+     19.00, None, ['White'], [], {'features': 'USB-C charging'}, 2019, ''),
+    ('USB-C to MagSafe 3 Cable (1m) - Silver', 'usb-c-magsafe-3-cable-1m-silver', 'accessories', 'cable',
+     'Quick-release MagSafe charging.',
+     '1-metre USB-C to MagSafe 3 Cable in Silver for MacBook Pro and MacBook Air.',
+     49.00, None, ['Silver'], [], {'features': 'MagSafe 3 fast-charging'}, 2024, ''),
+    ('Thunderbolt 5 Pro Cable (1m)',    'thunderbolt-5-pro-cable-1m',    'accessories', 'cable',
+     'Up to 120 Gb/s.',
+     'Thunderbolt 5 Pro Cable supports up to 120 Gb/s and 240W charging.',
+     129.00, None, ['Space Black'], [], {'features': '120 Gb/s, 240W'}, 2024, ''),
+    ('Thunderbolt 4 Pro Cable (3m)',    'thunderbolt-4-pro-cable-3m',    'accessories', 'cable',
+     'Up to 40 Gb/s data transfer.',
+     '3-metre Thunderbolt 4 Pro Cable supports up to 40 Gb/s and 100W charging.',
+     159.00, None, ['Space Black'], [], {'features': '40 Gb/s, 100W'}, 2022, ''),
+    ('HDMI to HDMI Cable (2m)',         'hdmi-cable-2m',                 'accessories', 'cable',
+     '4K HDR-ready HDMI cable.',
+     '2-metre HDMI cable supports 4K@60Hz with HDR. Compatible with Apple TV 4K and Mac.',
+     29.00, None, ['Black'], [], {'features': 'HDMI 2.1, 4K HDR'}, 2024, ''),
+    ('MagSafe Charger (2m)',            'magsafe-charger-2m',            'accessories', 'charger',
+     'Longer MagSafe cable.',
+     '2-metre MagSafe Charger delivers up to 25W fast-charge to compatible iPhones.',
+     45.00, None, ['White'], [], {'features': 'MagSafe 25W'}, 2024, ''),
+    ('MagSafe Battery Pack',            'magsafe-battery-pack',          'accessories', 'charger',
+     'On-the-go MagSafe charging.',
+     'Snap-on MagSafe Battery Pack. Up to 70% of additional charge on iPhone.',
+     99.00, None, ['White'], [], {'features': 'MagSafe, 1460 mAh'}, 2021, ''),
+    ('MagSafe Duo Charger',             'magsafe-duo-charger-2',         'accessories', 'charger',
+     'Charge iPhone and Apple Watch.',
+     'Folding MagSafe Duo Charger with USB-C cable. Charges iPhone and Apple Watch simultaneously.',
+     129.00, None, ['White'], [], {'features': 'MagSafe + Watch'}, 2020, ''),
+    ('MagSafe Charger (3-in-1)',        'magsafe-charger-3-in-1',        'accessories', 'charger',
+     'iPhone + Apple Watch + AirPods.',
+     'New 3-in-1 MagSafe puck charges iPhone (25W), Apple Watch, and AirPods at the same time.',
+     149.00, None, ['White'], [], {'features': 'MagSafe + Watch + AirPods'}, 2025, ''),
+    _power_tuple('30W USB-C Power Adapter',  'usb-c-power-adapter-30w', 30),
+    _power_tuple('35W USB-C Dual Power Adapter', 'usb-c-power-adapter-35w-dual', 35),
+    _power_tuple('67W USB-C Power Adapter',  'usb-c-power-adapter-67w', 67),
+    _power_tuple('70W USB-C Power Adapter',  'usb-c-power-adapter-70w', 70),
+    _power_tuple('96W USB-C Power Adapter',  'usb-c-power-adapter-96w', 96),
+    _power_tuple('140W USB-C Power Adapter', 'usb-c-power-adapter-140w', 140),
+
+    # ------------------------------------------------------------------ AirPods accessories
+    ('AirPods Pro Tip Kit (XS, S, M, L)', 'airpods-pro-tip-kit', 'accessories', 'airpods-case',
+     'Replacement silicone tips.', 'Replacement silicone ear tips for AirPods Pro 2 / 3. Includes XS, S, M, L.',
+     9.00, None, ['White'], [], {'compat': 'AirPods Pro 2 / 3'}, 2022, ''),
+    ('AirPods Max Smart Case',          'airpods-max-smart-case',        'accessories', 'airpods-case',
+     'Slim, soft case.', 'AirPods Max Smart Case puts AirPods Max into a low-power state to preserve battery.',
+     59.00, None, ['Midnight', 'Starlight', 'Orange', 'Purple'], [], {'compat': 'AirPods Max'}, 2024, ''),
+    ('AirPods Max Replacement Ear Cushions - Midnight', 'airpods-max-replacement-cushions-midnight', 'accessories', 'airpods-case',
+     'Magnetically attached cushions.', 'Replacement Ear Cushions for AirPods Max in Midnight.',
+     69.00, None, ['Midnight'], [], {'compat': 'AirPods Max'}, 2024, ''),
+    ('AirPods Pro MagSafe Charging Case (spare)', 'airpods-pro-magsafe-case-spare', 'accessories', 'airpods-case',
+     'Replacement MagSafe charging case.', 'Spare MagSafe Charging Case for AirPods Pro 2.',
+     99.00, None, ['White'], [], {'compat': 'AirPods Pro 2'}, 2022, ''),
+
+    # ------------------------------------------------------------------ HomePod / Apple TV / Siri Remote
+    ('Siri Remote (3rd generation)',    'siri-remote-3rd-gen',           'accessories', 'tv-accessory',
+     'Touch-enabled clickpad, USB-C.', 'Siri Remote (3rd generation) with USB-C charging port for Apple TV 4K.',
+     69.00, None, ['Silver'], [], {'compat': 'Apple TV 4K (2022 / 2024)'}, 2024, ''),
+    ('Siri Remote (2nd generation)',    'siri-remote-2nd-gen',           'accessories', 'tv-accessory',
+     'Touch-enabled clickpad, Lightning.', 'Siri Remote (2nd generation) with Lightning port for Apple TV 4K (2021).',
+     59.00, None, ['Silver'], [], {'compat': 'Apple TV 4K (2021)'}, 2021, ''),
+
+    # ------------------------------------------------------------------ AirTag bundles + accessories
+    ('AirTag (4 pack)',                 'airtag-4-pack',                 'accessories', 'airtag',
+     'Find your stuff.', 'AirTag 4-pack to attach to keys, bags, and more. Find via the Find My network.',
+     99.00, None, ['White'], [], {'features': 'Find My, Precision Finding'}, 2021, ''),
+    ('AirTag Leather Loop - Saddle Brown', 'airtag-loop-saddle-brown',   'accessories', 'airtag',
+     'Designed by Apple.', 'AirTag Leather Loop in Saddle Brown.',
+     39.00, None, ['Saddle Brown'], [], {'compat': 'AirTag'}, 2021, ''),
+    ('AirTag Leather Loop - Midnight',  'airtag-loop-midnight',          'accessories', 'airtag',
+     'Designed by Apple.', 'AirTag Leather Loop in Midnight.',
+     39.00, None, ['Midnight'], [], {'compat': 'AirTag'}, 2021, ''),
+    ('AirTag Polyurethane Keyring',     'airtag-keyring-polyurethane',   'accessories', 'airtag',
+     'Designed by Apple.', 'AirTag Polyurethane Keyring in White.',
+     35.00, None, ['White'], [], {'compat': 'AirTag'}, 2021, ''),
+
+    # ------------------------------------------------------------------ Vision Pro accessories
+    ('Apple Vision Pro Cover',          'apple-vision-pro-cover',        'accessories', 'vision-pro-accessory',
+     'Soft protective front cover.', 'Magnetically attached cover protects the front glass of Apple Vision Pro during storage.',
+     199.00, None, ['Light Gray'], [], {'compat': 'Apple Vision Pro'}, 2024, ''),
+    ('Apple Vision Pro Solo Knit Band - Medium', 'apple-vision-pro-solo-knit-band-medium', 'accessories', 'vision-pro-accessory',
+     'Single-piece knit band.', 'Replacement Solo Knit Band for Apple Vision Pro - Medium.',
+     99.00, None, ['Black'], [], {'compat': 'Apple Vision Pro', 'size': 'Medium'}, 2024, ''),
+    ('Apple Vision Pro Dual Loop Band - Medium', 'apple-vision-pro-dual-loop-band-medium', 'accessories', 'vision-pro-accessory',
+     'Upper and lower straps.', 'Replacement Dual Loop Band for Apple Vision Pro - Medium.',
+     99.00, None, ['Black'], [], {'compat': 'Apple Vision Pro', 'size': 'Medium'}, 2024, ''),
+    ('ZEISS Optical Inserts - Readers', 'zeiss-optical-inserts-readers', 'accessories', 'vision-pro-accessory',
+     'Reading-strength magnetic lenses.', 'ZEISS Optical Inserts (Readers, +0.25 to +3.50) for Apple Vision Pro.',
+     99.00, None, ['Clear'], [], {'compat': 'Apple Vision Pro'}, 2024, ''),
+    ('ZEISS Optical Inserts - Prescription', 'zeiss-optical-inserts-prescription', 'accessories', 'vision-pro-accessory',
+     'Custom prescription magnetic lenses.', 'ZEISS Optical Inserts (Prescription, sphere -10.00 to +6.00) for Apple Vision Pro. Prescription required.',
+     149.00, None, ['Clear'], [], {'compat': 'Apple Vision Pro'}, 2024, ''),
+    ('Apple Vision Pro Developer Strap', 'apple-vision-pro-developer-strap', 'accessories', 'vision-pro-accessory',
+     'USB-C connection for developers.', 'Apple Vision Pro Developer Strap provides a USB-C connection for app development and accessory testing.',
+     299.00, None, ['Gray'], [], {'compat': 'Apple Vision Pro'}, 2024, ''),
+
+    # ------------------------------------------------------------------ AppleCare variants
+    ('AppleCare+ for iPhone (2-year)',  'applecare-iphone-2yr',          'accessories', 'care',
+     '2 years of expert support.', 'AppleCare+ for iPhone with up to two incidents of accidental damage protection every 12 months.',
+     199.00, None, [], [], {'duration': '2 years', 'incidents': 'Unlimited @ service fee'}, 2024, ''),
+    ('AppleCare+ for Apple Watch (2-year)', 'applecare-watch-2yr',        'accessories', 'care',
+     '2 years of expert support.', 'AppleCare+ for Apple Watch with up to two incidents of accidental damage protection every 12 months.',
+     59.00, None, [], [], {'duration': '2 years', 'incidents': 'Unlimited @ service fee'}, 2024, ''),
+    ('AppleCare+ for AirPods (2-year)', 'applecare-airpods-2yr',         'accessories', 'care',
+     '2 years of expert support.', 'AppleCare+ for AirPods with up to two incidents of accidental damage protection every 12 months.',
+     29.00, None, [], [], {'duration': '2 years', 'incidents': 'Unlimited @ service fee'}, 2024, ''),
+    ('AppleCare+ for iPad (2-year)',    'applecare-ipad-2yr',            'accessories', 'care',
+     '2 years of expert support.', 'AppleCare+ for iPad with up to two incidents of accidental damage protection every 12 months.',
+     99.00, None, [], [], {'duration': '2 years', 'incidents': 'Unlimited @ service fee'}, 2024, ''),
+    ('AppleCare+ for Apple Vision Pro (2-year)', 'applecare-vision-pro-2yr', 'accessories', 'care',
+     '2 years of expert support.', 'AppleCare+ for Apple Vision Pro with up to two incidents of accidental damage protection every 12 months.',
+     499.00, None, [], [], {'duration': '2 years', 'incidents': 'Unlimited @ service fee'}, 2024, ''),
+
+    # ------------------------------------------------------------------ Watch chargers
+    ('Apple Watch Magnetic Fast Charger to USB-C Cable (1m)', 'apple-watch-magnetic-fast-charger-1m', 'accessories', 'watch-accessory',
+     'Fast-charge Apple Watch.', 'Fast-charge Apple Watch Series 7 and later. 1m USB-C cable.',
+     29.00, None, ['White'], [], {'compat': 'Apple Watch Series 7+', 'fast_charge': True}, 2022, ''),
+    ('Apple Watch Magnetic Charging Cable (2m)', 'apple-watch-magnetic-charging-2m', 'accessories', 'watch-accessory',
+     'Magnetic charging cable.', 'Apple Watch Magnetic Charging Cable, 2 metres.',
+     35.00, None, ['White'], [], {'compat': 'Apple Watch'}, 2020, ''),
+
+    # ------------------------------------------------------------------ Legacy iPhones (trade-in story)
+    ('iPhone X', 'iphone-x', 'iphone', '', 'Say hello to the future.',
+     'A11 Bionic chip, 5.8-inch Super Retina OLED display, Face ID, dual 12MP cameras.',
+     349.00, None, ['Silver', 'Space Gray'], ['64GB', '256GB'],
+     {'chip': 'A11 Bionic', 'display': '5.8" Super Retina OLED'}, 2017, 'A11 Bionic'),
+    ('iPhone 8', 'iphone-8', 'iphone', '', 'A new generation of iPhone.',
+     'A11 Bionic chip, 4.7-inch Retina HD display, wireless charging.',
+     249.00, None, ['Space Gray', 'Silver', 'Gold', 'Red'], ['64GB', '128GB', '256GB'],
+     {'chip': 'A11 Bionic', 'display': '4.7" Retina HD'}, 2017, 'A11 Bionic'),
+    ('iPhone 8 Plus', 'iphone-8-plus', 'iphone', '', 'A new generation of iPhone.',
+     'A11 Bionic chip, 5.5-inch Retina HD display, dual 12MP cameras.',
+     299.00, None, ['Space Gray', 'Silver', 'Gold', 'Red'], ['64GB', '128GB', '256GB'],
+     {'chip': 'A11 Bionic', 'display': '5.5" Retina HD'}, 2017, 'A11 Bionic'),
+    ('iPhone 7', 'iphone-7', 'iphone', '', 'This is iPhone 7.',
+     'A10 Fusion chip, 4.7-inch Retina HD, water resistant, 12MP camera.',
+     199.00, None, ['Black', 'Silver', 'Gold', 'Rose Gold', 'Red'], ['32GB', '128GB', '256GB'],
+     {'chip': 'A10 Fusion', 'display': '4.7" Retina HD'}, 2016, 'A10 Fusion'),
+    ('iPhone 7 Plus', 'iphone-7-plus', 'iphone', '', 'This is iPhone 7 Plus.',
+     'A10 Fusion chip, 5.5-inch Retina HD, dual 12MP cameras, water resistant.',
+     249.00, None, ['Black', 'Silver', 'Gold', 'Rose Gold', 'Red'], ['32GB', '128GB', '256GB'],
+     {'chip': 'A10 Fusion', 'display': '5.5" Retina HD'}, 2016, 'A10 Fusion'),
+
+    # ------------------------------------------------------------------ Legacy iPads
+    ('iPad (8th generation)', 'ipad-8', 'ipad', '', 'Just what you need. In an iPad.',
+     'A12 Bionic chip, 10.2-inch Retina display, Apple Pencil (1st gen) support.',
+     299.00, None, ['Space Gray', 'Silver', 'Gold'], ['32GB', '128GB'],
+     {'chip': 'A12 Bionic', 'display': '10.2" Retina'}, 2020, 'A12 Bionic'),
+    ('iPad (7th generation)', 'ipad-7', 'ipad', '', 'Just what you need.',
+     'A10 Fusion chip, 10.2-inch Retina display, Smart Connector.',
+     249.00, None, ['Space Gray', 'Silver', 'Gold'], ['32GB', '128GB'],
+     {'chip': 'A10 Fusion', 'display': '10.2" Retina'}, 2019, 'A10 Fusion'),
+    ('iPad Air (5th generation)', 'ipad-air-5', 'ipad', 'ipad-air', 'Light. Bright. Full of might.',
+     'Apple M1 chip, 10.9-inch Liquid Retina display, USB-C.',
+     499.00, None, ['Space Gray', 'Starlight', 'Pink', 'Purple', 'Blue'], ['64GB', '256GB'],
+     {'chip': 'M1', 'display': '10.9" Liquid Retina'}, 2022, 'M1'),
+    ('iPad Air (4th generation)', 'ipad-air-4', 'ipad', 'ipad-air', 'Power. It is in the Air.',
+     'A14 Bionic chip, 10.9-inch Liquid Retina display, USB-C.',
+     449.00, None, ['Silver', 'Space Gray', 'Rose Gold', 'Green', 'Sky Blue'], ['64GB', '256GB'],
+     {'chip': 'A14 Bionic', 'display': '10.9" Liquid Retina'}, 2020, 'A14 Bionic'),
+    ('iPad mini (5th generation)', 'ipad-mini-5', 'ipad', 'ipad-mini', 'Mega power. Mini sized.',
+     'A12 Bionic chip, 7.9-inch Retina display, Apple Pencil (1st gen) support.',
+     349.00, None, ['Silver', 'Space Gray', 'Gold'], ['64GB', '256GB'],
+     {'chip': 'A12 Bionic', 'display': '7.9" Retina'}, 2019, 'A12 Bionic'),
+
+    # ------------------------------------------------------------------ Legacy Mac
+    ('Mac mini (M2)', 'mac-mini-m2', 'mac', 'mac-mini', 'More mini. More mighty.',
+     'Apple M2 chip, up to 24GB unified memory, two USB-C / Thunderbolt 4 ports.',
+     599.00, 24.95, ['Silver'], ['256GB', '512GB', '1TB', '2TB'],
+     {'chip': 'M2', 'memory': '8GB / 16GB / 24GB'}, 2023, 'M2'),
+    ('MacBook Pro 13-inch (M1)', 'macbook-pro-13-m1', 'mac', 'macbook-pro', 'Power to go.',
+     'Apple M1 chip, 13.3-inch Retina display, Touch Bar.',
+     1099.00, 45.79, ['Space Gray', 'Silver'], ['256GB', '512GB'],
+     {'chip': 'M1', 'display': '13.3" Retina'}, 2020, 'M1'),
+
+    # ------------------------------------------------------------------ Legacy Watch
+    ('Apple Watch Series 5', 'apple-watch-series-5', 'watch', '', 'See it. Even when you do not raise it.',
+     'S5 SiP, Always-On Retina display, ECG, fall detection.',
+     179.00, None, ['Space Gray', 'Silver', 'Gold'], ['40mm', '44mm'],
+     {'chip': 'S5', 'display': 'Always-On Retina'}, 2019, ''),
+    ('Apple Watch Series 4', 'apple-watch-series-4', 'watch', '', 'A breakthrough in health.',
+     'S4 SiP, ECG, fall detection, larger 40 / 44mm display.',
+     149.00, None, ['Space Gray', 'Silver', 'Gold'], ['40mm', '44mm'],
+     {'chip': 'S4', 'display': 'Retina LTPO OLED'}, 2018, ''),
+    ('Apple Watch Series 3', 'apple-watch-series-3', 'watch', '', 'A healthy leap ahead.',
+     'S3 SiP, GPS + Cellular options.',
+     129.00, None, ['Space Gray', 'Silver'], ['38mm', '42mm'],
+     {'chip': 'S3', 'display': 'Retina'}, 2017, ''),
+
+    # ------------------------------------------------------------------ Legacy AirPods
+    ('AirPods (2nd generation)', 'airpods-2nd-gen', 'airpods', '', 'Wireless. Effortless. Magical.',
+     'H1 chip, hands-free Hey Siri, wireless charging case option.',
+     129.00, None, ['White'], [],
+     {'chip': 'H1', 'battery': '24 hr with case'}, 2019, ''),
+    ('AirPods Pro (1st generation)', 'airpods-pro-1st-gen', 'airpods', '', 'Magic like you have never heard.',
+     'H1 chip, Active Noise Cancellation, Transparency mode, sweat and water resistant.',
+     199.00, None, ['White'], [],
+     {'chip': 'H1', 'features': 'ANC, Transparency'}, 2019, ''),
+
+    # ------------------------------------------------------------------ Final padding (push catalog past 300)
+    ('Apple TV (3rd generation)', 'apple-tv-3rd-gen', 'tv', '', 'A small device with a big idea.',
+     'A5 chip, 1080p HD output via HDMI (legacy).',
+     99.00, None, ['Black'], [],
+     {'chip': 'A5', 'output': '1080p HD'}, 2012, ''),
+    ('HomePod (1st generation, Space Gray)', 'homepod-1st-gen-space-gray', 'homepod', '', 'A breakthrough in sound.',
+     'A8 chip, seven tweeter array, room-sensing spatial awareness (legacy).',
+     299.00, None, ['Space Gray'], [],
+     {'chip': 'A8'}, 2018, ''),
+    ('Beats Powerbeats Pro', 'beats-powerbeats-pro', 'audio', '', 'Run, gym, anywhere.',
+     'H1 chip, ear-hook design, sweat-resistant, 9 hours of listening time.',
+     199.99, None, ['Black', 'Ivory', 'Moss', 'Navy'], [],
+     {'chip': 'H1', 'battery': '9 hr'}, 2019, ''),
+    ('Beats Flex', 'beats-flex', 'audio', '', 'Wireless. Affordable. All-day.',
+     'Apple W1 chip, magnetic earbuds, 12 hours of listening time.',
+     49.99, None, ['Beats Black', 'Yuzu Yellow', 'Smoke Gray', 'Flame Blue'], [],
+     {'chip': 'W1', 'battery': '12 hr'}, 2020, ''),
+    ('Smart Folio for iPad Air 13-inch (M4) - Light Violet', 'smart-folio-ipad-air-13-m4-light-violet', 'accessories', 'ipad-accessory',
+     'Front and back protection.',
+     'Polyurethane Smart Folio for iPad Air 13-inch (M4) in Light Violet.',
+     79.00, None, ['Light Violet'], [], {'compat': 'iPad Air 13-inch (M4)'}, 2024, ''),
+    ('Smart Folio for iPad Air 13-inch (M4) - Charcoal Gray', 'smart-folio-ipad-air-13-m4-charcoal-gray', 'accessories', 'ipad-accessory',
+     'Front and back protection.',
+     'Polyurethane Smart Folio for iPad Air 13-inch (M4) in Charcoal Gray.',
+     79.00, None, ['Charcoal Gray'], [], {'compat': 'iPad Air 13-inch (M4)'}, 2024, ''),
+    ('Smart Folio for iPad mini 7 - Sage', 'smart-folio-ipad-mini-7-sage', 'accessories', 'ipad-accessory',
+     'Front and back protection.',
+     'Polyurethane Smart Folio for iPad mini 7 in Sage.',
+     59.00, None, ['Sage'], [], {'compat': 'iPad mini 7'}, 2024, ''),
+    ('Polishing Cloth (extra)', 'polishing-cloth-extra', 'accessories', '',
+     'Soft, nonabrasive cloth.',
+     'Polishing Cloth made of soft nonabrasive material cleans any Apple display, including nano-texture glass.',
+     19.00, None, ['White'], [], {'features': 'nano-texture safe'}, 2021, ''),
+    ('World Travel Adapter Kit (2025)', 'world-travel-adapter-kit-2025', 'accessories', 'charger',
+     'Charge anywhere.',
+     'World Travel Adapter Kit includes plug attachments for North America, EU, UK, AU, China, Japan, Korea, Hong Kong, and Brazil.',
+     29.00, None, ['White'], [], {'features': '8 plug heads'}, 2025, ''),
+    ('iPhone Lightning Dock', 'iphone-lightning-dock', 'accessories', 'charger',
+     'Charge and sync at the desk.',
+     'Lightning Dock for iPhone holds and charges iPhone upright while syncing.',
+     49.00, None, ['White'], [], {'features': 'Lightning'}, 2016, ''),
+    ('USB-C to Lightning Adapter', 'usb-c-to-lightning-adapter', 'accessories', 'cable',
+     'Connect Lightning accessories.',
+     'USB-C to Lightning Adapter lets Lightning accessories such as EarPods or older docks connect to USB-C iPads and Macs.',
+     35.00, None, ['White'], [], {'features': 'Lightning to USB-C'}, 2023, ''),
+    ('Beats Pill+ (Legacy)', 'beats-pill-plus-legacy', 'audio', '', 'Portable stereo speaker.',
+     'Beats Pill+ portable Bluetooth speaker with 12-hour battery (legacy 2015 design).',
+     179.95, None, ['Black', 'White', 'Red'], [],
+     {'features': 'Bluetooth, 12 hr'}, 2015, ''),
+]
+
+
 def _seed_extra_products():
-    """Add the EXTRA_PRODUCTS rows. Idempotent — skips slugs already present."""
+    """Add the EXTRA_PRODUCTS + EXTRA_PRODUCTS_R2 rows. Idempotent — skips slugs already present."""
     existing = {p.slug for p in Product.query.with_entities(Product.slug).all()}
     added = 0
-    for tup in EXTRA_PRODUCTS:
+    for tup in (EXTRA_PRODUCTS + EXTRA_PRODUCTS_R2):
         (name, slug, cat, subcat, subt, desc, price, mp, colors, storage, specs, year, chip) = tup
         if slug in existing:
             continue
@@ -3323,6 +4086,7 @@ def _seed_extra_products():
             created_at=MIRROR_REFERENCE_DATE,
         )
         db.session.add(p)
+        existing.add(slug)
         added += 1
     db.session.commit()
     print(f"Seeded {added} extra products")

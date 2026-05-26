@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% block title %}{{ post.title }} | Cambridge Dictionary Blog{% endblock %}
+{% block content %}
+<div class="container blog-post">
+  <nav class="breadcrumb">
+    <a href="{{ url_for('index') }}">Dictionary</a> &rsaquo;
+    <a href="{{ url_for('blog_index') }}">Blog</a> &rsaquo;
+    <span>{{ post.title }}</span>
+  </nav>
+  <article class="post-body">
+    <span class="post-category">{{ post.category }}</span>
+    <h1 class="post-title">{{ post.title }}</h1>
+    <p class="post-meta">Published {{ post.date }} &middot; Cambridge Dictionary editors</p>
+    <p class="post-lede">{{ post.excerpt }}</p>
+    <p>The Cambridge Dictionary editorial team publishes regular pieces on how
+       English evolves, what makes a word qualify for the dictionary, and how
+       learners can use the dictionary to improve faster. Each post is
+       reviewed by lexicographers based at Cambridge University Press &amp;
+       Assessment.</p>
+    <p>Follow the blog for weekly new-word round-ups, learner-tip threads,
+       and reflections on grammar usage in present-day English.</p>
+    <a class="btn-primary" href="{{ url_for('blog_index') }}">Back to all posts</a>
+  </article>
+
+  <aside class="post-aside">
+    <h3>More from the blog</h3>
+    <ul>
+      {% for p in posts if p.slug != post.slug %}
+        <li><a href="{{ url_for('blog_post', slug=p.slug) }}">{{ p.title }}</a></li>
+      {% endfor %}
+    </ul>
+  </aside>
+</div>
+{% endblock %}

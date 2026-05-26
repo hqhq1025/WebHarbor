@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+{% block title %}Coursera for Campus | Online Learning for Universities{% endblock %}
+{% block content %}
+<div class="enterprise-page">
+  <div class="enterprise-hero">
+    <div class="container">
+      <div class="hero-with-art">
+        <div class="hero-text">
+          <h1>Coursera for Campus</h1>
+          <p>Equip your students with industry-relevant skills, job-ready certificates,
+             and supplemental courses from 350+ leading universities and companies.</p>
+          <div style="display:flex;gap:12px;margin-top:24px;flex-wrap:wrap;">
+            <a href="{{ url_for('register') }}" class="btn-primary">Request a demo</a>
+            <a href="{{ url_for('partners') }}" class="btn-outline-white">See our partners</a>
+          </div>
+        </div>
+        {% set _h = hero_image('business') %}
+        {% if _h %}<div class="hero-photo"><img src="{{ url_for('static', filename=_h) }}" alt=""></div>{% endif %}
+      </div>
+    </div>
+  </div>
+  <div class="container">
+    <section class="enterprise-benefits">
+      <h2>Why Coursera for Campus?</h2>
+      <div class="benefits-grid">
+        <div class="benefit-card">
+          <span class="benefit-icon">&#127979;</span>
+          <h3>7,000+ courses</h3>
+          <p>Give students unlimited access to the full Coursera catalog including
+             specializations, professional certificates, and guided projects.</p>
+        </div>
+        <div class="benefit-card">
+          <span class="benefit-icon">&#128218;</span>
+          <h3>Career-aligned content</h3>
+          <p>Industry micro-credentials from Google, IBM, Meta, and more — mapped to
+             entry-level roles your students target.</p>
+        </div>
+        <div class="benefit-card">
+          <span class="benefit-icon">&#128202;</span>
+          <h3>Outcome analytics</h3>
+          <p>Track enrolment, completion rates, and skill development across cohorts
+             with a dedicated admin dashboard.</p>
+        </div>
+        <div class="benefit-card">
+          <span class="benefit-icon">&#127942;</span>
+          <h3>Recognised credentials</h3>
+          <p>Earn shareable certificates from world-class institutions, recognised by
+             employers across 190+ countries.</p>
+        </div>
+        <div class="benefit-card">
+          <span class="benefit-icon">&#127757;</span>
+          <h3>Global reach</h3>
+          <p>Already used by 4,400+ universities in 110+ countries to upskill students
+             at scale.</p>
+        </div>
+        <div class="benefit-card">
+          <span class="benefit-icon">&#128104;&#8205;&#127979;</span>
+          <h3>Faculty co-teaching</h3>
+          <p>Layer Coursera content into your own credit-bearing courses with our
+             integrated authoring and grading tools.</p>
+        </div>
+      </div>
+    </section>
+    <section class="enterprise-cta">
+      <h2>Ready to bring industry-recognised learning to your campus?</h2>
+      <a href="{{ url_for('register') }}" class="btn-primary">Talk to our education team</a>
+    </section>
+  </div>
+</div>
+{% endblock %}

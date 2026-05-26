@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% block title %}Registry - Amazon.com{% endblock %}
+
+{% block content %}
+<div class="account-page" style="max-width:1200px">
+    <h1>Find or Create a Registry</h1>
+    <p style="margin-bottom:24px;color:#565959">Celebrate life's milestones with a personalized registry. Create one for free or find someone's registry below.</p>
+
+    <div style="background:#fff;padding:30px;border-radius:4px;margin-bottom:24px">
+        <h2 style="margin-bottom:16px">Create a registry</h2>
+        <div class="account-grid">
+            <a class="account-tile" href="{{ url_for('index') }}">
+                <div class="account-tile-icon">👰</div>
+                <div class="account-tile-info">
+                    <h3>Wedding Registry</h3>
+                    <p>Build your dream wedding list</p>
+                </div>
+            </a>
+            <a class="account-tile" href="{{ url_for('index') }}">
+                <div class="account-tile-icon">👶</div>
+                <div class="account-tile-info">
+                    <h3>Baby Registry</h3>
+                    <p>Free welcome box for new parents</p>
+                </div>
+            </a>
+            <a class="account-tile" href="{{ url_for('index') }}">
+                <div class="account-tile-icon">🎂</div>
+                <div class="account-tile-info">
+                    <h3>Birthday Registry</h3>
+                    <p>Share what you'd love this year</p>
+                </div>
+            </a>
+            <a class="account-tile" href="{{ url_for('wishlist') if current_user.is_authenticated else url_for('login') }}">
+                <div class="account-tile-icon">⭐</div>
+                <div class="account-tile-info">
+                    <h3>Your Wish List</h3>
+                    <p>Items you've saved for later</p>
+                </div>
+            </a>
+        </div>
+    </div>
+
+    <div style="background:#fff;padding:30px;border-radius:4px">
+        <h2 style="margin-bottom:16px">Find a registry or gift list</h2>
+        <form action="{{ url_for('search') }}" method="get" style="display:flex;gap:8px;max-width:600px">
+            <input class="form-input" type="text" name="k" placeholder="Search by name or email" style="flex:1">
+            <button type="submit" class="btn-primary">Search</button>
+        </form>
+        <p style="margin-top:16px;color:#565959;font-size:13px">Top registry picks from Customers: Wedding · Baby · Birthday · Housewarming · Graduation</p>
+    </div>
+</div>
+{% endblock %}

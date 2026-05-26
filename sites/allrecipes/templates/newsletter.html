@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% block title %}Newsletter{% endblock %}
+{% block content %}
+<div class="newsletter-page" style="max-width:760px;margin:48px auto;padding:0 20px;">
+    <h1>The Allrecipes Newsletter</h1>
+    <p style="font-size:1.1rem;color:#444;line-height:1.5;">
+        Get our most popular recipes, kitchen tips, and seasonal collections delivered to
+        your inbox every week. Sign up below — you can unsubscribe any time.
+    </p>
+
+    {% if signed_up %}
+    <div class="newsletter-success" style="margin-top:24px;padding:18px;border-radius:8px;background:#e7f6ee;border:1px solid #b8e0c8;color:#1f6b3a;">
+        <strong>You're signed up!</strong> Watch your inbox for our next issue.
+    </div>
+    {% else %}
+    <form method="POST" action="{{ url_for('newsletter') }}"
+          style="margin-top:24px;display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <input type="email" name="email" required placeholder="you@example.com"
+               style="flex:1;min-width:240px;padding:12px 14px;border:1px solid #bbb;border-radius:6px;font-size:1rem;">
+        <button type="submit" class="btn btn-primary"
+                style="padding:12px 22px;border-radius:6px;font-size:1rem;font-weight:600;cursor:pointer;">
+            Sign Up
+        </button>
+    </form>
+    {% endif %}
+
+    <h2 style="margin-top:40px;">What you'll get</h2>
+    <ul style="line-height:1.7;color:#444;">
+        <li><strong>Weekly Recipe Round-Up</strong> — the dishes our home cooks loved most this week.</li>
+        <li><strong>Seasonal Collections</strong> — themed roundups for holidays, weeknights, and special occasions.</li>
+        <li><strong>New from the Allstars</strong> — fresh recipes and tips from the Allrecipes Allstars.</li>
+        <li><strong>Kitchen Tips</strong> — practical guides on technique, equipment, and shopping.</li>
+    </ul>
+
+    <h2>Other ways to follow us</h2>
+    <p style="color:#555;">Looking for more recipes? Browse our hubs:</p>
+    <p>
+        <a href="{{ url_for('meals_hub') }}">Meals</a> &middot;
+        <a href="{{ url_for('ingredients_hub') }}">Ingredients</a> &middot;
+        <a href="{{ url_for('cuisines_hub') }}">Cuisines</a> &middot;
+        <a href="{{ url_for('occasions') }}">Occasions</a>
+    </p>
+</div>
+{% endblock %}

@@ -72,6 +72,16 @@ class Word(db.Model):
     guide_word = db.Column(db.String(200), default='')   # short gloss for disambiguation
     phonetic_uk = db.Column(db.String(100), default='')  # IPA UK
     phonetic_us = db.Column(db.String(100), default='')  # IPA US
+    # R2: a non-region-specific IPA slot, populated for the WordNet-generated
+    # long tail that doesn't have curated UK/US transcriptions. Curated words
+    # mirror phonetic_uk into this field so callers can always read one slot.
+    pronunciation_ipa = db.Column(db.String(120), default='')
+    # R2: deterministic per-region MP3 placeholder paths. The MP3 files are
+    # NOT shipped — templates only render the URL string and the browser's
+    # native onerror handling hides the player. Real Cambridge keys audio
+    # per region (UK / US).
+    audio_uk_path = db.Column(db.String(255), default='')
+    audio_us_path = db.Column(db.String(255), default='')
     level = db.Column(db.String(10), default='')         # B1, C1, etc.
     # Definitions stored as JSON list of dicts:
     # [{sense_num, grammar_note, definition, examples:[str], register}]
@@ -111,6 +121,12 @@ class Word(db.Model):
             return json.loads(self.synonyms_json or '[]')
         except Exception:
             return []
+
+    @property
+    def definitions_count(self):
+        """Surface a cheap sense-count for templates and tasks
+        ('How many meanings of X are listed?'). No DB column."""
+        return len(self.get_definitions())
 
 
 class SavedWord(db.Model):
@@ -670,6 +686,180 @@ def shop_item(slug):
         ShopItem.category == item.category
     ).limit(3).all()
     return render_template('shop_item.html', item=item, related=related)
+
+
+# --- Word of the Day --------------------------------------------------------
+# Real Cambridge picks a daily WOTD that any visitor can hit at a stable URL.
+# We pick deterministically from MIRROR_REFERENCE_DATE so re-seeds and tests
+# always agree on today's word, and also accept ?date=YYYY-MM-DD so agents
+# can navigate the archive without server-side mutation.
+
+@app.route('/word-of-the-day')
+@app.route('/word-of-the-day/')
+def word_of_the_day():
+    date_str = request.args.get('date', '').strip()
+    try:
+        target_date = (datetime.strptime(date_str, '%Y-%m-%d').date()
+                       if date_str else MIRROR_REFERENCE_DATE.date())
+    except ValueError:
+        target_date = MIRROR_REFERENCE_DATE.date()
+
+    # Deterministic pick: hash the date into a row index over the curated
+    # (high-quality) part of the catalog — only words that have at least one
+    # example and a non-empty IPA. Falls back to the full catalog if needed.
+    import hashlib as _hl
+    pool = (Word.query
+            .filter(Word.is_thesaurus_phrase == False,  # noqa
+                    Word.phonetic_uk != '')
+            .order_by(Word.id).all())
+    if not pool:
+        pool = Word.query.filter(Word.is_thesaurus_phrase == False  # noqa
+                                 ).order_by(Word.id).all()
+    if not pool:
+        abort(404)
+    idx = int(_hl.md5(target_date.isoformat().encode()).hexdigest()[:8], 16) % len(pool)
+    wotd = pool[idx]
+
+    # Build a 7-day archive list for the side panel.
+    from datetime import timedelta as _td
+    archive = []
+    for back in range(1, 8):
+        d = target_date - _td(days=back)
+        i = int(_hl.md5(d.isoformat().encode()).hexdigest()[:8], 16) % len(pool)
+        archive.append({'date': d, 'word': pool[i]})
+
+    return render_template('word_of_day.html', wotd=wotd,
+                           target_date=target_date, archive=archive)
+
+
+# --- Word Lists (themed vocabulary collections) -----------------------------
+# Real Cambridge ships curated word lists (Business English, Academic, IELTS,
+# Travel, …). We back them with a simple deterministic SQL slice over the
+# catalog so agents have something concrete to enumerate.
+
+WORDLIST_DEFS = [
+    {'slug': 'business-english', 'title': 'Business English Essentials',
+     'category': 'Business', 'level': 'B2',
+     'description': 'Vocabulary for meetings, emails, and negotiations.',
+     'seed_words': ['innovate', 'sustainability', 'cryptocurrency',
+                    'concatenate', 'mitigate', 'impeccable',
+                    'pandemic', 'resilience']},
+    {'slug': 'academic-vocabulary', 'title': 'Academic Vocabulary',
+     'category': 'Academic', 'level': 'C1',
+     'description': 'High-frequency words used in academic writing.',
+     'seed_words': ['ubiquitous', 'ameliorate', 'altruism', 'quintessential',
+                    'meticulous', 'ephemeral', 'gestalt', 'serendipity']},
+    {'slug': 'ielts-band-7', 'title': 'IELTS Band 7+ Vocabulary',
+     'category': 'IELTS', 'level': 'C1',
+     'description': 'Advanced lexis to push your IELTS Writing band score.',
+     'seed_words': ['zeitgeist', 'procrastination', 'euphoria',
+                    'ephemeral', 'altruism', 'unblemished',
+                    'quintessential', 'meticulous']},
+    {'slug': 'travel-and-tourism', 'title': 'Travel & Tourism',
+     'category': 'Everyday', 'level': 'B1',
+     'description': 'Words for planning trips, transport, and accommodation.',
+     'seed_words': ['serendipity', 'nostalgia', 'solitude', 'harmony']},
+    {'slug': 'feelings-and-emotions', 'title': 'Feelings & Emotions',
+     'category': 'Everyday', 'level': 'A2',
+     'description': 'Talk about how you feel in English.',
+     'seed_words': ['euphoria', 'nostalgia', 'solitude', 'harmony',
+                    'reverie', 'resilience']},
+    {'slug': 'technology-and-internet', 'title': 'Technology & the Internet',
+     'category': 'Tech', 'level': 'B2',
+     'description': 'Words for talking about tech, software, and the web.',
+     'seed_words': ['cryptocurrency', 'concatenate', 'innovate', 'pandemic']},
+]
+
+
+def _resolve_wordlist(wl):
+    """Resolve a wordlist definition's seed slugs into Word rows."""
+    rows = []
+    for slug in wl['seed_words']:
+        w = Word.query.filter_by(slug=slug, is_thesaurus_phrase=False).first()
+        if w:
+            rows.append(w)
+    return rows
+
+
+@app.route('/wordlists')
+@app.route('/wordlists/')
+def wordlists_index():
+    return render_template('wordlists_index.html', wordlists=WORDLIST_DEFS)
+
+
+@app.route('/wordlists/<slug>')
+def wordlist_detail(slug):
+    wl = next((w for w in WORDLIST_DEFS if w['slug'] == slug), None)
+    if not wl:
+        abort(404)
+    words = _resolve_wordlist(wl)
+    return render_template('wordlist_detail.html', wl=wl, words=words)
+
+
+# --- Static informational pages --------------------------------------------
+# Real Cambridge has /about/dictionary, /help, /blog/ — wire static templates.
+
+BLOG_POSTS = [
+    {'slug': 'new-words-spring-2026', 'date': '2026-03-12',
+     'title': 'New words: 12 March 2026',
+     'category': 'New words',
+     'excerpt': ('A weekly round-up of words that have entered popular usage. '
+                 'This week: solarpunk, vibe-coding, climate-doomerism.')},
+    {'slug': 'how-to-use-cambridge-dictionary', 'date': '2026-02-28',
+     'title': 'How to use the Cambridge Dictionary like a pro',
+     'category': 'Learning tips',
+     'excerpt': ('Five less-obvious features of cambridge.org/dictionary that '
+                 'every advanced learner should know about.')},
+    {'slug': 'ielts-vocabulary-tips', 'date': '2026-02-10',
+     'title': '7 vocabulary tactics to push your IELTS Writing band',
+     'category': 'IELTS',
+     'excerpt': ('From topic-specific collocations to register-aware '
+                 'paraphrase, here are the moves examiners reward.')},
+    {'slug': 'why-pronunciation-matters', 'date': '2026-01-22',
+     'title': 'Why pronunciation matters more than you think',
+     'category': 'Pronunciation',
+     'excerpt': ('Even small phonetic errors can carry meaning. We break '
+                 'down the four UK-vs-US sound shifts learners get wrong most.')},
+    {'slug': 'cambridge-dictionary-2025-word-of-year',
+     'date': '2025-11-30',
+     'title': "Cambridge Dictionary's 2025 Word of the Year",
+     'category': 'Word of the year',
+     'excerpt': ('A look back at the word that defined 2025 and the '
+                 'shortlist that nearly took the title.')},
+    {'slug': 'grammar-myths-busted', 'date': '2025-10-14',
+     'title': 'Six grammar myths your English teacher told you',
+     'category': 'Grammar',
+     'excerpt': ("'Never start a sentence with And.' '\"You\" is always "
+                 "singular.' We bust six tenacious grammar myths with corpus "
+                 "evidence.")},
+]
+
+
+@app.route('/blog')
+@app.route('/blog/')
+def blog_index():
+    return render_template('blog_index.html', posts=BLOG_POSTS)
+
+
+@app.route('/blog/<slug>')
+def blog_post(slug):
+    post = next((p for p in BLOG_POSTS if p['slug'] == slug), None)
+    if not post:
+        abort(404)
+    return render_template('blog_post.html', post=post, posts=BLOG_POSTS)
+
+
+@app.route('/about')
+@app.route('/about/')
+@app.route('/about/dictionary')
+def about():
+    return render_template('about.html')
+
+
+@app.route('/help')
+@app.route('/help/')
+def help_page():
+    return render_template('help.html')
 
 
 # --- Language switcher ---
@@ -2317,6 +2507,12 @@ def seed_database():
                 pos=wd.get('pos', ''), guide_word=wd.get('guide_word', ''),
                 phonetic_uk=wd.get('phonetic_uk', ''),
                 phonetic_us=wd.get('phonetic_us', ''),
+                pronunciation_ipa=(wd.get('pronunciation_ipa')
+                                   or wd.get('phonetic_uk', '')),
+                audio_uk_path=wd.get('audio_uk_path',
+                                     f"/static/audio/uk/{wd['slug']}.mp3"),
+                audio_us_path=wd.get('audio_us_path',
+                                     f"/static/audio/us/{wd['slug']}.mp3"),
                 level=wd.get('level', ''),
                 definitions_json=_j(wd.get('definitions', [])),
                 translations_json=_j(wd.get('translations', {})),
@@ -2337,6 +2533,12 @@ def seed_database():
                 pos=wd.get('pos', ''), guide_word=wd.get('guide_word', ''),
                 phonetic_uk=wd.get('phonetic_uk', ''),
                 phonetic_us=wd.get('phonetic_us', ''),
+                pronunciation_ipa=(wd.get('pronunciation_ipa')
+                                   or wd.get('phonetic_uk', '')),
+                audio_uk_path=wd.get('audio_uk_path',
+                                     f"/static/audio/uk/{wd['slug']}.mp3"),
+                audio_us_path=wd.get('audio_us_path',
+                                     f"/static/audio/us/{wd['slug']}.mp3"),
                 level=wd.get('level', ''),
                 definitions_json=_j(wd.get('definitions', [])),
                 translations_json=_j(wd.get('translations', {})),
@@ -2356,6 +2558,9 @@ def seed_database():
                 headword=wd['headword'], slug=wd['slug'], pos=wd['pos'],
                 guide_word=wd['guide_word'],
                 phonetic_uk=wd['phonetic_uk'], phonetic_us=wd['phonetic_us'],
+                pronunciation_ipa=wd['phonetic_uk'],
+                audio_uk_path=f"/static/audio/uk/{wd['slug']}.mp3",
+                audio_us_path=f"/static/audio/us/{wd['slug']}.mp3",
                 level=wd.get('level', ''),
                 definitions_json=_j(wd['definitions']),
                 translations_json=_j(wd['translations']),
@@ -2369,6 +2574,9 @@ def seed_database():
                 headword=td['headword'], slug=td['slug'], pos=td['pos'],
                 guide_word=td['guide_word'],
                 phonetic_uk=td['phonetic_uk'], phonetic_us=td['phonetic_us'],
+                pronunciation_ipa=td['phonetic_uk'],
+                audio_uk_path=f"/static/audio/uk/{td['slug']}.mp3",
+                audio_us_path=f"/static/audio/us/{td['slug']}.mp3",
                 level=td.get('level', ''),
                 definitions_json=_j(td['definitions']),
                 translations_json=_j(td['translations']),
@@ -2438,7 +2646,9 @@ def seed_database():
     # when creating indexes during db.create_all(), which leaves
     # sqlite_master entries in different orders across rebuilds and breaks
     # byte-identity. Re-create them in a deterministic (alphabetical) order
-    # so two consecutive seed runs produce md5-identical DB files.
+    # so two consecutive seed runs produce md5-identical DB files. VACUUM
+    # afterwards so the dropped index pages don't leave non-deterministic
+    # free-page residue inside the file.
     from sqlalchemy import text as _sql_text
     rows = db.session.execute(_sql_text(
         "SELECT name, sql FROM sqlite_master "
@@ -2451,6 +2661,11 @@ def seed_database():
         if sql:
             db.session.execute(_sql_text(sql))
     db.session.commit()
+    # VACUUM has to run outside a transaction; SQLAlchemy 2.x exposes the
+    # raw connection via db.session.connection().exec_driver_sql.
+    raw = db.session.connection().connection
+    raw.isolation_level = None
+    raw.execute('VACUUM')
     print('Database seeded.')
 
 

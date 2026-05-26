@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block title %}Help &amp; FAQ | Cambridge Dictionary{% endblock %}
+{% block content %}
+<div class="container static-page help-page">
+  <nav class="breadcrumb">
+    <a href="{{ url_for('index') }}">Dictionary</a> &rsaquo;
+    <span>Help</span>
+  </nav>
+  <h1>Help &amp; Frequently Asked Questions</h1>
+
+  <h2>How do I look up a word?</h2>
+  <p>Type the word into the search box at the top of any page and press Enter,
+     or click the magnifying glass. The dictionary supports both UK and US
+     spellings and will suggest matches as you type.</p>
+
+  <h2>What do the CEFR level labels mean?</h2>
+  <p>Every entry tagged with a level (A1, A2, B1, B2, C1, C2) corresponds to
+     the Common European Framework of Reference for Languages. A1 is
+     beginner, C2 is mastery.</p>
+
+  <h2>How do I save a word to my list?</h2>
+  <p>Sign in to your free Cambridge Dictionary account, open any word page,
+     and click <em>Add to word list</em>. Your saved words appear under
+     <a href="{{ url_for('account') if current_user.is_authenticated else url_for('login') }}">My Account</a>.</p>
+
+  <h2>Where do the audio recordings come from?</h2>
+  <p>Each headword has separate UK and US recordings, available at
+     <code>/static/audio/uk/&lt;word&gt;.mp3</code> and
+     <code>/static/audio/us/&lt;word&gt;.mp3</code>.</p>
+
+  <h2>How can I report a typo or missing word?</h2>
+  <p>Reach out to the lexicography team via the editorial email listed on
+     our <a href="{{ url_for('about') }}">About</a> page. Every report is read.</p>
+
+  <h2>Is the dictionary free?</h2>
+  <p>Yes &mdash; the dictionary, thesaurus, grammar, and translation tools
+     are completely free. Cambridge Dictionary <em>Plus</em> features
+     additional quizzes and word games, also at no cost.</p>
+</div>
+{% endblock %}

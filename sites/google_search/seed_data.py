@@ -1,9 +1,10 @@
-"""Seed data for Google Search mirror.
+"""Seed data for Google Search mirror — R2.
 Builds SearchResults by generating plausible variations around each topic's
 Wikipedia summary + 4-6 additional simulated results from Britannica, YouTube,
 NYTimes, Wikipedia, Reddit, etc. Also seeds trending searches, doodles,
 and the Google apps list.
 """
+import hashlib
 import json
 import os
 import random
@@ -11,6 +12,22 @@ from datetime import datetime, timedelta
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 TOPICS_JSON = os.path.join(HERE, 'scraped_data', 'topics.json')
+
+# Pinned reference date - every timestamp derives from this so rebuilds are
+# byte-identical regardless of wall-clock time. See harden-env/gotchas.
+MIRROR_REFERENCE_DATE = datetime(2026, 5, 12, 12, 0, 0)
+
+# Pre-computed bcrypt hashes - random salt in bcrypt.generate_password_hash()
+# would shift bytes on every rebuild. See harden-env/gotchas.
+PINNED_BENCH_PASSWORD_HASH = '$2b$12$RwAC/sfwDHtccU//A20fde.uKkZK4Ptnjjyua2l2ktwI6uysAp3Ou'  # 'TestPass123!'
+PINNED_DEMO_PASSWORD_HASH = '$2b$12$Oi0plj9XBSbuCcjmrSVmje2AWKXN99Xpa7J2O6tjYvquZPTqNXN6i'  # 'test1234'
+
+
+def _det_hash(s, mod=2**31):
+    """Stable string hash - Python's built-in hash() is randomized per
+    process unless PYTHONHASHSEED=0. Returns int in [0, mod)."""
+    h = hashlib.md5(s.encode('utf-8')).hexdigest()
+    return int(h[:8], 16) % mod
 
 # Google verticals — the search-result category tabs.
 # Real Google exposes far more than the original 7; expand to cover the
@@ -1556,8 +1573,8 @@ def _seed_task_topics(db, Topic, SearchResult, PaaQuestion, RelatedQuery, Knowle
             query_text=td['query_text'],
             keywords_json=json.dumps(td['keywords']),
             answer_token=td['answer_token'],
-            result_count=random.randint(1_000_000, 500_000_000),
-            search_time=round(random.uniform(0.22, 0.79), 2),
+            result_count=random.Random(_det_hash(slug)).randint(1_000_000, 500_000_000),
+            search_time=round(random.Random(_det_hash(slug + '_t')).uniform(0.22, 0.79), 2),
             knowledge_type='topic',
             knowledge_panel_json=json.dumps({}),
         )
@@ -1589,6 +1606,212 @@ def _seed_task_topics(db, Topic, SearchResult, PaaQuestion, RelatedQuery, Knowle
             db.session.add(PaaQuestion(topic_id=topic.id, question=q, answer=a, rank=i))
 
     db.session.commit()
+
+
+def _seed_scraped_topics(db, Topic, SearchResult, PaaQuestion, RelatedQuery, KnowledgeFact):
+    """Replay topics dumped from the shipped Round 1 instance_seed DB.
+
+    Round 1 polish added ~170 rich topics directly into the SQLite DB
+    (bypassing seed_data.py). To make builds-from-source reproducible we
+    dumped those rows into scraped_topics.json. This function inserts them
+    back so a fresh rebuild produces a comparable topic universe.
+    """
+    scraped_path = os.path.join(HERE, 'scraped_topics.json')
+    if not os.path.exists(scraped_path):
+        return
+    with open(scraped_path) as f:
+        topics = json.load(f)
+
+    inserted = 0
+    for td in topics:
+        slug = td['slug']
+        if Topic.query.filter_by(slug=slug).first():
+            continue
+
+        topic = Topic(
+            slug=slug,
+            name=td['name'],
+            wiki_title=td.get('wiki_title') or td['name'],
+            summary=td.get('summary') or '',
+            wiki_url=td.get('wiki_url') or '',
+            query_text=td.get('query_text') or td['name'],
+            keywords_json=td.get('keywords_json') or '[]',
+            answer_token=td.get('answer_token') or '',
+            images_json=td.get('images_json') or '[]',
+            hero_image=td.get('hero_image') or '',
+            result_count=td.get('result_count') or 0,
+            search_time=td.get('search_time') or 0.5,
+            knowledge_type=td.get('knowledge_type') or '',
+            knowledge_panel_json=td.get('knowledge_panel_json') or '{}',
+        )
+        db.session.add(topic)
+        db.session.flush()
+
+        for r in td.get('results', []):
+            db.session.add(SearchResult(
+                topic_id=topic.id,
+                title=r['title'], url=r['url'],
+                display_url=r['display_url'], snippet=r['snippet'],
+                source=r['source'], rank=r['rank'], image=r.get('image') or '',
+            ))
+        for p in td.get('paa', []):
+            db.session.add(PaaQuestion(
+                topic_id=topic.id, question=p['question'],
+                answer=p['answer'], rank=p['rank'],
+            ))
+        for r in td.get('related', []):
+            db.session.add(RelatedQuery(
+                topic_id=topic.id, term=r['term'], rank=r['rank'],
+            ))
+        for k in td.get('knowledge_facts', []):
+            db.session.add(KnowledgeFact(
+                topic_id=topic.id, key=k['key'], value=k['value'], rank=k['rank'],
+            ))
+        inserted += 1
+
+    if inserted:
+        db.session.commit()
+        print(f"[seed] _seed_scraped_topics inserted {inserted} topics")
+
+
+def _seed_pop_topics(db, Topic, SearchResult, PaaQuestion, RelatedQuery, KnowledgeFact):
+    """R2 expansion: seed ~200 popular general-interest topics.
+
+    Each pop topic gets 6 synthetic results from a fixed provider list, 2 PAA
+    questions, 6 related queries, plus knowledge facts. Everything is
+    derived deterministically from the slug so rebuilds are byte-identical.
+    """
+    try:
+        from pop_topics_data import POP_TOPICS
+    except ImportError:
+        return
+
+    # Per-topic providers: deterministic 6-provider pick from a stable pool.
+    _PROVIDERS = ['wikipedia', 'britannica', 'youtube', 'reddit', 'nytimes', 'bbc',
+                  'medium', 'github', 'quanta', 'khan', 'nature']
+    _PROVIDER_DOMAIN = {
+        'wikipedia': 'en.wikipedia.org', 'britannica': 'www.britannica.com',
+        'youtube': 'www.youtube.com', 'reddit': 'www.reddit.com',
+        'nytimes': 'www.nytimes.com', 'bbc': 'www.bbc.com',
+        'medium': 'medium.com', 'github': 'github.com',
+        'quanta': 'www.quantamagazine.org', 'khan': 'www.khanacademy.org',
+        'nature': 'www.nature.com',
+    }
+    _TITLE_TPL = {
+        'wikipedia': '{name} - Wikipedia',
+        'britannica': '{name} | Britannica',
+        'youtube': '{name} - YouTube',
+        'reddit': 'r/{slug} - Reddit',
+        'nytimes': '{name} - The New York Times',
+        'bbc': '{name} - BBC News',
+        'medium': '{name} on Medium',
+        'github': '{name} on GitHub',
+        'quanta': '{name} - Quanta Magazine',
+        'khan': '{name} | Khan Academy',
+        'nature': '{name} | Nature',
+    }
+    _URL_TPL = {
+        'wikipedia': 'https://en.wikipedia.org/wiki/{slug}',
+        'britannica': 'https://www.britannica.com/topic/{slug}',
+        'youtube': 'https://www.youtube.com/results?search_query={slug}',
+        'reddit': 'https://www.reddit.com/r/{slug}/',
+        'nytimes': 'https://www.nytimes.com/topic/{slug}',
+        'bbc': 'https://www.bbc.com/news/topics/{slug}',
+        'medium': 'https://medium.com/tag/{slug}',
+        'github': 'https://github.com/topics/{slug}',
+        'quanta': 'https://www.quantamagazine.org/tag/{slug}/',
+        'khan': 'https://www.khanacademy.org/{slug}',
+        'nature': 'https://www.nature.com/subjects/{slug}',
+    }
+
+    inserted = 0
+    for slug, name, qtext, summary, answer_token, kfacts in POP_TOPICS:
+        if Topic.query.filter_by(slug=slug).first():
+            continue
+
+        rng = random.Random(_det_hash(slug + '_pop'))
+
+        # Build a 6-provider permutation (wikipedia always first)
+        providers = ['wikipedia'] + rng.sample(
+            [p for p in _PROVIDERS if p != 'wikipedia'], 5
+        )
+
+        topic = Topic(
+            slug=slug,
+            name=name,
+            wiki_title=name,
+            summary=summary,
+            wiki_url=_URL_TPL['wikipedia'].format(slug=slug),
+            query_text=qtext,
+            keywords_json=json.dumps(
+                [w.lower() for w in name.split() if len(w) > 2] + [slug]
+            ),
+            answer_token=answer_token,
+            result_count=rng.randint(1_000_000, 500_000_000),
+            search_time=round(rng.uniform(0.22, 0.79), 2),
+            knowledge_type='topic' if kfacts else '',
+            knowledge_panel_json=json.dumps({
+                'title': name,
+                'subtitle': '',
+                'description': summary,
+                'facts': [[k, v] for k, v in kfacts],
+            }) if kfacts else json.dumps({}),
+        )
+        db.session.add(topic)
+        db.session.flush()
+
+        # 6 results
+        for rank, prov in enumerate(providers):
+            title = _TITLE_TPL[prov].format(name=name, slug=slug)
+            url = _URL_TPL[prov].format(slug=slug)
+            display_url = _PROVIDER_DOMAIN[prov]
+            snippet_pool = [
+                f'{name}: {summary[:200]}',
+                f'Learn about {name} - history, key facts, and modern significance. {summary[:160]}',
+                f'{name} explained. {summary[:180]}',
+                f'Browse the latest about {name}. {summary[:150]}',
+                f'Everything you need to know about {name}. {summary[:170]}',
+                f'r/{slug}: community discussion of {name}. {summary[:140]}',
+            ]
+            snippet = snippet_pool[rank % len(snippet_pool)]
+            db.session.add(SearchResult(
+                topic_id=topic.id, title=title, url=url,
+                display_url=display_url, snippet=snippet,
+                source=prov, rank=rank, image=''
+            ))
+
+        # 2 PAA
+        paa_qs = [
+            (f'What is {name}?', f'{name}: {summary[:280]}'),
+            (f'Why is {name} important?',
+             f'{name} is significant because of its role and influence as described in the available references. {summary[:200]}'),
+        ]
+        for i, (q, a) in enumerate(paa_qs):
+            db.session.add(PaaQuestion(
+                topic_id=topic.id, question=q, answer=a, rank=i
+            ))
+
+        # 6 related queries (deterministic from slug)
+        suffixes = ['definition', 'history', 'examples', 'facts', 'images', 'news']
+        rng2 = random.Random(_det_hash(slug + '_rel'))
+        rng2.shuffle(suffixes)
+        base_lower = name.lower()
+        for i, sfx in enumerate(suffixes):
+            db.session.add(RelatedQuery(
+                topic_id=topic.id, term=f'{base_lower} {sfx}', rank=i
+            ))
+
+        # Knowledge facts
+        for i, (k, v) in enumerate(kfacts):
+            db.session.add(KnowledgeFact(
+                topic_id=topic.id, key=k, value=v, rank=i
+            ))
+
+        inserted += 1
+
+    if inserted:
+        db.session.commit()
+        print(f"[seed] _seed_pop_topics inserted {inserted} new topics")
 
 
 def domain_for(provider):
@@ -1690,7 +1913,7 @@ def build_results_for_topic(topic_data):
 
     # Pick 8 providers for variety
     providers = ['wikipedia', 'britannica', 'nytimes', 'bbc', 'youtube', 'reddit', 'nature', 'sciam', 'nat_geo', 'quanta']
-    random.seed(hash(slug) % 10000)
+    random.seed(_det_hash(slug, 10000))
     picked = ['wikipedia'] + random.sample([p for p in providers if p != 'wikipedia'], 7)
 
     results = []
@@ -1729,14 +1952,14 @@ def build_results_for_topic(topic_data):
 
 
 def build_paa(topic):
-    random.seed(hash(topic) % 50000)
+    random.seed(_det_hash(topic, 50000))
     picked = random.sample(PAA_TEMPLATES, 5)
     return [q.format(topic=topic) for q in picked]
 
 
 def build_related(topic, topics_data):
     """Pick 8 related queries from other topics."""
-    random.seed(hash(topic) % 20000)
+    random.seed(_det_hash(topic, 20000))
     pool = [t['topic'] for t in topics_data if t['topic'] != topic]
     picks = random.sample(pool, min(8, len(pool)))
     # Add some natural modifiers
@@ -1765,7 +1988,7 @@ def seed_database(db, User, Vertical, Topic, SearchResult, PaaQuestion, RelatedQ
             and GoogleApp.query.count() >= len(GOOGLE_APPS)
             and TrendingTerm.query.count() >= len(TRENDING)
             and Doodle.query.count() >= len(DOODLES)
-            and Topic.query.count() > 100):
+            and Topic.query.count() > 400):
         return  # fully seeded; do not even commit
     # Verticals
     for v in VERTICALS:
@@ -1815,6 +2038,7 @@ def seed_database(db, User, Vertical, Topic, SearchResult, PaaQuestion, RelatedQ
     for td in topics_data:
         if Topic.query.filter_by(slug=td['slug']).first():
             continue
+        _trng = random.Random(_det_hash(td['slug']))
         topic = Topic(
             slug=td['slug'],
             name=td['topic'],
@@ -1823,8 +2047,8 @@ def seed_database(db, User, Vertical, Topic, SearchResult, PaaQuestion, RelatedQ
             wiki_url=td.get('url', ''),
             images_json=json.dumps(td.get('images', [])),
             hero_image=(td.get('images', [None])[0] if td.get('images') else ''),
-            result_count=random.randint(1_000_000, 500_000_000),
-            search_time=round(random.uniform(0.22, 0.79), 2),
+            result_count=_trng.randint(1_000_000, 500_000_000),
+            search_time=round(_trng.uniform(0.22, 0.79), 2),
         )
         db.session.add(topic)
         db.session.flush()
@@ -1991,12 +2215,20 @@ def seed_database(db, User, Vertical, Topic, SearchResult, PaaQuestion, RelatedQ
     # ---- Task-driven topics for ALL WebVoyager tasks ----
     _seed_task_topics(db, Topic, SearchResult, PaaQuestion, RelatedQuery, KnowledgeFact)
 
+    # ---- R2: Replay scraped topics from Round 1 (preserves the 170+ rich
+    # topics that were added directly to the DB in R1) ----
+    _seed_scraped_topics(db, Topic, SearchResult, PaaQuestion, RelatedQuery, KnowledgeFact)
+
+    # ---- R2: Pop-topic expansion (programming, science, people, places, etc.) ----
+    _seed_pop_topics(db, Topic, SearchResult, PaaQuestion, RelatedQuery, KnowledgeFact)
+
     # Demo user
     if not User.query.filter_by(email='demo@google.com').first():
         demo = User(
             email='demo@google.com',
             name='Demo User',
-            password_hash=bcrypt.generate_password_hash('demo1234').decode('utf-8'),
+            password_hash=PINNED_DEMO_PASSWORD_HASH,
+            created=MIRROR_REFERENCE_DATE,
         )
         db.session.add(demo)
         db.session.commit()

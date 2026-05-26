@@ -1,0 +1,48 @@
+{% extends 'base.html' %}
+{% block title %}About - Google Flights{% endblock %}
+{% block content %}
+<div class="info-page">
+  <div class="info-page-inner">
+    <h1>About Google Flights</h1>
+    <p class="lead">
+      Google Flights helps you find the best fares, track price trends, and
+      book flights from hundreds of airlines worldwide. We combine real-time
+      pricing, AI-driven price tracking, and a single search across the
+      world's biggest airline catalogs to make travel planning effortless.
+    </p>
+
+    <h2>Our mission</h2>
+    <p>
+      We believe travel should be transparent. Google Flights does not sell
+      tickets directly - we surface the best options from airlines and
+      online travel agencies so you can compare and choose the right
+      itinerary at the right price.
+    </p>
+
+    <h2>Coverage</h2>
+    <p>
+      This mirror currently lists <strong>{{ _airports_count if _airports_count else '300+' }}</strong>
+      airports across six continents and indexes flights from every major
+      global carrier. Search by city, IATA code, or country, then filter
+      results by airline, stops, cabin class, and price.
+    </p>
+
+    <h2>Price tracking</h2>
+    <p>
+      Sign in to save searches, track flight prices, and set alerts that
+      fire when fares drop. We never charge for these features.
+    </p>
+
+    <h2>Privacy and data</h2>
+    <p>
+      We respect your privacy. Read our <a href="{{ url_for('privacy') }}">Privacy</a>
+      page for the full statement. For help, visit <a href="{{ url_for('help_page') }}">Help</a>.
+    </p>
+
+    <div class="info-page-cta">
+      <a href="{{ url_for('index') }}" class="btn-primary">Start a flight search</a>
+      <a href="{{ url_for('explore') }}" class="btn-secondary">Explore destinations</a>
+    </div>
+  </div>
+</div>
+{% endblock %}

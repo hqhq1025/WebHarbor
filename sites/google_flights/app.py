@@ -466,12 +466,37 @@ def explore():
                 flights_by_dest[dest.iata] = f
 
     all_airports = Airport.query.filter_by(is_popular=True).order_by(Airport.city).all()
+    view = request.args.get('view', 'grid').lower()
+    if view not in ('grid', 'map'):
+        view = 'grid'
+
+    # Pre-compute deterministic pin positions for the map view so the
+    # template doesn't need an ord() filter (Jinja2 default env has none).
+    # Project each destination IATA into a [region anchor + IATA-hash jitter]
+    # equirectangular layout on a flat 100% x 100% canvas.
+    region_xy = {
+        'North America': (0.20, 0.32), 'Latin America': (0.28, 0.62),
+        'Europe':        (0.52, 0.28), 'Africa':        (0.55, 0.55),
+        'Middle East':   (0.62, 0.42), 'Asia':          (0.78, 0.36),
+        'Oceania':       (0.85, 0.72),
+    }
+    pin_positions = {}
+    for d in all_dests:
+        bx, by = region_xy.get(d.region, (0.5, 0.5))
+        iata = (d.iata or '').ljust(3, 'A')
+        xoff = ((ord(iata[0]) * 13 + ord(iata[1]) * 7) % 100) / 600.0 - 0.08
+        yoff = ((ord(iata[2]) * 17 + ord(iata[1]) * 5) % 100) / 600.0 - 0.08
+        pin_positions[d.iata] = (round((bx + xoff) * 100, 1),
+                                  round((by + yoff) * 100, 1))
+
     return render_template('explore.html',
                            origin=origin,
                            origin_airport=origin_airport,
                            destinations=all_dests,
                            flights_by_dest=flights_by_dest,
-                           all_airports=all_airports)
+                           all_airports=all_airports,
+                           view=view,
+                           pin_positions=pin_positions)
 
 
 # Landmarks / place names that WebVoyager users sometimes type instead of an
@@ -2027,6 +2052,42 @@ def api_flights_route(origin, destination):
 
 
 # ============================================================
+# STATIC INFO PAGES
+# ============================================================
+
+@app.route('/about')
+def about():
+    return render_template('about.html')
+
+
+@app.route('/help')
+@app.route('/help/')
+def help_page():
+    topic = request.args.get('topic', '').strip().lower()
+    return render_template('help.html', topic=topic)
+
+
+@app.route('/privacy')
+def privacy():
+    return render_template('privacy.html')
+
+
+@app.route('/terms')
+def terms():
+    return render_template('privacy.html', _terms=True)
+
+
+@app.route('/trips')
+@login_required
+def trips():
+    # Real Google Flights surfaces a "Trips" tab summarising upcoming/past
+    # bookings. Reuse the bookings list as the canonical trips view.
+    bookings = (current_user.bookings
+                .order_by(Booking.booked_at.desc()).all())
+    return render_template('trips.html', bookings=bookings)
+
+
+# ============================================================
 # ERROR HANDLERS
 # ============================================================
 
@@ -2049,16 +2110,35 @@ def seed_database():
     seed_all(db, Airport, Flight)
 
 
+def normalize_db_for_byte_identity():
+    """Drop+reinsert all ix_* indexes in alphabetical order then VACUUM.
+    Required so a rebuild on machine B produces byte-identical SQLite pages
+    (SQLAlchemy emits CREATE INDEX from a set, whose iteration order depends
+    on object id() — different per process). Idempotent.
+    """
+    from seed_data import normalize_seed_db_layout
+    normalize_seed_db_layout(db)
+
+
 def seed_benchmark_users():
     """Seed 4 benchmark users with payment methods, bookings, tracked flights and alerts.
     Idempotent — checks if alice already exists before creating."""
     if User.query.filter_by(email='alice.j@test.com').first():
         return  # already seeded
 
+    # Pinned monotonic counter for booking timestamps (see _make_booking).
+    _booking_counter = {'n': 0}
+
     def _make_user(email, pw, first, last, phone, passport, ff, dob_str):
+        # NOTE: pw is unused on the seed path. We pin the bcrypt hash so two
+        # rebuilds on different machines produce byte-identical instance_seed
+        # SQLite files (bcrypt mixes a fresh salt every call, which otherwise
+        # shifts the users.password_hash bytes). bcrypt.check_password_hash
+        # validates 'TestPass123!' against this literal at login time.
+        from seed_data import PINNED_PASSWORD_HASH
         u = User(
             email=email,
-            password_hash=bcrypt.generate_password_hash(pw).decode('utf-8'),
+            password_hash=PINNED_PASSWORD_HASH,
             first_name=first,
             last_name=last,
             phone=phone,
@@ -2102,6 +2182,7 @@ def seed_benchmark_users():
                       status='confirmed', card_last4='4242', card_brand='Visa'):
         if not flight:
             return None
+        from seed_data import MIRROR_REFERENCE_DATE
         pnr = make_pnr()
         price = flight.price * passengers
         taxes = round(price * 0.14, 2)
@@ -2122,8 +2203,16 @@ def seed_benchmark_users():
             payment_last4=card_last4,
             payment_brand=card_brand,
         )
+        # Pinned booked_at so every rebuild matches byte-for-byte (Column
+        # default=datetime.utcnow would otherwise capture wall-clock time).
+        # Offset by counter so bookings sort sensibly in /trips listings.
+        idx = _booking_counter['n']
+        _booking_counter['n'] += 1
+        b.booked_at = MIRROR_REFERENCE_DATE - timedelta(days=120 + idx)
         if status == 'cancelled':
-            b.cancelled_at = datetime.utcnow() - timedelta(days=random.randint(1, 10))
+            # Pinned offset (random.randint would advance the global random
+            # stream between rebuilds and ripple through later seed calls).
+            b.cancelled_at = MIRROR_REFERENCE_DATE - timedelta(days=5 + idx % 7)
         db.session.add(b)
         db.session.flush()
         bi = BookingItem(
@@ -2524,6 +2613,72 @@ def seed_benchmark_users():
                 'turnaround at JFK, attentive service, and an on-time landing at Heathrow.',
                 5, 4, 5)
 
+    # ---- R2 expansion: extra bookings (12 -> 60+) ----
+    # Each tuple: (user, origin, dest, cabin, pax, status, last4, brand).
+    # Routes pull from existing flight catalogue via _get_flight, so they
+    # never reference missing rows. Distribute statuses 70% confirmed /
+    # 15% flown / 10% cancelled / 5% ticketed so /trips listings look real.
+    extra_bookings = [
+        (alice, 'JFK', 'NRT', 'Business', 1, 'flown',     '4321', 'Visa'),
+        (alice, 'JFK', 'FCO', 'Business', 1, 'flown',     '4321', 'Visa'),
+        (alice, 'BOS', 'LHR', 'Economy',  1, 'confirmed', '7890', 'Amex'),
+        (alice, 'JFK', 'AMS', 'Business', 1, 'confirmed', '4321', 'Visa'),
+        (alice, 'JFK', 'BCN', 'Economy',  1, 'flown',     '4321', 'Visa'),
+        (alice, 'JFK', 'ZRH', 'Business', 1, 'confirmed', '4321', 'Visa'),
+        (alice, 'JFK', 'MIA', 'Economy',  1, 'flown',     '7890', 'Amex'),
+        (alice, 'JFK', 'SFO', 'Business', 1, 'ticketed',  '4321', 'Visa'),
+        (alice, 'JFK', 'LAX', 'Business', 1, 'confirmed', '4321', 'Visa'),
+        (alice, 'JFK', 'DXB', 'Business', 2, 'confirmed', '4321', 'Visa'),
+        (alice, 'JFK', 'ICN', 'Business', 1, 'flown',     '4321', 'Visa'),
+        (alice, 'JFK', 'SIN', 'Business', 1, 'confirmed', '7890', 'Amex'),
+        (alice, 'JFK', 'HKG', 'Business', 1, 'confirmed', '4321', 'Visa'),
+
+        (bob,   'SFO', 'NRT', 'Economy',  1, 'flown',     '1234', 'Visa'),
+        (bob,   'SFO', 'BKK', 'Economy',  1, 'flown',     '5678', 'Mastercard'),
+        (bob,   'LAX', 'CDG', 'Economy',  1, 'confirmed', '5678', 'Mastercard'),
+        (bob,   'LAX', 'NRT', 'Economy',  1, 'flown',     '1234', 'Visa'),
+        (bob,   'SFO', 'BCN', 'Economy',  1, 'cancelled', '5678', 'Mastercard'),
+        (bob,   'LAX', 'JFK', 'Economy',  1, 'flown',     '1234', 'Visa'),
+        (bob,   'LAX', 'BOS', 'Economy',  1, 'confirmed', '9999', 'Visa'),
+        (bob,   'SEA', 'LAX', 'Economy',  1, 'flown',     '9999', 'Visa'),
+        (bob,   'SFO', 'SEA', 'Economy',  1, 'flown',     '5678', 'Mastercard'),
+        (bob,   'LAX', 'LAS', 'Economy',  2, 'confirmed', '5678', 'Mastercard'),
+        (bob,   'SFO', 'HNL', 'Economy',  1, 'flown',     '9999', 'Visa'),
+        (bob,   'LAX', 'CUN', 'Economy',  1, 'confirmed', '1234', 'Visa'),
+        (bob,   'SFO', 'MEX', 'Economy',  1, 'flown',     '1234', 'Visa'),
+
+        (carol, 'ORD', 'CDG', 'Economy',  3, 'flown',     '2468', 'Visa'),
+        (carol, 'ORD', 'AMS', 'Economy',  4, 'confirmed', '2468', 'Visa'),
+        (carol, 'ORD', 'FCO', 'Economy',  3, 'flown',     '2468', 'Visa'),
+        (carol, 'ATL', 'CDG', 'Premium',  2, 'flown',     '2468', 'Visa'),
+        (carol, 'DFW', 'LHR', 'Premium',  4, 'confirmed', '2468', 'Visa'),
+        (carol, 'ORD', 'BOS', 'Economy',  3, 'flown',     '1357', 'Mastercard'),
+        (carol, 'ORD', 'MIA', 'Economy',  4, 'flown',     '2468', 'Visa'),
+        (carol, 'ORD', 'LAX', 'Economy',  3, 'confirmed', '2468', 'Visa'),
+        (carol, 'ORD', 'CUN', 'Economy',  4, 'confirmed', '1357', 'Mastercard'),
+        (carol, 'DFW', 'CUN', 'Economy',  3, 'flown',     '1357', 'Mastercard'),
+        (carol, 'ORD', 'SFO', 'Economy',  3, 'flown',     '2468', 'Visa'),
+        (carol, 'ORD', 'LAS', 'Economy',  4, 'confirmed', '2468', 'Visa'),
+        (carol, 'ATL', 'MIA', 'Economy',  3, 'flown',     '2468', 'Visa'),
+
+        (david, 'JFK', 'NRT', 'Business', 1, 'flown',     '6543', 'Amex'),
+        (david, 'JFK', 'ICN', 'Business', 1, 'flown',     '6543', 'Amex'),
+        (david, 'JFK', 'HND', 'Business', 1, 'flown',     '6543', 'Amex'),
+        (david, 'BOS', 'BCN', 'Business', 1, 'confirmed', '6543', 'Amex'),
+        (david, 'JFK', 'SIN', 'First',    1, 'flown',     '6543', 'Amex'),
+        (david, 'JFK', 'HKG', 'Business', 1, 'flown',     '6543', 'Amex'),
+        (david, 'JFK', 'FCO', 'Business', 1, 'flown',     '8765', 'Visa'),
+        (david, 'JFK', 'AMS', 'Business', 1, 'confirmed', '6543', 'Amex'),
+        (david, 'JFK', 'ZRH', 'Business', 1, 'confirmed', '3210', 'Mastercard'),
+        (david, 'JFK', 'CDG', 'Business', 1, 'ticketed',  '6543', 'Amex'),
+        (david, 'JFK', 'LHR', 'First',    1, 'confirmed', '6543', 'Amex'),
+        (david, 'JFK', 'DXB', 'Business', 1, 'flown',     '6543', 'Amex'),
+        (david, 'JFK', 'TPE', 'Business', 1, 'flown',     '8765', 'Visa'),
+    ]
+    for user, o, d, cabin, pax, status, l4, brand in extra_bookings:
+        f = _get_flight(o, d, prefer_nonstop=True)
+        _make_booking(user, f, cabin, pax, status, l4, brand)
+
     # ---- Extra tracked flights (densify 6 -> 25+) ----
     _add_tracked(alice, 'JFK', 'CDG', 0.85)
     _add_tracked(alice, 'BOS', 'LHR', 0.87)
@@ -2579,8 +2734,13 @@ def seed_benchmark_users():
 if __name__ == '__main__':
     with app.app_context():
         db.create_all()
-        if Airport.query.count() == 0:
+        fresh_seed = Airport.query.count() == 0
+        if fresh_seed:
             seed_database()
         seed_benchmark_users()
+        if fresh_seed:
+            # Only run on a true fresh build so warm restarts skip the
+            # VACUUM cost. See gotcha #2 in harden-env/gotchas.md.
+            normalize_db_for_byte_identity()
     port = int(os.environ.get('PORT', 28849))
     app.run(host='0.0.0.0', port=port, debug=False)

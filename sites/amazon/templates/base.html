@@ -73,9 +73,9 @@
                 <a class="nav-sub-item nav-sub-item-bold" href="{{ url_for('index') }}">☰ All</a>
                 <a class="nav-sub-item" href="{{ url_for('todays_deals') }}">Today's Deals</a>
                 <a class="nav-sub-item" href="{{ url_for('customer_service') }}">Customer Service</a>
-                <a class="nav-sub-item" href="{{ url_for('index') }}">Registry</a>
+                <a class="nav-sub-item" href="{{ url_for('registry') }}">Registry</a>
                 <a class="nav-sub-item" href="{{ url_for('gift_cards') }}">Gift Cards</a>
-                <a class="nav-sub-item" href="{{ url_for('index') }}">Sell</a>
+                <a class="nav-sub-item" href="{{ url_for('sell') }}">Sell</a>
                 {% for c in nav_categories %}
                 <a class="nav-sub-item" href="{{ url_for('category', slug=c.slug) }}">{{ c.name }}</a>
                 {% endfor %}

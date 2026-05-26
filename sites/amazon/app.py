@@ -21,6 +21,16 @@ from sqlalchemy import or_, func
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
+# Mirror reference date — pins datetime defaults so /reset rebuilds are
+# byte-identical (see harden-env/gotchas.md). Live writes (new orders, reviews,
+# returns) still use real datetime.utcnow() via the route handlers.
+MIRROR_REFERENCE_DATE = datetime(2026, 4, 15)
+
+
+def _seed_now():
+    return MIRROR_REFERENCE_DATE
+
+
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'amazon-mirror-secret-key-change-in-prod'
 app.config['SQLALCHEMY_DATABASE_URI'] = f"sqlite:///{os.path.join(BASE_DIR, 'instance', 'amazon_store.db')}"
@@ -54,7 +64,7 @@ class User(db.Model, UserMixin):
     zip_code = db.Column(db.String(20), default='')
     country = db.Column(db.String(50), default='United States')
     is_prime = db.Column(db.Boolean, default=True)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=_seed_now)
 
     cart_items = db.relationship('CartItem', backref='user', lazy=True, cascade='all, delete-orphan')
     orders = db.relationship('Order', backref='user', lazy=True, cascade='all, delete-orphan')
@@ -110,7 +120,7 @@ class Product(db.Model):
     release_date = db.Column(db.String(20), default='')  # YYYY-MM-DD or "Pre-order: 2024-12-01"
     return_policy = db.Column(db.Text, default='30-day return policy. Eligible for free returns.')
     delivery_estimate = db.Column(db.String(100), default='FREE delivery in 2 days')
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=_seed_now)
 
     cart_items = db.relationship('CartItem', backref='product', lazy=True, cascade='all, delete-orphan')
     order_items = db.relationship('OrderItem', backref='product', lazy=True)
@@ -166,7 +176,7 @@ class CartItem(db.Model):
     product_id = db.Column(db.Integer, db.ForeignKey('products.id'), nullable=False)
     quantity = db.Column(db.Integer, default=1)
     variant = db.Column(db.String(100), default='')
-    added_at = db.Column(db.DateTime, default=datetime.utcnow)
+    added_at = db.Column(db.DateTime, default=_seed_now)
 
 
 class Order(db.Model):
@@ -186,7 +196,7 @@ class Order(db.Model):
     ship_zip = db.Column(db.String(20), default='')
     payment_method = db.Column(db.String(30), default='Credit Card')
     payment_last4 = db.Column(db.String(10), default='1234')
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=_seed_now)
     delivery_estimate = db.Column(db.String(50), default='')
 
     items = db.relationship('OrderItem', backref='order', lazy=True, cascade='all, delete-orphan')
@@ -212,7 +222,7 @@ class WishlistItem(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     product_id = db.Column(db.Integer, db.ForeignKey('products.id'), nullable=False)
-    added_at = db.Column(db.DateTime, default=datetime.utcnow)
+    added_at = db.Column(db.DateTime, default=_seed_now)
 
 
 class Review(db.Model):
@@ -224,7 +234,7 @@ class Review(db.Model):
     title = db.Column(db.String(200), default='')
     body = db.Column(db.Text, default='')
     verified = db.Column(db.Boolean, default=True)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=_seed_now)
 
 
 class PaymentMethod(db.Model):
@@ -237,7 +247,7 @@ class PaymentMethod(db.Model):
     exp_year = db.Column(db.Integer, nullable=False)
     cardholder_name = db.Column(db.String(120), default='')
     is_default = db.Column(db.Boolean, default=False)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=_seed_now)
 
 
 class SavedAddress(db.Model):
@@ -254,7 +264,7 @@ class SavedAddress(db.Model):
     zip_code = db.Column(db.String(20), nullable=False)
     country = db.Column(db.String(50), default='United States')
     is_default = db.Column(db.Boolean, default=False)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=_seed_now)
 
 
 class Return(db.Model):
@@ -265,7 +275,7 @@ class Return(db.Model):
     status = db.Column(db.String(30), default='requested')  # requested, approved, completed
     refund_method = db.Column(db.String(30), default='original_payment')  # original_payment, gift_card
     refund_amount = db.Column(db.Float, default=0)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=_seed_now)
 
     order = db.relationship('Order', backref='returns')
     items = db.relationship('ReturnItem', backref='return_request', lazy=True, cascade='all, delete-orphan')
@@ -734,6 +744,17 @@ def gift_cards():
 @app.route('/todays-deals')
 def todays_deals():
     return redirect(url_for('deals'))
+
+
+@app.route('/registry')
+def registry():
+    return render_template('registry.html')
+
+
+@app.route('/sell')
+def sell():
+    return render_template('sell.html')
+
 
 
 # ----- Routes: Auth -----
@@ -1334,8 +1355,11 @@ def order_return(order_id):
     if order.status != 'delivered':
         flash('Only delivered orders can be returned.', 'error')
         return redirect(url_for('order_detail', order_id=order.id))
-    # Check 30-day return window
-    if order.created_at and (datetime.utcnow() - order.created_at).days > 30:
+    # 30-day return window — measured against MIRROR_REFERENCE_DATE so that
+    # seeded delivered orders remain returnable regardless of when an agent
+    # exercises this route. Live orders placed via /checkout still anchor at
+    # MIRROR_REFERENCE_DATE on insert (see _seed_now), so the math is uniform.
+    if order.created_at and (MIRROR_REFERENCE_DATE - order.created_at).days > 30:
         flash('Return window (30 days) has expired for this order.', 'error')
         return redirect(url_for('order_detail', order_id=order.id))
 
@@ -1519,11 +1543,13 @@ def seed_benchmark_users():
     ]
 
     created_users = []
+    # Pinned bcrypt('TestPass123!') for byte-identical reset (see harden-env/gotchas.md).
+    PINNED_TESTPASS_HASH = '$2b$12$PpubQvLvUkIksb10lxqIduzS2wfRkZ.ZAobDEtGEF7N9qelOp5ktK'
     for ud in users_data:
         u = User(email=ud['email'], name=ud['name'], phone=ud['phone'],
                  address_line1=ud['address_line1'], city=ud['city'], state=ud['state'],
                  zip_code=ud['zip_code'], is_prime=ud['is_prime'])
-        u.set_password(ud['password'])
+        u.password_hash = PINNED_TESTPASS_HASH
         db.session.add(u)
         db.session.flush()
         created_users.append(u)
@@ -1593,8 +1619,8 @@ def seed_benchmark_users():
             ship_zip=default_addr.zip_code if default_addr else user.zip_code,
             payment_method=default_pm.card_type if default_pm else 'Visa',
             payment_last4=default_pm.last4 if default_pm else '1234',
-            created_at=datetime.utcnow() - timedelta(days=days_ago),
-            delivery_estimate=(datetime.utcnow() + timedelta(days=random.randint(2, 5))).strftime('%A, %B %d'),
+            created_at=MIRROR_REFERENCE_DATE - timedelta(days=days_ago),
+            delivery_estimate=(MIRROR_REFERENCE_DATE + timedelta(days=2 + (days_ago % 4))).strftime('%A, %B %d'),
         )
         db.session.add(order)
         db.session.flush()

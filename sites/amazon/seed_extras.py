@@ -617,6 +617,51 @@ REVIEW_USER_PROFILES = {
 }
 
 
+# Pinned bcrypt('test1234') for byte-identical reset (see harden-env/gotchas.md).
+PINNED_PASSWORD_HASH = '$2b$12$Oi0plj9XBSbuCcjmrSVmje2AWKXN99Xpa7J2O6tjYvquZPTqNXN6i'
+
+# Display names + prime flags for the 12 reviewer/customer accounts.
+REVIEW_USER_DISPLAY = {
+    'jessica.m@test.com': ('Jessica Mills',     True),
+    'rahul.p@test.com':   ('Rahul Patel',       True),
+    'samir.k@test.com':   ('Samir Krishnan',    False),
+    'emily.r@test.com':   ('Emily Rodriguez',   True),
+    'marcus.t@test.com':  ('Marcus Thompson',   False),
+    'priya.s@test.com':   ('Priya Shankar',     True),
+    'diana.l@test.com':   ('Diana Lim',         False),
+    'tommy.h@test.com':   ('Tommy Hernandez',   True),
+    'linda.w@test.com':   ('Linda Williams',    False),
+    'greg.f@test.com':    ('Greg Fisher',       True),
+    'aisha.n@test.com':   ('Aisha Nguyen',      False),
+    'kevin.o@test.com':   ('Kevin Okafor',      True),
+}
+
+
+def seed_review_users(db, User):
+    """Create the 12 reviewer/customer accounts used by extra orders/wishlists.
+
+    Idempotent: skip when jessica already exists. Uses a pinned bcrypt hash
+    instead of set_password() so byte-identical reset holds.
+    """
+    if User.query.filter_by(email='jessica.m@test.com').first():
+        return 0
+    added = 0
+    for email, profile in REVIEW_USER_PROFILES.items():
+        city, state, zc, line1, phone, ctype, last4, em, ey = profile
+        name, is_prime = REVIEW_USER_DISPLAY[email]
+        u = User(
+            email=email, name=name, phone=phone,
+            address_line1=line1, address_line2='',
+            city=city, state=state, zip_code=zc,
+            is_prime=is_prime,
+        )
+        u.password_hash = PINNED_PASSWORD_HASH
+        db.session.add(u)
+        added += 1
+    db.session.commit()
+    return added
+
+
 def seed_extra_orders(db, User, Order, OrderItem, Product, SavedAddress, PaymentMethod):
     """For 12 review users: seed 1 saved address + 1 payment method + 1-2 orders each.
 
@@ -862,8 +907,45 @@ def seed_returns(db, Order, OrderItem, Return, ReturnItem):
 def run_extras(db, User, Product, Category, CartItem, Order, OrderItem,
                WishlistItem, SavedAddress, PaymentMethod, Return, ReturnItem):
     """Top-level entry that runs every extras seeder in order."""
+    seed_review_users(db, User)
     seed_extra_products(db, Product)
+    # R2: bulk-add ~800 more products via Open Library + brand SKU synthesis.
+    # Must run before orders/wishlists/carts so they can reference new products.
+    try:
+        from seed_bulk import seed_bulk_products
+        seed_bulk_products(db, Product)
+    except Exception as e:  # surface error, don't mask
+        raise RuntimeError(f"seed_bulk_products failed: {e}") from e
     seed_extra_orders(db, User, Order, OrderItem, Product, SavedAddress, PaymentMethod)
     seed_wishlists(db, User, Product, WishlistItem)
     seed_extra_carts(db, User, Product, CartItem)
     seed_returns(db, Order, OrderItem, Return, ReturnItem)
+    _normalize_seed_db_layout(db)
+
+
+def _normalize_seed_db_layout(db):
+    """Re-emit indexes in alpha order + VACUUM so rebuilds match byte-for-byte.
+
+    Fixes the SQLAlchemy set-iteration non-determinism documented in
+    harden-env/gotchas.md item #2. Runs only when this is a fresh seed (no
+    sentinel row); safe to call on warm restart.
+    """
+    from sqlalchemy import text
+    conn = db.engine.connect()
+    idx_rows = conn.execute(text(
+        "SELECT name, sql FROM sqlite_master WHERE type='index' AND name LIKE 'ix_%'"
+    )).fetchall()
+    for name, _ in idx_rows:
+        conn.execute(text(f"DROP INDEX IF EXISTS {name}"))
+    for name, sql in sorted(idx_rows, key=lambda r: r[0]):
+        if sql:
+            conn.execute(text(sql))
+    conn.commit()
+    conn.close()
+    # VACUUM must be outside a transaction
+    raw = db.engine.raw_connection()
+    raw.isolation_level = None
+    try:
+        raw.execute("VACUUM")
+    finally:
+        raw.close()

@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+{% block title %}Help Center | Coursera{% endblock %}
+{% block content %}
+<div class="container" style="padding:48px 16px;">
+  <h1>Help Center</h1>
+  <p class="muted">Find answers to common questions about courses, certificates, payments, and your account.</p>
+
+  <div style="margin:24px 0 36px;">
+    <form action="{{ url_for('search') }}" method="get" style="display:flex;gap:8px;flex-wrap:wrap;">
+      <input type="text" name="q" placeholder="Search help articles…" style="flex:1;min-width:240px;padding:10px 14px;border:1px solid #d4d4d8;border-radius:4px;">
+      <button type="submit" class="btn-primary">Search</button>
+    </form>
+  </div>
+
+  <section style="margin-bottom:36px;">
+    <h2>Getting started</h2>
+    <details><summary><strong>How do I enroll in a course?</strong></summary>
+      <p>Find a course on Coursera, open its page, click <em>Enroll for Free</em> or
+         <em>Start 7-day Free Trial</em>, and follow the prompts. Most courses can be
+         audited for free; you can also pay to receive a certificate.</p>
+    </details>
+    <details><summary><strong>How long do I have to finish a course?</strong></summary>
+      <p>Most courses are self-paced and you can finish at your own speed. Specializations
+         and Professional Certificates have suggested timelines (3–6 months) but no hard
+         deadlines.</p>
+    </details>
+    <details><summary><strong>What is the difference between a Course, a Specialization, and a Professional Certificate?</strong></summary>
+      <p>A <em>Course</em> covers one focused topic. A <em>Specialization</em> bundles
+         several related courses into a learning path. A <em>Professional Certificate</em>
+         is a job-aligned credential built by industry partners such as Google, IBM,
+         and Meta.</p>
+    </details>
+  </section>
+
+  <section style="margin-bottom:36px;">
+    <h2>Payments and refunds</h2>
+    <details><summary><strong>What is Coursera Plus?</strong></summary>
+      <p>Coursera Plus is an annual subscription that unlocks 7,000+ courses,
+         specializations, and professional certificates for one price. <a href="{{ url_for('coursera_plus') }}">Learn more</a>.</p>
+    </details>
+    <details><summary><strong>Can I get a refund?</strong></summary>
+      <p>Yes — most paid courses and specializations come with a 14-day money-back
+         guarantee. Visit your Account page to request a refund.</p>
+    </details>
+    <details><summary><strong>Do you offer financial aid?</strong></summary>
+      <p>Many courses offer financial aid for learners who cannot afford the fee.
+         Apply from the course page; approvals typically take up to 15 business days.</p>
+    </details>
+  </section>
+
+  <section style="margin-bottom:36px;">
+    <h2>Certificates and credit</h2>
+    <details><summary><strong>How do I receive my certificate?</strong></summary>
+      <p>Once you complete every required item with a passing grade, your certificate
+         appears in your <a href="{{ url_for('account') }}">Account</a>. You can share
+         it directly to LinkedIn or download it as a PDF.</p>
+    </details>
+    <details><summary><strong>Are Coursera certificates accredited?</strong></summary>
+      <p>Many specializations and degrees are credit-eligible through partner
+         universities. Look for the <em>Credit Eligible</em> tag on the course page.</p>
+    </details>
+  </section>
+
+  <section style="margin-bottom:36px;">
+    <h2>Account and technical support</h2>
+    <details><summary><strong>How do I change my password?</strong></summary>
+      <p>Go to <a href="{{ url_for('account_edit') if current_user.is_authenticated else url_for('login') }}">Account → Settings</a> and click <em>Change password</em>.</p>
+    </details>
+    <details><summary><strong>I cannot watch a video — what should I try?</strong></summary>
+      <p>Try refreshing your browser, switching to Chrome or Firefox, and disabling
+         browser extensions. If the issue persists, contact our support team.</p>
+    </details>
+    <details><summary><strong>How do I delete my account?</strong></summary>
+      <p>From your <a href="{{ url_for('account') if current_user.is_authenticated else url_for('login') }}">Account</a> page, scroll to the bottom and select <em>Delete account</em>.</p>
+    </details>
+  </section>
+
+  <section>
+    <h2>Still need help?</h2>
+    <p>Email our learner support team at <strong>support@coursera.org</strong> or
+       browse our community forums for peer-to-peer answers.</p>
+  </section>
+</div>
+{% endblock %}

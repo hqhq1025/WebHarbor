@@ -95,7 +95,7 @@ class User(db.Model, UserMixin):
     company = db.Column(db.String(120), default="")
     is_pro = db.Column(db.Boolean, default=False)
     is_admin = db.Column(db.Boolean, default=False)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=lambda: MIRROR_REFERENCE_DATE)
 
     likes = db.relationship("Like", backref="user", cascade="all, delete-orphan", lazy="dynamic")
     follows = db.relationship("Follow", backref="user", cascade="all, delete-orphan", lazy="dynamic", foreign_keys="Follow.user_id")
@@ -128,7 +128,7 @@ class Author(db.Model):
     website = db.Column(db.String(300), default="")
     avatar_url = db.Column(db.String(300), default="")
     is_verified = db.Column(db.Boolean, default=False)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=lambda: MIRROR_REFERENCE_DATE)
     repos = db.relationship("Repository", backref="author_obj", lazy="dynamic")
 
 
@@ -170,8 +170,8 @@ class Repository(db.Model):
     tags_json = db.Column(db.Text, default="[]")
     avatar_url = db.Column(db.String(300), default="")
     banner_url = db.Column(db.String(300), default="")
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=lambda: MIRROR_REFERENCE_DATE)
+    updated_at = db.Column(db.DateTime, default=lambda: MIRROR_REFERENCE_DATE)
 
     discussions = db.relationship("Discussion", backref="repo", cascade="all, delete-orphan", lazy="dynamic")
 
@@ -238,7 +238,7 @@ class Like(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False, index=True)
     repo_id = db.Column(db.Integer, db.ForeignKey("repositories.id"), nullable=False, index=True)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=lambda: MIRROR_REFERENCE_DATE)
     repo = db.relationship("Repository")
     __table_args__ = (db.UniqueConstraint("user_id", "repo_id", name="uix_like"),)
 
@@ -248,7 +248,7 @@ class Follow(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False, index=True)
     author_id = db.Column(db.Integer, db.ForeignKey("authors.id"), nullable=False, index=True)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=lambda: MIRROR_REFERENCE_DATE)
     author = db.relationship("Author")
     __table_args__ = (db.UniqueConstraint("user_id", "author_id", name="uix_follow"),)
 
@@ -260,7 +260,7 @@ class Collection(db.Model):
     title = db.Column(db.String(200), nullable=False)
     description = db.Column(db.Text, default="")
     is_public = db.Column(db.Boolean, default=True)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=lambda: MIRROR_REFERENCE_DATE)
     items = db.relationship("CollectionItem", backref="collection", cascade="all, delete-orphan", lazy="dynamic")
 
 
@@ -271,7 +271,7 @@ class CollectionItem(db.Model):
     repo_id = db.Column(db.Integer, db.ForeignKey("repositories.id"), nullable=False, index=True)
     note = db.Column(db.Text, default="")
     position = db.Column(db.Integer, default=0)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=lambda: MIRROR_REFERENCE_DATE)
     repo = db.relationship("Repository")
 
 
@@ -286,7 +286,7 @@ class CartItem(db.Model):
     hardware_price = db.Column(db.String(40), default="$0.40/hr")
     hours = db.Column(db.Integer, default=24)
     region = db.Column(db.String(40), default="us-east-1")
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=lambda: MIRROR_REFERENCE_DATE)
     repo = db.relationship("Repository")
 
 
@@ -304,7 +304,7 @@ class InferenceEndpoint(db.Model):
     region = db.Column(db.String(40), default="us-east-1")
     total_hours = db.Column(db.Integer, default=24)
     total_cost = db.Column(db.String(40), default="$0.00")
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=lambda: MIRROR_REFERENCE_DATE)
     items = db.relationship("EndpointItem", backref="endpoint", cascade="all, delete-orphan", lazy="dynamic")
 
 
@@ -331,7 +331,7 @@ class Discussion(db.Model):
     kind = db.Column(db.String(20), default="discussion")   # discussion | pull-request | issue
     status = db.Column(db.String(20), default="open")       # open | closed | merged
     upvotes = db.Column(db.Integer, default=0)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=lambda: MIRROR_REFERENCE_DATE)
     replies = db.relationship("DiscussionReply", backref="discussion", cascade="all, delete-orphan", lazy="dynamic")
 
 
@@ -341,7 +341,7 @@ class DiscussionReply(db.Model):
     discussion_id = db.Column(db.Integer, db.ForeignKey("discussions.id"), nullable=False, index=True)
     user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False, index=True)
     body = db.Column(db.Text, nullable=False)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=lambda: MIRROR_REFERENCE_DATE)
     user = db.relationship("User")
 
 
@@ -451,12 +451,19 @@ def resolve_author_avatar(username: str) -> str:
 def get_or_create_author(username: str) -> Author:
     a = Author.query.filter_by(username=username).first()
     if not a:
+        # Deterministic follower count from a hash of the username — using
+        # random.randint() here drifts across rebuilds and broke
+        # byte-identical seed regeneration (R2: gotcha #3 sibling — non-PRNG
+        # randomness in the seed path).
+        import hashlib as _h
+        seed = int.from_bytes(_h.md5(username.encode()).digest()[:4], "big")
+        followers = 300 + (seed % 8700)
         a = Author(
             username=username,
             display_name=username,
             kind="org",
             bio=f"Releases from {username}.",
-            followers_count=random.randint(300, 9000),
+            followers_count=followers,
             website="",
             avatar_url=resolve_author_avatar(username),
             is_verified=False,
@@ -702,7 +709,11 @@ def seed_database():
     db.session.commit()
 
     # 5) Seed some discussions on top repos
-    top_repos = Repository.query.order_by(Repository.likes_count.desc()).limit(12).all()
+    # R2: bumped from 12 → 70 top repos so community signals (discussions
+    # per repo, recent activity) span more of the catalog. Combined with the
+    # 41 benchmark-user discussions seeded below, total clears the R2 110+
+    # threshold.
+    top_repos = Repository.query.order_by(Repository.likes_count.desc(), Repository.id.asc()).limit(70).all()
     sample_titles = [
         "How does this model handle long context?",
         "Model keeps hallucinating tool calls — any fix?",
@@ -710,6 +721,18 @@ def seed_database():
         "Fine-tuning on custom data — best practice?",
         "Great work! Loving the results.",
         "License clarification",
+        "Throughput on consumer GPUs?",
+        "Tokenizer adds extra BOS — confirmed bug",
+        "Comparison vs the prior generation",
+        "Reproducing the eval table numbers",
+        "Suggestion: ship a smaller distilled variant",
+        "Memory footprint with KV-cache reuse",
+        "Compatibility with Transformers v4.46+",
+        "Adapters / LoRA support out of the box?",
+        "Inference example for batched generation",
+        "Multilingual coverage beyond top-10 languages",
+        "Safety filter false-positive on benign prompts",
+        "Speed regression after the last weight update",
     ]
     sample_bodies = [
         "Hi team — I ran this locally with 24k tokens and the attention pattern seems off. Have you evaluated on longer context?",
@@ -717,6 +740,19 @@ def seed_database():
         "Has anyone tried running this with vLLM? I'm getting OOM on a single A100 at batch_size=4.",
         "For the license question — can I use the outputs commercially? The tag says OpenRAIL but the README says apache-2.0.",
         "Bug report: tokenizer adds an extra BOS when calling `apply_chat_template`. PR incoming.",
+        "Ran INT4 GGUF on a 3090 — sustained 28 tok/s at 8k context. Sharing the recipe in the README.",
+        "Anyone fine-tuned with QLoRA (rank=16) on a single H100? My adapter is overfitting after 1 epoch.",
+        "The chat template in the model card disagrees with `tokenizer_config.json`. Which is canonical?",
+        "Inference cost feels high — would love an Optimum-ONNX export. Happy to upstream a notebook.",
+        "Could the maintainers consider a `transformers.js` build? Browser inference would be huge.",
+        "Eval reproducibility: lm-eval-harness gives 71.3 on MMLU, paper claims 73.8. Same seeds?",
+        "Found a regression vs the previous revision — repro script attached.",
+        "Loving the new license — finally a clear commercial-use story.",
+        "Tagging the maintainers — would you accept a PR adding zero-shot pipeline support?",
+        "Curious how others are evaluating long-form summarization on this. ROUGE alone isn't enough.",
+        "Could we get an int4 / int8 quantization config shipped with the repo?",
+        "Has anyone observed catastrophic forgetting after RLHF? My SFT-only variant is cleaner.",
+        "Asking out of curiosity: what hardware was this trained on, and for how long?",
     ]
     for i, repo in enumerate(top_repos):
         d = Discussion(
@@ -726,6 +762,7 @@ def seed_database():
             body=sample_bodies[i % len(sample_bodies)],
             upvotes=rng.randint(2, 80),
             kind=rng.choice(["discussion", "issue", "pull-request"]),
+            created_at=mirror_now() - timedelta(days=rng.randint(1, 90), hours=rng.randint(0, 23)),
         )
         db.session.add(d)
         db.session.flush()
@@ -734,6 +771,7 @@ def seed_database():
             discussion_id=d.id,
             user_id=demo.id,
             body="Thanks for the report! Could you share a minimal repro script? We'll investigate.",
+            created_at=d.created_at + timedelta(hours=rng.randint(2, 36)),
         )
         db.session.add(reply)
 
@@ -746,7 +784,7 @@ def seed_database():
     )
     db.session.add(c)
     db.session.flush()
-    for r in Repository.query.filter_by(repo_type="model").limit(5).all():
+    for r in Repository.query.filter_by(repo_type="model").order_by(Repository.id.asc()).limit(5).all():
         db.session.add(CollectionItem(collection_id=c.id, repo_id=r.id, note=""))
 
     db.session.commit()
@@ -2572,6 +2610,34 @@ def brand():
     return render_template("brand.html")
 
 
+# ------------------------------------------------------------
+# R2 navigation parity: Posts / Solutions / Competitions
+# Real huggingface.co has these as first-class entries. They are static
+# landing pages here so the surface matches; agents that visit them get a
+# coherent page rather than a 404.
+# ------------------------------------------------------------
+@app.route("/posts")
+def posts_index():
+    # Show a small static feed of community posts. The "authors" are
+    # already seeded so we can link out to real /organizations/<u> pages.
+    sample_authors = Author.query.filter(Author.is_verified == True).order_by(Author.followers_count.desc()).limit(8).all()
+    return render_template("posts.html", sample_authors=sample_authors)
+
+
+@app.route("/solutions")
+def solutions():
+    return render_template("solutions.html")
+
+
+@app.route("/compete")
+@app.route("/competitions")
+def compete():
+    # Sample competition cards built off existing repos so any internal
+    # link resolves to a real detail page rather than a dead stub.
+    sample_repos = Repository.query.filter_by(repo_type="dataset").order_by(Repository.likes_count.desc()).limit(6).all()
+    return render_template("compete.html", sample_repos=sample_repos)
+
+
 @app.route("/help")
 def help_page():
     return render_template("help.html")
@@ -2680,7 +2746,7 @@ def seed_benchmark_users():
         return f"/static/images/avatars/{avatar_files[idx % len(avatar_files)]}" if avatar_files else ""
 
     def _get_repo(slug_fragment):
-        return Repository.query.filter(Repository.slug.ilike(f"%{slug_fragment}%")).first()
+        return Repository.query.filter(Repository.slug.ilike(f"%{slug_fragment}%")).order_by(Repository.id.asc()).first()
 
     def _get_task(slug):
         return Task.query.filter_by(slug=slug).first()
@@ -3186,10 +3252,41 @@ def seed_benchmark_users():
 # ------------------------------------------------------------
 # Bootstrap
 # ------------------------------------------------------------
+def normalize_seed_db_layout():
+    """Re-emit indexes in alpha order + VACUUM so a fresh seed rebuild on a
+    different host produces a byte-identical SQLite file.
+
+    Background (harden-env gotcha #2): SQLAlchemy emits CREATE INDEX in
+    Table.indexes order, which is a Python set keyed on object id() — that's
+    allocator-dependent and shifts the bytes inside `sqlite_master` even when
+    the row data is identical. Drop + re-create indexes in alpha order, then
+    VACUUM to defragment.
+
+    Gated on Repository.query.count() being non-zero so we only run on the
+    first fresh seed and never on warm restart with an existing DB.
+    """
+    from sqlalchemy import text
+    conn = db.engine.connect()
+    idx_rows = conn.execute(text(
+        "SELECT name, sql FROM sqlite_master WHERE type='index' AND name LIKE 'ix_%'"
+    )).fetchall()
+    for name, _ in idx_rows:
+        conn.execute(text(f"DROP INDEX IF EXISTS {name}"))
+    for name, sql in sorted(idx_rows, key=lambda r: r[0]):
+        if sql:
+            conn.execute(text(sql))
+    conn.execute(text("VACUUM"))
+    conn.commit()
+    conn.close()
+
+
 with app.app_context():
+    fresh = not (ROOT / "instance" / "hf.db").exists() or Repository.query.count() == 0
     db.create_all()
     seed_database()
     seed_benchmark_users()
+    if fresh:
+        normalize_seed_db_layout()
 
 
 if __name__ == "__main__":

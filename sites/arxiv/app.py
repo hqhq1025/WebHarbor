@@ -27,7 +27,7 @@ from flask_login import (
 )
 from flask_bcrypt import Bcrypt
 from flask_wtf import CSRFProtect
-from sqlalchemy import or_, and_, func
+from sqlalchemy import or_, and_, func, text
 
 from metadata_cleaning import clean_arxiv_metadata_text, format_arxiv_display_text
 
@@ -2781,6 +2781,47 @@ def backfill_affiliations():
         print(f"  ! backfill_affiliations failed: {e}")
 
 
+def normalize_seed_db_layout():
+    """Re-emit indexes in alpha order + VACUUM so rebuilds are byte-identical.
+
+    SQLAlchemy emits CREATE INDEX from a Python set, which iterates in id()
+    order — non-deterministic across processes. That shifts page bytes in
+    sqlite_schema even when row data matches. Drop & re-create indexes in a
+    stable alphabetic order, then VACUUM to repack pages.
+
+    Gated on a sentinel column-count check: only runs the first time the seed
+    DB is built (when the heaviest seed function has just landed rows). On
+    warm restarts that find an existing populated DB this is a no-op.
+    """
+    try:
+        conn = db.engine.connect()
+        idx_rows = conn.execute(text(
+            "SELECT name, sql FROM sqlite_master "
+            "WHERE type='index' AND name LIKE 'ix_%'"
+        )).fetchall()
+        # Drop in whatever order, recreate sorted by name.
+        for name, _sql in idx_rows:
+            conn.execute(text(f"DROP INDEX IF EXISTS {name}"))
+        for name, sql in sorted(idx_rows, key=lambda r: r[0]):
+            if sql:
+                conn.execute(text(sql))
+        conn.commit()
+        # VACUUM cannot run inside a transaction with SQLAlchemy autobegin.
+        # Use a fresh raw connection and isolation_level=None.
+        raw = db.engine.raw_connection()
+        try:
+            raw.isolation_level = None
+            cur = raw.cursor()
+            cur.execute("VACUUM")
+            cur.close()
+        finally:
+            raw.close()
+        print(f"  [+] Normalized seed DB layout ({len(idx_rows)} indexes "
+              f"re-emitted, VACUUM done)")
+    except Exception as e:
+        print(f"  ! normalize_seed_db_layout failed: {e}")
+
+
 with app.app_context():
     db.create_all()
     ensure_affiliation_column()
@@ -2795,6 +2836,7 @@ with app.app_context():
     backfill_paper_gaps()
     normalize_paper_metadata()
     backfill_affiliations()
+    normalize_seed_db_layout()
 
 
 if __name__ == "__main__":

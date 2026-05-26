@@ -544,6 +544,71 @@ def espnplus():
     return render_template('espnplus.html')
 
 
+# ─── Routes: Static Corporate Pages ───────────────────────────────────────────
+
+@app.route('/about')
+@app.route('/about/')
+@app.route('/about/index.html')
+def about():
+    return render_template('about.html')
+
+
+@app.route('/press')
+@app.route('/press/')
+@app.route('/pressroom')
+def press():
+    return render_template('press.html')
+
+
+@app.route('/careers')
+@app.route('/careers/')
+@app.route('/jobs')
+def careers():
+    return render_template('careers.html')
+
+
+@app.route('/watch')
+@app.route('/watch/')
+def watch():
+    sport = Sport.query.filter_by(slug='watch').first()
+    featured_articles = Article.query.filter_by(is_featured=True).order_by(
+        Article.created_at.desc()).limit(8).all()
+    return render_template('watch.html', sport=sport,
+                           featured_articles=featured_articles)
+
+
+# ─── Routes: Favorite (form-based, per ESPN URL convention) ───────────────────
+
+@app.route('/favorite/<team_slug>', methods=['POST', 'GET'])
+def favorite_team(team_slug):
+    """Toggle a team in the signed-in user's favorites.
+    Form POST flow used by team pages (matches espn.com URL shape:
+    espn.com/favorite/<team>). Falls back to login redirect when anonymous.
+    """
+    team = Team.query.filter_by(slug=team_slug).first_or_404()
+    if not current_user.is_authenticated:
+        flash('Please sign in to add a favorite team.', 'info')
+        return redirect(url_for('login'))
+    existing = UserFavorite.query.filter_by(
+        user_id=current_user.id, item_type='team',
+        item_id=team.id).first()
+    if existing:
+        db.session.delete(existing)
+        db.session.commit()
+        flash(f'Removed {team.full_name} from favorites.', 'success')
+    else:
+        fav = UserFavorite(user_id=current_user.id, item_type='team',
+                           item_id=team.id)
+        db.session.add(fav)
+        db.session.commit()
+        flash(f'Added {team.full_name} to favorites.', 'success')
+    next_url = (request.form.get('next') or request.args.get('next')
+                or request.referrer
+                or url_for('team_home', sport_slug=team.sport_slug,
+                           team_slug=team.slug))
+    return redirect(next_url)
+
+
 # ─── Routes: Sport Sections ───────────────────────────────────────────────────
 
 @app.route('/<sport_slug>/')

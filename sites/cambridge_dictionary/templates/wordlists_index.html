@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block title %}Word Lists | Cambridge Dictionary{% endblock %}
+{% block content %}
+<div class="container wordlists-page">
+  <nav class="breadcrumb">
+    <a href="{{ url_for('index') }}">Dictionary</a> &rsaquo;
+    <span>Word Lists</span>
+  </nav>
+  <header class="wordlists-header">
+    <h1>Word Lists</h1>
+    <p class="wordlists-sub">Curated vocabulary collections for learners, professionals, and exam candidates.</p>
+  </header>
+
+  <div class="wordlist-grid">
+    {% for wl in wordlists %}
+    <a class="wordlist-card" href="{{ url_for('wordlist_detail', slug=wl.slug) }}">
+      <span class="wl-category">{{ wl.category }}</span>
+      <h3 class="wl-title">{{ wl.title }}</h3>
+      <p class="wl-desc">{{ wl.description }}</p>
+      <div class="wl-meta">
+        {% if wl.level %}<span class="entry-level level-{{ wl.level|lower }}">{{ wl.level }}</span>{% endif %}
+        <span class="wl-count">{{ wl.seed_words|length }} words</span>
+      </div>
+    </a>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}

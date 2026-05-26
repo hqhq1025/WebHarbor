@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+{% block title %}Coursera Mobile App | Learn on the Go{% endblock %}
+{% block content %}
+<div class="enterprise-page">
+  <div class="enterprise-hero">
+    <div class="container">
+      <div class="hero-with-art">
+        <div class="hero-text">
+          <h1>Learn anywhere with the Coursera app</h1>
+          <p>Download courses for offline access, track your progress, and earn
+             certificates from your phone or tablet. Available on iOS and Android.</p>
+          <div style="display:flex;gap:12px;margin-top:24px;flex-wrap:wrap;align-items:center;">
+            {% if app_store_badge %}
+            <a href="#" class="fb-badge is-img" aria-label="Download on the App Store">
+              <img src="{{ url_for('static', filename=app_store_badge) }}" alt="Download on the App Store">
+            </a>
+            {% endif %}
+            {% if play_store_badge %}
+            <a href="#" class="fb-badge is-img" aria-label="Get it on Google Play">
+              <img src="{{ url_for('static', filename=play_store_badge) }}" alt="Get it on Google Play">
+            </a>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="container">
+    <section class="enterprise-benefits">
+      <h2>Why learners love the mobile app</h2>
+      <div class="benefits-grid">
+        <div class="benefit-card">
+          <span class="benefit-icon">&#128277;</span>
+          <h3>Offline lessons</h3>
+          <p>Download videos and readings before a flight or commute and pick up
+             exactly where you left off.</p>
+        </div>
+        <div class="benefit-card">
+          <span class="benefit-icon">&#128241;</span>
+          <h3>Mobile-first quizzes</h3>
+          <p>Practice quizzes and reviews are redesigned for short sessions — perfect
+             for a 10-minute coffee break.</p>
+        </div>
+        <div class="benefit-card">
+          <span class="benefit-icon">&#128276;</span>
+          <h3>Smart reminders</h3>
+          <p>Get gentle nudges to keep your streak going and finish your next
+             specialization on time.</p>
+        </div>
+        <div class="benefit-card">
+          <span class="benefit-icon">&#127942;</span>
+          <h3>Earn certificates</h3>
+          <p>Submit assignments, peer reviews, and final projects directly from the
+             app — your certificate lands in your account when you finish.</p>
+        </div>
+      </div>
+    </section>
+    <section class="enterprise-cta">
+      <h2>Free to download. 7,000+ courses ready to go.</h2>
+      <div style="display:flex;gap:12px;flex-wrap:wrap;justify-content:center;margin-top:18px;">
+        {% if app_store_badge %}<a href="#" class="fb-badge is-img"><img src="{{ url_for('static', filename=app_store_badge) }}" alt="App Store"></a>{% endif %}
+        {% if play_store_badge %}<a href="#" class="fb-badge is-img"><img src="{{ url_for('static', filename=play_store_badge) }}" alt="Google Play"></a>{% endif %}
+      </div>
+    </section>
+  </div>
+</div>
+{% endblock %}

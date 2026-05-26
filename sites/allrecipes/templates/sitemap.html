@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% block title %}Sitemap{% endblock %}
+{% block content %}
+<div class="sitemap-page" style="max-width:1100px;margin:32px auto;padding:0 20px;">
+    <h1>Sitemap</h1>
+    <p style="color:#555;">A complete index of every section and category on Allrecipes.</p>
+
+    <section style="margin-top:28px;">
+        <h2>Main pages</h2>
+        <ul style="columns:2;column-gap:32px;line-height:1.8;">
+            {% for label, url in static_pages %}
+            <li><a href="{{ url }}">{{ label }}</a></li>
+            {% endfor %}
+        </ul>
+    </section>
+
+    {% for group_name, cats in grouped.items() %}
+    <section style="margin-top:28px;">
+        <h2 style="text-transform:capitalize;">{{ group_name }} Categories</h2>
+        <ul style="columns:3;column-gap:32px;line-height:1.8;">
+            {% for c in cats %}
+            <li><a href="{{ url_for('category_page', slug=c.slug) }}">{{ c.name }}</a></li>
+            {% endfor %}
+        </ul>
+    </section>
+    {% endfor %}
+
+    <section style="margin-top:28px;">
+        <h2>Account</h2>
+        <ul style="line-height:1.8;">
+            <li><a href="{{ url_for('login') }}">Log In</a></li>
+            <li><a href="{{ url_for('register') }}">Sign Up</a></li>
+            {% if current_user.is_authenticated %}
+            <li><a href="{{ url_for('account') }}">Your Profile</a></li>
+            <li><a href="{{ url_for('recipe_box') }}">Recipe Box</a></li>
+            <li><a href="{{ url_for('meal_plan') }}">Meal Plan</a></li>
+            <li><a href="{{ url_for('shopping_list') }}">Shopping List</a></li>
+            {% endif %}
+        </ul>
+    </section>
+</div>
+{% endblock %}

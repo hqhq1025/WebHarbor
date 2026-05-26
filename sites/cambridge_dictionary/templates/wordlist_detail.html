@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block title %}{{ wl.title }} | Cambridge Dictionary Word Lists{% endblock %}
+{% block content %}
+<div class="container wordlist-detail-page">
+  <nav class="breadcrumb">
+    <a href="{{ url_for('index') }}">Dictionary</a> &rsaquo;
+    <a href="{{ url_for('wordlists_index') }}">Word Lists</a> &rsaquo;
+    <span>{{ wl.title }}</span>
+  </nav>
+
+  <header class="wl-detail-header">
+    <span class="wl-category">{{ wl.category }}</span>
+    <h1>{{ wl.title }}</h1>
+    <p class="wl-desc">{{ wl.description }}</p>
+    <div class="wl-meta">
+      {% if wl.level %}<span class="entry-level level-{{ wl.level|lower }}">{{ wl.level }}</span>{% endif %}
+      <span class="wl-count">{{ words|length }} words in this list</span>
+    </div>
+  </header>
+
+  <ul class="wl-words">
+    {% for w in words %}
+    <li class="wl-row">
+      <a class="wl-head" href="{{ url_for('word_detail', slug=w.slug) }}">{{ w.headword }}</a>
+      <span class="wl-pos">{{ w.pos }}</span>
+      {% if w.pronunciation_ipa or w.phonetic_uk %}
+        <span class="wl-ipa">{{ w.phonetic_uk or w.pronunciation_ipa }}</span>
+      {% endif %}
+      {% if w.level %}<span class="entry-level level-{{ w.level|lower }}">{{ w.level }}</span>{% endif %}
+      {% set defs = w.get_definitions() %}
+      {% if defs %}<p class="wl-gloss">{{ defs[0].definition }}</p>{% endif %}
+    </li>
+    {% endfor %}
+  </ul>
+</div>
+{% endblock %}

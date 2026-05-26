@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block title %}Solutions – Hugging Face{% endblock %}
+{% block content %}
+<div class="container-wide section">
+  <header class="page-head">
+    <h1>Solutions</h1>
+    <p class="page-subtitle">Pre-packaged deployments and integrations to take open models to production — without rebuilding the stack each time.</p>
+  </header>
+
+  <div class="solutions-grid">
+    {% set sols = [
+      ("Inference Endpoints", "Click-to-deploy any model on dedicated GPU — autoscaling, private VPC, region-aware.", "/endpoints"),
+      ("Spaces ZeroGPU", "Free public GPU minutes for community demos. Build once, share with everyone.", "/spaces"),
+      ("Enterprise Hub", "Single-tenant Hub for regulated industries — SSO, audit logs, dedicated storage.", "/enterprise"),
+      ("Inference API", "Hosted serverless inference for the top 100k models. Pay per token.", "/docs/topic/inference"),
+      ("Hugging Face for Teams", "Shared repos, role-based access, and team-wide compute budgets.", "/pricing"),
+      ("AutoTrain", "No-code fine-tuning UI on top of your own data — image, text, audio, tabular.", "/docs"),
+      ("Optimum", "Inference acceleration via ONNX, TensorRT, OpenVINO, Habana — drop-in optimizers.", "/docs"),
+      ("Text Generation Inference (TGI)", "High-throughput serving stack used by major labs in production.", "/docs/topic/inference"),
+    ] %}
+    {% for title, desc, href in sols %}
+      <a class="solution-card" href="{{ href }}">
+        <h3>{{ title }}</h3>
+        <p>{{ desc }}</p>
+        <span class="solution-arrow">Learn more →</span>
+      </a>
+    {% endfor %}
+  </div>
+
+  <section class="contact-sales">
+    <h2>Need help picking a solution?</h2>
+    <p>Talk to our team about volume pricing, on-prem deployment, or a custom integration.</p>
+    <a class="btn btn-primary" href="{{ url_for('enterprise') }}">Contact Sales</a>
+  </section>
+</div>
+{% endblock %}

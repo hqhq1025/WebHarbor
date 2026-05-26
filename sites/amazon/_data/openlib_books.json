@@ -1,0 +1,5456 @@
+[
+  {
+    "title": "Pride and Prejudice",
+    "author": "Jane Austen",
+    "genre": "Fiction",
+    "year": 1813,
+    "edition_count": 4038,
+    "cover_id": 14348537,
+    "key": "/works/OL66554W"
+  },
+  {
+    "title": "Alice's Adventures in Wonderland",
+    "author": "Lewis Carroll",
+    "genre": "Fiction",
+    "year": 1865,
+    "edition_count": 3547,
+    "cover_id": 10527843,
+    "key": "/works/OL138052W"
+  },
+  {
+    "title": "A Christmas Carol",
+    "author": "Charles Dickens",
+    "genre": "Fiction",
+    "year": 1843,
+    "edition_count": 3198,
+    "cover_id": 12875748,
+    "key": "/works/OL32466W"
+  },
+  {
+    "title": "The Picture of Dorian Gray",
+    "author": "Oscar Wilde",
+    "genre": "Fiction",
+    "year": 1890,
+    "edition_count": 3012,
+    "cover_id": 14314858,
+    "key": "/works/OL8193416W"
+  },
+  {
+    "title": "Wuthering Heights",
+    "author": "Emily Bronte\u0308",
+    "genre": "Fiction",
+    "year": 1846,
+    "edition_count": 2886,
+    "cover_id": 12818862,
+    "key": "/works/OL21177W"
+  },
+  {
+    "title": "Adventures of Huckleberry Finn",
+    "author": "Mark Twain",
+    "genre": "Fiction",
+    "year": 1876,
+    "edition_count": 2622,
+    "cover_id": 8157718,
+    "key": "/works/OL53908W"
+  },
+  {
+    "title": "Robinson Crusoe",
+    "author": "Daniel Defoe",
+    "genre": "Fiction",
+    "year": 1686,
+    "edition_count": 2420,
+    "cover_id": 368541,
+    "key": "/works/OL45089W"
+  },
+  {
+    "title": "The Scarlet Letter",
+    "author": "Nathaniel Hawthorne",
+    "genre": "Fiction",
+    "year": 1800,
+    "edition_count": 2406,
+    "cover_id": 5654516,
+    "key": "/works/OL455305W"
+  },
+  {
+    "title": "Hamlet",
+    "author": "William Shakespeare",
+    "genre": "Fiction",
+    "year": 1603,
+    "edition_count": 2377,
+    "cover_id": 8281954,
+    "key": "/works/OL9170454W"
+  },
+  {
+    "title": "Emma",
+    "author": "Jane Austen",
+    "genre": "Fiction",
+    "year": 1815,
+    "edition_count": 2263,
+    "cover_id": 9278312,
+    "key": "/works/OL66513W"
+  },
+  {
+    "title": "Oliver Twist",
+    "author": "Charles Dickens",
+    "genre": "Fiction",
+    "year": 1822,
+    "edition_count": 2209,
+    "cover_id": 13300802,
+    "key": "/works/OL8193478W"
+  },
+  {
+    "title": "Frankenstein or The Modern Prometheus",
+    "author": "Mary Shelley",
+    "genre": "Fiction",
+    "year": 1818,
+    "edition_count": 2185,
+    "cover_id": 12356249,
+    "key": "/works/OL450063W"
+  },
+  {
+    "title": "Sense and Sensibility",
+    "author": "Jane Austen",
+    "genre": "Fiction",
+    "year": 1811,
+    "edition_count": 2090,
+    "cover_id": 9278292,
+    "key": "/works/OL66562W"
+  },
+  {
+    "title": "A Tale of Two Cities",
+    "author": "Charles Dickens",
+    "genre": "Fiction",
+    "year": 1800,
+    "edition_count": 2060,
+    "cover_id": 13301713,
+    "key": "/works/OL8193465W"
+  },
+  {
+    "title": "The Wonderful Wizard of Oz",
+    "author": "L. Frank Baum",
+    "genre": "Fiction",
+    "year": 1899,
+    "edition_count": 2049,
+    "cover_id": 552443,
+    "key": "/works/OL18417W"
+  },
+  {
+    "title": "Treasure Island",
+    "author": "Robert Louis Stevenson",
+    "genre": "Fiction",
+    "year": 1880,
+    "edition_count": 1988,
+    "cover_id": 13859660,
+    "key": "/works/OL24034W"
+  },
+  {
+    "title": "Little Women",
+    "author": "Louisa May Alcott",
+    "genre": "Fiction",
+    "year": 1848,
+    "edition_count": 1888,
+    "cover_id": 8775559,
+    "key": "/works/OL29983W"
+  },
+  {
+    "title": "Macbeth",
+    "author": "William Shakespeare",
+    "genre": "Fiction",
+    "year": 1508,
+    "edition_count": 1866,
+    "cover_id": 872432,
+    "key": "/works/OL258902W"
+  },
+  {
+    "title": "Gulliver's Travels",
+    "author": "Jonathan Swift",
+    "genre": "Fiction",
+    "year": 1726,
+    "edition_count": 1810,
+    "cover_id": 12717083,
+    "key": "/works/OL20600W"
+  },
+  {
+    "title": "The Call of the Wild",
+    "author": "Jack London",
+    "genre": "Fiction",
+    "year": 1903,
+    "edition_count": 1700,
+    "cover_id": 12393037,
+    "key": "/works/OL14942956W"
+  },
+  {
+    "title": "King Lear",
+    "author": "William Shakespeare",
+    "genre": "Fiction",
+    "year": 1608,
+    "edition_count": 1614,
+    "cover_id": 7420452,
+    "key": "/works/OL259026W"
+  },
+  {
+    "title": "The Secret Garden",
+    "author": "Frances Hodgson Burnett",
+    "genre": "Fiction",
+    "year": 1911,
+    "edition_count": 1594,
+    "cover_id": 12622062,
+    "key": "/works/OL69612W"
+  },
+  {
+    "title": "Don Quijote de la Mancha",
+    "author": "Miguel de Cervantes Saavedra",
+    "genre": "Fiction",
+    "year": 1600,
+    "edition_count": 1594,
+    "cover_id": 14428305,
+    "key": "/works/OL503666W"
+  },
+  {
+    "title": "Madame Bovary",
+    "author": "Gustave Flaubert",
+    "genre": "Fiction",
+    "year": 1856,
+    "edition_count": 1557,
+    "cover_id": 12993424,
+    "key": "/works/OL893707W"
+  },
+  {
+    "title": "The Art of War",
+    "author": "\u5b59\u6b66 (Sun Tzu)",
+    "genre": "Fiction",
+    "year": 1900,
+    "edition_count": 1542,
+    "cover_id": 4849549,
+    "key": "/works/OL244537W"
+  },
+  {
+    "title": "A Midsummer Night's Dream",
+    "author": "William Shakespeare",
+    "genre": "Fiction",
+    "year": 1600,
+    "edition_count": 1505,
+    "cover_id": 7205924,
+    "key": "/works/OL259010W"
+  },
+  {
+    "title": "Great Expectations",
+    "author": "Charles Dickens",
+    "genre": "Fiction",
+    "year": 1861,
+    "edition_count": 1489,
+    "cover_id": 13322313,
+    "key": "/works/OL8721462W"
+  },
+  {
+    "title": "A Study in Scarlet",
+    "author": "Arthur Conan Doyle",
+    "genre": "Fiction",
+    "year": 1887,
+    "edition_count": 1447,
+    "cover_id": 13405534,
+    "key": "/works/OL262496W"
+  },
+  {
+    "title": "The Prince",
+    "author": "Niccol\u00f2 Machiavelli",
+    "genre": "Fiction",
+    "year": 1515,
+    "edition_count": 1407,
+    "cover_id": 12726168,
+    "key": "/works/OL1089297W"
+  },
+  {
+    "title": "Through the Looking-Glass",
+    "author": "Lewis Carroll",
+    "genre": "Fiction",
+    "year": 1865,
+    "edition_count": 1379,
+    "cover_id": 11272464,
+    "key": "/works/OL151406W"
+  },
+  {
+    "title": "The Wind in the Willows",
+    "author": "Kenneth Grahame",
+    "genre": "Fiction",
+    "year": 1908,
+    "edition_count": 1346,
+    "cover_id": 13335427,
+    "key": "/works/OL28570037W"
+  },
+  {
+    "title": "La Divina Commedia",
+    "author": "Dante Alighieri",
+    "genre": "Fiction",
+    "year": 1472,
+    "edition_count": 1339,
+    "cover_id": 11621024,
+    "key": "/works/OL93082W"
+  },
+  {
+    "title": "\u0410\u043d\u043d\u0430 \u041a\u0430\u0440\u0435\u043d\u0438\u043d\u0430",
+    "author": "\u041b\u0435\u0432 \u0422\u043e\u043b\u0441\u0442\u043e\u0439",
+    "genre": "Fiction",
+    "year": 1876,
+    "edition_count": 1314,
+    "cover_id": 2560652,
+    "key": "/works/OL267096W"
+  },
+  {
+    "title": "The Hound of the Baskervilles",
+    "author": "Arthur Conan Doyle",
+    "genre": "Fiction",
+    "year": 1900,
+    "edition_count": 1309,
+    "cover_id": 8063264,
+    "key": "/works/OL262454W"
+  },
+  {
+    "title": "Anne of Green Gables",
+    "author": "Lucy Maud Montgomery",
+    "genre": "Fiction",
+    "year": 1908,
+    "edition_count": 1299,
+    "cover_id": 14641084,
+    "key": "/works/OL77746W"
+  },
+  {
+    "title": "Persuasion",
+    "author": "Jane Austen",
+    "genre": "Fiction",
+    "year": 1789,
+    "edition_count": 1236,
+    "cover_id": 12824691,
+    "key": "/works/OL66544W"
+  },
+  {
+    "title": "Julius Caesar",
+    "author": "William Shakespeare",
+    "genre": "Fiction",
+    "year": 1656,
+    "edition_count": 1226,
+    "cover_id": 7901303,
+    "key": "/works/OL362702W"
+  },
+  {
+    "title": "The Great Gatsby",
+    "author": "F. Scott Fitzgerald",
+    "genre": "Fiction",
+    "year": 1920,
+    "edition_count": 1179,
+    "cover_id": 10590366,
+    "key": "/works/OL468431W"
+  },
+  {
+    "title": "\u041f\u0440\u0435\u0441\u0442\u0443\u043f\u043b\u0435\u043d\u0438\u0435 \u0438 \u043d\u0430\u043a\u0430\u0437\u0430\u043d\u0438\u0435",
+    "author": "\u0424\u0451\u0434\u043e\u0440 \u041c\u0438\u0445\u0430\u0439\u043b\u043e\u0432\u0438\u0447 \u0414\u043e\u0441\u0442\u043e\u0435\u0432\u0441\u043a\u0438\u0439",
+    "genre": "Fiction",
+    "year": 1866,
+    "edition_count": 1178,
+    "cover_id": 9411873,
+    "key": "/works/OL166894W"
+  },
+  {
+    "title": "Jane Eyre",
+    "author": "Charlotte Bronte\u0308",
+    "genre": "Fiction",
+    "year": 1847,
+    "edition_count": 1170,
+    "cover_id": 8235363,
+    "key": "/works/OL1095427W"
+  },
+  {
+    "title": "The Time Machine",
+    "author": "H. G. Wells",
+    "genre": "Science Fiction",
+    "year": 1895,
+    "edition_count": 1146,
+    "cover_id": 9009316,
+    "key": "/works/OL52267W"
+  },
+  {
+    "title": "The Lost World",
+    "author": "Arthur Conan Doyle",
+    "genre": "Science Fiction",
+    "year": 1900,
+    "edition_count": 747,
+    "cover_id": 8231444,
+    "key": "/works/OL262460W"
+  },
+  {
+    "title": "Dracula",
+    "author": "Bram Stoker",
+    "genre": "Science Fiction",
+    "year": 1897,
+    "edition_count": 736,
+    "cover_id": 12216503,
+    "key": "/works/OL85892W"
+  },
+  {
+    "title": "Brave New World",
+    "author": "Aldous Huxley",
+    "genre": "Science Fiction",
+    "year": 1932,
+    "edition_count": 721,
+    "cover_id": 8231823,
+    "key": "/works/OL64365W"
+  },
+  {
+    "title": "The Jewel of Seven Stars",
+    "author": "Bram Stoker",
+    "genre": "Science Fiction",
+    "year": 1902,
+    "edition_count": 653,
+    "cover_id": 2760301,
+    "key": "/works/OL85891W"
+  },
+  {
+    "title": "The Iron Heel",
+    "author": "Jack London",
+    "genre": "Science Fiction",
+    "year": 1907,
+    "edition_count": 597,
+    "cover_id": 8243314,
+    "key": "/works/OL74502W"
+  },
+  {
+    "title": "Flatland",
+    "author": "Edwin Abbott Abbott",
+    "genre": "Science Fiction",
+    "year": 1884,
+    "edition_count": 585,
+    "cover_id": 10069547,
+    "key": "/works/OL118388W"
+  },
+  {
+    "title": "The Invisible Man",
+    "author": "H. G. Wells",
+    "genre": "Science Fiction",
+    "year": 2020,
+    "edition_count": 563,
+    "cover_id": 6419199,
+    "key": "/works/OL52266W"
+  },
+  {
+    "title": "Nineteen Eighty-Four",
+    "author": "George Orwell",
+    "genre": "Science Fiction",
+    "year": 1949,
+    "edition_count": 535,
+    "cover_id": 9267242,
+    "key": "/works/OL1168083W"
+  },
+  {
+    "title": "The Princess and Curdie",
+    "author": "George MacDonald",
+    "genre": "Science Fiction",
+    "year": 1832,
+    "edition_count": 487,
+    "cover_id": 14357835,
+    "key": "/works/OL15448W"
+  },
+  {
+    "title": "The War of the Worlds",
+    "author": "H. G. Wells",
+    "genre": "Science Fiction",
+    "year": 2020,
+    "edition_count": 457,
+    "cover_id": 36314,
+    "key": "/works/OL52114W"
+  },
+  {
+    "title": "A Princess of Mars",
+    "author": "Edgar Rice Burroughs",
+    "genre": "Science Fiction",
+    "year": 1912,
+    "edition_count": 456,
+    "cover_id": 207226,
+    "key": "/works/OL1418187W"
+  },
+  {
+    "title": "The Napoleon of Notting Hill",
+    "author": "Gilbert Keith Chesterton",
+    "genre": "Science Fiction",
+    "year": 1904,
+    "edition_count": 454,
+    "cover_id": 6980094,
+    "key": "/works/OL76473W"
+  },
+  {
+    "title": "The Last Man",
+    "author": "Mary Shelley",
+    "genre": "Science Fiction",
+    "year": 1826,
+    "edition_count": 430,
+    "cover_id": 882662,
+    "key": "/works/OL450124W"
+  },
+  {
+    "title": "Le Tour du Monde en Quatre-Vingts Jours",
+    "author": "Jules Verne",
+    "genre": "Science Fiction",
+    "year": 1872,
+    "edition_count": 426,
+    "cover_id": 6976035,
+    "key": "/works/OL1100007W"
+  },
+  {
+    "title": "The warlord of Mars #3",
+    "author": "Edgar Rice Burroughs",
+    "genre": "Science Fiction",
+    "year": 1914,
+    "edition_count": 420,
+    "cover_id": 207141,
+    "key": "/works/OL1418137W"
+  },
+  {
+    "title": "Vingt mille lieues sous les mers",
+    "author": "Jules Verne",
+    "genre": "Science Fiction",
+    "year": 1870,
+    "edition_count": 383,
+    "cover_id": 6573517,
+    "key": "/works/OL1099280W"
+  },
+  {
+    "title": "The Strange Case of Dr. Jekyll and Mr. Hyde",
+    "author": "Robert Louis Stevenson",
+    "genre": "Science Fiction",
+    "year": 1875,
+    "edition_count": 373,
+    "cover_id": 295773,
+    "key": "/works/OL24156W"
+  },
+  {
+    "title": "The description of a new world",
+    "author": "Margaret Cavendish, Duchess of Newcastle",
+    "genre": "Science Fiction",
+    "year": 1666,
+    "edition_count": 361,
+    "cover_id": 103235,
+    "key": "/works/OL1112413W"
+  },
+  {
+    "title": "News from nowhere, or, An epoch of rest, being some chapters from a utopian romance",
+    "author": "William Morris",
+    "genre": "Science Fiction",
+    "year": 1890,
+    "edition_count": 347,
+    "cover_id": 338173,
+    "key": "/works/OL47721W"
+  },
+  {
+    "title": "The Poison Belt",
+    "author": "Arthur Conan Doyle",
+    "genre": "Science Fiction",
+    "year": 1913,
+    "edition_count": 345,
+    "cover_id": 5788361,
+    "key": "/works/OL262596W"
+  },
+  {
+    "title": "The Gods of Mars",
+    "author": "Edgar Rice Burroughs",
+    "genre": "Science Fiction",
+    "year": 1918,
+    "edition_count": 315,
+    "cover_id": 207132,
+    "key": "/works/OL1417942W"
+  },
+  {
+    "title": "The Chessmen of Mars",
+    "author": "Edgar Rice Burroughs",
+    "genre": "Science Fiction",
+    "year": 1922,
+    "edition_count": 313,
+    "cover_id": 1930755,
+    "key": "/works/OL1418244W"
+  },
+  {
+    "title": "The Machine Stops",
+    "author": "E. M. Forster",
+    "genre": "Science Fiction",
+    "year": 1909,
+    "edition_count": 311,
+    "cover_id": 7793883,
+    "key": "/works/OL88800W"
+  },
+  {
+    "title": "The Island of Dr. Moreau",
+    "author": "H. G. Wells",
+    "genre": "Science Fiction",
+    "year": 1896,
+    "edition_count": 295,
+    "cover_id": 968312,
+    "key": "/works/OL381550W"
+  },
+  {
+    "title": "Gullivar of Mars",
+    "author": "Edwin Lester Linden Arnold",
+    "genre": "Science Fiction",
+    "year": 1964,
+    "edition_count": 290,
+    "cover_id": 573770,
+    "key": "/works/OL5960415W"
+  },
+  {
+    "title": "After London",
+    "author": "Richard Jefferies",
+    "genre": "Science Fiction",
+    "year": 1885,
+    "edition_count": 280,
+    "cover_id": 2841895,
+    "key": "/works/OL1176822W"
+  },
+  {
+    "title": "The Coming Race",
+    "author": "Edward Bulwer Lytton, Baron Lytton",
+    "genre": "Science Fiction",
+    "year": 1871,
+    "edition_count": 262,
+    "cover_id": 2751882,
+    "key": "/works/OL61825W"
+  },
+  {
+    "title": "Fahrenheit 451",
+    "author": "Ray Bradbury",
+    "genre": "Science Fiction",
+    "year": 1953,
+    "edition_count": 261,
+    "cover_id": 12993656,
+    "key": "/works/OL103123W"
+  },
+  {
+    "title": "The wood beyond the world",
+    "author": "William Morris",
+    "genre": "Science Fiction",
+    "year": 1894,
+    "edition_count": 250,
+    "cover_id": 5895767,
+    "key": "/works/OL47752W"
+  },
+  {
+    "title": "The Moon Pool",
+    "author": "A. Merritt",
+    "genre": "Science Fiction",
+    "year": 1919,
+    "edition_count": 230,
+    "cover_id": 9317374,
+    "key": "/works/OL4104767W"
+  },
+  {
+    "title": "The king of the Golden River; or, The black brothers",
+    "author": "John Ruskin",
+    "genre": "Science Fiction",
+    "year": 1839,
+    "edition_count": 219,
+    "cover_id": 5884126,
+    "key": "/works/OL88599W"
+  },
+  {
+    "title": "At the Earth's Core",
+    "author": "Edgar Rice Burroughs",
+    "genre": "Science Fiction",
+    "year": 1914,
+    "edition_count": 219,
+    "cover_id": 9317372,
+    "key": "/works/OL1417907W"
+  },
+  {
+    "title": "In the days of the comet",
+    "author": "H. G. Wells",
+    "genre": "Science Fiction",
+    "year": 1906,
+    "edition_count": 213,
+    "cover_id": 5783892,
+    "key": "/works/OL52252W"
+  },
+  {
+    "title": "\u041c\u044b",
+    "author": "\u0415\u0432\u0433\u0435\u043d\u0438\u0439 \u0418\u0432\u0430\u043d\u043e\u0432\u0438\u0447 \u0417\u0430\u043c\u044f\u0442\u0438\u043d",
+    "genre": "Science Fiction",
+    "year": 1924,
+    "edition_count": 210,
+    "cover_id": 5484189,
+    "key": "/works/OL10215W"
+  },
+  {
+    "title": "De la terre \u00e0 la lune",
+    "author": "Jules Verne",
+    "genre": "Science Fiction",
+    "year": 1865,
+    "edition_count": 208,
+    "cover_id": 5943556,
+    "key": "/works/OL1099479W"
+  },
+  {
+    "title": "Thuvia, Maid of Mars",
+    "author": "Edgar Rice Burroughs",
+    "genre": "Science Fiction",
+    "year": 1916,
+    "edition_count": 206,
+    "cover_id": 284442,
+    "key": "/works/OL1418128W"
+  },
+  {
+    "title": "The Adventures of Sherlock Holmes [12 stories]",
+    "author": "Arthur Conan Doyle",
+    "genre": "Mystery",
+    "year": 1892,
+    "edition_count": 1132,
+    "cover_id": 6717853,
+    "key": "/works/OL262421W"
+  },
+  {
+    "title": "The Moonstone",
+    "author": "Wilkie Collins",
+    "genre": "Mystery",
+    "year": 1800,
+    "edition_count": 977,
+    "cover_id": 8237041,
+    "key": "/works/OL176092W"
+  },
+  {
+    "title": "The Sign of Four",
+    "author": "Arthur Conan Doyle",
+    "genre": "Mystery",
+    "year": 1889,
+    "edition_count": 962,
+    "cover_id": 9247987,
+    "key": "/works/OL262438W"
+  },
+  {
+    "title": "The Woman in White",
+    "author": "Wilkie Collins",
+    "genre": "Mystery",
+    "year": 1859,
+    "edition_count": 653,
+    "cover_id": 4684227,
+    "key": "/works/OL176045W"
+  },
+  {
+    "title": "The Story of the Amulet",
+    "author": "Edith Nesbit",
+    "genre": "Mystery",
+    "year": 1905,
+    "edition_count": 578,
+    "cover_id": 13241470,
+    "key": "/works/OL407476W"
+  },
+  {
+    "title": "The Return of Sherlock Holmes",
+    "author": "Arthur Conan Doyle",
+    "genre": "Mystery",
+    "year": 1903,
+    "edition_count": 545,
+    "cover_id": 9246467,
+    "key": "/works/OL262477W"
+  },
+  {
+    "title": "Memoirs of Sherlock Holmes [11 stories]",
+    "author": "Arthur Conan Doyle",
+    "genre": "Mystery",
+    "year": 1893,
+    "edition_count": 530,
+    "cover_id": 9246429,
+    "key": "/works/OL262463W"
+  },
+  {
+    "title": "The Secret Agent",
+    "author": "Joseph Conrad",
+    "genre": "Mystery",
+    "year": 1907,
+    "edition_count": 335,
+    "cover_id": 8239401,
+    "key": "/works/OL39108W"
+  },
+  {
+    "title": "The Case-Book of Sherlock Holmes",
+    "author": "Arthur Conan Doyle",
+    "genre": "Mystery",
+    "year": 1927,
+    "edition_count": 286,
+    "cover_id": 8350410,
+    "key": "/works/OL262426W"
+  },
+  {
+    "title": "Tom Sawyer, Detective",
+    "author": "Mark Twain",
+    "genre": "Mystery",
+    "year": 1897,
+    "edition_count": 276,
+    "cover_id": 8923621,
+    "key": "/works/OL54147W"
+  },
+  {
+    "title": "The Old Man in the Corner",
+    "author": "Emma Orczy",
+    "genre": "Mystery",
+    "year": 1908,
+    "edition_count": 215,
+    "cover_id": 5815381,
+    "key": "/works/OL1253282W"
+  },
+  {
+    "title": "The Gold-Bug",
+    "author": "Edgar Allan Poe",
+    "genre": "Mystery",
+    "year": 1845,
+    "edition_count": 210,
+    "cover_id": 11777143,
+    "key": "/works/OL40983W"
+  },
+  {
+    "title": "The A.B.C. Murders",
+    "author": "Agatha Christie",
+    "genre": "Mystery",
+    "year": 1936,
+    "edition_count": 142,
+    "cover_id": 14573514,
+    "key": "/works/OL471509W"
+  },
+  {
+    "title": "The Purloined Letter",
+    "author": "Edgar Allan Poe",
+    "genre": "Mystery",
+    "year": 1931,
+    "edition_count": 121,
+    "cover_id": 11674884,
+    "key": "/works/OL41065W"
+  },
+  {
+    "title": "The Complete Sherlock Holmes [4 novels, 56 stories]",
+    "author": "Arthur Conan Doyle",
+    "genre": "Mystery",
+    "year": 1900,
+    "edition_count": 118,
+    "cover_id": 12501284,
+    "key": "/works/OL262554W"
+  },
+  {
+    "title": "The Big Sleep",
+    "author": "Raymond Chandler",
+    "genre": "Mystery",
+    "year": 1939,
+    "edition_count": 116,
+    "cover_id": 7268475,
+    "key": "/works/OL15400582W"
+  },
+  {
+    "title": "After the Funeral",
+    "author": "Agatha Christie",
+    "genre": "Mystery",
+    "year": 1953,
+    "edition_count": 114,
+    "cover_id": 12996535,
+    "key": "/works/OL471943W"
+  },
+  {
+    "title": "Elephants Can Remember",
+    "author": "Agatha Christie",
+    "genre": "Mystery",
+    "year": 1969,
+    "edition_count": 110,
+    "cover_id": 11165070,
+    "key": "/works/OL471776W"
+  },
+  {
+    "title": "The Curious Incident of the Dog in the Night-Time",
+    "author": "Mark Haddon",
+    "genre": "Mystery",
+    "year": 2002,
+    "edition_count": 108,
+    "cover_id": 7890719,
+    "key": "/works/OL2965102W"
+  },
+  {
+    "title": "Scarhaven Keep",
+    "author": "Joseph Smith Fletcher",
+    "genre": "Mystery",
+    "year": 1922,
+    "edition_count": 108,
+    "cover_id": 2784157,
+    "key": "/works/OL1797754W"
+  },
+  {
+    "title": "Nemesis",
+    "author": "Agatha Christie",
+    "genre": "Mystery",
+    "year": 1970,
+    "edition_count": 103,
+    "cover_id": 10249139,
+    "key": "/works/OL472594W"
+  },
+  {
+    "title": "Murder in Three Acts",
+    "author": "Agatha Christie",
+    "genre": "Mystery",
+    "year": 1934,
+    "edition_count": 103,
+    "cover_id": 6874620,
+    "key": "/works/OL471765W"
+  },
+  {
+    "title": "Hallowe'en Party",
+    "author": "Agatha Christie",
+    "genre": "Mystery",
+    "year": 1969,
+    "edition_count": 100,
+    "cover_id": 11160095,
+    "key": "/works/OL471832W"
+  },
+  {
+    "title": "They Came to Baghdad",
+    "author": "Agatha Christie",
+    "genre": "Mystery",
+    "year": 1951,
+    "edition_count": 95,
+    "cover_id": 12846782,
+    "key": "/works/OL472215W"
+  },
+  {
+    "title": "Why Didn't they Ask Evans?",
+    "author": "Agatha Christie",
+    "genre": "Mystery",
+    "year": 1934,
+    "edition_count": 92,
+    "cover_id": 9831097,
+    "key": "/works/OL472388W"
+  },
+  {
+    "title": "The Green Mile",
+    "author": "Stephen King",
+    "genre": "Mystery",
+    "year": 1996,
+    "edition_count": 91,
+    "cover_id": 9334567,
+    "key": "/works/OL81629W"
+  },
+  {
+    "title": "Emil und die Detektive",
+    "author": "Erich K\u00e4stner",
+    "genre": "Mystery",
+    "year": 1930,
+    "edition_count": 90,
+    "cover_id": 3065314,
+    "key": "/works/OL970122W"
+  },
+  {
+    "title": "Breaking Dawn",
+    "author": "Stephenie Meyer",
+    "genre": "Mystery",
+    "year": 2000,
+    "edition_count": 90,
+    "cover_id": 12643419,
+    "key": "/works/OL5720022W"
+  },
+  {
+    "title": "Hickory Dickory Death",
+    "author": "Agatha Christie",
+    "genre": "Mystery",
+    "year": 1952,
+    "edition_count": 89,
+    "cover_id": 13014831,
+    "key": "/works/OL471577W"
+  },
+  {
+    "title": "The Boxcar Children",
+    "author": "Gertrude Chandler Warner",
+    "genre": "Mystery",
+    "year": 1924,
+    "edition_count": 87,
+    "cover_id": 11349395,
+    "key": "/works/OL24656586W"
+  },
+  {
+    "title": "Five on a Treasure Island",
+    "author": "Enid Blyton",
+    "genre": "Mystery",
+    "year": 1942,
+    "edition_count": 85,
+    "cover_id": 14570937,
+    "key": "/works/OL1948704W"
+  },
+  {
+    "title": "Endless Night",
+    "author": "Agatha Christie",
+    "genre": "Mystery",
+    "year": 1905,
+    "edition_count": 84,
+    "cover_id": 12855084,
+    "key": "/works/OL472508W"
+  },
+  {
+    "title": "The Red House Mystery",
+    "author": "A. A. Milne",
+    "genre": "Mystery",
+    "year": 1922,
+    "edition_count": 71,
+    "cover_id": 6299936,
+    "key": "/works/OL476846W"
+  },
+  {
+    "title": "The Haunted Bookshop",
+    "author": "Christopher Morley",
+    "genre": "Mystery",
+    "year": 1919,
+    "edition_count": 69,
+    "cover_id": 935927,
+    "key": "/works/OL619317W"
+  },
+  {
+    "title": "The Nine Tailors",
+    "author": "Dorothy L. Sayers",
+    "genre": "Mystery",
+    "year": 1934,
+    "edition_count": 69,
+    "cover_id": 482463,
+    "key": "/works/OL2234946W"
+  },
+  {
+    "title": "The Mysterious Affair at Styles",
+    "author": "Agatha Christie",
+    "genre": "Thriller",
+    "year": 1920,
+    "edition_count": 1091,
+    "cover_id": 13699667,
+    "key": "/works/OL472715W"
+  },
+  {
+    "title": "The Thirty-Nine Steps",
+    "author": "John Buchan",
+    "genre": "Thriller",
+    "year": 1915,
+    "edition_count": 881,
+    "cover_id": 93020,
+    "key": "/works/OL76524W"
+  },
+  {
+    "title": "The Red Badge of Courage",
+    "author": "Stephen Crane",
+    "genre": "Thriller",
+    "year": 1855,
+    "edition_count": 639,
+    "cover_id": 8236915,
+    "key": "/works/OL20844W"
+  },
+  {
+    "title": "The Prisoner of Zenda",
+    "author": "Anthony Hope",
+    "genre": "Thriller",
+    "year": 1800,
+    "edition_count": 627,
+    "cover_id": 105814,
+    "key": "/works/OL245401W"
+  },
+  {
+    "title": "The Riddle of the Sands",
+    "author": "Erskine Childers",
+    "genre": "Thriller",
+    "year": 1903,
+    "edition_count": 532,
+    "cover_id": 2293974,
+    "key": "/works/OL23797W"
+  },
+  {
+    "title": "The deerslayer",
+    "author": "James Fenimore Cooper",
+    "genre": "Thriller",
+    "year": 1841,
+    "edition_count": 504,
+    "cover_id": 8237593,
+    "key": "/works/OL77950W"
+  },
+  {
+    "title": "Mr. Standfast",
+    "author": "John Buchan",
+    "genre": "Thriller",
+    "year": 1918,
+    "edition_count": 437,
+    "cover_id": 6962564,
+    "key": "/works/OL76598W"
+  },
+  {
+    "title": "The Pathfinder",
+    "author": "James Fenimore Cooper",
+    "genre": "Thriller",
+    "year": 1800,
+    "edition_count": 427,
+    "cover_id": 8980913,
+    "key": "/works/OL78009W"
+  },
+  {
+    "title": "White Fang",
+    "author": "Jack London",
+    "genre": "Thriller",
+    "year": 1905,
+    "edition_count": 387,
+    "cover_id": 8236920,
+    "key": "/works/OL74504W"
+  },
+  {
+    "title": "The pioneers",
+    "author": "James Fenimore Cooper",
+    "genre": "Thriller",
+    "year": 1800,
+    "edition_count": 378,
+    "cover_id": 9000512,
+    "key": "/works/OL77997W"
+  },
+  {
+    "title": "Kidnapped",
+    "author": "Robert Louis Stevenson",
+    "genre": "Thriller",
+    "year": 1886,
+    "edition_count": 352,
+    "cover_id": 8267822,
+    "key": "/works/OL24166W"
+  },
+  {
+    "title": "A strange disappearance",
+    "author": "Anna Katharine Green",
+    "genre": "Thriller",
+    "year": 1879,
+    "edition_count": 306,
+    "cover_id": 12657405,
+    "key": "/works/OL4885721W"
+  },
+  {
+    "title": "The Evil Shepherd",
+    "author": "Edward Phillips Oppenheim",
+    "genre": "Thriller",
+    "year": 1922,
+    "edition_count": 290,
+    "cover_id": 12648419,
+    "key": "/works/OL2681032W"
+  },
+  {
+    "title": "Otto of the Silver Hand",
+    "author": "Howard Pyle",
+    "genre": "Thriller",
+    "year": 1888,
+    "edition_count": 226,
+    "cover_id": 7263483,
+    "key": "/works/OL2021957W"
+  },
+  {
+    "title": "A Tale of Three Lions",
+    "author": "H. Rider Haggard",
+    "genre": "Thriller",
+    "year": 2004,
+    "edition_count": 215,
+    "cover_id": 2009339,
+    "key": "/works/OL17455W"
+  },
+  {
+    "title": "The Beetle. A Mystery",
+    "author": "Richard Marsh",
+    "genre": "Thriller",
+    "year": 1897,
+    "edition_count": 211,
+    "cover_id": 750958,
+    "key": "/works/OL827304W"
+  },
+  {
+    "title": "An American Tragedy",
+    "author": "Theodore Dreiser",
+    "genre": "Thriller",
+    "year": 1900,
+    "edition_count": 210,
+    "cover_id": 12728401,
+    "key": "/works/OL100239W"
+  },
+  {
+    "title": "Voyage au Centre de la Terre",
+    "author": "Jules Verne",
+    "genre": "Thriller",
+    "year": 1867,
+    "edition_count": 205,
+    "cover_id": 5890987,
+    "key": "/works/OL1099513W"
+  },
+  {
+    "title": "Lord of the Flies",
+    "author": "William Golding",
+    "genre": "Thriller",
+    "year": 1954,
+    "edition_count": 191,
+    "cover_id": 8684447,
+    "key": "/works/OL455327W"
+  },
+  {
+    "title": "The Four Just Men",
+    "author": "Edgar Wallace",
+    "genre": "Thriller",
+    "year": 1905,
+    "edition_count": 177,
+    "cover_id": 12947886,
+    "key": "/works/OL1517879W"
+  },
+  {
+    "title": "Casino Royale",
+    "author": "Ian Fleming",
+    "genre": "Thriller",
+    "year": 1953,
+    "edition_count": 163,
+    "cover_id": 5540820,
+    "key": "/works/OL85753W"
+  },
+  {
+    "title": "Michel Strogoff",
+    "author": "Jules Verne",
+    "genre": "Thriller",
+    "year": 1876,
+    "edition_count": 152,
+    "cover_id": 10393209,
+    "key": "/works/OL1099641W"
+  },
+  {
+    "title": "From Russia, with love",
+    "author": "Ian Fleming",
+    "genre": "Thriller",
+    "year": 1957,
+    "edition_count": 150,
+    "cover_id": 109458,
+    "key": "/works/OL85732W"
+  },
+  {
+    "title": "Goldfinger",
+    "author": "Ian Fleming",
+    "genre": "Thriller",
+    "year": 1958,
+    "edition_count": 143,
+    "cover_id": 109454,
+    "key": "/works/OL85750W"
+  },
+  {
+    "title": "In Secret",
+    "author": "Robert W. Chambers",
+    "genre": "Thriller",
+    "year": 1919,
+    "edition_count": 142,
+    "cover_id": 1844837,
+    "key": "/works/OL8127199W"
+  },
+  {
+    "title": "Nightmare Abbey",
+    "author": "Thomas Love Peacock",
+    "genre": "Thriller",
+    "year": 1818,
+    "edition_count": 140,
+    "cover_id": 1956635,
+    "key": "/works/OL2713465W"
+  },
+  {
+    "title": "The Drums of Jeopardy",
+    "author": "Harold MacGrath",
+    "genre": "Thriller",
+    "year": 1920,
+    "edition_count": 140,
+    "cover_id": 11351150,
+    "key": "/works/OL2344450W"
+  },
+  {
+    "title": "The Eye of Osiris",
+    "author": "R. Austin Freeman",
+    "genre": "Thriller",
+    "year": 1911,
+    "edition_count": 136,
+    "cover_id": 7162423,
+    "key": "/works/OL13150029W"
+  },
+  {
+    "title": "Live and let die",
+    "author": "Ian Fleming",
+    "genre": "Thriller",
+    "year": 1954,
+    "edition_count": 134,
+    "cover_id": 109570,
+    "key": "/works/OL85746W"
+  },
+  {
+    "title": "Doctor No",
+    "author": "Ian Fleming",
+    "genre": "Thriller",
+    "year": 1958,
+    "edition_count": 119,
+    "cover_id": 6491664,
+    "key": "/works/OL85736W"
+  },
+  {
+    "title": "Carrie",
+    "author": "Stephen King",
+    "genre": "Thriller",
+    "year": 1974,
+    "edition_count": 117,
+    "cover_id": 9256043,
+    "key": "/works/OL81626W"
+  },
+  {
+    "title": "Diamonds are Forever",
+    "author": "Ian Fleming",
+    "genre": "Thriller",
+    "year": 1956,
+    "edition_count": 116,
+    "cover_id": 5540817,
+    "key": "/works/OL85747W"
+  },
+  {
+    "title": "Robur le conqu\u00e9rant",
+    "author": "Jules Verne",
+    "genre": "Thriller",
+    "year": 1886,
+    "edition_count": 113,
+    "cover_id": 2821179,
+    "key": "/works/OL1099693W"
+  },
+  {
+    "title": "Cinq semaines en ballon",
+    "author": "Jules Verne",
+    "genre": "Thriller",
+    "year": 1867,
+    "edition_count": 112,
+    "cover_id": 8179189,
+    "key": "/works/OL1099380W"
+  },
+  {
+    "title": "The Pillars of the Earth",
+    "author": "Ken Follett",
+    "genre": "Thriller",
+    "year": 1989,
+    "edition_count": 110,
+    "cover_id": 9269909,
+    "key": "/works/OL1914022W"
+  },
+  {
+    "title": "Northanger Abbey",
+    "author": "Jane Austen",
+    "genre": "Romance",
+    "year": 1818,
+    "edition_count": 1013,
+    "cover_id": 12567961,
+    "key": "/works/OL66534W"
+  },
+  {
+    "title": "Ethan Frome",
+    "author": "Edith Wharton",
+    "genre": "Romance",
+    "year": 1910,
+    "edition_count": 1000,
+    "cover_id": 8303480,
+    "key": "/works/OL98501W"
+  },
+  {
+    "title": "Le Comte de Monte Cristo",
+    "author": "Alexandre Dumas",
+    "genre": "Romance",
+    "year": 1830,
+    "edition_count": 735,
+    "cover_id": 14566393,
+    "key": "/works/OL36287W"
+  },
+  {
+    "title": "Riders of the Purple Sage",
+    "author": "Zane Grey",
+    "genre": "Romance",
+    "year": 1912,
+    "edition_count": 709,
+    "cover_id": 872066,
+    "key": "/works/OL485504W"
+  },
+  {
+    "title": "A Room with a View",
+    "author": "E. M. Forster",
+    "genre": "Romance",
+    "year": 1905,
+    "edition_count": 692,
+    "cover_id": 1748132,
+    "key": "/works/OL88813W"
+  },
+  {
+    "title": "Uncle Tom's Cabin",
+    "author": "Harriet Beecher Stowe",
+    "genre": "Romance",
+    "year": 1850,
+    "edition_count": 688,
+    "cover_id": 12728198,
+    "key": "/works/OL152161W"
+  },
+  {
+    "title": "Women in Love",
+    "author": "D. H. Lawrence",
+    "genre": "Romance",
+    "year": 1877,
+    "edition_count": 564,
+    "cover_id": 13140934,
+    "key": "/works/OL81294W"
+  },
+  {
+    "title": "Heart of Darkness",
+    "author": "Joseph Conrad",
+    "genre": "Romance",
+    "year": 1899,
+    "edition_count": 552,
+    "cover_id": 12307847,
+    "key": "/works/OL38663W"
+  },
+  {
+    "title": "She",
+    "author": "H. Rider Haggard",
+    "genre": "Romance",
+    "year": 1886,
+    "edition_count": 506,
+    "cover_id": 295537,
+    "key": "/works/OL17453W"
+  },
+  {
+    "title": "Howards End",
+    "author": "E. M. Forster",
+    "genre": "Romance",
+    "year": 1910,
+    "edition_count": 498,
+    "cover_id": 8235207,
+    "key": "/works/OL88881W"
+  },
+  {
+    "title": "This Side of Paradise",
+    "author": "F. Scott Fitzgerald",
+    "genre": "Romance",
+    "year": 1920,
+    "edition_count": 495,
+    "cover_id": 8243609,
+    "key": "/works/OL468488W"
+  },
+  {
+    "title": "Cranford",
+    "author": "Elizabeth Cleghorn Gaskell",
+    "genre": "Romance",
+    "year": 1853,
+    "edition_count": 473,
+    "cover_id": 5188445,
+    "key": "/works/OL1103093W"
+  },
+  {
+    "title": "The Portrait of a Lady",
+    "author": "Henry James",
+    "genre": "Romance",
+    "year": 1881,
+    "edition_count": 432,
+    "cover_id": 3352367,
+    "key": "/works/OL276365W"
+  },
+  {
+    "title": "Under the Greenwood Tree or, The Mellstock quire",
+    "author": "Thomas Hardy",
+    "genre": "Romance",
+    "year": 1872,
+    "edition_count": 425,
+    "cover_id": 902186,
+    "key": "/works/OL44973W"
+  },
+  {
+    "title": "Jude the Obscure",
+    "author": "Thomas Hardy",
+    "genre": "Romance",
+    "year": 1895,
+    "edition_count": 425,
+    "cover_id": 12973053,
+    "key": "/works/OL44986W"
+  },
+  {
+    "title": "Le rouge et le noir",
+    "author": "Stendhal",
+    "genre": "Romance",
+    "year": 1830,
+    "edition_count": 404,
+    "cover_id": 8231413,
+    "key": "/works/OL733640W"
+  },
+  {
+    "title": "The Woodlanders",
+    "author": "Thomas Hardy",
+    "genre": "Romance",
+    "year": 1800,
+    "edition_count": 392,
+    "cover_id": 8243078,
+    "key": "/works/OL44990W"
+  },
+  {
+    "title": "The Lone Star Ranger",
+    "author": "Zane Grey",
+    "genre": "Romance",
+    "year": 1914,
+    "edition_count": 358,
+    "cover_id": 4813849,
+    "key": "/works/OL485469W"
+  },
+  {
+    "title": "The ghost",
+    "author": "Arnold Bennett",
+    "genre": "Romance",
+    "year": 1907,
+    "edition_count": 319,
+    "cover_id": 5877895,
+    "key": "/works/OL109229W"
+  },
+  {
+    "title": "Framley Parsonage",
+    "author": "Anthony Trollope",
+    "genre": "Romance",
+    "year": 1861,
+    "edition_count": 317,
+    "cover_id": 8288051,
+    "key": "/works/OL109880W"
+  },
+  {
+    "title": "The Age of Innocence",
+    "author": "Edith Wharton",
+    "genre": "Romance",
+    "year": 1920,
+    "edition_count": 301,
+    "cover_id": 11196262,
+    "key": "/works/OL98491W"
+  },
+  {
+    "title": "Daisy Miller",
+    "author": "Henry James",
+    "genre": "Romance",
+    "year": 1877,
+    "edition_count": 244,
+    "cover_id": 6482238,
+    "key": "/works/OL276328W"
+  },
+  {
+    "title": "The Ambassadors",
+    "author": "Henry James",
+    "genre": "Romance",
+    "year": 1903,
+    "edition_count": 231,
+    "cover_id": 313610,
+    "key": "/works/OL276470W"
+  },
+  {
+    "title": "Washington Square",
+    "author": "Henry James",
+    "genre": "Romance",
+    "year": 1880,
+    "edition_count": 219,
+    "cover_id": 8243278,
+    "key": "/works/OL276395W"
+  },
+  {
+    "title": "Poirot investigates",
+    "author": "Agatha Christie",
+    "genre": "Romance",
+    "year": 1924,
+    "edition_count": 216,
+    "cover_id": 13670505,
+    "key": "/works/OL471940W"
+  },
+  {
+    "title": "The Return of the Native",
+    "author": "Thomas Hardy",
+    "genre": "Romance",
+    "year": 1878,
+    "edition_count": 205,
+    "cover_id": 8162989,
+    "key": "/works/OL44994W"
+  },
+  {
+    "title": "Death on the Nile",
+    "author": "Agatha Christie",
+    "genre": "Romance",
+    "year": 1937,
+    "edition_count": 187,
+    "cover_id": 14066646,
+    "key": "/works/OL471724W"
+  },
+  {
+    "title": "\u0414\u043e\u043a\u0442\u043e\u0440 \u0416\u0438\u0432\u0430\u0433\u043e",
+    "author": "Boris Leonidovich Pasternak",
+    "genre": "Romance",
+    "year": 1957,
+    "edition_count": 176,
+    "cover_id": 1045432,
+    "key": "/works/OL258301W"
+  },
+  {
+    "title": "Fifty Shades of Grey",
+    "author": "E. L. James",
+    "genre": "Romance",
+    "year": 2000,
+    "edition_count": 141,
+    "cover_id": 12648183,
+    "key": "/works/OL16336633W"
+  },
+  {
+    "title": "Pride and Prejudice",
+    "author": "Jane Austen",
+    "genre": "Romance",
+    "year": 1813,
+    "edition_count": 133,
+    "cover_id": 13148521,
+    "key": "/works/OL15165350W"
+  },
+  {
+    "title": "Twilight",
+    "author": "Stephenie Meyer",
+    "genre": "Romance",
+    "year": 2005,
+    "edition_count": 131,
+    "cover_id": 12641977,
+    "key": "/works/OL5720023W"
+  },
+  {
+    "title": "Three Men in a Boat (to say nothing of the dog)",
+    "author": "Jerome Klapka J\u00e9r\u00f4me",
+    "genre": "History",
+    "year": 1889,
+    "edition_count": 1135,
+    "cover_id": 8243006,
+    "key": "/works/OL1793164W"
+  },
+  {
+    "title": "The Taming of the Shrew",
+    "author": "William Shakespeare",
+    "genre": "History",
+    "year": 1631,
+    "edition_count": 1126,
+    "cover_id": 7889534,
+    "key": "/works/OL362690W"
+  },
+  {
+    "title": "Moby Dick",
+    "author": "Herman Melville",
+    "genre": "History",
+    "year": 1851,
+    "edition_count": 1116,
+    "cover_id": 10544254,
+    "key": "/works/OL102749W"
+  },
+  {
+    "title": "Moll Flanders",
+    "author": "Daniel Defoe",
+    "genre": "History",
+    "year": 1722,
+    "edition_count": 1114,
+    "cover_id": 12997559,
+    "key": "/works/OL45139W"
+  },
+  {
+    "title": "Les Trois Mousquetaires",
+    "author": "Alexandre Dumas",
+    "genre": "History",
+    "year": 1844,
+    "edition_count": 1104,
+    "cover_id": 11929973,
+    "key": "/works/OL36861W"
+  },
+  {
+    "title": "Candide",
+    "author": "Voltaire",
+    "genre": "History",
+    "year": 1746,
+    "edition_count": 1079,
+    "cover_id": 12736044,
+    "key": "/works/OL100672W"
+  },
+  {
+    "title": "Narrative of the life of Frederick Douglass",
+    "author": "Frederick Douglass",
+    "genre": "History",
+    "year": 1845,
+    "edition_count": 1032,
+    "cover_id": 8247724,
+    "key": "/works/OL69178W"
+  },
+  {
+    "title": "Twelve years a slave",
+    "author": "Solomon Northup",
+    "genre": "History",
+    "year": 1853,
+    "edition_count": 1029,
+    "cover_id": 14856045,
+    "key": "/works/OL78871W"
+  },
+  {
+    "title": "Hard Times",
+    "author": "Charles Dickens",
+    "genre": "History",
+    "year": 1854,
+    "edition_count": 1028,
+    "cover_id": 8236916,
+    "key": "/works/OL8193387W"
+  },
+  {
+    "title": "The Legend of Sleepy Hollow",
+    "author": "Washington Irving",
+    "genre": "History",
+    "year": 1820,
+    "edition_count": 1017,
+    "cover_id": 8243083,
+    "key": "/works/OL63985W"
+  },
+  {
+    "title": "Walden",
+    "author": "Henry David Thoreau",
+    "genre": "Biography",
+    "year": 1854,
+    "edition_count": 1139,
+    "cover_id": 11248037,
+    "key": "/works/OL55649W"
+  },
+  {
+    "title": "Dubliners",
+    "author": "James Joyce",
+    "genre": "Biography",
+    "year": 1914,
+    "edition_count": 996,
+    "cover_id": 8216412,
+    "key": "/works/OL86320W"
+  },
+  {
+    "title": "Troilus and Cressida",
+    "author": "William Shakespeare",
+    "genre": "Biography",
+    "year": 1609,
+    "edition_count": 992,
+    "cover_id": 8789523,
+    "key": "/works/OL362685W"
+  },
+  {
+    "title": "Captains Courageous",
+    "author": "Rudyard Kipling",
+    "genre": "Biography",
+    "year": 1896,
+    "edition_count": 990,
+    "cover_id": 12819857,
+    "key": "/works/OL19842W"
+  },
+  {
+    "title": "My \u00c1ntonia",
+    "author": "Willa Cather",
+    "genre": "Biography",
+    "year": 1818,
+    "edition_count": 832,
+    "cover_id": 8369013,
+    "key": "/works/OL12791W"
+  },
+  {
+    "title": "Leaves of Grass",
+    "author": "Walt Whitman",
+    "genre": "Biography",
+    "year": 1855,
+    "edition_count": 755,
+    "cover_id": 9000447,
+    "key": "/works/OL16333W"
+  },
+  {
+    "title": "The Princess and the Goblin",
+    "author": "George MacDonald",
+    "genre": "Biography",
+    "year": 1872,
+    "edition_count": 750,
+    "cover_id": 14363454,
+    "key": "/works/OL15449W"
+  },
+  {
+    "title": "The Canterbury Tales",
+    "author": "Geoffrey Chaucer",
+    "genre": "Biography",
+    "year": 1478,
+    "edition_count": 722,
+    "cover_id": 5767180,
+    "key": "/works/OL531767W"
+  },
+  {
+    "title": "The Pilgrim's Progress",
+    "author": "John Bunyan",
+    "genre": "Biography",
+    "year": 1678,
+    "edition_count": 683,
+    "cover_id": 8229224,
+    "key": "/works/OL107195W"
+  },
+  {
+    "title": "The Autobiography of Benjamin Franklin",
+    "author": "Benjamin Franklin",
+    "genre": "Biography",
+    "year": 1791,
+    "edition_count": 679,
+    "cover_id": 5647361,
+    "key": "/works/OL26492W"
+  },
+  {
+    "title": "Sonnets",
+    "author": "William Shakespeare",
+    "genre": "Biography",
+    "year": 1609,
+    "edition_count": 646,
+    "cover_id": 8222090,
+    "key": "/works/OL362706W"
+  },
+  {
+    "title": "King Henry V",
+    "author": "William Shakespeare",
+    "genre": "Biography",
+    "year": 1600,
+    "edition_count": 631,
+    "cover_id": 7420215,
+    "key": "/works/OL361466W"
+  },
+  {
+    "title": "The Second Jungle Book",
+    "author": "Rudyard Kipling",
+    "genre": "Biography",
+    "year": 1887,
+    "edition_count": 611,
+    "cover_id": 2140514,
+    "key": "/works/OL19926W"
+  },
+  {
+    "title": "The Tenant of Wildfell Hall",
+    "author": "Anne Bront\u00eb",
+    "genre": "Biography",
+    "year": 1847,
+    "edition_count": 558,
+    "cover_id": 1023552,
+    "key": "/works/OL260101W"
+  },
+  {
+    "title": "Ab urbe condita",
+    "author": "Titus Livius",
+    "genre": "Biography",
+    "year": 1481,
+    "edition_count": 558,
+    "cover_id": 6657951,
+    "key": "/works/OL1261147W"
+  },
+  {
+    "title": "Orthodoxy",
+    "author": "Gilbert Keith Chesterton",
+    "genre": "Biography",
+    "year": 1874,
+    "edition_count": 551,
+    "cover_id": 6268135,
+    "key": "/works/OL76350W"
+  },
+  {
+    "title": "Saint Francis of Assisi",
+    "author": "Gilbert Keith Chesterton",
+    "genre": "Biography",
+    "year": 1923,
+    "edition_count": 547,
+    "cover_id": 502618,
+    "key": "/works/OL76399W"
+  },
+  {
+    "title": "The Jungle Book",
+    "author": "Rudyard Kipling",
+    "genre": "Biography",
+    "year": 1893,
+    "edition_count": 536,
+    "cover_id": 3344204,
+    "key": "/works/OL19870W"
+  },
+  {
+    "title": "My bondage and my freedom",
+    "author": "Frederick Douglass",
+    "genre": "Biography",
+    "year": 1815,
+    "edition_count": 509,
+    "cover_id": 14847114,
+    "key": "/works/OL69179W"
+  },
+  {
+    "title": "At the Back of the North Wind",
+    "author": "George MacDonald",
+    "genre": "Biography",
+    "year": 1871,
+    "edition_count": 496,
+    "cover_id": 8245161,
+    "key": "/works/OL15451W"
+  },
+  {
+    "title": "Metamorphoses",
+    "author": "Ovid",
+    "genre": "Biography",
+    "year": 1479,
+    "edition_count": 491,
+    "cover_id": 7212118,
+    "key": "/works/OL15292640W"
+  },
+  {
+    "title": "Lilith",
+    "author": "George MacDonald",
+    "genre": "Biography",
+    "year": 1895,
+    "edition_count": 480,
+    "cover_id": 14364546,
+    "key": "/works/OL15437W"
+  },
+  {
+    "title": "A history of New York",
+    "author": "Washington Irving",
+    "genre": "Biography",
+    "year": 1800,
+    "edition_count": 472,
+    "cover_id": 1991009,
+    "key": "/works/OL63871W"
+  },
+  {
+    "title": "The  man who would be king",
+    "author": "Rudyard Kipling",
+    "genre": "Biography",
+    "year": 1898,
+    "edition_count": 460,
+    "cover_id": 6021425,
+    "key": "/works/OL20112W"
+  },
+  {
+    "title": "Manifest der Kommunistischen Partei",
+    "author": "Karl Marx",
+    "genre": "Biography",
+    "year": 1848,
+    "edition_count": 459,
+    "cover_id": 11048623,
+    "key": "/works/OL629052W"
+  },
+  {
+    "title": "Quo Vadis? Powies\u0301c\u0301 z czaso\u0301w Nerona",
+    "author": "Henryk Sienkiewicz",
+    "genre": "Biography",
+    "year": 1895,
+    "edition_count": 453,
+    "cover_id": 833096,
+    "key": "/works/OL503424W"
+  },
+  {
+    "title": "Confessions",
+    "author": "Augustine of Hippo",
+    "genre": "Biography",
+    "year": 1482,
+    "edition_count": 449,
+    "cover_id": 9022521,
+    "key": "/works/OL137872W"
+  },
+  {
+    "title": "Up from Slavery",
+    "author": "Booker T. Washington",
+    "genre": "Biography",
+    "year": 1900,
+    "edition_count": 430,
+    "cover_id": 119317,
+    "key": "/works/OL357501W"
+  },
+  {
+    "title": "Roughing It",
+    "author": "Mark Twain",
+    "genre": "Biography",
+    "year": 1872,
+    "edition_count": 408,
+    "cover_id": 9165528,
+    "key": "/works/OL54059W"
+  },
+  {
+    "title": "Paradise Lost",
+    "author": "John Milton",
+    "genre": "Biography",
+    "year": 1667,
+    "edition_count": 396,
+    "cover_id": 5992814,
+    "key": "/works/OL810991W"
+  },
+  {
+    "title": "Incidents in the Life of a Slave Girl",
+    "author": "Harriet A. Jacobs",
+    "genre": "Biography",
+    "year": 1861,
+    "edition_count": 386,
+    "cover_id": 411542,
+    "key": "/works/OL28623W"
+  },
+  {
+    "title": "Der Antichrist",
+    "author": "Friedrich Nietzsche",
+    "genre": "Biography",
+    "year": 1895,
+    "edition_count": 385,
+    "cover_id": 1759313,
+    "key": "/works/OL15692719W"
+  },
+  {
+    "title": "Kokuritsu Kokkai Toshokan shoz\u014d Meijiki kank\u014d tosho maikuro-ban sh\u016bsei",
+    "author": "Kokuritsu Kokkai Toshokan (Japan)",
+    "genre": "Cookbook",
+    "year": 1991,
+    "edition_count": 156,
+    "cover_id": null,
+    "key": "/works/OL33207850W"
+  },
+  {
+    "title": "Frugal housewife",
+    "author": "Lydia Maria Child",
+    "genre": "Cookbook",
+    "year": 1829,
+    "edition_count": 127,
+    "cover_id": 6023522,
+    "key": "/works/OL107969W"
+  },
+  {
+    "title": "Boston Cooking-School cook book",
+    "author": "Fannie Merritt Farmer",
+    "genre": "Cookbook",
+    "year": 1896,
+    "edition_count": 97,
+    "cover_id": 8246263,
+    "key": "/works/OL1798750W"
+  },
+  {
+    "title": "Como agua para chocolate",
+    "author": "Laura Esquivel",
+    "genre": "Cookbook",
+    "year": 1989,
+    "edition_count": 82,
+    "cover_id": 8372632,
+    "key": "/works/OL953162W"
+  },
+  {
+    "title": "The Virginia house-wife",
+    "author": "Mary Randolph",
+    "genre": "Cookbook",
+    "year": 1824,
+    "edition_count": 80,
+    "cover_id": 311390,
+    "key": "/works/OL2653703W"
+  },
+  {
+    "title": "On Cooking",
+    "author": "Sarah R. Labensky",
+    "genre": "Cookbook",
+    "year": 1994,
+    "edition_count": 74,
+    "cover_id": 92630,
+    "key": "/works/OL1874827W"
+  },
+  {
+    "title": "Old Cookery Books and Ancient Cuisine",
+    "author": "William Carew Hazlitt",
+    "genre": "Cookbook",
+    "year": 1886,
+    "edition_count": 73,
+    "cover_id": 5814502,
+    "key": "/works/OL1086812W"
+  },
+  {
+    "title": "Joy of Cooking",
+    "author": "Irma S. Rombauer",
+    "genre": "Cookbook",
+    "year": 1931,
+    "edition_count": 67,
+    "cover_id": 475157,
+    "key": "/works/OL267968W"
+  },
+  {
+    "title": "The Bartender's Guide",
+    "author": "Jerry Thomas",
+    "genre": "Cookbook",
+    "year": 1862,
+    "edition_count": 62,
+    "cover_id": 739862,
+    "key": "/works/OL7418388W"
+  },
+  {
+    "title": "\u56fd\u7acb \u56fd\u4f1a \u56f3\u66f8\u9928 \u6240\u8535 \u660e\u6cbb\u671f \u520b\u884c \u56f3\u66f8 \u30de\u30a4\u30af\u30ed\u7248 \u96c6\u6210",
+    "author": "Kokuritsu Kokkai Toshokan (Japan)",
+    "genre": "Cookbook",
+    "year": 1991,
+    "edition_count": 60,
+    "cover_id": null,
+    "key": "/works/OL39080200W"
+  },
+  {
+    "title": "Physiologie du go\u00fbt",
+    "author": "Jean Anthelme Brillat-Savarin",
+    "genre": "Cookbook",
+    "year": 1826,
+    "edition_count": 56,
+    "cover_id": 8244554,
+    "key": "/works/OL134484W"
+  },
+  {
+    "title": "The Book of Household Management",
+    "author": "Isabella Beeton",
+    "genre": "Cookbook",
+    "year": 1861,
+    "edition_count": 55,
+    "cover_id": 4608386,
+    "key": "/works/OL1463273W"
+  },
+  {
+    "title": "English housewifery exemplified",
+    "author": "Elizabeth Moxon",
+    "genre": "Cookbook",
+    "year": 1749,
+    "edition_count": 50,
+    "cover_id": 7936313,
+    "key": "/works/OL5225585W"
+  },
+  {
+    "title": "Food and feeding",
+    "author": "Sir Henry Thompson",
+    "genre": "Cookbook",
+    "year": 1879,
+    "edition_count": 50,
+    "cover_id": 10679935,
+    "key": "/works/OL7113090W"
+  },
+  {
+    "title": "Original White House Cookbook",
+    "author": "Hugo Ziemann",
+    "genre": "Cookbook",
+    "year": 1887,
+    "edition_count": 49,
+    "cover_id": 8501176,
+    "key": "/works/OL2297994W"
+  },
+  {
+    "title": "Guide culinaire",
+    "author": "Auguste Escoffier",
+    "genre": "Cookbook",
+    "year": 1903,
+    "edition_count": 49,
+    "cover_id": 322134,
+    "key": "/works/OL3279082W"
+  },
+  {
+    "title": "The art of cookery, made plain and easy",
+    "author": "Hannah Glasse",
+    "genre": "Cookbook",
+    "year": 1747,
+    "edition_count": 45,
+    "cover_id": 7916175,
+    "key": "/works/OL1646026W"
+  },
+  {
+    "title": "Miss Beecher's domestic receipt book",
+    "author": "Catharine Esther Beecher",
+    "genre": "Cookbook",
+    "year": 1846,
+    "edition_count": 44,
+    "cover_id": 6095532,
+    "key": "/works/OL1537443W"
+  },
+  {
+    "title": "\u05de\u05d9\u05db\u05d0\u05dc \u05e9\u05dc\u05d9",
+    "author": "\u05e2\u05de\u05d5\u05e1 \u05e2\u05d5\u05d6",
+    "genre": "Cookbook",
+    "year": 1968,
+    "edition_count": 43,
+    "cover_id": 4521393,
+    "key": "/works/OL1580908W"
+  },
+  {
+    "title": "The Forme of Cury",
+    "author": "Samuel Pegge",
+    "genre": "Cookbook",
+    "year": 1780,
+    "edition_count": 42,
+    "cover_id": 11996366,
+    "key": "/works/OL6934414W"
+  },
+  {
+    "title": "Fast Food Nation",
+    "author": "Eric Schlosser",
+    "genre": "Cookbook",
+    "year": 2001,
+    "edition_count": 39,
+    "cover_id": 8392930,
+    "key": "/works/OL5801795W"
+  },
+  {
+    "title": "Good Things to Eat as Suggested by Rufus",
+    "author": "Rufus Estes",
+    "genre": "Cookbook",
+    "year": 1911,
+    "edition_count": 38,
+    "cover_id": 729651,
+    "key": "/works/OL58258W"
+  },
+  {
+    "title": "The South Beach diet",
+    "author": "Arthur Agatston",
+    "genre": "Cookbook",
+    "year": 2003,
+    "edition_count": 38,
+    "cover_id": 10679929,
+    "key": "/works/OL5754207W"
+  },
+  {
+    "title": "A Book of Mediterranean Food",
+    "author": "Elizabeth David",
+    "genre": "Cookbook",
+    "year": 1950,
+    "edition_count": 34,
+    "cover_id": 859039,
+    "key": "/works/OL727605W"
+  },
+  {
+    "title": "De re coquinaria",
+    "author": "Apicius",
+    "genre": "Cookbook",
+    "year": 1500,
+    "edition_count": 34,
+    "cover_id": 309375,
+    "key": "/works/OL3707722W"
+  },
+  {
+    "title": "Fit for Life",
+    "author": "Marilyn Diamond",
+    "genre": "Cookbook",
+    "year": 1985,
+    "edition_count": 32,
+    "cover_id": 6688167,
+    "key": "/works/OL2737143W"
+  },
+  {
+    "title": "The Professional Chef",
+    "author": "Culinary Institute of America.",
+    "genre": "Cookbook",
+    "year": 1962,
+    "edition_count": 31,
+    "cover_id": 304020,
+    "key": "/works/OL2711902W"
+  },
+  {
+    "title": "The experienced English housekeeper",
+    "author": "Elizabeth Raffald",
+    "genre": "Cookbook",
+    "year": 1769,
+    "edition_count": 30,
+    "cover_id": 8569017,
+    "key": "/works/OL19654580W"
+  },
+  {
+    "title": "French Country Cooking (Cookery Library)",
+    "author": "Elizabeth David",
+    "genre": "Cookbook",
+    "year": 1951,
+    "edition_count": 30,
+    "cover_id": 101221,
+    "key": "/works/OL727612W"
+  },
+  {
+    "title": "The Alice B. Toklas Cook Book",
+    "author": "Alice B. Toklas",
+    "genre": "Cookbook",
+    "year": 1954,
+    "edition_count": 29,
+    "cover_id": 3205275,
+    "key": "/works/OL1857683W"
+  },
+  {
+    "title": "Omnivore's Dilemma. A Natural History of Four Meals",
+    "author": "Michael Pollan",
+    "genre": "Cookbook",
+    "year": 2006,
+    "edition_count": 28,
+    "cover_id": 8596706,
+    "key": "/works/OL3296483W"
+  },
+  {
+    "title": "Summer Cooking (Cookery Library)",
+    "author": "Elizabeth David",
+    "genre": "Cookbook",
+    "year": 1955,
+    "edition_count": 27,
+    "cover_id": 2324126,
+    "key": "/works/OL727618W"
+  },
+  {
+    "title": "Pancakes, pancakes!",
+    "author": "Eric Carle",
+    "genre": "Cookbook",
+    "year": 1970,
+    "edition_count": 27,
+    "cover_id": 435008,
+    "key": "/works/OL53024W"
+  },
+  {
+    "title": "Growing Vegetable Soup",
+    "author": "Lois Ehlert",
+    "genre": "Cookbook",
+    "year": 1987,
+    "edition_count": 27,
+    "cover_id": 10768249,
+    "key": "/works/OL2347041W"
+  },
+  {
+    "title": "On baking",
+    "author": "Sarah R. Labensky",
+    "genre": "Cookbook",
+    "year": 2004,
+    "edition_count": 26,
+    "cover_id": 90882,
+    "key": "/works/OL1874828W"
+  },
+  {
+    "title": "Bt-Diet for Sml Planet",
+    "author": "Frances Moore Lapp\u00e9",
+    "genre": "Cookbook",
+    "year": 1971,
+    "edition_count": 26,
+    "cover_id": 13854853,
+    "key": "/works/OL1925788W"
+  },
+  {
+    "title": "Great Dishes of the World",
+    "author": "Robert Carrier",
+    "genre": "Cookbook",
+    "year": 1963,
+    "edition_count": 26,
+    "cover_id": 10172316,
+    "key": "/works/OL2184972W"
+  },
+  {
+    "title": "The experienced English housekeeper",
+    "author": "Elizabeth Raffald",
+    "genre": "Cookbook",
+    "year": 1769,
+    "edition_count": 26,
+    "cover_id": 13521544,
+    "key": "/works/OL4332066W"
+  },
+  {
+    "title": "Guide to good food",
+    "author": "Velda L. Largen",
+    "genre": "Cookbook",
+    "year": 1979,
+    "edition_count": 24,
+    "cover_id": 10679920,
+    "key": "/works/OL2959019W"
+  },
+  {
+    "title": "A heartbreaking work of staggering genius",
+    "author": "Dave Eggers",
+    "genre": "Cookbook",
+    "year": 2000,
+    "edition_count": 24,
+    "cover_id": 8300013,
+    "key": "/works/OL114661W"
+  },
+  {
+    "title": "Meditations",
+    "author": "Marcus Aurelius",
+    "genre": "Self-Help",
+    "year": 1626,
+    "edition_count": 643,
+    "cover_id": 211529,
+    "key": "/works/OL1317211W"
+  },
+  {
+    "title": "The Power of Your Subconscious Mind",
+    "author": "Joseph Murphy",
+    "genre": "Self-Help",
+    "year": 1963,
+    "edition_count": 132,
+    "cover_id": 6553019,
+    "key": "/works/OL55806W"
+  },
+  {
+    "title": "The Power of Positive Thinking",
+    "author": "Norman Vincent Peale",
+    "genre": "Self-Help",
+    "year": 1952,
+    "edition_count": 89,
+    "cover_id": 14570194,
+    "key": "/works/OL2917168W"
+  },
+  {
+    "title": "Inquiry into Life",
+    "author": "Sylvia S. Mader",
+    "genre": "Self-Help",
+    "year": 1976,
+    "edition_count": 63,
+    "cover_id": 10043864,
+    "key": "/works/OL2657790W"
+  },
+  {
+    "title": "The magic of believing",
+    "author": "Claude M. Bristol",
+    "genre": "Self-Help",
+    "year": 1948,
+    "edition_count": 61,
+    "cover_id": 14424610,
+    "key": "/works/OL120672W"
+  },
+  {
+    "title": "The 48 Laws of Power",
+    "author": "Robert Greene",
+    "genre": "Self-Help",
+    "year": 1998,
+    "edition_count": 55,
+    "cover_id": 6424160,
+    "key": "/works/OL1968368W"
+  },
+  {
+    "title": "A child called \"it\"",
+    "author": "David J. Pelzer",
+    "genre": "Self-Help",
+    "year": 1987,
+    "edition_count": 48,
+    "cover_id": 14559604,
+    "key": "/works/OL66946W"
+  },
+  {
+    "title": "Musicophilia",
+    "author": "Oliver Sacks",
+    "genre": "Self-Help",
+    "year": 2007,
+    "edition_count": 43,
+    "cover_id": 9261340,
+    "key": "/works/OL277255W"
+  },
+  {
+    "title": "Big Magic",
+    "author": "Elizabeth Gilbert",
+    "genre": "Self-Help",
+    "year": 2014,
+    "edition_count": 31,
+    "cover_id": 7434843,
+    "key": "/works/OL17356845W"
+  },
+  {
+    "title": "Sexuality (Key Ideas)",
+    "author": "Jeffrey Weeks",
+    "genre": "Self-Help",
+    "year": 1986,
+    "edition_count": 31,
+    "cover_id": 262137,
+    "key": "/works/OL2916475W"
+  },
+  {
+    "title": "12 Rules for Life",
+    "author": "Jordan B. Peterson",
+    "genre": "Self-Help",
+    "year": 2015,
+    "edition_count": 26,
+    "cover_id": 8131760,
+    "key": "/works/OL17837119W"
+  },
+  {
+    "title": "I Know This to Be True",
+    "author": "Geoff Blackwell",
+    "genre": "Self-Help",
+    "year": 2016,
+    "edition_count": 25,
+    "cover_id": 13210745,
+    "key": "/works/OL21665201W"
+  },
+  {
+    "title": "Blink",
+    "author": "Malcolm Gladwell",
+    "genre": "Self-Help",
+    "year": 2004,
+    "edition_count": 25,
+    "cover_id": 14421850,
+    "key": "/works/OL5749849W"
+  },
+  {
+    "title": "Think Like a Monk",
+    "author": "Jay Shetty",
+    "genre": "Self-Help",
+    "year": 2020,
+    "edition_count": 24,
+    "cover_id": 10355397,
+    "key": "/works/OL21237606W"
+  },
+  {
+    "title": "A second chicken soup for the woman's soul",
+    "author": "Jack Canfield",
+    "genre": "Self-Help",
+    "year": 1996,
+    "edition_count": 23,
+    "cover_id": 14553102,
+    "key": "/works/OL2210568W"
+  },
+  {
+    "title": "Married women who love women",
+    "author": "Carren Strock",
+    "genre": "Self-Help",
+    "year": 1995,
+    "edition_count": 22,
+    "cover_id": 241371,
+    "key": "/works/OL549341W"
+  },
+  {
+    "title": "Feeling Is the Secret",
+    "author": "Neville Goddard",
+    "genre": "Self-Help",
+    "year": 2004,
+    "edition_count": 22,
+    "cover_id": 13848693,
+    "key": "/works/OL4492042W"
+  },
+  {
+    "title": "A life of one's own",
+    "author": "Marion Milner",
+    "genre": "Self-Help",
+    "year": 1934,
+    "edition_count": 20,
+    "cover_id": 4325293,
+    "key": "/works/OL4961754W"
+  },
+  {
+    "title": "The Greatness Guide",
+    "author": "Robin S. Sharma",
+    "genre": "Self-Help",
+    "year": 2006,
+    "edition_count": 20,
+    "cover_id": 47322,
+    "key": "/works/OL276493W"
+  },
+  {
+    "title": "Sex, Love, and Romance in the Mass Media",
+    "author": "Mary-Lou Galician",
+    "genre": "Self-Help",
+    "year": 1600,
+    "edition_count": 19,
+    "cover_id": 583933,
+    "key": "/works/OL5801633W"
+  },
+  {
+    "title": "The Freedom of Life",
+    "author": "Annie Payson Call",
+    "genre": "Self-Help",
+    "year": 1905,
+    "edition_count": 19,
+    "cover_id": 10857731,
+    "key": "/works/OL7711731W"
+  },
+  {
+    "title": "Maybe You Should Talk to Someone",
+    "author": "Lori Gottlieb",
+    "genre": "Self-Help",
+    "year": 2019,
+    "edition_count": 18,
+    "cover_id": 8596019,
+    "key": "/works/OL19791590W"
+  },
+  {
+    "title": "The creative mind",
+    "author": "Margaret A. Boden",
+    "genre": "Self-Help",
+    "year": 1990,
+    "edition_count": 17,
+    "cover_id": 4307485,
+    "key": "/works/OL4484307W"
+  },
+  {
+    "title": "You Are a Badass",
+    "author": "Jen Sincero",
+    "genre": "Self-Help",
+    "year": 2013,
+    "edition_count": 17,
+    "cover_id": 7436635,
+    "key": "/works/OL17102197W"
+  },
+  {
+    "title": "The courage to be",
+    "author": "Paul Tillich",
+    "genre": "Self-Help",
+    "year": 1952,
+    "edition_count": 17,
+    "cover_id": 161349,
+    "key": "/works/OL450631W"
+  },
+  {
+    "title": "Who Will Cry When You Die?",
+    "author": "Robin S. Sharma",
+    "genre": "Self-Help",
+    "year": 1999,
+    "edition_count": 17,
+    "cover_id": 750310,
+    "key": "/works/OL1854815W"
+  },
+  {
+    "title": "You are not the target",
+    "author": "Laura Archera Huxley",
+    "genre": "Self-Help",
+    "year": 1963,
+    "edition_count": 17,
+    "cover_id": 813298,
+    "key": "/works/OL2016080W"
+  },
+  {
+    "title": "The Gift of Fear",
+    "author": "Gavin de Becker",
+    "genre": "Self-Help",
+    "year": 1997,
+    "edition_count": 17,
+    "cover_id": 5272015,
+    "key": "/works/OL3355180W"
+  },
+  {
+    "title": "The Courage to Be Disliked",
+    "author": "Ichir\u014d Kishimi",
+    "genre": "Self-Help",
+    "year": 2013,
+    "edition_count": 17,
+    "cover_id": 10873626,
+    "key": "/works/OL19744000W"
+  },
+  {
+    "title": "Everything is F*cked",
+    "author": "Mark Manson",
+    "genre": "Self-Help",
+    "year": 2019,
+    "edition_count": 16,
+    "cover_id": 9351865,
+    "key": "/works/OL20657486W"
+  },
+  {
+    "title": "Come as you are",
+    "author": "Emily Nagoski",
+    "genre": "Self-Help",
+    "year": 2015,
+    "edition_count": 16,
+    "cover_id": 8176873,
+    "key": "/works/OL17870214W"
+  },
+  {
+    "title": "Goals! How to Get Everything You Want--Faster Than You Ever Thought Possible",
+    "author": "Brian Tracy",
+    "genre": "Self-Help",
+    "year": 2003,
+    "edition_count": 16,
+    "cover_id": 831356,
+    "key": "/works/OL2392330W"
+  },
+  {
+    "title": "Family Wisdom from the Monk Who Sold His Ferrari",
+    "author": "Robin S. Sharma",
+    "genre": "Self-Help",
+    "year": 2001,
+    "edition_count": 16,
+    "cover_id": 8147897,
+    "key": "/works/OL1854797W"
+  },
+  {
+    "title": "Bodies that matter",
+    "author": "Judith Butler",
+    "genre": "Self-Help",
+    "year": 1993,
+    "edition_count": 16,
+    "cover_id": 268131,
+    "key": "/works/OL3292644W"
+  },
+  {
+    "title": "Improve Your Communication Skills",
+    "author": "Alan Barker",
+    "genre": "Self-Help",
+    "year": 2010,
+    "edition_count": 15,
+    "cover_id": 6441309,
+    "key": "/works/OL15184542W"
+  },
+  {
+    "title": "Boundaries",
+    "author": "Henry Cloud",
+    "genre": "Self-Help",
+    "year": 1992,
+    "edition_count": 15,
+    "cover_id": 8227168,
+    "key": "/works/OL15134775W"
+  },
+  {
+    "title": "Illicit drugs",
+    "author": "Adrian Barton",
+    "genre": "Self-Help",
+    "year": 2003,
+    "edition_count": 14,
+    "cover_id": 1213870,
+    "key": "/works/OL5968359W"
+  },
+  {
+    "title": "Life Coaching",
+    "author": "Michael Neenan",
+    "genre": "Self-Help",
+    "year": 2002,
+    "edition_count": 14,
+    "cover_id": 847619,
+    "key": "/works/OL6031983W"
+  },
+  {
+    "title": "Grit",
+    "author": "Angela Duckworth",
+    "genre": "Self-Help",
+    "year": 2016,
+    "edition_count": 14,
+    "cover_id": 7438753,
+    "key": "/works/OL17361140W"
+  },
+  {
+    "title": "The psychological treatment of depression",
+    "author": "J. Mark G. Williams",
+    "genre": "Self-Help",
+    "year": 1984,
+    "edition_count": 14,
+    "cover_id": 4009036,
+    "key": "/works/OL2100107W"
+  },
+  {
+    "title": "As a man thinketh",
+    "author": "James Allen",
+    "genre": "Business",
+    "year": 1902,
+    "edition_count": 657,
+    "cover_id": 6268048,
+    "key": "/works/OL43024W"
+  },
+  {
+    "title": "Think and Grow Rich",
+    "author": "Napoleon Hill",
+    "genre": "Business",
+    "year": 1937,
+    "edition_count": 309,
+    "cover_id": 14542536,
+    "key": "/works/OL527464W"
+  },
+  {
+    "title": "The art of money getting, or, Golden rules for money getting",
+    "author": "P. T. Barnum",
+    "genre": "Business",
+    "year": 1880,
+    "edition_count": 296,
+    "cover_id": 756095,
+    "key": "/works/OL891636W"
+  },
+  {
+    "title": "Acres of diamonds",
+    "author": "Russell Herman Conwell",
+    "genre": "Business",
+    "year": 1901,
+    "edition_count": 275,
+    "cover_id": 5833160,
+    "key": "/works/OL3920712W"
+  },
+  {
+    "title": "The Richest Man in Babylon",
+    "author": "George S. Clason",
+    "genre": "Business",
+    "year": 1926,
+    "edition_count": 258,
+    "cover_id": 10491331,
+    "key": "/works/OL8165007W"
+  },
+  {
+    "title": "The Theory of the Leisure Class",
+    "author": "Thorstein Veblen",
+    "genre": "Business",
+    "year": 1899,
+    "edition_count": 236,
+    "cover_id": 5815298,
+    "key": "/works/OL1868441W"
+  },
+  {
+    "title": "My life and work",
+    "author": "Ford, Henry",
+    "genre": "Business",
+    "year": 1922,
+    "edition_count": 166,
+    "cover_id": 1200056,
+    "key": "/works/OL4418043W"
+  },
+  {
+    "title": "The master key system in twenty-four parts with questionnaire and glossary",
+    "author": "Charles F. Haanel",
+    "genre": "Business",
+    "year": 1919,
+    "edition_count": 135,
+    "cover_id": 7308093,
+    "key": "/works/OL2041069W"
+  },
+  {
+    "title": "The Wealth of Nations",
+    "author": "Adam Smith",
+    "genre": "Business",
+    "year": 1776,
+    "edition_count": 123,
+    "cover_id": 12816911,
+    "key": "/works/OL76827W"
+  },
+  {
+    "title": "[Relief of C. J. Baronett.]",
+    "author": "United States. Congress. Senate. Committee on Territories",
+    "genre": "Business",
+    "year": 1863,
+    "edition_count": 110,
+    "cover_id": null,
+    "key": "/works/OL11114078W"
+  },
+  {
+    "title": "Ali Pacha",
+    "author": "Alexandre Dumas",
+    "genre": "Business",
+    "year": 2001,
+    "edition_count": 105,
+    "cover_id": 10330225,
+    "key": "/works/OL259549W"
+  },
+  {
+    "title": "The mis-education of the Negro",
+    "author": "Carter Godwin Woodson",
+    "genre": "Business",
+    "year": 1933,
+    "edition_count": 101,
+    "cover_id": 799531,
+    "key": "/works/OL48136W"
+  },
+  {
+    "title": "The Law of Success",
+    "author": "Napoleon Hill",
+    "genre": "Business",
+    "year": 1969,
+    "edition_count": 90,
+    "cover_id": 2292427,
+    "key": "/works/OL527383W"
+  },
+  {
+    "title": "Collins Robert French English Dictionary",
+    "author": "Beryl T. Atkins",
+    "genre": "Business",
+    "year": 1978,
+    "edition_count": 90,
+    "cover_id": 4944047,
+    "key": "/works/OL259619W"
+  },
+  {
+    "title": "Reminiscences of a stock operator",
+    "author": "Edwin Lef\u00e8vre",
+    "genre": "Business",
+    "year": 1923,
+    "edition_count": 81,
+    "cover_id": 300533,
+    "key": "/works/OL3472215W"
+  },
+  {
+    "title": "Accounting Principles",
+    "author": "Jerry J. Weygandt",
+    "genre": "Business",
+    "year": 1987,
+    "edition_count": 79,
+    "cover_id": 1241487,
+    "key": "/works/OL1881226W"
+  },
+  {
+    "title": "The 7 Habits of Highly Effective People",
+    "author": "Stephen R. Covey",
+    "genre": "Business",
+    "year": 1989,
+    "edition_count": 77,
+    "cover_id": 10079937,
+    "key": "/works/OL2629977W"
+  },
+  {
+    "title": "Sixteenth census of the United States",
+    "author": "United States. Bureau of the Census",
+    "genre": "Business",
+    "year": 1900,
+    "edition_count": 72,
+    "cover_id": 7027008,
+    "key": "/works/OL1369822W"
+  },
+  {
+    "title": "[To promote education of the blind.]",
+    "author": "United States. Congress. Senate. Committee on Education and ",
+    "genre": "Business",
+    "year": 1870,
+    "edition_count": 65,
+    "cover_id": null,
+    "key": "/works/OL11316174W"
+  },
+  {
+    "title": "Freakonomics",
+    "author": "Steven D. Levitt",
+    "genre": "Business",
+    "year": 2005,
+    "edition_count": 63,
+    "cover_id": 11172914,
+    "key": "/works/OL278022W"
+  },
+  {
+    "title": "Eat That Frog! 21 Great Ways to Stop Procrastinating and Get More Done in Less Time",
+    "author": "Brian Tracy",
+    "genre": "Business",
+    "year": 2001,
+    "edition_count": 60,
+    "cover_id": 847534,
+    "key": "/works/OL2392324W"
+  },
+  {
+    "title": "The theory of business enterprise 1904",
+    "author": "Thorstein Veblen",
+    "genre": "Business",
+    "year": 1904,
+    "edition_count": 56,
+    "cover_id": 9931842,
+    "key": "/works/OL1868458W"
+  },
+  {
+    "title": "Steve Jobs",
+    "author": "Walter Isaacson",
+    "genre": "Business",
+    "year": 2011,
+    "edition_count": 56,
+    "cover_id": 12374726,
+    "key": "/works/OL16085155W"
+  },
+  {
+    "title": "The Intelligent Investor",
+    "author": "Benjamin Graham",
+    "genre": "Business",
+    "year": 1949,
+    "edition_count": 52,
+    "cover_id": 36434,
+    "key": "/works/OL273184W"
+  },
+  {
+    "title": "Interactive Computing Series",
+    "author": "Kenneth C. Laudon",
+    "genre": "Business",
+    "year": 1997,
+    "edition_count": 51,
+    "cover_id": 1074287,
+    "key": "/works/OL58233W"
+  },
+  {
+    "title": "Mastering today's software",
+    "author": "Edward G. Martin",
+    "genre": "Business",
+    "year": 1992,
+    "edition_count": 49,
+    "cover_id": 1063675,
+    "key": "/works/OL64843W"
+  },
+  {
+    "title": "The Moneychangers",
+    "author": "Arthur Hailey",
+    "genre": "Business",
+    "year": 1970,
+    "edition_count": 49,
+    "cover_id": 4468684,
+    "key": "/works/OL2475103W"
+  },
+  {
+    "title": "Autobiography",
+    "author": "Andrew Carnegie",
+    "genre": "Business",
+    "year": 1920,
+    "edition_count": 48,
+    "cover_id": 5661821,
+    "key": "/works/OL1532804W"
+  },
+  {
+    "title": "Effective Executive",
+    "author": "Peter F. Drucker",
+    "genre": "Business",
+    "year": 1967,
+    "edition_count": 43,
+    "cover_id": 4941284,
+    "key": "/works/OL272920W"
+  },
+  {
+    "title": "Imperialism [and] Social classes; two essays",
+    "author": "Joseph Alois Schumpeter",
+    "genre": "Business",
+    "year": 1951,
+    "edition_count": 42,
+    "cover_id": 10765521,
+    "key": "/works/OL1295306W"
+  },
+  {
+    "title": "I-Series",
+    "author": "Stephen Haag",
+    "genre": "Business",
+    "year": 2001,
+    "edition_count": 41,
+    "cover_id": 1083769,
+    "key": "/works/OL15052267W"
+  },
+  {
+    "title": "Les belles images",
+    "author": "Simone de Beauvoir",
+    "genre": "Business",
+    "year": 1966,
+    "edition_count": 41,
+    "cover_id": 967166,
+    "key": "/works/OL43413999W"
+  },
+  {
+    "title": "The 4-Hour Workweek",
+    "author": "Timothy Ferriss",
+    "genre": "Business",
+    "year": 2006,
+    "edition_count": 40,
+    "cover_id": 539652,
+    "key": "/works/OL3353439W"
+  },
+  {
+    "title": "The leadership challenge",
+    "author": "James M. Kouzes",
+    "genre": "Business",
+    "year": 1987,
+    "edition_count": 40,
+    "cover_id": 548022,
+    "key": "/works/OL1974749W"
+  },
+  {
+    "title": "Atomic Habits",
+    "author": "James Clear",
+    "genre": "Business",
+    "year": 2016,
+    "edition_count": 40,
+    "cover_id": 12539702,
+    "key": "/works/OL17930368W"
+  },
+  {
+    "title": "Hold the dream",
+    "author": "Barbara Taylor Bradford",
+    "genre": "Business",
+    "year": 1625,
+    "edition_count": 40,
+    "cover_id": 4195318,
+    "key": "/works/OL11375139W"
+  },
+  {
+    "title": "Romeo and Juliet",
+    "author": "William Shakespeare",
+    "genre": "Science",
+    "year": 1597,
+    "edition_count": 985,
+    "cover_id": 8257991,
+    "key": "/works/OL362427W"
+  },
+  {
+    "title": "De rerum natura",
+    "author": "Titus Lucretius Carus",
+    "genre": "Science",
+    "year": 1486,
+    "edition_count": 537,
+    "cover_id": 566208,
+    "key": "/works/OL1548597W"
+  },
+  {
+    "title": "Two years before the mast",
+    "author": "Richard Henry Dana",
+    "genre": "Science",
+    "year": 1000,
+    "edition_count": 369,
+    "cover_id": 8245243,
+    "key": "/works/OL1815550W"
+  },
+  {
+    "title": "Houghton Mifflin Science California",
+    "author": "Houghton Mifflin Company Staff",
+    "genre": "Science",
+    "year": 2006,
+    "edition_count": 301,
+    "cover_id": 12746894,
+    "key": "/works/OL27468204W"
+  },
+  {
+    "title": "History",
+    "author": "Herodotus",
+    "genre": "Science",
+    "year": 1494,
+    "edition_count": 282,
+    "cover_id": 9829028,
+    "key": "/works/OL15678068W"
+  },
+  {
+    "title": "On the origin of species by means of natural selection",
+    "author": "Charles Darwin",
+    "genre": "Science",
+    "year": 1859,
+    "edition_count": 259,
+    "cover_id": 7153600,
+    "key": "/works/OL515051W"
+  },
+  {
+    "title": "Houghton Mifflin Science Leveled Readers",
+    "author": "Houghton Mifflin Company Staff",
+    "genre": "Science",
+    "year": 2005,
+    "edition_count": 242,
+    "cover_id": 12917356,
+    "key": "/works/OL27467443W"
+  },
+  {
+    "title": "[William Wheeler Hubbell, authorized to apply for patents.]",
+    "author": "United States. Congress. Senate. Committee on Patents",
+    "genre": "Science",
+    "year": 1858,
+    "edition_count": 240,
+    "cover_id": 10200621,
+    "key": "/works/OL7574091W"
+  },
+  {
+    "title": "Advances in Heterocyclic Chemistry",
+    "author": "Alan R. Katritzky",
+    "genre": "Science",
+    "year": 1963,
+    "edition_count": 226,
+    "cover_id": 5030345,
+    "key": "/works/OL120822W"
+  },
+  {
+    "title": "The principall navigations, voiages, and discoveries of the English nations",
+    "author": "Richard Hakluyt",
+    "genre": "Science",
+    "year": 1589,
+    "edition_count": 225,
+    "cover_id": 6052194,
+    "key": "/works/OL3639910W"
+  },
+  {
+    "title": "Principles of Anatomy and Physiology",
+    "author": "Gerard J. Tortora",
+    "genre": "Science",
+    "year": 1975,
+    "edition_count": 218,
+    "cover_id": 3810109,
+    "key": "/works/OL1827306W"
+  },
+  {
+    "title": "Moralia",
+    "author": "Plutarch",
+    "genre": "Science",
+    "year": 1500,
+    "edition_count": 211,
+    "cover_id": 5788251,
+    "key": "/works/OL723491W"
+  },
+  {
+    "title": "Essays",
+    "author": "Francis Bacon",
+    "genre": "Science",
+    "year": 1618,
+    "edition_count": 188,
+    "cover_id": 8236351,
+    "key": "/works/OL69382W"
+  },
+  {
+    "title": "Histoire naturelle",
+    "author": "Georges-Louis Leclerc, comte de Buffon",
+    "genre": "Science",
+    "year": 1749,
+    "edition_count": 174,
+    "cover_id": 6130908,
+    "key": "/works/OL1356870W"
+  },
+  {
+    "title": "Discours de la m\u00e9thode",
+    "author": "Ren\u00e9 Descartes",
+    "genre": "Science",
+    "year": 1644,
+    "edition_count": 163,
+    "cover_id": 8236442,
+    "key": "/works/OL1151518W"
+  },
+  {
+    "title": "The book of the damned",
+    "author": "Charles Fort",
+    "genre": "Science",
+    "year": 1919,
+    "edition_count": 154,
+    "cover_id": 825884,
+    "key": "/works/OL66059W"
+  },
+  {
+    "title": "Northern Lights",
+    "author": "Philip Pullman",
+    "genre": "Science",
+    "year": 1995,
+    "edition_count": 148,
+    "cover_id": 8747028,
+    "key": "/works/OL28988W"
+  },
+  {
+    "title": "1st Report [Session 1993-94]",
+    "author": "Rand McNally",
+    "genre": "Science",
+    "year": 1983,
+    "edition_count": 133,
+    "cover_id": 11962006,
+    "key": "/works/OL14903351W"
+  },
+  {
+    "title": "L'\u00c9volution cre\u0301atrice",
+    "author": "Henri Bergson",
+    "genre": "Science",
+    "year": 1907,
+    "edition_count": 125,
+    "cover_id": 6774245,
+    "key": "/works/OL76664W"
+  },
+  {
+    "title": "A Brief History of Time",
+    "author": "Stephen Hawking",
+    "genre": "Science",
+    "year": 1988,
+    "edition_count": 120,
+    "cover_id": 10432365,
+    "key": "/works/OL1892617W"
+  },
+  {
+    "title": "International review of cytology",
+    "author": "George Bourne",
+    "genre": "Science",
+    "year": 1986,
+    "edition_count": 108,
+    "cover_id": 5031814,
+    "key": "/works/OL24446425W"
+  },
+  {
+    "title": "A System of Logic, Ratiocinative and Inductive",
+    "author": "John Stuart Mill",
+    "genre": "Science",
+    "year": 1843,
+    "edition_count": 106,
+    "cover_id": 5745051,
+    "key": "/works/OL1068214W"
+  },
+  {
+    "title": "The ABC of atoms",
+    "author": "Bertrand Russell",
+    "genre": "Science",
+    "year": 1923,
+    "edition_count": 105,
+    "cover_id": 9321152,
+    "key": "/works/OL1088556W"
+  },
+  {
+    "title": "Goethe's Werke",
+    "author": "Johann Wolfgang von Goethe",
+    "genre": "Science",
+    "year": 1800,
+    "edition_count": 105,
+    "cover_id": 5760460,
+    "key": "/works/OL15116693W"
+  },
+  {
+    "title": "\u00dcber die spezielle und die allgemeine Relativit\u00e4tstheorie",
+    "author": "Albert Einstein",
+    "genre": "Science",
+    "year": 1917,
+    "edition_count": 102,
+    "cover_id": 10478466,
+    "key": "/works/OL1214190W"
+  },
+  {
+    "title": "NASA/DoD aerospace knowledge diffusion research project",
+    "author": "Thomas E. Pinelli",
+    "genre": "Science",
+    "year": 1990,
+    "edition_count": 101,
+    "cover_id": 8936636,
+    "key": "/works/OL8894965W"
+  },
+  {
+    "title": "International Review of Cell and Molecular Biology",
+    "author": "Kwang W. Jeon",
+    "genre": "Science",
+    "year": 2008,
+    "edition_count": 95,
+    "cover_id": 11653976,
+    "key": "/works/OL21015217W"
+  },
+  {
+    "title": "4th Report [Session 1993-94]",
+    "author": "Rand McNally",
+    "genre": "Science",
+    "year": 1990,
+    "edition_count": 92,
+    "cover_id": 11849209,
+    "key": "/works/OL14903327W"
+  },
+  {
+    "title": "Introduction to genetic analysis",
+    "author": "Anthony J. F. Griffiths",
+    "genre": "Science",
+    "year": 1993,
+    "edition_count": 90,
+    "cover_id": 8665020,
+    "key": "/works/OL18407621W"
+  },
+  {
+    "title": "Leonardo",
+    "author": "Leonardo da Vinci",
+    "genre": "Science",
+    "year": 1946,
+    "edition_count": 89,
+    "cover_id": 919361,
+    "key": "/works/OL695408W"
+  },
+  {
+    "title": "Physics",
+    "author": "Aristotle",
+    "genre": "Science",
+    "year": 1472,
+    "edition_count": 88,
+    "cover_id": 7145464,
+    "key": "/works/OL151632W"
+  },
+  {
+    "title": "Sapiens",
+    "author": "Yuval Noah Harari",
+    "genre": "Science",
+    "year": 2011,
+    "edition_count": 86,
+    "cover_id": 8634250,
+    "key": "/works/OL17075811W"
+  },
+  {
+    "title": "Annual reports on NMR spectroscopy",
+    "author": "Graham A. Webb",
+    "genre": "Science",
+    "year": 1979,
+    "edition_count": 84,
+    "cover_id": 9837465,
+    "key": "/works/OL16927878W"
+  },
+  {
+    "title": "Nova Atlantis",
+    "author": "Francis Bacon",
+    "genre": "Science",
+    "year": 1627,
+    "edition_count": 84,
+    "cover_id": 313890,
+    "key": "/works/OL69453W"
+  },
+  {
+    "title": "Microbiology",
+    "author": "Gerard J. Tortora",
+    "genre": "Science",
+    "year": 1982,
+    "edition_count": 80,
+    "cover_id": 10146469,
+    "key": "/works/OL1827302W"
+  },
+  {
+    "title": "Advances in imaging and electron physics",
+    "author": "Peter W. Hawkes",
+    "genre": "Science",
+    "year": 1995,
+    "edition_count": 78,
+    "cover_id": 1094494,
+    "key": "/works/OL16959776W"
+  },
+  {
+    "title": "Five Children and It",
+    "author": "Edith Nesbit",
+    "genre": "Children",
+    "year": 1905,
+    "edition_count": 950,
+    "cover_id": 28174,
+    "key": "/works/OL99499W"
+  },
+  {
+    "title": "The Adventures of Tom Sawyer",
+    "author": "Mark Twain",
+    "genre": "Children",
+    "year": 1817,
+    "edition_count": 879,
+    "cover_id": 12043351,
+    "key": "/works/OL53919W"
+  },
+  {
+    "title": "David Copperfield",
+    "author": "Charles Dickens",
+    "genre": "Children",
+    "year": 1800,
+    "edition_count": 846,
+    "cover_id": 1048892,
+    "key": "/works/OL8662242W"
+  },
+  {
+    "title": "The Old Curiosity Shop",
+    "author": "Charles Dickens",
+    "genre": "Children",
+    "year": 1800,
+    "edition_count": 825,
+    "cover_id": 13119794,
+    "key": "/works/OL14869167W"
+  },
+  {
+    "title": "The Story of the Treasure Seekers",
+    "author": "Edith Nesbit",
+    "genre": "Children",
+    "year": 1899,
+    "edition_count": 653,
+    "cover_id": 13241364,
+    "key": "/works/OL99522W"
+  },
+  {
+    "title": "The Turn of the Screw",
+    "author": "Henry James",
+    "genre": "Children",
+    "year": 1898,
+    "edition_count": 563,
+    "cover_id": 181493,
+    "key": "/works/OL276386W"
+  },
+  {
+    "title": "Alice's Adventures in Wonderland / Through the Looking Glass",
+    "author": "Lewis Carroll",
+    "genre": "Children",
+    "year": 1889,
+    "edition_count": 544,
+    "cover_id": 8595966,
+    "key": "/works/OL151411W"
+  },
+  {
+    "title": "Little men",
+    "author": "Louisa May Alcott",
+    "genre": "Children",
+    "year": 1885,
+    "edition_count": 517,
+    "cover_id": 8043576,
+    "key": "/works/OL17761452W"
+  },
+  {
+    "title": "The Enchanted Castle",
+    "author": "Edith Nesbit",
+    "genre": "Children",
+    "year": 1907,
+    "edition_count": 478,
+    "cover_id": 6644514,
+    "key": "/works/OL99541W"
+  },
+  {
+    "title": "The Yellow Fairy Book",
+    "author": "Andrew Lang",
+    "genre": "Children",
+    "year": 1894,
+    "edition_count": 458,
+    "cover_id": 5275099,
+    "key": "/works/OL1088888W"
+  },
+  {
+    "title": "Tanglewood Tales",
+    "author": "Nathaniel Hawthorne",
+    "genre": "Children",
+    "year": 1853,
+    "edition_count": 418,
+    "cover_id": 8243662,
+    "key": "/works/OL455476W"
+  },
+  {
+    "title": "The Night Before Christmas",
+    "author": "Clement Clarke Moore",
+    "genre": "Children",
+    "year": 1857,
+    "edition_count": 389,
+    "cover_id": 8236410,
+    "key": "/works/OL655908W"
+  },
+  {
+    "title": "Tom Sawyer Abroad",
+    "author": "Mark Twain",
+    "genre": "Children",
+    "year": 1894,
+    "edition_count": 333,
+    "cover_id": 9162125,
+    "key": "/works/OL413674W"
+  },
+  {
+    "title": "Little Lord Fauntleroy",
+    "author": "Frances Hodgson Burnett",
+    "genre": "Children",
+    "year": 1886,
+    "edition_count": 332,
+    "cover_id": 29376,
+    "key": "/works/OL69625W"
+  },
+  {
+    "title": "Dream days",
+    "author": "Kenneth Grahame",
+    "genre": "Children",
+    "year": 1898,
+    "edition_count": 303,
+    "cover_id": 5915025,
+    "key": "/works/OL69601W"
+  },
+  {
+    "title": "Het Achterhuis",
+    "author": "Anne Frank",
+    "genre": "Children",
+    "year": 1944,
+    "edition_count": 293,
+    "cover_id": 8584021,
+    "key": "/works/OL266178W"
+  },
+  {
+    "title": "What Katy Did",
+    "author": "Susan Coolidge",
+    "genre": "Children",
+    "year": 1873,
+    "edition_count": 286,
+    "cover_id": 2324467,
+    "key": "/works/OL5114586W"
+  },
+  {
+    "title": "Rose in Bloom",
+    "author": "Louisa May Alcott",
+    "genre": "Children",
+    "year": 1876,
+    "edition_count": 257,
+    "cover_id": 7242794,
+    "key": "/works/OL30020W"
+  },
+  {
+    "title": "Tales from Shakespeare [20 tales]",
+    "author": "Charles Lamb",
+    "genre": "Children",
+    "year": 1800,
+    "edition_count": 255,
+    "cover_id": 12569842,
+    "key": "/works/OL44841W"
+  },
+  {
+    "title": "American notes",
+    "author": "Charles Dickens",
+    "genre": "Children",
+    "year": 1800,
+    "edition_count": 233,
+    "cover_id": 8236357,
+    "key": "/works/OL8300173W"
+  },
+  {
+    "title": "Sylvie and Bruno",
+    "author": "Lewis Carroll",
+    "genre": "Children",
+    "year": 1889,
+    "edition_count": 232,
+    "cover_id": 8243045,
+    "key": "/works/OL151430W"
+  },
+  {
+    "title": "The Well at the World's End",
+    "author": "William Morris",
+    "genre": "Children",
+    "year": 1892,
+    "edition_count": 216,
+    "cover_id": 2404583,
+    "key": "/works/OL47750W"
+  },
+  {
+    "title": "The water-babies: a fairy tale for a land-baby",
+    "author": "Charles Kingsley",
+    "genre": "Children",
+    "year": 1863,
+    "edition_count": 213,
+    "cover_id": 6062095,
+    "key": "/works/OL1130038W"
+  },
+  {
+    "title": "Jack and Jill",
+    "author": "Louisa May Alcott",
+    "genre": "Children",
+    "year": 1880,
+    "edition_count": 208,
+    "cover_id": 5922002,
+    "key": "/works/OL30033W"
+  },
+  {
+    "title": "Domestic medicine",
+    "author": "William Buchan M.D.",
+    "genre": "Children",
+    "year": 1769,
+    "edition_count": 202,
+    "cover_id": 6129497,
+    "key": "/works/OL3715685W"
+  },
+  {
+    "title": "Heidi",
+    "author": "Spyri, Johanna",
+    "genre": "Children",
+    "year": 1885,
+    "edition_count": 180,
+    "cover_id": 2668686,
+    "key": "/works/OL1455042W"
+  },
+  {
+    "title": "The little white bird, or, Adventures in Kensington gardens",
+    "author": "J. M. Barrie",
+    "genre": "Children",
+    "year": 1902,
+    "edition_count": 172,
+    "cover_id": 2808666,
+    "key": "/works/OL461993W"
+  },
+  {
+    "title": "The wide, wide world",
+    "author": "Susan Warner",
+    "genre": "Children",
+    "year": 1850,
+    "edition_count": 162,
+    "cover_id": 4173606,
+    "key": "/works/OL4874217W"
+  },
+  {
+    "title": "Harry Potter and the Deathly Hallows",
+    "author": "J. K. Rowling",
+    "genre": "Young Adult",
+    "year": 2007,
+    "edition_count": 144,
+    "cover_id": 15158660,
+    "key": "/works/OL82586W"
+  },
+  {
+    "title": "The BFG",
+    "author": "Roald Dahl",
+    "genre": "Young Adult",
+    "year": 1980,
+    "edition_count": 136,
+    "cover_id": 9176033,
+    "key": "/works/OL45885W"
+  },
+  {
+    "title": "The Bobbsey Twins",
+    "author": "Laura Lee Hope",
+    "genre": "Young Adult",
+    "year": 1904,
+    "edition_count": 94,
+    "cover_id": 9330264,
+    "key": "/works/OL4072567W"
+  },
+  {
+    "title": "Mockingjay",
+    "author": "Suzanne Collins",
+    "genre": "Young Adult",
+    "year": 2010,
+    "edition_count": 88,
+    "cover_id": 12646459,
+    "key": "/works/OL14908941W"
+  },
+  {
+    "title": "Divergent",
+    "author": "Veronica Roth",
+    "genre": "Young Adult",
+    "year": 2010,
+    "edition_count": 87,
+    "cover_id": 13274634,
+    "key": "/works/OL15719630W"
+  },
+  {
+    "title": "Hatchet",
+    "author": "Gary Paulsen",
+    "genre": "Young Adult",
+    "year": 1986,
+    "edition_count": 81,
+    "cover_id": 11240448,
+    "key": "/works/OL8125760W"
+  },
+  {
+    "title": "Allegiant",
+    "author": "Veronica Roth",
+    "genre": "Young Adult",
+    "year": 2011,
+    "edition_count": 60,
+    "cover_id": 7276393,
+    "key": "/works/OL16808471W"
+  },
+  {
+    "title": "The Hate U Give",
+    "author": "Angie Thomas",
+    "genre": "Young Adult",
+    "year": 2017,
+    "edition_count": 59,
+    "cover_id": 11521588,
+    "key": "/works/OL17714701W"
+  },
+  {
+    "title": "The Amazing Maurice and His Educated Rodents",
+    "author": "Terry Pratchett",
+    "genre": "Young Adult",
+    "year": 2001,
+    "edition_count": 48,
+    "cover_id": 14645777,
+    "key": "/works/OL453885W"
+  },
+  {
+    "title": "Sabriel",
+    "author": "Garth Nix",
+    "genre": "Young Adult",
+    "year": 1995,
+    "edition_count": 42,
+    "cover_id": 13165306,
+    "key": "/works/OL2628761W"
+  },
+  {
+    "title": "An Abundance of Katherines",
+    "author": "John Green",
+    "genre": "Young Adult",
+    "year": 2006,
+    "edition_count": 41,
+    "cover_id": 14559681,
+    "key": "/works/OL2130549W"
+  },
+  {
+    "title": "The Graveyard Book",
+    "author": "Neil Gaiman",
+    "genre": "Young Adult",
+    "year": 2008,
+    "edition_count": 40,
+    "cover_id": 7099583,
+    "key": "/works/OL679348W"
+  },
+  {
+    "title": "The White Mountains (The Tripods #1)",
+    "author": "Sam Youd",
+    "genre": "Young Adult",
+    "year": 1967,
+    "edition_count": 39,
+    "cover_id": 14301,
+    "key": "/works/OL3972834W"
+  },
+  {
+    "title": "The Great Gilly Hopkins (M Books)",
+    "author": "Katherine Paterson",
+    "genre": "Young Adult",
+    "year": 1978,
+    "edition_count": 38,
+    "cover_id": 2292779,
+    "key": "/works/OL27086W"
+  },
+  {
+    "title": "The Whipping Boy",
+    "author": "Sid Fleischman",
+    "genre": "Young Adult",
+    "year": 1986,
+    "edition_count": 37,
+    "cover_id": 27023,
+    "key": "/works/OL114726W"
+  },
+  {
+    "title": "The Black Stallion",
+    "author": "Walter Farley",
+    "genre": "Young Adult",
+    "year": 1941,
+    "edition_count": 36,
+    "cover_id": 4037099,
+    "key": "/works/OL869965W"
+  },
+  {
+    "title": "Shadow and Bone",
+    "author": "Leigh Bardugo",
+    "genre": "Young Adult",
+    "year": 2012,
+    "edition_count": 35,
+    "cover_id": 13816048,
+    "key": "/works/OL16239519W"
+  },
+  {
+    "title": "Red Queen",
+    "author": "Victoria Aveyard",
+    "genre": "Young Adult",
+    "year": 2015,
+    "edition_count": 35,
+    "cover_id": 7434883,
+    "key": "/works/OL17356883W"
+  },
+  {
+    "title": "The Harvester",
+    "author": "Gene Stratton-Porter",
+    "genre": "Young Adult",
+    "year": 1911,
+    "edition_count": 34,
+    "cover_id": 4115711,
+    "key": "/works/OL42383W"
+  },
+  {
+    "title": "The Eagle of the Ninth. 1400 Grundw\u00f6rter.",
+    "author": "Rosemary Sutcliff",
+    "genre": "Young Adult",
+    "year": 1954,
+    "edition_count": 33,
+    "cover_id": 1053251,
+    "key": "/works/OL1417723W"
+  },
+  {
+    "title": "Scary stories to tell in the dark",
+    "author": "Alvin Schwartz",
+    "genre": "Young Adult",
+    "year": 1981,
+    "edition_count": 32,
+    "cover_id": 12634210,
+    "key": "/works/OL268379W"
+  },
+  {
+    "title": "Me Talk Pretty One Day",
+    "author": "David Sedaris",
+    "genre": "Young Adult",
+    "year": 2000,
+    "edition_count": 29,
+    "cover_id": 8567510,
+    "key": "/works/OL2693077W"
+  },
+  {
+    "title": "Siege and Storm",
+    "author": "Leigh Bardugo",
+    "genre": "Young Adult",
+    "year": 2013,
+    "edition_count": 28,
+    "cover_id": 10297781,
+    "key": "/works/OL20924915W"
+  },
+  {
+    "title": "Heir of Fire",
+    "author": "Sarah J. Maas",
+    "genre": "Young Adult",
+    "year": 2014,
+    "edition_count": 28,
+    "cover_id": 9318480,
+    "key": "/works/OL17367560W"
+  },
+  {
+    "title": "Ruin and Rising",
+    "author": "Leigh Bardugo",
+    "genre": "Young Adult",
+    "year": 2014,
+    "edition_count": 26,
+    "cover_id": 12667421,
+    "key": "/works/OL17293267W"
+  },
+  {
+    "title": "Red Rising",
+    "author": "Pierce Brown",
+    "genre": "Young Adult",
+    "year": 2014,
+    "edition_count": 26,
+    "cover_id": 7316188,
+    "key": "/works/OL17076473W"
+  },
+  {
+    "title": "The Face on the Milk Carton",
+    "author": "Caroline B. Cooney",
+    "genre": "Young Adult",
+    "year": 1990,
+    "edition_count": 24,
+    "cover_id": 1473631,
+    "key": "/works/OL12388W"
+  },
+  {
+    "title": "The city boy",
+    "author": "Herman Wouk",
+    "genre": "Young Adult",
+    "year": 1948,
+    "edition_count": 24,
+    "cover_id": 191145,
+    "key": "/works/OL729138W"
+  },
+  {
+    "title": "Crooked Kingdom",
+    "author": "Leigh Bardugo",
+    "genre": "Young Adult",
+    "year": 2016,
+    "edition_count": 24,
+    "cover_id": 12667428,
+    "key": "/works/OL17597665W"
+  },
+  {
+    "title": "Simon vs. the Homo Sapiens Agenda",
+    "author": "Becky Albertalli",
+    "genre": "Young Adult",
+    "year": 2015,
+    "edition_count": 22,
+    "cover_id": 12303551,
+    "key": "/works/OL17357353W"
+  },
+  {
+    "title": "Freak the Mighty",
+    "author": "W. R. Philbrick",
+    "genre": "Young Adult",
+    "year": 1989,
+    "edition_count": 21,
+    "cover_id": 384409,
+    "key": "/works/OL497779W"
+  },
+  {
+    "title": "Flawless",
+    "author": "Sara Shepard",
+    "genre": "Young Adult",
+    "year": 2006,
+    "edition_count": 20,
+    "cover_id": 1069050,
+    "key": "/works/OL276726W"
+  },
+  {
+    "title": "Blue Willow",
+    "author": "Doris Gates",
+    "genre": "Young Adult",
+    "year": 1940,
+    "edition_count": 20,
+    "cover_id": 101370,
+    "key": "/works/OL5590818W"
+  },
+  {
+    "title": "Children of Blood and Bone",
+    "author": "Tomi Adeyemi",
+    "genre": "Young Adult",
+    "year": 2017,
+    "edition_count": 19,
+    "cover_id": 8572526,
+    "key": "/works/OL19659793W"
+  },
+  {
+    "title": "Just Ella",
+    "author": "Margaret Peterson Haddix",
+    "genre": "Young Adult",
+    "year": 1999,
+    "edition_count": 19,
+    "cover_id": 435575,
+    "key": "/works/OL548168W"
+  },
+  {
+    "title": "Lost in the Barrens - Collector's Edition",
+    "author": "Farley Mowat",
+    "genre": "Young Adult",
+    "year": 1956,
+    "edition_count": 19,
+    "cover_id": 530643,
+    "key": "/works/OL479073W"
+  },
+  {
+    "title": "\u1f38\u03bb\u03b9\u03ac\u03c2",
+    "author": "\u038c\u03bc\u03b7\u03c1\u03bf\u03c2",
+    "genre": "Poetry",
+    "year": 1505,
+    "edition_count": 1084,
+    "cover_id": 7083790,
+    "key": "/works/OL61981W"
+  },
+  {
+    "title": "\u1f48\u03b4\u03cd\u03c3\u03c3\u03b5\u03b9\u03b1",
+    "author": "\u038c\u03bc\u03b7\u03c1\u03bf\u03c2",
+    "genre": "Poetry",
+    "year": 1488,
+    "edition_count": 1063,
+    "cover_id": 9045853,
+    "key": "/works/OL61982W"
+  },
+  {
+    "title": "Aeneis",
+    "author": "Publius Vergilius Maro",
+    "genre": "Poetry",
+    "year": 1592,
+    "edition_count": 721,
+    "cover_id": 5273998,
+    "key": "/works/OL47087W"
+  },
+  {
+    "title": "Faust",
+    "author": "Johann Wolfgang von Goethe",
+    "genre": "Poetry",
+    "year": 1800,
+    "edition_count": 633,
+    "cover_id": 6499459,
+    "key": "/works/OL52456W"
+  },
+  {
+    "title": "The Prophet",
+    "author": "Kahlil Gibran",
+    "genre": "Poetry",
+    "year": 1900,
+    "edition_count": 569,
+    "cover_id": 418324,
+    "key": "/works/OL318900W"
+  },
+  {
+    "title": "La Poetica",
+    "author": "Aristotle",
+    "genre": "Poetry",
+    "year": 1479,
+    "edition_count": 498,
+    "cover_id": 129771,
+    "key": "/works/OL151515W"
+  },
+  {
+    "title": "Flower Fables",
+    "author": "Louisa May Alcott",
+    "genre": "Poetry",
+    "year": 1854,
+    "edition_count": 448,
+    "cover_id": 755980,
+    "key": "/works/OL30056W"
+  },
+  {
+    "title": "Inferno",
+    "author": "Dante Alighieri",
+    "genre": "Poetry",
+    "year": 1767,
+    "edition_count": 446,
+    "cover_id": 6387077,
+    "key": "/works/OL93227W"
+  },
+  {
+    "title": "Poems",
+    "author": "William Wordsworth",
+    "genre": "Poetry",
+    "year": 1807,
+    "edition_count": 372,
+    "cover_id": 102874,
+    "key": "/works/OL26386W"
+  },
+  {
+    "title": "Os Lus\u00edadas",
+    "author": "Lu\u00eds de Cam\u00f5es",
+    "genre": "Poetry",
+    "year": 1572,
+    "edition_count": 367,
+    "cover_id": 5943496,
+    "key": "/works/OL848771W"
+  },
+  {
+    "title": "Tender Buttons",
+    "author": "Gertrude Stein",
+    "genre": "Poetry",
+    "year": 1914,
+    "edition_count": 365,
+    "cover_id": 756373,
+    "key": "/works/OL35395W"
+  },
+  {
+    "title": "Les fleurs du mal",
+    "author": "Charles Baudelaire",
+    "genre": "Poetry",
+    "year": 1855,
+    "edition_count": 363,
+    "cover_id": 8236412,
+    "key": "/works/OL1158921W"
+  },
+  {
+    "title": "Fables",
+    "author": "Jean de La Fontaine",
+    "genre": "Poetry",
+    "year": 1678,
+    "edition_count": 345,
+    "cover_id": 976209,
+    "key": "/works/OL50348W"
+  },
+  {
+    "title": "Godfrey of Bulloigne",
+    "author": "Torquato Tasso",
+    "genre": "Poetry",
+    "year": 1581,
+    "edition_count": 326,
+    "cover_id": 5954727,
+    "key": "/works/OL502943W"
+  },
+  {
+    "title": "An essay on man",
+    "author": "Alexander Pope",
+    "genre": "Poetry",
+    "year": 1733,
+    "edition_count": 315,
+    "cover_id": 14538511,
+    "key": "/works/OL79353W"
+  },
+  {
+    "title": "The complete poetical works",
+    "author": "Robert Burns",
+    "genre": "Poetry",
+    "year": 1786,
+    "edition_count": 293,
+    "cover_id": 9048263,
+    "key": "/works/OL766052W"
+  },
+  {
+    "title": "Milton's Poems",
+    "author": "John Milton",
+    "genre": "Poetry",
+    "year": 1605,
+    "edition_count": 292,
+    "cover_id": 8235508,
+    "key": "/works/OL810990W"
+  },
+  {
+    "title": "Il Paradiso",
+    "author": "Dante Alighieri",
+    "genre": "Poetry",
+    "year": 1595,
+    "edition_count": 291,
+    "cover_id": 6549496,
+    "key": "/works/OL93230W"
+  },
+  {
+    "title": "The Raven",
+    "author": "Edgar Allan Poe",
+    "genre": "Poetry",
+    "year": 1845,
+    "edition_count": 287,
+    "cover_id": 8246077,
+    "key": "/works/OL41081W"
+  },
+  {
+    "title": "Hudibras",
+    "author": "Samuel Butler",
+    "genre": "Poetry",
+    "year": 1662,
+    "edition_count": 283,
+    "cover_id": 9938523,
+    "key": "/works/OL3159983W"
+  },
+  {
+    "title": "Helen of Troy",
+    "author": "Andrew Lang",
+    "genre": "Poetry",
+    "year": 1882,
+    "edition_count": 282,
+    "cover_id": 5556502,
+    "key": "/works/OL415234W"
+  },
+  {
+    "title": "Poems",
+    "author": "Alfred Lord Tennyson",
+    "genre": "Poetry",
+    "year": 1827,
+    "edition_count": 281,
+    "cover_id": 8236274,
+    "key": "/works/OL15097239W"
+  },
+  {
+    "title": "Poema de mio Cid",
+    "author": "Anonymous",
+    "genre": "Poetry",
+    "year": 1868,
+    "edition_count": 269,
+    "cover_id": 4910995,
+    "key": "/works/OL886738W"
+  },
+  {
+    "title": "The Hunting of the Snark",
+    "author": "Lewis Carroll",
+    "genre": "Poetry",
+    "year": 1876,
+    "edition_count": 255,
+    "cover_id": 8243028,
+    "key": "/works/OL151447W"
+  },
+  {
+    "title": "Poetics",
+    "author": "Aristotle",
+    "genre": "Poetry",
+    "year": 1536,
+    "edition_count": 252,
+    "cover_id": 6528920,
+    "key": "/works/OL13703833W"
+  },
+  {
+    "title": "The History of Rasselas, Prince of Abyssinia",
+    "author": "Samuel Johnson",
+    "genre": "Poetry",
+    "year": 1759,
+    "edition_count": 249,
+    "cover_id": 2035834,
+    "key": "/works/OL4558936W"
+  },
+  {
+    "title": "The Georgics of Virgil translated by Thomas Neville, ..",
+    "author": "Publius Vergilius Maro",
+    "genre": "Poetry",
+    "year": 1523,
+    "edition_count": 247,
+    "cover_id": 2810356,
+    "key": "/works/OL15237196W"
+  },
+  {
+    "title": "The Ballad of Reading Gaol",
+    "author": "Oscar Wilde",
+    "genre": "Poetry",
+    "year": 1896,
+    "edition_count": 241,
+    "cover_id": 1990809,
+    "key": "/works/OL8271329W"
+  },
+  {
+    "title": "\u0417\u0430\u043f\u0438\u0441\u043a\u0438 \u0438\u0437\u044a \u043f\u043e\u0434\u043f\u043e\u043b\u044c\u044f",
+    "author": "\u0424\u0451\u0434\u043e\u0440 \u041c\u0438\u0445\u0430\u0439\u043b\u043e\u0432\u0438\u0447 \u0414\u043e\u0441\u0442\u043e\u0435\u0432\u0441\u043a\u0438\u0439",
+    "genre": "Philosophy",
+    "year": 1864,
+    "edition_count": 837,
+    "cover_id": 10445973,
+    "key": "/works/OL21025633W"
+  },
+  {
+    "title": "\u03c0\u03bf\u03bb\u03b9\u03c4\u03b5\u03af\u03b1",
+    "author": "\u03a0\u03bb\u03ac\u03c4\u03c9\u03bd",
+    "genre": "Philosophy",
+    "year": 1554,
+    "edition_count": 794,
+    "cover_id": 14418448,
+    "key": "/works/OL51831W"
+  },
+  {
+    "title": "Le petit prince",
+    "author": "Antoine de Saint-Exup\u00e9ry",
+    "genre": "Philosophy",
+    "year": 1943,
+    "edition_count": 688,
+    "cover_id": 10708272,
+    "key": "/works/OL10263W"
+  },
+  {
+    "title": "Tao te Ching",
+    "author": "\u8001\u5b50",
+    "genre": "Philosophy",
+    "year": 1842,
+    "edition_count": 648,
+    "cover_id": 662232,
+    "key": "/works/OL45499W"
+  },
+  {
+    "title": "Also sprach Zarathustra",
+    "author": "Friedrich Nietzsche",
+    "genre": "Philosophy",
+    "year": 1883,
+    "edition_count": 550,
+    "cover_id": 1017466,
+    "key": "/works/OL98130W"
+  },
+  {
+    "title": "The Book of Tea",
+    "author": "Okakura Kakuz\u014d",
+    "genre": "Philosophy",
+    "year": 1900,
+    "edition_count": 476,
+    "cover_id": 8245415,
+    "key": "/works/OL7095112W"
+  },
+  {
+    "title": "On Liberty",
+    "author": "John Stuart Mill",
+    "genre": "Philosophy",
+    "year": 1859,
+    "edition_count": 465,
+    "cover_id": 966821,
+    "key": "/works/OL1068091W"
+  },
+  {
+    "title": "Nicomachean Ethics",
+    "author": "Aristotle",
+    "genre": "Philosophy",
+    "year": 1558,
+    "edition_count": 416,
+    "cover_id": 12593945,
+    "key": "/works/OL8273964W"
+  },
+  {
+    "title": "Jenseits von Gut und Bo\u0308se",
+    "author": "Friedrich Nietzsche",
+    "genre": "Philosophy",
+    "year": 1885,
+    "edition_count": 415,
+    "cover_id": 8245356,
+    "key": "/works/OL98174W"
+  },
+  {
+    "title": "Pense\u0301es",
+    "author": "Blaise Pascal",
+    "genre": "Philosophy",
+    "year": 1670,
+    "edition_count": 395,
+    "cover_id": 6550324,
+    "key": "/works/OL1262495W"
+  },
+  {
+    "title": "The Golden Bough",
+    "author": "James George Frazer",
+    "genre": "Philosophy",
+    "year": 1890,
+    "edition_count": 374,
+    "cover_id": 8876695,
+    "key": "/works/OL1159648W"
+  },
+  {
+    "title": "\u03a3\u03c5\u03bc\u03c0\u03cc\u03c3\u03b9\u03bf\u03bd",
+    "author": "\u03a0\u03bb\u03ac\u03c4\u03c9\u03bd",
+    "genre": "Philosophy",
+    "year": 1559,
+    "edition_count": 351,
+    "cover_id": 14398918,
+    "key": "/works/OL51815W"
+  },
+  {
+    "title": "Dialogues Concerning Natural Religion",
+    "author": "David Hume",
+    "genre": "Philosophy",
+    "year": 1779,
+    "edition_count": 340,
+    "cover_id": 5704676,
+    "key": "/works/OL93568W"
+  },
+  {
+    "title": "A Room of One's Own",
+    "author": "Virginia Woolf",
+    "genre": "Philosophy",
+    "year": 1929,
+    "edition_count": 303,
+    "cover_id": 6559057,
+    "key": "/works/OL39379W"
+  },
+  {
+    "title": "Essais",
+    "author": "Montaigne, Michel de",
+    "genre": "Philosophy",
+    "year": 1600,
+    "edition_count": 294,
+    "cover_id": 104154,
+    "key": "/works/OL1086528W"
+  },
+  {
+    "title": "\u03a6\u03b1\u03af\u03b4\u03c9\u03bd",
+    "author": "\u03a0\u03bb\u03ac\u03c4\u03c9\u03bd",
+    "genre": "Philosophy",
+    "year": 1713,
+    "edition_count": 291,
+    "cover_id": 14400104,
+    "key": "/works/OL51805W"
+  },
+  {
+    "title": "The Problems of Philosophy",
+    "author": "Bertrand Russell",
+    "genre": "Philosophy",
+    "year": 1900,
+    "edition_count": 288,
+    "cover_id": 6947403,
+    "key": "/works/OL1088577W"
+  },
+  {
+    "title": "Summa Theologica",
+    "author": "Thomas Aquinas",
+    "genre": "Philosophy",
+    "year": 1467,
+    "edition_count": 277,
+    "cover_id": 8236222,
+    "key": "/works/OL15314568W"
+  },
+  {
+    "title": "Civil Disobedience",
+    "author": "Henry David Thoreau",
+    "genre": "Philosophy",
+    "year": 1800,
+    "edition_count": 261,
+    "cover_id": 12679584,
+    "key": "/works/OL55631W"
+  },
+  {
+    "title": "Bushido\u0304",
+    "author": "Inazo Nitobe",
+    "genre": "Philosophy",
+    "year": 1899,
+    "edition_count": 258,
+    "cover_id": 3354324,
+    "key": "/works/OL1154715W"
+  },
+  {
+    "title": "The Yellow Wallpaper",
+    "author": "Charlotte Perkins Gilman",
+    "genre": "Psychology",
+    "year": 1892,
+    "edition_count": 721,
+    "cover_id": 652029,
+    "key": "/works/OL2772007W"
+  },
+  {
+    "title": "The Mayor of Casterbridge",
+    "author": "Thomas Hardy",
+    "genre": "Psychology",
+    "year": 1800,
+    "edition_count": 676,
+    "cover_id": 1260617,
+    "key": "/works/OL8193406W"
+  },
+  {
+    "title": "Ulysses",
+    "author": "James Joyce",
+    "genre": "Psychology",
+    "year": 1914,
+    "edition_count": 612,
+    "cover_id": 13136548,
+    "key": "/works/OL86318W"
+  },
+  {
+    "title": "Princesse de Cl\u00e8ves",
+    "author": "Madame de La Fayette",
+    "genre": "Psychology",
+    "year": 1678,
+    "edition_count": 417,
+    "cover_id": 119470,
+    "key": "/works/OL1244914W"
+  },
+  {
+    "title": "Basil",
+    "author": "Wilkie Collins",
+    "genre": "Psychology",
+    "year": 1852,
+    "edition_count": 417,
+    "cover_id": 12968342,
+    "key": "/works/OL176086W"
+  },
+  {
+    "title": "The Awakening",
+    "author": "Kate Chopin",
+    "genre": "Psychology",
+    "year": 1899,
+    "edition_count": 347,
+    "cover_id": 8750241,
+    "key": "/works/OL65430W"
+  },
+  {
+    "title": "\u0411\u0440\u0430\u0442\u044c\u044f \u041a\u0430\u0440\u0430\u043c\u0430\u0437\u043e\u0432\u044b",
+    "author": "\u0424\u0451\u0434\u043e\u0440 \u041c\u0438\u0445\u0430\u0439\u043b\u043e\u0432\u0438\u0447 \u0414\u043e\u0441\u0442\u043e\u0435\u0432\u0441\u043a\u0438\u0439",
+    "genre": "Psychology",
+    "year": 1880,
+    "edition_count": 313,
+    "cover_id": 8272336,
+    "key": "/works/OL10432709W"
+  },
+  {
+    "title": "Tender is the Night",
+    "author": "F. Scott Fitzgerald",
+    "genre": "Psychology",
+    "year": 1933,
+    "edition_count": 312,
+    "cover_id": 6984433,
+    "key": "/works/OL468485W"
+  },
+  {
+    "title": "The Old Man and the Sea",
+    "author": "Ernest Hemingway",
+    "genre": "Psychology",
+    "year": 1952,
+    "edition_count": 307,
+    "cover_id": 463307,
+    "key": "/works/OL63073W"
+  },
+  {
+    "title": "La Peste",
+    "author": "Albert Camus",
+    "genre": "Psychology",
+    "year": 1942,
+    "edition_count": 280,
+    "cover_id": 13151272,
+    "key": "/works/OL1230715W"
+  },
+  {
+    "title": "The Varieties of Religious Experience",
+    "author": "William James",
+    "genre": "Psychology",
+    "year": 1817,
+    "edition_count": 266,
+    "cover_id": 2415434,
+    "key": "/works/OL1073561W"
+  },
+  {
+    "title": "The Book of Dreams and Ghosts",
+    "author": "Andrew Lang",
+    "genre": "Psychology",
+    "year": 1897,
+    "edition_count": 228,
+    "cover_id": 1826864,
+    "key": "/works/OL1088777W"
+  },
+  {
+    "title": "Works (Awakening / Beyond the Bayou / Desiree's Baby / Kiss / Locket / Ma'ame Pelagie / Pa",
+    "author": "Kate Chopin",
+    "genre": "Psychology",
+    "year": 1981,
+    "edition_count": 198,
+    "cover_id": 11513625,
+    "key": "/works/OL65438W"
+  },
+  {
+    "title": "\u0411\u0463\u0441\u044b",
+    "author": "\u0424\u0451\u0434\u043e\u0440 \u041c\u0438\u0445\u0430\u0439\u043b\u043e\u0432\u0438\u0447 \u0414\u043e\u0441\u0442\u043e\u0435\u0432\u0441\u043a\u0438\u0439",
+    "genre": "Psychology",
+    "year": 1871,
+    "edition_count": 171,
+    "cover_id": 9258937,
+    "key": "/works/OL166971W"
+  },
+  {
+    "title": "The Bell Jar",
+    "author": "Sylvia Plath",
+    "genre": "Psychology",
+    "year": 1948,
+    "edition_count": 159,
+    "cover_id": 8477115,
+    "key": "/works/OL1865528W"
+  },
+  {
+    "title": "Paul Klee",
+    "author": "Paul Klee",
+    "genre": "Psychology",
+    "year": 1930,
+    "edition_count": 150,
+    "cover_id": 13174486,
+    "key": "/works/OL972930W"
+  },
+  {
+    "title": "Die Traumdeutung",
+    "author": "Sigmund Freud",
+    "genre": "Psychology",
+    "year": 1899,
+    "edition_count": 141,
+    "cover_id": 234730,
+    "key": "/works/OL1069300W"
+  },
+  {
+    "title": "Le rire; essai sur la signification du comique",
+    "author": "Henri Bergson",
+    "genre": "Psychology",
+    "year": 1901,
+    "edition_count": 139,
+    "cover_id": 14016039,
+    "key": "/works/OL76650W"
+  },
+  {
+    "title": "The Razor's Edge",
+    "author": "William Somerset Maugham",
+    "genre": "Psychology",
+    "year": 1944,
+    "edition_count": 135,
+    "cover_id": 97505,
+    "key": "/works/OL505944W"
+  },
+  {
+    "title": "Catch-22",
+    "author": "Joseph Heller",
+    "genre": "Psychology",
+    "year": 1961,
+    "edition_count": 134,
+    "cover_id": 6468653,
+    "key": "/works/OL276798W"
+  },
+  {
+    "title": "Sozialgeschichte der Kunst und Literatur",
+    "author": "Arnold Hauser",
+    "genre": "Psychology",
+    "year": 1951,
+    "edition_count": 129,
+    "cover_id": 8388010,
+    "key": "/works/OL1331984W"
+  },
+  {
+    "title": "The Kybalion",
+    "author": "Three Initiates",
+    "genre": "Psychology",
+    "year": 1912,
+    "edition_count": 122,
+    "cover_id": 8801364,
+    "key": "/works/OL20156281W"
+  },
+  {
+    "title": "Psychopathia sexualis",
+    "author": "Richard von Krafft-Ebing",
+    "genre": "Psychology",
+    "year": 1886,
+    "edition_count": 122,
+    "cover_id": 5694463,
+    "key": "/works/OL15822096W"
+  },
+  {
+    "title": "Poor Miss Finch",
+    "author": "Wilkie Collins",
+    "genre": "Psychology",
+    "year": 1872,
+    "edition_count": 122,
+    "cover_id": 8242218,
+    "key": "/works/OL176089W"
+  },
+  {
+    "title": "El t\u00fanel",
+    "author": "Ernesto Sabato",
+    "genre": "Psychology",
+    "year": 1948,
+    "edition_count": 120,
+    "cover_id": 5517733,
+    "key": "/works/OL617847W"
+  },
+  {
+    "title": "... Trotzdem Ja zum Leben sagen",
+    "author": "Viktor E. Frankl",
+    "genre": "Psychology",
+    "year": 1946,
+    "edition_count": 111,
+    "cover_id": 8516506,
+    "key": "/works/OL1268413W"
+  },
+  {
+    "title": "Clairvoyance and occult powers",
+    "author": "Swami Panchadasi",
+    "genre": "Psychology",
+    "year": 1916,
+    "edition_count": 109,
+    "cover_id": 5693728,
+    "key": "/works/OL7904330W"
+  },
+  {
+    "title": "Complete Works of W. R. Bion",
+    "author": "W. R. Bion",
+    "genre": "Psychology",
+    "year": 2014,
+    "edition_count": 108,
+    "cover_id": 13227090,
+    "key": "/works/OL21694912W"
+  },
+  {
+    "title": "Advances in Computers, Volume 49 (Advances in Computers)",
+    "author": "Marvin V. Zelkowitz",
+    "genre": "Programming",
+    "year": 1995,
+    "edition_count": 69,
+    "cover_id": 1094406,
+    "key": "/works/OL7938163W"
+  },
+  {
+    "title": "Transactions on Engineering Technologies",
+    "author": "Sio-Iong Ao",
+    "genre": "Programming",
+    "year": 2013,
+    "edition_count": 40,
+    "cover_id": 9334768,
+    "key": "/works/OL20667190W"
+  },
+  {
+    "title": "Hacking for Dummies",
+    "author": "Kevin Beaver",
+    "genre": "Programming",
+    "year": 2004,
+    "edition_count": 37,
+    "cover_id": 299671,
+    "key": "/works/OL6035941W"
+  },
+  {
+    "title": "Computational Linguistics and Intelligent Text Processing",
+    "author": "Alexander Gelbukh",
+    "genre": "Programming",
+    "year": 2003,
+    "edition_count": 35,
+    "cover_id": 8631121,
+    "key": "/works/OL19836244W"
+  },
+  {
+    "title": "Artificial Intelligence and Soft Computing",
+    "author": "Leszek Rutkowski",
+    "genre": "Programming",
+    "year": 2012,
+    "edition_count": 34,
+    "cover_id": 8619487,
+    "key": "/works/OL19827983W"
+  },
+  {
+    "title": "Intelligent Robotics and Applications",
+    "author": "Honghai Liu",
+    "genre": "Programming",
+    "year": 2010,
+    "edition_count": 33,
+    "cover_id": 8663755,
+    "key": "/works/OL16925984W"
+  },
+  {
+    "title": "Artificial Intelligence Applications and Innovations",
+    "author": "Lazaros S. Iliadis",
+    "genre": "Programming",
+    "year": 2006,
+    "edition_count": 33,
+    "cover_id": 9336633,
+    "key": "/works/OL20668591W"
+  },
+  {
+    "title": "Pattern Recognition",
+    "author": "Cheng-Lin Liu",
+    "genre": "Programming",
+    "year": 2012,
+    "edition_count": 31,
+    "cover_id": 8704757,
+    "key": "/works/OL19893748W"
+  },
+  {
+    "title": "Computer Concepts",
+    "author": "June Jamrich Parsons",
+    "genre": "Programming",
+    "year": 1996,
+    "edition_count": 30,
+    "cover_id": 9289977,
+    "key": "/works/OL2373712W"
+  },
+  {
+    "title": "Advances in Swarm Intelligence",
+    "author": "Ying Tan",
+    "genre": "Programming",
+    "year": 2012,
+    "edition_count": 28,
+    "cover_id": 8615332,
+    "key": "/works/OL19824829W"
+  },
+  {
+    "title": "Cooperative Design, Visualization, and Engineering",
+    "author": "Yuhua Luo",
+    "genre": "Programming",
+    "year": 2004,
+    "edition_count": 28,
+    "cover_id": 8633122,
+    "key": "/works/OL19837955W"
+  },
+  {
+    "title": "Systems Analysis and Design",
+    "author": "Alan Dennis",
+    "genre": "Programming",
+    "year": 2000,
+    "edition_count": 28,
+    "cover_id": 304506,
+    "key": "/works/OL5973035W"
+  },
+  {
+    "title": "BTEC National for IT Practitioners",
+    "author": "Sharon Yull",
+    "genre": "Programming",
+    "year": 2008,
+    "edition_count": 27,
+    "cover_id": 10620371,
+    "key": "/works/OL21228441W"
+  },
+  {
+    "title": "Advances in visual computing",
+    "author": "George Bebis",
+    "genre": "Programming",
+    "year": 2005,
+    "edition_count": 27,
+    "cover_id": 2221209,
+    "key": "/works/OL16930512W"
+  },
+  {
+    "title": "Advances in Computers",
+    "author": "Marshall C. Yovits",
+    "genre": "Programming",
+    "year": 1971,
+    "edition_count": 27,
+    "cover_id": 9297074,
+    "key": "/works/OL9173509W"
+  },
+  {
+    "title": "Advances in Computers",
+    "author": "Atif Memon",
+    "genre": "Programming",
+    "year": 2012,
+    "edition_count": 26,
+    "cover_id": 10215696,
+    "key": "/works/OL20887301W"
+  },
+  {
+    "title": "Computer Confluence",
+    "author": "George Beekman",
+    "genre": "Programming",
+    "year": 1997,
+    "edition_count": 26,
+    "cover_id": 2334515,
+    "key": "/works/OL51556W"
+  },
+  {
+    "title": "Java software solutions",
+    "author": "Lewis, John",
+    "genre": "Programming",
+    "year": 1997,
+    "edition_count": 26,
+    "cover_id": 135371,
+    "key": "/works/OL94732W"
+  },
+  {
+    "title": "Linear Algebra with Applications",
+    "author": "Gareth Williams",
+    "genre": "Programming",
+    "year": 1984,
+    "edition_count": 23,
+    "cover_id": 517076,
+    "key": "/works/OL258590W"
+  },
+  {
+    "title": "Objects first with Java",
+    "author": "David J. Barnes",
+    "genre": "Programming",
+    "year": 2002,
+    "edition_count": 23,
+    "cover_id": 89228,
+    "key": "/works/OL11967463W"
+  },
+  {
+    "title": "Learning Python",
+    "author": "Mark Lutz",
+    "genre": "Programming",
+    "year": 1999,
+    "edition_count": 23,
+    "cover_id": 1312568,
+    "key": "/works/OL2784125W"
+  },
+  {
+    "title": "Parallel Processing and Applied Mathematics",
+    "author": "Roman Wyrzykowski",
+    "genre": "Programming",
+    "year": 2003,
+    "edition_count": 22,
+    "cover_id": 8704246,
+    "key": "/works/OL19893421W"
+  },
+  {
+    "title": "Advances in Computers",
+    "author": "Ali R. Hurson",
+    "genre": "Programming",
+    "year": 2012,
+    "edition_count": 22,
+    "cover_id": 13139956,
+    "key": "/works/OL20743957W"
+  },
+  {
+    "title": "Integral Methods in Science and Engineering",
+    "author": "Christian Constanda",
+    "genre": "Programming",
+    "year": 2008,
+    "edition_count": 21,
+    "cover_id": 9376847,
+    "key": "/works/OL20700183W"
+  },
+  {
+    "title": "Invitation to Computer Science",
+    "author": "G. Michael Schneider",
+    "genre": "Programming",
+    "year": 1995,
+    "edition_count": 21,
+    "cover_id": 8524066,
+    "key": "/works/OL1926026W"
+  },
+  {
+    "title": "Neural Information Processing",
+    "author": "Tingwen Huang",
+    "genre": "Programming",
+    "year": 2012,
+    "edition_count": 20,
+    "cover_id": 8699043,
+    "key": "/works/OL19890379W"
+  },
+  {
+    "title": "Technology in action",
+    "author": "Alan Evans",
+    "genre": "Programming",
+    "year": 2004,
+    "edition_count": 20,
+    "cover_id": 1108022,
+    "key": "/works/OL6031175W"
+  },
+  {
+    "title": "Discrete Mathematics and Its Applications",
+    "author": "Kenneth H. Rosen",
+    "genre": "Programming",
+    "year": 1988,
+    "edition_count": 20,
+    "cover_id": 7083171,
+    "key": "/works/OL31821W"
+  },
+  {
+    "title": "Emerging Research in Computing, Information, Communication and Applications",
+    "author": "N. R. Shetty",
+    "genre": "Programming",
+    "year": 2015,
+    "edition_count": 19,
+    "cover_id": 9375887,
+    "key": "/works/OL20699446W"
+  },
+  {
+    "title": "e-Business and Telecommunications",
+    "author": "Mohammad S. Obaidat",
+    "genre": "Programming",
+    "year": 2008,
+    "edition_count": 18,
+    "cover_id": 9351198,
+    "key": "/works/OL20679999W"
+  },
+  {
+    "title": "Computers Helping People with Special Needs",
+    "author": "Klaus Miesenberger",
+    "genre": "Programming",
+    "year": 2003,
+    "edition_count": 18,
+    "cover_id": 9356947,
+    "key": "/works/OL20684644W"
+  },
+  {
+    "title": "Advanced Computing and Systems for Security",
+    "author": "Rituparna Chaki",
+    "genre": "Programming",
+    "year": 2015,
+    "edition_count": 18,
+    "cover_id": 9415738,
+    "key": "/works/OL20730220W"
+  },
+  {
+    "title": "Natural Language Processing and Information Systems",
+    "author": "Elisabeth M\u00e9tais",
+    "genre": "Programming",
+    "year": 2005,
+    "edition_count": 18,
+    "cover_id": 8698513,
+    "key": "/works/OL19890087W"
+  },
+  {
+    "title": "Image Analysis and Recognition",
+    "author": "Aur\u00e9lio Campilho",
+    "genre": "Programming",
+    "year": 2004,
+    "edition_count": 18,
+    "cover_id": 8661489,
+    "key": "/works/OL19856855W"
+  },
+  {
+    "title": "The Innovators",
+    "author": "Walter Isaacson",
+    "genre": "Programming",
+    "year": 2014,
+    "edition_count": 18,
+    "cover_id": 7313659,
+    "key": "/works/OL17074268W"
+  },
+  {
+    "title": "Artificial Intelligence for Knowledge Management",
+    "author": "Eunika Mercier-Laurent",
+    "genre": "Programming",
+    "year": 2014,
+    "edition_count": 17,
+    "cover_id": 9377126,
+    "key": "/works/OL20700398W"
+  },
+  {
+    "title": "Evaluation of Novel Approaches to Software Engineering",
+    "author": "Leszek A. Maciaszek",
+    "genre": "Programming",
+    "year": 2011,
+    "edition_count": 17,
+    "cover_id": 8646990,
+    "key": "/works/OL19848676W"
+  },
+  {
+    "title": "Foundations and Practice of Security",
+    "author": "Joaquin Garcia-Alfaro",
+    "genre": "Programming",
+    "year": 2012,
+    "edition_count": 17,
+    "cover_id": 8650776,
+    "key": "/works/OL19851042W"
+  },
+  {
+    "title": "Knowledge Discovery, Knowledge Engineering and Knowledge Management",
+    "author": "Ana Fred",
+    "genre": "Programming",
+    "year": 2011,
+    "edition_count": 17,
+    "cover_id": 8682582,
+    "key": "/works/OL19879698W"
+  },
+  {
+    "title": "Advances in Computational Intelligence",
+    "author": "Ignacio Rojas",
+    "genre": "Programming",
+    "year": 2013,
+    "edition_count": 17,
+    "cover_id": 8614566,
+    "key": "/works/OL19824264W"
+  },
+  {
+    "title": "Twice-Told Tales",
+    "author": "Nathaniel Hawthorne",
+    "genre": "Art",
+    "year": 1800,
+    "edition_count": 369,
+    "cover_id": 10223473,
+    "key": "/works/OL455489W"
+  },
+  {
+    "title": "Picasso",
+    "author": "Pablo Picasso",
+    "genre": "Art",
+    "year": 1926,
+    "edition_count": 240,
+    "cover_id": 2238306,
+    "key": "/works/OL145191W"
+  },
+  {
+    "title": "Sesame and Lilies, three lectures",
+    "author": "John Ruskin",
+    "genre": "Art",
+    "year": 1800,
+    "edition_count": 177,
+    "cover_id": 526624,
+    "key": "/works/OL88547W"
+  },
+  {
+    "title": "Evangeline",
+    "author": "Henry Wadsworth Longfellow",
+    "genre": "Art",
+    "year": 1847,
+    "edition_count": 177,
+    "cover_id": 6153860,
+    "key": "/works/OL495761W"
+  },
+  {
+    "title": "Salom\u00e9",
+    "author": "Oscar Wilde",
+    "genre": "Art",
+    "year": 1893,
+    "edition_count": 174,
+    "cover_id": 8246115,
+    "key": "/works/OL14877882W"
+  },
+  {
+    "title": "The \"genius\"",
+    "author": "Theodore Dreiser",
+    "genre": "Art",
+    "year": 1915,
+    "edition_count": 164,
+    "cover_id": 8369941,
+    "key": "/works/OL100196W"
+  },
+  {
+    "title": "Hide and seek, or, The mystery of Mary Grice",
+    "author": "Wilkie Collins",
+    "genre": "Art",
+    "year": 1854,
+    "edition_count": 161,
+    "cover_id": 309703,
+    "key": "/works/OL176054W"
+  },
+  {
+    "title": "The Renaissance, Studies in Art and Poetry",
+    "author": "Walter Pater",
+    "genre": "Art",
+    "year": 1873,
+    "edition_count": 156,
+    "cover_id": 1803572,
+    "key": "/works/OL43676W"
+  },
+  {
+    "title": "Henry Moore",
+    "author": "David Sylvester",
+    "genre": "Art",
+    "year": 1934,
+    "edition_count": 146,
+    "cover_id": 1604103,
+    "key": "/works/OL1001044W"
+  },
+  {
+    "title": "Implementation of the Helsinki accords",
+    "author": "United States. Congress. Commission on Security and Cooperat",
+    "genre": "Art",
+    "year": 1982,
+    "edition_count": 144,
+    "cover_id": 5939619,
+    "key": "/works/OL133442W"
+  },
+  {
+    "title": "Vincent van Gogh",
+    "author": "Vincent van Gogh",
+    "genre": "Art",
+    "year": 1914,
+    "edition_count": 114,
+    "cover_id": 4703873,
+    "key": "/works/OL518262W"
+  },
+  {
+    "title": "Max Ernst",
+    "author": "Max Ernst",
+    "genre": "Art",
+    "year": 1956,
+    "edition_count": 114,
+    "cover_id": 7879121,
+    "key": "/works/OL2248600W"
+  },
+  {
+    "title": "On the sublime",
+    "author": "Longinus",
+    "genre": "Art",
+    "year": 1612,
+    "edition_count": 113,
+    "cover_id": 8235184,
+    "key": "/works/OL2101248W"
+  },
+  {
+    "title": "Georg Baselitz",
+    "author": "Georg Baselitz",
+    "genre": "Art",
+    "year": 1970,
+    "edition_count": 113,
+    "cover_id": 3026795,
+    "key": "/works/OL5144330W"
+  },
+  {
+    "title": "A silent witness",
+    "author": "R. Austin Freeman",
+    "genre": "Art",
+    "year": 1929,
+    "edition_count": 111,
+    "cover_id": 502736,
+    "key": "/works/OL4112834W"
+  },
+  {
+    "title": "A Dog of Flanders",
+    "author": "Ouida",
+    "genre": "Art",
+    "year": 1800,
+    "edition_count": 105,
+    "cover_id": 14434819,
+    "key": "/works/OL2339940W"
+  },
+  {
+    "title": "Naturalis historia",
+    "author": "Pliny the Elder",
+    "genre": "Art",
+    "year": 1469,
+    "edition_count": 100,
+    "cover_id": 6543272,
+    "key": "/works/OL1257866W"
+  },
+  {
+    "title": "The Stones of Venice",
+    "author": "John Ruskin",
+    "genre": "Art",
+    "year": 1851,
+    "edition_count": 99,
+    "cover_id": 8239410,
+    "key": "/works/OL88640W"
+  },
+  {
+    "title": "La nause\u0301e",
+    "author": "Jean-Paul Sartre",
+    "genre": "Art",
+    "year": 1938,
+    "edition_count": 98,
+    "cover_id": 9393973,
+    "key": "/works/OL1161171W"
+  },
+  {
+    "title": "Venus and Adonis",
+    "author": "William Shakespeare",
+    "genre": "Art",
+    "year": 1593,
+    "edition_count": 98,
+    "cover_id": 8982674,
+    "key": "/works/OL362672W"
+  },
+  {
+    "title": "Marc Chagall",
+    "author": "Marc Chagall",
+    "genre": "Art",
+    "year": 1948,
+    "edition_count": 97,
+    "cover_id": 723472,
+    "key": "/works/OL4875453W"
+  },
+  {
+    "title": "Sophocles",
+    "author": "Sophocles",
+    "genre": "Art",
+    "year": 1832,
+    "edition_count": 96,
+    "cover_id": 295684,
+    "key": "/works/OL10327036W"
+  },
+  {
+    "title": "Vita di Benvenuto Cellini",
+    "author": "Benvenuto Cellini",
+    "genre": "Art",
+    "year": 1728,
+    "edition_count": 95,
+    "cover_id": 9230254,
+    "key": "/works/OL1091251W"
+  },
+  {
+    "title": "Rembrandt",
+    "author": "Rembrandt Harmenszoon van Rijn",
+    "genre": "Art",
+    "year": 1900,
+    "edition_count": 93,
+    "cover_id": 8242272,
+    "key": "/works/OL54653W"
+  },
+  {
+    "title": "New Creations Coloring Book Series",
+    "author": "Teresa Davis",
+    "genre": "Art",
+    "year": 2002,
+    "edition_count": 92,
+    "cover_id": 12102183,
+    "key": "/works/OL20763355W"
+  },
+  {
+    "title": "The  wrecker",
+    "author": "Robert Louis Stevenson",
+    "genre": "Art",
+    "year": 1892,
+    "edition_count": 91,
+    "cover_id": 8242977,
+    "key": "/works/OL24146W"
+  },
+  {
+    "title": "Vite de' pi\u00f9 eccellenti pittori, scultori et architettori",
+    "author": "Giorgio Vasari",
+    "genre": "Art",
+    "year": 1759,
+    "edition_count": 91,
+    "cover_id": 5883089,
+    "key": "/works/OL1298151W"
+  },
+  {
+    "title": "Van Gogh",
+    "author": "Federico Zeri",
+    "genre": "Art",
+    "year": 1937,
+    "edition_count": 91,
+    "cover_id": 773443,
+    "key": "/works/OL518261W"
+  },
+  {
+    "title": "Edvard Munch",
+    "author": "Edvard Munch",
+    "genre": "Art",
+    "year": 1927,
+    "edition_count": 88,
+    "cover_id": 6748093,
+    "key": "/works/OL136192W"
+  },
+  {
+    "title": "Picasso",
+    "author": "William S. Lieberman",
+    "genre": "Art",
+    "year": 1932,
+    "edition_count": 87,
+    "cover_id": 2238081,
+    "key": "/works/OL145190W"
+  },
+  {
+    "title": "King Solomon's Mines",
+    "author": "H. Rider Haggard",
+    "genre": "Travel",
+    "year": 1880,
+    "edition_count": 1091,
+    "cover_id": 8665393,
+    "key": "/works/OL17448W"
+  },
+  {
+    "title": "All's Well That Ends Well",
+    "author": "William Shakespeare",
+    "genre": "Travel",
+    "year": 1734,
+    "edition_count": 818,
+    "cover_id": 7338455,
+    "key": "/works/OL362676W"
+  },
+  {
+    "title": "A Connecticut Yankee in King Arthur's Court",
+    "author": "Mark Twain",
+    "genre": "Travel",
+    "year": 1889,
+    "edition_count": 788,
+    "cover_id": 9168732,
+    "key": "/works/OL54031W"
+  },
+  {
+    "title": "Voyage Out",
+    "author": "Virginia Woolf",
+    "genre": "Travel",
+    "year": 1915,
+    "edition_count": 465,
+    "cover_id": 12621766,
+    "key": "/works/OL27064817W"
+  },
+  {
+    "title": "The Alhambra",
+    "author": "Washington Irving",
+    "genre": "Travel",
+    "year": 1800,
+    "edition_count": 459,
+    "cover_id": 8237030,
+    "key": "/works/OL63996W"
+  },
+  {
+    "title": "The sketch-book of Geoffrey Crayon, Esq",
+    "author": "Washington Irving",
+    "genre": "Travel",
+    "year": 1819,
+    "edition_count": 351,
+    "cover_id": 7162030,
+    "key": "/works/OL63893W"
+  },
+  {
+    "title": "Lord Jim",
+    "author": "Joseph Conrad",
+    "genre": "Travel",
+    "year": 1900,
+    "edition_count": 344,
+    "cover_id": 8236295,
+    "key": "/works/OL38684W"
+  },
+  {
+    "title": "Astoria",
+    "author": "Washington Irving",
+    "genre": "Travel",
+    "year": 1800,
+    "edition_count": 321,
+    "cover_id": 448955,
+    "key": "/works/OL63862W"
+  },
+  {
+    "title": "Sailing alone around the world",
+    "author": "Joshua Slocum",
+    "genre": "Travel",
+    "year": 1800,
+    "edition_count": 297,
+    "cover_id": 8247067,
+    "key": "/works/OL59979W"
+  },
+  {
+    "title": "Martin Chuzzlewit",
+    "author": "Charles Dickens",
+    "genre": "Travel",
+    "year": 1800,
+    "edition_count": 290,
+    "cover_id": 13112817,
+    "key": "/works/OL14869242W"
+  },
+  {
+    "title": "Murder on the Orient Express",
+    "author": "Agatha Christie",
+    "genre": "Travel",
+    "year": 1933,
+    "edition_count": 247,
+    "cover_id": 11100465,
+    "key": "/works/OL471576W"
+  },
+  {
+    "title": "Life of Samuel Johnson",
+    "author": "James Boswell",
+    "genre": "Travel",
+    "year": 1776,
+    "edition_count": 238,
+    "cover_id": 5785491,
+    "key": "/works/OL16234621W"
+  },
+  {
+    "title": "A week on the Concord and Merrimack Rivers",
+    "author": "Henry David Thoreau",
+    "genre": "Travel",
+    "year": 1849,
+    "edition_count": 236,
+    "cover_id": 8244612,
+    "key": "/works/OL55670W"
+  },
+  {
+    "title": "The museum experience revisited",
+    "author": "John H. Falk",
+    "genre": "Travel",
+    "year": 1992,
+    "edition_count": 219,
+    "cover_id": 13195762,
+    "key": "/works/OL16705133W"
+  },
+  {
+    "title": "Die Leiden des jungen Werthers",
+    "author": "Johann Wolfgang von Goethe",
+    "genre": "Travel",
+    "year": 1779,
+    "edition_count": 212,
+    "cover_id": 7187281,
+    "key": "/works/OL52556W"
+  },
+  {
+    "title": "Martin Rattler, or, A boy's adventures in the forests of Brazil",
+    "author": "Robert Michael Ballantyne",
+    "genre": "Travel",
+    "year": 1867,
+    "edition_count": 204,
+    "cover_id": 1813742,
+    "key": "/works/OL2320050W"
+  },
+  {
+    "title": "A Tramp Abroad",
+    "author": "Mark Twain",
+    "genre": "Travel",
+    "year": 1878,
+    "edition_count": 197,
+    "cover_id": 9168741,
+    "key": "/works/OL53918W"
+  },
+  {
+    "title": "The Essays of Elia",
+    "author": "Charles Lamb",
+    "genre": "Travel",
+    "year": 1823,
+    "edition_count": 187,
+    "cover_id": 8876245,
+    "key": "/works/OL44842W"
+  },
+  {
+    "title": "Cape Cod",
+    "author": "Henry David Thoreau",
+    "genre": "Travel",
+    "year": 1864,
+    "edition_count": 182,
+    "cover_id": 1468928,
+    "key": "/works/OL55724W"
+  },
+  {
+    "title": "The Innocents Abroad",
+    "author": "Mark Twain",
+    "genre": "Travel",
+    "year": 1800,
+    "edition_count": 177,
+    "cover_id": 8221271,
+    "key": "/works/OL54041W"
+  },
+  {
+    "title": "Homage to Catalonia",
+    "author": "George Orwell",
+    "genre": "Travel",
+    "year": 1938,
+    "edition_count": 169,
+    "cover_id": 7282177,
+    "key": "/works/OL1168169W"
+  },
+  {
+    "title": "The Romany Rye",
+    "author": "George Henry Borrow",
+    "genre": "Travel",
+    "year": 1800,
+    "edition_count": 164,
+    "cover_id": 1749038,
+    "key": "/works/OL244675W"
+  },
+  {
+    "title": "The Bible in Spain",
+    "author": "George Henry Borrow",
+    "genre": "Travel",
+    "year": 1842,
+    "edition_count": 163,
+    "cover_id": 897639,
+    "key": "/works/OL244674W"
+  },
+  {
+    "title": "Mademoiselle Fifi",
+    "author": "Guy de Maupassant",
+    "genre": "Travel",
+    "year": 1882,
+    "edition_count": 162,
+    "cover_id": 6468088,
+    "key": "/works/OL93833W"
+  }
+]

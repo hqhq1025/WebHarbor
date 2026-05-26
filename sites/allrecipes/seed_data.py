@@ -31,6 +31,8 @@ import random
 import unicodedata
 from datetime import datetime, timedelta
 
+from sqlalchemy import text
+
 from app import (
     app, db,
     Category, Recipe, User, Review,
@@ -293,6 +295,242 @@ def _cooking_method(instructions_text: str) -> str:
     if 'simmer' in t or 'boil' in t:
         return 'stovetop'
     return ''
+
+
+# ---------------------------------------------------------------------------
+# Variant recipes (Slow Cooker / Air Fryer / Grilled / 30-Minute / Easy)
+# ---------------------------------------------------------------------------
+# Allrecipes.com is full of appliance/method-specific variants of the same
+# core dish ("Slow Cooker Beef Stew", "Air Fryer Chicken Wings", "Grilled
+# Honey Garlic Salmon", etc.). To double the catalog without inventing
+# fictional dishes, we deterministically derive one variant per base
+# recipe, modulated by category. Ingredients reuse the base; instructions
+# are a templated cookware-specific wrapper.
+
+VARIANT_RULES = {
+    # category_slug -> (variant_prefix, variant_slug_prefix, cooking_method,
+    #                   prep_delta, cook_factor, instr_template_key)
+    'beef':         ('Slow Cooker',     'slow-cooker',  'slow cooker', 5,  3.0,  'slow_cooker'),
+    'pork':         ('Slow Cooker',     'slow-cooker',  'slow cooker', 5,  3.0,  'slow_cooker'),
+    'lamb':         ('Slow Cooker',     'slow-cooker',  'slow cooker', 5,  3.0,  'slow_cooker'),
+    'chicken':      ('Air Fryer',       'air-fryer',    'air fryer',  -3,  0.6,  'air_fryer'),
+    'seafood':      ('Grilled',         'grilled',      'grilled',    -2,  0.5,  'grilled'),
+    'pasta':        ('30-Minute',       '30-minute',    'stovetop',   -5,  0.5,  'thirty_min'),
+    'vegetarian':   ('Easy Weeknight',  'easy-weeknight','stovetop',  -3,  0.7,  'easy_weeknight'),
+    'vegan':        ('30-Minute',       '30-minute',    'stovetop',   -5,  0.6,  'thirty_min'),
+    'side-dishes':  ('Air Fryer',       'air-fryer',    'air fryer',  -2,  0.6,  'air_fryer'),
+    'appetizers':   ('Easy Party',      'easy-party',   'baked',       0,  0.8,  'easy_weeknight'),
+    'breakfast':    ('Easy Make-Ahead', 'easy-make-ahead','stovetop', -2,  0.9,  'easy_weeknight'),
+    'desserts':     ('No-Bake',         'no-bake',      'no-bake',     5,  0.0,  'no_bake'),
+    'dinner':       ('Slow Cooker',     'slow-cooker',  'slow cooker', 5,  2.5,  'slow_cooker'),
+}
+
+
+INSTRUCTION_TEMPLATES = {
+    'slow_cooker': [
+        "Brown the meat in a skillet with a tablespoon of oil over medium-high heat, 4 to 5 minutes per side, then transfer to the slow cooker.",
+        "Add the remaining ingredients to the slow cooker, stirring to combine.",
+        "Cover and cook on LOW for 7 to 8 hours, or on HIGH for 3 to 4 hours, until the meat is fork-tender.",
+        "Skim any visible fat from the surface before serving. Adjust seasoning with salt and pepper to taste.",
+        "Serve warm over rice, mashed potatoes, or crusty bread.",
+    ],
+    'air_fryer': [
+        "Preheat the air fryer to 380°F (193°C) for 3 minutes.",
+        "Toss the main ingredients with oil and seasoning in a large bowl until evenly coated.",
+        "Arrange in a single layer in the air fryer basket, working in batches if needed to avoid crowding.",
+        "Air fry for 12 to 15 minutes, shaking the basket halfway through, until golden brown and cooked through.",
+        "Rest 2 minutes before serving with your favorite dipping sauce.",
+    ],
+    'grilled': [
+        "Preheat an outdoor grill or grill pan to medium-high heat (about 400°F / 204°C). Lightly oil the grates.",
+        "Pat the protein dry with paper towels, then rub all over with oil and the seasoning mix.",
+        "Grill 3 to 5 minutes per side, depending on thickness, until just cooked through and grill marks form.",
+        "Transfer to a plate and tent loosely with foil for 5 minutes to let the juices redistribute.",
+        "Serve with a wedge of lemon and fresh herbs.",
+    ],
+    'thirty_min': [
+        "Bring a large pot of well-salted water to a boil for the pasta or grains.",
+        "While the water heats, prep all the remaining ingredients so everything is ready to go.",
+        "Cook the pasta or grains according to package directions; meanwhile, sauté aromatics in a large skillet over medium-high heat.",
+        "Add the remaining ingredients to the skillet and cook 5 to 7 minutes, stirring often, until heated through.",
+        "Drain the pasta, reserving 1/4 cup cooking water, then toss everything together. Add reserved water as needed to loosen the sauce. Serve immediately.",
+    ],
+    'easy_weeknight': [
+        "Gather all your ingredients on the counter so you can move quickly once you start cooking.",
+        "Heat a large skillet or Dutch oven over medium heat with a glug of olive oil.",
+        "Add the aromatics and cook 2 to 3 minutes until fragrant, then add the rest of the ingredients.",
+        "Cook, stirring occasionally, until everything is heated through and the flavors have melded, 15 to 20 minutes.",
+        "Taste and adjust seasoning. Serve hot, garnished with fresh herbs if you like.",
+    ],
+    'no_bake': [
+        "Line an 8x8-inch baking dish with parchment paper, leaving overhang on two sides for easy lifting.",
+        "Combine all the dry ingredients in a large bowl and whisk to remove any lumps.",
+        "Gently fold the wet ingredients into the dry mixture until just combined.",
+        "Press the mixture firmly into the prepared dish in an even layer.",
+        "Refrigerate for at least 4 hours (or overnight) until set. Lift out using the parchment, then slice into squares and serve chilled.",
+    ],
+}
+
+
+def _variant_pick_for(category_slug: str, slug_hash: int) -> str | None:
+    """Return the variant key for this recipe, or None to skip."""
+    if category_slug not in VARIANT_RULES:
+        return None
+    # Every eligible recipe gets exactly ONE variant (deterministic).
+    return category_slug
+
+
+def _seed_variant_recipes(cat_by_slug, base_recipes):
+    """Create deterministic appliance/method variants of every eligible base."""
+    added = 0
+    existing_slugs = {r.slug for r in Recipe.query.all()}
+    for ri, base in enumerate(base_recipes):
+        base_cat_slug = None
+        if base.category_id:
+            for slug, c in cat_by_slug.items():
+                if c.id == base.category_id:
+                    base_cat_slug = slug
+                    break
+        if not base_cat_slug:
+            continue
+        rule_key = _variant_pick_for(base_cat_slug, ri)
+        if not rule_key:
+            continue
+        prefix, slug_prefix, method, prep_delta, cook_factor, tmpl_key = VARIANT_RULES[rule_key]
+
+        new_title = f"{prefix} {base.title}"
+        new_slug = f"{slug_prefix}-{base.slug}"
+        if new_slug in existing_slugs:
+            continue
+        existing_slugs.add(new_slug)
+
+        # Time math — deterministic.
+        base_prep = base.prep_time_mins or 20
+        base_cook = base.cook_time_mins or 30
+        new_prep = max(5, base_prep + prep_delta)
+        if cook_factor == 0.0:
+            new_cook = 0  # no-bake
+        else:
+            new_cook = max(5, int(round(base_cook * cook_factor)))
+        new_total = new_prep + new_cook
+
+        # Reuse ingredients, but tweak the title-of-ingredient list to nod
+        # at the appliance/method (deterministic, no random calls).
+        try:
+            base_ings = json.loads(base.ingredients_json or '[]')
+        except Exception:
+            base_ings = []
+        new_ings = list(base_ings)
+        if rule_key in ('beef','pork','lamb','dinner') and 'beef broth' not in ' '.join(new_ings).lower():
+            new_ings.append('1 cup beef or chicken broth')
+        if rule_key == 'chicken' and 'cooking spray' not in ' '.join(new_ings).lower():
+            new_ings.append('Cooking spray, for the basket')
+        if rule_key == 'seafood' and 'lemon' not in ' '.join(new_ings).lower():
+            new_ings.append('1 lemon, cut into wedges, for serving')
+        if rule_key == 'desserts':
+            new_ings = new_ings + ['1 1/2 cups graham cracker crumbs',
+                                    '1/2 cup unsalted butter, melted']
+
+        # Instructions — adapt to method.
+        new_instr = list(INSTRUCTION_TEMPLATES[tmpl_key])
+        # Append one base-flavored line so the variant references its parent dish.
+        try:
+            base_instr = json.loads(base.instructions_json or '[]')
+        except Exception:
+            base_instr = []
+        if base_instr:
+            tail = base_instr[0]
+            tail_clean = re.sub(r"\s+", ' ', tail).strip()[:200]
+            if tail_clean and len(tail_clean) > 40:
+                new_instr.append(f"Note from the original recipe: {tail_clean}")
+
+        # Derived numeric fields.
+        avg_rating = round(min(5.0, (base.avg_rating or 4.2) + ((ri % 7 - 3) * 0.05)), 1)
+        # Don't seed a review count; the review pass below will set it.
+        review_count = 0
+
+        # Dietary tags: inherit, plus add a method-flavored tag.
+        try:
+            base_dietary = json.loads(base.dietary_tags_json or '[]')
+        except Exception:
+            base_dietary = []
+        method_tag = {
+            'slow_cooker': 'slow-cooker',
+            'air_fryer': 'air-fryer',
+            'grilled': 'grilled',
+            'thirty_min': 'quick',
+            'easy_weeknight': 'easy',
+            'no_bake': 'no-bake',
+        }[tmpl_key]
+
+        # feature_tags reuse + variant marker
+        try:
+            base_features = json.loads(base.feature_tags or '[]')
+        except Exception:
+            base_features = []
+        new_features = list(dict.fromkeys(base_features + [method_tag, slug_prefix]))
+
+        description = (
+            f"A {prefix.lower()} take on the classic {base.title.lower()}. "
+            f"Same flavors, adapted for the {method} so you can have dinner on the table "
+            f"with less hands-on time."
+        )
+
+        created = MIRROR_REFERENCE_DATE - timedelta(days=(ri * 5 + 11) % 720)
+
+        # Image — recycle the existing pool with a deterministic offset
+        # so a variant has a different image from the base.
+        img_n = ((ri * 13 + 47) % IMAGE_POOL_SIZE) + 1
+        image = f"{IMAGES_DIR_REL}/recipe_{img_n}.jpg"
+
+        servings_str = base.servings or '4'
+
+        rec = Recipe(
+            title=new_title,
+            slug=new_slug,
+            description=description,
+            category_id=base.category_id,
+            cuisine=base.cuisine,
+            image=image,
+            prep_time=_fmt_mins(new_prep),
+            cook_time=_fmt_mins(new_cook) if new_cook else '0 mins',
+            total_time=_fmt_mins(new_total),
+            servings=servings_str,
+            calories=base.calories,
+            ingredients_json=json.dumps(new_ings),
+            instructions_json=json.dumps(new_instr),
+            nutrition_json=base.nutrition_json,
+            tags_json=json.dumps(new_features),
+            gallery_json=json.dumps([]),
+            is_featured=(ri % 31 == 0),
+            is_editors_pick=(ri % 53 == 0),
+            avg_rating=avg_rating,
+            review_count=review_count,
+            author_name=f"{prefix} Test Kitchen",
+            prep_time_mins=new_prep,
+            cook_time_mins=new_cook,
+            total_time_mins=new_total,
+            ingredient_count=len(new_ings),
+            dietary_tags_json=json.dumps(list(dict.fromkeys(base_dietary + ([method_tag] if method_tag in ('quick','easy') else [])))),
+            dish_type=base.dish_type,
+            meal_type=base.meal_type,
+            cooking_method=method,
+            main_ingredient=base.main_ingredient,
+            occasion='',
+            season='',
+            feature_tags=json.dumps(new_features),
+            latest_review_text='',
+            storage_instructions=(
+                'Refrigerate leftovers in an airtight container for up to 4 days. '
+                'Reheat gently to preserve texture.'
+            ),
+            primary_seasoning='',
+            max_oven_temp=0,
+            created_at=created,
+        )
+        db.session.add(rec)
+        added += 1
+    return added
 
 
 def _generate_review_pool(rng: random.Random) -> list[tuple[int, str, str]]:
@@ -622,6 +860,20 @@ def seed_extended_catalog():
     db.session.flush()
     print(f"[seed_extended] added {added} recipes from TheMealDB")
 
+    # ----- Variant recipes (Slow Cooker / Air Fryer / Grilled / …) -----
+    # Doubles the catalog with deterministic appliance/method variants of
+    # every eligible MealDB base recipe. Variants live in the same Test
+    # Kitchen author bucket so they pick up reviews below.
+    base_for_variants = (
+        Recipe.query
+        .filter(Recipe.author_name.like('%Test Kitchen%'))
+        .order_by(Recipe.id)
+        .all()
+    )
+    variants_added = _seed_variant_recipes(cat_by_slug, base_for_variants)
+    db.session.flush()
+    print(f"[seed_extended] added {variants_added} variant recipes")
+
     # ----- Reviewer users (placeholder, non-loginable) -----
     REVIEWER_COUNT = 24
     reviewer_first = [
@@ -693,3 +945,22 @@ def seed_extended_catalog():
     print(f"[seed_extended] added {review_count_added} reviews "
           f"across {Recipe.query.count()} total recipes "
           f"in {Category.query.count()} categories")
+
+    # Re-emit indexes in alpha order + VACUUM so a rebuild from source
+    # gives a byte-identical SQLite file (see harden-env gotcha #2).
+    _normalize_seed_db_layout()
+
+
+def _normalize_seed_db_layout():
+    """Re-emit indexes alphabetically + VACUUM. Run once after first seed."""
+    conn = db.engine.connect()
+    idx_rows = conn.execute(text(
+        "SELECT name, sql FROM sqlite_master WHERE type='index' AND name LIKE 'ix_%'"
+    )).fetchall()
+    for name, _ in idx_rows:
+        conn.execute(text(f"DROP INDEX IF EXISTS {name}"))
+    for name, sql in sorted(idx_rows, key=lambda r: r[0]):
+        if sql:
+            conn.execute(text(sql))
+    conn.execute(text("VACUUM"))
+    conn.commit()

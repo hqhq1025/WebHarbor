@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block title %}Cambridge Dictionary Blog{% endblock %}
+{% block content %}
+<div class="container blog-index">
+  <nav class="breadcrumb">
+    <a href="{{ url_for('index') }}">Dictionary</a> &rsaquo;
+    <span>Blog</span>
+  </nav>
+  <header class="blog-header">
+    <h1>About words — the Cambridge Dictionary blog</h1>
+    <p class="blog-sub">Inside the dictionary: new words, learning tips, and grammar guidance from our editors.</p>
+  </header>
+  <div class="blog-list">
+    {% for p in posts %}
+    <article class="blog-card">
+      <span class="blog-category">{{ p.category }}</span>
+      <a class="blog-title" href="{{ url_for('blog_post', slug=p.slug) }}">{{ p.title }}</a>
+      <p class="blog-excerpt">{{ p.excerpt }}</p>
+      <p class="blog-date">{{ p.date }}</p>
+    </article>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}

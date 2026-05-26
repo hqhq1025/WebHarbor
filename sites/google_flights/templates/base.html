@@ -40,6 +40,9 @@
       </nav>
       <div class="gbar-right">
         {% if current_user.is_authenticated %}
+          <a href="{{ url_for('trips') }}" class="gbar-icon-btn" title="Your trips">
+            <span class="material-symbols-outlined">work</span>
+          </a>
           <a href="{{ url_for('bag') }}" class="gbar-icon-btn" title="Your bag">
             <span class="material-symbols-outlined">shopping_bag</span>
             {% if cart_count > 0 %}<span class="gbar-badge">{{ cart_count }}</span>{% endif %}
@@ -131,11 +134,11 @@
         </div>
       </div>
       <div class="footer-legal">
-        <a href="#">About</a>
-        <a href="#">Privacy</a>
-        <a href="#">Terms</a>
-        <a href="#">Help</a>
-        <a href="#">Feedback</a>
+        <a href="{{ url_for('about') }}">About</a>
+        <a href="{{ url_for('privacy') }}">Privacy</a>
+        <a href="{{ url_for('terms') }}">Terms</a>
+        <a href="{{ url_for('help_page') }}">Help</a>
+        <a href="{{ url_for('help_page', topic='feedback') }}">Feedback</a>
         <span>&copy; {{ current_year }} Google Flights mirror - educational project</span>
       </div>
     </div>

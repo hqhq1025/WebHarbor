@@ -1,0 +1,43 @@
+{% extends 'base.html' %}
+{% block title %}Trips - Google Flights{% endblock %}
+{% block content %}
+<div class="trips-page">
+  <div class="trips-page-inner">
+    <h1>Trips</h1>
+    <p class="lead">Upcoming and past bookings.</p>
+
+    {% if not bookings %}
+      <div class="empty-state">
+        <span class="material-symbols-outlined">flight_takeoff</span>
+        <h3>You have no trips yet</h3>
+        <p>When you book a flight, it'll show up here.</p>
+        <a href="{{ url_for('index') }}" class="btn-primary">Search flights</a>
+      </div>
+    {% else %}
+      <div class="trips-list">
+        {% for b in bookings %}
+          <a href="{{ url_for('booking_detail', booking_id=b.id) }}" class="trip-card status-{{ b.status }}">
+            <div class="trip-card-top">
+              <span class="trip-pnr">PNR {{ b.pnr }}</span>
+              <span class="trip-status">{{ b.status|capitalize }}</span>
+            </div>
+            <div class="trip-card-mid">
+              {% set first_item = b.items.first() %}
+              {% if first_item and first_item.flight %}
+                <strong>{{ first_item.flight.origin.city }}</strong>
+                <span class="material-symbols-outlined">arrow_right_alt</span>
+                <strong>{{ first_item.flight.destination.city }}</strong>
+              {% endif %}
+            </div>
+            <div class="trip-card-bot">
+              <span>{{ b.trip_type|capitalize }}</span>
+              <span>{{ '$%.2f'|format(b.total_amount) }}</span>
+              <span>Booked {{ b.booked_at.strftime('%b %d, %Y') }}</span>
+            </div>
+          </a>
+        {% endfor %}
+      </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

@@ -30,6 +30,14 @@
         <span class="material-icons-outlined icon">directions</span>
         <span class="label">Directions</span>
     </a>
+    <a href="{{ url_for('contribute') }}" class="rail-item {% if request.endpoint == 'contribute' %}active{% endif %}" title="Contribute">
+        <span class="material-icons-outlined icon">add_location_alt</span>
+        <span class="label">Contribute</span>
+    </a>
+    <a href="{{ url_for('your_data') }}" class="rail-item {% if request.endpoint == 'your_data' %}active{% endif %}" title="Your data">
+        <span class="material-icons-outlined icon">shield</span>
+        <span class="label">Your data</span>
+    </a>
     <div class="rail-divider"></div>
     <a href="{{ url_for('settings') }}" class="rail-item {% if request.endpoint == 'settings' %}active{% endif %}" title="Settings">
         <span class="material-icons-outlined icon">settings</span>

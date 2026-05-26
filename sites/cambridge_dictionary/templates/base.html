@@ -122,13 +122,17 @@
             <li><a href="{{ url_for('plus_index') }}">Cambridge Dictionary Plus</a></li>
             <li><a href="{{ url_for('plus_index') }}">Quizzes</a></li>
             <li><a href="{{ url_for('word_scramble') }}">Word Games</a></li>
+            <li><a href="{{ url_for('wordlists_index') }}">Word Lists</a></li>
+            <li><a href="{{ url_for('word_of_the_day') }}">Word of the Day</a></li>
           </ul>
         </div>
         <div class="footer-col">
           <h4>Cambridge</h4>
           <ul>
             <li><a href="{{ url_for('shop') }}">Cambridge Dictionary Shop</a></li>
-            <li><a href="#">About Cambridge Dictionary</a></li>
+            <li><a href="{{ url_for('about') }}">About Cambridge Dictionary</a></li>
+            <li><a href="{{ url_for('blog_index') }}">Blog</a></li>
+            <li><a href="{{ url_for('help_page') }}">Help</a></li>
             <li><a href="#">Cambridge University Press</a></li>
           </ul>
         </div>

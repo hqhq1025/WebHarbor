@@ -38,19 +38,17 @@
         <div class="nav-categories">
             <div class="nav-categories-inner">
                 <a href="{{ url_for('all_recipes') }}" {% if request.endpoint == 'all_recipes' %}class="active"{% endif %}>All Recipes</a>
+                <a href="{{ url_for('meals_hub') }}" {% if request.endpoint == 'meals_hub' %}class="active"{% endif %}>Meals</a>
+                <a href="{{ url_for('ingredients_hub') }}" {% if request.endpoint == 'ingredients_hub' %}class="active"{% endif %}>Ingredients</a>
+                <a href="{{ url_for('cuisines_hub') }}" {% if request.endpoint == 'cuisines_hub' %}class="active"{% endif %}>Cuisines</a>
                 <a href="{{ url_for('category_page', slug='dinner') }}" {% if request.path == '/category/dinner' %}class="active"{% endif %}>Dinners</a>
                 <a href="{{ url_for('category_page', slug='breakfast') }}" {% if request.path == '/category/breakfast' %}class="active"{% endif %}>Breakfast</a>
-                <a href="{{ url_for('category_page', slug='appetizers') }}" {% if request.path == '/category/appetizers' %}class="active"{% endif %}>Appetizers</a>
                 <a href="{{ url_for('category_page', slug='desserts') }}" {% if request.path == '/category/desserts' %}class="active"{% endif %}>Desserts</a>
                 <a href="{{ url_for('category_page', slug='chicken') }}" {% if request.path == '/category/chicken' %}class="active"{% endif %}>Chicken</a>
-                <a href="{{ url_for('category_page', slug='pasta') }}" {% if request.path == '/category/pasta' %}class="active"{% endif %}>Pasta</a>
-                <a href="{{ url_for('category_page', slug='salads') }}" {% if request.path == '/category/salads' %}class="active"{% endif %}>Salads</a>
-                <a href="{{ url_for('category_page', slug='soups') }}" {% if request.path == '/category/soups' %}class="active"{% endif %}>Soups</a>
-                <a href="{{ url_for('category_page', slug='seafood') }}" {% if request.path == '/category/seafood' %}class="active"{% endif %}>Seafood</a>
-                <a href="{{ url_for('category_page', slug='baking') }}" {% if request.path == '/category/baking' %}class="active"{% endif %}>Baking</a>
                 <a href="{{ url_for('category_page', slug='healthy') }}" {% if request.path == '/category/healthy' %}class="active"{% endif %}>Healthy</a>
                 <a href="{{ url_for('occasions') }}" {% if request.path == '/occasions' %}class="active"{% endif %}>Occasions</a>
                 <a href="{{ url_for('popular_1960s') }}" {% if request.path == '/collections/popular-1960s' %}class="active"{% endif %}>Collections</a>
+                <a href="{{ url_for('newsletter') }}" {% if request.endpoint == 'newsletter' %}class="active"{% endif %}>Newsletter</a>
                 <a href="{{ url_for('about') }}" {% if request.path.startswith('/about') %}class="active"{% endif %}>About</a>
             </div>
         </div>
@@ -117,6 +115,8 @@
                 <a href="{{ url_for('about') }}">About Allrecipes</a>
                 <a href="{{ url_for('about_allstars') }}">The Allrecipes Allstars</a>
                 <a href="{{ url_for('occasions') }}">Occasions</a>
+                <a href="{{ url_for('newsletter') }}">Newsletter</a>
+                <a href="{{ url_for('sitemap') }}">Sitemap</a>
                 <a href="{{ url_for('popular_1960s') }}">Popular 1960s Recipes</a>
             </div>
         </div>

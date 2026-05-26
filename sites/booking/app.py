@@ -2124,6 +2124,33 @@ def deals():
     return render_template('deals.html', offers=offers)
 
 
+@app.route('/customer-service')
+@app.route('/customer_service')
+@app.route('/support')
+def customer_service():
+    return render_template('customer_service.html')
+
+
+@app.route('/legal')
+@app.route('/terms')
+@app.route('/privacy')
+def legal():
+    return render_template('legal.html')
+
+
+@app.route('/careers')
+@app.route('/jobs')
+def careers():
+    return render_template('careers.html')
+
+
+@app.route('/press')
+@app.route('/media')
+@app.route('/newsroom')
+def press():
+    return render_template('press.html')
+
+
 # =====================================================================
 # ERROR HANDLERS
 # =====================================================================

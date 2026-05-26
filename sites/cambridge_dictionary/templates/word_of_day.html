@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% block title %}Word of the Day: {{ wotd.headword }} | Cambridge Dictionary{% endblock %}
+{% block content %}
+<div class="container wotd-page">
+  <nav class="breadcrumb">
+    <a href="{{ url_for('index') }}">Dictionary</a> &rsaquo;
+    <span>Word of the Day</span>
+  </nav>
+
+  <header class="wotd-header-banner">
+    <p class="wotd-banner-date">{{ target_date.strftime('%A, %d %B %Y') }}</p>
+    <h1 class="wotd-banner-title">Word of the Day</h1>
+  </header>
+
+  <article class="wotd-feature">
+    <a href="{{ url_for('word_detail', slug=wotd.slug) }}" class="wotd-feature-headword">
+      {{ wotd.headword }}
+    </a>
+    <div class="wotd-feature-meta">
+      <span class="wotd-feature-pos">{{ wotd.pos }}</span>
+      {% if wotd.level %}<span class="entry-level level-{{ wotd.level|lower }}">{{ wotd.level }}</span>{% endif %}
+      {% if wotd.pronunciation_ipa or wotd.phonetic_uk %}
+        <span class="wotd-feature-ipa">{{ wotd.phonetic_uk or wotd.pronunciation_ipa }}</span>
+      {% endif %}
+    </div>
+    {% set defs = wotd.get_definitions() %}
+    {% if defs %}
+      <p class="wotd-feature-def">{{ defs[0].definition }}</p>
+      {% if defs[0].examples %}
+        <ul class="wotd-feature-examples">
+          {% for ex in defs[0].examples[:2] %}<li>&#x25BA; {{ ex }}</li>{% endfor %}
+        </ul>
+      {% endif %}
+    {% endif %}
+    <a href="{{ url_for('word_detail', slug=wotd.slug) }}" class="btn-primary">Read full entry</a>
+  </article>
+
+  <section class="wotd-archive">
+    <h2 class="section-heading">Recent words of the day</h2>
+    <ul class="wotd-archive-list">
+      {% for row in archive %}
+        <li class="wotd-archive-row">
+          <a class="wotd-archive-date" href="{{ url_for('word_of_the_day', date=row.date.isoformat()) }}">{{ row.date.strftime('%d %b %Y') }}</a>
+          <a class="wotd-archive-word" href="{{ url_for('word_detail', slug=row.word.slug) }}">{{ row.word.headword }}</a>
+          <span class="wotd-archive-pos">{{ row.word.pos }}</span>
+        </li>
+      {% endfor %}
+    </ul>
+  </section>
+</div>
+{% endblock %}

@@ -38,6 +38,13 @@ login_manager.login_message_category = 'info'
 # Models
 # ---------------------------------------------------------------------------
 
+# Pinned reference date used as the default for every created_at column so
+# rebuilding the seed DB from source yields a byte-identical SQLite file.
+# Any seed row that wants a different timestamp must set created_at
+# explicitly (see seed_data.py and seed_benchmark_users below).
+MIRROR_REFERENCE_DATE = datetime(2026, 4, 15, 12, 0, 0)
+
+
 class User(UserMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(80), unique=True, nullable=False)
@@ -47,7 +54,7 @@ class User(UserMixin, db.Model):
     bio = db.Column(db.Text, default='')
     location = db.Column(db.String(100), default='')
     avatar_url = db.Column(db.String(300), default='')
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=lambda: MIRROR_REFERENCE_DATE)
     # Relationships
     reviews = db.relationship('Review', backref='author', lazy=True, cascade='all, delete-orphan')
     recipe_box = db.relationship('RecipeBoxItem', backref='user', lazy=True, cascade='all, delete-orphan')
@@ -114,7 +121,7 @@ class Recipe(db.Model):
     storage_instructions = db.Column(db.Text, default='')
     primary_seasoning = db.Column(db.String(120), default='')
     max_oven_temp = db.Column(db.Integer, default=0)  # e.g. 425 for apple pie
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=lambda: MIRROR_REFERENCE_DATE)
     # Relationships
     reviews = db.relationship('Review', backref='recipe', lazy=True, cascade='all, delete-orphan')
     recipe_box_items = db.relationship('RecipeBoxItem', backref='recipe', lazy=True, cascade='all, delete-orphan')
@@ -170,7 +177,7 @@ class Review(db.Model):
     title = db.Column(db.String(200), default='')
     body = db.Column(db.Text, default='')
     helpful_count = db.Column(db.Integer, default=0)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=lambda: MIRROR_REFERENCE_DATE)
 
 
 class RecipeBoxItem(db.Model):
@@ -178,7 +185,7 @@ class RecipeBoxItem(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     recipe_id = db.Column(db.Integer, db.ForeignKey('recipe.id'), nullable=False)
     notes = db.Column(db.Text, default='')
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=lambda: MIRROR_REFERENCE_DATE)
 
 
 class MealPlanItem(db.Model):
@@ -187,7 +194,7 @@ class MealPlanItem(db.Model):
     recipe_id = db.Column(db.Integer, db.ForeignKey('recipe.id'), nullable=False)
     day = db.Column(db.String(20), nullable=False)  # monday, tuesday, etc.
     meal_type = db.Column(db.String(20), nullable=False)  # breakfast, lunch, dinner, snack
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=lambda: MIRROR_REFERENCE_DATE)
     recipe = db.relationship('Recipe', lazy=True)
 
 
@@ -196,7 +203,7 @@ class ShoppingList(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     name = db.Column(db.String(200), default='Shopping List')
     items_json = db.Column(db.Text, default='[]')
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=lambda: MIRROR_REFERENCE_DATE)
 
     def get_items(self):
         try:
@@ -1194,6 +1201,83 @@ def dinners():
     if len(recommended) < 3:
         recommended = Recipe.query.order_by(Recipe.review_count.desc()).limit(12).all()
     return render_template('dinners.html', recommended=recommended)
+
+
+@app.route('/meals')
+def meals_hub():
+    """Top-level Meals hub — links the meal-type subcategories."""
+    meal_slugs = ['breakfast', 'dinner', 'appetizers', 'desserts',
+                  'healthy', 'salads', 'soups']
+    cats = [Category.query.filter_by(slug=s).first() for s in meal_slugs]
+    cats = [c for c in cats if c]
+    return render_template('hub.html', hub_title='Meals',
+                           hub_intro='Browse our biggest meal-of-the-day collections.',
+                           categories=cats)
+
+
+@app.route('/ingredients')
+def ingredients_hub():
+    """Top-level Ingredients hub."""
+    ing_slugs = ['chicken', 'beef', 'pork', 'lamb', 'seafood',
+                 'pasta', 'baking', 'vegetarian', 'vegan']
+    cats = [Category.query.filter_by(slug=s).first() for s in ing_slugs]
+    cats = [c for c in cats if c]
+    return render_template('hub.html', hub_title='Ingredients',
+                           hub_intro='Find a recipe by the ingredient you have on hand.',
+                           categories=cats)
+
+
+@app.route('/cuisines')
+def cuisines_hub():
+    """Top-level Cuisines hub."""
+    cui_slugs = ['italian', 'mexican', 'asian', 'french', 'indian',
+                 'chinese', 'japanese', 'thai', 'mediterranean', 'american']
+    cats = [Category.query.filter_by(slug=s).first() for s in cui_slugs]
+    cats = [c for c in cats if c]
+    return render_template('hub.html', hub_title='Cuisines',
+                           hub_intro='Travel the world from your kitchen with recipes by cuisine.',
+                           categories=cats)
+
+
+@app.route('/newsletter', methods=['GET', 'POST'])
+def newsletter():
+    """Newsletter signup landing page (form posts back here)."""
+    signed_up = False
+    if request.method == 'POST':
+        email = request.form.get('email', '').strip()
+        if email and '@' in email:
+            flash(f'Thanks! {email} is now subscribed to the Allrecipes newsletter.',
+                  'success')
+            signed_up = True
+        else:
+            flash('Please enter a valid email address.', 'danger')
+    return render_template('newsletter.html', signed_up=signed_up)
+
+
+@app.route('/sitemap')
+def sitemap():
+    """Human-readable sitemap listing every section and every category."""
+    cats = Category.query.order_by(Category.parent_type, Category.display_order).all()
+    grouped = {}
+    for c in cats:
+        grouped.setdefault(c.parent_type or 'other', []).append(c)
+    static_pages = [
+        ('Home', url_for('index')),
+        ('All Recipes', url_for('all_recipes')),
+        ('Meals', url_for('meals_hub')),
+        ('Ingredients', url_for('ingredients_hub')),
+        ('Cuisines', url_for('cuisines_hub')),
+        ('Occasions', url_for('occasions')),
+        ('Dinners', url_for('dinners')),
+        ('Popular 1960s Recipes', url_for('popular_1960s')),
+        ('About Allrecipes', url_for('about')),
+        ('The Allrecipes Allstars', url_for('about_allstars')),
+        ('Newsletter', url_for('newsletter')),
+        ('Log In', url_for('login')),
+        ('Sign Up', url_for('register')),
+    ]
+    return render_template('sitemap.html', grouped=grouped,
+                           static_pages=static_pages)
 
 
 POPULAR_1960S = [
@@ -2668,6 +2752,12 @@ def seed_benchmark_users():
         return  # already seeded
 
     PASSWORD = 'TestPass123!'
+    # Pinned bcrypt hash of 'TestPass123!' so a fresh seed build produces
+    # byte-identical user rows. Without this, bcrypt's random salt would
+    # rotate the hash on every rebuild and break the byte-identical reset
+    # invariant. Login still works because bcrypt.check_password_hash
+    # accepts any valid $2b$… hash. See harden-env/gotchas.md #1.
+    PINNED_HASH = '$2b$12$RwAC/sfwDHtccU//A20fde.uKkZK4Ptnjjyua2l2ktwI6uysAp3Ou'
 
     def _get_recipe(title_fragment):
         return Recipe.query.filter(
@@ -2713,7 +2803,7 @@ def seed_benchmark_users():
             bio=ud['bio'],
             location=ud['location'],
         )
-        u.set_password(PASSWORD)
+        u.password_hash = PINNED_HASH
         db.session.add(u)
         users[ud['email']] = u
     db.session.flush()
