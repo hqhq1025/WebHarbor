@@ -235,6 +235,130 @@ class Report(db.Model):
     timestamp = db.Column(db.DateTime, default=datetime.utcnow)
 
 
+# ---------- Phase 2 extensions ----------
+
+class FileAsset(db.Model):
+    """File: namespace records — images uploaded to a wiki."""
+    __tablename__ = "files"
+    id = db.Column(db.Integer, primary_key=True)
+    wiki_id = db.Column(db.Integer, db.ForeignKey("wikis.id"), nullable=False, index=True)
+    filename = db.Column(db.String(200), nullable=False, index=True)
+    display_name = db.Column(db.String(240), default="")
+    description = db.Column(db.Text, default="")
+    license = db.Column(db.String(80), default="Fair use")
+    uploader_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=True)
+    uploader_label = db.Column(db.String(80), default="")
+    bytes_size = db.Column(db.Integer, default=0)
+    width = db.Column(db.Integer, default=0)
+    height = db.Column(db.Integer, default=0)
+    uploaded_at = db.Column(db.DateTime, default=datetime.utcnow, index=True)
+    mime_type = db.Column(db.String(40), default="image/jpeg")
+    wiki = db.relationship("Wiki", backref="files")
+    uploader = db.relationship("User", backref="uploads")
+
+
+class ForumThread(db.Model):
+    """Fandom-style discussion thread (per-wiki forum)."""
+    __tablename__ = "forum_threads"
+    id = db.Column(db.Integer, primary_key=True)
+    wiki_id = db.Column(db.Integer, db.ForeignKey("wikis.id"), nullable=False, index=True)
+    category = db.Column(db.String(60), default="General")
+    title = db.Column(db.String(280), nullable=False)
+    slug = db.Column(db.String(280), index=True)
+    body = db.Column(db.Text, default="")
+    author_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=True)
+    author_label = db.Column(db.String(80), default="")
+    created_at = db.Column(db.DateTime, default=datetime.utcnow, index=True)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow)
+    view_count = db.Column(db.Integer, default=0)
+    is_pinned = db.Column(db.Boolean, default=False)
+    is_locked = db.Column(db.Boolean, default=False)
+    wiki = db.relationship("Wiki", backref="threads")
+    author = db.relationship("User", backref="threads")
+
+
+class ForumPost(db.Model):
+    __tablename__ = "forum_posts"
+    id = db.Column(db.Integer, primary_key=True)
+    thread_id = db.Column(db.Integer, db.ForeignKey("forum_threads.id"), nullable=False, index=True)
+    user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=True)
+    author_label = db.Column(db.String(80), default="")
+    body = db.Column(db.Text, default="")
+    timestamp = db.Column(db.DateTime, default=datetime.utcnow, index=True)
+    likes = db.Column(db.Integer, default=0)
+    thread = db.relationship("ForumThread", backref="posts")
+
+
+class ArticleComment(db.Model):
+    """Fandom article comments (distinct from talk page)."""
+    __tablename__ = "article_comments"
+    id = db.Column(db.Integer, primary_key=True)
+    article_id = db.Column(db.Integer, db.ForeignKey("articles.id"), nullable=False, index=True)
+    user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=True)
+    author_label = db.Column(db.String(80), default="")
+    parent_id = db.Column(db.Integer, db.ForeignKey("article_comments.id"), nullable=True)
+    body = db.Column(db.Text, default="")
+    likes = db.Column(db.Integer, default=0)
+    timestamp = db.Column(db.DateTime, default=datetime.utcnow, index=True)
+    article = db.relationship("Article", backref="comments")
+
+
+class Notice(db.Model):
+    """MediaWiki:Sitenotice — wiki-level announcement banner."""
+    __tablename__ = "notices"
+    id = db.Column(db.Integer, primary_key=True)
+    wiki_id = db.Column(db.Integer, db.ForeignKey("wikis.id"), nullable=True)
+    title = db.Column(db.String(200), default="")
+    body = db.Column(db.Text, default="")
+    is_active = db.Column(db.Boolean, default=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    expires_at = db.Column(db.DateTime, nullable=True)
+    wiki = db.relationship("Wiki", backref="notices")
+
+
+class UserBlock(db.Model):
+    __tablename__ = "user_blocks"
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
+    blocker_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=True)
+    reason = db.Column(db.String(200), default="")
+    duration = db.Column(db.String(40), default="indefinite")
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    is_active = db.Column(db.Boolean, default=True)
+    blocked_user = db.relationship("User", foreign_keys=[user_id])
+
+
+class UserFollow(db.Model):
+    __tablename__ = "user_follows"
+    follower_id = db.Column(db.Integer, db.ForeignKey("users.id"), primary_key=True)
+    followee_id = db.Column(db.Integer, db.ForeignKey("users.id"), primary_key=True)
+    since = db.Column(db.DateTime, default=datetime.utcnow)
+
+
+class WikiSubscription(db.Model):
+    __tablename__ = "wiki_subs"
+    user_id = db.Column(db.Integer, db.ForeignKey("users.id"), primary_key=True)
+    wiki_id = db.Column(db.Integer, db.ForeignKey("wikis.id"), primary_key=True)
+    since = db.Column(db.DateTime, default=datetime.utcnow)
+
+
+class CommentLike(db.Model):
+    __tablename__ = "comment_likes"
+    user_id = db.Column(db.Integer, db.ForeignKey("users.id"), primary_key=True)
+    comment_id = db.Column(db.Integer, db.ForeignKey("article_comments.id"), primary_key=True)
+    timestamp = db.Column(db.DateTime, default=datetime.utcnow)
+
+
+class Protection(db.Model):
+    __tablename__ = "protections"
+    article_id = db.Column(db.Integer, db.ForeignKey("articles.id"), primary_key=True)
+    level = db.Column(db.String(20), default="autoconfirmed")  # autoconfirmed / sysop
+    reason = db.Column(db.String(200), default="")
+    set_by_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=True)
+    set_at = db.Column(db.DateTime, default=datetime.utcnow)
+    article = db.relationship("Article", backref="protection")
+
+
 # =======================================================================
 # HELPERS
 # =======================================================================
@@ -379,10 +503,18 @@ def load_user(uid):
 
 @app.context_processor
 def inject_globals():
+    notices = []
+    try:
+        # Global notices (wiki_id is None) always shown; per-wiki notices added inside wiki views
+        notices = Notice.query.filter(Notice.is_active == True,
+                                      Notice.wiki_id == None).limit(2).all()
+    except Exception:
+        notices = []
     return {
         "WIKIS": Wiki.query.order_by(Wiki.id).all(),
         "now_year": datetime.utcnow().year,
         "site_name": "Fandom",
+        "global_notices": notices,
     }
 
 
@@ -905,6 +1037,598 @@ def community_portal():
     return render_template("community_portal.html")
 
 
+# =======================================================================
+# Hub-level extras
+# =======================================================================
+
+VERTICAL_HUBS = {
+    "movies": dict(label="Movies", tagline="Wikis dedicated to films",
+                   slugs=["mcu", "starwars"]),
+    "games":  dict(label="Games",  tagline="Game encyclopedias",
+                   slugs=["genshin"]),
+    "tv":     dict(label="TV",     tagline="Television wikis",
+                   slugs=["mcu", "starwars"]),
+    "anime":  dict(label="Anime & Manga", tagline="Anime universes",
+                   slugs=["genshin"]),
+    "books":  dict(label="Books",  tagline="Book and comic wikis",
+                   slugs=["mcu", "starwars"]),
+}
+
+@app.route("/explore")
+def explore():
+    wikis = Wiki.query.order_by(Wiki.id).all()
+    return render_template("explore.html", wikis=wikis, hubs=VERTICAL_HUBS)
+
+
+@app.route("/<hub_slug>")
+def vertical_hub(hub_slug):
+    if hub_slug not in VERTICAL_HUBS:
+        abort(404)
+    spec = VERTICAL_HUBS[hub_slug]
+    wikis = Wiki.query.filter(Wiki.slug.in_(spec["slugs"])).all()
+    trending = (Article.query
+                .filter(Article.wiki_id.in_([w.id for w in wikis]))
+                .order_by(desc(Article.view_count)).limit(12).all())
+    return render_template("vertical_hub.html", spec=spec, hub_slug=hub_slug,
+                           wikis=wikis, trending=trending)
+
+
+@app.route("/start-a-wiki", methods=["GET", "POST"])
+def start_a_wiki():
+    if request.method == "POST":
+        flash("Wiki request submitted! Our team will review and contact you within 48h.", "success")
+        return redirect(url_for("hub"))
+    return render_template("start_a_wiki.html")
+
+
+# =======================================================================
+# File: namespace
+# =======================================================================
+
+@app.route("/wiki/<wiki_slug>/Special:ListFiles")
+def special_list_files(wiki_slug):
+    w = get_wiki_or_404(wiki_slug)
+    q = request.args.get("q", "").strip()
+    base = FileAsset.query.filter_by(wiki_id=w.id)
+    if q:
+        like = f"%{q.lower()}%"
+        base = base.filter(or_(FileAsset.filename.ilike(like),
+                               FileAsset.display_name.ilike(like)))
+    files = base.order_by(desc(FileAsset.uploaded_at)).limit(200).all()
+    return render_template("list_files.html", wiki=w, files=files, q=q)
+
+
+@app.route("/wiki/<wiki_slug>/File:<path:filename>")
+def file_view(wiki_slug, filename):
+    w = get_wiki_or_404(wiki_slug)
+    f = FileAsset.query.filter_by(wiki_id=w.id, filename=filename).first()
+    if not f:
+        return render_template("file_missing.html", wiki=w, filename=filename), 404
+    # File usage: articles whose `image` column references this filename
+    usage = Article.query.filter_by(wiki_id=w.id, image=filename).all()
+    global_usage = (Article.query.filter(Article.image == filename,
+                                         Article.wiki_id != w.id).all())
+    return render_template("file_view.html", wiki=w, file=f,
+                           usage=usage, global_usage=global_usage)
+
+
+@app.route("/wiki/<wiki_slug>/Special:Upload", methods=["GET", "POST"])
+@login_required
+def special_upload(wiki_slug):
+    w = get_wiki_or_404(wiki_slug)
+    if request.method == "POST":
+        fn = request.form.get("filename", "").strip()
+        desc = request.form.get("description", "").strip()
+        lic = request.form.get("license", "Fair use").strip()
+        if not fn:
+            flash("Filename required.", "error")
+        elif FileAsset.query.filter_by(wiki_id=w.id, filename=fn).first():
+            flash("That filename already exists on this wiki.", "error")
+        else:
+            f = FileAsset(wiki_id=w.id, filename=fn,
+                          display_name=fn.replace("_", " ").rsplit(".", 1)[0],
+                          description=desc, license=lic,
+                          uploader_id=current_user.id,
+                          uploader_label=current_user.username,
+                          bytes_size=request.form.get("bytes_size", 65536, type=int),
+                          width=800, height=600)
+            db.session.add(f); db.session.commit()
+            flash(f"File uploaded: {fn}", "success")
+            return redirect(url_for("file_view", wiki_slug=w.slug, filename=fn))
+    return render_template("upload.html", wiki=w)
+
+
+# =======================================================================
+# Forum (Discussions)
+# =======================================================================
+
+@app.route("/wiki/<wiki_slug>/Forum")
+def forum_index(wiki_slug):
+    w = get_wiki_or_404(wiki_slug)
+    cat = request.args.get("cat", "").strip()
+    base = ForumThread.query.filter_by(wiki_id=w.id)
+    if cat:
+        base = base.filter_by(category=cat)
+    threads = base.order_by(desc(ForumThread.is_pinned),
+                            desc(ForumThread.updated_at)).limit(50).all()
+    cats = sorted({t.category for t in ForumThread.query.filter_by(wiki_id=w.id).all()})
+    return render_template("forum_index.html", wiki=w, threads=threads,
+                           cats=cats, active_cat=cat)
+
+
+@app.route("/wiki/<wiki_slug>/Forum/Thread/<int:thread_id>", methods=["GET", "POST"])
+def forum_thread(wiki_slug, thread_id):
+    w = get_wiki_or_404(wiki_slug)
+    t = ForumThread.query.get_or_404(thread_id)
+    if t.wiki_id != w.id:
+        abort(404)
+    if request.method == "POST":
+        if not current_user.is_authenticated:
+            flash("Sign in to post.", "error")
+            return redirect(url_for("login", next=request.path))
+        if t.is_locked:
+            flash("Thread is locked.", "error")
+            return redirect(url_for("forum_thread", wiki_slug=w.slug, thread_id=t.id))
+        body = request.form.get("body", "").strip()
+        if not body:
+            flash("Reply body required.", "error")
+        else:
+            p = ForumPost(thread_id=t.id, user_id=current_user.id,
+                          author_label=current_user.username, body=body)
+            db.session.add(p)
+            t.updated_at = datetime.utcnow()
+            db.session.commit()
+            flash("Reply posted.", "success")
+        return redirect(url_for("forum_thread", wiki_slug=w.slug, thread_id=t.id))
+    t.view_count = (t.view_count or 0) + 1
+    db.session.commit()
+    posts = ForumPost.query.filter_by(thread_id=t.id).order_by(ForumPost.timestamp).all()
+    return render_template("forum_thread.html", wiki=w, thread=t, posts=posts)
+
+
+@app.route("/wiki/<wiki_slug>/Forum/New", methods=["GET", "POST"])
+@login_required
+def forum_new(wiki_slug):
+    w = get_wiki_or_404(wiki_slug)
+    if request.method == "POST":
+        title = request.form.get("title", "").strip()
+        body = request.form.get("body", "").strip()
+        cat = request.form.get("category", "General").strip() or "General"
+        if not (title and body):
+            flash("Title and body required.", "error")
+        else:
+            t = ForumThread(wiki_id=w.id, title=title, slug=slugify(title),
+                            body=body, category=cat,
+                            author_id=current_user.id,
+                            author_label=current_user.username)
+            db.session.add(t); db.session.flush()
+            # Author's body becomes first post
+            db.session.add(ForumPost(thread_id=t.id, user_id=current_user.id,
+                                     author_label=current_user.username, body=body))
+            db.session.commit()
+            flash("Thread created.", "success")
+            return redirect(url_for("forum_thread", wiki_slug=w.slug, thread_id=t.id))
+    return render_template("forum_new.html", wiki=w)
+
+
+# =======================================================================
+# Article comments
+# =======================================================================
+
+@app.route("/wiki/<wiki_slug>/<path:title>/comments", methods=["GET", "POST"])
+def article_comments(wiki_slug, title):
+    w = get_wiki_or_404(wiki_slug)
+    slug = slugify(title)
+    a = Article.query.filter_by(wiki_id=w.id, slug=slug).first_or_404()
+    if request.method == "POST":
+        if not current_user.is_authenticated:
+            flash("Sign in to comment.", "error")
+            return redirect(url_for("login", next=request.path))
+        body = request.form.get("body", "").strip()
+        parent_id = request.form.get("parent_id")
+        try:
+            parent_id = int(parent_id) if parent_id else None
+        except ValueError:
+            parent_id = None
+        if not body:
+            flash("Comment body required.", "error")
+        else:
+            c = ArticleComment(article_id=a.id, user_id=current_user.id,
+                               author_label=current_user.username,
+                               parent_id=parent_id, body=body)
+            db.session.add(c); db.session.commit()
+            flash("Comment posted.", "success")
+        return redirect(url_for("article_comments", wiki_slug=w.slug, title=slug))
+    comments = (ArticleComment.query.filter_by(article_id=a.id)
+                .order_by(ArticleComment.timestamp).all())
+    return render_template("comments.html", wiki=w, article=a, comments=comments)
+
+
+@app.route("/wiki/<wiki_slug>/comment/<int:cid>/like", methods=["POST"])
+@login_required
+def comment_like(wiki_slug, cid):
+    c = ArticleComment.query.get_or_404(cid)
+    existing = CommentLike.query.filter_by(user_id=current_user.id, comment_id=cid).first()
+    if existing:
+        db.session.delete(existing)
+        c.likes = max(0, c.likes - 1)
+        flash("Like removed.", "info")
+    else:
+        db.session.add(CommentLike(user_id=current_user.id, comment_id=cid))
+        c.likes = (c.likes or 0) + 1
+        flash("Liked!", "success")
+    db.session.commit()
+    a = Article.query.get(c.article_id)
+    return redirect(url_for("article_comments", wiki_slug=wiki_slug, title=a.slug))
+
+
+# =======================================================================
+# Watchlist, follow, subscribe
+# =======================================================================
+
+@app.route("/wiki/<wiki_slug>/Special:Watchlist")
+@login_required
+def special_watchlist(wiki_slug):
+    w = get_wiki_or_404(wiki_slug)
+    items = (db.session.query(Article)
+             .join(WatchItem, WatchItem.article_id == Article.id)
+             .filter(WatchItem.user_id == current_user.id,
+                     Article.wiki_id == w.id)
+             .all())
+    article_ids = [a.id for a in items]
+    revs = []
+    if article_ids:
+        revs = (Revision.query.filter(Revision.article_id.in_(article_ids))
+                .order_by(desc(Revision.timestamp)).limit(50).all())
+    return render_template("watchlist.html", wiki=w, items=items, revisions=revs)
+
+
+@app.route("/user/<username>/follow", methods=["POST"])
+@login_required
+def user_follow(username):
+    u = User.query.filter_by(username=username).first_or_404()
+    if u.id == current_user.id:
+        flash("You cannot follow yourself.", "error")
+    else:
+        existing = UserFollow.query.filter_by(
+            follower_id=current_user.id, followee_id=u.id).first()
+        if existing:
+            db.session.delete(existing)
+            flash(f"Unfollowed {u.username}.", "info")
+        else:
+            db.session.add(UserFollow(follower_id=current_user.id, followee_id=u.id))
+            flash(f"Now following {u.username}.", "success")
+        db.session.commit()
+    return redirect(url_for("user_profile", username=username))
+
+
+@app.route("/wiki/<wiki_slug>/subscribe", methods=["POST"])
+@login_required
+def wiki_subscribe(wiki_slug):
+    w = get_wiki_or_404(wiki_slug)
+    existing = WikiSubscription.query.filter_by(
+        user_id=current_user.id, wiki_id=w.id).first()
+    if existing:
+        db.session.delete(existing)
+        flash(f"Unsubscribed from {w.name}.", "info")
+    else:
+        db.session.add(WikiSubscription(user_id=current_user.id, wiki_id=w.id))
+        flash(f"Subscribed to {w.name} notifications.", "success")
+    db.session.commit()
+    return redirect(url_for("wiki_home", wiki_slug=w.slug))
+
+
+# =======================================================================
+# Special analytics pages
+# =======================================================================
+
+@app.route("/wiki/<wiki_slug>/Special:Statistics")
+def special_statistics(wiki_slug):
+    w = get_wiki_or_404(wiki_slug)
+    stats = dict(
+        articles=Article.query.filter_by(wiki_id=w.id, namespace="Main").count(),
+        pages=Article.query.filter_by(wiki_id=w.id).count(),
+        revisions=Revision.query.join(Article).filter(Article.wiki_id == w.id).count(),
+        files=FileAsset.query.filter_by(wiki_id=w.id).count(),
+        editors=db.session.query(func.count(func.distinct(Revision.user_id)))
+                .join(Article).filter(Article.wiki_id == w.id,
+                                      Revision.user_id != None).scalar() or 0,
+        categories=Category.query.filter_by(wiki_id=w.id).count(),
+        talk_posts=TalkPost.query.join(Article).filter(Article.wiki_id == w.id).count(),
+        threads=ForumThread.query.filter_by(wiki_id=w.id).count(),
+        forum_posts=ForumPost.query.join(ForumThread).filter(
+            ForumThread.wiki_id == w.id).count(),
+        comments=ArticleComment.query.join(Article).filter(
+            Article.wiki_id == w.id).count(),
+    )
+    return render_template("statistics.html", wiki=w, stats=stats)
+
+
+@app.route("/wiki/<wiki_slug>/Special:LongPages")
+def special_long_pages(wiki_slug):
+    w = get_wiki_or_404(wiki_slug)
+    arts = Article.query.filter_by(wiki_id=w.id).all()
+    arts.sort(key=lambda a: len((a.content or "").encode("utf-8")), reverse=True)
+    return render_template("long_pages.html", wiki=w, articles=arts[:50])
+
+
+@app.route("/wiki/<wiki_slug>/Special:ShortPages")
+def special_short_pages(wiki_slug):
+    w = get_wiki_or_404(wiki_slug)
+    arts = Article.query.filter_by(wiki_id=w.id).all()
+    arts.sort(key=lambda a: len((a.content or "").encode("utf-8")))
+    return render_template("short_pages.html", wiki=w, articles=arts[:50])
+
+
+@app.route("/wiki/<wiki_slug>/Special:MostRevisions")
+def special_most_revisions(wiki_slug):
+    w = get_wiki_or_404(wiki_slug)
+    rows = (db.session.query(Article, func.count(Revision.id))
+            .join(Revision, Revision.article_id == Article.id)
+            .filter(Article.wiki_id == w.id)
+            .group_by(Article.id)
+            .order_by(desc(func.count(Revision.id)))
+            .limit(50).all())
+    return render_template("most_revisions.html", wiki=w, rows=rows)
+
+
+@app.route("/wiki/<wiki_slug>/Special:OrphanedPages")
+def special_orphaned(wiki_slug):
+    w = get_wiki_or_404(wiki_slug)
+    arts = Article.query.filter_by(wiki_id=w.id).all()
+    # An article is orphaned if no other article links to it via [[Title]]
+    orphans = []
+    for a in arts:
+        needle = f"[[{a.title}"
+        linked = any(needle in (b.content or "")
+                     for b in arts if b.id != a.id)
+        if not linked:
+            orphans.append(a)
+    return render_template("orphaned.html", wiki=w, articles=orphans[:80])
+
+
+@app.route("/wiki/<wiki_slug>/Special:WantedPages")
+def special_wanted(wiki_slug):
+    w = get_wiki_or_404(wiki_slug)
+    arts = Article.query.filter_by(wiki_id=w.id).all()
+    seen = {a.slug for a in arts}
+    wanted = {}  # title -> count of links
+    pat = re.compile(r"\[\[([^\]|]+)(\|[^\]]+)?\]\]")
+    for a in arts:
+        for m in pat.finditer(a.content or ""):
+            tgt = m.group(1).strip()
+            if slugify(tgt) not in seen and ":" not in tgt:
+                wanted[tgt] = wanted.get(tgt, 0) + 1
+    rows = sorted(wanted.items(), key=lambda x: -x[1])[:80]
+    return render_template("wanted.html", wiki=w, rows=rows)
+
+
+@app.route("/wiki/<wiki_slug>/Special:UserContributions/<username>")
+def special_user_contribs(wiki_slug, username):
+    w = get_wiki_or_404(wiki_slug)
+    u = User.query.filter_by(username=username).first_or_404()
+    ns = request.args.get("namespace", "")
+    q = (Revision.query.join(Article)
+         .filter(Article.wiki_id == w.id, Revision.user_id == u.id))
+    if ns:
+        q = q.filter(Article.namespace == ns)
+    revs = q.order_by(desc(Revision.timestamp)).limit(200).all()
+    return render_template("user_contribs.html", wiki=w, user=u,
+                           revisions=revs, namespace=ns)
+
+
+@app.route("/wiki/<wiki_slug>/Special:UserRights/<username>")
+def special_user_rights(wiki_slug, username):
+    w = get_wiki_or_404(wiki_slug)
+    u = User.query.filter_by(username=username).first_or_404()
+    return render_template("user_rights.html", wiki=w, user=u)
+
+
+@app.route("/wiki/<wiki_slug>/Special:TopEditors")
+def special_top_editors(wiki_slug):
+    w = get_wiki_or_404(wiki_slug)
+    span = request.args.get("span", "all")
+    cutoff = None
+    if span == "week":
+        cutoff = datetime.utcnow() - timedelta(days=7)
+    elif span == "month":
+        cutoff = datetime.utcnow() - timedelta(days=30)
+    q = (db.session.query(User, func.count(Revision.id))
+         .join(Revision, Revision.user_id == User.id)
+         .join(Article, Article.id == Revision.article_id)
+         .filter(Article.wiki_id == w.id))
+    if cutoff:
+        q = q.filter(Revision.timestamp >= cutoff)
+    rows = q.group_by(User.id).order_by(desc(func.count(Revision.id))).limit(50).all()
+    return render_template("top_editors.html", wiki=w, rows=rows, span=span)
+
+
+@app.route("/wiki/<wiki_slug>/Special:SpecialPages")
+def special_pages_index(wiki_slug):
+    w = get_wiki_or_404(wiki_slug)
+    return render_template("special_pages.html", wiki=w)
+
+
+@app.route("/wiki/<wiki_slug>/Special:WikiActivity")
+def special_wiki_activity(wiki_slug):
+    w = get_wiki_or_404(wiki_slug)
+    revs = (Revision.query.join(Article).filter(Article.wiki_id == w.id)
+            .order_by(desc(Revision.timestamp)).limit(40).all())
+    threads = (ForumThread.query.filter_by(wiki_id=w.id)
+               .order_by(desc(ForumThread.updated_at)).limit(10).all())
+    comments = (ArticleComment.query.join(Article)
+                .filter(Article.wiki_id == w.id)
+                .order_by(desc(ArticleComment.timestamp)).limit(10).all())
+    return render_template("wiki_activity.html", wiki=w, revs=revs,
+                           threads=threads, comments=comments)
+
+
+@app.route("/wiki/<wiki_slug>/Special:Polls")
+def special_polls(wiki_slug):
+    w = get_wiki_or_404(wiki_slug)
+    polls = Poll.query.filter_by(wiki_id=w.id).all()
+    return render_template("polls_index.html", wiki=w, polls=polls)
+
+
+@app.route("/wiki/<wiki_slug>/Poll/<int:poll_id>")
+def poll_view(wiki_slug, poll_id):
+    w = get_wiki_or_404(wiki_slug)
+    p = Poll.query.get_or_404(poll_id)
+    if p.wiki_id != w.id:
+        abort(404)
+    return render_template("poll_view.html", wiki=w, poll=p,
+                           results=p.results())
+
+
+@app.route("/wiki/<wiki_slug>/Help:<path:topic>")
+def help_page(wiki_slug, topic):
+    w = get_wiki_or_404(wiki_slug)
+    topic = slugify(topic)
+    return render_template("help.html", wiki=w, topic=topic)
+
+
+@app.route("/wiki/<wiki_slug>/Help")
+def help_index(wiki_slug):
+    w = get_wiki_or_404(wiki_slug)
+    return render_template("help_index.html", wiki=w)
+
+
+# =======================================================================
+# Admin action POSTs (read-only mockups + a few mutators)
+# =======================================================================
+
+@app.route("/wiki/<wiki_slug>/<path:title>/move", methods=["GET", "POST"])
+@login_required
+def article_move(wiki_slug, title):
+    w = get_wiki_or_404(wiki_slug)
+    slug = slugify(title)
+    a = Article.query.filter_by(wiki_id=w.id, slug=slug).first_or_404()
+    if request.method == "POST":
+        new_title = request.form.get("new_title", "").strip()
+        reason = request.form.get("reason", "").strip()
+        if not new_title:
+            flash("New title required.", "error")
+        else:
+            new_slug = slugify(new_title)
+            if Article.query.filter_by(wiki_id=w.id, slug=new_slug).first():
+                flash("Target title already exists.", "error")
+            else:
+                old_title = a.title
+                a.title = new_title
+                a.slug = new_slug
+                a.updated_at = datetime.utcnow()
+                # Log move as a revision
+                rev = Revision(article_id=a.id, user_id=current_user.id,
+                               author_label=current_user.username,
+                               summary=f"Moved from [[{old_title}]]. Reason: {reason or '(none)'}",
+                               content=a.content,
+                               bytes_size=len((a.content or "").encode("utf-8")),
+                               bytes_delta=0)
+                db.session.add(rev); db.session.commit()
+                flash(f"Page moved to {new_title}.", "success")
+                return redirect(url_for("article_view", wiki_slug=w.slug,
+                                        title=new_slug))
+    return render_template("move_page.html", wiki=w, article=a)
+
+
+@app.route("/wiki/<wiki_slug>/<path:title>/protect", methods=["GET", "POST"])
+@login_required
+def article_protect(wiki_slug, title):
+    w = get_wiki_or_404(wiki_slug)
+    slug = slugify(title)
+    a = Article.query.filter_by(wiki_id=w.id, slug=slug).first_or_404()
+    p = Protection.query.filter_by(article_id=a.id).first()
+    if request.method == "POST":
+        level = request.form.get("level", "autoconfirmed")
+        reason = request.form.get("reason", "")
+        if level == "none":
+            if p:
+                db.session.delete(p)
+                db.session.commit()
+            flash(f"Page {a.title} unprotected.", "success")
+        else:
+            if p:
+                p.level = level
+                p.reason = reason
+                p.set_by_id = current_user.id
+                p.set_at = datetime.utcnow()
+            else:
+                p = Protection(article_id=a.id, level=level,
+                               reason=reason, set_by_id=current_user.id)
+                db.session.add(p)
+            db.session.commit()
+            flash(f"{a.title} now protected at {level}.", "success")
+        return redirect(url_for("article_view", wiki_slug=w.slug, title=a.slug))
+    return render_template("protect_page.html", wiki=w, article=a, prot=p)
+
+
+@app.route("/wiki/<wiki_slug>/<path:title>/delete", methods=["GET", "POST"])
+@login_required
+def article_delete(wiki_slug, title):
+    w = get_wiki_or_404(wiki_slug)
+    slug = slugify(title)
+    a = Article.query.filter_by(wiki_id=w.id, slug=slug).first_or_404()
+    if request.method == "POST":
+        reason = request.form.get("reason", "")
+        # Mockup: record a delete revision but keep the row
+        rev = Revision(article_id=a.id, user_id=current_user.id,
+                       author_label=current_user.username,
+                       summary=f"[DELETE REQUEST] {reason}",
+                       content=a.content, minor=False,
+                       bytes_size=len((a.content or "").encode("utf-8")),
+                       bytes_delta=0)
+        db.session.add(rev); db.session.commit()
+        flash("Delete request filed. Awaiting sysop review.", "success")
+        return redirect(url_for("article_view", wiki_slug=w.slug, title=a.slug))
+    return render_template("delete_page.html", wiki=w, article=a)
+
+
+@app.route("/wiki/<wiki_slug>/Special:Block", methods=["GET", "POST"])
+@login_required
+def special_block(wiki_slug):
+    w = get_wiki_or_404(wiki_slug)
+    if request.method == "POST":
+        username = request.form.get("username", "").strip()
+        reason = request.form.get("reason", "")
+        duration = request.form.get("duration", "indefinite")
+        u = User.query.filter_by(username=username).first()
+        if not u:
+            flash("User not found.", "error")
+        else:
+            existing = UserBlock.query.filter_by(user_id=u.id, is_active=True).first()
+            if existing:
+                existing.is_active = False
+                db.session.commit()
+                flash(f"Unblocked {username}.", "info")
+            else:
+                db.session.add(UserBlock(user_id=u.id, blocker_id=current_user.id,
+                                         reason=reason, duration=duration))
+                db.session.commit()
+                flash(f"Blocked {username} ({duration}).", "success")
+        return redirect(url_for("special_block", wiki_slug=w.slug))
+    blocks = UserBlock.query.filter_by(is_active=True).all()
+    return render_template("block.html", wiki=w, blocks=blocks)
+
+
+# Namespace browse views
+NAMESPACES = ["User", "File", "Template", "Help", "Category", "MediaWiki", "Forum"]
+
+@app.route("/wiki/<wiki_slug>/Namespace/<ns>")
+def namespace_index(wiki_slug, ns):
+    w = get_wiki_or_404(wiki_slug)
+    if ns not in NAMESPACES:
+        abort(404)
+    if ns == "User":
+        items = User.query.order_by(User.username).all()
+    elif ns == "File":
+        items = FileAsset.query.filter_by(wiki_id=w.id).order_by(FileAsset.filename).all()
+    elif ns == "Category":
+        items = Category.query.filter_by(wiki_id=w.id).order_by(Category.name).all()
+    else:
+        items = Article.query.filter_by(wiki_id=w.id, namespace=ns).order_by(Article.title).all()
+    return render_template("namespace.html", wiki=w, ns=ns, items=items)
+
+
 @app.errorhandler(404)
 def _not_found(e):
     return render_template("404.html"), 404
@@ -937,11 +1661,13 @@ import sys as _sys
 _sys.modules.setdefault("app", _sys.modules[__name__])
 
 from seed_data import seed_database, seed_benchmark_users  # noqa: E402
+from seed_phase2 import seed_phase2_all  # noqa: E402
 
 with app.app_context():
     db.create_all()
     seed_database()
     seed_benchmark_users()
+    seed_phase2_all()
 
 
 if __name__ == "__main__":
