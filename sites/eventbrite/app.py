@@ -470,12 +470,14 @@ def _load_module(rel):
 
 _load_module('routes.py')
 _load_module('seed_data.py')
+_load_module('routes_more.py')
 
 
 with app.app_context():
     db.create_all()
     seed_database()
     seed_benchmark_users()
+    seed_extra()
 
 
 if __name__ == '__main__':
