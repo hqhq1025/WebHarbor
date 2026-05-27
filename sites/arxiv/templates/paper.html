@@ -486,7 +486,7 @@
             <p><a href="{{ url_for('login', next=request.path) }}">Log in</a> to save this paper to your library or starred papers.</p>
             {% endif %}
             <p style="text-align:center;">
-                <img src="{{ url_for('static', filename='images/brand/bibsonomy.png') }}" alt="BibSonomy"
+                <img loading="lazy" decoding="async" src="{{ url_for('static', filename='images/brand/bibsonomy.png') }}" alt="BibSonomy"
                      style="width:40px;"
                      onerror="this.outerHTML='<span class=&quot;tag&quot;>BibSonomy</span>'">
             </p>

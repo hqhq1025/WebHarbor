@@ -7,7 +7,7 @@
 {% block content %}
 
 <div class="author-hero" id="author_hero" style="display:flex;align-items:center;gap:14px;padding:10px 0;">
-  <img id="author_listing_headshot" src="{{ url_for('static', filename='images/' + (avatar_filename or 'headshots/avatar_00.svg')) }}"
+  <img loading="lazy" decoding="async" id="author_listing_headshot" src="{{ url_for('static', filename='images/' + (avatar_filename or 'headshots/avatar_00.svg')) }}"
        alt="{{ name }} headshot" width="72" height="72"
        style="border-radius:50%;border:2px solid #b31b1b;"/>
   <div>

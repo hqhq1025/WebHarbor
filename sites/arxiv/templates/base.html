@@ -30,7 +30,7 @@
     <div class="cu-identity-inner">
         <div class="cu-logo">
             <a href="{{ url_for('external_cornell') }}">
-                <img src="{{ url_for('static', filename='images/brand/cornell-reduced-white-SMALL.svg') }}" alt="Cornell University"
+                <img loading="lazy" decoding="async" src="{{ url_for('static', filename='images/brand/cornell-reduced-white-SMALL.svg') }}" alt="Cornell University"
                      onerror="this.outerHTML='<strong>Cornell University</strong>'">
             </a>
         </div>
@@ -49,7 +49,7 @@
     <div class="header-inner">
         <div class="header-logo">
             <a href="{{ url_for('index') }}">
-                <img src="{{ url_for('static', filename='images/brand/arxiv-logo-one-color-white.svg') }}" alt="arXiv"
+                <img loading="lazy" decoding="async" src="{{ url_for('static', filename='images/brand/arxiv-logo-one-color-white.svg') }}" alt="arXiv"
                      onerror="this.outerHTML='<span style=&quot;color:#fff;font-size:28px;font-weight:bold;font-style:italic;&quot;>arXiv</span>'">
             </a>
         </div>

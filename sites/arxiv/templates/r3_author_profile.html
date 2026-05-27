@@ -3,7 +3,7 @@
 {% block content %}
 <div class="r3-profile-hero" id="r3_profile_hero"
      style="display:flex;align-items:center;gap:18px;padding:18px;background:linear-gradient(90deg,{{ visual.institution_accent }},#0c0c14);color:#fff;border-radius:8px;margin-bottom:18px;">
-  <img id="r3_author_headshot" src="{{ url_for('static', filename='images/' + visual.headshot) }}"
+  <img loading="lazy" decoding="async" id="r3_author_headshot" src="{{ url_for('static', filename='images/' + visual.headshot) }}"
        alt="{{ name }} headshot"
        width="120" height="120"
        style="border-radius:50%;border:3px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,0.3);"/>
@@ -12,7 +12,7 @@
     <p id="r3_author_affiliation" style="margin:6px 0 0 0;opacity:0.9;font-size:14px;">{{ visual.affiliation }}</p>
     <p style="margin:4px 0 0 0;opacity:0.75;font-size:12px;">ORCID <span id="r3_orcid_inline">{{ stats.orcid }}</span></p>
   </div>
-  <img id="r3_institution_banner" src="{{ url_for('static', filename='images/' + visual.institution_banner) }}"
+  <img loading="lazy" decoding="async" id="r3_institution_banner" src="{{ url_for('static', filename='images/' + visual.institution_banner) }}"
        alt="{{ visual.affiliation }} institutional banner"
        width="220" height="80"
        style="border-radius:6px;border:1px solid rgba(255,255,255,0.3);"/>
