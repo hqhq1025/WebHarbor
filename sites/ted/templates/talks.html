@@ -12,6 +12,11 @@
       {% endfor %}
     </select>
     <input type="number" name="max_minutes" min="1" placeholder="Max minutes" value="{{ max_minutes or '' }}">
+    <select name="sort">
+      <option value="newest" {% if sort == 'newest' %}selected{% endif %}>Newest</option>
+      <option value="popular" {% if sort == 'popular' %}selected{% endif %}>Most viewed</option>
+      <option value="oldest" {% if sort == 'oldest' %}selected{% endif %}>Oldest</option>
+    </select>
     {% if topic %}<input type="hidden" name="topic" value="{{ topic }}">{% endif %}
     <button type="submit">Apply</button>
   </form>

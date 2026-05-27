@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block title %}Apply to {{ conf.name }} | TED{% endblock %}
+{% block content %}
+<section class="page-head">
+  <p class="eyebrow">{{ conf.name }}</p>
+  <h1>Apply to attend</h1>
+  <p>{{ conf.city }}, {{ conf.country }} - {{ conf.starts_on|date_label }} through {{ conf.ends_on|date_label }}.</p>
+  <p>Status: <strong>{{ conf.status }}</strong></p>
+</section>
+<section class="auth-page">
+  <form class="panel" method="post">
+    <h2>Application</h2>
+    <label>Role
+      <select name="role">
+        {% for r in roles %}
+          <option value="{{ r }}" {% if existing and existing.role == r %}selected{% endif %}>{{ r }}</option>
+        {% endfor %}
+      </select>
+    </label>
+    <label>Motivation
+      <textarea name="motivation" rows="6">{% if existing %}{{ existing.motivation }}{% endif %}</textarea>
+    </label>
+    <button type="submit">{{ "Update application" if existing else "Submit application" }}</button>
+  </form>
+</section>
+{% endblock %}

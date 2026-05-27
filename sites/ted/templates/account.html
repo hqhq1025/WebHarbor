@@ -3,6 +3,12 @@
 <section class="page-head">
   <p class="eyebrow">Account</p>
   <h1>{{ user.display_name }}</h1>
+  <p>{{ user.role }} - {{ user.city }} - Member tier: <strong>{{ user.member_tier }}</strong></p>
+  <p>
+    <a href="{{ url_for('myaccount_saved') }}">Saved talks</a> ·
+    <a href="{{ url_for('myaccount_notes') }}">Notes</a> ·
+    <a href="{{ url_for('myaccount_playlists') }}">Playlists</a>
+  </p>
 </section>
 <section class="split">
   <form class="panel" method="post">
@@ -11,19 +17,32 @@
     <label>Role<input name="role" value="{{ user.role }}"></label>
     <label>City<input name="city" value="{{ user.city }}"></label>
     <label>Newsletter topic<input name="newsletter_topic" value="{{ user.newsletter_topic }}"></label>
+    <label>Bio<textarea name="bio" rows="3">{{ user.bio }}</textarea></label>
     <button type="submit">Update profile</button>
   </form>
   <div>
+    <h2>Membership</h2>
+    {% if tier %}
+      <div class="row-link"><strong>{{ tier.name }}</strong><span>{{ subscription.billing }} - status {{ subscription.status }}</span></div>
+    {% else %}
+      <p>No membership subscription yet. <a href="{{ url_for('membership_landing') }}">Choose a level</a>.</p>
+    {% endif %}
     <h2>Event registrations</h2>
     {% for reg in registrations %}
       <div class="row-link"><strong>{{ reg.event.name }}</strong><span>{{ reg.status }} - {{ reg.event.city }}</span></div>
     {% else %}
       <p>No event registrations yet.</p>
     {% endfor %}
+    <h2>Conference applications</h2>
+    {% for app_row in applications %}
+      <div class="row-link"><strong>conference #{{ app_row.conference_id }}</strong><span>{{ app_row.role }} - {{ app_row.status }}</span></div>
+    {% else %}
+      <p>No conference applications.</p>
+    {% endfor %}
   </div>
 </section>
 <section class="band">
-  <div class="section-head"><h2>Saved talks</h2></div>
+  <div class="section-head"><h2>Recently saved</h2><a href="{{ url_for('myaccount_saved') }}">All saved</a></div>
   <div class="list">
     {% for saved_item in saved %}
       <div class="row-link">
@@ -32,6 +51,26 @@
       </div>
     {% else %}
       <p>No saved talks yet.</p>
+    {% endfor %}
+  </div>
+</section>
+<section class="band">
+  <div class="section-head"><h2>Your playlists</h2><a href="{{ url_for('myaccount_playlists') }}">All playlists</a></div>
+  <div class="list">
+    {% for p in playlists %}
+      <a class="row-link" href="{{ url_for('myaccount_playlist_detail', playlist_id=p.id) }}"><strong>{{ p.title }}</strong><span>{{ p.description }}</span></a>
+    {% else %}
+      <p>No playlists yet.</p>
+    {% endfor %}
+  </div>
+</section>
+<section class="band">
+  <div class="section-head"><h2>Recent notes</h2><a href="{{ url_for('myaccount_notes') }}">All notes</a></div>
+  <div class="list">
+    {% for n in notes %}
+      <div class="row-link"><strong><a href="{{ url_for('talk_detail', slug=n.talk.slug) }}">{{ n.talk.title }}</a></strong><span>{{ n.body }}</span></div>
+    {% else %}
+      <p>No notes yet.</p>
     {% endfor %}
   </div>
 </section>

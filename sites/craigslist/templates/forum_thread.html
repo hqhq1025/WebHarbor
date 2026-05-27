@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block title %}{{ thread.title }} - craigslist forums{% endblock %}
+{% block content %}
+<div class="content-shell forums-shell">
+  <nav class="breadcrumb"><a href="{{ url_for('index') }}">SF bay area</a> &gt; <a href="{{ url_for('discussion_forums') }}">discussion forums</a> &gt; <a href="{{ url_for('forum_board', slug=thread.board_slug) }}">{{ board.name if board else thread.board_slug }}</a> &gt; <span>{{ thread.title }}</span></nav>
+  <article class="forum-post root">
+    <header><h1>{{ thread.title }}</h1>
+      <span class="muted">posted by {{ thread.author_name }} &middot; {{ thread.created_at.strftime("%Y-%m-%d %H:%M") }}</span>
+    </header>
+    <div class="post-body">{{ thread.body }}</div>
+  </article>
+  <section class="replies">
+    <h2>replies ({{ replies|length }})</h2>
+    {% for r in replies %}
+    <article class="forum-post reply">
+      <span class="muted">{{ r.author_name }} &middot; {{ r.created_at.strftime("%Y-%m-%d %H:%M") }}</span>
+      <p>{{ r.body }}</p>
+    </article>
+    {% endfor %}
+  </section>
+  <section class="reply-form">
+    <h2>post a reply</h2>
+    <form method="post" action="{{ url_for('forum_reply', thread_id=thread.id) }}">
+      {% if not current_user.is_authenticated %}
+      <input name="name" placeholder="your name (optional)">
+      <input name="email" placeholder="your email (optional)">
+      {% endif %}
+      <textarea name="body" rows="5" required placeholder="reply..."></textarea>
+      <button type="submit">post reply</button>
+    </form>
+  </section>
+</div>
+{% endblock %}

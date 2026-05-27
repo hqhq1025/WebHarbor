@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% block title %}{{ area }} - craigslist{% endblock %}
+{% block content %}
+<div class="content-shell area-hub">
+  <nav class="breadcrumb"><a href="{{ url_for('index') }}">SF bay area</a> &gt; <span>{{ area }}</span></nav>
+  <h1>{{ area }}</h1>
+  <p class="muted">postings local to {{ area }}.</p>
+
+  <section class="hub-nbhoods">
+    <h2>neighborhoods</h2>
+    <ul class="hub-pill-list">
+      {% for nh in hubs %}
+      <li><a href="{{ url_for('neighborhood_hub', area_slug=area_slug, neighborhood_slug=nh.replace(' ', '-')) }}">{{ nh }}</a></li>
+      {% endfor %}
+    </ul>
+  </section>
+
+  <section class="hub-cats">
+    <h2>browse by category</h2>
+    <ul class="hub-cat-grid">
+      {% for cat in category_groups() %}
+        {% for c in cat.categories %}
+          {% if counts.get(c.slug, 0) > 0 %}
+          <li><a href="{{ url_for('category_search', category_slug=c.slug, area=area) }}">{{ c.name }}</a> <span class="muted">{{ counts[c.slug] }}</span></li>
+          {% endif %}
+        {% endfor %}
+      {% endfor %}
+    </ul>
+  </section>
+
+  <section class="hub-featured">
+    <h2>featured in {{ area }}</h2>
+    <div class="best-grid">
+      {% for item in featured %}
+      {% set photos = listing_images(item) %}
+      <article class="best-card">
+        {% if photos %}<a href="{{ url_for('listing_detail', slug=item.slug, listing_id=item.id) }}"><img src="{{ url_for('static', filename=photos[0]) }}" alt=""></a>{% endif %}
+        <div class="best-meta">
+          <a href="{{ url_for('listing_detail', slug=item.slug, listing_id=item.id) }}">{{ item.title }}</a>
+          <span class="muted">{{ item.neighborhood }} &middot; {{ item.display_price }}</span>
+        </div>
+      </article>
+      {% endfor %}
+    </div>
+  </section>
+
+  <section class="hub-recent">
+    <h2>recent in {{ area }}</h2>
+    <ul class="compact-list">
+      {% for item in recent %}
+      <li><a href="{{ url_for('listing_detail', slug=item.slug, listing_id=item.id) }}">{{ item.title }}</a> <span class="muted">{{ item.neighborhood }} &middot; {{ item.display_price }}</span></li>
+      {% endfor %}
+    </ul>
+  </section>
+</div>
+{% endblock %}

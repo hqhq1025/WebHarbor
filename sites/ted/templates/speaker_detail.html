@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block title %}{{ speaker.name }} | TED Speaker{% endblock %}
+{% block content %}
+<section class="detail-hero">
+  <img src="{{ url_for('static', filename=speaker.photo) }}" alt="">
+  <div>
+    <p class="eyebrow">Speaker</p>
+    <h1>{{ speaker.name }}</h1>
+    <p class="speaker">{{ speaker.role }} - {{ speaker.affiliation }}</p>
+    <p>{{ speaker.bio }}</p>
+    <h2>Why you should listen</h2>
+    <p>{{ speaker.why_listen }}</p>
+    <dl class="stats">
+      <div><dt>Talks</dt><dd>{{ speaker.talks_count }}</dd></div>
+      <div><dt>Total views</dt><dd>{{ speaker.total_views }}</dd></div>
+      <div><dt>Languages</dt><dd>{{ speaker.languages }}</dd></div>
+    </dl>
+  </div>
+</section>
+<section class="band">
+  <div class="section-head"><h2>Talks by {{ speaker.name }}</h2></div>
+  <div class="grid">
+    {% for talk in talks %}{% include "_talk_card.html" %}{% endfor %}
+  </div>
+</section>
+{% endblock %}

@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block title %}your postings - craigslist{% endblock %}
+{% block content %}
+<div class="content-shell">
+  <nav class="account-tabs">
+    <a href="{{ url_for('account') }}">account home</a>
+    <a class="active" href="{{ url_for('myaccount_posts') }}">your postings</a>
+    <a href="{{ url_for('saved') }}">favorites</a>
+    <a href="{{ url_for('messages') }}">messages</a>
+  </nav>
+  <h1>your postings</h1>
+  {% if posts %}
+  <ul class="compact-list account-posts">
+    {% for p in posts %}
+    <li>
+      <a href="{{ url_for('listing_detail', slug=p.slug, listing_id=p.id) }}">{{ p.title }}</a>
+      <span class="muted">{{ p.status }} &middot; {{ p.display_price }} &middot; {{ p.posted_at.strftime("%Y-%m-%d") }}</span>
+      <a href="{{ url_for('manage_posting', listing_id=p.id) }}">manage</a>
+    </li>
+    {% endfor %}
+  </ul>
+  {% else %}
+  <p class="muted">you have not posted yet. <a href="{{ url_for('post_choose_category') }}">create your first posting</a>.</p>
+  {% endif %}
+</div>
+{% endblock %}

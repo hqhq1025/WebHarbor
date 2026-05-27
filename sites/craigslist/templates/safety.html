@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block title %}personal safety tips - craigslist{% endblock %}
+{% block content %}
+<div class="content-shell">
+  <nav class="breadcrumb"><a href="{{ url_for('index') }}">SF bay area</a> &gt; <a href="{{ url_for('about') }}">about</a> &gt; <span>safety</span></nav>
+  <h1>personal safety tips</h1>
+  <p>most craigslist transactions are uneventful, but a small number turn ugly. these tips reduce the risk.</p>
+  <ul class="safety-list">
+    {% for tip in tips %}
+    <li><strong>{{ tip.title }}.</strong> {{ tip.body }}</li>
+    {% endfor %}
+  </ul>
+  <h2>safe trade locations</h2>
+  <p>most bay area police departments host a designated "safe trade zone" with 24-hour camera coverage. ask the desk sergeant at sfpd central station, oakland police HQ, san jose police hq, or your local pd lobby. trade in daylight when possible.</p>
+  <p>related: <a href="{{ url_for('scams') }}">how to avoid common scams</a> &middot; <a href="{{ url_for('about_help', topic='safety') }}">help article on safety</a></p>
+</div>
+{% endblock %}

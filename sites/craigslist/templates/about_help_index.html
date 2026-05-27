@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block title %}help &amp; FAQ - craigslist{% endblock %}
+{% block content %}
+<div class="content-shell">
+  <nav class="breadcrumb"><a href="{{ url_for('index') }}">SF bay area</a> &gt; <a href="{{ url_for('about') }}">about</a> &gt; <span>help</span></nav>
+  <h1>help &amp; FAQ</h1>
+  <p>pick a topic. each topic links to the full answer.</p>
+  <ul class="help-index compact-list">
+    {% for topic in topics %}
+    <li>
+      <a href="{{ url_for('about_help', topic=topic.slug) }}"><strong>{{ topic.title }}</strong></a>
+      <p class="muted">{{ topic.summary }}</p>
+    </li>
+    {% endfor %}
+  </ul>
+</div>
+{% endblock %}

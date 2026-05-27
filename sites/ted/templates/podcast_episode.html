@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block title %}{{ episode.title }} | {{ podcast.name }}{% endblock %}
+{% block content %}
+<section class="detail-hero">
+  <img src="{{ url_for('static', filename=episode.image) }}" alt="">
+  <div>
+    <p class="eyebrow">{{ podcast.name }} - episode {{ episode.position }}</p>
+    <h1>{{ episode.title }}</h1>
+    <p class="speaker">{{ episode.speaker }}</p>
+    <p>{{ episode.description }}</p>
+    <dl class="stats">
+      <div><dt>Duration</dt><dd>{{ episode.duration_seconds|duration_label }}</dd></div>
+      <div><dt>Published</dt><dd>{{ episode.published_at|date_label }}</dd></div>
+      <div><dt>Host</dt><dd>{{ podcast.host }}</dd></div>
+    </dl>
+    {% if related_talk %}
+      <p><a href="{{ url_for('talk_detail', slug=related_talk.slug) }}">Watch the talk this episode is built around</a></p>
+    {% endif %}
+  </div>
+</section>
+{% endblock %}

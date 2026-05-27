@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block title %}create a posting - choose category{% endblock %}
+{% block content %}
+<div class="content-shell">
+  <h1>create a posting</h1>
+  <p class="muted">step 1 of 3: choose a category</p>
+  <div class="post-wizard-grid">
+    {% for group in groups %}
+    <section class="post-wizard-group">
+      <h2>{{ group.name }}</h2>
+      <ul class="compact-list">
+        {% for cat in group.categories %}
+        <li><a href="{{ url_for('post_choose_area', category_slug=cat.slug) }}">{{ cat.name }}</a></li>
+        {% endfor %}
+      </ul>
+    </section>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}contact craigslist{% endblock %}
+{% block content %}
+<div class="content-shell">
+  <nav class="breadcrumb"><a href="{{ url_for('index') }}">SF bay area</a> &gt; <a href="{{ url_for('about') }}">about</a> &gt; <span>contact</span></nav>
+  <h1>contact craigslist</h1>
+  <p>file a bug, billing question, or feedback note. for safety incidents please contact local law enforcement first.</p>
+  <form method="post" class="contact-form">
+    <label>topic</label>
+    <select name="topic">
+      <option value="general">general feedback</option>
+      <option value="billing">billing question</option>
+      <option value="bug">bug report</option>
+      <option value="abuse">abuse / harassment</option>
+      <option value="legal">legal / takedown</option>
+      <option value="press">press inquiry</option>
+    </select>
+    <label>your name</label>
+    <input name="name" placeholder="optional">
+    <label>your email</label>
+    <input name="email" placeholder="reply address">
+    <label>message</label>
+    <textarea name="body" rows="6" required></textarea>
+    <button type="submit">submit</button>
+  </form>
+</div>
+{% endblock %}

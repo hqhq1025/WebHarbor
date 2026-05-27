@@ -3,14 +3,26 @@ import hashlib
 import json
 import os
 import re
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from flask import Flask, abort, flash, redirect, render_template, request, Response, session, url_for
 from flask_login import LoginManager, UserMixin, current_user, login_required, login_user, logout_user
 from flask_sqlalchemy import SQLAlchemy
-from sqlalchemy import or_
+from sqlalchemy import or_, text
 
-from seed_data import CATEGORY_GROUPS, deterministic_password, seed_benchmark_users, seed_database
+from seed_data import (
+    CATEGORY_GROUPS,
+    FORUM_BOARDS,
+    HELP_TOPICS,
+    NEIGHBORHOOD_HUBS,
+    SAFETY_TIPS,
+    SCAM_PATTERNS,
+    SYSTEM_STATUS_ENTRIES,
+    deterministic_password,
+    seed_benchmark_users,
+    seed_database,
+    seed_forum_content,
+)
 
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -167,6 +179,58 @@ class Message(db.Model):
     body = db.Column(db.Text, default="")
     direction = db.Column(db.String(20), default="outbound")
     is_read = db.Column(db.Boolean, default=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+
+class AbuseReport(db.Model):
+    __tablename__ = "abuse_reports"
+
+    id = db.Column(db.Integer, primary_key=True)
+    listing_id = db.Column(db.Integer, db.ForeignKey("listings.id"), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=True)
+    reason = db.Column(db.String(80), default="other")
+    body = db.Column(db.Text, default="")
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+
+class ContactInquiry(db.Model):
+    __tablename__ = "contact_inquiries"
+
+    id = db.Column(db.Integer, primary_key=True)
+    topic = db.Column(db.String(80), default="general")
+    sender_name = db.Column(db.String(120), default="")
+    sender_email = db.Column(db.String(160), default="")
+    body = db.Column(db.Text, default="")
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+
+class ForumThread(db.Model):
+    __tablename__ = "forum_threads"
+
+    id = db.Column(db.Integer, primary_key=True)
+    board_slug = db.Column(db.String(60), index=True, nullable=False)
+    title = db.Column(db.String(200), nullable=False)
+    author_name = db.Column(db.String(120), default="cl user")
+    author_email = db.Column(db.String(160), default="")
+    body = db.Column(db.Text, default="")
+    user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=True)
+    is_pinned = db.Column(db.Boolean, default=False)
+    view_count = db.Column(db.Integer, default=0)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    replies = db.relationship("ForumReply", backref="thread", cascade="all, delete-orphan")
+
+
+class ForumReply(db.Model):
+    __tablename__ = "forum_replies"
+
+    id = db.Column(db.Integer, primary_key=True)
+    thread_id = db.Column(db.Integer, db.ForeignKey("forum_threads.id"), nullable=False)
+    author_name = db.Column(db.String(120), default="cl user")
+    author_email = db.Column(db.String(160), default="")
+    body = db.Column(db.Text, default="")
+    user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
 
@@ -660,15 +724,534 @@ def delete_posting(listing_id):
     return redirect(url_for("account"))
 
 
+# ---- post wizard (multi-step) ----
+
+@app.route("/post/category")
+@login_required
+def post_choose_category():
+    return render_template(
+        "post_choose_category.html",
+        groups=category_groups(),
+    )
+
+
+@app.route("/post/area")
+@login_required
+def post_choose_area():
+    cat_slug = request.args.get("category_slug", "").strip()
+    category = Category.query.filter_by(slug=cat_slug).first() if cat_slug else None
+    return render_template(
+        "post_choose_area.html",
+        category=category,
+        areas=AREAS,
+        neighborhoods_by_area=NEIGHBORHOOD_HUBS,
+    )
+
+
+# ---- manage individual posting ----
+
+@app.route("/manage/<int:listing_id>")
+@login_required
+def manage_posting(listing_id):
+    listing = Listing.query.get_or_404(listing_id)
+    if listing.owner_id != current_user.id:
+        abort(403)
+    return render_template("manage.html", listing=listing)
+
+
+@app.route("/manage/<int:listing_id>/edit", methods=["GET", "POST"])
+@login_required
+def edit_posting(listing_id):
+    listing = Listing.query.get_or_404(listing_id)
+    if listing.owner_id != current_user.id:
+        abort(403)
+    categories = Category.query.order_by(Category.group_slug, Category.display_order).all()
+    if request.method == "POST":
+        listing.title = request.form.get("title", listing.title).strip() or listing.title
+        listing.description = request.form.get("description", listing.description).strip() or listing.description
+        new_price = request.form.get("price", "")
+        if new_price:
+            listing.price = parse_int(new_price)
+        new_area = request.form.get("area", "").strip()
+        if new_area:
+            listing.area = new_area
+        new_neighborhood = request.form.get("neighborhood", "").strip()
+        if new_neighborhood:
+            listing.neighborhood = new_neighborhood
+        new_condition = request.form.get("condition", "").strip()
+        if new_condition:
+            listing.condition = new_condition
+        listing.updated_at = datetime.utcnow()
+        db.session.commit()
+        flash("posting updated", "success")
+        return redirect(url_for("manage_posting", listing_id=listing.id))
+    return render_template("manage_edit.html", listing=listing, categories=categories)
+
+
+@app.route("/manage/<int:listing_id>/repost", methods=["POST"])
+@login_required
+def repost_listing(listing_id):
+    listing = Listing.query.get_or_404(listing_id)
+    if listing.owner_id != current_user.id:
+        abort(403)
+    listing.status = "active"
+    listing.posted_at = datetime.utcnow()
+    listing.updated_at = datetime.utcnow()
+    db.session.commit()
+    flash("posting reposted", "success")
+    return redirect(url_for("manage_posting", listing_id=listing.id))
+
+
+@app.route("/manage/<int:listing_id>/extend", methods=["POST"])
+@login_required
+def extend_listing(listing_id):
+    listing = Listing.query.get_or_404(listing_id)
+    if listing.owner_id != current_user.id:
+        abort(403)
+    listing.updated_at = datetime.utcnow() + timedelta(days=7)
+    db.session.commit()
+    flash("posting extended by 7 days", "success")
+    return redirect(url_for("manage_posting", listing_id=listing.id))
+
+
+# ---- account: password, delete, alias ----
+
+@app.route("/account/password", methods=["GET", "POST"])
+@login_required
+def account_password():
+    if request.method == "POST":
+        current = request.form.get("current_password", "")
+        new = request.form.get("new_password", "")
+        confirm = request.form.get("confirm_password", "")
+        if not current_user.check_password(current):
+            flash("current password is incorrect", "error")
+        elif not new or new != confirm:
+            flash("new password does not match the confirmation", "error")
+        else:
+            current_user.set_password(new)
+            db.session.commit()
+            flash("password updated", "success")
+            return redirect(url_for("account"))
+    return render_template("account_password.html")
+
+
+@app.route("/account/delete", methods=["POST"])
+@login_required
+def account_delete():
+    confirm = request.form.get("confirm", "")
+    if confirm.strip().lower() != "delete":
+        flash("type the word delete to confirm", "error")
+        return redirect(url_for("account_edit"))
+    user = current_user
+    logout_user()
+    db.session.delete(user)
+    db.session.commit()
+    flash("account deleted", "info")
+    return redirect(url_for("index"))
+
+
+@app.route("/myaccount")
+def myaccount_alias():
+    if current_user.is_authenticated:
+        return redirect(url_for("account"))
+    return redirect(url_for("login", next=url_for("account")))
+
+
+@app.route("/myaccount/posts")
+@login_required
+def myaccount_posts():
+    posts = Listing.query.filter_by(owner_id=current_user.id).order_by(Listing.posted_at.desc()).all()
+    return render_template("myaccount_posts.html", posts=posts)
+
+
+@app.route("/myaccount/favorites")
+@login_required
+def myaccount_favorites():
+    return redirect(url_for("saved"))
+
+
+# ---- saved search delete, message delete, listing unhide ----
+
+@app.route("/saved-search/<int:search_id>/delete", methods=["POST"])
+@login_required
+def delete_saved_search(search_id):
+    row = SavedSearch.query.filter_by(id=search_id, user_id=current_user.id).first_or_404()
+    db.session.delete(row)
+    db.session.commit()
+    flash("saved search removed", "info")
+    return redirect(url_for("account"))
+
+
+@app.route("/messages/<int:message_id>/delete", methods=["POST"])
+@login_required
+def delete_message(message_id):
+    row = Message.query.filter_by(id=message_id, user_id=current_user.id).first_or_404()
+    db.session.delete(row)
+    db.session.commit()
+    flash("message removed", "info")
+    return redirect(url_for("messages"))
+
+
+@app.route("/listing/<int:listing_id>/unhide", methods=["POST"])
+def unhide_listing(listing_id):
+    listing = Listing.query.get_or_404(listing_id)
+    if current_user.is_authenticated:
+        row = HiddenListing.query.filter_by(user_id=current_user.id, listing_id=listing.id).first()
+        if row:
+            db.session.delete(row)
+            db.session.commit()
+    else:
+        ids = set(session.get("hidden_listing_ids", []))
+        if listing.id in ids:
+            ids.discard(listing.id)
+            session["hidden_listing_ids"] = sorted(ids)
+    flash("listing restored", "info")
+    return redirect(request.form.get("next") or url_for("search"))
+
+
+# ---- alternate contact + abuse report ----
+
+@app.route("/listing/<int:listing_id>/contact", methods=["GET", "POST"])
+def contact_seller(listing_id):
+    listing = Listing.query.get_or_404(listing_id)
+    if request.method == "POST":
+        name = request.form.get("name", "").strip() or (current_user.name if current_user.is_authenticated else "craigslist user")
+        email = request.form.get("email", "").strip() or (current_user.email if current_user.is_authenticated else "anonymous@example.test")
+        phone = request.form.get("phone", "").strip()
+        body = request.form.get("body", "").strip()
+        if not body:
+            flash("message body is required", "error")
+        else:
+            db.session.add(Message(
+                user_id=current_user.id if current_user.is_authenticated else None,
+                listing_id=listing.id,
+                sender_name=name,
+                sender_email=email,
+                body=f"[via contact form, phone: {phone}] {body}" if phone else body,
+                direction="outbound",
+                is_read=True,
+            ))
+            db.session.commit()
+            flash("contact request sent", "success")
+            return redirect(url_for("listing_detail", slug=listing.slug, listing_id=listing.id))
+    return render_template("contact.html", listing=listing)
+
+
+@app.route("/listing/<int:listing_id>/report", methods=["GET", "POST"])
+def report_listing(listing_id):
+    listing = Listing.query.get_or_404(listing_id)
+    if request.method == "POST":
+        reason = request.form.get("reason", "other").strip()
+        body = request.form.get("body", "").strip()
+        db.session.add(AbuseReport(
+            listing_id=listing.id,
+            user_id=current_user.id if current_user.is_authenticated else None,
+            reason=reason,
+            body=body,
+        ))
+        listing.flag_count += 1
+        db.session.commit()
+        flash("thank you, this posting has been reported", "success")
+        return redirect(url_for("listing_detail", slug=listing.slug, listing_id=listing.id))
+    return render_template("report.html", listing=listing)
+
+
+# ---- city / area subhubs ----
+
+AREAS = ["san francisco", "east bay", "south bay", "peninsula", "north bay", "santa cruz"]
+
+AREA_SLUGS = {
+    "sfc": "san francisco",
+    "eby": "east bay",
+    "sby": "south bay",
+    "pen": "peninsula",
+    "nby": "north bay",
+    "scz": "santa cruz",
+}
+
+
+@app.route("/<area_slug>/sites")
+def area_hub_alias(area_slug):
+    area = AREA_SLUGS.get(area_slug.lower())
+    if not area:
+        abort(404)
+    return redirect(url_for("area_hub", area_slug=area_slug.lower()))
+
+
+@app.route("/area/<area_slug>")
+def area_hub(area_slug):
+    area = AREA_SLUGS.get(area_slug.lower())
+    if not area:
+        abort(404)
+    counts = {}
+    for cat in Category.query.all():
+        counts[cat.slug] = Listing.query.filter_by(category_slug=cat.slug, area=area, status="active").count()
+    featured = Listing.query.filter_by(area=area, status="active").filter(Listing.image != "").order_by(Listing.posted_at.desc()).limit(8).all()
+    recent = Listing.query.filter_by(area=area, status="active").order_by(Listing.posted_at.desc()).limit(20).all()
+    hubs = NEIGHBORHOOD_HUBS.get(area, [])
+    return render_template("area_hub.html", area=area, area_slug=area_slug.lower(), counts=counts, featured=featured, recent=recent, hubs=hubs)
+
+
+@app.route("/area/<area_slug>/<neighborhood_slug>")
+def neighborhood_hub(area_slug, neighborhood_slug):
+    area = AREA_SLUGS.get(area_slug.lower())
+    if not area:
+        abort(404)
+    neighborhood = neighborhood_slug.replace("-", " ")
+    listings = Listing.query.filter_by(area=area, status="active").filter(Listing.neighborhood.ilike(f"%{neighborhood}%")).order_by(Listing.posted_at.desc()).all()
+    return render_template("neighborhood.html", area=area, neighborhood=neighborhood, listings=listings)
+
+
+# ---- group hubs (for-sale / housing / jobs / services / community) ----
+
+GROUP_PATH_ALIASES = {
+    "for-sale": "for_sale",
+    "for_sale": "for_sale",
+    "housing": "housing",
+    "jobs": "jobs",
+    "services": "services",
+    "community": "community",
+}
+
+
+@app.route("/group/<group_path>")
+def group_hub(group_path):
+    group_slug = GROUP_PATH_ALIASES.get(group_path.lower())
+    if not group_slug:
+        abort(404)
+    group_meta = next((g for g in CATEGORY_GROUPS if g["slug"] == group_slug), None)
+    if not group_meta:
+        abort(404)
+    cats = Category.query.filter_by(group_slug=group_slug).order_by(Category.display_order).all()
+    counts = {c.slug: Listing.query.filter_by(category_slug=c.slug, status="active").count() for c in cats}
+    featured = Listing.query.filter_by(category_group=group_slug, status="active").filter(Listing.image != "").order_by(Listing.posted_at.desc()).limit(8).all()
+    return render_template("group_hub.html", group=group_meta, categories=cats, counts=counts, featured=featured)
+
+
+@app.route("/<group_path>/sub/<sub_slug>")
+def group_sub(group_path, sub_slug):
+    group_slug = GROUP_PATH_ALIASES.get(group_path.lower())
+    if not group_slug:
+        abort(404)
+    return redirect(url_for("category_search", category_slug=sub_slug))
+
+
+@app.route("/jobs/cat/<sub_slug>")
+def jobs_sub(sub_slug):
+    return redirect(url_for("category_search", category_slug=sub_slug))
+
+
+# ---- about / help / safety / legal ----
+
+@app.route("/about")
+def about():
+    return render_template("about.html", topics=HELP_TOPICS)
+
+
+@app.route("/about/help")
+def about_help_index():
+    return render_template("about_help_index.html", topics=HELP_TOPICS)
+
+
+@app.route("/about/help/<topic>")
+def about_help(topic):
+    item = next((t for t in HELP_TOPICS if t["slug"] == topic), None)
+    if not item:
+        abort(404)
+    return render_template("about_help.html", topic=item, topics=HELP_TOPICS)
+
+
+@app.route("/about/legal")
+def about_legal():
+    return render_template("about_legal.html")
+
+
+@app.route("/about/terms")
+def about_terms():
+    return render_template("about_terms.html")
+
+
+@app.route("/about/privacy")
+def about_privacy():
+    return render_template("about_privacy.html")
+
+
+@app.route("/about/system-status")
+def about_system_status():
+    return render_template("system_status.html", entries=SYSTEM_STATUS_ENTRIES)
+
+
+@app.route("/about/best-of")
+def about_best_of():
+    listings = Listing.query.filter(Listing.image != "", Listing.status == "active").order_by(Listing.view_count.desc(), Listing.posted_at.desc()).limit(40).all()
+    return render_template("best_of.html", listings=listings)
+
+
+@app.route("/about/apps")
+def about_apps():
+    return render_template("apps.html")
+
+
+@app.route("/about/contact", methods=["GET", "POST"])
+def about_contact():
+    if request.method == "POST":
+        topic = request.form.get("topic", "general").strip()
+        name = request.form.get("name", "").strip() or "anonymous"
+        email = request.form.get("email", "").strip() or "anonymous@example.test"
+        body = request.form.get("body", "").strip()
+        if not body:
+            flash("please describe your issue", "error")
+        else:
+            db.session.add(ContactInquiry(topic=topic, sender_name=name, sender_email=email, body=body))
+            db.session.commit()
+            flash("thanks, your note has been logged", "success")
+            return redirect(url_for("about"))
+    return render_template("about_contact.html")
+
+
+@app.route("/safety")
+def safety():
+    return render_template("safety.html", tips=SAFETY_TIPS)
+
+
+@app.route("/scams")
+def scams():
+    return render_template("scams.html", patterns=SCAM_PATTERNS)
+
+
+# ---- discussion forums ----
+
+@app.route("/discussion-forums")
+def discussion_forums():
+    boards = []
+    for board in FORUM_BOARDS:
+        thread_count = ForumThread.query.filter_by(board_slug=board["slug"]).count()
+        latest = ForumThread.query.filter_by(board_slug=board["slug"]).order_by(ForumThread.updated_at.desc()).first()
+        boards.append({"slug": board["slug"], "name": board["name"], "description": board["description"], "thread_count": thread_count, "latest": latest})
+    return render_template("discussion_forums.html", boards=boards)
+
+
+@app.route("/forum/<slug>")
+def forum_board(slug):
+    board = next((b for b in FORUM_BOARDS if b["slug"] == slug), None)
+    if not board:
+        abort(404)
+    threads = ForumThread.query.filter_by(board_slug=slug).order_by(ForumThread.is_pinned.desc(), ForumThread.updated_at.desc()).all()
+    return render_template("forum_board.html", board=board, threads=threads)
+
+
+@app.route("/forum/<slug>/thread/<int:thread_id>")
+def forum_thread_detail(slug, thread_id):
+    thread = ForumThread.query.get_or_404(thread_id)
+    if thread.board_slug != slug:
+        return redirect(url_for("forum_thread_detail", slug=thread.board_slug, thread_id=thread.id), code=301)
+    thread.view_count += 1
+    db.session.commit()
+    replies = ForumReply.query.filter_by(thread_id=thread.id).order_by(ForumReply.created_at.asc()).all()
+    board = next((b for b in FORUM_BOARDS if b["slug"] == slug), None)
+    return render_template("forum_thread.html", board=board, thread=thread, replies=replies)
+
+
+@app.route("/forum/<slug>/new", methods=["GET", "POST"])
+def forum_new_thread(slug):
+    board = next((b for b in FORUM_BOARDS if b["slug"] == slug), None)
+    if not board:
+        abort(404)
+    if request.method == "POST":
+        title = request.form.get("title", "").strip()
+        body = request.form.get("body", "").strip()
+        if not title or not body:
+            flash("title and body are required", "error")
+        else:
+            thread = ForumThread(
+                board_slug=slug,
+                title=title,
+                body=body,
+                author_name=current_user.name if current_user.is_authenticated else (request.form.get("name", "").strip() or "anon"),
+                author_email=current_user.email if current_user.is_authenticated else (request.form.get("email", "").strip() or "anon@example.test"),
+                user_id=current_user.id if current_user.is_authenticated else None,
+            )
+            db.session.add(thread)
+            db.session.commit()
+            flash("thread posted", "success")
+            return redirect(url_for("forum_thread_detail", slug=slug, thread_id=thread.id))
+    return render_template("forum_new_thread.html", board=board)
+
+
+@app.route("/forum/thread/<int:thread_id>/reply", methods=["POST"])
+def forum_reply(thread_id):
+    thread = ForumThread.query.get_or_404(thread_id)
+    body = request.form.get("body", "").strip()
+    if not body:
+        flash("reply body is required", "error")
+        return redirect(url_for("forum_thread_detail", slug=thread.board_slug, thread_id=thread.id))
+    reply = ForumReply(
+        thread_id=thread.id,
+        body=body,
+        author_name=current_user.name if current_user.is_authenticated else (request.form.get("name", "").strip() or "anon"),
+        author_email=current_user.email if current_user.is_authenticated else (request.form.get("email", "").strip() or "anon@example.test"),
+        user_id=current_user.id if current_user.is_authenticated else None,
+    )
+    thread.updated_at = datetime.utcnow()
+    db.session.add(reply)
+    db.session.commit()
+    flash("reply posted", "success")
+    return redirect(url_for("forum_thread_detail", slug=thread.board_slug, thread_id=thread.id))
+
+
+# ---- generic simple landing fallbacks for craigslist.org links ----
+
+@app.route("/jobs")
+def jobs_alias():
+    return redirect(url_for("group_hub", group_path="jobs"))
+
+
+@app.route("/housing")
+def housing_alias():
+    return redirect(url_for("group_hub", group_path="housing"))
+
+
+@app.route("/for-sale")
+def forsale_alias():
+    return redirect(url_for("group_hub", group_path="for-sale"))
+
+
+@app.route("/services")
+def services_alias():
+    return redirect(url_for("group_hub", group_path="services"))
+
+
+@app.route("/community")
+def community_alias():
+    return redirect(url_for("group_hub", group_path="community"))
+
+
 @app.route("/_health")
 def health():
     return {"ok": True, "site": "craigslist", "listings": Listing.query.count()}
 
 
 with app.app_context():
+    fresh_seed = not os.path.exists(os.path.join(BASE_DIR, "instance", "craigslist.db"))
     db.create_all()
     seed_database(BASE_DIR, db, Category, Listing)
     seed_benchmark_users(db, User, Listing, SavedListing, SavedSearch, Message)
+    seed_forum_content(db, ForumThread, ForumReply, User)
+    if fresh_seed:
+        # Normalize index order + VACUUM so rebuilds on different machines match
+        # byte-for-byte. See harden-env/gotchas.md §2.
+        conn = db.engine.connect()
+        idx_rows = conn.execute(text(
+            "SELECT name, sql FROM sqlite_master WHERE type='index' AND name LIKE 'ix_%'"
+        )).fetchall()
+        for name, _sql in idx_rows:
+            conn.execute(text(f"DROP INDEX IF EXISTS {name}"))
+        for name, sql in sorted(idx_rows, key=lambda r: r[0]):
+            if sql:
+                conn.execute(text(sql))
+        conn.execute(text("VACUUM"))
+        conn.commit()
+        conn.close()
 
 
 if __name__ == "__main__":

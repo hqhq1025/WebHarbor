@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block title %}Open Translation Project | TED{% endblock %}
+{% block content %}
+<section class="hero">
+  <div>
+    <p class="eyebrow">Open Translation Project</p>
+    <h1>TED in every language</h1>
+    <p>TED talks are subtitled and translated by a global community of {{ languages_count }}+ languages. {{ submitted }} translations submitted so far.</p>
+    <div class="hero-actions">
+      <a class="button primary" href="{{ url_for('translate_dashboard') }}">Translator dashboard</a>
+      <a class="button" href="{{ url_for('login') }}">Sign in to translate</a>
+    </div>
+  </div>
+  <div class="lead-card">
+    <span>How it works</span>
+    <h2>Subtitle, transcribe, review</h2>
+    <p>Pick a talk. Translate the transcript. Submit for review. Help TED ideas travel further.</p>
+  </div>
+</section>
+{% endblock %}

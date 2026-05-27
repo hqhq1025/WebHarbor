@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% block title %}Compare membership levels | TED{% endblock %}
+{% block content %}
+<section class="page-head">
+  <p class="eyebrow">TED Membership</p>
+  <h1>Compare levels</h1>
+  <p>Pick the membership that fits how you want to be part of TED.</p>
+</section>
+<section class="band">
+  <table style="width:100%; border-collapse: collapse;">
+    <thead>
+      <tr>
+        <th style="text-align:left; padding:12px;">Tier</th>
+        <th style="text-align:left;">Monthly</th>
+        <th style="text-align:left;">Annual</th>
+        <th style="text-align:left;">Perks</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for t in tiers %}
+        <tr style="border-top: 1px solid var(--line);">
+          <td style="padding:14px;"><strong style="color: {{ t.color }};">{{ t.name }}</strong><br><small>{{ t.tagline }}</small></td>
+          <td style="padding:14px;">${{ t.monthly_price }}</td>
+          <td style="padding:14px;">${{ t.annual_price }}</td>
+          <td style="padding:14px;"><ul>{% for p in t.perks_json|from_json %}<li>{{ p }}</li>{% endfor %}</ul></td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</section>
+<section class="band">
+  <a class="button primary" href="{{ url_for('membership_subscribe') }}">Subscribe</a>
+</section>
+{% endblock %}

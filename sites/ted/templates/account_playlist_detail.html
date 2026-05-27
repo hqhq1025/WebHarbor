@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block title %}{{ playlist.title }} | TED account{% endblock %}
+{% block content %}
+<section class="page-head">
+  <p class="eyebrow">Your playlist</p>
+  <h1>{{ playlist.title }}</h1>
+  <p>{{ playlist.description }} - {{ 'Public' if playlist.is_public else 'Private' }}</p>
+</section>
+<section class="split">
+  <article>
+    <h2>Items ({{ items|length }})</h2>
+    <div class="list">
+      {% for it in items %}
+        <div class="row-link">
+          <a href="{{ url_for('talk_detail', slug=it.talk.slug) }}"><strong>{{ it.position }}. {{ it.talk.title }}</strong></a>
+          <span>{{ it.talk.speaker }}</span>
+          <form method="post" style="display:inline;">
+            <input name="action" value="remove" type="hidden">
+            <input name="ut_id" value="{{ it.id }}" type="hidden">
+            <button type="submit">Remove</button>
+          </form>
+        </div>
+      {% else %}
+        <p>This playlist is empty.</p>
+      {% endfor %}
+    </div>
+    <form method="post" style="margin-top: 14px;">
+      <input name="action" value="delete-playlist" type="hidden">
+      <button type="submit">Delete playlist</button>
+    </form>
+  </article>
+  <aside class="panel">
+    <h2>Add a talk</h2>
+    <form method="post">
+      <label>Talk slug<input name="talk_slug" placeholder="e.g. malala-yousafzai-...">
+      </label>
+      <button type="submit">Add talk</button>
+    </form>
+  </aside>
+</section>
+{% endblock %}

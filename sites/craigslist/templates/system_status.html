@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block title %}system status - craigslist{% endblock %}
+{% block content %}
+<div class="content-shell">
+  <nav class="breadcrumb"><a href="{{ url_for('index') }}">SF bay area</a> &gt; <a href="{{ url_for('about') }}">about</a> &gt; <span>system status</span></nav>
+  <h1>system status</h1>
+  <p>live snapshot. updates every five minutes from the operations dashboard.</p>
+  <table class="status-table">
+    <thead><tr><th>region / service</th><th>status</th><th>note</th></tr></thead>
+    <tbody>
+      {% for row in entries %}
+      <tr class="status-{{ row.status }}">
+        <td>{{ row.region }}</td>
+        <td><span class="status-dot status-{{ row.status }}">&bull;</span> {{ row.status }}</td>
+        <td>{{ row.note }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  <p class="muted">to subscribe to incident notifications, log in to your account and enable system alerts on the <a href="{{ url_for('account_edit') }}">account settings page</a>.</p>
+</div>
+{% endblock %}

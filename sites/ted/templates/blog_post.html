@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block title %}{{ post.title }} | TED Ideas{% endblock %}
+{% block content %}
+<section class="detail-hero">
+  <img src="{{ url_for('static', filename=post.hero) }}" alt="">
+  <div>
+    <p class="eyebrow">{{ post.bucket }} - {{ post.published_at|date_label }}</p>
+    <h1>{{ post.title }}</h1>
+    <p class="speaker">By {{ post.author }}</p>
+    <p>{{ post.summary }}</p>
+    {% if related_talk %}
+      <p><a href="{{ url_for('talk_detail', slug=related_talk.slug) }}">Watch the talk this post is built around</a></p>
+    {% endif %}
+    <form method="post" action="{{ url_for('blog_share', slug=post.slug) }}" class="save-form">
+      <select name="channel">
+        <option>link</option><option>email</option><option>x</option>
+        <option>linkedin</option><option>facebook</option>
+      </select>
+      <button type="submit">Share</button>
+    </form>
+  </div>
+</section>
+<section class="split">
+  <article>
+    <h2>Read</h2>
+    {% for paragraph in post.body.split('\n\n') %}<p>{{ paragraph }}</p>{% endfor %}
+    <h2>Tagged</h2>
+    <div class="chips">{% for tag in post.tags_json|from_json %}<a href="{{ url_for('topic_detail', topic=tag) }}">{{ tag }}</a>{% endfor %}</div>
+  </article>
+  <aside class="panel">
+    <h2>Comments</h2>
+    {% for c in comments %}
+      <div class="row-link"><strong>{{ c.author_label or 'Anonymous' }}</strong><span>{{ c.body }}</span></div>
+    {% else %}
+      <p>No comments yet.</p>
+    {% endfor %}
+    <form method="post">
+      <label>Add your reaction<textarea name="body" rows="4"></textarea></label>
+      <button type="submit">Post comment</button>
+    </form>
+  </aside>
+</section>
+{% endblock %}

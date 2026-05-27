@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block title %}manage {{ listing.title }} - craigslist{% endblock %}
+{% block content %}
+<div class="content-shell manage-shell">
+  <nav class="breadcrumb"><a href="{{ url_for('account') }}">account</a> &gt; <span>manage posting</span></nav>
+  <h1>manage posting</h1>
+  <div class="manage-summary">
+    <h2><a href="{{ url_for('listing_detail', slug=listing.slug, listing_id=listing.id) }}">{{ listing.title }}</a></h2>
+    <p class="muted">post id {{ listing.id }} &middot; {{ listing.category.name }} &middot; {{ listing.area }} / {{ listing.neighborhood }}</p>
+    <p>status: <strong>{{ listing.status }}</strong> &middot; price: {{ listing.display_price }} &middot; posted {{ listing.posted_at.strftime("%Y-%m-%d %H:%M") }} &middot; updated {{ listing.updated_at.strftime("%Y-%m-%d") }}</p>
+  </div>
+  <ul class="manage-actions">
+    <li><a class="buttonish" href="{{ url_for('edit_posting', listing_id=listing.id) }}">edit posting</a></li>
+    <li>
+      <form method="post" action="{{ url_for('repost_listing', listing_id=listing.id) }}">
+        <button class="buttonish" type="submit">repost this listing</button>
+      </form>
+    </li>
+    <li>
+      <form method="post" action="{{ url_for('extend_listing', listing_id=listing.id) }}">
+        <button class="buttonish" type="submit">extend 7 days</button>
+      </form>
+    </li>
+    <li>
+      <form method="post" action="{{ url_for('delete_posting', listing_id=listing.id) }}" onsubmit="return confirm('delete this posting?');">
+        <button class="buttonish danger" type="submit">delete posting</button>
+      </form>
+    </li>
+  </ul>
+  <p><a href="{{ url_for('account') }}">&laquo; back to account</a></p>
+</div>
+{% endblock %}

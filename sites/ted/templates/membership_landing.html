@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block title %}Membership | TED{% endblock %}
+{% block content %}
+<section class="hero">
+  <div>
+    <p class="eyebrow">TED Membership</p>
+    <h1>Power the ideas worth spreading</h1>
+    <p>Members keep TED a non-profit, ad-light home for ideas. Pick a tier that fits how you want to be part of it.</p>
+    <div class="hero-actions">
+      <a class="button primary" href="{{ url_for('membership_subscribe') }}">Subscribe now</a>
+      <a class="button" href="{{ url_for('membership_levels') }}">Compare levels</a>
+    </div>
+  </div>
+</section>
+<section class="band">
+  <div class="grid">
+    {% for t in tiers %}
+      <article class="talk-card">
+        <div class="card-body" style="border-top: 4px solid {{ t.color }};">
+          <p class="meta">{{ t.name }}</p>
+          <h3>${{ t.monthly_price }}/mo</h3>
+          <p>or ${{ t.annual_price }} per year</p>
+          <p>{{ t.tagline }}</p>
+          <ul>{% for p in t.perks_json|from_json %}<li>{{ p }}</li>{% endfor %}</ul>
+        </div>
+      </article>
+    {% endfor %}
+  </div>
+</section>
+{% endblock %}

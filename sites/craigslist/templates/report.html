@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block title %}report posting - craigslist{% endblock %}
+{% block content %}
+<div class="content-shell form-page">
+  <p class="form-back"><a href="{{ url_for('listing_detail', slug=listing.slug, listing_id=listing.id) }}">&lt; back to posting</a></p>
+  <h1>report posting</h1>
+  <p class="muted">re: <a href="{{ url_for('listing_detail', slug=listing.slug, listing_id=listing.id) }}">{{ listing.title }}</a></p>
+  <form method="post" class="report-form">
+    <label>reason</label>
+    <select name="reason" required>
+      <option value="prohibited">prohibited (illegal, weapons, drugs)</option>
+      <option value="spam">spam / commercial / overposting</option>
+      <option value="scam">scam / fraud / wire transfer demand</option>
+      <option value="miscategorized">miscategorized</option>
+      <option value="discriminatory">discriminatory housing or hiring</option>
+      <option value="offensive">offensive / hateful content</option>
+      <option value="other">other</option>
+    </select>
+    <label>details (optional)</label>
+    <textarea name="body" rows="5" placeholder="explain so the abuse team can act quickly..."></textarea>
+    <button type="submit">submit report</button>
+  </form>
+  <p class="muted">reports are anonymous. abuse@example.test handles every submission within 24 hours.</p>
+</div>
+{% endblock %}

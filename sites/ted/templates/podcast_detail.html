@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block title %}{{ podcast.name }} | TED Audio Collective{% endblock %}
+{% block content %}
+<section class="detail-hero">
+  <img src="{{ url_for('static', filename=podcast.banner) }}" alt="">
+  <div>
+    <p class="eyebrow">Podcast - {{ podcast.frequency }} - {{ podcast.publisher }}</p>
+    <h1>{{ podcast.name }}</h1>
+    <p class="speaker">Hosted by {{ podcast.host }}</p>
+    <p>{{ podcast.tagline }}</p>
+    <dl class="stats">
+      <div><dt>Episodes</dt><dd>{{ podcast.episode_count }}</dd></div>
+      <div><dt>Frequency</dt><dd>{{ podcast.frequency }}</dd></div>
+      <div><dt>Publisher</dt><dd>{{ podcast.publisher }}</dd></div>
+    </dl>
+  </div>
+</section>
+<section class="band">
+  <div class="section-head"><h2>Episodes</h2></div>
+  <div class="list">
+    {% for ep in episodes %}
+      <a class="row-link" href="{{ url_for('podcast_episode', slug=podcast.slug, episode_slug=ep.slug) }}">
+        <strong>{{ ep.position }}. {{ ep.title }}</strong>
+        <span>{{ ep.speaker }} - {{ ep.duration_seconds|duration_label }} - published {{ ep.published_at|date_label }}</span>
+      </a>
+    {% endfor %}
+  </div>
+</section>
+{% endblock %}

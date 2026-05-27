@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}Subscribe | TED Membership{% endblock %}
+{% block content %}
+<section class="page-head">
+  <p class="eyebrow">TED Membership</p>
+  <h1>Subscribe</h1>
+  <p>Choose a tier and billing cadence.</p>
+</section>
+<section class="auth-page">
+  <form class="panel" method="post">
+    <label>Tier
+      <select name="tier">
+        {% for t in tiers %}
+          <option value="{{ t.slug }}">{{ t.name }} - ${{ t.monthly_price }}/mo</option>
+        {% endfor %}
+      </select>
+    </label>
+    <label>Billing
+      <select name="billing">
+        <option value="monthly">Monthly</option>
+        <option value="annual">Annual</option>
+      </select>
+    </label>
+    <button type="submit">Confirm subscription</button>
+  </form>
+</section>
+{% endblock %}

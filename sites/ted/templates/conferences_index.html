@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block title %}TED Conferences | Attend TED{% endblock %}
+{% block content %}
+<section class="page-head">
+  <p class="eyebrow">Attend TED</p>
+  <h1>TED Conferences</h1>
+  <p>{{ conferences|length }} upcoming gatherings — flagships, summits, salons, and special initiatives.</p>
+</section>
+<section class="band">
+  <div class="grid">
+    {% for c in conferences %}
+      <article class="talk-card">
+        <a href="{{ url_for('conference_detail', slug=c.slug) }}">
+          <img src="{{ url_for('static', filename=c.banner) }}" alt="">
+          <div class="card-body">
+            <p class="meta">{{ c.track }} - {{ c.city }}</p>
+            <h3>{{ c.name }}</h3>
+            <p>{{ c.starts_on|date_label }} — {{ c.ends_on|date_label }}</p>
+            <div class="chips"><span>Theme: {{ c.theme }}</span><span>{{ c.status }}</span></div>
+          </div>
+        </a>
+      </article>
+    {% endfor %}
+  </div>
+</section>
+{% endblock %}

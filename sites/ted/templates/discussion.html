@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block title %}Discussion: {{ talk.title }} | TED{% endblock %}
+{% block content %}
+<section class="page-head">
+  <p class="eyebrow">Discussion</p>
+  <h1>{{ talk.title }}</h1>
+  <p>{{ talk.speaker }} - {{ comments|length }} comments</p>
+  <p><a href="{{ url_for('talk_detail', slug=talk.slug) }}">Back to talk</a></p>
+</section>
+<section class="split">
+  <article>
+    <h2>Comments</h2>
+    {% if comments %}
+      {% for c in comments %}
+        <div class="row-link">
+          <strong>{{ c.author_label or 'Anonymous' }}</strong>
+          <span>{{ c.body }}</span>
+          <span>Score: {{ c.score }}</span>
+          <form method="post" action="{{ url_for('comment_vote', comment_id=c.id) }}" style="display:inline;">
+            <button name="direction" value="up" type="submit">+1</button>
+            <button name="direction" value="down" type="submit">-1</button>
+          </form>
+          <form method="post" action="{{ url_for('comment_report', comment_id=c.id) }}" style="display:inline;">
+            <input name="reason" value="spam" type="hidden">
+            <button type="submit">Report</button>
+          </form>
+        </div>
+      {% endfor %}
+    {% else %}
+      <p>No comments yet.</p>
+    {% endif %}
+  </article>
+  <aside class="panel">
+    <h2>Add to the discussion</h2>
+    <form method="post">
+      <label>Comment<textarea name="body" rows="5"></textarea></label>
+      <button type="submit">Post comment</button>
+    </form>
+  </aside>
+</section>
+{% endblock %}

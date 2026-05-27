@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block title %}Translator dashboard | TED{% endblock %}
+{% block content %}
+<section class="page-head">
+  <p class="eyebrow">Translator dashboard</p>
+  <h1>Your translations</h1>
+</section>
+<section class="split">
+  <article>
+    <h2>Submitted</h2>
+    <div class="list">
+      {% for tr in submissions %}
+        <div class="row-link">
+          <strong>{{ tr.talk.title }}</strong>
+          <span>{{ tr.language }} - status: {{ tr.status }}</span>
+          {% if tr.status != 'published' %}
+            <form method="post" action="{{ url_for('translate_review', translation_id=tr.id) }}" style="display:inline;">
+              <button name="decision" value="approve" type="submit">Mark approved</button>
+              <button name="decision" value="reviewed" type="submit">Mark reviewed</button>
+            </form>
+          {% endif %}
+        </div>
+      {% else %}
+        <p>No submissions yet.</p>
+      {% endfor %}
+    </div>
+  </article>
+  <aside class="panel">
+    <h2>Submit a new translation</h2>
+    <form method="post">
+      <label>Talk slug
+        <select name="talk_slug">
+          {% for t in suggested %}<option value="{{ t.slug }}">{{ t.title }} - {{ t.speaker }}</option>{% endfor %}
+        </select>
+      </label>
+      <label>Language
+        <select name="language">{% for L in languages %}<option>{{ L }}</option>{% endfor %}</select>
+      </label>
+      <label>Working transcript<textarea name="body" rows="4"></textarea></label>
+      <button type="submit">Submit draft</button>
+    </form>
+  </aside>
+</section>
+{% endblock %}

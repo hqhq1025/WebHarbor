@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block title %}create a posting - choose area{% endblock %}
+{% block content %}
+<div class="content-shell">
+  <h1>create a posting</h1>
+  <p class="muted">step 2 of 3: choose an area{% if category %} for your {{ category.name }} posting{% endif %}</p>
+  <form method="get" action="{{ url_for('post_listing') }}">
+    {% if category %}<input type="hidden" name="category_slug" value="{{ category.slug }}">{% endif %}
+    <div class="wizard-area-grid">
+      {% for a in areas %}
+      <section class="wizard-area">
+        <h2>{{ a }}</h2>
+        <ul class="compact-list">
+          {% for n in neighborhoods_by_area.get(a, []) %}
+          <li><a href="{{ url_for('post_listing') }}">{{ n }}</a></li>
+          {% endfor %}
+        </ul>
+      </section>
+      {% endfor %}
+    </div>
+  </form>
+  <p><a class="buttonish" href="{{ url_for('post_listing') }}">skip to posting details</a></p>
+</div>
+{% endblock %}

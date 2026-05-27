@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block title %}{{ board.name }} - craigslist forums{% endblock %}
+{% block content %}
+<div class="content-shell forums-shell">
+  <nav class="breadcrumb"><a href="{{ url_for('index') }}">SF bay area</a> &gt; <a href="{{ url_for('discussion_forums') }}">discussion forums</a> &gt; <span>{{ board.name }}</span></nav>
+  <h1>{{ board.name }}</h1>
+  <p class="muted">{{ board.description }}</p>
+  <p><a class="buttonish" href="{{ url_for('forum_new_thread', slug=board.slug) }}">new thread</a></p>
+  <table class="thread-table">
+    <thead><tr><th>thread</th><th>author</th><th>replies</th><th>last reply</th></tr></thead>
+    <tbody>
+    {% for t in threads %}
+    <tr>
+      <td>{% if t.is_pinned %}<span class="pin-flag">pinned</span> {% endif %}<a href="{{ url_for('forum_thread_detail', slug=board.slug, thread_id=t.id) }}">{{ t.title }}</a></td>
+      <td>{{ t.author_name }}</td>
+      <td>{{ t.replies|length }}</td>
+      <td class="muted">{{ t.updated_at.strftime("%Y-%m-%d %H:%M") }}</td>
+    </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

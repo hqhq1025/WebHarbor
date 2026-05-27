@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block title %}terms of use - craigslist{% endblock %}
+{% block content %}
+<div class="content-shell legal-shell">
+  <nav class="breadcrumb"><a href="{{ url_for('index') }}">SF bay area</a> &gt; <a href="{{ url_for('about') }}">about</a> &gt; <span>terms of use</span></nav>
+  <h1>terms of use</h1>
+  <p class="muted">plain-english summary. the controlling document is the full terms at terms@example.test.</p>
+  <ol class="terms-list">
+    <li><strong>license to use the service.</strong> craigslist grants a limited, non-transferable license to access the site and to post non-commercial classifieds.</li>
+    <li><strong>your content.</strong> you retain copyright on the text and photos you submit. you grant craigslist a non-exclusive license to publish them while they remain live.</li>
+    <li><strong>no automated access.</strong> automated scraping, including by AI agents trained on listings without permission, is prohibited.</li>
+    <li><strong>no resale of postings.</strong> bulk extraction or redistribution of listing data requires a written license.</li>
+    <li><strong>prohibited categories.</strong> postings for illegal items, weapons, hard drugs, sex services, and counterfeit goods are removed without warning.</li>
+    <li><strong>fees.</strong> most categories are free. paid categories are listed under <a href="{{ url_for('about_help', topic='fees') }}">posting fees</a>. fees are non-refundable once a posting goes live.</li>
+    <li><strong>account closure.</strong> accounts that repeatedly violate these terms are closed without refund. closure does not entitle you to a transcript of past activity.</li>
+    <li><strong>warranties.</strong> the site is provided as-is. craigslist makes no warranty as to the truthfulness of any posting.</li>
+    <li><strong>indemnification.</strong> by posting you agree to indemnify craigslist against claims arising from your post.</li>
+    <li><strong>governing law.</strong> these terms are governed by california law. disputes are resolved in san francisco county.</li>
+  </ol>
+  <p><a href="{{ url_for('about_privacy') }}">privacy policy</a> &middot; <a href="{{ url_for('about_legal') }}">legal</a> &middot; <a href="{{ url_for('about') }}">help</a></p>
+</div>
+{% endblock %}

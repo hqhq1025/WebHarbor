@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block title %}craigslist apps{% endblock %}
+{% block content %}
+<div class="content-shell">
+  <nav class="breadcrumb"><a href="{{ url_for('index') }}">SF bay area</a> &gt; <a href="{{ url_for('about') }}">about</a> &gt; <span>apps</span></nav>
+  <h1>craigslist apps</h1>
+  <p>browse and reply from your phone. current versions: iOS 4.12.0 / android 4.12.1.</p>
+  <div class="apps-grid">
+    <article class="app-card">
+      <h3>iOS</h3>
+      <p>requires iOS 16 or later. supports universal search, saved searches, and the relay inbox.</p>
+      <p><a href="{{ url_for('about') }}">App Store &rsaquo;</a></p>
+    </article>
+    <article class="app-card">
+      <h3>android</h3>
+      <p>requires android 10 or later. supports universal search, push notifications for saved searches, and replies.</p>
+      <p><a href="{{ url_for('about') }}">Google Play &rsaquo;</a></p>
+    </article>
+    <article class="app-card">
+      <h3>mobile web</h3>
+      <p>no install needed. open <code>m.craigslist.org</code> in any browser. responsive design.</p>
+      <p><a href="{{ url_for('index') }}">open in browser &rsaquo;</a></p>
+    </article>
+  </div>
+  <h2>release notes (last three releases)</h2>
+  <ul class="compact-list">
+    <li>4.12 — universal search across categories; saved-search push fix; new map tile vendor.</li>
+    <li>4.11 — relay inbox redesign; dark mode honors system setting; image upload retries.</li>
+    <li>4.10 — initial android tablet layout; iOS keyboard shortcuts for power users.</li>
+  </ul>
+</div>
+{% endblock %}

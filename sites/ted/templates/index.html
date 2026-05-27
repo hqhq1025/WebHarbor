@@ -4,10 +4,10 @@
   <div>
     <p class="eyebrow">Newest from TED</p>
     <h1>Ideas change everything</h1>
-    <p>Browse talks, save ideas to your account, compare speakers and topics, and register interest in TED events.</p>
+    <p>Browse talks, save ideas to your library, build playlists, take TED-Ed lessons, listen to TED Audio Collective podcasts, and apply to TED conferences.</p>
     <div class="hero-actions">
       <a class="button primary" href="{{ url_for('talks') }}">Explore talks</a>
-      <a class="button" href="{{ url_for('playlists') }}">View playlists</a>
+      <a class="button" href="{{ url_for('membership_landing') }}">Become a member</a>
     </div>
   </div>
   {% set lead = featured[0] %}
@@ -53,6 +53,67 @@
         </a>
       {% endfor %}
     </div>
+  </div>
+</section>
+
+<section class="band">
+  <div class="section-head"><h2>TED Series</h2><a href="{{ url_for('series_index') }}">All series</a></div>
+  <div class="grid">
+    {% for s in series_rows %}
+      <article class="talk-card">
+        <a href="{{ url_for('series_detail', slug=s.slug) }}">
+          <img src="{{ url_for('static', filename=s.banner) }}" alt="">
+          <div class="card-body">
+            <p class="meta">Series - hosted by {{ s.host }}</p>
+            <h3>{{ s.name }}</h3>
+            <p>{{ s.tagline }}</p>
+          </div>
+        </a>
+      </article>
+    {% endfor %}
+  </div>
+</section>
+
+<section class="band">
+  <div class="section-head"><h2>From the TED Audio Collective</h2><a href="{{ url_for('podcasts_index') }}">All podcasts</a></div>
+  <div class="grid">
+    {% for p in podcasts_rows %}
+      <article class="talk-card">
+        <a href="{{ url_for('podcast_detail', slug=p.slug) }}">
+          <img src="{{ url_for('static', filename=p.banner) }}" alt="">
+          <div class="card-body">
+            <p class="meta">{{ p.frequency }} - {{ p.publisher }}</p>
+            <h3>{{ p.name }}</h3>
+            <p>{{ p.tagline }}</p>
+          </div>
+        </a>
+      </article>
+    {% endfor %}
+  </div>
+</section>
+
+<section class="split">
+  <div>
+    <div class="section-head"><h2>TED Ideas blog</h2><a href="{{ url_for('blog_index') }}">All posts</a></div>
+    <div class="list">
+      {% for b in blog_rows %}
+        <a class="row-link" href="{{ url_for('blog_post', slug=b.slug) }}">
+          <strong>{{ b.title }}</strong>
+          <span>{{ b.bucket }} - by {{ b.author }} - {{ b.published_at|date_label }}</span>
+        </a>
+      {% endfor %}
+    </div>
+  </div>
+  <div>
+    <div class="section-head"><h2>Up next</h2></div>
+    {% if next_conf %}
+      <a class="lead-card" href="{{ url_for('conference_detail', slug=next_conf.slug) }}">
+        <img src="{{ url_for('static', filename=next_conf.banner) }}" alt="">
+        <span>{{ next_conf.track }} - {{ next_conf.city }}</span>
+        <h2>{{ next_conf.name }}</h2>
+        <p>{{ next_conf.starts_on|date_label }} — {{ next_conf.ends_on|date_label }}. Theme: {{ next_conf.theme }}.</p>
+      </a>
+    {% endif %}
   </div>
 </section>
 {% endblock %}

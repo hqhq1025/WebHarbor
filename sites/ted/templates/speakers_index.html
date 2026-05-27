@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block title %}Speakers | TED{% endblock %}
+{% block content %}
+<section class="page-head">
+  <p class="eyebrow">Voices</p>
+  <h1>Speakers</h1>
+  <p>{{ speakers|length }} speakers featured on the TED stage.</p>
+  <form method="get" class="filters">
+    <input name="q" value="{{ q or '' }}" placeholder="Search by name, role, organization">
+    <select name="letter">
+      <option value="">A–Z</option>
+      {% for L in letters %}
+        <option value="{{ L }}" {% if L == letter %}selected{% endif %}>{{ L }}</option>
+      {% endfor %}
+    </select>
+    <button type="submit">Filter</button>
+  </form>
+</section>
+<section class="band">
+  <div class="grid">
+    {% for s in speakers %}
+      <article class="talk-card">
+        <a href="{{ url_for('speaker_detail', slug=s.slug) }}">
+          <img src="{{ url_for('static', filename=s.photo) }}" alt="">
+          <div class="card-body">
+            <p class="meta">{{ s.role }}</p>
+            <h3>{{ s.name }}</h3>
+            <p>{{ s.affiliation }} - {{ s.talks_count }} talks</p>
+          </div>
+        </a>
+      </article>
+    {% endfor %}
+  </div>
+</section>
+{% endblock %}

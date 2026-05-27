@@ -4,14 +4,75 @@
 <section class="page-head">
   <p class="eyebrow">Search</p>
   <h1>{% if q %}Results for "{{ q }}"{% else %}Search TED{% endif %}</h1>
+  <form method="get" class="filters">
+    <input name="q" value="{{ q or '' }}" placeholder="Search ideas, speakers, podcasts, blog">
+    <select name="kind">
+      <option value="talks" {% if kind == 'talks' %}selected{% endif %}>Talks</option>
+      <option value="speakers" {% if kind == 'speakers' %}selected{% endif %}>Speakers</option>
+      <option value="podcasts" {% if kind == 'podcasts' %}selected{% endif %}>Podcasts</option>
+      <option value="blog" {% if kind == 'blog' %}selected{% endif %}>Blog</option>
+    </select>
+    <button type="submit">Search</button>
+  </form>
 </section>
 <section class="band">
-  <div class="grid">
-    {% for talk in talks %}
-      {% include "_talk_card.html" %}
-    {% else %}
-      <p>Try a query such as AI, climate, design, science, democracy, or health.</p>
-    {% endfor %}
-  </div>
+  {% if kind == 'speakers' %}
+    <div class="grid">
+      {% for s in speakers %}
+        <article class="talk-card">
+          <a href="{{ url_for('speaker_detail', slug=s.slug) }}">
+            <img src="{{ url_for('static', filename=s.photo) }}" alt="">
+            <div class="card-body">
+              <p class="meta">{{ s.role }}</p>
+              <h3>{{ s.name }}</h3>
+              <p>{{ s.affiliation }}</p>
+            </div>
+          </a>
+        </article>
+      {% else %}
+        <p>No speaker matches.</p>
+      {% endfor %}
+    </div>
+  {% elif kind == 'podcasts' %}
+    <div class="grid">
+      {% for p in podcasts %}
+        <article class="talk-card">
+          <a href="{{ url_for('podcast_detail', slug=p.slug) }}">
+            <img src="{{ url_for('static', filename=p.banner) }}" alt="">
+            <div class="card-body">
+              <p class="meta">{{ p.frequency }} - {{ p.publisher }}</p>
+              <h3>{{ p.name }}</h3>
+              <p>{{ p.tagline }}</p>
+            </div>
+          </a>
+        </article>
+      {% else %}
+        <p>No podcast matches.</p>
+      {% endfor %}
+    </div>
+  {% elif kind == 'blog' %}
+    <div class="grid">
+      {% for b in blog %}
+        <article class="talk-card">
+          <a href="{{ url_for('blog_post', slug=b.slug) }}">
+            <img src="{{ url_for('static', filename=b.hero) }}" alt="">
+            <div class="card-body">
+              <p class="meta">{{ b.bucket }}</p>
+              <h3>{{ b.title }}</h3>
+              <p>{{ b.author }}</p>
+            </div>
+          </a>
+        </article>
+      {% else %}
+        <p>No blog matches.</p>
+      {% endfor %}
+    </div>
+  {% else %}
+    <div class="grid">
+      {% for talk in talks %}{% include "_talk_card.html" %}{% else %}
+        <p>Try a query such as AI, climate, design, science, democracy, or health.</p>
+      {% endfor %}
+    </div>
+  {% endif %}
 </section>
 {% endblock %}

@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block title %}edit {{ listing.title }} - craigslist{% endblock %}
+{% block content %}
+<div class="content-shell form-page wide">
+  <p class="form-back"><a href="{{ url_for('manage_posting', listing_id=listing.id) }}">&lt; manage posting</a></p>
+  <h1>edit posting</h1>
+  <form method="post" class="edit-posting-form">
+    <label>title</label>
+    <input name="title" value="{{ listing.title }}" required>
+    <div class="form-row">
+      <div><label>price</label><input name="price" value="{{ listing.price if listing.price is not none else '' }}"></div>
+      <div><label>condition</label>
+        <select name="condition">
+          <option value="" {% if not listing.condition %}selected{% endif %}>not applicable</option>
+          {% for c in ['new', 'like new', 'excellent', 'good', 'fair'] %}
+          <option {% if listing.condition == c %}selected{% endif %}>{{ c }}</option>
+          {% endfor %}
+        </select>
+      </div>
+    </div>
+    <div class="form-row">
+      <div><label>area</label>
+        <select name="area">
+          {% for a in ['san francisco', 'east bay', 'south bay', 'peninsula', 'north bay', 'santa cruz'] %}
+          <option {% if listing.area == a %}selected{% endif %}>{{ a }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div><label>neighborhood</label><input name="neighborhood" value="{{ listing.neighborhood }}"></div>
+    </div>
+    <label>posting body</label>
+    <textarea name="description" rows="9" required>{{ listing.description }}</textarea>
+    <button type="submit">save changes</button>
+  </form>
+</div>
+{% endblock %}

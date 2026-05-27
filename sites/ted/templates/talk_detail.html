@@ -6,17 +6,53 @@
   <div>
     <p class="eyebrow">{{ talk.event }} - {{ talk.talk_type }}</p>
     <h1>{{ talk.title }}</h1>
-    <p class="speaker">{{ talk.speaker }}</p>
+    <p class="speaker">
+      {% if speaker_row %}
+        <a href="{{ url_for('speaker_detail', slug=speaker_row.slug) }}">{{ talk.speaker }}</a>
+      {% else %}{{ talk.speaker }}{% endif %}
+    </p>
     <p>{{ talk.description }}</p>
     <dl class="stats">
       <div><dt>Duration</dt><dd>{{ talk.minutes }} minutes</dd></div>
       <div><dt>Published</dt><dd>{{ talk.published_at|date_label }}</dd></div>
       <div><dt>Views</dt><dd>{{ talk.views_label }}</dd></div>
     </dl>
+    <dl class="stats">
+      <div><dt>Saves</dt><dd>{{ save_count }}</dd></div>
+      <div><dt>Avg rating</dt><dd>{{ avg_rating }}/5 ({{ rating_count }})</dd></div>
+      <div><dt>Comments</dt><dd>{{ comment_count }}</dd></div>
+    </dl>
     <form method="post" action="{{ url_for('save_talk', slug=talk.slug) }}" class="save-form">
       <input name="note" placeholder="Add a note for your saved list">
       <button type="submit">{{ "Saved" if saved else "Save talk" }}</button>
     </form>
+    <form method="post" action="{{ url_for('talk_rate', slug=talk.slug) }}" class="save-form" style="margin-top:8px;">
+      <select name="value">
+        {% for v in [5,4,3,2,1] %}
+          <option value="{{ v }}" {% if user_rating and user_rating.value == v %}selected{% endif %}>{{ v }} / 5</option>
+        {% endfor %}
+      </select>
+      <button type="submit">Rate this talk</button>
+    </form>
+    <form method="post" action="{{ url_for('talk_note', slug=talk.slug) }}" class="save-form" style="margin-top:8px;">
+      <input name="body" placeholder="Take a note on this talk">
+      <button type="submit">Save note</button>
+    </form>
+    <form method="post" action="{{ url_for('talk_share', slug=talk.slug) }}" class="save-form" style="margin-top:8px;">
+      <select name="channel">
+        <option value="link">Copy link</option>
+        <option value="email">Email</option>
+        <option value="x">X / Twitter</option>
+        <option value="facebook">Facebook</option>
+        <option value="linkedin">LinkedIn</option>
+        <option value="whatsapp">WhatsApp</option>
+      </select>
+      <button type="submit">Share</button>
+    </form>
+    <p style="margin-top:14px;">
+      <a href="{{ url_for('talk_transcript', slug=talk.slug) }}">Read transcript</a> ·
+      <a href="{{ url_for('talk_discussion', slug=talk.slug) }}">Discussion ({{ comment_count }})</a>
+    </p>
   </div>
 </section>
 <section class="split">
@@ -29,6 +65,19 @@
     </div>
   </article>
   <aside>
+    {% if speaker_row %}
+      <h2>About the speaker</h2>
+      <article class="talk-card">
+        <a href="{{ url_for('speaker_detail', slug=speaker_row.slug) }}">
+          <img src="{{ url_for('static', filename=speaker_row.photo) }}" alt="">
+          <div class="card-body">
+            <p class="meta">{{ speaker_row.role }}</p>
+            <h3>{{ speaker_row.name }}</h3>
+            <p>{{ speaker_row.affiliation }} - {{ speaker_row.talks_count }} talks</p>
+          </div>
+        </a>
+      </article>
+    {% endif %}
     <h2>Recommended for</h2>
     <ul>
       {% for item in talk.recommended_for %}<li>{{ item }}</li>{% endfor %}

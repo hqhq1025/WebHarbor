@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block title %}TED newsletters{% endblock %}
+{% block content %}
+<section class="page-head">
+  <p class="eyebrow">Stay in the loop</p>
+  <h1>TED newsletters</h1>
+  <p>One small dose of TED in your inbox, on the cadence you like.</p>
+</section>
+<section class="band">
+  <div class="grid">
+    {% for n in newsletters %}
+      <article class="talk-card">
+        <div class="card-body">
+          <p class="meta">{{ n.frequency }}</p>
+          <h3>{{ n.name }}</h3>
+          <p>{{ n.description }}</p>
+        </div>
+      </article>
+    {% endfor %}
+  </div>
+  <p><a class="button primary" href="{{ url_for('newsletter_subscribe') }}">Subscribe</a></p>
+</section>
+{% endblock %}

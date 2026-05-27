@@ -13,7 +13,11 @@
       <a href="{{ url_for('talks') }}">Watch</a>
       <a href="{{ url_for('topics') }}">Topics</a>
       <a href="{{ url_for('playlists') }}">Playlists</a>
-      <a href="{{ url_for('events') }}">Attend</a>
+      <a href="{{ url_for('podcasts_index') }}">Podcasts</a>
+      <a href="{{ url_for('ted_ed_index') }}">TED-Ed</a>
+      <a href="{{ url_for('conferences_index') }}">Attend</a>
+      <a href="{{ url_for('blog_index') }}">Ideas blog</a>
+      <a href="{{ url_for('membership_landing') }}">Membership</a>
     </nav>
     <form class="quick-search" action="{{ url_for('search') }}" method="get">
       <input name="q" value="{{ request.args.get('q', '') }}" placeholder="Search ideas">
@@ -45,10 +49,12 @@
   <footer class="footer">
     <div>
       <strong>TED</strong>
-      <p>A local WebHarbor mirror for talks, topics, playlists, and event workflows.</p>
+      <p>Ideas worth spreading — talks, podcasts, lessons, conferences, and the people behind them.</p>
+      <p><a href="{{ url_for('about') }}">About TED</a> · <a href="{{ url_for('about_org') }}">Our organization</a> · <a href="{{ url_for('about_programs') }}">Programs &amp; initiatives</a></p>
+      <p><a href="{{ url_for('translate_landing') }}">Translate TED</a> · <a href="{{ url_for('newsletter_index') }}">Newsletters</a> · <a href="{{ url_for('tedx_index') }}">TEDx</a> · <a href="{{ url_for('speakers_index') }}">Speakers</a></p>
     </div>
     <div class="topic-strip">
-      {% for topic in nav_topics %}
+      {% for topic in footer_topics %}
         <a href="{{ url_for('topic_detail', topic=topic) }}">{{ topic }}</a>
       {% endfor %}
     </div>

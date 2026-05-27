@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block title %}Playlists | TED account{% endblock %}
+{% block content %}
+<section class="page-head">
+  <p class="eyebrow">Your library</p>
+  <h1>Playlists</h1>
+  <p>{{ playlists|length }} playlists curated by you.</p>
+</section>
+<section class="split">
+  <article>
+    <h2>Your playlists</h2>
+    <div class="list">
+      {% for p in playlists %}
+        <a class="row-link" href="{{ url_for('myaccount_playlist_detail', playlist_id=p.id) }}">
+          <strong>{{ p.title }}</strong>
+          <span>{{ p.description }} - {{ 'Public' if p.is_public else 'Private' }}</span>
+        </a>
+      {% else %}
+        <p>No playlists yet.</p>
+      {% endfor %}
+    </div>
+  </article>
+  <aside class="panel">
+    <h2>Create a playlist</h2>
+    <form method="post">
+      <label>Title<input name="title"></label>
+      <label>Description<textarea name="description" rows="3"></textarea></label>
+      <label><input type="checkbox" name="is_public" value="1"> Make public</label>
+      <button type="submit">Create playlist</button>
+    </form>
+  </aside>
+</section>
+{% endblock %}

@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block title %}best of craigslist{% endblock %}
+{% block content %}
+<div class="content-shell best-of-shell">
+  <nav class="breadcrumb"><a href="{{ url_for('index') }}">SF bay area</a> &gt; <a href="{{ url_for('about') }}">about</a> &gt; <span>best of craigslist</span></nav>
+  <h1>best of craigslist</h1>
+  <p>community-curated postings with the most views in recent weeks.</p>
+  <div class="best-grid">
+    {% for item in listings %}
+    <article class="best-card">
+      {% set photos = listing_images(item) %}
+      {% if photos %}<a href="{{ url_for('listing_detail', slug=item.slug, listing_id=item.id) }}"><img src="{{ url_for('static', filename=photos[0]) }}" alt=""></a>{% endif %}
+      <div class="best-meta">
+        <a href="{{ url_for('listing_detail', slug=item.slug, listing_id=item.id) }}">{{ item.title }}</a>
+        <span class="muted">{{ item.neighborhood }} &middot; {{ item.display_price }}</span>
+      </div>
+    </article>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}

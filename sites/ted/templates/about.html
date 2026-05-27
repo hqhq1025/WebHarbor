@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% block title %}About | TED{% endblock %}
+{% block content %}
+<section class="hero">
+  <div>
+    <p class="eyebrow">About</p>
+    <h1>Ideas worth spreading</h1>
+    <p>TED is a non-profit devoted to sharing ideas — usually in the form of short, powerful talks. It began in 1984 as a conference where Technology, Entertainment, and Design converged.</p>
+    <div class="hero-actions">
+      <a class="button primary" href="{{ url_for('about_org') }}">Our organization</a>
+      <a class="button" href="{{ url_for('about_programs') }}">Programs &amp; initiatives</a>
+    </div>
+  </div>
+</section>
+<section class="split">
+  <article>
+    <h2>Our mission</h2>
+    <p>To discover and spread ideas that spark imagination, embrace possibility, and catalyze impact.</p>
+    <h2>Our values</h2>
+    <ul>
+      <li>Pursue curiosity and knowledge.</li>
+      <li>Welcome thoughtful disagreement.</li>
+      <li>Take responsibility for the truth.</li>
+      <li>Champion the people, ideas, and communities that build a better future.</li>
+    </ul>
+  </article>
+  <aside class="panel">
+    <h2>By the numbers</h2>
+    <p>Talks shared worldwide.</p>
+    <p>119+ languages of translation.</p>
+    <p>Conferences across six continents.</p>
+  </aside>
+</section>
+{% endblock %}

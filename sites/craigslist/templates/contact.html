@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block title %}contact seller - craigslist{% endblock %}
+{% block content %}
+<div class="content-shell form-page">
+  <p class="form-back"><a href="{{ url_for('listing_detail', slug=listing.slug, listing_id=listing.id) }}">&lt; back to posting</a></p>
+  <h1>contact seller</h1>
+  <p class="muted">re: <a href="{{ url_for('listing_detail', slug=listing.slug, listing_id=listing.id) }}">{{ listing.title }}</a></p>
+  <form method="post" class="contact-form">
+    <label>your name</label>
+    <input name="name" value="{% if current_user.is_authenticated %}{{ current_user.name }}{% endif %}">
+    <label>your email</label>
+    <input name="email" value="{% if current_user.is_authenticated %}{{ current_user.email }}{% endif %}">
+    <label>phone (optional)</label>
+    <input name="phone" placeholder="for callbacks">
+    <label>message</label>
+    <textarea name="body" rows="6" required></textarea>
+    <button type="submit">send contact request</button>
+  </form>
+  <p class="muted">craigslist will route your reply through an anonymized relay. your email is never shown to the seller until you reply directly.</p>
+</div>
+{% endblock %}

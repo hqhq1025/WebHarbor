@@ -1,12 +1,18 @@
 {% extends "base.html" %}
+{% block title %}Topics | TED{% endblock %}
 {% block content %}
 <section class="page-head">
-  <p class="eyebrow">Discover</p>
+  <p class="eyebrow">Browse</p>
   <h1>Topics</h1>
+  <p>{{ topics|length }} topics, sorted by number of TED talks.</p>
 </section>
 <section class="topic-grid">
-  {% for topic, count in counts %}
-    <a href="{{ url_for('topic_detail', topic=topic) }}"><strong>{{ topic }}</strong><span>{{ count }} talks</span></a>
+  {% for t in topics %}
+    <article>
+      <strong><a href="{{ url_for('topic_detail', topic=t.name) }}">{{ t.name }}</a></strong>
+      <span>{{ t.talk_count }} talks</span>
+      <p>{{ t.description }}</p>
+    </article>
   {% endfor %}
 </section>
 {% endblock %}

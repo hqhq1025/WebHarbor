@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block title %}legal - craigslist{% endblock %}
+{% block content %}
+<div class="content-shell legal-shell">
+  <nav class="breadcrumb"><a href="{{ url_for('index') }}">SF bay area</a> &gt; <a href="{{ url_for('about') }}">about</a> &gt; <span>legal</span></nav>
+  <h1>legal</h1>
+  <p>craigslist publishes statutory disclosures, takedown procedures, and a summary of recent litigation history here. <strong>this page is not legal advice.</strong></p>
+  <h2>recent statutes that affect postings</h2>
+  <ul>
+    <li><strong>fair housing act</strong> — housing postings may not exclude tenants on protected-class grounds. see <a href="{{ url_for('about_help', topic='discrimination') }}">discrimination &amp; fair housing</a>.</li>
+    <li><strong>FOSTA-SESTA (2018)</strong> — personals categories were removed in 2018 in response to federal sex-trafficking legislation.</li>
+    <li><strong>california consumer privacy act</strong> — california residents may request a copy of stored personal data; see <a href="{{ url_for('about_privacy') }}">privacy policy</a>.</li>
+    <li><strong>section 230</strong> — craigslist relies on common-carrier protections for user-generated postings.</li>
+  </ul>
+  <h2>takedown requests</h2>
+  <p>copyright takedowns under 17 U.S.C. §512 should be sent in writing to copyright@example.test with the posting URL, the copyrighted work, and a good-faith statement.</p>
+  <h2>court ordered records</h2>
+  <p>law enforcement should submit subpoenas through the legal-process portal listed in our <a href="{{ url_for('about_terms') }}">terms of use</a>.</p>
+</div>
+{% endblock %}

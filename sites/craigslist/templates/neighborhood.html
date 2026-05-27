@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block title %}{{ neighborhood }} - {{ area }} - craigslist{% endblock %}
+{% block content %}
+<div class="content-shell">
+  <nav class="breadcrumb"><a href="{{ url_for('index') }}">SF bay area</a> &gt; <a href="{{ url_for('area_hub', area_slug='eby' if area == 'east bay' else ('sfc' if area == 'san francisco' else ('sby' if area == 'south bay' else ('pen' if area == 'peninsula' else ('nby' if area == 'north bay' else 'scz'))))) }}">{{ area }}</a> &gt; <span>{{ neighborhood }}</span></nav>
+  <h1>{{ neighborhood }} <span class="muted">{{ area }}</span></h1>
+  <p>{{ listings|length }} active posting{% if listings|length != 1 %}s{% endif %} in {{ neighborhood }}.</p>
+  <ul class="compact-list">
+    {% for item in listings %}
+    <li><a href="{{ url_for('listing_detail', slug=item.slug, listing_id=item.id) }}">{{ item.title }}</a> <span class="muted">{{ item.category_slug }} &middot; {{ item.display_price }}</span></li>
+    {% endfor %}
+  </ul>
+</div>
+{% endblock %}

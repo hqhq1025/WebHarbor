@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block title %}Transcript: {{ talk.title }} | TED{% endblock %}
+{% block content %}
+<section class="page-head">
+  <p class="eyebrow">Transcript</p>
+  <h1>{{ talk.title }}</h1>
+  <p>{{ talk.speaker }} - {{ talk.event }} - {{ talk.minutes }} minutes</p>
+  <p><a href="{{ url_for('talk_detail', slug=talk.slug) }}">Back to talk</a></p>
+</section>
+<section class="split">
+  <article>
+    <h2>English transcript</h2>
+    <p>{{ talk.transcript }}</p>
+    <p>{{ talk.description }}</p>
+  </article>
+  <aside class="panel">
+    <h2>Translations</h2>
+    {% if translations %}
+      <ul>
+        {% for tr in translations %}
+          <li><strong>{{ tr.language }}</strong> - status: {{ tr.status }}</li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      <p>No community translations yet. Be the first.</p>
+    {% endif %}
+    <form method="post" action="{{ url_for('talk_translate_submit', slug=talk.slug) }}">
+      <h2>Submit a translation</h2>
+      <label>Language
+        <select name="language">
+          <option>Spanish</option><option>French</option><option>Mandarin</option>
+          <option>Hindi</option><option>Portuguese</option><option>Japanese</option>
+          <option>Arabic</option><option>German</option><option>Korean</option>
+        </select>
+      </label>
+      <label>Working transcript<textarea name="body" rows="4"></textarea></label>
+      <button type="submit">Submit draft</button>
+    </form>
+  </aside>
+</section>
+{% endblock %}

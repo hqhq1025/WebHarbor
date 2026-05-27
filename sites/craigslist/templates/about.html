@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}about craigslist{% endblock %}
+{% block body_class %}about-page{% endblock %}
+{% block content %}
+<div class="content-shell">
+  <nav class="breadcrumb"><a href="{{ url_for('index') }}">SF bay area</a> &gt; <span>about</span></nav>
+  <h1>about craigslist</h1>
+  <p>craigslist is a community-classifieds site. these pages cover how to use the site, our terms of use, privacy policy, and recent service status.</p>
+  <ul class="page-grid">
+    <li><a href="{{ url_for('about_help_index') }}">help &amp; FAQ</a> — answers to the most common questions about posting, replying, account, and search</li>
+    <li><a href="{{ url_for('about_legal') }}">legal</a> — court cases, takedown notices, statutory disclosures</li>
+    <li><a href="{{ url_for('about_terms') }}">terms of use</a> — plain-english summary of our terms</li>
+    <li><a href="{{ url_for('about_privacy') }}">privacy policy</a> — what we collect and how we use it</li>
+    <li><a href="{{ url_for('safety') }}">personal safety tips</a> — how to meet safely in person</li>
+    <li><a href="{{ url_for('scams') }}">avoiding scams</a> — common fraud patterns and how to spot them</li>
+    <li><a href="{{ url_for('about_system_status') }}">system status</a> — current service status across regions</li>
+    <li><a href="{{ url_for('about_best_of') }}">best of craigslist</a> — community-curated archive</li>
+    <li><a href="{{ url_for('about_apps') }}">craigslist apps</a> — iOS, Android, and mobile web</li>
+    <li><a href="{{ url_for('about_contact') }}">contact craigslist</a> — bugs, feedback, billing questions</li>
+    <li><a href="{{ url_for('discussion_forums') }}">discussion forums</a> — community boards</li>
+  </ul>
+  <h2>help topics</h2>
+  <ul class="compact-list">
+    {% for topic in topics %}<li><a href="{{ url_for('about_help', topic=topic.slug) }}">{{ topic.title }}</a> — {{ topic.summary }}</li>{% endfor %}
+  </ul>
+</div>
+{% endblock %}

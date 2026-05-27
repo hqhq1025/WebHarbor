@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block title %}{{ topic_row.name if topic_row else topic }} | Topics | TED{% endblock %}
+{% block content %}
+<section class="detail-hero">
+  {% if topic_row %}
+    <img src="{{ url_for('static', filename=topic_row.banner) }}" alt="">
+  {% endif %}
+  <div>
+    <p class="eyebrow">Topic</p>
+    <h1>{{ topic_row.name if topic_row else topic }}</h1>
+    {% if topic_row %}<p>{{ topic_row.description }}</p>{% endif %}
+    <p>{{ talks|length }} talks tagged with this topic.</p>
+  </div>
+</section>
+<section class="band">
+  <div class="grid">
+    {% for talk in talks %}{% include "_talk_card.html" %}{% endfor %}
+  </div>
+</section>
+{% endblock %}

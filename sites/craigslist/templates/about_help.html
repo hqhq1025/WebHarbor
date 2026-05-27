@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block title %}{{ topic.title }} - craigslist help{% endblock %}
+{% block content %}
+<div class="content-shell help-shell">
+  <nav class="breadcrumb"><a href="{{ url_for('index') }}">SF bay area</a> &gt; <a href="{{ url_for('about') }}">about</a> &gt; <a href="{{ url_for('about_help_index') }}">help</a> &gt; <span>{{ topic.title }}</span></nav>
+  <article class="help-article">
+    <h1>{{ topic.title }}</h1>
+    <p class="lead">{{ topic.summary }}</p>
+    <p>{{ topic.body }}</p>
+    <p class="muted">if this didn't answer your question, <a href="{{ url_for('about_contact') }}">file a note with craigslist support</a>.</p>
+  </article>
+  <aside class="help-sidebar">
+    <h3>other help topics</h3>
+    <ul class="compact-list">
+      {% for other in topics %}{% if other.slug != topic.slug %}<li><a href="{{ url_for('about_help', topic=other.slug) }}">{{ other.title }}</a></li>{% endif %}{% endfor %}
+    </ul>
+  </aside>
+</div>
+{% endblock %}

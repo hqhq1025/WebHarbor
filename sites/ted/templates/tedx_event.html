@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}{{ event.name }} | TEDx{% endblock %}
+{% block content %}
+<section class="detail-hero">
+  <img src="{{ url_for('static', filename=event.banner) }}" alt="">
+  <div>
+    <p class="eyebrow">TEDx - {{ event.city }}, {{ event.country }}</p>
+    <h1>{{ event.name }}</h1>
+    <p class="speaker">Theme: {{ event.theme }} - organizer {{ event.organizer }}</p>
+    <dl class="stats">
+      <div><dt>Date</dt><dd>{{ event.date|date_label }}</dd></div>
+      <div><dt>Capacity</dt><dd>{{ event.capacity }}</dd></div>
+      <div><dt>Status</dt><dd>{{ event.status }}</dd></div>
+    </dl>
+    {% if feature_talk %}
+      <p>Featured talk: <a href="{{ url_for('talk_detail', slug=feature_talk.slug) }}">{{ feature_talk.title }}</a></p>
+    {% endif %}
+    <form method="post" class="save-form">
+      <select name="role">
+        <option>Attendee</option><option>Speaker nominator</option>
+        <option>Volunteer</option><option>Press</option>
+      </select>
+      <button type="submit">RSVP</button>
+    </form>
+  </div>
+</section>
+{% endblock %}

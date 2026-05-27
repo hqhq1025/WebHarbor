@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block title %}discussion forums - craigslist{% endblock %}
+{% block content %}
+<div class="content-shell forums-shell">
+  <nav class="breadcrumb"><a href="{{ url_for('index') }}">SF bay area</a> &gt; <span>discussion forums</span></nav>
+  <h1>discussion forums</h1>
+  <p>community-run boards. text-only, threaded, no images.</p>
+  <table class="forum-table">
+    <thead><tr><th>board</th><th>threads</th><th>last activity</th></tr></thead>
+    <tbody>
+    {% for board in boards %}
+    <tr>
+      <td><a href="{{ url_for('forum_board', slug=board.slug) }}">{{ board.name }}</a><div class="muted">{{ board.description }}</div></td>
+      <td>{{ board.thread_count }}</td>
+      <td>{% if board.latest %}<a href="{{ url_for('forum_thread_detail', slug=board.slug, thread_id=board.latest.id) }}">{{ board.latest.title }}</a><div class="muted">{{ board.latest.updated_at.strftime("%Y-%m-%d %H:%M") }}</div>{% else %}<span class="muted">no threads</span>{% endif %}</td>
+    </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

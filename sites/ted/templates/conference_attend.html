@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block title %}Attend {{ conf.name }} | TED{% endblock %}
+{% block content %}
+<section class="page-head">
+  <p class="eyebrow">{{ conf.name }} - Logistics</p>
+  <h1>Attend {{ conf.name }}</h1>
+  <p>{{ conf.city }}, {{ conf.country }} - {{ conf.starts_on|date_label }} through {{ conf.ends_on|date_label }}.</p>
+</section>
+<section class="split">
+  <article>
+    <h2>What to expect</h2>
+    <p>{{ conf.summary }}</p>
+    <h2>Venue</h2>
+    <p>The conference will be held in {{ conf.city }}, {{ conf.country }}. Capacity: {{ conf.capacity }}.</p>
+    <h2>Code of conduct</h2>
+    <p>TED gatherings are governed by the community code of conduct. Read it before you arrive.</p>
+  </article>
+  <aside class="panel">
+    <h2>Confirm interest</h2>
+    <p>Already have a confirmed pass? Use this to register interest in side events.</p>
+    <form method="post"><button type="submit">Confirm interest</button></form>
+    <p><a href="{{ url_for('conference_apply', slug=conf.slug) }}">Apply for a pass</a></p>
+  </aside>
+</section>
+{% endblock %}

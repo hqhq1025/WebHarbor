@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block title %}avoiding scams - craigslist{% endblock %}
+{% block content %}
+<div class="content-shell">
+  <nav class="breadcrumb"><a href="{{ url_for('index') }}">SF bay area</a> &gt; <a href="{{ url_for('about') }}">about</a> &gt; <span>scams</span></nav>
+  <h1>avoiding scams</h1>
+  <p>recognize these patterns. if a buyer or seller insists on any of them, walk away.</p>
+  <div class="scam-grid">
+    {% for pat in patterns %}
+    <article class="scam-card">
+      <h3>{{ pat.title }}</h3>
+      <p>{{ pat.body }}</p>
+    </article>
+    {% endfor %}
+  </div>
+  <h2>what to do if you got scammed</h2>
+  <ol>
+    <li>stop replying to the other party. screenshot everything.</li>
+    <li>file a report with your local police non-emergency line.</li>
+    <li>file an IC3 report at <code>ic3.gov</code> if money changed hands online.</li>
+    <li>email the listing url + screenshots to abuse@example.test.</li>
+  </ol>
+  <p><a href="{{ url_for('safety') }}">personal safety tips</a> &middot; <a href="{{ url_for('about_help', topic='payment') }}">payment guide</a></p>
+</div>
+{% endblock %}

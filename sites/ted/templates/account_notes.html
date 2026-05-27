@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block title %}Notes | TED account{% endblock %}
+{% block content %}
+<section class="page-head">
+  <p class="eyebrow">Your library</p>
+  <h1>Notes</h1>
+  <p>{{ notes|length }} notes you've taken on TED talks.</p>
+</section>
+<section class="band">
+  <div class="list">
+    {% for n in notes %}
+      <div class="row-link">
+        <strong><a href="{{ url_for('talk_detail', slug=n.talk.slug) }}">{{ n.talk.title }}</a></strong>
+        <span>{{ n.body }}</span>
+        <form method="post" style="display:inline;">
+          <input name="delete_note_id" value="{{ n.id }}" type="hidden">
+          <button type="submit">Delete note</button>
+        </form>
+      </div>
+    {% else %}
+      <p>No notes yet.</p>
+    {% endfor %}
+  </div>
+</section>
+{% endblock %}

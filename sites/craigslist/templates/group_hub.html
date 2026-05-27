@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block title %}{{ group.name }} - craigslist{% endblock %}
+{% block content %}
+<div class="content-shell">
+  <nav class="breadcrumb"><a href="{{ url_for('index') }}">SF bay area</a> &gt; <span>{{ group.name }}</span></nav>
+  <h1>{{ group.name }}</h1>
+
+  <section class="group-cats">
+    <h2>categories</h2>
+    <ul class="hub-cat-grid">
+      {% for cat in categories %}
+      <li><a href="{{ url_for('category_search', category_slug=cat.slug) }}">{{ cat.name }}</a> <span class="muted">{{ counts.get(cat.slug, 0) }}</span></li>
+      {% endfor %}
+    </ul>
+  </section>
+
+  <section class="hub-featured">
+    <h2>featured in {{ group.name }}</h2>
+    <div class="best-grid">
+      {% for item in featured %}
+      {% set photos = listing_images(item) %}
+      <article class="best-card">
+        {% if photos %}<a href="{{ url_for('listing_detail', slug=item.slug, listing_id=item.id) }}"><img src="{{ url_for('static', filename=photos[0]) }}" alt=""></a>{% endif %}
+        <div class="best-meta">
+          <a href="{{ url_for('listing_detail', slug=item.slug, listing_id=item.id) }}">{{ item.title }}</a>
+          <span class="muted">{{ item.neighborhood }} &middot; {{ item.display_price }}</span>
+        </div>
+      </article>
+      {% endfor %}
+    </div>
+  </section>
+</div>
+{% endblock %}

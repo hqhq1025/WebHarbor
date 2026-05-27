@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block title %}Podcasts | TED Audio Collective{% endblock %}
+{% block content %}
+<section class="page-head">
+  <p class="eyebrow">TED Audio Collective</p>
+  <h1>Podcasts</h1>
+  <p>Conversations, explainers, and deep dives from the TED Audio Collective family of shows.</p>
+</section>
+<section class="band">
+  <div class="grid">
+    {% for p in podcasts %}
+      <article class="talk-card">
+        <a href="{{ url_for('podcast_detail', slug=p.slug) }}">
+          <img src="{{ url_for('static', filename=p.banner) }}" alt="">
+          <div class="card-body">
+            <p class="meta">{{ p.frequency }} - {{ p.publisher }}</p>
+            <h3>{{ p.name }}</h3>
+            <p>{{ p.tagline }}</p>
+            <div class="chips"><span>Hosted by {{ p.host }}</span><span>{{ p.episode_count }} episodes</span></div>
+          </div>
+        </a>
+      </article>
+    {% endfor %}
+  </div>
+</section>
+{% endblock %}

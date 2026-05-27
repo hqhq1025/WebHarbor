@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block title %}TED-Ed | Lessons worth sharing{% endblock %}
+{% block content %}
+<section class="page-head">
+  <p class="eyebrow">TED-Ed</p>
+  <h1>Lessons worth sharing</h1>
+  <p>{{ lessons|length }} TED-Ed lessons across {{ subjects|length }} subjects.</p>
+  <form method="get" class="filters">
+    <select name="subject">
+      <option value="">All subjects</option>
+      {% for s in subjects %}
+        <option value="{{ s }}" {% if s == subject %}selected{% endif %}>{{ s }}</option>
+      {% endfor %}
+    </select>
+    <select name="grade">
+      <option value="">Any grade</option>
+      {% for g in grades %}
+        <option value="{{ g }}" {% if g == grade %}selected{% endif %}>{{ g }}</option>
+      {% endfor %}
+    </select>
+    <button type="submit">Filter</button>
+  </form>
+</section>
+<section class="band">
+  <div class="grid">
+    {% for l in lessons %}
+      <article class="talk-card">
+        <a href="{{ url_for('ted_ed_detail', slug=l.slug) }}">
+          <img src="{{ url_for('static', filename=l.image) }}" alt="">
+          <div class="card-body">
+            <p class="meta">{{ l.subject }} - {{ l.grade_band }}</p>
+            <h3>{{ l.title }}</h3>
+            <p>{{ l.educator }} - {{ l.duration_seconds|duration_label }}</p>
+          </div>
+        </a>
+      </article>
+    {% endfor %}
+  </div>
+</section>
+{% endblock %}

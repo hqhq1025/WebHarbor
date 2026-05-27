@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block title %}{{ series.name }} | TED Series{% endblock %}
+{% block content %}
+<section class="detail-hero">
+  <img src="{{ url_for('static', filename=series.banner) }}" alt="">
+  <div>
+    <p class="eyebrow">Series - hosted by {{ series.host }}</p>
+    <h1>{{ series.name }}</h1>
+    <p class="speaker">{{ series.tagline }}</p>
+    <p>{{ series.description }}</p>
+    <dl class="stats">
+      <div><dt>Episodes</dt><dd>{{ series.episode_count }}</dd></div>
+      <div><dt>Host</dt><dd>{{ series.host }}</dd></div>
+    </dl>
+  </div>
+</section>
+<section class="band">
+  <div class="section-head"><h2>Episodes</h2></div>
+  <div class="grid">
+    {% for talk in episodes %}{% include "_talk_card.html" %}{% endfor %}
+  </div>
+</section>
+{% endblock %}

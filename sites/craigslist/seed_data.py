@@ -94,15 +94,286 @@ REGIONS = [
 ]
 
 
-def slugify(value):
-    value = value.lower()
-    value = re.sub(r"[^a-z0-9]+", "-", value)
-    return value.strip("-") or "listing"
+# Per-area neighborhood "subhubs" surfaced on /area/<slug> pages.
+NEIGHBORHOOD_HUBS = {
+    "san francisco": [
+        "mission district", "soma", "richmond district", "sunset", "nob hill",
+        "north beach", "marina", "haight", "castro", "dogpatch", "bernal heights",
+        "potrero hill", "bayview", "excelsior", "inner sunset", "nopa",
+    ],
+    "east bay": [
+        "oakland", "berkeley", "alameda", "emeryville", "richmond", "hayward",
+        "fremont", "walnut creek", "concord", "dublin", "pleasanton",
+        "livermore", "san leandro", "castro valley", "rockridge", "west oakland",
+    ],
+    "south bay": [
+        "san jose", "sunnyvale", "santa clara", "mountain view", "cupertino",
+        "milpitas", "campbell", "los gatos", "saratoga", "gilroy",
+    ],
+    "peninsula": [
+        "palo alto", "menlo park", "redwood city", "san mateo", "foster city",
+        "burlingame", "daly city", "south san francisco", "half moon bay",
+    ],
+    "north bay": [
+        "san rafael", "novato", "santa rosa", "petaluma", "mill valley",
+        "sausalito", "vallejo", "napa", "sonoma",
+    ],
+    "santa cruz": [
+        "santa cruz", "aptos", "capitola", "scotts valley", "soquel", "watsonville",
+    ],
+}
+
+
+HELP_TOPICS = [
+    {"slug": "posting", "title": "creating a posting",
+     "summary": "Walks through choosing a category, area, photos, and how soon a posting goes live.",
+     "body": "Postings appear within a few minutes of publishing once you confirm the email link. Each account may post 1 ad per category per 48 hours in most for-sale areas. Photos should be sized below 6 MB; the gallery shows up to 24 images per posting."},
+    {"slug": "editing", "title": "editing or updating a posting",
+     "summary": "How to edit a live posting and what changes require re-approval.",
+     "body": "Use the manage page link in your account or the link emailed when you first posted. Edits to title, price, or category trigger a quick automatic re-review; body text and photo swaps update immediately. Edits do not change the posting date."},
+    {"slug": "reposting", "title": "reposting an expired ad",
+     "summary": "Most postings expire after 7 to 45 days. Reposting takes a single click.",
+     "body": "Open the posting's manage page and click 'repost'. The repost will land on top of the search list with a fresh posted date but reuse the original post id. Reposting too often (more than once per 48 hours per category) will trigger a temporary cooldown."},
+    {"slug": "deleting", "title": "deleting your posting",
+     "summary": "Removes the posting from search and detail pages.",
+     "body": "From the manage page, click 'delete'. The posting is hidden immediately and removed from the public archive within an hour. Deleted postings cannot be undeleted; use repost to restore an expired ad instead."},
+    {"slug": "replying", "title": "replying to a posting",
+     "summary": "Use the reply button to send a message via craigslist's relay.",
+     "body": "The reply form generates a one-way relay address that hides both inboxes for the first 30 days. You may attach a phone number and a short message; large attachments are rejected automatically."},
+    {"slug": "flags", "title": "flagging a posting",
+     "summary": "Anonymous community flagging is how craigslist polices the boards.",
+     "body": "Click 'prohibited' or 'spam' on a posting to add a flag. Postings that accumulate flags from distinct IPs across the network are removed automatically. False flags are rate-limited."},
+    {"slug": "blocked", "title": "why was my posting blocked",
+     "summary": "The most common reasons a posting is auto-blocked before going live.",
+     "body": "Common triggers: duplicate posting across nearby areas; price under one dollar without 'free' marking; an external phone number that's been reported before; or a category mismatch (e.g. a real estate ad in furniture)."},
+    {"slug": "safety", "title": "personal safety while meeting",
+     "summary": "Tips for in-person meetups, payment, and high-value items.",
+     "body": "Always meet in a public place such as a coffee shop, a transit hub, or one of the police-station safe-trade zones. Carry only the amount you expect to pay or receive. Do not give a stranger your home address before meeting in person."},
+    {"slug": "payment", "title": "accepted payment methods",
+     "summary": "Craigslist never holds funds. Pay in cash, locally, in person.",
+     "body": "Cash is preferred for in-person transactions. Apps such as Zelle or Venmo are fine if you know the counterparty. Never wire money, never pay with gift cards, and never send a deposit to someone you have not met yet."},
+    {"slug": "fees", "title": "posting fees by category",
+     "summary": "Most posts are free. Some categories have nominal fees.",
+     "body": "Free: most for sale, all community, all housing in most metros, services. Paid: SF Bay Area jobs ($75), NYC apartments by broker ($5), gigs in select metros ($3 to $10), therapeutic services. The fee is charged at publish time; failed payments hold the posting in draft for 72 hours."},
+    {"slug": "account", "title": "managing your craigslist account",
+     "summary": "Editing your account, changing your password, and account closure.",
+     "body": "Open the account page from the header. From there you can edit your name, area, phone, and email; change your password; and delete the account. Account deletion removes your saved searches, saved listings, and personal info, but not the public postings unless you delete those first."},
+    {"slug": "search", "title": "advanced search tips",
+     "summary": "Combine the search box with the filter sidebar for precise results.",
+     "body": "Quotation marks enforce exact phrase matching. A leading minus sign excludes a term. The 'has image' switch hides text-only postings. Saved searches notify you via the messages panel within a few hours of new matches."},
+    {"slug": "forum", "title": "using the discussion forums",
+     "summary": "Old-school text forums hosted at /discussion-forums.",
+     "body": "Each board has its own rules. Threads are sorted by latest activity. Replies show up immediately for logged-in users; anonymous replies are reviewed before publishing."},
+    {"slug": "tos", "title": "terms of use overview",
+     "summary": "Plain-English summary of the most-cited terms-of-use clauses.",
+     "body": "You retain copyright on the text and photos you post, and grant craigslist a non-exclusive license to display them. Automated scraping is prohibited. Reselling or redistributing posting data without permission may result in account closure."},
+    {"slug": "privacy", "title": "privacy and what we collect",
+     "summary": "Plain-English summary of the privacy policy.",
+     "body": "Craigslist stores the email you registered with, the IP and user agent of each posting, and any phone numbers attached to a relay address. We do not sell this data. Search history is retained only for the duration of your active session."},
+    {"slug": "discrimination", "title": "discrimination and fair housing",
+     "summary": "Housing postings must comply with fair housing laws.",
+     "body": "Postings that exclude tenants by race, religion, national origin, disability, family status, or gender are removed without warning. Roommate ads are permitted to set gender preferences in shared-living situations."},
+]
+
+
+SAFETY_TIPS = [
+    {"slug": "public-place", "title": "meet in a public place",
+     "body": "Meet in well-lit public places like coffee shops or police-station safe-trade zones."},
+    {"slug": "no-personal-address", "title": "don't disclose your home address",
+     "body": "Do not give out your home address before the in-person meet."},
+    {"slug": "bring-a-friend", "title": "bring a friend",
+     "body": "When possible, have a friend with you, especially for higher-value items."},
+    {"slug": "tell-someone", "title": "tell someone where you're going",
+     "body": "Share the meet location and time with a trusted friend or family member."},
+    {"slug": "cash-only", "title": "prefer cash for in-person deals",
+     "body": "Cash exchanges in person are safest. Avoid wires, gift cards, and remote-pay platforms with strangers."},
+    {"slug": "trust-instinct", "title": "trust your instinct",
+     "body": "If a deal feels off, walk away. Craigslist offers no buyer protection."},
+    {"slug": "phone-relay", "title": "use the email relay",
+     "body": "Craigslist's email relay hides both inboxes. Give out a personal number only after a few back-and-forth replies."},
+    {"slug": "verify-id", "title": "verify identity for big-ticket items",
+     "body": "For cars, deposits, or housing, ask for a photo of a driver's license once you've agreed on terms."},
+]
+
+
+SCAM_PATTERNS = [
+    {"slug": "wire-transfer", "title": "wire transfer request",
+     "body": "Anyone asking you to wire money via Western Union or MoneyGram for a craigslist purchase is running a scam."},
+    {"slug": "overpayment", "title": "the overpayment scam",
+     "body": "Buyer sends a cashier's check for more than the asking price, asks you to refund the difference. The check bounces a week later."},
+    {"slug": "rental-without-tour", "title": "rental scam without a tour",
+     "body": "Landlord refuses an in-person tour, asks for a deposit by wire or gift card. Verify ownership in the county recorder's office."},
+    {"slug": "fake-buyer-shipper", "title": "fake buyer with their own shipper",
+     "body": "Buyer offers extra to cover their preferred shipper. The shipper is fake; the payment will be reversed."},
+    {"slug": "job-up-front-fee", "title": "remote job with up-front fee",
+     "body": "Any 'job' that asks for an equipment deposit before the first paycheck is a fraud."},
+    {"slug": "ticket-no-meet", "title": "concert tickets shipped only",
+     "body": "Concert tickets must always be transferred in person or via the official ticket platform."},
+    {"slug": "fake-escrow", "title": "fake escrow service",
+     "body": "Real escrow services don't email you out of the blue. Use a service you found yourself."},
+    {"slug": "phishing-link", "title": "phishing link disguised as craigslist",
+     "body": "Craigslist will never email you to confirm a sale on a third-party domain. Type the URL by hand."},
+]
+
+
+SYSTEM_STATUS_ENTRIES = [
+    {"region": "all SF bay area", "status": "operational",
+     "note": "All boards healthy. Posting queue at 12s average."},
+    {"region": "search index", "status": "operational",
+     "note": "Index updated 2 minutes ago. Saved-search notifications running on schedule."},
+    {"region": "email relay", "status": "degraded",
+     "note": "Inbound relay delivery from a small number of foreign senders is delayed by up to 8 minutes."},
+    {"region": "image upload", "status": "operational",
+     "note": "Image uploads processed within 30 seconds across all regions."},
+    {"region": "account billing", "status": "operational",
+     "note": "Stripe processor up. Receipts emailed within 5 minutes of charge."},
+    {"region": "discussion forums", "status": "operational",
+     "note": "Forums responding normally. Spam triage queue clear."},
+    {"region": "map tiles", "status": "operational",
+     "note": "Map tile CDN healthy in all metros."},
+    {"region": "mobile apps", "status": "operational",
+     "note": "iOS 4.12.0 and Android 4.12.1 are the current versions."},
+]
+
+
+FORUM_BOARDS = [
+    {"slug": "apple", "name": "apple", "description": "all things mac, iphone, and ipad"},
+    {"slug": "diy", "name": "do it yourself", "description": "home repair, fix-it tips, advice"},
+    {"slug": "garden", "name": "gardening", "description": "tips, plant swaps, pest control"},
+    {"slug": "pets", "name": "pets", "description": "dogs, cats, exotic, advice"},
+    {"slug": "philosophy", "name": "philosophy", "description": "long-form discussions, ethics, ideas"},
+    {"slug": "politics", "name": "politics", "description": "civic conversation, kept civil"},
+    {"slug": "sf-haiku", "name": "sf haiku", "description": "haiku and short poems about the bay area"},
+    {"slug": "feedback", "name": "site feedback", "description": "questions and reports about craigslist itself"},
+    {"slug": "housing-help", "name": "housing help", "description": "lease questions, deposits, tenant rights"},
+    {"slug": "moving", "name": "moving to sf", "description": "advice for newcomers"},
+    {"slug": "rideshare", "name": "rideshare", "description": "carpool, parking, transit"},
+    {"slug": "linux", "name": "linux", "description": "distro talk, package managers, dotfiles"},
+]
+
+
+FORUM_THREAD_SEEDS = [
+    # (board_slug, title, author_email, body, replies[(author, body)], hours_old, pinned)
+    ("apple", "M2 MacBook Air vs M3 Pro for development",
+     "ben.k@test.com",
+     "Anyone here switched from a base M2 Air to an M3 Pro for full-stack work? I'm noticing the Air gets warm during long npm builds and I'm wondering if the extra cores and active cooling actually pay off.",
+     [
+         ("alice.j@test.com", "I made that exact jump in February. Daily Docker workloads no longer thermally throttle. For pure code editing the Air was already fine."),
+         ("carla.m@test.com", "If you live in browser tabs the Air is plenty. The Pro shines for video, photo, and ML workloads."),
+         ("david.p@test.com", "Bought a refurb M3 Pro from the same craigslist user who flipped his Air here. Loud fans under load but build time dropped by half."),
+     ], 26, True),
+    ("apple", "Anyone seen the iPhone-as-webcam Continuity Camera lag?",
+     "carla.m@test.com",
+     "On macOS Sequoia my iPhone 15 lags a full half second behind the audio when used as the webcam. Other reports?",
+     [("ben.k@test.com", "Try plugging the phone in via USB-C and disabling 'desk view'. Cleared it for me."),
+      ("david.p@test.com", "Updating to 17.4.1 fixed it on my 14 Pro.")], 41, False),
+    ("diy", "Replacing a kitchen faucet — sharkbite vs solder",
+     "david.p@test.com",
+     "Old chrome faucet finally died. The underside is 1/2 inch copper. Is it worth learning to sweat solder for one job, or do sharkbite fittings hold up long-term under a kitchen sink?",
+     [("ben.k@test.com", "Sharkbite is fine for the kitchen if the line isn't visible. I have a 6-year install still leak-free."),
+      ("alice.j@test.com", "For one job, push-fit. If you'll ever do more plumbing, learn to sweat — much cheaper per joint.")], 14, False),
+    ("diy", "Recommended hand planes for a beginner",
+     "alice.j@test.com",
+     "Picking up second-hand hand planes at the Berkeley flea market this weekend. Numbers 4 and 5 are the obvious starters. Anything else worth grabbing if the price is right?",
+     [("david.p@test.com", "Number 60-1/2 block plane is the most useful plane I own."),
+      ("carla.m@test.com", "Don't pay extra for a Bedrock; a clean Stanley type 11 is just as good once tuned.")], 70, False),
+    ("garden", "Tomatoes in foggy sunset district — any luck?",
+     "alice.j@test.com",
+     "Three seasons of stunted tomatoes in the sunset. Anyone in fog land actually getting fruit, and what varieties?",
+     [("carla.m@test.com", "Stupice and Glacier are my staples. Anything indeterminate that wants heat will sulk."),
+      ("ben.k@test.com", "Cherry tomatoes in 7-gallon pots against a south-facing wall is the only thing that's worked for me.")], 9, False),
+    ("garden", "Slug control without pellets",
+     "ben.k@test.com",
+     "My raised beds in oakland are getting hammered. I'd rather not put down pellets near the dog. Beer traps actually working?",
+     [("alice.j@test.com", "Beer traps catch dozens overnight. Refresh every two days."),
+      ("david.p@test.com", "Copper tape around bed edges. One-time install, lasts the season.")], 56, False),
+    ("pets", "Best low-cost vaccine clinics around the bay",
+     "carla.m@test.com",
+     "Two new kittens. Looking for low-cost spay/neuter and vaccine clinics that don't require six weeks of phone tag.",
+     [("alice.j@test.com", "Berkeley Humane runs Tuesday/Thursday walk-in vaccine clinics, no appointment."),
+      ("ben.k@test.com", "Peninsula Humane in burlingame has the cheapest spay/neuter I've found.")], 19, False),
+    ("pets", "Lost dog: white pit mix near lake merritt",
+     "alice.j@test.com",
+     "Cross-posting from lost+found. White pit mix with a blue collar slipped his leash near the pergola at lake merritt this morning.",
+     [("carla.m@test.com", "Will share to my Oakland neighbors group."),
+      ("david.p@test.com", "Check oakland animal services — they post intake photos within 24 hours.")], 6, True),
+    ("philosophy", "What do we owe the people we'll never meet?",
+     "david.p@test.com",
+     "Effective altruism keeps coming up at parties. Curious how people on this board think about obligations to distant strangers vs neighbors.",
+     [("alice.j@test.com", "I keep coming back to Singer's drowning child but with diminishing weight as distance grows."),
+      ("carla.m@test.com", "The closer the harm is to your control, the heavier the moral weight."),
+      ("ben.k@test.com", "Most of us aren't consistent moral agents over years anyway; better to set up reliable systems.")], 80, False),
+    ("politics", "Bay Area transit funding measure",
+     "carla.m@test.com",
+     "Have we collectively read the fine print on the latest transit funding measure? My take is the bus operating subsidy is buried in section 4(c).",
+     [("alice.j@test.com", "Read section 4(c) twice. The subsidy is real but expires in 2030 unless reauthorized."),
+      ("ben.k@test.com", "Anyone willing to summarize the BART portion in plain english?")], 33, False),
+    ("sf-haiku", "fog comes in tuesday",
+     "alice.j@test.com",
+     "fog comes in tuesday / sunset disappears at four / sweater season starts",
+     [("carla.m@test.com", "love the closing line."),
+      ("david.p@test.com", "the four o'clock cue is exactly right.")], 110, True),
+    ("sf-haiku", "muni at midnight",
+     "ben.k@test.com",
+     "muni at midnight / one rider, one driver hum / city sleeping by",
+     [("alice.j@test.com", "the comma break works.")], 95, False),
+    ("feedback", "Saved searches notification frequency",
+     "david.p@test.com",
+     "Mine fire about every 4 to 6 hours. Is there a setting to make them more frequent without crossing into spam territory?",
+     [("alice.j@test.com", "Frequency is fixed at 6 hours. Better to refresh the saved-search page when you're actively shopping.")], 38, False),
+    ("feedback", "Mobile site search doesn't honor area filter",
+     "carla.m@test.com",
+     "Filing a quick report — mobile search seems to ignore the area dropdown intermittently.",
+     [("ben.k@test.com", "Reproduces on iOS 17.4 Safari, not on Chrome.")], 22, False),
+    ("housing-help", "How long must a landlord return my deposit?",
+     "alice.j@test.com",
+     "Moved out of an oakland 2-br in mid-april. Landlord still hasn't returned the deposit. CA law says 21 days, right?",
+     [("david.p@test.com", "21 days, itemized statement if any deductions. Demand letter next, then small claims."),
+      ("carla.m@test.com", "Bay area tenants' union has a free template letter on their site.")], 12, True),
+    ("housing-help", "Subletting in a rent-controlled apartment",
+     "ben.k@test.com",
+     "Moving for a 6-month gig. Is a sublet legal in a rent-controlled oakland building with written landlord consent?",
+     [("alice.j@test.com", "Yes with written consent. Without it, you're risking eviction.")], 48, False),
+    ("moving", "Best neighborhoods for a remote worker with a dog",
+     "carla.m@test.com",
+     "Moving from chicago in september. Remote tech salary, one large mellow dog. Where would you start the search?",
+     [("alice.j@test.com", "rockridge, glen park, or the inner sunset. All walkable, off-leash space nearby."),
+      ("ben.k@test.com", "If budget is a concern, alameda gets you a yard and a beach.")], 30, False),
+    ("moving", "How early to start the apartment search?",
+     "alice.j@test.com",
+     "I keep reading conflicting advice. For a june 1 move-in, is april too early to tour?",
+     [("david.p@test.com", "30 days out is the sweet spot for SF/Oakland. Two months out you'll mostly tour places that won't actually be available."),
+      ("carla.m@test.com", "I always start 45 days out and pad two extra week-ends for back-up tours.")], 24, False),
+    ("rideshare", "carpool from east bay to palo alto, tuesdays",
+     "ben.k@test.com",
+     "looking for a steady carpool, mondays and tuesdays, from rockridge BART to a palo alto office. happy to drive or chip in for gas.",
+     [("david.p@test.com", "I do tuesday/thursday from oakland to mountain view. happy to chat if your hours match.")], 18, False),
+    ("rideshare", "best paid parking near downtown sf",
+     "alice.j@test.com",
+     "appointment downtown twice a month. which paid lot has been most reliable and isn't $60?",
+     [("ben.k@test.com", "5th and mission garage is the cheapest reliable option after 6pm."),
+      ("carla.m@test.com", "spothero deal in the fillmore garage gets me a $14 day rate.")], 44, False),
+    ("linux", "Arch vs Fedora on a 2017 thinkpad",
+     "david.p@test.com",
+     "Reviving an old thinkpad for tinkering. Last time I ran linux daily was ubuntu 14. Arch or Fedora for staying current?",
+     [("ben.k@test.com", "Fedora workstation. Arch is great if you want to maintain the system; Fedora if you want to use it."),
+      ("alice.j@test.com", "Fedora kinoite is my personal pick — immutable but still bleeding-edge.")], 64, False),
+    ("linux", "Recommended dotfile manager",
+     "alice.j@test.com",
+     "Stow and chezmoi seem to be the front-runners. Any field reports?",
+     [("david.p@test.com", "chezmoi if you have multiple machines with different settings; stow if it's a single home dir.")], 35, False),
+]
 
 
 def deterministic_password(email, password="TestPass123!"):
     payload = f"{email}:{password}:webharbor-craigslist".encode("utf-8")
     return "sha256$" + hashlib.sha256(payload).hexdigest()
+
+
+def slugify(value):
+    value = value.lower()
+    value = re.sub(r"[^a-z0-9]+", "-", value)
+    return value.strip("-") or "listing"
 
 
 def image_pool(base_dir):
@@ -966,4 +1237,39 @@ def seed_benchmark_users(db, User, Listing, SavedListing, SavedSearch, Message):
             is_read=is_read,
         ))
 
+    db.session.commit()
+
+
+def seed_forum_content(db, ForumThread, ForumReply, User):
+    if ForumThread.query.count() > 0:
+        return
+
+    users_by_email = {u.email: u for u in User.query.all()}
+
+    for board_slug, title, author_email, body, replies, hours_old, pinned in FORUM_THREAD_SEEDS:
+        author = users_by_email.get(author_email)
+        thread = ForumThread(
+            board_slug=board_slug,
+            title=title,
+            body=body,
+            author_name=author.name if author else author_email.split("@")[0],
+            author_email=author_email,
+            user_id=author.id if author else None,
+            is_pinned=pinned,
+            view_count=0,
+            created_at=FIXED_NOW - timedelta(hours=hours_old),
+            updated_at=FIXED_NOW - timedelta(hours=max(0, hours_old - len(replies))),
+        )
+        db.session.add(thread)
+        db.session.flush()
+        for reply_idx, (reply_email, reply_body) in enumerate(replies, start=1):
+            reply_user = users_by_email.get(reply_email)
+            db.session.add(ForumReply(
+                thread_id=thread.id,
+                author_name=reply_user.name if reply_user else reply_email.split("@")[0],
+                author_email=reply_email,
+                body=reply_body,
+                user_id=reply_user.id if reply_user else None,
+                created_at=FIXED_NOW - timedelta(hours=max(1, hours_old - reply_idx)),
+            ))
     db.session.commit()

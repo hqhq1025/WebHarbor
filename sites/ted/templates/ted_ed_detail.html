@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}{{ lesson.title }} | TED-Ed{% endblock %}
+{% block content %}
+<section class="detail-hero">
+  <img src="{{ url_for('static', filename=lesson.image) }}" alt="">
+  <div>
+    <p class="eyebrow">TED-Ed lesson - {{ lesson.subject }} - {{ lesson.grade_band }}</p>
+    <h1>{{ lesson.title }}</h1>
+    <p class="speaker">Lesson by {{ lesson.educator }}</p>
+    <p>{{ lesson.summary }}</p>
+    <dl class="stats">
+      <div><dt>Duration</dt><dd>{{ lesson.duration_seconds|duration_label }}</dd></div>
+      <div><dt>Subject</dt><dd>{{ lesson.subject }}</dd></div>
+      <div><dt>Grade band</dt><dd>{{ lesson.grade_band }}</dd></div>
+    </dl>
+    {% if related_talk %}
+      <p><a href="{{ url_for('talk_detail', slug=related_talk.slug) }}">Watch the original TED talk</a></p>
+    {% endif %}
+  </div>
+</section>
+<section class="band">
+  <h2>Dig deeper</h2>
+  <ul>
+    {% for tip in lesson.dig_deeper_json|from_json %}<li>{{ tip }}</li>{% endfor %}
+  </ul>
+</section>
+{% endblock %}

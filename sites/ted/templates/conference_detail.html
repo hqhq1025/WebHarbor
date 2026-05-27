@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block title %}{{ conf.name }} | TED Conferences{% endblock %}
+{% block content %}
+<section class="detail-hero">
+  <img src="{{ url_for('static', filename=conf.banner) }}" alt="">
+  <div>
+    <p class="eyebrow">{{ conf.track }} - {{ conf.city }}, {{ conf.country }}</p>
+    <h1>{{ conf.name }}</h1>
+    <p class="speaker">Theme: {{ conf.theme }}</p>
+    <p>{{ conf.summary }}</p>
+    <dl class="stats">
+      <div><dt>Starts</dt><dd>{{ conf.starts_on|date_label }}</dd></div>
+      <div><dt>Ends</dt><dd>{{ conf.ends_on|date_label }}</dd></div>
+      <div><dt>Capacity</dt><dd>{{ conf.capacity }}</dd></div>
+    </dl>
+    <p>Status: <strong>{{ conf.status }}</strong></p>
+    <div class="hero-actions">
+      <a class="button primary" href="{{ url_for('conference_apply', slug=conf.slug) }}">Apply to attend</a>
+      <a class="button" href="{{ url_for('conference_attend', slug=conf.slug) }}">Logistics &amp; venue</a>
+    </div>
+  </div>
+</section>
+<section class="band">
+  <div class="section-head"><h2>Sample session lineup</h2></div>
+  <div class="grid">
+    {% for talk in sessions %}{% include "_talk_card.html" %}{% endfor %}
+  </div>
+</section>
+{% endblock %}
