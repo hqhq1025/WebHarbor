@@ -4,6 +4,11 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
+    {# Snapshot date — exposed as meta so agents can read it without a visible UI banner. #}
+    {% if mirror_now is defined and mirror_now %}
+    <meta name="snapshot-date" content="{{ mirror_now.strftime('%Y-%m-%d') }}">
+    <meta name="snapshot-date-display" content="{{ mirror_today_display }}">
+    {% endif %}
     <title>{% block title %}Hugging Face – The AI community building the future.{% endblock %}</title>
     {# R7: SEO meta + OG defaults. Per-repo pages can override via blocks. #}
     {% block head_meta %}

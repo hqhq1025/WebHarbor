@@ -3,12 +3,10 @@
 {% block title %}Hugging Face – The AI community building the future.{% endblock %}
 
 {% block content %}
-<div class="container-wide">
-    <div class="today-banner" data-mirror-today="{{ mirror_now.strftime('%Y-%m-%d') }}">
-        <span class="today-banner-emoji">📅</span>
-        <span class="today-banner-text">Today is <strong>{{ mirror_today_display }}</strong>. Please treat this as the reference date for any relative time expressions ("today", "yesterday", "last week", "past month", "this year", etc.).</span>
-    </div>
-</div>
+{# Snapshot date exposed via <meta name="snapshot-date"> in base.html head.
+   Previous visible "Today is X. Please treat this as the reference date..."
+   banner removed — it leaked benchmark identity and contained agent-directed
+   meta-instructions that no real site UI ever shows. #}
 <section class="hero">
     <div class="hero-inner">
         <div class="hero-emoji">🤗</div>
