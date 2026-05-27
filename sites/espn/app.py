@@ -1427,9 +1427,19 @@ def sport_stats(sport_slug):
                     'rushing': lambda x: x[1].rushing_yards,
                     'receiving': lambda x: x[1].receiving_yards}
     else:
+        # Sport without basketball/football per-game stats (mlb, nhl, etc.):
+        # render the page with an empty leaderboard rather than 500ing.
+        # The template's {% for ... %}{% else %}No leaders data available.{% endfor %}
+        # branch handles this gracefully.
+        all_stats = []
         sort_map = {'points': lambda x: x[1].points_per_game}
     sort_fn = sort_map.get(stat, next(iter(sort_map.values())))
-    all_stats.sort(key=sort_fn, reverse=True)
+    # Some sports (mlb/nhl) have no points_per_game seeded; treat None as
+    # the lowest possible value so sort doesn't raise on heterogeneous data.
+    def _safe_sort(item):
+        v = sort_fn(item)
+        return (v is not None, v if v is not None else 0)
+    all_stats.sort(key=_safe_sort, reverse=True)
     leaders = all_stats[:25]
     return render_template('stat_leaders.html', sport=sport, leaders=leaders,
                            stat=stat, season=season, conf_filter=conf_filter)
