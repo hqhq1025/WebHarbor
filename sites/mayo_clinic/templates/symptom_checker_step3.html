@@ -8,7 +8,7 @@
   <div class="sc-options">
     <a href="{{ url_for('symptom_checker', region=region, symptom=symptom, age_group='child') }}">Child or adolescent (under 18)</a>
     <a href="{{ url_for('symptom_checker', region=region, symptom=symptom, age_group='adult') }}">Adult (18-64)</a>
-    <a href="{{ url_for('symptom_checker', region=region, symptom=symptom, age_group='adult') }}">Older adult (65+)</a>
+    <a href="{{ url_for('symptom_checker', region=region, symptom=symptom, age_group='senior') }}">Older adult (65+)</a>
   </div>
   <p style="margin-top:16px;"><a href="{{ url_for('symptom_checker', region=region) }}">&larr; Back to symptom list</a></p>
 </section>

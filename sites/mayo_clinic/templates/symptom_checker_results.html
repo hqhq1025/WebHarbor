@@ -6,6 +6,12 @@
   <div class="sc-progress"><div class="done"></div><div class="done"></div><div class="done"></div><div class="done"></div><div class="done"></div></div>
   <p class="muted">Showing possible causes for <strong>{{ sx.name if sx else symptom }}</strong> ({{ age_group }}, {{ duration }} duration).</p>
 
+  {% if age_group == 'senior' %}
+    <div class="alert alert-info" style="background:#fff3cd;border:1px solid #ffeeba;color:#856404;padding:10px 14px;border-radius:4px;margin-bottom:14px;">
+      <strong>Older adult (65+) results:</strong> age-sensitive causes (cardiovascular, neurologic, falls, osteoporosis, infection) are shown first. Discuss findings with your primary care clinician.
+    </div>
+  {% endif %}
+
   {% if results %}
     {% set urgent = results|selectattr('0.urgency', 'equalto', 'urgent')|list %}
     {% if urgent %}
