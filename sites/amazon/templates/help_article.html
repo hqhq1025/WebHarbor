@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block title %}{{ article.title }} - Amazon Customer Service{% endblock %}
+
+{% block content %}
+<div class="account-page" style="max-width:900px">
+    <p style="font-size:13px">
+        <a href="{{ url_for('help_index') }}">Customer Service</a> &rsaquo;
+        <a href="{{ url_for('help_category', slug=article.category.slug) }}">{{ article.category.name }}</a> &rsaquo;
+        <span>{{ article.title }}</span>
+    </p>
+
+    <article style="background:#fff;border:1px solid #ddd;border-radius:4px;padding:24px">
+        <h1>{{ article.title }}</h1>
+        <p class="text-muted" style="font-size:13px">
+            Last updated {{ article.updated_at.strftime('%B %d, %Y') }} &middot;
+            {{ article.helpful_count }} people found this helpful
+        </p>
+
+        <p style="font-size:15px;font-weight:500">{{ article.summary }}</p>
+
+        <div style="white-space:pre-line;line-height:1.6;font-size:14px;margin-top:14px">{{ article.body }}</div>
+
+        <div style="margin-top:24px;padding-top:14px;border-top:1px solid #eee;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
+            <div style="font-size:13px">Did this article answer your question?</div>
+            <div style="display:flex;gap:8px">
+                <a href="{{ url_for('help_category', slug=article.category.slug) }}" class="btn btn-outline">More in {{ article.category.name }}</a>
+                <a href="{{ url_for('help_contact') }}" class="btn btn-orange">Contact us</a>
+            </div>
+        </div>
+    </article>
+
+    {% if siblings %}
+    <div style="background:#fff;border:1px solid #ddd;border-radius:4px;padding:18px;margin-top:18px">
+        <h2 style="font-size:15px;margin:0 0 8px">Related articles</h2>
+        <ul style="list-style:none;padding:0;margin:0;font-size:14px">
+            {% for art in siblings %}
+            <li style="padding:5px 0"><a href="{{ url_for('help_article', slug=art.slug) }}">{{ art.title }}</a></li>
+            {% endfor %}
+        </ul>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

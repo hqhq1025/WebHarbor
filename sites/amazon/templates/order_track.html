@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% block title %}Track Package - Order {{ order.order_number }} - Amazon.com{% endblock %}
+
+{% block content %}
+<div class="account-page">
+    <h1>Track Your Package</h1>
+    <p><a href="{{ url_for('order_detail', order_id=order.id) }}">&larr; Back to order details</a></p>
+
+    <div class="order-card">
+        <div class="order-card-header">
+            <div class="order-card-header-item">
+                <div class="label">Order #</div>
+                <div class="value">{{ order.order_number }}</div>
+            </div>
+            <div class="order-card-header-item">
+                <div class="label">Carrier</div>
+                <div class="value">{{ tracking.carrier }}</div>
+            </div>
+            <div class="order-card-header-item">
+                <div class="label">Tracking ID</div>
+                <div class="value" style="font-family:monospace">{{ tracking.tracking_no }}</div>
+            </div>
+            <div><span class="status-badge status-{{ order.status }}">{{ order.status }}</span></div>
+        </div>
+
+        <div class="order-card-body">
+            <h2 style="font-size:16px;margin:0 0 14px">Shipment progress</h2>
+            <div style="border-left:2px solid var(--amz-orange);padding-left:18px;margin-left:6px">
+                {% for ts, label, location in tracking.events %}
+                <div style="margin-bottom:18px;position:relative">
+                    <div style="position:absolute;left:-25px;top:4px;width:12px;height:12px;border-radius:50%;background:var(--amz-orange);border:2px solid #fff"></div>
+                    <div style="font-weight:700;font-size:14px">{{ label }}</div>
+                    <div class="text-muted" style="font-size:13px">{{ ts.strftime('%a, %b %d %Y &middot; %I:%M %p')|safe }} &middot; {{ location }}</div>
+                </div>
+                {% endfor %}
+            </div>
+
+            <h2 style="font-size:16px;margin:20px 0 10px">Items in this shipment</h2>
+            {% for item in order.items %}
+            <div class="order-card-item">
+                <img src="{{ item.product_image }}" alt="{{ item.product_name }}" onerror="this.style.display='none'">
+                <div>
+                    <h3><a href="{{ url_for('product_detail', slug=item.product.slug) }}">{{ item.product_name }}</a></h3>
+                    {% if item.variant %}<div class="text-muted" style="font-size:13px">{{ item.variant }}</div>{% endif %}
+                    <div class="text-muted" style="font-size:13px">Qty: {{ item.quantity }}</div>
+                </div>
+            </div>
+            {% endfor %}
+
+            <div style="padding:14px;background:#f7f7f7;border-radius:4px;margin-top:14px;font-size:13px">
+                <strong>Shipping to:</strong> {{ order.ship_name }} &middot;
+                {{ order.ship_address }}, {{ order.ship_city }}, {{ order.ship_state }} {{ order.ship_zip }}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

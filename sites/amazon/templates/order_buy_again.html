@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+{% block title %}Buy It Again - Amazon.com{% endblock %}
+
+{% block content %}
+<div class="account-page" style="max-width:1200px">
+    <h1>Buy It Again</h1>
+    <p><a href="{{ url_for('orders_hub') }}">&larr; Back to your orders</a></p>
+
+    {% if items %}
+    <p style="font-size:13px;color:var(--amz-text-secondary)">
+        Products you've ordered before. Quickly add them back to your cart.
+    </p>
+
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:18px;margin-top:18px">
+        {% for entry in items %}
+        <div style="background:#fff;border:1px solid #ddd;border-radius:4px;padding:16px;display:flex;flex-direction:column">
+            <div style="display:flex;gap:12px">
+                <img src="{{ entry.last_item.product_image }}"
+                    alt="{{ entry.product.name }}"
+                    style="width:90px;height:90px;object-fit:contain"
+                    onerror="this.style.display='none'">
+                <div style="flex:1">
+                    <h3 style="font-size:14px;margin:0 0 6px">
+                        <a href="{{ url_for('product_detail', slug=entry.product.slug) }}">{{ entry.product.name }}</a>
+                    </h3>
+                    {% if entry.last_variant %}
+                    <div class="text-muted" style="font-size:12px">{{ entry.last_variant }}</div>
+                    {% endif %}
+                    <div style="font-weight:700;font-size:15px;margin-top:4px">${{ '%.2f'|format(entry.product.price) }}</div>
+                </div>
+            </div>
+
+            <div style="font-size:12px;color:var(--amz-text-secondary);margin:10px 0 6px">
+                Bought {{ entry.times_purchased }} time{% if entry.times_purchased != 1 %}s{% endif %} &middot;
+                Last on {{ entry.last_order.created_at.strftime('%b %d, %Y') }}
+            </div>
+
+            <form method="POST" action="{{ url_for('buy_again_add_to_cart', product_id=entry.product.id) }}"
+                style="margin-top:auto;display:flex;gap:6px;align-items:center">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token_value }}">
+                <input type="hidden" name="variant" value="{{ entry.last_variant or '' }}">
+                <input type="number" name="quantity" value="1" min="1" max="10"
+                    class="form-control" style="width:60px;font-size:13px">
+                <button type="submit" class="btn btn-orange" style="flex:1;padding:6px 10px;font-size:13px">
+                    Add to cart
+                </button>
+            </form>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="empty-state">
+        <h2>Nothing to buy again yet</h2>
+        <p>Items from your delivered orders will appear here.</p>
+        <a href="{{ url_for('index') }}" class="btn btn-orange">Start shopping</a>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

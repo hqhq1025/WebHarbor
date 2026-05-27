@@ -1,0 +1,128 @@
+{% extends "base.html" %}
+{% block title %}Contact Us - Amazon Customer Service{% endblock %}
+
+{% block content %}
+<div class="account-page" style="max-width:900px">
+    <p><a href="{{ url_for('help_index') }}">&larr; Customer Service</a></p>
+    <h1>Contact Us</h1>
+
+    {% if submitted %}
+    <div style="background:#e7f5e8;border:1px solid #45a02f;border-radius:4px;padding:20px;margin-bottom:18px">
+        <h2 style="margin:0 0 6px;font-size:18px;color:#0a8a0a">Thanks — we'll be in touch.</h2>
+        <p style="margin:0;font-size:14px">
+            Your ticket number is <strong style="font-family:monospace">{{ ticket }}</strong>.
+            {% if method == 'chat' %}A specialist is reviewing your message and will reply in chat within a few minutes.{% endif %}
+            {% if method == 'email' %}We've sent a confirmation to your email. You'll receive a reply within 24 hours.{% endif %}
+            {% if method == 'phone' %}A specialist will call you back during your selected window.{% endif %}
+        </p>
+    </div>
+    {% endif %}
+
+    <div style="display:flex;gap:8px;margin-bottom:18px;flex-wrap:wrap">
+        <a href="{{ url_for('help_contact', method='chat') }}"
+           class="btn {% if method == 'chat' %}btn-orange{% else %}btn-outline{% endif %}">Chat</a>
+        <a href="{{ url_for('help_contact', method='email') }}"
+           class="btn {% if method == 'email' %}btn-orange{% else %}btn-outline{% endif %}">Email</a>
+        <a href="{{ url_for('help_contact', method='phone') }}"
+           class="btn {% if method == 'phone' %}btn-orange{% else %}btn-outline{% endif %}">Phone</a>
+    </div>
+
+    <div style="background:#fff;border:1px solid #ddd;border-radius:4px;padding:24px">
+        {% if method == 'chat' %}
+        <h2 style="font-size:16px;margin:0 0 6px">Start a chat with customer service</h2>
+        <p class="text-muted" style="font-size:13px">Average reply time under 2 minutes, 24/7.</p>
+        <form method="POST" action="{{ url_for('help_contact_chat') }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token_value }}">
+            <div class="form-group">
+                <label for="topic">What is this about?</label>
+                <select id="topic" name="topic" class="form-control">
+                    <option value="order">An order or delivery</option>
+                    <option value="returns">Returns and refunds</option>
+                    <option value="prime">My Prime membership</option>
+                    <option value="payment">Payment or billing</option>
+                    <option value="account">Account and login</option>
+                    <option value="devices">Devices or digital content</option>
+                    <option value="other">Something else</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="message">Describe your issue</label>
+                <textarea id="message" name="message" class="form-control" rows="5"
+                    placeholder="Please share order number and any details that will help us assist you" required></textarea>
+            </div>
+            <button type="submit" class="btn btn-orange" style="padding:10px 24px">Start chat</button>
+        </form>
+
+        {% elif method == 'email' %}
+        <h2 style="font-size:16px;margin:0 0 6px">Email customer service</h2>
+        <p class="text-muted" style="font-size:13px">We typically reply within 24 hours.</p>
+        <form method="POST" action="{{ url_for('help_contact_email') }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token_value }}">
+            <div class="form-group">
+                <label for="contact_email">Your email address</label>
+                <input type="email" id="contact_email" name="contact_email" class="form-control"
+                    placeholder="you@example.com" required>
+            </div>
+            <div class="form-group">
+                <label for="topic">Topic</label>
+                <select id="topic" name="topic" class="form-control">
+                    <option value="order">An order or delivery</option>
+                    <option value="returns">Returns and refunds</option>
+                    <option value="prime">My Prime membership</option>
+                    <option value="payment">Payment or billing</option>
+                    <option value="account">Account and login</option>
+                    <option value="devices">Devices or digital content</option>
+                    <option value="other">Something else</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="message">Message</label>
+                <textarea id="message" name="message" class="form-control" rows="6"
+                    placeholder="Please include your order number where relevant" required></textarea>
+            </div>
+            <button type="submit" class="btn btn-orange" style="padding:10px 24px">Send email</button>
+        </form>
+
+        {% elif method == 'phone' %}
+        <h2 style="font-size:16px;margin:0 0 6px">Request a callback</h2>
+        <p class="text-muted" style="font-size:13px">A specialist will call you. Your call is free.</p>
+        <form method="POST" action="{{ url_for('help_contact_phone') }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token_value }}">
+            <div class="form-group">
+                <label for="contact_phone">Phone number</label>
+                <input type="tel" id="contact_phone" name="contact_phone" class="form-control"
+                    placeholder="+1 (555) 555-0123" required>
+            </div>
+            <div class="form-group">
+                <label for="topic">Topic</label>
+                <select id="topic" name="topic" class="form-control">
+                    <option value="order">An order or delivery</option>
+                    <option value="returns">Returns and refunds</option>
+                    <option value="prime">My Prime membership</option>
+                    <option value="payment">Payment or billing</option>
+                    <option value="account">Account and login</option>
+                    <option value="devices">Devices or digital content</option>
+                    <option value="other">Something else</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="callback_window">When should we call?</label>
+                <select id="callback_window" name="callback_window" class="form-control">
+                    <option value="9am-12pm">Today, 9am – 12pm</option>
+                    <option value="12pm-3pm">Today, 12pm – 3pm</option>
+                    <option value="3pm-6pm">Today, 3pm – 6pm</option>
+                    <option value="6pm-9pm">Today, 6pm – 9pm</option>
+                    <option value="tomorrow">Tomorrow, any time</option>
+                </select>
+            </div>
+            <button type="submit" class="btn btn-orange" style="padding:10px 24px">Request callback</button>
+        </form>
+        {% endif %}
+
+        <div style="margin-top:20px;padding-top:14px;border-top:1px solid #eee;font-size:13px;color:var(--amz-text-secondary)">
+            Customer service is available 24 hours a day, 7 days a week. For Amazon Business inquiries, visit
+            <a href="{{ url_for('help_category', slug='shopping-amazon') }}">Shopping on Amazon</a>.
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,117 @@
+{% extends "base.html" %}
+{% block title %}Your Orders - Amazon.com{% endblock %}
+
+{% block content %}
+<div class="account-page" style="max-width:1200px">
+    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
+        <h1>Your Orders</h1>
+        <form method="GET" action="{{ url_for('orders_search') }}" style="display:flex;gap:6px">
+            <input type="search" name="q" value="{{ search_q or '' }}" placeholder="Search all orders" class="form-control" style="width:280px;font-size:13px">
+            <button type="submit" class="btn">Search Orders</button>
+        </form>
+    </div>
+    <p><a href="{{ url_for('account') }}">&larr; Back to your account</a></p>
+
+    <!-- Status / year filters — real amazon.com Your Orders UI -->
+    <div style="display:flex;flex-wrap:wrap;gap:6px;margin:10px 0 20px">
+        {% for value, label in status_choices %}
+        <a href="{{ url_for('orders_hub', year=active_year, status=value, q=search_q) }}"
+           class="btn {% if active_status == value %}btn-orange{% else %}btn-outline{% endif %}"
+           style="padding:6px 12px;font-size:13px">{{ label }}</a>
+        {% endfor %}
+    </div>
+
+    {% if years %}
+    <div style="margin-bottom:14px;font-size:13px">
+        <strong>Filter by year:</strong>
+        <a href="{{ url_for('orders_hub', status=active_status, q=search_q) }}"
+           {% if not active_year %}style="font-weight:700;text-decoration:underline"{% endif %}>All</a>
+        {% for y in years %}
+          | <a href="{{ url_for('orders_hub', year=y, status=active_status, q=search_q) }}"
+                {% if active_year == y %}style="font-weight:700;text-decoration:underline"{% endif %}>{{ y }}</a>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    {% if search_q %}
+    <div style="margin-bottom:10px;font-size:13px">
+        Showing results for "<strong>{{ search_q }}</strong>".
+        <a href="{{ url_for('orders_hub') }}">Clear search</a>
+    </div>
+    {% endif %}
+
+    {% if orders %}
+    <div>
+        <strong>{{ orders|length }} order{% if orders|length != 1 %}s{% endif %}</strong>
+        {% if active_year %}placed in {{ active_year }}{% else %}placed{% endif %}
+    </div>
+
+    {% for order in orders %}
+    <div class="order-card">
+        <div class="order-card-header">
+            <div class="order-card-header-item">
+                <div class="label">Order placed</div>
+                <div class="value">{{ order.created_at.strftime('%B %d, %Y') }}</div>
+            </div>
+            <div class="order-card-header-item">
+                <div class="label">Total</div>
+                <div class="value">${{ '%.2f'|format(order.total) }}</div>
+            </div>
+            <div class="order-card-header-item">
+                <div class="label">Ship to</div>
+                <div class="value">{{ order.ship_name }}</div>
+            </div>
+            <div class="order-card-header-item">
+                <div class="label">Order #</div>
+                <div class="value">{{ order.order_number }}</div>
+            </div>
+            <div><span class="status-badge status-{{ order.status }}">{{ order.status }}</span></div>
+        </div>
+        <div class="order-card-body">
+            {% for item in order.items %}
+            <div class="order-card-item">
+                <img src="{{ item.product_image }}" alt="{{ item.product_name }}" onerror="this.style.display='none'">
+                <div>
+                    <h3><a href="{{ url_for('product_detail', slug=item.product.slug) }}">{{ item.product_name }}</a></h3>
+                    <div>Qty: {{ item.quantity }}</div>
+                    {% if item.variant %}<div class="text-muted" style="font-size:12px">{{ item.variant }}</div>{% endif %}
+                </div>
+                <div>${{ '%.2f'|format(item.price) }}</div>
+            </div>
+            {% endfor %}
+        </div>
+        <div class="order-actions" style="flex-direction:row;gap:10px;flex-wrap:wrap">
+            <a href="{{ url_for('order_detail', order_id=order.id) }}" class="btn btn-outline">View order details</a>
+            <a href="{{ url_for('order_track', order_id=order.id) }}" class="btn btn-outline">Track package</a>
+            <a href="{{ url_for('order_invoice', order_id=order.id) }}" class="btn btn-outline">View invoice</a>
+            {% if order.status == 'processing' %}
+            <form method="POST" action="{{ url_for('order_cancel', order_id=order.id) }}" style="display:inline">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token_value }}">
+                <button type="submit" class="btn btn-outline">Cancel order</button>
+            </form>
+            {% endif %}
+            {% if order.status == 'delivered' %}
+            <a href="{{ url_for('order_return', order_id=order.id) }}" class="btn btn-outline">Return or replace items</a>
+            <a href="{{ url_for('order_leave_feedback', order_id=order.id) }}" class="btn btn-outline">Leave seller feedback</a>
+            {% endif %}
+            <form method="POST" action="{{ url_for('order_reorder', order_id=order.id) }}" style="display:inline">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token_value }}">
+                <button type="submit" class="btn btn-orange">Buy it again</button>
+            </form>
+        </div>
+    </div>
+    {% endfor %}
+    {% else %}
+    <div class="empty-state">
+        <h2>No orders found</h2>
+        {% if search_q or active_year or (active_status and active_status != 'all') %}
+        <p>Try clearing your filters.</p>
+        <a href="{{ url_for('orders_hub') }}" class="btn btn-outline">Clear filters</a>
+        {% else %}
+        <p>When you place orders, they'll show up here.</p>
+        <a href="{{ url_for('index') }}" class="btn btn-orange">Start shopping</a>
+        {% endif %}
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

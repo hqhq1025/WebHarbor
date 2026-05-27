@@ -580,6 +580,68 @@ class WebhookEvent(db.Model):
     http_status = db.Column(db.Integer, default=200)
 
 
+# ===========================================================================
+# R11 — /orders order-history hub + /help customer-service hub
+# Adds HelpCategory / HelpArticle / OrderFeedback / ContactRequest. Byte-id
+# reset relies on _seed_now and md5-derived numeric defaults in seed_help.py.
+# ===========================================================================
+
+class HelpCategory(db.Model):
+    __tablename__ = 'help_categories'
+    id = db.Column(db.Integer, primary_key=True)
+    slug = db.Column(db.String(80), unique=True, nullable=False, index=True)
+    name = db.Column(db.String(120), nullable=False)
+    icon = db.Column(db.String(10), default='')
+    blurb = db.Column(db.String(255), default='')
+    sort_order = db.Column(db.Integer, default=0)
+
+    articles = db.relationship('HelpArticle', backref='category', lazy=True)
+
+
+class HelpArticle(db.Model):
+    __tablename__ = 'help_articles'
+    id = db.Column(db.Integer, primary_key=True)
+    category_id = db.Column(db.Integer, db.ForeignKey('help_categories.id'),
+                            nullable=False, index=True)
+    slug = db.Column(db.String(120), unique=True, nullable=False, index=True)
+    title = db.Column(db.String(255), nullable=False)
+    summary = db.Column(db.String(500), default='')
+    body = db.Column(db.Text, default='')
+    helpful_count = db.Column(db.Integer, default=0)
+    updated_at = db.Column(db.DateTime, default=_seed_now)
+
+
+class OrderFeedback(db.Model):
+    """Seller feedback left on a delivered order (R11 — buy-again hub)."""
+    __tablename__ = 'order_feedback'
+    id = db.Column(db.Integer, primary_key=True)
+    order_id = db.Column(db.Integer, db.ForeignKey('orders.id'),
+                         nullable=False, index=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'),
+                        nullable=False, index=True)
+    seller_name = db.Column(db.String(120), default='Amazon.com')
+    rating = db.Column(db.Integer, default=5)  # 1..5
+    comment = db.Column(db.Text, default='')
+    created_at = db.Column(db.DateTime, default=_seed_now)
+
+
+class ContactRequest(db.Model):
+    """A request submitted via /help/contact (chat / email / phone callback)."""
+    __tablename__ = 'contact_requests'
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'),
+                        nullable=True, index=True)  # nullable for guest
+    method = db.Column(db.String(20), nullable=False, index=True)  # chat | email | phone
+    topic = db.Column(db.String(120), default='')
+    message = db.Column(db.Text, default='')
+    contact_email = db.Column(db.String(255), default='')
+    contact_phone = db.Column(db.String(40), default='')
+    callback_window = db.Column(db.String(40), default='')  # e.g. '9am-12pm'
+    ticket_number = db.Column(db.String(40), default='')
+    status = db.Column(db.String(20), default='open')  # open | resolved
+    created_at = db.Column(db.DateTime, default=_seed_now)
+
+
 # ----- Login -----
 
 @login_manager.user_loader
@@ -2860,6 +2922,350 @@ def order_return(order_id):
 def return_confirmation(return_id):
     ret = Return.query.filter_by(id=return_id, user_id=current_user.id).first_or_404()
     return render_template('return_confirmation.html', ret=ret)
+
+
+# ----- R11 Routes: /orders order-history hub (real amazon.com style) -----
+
+def _filter_orders_query(base_query, year=None, status=None, q=None):
+    """Apply optional year / status / product-search filters to an Order query."""
+    if year:
+        try:
+            y = int(year)
+            base_query = base_query.filter(
+                Order.created_at >= datetime(y, 1, 1),
+                Order.created_at < datetime(y + 1, 1, 1),
+            )
+        except ValueError:
+            pass
+    if status and status != 'all':
+        base_query = base_query.filter(Order.status == status)
+    if q:
+        # Search by product name across order items
+        order_ids = (db.session.query(OrderItem.order_id)
+                     .filter(OrderItem.product_name.ilike(f'%{q}%'))
+                     .distinct())
+        base_query = base_query.filter(Order.id.in_(order_ids))
+    return base_query
+
+
+def _orders_available_years():
+    """Distinct years across the current user's orders, desc."""
+    if not current_user.is_authenticated:
+        return []
+    rows = (db.session.query(func.strftime('%Y', Order.created_at))
+            .filter(Order.user_id == current_user.id)
+            .distinct().all())
+    years = sorted({int(r[0]) for r in rows if r[0]}, reverse=True)
+    return years
+
+
+@app.route('/orders')
+@app.route('/orders/<int:year>')
+@login_required
+def orders_hub(year=None):
+    """Filterable order-history hub at /orders (real amazon.com Your Orders style)."""
+    status = request.args.get('status', 'all')
+    q = (request.args.get('q') or '').strip()
+    base = Order.query.filter_by(user_id=current_user.id)
+    base = _filter_orders_query(base, year=year, status=status, q=q)
+    orders = base.order_by(Order.created_at.desc()).all()
+    return render_template(
+        'orders_list.html',
+        orders=orders,
+        active_year=year,
+        active_status=status,
+        search_q=q,
+        years=_orders_available_years(),
+        status_choices=[('all', 'All orders'),
+                        ('processing', 'Not yet shipped'),
+                        ('shipped', 'Shipped'),
+                        ('delivered', 'Delivered'),
+                        ('cancelled', 'Cancelled')],
+    )
+
+
+@app.route('/orders/search')
+@login_required
+def orders_search():
+    """Search-by-product within Your Orders. Real amazon.com search-orders box."""
+    q = (request.args.get('q') or '').strip()
+    base = Order.query.filter_by(user_id=current_user.id)
+    base = _filter_orders_query(base, q=q)
+    orders = base.order_by(Order.created_at.desc()).all()
+    return render_template(
+        'orders_list.html',
+        orders=orders,
+        active_year=None,
+        active_status='all',
+        search_q=q,
+        years=_orders_available_years(),
+        status_choices=[('all', 'All orders'),
+                        ('processing', 'Not yet shipped'),
+                        ('shipped', 'Shipped'),
+                        ('delivered', 'Delivered'),
+                        ('cancelled', 'Cancelled')],
+    )
+
+
+def _derive_tracking(order):
+    """Deterministic tracking summary keyed off order_number — byte-identical."""
+    import hashlib
+    seed = int(hashlib.md5(order.order_number.encode()).hexdigest()[:8], 16)
+    carriers = ['UPS', 'USPS', 'FedEx', 'Amazon Logistics']
+    carrier = carriers[seed % len(carriers)]
+    prefix = {'UPS': '1Z', 'USPS': '9400', 'FedEx': '7790',
+              'Amazon Logistics': 'TBA'}[carrier]
+    tracking_no = f"{prefix}{(seed % 10**12):012d}"
+    hubs = ['Carteret, NJ', 'Bethpage, NY', 'Robbinsville, NJ',
+            'Ontario, CA', 'Joliet, IL', 'Dallas, TX']
+    hub = hubs[seed % len(hubs)]
+    if order.status == 'delivered':
+        events = [
+            (order.created_at, 'Order placed', 'Online'),
+            (order.created_at + timedelta(days=1), 'Shipped from fulfillment center', hub),
+            (order.created_at + timedelta(days=2), 'Out for delivery', order.ship_city),
+            (order.created_at + timedelta(days=2, hours=6),
+             'Delivered, Front door', order.ship_city),
+        ]
+    elif order.status == 'shipped':
+        events = [
+            (order.created_at, 'Order placed', 'Online'),
+            (order.created_at + timedelta(days=1), 'Shipped from fulfillment center', hub),
+            (order.created_at + timedelta(days=2), 'In transit', hub),
+        ]
+    elif order.status == 'cancelled':
+        events = [
+            (order.created_at, 'Order placed', 'Online'),
+            (order.created_at + timedelta(hours=2), 'Cancelled by customer', 'Online'),
+        ]
+    else:  # processing
+        events = [
+            (order.created_at, 'Order placed', 'Online'),
+            (order.created_at + timedelta(hours=4), 'Payment authorised', 'Online'),
+        ]
+    return {
+        'carrier': carrier,
+        'tracking_no': tracking_no,
+        'events': events,
+    }
+
+
+@app.route('/order/<int:order_id>/track')
+@login_required
+def order_track(order_id):
+    order = Order.query.filter_by(id=order_id, user_id=current_user.id).first_or_404()
+    tracking = _derive_tracking(order)
+    return render_template('order_track.html', order=order, tracking=tracking)
+
+
+@app.route('/order/<int:order_id>/invoice')
+@login_required
+def order_invoice(order_id):
+    order = Order.query.filter_by(id=order_id, user_id=current_user.id).first_or_404()
+    return render_template('order_invoice.html', order=order)
+
+
+@app.route('/order/<int:order_id>/leave-feedback', methods=['GET', 'POST'])
+@csrf.exempt
+@login_required
+def order_leave_feedback(order_id):
+    """Leave seller feedback on a delivered order."""
+    order = Order.query.filter_by(id=order_id, user_id=current_user.id).first_or_404()
+    existing = OrderFeedback.query.filter_by(
+        order_id=order.id, user_id=current_user.id).first()
+    if request.method == 'POST':
+        if order.status != 'delivered':
+            flash('You can only leave seller feedback on delivered orders.', 'error')
+            return redirect(url_for('order_detail', order_id=order.id))
+        rating = max(1, min(5, int(request.form.get('rating', 5) or 5)))
+        comment = (request.form.get('comment') or '').strip()
+        seller_name = (request.form.get('seller_name') or 'Amazon.com').strip()
+        if existing:
+            existing.rating = rating
+            existing.comment = comment
+            existing.seller_name = seller_name
+        else:
+            db.session.add(OrderFeedback(
+                order_id=order.id, user_id=current_user.id,
+                seller_name=seller_name, rating=rating, comment=comment,
+                created_at=datetime.utcnow(),
+            ))
+        db.session.commit()
+        flash('Thanks! Your seller feedback was submitted.', 'success')
+        return redirect(url_for('order_detail', order_id=order.id))
+    return render_template('order_leave_feedback.html',
+                           order=order, feedback=existing)
+
+
+@app.route('/buy-again')
+@login_required
+def buy_again():
+    """Buy-it-again hub aggregating products from delivered orders."""
+    delivered = (Order.query.filter_by(user_id=current_user.id, status='delivered')
+                 .order_by(Order.created_at.desc()).all())
+    # Aggregate unique products with last-purchase date + qty
+    agg = {}
+    for o in delivered:
+        for it in o.items:
+            entry = agg.setdefault(it.product_id, {
+                'product': it.product, 'last_order': o, 'last_item': it,
+                'times_purchased': 0, 'last_variant': it.variant,
+            })
+            entry['times_purchased'] += 1
+            if o.created_at > entry['last_order'].created_at:
+                entry['last_order'] = o
+                entry['last_item'] = it
+                entry['last_variant'] = it.variant
+    # Sort by last-purchase date desc
+    items = sorted(agg.values(),
+                   key=lambda e: e['last_order'].created_at, reverse=True)
+    return render_template('order_buy_again.html', items=items)
+
+
+@app.route('/buy-again/<int:product_id>/add-to-cart', methods=['POST'])
+@csrf.exempt
+@login_required
+def buy_again_add_to_cart(product_id):
+    product = Product.query.get_or_404(product_id)
+    variant = (request.form.get('variant') or '').strip()
+    quantity = max(1, int(request.form.get('quantity', 1) or 1))
+    existing = CartItem.query.filter_by(
+        user_id=current_user.id, product_id=product_id, variant=variant).first()
+    if existing:
+        existing.quantity += quantity
+    else:
+        db.session.add(CartItem(
+            user_id=current_user.id, product_id=product_id,
+            quantity=quantity, variant=variant,
+        ))
+    db.session.commit()
+    flash(f'{product.name} added back to your cart.', 'success')
+    return redirect(url_for('buy_again'))
+
+
+# ----- R11 Routes: /help customer-service hub (real amazon.com style) -----
+
+@app.route('/help')
+def help_index():
+    """Help & Customer Service hub. Topic grid + search + Contact us."""
+    q = (request.args.get('q') or '').strip()
+    categories = HelpCategory.query.order_by(HelpCategory.sort_order,
+                                             HelpCategory.id).all()
+    results = []
+    if q:
+        like = f'%{q}%'
+        results = (HelpArticle.query
+                   .filter(or_(HelpArticle.title.ilike(like),
+                               HelpArticle.summary.ilike(like),
+                               HelpArticle.body.ilike(like)))
+                   .order_by(HelpArticle.helpful_count.desc())
+                   .limit(25).all())
+    popular = (HelpArticle.query.order_by(HelpArticle.helpful_count.desc())
+               .limit(6).all())
+    return render_template('help_index.html', categories=categories,
+                           search_q=q, results=results, popular=popular)
+
+
+@app.route('/help/category/<slug>')
+def help_category(slug):
+    cat = HelpCategory.query.filter_by(slug=slug).first_or_404()
+    articles = (HelpArticle.query.filter_by(category_id=cat.id)
+                .order_by(HelpArticle.helpful_count.desc()).all())
+    other_categories = (HelpCategory.query
+                        .filter(HelpCategory.id != cat.id)
+                        .order_by(HelpCategory.sort_order).all())
+    return render_template('help_category.html', category=cat,
+                           articles=articles, other_categories=other_categories)
+
+
+@app.route('/help/article/<slug>')
+def help_article(slug):
+    art = HelpArticle.query.filter_by(slug=slug).first_or_404()
+    siblings = (HelpArticle.query.filter_by(category_id=art.category_id)
+                .filter(HelpArticle.id != art.id)
+                .order_by(HelpArticle.helpful_count.desc()).limit(5).all())
+    return render_template('help_article.html', article=art, siblings=siblings)
+
+
+def _new_ticket_number():
+    """Generate a CS ticket id. Live write — does not affect byte-id reset."""
+    import hashlib, uuid
+    h = hashlib.md5(uuid.uuid4().bytes).hexdigest()[:10].upper()
+    return f"CS-{h[:4]}-{h[4:8]}-{h[8:10]}"
+
+
+@app.route('/help/contact')
+def help_contact():
+    """Contact us — chat / email / phone option switcher."""
+    method = request.args.get('method', 'chat')
+    if method not in ('chat', 'email', 'phone'):
+        method = 'chat'
+    return render_template('help_contact.html', method=method,
+                           submitted=False, ticket=None)
+
+
+@app.route('/help/contact/chat', methods=['POST'])
+@csrf.exempt
+def help_contact_chat():
+    topic = (request.form.get('topic') or '').strip()
+    message = (request.form.get('message') or '').strip()
+    if not message:
+        flash('Please describe your issue before starting chat.', 'error')
+        return redirect(url_for('help_contact', method='chat'))
+    ticket = _new_ticket_number()
+    db.session.add(ContactRequest(
+        user_id=current_user.id if current_user.is_authenticated else None,
+        method='chat', topic=topic, message=message,
+        ticket_number=ticket, status='open',
+        created_at=datetime.utcnow(),
+    ))
+    db.session.commit()
+    return render_template('help_contact.html', method='chat',
+                           submitted=True, ticket=ticket)
+
+
+@app.route('/help/contact/email', methods=['POST'])
+@csrf.exempt
+def help_contact_email():
+    topic = (request.form.get('topic') or '').strip()
+    message = (request.form.get('message') or '').strip()
+    email = (request.form.get('contact_email') or '').strip()
+    if not (message and email):
+        flash('Please enter your email and message.', 'error')
+        return redirect(url_for('help_contact', method='email'))
+    ticket = _new_ticket_number()
+    db.session.add(ContactRequest(
+        user_id=current_user.id if current_user.is_authenticated else None,
+        method='email', topic=topic, message=message,
+        contact_email=email,
+        ticket_number=ticket, status='open',
+        created_at=datetime.utcnow(),
+    ))
+    db.session.commit()
+    return render_template('help_contact.html', method='email',
+                           submitted=True, ticket=ticket)
+
+
+@app.route('/help/contact/phone', methods=['POST'])
+@csrf.exempt
+def help_contact_phone():
+    topic = (request.form.get('topic') or '').strip()
+    phone = (request.form.get('contact_phone') or '').strip()
+    window = (request.form.get('callback_window') or '9am-12pm').strip()
+    if not phone:
+        flash('Please enter a phone number for the callback.', 'error')
+        return redirect(url_for('help_contact', method='phone'))
+    ticket = _new_ticket_number()
+    db.session.add(ContactRequest(
+        user_id=current_user.id if current_user.is_authenticated else None,
+        method='phone', topic=topic, contact_phone=phone,
+        callback_window=window, message='',
+        ticket_number=ticket, status='open',
+        created_at=datetime.utcnow(),
+    ))
+    db.session.commit()
+    return render_template('help_contact.html', method='phone',
+                           submitted=True, ticket=ticket)
 
 
 # ----- Routes: Wishlist -----
@@ -5329,5 +5735,8 @@ if __name__ == '__main__':
             'EarlyReviewerItem': EarlyReviewerItem, 'PromoCode': PromoCode,
             'WebhookEvent': WebhookEvent,
         })
+        # R11: /orders + /help hubs — help categories, articles, seller feedback.
+        from seed_help import run_help
+        run_help(db, HelpCategory, HelpArticle, Order, OrderFeedback)
     port = int(os.environ.get('PORT', 28841))
     app.run(host='0.0.0.0', port=port, debug=False)
