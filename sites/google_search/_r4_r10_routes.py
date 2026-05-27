@@ -11,7 +11,7 @@ before and after rebuild) sees only DB rows, not Python module state.
 """
 
 import json
-from flask import render_template, request, redirect, abort, session
+from flask import render_template, request, redirect, abort, session, jsonify
 
 
 # Static filter taxonomies (these are real Google UI controls, not entity data,
@@ -247,6 +247,28 @@ def register_r4(app, M):
         return render_template('r4_image_usage_rights.html',
                                rights=R4_RIGHTS, cards=cards)
 
+    @app.route('/api/images/tools')
+    def r4_api_image_tools():
+        """JSON mirror of the R4 image-search tool catalogue."""
+        def _rows(rs):
+            return [{'key': k, 'label': l, 'description': d} for k, l, d in rs]
+        return jsonify({
+            'colors': _rows(R4_COLORS),
+            'sizes': _rows(R4_SIZES),
+            'types': _rows(R4_TYPES),
+            'times': _rows(R4_TIMES),
+            'rights': _rows(R4_RIGHTS),
+        })
+
+    @app.route('/api/images/cards')
+    def r4_api_image_cards():
+        """JSON mirror of all ImageCard rows (used by usage-rights page)."""
+        rights_filter = (request.args.get('rights') or '').strip()
+        q = ImageCard.query.order_by(ImageCard.id)
+        if rights_filter:
+            q = q.filter_by(rights=rights_filter)
+        return jsonify({'cards': [_img_to_card(c) for c in q.all()]})
+
     @app.route('/search/images/preview/<int:img_id>')
     def r4_image_preview(img_id):
         img = ImageCard.query.get(img_id)
@@ -319,6 +341,18 @@ def register_r5(app, M):
         return render_template('r5_video_hub.html',
                                videos=videos, durations=R5_DURATIONS,
                                qualities=R5_QUALITIES, sources=R5_SOURCES)
+
+    @app.route('/api/videos/durations')
+    def r5_api_video_durations():
+        """JSON: duration buckets + count per bucket."""
+        out = []
+        for k, label, desc in R5_DURATIONS:
+            if k == 'any':
+                cnt = VideoCard.query.count()
+            else:
+                cnt = VideoCard.query.filter_by(duration_bucket=k).count()
+            out.append({'key': k, 'label': label, 'description': desc, 'count': cnt})
+        return jsonify({'durations': out})
 
 
 def register_r6(app, M):
@@ -405,6 +439,19 @@ def register_r6(app, M):
         ]
         return render_template('r6_scholar_pdf_preview.html', p=p, figures=figures)
 
+    @app.route('/api/scholar/papers')
+    def r6_api_scholar_papers():
+        """JSON mirror of all ScholarPaper rows (used by /scholar pages)."""
+        q = (request.args.get('q') or '').strip()
+        query = ScholarPaper.query
+        if q:
+            ql = '%' + q.lower() + '%'
+            from sqlalchemy import or_, func as sqlf
+            query = query.filter(or_(sqlf.lower(ScholarPaper.title).like(ql),
+                                     sqlf.lower(ScholarPaper.abstract).like(ql)))
+        query = query.order_by(ScholarPaper.id)
+        return jsonify({'papers': [_paper_to_dict(p) for p in query.all()]})
+
 
 def register_r10(app, M):
     FeaturedSnippet = M['FeaturedSnippet']
@@ -424,6 +471,16 @@ def register_r10(app, M):
         current = session.get('safesearch', 'moderate')
         return render_template('r10_safesearch_settings.html',
                                current=current, levels=R10_SAFESEARCH_LEVELS)
+
+    @app.route('/api/safesearch/status')
+    def r10_api_safesearch_status():
+        """JSON: current SafeSearch level + all available levels."""
+        current = session.get('safesearch', 'moderate')
+        return jsonify({
+            'current': current,
+            'levels': [{'key': k, 'label': l, 'description': d}
+                       for k, l, d in R10_SAFESEARCH_LEVELS],
+        })
 
     def _snippet_dict(s):
         return {'slug': s.slug, 'query': s.query_text, 'answer': s.answer,
