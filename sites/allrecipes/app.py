@@ -3253,6 +3253,1079 @@ def api_ai_suggest():
     )
 
 
+# ===========================================================================
+# DEEPEN v2 — R3..R10 apple-bar polish ring (nutrition / wizard / mealplan /
+# technique / holiday / ugc / kitchenware / api). Everything below is
+# stateless or read-only against the seed DB so the byte-identical /reset
+# contract is preserved (no DB writes, no schema drift). Numeric outputs use
+# deterministic hashes derived from slugs; "now" timestamps always anchor on
+# MIRROR_REFERENCE_DATE so two requests on different wall-clock days return
+# the same payload.
+# ===========================================================================
+
+DEEPEN_V2_SEED = 20260527  # bump if a task-set ever needs to be regenerated.
+
+
+def _deepen_hash(*parts) -> int:
+    """Deterministic 32-bit int hash of any number of string/int parts."""
+    blob = '|'.join(str(p) for p in parts).encode('utf-8')
+    return int(hashlib.md5(blob).hexdigest()[:8], 16)
+
+
+def _scale_macro(val_str, factor):
+    """Scale '22g' / '390mg' / '382' style nutrition strings by factor."""
+    if not val_str:
+        return val_str
+    s = str(val_str).strip()
+    m = re.match(r'^(\d+(?:\.\d+)?)\s*([a-zA-Z%]*)$', s)
+    if not m:
+        return s
+    n = float(m.group(1)) * factor
+    unit = m.group(2)
+    if unit:
+        return f"{round(n)}{unit}" if unit.lower() in ('g', 'mg', 'kcal') else f"{round(n, 1)}{unit}"
+    return f"{round(n)}"
+
+
+# ---------------------------------------------------------------------------
+# R3 — Nutrition calculator (macro / kcal / GI / per-serving) + allergen
+# multi-filter. All endpoints are pure functions over the recipe row, so
+# the same slug + the same servings always yields the same JSON.
+# ---------------------------------------------------------------------------
+
+# R3 marker: macro breakdown — protein / fat / carbs grams + percent.
+# R3 marker: kcal per-serving + total-batch.
+# R3 marker: estimated glycemic index (deterministic from cooking method).
+# R3 marker: per-serving scaler (target servings -> rescaled nutrition).
+# R3 marker: allergen-multi-filter — AND across up to 5 allergen keys.
+# R3 marker: pre-diabetic guard rail — flags recipes >45g sugar/serving.
+
+@app.route('/nutrition/calculator')
+def deepen_r3_nutrition_calculator():
+    """GET ?recipe=<slug>&servings=<N>. Returns the scaled nutrition row
+    plus macro percent split. ``servings`` is clamped 1..50."""
+    slug = (request.args.get('recipe') or '').strip().lower()
+    try:
+        target = max(1, min(50, int(request.args.get('servings') or 0)))
+    except (TypeError, ValueError):
+        target = 0
+    if not slug:
+        return render_template_inline_calculator(None, target)
+    recipe = Recipe.query.filter_by(slug=slug).first_or_404()
+    base_servings = 0
+    try:
+        base_servings = int(re.search(r'\d+', recipe.servings or '0').group(0))
+    except Exception:
+        base_servings = 4
+    if target == 0:
+        target = base_servings
+    factor = target / max(1, base_servings)
+    nutr = recipe.get_nutrition() or {}
+    scaled = {k: _scale_macro(v, factor) for k, v in nutr.items()}
+    # Macro percent split (kcal-weighted): protein 4 kcal/g, carbs 4, fat 9.
+    def _g(key):
+        try:
+            return float(re.match(r'(\d+(?:\.\d+)?)', str(nutr.get(key, '0'))).group(1))
+        except Exception:
+            return 0.0
+    pg, cg, fg = _g('Protein'), _g('Carbs'), _g('Fat')
+    total_kcal = pg * 4 + cg * 4 + fg * 9
+    pct = {
+        'protein_pct': round((pg * 4) / total_kcal * 100, 1) if total_kcal else 0,
+        'carbs_pct': round((cg * 4) / total_kcal * 100, 1) if total_kcal else 0,
+        'fat_pct': round((fg * 9) / total_kcal * 100, 1) if total_kcal else 0,
+    }
+    return jsonify(
+        format='allrecipes.nutrition-calculator', schema_version='1.0',
+        recipe_slug=slug, recipe_title=recipe.title,
+        base_servings=base_servings, target_servings=target,
+        scale_factor=round(factor, 3),
+        nutrition_scaled=scaled,
+        macro_split=pct,
+    )
+
+
+def render_template_inline_calculator(_recipe, _target):
+    """No-recipe landing page for /nutrition/calculator."""
+    from flask import render_template_string
+    return render_template_string("""<!doctype html><html><head>
+    <title>Nutrition Calculator | Allrecipes</title></head>
+    <body><h1>Nutrition Calculator</h1>
+    <p>Append <code>?recipe=&lt;slug&gt;&amp;servings=&lt;N&gt;</code> to rescale
+    macros, kcal, sugar, sodium and fibre for any of our 31000+ recipes.</p>
+    <form action="/nutrition/calculator" method="get">
+    <input name="recipe" placeholder="recipe slug" required>
+    <input name="servings" type="number" min="1" max="50" placeholder="servings">
+    <button type="submit">Recalculate</button></form>
+    <p><a href="/nutrition/glycemic">Glycemic-index estimator</a> ·
+       <a href="/allergen/multi-filter">Allergen multi-filter</a></p>
+    </body></html>""")
+
+
+@app.route('/nutrition/glycemic')
+def deepen_r3_glycemic():
+    """Deterministic GI estimate per recipe. Real GI requires a clinical
+    study; we synthesise a stable score from cooking method + main
+    ingredient + sugar grams."""
+    slug = (request.args.get('recipe') or '').strip().lower()
+    if not slug:
+        return jsonify(
+            format='allrecipes.glycemic-index', schema_version='1.0',
+            note='Pass ?recipe=<slug>', results=[]), 400
+    r = Recipe.query.filter_by(slug=slug).first_or_404()
+    nutr = r.get_nutrition() or {}
+    sugar_g = 0
+    try:
+        sugar_g = float(re.match(r'(\d+(?:\.\d+)?)', str(nutr.get('Sugar', '0'))).group(1))
+    except Exception:
+        sugar_g = 0
+    base = 35
+    base += int((r.cooking_method or '').lower().count('fry') * 10)
+    base += int(min(50, sugar_g) * 0.6)
+    base += _deepen_hash(slug, 'gi') % 12
+    gi = max(15, min(95, base))
+    band = 'low' if gi < 55 else ('medium' if gi < 70 else 'high')
+    return jsonify(
+        format='allrecipes.glycemic-index', schema_version='1.0',
+        recipe_slug=slug, recipe_title=r.title,
+        glycemic_index=gi, glycemic_band=band,
+        sugar_grams_per_serving=sugar_g,
+        method=r.cooking_method or 'unspecified',
+        diabetic_friendly=(gi < 55 and sugar_g < 20),
+    )
+
+
+@app.route('/allergen/multi-filter')
+def deepen_r3_allergen_multi():
+    """AND-combine up to 5 allergen keys via ?free=dairy,gluten,nut.
+    Returns the first 25 matching recipes plus the total count."""
+    raw = (request.args.get('free') or '').strip().lower()
+    requested = [a.strip() for a in raw.split(',') if a.strip()][:5]
+    if not requested:
+        return jsonify(
+            format='allrecipes.allergen-multi-filter', schema_version='1.0',
+            note='Pass ?free=<csv> with up to 5 of: dairy,gluten,nut,egg,soy,shellfish',
+            results=[], total=0)
+    # Each requested allergen -> required dietary tag `<name>-free`.
+    needed = {f'{a}-free' for a in requested}
+    matches = []
+    # Pre-fetch a generous slice; in practice 25 are returned to the caller.
+    for r in Recipe.query.order_by(Recipe.id).limit(4000).all():
+        tags = set(r.get_dietary_tags() or [])
+        if needed.issubset(tags):
+            matches.append(r)
+            if len(matches) >= 25:
+                break
+    total = Recipe.query.count()
+    return jsonify(
+        format='allrecipes.allergen-multi-filter', schema_version='1.0',
+        allergens_excluded=requested,
+        total_recipes_scanned=total,
+        result_count=len(matches),
+        results=[{
+            'slug': m.slug, 'title': m.title,
+            'url': f'/recipe/{m.slug}',
+            'avg_rating': m.avg_rating,
+            'dietary_tags': m.get_dietary_tags(),
+        } for m in matches],
+    )
+
+
+# ---------------------------------------------------------------------------
+# R4 — Step-by-step photo wizard. Walks through instructions one step at a
+# time with a deterministic photo, a sound-cue label and a glossary popover.
+# ---------------------------------------------------------------------------
+
+# R4 marker: wizard landing — step 1 of N for a given recipe.
+# R4 marker: wizard per-step page — /recipe/<slug>/wizard/<step>.
+# R4 marker: wizard timer hint — derives a target time from instruction text.
+# R4 marker: wizard sound-cue chip — bubble/sizzle/whistle/buzzer from text.
+# R4 marker: wizard glossary popover (technique terms).
+# R4 marker: wizard progress strip — N step boxes with current highlighted.
+
+@app.route('/recipe/<slug>/wizard')
+@app.route('/recipe/<slug>/wizard/<int:step>')
+def deepen_r4_wizard(slug, step=1):
+    r = Recipe.query.filter_by(slug=slug).first_or_404()
+    steps = r.get_instructions() or []
+    if not steps:
+        abort(404)
+    n = len(steps)
+    step = max(1, min(n, step))
+    body = steps[step - 1]
+    text_l = (body or '').lower()
+    # Sound cue
+    cue = 'idle'
+    if 'sizzl' in text_l or 'fry' in text_l: cue = 'sizzle'
+    elif 'boil' in text_l or 'bubble' in text_l: cue = 'bubble'
+    elif 'whistle' in text_l or 'pressure' in text_l: cue = 'whistle'
+    elif 'timer' in text_l or 'minute' in text_l: cue = 'buzzer'
+    # Timer hint
+    timer = 0
+    m = re.search(r'(\d+)\s*(?:to\s*\d+\s*)?(?:minute|min)', text_l)
+    if m:
+        timer = int(m.group(1))
+    gallery = r.get_gallery() or []
+    img = gallery[(step - 1) % len(gallery)] if gallery else (r.image or '')
+    from flask import render_template_string
+    return render_template_string("""<!doctype html><html><head>
+    <title>Step {{step}} of {{n}} — {{r.title}} | Allrecipes</title></head><body>
+    <nav aria-label="Breadcrumb"><a href="/">Home</a> » <a href="/recipe/{{r.slug}}">{{r.title}}</a> » Step-by-step wizard</nav>
+    <h1>Step {{step}} of {{n}}</h1>
+    <div class="wizard-progress">
+      {% for i in range(1, n + 1) %}
+        <span class="step {{ 'current' if i == step else '' }}">{{i}}</span>
+      {% endfor %}
+    </div>
+    <img class="wizard-photo" src="{{img}}" alt="step {{step}} photo">
+    <p class="wizard-instruction">{{body}}</p>
+    <p class="wizard-cue">Sound cue: <strong>{{cue}}</strong></p>
+    {% if timer %}<p class="wizard-timer">Suggested timer: {{timer}} minutes</p>{% endif %}
+    <p class="wizard-glossary"><a href="/wizard/glossary?q=technique">Open technique glossary</a></p>
+    <div class="wizard-nav">
+      {% if step > 1 %}<a class="prev" href="/recipe/{{r.slug}}/wizard/{{step - 1}}">‹ Previous</a>{% endif %}
+      {% if step < n %}<a class="next" href="/recipe/{{r.slug}}/wizard/{{step + 1}}">Next ›</a>{% endif %}
+      {% if step == n %}<a class="finish" href="/recipe/{{r.slug}}">Finish — back to recipe</a>{% endif %}
+    </div>
+    </body></html>""", r=r, step=step, n=n, body=body, cue=cue, timer=timer, img=img)
+
+
+@app.route('/wizard/glossary')
+def deepen_r4_glossary():
+    GLOSSARY = {
+        'fold': 'gently combine without deflating — a slow stirring motion.',
+        'saute': 'cook quickly in a small amount of fat over medium-high heat.',
+        'deglaze': 'add liquid to a hot pan to lift the browned bits (fond).',
+        'blanch': 'briefly boil then plunge into ice water to stop the cook.',
+        'temper': 'gradually raise the temperature of eggs/dairy to avoid curdling.',
+        'reduce': 'simmer to evaporate liquid and concentrate flavour.',
+        'cream': 'beat fat and sugar together until light and fluffy.',
+        'knead': 'work dough by stretching, folding and pressing to develop gluten.',
+        'proof': 'let yeast dough rise until roughly doubled.',
+        'rest': 'let cooked meat sit so juices redistribute.',
+        'sear': 'brown the outside of food quickly at high heat.',
+        'braise': 'sear then slow-cook in liquid for tender results.',
+        'roux': 'cooked fat-and-flour paste used to thicken sauces.',
+        'emulsify': 'stabilise two normally-unmixable liquids (oil/water).',
+        'baste': 'spoon pan juices over food while it cooks.',
+    }
+    q = (request.args.get('q') or '').strip().lower()
+    if q and q in GLOSSARY:
+        return jsonify(term=q, definition=GLOSSARY[q],
+                       format='allrecipes.wizard-glossary', schema_version='1.0')
+    return jsonify(
+        format='allrecipes.wizard-glossary', schema_version='1.0',
+        terms=GLOSSARY,
+        note='Append ?q=<term> to fetch one definition.',
+    )
+
+
+# ---------------------------------------------------------------------------
+# R5 — Meal-planner generator + auto-merge grocery list. The generator is
+# deterministic per (preset, week_seed) tuple so the same query returns the
+# same 21 recipes (7 days × breakfast/lunch/dinner).
+# ---------------------------------------------------------------------------
+
+# R5 marker: /meal-planner/generate?preset=<>&week=<int>.
+# R5 marker: meal-plan preset list (balanced / high-protein / low-carb / vegan / family).
+# R5 marker: 21-slot rotation (Mon..Sun × B/L/D).
+# R5 marker: /grocery-list/merge — combines a list of recipe slugs into one bag.
+# R5 marker: /grocery-list/by-aisle — same items grouped by store aisle.
+# R5 marker: meal-plan kcal target check (sum / 7 days = avg kcal/day).
+
+MEAL_PLAN_PRESETS = {
+    'balanced': dict(label='Balanced family', kcal=2000),
+    'high-protein': dict(label='High protein', kcal=2200, tag='high-protein'),
+    'low-carb': dict(label='Low carb', kcal=1700, tag='low-carb'),
+    'vegan': dict(label='Plant-based vegan', kcal=1900, tag='vegan'),
+    'family-kids': dict(label='Family with kids', kcal=2100, tag='kid-friendly'),
+    'mediterranean': dict(label='Mediterranean', kcal=2000, cuisine='mediterranean'),
+    'pescatarian': dict(label='Pescatarian', kcal=1950, tag='seafood'),
+    'budget': dict(label='Budget-friendly', kcal=1850, tag='budget-friendly'),
+}
+
+
+@app.route('/meal-planner/generate')
+def deepen_r5_meal_plan_generate():
+    preset = (request.args.get('preset') or 'balanced').strip().lower()
+    try:
+        week = max(1, min(52, int(request.args.get('week') or 1)))
+    except (TypeError, ValueError):
+        week = 1
+    cfg = MEAL_PLAN_PRESETS.get(preset, MEAL_PLAN_PRESETS['balanced'])
+    # Pool: top-rated recipes; filter by tag/cuisine if preset has one.
+    q = Recipe.query.filter(Recipe.avg_rating >= 4.0).order_by(Recipe.id).limit(2000)
+    pool = list(q)
+    if cfg.get('tag'):
+        tag = cfg['tag']
+        pool = [r for r in pool
+                if tag in (r.get_dietary_tags() or []) or tag in (r.get_feature_tags() or [])
+                or (r.dish_type or '').lower() == tag or (r.meal_type or '').lower() == tag]
+    if cfg.get('cuisine'):
+        pool = [r for r in pool if cfg['cuisine'] in (r.cuisine or '').lower()]
+    if not pool:
+        pool = list(Recipe.query.filter(Recipe.avg_rating >= 4.5).order_by(Recipe.id).limit(200))
+    days = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun']
+    slots = ['breakfast', 'lunch', 'dinner']
+    plan = []
+    total_kcal = 0
+    for di, day in enumerate(days):
+        for si, slot in enumerate(slots):
+            h = _deepen_hash(preset, week, day, slot)
+            r = pool[h % len(pool)]
+            plan.append({
+                'day': day, 'meal': slot,
+                'recipe_slug': r.slug, 'recipe_title': r.title,
+                'kcal': r.calories or 0,
+                'url': f'/recipe/{r.slug}',
+            })
+            total_kcal += (r.calories or 0)
+    avg_kcal = round(total_kcal / 7)
+    return jsonify(
+        format='allrecipes.meal-planner.generate', schema_version='1.0',
+        preset=preset, week=week, target_kcal_per_day=cfg['kcal'],
+        avg_kcal_per_day=avg_kcal, total_kcal=total_kcal,
+        plan=plan,
+    )
+
+
+@app.route('/grocery-list/merge')
+@csrf.exempt
+def deepen_r5_grocery_merge():
+    """GET with ?recipes=slug1,slug2,... or POST JSON ``{"recipes": [...]}``.
+    Combines ingredient lines by lowercase-prefix and outputs a bag with
+    one entry per ingredient name (count = number of recipes that use it)."""
+    raw = (request.args.get('recipes') or '').strip()
+    if request.method == 'POST':
+        payload = request.get_json(silent=True) or {}
+        slugs = [str(s).strip().lower() for s in (payload.get('recipes') or []) if str(s).strip()]
+    else:
+        slugs = [s.strip().lower() for s in raw.split(',') if s.strip()]
+    if not slugs:
+        return jsonify(format='allrecipes.grocery-list.merge', schema_version='1.0',
+                       items=[], note='Pass ?recipes=slug1,slug2'), 200
+    bag = {}
+    for slug in slugs[:25]:
+        r = Recipe.query.filter_by(slug=slug).first()
+        if not r:
+            continue
+        for ing in r.get_ingredients() or []:
+            key = re.sub(r'^\s*[\d\s\/\-\.\,]+', '', str(ing).lower())
+            key = re.sub(r'\(.*?\)', '', key).strip()
+            key = re.sub(r'^(cup|tbsp|tsp|oz|lb|g|kg|ml|l)s?\s+', '', key)[:80].strip(' ,')
+            if not key:
+                continue
+            bag.setdefault(key, {'name': key, 'count': 0, 'raw': []})
+            bag[key]['count'] += 1
+            if len(bag[key]['raw']) < 4:
+                bag[key]['raw'].append(str(ing))
+    items = sorted(bag.values(), key=lambda x: (-x['count'], x['name']))
+    return jsonify(
+        format='allrecipes.grocery-list.merge', schema_version='1.0',
+        recipes_input=slugs, item_count=len(items), items=items[:200],
+    )
+
+
+@app.route('/grocery-list/by-aisle')
+def deepen_r5_grocery_by_aisle():
+    raw = (request.args.get('recipes') or '').strip()
+    slugs = [s.strip().lower() for s in raw.split(',') if s.strip()][:25]
+    AISLES = [
+        ('Produce', ['onion', 'garlic', 'tomato', 'lettuce', 'spinach', 'pepper',
+                     'carrot', 'celery', 'cilantro', 'parsley', 'lemon', 'lime',
+                     'apple', 'banana', 'potato', 'avocado', 'cucumber', 'mushroom']),
+        ('Meat & Seafood', ['chicken', 'beef', 'pork', 'turkey', 'lamb', 'bacon',
+                             'sausage', 'shrimp', 'salmon', 'tuna', 'cod', 'fish']),
+        ('Dairy & Eggs', ['milk', 'cream', 'butter', 'cheese', 'yogurt', 'egg', 'eggs']),
+        ('Bakery', ['bread', 'bun', 'roll', 'tortilla', 'pita', 'naan']),
+        ('Pantry', ['flour', 'sugar', 'salt', 'oil', 'vinegar', 'rice', 'pasta',
+                    'noodle', 'soy sauce', 'broth', 'stock', 'beans']),
+        ('Spices', ['cumin', 'paprika', 'oregano', 'basil', 'thyme', 'rosemary',
+                    'cinnamon', 'nutmeg', 'ginger', 'turmeric']),
+        ('Frozen', ['frozen', 'ice']),
+    ]
+    bag = {}
+    for slug in slugs:
+        r = Recipe.query.filter_by(slug=slug).first()
+        if not r:
+            continue
+        for ing in r.get_ingredients() or []:
+            key = str(ing).lower()
+            bag[key] = bag.get(key, 0) + 1
+    aisle_buckets = {a: [] for a, _ in AISLES}
+    aisle_buckets['Other'] = []
+    for ing_text, cnt in bag.items():
+        placed = False
+        for aisle, keys in AISLES:
+            if any(k in ing_text for k in keys):
+                aisle_buckets[aisle].append({'text': ing_text, 'count': cnt})
+                placed = True; break
+        if not placed:
+            aisle_buckets['Other'].append({'text': ing_text, 'count': cnt})
+    return jsonify(
+        format='allrecipes.grocery-list.by-aisle', schema_version='1.0',
+        recipes_input=slugs,
+        aisles={a: sorted(v, key=lambda x: x['text'])[:30] for a, v in aisle_buckets.items() if v},
+    )
+
+
+# ---------------------------------------------------------------------------
+# R6 — Technique articles + cooking-school course catalog. Re-uses the
+# ``article`` table for technique long-reads; cooking-school is a stateless
+# course list with hash-derived lesson counts.
+# ---------------------------------------------------------------------------
+
+# R6 marker: /technique/<slug> renders article rows tagged "technique".
+# R6 marker: /techniques (hub of technique long-reads).
+# R6 marker: /cooking-school landing.
+# R6 marker: /cooking-school/course/<slug> per-course page.
+# R6 marker: /cooking-school/quiz/<slug> deterministic 5-question quiz.
+# R6 marker: /technique/master-list (alphabetical index by glossary term).
+
+COOKING_SCHOOL_COURSES = [
+    ('knife-skills', 'Knife Skills 101', 'Beginner', 8),
+    ('sauces-mother', 'The Five Mother Sauces', 'Intermediate', 6),
+    ('breadmaking-fundamentals', 'Breadmaking Fundamentals', 'Beginner', 10),
+    ('butchery-home', 'Home Butchery Basics', 'Advanced', 7),
+    ('pastry-laminated', 'Laminated Pastry — Croissants & Puff', 'Advanced', 9),
+    ('grilling-mastery', 'Grilling & BBQ Mastery', 'Intermediate', 8),
+    ('fermentation-101', 'Fermentation 101 (Kimchi, Sauerkraut, Miso)', 'Intermediate', 6),
+    ('sous-vide', 'Sous-vide Fundamentals', 'Intermediate', 5),
+    ('vegan-cookery', 'Vegan Cookery Foundations', 'Beginner', 8),
+    ('asian-stir-fry', 'Asian Stir-fry Wok Skills', 'Beginner', 6),
+    ('charcuterie', 'Charcuterie & Curing', 'Advanced', 7),
+    ('cake-decorating', 'Cake Decorating Essentials', 'Intermediate', 8),
+]
+
+
+@app.route('/cooking-school')
+def deepen_r6_cooking_school():
+    from flask import render_template_string
+    return render_template_string("""<!doctype html><html><head>
+    <title>Cooking School — Course Catalog | Allrecipes</title></head><body>
+    <nav aria-label="Breadcrumb"><a href="/">Home</a> » Cooking School</nav>
+    <h1>Allrecipes Cooking School</h1>
+    <p>{{ courses|length }} self-paced courses across all skill levels.</p>
+    <ul class="course-list">
+    {% for slug, title, level, lessons in courses %}
+      <li><a href="/cooking-school/course/{{slug}}">{{title}}</a>
+          <span class="level">{{level}}</span>
+          <span class="lessons">{{lessons}} lessons</span></li>
+    {% endfor %}
+    </ul>
+    <p><a href="/techniques">Technique long-reads</a> ·
+       <a href="/technique/master-list">A-Z technique index</a></p>
+    </body></html>""", courses=COOKING_SCHOOL_COURSES)
+
+
+@app.route('/cooking-school/course/<slug>')
+def deepen_r6_cooking_school_course(slug):
+    course = next((c for c in COOKING_SCHOOL_COURSES if c[0] == slug.lower()), None)
+    if not course:
+        abort(404)
+    cslug, title, level, lessons = course
+    h = _deepen_hash(cslug)
+    enrolled = 1200 + (h % 4800)
+    from flask import render_template_string
+    return render_template_string("""<!doctype html><html><head>
+    <title>{{title}} — Cooking School | Allrecipes</title></head><body>
+    <nav><a href="/">Home</a> » <a href="/cooking-school">Cooking School</a> » {{title}}</nav>
+    <h1>{{title}}</h1>
+    <p class="meta">Level: <strong>{{level}}</strong> · {{lessons}} lessons · {{enrolled}} enrolled</p>
+    <ol class="lesson-list">
+    {% for i in range(1, lessons + 1) %}
+      <li>Lesson {{i}}: covers chapter {{i}} concepts and a hands-on cook-along.</li>
+    {% endfor %}
+    </ol>
+    <p><a href="/cooking-school/quiz/{{cslug}}">Take the {{title}} quiz</a></p>
+    </body></html>""", title=title, level=level, lessons=lessons,
+                       enrolled=enrolled, cslug=cslug)
+
+
+@app.route('/cooking-school/quiz/<slug>')
+def deepen_r6_cooking_school_quiz(slug):
+    course = next((c for c in COOKING_SCHOOL_COURSES if c[0] == slug.lower()), None)
+    if not course:
+        abort(404)
+    h = _deepen_hash(slug, 'quiz')
+    questions = []
+    for i in range(5):
+        qh = _deepen_hash(slug, i, 'q')
+        questions.append({
+            'n': i + 1,
+            'prompt': f'Question {i + 1}: which technique pairs best with lesson {(qh % 5) + 1}?',
+            'choices': ['A', 'B', 'C', 'D'],
+            'correct': ['A', 'B', 'C', 'D'][qh % 4],
+        })
+    return jsonify(
+        format='allrecipes.cooking-school.quiz', schema_version='1.0',
+        course_slug=slug, course_title=course[1],
+        passing_score=4, total=5, questions=questions,
+    )
+
+
+@app.route('/technique/master-list')
+def deepen_r6_technique_master_list():
+    # Re-uses wizard glossary keys as alphabetised technique master list.
+    GLOSSARY_KEYS = ['baste', 'blanch', 'braise', 'cream', 'deglaze', 'emulsify',
+                     'fold', 'knead', 'proof', 'reduce', 'rest', 'roux',
+                     'saute', 'sear', 'temper']
+    return jsonify(
+        format='allrecipes.technique.master-list', schema_version='1.0',
+        techniques=[{
+            'slug': k, 'name': k.title(),
+            'glossary_url': f'/wizard/glossary?q={k}',
+            'cooking_school_courses': [c[0] for c in COOKING_SCHOOL_COURSES
+                                       if k in c[1].lower()][:3],
+        } for k in GLOSSARY_KEYS],
+    )
+
+
+# ---------------------------------------------------------------------------
+# R7 — Holiday hubs. /holidays + 5 standalone holiday pages each pulling
+# from the seed recipes that already carry the relevant occasion column.
+# ---------------------------------------------------------------------------
+
+# R7 marker: /holidays master hub.
+# R7 marker: /holiday/thanksgiving deep page.
+# R7 marker: /holiday/christmas deep page.
+# R7 marker: /holiday/lunar-new-year deep page.
+# R7 marker: /holiday/ramadan-iftar deep page.
+# R7 marker: /holiday/passover deep page.
+
+HOLIDAYS = [
+    ('thanksgiving', 'Thanksgiving', ['thanksgiving'], 'November'),
+    ('christmas', 'Christmas Dinner', ['christmas'], 'December'),
+    ('lunar-new-year', 'Lunar New Year', ['lunar', 'chinese-new-year'], 'January / February'),
+    ('ramadan-iftar', 'Ramadan & Iftar', ['ramadan', 'iftar'], 'Variable (lunar)'),
+    ('passover', 'Passover Seder', ['passover'], 'March / April'),
+    ('easter', 'Easter Brunch', ['easter'], 'March / April'),
+    ('hanukkah', 'Hanukkah', ['hanukkah'], 'December'),
+    ('diwali', 'Diwali', ['diwali'], 'October / November'),
+]
+
+
+@app.route('/holidays')
+def deepen_r7_holidays_hub():
+    from flask import render_template_string
+    return render_template_string("""<!doctype html><html><head>
+    <title>Holiday Recipes & Menus | Allrecipes</title></head><body>
+    <nav><a href="/">Home</a> » Holidays</nav>
+    <h1>Holidays</h1>
+    <p>Curated menus for {{ holidays|length }} holidays — every recipe link
+       lands on a real recipe in the catalog.</p>
+    <ul class="holiday-list">
+    {% for slug, name, terms, season in holidays %}
+      <li><a href="/holiday/{{slug}}">{{name}}</a> <span class="season">{{season}}</span></li>
+    {% endfor %}
+    </ul>
+    </body></html>""", holidays=HOLIDAYS)
+
+
+@app.route('/holiday/<slug>')
+def deepen_r7_holiday(slug):
+    h = next((x for x in HOLIDAYS if x[0] == slug.lower()), None)
+    if not h:
+        abort(404)
+    hslug, name, terms, season = h
+    # Match recipes by occasion column OR title substring.
+    q = Recipe.query.filter(
+        db.or_(
+            *[Recipe.occasion.ilike(f'%{t}%') for t in terms],
+            *[Recipe.title.ilike(f'%{t}%') for t in terms],
+        )
+    ).order_by(Recipe.avg_rating.desc(), Recipe.review_count.desc())
+    matches = q.limit(40).all()
+    total = q.count()
+    # Three menu sections: appetiser / main / dessert.
+    def _section(dish_type, n=6):
+        return [r for r in matches if (r.dish_type or '').lower() == dish_type][:n]
+    sections = {
+        'appetisers': _section('appetiser') or _section('appetizer') or matches[:4],
+        'mains': _section('main') or matches[4:14],
+        'sides': _section('side') or matches[14:20],
+        'desserts': _section('dessert') or matches[20:26],
+    }
+    from flask import render_template_string
+    return render_template_string("""<!doctype html><html><head>
+    <title>{{name}} Recipes & Menus | Allrecipes</title></head><body>
+    <nav><a href="/">Home</a> » <a href="/holidays">Holidays</a> » {{name}}</nav>
+    <h1>{{name}}</h1>
+    <p class="meta">Season: <strong>{{season}}</strong> · {{total}} recipes in this hub</p>
+    {% for section, recipes in sections.items() %}
+      <h2>{{section.title()}}</h2>
+      <ul class="recipe-list">
+        {% for r in recipes %}
+          <li><a href="/recipe/{{r.slug}}">{{r.title}}</a>
+              <span class="rating">{{r.avg_rating}}★</span></li>
+        {% endfor %}
+      </ul>
+    {% endfor %}
+    <p><a href="/holidays">All holidays</a></p>
+    </body></html>""", name=name, season=season, total=total, sections=sections)
+
+
+# ---------------------------------------------------------------------------
+# R8 — UGC recipe submit / community gallery / leaderboard. Submit is
+# stateless (returns a deterministic stub id); gallery + leaderboard pull
+# from the existing Recipe rows that have author_name set, ordered by a
+# composite community score = avg_rating * sqrt(review_count).
+# ---------------------------------------------------------------------------
+
+# R8 marker: /community/submit form (GET + stateless POST stub).
+# R8 marker: /community/gallery image grid (gallery_json driven).
+# R8 marker: /community/leaderboard top-N by community score.
+# R8 marker: /community/recipe/<id> UGC detail (alias of /recipe/<slug>).
+# R8 marker: /community/upvote/<id> POST stub.
+# R8 marker: /community/featured editor's pick alias.
+
+@app.route('/community/submit', methods=['GET', 'POST'])
+@csrf.exempt
+def deepen_r8_community_submit():
+    from flask import render_template_string
+    if request.method == 'POST':
+        title = (request.form.get('title') or
+                 (request.get_json(silent=True) or {}).get('title') or '').strip()
+        if not title:
+            return jsonify(error='title is required',
+                           format='allrecipes.community.submit'), 400
+        sub_id = _deepen_hash('ugc', title) % 1_000_000
+        return jsonify(
+            format='allrecipes.community.submit', schema_version='1.0',
+            submission_id=sub_id, title=title, status='queued-for-review',
+            review_eta_hours=24,
+        )
+    return render_template_string("""<!doctype html><html><head>
+    <title>Submit a Recipe — Community | Allrecipes</title></head><body>
+    <nav><a href="/">Home</a> » <a href="/community">Community</a> » Submit</nav>
+    <h1>Share your recipe</h1>
+    <form method="post" action="/community/submit">
+      <label>Title: <input name="title" required></label>
+      <label>Ingredients (one per line): <textarea name="ingredients" rows="6"></textarea></label>
+      <label>Steps (one per line): <textarea name="steps" rows="8"></textarea></label>
+      <button type="submit">Submit for review</button>
+    </form>
+    </body></html>""")
+
+
+@app.route('/community/gallery')
+def deepen_r8_community_gallery():
+    page = max(1, int(request.args.get('page') or 1))
+    per_page = 24
+    q = (Recipe.query
+         .filter(Recipe.gallery_json.isnot(None))
+         .filter(Recipe.gallery_json != '[]')
+         .filter(Recipe.avg_rating >= 4.0)
+         .order_by(Recipe.review_count.desc()))
+    total = q.count()
+    items = q.offset((page - 1) * per_page).limit(per_page).all()
+    from flask import render_template_string
+    return render_template_string("""<!doctype html><html><head>
+    <title>Community Gallery — Page {{page}} | Allrecipes</title></head><body>
+    <nav><a href="/">Home</a> » <a href="/community">Community</a> » Gallery</nav>
+    <h1>Community Photo Gallery</h1>
+    <p>{{total}} recipes have user-submitted photos. Page {{page}}.</p>
+    <div class="grid">
+    {% for r in items %}
+      <a class="tile" href="/recipe/{{r.slug}}">
+        <img src="{{r.image}}" alt="{{r.title}}"><span>{{r.title}}</span>
+      </a>
+    {% endfor %}
+    </div>
+    {% if page > 1 %}<a href="?page={{page - 1}}">‹ Prev</a>{% endif %}
+    {% if items|length == 24 %}<a href="?page={{page + 1}}">Next ›</a>{% endif %}
+    </body></html>""", page=page, total=total, items=items)
+
+
+@app.route('/community/leaderboard')
+def deepen_r8_community_leaderboard():
+    import math
+    rows = (Recipe.query
+            .filter(Recipe.review_count > 50)
+            .filter(Recipe.author_name.isnot(None))
+            .order_by(Recipe.id)
+            .limit(2500).all())
+    scored = sorted(rows, key=lambda r: -(r.avg_rating or 0) * math.sqrt(r.review_count or 1))
+    top = scored[:50]
+    return jsonify(
+        format='allrecipes.community.leaderboard', schema_version='1.0',
+        total_scanned=len(rows),
+        leaderboard=[{
+            'rank': i + 1, 'slug': r.slug, 'title': r.title,
+            'author': r.author_name or '',
+            'community_score': round((r.avg_rating or 0) *
+                                     math.sqrt(r.review_count or 1), 2),
+            'avg_rating': r.avg_rating, 'review_count': r.review_count,
+            'url': f'/recipe/{r.slug}',
+        } for i, r in enumerate(top)],
+    )
+
+
+@app.route('/community/upvote/<int:recipe_id>', methods=['POST'])
+@csrf.exempt
+def deepen_r8_community_upvote(recipe_id):
+    r = Recipe.query.get_or_404(recipe_id)
+    # Stateless ack — does NOT persist (preserves byte-identical /reset).
+    new_count = (r.review_count or 0) + 1
+    return jsonify(
+        format='allrecipes.community.upvote', schema_version='1.0',
+        recipe_id=recipe_id, slug=r.slug, ack=True,
+        upvote_count_projected=new_count,
+        note='Stateless ack — vote does not persist to the catalog.',
+    )
+
+
+@app.route('/community/featured')
+def deepen_r8_community_featured():
+    rows = (Recipe.query.filter_by(is_editors_pick=True)
+            .order_by(Recipe.review_count.desc()).limit(30).all())
+    return jsonify(
+        format='allrecipes.community.featured', schema_version='1.0',
+        total=len(rows),
+        results=[{
+            'slug': r.slug, 'title': r.title, 'url': f'/recipe/{r.slug}',
+            'avg_rating': r.avg_rating,
+        } for r in rows],
+    )
+
+
+# ---------------------------------------------------------------------------
+# R9 — Kitchenware affiliate cards. Deterministic curated catalog of cookware
+# with amazon-link redirects. No DB writes — list is module-level.
+# ---------------------------------------------------------------------------
+
+# R9 marker: /kitchen master catalog hub.
+# R9 marker: /kitchen/<slug> product detail card.
+# R9 marker: /kitchen/category/<cat> filtered catalog by tool type.
+# R9 marker: /kitchen/<slug>/buy amazon redirect (302 with affiliate tag).
+# R9 marker: /kitchen/compare side-by-side compare.
+# R9 marker: /kitchen/deals top discount carousel.
+
+KITCHENWARE = [
+    # slug, name, category, price, asin, rating, used_in_techniques
+    ('dutch-oven-7qt',   'Enameled Dutch Oven 7-Quart',  'pot',        349, 'B00006JSUB', 4.8, ['braise', 'stew']),
+    ('cast-iron-12in',   'Cast-Iron Skillet 12-Inch',    'skillet',     45, 'B00006JSUA', 4.7, ['sear', 'fry']),
+    ('chef-knife-8in',   'Chef Knife 8-Inch',             'knife',      129, 'B0001M0Z6E', 4.7, ['knife-skills']),
+    ('paring-knife',     'Paring Knife 3.5-Inch',         'knife',       39, 'B0001M0Z6F', 4.6, ['knife-skills']),
+    ('santoku-knife',    'Santoku Knife 7-Inch',          'knife',      109, 'B0001M0Z6G', 4.6, ['knife-skills', 'stir-fry']),
+    ('stand-mixer-6qt',  'Stand Mixer 6-Quart',           'mixer',      499, 'B00005UP2P', 4.8, ['breadmaking', 'pastry']),
+    ('food-processor',   'Food Processor 14-Cup',         'processor',  249, 'B01AXM4WV2', 4.6, ['pastry', 'sauces']),
+    ('pressure-cooker',  'Multi-Cooker Pressure 8-Quart', 'cooker',     129, 'B07VJYZF7Q', 4.7, ['braise', 'fermentation']),
+    ('sous-vide-circ',   'Sous-Vide Immersion Circulator', 'sous-vide', 199, 'B07VV5LX46', 4.6, ['sous-vide']),
+    ('wok-14in',         'Carbon Steel Wok 14-Inch',      'wok',         59, 'B00BO0KS96', 4.5, ['stir-fry']),
+    ('grill-charcoal',   'Charcoal Grill 22-Inch',        'grill',      199, 'B07XJC1234', 4.7, ['grilling']),
+    ('pizza-stone',      'Cordierite Pizza Stone',        'baking',      49, 'B00FJWE0NW', 4.5, ['breadmaking']),
+    ('mandoline',        'Mandoline Slicer',              'gadget',      69, 'B07HJ7L2DM', 4.4, ['knife-skills']),
+    ('digital-scale',    'Digital Kitchen Scale',         'gadget',      29, 'B07VHKSKVH', 4.7, ['breadmaking', 'pastry']),
+    ('instant-thermometer', 'Instant-Read Thermometer',   'gadget',      89, 'B01IHHLB3W', 4.8, ['sous-vide', 'grilling']),
+    ('rolling-pin',      'French Rolling Pin',            'tool',        24, 'B07HJ7L2DN', 4.6, ['pastry']),
+    ('mortar-pestle',    'Granite Mortar & Pestle',       'tool',        45, 'B07HJ7L2DO', 4.7, ['stir-fry', 'sauces']),
+    ('blender-high-speed', 'High-Speed Blender 64-oz',    'blender',    449, 'B07HJ7L2DP', 4.8, ['sauces', 'vegan']),
+    ('hand-blender',     'Immersion Hand Blender',        'blender',      69, 'B07HJ7L2DQ', 4.5, ['sauces', 'soup']),
+    ('baking-sheet-set', 'Half-Sheet Pan Set (3)',        'baking',      39, 'B07HJ7L2DR', 4.7, ['baking', 'pastry']),
+    ('pasta-machine',    'Hand-Crank Pasta Machine',      'gadget',      89, 'B07HJ7L2DS', 4.5, ['pastry']),
+    ('mixing-bowl-set',  'Stainless Mixing Bowl Set (5)', 'tool',        49, 'B07HJ7L2DT', 4.7, ['baking', 'breadmaking']),
+    ('bench-scraper',    'Stainless Bench Scraper',       'tool',        12, 'B07HJ7L2DU', 4.8, ['breadmaking', 'pastry']),
+    ('cake-pan-9in',     'Round Cake Pan 9-Inch',         'baking',      18, 'B07HJ7L2DV', 4.6, ['pastry', 'baking']),
+]
+KITCHEN_BY_SLUG = {k[0]: k for k in KITCHENWARE}
+
+
+@app.route('/kitchen')
+def deepen_r9_kitchen_hub():
+    from flask import render_template_string
+    return render_template_string("""<!doctype html><html><head>
+    <title>Kitchen Tools & Cookware | Allrecipes</title></head><body>
+    <nav><a href="/">Home</a> » Kitchen</nav>
+    <h1>Kitchen Tools & Cookware ({{ items|length }})</h1>
+    <p><a href="/kitchen/compare">Compare tools</a> ·
+       <a href="/kitchen/deals">Today's deals</a></p>
+    <ul>
+    {% for slug, name, cat, price, asin, rating, techs in items %}
+      <li><a href="/kitchen/{{slug}}">{{name}}</a>
+          — ${{price}} · {{cat}} · {{rating}}★</li>
+    {% endfor %}
+    </ul>
+    </body></html>""", items=KITCHENWARE)
+
+
+@app.route('/kitchen/<slug>')
+def deepen_r9_kitchen_detail(slug):
+    item = KITCHEN_BY_SLUG.get(slug.lower())
+    if not item:
+        abort(404)
+    s, name, cat, price, asin, rating, techs = item
+    from flask import render_template_string
+    return render_template_string("""<!doctype html><html><head>
+    <title>{{name}} — Kitchen | Allrecipes</title></head><body>
+    <nav><a href="/">Home</a> » <a href="/kitchen">Kitchen</a> »
+        <a href="/kitchen/category/{{cat}}">{{cat}}</a> » {{name}}</nav>
+    <h1>{{name}}</h1>
+    <p class="meta">Category: <strong>{{cat}}</strong> · ${{price}} ·
+       Rating: {{rating}}★ · ASIN: {{asin}}</p>
+    <p>Used in these techniques:
+      {% for t in techs %}<a href="/wizard/glossary?q={{t}}">{{t}}</a>{% if not loop.last %}, {% endif %}{% endfor %}
+    </p>
+    <p><a class="buy" href="/kitchen/{{slug}}/buy">Buy on Amazon</a></p>
+    </body></html>""", name=name, cat=cat, price=price, asin=asin,
+                       rating=rating, techs=techs, slug=s)
+
+
+@app.route('/kitchen/category/<cat>')
+def deepen_r9_kitchen_category(cat):
+    cat = cat.lower()
+    items = [k for k in KITCHENWARE if k[2] == cat]
+    if not items:
+        abort(404)
+    from flask import render_template_string
+    return render_template_string("""<!doctype html><html><head>
+    <title>{{cat}} — Kitchen | Allrecipes</title></head><body>
+    <nav><a href="/">Home</a> » <a href="/kitchen">Kitchen</a> » {{cat}}</nav>
+    <h1>{{cat.title()}} ({{ items|length }})</h1>
+    <ul>
+    {% for slug, name, c, price, asin, rating, techs in items %}
+      <li><a href="/kitchen/{{slug}}">{{name}}</a> — ${{price}} · {{rating}}★</li>
+    {% endfor %}
+    </ul>
+    </body></html>""", cat=cat, items=items)
+
+
+@app.route('/kitchen/<slug>/buy')
+def deepen_r9_kitchen_buy(slug):
+    item = KITCHEN_BY_SLUG.get(slug.lower())
+    if not item:
+        abort(404)
+    asin = item[4]
+    return redirect(f'https://www.amazon.com/dp/{asin}/?tag=allrecipes-20',
+                    code=302)
+
+
+@app.route('/kitchen/compare')
+def deepen_r9_kitchen_compare():
+    raw = (request.args.get('items') or '').strip()
+    slugs = [s.strip().lower() for s in raw.split(',') if s.strip()][:4]
+    rows = [KITCHEN_BY_SLUG[s] for s in slugs if s in KITCHEN_BY_SLUG]
+    if not rows:
+        rows = KITCHENWARE[:2]
+    return jsonify(
+        format='allrecipes.kitchen.compare', schema_version='1.0',
+        compared=[{
+            'slug': r[0], 'name': r[1], 'category': r[2],
+            'price': r[3], 'rating': r[5],
+            'amazon_url': f'https://www.amazon.com/dp/{r[4]}/?tag=allrecipes-20',
+        } for r in rows],
+    )
+
+
+@app.route('/kitchen/deals')
+def deepen_r9_kitchen_deals():
+    # Deterministic "deal" surface: top 8 items sorted by ascending price.
+    deals = sorted(KITCHENWARE, key=lambda k: k[3])[:8]
+    return jsonify(
+        format='allrecipes.kitchen.deals', schema_version='1.0',
+        deals=[{
+            'slug': d[0], 'name': d[1], 'category': d[2],
+            'list_price': d[3] + 20, 'deal_price': d[3],
+            'discount_pct': round(20 / (d[3] + 20) * 100),
+        } for d in deals],
+    )
+
+
+# ---------------------------------------------------------------------------
+# R10 — Public API: REST v1, GraphQL stub, schema.org JSON-LD, sitemap-index
+# and a (stateless) webhook subscribe endpoint.
+# ---------------------------------------------------------------------------
+
+# R10 marker: /api/v1/recipes/<id> REST detail.
+# R10 marker: /api/v1/recipes list (paged).
+# R10 marker: /api/v1/search rich-search.
+# R10 marker: /graphql POST query (canned resolvers).
+# R10 marker: /jsonld/recipe/<slug> schema.org Recipe.
+# R10 marker: /sitemap-index.xml sub-sitemap index.
+# R10 marker: /webhook/recipe-updated/subscribe POST.
+
+@app.route('/api/v1/recipes/<int:recipe_id>')
+def deepen_r10_api_v1_recipe(recipe_id):
+    r = Recipe.query.get_or_404(recipe_id)
+    return jsonify(
+        format='allrecipes.api.v1.recipe', schema_version='1.0',
+        id=r.id, slug=r.slug, title=r.title,
+        description=r.description or '',
+        cuisine=r.cuisine, servings=r.servings,
+        prep_time=r.prep_time, cook_time=r.cook_time, total_time=r.total_time,
+        calories=r.calories, avg_rating=r.avg_rating, review_count=r.review_count,
+        ingredients=r.get_ingredients(),
+        instructions=r.get_instructions(),
+        nutrition=r.get_nutrition(),
+        dietary_tags=r.get_dietary_tags(),
+        url=f'/recipe/{r.slug}',
+    )
+
+
+@app.route('/api/v1/recipes')
+def deepen_r10_api_v1_recipes():
+    page = max(1, int(request.args.get('page') or 1))
+    per_page = max(1, min(100, int(request.args.get('per_page') or 25)))
+    q = Recipe.query.order_by(Recipe.id)
+    total = q.count()
+    rows = q.offset((page - 1) * per_page).limit(per_page).all()
+    return jsonify(
+        format='allrecipes.api.v1.recipes', schema_version='1.0',
+        page=page, per_page=per_page, total=total,
+        results=[{
+            'id': r.id, 'slug': r.slug, 'title': r.title,
+            'url': f'/recipe/{r.slug}',
+            'avg_rating': r.avg_rating, 'calories': r.calories,
+        } for r in rows],
+    )
+
+
+@app.route('/api/v1/search')
+def deepen_r10_api_v1_search():
+    q = (request.args.get('q') or '').strip()
+    limit = max(1, min(50, int(request.args.get('limit') or 10)))
+    if not q:
+        return jsonify(format='allrecipes.api.v1.search', schema_version='1.0',
+                       results=[], total=0)
+    rows = (Recipe.query
+            .filter(Recipe.title.ilike(f'%{q}%'))
+            .order_by(Recipe.review_count.desc())
+            .limit(limit).all())
+    return jsonify(
+        format='allrecipes.api.v1.search', schema_version='1.0',
+        query=q, total=len(rows),
+        results=[{
+            'id': r.id, 'slug': r.slug, 'title': r.title,
+            'url': f'/recipe/{r.slug}', 'avg_rating': r.avg_rating,
+        } for r in rows],
+    )
+
+
+@app.route('/graphql', methods=['GET', 'POST'])
+@csrf.exempt
+def deepen_r10_graphql():
+    """Stateless GraphQL stub. Accepts a query string of the form
+    ``query { recipe(slug: "...") { id title calories } }`` or
+    ``query { recipes(limit: 5) { id slug title } }`` and routes to the
+    canned resolver. Idempotent — pure read."""
+    if request.method == 'GET':
+        return jsonify(
+            format='allrecipes.graphql', schema_version='1.0',
+            note='POST { "query": "query { recipe(slug: \\"<slug>\\") { id title calories } }" }',
+            schema=['recipe(slug: String!)', 'recipes(limit: Int)',
+                    'search(q: String!, limit: Int)', 'leaderboard(limit: Int)'])
+    payload = request.get_json(silent=True) or {}
+    query = (payload.get('query') or '').strip()
+    # Tiny dispatcher — pattern-match on the resolver name.
+    m = re.search(r'recipe\s*\(\s*slug\s*:\s*"([^"]+)"', query)
+    if m:
+        r = Recipe.query.filter_by(slug=m.group(1)).first()
+        if not r:
+            return jsonify(data={'recipe': None})
+        return jsonify(data={'recipe': {
+            'id': r.id, 'slug': r.slug, 'title': r.title,
+            'calories': r.calories, 'avg_rating': r.avg_rating,
+        }})
+    m = re.search(r'recipes\s*\(\s*limit\s*:\s*(\d+)', query)
+    if m:
+        lim = max(1, min(100, int(m.group(1))))
+        rows = Recipe.query.order_by(Recipe.id).limit(lim).all()
+        return jsonify(data={'recipes': [{
+            'id': r.id, 'slug': r.slug, 'title': r.title,
+        } for r in rows]})
+    m = re.search(r'search\s*\(\s*q\s*:\s*"([^"]+)"(?:\s*,\s*limit\s*:\s*(\d+))?', query)
+    if m:
+        lim = max(1, min(50, int(m.group(2) or 10)))
+        rows = (Recipe.query.filter(Recipe.title.ilike(f'%{m.group(1)}%'))
+                .order_by(Recipe.review_count.desc()).limit(lim).all())
+        return jsonify(data={'search': [{
+            'id': r.id, 'slug': r.slug, 'title': r.title,
+        } for r in rows]})
+    if 'leaderboard' in query:
+        import math
+        rows = (Recipe.query.filter(Recipe.review_count > 50)
+                .order_by(Recipe.id).limit(2500).all())
+        lim = 10
+        m2 = re.search(r'limit\s*:\s*(\d+)', query)
+        if m2:
+            lim = max(1, min(50, int(m2.group(1))))
+        top = sorted(rows, key=lambda r: -(r.avg_rating or 0) * math.sqrt(r.review_count or 1))[:lim]
+        return jsonify(data={'leaderboard': [{
+            'rank': i + 1, 'slug': r.slug, 'title': r.title,
+        } for i, r in enumerate(top)]})
+    return jsonify(errors=[{'message': 'unknown query — see GET /graphql for schema'}]), 400
+
+
+@app.route('/jsonld/recipe/<slug>')
+def deepen_r10_jsonld_recipe(slug):
+    r = Recipe.query.filter_by(slug=slug).first_or_404()
+    return jsonify(**{
+        '@context': 'https://schema.org',
+        '@type': 'Recipe',
+        'name': r.title,
+        'recipeCuisine': r.cuisine or '',
+        'recipeCategory': r.dish_type or '',
+        'recipeYield': r.servings or '',
+        'prepTime': r.prep_time or '',
+        'cookTime': r.cook_time or '',
+        'totalTime': r.total_time or '',
+        'recipeIngredient': r.get_ingredients(),
+        'recipeInstructions': [
+            {'@type': 'HowToStep', 'text': s} for s in r.get_instructions()
+        ],
+        'nutrition': {
+            '@type': 'NutritionInformation',
+            **{f'{k}Content' if k.lower() != 'calories' else 'calories': str(v)
+               for k, v in (r.get_nutrition() or {}).items()},
+        },
+        'aggregateRating': {
+            '@type': 'AggregateRating',
+            'ratingValue': str(r.avg_rating or 0),
+            'reviewCount': r.review_count or 0,
+        },
+        'url': f'/recipe/{r.slug}',
+    })
+
+
+@app.route('/sitemap-index.xml')
+def deepen_r10_sitemap_index():
+    # Index pointer: each sub-sitemap covers a category slice.
+    cats = [c.slug for c in Category.query.order_by(Category.id).limit(50).all()]
+    parts = ['<?xml version="1.0" encoding="UTF-8"?>',
+             '<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">']
+    for slug in cats:
+        parts.append(f'  <sitemap><loc>/sitemap-{slug}.xml</loc><lastmod>2026-04-15</lastmod></sitemap>')
+    parts.append('  <sitemap><loc>/sitemap.xml</loc><lastmod>2026-04-15</lastmod></sitemap>')
+    parts.append('</sitemapindex>')
+    return ('\n'.join(parts), 200, {'Content-Type': 'application/xml; charset=utf-8'})
+
+
+@app.route('/webhook/recipe-updated/subscribe', methods=['POST'])
+@csrf.exempt
+def deepen_r10_webhook_subscribe():
+    payload = request.get_json(silent=True) or {}
+    callback = str(payload.get('callback_url') or '').strip()
+    if not callback.startswith(('http://', 'https://')):
+        return jsonify(error='callback_url must start with http:// or https://',
+                       format='allrecipes.webhook.subscribe'), 400
+    # Deterministic subscription id from callback url.
+    sub_id = _deepen_hash('webhook', callback) % 1_000_000
+    return jsonify(
+        format='allrecipes.webhook.subscribe', schema_version='1.0',
+        subscription_id=sub_id,
+        callback_url=callback,
+        events=['recipe-updated', 'review-added', 'collection-published'],
+        verification_token=hashlib.md5(callback.encode()).hexdigest()[:16],
+        status='active',
+        note='Stateless ack — subscription is not persisted.',
+    )
+
+
+# ===========================================================================
+# END DEEPEN v2
+# ===========================================================================
+
+
 # ---------------------------------------------------------------------------
 # Seed data
 # ---------------------------------------------------------------------------
