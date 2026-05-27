@@ -157,6 +157,20 @@ class Flight(db.Model):
     origin = db.relationship('Airport', foreign_keys=[origin_id])
     destination = db.relationship('Airport', foreign_keys=[destination_id])
 
+    # Homepage `/` runs:
+    #   1) min(id) grouped by Airport.city  filter is_best=True
+    #      joined Airport on destination_id
+    #   2) Flight.query.filter_by(is_cheapest=True).order_by(id).limit(800)
+    # Without these the planner full-scans the 1.5M-row table (~38ms × 5).
+    # Composite on (is_best, destination_id) and (is_cheapest, id) turns each
+    # into an index seek; (origin_id, destination_id, price) speeds up
+    # /explore's per-dest cheapest lookups.
+    __table_args__ = (
+        db.Index('ix_flight_is_best_destination', 'is_best', 'destination_id'),
+        db.Index('ix_flight_is_cheapest_id', 'is_cheapest', 'id'),
+        db.Index('ix_flight_origin_destination_price', 'origin_id', 'destination_id', 'price'),
+    )
+
     @property
     def duration_str(self):
         h = self.duration_minutes // 60
@@ -499,19 +513,48 @@ def datefmt(value, fmt='%b %d, %Y'):
     return value.strftime(fmt)
 
 
+# Process-level caches for static Airport-derived data. The flight DB has
+# 1.5M rows but the airport catalog is fixed; recomputing these on every
+# request was the dominant cost in /, /explore, and /search. Cache resets on
+# /reset because control_server respawns the worker.
+_AIRPORTS_BY_POPULARITY_CACHE: list = []
+_MULTI_CITY_GROUPS_CACHE: list = []
+
+
+def _cached_airports_by_popularity():
+    if not _AIRPORTS_BY_POPULARITY_CACHE:
+        _AIRPORTS_BY_POPULARITY_CACHE.extend(
+            Airport.query.order_by(Airport.is_popular.desc(), Airport.city).all()
+        )
+    return _AIRPORTS_BY_POPULARITY_CACHE
+
+
+def _cached_multi_city_groups():
+    if not _MULTI_CITY_GROUPS_CACHE:
+        from collections import defaultdict
+        by_city = defaultdict(list)
+        for a in Airport.query.all():
+            by_city[a.city].append(a.iata)
+        groups = sorted(
+            [(city, sorted(iatas)) for city, iatas in by_city.items() if len(iatas) > 1]
+        )
+        _MULTI_CITY_GROUPS_CACHE.extend(groups)
+    return _MULTI_CITY_GROUPS_CACHE
+
+
 @app.context_processor
 def _inject_airport_groups():
     """Surface multi-airport cities (New York → JFK/LGA/EWR, London → LHR/LGW,
     Tokyo → HND/NRT, …) as their own datalist entries so users can search by
-    city name without picking one specific airport."""
-    from collections import defaultdict
-    by_city = defaultdict(list)
-    for a in Airport.query.all():
-        by_city[a.city].append(a.iata)
-    multi = sorted(
-        [(city, sorted(iatas)) for city, iatas in by_city.items() if len(iatas) > 1]
-    )
-    return {'multi_city_groups': multi}
+    city name without picking one specific airport.
+
+    Airports are static between resets — the catalog never mutates at request
+    time — so memoize the rendered list at module scope. This shaves ~60ms
+    per request that was previously spent re-running Airport.query.all() +
+    rebuilding the defaultdict on every page render. control_server's
+    /reset respawns the worker, so the cache always tracks the current DB.
+    """
+    return {'multi_city_groups': _cached_multi_city_groups()}
 
 
 # ============================================================
@@ -567,7 +610,7 @@ def index():
         .order_by(Airport.city)
         .limit(8).all()
     )
-    all_airports = Airport.query.order_by(Airport.is_popular.desc(), Airport.city).all()
+    all_airports = _cached_airports_by_popularity()
 
     return render_template('index.html',
                            popular_origins=popular_origins,
@@ -911,7 +954,7 @@ def flights_list():
     # If validation failed, short-circuit: render empty results with the errors so
     # the user sees the problem rather than getting unrelated rows.
     if validation_errors:
-        all_airports = Airport.query.order_by(Airport.is_popular.desc(), Airport.city).all()
+        all_airports = _cached_airports_by_popularity()
         return render_template('flights.html',
                                flights=[],
                                origin=origin,
@@ -1055,7 +1098,7 @@ def flights_list():
         airline_q = airline_q.filter(Flight.destination_id.in_(dest_ids))
     airline_options = sorted({row[0] for row in airline_q.limit(100).all()})
 
-    all_airports = Airport.query.order_by(Airport.is_popular.desc(), Airport.city).all()
+    all_airports = _cached_airports_by_popularity()
 
     return render_template('flights.html',
                            flights=flights,
