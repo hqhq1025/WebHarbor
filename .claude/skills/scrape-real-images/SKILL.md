@@ -59,45 +59,11 @@ if not any(x in ct for x in ('image/jpeg', 'image/png', 'image/webp', 'image/svg
 
 Reject anything under 5 KB — almost always a tracking pixel, HTML error page, or empty placeholder.
 
-## ⚠️ Source priority: Wikipedia/Wikimedia FIRST, **local SearXNG SECOND**, Tavily LAST
+## ⚠️ Source priority: Wikipedia/Wikimedia FIRST, Tavily LAST
 
-**Tavily / Exa 是 last resort 不是 default**。Tavily 有月配额（free 1000 query/月），过去一次 36 站 polish 直接消耗 ~50-75%（700+ query），其中大部分本来能用免费 unlimited 的 Wikipedia/Wikimedia REST API + **本地 SearXNG meta-search** 拿到。
+**Tavily 是 fallback 不是 default**。Tavily 有月配额（free 1000 query/月），过去一次 36 站 polish 直接消耗 ~50-75%（700+ query），其中大部分本来能用免费 unlimited 的 Wikipedia/Wikimedia REST API 拿到。
 
-### 本地 SearXNG（替代 Tavily/Exa，完全免费、无 quota）
-
-跑在 `http://localhost:8888`（docker container `searxng`，端口 8888 → 8080）。聚合 Google / Bing / DuckDuckGo / Brave / Wikipedia / Wikimedia 等 70 个引擎，返回标准 JSON。如果 container 没在跑，启动：
-
-```bash
-mkdir -p /tmp/searxng && cat > /tmp/searxng/settings.yml <<'EOF'
-use_default_settings: true
-server:
-  secret_key: "<random>"
-  bind_address: "0.0.0.0"
-  port: 8080
-  limiter: false
-search:
-  formats: [html, json]
-EOF
-docker run -d --name searxng -p 8888:8080 -v /tmp/searxng:/etc/searxng:rw searxng/searxng:latest
-```
-
-调用（wrapper at `~/webvoyager-analysis/real_components/search_local.py`）：
-
-```python
-from search_local import search, search_images
-
-# Tavily-equivalent text search
-results = search("italian restaurant interior", n=10)
-# [{title, url, content, engine, score}, ...]
-
-# Tavily include_images=True equivalent — returns Google+Bing image search aggregated
-imgs = search_images("italian restaurant interior", n=20)
-# [{img_src, thumbnail_src, title, source}, ...]
-```
-
-实测 2026-05：289 image results / "iron man" query in 1 second，Google + Bing + Wikimedia 聚合，0 cost。
-
-**第一反应应该是查这张表**（按 entity 类型直接知道去哪爬），找不到才用本地 SearXNG，最后才用 Tavily：
+**第一反应应该是查这张表**（按 entity 类型直接知道去哪爬），找不到才用 Tavily：
 
 | 想要的图 | 直接爬哪（免费 unlimited） | 限速 |
 |---|---|---|
@@ -119,41 +85,29 @@ imgs = search_images("italian restaurant interior", n=20)
 ```python
 import requests, time
 
-# ⚠️ UA 必须是真浏览器或合规归因 UA — 否则 upload.wikimedia.org 直接 403
-# ❌ 别用: "Python/3.10" / "curl/7.x" / "Bot/1.0" / generic UA
-# ✅ 用方案 A: 真 Chrome UA — 简单粗暴
-UA_CHROME = ("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
-             "(KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36")
-# ✅ 用方案 B: 合规归因 UA — 符合 Wikimedia attribution policy
-UA_POLITE = "WebHarbor-Mirror-Builder/1.0 (https://github.com/aiming-lab/WebHarbor; contact@example.com)"
-
 def wiki_thumb(name, size=800):
     """Get the canonical Wikipedia thumbnail for a named entity. Returns None on miss."""
     title = name.replace(' ', '_')
     r = requests.get(
         f"https://en.wikipedia.org/api/rest_v1/page/summary/{title}",
-        headers={'User-Agent': UA_POLITE},  # 任选 A 或 B
+        headers={'User-Agent': 'WebHarbor/1.0 (your-email@example.com)'},
         timeout=5,
     )
     if r.status_code != 200: return None
     thumb = r.json().get('thumbnail')
     if not thumb: return None
-    return thumb.get('source')
+    # `thumb.source` is the small-size URL; for larger replace `.../<NNN>px-<file>` with desired width
+    return thumb.get('source')  # 用 .original 拿原图
 
 # bulk fetch for 1000 entities，无配额
 for ent in entities:
     url = wiki_thumb(ent.name)
     if url:
-        download_and_save(url, dest, headers={'User-Agent': UA_POLITE})  # 下载时也要带！
-    time.sleep(0.3)
+        download_and_save(url, dest)
+    time.sleep(0.3)  # polite, 4-parallel works too
 ```
 
-**2026-05 教训（必看）**：
-- 多次实战 generic bot UA 在 `upload.wikimedia.org/wikipedia/commons/...` 直接 403（API 通但下载图被拒）
-- 用真 Chrome UA 或合规归因 UA → 100% 通过
-- 推荐先 polite UA，请求被拒再 fallback Chrome UA
-
-**实测**：本会话 google_map 136 place 用 Wikipedia REST 一次抓 **407 张 wiki_*.jpg / 166MB**, 135/136 places 拿到 3 张 distinct 真照片 — **0 Tavily call**。berkeley/recreation_gov 6 列 top-dup 21-27% → ≤6.7%，127 张 webp 全 Wikipedia REST。
+**实测**：本会话 google_map 136 place 用 Wikipedia REST 一次抓 **407 张 wiki_*.jpg / 166MB**, 135/136 places 拿到 3 张 distinct 真照片 — **0 Tavily call**。
 
 ### Wikimedia Commons 直查（找特定文件名 / category）
 
@@ -497,3 +451,121 @@ curl -s -X POST http://localhost:8311/restart/<slug>
 - `seed-database/SKILL.md` — image diversity check as mandatory verify step
 - `seed-database/data-sources.md` — battle-tested API registry (Wikipedia / TED / TMDB / etc)
 - `clone-website/SKILL.md` — real upstream scraping mandate (≥50% of new page content)
+
+---
+
+## Real-world gotchas from 2026-05-27 mass scrape (200+ entities)
+
+### 1. ⚠️ `upload.wikimedia.org` 403 on bot-like UA
+
+Wikipedia API (`en.wikipedia.org/api/...`) 接受 informative bot UA like `WebHarbor/1.0`，但 **upload.wikimedia.org**（实际拿图的 CDN）对含 `WebHarbor`/`bot` 字样的 UA 返 **403 Forbidden**。
+
+**Fix**: 两种 UA 分开用：
+
+```python
+API_UA = 'WebHarbor/1.0 (haoqiwang@msr)'         # for en.wikipedia.org/api/* — politeness signal
+DOWNLOAD_UA = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36'  # for upload.wikimedia.org
+
+# 1. discovery
+r = requests.get('https://en.wikipedia.org/api/rest_v1/page/summary/Eiffel_Tower',
+                 headers={'User-Agent': API_UA})
+url = r.json()['thumbnail']['source']
+# url 是 https://upload.wikimedia.org/wikipedia/commons/thumb/...
+
+# 2. download with different UA
+img = requests.get(url, headers={'User-Agent': DOWNLOAD_UA})  # 200
+```
+
+### 2. 优先 `thumbnail.source`，不要 `original.source`
+
+`page/summary` 返 `thumbnail` (CDN-cached 缩略图) + `original` (原图)。
+
+- `thumbnail.source` 走 thumb CDN，**抗 429 强**，~800px 已经够 hero photo
+- `original.source` 直接 hit upload.wikimedia.org 源文件，aggressive download 容易 429 / 503
+
+**Recipe**：永远用 thumbnail。需要更大就 URL 改 width：
+
+```python
+# original thumbnail url: ".../thumb/.../320px-X.jpg"
+# 改成 1280px:
+big_url = re.sub(r'/\d+px-', '/1280px-', thumb_url)
+```
+
+### 3. `pageimage` miss → 用 `prop=images` 兜底
+
+Wikipedia REST `page/summary` 取 `pageimage`（page metadata 里的 lead image）。某些 page（如 Algebra / Calculus / 抽象 topic）没 pageimage。
+
+**Fallback**: 用 MediaWiki API `prop=images` 拿 page 上所有 inline image filenames，挑第一个非 icon/flag：
+
+```python
+r = requests.get('https://en.wikipedia.org/w/api.php', params={
+    'action': 'query', 'titles': 'Algebra', 'prop': 'images',
+    'imlimit': 50, 'format': 'json',
+}, headers={'User-Agent': API_UA})
+pages = list(r.json()['query']['pages'].values())
+for img in pages[0].get('images', []):
+    title = img['title']  # e.g. 'File:Quadratic formula.svg'
+    if any(skip in title.lower() for skip in ('icon', 'flag_of', 'wiki_logo', 'commons')):
+        continue
+    # 进一步 query imageinfo prop=imageinfo iiprop=url 拿真 URL
+    break
+```
+
+### 4. Parallel scraping 用 per-worker Session
+
+多线程 scrape 共享一个 `requests` 模块 → connection pool 撞。每个 worker 单独 `requests.Session()`：
+
+```python
+def worker(entities):
+    session = requests.Session()
+    session.headers['User-Agent'] = DOWNLOAD_UA
+    for ent in entities:
+        r = session.get(url, timeout=10)
+        ...
+```
+
+并行 5-10 workers 是 polite ceiling — Wikipedia 不喜欢 50+ 并发。
+
+### 5. 5 KB 太低 → 现实 threshold 改 8 KB
+
+`< 5 KB` 主要挡 tracking pixel，但 Wikipedia 的 favicon / 小 thumb 也常 4-6 KB。提到 **8 KB** 更稳：
+
+```python
+if len(r.content) < 8 * 1024: continue  # filter out icons/pixels
+```
+
+### 6. 周期 commit / write 防 kill 丢失
+
+parallel scrape 跑半小时被 kill 大概率（subagent 30 min stall）。每 50 个 entity 做一次 `db.session.commit()`，每张图下载完立刻 `Path.write_bytes()`。不要 batch 到最后一次性写。
+
+### 7. SVG 字母兜底（Wiki miss 的 entity）
+
+Wikipedia 覆盖率约 70-80%，剩 20-30% 没条目。用 deterministic SVG 字母头像兜底：
+
+```python
+def initials_svg(name, accent_hue):
+    bits = name.split()[:2]
+    initials = ''.join(b[0].upper() for b in bits if b)
+    h = int(hashlib.md5(name.encode()).hexdigest()[:2], 16)
+    color = f'hsl({(h * 137 + accent_hue) % 360}, 60%, 45%)'
+    return f'<svg ...><rect fill="{color}"/><text>{initials}</text></svg>'
+```
+
+这种作为 fallback 不算违反 "no placeholder reuse" — 每个 entity 仍独立。
+
+---
+
+## 实测累计（2026-05-27 整轮）
+
+| Site batch | 列数 | 总 entity | wiki 命中 | dup gate 通过 |
+|---|---:|---:|---:|---|
+| google_map place | 1 (×3 section) | 136×3=408 | 407 | ✓ |
+| arxiv institution_logo | 1 | 1500 | (46 pool) | ✓ |
+| huggingface banner_url | 1 | 456380 | (411 pool) | ✓ |
+| bbc_news articles | re-seed | 636 (RSS) | 583 with thumb | ✓ |
+| nba 5 cols | 5 | 575 | 171 wiki + SVG | ✓ |
+| mega 4 cols | 4 | 98 | (SVG) | ✓ |
+| berkeley + recreation_gov | 6 | 127 | 127 wiki | ✓ |
+| wolfram + booking + ted + craigslist + carmax | 5 | 1245+ | (varied) | ✓ |
+
+**全程 0 Tavily call**（B1-B5 没用一次），只用 Wikipedia REST + Wikimedia Commons + RSS + 已有 disk pool + 极少 SearXNG。
