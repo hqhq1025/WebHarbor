@@ -5430,6 +5430,1532 @@ def seed_benchmark_users():
     print('Benchmark users seeded: alice, bob, carol, david')
 
 
+# ============================================================
+# R3-R10 DEEPENING — pages, REST APIs, surfaces
+# ============================================================
+# All routes below are deterministic, stateless helpers (no DB writes) so the
+# byte-identical reset md5 invariant is preserved. Outputs derive from sha1
+# hashes of the inputs. New pages re-use the _R9_BASE_WRAPPER chrome for
+# visual consistency with the existing R9 Charter / Jet-card / Group surfaces.
+
+import hashlib as _rx_h
+from flask import render_template_string as _rx_tpl
+
+def _rx_hint(*parts, mod=1000):
+    """Deterministic int from inputs (sha1, byte-stable across rebuilds)."""
+    return int(_rx_h.sha1('|'.join(str(p) for p in parts).encode()).hexdigest()[:8], 16) % mod
+
+def _rx_pick(seq, *parts):
+    return seq[_rx_hint(*parts, mod=len(seq))]
+
+def _rx_render(title, subtitle, inner_html, **ctx):
+    tpl = _R9_BASE_WRAPPER.replace('__INNER__', inner_html)
+    return _rx_tpl(tpl, title=title, subtitle=subtitle, **ctx)
+
+
+# ============================================================
+# ---- R3: price history sparkline data ----
+# ============================================================
+# Generates a 60-day deterministic price series for an (origin, destination,
+# departure_date) tuple. Confidence interval is a band around a 7-day moving
+# average. The same query always returns the same array.
+
+def _r3_price_series(origin, destination, target_date_str, days=60):
+    """Returns list of {'date': 'YYYY-MM-DD', 'price': int, 'low': int, 'high': int}.
+    Anchored to MIRROR_REFERENCE_DATE so rebuilds match."""
+    from seed_data import MIRROR_REFERENCE_DATE
+    anchor = MIRROR_REFERENCE_DATE.date()
+    base = 220 + _rx_hint(origin, destination, 'base', mod=560)  # 220..779
+    series = []
+    for i in range(days):
+        d = anchor + timedelta(days=i - days // 2)
+        wiggle = _rx_hint(origin, destination, d.isoformat(), 'p', mod=180) - 90
+        seasonal = int(40 * ((i % 14) - 7) / 7)
+        price = max(89, base + wiggle + seasonal)
+        spread = 25 + _rx_hint(origin, destination, d.isoformat(), 's', mod=70)
+        series.append({
+            'date': d.isoformat(),
+            'price': price,
+            'low': max(60, price - spread),
+            'high': price + spread,
+        })
+    return series
+
+
+def _r3_price_summary(series):
+    prices = [p['price'] for p in series]
+    cheapest = min(series, key=lambda p: p['price'])
+    most_expensive = max(series, key=lambda p: p['price'])
+    return {
+        'min': min(prices),
+        'max': max(prices),
+        'avg': sum(prices) // len(prices),
+        'cheapest_day': cheapest['date'],
+        'cheapest_price': cheapest['price'],
+        'most_expensive_day': most_expensive['date'],
+        'most_expensive_price': most_expensive['price'],
+        'sample_size': len(prices),
+    }
+
+
+# ---- R3: price-history page route ----
+@app.route('/tools/price-history/<origin>/<destination>')
+def r3_price_history_page(origin, destination):
+    """Sparkline + buy-vs-wait recommendation. Read-only, no auth."""
+    origin = origin.upper()[:3]
+    destination = destination.upper()[:3]
+    target = request.args.get('date', '')
+    series = _r3_price_series(origin, destination, target)
+    summary = _r3_price_summary(series)
+    sparkline_pts = ' '.join(
+        f"{int(i * 600 / max(1, len(series) - 1))},{int(120 - (p['price'] - summary['min']) * 100 / max(1, summary['max'] - summary['min']))}"
+        for i, p in enumerate(series)
+    )
+    advice_idx = _rx_hint(origin, destination, 'rec', mod=3)
+    advice = ['Buy now — prices are below average.',
+              'Wait — prices likely to drop within 14 days.',
+              'Buy soon — prices trending up.'][advice_idx]
+    inner = """
+    <div style='background:#e8f0fe;border:1px solid #1a73e8;border-radius:8px;padding:14px;margin-bottom:16px;'>
+      <p style='margin:0;font-size:15px;color:#1a73e8;'><strong>Recommendation:</strong> {{ advice }}</p>
+    </div>
+    <svg viewBox='0 0 600 120' width='100%' height='160' style='background:#fff;border:1px solid #dadce0;border-radius:8px;'>
+      <polyline points='{{ pts }}' fill='none' stroke='#1a73e8' stroke-width='2'/>
+    </svg>
+    <dl style='display:grid;grid-template-columns:repeat(2,1fr);gap:8px 24px;font-size:14px;margin-top:20px;'>
+      <div><strong>Cheapest day:</strong> {{ s.cheapest_day }} (${{ s.cheapest_price }})</div>
+      <div><strong>Most expensive day:</strong> {{ s.most_expensive_day }} (${{ s.most_expensive_price }})</div>
+      <div><strong>60-day average:</strong> ${{ s.avg }}</div>
+      <div><strong>Range:</strong> ${{ s.min }}–${{ s.max }}</div>
+      <div><strong>Sample size:</strong> {{ s.sample_size }} days</div>
+      <div><strong>Route:</strong> {{ origin }} → {{ destination }}</div>
+    </dl>
+    <p style='margin-top:18px;'><a href='/api/v1/price-history?origin={{ origin }}&destination={{ destination }}' style='color:#1a73e8;'>JSON view</a>
+    &middot; <a href='/tools/fare-prediction/{{ origin }}/{{ destination }}' style='color:#1a73e8;'>Fare prediction</a></p>
+    """
+    return _rx_render(f'Price history — {origin} → {destination}',
+                      '60-day price band with cheapest-day recommendation.',
+                      inner, advice=advice, pts=sparkline_pts, s=summary,
+                      origin=origin, destination=destination)
+
+
+# ---- R3: price-history JSON API ----
+@app.route('/api/v1/price-history')
+def r3_price_history_api():
+    origin = (request.args.get('origin') or '').upper()[:3]
+    destination = (request.args.get('destination') or '').upper()[:3]
+    if not origin or not destination:
+        return jsonify({'error': 'origin and destination required'}), 400
+    series = _r3_price_series(origin, destination, '')
+    summary = _r3_price_summary(series)
+    return jsonify({
+        'origin': origin, 'destination': destination,
+        'series': series, 'summary': summary,
+    })
+
+
+# ---- R3: fare-prediction confidence page ----
+@app.route('/tools/fare-prediction/<origin>/<destination>')
+def r3_fare_prediction_page(origin, destination):
+    origin = origin.upper()[:3]; destination = destination.upper()[:3]
+    series = _r3_price_series(origin, destination, '')
+    summary = _r3_price_summary(series)
+    confidence_pct = 55 + _rx_hint(origin, destination, 'conf', mod=40)  # 55..94
+    if confidence_pct >= 85:
+        label = 'High confidence'
+    elif confidence_pct >= 70:
+        label = 'Medium confidence'
+    else:
+        label = 'Low confidence'
+    direction = ['drop', 'hold', 'rise'][_rx_hint(origin, destination, 'dir', mod=3)]
+    inner = """
+    <article style='background:#fff;border:1px solid #dadce0;border-radius:12px;padding:22px;max-width:680px;'>
+      <h2 style='margin:0 0 8px;font-family:"Google Sans",sans-serif;font-size:22px;font-weight:500;'>
+        Fares likely to <span style='color:#1a73e8;'>{{ direction }}</span> in the next 14 days
+      </h2>
+      <p style='font-size:15px;color:#5f6368;margin:0 0 12px;'>
+        Confidence: <strong style='color:#202124;'>{{ confidence_pct }}%</strong>
+        &middot; Label: <strong>{{ label }}</strong>
+      </p>
+      <div style='background:#f1f3f4;border-radius:8px;height:14px;overflow:hidden;margin:0 0 18px;'>
+        <div style='background:#1a73e8;height:14px;width:{{ confidence_pct }}%;'></div>
+      </div>
+      <dl style='font-size:14px;line-height:1.9;'>
+        <div><strong>Route:</strong> {{ origin }} → {{ destination }}</div>
+        <div><strong>Current low:</strong> ${{ s.min }}</div>
+        <div><strong>Projected low (14d):</strong> ${{ proj_low }}</div>
+        <div><strong>Projected high (14d):</strong> ${{ proj_high }}</div>
+        <div><strong>Model:</strong> wf-bandit-v3 (sha1 deterministic mirror)</div>
+      </dl>
+    </article>
+    <p style='margin-top:16px;'><a href='/api/v1/fare-prediction?origin={{ origin }}&destination={{ destination }}' style='color:#1a73e8;'>JSON view</a></p>
+    """
+    delta = _rx_hint(origin, destination, 'delta', mod=80) - 40
+    proj_low = max(60, summary['min'] + delta - 20)
+    proj_high = summary['max'] + delta + 30
+    return _rx_render(f'Fare prediction — {origin} → {destination}',
+                      'Confidence interval for the next 14 days.',
+                      inner, direction=direction, confidence_pct=confidence_pct,
+                      label=label, s=summary, proj_low=proj_low, proj_high=proj_high,
+                      origin=origin, destination=destination)
+
+
+# ---- R3: fare-prediction JSON API ----
+@app.route('/api/v1/fare-prediction')
+def r3_fare_prediction_api():
+    origin = (request.args.get('origin') or '').upper()[:3]
+    destination = (request.args.get('destination') or '').upper()[:3]
+    if not origin or not destination:
+        return jsonify({'error': 'origin and destination required'}), 400
+    confidence_pct = 55 + _rx_hint(origin, destination, 'conf', mod=40)
+    if confidence_pct >= 85:
+        label = 'High confidence'
+    elif confidence_pct >= 70:
+        label = 'Medium confidence'
+    else:
+        label = 'Low confidence'
+    direction = ['drop', 'hold', 'rise'][_rx_hint(origin, destination, 'dir', mod=3)]
+    return jsonify({
+        'origin': origin, 'destination': destination,
+        'confidence_pct': confidence_pct, 'confidence_label': label,
+        'direction': direction, 'model': 'wf-bandit-v3',
+    })
+
+
+# ---- R3: price-history calendar grid ----
+@app.route('/tools/price-history-grid/<origin>/<destination>')
+def r3_price_history_grid(origin, destination):
+    origin = origin.upper()[:3]; destination = destination.upper()[:3]
+    series = _r3_price_series(origin, destination, '', days=42)  # 6 weeks
+    rows = [series[i:i + 7] for i in range(0, 42, 7)]
+    summary = _r3_price_summary(series)
+    inner = """
+    <table style='border-collapse:collapse;width:100%;max-width:640px;font-size:13px;'>
+      <thead><tr>{% for d in ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'] %}
+        <th style='padding:6px;border:1px solid #dadce0;background:#f8f9fa;'>{{ d }}</th>{% endfor %}</tr></thead>
+      <tbody>
+      {% for row in rows %}<tr>{% for cell in row %}
+        <td style='padding:8px;border:1px solid #dadce0;text-align:center;
+                   background:{% if cell.price == s.min %}#e6f4ea{% elif cell.price >= s.avg %}#fce8e6{% else %}#fff{% endif %};'>
+          <div style='font-size:11px;color:#5f6368;'>{{ cell.date[5:] }}</div>
+          <div style='font-weight:500;'>${{ cell.price }}</div>
+        </td>{% endfor %}</tr>{% endfor %}
+      </tbody>
+    </table>
+    <p style='margin-top:14px;font-size:13px;color:#5f6368;'>
+      Green = cheapest. Red = above 60-day average.
+      <a href='/tools/price-history/{{ origin }}/{{ destination }}' style='color:#1a73e8;'>Sparkline view</a>
+    </p>
+    """
+    return _rx_render(f'Price calendar — {origin} → {destination}',
+                      'Six-week grid showing daily fare bands.',
+                      inner, rows=rows, s=summary,
+                      origin=origin, destination=destination)
+
+
+
+# ============================================================
+# ---- R4: fare-class compare page ----
+# ============================================================
+# Surfaces the four cabin classes for a given flight with side-by-side perks,
+# baggage, miles-earned, and refundability columns. Uses existing
+# price_premium/price_business/price_first columns; derives perks from a
+# deterministic matrix.
+
+_R4_CABINS = [
+    ('Economy',  'economy',  'price',           1.0,
+     ['1x carry-on (10kg)', 'Snack', 'Pre-reserved seat ($)', '50% miles', 'Non-refundable'],
+     ['Standard recline', 'Seat-back screen', 'Power outlet (some rows)']),
+    ('Premium',  'premium',  'price_premium',   1.5,
+     ['1x carry-on + 1x checked (23kg)', 'Hot meal', 'Pre-reserved seat (free)',
+      '100% miles', 'Refundable (fee)'],
+     ['Extra legroom (38")', 'Larger screen', 'Power + USB']),
+    ('Business', 'business', 'price_business', 3.0,
+     ['2x carry-on + 2x checked (32kg)', 'Multi-course meal', 'Lounge access',
+      '125% miles', 'Refundable + changeable'],
+     ['Lie-flat seat', '15-18" screen', 'AC + USB-C', 'Direct aisle access']),
+    ('First',    'first',    'price_first',    5.0,
+     ['3x checked (32kg)', 'Caviar service', 'First-class lounge + chauffeur',
+      '200% miles', 'Fully refundable'],
+     ['Private suite', '23-24" screen', 'Onboard shower', 'Pajamas + amenity kit']),
+]
+
+
+def _r4_fare_class_bundle(flight):
+    bundle = []
+    for cabin, slug, attr, mult, perks, seat in _R4_CABINS:
+        price = getattr(flight, attr, None)
+        if price is None:
+            price = round(flight.price * mult, 2)
+        bundle.append({
+            'cabin': cabin, 'slug': slug, 'price': price,
+            'perks': perks, 'seat_features': seat,
+            'miles_earned': int(flight.duration_minutes * mult * 0.8 + 200),
+            'baggage_included': int(mult * 1.5),
+        })
+    return bundle
+
+
+@app.route('/tools/fare-classes/<int:flight_id>')
+def r4_fare_classes_page(flight_id):
+    f = db.session.get(Flight, flight_id) or abort(404)
+    bundle = _r4_fare_class_bundle(f)
+    o = db.session.get(Airport, f.origin_id)
+    d = db.session.get(Airport, f.destination_id)
+    inner = """
+    <p style='color:#5f6368;margin:0 0 16px;font-size:14px;'>
+      {{ f.airline }} {{ f.flight_number }} &middot; {{ o.iata }} → {{ d.iata }}
+      &middot; {{ f.departure_date }}
+    </p>
+    <table style='border-collapse:collapse;width:100%;font-size:14px;'>
+      <thead><tr>
+        <th style='padding:10px;border-bottom:2px solid #1a73e8;text-align:left;'>Cabin</th>
+        {% for c in bundle %}<th style='padding:10px;border-bottom:2px solid #1a73e8;'>{{ c.cabin }}</th>{% endfor %}
+      </tr></thead>
+      <tbody>
+        <tr><td style='padding:10px;'>Price</td>
+          {% for c in bundle %}<td style='padding:10px;text-align:center;font-weight:500;color:#1a73e8;'>${{ c.price }}</td>{% endfor %}</tr>
+        <tr><td style='padding:10px;'>Miles earned</td>
+          {% for c in bundle %}<td style='padding:10px;text-align:center;'>{{ c.miles_earned }}</td>{% endfor %}</tr>
+        <tr><td style='padding:10px;'>Free checked bags</td>
+          {% for c in bundle %}<td style='padding:10px;text-align:center;'>{{ c.baggage_included }}</td>{% endfor %}</tr>
+        {% for i in range(5) %}<tr><td style='padding:10px;color:#5f6368;'>Perk {{ i + 1 }}</td>
+          {% for c in bundle %}<td style='padding:10px;text-align:center;'>{{ c.perks[i] }}</td>{% endfor %}</tr>{% endfor %}
+      </tbody>
+    </table>
+    <p style='margin-top:16px;'><a href='/api/v1/fare-classes/{{ f.id }}' style='color:#1a73e8;'>JSON view</a>
+    &middot; <a href='/tools/cabin-meals/{{ f.id }}' style='color:#1a73e8;'>Meal matrix</a></p>
+    """
+    return _rx_render('Fare-class comparison',
+                      'Side-by-side cabin breakdown for this flight.',
+                      inner, f=f, o=o, d=d, bundle=bundle)
+
+
+# ---- R4: fare-class compare across route ----
+@app.route('/tools/fare-classes/<origin>/<destination>')
+def r4_fare_classes_route(origin, destination):
+    origin = origin.upper()[:3]; destination = destination.upper()[:3]
+    o = Airport.query.filter_by(iata=origin).first() or abort(404)
+    d = Airport.query.filter_by(iata=destination).first() or abort(404)
+    cheap = (Flight.query.filter_by(origin_id=o.id, destination_id=d.id)
+             .order_by(Flight.price).first())
+    if not cheap:
+        abort(404)
+    bundle = _r4_fare_class_bundle(cheap)
+    inner = """
+    <p style='color:#5f6368;'>Cheapest flight on this route is {{ f.airline }} {{ f.flight_number }} at ${{ f.price }} (economy).</p>
+    <table style='border-collapse:collapse;width:100%;font-size:14px;margin-top:10px;'>
+      <tr><th style='padding:8px;text-align:left;'>Cabin</th><th>Price</th><th>Miles</th><th>Bags</th></tr>
+      {% for c in bundle %}<tr><td style='padding:8px;'>{{ c.cabin }}</td>
+        <td style='text-align:center;color:#1a73e8;font-weight:500;'>${{ c.price }}</td>
+        <td style='text-align:center;'>{{ c.miles_earned }}</td>
+        <td style='text-align:center;'>{{ c.baggage_included }}</td></tr>{% endfor %}
+    </table>
+    <p style='margin-top:14px;'><a href='/flight/{{ f.id }}' style='color:#1a73e8;'>View this flight</a></p>
+    """
+    return _rx_render(f'Fare classes — {origin} → {destination}',
+                      f'Lowest-priced flight breakdown across all four cabins.',
+                      inner, f=cheap, bundle=bundle)
+
+
+# ---- R4: fare-class JSON API ----
+@app.route('/api/v1/fare-classes/<int:flight_id>')
+def r4_fare_classes_api(flight_id):
+    f = db.session.get(Flight, flight_id) or abort(404)
+    bundle = _r4_fare_class_bundle(f)
+    return jsonify({
+        'flight_id': flight_id, 'flight_number': f.flight_number,
+        'airline': f.airline, 'fare_classes': bundle,
+    })
+
+
+# ---- R4: fare-class glossary expansion ----
+@app.route('/help/fare-rules/<klass>')
+def r4_fare_rules(klass):
+    klass = klass.lower()[:12]
+    rules = {
+        'economy':  ('Standard fare', 'Non-refundable, change fee applies, 50% miles, 1 carry-on free.'),
+        'premium':  ('Premium economy', 'Refundable with $150 fee, 100% miles, 1 carry-on + 1 checked free.'),
+        'business': ('Business class', 'Fully refundable, lounge access included, 125% miles, 2 carry-on + 2 checked free.'),
+        'first':    ('First class', 'Fully refundable + changeable, chauffeur transfer, 200% miles, 3 checked bags free.'),
+    }
+    if klass not in rules:
+        abort(404)
+    name, body = rules[klass]
+    inner = f"<h2 style='font-family:\"Google Sans\",sans-serif;font-size:20px;'>{name}</h2><p style='font-size:15px;line-height:1.7;'>{body}</p>"
+    return _rx_render(f'Fare rules — {name}', 'Fare-class refund and change policy.', inner)
+
+
+# ---- R4: upgrade upsell helper ----
+@app.route('/api/v1/fare-classes/upgrade/<int:flight_id>')
+def r4_upgrade_quote(flight_id):
+    f = db.session.get(Flight, flight_id) or abort(404)
+    to_class = (request.args.get('to') or 'business').lower()
+    cabin_map = {c[1]: c for c in _R4_CABINS}
+    if to_class not in cabin_map:
+        return jsonify({'error': 'unknown cabin class'}), 400
+    bundle = _r4_fare_class_bundle(f)
+    target = next((b for b in bundle if b['slug'] == to_class), None)
+    delta = target['price'] - f.price
+    return jsonify({
+        'flight_id': flight_id, 'from': 'economy', 'to': to_class,
+        'base_price': f.price, 'upgrade_price': target['price'],
+        'delta': round(delta, 2), 'available_seats': 4 + _rx_hint(flight_id, to_class, mod=12),
+        'miles_alt': int(delta * 80),
+    })
+
+
+# ---- R4: cabin meal matrix ----
+@app.route('/tools/cabin-meals/<int:flight_id>')
+def r4_cabin_meals(flight_id):
+    f = db.session.get(Flight, flight_id) or abort(404)
+    meals = ['Pretzels & water', 'Sandwich + drink', 'Two-course hot meal', 'Five-course tasting']
+    cabin_meal = list(zip(['Economy', 'Premium', 'Business', 'First'], meals))
+    inner = """
+    <p style='color:#5f6368;'>Catering varies by cabin on {{ f.airline }} {{ f.flight_number }}:</p>
+    <ul style='font-size:14px;line-height:1.9;'>
+      {% for c, m in cabin_meal %}<li><strong>{{ c }}:</strong> {{ m }}</li>{% endfor %}
+    </ul>
+    """
+    return _rx_render(f'Meals on {f.flight_number}', 'Per-cabin catering matrix.',
+                      inner, f=f, cabin_meal=cabin_meal)
+
+
+# ============================================================
+# ---- R5: multi-city builder page ----
+# ============================================================
+# Multi-city itineraries (>2 legs) and open-jaw routes (return from a
+# different city than the outbound destination). All routes are stateless;
+# quote endpoints accept JSON or form-encoded leg lists.
+
+def _r5_quote_legs(legs):
+    """Given list of {'origin','destination','date'}, returns per-leg + total."""
+    out = []
+    total = 0.0
+    for leg in legs:
+        o = (leg.get('origin') or '').upper()[:3]
+        d = (leg.get('destination') or '').upper()[:3]
+        date_str = leg.get('date') or ''
+        # Deterministic per-leg price: 220 + hash + small date influence.
+        price = 220 + _rx_hint(o, d, date_str, 'leg', mod=560)
+        out.append({'origin': o, 'destination': d, 'date': date_str, 'price': price})
+        total += price
+    # Multi-city discount: 5% for 3+ legs, 8% for 4+ legs.
+    discount_pct = 0
+    if len(legs) >= 4:
+        discount_pct = 8
+    elif len(legs) >= 3:
+        discount_pct = 5
+    discount = round(total * discount_pct / 100, 2)
+    return out, round(total, 2), discount_pct, discount, round(total - discount, 2)
+
+
+@app.route('/tools/multi-city')
+def r5_multi_city_page():
+    inner = """
+    <p style='color:#5f6368;'>Plan an itinerary with 3 or more legs. Submit to <code>/api/v1/multi-city/quote</code> for an instant price.</p>
+    <form method='GET' action='/api/v1/multi-city/quote' style='background:#fff;padding:16px;border:1px solid #dadce0;border-radius:8px;max-width:680px;'>
+      {% for n in range(1, 5) %}<div style='display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:10px;'>
+        <input name='from{{ n }}' placeholder='Leg {{ n }} from (IATA)' style='padding:8px;border:1px solid #dadce0;border-radius:4px;'>
+        <input name='to{{ n }}' placeholder='Leg {{ n }} to (IATA)' style='padding:8px;border:1px solid #dadce0;border-radius:4px;'>
+        <input name='date{{ n }}' placeholder='YYYY-MM-DD' style='padding:8px;border:1px solid #dadce0;border-radius:4px;'>
+      </div>{% endfor %}
+      <button type='submit' style='background:#1a73e8;color:#fff;border:0;padding:10px 18px;border-radius:4px;cursor:pointer;'>Get quote</button>
+    </form>
+    <p style='margin-top:14px;'><a href='/tools/multi-city/samples' style='color:#1a73e8;'>Sample itineraries</a>
+    &middot; <a href='/tools/open-jaw' style='color:#1a73e8;'>Open-jaw planner</a></p>
+    """
+    return _rx_render('Multi-city builder',
+                      'Build 3-, 4-, or 5-leg itineraries with one quote.',
+                      inner)
+
+
+# ---- R5: multi-city quote ----
+@app.route('/api/v1/multi-city/quote', methods=['GET', 'POST'])
+@csrf.exempt
+def r5_multi_city_quote():
+    legs = []
+    if request.method == 'POST' and request.is_json:
+        legs = request.get_json(silent=True).get('legs', []) or []
+    else:
+        src = request.values
+        for n in range(1, 7):
+            o = src.get(f'from{n}') or ''
+            d = src.get(f'to{n}') or ''
+            date = src.get(f'date{n}') or ''
+            if o and d:
+                legs.append({'origin': o, 'destination': d, 'date': date})
+    if not legs:
+        return jsonify({'error': 'no legs provided'}), 400
+    out, total, pct, discount, final = _r5_quote_legs(legs)
+    return jsonify({
+        'legs': out, 'subtotal': total, 'discount_pct': pct,
+        'discount_amount': discount, 'total_price': final,
+        'itinerary_token': _rx_h.sha1(json.dumps(out, sort_keys=True).encode()).hexdigest()[:12],
+    })
+
+
+# ---- R5: open-jaw planner ----
+@app.route('/tools/open-jaw')
+def r5_open_jaw_page():
+    inner = """
+    <p style='color:#5f6368;'>An open-jaw lets you fly into one city and home from another. Example:
+       <strong>JFK → CDG</strong> outbound, ground travel to Rome, then <strong>FCO → JFK</strong> home.</p>
+    <form method='GET' action='/api/v1/open-jaw/quote' style='background:#fff;padding:16px;border:1px solid #dadce0;border-radius:8px;max-width:560px;'>
+      <div style='display:grid;grid-template-columns:1fr 1fr;gap:10px;'>
+        <label>Outbound from <input name='out_from' style='width:100%;padding:8px;border:1px solid #dadce0;border-radius:4px;'></label>
+        <label>Outbound to <input name='out_to' style='width:100%;padding:8px;border:1px solid #dadce0;border-radius:4px;'></label>
+        <label>Outbound date <input name='out_date' style='width:100%;padding:8px;border:1px solid #dadce0;border-radius:4px;'></label>
+        <label>Return from <input name='ret_from' style='width:100%;padding:8px;border:1px solid #dadce0;border-radius:4px;'></label>
+        <label>Return to <input name='ret_to' style='width:100%;padding:8px;border:1px solid #dadce0;border-radius:4px;'></label>
+        <label>Return date <input name='ret_date' style='width:100%;padding:8px;border:1px solid #dadce0;border-radius:4px;'></label>
+      </div>
+      <button type='submit' style='margin-top:12px;background:#1a73e8;color:#fff;border:0;padding:10px 18px;border-radius:4px;cursor:pointer;'>Quote open-jaw</button>
+    </form>
+    """
+    return _rx_render('Open-jaw planner',
+                      'Different-city outbound and return. Frequent value vs round-trip.',
+                      inner)
+
+
+# ---- R5: open-jaw quote ----
+@app.route('/api/v1/open-jaw/quote')
+def r5_open_jaw_quote():
+    out_from = (request.args.get('out_from') or '').upper()[:3]
+    out_to = (request.args.get('out_to') or '').upper()[:3]
+    out_date = request.args.get('out_date') or ''
+    ret_from = (request.args.get('ret_from') or '').upper()[:3]
+    ret_to = (request.args.get('ret_to') or '').upper()[:3]
+    ret_date = request.args.get('ret_date') or ''
+    if not (out_from and out_to and ret_from and ret_to):
+        return jsonify({'error': 'all four IATAs required'}), 400
+    legs = [
+        {'origin': out_from, 'destination': out_to, 'date': out_date},
+        {'origin': ret_from, 'destination': ret_to, 'date': ret_date},
+    ]
+    out, total, _, _, _ = _r5_quote_legs(legs)
+    is_open_jaw = (out_to != ret_from) or (out_from != ret_to)
+    surcharge_pct = 4 if is_open_jaw else 0
+    surcharge = round(total * surcharge_pct / 100, 2)
+    return jsonify({
+        'legs': out, 'subtotal': total, 'is_open_jaw': is_open_jaw,
+        'surcharge_pct': surcharge_pct, 'surcharge_amount': surcharge,
+        'total_price': round(total + surcharge, 2),
+    })
+
+
+# ---- R5: multi-city sample itineraries ----
+@app.route('/tools/multi-city/samples')
+def r5_multi_city_samples():
+    samples = [
+        ('Eurotrip', [('JFK', 'LHR', '2026-07-12'), ('LHR', 'CDG', '2026-07-15'),
+                      ('CDG', 'FCO', '2026-07-19'), ('FCO', 'JFK', '2026-07-24')]),
+        ('Asia loop', [('LAX', 'NRT', '2026-09-04'), ('NRT', 'HKG', '2026-09-09'),
+                       ('HKG', 'SIN', '2026-09-13'), ('SIN', 'LAX', '2026-09-18')]),
+        ('US triangle', [('SEA', 'DEN', '2026-08-01'), ('DEN', 'ATL', '2026-08-05'),
+                         ('ATL', 'SEA', '2026-08-10')]),
+    ]
+    quoted = []
+    for name, legs in samples:
+        leg_dicts = [{'origin': a, 'destination': b, 'date': d} for a, b, d in legs]
+        out, total, pct, _, final = _r5_quote_legs(leg_dicts)
+        quoted.append((name, out, total, pct, final))
+    inner = """
+    {% for name, legs, total, pct, final in quoted %}
+    <article style='background:#fff;border:1px solid #dadce0;border-radius:8px;padding:16px;margin-bottom:14px;'>
+      <h3 style='margin:0 0 8px;font-family:"Google Sans",sans-serif;'>{{ name }}</h3>
+      <ol style='font-size:14px;line-height:1.7;padding-left:18px;margin:0 0 10px;'>
+        {% for leg in legs %}<li>{{ leg.origin }} → {{ leg.destination }} on {{ leg.date }} — ${{ leg.price }}</li>{% endfor %}
+      </ol>
+      <p style='margin:0;'><strong>Subtotal:</strong> ${{ total }} &middot;
+         <strong>Discount:</strong> {{ pct }}% &middot;
+         <strong>Total:</strong> <span style='color:#1a73e8;font-weight:500;'>${{ final }}</span></p>
+    </article>{% endfor %}
+    """
+    return _rx_render('Sample multi-city itineraries',
+                      'Three pre-priced templates to copy.',
+                      inner, quoted=quoted)
+
+
+# ---- R5: itinerary share-link generator ----
+@app.route('/tools/itinerary/<token>')
+def r5_itinerary_share(token):
+    token = token[:24]
+    # Hash the token to fabricate a stable example itinerary preview.
+    cities = ['JFK', 'LHR', 'CDG', 'FCO', 'AMS', 'BCN', 'NRT', 'HKG',
+              'DXB', 'SIN', 'SYD', 'GRU']
+    n_legs = 3 + _rx_hint(token, 'n', mod=3)  # 3..5
+    base_idx = _rx_hint(token, 'base', mod=len(cities))
+    legs = []
+    for i in range(n_legs):
+        o = cities[(base_idx + i) % len(cities)]
+        d = cities[(base_idx + i + 1) % len(cities)]
+        date = (datetime(2026, 6, 1) + timedelta(days=15 * i)).date().isoformat()
+        legs.append({'origin': o, 'destination': d, 'date': date})
+    out, total, pct, discount, final = _r5_quote_legs(legs)
+    inner = """
+    <p style='color:#5f6368;'>Share token: <code>{{ token }}</code></p>
+    <ol style='font-size:14px;line-height:1.8;'>
+      {% for leg in out %}<li>{{ leg.origin }} → {{ leg.destination }} on {{ leg.date }} — ${{ leg.price }}</li>{% endfor %}
+    </ol>
+    <p><strong>Total:</strong> <span style='color:#1a73e8;font-size:18px;'>${{ final }}</span>
+       (subtotal ${{ total }}, discount {{ pct }}%)</p>
+    """
+    return _rx_render('Saved itinerary',
+                      'Recreatable itinerary keyed by share-token.',
+                      inner, token=token, out=out, total=total,
+                      pct=pct, final=final)
+
+
+# ============================================================
+# ---- R6: addons catalog page ----
+# ============================================================
+# Modular pricing for baggage, seat selection, meal preferences, and priority
+# boarding. Stateless: all prices derive from sha1 hashes of the inputs so
+# the same query returns the same totals across rebuilds.
+
+_R6_ADDON_CATALOG = {
+    'seat': {
+        'window':       38,
+        'aisle':        38,
+        'middle':       0,
+        'extra_legroom': 65,
+        'exit_row':     45,
+        'front_row':    55,
+    },
+    'baggage': {
+        'carry_on':         0,
+        'checked_1':        35,
+        'checked_2':        50,
+        'checked_3':        150,
+        'overweight':       100,
+        'oversized':        150,
+        'sports_equipment': 75,
+    },
+    'meal': {
+        'standard':         0,
+        'vegetarian':       0,
+        'vegan':            5,
+        'gluten_free':      8,
+        'kosher':           12,
+        'halal':            10,
+        'low_sodium':       0,
+        'kids_meal':        0,
+        'lobster_upgrade':  85,
+    },
+    'priority': {
+        'none':             0,
+        'priority_boarding': 25,
+        'priority_security': 35,
+        'lounge_day_pass':   60,
+        'fast_track_bundle': 90,
+    },
+}
+
+
+def _r6_price_addons(flight_id, seat=None, bag=None, meal=None, priority=None):
+    """Return per-line + total addon price. Stateless, deterministic."""
+    items = []
+    total = 0
+    if seat and seat in _R6_ADDON_CATALOG['seat']:
+        p = _R6_ADDON_CATALOG['seat'][seat]
+        items.append({'category': 'seat', 'choice': seat, 'price': p})
+        total += p
+    if bag and bag in _R6_ADDON_CATALOG['baggage']:
+        p = _R6_ADDON_CATALOG['baggage'][bag]
+        items.append({'category': 'baggage', 'choice': bag, 'price': p})
+        total += p
+    if meal and meal in _R6_ADDON_CATALOG['meal']:
+        p = _R6_ADDON_CATALOG['meal'][meal]
+        items.append({'category': 'meal', 'choice': meal, 'price': p})
+        total += p
+    if priority and priority in _R6_ADDON_CATALOG['priority']:
+        p = _R6_ADDON_CATALOG['priority'][priority]
+        items.append({'category': 'priority', 'choice': priority, 'price': p})
+        total += p
+    # Bundle discount: 10% off if 3+ paid items
+    paid_count = sum(1 for i in items if i['price'] > 0)
+    discount = round(total * 0.1, 2) if paid_count >= 3 else 0
+    return items, total, discount, round(total - discount, 2)
+
+
+@app.route('/tools/addons')
+def r6_addons_catalog():
+    fid = request.args.get('flight_id')
+    if fid and fid.isdigit():
+        f = db.session.get(Flight, int(fid))
+    else:
+        f = None
+    inner = """
+    {% if f %}<p style='color:#5f6368;'>Configuring add-ons for {{ f.airline }} {{ f.flight_number }} ({{ f.flight_number }}). Base fare ${{ f.price }}.</p>{% endif %}
+    <div style='display:grid;grid-template-columns:repeat(2,1fr);gap:14px;'>
+      {% for cat, opts in catalog.items() %}
+      <article style='background:#fff;border:1px solid #dadce0;border-radius:8px;padding:14px;'>
+        <h3 style='margin:0 0 8px;font-family:"Google Sans",sans-serif;font-size:16px;text-transform:capitalize;'>{{ cat }}</h3>
+        <ul style='font-size:13px;line-height:1.7;padding-left:18px;margin:0;'>
+          {% for choice, price in opts.items() %}<li>{{ choice.replace('_',' ') }} — <strong>${{ price }}</strong></li>{% endfor %}
+        </ul>
+        <p style='margin:10px 0 0;'><a href='/tools/addons/{{ cat }}' style='color:#1a73e8;font-size:13px;'>Configure {{ cat }} →</a></p>
+      </article>{% endfor %}
+    </div>
+    <p style='margin-top:14px;'><a href='/api/v1/addons/price?flight_id={{ f.id if f else 1 }}&seat=window&bag=checked_1&meal=vegan&priority=priority_boarding' style='color:#1a73e8;'>Sample API call</a></p>
+    """
+    return _rx_render('Add-ons catalog',
+                      'Modular pricing for seat, baggage, meal, and priority.',
+                      inner, f=f, catalog=_R6_ADDON_CATALOG)
+
+
+# ---- R6: addons price api ----
+@app.route('/api/v1/addons/price')
+def r6_addons_price_api():
+    flight_id = request.args.get('flight_id', type=int) or 0
+    seat = request.args.get('seat') or None
+    bag = request.args.get('bag') or None
+    meal = request.args.get('meal') or None
+    priority = request.args.get('priority') or None
+    items, subtotal, discount, total = _r6_price_addons(flight_id, seat, bag, meal, priority)
+    return jsonify({
+        'flight_id': flight_id, 'items': items,
+        'subtotal': subtotal, 'bundle_discount': discount,
+        'total_addon_price': total,
+    })
+
+
+# ---- R6: seat-pick addon variant ----
+@app.route('/tools/addons/seat')
+def r6_addon_seat():
+    rows = []
+    for choice, price in _R6_ADDON_CATALOG['seat'].items():
+        rows.append((choice.replace('_', ' '), price,
+                     ('Best for sightseeing' if choice == 'window' else
+                      'Easy aisle access' if choice == 'aisle' else
+                      'Bulkhead extra legroom' if choice == 'extra_legroom' else
+                      'Most legroom on plane' if choice == 'exit_row' else
+                      'Quickest deplaning' if choice == 'front_row' else
+                      'Default assigned seat')))
+    inner = """
+    <table style='border-collapse:collapse;width:100%;max-width:560px;font-size:14px;'>
+      <thead><tr><th style='padding:8px;border-bottom:2px solid #1a73e8;text-align:left;'>Seat type</th>
+                 <th style='padding:8px;border-bottom:2px solid #1a73e8;'>Price</th>
+                 <th style='padding:8px;border-bottom:2px solid #1a73e8;text-align:left;'>Best for</th></tr></thead>
+      <tbody>{% for c, p, why in rows %}<tr>
+        <td style='padding:8px;text-transform:capitalize;'>{{ c }}</td>
+        <td style='padding:8px;text-align:center;color:#1a73e8;font-weight:500;'>${{ p }}</td>
+        <td style='padding:8px;color:#5f6368;'>{{ why }}</td>
+      </tr>{% endfor %}</tbody>
+    </table>
+    """
+    return _rx_render('Seat selection add-on', 'Per-seat-type up-front fees.', inner, rows=rows)
+
+
+# ---- R6: baggage addon variant ----
+@app.route('/tools/addons/baggage')
+def r6_addon_baggage():
+    items = list(_R6_ADDON_CATALOG['baggage'].items())
+    inner = """
+    <ul style='font-size:15px;line-height:1.9;'>
+      {% for choice, price in items %}<li><strong>{{ choice.replace('_', ' ') }}:</strong> ${{ price }}</li>{% endfor %}
+    </ul>
+    <p style='font-size:13px;color:#5f6368;'>Bundle 3 add-ons across categories for 10% off the total.</p>
+    """
+    return _rx_render('Baggage add-on', 'Checked/carry-on/special baggage prices.', inner, items=items)
+
+
+# ---- R6: meal addon variant ----
+@app.route('/tools/addons/meal')
+def r6_addon_meal():
+    items = list(_R6_ADDON_CATALOG['meal'].items())
+    inner = """
+    <p style='color:#5f6368;font-size:14px;'>Most special meals are free with 48h notice. Upgrade options carry a fee.</p>
+    <table style='border-collapse:collapse;width:100%;max-width:520px;font-size:14px;'>
+      {% for choice, price in items %}<tr>
+        <td style='padding:8px;border-bottom:1px solid #f1f3f4;text-transform:capitalize;'>{{ choice.replace('_',' ') }}</td>
+        <td style='padding:8px;text-align:right;border-bottom:1px solid #f1f3f4;color:#1a73e8;'>${{ price }}</td>
+      </tr>{% endfor %}
+    </table>
+    """
+    return _rx_render('Meal add-on', 'Dietary and premium meal options.', inner, items=items)
+
+
+# ---- R6: priority boarding addon ----
+@app.route('/tools/addons/priority')
+def r6_addon_priority():
+    items = list(_R6_ADDON_CATALOG['priority'].items())
+    inner = """
+    <p style='color:#5f6368;font-size:14px;'>Skip the line at boarding, security, or both. Lounge day-pass bundles dial down the airport friction.</p>
+    <ol style='font-size:15px;line-height:1.9;padding-left:20px;'>
+      {% for choice, price in items %}<li><strong>{{ choice.replace('_',' ') }}:</strong> ${{ price }}</li>{% endfor %}
+    </ol>
+    """
+    return _rx_render('Priority add-on', 'Lane- and lounge-priority bundles.', inner, items=items)
+
+
+# ============================================================
+# ---- R7: award chart page ----
+# ============================================================
+# Miles / award / status-tier surface. Each alliance member's "earn rate" and
+# "redemption rate" derive deterministically from carrier code. Region pairs
+# follow oneworld-style 5-band charts. Three alliance pages list their member
+# airlines (Wikipedia-grounded).
+
+_R7_REGIONS = ['NA', 'EU', 'LATAM', 'AFRICA', 'ME', 'SE_ASIA', 'NE_ASIA', 'OCEANIA']
+
+# Wikipedia-grounded alliance membership (truncated to canonical members).
+_R7_ALLIANCES = {
+    'oneworld': {
+        'name': 'oneworld',
+        'founded': 1999,
+        'headquarters': 'New York, USA',
+        'tagline': 'An alliance of the world\'s leading airlines.',
+        'members': [
+            'American Airlines (AA)', 'British Airways (BA)', 'Cathay Pacific (CX)',
+            'Finnair (AY)', 'Iberia (IB)', 'Japan Airlines (JL)',
+            'Qantas (QF)', 'Qatar Airways (QR)', 'Royal Air Maroc (AT)',
+            'Royal Jordanian (RJ)', 'SriLankan Airlines (UL)', 'Alaska Airlines (AS)',
+            'Malaysia Airlines (MH)', 'Fiji Airways (FJ) (connecting partner)',
+        ],
+    },
+    'skyteam': {
+        'name': 'SkyTeam',
+        'founded': 2000,
+        'headquarters': 'Amsterdam, Netherlands',
+        'tagline': 'Caring more about you.',
+        'members': [
+            'Aeroflot (SU)', 'Aerolíneas Argentinas (AR)', 'Aeromexico (AM)',
+            'Air Europa (UX)', 'Air France (AF)', 'China Airlines (CI)',
+            'China Eastern (MU)', 'Delta Air Lines (DL)', 'Garuda Indonesia (GA)',
+            'ITA Airways (AZ)', 'Kenya Airways (KQ)', 'KLM (KL)',
+            'Korean Air (KE)', 'Middle East Airlines (ME)', 'Saudia (SV)',
+            'TAROM (RO)', 'Vietnam Airlines (VN)', 'XiamenAir (MF)',
+            'Virgin Atlantic (VS)',
+        ],
+    },
+    'staralliance': {
+        'name': 'Star Alliance',
+        'founded': 1997,
+        'headquarters': 'Frankfurt, Germany',
+        'tagline': 'The way the Earth connects.',
+        'members': [
+            'Aegean Airlines (A3)', 'Air Canada (AC)', 'Air China (CA)',
+            'Air India (AI)', 'Air New Zealand (NZ)', 'ANA (NH)',
+            'Asiana Airlines (OZ)', 'Austrian (OS)', 'Avianca (AV)',
+            'Brussels Airlines (SN)', 'Copa Airlines (CM)', 'Croatia Airlines (OU)',
+            'EGYPTAIR (MS)', 'Ethiopian Airlines (ET)', 'EVA Air (BR)',
+            'LOT Polish Airlines (LO)', 'Lufthansa (LH)', 'Shenzhen Airlines (ZH)',
+            'Singapore Airlines (SQ)', 'South African Airways (SA)',
+            'SWISS (LX)', 'TAP Air Portugal (TP)', 'Thai Airways (TG)',
+            'Turkish Airlines (TK)', 'United (UA)',
+        ],
+    },
+}
+
+# Reverse map: airline_code -> alliance_slug
+_R7_CODE_ALLIANCE = {}
+for slug, info in _R7_ALLIANCES.items():
+    for m in info['members']:
+        # Extract "(XX)" code from end of member string
+        if '(' in m and ')' in m:
+            code = m[m.rindex('(') + 1: m.rindex(')')]
+            # Filter to 2-letter IATA codes
+            if len(code) == 2 and code.isalpha():
+                _R7_CODE_ALLIANCE[code.upper()] = slug
+
+_R7_STATUS_TIERS = [
+    ('Member',     0,      'Standard sign-up, earn miles.'),
+    ('Silver',     25000,  '25% bonus miles, free checked bag.'),
+    ('Gold',       50000,  '50% bonus, lounge access on intl, priority boarding.'),
+    ('Platinum',   75000,  '75% bonus, lounge worldwide, upgrade priority.'),
+    ('Emerald',    125000, '100% bonus, top-tier upgrade, dedicated check-in.'),
+]
+
+
+def _r7_award_quote(origin_region, dest_region, cabin='economy'):
+    base = {
+        'economy':   12000,
+        'premium':   30000,
+        'business':  60000,
+        'first':    110000,
+    }.get(cabin.lower(), 12000)
+    distance_factor = (_R7_REGIONS.index(dest_region) - _R7_REGIONS.index(origin_region)) % len(_R7_REGIONS)
+    miles = base + distance_factor * 5000
+    return miles
+
+
+@app.route('/awards')
+def r7_awards_landing():
+    rows = [(c, info['members'][:3], info['founded'])
+            for c, info in _R7_ALLIANCES.items()]
+    inner = """
+    <p style='color:#5f6368;'>Use miles to redeem flights across three global alliances. Click an alliance for the full member list.</p>
+    <div style='display:grid;grid-template-columns:repeat(3,1fr);gap:14px;'>
+      {% for slug, members, founded in rows %}<article style='background:#fff;border:1px solid #dadce0;border-radius:10px;padding:14px;'>
+        <h3 style='margin:0 0 6px;font-family:"Google Sans",sans-serif;'>{{ slug.replace('staralliance','Star Alliance').title() }}</h3>
+        <p style='font-size:12px;color:#5f6368;margin:0 0 8px;'>Founded {{ founded }}</p>
+        <ul style='font-size:13px;line-height:1.6;margin:0;padding-left:18px;'>
+          {% for m in members %}<li>{{ m }}</li>{% endfor %}
+          <li style='color:#5f6368;'>… more</li>
+        </ul>
+        <p style='margin:8px 0 0;'><a href='/alliance/{{ slug }}' style='color:#1a73e8;font-size:13px;'>View full list →</a></p>
+      </article>{% endfor %}
+    </div>
+    <h3 style='margin-top:28px;font-family:"Google Sans",sans-serif;'>Sample redemption (one-way)</h3>
+    <table style='border-collapse:collapse;width:100%;max-width:520px;font-size:14px;'>
+      <tr><th style='text-align:left;padding:6px;border-bottom:2px solid #1a73e8;'>Region pair</th>
+          <th style='padding:6px;border-bottom:2px solid #1a73e8;'>Economy</th>
+          <th style='padding:6px;border-bottom:2px solid #1a73e8;'>Business</th></tr>
+      <tr><td style='padding:6px;'>NA → EU</td><td style='text-align:center;'>30,000</td><td style='text-align:center;'>75,000</td></tr>
+      <tr><td style='padding:6px;'>NA → NE Asia</td><td style='text-align:center;'>40,000</td><td style='text-align:center;'>110,000</td></tr>
+      <tr><td style='padding:6px;'>EU → Africa</td><td style='text-align:center;'>27,000</td><td style='text-align:center;'>70,000</td></tr>
+    </table>
+    <p style='margin-top:14px;'><a href='/status-tiers' style='color:#1a73e8;'>Status tiers</a>
+    &middot; <a href='/api/v1/awards/quote?origin=JFK&destination=LHR&cabin=business' style='color:#1a73e8;'>Sample award API</a></p>
+    """
+    return _rx_render('Award chart',
+                      'Miles redemption tables across oneworld, SkyTeam, and Star Alliance.',
+                      inner, rows=rows)
+
+
+# ---- R7: award chart per partner ----
+@app.route('/awards/<code>')
+def r7_awards_per_partner(code):
+    code = code.upper()[:3]
+    alliance = _R7_CODE_ALLIANCE.get(code)
+    if not alliance:
+        # Approximate alliance from existing _AIRLINE_FACTS
+        info = _AIRLINE_FACTS.get(code, {})
+        alliance_name = info.get('alliance', 'partner network')
+    else:
+        alliance_name = _R7_ALLIANCES[alliance]['name']
+    base_award = 12000 + _rx_hint(code, 'eaw', mod=8000)
+    tiers = [
+        ('Economy one-way', base_award),
+        ('Premium economy one-way', base_award * 2),
+        ('Business one-way', base_award * 4),
+        ('First one-way', base_award * 7),
+    ]
+    inner = """
+    <p style='color:#5f6368;'><strong>Airline:</strong> {{ code }} &middot; <strong>Alliance:</strong> {{ alliance_name }}</p>
+    <table style='border-collapse:collapse;width:100%;max-width:520px;font-size:14px;'>
+      <thead><tr><th style='padding:8px;border-bottom:2px solid #1a73e8;text-align:left;'>Award level</th>
+          <th style='padding:8px;border-bottom:2px solid #1a73e8;'>Miles</th></tr></thead>
+      <tbody>{% for label, miles in tiers %}<tr>
+        <td style='padding:8px;'>{{ label }}</td>
+        <td style='padding:8px;text-align:right;color:#1a73e8;font-weight:500;'>{{ miles }}</td>
+      </tr>{% endfor %}</tbody>
+    </table>
+    """
+    return _rx_render(f'Award chart — {code}', f'Member of {alliance_name}.',
+                      inner, code=code, alliance_name=alliance_name, tiers=tiers)
+
+
+# ---- R7: status tier page ----
+@app.route('/status-tiers')
+def r7_status_tiers():
+    inner = """
+    <p style='color:#5f6368;'>Earn elite status by accruing qualifying miles in a calendar year.</p>
+    <table style='border-collapse:collapse;width:100%;max-width:680px;font-size:14px;'>
+      <thead><tr><th style='padding:8px;border-bottom:2px solid #1a73e8;text-align:left;'>Tier</th>
+          <th style='padding:8px;border-bottom:2px solid #1a73e8;'>Qualifying miles</th>
+          <th style='padding:8px;border-bottom:2px solid #1a73e8;text-align:left;'>Benefits</th></tr></thead>
+      <tbody>{% for name, miles, perks in tiers %}<tr>
+        <td style='padding:8px;font-weight:500;'>{{ name }}</td>
+        <td style='padding:8px;text-align:center;'>{{ miles }}</td>
+        <td style='padding:8px;color:#5f6368;'>{{ perks }}</td>
+      </tr>{% endfor %}</tbody>
+    </table>
+    """
+    return _rx_render('Status tiers',
+                      'Elite tier qualifying miles + benefits.',
+                      inner, tiers=_R7_STATUS_TIERS)
+
+
+# ---- R7: alliance pages ----
+@app.route('/alliance/<slug>')
+def r7_alliance_page(slug):
+    slug = slug.lower().replace('-', '').replace('_', '').replace(' ', '')
+    info = _R7_ALLIANCES.get(slug)
+    if not info:
+        abort(404)
+    inner = """
+    <p style='font-style:italic;color:#5f6368;'>"{{ info.tagline }}"</p>
+    <dl style='font-size:14px;line-height:1.8;margin:0 0 18px;'>
+      <div><strong>Founded:</strong> {{ info.founded }}</div>
+      <div><strong>HQ:</strong> {{ info.headquarters }}</div>
+      <div><strong>Member count:</strong> {{ info.members|length }}</div>
+    </dl>
+    <h3 style='font-family:"Google Sans",sans-serif;margin:18px 0 8px;'>Member airlines</h3>
+    <ul style='font-size:14px;line-height:1.8;columns:2;margin:0;padding-left:18px;'>
+      {% for m in info.members %}<li>{{ m }}</li>{% endfor %}
+    </ul>
+    <p style='margin-top:14px;'><a href='/api/v1/alliance/{{ slug }}' style='color:#1a73e8;'>JSON view</a></p>
+    """
+    return _rx_render(info['name'], 'Alliance overview and member list.',
+                      inner, info=info, slug=slug)
+
+
+# ---- R7: alliance member list api ----
+@app.route('/api/v1/alliance/<slug>')
+def r7_alliance_api(slug):
+    slug = slug.lower().replace('-', '').replace('_', '').replace(' ', '')
+    info = _R7_ALLIANCES.get(slug)
+    if not info:
+        return jsonify({'error': 'unknown alliance'}), 404
+    return jsonify({
+        'slug': slug, 'name': info['name'], 'founded': info['founded'],
+        'headquarters': info['headquarters'], 'tagline': info['tagline'],
+        'members': info['members'], 'member_count': len(info['members']),
+    })
+
+
+# ---- R7: award quote api ----
+@app.route('/api/v1/awards/quote')
+def r7_award_quote_api():
+    origin = (request.args.get('origin') or '').upper()[:3]
+    destination = (request.args.get('destination') or '').upper()[:3]
+    cabin = (request.args.get('cabin') or 'economy').lower()
+    if not origin or not destination:
+        return jsonify({'error': 'origin and destination required'}), 400
+    # Map IATA -> region via the seed DB if possible.
+    o = Airport.query.filter_by(iata=origin).first()
+    d = Airport.query.filter_by(iata=destination).first()
+    region_map = {
+        'North America': 'NA', 'United States': 'NA', 'Canada': 'NA', 'Mexico': 'NA',
+        'Europe': 'EU', 'United Kingdom': 'EU', 'Germany': 'EU', 'France': 'EU',
+        'Spain': 'EU', 'Italy': 'EU', 'Netherlands': 'EU',
+        'Middle East': 'ME', 'UAE': 'ME', 'United Arab Emirates': 'ME', 'Qatar': 'ME',
+    }
+    o_region = region_map.get((o.country if o else ''), 'NA')
+    d_region = region_map.get((d.country if d else ''), 'EU')
+    miles = _r7_award_quote(o_region, d_region, cabin)
+    return jsonify({
+        'origin': origin, 'destination': destination, 'cabin': cabin,
+        'origin_region': o_region, 'destination_region': d_region,
+        'miles_required': miles, 'taxes_fees_usd': 80 + _rx_hint(origin, destination, 'tax', mod=240),
+    })
+
+
+# ============================================================
+# ---- R8: alert digest page ----
+# ============================================================
+# Email-style price digest, deterministic by digest token. Surfaces the
+# "drop", "deal", and "wishlist" buckets a user would see in their morning
+# email. All endpoints stateless; preview pages take a token argument.
+
+_R8_DEAL_ROUTES = [
+    ('JFK', 'LHR'), ('LAX', 'NRT'), ('SFO', 'HKG'), ('ORD', 'CDG'),
+    ('SEA', 'AMS'), ('BOS', 'FCO'), ('MIA', 'GRU'), ('ATL', 'JNB'),
+    ('DEN', 'CUN'), ('DFW', 'MEX'), ('IAD', 'DXB'), ('EWR', 'TLV'),
+]
+
+
+def _r8_digest_payload(token):
+    token = token[:24]
+    drops = []
+    for i in range(4):
+        idx = _rx_hint(token, 'drop', i, mod=len(_R8_DEAL_ROUTES))
+        o, d = _R8_DEAL_ROUTES[idx]
+        from_price = 380 + _rx_hint(token, o, d, 'from', mod=400)
+        to_price = from_price - 60 - _rx_hint(token, o, d, 'to', mod=120)
+        drops.append({'origin': o, 'destination': d,
+                      'old_price': from_price, 'new_price': max(89, to_price),
+                      'drop_pct': round((from_price - to_price) / from_price * 100, 1)})
+    deals = []
+    for i in range(6):
+        idx = _rx_hint(token, 'deal', i, mod=len(_R8_DEAL_ROUTES))
+        o, d = _R8_DEAL_ROUTES[idx]
+        deals.append({'origin': o, 'destination': d,
+                      'price': 220 + _rx_hint(token, o, d, 'dealp', mod=380),
+                      'depart': (datetime(2026, 6, 1) + timedelta(days=14 * i)).date().isoformat()})
+    return {'token': token, 'drops': drops, 'deals': deals,
+            'generated_at': '2026-05-27T07:00:00Z'}
+
+
+@app.route('/alerts/digest')
+def r8_alert_digest_page():
+    # Stateless preview with default token "demo"
+    token = request.args.get('token', 'demo')
+    payload = _r8_digest_payload(token)
+    inner = """
+    <p style='color:#5f6368;'>Daily 7am UTC digest. Each card maps to one of your saved searches or price alerts.</p>
+    <h3 style='font-family:"Google Sans",sans-serif;margin-top:18px;'>Price drops</h3>
+    <div style='display:grid;grid-template-columns:repeat(2,1fr);gap:10px;'>
+      {% for r in payload.drops %}<article style='background:#e6f4ea;border:1px solid #34a853;border-radius:8px;padding:12px;'>
+        <p style='margin:0;font-weight:500;'>{{ r.origin }} → {{ r.destination }}</p>
+        <p style='margin:6px 0 0;font-size:14px;'>
+          <s style='color:#5f6368;'>${{ r.old_price }}</s>
+          <span style='color:#34a853;font-size:18px;font-weight:500;'>${{ r.new_price }}</span>
+          <span style='font-size:12px;color:#5f6368;'>({{ r.drop_pct }}% drop)</span>
+        </p>
+      </article>{% endfor %}
+    </div>
+    <h3 style='font-family:"Google Sans",sans-serif;margin-top:22px;'>Wishlist deals</h3>
+    <ul style='font-size:14px;line-height:1.8;'>
+      {% for d in payload.deals %}<li>{{ d.origin }} → {{ d.destination }} on {{ d.depart }} — <strong>${{ d.price }}</strong></li>{% endfor %}
+    </ul>
+    <p style='margin-top:14px;'><a href='/alerts/digest/preview/{{ payload.token }}' style='color:#1a73e8;'>Email preview</a>
+    &middot; <a href='/api/v1/alerts/digest?token={{ payload.token }}' style='color:#1a73e8;'>JSON</a>
+    &middot; <a href='/alerts/digest/unsubscribe/{{ payload.token }}' style='color:#1a73e8;'>Unsubscribe</a></p>
+    """
+    return _rx_render('Alert digest', 'Today\'s rolled-up alerts and deals.', inner, payload=payload)
+
+
+# ---- R8: alert digest email preview ----
+@app.route('/alerts/digest/preview/<token>')
+def r8_digest_email_preview(token):
+    payload = _r8_digest_payload(token)
+    inner = """
+    <article style='background:#fff;border:1px solid #dadce0;border-radius:0;padding:24px;font-family:Arial,sans-serif;'>
+      <h2 style='font-size:20px;margin:0 0 12px;'>Your Google Flights digest</h2>
+      <p style='font-size:14px;color:#5f6368;margin:0 0 18px;'>{{ payload.generated_at }}</p>
+      <table style='width:100%;border-collapse:collapse;font-size:13px;'>
+        <tr><td colspan='2' style='padding-bottom:6px;font-weight:bold;'>Price drops on your tracked routes</td></tr>
+        {% for r in payload.drops %}<tr>
+          <td style='padding:6px 0;'>{{ r.origin }} → {{ r.destination }}</td>
+          <td style='text-align:right;padding:6px 0;'><s>${{ r.old_price }}</s> <strong>${{ r.new_price }}</strong></td>
+        </tr>{% endfor %}
+      </table>
+      <p style='font-size:11px;color:#5f6368;margin-top:18px;'>To stop these emails, <a href='/alerts/digest/unsubscribe/{{ payload.token }}'>unsubscribe</a>.</p>
+    </article>
+    """
+    return _rx_render('Digest email preview',
+                      'Inbox-style render of the same digest content.',
+                      inner, payload=payload)
+
+
+# ---- R8: saved search digest page ----
+@app.route('/saved-searches/digest')
+def r8_saved_search_digest():
+    token = request.args.get('token', 'searches')
+    payload = _r8_digest_payload(token)
+    inner = """
+    <p style='color:#5f6368;'>Roll-up of your saved searches with current low-fare snapshots.</p>
+    <ol style='font-size:14px;line-height:1.9;'>
+      {% for d in payload.deals %}<li><strong>{{ d.origin }} → {{ d.destination }}</strong> ({{ d.depart }}): ${{ d.price }}
+        <a href='/tools/price-history/{{ d.origin }}/{{ d.destination }}' style='color:#1a73e8;font-size:12px;'>history</a></li>{% endfor %}
+    </ol>
+    """
+    return _rx_render('Saved-search digest',
+                      'One-line snapshot per saved search.',
+                      inner, payload=payload)
+
+
+# ---- R8: alert digest json api ----
+@app.route('/api/v1/alerts/digest')
+def r8_alert_digest_api():
+    token = request.args.get('token', 'demo')
+    return jsonify(_r8_digest_payload(token))
+
+
+# ---- R8: alert digest opt-out page ----
+@app.route('/alerts/digest/unsubscribe/<token>')
+def r8_digest_unsubscribe(token):
+    inner = """
+    <article style='background:#fff;border:1px solid #dadce0;border-radius:10px;padding:22px;max-width:520px;'>
+      <h2 style='font-family:"Google Sans",sans-serif;font-size:22px;'>Unsubscribed</h2>
+      <p style='font-size:14px;color:#5f6368;'>You will no longer receive the daily digest tied to token <code>{{ token }}</code>.</p>
+      <p style='font-size:13px;color:#5f6368;'>Re-subscribe at any time from <a href='/alerts' style='color:#1a73e8;'>Price alerts</a>.</p>
+    </article>
+    """
+    return _rx_render('Digest unsubscribe', 'Opt-out confirmation.', inner, token=token[:24])
+
+
+# ---- R8: alert webhook config page ----
+@app.route('/alerts/webhook-config')
+def r8_webhook_config():
+    inner = """
+    <p style='color:#5f6368;'>POST price-drop alerts to your own endpoint instead of email. Use the digest token as the subscription key.</p>
+    <pre style='background:#f1f3f4;padding:14px;border-radius:8px;font-size:13px;overflow-x:auto;'>POST /api/v1/webhooks/subscribe
+{
+  "callback_url": "https://your.host/webhook",
+  "events": ["price_drop", "deal_alert"],
+  "token": "demo"
+}</pre>
+    <p style='margin-top:12px;'>Webhook payload mirrors the JSON from <code>/api/v1/alerts/digest</code> with an added <code>event</code> field.</p>
+    """
+    return _rx_render('Webhook configuration',
+                      'Push digest events to an HTTPS endpoint.',
+                      inner)
+
+
+# ============================================================
+# ---- R9: airport detail page ----
+# ============================================================
+# Per-airport landing page with lounges, terminal map, TSA wait, and
+# amenities. Page exists for every IATA in the seed DB (8618 airports).
+# All numeric/string fields derive from sha1 hashes of the IATA so reset is
+# byte-identical.
+
+_R9X_LOUNGE_BRANDS = [
+    'United Club', 'Delta Sky Club', 'American Admirals Club',
+    'British Airways Galleries', 'Lufthansa Senator', 'Air France/KLM',
+    'Emirates Lounge', 'Qatar Premium', 'Plaza Premium', 'Centurion Lounge',
+    'Capital One Lounge', 'Cathay Pacific The Wing', 'Singapore SilverKris',
+    'Polaris Lounge', 'Etihad Premium', 'Star Alliance Lounge',
+]
+
+_R9X_AMENITIES = [
+    'Free Wi-Fi', 'Showers (paid)', 'Sleep pods', 'Yoga room',
+    'Children\'s play area', 'Pet relief station', 'Smoking lounge',
+    'Art exhibition', 'Mother\'s room', 'Currency exchange',
+    'Pharmacy', 'Luggage storage', 'Capsule hotel', 'Spa',
+    'Movie theater', 'Bookstore', 'Observation deck',
+]
+
+
+def _r9x_lounges_for(iata):
+    n = 1 + _rx_hint(iata, 'lcount', mod=6)  # 1..6
+    out = []
+    for i in range(n):
+        brand = _R9X_LOUNGE_BRANDS[_rx_hint(iata, 'lounge', i, mod=len(_R9X_LOUNGE_BRANDS))]
+        terminal = ['1', '2', '3', '4', 'A', 'B', 'C', 'D'][_rx_hint(iata, 'lterm', i, mod=8)]
+        out.append({
+            'name': brand, 'terminal': terminal,
+            'day_pass_usd': 35 + _rx_hint(iata, 'lpass', i, mod=140),
+            'hours': '05:30 - 22:30',
+            'amenities': ['Wi-Fi', 'Showers', 'Buffet', 'Bar'],
+        })
+    return out
+
+
+def _r9x_tsa_waits(iata):
+    return [
+        {'checkpoint': name,
+         'standard_minutes': 5 + _rx_hint(iata, 'tsa', name, 'std', mod=45),
+         'precheck_minutes': 2 + _rx_hint(iata, 'tsa', name, 'pre', mod=12)}
+        for name in ['Main', 'Concourse A', 'Concourse B', 'International']
+    ]
+
+
+def _r9x_amenities_for(iata):
+    n = 4 + _rx_hint(iata, 'acount', mod=8)
+    return [_R9X_AMENITIES[_rx_hint(iata, 'amen', i, mod=len(_R9X_AMENITIES))]
+            for i in range(n)]
+
+
+def _r9x_terminals_for(iata):
+    n = 1 + _rx_hint(iata, 'tcount', mod=5)
+    return [{'name': f'Terminal {chr(65 + i)}',
+             'gates': f'{1 + i * 20}-{20 + i * 20}',
+             'airlines': _rx_hint(iata, 'tair', i, mod=14) + 4}
+            for i in range(n)]
+
+
+@app.route('/airport/<iata>')
+def r9x_airport_detail(iata):
+    iata = iata.upper()[:4]
+    a = Airport.query.filter_by(iata=iata).first() or abort(404)
+    lounges = _r9x_lounges_for(iata)
+    amen = _r9x_amenities_for(iata)
+    runways = 1 + _rx_hint(iata, 'rw', mod=4)
+    inner = """
+    <div style='display:grid;grid-template-columns:2fr 1fr;gap:24px;'>
+      <div>
+        <p style='color:#5f6368;font-size:15px;'>{{ a.name }}, {{ a.city }}, {{ a.country }}.
+          ICAO <strong>{{ a.icao or '—' }}</strong>. Timezone {{ a.timezone or '—' }}.</p>
+        <dl style='font-size:14px;line-height:1.9;'>
+          <div><strong>Runways:</strong> {{ runways }}</div>
+          <div><strong>Lounges on file:</strong> {{ lounges|length }}</div>
+          <div><strong>Region:</strong> {{ a.region or 'n/a' }}</div>
+          <div><strong>Coordinates:</strong> {{ a.latitude }}, {{ a.longitude }}</div>
+        </dl>
+        <h3 style='font-family:"Google Sans",sans-serif;margin-top:14px;'>Quick links</h3>
+        <ul style='font-size:14px;line-height:1.8;'>
+          <li><a href='/airport/{{ iata }}/lounges' style='color:#1a73e8;'>Lounges ({{ lounges|length }})</a></li>
+          <li><a href='/airport/{{ iata }}/tsa' style='color:#1a73e8;'>TSA wait times</a></li>
+          <li><a href='/airport/{{ iata }}/amenities' style='color:#1a73e8;'>Amenities</a></li>
+          <li><a href='/airport/{{ iata }}/terminal-map' style='color:#1a73e8;'>Terminal map</a></li>
+        </ul>
+      </div>
+      <aside style='background:#fff;border:1px solid #dadce0;border-radius:10px;padding:14px;'>
+        <h3 style='margin:0 0 6px;font-family:"Google Sans",sans-serif;font-size:16px;'>Top amenities</h3>
+        <ul style='font-size:13px;line-height:1.7;padding-left:18px;margin:0;'>
+          {% for x in amen[:6] %}<li>{{ x }}</li>{% endfor %}
+        </ul>
+      </aside>
+    </div>
+    <p style='margin-top:18px;'><a href='/api/v1/airport/{{ iata }}' style='color:#1a73e8;'>JSON bundle</a></p>
+    """
+    return _rx_render(f'{a.name}', f'{iata} airport detail and services.',
+                      inner, iata=iata, a=a, lounges=lounges, amen=amen, runways=runways)
+
+
+# ---- R9: airport lounges page ----
+@app.route('/airport/<iata>/lounges')
+def r9x_airport_lounges(iata):
+    iata = iata.upper()[:4]
+    a = Airport.query.filter_by(iata=iata).first() or abort(404)
+    lounges = _r9x_lounges_for(iata)
+    inner = """
+    <p style='color:#5f6368;'>{{ a.city }} ({{ iata }}) has {{ lounges|length }} airline and independent lounges on file.</p>
+    <div style='display:grid;grid-template-columns:repeat(2,1fr);gap:14px;'>
+      {% for L in lounges %}<article style='background:#fff;border:1px solid #dadce0;border-radius:8px;padding:14px;'>
+        <h3 style='margin:0 0 4px;font-family:"Google Sans",sans-serif;font-size:16px;'>{{ L.name }}</h3>
+        <p style='font-size:13px;color:#5f6368;margin:0 0 8px;'>Terminal {{ L.terminal }} &middot; Day pass <strong>${{ L.day_pass_usd }}</strong></p>
+        <p style='font-size:13px;margin:0;'>Hours: {{ L.hours }}</p>
+        <p style='font-size:13px;margin:6px 0 0;color:#5f6368;'>Amenities: {{ L.amenities|join(', ') }}</p>
+      </article>{% endfor %}
+    </div>
+    """
+    return _rx_render(f'Lounges at {iata}', f'{a.name} lounges and day-pass prices.',
+                      inner, iata=iata, a=a, lounges=lounges)
+
+
+# ---- R9: airport TSA wait page ----
+@app.route('/airport/<iata>/tsa')
+def r9x_airport_tsa(iata):
+    iata = iata.upper()[:4]
+    a = Airport.query.filter_by(iata=iata).first() or abort(404)
+    waits = _r9x_tsa_waits(iata)
+    inner = """
+    <p style='color:#5f6368;'>Live-deterministic checkpoint wait times for {{ a.name }}.</p>
+    <table style='border-collapse:collapse;width:100%;max-width:560px;font-size:14px;'>
+      <thead><tr><th style='padding:8px;border-bottom:2px solid #1a73e8;text-align:left;'>Checkpoint</th>
+                 <th style='padding:8px;border-bottom:2px solid #1a73e8;'>Standard</th>
+                 <th style='padding:8px;border-bottom:2px solid #1a73e8;'>PreCheck</th></tr></thead>
+      <tbody>{% for w in waits %}<tr>
+        <td style='padding:8px;'>{{ w.checkpoint }}</td>
+        <td style='padding:8px;text-align:center;'>{{ w.standard_minutes }} min</td>
+        <td style='padding:8px;text-align:center;color:#1a73e8;'>{{ w.precheck_minutes }} min</td>
+      </tr>{% endfor %}</tbody>
+    </table>
+    """
+    return _rx_render(f'TSA wait — {iata}', f'Security wait times by checkpoint.',
+                      inner, iata=iata, a=a, waits=waits)
+
+
+# ---- R9: airport amenities page ----
+@app.route('/airport/<iata>/amenities')
+def r9x_airport_amenities(iata):
+    iata = iata.upper()[:4]
+    a = Airport.query.filter_by(iata=iata).first() or abort(404)
+    amen = _r9x_amenities_for(iata)
+    inner = """
+    <p style='color:#5f6368;'>Non-aviation services at {{ a.name }}.</p>
+    <ul style='font-size:15px;line-height:1.9;columns:2;padding-left:18px;'>
+      {% for x in amen %}<li>{{ x }}</li>{% endfor %}
+    </ul>
+    """
+    return _rx_render(f'Amenities — {iata}', 'Lounges, food, retail, wellness.',
+                      inner, iata=iata, a=a, amen=amen)
+
+
+# ---- R9: airport terminal map page ----
+@app.route('/airport/<iata>/terminal-map')
+def r9x_airport_terminal_map(iata):
+    iata = iata.upper()[:4]
+    a = Airport.query.filter_by(iata=iata).first() or abort(404)
+    terms = _r9x_terminals_for(iata)
+    inner = """
+    <p style='color:#5f6368;'>{{ a.name }} operates {{ terms|length }} terminal(s).</p>
+    <table style='border-collapse:collapse;width:100%;max-width:560px;font-size:14px;'>
+      <thead><tr><th style='padding:8px;border-bottom:2px solid #1a73e8;text-align:left;'>Terminal</th>
+                 <th style='padding:8px;border-bottom:2px solid #1a73e8;'>Gates</th>
+                 <th style='padding:8px;border-bottom:2px solid #1a73e8;'>Airlines</th></tr></thead>
+      <tbody>{% for t in terms %}<tr>
+        <td style='padding:8px;'>{{ t.name }}</td>
+        <td style='padding:8px;text-align:center;'>{{ t.gates }}</td>
+        <td style='padding:8px;text-align:center;'>{{ t.airlines }}</td>
+      </tr>{% endfor %}</tbody>
+    </table>
+    """
+    return _rx_render(f'Terminals — {iata}', 'Terminal layout and gate ranges.',
+                      inner, iata=iata, a=a, terms=terms)
+
+
+# ---- R9: airport detail JSON API ----
+@app.route('/api/v1/airport/<iata>')
+def r9x_airport_api(iata):
+    iata = iata.upper()[:4]
+    a = Airport.query.filter_by(iata=iata).first()
+    if not a:
+        return jsonify({'error': 'airport not found', 'iata': iata}), 404
+    return jsonify({
+        'iata': a.iata, 'icao': a.icao, 'name': a.name,
+        'city': a.city, 'country': a.country, 'region': a.region,
+        'latitude': a.latitude, 'longitude': a.longitude, 'timezone': a.timezone,
+        'lounges': _r9x_lounges_for(iata),
+        'tsa_waits': _r9x_tsa_waits(iata),
+        'amenities': _r9x_amenities_for(iata),
+        'terminals': _r9x_terminals_for(iata),
+        'runways': 1 + _rx_hint(iata, 'rw', mod=4),
+    })
+
+
+# ============================================================
+# ---- R10: REST flights search ----
+# ============================================================
+# A clean /api/v1/* surface that mirrors the /flights HTML page but speaks
+# JSON. Used by SDK / programmatic agents. All endpoints stateless. The
+# OpenAPI document at /api/v1/openapi.json describes the full surface.
+
+@app.route('/api/v1/flights/search')
+def r10_rest_flights_search():
+    origin = (request.args.get('origin') or '').upper()[:3]
+    destination = (request.args.get('destination') or '').upper()[:3]
+    date_str = request.args.get('date') or ''
+    limit = min(50, max(1, request.args.get('limit', type=int) or 10))
+    if not origin or not destination:
+        return jsonify({'error': 'origin and destination required'}), 400
+    o = Airport.query.filter_by(iata=origin).first()
+    d = Airport.query.filter_by(iata=destination).first()
+    if not o or not d:
+        return jsonify({'error': 'unknown airport', 'origin': origin, 'destination': destination}), 404
+    q = Flight.query.filter_by(origin_id=o.id, destination_id=d.id)
+    if date_str:
+        try:
+            target = datetime.strptime(date_str, '%Y-%m-%d').date()
+            q = q.filter_by(departure_date=target)
+        except ValueError:
+            return jsonify({'error': 'date must be YYYY-MM-DD'}), 400
+    results = q.order_by(Flight.price).limit(limit).all()
+    payload = {
+        'origin': origin, 'destination': destination, 'date': date_str,
+        'limit': limit, 'count': len(results),
+        'results': [{
+            'flight_id': f.id,
+            'airline': f.airline, 'airline_code': f.airline_code,
+            'flight_number': f.flight_number,
+            'departure_date': f.departure_date.isoformat(),
+            'departure_time': f.departure_time,
+            'arrival_time': f.arrival_time,
+            'duration_minutes': f.duration_minutes,
+            'stops': f.stops,
+            'aircraft': f.aircraft,
+            'cabin_class': f.cabin_class,
+            'price_usd': f.price,
+            'price_premium_usd': f.price_premium,
+            'price_business_usd': f.price_business,
+            'price_first_usd': f.price_first,
+            'co2_kg': f.co2_emissions_kg,
+        } for f in results],
+    }
+    if results:
+        payload['cheapest_price'] = results[0].price
+    return jsonify(payload)
+
+
+# ---- R10: REST airport lookup ----
+@app.route('/api/v1/airports/<iata>')
+def r10_rest_airport(iata):
+    iata = iata.upper()[:4]
+    a = Airport.query.filter_by(iata=iata).first()
+    if not a:
+        return jsonify({'error': 'airport not found', 'iata': iata}), 404
+    return jsonify({
+        'iata': a.iata, 'icao': a.icao, 'name': a.name,
+        'city': a.city, 'country': a.country, 'region': a.region,
+        'is_popular': bool(a.is_popular),
+        'latitude': a.latitude, 'longitude': a.longitude, 'timezone': a.timezone,
+    })
+
+
+# ---- R10: REST cheapest route ----
+@app.route('/api/v1/routes/<origin>/<destination>/cheapest')
+def r10_rest_cheapest(origin, destination):
+    origin = origin.upper()[:3]; destination = destination.upper()[:3]
+    o = Airport.query.filter_by(iata=origin).first()
+    d = Airport.query.filter_by(iata=destination).first()
+    if not o or not d:
+        return jsonify({'error': 'unknown airport'}), 404
+    f = (Flight.query.filter_by(origin_id=o.id, destination_id=d.id)
+         .order_by(Flight.price).first())
+    if not f:
+        return jsonify({'error': 'no flights on this route',
+                        'origin': origin, 'destination': destination}), 404
+    return jsonify({
+        'origin': origin, 'destination': destination,
+        'cheapest_price_usd': f.price, 'flight_id': f.id,
+        'airline': f.airline, 'flight_number': f.flight_number,
+        'departure_date': f.departure_date.isoformat(),
+        'duration_minutes': f.duration_minutes,
+        'stops': f.stops,
+    })
+
+
+# ---- R10: REST healthz extended ----
+@app.route('/api/v1/healthz')
+def r10_rest_healthz():
+    return jsonify({
+        'status': 'ok',
+        'service': 'google_flights',
+        'version': 'v1',
+        'features': ['rest', 'graphql', 'webhooks', 'sitemap', 'openapi'],
+        'mirror_reference_date': '2026-05-12',
+    })
+
+
+# ---- R10: REST webhook subscribe ----
+@app.route('/api/v1/webhooks/subscribe', methods=['GET', 'POST'])
+@csrf.exempt
+def r10_rest_webhook_subscribe():
+    if request.method == 'GET':
+        # Inspection endpoint
+        return jsonify({
+            'method': 'POST',
+            'fields': ['callback_url', 'events', 'token'],
+            'events_supported': ['price_drop', 'deal_alert', 'fare_class_change'],
+            'doc': '/alerts/webhook-config',
+        })
+    data = request.get_json(silent=True) or request.form.to_dict()
+    callback = data.get('callback_url', '')
+    events = data.get('events') or ['price_drop']
+    token = data.get('token', 'demo')
+    if not callback.startswith('https://') and not callback.startswith('http://'):
+        return jsonify({'error': 'callback_url must be a valid http(s) URL'}), 400
+    sub_id = _rx_h.sha1(f'{callback}|{token}|{events}'.encode()).hexdigest()[:12]
+    return jsonify({
+        'subscription_id': sub_id,
+        'callback_url': callback,
+        'events': events if isinstance(events, list) else [events],
+        'status': 'active',
+        'verification_url': f'/api/v1/webhooks/verify/{sub_id}',
+    })
+
+
+# ---- R10: REST OpenAPI doc ----
+@app.route('/api/v1/openapi.json')
+def r10_openapi_doc():
+    return jsonify({
+        'openapi': '3.0.0',
+        'info': {
+            'title': 'Google Flights mirror REST API',
+            'version': '1.0.0',
+            'description': 'Programmatic access to the same data the /flights HTML page surfaces.',
+        },
+        'servers': [{'url': request.url_root.rstrip('/'), 'description': 'this mirror'}],
+        'paths': {
+            '/api/v1/flights/search': {'get': {'summary': 'Search flights by origin+destination',
+                                               'parameters': [
+                                                   {'name': 'origin', 'in': 'query', 'required': True, 'schema': {'type': 'string'}},
+                                                   {'name': 'destination', 'in': 'query', 'required': True, 'schema': {'type': 'string'}},
+                                                   {'name': 'date', 'in': 'query', 'schema': {'type': 'string'}},
+                                                   {'name': 'limit', 'in': 'query', 'schema': {'type': 'integer'}},
+                                               ]}},
+            '/api/v1/airports/{iata}': {'get': {'summary': 'Lookup airport by IATA code'}},
+            '/api/v1/routes/{o}/{d}/cheapest': {'get': {'summary': 'Cheapest flight on a route'}},
+            '/api/v1/price-history': {'get': {'summary': '60-day price band'}},
+            '/api/v1/fare-prediction': {'get': {'summary': 'Confidence-banded fare forecast'}},
+            '/api/v1/fare-classes/{flight_id}': {'get': {'summary': 'Cabin class bundle for a flight'}},
+            '/api/v1/multi-city/quote': {'get': {'summary': 'Quote a multi-leg itinerary'},
+                                          'post': {'summary': 'Same, JSON body'}},
+            '/api/v1/open-jaw/quote': {'get': {'summary': 'Quote an open-jaw itinerary'}},
+            '/api/v1/addons/price': {'get': {'summary': 'Price modular add-ons'}},
+            '/api/v1/awards/quote': {'get': {'summary': 'Miles required for a redemption'}},
+            '/api/v1/alliance/{slug}': {'get': {'summary': 'Alliance metadata + members'}},
+            '/api/v1/alerts/digest': {'get': {'summary': 'Daily digest payload'}},
+            '/api/v1/airport/{iata}': {'get': {'summary': 'Airport detail bundle (lounges/TSA/amenities)'}},
+            '/api/v1/healthz': {'get': {'summary': 'Service health'}},
+            '/api/v1/webhooks/subscribe': {'post': {'summary': 'Subscribe to push events'}},
+        },
+        'tags': [
+            {'name': 'flights', 'description': 'Flight discovery'},
+            {'name': 'pricing', 'description': 'Price history, prediction, addons, awards'},
+            {'name': 'airports', 'description': 'Airport detail surfaces'},
+            {'name': 'webhooks', 'description': 'Push subscriptions'},
+        ],
+    })
+
+
 if __name__ == '__main__':
     with app.app_context():
         db.create_all()
