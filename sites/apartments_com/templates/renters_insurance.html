@@ -1,0 +1,87 @@
+{% extends "base.html" %}
+{% block title %}Renters Insurance Quote | Apartments.com{% endblock %}
+{% block content %}
+<div class="container-narrow" style="padding-top:24px;">
+  <nav style="font-size:13px;color:var(--muted);margin-bottom:14px;">
+    <a href="{{ url_for('index') }}">Home</a> › <span>Renters Insurance</span>
+  </nav>
+  <div class="spec-banner">
+    <h1>Renters Insurance — get a quote in 90 seconds</h1>
+    <p>Required by most leases. Typically $12–$25/month for $20,000 coverage with liability.</p>
+  </div>
+
+  <div class="row" style="margin-top:24px;">
+    <div class="section-block" style="flex:2;">
+      <form method="post">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <h2>Your information</h2>
+        <div class="row">
+          <div class="form-field" style="flex:1;"><label>Full name</label><input type="text" name="full_name" required></div>
+          <div class="form-field" style="flex:1;"><label>Email</label><input type="email" name="email" required></div>
+        </div>
+        <div class="row">
+          <div class="form-field" style="flex:1;"><label>Phone</label><input type="tel" name="phone"></div>
+        </div>
+        <h2>Address you're insuring</h2>
+        <div class="form-field"><label>Address</label><input type="text" name="address" required></div>
+        <div class="row">
+          <div class="form-field" style="flex:2;"><label>City</label><input type="text" name="city" required></div>
+          <div class="form-field" style="flex:1;"><label>State</label><input type="text" name="state" maxlength="2" required></div>
+          <div class="form-field" style="flex:1;"><label>ZIP</label><input type="text" name="zip" required></div>
+        </div>
+
+        <h2>Coverage</h2>
+        <div class="row">
+          <div class="form-field" style="flex:1;"><label>Personal property coverage ($)</label>
+            <select name="coverage_amount">
+              <option value="10000">$10,000</option>
+              <option value="20000" selected>$20,000</option>
+              <option value="30000">$30,000</option>
+              <option value="50000">$50,000</option>
+              <option value="100000">$100,000</option>
+            </select>
+          </div>
+          <div class="form-field" style="flex:1;"><label>Deductible ($)</label>
+            <select name="deductible">
+              <option value="250">$250</option>
+              <option value="500" selected>$500</option>
+              <option value="1000">$1,000</option>
+              <option value="2500">$2,500</option>
+            </select>
+          </div>
+        </div>
+        <div class="row">
+          <div class="form-field" style="flex:1;"><label>High-value items (jewelry, art, electronics)</label><input type="number" name="valuables_amount" value="0"></div>
+        </div>
+        <div class="checkbox-row"><input type="checkbox" name="has_pets"> I have one or more pets (affects liability)</div>
+
+        <button class="btn lg" type="submit">Get my quote</button>
+      </form>
+    </div>
+
+    <div class="section-block" style="flex:1;">
+      <h3>What's covered</h3>
+      <ul>
+        <li>Personal property (theft, fire, water damage)</li>
+        <li>Personal liability ($100,000 default)</li>
+        <li>Medical payments to guests ($1,000 default)</li>
+        <li>Loss-of-use (hotel + meals during repairs)</li>
+        <li>Identity-fraud restoration</li>
+      </ul>
+      <h3>What's not covered</h3>
+      <ul>
+        <li>Floods (need a separate flood policy)</li>
+        <li>Earthquakes (separate rider)</li>
+        <li>Damage you cause to the structure (landlord's policy)</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="section-block" style="margin-top:14px;">
+    <h2>FAQ</h2>
+    <p><strong>Is renters insurance required?</strong> Most modern leases require $100,000 liability minimum. Check your lease.</p>
+    <p><strong>How fast can I get a policy?</strong> Most quotes can be bound the same day.</p>
+    <p><strong>Can my landlord see my policy?</strong> Yes — you can add them as an "interested party" so they receive notice if it lapses.</p>
+  </div>
+</div>
+{% endblock %}

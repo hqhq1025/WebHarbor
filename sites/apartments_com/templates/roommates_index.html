@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block title %}Find a Roommate | Apartments.com{% endblock %}
+{% block content %}
+<div class="hero">
+  <div class="container">
+    <h1>Find a Roommate</h1>
+    <p class="sub">Browse {{ profiles|length }}+ profiles. Filter by city and budget. Message directly.</p>
+    <form action="{{ url_for('roommates_browse') }}" method="get" class="search-box">
+      <input type="text" name="city" placeholder="City (e.g. New York)">
+      <button type="submit">Browse</button>
+    </form>
+  </div>
+</div>
+
+<div class="container section">
+  <h2>How Roommate Finder works</h2>
+  <div class="grid-narrow">
+    <div class="section-block"><h3>1. Create a profile</h3><p>Tell people what you're looking for, your budget, neighborhood, and lifestyle.</p></div>
+    <div class="section-block"><h3>2. Browse candidates</h3><p>See who else is searching in your target neighborhood.</p></div>
+    <div class="section-block"><h3>3. Connect &amp; message</h3><p>Send a message, meet up, and find your match.</p></div>
+  </div>
+
+  <div style="margin-top:24px;">
+    <a class="btn lg" href="{{ url_for('roommate_profile_edit') }}">Create your profile</a>
+    <a class="btn ghost" href="{{ url_for('roommates_browse') }}">Browse all profiles →</a>
+  </div>
+
+  <h2 style="margin-top:30px;">Featured Profiles</h2>
+  <div class="grid">
+    {% for p in profiles %}
+      <a class="listing-card" href="{{ url_for('roommate_detail', pid=p.id) }}">
+        <div class="photo">{% if p.avatar %}<img src="{{ p.avatar }}" alt="{{ p.name }}">{% endif %}</div>
+        <div class="body">
+          <div class="name">{{ p.name }}, {{ p.age }}</div>
+          <div class="specs">{{ p.city }}, {{ p.state }}{% if p.neighborhood %} · {{ p.neighborhood }}{% endif %}</div>
+          <div class="addr">${{ '{:,}'.format(p.budget_min) }}–${{ '{:,}'.format(p.budget_max) }}/mo · Move-in {{ p.move_in_date }}</div>
+          <div class="meta">{{ p.bio[:90] }}…</div>
+        </div>
+      </a>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}

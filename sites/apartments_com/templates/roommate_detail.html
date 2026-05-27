@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+{% block title %}{{ p.name }} — Roommate Profile | Apartments.com{% endblock %}
+{% block content %}
+<div class="container" style="padding-top:24px;">
+  <nav style="font-size:13px;color:var(--muted);margin-bottom:14px;">
+    <a href="{{ url_for('roommates_index') }}">Roommates</a> ›
+    <a href="{{ url_for('roommates_browse') }}">Browse</a> ›
+    <span>{{ p.name }}</span>
+  </nav>
+
+  <div class="row">
+    <div class="section-block" style="flex:1;min-width:260px;max-width:340px;">
+      {% if p.avatar %}<img src="{{ p.avatar }}" alt="{{ p.name }}" style="width:100%;aspect-ratio:1/1;object-fit:cover;border-radius:8px;">{% endif %}
+      <h2 style="margin-top:14px;">{{ p.name }}, {{ p.age }}</h2>
+      <p style="color:var(--muted);">{{ p.gender }} · {{ p.occupation }}</p>
+      <p><strong>Location:</strong> {{ p.city }}, {{ p.state }} {% if p.neighborhood %}({{ p.neighborhood }}){% endif %}</p>
+      <p><strong>Budget:</strong> ${{ '{:,}'.format(p.budget_min) }} – ${{ '{:,}'.format(p.budget_max) }}/mo</p>
+      <p><strong>Move-in:</strong> {{ p.move_in_date }}</p>
+      <p>
+        {% if p.has_pet %}<span class="tag">Has pet</span>{% else %}<span class="tag">No pets</span>{% endif %}
+        {% if p.smoker %}<span class="tag" style="background:#ffe6e6;color:#b71c1c;">Smoker</span>{% else %}<span class="tag" style="background:#e6f7ed;color:#1aa260;">Non-smoker</span>{% endif %}
+      </p>
+
+      {% if current_user.is_authenticated %}
+      <form method="post" action="{{ url_for('roommate_connect', pid=p.id) }}" style="margin-top:14px;">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button class="btn" type="submit" style="width:100%;">Send Connection Request</button>
+      </form>
+      {% else %}
+      <a class="btn" href="{{ url_for('login') }}" style="width:100%;text-align:center;margin-top:14px;">Sign in to connect</a>
+      {% endif %}
+    </div>
+
+    <div style="flex:2;min-width:300px;">
+      <div class="section-block">
+        <h3>About {{ p.name.split(' ')[0] }}</h3>
+        <p>{{ p.bio }}</p>
+      </div>
+      <div class="section-block">
+        <h3>Interests</h3>
+        <p>{{ p.interests }}</p>
+      </div>
+
+      <div class="section-block">
+        <h3>Send a message</h3>
+        <form method="post" action="{{ url_for('roommate_message', pid=p.id) }}">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <div class="row">
+            <div class="form-field" style="flex:1;"><label>Your name</label><input type="text" name="name" value="{{ current_user.name if current_user.is_authenticated else '' }}" required></div>
+            <div class="form-field" style="flex:1;"><label>Your email</label><input type="email" name="email" value="{{ current_user.email if current_user.is_authenticated else '' }}" required></div>
+          </div>
+          <div class="form-field"><label>Message</label><textarea name="body" required>Hi {{ p.name.split(' ')[0] }}, I'm looking in {{ p.neighborhood or p.city }} too — would love to chat about being roommates.</textarea></div>
+          <button class="btn" type="submit">Send Message</button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  {% if similar %}
+  <div class="section-block" style="margin-top:14px;">
+    <h2>Other roommates in {{ p.city }}</h2>
+    <div class="grid">
+      {% for s in similar %}
+        <a class="listing-card" href="{{ url_for('roommate_detail', pid=s.id) }}">
+          <div class="photo">{% if s.avatar %}<img src="{{ s.avatar }}">{% endif %}</div>
+          <div class="body">
+            <div class="name">{{ s.name }}, {{ s.age }}</div>
+            <div class="specs">${{ '{:,}'.format(s.budget_max) }}/mo max · {{ s.neighborhood or s.city }}</div>
+          </div>
+        </a>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

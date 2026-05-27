@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% block title %}Your Roommate Profile | Apartments.com{% endblock %}
+{% block content %}
+<div class="container-narrow" style="padding-top:24px;">
+  <h1>{% if profile %}Edit{% else %}Create{% endif %} Roommate Profile</h1>
+  <form method="post">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <div class="section-block">
+      <h2>Basics</h2>
+      <div class="row">
+        <div class="form-field" style="flex:1;"><label>Display name</label><input type="text" name="name" value="{{ profile.name if profile else current_user.name }}" required></div>
+        <div class="form-field" style="flex:1;"><label>Age</label><input type="number" name="age" value="{{ profile.age if profile else 25 }}" min="18" max="80"></div>
+        <div class="form-field" style="flex:1;"><label>Gender</label>
+          <select name="gender">
+            <option {% if profile and profile.gender == 'Male' %}selected{% endif %}>Male</option>
+            <option {% if profile and profile.gender == 'Female' %}selected{% endif %}>Female</option>
+            <option {% if profile and profile.gender == 'Non-binary' %}selected{% endif %}>Non-binary</option>
+            <option {% if profile and profile.gender == 'Prefer not to say' %}selected{% endif %}>Prefer not to say</option>
+          </select>
+        </div>
+      </div>
+
+      <h2>Location &amp; Budget</h2>
+      <div class="row">
+        <div class="form-field" style="flex:2;"><label>City</label><input type="text" name="city" value="{{ profile.city if profile else '' }}" required></div>
+        <div class="form-field" style="flex:1;"><label>State</label><input type="text" name="state" maxlength="2" value="{{ profile.state if profile else '' }}" required></div>
+        <div class="form-field" style="flex:2;"><label>Neighborhood</label><input type="text" name="neighborhood" value="{{ profile.neighborhood if profile else '' }}"></div>
+      </div>
+      <div class="row">
+        <div class="form-field" style="flex:1;"><label>Budget min ($/mo)</label><input type="number" name="budget_min" value="{{ profile.budget_min if profile else 800 }}"></div>
+        <div class="form-field" style="flex:1;"><label>Budget max ($/mo)</label><input type="number" name="budget_max" value="{{ profile.budget_max if profile else 2000 }}"></div>
+        <div class="form-field" style="flex:1;"><label>Target move-in</label><input type="date" name="move_in_date" value="{{ profile.move_in_date if profile else '' }}"></div>
+      </div>
+
+      <h2>About You</h2>
+      <div class="form-field"><label>Occupation / role</label><input type="text" name="occupation" value="{{ profile.occupation if profile else '' }}"></div>
+      <div class="form-field"><label>Bio</label><textarea name="bio">{{ profile.bio if profile else '' }}</textarea></div>
+      <div class="form-field"><label>Interests (comma-separated)</label><input type="text" name="interests" value="{{ profile.interests if profile else '' }}"></div>
+      <div class="row">
+        <div class="checkbox-row"><input type="checkbox" name="has_pet" {% if profile and profile.has_pet %}checked{% endif %}> Has a pet</div>
+        <div class="checkbox-row"><input type="checkbox" name="smoker" {% if profile and profile.smoker %}checked{% endif %}> Smoker</div>
+      </div>
+    </div>
+
+    <button class="btn lg" type="submit">{% if profile %}Save changes{% else %}Create profile{% endif %}</button>
+  </form>
+</div>
+{% endblock %}

@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+{% block title %}{{ m.name }} — Moving Quote | Apartments.com{% endblock %}
+{% block content %}
+<div class="container" style="padding-top:24px;">
+  <nav style="font-size:13px;color:var(--muted);margin-bottom:14px;">
+    <a href="{{ url_for('moving_services') }}">Moving Services</a> › <span>{{ m.name }}</span>
+  </nav>
+  <div class="row">
+    <div class="section-block" style="flex:2;">
+      <h1>{{ m.name }}</h1>
+      <p style="color:var(--muted);">{{ m.city }}, {{ m.state }} · <span class="rating">★ {{ '%.1f'|format(m.rating) }}</span> ({{ m.review_count }} reviews)</p>
+      <p>{{ m.blurb }}</p>
+
+      <h2>Request a quote</h2>
+      <form method="post">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <div class="row">
+          <div class="form-field" style="flex:1;"><label>Your name</label><input type="text" name="name" required></div>
+          <div class="form-field" style="flex:1;"><label>Email</label><input type="email" name="email" required></div>
+          <div class="form-field" style="flex:1;"><label>Phone</label><input type="tel" name="phone"></div>
+        </div>
+        <div class="row">
+          <div class="form-field" style="flex:1;"><label>From ZIP</label><input type="text" name="from_zip" required></div>
+          <div class="form-field" style="flex:1;"><label>To ZIP</label><input type="text" name="to_zip" required></div>
+          <div class="form-field" style="flex:1;"><label>Move date</label><input type="date" name="move_date" required></div>
+        </div>
+        <div class="row">
+          <div class="form-field" style="flex:1;"><label>Home size</label>
+            <select name="home_size">
+              <option>Studio</option><option selected>1BR Apartment</option><option>2BR Apartment</option>
+              <option>3BR Apartment / House</option><option>4BR+ House</option>
+            </select>
+          </div>
+          <div class="form-field" style="flex:1;"><label>Rooms of furniture</label><input type="number" name="rooms" value="3" min="0"></div>
+        </div>
+        <h3>Add-on services</h3>
+        <div class="checkbox-row"><input type="checkbox" name="services" value="packing"> Full packing service (+$200)</div>
+        <div class="checkbox-row"><input type="checkbox" name="services" value="unpacking"> Unpacking at destination</div>
+        <div class="checkbox-row"><input type="checkbox" name="services" value="storage"> Short-term storage (+$150)</div>
+        <div class="checkbox-row"><input type="checkbox" name="services" value="furniture"> Furniture disassembly / reassembly</div>
+        <div class="checkbox-row"><input type="checkbox" name="services" value="piano"> Piano / large item handling</div>
+
+        <button class="btn lg" type="submit">Get my quote</button>
+      </form>
+    </div>
+
+    <div class="section-block" style="flex:1;">
+      <h3>Services offered</h3>
+      <ul>
+        <li>Local moves</li>
+        <li>Long-distance moves</li>
+        <li>Packing &amp; unpacking</li>
+        <li>Furniture disassembly</li>
+        <li>Short-term storage</li>
+      </ul>
+      <p><strong>Phone:</strong> {{ m.phone }}</p>
+      <p><strong>Base rate:</strong> ${{ m.base_rate }}/hr (2-person crew)</p>
+    </div>
+  </div>
+</div>
+{% endblock %}

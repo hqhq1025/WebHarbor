@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block title %}Moving Quote — {{ mover.name }} | Apartments.com{% endblock %}
+{% block content %}
+<div class="container-narrow" style="padding:40px 20px;">
+  <div class="section-block">
+    <h1 style="color:#1aa260;">Your moving estimate</h1>
+    <div style="font-size:48px;font-weight:800;">${{ '{:,}'.format(quote.estimated_cost) }}</div>
+    <p style="color:var(--muted);">{{ mover.name }} · {{ quote.from_zip }} → {{ quote.to_zip }} · {{ quote.home_size }}</p>
+    <p>This is a non-binding estimate based on the inputs you provided. A coordinator will reach out within 24 hours at {{ quote.email }} to schedule an in-home or video survey.</p>
+    <a class="btn" href="{{ url_for('moving_services') }}">Compare other movers</a>
+  </div>
+</div>
+{% endblock %}

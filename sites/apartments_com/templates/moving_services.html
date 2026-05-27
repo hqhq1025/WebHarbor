@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% block title %}Moving Services | Apartments.com{% endblock %}
+{% block content %}
+<div class="container" style="padding-top:24px;">
+  <div class="spec-banner">
+    <h1>Moving Services Directory</h1>
+    <p>Vetted local and long-distance moving companies. Compare rates, request quotes, read reviews.</p>
+  </div>
+
+  <div class="row" style="margin-top:24px;">
+    {% for m in movers %}
+      <div class="listing-card" style="flex:1 1 320px;">
+        <div class="body">
+          <div class="name">{{ m.name }}</div>
+          <div class="specs">{{ m.city }}, {{ m.state }} · Base rate: ${{ m.base_rate }}/hr</div>
+          <div class="meta"><span class="rating">★ {{ '%.1f'|format(m.rating) }}</span> ({{ m.review_count }} reviews)</div>
+          <p style="margin-top:8px;color:var(--ink-2);font-size:14px;">{{ m.blurb }}</p>
+          <a class="btn sm" href="{{ url_for('mover_detail', slug=m.slug) }}">View details &amp; quote</a>
+        </div>
+      </div>
+    {% endfor %}
+  </div>
+
+  <div class="section-block" style="margin-top:24px;">
+    <h2>How to choose a mover</h2>
+    <ul>
+      <li>Get at least 3 in-home or video estimates</li>
+      <li>Look for FMCSA / USDOT registration for interstate moves</li>
+      <li>Confirm valuation coverage (basic vs full replacement)</li>
+      <li>Ask about extra fees: long carry, stairs, elevator reservation</li>
+    </ul>
+  </div>
+</div>
+{% endblock %}

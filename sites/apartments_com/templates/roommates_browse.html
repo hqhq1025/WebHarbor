@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block title %}Browse Roommates | Apartments.com{% endblock %}
+{% block content %}
+<div class="container" style="padding-top:24px;">
+  <h1>Browse Roommates</h1>
+  <p style="color:var(--muted);">{{ total }} profiles match your filter.</p>
+
+  <form method="get" class="row" style="margin-bottom:16px;">
+    <div class="form-field" style="flex:1;"><label>City</label><input type="text" name="city" value="{{ qcity }}"></div>
+    <div class="form-field" style="flex:1;"><label>Max budget ($)</label><input type="number" name="budget_max" value="{{ qbudget or '' }}"></div>
+    <div class="form-field" style="align-self:end;"><button class="btn" type="submit">Apply</button></div>
+  </form>
+
+  <div class="grid">
+    {% for p in profiles %}
+      <a class="listing-card" href="{{ url_for('roommate_detail', pid=p.id) }}">
+        <div class="photo">{% if p.avatar %}<img src="{{ p.avatar }}" alt="{{ p.name }}">{% endif %}</div>
+        <div class="body">
+          <div class="name">{{ p.name }}, {{ p.age }}</div>
+          <div class="specs">{{ p.city }}, {{ p.state }} · {{ p.neighborhood }}</div>
+          <div class="addr">${{ '{:,}'.format(p.budget_min) }}–${{ '{:,}'.format(p.budget_max) }}/mo</div>
+          <div class="meta">{% if p.has_pet %}🐾 {% endif %}{% if p.smoker %}🚬 {% endif %}{{ p.occupation[:50] }}</div>
+        </div>
+      </a>
+    {% else %}
+      <p style="grid-column:1/-1;">No profiles match — try a different city or higher budget.</p>
+    {% endfor %}
+  </div>
+
+  {% if pages > 1 %}
+  <div class="pagination">
+    {% for p in range(1, pages + 1) %}
+      {% if p == page %}<span class="current">{{ p }}</span>
+      {% else %}<a href="?page={{ p }}{% if qcity %}&city={{ qcity|urlencode }}{% endif %}{% if qbudget %}&budget_max={{ qbudget }}{% endif %}">{{ p }}</a>{% endif %}
+    {% endfor %}
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

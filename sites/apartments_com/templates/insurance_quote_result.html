@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block title %}Your Renters Insurance Quote | Apartments.com{% endblock %}
+{% block content %}
+<div class="container-narrow" style="padding:40px 20px;">
+  <div class="section-block">
+    <h1 style="color:#1aa260;">Your estimated premium</h1>
+    <div style="font-size:48px;font-weight:800;">${{ quote.quoted_premium }}<span style="font-size:18px;color:var(--muted);">/month</span></div>
+    <p style="color:var(--muted);">${{ '{:,}'.format(quote.coverage_amount) }} personal property coverage · ${{ quote.deductible }} deductible</p>
+
+    <h2 style="margin-top:24px;">What you submitted</h2>
+    <table class="units">
+      <tr><th>Address</th><td>{{ quote.address }}, {{ quote.city }} {{ quote.state }} {{ quote.zip }}</td></tr>
+      <tr><th>Coverage</th><td>${{ '{:,}'.format(quote.coverage_amount) }}</td></tr>
+      <tr><th>Deductible</th><td>${{ quote.deductible }}</td></tr>
+      <tr><th>Valuables rider</th><td>${{ '{:,}'.format(quote.valuables_amount) }}</td></tr>
+      <tr><th>Pets</th><td>{{ 'Yes' if quote.has_pets else 'No' }}</td></tr>
+    </table>
+
+    <p style="margin-top:18px;">An agent will email {{ quote.email }} within 24 hours to finalize. Quote ID: <code>#{{ quote.id }}</code>.</p>
+    <a class="btn" href="{{ url_for('renters_insurance') }}">Get another quote</a>
+    <a class="btn ghost" href="{{ url_for('index') }}">Back to home</a>
+  </div>
+</div>
+{% endblock %}
