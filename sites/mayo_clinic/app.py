@@ -1120,13 +1120,13 @@ def lifestyle_hub(hub):
         "fitness": "Fitness",
         "stress": "Stress",
         "adult-health": "Adult Health",
-        "childrens-health": "Children's Health",
+        "childrens-health": "Children",
         "womens-health": "Women's Health",
         "mens-health": "Men's Health",
         "healthy-aging": "Healthy Aging",
         "sleep": "Stress",  # sleep articles tagged under Stress
         "weight-loss": "Nutrition",
-        "pregnancy": "Women's Health",
+        "pregnancy": "Pregnancy",
         "sexual-health": "Adult Health",
     }
     category = keyword_map.get(slug, name)
