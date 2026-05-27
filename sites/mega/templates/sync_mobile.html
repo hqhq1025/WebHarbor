@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block title %}Mobile sync app{% endblock %}
+{% block content %}
+<section class="hero">
+  <div class="hero-copy">
+    <h1>MEGA Mobile apps</h1>
+    <p>Camera uploads, offline files, document scan, slideshow, and chat from Android and iOS.</p>
+  </div>
+  <div class="hero-media"><img src="{{ image_url('Mobile-img-2.png') }}" alt="Mobile overview"></div>
+</section>
+<section class="feature-grid">
+  <article class="feature-card"><img src="{{ image_url('Android-1.png') }}" alt="Android"><h3>Android</h3><p>14.8 · 64 MB · ARM build.</p></article>
+  <article class="feature-card"><img src="{{ image_url('iOS-1.png') }}" alt="iOS"><h3>iOS</h3><p>14.8 · 71 MB · Universal.</p></article>
+  <article class="feature-card"><img src="{{ image_url('MEGA-Mobile-Offline-access-to-your-data.png') }}" alt="Offline"><h3>Offline</h3><p>Mark files for offline encrypted access.</p></article>
+  <article class="feature-card"><img src="{{ image_url('backup-photos.png') }}" alt="Camera uploads"><h3>Camera uploads</h3><p>Photo + video backup with selectable folder.</p></article>
+</section>
+{% endblock %}

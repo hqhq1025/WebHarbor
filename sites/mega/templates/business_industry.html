@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block title %}{{ industry.title }} on MEGA{% endblock %}
+{% block content %}
+<section class="hero">
+  <div class="hero-copy">
+    <h1>{{ industry.title }}</h1>
+    <p>{{ industry.tagline }}</p>
+    {% if plan %}<a class="button" href="{{ url_for('plan_detail', slug=plan.slug) }}">Recommended: {{ plan.name }}</a>{% endif %}
+  </div>
+  <div class="hero-media"><img src="{{ image_url(industry.hero_image) }}" alt="{{ industry.title }}"></div>
+</section>
+<section class="industry-body">
+  <p>{{ industry.body }}</p>
+  <h2>Capabilities</h2>
+  <ul>
+    {% for f in industry.highlight_features|json %}<li>{{ f }}</li>{% endfor %}
+  </ul>
+  <h2>Customer reference</h2>
+  <p>{{ industry.case_study }}</p>
+  <h2>Customers</h2>
+  <p>{{ (industry.customer_logos|json)|join(' · ') }}</p>
+</section>
+{% endblock %}

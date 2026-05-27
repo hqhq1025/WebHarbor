@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block title %}Transfer settings{% endblock %}
+{% block content %}
+<section class="page-head"><h1>Transfer preferences</h1></section>
+<form class="form-card" method="post">
+  <img class="hero" src="{{ image_url('Fast-downloads-and-uploads.png') }}" alt="Transfers">
+  <label>Upload limit (Mbps, 0 for unlimited)</label>
+  <input name="upload_limit_mbps" type="number" min="0" value="{{ cfg.upload_limit_mbps }}">
+  <label>Download limit (Mbps, 0 for unlimited)</label>
+  <input name="download_limit_mbps" type="number" min="0" value="{{ cfg.download_limit_mbps }}">
+  <label>Max parallel transfers</label>
+  <input name="max_parallel" type="number" min="1" max="20" value="{{ cfg.max_parallel }}">
+  <label><input type="checkbox" name="priority_uploads" {% if cfg.priority_uploads %}checked{% endif %}> Prioritise uploads over downloads</label>
+  <label><input type="checkbox" name="pause_on_metered" {% if cfg.pause_on_metered %}checked{% endif %}> Pause on metered networks</label>
+  <button type="submit">Save preferences</button>
+</form>
+{% endblock %}

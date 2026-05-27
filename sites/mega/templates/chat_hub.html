@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block title %}MEGA Chat{% endblock %}
+{% block content %}
+<section class="page-head">
+  <h1>MEGA chat</h1>
+  <p>{{ threads|length }} threads. End-to-end encrypted messages and call history.</p>
+</section>
+<section class="chat-list">
+  {% for t in threads %}
+    <a class="chat-row {% if t.starred %}starred{% endif %} {% if t.unread %}unread{% endif %}" href="{{ url_for('chat_thread', slug=t.slug) }}">
+      <img class="avatar" src="{{ image_url(t.avatar) }}" alt="{{ t.name }} avatar">
+      <div>
+        <strong>{{ t.name }}</strong>
+        <span class="muted">{{ t.kind }} · last activity {{ t.last_message_at }}</span>
+      </div>
+      {% if t.unread %}<span class="badge unread">{{ t.unread }}</span>{% endif %}
+    </a>
+  {% endfor %}
+</section>
+{% endblock %}

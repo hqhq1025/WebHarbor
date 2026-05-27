@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block title %}Incoming shares{% endblock %}
+{% block content %}
+<section class="page-head"><h1>Incoming shares</h1><p>{{ links|length }} links shared with you.</p></section>
+<div class="link-grid">
+{% for link in links %}
+  <article class="link-card">
+    <img src="{{ image_url('share-2.5.png') }}" alt="Incoming share">
+    <strong>{{ link.title }}</strong>
+    <p>{{ link.token }}</p>
+    <span class="muted">{{ link.downloads }} accesses · expires {{ link.expiry or '—' }}</span>
+    <a class="button small" href="{{ url_for('share_link_public', token=link.token) }}">Open</a>
+  </article>
+{% endfor %}
+</div>
+{% endblock %}

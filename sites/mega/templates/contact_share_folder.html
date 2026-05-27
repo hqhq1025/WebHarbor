@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block title %}Share folder with {{ contact.name }}{% endblock %}
+{% block content %}
+<section class="page-head">
+  <h1>Share a folder with {{ contact.name }}</h1>
+  <p class="muted">{{ contact.email }}</p>
+</section>
+<form class="form-card" method="post">
+  <label>Folder</label>
+  <select name="folder" required>
+    {% for f in folders %}<option value="{{ f }}">{{ f }}</option>{% endfor %}
+  </select>
+  <button type="submit">Share folder</button>
+  <a class="button ghost" href="{{ url_for('contact_detail', email_slug=contact.slug) }}">Cancel</a>
+</form>
+{% endblock %}

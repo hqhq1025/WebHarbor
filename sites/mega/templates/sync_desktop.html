@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block title %}Desktop sync app{% endblock %}
+{% block content %}
+<section class="hero">
+  <div class="hero-copy">
+    <h1>MEGA Desktop app</h1>
+    <p>Windows, macOS, and Linux sync, backup, and selective transfer for everyday work.</p>
+    <div class="row">
+      <a class="button" href="{{ url_for('downloads', product='Desktop') }}">All desktop downloads</a>
+      <a class="button ghost" href="{{ url_for('downloads', product='CMD') }}">MEGA CMD</a>
+    </div>
+  </div>
+  <div class="hero-media"><img src="{{ image_url('DA-img-2.png') }}" alt="Desktop overview"></div>
+</section>
+<section class="feature-grid">
+  <article class="feature-card"><img src="{{ image_url('Sync-img-2-2.png') }}" alt="Selective sync"><h3>Selective sync</h3><p>Pick folders per device.</p></article>
+  <article class="feature-card"><img src="{{ image_url('Sync-img-3-1.png') }}" alt="Backups"><h3>Continuous backup</h3><p>Recovery history per device.</p></article>
+  <article class="feature-card"><img src="{{ image_url('Sync-img-4-1.png') }}" alt="Transfer manager"><h3>Transfer manager</h3><p>Throttle, prioritise, pause.</p></article>
+</section>
+{% endblock %}

@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block title %}Transfer history{% endblock %}
+{% block content %}
+<section class="page-head"><h1>Transfer history</h1><p>{{ transfers|length }} completed transfers.</p></section>
+<table class="data-table">
+  <thead><tr><th>File</th><th>Direction</th><th>Device</th><th>Size</th><th>Speed</th><th>Completed</th></tr></thead>
+  <tbody>
+  {% for t in transfers %}
+    <tr>
+      <td>{{ t.file_name }}</td><td>{{ t.direction }}</td><td>{{ t.device }}</td>
+      <td>{{ t.size_mb|size }}</td><td>{{ t.speed_mbps }} Mbps</td><td>{{ t.completed_at }}</td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% endblock %}

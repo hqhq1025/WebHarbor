@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block title %}Sync devices{% endblock %}
+{% block content %}
+<section class="page-head"><h1>Your synced devices</h1><p>{{ devices|length }} devices currently connected.</p></section>
+<section class="device-grid">
+  {% for d in devices %}
+    <article class="device-card">
+      <img src="{{ image_url(d.icon) }}" alt="{{ d.platform }}">
+      <strong>{{ d.name }}</strong>
+      <span class="muted">{{ d.platform }} · v{{ d.client_version }}</span>
+      <span>Root: {{ d.sync_root }}</span>
+      <span>Last seen: {{ d.last_seen }}</span>
+      <span class="badge {{ d.status }}">{{ d.status }}{% if d.backup_only %} · backup-only{% endif %}</span>
+    </article>
+  {% endfor %}
+</section>
+{% endblock %}

@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block title %}Encryption settings{% endblock %}
+{% block content %}
+<section class="page-head"><h1>Encryption</h1></section>
+<section class="security-cards">
+  <article class="form-card">
+    <img class="hero" src="{{ image_url('MEGA-icon-lock.png') }}" alt="Encryption">
+    <h2>Zero-knowledge encryption</h2>
+    <p>MEGA encrypts files with keys that only you control. Decryption keys travel separately from the share link.</p>
+    <p>Recovery methods enabled: <strong>{{ cfg.recovery_methods }}</strong>.</p>
+  </article>
+  <article class="form-card">
+    <img class="hero" src="{{ image_url('shield-icon.png') }}" alt="Required 2FA">
+    <h2>Require two-factor for sharing</h2>
+    <p>{% if cfg.require_2fa_for_sharing %}Enabled — collaborators must complete 2FA before accepting a shared folder.{% else %}Disabled.{% endif %}</p>
+  </article>
+</section>
+{% endblock %}

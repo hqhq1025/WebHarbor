@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block title %}Copy {{ item.name }}{% endblock %}
+{% block content %}
+<section class="page-head"><h1>Copy file</h1><p>Source: {{ item.folder }} / {{ item.name }}</p></section>
+<form class="form-card" method="post">
+  <label>Copy name</label>
+  <input name="new_name" value="Copy of {{ item.name }}">
+  <label>Destination folder</label>
+  <select name="folder">
+    {% for f in folders %}<option value="{{ f }}" {% if f == item.folder %}selected{% endif %}>{{ f }}</option>{% endfor %}
+  </select>
+  <button type="submit">Create copy</button>
+  <a class="button ghost" href="{{ url_for('file_detail', slug=item.slug) }}">Cancel</a>
+</form>
+{% endblock %}

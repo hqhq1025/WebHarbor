@@ -3,6 +3,7 @@
 {% block content %}
 <section class="detail-layout">
   <div>
+    <img class="file-hero" src="{{ image_url(ext_thumb(item.name, item.item_type)) }}" alt="{{ item.name }} preview">
     <p class="eyebrow">{{ item.folder }}</p>
     <h1>{{ item.name }}</h1>
     <p>{{ item.content_summary }}</p>
@@ -14,6 +15,13 @@
       <div><span>Shared with</span><strong>{{ item.shared_with or 'Not shared' }}</strong></div>
       <div><span>Share link</span><strong>{{ item.share_link or 'No link' }}</strong></div>
     </dl>
+    <div class="row">
+      <a class="button small" href="{{ url_for('file_rename', slug=item.slug) }}">Rename</a>
+      <a class="button small" href="{{ url_for('file_move', slug=item.slug) }}">Move</a>
+      <a class="button small" href="{{ url_for('file_copy', slug=item.slug) }}">Copy</a>
+      <a class="button small ghost" href="{{ url_for('file_version_history', slug=item.slug) }}">Version history</a>
+      <a class="button small danger" href="{{ url_for('file_delete', slug=item.slug) }}">Delete</a>
+    </div>
   </div>
   <form class="form-card" method="post">
     <h2>Sharing settings</h2>

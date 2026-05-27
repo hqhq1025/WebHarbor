@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block title %}{{ contact.name }}{% endblock %}
+{% block content %}
+<section class="contact-detail">
+  <img class="avatar large" src="{{ image_url(contact.avatar) }}" alt="{{ contact.name }} avatar">
+  <div>
+    <h1>{{ contact.name }} {% if contact.starred %}<span class="badge">starred</span>{% endif %}</h1>
+    <p>{{ contact.company }}</p>
+    <p class="muted">{{ contact.email }} · status {{ contact.status }}</p>
+    <p>{{ contact.note }}</p>
+    <span>{{ contact.shared_folders_count }} shared folder(s)</span>
+  </div>
+  <div class="row">
+    <a class="button" href="{{ url_for('contact_share_folder', email_slug=contact.slug) }}">Share folder</a>
+    <form method="post" action="{{ url_for('contact_remove', email_slug=contact.slug) }}">
+      <button class="danger ghost">Remove contact</button>
+    </form>
+  </div>
+</section>
+<section>
+  <h2>Recent shared links</h2>
+  <div class="link-grid">
+    {% for link in shared_links %}
+      <article class="link-card">
+        <img src="{{ image_url('share-1.png') }}" alt="Share thumbnail">
+        <strong>{{ link.title }}</strong>
+        <span class="muted">{{ link.created_at }} · expires {{ link.expiry or '—' }}</span>
+        <a class="button small" href="{{ url_for('share_link_public', token=link.token) }}">Open</a>
+      </article>
+    {% endfor %}
+  </div>
+</section>
+{% endblock %}

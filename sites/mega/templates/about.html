@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block title %}About MEGA{% endblock %}
+{% block content %}
+<section class="hero">
+  <div class="hero-copy">
+    <h1>About MEGA</h1>
+    <p>The Privacy Company — building encrypted cloud storage since 2013. MEGA is headquartered in Auckland, New Zealand, with a globally distributed engineering team.</p>
+    <div class="row">
+      <a class="button" href="{{ url_for('about_why_mega') }}">Why MEGA</a>
+      <a class="button ghost" href="{{ url_for('about_team') }}">Team</a>
+    </div>
+  </div>
+  <div class="hero-media"><img src="{{ image_url('pro-privacy.png') }}" alt="Why privacy matters"></div>
+</section>
+<section class="feature-grid">
+  <article class="feature-card"><img src="{{ image_url('Your-privacy-is-our-priority-1.png') }}" alt="Privacy priority"><h3>Privacy first</h3><p>End-to-end encryption is the default.</p></article>
+  <article class="feature-card"><img src="{{ image_url('proprivacy.png') }}" alt="Trust"><h3>Independent reviews</h3><p>Audited by reviewers like ProPrivacy, TechRadar, Tom's Guide.</p></article>
+  <article class="feature-card"><img src="{{ image_url('free-today-evolving-with-you.png') }}" alt="Free tier"><h3>Free starting tier</h3><p>20 GB encrypted storage with no time limit.</p></article>
+</section>
+{% endblock %}

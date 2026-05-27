@@ -1,5 +1,6 @@
 <article class="plan-card {% if plan.popular %}popular{% endif %}">
   {% if plan.popular %}<span class="badge">Popular</span>{% endif %}
+  <img class="plan-icon" src="{{ image_url(plan_icon(plan.category)) }}" alt="{{ plan.name }} icon">
   <h3>{{ plan.name }}</h3>
   <p>{{ plan.tagline }}</p>
   <div class="price">

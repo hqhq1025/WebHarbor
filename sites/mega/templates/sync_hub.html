@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block title %}Sync apps{% endblock %}
+{% block content %}
+<section class="hero">
+  <div class="hero-copy">
+    <h1>MEGA sync apps</h1>
+    <p>Continuously synchronise files between your devices and your encrypted cloud drive.</p>
+    <div class="row">
+      <a class="button" href="{{ url_for('sync_desktop') }}">Desktop app</a>
+      <a class="button ghost" href="{{ url_for('sync_mobile') }}">Mobile apps</a>
+    </div>
+  </div>
+  <div class="hero-media"><img src="{{ image_url('Sync-img-1-1.png') }}" alt="Sync overview"></div>
+</section>
+<section class="platform-strip">
+  {% for plat, icon in desktop_devices.items() %}
+    <div class="platform-card">
+      <img src="{{ image_url(icon) }}" alt="{{ plat }} icon">
+      <strong>{{ plat }}</strong>
+    </div>
+  {% endfor %}
+</section>
+{% if authed %}
+<section>
+  <h2>Your synced devices</h2>
+  <a class="button" href="{{ url_for('sync_devices') }}">Manage devices</a>
+</section>
+{% endif %}
+{% endblock %}

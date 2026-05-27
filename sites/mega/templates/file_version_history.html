@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block title %}Version history — {{ item.name }}{% endblock %}
+{% block content %}
+<section class="page-head">
+  <a href="{{ url_for('file_detail', slug=item.slug) }}">&larr; {{ item.name }}</a>
+  <h1>Version history</h1>
+  <p>{{ versions|length }} versions tracked for this file.</p>
+</section>
+<section class="version-list">
+  {% for v in versions %}
+    <article class="version-row {% if v.current %}current{% endif %}">
+      <img class="version-thumb" src="{{ image_url(ext_thumb(item.name, item.item_type)) }}" alt="{{ item.name }} version {{ v.version_number }}">
+      <div>
+        <strong>v{{ v.version_number }}</strong>{% if v.current %} <span class="badge">current</span>{% endif %}
+        <p>{{ v.note }}</p>
+        <span class="muted">{{ v.modified_at }} · {{ v.size_mb|size }} · {{ v.actor_email }}</span>
+      </div>
+      {% if not v.current %}
+      <form method="post" action="{{ url_for('file_version_restore', slug=item.slug, version_id=v.id) }}">
+        <button type="submit">Restore</button>
+      </form>
+      {% endif %}
+    </article>
+  {% endfor %}
+</section>
+{% endblock %}

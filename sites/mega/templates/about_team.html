@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block title %}The MEGA team{% endblock %}
+{% block content %}
+<section class="page-head"><h1>The team</h1><p>Engineering, privacy research, and customer experience across multiple time zones.</p></section>
+<section class="team-grid">
+  {% for av in sample_avatars %}
+    <article class="team-card">
+      <img class="avatar large" src="{{ image_url(av) }}" alt="MEGA team member">
+      <strong>Engineer</strong>
+      <span>Auckland · Berlin · Toronto</span>
+    </article>
+  {% endfor %}
+</section>
+{% endblock %}

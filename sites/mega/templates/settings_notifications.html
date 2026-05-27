@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block title %}Notification settings{% endblock %}
+{% block content %}
+<section class="page-head"><h1>Notifications</h1><p>Choose which alerts MEGA sends you.</p></section>
+<form class="form-card" method="post">
+  <img class="hero" src="{{ image_url('MEGA-icon-message-call.png') }}" alt="Notifications">
+  <ul class="pref-list">
+    {% for p in prefs %}
+      <li>
+        <label>
+          <input type="checkbox" name="enabled" value="{{ p.kind }}" {% if p.enabled %}checked{% endif %}>
+          <strong>{{ p.kind }}</strong>
+          <span class="muted">via {{ p.channel }}</span>
+        </label>
+      </li>
+    {% endfor %}
+  </ul>
+  <button type="submit">Save notification preferences</button>
+</form>
+{% endblock %}

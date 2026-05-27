@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block title %}Share — {{ link.title }}{% endblock %}
+{% block content %}
+<section class="page-head">
+  <h1>{{ link.title }}</h1>
+  <p class="muted">MEGA encrypted share · token <code>{{ link.token }}</code></p>
+</section>
+{% if link.revoked %}
+  <div class="warning-card"><strong>This share has been revoked.</strong> Ask the sender for a new link.</div>
+{% elif not unlocked %}
+  <div class="warning-card">
+    <p>This share is protected. Enter the decryption key{% if link.has_password %} and password{% endif %} to view files.</p>
+    <a class="button" href="{{ url_for('share_link_decrypt', token=link.token) }}">Decrypt link</a>
+  </div>
+{% else %}
+  <section class="share-detail">
+    <img class="hero" src="{{ image_url('share-1.png') }}" alt="Shared item preview">
+    <div>
+      <h2>{{ item.name }}</h2>
+      <p>{{ item.content_summary }}</p>
+      <ul>
+        <li>Size: {{ item.size_mb|size }}</li>
+        <li>Modified: {{ item.modified_at }}</li>
+        <li>Downloads: {{ link.downloads }}</li>
+        <li>Expires: {{ link.expiry or 'never' }}</li>
+      </ul>
+    </div>
+  </section>
+{% endif %}
+{% endblock %}

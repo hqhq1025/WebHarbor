@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block title %}Add contact{% endblock %}
+{% block content %}
+<section class="page-head"><h1>Invite a contact</h1></section>
+<form class="form-card" method="post">
+  <label>Email</label><input name="email" required placeholder="name@example.com">
+  <label>Display name</label><input name="name">
+  <label>Company</label><input name="company">
+  <label>Message (optional)</label><textarea name="message" placeholder="Why are you connecting?"></textarea>
+  <label>Note for your contacts list</label><input name="note">
+  <button type="submit">Send invitation</button>
+</form>
+{% endblock %}

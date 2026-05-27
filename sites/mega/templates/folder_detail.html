@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block title %}{{ folder }} folder{% endblock %}
+{% block content %}
+<section class="page-head">
+  <a href="{{ url_for('file_manager') }}">&larr; File manager</a>
+  <h1>{{ folder }}</h1>
+  <p>{{ items|length }} items · {{ bytes_total|size }} total</p>
+</section>
+<section class="file-grid">
+  {% for item in items %}
+    <a class="file-tile {{ item.item_type }}" href="{{ url_for('file_detail', slug=item.slug) }}">
+      <img class="file-thumb" src="{{ image_url(ext_thumb(item.name, item.item_type)) }}" alt="{{ item.name }} thumbnail">
+      <strong>{{ item.name }}</strong>
+      <span>{{ item.size_mb|size }} · {{ item.modified_at }}</span>
+      {% if item.shared_with %}<span class="badge shared">Shared with {{ item.shared_with }}</span>{% endif %}
+    </a>
+  {% endfor %}
+</section>
+{% endblock %}

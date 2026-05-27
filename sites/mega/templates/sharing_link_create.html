@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block title %}Create share link{% endblock %}
+{% block content %}
+<section class="page-head"><h1>Create share link</h1></section>
+<form class="form-card" method="post">
+  <label>File to share</label>
+  <select name="item_slug" required>
+    {% for opt in items %}
+      <option value="{{ opt.slug }}" {% if item and item.slug == opt.slug %}selected{% endif %}>{{ opt.folder }} / {{ opt.name }}</option>
+    {% endfor %}
+  </select>
+  <label><input type="checkbox" name="has_password"> Require a password</label>
+  <input name="password_pin" placeholder="Password (if required)">
+  <label>Expiry date</label>
+  <input name="expiry" placeholder="2026-12-31">
+  <button type="submit">Create link</button>
+</form>
+{% endblock %}

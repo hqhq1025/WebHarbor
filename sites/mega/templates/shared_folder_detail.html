@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block title %}Shared folder — {{ item.name }}{% endblock %}
+{% block content %}
+<section class="page-head">
+  <h1>{{ item.name }}</h1>
+  <p>Shared folder with {{ item.shared_with or 'no one yet' }}.</p>
+</section>
+<section class="file-grid">
+  {% for c in children %}
+    <a class="file-tile {{ c.item_type }}" href="{{ url_for('file_detail', slug=c.slug) }}">
+      <img class="file-thumb" src="{{ image_url(ext_thumb(c.name, c.item_type)) }}" alt="{{ c.name }} thumb">
+      <strong>{{ c.name }}</strong>
+      <span>{{ c.size_mb|size }}</span>
+    </a>
+  {% endfor %}
+</section>
+{% if link %}
+<aside class="form-card">
+  <h2>Active share link</h2>
+  <p>Token <code>{{ link.token }}</code></p>
+  <p>{{ link.downloads }} downloads · expires {{ link.expiry or 'never' }}</p>
+  <a class="button" href="{{ url_for('share_link_public', token=link.token) }}">Open public preview</a>
+</aside>
+{% endif %}
+{% endblock %}

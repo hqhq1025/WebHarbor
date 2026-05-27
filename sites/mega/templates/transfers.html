@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% block title %}Transfers{% endblock %}
+{% block content %}
+<section class="page-head">
+  <h1>Transfers</h1>
+  <p>{{ active|length }} active · {{ transfers|length }} total this month.</p>
+  <a class="button ghost" href="{{ url_for('transfers_history') }}">Open history</a>
+</section>
+<section>
+  <h2>Active transfers</h2>
+  <table class="data-table">
+    <thead><tr><th></th><th>File</th><th>Direction</th><th>Device</th><th>Status</th><th>Size</th><th>Speed</th></tr></thead>
+    <tbody>
+    {% for t in active %}
+      <tr>
+        <td><img class="row-icon" src="{{ image_url(platform_icon(t.device.split(' ')[0])) }}" alt="{{ t.device }}"></td>
+        <td>{{ t.file_name }}</td>
+        <td>{{ t.direction }}</td>
+        <td>{{ t.device }}</td>
+        <td>{{ t.status }}</td>
+        <td>{{ t.size_mb|size }}</td>
+        <td>{{ t.speed_mbps }} Mbps</td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</section>
+<section>
+  <h2>Recent transfers</h2>
+  <table class="data-table">
+    <thead><tr><th>File</th><th>Direction</th><th>Device</th><th>Status</th><th>Completed</th></tr></thead>
+    <tbody>
+    {% for t in transfers[:30] %}
+      <tr>
+        <td>{{ t.file_name }}</td>
+        <td>{{ t.direction }}</td>
+        <td>{{ t.device }}</td>
+        <td>{{ t.status }}</td>
+        <td>{{ t.completed_at }}</td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</section>
+{% endblock %}

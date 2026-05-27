@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% block title %}Contacts{% endblock %}
+{% block content %}
+<section class="page-head">
+  <h1>Contacts</h1>
+  <p>{{ contacts|length }} contacts · {{ incoming|length }} incoming requests · {{ outgoing|length }} outgoing requests.</p>
+  <div class="row">
+    <a class="button" href="{{ url_for('contacts_add') }}">Invite contact</a>
+  </div>
+</section>
+<form class="filters" action="{{ url_for('contacts_list') }}">
+  <input name="q" value="{{ q }}" placeholder="Search by name, email, or company">
+  <button>Search</button>
+</form>
+<section class="contact-grid">
+  {% for c in contacts %}
+    <a class="contact-card {% if c.starred %}starred{% endif %}" href="{{ url_for('contact_detail', email_slug=c.slug) }}">
+      <img class="avatar" src="{{ image_url(c.avatar) }}" alt="{{ c.name }} avatar">
+      <strong>{{ c.name }}</strong>
+      <span class="muted">{{ c.email }}</span>
+      <span>{{ c.company }}</span>
+      <span class="badge status-{{ c.status }}">{{ c.status }}</span>
+    </a>
+  {% endfor %}
+</section>
+<section class="columns two">
+  <div>
+    <h2>Incoming requests</h2>
+    <ul class="link-list">
+      {% for r in incoming %}
+        <li>
+          <strong>{{ r.recipient_name }}</strong>
+          <p>{{ r.message }}</p>
+          <span class="muted">{{ r.created_at }} · {{ r.status }}</span>
+          {% if r.status == 'pending' %}
+          <form method="post" action="{{ url_for('contact_request_respond', request_id=r.id) }}">
+            <button name="action" value="accept">Accept</button>
+            <button name="action" value="decline" class="ghost">Decline</button>
+          </form>
+          {% endif %}
+        </li>
+      {% endfor %}
+    </ul>
+  </div>
+  <div>
+    <h2>Outgoing requests</h2>
+    <ul class="link-list">
+      {% for r in outgoing %}
+        <li>
+          <strong>{{ r.recipient_name }}</strong>
+          <p>{{ r.message }}</p>
+          <span class="muted">{{ r.created_at }} · {{ r.status }}</span>
+        </li>
+      {% endfor %}
+    </ul>
+  </div>
+</section>
+{% endblock %}

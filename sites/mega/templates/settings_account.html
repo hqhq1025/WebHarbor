@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block title %}Account settings{% endblock %}
+{% block content %}
+<section class="page-head"><h1>Account settings</h1></section>
+<section class="settings-detail">
+  <img class="hero" src="{{ image_url('One-account-more-control.png') }}" alt="Account control">
+  <dl>
+    <div><dt>Email</dt><dd>{{ current_user.email }}</dd></div>
+    <div><dt>Display name</dt><dd>{{ current_user.display_name }}</dd></div>
+    <div><dt>Company</dt><dd>{{ current_user.company }}</dd></div>
+    <div><dt>Plan</dt><dd>{{ current_user.plan.name if current_user.plan else 'Free' }}</dd></div>
+    <div><dt>Language</dt><dd>{{ current_user.language }}</dd></div>
+    <div><dt>Timezone</dt><dd>{{ current_user.timezone }}</dd></div>
+  </dl>
+  <a class="button" href="{{ url_for('account_edit') }}">Edit profile</a>
+</section>
+{% endblock %}

@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% block title %}Delete {{ item.name }}{% endblock %}
+{% block content %}
+<section class="page-head"><h1>Delete file</h1></section>
+<form class="form-card warning" method="post">
+  <p>You are about to delete <strong>{{ item.name }}</strong> from <em>{{ item.folder }}</em>. Files in the rubbish bin still count toward your storage quota.</p>
+  <button type="submit" class="danger">Move to rubbish bin</button>
+  <a class="button ghost" href="{{ url_for('file_detail', slug=item.slug) }}">Cancel</a>
+</form>
+{% endblock %}

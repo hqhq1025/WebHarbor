@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block title %}Decrypt share{% endblock %}
+{% block content %}
+<section class="page-head"><h1>Decrypt share</h1><p>Token <code>{{ link.token }}</code></p></section>
+<form class="form-card" method="post">
+  <label>Decryption key</label>
+  <input name="decryption_key" placeholder="Paste decryption key" required>
+  {% if link.has_password %}
+    <label>Share password</label>
+    <input name="password" type="password" placeholder="Password">
+  {% endif %}
+  <button type="submit">Unlock</button>
+  <a class="button ghost" href="{{ url_for('share_link_public', token=link.token) }}">Back</a>
+</form>
+{% endblock %}

@@ -746,6 +746,12 @@ with app.app_context():
     seed_database()
     seed_benchmark_users()
 
+    # Late-import the deepen pack (gotchas §32) and register its models,
+    # seed extension, and routes. The pack is idempotent — only seeds on
+    # the first build, only registers each route once per process.
+    import mega_deepen
+    mega_deepen.register_deepen(app, db)
+
     if fresh_seed:
         # Force deterministic on-disk index layout. SQLAlchemy iterates
         # `Table.indexes` as a Python set, so `CREATE INDEX` runs in

@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block title %}MEGA for business{% endblock %}
+{% block content %}
+<section class="hero">
+  <div class="hero-copy">
+    <h1>MEGA for business</h1>
+    <p>Encrypted storage, sharing, chat, and audit trails for distributed teams.</p>
+    <a class="button" href="{{ url_for('pricing', audience='business') }}">Compare business plans</a>
+  </div>
+  <div class="hero-media"><img src="{{ image_url('Business-img-1.png') }}" alt="Business team"></div>
+</section>
+<section>
+  <h2>By industry</h2>
+  <div class="feature-grid">
+    {% for ind in industries %}
+      <a class="feature-card" href="{{ url_for('business_industry', slug=ind.slug) }}">
+        <img src="{{ image_url(ind.hero_image) }}" alt="{{ ind.title }}">
+        <strong>{{ ind.title }}</strong>
+        <p>{{ ind.tagline }}</p>
+      </a>
+    {% endfor %}
+  </div>
+</section>
+<section>
+  <h2>Recommended plans</h2>
+  <div class="plan-grid">
+    {% for plan in plans %}{% include "_plan_card.html" %}{% endfor %}
+  </div>
+</section>
+{% endblock %}

@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}Active sessions{% endblock %}
+{% block content %}
+<section class="page-head"><h1>Active sessions</h1></section>
+<section>
+  <h2>Synced devices</h2>
+  <div class="device-grid">
+    {% for d in devices %}
+      <article class="device-card">
+        <img src="{{ image_url(d.icon) }}" alt="{{ d.platform }}">
+        <strong>{{ d.name }}</strong>
+        <span class="muted">{{ d.platform }} · {{ d.client_version }}</span>
+        <span>Last seen: {{ d.last_seen }}</span>
+        <span class="badge {{ d.status }}">{{ d.status }}</span>
+      </article>
+    {% endfor %}
+  </div>
+</section>
+<section>
+  <h2>Sign-in history</h2>
+  <ul class="link-list">
+    {% for e in events %}
+      <li><strong>{{ e.detail }}</strong> · {{ e.device }} · <span class="muted">{{ e.at }} · {{ e.location }}</span></li>
+    {% endfor %}
+  </ul>
+</section>
+{% endblock %}

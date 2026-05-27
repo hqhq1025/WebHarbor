@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block title %}Sharing{% endblock %}
+{% block content %}
+<section class="page-head">
+  <h1>Sharing</h1>
+  <p>{{ outgoing|length }} outgoing links · {{ incoming|length }} incoming shares.</p>
+  <div class="row">
+    <a class="button" href="{{ url_for('share_link_create') }}">Create share link</a>
+    <a class="button ghost" href="{{ url_for('sharing_outgoing') }}">Outgoing</a>
+    <a class="button ghost" href="{{ url_for('sharing_incoming') }}">Incoming</a>
+  </div>
+</section>
+<section>
+  <h2>Recent outgoing</h2>
+  <div class="link-grid">
+    {% for link in outgoing[:8] %}
+      <article class="link-card {% if link.revoked %}revoked{% endif %}">
+        <img src="{{ image_url('share-1.png') }}" alt="Share thumbnail">
+        <strong>{{ link.title }}</strong>
+        <p>{{ link.token }}</p>
+        <span class="muted">{{ link.downloads }} downloads · expires {{ link.expiry or 'never' }}</span>
+        <div class="row">
+          <a class="button small" href="{{ url_for('share_link_public', token=link.token) }}">Preview</a>
+          {% if not link.revoked %}
+          <form method="post" action="{{ url_for('share_link_revoke', token=link.token) }}">
+            <button class="danger small">Revoke</button>
+          </form>
+          {% endif %}
+        </div>
+      </article>
+    {% endfor %}
+  </div>
+</section>
+<section>
+  <h2>Recent incoming</h2>
+  <ul class="link-list">
+    {% for link in incoming[:8] %}
+      <li>
+        <img class="inline-icon" src="{{ image_url('share-2.5.png') }}" alt="Incoming share">
+        <a href="{{ url_for('share_link_public', token=link.token) }}">{{ link.title }}</a>
+        <span class="muted">expires {{ link.expiry or '—' }}</span>
+      </li>
+    {% endfor %}
+  </ul>
+</section>
+{% endblock %}

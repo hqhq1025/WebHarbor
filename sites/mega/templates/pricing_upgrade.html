@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block title %}Upgrade — {{ plan.name }}{% endblock %}
+{% block content %}
+<section class="page-head"><h1>Upgrade to {{ plan.name }}</h1><p>{{ plan.tagline }}</p></section>
+<form class="form-card" method="post">
+  <img class="hero" src="{{ image_url(plan_icon(plan.category)) }}" alt="{{ plan.name }}">
+  <label>Billing cycle</label>
+  <select name="billing_cycle">
+    <option value="monthly">Monthly</option>
+    <option value="yearly" selected>Yearly</option>
+  </select>
+  <label>Seats</label>
+  <input name="seats" type="number" min="1" value="{{ plan.users_included or 1 }}">
+  <button type="submit">Continue to checkout</button>
+</form>
+{% endblock %}

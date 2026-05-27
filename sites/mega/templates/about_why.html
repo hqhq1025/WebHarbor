@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block title %}Why MEGA{% endblock %}
+{% block content %}
+<section class="page-head"><h1>Why MEGA</h1></section>
+<section class="why-grid">
+  <article><img src="{{ image_url('Nothing-but-complete-security.png') }}" alt="Complete security"><h2>Complete security</h2><p>Zero-knowledge encryption with user-controlled keys.</p></article>
+  <article><img src="{{ image_url('Seamless-connectivity.png') }}" alt="Connectivity"><h2>Seamless connectivity</h2><p>Web, mobile, desktop, CMD, and S4 — one account.</p></article>
+  <article><img src="{{ image_url('img-performance.png') }}" alt="Performance"><h2>Performance</h2><p>Fast transfers with global infrastructure.</p></article>
+  <article><img src="{{ image_url('img-compatibility.png') }}" alt="Compatibility"><h2>Compatibility</h2><p>S3-compatible object storage and standard sync tools.</p></article>
+  <article><img src="{{ image_url('img-use-it.png') }}" alt="Easy"><h2>Use it your way</h2><p>From phone backups to enterprise archives.</p></article>
+  <article><img src="{{ image_url('icon-magic-wand.png') }}" alt="Recovery"><h2>Built-in recovery</h2><p>Version history, master keys, ransomware drills.</p></article>
+</section>
+{% endblock %}

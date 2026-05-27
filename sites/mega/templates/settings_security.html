@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block title %}Security settings{% endblock %}
+{% block content %}
+<section class="page-head"><h1>Security</h1></section>
+<section class="security-cards">
+  <article class="form-card">
+    <img class="hero" src="{{ image_url('Sec-img-1.png') }}" alt="Security">
+    <h2>Two-factor authentication</h2>
+    <p>Status: {% if current_user.two_factor_enabled %}Enabled{% else %}Disabled{% endif %}.</p>
+    <a class="button" href="{{ url_for('security_2fa') }}">Manage 2FA</a>
+  </article>
+  <article class="form-card">
+    <img class="hero" src="{{ image_url('keys-icon.png') }}" alt="Master key">
+    <h2>Master recovery key</h2>
+    <p>Last backed up: {{ cfg.master_key_backed_up_at or 'never' }}.</p>
+    <a class="button" href="{{ url_for('security_master_key_backup') }}">Back up master key</a>
+  </article>
+  <article class="form-card">
+    <img class="hero" src="{{ image_url('image-otp-code.png') }}" alt="Sessions">
+    <h2>Sessions</h2>
+    <p>Session timeout: {{ cfg.session_timeout_minutes }} minutes.</p>
+    <a class="button" href="{{ url_for('security_sessions') }}">Manage sessions</a>
+  </article>
+</section>
+<section>
+  <h2>Recent security events</h2>
+  <ul class="link-list">
+    {% for e in events %}
+      <li><strong>{{ e.kind }}</strong> · {{ e.detail }} · <span class="muted">{{ e.at }} · {{ e.location }}</span></li>
+    {% endfor %}
+  </ul>
+</section>
+{% endblock %}

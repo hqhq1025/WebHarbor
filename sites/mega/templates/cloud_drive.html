@@ -14,6 +14,7 @@
   <div class="file-list">
     {% for item in items %}
       <a class="file-row" href="{{ url_for('file_detail', slug=item.slug) }}">
+        <img class="row-icon" src="{{ image_url(ext_thumb(item.name, item.item_type)) }}" alt="{{ item.name }} thumbnail">
         <span class="file-type">{{ item.item_type }}</span>
         <strong>{{ item.name }}</strong>
         <span>{{ item.folder }}</span>
