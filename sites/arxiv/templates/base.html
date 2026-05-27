@@ -4,6 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
+    {# Snapshot date — exposed as meta so agents can read it without a visible UI banner. #}
+    {% if mirror_today %}
+    <meta name="snapshot-date" content="{{ mirror_today }}">
+    {% if mirror_today_pretty %}<meta name="snapshot-date-display" content="{{ mirror_today_pretty }}">{% endif %}
+    {% endif %}
     <title>{% block title %}arXiv.org e-Print archive{% endblock %}</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
     <link rel="icon" href="{{ url_for('static', filename='images/brand/arxiv-logomark.svg') }}" type="image/svg+xml">
@@ -106,13 +111,10 @@
 </header>
 
 {% if mirror_today_pretty %}
-<!-- Mirror date strip (anchor for relative-date tasks like "yesterday", "last week") -->
-<div class="mirror-date-strip">
-    <span class="mdate-label">Today on arXiv:</span>
-    <strong class="mdate-value">{{ mirror_today_pretty }}</strong>
-    <span class="mdate-iso">({{ mirror_today }})</span>
-    <span class="mdate-note">— all "recent / latest / last N days / yesterday" wording on arXiv is relative to this date.</span>
-</div>
+{# Snapshot date previously rendered as a visible "Today on arXiv: X — all
+   recent/latest/last N days/yesterday wording is relative to this date"
+   strip. That prose was agent-directed meta-instruction and broke realism.
+   The date is now exposed via <meta name="snapshot-date"> in <head>. #}
 {% endif %}
 
 <!-- ROW 3: Secondary bar (login/account quick links) -->
