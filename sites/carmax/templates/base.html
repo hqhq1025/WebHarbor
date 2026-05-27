@@ -6,6 +6,10 @@
   <title>{% block title %}CarMax - Shop for used cars, then buy online or at a store{% endblock %}</title>
   <meta name="description" content="{% block description %}Search used cars, research vehicle models, and compare cars, all online at CarMax.{% endblock %}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
+  <style>
+    /* R7 — horizontal-overflow safety net (gotcha #43). */
+    html, body { overflow-x: hidden; max-width: 100vw; }
+  </style>
   <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='images/_pending.svg') }}">
   {% block head_extra %}{% endblock %}
 </head>

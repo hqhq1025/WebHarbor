@@ -6,6 +6,10 @@
   <title>{% block title %}Fandom — The home of fandom{% endblock %}</title>
   <meta name="csrf-token" content="{{ csrf_token() }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
+  <style>
+    /* R7 — horizontal-overflow safety net (gotcha #43). */
+    html, body { overflow-x: hidden; max-width: 100vw; }
+  </style>
 </head>
 <body class="{% block body_class %}{% endblock %}" {% if wiki %}style="--accent: {{ wiki.accent }};"{% endif %}>
 
