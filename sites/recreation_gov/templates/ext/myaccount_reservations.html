@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block title %}My Reservations — Recreation.gov{% endblock %}
+{% block content %}
+<section class="section"><div class="wrap">
+  <h1>My Reservations</h1>
+  <table class="reservation-table">
+    <thead><tr><th>Confirmation</th><th>Facility</th><th>Dates</th><th>Status</th><th>Actions</th></tr></thead>
+    <tbody>
+      {% for r in reservations %}
+      <tr>
+        <td>{{ r.confirmation_code }}</td>
+        <td>{{ r.facility.name }}</td>
+        <td>{{ r.start_date }} – {{ r.end_date }}</td>
+        <td>{{ r.status }}</td>
+        <td>
+          <a href="{{ url_for('ext_reservation_modify', reservation_id=r.id) }}">Modify</a>
+          <a href="{{ url_for('ext_check_in', reservation_id=r.id) }}">Check in</a>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div></section>
+{% endblock %}

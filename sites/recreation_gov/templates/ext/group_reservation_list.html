@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block title %}Group Reservations — Recreation.gov{% endblock %}
+{% block content %}
+<section class="section"><div class="wrap">
+  <h1>Group Reservation Sites</h1>
+  <p>Pavilions, group campsites, and large-party venues across federal land managers.</p>
+  <div class="grid-cards">
+    {% for group in groups %}
+    <article class="card group-card">
+      <a href="{{ url_for('ext_group_reservation_detail', slug=group.slug) }}">
+        <img src="{{ url_for('static', filename='images/' ~ (group.hero_image or 'real-nav-venues.webp')) }}" alt="{{ group.name }}">
+      </a>
+      <div class="card-body">
+        <h2><a href="{{ url_for('ext_group_reservation_detail', slug=group.slug) }}">{{ group.name }}</a></h2>
+        <p class="meta">{{ group.location }}, {{ group.state }}</p>
+        <p class="meta">Up to {{ group.capacity }} guests · ${{ '%.2f'|format(group.fee) }}</p>
+      </div>
+    </article>
+    {% endfor %}
+  </div>
+</div></section>
+{% endblock %}

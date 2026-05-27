@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block title %}Report Condition — {{ facility.name }}{% endblock %}
+{% block content %}
+<section class="section"><div class="wrap detail-shell">
+  <article class="detail-main">
+    <h1>Report Site Condition — {{ facility.name }}</h1>
+    <img class="hero-photo" src="{{ facility.image_url }}" alt="{{ facility.name }}">
+    <p>Help other visitors plan ahead by flagging trail, facility, or wildlife conditions.</p>
+    <form method="post" class="apply-form">
+      <label>Category
+        <select name="category">
+          <option value="trail">Trail condition</option>
+          <option value="facility">Facility</option>
+          <option value="wildlife">Wildlife</option>
+          <option value="water">Water access</option>
+          <option value="access">Access / road</option>
+        </select>
+      </label>
+      <label>Severity
+        <select name="severity">
+          <option value="advisory">Advisory</option>
+          <option value="warning">Warning</option>
+          <option value="closure">Closure</option>
+        </select>
+      </label>
+      <label>Description
+        <textarea name="body" rows="4" minlength="10" required></textarea>
+      </label>
+      <button class="btn primary" type="submit">Submit Report</button>
+    </form>
+  </article>
+  <aside class="detail-side">
+    <p>Reports are reviewed by {{ facility.agency }} staff and may be reflected in future alerts.</p>
+  </aside>
+</div></section>
+{% endblock %}

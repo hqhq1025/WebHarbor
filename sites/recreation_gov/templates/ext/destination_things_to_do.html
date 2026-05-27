@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block title %}Things to do at {{ destination.name }}{% endblock %}
+{% block content %}
+<section class="section detail-hero"><div class="wrap">
+  <img class="hero-photo" src="{{ url_for('static', filename='images/' ~ (destination.hero_image or 'real-nav-camping.webp')) }}" alt="{{ destination.name }}">
+  <h1>Things to do at {{ destination.name }}</h1>
+</div></section>
+<section class="section"><div class="wrap">
+  <div class="grid-cards">
+    {% for tile in destination.things_to_do %}
+    <article class="card destination-tile">
+      <div class="card-body">
+        <h2>{{ tile.title }}</h2>
+        <p>{{ tile.body }}</p>
+      </div>
+    </article>
+    {% endfor %}
+  </div>
+  <p><a class="btn secondary" href="{{ url_for('ext_destination_detail', slug=destination.slug) }}">Back to {{ destination.name }}</a></p>
+</div></section>
+{% endblock %}

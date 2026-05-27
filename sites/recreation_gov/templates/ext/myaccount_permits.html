@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block title %}My Permits & Lottery Entries{% endblock %}
+{% block content %}
+<section class="section"><div class="wrap">
+  <h1>Permits & Lottery Entries</h1>
+  <h2>Permit applications</h2>
+  <ul class="trip-list">
+    {% for p in permits %}<li>{{ p.confirmation_code }} · <a href="{{ url_for('ext_permit_detail', slug=p.permit.slug) }}">{{ p.permit.name }}</a> · {{ p.entry_date }} – {{ p.exit_date }} · {{ p.status }}</li>{% endfor %}
+  </ul>
+  <h2>Lottery entries</h2>
+  <ul class="trip-list">
+    {% for l in lottery_entries %}<li>{{ l.confirmation_code }} · <a href="{{ url_for('ext_lottery_detail', slug=l.lottery.slug) }}">{{ l.lottery.name }}</a> · {{ l.preferred_date }} · {{ l.status }}</li>{% endfor %}
+  </ul>
+</div></section>
+{% endblock %}

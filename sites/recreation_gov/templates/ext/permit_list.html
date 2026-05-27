@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% block title %}Permits — Recreation.gov{% endblock %}
+{% block content %}
+<section class="section"><div class="wrap">
+  <h1>All Permits</h1>
+  <p>Wilderness, climbing, fishing, hunting, and backcountry permits managed across federal land agencies. {{ permits|length }} permits available.</p>
+  <form method="get" class="filter-row">
+    <label>Filter by activity
+      <select name="activity">
+        <option value="">All activities</option>
+        {% for act in activities %}
+          <option value="{{ act }}" {% if act == current_activity %}selected{% endif %}>{{ act|capitalize }}</option>
+        {% endfor %}
+      </select>
+    </label>
+    <button class="btn secondary" type="submit">Apply</button>
+  </form>
+  <div class="grid-cards">
+    {% for permit in permits %}
+    <article class="card permit-card">
+      <a href="{{ url_for('ext_permit_detail', slug=permit.slug) }}">
+        <img src="{{ url_for('static', filename='images/' ~ (permit.hero_image or 'real-nav-permits.webp')) }}" alt="{{ permit.name }}">
+      </a>
+      <div class="card-body">
+        <span class="kicker">{{ permit.agency }} · {{ permit.activity|capitalize }}</span>
+        <h2><a href="{{ url_for('ext_permit_detail', slug=permit.slug) }}">{{ permit.name }}</a></h2>
+        <p class="meta">{{ permit.parent_area }} · {{ permit.state }}</p>
+        <p class="meta">Fee ${{ '%.2f'|format(permit.fee) }} · Quota {{ permit.quota_per_day }}/day</p>
+      </div>
+    </article>
+    {% endfor %}
+  </div>
+</div></section>
+{% endblock %}

@@ -6,11 +6,22 @@ byte-identical to instance_seed/recreation_gov.db.
 """
 from __future__ import annotations
 
+import hashlib
 import json
 import re
 from decimal import Decimal
 
 PASSWORD = "TestPass123!"
+
+
+def _pin_password_hash(email: str, password: str = PASSWORD) -> str:
+    """Deterministic werkzeug-compatible pbkdf2 hash (harden-env gotcha §1 Fix B).
+
+    Avoids the scrypt random-salt drift that prevented byte-identical rebuilds.
+    """
+    salt = hashlib.sha1(f"recgov-salt-{email}".encode()).hexdigest()[:8]
+    derived = hashlib.pbkdf2_hmac("sha256", password.encode(), salt.encode(), 1000, dklen=32).hex()
+    return f"pbkdf2:sha256:1000${salt}${derived}"
 
 IMAGE_POOL = [
     "015-point-reyes-national-seashore.webp",
@@ -562,7 +573,7 @@ def seed_benchmark_users(db, User, Address, PaymentMethod, SavedItem, CartItem, 
     created = {}
     for idx, (username, email, display_name, city) in enumerate(users):
         user = User(username=username, email=email, display_name=display_name, phone=f"555-010{idx}", home_city=city)
-        user.set_password(PASSWORD)
+        user.password_hash = _pin_password_hash(email)
         db.session.add(user)
         db.session.flush()
         db.session.add(Address(user_id=user.id, label="Home", street=f"{100 + idx} Trailhead Ave", city=city, state=["CA", "WA", "CO", "GA"][idx], zip_code=["95113", "98101", "80202", "30303"][idx], is_default=True))

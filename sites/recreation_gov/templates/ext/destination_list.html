@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block title %}Destinations — Recreation.gov{% endblock %}
+{% block content %}
+<section class="section"><div class="wrap">
+  <h1>Destinations</h1>
+  <p>National parks, monuments, forests, and refuges with bookable inventory.</p>
+  <form method="get" class="filter-row">
+    <label>Type
+      <select name="kind">
+        <option value="">All</option>
+        {% for k in kinds %}
+          <option value="{{ k }}" {% if k == current_kind %}selected{% endif %}>{{ k.replace('-', ' ')|capitalize }}</option>
+        {% endfor %}
+      </select>
+    </label>
+    <button class="btn secondary" type="submit">Filter</button>
+  </form>
+  <div class="grid-cards">
+    {% for destination in destinations %}
+    <article class="card destination-card">
+      <a href="{{ url_for('ext_destination_detail', slug=destination.slug) }}">
+        <img src="{{ url_for('static', filename='images/' ~ (destination.hero_image or 'real-nav-camping.webp')) }}" alt="{{ destination.name }}">
+      </a>
+      <div class="card-body">
+        <span class="kicker">{{ destination.agency }} · {{ destination.state }}</span>
+        <h2><a href="{{ url_for('ext_destination_detail', slug=destination.slug) }}">{{ destination.name }}</a></h2>
+        <p class="meta">{{ destination.description }}</p>
+      </div>
+    </article>
+    {% endfor %}
+  </div>
+</div></section>
+{% endblock %}

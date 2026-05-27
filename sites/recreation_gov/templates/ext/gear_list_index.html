@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block title %}Gear Lists — Recreation.gov{% endblock %}
+{% block content %}
+<section class="section"><div class="wrap">
+  <h1>Gear Lists</h1>
+  <p>Trip-tested packing lists for the most common federal recreation activities.</p>
+  <div class="grid-cards">
+    {% for gl in gear_lists %}
+    <article class="card gear-card">
+      <a href="{{ url_for('ext_gear_list_detail', category=gl.category) }}">
+        <img src="{{ url_for('static', filename='images/' ~ (gl.hero_image or 'real-nav-camping.webp')) }}" alt="{{ gl.name }}">
+      </a>
+      <div class="card-body">
+        <h2><a href="{{ url_for('ext_gear_list_detail', category=gl.category) }}">{{ gl.name }}</a></h2>
+        <p>{{ gl.description }}</p>
+      </div>
+    </article>
+    {% endfor %}
+  </div>
+</div></section>
+{% endblock %}

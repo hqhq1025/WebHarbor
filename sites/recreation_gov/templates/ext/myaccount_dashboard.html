@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block title %}My Account — Recreation.gov{% endblock %}
+{% block content %}
+<section class="section"><div class="wrap">
+  <h1>My Account</h1>
+  <p>{{ current_user.display_name }} · {{ current_user.email }}</p>
+
+  <h2>Quick links</h2>
+  <ul class="trip-list">
+    <li><a href="{{ url_for('ext_myaccount_reservations') }}">All reservations</a></li>
+    <li><a href="{{ url_for('ext_myaccount_permits') }}">Permits & lottery entries</a></li>
+    <li><a href="{{ url_for('ext_myaccount_profile') }}">Profile settings</a></li>
+    <li><a href="{{ url_for('ext_trip_planner_index') }}">Trip planner</a></li>
+    <li><a href="{{ url_for('saved') }}">Saved locations</a></li>
+  </ul>
+
+  <h2>Recent reservations</h2>
+  <ul class="trip-list">
+    {% for r in reservations %}<li><strong>{{ r.confirmation_code }}</strong> · {{ r.facility.name }} · {{ r.start_date }} · {{ r.status }}</li>{% endfor %}
+  </ul>
+
+  <h2>Recent permit applications</h2>
+  <ul class="trip-list">
+    {% for p in permits %}<li>{{ p.confirmation_code }} · {{ p.permit.name }} · {{ p.entry_date }} · {{ p.status }}</li>{% endfor %}
+  </ul>
+
+  <h2>Recent lottery entries</h2>
+  <ul class="trip-list">
+    {% for l in lottery_entries %}<li>{{ l.confirmation_code }} · {{ l.lottery.name }} · {{ l.preferred_date }}</li>{% endfor %}
+  </ul>
+
+  <h2>Trip plans</h2>
+  <ul class="trip-list">
+    {% for plan in plans %}<li><a href="{{ url_for('ext_trip_planner_detail', plan_id=plan.id) }}">{{ plan.name }}</a> · {{ plan.start_date }} – {{ plan.end_date }}</li>{% endfor %}
+  </ul>
+</div></section>
+{% endblock %}

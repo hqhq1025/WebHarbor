@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% block title %}{{ plan.name }} — Trip Planner{% endblock %}
+{% block content %}
+<section class="section"><div class="wrap">
+  <h1>{{ plan.name }}</h1>
+  <p class="meta">{{ plan.start_date }} – {{ plan.end_date }}{% if plan.is_public %} · Shared via /trip-planner/shared/{{ plan.share_token }}{% endif %}</p>
+  <p>{{ plan.notes }}</p>
+  <h2>Itinerary</h2>
+  <ol class="trip-items">
+    {% for item in items %}
+    <li>
+      <strong>{{ item.title }}</strong>
+      <span class="meta">{{ item.kind }} · {{ item.ref_slug }}</span>
+      {% if item.notes %}<p>{{ item.notes }}</p>{% endif %}
+    </li>
+    {% endfor %}
+  </ol>
+
+  <h2>Add a stop</h2>
+  <form method="post" action="{{ url_for('ext_trip_planner_add', plan_id=plan.id) }}" class="apply-form">
+    <label>Title<input type="text" name="title" required maxlength="220"></label>
+    <label>Kind
+      <select name="kind">
+        <option value="facility">Facility</option>
+        <option value="tour">Tour</option>
+        <option value="permit">Permit</option>
+        <option value="lottery">Lottery</option>
+        <option value="destination">Destination</option>
+        <option value="timed_entry">Timed Entry</option>
+      </select>
+    </label>
+    <label>Reference slug<input type="text" name="ref_slug" maxlength="180"></label>
+    <label>Notes<textarea name="notes" rows="2"></textarea></label>
+    <button class="btn primary" type="submit">Add to plan</button>
+  </form>
+
+  <h2>Share trip plan</h2>
+  <form method="post" action="{{ url_for('ext_trip_planner_share', plan_id=plan.id) }}">
+    <button class="btn secondary" type="submit">Generate share link</button>
+  </form>
+</div></section>
+{% endblock %}

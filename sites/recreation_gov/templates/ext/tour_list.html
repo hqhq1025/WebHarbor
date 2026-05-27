@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block title %}Tours & Programs — Recreation.gov{% endblock %}
+{% block content %}
+<section class="section"><div class="wrap">
+  <h1>Tours, Ferries & Ranger Programs</h1>
+  <p>Browse ranger-led tours, ferries, and concessioner programs.</p>
+  <div class="grid-cards">
+    {% for tour in tours %}
+    <article class="card tour-card">
+      <a href="{{ url_for('ext_tour_detail', slug=tour.slug) }}">
+        <img src="{{ url_for('static', filename='images/' ~ (tour.hero_image or 'real-nav-tickets.webp')) }}" alt="{{ tour.name }}">
+      </a>
+      <div class="card-body">
+        <span class="kicker">{{ tour.agency }} · {{ tour.parent_area }}</span>
+        <h2><a href="{{ url_for('ext_tour_detail', slug=tour.slug) }}">{{ tour.name }}</a></h2>
+        <p class="meta">{{ tour.location }}, {{ tour.state }} · {{ tour.duration_minutes }} min</p>
+        <p class="meta">{{ tour.accessibility }} · ${{ '%.2f'|format(tour.price) }}</p>
+      </div>
+    </article>
+    {% endfor %}
+  </div>
+</div></section>
+{% endblock %}

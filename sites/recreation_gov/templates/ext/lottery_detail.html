@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block title %}{{ lottery.name }} — Lottery — Recreation.gov{% endblock %}
+{% block content %}
+<section class="section detail-hero"><div class="wrap">
+  <img class="hero-photo" src="{{ url_for('static', filename='images/' ~ (lottery.hero_image or 'real-nav-lotteries.webp')) }}" alt="{{ lottery.name }}">
+  <span class="kicker">{{ lottery.agency }} · Lottery</span>
+  <h1>{{ lottery.name }}</h1>
+  <p class="meta">Location {{ lottery.location }}, {{ lottery.state }} · Parent area {{ lottery.parent_area }}</p>
+</div></section>
+
+<section class="section"><div class="wrap detail-shell">
+  <article class="detail-main">
+    <h2>About this lottery</h2>
+    <p>{{ lottery.description }}</p>
+
+    <h2>Key dates</h2>
+    <ul class="key-facts">
+      <li><strong>Application opens:</strong> {{ lottery.opens }}</li>
+      <li><strong>Application deadline:</strong> {{ lottery.deadline }}</li>
+      <li><strong>Historic odds:</strong> {{ (lottery.odds * 100)|round(1) }}%</li>
+      <li><strong>Application fee:</strong> ${{ '%.2f'|format(lottery.fee) }}</li>
+    </ul>
+
+    <h2>Past winners snapshot</h2>
+    <ul class="key-facts">
+      {% for line in lottery.past_winners %}<li>{{ line }}</li>{% endfor %}
+    </ul>
+
+    <div class="cta-row">
+      <a class="btn primary" href="{{ url_for('ext_lottery_enter', slug=lottery.slug) }}">Enter Lottery</a>
+      <a class="btn secondary" href="{{ url_for('ext_lottery_list') }}">Back to all lotteries</a>
+    </div>
+  </article>
+  <aside class="detail-side">
+    <img src="{{ url_for('static', filename='images/' ~ (lottery.hero_image or 'real-nav-lotteries.webp')) }}" alt="Lottery photo">
+    <p>{{ lottery.agency }} manages this lottery. Review the official destination page before entering.</p>
+  </aside>
+</div></section>
+{% endblock %}

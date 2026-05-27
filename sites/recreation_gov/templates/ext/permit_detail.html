@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block title %}{{ permit.name }} — Permit — Recreation.gov{% endblock %}
+{% block content %}
+<section class="section detail-hero"><div class="wrap">
+  <img class="hero-photo" src="{{ url_for('static', filename='images/' ~ (permit.hero_image or 'real-nav-permits.webp')) }}" alt="{{ permit.name }}">
+  <span class="kicker">{{ permit.agency }} · {{ permit.activity|capitalize }} permit</span>
+  <h1>{{ permit.name }}</h1>
+  <p class="meta">{{ permit.parent_area }} · {{ permit.location }}, {{ permit.state }}</p>
+</div></section>
+
+<section class="section"><div class="wrap detail-shell">
+  <article class="detail-main">
+    <h2>About this permit</h2>
+    <p>{{ permit.description }}</p>
+    <h2>Trip details</h2>
+    <ul class="key-facts">
+      <li><strong>Season:</strong> {{ permit.season_start }} – {{ permit.season_end }}</li>
+      <li><strong>Quota:</strong> {{ permit.quota_per_day }} permits per day</li>
+      <li><strong>Fee:</strong> ${{ '%.2f'|format(permit.fee) }} per permit</li>
+      <li><strong>Activity type:</strong> {{ permit.activity|capitalize }}</li>
+    </ul>
+    <div class="cta-row">
+      <a class="btn primary" href="{{ url_for('ext_permit_apply', slug=permit.slug) }}">Apply for Permit</a>
+      <a class="btn secondary" href="{{ url_for('ext_permit_list') }}">All permits</a>
+    </div>
+  </article>
+  <aside class="detail-side">
+    <img src="{{ url_for('static', filename='images/' ~ (permit.hero_image or 'real-nav-permits.webp')) }}" alt="Permit photo">
+    <h3>What to bring</h3>
+    <ul class="key-facts">
+      <li>Printed or digital permit copy</li>
+      <li>Photo ID matching the lead applicant</li>
+      <li>Bear canister if {{ permit.activity }} includes overnight stays</li>
+    </ul>
+  </aside>
+</div></section>
+{% endblock %}

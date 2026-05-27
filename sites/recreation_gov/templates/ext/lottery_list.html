@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block title %}Lotteries — Recreation.gov{% endblock %}
+{% block content %}
+<section class="section"><div class="wrap">
+  <h1>Lotteries & Drawings</h1>
+  <p>High-demand inventory where access is allocated by lottery rather than first-come booking. {{ lotteries|length }} active lotteries.</p>
+  <div class="grid-cards">
+    {% for lottery in lotteries %}
+    <article class="card lottery-card">
+      <a href="{{ url_for('ext_lottery_detail', slug=lottery.slug) }}">
+        <img src="{{ url_for('static', filename='images/' ~ (lottery.hero_image or 'real-nav-lotteries.webp')) }}" alt="{{ lottery.name }}">
+      </a>
+      <div class="card-body">
+        <span class="kicker">{{ lottery.agency }} · {{ lottery.parent_area }}</span>
+        <h2><a href="{{ url_for('ext_lottery_detail', slug=lottery.slug) }}">{{ lottery.name }}</a></h2>
+        <p class="meta">Deadline {{ lottery.deadline }} · Odds {{ (lottery.odds * 100)|round(0, 'floor') }}%</p>
+        <p class="meta">Fee ${{ '%.2f'|format(lottery.fee) }} · {{ lottery.state }}</p>
+      </div>
+    </article>
+    {% endfor %}
+  </div>
+</div></section>
+{% endblock %}

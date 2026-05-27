@@ -32,12 +32,19 @@
         <a href="{{ url_for('tickets') }}">Tickets & Tours</a>
         <a href="{{ url_for('permits') }}">Permits</a>
         <a href="{{ url_for('day_use') }}">Day Use / Venues</a>
+        <a href="{{ url_for('ext_lottery_list') }}">Lotteries</a>
+        <a href="{{ url_for('ext_destination_list') }}">Destinations</a>
+        <a href="{{ url_for('ext_tour_list') }}">Tours</a>
+        <a href="{{ url_for('ext_alerts_list') }}">Alerts</a>
+        <a href="{{ url_for('ext_trip_planner_index') }}">Trip Planner</a>
+        <a href="{{ url_for('ext_gear_list_index') }}">Gear</a>
       </nav>
       <div class="nav-actions">
         <a href="{{ url_for('help_center') }}">Help</a>
         {% if current_user.is_authenticated %}
           <a href="{{ url_for('saved') }}">Saved</a>
           <a href="{{ url_for('cart') }}">Cart{% if cart_count %} ({{ cart_count }}){% endif %}</a>
+          <a href="{{ url_for('ext_myaccount_dashboard') }}">My Account</a>
           <a href="{{ url_for('account') }}">{{ current_user.display_name }}</a>
         {% else %}
           <a href="{{ url_for('register') }}">Create Account</a>

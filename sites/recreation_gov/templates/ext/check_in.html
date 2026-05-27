@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block title %}Check In — {{ reservation.confirmation_code }}{% endblock %}
+{% block content %}
+<section class="section"><div class="wrap detail-shell">
+  <article class="detail-main">
+    <h1>Check in to {{ reservation.facility.name }}</h1>
+    <img class="hero-photo" src="{{ reservation.facility.image_url }}" alt="{{ reservation.facility.name }}">
+    <p>Confirmation {{ reservation.confirmation_code }} · {{ reservation.start_date }} to {{ reservation.end_date }}</p>
+    <form method="post" class="apply-form">
+      <label>Party count
+        <input type="number" name="party_count" min="1" max="12" value="{{ reservation.guests }}">
+      </label>
+      <label>Vehicle plate
+        <input type="text" name="vehicle_plate" maxlength="20">
+      </label>
+      <label>Arrival notes
+        <textarea name="notes" rows="2"></textarea>
+      </label>
+      <button class="btn primary" type="submit">Confirm Check-In</button>
+    </form>
+  </article>
+  <aside class="detail-side">
+    <p>Checking in updates the reservation status to "Checked In" and unlocks on-site amenity passes.</p>
+  </aside>
+</div></section>
+{% endblock %}

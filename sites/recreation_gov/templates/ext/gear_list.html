@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block title %}{{ gear.name }} — Recreation.gov{% endblock %}
+{% block content %}
+<section class="section detail-hero"><div class="wrap">
+  <img class="hero-photo" src="{{ url_for('static', filename='images/' ~ (gear.hero_image or 'real-nav-camping.webp')) }}" alt="{{ gear.name }}">
+  <h1>{{ gear.name }}</h1>
+  <p>{{ gear.description }}</p>
+</div></section>
+
+<section class="section"><div class="wrap">
+  <form method="post" action="{{ url_for('ext_gear_list_save', category=gear.category) }}">
+    <ol class="gear-items">
+      {% for item in items %}
+      <li>
+        <label>
+          <input type="checkbox" name="items" value="{{ item.text }}" checked>
+          {{ item.text }}
+        </label>
+      </li>
+      {% endfor %}
+    </ol>
+    <button class="btn primary" type="submit">Save my checklist</button>
+  </form>
+</div></section>
+{% endblock %}

@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% block title %}Enter — {{ lottery.name }}{% endblock %}
+{% block content %}
+<section class="section"><div class="wrap detail-shell">
+  <article class="detail-main">
+    <h1>Enter {{ lottery.name }}</h1>
+    <img class="hero-photo" src="{{ url_for('static', filename='images/' ~ (lottery.hero_image or 'real-nav-lotteries.webp')) }}" alt="{{ lottery.name }}">
+    <form method="post" class="apply-form">
+      <label>Group size
+        <input type="number" name="group_size" min="1" max="12" value="2" required>
+      </label>
+      <label>Preferred date
+        <input type="date" name="preferred_date" value="{{ lottery.opens }}">
+      </label>
+      <label>Alternate date
+        <input type="date" name="alternate_date" value="{{ lottery.deadline }}">
+      </label>
+      <label>Zone or destination (optional)
+        <input type="text" name="zone" maxlength="80">
+      </label>
+      <label>Trip notes
+        <textarea name="notes" rows="3"></textarea>
+      </label>
+      <button class="btn primary" type="submit">Submit Lottery Entry</button>
+    </form>
+  </article>
+  <aside class="detail-side">
+    <h3>Lottery snapshot</h3>
+    <p>Deadline {{ lottery.deadline }}</p>
+    <p>Historic odds {{ (lottery.odds * 100)|round(1) }}%</p>
+    <p>Fee ${{ '%.2f'|format(lottery.fee) }}</p>
+  </aside>
+</div></section>
+{% endblock %}

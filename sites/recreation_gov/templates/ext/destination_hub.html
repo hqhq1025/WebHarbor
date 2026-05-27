@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% block title %}{{ destination.name }} — Destination — Recreation.gov{% endblock %}
+{% block content %}
+<section class="section detail-hero"><div class="wrap">
+  <img class="hero-photo" src="{{ url_for('static', filename='images/' ~ (destination.hero_image or 'real-nav-camping.webp')) }}" alt="{{ destination.name }}">
+  <span class="kicker">{{ destination.agency }} · {{ destination.kind.replace('-', ' ')|capitalize }}</span>
+  <h1>{{ destination.name }}</h1>
+  <p class="meta">{{ destination.state }}</p>
+</div></section>
+
+<section class="section"><div class="wrap detail-shell">
+  <article class="detail-main">
+    <p>{{ destination.description }}</p>
+
+    {% if alerts %}
+    <h2>Current alerts</h2>
+    <ul class="alerts-list">
+      {% for alert in alerts %}
+      <li>
+        <span class="alert-tag {{ alert.severity }}">{{ alert.severity }}</span>
+        <a href="{{ url_for('ext_alerts_detail', slug=alert.slug) }}">{{ alert.title }}</a>
+      </li>
+      {% endfor %}
+    </ul>
+    {% endif %}
+
+    <h2>Plan your visit</h2>
+    <div class="grid-cards">
+      {% for tile in destination.things_to_do %}
+      <article class="card destination-tile">
+        <div class="card-body">
+          <h3>{{ tile.title }}</h3>
+          <p>{{ tile.body }}</p>
+        </div>
+      </article>
+      {% endfor %}
+    </div>
+
+    <div class="cta-row">
+      <a class="btn primary" href="{{ url_for('ext_destination_things', slug=destination.slug) }}">Things to do</a>
+      <form method="post" action="{{ url_for('ext_destination_save', slug=destination.slug) }}">
+        <button class="btn secondary" type="submit">Save this destination</button>
+      </form>
+    </div>
+  </article>
+  <aside class="detail-side">
+    <img src="{{ url_for('static', filename='images/' ~ (destination.hero_image or 'real-nav-camping.webp')) }}" alt="Destination photo">
+    <h3>Inventory across this destination</h3>
+    <p><a href="{{ url_for('search', q=destination.name) }}">Search all inventory at {{ destination.name }}</a></p>
+  </aside>
+</div></section>
+{% endblock %}

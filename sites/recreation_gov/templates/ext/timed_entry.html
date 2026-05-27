@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block title %}{{ park.name }} — Timed Entry — Recreation.gov{% endblock %}
+{% block content %}
+<section class="section detail-hero"><div class="wrap">
+  <img class="hero-photo" src="{{ url_for('static', filename='images/' ~ (park.hero_image or 'real-nav-passes.webp')) }}" alt="{{ park.name }}">
+  <h1>{{ park.name }} Timed Entry</h1>
+  <p class="meta">{{ park.location }}</p>
+</div></section>
+<section class="section"><div class="wrap detail-shell">
+  <article class="detail-main">
+    <h2>Reserve your entry</h2>
+    <p>Vehicle entry to {{ park.name }} requires a reservation between {{ park.window_open }} and {{ park.window_close }}. Fee ${{ '%.2f'|format(park.fee) }} per vehicle.</p>
+    <form method="post" action="{{ url_for('ext_timed_entry_book', park=park.slug) }}" class="apply-form">
+      <label>Entry date
+        <input type="date" name="entry_date" value="{{ park.window_open }}" required>
+      </label>
+      <label>Entry window
+        <select name="entry_window">
+          <option>05:00 - 07:00</option>
+          <option selected>07:00 - 09:00</option>
+          <option>09:00 - 11:00</option>
+          <option>11:00 - 13:00</option>
+          <option>13:00 - 15:00</option>
+          <option>15:00 - 17:00</option>
+        </select>
+      </label>
+      <label>Vehicle plate
+        <input type="text" name="vehicle_plate" maxlength="20">
+      </label>
+      <label>Party size
+        <input type="number" name="party_size" min="1" max="8" value="2">
+      </label>
+      <button class="btn primary" type="submit">Reserve Timed Entry</button>
+    </form>
+  </article>
+  <aside class="detail-side">
+    <img src="{{ url_for('static', filename='images/' ~ (park.hero_image or 'real-nav-passes.webp')) }}" alt="Park photo">
+    <p>Reservations are limited and often fill within minutes of release.</p>
+  </aside>
+</div></section>
+{% endblock %}

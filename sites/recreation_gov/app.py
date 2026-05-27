@@ -391,7 +391,7 @@ class User(UserMixin, db.Model):
     display_name = db.Column(db.String(120), nullable=False)
     phone = db.Column(db.String(40), default="")
     home_city = db.Column(db.String(120), default="")
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=lambda: datetime(2026, 5, 12, 12, 0, 0))
 
     def set_password(self, password: str) -> None:
         self.password_hash = generate_password_hash(password)
@@ -518,7 +518,7 @@ class SavedItem(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=False)
     facility_id = db.Column(db.Integer, db.ForeignKey("facility.id"), nullable=False)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=lambda: datetime(2026, 5, 12, 12, 0, 0))
     facility = db.relationship("Facility")
 
 
@@ -553,7 +553,7 @@ class Reservation(db.Model):
     total_cost = db.Column(db.Numeric(10, 2), default=0)
     status = db.Column(db.String(40), default="Upcoming")
     confirmation_code = db.Column(db.String(40), unique=True, nullable=False)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=lambda: datetime(2026, 5, 12, 12, 0, 0))
     facility = db.relationship("Facility")
 
 
@@ -1572,12 +1572,29 @@ def not_found(_):
 
 
 from seed_data import seed_benchmark_users, seed_database  # noqa: E402
+import extensions as _ext  # noqa: E402
+
+
+@app.template_filter("from_json")
+def _from_json_filter(value):
+    try:
+        return json.loads(value or "[]")
+    except (ValueError, TypeError):
+        return []
+
 
 os.makedirs(os.path.join(BASE_DIR, "instance"), exist_ok=True)
+_db_path = os.path.join(BASE_DIR, "instance", "recreation_gov.db")
+_fresh_seed = (not os.path.exists(_db_path)) or os.path.getsize(_db_path) == 0
 with app.app_context():
     db.create_all()
     seed_database(db, Facility, Campsite, Review)
     seed_benchmark_users(db, User, Address, PaymentMethod, SavedItem, CartItem, Reservation, Facility, Campsite)
+    _ext.register(app)
+    db.create_all()
+    _ext.seed_extensions()
+    if _fresh_seed:
+        _ext.normalize_seed_db_layout()
 
 
 if __name__ == "__main__":

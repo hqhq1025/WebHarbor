@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block title %}Timed Entry — Recreation.gov{% endblock %}
+{% block content %}
+<section class="section"><div class="wrap">
+  <h1>Timed Entry Reservations</h1>
+  <p>Parks that require advance entry reservations for vehicle access.</p>
+  <div class="grid-cards">
+    {% for park in parks %}
+    <article class="card timed-card">
+      <a href="{{ url_for('ext_timed_entry_park', park=park.slug) }}">
+        <img src="{{ url_for('static', filename='images/' ~ (park.hero_image or 'real-nav-passes.webp')) }}" alt="{{ park.name }}">
+      </a>
+      <div class="card-body">
+        <span class="kicker">{{ park.agency }}</span>
+        <h2><a href="{{ url_for('ext_timed_entry_park', park=park.slug) }}">{{ park.name }}</a></h2>
+        <p class="meta">{{ park.location }}</p>
+        <p class="meta">Window {{ park.window_open }} to {{ park.window_close }} · Fee ${{ '%.2f'|format(park.fee) }}</p>
+      </div>
+    </article>
+    {% endfor %}
+  </div>
+</div></section>
+{% endblock %}

@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block title %}{{ group.name }} — Group Reservation{% endblock %}
+{% block content %}
+<section class="section detail-hero"><div class="wrap">
+  <img class="hero-photo" src="{{ url_for('static', filename='images/' ~ (group.hero_image or 'real-nav-venues.webp')) }}" alt="{{ group.name }}">
+  <h1>{{ group.name }}</h1>
+  <p class="meta">{{ group.location }}, {{ group.state }} · Capacity {{ group.capacity }}</p>
+</div></section>
+<section class="section"><div class="wrap detail-shell">
+  <article class="detail-main">
+    <h2>Group amenities</h2>
+    <ul class="key-facts">
+      {% for amenity in (group.amenities_json|from_json) %}
+        <li>{{ amenity }}</li>
+      {% endfor %}
+    </ul>
+    <p>Fee ${{ '%.2f'|format(group.fee) }} flat. Capacity up to {{ group.capacity }} guests.</p>
+    <h2>Submit a group reservation request</h2>
+    <form method="post" action="{{ url_for('ext_group_reservation_request', slug=group.slug) }}" class="apply-form">
+      <label>Party size
+        <input type="number" name="party_size" min="1" max="{{ group.capacity }}" value="{{ group.capacity }}" required>
+      </label>
+      <label>Event date
+        <input type="date" name="event_date" required>
+      </label>
+      <label>Notes
+        <textarea name="notes" rows="3"></textarea>
+      </label>
+      <button class="btn primary" type="submit">Submit request</button>
+    </form>
+  </article>
+  <aside class="detail-side">
+    <img src="{{ url_for('static', filename='images/' ~ (group.hero_image or 'real-nav-venues.webp')) }}" alt="Photo">
+    <p>Group requests are reviewed by the host agency before confirmation.</p>
+  </aside>
+</div></section>
+{% endblock %}

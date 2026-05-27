@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block title %}Modify Reservation {{ reservation.confirmation_code }}{% endblock %}
+{% block content %}
+<section class="section"><div class="wrap detail-shell">
+  <article class="detail-main">
+    <h1>Modify Reservation</h1>
+    <img class="hero-photo" src="{{ reservation.facility.image_url }}" alt="{{ reservation.facility.name }}">
+    <p>{{ reservation.facility.name }} · {{ reservation.confirmation_code }}</p>
+    <form method="post" class="apply-form">
+      <label>New start date
+        <input type="date" name="new_start_date" value="{{ reservation.start_date }}" required>
+      </label>
+      <label>New end date
+        <input type="date" name="new_end_date" value="{{ reservation.end_date }}" required>
+      </label>
+      <label>Reason for change
+        <input type="text" name="reason" maxlength="220">
+      </label>
+      <button class="btn primary" type="submit">Save changes</button>
+    </form>
+  </article>
+  <aside class="detail-side">
+    <p>Modifying dates may forfeit the original deposit depending on cut-off rules.</p>
+  </aside>
+</div></section>
+{% endblock %}

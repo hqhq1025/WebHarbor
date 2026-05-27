@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block title %}{{ site.name }} — Campsite — Recreation.gov{% endblock %}
+{% block content %}
+<section class="section detail-hero"><div class="wrap">
+  <img class="hero-photo" src="{{ site.facility.image_url }}" alt="{{ site.name }}">
+  <span class="kicker">{{ site.facility.agency }} · {{ site.facility.parent_area }}</span>
+  <h1>{{ site.name }}</h1>
+  <p class="meta">{{ site.site_type }} · Capacity {{ site.capacity }} · ${{ '%.2f'|format(site.nightly_rate) }} / night</p>
+</div></section>
+<section class="section"><div class="wrap detail-shell">
+  <article class="detail-main">
+    <h2>About this site</h2>
+    <p>{{ site.name }} is part of <a href="{{ url_for('facility_detail', slug=site.facility.slug) }}">{{ site.facility.name }}</a>. Maximum occupancy {{ site.capacity }} guests. {% if site.accessible %}This is an accessible site.{% endif %}</p>
+    <h2>Available dates</h2>
+    <ul class="key-facts">
+      {% for d in site.dates %}<li>{{ d }}</li>{% endfor %}
+    </ul>
+    <h2>Photos</h2>
+    <div class="photo-mosaic">
+      {% for photo in site.facility.photos[:4] %}
+        <img src="{{ url_for('static', filename='images/' ~ photo.filename) }}" alt="{{ photo.caption }}">
+      {% endfor %}
+    </div>
+  </article>
+  <aside class="detail-side">
+    <a class="btn primary" href="{{ url_for('facility_detail', slug=site.facility.slug, _anchor='booking') }}">Book this site</a>
+    <p>Manage from <a href="{{ url_for('ext_myaccount_reservations') }}">My reservations</a> after booking.</p>
+  </aside>
+</div></section>
+{% endblock %}

@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block title %}Apply — {{ permit.name }}{% endblock %}
+{% block content %}
+<section class="section"><div class="wrap detail-shell">
+  <article class="detail-main">
+    <h1>Apply for {{ permit.name }}</h1>
+    <img class="hero-photo" src="{{ url_for('static', filename='images/' ~ (permit.hero_image or 'real-nav-permits.webp')) }}" alt="{{ permit.name }}">
+    <form method="post" class="apply-form">
+      <label>Party size
+        <input type="number" name="party_size" min="1" max="12" value="2" required>
+      </label>
+      <label>Entry date
+        <input type="date" name="entry_date" value="{{ permit.season_start }}">
+      </label>
+      <label>Exit date
+        <input type="date" name="exit_date" value="{{ permit.season_end }}">
+      </label>
+      <label>Trailhead / entry point
+        <input type="text" name="trailhead" maxlength="120">
+      </label>
+      <label>Emergency contact
+        <input type="text" name="emergency_contact" maxlength="160">
+      </label>
+      <button class="btn primary" type="submit">Submit Permit Application</button>
+    </form>
+  </article>
+  <aside class="detail-side">
+    <h3>{{ permit.name }}</h3>
+    <p>{{ permit.description }}</p>
+    <p>Season {{ permit.season_start }} to {{ permit.season_end }}.</p>
+  </aside>
+</div></section>
+{% endblock %}

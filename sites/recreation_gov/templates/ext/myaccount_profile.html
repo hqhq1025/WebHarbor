@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block title %}Profile Settings{% endblock %}
+{% block content %}
+<section class="section"><div class="wrap">
+  <h1>Profile Settings</h1>
+  <p>Manage profile fields, payments, and addresses from the main <a href="{{ url_for('account') }}">account page</a>.</p>
+  <dl class="profile-dl">
+    <dt>Display name</dt><dd>{{ current_user.display_name }}</dd>
+    <dt>Username</dt><dd>{{ current_user.username }}</dd>
+    <dt>Email</dt><dd>{{ current_user.email }}</dd>
+    <dt>Phone</dt><dd>{{ current_user.phone }}</dd>
+    <dt>Home city</dt><dd>{{ current_user.home_city }}</dd>
+  </dl>
+</div></section>
+{% endblock %}

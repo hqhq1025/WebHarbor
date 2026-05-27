@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block title %}{{ tour.name }} — Tour — Recreation.gov{% endblock %}
+{% block content %}
+<section class="section detail-hero"><div class="wrap">
+  <img class="hero-photo" src="{{ url_for('static', filename='images/' ~ (tour.hero_image or 'real-nav-tickets.webp')) }}" alt="{{ tour.name }}">
+  <span class="kicker">{{ tour.agency }} · {{ tour.parent_area }}</span>
+  <h1>{{ tour.name }}</h1>
+  <p class="meta">{{ tour.location }}, {{ tour.state }} · {{ tour.duration_minutes }} minutes</p>
+</div></section>
+
+<section class="section"><div class="wrap detail-shell">
+  <article class="detail-main">
+    <h2>About this tour</h2>
+    <p>{{ tour.description }}</p>
+    <h2>Logistics</h2>
+    <ul class="key-facts">
+      <li><strong>Duration:</strong> {{ tour.duration_minutes }} minutes</li>
+      <li><strong>Accessibility:</strong> {{ tour.accessibility }}</li>
+      <li><strong>Next session:</strong> {{ tour.next_session }}</li>
+      <li><strong>Price:</strong> ${{ '%.2f'|format(tour.price) }} per ticket</li>
+    </ul>
+    <div class="cta-row">
+      <a class="btn primary" href="{{ url_for('ext_tour_book', slug=tour.slug) }}">Book this tour</a>
+      <a class="btn secondary" href="{{ url_for('ext_tour_list') }}">All tours</a>
+    </div>
+  </article>
+  <aside class="detail-side">
+    <img src="{{ url_for('static', filename='images/' ~ (tour.hero_image or 'real-nav-tickets.webp')) }}" alt="Tour photo">
+    <h3>Trip tips</h3>
+    <p>{{ tour.parent_area }} encourages early arrival because timed entry windows open 15 minutes before the tour begins.</p>
+  </aside>
+</div></section>
+{% endblock %}

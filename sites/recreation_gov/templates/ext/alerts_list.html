@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block title %}Park Alerts — Recreation.gov{% endblock %}
+{% block content %}
+<section class="section"><div class="wrap">
+  <h1>Park Alerts</h1>
+  <p>Current advisories and warnings across federal recreation sites.</p>
+  <ul class="alerts-list">
+    {% for alert in alerts %}
+    <li>
+      <span class="alert-tag {{ alert.severity }}">{{ alert.severity }}</span>
+      <a href="{{ url_for('ext_alerts_detail', slug=alert.slug) }}">{{ alert.title }}</a>
+      <span class="meta">{{ alert.agency }} · {{ alert.posted_date }}</span>
+    </li>
+    {% endfor %}
+  </ul>
+</div></section>
+{% endblock %}

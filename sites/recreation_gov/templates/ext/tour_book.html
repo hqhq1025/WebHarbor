@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block title %}Book {{ tour.name }}{% endblock %}
+{% block content %}
+<section class="section"><div class="wrap detail-shell">
+  <article class="detail-main">
+    <h1>Book {{ tour.name }}</h1>
+    <img class="hero-photo" src="{{ url_for('static', filename='images/' ~ (tour.hero_image or 'real-nav-tickets.webp')) }}" alt="{{ tour.name }}">
+    <form method="post" class="apply-form">
+      <label>Party size
+        <input type="number" name="party_size" min="1" max="12" value="2" required>
+      </label>
+      <label>Session time
+        <input type="text" name="session_time" value="{{ tour.next_session }}">
+      </label>
+      <button class="btn primary" type="submit">Confirm Tour Booking</button>
+    </form>
+  </article>
+  <aside class="detail-side">
+    <p>Price ${{ '%.2f'|format(tour.price) }} per person</p>
+    <p>{{ tour.accessibility }}</p>
+  </aside>
+</div></section>
+{% endblock %}
