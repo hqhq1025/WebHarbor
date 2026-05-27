@@ -5828,6 +5828,372 @@ with app.app_context():
         pass
 
 
+
+# === R2-R3 backfill BEGIN — auto-generated, do not hand-edit between markers ===
+# Added 2026-05-27 to backfill the R2 (i18n / a11y / l10n) and
+# R3 (observability + static chrome) surfaces that the verify subagent
+# flagged as missing.  No DB writes — instance_seed/*.db md5 is unchanged.
+
+import hashlib as _r23_hashlib
+
+# ---------------------------------------------------------------------------
+# R2 — Internationalization / accessibility / localization surface
+# ---------------------------------------------------------------------------
+
+R2_LOCALES = (
+    ('en', 'English',     'ltr'),
+    ('zh', '简体中文',     'ltr'),
+    ('ja', '日本語',       'ltr'),
+    ('es', 'Español',     'ltr'),
+    ('fr', 'Français',    'ltr'),
+    ('de', 'Deutsch',     'ltr'),
+    ('pt', 'Português',   'ltr'),
+    ('ar', 'العربية',     'rtl'),
+    ('he', 'עברית',       'rtl'),
+)
+R2_RTL = {'ar', 'he'}
+R2_SITE_NAME = "Huggingface"
+R2_DOMAIN = "huggingface.co"
+R2_ACCESSIBILITY_BLURB = "Hugging Face strives for AA conformance on model and dataset pages and continues to add semantic landmarks to Spaces."
+
+
+def r2_normalize_locale(code):
+    code = (code or '').strip().lower()
+    if any(code == c for c, _, _ in R2_LOCALES):
+        return code
+    primary = code.split('-')[0].split('_')[0]
+    return primary if any(primary == c for c, _, _ in R2_LOCALES) else 'en'
+
+
+def r2_label_for(code):
+    for c, label, _ in R2_LOCALES:
+        if c == code:
+            return label
+    return 'English'
+
+
+@app.route('/r2/lang/<code>')
+def r2_lang_switch(code):
+    norm = r2_normalize_locale(code)
+    direction = 'rtl' if norm in R2_RTL else 'ltr'
+    label = r2_label_for(norm)
+    return (
+        '<!doctype html><html lang="' + norm + '" dir="' + direction + '">'
+        '<head><meta charset="utf-8"><title>' + label + ' – ' + R2_SITE_NAME + '</title>'
+        '<link rel="alternate" hreflang="' + norm + '" href="/r2/lang/' + norm + '">'
+        '</head><body>'
+        '<header role="banner">' + R2_SITE_NAME + ' locale switcher</header>'
+        '<main role="main" aria-label="Locale switch result">'
+        '<h1>Locale set to ' + label + ' (' + norm + ')</h1>'
+        '<p>Page direction: <strong>' + direction + '</strong>.</p>'
+        '<p><a href="/r2/locales">Back to locale catalog</a>.</p>'
+        '</main><footer role="contentinfo">/r2/lang</footer>'
+        '</body></html>'
+    )
+
+
+@app.route('/r2/locales')
+def r2_locales_catalog():
+    return {
+        'site': R2_SITE_NAME,
+        'default': 'en',
+        'locales': [
+            {'code': c, 'label': l, 'dir': d} for c, l, d in R2_LOCALES
+        ],
+    }
+
+
+@app.route('/r2/hreflang')
+def r2_hreflang_index():
+    links = '\n'.join(
+        '<link rel="alternate" hreflang="' + c + '" href="/r2/lang/' + c + '">'
+        for c, _, _ in R2_LOCALES
+    )
+    rows = '\n'.join(
+        '<tr><td>' + c + '</td><td>' + l + '</td><td>' + d + '</td></tr>'
+        for c, l, d in R2_LOCALES
+    )
+    return (
+        '<!doctype html><html lang="en"><head>' + links +
+        '<title>hreflang catalog</title></head><body>'
+        '<main role="main" aria-labelledby="hreflang-h1">'
+        '<h1 id="hreflang-h1">' + R2_SITE_NAME + ' hreflang catalog</h1>'
+        '<table><thead><tr><th>code</th><th>label</th><th>dir</th></tr></thead>'
+        '<tbody>' + rows + '</tbody></table></main></body></html>'
+    )
+
+
+@app.route('/r2/accessibility-policy')
+def r2_accessibility_policy():
+    return (
+        '<!doctype html><html lang="en"><body>'
+        '<header role="banner">' + R2_SITE_NAME + '</header>'
+        '<nav role="navigation" aria-label="Policies"><ul>'
+        '<li><a href="/r2/accessibility-policy">Accessibility</a></li>'
+        '<li><a href="/r2/aria-tour">ARIA tour</a></li>'
+        '<li><a href="/r2/locales">Locales</a></li>'
+        '</ul></nav>'
+        '<main role="main" aria-labelledby="a11y-h1">'
+        '<h1 id="a11y-h1">Accessibility Policy</h1>'
+        '<p>' + R2_ACCESSIBILITY_BLURB + '</p>'
+        '<h2>Conformance target</h2>'
+        '<p>This site targets <strong>WCAG 2.1 Level AA</strong> with ARIA 1.2 patterns and Section 508 alignment.</p>'
+        '<h2>Reporting an issue</h2>'
+        '<p>Email <a href="mailto:accessibility@' + R2_DOMAIN + '">accessibility@' + R2_DOMAIN + '</a>.</p>'
+        '<h2>Last reviewed</h2><p>2026-05-27</p>'
+        '</main><footer role="contentinfo">/r2/accessibility-policy</footer>'
+        '</body></html>'
+    )
+
+
+@app.route('/r2/aria-tour')
+def r2_aria_tour():
+    landmarks = (
+        ('banner', 'Site-wide header.'),
+        ('navigation', 'Primary menu.'),
+        ('main', 'Primary content.'),
+        ('search', 'Site search.'),
+        ('form', 'Forms outside main.'),
+        ('region', 'Generic region with aria-label.'),
+        ('complementary', 'Sidebar / aside.'),
+        ('contentinfo', 'Footer area.'),
+    )
+    items = ''.join(
+        '<li role="listitem"><strong>' + role + '</strong> — ' + desc + '</li>'
+        for role, desc in landmarks
+    )
+    return (
+        '<!doctype html><html lang="en"><body>'
+        '<header role="banner">' + R2_SITE_NAME + ' banner</header>'
+        '<nav role="navigation" aria-label="Primary">primary nav</nav>'
+        '<main role="main" aria-labelledby="aria-h1">'
+        '<h1 id="aria-h1">ARIA landmark tour</h1>'
+        '<ul role="list">' + items + '</ul>'
+        '</main>'
+        '<aside role="complementary" aria-label="Related">complementary region</aside>'
+        '<footer role="contentinfo">/r2/aria-tour</footer>'
+        '</body></html>'
+    )
+
+
+@app.route('/r2/i18n.json')
+def r2_i18n_json():
+    return {
+        'site': R2_SITE_NAME,
+        'default_locale': 'en',
+        'locales': [c for c, _, _ in R2_LOCALES],
+        'rtl': sorted(R2_RTL),
+        'fallback_chain': ['en'],
+        'updated': '2026-05-27',
+    }
+
+
+@app.route('/r2/keyboard-shortcuts')
+def r2_keyboard_shortcuts():
+    pairs = (
+        ('?', 'Open shortcuts help'),
+        ('/', 'Focus search'),
+        ('g h', 'Go to home'),
+        ('g l', 'Go to locale picker'),
+        ('g a', 'Go to accessibility policy'),
+        ('Esc', 'Close dialog'),
+        ('Tab', 'Move focus forward'),
+        ('Shift+Tab', 'Move focus backward'),
+    )
+    rows = ''.join(
+        '<tr><td><kbd>' + k + '</kbd></td><td>' + v + '</td></tr>'
+        for k, v in pairs
+    )
+    return (
+        '<!doctype html><html lang="en"><body>'
+        '<main role="main" aria-labelledby="kbd-h1">'
+        '<h1 id="kbd-h1">Keyboard shortcuts</h1>'
+        '<table><thead><tr><th>Keys</th><th>Action</th></tr></thead><tbody>' + rows + '</tbody></table>'
+        '</main></body></html>'
+    )
+
+
+# ---------------------------------------------------------------------------
+# R3 — Observability + static chrome
+# ---------------------------------------------------------------------------
+
+R3_BOOT_TS = '2024-04-10T12:00:00Z'
+R3_UPTIME_SECONDS = 31_557_600  # one anchor-year — fixed for determinism
+R3_SITE_NAME = "Huggingface"
+R3_DOMAIN = "huggingface.co"
+
+
+def r3_event_id(seq):
+    return _r23_hashlib.md5(('r3-evt-' + R3_SITE_NAME + '-' + str(seq)).encode()).hexdigest()[:12]
+
+
+def r3_event_kind(seq):
+    kinds = ('page_view', 'search', 'click', 'login', 'logout',
+             'feed_open', 'api_hit', 'error_404', 'job_done', 'webhook_in')
+    return kinds[seq % len(kinds)]
+
+
+@app.route('/r3/healthz')
+def r3_healthz():
+    return {
+        'status': 'ok',
+        'site': R3_SITE_NAME,
+        'version': '1.0.0',
+        'boot': R3_BOOT_TS,
+        'checks': {
+            'web': 'ok',
+            'db': 'ok',
+            'cache': 'ok',
+            'search': 'ok',
+        },
+    }
+
+
+@app.route('/r3/uptime')
+def r3_uptime():
+    return {
+        'uptime_seconds': R3_UPTIME_SECONDS,
+        'since': R3_BOOT_TS,
+        'replicas': 3,
+        'region': 'us-east-1',
+    }
+
+
+@app.route('/r3/events')
+def r3_events():
+    out = []
+    for i in range(50):
+        out.append({
+            'id': r3_event_id(i),
+            'kind': r3_event_kind(i),
+            'ts': R3_BOOT_TS,
+            'seq': i,
+        })
+    return {'site': R3_SITE_NAME, 'count': len(out), 'events': out}
+
+
+@app.route('/r3/robots.txt')
+def r3_robots_alt():
+    body = (
+        'User-agent: *\n'
+        'Allow: /\n'
+        'Disallow: /admin\n'
+        'Disallow: /api/internal\n'
+        'Sitemap: /r3/sitemap.xml\n'
+        '# ' + R3_SITE_NAME + ' (WebHarbor mirror)\n'
+    )
+    return body, 200, {'Content-Type': 'text/plain; charset=utf-8'}
+
+
+@app.route('/r3/humans.txt')
+def r3_humans_txt():
+    body = (
+        '/* TEAM */\n'
+        'Site: ' + R3_SITE_NAME + '\n'
+        'Maintainer: WebHarbor mirror project\n'
+        'Location: Redmond / Chapel Hill\n'
+        '\n/* THANKS */\n'
+        'Upstream content authors retain copyright over scraped material.\n'
+        '\n/* SITE */\n'
+        'Domain: ' + R3_DOMAIN + '\n'
+        'Standards: HTML5, ARIA 1.2, ISO 8601\n'
+        'Last updated: 2026-05-27\n'
+    )
+    return body, 200, {'Content-Type': 'text/plain; charset=utf-8'}
+
+
+@app.route('/r3/.well-known/security.txt')
+def r3_security_txt():
+    body = (
+        'Contact: mailto:security@' + R3_DOMAIN + '\n'
+        'Expires: 2099-12-31T23:59:59Z\n'
+        'Preferred-Languages: en\n'
+        'Canonical: /r3/.well-known/security.txt\n'
+        'Policy: /r3/security-policy\n'
+        'Acknowledgments: /r3/security-policy\n'
+    )
+    return body, 200, {'Content-Type': 'text/plain; charset=utf-8'}
+
+
+@app.route('/r3/security-policy')
+def r3_security_policy():
+    return (
+        '<!doctype html><html lang="en"><body>'
+        '<main role="main" aria-labelledby="sec-h1">'
+        '<h1 id="sec-h1">Security Policy</h1>'
+        '<p>Report vulnerabilities to <code>security@' + R3_DOMAIN + '</code>.</p>'
+        '<h2>Scope</h2><ul>'
+        '<li>This WebHarbor mirror — server-side bugs</li>'
+        '<li>Authentication issues on r2/r3 endpoints</li>'
+        '</ul>'
+        '<h2>Out of scope</h2><ul>'
+        '<li>Upstream third-party services</li>'
+        '<li>Denial-of-service against the dev mirror</li>'
+        '</ul></main></body></html>'
+    )
+
+
+@app.route('/r3/status')
+def r3_status_page():
+    return (
+        '<!doctype html><html lang="en"><body>'
+        '<main role="main" aria-labelledby="status-h1">'
+        '<h1 id="status-h1">' + R3_SITE_NAME + ' – System Status</h1>'
+        '<p>All systems operational.</p>'
+        '<table><thead><tr><th>Component</th><th>Status</th><th>Last incident</th></tr></thead>'
+        '<tbody>'
+        '<tr><td>web</td><td>ok</td><td>none</td></tr>'
+        '<tr><td>db</td><td>ok</td><td>none</td></tr>'
+        '<tr><td>cache</td><td>ok</td><td>none</td></tr>'
+        '<tr><td>search</td><td>ok</td><td>none</td></tr>'
+        '<tr><td>cdn</td><td>ok</td><td>none</td></tr>'
+        '</tbody></table>'
+        '<p>Uptime: ' + str(R3_UPTIME_SECONDS) + ' seconds since ' + R3_BOOT_TS + '.</p>'
+        '</main></body></html>'
+    )
+
+
+@app.route('/r3/version')
+def r3_version():
+    return {
+        'site': R3_SITE_NAME,
+        'version': '1.0.0',
+        'commit': _r23_hashlib.md5(('r3-version-' + R3_SITE_NAME).encode()).hexdigest()[:10],
+        'built': R3_BOOT_TS,
+        'channel': 'stable',
+    }
+
+
+@app.route('/r3/sitemap.xml')
+def r3_sitemap_xml():
+    urls = [
+        '/r2/locales',
+        '/r2/hreflang',
+        '/r2/accessibility-policy',
+        '/r2/aria-tour',
+        '/r2/i18n.json',
+        '/r2/keyboard-shortcuts',
+        '/r3/healthz',
+        '/r3/uptime',
+        '/r3/events',
+        '/r3/robots.txt',
+        '/r3/humans.txt',
+        '/r3/.well-known/security.txt',
+        '/r3/security-policy',
+        '/r3/status',
+        '/r3/version',
+    ]
+    items = ''.join('<url><loc>' + u + '</loc></url>' for u in urls)
+    xml = (
+        '<?xml version="1.0" encoding="UTF-8"?>'
+        '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">'
+        + items + '</urlset>'
+    )
+    return xml, 200, {'Content-Type': 'application/xml; charset=utf-8'}
+
+# === R2-R3 backfill END ===
+
+
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
     app.run(host="0.0.0.0", port=port, debug=False)
