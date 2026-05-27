@@ -1204,6 +1204,26 @@ def register_gui_deepen(app, db):
             csrf_token_value=generate_csrf(),
         )
 
+    # ------------ Canonical /buy/<category>/<model> aliases ------------------
+    # yaml documents these as /buy/iphone/<model> etc.; the original deepen
+    # registration used /shop/buy-iphone/<model>. Add aliases so external
+    # benchmarks / yaml-documented links resolve.
+    @app.route('/buy/iphone/<model>')
+    def gui_buy_iphone_alias(model):
+        return gui_buy_iphone(model)
+
+    @app.route('/buy/mac/<model>')
+    def gui_buy_mac_alias(model):
+        return gui_buy_mac(model)
+
+    @app.route('/buy/ipad/<model>')
+    def gui_buy_ipad_alias(model):
+        return gui_buy_ipad(model)
+
+    @app.route('/buy/watch/<model>')
+    def gui_buy_watch_alias(model):
+        return gui_buy_watch(model)
+
     # ------------ Compare pages ---------------------------------------------
     @app.route('/iphone/compare')
     def gui_compare_iphone():
