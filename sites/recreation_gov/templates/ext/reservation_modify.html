@@ -4,7 +4,7 @@
 <section class="section"><div class="wrap detail-shell">
   <article class="detail-main">
     <h1>Modify Reservation</h1>
-    <img class="hero-photo" src="{{ reservation.facility.image_url }}" alt="{{ reservation.facility.name }}">
+    <img loading="lazy" decoding="async" class="hero-photo" src="{{ reservation.facility.image_url }}" alt="{{ reservation.facility.name }}">
     <p>{{ reservation.facility.name }} · {{ reservation.confirmation_code }}</p>
     <form method="post" class="apply-form">
       <label>New start date

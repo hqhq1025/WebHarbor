@@ -8,7 +8,7 @@
     {% for tour in tours %}
     <article class="card tour-card">
       <a href="{{ url_for('ext_tour_detail', slug=tour.slug) }}">
-        <img src="{{ url_for('static', filename='images/' ~ (tour.hero_image or 'real-nav-tickets.webp')) }}" alt="{{ tour.name }}">
+        <img loading="lazy" decoding="async" src="{{ url_for('static', filename='images/' ~ (tour.hero_image or 'real-nav-tickets.webp')) }}" alt="{{ tour.name }}">
       </a>
       <div class="card-body">
         <span class="kicker">{{ tour.agency }} · {{ tour.parent_area }}</span>

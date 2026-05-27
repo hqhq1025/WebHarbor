@@ -2,7 +2,7 @@
 {% block title %}{{ group.name }} — Group Reservation{% endblock %}
 {% block content %}
 <section class="section detail-hero"><div class="wrap">
-  <img class="hero-photo" src="{{ url_for('static', filename='images/' ~ (group.hero_image or 'real-nav-venues.webp')) }}" alt="{{ group.name }}">
+  <img loading="lazy" decoding="async" class="hero-photo" src="{{ url_for('static', filename='images/' ~ (group.hero_image or 'real-nav-venues.webp')) }}" alt="{{ group.name }}">
   <h1>{{ group.name }}</h1>
   <p class="meta">{{ group.location }}, {{ group.state }} · Capacity {{ group.capacity }}</p>
 </div></section>
@@ -30,7 +30,7 @@
     </form>
   </article>
   <aside class="detail-side">
-    <img src="{{ url_for('static', filename='images/' ~ (group.hero_image or 'real-nav-venues.webp')) }}" alt="Photo">
+    <img loading="lazy" decoding="async" src="{{ url_for('static', filename='images/' ~ (group.hero_image or 'real-nav-venues.webp')) }}" alt="Photo">
     <p>Group requests are reviewed by the host agency before confirmation.</p>
   </aside>
 </div></section>

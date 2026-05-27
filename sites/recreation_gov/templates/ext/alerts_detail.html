@@ -18,9 +18,9 @@
   </article>
   <aside class="detail-side">
     {% if destination %}
-    <img src="{{ url_for('static', filename='images/' ~ (destination.hero_image or 'real-nav-camping.webp')) }}" alt="{{ destination.name }}">
+    <img loading="lazy" decoding="async" src="{{ url_for('static', filename='images/' ~ (destination.hero_image or 'real-nav-camping.webp')) }}" alt="{{ destination.name }}">
     {% else %}
-    <img src="{{ url_for('static', filename='images/real-passes-featured.webp') }}" alt="Alert">
+    <img loading="lazy" decoding="async" src="{{ url_for('static', filename='images/real-passes-featured.webp') }}" alt="Alert">
     {% endif %}
     <h3>About this alert</h3>
     <p>Subscribers receive a note whenever the destination's reservation rules or closures change.</p>

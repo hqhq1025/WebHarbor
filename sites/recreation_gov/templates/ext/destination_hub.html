@@ -2,7 +2,7 @@
 {% block title %}{{ destination.name }} — Destination — Recreation.gov{% endblock %}
 {% block content %}
 <section class="section detail-hero"><div class="wrap">
-  <img class="hero-photo" src="{{ url_for('static', filename='images/' ~ (destination.hero_image or 'real-nav-camping.webp')) }}" alt="{{ destination.name }}">
+  <img loading="lazy" decoding="async" class="hero-photo" src="{{ url_for('static', filename='images/' ~ (destination.hero_image or 'real-nav-camping.webp')) }}" alt="{{ destination.name }}">
   <span class="kicker">{{ destination.agency }} · {{ destination.kind.replace('-', ' ')|capitalize }}</span>
   <h1>{{ destination.name }}</h1>
   <p class="meta">{{ destination.state }}</p>
@@ -44,7 +44,7 @@
     </div>
   </article>
   <aside class="detail-side">
-    <img src="{{ url_for('static', filename='images/' ~ (destination.hero_image or 'real-nav-camping.webp')) }}" alt="Destination photo">
+    <img loading="lazy" decoding="async" src="{{ url_for('static', filename='images/' ~ (destination.hero_image or 'real-nav-camping.webp')) }}" alt="Destination photo">
     <h3>Inventory across this destination</h3>
     <p><a href="{{ url_for('search', q=destination.name) }}">Search all inventory at {{ destination.name }}</a></p>
   </aside>

@@ -2,7 +2,7 @@
 {% block title %}{{ park.name }} — Timed Entry — Recreation.gov{% endblock %}
 {% block content %}
 <section class="section detail-hero"><div class="wrap">
-  <img class="hero-photo" src="{{ url_for('static', filename='images/' ~ (park.hero_image or 'real-nav-passes.webp')) }}" alt="{{ park.name }}">
+  <img loading="lazy" decoding="async" class="hero-photo" src="{{ url_for('static', filename='images/' ~ (park.hero_image or 'real-nav-passes.webp')) }}" alt="{{ park.name }}">
   <h1>{{ park.name }} Timed Entry</h1>
   <p class="meta">{{ park.location }}</p>
 </div></section>
@@ -34,7 +34,7 @@
     </form>
   </article>
   <aside class="detail-side">
-    <img src="{{ url_for('static', filename='images/' ~ (park.hero_image or 'real-nav-passes.webp')) }}" alt="Park photo">
+    <img loading="lazy" decoding="async" src="{{ url_for('static', filename='images/' ~ (park.hero_image or 'real-nav-passes.webp')) }}" alt="Park photo">
     <p>Reservations are limited and often fill within minutes of release.</p>
   </aside>
 </div></section>

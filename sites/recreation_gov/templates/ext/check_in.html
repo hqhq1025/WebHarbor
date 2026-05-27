@@ -4,7 +4,7 @@
 <section class="section"><div class="wrap detail-shell">
   <article class="detail-main">
     <h1>Check in to {{ reservation.facility.name }}</h1>
-    <img class="hero-photo" src="{{ reservation.facility.image_url }}" alt="{{ reservation.facility.name }}">
+    <img loading="lazy" decoding="async" class="hero-photo" src="{{ reservation.facility.image_url }}" alt="{{ reservation.facility.name }}">
     <p>Confirmation {{ reservation.confirmation_code }} · {{ reservation.start_date }} to {{ reservation.end_date }}</p>
     <form method="post" class="apply-form">
       <label>Party count

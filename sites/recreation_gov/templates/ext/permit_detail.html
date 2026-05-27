@@ -2,7 +2,7 @@
 {% block title %}{{ permit.name }} — Permit — Recreation.gov{% endblock %}
 {% block content %}
 <section class="section detail-hero"><div class="wrap">
-  <img class="hero-photo" src="{{ url_for('static', filename='images/' ~ (permit.hero_image or 'real-nav-permits.webp')) }}" alt="{{ permit.name }}">
+  <img loading="lazy" decoding="async" class="hero-photo" src="{{ url_for('static', filename='images/' ~ (permit.hero_image or 'real-nav-permits.webp')) }}" alt="{{ permit.name }}">
   <span class="kicker">{{ permit.agency }} · {{ permit.activity|capitalize }} permit</span>
   <h1>{{ permit.name }}</h1>
   <p class="meta">{{ permit.parent_area }} · {{ permit.location }}, {{ permit.state }}</p>
@@ -25,7 +25,7 @@
     </div>
   </article>
   <aside class="detail-side">
-    <img src="{{ url_for('static', filename='images/' ~ (permit.hero_image or 'real-nav-permits.webp')) }}" alt="Permit photo">
+    <img loading="lazy" decoding="async" src="{{ url_for('static', filename='images/' ~ (permit.hero_image or 'real-nav-permits.webp')) }}" alt="Permit photo">
     <h3>What to bring</h3>
     <ul class="key-facts">
       <li>Printed or digital permit copy</li>

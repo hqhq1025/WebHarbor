@@ -19,7 +19,7 @@
     {% for destination in destinations %}
     <article class="card destination-card">
       <a href="{{ url_for('ext_destination_detail', slug=destination.slug) }}">
-        <img src="{{ url_for('static', filename='images/' ~ (destination.hero_image or 'real-nav-camping.webp')) }}" alt="{{ destination.name }}">
+        <img loading="lazy" decoding="async" src="{{ url_for('static', filename='images/' ~ (destination.hero_image or 'real-nav-camping.webp')) }}" alt="{{ destination.name }}">
       </a>
       <div class="card-body">
         <span class="kicker">{{ destination.agency }} · {{ destination.state }}</span>

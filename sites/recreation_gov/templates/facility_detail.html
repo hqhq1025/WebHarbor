@@ -8,7 +8,7 @@
 {% endblock %}
 {% block content %}
 <section class="detail-panorama">
-  <img src="{{ gallery_images[0].src }}" alt="{{ gallery_images[0].alt }}">
+  <img loading="lazy" decoding="async" src="{{ gallery_images[0].src }}" alt="{{ gallery_images[0].alt }}">
   <button class="view-photos-btn" type="button">▣ View Photos</button>
 </section>
 
@@ -235,7 +235,7 @@
           <h2>Media Gallery</h2>
           <div class="detail-media-grid">
             {% for image in gallery_images %}
-              <img src="{{ image.src }}" alt="{{ image.alt }}">
+              <img loading="lazy" decoding="async" src="{{ image.src }}" alt="{{ image.alt }}">
             {% endfor %}
           </div>
         </section>

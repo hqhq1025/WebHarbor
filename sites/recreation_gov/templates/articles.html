@@ -12,7 +12,7 @@
   <div class="wrap article-grid">
     {% for article in articles %}
       <a class="article-card" href="{{ article.href }}">
-        <img src="{{ article.image_url }}" alt="">
+        <img loading="lazy" decoding="async" src="{{ article.image_url }}" alt="">
         <span>{{ article.kicker }}</span>
         <strong>{{ article.title }}</strong>
         <p>{{ article.summary }}</p>

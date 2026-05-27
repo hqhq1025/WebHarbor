@@ -2,7 +2,7 @@
 {% block title %}{{ gear.name }} — Recreation.gov{% endblock %}
 {% block content %}
 <section class="section detail-hero"><div class="wrap">
-  <img class="hero-photo" src="{{ url_for('static', filename='images/' ~ (gear.hero_image or 'real-nav-camping.webp')) }}" alt="{{ gear.name }}">
+  <img loading="lazy" decoding="async" class="hero-photo" src="{{ url_for('static', filename='images/' ~ (gear.hero_image or 'real-nav-camping.webp')) }}" alt="{{ gear.name }}">
   <h1>{{ gear.name }}</h1>
   <p>{{ gear.description }}</p>
 </div></section>

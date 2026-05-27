@@ -19,7 +19,7 @@
     {% for permit in permits %}
     <article class="card permit-card">
       <a href="{{ url_for('ext_permit_detail', slug=permit.slug) }}">
-        <img src="{{ url_for('static', filename='images/' ~ (permit.hero_image or 'real-nav-permits.webp')) }}" alt="{{ permit.name }}">
+        <img loading="lazy" decoding="async" src="{{ url_for('static', filename='images/' ~ (permit.hero_image or 'real-nav-permits.webp')) }}" alt="{{ permit.name }}">
       </a>
       <div class="card-body">
         <span class="kicker">{{ permit.agency }} · {{ permit.activity|capitalize }}</span>

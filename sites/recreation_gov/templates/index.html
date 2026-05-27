@@ -33,7 +33,7 @@
             <div class="category-photo-grid" aria-label="Popular recreation categories">
               {% for tile in category_tiles %}
                 <a class="category-photo-tile tile-{{ tile.key }}" href="{{ tile.href }}">
-                  <img src="{{ tile.image }}" alt="">
+                  <img loading="lazy" decoding="async" src="{{ tile.image }}" alt="">
                   <span>{{ tile.label }}</span>
                 </a>
               {% endfor %}
@@ -236,7 +236,7 @@
         <p>Explore historic parks, cultural sites, scenic landscapes, and more as you join the nationwide celebration of America's 250th anniversary.</p>
         <a class="btn ghost light" href="{{ url_for('america250_article') }}">Learn More</a>
       </div>
-      <img src="{{ url_for('static', filename='images/real-america-250-background.webp') }}" alt="">
+      <img loading="lazy" decoding="async" src="{{ url_for('static', filename='images/real-america-250-background.webp') }}" alt="">
     </article>
   </div>
 </section>
@@ -249,17 +249,17 @@
     </div>
     <div class="inspiration-layout">
       <a class="inspiration-feature" href="{{ article_cards[0].href }}">
-        <img src="{{ article_cards[0].image_url }}" alt="">
+        <img loading="lazy" decoding="async" src="{{ article_cards[0].image_url }}" alt="">
         <span>{{ article_cards[0].kicker }}</span>
         <strong>{{ article_cards[0].title }}</strong>
       </a>
       <div class="inspiration-stack">
         <a href="{{ article_cards[1].href }}">
-          <img src="{{ article_cards[1].image_url }}" alt="">
+          <img loading="lazy" decoding="async" src="{{ article_cards[1].image_url }}" alt="">
           <strong>{{ article_cards[1].title }}</strong>
         </a>
         <a href="{{ article_cards[2].href }}">
-          <img src="{{ article_cards[2].image_url }}" alt="">
+          <img loading="lazy" decoding="async" src="{{ article_cards[2].image_url }}" alt="">
           <strong>{{ article_cards[2].title }}</strong>
         </a>
       </div>

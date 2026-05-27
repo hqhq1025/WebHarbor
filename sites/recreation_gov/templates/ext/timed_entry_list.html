@@ -8,7 +8,7 @@
     {% for park in parks %}
     <article class="card timed-card">
       <a href="{{ url_for('ext_timed_entry_park', park=park.slug) }}">
-        <img src="{{ url_for('static', filename='images/' ~ (park.hero_image or 'real-nav-passes.webp')) }}" alt="{{ park.name }}">
+        <img loading="lazy" decoding="async" src="{{ url_for('static', filename='images/' ~ (park.hero_image or 'real-nav-passes.webp')) }}" alt="{{ park.name }}">
       </a>
       <div class="card-body">
         <span class="kicker">{{ park.agency }}</span>

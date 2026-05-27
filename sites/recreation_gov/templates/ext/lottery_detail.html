@@ -2,7 +2,7 @@
 {% block title %}{{ lottery.name }} — Lottery — Recreation.gov{% endblock %}
 {% block content %}
 <section class="section detail-hero"><div class="wrap">
-  <img class="hero-photo" src="{{ url_for('static', filename='images/' ~ (lottery.hero_image or 'real-nav-lotteries.webp')) }}" alt="{{ lottery.name }}">
+  <img loading="lazy" decoding="async" class="hero-photo" src="{{ url_for('static', filename='images/' ~ (lottery.hero_image or 'real-nav-lotteries.webp')) }}" alt="{{ lottery.name }}">
   <span class="kicker">{{ lottery.agency }} · Lottery</span>
   <h1>{{ lottery.name }}</h1>
   <p class="meta">Location {{ lottery.location }}, {{ lottery.state }} · Parent area {{ lottery.parent_area }}</p>
@@ -32,7 +32,7 @@
     </div>
   </article>
   <aside class="detail-side">
-    <img src="{{ url_for('static', filename='images/' ~ (lottery.hero_image or 'real-nav-lotteries.webp')) }}" alt="Lottery photo">
+    <img loading="lazy" decoding="async" src="{{ url_for('static', filename='images/' ~ (lottery.hero_image or 'real-nav-lotteries.webp')) }}" alt="Lottery photo">
     <p>{{ lottery.agency }} manages this lottery. Review the official destination page before entering.</p>
   </aside>
 </div></section>

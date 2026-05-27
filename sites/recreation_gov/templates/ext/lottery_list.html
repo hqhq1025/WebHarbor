@@ -8,7 +8,7 @@
     {% for lottery in lotteries %}
     <article class="card lottery-card">
       <a href="{{ url_for('ext_lottery_detail', slug=lottery.slug) }}">
-        <img src="{{ url_for('static', filename='images/' ~ (lottery.hero_image or 'real-nav-lotteries.webp')) }}" alt="{{ lottery.name }}">
+        <img loading="lazy" decoding="async" src="{{ url_for('static', filename='images/' ~ (lottery.hero_image or 'real-nav-lotteries.webp')) }}" alt="{{ lottery.name }}">
       </a>
       <div class="card-body">
         <span class="kicker">{{ lottery.agency }} · {{ lottery.parent_area }}</span>

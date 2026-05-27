@@ -6,7 +6,7 @@
     {% if kind == 'editorial' %}
       <p class="eyebrow">{{ article.kicker }}</p>
       <h1>{{ article.title }}</h1>
-      <img class="article-hero" src="{{ article.image_url }}" alt="">
+      <img loading="lazy" decoding="async" class="article-hero" src="{{ article.image_url }}" alt="">
       <p class="article-deck">{{ article.summary }}</p>
       {% for paragraph in article.paragraphs %}
         <p>{{ paragraph }}</p>

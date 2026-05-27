@@ -2,7 +2,7 @@
 {% block title %}{{ site.name }} — Campsite — Recreation.gov{% endblock %}
 {% block content %}
 <section class="section detail-hero"><div class="wrap">
-  <img class="hero-photo" src="{{ site.facility.image_url }}" alt="{{ site.name }}">
+  <img loading="lazy" decoding="async" class="hero-photo" src="{{ site.facility.image_url }}" alt="{{ site.name }}">
   <span class="kicker">{{ site.facility.agency }} · {{ site.facility.parent_area }}</span>
   <h1>{{ site.name }}</h1>
   <p class="meta">{{ site.site_type }} · Capacity {{ site.capacity }} · ${{ '%.2f'|format(site.nightly_rate) }} / night</p>
@@ -18,7 +18,7 @@
     <h2>Photos</h2>
     <div class="photo-mosaic">
       {% for photo in site.facility.photos[:4] %}
-        <img src="{{ url_for('static', filename='images/' ~ photo.filename) }}" alt="{{ photo.caption }}">
+        <img loading="lazy" decoding="async" src="{{ url_for('static', filename='images/' ~ photo.filename) }}" alt="{{ photo.caption }}">
       {% endfor %}
     </div>
   </article>

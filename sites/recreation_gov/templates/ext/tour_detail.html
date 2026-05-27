@@ -2,7 +2,7 @@
 {% block title %}{{ tour.name }} — Tour — Recreation.gov{% endblock %}
 {% block content %}
 <section class="section detail-hero"><div class="wrap">
-  <img class="hero-photo" src="{{ url_for('static', filename='images/' ~ (tour.hero_image or 'real-nav-tickets.webp')) }}" alt="{{ tour.name }}">
+  <img loading="lazy" decoding="async" class="hero-photo" src="{{ url_for('static', filename='images/' ~ (tour.hero_image or 'real-nav-tickets.webp')) }}" alt="{{ tour.name }}">
   <span class="kicker">{{ tour.agency }} · {{ tour.parent_area }}</span>
   <h1>{{ tour.name }}</h1>
   <p class="meta">{{ tour.location }}, {{ tour.state }} · {{ tour.duration_minutes }} minutes</p>
@@ -25,7 +25,7 @@
     </div>
   </article>
   <aside class="detail-side">
-    <img src="{{ url_for('static', filename='images/' ~ (tour.hero_image or 'real-nav-tickets.webp')) }}" alt="Tour photo">
+    <img loading="lazy" decoding="async" src="{{ url_for('static', filename='images/' ~ (tour.hero_image or 'real-nav-tickets.webp')) }}" alt="Tour photo">
     <h3>Trip tips</h3>
     <p>{{ tour.parent_area }} encourages early arrival because timed entry windows open 15 minutes before the tour begins.</p>
   </aside>

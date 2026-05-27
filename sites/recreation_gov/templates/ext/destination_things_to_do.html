@@ -2,7 +2,7 @@
 {% block title %}Things to do at {{ destination.name }}{% endblock %}
 {% block content %}
 <section class="section detail-hero"><div class="wrap">
-  <img class="hero-photo" src="{{ url_for('static', filename='images/' ~ (destination.hero_image or 'real-nav-camping.webp')) }}" alt="{{ destination.name }}">
+  <img loading="lazy" decoding="async" class="hero-photo" src="{{ url_for('static', filename='images/' ~ (destination.hero_image or 'real-nav-camping.webp')) }}" alt="{{ destination.name }}">
   <h1>Things to do at {{ destination.name }}</h1>
 </div></section>
 <section class="section"><div class="wrap">

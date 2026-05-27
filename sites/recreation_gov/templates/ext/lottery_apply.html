@@ -4,7 +4,7 @@
 <section class="section"><div class="wrap detail-shell">
   <article class="detail-main">
     <h1>Enter {{ lottery.name }}</h1>
-    <img class="hero-photo" src="{{ url_for('static', filename='images/' ~ (lottery.hero_image or 'real-nav-lotteries.webp')) }}" alt="{{ lottery.name }}">
+    <img loading="lazy" decoding="async" class="hero-photo" src="{{ url_for('static', filename='images/' ~ (lottery.hero_image or 'real-nav-lotteries.webp')) }}" alt="{{ lottery.name }}">
     <form method="post" class="apply-form">
       <label>Group size
         <input type="number" name="group_size" min="1" max="12" value="2" required>
