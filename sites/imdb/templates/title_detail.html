@@ -36,6 +36,29 @@
     </div>
   </header>
 
+  <nav class="subpages">
+    <a href="{{ url_for('title_fullcredits', tt_id=title.tt_id) }}">Full Cast &amp; Crew</a>
+    &middot; <a href="{{ url_for('title_reviews', tt_id=title.tt_id) }}">User Reviews</a>
+    &middot; <a href="{{ url_for('title_trivia', tt_id=title.tt_id) }}">Trivia</a>
+    &middot; <a href="{{ url_for('title_quotes', tt_id=title.tt_id) }}">Quotes</a>
+    &middot; <a href="{{ url_for('title_goofs', tt_id=title.tt_id) }}">Goofs</a>
+    &middot; <a href="{{ url_for('title_awards', tt_id=title.tt_id) }}">Awards</a>
+    &middot; <a href="{{ url_for('title_keywords', tt_id=title.tt_id) }}">Keywords</a>
+    &middot; <a href="{{ url_for('title_parents_guide', tt_id=title.tt_id) }}">Parents Guide</a>
+    &middot; <a href="{{ url_for('title_technical', tt_id=title.tt_id) }}">Technical Specs</a>
+    &middot; <a href="{{ url_for('title_release_info', tt_id=title.tt_id) }}">Release Info</a>
+    &middot; <a href="{{ url_for('title_locations', tt_id=title.tt_id) }}">Filming Locations</a>
+    &middot; <a href="{{ url_for('title_companies', tt_id=title.tt_id) }}">Companies</a>
+    &middot; <a href="{{ url_for('title_external', tt_id=title.tt_id) }}">External Sites</a>
+    &middot; <a href="{{ url_for('title_connections', tt_id=title.tt_id) }}">Connections</a>
+    &middot; <a href="{{ url_for('title_photos', tt_id=title.tt_id) }}">Photos</a>
+    &middot; <a href="{{ url_for('title_soundtrack', tt_id=title.tt_id) }}">Soundtrack</a>
+    &middot; <a href="{{ url_for('title_faq', tt_id=title.tt_id) }}">FAQ</a>
+    {% if title.title_type == 'tvSeries' %}
+    &middot; <a href="{{ url_for('title_episodes', tt_id=title.tt_id) }}">Episodes</a>
+    {% endif %}
+  </nav>
+
   {% if title.poster_path %}
   <img class="title-poster" src="{{ url_for('static', filename='images/' ~ title.poster_path) }}" alt="">
   {% endif %}
@@ -117,6 +140,19 @@
         <button type="submit" class="btn">{% if user_rating %}Update rating{% else %}Rate{% endif %}</button>
       </form>
       <a class="btn" href="{{ url_for('title_write_review', tt_id=title.tt_id) }}">Write a review</a>
+      <form method="post" action="{{ url_for('title_mark_watched', tt_id=title.tt_id) }}" style="display:inline">
+        <button type="submit" class="btn">Mark as Watched</button>
+      </form>
+      <form method="post" action="{{ url_for('title_report', tt_id=title.tt_id) }}" style="display:inline">
+        <select name="category" aria-label="Report category">
+          <option value="incorrect-data">Report incorrect data</option>
+          <option value="spoiler">Report spoiler</option>
+          <option value="duplicate">Report duplicate listing</option>
+          <option value="other">Other issue</option>
+        </select>
+        <input type="text" name="body" placeholder="Brief description (optional)">
+        <button type="submit" class="btn">Submit Report</button>
+      </form>
     {% else %}
       <p><a href="{{ url_for('login') }}">Sign in</a> to add to Watchlist, rate, or write a review.</p>
     {% endif %}

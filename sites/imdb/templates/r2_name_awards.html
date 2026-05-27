@@ -1,0 +1,24 @@
+{% extends 'base.html' %}
+{% block title %}Awards &mdash; {{ person.name }}{% endblock %}
+{% block content %}
+<a class="crumb" href="{{ url_for('name_detail', nm_id=person.nm_id) }}">&lsaquo; {{ person.name }}</a>
+<h1>Awards &mdash; {{ person.name }}</h1>
+{% if person.photo_path %}
+<img class="person-photo" src="{{ url_for('static', filename='images/' ~ person.photo_path) }}" alt="" style="max-width:200px">
+{% endif %}
+<table class="credits-table">
+  <thead><tr><th>Year</th><th>Title</th><th>Role</th><th>Awards summary</th></tr></thead>
+  <tbody>
+  {% for t, role, sm in items %}
+  <tr>
+    <td>{{ t.year }}</td>
+    <td><a href="{{ url_for('title_detail', tt_id=t.tt_id) }}">{{ t.primary_title }}</a></td>
+    <td>{{ role }}</td>
+    <td>{{ sm }}</td>
+  </tr>
+  {% else %}
+  <tr><td colspan="4">No awards summary on file.</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% endblock %}

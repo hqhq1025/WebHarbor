@@ -1,0 +1,29 @@
+{% extends 'base.html' %}
+{% block title %}Trivia &mdash; {{ title.primary_title }}{% endblock %}
+{% block content %}
+<a class="crumb" href="{{ url_for('title_detail', tt_id=title.tt_id) }}">&lsaquo; {{ title.primary_title }} ({{ title.year }})</a>
+<h1>Trivia for {{ title.primary_title }} ({{ title.year }})</h1>
+{% if title.poster_path %}
+<img class="title-poster" src="{{ url_for('static', filename='images/' ~ title.poster_path) }}" alt="" style="max-width:160px">
+{% endif %}
+<ul class="trivia-list">
+  {% for it in items %}
+  <li class="trivia-card">
+    <p>{{ it.body }}</p>
+    <footer>{{ it.helpful_count }} of {{ it.helpful_count + 12 }} found this trivia interesting</footer>
+  </li>
+  {% else %}
+  <li>No trivia entries yet.</li>
+  {% endfor %}
+</ul>
+
+{% if current_user.is_authenticated %}
+<h2>Submit your own trivia</h2>
+<form method="post" action="{{ url_for('trivia_submit', tt_id=title.tt_id) }}">
+  <textarea name="body" rows="3" cols="60" placeholder="Share an interesting fact about this title..."></textarea>
+  <button type="submit" class="btn">Submit trivia</button>
+</form>
+{% else %}
+<p><a href="{{ url_for('login') }}">Sign in</a> to submit trivia.</p>
+{% endif %}
+{% endblock %}

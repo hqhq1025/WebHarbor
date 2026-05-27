@@ -1,0 +1,39 @@
+{% extends 'base.html' %}
+{% block title %}Poll: {{ poll.question }}{% endblock %}
+{% block content %}
+<a class="crumb" href="{{ url_for('polls_index') }}">&lsaquo; All polls</a>
+<h1>{{ poll.question }}</h1>
+<p class="desc">{{ poll.description }}</p>
+
+<form method="post" action="{{ url_for('poll_vote', slug=poll.slug) }}">
+<ol class="poll-options">
+  {% for op, v in tallies %}
+  <li>
+    {% if current_user.is_authenticated %}
+    <label>
+      <input type="radio" name="option_id" value="{{ op.id }}" {% if my_choice == op.id %}checked{% endif %}>
+      <strong>{{ op.label }}</strong>
+    </label>
+    {% else %}
+    <strong>{{ op.label }}</strong>
+    {% endif %}
+    &mdash; {{ v }} vote{{ 's' if v != 1 }} ({{ (100 * v // total) }}%)
+  </li>
+  {% endfor %}
+</ol>
+{% if current_user.is_authenticated %}
+<button type="submit" class="btn">Submit vote</button>
+{% else %}
+<p><a href="{{ url_for('login') }}">Sign in</a> to vote.</p>
+{% endif %}
+</form>
+<p>Total votes: {{ total }}</p>
+
+{% if current_user.is_authenticated %}
+<h2>Suggest a new option</h2>
+<form method="post" action="{{ url_for('poll_suggest', slug=poll.slug) }}">
+  <textarea name="body" rows="2" cols="60" placeholder="Suggest an additional poll option..."></textarea>
+  <button type="submit" class="btn">Send suggestion</button>
+</form>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,42 @@
+{% extends 'base.html' %}
+{% block title %}Goofs &mdash; {{ title.primary_title }}{% endblock %}
+{% block content %}
+<a class="crumb" href="{{ url_for('title_detail', tt_id=title.tt_id) }}">&lsaquo; {{ title.primary_title }} ({{ title.year }})</a>
+<h1>Goofs in {{ title.primary_title }} ({{ title.year }})</h1>
+{% if title.poster_path %}
+<img class="title-poster" src="{{ url_for('static', filename='images/' ~ title.poster_path) }}" alt="" style="max-width:160px">
+{% endif %}
+
+{% set cats = items|map(attribute='category')|list|unique %}
+{% for cat in cats %}
+<section class="goof-cat">
+  <h2>{{ cat }}</h2>
+  <ul>
+    {% for it in items if it.category == cat %}
+    <li>
+      <p>{{ it.body }}</p>
+      <footer>{{ it.helpful_count }} found this useful</footer>
+    </li>
+    {% endfor %}
+  </ul>
+</section>
+{% else %}
+<p>No goofs catalogued yet.</p>
+{% endfor %}
+
+{% if current_user.is_authenticated %}
+<h2>Submit a goof</h2>
+<form method="post" action="{{ url_for('goof_submit', tt_id=title.tt_id) }}">
+  <select name="category">
+    <option>Continuity</option>
+    <option>Factual error</option>
+    <option>Audio/visual unsynchronised</option>
+    <option>Anachronism</option>
+    <option>Crew or equipment visible</option>
+    <option>Plot hole</option>
+  </select>
+  <textarea name="body" rows="3" cols="60" placeholder="Describe the goof..."></textarea>
+  <button type="submit" class="btn">Submit goof</button>
+</form>
+{% endif %}
+{% endblock %}

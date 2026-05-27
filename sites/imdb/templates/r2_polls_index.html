@@ -1,0 +1,16 @@
+{% extends 'base.html' %}
+{% block title %}Polls{% endblock %}
+{% block content %}
+<h1>IMDb polls</h1>
+<ul class="polls">
+  {% for p in polls %}
+  <li>
+    <a href="{{ url_for('poll_detail', slug=p.slug) }}"><strong>{{ p.question }}</strong></a>
+    &middot; {{ p.category|title }}
+    &middot; {{ p.options|length }} options
+  </li>
+  {% else %}
+  <li>No polls posted.</li>
+  {% endfor %}
+</ul>
+{% endblock %}

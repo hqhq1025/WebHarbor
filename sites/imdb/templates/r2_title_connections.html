@@ -1,0 +1,20 @@
+{% extends 'base.html' %}
+{% block title %}Connections &mdash; {{ title.primary_title }}{% endblock %}
+{% block content %}
+<a class="crumb" href="{{ url_for('title_detail', tt_id=title.tt_id) }}">&lsaquo; {{ title.primary_title }} ({{ title.year }})</a>
+<h1>Connections to {{ title.primary_title }}</h1>
+{% if title.poster_path %}
+<img class="title-poster" src="{{ url_for('static', filename='images/' ~ title.poster_path) }}" alt="" style="max-width:160px">
+{% endif %}
+<ul class="card-grid">
+  {% for r in related %}
+  <li class="card">
+    {% if r.poster_path %}<img src="{{ url_for('static', filename='images/' ~ r.poster_path) }}" alt="">{% endif %}
+    <a class="card-title" href="{{ url_for('title_detail', tt_id=r.tt_id) }}">{{ r.primary_title }}</a>
+    <div class="card-meta">{{ r.year }} &middot; <span class="star">&#9733;</span> {{ '%.1f'|format(r.rating_avg) }}</div>
+  </li>
+  {% else %}
+  <li>No related connections yet.</li>
+  {% endfor %}
+</ul>
+{% endblock %}

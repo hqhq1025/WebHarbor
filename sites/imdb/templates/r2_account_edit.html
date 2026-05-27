@@ -1,0 +1,10 @@
+{% extends 'base.html' %}
+{% block title %}Edit account{% endblock %}
+{% block content %}
+<h1>Edit profile</h1>
+<form method="post">
+  <p><label>Display name <input type="text" name="name" value="{{ current_user.name }}" required></label></p>
+  <button class="btn" type="submit">Save</button>
+</form>
+<p><a href="{{ url_for('account_password') }}">Change password</a></p>
+{% endblock %}

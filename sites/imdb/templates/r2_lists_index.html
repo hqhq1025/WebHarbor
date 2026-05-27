@@ -1,0 +1,19 @@
+{% extends 'base.html' %}
+{% block title %}Lists{% endblock %}
+{% block content %}
+<h1>Public lists</h1>
+{% if current_user.is_authenticated %}
+<p><a class="btn" href="{{ url_for('list_new') }}">Create a new list</a></p>
+{% endif %}
+<ul class="lists">
+  {% for L in lists %}
+  <li>
+    <a href="{{ url_for('list_detail', list_id=L.id) }}"><strong>{{ L.name }}</strong></a>
+    &mdash; {{ L.items|length }} title{{ 's' if L.items|length != 1 }}
+    <div class="desc">{{ L.description }}</div>
+  </li>
+  {% else %}
+  <li>No lists yet.</li>
+  {% endfor %}
+</ul>
+{% endblock %}

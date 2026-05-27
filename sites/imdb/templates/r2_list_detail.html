@@ -1,0 +1,38 @@
+{% extends 'base.html' %}
+{% block title %}{{ list.name }} &mdash; List{% endblock %}
+{% block content %}
+<a class="crumb" href="{{ url_for('lists_index') }}">&lsaquo; All lists</a>
+<h1>{{ list.name }}</h1>
+<p class="desc">{{ list.description }}</p>
+<p>by {{ owner.name if owner else '—' }} &middot; {{ list.items|length }} title{{ 's' if list.items|length != 1 }}</p>
+
+{% if current_user.is_authenticated and current_user.id == list.owner_id %}
+<p>
+  <a class="btn" href="{{ url_for('list_edit', list_id=list.id) }}">Edit list</a>
+  <form method="post" action="{{ url_for('list_delete', list_id=list.id) }}" style="display:inline">
+    <button class="btn">Delete list</button>
+  </form>
+</p>
+<form method="post" action="{{ url_for('list_add', list_id=list.id) }}">
+  <input type="text" name="tt_id" placeholder="tt0111161">
+  <button class="btn">Add title by tt-id</button>
+</form>
+{% endif %}
+
+<ul class="card-grid">
+  {% for it, t in rows %}
+  <li class="card">
+    {% if t.poster_path %}<img src="{{ url_for('static', filename='images/' ~ t.poster_path) }}" alt="">{% endif %}
+    <a class="card-title" href="{{ url_for('title_detail', tt_id=t.tt_id) }}">{{ t.primary_title }}</a>
+    <div class="card-meta">{{ t.year }} &middot; <span class="star">&#9733;</span> {{ '%.1f'|format(t.rating_avg) }}</div>
+    {% if current_user.is_authenticated and current_user.id == list.owner_id %}
+    <form method="post" action="{{ url_for('list_remove', list_id=list.id, tt_id=t.tt_id) }}">
+      <button class="btn-link">Remove</button>
+    </form>
+    {% endif %}
+  </li>
+  {% else %}
+  <li>No titles in this list yet.</li>
+  {% endfor %}
+</ul>
+{% endblock %}

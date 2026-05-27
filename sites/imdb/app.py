@@ -712,6 +712,10 @@ def _bootstrap():
         from seed_data import seed_all
         seed_all(db, Title, Person, Genre, Credit, Review, UserRating,
                  WatchlistItem, User, NewsItem)
+    # r2 deepen: adds new tables, seeds, and 35+ new routes.
+    from r2_deepen import deepen_app
+    deepen_app(app, db, Title, Person, Genre, Credit, Review, UserRating,
+               WatchlistItem, User, NewsItem)
 
 
 _bootstrap()

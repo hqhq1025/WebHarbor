@@ -1,0 +1,10 @@
+{% extends 'base.html' %}
+{% block title %}{% if list %}Edit{% else %}New{% endif %} list{% endblock %}
+{% block content %}
+<h1>{% if list %}Edit list &mdash; {{ list.name }}{% else %}Create new list{% endif %}</h1>
+<form method="post">
+  <p><label>Name <input type="text" name="name" value="{{ list.name if list else '' }}" required></label></p>
+  <p><label>Description<br><textarea name="description" rows="3" cols="60">{{ list.description if list else '' }}</textarea></label></p>
+  <button class="btn" type="submit">{% if list %}Save{% else %}Create{% endif %}</button>
+</form>
+{% endblock %}

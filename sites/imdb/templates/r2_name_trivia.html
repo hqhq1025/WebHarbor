@@ -1,0 +1,12 @@
+{% extends 'base.html' %}
+{% block title %}Trivia &mdash; {{ person.name }}{% endblock %}
+{% block content %}
+<a class="crumb" href="{{ url_for('name_detail', nm_id=person.nm_id) }}">&lsaquo; {{ person.name }}</a>
+<h1>Trivia &mdash; {{ person.name }}</h1>
+{% if person.photo_path %}
+<img class="person-photo" src="{{ url_for('static', filename='images/' ~ person.photo_path) }}" alt="" style="max-width:200px">
+{% endif %}
+<ul>
+  {% for it in items %}<li>{{ it }}</li>{% endfor %}
+</ul>
+{% endblock %}

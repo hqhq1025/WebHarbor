@@ -1,0 +1,15 @@
+{% extends 'base.html' %}
+{% block title %}Technical Specs &mdash; {{ title.primary_title }}{% endblock %}
+{% block content %}
+<a class="crumb" href="{{ url_for('title_detail', tt_id=title.tt_id) }}">&lsaquo; {{ title.primary_title }} ({{ title.year }})</a>
+<h1>Technical specifications</h1>
+{% if title.poster_path %}
+<img class="title-poster" src="{{ url_for('static', filename='images/' ~ title.poster_path) }}" alt="" style="max-width:160px">
+{% endif %}
+<dl class="metadata">
+  <dt>Runtime</dt><dd>{{ title.runtime_min }} min ({{ (title.runtime_min // 60) }}h {{ title.runtime_min % 60 }}m)</dd>
+  <dt>Color</dt><dd>{{ specs.color or '—' }}</dd>
+  <dt>Sound mix</dt><dd>{{ specs.sound or '—' }}</dd>
+  <dt>Aspect ratio</dt><dd>{{ specs.aspect_ratio or '—' }}</dd>
+</dl>
+{% endblock %}

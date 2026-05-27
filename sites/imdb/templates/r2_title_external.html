@@ -1,0 +1,15 @@
+{% extends 'base.html' %}
+{% block title %}External Sites &mdash; {{ title.primary_title }}{% endblock %}
+{% block content %}
+<a class="crumb" href="{{ url_for('title_detail', tt_id=title.tt_id) }}">&lsaquo; {{ title.primary_title }} ({{ title.year }})</a>
+<h1>External sites</h1>
+{% if title.poster_path %}
+<img class="title-poster" src="{{ url_for('static', filename='images/' ~ title.poster_path) }}" alt="" style="max-width:160px">
+{% endif %}
+<p>Official partner sites and resources for {{ title.primary_title }}.</p>
+<ul>
+  {% for c in companies %}<li>Official site: {{ c }}</li>{% endfor %}
+  <li>IMDb Pro listing (placeholder)</li>
+  <li>Box Office Mojo summary (placeholder)</li>
+</ul>
+{% endblock %}

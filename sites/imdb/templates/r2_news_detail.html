@@ -1,0 +1,19 @@
+{% extends 'base.html' %}
+{% block title %}{{ news.headline }}{% endblock %}
+{% block content %}
+<a class="crumb" href="{{ url_for('news_list') }}">&lsaquo; News</a>
+<h1>{{ news.headline }}</h1>
+<p class="news-meta">{{ news.source }} &middot; {{ news.published_at }} &middot; {{ news.category|title }}</p>
+{% if related_title %}
+<p>
+  Related title:
+  <a href="{{ url_for('title_detail', tt_id=related_title.tt_id) }}">{{ related_title.primary_title }} ({{ related_title.year }})</a>
+</p>
+{% if related_title.poster_path %}
+<img src="{{ url_for('static', filename='images/' ~ related_title.poster_path) }}" alt="" style="max-width:200px">
+{% endif %}
+{% endif %}
+<article class="news-body">
+  <p>{{ news.summary }}</p>
+</article>
+{% endblock %}

@@ -27,6 +27,24 @@
       by {{ r.user.name }}
       &middot; {{ r.created_at.strftime('%Y-%m-%d') }}
       &middot; {{ r.helpful_count }} found this helpful
+      {% if current_user.is_authenticated %}
+      <form method="post" action="{{ url_for('review_helpful', review_id=r.id) }}" style="display:inline">
+        <button type="submit" class="btn-link">Helpful</button>
+      </form>
+      <form method="post" action="{{ url_for('review_flag', review_id=r.id) }}" style="display:inline">
+        <select name="category" aria-label="Flag category">
+          <option value="spoiler">Spoiler</option>
+          <option value="offensive">Offensive</option>
+          <option value="other">Other</option>
+        </select>
+        <button type="submit" class="btn-link">Flag</button>
+      </form>
+      {% if r.user_id == current_user.id %}
+      <form method="post" action="{{ url_for('review_delete', review_id=r.id) }}" style="display:inline">
+        <button type="submit" class="btn-link">Delete</button>
+      </form>
+      {% endif %}
+      {% endif %}
     </footer>
   </li>
 {% else %}

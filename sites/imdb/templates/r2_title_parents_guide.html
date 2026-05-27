@@ -1,0 +1,19 @@
+{% extends 'base.html' %}
+{% block title %}Parents Guide &mdash; {{ title.primary_title }}{% endblock %}
+{% block content %}
+<a class="crumb" href="{{ url_for('title_detail', tt_id=title.tt_id) }}">&lsaquo; {{ title.primary_title }} ({{ title.year }})</a>
+<h1>Parents Guide for {{ title.primary_title }} ({{ title.year }})</h1>
+{% if title.poster_path %}
+<img class="title-poster" src="{{ url_for('static', filename='images/' ~ title.poster_path) }}" alt="" style="max-width:160px">
+{% endif %}
+<p><strong>MPAA rating:</strong> {{ title.mpaa_rating or 'Not Rated' }}</p>
+<table class="parents-table">
+  <thead><tr><th>Category</th><th>Severity</th></tr></thead>
+  <tbody>
+  {% for cat, lvl in buckets.items() %}
+  <tr><td>{{ cat }}</td><td>{{ lvl }}</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+<p class="note">Severity levels reflect community consensus on a 5-point scale: None / Mild / Moderate / Severe / Extreme.</p>
+{% endblock %}

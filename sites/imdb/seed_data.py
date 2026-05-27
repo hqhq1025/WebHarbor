@@ -621,10 +621,24 @@ def seed_all(db, Title, Person, Genre, Credit, Review, UserRating,
     db.session.flush()
 
     # 6) Benchmark users ---------------------------------------------------
+    # Fixed-salt pbkdf2 — gotchas.md fix #1B. Werkzeug's check_password_hash
+    # accepts these strings; the salt is derived from the email so each user
+    # gets a stable, deterministic hash without calling set_password() (which
+    # injects a random salt and breaks byte-identical rebuilds).
+    import hashlib as _hashlib
+
+    def _pinned_pbkdf2(email, password):
+        salt = _hashlib.sha1(('salt-' + email).encode()).hexdigest()[:8]
+        derived = _hashlib.pbkdf2_hmac(
+            'sha256', password.encode(), salt.encode(), 1000, dklen=32
+        ).hex()
+        return f'pbkdf2:sha256:1000${salt}${derived}'
+
     email_to_user = {}
     for spec in USERS_SPEC:
-        u = User(email=spec['email'], name=spec['name'])
-        u.set_password(spec['password'])
+        u = User(email=spec['email'], name=spec['name'],
+                 created_at=MIRROR_REFERENCE_DATE)
+        u.password_hash = _pinned_pbkdf2(spec['email'], spec['password'])
         db.session.add(u)
         email_to_user[spec['email']] = u
     db.session.flush()
@@ -633,8 +647,10 @@ def seed_all(db, Title, Person, Genre, Credit, Review, UserRating,
     author_users = {}
     for _, author, *_ in SEED_REVIEWS:
         if author not in author_users:
-            u = User(email=f'{author.lower()}@imdb-mirror.test', name=author)
-            u.set_password('seeded-anon-' + author)
+            email = f'{author.lower()}@imdb-mirror.test'
+            u = User(email=email, name=author,
+                     created_at=MIRROR_REFERENCE_DATE)
+            u.password_hash = _pinned_pbkdf2(email, 'seeded-anon-' + author)
             db.session.add(u)
             author_users[author] = u
     db.session.flush()

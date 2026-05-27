@@ -5,7 +5,7 @@
 <ul class="news-list">
   {% for n in items %}
   <li>
-    <strong>{{ n.headline }}</strong>
+    <strong><a href="{{ url_for('news_detail', news_id=n.id) }}">{{ n.headline }}</a></strong>
     <span class="news-meta">&mdash; {{ n.source }} &middot; {{ n.published_at }} &middot; {{ n.category }}</span>
     <p>{{ n.summary }}</p>
     {% if n.related_tt and n.related_tt.startswith('tt') %}

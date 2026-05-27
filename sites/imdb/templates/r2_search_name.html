@@ -1,0 +1,20 @@
+{% extends 'base.html' %}
+{% block title %}Name search{% endblock %}
+{% block content %}
+<h1>Name search</h1>
+<form method="get">
+  <input type="search" name="q" value="{{ q }}" placeholder="Search names" autofocus>
+  <button class="btn" type="submit">Search</button>
+</form>
+<ul class="card-grid">
+  {% for p in people %}
+  <li class="card">
+    {% if p.photo_path %}<img src="{{ url_for('static', filename='images/' ~ p.photo_path) }}" alt="">{% endif %}
+    <a class="card-title" href="{{ url_for('name_detail', nm_id=p.nm_id) }}">{{ p.name }}</a>
+    <div class="card-meta">{{ p.primary_profession }}</div>
+  </li>
+  {% else %}
+  <li>{% if q %}No matches.{% else %}Enter a query.{% endif %}</li>
+  {% endfor %}
+</ul>
+{% endblock %}

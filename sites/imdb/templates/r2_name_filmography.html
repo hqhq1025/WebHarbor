@@ -1,0 +1,29 @@
+{% extends 'base.html' %}
+{% block title %}Filmography &mdash; {{ person.name }}{% endblock %}
+{% block content %}
+<a class="crumb" href="{{ url_for('name_detail', nm_id=person.nm_id) }}">&lsaquo; {{ person.name }}</a>
+<h1>Full filmography &mdash; {{ person.name }}</h1>
+{% if person.photo_path %}
+<img class="person-photo" src="{{ url_for('static', filename='images/' ~ person.photo_path) }}" alt="" style="max-width:200px">
+{% endif %}
+{% set labels = {'actor':'Actor','director':'Director','writer':'Writer',
+                  'producer':'Producer','composer':'Composer'} %}
+{% for role, items in grouped.items() %}
+{% if items %}
+<section>
+  <h2>{{ labels.get(role, role|title) }} &mdash; {{ items|length }} credit{{ 's' if items|length != 1 }}</h2>
+  <table class="credits-table">
+    <tbody>
+    {% for c in items %}
+    <tr>
+      <td>{{ c.title.year if c.title else '' }}</td>
+      <td>{% if c.title %}<a href="{{ url_for('title_detail', tt_id=c.title.tt_id) }}">{{ c.title.primary_title }}</a>{% endif %}</td>
+      <td>{% if c.character %}as {{ c.character }}{% endif %}</td>
+    </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</section>
+{% endif %}
+{% endfor %}
+{% endblock %}

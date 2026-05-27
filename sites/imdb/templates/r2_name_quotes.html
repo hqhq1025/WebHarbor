@@ -1,0 +1,19 @@
+{% extends 'base.html' %}
+{% block title %}Quotes &mdash; {{ person.name }}{% endblock %}
+{% block content %}
+<a class="crumb" href="{{ url_for('name_detail', nm_id=person.nm_id) }}">&lsaquo; {{ person.name }}</a>
+<h1>Quotes &mdash; {{ person.name }}</h1>
+{% if person.photo_path %}
+<img class="person-photo" src="{{ url_for('static', filename='images/' ~ person.photo_path) }}" alt="" style="max-width:200px">
+{% endif %}
+<ul class="quotes-list">
+  {% for t, q in items %}
+  <li class="quote-card">
+    <div class="quote-char"><strong>{{ q.character }}</strong> in <a href="{{ url_for('title_detail', tt_id=t.tt_id) }}">{{ t.primary_title }}</a> ({{ t.year }})</div>
+    <blockquote>{{ q.body }}</blockquote>
+  </li>
+  {% else %}
+  <li>No on-screen quotes catalogued yet.</li>
+  {% endfor %}
+</ul>
+{% endblock %}

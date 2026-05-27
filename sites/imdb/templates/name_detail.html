@@ -18,6 +18,35 @@
     {% endif %}
   </header>
 
+  <nav class="subpages">
+    <a href="{{ url_for('name_bio', nm_id=person.nm_id) }}">Bio</a>
+    &middot; <a href="{{ url_for('name_personal', nm_id=person.nm_id) }}">Personal Life</a>
+    &middot; <a href="{{ url_for('name_awards', nm_id=person.nm_id) }}">Awards</a>
+    &middot; <a href="{{ url_for('name_quotes', nm_id=person.nm_id) }}">Quotes</a>
+    &middot; <a href="{{ url_for('name_trivia', nm_id=person.nm_id) }}">Trivia</a>
+    &middot; <a href="{{ url_for('name_photos', nm_id=person.nm_id) }}">Photos</a>
+    &middot; <a href="{{ url_for('name_filmography', nm_id=person.nm_id) }}">Full Filmography</a>
+  </nav>
+
+  {% if current_user.is_authenticated %}
+  <div class="user-actions">
+    <form method="post" action="{{ url_for('name_follow', nm_id=person.nm_id) }}" style="display:inline">
+      <button type="submit" class="btn">
+        {% if person.id in following_ids %}Unfollow{% else %}Follow{% endif %}
+      </button>
+    </form>
+    <form method="post" action="{{ url_for('name_report', nm_id=person.nm_id) }}" style="display:inline">
+      <select name="category" aria-label="Report category">
+        <option value="incorrect-data">Report incorrect data</option>
+        <option value="impersonation">Report impersonation</option>
+        <option value="other">Other issue</option>
+      </select>
+      <input type="text" name="body" placeholder="Brief description (optional)">
+      <button type="submit" class="btn">Submit Report</button>
+    </form>
+  </div>
+  {% endif %}
+
   {% if person.bio %}
   <section class="bio">
     <h2>Mini bio</h2>

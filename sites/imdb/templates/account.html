@@ -7,6 +7,22 @@
   <li><a href="{{ url_for('my_watchlist') }}">Watchlist</a> &mdash; {{ watch_count }} title{{ 's' if watch_count != 1 }}</li>
   <li><a href="{{ url_for('my_ratings') }}">Your ratings</a> &mdash; {{ rating_count }} rating{{ 's' if rating_count != 1 }}</li>
   <li>Reviews you have written: {{ review_count }}</li>
+  <li><a href="{{ url_for('recently_viewed') }}">Recently viewed</a></li>
+  <li><a href="{{ url_for('lists_index') }}">Browse public lists</a> &middot; <a href="{{ url_for('list_new') }}">Create a list</a></li>
+  <li><a href="{{ url_for('account_edit') }}">Edit profile</a> &middot; <a href="{{ url_for('account_password') }}">Change password</a></li>
+  <li>
+    <form method="post" action="{{ url_for('watchlist_clear') }}" style="display:inline">
+      <button type="submit" class="btn-link">Clear my Watchlist</button>
+    </form>
+    &middot;
+    <form method="post" action="{{ url_for('ratings_clear') }}" style="display:inline">
+      <button type="submit" class="btn-link">Clear my Ratings</button>
+    </form>
+    &middot;
+    <form method="post" action="{{ url_for('follows_clear') }}" style="display:inline">
+      <button type="submit" class="btn-link">Unfollow everyone</button>
+    </form>
+  </li>
 </ul>
 <p><a href="{{ url_for('logout') }}">Sign out</a></p>
 {% endblock %}
