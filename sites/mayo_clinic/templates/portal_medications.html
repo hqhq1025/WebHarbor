@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% block title %}My Medications{% endblock %}
+{% block content %}
+<section class="container">
+  <h1>My Medications</h1>
+
+  <div class="two-col">
+    <div>
+      <h2>Request a prescription refill</h2>
+      <form method="post" class="form-grid">
+        <div class="span-2">
+          <label>Medication</label>
+          <select name="drug_slug" required>
+            <option value="">Choose a medication...</option>
+            {% for s in saved_drugs %}<option value="{{ s.slug }}">{{ s.title }}</option>{% endfor %}
+          </select>
+        </div>
+        <div class="span-2"><label>Pharmacy</label>
+          <select name="pharmacy">
+            <option>Mayo Clinic Pharmacy (Rochester)</option>
+            <option>Mayo Clinic Pharmacy (Jacksonville)</option>
+            <option>Mayo Clinic Pharmacy (Phoenix)</option>
+            <option>CVS</option>
+            <option>Walgreens</option>
+            <option>Rite Aid</option>
+          </select>
+        </div>
+        <div class="span-2"><button class="btn-primary" type="submit">Request refill</button></div>
+      </form>
+
+      <h2 style="margin-top:32px;">Refill history</h2>
+      {% if refills %}
+        {% for r in refills %}
+          <div class="sidebar-card">
+            <strong>{{ r.drug_name }}</strong> &mdash; {{ r.pharmacy }}<br>
+            <span class="muted">Status: {{ r.status }} &middot; Confirmation: {{ r.confirmation_code }}</span>
+          </div>
+        {% endfor %}
+      {% else %}<p>No refills requested.</p>{% endif %}
+    </div>
+    <aside class="sidebar">
+      <div class="sidebar-card">
+        <h4>Active medications</h4>
+        <ul>
+          {% for s in saved_drugs %}<li><a href="{{ url_for('drug_detail', slug=s.slug) }}">{{ s.title }}</a></li>{% endfor %}
+        </ul>
+      </div>
+    </aside>
+  </div>
+</section>
+{% endblock %}

@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% block title %}Search{% endblock %}
+{% block breadcrumbs %}
+<div class="container breadcrumbs"><a href="{{ url_for('index') }}">Home</a><span>&rsaquo;</span> Search</div>
+{% endblock %}
+{% block content %}
+<section class="container">
+  <h1>Search results</h1>
+  <form action="{{ url_for('search') }}" method="get">
+    <div class="form-row" style="max-width:540px;">
+      <input type="search" name="q" value="{{ q }}" placeholder="Search Mayo Clinic...">
+      <button class="btn-primary" type="submit" style="margin-top:6px;">Search</button>
+    </div>
+  </form>
+
+  {% if q %}
+    <p class="muted">Showing {{ total }} result{{ '' if total == 1 else 's' }} for &ldquo;{{ q }}&rdquo;.</p>
+    {% for kind, items in results.items() %}
+      {% if items %}
+        <h2>{{ kind }} <span class="muted" style="font-size:14px;font-weight:normal;">({{ items|length }})</span></h2>
+        {% for it in items %}
+          <div class="result-row">
+            <span class="kind">{{ kind }}</span>
+            {% if kind == 'Conditions' %}
+              <a class="title" href="{{ url_for('condition_detail', slug=it.slug) }}">{{ it.name }}</a>
+              <p>{{ it.summary[:240] }}</p>
+            {% elif kind == 'Tests & Procedures' %}
+              <a class="title" href="{{ url_for('procedure_detail', slug=it.slug) }}">{{ it.name }}</a>
+              <p>{{ it.summary[:240] }}</p>
+            {% elif kind == 'Drugs & Supplements' %}
+              <a class="title" href="{{ url_for('drug_detail', slug=it.slug) }}">{{ it.name }}</a>
+              <p>{{ it.description[:240] }}</p>
+            {% elif kind == 'Doctors' %}
+              <a class="title" href="{{ url_for('doctor_detail', slug=it.slug) }}">{{ it.name }}</a>
+              <p>{{ it.specialty }} &middot; {{ it.locations.replace(',', ', ') }}</p>
+            {% elif kind == 'Articles' %}
+              <a class="title" href="{{ url_for('lifestyle_detail' if it.kind=='lifestyle' else ('news_detail' if it.kind=='news' else 'story_detail'), slug=it.slug) }}">{{ it.title }}</a>
+              <p>{{ it.summary[:240] }}</p>
+            {% elif kind == 'Clinical Trials' %}
+              <a class="title" href="{{ url_for('trial_detail', nct_id=it.nct_id) }}">{{ it.title }}</a>
+              <p>{{ it.brief_summary[:200] }}</p>
+            {% endif %}
+          </div>
+        {% endfor %}
+      {% endif %}
+    {% endfor %}
+    {% if total == 0 %}<p class="muted">No results. Try different keywords.</p>{% endif %}
+  {% else %}
+    <p class="muted">Enter a query to search across conditions, procedures, drugs, doctors, articles, and trials.</p>
+  {% endif %}
+</section>
+{% endblock %}

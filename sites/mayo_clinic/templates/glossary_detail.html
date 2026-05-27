@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% block title %}{{ term.term }} - Medical Glossary{% endblock %}
+{% block breadcrumbs %}
+<div class="container breadcrumbs">
+  <a href="{{ url_for('index') }}">Home</a><span>&rsaquo;</span>
+  <a href="{{ url_for('glossary_index') }}">Glossary</a><span>&rsaquo;</span>
+  {{ term.term }}
+</div>
+{% endblock %}
+{% block content %}
+<section class="container">
+  <div class="two-col">
+    <div>
+      <h1>{{ term.term }}</h1>
+      <p class="muted"><span class="cat" style="background:var(--mayo-blue-light); padding:3px 8px; border-radius:3px; font-size:12px; font-weight:600;">{{ term.category }}</span></p>
+      <div class="article-body">
+        <p style="font-size:1.1rem;">{{ term.definition }}</p>
+        <p>This term appears in patient education materials, clinical notes, and the Mayo Clinic Health Library. If you have questions about how it applies to your care, talk with your Mayo Clinic care team.</p>
+      </div>
+
+      <form action="{{ url_for('glossary_feedback', slug=term.slug) }}" method="post" style="margin-top:20px;">
+        <h3>Suggest a clearer definition</h3>
+        <textarea name="suggestion" rows="3" style="width:100%;" placeholder="Optional: tell us how to improve this definition..."></textarea>
+        <button class="btn-secondary" type="submit" style="margin-top:8px;">Submit feedback</button>
+      </form>
+
+      <p style="margin-top: 24px;"><a href="{{ url_for('print_view', kind='glossary', slug=term.slug) }}">Print this definition &rsaquo;</a></p>
+    </div>
+    <aside class="sidebar">
+      <div class="sidebar-card">
+        <h4>Related terms</h4>
+        <ul>
+          {% for r in related %}<li><a href="{{ url_for('glossary_detail', slug=r.slug) }}">{{ r.term }}</a></li>{% endfor %}
+        </ul>
+      </div>
+      <div class="sidebar-card">
+        <h4>Browse</h4>
+        <ul>
+          <li><a href="{{ url_for('glossary_index') }}">Full glossary A-Z</a></li>
+          <li><a href="{{ url_for('glossary_index', category=term.category) }}">More in {{ term.category }}</a></li>
+          <li><a href="{{ url_for('diseases_index') }}">Diseases &amp; Conditions</a></li>
+        </ul>
+      </div>
+    </aside>
+  </div>
+</section>
+{% endblock %}

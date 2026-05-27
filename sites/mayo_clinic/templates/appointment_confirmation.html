@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block title %}Appointment Confirmation{% endblock %}
+{% block content %}
+<section class="container">
+  <h1>Appointment request received</h1>
+  <div class="alert alert-success">
+    Thank you. Your appointment request has been submitted. Confirmation code: <strong>{{ confirmation.code }}</strong>
+  </div>
+  <p>A Mayo Clinic appointment coordinator will contact you at <strong>{{ confirmation.patient_email }}</strong> or <strong>{{ confirmation.patient_phone }}</strong> within 1-2 business days to confirm the time.</p>
+  <h2>Request summary</h2>
+  <table class="data">
+    <tr><th>Department</th><td>{{ confirmation.dept }}</td></tr>
+    <tr><th>Location</th><td>{{ confirmation.location }}</td></tr>
+    <tr><th>Preferred date</th><td>{{ confirmation.preferred_date }}</td></tr>
+    <tr><th>Name</th><td>{{ confirmation.patient_name }}</td></tr>
+    <tr><th>Insurance</th><td>{{ confirmation.insurance }}</td></tr>
+    <tr><th>Reason</th><td>{{ confirmation.reason }}</td></tr>
+  </table>
+  <a class="btn-primary" href="{{ url_for('patient_portal') }}">Go to my portal</a>
+  <a class="btn-secondary" href="{{ url_for('index') }}" style="margin-left:8px;">Return home</a>
+</section>
+{% endblock %}

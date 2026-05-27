@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block title %}Drugs &amp; Supplements{% endblock %}
+{% block breadcrumbs %}
+<div class="container breadcrumbs"><a href="{{ url_for('index') }}">Home</a><span>&rsaquo;</span> Drugs &amp; Supplements</div>
+{% endblock %}
+{% block content %}
+<section class="container">
+  <h1>Drugs &amp; Supplements</h1>
+  <p class="muted">Information from Mayo Clinic about prescription medications, over-the-counter remedies, and herbal supplements.</p>
+
+  <form method="get" action="{{ url_for('drugs_index') }}" style="margin:12px 0;">
+    <label>Type:</label>
+    <select name="kind" onchange="this.form.submit()">
+      <option value="">All</option>
+      <option value="prescription" {{ 'selected' if kind == 'prescription' else '' }}>Prescription</option>
+      <option value="otc" {{ 'selected' if kind == 'otc' else '' }}>Over-the-counter (OTC)</option>
+      <option value="supplement" {{ 'selected' if kind == 'supplement' else '' }}>Herbs &amp; supplements</option>
+    </select>
+    {% if active_letter %}<input type="hidden" name="letter" value="{{ active_letter }}">{% endif %}
+  </form>
+
+  <div class="az-strip">
+    {% for L in letters %}
+      <a class="{{ 'active' if L == active_letter else '' }}" href="{{ url_for('drugs_index') }}?letter={{ L }}{% if kind %}&kind={{ kind }}{% endif %}">{{ L }}</a>
+    {% endfor %}
+    {% if active_letter %}<a href="{{ url_for('drugs_index') }}{% if kind %}?kind={{ kind }}{% endif %}" style="background:#fff;color:#0064a2;">Show all</a>{% endif %}
+  </div>
+
+  <p class="muted">Showing {{ drugs|length }} {{ 'drug' if drugs|length == 1 else 'drugs' }}{% if active_letter %} starting with "{{ active_letter }}"{% endif %}.</p>
+  <ul class="az-list">
+    {% for d in drugs %}
+      <li><a href="{{ url_for('drug_detail', slug=d.slug) }}">{{ d.name }}</a> <span class="muted" style="font-size:12px;">({{ d.kind }})</span></li>
+    {% endfor %}
+  </ul>
+</section>
+{% endblock %}

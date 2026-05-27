@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+{% block title %}{{ article.title }}{% endblock %}
+{% block breadcrumbs %}
+<div class="container breadcrumbs">
+  <a href="{{ url_for('index') }}">Home</a><span>&rsaquo;</span>
+  <a href="{{ back_url }}">{{ back_label }}</a><span>&rsaquo;</span>
+  {{ article.title }}
+</div>
+{% endblock %}
+{% block content %}
+<section class="container">
+  {% set img_kind = 'wellness' if article.kind == 'lifestyle' else ('stories' if article.kind == 'story' else 'trials') %}
+  {% set hero = pick_image(img_kind, article.slug) %}
+  {% if not hero %}{% set hero = pick_image('articles', article.slug) %}{% endif %}
+  {% if hero %}<img class="article-hero" src="{{ url_for('static', filename=hero) }}" alt="">{% endif %}
+  <h1>{{ article.title }}</h1>
+  <p class="muted">{{ article.category }} &middot; {{ article.published_date }}</p>
+
+  <div class="two-col">
+    <div class="article-body">
+      <p style="font-size:1.1rem;font-weight:600;color:var(--mayo-blue-dark);">{{ article.summary }}</p>
+      <div style="white-space:pre-wrap;">{{ article.body }}</div>
+
+      <form action="{{ url_for('feedback') }}" method="post" style="margin-top:24px;">
+        <input type="hidden" name="slug" value="{{ article.slug }}">
+        <input type="hidden" name="kind" value="article">
+        <strong>Was this helpful?</strong>
+        <button class="btn-secondary" name="helpful" value="yes" type="submit" style="margin-left:8px;">Yes</button>
+        <button class="btn-secondary" name="helpful" value="no" type="submit">No</button>
+      </form>
+
+      {% if current_user.is_authenticated %}
+      <form action="{{ url_for('save_item') }}" method="post" style="display:inline-block;margin-top:14px;">
+        <input type="hidden" name="kind" value="article">
+        <input type="hidden" name="slug" value="{{ article.slug }}">
+        <input type="hidden" name="title" value="{{ article.title }}">
+        <input type="hidden" name="next" value="{{ request.path }}">
+        <button class="btn-secondary" type="submit">Save article</button>
+      </form>
+      {% endif %}
+
+      <form action="{{ url_for('share_article') }}" method="post" style="margin-top: 18px; padding: 14px; background: var(--mayo-bg-alt); border-radius: 4px;">
+        <strong>Share this article by email</strong>
+        <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap;">
+          <input type="hidden" name="slug" value="{{ article.slug }}">
+          <input type="hidden" name="kind" value="{{ article.kind }}">
+          <input type="email" name="sender_email" placeholder="Your email" required style="flex:1;min-width:160px;padding:6px;border:1px solid var(--mayo-border);border-radius:4px;">
+          <input type="email" name="recipient_email" placeholder="Recipient" required style="flex:1;min-width:160px;padding:6px;border:1px solid var(--mayo-border);border-radius:4px;">
+          <button class="btn-secondary" type="submit">Share</button>
+        </div>
+      </form>
+      <p style="margin-top: 12px;"><a href="{{ url_for('print_view', kind='article', slug=article.slug) }}">Print-friendly view &rsaquo;</a></p>
+    </div>
+    <aside class="sidebar">
+      {% if related %}
+      <div class="sidebar-card">
+        <h4>Related</h4>
+        <ul>{% for r in related %}<li><a href="{{ request.path.rsplit('/',1)[0] }}/{{ r.slug }}">{{ r.title }}</a></li>{% endfor %}</ul>
+      </div>
+      {% endif %}
+      <div class="appointment-block">
+        <h4>Care at Mayo Clinic</h4>
+        <a class="btn-primary" href="{{ url_for('appointments_landing') }}">Request appointment</a>
+      </div>
+    </aside>
+  </div>
+</section>
+{% endblock %}

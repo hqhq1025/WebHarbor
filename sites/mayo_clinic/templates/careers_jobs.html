@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block title %}Search Jobs at Mayo Clinic{% endblock %}
+{% block breadcrumbs %}
+<div class="container breadcrumbs">
+  <a href="{{ url_for('index') }}">Home</a><span>&rsaquo;</span>
+  <a href="{{ url_for('careers') }}">Careers</a><span>&rsaquo;</span> Job listings
+</div>
+{% endblock %}
+{% block content %}
+<section class="container">
+  <h1>Open positions at Mayo Clinic</h1>
+  <p>{{ rows|length }} open positions across Rochester, Jacksonville, and Phoenix.</p>
+
+  <form method="get" class="form-grid">
+    <div><label>Keyword</label><input type="search" name="q" value="{{ q }}" placeholder="e.g., nurse, oncology"></div>
+    <div>
+      <label>Category</label>
+      <select name="category">
+        <option value="">All categories</option>
+        {% for c in categories %}<option value="{{ c }}" {% if c == category %}selected{% endif %}>{{ c }}</option>{% endfor %}
+      </select>
+    </div>
+    <div>
+      <label>Location</label>
+      <select name="location">
+        <option value="">All locations</option>
+        {% for l in locations %}<option value="{{ l }}" {% if l == location %}selected{% endif %}>{{ l }}</option>{% endfor %}
+      </select>
+    </div>
+    <div class="span-2"><button class="btn-primary" type="submit">Filter</button></div>
+  </form>
+
+  <h2>Results</h2>
+  {% for idx in range(rows|length) %}
+    {% set job = rows[idx] %}
+    <div class="job-row">
+      <div class="title"><a href="{{ url_for('career_job_detail', idx=loop.index0) }}">{{ job[0] }}</a></div>
+      <div><span class="badge">{{ job[1] }}</span></div>
+      <div>{{ job[2] }}</div>
+      <div>{{ job[3] }} &middot; {{ job[4] }}</div>
+    </div>
+  {% else %}
+    <p>No openings match your filter.</p>
+  {% endfor %}
+</section>
+{% endblock %}

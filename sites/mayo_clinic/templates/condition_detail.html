@@ -1,0 +1,145 @@
+{% extends "base.html" %}
+{% block title %}{{ cond.name }} - Symptoms and causes{% endblock %}
+{% block breadcrumbs %}
+<div class="container breadcrumbs">
+  <a href="{{ url_for('index') }}">Home</a><span>&rsaquo;</span>
+  <a href="{{ url_for('diseases_index') }}">Diseases &amp; Conditions</a><span>&rsaquo;</span>
+  {{ cond.name }}
+</div>
+{% endblock %}
+{% block content %}
+<section class="container">
+  <h1>{{ cond.name }}</h1>
+  <p class="muted" style="font-size:1.05rem;">{{ cond.summary }}</p>
+  {% if dept %}<p class="muted">Care at Mayo Clinic: <a href="{{ url_for('department_detail', slug=dept.slug) }}">{{ dept.name }}</a></p>{% endif %}
+
+  {% set anat = pick_image('anatomy', cond.slug) %}
+  {% if anat %}
+  <figure class="anatomy-fig">
+    <img src="{{ url_for('static', filename=anat) }}" alt="Illustration related to {{ cond.name }}">
+    <figcaption>Illustrative anatomy. Mayo Clinic Health Library.</figcaption>
+  </figure>
+  {% endif %}
+
+  <div class="two-col">
+    <div class="article-body">
+      <section id="overview"><h2>Overview</h2><p>{{ cond.overview }}</p></section>
+      <section id="symptoms"><h2>Symptoms</h2><p>{{ cond.symptoms }}</p>
+        <h3>When to see a doctor</h3>
+        <p>If you suspect you or a loved one has {{ cond.name }}, schedule an appointment with your primary care clinician. For serious or worsening symptoms, seek emergency care.</p>
+      </section>
+      <section id="causes"><h2>Causes</h2><p>{{ cond.causes }}</p></section>
+      <section id="risk-factors"><h2>Risk Factors</h2><p>{{ cond.risk_factors }}</p></section>
+      <section id="complications"><h2>Complications</h2><p>{{ cond.complications }}</p></section>
+      <section id="prevention"><h2>Prevention</h2><p>{{ cond.prevention }}</p></section>
+      <section id="diagnosis"><h2>Diagnosis</h2><p>{{ cond.diagnosis }}</p></section>
+      <section id="treatment"><h2>Treatment</h2><p>{{ cond.treatment }}</p></section>
+      <section id="lifestyle"><h2>Lifestyle and Home Remedies</h2><p>{{ cond.lifestyle }}</p></section>
+      <section id="alternative"><h2>Alternative Medicine</h2><p>{{ cond.alternative }}</p></section>
+      <section id="preparing"><h2>Preparing for Your Appointment</h2><p>{{ cond.preparing }}</p></section>
+      <section id="references"><h2>References</h2><pre style="white-space:pre-wrap;font-family:inherit;">{{ cond.references_text }}</pre></section>
+
+      <form action="{{ url_for('feedback') }}" method="post" style="margin-top:24px;">
+        <input type="hidden" name="slug" value="{{ cond.slug }}">
+        <input type="hidden" name="kind" value="condition">
+        <strong>Was this helpful?</strong>
+        <button class="btn-secondary" name="helpful" value="yes" type="submit" style="margin-left:8px;">Yes</button>
+        <button class="btn-secondary" name="helpful" value="no" type="submit">No</button>
+      </form>
+
+      {% if current_user.is_authenticated %}
+      <form action="{{ url_for('save_item') }}" method="post" style="display:inline-block;margin-top:14px;">
+        <input type="hidden" name="kind" value="condition">
+        <input type="hidden" name="slug" value="{{ cond.slug }}">
+        <input type="hidden" name="title" value="{{ cond.name }}">
+        <input type="hidden" name="next" value="{{ request.path }}">
+        <button class="btn-secondary" type="submit">Save to my portal</button>
+      </form>
+      {% endif %}
+
+      <form action="{{ url_for('share_article') }}" method="post" style="margin-top: 18px; padding: 14px; background: var(--mayo-bg-alt); border-radius: 4px;">
+        <strong>Share this article</strong>
+        <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap;">
+          <input type="hidden" name="slug" value="{{ cond.slug }}">
+          <input type="hidden" name="kind" value="condition">
+          <input type="email" name="sender_email" placeholder="Your email" required style="flex:1;min-width:160px;padding:6px;border:1px solid var(--mayo-border);border-radius:4px;">
+          <input type="email" name="recipient_email" placeholder="Recipient email" required style="flex:1;min-width:160px;padding:6px;border:1px solid var(--mayo-border);border-radius:4px;">
+          <button class="btn-secondary" type="submit">Share</button>
+        </div>
+      </form>
+
+      <p style="margin-top: 16px;"><a href="{{ url_for('print_view', kind='condition', slug=cond.slug) }}">Print-friendly view &rsaquo;</a></p>
+    </div>
+
+    <aside class="sidebar">
+      <div class="sidebar-card">
+        <h4>On this page</h4>
+        <ul>
+          <li><a class="toc-link" href="#overview">Overview</a></li>
+          <li><a class="toc-link" href="#symptoms">Symptoms</a></li>
+          <li><a class="toc-link" href="#causes">Causes</a></li>
+          <li><a class="toc-link" href="#risk-factors">Risk Factors</a></li>
+          <li><a class="toc-link" href="#complications">Complications</a></li>
+          <li><a class="toc-link" href="#prevention">Prevention</a></li>
+          <li><a class="toc-link" href="#diagnosis">Diagnosis</a></li>
+          <li><a class="toc-link" href="#treatment">Treatment</a></li>
+          <li><a class="toc-link" href="#lifestyle">Lifestyle</a></li>
+          <li><a class="toc-link" href="#alternative">Alternative Medicine</a></li>
+          <li><a class="toc-link" href="#preparing">Preparing for Appointment</a></li>
+          <li><a class="toc-link" href="#references">References</a></li>
+        </ul>
+      </div>
+
+      <div class="appointment-block">
+        <h4>Care at Mayo Clinic</h4>
+        <p>Our caring team of Mayo Clinic experts can help you with concerns related to {{ cond.name }}.</p>
+        <a class="btn-primary" href="{{ url_for('appointments_landing') }}">Request appointment</a>
+      </div>
+
+      {% if related_procs %}
+      <div class="sidebar-card">
+        <h4>Associated Procedures</h4>
+        <ul>
+          {% for p in related_procs %}
+            <li><a href="{{ url_for('procedure_detail', slug=p.slug) }}">{{ p.name }}</a></li>
+          {% endfor %}
+        </ul>
+      </div>
+      {% endif %}
+
+      {% if related_drugs %}
+      <div class="sidebar-card">
+        <h4>Related Drugs</h4>
+        <ul>
+          {% for d in related_drugs %}
+            <li><a href="{{ url_for('drug_detail', slug=d.slug) }}">{{ d.name }}</a></li>
+          {% endfor %}
+        </ul>
+      </div>
+      {% endif %}
+
+      {% if doctors %}
+      <div class="sidebar-card">
+        <h4>Doctors who treat this</h4>
+        <ul>
+          {% for d in doctors %}
+            <li><a href="{{ url_for('doctor_detail', slug=d.slug) }}">{{ d.name }}</a><br><span class="muted" style="font-size:12px;">{{ d.specialty }}</span></li>
+          {% endfor %}
+        </ul>
+      </div>
+      {% endif %}
+
+      {% if related_conditions %}
+      <div class="sidebar-card">
+        <h4>Related conditions</h4>
+        <ul>
+          {% for r in related_conditions %}
+            <li><a href="{{ url_for('condition_detail', slug=r.slug) }}">{{ r.name }}</a></li>
+          {% endfor %}
+        </ul>
+      </div>
+      {% endif %}
+    </aside>
+  </div>
+</section>
+{% endblock %}

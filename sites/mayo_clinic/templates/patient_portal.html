@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+{% block title %}Patient Portal{% endblock %}
+{% block content %}
+<section class="container">
+  <h1>Welcome back, {{ user.display_name }}</h1>
+  <p class="muted">Your Mayo Clinic patient portal.</p>
+
+  <div class="two-col">
+    <div>
+      <h2>Your appointment requests</h2>
+      {% if appointments %}
+        <table class="data">
+          <thead><tr><th>Department</th><th>Location</th><th>Preferred date</th><th>Status</th><th>Code</th></tr></thead>
+          <tbody>
+          {% for a in appointments %}
+            <tr>
+              <td>{{ a.dept_slug }}</td>
+              <td>{{ a.location }}</td>
+              <td>{{ a.preferred_date }}</td>
+              <td>{{ a.status }}</td>
+              <td><code>{{ a.confirmation_code }}</code></td>
+            </tr>
+          {% endfor %}
+          </tbody>
+        </table>
+      {% else %}
+        <p class="muted">You don't have any appointment requests yet.</p>
+      {% endif %}
+      <a class="btn-primary" href="{{ url_for('request_appointment') }}?step=1">Request new appointment</a>
+
+      <h2>Saved items</h2>
+      {% if saved %}
+        <ul>
+          {% for s in saved %}
+            <li>
+              <span class="kind" style="display:inline-block;padding:2px 8px;background:var(--mayo-blue-light);color:var(--mayo-blue-dark);border-radius:12px;font-size:11px;">{{ s.kind|upper }}</span>
+              {{ s.title }}
+              <form action="{{ url_for('unsave_item') }}" method="post" style="display:inline;">
+                <input type="hidden" name="kind" value="{{ s.kind }}">
+                <input type="hidden" name="slug" value="{{ s.slug }}">
+                <button class="btn-secondary" style="padding:2px 9px;font-size:11px;" type="submit">Remove</button>
+              </form>
+            </li>
+          {% endfor %}
+        </ul>
+      {% else %}
+        <p class="muted">No saved items yet.</p>
+      {% endif %}
+    </div>
+    <aside class="sidebar">
+      <div class="sidebar-card">
+        <h4>Patient services</h4>
+        <ul>
+          <li><a href="{{ url_for('portal_appointments') }}">My appointments</a></li>
+          <li><a href="{{ url_for('portal_messages') }}">Messages</a></li>
+          <li><a href="{{ url_for('portal_medications') }}">Medications &amp; refills</a></li>
+          <li><a href="{{ url_for('portal_billing') }}">Billing</a></li>
+          <li><a href="{{ url_for('portal_health_records') }}">Health records</a></li>
+          <li><a href="{{ url_for('portal_profile') }}">Profile</a></li>
+        </ul>
+      </div>
+      <div class="sidebar-card">
+        <h4>Profile</h4>
+        <p><strong>{{ user.display_name }}</strong></p>
+        <p>{{ user.email }}<br>{{ user.phone }}</p>
+        <p>{{ user.address }}</p>
+        <p>Preferred location: {{ user.preferred_location }}</p>
+      </div>
+      <div class="appointment-block">
+        <h4>Get care</h4>
+        <a class="btn-primary" href="{{ url_for('appointments_landing') }}">Request appointment</a>
+      </div>
+    </aside>
+  </div>
+</section>
+{% endblock %}

@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block title %}Pre-Screen for {{ trial.title }}{% endblock %}
+{% block breadcrumbs %}
+<div class="container breadcrumbs">
+  <a href="{{ url_for('index') }}">Home</a><span>&rsaquo;</span>
+  <a href="{{ url_for('trials_index') }}">Clinical Trials</a><span>&rsaquo;</span>
+  <a href="{{ url_for('trial_detail', nct_id=trial.nct_id) }}">{{ trial.nct_id }}</a><span>&rsaquo;</span>
+  Inquire
+</div>
+{% endblock %}
+{% block content %}
+<section class="container">
+  <h1>Pre-screening for {{ trial.title }}</h1>
+  <p class="muted">{{ trial.brief_summary }}</p>
+
+  {% if success_code %}
+    {% if eligible == 'eligible' %}
+      <div class="alert alert-success">Based on the information provided you appear potentially eligible. Confirmation: <strong>{{ success_code }}</strong>. A trial coordinator will reach out for additional screening.</div>
+    {% else %}
+      <div class="alert alert-info">Based on the information provided you may not meet eligibility criteria. Your inquiry has been logged as <strong>{{ success_code }}</strong> and a coordinator may still reach out for additional review.</div>
+    {% endif %}
+  {% endif %}
+
+  <form method="post" class="form-grid">
+    <div><label>Patient name</label><input type="text" name="patient_name" required></div>
+    <div><label>Email</label><input type="email" name="patient_email" required></div>
+    <div><label>Age</label><input type="number" name="patient_age" min="0" max="120" required></div>
+    <div><label>Year diagnosed</label><input type="number" name="diagnosis_year" min="1950" max="2030" required></div>
+    <div class="span-2"><label>Prior treatments tried</label><textarea name="prior_treatments" rows="4"></textarea></div>
+    <div class="span-2"><button class="btn-primary" type="submit">Submit pre-screen</button></div>
+  </form>
+
+  <h2>Trial eligibility</h2>
+  <pre style="white-space:pre-wrap;background:var(--mayo-bg-alt);padding:14px;border-radius:4px;">{{ trial.eligibility }}</pre>
+</section>
+{% endblock %}

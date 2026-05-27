@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block title %}Departments &amp; Centers{% endblock %}
+{% block breadcrumbs %}
+<div class="container breadcrumbs"><a href="{{ url_for('index') }}">Home</a><span>&rsaquo;</span> Departments &amp; Centers</div>
+{% endblock %}
+{% block content %}
+<section class="container">
+  <h1>Medical Departments &amp; Centers</h1>
+  <p class="muted">Mayo Clinic care teams work together across more than 30 medical departments and centers.</p>
+
+  <form method="get" action="{{ url_for('departments_index') }}" style="margin:12px 0;">
+    <label>Filter by location:</label>
+    <select name="location" onchange="this.form.submit()">
+      <option value="">All locations</option>
+      <option value="Rochester" {{ 'selected' if location == 'Rochester' else '' }}>Rochester, Minnesota</option>
+      <option value="Jacksonville" {{ 'selected' if location == 'Jacksonville' else '' }}>Jacksonville, Florida</option>
+      <option value="Phoenix" {{ 'selected' if location == 'Phoenix' else '' }}>Phoenix/Scottsdale, Arizona</option>
+    </select>
+  </form>
+
+  <ul class="az-list">
+    {% for d in departments %}
+      <li><a href="{{ url_for('department_detail', slug=d.slug) }}">{{ d.name }}</a>
+        <span class="muted" style="font-size:12px;">&middot; {{ d.locations.replace(',', ', ') }}</span>
+      </li>
+    {% endfor %}
+  </ul>
+</section>
+{% endblock %}

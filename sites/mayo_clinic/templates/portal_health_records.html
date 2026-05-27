@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block title %}Health Records{% endblock %}
+{% block content %}
+<section class="container">
+  <h1>My Health Records</h1>
+  <p>Active conditions, allergies, vitals, and uploaded reports for {{ user.display_name }}.</p>
+
+  <h2>Active conditions</h2>
+  {% if conditions %}
+    <ul>{% for c in conditions %}<li><a href="{{ url_for('condition_detail', slug=c.slug) }}">{{ c.title }}</a></li>{% endfor %}</ul>
+  {% else %}<p>No active conditions documented.</p>{% endif %}
+
+  <h2>Allergies</h2>
+  <p>No known allergies on file. <a href="{{ url_for('portal_messages') }}">Message your care team</a> to add one.</p>
+
+  <h2>Recent vitals</h2>
+  <table style="width:100%; border-collapse:collapse;">
+    <tr style="background: var(--mayo-blue-light);">
+      <th style="padding:8px; text-align:left;">Date</th>
+      <th style="text-align:left;">Blood pressure</th>
+      <th style="text-align:left;">Heart rate</th>
+      <th style="text-align:left;">Weight</th>
+    </tr>
+    <tr><td style="padding:8px;">{{ mirror_date }}</td><td>120/78 mmHg</td><td>68 bpm</td><td>72 kg</td></tr>
+    <tr><td style="padding:8px;">3 months prior</td><td>122/80 mmHg</td><td>72 bpm</td><td>73 kg</td></tr>
+    <tr><td style="padding:8px;">6 months prior</td><td>128/82 mmHg</td><td>70 bpm</td><td>74 kg</td></tr>
+  </table>
+
+  <p style="margin-top:18px;"><a href="{{ url_for('portal_messages') }}">Send a message to your care team about your records &rsaquo;</a></p>
+</section>
+{% endblock %}

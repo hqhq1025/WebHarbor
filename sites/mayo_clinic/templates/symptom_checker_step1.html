@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block title %}Symptom Checker - Step 1{% endblock %}
+{% block breadcrumbs %}
+<div class="container breadcrumbs"><a href="{{ url_for('index') }}">Home</a><span>&rsaquo;</span> Symptom Checker</div>
+{% endblock %}
+{% block content %}
+<section class="container">
+  <h1>Symptom Checker</h1>
+  <p>Foot pain? Headache? Sore throat? Skin rash? Use the Mayo Clinic Symptom Checker to find out what's causing your symptom.</p>
+  <div class="sc-progress">
+    <div class="done"></div><div></div><div></div><div></div><div></div>
+  </div>
+  <div class="sc-step">Step 1 of 5: Where is the symptom located?</div>
+  <div style="display:grid;grid-template-columns: 220px 1fr; gap:24px; align-items:start;">
+    <img src="{{ url_for('static', filename='icons/body-silhouette.svg') }}" alt="Body region selector" style="width:200px;">
+    <div class="sc-options">
+      {% for slug, label, _ in regions %}
+        <a href="{{ url_for('symptom_checker', region=slug) }}">{{ label }}</a>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+{% endblock %}

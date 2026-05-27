@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block title %}Contact{% endblock %}
+{% block content %}
+<section class="container">
+  <h1>Contact Mayo Clinic</h1>
+  <p>For appointments, the fastest way to reach us is through the online appointment request system.</p>
+  <a class="btn-primary" href="{{ url_for('appointments_landing') }}">Request an appointment</a>
+
+  <h2>Phone numbers</h2>
+  <table class="data">
+    <thead><tr><th>Office</th><th>Phone</th></tr></thead>
+    <tbody>
+      <tr><td>Rochester appointments</td><td>507-538-3270</td></tr>
+      <tr><td>Phoenix/Scottsdale appointments</td><td>480-301-8484</td></tr>
+      <tr><td>Jacksonville appointments</td><td>904-953-0853</td></tr>
+      <tr><td>International appointment office</td><td>+1 507-738-4021</td></tr>
+      <tr><td>Children's Center (Rochester)</td><td>855-629-6543</td></tr>
+      <tr><td>Mayo Clinic Health System</td><td>Multiple locations</td></tr>
+    </tbody>
+  </table>
+
+  <h2>Media inquiries</h2>
+  <p>Mayo Clinic News Network: <a href="{{ url_for('news_index') }}">View the newsroom</a></p>
+
+  <h2>General inquiries</h2>
+  <p>For non-medical questions, please use our online contact form (mock for benchmark) or call the Mayo Clinic main switchboard.</p>
+</section>
+{% endblock %}

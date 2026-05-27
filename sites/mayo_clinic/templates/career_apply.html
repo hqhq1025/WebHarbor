@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block title %}Apply for {{ job_title }}{% endblock %}
+{% block breadcrumbs %}
+<div class="container breadcrumbs">
+  <a href="{{ url_for('index') }}">Home</a><span>&rsaquo;</span>
+  <a href="{{ url_for('careers') }}">Careers</a><span>&rsaquo;</span> Apply
+</div>
+{% endblock %}
+{% block content %}
+<section class="container">
+  <h1>Apply{% if job_title %} &mdash; {{ job_title }}{% endif %}</h1>
+
+  {% if success_code %}
+    <div class="alert alert-success">Application submitted. Confirmation: <strong>{{ success_code }}</strong>. Mayo Clinic Talent Acquisition will reach out within 7 business days.</div>
+  {% endif %}
+
+  <form method="post" enctype="multipart/form-data" class="form-grid">
+    {% if job_title %}
+      <input type="hidden" name="job_title" value="{{ job_title }}">
+    {% else %}
+      <div class="span-2"><label>Job title</label><input type="text" name="job_title" required></div>
+    {% endif %}
+    <div><label>Full name</label><input type="text" name="applicant_name" required></div>
+    <div><label>Email</label><input type="email" name="applicant_email" required></div>
+    <div><label>Phone</label><input type="tel" name="applicant_phone"></div>
+    <div><label>Years of experience</label><input type="number" name="years_experience" min="0" max="60"></div>
+    <div>
+      <label>Preferred location</label>
+      <select name="location_pref">
+        <option value="">Any</option>
+        <option value="Rochester">Rochester, MN</option>
+        <option value="Jacksonville">Jacksonville, FL</option>
+        <option value="Phoenix">Phoenix, AZ</option>
+      </select>
+    </div>
+    <div><label>Available start date</label><input type="date" name="available_date"></div>
+    <div class="span-2"><label>Cover letter</label><textarea name="cover_letter" rows="6" placeholder="Tell us why you're interested in this role."></textarea></div>
+    <div class="span-2">
+      <label>Resume (PDF)</label>
+      <input type="file" name="resume" accept=".pdf,.doc,.docx">
+      <input type="hidden" name="resume_filename" value="uploaded_resume.pdf">
+    </div>
+    <div class="span-2"><button class="btn-primary" type="submit">Submit application</button></div>
+  </form>
+</section>
+{% endblock %}

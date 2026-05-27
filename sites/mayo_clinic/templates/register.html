@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block title %}Register{% endblock %}
+{% block content %}
+<section class="container" style="max-width:480px;">
+  <h1>Create a Patient Portal account</h1>
+  <form method="post">
+    <div class="form-row"><label>Email</label><input type="email" name="email" required></div>
+    <div class="form-row"><label>Display name</label><input type="text" name="display_name" required></div>
+    <div class="form-row"><label>Username</label><input type="text" name="username" required></div>
+    <div class="form-row"><label>Password</label><input type="password" name="password" required></div>
+    <button class="btn-primary" type="submit">Create account</button>
+  </form>
+</section>
+{% endblock %}

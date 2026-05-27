@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+{% block title %}Site Map{% endblock %}
+{% block content %}
+<section class="container">
+  <h1>Site map</h1>
+  <p class="muted">Mayo Clinic content overview ({{ cond_count }} conditions, {{ proc_count }} procedures, {{ drug_count }} drugs, {{ doc_count }} doctors, {{ dept_count }} departments, {{ trial_count }} active trials, {{ article_count }} articles).</p>
+  <div class="footer-grid" style="background:#fff;color:#2d3033;">
+    <div>
+      <h5 style="color:var(--mayo-blue-dark);">Patient care</h5>
+      <ul style="list-style:none;padding:0;">
+        <li><a href="{{ url_for('patient_care_hub') }}">Patient Care &amp; Health Info hub</a></li>
+        <li><a href="{{ url_for('appointments_landing') }}">Request an appointment</a></li>
+        <li><a href="{{ url_for('find_doctor') }}">Find a doctor</a></li>
+        <li><a href="{{ url_for('find_doctor_advanced') }}">Find a doctor - advanced</a></li>
+        <li><a href="{{ url_for('locations') }}">Locations</a></li>
+        <li><a href="{{ url_for('location_detail', slug='rochester') }}">Rochester campus</a></li>
+        <li><a href="{{ url_for('location_detail', slug='jacksonville') }}">Jacksonville campus</a></li>
+        <li><a href="{{ url_for('location_detail', slug='phoenix') }}">Phoenix campus</a></li>
+        <li><a href="{{ url_for('patient_portal') }}">Patient Portal</a></li>
+        <li><a href="{{ url_for('portal_appointments') }}">Portal: Appointments</a></li>
+        <li><a href="{{ url_for('portal_messages') }}">Portal: Messages</a></li>
+        <li><a href="{{ url_for('portal_medications') }}">Portal: Medications</a></li>
+        <li><a href="{{ url_for('portal_billing') }}">Portal: Billing</a></li>
+        <li><a href="{{ url_for('portal_health_records') }}">Portal: Health records</a></li>
+        <li><a href="{{ url_for('portal_profile') }}">Portal: Profile</a></li>
+        <li><a href="{{ url_for('patient_visitor_guide') }}">Patient &amp; Visitor guide</a></li>
+        <li><a href="{{ url_for('refer_a_patient') }}">Refer a patient</a></li>
+        <li><a href="{{ url_for('second_opinion') }}">Second opinion</a></li>
+        <li><a href="{{ url_for('international_services') }}">International services</a></li>
+        <li><a href="{{ url_for('live_chat') }}">Live chat</a></li>
+      </ul>
+    </div>
+    <div>
+      <h5 style="color:var(--mayo-blue-dark);">Health Information</h5>
+      <ul style="list-style:none;padding:0;">
+        <li><a href="{{ url_for('diseases_index') }}">Diseases &amp; Conditions</a></li>
+        <li><a href="{{ url_for('body_systems_index') }}">Conditions by Body System</a></li>
+        <li><a href="{{ url_for('symptoms_index') }}">Symptoms</a></li>
+        <li><a href="{{ url_for('symptom_checker') }}">Symptom Checker</a></li>
+        <li><a href="{{ url_for('body_map') }}">Symptom Body Map</a></li>
+        <li><a href="{{ url_for('procedures_index') }}">Tests &amp; Procedures</a></li>
+        <li><a href="{{ url_for('drugs_index') }}">Drugs &amp; Supplements</a></li>
+        <li><a href="{{ url_for('lifestyle_index') }}">Healthy Lifestyle</a></li>
+        <li><a href="{{ url_for('lifestyle_hub', hub='nutrition') }}">Nutrition</a></li>
+        <li><a href="{{ url_for('lifestyle_hub', hub='fitness') }}">Fitness</a></li>
+        <li><a href="{{ url_for('lifestyle_hub', hub='stress') }}">Stress Management</a></li>
+        <li><a href="{{ url_for('lifestyle_hub', hub='healthy-aging') }}">Healthy Aging</a></li>
+        <li><a href="{{ url_for('stories_index') }}">Patient Stories</a></li>
+        <li><a href="{{ url_for('cancer_center') }}">Cancer Center</a></li>
+        <li><a href="{{ url_for('glossary_index') }}">Medical Glossary</a></li>
+        <li><a href="{{ url_for('site_index') }}">A-Z Site Index</a></li>
+      </ul>
+    </div>
+    <div>
+      <h5 style="color:var(--mayo-blue-dark);">Research &amp; Education</h5>
+      <ul style="list-style:none;padding:0;">
+        <li><a href="{{ url_for('research_education') }}">Research &amp; Education hub</a></li>
+        <li><a href="{{ url_for('trials_index') }}">Clinical Trials</a></li>
+        <li><a href="{{ url_for('education') }}">Schools &amp; programs</a></li>
+        <li><a href="{{ url_for('news_index') }}">News</a></li>
+        <li><a href="{{ url_for('newsroom') }}">Newsroom</a></li>
+      </ul>
+    </div>
+    <div>
+      <h5 style="color:var(--mayo-blue-dark);">About &amp; Giving</h5>
+      <ul style="list-style:none;padding:0;">
+        <li><a href="{{ url_for('about') }}">About Mayo Clinic</a></li>
+        <li><a href="{{ url_for('about_topic', topic='leadership') }}">Leadership</a></li>
+        <li><a href="{{ url_for('about_topic', topic='history') }}">History</a></li>
+        <li><a href="{{ url_for('about_topic', topic='quality-awards') }}">Quality &amp; awards</a></li>
+        <li><a href="{{ url_for('about_topic', topic='diversity-equity-inclusion') }}">Diversity, Equity &amp; Inclusion</a></li>
+        <li><a href="{{ url_for('careers') }}">Careers</a></li>
+        <li><a href="{{ url_for('careers_jobs') }}">Open positions</a></li>
+        <li><a href="{{ url_for('giving') }}">Giving</a></li>
+        <li><a href="{{ url_for('donate') }}">Donate</a></li>
+        <li><a href="{{ url_for('contact') }}">Contact</a></li>
+      </ul>
+    </div>
+  </div>
+</section>
+{% endblock %}

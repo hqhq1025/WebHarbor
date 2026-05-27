@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block title %}Mayo Clinic Medical Glossary{% endblock %}
+{% block breadcrumbs %}
+<div class="container breadcrumbs">
+  <a href="{{ url_for('index') }}">Home</a><span>&rsaquo;</span>
+  <a href="{{ url_for('patient_care_hub') }}">Patient Care</a><span>&rsaquo;</span>
+  Medical Glossary
+</div>
+{% endblock %}
+{% block content %}
+<section class="container">
+  <h1>Mayo Clinic Medical Glossary</h1>
+  <p>Plain-language definitions for {{ terms|length if not active_letter else "the " }}common medical terms.</p>
+
+  <div class="az-strip">
+    <a href="{{ url_for('glossary_index') }}" class="{{ 'active' if not active_letter else '' }}">All</a>
+    {% for L in letters %}
+      <a href="{{ url_for('glossary_index', letter=L) }}" class="{{ 'active' if active_letter == L else '' }}">{{ L }}</a>
+    {% endfor %}
+  </div>
+
+  <form method="get" style="margin: 16px 0; display:flex; gap:8px; flex-wrap:wrap;">
+    {% if active_letter %}<input type="hidden" name="letter" value="{{ active_letter }}">{% endif %}
+    <label for="cat-sel">Category:</label>
+    <select id="cat-sel" name="category" onchange="this.form.submit()">
+      <option value="">All categories</option>
+      {% for c in categories %}<option value="{{ c }}" {% if active_category == c %}selected{% endif %}>{{ c }}</option>{% endfor %}
+    </select>
+  </form>
+
+  <div class="glossary-grid">
+    {% for t in terms %}
+      <div class="glossary-entry">
+        <span class="term"><a href="{{ url_for('glossary_detail', slug=t.slug) }}">{{ t.term }}</a></span>
+        <span class="cat">{{ t.category }}</span>
+        <div class="def">{{ t.definition }}</div>
+      </div>
+    {% else %}
+      <p>No glossary terms match your filter.</p>
+    {% endfor %}
+  </div>
+</section>
+{% endblock %}

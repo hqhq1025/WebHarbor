@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% block title %}Make a Gift to Mayo Clinic{% endblock %}
+{% block breadcrumbs %}
+<div class="container breadcrumbs">
+  <a href="{{ url_for('index') }}">Home</a><span>&rsaquo;</span>
+  <a href="{{ url_for('giving') }}">Giving</a><span>&rsaquo;</span> Donate
+</div>
+{% endblock %}
+{% block content %}
+<section class="container">
+  <h1>Make a Gift</h1>
+  <p>Every gift, large or small, advances Mayo Clinic's mission. Thank you for your support.</p>
+
+  {% if success_code %}
+    <div class="alert alert-success">Thank you for your gift of ${{ '{:,}'.format(donation.amount) }} to {{ donation.fund }}. Confirmation: <strong>{{ success_code }}</strong>. A receipt has been sent to {{ donation.donor_email }}.</div>
+  {% endif %}
+
+  <form method="post" class="form-grid">
+    <div class="span-2">
+      <label>Gift amount</label>
+      <input type="number" name="amount" min="1" required placeholder="e.g., 100">
+    </div>
+    <div>
+      <label>Frequency</label>
+      <select name="frequency">
+        <option value="one-time">One-time</option>
+        <option value="monthly">Monthly recurring</option>
+        <option value="quarterly">Quarterly</option>
+        <option value="annual">Annually</option>
+      </select>
+    </div>
+    <div>
+      <label>Designate to</label>
+      <select name="fund">
+        {% for slug, name in funds %}<option value="{{ slug }}">{{ name }}</option>{% endfor %}
+      </select>
+    </div>
+    <div><label>Your name</label><input type="text" name="donor_name" required></div>
+    <div><label>Email (for receipt)</label><input type="email" name="donor_email" required></div>
+    <div class="span-2"><label>In honor / memory of (optional)</label><input type="text" name="dedication" placeholder="e.g., In memory of John Smith"></div>
+    <div class="span-2">
+      <label><input type="checkbox" name="is_anonymous" value="yes"> List my gift as anonymous.</label>
+    </div>
+    <div class="span-2">
+      <button class="btn-primary" type="submit">Complete gift</button>
+    </div>
+  </form>
+</section>
+{% endblock %}

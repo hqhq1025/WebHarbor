@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% block title %}Mayo Clinic in {{ c.name }}{% endblock %}
+{% block breadcrumbs %}
+<div class="container breadcrumbs">
+  <a href="{{ url_for('index') }}">Home</a><span>&rsaquo;</span>
+  <a href="{{ url_for('locations') }}">Locations</a><span>&rsaquo;</span>
+  {{ c.name }}
+</div>
+{% endblock %}
+{% block content %}
+<section class="container">
+  {% set hero = pick_image('locations', c.slug) %}
+  {% if not hero %}{% set hero = pick_image('brand', c.slug) %}{% endif %}
+  {% if hero %}<img class="hero-image" src="{{ url_for('static', filename=hero) }}" alt="{{ c.name }}">{% endif %}
+  <h1>Mayo Clinic in {{ c.name }}</h1>
+  <p class="muted">{{ c.highlights }}</p>
+
+  <dl class="campus-info">
+    <div>
+      <dt>Address</dt><dd>{{ c.address }}</dd>
+      <dt>Main phone</dt><dd>{{ c.phone }}</dd>
+      <dt>International office</dt><dd>{{ c.international }}</dd>
+      <dt>Hours</dt><dd>{{ c.hours }}</dd>
+    </div>
+    <div>
+      <dt>Founded</dt><dd>{{ c.founded }}</dd>
+      <dt>Licensed beds</dt><dd>{{ c.beds }}</dd>
+      <dt>Major buildings</dt><dd>{{ c.buildings }}</dd>
+      <dt>Transportation</dt><dd>{{ c.transit }}</dd>
+    </div>
+  </dl>
+
+  <h2>Find a doctor at this campus</h2>
+  <p><a href="{{ url_for('find_doctor', location=location_name) }}">View all {{ docs|length }}+ doctors at {{ location_name }} &rsaquo;</a></p>
+  <ul>
+    {% for d in docs[:10] %}
+      <li><a href="{{ url_for('doctor_detail', slug=d.slug) }}">{{ d.name }}</a> &mdash; <span class="muted">{{ d.specialty }}</span></li>
+    {% endfor %}
+  </ul>
+
+  <h2>Departments at {{ location_name }}</h2>
+  <p>{{ dept_count }} departments and centers are based at this campus. <a href="{{ url_for('departments_index', location=location_name) }}">Browse departments at {{ location_name }} &rsaquo;</a></p>
+
+  <h2>Other Mayo Clinic campuses</h2>
+  <ul>
+    {% for o in campuses %}
+      {% if o.slug != c.slug %}<li><a href="{{ url_for('location_detail', slug=o.slug) }}">{{ o.name }}</a></li>{% endif %}
+    {% endfor %}
+  </ul>
+
+  <div class="appointment-block">
+    <h4>Request an appointment at {{ location_name }}</h4>
+    <a class="btn-primary" href="{{ url_for('appointments_landing') }}">Request appointment</a>
+  </div>
+</section>
+{% endblock %}

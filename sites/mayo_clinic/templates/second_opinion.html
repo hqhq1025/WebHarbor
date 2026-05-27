@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block title %}Second Opinion{% endblock %}
+{% block breadcrumbs %}
+<div class="container breadcrumbs">
+  <a href="{{ url_for('index') }}">Home</a><span>&rsaquo;</span> Second Opinion
+</div>
+{% endblock %}
+{% block content %}
+<section class="container">
+  <h1>Request a Second Opinion</h1>
+  <p>Mayo Clinic provides second opinions for complex diagnoses across all specialties. Your medical team will review your records and offer a comprehensive opinion.</p>
+
+  {% if success_code %}
+    <div class="alert alert-success">Your second opinion request has been received. Confirmation: <strong>{{ success_code }}</strong>. A Mayo Clinic coordinator will reach out within 48 hours.</div>
+  {% endif %}
+
+  <form method="post" class="form-grid">
+    <div><label>Patient name</label><input type="text" name="patient_name" required></div>
+    <div><label>Email</label><input type="email" name="patient_email" required></div>
+    <div><label>Phone</label><input type="tel" name="patient_phone"></div>
+    <div>
+      <label>Department</label>
+      <select name="department_slug">
+        <option value="">Auto-route based on diagnosis</option>
+        {% for d in departments %}<option value="{{ d.slug }}">{{ d.name }}</option>{% endfor %}
+      </select>
+    </div>
+    <div class="span-2"><label>Diagnosis</label><input type="text" name="diagnosis" required></div>
+    <div class="span-2"><label>Current treatment</label><textarea name="current_treatment" rows="3"></textarea></div>
+    <div class="span-2"><label>What would you like our team to review?</label><textarea name="desired_review" rows="4" required placeholder="Outline the specific questions you'd like answered."></textarea></div>
+    <div class="span-2">
+      <label>
+        <input type="checkbox" name="records_attached" value="yes">
+        I have my medical records ready to submit (you will be contacted to upload them securely).
+      </label>
+    </div>
+    <div class="span-2"><button class="btn-primary" type="submit">Submit second opinion request</button></div>
+  </form>
+</section>
+{% endblock %}

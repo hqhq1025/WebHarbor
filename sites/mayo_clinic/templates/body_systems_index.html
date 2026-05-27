@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block title %}Conditions by Body System{% endblock %}
+{% block breadcrumbs %}
+<div class="container breadcrumbs">
+  <a href="{{ url_for('index') }}">Home</a><span>&rsaquo;</span>
+  <a href="{{ url_for('patient_care_hub') }}">Patient Care &amp; Health Info</a><span>&rsaquo;</span>
+  Conditions by Body System
+</div>
+{% endblock %}
+{% block content %}
+<section class="container">
+  <h1>Browse by Body System</h1>
+  <p>Find conditions grouped by anatomical system. Each system links to the departments that treat it and the doctors who care for patients with those conditions.</p>
+
+  <div class="body-systems">
+    {% for slug, name, desc, depts, conds in body_systems %}
+      <div class="body-system-card">
+        <h3><a href="{{ url_for('body_system_detail', slug=slug) }}">{{ name }}</a></h3>
+        <p>{{ desc }}</p>
+        <div class="conditions-list">{{ conds[:4] | join(', ') }}{% if conds|length > 4 %}, and more.{% endif %}</div>
+      </div>
+    {% endfor %}
+  </div>
+</section>
+{% endblock %}

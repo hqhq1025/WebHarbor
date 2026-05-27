@@ -1,0 +1,146 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}{{ title or "Mayo Clinic" }}{% endblock %} - Mayo Clinic</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/site.css') }}">
+  <link rel="icon" href="{{ url_for('static', filename='icons/mayo-shield.svg') }}">
+</head>
+<body>
+  <div class="top-utility">
+    <div class="container flex">
+      <a href="{{ url_for('about') }}">About</a>
+      <a href="{{ url_for('locations') }}">Locations</a>
+      <a href="{{ url_for('careers') }}">Careers</a>
+      <a href="{{ url_for('education') }}">Education</a>
+      <a href="{{ url_for('news_index') }}">Newsroom</a>
+      {% if current_user.is_authenticated %}
+        <a href="{{ url_for('patient_portal') }}">Patient Portal</a>
+        <span class="user-badge">{{ current_user.display_name }}</span>
+        <a href="{{ url_for('logout') }}">Sign out</a>
+      {% else %}
+        <a href="{{ url_for('login') }}">Log in</a>
+      {% endif %}
+    </div>
+  </div>
+  <header class="site-header">
+    <div class="container">
+      <a class="brand" href="{{ url_for('index') }}">
+        <span class="brand-shield">M</span>
+        <span class="brand-text">Mayo Clinic<small>World-class care since 1864</small></span>
+      </a>
+      <form class="header-search" action="{{ url_for('search') }}" method="get" role="search">
+        <input type="search" name="q" placeholder="Search diseases, drugs, procedures, doctors..." value="{{ request.args.get('q','') }}" autocomplete="off">
+        <button type="submit">Search</button>
+      </form>
+      <a class="appointment-cta" href="{{ url_for('appointments_landing') }}">Request appointment</a>
+    </div>
+  </header>
+  <nav class="main-nav">
+    <div class="container">
+      <ul>
+        <li><a href="{{ url_for('patient_care_hub') }}">Patient Care</a></li>
+        <li><a href="{{ url_for('diseases_index') }}">Diseases &amp; Conditions</a></li>
+        <li><a href="{{ url_for('symptoms_index') }}">Symptoms</a></li>
+        <li><a href="{{ url_for('symptom_checker') }}">Symptom Checker</a></li>
+        <li><a href="{{ url_for('procedures_index') }}">Tests &amp; Procedures</a></li>
+        <li><a href="{{ url_for('drugs_index') }}">Drugs</a></li>
+        <li><a href="{{ url_for('departments_index') }}">Departments</a></li>
+        <li><a href="{{ url_for('find_doctor') }}">Find a Doctor</a></li>
+        <li><a href="{{ url_for('cancer_center') }}">Cancer Center</a></li>
+        <li><a href="{{ url_for('trials_index') }}">Clinical Trials</a></li>
+        <li><a href="{{ url_for('lifestyle_index') }}">Healthy Lifestyle</a></li>
+        <li><a href="{{ url_for('research_education') }}">Research &amp; Education</a></li>
+      </ul>
+    </div>
+  </nav>
+
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+      <div class="container">
+        {% for cat, msg in messages %}
+          <div class="alert alert-{{ 'success' if cat == 'success' else ('error' if cat == 'error' else 'info') }}">{{ msg }}</div>
+        {% endfor %}
+      </div>
+    {% endif %}
+  {% endwith %}
+
+  {% block breadcrumbs %}{% endblock %}
+
+  <main>
+    {% block content %}{% endblock %}
+  </main>
+
+  <footer class="site-footer">
+    <div class="container">
+      <div class="footer-grid">
+        <div>
+          <h5>Patient Care</h5>
+          <ul>
+            <li><a href="{{ url_for('appointments_landing') }}">Request an appointment</a></li>
+            <li><a href="{{ url_for('find_doctor') }}">Find a doctor</a></li>
+            <li><a href="{{ url_for('locations') }}">Locations</a></li>
+            <li><a href="{{ url_for('patient_portal') }}">Patient online services</a></li>
+            <li><a href="{{ url_for('patient_visitor_guide') }}">Patient &amp; visitor guide</a></li>
+            <li><a href="{{ url_for('refer_a_patient') }}">Refer a patient</a></li>
+            <li><a href="{{ url_for('second_opinion') }}">Second opinion</a></li>
+            <li><a href="{{ url_for('international_services') }}">International patients</a></li>
+          </ul>
+        </div>
+        <div>
+          <h5>Health Information</h5>
+          <ul>
+            <li><a href="{{ url_for('diseases_index') }}">Diseases &amp; Conditions</a></li>
+            <li><a href="{{ url_for('symptoms_index') }}">Symptoms</a></li>
+            <li><a href="{{ url_for('procedures_index') }}">Tests &amp; Procedures</a></li>
+            <li><a href="{{ url_for('drugs_index') }}">Drugs &amp; Supplements</a></li>
+            <li><a href="{{ url_for('lifestyle_index') }}">Healthy Lifestyle</a></li>
+            <li><a href="{{ url_for('cancer_center') }}">Cancer Center</a></li>
+            <li><a href="{{ url_for('glossary_index') }}">Medical Glossary</a></li>
+            <li><a href="{{ url_for('body_systems_index') }}">Body Systems</a></li>
+          </ul>
+        </div>
+        <div>
+          <h5>For Researchers &amp; Education</h5>
+          <ul>
+            <li><a href="{{ url_for('trials_index') }}">Clinical Trials</a></li>
+            <li><a href="{{ url_for('research_education') }}">Research &amp; Education</a></li>
+            <li><a href="{{ url_for('education') }}">Schools &amp; programs</a></li>
+            <li><a href="{{ url_for('about_topic', topic='research-mission') }}">Research mission</a></li>
+          </ul>
+        </div>
+        <div>
+          <h5>About Mayo Clinic</h5>
+          <ul>
+            <li><a href="{{ url_for('about') }}">Who we are</a></li>
+            <li><a href="{{ url_for('about_topic', topic='leadership') }}">Leadership</a></li>
+            <li><a href="{{ url_for('about_topic', topic='history') }}">History</a></li>
+            <li><a href="{{ url_for('careers') }}">Careers</a></li>
+            <li><a href="{{ url_for('careers_jobs') }}">Open positions</a></li>
+            <li><a href="{{ url_for('newsroom') }}">Newsroom</a></li>
+            <li><a href="{{ url_for('giving') }}">Giving</a></li>
+            <li><a href="{{ url_for('contact') }}">Contact us</a></li>
+            <li><a href="{{ url_for('sitemap') }}">Site map</a></li>
+            <li><a href="{{ url_for('site_index') }}">A-Z Site Index</a></li>
+            <li><a href="{{ url_for('live_chat') }}">Live chat</a></li>
+          </ul>
+        </div>
+        <div>
+          <h5>Newsletter</h5>
+          <form action="{{ url_for('newsletter') }}" method="post">
+            <p style="font-size:13px;">Health insights from Mayo Clinic, free to your inbox.</p>
+            <div class="form-row">
+              <input type="email" name="email" placeholder="Your email" required>
+            </div>
+            <button class="btn-primary" type="submit">Subscribe</button>
+          </form>
+        </div>
+      </div>
+      <div class="copyright">
+        &copy; 1998-{{ now_year }} Mayo Foundation for Medical Education and Research (MFMER). All rights reserved.
+      </div>
+    </div>
+  </footer>
+</body>
+</html>

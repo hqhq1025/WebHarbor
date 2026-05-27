@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% block title %}International Patient Services{% endblock %}
+{% block breadcrumbs %}
+<div class="container breadcrumbs">
+  <a href="{{ url_for('index') }}">Home</a><span>&rsaquo;</span> International Patient Services
+</div>
+{% endblock %}
+{% block content %}
+<section class="container">
+  <h1>International Patient Services</h1>
+  <p>Mayo Clinic welcomes patients from more than 130 countries each year. Our international offices provide multilingual coordinators, travel and accommodation assistance, and integrated billing.</p>
+
+  {% if success_code %}
+    <div class="alert alert-success">Your international inquiry has been received. Confirmation: <strong>{{ success_code }}</strong>.</div>
+  {% endif %}
+
+  <form method="post" class="form-grid">
+    <div><label>Patient name</label><input type="text" name="patient_name" required></div>
+    <div><label>Country</label><input type="text" name="country" required></div>
+    <div><label>Email</label><input type="email" name="patient_email" required></div>
+    <div><label>Phone (with country code)</label><input type="tel" name="patient_phone"></div>
+    <div><label>Preferred language</label>
+      <select name="language">
+        <option>English</option><option>Spanish</option><option>French</option>
+        <option>Portuguese</option><option>Arabic</option><option>Mandarin</option>
+        <option>Russian</option><option>Italian</option><option>German</option><option>Japanese</option>
+        <option>Korean</option><option>Vietnamese</option><option>Hindi</option><option>Tagalog</option>
+      </select>
+    </div>
+    <div><label>Estimated travel dates</label><input type="text" name="travel_dates" placeholder="e.g., June 15 - July 5"></div>
+    <div class="span-2"><label>Diagnosis or reason for visit</label><textarea name="diagnosis" rows="3" required></textarea></div>
+    <div class="span-2">
+      <label><input type="checkbox" name="accommodation" value="yes"> I'd like assistance with lodging.</label>
+    </div>
+    <div class="span-2">
+      <label><input type="checkbox" name="translation" value="yes"> I need an interpreter for appointments.</label>
+    </div>
+    <div class="span-2"><button class="btn-primary" type="submit">Submit international inquiry</button></div>
+  </form>
+
+  <h2>Mayo Clinic international offices</h2>
+  <ul>
+    <li><strong>Rochester:</strong> +1-507-538-3270</li>
+    <li><strong>Jacksonville:</strong> +1-904-953-7000</li>
+    <li><strong>Phoenix:</strong> +1-480-301-7101</li>
+  </ul>
+</section>
+{% endblock %}

@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block title %}Symptom Checker - Results{% endblock %}
+{% block content %}
+<section class="container">
+  <h1>Symptom Checker results</h1>
+  <div class="sc-progress"><div class="done"></div><div class="done"></div><div class="done"></div><div class="done"></div><div class="done"></div></div>
+  <p class="muted">Showing possible causes for <strong>{{ sx.name if sx else symptom }}</strong> ({{ age_group }}, {{ duration }} duration).</p>
+
+  {% if results %}
+    {% set urgent = results|selectattr('0.urgency', 'equalto', 'urgent')|list %}
+    {% if urgent %}
+      <div class="alert alert-error"><strong>Urgent care needed for some causes.</strong> If you experience any urgent symptoms below, seek emergency care or call 911.</div>
+    {% endif %}
+    {% for rule, cond in results %}
+      <div class="cause-row">
+        <strong>
+          {% if cond %}<a href="{{ url_for('condition_detail', slug=cond.slug) }}">{{ rule.condition_name }}</a>{% else %}{{ rule.condition_name }}{% endif %}
+        </strong>
+        <span class="urgency {{ rule.urgency }}">{{ rule.urgency|upper }}</span>
+        <p style="margin:4px 0 0;">{{ rule.note }}</p>
+      </div>
+    {% endfor %}
+  {% else %}
+    <p class="muted">No structured results for this combination — try another duration or contact your primary care clinician.</p>
+  {% endif %}
+
+  <div class="appointment-block">
+    <h4>Not sure what to do next?</h4>
+    <p>If your symptoms are severe, persistent, or worsening, contact your primary care clinician or request an appointment with a Mayo Clinic specialist.</p>
+    <a class="btn-primary" href="{{ url_for('appointments_landing') }}">Request appointment</a>
+    <a class="btn-secondary" href="{{ url_for('symptom_checker') }}" style="margin-left:8px;">Start over</a>
+  </div>
+
+  <p style="font-size:13px;color:var(--mayo-grey);margin-top:24px;">
+    The Mayo Clinic Symptom Checker is intended for informational purposes and is not a substitute for professional medical advice, diagnosis, or treatment. If you think you may have a medical emergency, call your healthcare provider or 911 immediately.
+  </p>
+</section>
+{% endblock %}

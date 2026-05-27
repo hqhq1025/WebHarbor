@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% block title %}Mayo Clinic Comprehensive Cancer Center{% endblock %}
+{% block breadcrumbs %}
+<div class="container breadcrumbs">
+  <a href="{{ url_for('index') }}">Home</a><span>&rsaquo;</span>
+  <a href="{{ url_for('patient_care_hub') }}">Patient Care</a><span>&rsaquo;</span>
+  Cancer Center
+</div>
+{% endblock %}
+{% block content %}
+<section class="container">
+  {% set hero = pick_image('cancer', 'cancer-center') %}
+  {% if hero %}<img class="hero-image" src="{{ url_for('static', filename=hero) }}" alt="Mayo Clinic Cancer Center">{% endif %}
+  <h1>Mayo Clinic Comprehensive Cancer Center</h1>
+  <p>One of only a small number of NCI-designated Comprehensive Cancer Centers in the United States, with integrated research, clinical trials, proton beam therapy, CAR-T programs, and multidisciplinary tumor boards across all three Mayo Clinic campuses.</p>
+
+  <h2>Cancer types we treat</h2>
+  <div class="cancer-grid">
+    {% for slug, name, cond_slug, blurb in cancer_types %}
+      {% set img = pick_image('cancer', slug) %}
+      <div class="cancer-card">
+        {% if img %}<img src="{{ url_for('static', filename=img) }}" alt="{{ name }}">{% endif %}
+        <div class="body">
+          <h4><a href="{{ url_for('cancer_type_detail', slug=slug) }}">{{ name }}</a></h4>
+          <p>{{ blurb }}</p>
+        </div>
+      </div>
+    {% endfor %}
+  </div>
+
+  <h2>Cancer-related departments</h2>
+  <ul>
+    {% if dept %}<li><a href="{{ url_for('department_detail', slug=dept.slug) }}">{{ dept.name }}</a></li>{% endif %}
+    {% if radonc %}<li><a href="{{ url_for('department_detail', slug=radonc.slug) }}">{{ radonc.name }}</a></li>{% endif %}
+    <li><a href="{{ url_for('department_detail', slug='hematology') }}">Hematology</a></li>
+    <li><a href="{{ url_for('department_detail', slug='general-surgery') }}">General Surgery (Surgical Oncology)</a></li>
+  </ul>
+
+  <h2>Cancer doctors</h2>
+  <ul>
+    {% for d in doctors %}
+      <li><a href="{{ url_for('doctor_detail', slug=d.slug) }}">{{ d.name }}</a> &mdash; <span class="muted">{{ d.specialty }}</span></li>
+    {% endfor %}
+  </ul>
+
+  {% if trials %}
+  <h2>Cancer clinical trials</h2>
+  <ul>
+    {% for t in trials %}
+      <li><a href="{{ url_for('trial_detail', nct_id=t.nct_id) }}">{{ t.title }}</a> &mdash; <span class="muted">{{ t.phase }} &middot; {{ t.status }}</span></li>
+    {% endfor %}
+  </ul>
+  {% endif %}
+</section>
+{% endblock %}

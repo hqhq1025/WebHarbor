@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block title %}Print: {{ obj.name if obj.name is defined else (obj.title if obj.title is defined else obj.term) }}{% endblock %}
+{% block content %}
+<div class="print-view">
+  <p style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:1px;">Mayo Clinic Print Edition &middot; {{ mirror_date }}</p>
+  {% if kind == 'condition' %}
+    <h1>{{ obj.name }}</h1>
+    <p><em>{{ obj.summary }}</em></p>
+    <h2>Overview</h2><p>{{ obj.overview }}</p>
+    <h2>Symptoms</h2><p>{{ obj.symptoms }}</p>
+    <h2>Causes</h2><p>{{ obj.causes }}</p>
+    <h2>Diagnosis</h2><p>{{ obj.diagnosis }}</p>
+    <h2>Treatment</h2><p>{{ obj.treatment }}</p>
+  {% elif kind == 'procedure' %}
+    <h1>{{ obj.name }}</h1>
+    <p><em>{{ obj.summary }}</em></p>
+    <h2>Why it's done</h2><p>{{ obj.why_done }}</p>
+    <h2>How to prepare</h2><p>{{ obj.how_to_prepare }}</p>
+    <h2>What you can expect</h2><p>{{ obj.what_you_can_expect }}</p>
+    <h2>Risks</h2><p>{{ obj.risks }}</p>
+  {% elif kind == 'drug' %}
+    <h1>{{ obj.name }}</h1>
+    <p><em>Used for: {{ obj.treats }}</em></p>
+    <h2>Description</h2><p>{{ obj.description }}</p>
+    <h2>Dosage</h2><p>{{ obj.dosage }}</p>
+    <h2>Side effects</h2><p>{{ obj.side_effects }}</p>
+    <h2>Warnings</h2><p>{{ obj.warnings }}</p>
+  {% elif kind == 'article' %}
+    <h1>{{ obj.title }}</h1>
+    <p>{{ obj.body|replace('\n','<br>')|safe }}</p>
+  {% elif kind == 'glossary' %}
+    <h1>{{ obj.term }} <small style="font-size:14px;color:#888;">({{ obj.category }})</small></h1>
+    <p>{{ obj.definition }}</p>
+  {% endif %}
+  <hr>
+  <p style="font-size:11px;color:#888;">&copy; Mayo Foundation for Medical Education and Research (MFMER). All rights reserved.</p>
+</div>
+{% endblock %}

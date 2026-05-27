@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block title %}About Mayo Clinic{% endblock %}
+{% block content %}
+<section class="container">
+  <h1>About Mayo Clinic</h1>
+  <p style="font-size:1.2rem;color:var(--mayo-blue-dark);">Solving the world's toughest medical problems — one person at a time.</p>
+
+  <h2>Transforming health care</h2>
+  <p>Mayo Clinic is the largest integrated, not-for-profit medical group practice in the world. We work together to deliver answers and care to more than 1.3 million patients from over 130 countries each year. We are committed to clinical practice, education, and research, providing whole-person care to everyone who needs healing.</p>
+
+  <h2>Our history</h2>
+  <p>Our trailblazing spirit dates back almost 150 years, when brothers Will and Charlie Mayo pioneered an integrated, team-based approach to medicine. Today, that approach drives innovation, like Mayo Clinic Platform — which powers new technologies to change how care is delivered to all.</p>
+
+  <h2>Top rankings</h2>
+  <p>Mayo Clinic has more top rankings for high-quality patient care than any other health care organization. Mayo Clinic has more specialties ranked in the top three than any other hospital in the United States.</p>
+
+  <h2>Mission and values</h2>
+  <p>Inspiring hope and contributing to health and well-being by providing the best care to every patient through integrated clinical practice, education, and research.</p>
+
+  <h2>By the numbers</h2>
+  <table class="data">
+    <tr><th>Patients per year</th><td>~1.3 million from over 130 countries</td></tr>
+    <tr><th>Staff</th><td>~76,000 physicians, scientists, residents, and allied health</td></tr>
+    <tr><th>Active clinical trials</th><td>{{ now_year - 26 + 6300 }}+ each year</td></tr>
+    <tr><th>Specialties in top 3 nationally</th><td>More than any other US hospital</td></tr>
+  </table>
+</section>
+{% endblock %}

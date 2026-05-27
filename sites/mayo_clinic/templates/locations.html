@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% block title %}Locations{% endblock %}
+{% block content %}
+<section class="container">
+  {% set hero = pick_image('locations', 'overview') %}
+  {% if hero %}<img class="hero-image" src="{{ url_for('static', filename=hero) }}" alt="Mayo Clinic locations">{% endif %}
+  <h1>Mayo Clinic locations</h1>
+  <p class="muted">Learn more about Mayo Clinic locations or choose a specific location.</p>
+
+  <div class="related-grid">
+    {% set rochester_img = pick_image('locations', 'rochester') %}
+    <div class="card-with-image">
+      {% if rochester_img %}<img class="card-img" src="{{ url_for('static', filename=rochester_img) }}" alt="Rochester">{% endif %}
+      <div class="card-body">
+        <div class="kind">Minnesota</div>
+        <h4><a href="{{ url_for('location_detail', slug='rochester') }}">Mayo Clinic in Rochester</a></h4>
+        <p>200 First Street SW, Rochester, MN 55905</p>
+        <p>Founded in 1864. The largest Mayo Clinic campus, with more than 33,000 staff.</p>
+      </div>
+    </div>
+    {% set jax_img = pick_image('locations', 'jacksonville') %}
+    <div class="card-with-image">
+      {% if jax_img %}<img class="card-img" src="{{ url_for('static', filename=jax_img) }}" alt="Jacksonville">{% endif %}
+      <div class="card-body">
+        <div class="kind">Florida</div>
+        <h4><a href="{{ url_for('location_detail', slug='jacksonville') }}">Mayo Clinic in Jacksonville</a></h4>
+        <p>4500 San Pablo Road S, Jacksonville, FL 32224</p>
+        <p>Opened in 1986. Comprehensive cancer center, transplant, and proton therapy.</p>
+      </div>
+    </div>
+    {% set phx_img = pick_image('locations', 'phoenix') %}
+    <div class="card-with-image">
+      {% if phx_img %}<img class="card-img" src="{{ url_for('static', filename=phx_img) }}" alt="Phoenix">{% endif %}
+      <div class="card-body">
+        <div class="kind">Arizona</div>
+        <h4><a href="{{ url_for('location_detail', slug='phoenix') }}">Mayo Clinic in Phoenix/Scottsdale</a></h4>
+        <p>5777 East Mayo Boulevard, Phoenix, AZ 85054</p>
+        <p>Opened in 1987. Hematology, transplant, neurosciences, robotic surgery.</p>
+      </div>
+    </div>
+    <div class="related-card">
+      <div class="kind">Regional</div>
+      <h4>Mayo Clinic Health System</h4>
+      <p>Iowa, Minnesota, Wisconsin</p>
+      <p>A regional network of clinics and hospitals serving communities across the upper Midwest.</p>
+    </div>
+    <div class="related-card">
+      <div class="kind">International</div>
+      <h4>Mayo Clinic Healthcare in London</h4>
+      <p>15 Portland Place, London, United Kingdom</p>
+      <p>Mayo Clinic's UK center for consultative care.</p>
+    </div>
+  </div>
+</section>
+{% endblock %}

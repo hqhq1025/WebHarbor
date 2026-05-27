@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block title %}Profile{% endblock %}
+{% block content %}
+<section class="container">
+  <h1>My Profile</h1>
+  <form method="post" class="form-grid">
+    <div><label>Display name</label><input type="text" name="display_name" value="{{ user.display_name }}"></div>
+    <div><label>Email</label><input type="email" value="{{ user.email }}" disabled></div>
+    <div><label>Date of birth</label><input type="text" name="date_of_birth" value="{{ user.date_of_birth }}" placeholder="YYYY-MM-DD"></div>
+    <div><label>Phone</label><input type="text" name="phone" value="{{ user.phone }}"></div>
+    <div class="span-2"><label>Address</label><input type="text" name="address" value="{{ user.address }}"></div>
+    <div>
+      <label>Preferred Mayo Clinic location</label>
+      <select name="preferred_location">
+        <option value="Rochester" {% if user.preferred_location == 'Rochester' %}selected{% endif %}>Rochester</option>
+        <option value="Jacksonville" {% if user.preferred_location == 'Jacksonville' %}selected{% endif %}>Jacksonville</option>
+        <option value="Phoenix" {% if user.preferred_location == 'Phoenix' %}selected{% endif %}>Phoenix</option>
+      </select>
+    </div>
+    <div class="span-2"><button class="btn-primary" type="submit">Save changes</button></div>
+  </form>
+</section>
+{% endblock %}

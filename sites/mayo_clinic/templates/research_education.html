@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% block title %}Research &amp; Education{% endblock %}
+{% block breadcrumbs %}
+<div class="container breadcrumbs">
+  <a href="{{ url_for('index') }}">Home</a><span>&rsaquo;</span> Research &amp; Education
+</div>
+{% endblock %}
+{% block content %}
+<section class="container">
+  {% set hero = pick_image('trials', 'research') %}
+  {% if hero %}<img class="hero-image" src="{{ url_for('static', filename=hero) }}" alt="Mayo Clinic research">{% endif %}
+  <h1>Mayo Clinic Research &amp; Education</h1>
+  <p>Mayo Clinic combines clinical care, research, and education in one integrated mission. Each year, more than 4,000 ongoing studies span discovery science, translational research, and clinical trials.</p>
+
+  <h2>Education programs</h2>
+  <div class="related-grid">
+    {% for prog in programs %}
+      <div class="related-card">
+        <div class="kind">{{ prog[1] }}</div>
+        <h4><a href="{{ url_for('education_program_detail', slug=prog[0]|lower|replace(' ', '-')|replace(',', '')|replace('.', '')|replace("'", '')) }}">{{ prog[0] }}</a></h4>
+        <p>{{ prog[2] }}</p>
+        <p class="muted" style="font-size:12px;">{{ prog[3] }}{% if prog[4] %} &middot; {{ prog[4] }} years{% endif %}{% if prog[5] %} &middot; ~{{ prog[5] }} students/year{% endif %}</p>
+      </div>
+    {% endfor %}
+  </div>
+
+  <h2>Research areas</h2>
+  <div class="feature-grid">
+    {% for dept_slug, areas in research_areas.items() %}
+      <div class="feature-card">
+        <h3><a href="{{ url_for('department_detail', slug=dept_slug) }}">{{ dept_slug.replace('-', ' ').title() }} research</a></h3>
+        <ul>
+          {% for a in areas %}<li>{{ a }}</li>{% endfor %}
+        </ul>
+      </div>
+    {% endfor %}
+  </div>
+
+  <h2>Clinical trials</h2>
+  <p><a href="{{ url_for('trials_index') }}">Search the Mayo Clinic clinical trials directory &rsaquo;</a></p>
+</section>
+{% endblock %}

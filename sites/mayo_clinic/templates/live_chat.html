@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block title %}Live Chat{% endblock %}
+{% block content %}
+<section class="container">
+  <h1>Live Chat</h1>
+  <p>Chat with a Mayo Clinic Health Navigator. For medical emergencies, please call 911. Hours: Monday-Friday, 7 AM-7 PM CT.</p>
+
+  <div class="chat-window">
+    {% for m in messages %}
+      <div class="chat-msg {{ m.sender }}">
+        <div class="sender">{{ 'Mayo Clinic' if m.sender == 'mayo' else 'You' }}</div>
+        {{ m.body }}
+      </div>
+    {% else %}
+      <p class="muted">Start a conversation below.</p>
+    {% endfor %}
+  </div>
+
+  <form method="post" style="margin-top:16px;">
+    <textarea name="body" rows="3" style="width:100%; padding:10px; border-radius:4px; border:1px solid var(--mayo-border);" placeholder="Type your message..." required></textarea>
+    <button class="btn-primary" type="submit" style="margin-top:8px;">Send</button>
+  </form>
+</section>
+{% endblock %}

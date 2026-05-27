@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block title %}Body Map Symptom Checker{% endblock %}
+{% block breadcrumbs %}
+<div class="container breadcrumbs">
+  <a href="{{ url_for('index') }}">Home</a><span>&rsaquo;</span>
+  <a href="{{ url_for('symptom_checker') }}">Symptom Checker</a><span>&rsaquo;</span>
+  Body Map
+</div>
+{% endblock %}
+{% block content %}
+<section class="container">
+  <h1>Symptom Checker &mdash; Body Map</h1>
+  <p>Tap a body region below to see related symptoms, or use the <a href="{{ url_for('symptom_checker') }}">step-by-step wizard</a>.</p>
+
+  <div class="body-map-wrap">
+    <div class="body-map-img">
+      <img src="{{ url_for('static', filename='icons/body-silhouette.svg') }}" alt="Body map">
+      <p class="muted">Click a region in the list to start.</p>
+    </div>
+
+    <div>
+      {% for region, sxs in regions.items() %}
+        <div class="body-region">
+          <h4>{{ region|title }}</h4>
+          <ul style="margin:0; padding-left:18px;">
+            {% for s in sxs %}
+              <li><a href="{{ url_for('symptom_checker', region=s.region, symptom=s.slug) }}">{{ s.name }}</a></li>
+            {% endfor %}
+          </ul>
+        </div>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+{% endblock %}

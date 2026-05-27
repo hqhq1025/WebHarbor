@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+{% block title %}{{ name }} - Mayo Clinic Cancer Center{% endblock %}
+{% block breadcrumbs %}
+<div class="container breadcrumbs">
+  <a href="{{ url_for('index') }}">Home</a><span>&rsaquo;</span>
+  <a href="{{ url_for('cancer_center') }}">Cancer Center</a><span>&rsaquo;</span>
+  {{ name }}
+</div>
+{% endblock %}
+{% block content %}
+<section class="container">
+  {% set hero = pick_image('cancer', ct[0]) %}
+  {% if hero %}<img class="hero-image" src="{{ url_for('static', filename=hero) }}" alt="{{ name }}">{% endif %}
+  <h1>{{ name }}</h1>
+  <p class="muted">{{ blurb }}</p>
+
+  <div class="two-col">
+    <div>
+      {% if cond %}
+      <h2>About {{ cond.name }}</h2>
+      <p>{{ cond.summary }}</p>
+      <p><a href="{{ url_for('condition_detail', slug=cond.slug) }}">Read the full condition page &rsaquo;</a></p>
+      {% endif %}
+
+      <h2>Treatments and procedures</h2>
+      <ul>
+        {% for p in related_procedures %}
+          <li><a href="{{ url_for('procedure_detail', slug=p.slug) }}">{{ p.name }}</a></li>
+        {% else %}
+          <li><a href="{{ url_for('procedure_detail', slug='biopsy') }}">Biopsy</a></li>
+          <li><a href="{{ url_for('procedure_detail', slug='ct-scan') }}">CT scan</a></li>
+          <li><a href="{{ url_for('procedures_index', category='surgery') }}">Surgical options</a></li>
+        {% endfor %}
+      </ul>
+
+      {% if related_trials %}
+      <h2>Clinical trials</h2>
+      <ul>
+        {% for t in related_trials %}
+          <li><a href="{{ url_for('trial_detail', nct_id=t.nct_id) }}">{{ t.title }}</a></li>
+        {% endfor %}
+      </ul>
+      {% endif %}
+
+      <h2>Why Mayo Clinic</h2>
+      <p>The Mayo Clinic Comprehensive Cancer Center brings together medical oncology, surgical oncology, radiation oncology, pathology, and supportive services into one integrated care team. As an NCI-designated Comprehensive Cancer Center, Mayo Clinic offers proton beam therapy, CAR-T cell therapy, and access to leading-edge clinical trials.</p>
+    </div>
+    <aside class="sidebar">
+      <div class="sidebar-card">
+        <h4>Related conditions</h4>
+        <ul>
+          {% for c in related_conditions %}<li><a href="{{ url_for('condition_detail', slug=c.slug) }}">{{ c.name }}</a></li>{% endfor %}
+        </ul>
+      </div>
+      <div class="sidebar-card">
+        <h4>Cancer doctors</h4>
+        <ul>
+          {% for d in doctors[:6] %}<li><a href="{{ url_for('doctor_detail', slug=d.slug) }}">{{ d.name }}</a></li>{% endfor %}
+        </ul>
+      </div>
+      <div class="appointment-block">
+        <h4>Get a second opinion</h4>
+        <a class="btn-primary" href="{{ url_for('second_opinion') }}">Request second opinion</a>
+      </div>
+    </aside>
+  </div>
+</section>
+{% endblock %}

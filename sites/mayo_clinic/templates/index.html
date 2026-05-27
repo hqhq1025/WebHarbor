@@ -1,0 +1,132 @@
+{% extends "base.html" %}
+{% block title %}Mayo Clinic - The World's Best Hospital{% endblock %}
+{% block content %}
+<section class="hero">
+  <div class="container">
+    <h1>Solving the world's toughest medical problems &mdash; one person at a time.</h1>
+    <p>Mayo Clinic is the No. 1 hospital in the world according to Newsweek. From advanced diagnostics to compassionate whole-person care, our experts work together to deliver the right answers the first time.</p>
+    <div class="hero-buttons">
+      <a href="{{ url_for('appointments_landing') }}">Request an appointment</a>
+      <a class="outline" href="{{ url_for('symptom_checker') }}">Try the Symptom Checker</a>
+    </div>
+  </div>
+</section>
+
+<section class="container">
+  <h2 style="margin-top:34px;">Find diseases &amp; conditions by first letter</h2>
+  <div class="az-strip">
+    {% for L in letters %}
+      <a href="{{ url_for('diseases_index') }}?letter={{ L }}">{{ L }}</a>
+    {% endfor %}
+  </div>
+
+  <h2>Patient care features</h2>
+  <div class="feature-grid">
+    <div class="feature-card">
+      <div class="icon-wrap">&#9881;</div>
+      <h3>Find a doctor</h3>
+      <p>Search Mayo Clinic physicians by specialty, location, and language.</p>
+      <a class="feature-link" href="{{ url_for('find_doctor') }}">Search physicians &rsaquo;</a>
+    </div>
+    <div class="feature-card">
+      <div class="icon-wrap">&#9881;</div>
+      <h3>Symptom Checker</h3>
+      <p>Find out what could be causing your symptoms and when to seek care.</p>
+      <a class="feature-link" href="{{ url_for('symptom_checker') }}">Start the wizard &rsaquo;</a>
+    </div>
+    <div class="feature-card">
+      <div class="icon-wrap">&#9881;</div>
+      <h3>Diseases &amp; Conditions</h3>
+      <p>Easy-to-understand answers about hundreds of medical conditions.</p>
+      <a class="feature-link" href="{{ url_for('diseases_index') }}">Browse A-Z &rsaquo;</a>
+    </div>
+    <div class="feature-card">
+      <div class="icon-wrap">&#9881;</div>
+      <h3>Tests &amp; Procedures</h3>
+      <p>What it is, how it's done, how to prepare, risks and results.</p>
+      <a class="feature-link" href="{{ url_for('procedures_index') }}">Browse A-Z &rsaquo;</a>
+    </div>
+    <div class="feature-card">
+      <div class="icon-wrap">&#9881;</div>
+      <h3>Drugs &amp; Supplements</h3>
+      <p>Learn about medications, herbs and supplements.</p>
+      <a class="feature-link" href="{{ url_for('drugs_index') }}">Browse A-Z &rsaquo;</a>
+    </div>
+    <div class="feature-card">
+      <div class="icon-wrap">&#9881;</div>
+      <h3>Departments &amp; Centers</h3>
+      <p>Find a department or specialty center at Mayo Clinic.</p>
+      <a class="feature-link" href="{{ url_for('departments_index') }}">Browse departments &rsaquo;</a>
+    </div>
+    <div class="feature-card">
+      <div class="icon-wrap">&#9881;</div>
+      <h3>Healthy Lifestyle</h3>
+      <p>Information and tools for nutrition, fitness, stress, sleep, and more.</p>
+      <a class="feature-link" href="{{ url_for('lifestyle_index') }}">Explore healthy living &rsaquo;</a>
+    </div>
+    <div class="feature-card">
+      <div class="icon-wrap">&#9881;</div>
+      <h3>Clinical Trials</h3>
+      <p>Search for active clinical trials at Mayo Clinic.</p>
+      <a class="feature-link" href="{{ url_for('trials_index') }}">Find trials &rsaquo;</a>
+    </div>
+  </div>
+
+  <h2>Featured conditions</h2>
+  <div class="related-grid">
+    {% for c in featured_conditions %}
+      {% set img = pick_image('anatomy', c.slug) %}
+      <div class="card-with-image">
+        {% if img %}<img class="card-img" src="{{ url_for('static', filename=img) }}" alt="">{% endif %}
+        <div class="card-body">
+          <div class="kind">Condition</div>
+          <h4><a href="{{ url_for('condition_detail', slug=c.slug) }}">{{ c.name }}</a></h4>
+          <p>{{ c.summary[:160] }}{% if c.summary|length > 160 %}...{% endif %}</p>
+        </div>
+      </div>
+    {% endfor %}
+  </div>
+
+  <h2>Healthy Lifestyle highlights</h2>
+  <div class="related-grid">
+    {% for a in featured_articles %}
+      {% set img = pick_image('articles', a.slug) %}
+      <div class="card-with-image">
+        {% if img %}<img class="card-img" src="{{ url_for('static', filename=img) }}" alt="">{% endif %}
+        <div class="card-body">
+          <div class="kind">{{ a.category }}</div>
+          <h4><a href="{{ url_for('lifestyle_detail', slug=a.slug) }}">{{ a.title }}</a></h4>
+          <p>{{ a.summary[:150] }}</p>
+        </div>
+      </div>
+    {% endfor %}
+  </div>
+
+  <h2>Active clinical trials</h2>
+  <div class="related-grid">
+    {% for t in featured_trials %}
+      <div class="related-card">
+        <div class="kind">{{ t.phase }} &middot; {{ t.status }}</div>
+        <h4><a href="{{ url_for('trial_detail', nct_id=t.nct_id) }}">{{ t.title }}</a></h4>
+        <p>{{ t.brief_summary[:160] }}...</p>
+      </div>
+    {% endfor %}
+  </div>
+
+  <h2>News from Mayo Clinic</h2>
+  <ul style="list-style:none; padding:0;">
+    {% for n in latest_news %}
+      <li style="border-bottom:1px solid #eee; padding:10px 0;">
+        <strong>{{ n.published_date }}</strong> &mdash;
+        <a href="{{ url_for('news_detail', slug=n.slug) }}">{{ n.title }}</a>
+      </li>
+    {% endfor %}
+  </ul>
+
+  <div class="appointment-block">
+    <h4>Ready to be seen?</h4>
+    <p>Mayo Clinic accepts appointments in Arizona, Florida and Minnesota and at Mayo Clinic Health System sites.</p>
+    <a class="btn-primary" href="{{ url_for('appointments_landing') }}">Request an appointment</a>
+  </div>
+</section>
+{% endblock %}

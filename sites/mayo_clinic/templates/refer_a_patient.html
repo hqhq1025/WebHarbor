@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+{% block title %}Refer a Patient{% endblock %}
+{% block breadcrumbs %}
+<div class="container breadcrumbs">
+  <a href="{{ url_for('index') }}">Home</a><span>&rsaquo;</span> Refer a Patient
+</div>
+{% endblock %}
+{% block content %}
+<section class="container">
+  <h1>Refer a Patient to Mayo Clinic</h1>
+  <p>Physicians can refer patients to Mayo Clinic using this form. A Mayo Clinic care coordinator will contact you within one business day.</p>
+
+  {% if success_code %}
+    <div class="alert alert-success">Referral submitted. Confirmation code: <strong>{{ success_code }}</strong></div>
+  {% endif %}
+
+  <form method="post" class="form-grid">
+    <h2 class="span-2" style="margin:18px 0 0;">Referring provider</h2>
+    <div><label>Provider name</label><input type="text" name="referring_provider" required></div>
+    <div><label>NPI number</label><input type="text" name="npi"></div>
+    <div><label>Clinic / institution</label><input type="text" name="referring_clinic" required></div>
+    <div><label>Phone</label><input type="tel" name="referring_phone" required></div>
+    <div class="span-2"><label>Email</label><input type="email" name="referring_email" required></div>
+
+    <h2 class="span-2" style="margin:18px 0 0;">Patient information</h2>
+    <div><label>Patient name</label><input type="text" name="patient_name" required></div>
+    <div><label>Date of birth</label><input type="date" name="patient_dob"></div>
+    <div class="span-2"><label>Diagnosis / reason for referral</label><textarea name="patient_diagnosis" rows="3" required></textarea></div>
+
+    <h2 class="span-2" style="margin:18px 0 0;">Requested services</h2>
+    <div>
+      <label>Department</label>
+      <select name="requested_department" required>
+        <option value="">Choose a department...</option>
+        {% for d in departments %}<option value="{{ d.slug }}">{{ d.name }}</option>{% endfor %}
+      </select>
+    </div>
+    <div>
+      <label>Preferred location</label>
+      <select name="requested_location">
+        <option value="Rochester">Rochester, MN</option>
+        <option value="Jacksonville">Jacksonville, FL</option>
+        <option value="Phoenix">Phoenix, AZ</option>
+      </select>
+    </div>
+    <div>
+      <label>Urgency</label>
+      <select name="urgency">
+        <option value="routine">Routine (within 2-4 weeks)</option>
+        <option value="urgent">Urgent (within 1 week)</option>
+        <option value="emergent">Emergent (immediate)</option>
+      </select>
+    </div>
+    <div class="span-2"><label>Additional clinical notes</label><textarea name="notes" rows="4"></textarea></div>
+
+    <div class="span-2">
+      <button class="btn-primary" type="submit">Submit referral</button>
+    </div>
+  </form>
+</section>
+{% endblock %}

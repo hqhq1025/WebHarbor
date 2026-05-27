@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+{% block title %}Find a Doctor - Advanced Search{% endblock %}
+{% block breadcrumbs %}
+<div class="container breadcrumbs">
+  <a href="{{ url_for('index') }}">Home</a><span>&rsaquo;</span>
+  <a href="{{ url_for('find_doctor') }}">Find a Doctor</a><span>&rsaquo;</span> Advanced search
+</div>
+{% endblock %}
+{% block content %}
+<section class="container">
+  <h1>Find a Doctor &mdash; Advanced Search</h1>
+  <form method="get" class="form-grid">
+    <div><label>Doctor name</label><input type="search" name="q" value="{{ q }}"></div>
+    <div>
+      <label>Department</label>
+      <select name="specialty">
+        <option value="">All specialties</option>
+        {% for d in departments %}<option value="{{ d.slug }}" {% if d.slug == specialty %}selected{% endif %}>{{ d.name }}</option>{% endfor %}
+      </select>
+    </div>
+    <div>
+      <label>Sub-specialty / focus area</label>
+      <select name="sub_specialty">
+        <option value="">All</option>
+        {% for s in sub_specs %}<option value="{{ s }}" {% if s == sub_specialty %}selected{% endif %}>{{ s }}</option>{% endfor %}
+      </select>
+    </div>
+    <div>
+      <label>Location</label>
+      <select name="location">
+        <option value="">Any</option>
+        <option value="Rochester" {% if location == 'Rochester' %}selected{% endif %}>Rochester</option>
+        <option value="Jacksonville" {% if location == 'Jacksonville' %}selected{% endif %}>Jacksonville</option>
+        <option value="Phoenix" {% if location == 'Phoenix' %}selected{% endif %}>Phoenix</option>
+      </select>
+    </div>
+    <div>
+      <label>Language</label>
+      <select name="language">
+        <option value="">Any</option>
+        {% for l in ['English','Spanish','French','German','Mandarin','Cantonese','Arabic','Hindi','Vietnamese','Russian','Portuguese','Italian','Korean','Japanese','Tagalog','Polish'] %}
+          <option value="{{ l }}" {% if l == language %}selected{% endif %}>{{ l }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div>
+      <label>Accepting new patients</label>
+      <select name="accepts_new">
+        <option value="">Any</option>
+        <option value="yes" {% if accepts_new == 'yes' %}selected{% endif %}>Yes</option>
+      </select>
+    </div>
+    <div class="span-2"><button class="btn-primary" type="submit">Search physicians</button></div>
+  </form>
+
+  <h2>{{ doctors|length }} doctors match</h2>
+  {% for d in doctors %}
+    {% set img = pick_image('doctors', d.slug) %}
+    <div class="doctor-card">
+      {% if img %}<img class="doctor-headshot-row" src="{{ url_for('static', filename=img) }}" alt="">{% else %}<div class="doctor-headshot-row" style="background:var(--mayo-blue-light); display:flex; align-items:center; justify-content:center; font-weight:700; color:var(--mayo-blue);">{{ d.name[0] }}</div>{% endif %}
+      <div class="doctor-info">
+        <h4><a href="{{ url_for('doctor_detail', slug=d.slug) }}">{{ d.name }}</a></h4>
+        <div class="specialty">{{ d.specialty }}</div>
+        <div class="focus">{{ d.focus_areas[:120] }}</div>
+        <div class="muted" style="font-size:12px;">{{ d.locations }} &middot; {{ d.languages }} &middot; {% if d.accepts_appointments %}Accepts new patients{% else %}Not currently accepting{% endif %}</div>
+      </div>
+    </div>
+  {% endfor %}
+</section>
+{% endblock %}

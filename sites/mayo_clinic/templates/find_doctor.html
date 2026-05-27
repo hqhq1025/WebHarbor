@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+{% block title %}Find a Doctor{% endblock %}
+{% block breadcrumbs %}
+<div class="container breadcrumbs"><a href="{{ url_for('index') }}">Home</a><span>&rsaquo;</span> Find a Doctor</div>
+{% endblock %}
+{% block content %}
+<section class="container">
+  <h1>Find a Doctor</h1>
+  <p class="muted">Search Mayo Clinic physicians by name, specialty, location, and language.</p>
+
+  <form method="get" action="{{ url_for('find_doctor') }}" style="background:#f7f7f7;padding:16px;border-radius:6px;display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;">
+    <div class="form-row" style="margin:0;">
+      <label>Name or focus</label>
+      <input type="text" name="q" value="{{ q }}" placeholder="Search...">
+    </div>
+    <div class="form-row" style="margin:0;">
+      <label>Specialty (department)</label>
+      <select name="specialty">
+        <option value="">All specialties</option>
+        {% for d in departments %}
+          <option value="{{ d.slug }}" {{ 'selected' if d.slug == specialty else '' }}>{{ d.name }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="form-row" style="margin:0;">
+      <label>Location</label>
+      <select name="location">
+        <option value="">All locations</option>
+        {% for L in LOCATIONS %}
+          <option value="{{ L }}" {{ 'selected' if L == location else '' }}>{{ L }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="form-row" style="margin:0;">
+      <label>Language</label>
+      <select name="language">
+        <option value="">Any language</option>
+        {% for lang in LANGUAGE_LIST %}
+          <option value="{{ lang }}" {{ 'selected' if lang == language else '' }}>{{ lang }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="form-row" style="margin:0;display:flex;align-items:end;">
+      <button class="btn-primary" type="submit">Search</button>
+    </div>
+  </form>
+
+  <p class="muted" style="margin-top:16px;">{{ doctors|length }} physician{{ '' if doctors|length == 1 else 's' }} found. <a href="{{ url_for('find_doctor_advanced') }}">Advanced search &rsaquo;</a></p>
+  {% for d in doctors %}
+    {% set img = pick_image('doctors', d.slug) %}
+    <div class="doctor-card">
+      {% if img %}
+        <img class="doctor-headshot-row" src="{{ url_for('static', filename=img) }}" alt="{{ d.name }}">
+      {% else %}
+        <div class="avatar" style="width:80px;height:80px;font-size:30px;background:var(--mayo-blue-light);border-radius:50%;display:flex;align-items:center;justify-content:center;color:var(--mayo-blue);font-weight:700;flex-shrink:0;">{{ d.name[0] }}</div>
+      {% endif %}
+      <div class="doctor-info">
+        <h4><a href="{{ url_for('doctor_detail', slug=d.slug) }}">{{ d.name }}</a></h4>
+        <div class="specialty">{{ d.specialty }}</div>
+        <div class="meta">Department: {% if d.department %}<a href="{{ url_for('department_detail', slug=d.department.slug) }}">{{ d.department.name }}</a>{% else %}{{ d.dept_slug }}{% endif %}</div>
+        <div class="meta">Locations: {{ d.locations.replace(',', ', ') }}</div>
+        <div class="meta">Languages: {{ d.languages.replace(',', ', ') }}</div>
+        <div class="pills">
+          {% for f in d.focus_areas.split(',')[:4] %}<span class="pill">{{ f.strip() }}</span>{% endfor %}
+        </div>
+      </div>
+    </div>
+  {% else %}
+    <p class="muted">No physicians match those filters. Try broadening your search.</p>
+  {% endfor %}
+</section>
+{% endblock %}
