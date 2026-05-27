@@ -11,7 +11,7 @@
         {% for v in items %}
         <th style="vertical-align:top;min-width:180px">
           <a href="{{ url_for('vehicle_detail', slug=v.slug) }}">
-            <img src="{{ v.image or '/static/images/_pending.svg' }}" style="width:160px;border-radius:4px"
+            <img loading="lazy" decoding="async" src="{{ v.image or '/static/images/_pending.svg' }}" style="width:160px;border-radius:4px"
                  onerror="this.src='/static/images/_pending.svg'"><br>
             {{ v.short_title }}
           </a>

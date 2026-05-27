@@ -7,7 +7,7 @@
     <h1>{{ t.title }}</h1>
     <p class="dpn-research-summary">{{ t.summary }}</p>
     {% if t.hero_image %}
-      <img src="{{ t.hero_image }}" alt="{{ t.title }}" class="dpn-research-hero"
+      <img loading="lazy" decoding="async" src="{{ t.hero_image }}" alt="{{ t.title }}" class="dpn-research-hero"
            onerror="this.src='/static/images/_pending.svg'">
     {% endif %}
     <article class="dpn-research-body">

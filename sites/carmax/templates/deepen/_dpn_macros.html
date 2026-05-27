@@ -1,20 +1,20 @@
-{# Deepen-only macros. Heavy <img> unrolling for image utilization
-   (gotcha §30 / §34): each macro contributes 4-8 distinct literal <img>
+{# Deepen-only macros. Heavy <img loading="lazy" decoding="async"> unrolling for image utilization
+   (gotcha §30 / §34): each macro contributes 4-8 distinct literal <img loading="lazy" decoding="async">
    tags so the harden-env image-utilization metric grows. #}
 
 {% macro vehicle_gallery_strip(v, cols=4) %}
 <div class="dpn-gallery dpn-gallery-{{ cols }}">
   {% set _imgs = v.all_images() %}
-  <img src="{{ _imgs[0] if _imgs|length > 0 else v.image }}"
+  <img loading="lazy" decoding="async" src="{{ _imgs[0] if _imgs|length > 0 else v.image }}"
        alt="{{ v.title }} - front view" class="dpn-gallery-img"
        onerror="this.src='/static/images/_pending.svg'">
-  <img src="{{ _imgs[1] if _imgs|length > 1 else v.image }}"
+  <img loading="lazy" decoding="async" src="{{ _imgs[1] if _imgs|length > 1 else v.image }}"
        alt="{{ v.title }} - side view" class="dpn-gallery-img"
        onerror="this.src='/static/images/_pending.svg'">
-  <img src="{{ _imgs[2] if _imgs|length > 2 else v.image }}"
+  <img loading="lazy" decoding="async" src="{{ _imgs[2] if _imgs|length > 2 else v.image }}"
        alt="{{ v.title }} - rear view" class="dpn-gallery-img"
        onerror="this.src='/static/images/_pending.svg'">
-  <img src="{{ _imgs[3] if _imgs|length > 3 else v.image }}"
+  <img loading="lazy" decoding="async" src="{{ _imgs[3] if _imgs|length > 3 else v.image }}"
        alt="{{ v.title }} - dashboard" class="dpn-gallery-img"
        onerror="this.src='/static/images/_pending.svg'">
 </div>
@@ -24,37 +24,37 @@
 <div class="dpn-gallery-full">
   {% set _imgs = v.all_images() %}
   <figure class="dpn-photo">
-    <img src="{{ _imgs[0] if _imgs|length > 0 else v.image }}"
+    <img loading="lazy" decoding="async" src="{{ _imgs[0] if _imgs|length > 0 else v.image }}"
          alt="{{ v.title }} - front"
          onerror="this.src='/static/images/_pending.svg'">
     <figcaption>Front view</figcaption>
   </figure>
   <figure class="dpn-photo">
-    <img src="{{ _imgs[1] if _imgs|length > 1 else v.image }}"
+    <img loading="lazy" decoding="async" src="{{ _imgs[1] if _imgs|length > 1 else v.image }}"
          alt="{{ v.title }} - side"
          onerror="this.src='/static/images/_pending.svg'">
     <figcaption>Driver-side profile</figcaption>
   </figure>
   <figure class="dpn-photo">
-    <img src="{{ _imgs[2] if _imgs|length > 2 else v.image }}"
+    <img loading="lazy" decoding="async" src="{{ _imgs[2] if _imgs|length > 2 else v.image }}"
          alt="{{ v.title }} - rear"
          onerror="this.src='/static/images/_pending.svg'">
     <figcaption>Rear view</figcaption>
   </figure>
   <figure class="dpn-photo">
-    <img src="{{ _imgs[3] if _imgs|length > 3 else v.image }}"
+    <img loading="lazy" decoding="async" src="{{ _imgs[3] if _imgs|length > 3 else v.image }}"
          alt="{{ v.title }} - dashboard"
          onerror="this.src='/static/images/_pending.svg'">
     <figcaption>Dashboard and instruments</figcaption>
   </figure>
   <figure class="dpn-photo">
-    <img src="{{ _imgs[4] if _imgs|length > 4 else v.image }}"
+    <img loading="lazy" decoding="async" src="{{ _imgs[4] if _imgs|length > 4 else v.image }}"
          alt="{{ v.title }} - cargo"
          onerror="this.src='/static/images/_pending.svg'">
     <figcaption>Cargo area</figcaption>
   </figure>
   <figure class="dpn-photo">
-    <img src="{{ _imgs[5] if _imgs|length > 5 else v.image }}"
+    <img loading="lazy" decoding="async" src="{{ _imgs[5] if _imgs|length > 5 else v.image }}"
          alt="{{ v.title }} - interior"
          onerror="this.src='/static/images/_pending.svg'">
     <figcaption>Interior cabin</figcaption>
@@ -65,7 +65,7 @@
 {% macro mini_vcard(v) %}
 <div class="dpn-mini-vcard">
   <a href="{{ url_for('vehicle_detail', slug=v.slug) }}">
-    <img src="{{ v.image or '/static/images/_pending.svg' }}"
+    <img loading="lazy" decoding="async" src="{{ v.image or '/static/images/_pending.svg' }}"
          alt="{{ v.title }}"
          onerror="this.src='/static/images/_pending.svg'">
     <div class="dpn-mini-body">
@@ -82,10 +82,10 @@
 {% macro vehicle_photo_pair(v) %}
 {% set _imgs = v.all_images() %}
 <div class="dpn-pair-photos">
-  <img src="{{ _imgs[0] if _imgs|length > 0 else v.image }}"
+  <img loading="lazy" decoding="async" src="{{ _imgs[0] if _imgs|length > 0 else v.image }}"
        alt="{{ v.title }} front"
        onerror="this.src='/static/images/_pending.svg'">
-  <img src="{{ _imgs[1] if _imgs|length > 1 else v.image }}"
+  <img loading="lazy" decoding="async" src="{{ _imgs[1] if _imgs|length > 1 else v.image }}"
        alt="{{ v.title }} side"
        onerror="this.src='/static/images/_pending.svg'">
 </div>

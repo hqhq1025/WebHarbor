@@ -1,7 +1,7 @@
 {% macro vcard(v) %}
 <div class="vcard">
   <a href="{{ url_for('vehicle_detail', slug=v.slug) }}" class="vcard-img">
-    <img src="{{ v.image or '/static/images/_pending.svg' }}" alt="{{ v.title }}"
+    <img loading="lazy" decoding="async" src="{{ v.image or '/static/images/_pending.svg' }}" alt="{{ v.title }}"
          onerror="this.src='/static/images/_pending.svg'">
     <div class="badge-strip">
       {% if v.is_certified %}<span class="badge cert">CarMax Certified</span>{% endif %}

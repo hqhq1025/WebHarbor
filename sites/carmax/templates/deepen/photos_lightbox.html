@@ -11,32 +11,32 @@
     {% set _imgs = v.all_images() %}
     <div class="dpn-gallery-full">
       <figure class="dpn-photo">
-        <img src="{{ _imgs[0] if _imgs|length > 0 else v.image }}" alt="{{ v.title }} front view"
+        <img loading="lazy" decoding="async" src="{{ _imgs[0] if _imgs|length > 0 else v.image }}" alt="{{ v.title }} front view"
              onerror="this.src='/static/images/_pending.svg'">
         <figcaption>Front view</figcaption>
       </figure>
       <figure class="dpn-photo">
-        <img src="{{ _imgs[1] if _imgs|length > 1 else v.image }}" alt="{{ v.title }} driver-side profile"
+        <img loading="lazy" decoding="async" src="{{ _imgs[1] if _imgs|length > 1 else v.image }}" alt="{{ v.title }} driver-side profile"
              onerror="this.src='/static/images/_pending.svg'">
         <figcaption>Driver-side profile</figcaption>
       </figure>
       <figure class="dpn-photo">
-        <img src="{{ _imgs[2] if _imgs|length > 2 else v.image }}" alt="{{ v.title }} rear view"
+        <img loading="lazy" decoding="async" src="{{ _imgs[2] if _imgs|length > 2 else v.image }}" alt="{{ v.title }} rear view"
              onerror="this.src='/static/images/_pending.svg'">
         <figcaption>Rear view</figcaption>
       </figure>
       <figure class="dpn-photo">
-        <img src="{{ _imgs[3] if _imgs|length > 3 else v.image }}" alt="{{ v.title }} dashboard"
+        <img loading="lazy" decoding="async" src="{{ _imgs[3] if _imgs|length > 3 else v.image }}" alt="{{ v.title }} dashboard"
              onerror="this.src='/static/images/_pending.svg'">
         <figcaption>Dashboard and instruments</figcaption>
       </figure>
       <figure class="dpn-photo">
-        <img src="{{ _imgs[4] if _imgs|length > 4 else v.image }}" alt="{{ v.title }} cargo area"
+        <img loading="lazy" decoding="async" src="{{ _imgs[4] if _imgs|length > 4 else v.image }}" alt="{{ v.title }} cargo area"
              onerror="this.src='/static/images/_pending.svg'">
         <figcaption>Cargo area</figcaption>
       </figure>
       <figure class="dpn-photo">
-        <img src="{{ _imgs[5] if _imgs|length > 5 else v.image }}" alt="{{ v.title }} interior cabin"
+        <img loading="lazy" decoding="async" src="{{ _imgs[5] if _imgs|length > 5 else v.image }}" alt="{{ v.title }} interior cabin"
              onerror="this.src='/static/images/_pending.svg'">
         <figcaption>Interior cabin</figcaption>
       </figure>

@@ -12,7 +12,7 @@
     <div class="dpn-info-grid">
       {% for op in other_pages %}
       <a class="dpn-info-card dpn-info-link" href="/{{ op.slug }}">
-        <img src="/static/images/articles/{{ ['how-carmax-works','how-to-sell-your-car-to-carmax','pre-approval-vs-pre-qualified','maxcare-explained','first-time-car-buyer','best-high-mpg-cars'][loop.index0 % 6] }}.jpg" alt="{{ op.title }}">
+        <img loading="lazy" decoding="async" src="/static/images/articles/{{ ['how-carmax-works','how-to-sell-your-car-to-carmax','pre-approval-vs-pre-qualified','maxcare-explained','first-time-car-buyer','best-high-mpg-cars'][loop.index0 % 6] }}.jpg" alt="{{ op.title }}">
         <h3>{{ op.title }}</h3>
         <p>{{ op.eyebrow }}</p>
       </a>

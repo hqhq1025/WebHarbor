@@ -14,13 +14,13 @@
     <div>
       <div class="vdetail-gallery">
         <div class="main-img">
-          <img id="vdetail-hero" src="{{ vehicle.image or '/static/images/_pending.svg' }}"
+          <img loading="lazy" decoding="async" id="vdetail-hero" src="{{ vehicle.image or '/static/images/_pending.svg' }}"
                alt="{{ vehicle.title }}" onerror="this.src='/static/images/_pending.svg'">
         </div>
         {% if vehicle.all_images()|length > 1 %}
         <div class="thumbs">
           {% for p in vehicle.all_images() %}
-            <img src="{{ p }}" alt="thumb"
+            <img loading="lazy" decoding="async" src="{{ p }}" alt="thumb"
                  onclick="document.getElementById('vdetail-hero').src=this.src"
                  onerror="this.src='/static/images/_pending.svg'">
           {% endfor %}

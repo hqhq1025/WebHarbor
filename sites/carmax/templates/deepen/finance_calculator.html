@@ -11,16 +11,16 @@
     <p>{{ v.title }} &middot; sale price {{ v.price|money }}</p>
     {% set _imgs = v.all_images() %}
     <div class="dpn-gallery dpn-gallery-4">
-      <img src="{{ _imgs[0] if _imgs|length > 0 else v.image }}"
+      <img loading="lazy" decoding="async" src="{{ _imgs[0] if _imgs|length > 0 else v.image }}"
            alt="{{ v.title }} - front view"
            onerror="this.src='/static/images/_pending.svg'">
-      <img src="{{ _imgs[1] if _imgs|length > 1 else v.image }}"
+      <img loading="lazy" decoding="async" src="{{ _imgs[1] if _imgs|length > 1 else v.image }}"
            alt="{{ v.title }} - side view"
            onerror="this.src='/static/images/_pending.svg'">
-      <img src="{{ _imgs[2] if _imgs|length > 2 else v.image }}"
+      <img loading="lazy" decoding="async" src="{{ _imgs[2] if _imgs|length > 2 else v.image }}"
            alt="{{ v.title }} - rear view"
            onerror="this.src='/static/images/_pending.svg'">
-      <img src="{{ _imgs[3] if _imgs|length > 3 else v.image }}"
+      <img loading="lazy" decoding="async" src="{{ _imgs[3] if _imgs|length > 3 else v.image }}"
            alt="{{ v.title }} - dashboard"
            onerror="this.src='/static/images/_pending.svg'">
     </div>

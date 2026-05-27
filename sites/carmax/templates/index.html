@@ -95,7 +95,7 @@
       {% for a in article_strip %}
       <a href="{{ url_for('article_detail', slug=a.slug) }}" class="vcard" style="text-decoration:none;color:inherit">
         <div class="vcard-img">
-          <img src="{{ a.hero_image or '/static/images/_pending.svg' }}" alt="{{ a.title }}"
+          <img loading="lazy" decoding="async" src="{{ a.hero_image or '/static/images/_pending.svg' }}" alt="{{ a.title }}"
                onerror="this.src='/static/images/_pending.svg'">
         </div>
         <div class="vcard-body">

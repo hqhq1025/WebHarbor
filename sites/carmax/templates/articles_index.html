@@ -14,7 +14,7 @@
     {% for a in posts %}
     <a class="vcard" style="text-decoration:none;color:inherit" href="{{ url_for('article_detail', slug=a.slug) }}">
       <div class="vcard-img">
-        <img src="{{ a.hero_image or '/static/images/_pending.svg' }}" onerror="this.src='/static/images/_pending.svg'" alt="{{ a.title }}">
+        <img loading="lazy" decoding="async" src="{{ a.hero_image or '/static/images/_pending.svg' }}" onerror="this.src='/static/images/_pending.svg'" alt="{{ a.title }}">
       </div>
       <div class="vcard-body">
         <div class="vcard-trim">{{ a.category|capitalize }} - {{ a.published_at }}</div>

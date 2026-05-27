@@ -6,7 +6,7 @@
     <p class="dpn-breadcrumb"><a href="/about">About CarMax</a></p>
     <h1>{{ page.title }}</h1>
     <p class="dpn-eyebrow">{{ page.eyebrow }}</p>
-    <img src="/static/images/articles/how-carmax-works.jpg" alt="{{ page.title }}" class="dpn-about-hero">
+    <img loading="lazy" decoding="async" src="/static/images/articles/how-carmax-works.jpg" alt="{{ page.title }}" class="dpn-about-hero">
     <article class="dpn-about-body">
       {% for para in page.body.split('\n\n') %}<p>{{ para }}</p>{% endfor %}
     </article>

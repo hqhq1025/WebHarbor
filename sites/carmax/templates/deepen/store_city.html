@@ -8,7 +8,7 @@
     <p>{{ store.street }}, {{ store.city }}, {{ store.state }} {{ store.zip_code }} &middot; {{ store.phone }}</p>
     <div class="dpn-gallery dpn-gallery-4">
       {% for ph in photos %}
-        <img src="{{ ph.image }}" alt="{{ ph.caption }}" onerror="this.src='/static/images/_pending.svg'">
+        <img loading="lazy" decoding="async" src="{{ ph.image }}" alt="{{ ph.caption }}" onerror="this.src='/static/images/_pending.svg'">
       {% endfor %}
     </div>
     <table class="dpn-vhr-table">
