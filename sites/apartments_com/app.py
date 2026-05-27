@@ -1363,7 +1363,7 @@ def about():
 
 @app.route("/help")
 def help_page():
-    return render_template("help.html")
+    return render_template("help.html", topics=HELP_TOPICS)
 
 
 # ─── Category landings (amenity / bed / price / property type) ──────────────
@@ -2219,6 +2219,14 @@ def server_error(e):
 
 # ─── Bootstrap ──────────────────────────────────────────────────────────────
 
+
+# When app.py is run as __main__ (e.g. `python3 app.py`), seed_data's
+# `from app import …` would re-execute app.py as the `app` module and trigger
+# `from seed_data import …` again before seed_data has finished its top-level
+# imports — yielding "partially initialized module 'seed_data'". Aliasing
+# the live module under the name `app` makes the import a no-op.
+import sys as _sys  # noqa: E402
+_sys.modules.setdefault("app", _sys.modules[__name__])
 
 from seed_data import seed_database, seed_benchmark_users  # noqa: E402
 
