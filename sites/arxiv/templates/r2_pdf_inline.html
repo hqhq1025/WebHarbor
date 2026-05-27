@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block title %}PDF inline · {{ paper.arxiv_id }}{% endblock %}
+{% block content %}
+<h1 id="r2_pdf_inline_header">PDF inline reader</h1>
+<p class="r2_pdf_meta">Paper {{ paper.arxiv_id }} · {{ pages|length }} pages · MathJax-enabled</p>
+<div class="r2_pdf_pages">
+{% for pg in pages %}
+  <section id="r2_pdf_page_{{ pg.page }}" class="r2_pdf_page">
+    <h3>Page {{ pg.page }}</h3>
+    <p>≈ {{ pg.word_count }} words on this page.</p>
+  </section>
+{% endfor %}
+</div>
+<h2>Formulas detected (MathJax)</h2>
+<ul id="r2_mathjax_list">
+{% for f in formulas %}<li class="r2_mathjax_item">\( {{ f|safe }} \)</li>{% endfor %}
+</ul>
+<p><a href="/api/r2/citation-graph/{{ paper.arxiv_id }}">Citation graph (JSON)</a></p>
+{% endblock %}

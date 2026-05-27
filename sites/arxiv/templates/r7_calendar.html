@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block title %}Conference deadline calendar{% endblock %}
+{% block content %}
+<h1 id="r7_calendar_header">Academic conference calendar</h1>
+<p>Upcoming paper deadlines (sorted ascending):</p>
+<table class="r7_calendar_table">
+<tr><th>Conference</th><th>Year</th><th>Abstract</th><th>Paper</th><th>Notification</th><th>Location</th></tr>
+{% for c in upcoming %}
+<tr class="r7_calendar_row"><td>{{ c.conf }}</td><td>{{ c.year }}</td><td>{{ c.abstract_deadline }}</td><td>{{ c.paper_deadline }}</td><td>{{ c.notification }}</td><td>{{ c.location }}</td></tr>
+{% endfor %}
+</table>
+<h2 id="r7_full_header">All tracked conferences</h2>
+<ul id="r7_full_list">{% for c in calendar %}<li class="r7_calendar_item">{{ c.conf }} {{ c.year }} — {{ c.location }}</li>{% endfor %}</ul>
+{% endblock %}

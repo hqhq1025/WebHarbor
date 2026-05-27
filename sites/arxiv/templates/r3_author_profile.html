@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block title %}{{ name }} · profile{% endblock %}
+{% block content %}
+<h1 id="r3_author_header">{{ name }}</h1>
+<dl class="r3_author_stats">
+  <dt>h-index</dt><dd id="r3_h_index">{{ stats.h_index }}</dd>
+  <dt>Total citations</dt><dd id="r3_citations">{{ stats.citations }}</dd>
+  <dt>ORCID</dt><dd id="r3_orcid">{{ stats.orcid }}</dd>
+</dl>
+<h2 id="r3_coauthors_header">Coauthors</h2>
+<ul id="r3_coauthor_graph">
+{% for n in stats.coauthor_graph.nodes[1:] %}
+  <li class="r3_coauthor">{{ n }}</li>
+{% endfor %}
+</ul>
+{% endblock %}

@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block title %}Saved searches{% endblock %}
+{% block content %}
+<h1 id="r8_saved_searches_header">Saved searches & author alerts</h1>
+<form id="r8_save_search_form">
+  <input name="q" id="r8_query_input" placeholder="search query"/>
+  <button type="submit" id="r8_save_search_submit">Save search</button>
+</form>
+<form id="r8_author_alert_form">
+  <input name="author" id="r8_author_input" placeholder="author name"/>
+  <button type="submit" id="r8_author_alert_submit">Follow author</button>
+</form>
+<p><a href="/r8/rss/my-library.xml" id="r8_rss_link">My library RSS feed</a></p>
+<script>
+document.getElementById('r8_save_search_form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const q = document.getElementById('r8_query_input').value;
+  const r = await fetch('/api/r8/saved-search', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({q})});
+  alert(JSON.stringify(await r.json()));
+});
+document.getElementById('r8_author_alert_form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const author = document.getElementById('r8_author_input').value;
+  const r = await fetch('/api/r8/author-alert', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({author})});
+  alert(JSON.stringify(await r.json()));
+});
+</script>
+{% endblock %}

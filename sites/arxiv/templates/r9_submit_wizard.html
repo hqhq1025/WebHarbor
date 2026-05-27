@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% block title %}Submission wizard{% endblock %}
+{% block content %}
+<h1 id="r9_submit_wizard_header">Preprint submission wizard</h1>
+<ol id="r9_steps">{% for s in steps %}<li class="r9_step" id="r9_step_{{ s }}">{{ loop.index }}. {{ s }}</li>{% endfor %}</ol>
+
+<h2>Step 1 — Metadata</h2>
+<form id="r9_metadata_form">
+  <input id="r9_title_input" name="title" placeholder="Title"/>
+  <textarea id="r9_abstract_input" name="abstract" placeholder="Abstract (>=50 chars)"></textarea>
+  <input id="r9_category_input" name="primary_category" placeholder="Primary category, e.g. cs.AI"/>
+  <button type="submit" id="r9_validate_submit">Validate metadata</button>
+</form>
+
+<h2>Step 4 — LaTeX upload + lint</h2>
+<form id="r9_latex_form">
+  <textarea id="r9_latex_source" name="source" placeholder="paste LaTeX source"></textarea>
+  <button type="submit" id="r9_lint_submit">Lint LaTeX</button>
+</form>
+
+<script>
+document.getElementById('r9_metadata_form').addEventListener('submit', async (e)=>{
+  e.preventDefault();
+  const payload = {title:r9_title_input.value, abstract:r9_abstract_input.value, primary_category:r9_category_input.value};
+  const r = await fetch('/api/r9/submit/validate', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload)});
+  alert(JSON.stringify(await r.json()));
+});
+document.getElementById('r9_latex_form').addEventListener('submit', async (e)=>{
+  e.preventDefault();
+  const r = await fetch('/api/r9/submit/lint-latex', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({source:r9_latex_source.value})});
+  alert(JSON.stringify(await r.json()));
+});
+</script>
+{% endblock %}

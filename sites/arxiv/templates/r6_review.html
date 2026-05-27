@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block title %}Reviews · {{ paper.arxiv_id }}{% endblock %}
+{% block content %}
+<h1 id="r6_review_header">Reviews — {{ paper.arxiv_id }}</h1>
+<section class="r6_pwc">
+  <h2>PaperWithCode attestation</h2>
+  <p id="r6_pwc_has_code">Code available: {{ 'yes' if pwc.has_code else 'no' }}</p>
+  {% if pwc.has_code %}<p id="r6_pwc_url">Repo: {{ pwc.code_url }} ★ {{ pwc.stars }}</p>{% endif %}
+  <p id="r6_pwc_reproduced">Reproduced: {{ 'yes' if pwc.reproduced else 'no' }}</p>
+</section>
+<section class="r6_openreview">
+  <h2>Public review summary</h2>
+  <p id="r6_or_recommendation">Recommendation: {{ review.recommendation }} · avg {{ review.avg_score }} over {{ review.n_reviews }} reviewers</p>
+  <p id="r6_or_scores">Scores: {{ review.scores|join(', ') }}</p>
+</section>
+<section class="r6_trackback">
+  <h2>Trackback pings ({{ pings|length }})</h2>
+  <ul>{% for p in pings %}<li class="r6_trackback_item">{{ p.source }} — {{ p.date }}</li>{% endfor %}</ul>
+</section>
+{% endblock %}

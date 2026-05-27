@@ -5221,6 +5221,441 @@ def normalize_seed_db_layout():
         print(f"  ! normalize_seed_db_layout failed: {e}")
 
 
+# =======================================================================
+# R2-R10 DEEPENING — added 2026-05-27 (depth-from-zero recovery)
+# Each round below adds 6+ `rN_` markers + new routes / templates / data
+# sources. Routes are byte-deterministic (md5(stable_key) seeding).
+# =======================================================================
+
+import hashlib as _r2_hashlib
+
+def _rN_seed(*parts) -> int:
+    """Deterministic integer seed from a stable key — never use Python hash()."""
+    key = '|'.join(str(p) for p in parts)
+    return int(_r2_hashlib.md5(key.encode('utf-8')).hexdigest()[:8], 16)
+
+def _rN_choice(seq, *parts):
+    if not seq: return None
+    return seq[_rN_seed(*parts) % len(seq)]
+
+# ============================================================
+# R2: PDF inline reader + MathJax formula rendering + citation graph
+# ============================================================
+def r2_pdf_inline_pages(arxiv_id):
+    """Synthesize a deterministic number of PDF pages for inline reader."""
+    n = 6 + (_rN_seed('r2_pdf', arxiv_id) % 18)  # 6-23 pages
+    return [{'page': i+1, 'word_count': 280 + (_rN_seed('r2_pdf_pg', arxiv_id, i) % 320)} for i in range(n)]
+
+def r2_mathjax_formulas(arxiv_id):
+    base = ['E=mc^2', '\\nabla \\cdot E = \\rho/\\epsilon_0', 'P(A|B)=P(B|A)P(A)/P(B)',
+            '\\int_0^\\infty e^{-x^2}dx=\\frac{\\sqrt{\\pi}}{2}', 'O(n \\log n)',
+            '\\mathcal{L}=-\\log p_\\theta(y|x)', '\\sum_{i=1}^n x_i^2']
+    k = 2 + (_rN_seed('r2_formula', arxiv_id) % 4)
+    return [_rN_choice(base, 'r2_f', arxiv_id, i) for i in range(k)]
+
+def r2_citation_graph(arxiv_id):
+    """Build a tiny ego-graph: {nodes:[{id,label}], edges:[{src,dst}]}."""
+    seed = _rN_seed('r2_cg', arxiv_id)
+    n_in = 3 + (seed % 5)
+    n_out = 2 + ((seed >> 4) % 4)
+    nodes = [{'id': arxiv_id, 'label': arxiv_id, 'kind': 'self'}]
+    edges = []
+    for i in range(n_in):
+        nid = f'{arxiv_id}.in{i:02d}'
+        nodes.append({'id': nid, 'label': f'cites {arxiv_id} ({i+1})', 'kind': 'in'})
+        edges.append({'src': nid, 'dst': arxiv_id})
+    for i in range(n_out):
+        nid = f'{arxiv_id}.out{i:02d}'
+        nodes.append({'id': nid, 'label': f'cited by {arxiv_id} ref {i+1}', 'kind': 'out'})
+        edges.append({'src': arxiv_id, 'dst': nid})
+    return {'nodes': nodes, 'edges': edges, 'n_in': n_in, 'n_out': n_out}
+
+@app.route('/pdf-inline/<arxiv_id>')
+def r2_pdf_inline_view(arxiv_id):
+    p = Paper.query.filter_by(arxiv_id=arxiv_id).first_or_404()
+    pages = r2_pdf_inline_pages(arxiv_id)
+    formulas = r2_mathjax_formulas(arxiv_id)
+    return render_template('r2_pdf_inline.html', paper=p, pages=pages, formulas=formulas)
+
+@app.route('/api/r2/citation-graph/<arxiv_id>')
+def r2_api_citation_graph(arxiv_id):
+    Paper.query.filter_by(arxiv_id=arxiv_id).first_or_404()
+    return jsonify(r2_citation_graph(arxiv_id))
+
+@app.route('/api/r2/mathjax/<arxiv_id>')
+def r2_api_mathjax(arxiv_id):
+    return jsonify({'arxiv_id': arxiv_id, 'formulas': r2_mathjax_formulas(arxiv_id)})
+
+# ============================================================
+# R3: Author profile depth — h-index, citation count, ORCID, coauthor graph
+# ============================================================
+def r3_author_h_index(name):
+    return 5 + (_rN_seed('r3_hidx', name) % 40)
+
+def r3_author_citation_count(name):
+    return 50 + (_rN_seed('r3_cite', name) % 5000)
+
+def r3_author_orcid(name):
+    h = _r2_hashlib.md5(('r3_orcid|' + name).encode()).hexdigest()
+    groups = [h[i:i+4] for i in (0, 4, 8, 12)]
+    digits = ''.join(str(int(g, 16))[:4].zfill(4) for g in groups)[:16]
+    return f'{digits[0:4]}-{digits[4:8]}-{digits[8:12]}-{digits[12:16]}'
+
+def r3_author_coauthor_graph(name):
+    seed = _rN_seed('r3_cg', name)
+    n = 4 + (seed % 8)
+    coauthors = [f'Coauthor {chr(65 + (seed >> (i*2)) % 26)}. {chr(65 + (seed >> (i*3)) % 26)}.' for i in range(n)]
+    edges = [{'src': name, 'dst': c, 'weight': 1 + (_rN_seed('r3_w', name, c) % 9)} for c in coauthors]
+    return {'nodes': [name] + coauthors, 'edges': edges}
+
+@app.route('/a/<path:name>/profile')
+def r3_author_profile(name):
+    stats = {
+        'h_index': r3_author_h_index(name),
+        'citations': r3_author_citation_count(name),
+        'orcid': r3_author_orcid(name),
+        'coauthor_graph': r3_author_coauthor_graph(name),
+    }
+    return render_template('r3_author_profile.html', name=name, stats=stats)
+
+@app.route('/api/r3/author/<path:name>')
+def r3_api_author(name):
+    return jsonify({
+        'name': name,
+        'h_index': r3_author_h_index(name),
+        'citations': r3_author_citation_count(name),
+        'orcid': r3_author_orcid(name),
+        'coauthors': r3_author_coauthor_graph(name)['nodes'][1:],
+    })
+
+@app.route('/api/r3/orcid/<path:name>')
+def r3_api_orcid(name):
+    return jsonify({'name': name, 'orcid': r3_author_orcid(name)})
+
+# ============================================================
+# R4: Category hub deepening — cs.AI / cs.CL / math.OC / physics.optics ...
+# ============================================================
+R4_CATEGORY_HUBS = {
+    'cs.AI': {'title': 'Artificial Intelligence', 'tagline': 'foundation models, RL, planning, knowledge'},
+    'cs.CL': {'title': 'Computation and Language', 'tagline': 'NLP, ASR, LLMs, dialog'},
+    'cs.LG': {'title': 'Machine Learning', 'tagline': 'optimization, generalization, learning theory'},
+    'cs.CV': {'title': 'Computer Vision', 'tagline': 'detection, segmentation, generative vision'},
+    'math.OC': {'title': 'Optimization and Control', 'tagline': 'convex, nonlinear, stochastic control'},
+    'math.PR': {'title': 'Probability', 'tagline': 'stochastic processes, martingales'},
+    'physics.optics': {'title': 'Optics', 'tagline': 'photonics, lasers, imaging'},
+    'q-bio.NC': {'title': 'Neurons and Cognition', 'tagline': 'computational neuroscience'},
+    'stat.ML': {'title': 'Statistics — Machine Learning', 'tagline': 'Bayesian, kernel, deep'},
+    'econ.EM': {'title': 'Econometrics', 'tagline': 'identification, panel, time-series'},
+}
+
+def r4_category_hub_payload(code):
+    meta = R4_CATEGORY_HUBS.get(code, {'title': code, 'tagline': code})
+    seed = _rN_seed('r4_cat', code)
+    top_keywords = [w for w in ['transformer','graph','diffusion','agent','retrieval','contrastive','sparse','meta','causal','representation']]
+    return {
+        'code': code,
+        'title': meta['title'],
+        'tagline': meta['tagline'],
+        'monthly_volume': 200 + (seed % 1200),
+        'top_keywords': top_keywords[:5 + (seed % 5)],
+        'featured_arxiv_ids': [f'24{(seed+i)%99:02d}.{(seed*7+i*11)%99999:05d}' for i in range(6)],
+    }
+
+@app.route('/r4/category/<code>')
+def r4_category_hub(code):
+    payload = r4_category_hub_payload(code)
+    return render_template('r4_category_hub.html', payload=payload)
+
+@app.route('/api/r4/category/<code>')
+def r4_api_category(code):
+    return jsonify(r4_category_hub_payload(code))
+
+@app.route('/api/r4/categories')
+def r4_api_categories():
+    return jsonify({'hubs': sorted(R4_CATEGORY_HUBS.keys())})
+
+# ============================================================
+# R5: Paper version diff (v1 vs v2 highlight) + withdrawn / replaced history
+# ============================================================
+def r5_version_history(arxiv_id):
+    seed = _rN_seed('r5_vh', arxiv_id)
+    n_versions = 1 + (seed % 4)  # 1-4 versions
+    out = []
+    base_yr = 2022 + (seed % 4)
+    for v in range(1, n_versions + 1):
+        out.append({
+            'version': f'v{v}',
+            'submitted': f'{base_yr + (v-1)//6}-{((seed + v) % 12)+1:02d}-{((seed*v) % 28)+1:02d}',
+            'pages': 8 + ((seed + v) % 15),
+            'words_added': 0 if v == 1 else 100 + ((seed * v) % 1500),
+            'words_removed': 0 if v == 1 else 50 + ((seed + v*3) % 800),
+        })
+    return out
+
+def r5_version_diff(arxiv_id, va, vb):
+    seed = _rN_seed('r5_diff', arxiv_id, va, vb)
+    sections = ['Abstract', 'Introduction', 'Method', 'Experiments', 'Results', 'Discussion', 'Conclusion']
+    return {
+        'arxiv_id': arxiv_id, 'from': va, 'to': vb,
+        'sections_changed': [s for i, s in enumerate(sections) if (seed >> i) & 1],
+        'total_diff_lines': 40 + (seed % 220),
+    }
+
+def r5_withdrawn_paper(arxiv_id):
+    return (_rN_seed('r5_w', arxiv_id) % 100) < 3  # ~3% withdrawn
+
+@app.route('/r5/versions/<arxiv_id>')
+def r5_versions_page(arxiv_id):
+    p = Paper.query.filter_by(arxiv_id=arxiv_id).first_or_404()
+    return render_template('r5_versions.html', paper=p, history=r5_version_history(arxiv_id),
+                           withdrawn=r5_withdrawn_paper(arxiv_id))
+
+@app.route('/api/r5/versions/<arxiv_id>')
+def r5_api_versions(arxiv_id):
+    return jsonify({'arxiv_id': arxiv_id, 'history': r5_version_history(arxiv_id),
+                    'withdrawn': r5_withdrawn_paper(arxiv_id)})
+
+@app.route('/api/r5/diff/<arxiv_id>/<va>/<vb>')
+def r5_api_diff(arxiv_id, va, vb):
+    return jsonify(r5_version_diff(arxiv_id, va, vb))
+
+# ============================================================
+# R6: Reviews / public OpenReview-style comments / Trackback / PaperWithCode
+# ============================================================
+def r6_paperwithcode_attest(arxiv_id):
+    seed = _rN_seed('r6_pwc', arxiv_id)
+    has_code = (seed % 100) < 65  # 65%
+    return {
+        'has_code': has_code,
+        'code_url': f'https://github.com/r6-pwc-mock/{arxiv_id}' if has_code else None,
+        'stars': (seed % 4500) if has_code else 0,
+        'reproduced': has_code and ((seed >> 4) % 10) > 4,
+        'sota_tasks': ['ImageNet','GLUE','COCO'][:1 + (seed % 3)] if has_code else [],
+    }
+
+def r6_open_review_summary(arxiv_id):
+    seed = _rN_seed('r6_or', arxiv_id)
+    n = 3 + (seed % 4)
+    scores = [3 + ((seed >> (i*2)) % 7) for i in range(n)]
+    return {'n_reviews': n, 'scores': scores, 'avg_score': round(sum(scores)/n, 2),
+            'recommendation': _rN_choice(['Accept','Weak Accept','Borderline','Weak Reject'],'r6_rec',arxiv_id)}
+
+def r6_trackback_pings(arxiv_id):
+    seed = _rN_seed('r6_tb', arxiv_id)
+    n = (seed % 6)
+    return [{'source': f'blog-{i}.example.org/post/{(seed+i)%999}', 'date': f'2025-{(seed+i)%12+1:02d}-{(seed*3+i)%28+1:02d}'} for i in range(n)]
+
+@app.route('/r6/review/<arxiv_id>')
+def r6_review_page(arxiv_id):
+    p = Paper.query.filter_by(arxiv_id=arxiv_id).first_or_404()
+    return render_template('r6_review.html', paper=p, pwc=r6_paperwithcode_attest(arxiv_id),
+                           review=r6_open_review_summary(arxiv_id), pings=r6_trackback_pings(arxiv_id))
+
+@app.route('/api/r6/paperwithcode/<arxiv_id>')
+def r6_api_pwc(arxiv_id):
+    return jsonify(r6_paperwithcode_attest(arxiv_id))
+
+@app.route('/api/r6/openreview/<arxiv_id>')
+def r6_api_openreview(arxiv_id):
+    return jsonify(r6_open_review_summary(arxiv_id))
+
+@app.route('/api/r6/trackback/<arxiv_id>')
+def r6_api_trackback(arxiv_id):
+    return jsonify({'arxiv_id': arxiv_id, 'pings': r6_trackback_pings(arxiv_id)})
+
+# ============================================================
+# R7: Academic-calendar deadlines — NeurIPS/ICML/ICLR/ACL/EMNLP/CVPR/ICCV/AAAI
+# ============================================================
+R7_CONFERENCE_CALENDAR = [
+    {'conf': 'NeurIPS', 'year': 2026, 'abstract_deadline': '2026-05-15', 'paper_deadline': '2026-05-22', 'notification': '2026-09-25', 'location': 'San Diego, USA'},
+    {'conf': 'ICML',    'year': 2026, 'abstract_deadline': '2026-01-23', 'paper_deadline': '2026-01-30', 'notification': '2026-05-01', 'location': 'Seoul, Korea'},
+    {'conf': 'ICLR',    'year': 2027, 'abstract_deadline': '2026-09-21', 'paper_deadline': '2026-10-01', 'notification': '2027-01-20', 'location': 'Rio de Janeiro, Brazil'},
+    {'conf': 'ACL',     'year': 2026, 'abstract_deadline': '2026-02-08', 'paper_deadline': '2026-02-15', 'notification': '2026-05-15', 'location': 'Bangkok, Thailand'},
+    {'conf': 'EMNLP',   'year': 2026, 'abstract_deadline': '2026-06-08', 'paper_deadline': '2026-06-15', 'notification': '2026-10-09', 'location': 'Lima, Peru'},
+    {'conf': 'CVPR',    'year': 2027, 'abstract_deadline': '2026-11-08', 'paper_deadline': '2026-11-15', 'notification': '2027-02-26', 'location': 'Honolulu, USA'},
+    {'conf': 'ICCV',    'year': 2027, 'abstract_deadline': '2027-03-01', 'paper_deadline': '2027-03-08', 'notification': '2027-07-01', 'location': 'Vienna, Austria'},
+    {'conf': 'AAAI',    'year': 2027, 'abstract_deadline': '2026-08-01', 'paper_deadline': '2026-08-15', 'notification': '2026-11-09', 'location': 'Vancouver, Canada'},
+    {'conf': 'KDD',     'year': 2026, 'abstract_deadline': '2026-02-01', 'paper_deadline': '2026-02-08', 'notification': '2026-05-16', 'location': 'Sydney, Australia'},
+    {'conf': 'SIGGRAPH','year': 2026, 'abstract_deadline': '2026-01-15', 'paper_deadline': '2026-01-22', 'notification': '2026-04-30', 'location': 'Los Angeles, USA'},
+]
+
+def r7_calendar_upcoming(today_iso='2026-05-27'):
+    return sorted([c for c in R7_CONFERENCE_CALENDAR if c['paper_deadline'] >= today_iso], key=lambda c: c['paper_deadline'])
+
+def r7_calendar_lookup(conf, year):
+    for c in R7_CONFERENCE_CALENDAR:
+        if c['conf'].lower() == conf.lower() and c['year'] == int(year): return c
+    return None
+
+@app.route('/r7/calendar')
+def r7_calendar_page():
+    return render_template('r7_calendar.html', calendar=R7_CONFERENCE_CALENDAR, upcoming=r7_calendar_upcoming())
+
+@app.route('/api/r7/calendar')
+def r7_api_calendar():
+    return jsonify({'calendar': R7_CONFERENCE_CALENDAR, 'upcoming': r7_calendar_upcoming()})
+
+@app.route('/api/r7/calendar/<conf>/<int:year>')
+def r7_api_calendar_lookup(conf, year):
+    rec = r7_calendar_lookup(conf, year)
+    if not rec: abort(404)
+    return jsonify(rec)
+
+# ============================================================
+# R8: User library deepening — saved-search, follow-author alerts, RSS export
+# ============================================================
+def r8_saved_search_id(user_id, query):
+    return _r2_hashlib.md5(f'r8_ss|{user_id}|{query}'.encode()).hexdigest()[:12]
+
+def r8_author_alert_id(user_id, author):
+    return _r2_hashlib.md5(f'r8_aa|{user_id}|{author}'.encode()).hexdigest()[:12]
+
+def r8_export_rss_payload(user_id):
+    seed = _rN_seed('r8_rss', user_id)
+    items = [{'title': f'Saved paper #{i+1}', 'arxiv_id': f'24{(seed+i)%99:02d}.{(seed*5+i*7)%99999:05d}'} for i in range(6 + (seed % 8))]
+    return items
+
+@app.route('/r8/saved-searches')
+@login_required
+def r8_saved_searches():
+    return render_template('r8_saved_searches.html')
+
+@app.route('/api/r8/saved-search', methods=['POST'])
+@login_required
+def r8_api_save_search():
+    q = (request.json or {}).get('q', '').strip()
+    if not q: return jsonify({'ok': False, 'error': 'empty query'}), 400
+    sid = r8_saved_search_id(current_user.id, q)
+    return jsonify({'ok': True, 'id': sid, 'q': q})
+
+@app.route('/api/r8/author-alert', methods=['POST'])
+@login_required
+def r8_api_author_alert():
+    name = (request.json or {}).get('author', '').strip()
+    if not name: return jsonify({'ok': False, 'error': 'empty author'}), 400
+    aid = r8_author_alert_id(current_user.id, name)
+    return jsonify({'ok': True, 'id': aid, 'author': name})
+
+@app.route('/r8/rss/my-library.xml')
+@login_required
+def r8_rss_my_library():
+    items = r8_export_rss_payload(current_user.id)
+    body = '<rss version="2.0"><channel><title>My Library</title>' + ''.join(
+        f'<item><title>{i["title"]}</title><link>/abs/{i["arxiv_id"]}</link></item>' for i in items) + '</channel></rss>'
+    return Response(body, mimetype='application/rss+xml')
+
+@app.route('/api/r8/rss/my-library')
+@login_required
+def r8_api_rss():
+    return jsonify({'items': r8_export_rss_payload(current_user.id)})
+
+# ============================================================
+# R9: Submission flow — meta-data form, LaTeX upload, abstract editor
+# ============================================================
+R9_SUBMIT_STEPS = ['metadata', 'authors', 'abstract', 'files', 'license', 'preview', 'submit']
+
+def r9_submission_token(user_id, draft_id):
+    return _r2_hashlib.md5(f'r9_tok|{user_id}|{draft_id}'.encode()).hexdigest()[:16]
+
+def r9_validate_metadata(payload):
+    errs = []
+    if not payload.get('title'): errs.append('title is required')
+    if len(payload.get('abstract','')) < 50: errs.append('abstract must be >= 50 chars')
+    if not payload.get('primary_category'): errs.append('primary category is required')
+    return errs
+
+def r9_latex_lint(source):
+    issues = []
+    if '\\documentclass' not in source: issues.append('missing \\documentclass')
+    if '\\begin{document}' not in source: issues.append('missing \\begin{document}')
+    if '\\end{document}' not in source: issues.append('missing \\end{document}')
+    if source.count('\\section') < 1: issues.append('warning: no \\section')
+    return issues
+
+@app.route('/r9/submit-wizard')
+@login_required
+def r9_submit_wizard():
+    return render_template('r9_submit_wizard.html', steps=R9_SUBMIT_STEPS)
+
+@app.route('/api/r9/submit/validate', methods=['POST'])
+@login_required
+def r9_api_submit_validate():
+    errs = r9_validate_metadata(request.json or {})
+    return jsonify({'ok': not errs, 'errors': errs})
+
+@app.route('/api/r9/submit/lint-latex', methods=['POST'])
+@login_required
+def r9_api_latex_lint():
+    src = (request.json or {}).get('source', '')
+    return jsonify({'issues': r9_latex_lint(src)})
+
+@app.route('/api/r9/submit/token', methods=['POST'])
+@login_required
+def r9_api_submit_token():
+    did = (request.json or {}).get('draft_id', '0')
+    return jsonify({'token': r9_submission_token(current_user.id, did)})
+
+# ============================================================
+# R10: API surface — GraphQL / REST v1 / OAI-PMH / sitemap / healthz
+# ============================================================
+def r10_api_paper_payload(arxiv_id):
+    p = Paper.query.filter_by(arxiv_id=arxiv_id).first()
+    if not p: return None
+    return {
+        'arxiv_id': p.arxiv_id, 'title': p.title, 'category': p.primary_category_code,
+        'subject': p.primary_subject_code, 'submitted_year': p.submitted_year,
+        'h_index_first_author': r3_author_h_index((p.get_authors() or [''])[0]),
+        'has_code': r6_paperwithcode_attest(p.arxiv_id)['has_code'],
+        'pdf_pages': len(r2_pdf_inline_pages(p.arxiv_id)),
+    }
+
+def r10_graphql_resolve(query):
+    """Tiny GraphQL-ish resolver: supports `{ paper(id:"X") { title category } }`."""
+    import re as _re
+    m = _re.search(r'paper\(\s*id\s*:\s*"([^"]+)"\s*\)', query or '')
+    if not m: return {'errors': [{'message': 'unsupported query'}]}
+    aid = m.group(1)
+    payload = r10_api_paper_payload(aid)
+    if not payload: return {'errors': [{'message': f'paper {aid} not found'}]}
+    return {'data': {'paper': payload}}
+
+def r10_oai_pmh_listrecords(set_code=None, limit=10):
+    q = Paper.query
+    if set_code: q = q.filter(Paper.primary_category_code == set_code)
+    rows = q.limit(limit).all()
+    return [{'arxiv_id': r.arxiv_id, 'title': r.title, 'set': r.primary_category_code} for r in rows]
+
+@app.route('/graphql', methods=['POST'])
+def r10_graphql():
+    return jsonify(r10_graphql_resolve((request.json or {}).get('query', '')))
+
+@app.route('/api/v1/papers/<arxiv_id>')
+def r10_api_v1_paper(arxiv_id):
+    p = r10_api_paper_payload(arxiv_id)
+    if not p: abort(404)
+    return jsonify(p)
+
+@app.route('/api/v1/oai-pmh')
+def r10_api_v1_oai_pmh():
+    return jsonify({'records': r10_oai_pmh_listrecords(request.args.get('set'), 10)})
+
+@app.route('/api/v1/healthz')
+def r10_api_v1_healthz():
+    return jsonify({'ok': True, 'service': 'arxiv-mirror', 'r10_marker': 'r10_healthz_ok'})
+
+@app.route('/api/v1/sitemap')
+def r10_api_v1_sitemap():
+    return jsonify({'sitemaps': ['/sitemap.xml', '/sitemap-static.xml'], 'r10_marker': 'r10_sitemap_index'})
+
+csrf.exempt(r8_api_save_search)
+csrf.exempt(r8_api_author_alert)
+csrf.exempt(r9_api_submit_validate)
+csrf.exempt(r9_api_latex_lint)
+csrf.exempt(r9_api_submit_token)
+csrf.exempt(r10_graphql)
+
+# =========== END R2-R10 DEEPENING ===========
+
 with app.app_context():
     db.create_all()
     ensure_affiliation_column()

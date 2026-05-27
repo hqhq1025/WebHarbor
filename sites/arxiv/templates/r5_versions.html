@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block title %}Versions · {{ paper.arxiv_id }}{% endblock %}
+{% block content %}
+<h1 id="r5_versions_header">Version history — {{ paper.arxiv_id }}</h1>
+{% if withdrawn %}<p class="r5_withdrawn_banner" style="background:#fee;padding:8px">⚠️ This preprint has been withdrawn.</p>{% endif %}
+<table class="r5_versions_table">
+<tr><th>Version</th><th>Submitted</th><th>Pages</th><th>Words added</th><th>Words removed</th></tr>
+{% for v in history %}
+<tr class="r5_version_row"><td>{{ v.version }}</td><td>{{ v.submitted }}</td><td>{{ v.pages }}</td><td>+{{ v.words_added }}</td><td>-{{ v.words_removed }}</td></tr>
+{% endfor %}
+</table>
+<p><a href="/api/r5/diff/{{ paper.arxiv_id }}/v1/v2" id="r5_diff_link">v1→v2 diff (JSON)</a></p>
+{% endblock %}

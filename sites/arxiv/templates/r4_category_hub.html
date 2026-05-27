@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+{% block title %}{{ payload.title }} hub{% endblock %}
+{% block content %}
+<h1 id="r4_hub_header">{{ payload.title }} ({{ payload.code }})</h1>
+<p class="r4_tagline">{{ payload.tagline }}</p>
+<p class="r4_volume">≈ {{ payload.monthly_volume }} preprints / month</p>
+<h2 id="r4_keywords_header">Top keywords</h2>
+<ul class="r4_keywords">{% for k in payload.top_keywords %}<li>{{ k }}</li>{% endfor %}</ul>
+<h2 id="r4_featured_header">Featured preprints</h2>
+<ul class="r4_featured">{% for aid in payload.featured_arxiv_ids %}<li><a href="/abs/{{ aid }}">{{ aid }}</a></li>{% endfor %}</ul>
+{% endblock %}
