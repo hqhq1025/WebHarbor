@@ -329,3 +329,141 @@ done
 ```markdown
 | 2026-05-27 | <slug> | <endpoint> | <before>ms | <after>ms | <commit> |
 ```
+
+---
+
+## 追加经验：5 种新 fix 模式 (added 2026-05-27 rollout)
+
+跑完剩 32 站推广后又踩出 3 类新坑 + 总结 2 类新 fix：
+
+### F. Route-level HTML cache（template 太重时）
+
+当 DB 是小的、SQL 是快的，但 **template 太复杂 / loop 太大**导致 render 慢（apple `/shop` 176ms / 5.4MB, 16k Jinja call / 200k getattr 在 5526 product 列表上）：
+
+```python
+_HTML_CACHE = {}   # key: (route, authed, cart_count) → rendered html
+
+@app.route('/shop')
+def shop():
+    cart_count = len(session.get('cart', {})) if not current_user.is_authenticated else current_user.cart_count()
+    key = ('shop', current_user.is_authenticated, cart_count)
+    if key in _HTML_CACHE:
+        return _HTML_CACHE[key]
+    
+    products = _cached_shop_products()
+    categories = _cached_shop_categories()
+    html = render_template('shop.html', products=products, categories=categories)
+    _HTML_CACHE[key] = html
+    return html
+```
+
+**注意**：
+- key 必须包含**影响 render 的所有维度**（auth state / cart count / locale 等），否则不同用户看同一份
+- 写路径触发 invalidate：`/cart/add` 改了 cart_count → 下次 shop key 不命中 → 重 render
+- `/reset/<site>` 重启 worker → cache 自动清
+
+收益：apple `/shop` 176ms → 4ms (**44×**)。
+
+### G. SQLite LIKE 优化 — 改 range 让 index 生效
+
+`slug LIKE 'stem%'` 默认 case-insensitive，**不绑 BINARY-collated index** → 全表 scan。改成 range comparison：
+
+```python
+# 慢：LIKE 'stem%' 走全表
+words = Word.query.filter(Word.slug.like(f'{stem}%')).all()
+
+# 快：range comparison 用 slug index
+from sqlalchemy import and_
+words = Word.query.filter(and_(
+    Word.slug >= stem,
+    Word.slug < stem + '\xff'  # 或 chr(ord(stem[-1])+1)
+)).all()
+```
+
+或者在 model class 加 `__table_args__ = (db.Index('ix_word_slug', 'slug', sqlite_where=text('slug IS NOT NULL')),)` 用 partial index，或者改 SQLite pragma `case_sensitive_like=1`（影响全 session，不推荐）。
+
+收益：cambridge `/dictionary/<word>` 74ms → 5ms (**15×**)。
+
+### H. ⚠️ 新 index 在已存在 table 上 `db.create_all()` 不生效
+
+很容易踩的坑：在 model 加了 `db.Index(...)`，但 `db.create_all()` 只会 CREATE TABLE IF NOT EXISTS（table 已存在不动），**也不会 CREATE INDEX 新加的**。
+
+```python
+# model 加了
+__table_args__ = (
+    db.Index('ix_paper_submitted_date', 'submitted_date'),
+)
+
+# seed 仍然没这个 index——必须显式 create
+with app.app_context():
+    db.create_all()
+    # ↓ explicit index create on existing table
+    db.Index('ix_paper_submitted_date', Paper.submitted_date).create(db.engine, checkfirst=True)
+```
+
+或者最干净：删 `instance/<db>.db` → `db.create_all()` 从零 build → 重 seed。
+
+收益：arxiv `/catchup` 580ms → 10ms (**58×**)，但花了 30 min 才意识到为啥 index 没生效。
+
+### I. inject_globals 跑全表 max/count
+
+很常见 anti-pattern：
+
+```python
+@app.context_processor
+def inject_globals():
+    return {
+        'latest_date': db.session.query(func.max(Paper.submitted_date)).scalar(),  # 全表 scan
+        'total_papers': Paper.query.count(),                                       # 全表 count
+        'categories': Category.query.all(),                                        # 全 fetch
+    }
+```
+
+每个 request 跑一遍。修：module-level cache + 显式 invalidate hook on write paths。
+
+```python
+_GLOBALS_CACHE = {}
+
+def _cached_globals():
+    if not _GLOBALS_CACHE:
+        _GLOBALS_CACHE['latest_date'] = db.session.query(func.max(Paper.submitted_date)).scalar()
+        _GLOBALS_CACHE['total_papers'] = Paper.query.count()
+        _GLOBALS_CACHE['categories'] = Category.query.all()
+    return _GLOBALS_CACHE
+
+@app.context_processor
+def inject_globals():
+    return _cached_globals()
+```
+
+收益：arxiv inject_globals 100ms → 0.01ms per request。
+
+### J. baseline "max" 可能是 cold-cache outlier
+
+跑 baseline measure 时**一次性 measure** 容易把 cold-cache miss 当成 steady-state slow。29/32 sites 看着 max > 50ms 其实 median < 25ms / steady-state OK。
+
+**修法**：每 endpoint 取 5 个 sample 的 median（不是 first/max）。本 skill `_perf_baseline.py` 已经这样做了。
+
+```python
+# warm + 3 runs, take median
+for _ in range(1): urllib.request.urlopen(url).read()  # warm
+ts = sorted([measure(url) for _ in range(3)])
+median = ts[1]  # ✓
+```
+
+---
+
+## 实测累计（本会话 + 推广 = 8 战 12-150×）
+
+| Site | endpoint | Before | After | 提升 |
+|---|---|---:|---:|---:|
+| google_map | / | 596ms | 4ms | **150×** |
+| huggingface | / | 661ms | 5ms | **130×** |
+| arxiv | /catchup | 580ms | 10ms | 58× |
+| **apple** | /shop | 176ms / 5.4MB | 4ms | **44×** |
+| github | / | 99ms | 2.5ms | 40× |
+| **cambridge** | /dictionary | 74ms | 5ms | 15× |
+| google_flights | / | 344ms | 30ms | 12× |
+| coursera | /search | 2730ms / 48.5MB | 70ms / 75KB | **39× / 645×** |
+
+总：median TTFB < 30ms / 36 站、无 > 100ms 异常。
