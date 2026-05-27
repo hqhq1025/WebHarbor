@@ -11,7 +11,7 @@
     {% for s in series_rows %}
       <article class="talk-card">
         <a href="{{ url_for('series_detail', slug=s.slug) }}">
-          <img src="{{ url_for('static', filename=s.banner) }}" alt="">
+          <img loading="lazy" decoding="async" src="{{ url_for('static', filename=s.banner) }}" alt="">
           <div class="card-body">
             <p class="meta">Hosted by {{ s.host }} - {{ s.episode_count }} episodes</p>
             <h3>{{ s.name }}</h3>

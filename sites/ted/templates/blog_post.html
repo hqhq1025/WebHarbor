@@ -2,7 +2,7 @@
 {% block title %}{{ post.title }} | TED Ideas{% endblock %}
 {% block content %}
 <section class="detail-hero">
-  <img src="{{ url_for('static', filename=post.hero) }}" alt="">
+  <img loading="lazy" decoding="async" src="{{ url_for('static', filename=post.hero) }}" alt="">
   <div>
     <p class="eyebrow">{{ post.bucket }} - {{ post.published_at|date_label }}</p>
     <h1>{{ post.title }}</h1>

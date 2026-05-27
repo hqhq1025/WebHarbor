@@ -2,7 +2,7 @@
 {% block title %}{{ episode.title }} | {{ podcast.name }}{% endblock %}
 {% block content %}
 <section class="detail-hero">
-  <img src="{{ url_for('static', filename=episode.image) }}" alt="">
+  <img loading="lazy" decoding="async" src="{{ url_for('static', filename=episode.image) }}" alt="">
   <div>
     <p class="eyebrow">{{ podcast.name }} - episode {{ episode.position }}</p>
     <h1>{{ episode.title }}</h1>

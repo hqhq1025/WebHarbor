@@ -2,7 +2,7 @@
 {% block title %}{{ series.name }} | TED Series{% endblock %}
 {% block content %}
 <section class="detail-hero">
-  <img src="{{ url_for('static', filename=series.banner) }}" alt="">
+  <img loading="lazy" decoding="async" src="{{ url_for('static', filename=series.banner) }}" alt="">
   <div>
     <p class="eyebrow">Series - hosted by {{ series.host }}</p>
     <h1>{{ series.name }}</h1>

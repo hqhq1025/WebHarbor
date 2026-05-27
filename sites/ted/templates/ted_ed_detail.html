@@ -2,7 +2,7 @@
 {% block title %}{{ lesson.title }} | TED-Ed{% endblock %}
 {% block content %}
 <section class="detail-hero">
-  <img src="{{ url_for('static', filename=lesson.image) }}" alt="">
+  <img loading="lazy" decoding="async" src="{{ url_for('static', filename=lesson.image) }}" alt="">
   <div>
     <p class="eyebrow">TED-Ed lesson - {{ lesson.subject }} - {{ lesson.grade_band }}</p>
     <h1>{{ lesson.title }}</h1>

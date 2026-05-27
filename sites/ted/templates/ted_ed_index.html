@@ -26,7 +26,7 @@
     {% for l in lessons %}
       <article class="talk-card">
         <a href="{{ url_for('ted_ed_detail', slug=l.slug) }}">
-          <img src="{{ url_for('static', filename=l.image) }}" alt="">
+          <img loading="lazy" decoding="async" src="{{ url_for('static', filename=l.image) }}" alt="">
           <div class="card-body">
             <p class="meta">{{ l.subject }} - {{ l.grade_band }}</p>
             <h3>{{ l.title }}</h3>

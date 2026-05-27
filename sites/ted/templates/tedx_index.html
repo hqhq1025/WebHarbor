@@ -11,7 +11,7 @@
     {% for e in events %}
       <article class="talk-card">
         <a href="{{ url_for('tedx_event', slug=e.slug) }}">
-          <img src="{{ url_for('static', filename=e.banner) }}" alt="">
+          <img loading="lazy" decoding="async" src="{{ url_for('static', filename=e.banner) }}" alt="">
           <div class="card-body">
             <p class="meta">{{ e.date|date_label }} - {{ e.city }}, {{ e.country }}</p>
             <h3>{{ e.name }}</h3>

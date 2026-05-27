@@ -21,7 +21,7 @@
     {% for s in speakers %}
       <article class="talk-card">
         <a href="{{ url_for('speaker_detail', slug=s.slug) }}">
-          <img src="{{ url_for('static', filename=s.photo) }}" alt="">
+          <img loading="lazy" decoding="async" src="{{ url_for('static', filename=s.photo) }}" alt="">
           <div class="card-body">
             <p class="meta">{{ s.role }}</p>
             <h3>{{ s.name }}</h3>

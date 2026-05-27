@@ -21,7 +21,7 @@
       {% for s in speakers %}
         <article class="talk-card">
           <a href="{{ url_for('speaker_detail', slug=s.slug) }}">
-            <img src="{{ url_for('static', filename=s.photo) }}" alt="">
+            <img loading="lazy" decoding="async" src="{{ url_for('static', filename=s.photo) }}" alt="">
             <div class="card-body">
               <p class="meta">{{ s.role }}</p>
               <h3>{{ s.name }}</h3>
@@ -38,7 +38,7 @@
       {% for p in podcasts %}
         <article class="talk-card">
           <a href="{{ url_for('podcast_detail', slug=p.slug) }}">
-            <img src="{{ url_for('static', filename=p.banner) }}" alt="">
+            <img loading="lazy" decoding="async" src="{{ url_for('static', filename=p.banner) }}" alt="">
             <div class="card-body">
               <p class="meta">{{ p.frequency }} - {{ p.publisher }}</p>
               <h3>{{ p.name }}</h3>
@@ -55,7 +55,7 @@
       {% for b in blog %}
         <article class="talk-card">
           <a href="{{ url_for('blog_post', slug=b.slug) }}">
-            <img src="{{ url_for('static', filename=b.hero) }}" alt="">
+            <img loading="lazy" decoding="async" src="{{ url_for('static', filename=b.hero) }}" alt="">
             <div class="card-body">
               <p class="meta">{{ b.bucket }}</p>
               <h3>{{ b.title }}</h3>

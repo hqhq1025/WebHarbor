@@ -12,7 +12,7 @@
   </div>
   {% set lead = featured[0] %}
   <a class="lead-card" href="{{ url_for('talk_detail', slug=lead.slug) }}">
-    <img src="{{ url_for('static', filename=lead.image) }}" alt="">
+    <img loading="lazy" decoding="async" src="{{ url_for('static', filename=lead.image) }}" alt="">
     <span>{{ lead.event }}</span>
     <h2>{{ lead.title }}</h2>
     <p>{{ lead.speaker }}</p>
@@ -62,7 +62,7 @@
     {% for s in series_rows %}
       <article class="talk-card">
         <a href="{{ url_for('series_detail', slug=s.slug) }}">
-          <img src="{{ url_for('static', filename=s.banner) }}" alt="">
+          <img loading="lazy" decoding="async" src="{{ url_for('static', filename=s.banner) }}" alt="">
           <div class="card-body">
             <p class="meta">Series - hosted by {{ s.host }}</p>
             <h3>{{ s.name }}</h3>
@@ -80,7 +80,7 @@
     {% for p in podcasts_rows %}
       <article class="talk-card">
         <a href="{{ url_for('podcast_detail', slug=p.slug) }}">
-          <img src="{{ url_for('static', filename=p.banner) }}" alt="">
+          <img loading="lazy" decoding="async" src="{{ url_for('static', filename=p.banner) }}" alt="">
           <div class="card-body">
             <p class="meta">{{ p.frequency }} - {{ p.publisher }}</p>
             <h3>{{ p.name }}</h3>
@@ -108,7 +108,7 @@
     <div class="section-head"><h2>Up next</h2></div>
     {% if next_conf %}
       <a class="lead-card" href="{{ url_for('conference_detail', slug=next_conf.slug) }}">
-        <img src="{{ url_for('static', filename=next_conf.banner) }}" alt="">
+        <img loading="lazy" decoding="async" src="{{ url_for('static', filename=next_conf.banner) }}" alt="">
         <span>{{ next_conf.track }} - {{ next_conf.city }}</span>
         <h2>{{ next_conf.name }}</h2>
         <p>{{ next_conf.starts_on|date_label }} — {{ next_conf.ends_on|date_label }}. Theme: {{ next_conf.theme }}.</p>

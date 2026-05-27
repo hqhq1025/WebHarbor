@@ -20,7 +20,7 @@
     {% for b in posts %}
       <article class="talk-card">
         <a href="{{ url_for('blog_post', slug=b.slug) }}">
-          <img src="{{ url_for('static', filename=b.hero) }}" alt="">
+          <img loading="lazy" decoding="async" src="{{ url_for('static', filename=b.hero) }}" alt="">
           <div class="card-body">
             <p class="meta">{{ b.bucket }} - {{ b.published_at|date_label }}</p>
             <h3>{{ b.title }}</h3>

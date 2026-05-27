@@ -2,7 +2,7 @@
 {% block title %}{{ conf.name }} | TED Conferences{% endblock %}
 {% block content %}
 <section class="detail-hero">
-  <img src="{{ url_for('static', filename=conf.banner) }}" alt="">
+  <img loading="lazy" decoding="async" src="{{ url_for('static', filename=conf.banner) }}" alt="">
   <div>
     <p class="eyebrow">{{ conf.track }} - {{ conf.city }}, {{ conf.country }}</p>
     <h1>{{ conf.name }}</h1>

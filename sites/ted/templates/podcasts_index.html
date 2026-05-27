@@ -11,7 +11,7 @@
     {% for p in podcasts %}
       <article class="talk-card">
         <a href="{{ url_for('podcast_detail', slug=p.slug) }}">
-          <img src="{{ url_for('static', filename=p.banner) }}" alt="">
+          <img loading="lazy" decoding="async" src="{{ url_for('static', filename=p.banner) }}" alt="">
           <div class="card-body">
             <p class="meta">{{ p.frequency }} - {{ p.publisher }}</p>
             <h3>{{ p.name }}</h3>

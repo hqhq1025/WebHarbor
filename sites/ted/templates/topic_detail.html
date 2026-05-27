@@ -3,7 +3,7 @@
 {% block content %}
 <section class="detail-hero">
   {% if topic_row %}
-    <img src="{{ url_for('static', filename=topic_row.banner) }}" alt="">
+    <img loading="lazy" decoding="async" src="{{ url_for('static', filename=topic_row.banner) }}" alt="">
   {% endif %}
   <div>
     <p class="eyebrow">Topic</p>

@@ -2,7 +2,7 @@
 {% block title %}{{ event.name }} | TEDx{% endblock %}
 {% block content %}
 <section class="detail-hero">
-  <img src="{{ url_for('static', filename=event.banner) }}" alt="">
+  <img loading="lazy" decoding="async" src="{{ url_for('static', filename=event.banner) }}" alt="">
   <div>
     <p class="eyebrow">TEDx - {{ event.city }}, {{ event.country }}</p>
     <h1>{{ event.name }}</h1>

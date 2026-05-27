@@ -1,6 +1,6 @@
 <article class="talk-card">
   <a href="{{ url_for('talk_detail', slug=talk.slug) }}">
-    {% if talk.image %}<img src="{{ url_for('static', filename=talk.image) }}" alt="">{% endif %}
+    {% if talk.image %}<img loading="lazy" decoding="async" src="{{ url_for('static', filename=talk.image) }}" alt="">{% endif %}
     <div class="card-body">
       <p class="meta">{{ talk.event }} - {{ talk.minutes }} min</p>
       <h3>{{ talk.title }}</h3>

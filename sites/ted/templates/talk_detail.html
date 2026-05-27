@@ -2,7 +2,7 @@
 {% block title %}{{ talk.title }} | TED{% endblock %}
 {% block content %}
 <section class="detail-hero">
-  <img src="{{ url_for('static', filename=talk.image) }}" alt="">
+  <img loading="lazy" decoding="async" src="{{ url_for('static', filename=talk.image) }}" alt="">
   <div>
     <p class="eyebrow">{{ talk.event }} - {{ talk.talk_type }}</p>
     <h1>{{ talk.title }}</h1>
@@ -69,7 +69,7 @@
       <h2>About the speaker</h2>
       <article class="talk-card">
         <a href="{{ url_for('speaker_detail', slug=speaker_row.slug) }}">
-          <img src="{{ url_for('static', filename=speaker_row.photo) }}" alt="">
+          <img loading="lazy" decoding="async" src="{{ url_for('static', filename=speaker_row.photo) }}" alt="">
           <div class="card-body">
             <p class="meta">{{ speaker_row.role }}</p>
             <h3>{{ speaker_row.name }}</h3>

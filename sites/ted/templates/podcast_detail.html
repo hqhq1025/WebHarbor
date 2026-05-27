@@ -2,7 +2,7 @@
 {% block title %}{{ podcast.name }} | TED Audio Collective{% endblock %}
 {% block content %}
 <section class="detail-hero">
-  <img src="{{ url_for('static', filename=podcast.banner) }}" alt="">
+  <img loading="lazy" decoding="async" src="{{ url_for('static', filename=podcast.banner) }}" alt="">
   <div>
     <p class="eyebrow">Podcast - {{ podcast.frequency }} - {{ podcast.publisher }}</p>
     <h1>{{ podcast.name }}</h1>

@@ -2,7 +2,7 @@
 {% block title %}{{ speaker.name }} | TED Speaker{% endblock %}
 {% block content %}
 <section class="detail-hero">
-  <img src="{{ url_for('static', filename=speaker.photo) }}" alt="">
+  <img loading="lazy" decoding="async" src="{{ url_for('static', filename=speaker.photo) }}" alt="">
   <div>
     <p class="eyebrow">Speaker</p>
     <h1>{{ speaker.name }}</h1>
