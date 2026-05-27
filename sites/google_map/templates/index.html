@@ -14,16 +14,23 @@
             <p>Find great places to eat, stay, and visit around the world. Save favorites to your lists and build your perfect trip.</p>
         </div>
 
-        <div class="category-chips">
-            {% for cat in categories %}
-            <a href="{{ url_for('category_page', slug=cat.slug) }}" class="cat-chip">
-                <div class="chip-ico {{ cat.slug }}">
-                    <span class="material-icons-outlined">{{ cat.icon }}</span>
-                </div>
-                <span>{{ cat.name }}</span>
+        {# R-imgsave: category tile mosaic on the home page. #}
+        <section class="home-category-mosaic"
+                 aria-label="Top categories"
+                 style="display:grid;grid-template-columns:repeat(4,1fr);gap:5px;padding:6px 12px 12px;">
+            {% for cat in categories[:16] %}
+            <a href="{{ url_for('category_page', slug=cat.slug) }}"
+               class="home-cat-tile" data-cat="{{ cat.slug }}"
+               style="display:block;position:relative;border-radius:8px;overflow:hidden;text-decoration:none;color:#fff;aspect-ratio:1/1;background:#eceff1;">
+                <img src="{{ category_icon_image(cat.slug) }}"
+                     alt="{{ cat.name }}"
+                     loading="lazy"
+                     style="width:100%;height:100%;object-fit:cover;display:block;"
+                     onerror="this.style.display='none';">
+                <div style="position:absolute;inset:0;background:linear-gradient(180deg,transparent 55%,#000c);display:flex;align-items:flex-end;padding:4px 6px;font-size:11px;font-weight:500;">{{ cat.name }}</div>
             </a>
             {% endfor %}
-        </div>
+        </section>
 
         {% if featured %}
         <div class="panel-section">

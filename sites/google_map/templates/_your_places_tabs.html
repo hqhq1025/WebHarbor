@@ -1,0 +1,37 @@
+{# 4-tab nav for the Your Places hub.  Pass active_tab=
+   'saved' | 'visited' | 'lists' | 'labeled'. #}
+<div class="yp-tabs" role="tablist" aria-label="Your places sections"
+     style="display:flex;gap:4px;border-bottom:1px solid #dadce0;margin:8px 0 16px;padding:0 12px;">
+    <a href="{{ url_for('your_places_saved') }}"
+       role="tab" aria-selected="{{ 'true' if active_tab == 'saved' else 'false' }}"
+       class="yp-tab{% if active_tab == 'saved' %} active{% endif %}"
+       data-yp-tab="saved"
+       style="padding:8px 14px;text-decoration:none;color:{% if active_tab == 'saved' %}#1a73e8{% else %}#5f6368{% endif %};font-size:13px;font-weight:500;border-bottom:3px solid {% if active_tab == 'saved' %}#1a73e8{% else %}transparent{% endif %};">
+        <span class="material-icons-outlined" style="font-size:16px;vertical-align:-3px;">bookmark</span>
+        Saved
+    </a>
+    <a href="{{ url_for('your_places_visited') }}"
+       role="tab" aria-selected="{{ 'true' if active_tab == 'visited' else 'false' }}"
+       class="yp-tab{% if active_tab == 'visited' %} active{% endif %}"
+       data-yp-tab="visited"
+       style="padding:8px 14px;text-decoration:none;color:{% if active_tab == 'visited' %}#1a73e8{% else %}#5f6368{% endif %};font-size:13px;font-weight:500;border-bottom:3px solid {% if active_tab == 'visited' %}#1a73e8{% else %}transparent{% endif %};">
+        <span class="material-icons-outlined" style="font-size:16px;vertical-align:-3px;">history</span>
+        Visited
+    </a>
+    <a href="{{ url_for('your_places_lists') }}"
+       role="tab" aria-selected="{{ 'true' if active_tab == 'lists' else 'false' }}"
+       class="yp-tab{% if active_tab == 'lists' %} active{% endif %}"
+       data-yp-tab="lists"
+       style="padding:8px 14px;text-decoration:none;color:{% if active_tab == 'lists' %}#1a73e8{% else %}#5f6368{% endif %};font-size:13px;font-weight:500;border-bottom:3px solid {% if active_tab == 'lists' %}#1a73e8{% else %}transparent{% endif %};">
+        <span class="material-icons-outlined" style="font-size:16px;vertical-align:-3px;">list</span>
+        Lists
+    </a>
+    <a href="{{ url_for('your_places_labeled') }}"
+       role="tab" aria-selected="{{ 'true' if active_tab == 'labeled' else 'false' }}"
+       class="yp-tab{% if active_tab == 'labeled' %} active{% endif %}"
+       data-yp-tab="labeled"
+       style="padding:8px 14px;text-decoration:none;color:{% if active_tab == 'labeled' %}#1a73e8{% else %}#5f6368{% endif %};font-size:13px;font-weight:500;border-bottom:3px solid {% if active_tab == 'labeled' %}#1a73e8{% else %}transparent{% endif %};">
+        <span class="material-icons-outlined" style="font-size:16px;vertical-align:-3px;">label</span>
+        Labeled
+    </a>
+</div>

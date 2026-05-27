@@ -19,6 +19,9 @@
     <h1>Your places</h1>
     <p class="page-sub">All the maps activity for <strong>{{ current_user.email }}</strong> in one view.</p>
 
+    {% set active_tab = 'saved' %}
+    {% include '_your_places_tabs.html' %}
+
     <div class="grid grid-2" style="margin-top:18px;">
         <div class="card" style="padding:18px;">
             <h3 style="margin-top:0;"><span class="material-icons-outlined" style="vertical-align:-5px; color:#4285f4;">bookmark</span> Saved lists</h3>

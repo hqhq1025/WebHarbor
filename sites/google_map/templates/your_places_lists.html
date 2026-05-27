@@ -1,0 +1,93 @@
+{% extends "base.html" %}
+{% block title %}Your lists - Your places - Google Maps{% endblock %}
+
+{% block body %}
+<div class="topbar">
+    <a href="{{ url_for('index') }}" class="brand">
+        <span class="material-icons-outlined" style="font-size:26px;color:#ea4335;">place</span>
+        <span>Google Maps</span>
+    </a>
+    <div class="nav-links">
+        <a href="{{ url_for('your_places') }}" class="nav-link">Your places</a>
+        <a href="{{ url_for('timeline') }}" class="nav-link">Timeline</a>
+    </div>
+</div>
+
+<div class="page" id="your-places-lists">
+    <h1 style="margin-bottom:4px;">Your places</h1>
+    <p class="page-sub" style="color:#5f6368;font-size:13px;margin:0 0 12px;">
+        {{ lists|length }} list{{ '' if lists|length == 1 else 's' }} for <strong>{{ current_user.email }}</strong>.
+    </p>
+
+    {% include '_your_places_tabs.html' %}
+
+    <div style="padding:0 12px 12px;display:flex;gap:8px;align-items:center;">
+        <form method="POST" action="{{ url_for('list_create_post') }}"
+              class="yp-list-create"
+              style="display:flex;gap:6px;flex:1;">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <input type="text" name="name" placeholder="New list name"
+                   maxlength="128"
+                   style="flex:1;padding:8px 10px;border:1px solid #dadce0;border-radius:6px;font-size:13px;">
+            <input type="text" name="description" placeholder="Description (optional)"
+                   style="flex:1;padding:8px 10px;border:1px solid #dadce0;border-radius:6px;font-size:13px;">
+            <button type="submit" class="btn btn-sm">
+                <span class="material-icons-outlined" style="font-size:16px;vertical-align:-3px;">add</span> Create
+            </button>
+        </form>
+    </div>
+
+    {% if lists %}
+    <ul class="yp-list-grid"
+        style="list-style:none;margin:0;padding:0 12px;display:grid;grid-template-columns:repeat(auto-fill, minmax(260px, 1fr));gap:10px;">
+        {% for sl in lists %}
+        <li class="yp-list-card" data-list-id="{{ sl.id }}"
+            style="background:#fff;border:1px solid #e8eaed;border-radius:10px;padding:12px;">
+            <div style="display:flex;align-items:center;gap:10px;">
+                <div style="width:36px;height:36px;border-radius:50%;background:{{ sl.color or '#4285f4' }}22;color:{{ sl.color or '#4285f4' }};display:flex;align-items:center;justify-content:center;">
+                    <span class="material-icons-outlined">{{ sl.icon or 'bookmark' }}</span>
+                </div>
+                <div style="flex:1;">
+                    <a href="{{ url_for('list_detail', list_id=sl.id) }}"
+                       style="font-size:14px;font-weight:500;color:#202124;text-decoration:none;">{{ sl.name }}</a>
+                    <div style="font-size:12px;color:#5f6368;">{{ list_counts[sl.id] }} place{{ '' if list_counts[sl.id] == 1 else 's' }}{% if sl.is_default %} · default{% endif %}</div>
+                </div>
+            </div>
+            {% if sl.description %}
+            <div style="font-size:12px;color:#5f6368;margin-top:6px;{% if sl.description.startswith('[shared]') %}background:#e6f4ea;border-radius:6px;padding:4px 8px;color:#137333;{% endif %}">{{ sl.description }}</div>
+            {% endif %}
+            <div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap;">
+                <form method="POST" action="{{ url_for('list_rename', list_id=sl.id) }}"
+                      style="display:flex;gap:4px;">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <input type="text" name="name" value="{{ sl.name }}" maxlength="128"
+                           style="padding:4px 6px;border:1px solid #dadce0;border-radius:4px;font-size:11px;width:120px;">
+                    <button type="submit" class="btn ghost btn-sm" style="font-size:11px;padding:2px 6px;">Rename</button>
+                </form>
+                <form method="POST" action="{{ url_for('list_share_toggle', list_id=sl.id) }}">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button type="submit" class="btn ghost btn-sm" style="font-size:11px;padding:2px 6px;">
+                        {% if sl.description and sl.description.startswith('[shared]') %}Unshare{% else %}Share{% endif %}
+                    </button>
+                </form>
+                {% if not sl.is_default %}
+                <form method="POST" action="{{ url_for('list_delete', list_id=sl.id) }}"
+                      onsubmit="return confirm('Delete list {{ sl.name }}?');">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button type="submit" class="btn ghost btn-sm"
+                            style="font-size:11px;padding:2px 6px;color:#c5221f;">Delete</button>
+                </form>
+                {% endif %}
+            </div>
+        </li>
+        {% endfor %}
+    </ul>
+    {% else %}
+    <div class="empty-state" style="padding:40px;text-align:center;color:#5f6368;">
+        <span class="material-icons-outlined" style="font-size:48px;color:#dadce0;">list</span>
+        <h3>No lists yet</h3>
+        <p>Create your first list above.</p>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

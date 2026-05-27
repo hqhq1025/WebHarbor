@@ -481,6 +481,74 @@ class Photo(db.Model):
     created_at = db.Column(db.DateTime, default=lambda: MIRROR_REFERENCE_DATETIME)
 
 
+# --------------------------------------------------------------------------
+#  R-imgsave additions: questions, answers, edit suggestions, reports.
+#  All start empty in the seed DB so byte-id reset is unaffected.  Real
+#  agent writes go in to test POST handlers.
+# --------------------------------------------------------------------------
+class PlaceQuestion(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=False)
+    place_id = db.Column(db.Integer, db.ForeignKey("place.id"), nullable=False)
+    body = db.Column(db.Text, default="")
+    created_at = db.Column(db.DateTime,
+                           default=lambda: MIRROR_REFERENCE_DATETIME)
+
+    answers = db.relationship("PlaceAnswer", backref="question",
+                              cascade="all, delete-orphan", lazy="dynamic")
+
+
+class PlaceAnswer(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=False)
+    question_id = db.Column(db.Integer,
+                            db.ForeignKey("place_question.id"),
+                            nullable=False)
+    body = db.Column(db.Text, default="")
+    created_at = db.Column(db.DateTime,
+                           default=lambda: MIRROR_REFERENCE_DATETIME)
+
+
+class EditSuggestion(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=False)
+    place_id = db.Column(db.Integer, db.ForeignKey("place.id"), nullable=False)
+    field = db.Column(db.String(64), default="")  # name/address/hours/...
+    new_value = db.Column(db.String(512), default="")
+    note = db.Column(db.Text, default="")
+    status = db.Column(db.String(32), default="pending")  # pending/applied/rejected
+    created_at = db.Column(db.DateTime,
+                           default=lambda: MIRROR_REFERENCE_DATETIME)
+
+
+class PlaceReport(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=False)
+    place_id = db.Column(db.Integer, db.ForeignKey("place.id"), nullable=False)
+    reason = db.Column(db.String(64), default="")  # closed/duplicate/inaccurate/inappropriate
+    detail = db.Column(db.Text, default="")
+    created_at = db.Column(db.DateTime,
+                           default=lambda: MIRROR_REFERENCE_DATETIME)
+
+
+class PhotoReport(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=False)
+    photo_id = db.Column(db.Integer, db.ForeignKey("photo.id"), nullable=False)
+    reason = db.Column(db.String(64), default="")
+    created_at = db.Column(db.DateTime,
+                           default=lambda: MIRROR_REFERENCE_DATETIME)
+
+
+class PlaceCheckIn(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=False)
+    place_id = db.Column(db.Integer, db.ForeignKey("place.id"), nullable=False)
+    note = db.Column(db.String(255), default="")
+    created_at = db.Column(db.DateTime,
+                           default=lambda: MIRROR_REFERENCE_DATETIME)
+
+
 class TimelineEntry(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=False)
@@ -640,6 +708,175 @@ def display_place_website(place):
     return google_maps_place_url(place)
 
 
+# --------------------------------------------------------------------------
+#  Image pool helpers  (R-imgsave: wire 818 static images into templates)
+# --------------------------------------------------------------------------
+_IMG_POOL_CACHE = None
+
+
+def _img_pools():
+    """Scan static/images/ once.  Returns {categories,cities,places,heroes}.
+
+    Each value (except heroes) is a dict mapping dir-slug -> sorted URL list.
+    Deterministic by sort order so byte-id reset survives.
+    """
+    global _IMG_POOL_CACHE
+    if _IMG_POOL_CACHE is not None:
+        return _IMG_POOL_CACHE
+    base = BASE_DIR / "static" / "images"
+    out = {"categories": {}, "cities": {}, "places": {}, "heroes": []}
+    for kind in ("categories", "cities", "places"):
+        root = base / kind
+        if not root.exists():
+            continue
+        for d in sorted(root.iterdir()):
+            if d.is_dir():
+                imgs = sorted(
+                    f.name for f in d.iterdir()
+                    if f.suffix.lower() in (".jpg", ".jpeg", ".png", ".webp")
+                )
+                out[kind][d.name] = [
+                    f"/static/images/{kind}/{d.name}/{n}" for n in imgs
+                ]
+    heroes_dir = base / "heroes"
+    if heroes_dir.exists():
+        out["heroes"] = sorted(
+            f"/static/images/heroes/{f.name}" for f in heroes_dir.iterdir()
+            if f.suffix.lower() in (".jpg", ".jpeg", ".png", ".webp")
+        )
+    _IMG_POOL_CACHE = out
+    return out
+
+
+# DB category slug -> image subdirectory aliases under static/images/categories/
+_CATEGORY_IMG_ALIASES = {
+    "restaurants": ["restaurant-interior", "pizza-restaurant",
+                    "burger-restaurant", "seafood-restaurant"],
+    "hotels": ["hotel", "hotel-exterior"],
+    "attractions": ["city-landmark", "public-plaza", "temple", "theater",
+                    "zoo", "museum"],
+    "shopping": ["retail-store", "shopping-mall", "shopping-storefront",
+                 "department-store", "electronics-store", "asian-market",
+                 "baby-store", "target-store", "uniqlo", "warehouse-store",
+                 "furniture-store", "maternity-store", "apple-store",
+                 "best-buy"],
+    "supermarkets": ["supermarket", "asian-market"],
+    "museums": ["museum", "art-gallery"],
+    "parks": ["city-park", "national-park"],
+    "beaches": ["city-landmark"],
+    "transit": ["bus-stop", "train-station", "airport"],
+    "bus-stops": ["bus-stop"],
+    "ev-charging": ["ev-charging"],
+    "gas-stations": ["ev-charging"],
+    "entertainment": ["entertainment-venue", "theater", "arena",
+                      "music-venue", "climbing-gym"],
+    "services": ["service-shop", "locksmith", "plumber"],
+    "fitness": ["climbing-gym"],
+    "health-beauty": ["beauty-salon"],
+    "parking": ["parking-garage", "motorcycle-parking", "bicycle-parking"],
+    "religious": ["temple"],
+    "indoor-mall-shops": ["shopping-mall", "shopping-storefront",
+                          "department-store"],
+    "indoor-airport-shops": ["airport", "shopping-storefront"],
+    "campus-buildings": ["city-landmark", "public-plaza"],
+    "car-rental": ["service-shop"],
+    "coffee-shops": ["restaurant-interior"],
+    "dentists": ["service-shop"],
+    "dog-parks": ["city-park"],
+    "fire-stations": ["service-shop"],
+    "hospitals": ["service-shop"],
+    "libraries": ["museum"],
+    "pharmacies": ["retail-store", "supermarket"],
+    "playgrounds": ["city-park"],
+    "police-stations": ["service-shop"],
+    "post-offices": ["service-shop"],
+    "public-restrooms": ["service-shop"],
+    "schools": ["city-landmark"],
+    "veterinarians": ["service-shop"],
+    "atms": ["service-shop"],
+}
+
+
+def category_image_pool(cat_slug, n=12):
+    """Return up to n image URLs representative of a DB category slug."""
+    pools = _img_pools()["categories"]
+    aliases = _CATEGORY_IMG_ALIASES.get(cat_slug, [cat_slug])
+    out = []
+    for alias in aliases:
+        for url in pools.get(alias, []):
+            if url not in out:
+                out.append(url)
+        if len(out) >= n:
+            break
+    if not out:
+        for d in sorted(pools.keys()):
+            for url in pools[d]:
+                if url not in out:
+                    out.append(url)
+            if len(out) >= n:
+                break
+    return out[:n]
+
+
+def city_image_pool(city_slug, n=4):
+    """Return up to n city scenery images for a city slug."""
+    return _img_pools()["cities"].get(city_slug, [])[:n]
+
+
+def place_extra_images(place, n=5):
+    """Return up to n extra images for a place (excluding its hero).
+
+    Pulls from the place's own static/images/places/<slug>/ dir first, then
+    pads with the category pool so even sparse place dirs surface a rich
+    gallery.  Deterministic given (slug, category_id).
+    """
+    pools = _img_pools()
+    own = pools["places"].get(place.slug, [])
+    out = []
+    hero = place.hero_image or ""
+    for url in own:
+        if url != hero and url not in out:
+            out.append(url)
+    if len(out) < n and place.category_id:
+        cat = db.session.get(Category, place.category_id)
+        if cat:
+            for url in category_image_pool(cat.slug, n * 4):
+                if url != hero and url not in out:
+                    out.append(url)
+                if len(out) >= n:
+                    break
+    # Last-resort pad with heroes
+    if len(out) < n:
+        for url in pools["heroes"]:
+            if url != hero and url not in out:
+                out.append(url)
+            if len(out) >= n:
+                break
+    return out[:n]
+
+
+def category_icon_image(cat_slug):
+    """Return one representative image URL for a category tile."""
+    pool = category_image_pool(cat_slug, n=1)
+    return pool[0] if pool else "/static/images/heroes/eiffel-tower.jpg"
+
+
+def city_icon_image(city_slug):
+    """Return one representative image URL for a city tile."""
+    pool = city_image_pool(city_slug, n=1)
+    return pool[0] if pool else "/static/images/heroes/eiffel-tower.jpg"
+
+
+# Expose image helpers as Jinja globals — context_processor values are NOT
+# visible inside macros loaded via {% from ... import %}, but jinja globals
+# are.  We need place_extra_images in _place_card.html.
+app.jinja_env.globals["place_extra_images"] = place_extra_images
+app.jinja_env.globals["category_image_pool"] = category_image_pool
+app.jinja_env.globals["city_image_pool"] = city_image_pool
+app.jinja_env.globals["category_icon_image"] = category_icon_image
+app.jinja_env.globals["city_icon_image"] = city_icon_image
+
+
 @app.context_processor
 def inject_globals():
     categories = Category.query.order_by(Category.id).all()
@@ -656,6 +893,16 @@ def inject_globals():
         "current_year": datetime.utcnow().year,
         "display_place_website": display_place_website,
         "google_maps_place_url": google_maps_place_url,
+        "category_image_pool": category_image_pool,
+        "city_image_pool": city_image_pool,
+        "place_extra_images": place_extra_images,
+        "category_icon_image": category_icon_image,
+        "city_icon_image": city_icon_image,
+        "PlaceQuestion": PlaceQuestion,
+        "PlaceAnswer": PlaceAnswer,
+        "EditSuggestion": EditSuggestion,
+        "PlaceReport": PlaceReport,
+        "Photo": Photo,
         "r7_lang_code": lang_meta["code"],
         "r7_lang_dir": lang_meta["dir"],
         "r7_lang_name": lang_meta["name"],
@@ -2573,6 +2820,7 @@ def your_places_labeled():
         grouped.setdefault(sp.label, []).append(sp)
     return render_template(
         "labeled.html", grouped=grouped, saved=saved,
+        active_tab="labeled",
     )
 
 
@@ -3356,6 +3604,393 @@ def delete_timeline_entry(entry_id):
     db.session.commit()
     flash("Timeline entry removed.", "info")
     return redirect(url_for("timeline"))
+
+
+# --------------------------------------------------------------------------
+#  R-imgsave additions: 4-tab your-places hub + 15 new POST interactions.
+#  All writes go to SQLAlchemy models (no in-memory dicts), so reset works.
+# --------------------------------------------------------------------------
+def _ensure_default_list_for_user():
+    """Return the user's default SavedList, creating one if missing."""
+    default = SavedList.query.filter_by(
+        user_id=current_user.id, is_default=True).first()
+    if not default:
+        ensure_default_lists(current_user)
+        default = SavedList.query.filter_by(
+            user_id=current_user.id, is_default=True).first()
+    return default
+
+
+@app.route("/your-places/saved")
+@app.route("/your_places/saved")
+@login_required
+def your_places_saved():
+    """4-tab Your-Places hub: SAVED tab."""
+    lists = SavedList.query.filter_by(user_id=current_user.id).all()
+    saved_by_list = []
+    for L in lists:
+        sps = (SavedPlace.query
+               .filter_by(user_id=current_user.id, list_id=L.id)
+               .order_by(SavedPlace.created_at.desc()).all())
+        saved_by_list.append((L, sps))
+    total_saved = SavedPlace.query.filter_by(
+        user_id=current_user.id).count()
+    return render_template(
+        "your_places_saved.html",
+        active_tab="saved",
+        saved_by_list=saved_by_list,
+        lists=lists,
+        total_saved=total_saved,
+    )
+
+
+@app.route("/your-places/visited")
+@app.route("/your_places/visited")
+@login_required
+def your_places_visited():
+    """4-tab Your-Places hub: VISITED tab."""
+    visits = (TimelineEntry.query
+              .filter_by(user_id=current_user.id)
+              .order_by(TimelineEntry.visited_at.desc()).all())
+    return render_template(
+        "your_places_visited.html",
+        active_tab="visited",
+        visits=visits,
+    )
+
+
+@app.route("/your-places/lists")
+@app.route("/your_places/lists")
+@login_required
+def your_places_lists():
+    """4-tab Your-Places hub: LISTS tab."""
+    lists = SavedList.query.filter_by(user_id=current_user.id).all()
+    list_counts = {
+        L.id: SavedPlace.query.filter_by(list_id=L.id).count() for L in lists
+    }
+    return render_template(
+        "your_places_lists.html",
+        active_tab="lists",
+        lists=lists,
+        list_counts=list_counts,
+    )
+
+
+@app.route("/your-places/maps")
+@app.route("/your_places/maps")
+@login_required
+def your_places_maps():
+    """Alias for the legacy your-places dashboard; keeps deep links alive."""
+    return redirect(url_for("your_places"))
+
+
+# ---- 15 new POST interactions ----------------------------------------------
+
+@app.route("/place/<int:place_id>/save", methods=["POST"])
+@login_required
+def place_save_post(place_id):
+    """Toggle bookmark on a place by id (alias of /save/<id> for consistency
+    with /place/<id>/... POST family).  Writes SavedPlace row."""
+    place = db.session.get(Place, place_id)
+    if not place:
+        abort(404)
+    default = _ensure_default_list_for_user()
+    existing = SavedPlace.query.filter_by(
+        user_id=current_user.id, place_id=place.id).first()
+    if existing:
+        db.session.delete(existing)
+        db.session.commit()
+        flash(f"Removed {place.name} from saved.", "info")
+    else:
+        sp = SavedPlace(user_id=current_user.id,
+                        list_id=default.id if default else None,
+                        place_id=place.id)
+        db.session.add(sp)
+        db.session.commit()
+        flash(f"Saved {place.name}.", "success")
+    return redirect(request.referrer or
+                    url_for("place_detail", slug=place.slug))
+
+
+@app.route("/place/<slug>/photo/add", methods=["POST"])
+@login_required
+def place_photo_add(slug):
+    """Add a Photo row for a place (user-uploaded photo metadata)."""
+    place = Place.query.filter_by(slug=slug).first_or_404()
+    image_url = (request.form.get("image_url") or "").strip()
+    caption = (request.form.get("caption") or "").strip()[:255]
+    if not image_url:
+        # Pick a plausible deterministic placeholder from the place's pool
+        extras = place_extra_images(place, n=8)
+        image_url = extras[0] if extras else place.hero_image or "/static/images/heroes/eiffel-tower.jpg"
+    p = Photo(user_id=current_user.id, place_id=place.id,
+              image_url=image_url, caption=caption)
+    db.session.add(p)
+    db.session.commit()
+    flash("Photo added.", "success")
+    return redirect(url_for("place_detail", slug=place.slug) + "#photos")
+
+
+@app.route("/place/<slug>/question", methods=["POST"])
+@login_required
+def place_question_ask(slug):
+    """Post a Q&A question on a place."""
+    place = Place.query.filter_by(slug=slug).first_or_404()
+    body = (request.form.get("body") or "").strip()
+    if not body:
+        flash("Question cannot be empty.", "error")
+        return redirect(url_for("place_detail", slug=place.slug) + "#qa")
+    q = PlaceQuestion(user_id=current_user.id, place_id=place.id, body=body)
+    db.session.add(q)
+    db.session.commit()
+    flash("Question posted.", "success")
+    return redirect(url_for("place_detail", slug=place.slug) + "#qa")
+
+
+@app.route("/place/<slug>/q/<int:qid>/answer", methods=["POST"])
+@login_required
+def place_question_answer(slug, qid):
+    """Community answer to an existing question."""
+    place = Place.query.filter_by(slug=slug).first_or_404()
+    q = db.session.get(PlaceQuestion, qid)
+    if not q or q.place_id != place.id:
+        abort(404)
+    body = (request.form.get("body") or "").strip()
+    if not body:
+        flash("Answer cannot be empty.", "error")
+        return redirect(url_for("place_detail", slug=place.slug) + "#qa")
+    a = PlaceAnswer(user_id=current_user.id, question_id=q.id, body=body)
+    db.session.add(a)
+    db.session.commit()
+    flash("Answer posted.", "success")
+    return redirect(url_for("place_detail", slug=place.slug) + "#qa")
+
+
+@app.route("/place/<slug>/edit-suggest", methods=["POST"])
+@app.route("/place/<slug>/edit_suggest", methods=["POST"])
+@login_required
+def place_edit_suggest(slug):
+    """Submit a suggested edit to one of the place's fields."""
+    place = Place.query.filter_by(slug=slug).first_or_404()
+    field = (request.form.get("field") or "").strip().lower()
+    if field not in {"name", "address", "phone", "hours", "website",
+                     "category"}:
+        flash("Field not editable.", "error")
+        return redirect(url_for("place_detail", slug=place.slug))
+    new_value = (request.form.get("new_value") or "").strip()[:512]
+    note = (request.form.get("note") or "").strip()
+    es = EditSuggestion(user_id=current_user.id, place_id=place.id,
+                        field=field, new_value=new_value, note=note,
+                        status="pending")
+    db.session.add(es)
+    db.session.commit()
+    flash("Edit suggestion submitted.", "success")
+    return redirect(url_for("place_detail", slug=place.slug))
+
+
+@app.route("/place/<slug>/report", methods=["POST"])
+@login_required
+def place_report(slug):
+    """Report inaccurate / closed / duplicate info on a place."""
+    place = Place.query.filter_by(slug=slug).first_or_404()
+    reason = (request.form.get("reason") or "inaccurate").strip().lower()
+    if reason not in {"inaccurate", "closed", "duplicate",
+                      "inappropriate", "other"}:
+        reason = "other"
+    detail = (request.form.get("detail") or "").strip()
+    r = PlaceReport(user_id=current_user.id, place_id=place.id,
+                    reason=reason, detail=detail)
+    db.session.add(r)
+    db.session.commit()
+    flash("Report submitted. Thanks for helping keep Maps accurate.",
+          "success")
+    return redirect(url_for("place_detail", slug=place.slug))
+
+
+@app.route("/place/<slug>/photo/<int:photo_id>/report", methods=["POST"])
+@login_required
+def place_photo_report(slug, photo_id):
+    """Report a photo as inappropriate / inaccurate."""
+    photo = db.session.get(Photo, photo_id)
+    if not photo:
+        abort(404)
+    reason = (request.form.get("reason") or "inappropriate").strip().lower()
+    pr = PhotoReport(user_id=current_user.id, photo_id=photo.id,
+                     reason=reason)
+    db.session.add(pr)
+    db.session.commit()
+    flash("Photo reported.", "info")
+    return redirect(url_for("place_detail", slug=slug) + "#photos")
+
+
+@app.route("/list/create", methods=["POST"])
+@login_required
+def list_create_post():
+    """Create a custom list (form-POST flavour of /lists/new)."""
+    name = (request.form.get("name") or "").strip()
+    if not name:
+        flash("List name is required.", "error")
+        return redirect(request.referrer or url_for("lists_page"))
+    description = (request.form.get("description") or "").strip()
+    icon = (request.form.get("icon") or "bookmark").strip()[:32]
+    color = (request.form.get("color") or "#4285f4").strip()[:16]
+    sl = SavedList(user_id=current_user.id, name=name[:128],
+                   description=description, icon=icon, color=color,
+                   is_default=False)
+    db.session.add(sl)
+    db.session.commit()
+    flash(f"Created list '{sl.name}'.", "success")
+    return redirect(url_for("list_detail", list_id=sl.id))
+
+
+@app.route("/list/<int:list_id>/add-place", methods=["POST"])
+@app.route("/list/<int:list_id>/add_place", methods=["POST"])
+@login_required
+def list_add_place(list_id):
+    """Add a Place (by id) to a custom list."""
+    sl = db.session.get(SavedList, list_id)
+    if not sl or sl.user_id != current_user.id:
+        abort(404)
+    place_id = request.form.get("place_id", type=int)
+    place = db.session.get(Place, place_id) if place_id else None
+    if not place:
+        flash("Place not found.", "error")
+        return redirect(url_for("list_detail", list_id=sl.id))
+    existing = SavedPlace.query.filter_by(
+        user_id=current_user.id, list_id=sl.id, place_id=place.id).first()
+    if not existing:
+        sp = SavedPlace(user_id=current_user.id, list_id=sl.id,
+                        place_id=place.id)
+        db.session.add(sp)
+        db.session.commit()
+        flash(f"Added {place.name} to '{sl.name}'.", "success")
+    else:
+        flash(f"{place.name} is already in '{sl.name}'.", "info")
+    return redirect(url_for("list_detail", list_id=sl.id))
+
+
+@app.route("/list/<int:list_id>/rename", methods=["POST"])
+@login_required
+def list_rename(list_id):
+    """Rename a custom list."""
+    sl = db.session.get(SavedList, list_id)
+    if not sl or sl.user_id != current_user.id:
+        abort(404)
+    new_name = (request.form.get("name") or "").strip()
+    if not new_name:
+        flash("Name cannot be empty.", "error")
+        return redirect(url_for("list_detail", list_id=sl.id))
+    sl.name = new_name[:128]
+    db.session.commit()
+    flash("List renamed.", "success")
+    return redirect(url_for("list_detail", list_id=sl.id))
+
+
+@app.route("/list/<int:list_id>/share", methods=["POST"])
+@login_required
+def list_share_toggle(list_id):
+    """Toggle a list's shared state (stored in description prefix)."""
+    sl = db.session.get(SavedList, list_id)
+    if not sl or sl.user_id != current_user.id:
+        abort(404)
+    flag = "[shared] "
+    if sl.description and sl.description.startswith(flag):
+        sl.description = sl.description[len(flag):]
+        flash("List sharing disabled.", "info")
+    else:
+        sl.description = flag + (sl.description or "")
+        flash("List sharing enabled. Anyone with the link can view.",
+              "success")
+    db.session.commit()
+    return redirect(url_for("list_share", list_id=sl.id))
+
+
+@app.route("/trip/<int:trip_id>/reorder", methods=["POST"])
+@login_required
+def trip_reorder(trip_id):
+    """Reorder stops in a trip via a CSV `order` field of stop IDs."""
+    trip = db.session.get(Trip, trip_id)
+    if not trip or trip.user_id != current_user.id:
+        abort(404)
+    raw = (request.form.get("order") or "").strip()
+    if not raw:
+        flash("No order provided.", "error")
+        return redirect(url_for("trip_detail", trip_id=trip.id))
+    try:
+        stop_ids = [int(x) for x in raw.split(",") if x.strip().isdigit()]
+    except ValueError:
+        stop_ids = []
+    for idx, sid in enumerate(stop_ids):
+        s = db.session.get(TripStop, sid)
+        if s and s.trip_id == trip.id:
+            s.order_idx = idx
+    db.session.commit()
+    flash("Trip stops reordered.", "success")
+    return redirect(url_for("trip_detail", trip_id=trip.id))
+
+
+@app.route("/trip/<int:trip_id>/add-stop", methods=["POST"])
+@app.route("/trip/<int:trip_id>/add_stop", methods=["POST"])
+@login_required
+def trip_add_stop_alias(trip_id):
+    """Alias of /trips/<id>/add_stop using the singular /trip/ path."""
+    trip = db.session.get(Trip, trip_id)
+    if not trip or trip.user_id != current_user.id:
+        abort(404)
+    place_id = request.form.get("place_id", type=int)
+    place = db.session.get(Place, place_id) if place_id else None
+    if not place:
+        flash("Place not found.", "error")
+        return redirect(url_for("trip_detail", trip_id=trip.id))
+    max_idx = db.session.query(func.max(TripStop.order_idx)) \
+        .filter_by(trip_id=trip.id).scalar() or 0
+    s = TripStop(trip_id=trip.id, place_id=place.id, order_idx=max_idx + 1,
+                 notes=(request.form.get("notes") or "").strip())
+    db.session.add(s)
+    db.session.commit()
+    flash(f"Added {place.name} to {trip.title}.", "success")
+    return redirect(url_for("trip_detail", trip_id=trip.id))
+
+
+@app.route("/place/<slug>/check-in", methods=["POST"])
+@login_required
+def place_checkin_alias(slug):
+    """Alias for /place/<slug>/checkin (hyphenated form)."""
+    place = Place.query.filter_by(slug=slug).first_or_404()
+    ci = PlaceCheckIn(user_id=current_user.id, place_id=place.id,
+                      note=(request.form.get("note") or "")[:255])
+    db.session.add(ci)
+    # Also drop a TimelineEntry so the visit shows up in /timeline.
+    te = TimelineEntry(user_id=current_user.id, place_id=place.id,
+                       note=ci.note or "Checked in via Your Places")
+    db.session.add(te)
+    db.session.commit()
+    flash(f"Checked in at {place.name}.", "success")
+    return redirect(url_for("place_detail", slug=place.slug))
+
+
+@app.route("/place/<int:place_id>/rating", methods=["POST"])
+@login_required
+def place_quick_rating(place_id):
+    """Quick 1-tap rating from card row. Creates a body-less Review.
+
+    Real Google Maps lets a user tap stars without writing prose; we model
+    that by creating a Review row with body='' and the requested star count.
+    """
+    place = db.session.get(Place, place_id)
+    if not place:
+        abort(404)
+    try:
+        rating = int(request.form.get("rating", "5"))
+    except (TypeError, ValueError):
+        rating = 5
+    rating = max(1, min(5, rating))
+    rv = Review(user_id=current_user.id, place_id=place.id,
+                rating=rating, title="", body="")
+    db.session.add(rv)
+    db.session.commit()
+    flash(f"Rated {place.name} {rating} stars.", "success")
+    return redirect(url_for("place_detail", slug=place.slug) + "#reviews")
 
 
 # --------------------------------------------------------------------------

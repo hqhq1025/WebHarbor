@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+{% block title %}Saved places - Your places - Google Maps{% endblock %}
+
+{% block body %}
+<div class="topbar">
+    <a href="{{ url_for('index') }}" class="brand">
+        <span class="material-icons-outlined" style="font-size:26px;color:#ea4335;">place</span>
+        <span>Google Maps</span>
+    </a>
+    <div class="nav-links">
+        <a href="{{ url_for('your_places') }}" class="nav-link">Your places</a>
+        <a href="{{ url_for('timeline') }}" class="nav-link">Timeline</a>
+    </div>
+</div>
+
+<div class="page" id="your-places-saved">
+    <h1 style="margin-bottom:4px;">Your places</h1>
+    <p class="page-sub" style="color:#5f6368;font-size:13px;margin:0 0 12px;">
+        {{ total_saved }} saved place{{ '' if total_saved == 1 else 's' }} across {{ saved_by_list|length }} list{{ '' if saved_by_list|length == 1 else 's' }} for <strong>{{ current_user.email }}</strong>.
+    </p>
+
+    {% include '_your_places_tabs.html' %}
+
+    {% if saved_by_list %}
+        {% for L, sps in saved_by_list %}
+        <section class="yp-saved-group" data-list-id="{{ L.id }}"
+                 style="margin:18px 0;">
+            <header style="display:flex;align-items:center;gap:8px;padding:0 12px 8px;">
+                <span class="material-icons-outlined" style="color:{{ L.color or '#4285f4' }};">{{ L.icon or 'bookmark' }}</span>
+                <h2 style="margin:0;font-size:16px;font-weight:500;">{{ L.name }}</h2>
+                <span class="badge neutral" style="font-size:11px;color:#5f6368;">{{ sps|length }} place{{ '' if sps|length == 1 else 's' }}</span>
+                <a href="{{ url_for('list_detail', list_id=L.id) }}"
+                   style="margin-left:auto;font-size:12px;color:#1a73e8;text-decoration:none;">Open list &rarr;</a>
+            </header>
+            {% if sps %}
+            <ul class="yp-saved-list"
+                style="list-style:none;margin:0;padding:0 12px;display:grid;grid-template-columns:repeat(auto-fill, minmax(280px, 1fr));gap:8px;">
+                {% for sp in sps %}
+                {% set p = sp.place %}
+                <li class="yp-saved-card" data-saved-id="{{ sp.id }}"
+                    style="display:flex;gap:10px;background:#fff;border:1px solid #e8eaed;border-radius:10px;padding:10px;">
+                    <a href="{{ url_for('place_detail', slug=p.slug) }}"
+                       style="flex-shrink:0;width:72px;height:72px;border-radius:8px;overflow:hidden;background:#f1f3f4;">
+                        <img src="{{ p.hero_image }}" alt="{{ p.name }}"
+                             loading="lazy"
+                             style="width:100%;height:100%;object-fit:cover;"
+                             onerror="this.style.display='none';">
+                    </a>
+                    <div style="flex:1;min-width:0;">
+                        <a href="{{ url_for('place_detail', slug=p.slug) }}"
+                           style="font-size:14px;font-weight:500;color:#202124;text-decoration:none;">{{ p.name }}</a>
+                        <div style="font-size:12px;color:#5f6368;">{{ p.subtitle or p.address|truncate(48) }}</div>
+                        <div style="font-size:12px;color:#5f6368;">{{ "%.1f"|format(p.rating) }}★ · {{ p.price_level }}{% if sp.label %} · <span style="color:#1a73e8;">{{ sp.label }}</span>{% endif %}</div>
+                    </div>
+                    <form method="POST" action="{{ url_for('saved_remove', saved_id=sp.id) }}"
+                          style="align-self:flex-start;">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <button type="submit" title="Remove"
+                                style="background:none;border:none;cursor:pointer;color:#5f6368;">
+                            <span class="material-icons-outlined" style="font-size:18px;">close</span>
+                        </button>
+                    </form>
+                </li>
+                {% endfor %}
+            </ul>
+            {% else %}
+            <p style="color:#80868b;font-size:13px;padding:0 12px;">No places saved to this list yet.</p>
+            {% endif %}
+        </section>
+        {% endfor %}
+    {% else %}
+        <div class="empty-state" style="padding:40px;text-align:center;color:#5f6368;">
+            <span class="material-icons-outlined" style="font-size:48px;color:#dadce0;">bookmark_border</span>
+            <h3>No saved places yet</h3>
+            <p>Tap the <strong>Save</strong> button on any place to add it here.</p>
+            <a href="{{ url_for('explore') }}" class="btn">Explore places</a>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

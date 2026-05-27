@@ -29,6 +29,20 @@
             {% endif %}
         </div>
         <div class="desc">{{ p.description[:140] }}</div>
+        {# R-imgsave: 2-photo strip under place card text — surfaces extra
+           place/category images on every search result + category listing. #}
+        {% set _strip = place_extra_images(p, 2) %}
+        {% if _strip %}
+        <div class="place-card-strip"
+             style="display:flex;gap:4px;margin-top:6px;">
+            {% for s in _strip %}
+            <img src="{{ s }}" alt="{{ p.name }} photo {{ loop.index }}"
+                 loading="lazy"
+                 style="width:72px;height:48px;object-fit:cover;border-radius:4px;background:#eceff1;"
+                 onerror="this.style.display='none';">
+            {% endfor %}
+        </div>
+        {% endif %}
     </div>
     <div class="thumb">
         <img src="{{ p.hero_image }}" alt="{{ p.name }}"

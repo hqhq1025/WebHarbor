@@ -138,6 +138,30 @@
                  onerror="this.style.display='none'; this.parentElement.style.background='linear-gradient(135deg, #e8f0fe, #fde7f3)';">
         </div>
 
+        {# ---- R-imgsave: photo mosaic strip directly below hero ---- #}
+        {% set extra_imgs = place_extra_images(place, 5) %}
+        {% if extra_imgs %}
+        <section class="pd-photo-mosaic" id="photos"
+                 aria-label="Photos of {{ place.name }}"
+                 style="display:grid;grid-template-columns:repeat(5,1fr);gap:4px;padding:4px 16px 0;">
+            {% for img in extra_imgs %}
+            <a href="{{ img }}" target="_blank" rel="noopener"
+               class="pd-mosaic-cell"
+               data-mosaic-idx="{{ loop.index0 }}"
+               style="display:block;aspect-ratio:1/1;border-radius:6px;overflow:hidden;background:#f1f3f4;">
+                <img src="{{ img }}" alt="{{ place.name }} photo {{ loop.index }}"
+                     loading="lazy"
+                     style="width:100%;height:100%;object-fit:cover;"
+                     onerror="this.style.display='none';">
+            </a>
+            {% endfor %}
+        </section>
+        <div class="pd-photo-actions" style="display:flex;justify-content:flex-end;padding:6px 16px 8px;font-size:12px;">
+            <a href="#photos" class="pd-photo-all"
+               style="color:#1a73e8;text-decoration:none;">See all photos ({{ extra_imgs|length + 1 }})</a>
+        </div>
+        {% endif %}
+
         <div class="pd-header">
             <h1>{{ place.name }}</h1>
             <div class="pd-meta">
@@ -590,6 +614,148 @@
                 </div>
             </section>
             {% endfor %}
+        {% endif %}
+
+        {# ---- R-imgsave: visitor-uploaded photos grid (Photo rows) ---- #}
+        {% set user_photos = place.photos.order_by(Photo.created_at.desc()).limit(20).all() if place.photos else [] %}
+        {% if user_photos %}
+        <div class="pd-block" id="visitor-photos">
+            <div class="pd-section-title">Visitor photos ({{ user_photos|length }})</div>
+            <div class="pd-visitor-photos"
+                 style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;">
+                {% for ph in user_photos %}
+                <figure class="pd-visitor-photo" data-photo-id="{{ ph.id }}"
+                        style="margin:0;aspect-ratio:1/1;border-radius:8px;overflow:hidden;position:relative;background:#f1f3f4;">
+                    <img src="{{ ph.image_url }}"
+                         alt="{{ ph.caption or place.name }} photo by user {{ ph.user_id }}"
+                         loading="lazy"
+                         style="width:100%;height:100%;object-fit:cover;"
+                         onerror="this.style.display='none';">
+                    {% if ph.caption %}
+                    <figcaption style="position:absolute;bottom:0;left:0;right:0;padding:4px 6px;background:linear-gradient(transparent,#000a);color:#fff;font-size:11px;">{{ ph.caption[:60] }}</figcaption>
+                    {% endif %}
+                    {% if current_user.is_authenticated %}
+                    <form method="POST" action="{{ url_for('place_photo_report', slug=place.slug, photo_id=ph.id) }}"
+                          style="position:absolute;top:4px;right:4px;">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <input type="hidden" name="reason" value="inappropriate">
+                        <button type="submit" title="Report photo"
+                                style="background:#fff8;border:none;border-radius:50%;width:24px;height:24px;cursor:pointer;">
+                            <span class="material-icons-outlined" style="font-size:14px;">flag</span>
+                        </button>
+                    </form>
+                    {% endif %}
+                </figure>
+                {% endfor %}
+            </div>
+            {% if current_user.is_authenticated %}
+            <form method="POST" action="{{ url_for('place_photo_add', slug=place.slug) }}"
+                  style="margin-top:10px;display:flex;gap:8px;align-items:center;">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <input type="text" name="caption" placeholder="Caption (optional)"
+                       style="flex:1;padding:6px 10px;border:1px solid #dadce0;border-radius:6px;font-size:13px;">
+                <button type="submit" class="btn ghost btn-sm">
+                    <span class="material-icons-outlined" style="font-size:16px;">add_a_photo</span> Add photo
+                </button>
+            </form>
+            {% endif %}
+        </div>
+        {% elif current_user.is_authenticated %}
+        <div class="pd-block" id="visitor-photos">
+            <div class="pd-section-title">Visitor photos (0)</div>
+            <p style="color:#5f6368;font-size:13px;">Be the first to upload a photo.</p>
+            <form method="POST" action="{{ url_for('place_photo_add', slug=place.slug) }}"
+                  style="margin-top:10px;display:flex;gap:8px;align-items:center;">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <input type="text" name="caption" placeholder="Caption (optional)"
+                       style="flex:1;padding:6px 10px;border:1px solid #dadce0;border-radius:6px;font-size:13px;">
+                <button type="submit" class="btn ghost btn-sm">
+                    <span class="material-icons-outlined" style="font-size:16px;">add_a_photo</span> Add photo
+                </button>
+            </form>
+        </div>
+        {% endif %}
+
+        {# ---- R-imgsave: Questions & Answers block ---- #}
+        {% set qa_list = PlaceQuestion.query.filter_by(place_id=place.id).order_by(PlaceQuestion.created_at.desc()).limit(10).all() %}
+        <div class="pd-block" id="qa">
+            <div class="pd-section-title">Questions & answers ({{ qa_list|length }})</div>
+            {% for q in qa_list %}
+            <div class="qa-item" data-qid="{{ q.id }}"
+                 style="border-top:1px solid #f1f3f4;padding:10px 0;">
+                <div class="qa-q" style="font-size:14px;">
+                    <span class="material-icons-outlined" style="font-size:16px;vertical-align:-3px;color:#1a73e8;">help_outline</span>
+                    {{ q.body }}
+                </div>
+                {% for a in q.answers %}
+                <div class="qa-a" style="padding:6px 0 0 20px;font-size:13px;color:#3c4043;">
+                    <span class="material-icons-outlined" style="font-size:14px;vertical-align:-3px;color:#34a853;">check_circle</span>
+                    {{ a.body }}
+                </div>
+                {% endfor %}
+                {% if current_user.is_authenticated %}
+                <form method="POST" action="{{ url_for('place_question_answer', slug=place.slug, qid=q.id) }}"
+                      style="padding:6px 0 0 20px;display:flex;gap:6px;">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <input type="text" name="body" placeholder="Add a community answer"
+                           style="flex:1;padding:6px 10px;border:1px solid #dadce0;border-radius:6px;font-size:12px;">
+                    <button type="submit" class="btn ghost btn-sm">Answer</button>
+                </form>
+                {% endif %}
+            </div>
+            {% endfor %}
+            {% if not qa_list %}
+            <p style="color:#5f6368;font-size:13px;">No questions yet.</p>
+            {% endif %}
+            {% if current_user.is_authenticated %}
+            <form method="POST" action="{{ url_for('place_question_ask', slug=place.slug) }}"
+                  style="margin-top:10px;display:flex;gap:8px;">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <input type="text" name="body" placeholder="Ask a question about {{ place.name }}"
+                       style="flex:1;padding:6px 10px;border:1px solid #dadce0;border-radius:6px;font-size:13px;">
+                <button type="submit" class="btn">Ask</button>
+            </form>
+            {% endif %}
+        </div>
+
+        {# ---- R-imgsave: Suggest an edit + Report inaccuracy ---- #}
+        {% if current_user.is_authenticated %}
+        <div class="pd-block" id="contribute" style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+            <form method="POST" action="{{ url_for('place_edit_suggest', slug=place.slug) }}"
+                  class="pd-edit-suggest"
+                  style="background:#f1f3f4;border-radius:8px;padding:12px;">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <div style="font-weight:500;font-size:13px;margin-bottom:6px;">Suggest an edit</div>
+                <select name="field" style="width:100%;padding:6px;border:1px solid #dadce0;border-radius:6px;font-size:12px;margin-bottom:4px;">
+                    <option value="name">Name</option>
+                    <option value="address">Address</option>
+                    <option value="phone">Phone</option>
+                    <option value="hours">Hours</option>
+                    <option value="website">Website</option>
+                </select>
+                <input type="text" name="new_value" placeholder="Suggested value"
+                       style="width:100%;padding:6px;border:1px solid #dadce0;border-radius:6px;font-size:12px;margin-bottom:4px;">
+                <textarea name="note" rows="2" placeholder="Note (optional)"
+                          style="width:100%;padding:6px;border:1px solid #dadce0;border-radius:6px;font-size:12px;"></textarea>
+                <button type="submit" class="btn btn-sm" style="margin-top:6px;">Send suggestion</button>
+            </form>
+            <form method="POST" action="{{ url_for('place_report', slug=place.slug) }}"
+                  class="pd-report"
+                  style="background:#fef7e0;border-radius:8px;padding:12px;">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <div style="font-weight:500;font-size:13px;margin-bottom:6px;">Report inaccurate info</div>
+                <select name="reason" style="width:100%;padding:6px;border:1px solid #dadce0;border-radius:6px;font-size:12px;margin-bottom:4px;">
+                    <option value="inaccurate">Inaccurate details</option>
+                    <option value="closed">Permanently closed</option>
+                    <option value="duplicate">Duplicate listing</option>
+                    <option value="inappropriate">Inappropriate content</option>
+                    <option value="other">Other</option>
+                </select>
+                <textarea name="detail" rows="3" placeholder="What is wrong?"
+                          style="width:100%;padding:6px;border:1px solid #dadce0;border-radius:6px;font-size:12px;"></textarea>
+                <button type="submit" class="btn btn-sm" style="margin-top:6px;">Submit report</button>
+            </form>
+        </div>
         {% endif %}
 
         {% set snippets = place.get_review_snippets() %}

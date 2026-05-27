@@ -28,6 +28,8 @@
     <div class="lbl-head"><h1>Labeled places</h1></div>
     <div class="lbl-sub">Home, Work, and any other labels you've added to saved places.</div>
 
+    {% include '_your_places_tabs.html' %}
+
     {% set ordered = ['Home', 'Work'] %}
     {% for k in ordered %}
         {% if grouped.get(k) %}

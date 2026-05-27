@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+{% block title %}Visited places - Your places - Google Maps{% endblock %}
+
+{% block body %}
+<div class="topbar">
+    <a href="{{ url_for('index') }}" class="brand">
+        <span class="material-icons-outlined" style="font-size:26px;color:#ea4335;">place</span>
+        <span>Google Maps</span>
+    </a>
+    <div class="nav-links">
+        <a href="{{ url_for('your_places') }}" class="nav-link">Your places</a>
+        <a href="{{ url_for('timeline') }}" class="nav-link">Timeline</a>
+    </div>
+</div>
+
+<div class="page" id="your-places-visited">
+    <h1 style="margin-bottom:4px;">Your places</h1>
+    <p class="page-sub" style="color:#5f6368;font-size:13px;margin:0 0 12px;">
+        {{ visits|length }} location{{ '' if visits|length == 1 else 's' }} visited recently by <strong>{{ current_user.email }}</strong>.
+    </p>
+
+    {% include '_your_places_tabs.html' %}
+
+    {% if visits %}
+    <ul class="yp-visit-list"
+        style="list-style:none;margin:18px 0;padding:0 12px;display:grid;grid-template-columns:repeat(auto-fill, minmax(280px, 1fr));gap:8px;">
+        {% for t in visits %}
+        {% set p = t.place %}
+        <li class="yp-visit-card" data-entry-id="{{ t.id }}"
+            style="display:flex;gap:10px;background:#fff;border:1px solid #e8eaed;border-radius:10px;padding:10px;">
+            {% if p %}
+            <a href="{{ url_for('place_detail', slug=p.slug) }}"
+               style="flex-shrink:0;width:72px;height:72px;border-radius:8px;overflow:hidden;background:#f1f3f4;">
+                <img src="{{ p.hero_image }}" alt="{{ p.name }}"
+                     loading="lazy"
+                     style="width:100%;height:100%;object-fit:cover;"
+                     onerror="this.style.display='none';">
+            </a>
+            <div style="flex:1;min-width:0;">
+                <a href="{{ url_for('place_detail', slug=p.slug) }}"
+                   style="font-size:14px;font-weight:500;color:#202124;text-decoration:none;">{{ p.name }}</a>
+                <div style="font-size:12px;color:#5f6368;">{{ p.address|truncate(48) }}</div>
+                <div style="font-size:12px;color:#5f6368;">{{ t.visited_at.strftime('%b %d, %Y · %H:%M') if t.visited_at else '' }}</div>
+                {% if t.note %}<div style="font-size:11px;color:#80868b;font-style:italic;">{{ t.note }}</div>{% endif %}
+            </div>
+            {% else %}
+            <div style="flex:1;color:#5f6368;font-size:13px;">Place #{{ t.place_id }} ({{ t.visited_at.strftime('%Y-%m-%d') if t.visited_at else '' }})</div>
+            {% endif %}
+            <form method="POST" action="{{ url_for('delete_timeline_entry', entry_id=t.id) }}"
+                  style="align-self:flex-start;">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button type="submit" title="Remove from timeline"
+                        style="background:none;border:none;cursor:pointer;color:#5f6368;">
+                    <span class="material-icons-outlined" style="font-size:18px;">close</span>
+                </button>
+            </form>
+        </li>
+        {% endfor %}
+    </ul>
+    {% else %}
+    <div class="empty-state" style="padding:40px;text-align:center;color:#5f6368;">
+        <span class="material-icons-outlined" style="font-size:48px;color:#dadce0;">history</span>
+        <h3>No visits logged yet</h3>
+        <p>Check in at any place to start your visited history.</p>
+        <a href="{{ url_for('explore') }}" class="btn">Explore places</a>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
