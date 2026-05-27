@@ -14,7 +14,7 @@
   <p class="dek" style="font-size:1.15rem;color:var(--sa-muted);">{{ a.dek }}</p>
   <div class="meta" style="display:flex;gap:14px;align-items:center;margin:10px 0 18px;">
     <a href="{{ url_for('author_page', slug=a.author.slug) }}" style="font-weight:600;display:flex;gap:8px;align-items:center;">
-      <img src="{{ url_for('static', filename='images/authors/' + a.author.slug + '.jpg') }}"
+      <img loading="lazy" decoding="async" src="{{ url_for('static', filename='images/authors/' + a.author.slug + '.jpg') }}"
            alt="{{ a.author.name }}" style="width:36px;height:36px;border-radius:50%;object-fit:cover;"
            onerror="this.style.display='none';">
       {{ a.author.name }}{% if a.author.credentials %}, {{ a.author.credentials }}{% endif %}
@@ -22,7 +22,7 @@
     <span class="muted">&middot; {{ a.published_at.strftime('%B %d, %Y') }} &middot; {{ a.reading_minutes }} min read &middot; {{ a.view_count|commafy }} views</span>
   </div>
   {% if a.hero_image %}
-    <img src="{{ a.hero_image }}" alt="{{ a.title }}"
+    <img loading="lazy" decoding="async" src="{{ a.hero_image }}" alt="{{ a.title }}"
          style="width:100%;aspect-ratio:16/7;object-fit:cover;border-radius:8px;"
          onerror="this.parentElement.querySelector('.hero-fallback').style.display='flex'; this.style.display='none';">
   {% endif %}

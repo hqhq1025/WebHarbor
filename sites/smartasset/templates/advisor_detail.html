@@ -9,7 +9,7 @@
 </div>
 
 <div class="card" style="display:grid;grid-template-columns:160px 1fr;gap:24px;">
-  <img src="{{ url_for('static', filename='images/advisors/advisor-' + '%03d'|format(a.id) + '.jpg') }}"
+  <img loading="lazy" decoding="async" src="{{ url_for('static', filename='images/advisors/advisor-' + '%03d'|format(a.id) + '.jpg') }}"
        alt="{{ a.name }}" style="width:140px;height:140px;border-radius:50%;object-fit:cover;border:3px solid var(--sa-blue);"
        onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
   <div class="avatar" style="width:140px;height:140px;font-size:2.5rem;display:none;">{{ a.name[0] }}{{ a.name.split(' ')[-1][0] }}</div>
@@ -96,7 +96,7 @@
   <div class="sa-grid sa-cols-4">
     {% for s in similar %}
       <a class="advisor-card" href="{{ url_for('advisor_detail', slug=s.slug) }}" style="text-decoration:none;color:inherit;">
-        <img src="{{ url_for('static', filename='images/advisors/advisor-' + '%03d'|format(s.id) + '.jpg') }}"
+        <img loading="lazy" decoding="async" src="{{ url_for('static', filename='images/advisors/advisor-' + '%03d'|format(s.id) + '.jpg') }}"
              alt="{{ s.name }}" style="width:64px;height:64px;border-radius:50%;object-fit:cover;"
              onerror="this.style.display='none';">
         <strong>{{ s.name }}</strong>

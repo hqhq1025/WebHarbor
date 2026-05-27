@@ -8,7 +8,7 @@
 </div>
 
 <div class="card" style="display:grid;grid-template-columns:140px 1fr;gap:24px;align-items:flex-start;">
-  <img src="{{ url_for('static', filename='images/authors/' + au.slug + '.jpg') }}"
+  <img loading="lazy" decoding="async" src="{{ url_for('static', filename='images/authors/' + au.slug + '.jpg') }}"
        alt="{{ au.name }}"
        style="width:130px;height:130px;border-radius:50%;object-fit:cover;border:3px solid var(--sa-blue);"
        onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
