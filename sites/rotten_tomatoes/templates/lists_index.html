@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block title %}Lists | Rotten Tomatoes{% endblock %}
+{% block content %}
+<div class="lists-index">
+    <h1>Editorial Lists</h1>
+    <p class="lede">Hand-curated lists from Rotten Tomatoes editors.</p>
+    <div class="lists-grid">
+        {% for l in lists %}
+        <a href="/list/{{ l.slug }}" class="list-card">
+            <h3>{{ l.title }}</h3>
+            <p>{{ l.description }}</p>
+            <p class="meta">{{ l.items|length }} movies · #{{ l.tag }}</p>
+        </a>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

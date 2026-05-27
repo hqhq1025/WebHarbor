@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block title %}Critics | Rotten Tomatoes{% endblock %}
+{% block content %}
+<div class="critics-index">
+    <h1>Film Critics on Rotten Tomatoes</h1>
+    <div class="filter-bar">
+        <a href="/critics/" class="filter {{ 'active' if not top_only }}">All Critics</a>
+        <a href="/critics/?top=1" class="filter {{ 'active' if top_only }}">Top Critics Only</a>
+    </div>
+    <p class="result-count">{{ critics|length }} critics.</p>
+    <div class="critic-grid">
+        {% for c in critics %}
+        <a href="/critics/{{ c.slug }}" class="critic-card">
+            <div class="critic-icon">{% if c.top_critic %}🏅{% else %}🍅{% endif %}</div>
+            <div class="critic-name">{{ c.name }}</div>
+            <div class="critic-pub">{{ c.publication }}</div>
+            {% if c.top_critic %}<span class="badge badge-top">Top Critic</span>{% endif %}
+        </a>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block title %}{{ year }} Awards | Rotten Tomatoes{% endblock %}
+{% block content %}
+<div class="awards-year">
+    <header>
+        <h1>The {{ year }} Awards Season</h1>
+    </header>
+    {% for cat, items in grouped.items() %}
+    <section class="award-cat">
+        <h2>{{ cat }}</h2>
+        <ul class="award-list">
+            {% for a in items %}
+            <li class="award-row">
+                {% if a.winner %}<span class="badge badge-winner">Winner</span>{% else %}<span class="badge badge-nominee">Nominee</span>{% endif %}
+                {% if a.movie %}<a href="/m/{{ a.movie.slug }}">{{ a.movie.title }}</a>{% endif %}
+                {% if a.person %}— <a href="/celebrity/{{ a.person.slug }}">{{ a.person.name }}</a>{% endif %}
+            </li>
+            {% endfor %}
+        </ul>
+    </section>
+    {% endfor %}
+</div>
+{% endblock %}

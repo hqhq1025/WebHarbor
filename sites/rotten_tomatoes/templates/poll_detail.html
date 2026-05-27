@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block title %}{{ poll.question }} | Rotten Tomatoes Polls{% endblock %}
+{% block content %}
+<div class="poll-detail">
+    <h1>{{ poll.question }}</h1>
+    <p class="meta">Ends {{ poll.ends_on }} · {{ total_votes }} votes</p>
+
+    {% if current_user.is_authenticated and not already_voted %}
+    <form action="/polls/{{ poll.slug }}/vote" method="POST" class="poll-form">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        {% for opt in poll.options %}
+        <label class="poll-option">
+            <input type="radio" name="option_id" value="{{ opt.id }}" required>
+            <span>{{ opt.text }}</span>
+        </label>
+        {% endfor %}
+        <button type="submit" class="btn btn-primary">Submit Vote</button>
+    </form>
+    {% else %}
+    <ul class="poll-results">
+        {% for opt in poll.options %}
+        {% set pct = (opt.votes * 100 / total_votes) | round(1) %}
+        <li>
+            <div class="poll-bar">
+                <span class="poll-text">{{ opt.text }}</span>
+                <span class="poll-pct">{{ pct }}% ({{ opt.votes }})</span>
+                <div class="poll-fill" style="width: {{ pct }}%"></div>
+            </div>
+        </li>
+        {% endfor %}
+    </ul>
+    {% if already_voted %}<p class="hint">✓ You have already voted.</p>{% endif %}
+    {% if not current_user.is_authenticated %}<p><a href="/login">Sign in</a> to vote.</p>{% endif %}
+    {% endif %}
+</div>
+{% endblock %}

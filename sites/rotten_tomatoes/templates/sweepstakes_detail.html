@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block title %}{{ sweepstake.title }} | Rotten Tomatoes{% endblock %}
+{% block content %}
+<div class="sweep-detail">
+    <header class="sweep-header">
+        <img src="{{ sweepstake.image }}" alt="{{ sweepstake.title }}" onerror="this.onerror=null;this.src='/static/icons/placeholder.png'">
+        <div class="sweep-meta">
+            <h1>{{ sweepstake.title }}</h1>
+            <p class="sweep-prize"><strong>Prize:</strong> {{ sweepstake.prize }}</p>
+            <p class="sweep-desc">{{ sweepstake.description }}</p>
+            <p class="sweep-ends">Sweepstakes ends {{ sweepstake.ends_on }}</p>
+            <p class="sweep-entries">{{ entry_count }} entries received</p>
+            {% if current_user.is_authenticated %}
+            {% if entered %}
+            <p class="sweep-entered">✓ You're entered. Good luck!</p>
+            {% else %}
+            <form action="/sweepstakes/{{ sweepstake.slug }}/enter" method="POST">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button type="submit" class="btn btn-primary">Enter Sweepstakes</button>
+            </form>
+            {% endif %}
+            {% else %}
+            <p><a href="/login">Sign in</a> to enter.</p>
+            {% endif %}
+        </div>
+    </header>
+</div>
+{% endblock %}

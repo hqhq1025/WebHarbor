@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block title %}TV Shows | Rotten Tomatoes{% endblock %}
+{% block content %}
+<div class="browse-page">
+    <h1>TV Shows</h1>
+    <div class="filter-bar">
+        <span>Sort:</span>
+        <a href="?sort=popular" class="filter {{ 'active' if current_sort == 'popular' }}">Popular</a>
+        <a href="?sort=newest" class="filter {{ 'active' if current_sort == 'newest' }}">Newest</a>
+        <a href="?sort=tomatometer" class="filter {{ 'active' if current_sort == 'tomatometer' }}">Tomatometer</a>
+        <a href="?sort=audience" class="filter {{ 'active' if current_sort == 'audience' }}">Audience Score</a>
+    </div>
+    <p class="result-count">{{ shows|length }} shows.</p>
+    <div class="movie-grid">
+        {% for s in shows %}
+        <a href="/tv/{{ s.slug }}" class="movie-card">
+            <div class="card-poster"><img src="{{ s.poster }}" alt="{{ s.title }}" onerror="this.onerror=null;this.src='/static/icons/placeholder.png'"></div>
+            <div class="card-scores">
+                <span class="score tomatometer {{ 'certified-fresh' if s.certified_fresh else ('fresh' if s.tomatometer >= 60 else 'rotten') }}">🍅 {{ s.tomatometer }}%</span>
+                <span class="score audience">🍿 {{ s.audience_score }}%</span>
+            </div>
+            <div class="card-title">{{ s.title }}</div>
+            <div class="card-meta">{{ s.network }} · {{ s.year_start }}</div>
+        </a>
+        {% else %}
+        <p class="empty">No TV shows.</p>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

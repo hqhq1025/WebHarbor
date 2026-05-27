@@ -743,11 +743,46 @@ def health():
 # DB init & seed
 # ──────────────────────────────────────────────
 
+# ──────────────────────────────────────────────
+# Extension registration (extra models + routes)
+# ──────────────────────────────────────────────
+# Must run BEFORE db.create_all() so the new tables are picked up.
+from app_ext import register as _register_ext
+
+_BASE_MODELS = dict(
+    User=User, Genre=Genre, Movie=Movie, Person=Person,
+    MovieCast=MovieCast, CriticReview=CriticReview, AudienceReview=AudienceReview,
+    UserRating=UserRating, WatchlistItem=WatchlistItem,
+)
+_EXT_MODELS = _register_ext(app, db, _BASE_MODELS)
+
+
 def init_db():
     """Create tables and seed data."""
     db.create_all()
     from seed_data import seed_all
-    seed_all(db, Genre, Movie, Person, MovieCast, CriticReview, AudienceReview, User, UserRating, WatchlistItem)
+    seed_all(db, Genre, Movie, Person, MovieCast, CriticReview, AudienceReview,
+             User, UserRating, WatchlistItem)
+    from seed_extras_runner import seed_extras
+    seed_extras(db, _BASE_MODELS, _EXT_MODELS)
+    _finalize_byte_identical_layout()
+
+
+def _finalize_byte_identical_layout():
+    """Re-emit indexes alphabetically + VACUUM so cross-process rebuilds match."""
+    from sqlalchemy import text as _t
+    rows = db.session.execute(_t(
+        "SELECT name, sql FROM sqlite_master "
+        "WHERE type='index' AND sql IS NOT NULL"
+    )).fetchall()
+    rows = sorted(rows, key=lambda r: r[0])
+    for name, _ in rows:
+        db.session.execute(_t(f"DROP INDEX IF EXISTS {name}"))
+    db.session.commit()
+    for _name, sql in rows:
+        db.session.execute(_t(sql))
+    db.session.commit()
+    db.session.execute(_t("VACUUM"))
 
 
 with app.app_context():

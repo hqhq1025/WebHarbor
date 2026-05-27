@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+{% block title %}{{ article.title }} | Rotten Tomatoes{% endblock %}
+{% block content %}
+<article class="news-article">
+    <header>
+        <span class="news-cat">{{ article.category }}</span>
+        <h1>{{ article.title }}</h1>
+        <p class="news-byline">By <strong>{{ article.author }}</strong> · {{ article.published_at.strftime('%b %d, %Y') }}</p>
+    </header>
+    {% if article.image %}
+    <div class="news-hero"><img src="{{ article.image }}" alt="{{ article.title }}" onerror="this.onerror=null;this.src='/static/icons/placeholder.png'"></div>
+    {% endif %}
+    <p class="news-lede">{{ article.summary }}</p>
+    <div class="news-body">{{ article.body|safe }}</div>
+
+    {% if tag_movie %}
+    <aside class="related-movie">
+        <h3>Related Movie</h3>
+        <a href="/m/{{ tag_movie.slug }}" class="movie-mini">
+            <img src="{{ tag_movie.poster_image }}" alt="{{ tag_movie.title }}" onerror="this.onerror=null;this.src='/static/icons/placeholder.png'">
+            <div>
+                <div class="card-title">{{ tag_movie.title }} ({{ tag_movie.year }})</div>
+                <div class="card-scores">
+                    <span class="score tomatometer">🍅 {{ tag_movie.tomatometer }}%</span>
+                    <span class="score audience">🍿 {{ tag_movie.audience_score }}%</span>
+                </div>
+            </div>
+        </a>
+    </aside>
+    {% endif %}
+
+    <section class="news-comments">
+        <h2>Comments ({{ comments|length }})</h2>
+        {% if current_user.is_authenticated %}
+        <form action="/news/{{ article.slug }}/comment" method="POST" class="comment-form">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <textarea name="text" rows="3" required placeholder="Share your thoughts..."></textarea>
+            <button type="submit" class="btn btn-primary">Post Comment</button>
+        </form>
+        {% else %}
+        <p><a href="/login">Sign in</a> to comment.</p>
+        {% endif %}
+        <ul class="comment-list">
+            {% for c in comments %}
+            <li class="comment-row">
+                <strong>{{ c.user.name }}</strong>
+                <span class="comment-date">{{ c.created_at.strftime('%b %d, %Y') }}</span>
+                <p>{{ c.text }}</p>
+                {% if current_user.is_authenticated and c.user_id == current_user.id %}
+                <form action="/news/comment/{{ c.id }}/delete" method="POST" class="inline-form">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button type="submit" class="btn btn-tiny btn-danger">Delete</button>
+                </form>
+                {% endif %}
+            </li>
+            {% else %}
+            <li class="empty">No comments yet.</li>
+            {% endfor %}
+        </ul>
+    </section>
+</article>
+{% endblock %}

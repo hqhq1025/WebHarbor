@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block title %}{{ tv.title }} | Rotten Tomatoes{% endblock %}
+{% block content %}
+<div class="tv-detail">
+    <div class="movie-header">
+        <div class="movie-poster-col">
+            <img src="{{ tv.poster }}" alt="{{ tv.title }}" class="movie-poster-large" onerror="this.onerror=null;this.src='/static/icons/placeholder.png'">
+        </div>
+        <div class="movie-info-col">
+            <h1 class="movie-title-large">{{ tv.title }} <span class="movie-year">({{ tv.year_start }}{% if tv.year_end %} – {{ tv.year_end }}{% else %} – present{% endif %})</span></h1>
+            <div class="movie-meta">
+                <span class="network">{{ tv.network }}</span>
+                <span class="genres">{{ tv.genre_text }}</span>
+            </div>
+            <div class="score-boxes">
+                <div class="score-box tomatometer-box {{ 'certified-fresh' if tv.certified_fresh else ('fresh' if tv.tomatometer >= 60 else 'rotten') }}">
+                    <div class="score-icon">{% if tv.certified_fresh %}🏆{% elif tv.tomatometer >= 60 %}🍅{% else %}🟢{% endif %}</div>
+                    <div class="score-value">{{ tv.tomatometer }}%</div>
+                    <div class="score-label">Tomatometer</div>
+                    {% if tv.certified_fresh %}<div class="certified-badge">✓ Certified Fresh</div>{% endif %}
+                </div>
+                <div class="score-box audience-box {{ 'upright' if tv.audience_score >= 60 else 'spilled' }}">
+                    <div class="score-icon">🍿</div>
+                    <div class="score-value">{{ tv.audience_score }}%</div>
+                    <div class="score-label">Audience Score</div>
+                </div>
+            </div>
+            <div class="synopsis"><p>{{ tv.synopsis }}</p></div>
+        </div>
+    </div>
+
+    <section class="seasons-section">
+        <h2>Seasons</h2>
+        <div class="season-grid">
+            {% for s in tv.seasons %}
+            <a href="/tv/{{ tv.slug }}/s{{ s.number }}" class="season-card">
+                <div class="season-no">Season {{ s.number }}</div>
+                <div class="season-year">{{ s.year }}</div>
+                <div class="season-episodes">{{ s.episode_count }} episodes</div>
+                <p class="season-synopsis">{{ s.synopsis }}</p>
+            </a>
+            {% endfor %}
+        </div>
+    </section>
+</div>
+{% endblock %}

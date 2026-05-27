@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% block title %}{{ critic.name }} | Rotten Tomatoes{% endblock %}
+{% block content %}
+<div class="critic-detail">
+    <header class="critic-header">
+        <div class="critic-icon-large">{% if critic.top_critic %}🏅{% else %}🍅{% endif %}</div>
+        <div class="critic-meta">
+            <h1>{{ critic.name }}</h1>
+            <p class="critic-pub">{{ critic.publication }}</p>
+            {% if critic.top_critic %}<span class="badge badge-top">Top Critic</span>{% endif %}
+            <p class="critic-bio">{{ critic.bio }}</p>
+        </div>
+        {% if current_user.is_authenticated %}
+        <div class="critic-follow">
+            {% if is_following %}
+            <form action="/critics/{{ critic.slug }}/unfollow" method="POST">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button type="submit" class="btn btn-outline">✓ Following</button>
+            </form>
+            {% else %}
+            <form action="/critics/{{ critic.slug }}/follow" method="POST">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button type="submit" class="btn btn-primary">+ Follow</button>
+            </form>
+            {% endif %}
+        </div>
+        {% endif %}
+    </header>
+
+    <section class="critic-reviews">
+        <h2>Recent Reviews ({{ reviews|length }})</h2>
+        <div class="reviews-list">
+            {% for r in reviews %}
+            <article class="review-card {{ 'fresh' if r.fresh else 'rotten' }}">
+                <div class="review-icon">{% if r.fresh %}🍅{% else %}🟢{% endif %}</div>
+                <div class="review-content">
+                    <p class="review-text">{{ r.text }}</p>
+                    <div class="review-meta">
+                        <a href="/m/{{ r.movie.slug }}" class="reviewer-pub">{{ r.movie.title }} ({{ r.movie.year }})</a>
+                    </div>
+                </div>
+            </article>
+            {% else %}
+            <p class="empty">No reviews indexed.</p>
+            {% endfor %}
+        </div>
+    </section>
+</div>
+{% endblock %}

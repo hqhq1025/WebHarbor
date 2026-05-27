@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block title %}Community Polls | Rotten Tomatoes{% endblock %}
+{% block content %}
+<div class="polls-index">
+    <h1>Community Polls</h1>
+    <ul class="poll-list">
+        {% for p in polls %}
+        <li class="poll-item">
+            <a href="/polls/{{ p.slug }}">
+                <h3>{{ p.question }}</h3>
+                <p class="meta">Ends {{ p.ends_on }}</p>
+            </a>
+        </li>
+        {% endfor %}
+    </ul>
+</div>
+{% endblock %}

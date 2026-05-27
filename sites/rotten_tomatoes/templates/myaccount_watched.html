@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block title %}Watched | Rotten Tomatoes{% endblock %}
+{% block content %}
+<div class="myaccount-page">
+    <header class="myaccount-header">
+        <h1>Watched</h1>
+        <nav class="myaccount-nav">
+            <a href="/account">Account</a>
+            <a href="/myaccount/want-to-see">Want to See</a>
+            <a href="/myaccount/watched" class="active">Watched</a>
+            <a href="/user/watchlist">Watchlist</a>
+            <a href="/myaccount/follows">Critics Followed</a>
+            <a href="/myaccount/lists">My Lists</a>
+            <a href="/myaccount/podcasts">Podcasts</a>
+            <a href="/myaccount/sweepstakes">Sweepstakes</a>
+        </nav>
+    </header>
+    <p class="result-count">{{ movies|length }} movies watched.</p>
+    <div class="movie-grid">
+        {% for m in movies %}
+        <a href="/m/{{ m.slug }}" class="movie-card">
+            <div class="card-poster"><img src="{{ m.poster_image }}" alt="{{ m.title }}" onerror="this.onerror=null;this.src='/static/icons/placeholder.png'"></div>
+            <div class="card-scores"><span class="score tomatometer">🍅 {{ m.tomatometer }}%</span></div>
+            <div class="card-title">{{ m.title }}</div>
+        </a>
+        {% else %}
+        <p class="empty">No watched movies yet.</p>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

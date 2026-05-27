@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% block title %}{{ list.title }} | Rotten Tomatoes{% endblock %}
+{% block content %}
+<div class="list-detail">
+    <header class="list-header">
+        <h1>{{ list.title }}</h1>
+        <p class="list-desc">{{ list.description }}</p>
+        <p class="list-meta">
+            {% if list.owner_id %}A user list{% else %}An editorial Rotten Tomatoes list{% endif %}
+            · {{ list.items|length }} movies
+            {% if not list.is_public %}· <em>Private</em>{% endif %}
+        </p>
+        {% if list.owner_id and current_user.is_authenticated and list.owner_id == current_user.id %}
+        <div class="list-actions">
+            <form action="/lists/{{ list.slug }}/delete" method="POST" class="inline-form">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button type="submit" class="btn btn-danger" onclick="return confirm('Delete this list?')">Delete List</button>
+            </form>
+        </div>
+        {% endif %}
+    </header>
+
+    <ol class="ranked-list">
+        {% for item in list.items %}
+        {% set m = item.movie if item.movie else None %}
+        {% if m %}
+        <li class="list-item">
+            <span class="rank">#{{ item.order }}</span>
+            <a href="/m/{{ m.slug }}" class="movie-mini">
+                <img src="{{ m.poster_image }}" alt="{{ m.title }}" onerror="this.onerror=null;this.src='/static/icons/placeholder.png'">
+                <div>
+                    <div class="card-title">{{ m.title }} ({{ m.year }})</div>
+                    <div class="card-scores">
+                        <span class="score tomatometer">🍅 {{ m.tomatometer }}%</span>
+                        <span class="score audience">🍿 {{ m.audience_score }}%</span>
+                    </div>
+                </div>
+            </a>
+            {% if list.owner_id and current_user.is_authenticated and list.owner_id == current_user.id %}
+            <form action="/lists/{{ list.slug }}/remove/{{ m.id }}" method="POST" class="inline-form">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button type="submit" class="btn btn-tiny btn-danger">Remove</button>
+            </form>
+            {% endif %}
+        </li>
+        {% endif %}
+        {% else %}
+        <p class="empty">This list is empty.</p>
+        {% endfor %}
+    </ol>
+</div>
+{% endblock %}

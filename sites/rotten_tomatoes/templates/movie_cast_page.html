@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block title %}Cast & Crew — {{ movie.title }} | Rotten Tomatoes{% endblock %}
+{% block content %}
+<div class="movie-cast-page">
+    <header class="movie-subnav">
+        <a href="/m/{{ movie.slug }}">{{ movie.title }}</a>
+        <span class="crumb-sep">›</span>
+        <span class="crumb">Cast & Crew</span>
+    </header>
+
+    <h1>{{ movie.title }} — Cast & Crew</h1>
+
+    {% if directors %}
+    <section>
+        <h2>Director</h2>
+        <div class="cast-grid">
+            {% for d in directors %}
+            <a href="/celebrity/{{ d.person.slug }}" class="cast-card">
+                <img src="{{ d.person.photo }}" alt="{{ d.person.name }}" onerror="this.onerror=null;this.src='/static/icons/placeholder.png'">
+                <div class="cast-name">{{ d.person.name }}</div>
+                <div class="cast-character">Director</div>
+            </a>
+            {% endfor %}
+        </div>
+    </section>
+    {% endif %}
+
+    <section>
+        <h2>Cast</h2>
+        <div class="cast-grid">
+            {% for c in actors %}
+            <a href="/celebrity/{{ c.person.slug }}" class="cast-card">
+                <img src="{{ c.person.photo }}" alt="{{ c.person.name }}" onerror="this.onerror=null;this.src='/static/icons/placeholder.png'">
+                <div class="cast-name">{{ c.person.name }}</div>
+                <div class="cast-character">{{ c.character_name or '—' }}</div>
+            </a>
+            {% else %}
+            <p class="empty">No cast on record.</p>
+            {% endfor %}
+        </div>
+    </section>
+</div>
+{% endblock %}

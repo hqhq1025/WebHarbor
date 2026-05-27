@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block title %}Awards | Rotten Tomatoes{% endblock %}
+{% block content %}
+<div class="awards-index">
+    <h1>Awards Hub</h1>
+    <p class="lede">Best Picture, Director, Lead Actor, Lead Actress, and Best Animated Feature picks by year.</p>
+    <div class="year-grid">
+        {% for y in years %}
+        <a href="/awards/{{ y }}" class="year-card">{{ y }}</a>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

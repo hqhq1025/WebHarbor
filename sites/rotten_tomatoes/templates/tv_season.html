@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block title %}{{ tv.title }} Season {{ season.number }} | Rotten Tomatoes{% endblock %}
+{% block content %}
+<div class="tv-season">
+    <header class="movie-subnav">
+        <a href="/tv/{{ tv.slug }}">{{ tv.title }}</a>
+        <span class="crumb-sep">›</span>
+        <span class="crumb">Season {{ season.number }}</span>
+    </header>
+    <h1>{{ tv.title }} — {{ season.title }} ({{ season.year }})</h1>
+    <p class="lede">{{ season.synopsis }}</p>
+
+    <section class="episode-list">
+        {% for ep in season.episodes %}
+        <a href="/tv/{{ tv.slug }}/s{{ season.number }}/e{{ ep.number }}" class="episode-row">
+            <span class="ep-num">E{{ "%02d"|format(ep.number) }}</span>
+            <span class="ep-title">{{ ep.title }}</span>
+            <span class="ep-air">{{ ep.air_date }}</span>
+            <span class="ep-score">🍅 {{ ep.tomatometer }}%</span>
+        </a>
+        {% else %}
+        <p class="empty">No episodes listed yet.</p>
+        {% endfor %}
+    </section>
+</div>
+{% endblock %}

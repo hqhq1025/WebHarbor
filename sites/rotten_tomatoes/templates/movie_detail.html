@@ -131,6 +131,16 @@
             </form>
             {% endif %}
 
+            <form action="/m/{{ movie.slug }}/want-to-see" method="POST" class="inline-form">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button type="submit" class="btn btn-outline">+ Want to See</button>
+            </form>
+
+            <form action="/m/{{ movie.slug }}/watched" method="POST" class="inline-form">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button type="submit" class="btn btn-outline">✓ Mark as Watched</button>
+            </form>
+
             <form action="/m/{{ movie.slug }}/rate" method="POST" class="rate-form">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <label>Rate: </label>
@@ -144,6 +154,14 @@
         </div>
     </section>
     {% endif %}
+
+    <nav class="movie-tabs">
+        <a href="/m/{{ movie.slug }}" class="tab active">Movie</a>
+        <a href="/m/{{ movie.slug }}/reviews" class="tab">Reviews</a>
+        <a href="/m/{{ movie.slug }}/cast" class="tab">Cast & Crew</a>
+        <a href="/m/{{ movie.slug }}/photos" class="tab">Photos</a>
+    </nav>
+
 
     <!-- Critic Reviews -->
     {% if critic_reviews %}

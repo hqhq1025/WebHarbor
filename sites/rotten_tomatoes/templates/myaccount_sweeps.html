@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block title %}My Sweepstakes Entries | Rotten Tomatoes{% endblock %}
+{% block content %}
+<div class="myaccount-page">
+    <header class="myaccount-header">
+        <h1>Sweepstakes Entries</h1>
+        <nav class="myaccount-nav">
+            <a href="/account">Account</a>
+            <a href="/myaccount/want-to-see">Want to See</a>
+            <a href="/myaccount/watched">Watched</a>
+            <a href="/myaccount/follows">Critics Followed</a>
+            <a href="/myaccount/lists">My Lists</a>
+            <a href="/myaccount/podcasts">Podcasts</a>
+            <a href="/myaccount/sweepstakes" class="active">Sweepstakes</a>
+        </nav>
+    </header>
+    <div class="sweep-grid">
+        {% for s in sweepstakes %}
+        <a href="/sweepstakes/{{ s.slug }}" class="sweep-card">
+            <img src="{{ s.image }}" alt="{{ s.title }}" onerror="this.onerror=null;this.src='/static/icons/placeholder.png'">
+            <h3>{{ s.title }}</h3>
+            <p class="meta">Ends {{ s.ends_on }}</p>
+        </a>
+        {% else %}
+        <p class="empty">You haven't entered any sweepstakes yet.</p>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

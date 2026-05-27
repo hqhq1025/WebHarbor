@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block title %}News | Rotten Tomatoes{% endblock %}
+{% block content %}
+<div class="news-index">
+    <h1>News & Features</h1>
+    <nav class="category-bar">
+        <a href="/news/" class="filter {{ 'active' if not current_cat }}">All</a>
+        {% for c in categories %}
+        <a href="/news/?category={{ c }}" class="filter {{ 'active' if current_cat == c }}">{{ c }}</a>
+        {% endfor %}
+    </nav>
+    <p class="result-count">{{ articles|length }} stories.</p>
+    <div class="news-grid">
+        {% for a in articles %}
+        <a href="/news/{{ a.slug }}" class="news-card">
+            <div class="news-image"><img src="{{ a.image }}" alt="{{ a.title }}" loading="lazy" onerror="this.onerror=null;this.src='/static/icons/placeholder.png'"></div>
+            <div class="news-body">
+                <span class="news-cat">{{ a.category }}</span>
+                <h3>{{ a.title }}</h3>
+                <p>{{ a.summary }}</p>
+                <p class="news-byline">By {{ a.author }} · {{ a.published_at.strftime('%b %d, %Y') }}</p>
+            </div>
+        </a>
+        {% else %}
+        <p class="empty">No stories yet.</p>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

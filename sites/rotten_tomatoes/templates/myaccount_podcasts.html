@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block title %}Podcast Subscriptions | Rotten Tomatoes{% endblock %}
+{% block content %}
+<div class="myaccount-page">
+    <header class="myaccount-header">
+        <h1>Subscribed Podcasts</h1>
+        <nav class="myaccount-nav">
+            <a href="/account">Account</a>
+            <a href="/myaccount/want-to-see">Want to See</a>
+            <a href="/myaccount/watched">Watched</a>
+            <a href="/myaccount/follows">Critics Followed</a>
+            <a href="/myaccount/lists">My Lists</a>
+            <a href="/myaccount/podcasts" class="active">Podcasts</a>
+        </nav>
+    </header>
+    <div class="podcast-grid">
+        {% for p in podcasts %}
+        <a href="/podcasts/{{ p.slug }}" class="podcast-card">
+            <img src="{{ p.image }}" alt="{{ p.title }}" onerror="this.onerror=null;this.src='/static/icons/placeholder.png'">
+            <h3>{{ p.title }}</h3>
+            <p>{{ p.description }}</p>
+        </a>
+        {% else %}
+        <p class="empty">No subscriptions yet.</p>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

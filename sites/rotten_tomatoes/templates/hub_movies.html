@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block title %}{{ title }} | Rotten Tomatoes{% endblock %}
+{% block content %}
+<div class="hub-page">
+    <h1>{{ title }}</h1>
+    <p class="result-count">{{ movies|length }} movies.</p>
+    <div class="movie-grid">
+        {% for m in movies %}
+        <a href="/m/{{ m.slug }}" class="movie-card">
+            <div class="card-poster"><img src="{{ m.poster_image }}" alt="{{ m.title }}" onerror="this.onerror=null;this.src='/static/icons/placeholder.png'"></div>
+            <div class="card-scores">
+                <span class="score tomatometer {{ m.tomatometer_status }}">🍅 {{ m.tomatometer }}%</span>
+                <span class="score audience {{ m.audience_status }}">🍿 {{ m.audience_score }}%</span>
+            </div>
+            <div class="card-title">{{ m.title }} ({{ m.year }})</div>
+            {% if m.streaming_platform %}<div class="card-meta">{{ m.streaming_platform }}</div>{% endif %}
+        </a>
+        {% else %}
+        <p class="empty">Nothing matches yet.</p>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

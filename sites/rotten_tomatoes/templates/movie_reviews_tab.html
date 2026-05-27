@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+{% block title %}Reviews — {{ movie.title }} | Rotten Tomatoes{% endblock %}
+{% block content %}
+<div class="movie-reviews-tab">
+    <header class="movie-subnav">
+        <a href="/m/{{ movie.slug }}">{{ movie.title }}</a>
+        <span class="crumb-sep">›</span>
+        <span class="crumb">Reviews</span>
+    </header>
+
+    <h1>{{ movie.title }} — Reviews</h1>
+
+    <nav class="tab-bar">
+        <a href="/m/{{ movie.slug }}/reviews?type=all" class="tab {{ 'active' if which == 'all' }}">All Critics ({{ critic_reviews|length }})</a>
+        <a href="/m/{{ movie.slug }}/reviews?type=top_critics" class="tab {{ 'active' if which == 'top_critics' }}">Top Critics</a>
+        <a href="/m/{{ movie.slug }}/reviews?type=audience" class="tab {{ 'active' if which == 'audience' }}">Audience ({{ audience_reviews|length }})</a>
+    </nav>
+
+    {% if which == 'audience' %}
+    <section class="reviews-list">
+        {% for r in audience_reviews %}
+        <article class="review-card audience" data-review-id="{{ r.id }}">
+            <header class="review-meta">
+                <span class="reviewer-name">{{ r.user.name }}</span>
+                <span class="review-score">{{ r.score }}/5⭐</span>
+            </header>
+            <p class="review-text">{{ r.text }}</p>
+            {% if current_user.is_authenticated %}
+            <div class="review-actions">
+                <form action="/review/{{ r.id }}/helpful" method="POST" class="inline-form">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <input type="hidden" name="helpful" value="true">
+                    <button type="submit" class="btn btn-tiny">👍 Helpful</button>
+                </form>
+                <form action="/review/{{ r.id }}/report" method="POST" class="inline-form">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <select name="reason">
+                        <option value="spam">Spam</option>
+                        <option value="inappropriate">Inappropriate</option>
+                        <option value="spoiler">Spoiler</option>
+                    </select>
+                    <button type="submit" class="btn btn-tiny btn-danger">⚐ Report</button>
+                </form>
+            </div>
+            {% endif %}
+        </article>
+        {% else %}
+        <p class="empty">No audience reviews yet.</p>
+        {% endfor %}
+    </section>
+    {% else %}
+    <section class="reviews-list">
+        {% for r in critic_reviews %}
+            {% set is_top = top_lookup.get(r.critic_name, False) %}
+            {% if not (which == 'top_critics' and not is_top) %}
+            <article class="review-card {{ 'fresh' if r.fresh else 'rotten' }}">
+                <div class="review-icon">{% if r.fresh %}🍅{% else %}🟢{% endif %}</div>
+                <div class="review-content">
+                    <p class="review-text">{{ r.text }}</p>
+                    <div class="review-meta">
+                        <span class="reviewer-name">{{ r.critic_name }}</span>
+                        <span class="reviewer-pub">{{ r.publication }}</span>
+                        {% if is_top %}<span class="badge badge-top">Top Critic</span>{% endif %}
+                    </div>
+                </div>
+            </article>
+            {% endif %}
+        {% else %}
+        <p class="empty">No critic reviews yet.</p>
+        {% endfor %}
+    </section>
+    {% endif %}
+</div>
+{% endblock %}

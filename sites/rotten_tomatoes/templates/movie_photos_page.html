@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block title %}Photos — {{ movie.title }} | Rotten Tomatoes{% endblock %}
+{% block content %}
+<div class="photos-page">
+    <header class="movie-subnav">
+        <a href="/m/{{ movie.slug }}">{{ movie.title }}</a>
+        <span class="crumb-sep">›</span>
+        <span class="crumb">Photos</span>
+    </header>
+    <h1>{{ movie.title }} — Photos & Stills</h1>
+    <p class="lede">{{ photos|length }} photos.</p>
+
+    <div class="photo-grid">
+        {% for p in photos %}
+        <figure class="photo-tile">
+            <img src="{{ p.image }}" alt="{{ p.caption }}" loading="lazy" onerror="this.onerror=null;this.src='/static/icons/placeholder.png'">
+            <figcaption>{{ p.caption }}</figcaption>
+        </figure>
+        {% else %}
+        <p class="empty">No photos yet.</p>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

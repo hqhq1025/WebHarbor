@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block title %}{{ podcast.title }} | Rotten Tomatoes{% endblock %}
+{% block content %}
+<div class="podcast-detail">
+    <header class="podcast-header">
+        <img src="{{ podcast.image }}" alt="{{ podcast.title }}" class="podcast-cover" onerror="this.onerror=null;this.src='/static/icons/placeholder.png'">
+        <div class="podcast-meta">
+            <h1>{{ podcast.title }}</h1>
+            <p class="podcast-host">Hosted by {{ podcast.host }}</p>
+            <p>{{ podcast.description }}</p>
+            {% if current_user.is_authenticated %}
+            {% if subscribed %}
+            <form action="/podcasts/{{ podcast.slug }}/unsubscribe" method="POST" class="inline-form">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button type="submit" class="btn btn-outline">✓ Subscribed</button>
+            </form>
+            {% else %}
+            <form action="/podcasts/{{ podcast.slug }}/subscribe" method="POST" class="inline-form">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button type="submit" class="btn btn-primary">+ Subscribe</button>
+            </form>
+            {% endif %}
+            {% endif %}
+        </div>
+    </header>
+
+    <section class="episode-list">
+        <h2>Episodes ({{ episodes|length }})</h2>
+        {% for ep in episodes %}
+        <article class="episode-row">
+            <div class="ep-num">EP {{ ep.number }}</div>
+            <div class="ep-body">
+                <h3>{{ ep.title }}</h3>
+                <p>{{ ep.description }}</p>
+                <p class="ep-meta">{{ ep.duration_min }} min · Released {{ ep.published_at.strftime('%b %d, %Y') }}</p>
+            </div>
+        </article>
+        {% endfor %}
+    </section>
+</div>
+{% endblock %}

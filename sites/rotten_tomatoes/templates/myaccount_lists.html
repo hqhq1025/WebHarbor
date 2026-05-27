@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% block title %}My Lists | Rotten Tomatoes{% endblock %}
+{% block content %}
+<div class="myaccount-page">
+    <header class="myaccount-header">
+        <h1>My Lists</h1>
+        <nav class="myaccount-nav">
+            <a href="/account">Account</a>
+            <a href="/myaccount/want-to-see">Want to See</a>
+            <a href="/myaccount/watched">Watched</a>
+            <a href="/myaccount/follows">Critics Followed</a>
+            <a href="/myaccount/lists" class="active">My Lists</a>
+        </nav>
+    </header>
+
+    <section class="create-list">
+        <h2>Create a New List</h2>
+        <form action="/lists/create" method="POST" class="list-create-form">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <div class="form-group">
+                <label>Title</label>
+                <input type="text" name="title" required minlength="2" maxlength="200">
+            </div>
+            <div class="form-group">
+                <label>Description</label>
+                <textarea name="description" rows="2"></textarea>
+            </div>
+            <div class="form-group">
+                <label><input type="checkbox" name="is_public" value="1" checked> Public</label>
+            </div>
+            <button type="submit" class="btn btn-primary">Create List</button>
+        </form>
+    </section>
+
+    <section class="my-lists">
+        <h2>Your Lists ({{ lists|length }})</h2>
+        <ul class="list-list">
+            {% for l in lists %}
+            <li class="list-row">
+                <a href="/list/{{ l.slug }}">
+                    <h3>{{ l.title }}</h3>
+                    <p>{{ l.description }}</p>
+                    <p class="meta">{{ l.items|length }} movies{% if not l.is_public %} · Private{% endif %}</p>
+                </a>
+            </li>
+            {% else %}
+            <li class="empty">You haven't created any lists yet.</li>
+            {% endfor %}
+        </ul>
+    </section>
+</div>
+{% endblock %}

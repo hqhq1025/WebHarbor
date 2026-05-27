@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}Critics Followed | Rotten Tomatoes{% endblock %}
+{% block content %}
+<div class="myaccount-page">
+    <header class="myaccount-header">
+        <h1>Critics You Follow</h1>
+        <nav class="myaccount-nav">
+            <a href="/account">Account</a>
+            <a href="/myaccount/want-to-see">Want to See</a>
+            <a href="/myaccount/watched">Watched</a>
+            <a href="/myaccount/follows" class="active">Critics Followed</a>
+            <a href="/myaccount/lists">My Lists</a>
+        </nav>
+    </header>
+    <div class="critic-grid">
+        {% for c in critics %}
+        <a href="/critics/{{ c.slug }}" class="critic-card">
+            <div class="critic-icon">{% if c.top_critic %}🏅{% else %}🍅{% endif %}</div>
+            <div class="critic-name">{{ c.name }}</div>
+            <div class="critic-pub">{{ c.publication }}</div>
+        </a>
+        {% else %}
+        <p class="empty">You aren't following any critics yet.</p>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}
