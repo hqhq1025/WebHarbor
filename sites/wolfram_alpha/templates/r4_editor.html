@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% block title %}{{ r4_title }} — WolframAlpha Equation Editor{% endblock %}
+{% block body_class %}page-r4 page-r4-{{ r4_slug }}{% endblock %}
+{% block content %}
+<section class="wa-r4-editor wa-r4-{{ r4_slug }}">
+  <h1>{{ r4_title }}</h1>
+  <p class="wa-intro">{{ r4_intro }}</p>
+
+  <form class="wa-r4-formula-form" method="get" action="/editor/equation/preview">
+    <label for="r4-latex">LaTeX source</label>
+    <textarea id="r4-latex" name="latex" rows="3" class="wa-r4-latex-input">{{ r4_latex }}</textarea>
+    <input type="hidden" name="mode" value="{{ r4_mode }}">
+    <button class="wa-r4-preview-btn" type="submit">Preview</button>
+    <a class="wa-r4-export-link" href="/editor/equation/export?latex={{ r4_latex|urlencode }}&fmt=png">Export PNG</a>
+    <a class="wa-r4-export-link" href="/editor/equation/export?latex={{ r4_latex|urlencode }}&fmt=tex">Export .tex</a>
+  </form>
+
+  <h2>Parsed form</h2>
+  <pre class="wa-r4-parsed">{{ r4_parsed }}</pre>
+
+  <h2>Rendered preview</h2>
+  <div class="wa-r4-render" data-latex="{{ r4_latex }}">
+    <svg viewBox="0 0 320 80" width="320" height="80" xmlns="http://www.w3.org/2000/svg"
+         class="wa-r4-render-svg">
+      <rect width="320" height="80" fill="#fafafa"/>
+      <text x="12" y="50" font-family="Cambria, serif" font-size="22"
+            fill="#222">{{ r4_render_text }}</text>
+    </svg>
+  </div>
+
+  {% if r4_step_pods %}
+  <h2>Step-by-step ({{ r4_step_pods|length }} steps)</h2>
+  <ol class="wa-r4-steps">
+    {% for sp in r4_step_pods %}
+      <li class="wa-r4-step {% if sp.locked %}wa-r4-step-locked{% endif %}">
+        <strong>{{ sp.title }}</strong>
+        {% if sp.locked %}
+          <span class="wa-r4-lock-badge">Pro</span>
+          <a class="wa-r4-paywall-link" href="/pro/paywall/preview?from={{ r4_slug }}&step={{ loop.index }}">Unlock</a>
+        {% else %}
+          <pre class="wa-r4-step-body">{{ sp.body }}</pre>
+        {% endif %}
+      </li>
+    {% endfor %}
+  </ol>
+  {% endif %}
+
+  <p class="wa-meta">
+    Snapshot: <code>{{ r4_snapshot }}</code>.
+    Mode: <code>{{ r4_mode }}</code>.
+    Build: <code>r4</code>.
+  </p>
+
+  <p class="wa-related">
+    See <a href="/pro/features">Pro features</a>,
+    <a href="/pro/pricing">pricing</a>,
+    <a href="/step-by-step/{{ r4_demo_cr_id }}">demo step-by-step ({{ r4_demo_cr_id }})</a>.
+  </p>
+</section>
+{% endblock %}

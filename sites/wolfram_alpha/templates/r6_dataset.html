@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% block title %}{{ r6_title }} — WolframAlpha Datasets{% endblock %}
+{% block body_class %}page-r6 page-r6-{{ r6_slug }}{% endblock %}
+{% block content %}
+<section class="wa-r6-dataset wa-r6-{{ r6_slug }}">
+  <h1>{{ r6_title }}</h1>
+  <p class="wa-intro">{{ r6_intro }}</p>
+
+  <ul class="wa-r6-meta">
+    <li><strong>slug</strong> = <code>{{ r6_slug }}</code></li>
+    <li><strong>rows</strong> = <code>{{ r6_rows_count }}</code></li>
+    <li><strong>columns</strong> = <code>{{ r6_columns|join(', ') }}</code></li>
+    <li><strong>snapshot</strong> = <code>{{ r6_snapshot }}</code></li>
+    <li><strong>license</strong> = <code>{{ r6_license }}</code></li>
+  </ul>
+
+  <h2>Sample rows</h2>
+  <table class="wa-r6-table">
+    <thead>
+      <tr>{% for c in r6_columns %}<th>{{ c }}</th>{% endfor %}</tr>
+    </thead>
+    <tbody>
+      {% for row in r6_rows %}
+        <tr>{% for v in row %}<td>{{ v }}</td>{% endfor %}</tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <h2>Query</h2>
+  <form class="wa-r6-query-form" method="get" action="/datasets/{{ r6_slug }}/query">
+    <label for="r6-q">WL-style query (Filter / Select / Sort)</label>
+    <textarea id="r6-q" name="q" rows="2" class="wa-r6-query-input">{{ r6_query_demo }}</textarea>
+    <button class="wa-r6-query-btn" type="submit">Run</button>
+  </form>
+  {% if r6_query_result is not none %}
+    <pre class="wa-r6-query-result">{{ r6_query_result }}</pre>
+  {% endif %}
+
+  <h2>Visualizations</h2>
+  <div class="wa-r6-viz-links">
+    <a class="wa-r6-viz-link" href="/datasets/{{ r6_slug }}/viz/histogram?col={{ r6_default_col }}">Histogram of {{ r6_default_col }}</a>
+    <a class="wa-r6-viz-link" href="/datasets/{{ r6_slug }}/viz/scatter?x={{ r6_columns[0] }}&y={{ r6_default_col }}">Scatter {{ r6_columns[0] }} vs {{ r6_default_col }}</a>
+  </div>
+
+  {% if r6_chart_svg %}
+    <div class="wa-r6-viz-rendered">{{ r6_chart_svg|safe }}</div>
+  {% endif %}
+
+  <p class="wa-related">
+    <a class="wa-r6-download-link" href="/datasets/{{ r6_slug }}/download.csv">Download CSV</a> ·
+    <a href="/datasets">Dataset catalog</a> ·
+    <a href="/data-drop/upload">Upload your own</a>
+  </p>
+</section>
+{% endblock %}

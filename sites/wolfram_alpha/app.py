@@ -4301,6 +4301,837 @@ def r3_sitemap_xml():
 # === R2-R3 backfill END ===
 
 
+# === R4-R5-R6 backfill BEGIN — auto-generated, do not hand-edit between markers ===
+# Added 2026-05-27 to backfill the R4 (formula editor + step-by-step + Pro
+# paywall), R5 (Mathematica .nb notebook + executable cells + share), and
+# R6 (curated datasets + tabular query + visualization) surfaces flagged
+# missing by the verify subagent. APPEND-ONLY, no DB writes -- instance_seed/
+# md5 unchanged; routes are net-new (none shadow R7-R10 verticals).
+
+# ---------------------------------------------------------------------------
+# R4 backfill: equation editor + step-by-step deriver + Pro paywall sim
+# ---------------------------------------------------------------------------
+R4_VERSION = 'r4'
+R4_SNAPSHOT_DATE = '2026-05-27'
+
+_R4_FORMULA_SAMPLES = {
+    'derivative-x2':   ('d/dx x^2', 'Derivative[Power[x, 2], x]',     '2 x'),
+    'integral-sin':    ('int sin(x) dx', 'Integrate[Sin[x], x]',      '-cos(x) + C'),
+    'taylor-cos':      ('taylor cos(x) at 0', 'Series[Cos[x], {x,0,4}]',
+                        '1 - x^2/2 + x^4/24 + O(x^6)'),
+    'quadratic-roots': ('solve x^2-5x+6=0', 'Solve[x^2-5x+6==0, x]',  'x = 2 or x = 3'),
+    'matrix-inv-2x2':  ('inverse {{a,b},{c,d}}', 'Inverse[{{a,b},{c,d}}]',
+                        '1/(a d - b c) * {{d,-b},{-c,a}}'),
+    'limit-sinx-x':    ('lim x->0 sin(x)/x', 'Limit[Sin[x]/x, x->0]', '1'),
+    'series-geom':     ('sum_{k=0}^infty r^k', 'Sum[r^k, {k,0,Infinity}]',
+                        '1/(1 - r)  (|r| < 1)'),
+    'fourier-rect':    ('fourier rect pulse', 'FourierTransform[Rect[t], t, w]',
+                        'sinc(w/2)'),
+    'eigen-2x2':       ('eigenvalues {{2,1},{1,2}}', 'Eigenvalues[{{2,1},{1,2}}]',
+                        '{3, 1}'),
+    'ode-decay':       ("solve y'+ky=0", "DSolve[y'[t]+k y[t]==0, y[t], t]",
+                        'y(t) = C1 e^{-k t}'),
+}
+
+_R4_PRO_TIERS = [
+    ('pro-monthly',  'WolframAlpha Pro (monthly)',  7.25,  'monthly'),
+    ('pro-yearly',   'WolframAlpha Pro (yearly)',   60.0,  'yearly'),
+    ('pro-student',  'Pro Student',                 4.75,  'monthly'),
+    ('pro-edu',      'Pro for Educators',           9.99,  'monthly'),
+    ('pro-premium',  'Pro Premium',                 14.99, 'monthly'),
+]
+
+
+def _r4_parse_latex(src):
+    s = (src or '').strip()
+    if s.startswith('\\int '): return 'Integrate[' + s[5:].rstrip(' dx') + ', x]'
+    if s.startswith('\\sum '): return 'Sum[' + s[5:] + ', k]'
+    if s.startswith('\\frac{d}{dx}'): return 'Derivative[' + s[12:] + ', x]'
+    if s.startswith('\\lim_'): return 'Limit[' + s[6:] + ', x->0]'
+    return 'Hold[' + s + ']'
+
+
+def _r4_steps_for(slug, is_pro):
+    sample = _R4_FORMULA_SAMPLES.get(slug)
+    if not sample:
+        h = int(hashlib.md5(slug.encode()).hexdigest(), 16)
+        depth = 3 + (h % 3)
+        steps = []
+        for i in range(depth):
+            steps.append({
+                'title': 'Step ' + str(i + 1),
+                'body':  'Transform stage ' + str(i + 1) + ' for ' + repr(slug) + '.',
+                'locked': (not is_pro) and (i >= 1),
+            })
+        return steps
+    _, parsed, result = sample
+    return [
+        {'title': 'Step 1 (rewrite)',
+         'body':  'Rewrite input as canonical form: ' + parsed,
+         'locked': False},
+        {'title': 'Step 2 (apply rule)',
+         'body':  'Apply standard rule for ' + slug + '.',
+         'locked': not is_pro},
+        {'title': 'Step 3 (simplify)',
+         'body':  'Simplify to: ' + result,
+         'locked': not is_pro},
+        {'title': 'Step 4 (verify)',
+         'body':  'Verify: substituting back yields the original form.',
+         'locked': not is_pro},
+    ]
+
+
+# ---- R4 (1) Equation editor ---------------------------------------------
+@app.route('/editor/equation')
+def r4_editor_equation():
+    slug = (request.args.get('slug', 'derivative-x2') or 'derivative-x2').strip().lower()
+    sample = _R4_FORMULA_SAMPLES.get(slug, _R4_FORMULA_SAMPLES['derivative-x2'])
+    latex_text, parsed, _result = sample
+    is_pro = current_user.is_authenticated and getattr(current_user, 'is_pro', False)
+    step_pods = _r4_steps_for(slug, is_pro)
+    _r8_emit('r4.editor.opened', 'equation-editor-formula-input',
+             slug=slug, is_pro=int(is_pro))
+    if request.args.get('format') == 'json':
+        return jsonify({'slug': slug, 'latex': latex_text, 'parsed': parsed,
+                        'steps': step_pods, 'is_pro': bool(is_pro),
+                        'snapshot_date': R4_SNAPSHOT_DATE,
+                        'schema': 'wa-equation-editor-v1', 'version': R4_VERSION})
+    return render_template('r4_editor.html',
+                           r4_slug=slug, r4_title='Equation Editor',
+                           r4_intro='Compose, render, and step through a formula in LaTeX.',
+                           r4_latex=latex_text, r4_mode='latex',
+                           r4_parsed=parsed, r4_render_text=latex_text,
+                           r4_step_pods=step_pods,
+                           r4_snapshot=R4_SNAPSHOT_DATE,
+                           r4_demo_cr_id=2)
+
+
+# ---- R4 (2) Equation preview --------------------------------------------
+@app.route('/editor/equation/preview')
+def r4_editor_preview():
+    latex = (request.args.get('latex', '') or '').strip()
+    mode = (request.args.get('mode', 'latex') or 'latex').strip().lower()
+    parsed = _r4_parse_latex(latex)
+    h = int(hashlib.md5((latex + '|' + mode).encode()).hexdigest(), 16)
+    width  = 200 + (h % 240)
+    height = 60 + (h // 7 % 60)
+    if request.args.get('format') == 'json':
+        return jsonify({'latex': latex, 'parsed': parsed, 'mode': mode,
+                        'width_px': width, 'height_px': height,
+                        'snapshot_date': R4_SNAPSHOT_DATE,
+                        'schema': 'wa-equation-preview-v1', 'version': R4_VERSION})
+    _r8_emit('r4.editor.preview', 'equation-editor-preview-render',
+             mode=mode, length=len(latex))
+    return render_template('r4_editor.html',
+                           r4_slug='preview', r4_title='Equation Preview',
+                           r4_intro='Live render + parsed-input preview for an arbitrary LaTeX source.',
+                           r4_latex=latex or 'd/dx x^2', r4_mode=mode,
+                           r4_parsed=parsed,
+                           r4_render_text=latex or 'd/dx x^2',
+                           r4_step_pods=[],
+                           r4_snapshot=R4_SNAPSHOT_DATE,
+                           r4_demo_cr_id=2)
+
+
+# ---- R4 (3) Equation export ---------------------------------------------
+@app.route('/editor/equation/export')
+def r4_editor_export():
+    latex = (request.args.get('latex', '') or '').strip()
+    fmt = (request.args.get('fmt', 'png') or 'png').strip().lower()
+    if fmt not in ('png', 'svg', 'tex', 'mml'):
+        fmt = 'png'
+    h = hashlib.md5((latex + '|' + fmt).encode()).hexdigest()[:12]
+    parsed = _r4_parse_latex(latex)
+    _r8_emit('r4.editor.export', 'equation-editor-export-asset',
+             fmt=fmt, latex_len=len(latex))
+    if fmt == 'tex':
+        body = ('% wa-equation-export v1 (' + R4_SNAPSHOT_DATE + ')\n'
+                '% sha-prefix: ' + h + '\n'
+                '\\begin{equation}\n' + (latex or 'x^2') + '\n\\end{equation}\n'
+                '% parsed: ' + parsed + '\n')
+        return Response(body, mimetype='text/x-tex')
+    if fmt == 'svg':
+        svg = ('<svg viewBox="0 0 200 60" xmlns="http://www.w3.org/2000/svg">'
+               '<rect width="200" height="60" fill="#fafafa"/>'
+               '<text x="8" y="38" font-family="serif" font-size="20">'
+               + (latex or 'x^2')[:40] + '</text></svg>')
+        return Response(svg, mimetype='image/svg+xml')
+    return jsonify({'latex': latex, 'fmt': fmt, 'parsed': parsed,
+                    'asset_id': h, 'snapshot_date': R4_SNAPSHOT_DATE,
+                    'schema': 'wa-equation-export-v1', 'version': R4_VERSION})
+
+
+# ---- R4 (4) Derive step-by-step -----------------------------------------
+@app.route('/step-by-step/derive/<int:cr_id>')
+def r4_step_derive(cr_id):
+    comp = db.session.get(ComputationResult, cr_id)
+    if not comp:
+        abort(404)
+    slug = comp.topic_slug or 'derivative-x2'
+    is_pro = current_user.is_authenticated and getattr(current_user, 'is_pro', False)
+    steps = _r4_steps_for(slug, is_pro)
+    _r8_emit('r4.stepbystep.derived', 'step-by-step-derivation',
+             cr_id=cr_id, is_pro=int(is_pro))
+    if request.args.get('format') == 'json':
+        return jsonify({'cr_id': cr_id, 'slug': slug, 'is_pro': bool(is_pro),
+                        'steps': steps, 'snapshot_date': R4_SNAPSHOT_DATE,
+                        'schema': 'wa-derive-stepbystep-v1', 'version': R4_VERSION})
+    return render_template('r4_editor.html',
+                           r4_slug=slug, r4_title='Derive: ' + str(comp.input_query),
+                           r4_intro=('Show full derivation steps for this '
+                                     'computation result.'),
+                           r4_latex=comp.input_query or 'x^2',
+                           r4_mode='derive',
+                           r4_parsed=comp.parsed_input or comp.input_query,
+                           r4_render_text=comp.input_query or 'x^2',
+                           r4_step_pods=steps,
+                           r4_snapshot=R4_SNAPSHOT_DATE,
+                           r4_demo_cr_id=cr_id)
+
+
+# ---- R4 (5) Walkthrough --------------------------------------------------
+@app.route('/step-by-step/walkthrough/<int:cr_id>')
+def r4_step_walkthrough(cr_id):
+    comp = db.session.get(ComputationResult, cr_id)
+    if not comp:
+        abort(404)
+    is_pro = current_user.is_authenticated and getattr(current_user, 'is_pro', False)
+    try:
+        idx = int(request.args.get('i', '1'))
+    except (TypeError, ValueError):
+        idx = 1
+    steps = _r4_steps_for(comp.topic_slug or 'derivative-x2', is_pro)
+    idx = max(1, min(len(steps), idx))
+    cur = steps[idx - 1]
+    payload = {'cr_id': cr_id, 'step_index': idx, 'step_count': len(steps),
+               'title': cur['title'], 'body': cur['body'],
+               'locked': cur['locked'], 'is_pro': bool(is_pro),
+               'next': '/step-by-step/walkthrough/' + str(cr_id) + '?i=' + str(min(idx + 1, len(steps))),
+               'prev': '/step-by-step/walkthrough/' + str(cr_id) + '?i=' + str(max(idx - 1, 1)),
+               'snapshot_date': R4_SNAPSHOT_DATE,
+               'schema': 'wa-step-walkthrough-v1', 'version': R4_VERSION}
+    _r8_emit('r4.stepbystep.walkthrough', 'step-by-step-walkthrough',
+             cr_id=cr_id, idx=idx)
+    if request.args.get('format') == 'json':
+        return jsonify(payload)
+    return render_template('r4_editor.html',
+                           r4_slug='walkthrough-' + str(cr_id),
+                           r4_title='Walkthrough step ' + str(idx) + '/' + str(len(steps)),
+                           r4_intro=('Step-at-a-time walkthrough of a '
+                                     'derivation; next/prev to advance.'),
+                           r4_latex=comp.input_query or 'x^2',
+                           r4_mode='walkthrough',
+                           r4_parsed=cur['title'],
+                           r4_render_text=cur['body'],
+                           r4_step_pods=steps,
+                           r4_snapshot=R4_SNAPSHOT_DATE,
+                           r4_demo_cr_id=cr_id)
+
+
+# ---- R4 (6) Pro paywall preview -----------------------------------------
+@app.route('/pro/paywall/preview')
+def r4_pro_paywall_preview():
+    src = (request.args.get('from', 'derivative-x2') or 'derivative-x2').strip().lower()
+    step = request.args.get('step', '2')
+    tiers = [{'slug': s, 'name': n, 'price': p, 'cycle': c}
+             for (s, n, p, c) in _R4_PRO_TIERS]
+    payload = {'paywall_id': hashlib.md5((src + '|' + step).encode()).hexdigest()[:10],
+               'from': src, 'step': step, 'tiers': tiers,
+               'unlocked_count': 1, 'locked_count': 3,
+               'cta_url': '/pro/checkout?tier=pro-monthly&from=' + src,
+               'snapshot_date': R4_SNAPSHOT_DATE,
+               'schema': 'wa-pro-paywall-v1', 'version': R4_VERSION}
+    _r8_emit('r4.paywall.shown', 'pro-paywall-preview-modal',
+             src=src, step=step)
+    if request.args.get('format') == 'json':
+        return jsonify(payload)
+    rows = [(k, payload[k]) for k in sorted(payload) if k not in ('schema', 'tiers')]
+    return render_template('r10/vertical.html',
+        r10_slug='pro-paywall', r10_title='Pro Paywall Preview',
+        r10_intro='Simulated paywall modal showing locked steps + tier choices.',
+        r10_params=[('from', src), ('step', step)],
+        r10_parsed_input='ProPaywall[from=' + repr(src) + ', step=' + repr(step) + ']',
+        r10_plaintext=('Paywall on step ' + str(step) + ': 1 of '
+                       + str(payload['unlocked_count'] + payload['locked_count'])
+                       + ' steps unlocked; sign in to Pro to view the remaining '
+                       + str(payload['locked_count']) + '.'),
+        r10_pod_title='Paywall', r10_payload_rows=rows,
+        r10_schema=payload['schema'], r10_version=R4_VERSION,
+        r10_related=['Pro features', 'Pro pricing',
+                     'Step-by-step locked example'],
+        r10_topic_slug='pro-paywall-preview-modal')
+
+
+# ---- R4 (7) Pro checkout sim --------------------------------------------
+@app.route('/pro/checkout', methods=['GET', 'POST'])
+def r4_pro_checkout():
+    tier = (request.values.get('tier', 'pro-monthly') or 'pro-monthly').strip().lower()
+    src = (request.values.get('from', 'editor') or 'editor').strip().lower()
+    selected = next((t for t in _R4_PRO_TIERS if t[0] == tier), _R4_PRO_TIERS[0])
+    payload = {'tier': selected[0], 'name': selected[1],
+               'price_usd': selected[2], 'cycle': selected[3],
+               'from': src,
+               'cart_id': hashlib.md5((tier + '|' + src).encode()).hexdigest()[:10],
+               'estimated_tax_usd': round(selected[2] * 0.08, 2),
+               'total_usd': round(selected[2] * 1.08, 2),
+               'snapshot_date': R4_SNAPSHOT_DATE,
+               'schema': 'wa-pro-checkout-v1', 'version': R4_VERSION}
+    _r8_emit('r4.paywall.checkout', 'pro-paywall-checkout-sim',
+             tier=tier, src=src)
+    if request.method == 'POST' or request.args.get('format') == 'json':
+        return jsonify(payload)
+    rows = [(k, payload[k]) for k in sorted(payload) if k not in ('schema',)]
+    return render_template('r10/vertical.html',
+        r10_slug='pro-checkout', r10_title='Pro Checkout (sim)',
+        r10_intro='Simulated Pro checkout summary, not a real purchase flow.',
+        r10_params=[('tier', tier), ('from', src)],
+        r10_parsed_input='ProCheckout[tier=' + repr(tier) + ', from=' + repr(src) + ']',
+        r10_plaintext=('Cart for ' + selected[1] + ' at $' + str(selected[2])
+                       + ' / ' + selected[3] + '; estimated total $'
+                       + str(payload['total_usd']) + ' including 8% tax.'),
+        r10_pod_title='Checkout', r10_payload_rows=rows,
+        r10_schema=payload['schema'], r10_version=R4_VERSION,
+        r10_related=['Pro features', 'Pro pricing',
+                     'Step-by-step paywall examples'],
+        r10_topic_slug='pro-paywall-checkout-sim')
+
+
+# ---------------------------------------------------------------------------
+# R5 backfill: Mathematica .nb notebook container + executable cells + share
+# ---------------------------------------------------------------------------
+R5_VERSION = 'r5'
+R5_SNAPSHOT_DATE = '2026-05-27'
+_R5_KERNEL_DEFAULT = 'WolframKernel-14.1'
+
+_R5_NB_TEMPLATES = {
+    'starter-calculus':     ('Starter: calculus walkthrough',
+                             ['D[x^2, x]', 'Integrate[Sin[x], x]', 'Limit[Sin[x]/x, x->0]']),
+    'starter-linalg':       ('Starter: linear algebra',
+                             ['Inverse[{{1,2},{3,4}}]',
+                              'Eigenvalues[{{2,1},{1,2}}]',
+                              'NullSpace[{{1,2,3},{2,4,6}}]']),
+    'starter-stats':        ('Starter: statistics',
+                             ['Mean[{1,2,3,4,5}]', 'Variance[{1,2,3,4,5}]',
+                              'Quantile[{1,2,3,4,5,6,7,8,9,10}, 0.75]']),
+    'demo-ode':             ('Demo: ODE solver',
+                             ["DSolve[y'[t]+y[t]==0, y[t], t]",
+                              "NDSolve[{y'[t]==-y[t], y[0]==1}, y, {t,0,5}]"]),
+    'demo-units':           ('Demo: unit conversion',
+                             ['Convert[100 mph, kph]',
+                              'Convert[1 atm, Pa]',
+                              'Convert[6 ft, m]']),
+    'tutorial-pattern':     ('Tutorial: pattern matching',
+                             ['{1,2,3,4,5} /. x_ /; x>2 -> "big"',
+                              'Cases[{a, 1, b, 2}, _Integer]',
+                              'Replace[f[x,y], f[a_,b_]->a+b]']),
+    'tutorial-plot':        ('Tutorial: plotting',
+                             ['Plot[Sin[x], {x,0,2 Pi}]',
+                              'ListPlot[Range[10]]',
+                              'ContourPlot[x^2+y^2, {x,-2,2}, {y,-2,2}]']),
+}
+
+
+def _r5_cells_for(template):
+    label, srcs = _R5_NB_TEMPLATES.get(template, _R5_NB_TEMPLATES['starter-calculus'])
+    cells = []
+    for i, src in enumerate(srcs):
+        h = int(hashlib.md5((template + '|' + src).encode()).hexdigest(), 16)
+        cells.append({
+            'id': i + 1,
+            'kind': 'code',
+            'label': 'In[' + str(i + 1) + ']',
+            'src': src,
+            'out': '(* result-' + ('%04d' % (h % 9999)) + ' *)',
+        })
+        cells.append({
+            'id': len(cells) + 1,
+            'kind': 'markdown',
+            'label': 'Note',
+            'src': 'Result above is a deterministic snapshot of `' + src + '`.',
+            'out': '',
+        })
+    return label, cells
+
+
+# ---- R5 (1) Mathematica-style notebook create ----------------------------
+@app.route('/nb/create-mathematica', methods=['GET', 'POST'])
+def r5_nb_create_mathematica():
+    template = (request.values.get('template', 'starter-calculus')
+                or 'starter-calculus').strip().lower()
+    label, cells = _r5_cells_for(template)
+    nb_id = (int(hashlib.md5(template.encode()).hexdigest(), 16) % 9000) + 1000
+    payload = {'nb_id': nb_id, 'template': template, 'label': label,
+               'cells': cells, 'kernel': _R5_KERNEL_DEFAULT,
+               'format': 'mathematica-nb',
+               'snapshot_date': R5_SNAPSHOT_DATE,
+               'schema': 'wa-nb-mathematica-v1', 'version': R5_VERSION}
+    _r8_emit('r5.nb.created', 'mathematica-notebook-create',
+             template=template, cells=len(cells))
+    if request.args.get('format') == 'json':
+        return jsonify(payload)
+    return render_template('r5_notebook_mathematica.html',
+                           r5_slug='create-' + template, r5_title=label,
+                           r5_intro=('A Mathematica-style notebook seeded from a '
+                                     'template; every code cell is evaluatable.'),
+                           r5_nb_id=nb_id, r5_format='mathematica-nb',
+                           r5_kernel=_R5_KERNEL_DEFAULT,
+                           r5_snapshot=R5_SNAPSHOT_DATE,
+                           r5_cells=cells, r5_share_token=None)
+
+
+# ---- R5 (2) Cell detail --------------------------------------------------
+@app.route('/nb/<int:nb_id>/cell/<int:cell_id>')
+def r5_nb_cell(nb_id, cell_id):
+    template = request.args.get('template', 'starter-calculus')
+    label, cells = _r5_cells_for(template)
+    cell = next((c for c in cells if c['id'] == cell_id), None)
+    if not cell:
+        abort(404)
+    payload = {'nb_id': nb_id, 'cell_id': cell_id, 'template': template,
+               'cell': cell, 'snapshot_date': R5_SNAPSHOT_DATE,
+               'schema': 'wa-nb-cell-v1', 'version': R5_VERSION}
+    _r8_emit('r5.nb.cell.viewed', 'mathematica-notebook-cell-detail',
+             nb_id=nb_id, cell_id=cell_id)
+    if request.args.get('format') == 'json':
+        return jsonify(payload)
+    return render_template('r5_notebook_mathematica.html',
+                           r5_slug='nb-' + str(nb_id) + '-cell-' + str(cell_id),
+                           r5_title='Cell ' + str(cell_id) + ' in nb ' + str(nb_id),
+                           r5_intro='Single-cell view of cell ' + str(cell_id) + '.',
+                           r5_nb_id=nb_id, r5_format='mathematica-nb',
+                           r5_kernel=_R5_KERNEL_DEFAULT,
+                           r5_snapshot=R5_SNAPSHOT_DATE,
+                           r5_cells=[cell], r5_share_token=None)
+
+
+# ---- R5 (3) Evaluate cell ------------------------------------------------
+@app.route('/nb/<int:nb_id>/cell/<int:cell_id>/evaluate', methods=['POST', 'GET'])
+def r5_nb_cell_evaluate(nb_id, cell_id):
+    template = request.values.get('template', 'starter-calculus')
+    src_override = request.values.get('src')
+    label, cells = _r5_cells_for(template)
+    cell = next((c for c in cells if c['id'] == cell_id), None)
+    if not cell:
+        abort(404)
+    src = src_override or cell['src']
+    h = int(hashlib.md5((str(nb_id) + '|' + str(cell_id) + '|' + src).encode()).hexdigest(), 16)
+    result = 'Out[' + str(cell_id) + '] = sim-' + ('%05d' % (h % 99999))
+    payload = {'nb_id': nb_id, 'cell_id': cell_id, 'src': src,
+               'kernel': _R5_KERNEL_DEFAULT, 'result': result,
+               'elapsed_ms': 4 + (h % 30),
+               'snapshot_date': R5_SNAPSHOT_DATE,
+               'schema': 'wa-nb-evaluate-v1', 'version': R5_VERSION}
+    _r8_emit('r5.nb.cell.evaluated', 'mathematica-notebook-cell-evaluate',
+             nb_id=nb_id, cell_id=cell_id)
+    return jsonify(payload)
+
+
+# ---- R5 (4) Share notebook -----------------------------------------------
+@app.route('/nb/<int:nb_id>/share', methods=['POST', 'GET'])
+def r5_nb_share(nb_id):
+    audience = (request.values.get('audience', 'link') or 'link').strip().lower()
+    template = request.values.get('template', 'starter-calculus')
+    token = hashlib.md5(('nb-share|' + str(nb_id) + '|' + audience + '|' + template).encode()).hexdigest()[:12]
+    payload = {'nb_id': nb_id, 'audience': audience, 'template': template,
+               'share_token': token,
+               'share_url': '/nb/share/' + token,
+               'expires_at': '2026-08-25 12:00:00',
+               'snapshot_date': R5_SNAPSHOT_DATE,
+               'schema': 'wa-nb-share-v1', 'version': R5_VERSION}
+    _r8_emit('r5.nb.shared', 'mathematica-notebook-share-link',
+             nb_id=nb_id, audience=audience)
+    if request.args.get('format') == 'json':
+        return jsonify(payload)
+    label, cells = _r5_cells_for(template)
+    return render_template('r5_notebook_mathematica.html',
+                           r5_slug='nb-' + str(nb_id) + '-share',
+                           r5_title='Share notebook ' + str(nb_id),
+                           r5_intro='Created a ' + audience + '-scope share link.',
+                           r5_nb_id=nb_id, r5_format='mathematica-nb',
+                           r5_kernel=_R5_KERNEL_DEFAULT,
+                           r5_snapshot=R5_SNAPSHOT_DATE,
+                           r5_cells=cells, r5_share_token=token)
+
+
+# ---- R5 (5) View shared notebook ----------------------------------------
+@app.route('/nb/share/<token>')
+def r5_nb_share_view(token):
+    h = int(hashlib.md5(token.encode()).hexdigest(), 16)
+    template_keys = list(_R5_NB_TEMPLATES.keys())
+    template = template_keys[h % len(template_keys)]
+    label, cells = _r5_cells_for(template)
+    nb_id = 9000 + (h % 999)
+    payload = {'share_token': token, 'template': template, 'label': label,
+               'cell_count': len(cells), 'nb_id': nb_id,
+               'snapshot_date': R5_SNAPSHOT_DATE,
+               'schema': 'wa-nb-share-view-v1', 'version': R5_VERSION}
+    _r8_emit('r5.nb.share.viewed', 'mathematica-notebook-share-view',
+             token=token, template=template)
+    if request.args.get('format') == 'json':
+        return jsonify(payload)
+    return render_template('r5_notebook_mathematica.html',
+                           r5_slug='share-' + token,
+                           r5_title='Shared: ' + label,
+                           r5_intro=('Read-only view of a notebook shared via '
+                                     'a tokenized link.'),
+                           r5_nb_id=nb_id, r5_format='mathematica-nb',
+                           r5_kernel=_R5_KERNEL_DEFAULT,
+                           r5_snapshot=R5_SNAPSHOT_DATE,
+                           r5_cells=cells, r5_share_token=token)
+
+
+# ---- R5 (6) Export .nb file ---------------------------------------------
+@app.route('/nb/<int:nb_id>/export-nb')
+def r5_nb_export_nb(nb_id):
+    template = request.args.get('template', 'starter-calculus')
+    label, cells = _r5_cells_for(template)
+    lines = [
+        '(* Content-type: application/vnd.wolfram.mathematica *)',
+        '(* Wolfram Notebook File *)',
+        '(* https://www.wolfram.com/nb *)',
+        '(* CreatedBy=WolframAlpha mirror ' + R5_VERSION + ' *)',
+        '(* nb_id=' + str(nb_id) + ' *)',
+        '(* template=' + template + ' *)',
+        '(* snapshot=' + R5_SNAPSHOT_DATE + ' *)',
+        'Notebook[{',
+    ]
+    for c in cells:
+        kind = 'Input' if c['kind'] == 'code' else 'Text'
+        body = (c['src'] or '').replace('"', '\\"')
+        lines.append('  Cell[BoxData["' + body + '"], "' + kind + '"],')
+    lines.append('}]')
+    _r8_emit('r5.nb.export', 'mathematica-notebook-export-nb',
+             nb_id=nb_id, template=template)
+    return Response('\n'.join(lines), mimetype='application/vnd.wolfram.mathematica')
+
+
+# ---- R5 (7) Notebook templates gallery ----------------------------------
+@app.route('/nb/templates')
+def r5_nb_templates():
+    rows = [{'slug': k, 'label': v[0], 'cell_count': len(v[1]) * 2}
+            for k, v in _R5_NB_TEMPLATES.items()]
+    payload = {'templates': rows, 'count': len(rows),
+               'snapshot_date': R5_SNAPSHOT_DATE,
+               'schema': 'wa-nb-templates-v1', 'version': R5_VERSION}
+    _r8_emit('r5.nb.templates.listed', 'mathematica-notebook-templates-gallery',
+             count=len(rows))
+    if request.args.get('format') == 'json':
+        return jsonify(payload)
+    rows_kv = [(r['slug'], r['label'] + ' (' + str(r['cell_count']) + ' cells)') for r in rows]
+    return render_template('r10/vertical.html',
+        r10_slug='nb-templates', r10_title='Notebook Templates',
+        r10_intro='Gallery of starter notebook templates (Mathematica .nb compatible).',
+        r10_params=[('count', len(rows))],
+        r10_parsed_input='NotebookTemplates[]',
+        r10_plaintext=str(len(rows)) + ' notebook templates available.',
+        r10_pod_title='Templates', r10_payload_rows=rows_kv,
+        r10_schema=payload['schema'], r10_version=R5_VERSION,
+        r10_related=['Create a notebook', 'Notebook share',
+                     'Notebook export .nb'],
+        r10_topic_slug='mathematica-notebook-templates-gallery')
+
+
+# ---------------------------------------------------------------------------
+# R6 backfill: curated datasets + tabular query + visualization
+# ---------------------------------------------------------------------------
+R6_VERSION = 'r6'
+R6_SNAPSHOT_DATE = '2026-05-27'
+
+_R6_DATASETS = {
+    'world-population-2024':   (250, ['country', 'population_m', 'gdp_b_usd', 'area_km2'],
+                                'CC-BY-4.0', 'Curated 2024 country totals.'),
+    'planet-orbital-params':   (8,   ['planet', 'au', 'period_yr', 'mass_earth'],
+                                'CC0', 'Snapshot of solar-system orbital parameters.'),
+    'periodic-table':          (118, ['symbol', 'atomic_number', 'mass_amu', 'group'],
+                                'CC0', 'Curated periodic-table snapshot.'),
+    'sp500-snapshot-2026q1':   (500, ['ticker', 'cap_b_usd', 'pe_ratio', 'div_pct'],
+                                'CC-BY-4.0', 'S&P 500 snapshot 2026 Q1.'),
+    'us-city-demographics':    (300, ['city', 'pop_k', 'median_inc_k', 'area_km2'],
+                                'CC-BY-4.0', 'US city demographic snapshot.'),
+    'world-airport-codes':     (5000, ['iata', 'lat', 'lon', 'elev_ft'],
+                                'CC-BY-4.0', 'World airport IATA codes + geo.'),
+    'covid-cases-2020-2024':   (1825, ['date', 'cases_k', 'deaths_k', 'tests_m'],
+                                'CC-BY-4.0', 'Daily worldwide COVID totals 2020-2024.'),
+    'movies-imdb-top-1000':    (1000, ['title', 'year', 'rating', 'votes_k'],
+                                'IMDb-non-commercial', 'IMDb top 1000 snapshot.'),
+    'olympic-medals-1896-2024':(750, ['country', 'gold', 'silver', 'bronze'],
+                                'CC-BY-4.0', 'Olympic medal totals by country.'),
+    'global-volcanoes':        (1500, ['name', 'lat', 'lon', 'elev_m'],
+                                'CC-BY-4.0', 'Catalog of global volcanoes.'),
+    'us-zip-codes':            (40000, ['zip', 'lat', 'lon', 'pop_k'],
+                                'CC-BY-4.0', 'US ZIP code snapshot.'),
+    'currency-exchange-2026':  (180, ['code', 'rate_to_usd', 'rate_to_eur', 'rate_to_jpy'],
+                                'CC-BY-4.0', 'Fiat FX rate snapshot 2026-05-27.'),
+}
+
+
+def _r6_sample_rows(slug, n=5):
+    spec = _R6_DATASETS.get(slug, _R6_DATASETS['world-population-2024'])
+    rows_count, cols, _lic, _desc = spec
+    out = []
+    for i in range(min(n, rows_count)):
+        h = int(hashlib.md5((slug + '|' + str(i)).encode()).hexdigest(), 16)
+        row = []
+        for j, c in enumerate(cols):
+            if j == 0:
+                row.append(slug.split('-')[0][:4] + '-' + ('%04d' % i))
+            else:
+                row.append(round(((h >> (j * 7)) % 9999) / 7.3, 2))
+        out.append(row)
+    return cols, out
+
+
+def _r6_chart_svg(slug, kind, col='', x='', y=''):
+    h = int(hashlib.md5((slug + '|' + kind + '|' + col + '|' + x + '|' + y).encode()).hexdigest(), 16)
+    if kind == 'histogram':
+        bins = []
+        for k in range(10):
+            bins.append(20 + ((h >> (k * 3)) % 80))
+        bars = ''
+        for k, v in enumerate(bins):
+            bars += ('<rect x="' + str(10 + k * 28) + '" y="' + str(120 - v)
+                     + '" width="24" height="' + str(v) + '" fill="#f96302"/>')
+        return ('<svg viewBox="0 0 320 140" xmlns="http://www.w3.org/2000/svg" '
+                'class="wa-r6-chart wa-r6-chart-histogram">'
+                '<rect width="320" height="140" fill="#fafafa"/>'
+                + bars + '<text x="8" y="14" font-size="11" fill="#666">'
+                'histogram[' + slug + '.' + col + ']</text></svg>')
+    if kind == 'scatter':
+        pts = ''
+        for k in range(30):
+            cx = 10 + ((h >> (k * 2)) % 300)
+            cy = 10 + ((h >> (k * 3 + 1)) % 120)
+            pts += '<circle cx="' + str(cx) + '" cy="' + str(cy) + '" r="2.5" fill="#1d4ed8"/>'
+        return ('<svg viewBox="0 0 320 140" xmlns="http://www.w3.org/2000/svg" '
+                'class="wa-r6-chart wa-r6-chart-scatter">'
+                '<rect width="320" height="140" fill="#fafafa"/>'
+                + pts + '<text x="8" y="14" font-size="11" fill="#666">'
+                'scatter[' + slug + '.' + x + ' vs ' + slug + '.' + y + ']</text></svg>')
+    return ('<svg viewBox="0 0 320 140" xmlns="http://www.w3.org/2000/svg">'
+            '<rect width="320" height="140" fill="#fafafa"/>'
+            '<text x="8" y="80" font-size="14">chart[' + slug + ']</text></svg>')
+
+
+# ---- R6 (1) Dataset catalog --------------------------------------------
+@app.route('/datasets')
+def r6_datasets_index():
+    rows = []
+    for k, v in _R6_DATASETS.items():
+        rows.append({'slug': k, 'rows': v[0], 'columns': v[1],
+                     'license': v[2], 'description': v[3]})
+    payload = {'datasets': rows, 'count': len(rows),
+               'snapshot_date': R6_SNAPSHOT_DATE,
+               'schema': 'wa-dataset-catalog-v1', 'version': R6_VERSION}
+    _r8_emit('r6.datasets.listed', 'curated-dataset-catalog',
+             count=len(rows))
+    if request.args.get('format') == 'json':
+        return jsonify(payload)
+    rows_kv = [(r['slug'], str(r['rows']) + ' rows, license ' + r['license'])
+               for r in rows]
+    return render_template('r10/vertical.html',
+        r10_slug='datasets', r10_title='Curated Datasets',
+        r10_intro=('Curated datasets (Wolfram Data Drop style) browsable, '
+                   'queryable, and chartable from the dataset detail page.'),
+        r10_params=[('count', len(rows))],
+        r10_parsed_input='DatasetCatalog[]',
+        r10_plaintext=str(len(rows)) + ' curated datasets available.',
+        r10_pod_title='Catalog', r10_payload_rows=rows_kv,
+        r10_schema=payload['schema'], r10_version=R6_VERSION,
+        r10_related=['Dataset query', 'Histogram visualization',
+                     'Scatter visualization', 'Dataset CSV download'],
+        r10_topic_slug='curated-dataset-catalog')
+
+
+# ---- R6 (2) Dataset detail ---------------------------------------------
+@app.route('/datasets/<slug>')
+def r6_dataset_detail(slug):
+    spec = _R6_DATASETS.get(slug)
+    if not spec:
+        abort(404)
+    rows_count, cols, license_str, description = spec
+    cols_seen, sample = _r6_sample_rows(slug, n=8)
+    default_col = cols[1] if len(cols) > 1 else cols[0]
+    if request.args.get('format') == 'json':
+        return jsonify({'slug': slug, 'rows': rows_count, 'columns': cols,
+                        'license': license_str, 'description': description,
+                        'sample': sample,
+                        'snapshot_date': R6_SNAPSHOT_DATE,
+                        'schema': 'wa-dataset-detail-v1', 'version': R6_VERSION})
+    _r8_emit('r6.dataset.viewed', 'curated-dataset-detail',
+             slug=slug, rows=rows_count)
+    return render_template('r6_dataset.html',
+                           r6_slug=slug, r6_title=slug.replace('-', ' ').title(),
+                           r6_intro=description,
+                           r6_columns=cols, r6_rows=sample,
+                           r6_rows_count=rows_count,
+                           r6_snapshot=R6_SNAPSHOT_DATE,
+                           r6_license=license_str,
+                           r6_query_demo='Filter[' + (cols[1] if len(cols) > 1 else cols[0]) + ' > 100]',
+                           r6_query_result=None,
+                           r6_default_col=default_col,
+                           r6_chart_svg='')
+
+
+# ---- R6 (3) Dataset query -----------------------------------------------
+@app.route('/datasets/<slug>/query')
+def r6_dataset_query(slug):
+    spec = _R6_DATASETS.get(slug)
+    if not spec:
+        abort(404)
+    rows_count, cols, license_str, description = spec
+    q = (request.args.get('q', '') or '').strip()
+    h = int(hashlib.md5((slug + '|' + q).encode()).hexdigest(), 16)
+    matched = (h % max(1, rows_count // 4)) + 1
+    cols_seen, sample = _r6_sample_rows(slug, n=min(10, matched))
+    result_text = ('Query: ' + repr(q) + '\n'
+                   'Matched: ' + str(matched) + ' of ' + str(rows_count) + ' rows\n'
+                   'Engine: WL-emulator-r6\n'
+                   'Snapshot: ' + R6_SNAPSHOT_DATE)
+    payload = {'slug': slug, 'query': q, 'matched': matched,
+               'rows_total': rows_count, 'sample': sample,
+               'columns': cols, 'snapshot_date': R6_SNAPSHOT_DATE,
+               'schema': 'wa-dataset-query-v1', 'version': R6_VERSION}
+    _r8_emit('r6.dataset.queried', 'curated-dataset-query',
+             slug=slug, q_len=len(q))
+    if request.args.get('format') == 'json':
+        return jsonify(payload)
+    return render_template('r6_dataset.html',
+                           r6_slug=slug,
+                           r6_title='Query result on ' + slug,
+                           r6_intro='Filtered ' + str(matched) + ' rows for ' + repr(q) + '.',
+                           r6_columns=cols, r6_rows=sample,
+                           r6_rows_count=rows_count,
+                           r6_snapshot=R6_SNAPSHOT_DATE,
+                           r6_license=license_str,
+                           r6_query_demo=q,
+                           r6_query_result=result_text,
+                           r6_default_col=cols[1] if len(cols) > 1 else cols[0],
+                           r6_chart_svg='')
+
+
+# ---- R6 (4) Histogram visualization ------------------------------------
+@app.route('/datasets/<slug>/viz/histogram')
+def r6_dataset_viz_histogram(slug):
+    spec = _R6_DATASETS.get(slug)
+    if not spec:
+        abort(404)
+    rows_count, cols, license_str, description = spec
+    col = (request.args.get('col', cols[1] if len(cols) > 1 else cols[0])
+           or cols[0]).strip()
+    svg = _r6_chart_svg(slug, 'histogram', col=col)
+    _r8_emit('r6.dataset.viz', 'curated-dataset-histogram',
+             slug=slug, col=col)
+    if request.args.get('format') == 'svg':
+        return Response(svg, mimetype='image/svg+xml')
+    if request.args.get('format') == 'json':
+        return jsonify({'slug': slug, 'kind': 'histogram', 'col': col,
+                        'snapshot_date': R6_SNAPSHOT_DATE,
+                        'schema': 'wa-dataset-viz-histogram-v1',
+                        'version': R6_VERSION})
+    cols_seen, sample = _r6_sample_rows(slug, n=5)
+    return render_template('r6_dataset.html',
+                           r6_slug=slug, r6_title='Histogram: ' + slug + '.' + col,
+                           r6_intro='10-bin histogram of ' + col + ' on ' + slug + '.',
+                           r6_columns=cols, r6_rows=sample,
+                           r6_rows_count=rows_count,
+                           r6_snapshot=R6_SNAPSHOT_DATE,
+                           r6_license=license_str,
+                           r6_query_demo='Histogram[' + col + ']',
+                           r6_query_result=None,
+                           r6_default_col=col,
+                           r6_chart_svg=svg)
+
+
+# ---- R6 (5) Scatter visualization --------------------------------------
+@app.route('/datasets/<slug>/viz/scatter')
+def r6_dataset_viz_scatter(slug):
+    spec = _R6_DATASETS.get(slug)
+    if not spec:
+        abort(404)
+    rows_count, cols, license_str, description = spec
+    x = (request.args.get('x', cols[0]) or cols[0]).strip()
+    y = (request.args.get('y', cols[1] if len(cols) > 1 else cols[0])
+         or cols[0]).strip()
+    svg = _r6_chart_svg(slug, 'scatter', x=x, y=y)
+    _r8_emit('r6.dataset.viz', 'curated-dataset-scatter',
+             slug=slug, x=x, y=y)
+    if request.args.get('format') == 'svg':
+        return Response(svg, mimetype='image/svg+xml')
+    if request.args.get('format') == 'json':
+        return jsonify({'slug': slug, 'kind': 'scatter', 'x': x, 'y': y,
+                        'snapshot_date': R6_SNAPSHOT_DATE,
+                        'schema': 'wa-dataset-viz-scatter-v1',
+                        'version': R6_VERSION})
+    cols_seen, sample = _r6_sample_rows(slug, n=5)
+    return render_template('r6_dataset.html',
+                           r6_slug=slug,
+                           r6_title='Scatter: ' + slug + '.' + x + ' vs ' + slug + '.' + y,
+                           r6_intro='30-point scatter of ' + x + ' vs ' + y + ' on ' + slug + '.',
+                           r6_columns=cols, r6_rows=sample,
+                           r6_rows_count=rows_count,
+                           r6_snapshot=R6_SNAPSHOT_DATE,
+                           r6_license=license_str,
+                           r6_query_demo='Scatter[' + x + ', ' + y + ']',
+                           r6_query_result=None,
+                           r6_default_col=y,
+                           r6_chart_svg=svg)
+
+
+# ---- R6 (6) Download dataset as CSV ------------------------------------
+@app.route('/datasets/<slug>/download.csv')
+def r6_dataset_download_csv(slug):
+    spec = _R6_DATASETS.get(slug)
+    if not spec:
+        abort(404)
+    rows_count, cols, license_str, description = spec
+    sample_count = min(50, rows_count)
+    cols_seen, sample = _r6_sample_rows(slug, n=sample_count)
+    out = [','.join(cols)]
+    for row in sample:
+        out.append(','.join(str(c) for c in row))
+    _r8_emit('r6.dataset.download', 'curated-dataset-csv-download',
+             slug=slug, rows=sample_count)
+    return Response('\n'.join(out) + '\n', mimetype='text/csv')
+
+
+# ---- R6 (7) Data-drop upload sim ---------------------------------------
+@app.route('/data-drop/upload', methods=['GET', 'POST'])
+def r6_data_drop_upload():
+    name = (request.values.get('name', 'my-dataset') or 'my-dataset').strip().lower()
+    rows = request.values.get('rows', '100')
+    try:
+        rows_int = int(rows)
+    except (TypeError, ValueError):
+        rows_int = 100
+    rows_int = max(1, min(1000000, rows_int))
+    token = hashlib.md5(('data-drop|' + name + '|' + str(rows_int)).encode()).hexdigest()[:12]
+    payload = {'name': name, 'rows': rows_int, 'drop_token': token,
+               'public_url': '/datasets/drop-' + token,
+               'snapshot_date': R6_SNAPSHOT_DATE,
+               'schema': 'wa-data-drop-upload-v1', 'version': R6_VERSION}
+    _r8_emit('r6.data_drop.upload', 'curated-dataset-data-drop-upload',
+             name=name, rows=rows_int)
+    if request.method == 'POST' or request.args.get('format') == 'json':
+        return jsonify(payload)
+    rows_kv = [(k, payload[k]) for k in sorted(payload) if k != 'schema']
+    return render_template('r10/vertical.html',
+        r10_slug='data-drop-upload', r10_title='Data Drop Upload',
+        r10_intro='Simulated Wolfram Data Drop upload entry point.',
+        r10_params=[('name', name), ('rows', rows_int)],
+        r10_parsed_input='DataDrop[name=' + repr(name) + ', rows=' + str(rows_int) + ']',
+        r10_plaintext=('Accepted ' + str(rows_int) + ' rows for ' + repr(name)
+                       + '; drop token ' + token + ', public url '
+                       + payload['public_url'] + '.'),
+        r10_pod_title='Upload', r10_payload_rows=rows_kv,
+        r10_schema=payload['schema'], r10_version=R6_VERSION,
+        r10_related=['Dataset catalog', 'Dataset query',
+                     'Histogram visualization', 'Dataset CSV download'],
+        r10_topic_slug='curated-dataset-data-drop-upload')
+
+
+# === R4-R5-R6 backfill END ===
+
+
 if __name__ == '__main__':
     with app.app_context():
         db.create_all()

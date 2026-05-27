@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+{% block title %}{{ r5_title }} — WolframAlpha Notebook{% endblock %}
+{% block body_class %}page-r5 page-r5-{{ r5_slug }}{% endblock %}
+{% block content %}
+<section class="wa-r5-notebook wa-r5-{{ r5_slug }}">
+  <h1>{{ r5_title }}</h1>
+  <p class="wa-intro">{{ r5_intro }}</p>
+
+  <ul class="wa-r5-meta">
+    <li><strong>nb_id</strong> = <code>{{ r5_nb_id }}</code></li>
+    <li><strong>format</strong> = <code>{{ r5_format }}</code></li>
+    <li><strong>kernel</strong> = <code>{{ r5_kernel }}</code></li>
+    <li><strong>snapshot</strong> = <code>{{ r5_snapshot }}</code></li>
+  </ul>
+
+  <h2>Cells ({{ r5_cells|length }})</h2>
+  <ol class="wa-r5-cells">
+    {% for cell in r5_cells %}
+    <li class="wa-r5-cell wa-r5-cell-{{ cell.kind }}" data-cell-id="{{ cell.id }}">
+      <div class="wa-r5-cell-head">
+        <span class="wa-r5-cell-badge">{{ cell.kind }}</span>
+        <strong>{{ cell.label }}</strong>
+        {% if cell.kind == 'code' %}
+          <form method="post"
+                action="/nb/{{ r5_nb_id }}/cell/{{ cell.id }}/evaluate"
+                class="wa-r5-eval-form">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+            <button class="wa-r5-eval-btn" type="submit">Evaluate</button>
+          </form>
+        {% endif %}
+      </div>
+      <pre class="wa-r5-cell-src">{{ cell.src }}</pre>
+      {% if cell.out %}
+        <pre class="wa-r5-cell-out">Out[{{ cell.id }}]= {{ cell.out }}</pre>
+      {% endif %}
+    </li>
+    {% endfor %}
+  </ol>
+
+  <h2>Share</h2>
+  <form class="wa-r5-share-form" method="post" action="/nb/{{ r5_nb_id }}/share">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+    <label>Audience
+      <select name="audience">
+        <option value="link">anyone with the link</option>
+        <option value="readonly">read-only viewers</option>
+        <option value="comment">commenters</option>
+        <option value="edit">editors</option>
+      </select>
+    </label>
+    <button class="wa-r5-share-btn" type="submit">Create share link</button>
+  </form>
+  {% if r5_share_token %}
+    <p class="wa-r5-share-result">
+      Share token: <code>{{ r5_share_token }}</code>.
+      View at <a href="/nb/share/{{ r5_share_token }}">/nb/share/{{ r5_share_token }}</a>.
+    </p>
+  {% endif %}
+
+  <p class="wa-related">
+    <a class="wa-r5-export-link" href="/nb/{{ r5_nb_id }}/export-nb">Export .nb</a> ·
+    <a href="/nb/templates">Templates gallery</a> ·
+    <a href="/notebooks">Back to notebooks</a>
+  </p>
+</section>
+{% endblock %}
