@@ -92,6 +92,28 @@
         </div>
         {% endif %}
 
+        {# Author headshot strip — image-utilization deepening 2026-05-27. #}
+        {% set _author_imgs = paper.get_author_images() %}
+        {% if _author_imgs %}
+        <div class="paper-author-headshots" id="paper-author-headshots"
+             aria-label="Author headshots">
+          {% for ai in _author_imgs[:6] %}
+          <a href="{{ url_for('r3_author_profile', name=ai.name) }}"
+             class="paper-headshot-link" data-author-name="{{ ai.name }}"
+             title="{{ ai.name }} — {{ ai.affiliation }}">
+            <img src="{{ url_for('static', filename='images/' + ai.filename) }}"
+                 alt="{{ ai.alt }}" width="42" height="42" loading="lazy"
+                 class="paper-headshot"
+                 style="border-color:{{ ai.institution_accent }};"/>
+            <span class="paper-headshot-name">{{ ai.name }}</span>
+          </a>
+          {% endfor %}
+          {% if _author_imgs|length > 6 %}
+          <span class="paper-headshot-more">+{{ _author_imgs|length - 6 }} more</span>
+          {% endif %}
+        </div>
+        {% endif %}
+
         {% set _is_long_abs = (paper.display_abstract|length) > 720 %}
         <div class="paper-abstract{% if _is_long_abs %} collapsible{% endif %}" id="paper-abstract">
             <span class="label">Abstract:</span>
@@ -110,6 +132,38 @@
                 <i class="muted">Abstract not currently available for this paper.</i>
             {% endif %}
         </div>
+
+        {# Figure gallery — image-utilization deepening 2026-05-27. Thumbnails
+           link to /pdf-inline/<id>#figure-N anchors so agents can practise
+           "open the third figure on paper X" tasks. #}
+        {% set _figures = paper.get_figures() %}
+        {% if _figures %}
+        <section class="paper-figures" id="paper-figures-section"
+                 aria-label="Figures from the preprint">
+          <h3 class="paper-figures-header">Figures
+            <span class="muted" style="font-size:11px;font-weight:400;">
+              ({{ _figures|length }} shown · click to enlarge)
+            </span>
+          </h3>
+          <div class="paper-figures-grid">
+            {% for f in _figures[:5] %}
+            <figure id="paper-figure-{{ f.position }}" class="paper-figure-card paper-figure-style-{{ f.style }}"
+                    data-figure-position="{{ f.position }}" data-figure-style="{{ f.style }}">
+              <a href="{{ url_for('r2_pdf_inline_view', arxiv_id=paper.arxiv_id) }}#figure-{{ f.position }}"
+                 aria-label="Open figure {{ f.position }} in PDF inline reader">
+                <img src="{{ url_for('static', filename='images/' + f.filename) }}"
+                     alt="Figure {{ f.position }} ({{ f.style }}) of {{ paper.display_title|truncate(80) }}"
+                     width="{{ f.width }}" height="{{ f.height }}" loading="lazy"
+                     class="paper-figure-thumb"/>
+              </a>
+              <figcaption class="paper-figure-caption" id="paper-figure-caption-{{ f.position }}">
+                {{ f.caption }}
+              </figcaption>
+            </figure>
+            {% endfor %}
+          </div>
+        </section>
+        {% endif %}
 
         {% set _rail = paper.version_rail %}
         {% if _rail %}
@@ -358,6 +412,17 @@
     <aside class="paper-sidebar">
         <div class="sidebar-box">
             <h3>Access Paper:</h3>
+            {# PDF cover thumbnail (image-util deepening 2026-05-27). Click
+               opens the inline PDF reader. Sized small so it doesn't compete
+               with the access list. #}
+            <a href="{{ url_for('r2_pdf_inline_view', arxiv_id=paper.arxiv_id) }}"
+               class="pdf-cover-link" id="paper-pdf-cover-link"
+               aria-label="Open PDF preview ({{ paper.arxiv_id }})">
+              <img src="{{ url_for('static', filename='images/' + paper.pdf_cover_filename) }}"
+                   alt="PDF cover thumbnail for arXiv:{{ paper.arxiv_id }}"
+                   width="140" height="180" class="pdf-cover-thumb" loading="lazy"
+                   style="display:block;margin:0 auto 8px auto;border:1px solid #aaa;"/>
+            </a>
             {% if paper.is_withdrawn %}
             <p class="muted" style="font-size:12px;border-left:3px solid #b31b1b;padding-left:8px;">
                 PDF and source downloads are disabled because this paper has

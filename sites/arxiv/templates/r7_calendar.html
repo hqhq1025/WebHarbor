@@ -4,11 +4,39 @@
 <h1 id="r7_calendar_header">Academic conference calendar</h1>
 <p>Upcoming paper deadlines (sorted ascending):</p>
 <table class="r7_calendar_table">
-<tr><th>Conference</th><th>Year</th><th>Abstract</th><th>Paper</th><th>Notification</th><th>Location</th></tr>
+<tr><th>Banner</th><th>Conference</th><th>Year</th><th>Abstract</th><th>Paper</th><th>Notification</th><th>Location</th></tr>
 {% for c in upcoming %}
-<tr class="r7_calendar_row"><td>{{ c.conf }}</td><td>{{ c.year }}</td><td>{{ c.abstract_deadline }}</td><td>{{ c.paper_deadline }}</td><td>{{ c.notification }}</td><td>{{ c.location }}</td></tr>
+{% set _img = conf_images.get(c.conf) %}
+<tr class="r7_calendar_row" data-conf="{{ c.conf }}">
+  <td class="r7_conf_banner_cell" style="width:120px;">
+    {% if _img %}
+      <img class="r7_conf_banner_thumb" src="{{ url_for('static', filename='images/' + _img.filename) }}"
+           alt="{{ _img.alt }}" width="120" height="36" loading="lazy"
+           style="border-radius:3px;border:1px solid #aaa;"/>
+    {% endif %}
+  </td>
+  <td class="r7_conf_name"><b style="color:{% if _img %}{{ _img.accent_color }}{% else %}#b31b1b{% endif %};">{{ c.conf }}</b></td>
+  <td>{{ c.year }}</td><td>{{ c.abstract_deadline }}</td><td>{{ c.paper_deadline }}</td><td>{{ c.notification }}</td><td>{{ c.location }}</td>
+</tr>
 {% endfor %}
 </table>
+
 <h2 id="r7_full_header">All tracked conferences</h2>
-<ul id="r7_full_list">{% for c in calendar %}<li class="r7_calendar_item">{{ c.conf }} {{ c.year }} — {{ c.location }}</li>{% endfor %}</ul>
+<div id="r7_full_list" class="r7_full_grid"
+     style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px;margin-top:10px;">
+{% for c in calendar %}
+{% set _img = conf_images.get(c.conf) %}
+<div class="r7_calendar_item r7_conf_card" data-conf="{{ c.conf }}"
+     style="border:1px solid #ddd;padding:0;border-radius:6px;overflow:hidden;">
+  {% if _img %}
+    <img class="r7_conf_card_banner" src="{{ url_for('static', filename='images/' + _img.filename) }}"
+         alt="{{ _img.alt }}" width="280" height="84" loading="lazy"
+         style="display:block;width:100%;height:auto;"/>
+  {% endif %}
+  <div style="padding:6px 10px;">
+    <b style="color:{% if _img %}{{ _img.accent_color }}{% else %}#b31b1b{% endif %};">{{ c.conf }} {{ c.year }}</b> — {{ c.location }}
+  </div>
+</div>
+{% endfor %}
+</div>
 {% endblock %}

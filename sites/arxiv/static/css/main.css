@@ -1675,3 +1675,48 @@ body.dyslexia-friendly p, body.dyslexia-friendly li, body.dyslexia-friendly td {
     .paper-detail-layout { display: block; }
     .paper-main { width: 100%; }
 }
+
+/* =============================================================
+   Image-utilization deepening — 2026-05-27
+   Paper figures grid, author headshot strip, PDF cover thumb,
+   conference banners, category banners, wizard step diagram.
+   ============================================================= */
+.paper-figures { margin: 18px 0; padding: 12px 0; border-top: 1px solid var(--border-light); }
+.paper-figures-header { font-size: 14px; font-weight: 700; margin: 0 0 10px 0; color: #333; }
+.paper-figures-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 14px;
+}
+.paper-figure-card { margin: 0; padding: 0; border: 1px solid #ddd; background: #fff; border-radius: 4px; overflow: hidden; }
+.paper-figure-thumb { display: block; width: 100%; height: auto; }
+.paper-figure-caption { font-size: 11px; color: #444; padding: 6px 8px; line-height: 1.4; }
+
+.paper-author-headshots {
+    display: flex; flex-wrap: wrap; gap: 10px; padding: 8px 0;
+    border-top: 1px dotted #ddd; border-bottom: 1px dotted #ddd; margin: 10px 0;
+}
+.paper-headshot-link {
+    display: flex; flex-direction: column; align-items: center;
+    text-decoration: none; color: #333; max-width: 64px;
+}
+.paper-headshot {
+    width: 42px; height: 42px; border-radius: 50%;
+    border: 2px solid #b31b1b; object-fit: cover;
+}
+.paper-headshot-name { font-size: 9px; margin-top: 2px; text-align: center; line-height: 1.1; }
+.paper-headshot-more { font-size: 11px; color: #777; align-self: center; }
+
+.pdf-cover-thumb { background: #fff; }
+.pdf-cover-link { display: block; }
+
+.r3-profile-hero img { object-fit: cover; }
+.r3_featured_papers a:hover img { box-shadow: 0 2px 8px rgba(0,0,0,0.2); }
+
+.r4-category-banner { margin: 0 0 16px 0; }
+.r4_top_paper_card:hover img { box-shadow: 0 2px 8px rgba(0,0,0,0.2); }
+
+.r7_conf_banner_thumb { object-fit: cover; }
+.r7_conf_card_banner { object-fit: cover; }
+
+.r9-step-diagram-wrap, .r9-dropzone-wrap { margin: 10px 0; }

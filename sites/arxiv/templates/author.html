@@ -6,7 +6,18 @@
 {% endblock %}
 {% block content %}
 
-<h1>{{ name }}'s articles on arXiv</h1>
+<div class="author-hero" id="author_hero" style="display:flex;align-items:center;gap:14px;padding:10px 0;">
+  <img id="author_listing_headshot" src="{{ url_for('static', filename='images/' + (avatar_filename or 'headshots/avatar_00.svg')) }}"
+       alt="{{ name }} headshot" width="72" height="72"
+       style="border-radius:50%;border:2px solid #b31b1b;"/>
+  <div>
+    <h1 style="margin:0;">{{ name }}'s articles on arXiv</h1>
+    <p class="muted" style="margin:4px 0 0 0;">
+      <a href="{{ url_for('r3_author_profile', name=name) }}">Open full profile →</a>
+    </p>
+  </div>
+</div>
+
 <p class="muted">[{{ papers|length }} of {{ papers|length }}]
     <a href="{{ url_for('search', query=name, searchtype='author') }}">total of {{ papers|length }} entries</a>
 </p>

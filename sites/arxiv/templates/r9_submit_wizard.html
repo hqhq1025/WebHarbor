@@ -2,6 +2,14 @@
 {% block title %}Submission wizard{% endblock %}
 {% block content %}
 <h1 id="r9_submit_wizard_header">Preprint submission wizard</h1>
+
+<div class="r9-step-diagram-wrap" id="r9_step_diagram_wrap">
+  <img id="r9_step_diagram_img" src="{{ url_for('static', filename='images/submit_step_diagram.svg') }}"
+       alt="Submission wizard progress diagram (7 steps)"
+       width="700" height="140" loading="lazy"
+       style="display:block;width:100%;max-width:700px;height:auto;"/>
+</div>
+
 <ol id="r9_steps">{% for s in steps %}<li class="r9_step" id="r9_step_{{ s }}">{{ loop.index }}. {{ s }}</li>{% endfor %}</ol>
 
 <h2>Step 1 — Metadata</h2>
@@ -13,6 +21,13 @@
 </form>
 
 <h2>Step 4 — LaTeX upload + lint</h2>
+<div class="r9-dropzone-wrap" id="r9_dropzone_wrap"
+     style="margin:14px 0;cursor:pointer;">
+  <img id="r9_dropzone_img" src="{{ url_for('static', filename='images/submit_dropzone.svg') }}"
+       alt="Drag-and-drop placeholder for LaTeX bundle"
+       width="600" height="220" loading="lazy"
+       style="display:block;max-width:600px;width:100%;height:auto;"/>
+</div>
 <form id="r9_latex_form">
   <textarea id="r9_latex_source" name="source" placeholder="paste LaTeX source"></textarea>
   <button type="submit" id="r9_lint_submit">Lint LaTeX</button>

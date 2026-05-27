@@ -1,12 +1,48 @@
 {% extends "base.html" %}
 {% block title %}{{ name }} · profile{% endblock %}
 {% block content %}
-<h1 id="r3_author_header">{{ name }}</h1>
-<dl class="r3_author_stats">
-  <dt>h-index</dt><dd id="r3_h_index">{{ stats.h_index }}</dd>
-  <dt>Total citations</dt><dd id="r3_citations">{{ stats.citations }}</dd>
-  <dt>ORCID</dt><dd id="r3_orcid">{{ stats.orcid }}</dd>
+<div class="r3-profile-hero" id="r3_profile_hero"
+     style="display:flex;align-items:center;gap:18px;padding:18px;background:linear-gradient(90deg,{{ visual.institution_accent }},#0c0c14);color:#fff;border-radius:8px;margin-bottom:18px;">
+  <img id="r3_author_headshot" src="{{ url_for('static', filename='images/' + visual.headshot) }}"
+       alt="{{ name }} headshot"
+       width="120" height="120"
+       style="border-radius:50%;border:3px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,0.3);"/>
+  <div style="flex:1;">
+    <h1 id="r3_author_header" style="margin:0;color:#fff;">{{ name }}</h1>
+    <p id="r3_author_affiliation" style="margin:6px 0 0 0;opacity:0.9;font-size:14px;">{{ visual.affiliation }}</p>
+    <p style="margin:4px 0 0 0;opacity:0.75;font-size:12px;">ORCID <span id="r3_orcid_inline">{{ stats.orcid }}</span></p>
+  </div>
+  <img id="r3_institution_banner" src="{{ url_for('static', filename='images/' + visual.institution_banner) }}"
+       alt="{{ visual.affiliation }} institutional banner"
+       width="220" height="80"
+       style="border-radius:6px;border:1px solid rgba(255,255,255,0.3);"/>
+</div>
+
+<dl class="r3_author_stats" id="r3_stats_panel"
+    style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin:10px 0;">
+  <div><dt>h-index</dt><dd id="r3_h_index">{{ stats.h_index }}</dd></div>
+  <div><dt>Total citations</dt><dd id="r3_citations">{{ stats.citations }}</dd></div>
+  <div><dt>ORCID</dt><dd id="r3_orcid">{{ stats.orcid }}</dd></div>
 </dl>
+
+{% if visual.featured_papers %}
+<h2 id="r3_featured_header">Featured papers by {{ name }}</h2>
+<div class="r3_featured_papers" id="r3_featured_papers"
+     style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:12px;">
+  {% for fp in visual.featured_papers %}
+  <a href="/abs/{{ fp.arxiv_id }}" class="r3_featured_card" data-arxiv-id="{{ fp.arxiv_id }}"
+     style="text-decoration:none;color:#222;">
+    <img src="{{ url_for('static', filename='images/' + fp.cover) }}"
+         alt="PDF cover for {{ fp.arxiv_id }}"
+         width="140" height="180" loading="lazy"
+         style="border:1px solid #aaa;display:block;"/>
+    <span class="r3_featured_title" style="display:block;font-size:11px;margin-top:4px;line-height:1.25;">{{ fp.title|truncate(60) }}</span>
+    <span class="r3_featured_id muted" style="display:block;font-size:10px;">arXiv:{{ fp.arxiv_id }}</span>
+  </a>
+  {% endfor %}
+</div>
+{% endif %}
+
 <h2 id="r3_coauthors_header">Coauthors</h2>
 <ul id="r3_coauthor_graph">
 {% for n in stats.coauthor_graph.nodes[1:] %}

@@ -2,7 +2,39 @@
 {% block title %}PDF inline · {{ paper.arxiv_id }}{% endblock %}
 {% block content %}
 <h1 id="r2_pdf_inline_header">PDF inline reader</h1>
+
+<div id="r2_pdf_cover_wrap" style="float:right;margin:0 0 12px 12px;">
+  <img id="r2_pdf_cover_img" src="{{ url_for('static', filename='images/' + paper.pdf_cover_filename) }}"
+       alt="PDF cover thumbnail for arXiv:{{ paper.arxiv_id }}"
+       width="170" height="216" loading="lazy"
+       style="border:1px solid #aaa;display:block;"/>
+  <p class="muted" style="font-size:10px;text-align:center;margin:4px 0;">cover</p>
+</div>
+
 <p class="r2_pdf_meta">Paper {{ paper.arxiv_id }} · {{ pages|length }} pages · MathJax-enabled</p>
+
+{% set _figures = paper.get_figures() %}
+{% if _figures %}
+<section id="r2_pdf_figures" class="r2_pdf_figures" aria-label="Figures embedded in the PDF">
+  <h2>Embedded figures</h2>
+  <div class="r2_pdf_figures_grid"
+       style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:14px;">
+    {% for f in _figures %}
+    <figure id="figure-{{ f.position }}" class="r2_pdf_figure_item"
+            data-figure-position="{{ f.position }}" data-figure-style="{{ f.style }}">
+      <img src="{{ url_for('static', filename='images/' + f.filename) }}"
+           alt="Figure {{ f.position }} (style: {{ f.style }})"
+           width="{{ f.width }}" height="{{ f.height }}" loading="lazy"
+           style="width:100%;height:auto;border:1px solid #ddd;"/>
+      <figcaption id="r2_figure_caption_{{ f.position }}" style="font-size:11px;margin-top:4px;line-height:1.35;">
+        {{ f.caption }}
+      </figcaption>
+    </figure>
+    {% endfor %}
+  </div>
+</section>
+{% endif %}
+
 <div class="r2_pdf_pages">
 {% for pg in pages %}
   <section id="r2_pdf_page_{{ pg.page }}" class="r2_pdf_page">

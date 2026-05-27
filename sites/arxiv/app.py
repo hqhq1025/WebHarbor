@@ -30,6 +30,7 @@ from flask_wtf import CSRFProtect
 from sqlalchemy import or_, and_, func, text
 
 from metadata_cleaning import clean_arxiv_metadata_text, format_arxiv_display_text
+import visual_assets
 
 BASE_DIR = Path(__file__).parent
 DB_DIR = BASE_DIR / "instance"
@@ -367,6 +368,84 @@ class Paper(db.Model):
         except Exception:
             return base
 
+    # ------------------------------------------------------------------
+    # Visual asset accessors (image utilization deepening — 2026-05-27).
+    # ------------------------------------------------------------------
+
+    def get_figures(self) -> list:
+        """Return the figures list shown on /abs/<id>.
+
+        Prefer rows from the `paper_figures` table when present (seeded for
+        the bulk of papers). Otherwise synthesise deterministically from
+        md5(arxiv_id) so even unseen papers render figures. List items are
+        dicts: {position, kind, style, filename, caption, width, height}.
+        """
+        # DB-backed rows take precedence when the seed pass populated them.
+        try:
+            rows = (PaperFigure.query
+                    .filter_by(paper_id=self.id)
+                    .order_by(PaperFigure.position)
+                    .all())
+        except Exception:
+            rows = []
+        if rows:
+            return [{
+                "position": r.position, "kind": r.kind, "style": r.style,
+                "filename": r.filename, "caption": r.caption,
+                "width": r.width, "height": r.height,
+            } for r in rows]
+        # Fallback synth
+        n = _figure_count_for(self.arxiv_id, self.figures_count)
+        out = []
+        for i in range(1, n + 1):
+            style = _figure_style_for(
+                self.arxiv_id, i, self.primary_category_code,
+                self.primary_subject_code or "",
+            )
+            out.append({
+                "position": i,
+                "kind": "architecture" if (i == 1 and style == "arch") else "figure",
+                "style": style,
+                "filename": _figure_filename(style, self.arxiv_id, i),
+                "caption": _figure_caption(style, self.arxiv_id, i),
+                "width": 420,
+                "height": 260,
+            })
+        return out
+
+    @property
+    def hero_figure(self) -> dict:
+        """Pick the visually-strongest figure for the hero card on the abs
+        page. Architecture-style figures win when present; otherwise we fall
+        back to the first figure."""
+        figs = self.get_figures()
+        if not figs:
+            return {}
+        for f in figs:
+            if f.get("style") == "arch":
+                return f
+        return figs[0]
+
+    @property
+    def pdf_cover_filename(self) -> str:
+        return _pdf_cover_filename(self.arxiv_id)
+
+    def get_author_images(self) -> list:
+        """Aligned with get_authors() — returns avatar SVG paths + alt text."""
+        authors = self.get_authors()
+        affs = self.get_author_affiliations()
+        out = []
+        for i, a in enumerate(authors):
+            aff = affs[i] if i < len(affs) else ""
+            out.append({
+                "name": a,
+                "filename": _avatar_filename(a),
+                "alt": f"{a} headshot",
+                "institution_accent": _institution_accent(aff),
+                "affiliation": aff,
+            })
+        return out
+
 
 class LibraryItem(db.Model):
     """A paper saved to a user's Library (the 'cart' analog)."""
@@ -464,6 +543,60 @@ class PaperUpdateNotification(db.Model):
     )
 
 
+# -----------------------------------------------------------------------
+# Visual-asset relationship tables (image utilization deepening — 2026-05-27)
+# -----------------------------------------------------------------------
+# These three tables back the paper-figure / author-headshot / conference-banner
+# imagery shown on /abs/<id>, /a/<name>/profile, and /r7/calendar respectively.
+# They are deliberately small: rows store *references* into a shared SVG pool
+# under static/images/ rather than blob payloads, so byte-identical seed-DB
+# rebuilds stay cheap.
+
+class PaperFigure(db.Model):
+    """A figure attached to a paper. References a shared SVG in
+    static/images/figures/ — the same SVG may be reused across papers, but
+    the (paper, position, caption) tuple is unique per row."""
+    __tablename__ = "paper_figures"
+    id = db.Column(db.Integer, primary_key=True)
+    paper_id = db.Column(db.Integer, db.ForeignKey("papers.id"), nullable=False, index=True)
+    position = db.Column(db.Integer, default=1)  # 1..N
+    kind = db.Column(db.String(40), default="figure")  # figure / table / arch / chart
+    style = db.Column(db.String(40), default="line")
+    filename = db.Column(db.String(160), default="")  # 'figures/line_03.svg'
+    caption = db.Column(db.Text, default="")
+    width = db.Column(db.Integer, default=420)
+    height = db.Column(db.Integer, default=260)
+    __table_args__ = (
+        db.UniqueConstraint("paper_id", "position", name="_paper_position_uc"),
+    )
+
+
+class AuthorImage(db.Model):
+    """A headshot / banner attached to an author name."""
+    __tablename__ = "author_images"
+    id = db.Column(db.Integer, primary_key=True)
+    author_name = db.Column(db.String(200), nullable=False, index=True)
+    kind = db.Column(db.String(20), default="headshot")  # headshot / banner / institution
+    filename = db.Column(db.String(160), default="")
+    alt = db.Column(db.String(200), default="")
+    institution_logo = db.Column(db.String(160), default="")
+    __table_args__ = (
+        db.UniqueConstraint("author_name", "kind", name="_author_kind_uc"),
+    )
+
+
+class ConferenceImage(db.Model):
+    """A banner / venue photo for a named conference."""
+    __tablename__ = "conference_images"
+    id = db.Column(db.Integer, primary_key=True)
+    conf = db.Column(db.String(40), nullable=False, index=True)
+    year = db.Column(db.Integer, default=0)
+    kind = db.Column(db.String(20), default="banner")  # banner / venue / sponsor
+    filename = db.Column(db.String(160), default="")
+    alt = db.Column(db.String(200), default="")
+    accent_color = db.Column(db.String(20), default="#b31b1b")
+
+
 # =======================================================================
 # LOGIN MANAGER
 # =======================================================================
@@ -540,6 +673,194 @@ _CATEGORY_BLURBS = {
                     "data, with implications for the formation and evolution "
                     "of planetary systems."),
 }
+
+
+# -----------------------------------------------------------------------
+# Visual asset mapping helpers (image utilization deepening — 2026-05-27)
+# -----------------------------------------------------------------------
+# A single, deterministic md5 -> SVG mapping is shared by templates, seed-time
+# DB population, and the GUI-task generator. Pure functions of arxiv_id /
+# author name / conference slug so byte-identical rebuilds stay clean.
+
+# Figure styles by primary-category prefix. Each prefix maps to a small list
+# of style files. md5(arxiv_id) chooses the slot.
+_FIGURE_STYLES_BY_PREFIX = {
+    "cs":       ["arch", "line", "bar", "heatmap", "scatter", "curve"],
+    "stat":     ["scatter", "line", "heatmap", "bar", "curve"],
+    "math":     ["curve", "lattice", "line", "scatter"],
+    "physics":  ["lattice", "galaxy", "line", "scatter"],
+    "astro-ph": ["galaxy", "scatter", "line", "curve"],
+    "cond-mat": ["lattice", "heatmap", "line", "scatter"],
+    "quant-ph": ["lattice", "heatmap", "curve", "line"],
+    "q-bio":    ["brain", "scatter", "line", "heatmap"],
+    "q-fin":    ["line", "bar", "heatmap", "scatter"],
+    "eess":     ["heatmap", "line", "curve", "scatter"],
+    "econ":     ["line", "bar", "scatter"],
+    "hep-th":   ["lattice", "curve", "scatter"],
+    "hep-ph":   ["lattice", "scatter", "curve"],
+    "hep-ex":   ["scatter", "line", "curve"],
+    "nucl-th":  ["lattice", "curve"],
+    "nucl-ex":  ["scatter", "line"],
+    "nlin":     ["curve", "scatter"],
+    "gr-qc":    ["galaxy", "curve"],
+    "math-ph":  ["lattice", "curve"],
+}
+
+# Caption templates per style, parameterised by subject area + paper title prefix.
+_FIGURE_CAPTION_TEMPLATES = {
+    "arch": [
+        "Figure {n}: model architecture — encoder/decoder layout with skip connections.",
+        "Figure {n}: overall pipeline. Inputs are tokenised, embedded, and fed through {layers} transformer layers.",
+        "Figure {n}: system diagram. Pretrained backbone (frozen) feeds a task-specific head.",
+    ],
+    "line": [
+        "Figure {n}: training loss and validation accuracy across {epochs} epochs.",
+        "Figure {n}: ablation — performance versus model size (parameters, log scale).",
+        "Figure {n}: convergence behaviour for the four learning-rate schedules considered.",
+    ],
+    "bar": [
+        "Figure {n}: per-task benchmark scores on the eight evaluation datasets.",
+        "Figure {n}: comparison against published baselines (higher is better).",
+        "Figure {n}: ablation — contribution of each module to final accuracy.",
+    ],
+    "heatmap": [
+        "Figure {n}: attention map across layers and heads for a representative input.",
+        "Figure {n}: confusion matrix on the held-out test split ({classes} classes).",
+        "Figure {n}: pairwise feature correlation heatmap after projection.",
+    ],
+    "scatter": [
+        "Figure {n}: t-SNE projection of learned embeddings, coloured by predicted label.",
+        "Figure {n}: empirical scaling — error vs compute budget (log-log).",
+        "Figure {n}: scatter of predicted versus reference values; identity line in grey.",
+    ],
+    "curve": [
+        "Figure {n}: ROC curve and operating points for the four classifier variants.",
+        "Figure {n}: cumulative reward over interaction steps (mean over 5 seeds, shaded ±1σ).",
+        "Figure {n}: precision-recall envelope on the augmented evaluation set.",
+    ],
+    "galaxy": [
+        "Figure {n}: simulated survey catalogue — projected on the sky in equatorial coordinates.",
+        "Figure {n}: density field of the dark-matter halo population in the N-body run.",
+        "Figure {n}: light-curve sample for the {n} brightest sources in the field.",
+    ],
+    "lattice": [
+        "Figure {n}: unit cell of the proposed crystal structure (hexagonal symmetry).",
+        "Figure {n}: spin configuration on the underlying lattice after equilibration.",
+        "Figure {n}: schematic of the {n}-site Hamiltonian and the on-site interaction.",
+    ],
+    "brain": [
+        "Figure {n}: functional-connectivity graph reconstructed from the recording session.",
+        "Figure {n}: graph of co-activation across cortical regions of interest.",
+        "Figure {n}: schematic of the cell-type interaction network considered in the model.",
+    ],
+}
+
+
+def _figure_style_for(arxiv_id: str, position: int, primary_category: str,
+                      primary_subject: str) -> str:
+    """Pick a figure style for (paper, position) deterministically."""
+    pool = (_FIGURE_STYLES_BY_PREFIX.get(primary_subject)
+            or _FIGURE_STYLES_BY_PREFIX.get(primary_category)
+            or ["line", "bar", "scatter", "heatmap"])
+    h = hashlib.md5(f"figstyle|{arxiv_id}|{position}".encode()).digest()
+    return pool[h[0] % len(pool)]
+
+
+def _figure_filename(style: str, arxiv_id: str, position: int) -> str:
+    """Pick a specific SVG file from the 8-variant pool for a style."""
+    h = hashlib.md5(f"figfile|{arxiv_id}|{position}".encode()).digest()
+    return f"figures/{style}_{h[1] % 8:02d}.svg"
+
+
+def _figure_caption(style: str, arxiv_id: str, position: int) -> str:
+    templates = _FIGURE_CAPTION_TEMPLATES.get(style) or [f"Figure {{n}}: result of analysis."]
+    h = hashlib.md5(f"figcap|{arxiv_id}|{position}".encode()).digest()
+    tmpl = templates[h[2] % len(templates)]
+    return tmpl.format(
+        n=position,
+        epochs=20 + (h[3] % 80),
+        layers=4 + (h[4] % 20),
+        classes=2 + (h[5] % 18),
+    )
+
+
+def _figure_count_for(arxiv_id: str, declared: int) -> int:
+    """How many figures to surface on the abs page. Use declared count from
+    comments when available, clipped to [2, 5]. Otherwise hash-derive."""
+    if declared and declared > 0:
+        return max(2, min(5, declared))
+    h = hashlib.md5(f"figcount|{arxiv_id}".encode()).digest()
+    return 3 + (h[0] % 3)  # 3..5
+
+
+def _avatar_filename(author_name: str) -> str:
+    if not author_name:
+        return "headshots/avatar_00.svg"
+    h = hashlib.md5(f"avatar|{author_name}".encode()).digest()
+    return f"headshots/avatar_{h[0] % 24:02d}.svg"
+
+
+_INSTITUTION_ACCENTS = {
+    "Massachusetts Institute of Technology": "#A31F34",
+    "Stanford University": "#8C1515",
+    "University of California, Berkeley": "#003262",
+    "Carnegie Mellon University": "#C41230",
+    "ETH Zurich": "#1F407A",
+    "University of Cambridge": "#A3C1AD",
+    "University of Oxford": "#002147",
+    "Tsinghua University": "#7B1FA2",
+    "Peking University": "#94070A",
+    "University of Toronto": "#002A5C",
+    "California Institute of Technology": "#FF6C0C",
+    "Princeton University": "#E77500",
+    "Harvard University": "#A51C30",
+    "Cornell University": "#B31B1B",
+    "DeepMind": "#0B57D0",
+    "Google Research": "#4285F4",
+    "Microsoft Research": "#00A4EF",
+    "Meta AI": "#1877F2",
+    "OpenAI": "#10A37F",
+    "IBM Research": "#0F62FE",
+    "NVIDIA Research": "#76B900",
+    "Allen Institute for AI": "#0066CC",
+}
+
+
+def _institution_accent(affiliation: str) -> str:
+    return _INSTITUTION_ACCENTS.get(affiliation, "#555555")
+
+
+# Real conference banner files (live under static/images/conferences/<slug>.svg).
+_CONFERENCE_SLUGS = {
+    "NeurIPS":  ("neurips",  "#5e3ec5"),
+    "ICML":     ("icml",     "#1b6ec2"),
+    "ICLR":     ("iclr",     "#0e8a6a"),
+    "ACL":      ("acl",      "#b13434"),
+    "EMNLP":    ("emnlp",    "#7a3da6"),
+    "CVPR":     ("cvpr",     "#1f6f4a"),
+    "ICCV":     ("iccv",     "#185680"),
+    "AAAI":     ("aaai",     "#a64a1a"),
+    "KDD":      ("kdd",      "#5a4f24"),
+    "SIGGRAPH": ("siggraph", "#3a4e8c"),
+}
+
+
+def _conf_banner_filename(conf: str) -> str:
+    rec = _CONFERENCE_SLUGS.get(conf)
+    if not rec:
+        return "conferences/neurips.svg"
+    return f"conferences/{rec[0]}.svg"
+
+
+def _category_banner_filename(code: str) -> str:
+    """Banner for a category hub. Falls back to its top-level category."""
+    top = code.split(".")[0] if "." in code else code
+    return f"categories/{top}.svg"
+
+
+def _pdf_cover_filename(arxiv_id: str) -> str:
+    h = hashlib.md5(f"cover|{arxiv_id}".encode()).digest()
+    return f"pdf_covers/cover_{h[0] % 16:02d}.svg"
 
 
 def _synthesize_authors(arxiv_id: str) -> list:
@@ -1958,7 +2279,9 @@ def advanced_search():
 def author_papers(name):
     papers = (Paper.query.filter(Paper.authors_json.ilike(f'%{name}%'))
               .order_by(Paper.arxiv_id.desc()).limit(50).all())
-    return render_template("author.html", name=name, papers=papers)
+    avatar_filename = _avatar_filename(name)
+    return render_template("author.html", name=name, papers=papers,
+                           avatar_filename=avatar_filename)
 
 
 # -----------------------------------------------------------------------
@@ -5316,7 +5639,26 @@ def r3_author_profile(name):
         'orcid': r3_author_orcid(name),
         'coauthor_graph': r3_author_coauthor_graph(name),
     }
-    return render_template('r3_author_profile.html', name=name, stats=stats)
+    # Visual context: headshot avatar + institution banner + featured papers.
+    author_papers = (Paper.query
+                     .filter(Paper.authors_json.like(f'%"{name}"%'))
+                     .order_by(Paper.submitted_year.desc())
+                     .limit(6).all())
+    affiliation = _synthesize_affiliation(name)
+    visual = {
+        "headshot": _avatar_filename(name),
+        "institution_banner": _category_banner_filename("cs"),
+        "institution_accent": _institution_accent(affiliation),
+        "affiliation": affiliation,
+        "featured_papers": [
+            {
+                "arxiv_id": p.arxiv_id,
+                "title": p.display_title,
+                "cover": _pdf_cover_filename(p.arxiv_id),
+            } for p in author_papers
+        ],
+    }
+    return render_template('r3_author_profile.html', name=name, stats=stats, visual=visual)
 
 @app.route('/api/r3/author/<path:name>')
 def r3_api_author(name):
@@ -5364,6 +5706,22 @@ def r4_category_hub_payload(code):
 @app.route('/r4/category/<code>')
 def r4_category_hub(code):
     payload = r4_category_hub_payload(code)
+    # Top papers in this category — pull cover thumbnails for the hero grid.
+    top_papers = (Paper.query
+                  .filter(or_(Paper.primary_subject_code == code,
+                              Paper.primary_subject_code.like(f"{code}.%"),
+                              Paper.primary_category_code == code))
+                  .order_by(Paper.view_count.desc())
+                  .limit(8).all())
+    payload["banner"] = _category_banner_filename(code)
+    payload["top_paper_covers"] = [
+        {
+            "arxiv_id": p.arxiv_id,
+            "title": p.display_title,
+            "cover": _pdf_cover_filename(p.arxiv_id),
+            "views": p.view_count,
+        } for p in top_papers
+    ]
     return render_template('r4_category_hub.html', payload=payload)
 
 @app.route('/api/r4/category/<code>')
@@ -5489,7 +5847,13 @@ def r7_calendar_lookup(conf, year):
 
 @app.route('/r7/calendar')
 def r7_calendar_page():
-    return render_template('r7_calendar.html', calendar=R7_CONFERENCE_CALENDAR, upcoming=r7_calendar_upcoming())
+    images = {c.conf: c for c in ConferenceImage.query.all()}
+    return render_template(
+        'r7_calendar.html',
+        calendar=R7_CONFERENCE_CALENDAR,
+        upcoming=r7_calendar_upcoming(),
+        conf_images=images,
+    )
 
 @app.route('/api/r7/calendar')
 def r7_api_calendar():
@@ -5656,9 +6020,118 @@ csrf.exempt(r10_graphql)
 
 # =========== END R2-R10 DEEPENING ===========
 
+
+def seed_visual_assets():
+    """Bootstrap on-disk SVG pool + populate ConferenceImage / AuthorImage /
+    PaperFigure rows where useful.
+
+    Idempotent. Reads from `visual_assets.CONFERENCES` and the helper functions
+    in app.py so the on-disk and on-DB views never drift.
+
+    Image-utilization deepening — 2026-05-27.
+    """
+    # 1. Materialise the SVG pool. Cheap no-op when files exist.
+    visual_assets.bootstrap()
+
+    # 2. Conference banners — small, fixed list.
+    if ConferenceImage.query.count() == 0:
+        for slug, abbr, full, color in visual_assets.CONFERENCES:
+            db.session.add(ConferenceImage(
+                conf=abbr.upper(),
+                year=0,  # 0 = generic / any year
+                kind="banner",
+                filename=f"conferences/{slug}.svg",
+                alt=f"{full} official banner",
+                accent_color=color,
+            ))
+        db.session.commit()
+        print(f"  [+] Seeded {ConferenceImage.query.count()} conference banners")
+
+    # 3. Author images for the most-frequent author names. Top ~1500.
+    if AuthorImage.query.count() == 0:
+        # Count author appearances across papers. Cheap: parse authors_json
+        # in batches of 5000 papers and accumulate.
+        from collections import Counter
+        counter = Counter()
+        batch = 0
+        for rows in (db.session.execute(
+                text("SELECT authors_json FROM papers"))).yield_per(5000):
+            try:
+                names = json.loads(rows[0] or "[]")
+                for n in names:
+                    if n:
+                        counter[n] += 1
+            except Exception:
+                continue
+            batch += 1
+        # Top 1500 names get DB rows; the rest fall through to the md5 helper.
+        top = counter.most_common(1500)
+        for name, _ in top:
+            aff = _synthesize_affiliation(name)
+            db.session.add(AuthorImage(
+                author_name=name,
+                kind="headshot",
+                filename=_avatar_filename(name),
+                alt=f"{name} headshot",
+                institution_logo=_category_banner_filename("cs"),
+            ))
+        db.session.commit()
+        print(f"  [+] Seeded {AuthorImage.query.count()} author headshots "
+              f"(top of {len(counter)} unique names)")
+
+    # 4. Paper figures. Pre-seed for the *featured* slice (top-viewed papers)
+    #    so the showcase pages have DB-backed rows. The long tail uses the
+    #    synth helper at request time — identical render shape, no DB bloat.
+    if PaperFigure.query.count() == 0:
+        inserted = 0
+        ins = text(
+            "INSERT INTO paper_figures (paper_id, position, kind, style, "
+            "filename, caption, width, height) VALUES "
+            "(:paper_id, :position, :kind, :style, :filename, :caption, "
+            ":width, :height)"
+        )
+        chunk = []
+        CHUNK_SIZE = 5000
+        # Featured = top 10k by view_count, then sorted by arxiv_id so commit
+        # ordering is deterministic (md5 of seed DB stays stable).
+        rows = db.session.execute(text(
+            "SELECT id, arxiv_id, primary_category_code, "
+            "primary_subject_code, figures_count "
+            "FROM papers ORDER BY view_count DESC LIMIT 10000"
+        )).fetchall()
+        rows = sorted(rows, key=lambda r: r[1])  # by arxiv_id
+        for pid, aid, pcat, psub, fcount in rows:
+            n = _figure_count_for(aid, fcount)
+            for i in range(1, n + 1):
+                style = _figure_style_for(aid, i, pcat or "", psub or "")
+                chunk.append({
+                    "paper_id": pid, "position": i,
+                    "kind": "architecture" if (i == 1 and style == "arch") else "figure",
+                    "style": style,
+                    "filename": _figure_filename(style, aid, i),
+                    "caption": _figure_caption(style, aid, i),
+                    "width": 420, "height": 260,
+                })
+            if len(chunk) >= CHUNK_SIZE:
+                db.session.execute(ins, chunk)
+                inserted += len(chunk)
+                chunk = []
+        if chunk:
+            db.session.execute(ins, chunk)
+            inserted += len(chunk)
+        db.session.commit()
+        print(f"  [+] Seeded {inserted} paper figures (featured slice; long "
+              f"tail synthesised at request time)")
+
+
 with app.app_context():
     db.create_all()
     ensure_affiliation_column()
+    # Ensure the SVG asset pool exists on disk *before* anything else may
+    # serve a template that references images/figures/*. This is idempotent
+    # (returns {'cached': True} when the sentinel file is in place) so warm
+    # restarts pay nothing.
+    visual_assets.bootstrap()
     # `random.seed` makes the per-row randint() calls in seed_database() and
     # seed_benchmark_users() reproducible. Column defaults that wrap
     # datetime.utcnow() are pinned by passing explicit created_at / added_at
@@ -5671,6 +6144,7 @@ with app.app_context():
     normalize_paper_metadata()
     backfill_affiliations()
     backfill_provenance_fields()
+    seed_visual_assets()
     normalize_seed_db_layout()
 
 
