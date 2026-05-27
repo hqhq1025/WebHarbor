@@ -182,6 +182,12 @@ ls ~/repos/WebHarbor/sites/<slug>/templates/*.html | wc -l
    - mermaid 图节点用 `中文名(状态)` 格式，边写中文 GUI 动作
    - 原子技能两层至少写出 30+ / 20+，组合 flow 至少 5-10 条
    - 全程中文，专有名（endpoint、CSS class、Model 名、按钮标签）保留英文
+   - ⚠️ **强制 incremental Write/Edit 模式**：成品 MD 50-130 KB / YAML 100-200 KB（远超单次 Write 32k output token 上限）。**不要尝试一次性写完** — 单 agent message 撑爆会输出 "我已经准备好了" 但实际啥也没写。正确做法：
+     1. 第 1 次 `Write`：frontmatter + §1 元信息 + §2 page map skeleton（~5KB）
+     2. 重复 `Edit` 追加：每次添 1-3 个 `### 3.x` 页面段（每段 ~3-5KB × 30+ 页 = 主体 100KB）
+     3. 最后几次 `Edit`：§4 mermaid map + §5 原子技能表 + §6 备注
+     4. YAML 同理：初始 Write 写 header + pages skeleton，再 Edit 把 nodes / edges / atomic_skills 灌进去
+   - 把 token budget 花在 Write/Edit tool call 上，不要花在文字回复里。报告控制在 200 词内。
 
 4. **对比 `archive_v1/<slug>.md`**：找出 v1 没有而新版新增的 page / 按钮 / 子模块，在备注里列清单。
 
