@@ -1,0 +1,98 @@
+{% extends "base.html" %}
+{% block title %}{{ nbhd.name }} Hub | {{ city.name }} | Apartments.com{% endblock %}
+{% block content %}
+<div class="container" style="padding-top:24px;">
+  <nav style="font-size:13px;color:var(--muted);margin-bottom:14px;">
+    <a href="{{ url_for('index') }}">Home</a> ›
+    <a href="{{ url_for('city_page', city_slug=city.slug) }}">{{ city.name }}, {{ city.state }}</a> ›
+    <span>{{ nbhd.name }}</span>
+  </nav>
+
+  <div class="spec-banner">
+    <h1>{{ nbhd.name }} — Neighborhood Hub</h1>
+    <p>{{ nbhd.blurb }}</p>
+  </div>
+
+  <div class="row" style="margin-top:20px;">
+    <div class="section-block" style="flex:1;min-width:200px;">
+      <h3 style="margin-bottom:6px;">Median Rent</h3>
+      <div style="font-size:28px;font-weight:800;">${{ '{:,}'.format(median_rent) }}<span style="font-size:14px;color:var(--muted);">/mo</span></div>
+    </div>
+    <div class="section-block" style="flex:1;min-width:200px;">
+      <h3 style="margin-bottom:6px;">Walkability</h3>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;">
+        <span class="score-pill {{ nbhd.walk_score|score_color }}">Walk {{ nbhd.walk_score }}</span>
+        <span class="score-pill {{ nbhd.transit_score|score_color }}">Transit {{ nbhd.transit_score }}</span>
+        <span class="score-pill {{ nbhd.bike_score|score_color }}">Bike {{ nbhd.bike_score }}</span>
+      </div>
+    </div>
+    <div class="section-block" style="flex:1;min-width:200px;">
+      <h3 style="margin-bottom:6px;">Buildings Listed</h3>
+      <div style="font-size:28px;font-weight:800;">{{ buildings|length }}</div>
+    </div>
+  </div>
+
+  <div class="section-block">
+    <h2>Available Buildings in {{ nbhd.name }}</h2>
+    <div class="grid">
+      {% for b in buildings[:12] %}{% include "_card.html" %}{% endfor %}
+    </div>
+    {% if buildings|length > 12 %}
+      <p style="margin-top:14px;"><a href="{{ url_for('neighborhood_page', city_slug=city.slug, nbhd_slug=nbhd.slug) }}">See all {{ buildings|length }} buildings →</a></p>
+    {% endif %}
+  </div>
+
+  <div class="section-block">
+    <h2>Local Spots — Restaurants, Cafés, Parks, Transit</h2>
+    <div class="grid-narrow">
+      {% for p in pois[:18] %}
+      <div class="listing-card"><div class="body">
+        <div class="tag">{{ p.category }}</div>
+        <div class="name">{{ p.name }}</div>
+        <div class="specs">{{ p.distance_mi }} mi · {{ p.walk_min }} min walk</div>
+      </div></div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <div class="section-block">
+    <h2>Schools Serving {{ nbhd.name }}</h2>
+    <table class="units">
+      <thead><tr><th>School</th><th>Type</th><th>Grades</th><th>Rating</th></tr></thead>
+      <tbody>
+        {% for s in schools %}
+          <tr>
+            <td><a href="{{ url_for('school_detail', slug=s.slug) }}">{{ s.name }}</a></td>
+            <td>{{ s.type }}</td>
+            <td>{{ s.grades }}</td>
+            <td><span class="score-pill {% if s.rating >= 8 %}score-90{% elif s.rating >= 6 %}score-70{% else %}score-50{% endif %}">{{ s.rating }}/10</span></td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <div class="section-block">
+    <h2>If you like {{ nbhd.name }}, you might like</h2>
+    <div class="grid-narrow">
+      {% for n in similar %}
+        <a class="listing-card" href="{{ url_for('neighborhood_hub', city_slug=city.slug, nbhd_slug=n.slug) }}">
+          <div class="body">
+            <div class="name">{{ n.name }}</div>
+            <div class="specs">Median ${{ '{:,}'.format(n.avg_rent) }} · Walk {{ n.walk_score }}</div>
+          </div>
+        </a>
+      {% endfor %}
+    </div>
+  </div>
+
+  <div class="section-block">
+    <h2>Demographics & Walk-of-Life</h2>
+    <p>{{ nbhd.name }} attracts a mix of young professionals, students, and creative-industry residents.
+       Median household income in this neighborhood is approximately
+       ${{ '{:,}'.format(median_rent * 40) }}/year (3.3× annual rent).
+       Roughly 55% of residents have a bachelor's degree or higher, and the
+       median resident age is 31.</p>
+  </div>
+</div>
+{% endblock %}

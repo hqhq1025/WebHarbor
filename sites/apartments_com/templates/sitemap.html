@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% block title %}Sitemap | Apartments.com{% endblock %}
+{% block content %}
+<div class="container" style="padding-top:24px;">
+  <h1>Sitemap</h1>
+  <div class="row">
+    <div class="section-block" style="flex:1;min-width:240px;">
+      <h2>Cities</h2>
+      {% for c in cities %}
+        <a href="{{ url_for('city_page', city_slug=c.slug) }}">{{ c.name }}, {{ c.state }}</a><br>
+      {% endfor %}
+    </div>
+    <div class="section-block" style="flex:1;min-width:240px;">
+      <h2>By Category</h2>
+      {% for s in categories %}
+        <a href="/{{ s }}">{{ s.replace('-', ' ').title() }}</a><br>
+      {% endfor %}
+    </div>
+    <div class="section-block" style="flex:1;min-width:240px;">
+      <h2>Help &amp; Tools</h2>
+      {% for t in help_topics %}
+        <a href="{{ url_for('help_topic', topic=t) }}">{{ t.replace('-', ' ').title() }}</a><br>
+      {% endfor %}
+      <hr>
+      <a href="{{ url_for('calc_affordability') }}">Affordability Calculator</a><br>
+      <a href="{{ url_for('calc_rent_vs_buy') }}">Rent vs Buy</a><br>
+      <a href="{{ url_for('calc_move_in') }}">Move-in Cost</a><br>
+      <a href="{{ url_for('calc_utility') }}">Utility Cost</a><br>
+      <a href="{{ url_for('mortgage_preapproval') }}">Mortgage Pre-Approval</a><br>
+      <a href="{{ url_for('glossary_index') }}">Glossary</a><br>
+      <a href="{{ url_for('renters_insurance') }}">Renters Insurance</a><br>
+      <a href="{{ url_for('moving_services') }}">Moving Services</a><br>
+      <a href="{{ url_for('roommates_index') }}">Roommates</a>
+    </div>
+    <div class="section-block" style="flex:1;min-width:240px;">
+      <h2>Company</h2>
+      <a href="{{ url_for('about') }}">About</a><br>
+      <a href="{{ url_for('careers') }}">Careers</a><br>
+      <a href="{{ url_for('press') }}">Press</a><br>
+      <a href="{{ url_for('investors') }}">Investor Relations</a><br>
+      <a href="{{ url_for('mobile_app') }}">Mobile App</a>
+    </div>
+  </div>
+</div>
+{% endblock %}

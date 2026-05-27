@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block title %}{{ current }} | Renters Guide | Apartments.com{% endblock %}
+{% block content %}
+<div class="container" style="padding-top:24px;">
+  <h1>Renters Guide — {{ current }}</h1>
+  <p style="color:var(--muted);">{{ articles|length }} articles</p>
+
+  <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:18px;">
+    <a class="chip" href="{{ url_for('blog_category') }}">All</a>
+    {% for c in categories %}
+      <a class="chip" href="{{ url_for('blog_category', category=c|lower|replace(' ', '-')) }}">{{ c }}</a>
+    {% endfor %}
+  </div>
+
+  <div class="grid">
+    {% for a in articles %}
+    <div class="listing-card">
+      {% if a.hero_image %}<a href="{{ url_for('article_detail', slug=a.slug) }}" class="photo" style="display:block;">
+        <img src="{{ a.hero_image }}">
+      </a>{% endif %}
+      <div class="body">
+        <span class="tag">{{ a.category }}</span>
+        <div class="name" style="margin-top:6px;"><a href="{{ url_for('article_detail', slug=a.slug) }}" style="color:var(--ink);">{{ a.title }}</a></div>
+        <div class="addr">{{ a.summary[:120] }}…</div>
+        <div class="meta">{{ a.published_at.strftime('%b %d, %Y') }} · {{ a.reading_time_min }} min read · {{ a.author }}</div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}

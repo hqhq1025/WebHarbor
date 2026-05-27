@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block title %}{{ state_full }} Sitemap | Apartments.com{% endblock %}
+{% block content %}
+<div class="container" style="padding-top:24px;">
+  <nav style="font-size:13px;color:var(--muted);margin-bottom:14px;">
+    <a href="{{ url_for('sitemap_root') }}">Sitemap</a> › <span>{{ state_full }}</span>
+  </nav>
+  <h1>{{ state_full }} ({{ state }}) — Apartments</h1>
+  <div class="row">
+    <div class="section-block" style="flex:1;">
+      <h2>Cities</h2>
+      {% for c in cities %}<a href="{{ url_for('city_page', city_slug=c.slug) }}">{{ c.name }}, {{ c.state }}</a><br>{% endfor %}
+    </div>
+    <div class="section-block" style="flex:2;">
+      <h2>Neighborhoods ({{ nbhds|length }})</h2>
+      {% for n in nbhds %}
+        <a href="{{ url_for('neighborhood_page', city_slug=n.city.slug, nbhd_slug=n.slug) }}">{{ n.name }} ({{ n.city.name }})</a><br>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+{% endblock %}

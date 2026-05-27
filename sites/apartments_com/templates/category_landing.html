@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+{% block title %}{{ title }} | Apartments.com{% endblock %}
+{% block content %}
+<div class="container" style="padding-top:24px;">
+  <nav style="font-size:13px;color:var(--muted);margin-bottom:14px;">
+    <a href="{{ url_for('index') }}">Home</a> ›
+    <a href="{{ url_for('cities_index') }}">All Categories</a> ›
+    <span>{{ title }}</span>
+  </nav>
+  <div class="spec-banner">
+    <h1>{{ title }}</h1>
+    <p>{{ subtitle }}</p>
+    <p style="margin-top:14px;font-size:14px;opacity:.9;">{{ total }} matching {{ 'building' if total == 1 else 'buildings' }} across the U.S.</p>
+  </div>
+
+  {% if top_cities %}
+  <div class="section-block">
+    <h2 style="margin-bottom:8px;">Browse by City</h2>
+    <div style="display:flex;flex-wrap:wrap;gap:8px;">
+      {% for city_name, state, cnt in top_cities %}
+        {% set slug_guess = (city_name|lower|replace(' ', '-')) + '-' + state|lower %}
+        <a class="chip" href="{{ url_for('search') }}?{{ qs }}&city={{ city_name|urlencode }}">{{ city_name }}, {{ state }} ({{ cnt }})</a>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+
+  <div class="grid" style="margin-top:20px;">
+    {% for b in buildings %}
+      {% include "_card.html" %}
+    {% else %}
+      <div class="section-block" style="grid-column: 1 / -1;">
+        <p>No results in this category yet. Try the <a href="{{ url_for('search') }}">main search</a> with different filters.</p>
+      </div>
+    {% endfor %}
+  </div>
+
+  {% if pages > 1 %}
+  <div class="pagination">
+    {% for p in range(1, pages + 1) %}
+      {% if p == page %}<span class="current">{{ p }}</span>
+      {% else %}<a href="{{ request.path }}?page={{ p }}">{{ p }}</a>{% endif %}
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  <div class="section-block" style="margin-top:30px;">
+    <h2>Save this search</h2>
+    <p>Sign in to get notified when new buildings match this filter.</p>
+    {% if current_user.is_authenticated %}
+      <form method="post" action="{{ url_for('save_search') }}" style="display:flex;gap:10px;flex-wrap:wrap;">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <input type="hidden" name="query_string" value="{{ qs }}">
+        <input class="form-field" type="text" name="name" value="{{ title }}" style="flex:1;min-width:240px;">
+        <button class="btn" type="submit">Save Search</button>
+      </form>
+    {% else %}
+      <a class="btn" href="{{ url_for('login') }}">Sign in to save</a>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,102 @@
+{% extends "base.html" %}
+{% block title %}{{ city.name }} Rental Market Overview | Apartments.com{% endblock %}
+{% block content %}
+<div class="container" style="padding-top:24px;">
+  <nav style="font-size:13px;color:var(--muted);margin-bottom:14px;">
+    <a href="{{ url_for('index') }}">Home</a> ›
+    <a href="{{ url_for('cities_index') }}">Cities</a> ›
+    <a href="{{ url_for('city_page', city_slug=city.slug) }}">{{ city.name }}, {{ city.state }}</a> ›
+    <span>Market Overview</span>
+  </nav>
+
+  <div class="spec-banner">
+    <h1>{{ city.name }} Rental Market — May 2026</h1>
+    <p>{{ city.blurb }}</p>
+  </div>
+
+  <div class="row" style="margin-top:20px;">
+    <div class="section-block" style="flex:1;min-width:220px;">
+      <div style="color:var(--muted);font-size:12px;text-transform:uppercase;">Median Studio</div>
+      <div style="font-size:28px;font-weight:800;">${{ '{:,}'.format(trend.median_studio if trend else city.avg_rent_studio) }}</div>
+    </div>
+    <div class="section-block" style="flex:1;min-width:220px;">
+      <div style="color:var(--muted);font-size:12px;text-transform:uppercase;">Median 1-Bedroom</div>
+      <div style="font-size:28px;font-weight:800;">${{ '{:,}'.format(trend.median_1br if trend else city.avg_rent_1br) }}</div>
+    </div>
+    <div class="section-block" style="flex:1;min-width:220px;">
+      <div style="color:var(--muted);font-size:12px;text-transform:uppercase;">Median 2-Bedroom</div>
+      <div style="font-size:28px;font-weight:800;">${{ '{:,}'.format(trend.median_2br if trend else city.avg_rent_2br) }}</div>
+    </div>
+    <div class="section-block" style="flex:1;min-width:220px;">
+      <div style="color:var(--muted);font-size:12px;text-transform:uppercase;">Median 3-Bedroom</div>
+      <div style="font-size:28px;font-weight:800;">${{ '{:,}'.format(trend.median_3br if trend else city.avg_rent_3br) }}</div>
+    </div>
+  </div>
+
+  {% if trend %}
+  <div class="row" style="margin-top:14px;">
+    <div class="section-block" style="flex:1;">
+      <h3>Year-over-Year Rent Change</h3>
+      <div style="font-size:32px;font-weight:800;color:{% if trend.yoy_pct > 0 %}#1aa260{% else %}#b71c1c{% endif %};">
+        {{ '+' if trend.yoy_pct > 0 else '' }}{{ '%.1f'|format(trend.yoy_pct) }}%
+      </div>
+      <div style="color:var(--muted);">vs. May 2025</div>
+    </div>
+    <div class="section-block" style="flex:1;">
+      <h3>Vacancy Rate</h3>
+      <div style="font-size:32px;font-weight:800;">{{ '%.1f'|format(trend.vacancy_pct) }}%</div>
+      <div style="color:var(--muted);">across {{ total }} surveyed buildings</div>
+    </div>
+  </div>
+  {% endif %}
+
+  <div class="section-block" style="margin-top:14px;">
+    <h2>12-Month Rent Trend (1-Bedroom)</h2>
+    <svg viewBox="0 0 600 120" style="width:100%;height:120px;background:#f5f7fa;border-radius:6px;">
+      {% set maxv = sparkline|max %}
+      {% set minv = sparkline|min %}
+      {% set range_v = (maxv - minv) or 1 %}
+      <polyline fill="none" stroke="#00aeef" stroke-width="3"
+                points="{% for v in sparkline %}{{ loop.index0 * 54 + 20 }},{{ 100 - ((v - minv) / range_v) * 80 }} {% endfor %}" />
+      {% for v in sparkline %}
+        <circle cx="{{ loop.index0 * 54 + 20 }}" cy="{{ 100 - ((v - minv) / range_v) * 80 }}" r="3" fill="#007cba" />
+      {% endfor %}
+    </svg>
+    <p style="color:var(--muted);font-size:13px;">May 2025 → May 2026, monthly median rent samples.</p>
+  </div>
+
+  <div class="section-block" style="margin-top:14px;">
+    <h2>Popular Neighborhoods</h2>
+    <div class="grid-narrow">
+      {% for n in nbhds[:12] %}
+        <a class="listing-card" href="{{ url_for('neighborhood_page', city_slug=city.slug, nbhd_slug=n.slug) }}">
+          <div class="body">
+            <div class="name">{{ n.name }}</div>
+            <div class="specs">Median rent: ${{ '{:,}'.format(n.avg_rent) }}/mo</div>
+            <div class="meta">Walk {{ n.walk_score }} · Transit {{ n.transit_score }} · Bike {{ n.bike_score }}</div>
+          </div>
+        </a>
+      {% endfor %}
+    </div>
+  </div>
+
+  <div class="section-block" style="margin-top:14px;">
+    <h2>Top-Rated Buildings in {{ city.name }}</h2>
+    <div class="grid">
+      {% for b in top_buildings %}
+        {% include "_card.html" %}
+      {% endfor %}
+    </div>
+  </div>
+
+  <div class="section-block" style="margin-top:14px;">
+    <h2>Browse by Bedroom Count</h2>
+    <div style="display:flex;flex-wrap:wrap;gap:8px;">
+      <a class="chip" href="{{ url_for('search') }}?city={{ city.name|urlencode }}&beds=studio">Studios</a>
+      <a class="chip" href="{{ url_for('search') }}?city={{ city.name|urlencode }}&beds=1">1 Bedroom</a>
+      <a class="chip" href="{{ url_for('search') }}?city={{ city.name|urlencode }}&beds=2">2 Bedrooms</a>
+      <a class="chip" href="{{ url_for('search') }}?city={{ city.name|urlencode }}&beds=3">3+ Bedrooms</a>
+    </div>
+  </div>
+</div>
+{% endblock %}
