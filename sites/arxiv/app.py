@@ -479,6 +479,22 @@ class Paper(db.Model):
         return out
 
 
+# Composite indexes for the catchup / latest panels and inject_globals.
+# Without these, both routes full-scan the 380k-row papers table:
+#   - func.max(submitted_date) for the "mirror today" banner (~14ms × every
+#     request via inject_globals)
+#   - Paper.submitted_date >= X (.count() + .all()) for /catchup (~120ms+
+#     per query under load)
+# ix_ prefix preserves byte-id via normalize_seed_db_layout. db.Index()
+# declared at module scope attaches to the column's table just like
+# __table_args__ would, without needing to edit the class body.
+db.Index('ix_paper_submitted_date', Paper.submitted_date)
+db.Index('ix_paper_subject_submitted',
+         Paper.primary_subject_code, Paper.submitted_date)
+db.Index('ix_paper_category_submitted',
+         Paper.primary_category_code, Paper.submitted_date)
+
+
 class LibraryItem(db.Model):
     """A paper saved to a user's Library (the 'cart' analog)."""
     __tablename__ = "library_items"
@@ -1456,9 +1472,20 @@ def inject_globals():
     if current_user.is_authenticated:
         library_count = LibraryItem.query.filter_by(user_id=current_user.id).count()
 
-    main_cats = Category.query.order_by(Category.code).all()
+    # main_categories + mirror_today_iso are static between control_server
+    # /reset calls (Category table is read-only at runtime; the seed Paper
+    # table's max submitted_date is fixed at build time). Without caching,
+    # every page render fires both a Category.order_by(code).all() and a
+    # func.max(submitted_date) full-scan over 380k papers (~14ms each).
+    global _ARXIV_MAIN_CATS_CACHE, _ARXIV_MIRROR_TODAY_CACHE
+    if _ARXIV_MAIN_CATS_CACHE is None:
+        _ARXIV_MAIN_CATS_CACHE = Category.query.order_by(Category.code).all()
+    main_cats = _ARXIV_MAIN_CATS_CACHE
 
-    mirror_today_iso = db.session.query(func.max(Paper.submitted_date)).scalar() or ""
+    if _ARXIV_MIRROR_TODAY_CACHE is None:
+        _ARXIV_MIRROR_TODAY_CACHE = (
+            db.session.query(func.max(Paper.submitted_date)).scalar() or "")
+    mirror_today_iso = _ARXIV_MIRROR_TODAY_CACHE
     mirror_today_pretty = ""
     if mirror_today_iso:
         try:
@@ -1474,6 +1501,10 @@ def inject_globals():
         mirror_today=mirror_today_iso,
         mirror_today_pretty=mirror_today_pretty,
     )
+
+
+_ARXIV_MAIN_CATS_CACHE = None
+_ARXIV_MIRROR_TODAY_CACHE = None
 
 
 # =======================================================================
@@ -2465,8 +2496,13 @@ def catchup(code=None):
     """
     days = int(request.args.get("days", 7))
     days = max(1, min(days, 60))
-    anchor_date = (db.session.query(func.max(Paper.submitted_date)).scalar()
-                   or "")
+    # Reuse the cached anchor populated by inject_globals — both this view
+    # and inject_globals run per request, but inject_globals fires first
+    # via the context processor pipeline so the cache is warm by here.
+    anchor_date = _ARXIV_MIRROR_TODAY_CACHE
+    if anchor_date is None:
+        anchor_date = (db.session.query(func.max(Paper.submitted_date)).scalar()
+                       or "")
     # Build "from" date string for filtering
     try:
         anchor = datetime.strptime(anchor_date, "%Y-%m-%d")
