@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% block title %}Business account — corporate invoicing — Booking{% endblock %}
+{% block content %}
+<div class="container">
+    <h1 class="page-title">Business account & corporate invoicing</h1>
+    <p class="page-subtitle">Centralised billing for company-paid trips, shared payment methods, and VAT-compliant invoices.</p>
+
+    <div class="pd-section">
+        <h2>Account: {{ account.company_name }}</h2>
+        <p>Account ID: <code>{{ account.id }}</code></p>
+        <p>Billing email: <code>{{ account.billing_email }}</code></p>
+        <p>VAT / Tax ID: <code>{{ account.vat_id }}</code></p>
+        <p>Cost centre: <code>{{ account.cost_centre }}</code></p>
+        <p>Active travellers: <strong>{{ account.travellers }}</strong></p>
+        <p>Monthly spend cap: <strong>${{ '%.0f'|format(account.spend_cap_usd) }}</strong></p>
+    </div>
+
+    <div class="pd-section">
+        <h2>Shared payment methods ({{ shared_methods|length }})</h2>
+        <table class="data-table">
+            <thead><tr><th>Method</th><th>Last 4</th><th>Type</th><th>Pooled budget</th></tr></thead>
+            <tbody>
+                {% for m in shared_methods %}
+                <tr>
+                    <td>{{ m.label }}</td>
+                    <td>•••• {{ m.last4 }}</td>
+                    <td>{{ m.kind }}</td>
+                    <td>${{ '%.0f'|format(m.pool_usd) }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <div class="pd-section">
+        <h2>Recent invoices</h2>
+        <table class="data-table">
+            <thead><tr><th>Invoice #</th><th>Period</th><th>Amount</th><th>Status</th></tr></thead>
+            <tbody>
+                {% for inv in invoices %}
+                <tr>
+                    <td><a href="{{ url_for('business_invoice_detail', invoice_id=inv.id) }}">{{ inv.number }}</a></td>
+                    <td>{{ inv.period }}</td>
+                    <td>${{ '%.2f'|format(inv.amount_usd) }}</td>
+                    <td>{{ inv.status }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <div class="pd-section">
+        <h2>VAT-compliant invoice export</h2>
+        <p>Download monthly invoice as <a href="{{ url_for('business_account') }}?format=pdf">PDF</a> or <a href="{{ url_for('business_account') }}?format=csv">CSV</a>.</p>
+    </div>
+</div>
+{% endblock %}

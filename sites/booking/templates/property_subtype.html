@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block title %}{{ subtype_label }} — {{ city_display or 'All cities' }} — Booking{% endblock %}
+{% block content %}
+<div class="container">
+    <h1 class="page-title">{{ subtype_label }} {% if city_display %}in {{ city_display }}{% endif %}</h1>
+    <p class="page-subtitle">{{ subtype_blurb }}</p>
+
+    <div class="pd-section">
+        <h2>Featured {{ subtype_label|lower }} properties</h2>
+        <div class="card-grid cards-3">
+            {% for p in properties %}
+            <div class="pd-section">
+                <h3><a href="{{ url_for('property_detail', slug=p.slug) }}">{{ p.name }}</a></h3>
+                <p style="color:#666;">{{ p.city_display }}, {{ p.country }}</p>
+                <p>From <strong>${{ '%.0f'|format(p.price) }}/night</strong> · Rating {{ '%.1f'|format(p.rating) }}</p>
+                <p>{{ p.subtype_blurb }}</p>
+            </div>
+            {% endfor %}
+        </div>
+        {% if not properties %}<p>No matching {{ subtype_label|lower }} properties listed yet.</p>{% endif %}
+    </div>
+
+    <div class="pd-section">
+        <h2>Browse other property subtypes</h2>
+        <ul>
+            <li><a href="{{ url_for('property_subtype', subtype='resort') }}">Resort hotels</a></li>
+            <li><a href="{{ url_for('property_subtype', subtype='vacation-rental') }}">Vacation rentals</a></li>
+            <li><a href="{{ url_for('property_subtype', subtype='bnb') }}">B&amp;B / guesthouse</a></li>
+            <li><a href="{{ url_for('property_subtype', subtype='capsule') }}">Capsule hotels</a></li>
+            <li><a href="{{ url_for('property_subtype', subtype='ryokan') }}">Ryokan (Japanese inn)</a></li>
+            <li><a href="{{ url_for('property_subtype', subtype='aparthotel') }}">Aparthotel</a></li>
+        </ul>
+    </div>
+</div>
+{% endblock %}

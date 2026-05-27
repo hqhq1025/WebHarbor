@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block title %}Restaurant reservations — Booking{% endblock %}
+{% block content %}
+<div class="container">
+    <h1 class="page-title">Restaurant reservations</h1>
+    <p class="page-subtitle">Reserve a table at hotel and partner restaurants. Free service, no booking fee.</p>
+
+    <form method="GET" action="{{ url_for('addon_restaurants') }}" class="pd-section">
+        <div class="form-row">
+            <label>City
+                <input type="text" name="city" value="{{ city }}" placeholder="e.g. Paris">
+            </label>
+            <label>Cuisine
+                <select name="cuisine">
+                    <option value="">Any</option>
+                    {% for c in cuisines %}<option value="{{ c }}" {% if cuisine == c %}selected{% endif %}>{{ c }}</option>{% endfor %}
+                </select>
+            </label>
+            <button class="btn btn-primary" type="submit">Find restaurants</button>
+        </div>
+    </form>
+
+    <div class="pd-section">
+        <h2>{{ results|length }} restaurants in {{ city or 'all cities' }}</h2>
+        <ul>
+            {% for r in results %}
+            <li>
+                <strong>{{ r.name }}</strong> — {{ r.cuisine }} — avg ${{ r.avg_price_usd }}/cover
+                <a href="{{ url_for('addon_restaurants') }}?city={{ city }}&cuisine={{ cuisine }}&reserve={{ r.id }}">Reserve</a>
+            </li>
+            {% endfor %}
+        </ul>
+    </div>
+</div>
+{% endblock %}

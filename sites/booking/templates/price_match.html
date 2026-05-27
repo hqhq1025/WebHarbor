@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% block title %}Price match guarantee — Booking{% endblock %}
+{% block content %}
+<div class="container">
+    <h1 class="page-title">Price Match guarantee</h1>
+    <p class="page-subtitle">Find a lower public rate within 24 hours of booking and we'll match it — usually within 48 hours.</p>
+
+    <form method="POST" action="{{ url_for('price_match') }}" class="pd-section">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <div class="form-row">
+            <label>Booking reference
+                <input type="text" name="booking_ref" value="{{ booking_ref }}" placeholder="e.g. BK-12345678">
+            </label>
+            <label>Competitor URL
+                <input type="text" name="competitor_url" placeholder="https://...">
+            </label>
+            <label>Competitor nightly rate (USD)
+                <input type="number" name="competitor_rate" min="0" step="0.01">
+            </label>
+            <button class="btn btn-primary" type="submit">Submit claim</button>
+        </div>
+    </form>
+
+    <div class="pd-section">
+        <h2>Eligibility rules</h2>
+        <ul>
+            <li>Must be the same property, room type, dates, and cancellation policy.</li>
+            <li>Competitor must be publicly bookable (not a private rate, members-only, or pre-paid voucher).</li>
+            <li>Claim must be submitted within 24 hours of original booking confirmation.</li>
+            <li>Difference is refunded to original payment method.</li>
+        </ul>
+    </div>
+
+    {% if claim_status %}
+    <div class="pd-section">
+        <h2>Claim status</h2>
+        <p><strong>{{ claim_status.label }}</strong> — claim #{{ claim_status.id }}</p>
+        <p>{{ claim_status.message }}</p>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

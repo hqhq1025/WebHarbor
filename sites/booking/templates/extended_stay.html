@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% block title %}Extended-stay apartments — monthly rates — Booking{% endblock %}
+{% block content %}
+<div class="container">
+    <h1 class="page-title">Extended-stay apartments</h1>
+    <p class="page-subtitle">Stays of 28 nights or more qualify for the monthly rate. Discount tiers compound automatically.</p>
+
+    <form method="GET" action="{{ url_for('extended_stay') }}" class="pd-section">
+        <div class="form-row">
+            <label>Destination
+                <input type="text" name="dest" value="{{ dest }}" placeholder="city slug (e.g. paris)">
+            </label>
+            <label>Nights
+                <input type="number" name="nights" min="28" max="365" value="{{ nights }}">
+            </label>
+            <button class="btn btn-primary" type="submit">Show monthly rates</button>
+        </div>
+    </form>
+
+    <div class="pd-section">
+        <h2>Monthly discount tiers</h2>
+        <table class="data-table">
+            <thead><tr><th>Stay length</th><th>Tier</th><th>Discount</th></tr></thead>
+            <tbody>
+                {% for t in tiers %}
+                <tr {% if t.active %}style="background:#fffae6"{% endif %}>
+                    <td>{{ t.min_nights }}+ nights</td>
+                    <td>{{ t.label }}</td>
+                    <td>{{ t.discount_pct }}%</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <div class="pd-section">
+        <h2>Quote ({{ nights }} nights in {{ dest_display }})</h2>
+        <p>Base nightly: <strong>${{ '%.2f'|format(base_nightly) }}</strong></p>
+        <p>Active tier: <strong>{{ tier_label }}</strong> ({{ tier_pct }}% off)</p>
+        <p>Discounted nightly: <strong>${{ '%.2f'|format(discounted_nightly) }}</strong></p>
+        <p>Stay total: <strong>${{ '%.2f'|format(stay_total) }}</strong></p>
+        <p>Monthly billing equivalent ({{ months }} months): <strong>${{ '%.2f'|format(monthly_bill) }}/mo</strong></p>
+    </div>
+
+    <div class="pd-section">
+        <h2>Available extended-stay apartments in {{ dest_display }}</h2>
+        <ul>
+            {% for p in apartments %}
+            <li><a href="{{ url_for('property_detail', slug=p.slug) }}">{{ p.name }}</a> — ${{ '%.0f'|format(p.price) }}/night</li>
+            {% endfor %}
+        </ul>
+    </div>
+</div>
+{% endblock %}

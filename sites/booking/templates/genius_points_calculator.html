@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% block title %}Genius points calculator — Booking{% endblock %}
+{% block content %}
+<div class="container">
+    <h1 class="page-title">Genius points & tier discount calculator</h1>
+    <p class="page-subtitle">Calculate exactly how much you'll save at each Genius level.</p>
+
+    <form method="GET" action="{{ url_for('genius_points_calculator') }}" class="pd-section">
+        <div class="form-row">
+            <label>Stay total (USD)
+                <input type="number" name="stay_total" min="0" step="10" value="{{ stay_total }}">
+            </label>
+            <label>Current Genius level
+                <select name="current_level">
+                    {% for lv in [1, 2, 3] %}<option value="{{ lv }}" {% if current_level == lv %}selected{% endif %}>Level {{ lv }}</option>{% endfor %}
+                </select>
+            </label>
+            <label>Completed bookings (rolling 24 mo)
+                <input type="number" name="bookings_24m" min="0" value="{{ bookings_24m }}">
+            </label>
+            <button class="btn btn-primary" type="submit">Calculate</button>
+        </div>
+    </form>
+
+    <div class="pd-section">
+        <h2>Discount comparison</h2>
+        <table class="data-table">
+            <thead><tr><th>Level</th><th>Discount</th><th>Savings</th><th>Final price</th><th>Status</th></tr></thead>
+            <tbody>
+                {% for r in rows %}
+                <tr {% if r.is_current %}style="background:#fffae6"{% endif %}>
+                    <td>Level {{ r.level }}</td>
+                    <td>{{ r.pct }}%</td>
+                    <td>${{ '%.2f'|format(r.savings) }}</td>
+                    <td>${{ '%.2f'|format(r.final) }}</td>
+                    <td>{{ r.status_label }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <div class="pd-section">
+        <h2>Points accumulation</h2>
+        <p>Each completed stay awards <strong>{{ points_per_stay }}</strong> Genius points plus {{ point_rate }} points per USD spent.</p>
+        <p>This booking earns: <strong>{{ points_earned }}</strong> points.</p>
+        <p>Lifetime points: <strong>{{ lifetime_points }}</strong>.</p>
+        <p><a href="{{ url_for('loyalty_upgrade') }}">Track tier progression →</a></p>
+    </div>
+</div>
+{% endblock %}

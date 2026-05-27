@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% block title %}Add-ons & cross-sell hub — Booking{% endblock %}
+{% block content %}
+<div class="container">
+    <h1 class="page-title">Trip add-ons</h1>
+    <p class="page-subtitle">Bundle airport transfer, car rental, attractions and on-site dining into a single booking.</p>
+
+    <div class="pd-section">
+        <h2>Recommended add-ons for your trip</h2>
+        <div class="card-grid cards-4">
+            {% for a in addons %}
+            <div class="pd-section">
+                <h3>{{ a.title }}</h3>
+                <p style="color:#666;">{{ a.category }}</p>
+                <p>{{ a.description }}</p>
+                <p>From <strong>${{ '%.2f'|format(a.from_price) }}</strong></p>
+                <p><a class="btn btn-secondary" href="{{ a.detail_url }}">View options</a></p>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <div class="pd-section">
+        <h2>Bundle pricing</h2>
+        <p>Select 2 add-ons for 5% off, 3+ for 10% off — applied automatically at checkout.</p>
+        <ul>
+            <li><a href="{{ url_for('airport_taxis') }}">Airport transfer</a> — from $35 one-way</li>
+            <li><a href="{{ url_for('car_rentals') }}">Car rental</a> — from $42/day</li>
+            <li><a href="{{ url_for('attractions') }}">Attractions & tickets</a> — from $18</li>
+            <li><a href="{{ url_for('addon_restaurants') }}">Restaurant reservations</a> — free (no booking fee)</li>
+        </ul>
+    </div>
+</div>
+{% endblock %}

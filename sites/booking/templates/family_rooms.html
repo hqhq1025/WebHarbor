@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% block title %}Family rooms & multi-room pricing — Booking{% endblock %}
+{% block content %}
+<div class="container">
+    <h1 class="page-title">Family rooms & multi-room pricing</h1>
+    <p class="page-subtitle">Pricing for {{ adults }} adult{{ 's' if adults != 1 else '' }} and {{ children|length }} child{{ 'ren' if children|length != 1 else '' }} across {{ rooms }} room{{ 's' if rooms != 1 else '' }}.</p>
+
+    <form method="GET" action="{{ url_for('family_rooms') }}" class="pd-section">
+        <div class="form-row">
+            <label>Adults
+                <input type="number" name="adults" min="1" max="8" value="{{ adults }}">
+            </label>
+            <label>Rooms
+                <input type="number" name="rooms" min="1" max="4" value="{{ rooms }}">
+            </label>
+            <label>Children (comma-separated ages 0-17)
+                <input type="text" name="children" value="{{ children|join(',') }}" placeholder="e.g. 4,9">
+            </label>
+            <button class="btn btn-primary" type="submit">Recalculate</button>
+        </div>
+    </form>
+
+    <div class="pd-section">
+        <h2>Per-room price breakdown</h2>
+        <table class="data-table">
+            <thead><tr><th>Room</th><th>Adults</th><th>Children</th><th>Nightly rate</th></tr></thead>
+            <tbody>
+                {% for r in room_split %}
+                <tr>
+                    <td>Room {{ loop.index }} — {{ r.label }}</td>
+                    <td>{{ r.adults }}</td>
+                    <td>{{ r.children|join(', ') if r.children else '—' }}</td>
+                    <td>${{ '%.2f'|format(r.nightly) }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <div class="pd-section">
+        <h2>Pricing rules (children)</h2>
+        <ul>
+            <li>Age 0-2: stays free in a crib (no surcharge)</li>
+            <li>Age 3-5: 25% of adult rate, sharing existing bed</li>
+            <li>Age 6-11: 50% of adult rate, extra bed surcharge applies</li>
+            <li>Age 12-17: 75% of adult rate, counts toward room capacity</li>
+        </ul>
+    </div>
+
+    <div class="pd-section">
+        <h2>Total</h2>
+        <p>Nightly subtotal: <strong>${{ '%.2f'|format(nightly_total) }}</strong></p>
+        <p>For {{ nights }} night{{ 's' if nights != 1 else '' }}: <strong>${{ '%.2f'|format(stay_total) }}</strong></p>
+    </div>
+</div>
+{% endblock %}

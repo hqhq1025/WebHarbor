@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block title %}Cancellation policy comparison — Booking{% endblock %}
+{% block content %}
+<div class="container">
+    <h1 class="page-title">Cancellation policy comparison</h1>
+    <p class="page-subtitle">All cancellation policies side-by-side. Free cancellation cut-offs vary by rate plan.</p>
+
+    <table class="data-table">
+        <thead><tr><th>Policy</th><th>Free cancellation until</th><th>Refund after cut-off</th><th>No-show charge</th></tr></thead>
+        <tbody>
+            {% for p in policies %}
+            <tr>
+                <td><strong>{{ p.name }}</strong></td>
+                <td>{{ p.free_until }}</td>
+                <td>{{ p.partial_refund }}</td>
+                <td>{{ p.no_show }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <div class="pd-section">
+        <h2>Tips</h2>
+        <ul>
+            <li>Free cancellation rates are typically 5-15% more expensive than non-refundable.</li>
+            <li>If you have <a href="{{ url_for('travel_insurance') }}">trip cancellation insurance</a>, a non-refundable rate may still be fully reimbursed.</li>
+            <li>See our <a href="{{ url_for('price_match') }}">Price Match guarantee</a> for post-booking adjustments.</li>
+        </ul>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% block title %}Travel insurance & cancellation comparison — Booking{% endblock %}
+{% block content %}
+<div class="container">
+    <h1 class="page-title">Travel insurance</h1>
+    <p class="page-subtitle">Compare 3 protection plans. Pricing is per traveller for the duration of your stay.</p>
+
+    <form method="GET" action="{{ url_for('travel_insurance') }}" class="pd-section">
+        <div class="form-row">
+            <label>Trip cost (USD)
+                <input type="number" name="trip_cost" min="0" step="50" value="{{ trip_cost }}">
+            </label>
+            <label>Travellers
+                <input type="number" name="travellers" min="1" max="10" value="{{ travellers }}">
+            </label>
+            <label>Trip length (days)
+                <input type="number" name="days" min="1" max="365" value="{{ days }}">
+            </label>
+            <button class="btn btn-primary" type="submit">Compare plans</button>
+        </div>
+    </form>
+
+    <div class="pd-section">
+        <h2>Plan comparison</h2>
+        <table class="data-table">
+            <thead><tr><th>Plan</th><th>Trip cancellation</th><th>Medical</th><th>Baggage</th><th>Total premium</th></tr></thead>
+            <tbody>
+                {% for p in plans %}
+                <tr>
+                    <td><strong>{{ p.name }}</strong></td>
+                    <td>{{ p.cancellation }}</td>
+                    <td>{{ p.medical }}</td>
+                    <td>{{ p.baggage }}</td>
+                    <td>${{ '%.2f'|format(p.premium) }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <div class="pd-section">
+        <h2>Compare with property cancellation policies</h2>
+        <p>See <a href="{{ url_for('cancellation_compare') }}">side-by-side cancellation policy comparison</a> across all property types.</p>
+        <p>Or check our <a href="{{ url_for('price_match') }}">Price Match guarantee</a> — find a lower public rate within 24 hours and we'll match it.</p>
+    </div>
+</div>
+{% endblock %}

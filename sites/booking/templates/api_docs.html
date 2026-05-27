@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% block title %}API & integrations — Booking{% endblock %}
+{% block content %}
+<div class="container">
+    <h1 class="page-title">Developer API & integrations</h1>
+    <p class="page-subtitle">REST, GraphQL, ICS calendar export, and webhooks. All endpoints are unauthenticated for the public read-only surface.</p>
+
+    <div class="pd-section">
+        <h2>Endpoints</h2>
+        <ul>
+            <li><a href="/api/v1/properties/search?city=paris&limit=5"><code>GET /api/v1/properties/search</code></a> — REST property search</li>
+            <li><a href="/api/v1/properties/search?city=tokyo&limit=10&min_rating=8"><code>GET /api/v1/properties/search?min_rating=8</code></a> — with rating filter</li>
+            <li><a href="/graphql?query={cities(limit:5){slug+display+country}}"><code>POST /graphql</code></a> — GraphQL endpoint (also accepts <code>GET</code> with <code>?query=</code>)</li>
+            <li><a href="/calendar/bookings.ics"><code>GET /calendar/bookings.ics</code></a> — ICS calendar export of your bookings</li>
+            <li><a href="/api/v1/webhooks"><code>GET /api/v1/webhooks</code></a> — registered booking-event webhooks</li>
+            <li><a href="/api/v1/exchange-rates"><code>GET /api/v1/exchange-rates</code></a> — currency rates</li>
+        </ul>
+    </div>
+
+    <div class="pd-section">
+        <h2>GraphQL example</h2>
+        <pre style="background:#f5f5f5;padding:12px;overflow-x:auto;">{
+  cities(limit: 5) {
+    slug
+    display
+    country
+    properties_count
+  }
+  properties(city: "paris", limit: 3) {
+    name
+    rating
+    price
+  }
+}</pre>
+    </div>
+
+    <div class="pd-section">
+        <h2>Rate limits</h2>
+        <p>1000 requests/hour per IP. Each response includes <code>X-RateLimit-Remaining</code> and <code>X-Request-ID</code> headers.</p>
+    </div>
+</div>
+{% endblock %}
