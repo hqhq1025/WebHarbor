@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% block title %}Code of Conduct | Coursera{% endblock %}
+{% block content %}
+<div class="container" style="max-width:880px;margin:0 auto;padding:42px 24px;">
+  <nav style="font-size:13px;color:#5B6780;margin-bottom:14px;">
+    <a href="{{ url_for('index') }}">Home</a> &rsaquo;
+    <span>Code of Conduct</span>
+  </nav>
+  <h1 style="margin:0 0 6px;font-size:34px;">Coursera Community Code of Conduct</h1>
+  <p style="color:#5B6780;font-size:14px;">Last revised: February 18, 2026</p>
+
+  <section style="margin-top:24px;background:#fff;border:1px solid #DAE1ED;border-radius:12px;padding:24px;">
+    <p style="color:#3C4858;line-height:1.7;">Coursera serves learners of every age, background, and identity. The behaviors below help make Coursera safe and productive for everyone.</p>
+  </section>
+
+  <section style="margin-top:18px;background:#fff;border:1px solid #DAE1ED;border-radius:12px;padding:24px;">
+    <h2 style="margin:0 0 8px;font-size:22px;">Behaviors we expect</h2>
+    <ul style="padding-left:18px;line-height:1.7;color:#3C4858;">
+      <li>Treat fellow learners and mentors with respect.</li>
+      <li>Give and accept constructive feedback graciously.</li>
+      <li>Keep peer-review feedback specific, kind, and focused on the work.</li>
+      <li>Welcome new learners and answer questions you can answer.</li>
+    </ul>
+  </section>
+
+  <section style="margin-top:18px;background:#fff;border:1px solid #DAE1ED;border-radius:12px;padding:24px;">
+    <h2 style="margin:0 0 8px;font-size:22px;">Behaviors that are not tolerated</h2>
+    <ul style="padding-left:18px;line-height:1.7;color:#3C4858;">
+      <li>Harassment, hate speech, or threats of violence.</li>
+      <li>Doxxing — publishing or threatening to publish private information.</li>
+      <li>Discrimination based on race, ethnicity, religion, gender identity, sexual orientation, age, or disability.</li>
+      <li>Spam, scams, and undisclosed promotion of paid services.</li>
+      <li>Posting sexually explicit or violent imagery in any forum or peer-review submission.</li>
+    </ul>
+  </section>
+
+  <section style="margin-top:18px;background:#fff;border:1px solid #DAE1ED;border-radius:12px;padding:24px;">
+    <h2 style="margin:0 0 8px;font-size:22px;">Reporting violations</h2>
+    <p style="color:#3C4858;line-height:1.7;">Use the "Report" link on any forum post or peer review. Urgent safety concerns can be escalated to <strong>trust-safety@coursera.org</strong>; reports are reviewed within 48 hours.</p>
+  </section>
+
+  <section style="margin-top:18px;background:#fff;border:1px solid #DAE1ED;border-radius:12px;padding:24px;">
+    <h2 style="margin:0 0 8px;font-size:22px;">Enforcement</h2>
+    <ol style="padding-left:18px;line-height:1.7;color:#3C4858;">
+      <li><strong>Warning</strong> — first or borderline issue. Educational reminder.</li>
+      <li><strong>Forum suspension</strong> — repeat or escalating issue. 7–30 days.</li>
+      <li><strong>Account termination</strong> — severe or unaddressed pattern. Loss of certificates and access.</li>
+    </ol>
+  </section>
+
+  <p style="margin-top:24px;color:#5B6780;font-size:13px;">See also: <a href="{{ url_for('honor_code') }}" style="color:#0056D2;">Honor Code</a> &middot; <a href="{{ url_for('help_center') }}" style="color:#0056D2;">Help Center</a></p>
+</div>
+{% endblock %}

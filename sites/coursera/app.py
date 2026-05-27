@@ -1117,14 +1117,38 @@ def _r6_course_panels(course):
 
 
 @app.route('/specializations/<path:slug>')
-def specialization_detail_alias(slug):
-    """Real Coursera specialization URLs resolve to the mirrored course page."""
+def specialization_detail(slug):
+    """Dedicated Specialization landing page (GUI deepen 2026-05-27).
+
+    Real Coursera surfaces /specializations/<slug> as a richer landing
+    page distinct from the /learn/<slug> course detail.  We render a
+    dedicated template that lists the course series, capstone, skills,
+    and instructors — no DB writes, no API calls."""
     course = Course.query.filter_by(slug=slug).first()
     if not course and not slug.endswith('-specialization'):
         course = Course.query.filter_by(slug=f'{slug}-specialization').first()
     if not course:
         abort(404)
-    return redirect(url_for('course_detail', slug=course.slug))
+    sub_courses = SubCourse.query.filter_by(
+        specialization_id=course.id).order_by(SubCourse.order_index).all()
+    inst_names = []
+    if course.instructor:
+        for nm in [n.strip() for n in course.instructor.split(',')]:
+            if nm and nm not in inst_names:
+                inst_names.append(nm)
+    instructors = []
+    for nm in inst_names[:4]:
+        instructors.append({
+            'name': nm,
+            'slug': _slugify_instructor(nm),
+            'title': course.instructor_title or 'Instructor',
+        })
+    has_capstone = (int(hashlib.md5(course.slug.encode()).hexdigest()[:2], 16) % 3) != 0
+    return render_template('specialization_detail.html',
+                           course=course,
+                           sub_courses=sub_courses,
+                           instructors=instructors,
+                           has_capstone=has_capstone)
 
 # ─── Routes: Auth ─────────────────────────────────────────────────────────────
 
@@ -1538,9 +1562,15 @@ def certificate_verify(course_id):
 @app.route('/learn/<slug>/syllabus')
 @app.route('/learn/<slug>/modules')
 def course_syllabus(slug):
-    """Deep-link directly to the syllabus section of a course."""
+    """Standalone syllabus page (GUI deepen 2026-05-27).
+
+    Real Coursera renders /learn/<slug>/syllabus as its own page distinct
+    from the marketing course detail.  We surface the week-by-week
+    modules in a dedicated template."""
     course = Course.query.filter_by(slug=slug).first_or_404()
-    return redirect(url_for('course_detail', slug=course.slug) + '#modules')
+    modules = course.modules or []
+    return render_template('course_syllabus.html', course=course,
+                           modules=modules)
 
 
 # ─── R4 deep sub-pages ────────────────────────────────────────────────────────
@@ -5130,6 +5160,664 @@ def r4_api_learning_paths():
 
 
 # === R4 backfill END ===
+
+
+# === GUI deepen BEGIN — auto-generated 2026-05-27 (do not hand-edit between markers) ===
+# Adds 25+ dedicated GUI pages that mirror real coursera.org surfaces missing
+# from the original mirror: per-Specialization landing, per-Professional Cert
+# detail, per-Degree detail, MasterTrack, business-by-industry, campus,
+# /category/<cat>, /financial-aid/apply, refund/honor/conduct policies,
+# Coursera Plus subscribe, /learn/<slug>/{instructors,reviews,faq},
+# /courses/{free,with-certificate,in-spanish}, /specializations index,
+# /partner/<slug>/about, /compare, /terms, /privacy.
+#
+# Read-only: no DB writes, no API endpoints. Stable across reloads via md5
+# seeding so the byte-identical instance_seed/coursera.db invariant holds.
+
+import hashlib as _gd_hashlib
+
+
+_GD_CATEGORY_MAP = {
+    'computer-science':       ('Computer Science',                'Build software, AI, and infrastructure for the next decade.'),
+    'data-science':           ('Data Science',                    'Turn raw data into clear answers — from SQL to deep learning.'),
+    'business':               ('Business',                        'Lead teams, run companies, and grow careers in any industry.'),
+    'information-technology': ('Information Technology',          'Operate the systems and clouds the modern world depends on.'),
+    'it-cloud':               ('Information Technology',          'Operate the systems and clouds the modern world depends on.'),
+    'cs':                     ('Computer Science',                'Build software, AI, and infrastructure for the next decade.'),
+    'language-learning':      ('Language Learning',               'Speak a new language confidently with practical lessons.'),
+    'language':               ('Language Learning',               'Speak a new language confidently with practical lessons.'),
+    'math-logic':             ('Math and Logic',                  'Master the mathematics that underpin science and engineering.'),
+    'math':                   ('Math and Logic',                  'Master the mathematics that underpin science and engineering.'),
+    'physical-science':       ('Physical Science and Engineering','Explore engineering, physics, and applied science online.'),
+    'social-sciences':        ('Social Sciences',                 'Study people, policy, history, and the economies of nations.'),
+    'social-science':         ('Social Sciences',                 'Study people, policy, history, and the economies of nations.'),
+    'arts-humanities':        ('Arts and Humanities',             'Engage with art, music, philosophy, and creative writing.'),
+    'arts':                   ('Arts and Humanities',             'Engage with art, music, philosophy, and creative writing.'),
+    'health':                 ('Health',                          'Advance careers in public health, nursing, and biomedical science.'),
+    'personal-development':   ('Personal Development',            'Build confidence, productivity, and lifelong learning habits.'),
+}
+
+_GD_CATEGORY_SKILLS = {
+    'Computer Science':                 ['Python', 'Algorithms', 'Java', 'Data Structures', 'C++', 'JavaScript', 'Computer Architecture'],
+    'Data Science':                     ['SQL', 'Python', 'Machine Learning', 'R Programming', 'Statistics', 'Pandas', 'Deep Learning'],
+    'Business':                         ['Leadership', 'Project Management', 'Marketing', 'Finance', 'Strategy', 'Operations'],
+    'Information Technology':           ['Linux', 'Networking', 'Cybersecurity', 'AWS', 'Azure', 'Docker', 'Kubernetes'],
+    'Language Learning':                ['English', 'Spanish', 'Chinese', 'French', 'Japanese', 'Translation'],
+    'Math and Logic':                   ['Calculus', 'Linear Algebra', 'Probability', 'Discrete Math', 'Optimization'],
+    'Physical Science and Engineering': ['Mechanical Engineering', 'Electrical Engineering', 'Physics', 'Materials Science'],
+    'Social Sciences':                  ['Economics', 'Sociology', 'Public Policy', 'Psychology', 'Geography'],
+    'Arts and Humanities':              ['Writing', 'Philosophy', 'Music Theory', 'Art History', 'Creative Writing'],
+    'Health':                           ['Public Health', 'Nutrition', 'Epidemiology', 'Anatomy', 'Healthcare Management'],
+    'Personal Development':             ['Time Management', 'Communication', 'Critical Thinking', 'Resilience', 'Mindfulness'],
+}
+
+_GD_CATEGORY_CAREERS = {
+    'Computer Science':                 [{'name': 'Software Engineer',   'slug': 'software-engineer',   'salary': '$120,000'},
+                                         {'name': 'Frontend Developer',  'slug': 'frontend-developer',  'salary': '$95,000'},
+                                         {'name': 'Backend Developer',   'slug': 'backend-developer',   'salary': '$110,000'}],
+    'Data Science':                     [{'name': 'Data Analyst',        'slug': 'data-analyst',        'salary': '$78,000'},
+                                         {'name': 'Data Scientist',      'slug': 'data-scientist',      'salary': '$118,000'},
+                                         {'name': 'ML Engineer',         'slug': 'ml-engineer',         'salary': '$130,000'}],
+    'Business':                         [{'name': 'Product Manager',     'slug': 'product-manager',     'salary': '$135,000'},
+                                         {'name': 'Project Manager',     'slug': 'project-manager',     'salary': '$92,000'},
+                                         {'name': 'Business Analyst',    'slug': 'business-analyst',    'salary': '$85,000'}],
+    'Information Technology':           [{'name': 'Cloud Architect',     'slug': 'cloud-architect',     'salary': '$145,000'},
+                                         {'name': 'IT Support',          'slug': 'it-support',          'salary': '$55,000'},
+                                         {'name': 'Cyber Security',      'slug': 'cyber-security',      'salary': '$105,000'}],
+    'Language Learning':                [{'name': 'Translator',          'slug': 'translator',          'salary': '$54,000'},
+                                         {'name': 'ESL Teacher',         'slug': 'esl-teacher',         'salary': '$48,000'}],
+    'Math and Logic':                   [{'name': 'Quantitative Analyst','slug': 'quant',               'salary': '$135,000'},
+                                         {'name': 'Statistician',        'slug': 'statistician',        'salary': '$92,000'}],
+    'Physical Science and Engineering': [{'name': 'Mechanical Engineer', 'slug': 'mechanical-engineer', 'salary': '$95,000'},
+                                         {'name': 'Electrical Engineer', 'slug': 'electrical-engineer', 'salary': '$98,000'}],
+    'Social Sciences':                  [{'name': 'Economist',           'slug': 'economist',           'salary': '$108,000'},
+                                         {'name': 'Policy Analyst',      'slug': 'policy-analyst',      'salary': '$72,000'}],
+    'Arts and Humanities':              [{'name': 'Content Writer',      'slug': 'content-writer',      'salary': '$58,000'},
+                                         {'name': 'UX Designer',         'slug': 'ux-designer',         'salary': '$92,000'}],
+    'Health':                           [{'name': 'Public Health',       'slug': 'public-health',       'salary': '$72,000'},
+                                         {'name': 'Healthcare Mgr',      'slug': 'healthcare-manager',  'salary': '$104,000'}],
+    'Personal Development':             [{'name': 'Career Coach',        'slug': 'career-coach',        'salary': '$62,000'}],
+}
+
+
+_GD_MASTERTRACKS = [
+    {'slug': 'instructional-design', 'title': 'Instructional Design MasterTrack',
+     'partner_short': 'Illinois', 'partner_name': 'University of Illinois at Urbana-Champaign',
+     'blurb': 'Apply learning science to design effective courses, training, and educational technology.',
+     'long_blurb': 'Earn academic credit toward the iMSLD program at Illinois. Designed for K-12 teachers, corporate trainers, and emerging instructional designers.',
+     'duration': '6 months', 'workload': '8–10', 'tuition': '$3,920',
+     'degree_alias': 'Master of Science in Learning Design',
+     'modules': [
+         {'title': 'Foundations of Learning Design', 'summary': 'Theories of cognition, motivation, and assessment.'},
+         {'title': 'Designing Effective eLearning', 'summary': 'Authoring tools, accessibility, and assessment design.'},
+         {'title': 'Capstone Project', 'summary': 'Build a fully scoped learning experience reviewed by faculty.'},
+     ]},
+    {'slug': 'sustainability-and-development', 'title': 'Sustainability and Development MasterTrack',
+     'partner_short': 'Michigan', 'partner_name': 'University of Michigan',
+     'blurb': 'Tools for sustainable development across business, government, and NGOs.',
+     'long_blurb': 'Designed for early- and mid-career professionals tackling climate, equity, and resource problems.',
+     'duration': '7 months', 'workload': '10–12', 'tuition': '$3,750',
+     'degree_alias': 'Master of Sustainability and Development',
+     'modules': [
+         {'title': 'Foundations of Sustainability', 'summary': 'Earth systems, equity, and the SDG framework.'},
+         {'title': 'Sustainable Cities', 'summary': 'Urban planning, transit, and infrastructure choices.'},
+         {'title': 'Energy and Climate Policy', 'summary': 'Mitigation, adaptation, and policy levers.'},
+         {'title': 'Capstone', 'summary': 'Field-based sustainability project graded by Michigan faculty.'},
+     ]},
+    {'slug': 'global-energy-and-climate-policy', 'title': 'Global Energy and Climate Policy MasterTrack',
+     'partner_short': 'SOAS London', 'partner_name': 'SOAS University of London',
+     'blurb': 'Policy, finance, and geopolitics of the energy transition.',
+     'long_blurb': 'Bridges economics, international relations, and engineering. Counts toward the SOAS MSc.',
+     'duration': '6 months', 'workload': '9–11', 'tuition': '$4,250',
+     'degree_alias': 'MSc Global Energy and Climate Policy',
+     'modules': [
+         {'title': 'Energy Markets and Investment', 'summary': 'How energy is financed, traded, and priced.'},
+         {'title': 'Climate Negotiation', 'summary': 'UNFCCC, COP, and national policy design.'},
+         {'title': 'Capstone Policy Brief', 'summary': 'Write a publishable policy brief.'},
+     ]},
+    {'slug': 'social-work', 'title': 'Social Work: Practice, Policy, and Research MasterTrack',
+     'partner_short': 'Michigan', 'partner_name': 'University of Michigan',
+     'blurb': 'Core social work skills for community and clinical practice.',
+     'long_blurb': 'A direct on-ramp to Michigan\'s Master of Social Work program.',
+     'duration': '5 months', 'workload': '10–12', 'tuition': '$4,000',
+     'degree_alias': 'Master of Social Work',
+     'modules': [
+         {'title': 'Foundations of Social Work', 'summary': 'Values, ethics, and frameworks.'},
+         {'title': 'Policy and Advocacy', 'summary': 'How policy shapes practice.'},
+         {'title': 'Capstone Field Project', 'summary': 'Apply skills in a community setting.'},
+     ]},
+    {'slug': 'machine-learning-for-analytics', 'title': 'Machine Learning for Analytics MasterTrack',
+     'partner_short': 'Chicago', 'partner_name': 'University of Chicago',
+     'blurb': 'Applied ML for business analytics roles.',
+     'long_blurb': 'Designed for analysts adding ML to their toolkit. Counts toward Chicago\'s MS in Analytics.',
+     'duration': '6 months', 'workload': '10–14', 'tuition': '$4,800',
+     'degree_alias': 'MS in Analytics',
+     'modules': [
+         {'title': 'Foundations of ML', 'summary': 'Supervised and unsupervised models.'},
+         {'title': 'Time Series and Forecasting', 'summary': 'Statistical and neural approaches.'},
+         {'title': 'Deployment and MLOps', 'summary': 'Production-grade ML systems.'},
+         {'title': 'Capstone', 'summary': 'End-to-end analytics project on a real dataset.'},
+     ]},
+    {'slug': 'principles-of-management', 'title': 'Principles of Management MasterTrack',
+     'partner_short': 'IE Business School', 'partner_name': 'IE Business School',
+     'blurb': 'Management foundations for first-time and aspiring managers.',
+     'long_blurb': 'A stepping stone toward IE\'s online MBA.',
+     'duration': '5 months', 'workload': '8–10', 'tuition': '$3,600',
+     'degree_alias': 'IE Online MBA',
+     'modules': [
+         {'title': 'Strategy', 'summary': 'How firms create and sustain advantage.'},
+         {'title': 'People and Leadership', 'summary': 'Motivating and leading teams.'},
+         {'title': 'Finance for Managers', 'summary': 'Reading P&Ls and making investment cases.'},
+     ]},
+    {'slug': 'construction-engineering-and-management', 'title': 'Construction Engineering &amp; Management MasterTrack',
+     'partner_short': 'Michigan', 'partner_name': 'University of Michigan',
+     'blurb': 'Modern construction management for civil engineers.',
+     'long_blurb': 'Bridge field experience with formal credentials toward an M.Eng.',
+     'duration': '6 months', 'workload': '10–12', 'tuition': '$4,250',
+     'degree_alias': 'Master of Engineering in Construction Management',
+     'modules': [
+         {'title': 'Construction Estimation', 'summary': 'Cost modeling and bidding.'},
+         {'title': 'Scheduling and Planning', 'summary': 'Critical path and resource leveling.'},
+         {'title': 'Capstone Build', 'summary': 'Plan a real-scale construction project.'},
+     ]},
+]
+
+_GD_INDUSTRY_PAGES = {
+    'technology':  ('Technology',  'Help engineers, PMs, and designers ship faster — from AI fundamentals to system design.',
+                    ['Python', 'Cloud Computing', 'System Design', 'Machine Learning', 'Cybersecurity'],
+                    [('Adobe', 'Adobe upskilled 9,000+ engineers in cloud and ML.', 'Adobe', '4x faster', '95% completion'),
+                     ('Atlassian', 'Atlassian rolled out SRE training across the engineering org.', 'Atlassian', '67% incident drop', '2,800 trained'),
+                     ('Cisco', 'Cisco modernized its IT certification ladder.', 'Cisco', '120K seats', '3.8/5 NPS')]),
+    'finance':     ('Finance',     'Build the data, risk, and compliance skills banks and fintechs need.',
+                    ['Excel', 'SQL', 'Financial Modeling', 'Risk Analysis', 'Tableau'],
+                    [('Citi', 'Citi launched a digital banking academy for 40K staff.', 'Citi', '40,000 learners', '92% completion'),
+                     ('Mastercard', 'Mastercard rolled out a data fluency program.', 'Mastercard', '78% data fluency', '4.6/5'),
+                     ('Goldman Sachs', 'Goldman trained analysts in advanced Excel and Python.', 'Goldman Sachs', '2x faster onboarding', '4.7/5')]),
+    'healthcare':  ('Healthcare',  'Reskill clinical and administrative staff for digital health, telemedicine, and data.',
+                    ['EHR Systems', 'Public Health', 'Healthcare Analytics', 'Project Management', 'Communication'],
+                    [('Mercy Health', 'Mercy Health trained 8K clinicians in informatics.', 'Mercy Health', '8,000 clinicians', '94% retention'),
+                     ('Kaiser Permanente', 'Kaiser rolled out healthcare data analytics learning paths.', 'Kaiser', '3x analyst capacity', '4.5/5')]),
+    'retail':      ('Retail',      'Train store managers and corporate staff in analytics, supply chain, and digital marketing.',
+                    ['Inventory Management', 'Digital Marketing', 'Customer Experience', 'Operations', 'Excel'],
+                    [('IKEA', 'IKEA reskilled 12K store leaders in digital ops.', 'IKEA', '12K leaders', '88% completion'),
+                     ('Best Buy', 'Best Buy launched a Geek Squad cyber-skills academy.', 'Best Buy', '4K Agents certified', '4.6/5')]),
+    'manufacturing': ('Manufacturing','Industry 4.0 skills: automation, lean, and data-driven operations.',
+                    ['Lean Six Sigma', 'Industrial IoT', 'CAD', 'Quality Management', 'Supply Chain'],
+                    [('Bosch', 'Bosch ran a global digital factory academy.', 'Bosch', '15K engineers', '93% completion'),
+                     ('Siemens', 'Siemens built a workforce automation curriculum.', 'Siemens', '2x productivity', '4.5/5')]),
+    'government':  ('Government',  'Upskill public-sector employees in digital services, cybersecurity, and data.',
+                    ['Project Management', 'Cybersecurity', 'Public Speaking', 'Data Analysis', 'Excel'],
+                    [('Government of Colombia', 'Colombia reskilled 1M citizens in digital skills.', 'MinTIC Colombia', '1M citizens', '78% completion'),
+                     ('UAE Government', 'UAE built a future-skills academy for civil servants.', 'UAE Gov', '50K civil servants', '4.7/5')]),
+    'energy':      ('Energy',      'Skills for the energy transition: renewables, grid, and decarbonization.',
+                    ['Renewable Energy', 'Power Systems', 'Sustainability', 'Project Management', 'GIS'],
+                    [('Schneider Electric', 'Schneider trained sustainability engineers globally.', 'Schneider', '20K engineers', '4.6/5'),
+                     ('EDF', 'EDF ran a renewable energy reskilling program.', 'EDF', '6K reskilled', '91% completion')]),
+    'consulting':  ('Consulting',  'Equip consultants with structured problem solving, data, and stakeholder skills.',
+                    ['Communication', 'Strategy', 'Data Analysis', 'Storytelling', 'Excel'],
+                    [('Deloitte', 'Deloitte rolled out a consultant fluency program.', 'Deloitte', '70K consultants', '4.7/5'),
+                     ('Accenture', 'Accenture trained 200K staff in AI fluency.', 'Accenture', '200K trained', '92% completion')]),
+}
+
+
+_GD_PARTNER_ABOUT_EXPERTISE = {
+    'university': ['Research', 'Liberal arts', 'STEM', 'Professional schools', 'Continuing education'],
+    'company':    ['Industry training', 'Career certificates', 'Technical mentorship', 'Workforce reskilling'],
+    'institution':['Mission-driven training', 'Policy expertise', 'Sector partnerships', 'Cross-disciplinary work'],
+}
+
+
+def _gd_text(seed_str, items):
+    if not items:
+        return ''
+    idx = int(_gd_hashlib.md5(str(seed_str).encode()).hexdigest()[:6], 16) % len(items)
+    return items[idx]
+
+
+# ── /specializations index ────────────────────────────────────────────────────
+@app.route('/specializations')
+def specializations_index():
+    courses = (Course.query.filter_by(course_type='Specialization')
+               .order_by(Course.enrolled_count.desc()).limit(96).all())
+    partner_count = len({c.partner_id for c in courses if c.partner_id})
+    return render_template('specializations_index.html',
+                           courses=courses, partner_count=partner_count)
+
+
+# ── /professional-certificates/<slug> ─────────────────────────────────────────
+@app.route('/professional-certificates/<slug>')
+def professional_cert_detail(slug):
+    course = Course.query.filter_by(slug=slug).first()
+    if not course:
+        # Allow looser match — append '-professional-certificate' suffix
+        course = Course.query.filter_by(
+            slug=f'{slug}-professional-certificate').first()
+    if not course:
+        abort(404)
+    sub_courses = SubCourse.query.filter_by(
+        specialization_id=course.id).order_by(SubCourse.order_index).all()
+    # Career track derived from category — keeps copy plausible.
+    career_track = (course.category or 'this field').strip().lower() or 'this field'
+    return render_template('professional_cert_detail.html', course=course,
+                           sub_courses=sub_courses, career_track=career_track)
+
+
+# ── /degrees/<slug> ───────────────────────────────────────────────────────────
+@app.route('/degrees/<slug>')
+def degree_detail(slug):
+    # Avoid collision with /degrees/list (handled higher).
+    if slug == 'list':
+        return redirect(url_for('degrees_list'))
+    course = Course.query.filter_by(slug=slug).first()
+    if not course or course.course_type != 'Degree':
+        abort(404)
+    # Deterministic concentrations from the category.
+    cat = course.category or 'General'
+    skills_pool = _GD_CATEGORY_SKILLS.get(cat, ['Core Theory', 'Capstone Lab', 'Applied Project'])
+    seed = int(_gd_hashlib.md5(course.slug.encode()).hexdigest()[:6], 16)
+    concentrations = []
+    for k in range(4):
+        concentrations.append(skills_pool[(seed + k * 3) % len(skills_pool)])
+    # Drop duplicates while preserving order.
+    seen = set(); _c = []
+    for x in concentrations:
+        if x not in seen:
+            seen.add(x); _c.append(x)
+    concentrations = _c
+    return render_template('degree_detail.html', course=course,
+                           concentrations=concentrations)
+
+
+# ── /mastertrack and /mastertrack/<slug> ──────────────────────────────────────
+@app.route('/mastertrack')
+@app.route('/mastertrack/')
+def mastertrack_index():
+    return render_template('mastertrack_index.html', tracks=_GD_MASTERTRACKS)
+
+
+@app.route('/mastertrack/<slug>')
+def mastertrack_detail(slug):
+    track = next((t for t in _GD_MASTERTRACKS if t['slug'] == slug), None)
+    if not track:
+        abort(404)
+    return render_template('mastertrack_detail.html', track=track)
+
+
+@app.route('/mastertrack/<slug>/admissions', methods=['GET', 'POST'])
+def mastertrack_admissions(slug):
+    track = next((t for t in _GD_MASTERTRACKS if t['slug'] == slug), None)
+    if not track:
+        abort(404)
+    submitted = False
+    ref_code = ''
+    if request.method == 'POST':
+        # Deterministic, in-memory only — no DB write.
+        payload = (slug + (request.form.get('email') or '')
+                   + (request.form.get('first_name') or '')).encode('utf-8')
+        ref_code = _gd_hashlib.md5(payload).hexdigest()[:8].upper()
+        submitted = True
+    return render_template('mastertrack_admissions.html', track=track,
+                           submitted=submitted, ref_code=ref_code)
+
+
+# ── /business/<industry> ──────────────────────────────────────────────────────
+@app.route('/business/<industry>')
+def business_industry(industry):
+    page = _GD_INDUSTRY_PAGES.get(industry)
+    if not page:
+        abort(404)
+    industry_name, blurb, skills, raw_cases = page
+    case_studies = [
+        {'company': c[0], 'headline': c[1], 'summary': f'How {c[2]} partnered with Coursera for Business to drive measurable outcomes.',
+         'metric_1': c[3], 'metric_2': c[4]} for c in raw_cases
+    ]
+    # Recommend top courses tagged with any of the industry skills.
+    candidates = (Course.query.filter(Course.skills != '')
+                  .order_by(Course.enrolled_count.desc()).limit(400).all())
+    needles = [s.lower() for s in skills]
+    recommended = []
+    for c in candidates:
+        sk = (c.skills or '').lower()
+        if any(n in sk for n in needles):
+            recommended.append(c)
+        if len(recommended) >= 9:
+            break
+    return render_template('business_industry.html',
+                           industry_slug=industry,
+                           industry_name=industry_name,
+                           industry_blurb=blurb,
+                           key_skills=skills,
+                           case_studies=case_studies,
+                           recommended_courses=recommended)
+
+
+# ── /campus ───────────────────────────────────────────────────────────────────
+@app.route('/campus', methods=['GET', 'POST'])
+def campus():
+    return render_template('campus.html')
+
+
+# ── /category/<slug> ──────────────────────────────────────────────────────────
+@app.route('/category/<slug>')
+def category_detail(slug):
+    entry = _GD_CATEGORY_MAP.get(slug)
+    if not entry:
+        abort(404)
+    cat_name, _blurb = entry
+    q = Course.query.filter(Course.category.ilike(f'%{cat_name}%'))
+    level = request.args.get('level')
+    ctype = request.args.get('type')
+    if level in ('Beginner', 'Intermediate', 'Advanced', 'Mixed'):
+        q = q.filter(Course.level == level)
+    if ctype:
+        q = q.filter(Course.course_type == ctype)
+    if request.args.get('free') == '1':
+        q = q.filter(Course.is_free.is_(True))
+    courses = q.order_by(Course.enrolled_count.desc()).limit(96).all()
+    return render_template('category_detail.html',
+                           cat_slug=slug, cat_name=cat_name,
+                           courses=courses,
+                           top_skills=_GD_CATEGORY_SKILLS.get(cat_name, []),
+                           career_roles=_GD_CATEGORY_CAREERS.get(cat_name, []))
+
+
+# ── /financial-aid/apply ──────────────────────────────────────────────────────
+@app.route('/financial-aid/apply', methods=['GET', 'POST'])
+def financial_aid_apply():
+    eligible_courses = (Course.query.filter_by(has_certificate=True, is_free=False)
+                        .order_by(Course.enrolled_count.desc()).limit(30).all())
+    submitted = False
+    ref_code = ''
+    decision_by = ''
+    if request.method == 'POST':
+        payload = ((request.form.get('course_slug') or '') +
+                   (request.form.get('income_band') or '') +
+                   (request.form.get('why_needed') or '')[:30]).encode('utf-8')
+        ref_code = _gd_hashlib.md5(payload).hexdigest()[:8].upper()
+        submitted = True
+        # Decision date is a deterministic +15-business-day offset from a
+        # fixed reference so the GUI value is stable.
+        ref_dt = datetime(2026, 5, 1)
+        decision_by = (ref_dt + timedelta(days=21)).strftime('%B %d, %Y')
+    return render_template('financial_aid_apply.html',
+                           eligible_courses=eligible_courses,
+                           submitted=submitted, ref_code=ref_code,
+                           decision_by=decision_by)
+
+
+# ── Policy pages ──────────────────────────────────────────────────────────────
+@app.route('/refund-policy')
+def refund_policy():
+    return render_template('refund_policy.html')
+
+
+@app.route('/honor-code')
+def honor_code():
+    return render_template('honor_code.html')
+
+
+@app.route('/code-of-conduct')
+def code_of_conduct():
+    return render_template('code_of_conduct.html')
+
+
+@app.route('/terms')
+@app.route('/terms-of-use')
+def terms_of_use():
+    return render_template('terms_of_use.html')
+
+
+@app.route('/privacy')
+@app.route('/privacy-policy')
+def privacy_policy():
+    return render_template('privacy_policy.html')
+
+
+# ── /coursera-plus/subscribe ──────────────────────────────────────────────────
+@app.route('/coursera-plus/subscribe', methods=['GET', 'POST'])
+def coursera_plus_subscribe():
+    confirmed_plan = None
+    first_charge_date = ''
+    if request.method == 'POST':
+        plan = (request.form.get('plan') or '').lower()
+        if plan in ('monthly', 'annual', 'student'):
+            confirmed_plan = plan
+            ref_dt = datetime(2026, 5, 1)
+            first_charge_date = (ref_dt + timedelta(days=7)).strftime('%B %d, %Y')
+    return render_template('coursera_plus_subscribe.html',
+                           confirmed_plan=confirmed_plan,
+                           first_charge_date=first_charge_date)
+
+
+# ── Course sub-pages ──────────────────────────────────────────────────────────
+@app.route('/learn/<slug>/instructors')
+def course_instructors(slug):
+    course = Course.query.filter_by(slug=slug).first_or_404()
+    names = []
+    if course.instructor:
+        for nm in [n.strip() for n in course.instructor.split(',')]:
+            if nm and nm not in names:
+                names.append(nm)
+    if not names:
+        names = ['Coursera Instructor']
+    bios = [
+        'is a teaching professor with over a decade of experience guiding learners online and on campus.',
+        'leads research and industry collaborations and has published widely in the field.',
+        'brings hands-on industry experience to every course module and discussion forum.',
+        'is recognized for designing engaging, scaffolded learning experiences for global audiences.',
+    ]
+    instructors = []
+    for idx, nm in enumerate(names[:6]):
+        slugn = _slugify_instructor(nm)
+        seed = int(_gd_hashlib.md5(slugn.encode()).hexdigest()[:6], 16)
+        instructors.append({
+            'name': nm,
+            'slug': slugn,
+            'title': course.instructor_title or 'Lead Instructor',
+            'affiliation': (course.partner.name if course.partner else ''),
+            'bio': f'{nm} {bios[seed % len(bios)]}',
+            'course_count': 1 + (seed % 6),
+            'learner_count': '{:,}'.format(1500 + (seed % 9) * 850),
+        })
+    return render_template('course_instructors.html', course=course, instructors=instructors)
+
+
+@app.route('/learn/<slug>/reviews')
+def course_reviews(slug):
+    course = Course.query.filter_by(slug=slug).first_or_404()
+    star_filter = None
+    try:
+        sf = int(request.args.get('stars') or 0)
+        if 1 <= sf <= 5:
+            star_filter = sf
+    except (TypeError, ValueError):
+        star_filter = None
+    avg = course.rating or 4.5
+    if avg >= 4.7:
+        breakdown = {'5': 65, '4': 22, '3': 8, '2': 3, '1': 2}
+    elif avg >= 4.4:
+        breakdown = {'5': 55, '4': 28, '3': 10, '2': 4, '1': 3}
+    elif avg >= 4.0:
+        breakdown = {'5': 45, '4': 30, '3': 15, '2': 6, '1': 4}
+    else:
+        breakdown = {'5': 30, '4': 30, '3': 20, '2': 12, '1': 8}
+    # Build deterministic review entries from the existing Review rows when
+    # available, falling back to seeded synthetic entries.
+    reviews_rows = (Review.query.filter_by(course_id=course.id)
+                    .order_by(Review.rating.desc(), Review.created_at.desc())
+                    .limit(40).all())
+    out = []
+    for r in reviews_rows:
+        user = User.query.get(r.user_id)
+        if star_filter is not None and int(round(r.rating)) != star_filter:
+            continue
+        out.append({
+            'rating': int(round(r.rating)),
+            'body': r.body,
+            'author_name': (user.name if user else 'Coursera Learner'),
+            'author_initial': (user.name[0].upper() if user and user.name else 'C'),
+            'created_at_display': (r.created_at.strftime('%B %Y') if r.created_at else 'recently'),
+        })
+    if not out:
+        # Synthetic fallback when no reviews exist yet.
+        sample_bodies = [
+            'Clear explanations and well-paced labs.  The capstone tied everything together.',
+            'Loved the hands-on assignments.  Office hours from the TA team were a highlight.',
+            'A few outdated slides, but overall an outstanding introduction to the topic.',
+            'I had no background in this area and finished feeling confident with the basics.',
+            'The peer-review rubric is fair and the discussion forum is very active.',
+        ]
+        for i in range(5):
+            stars = 5 - (i % 5 if i < 5 else 0)
+            if star_filter and stars != star_filter:
+                continue
+            out.append({
+                'rating': stars,
+                'body': sample_bodies[i % len(sample_bodies)],
+                'author_name': f'Learner {i + 1}',
+                'author_initial': chr(ord('A') + i),
+                'created_at_display': 'March 2026',
+            })
+    return render_template('course_reviews.html', course=course, reviews=out,
+                           breakdown=breakdown, star_filter=star_filter)
+
+
+@app.route('/learn/<slug>/faq')
+def course_faq(slug):
+    course = Course.query.filter_by(slug=slug).first_or_404()
+    faq_groups = [
+        ('Enrollment and access', [
+            ('How do I enroll in this course?',
+             'Click the Enroll button on the course page. You can audit for free or join the certificate track for a fee.'),
+            ('Can I take the course at my own pace?',
+             'Yes. Coursera offers flexible deadlines — set your own schedule and shift due dates as needed.'),
+            ('Is there a free trial?',
+             'You can audit most courses for free. The certificate track unlocks graded assignments and the shareable certificate.'),
+        ]),
+        ('Certificates and credit', [
+            ('Will I receive a certificate?',
+             'Yes — finish all graded items in the certificate track to earn a shareable, verifiable certificate.'),
+            ('Can I add this to LinkedIn?',
+             'Absolutely.  From your Accomplishments page, click Add to LinkedIn — your verified credential will appear in your profile.'),
+            ('Is the certificate accredited for university credit?',
+             'Some Specializations are credit-eligible toward partner-university degrees. See the program page for details.'),
+        ]),
+        ('Payment and refunds', [
+            ('What does the certificate track cost?',
+             'Pricing varies by course and is shown on the enrollment screen. Subscriptions like Coursera Plus include this course.'),
+            ('Can I get a refund?',
+             'Yes — see our refund policy. Most paid courses are refundable within 14 days if you have not earned the certificate.'),
+            ('Is financial aid available?',
+             'Yes. Coursera offers full financial aid for learners who demonstrate need. Reviews take about 15 business days.'),
+        ]),
+        ('Course logistics', [
+            ('How long is this course?',
+             f'{course.duration_text} at approximately {int(course.estimated_workload_hours_per_week or 4)} hours per week.'),
+            ('Are the syllabus PDFs downloadable for offline study?',
+             'Yes. Each module page exposes a downloadable syllabus and lecture slides where available.'),
+            ('Are captions available?',
+             'Yes. Captions are available in English plus 16 additional languages where supported by the partner.'),
+        ]),
+    ]
+    return render_template('course_faq.html', course=course, faq_groups=faq_groups)
+
+
+# ── /courses landing + collections ────────────────────────────────────────────
+@app.route('/courses')
+def courses_landing():
+    cats = [
+        ('computer-science', 'Computer Science'),
+        ('data-science', 'Data Science'),
+        ('business', 'Business'),
+        ('information-technology', 'Information Technology'),
+        ('language-learning', 'Language Learning'),
+        ('math-logic', 'Math and Logic'),
+        ('physical-science', 'Physical Science and Engineering'),
+        ('social-sciences', 'Social Sciences'),
+        ('arts-humanities', 'Arts and Humanities'),
+        ('health', 'Health'),
+        ('personal-development', 'Personal Development'),
+    ]
+    return render_template('courses_landing.html', categories=cats)
+
+
+@app.route('/courses/free')
+def courses_free():
+    courses = (Course.query.filter_by(is_free=True)
+               .order_by(Course.enrolled_count.desc()).limit(72).all())
+    return render_template('courses_collection.html',
+                           collection='Free',
+                           heading='Free online courses',
+                           blurb='Audit any of these courses at no cost. Upgrade to the certificate track anytime.',
+                           courses=courses)
+
+
+@app.route('/courses/with-certificate')
+def courses_with_certificate():
+    courses = (Course.query.filter_by(has_certificate=True)
+               .order_by(Course.enrolled_count.desc()).limit(72).all())
+    return render_template('courses_collection.html',
+                           collection='With certificate',
+                           heading='Courses with a shareable certificate',
+                           blurb='Earn a verifiable certificate to share on LinkedIn or with employers.',
+                           courses=courses)
+
+
+@app.route('/courses/in-spanish')
+def courses_in_spanish():
+    needles = ['Spanish', 'español', 'en español', 'idioma']
+    q = Course.query.filter(
+        db.or_(*[Course.title.ilike(f'%{n}%') for n in needles] +
+               [Course.description.ilike(f'%{n}%') for n in needles])
+    )
+    courses = q.order_by(Course.enrolled_count.desc()).limit(72).all()
+    return render_template('courses_collection.html',
+                           collection='In Spanish',
+                           heading='Cursos completos en español',
+                           blurb='Browse courses taught in Spanish — from beginner language to professional-track content.',
+                           courses=courses)
+
+
+# ── /partner/<slug>/about ─────────────────────────────────────────────────────
+@app.route('/partner/<slug>/about')
+def partner_about(slug):
+    partner = Partner.query.filter_by(slug=slug).first_or_404()
+    expertise = _GD_PARTNER_ABOUT_EXPERTISE.get(partner.partner_type, ['Education', 'Research', 'Public engagement'])
+    # Featured = top 5 by enrollment.
+    featured = (Course.query.filter_by(partner_id=partner.id)
+                .order_by(Course.enrolled_count.desc()).limit(5).all())
+    rows = Course.query.filter_by(partner_id=partner.id).all()
+    total_courses = len(rows)
+    total_learners = '{:,}'.format(sum(c.enrolled_count or 0 for c in rows))
+    if rows:
+        avg_rating = '{:.2f}'.format(
+            sum((c.rating or 0) for c in rows) / max(len(rows), 1))
+    else:
+        avg_rating = 'n/a'
+    # Deterministic founding year from slug.
+    seed = int(_gd_hashlib.md5(partner.slug.encode()).hexdigest()[:6], 16)
+    founded = 1800 + (seed % 220)
+    return render_template('partner_about.html',
+                           partner=partner, expertise=expertise,
+                           featured=featured, total_courses=total_courses,
+                           total_learners=total_learners,
+                           avg_rating=avg_rating, founded=founded)
+
+
+# ── /compare ──────────────────────────────────────────────────────────────────
+@app.route('/compare')
+def course_compare():
+    all_courses = (Course.query.order_by(Course.enrolled_count.desc())
+                   .limit(200).all())
+    a_slug = request.args.get('a')
+    b_slug = request.args.get('b')
+    a = Course.query.filter_by(slug=a_slug).first() if a_slug else None
+    b = Course.query.filter_by(slug=b_slug).first() if b_slug else None
+    return render_template('course_compare.html', all_courses=all_courses,
+                           a=a, b=b)
+
+
+# === GUI deepen END ===
 
 
 if __name__ == '__main__':

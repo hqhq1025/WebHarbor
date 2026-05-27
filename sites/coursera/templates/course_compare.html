@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% block title %}Compare courses | Coursera{% endblock %}
+{% block content %}
+<div class="container" style="max-width:1080px;margin:0 auto;padding:32px 24px;">
+  <nav style="font-size:13px;color:#5B6780;margin-bottom:14px;">
+    <a href="{{ url_for('index') }}">Home</a> &rsaquo; <span>Compare</span>
+  </nav>
+  <h1 style="font-size:32px;margin:0 0 8px;">Compare two courses side by side</h1>
+  <p style="color:#5B6780;font-size:14px;">Select two courses to compare topics, workload, certificate options, and outcomes.</p>
+
+  <form method="GET" style="background:#fff;border:1px solid #DAE1ED;border-radius:12px;padding:18px;margin:18px 0;display:grid;grid-template-columns:1fr 1fr auto;gap:12px;align-items:end;">
+    <label style="font-size:13px;color:#5B6780;">Course A
+      <select name="a" required style="display:block;width:100%;padding:9px;border:1px solid #DAE1ED;border-radius:8px;margin-top:4px;">
+        <option value="">— pick a course —</option>
+        {% for c in all_courses %}<option value="{{ c.slug }}" {% if a and a.slug == c.slug %}selected{% endif %}>{{ c.title }}</option>{% endfor %}
+      </select>
+    </label>
+    <label style="font-size:13px;color:#5B6780;">Course B
+      <select name="b" required style="display:block;width:100%;padding:9px;border:1px solid #DAE1ED;border-radius:8px;margin-top:4px;">
+        <option value="">— pick a course —</option>
+        {% for c in all_courses %}<option value="{{ c.slug }}" {% if b and b.slug == c.slug %}selected{% endif %}>{{ c.title }}</option>{% endfor %}
+      </select>
+    </label>
+    <button type="submit" class="btn-primary">Compare</button>
+  </form>
+
+  {% if a and b %}
+  <table style="width:100%;border-collapse:collapse;background:#fff;border:1px solid #DAE1ED;border-radius:12px;overflow:hidden;">
+    <thead style="background:#F2F5FA;">
+      <tr><th style="text-align:left;padding:12px 16px;width:20%;">Attribute</th><th style="text-align:left;padding:12px 16px;">{{ a.title }}</th><th style="text-align:left;padding:12px 16px;">{{ b.title }}</th></tr>
+    </thead>
+    <tbody>
+      <tr><td style="padding:12px 16px;border-top:1px solid #DAE1ED;color:#5B6780;">Type</td><td style="padding:12px 16px;border-top:1px solid #DAE1ED;">{{ a.course_type }}</td><td style="padding:12px 16px;border-top:1px solid #DAE1ED;">{{ b.course_type }}</td></tr>
+      <tr><td style="padding:12px 16px;border-top:1px solid #DAE1ED;color:#5B6780;">Partner</td><td style="padding:12px 16px;border-top:1px solid #DAE1ED;">{{ a.partner.name if a.partner else '—' }}</td><td style="padding:12px 16px;border-top:1px solid #DAE1ED;">{{ b.partner.name if b.partner else '—' }}</td></tr>
+      <tr><td style="padding:12px 16px;border-top:1px solid #DAE1ED;color:#5B6780;">Level</td><td style="padding:12px 16px;border-top:1px solid #DAE1ED;">{{ a.level }}</td><td style="padding:12px 16px;border-top:1px solid #DAE1ED;">{{ b.level }}</td></tr>
+      <tr><td style="padding:12px 16px;border-top:1px solid #DAE1ED;color:#5B6780;">Duration</td><td style="padding:12px 16px;border-top:1px solid #DAE1ED;">{{ a.duration_text }}</td><td style="padding:12px 16px;border-top:1px solid #DAE1ED;">{{ b.duration_text }}</td></tr>
+      <tr><td style="padding:12px 16px;border-top:1px solid #DAE1ED;color:#5B6780;">Workload</td><td style="padding:12px 16px;border-top:1px solid #DAE1ED;">{{ '%.0f'|format(a.estimated_workload_hours_per_week or 4) }} hrs/wk</td><td style="padding:12px 16px;border-top:1px solid #DAE1ED;">{{ '%.0f'|format(b.estimated_workload_hours_per_week or 4) }} hrs/wk</td></tr>
+      <tr><td style="padding:12px 16px;border-top:1px solid #DAE1ED;color:#5B6780;">Rating</td><td style="padding:12px 16px;border-top:1px solid #DAE1ED;">{{ '%.1f'|format(a.rating) }} &#9733; ({{ '{:,}'.format(a.review_count) }})</td><td style="padding:12px 16px;border-top:1px solid #DAE1ED;">{{ '%.1f'|format(b.rating) }} &#9733; ({{ '{:,}'.format(b.review_count) }})</td></tr>
+      <tr><td style="padding:12px 16px;border-top:1px solid #DAE1ED;color:#5B6780;">Free?</td><td style="padding:12px 16px;border-top:1px solid #DAE1ED;">{{ 'Yes' if a.is_free else 'No' }}</td><td style="padding:12px 16px;border-top:1px solid #DAE1ED;">{{ 'Yes' if b.is_free else 'No' }}</td></tr>
+      <tr><td style="padding:12px 16px;border-top:1px solid #DAE1ED;color:#5B6780;">Certificate</td><td style="padding:12px 16px;border-top:1px solid #DAE1ED;">{{ 'Yes' if a.has_certificate else 'No' }}</td><td style="padding:12px 16px;border-top:1px solid #DAE1ED;">{{ 'Yes' if b.has_certificate else 'No' }}</td></tr>
+      <tr><td style="padding:12px 16px;border-top:1px solid #DAE1ED;color:#5B6780;vertical-align:top;">Skills</td>
+        <td style="padding:12px 16px;border-top:1px solid #DAE1ED;">{% for s in a.get_skills() %}<span style="display:inline-block;background:#E5F0FF;color:#0056D2;padding:3px 8px;border-radius:999px;font-size:12px;margin:2px;">{{ s }}</span>{% endfor %}</td>
+        <td style="padding:12px 16px;border-top:1px solid #DAE1ED;">{% for s in b.get_skills() %}<span style="display:inline-block;background:#E5F0FF;color:#0056D2;padding:3px 8px;border-radius:999px;font-size:12px;margin:2px;">{{ s }}</span>{% endfor %}</td>
+      </tr>
+    </tbody>
+  </table>
+  <div style="margin-top:18px;display:flex;gap:8px;justify-content:flex-end;">
+    <a href="{{ url_for('course_detail', slug=a.slug) }}" class="btn-outline">Open {{ a.title|truncate(40) }}</a>
+    <a href="{{ url_for('course_detail', slug=b.slug) }}" class="btn-primary">Open {{ b.title|truncate(40) }}</a>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

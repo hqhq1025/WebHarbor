@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% block title %}Privacy Policy | Coursera{% endblock %}
+{% block content %}
+<div class="container" style="max-width:880px;margin:0 auto;padding:42px 24px;">
+  <nav style="font-size:13px;color:#5B6780;margin-bottom:14px;">
+    <a href="{{ url_for('index') }}">Home</a> &rsaquo; <span>Privacy</span>
+  </nav>
+  <h1 style="margin:0 0 6px;font-size:34px;">Privacy Policy</h1>
+  <p style="color:#5B6780;font-size:14px;">Effective: January 8, 2026</p>
+
+  <section style="margin-top:24px;background:#fff;border:1px solid #DAE1ED;border-radius:12px;padding:24px;">
+    <h2 style="margin:0 0 8px;font-size:22px;">Information we collect</h2>
+    <ul style="padding-left:18px;line-height:1.7;color:#3C4858;">
+      <li>Account information (name, email, password hash).</li>
+      <li>Learning activity (course progress, quiz attempts, peer-review submissions).</li>
+      <li>Payment information processed by our card processor — Coursera never stores raw card numbers.</li>
+      <li>Device and usage signals (browser, OS, IP, anonymized telemetry).</li>
+    </ul>
+  </section>
+
+  <section style="margin-top:18px;background:#fff;border:1px solid #DAE1ED;border-radius:12px;padding:24px;">
+    <h2 style="margin:0 0 8px;font-size:22px;">How we use information</h2>
+    <ul style="padding-left:18px;line-height:1.7;color:#3C4858;">
+      <li>Deliver the courses, certificates, and recommendations you request.</li>
+      <li>Power the search experience and improve the quality of our catalog.</li>
+      <li>Send transactional emails (enrollment confirmations, deadlines).</li>
+      <li>Marketing email — you can opt out at any time from Account &rsaquo; Notifications.</li>
+    </ul>
+  </section>
+
+  <section style="margin-top:18px;background:#fff;border:1px solid #DAE1ED;border-radius:12px;padding:24px;">
+    <h2 style="margin:0 0 8px;font-size:22px;">Sharing with partners</h2>
+    <p style="color:#3C4858;line-height:1.7;">When you enroll in a course, the partnering university or company receives the data needed to deliver the course (e.g., name, completion status). Degrees and MasterTrack programs receive more detailed admissions information that you submit.</p>
+  </section>
+
+  <section style="margin-top:18px;background:#fff;border:1px solid #DAE1ED;border-radius:12px;padding:24px;">
+    <h2 style="margin:0 0 8px;font-size:22px;">Your rights</h2>
+    <ul style="padding-left:18px;line-height:1.7;color:#3C4858;">
+      <li>Access your data: <a href="{{ url_for('account_edit') }}" style="color:#0056D2;">Account &rsaquo; Edit profile</a>.</li>
+      <li>Export your learning record: request from <a href="{{ url_for('help_center') }}" style="color:#0056D2;">Help Center</a>.</li>
+      <li>Delete your account: <a href="{{ url_for('account_edit') }}" style="color:#0056D2;">Account &rsaquo; Delete</a> — irreversible.</li>
+      <li>EU/UK/EEA residents: contact dpo@coursera.org for GDPR data-subject requests.</li>
+      <li>California residents: contact privacy@coursera.org for CCPA requests.</li>
+    </ul>
+  </section>
+
+  <section style="margin-top:18px;background:#FFF8E6;border:1px solid #FDE38A;border-radius:12px;padding:18px;">
+    <h2 style="margin:0 0 6px;font-size:18px;">Cookies</h2>
+    <p style="color:#5B6780;font-size:14px;margin:0;">Coursera uses cookies for authentication, preferences, and aggregated analytics. Manage cookie preferences from <a href="{{ url_for('account_edit') }}" style="color:#0056D2;">Account &rsaquo; Privacy</a>.</p>
+  </section>
+
+  <p style="margin-top:18px;color:#5B6780;font-size:13px;">See also: <a href="{{ url_for('terms_of_use') }}" style="color:#0056D2;">Terms of Use</a>.</p>
+</div>
+{% endblock %}

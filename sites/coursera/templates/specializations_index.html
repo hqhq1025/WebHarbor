@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}All Specializations | Coursera{% endblock %}
+{% block content %}
+<div class="spec-index">
+  <header style="background:linear-gradient(135deg,#E5F0FF 0%,#fff 100%);padding:48px 0;border-bottom:1px solid #DAE1ED;">
+    <div class="container" style="max-width:1200px;margin:0 auto;padding:0 24px;">
+      <div style="font-size:12px;color:#0056D2;text-transform:uppercase;letter-spacing:.6px;font-weight:800;">Specializations</div>
+      <h1 style="font-size:38px;margin:6px 0 8px;letter-spacing:-.5px;">Master a job-ready skill, course by course.</h1>
+      <p style="color:#5B6780;font-size:15px;max-width:680px;">A Specialization is a series of courses that help you master a specific topic. Earn a shareable certificate after finishing the capstone project.</p>
+    </div>
+  </header>
+  <div class="container" style="max-width:1200px;margin:0 auto;padding:28px 24px;">
+    <p style="color:#5B6780;font-size:14px;margin:0 0 18px;"><strong>{{ courses|length }}</strong> Specializations from {{ partner_count }} top universities and companies.</p>
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:18px;">
+      {% for c in courses %}
+      <a href="{{ url_for('specialization_detail', slug=c.slug) }}"
+         style="background:#fff;border:1px solid #DAE1ED;border-radius:12px;padding:18px;text-decoration:none;color:inherit;display:block;">
+        <div style="font-size:11px;color:#0056D2;text-transform:uppercase;font-weight:800;letter-spacing:.5px;">Specialization &middot; {{ c.level }}</div>
+        <h3 style="margin:6px 0 6px;font-size:16px;line-height:1.3;">{{ c.title }}</h3>
+        <div style="color:#5B6780;font-size:13px;">{{ c.partner.short_name if c.partner else '' }} &middot; {{ c.duration_text }}</div>
+        <div style="margin-top:8px;color:#5B6780;font-size:13px;"><span style="color:#DD7B0F;font-weight:700;">{{ '%.1f'|format(c.rating or 0) }}&#9733;</span> &middot; {{ c.enrolled_display() }} enrolled</div>
+      </a>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+{% endblock %}

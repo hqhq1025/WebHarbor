@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% block title %}Coursera for Campus | Online Learning for Higher Ed{% endblock %}
+{% block content %}
+<div class="enterprise-page">
+  <div class="enterprise-hero" style="background:linear-gradient(135deg,#0A2540 0%,#0056D2 100%);color:#fff;padding:56px 0;">
+    <div class="container" style="max-width:1200px;margin:0 auto;padding:0 24px;">
+      <div style="font-size:12px;letter-spacing:.6px;text-transform:uppercase;font-weight:800;color:#7BB7FF;">For Campus</div>
+      <h1 style="font-size:40px;margin:8px 0 12px;letter-spacing:-.5px;max-width:780px;">Power student employability with world-class online learning.</h1>
+      <p style="font-size:17px;max-width:720px;opacity:.92;line-height:1.5;">Give every student access to 7,000+ courses, hands-on projects, and Professional Certificates from leading universities and industry partners — directly inside your campus LMS.</p>
+      <div style="margin-top:22px;display:flex;gap:10px;flex-wrap:wrap;">
+        <a href="#campus-contact" class="btn-primary" style="background:#fff;color:#0056D2;border-color:#fff;">Contact campus team</a>
+        <a href="{{ url_for('for_universities') }}" class="btn-outline-white">For universities</a>
+      </div>
+    </div>
+  </div>
+  <div class="container" style="max-width:1200px;margin:0 auto;padding:42px 24px;">
+    <section>
+      <h2 style="font-size:24px;margin:0 0 16px;">Built for higher education</h2>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:16px;">
+        <div style="background:#fff;border:1px solid #DAE1ED;border-radius:12px;padding:22px;"><h3 style="margin:0 0 6px;font-size:17px;">LMS integration</h3><p style="margin:0;color:#5B6780;font-size:14px;">LTI 1.3 + SSO into Canvas, Blackboard, Moodle, and D2L.</p></div>
+        <div style="background:#fff;border:1px solid #DAE1ED;border-radius:12px;padding:22px;"><h3 style="margin:0 0 6px;font-size:17px;">Faculty curation</h3><p style="margin:0;color:#5B6780;font-size:14px;">Add Coursera content to existing syllabi, by week or module.</p></div>
+        <div style="background:#fff;border:1px solid #DAE1ED;border-radius:12px;padding:22px;"><h3 style="margin:0 0 6px;font-size:17px;">Career Academy</h3><p style="margin:0;color:#5B6780;font-size:14px;">Embed industry Professional Certificates in undergrad programs.</p></div>
+        <div style="background:#fff;border:1px solid #DAE1ED;border-radius:12px;padding:22px;"><h3 style="margin:0 0 6px;font-size:17px;">Skills analytics</h3><p style="margin:0;color:#5B6780;font-size:14px;">Dashboards for student progress, completion, and skill mastery.</p></div>
+      </div>
+    </section>
+
+    <section style="margin-top:36px;">
+      <h2 style="font-size:24px;margin:0 0 12px;">Pricing for institutions</h2>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px;">
+        <div style="background:#F2F5FA;border:1px solid #DAE1ED;border-radius:12px;padding:22px;"><strong>Starter</strong><p style="color:#5B6780;font-size:14px;">Up to 500 students. Catalog access + LMS deep linking.</p></div>
+        <div style="background:#F2F5FA;border:1px solid #DAE1ED;border-radius:12px;padding:22px;"><strong>Standard</strong><p style="color:#5B6780;font-size:14px;">Up to 5,000 students. Pro Certs + Career Academy.</p></div>
+        <div style="background:#F2F5FA;border:1px solid #DAE1ED;border-radius:12px;padding:22px;"><strong>Enterprise</strong><p style="color:#5B6780;font-size:14px;">Unlimited learners + custom skills program + analytics API.</p></div>
+      </div>
+    </section>
+
+    <section id="campus-contact" style="margin-top:36px;background:#fff;border:1px solid #DAE1ED;border-radius:14px;padding:28px;">
+      <h2 style="font-size:22px;margin:0 0 12px;">Talk to the Coursera for Campus team</h2>
+      <form method="POST" style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <label style="font-size:13px;color:#5B6780;">Institution name<input type="text" name="institution" required style="display:block;width:100%;padding:9px;border:1px solid #DAE1ED;border-radius:8px;margin-top:4px;"></label>
+        <label style="font-size:13px;color:#5B6780;">Your role<input type="text" name="role" required style="display:block;width:100%;padding:9px;border:1px solid #DAE1ED;border-radius:8px;margin-top:4px;"></label>
+        <label style="font-size:13px;color:#5B6780;">Work email<input type="email" name="email" required style="display:block;width:100%;padding:9px;border:1px solid #DAE1ED;border-radius:8px;margin-top:4px;"></label>
+        <label style="font-size:13px;color:#5B6780;">Students enrolled
+          <select name="size" style="display:block;width:100%;padding:9px;border:1px solid #DAE1ED;border-radius:8px;margin-top:4px;">
+            <option>Up to 1,000</option><option>1,000–5,000</option><option>5,000–20,000</option><option>20,000+</option>
+          </select>
+        </label>
+        <button type="submit" class="btn-primary" style="grid-column:1/-1;align-self:flex-start;justify-self:start;">Request demo</button>
+      </form>
+    </section>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,102 @@
+{% extends "base.html" %}
+{% block title %}{{ course.title }} Specialization | Coursera{% endblock %}
+{% block content %}
+<div class="spec-detail-page">
+  <header style="background:linear-gradient(135deg,#0056D2 0%,#0048B0 100%);color:#fff;padding:56px 0;">
+    <div class="container" style="max-width:1200px;margin:0 auto;padding:0 24px;">
+      <nav style="font-size:13px;opacity:.85;margin-bottom:14px;">
+        <a href="{{ url_for('index') }}" style="color:#fff;">Home</a> &rsaquo;
+        <a href="{{ url_for('specializations_index') }}" style="color:#fff;">Specializations</a> &rsaquo;
+        <span>{{ course.title }}</span>
+      </nav>
+      <div style="font-size:12px;letter-spacing:.6px;text-transform:uppercase;font-weight:800;opacity:.9;">Specialization</div>
+      <h1 style="font-size:38px;margin:8px 0 12px;letter-spacing:-.5px;max-width:780px;">{{ course.title }}</h1>
+      <p style="font-size:17px;max-width:680px;opacity:.92;line-height:1.5;">{{ course.description[:240] }}{% if course.description|length > 240 %}…{% endif %}</p>
+      <div style="margin-top:18px;font-size:14px;opacity:.92;">
+        {% if course.partner %}<span>{{ course.partner.name }}</span> &middot; {% endif %}
+        <span>{{ course.level }}</span> &middot;
+        <span>{{ course.duration_text }}</span> &middot;
+        <span>&#9733; {{ '%.1f'|format(course.rating) }}</span>
+        ({{ '{:,}'.format(course.review_count) }} reviews)
+      </div>
+      <div style="margin-top:22px;display:flex;gap:10px;flex-wrap:wrap;">
+        <a href="{{ url_for('course_detail', slug=course.slug) }}" class="btn-primary" style="background:#fff;color:#0056D2;border-color:#fff;">Enroll in Specialization</a>
+        <a href="#courses-in-series" class="btn-outline-white">View course series</a>
+      </div>
+    </div>
+  </header>
+
+  <section style="padding:32px 0;background:#F2F5FA;border-bottom:1px solid #DAE1ED;">
+    <div class="container" style="max-width:1200px;margin:0 auto;padding:0 24px;display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:18px;">
+      <div><strong style="font-size:22px;display:block;color:#0A2540;">{{ sub_courses|length or 1 }}</strong><span style="color:#5B6780;font-size:13px;">course series</span></div>
+      <div><strong style="font-size:22px;display:block;color:#0A2540;">{{ course.duration_text }}</strong><span style="color:#5B6780;font-size:13px;">to complete</span></div>
+      <div><strong style="font-size:22px;display:block;color:#0A2540;">{{ '%.0f'|format(course.estimated_workload_hours_per_week or 4) }} hrs/wk</strong><span style="color:#5B6780;font-size:13px;">workload</span></div>
+      <div><strong style="font-size:22px;display:block;color:#0A2540;">{{ course.enrolled_display() }}</strong><span style="color:#5B6780;font-size:13px;">already enrolled</span></div>
+    </div>
+  </section>
+
+  <section id="courses-in-series" style="padding:42px 0;">
+    <div class="container" style="max-width:1200px;margin:0 auto;padding:0 24px;">
+      <h2 style="font-size:26px;margin:0 0 18px;">Courses in this Specialization</h2>
+      {% if sub_courses %}
+      <ol class="spec-course-list" style="list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:14px;">
+        {% for sc in sub_courses %}
+        <li style="background:#fff;border:1px solid #DAE1ED;border-radius:12px;padding:22px;display:flex;gap:18px;align-items:flex-start;">
+          <div style="width:38px;height:38px;border-radius:50%;background:#0056D2;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;flex-shrink:0;">{{ loop.index }}</div>
+          <div style="flex:1;">
+            <h3 style="margin:0 0 6px;font-size:17px;">{{ sc.title }}</h3>
+            <p style="margin:0 0 8px;color:#5B6780;font-size:14px;">{{ sc.description[:220] if sc.description else '' }}</p>
+            <div style="color:#5B6780;font-size:13px;">{{ sc.duration_text }}</div>
+          </div>
+        </li>
+        {% endfor %}
+      </ol>
+      {% else %}
+      <p style="color:#5B6780;">This Specialization is delivered as a single guided pathway. <a href="{{ url_for('course_detail', slug=course.slug) }}">View the full syllabus &rsaquo;</a></p>
+      {% endif %}
+
+      {% if has_capstone %}
+      <div style="margin-top:28px;background:#FFF8E6;border:1px solid #FDE38A;border-radius:12px;padding:22px;">
+        <div style="font-size:12px;color:#8A6500;letter-spacing:.6px;text-transform:uppercase;font-weight:800;">Final Capstone Project</div>
+        <h3 style="margin:6px 0 4px;font-size:18px;">Hands-on Capstone</h3>
+        <p style="margin:0;color:#5B6780;font-size:14px;">Apply everything you've learned in a portfolio-ready project graded by peers and instructors.</p>
+      </div>
+      {% endif %}
+    </div>
+  </section>
+
+  <section style="padding:36px 0;background:#fff;border-top:1px solid #DAE1ED;">
+    <div class="container" style="max-width:1200px;margin:0 auto;padding:0 24px;">
+      <h2 style="font-size:22px;margin:0 0 12px;">Skills you'll gain</h2>
+      <div style="display:flex;flex-wrap:wrap;gap:8px;">
+        {% for s in course.get_skills() %}
+        <a href="{{ url_for('skill_detail', slug=s.lower().replace(' ', '-').replace('/', '-')) }}" class="skill-chip"
+           style="background:#E5F0FF;color:#0056D2;padding:6px 12px;border-radius:999px;font-size:13px;font-weight:600;text-decoration:none;">{{ s }}</a>
+        {% endfor %}
+      </div>
+    </div>
+  </section>
+
+  {% if instructors %}
+  <section style="padding:36px 0;background:#F2F5FA;">
+    <div class="container" style="max-width:1200px;margin:0 auto;padding:0 24px;">
+      <h2 style="font-size:22px;margin:0 0 16px;">Instructors</h2>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:16px;">
+        {% for i in instructors %}
+        <a href="{{ url_for('instructor_profile', slug=i.slug) }}" style="background:#fff;border:1px solid #DAE1ED;border-radius:12px;padding:16px;text-decoration:none;color:inherit;display:flex;gap:12px;align-items:center;">
+          <div style="width:54px;height:54px;border-radius:50%;background:#E5F0FF;color:#0056D2;display:flex;align-items:center;justify-content:center;font-weight:800;flex-shrink:0;overflow:hidden;">
+            {% set _p = instructor_photo(i.slug) %}
+            {% if _p %}<img src="{{ url_for('static', filename=_p) }}" alt="" style="width:100%;height:100%;object-fit:cover;">{% else %}{{ i.name[0]|upper }}{% endif %}
+          </div>
+          <div>
+            <div style="font-weight:700;">{{ i.name }}</div>
+            <div style="color:#5B6780;font-size:12px;">{{ i.title }}</div>
+          </div>
+        </a>
+        {% endfor %}
+      </div>
+    </div>
+  </section>
+  {% endif %}
+</div>
+{% endblock %}

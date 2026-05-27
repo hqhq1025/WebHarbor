@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block title %}Terms of Use | Coursera{% endblock %}
+{% block content %}
+<div class="container" style="max-width:880px;margin:0 auto;padding:42px 24px;">
+  <nav style="font-size:13px;color:#5B6780;margin-bottom:14px;">
+    <a href="{{ url_for('index') }}">Home</a> &rsaquo; <span>Terms of Use</span>
+  </nav>
+  <h1 style="margin:0 0 6px;font-size:34px;">Terms of Use</h1>
+  <p style="color:#5B6780;font-size:14px;">Effective date: January 8, 2026 &middot; previous versions available in the <a href="#changes" style="color:#0056D2;">change log</a>.</p>
+
+  <ol style="margin-top:24px;padding-left:18px;line-height:1.7;color:#3C4858;">
+    <li><strong>Acceptance.</strong> By accessing Coursera you agree to these terms, the <a href="{{ url_for('privacy_policy') }}" style="color:#0056D2;">Privacy Policy</a>, the <a href="{{ url_for('honor_code') }}" style="color:#0056D2;">Honor Code</a>, and the <a href="{{ url_for('code_of_conduct') }}" style="color:#0056D2;">Code of Conduct</a>.</li>
+    <li><strong>Account.</strong> You must create only one account and keep your credentials secure. Coursera may suspend accounts that violate these terms.</li>
+    <li><strong>Content license.</strong> Course content is licensed to you for personal, non-commercial use. Redistribution, including downloading and re-uploading videos, is prohibited unless explicitly permitted.</li>
+    <li><strong>Payments.</strong> Paid products are billed as displayed at checkout. Refunds are handled per the <a href="{{ url_for('refund_policy') }}" style="color:#0056D2;">Refund Policy</a>.</li>
+    <li><strong>User submissions.</strong> When you post in forums or submit peer-review work, you grant Coursera a worldwide, royalty-free license to display and grade that content.</li>
+    <li><strong>Termination.</strong> Coursera may terminate accounts for material breaches with notice; you may close your account at any time from <a href="{{ url_for('account') }}" style="color:#0056D2;">Account settings</a>.</li>
+    <li><strong>Disclaimers.</strong> Coursera offers the service "as is." Some content is provided by third-party partners; their materials are governed by their respective agreements.</li>
+    <li><strong>Limitation of liability.</strong> To the extent permitted by law, Coursera's aggregate liability is limited to the fees you paid in the prior 12 months.</li>
+    <li><strong>Governing law.</strong> California law governs these terms. Disputes are resolved in Santa Clara County courts unless otherwise required by local consumer-protection law.</li>
+  </ol>
+
+  <section id="changes" style="margin-top:24px;background:#F2F5FA;border:1px solid #DAE1ED;border-radius:12px;padding:18px;">
+    <h2 style="margin:0 0 6px;font-size:18px;">Change log</h2>
+    <ul style="margin:0;padding-left:18px;color:#5B6780;font-size:13px;line-height:1.7;">
+      <li>2026-01-08 — Clarified peer-review license terms.</li>
+      <li>2025-04-12 — Aligned refund language with the standalone refund policy.</li>
+    </ul>
+  </section>
+</div>
+{% endblock %}

@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block title %}{{ course.title }} — Frequently Asked Questions | Coursera{% endblock %}
+{% block content %}
+<div class="container" style="max-width:880px;margin:0 auto;padding:32px 24px;">
+  <nav style="font-size:13px;color:#5B6780;margin-bottom:14px;">
+    <a href="{{ url_for('index') }}">Home</a> &rsaquo;
+    <a href="{{ url_for('course_detail', slug=course.slug) }}">{{ course.title }}</a> &rsaquo;
+    <span>FAQ</span>
+  </nav>
+  <header style="margin-bottom:22px;">
+    <div style="font-size:11px;color:#0056D2;text-transform:uppercase;font-weight:800;letter-spacing:.5px;">Frequently asked questions</div>
+    <h1 style="margin:6px 0 6px;font-size:32px;line-height:1.2;">{{ course.title }}</h1>
+    <p style="color:#5B6780;font-size:14px;">Answers to common questions about enrollment, pacing, certificates, and refunds.</p>
+  </header>
+
+  {% for group, items in faq_groups %}
+  <section style="margin-bottom:18px;">
+    <h2 style="font-size:20px;margin:0 0 10px;">{{ group }}</h2>
+    <div style="background:#fff;border:1px solid #DAE1ED;border-radius:12px;overflow:hidden;">
+      {% for q, a in items %}
+      <details style="border-bottom:1px solid #DAE1ED;{% if loop.last %}border-bottom:0;{% endif %}">
+        <summary style="padding:16px 20px;cursor:pointer;font-weight:700;color:#0A2540;font-size:15px;">{{ q }}</summary>
+        <div style="padding:0 20px 18px;color:#3C4858;line-height:1.7;">{{ a }}</div>
+      </details>
+      {% endfor %}
+    </div>
+  </section>
+  {% endfor %}
+
+  <section style="margin-top:22px;background:#F2F5FA;border:1px solid #DAE1ED;border-radius:12px;padding:18px;">
+    <h2 style="margin:0 0 6px;font-size:17px;">Still have questions?</h2>
+    <p style="margin:0 0 8px;color:#5B6780;font-size:14px;">Reach the {{ course.title }} community on the discussion forum, or contact Coursera support.</p>
+    <a href="{{ url_for('course_discussion', slug=course.slug) }}" class="btn-outline" style="margin-right:8px;">Open course forum</a>
+    <a href="{{ url_for('help_center') }}" class="btn-outline">Contact support</a>
+  </section>
+
+  <p style="margin-top:24px;color:#5B6780;font-size:13px;">Also see: <a href="{{ url_for('course_syllabus', slug=course.slug) }}" style="color:#0056D2;">Syllabus</a> &middot; <a href="{{ url_for('course_instructors', slug=course.slug) }}" style="color:#0056D2;">Instructors</a> &middot; <a href="{{ url_for('course_reviews', slug=course.slug) }}" style="color:#0056D2;">Reviews</a></p>
+</div>
+{% endblock %}

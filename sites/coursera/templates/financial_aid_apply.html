@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% block title %}Apply for Financial Aid | Coursera{% endblock %}
+{% block content %}
+<div class="container" style="max-width:780px;margin:0 auto;padding:36px 24px;">
+  <nav style="font-size:13px;color:#5B6780;margin-bottom:14px;">
+    <a href="{{ url_for('index') }}">Home</a> &rsaquo;
+    <a href="{{ url_for('financial_aid') }}">Financial Aid</a> &rsaquo;
+    <span>Apply</span>
+  </nav>
+  <h1 style="margin:0 0 6px;font-size:28px;">Apply for Financial Aid</h1>
+  <p style="color:#5B6780;font-size:14px;">Coursera financial aid covers the full cost of the certificate track. Reviews take ~15 business days. All fields are required.</p>
+
+  {% if submitted %}
+  <div style="margin:18px 0;background:#D1FAE5;border:1px solid #6EE7B7;color:#065F46;border-radius:10px;padding:14px;">
+    Application received. Your reference code is <strong>FA-{{ ref_code }}</strong>. Decision by <strong>{{ decision_by }}</strong>.
+    <p style="margin-top:6px;">Check status: <a href="{{ url_for('financial_aid') }}">View status &rsaquo;</a></p>
+  </div>
+  {% endif %}
+
+  <form method="POST" style="background:#fff;border:1px solid #DAE1ED;border-radius:12px;padding:28px;margin-top:14px;display:flex;flex-direction:column;gap:16px;">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <label style="font-size:13px;color:#5B6780;">Course you want aid for
+      <select name="course_slug" required style="display:block;width:100%;padding:9px;border:1px solid #DAE1ED;border-radius:8px;margin-top:4px;">
+        {% for c in eligible_courses %}
+        <option value="{{ c.slug }}">{{ c.title }}</option>
+        {% endfor %}
+      </select>
+    </label>
+
+    <fieldset style="border:1px solid #DAE1ED;border-radius:10px;padding:16px;">
+      <legend style="font-size:13px;color:#0A2540;font-weight:700;padding:0 6px;">Annual income (USD)</legend>
+      <label style="display:block;font-size:13px;color:#5B6780;margin-top:6px;"><input type="radio" name="income_band" value="under_5k" required> Under $5,000</label>
+      <label style="display:block;font-size:13px;color:#5B6780;margin-top:6px;"><input type="radio" name="income_band" value="5k_15k"> $5,000 – $15,000</label>
+      <label style="display:block;font-size:13px;color:#5B6780;margin-top:6px;"><input type="radio" name="income_band" value="15k_30k"> $15,000 – $30,000</label>
+      <label style="display:block;font-size:13px;color:#5B6780;margin-top:6px;"><input type="radio" name="income_band" value="30k_50k"> $30,000 – $50,000</label>
+      <label style="display:block;font-size:13px;color:#5B6780;margin-top:6px;"><input type="radio" name="income_band" value="over_50k"> Over $50,000</label>
+    </fieldset>
+
+    <label style="font-size:13px;color:#5B6780;">Why do you need financial aid? (150–500 words)
+      <textarea name="why_needed" rows="6" minlength="150" required style="display:block;width:100%;padding:9px;border:1px solid #DAE1ED;border-radius:8px;margin-top:4px;"></textarea>
+    </label>
+
+    <label style="font-size:13px;color:#5B6780;">How will this course help you achieve your goals? (150–500 words)
+      <textarea name="how_helps" rows="6" minlength="150" required style="display:block;width:100%;padding:9px;border:1px solid #DAE1ED;border-radius:8px;margin-top:4px;"></textarea>
+    </label>
+
+    <label style="font-size:13px;color:#5B6780;display:flex;gap:8px;align-items:flex-start;">
+      <input type="checkbox" name="honor" required>
+      I have read the Coursera <a href="{{ url_for('honor_code') }}" style="color:#0056D2;">Honor Code</a> and confirm that the information provided is accurate.
+    </label>
+
+    <button type="submit" class="btn-primary" style="align-self:flex-start;">Submit application</button>
+  </form>
+
+  <p style="color:#5B6780;font-size:13px;margin-top:20px;">Need help? Read the <a href="{{ url_for('help_center') }}" style="color:#0056D2;">help center</a> or check our <a href="{{ url_for('refund_policy') }}" style="color:#0056D2;">refund policy</a>.</p>
+</div>
+{% endblock %}

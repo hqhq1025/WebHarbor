@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+{% block title %}Refund Policy | Coursera{% endblock %}
+{% block content %}
+<div class="container" style="max-width:880px;margin:0 auto;padding:42px 24px;">
+  <nav style="font-size:13px;color:#5B6780;margin-bottom:14px;">
+    <a href="{{ url_for('index') }}">Home</a> &rsaquo;
+    <a href="{{ url_for('help_center') }}">Help</a> &rsaquo;
+    <span>Refund Policy</span>
+  </nav>
+  <h1 style="margin:0 0 6px;font-size:34px;">Refund Policy</h1>
+  <p style="color:#5B6780;font-size:14px;">Last updated: April 12, 2026 &middot; <a href="#change-log" style="color:#0056D2;">View change log</a></p>
+
+  <section style="margin-top:28px;background:#fff;border:1px solid #DAE1ED;border-radius:12px;padding:24px;">
+    <h2 style="margin:0 0 8px;font-size:22px;">Two-week refund window</h2>
+    <p style="color:#3C4858;line-height:1.7;">For paid courses, Professional Certificates, and Specializations, you can request a full refund within <strong>14 days</strong> of payment, as long as you have not earned the course certificate.</p>
+  </section>
+
+  <section style="margin-top:18px;background:#fff;border:1px solid #DAE1ED;border-radius:12px;padding:24px;">
+    <h2 style="margin:0 0 8px;font-size:22px;">Subscription products (Coursera Plus, Specializations)</h2>
+    <ul style="padding-left:18px;line-height:1.7;color:#3C4858;">
+      <li>Monthly subscriptions: refundable within <strong>7 days</strong> of the latest renewal.</li>
+      <li>Annual Coursera Plus: refundable within <strong>14 days</strong> of purchase or renewal.</li>
+      <li>Refunds are issued in the original payment method within 5–10 business days.</li>
+    </ul>
+  </section>
+
+  <section style="margin-top:18px;background:#fff;border:1px solid #DAE1ED;border-radius:12px;padding:24px;">
+    <h2 style="margin:0 0 8px;font-size:22px;">Degree and MasterTrack programs</h2>
+    <p style="color:#3C4858;line-height:1.7;">Refunds for degree tuition and MasterTrack programs are governed by the partnering university's policy. Visit your program page for details, or contact your enrollment counselor.</p>
+  </section>
+
+  <section style="margin-top:18px;background:#fff;border:1px solid #DAE1ED;border-radius:12px;padding:24px;">
+    <h2 style="margin:0 0 8px;font-size:22px;">How to request a refund</h2>
+    <ol style="padding-left:18px;line-height:1.7;color:#3C4858;">
+      <li>Go to your <a href="{{ url_for('account') }}" style="color:#0056D2;">Account &rsaquo; Purchase history</a>.</li>
+      <li>Find the order and click <em>Request refund</em>.</li>
+      <li>Confirm the refund reason. The funds are returned within 5–10 business days.</li>
+    </ol>
+  </section>
+
+  <section style="margin-top:18px;background:#fff;border:1px solid #DAE1ED;border-radius:12px;padding:24px;">
+    <h2 style="margin:0 0 8px;font-size:22px;">Non-refundable items</h2>
+    <ul style="padding-left:18px;line-height:1.7;color:#3C4858;">
+      <li>Already-earned certificates</li>
+      <li>Coursera for Business or Campus license seats</li>
+      <li>Enrollments made through employer or institutional sponsorship</li>
+    </ul>
+  </section>
+
+  <section id="change-log" style="margin-top:18px;background:#F2F5FA;border:1px solid #DAE1ED;border-radius:12px;padding:20px;">
+    <h2 style="margin:0 0 6px;font-size:18px;">Change log</h2>
+    <ul style="margin:0;padding-left:18px;color:#5B6780;font-size:13px;line-height:1.7;">
+      <li>2026-04-12 — Extended the subscription refund window from 5 to 7 days.</li>
+      <li>2025-09-01 — Clarified non-refundable items list.</li>
+      <li>2024-11-20 — Initial publication.</li>
+    </ul>
+  </section>
+</div>
+{% endblock %}

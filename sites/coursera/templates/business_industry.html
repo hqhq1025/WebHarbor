@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+{% block title %}Coursera for Business: {{ industry_name }} | Coursera{% endblock %}
+{% block content %}
+<div class="enterprise-page">
+  <div class="enterprise-hero" style="background:linear-gradient(135deg,#0056D2 0%,#0A2540 100%);color:#fff;padding:56px 0;">
+    <div class="container" style="max-width:1200px;margin:0 auto;padding:0 24px;">
+      <nav style="font-size:13px;opacity:.85;margin-bottom:12px;">
+        <a href="{{ url_for('business') }}" style="color:#fff;">For Business</a> &rsaquo; <span>{{ industry_name }}</span>
+      </nav>
+      <div style="font-size:12px;letter-spacing:.6px;text-transform:uppercase;font-weight:800;color:#7BB7FF;">Industry solution</div>
+      <h1 style="font-size:40px;margin:8px 0 12px;letter-spacing:-.5px;">Coursera for {{ industry_name }}</h1>
+      <p style="font-size:17px;max-width:720px;opacity:.92;line-height:1.5;">{{ industry_blurb }}</p>
+      <div style="margin-top:22px;display:flex;gap:10px;flex-wrap:wrap;">
+        <a href="{{ url_for('for_teams') }}" class="btn-primary" style="background:#fff;color:#0056D2;border-color:#fff;">Contact sales</a>
+        <a href="#case-studies" class="btn-outline-white">See case studies</a>
+      </div>
+    </div>
+  </div>
+
+  <section style="padding:42px 0;">
+    <div class="container" style="max-width:1200px;margin:0 auto;padding:0 24px;">
+      <h2 style="font-size:24px;margin:0 0 16px;">Critical skills for {{ industry_name }}</h2>
+      <div style="display:flex;flex-wrap:wrap;gap:8px;">
+        {% for s in key_skills %}
+        <a href="{{ url_for('skill_detail', slug=s.lower().replace(' ', '-')) }}"
+           style="background:#E5F0FF;color:#0056D2;padding:8px 14px;border-radius:999px;font-size:13px;font-weight:700;text-decoration:none;">{{ s }}</a>
+        {% endfor %}
+      </div>
+    </div>
+  </section>
+
+  <section id="case-studies" style="padding:42px 0;background:#F2F5FA;">
+    <div class="container" style="max-width:1200px;margin:0 auto;padding:0 24px;">
+      <h2 style="font-size:24px;margin:0 0 16px;">Case studies</h2>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:18px;">
+        {% for cs in case_studies %}
+        <div style="background:#fff;border:1px solid #DAE1ED;border-radius:12px;padding:22px;">
+          <div style="font-size:11px;color:#0056D2;text-transform:uppercase;letter-spacing:.5px;font-weight:800;">{{ cs.company }}</div>
+          <h3 style="margin:6px 0 8px;font-size:18px;">{{ cs.headline }}</h3>
+          <p style="color:#5B6780;font-size:14px;margin:0 0 10px;">{{ cs.summary }}</p>
+          <div style="display:flex;gap:14px;flex-wrap:wrap;font-size:13px;color:#0A2540;font-weight:700;">
+            <span>{{ cs.metric_1 }}</span><span>{{ cs.metric_2 }}</span>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+  </section>
+
+  <section style="padding:42px 0;">
+    <div class="container" style="max-width:1200px;margin:0 auto;padding:0 24px;">
+      <h2 style="font-size:24px;margin:0 0 16px;">Recommended learning paths for {{ industry_name }}</h2>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px;">
+        {% for c in recommended_courses %}
+        <a href="{{ url_for('course_detail', slug=c.slug) }}"
+           style="background:#fff;border:1px solid #DAE1ED;border-radius:12px;padding:18px;text-decoration:none;color:inherit;display:block;">
+          <div style="font-size:11px;color:#0056D2;text-transform:uppercase;font-weight:800;letter-spacing:.5px;">{{ c.course_type }} &middot; {{ c.level }}</div>
+          <h3 style="margin:6px 0 6px;font-size:16px;">{{ c.title }}</h3>
+          <div style="color:#5B6780;font-size:13px;">{{ c.partner.short_name if c.partner else '' }} &middot; {{ c.duration_text }}</div>
+        </a>
+        {% endfor %}
+      </div>
+    </div>
+  </section>
+</div>
+{% endblock %}

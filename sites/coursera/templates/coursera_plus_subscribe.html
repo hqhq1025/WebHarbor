@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+{% block title %}Subscribe to Coursera Plus{% endblock %}
+{% block content %}
+<div class="plus-subscribe">
+  <header style="background:linear-gradient(135deg,#0056D2 0%,#0A2540 100%);color:#fff;padding:48px 0;">
+    <div class="container" style="max-width:1080px;margin:0 auto;padding:0 24px;">
+      <nav style="font-size:13px;opacity:.85;margin-bottom:12px;">
+        <a href="{{ url_for('coursera_plus') }}" style="color:#fff;">Coursera Plus</a> &rsaquo; <span>Subscribe</span>
+      </nav>
+      <h1 style="font-size:36px;margin:6px 0 12px;letter-spacing:-.5px;">Choose your Coursera Plus plan</h1>
+      <p style="font-size:16px;opacity:.92;max-width:680px;">Unlimited access to 7,000+ courses, Specializations, and Professional Certificates. 7-day free trial. Cancel anytime from your account.</p>
+    </div>
+  </header>
+
+  <div class="container" style="max-width:1080px;margin:0 auto;padding:36px 24px;">
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:18px;">
+      <div style="background:#fff;border:1px solid #DAE1ED;border-radius:14px;padding:26px;">
+        <div style="font-size:12px;color:#0056D2;text-transform:uppercase;letter-spacing:.6px;font-weight:800;">Monthly</div>
+        <h3 style="margin:6px 0 4px;font-size:22px;">$59 / month</h3>
+        <p style="color:#5B6780;font-size:14px;margin:0 0 14px;">Cancel anytime.</p>
+        <form method="POST" action="{{ url_for('coursera_plus_subscribe') }}">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <input type="hidden" name="plan" value="monthly">
+          <button type="submit" class="btn-outline" style="width:100%;">Start 7-day free trial</button>
+        </form>
+      </div>
+      <div style="background:#0A2540;color:#fff;border:1px solid #0A2540;border-radius:14px;padding:26px;position:relative;">
+        <span style="position:absolute;top:-10px;right:14px;background:#FDE38A;color:#0A2540;font-size:11px;font-weight:800;padding:4px 8px;border-radius:999px;letter-spacing:.5px;text-transform:uppercase;">Best value</span>
+        <div style="font-size:12px;color:#7BB7FF;text-transform:uppercase;letter-spacing:.6px;font-weight:800;">Annual</div>
+        <h3 style="margin:6px 0 4px;font-size:22px;">$399 / year</h3>
+        <p style="color:#cdd9ec;font-size:14px;margin:0 0 14px;">Equivalent to $33 / month — save 43%.</p>
+        <form method="POST" action="{{ url_for('coursera_plus_subscribe') }}">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <input type="hidden" name="plan" value="annual">
+          <button type="submit" class="btn-primary" style="width:100%;background:#fff;color:#0A2540;border-color:#fff;">Start 7-day free trial</button>
+        </form>
+      </div>
+      <div style="background:#fff;border:1px solid #DAE1ED;border-radius:14px;padding:26px;">
+        <div style="font-size:12px;color:#0056D2;text-transform:uppercase;letter-spacing:.6px;font-weight:800;">Student</div>
+        <h3 style="margin:6px 0 4px;font-size:22px;">$199 / year</h3>
+        <p style="color:#5B6780;font-size:14px;margin:0 0 14px;">.edu email required.</p>
+        <form method="POST" action="{{ url_for('coursera_plus_subscribe') }}">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <input type="hidden" name="plan" value="student">
+          <input type="email" name="edu_email" placeholder="you@university.edu" style="display:block;width:100%;padding:8px;border:1px solid #DAE1ED;border-radius:8px;margin-bottom:10px;">
+          <button type="submit" class="btn-outline" style="width:100%;">Verify and subscribe</button>
+        </form>
+      </div>
+    </div>
+
+    {% if confirmed_plan %}
+    <div style="margin-top:18px;background:#D1FAE5;border:1px solid #6EE7B7;color:#065F46;border-radius:10px;padding:14px;">
+      You started a 7-day free trial of Coursera Plus <strong>{{ confirmed_plan|title }}</strong>. First charge on <strong>{{ first_charge_date }}</strong>.
+    </div>
+    {% endif %}
+
+    <section style="margin-top:32px;">
+      <h2 style="font-size:22px;margin:0 0 12px;">What's included</h2>
+      <ul style="columns:2;column-gap:32px;line-height:1.7;padding-left:18px;color:#3C4858;">
+        <li>Unlimited course enrollment in 7,000+ courses</li>
+        <li>All Specializations and Professional Certificates</li>
+        <li>Hands-on Guided Projects in the browser</li>
+        <li>Career resources and certificate downloads</li>
+        <li>Cancel anytime, refund within 14 days of payment</li>
+        <li>Excludes Degree programs and MasterTrack</li>
+      </ul>
+    </section>
+  </div>
+</div>
+{% endblock %}

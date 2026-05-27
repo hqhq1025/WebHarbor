@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block title %}Apply: {{ track.title }} MasterTrack | Coursera{% endblock %}
+{% block content %}
+<div class="container" style="max-width:880px;margin:0 auto;padding:36px 24px;">
+  <nav style="font-size:13px;color:#5B6780;margin-bottom:14px;">
+    <a href="{{ url_for('mastertrack_index') }}">MasterTrack</a> &rsaquo;
+    <a href="{{ url_for('mastertrack_detail', slug=track.slug) }}">{{ track.title }}</a> &rsaquo;
+    <span>Apply</span>
+  </nav>
+  <h1 style="font-size:30px;margin:0 0 6px;">Apply to {{ track.title }}</h1>
+  <p style="color:#5B6780;font-size:15px;">Offered by {{ track.partner_name }}. Rolling admissions, free to apply.</p>
+
+  <form method="POST" style="background:#fff;border:1px solid #DAE1ED;border-radius:12px;padding:28px;margin-top:24px;display:flex;flex-direction:column;gap:14px;">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
+      <label style="font-size:13px;color:#5B6780;">First name<input type="text" name="first_name" required style="display:block;width:100%;padding:9px;border:1px solid #DAE1ED;border-radius:8px;margin-top:4px;"></label>
+      <label style="font-size:13px;color:#5B6780;">Last name<input type="text" name="last_name" required style="display:block;width:100%;padding:9px;border:1px solid #DAE1ED;border-radius:8px;margin-top:4px;"></label>
+    </div>
+    <label style="font-size:13px;color:#5B6780;">Email<input type="email" name="email" required style="display:block;width:100%;padding:9px;border:1px solid #DAE1ED;border-radius:8px;margin-top:4px;"></label>
+    <label style="font-size:13px;color:#5B6780;">Country of residence<input type="text" name="country" required style="display:block;width:100%;padding:9px;border:1px solid #DAE1ED;border-radius:8px;margin-top:4px;"></label>
+    <label style="font-size:13px;color:#5B6780;">Highest degree earned
+      <select name="degree" style="display:block;width:100%;padding:9px;border:1px solid #DAE1ED;border-radius:8px;margin-top:4px;">
+        <option>High school</option>
+        <option>Associate</option>
+        <option selected>Bachelor's</option>
+        <option>Master's</option>
+        <option>Doctorate</option>
+      </select>
+    </label>
+    <label style="font-size:13px;color:#5B6780;">Statement of purpose (max 750 words)<textarea name="sop" rows="6" style="display:block;width:100%;padding:9px;border:1px solid #DAE1ED;border-radius:8px;margin-top:4px;"></textarea></label>
+    <label style="font-size:13px;color:#5B6780;display:flex;gap:8px;align-items:flex-start;"><input type="checkbox" name="agree" required> I confirm the information is accurate and authorize {{ track.partner_name }} to review my application.</label>
+    <button type="submit" class="btn-primary" style="align-self:flex-start;">Submit application</button>
+  </form>
+  {% if submitted %}
+  <div style="margin-top:18px;background:#D1FAE5;border:1px solid #6EE7B7;color:#065F46;border-radius:10px;padding:14px;">Application received. Reference number <strong>MT-{{ ref_code }}</strong>. {{ track.partner_name }} will email you within 10 business days.</div>
+  {% endif %}
+</div>
+{% endblock %}

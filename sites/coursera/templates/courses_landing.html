@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block title %}Browse all online courses | Coursera{% endblock %}
+{% block content %}
+<div class="catalog-landing">
+  <header style="background:#fff;border-bottom:1px solid #DAE1ED;padding:42px 0;">
+    <div class="container" style="max-width:1200px;margin:0 auto;padding:0 24px;">
+      <div style="font-size:12px;color:#0056D2;text-transform:uppercase;letter-spacing:.6px;font-weight:800;">Courses</div>
+      <h1 style="font-size:38px;margin:6px 0 8px;letter-spacing:-.5px;">Find your next course</h1>
+      <p style="color:#5B6780;font-size:15px;max-width:680px;">Browse 7,000+ online courses by category, partner, or focus area. Free options, certificate programs, and Spanish-language picks below.</p>
+    </div>
+  </header>
+  <div class="container" style="max-width:1200px;margin:0 auto;padding:28px 24px;">
+    <section style="margin-bottom:32px;">
+      <h2 style="font-size:22px;margin:0 0 12px;">Featured collections</h2>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px;">
+        <a href="{{ url_for('courses_free') }}" style="background:#fff;border:1px solid #DAE1ED;border-radius:12px;padding:22px;text-decoration:none;color:inherit;display:block;"><h3 style="margin:0 0 4px;font-size:17px;">Free courses</h3><p style="margin:0;color:#5B6780;font-size:14px;">Audit thousands of courses at no cost.</p></a>
+        <a href="{{ url_for('courses_with_certificate') }}" style="background:#fff;border:1px solid #DAE1ED;border-radius:12px;padding:22px;text-decoration:none;color:inherit;display:block;"><h3 style="margin:0 0 4px;font-size:17px;">With certificate</h3><p style="margin:0;color:#5B6780;font-size:14px;">Earn a shareable, verified credential.</p></a>
+        <a href="{{ url_for('courses_in_spanish') }}" style="background:#fff;border:1px solid #DAE1ED;border-radius:12px;padding:22px;text-decoration:none;color:inherit;display:block;"><h3 style="margin:0 0 4px;font-size:17px;">In Spanish</h3><p style="margin:0;color:#5B6780;font-size:14px;">Cursos completos en español.</p></a>
+        <a href="{{ url_for('specializations_index') }}" style="background:#fff;border:1px solid #DAE1ED;border-radius:12px;padding:22px;text-decoration:none;color:inherit;display:block;"><h3 style="margin:0 0 4px;font-size:17px;">Specializations</h3><p style="margin:0;color:#5B6780;font-size:14px;">Master a skill in a series.</p></a>
+      </div>
+    </section>
+    <section>
+      <h2 style="font-size:22px;margin:0 0 12px;">Browse by category</h2>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px;">
+        {% for slug, name in categories %}
+        <a href="{{ url_for('category_detail', slug=slug) }}" style="background:#F2F5FA;border:1px solid #DAE1ED;border-radius:12px;padding:18px;text-decoration:none;color:inherit;display:block;">
+          <div style="font-size:11px;color:#0056D2;text-transform:uppercase;font-weight:800;letter-spacing:.5px;">Category</div>
+          <strong style="display:block;font-size:16px;margin-top:4px;">{{ name }}</strong>
+        </a>
+        {% endfor %}
+      </div>
+    </section>
+  </div>
+</div>
+{% endblock %}

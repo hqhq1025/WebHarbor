@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% block title %}{{ course.title }} — Syllabus | Coursera{% endblock %}
+{% block content %}
+<div class="container" style="max-width:1100px;margin:0 auto;padding:32px 24px;">
+  <nav style="font-size:13px;color:#5B6780;margin-bottom:14px;">
+    <a href="{{ url_for('index') }}">Home</a> &rsaquo;
+    <a href="{{ url_for('course_detail', slug=course.slug) }}">{{ course.title }}</a> &rsaquo;
+    <span>Syllabus</span>
+  </nav>
+  <header style="display:flex;gap:24px;align-items:flex-start;flex-wrap:wrap;margin-bottom:24px;">
+    <div style="flex:1;min-width:280px;">
+      <div style="font-size:11px;color:#0056D2;text-transform:uppercase;font-weight:800;letter-spacing:.5px;">Syllabus &middot; {{ course.course_type }}</div>
+      <h1 style="margin:6px 0 6px;font-size:32px;line-height:1.2;">{{ course.title }}</h1>
+      <p style="color:#5B6780;font-size:14px;">{{ course.partner.name if course.partner else '' }} &middot; {{ course.duration_text }} &middot; {{ '%.0f'|format(course.estimated_workload_hours_per_week or 4) }} hrs/wk</p>
+    </div>
+    <div style="display:flex;gap:8px;">
+      <a href="{{ url_for('course_detail', slug=course.slug) }}" class="btn-outline">Back to course</a>
+      <a href="{{ url_for('course_detail', slug=course.slug) }}#enroll" class="btn-primary">Enroll</a>
+    </div>
+  </header>
+
+  <section style="background:#F2F5FA;border:1px solid #DAE1ED;border-radius:12px;padding:20px;margin-bottom:24px;">
+    <h2 style="margin:0 0 6px;font-size:20px;">About this syllabus</h2>
+    <p style="color:#3C4858;line-height:1.7;margin:0;">A complete week-by-week schedule of videos, readings, and assignments. Hours estimates assume 1 video minute ≈ 2 study minutes including notes.</p>
+  </section>
+
+  <ol style="list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:14px;">
+    {% for m in modules %}
+    <li style="background:#fff;border:1px solid #DAE1ED;border-radius:12px;padding:22px;">
+      <div style="display:flex;align-items:baseline;gap:12px;">
+        <div style="font-size:12px;color:#0056D2;font-weight:800;letter-spacing:.5px;text-transform:uppercase;">Week {{ m.week_number }}</div>
+        <h3 style="margin:0;font-size:18px;flex:1;">{{ m.title }}</h3>
+        <div style="color:#5B6780;font-size:13px;">{{ m.videos_count + m.readings_count + m.quizzes_count }} items</div>
+      </div>
+      {% if m.description %}<p style="color:#3C4858;margin:8px 0 12px;line-height:1.6;">{{ m.description }}</p>{% endif %}
+      <div style="display:flex;gap:18px;color:#5B6780;font-size:13px;flex-wrap:wrap;">
+        <span>&#127909; {{ m.videos_count }} video{{ 's' if m.videos_count != 1 else '' }}</span>
+        <span>&#128214; {{ m.readings_count }} reading{{ 's' if m.readings_count != 1 else '' }}</span>
+        <span>&#128221; {{ m.quizzes_count }} quiz{{ 'zes' if m.quizzes_count != 1 else '' }}</span>
+        <a href="{{ url_for('course_lecture', slug=course.slug, n=m.week_number) }}" style="color:#0056D2;font-weight:700;">Open week &rsaquo;</a>
+      </div>
+      {% if m.get_video_titles() %}
+      <details style="margin-top:12px;">
+        <summary style="cursor:pointer;font-size:13px;font-weight:700;color:#0056D2;">View video titles ({{ m.get_video_titles()|length }})</summary>
+        <ul style="margin:8px 0 0;padding-left:18px;color:#3C4858;line-height:1.7;">
+          {% for vt in m.get_video_titles() %}
+          <li>{{ vt }}</li>
+          {% endfor %}
+        </ul>
+      </details>
+      {% endif %}
+    </li>
+    {% else %}
+    <li style="color:#5B6780;">Syllabus is being finalized. Check back soon.</li>
+    {% endfor %}
+  </ol>
+
+  <p style="margin-top:24px;color:#5B6780;font-size:13px;">Also see: <a href="{{ url_for('course_instructors', slug=course.slug) }}" style="color:#0056D2;">Instructors</a> &middot; <a href="{{ url_for('course_reviews', slug=course.slug) }}" style="color:#0056D2;">Reviews</a> &middot; <a href="{{ url_for('course_faq', slug=course.slug) }}" style="color:#0056D2;">FAQ</a></p>
+</div>
+{% endblock %}

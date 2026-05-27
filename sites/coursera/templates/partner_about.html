@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% block title %}About {{ partner.name }} | Coursera Partner{% endblock %}
+{% block content %}
+<div class="container" style="max-width:1100px;margin:0 auto;padding:32px 24px;">
+  <nav style="font-size:13px;color:#5B6780;margin-bottom:14px;">
+    <a href="{{ url_for('index') }}">Home</a> &rsaquo;
+    <a href="{{ url_for('partners') }}">Partners</a> &rsaquo;
+    <a href="{{ url_for('partner_detail', slug=partner.slug) }}">{{ partner.name }}</a> &rsaquo;
+    <span>About</span>
+  </nav>
+  <header style="background:#fff;border:1px solid #DAE1ED;border-radius:14px;padding:28px;margin-bottom:24px;display:flex;gap:24px;flex-wrap:wrap;align-items:center;">
+    <div style="width:96px;height:96px;background:#0056D2;color:#fff;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:36px;font-weight:800;flex-shrink:0;">{{ partner.short_name[0]|upper if partner.short_name else partner.name[0]|upper }}</div>
+    <div style="flex:1;min-width:280px;">
+      <div style="font-size:12px;color:#0056D2;text-transform:uppercase;font-weight:800;letter-spacing:.6px;">{{ partner.partner_type|title }} &middot; {{ partner.country }}</div>
+      <h1 style="margin:6px 0 4px;font-size:30px;">About {{ partner.name }}</h1>
+      <p style="margin:0;color:#5B6780;">{{ partner.short_name or partner.name }} has been a Coursera partner since 2014. {% if partner.website %}<a href="{{ partner.website }}" style="color:#0056D2;">{{ partner.website }}</a>{% endif %}</p>
+    </div>
+  </header>
+
+  <div style="display:grid;grid-template-columns:2fr 1fr;gap:24px;">
+    <main>
+      <section>
+        <h2 style="font-size:22px;margin:0 0 10px;">Mission</h2>
+        <p style="color:#3C4858;line-height:1.7;">{{ partner.name }} brings world-class education to learners around the globe. Through Coursera, the institution shares signature courses, capstone projects, and faculty-led research with millions of learners.</p>
+      </section>
+      <section style="margin-top:24px;">
+        <h2 style="font-size:22px;margin:0 0 10px;">Areas of expertise</h2>
+        <div style="display:flex;flex-wrap:wrap;gap:8px;">
+          {% for tag in expertise %}
+          <span style="background:#E5F0FF;color:#0056D2;padding:7px 14px;border-radius:999px;font-size:13px;font-weight:700;">{{ tag }}</span>
+          {% endfor %}
+        </div>
+      </section>
+      <section style="margin-top:24px;">
+        <h2 style="font-size:22px;margin:0 0 10px;">Featured offerings</h2>
+        <ul style="padding-left:18px;line-height:1.7;color:#3C4858;">
+          {% for c in featured %}
+          <li><a href="{{ url_for('course_detail', slug=c.slug) }}" style="color:#0056D2;">{{ c.title }}</a> &middot; <span style="color:#5B6780;">{{ c.course_type }}</span></li>
+          {% endfor %}
+        </ul>
+      </section>
+    </main>
+    <aside>
+      <div style="background:#F2F5FA;border:1px solid #DAE1ED;border-radius:12px;padding:18px;">
+        <h3 style="margin:0 0 10px;font-size:16px;">By the numbers</h3>
+        <p style="margin:0 0 6px;color:#5B6780;font-size:14px;"><strong style="color:#0A2540;">{{ total_courses }}</strong> courses on Coursera</p>
+        <p style="margin:0 0 6px;color:#5B6780;font-size:14px;"><strong style="color:#0A2540;">{{ total_learners }}</strong> learners enrolled</p>
+        <p style="margin:0 0 6px;color:#5B6780;font-size:14px;"><strong style="color:#0A2540;">{{ avg_rating }}</strong> average course rating</p>
+        <p style="margin:0;color:#5B6780;font-size:14px;"><strong style="color:#0A2540;">{{ partner.country }}</strong> &middot; founded {{ founded }}</p>
+      </div>
+      <div style="margin-top:14px;">
+        <a href="{{ url_for('partner_courses', slug=partner.slug) }}" class="btn-outline" style="display:block;text-align:center;">Browse {{ partner.short_name or partner.name }} courses</a>
+      </div>
+    </aside>
+  </div>
+</div>
+{% endblock %}

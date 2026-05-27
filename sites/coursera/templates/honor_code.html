@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% block title %}Honor Code | Coursera{% endblock %}
+{% block content %}
+<div class="container" style="max-width:880px;margin:0 auto;padding:42px 24px;">
+  <nav style="font-size:13px;color:#5B6780;margin-bottom:14px;">
+    <a href="{{ url_for('index') }}">Home</a> &rsaquo;
+    <span>Honor Code</span>
+  </nav>
+  <h1 style="margin:0 0 6px;font-size:34px;">Coursera Honor Code</h1>
+  <p style="color:#5B6780;font-size:14px;">Effective: March 1, 2026</p>
+
+  <section style="margin-top:24px;background:#fff;border:1px solid #DAE1ED;border-radius:12px;padding:24px;">
+    <p style="color:#3C4858;line-height:1.7;">By enrolling in a course, you agree to the Coursera Honor Code. This pledge is what makes our community trustworthy for employers, universities, and fellow learners.</p>
+  </section>
+
+  <section style="margin-top:18px;background:#fff;border:1px solid #DAE1ED;border-radius:12px;padding:24px;">
+    <h2 style="margin:0 0 8px;font-size:22px;">I will:</h2>
+    <ul style="padding-left:18px;line-height:1.7;color:#3C4858;">
+      <li>Register for only one account.</li>
+      <li>Submit only my own work on graded assignments.</li>
+      <li>Not share solutions to graded assignments — including in study groups and on external sites.</li>
+      <li>Properly cite any external sources I draw from.</li>
+      <li>Use Coursera AI tutors and external generative AI only as study aids, not as graded answer producers.</li>
+    </ul>
+  </section>
+
+  <section style="margin-top:18px;background:#fff;border:1px solid #DAE1ED;border-radius:12px;padding:24px;">
+    <h2 style="margin:0 0 8px;font-size:22px;">I will not:</h2>
+    <ul style="padding-left:18px;line-height:1.7;color:#3C4858;">
+      <li>Share my account credentials.</li>
+      <li>Post copyrighted material that I did not author.</li>
+      <li>Engage in any form of academic dishonesty, including plagiarism, collusion, or impersonation.</li>
+      <li>Pay another person, or be paid, to complete coursework.</li>
+    </ul>
+  </section>
+
+  <section style="margin-top:18px;background:#fff;border:1px solid #DAE1ED;border-radius:12px;padding:24px;">
+    <h2 style="margin:0 0 8px;font-size:22px;">Consequences</h2>
+    <p style="color:#3C4858;line-height:1.7;">Violations may result in any of the following:</p>
+    <ul style="padding-left:18px;line-height:1.7;color:#3C4858;">
+      <li>A failing grade on the assignment or course</li>
+      <li>Revocation of certificate or completion record</li>
+      <li>Account suspension or permanent ban</li>
+      <li>Notification to the credential-issuing partner university or employer</li>
+    </ul>
+  </section>
+
+  <section style="margin-top:18px;background:#FFF8E6;border:1px solid #FDE38A;border-radius:12px;padding:20px;">
+    <h2 style="margin:0 0 6px;font-size:18px;">Report a violation</h2>
+    <p style="color:#5B6780;font-size:14px;margin:0;">If you observe academic dishonesty, please email <strong>honor-code@coursera.org</strong> or use the in-course "Report" link on any forum post.</p>
+  </section>
+
+  <p style="margin-top:24px;color:#5B6780;font-size:13px;">See also: <a href="{{ url_for('code_of_conduct') }}" style="color:#0056D2;">Code of Conduct</a> &middot; <a href="{{ url_for('refund_policy') }}" style="color:#0056D2;">Refund Policy</a></p>
+</div>
+{% endblock %}

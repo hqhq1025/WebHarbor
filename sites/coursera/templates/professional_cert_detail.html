@@ -1,0 +1,102 @@
+{% extends "base.html" %}
+{% block title %}{{ course.title }} Professional Certificate | Coursera{% endblock %}
+{% block content %}
+<div class="pcert-detail">
+  <header style="background:#0A2540;color:#fff;padding:56px 0;">
+    <div class="container" style="max-width:1200px;margin:0 auto;padding:0 24px;">
+      <nav style="font-size:13px;opacity:.85;margin-bottom:14px;">
+        <a href="{{ url_for('index') }}" style="color:#fff;">Home</a> &rsaquo;
+        <a href="{{ url_for('professional_certificates') }}" style="color:#fff;">Professional Certificates</a> &rsaquo;
+        <span>{{ course.title }}</span>
+      </nav>
+      <div style="font-size:12px;letter-spacing:.6px;text-transform:uppercase;font-weight:800;color:#7BB7FF;">Professional Certificate</div>
+      <h1 style="font-size:38px;margin:8px 0 12px;letter-spacing:-.5px;max-width:820px;">{{ course.title }}</h1>
+      <p style="font-size:17px;max-width:720px;opacity:.92;line-height:1.5;">Prepare for a career in {{ career_track }}. No degree or prior experience required. Earn an industry-recognized credential from {{ course.partner.name if course.partner else 'a leading employer' }}.</p>
+      <div style="margin-top:18px;font-size:14px;opacity:.92;">
+        <span>{{ course.level }}</span> &middot;
+        <span>{{ course.duration_text }}</span> &middot;
+        <span>&#9733; {{ '%.1f'|format(course.rating) }}</span> ({{ '{:,}'.format(course.review_count) }} reviews) &middot;
+        <span>{{ course.enrolled_display() }} enrolled</span>
+      </div>
+      <div style="margin-top:22px;display:flex;gap:10px;flex-wrap:wrap;">
+        <a href="{{ url_for('course_detail', slug=course.slug) }}" class="btn-primary" style="background:#0056D2;color:#fff;border-color:#0056D2;">Start the Certificate</a>
+        <a href="{{ url_for('financial_aid') }}" class="btn-outline-white">Apply for financial aid</a>
+      </div>
+    </div>
+  </header>
+
+  <section style="padding:36px 0;background:#fff;border-bottom:1px solid #DAE1ED;">
+    <div class="container" style="max-width:1200px;margin:0 auto;padding:0 24px;display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:18px;">
+      <div><strong style="font-size:22px;display:block;color:#0A2540;">{{ course.duration_text }}</strong><span style="color:#5B6780;font-size:13px;">at {{ '%.0f'|format(course.estimated_workload_hours_per_week or 6) }} hrs/wk</span></div>
+      <div><strong style="font-size:22px;display:block;color:#0A2540;">Industry-recognized</strong><span style="color:#5B6780;font-size:13px;">credential</span></div>
+      <div><strong style="font-size:22px;display:block;color:#0A2540;">Hands-on projects</strong><span style="color:#5B6780;font-size:13px;">portfolio-ready</span></div>
+      <div><strong style="font-size:22px;display:block;color:#0A2540;">Career support</strong><span style="color:#5B6780;font-size:13px;">resume + interview prep</span></div>
+    </div>
+  </section>
+
+  <section style="padding:42px 0;">
+    <div class="container" style="max-width:1200px;margin:0 auto;padding:0 24px;">
+      <h2 style="font-size:24px;margin:0 0 16px;">What you'll learn</h2>
+      <ul style="columns:2;column-gap:32px;line-height:1.7;padding-left:18px;">
+        {% for item in course.get_what_you_learn() %}
+        <li>{{ item }}</li>
+        {% else %}
+        <li>Core concepts of {{ career_track }}</li>
+        <li>Hands-on tools used on the job</li>
+        <li>How to build a portfolio for hiring managers</li>
+        <li>Interview preparation and resume polish</li>
+        {% endfor %}
+      </ul>
+    </div>
+  </section>
+
+  <section style="padding:32px 0;background:#F2F5FA;">
+    <div class="container" style="max-width:1200px;margin:0 auto;padding:0 24px;">
+      <h2 style="font-size:24px;margin:0 0 16px;">Career outcomes</h2>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px;">
+        <div style="background:#fff;border:1px solid #DAE1ED;border-radius:12px;padding:20px;">
+          <div style="font-size:32px;font-weight:800;color:#0056D2;">75%</div>
+          <p style="margin:6px 0 0;color:#5B6780;font-size:14px;">of certificate graduates report a positive career outcome within 6 months</p>
+        </div>
+        <div style="background:#fff;border:1px solid #DAE1ED;border-radius:12px;padding:20px;">
+          <div style="font-size:32px;font-weight:800;color:#0056D2;">$59,000+</div>
+          <p style="margin:6px 0 0;color:#5B6780;font-size:14px;">median U.S. entry-level salary in {{ career_track }} (BLS, 2025)</p>
+        </div>
+        <div style="background:#fff;border:1px solid #DAE1ED;border-radius:12px;padding:20px;">
+          <div style="font-size:32px;font-weight:800;color:#0056D2;">150+</div>
+          <p style="margin:6px 0 0;color:#5B6780;font-size:14px;">employer consortium partners hiring certificate holders</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section style="padding:42px 0;">
+    <div class="container" style="max-width:1200px;margin:0 auto;padding:0 24px;">
+      <h2 style="font-size:24px;margin:0 0 16px;">Course series</h2>
+      {% if sub_courses %}
+      <ol style="list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:14px;">
+        {% for sc in sub_courses %}
+        <li style="background:#fff;border:1px solid #DAE1ED;border-radius:12px;padding:18px;display:flex;gap:16px;">
+          <div style="width:34px;height:34px;border-radius:50%;background:#0A2540;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;flex-shrink:0;">{{ loop.index }}</div>
+          <div style="flex:1;">
+            <h3 style="margin:0 0 4px;font-size:16px;">{{ sc.title }}</h3>
+            <div style="color:#5B6780;font-size:13px;">{{ sc.duration_text }}</div>
+          </div>
+        </li>
+        {% endfor %}
+      </ol>
+      {% else %}
+      <p style="color:#5B6780;">Single integrated program — <a href="{{ url_for('course_detail', slug=course.slug) }}">view full syllabus</a>.</p>
+      {% endif %}
+    </div>
+  </section>
+
+  <section style="padding:32px 0;background:#FFF8E6;border-top:1px solid #FDE38A;">
+    <div class="container" style="max-width:1200px;margin:0 auto;padding:0 24px;">
+      <h2 style="font-size:22px;margin:0 0 10px;">Financial aid available</h2>
+      <p style="color:#5B6780;margin:0 0 12px;">If you can't afford the program fee, apply for financial aid. Reviews take ~15 business days.</p>
+      <a href="{{ url_for('financial_aid_apply') }}" class="btn-primary">Apply for financial aid</a>
+    </div>
+  </section>
+</div>
+{% endblock %}

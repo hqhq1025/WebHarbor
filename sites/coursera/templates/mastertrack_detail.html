@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+{% block title %}{{ track.title }} MasterTrack | Coursera{% endblock %}
+{% block content %}
+<div class="mastertrack-detail">
+  <header style="background:#0A2540;color:#fff;padding:56px 0;">
+    <div class="container" style="max-width:1200px;margin:0 auto;padding:0 24px;">
+      <nav style="font-size:13px;opacity:.85;margin-bottom:14px;">
+        <a href="{{ url_for('index') }}" style="color:#fff;">Home</a> &rsaquo;
+        <a href="{{ url_for('mastertrack_index') }}" style="color:#fff;">MasterTrack</a> &rsaquo;
+        <span>{{ track.title }}</span>
+      </nav>
+      <div style="font-size:12px;letter-spacing:.6px;text-transform:uppercase;font-weight:800;color:#7BB7FF;">MasterTrack&trade; Certificate &middot; {{ track.partner_name }}</div>
+      <h1 style="font-size:38px;margin:8px 0 12px;letter-spacing:-.5px;max-width:820px;">{{ track.title }}</h1>
+      <p style="font-size:17px;max-width:720px;opacity:.92;line-height:1.5;">{{ track.long_blurb }}</p>
+      <div style="margin-top:18px;font-size:14px;opacity:.92;">
+        <span>{{ track.duration }}</span> &middot;
+        <span>{{ track.workload }} hrs/wk</span> &middot;
+        <span>Counts toward {{ track.degree_alias }}</span>
+      </div>
+      <div style="margin-top:22px;display:flex;gap:10px;flex-wrap:wrap;">
+        <a href="{{ url_for('mastertrack_admissions', slug=track.slug) }}" class="btn-primary" style="background:#fff;color:#0A2540;border-color:#fff;">Start application</a>
+        <a href="#modules" class="btn-outline-white">View modules</a>
+      </div>
+    </div>
+  </header>
+
+  <section style="padding:36px 0;background:#fff;border-bottom:1px solid #DAE1ED;">
+    <div class="container" style="max-width:1200px;margin:0 auto;padding:0 24px;display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:18px;">
+      <div><strong style="font-size:20px;display:block;color:#0A2540;">Application fee: $0</strong><span style="color:#5B6780;font-size:13px;">no GRE required</span></div>
+      <div><strong style="font-size:20px;display:block;color:#0A2540;">{{ track.tuition }}</strong><span style="color:#5B6780;font-size:13px;">total program cost</span></div>
+      <div><strong style="font-size:20px;display:block;color:#0A2540;">Live sessions</strong><span style="color:#5B6780;font-size:13px;">weekly office hours</span></div>
+      <div><strong style="font-size:20px;display:block;color:#0A2540;">Capstone</strong><span style="color:#5B6780;font-size:13px;">portfolio project</span></div>
+    </div>
+  </section>
+
+  <section id="modules" style="padding:42px 0;">
+    <div class="container" style="max-width:1200px;margin:0 auto;padding:0 24px;">
+      <h2 style="font-size:24px;margin:0 0 16px;">Program modules</h2>
+      <ol style="list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:14px;">
+        {% for m in track.modules %}
+        <li style="background:#fff;border:1px solid #DAE1ED;border-radius:12px;padding:18px;display:flex;gap:16px;">
+          <div style="width:34px;height:34px;border-radius:50%;background:#0056D2;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;flex-shrink:0;">{{ loop.index }}</div>
+          <div style="flex:1;">
+            <h3 style="margin:0 0 4px;font-size:16px;">{{ m.title }}</h3>
+            <p style="margin:0;color:#5B6780;font-size:14px;">{{ m.summary }}</p>
+          </div>
+        </li>
+        {% endfor %}
+      </ol>
+    </div>
+  </section>
+
+  <section style="padding:32px 0;background:#F2F5FA;">
+    <div class="container" style="max-width:1200px;margin:0 auto;padding:0 24px;">
+      <h2 style="font-size:22px;margin:0 0 10px;">Pathway to the full master's</h2>
+      <p style="color:#5B6780;margin:0 0 8px;">When you complete this MasterTrack and apply to the {{ track.degree_alias }} program at {{ track.partner_name }}, your performance and projects are reviewed as part of the admissions package.</p>
+      <p style="color:#5B6780;margin:0;">Successful learners typically transfer the equivalent of <strong>4–6 graduate credits</strong> into the full degree, shaving 1–2 terms off campus time.</p>
+    </div>
+  </section>
+</div>
+{% endblock %}

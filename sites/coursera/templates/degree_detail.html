@@ -1,0 +1,95 @@
+{% extends "base.html" %}
+{% block title %}{{ course.title }} | Online Degree on Coursera{% endblock %}
+{% block content %}
+<div class="degree-detail-page">
+  <header style="background:linear-gradient(135deg,#0A2540 0%,#1B3F66 100%);color:#fff;padding:56px 0;">
+    <div class="container" style="max-width:1200px;margin:0 auto;padding:0 24px;">
+      <nav style="font-size:13px;opacity:.85;margin-bottom:14px;">
+        <a href="{{ url_for('index') }}" style="color:#fff;">Home</a> &rsaquo;
+        <a href="{{ url_for('degrees') }}" style="color:#fff;">Degrees</a> &rsaquo;
+        <span>{{ course.title }}</span>
+      </nav>
+      <div style="font-size:12px;letter-spacing:.6px;text-transform:uppercase;font-weight:800;color:#7BB7FF;">{{ course.degree_type or 'Online Degree' }}</div>
+      <h1 style="font-size:40px;margin:8px 0 12px;letter-spacing:-.5px;max-width:840px;">{{ course.title }}</h1>
+      {% if course.partner %}
+      <p style="font-size:16px;opacity:.92;margin:0 0 6px;">Offered by <strong>{{ course.partner.name }}</strong> ({{ course.partner.country }})</p>
+      {% endif %}
+      <p style="font-size:17px;max-width:720px;opacity:.92;line-height:1.5;">{{ course.description[:280] }}{% if course.description|length > 280 %}…{% endif %}</p>
+      <div style="margin-top:22px;display:flex;gap:10px;flex-wrap:wrap;">
+        <a href="{{ url_for('degree_admissions', slug=course.slug) }}" class="btn-primary" style="background:#fff;color:#0A2540;border-color:#fff;">Apply now</a>
+        <a href="#curriculum" class="btn-outline-white">View curriculum</a>
+      </div>
+      {% if course.application_deadline %}
+      <div style="margin-top:18px;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.25);padding:10px 16px;border-radius:10px;display:inline-block;font-size:14px;">Next application deadline: <strong>{{ course.application_deadline }}</strong></div>
+      {% endif %}
+    </div>
+  </header>
+
+  <section style="padding:36px 0;background:#fff;border-bottom:1px solid #DAE1ED;">
+    <div class="container" style="max-width:1200px;margin:0 auto;padding:0 24px;display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:18px;">
+      <div><strong style="font-size:20px;display:block;color:#0A2540;">100% online</strong><span style="color:#5B6780;font-size:13px;">study from anywhere</span></div>
+      <div><strong style="font-size:20px;display:block;color:#0A2540;">{{ course.duration_text }}</strong><span style="color:#5B6780;font-size:13px;">to complete</span></div>
+      <div><strong style="font-size:20px;display:block;color:#0A2540;">Accredited</strong><span style="color:#5B6780;font-size:13px;">same diploma as on-campus</span></div>
+      <div><strong style="font-size:20px;display:block;color:#0A2540;">$15K–$45K USD</strong><span style="color:#5B6780;font-size:13px;">est. total tuition</span></div>
+    </div>
+  </section>
+
+  <div id="curriculum" class="container" style="max-width:1200px;margin:0 auto;padding:42px 24px;display:grid;grid-template-columns:2fr 1fr;gap:32px;">
+    <main>
+      <section>
+        <h2 style="font-size:24px;margin:0 0 12px;">Program overview</h2>
+        <p style="color:#3C4858;line-height:1.7;">{{ course.description }}</p>
+      </section>
+
+      <section style="margin-top:32px;">
+        <h2 style="font-size:24px;margin:0 0 12px;">What you'll learn</h2>
+        <ul style="line-height:1.7;padding-left:18px;">
+          {% for item in course.get_what_you_learn() %}
+          <li>{{ item }}</li>
+          {% else %}
+          <li>Foundational graduate-level theory</li>
+          <li>Hands-on capstone in your concentration</li>
+          <li>Career-focused electives</li>
+          {% endfor %}
+        </ul>
+      </section>
+
+      <section style="margin-top:32px;">
+        <h2 style="font-size:24px;margin:0 0 12px;">Concentrations &amp; electives</h2>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;">
+          {% for con in concentrations %}
+          <div style="background:#fff;border:1px solid #DAE1ED;border-radius:10px;padding:14px;">
+            <strong>{{ con }}</strong>
+            <p style="margin:4px 0 0;color:#5B6780;font-size:13px;">3–4 elective courses</p>
+          </div>
+          {% endfor %}
+        </div>
+      </section>
+
+      <section style="margin-top:32px;">
+        <h2 style="font-size:24px;margin:0 0 12px;">Admissions snapshot</h2>
+        <ul style="line-height:1.7;padding-left:18px;color:#3C4858;">
+          <li>Bachelor's degree from an accredited institution (or equivalent)</li>
+          <li>Statement of purpose (~750 words)</li>
+          <li>Two letters of recommendation</li>
+          <li>English proficiency (TOEFL/IELTS) for non-native speakers</li>
+        </ul>
+        <a href="{{ url_for('degree_admissions', slug=course.slug) }}" style="color:#0056D2;font-weight:700;">See full admissions page &rsaquo;</a>
+      </section>
+    </main>
+    <aside>
+      <div style="background:#fff;border:1px solid #DAE1ED;border-radius:12px;padding:22px;position:sticky;top:24px;">
+        <h3 style="margin:0 0 10px;font-size:18px;">Get program info</h3>
+        <form method="POST" action="{{ url_for('degree_admissions', slug=course.slug) }}" style="display:flex;flex-direction:column;gap:10px;">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <label style="font-size:13px;color:#5B6780;">First name<input type="text" name="first_name" required style="display:block;width:100%;padding:8px;border:1px solid #DAE1ED;border-radius:8px;margin-top:4px;"></label>
+          <label style="font-size:13px;color:#5B6780;">Email<input type="email" name="email" required style="display:block;width:100%;padding:8px;border:1px solid #DAE1ED;border-radius:8px;margin-top:4px;"></label>
+          <label style="font-size:13px;color:#5B6780;">Country<input type="text" name="country" style="display:block;width:100%;padding:8px;border:1px solid #DAE1ED;border-radius:8px;margin-top:4px;"></label>
+          <button type="submit" class="btn-primary">Request information</button>
+        </form>
+        <p style="font-size:12px;color:#5B6780;margin-top:10px;">By submitting, you agree to receive emails from {{ course.partner.name if course.partner else 'this university' }} and Coursera.</p>
+      </div>
+    </aside>
+  </div>
+</div>
+{% endblock %}
