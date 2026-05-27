@@ -65,35 +65,36 @@ v2 自动检测的失败状态（写入 metadata.json）：
 
 **v2.1 关键修复**（2026-05 R2 phys_org 案例后）：`detect_failure` 不再 short-circuit。**bot_block 检测优先于 status**，所以 Akamai/CF 的 403 + "Checking your connection" body 会正确标 bot_block（之前会被错标成 not_found）。bot_block 触发 Exa fallback hint；not_found 不触发（真 404 没必要走 Exa）。
 
-## 配套工具
+## 配套工具（v3 stack，2026-05）
 
-`~/webvoyager-analysis/real_components/index_site.py` — 扫 `snapshots/<site>/<page>/metadata.json`，写 `_index.json` 汇总：
+`~/webvoyager-analysis/real_components/` 下完整工具集：
 
-```bash
-python3 index_site.py <site>      # 单站
-python3 index_site.py --all       # 全站
+| 工具 | 作用 | 何时用 |
+|---|---|---|
+| `harvest.py` | 单 URL Playwright 抓 + bot 检测 + 结构化抽取 + Wayback 兜底 | 起步爬一个 URL |
+| `harvest_spider.py` | BFS 多页爬 + per-host fail-fast + SQLite checkpoint | 想深扒一站多页 |
+| `extract_image_urls.py` | 从 snapshots 抽 `<img src>` 入 `_image_urls.jsonl` | harvest 完后桥到 scrape-real-images |
+| `index_pool.py` | 聚 77k+ image URL 入 SQLite FTS5，alt 文本全文搜 | 跨站通用图片复用，避免重复爬 |
+| `infer_cdn_pattern.py` | 从一站 URLs 推 CDN 模板（host + 路径 placeholder） | 新发现的 CDN 半自动入 registry |
+| `reprocess_structured.py` | 从已有 `full.html` 离线抽 JSON-LD + state + 文章（不抓网）| 之前抓的 snapshot 升级到 v3 数据 |
+| `content_extract.py` | trafilatura wrapper 抽干净 article body | 新闻/博客站 |
+| `search_local.py` | 本地 SearXNG 搜，无 quota 替代 Tavily/Exa | 找 entity URL / image 替代 paid API |
 
-# 输出格式：
-# <site>: pages=N ok=X bot_block=Y not_found=Z http2=W frags=F size=SMB
-```
+## v3 增量（2026-05 升级）
 
-每次 harvest 后跑一遍 `--all`，立刻看到哪些站需要 Round 2 重抓。
+v2 仅抓 HTML + image URL；v3 额外产出：
 
-`~/webvoyager-analysis/real_components/extract_image_urls.py` — 桥工具，从 snapshots 抽真 img URL 给 [[scrape-real-images]] 用：
+- **`structured.json`**：每页提取 `jsonld` (Schema.org Product/Article/Event/Person etc) + `state` (Next.js / Apollo / Initial-State / Nuxt / Remix) + `meta` (og:* / twitter:* / canonical)
+- **`article.json`**（trafilatura）：title / author / date / body_text / hero_image / links
+- **`wayback.html`** + `structured_wayback.json`：bot_block 时自动试 Web Archive 历史快照（CDX API），有就用，没有再走 Exa fallback
+- **`FALLBACK_NEEDED.md`**：Wayback 也空时的 Exa hint
 
-```bash
-python3 extract_image_urls.py <site>      # 单站
-python3 extract_image_urls.py --all       # 全站
-```
+**reprocess 实战 (2026-05)**：90+ 站现有 snapshots **零网络调用** 离线 reprocess →
+- **801 `structured.json` 文件**（carmax 125 JSON-LD / landwatch 41 / apple 22 / coursera 21）
+- **764 `article.json` 文件**（trafilatura clean body）
+- 平均每页 1-3 JSON-LD blocks + 5-13 meta tags + 50% 概率有 framework state
 
-输出 `snapshots/<site>/_image_urls.jsonl`，每行 `{page, url, alt, kind}`：
-- `kind`: `img-src` / `img-srcset` / `source-srcset` / `css-bg`
-- `alt`: 真站给的 alt text（"Tony Stark" / "iPhone 15 Pro" / "LeBron James" 等 — 直接拿 entity 名）
-- `url`: 真 CDN 完整路径，可直接 `curl --referer https://<site>/` 拉
-
-2026-05 实战 stats：bestbuy 1113 / apple 2551 / fandom 1752 distinct img URL，alt 里就有 character / product / player 名。这是 per-entity 真图最便宜的来源。
-
-每次产出 `~/webvoyager-analysis/real_components/snapshots/<site>/<page_name>/`：
+下游用法：写 site_specs / seed_data 时**直接读 `structured.json` 的 og:image / jsonld[0].image / state.next_data.props.pageProps**，比解 HTML 准确百倍。
 - `full.html` + `full.png` — 整页
 - `page-header.html`、`nav.html`、`hero.html`、`main.html`、`footer.html`、`container.html`、`wrap.html`、`sidebar.html`
 - `card-<sel>-<n>.html` — 首 3 个 card-like 元素
