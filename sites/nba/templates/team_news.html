@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block title %}{{ team.full_name }} - News{% endblock %}
+{% block content %}
+<section class="team-deep">
+  <header class="team-deep-hero" style="--team:{{ team.color }}">
+    <img class="team-deep-logo" src="{{ team.logo }}" alt="">
+    <div>
+      <span class="eyebrow">Team News</span>
+      <h1>{{ team.full_name }}</h1>
+      <nav class="team-deep-tabs">
+        <a href="{{ url_for('team_detail', slug=team.slug) }}">Overview</a>
+        <a href="{{ url_for('team_roster', slug=team.slug) }}">Roster</a>
+        <a href="{{ url_for('team_schedule', slug=team.slug) }}">Schedule</a>
+        <a class="active" href="{{ url_for('team_news', slug=team.slug) }}">News</a>
+        <a href="{{ url_for('team_video', slug=team.slug) }}">Video</a>
+        <a href="{{ url_for('team_tickets', slug=team.slug) }}">Tickets</a>
+        <a href="{{ url_for('team_store', slug=team.slug) }}">Store</a>
+      </nav>
+    </div>
+  </header>
+  <ul class="team-news-list">
+    {% for n in items %}
+    <li>
+      <img src="{{ n.image }}" alt="">
+      <div>
+        <small>{{ n.published_at }} · <span class="news-tag">{{ n.tag }}</span></small>
+        <h3>{{ n.title }}</h3>
+        <p>{{ n.body }}</p>
+      </div>
+    </li>
+    {% endfor %}
+  </ul>
+
+  <form action="{{ url_for('follow_team', slug=team.slug) }}" method="post">
+    <button type="submit" class="follow-cta">Follow {{ team.full_name }}</button>
+  </form>
+</section>
+{% endblock %}

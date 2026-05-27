@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% block title %}{{ year }} NBA All-Star{% endblock %}
+{% block content %}
+<section class="allstar-deep">
+  <header class="allstar-hero">
+    <h1>{{ year }} NBA All-Star Game</h1>
+    <p>Fan vote leaders, conference rosters, and celebrity game.</p>
+    <nav class="allstar-tabs">
+      <a class="active" href="{{ url_for('allstar_year', year=year) }}">Overview</a>
+      <a href="{{ url_for('allstar_voting', year=year) }}">Vote</a>
+      <a href="{{ url_for('allstar_celebrity_game', year=year) }}">Celebrity Game</a>
+    </nav>
+  </header>
+  <div class="allstar-conferences">
+    <section>
+      <h2>Eastern Conference Leaders</h2>
+      <ol class="allstar-leader-list">
+        {% for v in east %}
+        <li>
+          <img src="{{ player_headshot(v.player_slug) }}" alt="">
+          <a href="{{ url_for('player_detail', slug=v.player_slug) }}">{{ player_name(v.player_slug) }}</a>
+          <span>{{ v.votes }} votes</span>
+        </li>
+        {% endfor %}
+      </ol>
+    </section>
+    <section>
+      <h2>Western Conference Leaders</h2>
+      <ol class="allstar-leader-list">
+        {% for v in west %}
+        <li>
+          <img src="{{ player_headshot(v.player_slug) }}" alt="">
+          <a href="{{ url_for('player_detail', slug=v.player_slug) }}">{{ player_name(v.player_slug) }}</a>
+          <span>{{ v.votes }} votes</span>
+        </li>
+        {% endfor %}
+      </ol>
+    </section>
+  </div>
+  <section>
+    <h2>Celebrity Game</h2>
+    <div class="celeb-grid">
+      {% for c in celebs %}
+      <article class="celeb-card">
+        <img src="{{ c.image }}" alt="">
+        <h3>{{ c.name }}</h3>
+        <small>{{ c.team }} · {{ c.role }}</small>
+        <p>{{ c.tagline }}</p>
+      </article>
+      {% endfor %}
+    </div>
+  </section>
+</section>
+{% endblock %}

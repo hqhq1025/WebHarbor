@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block title %}NBA {{ category|upper }} Leaders{% endblock %}
+{% block content %}
+<section class="leaders-deep">
+  <header class="leaders-hero">
+    <h1>NBA {{ category|upper }} Leaders</h1>
+    <nav class="leader-tabs">
+      <a {% if category == 'ppg' %}class="active"{% endif %} href="{{ url_for('stats_leaders_category', category='ppg') }}">Points</a>
+      <a {% if category == 'rpg' %}class="active"{% endif %} href="{{ url_for('stats_leaders_category', category='rpg') }}">Rebounds</a>
+      <a {% if category == 'apg' %}class="active"{% endif %} href="{{ url_for('stats_leaders_category', category='apg') }}">Assists</a>
+      <a {% if category == 'spg' %}class="active"{% endif %} href="{{ url_for('stats_leaders_category', category='spg') }}">Steals</a>
+      <a {% if category == 'bpg' %}class="active"{% endif %} href="{{ url_for('stats_leaders_category', category='bpg') }}">Blocks</a>
+      <a {% if category == 'fg_pct' %}class="active"{% endif %} href="{{ url_for('stats_leaders_category', category='fg_pct') }}">FG%</a>
+      <a {% if category == 'three_pct' %}class="active"{% endif %} href="{{ url_for('stats_leaders_category', category='three_pct') }}">3P%</a>
+    </nav>
+  </header>
+  <ol class="leader-list">
+    {% for r in rows %}
+    <li class="leader-row">
+      <span class="rank">#{{ r.rank }}</span>
+      <img class="leader-portrait" src="{{ player_headshot(r.player_slug) }}" alt="">
+      <a href="{{ url_for('player_detail', slug=r.player_slug) }}">{{ player_name(r.player_slug) }}</a>
+      <strong>{{ r.value }}</strong>
+    </li>
+    {% endfor %}
+  </ol>
+</section>
+{% endblock %}

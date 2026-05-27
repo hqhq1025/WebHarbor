@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block title %}{{ video.title }}{% endblock %}
+{% block content %}
+<section class="video-deep">
+  <header class="video-player">
+    <img class="poster" src="{{ video.image }}" alt="">
+    <div>
+      <span class="eyebrow">{{ video.kind }} · {{ video.duration }} · {{ video.views }} views</span>
+      <h1>{{ video.title }}</h1>
+      <p>{{ video.description }}</p>
+      {% if current_user.is_authenticated %}
+      <form action="{{ url_for('video_like', slug=video.slug) }}" method="post" class="inline-form">
+        <button type="submit">Like Highlight</button>
+      </form>
+      <form action="{{ url_for('video_share', slug=video.slug) }}" method="post" class="share-form">
+        <label>Share via
+          <select name="channel"><option>email</option><option>x</option><option>facebook</option><option>copy-link</option></select>
+        </label>
+        <label>Recipient <input name="recipient" placeholder="friend@example.com"></label>
+        <label>Note <input name="note" placeholder="Watch this!"></label>
+        <button type="submit">Share</button>
+      </form>
+      {% endif %}
+    </div>
+  </header>
+  <h2>Related Clips</h2>
+  <div class="video-grid">
+    {% for v in related %}
+    <a class="video-card" href="{{ url_for('video_detail', slug=v.slug) }}">
+      <img src="{{ v.image }}" alt="">
+      <span class="duration">{{ v.duration }}</span>
+      <strong>{{ v.title }}</strong>
+      <small>{{ v.views }} views</small>
+    </a>
+    {% endfor %}
+  </div>
+</section>
+{% endblock %}

@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% block title %}My Ticket Orders{% endblock %}
+{% block content %}
+<section class="account-deep">
+  <header>
+    <h1>My Ticket Orders</h1>
+    <nav class="account-tabs">
+      <a href="{{ url_for('account') }}">Profile</a>
+      <a href="{{ url_for('my_follows') }}">Follows</a>
+      <a href="{{ url_for('my_alerts') }}">Alerts</a>
+      <a href="{{ url_for('my_saved_games') }}">Saved Games</a>
+      <a class="active" href="{{ url_for('my_ticket_orders') }}">Ticket Orders</a>
+      <a href="{{ url_for('my_wishlist') }}">Wishlist</a>
+    </nav>
+  </header>
+  <ul class="ticket-orders-list">
+    {% for r in rows %}
+    <li>
+      <strong>{{ r.confirmation }}</strong>
+      <div>
+        <img class="inline-logo" src="{{ r.home_logo }}" alt="">
+        <strong>{{ r.home_name }} vs {{ r.away_name }}</strong>
+        <img class="inline-logo" src="{{ r.away_logo }}" alt="">
+      </div>
+      <p>{{ r.game_date }} · {{ r.section }} · Row {{ r.row_label }} · {{ r.seats }} seats</p>
+      <p>${{ r.price_each }} each · Total ${{ r.total }}</p>
+      <form action="{{ url_for('ticket_cancel', order_id=r.id) }}" method="post">
+        <button type="submit">Cancel Order</button>
+      </form>
+    </li>
+    {% endfor %}
+  </ul>
+</section>
+{% endblock %}

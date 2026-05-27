@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block title %}Game {{ game.id }} - Box Score{% endblock %}
+{% block content %}
+<section class="game-deep">
+  <header class="game-deep-hero">
+    <img class="team-side" src="{{ game.home_team.logo }}" alt="">
+    <div class="score">
+      <strong>{{ game.home_team.full_name }} {{ game.home_score or '-' }}</strong>
+      <span>{% if game.status == 'Final' %}Final{% else %}Tip {{ game.game_date.strftime('%I:%M %p') }}{% endif %}</span>
+      <strong>{{ game.away_score or '-' }} {{ game.away_team.full_name }}</strong>
+    </div>
+    <img class="team-side" src="{{ game.away_team.logo }}" alt="">
+  </header>
+  <nav class="game-deep-tabs">
+    <a href="{{ url_for('game_detail', game_id=game.id) }}">Summary</a>
+    <a class="active" href="{{ url_for('game_box', game_id=game.id) }}">Box Score</a>
+    <a href="{{ url_for('game_pbp', game_id=game.id) }}">Play by Play</a>
+    <a href="{{ url_for('game_shotchart', game_id=game.id) }}">Shot Chart</a>
+    <a href="{{ url_for('game_four_factors', game_id=game.id) }}">Four Factors</a>
+  </nav>
+  <table class="box-table">
+    <thead><tr><th>Team</th><th>Q1</th><th>Q2</th><th>Q3</th><th>Q4</th><th>FG</th><th>3PT</th><th>FT</th><th>REB</th><th>AST</th><th>TOV</th><th>F</th></tr></thead>
+    <tbody>
+      {% for r in rows %}
+      <tr>
+        <td><img class="inline-logo" src="{{ team_logo(r.team_slug) }}" alt="">{{ team_name(r.team_slug) }}</td>
+        <td>{{ r.q1 }}</td><td>{{ r.q2 }}</td><td>{{ r.q3 }}</td><td>{{ r.q4 }}</td>
+        <td>{{ r.fg_made }}-{{ r.fg_att }}</td>
+        <td>{{ r.three_made }}-{{ r.three_att }}</td>
+        <td>{{ r.ft_made }}-{{ r.ft_att }}</td>
+        <td>{{ r.reb }}</td><td>{{ r.ast }}</td><td>{{ r.tov }}</td><td>{{ r.fouls }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  <form action="{{ url_for('save_game', game_id=game.id) }}" method="post" class="save-game-form">
+    <input name="note" placeholder="Why are you saving this game?">
+    <button type="submit">Save Game</button>
+  </form>
+</section>
+{% endblock %}

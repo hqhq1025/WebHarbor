@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block title %}My Saved Games{% endblock %}
+{% block content %}
+<section class="account-deep">
+  <header>
+    <h1>My Saved Games</h1>
+    <nav class="account-tabs">
+      <a href="{{ url_for('account') }}">Profile</a>
+      <a href="{{ url_for('my_follows') }}">Follows</a>
+      <a href="{{ url_for('my_alerts') }}">Alerts</a>
+      <a class="active" href="{{ url_for('my_saved_games') }}">Saved Games</a>
+      <a href="{{ url_for('my_ticket_orders') }}">Ticket Orders</a>
+      <a href="{{ url_for('my_wishlist') }}">Wishlist</a>
+    </nav>
+  </header>
+  <ul class="saved-games-list">
+    {% for s in saved %}
+    <li>
+      <a href="{{ url_for('game_detail', game_id=s.game_id) }}">
+        <img class="inline-logo" src="{{ s.home_logo }}" alt="">
+        <strong>{{ s.home_name }} vs {{ s.away_name }}</strong>
+        <img class="inline-logo" src="{{ s.away_logo }}" alt="">
+      </a>
+      <small>{{ s.game_date }} · {{ s.status }}</small>
+      <p>{{ s.note }}</p>
+    </li>
+    {% endfor %}
+  </ul>
+</section>
+{% endblock %}

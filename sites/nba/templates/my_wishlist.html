@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block title %}My Wishlist{% endblock %}
+{% block content %}
+<section class="account-deep">
+  <header>
+    <h1>My Wishlist</h1>
+    <nav class="account-tabs">
+      <a href="{{ url_for('account') }}">Profile</a>
+      <a href="{{ url_for('my_follows') }}">Follows</a>
+      <a href="{{ url_for('my_alerts') }}">Alerts</a>
+      <a href="{{ url_for('my_saved_games') }}">Saved Games</a>
+      <a href="{{ url_for('my_ticket_orders') }}">Ticket Orders</a>
+      <a class="active" href="{{ url_for('my_wishlist') }}">Wishlist</a>
+    </nav>
+  </header>
+  <div class="wishlist-grid">
+    {% for r in rows %}
+    <article class="wishlist-card">
+      {% if r.product_image %}<img src="{{ r.product_image }}" alt="">{% endif %}
+      <h3><a href="{{ url_for('product_detail', slug=r.product_slug) }}">{{ r.product_name or r.product_slug }}</a></h3>
+      <p>${{ r.product_price }}</p>
+      <small>{{ r.note }}</small>
+      <form action="{{ url_for('wishlist_remove', slug=r.product_slug) }}" method="post">
+        <button type="submit">Remove</button>
+      </form>
+    </article>
+    {% endfor %}
+  </div>
+</section>
+{% endblock %}

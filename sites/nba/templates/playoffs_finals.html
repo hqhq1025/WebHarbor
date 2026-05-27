@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block title %}{{ year }} NBA Finals{% endblock %}
+{% block content %}
+<section class="playoffs-deep">
+  <header class="playoffs-hero">
+    <img src="/static/images/articles/nba-official-finals-logo.png" alt="">
+    <h1>{{ year }} NBA Finals</h1>
+    <nav class="playoffs-tabs">
+      <a href="{{ url_for('playoffs_year', year=year) }}">Overview</a>
+      <a href="{{ url_for('playoffs_bracket', year=year) }}">Bracket</a>
+      <a class="active" href="{{ url_for('playoffs_finals', year=year) }}">Finals</a>
+    </nav>
+  </header>
+  <p>Conference champions square off for the Larry O'Brien Trophy. Follow each potential Finals matchup, broadcast schedule and series storyline.</p>
+  <div class="finals-shell">
+    {% for t in teams[:6] %}
+    <article class="finals-team">
+      <img src="{{ t.logo }}" alt="">
+      <h3>{{ t.full_name }}</h3>
+      <p>{{ t.arena }} · Coach {{ t.coach }}</p>
+      <small>Season record {{ t.wins }}-{{ t.losses }}</small>
+    </article>
+    {% endfor %}
+  </div>
+</section>
+{% endblock %}

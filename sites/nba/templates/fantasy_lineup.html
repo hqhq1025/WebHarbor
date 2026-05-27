@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}Lineup - {{ team.name }}{% endblock %}
+{% block content %}
+<section class="fantasy-deep">
+  <header class="fantasy-hero">
+    <h1>Set Lineup — {{ team.name }}</h1>
+    <p>Lock starters and confirm projected points before tipoff.</p>
+  </header>
+  <form action="{{ url_for('fantasy_lineup_edit', slug=team.slug) }}" method="post" class="lineup-form">
+    <table class="lineup-table">
+      <thead><tr><th></th><th>Player</th><th>Slot</th><th>Pos</th><th>Proj</th><th>Locked</th></tr></thead>
+      <tbody>
+        {% for l in lineups %}
+        <tr>
+          <td><img class="roster-portrait" src="{{ l.player_image or '/static/images/league/nba-logo.svg' }}" alt=""></td>
+          <td><a href="{{ url_for('player_detail', slug=l.player_slug) }}">{{ l.player_name or l.player_slug }}</a></td>
+          <td>{{ l.slot }}</td><td>{{ l.player_pos }}</td>
+          <td>{{ l.proj_pts }}</td>
+          <td><input type="checkbox" name="locked_{{ l.id }}" value="1" {% if l.locked %}checked{% endif %}></td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    <button type="submit">Save Lineup</button>
+  </form>
+</section>
+{% endblock %}

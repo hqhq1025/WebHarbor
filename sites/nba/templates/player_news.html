@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block title %}{{ player.name }} - News{% endblock %}
+{% block content %}
+<section class="player-deep">
+  <header class="player-deep-hero" style="--team:{{ player.team.color }}">
+    <img class="player-deep-headshot" src="{{ player.image }}" alt="{{ player.name }}">
+    <div>
+      <span class="eyebrow">Player News</span>
+      <h1>{{ player.name }}</h1>
+      <p>{{ player.position }} · #{{ player.jersey }} · {{ player.team.full_name }}</p>
+    </div>
+  </header>
+  <ul class="player-news-list">
+    {% for n in items %}
+    <li>
+      <small>{{ n.published_at }}</small>
+      <span class="news-tag">{{ n.tag }}</span>
+      <h3>{{ n.title }}</h3>
+      <p>{{ n.body }}</p>
+    </li>
+    {% endfor %}
+  </ul>
+</section>
+{% endblock %}

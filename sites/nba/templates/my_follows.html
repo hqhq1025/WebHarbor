@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block title %}My Follows{% endblock %}
+{% block content %}
+<section class="account-deep">
+  <header>
+    <h1>My Follows</h1>
+    <p>Teams and players you follow appear in your alerts feed.</p>
+    <nav class="account-tabs">
+      <a href="{{ url_for('account') }}">Profile</a>
+      <a class="active" href="{{ url_for('my_follows') }}">Follows</a>
+      <a href="{{ url_for('my_alerts') }}">Alerts</a>
+      <a href="{{ url_for('my_saved_games') }}">Saved Games</a>
+      <a href="{{ url_for('my_ticket_orders') }}">Ticket Orders</a>
+      <a href="{{ url_for('my_wishlist') }}">Wishlist</a>
+      <a href="{{ url_for('my_mock_drafts') }}">Mock Drafts</a>
+      <a href="{{ url_for('preferences') }}">Preferences</a>
+    </nav>
+  </header>
+  <div class="follow-grid">
+    {% for f in follows %}
+    <article class="follow-card">
+      <img src="{{ f.image }}" alt="">
+      <h3><a href="{{ f.link }}">{{ f.label }}</a></h3>
+      <small>{{ f.kind }} · {% if f.alert_on %}alerts on{% else %}alerts off{% endif %}</small>
+      <form action="{% if f.kind == 'team' %}{{ url_for('follow_team', slug=f.target_slug) }}{% else %}{{ url_for('follow_player', slug=f.target_slug) }}{% endif %}" method="post">
+        <button type="submit">Unfollow</button>
+      </form>
+    </article>
+    {% endfor %}
+  </div>
+</section>
+{% endblock %}

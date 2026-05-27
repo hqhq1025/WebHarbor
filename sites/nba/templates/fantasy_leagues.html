@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block title %}NBA Fantasy Leagues{% endblock %}
+{% block content %}
+<section class="fantasy-deep">
+  <header class="fantasy-hero">
+    <h1>NBA Fantasy Leagues</h1>
+    <p>Join or browse public head-to-head, roto, dynasty, and salary-cap auction leagues.</p>
+  </header>
+  <div class="fantasy-league-grid">
+    {% for l in leagues %}
+    <article class="fantasy-league-card">
+      <h3><a href="{{ url_for('fantasy_league_detail', slug=l.slug) }}">{{ l.name }}</a></h3>
+      <p><strong>{{ l.scoring }}</strong> · {{ l.team_count }} teams · {% if l.public %}Public{% else %}Private{% endif %}</p>
+      <p>{{ l.description }}</p>
+    </article>
+    {% endfor %}
+  </div>
+</section>
+{% endblock %}

@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block title %}{{ year }} NBA Draft Picks{% endblock %}
+{% block content %}
+<section class="draft-deep">
+  <header class="draft-hero">
+    <img src="/static/images/articles/nba-official-draft-logo.png" alt="">
+    <div>
+      <span class="eyebrow">{{ year }} Picks</span>
+      <h1>{{ year }} Draft Picks</h1>
+      <nav class="draft-deep-tabs">
+        <a href="{{ url_for('draft_year', year=year) }}">Overview</a>
+        <a href="{{ url_for('draft_prospects', year=year) }}">Prospects</a>
+        <a href="{{ url_for('draft_lottery', year=year) }}">Lottery</a>
+        <a class="active" href="{{ url_for('draft_picks', year=year) }}">Picks</a>
+      </nav>
+    </div>
+  </header>
+  <table class="draft-picks-table">
+    <thead><tr><th>Pick</th><th>Team</th><th>Prospect</th><th>Via</th></tr></thead>
+    <tbody>
+      {% for p in picks %}
+      <tr>
+        <td>R{{ p.round }} · #{{ p.pick_no }}</td>
+        <td><img class="inline-logo" src="{{ team_logo(p.team_slug) }}" alt="">{{ team_name(p.team_slug) }}</td>
+        <td>{{ p.prospect_name or p.prospect_slug }}</td>
+        <td>{{ p.via or '—' }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</section>
+{% endblock %}

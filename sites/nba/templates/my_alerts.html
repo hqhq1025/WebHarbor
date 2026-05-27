@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block title %}My Alerts{% endblock %}
+{% block content %}
+<section class="account-deep">
+  <header>
+    <h1>My Alerts</h1>
+    <p>Push and email alerts for teams, players, and league events.</p>
+    <nav class="account-tabs">
+      <a href="{{ url_for('account') }}">Profile</a>
+      <a href="{{ url_for('my_follows') }}">Follows</a>
+      <a class="active" href="{{ url_for('my_alerts') }}">Alerts</a>
+      <a href="{{ url_for('my_saved_games') }}">Saved Games</a>
+      <a href="{{ url_for('my_ticket_orders') }}">Ticket Orders</a>
+      <a href="{{ url_for('my_wishlist') }}">Wishlist</a>
+      <a href="{{ url_for('preferences') }}">Preferences</a>
+    </nav>
+  </header>
+  <ul class="alert-list">
+    {% for a in alerts %}
+    <li>
+      <strong>{{ a.label }}</strong>
+      <small>{{ a.kind }}{% if a.target_slug %} · {{ a.target_slug }}{% endif %}</small>
+      <form action="{{ url_for('alert_toggle', alert_id=a.id) }}" method="post">
+        <button type="submit">{% if a.active %}Pause{% else %}Resume{% endif %}</button>
+      </form>
+    </li>
+    {% endfor %}
+  </ul>
+  <form action="{{ url_for('alert_add') }}" method="post" class="alert-add-form">
+    <h3>Add a new alert</h3>
+    <label>Kind
+      <select name="kind">
+        <option value="tipoff">Tipoff</option>
+        <option value="score_swing">Score swing</option>
+        <option value="player_news">Player news</option>
+        <option value="all_star_vote_open">All-Star vote open</option>
+      </select>
+    </label>
+    <label>Target slug <input name="target_slug" placeholder="lakers or lebron-james"></label>
+    <label>Label <input name="label" placeholder="Lakers tipoff alert"></label>
+    <button type="submit">Create Alert</button>
+  </form>
+</section>
+{% endblock %}

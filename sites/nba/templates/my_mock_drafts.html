@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block title %}My Mock Drafts{% endblock %}
+{% block content %}
+<section class="account-deep">
+  <header>
+    <h1>My Mock Drafts</h1>
+    <nav class="account-tabs">
+      <a href="{{ url_for('account') }}">Profile</a>
+      <a href="{{ url_for('my_follows') }}">Follows</a>
+      <a href="{{ url_for('my_alerts') }}">Alerts</a>
+      <a href="{{ url_for('my_saved_games') }}">Saved Games</a>
+      <a href="{{ url_for('my_ticket_orders') }}">Ticket Orders</a>
+      <a href="{{ url_for('my_wishlist') }}">Wishlist</a>
+      <a class="active" href="{{ url_for('my_mock_drafts') }}">Mock Drafts</a>
+    </nav>
+  </header>
+  {% if rows %}
+  <ol class="mock-draft-list">
+    {% for r in rows %}
+    <li>
+      <span>#{{ r.pick_no }}</span>
+      {% if r.prospect_image %}<img src="{{ r.prospect_image }}" alt="">{% endif %}
+      <strong>{{ r.prospect_name or r.prospect_slug }}</strong>
+      <small>{{ r.year }} · submitted {{ r.submitted_at }}</small>
+    </li>
+    {% endfor %}
+  </ol>
+  {% else %}
+  <p>You haven't submitted a mock draft yet. Try <a href="{{ url_for('draft_year', year=2026) }}">2026 Draft Central</a>.</p>
+  {% endif %}
+</section>
+{% endblock %}

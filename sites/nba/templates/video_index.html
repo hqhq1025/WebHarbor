@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block title %}NBA Video{% endblock %}
+{% block content %}
+<section class="video-deep">
+  <header class="video-hero">
+    <h1>NBA Video Library</h1>
+    <nav class="video-kind-tabs">
+      <a {% if kind == '' %}class="active"{% endif %} href="{{ url_for('video_index') }}">All</a>
+      {% for k in kinds %}
+      <a {% if kind == k %}class="active"{% endif %} href="{{ url_for('video_index', kind=k) }}">{{ k }}</a>
+      {% endfor %}
+    </nav>
+  </header>
+  <div class="video-grid">
+    {% for v in videos %}
+    <a class="video-card" href="{{ url_for('video_detail', slug=v.slug) }}">
+      <img src="{{ v.image }}" alt="">
+      <span class="duration">{{ v.duration }}</span>
+      <strong>{{ v.title }}</strong>
+      <small>{{ v.kind }} · {{ v.views }} views</small>
+    </a>
+    {% endfor %}
+  </div>
+</section>
+{% endblock %}

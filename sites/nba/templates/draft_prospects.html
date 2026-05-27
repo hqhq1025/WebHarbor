@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block title %}{{ year }} NBA Draft Prospects{% endblock %}
+{% block content %}
+<section class="draft-deep">
+  <header class="draft-hero">
+    <img src="/static/images/articles/nba-official-draft-combine-hero.jpg" alt="">
+    <div>
+      <span class="eyebrow">{{ year }} Draft Prospects</span>
+      <h1>{{ year }} Prospect Board</h1>
+      <nav class="draft-deep-tabs">
+        <a href="{{ url_for('draft_year', year=year) }}">Overview</a>
+        <a class="active" href="{{ url_for('draft_prospects', year=year) }}">Prospects</a>
+        <a href="{{ url_for('draft_lottery', year=year) }}">Lottery</a>
+        <a href="{{ url_for('draft_picks', year=year) }}">Picks</a>
+      </nav>
+    </div>
+  </header>
+  <div class="prospect-grid">
+    {% for p in prospects %}
+    <article class="prospect-card">
+      <img src="{{ p.image }}" alt="{{ p.name }}">
+      <span>Mock #{{ p.mock_rank }} · {{ p.tier }}</span>
+      <h3>{{ p.name }}</h3>
+      <p>{{ p.position }} · {{ p.height }} · {{ p.weight }} lb · {{ p.wingspan }} wing</p>
+      <p>{{ p.college }} ({{ p.country }}) · Age {{ p.age }}</p>
+      <p><strong>Strengths:</strong> {{ p.strengths }}</p>
+      <p><strong>Concerns:</strong> {{ p.concerns }}</p>
+      <small>{{ p.comp }}</small>
+    </article>
+    {% endfor %}
+  </div>
+</section>
+{% endblock %}

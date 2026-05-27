@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block title %}{{ player.name }} - Game Log {{ year }}{% endblock %}
+{% block content %}
+<section class="player-deep">
+  <header class="player-deep-hero" style="--team:{{ player.team.color }}">
+    <img class="player-deep-headshot" src="{{ player.image }}" alt="{{ player.name }}">
+    <div>
+      <span class="eyebrow">Game Log {{ year }}</span>
+      <h1>{{ player.name }}</h1>
+      <p>{{ player.position }} · #{{ player.jersey }} · {{ player.team.full_name }}</p>
+      <nav class="player-deep-tabs">
+        <a href="{{ url_for('player_career', slug=player.slug) }}">Career</a>
+        <a class="active" href="{{ url_for('player_gamelog', slug=player.slug) }}">Game Log</a>
+        <a href="{{ url_for('player_splits', slug=player.slug) }}">Splits</a>
+        <a href="{{ url_for('player_news_page', slug=player.slug) }}">News</a>
+      </nav>
+    </div>
+  </header>
+
+  <table class="player-gamelog-table">
+    <thead>
+      <tr><th>Date</th><th>Opp</th><th>Result</th><th>MIN</th><th>PTS</th><th>REB</th><th>AST</th><th>STL</th><th>BLK</th><th>TOV</th><th>FG</th><th>3PT</th><th>FT</th><th>+/-</th></tr>
+    </thead>
+    <tbody>
+      {% for g in logs %}
+      <tr>
+        <td>{{ g.game_date }}</td>
+        <td>{% if g.at_home %}vs{% else %}@{% endif %} {{ team_name(g.opponent_slug) }}</td>
+        <td><strong>{{ g.result }}</strong></td>
+        <td>{{ g.mins }}</td>
+        <td>{{ g.pts }}</td>
+        <td>{{ g.reb }}</td>
+        <td>{{ g.ast }}</td>
+        <td>{{ g.stl }}</td>
+        <td>{{ g.blk }}</td>
+        <td>{{ g.tov }}</td>
+        <td>{{ g.fg }}</td>
+        <td>{{ g.three }}</td>
+        <td>{{ g.ft }}</td>
+        <td>{{ g.plus_minus }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</section>
+{% endblock %}

@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block title %}{{ year }} NBA Playoffs{% endblock %}
+{% block content %}
+<section class="playoffs-deep">
+  <header class="playoffs-hero">
+    <img src="/static/images/articles/nba-official-finals-logo.png" alt="">
+    <h1>{{ year }} NBA Playoffs</h1>
+    <nav class="playoffs-tabs">
+      <a class="active" href="{{ url_for('playoffs_year', year=year) }}">Overview</a>
+      <a href="{{ url_for('playoffs_bracket', year=year) }}">Bracket</a>
+      <a href="{{ url_for('playoffs_finals', year=year) }}">Finals</a>
+    </nav>
+  </header>
+  <h2>Teams in the {{ year }} Playoff Field</h2>
+  <div class="team-grid-condensed">
+    {% for t in teams[:16] %}
+    <a class="team-card-small" href="{{ url_for('team_detail', slug=t.slug) }}">
+      <img src="{{ t.logo }}" alt="">
+      <strong>{{ t.full_name }}</strong>
+      <small>{{ t.conference }} · {{ t.division }}</small>
+    </a>
+    {% endfor %}
+  </div>
+</section>
+{% endblock %}

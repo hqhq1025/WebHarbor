@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% block title %}{{ year }} All-Star Voting{% endblock %}
+{% block content %}
+<section class="allstar-deep">
+  <header class="allstar-hero">
+    <h1>Vote for {{ year }} NBA All-Stars</h1>
+    <nav class="allstar-tabs">
+      <a href="{{ url_for('allstar_year', year=year) }}">Overview</a>
+      <a class="active" href="{{ url_for('allstar_voting', year=year) }}">Vote</a>
+      <a href="{{ url_for('allstar_celebrity_game', year=year) }}">Celebrity Game</a>
+    </nav>
+  </header>
+  <form action="{{ url_for('allstar_vote', year=year) }}" method="post" class="allstar-ballot">
+    <label>Conference
+      <select name="conference">
+        <option value="East">East</option>
+        <option value="West">West</option>
+      </select>
+    </label>
+    <label>Position
+      <select name="position">
+        <option value="F">Frontcourt</option>
+        <option value="G">Backcourt</option>
+      </select>
+    </label>
+    <label>Player slug
+      <input name="player_slug" placeholder="e.g. luka-doncic">
+    </label>
+    <button type="submit">Submit Vote</button>
+  </form>
+  <div class="allstar-candidates">
+    <h2>Eastern Conference Candidates</h2>
+    <div class="player-card-grid">
+      {% for p in east %}
+      <a class="allstar-candidate" href="{{ url_for('player_detail', slug=p.slug) }}">
+        <img src="{{ p.image }}" alt=""><span>{{ p.name }}</span><small>{{ p.team.full_name }} · {{ p.position }}</small>
+      </a>
+      {% endfor %}
+    </div>
+    <h2>Western Conference Candidates</h2>
+    <div class="player-card-grid">
+      {% for p in west %}
+      <a class="allstar-candidate" href="{{ url_for('player_detail', slug=p.slug) }}">
+        <img src="{{ p.image }}" alt=""><span>{{ p.name }}</span><small>{{ p.team.full_name }} · {{ p.position }}</small>
+      </a>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+{% endblock %}

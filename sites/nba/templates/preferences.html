@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block title %}Preferences{% endblock %}
+{% block content %}
+<section class="account-deep">
+  <header>
+    <h1>Preferences</h1>
+    <p>Adjust League Pass quality, alert delivery, and score-hiding behavior.</p>
+    <nav class="account-tabs">
+      <a href="{{ url_for('account') }}">Profile</a>
+      <a href="{{ url_for('my_follows') }}">Follows</a>
+      <a href="{{ url_for('my_alerts') }}">Alerts</a>
+      <a class="active" href="{{ url_for('preferences') }}">Preferences</a>
+    </nav>
+  </header>
+  <form action="{{ url_for('preferences') }}" method="post" class="preferences-form">
+    <label><input type="checkbox" name="hide_scores" {% if prefs.hide_scores %}checked{% endif %}> Hide live scores until I open a game</label>
+    <label>Timezone
+      <select name="timezone">
+        {% for tz in ['America/Los_Angeles','America/Denver','America/Chicago','America/New_York'] %}
+        <option value="{{ tz }}" {% if prefs.timezone == tz %}selected{% endif %}>{{ tz }}</option>
+        {% endfor %}
+      </select>
+    </label>
+    <label><input type="checkbox" name="email_news" {% if prefs.email_news %}checked{% endif %}> Email news roundups</label>
+    <label><input type="checkbox" name="push_alerts" {% if prefs.push_alerts %}checked{% endif %}> Push alerts on tipoff</label>
+    <label>League Pass quality
+      <select name="league_pass_quality">
+        {% for q in ['Auto','4K','1080p','720p'] %}
+        <option value="{{ q }}" {% if prefs.league_pass_quality == q %}selected{% endif %}>{{ q }}</option>
+        {% endfor %}
+      </select>
+    </label>
+    <button type="submit">Save Preferences</button>
+  </form>
+</section>
+{% endblock %}

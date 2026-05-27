@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block title %}{{ team.full_name }} - Video{% endblock %}
+{% block content %}
+<section class="team-deep">
+  <header class="team-deep-hero" style="--team:{{ team.color }}">
+    <img class="team-deep-logo" src="{{ team.logo }}" alt="">
+    <div>
+      <span class="eyebrow">Team Video</span>
+      <h1>{{ team.full_name }}</h1>
+      <nav class="team-deep-tabs">
+        <a href="{{ url_for('team_detail', slug=team.slug) }}">Overview</a>
+        <a href="{{ url_for('team_news', slug=team.slug) }}">News</a>
+        <a class="active" href="{{ url_for('team_video', slug=team.slug) }}">Video</a>
+        <a href="{{ url_for('team_tickets', slug=team.slug) }}">Tickets</a>
+        <a href="{{ url_for('team_store', slug=team.slug) }}">Store</a>
+      </nav>
+    </div>
+  </header>
+
+  <h2>Team Highlights</h2>
+  <div class="video-grid">
+    {% for v in team_clips %}
+    <a class="video-card" href="{{ url_for('video_detail', slug=v.slug) }}">
+      <img src="{{ v.image }}" alt="">
+      <span class="duration">{{ v.duration }}</span>
+      <strong>{{ v.title }}</strong>
+      <small>{{ v.kind }} · {{ v.views }} views</small>
+    </a>
+    {% endfor %}
+  </div>
+
+  <h2>Player Clips</h2>
+  <div class="video-grid">
+    {% for v in player_clips %}
+    <a class="video-card" href="{{ url_for('video_detail', slug=v.slug) }}">
+      <img src="{{ v.image }}" alt="">
+      <span class="duration">{{ v.duration }}</span>
+      <strong>{{ v.title }}</strong>
+      <small>{{ v.kind }}</small>
+    </a>
+    {% endfor %}
+  </div>
+</section>
+{% endblock %}

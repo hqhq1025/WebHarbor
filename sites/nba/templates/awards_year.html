@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% block title %}{{ year }} NBA Awards{% endblock %}
+{% block content %}
+<section class="awards-deep">
+  <header class="awards-hero">
+    <h1>{{ year }} NBA Awards</h1>
+    <p>Ceremony recap, voting share, and runner-up details.</p>
+  </header>
+  <div class="award-grid">
+    {% for a in awards %}
+    <article class="award-card">
+      <h3>{{ a.name }}</h3>
+      {% if a.winner_slug %}
+      <a href="{{ url_for('player_detail', slug=a.winner_slug) }}">
+        <img src="{{ player_headshot(a.winner_slug) }}" alt="">
+        <strong>{{ player_name(a.winner_slug) }}</strong>
+      </a>
+      {% if a.winner_team_slug %}
+      <p>Team: <a href="{{ url_for('team_detail', slug=a.winner_team_slug) }}"><img class="inline-logo" src="{{ team_logo(a.winner_team_slug) }}" alt="">{{ team_name(a.winner_team_slug) }}</a></p>
+      {% endif %}
+      {% endif %}
+      <dl>
+        <dt>Vote share</dt><dd>{{ a.share }}</dd>
+        <dt>1st-place votes</dt><dd>{{ a.votes_first }}</dd>
+        <dt>Runner-up</dt><dd>{{ player_name(a.runner_up_slug) if a.runner_up_slug else '—' }}</dd>
+        <dt>3rd place</dt><dd>{{ player_name(a.third_slug) if a.third_slug else '—' }}</dd>
+        <dt>Ceremony</dt><dd>{{ a.ceremony_date }}</dd>
+      </dl>
+    </article>
+    {% endfor %}
+  </div>
+  {% if current_user.is_authenticated %}
+  <form action="{{ url_for('award_vote', year=year) }}" method="post" class="award-ballot">
+    <h3>Cast your {{ year }} ballot</h3>
+    <label>Award
+      <select name="award_slug">
+        {% for a in awards %}<option value="{{ a.slug }}">{{ a.name }}</option>{% endfor %}
+      </select>
+    </label>
+    <label>1st <input name="first_slug" placeholder="player-slug"></label>
+    <label>2nd <input name="second_slug" placeholder="player-slug"></label>
+    <label>3rd <input name="third_slug" placeholder="player-slug"></label>
+    <button type="submit">Submit Ballot</button>
+  </form>
+  {% endif %}
+</section>
+{% endblock %}

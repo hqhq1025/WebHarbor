@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block title %}{{ team.full_name }} - Store{% endblock %}
+{% block content %}
+<section class="team-deep">
+  <header class="team-deep-hero" style="--team:{{ team.color }}">
+    <img class="team-deep-logo" src="{{ team.logo }}" alt="">
+    <div>
+      <span class="eyebrow">Team Store</span>
+      <h1>{{ team.full_name }} Gear</h1>
+    </div>
+  </header>
+  <div class="team-store-grid">
+    {% for p in products %}
+    <article class="team-store-card">
+      <a href="{{ url_for('product_detail', slug=p.slug) }}">
+        <img src="{{ p.image }}" alt="{{ p.name }}">
+      </a>
+      <span>{{ p.category }}</span>
+      <h3><a href="{{ url_for('product_detail', slug=p.slug) }}">{{ p.name }}</a></h3>
+      <p>${{ p.price }} <small>was ${{ p.list_price }}</small></p>
+      <form action="{{ url_for('wishlist_add', slug=p.slug) }}" method="post">
+        <button type="submit">Add to Wishlist</button>
+      </form>
+    </article>
+    {% endfor %}
+  </div>
+</section>
+{% endblock %}

@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block title %}{{ league.name }} - Fantasy{% endblock %}
+{% block content %}
+<section class="fantasy-deep">
+  <header class="fantasy-hero">
+    <span class="eyebrow">{{ league.scoring }}</span>
+    <h1>{{ league.name }}</h1>
+    <p>{{ league.description }}</p>
+    <p><strong>{{ league.team_count }} teams</strong> · {% if league.public %}Public{% else %}Private{% endif %}</p>
+  </header>
+  <h2>Standings</h2>
+  <table class="fantasy-standings">
+    <thead><tr><th>#</th><th>Team</th><th>W</th><th>L</th><th>T</th><th>PF</th><th>PA</th></tr></thead>
+    <tbody>
+      {% for t in teams %}
+      <tr>
+        <td>{{ loop.index }}</td>
+        <td><a href="{{ url_for('fantasy_team_detail', slug=t.slug) }}">{{ t.name }}</a><br><small>{{ t.owner_label }}</small></td>
+        <td>{{ t.wins }}</td><td>{{ t.losses }}</td><td>{{ t.ties }}</td>
+        <td>{{ t.pts_for }}</td><td>{{ t.pts_against }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</section>
+{% endblock %}

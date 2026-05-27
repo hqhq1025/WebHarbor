@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block title %}{{ team.full_name }} - Advanced Stats{% endblock %}
+{% block content %}
+<section class="team-deep">
+  <header class="team-deep-hero" style="--team:{{ team.color }}">
+    <img class="team-deep-logo" src="{{ team.logo }}" alt="">
+    <div>
+      <span class="eyebrow">Advanced Stats</span>
+      <h1>{{ team.full_name }}</h1>
+      <p>Four-factor splits across recent games.</p>
+    </div>
+  </header>
+  <table class="four-factors-table">
+    <thead>
+      <tr><th>Game</th><th>eFG%</th><th>TOV%</th><th>OREB%</th><th>FTr</th><th>Pace</th></tr>
+    </thead>
+    <tbody>
+      {% for f in ff %}
+      <tr>
+        <td><a href="{{ url_for('game_detail', game_id=f.gid) }}">vs {{ f.away_slug if f.home_slug == team.slug else f.home_slug }}</a></td>
+        <td>{{ f.efg }}</td><td>{{ f.tov_pct }}</td><td>{{ f.oreb_pct }}</td>
+        <td>{{ f.ft_rate }}</td><td>{{ f.pace }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</section>
+{% endblock %}

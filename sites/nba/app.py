@@ -2558,6 +2558,14 @@ with app.app_context():
     db.create_all()
     seed_database()
     seed_benchmark_users()
+    # Apply deep-content extension (raw sqlite — see _deepen_extend.py).
+    # Idempotent via marker user id=99; safe to call every boot.
+    from _deepen_extend import main as _apply_deepen
+    _apply_deepen(os.path.join(BASE_DIR, "instance", "nba.db"))
+
+
+# Register deepen routes after seed so models/Tables exist.
+import _deepen_routes  # noqa: F401,E402
 
 
 if __name__ == "__main__":

@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block title %}NBA Awards{% endblock %}
+{% block content %}
+<section class="awards-deep">
+  <header class="awards-hero">
+    <h1>NBA Awards Archive</h1>
+    <p>Browse season awards by year.</p>
+  </header>
+  <ul class="awards-year-list">
+    {% for y in years %}
+    <li><a href="{{ url_for('awards_year', year=y) }}">{{ y }} Awards</a></li>
+    {% endfor %}
+  </ul>
+</section>
+{% endblock %}

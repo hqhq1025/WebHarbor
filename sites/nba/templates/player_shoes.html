@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block title %}{{ player.name }} - Signature Shoes{% endblock %}
+{% block content %}
+<section class="player-deep">
+  <header class="player-deep-hero" style="--team:{{ player.team.color }}">
+    <img class="player-deep-headshot" src="{{ player.image }}" alt="{{ player.name }}">
+    <div>
+      <span class="eyebrow">Signature Shoes</span>
+      <h1>{{ player.name }}</h1>
+      <p>{{ player.position }} · #{{ player.jersey }} · {{ player.team.full_name }}</p>
+    </div>
+  </header>
+  <div class="player-shoe-grid">
+    {% for e in endorsements %}
+    <article class="player-shoe-card">
+      <img src="{{ e.image }}" alt="{{ e.shoe }}">
+      <div>
+        <span>{{ e.brand }}</span>
+        <h3>{{ e.shoe }}</h3>
+        <p>Colorway: {{ e.colorway }}</p>
+        <p>Price: <strong>${{ e.price }}</strong></p>
+        <small>Release {{ e.release_date }}</small>
+      </div>
+    </article>
+    {% endfor %}
+  </div>
+</section>
+{% endblock %}

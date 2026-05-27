@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+{% block title %}{{ player.name }} - Career{% endblock %}
+{% block content %}
+<section class="player-deep">
+  <header class="player-deep-hero" style="--team:{{ player.team.color }}">
+    <img class="player-deep-headshot" src="{{ player.image }}" alt="{{ player.name }}">
+    <div>
+      <span class="eyebrow">Career Overview</span>
+      <h1>{{ player.name }}</h1>
+      <p>{{ player.position }} · #{{ player.jersey }} · {{ player.team.full_name }}</p>
+      <nav class="player-deep-tabs">
+        <a class="active" href="{{ url_for('player_career', slug=player.slug) }}">Career</a>
+        <a href="{{ url_for('player_gamelog', slug=player.slug) }}">Game Log</a>
+        <a href="{{ url_for('player_splits', slug=player.slug) }}">Splits</a>
+        <a href="{{ url_for('player_news_page', slug=player.slug) }}">News</a>
+        <a href="{{ url_for('player_shoes', slug=player.slug) }}">Shoes</a>
+      </nav>
+    </div>
+  </header>
+
+  <section class="player-deep-section">
+    <h2>Season Splits Snapshot</h2>
+    <table class="player-splits-table">
+      <thead><tr><th>Split</th><th>GP</th><th>PPG</th><th>RPG</th><th>APG</th><th>FG%</th><th>3P%</th></tr></thead>
+      <tbody>
+      {% for s in splits %}
+        <tr><td>{{ s.split_kind }}</td><td>{{ s.gp }}</td><td>{{ s.ppg }}</td><td>{{ s.rpg }}</td><td>{{ s.apg }}</td><td>{{ s.fg_pct }}</td><td>{{ s.three_pct }}</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </section>
+
+  <section class="player-deep-section">
+    <h2>Leaderboard Rankings</h2>
+    <ul class="player-leaderboards">
+      {% for lb in leaderboards %}
+      <li>
+        <a href="{{ url_for('stats_leaders_category', category=lb.category) }}">
+          <strong>{{ lb.category|upper }}</strong>
+          <span>Rank #{{ lb.rank }}</span>
+          <em>{{ lb.value }}</em>
+        </a>
+      </li>
+      {% endfor %}
+    </ul>
+  </section>
+
+  <section class="player-deep-section">
+    <h2>Signature Shoes & Endorsements</h2>
+    <div class="player-shoe-grid">
+      {% for e in endorsements %}
+      <article class="player-shoe-card">
+        <img src="{{ e.image }}" alt="{{ e.shoe }}">
+        <div>
+          <span>{{ e.brand }}</span>
+          <h3>{{ e.shoe }}</h3>
+          <p>{{ e.colorway }} · ${{ e.price }}</p>
+          <small>Release {{ e.release_date }}</small>
+        </div>
+      </article>
+      {% endfor %}
+    </div>
+  </section>
+
+  <form action="{{ url_for('follow_player', slug=player.slug) }}" method="post">
+    <button type="submit" class="follow-cta">Follow {{ player.name }}</button>
+  </form>
+</section>
+{% endblock %}

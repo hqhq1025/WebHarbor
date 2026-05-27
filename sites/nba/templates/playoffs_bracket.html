@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block title %}{{ year }} Playoff Bracket{% endblock %}
+{% block content %}
+<section class="playoffs-deep">
+  <header class="playoffs-hero">
+    <img src="/static/images/articles/nba-official-finals-logo.png" alt="">
+    <h1>{{ year }} Playoff Bracket</h1>
+    <nav class="playoffs-tabs">
+      <a href="{{ url_for('playoffs_year', year=year) }}">Overview</a>
+      <a class="active" href="{{ url_for('playoffs_bracket', year=year) }}">Bracket</a>
+      <a href="{{ url_for('playoffs_finals', year=year) }}">Finals</a>
+    </nav>
+  </header>
+  <div class="bracket-shell">
+    <section>
+      <h2>Eastern Conference</h2>
+      <ol>
+        {% for t in teams if t.conference == 'East' %}
+        <li><a href="{{ url_for('team_detail', slug=t.slug) }}">
+          <img class="inline-logo" src="{{ t.logo }}" alt="">
+          {{ t.full_name }}
+        </a> ({{ t.wins }}-{{ t.losses }})</li>
+        {% endfor %}
+      </ol>
+    </section>
+    <section>
+      <h2>Western Conference</h2>
+      <ol>
+        {% for t in teams if t.conference == 'West' %}
+        <li><a href="{{ url_for('team_detail', slug=t.slug) }}">
+          <img class="inline-logo" src="{{ t.logo }}" alt="">
+          {{ t.full_name }}
+        </a> ({{ t.wins }}-{{ t.losses }})</li>
+        {% endfor %}
+      </ol>
+    </section>
+  </div>
+</section>
+{% endblock %}

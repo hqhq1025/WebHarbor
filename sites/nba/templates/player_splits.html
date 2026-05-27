@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block title %}{{ player.name }} - Splits{% endblock %}
+{% block content %}
+<section class="player-deep">
+  <header class="player-deep-hero" style="--team:{{ player.team.color }}">
+    <img class="player-deep-headshot" src="{{ player.image }}" alt="{{ player.name }}">
+    <div>
+      <span class="eyebrow">Season Splits</span>
+      <h1>{{ player.name }}</h1>
+      <p>{{ player.position }} · #{{ player.jersey }} · {{ player.team.full_name }}</p>
+      <nav class="player-deep-tabs">
+        <a href="{{ url_for('player_career', slug=player.slug) }}">Career</a>
+        <a href="{{ url_for('player_gamelog', slug=player.slug) }}">Game Log</a>
+        <a class="active" href="{{ url_for('player_splits', slug=player.slug) }}">Splits</a>
+        <a href="{{ url_for('player_news_page', slug=player.slug) }}">News</a>
+      </nav>
+    </div>
+  </header>
+
+  <table class="player-splits-table">
+    <thead><tr><th>Split</th><th>GP</th><th>PPG</th><th>RPG</th><th>APG</th><th>FG%</th><th>3P%</th></tr></thead>
+    <tbody>
+    {% for s in splits %}
+      <tr><td>{{ s.split_kind }}</td><td>{{ s.gp }}</td><td>{{ s.ppg }}</td><td>{{ s.rpg }}</td><td>{{ s.apg }}</td><td>{{ s.fg_pct }}</td><td>{{ s.three_pct }}</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</section>
+{% endblock %}
