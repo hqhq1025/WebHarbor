@@ -1569,3 +1569,238 @@ assert 'Cmd+K' not in r.text or 'Keyboard shortcuts' not in r.text
 每 deepen subagent 完成后跑上面 detection grep 复查。
 
 **真案例（2026-05-27）**：14/15 vanilla 站受影响。allrecipes / apple / cambridge_dictionary / espn / github / huggingface / wolfram_alpha 几乎所有 vanilla 都中招。bbc_news / amazon / arxiv / booking / coursera / google_flights / google_map / google_search 在 templates/base.html 里没显式 markup 但可能在 JS listener / inline css 里有残留 — 需要 4 类全部 grep 确认。一次清掉，docker hot-reload，commit per-site。
+
+## 42. 占位图被多个 entity 共用 — 视觉品质崩
+
+**症状**：browse 列表页 / hub 页 / detail page 上 5-50 个不同 entity 的图全是同一张占位图。看起来像"Mock UI Studio"。最严重时：812 个城市的 hero_image 95% 都是 eiffel-tower.jpg，46 个 neighborhood 100% 都是同一张 hero-compass.svg。
+
+视觉上：
+- "Chemical Elements" 和 "Chemical Equations" 两个不同 section 用一模一样的截图
+- City hub `/city/<slug>` 不管 slug 是 paris / tokyo / nyc 渲染的 hero 都是同一张
+- Profile / Avatar 50%+ 用户用同一张 `avatar_00.jpg`
+- Store / Branch / Location 全是同一张 `storefront_default.jpg`
+
+### 怎么发现
+
+```python
+"""Find sites where many entities share the same image file."""
+import sqlite3, glob, collections, pathlib
+ROOT = pathlib.Path("sites")
+for sd in sorted(ROOT.iterdir()):
+    for db in glob.glob(str(sd / "instance" / "*.db")):
+        con = sqlite3.connect(db)
+        tables = [r[0] for r in con.execute("SELECT name FROM sqlite_master WHERE type='table'")]
+        for t in tables:
+            cols = [r[1] for r in con.execute(f'PRAGMA table_info("{t}")')]
+            img_cols = [c for c in cols if any(k in c.lower() for k in
+                ('image','photo','poster','thumb','avatar','cover','banner','headshot','icon'))]
+            for col in img_cols:
+                rows = con.execute(f'SELECT "{col}" FROM "{t}" WHERE "{col}" IS NOT NULL').fetchall()
+                if len(rows) < 20: continue
+                top = collections.Counter([r[0] for r in rows]).most_common(1)[0]
+                pct = top[1] * 100.0 / len(rows)
+                if pct > 30:
+                    print(f"{sd.name}/{t}.{col}: {top[1]}/{len(rows)} = {pct:.0f}% on {top[0][:60]}")
+```
+
+Threshold 30%：top 图占 ≥30% entity 就是 placeholder 问题。
+
+JSON files 同理：
+
+```python
+import json, collections
+data = json.load(open("sites/<slug>/<some>.json"))
+imgs = [...]  # recurse pull all 'image' / 'poster' values
+c = collections.Counter(imgs)
+top = c.most_common(1)[0]
+if top[1] / len(imgs) > 0.3:
+    print(f"{top[1]}/{len(imgs)} share {top[0]}")
+```
+
+### 3 种 fix 策略
+
+#### 策略 A：真扒（最高质量）
+
+用 `mcp__tavily__tavily_search` + `WebFetch` 真去抓上游对应 entity 的代表图：
+
+```python
+for place in places:
+    # tavily 搜真实图
+    results = tavily_search(f"{place.name} cityscape hero image")
+    img_url = results['results'][0].get('image_url') or results['images'][0]
+    # 下载
+    r = requests.get(img_url, timeout=10)
+    fname = f"static/images/heroes/{place.slug}.jpg"
+    open(fname, 'wb').write(r.content)
+    place.hero_image = fname
+db.session.commit()
+```
+
+适用：≤100 个 entity（fetch 慢 + 上游 rate-limit）。
+
+#### 策略 B：deterministic md5 mapping over real pool
+
+如果 `static/images/<kind>/*.jpg` 已经有 30+ 张真实图但没被使用：
+
+```python
+import hashlib, pathlib
+pool = sorted([p.name for p in pathlib.Path("static/images/cities").glob("*.jpg")])
+for city in cities:
+    h = int(hashlib.md5(city.slug.encode()).hexdigest()[:8], 16)
+    city.hero_image = f"static/images/cities/{pool[h % len(pool)]}"
+db.session.commit()
+```
+
+适用：≥1000 个 entity but pool 只有几十张。每个 entity 有 stable assignment，不重 build 不会变。
+
+#### 策略 C：SVG 生成（fallback）
+
+如果完全没有真图：
+
+```python
+def gen_svg(slug, palette):
+    h = hashlib.md5(slug.encode()).hexdigest()
+    color = "#" + h[:6]
+    initial = slug.replace("-", " ").title()[:2]
+    return f'<svg xmlns="..." width="400" height="240">' \
+           f'<rect width="400" height="240" fill="{color}"/>' \
+           f'<text x="200" y="140" font-size="80" text-anchor="middle" fill="white">{initial}</text>' \
+           f'</svg>'
+```
+
+每个 entity 一张独特 SVG，确定性，至少不全是同色块。
+
+详见 gotcha #40 (SVG generation as image fallback) — 这里强调"不要共用一张占位"。
+
+### 完成标准
+
+修后再跑 detection grep，**任一 image_column 的 top 重复 ≤ 5%**。
+
+### 防止再发生
+
+deepen / clone-website / seed-database 三个 skill 都要在 seed 完成后跑一次 "image diversity check"：
+
+```bash
+python3 ~/webvoyager-analysis/scripts/check_image_diversity.py <slug>
+# 输出每个 image-like 列的 top-N 重复百分比；任意 >30% 报错
+```
+
+把这个 check 集成到 `seed-database` SKILL 的"verify"步骤里，CI 也跑。
+
+**真案例 (2026-05-27)**：
+- compass：3 表 100% 共用 hero-compass.svg
+- google_map：city 812 行 95% 是 eiffel-tower.jpg
+- carmax：62 store 100% 是 storefront_default.jpg  
+- wolfram_alpha：topic_galleries.json 56 image refs / 21 distinct (37% dup), mathematics.png 用了 10x
+- github：39 user 54% 用 avatar_00.jpg
+- berkeley：23 library 39% library_003.svg
+- apartments_com：6048 floor_plan 31% floorplan-2br.svg
+- google_search：1323 topic 92% images_json 是空数组 `[]`
+
+## 43. 横向溢出 / 布局崩 — flex 子元素无 wrap 撑爆 viewport
+
+**症状**：page 横向出现长长一行内容（产品 variant / band picker / tab strip / chip list）超过 viewport 宽，body 出现水平滚动条。看截图：apple watch 一个"Milanese Loop (R6) - Sand - 45/49mm" 等 variant 选择条目占满 viewport 后还在继续向右延伸，导致整页歪掉、其它内容也被推到右下角看不见 — 视觉品质崩。
+
+伴生：
+- 这些 variant 大多是 text-only（没匹配 product image，因 image_path 缺失或 fallback 失败）
+- 截图显示同名条目重复（Sand 45/49mm + Sand 41/42mm + Lake Green 45/49mm + Lake Green 41/42mm + ... × N 色 × 2 size）— variant 笛卡尔积没收敛到 ≤8 cards 一行 + 多行
+
+### 根因（CSS 常见 3 类）
+
+1. **`display:flex` 没 `flex-wrap:wrap`**：子元素一律一行排，N 个 width=140px 子元素就是 N*140 px wide。修：加 `flex-wrap:wrap`，或包裹层加 `overflow-x: auto` 改成横向滚动 carousel。
+
+2. **没设 `min-width:0` 在 flex 子元素**：长文本不收缩，撑爆父容器。修：variant card 加 `min-width:0; flex-basis: 140px; flex-shrink: 1`，或文本加 `overflow:hidden; text-overflow:ellipsis; white-space:nowrap`。
+
+3. **fixed `width` 配 N children**：如 `.variant-row { width: max-content }` 配 16 个 variant — math 算出 2240px 直接破 1280viewport。修：去掉 max-content，改 grid `grid-template-columns: repeat(auto-fill, minmax(140px, 1fr))`。
+
+### 怎么发现（Playwright 全站扫）
+
+```python
+from playwright.sync_api import sync_playwright
+def detect_overflow(slug, base_url, urls):
+    issues = []
+    with sync_playwright() as p:
+        b = p.chromium.launch(headless=True)
+        page = b.new_context(viewport={"width": 1280, "height": 900}).new_page()
+        for url in urls:
+            page.goto(base_url + url, timeout=10000)
+            sw = page.evaluate("document.documentElement.scrollWidth")
+            cw = page.evaluate("document.documentElement.clientWidth")
+            if sw > cw + 5:  # 5px tolerance
+                # locate offending element
+                culprits = page.evaluate("""() => {
+                    const out = [];
+                    document.querySelectorAll('*').forEach(el => {
+                        const r = el.getBoundingClientRect();
+                        if (r.right > document.documentElement.clientWidth + 5) {
+                            out.push({
+                                tag: el.tagName,
+                                cls: el.className.toString().slice(0,60),
+                                w: Math.round(r.width),
+                                right: Math.round(r.right)
+                            });
+                        }
+                    });
+                    return out.slice(0, 5);
+                }""")
+                issues.append({"url": url, "scrollWidth": sw, "clientWidth": cw, "culprits": culprits})
+        b.close()
+    return issues
+```
+
+跑 yaml 里 N 个 page，记录 scrollWidth > clientWidth 的 URLs + 撑爆的元素 className。
+
+### 怎么修
+
+```css
+/* universal safety net in base.html */
+html, body { overflow-x: hidden; }
+
+/* variant pickers etc */
+.variant-row, .band-picker, .tab-strip, .chip-row, .feature-grid {
+  display: flex;
+  flex-wrap: wrap;          /* 1️⃣ 关键：允许换行 */
+  gap: 12px;
+}
+.variant-row > *, .band-picker > * {
+  flex-basis: 140px;
+  min-width: 0;             /* 2️⃣ 关键：允许收缩 */
+  max-width: 200px;
+}
+
+/* OR carousel pattern if真心要单行（移动端常见）*/
+.product-carousel {
+  display: flex;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+}
+.product-carousel > * {
+  flex: 0 0 auto;
+  scroll-snap-align: start;
+}
+```
+
+### Variant explosion 衍生问题
+
+screenshot 里同一个 band (Milanese Loop) × 4 color × 2 size = 8 个 cards，加上 Alpine Loop × 4 color × 2 size = 8 — 一行 16 cards，每个 140px = 2240px ≫ viewport。这是 **variant 笛卡尔积没收敛**：
+
+修法：
+- 把 variant **按 attribute 分级展示**：先展示 color (4 个), 用户选完再展示 size (2 个)。一次最多 4-8 card 一行。
+- 或者 grid + wrap，让 16 个 card 自然分 4 行 × 4 列。
+
+### 防止再发生
+
+每 deepen subagent prompt 加一条：
+
+```
+❌ 禁止：variant card 平铺 N×M 笛卡尔积一行 (>8 张)
+✅ 必须：grid wrap 自动多行 OR 分级 selector (color → size → ...)
+
+所有新 template 必须通过 viewport overflow check：
+  scrollWidth ≤ clientWidth + 5
+```
+
+每站完成时跑 `_verify_playwright.py` 加 overflow detection 模块。
+
+**真案例 (2026-05-27)**：apple `/shop/buy-watch/<model>` Ultra 系列 watch band picker — 16 个 R6 band variant 一行平铺撑爆 viewport，整页视觉崩，下面 product detail 被挤到看不见。
+

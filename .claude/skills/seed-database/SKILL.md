@@ -421,3 +421,39 @@ False positives: task generators (build-time, fine). True positives: runtime rou
 7. Bump `_normalize_seed_db_layout` sentinel.
 
 Real-pass examples (2026-05-27): google_search 9 new tables (ImageCard / VideoCard / ScholarPaper / FeaturedSnippet / PaaBundle / KnowledgePanel / ...), wolfram 16 new R11 tables (r11_blog_posts / r11_jobs / r11_store_products / ...).
+
+---
+
+## 强制 verify 步：image diversity check (added 2026-05-27)
+
+每次 seed_<feature>() 写入图字段后，必须跑 diversity check：
+
+```python
+import sqlite3, collections
+def check_image_diversity(db_path, threshold=0.30):
+    """Raise if any image column has top value used by ≥threshold of rows."""
+    con = sqlite3.connect(db_path)
+    issues = []
+    for (t,) in con.execute("SELECT name FROM sqlite_master WHERE type='table'"):
+        cols = [r[1] for r in con.execute(f'PRAGMA table_info("{t}")')]
+        for col in cols:
+            cl = col.lower()
+            if not any(k in cl for k in ('image','photo','poster','thumb','avatar','cover','banner','headshot','icon')):
+                continue
+            rows = con.execute(f'SELECT "{col}" FROM "{t}" WHERE "{col}" IS NOT NULL AND "{col}" != ""').fetchall()
+            if len(rows) < 20: continue
+            top = collections.Counter(r[0] for r in rows).most_common(1)[0]
+            pct = top[1] / len(rows)
+            if pct >= threshold:
+                issues.append((t, col, top[1], len(rows), pct, top[0]))
+    con.close()
+    if issues:
+        msg = "\n".join(f"  {t}.{col}: {n}/{tot} = {p:.0%} on {v[:60]}" for t,col,n,tot,p,v in issues)
+        raise RuntimeError(f"image diversity check failed:\n{msg}")
+```
+
+每个 seed_<feature>() 结尾调用 `check_image_diversity(DB_PATH)`。fail 即 abort seed — 强迫开发者按 gotcha #42 三种策略之一修。
+
+JSON files 同样的 check 模式，递归找 `'image' / 'poster' / 'thumb'` 等键的 value。
+
+不通过这关，**不允许** declare seed done。

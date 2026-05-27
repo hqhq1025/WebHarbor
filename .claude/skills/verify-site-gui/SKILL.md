@@ -92,45 +92,6 @@ PER_SLUG = {
     "imdb": {"tt_id": "tt0017136", "nm_id": "nm0000006"},
     "wolfram_alpha": {"cr_id": "186"},   # seed 从 id 186 开始（不是 1）
     "phet_simulations": {"code": "af"},   # 真存在的语言代码（不是默认 AA）
-
-    # 多 placeholder + URL-prefix override 模式（2026-05 P0 批 5 站实战）
-    # 用 _url_overrides 让不同 URL 前缀走不同 slug 源，避免一刀切
-    "eventbrite": {
-        "region_slug": "northeast", "cat_slug": "music", "label": "this-weekend",
-        "n_slug": "manhattan", "name": "your-account",
-        "_url_overrides": {"/d/": "music", "/help/section/": "your-account",
-                           "/organize/": "pricing"},
-    },
-    "smartasset": {
-        # 真 bug：harness 把 author slug "amanda-dixon" 误填到 article/compare/wizard URL
-        "_url_overrides": {"/smartreads/": "15-states-that-dont-tax-retirement-income",
-                           "/compare/": "roth-ira-vs-401k",
-                           "/advisor-match/": "retirement_status"},
-        "hub": "banking", "page_slug": "best-savings-accounts", "step": "retirement_status",
-    },
-    "apartments_com": {
-        # 链式 placeholder /<state>/<city_slug>/<building_slug>/...
-        # 若不指定，harness 会用同一 slug 填所有 placeholder → /atlanta-ga/atlanta-ga/atlanta-ga/
-        "state": "ny", "city_slug": "new-york-ny", "nbhd_slug": "upper-east-side",
-        "building_slug": "mosaic-new-york-ny-000", "plan_slug": "plan-1br-a-0",
-        "slug": "apartments-with-pool", "topic": "applying",
-        "_url_overrides": {"/help/": "applying", "/glossary/": "administrative-fee"},
-    },
-    "mayo_clinic": {
-        # 18 个 URL-prefix override 覆盖 conditions/procedures/drugs/depts/...
-        "_url_overrides": {"/clinical-trials/": "NCT05123456",
-                           "/healthy-lifestyle/": "nutrition",
-                           "/diseases-conditions/": "diabetes-type-2",
-                           "/tests-procedures/": "blood-test",
-                           "/drugs-supplements/": "aspirin"},
-    },
-    "fandom": {
-        # MediaWiki Namespace: 前缀（Category:/User:/File:/Talk:）走专门 slug
-        "_url_overrides": {"Category:": "Avengers", "User:": "alice", "Talk:": "Iron_Man",
-                           "File:": "iron-man.jpg", "Help:": "Editing",
-                           "/Forum/Thread/": "1", "/Poll/": "1"},
-        "bad_title": "DoesNotExist_PageXYZ", "cat_slug": "Avengers",
-    },
 }
 ```
 
@@ -145,7 +106,6 @@ PER_SLUG = {
 **真案例**：
 - `apple` yaml 写 `/buy/iphone/<model>` 但 `apple_deepen.py` 注册在 `/shop/buy-iphone/<model>` → 加 4 个 alias route 重定向到现成 handler
 - `google_map` yaml 写 `/transit/stop/<slug>` 但 app 真没这个 route → 加 route + 模板 或 改 yaml
-- `eventbrite` yaml 承诺 `help_index.section_link → help_section`，模板里 5 个 section h2 是死文本不是链接 → 改 `<h2>` 为 `<a href="/help/section/{slug}">`（commit `7f2cdf3`）
 
 ### 2. 真 5xx — handler crash
 
@@ -162,37 +122,13 @@ PER_SLUG = {
 
 **fix**：base.html / 侧栏给 `<nav>` 或 `<aside>` 加 `role="navigation"` 属性。
 
-**真案例**：google_map `_rail.html` 缺 `role="navigation"`，`base.html` 缺 `<header role="banner">` — commit 670eb99 修了；smartasset `calculator_print.html` 加 `<header role="banner">` — commit `6e5e4c8`。
+**真案例**：google_map `_rail.html` 缺 `role="navigation"`，`base.html` 缺 `<header role="banner">` — commit 670eb99 修了。
 
 ### 4. modal trigger 缺失
 
 **症状**：yaml `modals.X.opened_from` 指向 page Y，但 page Y 的 HTML 里没 `[data-bs-toggle="modal"]` / `[data-toggle="modal"]` / "Sign in" 按钮等 modal 触发器文案。
 
 **fix**：模板里加触发器 `<button data-bs-toggle="modal" data-bs-target="#X">...</button>` 或对应 JS。或确认 yaml 是不是把"原生 confirm()"误写成 modal — 真案例 compass `collection_detail` 删 collection 用 native `confirm()` 但 yaml 说 modal → commit 60a2b31 改成 HTML modal w/ `cancel_btn` + `confirm_delete_btn`。
-
-### 5. byte-identical reset 被非确定性打破
-
-**症状**：每次 `rm -rf instance && python3 app.py` 产生的 `instance/<site>.db` md5 都不同 → reset 后与 `instance_seed/` 不匹配 → benchmark 的 reset invariant 失效。
-
-**3 个常见非确定源 + fix**（2026-05 fandom 实战，commit `dc5b676`）：
-- **bcrypt random salt**：`User.password_hash` 每次 seed 重算 → 用 **pinned salt** `$2b$10$WebHarborSeedSalt22BC.` 或用 fandom 的 `assign_pinned_password()` helper 走固定盐
-- **builtin `hash()` 受 `PYTHONHASHSEED` 影响**：seed_phase2 里用 `hash(filename)` 决定 uploader / joined_date → 换 **`_stable_hash()`** md5-based 替代
-- **`datetime.utcnow()` 默认值**：`User.created_at = utcnow` 在 row-create 时间运行 → 显式设 `BASE_TS = datetime(2026, 5, 27, 12, 0, 0)`；对 `WatchItem.since` / `UserFollow.since` / `WikiSubscription.since` 同样处理
-
-apartments_com 早就有 `_normalize_seed_db_layout()` + `_deterministic_pbkdf2_hash(email)` 解决这个；compass 也是同 pattern。新站 clone 完一定先跑 byte-id 测，撞上立即套这套 fix。
-
-### 6. python3 app.py 标杆循环 import
-
-**症状**：`cd sites/<slug> && python3 app.py` 报 `ImportError: cannot import name 'db' from partially initialized module 'app'` 或 seed_database 跑两次。
-
-**根因**：app.py 作 `__main__` 加载时，`from seed_data import seed_database` 又 `from app import db, ...` → 启动 app.py 第二个 module instance，俩 SQLAlchemy() 实例。
-
-**fix**：app.py 顶部加：
-```python
-import sys
-sys.modules.setdefault('app', sys.modules[__name__])
-```
-让 `from app import ...` 拿到当前模块。fandom + apartments_com 都套了这个（apartments commit `850465d`）。新站务必早装。
 
 ## 7 种假阳性（必须先排除真 bug）
 
@@ -202,14 +138,9 @@ sys.modules.setdefault('app', sys.modules[__name__])
 2. **URL placeholder 是 enum 不是 slug** — `/admissions/<level>` ∈ {undergrad/grad/transfer/intl}
 3. **特殊格式 ID** — carmax `<stock>=C0000542` / google_flights `<icao>=B738`
 4. **复合 slug 格式** — nba `<series_slug>=cavaliers-vs-pistons`（必须 a-vs-b）
-5. **URL-prefix-aware 错表** — huggingface 把 model slug 塞进 `/spaces/...` 路径；smartasset 把 author `amanda-dixon` 误填到 `/smartreads/<slug>` —— 用 `_url_overrides` 修
+5. **URL-prefix-aware 错表** — huggingface 把 model slug 塞进 `/spaces/...` 路径
 6. **YAML "或" / "[optional]" 段没处理** — `/foo 或 /bar` / `/cars[/<x>]`
-7. **POST-only 路由测 GET** — phys_org `/article/<slug>/comment` 是 405（intentional）；eventbrite `/checkout/<slug>/promo`, `/order/<code>/cancel`, `/tickets/<code>/gift` 同理
-
-**新增 2 种 yaml-level 假阳性（2026-05 加进 harness）**：
-
-8. **`template: null` 的 download endpoint** — yaml 标 `template: null` 表示无渲染（POST-only 或 ICS/PDF/CSV/ZIP 直接 download）。Playwright 撞 `Content-Type: text/calendar` 等会抛 "Download is starting" exception。harness 现在用 `urllib` fallback 测 status；同时 walker 应过滤 `template: null`。
-9. **`id: not_found / page_404 / error_404 / fallback_404` 的 404 fallback 页** — yaml 故意把"任意未匹配 URL → 404"也列成一个 page（apartments_com `page_404`，fandom `article_missing`）。harness walker 应按 id 模式过滤。
+7. **POST-only 路由测 GET** — phys_org `/article/<slug>/comment` 是 405（intentional）
 
 **排除流程**：
 - 看 harness 输出 status + issue
@@ -220,10 +151,9 @@ sys.modules.setdefault('app', sys.modules[__name__])
 ## 单站执行步骤
 
 ```bash
-# 1. 跑 harness — 第 3 arg 是 max_pages（默认 40，跑全 yaml 用 80）
+# 1. 跑 harness
 cd ~/webvoyager-analysis
-python3 site_specs/_verify_playwright.py <slug>           # 默认 max_pages=40
-python3 site_specs/_verify_playwright.py <slug> 50034 80  # 跑全 77 页 mayo
+python3 site_specs/_verify_playwright.py <slug>
 
 # 2. 看报告
 cat site_specs/_verify/<slug>_pw.json | jq '.summary'
@@ -299,12 +229,10 @@ git -C ~/repos/WebHarbor push fork main
 ## 经验总结
 
 - **真 bug 率 ~0.5%** — 一轮 29 站 × 30 页 ≈ 1000 检验点 ≈ 5 个真 bug。其余都是 harness 假阳性。
-- **6 个真 bug 类型** 都在本 skill §"6 种发现"里：missing route / handler crash / nav landmark / modal trigger / byte-id reset broken / circular import。
-- **harness 升级路径** 早就有形：每跑一批就会发现 1-2 个改进点（threaded / abort assets / wait_for_port / PER_SLUG / `或` 处理 / download fallback / template:null filter / max_pages CLI arg）。改完写回共享 harness。
-- **per-site PER_SLUG + `_url_overrides` 是最高 ROI 的 fix**：手工写 1-3 个 PER_SLUG 条目能消掉一个 site 80%+ 的假阳性。多 placeholder URL 必须用 `_url_overrides`。
+- **5 个真 bug 类型** 都在本 skill §"4 种发现"里：missing route / handler crash / nav landmark / modal trigger / yaml-runtime mismatch（aliases）。
+- **harness 升级路径** 早就有形：每跑一批就会发现 1-2 个改进点（threaded / abort assets / wait_for_port / PER_SLUG / `或` 处理）。改完写回共享 harness。
+- **per-site PER_SLUG 是最高 ROI 的 fix**：手工写 1-3 个 PER_SLUG 条目能消掉一个 site 80%+ 的假阳性。
 - **commit 粒度 per-site**：每站一个 commit，message `<slug>: fix visibility bugs (N route / M template)`，便于回滚和 audit。
-- **agent 派发陷阱**：Agent tool **没有 SendMessage** —— "spawn 一个 agent 让它给另一个 agent 发消息"行不通，新 agent 会把消息当成自己的任务从头跑（产生 dual agents 同改一个 site）。要 inject 新指令只能等当前 agent 完成或 TaskStop 重派。
-- **worktree baseRef 陷阱**：默认 `worktree.baseRef = fresh` fork 自 `origin/<default>`。若本地 main 有未 push 的工作（如刚 merge 5 个 P0 site），worktree 看不到。两条出路：(a) 不用 worktree 让 agent 直接读 main；(b) 改 baseRef 或先 push origin。
 
 ## 索引
 
@@ -313,3 +241,26 @@ git -C ~/repos/WebHarbor push fork main
 ```markdown
 | <slug> | <date> | yaml_pages | OK | 404 | 5xx | real-bugs | commit |
 ```
+
+---
+
+## 5. 横向布局溢出检测 (added 2026-05-27)
+
+除了 4 类 visibility bug（§"4 种发现"），还要加第 5 类：**horizontal layout overflow**。
+
+每个 page goto 后做：
+
+```python
+sw = page.evaluate("document.documentElement.scrollWidth")
+cw = page.evaluate("document.documentElement.clientWidth")
+if sw > cw + 5:
+    # 撑爆了；locate offending element
+    culprits = page.evaluate("""() => Array.from(document.querySelectorAll('*'))
+        .filter(el => el.getBoundingClientRect().right > document.documentElement.clientWidth + 5)
+        .slice(0, 5).map(el => ({tag: el.tagName, cls: el.className.toString().slice(0,60), w: Math.round(el.getBoundingClientRect().width)}))""")
+    findings["pages"][-1]["overflow"] = {"scrollWidth": sw, "clientWidth": cw, "culprits": culprits}
+```
+
+**修复指引**：见 `harden-env/gotchas.md` §43。三种典型根因：`display:flex` 无 `flex-wrap`、flex 子元素无 `min-width:0`、`width: max-content` + N children。
+
+加到 harness 后，verify pass 报告除了 OK / 404 / 5xx，还多一个 **overflow** 计数。
