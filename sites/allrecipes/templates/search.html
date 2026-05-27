@@ -31,7 +31,7 @@
         <div class="recipe-card">
             <div class="recipe-card-image">
                 <a href="{{ url_for('recipe_detail', slug=recipe.slug) }}">
-                    <img src="{{ recipe.image }}" alt="{{ recipe.title }}"
+                    <img loading="lazy" decoding="async" src="{{ recipe.image }}" alt="{{ recipe.title }}"
                          onerror="this.parentElement.innerHTML='<div class=\'placeholder-img\'>{{ recipe.title }}</div>'">
                 </a>
             </div>

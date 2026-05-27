@@ -237,7 +237,7 @@
     <div class="pd-gallery-images">
         {% for img in section.images %}
         <div class="pd-gallery-img">
-            <img src="{{ img }}" alt="{{ section.title }}"
+            <img loading="lazy" decoding="async" src="{{ img }}" alt="{{ section.title }}"
                  onerror="this.parentElement.style.display='none'">
         </div>
         {% endfor %}
