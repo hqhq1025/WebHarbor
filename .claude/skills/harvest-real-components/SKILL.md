@@ -7,22 +7,24 @@ description: "Phase 0 (pre-clone): harvest real HTML/CSS/screenshot fragments fr
 
 把要复刻的真站每个关键页面用真 Chromium 打开，拉回 HTML 片段 + 截图 + 元数据。**写 Flask mirror 之前就做**，让后续 clone/design/verify 阶段都有"真站长这样"的视觉与结构参考。
 
-## 复刻一个站需要 4 维度数据（v3.1 框架，2026-05）
+## 复刻一个站需要 **6 维度** 数据（v4 框架，2026-05）
 
-| Pillar | 内容 | harvest.py 产出 |
+| Pillar | 内容 | 工具产出 |
 |---|---|---|
-| **1. 样式** | HTML + CSS + JS + 视觉组件 | `full.html` + section/card fragments + `full.png` + `assets/{css_*,js_*,favicon,manifest.json}` |
-| **2. 文字** | 结构化数据 + 干净 body | `structured.json` (JSON-LD + state blobs + og:* meta) + `article.json` (trafilatura) |
-| **3. 图像** | 真图 URL + 图标 + brand | `_image_urls.jsonl` (img/srcset/css-bg) + `assets/favicon` + `assets/manifest.json` (PWA icons) |
-| **4. 跳转 + 按钮** | 真站 link graph + button catalog | `_nav_graph.json` (nodes+edges with anchor text) + `_buttons.jsonl` (text+onclick+data-*) |
+| **1. 样式** | HTML + CSS + JS + 视觉组件 | harvest.py → `full.html` + `full.png` + `assets/{css_*,js_*,favicon,manifest.json}` + section fragments + card fragments |
+| **2. 文字** | 结构化数据 + 干净 body + 面包屑 | harvest.py + reprocess_structured.py → `structured.json` (JSON-LD + state blobs + og:* meta) + `article.json` (trafilatura) + `breadcrumbs.json` (Schema.org BreadcrumbList) + `feed.xml` (RSS/Atom) |
+| **3. 图像** | 真图 URL + icon sprite + brand | extract_image_urls.py + extract_sprites.py → `_image_urls.jsonl` + `sprites/<id>.svg` + `_sprites.json` + `assets/favicon` |
+| **4. 跳转** | 真站 link graph + button catalog + 页脚目录 | extract_nav_graph.py → `_nav_graph.json` + `_buttons.jsonl` + `_footer_links.jsonl` |
+| **5. 表单** | 每个 `<form>` 的字段 / 类型 / 选项 / 验证 | extract_forms.py → `_forms.jsonl` |
+| **6. Session/协议** | HTTP 头 + cookies + XHR endpoints + i18n locales + sitemap | harvest.py + extract_sitemap.py → metadata.json (response_headers + cookies) + `xhr_calls.jsonl` + `locales.json` + `_robots.txt` + `_sitemap_urls.jsonl` + `_sitemap_index.json` |
 
-每跑一站 = 4 维度全捕获。下游 clone-website / design-tasks / site_specs.yaml / scrape-real-images 直接读这些产物。
+每跑一站 = 6 维度全捕获。下游 clone-website / design-tasks / scrape-real-images 直接读这些产物。
 
 ## 何时使用
 
 - **Phase 0 — 任何新 P1+ site 复刻之前必做**
 - **Site polish / 视觉升级时**：旧 mirror 看着不像，回去看真站现在长啥样
-- **写跨站公共 partial 之前**：`_product_card.html` / `_filter_sidebar.html` / `_breadcrumb.html` 等
+- **Benchmark 任务设计时**：写 facet/form 类任务前确认真站实际选项
 
 **不要用于**：已 deepen 完的旧 site（用 [[document-site-gui]]）/ 运行时验证（用 [[verify-site-gui]]）/ 任务设计（用 [[design-tasks]]）。
 
@@ -76,42 +78,57 @@ v2 自动检测的失败状态（写入 metadata.json）：
 
 **v2.1 关键修复**（2026-05 R2 phys_org 案例后）：`detect_failure` 不再 short-circuit。**bot_block 检测优先于 status**，所以 Akamai/CF 的 403 + "Checking your connection" body 会正确标 bot_block（之前会被错标成 not_found）。bot_block 触发 Exa fallback hint；not_found 不触发（真 404 没必要走 Exa）。
 
-## 配套工具（v3.1 stack，2026-05）
+## 配套工具（v4 stack，2026-05 — 14 个工具覆盖 6 pillars）
 
-`~/webvoyager-analysis/real_components/` 下完整工具集，每个对应 4 维度的某面：
+`~/webvoyager-analysis/real_components/` 下完整工具集：
 
-| 工具 | 维度 | 作用 |
+| 工具 | Pillar | 作用 |
 |---|---|---|
-| `harvest.py` | 1+2+3 | 单 URL Playwright 抓 → HTML + fragments + structured.json + assets/ |
-| `harvest_spider.py` | all | BFS 多页爬 + per-host fail-fast + SQLite checkpoint |
-| `extract_image_urls.py` | 3 | 从 snapshots 抽 `<img src>` 入 `_image_urls.jsonl` |
-| `extract_nav_graph.py` | **4** | 从 snapshots 构建真站 link graph + button catalog |
-| `index_pool.py` | 3 | 聚 77k+ image URL 入 SQLite FTS5，跨站 alt 文本搜 |
-| `infer_cdn_pattern.py` | 3 | 从 URLs 推 CDN 模板 |
-| `reprocess_structured.py` | 2 | 从已有 `full.html` 离线抽 JSON-LD + 文章 |
-| `content_extract.py` | 2 | trafilatura wrapper 单页抽 clean article body |
-| `search_local.py` | helper | SearXNG 本地搜，无 quota 替代 Tavily/Exa |
+| `harvest.py` v3.2 | 1+2+3+6 | 单 URL Playwright 抓 → HTML + fragments + assets/{css,js,favicon,manifest} + structured.json + xhr_calls.jsonl + locales.json + response_headers/cookies in metadata + feed.xml |
+| `harvest_spider.py` | all | BFS 多页爬 + per-host fail-fast + SQLite checkpoint resume |
+| `extract_sitemap.py` | **6** | 拉 /robots.txt + /sitemap.xml(.gz) → 全量 entity URL 分类 |
+| `extract_forms.py` | **5** | 每个 `<form>` 字段 / 选项 / 验证 → `_forms.jsonl` |
+| `extract_facets.py` | 4 | 侧栏 filter facet + 选项 + URL param 映射 → `_facets.jsonl` |
+| `extract_image_urls.py` | 3 | 抽 `<img src>` → `_image_urls.jsonl` |
+| `extract_sprites.py` | 3 | 抽 inline SVG `<symbol id=X>` → `sprites/<id>.svg` |
+| `extract_nav_graph.py` | 4 | link graph + button catalog + footer-only links |
+| `reprocess_structured.py` | 2 | 离线从 `full.html` 抽 JSON-LD / state / article / BreadcrumbList |
+| `content_extract.py` | 2 | trafilatura wrapper 单页抽 clean body |
+| `index_pool.py` | 3 | 聚所有 image URL 入 SQLite FTS5 |
+| `infer_cdn_pattern.py` | 3 | URLs 推 CDN 模板 |
+| `index_site.py` | helper | 扫每页 metadata.json → `_index.json` 汇总 |
+| `search_local.py` | helper | SearXNG localhost:8888 wrapper，无 quota 替代 Tavily |
 
-## v3 增量（2026-05 升级）
+## v4 实战 stats（A-K 11 features 全跑过 96 站）
 
-v2 仅抓 HTML + image URL；v3 额外产出：
+| Feature | 工具 | 全 96 站成果 |
+|---|---|---|
+| A. sitemap.xml | `extract_sitemap.py` | **412,087 URLs / 53 sites**（bbc/youtube/coursera 10k cap；43 站没 sitemap） |
+| B. forms | `extract_forms.py` | **1,503 forms / 5,381 fields / 84 站**（github 50 forms / amazon 19） |
+| C. facets | `extract_facets.py` | **146 groups / 31 站**（bestbuy 21 / akc 17 / newegg 16） |
+| D. response_headers + cookies | harvest.py v3.2 | 7 关键 header + 47 cookies (etsy 测) 每次入 metadata.json |
+| E. RSS/Atom feeds | harvest.py v3.2 | 自动 HTML-link 发现 + 5 conventional paths probe（theverge 命中 `/rss/index.xml`） |
+| F. BreadcrumbList | `reprocess_structured.py` | JSON-LD BreadcrumbList → `breadcrumbs.json`，提供 entity 路径 |
+| G. --expand-tabs | harvest.py v3.2 | 展开 tab/accordion/details/aria-expanded false → `full_expanded.html` |
+| H. XHR/fetch capture | harvest.py v3.2 | etsy 39 / bbc 87 / theverge 228 calls → `xhr_calls.jsonl` |
+| I. i18n hreflang | harvest.py v3.2 | etsy 29 locales / bbc 2 → `locales.json` |
+| J. SVG sprites | `extract_sprites.py` | **4,026 symbols / 16 sites**（yelp 2363 / fandom 490） |
+| K. footer-only nav | `extract_nav_graph.py` | `_footer_links.jsonl` 单独 dump 真站底部目录 |
 
-- **`structured.json`**：每页提取 `jsonld` (Schema.org Product/Article/Event/Person etc) + `state` (Next.js / Apollo / Initial-State / Nuxt / Remix) + `meta` (og:* / twitter:* / canonical)
-- **`article.json`**（trafilatura）：title / author / date / body_text / hero_image / links
-- **`wayback.html`** + `structured_wayback.json`：bot_block 时自动试 Web Archive 历史快照（CDX API），有就用，没有再走 Exa fallback
-- **`FALLBACK_NEEDED.md`**：Wayback 也空时的 Exa hint
+reprocess 实战：90+ 站现有 snapshots **零网络调用** 离线 reprocess → **801 structured.json + 764 article.json**（carmax 125 JSON-LD / landwatch 41）。
 
-**reprocess 实战 (2026-05)**：90+ 站现有 snapshots **零网络调用** 离线 reprocess →
-- **801 `structured.json` 文件**（carmax 125 JSON-LD / landwatch 41 / apple 22 / coursera 21）
-- **764 `article.json` 文件**（trafilatura clean body）
-- 平均每页 1-3 JSON-LD blocks + 5-13 meta tags + 50% 概率有 framework state
+下游用法：写 site_specs / seed_data 时**直接读 `structured.json` 的 og:image / jsonld[0].image / state.next_data.props.pageProps**，比解 HTML 准确百倍。`_sitemap_urls.jsonl` 喂 spider 做 entity-driven 深爬。`_forms.jsonl` 给 benchmark 任务设计 ground-truth 字段。
 
-下游用法：写 site_specs / seed_data 时**直接读 `structured.json` 的 og:image / jsonld[0].image / state.next_data.props.pageProps**，比解 HTML 准确百倍。
-- `full.html` + `full.png` — 整页
-- `page-header.html`、`nav.html`、`hero.html`、`main.html`、`footer.html`、`container.html`、`wrap.html`、`sidebar.html`
-- `card-<sel>-<n>.html` — 首 3 个 card-like 元素
-- `metadata.json` — 索引 + bbox + selector + flags + 时间戳
-- `FALLBACK_NEEDED.md` —（若 blocked）告诉 agent 后续怎么走 Exa
+每次产出 `~/webvoyager-analysis/real_components/snapshots/<site>/<page_name>/`：
+- `full.html` + `full.png` + `full_expanded.html`（若 --expand-tabs）
+- `page-header.html`、`nav.html`、`hero.html`、`main.html`、`footer.html`、`container.html`、`wrap.html`、`sidebar.html`、`card-*.html`
+- `metadata.json`（v3.2: 含 response_headers + cookies + feed_found + locale_count + xhr_count + jsonld_count）
+- `structured.json` / `article.json` / `breadcrumbs.json` / `locales.json` / `xhr_calls.jsonl`
+- `assets/{css_*,js_*,favicon,manifest.json}` / `feed.xml`
+- `sprites/<id>.svg`（若有 inline sprite）
+- `FALLBACK_NEEDED.md` / `wayback.html` / `content.md`（bot_block 时）
+
+每站根目录还有：`_index.json` / `_image_urls.jsonl` / `_forms.jsonl` / `_facets.jsonl` / `_nav_graph.json` / `_buttons.jsonl` / `_footer_links.jsonl` / `_sprites.json` / `_sitemap_urls.jsonl` / `_sitemap_index.json` / `_robots.txt`。
 
 ## 单站采集建议（10 页 / 站）
 

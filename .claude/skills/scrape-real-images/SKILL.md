@@ -119,29 +119,41 @@ imgs = search_images("italian restaurant interior", n=20)
 ```python
 import requests, time
 
+# ⚠️ UA 必须是真浏览器或合规归因 UA — 否则 upload.wikimedia.org 直接 403
+# ❌ 别用: "Python/3.10" / "curl/7.x" / "Bot/1.0" / generic UA
+# ✅ 用方案 A: 真 Chrome UA — 简单粗暴
+UA_CHROME = ("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
+             "(KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36")
+# ✅ 用方案 B: 合规归因 UA — 符合 Wikimedia attribution policy
+UA_POLITE = "WebHarbor-Mirror-Builder/1.0 (https://github.com/aiming-lab/WebHarbor; contact@example.com)"
+
 def wiki_thumb(name, size=800):
     """Get the canonical Wikipedia thumbnail for a named entity. Returns None on miss."""
     title = name.replace(' ', '_')
     r = requests.get(
         f"https://en.wikipedia.org/api/rest_v1/page/summary/{title}",
-        headers={'User-Agent': 'WebHarbor/1.0 (your-email@example.com)'},
+        headers={'User-Agent': UA_POLITE},  # 任选 A 或 B
         timeout=5,
     )
     if r.status_code != 200: return None
     thumb = r.json().get('thumbnail')
     if not thumb: return None
-    # `thumb.source` is the small-size URL; for larger replace `.../<NNN>px-<file>` with desired width
-    return thumb.get('source')  # 用 .original 拿原图
+    return thumb.get('source')
 
 # bulk fetch for 1000 entities，无配额
 for ent in entities:
     url = wiki_thumb(ent.name)
     if url:
-        download_and_save(url, dest)
-    time.sleep(0.3)  # polite, 4-parallel works too
+        download_and_save(url, dest, headers={'User-Agent': UA_POLITE})  # 下载时也要带！
+    time.sleep(0.3)
 ```
 
-**实测**：本会话 google_map 136 place 用 Wikipedia REST 一次抓 **407 张 wiki_*.jpg / 166MB**, 135/136 places 拿到 3 张 distinct 真照片 — **0 Tavily call**。
+**2026-05 教训（必看）**：
+- 多次实战 generic bot UA 在 `upload.wikimedia.org/wikipedia/commons/...` 直接 403（API 通但下载图被拒）
+- 用真 Chrome UA 或合规归因 UA → 100% 通过
+- 推荐先 polite UA，请求被拒再 fallback Chrome UA
+
+**实测**：本会话 google_map 136 place 用 Wikipedia REST 一次抓 **407 张 wiki_*.jpg / 166MB**, 135/136 places 拿到 3 张 distinct 真照片 — **0 Tavily call**。berkeley/recreation_gov 6 列 top-dup 21-27% → ≤6.7%，127 张 webp 全 Wikipedia REST。
 
 ### Wikimedia Commons 直查（找特定文件名 / category）
 
