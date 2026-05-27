@@ -134,7 +134,7 @@
             <a href="{{ url_for('category_page', slug=place.category.slug) }}" class="pd-back" title="Back">
                 <span class="material-icons-outlined">arrow_back</span>
             </a>
-            <img src="{{ place.hero_image }}" alt="{{ place.name }}"
+            <img loading="lazy" decoding="async" src="{{ place.hero_image }}" alt="{{ place.name }}"
                  onerror="this.style.display='none'; this.parentElement.style.background='linear-gradient(135deg, #e8f0fe, #fde7f3)';">
         </div>
 
@@ -592,7 +592,7 @@
                              tabindex="0" role="group"
                              aria-label="Photo {{ loop.index }} of {{ sec.images|length }}"
                              style="scroll-snap-align:start;flex:0 0 80%;min-width:240px;">
-                            <img src="{{ img }}" alt="{{ sec.title }} photo {{ loop.index }}"
+                            <img loading="lazy" decoding="async" src="{{ img }}" alt="{{ sec.title }} photo {{ loop.index }}"
                                  onerror="this.parentElement.style.display='none';">
                         </div>
                         {% endfor %}

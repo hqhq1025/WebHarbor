@@ -11,7 +11,7 @@
         {% include '_search_bar.html' %}
 
         <div class="pd-hero">
-            <img src="{{ city.hero_image }}" alt="{{ city.display_name }}"
+            <img loading="lazy" decoding="async" src="{{ city.hero_image }}" alt="{{ city.display_name }}"
                  onerror="this.style.display='none'; this.parentElement.style.background='linear-gradient(135deg, #e8f0fe, #fde7f3)';">
         </div>
 
