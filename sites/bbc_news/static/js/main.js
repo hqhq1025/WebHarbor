@@ -1,3 +1,40 @@
+// >>> silent-fail-fix: fetch-auth-wrapper
+// Wraps window.fetch so that a JSON 401 response with {error:'login_required',
+// redirect:'/login?next=...'} triggers an actual browser redirect to /login.
+// Without this the JSON body is swallowed as a 'success' result and the user
+// click silently no-ops. Pairs with the @login_manager.unauthorized_handler
+// installed in app.py. Root cause docs: gotcha #49.
+(function () {
+    if (window._fetchAuthWrapped) return;
+    if (typeof window.fetch !== 'function') return;
+    window._fetchAuthWrapped = true;
+    var _origFetch = window.fetch.bind(window);
+    window.fetch = function () {
+        return _origFetch.apply(this, arguments).then(function (r) {
+            if (r && r.status === 401) {
+                var ct = '';
+                try { ct = (r.headers && r.headers.get && r.headers.get('Content-Type')) || ''; } catch (e) {}
+                if (ct.indexOf('application/json') !== -1) {
+                    var cloned;
+                    try { cloned = r.clone(); } catch (e) { return r; }
+                    return cloned.json().then(function (d) {
+                        if (d && d.error === 'login_required') {
+                            var next = encodeURIComponent(location.pathname + location.search);
+                            var url = (d.redirect || '/login');
+                            url += (url.indexOf('?') === -1 ? '?' : '&') + 'next=' + next;
+                            try { console.warn('[auth] redirecting:', url, d.message || ''); } catch (e) {}
+                            location.href = url;
+                        }
+                        return r;
+                    }).catch(function () { return r; });
+                }
+            }
+            return r;
+        });
+    };
+})();
+// <<< silent-fail-fix
+
 // BBC News mirror — interactive helpers
 
 function csrfToken() {
