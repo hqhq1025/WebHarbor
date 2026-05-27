@@ -5,6 +5,9 @@ so the byte-identical reset invariant holds (no commits when populated).
 """
 from datetime import datetime, date, timedelta
 
+from seed_extras_data import EXTRA_ARTICLES
+from seed_glossary_data import CITIES, GLOSSARY, REVIEWS, PROMOS
+
 PINNED_BCRYPT = "$2b$12$RwAC/sfwDHtccU//A20fde.uKkZK4Ptnjjyua2l2ktwI6uysAp3Ou"
 SEED_DATE = datetime(2026, 1, 1, 12, 0, 0)
 
@@ -560,19 +563,21 @@ def seed_database(db, User, Author, Category, Article, State, Advisor, bcrypt):
     cat_by_slug = {c.slug: c for c in Category.query.all()}
     authors = Author.query.order_by(Author.id).all()
     base = date(2026, 5, 26)
-    for i, (title, dek, short, cat_slug, tags) in enumerate(ARTICLES_SPEC):
+    all_articles = list(ARTICLES_SPEC) + EXTRA_ARTICLES
+    for i, (title, dek, short, cat_slug, tags) in enumerate(all_articles):
         cat = cat_by_slug[cat_slug]
         author = authors[i % len(authors)]
         slug = _slugify(title)
         body = _body_for(title, short, tags)
         related_calc = _calc_slug_for(short)
-        hero = f"/static/images/articles/{cat_slug}-{(i % 8) + 1}.jpg"
-        pub = base - timedelta(days=i * 3)
+        # Cycle through 85 real Pexels article images
+        hero = f"/static/images/articles/article-{(i % 85) + 1:03d}.jpg"
+        pub = base - timedelta(days=i * 2)
         a = Article(title=title, slug=slug, dek=dek, body=body,
                      hero_image=hero, category_id=cat.id,
                      author_id=author.id, published_at=pub,
                      reading_minutes=4 + (i % 6),
-                     view_count=12000 - (i * 47) % 10000,
+                     view_count=18000 - (i * 47) % 14000,
                      related_calc=related_calc, tags=tags)
         db.session.add(a)
 
@@ -654,3 +659,53 @@ def _state_overview(name, metro, kind, top, prop, median_home):
         f"correct rates automatically when you enter your home or income "
         f"details on any tool below."
     )
+
+
+# ─── Extras: glossary, cities, reviews, promos ────────────────────
+
+def seed_extras(db, GlossaryTerm, City, Review, Promo):
+    """Seed glossary, cities, reviews, promos. Function-level idempotent."""
+    # Glossary
+    if GlossaryTerm.query.count() == 0:
+        for term, short_def, long_def, related_calc, related_cat in GLOSSARY:
+            letter = (term[0] if term else "Z").upper()
+            if not ("A" <= letter <= "Z"):
+                letter = "Z"
+            db.session.add(GlossaryTerm(
+                term=term, slug=_slugify(term), letter=letter,
+                short_def=short_def, long_def=long_def,
+                related_calc=related_calc, related_category=related_cat,
+            ))
+        db.session.commit()
+
+    # Cities
+    if City.query.count() == 0:
+        for (name, abbr, pop, mh, mr, mi, coli, walk, ptax, overview) in CITIES:
+            slug = f"{_slugify(name)}-{abbr.lower()}"
+            db.session.add(City(
+                name=name, slug=slug, state_abbr=abbr, population=pop,
+                median_home_price=mh, median_rent=mr,
+                median_household_income=mi, cost_of_living_index=coli,
+                walk_score=walk, avg_property_tax_rate=ptax,
+                crime_index=round(50 + (pop % 30), 1),
+                overview=overview,
+            ))
+        db.session.commit()
+
+    # Reviews
+    if Review.query.count() == 0:
+        for (name, kind, overall, fees, mn, pros, cons, body, hq, founded) in REVIEWS:
+            slug = f"{_slugify(name)}-review"
+            db.session.add(Review(
+                name=name, slug=slug, kind=kind, overall_rating=overall,
+                fees=fees, minimum=mn, pros=pros, cons=cons,
+                body=body, headquarters=hq, founded_year=founded,
+            ))
+        db.session.commit()
+
+    # Promos
+    if Promo.query.count() == 0:
+        for code, desc, pct in PROMOS:
+            db.session.add(Promo(code=code, description=desc,
+                                   discount_pct=pct, active=True))
+        db.session.commit()
