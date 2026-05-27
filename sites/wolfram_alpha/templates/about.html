@@ -40,7 +40,7 @@
         <div class="about-stat-label">Users worldwide</div>
       </div>
       <div class="about-wolfram-logo">
-        <img src="/static/images/about/wolf_logo_7ebbb5dc50.png" alt="Wolfram"
+        <img loading="lazy" decoding="async" src="/static/images/about/wolf_logo_7ebbb5dc50.png" alt="Wolfram"
              onerror="this.style.display='none'">
       </div>
     </div>
@@ -57,7 +57,7 @@
       {% for name, role, img in team %}
       <div class="team-card">
         <div class="team-avatar">
-          <img src="/static/images/{{ img }}" alt="{{ name }}"
+          <img loading="lazy" decoding="async" src="/static/images/{{ img }}" alt="{{ name }}"
                onerror="this.style.display='none'">
         </div>
         <h3 class="team-name">{{ name }}</h3>

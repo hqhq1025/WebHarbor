@@ -57,7 +57,7 @@
           Simplify the following:<br>
           <code>x&sup2; &minus; 3x + 2</code>
         </span>
-        <img src="/static/images/pro/wolfram_alpha_spikey_icon_5e9b37fe41.svg" alt="" class="wa-promo-spikey">
+        <img loading="lazy" decoding="async" src="/static/images/pro/wolfram_alpha_spikey_icon_5e9b37fe41.svg" alt="" class="wa-promo-spikey">
         <span class="wa-promo-card wa-promo-card--2">
           <em>Answer:</em><br>
           <code>(x&minus;1)(x&minus;2)</code>
@@ -76,7 +76,7 @@
     <div class="wa-hero-inner">
       <p class="wa-hero-eyebrow">FROM THE MAKERS OF <strong>WOLFRAM LANGUAGE</strong> AND <strong>MATHEMATICA</strong></p>
       <a href="/" class="wa-wordmark wa-wordmark--sm" aria-label="WolframAlpha">
-        <img src="/static/images/pro/wolfram_alpha_spikey_icon_5e9b37fe41.svg" alt="" class="wa-wordmark-spikey">
+        <img loading="lazy" decoding="async" src="/static/images/pro/wolfram_alpha_spikey_icon_5e9b37fe41.svg" alt="" class="wa-wordmark-spikey">
         <span class="wa-wordmark-text"><span class="wm-wolfram">Wolfram</span><span class="wm-alpha">Alpha</span></span>
       </a>
       <form class="wa-search-form" action="/input" method="get">
@@ -212,7 +212,7 @@
             <pre class="pod-extra-plaintext">{{ pod.plaintext }}</pre>
             {% endif %}
             {% if pod.image %}
-            <img src="{{ pod.image }}" alt="{{ pod.title }}" class="pod-plot-img"
+            <img loading="lazy" decoding="async" src="{{ pod.image }}" alt="{{ pod.title }}" class="pod-plot-img"
                  onerror="this.style.display='none'">
             {% endif %}
           </div>
@@ -246,7 +246,7 @@
         <div class="result-pod result-pod--plot">
           <div class="pod-title">Plot</div>
           <div class="pod-content">
-            <img src="{{ computation.plot_url }}" alt="Plot" class="pod-plot-img"
+            <img loading="lazy" decoding="async" src="{{ computation.plot_url }}" alt="Plot" class="pod-plot-img"
                  onerror="this.style.display='none'">
           </div>
         </div>
@@ -388,7 +388,7 @@
       {% if matching_topic %}
       <div class="sidebar-topic-card">
         <h3 class="sidebar-section-title">About: {{ matching_topic.name }}</h3>
-        <img src="{{ matching_topic.image }}" alt="{{ matching_topic.name }}"
+        <img loading="lazy" decoding="async" src="{{ matching_topic.image }}" alt="{{ matching_topic.name }}"
              class="sidebar-topic-img"
              onerror="this.style.display='none'">
         <p class="sidebar-topic-desc">{{ matching_topic.description[:150] }}...</p>

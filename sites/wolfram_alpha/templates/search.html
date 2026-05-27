@@ -23,7 +23,7 @@
     {% for topic in results %}
     <a href="/topic/{{ topic.slug }}" class="wa-topic-card fade-in">
       <div class="wa-topic-img-wrap">
-        <img src="{{ topic.image }}" alt="{{ topic.name }}"
+        <img loading="lazy" decoding="async" src="{{ topic.image }}" alt="{{ topic.name }}"
              onerror="this.parentElement.innerHTML='<div class=\'topic-img-placeholder\'>{{ topic.category.icon }}</div>'">
       </div>
       <div class="wa-topic-body">

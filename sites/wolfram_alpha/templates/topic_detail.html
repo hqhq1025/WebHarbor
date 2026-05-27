@@ -38,7 +38,7 @@
       </div>
     </div>
     <div class="topic-hero-img">
-      <img src="{{ topic.image }}" alt="{{ topic.name }}"
+      <img loading="lazy" decoding="async" src="{{ topic.image }}" alt="{{ topic.name }}"
            onerror="this.style.display='none'">
     </div>
   </div>
@@ -83,7 +83,7 @@
       <div class="pd-gallery-images">
         {% for img in section.images %}
         <div class="pd-gallery-img">
-          <img src="/{{ img }}" alt="{{ section.title }}"
+          <img loading="lazy" decoding="async" src="/{{ img }}" alt="{{ section.title }}"
                onerror="this.parentElement.style.display='none'">
         </div>
         {% endfor %}
@@ -207,7 +207,7 @@
       {% for t in related %}
       <a href="/topic/{{ t.slug }}" class="wa-topic-card wa-topic-card--sm">
         <div class="wa-topic-img-wrap wa-topic-img-wrap--sm">
-          <img src="{{ t.image }}" alt="{{ t.name }}"
+          <img loading="lazy" decoding="async" src="{{ t.image }}" alt="{{ t.name }}"
                onerror="this.parentElement.innerHTML='<div class=\'topic-img-placeholder\'>{{ t.category.icon }}</div>'">
         </div>
         <div class="wa-topic-body">

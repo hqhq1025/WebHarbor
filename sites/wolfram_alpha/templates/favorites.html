@@ -13,7 +13,7 @@
     {% for fav in favorites %}
     <div class="wa-topic-card">
       <div class="wa-topic-img-wrap">
-        <img src="{{ fav.topic.image }}" alt="{{ fav.topic.name }}"
+        <img loading="lazy" decoding="async" src="{{ fav.topic.image }}" alt="{{ fav.topic.name }}"
              onerror="this.parentElement.innerHTML='<div class=\'topic-img-placeholder\'>{{ fav.topic.category.icon }}</div>'">
       </div>
       <div class="wa-topic-body">
