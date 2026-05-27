@@ -106,6 +106,31 @@ def seed_database():
          "A near-miss storage option for backup teams that need object-style retention but less transfer.",
          ["2 TB retained backups", "Desktop backup staging", "Version history review", "Recovery planning"], []),
     ]
+    # Per-plan hero image. Each plan must have a distinct image so the
+    # `plans.image` column reflects real product art (audit caught this
+    # column was 100% logo-mega.png across all 19 rows). All filenames
+    # below already live in sites/mega/static/images/.
+    plan_image_by_slug = {
+        "free": "MEGA-icon-cloud.png",
+        "pro-lite": "Feature-1.png",
+        "pro-i": "MEGA-Cloud-Access-files-on-the-go.png",
+        "pro-ii": "MEGA-Mobile-Offline-access-to-your-data.png",
+        "pro-iii": "img-performance.png",
+        "vpn-monthly": "Picture-3vpn.png",
+        "vpn-annual": "MEGA-VPN_Locations.png",
+        "pass-free": "MEGA-Pass_image_1.png",
+        "pass-pro": "pass-hero.png",
+        "business-starter": "Business-img-1.png",
+        "business-pro": "Business-img-2.png",
+        "business-enterprise": "Business-img-3.png",
+        "s4-fixed-storage": "True-Nas-Community-edition.png",
+        "pro-flexi": "MEGA-icon-zap.png",
+        "s4-media-vault": "Business-img-4.png",
+        "s4-analytics-reserve": "S3-browser.png",
+        "s4-developer-sandbox": "AWS.png",
+        "s4-enterprise-archive": "Backup-2.png",
+        "backup-reserve": "MEGA-Backup-visibility-of-all-your-backups.png",
+    }
     for row in plans:
         db.session.add(Plan(
             name=row[0], slug=row[1], audience=row[2], category=row[3],
@@ -113,7 +138,8 @@ def seed_database():
             transfer_tb=row[7], users_included=row[8], vpn_devices=row[9],
             pass_accounts=row[10], s4_base_tb=row[11], popular=row[12],
             tagline=row[13], description=row[14], features=dumps(row[15]),
-            caveats=dumps(row[16]), image="logo-mega.png",
+            caveats=dumps(row[16]),
+            image=plan_image_by_slug.get(row[1], "logo-mega.png"),
         ))
 
     pages = [
