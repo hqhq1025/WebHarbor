@@ -4,7 +4,7 @@
 <section class="eb-hero" style="background:linear-gradient(135deg,{{ color }},rgba(255,255,255,.1)); padding-bottom:32px;">
   <div class="eb-container">
     {% set hero = category_hero_image_url(cat_slug) %}
-    {% if hero %}<div style="border-radius:14px;overflow:hidden;margin-bottom:18px;max-height:240px;"><img src="{{ hero }}" alt="{{ cat_name }}" style="width:100%;height:240px;object-fit:cover;"></div>{% endif %}
+    {% if hero %}<div style="border-radius:14px;overflow:hidden;margin-bottom:18px;max-height:240px;"><img loading="lazy" decoding="async" src="{{ hero }}" alt="{{ cat_name }}" style="width:100%;height:240px;object-fit:cover;"></div>{% endif %}
     <h1 class="eb-hero-title">{{ cat_name }} events</h1>
     <p class="eb-hero-sub">Discover {{ cat_name|lower }} happening near you and around the country.</p>
     <div class="eb-pill-row">
