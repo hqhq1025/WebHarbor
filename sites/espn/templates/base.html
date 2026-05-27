@@ -4,6 +4,11 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="csrf-token" content="{{ csrf_token() }}">
+  {# Snapshot date — exposed as meta so agents can read it without a visible UI banner. #}
+  {% if mirror_today_iso %}
+  <meta name="snapshot-date" content="{{ mirror_today_iso }}">
+  {% if mirror_today_label %}<meta name="snapshot-date-display" content="{{ mirror_today_label }}">{% endif %}
+  {% endif %}
   <title>{% block title %}ESPN{% endblock %} - ESPN</title>
   <link rel="icon" type="image/png" href="{{ url_for('static', filename='images/espn/logo/espn-wordmark.png') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
@@ -14,14 +19,10 @@
   <!-- ESPN Red brand strip (R3 visual polish) -->
   <div class="brand-strip" role="presentation"></div>
 
-  <!-- Anchor date banner -->
-  <div class="mirror-clock-banner" role="note">
-    <span class="mirror-clock-banner__icon" aria-hidden="true">&#128197;</span>
-    <span class="mirror-clock-banner__text">
-      ESPN Today's date is <strong>{{ mirror_today_label }}</strong>.
-      <span class="mirror-clock-banner__hint">Phrases like &ldquo;today&rdquo;, &ldquo;yesterday&rdquo;, &ldquo;recent&rdquo;, and &ldquo;latest&rdquo; on this site, please refer to this fixed date.</span>
-    </span>
-  </div>
+  {# Anchor date previously rendered as a visible "ESPN Today's date is X. Phrases
+     like 'today', 'yesterday', 'recent', 'latest' on this site, please refer to
+     this fixed date." banner. That prose was agent-directed meta-instruction and
+     broke realism. The date is now exposed via <meta name="snapshot-date"> in <head>. #}
 
   <!-- Scorebar (top light-gray ticker) -->
   <section class="scorebar" id="global-scoreboard" aria-live="polite" aria-label="Live scores ticker">
