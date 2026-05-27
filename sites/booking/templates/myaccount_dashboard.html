@@ -42,10 +42,10 @@
                 {% if next_trip %}
                 <div class="booking-row next-trip">
                     {% if next_trip.items and next_trip.items[0].property.image %}
-                    <img src="{{ next_trip.items[0].property.image }}" alt=""
+                    <img loading="lazy" decoding="async" src="{{ next_trip.items[0].property.image }}" alt=""
                          onerror="this.style.background='linear-gradient(135deg,#003580,#006ce4)'">
                     {% else %}
-                    <img src="/static/images/placeholder.jpg"
+                    <img loading="lazy" decoding="async" src="/static/images/placeholder.jpg"
                          onerror="this.style.background='linear-gradient(135deg,#003580,#006ce4)'">
                     {% endif %}
                     <div class="info">
@@ -77,10 +77,10 @@
                     {% for booking in recent_bookings %}
                     <div class="booking-row">
                         {% if booking.items and booking.items[0].property.image %}
-                        <img src="{{ booking.items[0].property.image }}" alt=""
+                        <img loading="lazy" decoding="async" src="{{ booking.items[0].property.image }}" alt=""
                              onerror="this.style.background='linear-gradient(135deg,#003580,#006ce4)'">
                         {% else %}
-                        <img src="/static/images/placeholder.jpg"
+                        <img loading="lazy" decoding="async" src="/static/images/placeholder.jpg"
                              onerror="this.style.background='linear-gradient(135deg,#003580,#006ce4)'">
                         {% endif %}
                         <div class="info">
@@ -108,7 +108,7 @@
                     {% for item in saved_props %}
                     <a href="{{ url_for('property_detail', slug=item.property.slug) }}" class="city-card">
                         {% if item.property.image %}
-                        <img src="{{ item.property.image }}" alt="" class="city-card-img"
+                        <img loading="lazy" decoding="async" src="{{ item.property.image }}" alt="" class="city-card-img"
                              onerror="this.style.background='linear-gradient(135deg,#003580,#006ce4)';this.alt=''">
                         {% endif %}
                         <div class="city-card-body">

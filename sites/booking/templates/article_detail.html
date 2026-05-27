@@ -16,7 +16,7 @@
         </div>
 
         {% if article.image %}
-        <img src="{{ article.image }}" alt="{{ article.title }}"
+        <img loading="lazy" decoding="async" src="{{ article.image }}" alt="{{ article.title }}"
              style="width:100%;max-height:380px;object-fit:cover;border-radius:6px;margin-bottom:16px;"
              onerror="this.style.display='none'">
         {% endif %}
@@ -44,7 +44,7 @@
             {% for r in related %}
             <a href="{{ url_for('article_detail', slug=r.slug) }}" class="city-card" style="text-decoration:none;color:inherit;">
                 {% if r.image %}
-                <img src="{{ r.image }}" alt="{{ r.title }}" class="city-card-img"
+                <img loading="lazy" decoding="async" src="{{ r.image }}" alt="{{ r.title }}" class="city-card-img"
                      onerror="this.style.background='linear-gradient(135deg,#003580,#006ce4)';this.alt=''">
                 {% endif %}
                 <div class="city-card-body">

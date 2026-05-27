@@ -57,10 +57,10 @@
     {% set gallery = property.get_gallery() %}
     {% if gallery %}
     <div class="pd-gallery">
-        <img src="{{ gallery[0] }}" alt="{{ property.name }}" class="pd-gallery-main"
+        <img loading="lazy" decoding="async" src="{{ gallery[0] }}" alt="{{ property.name }}" class="pd-gallery-main"
              onerror="this.style.background='linear-gradient(135deg,#003580,#006ce4)';this.alt=''">
         {% for img in gallery[1:5] %}
-        <img src="{{ img }}" alt="{{ property.name }} photo {{ loop.index + 1 }}"
+        <img loading="lazy" decoding="async" src="{{ img }}" alt="{{ property.name }} photo {{ loop.index + 1 }}"
              onerror="this.style.background='linear-gradient(135deg,#003580,#006ce4)';this.alt=''">
         {% endfor %}
     </div>
@@ -108,7 +108,7 @@
                     <div class="pd-gallery-images">
                         {% for img in gallery[5:8] %}
                         <div class="pd-gallery-img">
-                            <img src="{{ img }}" alt="exterior"
+                            <img loading="lazy" decoding="async" src="{{ img }}" alt="exterior"
                                  onerror="this.parentElement.style.background='linear-gradient(135deg,#003580,#006ce4)';this.parentElement.innerHTML='';">
                         </div>
                         {% endfor %}
@@ -122,7 +122,7 @@
                     <div class="pd-gallery-images">
                         {% for img in gallery[8:11] %}
                         <div class="pd-gallery-img">
-                            <img src="{{ img }}" alt="room"
+                            <img loading="lazy" decoding="async" src="{{ img }}" alt="room"
                                  onerror="this.parentElement.style.background='linear-gradient(135deg,#003580,#006ce4)';this.parentElement.innerHTML='';">
                         </div>
                         {% endfor %}
@@ -137,7 +137,7 @@
                     <div class="pd-gallery-images">
                         {% for img in gallery[11:] %}
                         <div class="pd-gallery-img">
-                            <img src="{{ img }}" alt="amenity"
+                            <img loading="lazy" decoding="async" src="{{ img }}" alt="amenity"
                                  onerror="this.parentElement.style.background='linear-gradient(135deg,#003580,#006ce4)';this.parentElement.innerHTML='';">
                         </div>
                         {% endfor %}
@@ -348,7 +348,7 @@
                     {% for prop in similar %}
                     <a href="{{ url_for('property_detail', slug=prop.slug) }}" class="city-card">
                         {% if prop.image %}
-                        <img src="{{ prop.image }}" alt="{{ prop.name }}" class="city-card-img"
+                        <img loading="lazy" decoding="async" src="{{ prop.image }}" alt="{{ prop.name }}" class="city-card-img"
                              onerror="this.style.background='linear-gradient(135deg,#003580,#006ce4)';this.alt=''">
                         {% endif %}
                         <div class="city-card-body">
@@ -376,7 +376,7 @@
                     {% for prop in same_area %}
                     <a href="{{ url_for('property_detail', slug=prop.slug) }}" class="city-card">
                         {% if prop.image %}
-                        <img src="{{ prop.image }}" alt="{{ prop.name }}" class="city-card-img"
+                        <img loading="lazy" decoding="async" src="{{ prop.image }}" alt="{{ prop.name }}" class="city-card-img"
                              onerror="this.style.background='linear-gradient(135deg,#003580,#006ce4)';this.alt=''">
                         {% endif %}
                         <div class="city-card-body">
@@ -406,7 +406,7 @@
                     {% for prop in you_might_also_like %}
                     <a href="{{ url_for('property_detail', slug=prop.slug) }}" class="city-card">
                         {% if prop.image %}
-                        <img src="{{ prop.image }}" alt="{{ prop.name }}" class="city-card-img"
+                        <img loading="lazy" decoding="async" src="{{ prop.image }}" alt="{{ prop.name }}" class="city-card-img"
                              onerror="this.style.background='linear-gradient(135deg,#003580,#006ce4)';this.alt=''">
                         {% endif %}
                         <div class="city-card-body">
@@ -544,7 +544,7 @@
      aria-label="Photo gallery" aria-hidden="true">
     <button type="button" class="lightbox-close" aria-label="Close lightbox" id="lightboxClose">&times;</button>
     <button type="button" class="lightbox-prev" aria-label="Previous photo" id="lightboxPrev">&lsaquo;</button>
-    <img class="lightbox-image" id="lightboxImage" alt="">
+    <img loading="lazy" decoding="async" class="lightbox-image" id="lightboxImage" alt="">
     <button type="button" class="lightbox-next" aria-label="Next photo" id="lightboxNext">&rsaquo;</button>
     <div class="lightbox-counter" id="lightboxCounter" aria-live="polite"></div>
 </div>

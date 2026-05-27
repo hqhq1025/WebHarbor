@@ -23,7 +23,7 @@
             <div class="city-card">
                 <a href="{{ url_for('property_detail', slug=item.property.slug) }}">
                     {% if item.property.image %}
-                    <img src="{{ item.property.image }}" alt="{{ item.property.name }}" class="city-card-img"
+                    <img loading="lazy" decoding="async" src="{{ item.property.image }}" alt="{{ item.property.name }}" class="city-card-img"
                          onerror="this.style.background='linear-gradient(135deg,#003580,#006ce4)';this.alt=''">
                     {% endif %}
                     <div class="city-card-body">

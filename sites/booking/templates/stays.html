@@ -53,7 +53,7 @@
         <div class="property-card">
             <div class="property-card-img">
                 {% if prop.image %}
-                <img src="{{ prop.image }}" alt="{{ prop.name }}"
+                <img loading="lazy" decoding="async" src="{{ prop.image }}" alt="{{ prop.name }}"
                      onerror="this.parentElement.innerHTML='<div style=&quot;background:linear-gradient(135deg,#003580,#006ce4);width:100%;height:100%;display:flex;align-items:center;justify-content:center;color:#fff;font-size:14px;padding:10px;text-align:center;&quot;>{{ prop.name }}</div>'">
                 {% endif %}
                 {% if current_user.is_authenticated %}

@@ -222,7 +222,7 @@
             <div class="property-card" role="article" aria-labelledby="prop-title-{{ prop.id }}">
                 <div class="property-card-img">
                     {% if prop.image %}
-                    <img src="{{ prop.image }}" alt="{{ prop.name }}"
+                    <img loading="lazy" decoding="async" src="{{ prop.image }}" alt="{{ prop.name }}"
                          onerror="this.parentElement.innerHTML='<div style=&quot;background:linear-gradient(135deg,#003580,#006ce4);width:100%;height:100%;&quot;></div>'">
                     {% endif %}
                 </div>

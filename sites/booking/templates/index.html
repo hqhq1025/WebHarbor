@@ -56,7 +56,7 @@
             {% for city in trending_cities %}
             <a href="{{ url_for('city_page', slug=city.slug) }}" class="city-card">
                 {% if city.hero_image %}
-                <img src="{{ city.hero_image }}" alt="{{ city.display }}" class="city-card-img"
+                <img loading="lazy" decoding="async" src="{{ city.hero_image }}" alt="{{ city.display }}" class="city-card-img"
                      onerror="this.style.background='linear-gradient(135deg, #003580, #006ce4)';this.alt=''">
                 {% else %}
                 <div class="city-card-img" style="background:linear-gradient(135deg,#003580,#006ce4)"></div>
@@ -133,7 +133,7 @@
         <div class="property-card">
             <div class="property-card-img">
                 {% if prop.image %}
-                <img src="{{ prop.image }}" alt="{{ prop.name }}"
+                <img loading="lazy" decoding="async" src="{{ prop.image }}" alt="{{ prop.name }}"
                      onerror="this.parentElement.innerHTML='<div style=&quot;background:linear-gradient(135deg,#003580,#006ce4);width:100%;height:100%;display:flex;align-items:center;justify-content:center;color:#fff;font-size:14px;padding:10px;text-align:center;&quot;>{{ prop.name }}</div>'">
                 {% endif %}
                 {% if current_user.is_authenticated %}
@@ -194,7 +194,7 @@
             {% for prop in genius_deals %}
             <a href="{{ url_for('property_detail', slug=prop.slug) }}" class="city-card">
                 {% if prop.image %}
-                <img src="{{ prop.image }}" alt="{{ prop.name }}" class="city-card-img"
+                <img loading="lazy" decoding="async" src="{{ prop.image }}" alt="{{ prop.name }}" class="city-card-img"
                      onerror="this.style.background='linear-gradient(135deg,#003580,#006ce4)';this.alt=''">
                 {% endif %}
                 <div class="city-card-body">
@@ -220,7 +220,7 @@
         </div>
         <div class="card-grid cards-3">
             <a href="{{ url_for('article_detail', slug='top-5-european-cities-food-lovers') }}" class="city-card">
-                <img src="/static/images/screenshots/paris.png" alt="European food cities" class="city-card-img"
+                <img loading="lazy" decoding="async" src="/static/images/screenshots/paris.png" alt="European food cities" class="city-card-img"
                      onerror="this.style.background='linear-gradient(135deg,#003580,#006ce4)';this.alt=''">
                 <div class="city-card-body">
                     <h3>Top 5 European Cities for Food Lovers</h3>
@@ -228,7 +228,7 @@
                 </div>
             </a>
             <a href="{{ url_for('article_detail', slug='asia-on-a-budget') }}" class="city-card">
-                <img src="/static/images/screenshots/bali.png" alt="Asia on a budget" class="city-card-img"
+                <img loading="lazy" decoding="async" src="/static/images/screenshots/bali.png" alt="Asia on a budget" class="city-card-img"
                      onerror="this.style.background='linear-gradient(135deg,#003580,#006ce4)';this.alt=''">
                 <div class="city-card-body">
                     <h3>Asia on a Budget: 10 Nights Under $60 a Day</h3>
@@ -236,7 +236,7 @@
                 </div>
             </a>
             <a href="{{ url_for('article_detail', slug='romantic-city-breaks') }}" class="city-card">
-                <img src="/static/images/screenshots/rome.png" alt="Romantic city breaks" class="city-card-img"
+                <img loading="lazy" decoding="async" src="/static/images/screenshots/rome.png" alt="Romantic city breaks" class="city-card-img"
                      onerror="this.style.background='linear-gradient(135deg,#003580,#006ce4)';this.alt=''">
                 <div class="city-card-body">
                     <h3>Seven Romantic City Breaks for Couples</h3>

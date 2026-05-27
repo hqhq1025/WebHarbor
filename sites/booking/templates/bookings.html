@@ -21,7 +21,7 @@
                 {% for booking in bookings %}
                 <div class="booking-row">
                     {% if booking.items and booking.items[0].property.image %}
-                    <img src="{{ booking.items[0].property.image }}" alt=""
+                    <img loading="lazy" decoding="async" src="{{ booking.items[0].property.image }}" alt=""
                          onerror="this.style.background='linear-gradient(135deg,#003580,#006ce4)'">
                     {% endif %}
                     <div class="info">

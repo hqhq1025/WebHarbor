@@ -16,7 +16,7 @@
             {% for prop in properties %}
             <a href="{{ url_for('property_detail', slug=prop.slug) }}" class="city-card">
                 {% if prop.image %}
-                <img src="{{ prop.image }}" alt="{{ prop.name }}" class="city-card-img"
+                <img loading="lazy" decoding="async" src="{{ prop.image }}" alt="{{ prop.name }}" class="city-card-img"
                      onerror="this.style.background='linear-gradient(135deg,#003580,#006ce4)';this.alt=''">
                 {% endif %}
                 <div class="city-card-body">

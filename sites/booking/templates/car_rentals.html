@@ -85,7 +85,7 @@
             {% for c in cities[:8] %}
             <a href="{{ url_for('car_rentals', city=c.key) }}" class="city-card">
                 {% if c.hero_image %}
-                <img src="{{ c.hero_image }}" alt="{{ c.display }}" class="city-card-img"
+                <img loading="lazy" decoding="async" src="{{ c.hero_image }}" alt="{{ c.display }}" class="city-card-img"
                      onerror="this.style.background='linear-gradient(135deg,#003580,#006ce4)';this.alt=''">
                 {% endif %}
                 <div class="city-card-body">

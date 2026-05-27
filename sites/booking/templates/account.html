@@ -46,10 +46,10 @@
                     {% for booking in bookings %}
                     <div class="booking-row">
                         {% if booking.items and booking.items[0].property.image %}
-                        <img src="{{ booking.items[0].property.image }}" alt=""
+                        <img loading="lazy" decoding="async" src="{{ booking.items[0].property.image }}" alt=""
                              onerror="this.style.background='linear-gradient(135deg,#003580,#006ce4)'">
                         {% else %}
-                        <img src="/static/images/placeholder.jpg" onerror="this.style.background='linear-gradient(135deg,#003580,#006ce4)'">
+                        <img loading="lazy" decoding="async" src="/static/images/placeholder.jpg" onerror="this.style.background='linear-gradient(135deg,#003580,#006ce4)'">
                         {% endif %}
                         <div class="info">
                             <h4>{{ booking.items[0].property.name if booking.items else 'Booking' }}</h4>
@@ -75,7 +75,7 @@
                     {% for item in saved %}
                     <a href="{{ url_for('property_detail', slug=item.property.slug) }}" class="city-card">
                         {% if item.property.image %}
-                        <img src="{{ item.property.image }}" alt="" class="city-card-img"
+                        <img loading="lazy" decoding="async" src="{{ item.property.image }}" alt="" class="city-card-img"
                              onerror="this.style.background='linear-gradient(135deg,#003580,#006ce4)';this.alt=''">
                         {% endif %}
                         <div class="city-card-body">

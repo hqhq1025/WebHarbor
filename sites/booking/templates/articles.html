@@ -9,7 +9,7 @@
         {% for a in articles %}
         <a href="{{ url_for('article_detail', slug=a.slug) }}" class="city-card" style="text-decoration:none;color:inherit;display:block;">
             {% if a.image %}
-            <img src="{{ a.image }}" alt="{{ a.title }}" class="city-card-img"
+            <img loading="lazy" decoding="async" src="{{ a.image }}" alt="{{ a.title }}" class="city-card-img"
                  onerror="this.style.background='linear-gradient(135deg,#003580,#006ce4)';this.alt=''">
             {% endif %}
             <div class="city-card-body">

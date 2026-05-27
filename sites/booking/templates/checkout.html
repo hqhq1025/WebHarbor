@@ -92,7 +92,7 @@
                 <div style="border-bottom:1px solid #e7e7e7;padding-bottom:12px;margin-bottom:12px;">
                     <div style="display:flex;gap:10px;">
                         {% if item.property.image %}
-                        <img src="{{ item.property.image }}" style="width:60px;height:60px;object-fit:cover;border-radius:4px;"
+                        <img loading="lazy" decoding="async" src="{{ item.property.image }}" style="width:60px;height:60px;object-fit:cover;border-radius:4px;"
                              onerror="this.style.background='linear-gradient(135deg,#003580,#006ce4)'">
                         {% endif %}
                         <div style="flex:1;">

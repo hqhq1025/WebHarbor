@@ -42,7 +42,7 @@
         <div class="card-grid cards-4">
             {% for p in sample_properties %}
             <a href="{{ url_for('property_detail', slug=p.slug) }}" class="city-card">
-                {% if p.image %}<img src="{{ p.image }}" alt="{{ p.name }}" class="city-card-img">{% endif %}
+                {% if p.image %}<img loading="lazy" decoding="async" src="{{ p.image }}" alt="{{ p.name }}" class="city-card-img">{% endif %}
                 <div class="city-card-body">
                     <h3>{{ p.name }}</h3>
                     <span class="flag">{{ p.city.display }}</span>
