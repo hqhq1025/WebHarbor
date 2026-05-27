@@ -1903,11 +1903,21 @@ def etymology_index():
     base = (Word.query
             .filter(Word.is_thesaurus_phrase == False,  # noqa
                     Word.etymology != ''))
-    total = base.count()
+    # ``etymology != ''`` is not indexable (TEXT column, no covering index)
+    # so .count() full-scans 75k rows (~40ms). The catalog is static
+    # between resets and control_server respawns the worker on /reset, so
+    # the total is safe to cache module-level.
+    global _ETYM_TOTAL_CACHE
+    if _ETYM_TOTAL_CACHE is None:
+        _ETYM_TOTAL_CACHE = base.count()
+    total = _ETYM_TOTAL_CACHE
     words = (base.order_by(Word.headword.asc())
              .offset((page - 1) * per).limit(per).all())
     return render_template('etymology_index.html', words=words,
                            page=page, per=per, total=total)
+
+
+_ETYM_TOTAL_CACHE = None
 
 
 @app.route('/etymology/<slug>')
