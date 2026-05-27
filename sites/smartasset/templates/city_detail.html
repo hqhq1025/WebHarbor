@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+{% block title %}{{ c.name }}, {{ c.state_abbr }}: Cost of Living, Taxes & Mortgages | SmartAsset{% endblock %}
+{% block content %}
+<div class="breadcrumb">
+  <a href="{{ url_for('index') }}">Home</a> &rsaquo;
+  <a href="{{ url_for('cities_index') }}">Cities</a> &rsaquo;
+  {{ c.name }}
+</div>
+
+<div class="card-hero" style="background-image:linear-gradient(135deg,rgba(11,57,97,.85),rgba(28,108,160,.7)),url('{{ url_for('static', filename='images/cities/' + c.slug + '.jpg') }}');background-size:cover;background-position:center;">
+  <span class="tag">{{ c.state_abbr }} city profile</span>
+  <h1>{{ c.name }}, {{ c.state_abbr }}</h1>
+  <p>Population {{ c.population|commafy }} &middot; Median household income
+     {{ c.median_household_income|money }} &middot;
+     COLI {{ '%.1f'|format(c.cost_of_living_index) }} (US&nbsp;avg&nbsp;=&nbsp;100)</p>
+</div>
+
+<div class="sa-grid sa-cols-4" style="margin-top:18px;">
+  <div class="card"><strong>Median home</strong><br>{{ c.median_home_price|money }}</div>
+  <div class="card"><strong>Median rent</strong><br>{{ c.median_rent|money }} / mo</div>
+  <div class="card"><strong>Property tax</strong><br>{{ '%.2f'|format(c.avg_property_tax_rate) }}%</div>
+  <div class="card"><strong>Walk score</strong><br>{{ c.walk_score }} / 100</div>
+</div>
+
+<article class="card" style="margin-top:18px;">
+  <h2>Living in {{ c.name }}</h2>
+  <p>{{ c.overview }}</p>
+</article>
+
+{% if st %}
+  <div class="card" style="margin-top:18px;">
+    <h2>State context</h2>
+    <p><a href="{{ url_for('state_detail', slug=st.slug) }}">{{ st.name }}</a>
+       has a {{ st.income_tax_type }} state income tax
+       {% if st.income_tax_type != 'none' %}
+         topping out at {{ '%.2f'|format(st.state_income_top_rate) }}%
+       {% endif %}
+       and an average property tax rate of {{ '%.2f'|format(st.property_tax_rate) }}%.
+    </p>
+    <a class="btn btn-sm" href="{{ url_for('state_detail', slug=st.slug) }}">View {{ st.name }} page &rsaquo;</a>
+    <a class="btn btn-sm" href="{{ url_for('calculator', slug='state-tax') }}?state={{ st.abbr }}">Run state tax calc</a>
+    <a class="btn btn-sm" href="{{ url_for('calculator', slug='cost-of-living') }}">Cost of living calc</a>
+  </div>
+{% endif %}
+
+{% if advisors %}
+  <div class="section-title"><h2>Top advisors near {{ c.name }}</h2></div>
+  <div class="sa-grid sa-cols-3">
+    {% for a in advisors %}
+      <a class="card" href="{{ url_for('advisor_detail', slug=a.slug) }}"
+         style="text-decoration:none;color:inherit;">
+        <h3 style="margin:0 0 4px;">{{ a.name }}</h3>
+        <p class="muted">{{ a.firm }}<br>{{ a.city }}, {{ a.state_abbr }}</p>
+        <p>Rating {{ '%.1f'|format(a.rating) }}/5 &middot; {{ a.years_experience }} yrs</p>
+      </a>
+    {% endfor %}
+  </div>
+{% endif %}
+
+{% if nearby %}
+  <div class="section-title"><h2>Nearby cities in {{ c.state_abbr }}</h2></div>
+  <div class="sa-grid sa-cols-3">
+    {% for n in nearby %}
+      <a class="card" href="{{ url_for('city_detail', slug=n.slug) }}"
+         style="text-decoration:none;color:inherit;">
+        <h3 style="margin:0 0 4px;">{{ n.name }}, {{ n.state_abbr }}</h3>
+        <p class="muted">Pop. {{ n.population|commafy }} &middot; COLI {{ '%.1f'|format(n.cost_of_living_index) }}</p>
+      </a>
+    {% endfor %}
+  </div>
+{% endif %}
+{% endblock %}

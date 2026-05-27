@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block title %}Press Releases | SmartAsset{% endblock %}
+{% block content %}
+<div class="breadcrumb">
+  <a href="{{ url_for('index') }}">Home</a> &rsaquo;
+  <a href="{{ url_for('press') }}">Press</a> &rsaquo;
+  Press Releases
+</div>
+<h1>SmartAsset Press Releases</h1>
+
+<div class="card" style="margin-top:14px;">
+  <h3>SmartAsset launches AI-driven retirement planner</h3>
+  <p class="muted">March 14, 2026 &middot; New York, NY</p>
+  <p>SmartAsset today launched an AI-driven retirement planning module integrated with the
+     company's existing calculator suite. The new tool produces multi-decade Monte Carlo
+     projections in under three seconds and is available free to all registered users...</p>
+  <a class="btn btn-sm" href="{{ url_for('contact') }}">Press inquiry &rsaquo;</a>
+</div>
+
+<div class="card" style="margin-top:14px;">
+  <h3>SmartAdvisor advisor network grows to 12,000+ fiduciaries</h3>
+  <p class="muted">January 9, 2026 &middot; New York, NY</p>
+  <p>SmartAdvisor, SmartAsset's free advisor matching service, now counts more than
+     12,000 vetted fiduciary advisors in its network, representing every U.S. state and
+     a combined $1.3 trillion in client assets under management...</p>
+</div>
+
+<div class="card" style="margin-top:14px;">
+  <h3>SmartAsset partners with Coursera on financial literacy</h3>
+  <p class="muted">November 4, 2025 &middot; New York, NY</p>
+  <p>SmartAsset and Coursera today announced a partnership to deliver a free
+     six-module "Practical Personal Finance" course launching January 2026...</p>
+</div>
+
+<div class="card" style="margin-top:14px;">
+  <h3>SmartAsset crosses 100M monthly users</h3>
+  <p class="muted">September 22, 2025 &middot; New York, NY</p>
+  <p>SmartAsset has crossed 100 million monthly unique users, the company announced today,
+     up from 75 million one year ago...</p>
+</div>
+{% endblock %}

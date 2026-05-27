@@ -1,0 +1,105 @@
+{% extends "base.html" %}
+{% block title %}{{ h.title }} | SmartAsset{% endblock %}
+{% block description %}{{ h.tagline }}{% endblock %}
+{% block content %}
+<div class="breadcrumb">
+  <a href="{{ url_for('index') }}">Home</a> &rsaquo; {{ h.title }}
+</div>
+
+<div class="card-hero">
+  <span class="tag">{{ h.title }} hub</span>
+  <h1>{{ h.title }} on SmartAsset</h1>
+  <p>{{ h.tagline }}</p>
+  {% if calcs %}
+    <a class="btn-yellow" href="{{ url_for('calculator', slug=calcs[0].slug) }}">
+      Try the {{ calcs[0].title }} &rsaquo;
+    </a>
+  {% endif %}
+  <a class="btn btn-outline" href="{{ url_for('advisor_match_start') }}"
+     style="background:rgba(255,255,255,.12);color:#fff !important;border-color:#fff;margin-left:8px;">
+    Get matched with an advisor
+  </a>
+</div>
+
+<div class="section-title"><h2>Best of {{ h.title }}</h2></div>
+<div class="sa-grid sa-cols-3">
+  {% for label, slug in h.sub_pages %}
+    <a class="card" style="text-decoration:none;color:inherit;"
+       href="{{ url_for('hub_subpage', hub=key, page_slug=slug) }}">
+      <span class="tag tag-muted">Guide</span>
+      <h3 style="margin:8px 0 4px;">{{ label }}</h3>
+      <p class="muted">SmartAsset's 2026 picks and methodology for {{ label.lower() }}.</p>
+      <span class="pill">Read &rsaquo;</span>
+    </a>
+  {% endfor %}
+</div>
+
+{% if calcs %}
+  <div class="section-title">
+    <h2>{{ h.title }} Calculators</h2>
+    <a class="more" href="{{ url_for('calculators_index') }}">All calculators &rsaquo;</a>
+  </div>
+  <div class="sa-grid sa-cols-3">
+    {% for c in calcs %}
+      <a class="card" href="{{ url_for('calculator', slug=c.slug) }}"
+         style="text-decoration:none;color:inherit;">
+        <h3 style="margin:0 0 6px;">{{ c.title }}</h3>
+        <p class="muted">{{ c.blurb }}</p>
+        <span class="pill">Open calculator &rsaquo;</span>
+      </a>
+    {% endfor %}
+  </div>
+{% endif %}
+
+{% if reviews %}
+  <div class="section-title">
+    <h2>Top {{ h.title }} Reviews</h2>
+    <a class="more" href="{{ url_for('reviews_index') }}">All reviews &rsaquo;</a>
+  </div>
+  <div class="sa-grid sa-cols-3">
+    {% for r in reviews %}
+      <a class="card" href="{{ url_for('review_detail', slug=r.slug) }}"
+         style="text-decoration:none;color:inherit;">
+        <h3 style="margin:0 0 6px;">{{ r.name }}</h3>
+        <p class="muted">{{ r.kind|capitalize }} &middot; <strong>{{ '%.1f'|format(r.overall_rating) }}/5</strong></p>
+        <p class="muted" style="font-size:.9rem;">{{ r.fees }}</p>
+      </a>
+    {% endfor %}
+  </div>
+{% endif %}
+
+{% if articles %}
+  <div class="section-title">
+    <h2>Latest {{ h.title }} SmartReads</h2>
+    {% if category %}
+      <a class="more" href="{{ url_for('category_page', slug=category.slug) }}">View all &rsaquo;</a>
+    {% endif %}
+  </div>
+  <div class="sa-grid sa-cols-3">
+    {% for a in articles[:6] %}
+      <article class="article-card">
+        <a href="{{ url_for('article_detail', slug=a.slug) }}">
+          <div class="hero">{{ a.category.name }}</div>
+        </a>
+        <div class="body">
+          <h3><a href="{{ url_for('article_detail', slug=a.slug) }}">{{ a.title }}</a></h3>
+          <div class="meta">{{ a.author.name }} &middot; {{ a.published_at.strftime('%b %d, %Y') }}</div>
+        </div>
+      </article>
+    {% endfor %}
+  </div>
+{% endif %}
+
+{% if category %}
+  <div class="card" style="margin-top:24px;">
+    <h3>Subscribe to the {{ category.name }} newsletter</h3>
+    <p class="muted">{{ category.blurb }}</p>
+    <form method="post" action="{{ url_for('category_subscribe', slug=category.slug) }}"
+          style="display:flex;gap:8px;max-width:480px;">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <input type="email" name="email" placeholder="your@email.com" required>
+      <button class="btn">Subscribe</button>
+    </form>
+  </div>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+{% block title %}Frequently Asked Questions | SmartAsset{% endblock %}
+{% block content %}
+<div class="breadcrumb"><a href="{{ url_for('index') }}">Home</a> &rsaquo; FAQ</div>
+<h1>SmartAsset FAQ</h1>
+
+<div class="card" style="max-width:820px;margin:0 auto;">
+  <details>
+    <summary><strong>Is SmartAsset really free?</strong></summary>
+    <p>Yes. Every calculator, article and the advisor matching service is
+    free. We earn revenue from advisors who pay to receive client referrals,
+    not from end-users.</p>
+  </details>
+  <details>
+    <summary><strong>How do you vet financial advisors?</strong></summary>
+    <p>Every advisor in the SmartAdvisor network is a registered investment
+    adviser with a clean compliance record, operates under a fiduciary
+    standard, and meets minimum experience and AUM thresholds. See the
+    <a href="{{ url_for('methodology') }}">methodology page</a>.</p>
+  </details>
+  <details>
+    <summary><strong>Are the calculator results accurate?</strong></summary>
+    <p>The math is deterministic and uses official IRS and FRBNY data
+    sources. The output is a planning estimate &mdash; not legal or tax
+    advice for your specific situation.</p>
+  </details>
+  <details>
+    <summary><strong>Do you sell my information?</strong></summary>
+    <p>No. We never sell calculator inputs. When you complete the advisor
+    matching quiz, your contact info is shared only with the up-to-three
+    advisors you are matched with.</p>
+  </details>
+  <details>
+    <summary><strong>Can I opt out of advisor outreach?</strong></summary>
+    <p>Yes &mdash; reply "STOP" to any text, click the unsubscribe link in any
+    email, or contact us at <a href="{{ url_for('contact') }}">contact</a>.</p>
+  </details>
+  <details>
+    <summary><strong>What states do you cover?</strong></summary>
+    <p>All 50 states and DC. State-level calculators apply that state's tax
+    rules. See the <a href="{{ url_for('states_index') }}">states index</a>.</p>
+  </details>
+  <details>
+    <summary><strong>Do you offer financial advice directly?</strong></summary>
+    <p>No. SmartAsset is a publisher and a referral service. Personalized
+    advice comes from the registered advisor you're matched with.</p>
+  </details>
+  <details>
+    <summary><strong>How often are articles updated?</strong></summary>
+    <p>Tax content is reviewed quarterly. Markets content is refreshed
+    when material data changes. Each SmartReads article shows a
+    last-updated date.</p>
+  </details>
+  <details>
+    <summary><strong>Can I delete my account?</strong></summary>
+    <p>Yes &mdash; from <a href="{{ url_for('account_edit') }}">Account
+    Settings</a> or by emailing support. We delete all PII within 30 days.</p>
+  </details>
+  <details>
+    <summary><strong>What's the SmartMoney Minute?</strong></summary>
+    <p>A free weekly newsletter sent every Tuesday at 6 a.m. ET.
+    <a href="{{ url_for('newsletter_landing') }}">Subscribe here</a>.</p>
+  </details>
+</div>
+{% endblock %}

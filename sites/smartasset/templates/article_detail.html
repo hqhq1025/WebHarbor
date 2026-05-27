@@ -13,12 +13,20 @@
   <h1 style="margin-top:10px;">{{ a.title }}</h1>
   <p class="dek" style="font-size:1.15rem;color:var(--sa-muted);">{{ a.dek }}</p>
   <div class="meta" style="display:flex;gap:14px;align-items:center;margin:10px 0 18px;">
-    <a href="{{ url_for('author_page', slug=a.author.slug) }}" style="font-weight:600;">
+    <a href="{{ url_for('author_page', slug=a.author.slug) }}" style="font-weight:600;display:flex;gap:8px;align-items:center;">
+      <img src="{{ url_for('static', filename='images/authors/' + a.author.slug + '.jpg') }}"
+           alt="{{ a.author.name }}" style="width:36px;height:36px;border-radius:50%;object-fit:cover;"
+           onerror="this.style.display='none';">
       {{ a.author.name }}{% if a.author.credentials %}, {{ a.author.credentials }}{% endif %}
     </a>
     <span class="muted">&middot; {{ a.published_at.strftime('%B %d, %Y') }} &middot; {{ a.reading_minutes }} min read &middot; {{ a.view_count|commafy }} views</span>
   </div>
-  <div class="hero" style="aspect-ratio:16/7;background:linear-gradient(135deg,var(--sa-blue),var(--sa-blue-2));border-radius:8px;display:flex;align-items:flex-end;padding:24px;color:#fff;font-family:'Merriweather',serif;font-weight:700;">
+  {% if a.hero_image %}
+    <img src="{{ a.hero_image }}" alt="{{ a.title }}"
+         style="width:100%;aspect-ratio:16/7;object-fit:cover;border-radius:8px;"
+         onerror="this.parentElement.querySelector('.hero-fallback').style.display='flex'; this.style.display='none';">
+  {% endif %}
+  <div class="hero hero-fallback" style="aspect-ratio:16/7;background:linear-gradient(135deg,var(--sa-blue),var(--sa-blue-2));border-radius:8px;{% if a.hero_image %}display:none;{% else %}display:flex;{% endif %}align-items:flex-end;padding:24px;color:#fff;font-family:'Merriweather',serif;font-weight:700;">
     {{ a.category.name }}
   </div>
 
@@ -43,6 +51,22 @@
       {% for t in a.tags.split(',') %}
         <span class="pill">#{{ t.strip() }}</span>
       {% endfor %}
+    </div>
+  {% endif %}
+
+  {% if current_user.is_authenticated %}
+    <div class="card" style="background:#f4f7fa;border:none;display:flex;gap:10px;align-items:center;">
+      <strong>Was this helpful?</strong>
+      <form method="post" action="{{ url_for('article_vote', slug=a.slug) }}" style="display:inline;">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <input type="hidden" name="direction" value="up">
+        <button class="btn btn-sm" type="submit">&uarr; Upvote</button>
+      </form>
+      <form method="post" action="{{ url_for('article_vote', slug=a.slug) }}" style="display:inline;">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <input type="hidden" name="direction" value="down">
+        <button class="btn btn-sm" type="submit">&darr; Downvote</button>
+      </form>
     </div>
   {% endif %}
 

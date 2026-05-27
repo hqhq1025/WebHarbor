@@ -1,0 +1,82 @@
+{% extends "base.html" %}
+{% block title %}{{ page_title }} | SmartAsset{% endblock %}
+{% block description %}{{ page_title }} — SmartAsset's 2026 review and methodology.{% endblock %}
+{% block content %}
+<div class="breadcrumb">
+  <a href="{{ url_for('index') }}">Home</a> &rsaquo;
+  <a href="{{ url_for('hub_' + hub) }}">{{ ctx.h.title }}</a> &rsaquo;
+  {{ page_title }}
+</div>
+
+<article class="card" style="max-width:920px;margin:0 auto;">
+  <span class="tag">{{ ctx.h.title }} guide</span>
+  <h1>{{ page_title }}</h1>
+  <p class="dek muted" style="font-size:1.1rem;">
+    SmartAsset's editors compare the leading options against fees,
+    minimums, fund quality, customer experience and tax treatment.
+    Picks are refreshed each quarter; this list is current for May 2026.
+  </p>
+
+  {% if top_reviews %}
+    <h2>Editor's picks</h2>
+    <table class="review-table" style="width:100%;border-collapse:collapse;margin:14px 0 22px;">
+      <thead>
+        <tr style="background:#f4f7fa;text-align:left;">
+          <th style="padding:10px;">Rank</th>
+          <th>Provider</th>
+          <th>Overall</th>
+          <th>Fees</th>
+          <th>Minimum</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for r in top_reviews %}
+          <tr style="border-top:1px solid #e6ecf1;">
+            <td style="padding:10px;">{{ loop.index }}</td>
+            <td><strong>{{ r.name }}</strong></td>
+            <td>{{ '%.1f'|format(r.overall_rating) }} / 5</td>
+            <td>{{ r.fees }}</td>
+            <td>{{ r.minimum }}</td>
+            <td><a class="btn btn-sm" href="{{ url_for('review_detail', slug=r.slug) }}">Read review</a></td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  {% endif %}
+
+  <h2>What we looked for</h2>
+  <ul>
+    <li>Total cost of ownership over a 5-year horizon (not just headline rate).</li>
+    <li>FDIC / SIPC coverage where applicable.</li>
+    <li>Product breadth — single-product winners only counted if depth-of-menu was reasonable.</li>
+    <li>Customer-service responsiveness and online dispute resolution.</li>
+    <li>Transparency in pricing and conflicts of interest.</li>
+  </ul>
+
+  <h2>How to use this list</h2>
+  <p>Open one or two of the top picks above, then run their numbers
+  through SmartAsset's matching calculator for an apples-to-apples
+  comparison against your specific situation.</p>
+
+  {% if ctx.calcs %}
+    <div class="card-hero" style="background:linear-gradient(135deg,var(--sa-yellow),var(--sa-yellow-2));color:var(--sa-blue);padding:18px;">
+      <h3 style="color:var(--sa-blue);margin:0;">Plug in your numbers</h3>
+      <p style="color:var(--sa-blue);">{{ ctx.calcs[0].blurb }}</p>
+      <a class="btn" href="{{ url_for('calculator', slug=ctx.calcs[0].slug) }}">
+        {{ ctx.calcs[0].title }} &rsaquo;
+      </a>
+    </div>
+  {% endif %}
+
+  {% if ctx.articles %}
+    <h2>Related SmartReads</h2>
+    <ul>
+      {% for a in ctx.articles[:6] %}
+        <li><a href="{{ url_for('article_detail', slug=a.slug) }}">{{ a.title }}</a>
+            <span class="muted">— {{ a.author.name }}</span></li>
+      {% endfor %}
+    </ul>
+  {% endif %}
+</article>
+{% endblock %}

@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% block title %}Editorial Methodology | SmartAsset{% endblock %}
+{% block content %}
+<div class="breadcrumb">
+  <a href="{{ url_for('index') }}">Home</a> &rsaquo;
+  <a href="{{ url_for('about') }}">About</a> &rsaquo;
+  Methodology
+</div>
+<h1>SmartAsset Editorial Methodology</h1>
+
+<article class="card" style="max-width:820px;margin:0 auto;">
+  <h2>How we rate products</h2>
+  <p>Every brokerage, bank, lender, robo-advisor and insurance carrier on
+  SmartAsset is rated on a 1.0&ndash;5.0 scale using a four-factor model:</p>
+  <ol>
+    <li><strong>Cost (30%).</strong> Headline fees, expense ratios, account
+        minimums, plus an estimated 5-year all-in cost for a representative
+        $50,000 portfolio.</li>
+    <li><strong>Product depth (25%).</strong> Account types, asset coverage,
+        cash-management features, and integrations with tax software.</li>
+    <li><strong>Customer experience (25%).</strong> Time-to-respond on
+        support tickets, app store ratings (weighted by review count), and
+        dispute resolution outcomes.</li>
+    <li><strong>Safety &amp; transparency (20%).</strong> Regulatory record,
+        FDIC / SIPC coverage, conflicts of interest disclosed, and the
+        clarity of the fee schedule.</li>
+  </ol>
+
+  <h2>How we evaluate financial advisors</h2>
+  <p>SmartAdvisor only refers to advisors who are:</p>
+  <ul>
+    <li>Registered with either the SEC or a state regulator.</li>
+    <li>Operating under a fiduciary standard at all times.</li>
+    <li>Have a clean compliance record on their Form ADV (no felonies,
+        no client-fund misappropriation, no settled regulatory actions in
+        the past 10 years).</li>
+    <li>Hold one of: CFP&reg;, CFA, ChFC, CPA/PFS.</li>
+    <li>Manage a minimum of $50M in client assets.</li>
+  </ul>
+
+  <h2>How our calculators work</h2>
+  <p>Every SmartAsset calculator is server-side, deterministic, and
+  open-source-by-design. The math behind each calculator is documented in
+  its "How this is calculated" sidebar and uses IRS / FRBNY published values
+  for tax tables, federal rate quotes, and inflation indices.</p>
+
+  <h2>How we update content</h2>
+  <p>SmartReads articles list a "last updated" timestamp at the top.
+  Tax-related articles are reviewed quarterly and within 30 days of any
+  Treasury / IRS rulemaking that affects the calculation.</p>
+
+  <h2>Conflicts of interest</h2>
+  <p>SmartAsset earns referral fees from advisors who join the SmartAdvisor
+  Match program. Editorial coverage of products is fully independent of
+  those relationships, and we do not accept payment for review placement
+  or favorable ratings.</p>
+</article>
+{% endblock %}

@@ -42,6 +42,21 @@
         <button class="btn-yellow btn btn-sm" type="submit">Save to my account</button>
       </form>
     {% endif %}
+    {% if result %}
+      <form method="post" action="{{ url_for('email_calc_result', slug=spec.slug) }}" style="margin-top:10px;">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        {% for f in spec.fields %}
+          <input type="hidden" name="{{ f }}" value="{{ inputs.get(f, '') }}">
+        {% endfor %}
+        <input type="email" name="email" placeholder="Email me this result" required style="width:55%;">
+        <button class="btn btn-sm" type="submit">Email result</button>
+      </form>
+    {% endif %}
+    <form method="post" action="{{ url_for('compare_calc_add') }}" style="margin-top:8px;">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <input type="hidden" name="calc_slug" value="{{ spec.slug }}">
+      <button class="btn btn-sm" type="submit" style="background:#fff;border:1px solid var(--sa-blue);color:var(--sa-blue);">+ Add to compare tray</button>
+    </form>
   </div>
 
   <div>
@@ -305,7 +320,24 @@
 <div class="divider"></div>
 <div class="card">
   <h3>About This Calculator</h3>
-  <p>SmartAsset's {{ spec.title }} estimates your result based on the inputs you provide. All math runs server-side and the result is deterministic — you can save it to your account or share a permalink that recomputes the same numbers.</p>
+  <p>SmartAsset's {{ spec.title }} estimates your result based on the inputs you provide. All math runs server-side and the result is deterministic &mdash; you can save it to your account or share a permalink that recomputes the same numbers.</p>
   <p>Need help interpreting the result? <a href="{{ url_for('advisor_match_start') }}">Get matched with a vetted fiduciary advisor</a> in your area for a free 30-minute call.</p>
+</div>
+
+<div class="card" style="margin-top:14px;">
+  <h3>Was this calculator helpful?</h3>
+  <form method="post" action="{{ url_for('calc_feedback', slug=spec.slug) }}"
+        style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <select name="rating" style="width:auto;">
+      <option value="5">5 &mdash; Very helpful</option>
+      <option value="4">4 &mdash; Helpful</option>
+      <option value="3">3 &mdash; OK</option>
+      <option value="2">2 &mdash; Confusing</option>
+      <option value="1">1 &mdash; Not helpful</option>
+    </select>
+    <input type="text" name="body" placeholder="Optional comment (what could be better?)" maxlength="1000" style="flex:1;min-width:240px;">
+    <button class="btn btn-sm" type="submit">Submit feedback</button>
+  </form>
 </div>
 {% endblock %}

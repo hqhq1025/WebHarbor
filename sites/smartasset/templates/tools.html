@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+{% block title %}All Financial Calculators | SmartAsset Tools{% endblock %}
+{% block content %}
+<div class="breadcrumb"><a href="{{ url_for('index') }}">Home</a> &rsaquo; Tools</div>
+<h1>SmartAsset Tools</h1>
+<p class="muted" style="max-width:760px;font-size:1.05rem;">
+  Every SmartAsset calculator on one page. Filter by category, add to your
+  compare tray, or save to your account once signed in.
+</p>
+
+<div style="margin:14px 0;">
+  <strong>Filter:</strong>
+  <a class="pill {% if not current_cat %}pill-active{% endif %}" href="{{ url_for('tools_hub') }}">All</a>
+  {% for g in groups.keys() %}
+    <a class="pill {% if current_cat|lower == g|lower %}pill-active{% endif %}"
+       href="{{ url_for('tools_hub', category=g) }}">{{ g }}</a>
+  {% endfor %}
+</div>
+
+{% if session.compare_tray %}
+  <div class="card" style="background:#fff8e1;border-left:4px solid #fbc02d;">
+    <strong>Compare tray:</strong>
+    {% for slug in session.compare_tray %}
+      <span class="pill">{{ slug }}</span>
+    {% endfor %}
+    <form method="post" action="{{ url_for('compare_calc_clear') }}" style="display:inline;">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <button class="btn-sm" type="submit">Clear</button>
+    </form>
+  </div>
+{% endif %}
+
+{% if filtered %}
+  <div class="sa-grid sa-cols-3">
+    {% for c in filtered %}
+      <div class="card">
+        <span class="tag tag-muted">{{ c.group }}</span>
+        <h3 style="margin:8px 0 4px;">{{ c.title }}</h3>
+        <p class="muted">{{ c.blurb }}</p>
+        <a class="btn btn-sm" href="{{ url_for('calculator', slug=c.slug) }}">Open</a>
+        <form method="post" action="{{ url_for('compare_calc_add') }}" style="display:inline;">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <input type="hidden" name="calc_slug" value="{{ c.slug }}">
+          <button class="btn-sm" type="submit" style="background:#fff;border:1px solid var(--sa-blue);color:var(--sa-blue);">+ Compare</button>
+        </form>
+      </div>
+    {% endfor %}
+  </div>
+{% else %}
+  {% for group_name, items in groups.items() %}
+    <div class="section-title"><h2>{{ group_name }}</h2></div>
+    <div class="sa-grid sa-cols-3">
+      {% for c in items %}
+        <div class="card">
+          <h3 style="margin:0 0 4px;">{{ c.title }}</h3>
+          <p class="muted">{{ c.blurb }}</p>
+          <a class="btn btn-sm" href="{{ url_for('calculator', slug=c.slug) }}">Open</a>
+          <form method="post" action="{{ url_for('compare_calc_add') }}" style="display:inline;">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <input type="hidden" name="calc_slug" value="{{ c.slug }}">
+            <button class="btn-sm" type="submit" style="background:#fff;border:1px solid var(--sa-blue);color:var(--sa-blue);">+ Compare</button>
+          </form>
+        </div>
+      {% endfor %}
+    </div>
+  {% endfor %}
+{% endif %}
+{% endblock %}

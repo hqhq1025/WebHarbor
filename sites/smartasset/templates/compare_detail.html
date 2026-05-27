@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% block title %}{{ title }} | SmartAsset{% endblock %}
+{% block content %}
+<div class="breadcrumb">
+  <a href="{{ url_for('index') }}">Home</a> &rsaquo;
+  <a href="{{ url_for('compare_index') }}">Compare</a> &rsaquo;
+  {{ title }}
+</div>
+
+<article class="card" style="max-width:960px;margin:0 auto;">
+  <h1>{{ title }}</h1>
+  <p class="muted">A side-by-side comparison of <strong>{{ a }}</strong> and
+    <strong>{{ b }}</strong> across {{ rows|length }} dimensions.</p>
+
+  <table style="width:100%;border-collapse:collapse;margin-top:18px;">
+    <thead>
+      <tr style="background:#f4f7fa;">
+        <th style="padding:10px;text-align:left;">Dimension</th>
+        <th style="padding:10px;text-align:left;">{{ a }}</th>
+        <th style="padding:10px;text-align:left;">{{ b }}</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for label, a_val, b_val in rows %}
+        <tr style="border-top:1px solid #e6ecf1;">
+          <td style="padding:10px;font-weight:600;">{{ label }}</td>
+          <td style="padding:10px;">{{ a_val }}</td>
+          <td style="padding:10px;">{{ b_val }}</td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <h2>Bottom line</h2>
+  <p>Neither option is universally better — your situation determines
+  the winner. Plug in your numbers via the related calculator and a
+  fiduciary advisor can confirm the tax mechanics for your filing
+  status and state.</p>
+
+  <a class="btn" href="{{ url_for('advisor_match_start') }}">Talk to an advisor &rsaquo;</a>
+</article>
+
+{% if related %}
+  <div style="max-width:960px;margin:24px auto 0;">
+    <h2>Related comparisons</h2>
+    <div class="sa-grid sa-cols-3">
+      {% for slug, title, a, b, rows in related %}
+        <a class="card" href="{{ url_for('compare_detail', slug=slug) }}"
+           style="text-decoration:none;color:inherit;">
+          <h3 style="margin:0;">{{ title }}</h3>
+          <p class="muted">{{ a }} vs {{ b }}</p>
+        </a>
+      {% endfor %}
+    </div>
+  </div>
+{% endif %}
+{% endblock %}

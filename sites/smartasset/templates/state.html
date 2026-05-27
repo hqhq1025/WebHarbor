@@ -7,8 +7,12 @@
   <span>{{ st.name }}</span>
 </div>
 
-<h1>{{ st.name }} ({{ st.abbr }}) Financial Guide</h1>
-<p style="max-width:760px;font-size:1.05rem;">{{ st.overview }}</p>
+<div class="card-hero" style="background-image:linear-gradient(135deg,rgba(11,57,97,.82),rgba(28,108,160,.65)),url('{{ url_for('static', filename='images/states/' + st.slug + '.jpg') }}');background-size:cover;background-position:center;min-height:240px;">
+  <span class="tag">{{ st.abbr }} state guide</span>
+  <h1 style="margin:6px 0;">{{ st.name }} Financial Guide</h1>
+  <p>{{ st.top_metro }} is the largest metro &middot; median home {{ st.median_home_price|money }} &middot; median income {{ st.median_household_income|money }}</p>
+</div>
+<p style="max-width:760px;font-size:1.05rem;margin-top:14px;">{{ st.overview }}</p>
 
 <div class="sa-grid sa-cols-3" style="margin-top:20px;">
   <div class="card">
@@ -54,17 +58,31 @@
 <div class="sa-grid sa-cols-3">
   {% for a in advisors %}
     <a class="advisor-card" href="{{ url_for('advisor_detail', slug=a.slug) }}" style="text-decoration:none;color:inherit;">
-      <div class="avatar">{{ a.name[0] }}{{ a.name.split(' ')[-1][0] }}</div>
+      <img src="{{ url_for('static', filename='images/advisors/advisor-' + '%03d'|format(a.id) + '.jpg') }}"
+           alt="{{ a.name }}" style="width:64px;height:64px;border-radius:50%;object-fit:cover;"
+           onerror="this.style.display='none';">
       <h3 style="margin:0;">{{ a.name }}</h3>
       <div class="muted" style="font-size:.85rem;">{{ a.firm }}</div>
       <div style="margin-top:6px;">
         <span class="badge">{{ a.credentials }}</span>
         <span class="badge">{{ a.specialty }}</span>
       </div>
-      <p class="muted" style="font-size:.85rem;margin-top:8px;">{{ a.city }} &middot; ${{ a.aum_millions }}M AUM &middot; ⭐ {{ a.rating }}</p>
+      <p class="muted" style="font-size:.85rem;margin-top:8px;">{{ a.city }} &middot; ${{ a.aum_millions }}M AUM &middot; &#9733; {{ a.rating }}</p>
     </a>
   {% endfor %}
 </div>
+
+{% if metros %}
+  <div class="section-title"><h2>Top {{ st.name }} Metros</h2></div>
+  <div class="sa-grid sa-cols-3">
+    {% for c in metros %}
+      <a class="card" href="{{ url_for('city_detail', slug=c.slug) }}" style="text-decoration:none;color:inherit;">
+        <h3 style="margin:0;">{{ c.name }}</h3>
+        <p class="muted">Pop. {{ c.population|commafy }} &middot; COLI {{ '%.1f'|format(c.cost_of_living_index) }}</p>
+      </a>
+    {% endfor %}
+  </div>
+{% endif %}
 
 {% if related_articles %}
   <div class="section-title"><h2>SmartReads About {{ st.name }}</h2></div>

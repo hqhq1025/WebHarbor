@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block title %}Provider Reviews | SmartAsset{% endblock %}
+{% block content %}
+<div class="breadcrumb"><a href="{{ url_for('index') }}">Home</a> &rsaquo; Reviews</div>
+<h1>SmartAsset Reviews</h1>
+<p class="muted" style="max-width:760px;font-size:1.05rem;">
+  Independent reviews of brokerages, banks, robo-advisors, lenders, insurers and
+  cards. Ratings are SmartAsset editorial — we do not accept payment for placement.
+</p>
+
+{% for kind, rows in by_kind.items() %}
+  <div class="section-title">
+    <h2>{{ labels.get(kind, kind|capitalize) }}</h2>
+    <span class="muted">{{ rows|length }} reviews</span>
+  </div>
+  <div class="sa-grid sa-cols-3">
+    {% for r in rows %}
+      <a class="card" href="{{ url_for('review_detail', slug=r.slug) }}"
+         style="text-decoration:none;color:inherit;">
+        <span class="tag tag-muted">{{ kind|capitalize }}</span>
+        <h3 style="margin:8px 0 4px;">{{ r.name }}</h3>
+        <p class="muted" style="font-size:.9rem;">
+          <strong>{{ '%.1f'|format(r.overall_rating) }}/5</strong>
+          &middot; {{ r.fees }}
+          &middot; Min {{ r.minimum }}
+        </p>
+        <p class="muted" style="font-size:.85rem;">HQ: {{ r.headquarters }}, est. {{ r.founded_year }}</p>
+      </a>
+    {% endfor %}
+  </div>
+{% endfor %}
+{% endblock %}

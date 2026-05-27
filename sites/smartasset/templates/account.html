@@ -4,6 +4,32 @@
 <h1>Welcome back, {{ current_user.name }}</h1>
 <p class="muted">{{ current_user.email }}{% if current_user.state %} &middot; {{ current_user.state }}{% endif %} &middot; <a href="{{ url_for('account_edit') }}">Edit profile</a> &middot; <a href="{{ url_for('logout') }}">Sign out</a></p>
 
+<div class="sa-grid sa-cols-2">
+  <div class="card">
+    <h3>Default tax filing status</h3>
+    <p class="muted">Calculators pre-fill this on every form.</p>
+    <form method="post" action="{{ url_for('update_tax_status') }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <select name="tax_filing_status" style="width:200px;">
+        <option value="single" {% if current_user.tax_filing_status == 'single' %}selected{% endif %}>Single</option>
+        <option value="married" {% if current_user.tax_filing_status == 'married' %}selected{% endif %}>Married filing jointly</option>
+        <option value="head" {% if current_user.tax_filing_status == 'head' %}selected{% endif %}>Head of household</option>
+      </select>
+      <button class="btn btn-sm" type="submit">Update</button>
+    </form>
+  </div>
+  <div class="card">
+    <h3>Default location</h3>
+    <p class="muted">Used for state-tax and cost-of-living calcs.</p>
+    <form method="post" action="{{ url_for('update_location') }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <input type="text" name="state" placeholder="State (e.g. NY)" value="{{ current_user.state }}" style="width:100px;">
+      <input type="text" name="zip_code" placeholder="ZIP" value="{{ current_user.zip_code }}" style="width:80px;">
+      <button class="btn btn-sm" type="submit">Update</button>
+    </form>
+  </div>
+</div>
+
 <div class="section-title"><h2>Saved Calculations</h2></div>
 {% if saved %}
   <div class="sa-grid sa-cols-2">
@@ -22,6 +48,20 @@
   </div>
 {% else %}
   <p class="muted">You haven't saved any calculations yet. <a href="{{ url_for('calculators_index') }}">Try a calculator &rsaquo;</a></p>
+{% endif %}
+
+{% if saved_advisors %}
+  <div class="section-title"><h2>Saved Advisors</h2></div>
+  <div class="sa-grid sa-cols-3">
+    {% for sa in saved_advisors %}
+      <a class="card" href="{{ url_for('advisor_detail', slug=sa.advisor.slug) }}"
+         style="text-decoration:none;color:inherit;">
+        <h3 style="margin:0;">{{ sa.advisor.name }}</h3>
+        <p class="muted">{{ sa.advisor.firm }} &middot; {{ sa.advisor.city }}, {{ sa.advisor.state_abbr }}</p>
+        {% if sa.notes %}<p style="font-size:.85rem;">{{ sa.notes }}</p>{% endif %}
+      </a>
+    {% endfor %}
+  </div>
 {% endif %}
 
 <div class="section-title"><h2>Advisor Matches</h2></div>

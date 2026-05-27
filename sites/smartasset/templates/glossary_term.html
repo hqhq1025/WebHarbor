@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% block title %}{{ t.term }} — Definition | SmartAsset{% endblock %}
+{% block description %}{{ t.short_def }}{% endblock %}
+{% block content %}
+<div class="breadcrumb">
+  <a href="{{ url_for('index') }}">Home</a> &rsaquo;
+  <a href="{{ url_for('glossary_index') }}">Glossary</a> &rsaquo;
+  <a href="{{ url_for('glossary_letter', letter=t.letter) }}">{{ t.letter }}</a> &rsaquo;
+  {{ t.term }}
+</div>
+
+<article class="card" style="max-width:820px;margin:0 auto;">
+  <span class="tag">Definition</span>
+  <h1>{{ t.term }}</h1>
+  <p class="dek muted" style="font-size:1.15rem;">{{ t.short_def }}</p>
+  <div style="font-size:1.05rem;line-height:1.6;">
+    {% for para in t.long_def.split('\n\n') %}
+      <p>{{ para }}</p>
+    {% endfor %}
+  </div>
+
+  {% if related_calc %}
+    <div class="card-hero" style="background:linear-gradient(135deg,var(--sa-yellow),var(--sa-yellow-2));color:var(--sa-blue);padding:18px;">
+      <h3 style="color:var(--sa-blue);margin:0;">Run the math: {{ related_calc.title }}</h3>
+      <p style="color:var(--sa-blue);">{{ related_calc.blurb }}</p>
+      <a class="btn" href="{{ url_for('calculator', slug=related_calc.slug) }}">Open calculator &rsaquo;</a>
+    </div>
+  {% endif %}
+</article>
+
+{% if related %}
+  <div style="max-width:820px;margin:24px auto;">
+    <h2>More {{ t.letter }} terms</h2>
+    <div class="sa-grid sa-cols-3">
+      {% for r in related %}
+        <a class="card" href="{{ url_for('glossary_term', slug=r.slug) }}"
+           style="text-decoration:none;color:inherit;">
+          <h3 style="margin:0 0 4px;font-size:1rem;">{{ r.term }}</h3>
+          <p class="muted" style="font-size:.85rem;">{{ r.short_def }}</p>
+        </a>
+      {% endfor %}
+    </div>
+  </div>
+{% endif %}
+{% endblock %}

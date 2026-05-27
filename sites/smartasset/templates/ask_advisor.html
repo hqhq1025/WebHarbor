@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block title %}Ask an Advisor | SmartAsset{% endblock %}
+{% block content %}
+<div class="breadcrumb"><a href="{{ url_for('index') }}">Home</a> &rsaquo; Ask an Advisor</div>
+<h1>Ask an Advisor</h1>
+<p class="muted" style="max-width:720px;font-size:1.05rem;">
+  Submit a question and a SmartAsset fiduciary advisor will respond within
+  two business days. Anonymous Q&amp;A; we never publish your contact info.
+</p>
+
+<form method="post" action="{{ url_for('ask_advisor') }}" class="card"
+      style="max-width:720px;">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+  <label for="topic">Topic</label>
+  <select id="topic" name="topic">
+    <option>Retirement</option>
+    <option>Investing</option>
+    <option>Taxes</option>
+    <option>Mortgages</option>
+    <option>Insurance</option>
+    <option>Estate planning</option>
+    <option>General</option>
+  </select>
+
+  <label for="state">State</label>
+  <select id="state" name="state">
+    <option value="">-- pick a state --</option>
+    {% for st in states %}
+      <option value="{{ st.abbr }}">{{ st.name }}</option>
+    {% endfor %}
+  </select>
+
+  <label for="email">Your email</label>
+  <input id="email" type="email" name="email" placeholder="your@email.com">
+
+  <label for="question">Your question</label>
+  <textarea id="question" name="question" rows="6" maxlength="4000" required
+            placeholder="e.g. I'm 58, want to retire at 63. Should I shift my 401(k) toward bonds?"></textarea>
+
+  <button class="btn" type="submit" style="margin-top:12px;">Submit question</button>
+</form>
+{% endblock %}

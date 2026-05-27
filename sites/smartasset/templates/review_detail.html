@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+{% block title %}{{ r.name }} Review | SmartAsset{% endblock %}
+{% block description %}SmartAsset's {{ r.name }} review — fees, minimums, pros and cons.{% endblock %}
+{% block content %}
+<div class="breadcrumb">
+  <a href="{{ url_for('index') }}">Home</a> &rsaquo;
+  <a href="{{ url_for('reviews_index') }}">Reviews</a> &rsaquo;
+  {{ labels.get(r.kind, r.kind) }}
+</div>
+
+<article class="card" style="max-width:920px;margin:0 auto;">
+  <span class="tag">{{ labels.get(r.kind, r.kind) }}</span>
+  <h1 style="margin-top:8px;">{{ r.name }} Review</h1>
+  <p class="muted">Headquartered in {{ r.headquarters }} &middot; founded {{ r.founded_year }}</p>
+
+  <div class="card-hero" style="display:flex;gap:24px;align-items:center;padding:18px;margin-top:14px;">
+    <div style="font-size:3rem;font-weight:800;">{{ '%.1f'|format(r.overall_rating) }}/5</div>
+    <div>
+      <p style="margin:0;"><strong>Fees:</strong> {{ r.fees }}</p>
+      <p style="margin:4px 0 0;"><strong>Account minimum:</strong> {{ r.minimum }}</p>
+    </div>
+  </div>
+
+  <div class="sa-grid sa-cols-2" style="margin-top:20px;">
+    <div class="card" style="background:#f1f9f3;border-left:4px solid #2c8a4f;">
+      <h3 style="margin-top:0;color:#1f6b3a;">Pros</h3>
+      <ul>
+        {% for p in r.pros.split('\n') if p.strip() %}
+          <li>{{ p.strip() }}</li>
+        {% endfor %}
+      </ul>
+    </div>
+    <div class="card" style="background:#fdf2f2;border-left:4px solid #b03030;">
+      <h3 style="margin-top:0;color:#8a2424;">Cons</h3>
+      <ul>
+        {% for c in r.cons.split('\n') if c.strip() %}
+          <li>{{ c.strip() }}</li>
+        {% endfor %}
+      </ul>
+    </div>
+  </div>
+
+  <h2>Detailed review</h2>
+  {% for para in r.body.split('\n\n') %}
+    <p>{{ para|safe }}</p>
+  {% endfor %}
+</article>
+
+{% if similar %}
+  <div style="max-width:920px;margin:24px auto 0;">
+    <h2>Similar {{ labels.get(r.kind, r.kind) }}</h2>
+    <div class="sa-grid sa-cols-3">
+      {% for s in similar %}
+        <a class="card" href="{{ url_for('review_detail', slug=s.slug) }}"
+           style="text-decoration:none;color:inherit;">
+          <h3 style="margin:0;">{{ s.name }}</h3>
+          <p class="muted">{{ '%.1f'|format(s.overall_rating) }}/5 &middot; {{ s.fees }}</p>
+        </a>
+      {% endfor %}
+    </div>
+  </div>
+{% endif %}
+{% endblock %}

@@ -4,11 +4,15 @@
 <div class="breadcrumb">
   <a href="{{ url_for('index') }}">Home</a> &rsaquo;
   <a href="{{ url_for('advisor_landing') }}">Find an Advisor</a> &rsaquo;
+  <a href="{{ url_for('advisors_by_state', state_slug=state.slug) if state else '#' }}">{{ a.state_abbr }}</a> &rsaquo;
   <span>{{ a.name }}</span>
 </div>
 
-<div class="card" style="display:grid;grid-template-columns:140px 1fr;gap:24px;">
-  <div class="avatar" style="width:120px;height:120px;font-size:2.5rem;">{{ a.name[0] }}{{ a.name.split(' ')[-1][0] }}</div>
+<div class="card" style="display:grid;grid-template-columns:160px 1fr;gap:24px;">
+  <img src="{{ url_for('static', filename='images/advisors/advisor-' + '%03d'|format(a.id) + '.jpg') }}"
+       alt="{{ a.name }}" style="width:140px;height:140px;border-radius:50%;object-fit:cover;border:3px solid var(--sa-blue);"
+       onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+  <div class="avatar" style="width:140px;height:140px;font-size:2.5rem;display:none;">{{ a.name[0] }}{{ a.name.split(' ')[-1][0] }}</div>
   <div>
     <h1 style="margin:0;">{{ a.name }}, {{ a.credentials }}</h1>
     <p class="muted" style="font-size:1.05rem;margin:4px 0;">{{ a.firm }}</p>
@@ -17,9 +21,22 @@
       <span class="badge">{{ a.fee_structure }}</span>
       {% if a.fiduciary %}<span class="badge" style="background:var(--sa-yellow);">Fiduciary</span>{% endif %}
     </p>
-    <p>{{ a.city }}, {{ a.state_abbr }} &middot; {{ a.years_experience }} years experience &middot; ${{ a.aum_millions }}M AUM &middot; ⭐ {{ a.rating }} ({{ a.review_count }} reviews)</p>
+    <p>{{ a.city }}, {{ a.state_abbr }} &middot; {{ a.years_experience }} years experience &middot; ${{ a.aum_millions }}M AUM &middot; &#9733; {{ a.rating }} ({{ a.review_count }} reviews)</p>
     <p>Minimum assets: <strong>${{ a.min_assets|commafy }}</strong></p>
     <a class="btn-match" href="{{ url_for('advisor_match_start') }}">Get Matched</a>
+    {% if current_user.is_authenticated %}
+      {% if already_saved %}
+        <form method="post" action="{{ url_for('unsave_advisor', slug=a.slug) }}" style="display:inline;">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <button class="btn btn-sm" type="submit">&#9733; Saved (remove)</button>
+        </form>
+      {% else %}
+        <form method="post" action="{{ url_for('save_advisor', slug=a.slug) }}" style="display:inline;">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <button class="btn btn-sm" type="submit">+ Save to shortlist</button>
+        </form>
+      {% endif %}
+    {% endif %}
   </div>
 </div>
 
@@ -34,17 +51,56 @@
     <li>Retirement income modeling</li>
   </ul>
   <h3>Fee Structure</h3>
-  <p>{{ a.fee_structure }} — {% if 'Fee-only' in a.fee_structure %}compensated solely by client fees, never commissions from product sales.{% else %}may receive a combination of advisory fees and commissions.{% endif %}</p>
+  <p>{{ a.fee_structure }} &mdash; {% if 'Fee-only' in a.fee_structure %}compensated solely by client fees, never commissions from product sales.{% else %}may receive a combination of advisory fees and commissions.{% endif %}</p>
 </div>
+
+<div class="sa-grid sa-cols-2" style="margin-top:18px;">
+  <div class="card">
+    <h3>Contact {{ a.name.split(' ')[0] }}</h3>
+    <form method="post" action="{{ url_for('contact_advisor', slug=a.slug) }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <input type="email" name="email" placeholder="Email" required>
+      <input type="tel" name="phone" placeholder="Phone (optional)">
+      <textarea name="message" rows="3" maxlength="2000"
+                placeholder="Tell {{ a.name.split(' ')[0] }} what you'd like to discuss..."></textarea>
+      <button class="btn btn-sm" type="submit" style="margin-top:8px;">Send message</button>
+    </form>
+  </div>
+  <div class="card" style="background:linear-gradient(135deg,var(--sa-yellow),var(--sa-yellow-2));color:var(--sa-blue);">
+    <h3 style="color:var(--sa-blue);">Request a free consultation</h3>
+    <p style="color:var(--sa-blue);">30-minute intro call &mdash; no obligation.</p>
+    <form method="post" action="{{ url_for('request_consultation', slug=a.slug) }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <input type="email" name="email" placeholder="Email" required>
+      <input type="tel" name="phone" placeholder="Phone (optional)">
+      <button class="btn" type="submit" style="margin-top:8px;">Request consultation</button>
+    </form>
+  </div>
+</div>
+
+{% if state %}
+  <div class="card" style="margin-top:18px;">
+    <h3>{{ a.name.split(' ')[0] }}'s state context</h3>
+    <p>{{ a.state_abbr }} clients should also explore:
+       <a href="{{ url_for('state_detail', slug=state.slug) }}">{{ state.name }} overview</a>
+       &middot;
+       <a href="{{ url_for('advisors_by_state', state_slug=state.slug) }}">More {{ a.state_abbr }} advisors</a>
+       &middot;
+       <a href="{{ url_for('calculator', slug='state-tax') }}?state={{ a.state_abbr }}">State tax calculator</a>
+    </p>
+  </div>
+{% endif %}
 
 {% if similar %}
   <div class="section-title"><h2>Similar Advisors</h2></div>
   <div class="sa-grid sa-cols-4">
     {% for s in similar %}
       <a class="advisor-card" href="{{ url_for('advisor_detail', slug=s.slug) }}" style="text-decoration:none;color:inherit;">
-        <div class="avatar">{{ s.name[0] }}{{ s.name.split(' ')[-1][0] }}</div>
+        <img src="{{ url_for('static', filename='images/advisors/advisor-' + '%03d'|format(s.id) + '.jpg') }}"
+             alt="{{ s.name }}" style="width:64px;height:64px;border-radius:50%;object-fit:cover;"
+             onerror="this.style.display='none';">
         <strong>{{ s.name }}</strong>
-        <div class="muted" style="font-size:.85rem;">{{ s.firm }} &middot; ⭐ {{ s.rating }}</div>
+        <div class="muted" style="font-size:.85rem;">{{ s.firm }} &middot; &#9733; {{ s.rating }}</div>
       </a>
     {% endfor %}
   </div>

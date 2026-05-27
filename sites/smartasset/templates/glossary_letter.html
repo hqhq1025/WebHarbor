@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block title %}Glossary — {{ letter }} | SmartAsset{% endblock %}
+{% block content %}
+<div class="breadcrumb">
+  <a href="{{ url_for('index') }}">Home</a> &rsaquo;
+  <a href="{{ url_for('glossary_index') }}">Glossary</a> &rsaquo;
+  {{ letter }}
+</div>
+<h1>Glossary — Terms starting with {{ letter }}</h1>
+
+<div class="state-grid" style="margin-bottom:24px;">
+  {% for L in letters %}
+    {% if L == letter %}
+      <a href="{{ url_for('glossary_letter', letter=L) }}" style="background:var(--sa-blue);color:#fff;">{{ L }}</a>
+    {% else %}
+      <a href="{{ url_for('glossary_letter', letter=L) }}">{{ L }}</a>
+    {% endif %}
+  {% endfor %}
+</div>
+
+<div class="sa-grid sa-cols-2">
+  {% for t in terms %}
+    <a class="card" href="{{ url_for('glossary_term', slug=t.slug) }}"
+       style="text-decoration:none;color:inherit;">
+      <h3 style="margin:0 0 6px;">{{ t.term }}</h3>
+      <p class="muted">{{ t.short_def }}</p>
+    </a>
+  {% endfor %}
+</div>
+{% endblock %}

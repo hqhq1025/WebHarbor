@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+{% block title %}2025-2026 Federal Tax Brackets | SmartAsset{% endblock %}
+{% block content %}
+<div class="breadcrumb">
+  <a href="{{ url_for('index') }}">Home</a> &rsaquo;
+  <a href="{{ url_for('hub_taxes') }}">Taxes</a> &rsaquo;
+  Federal Tax Brackets
+</div>
+<h1>2025-2026 Federal Income Tax Brackets</h1>
+<p class="muted" style="max-width:760px;font-size:1.05rem;">
+  Bracket thresholds inflate annually with chained CPI. Below are the bracket
+  schedules for each filing status. Use the
+  <a href="{{ url_for('calculator', slug='income-tax') }}">federal income tax calculator</a>
+  to compute your actual tax bill.
+</p>
+
+<div class="sa-grid sa-cols-3">
+  <div class="card">
+    <h3>Single Filers</h3>
+    <table style="width:100%;">
+      <tr><th>Rate</th><th>Bracket (up to)</th></tr>
+      <tr><td>10%</td><td>$11,925</td></tr>
+      <tr><td>12%</td><td>$48,475</td></tr>
+      <tr><td>22%</td><td>$103,350</td></tr>
+      <tr><td>24%</td><td>$197,300</td></tr>
+      <tr><td>32%</td><td>$250,525</td></tr>
+      <tr><td>35%</td><td>$626,350</td></tr>
+      <tr><td>37%</td><td>above</td></tr>
+    </table>
+  </div>
+  <div class="card">
+    <h3>Married Filing Jointly</h3>
+    <table style="width:100%;">
+      <tr><th>Rate</th><th>Bracket (up to)</th></tr>
+      <tr><td>10%</td><td>$23,850</td></tr>
+      <tr><td>12%</td><td>$96,950</td></tr>
+      <tr><td>22%</td><td>$206,700</td></tr>
+      <tr><td>24%</td><td>$394,600</td></tr>
+      <tr><td>32%</td><td>$501,050</td></tr>
+      <tr><td>35%</td><td>$751,600</td></tr>
+      <tr><td>37%</td><td>above</td></tr>
+    </table>
+  </div>
+  <div class="card">
+    <h3>Head of Household</h3>
+    <table style="width:100%;">
+      <tr><th>Rate</th><th>Bracket (up to)</th></tr>
+      <tr><td>10%</td><td>$17,000</td></tr>
+      <tr><td>12%</td><td>$64,850</td></tr>
+      <tr><td>22%</td><td>$103,350</td></tr>
+      <tr><td>24%</td><td>$197,300</td></tr>
+      <tr><td>32%</td><td>$250,500</td></tr>
+      <tr><td>35%</td><td>$626,350</td></tr>
+      <tr><td>37%</td><td>above</td></tr>
+    </table>
+  </div>
+</div>
+
+<div class="card" style="margin-top:18px;">
+  <h2>Standard deduction (2025)</h2>
+  <ul>
+    <li>Single: $15,000</li>
+    <li>Married filing jointly: $30,000</li>
+    <li>Head of household: $22,500</li>
+  </ul>
+</div>
+
+<div class="card" style="margin-top:18px;background:#f4f7fa;">
+  <h2>Run the math</h2>
+  <p>The <a href="{{ url_for('calculator', slug='income-tax') }}">income tax calculator</a>
+  applies these brackets to your wages and deductions. State residents can also use the
+  <a href="{{ url_for('calculator', slug='state-tax') }}">state income tax calculator</a>.</p>
+</div>
+{% endblock %}

@@ -7,14 +7,20 @@
   <span>{{ au.name }}</span>
 </div>
 
-<div class="card" style="display:grid;grid-template-columns:120px 1fr;gap:24px;align-items:flex-start;">
-  <div class="advisor-card" style="border:0;padding:0;">
-    <div class="avatar">{{ au.name[0] }}{{ au.name.split(' ')[-1][0] }}</div>
-  </div>
+<div class="card" style="display:grid;grid-template-columns:140px 1fr;gap:24px;align-items:flex-start;">
+  <img src="{{ url_for('static', filename='images/authors/' + au.slug + '.jpg') }}"
+       alt="{{ au.name }}"
+       style="width:130px;height:130px;border-radius:50%;object-fit:cover;border:3px solid var(--sa-blue);"
+       onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+  <div class="avatar" style="width:130px;height:130px;font-size:2.5rem;display:none;">{{ au.name[0] }}{{ au.name.split(' ')[-1][0] }}</div>
   <div>
     <h1 style="margin:0;">{{ au.name }}{% if au.credentials %}, {{ au.credentials }}{% endif %}</h1>
     <p class="muted" style="margin:4px 0;">{{ au.title }}{% if au.location %} &middot; {{ au.location }}{% endif %}</p>
     <p>{{ au.bio }}</p>
+    <p style="margin-top:6px;">
+      <span class="badge">Senior Contributor</span>
+      <span class="badge">{{ articles|length }} articles published</span>
+    </p>
     {% if au.twitter %}<a href="https://twitter.com/{{ au.twitter }}">@{{ au.twitter }}</a> &middot; {% endif %}
     {% if au.linkedin %}<a href="{{ au.linkedin }}">LinkedIn</a>{% endif %}
   </div>

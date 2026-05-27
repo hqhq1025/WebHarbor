@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block title %}Side-by-Side Financial Comparisons | SmartAsset{% endblock %}
+{% block content %}
+<div class="breadcrumb"><a href="{{ url_for('index') }}">Home</a> &rsaquo; Compare</div>
+<h1>Side-by-Side Comparisons</h1>
+<p class="muted" style="max-width:760px;font-size:1.05rem;">
+  Roth vs Traditional, ETF vs mutual fund, term vs whole life — the
+  questions households actually wrestle with, answered with a side-by-side
+  table you can scan in 60 seconds.
+</p>
+
+<div class="sa-grid sa-cols-2">
+  {% for slug, title, a, b, rows in comparisons %}
+    <a class="card" href="{{ url_for('compare_detail', slug=slug) }}"
+       style="text-decoration:none;color:inherit;">
+      <h3 style="margin:0 0 4px;">{{ title }}</h3>
+      <p class="muted">{{ a }} &nbsp;vs&nbsp; {{ b }} &middot; {{ rows|length }} rows compared</p>
+      <span class="pill">Compare &rsaquo;</span>
+    </a>
+  {% endfor %}
+</div>
+{% endblock %}

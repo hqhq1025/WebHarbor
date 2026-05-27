@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block title %}Financial Glossary | SmartAsset{% endblock %}
+{% block content %}
+<div class="breadcrumb"><a href="{{ url_for('index') }}">Home</a> &rsaquo; Glossary</div>
+<h1>Financial Glossary</h1>
+<p class="muted" style="max-width:760px;font-size:1.05rem;">
+  Over {{ by_letter.values()|map('length')|sum }} clear, plain-English definitions
+  for the terms that come up in personal finance. Search by keyword or browse
+  by first letter.
+</p>
+
+<form method="get" action="{{ url_for('glossary_lookup') }}"
+      style="display:flex;gap:8px;margin:18px 0;max-width:560px;">
+  <input type="text" name="q" placeholder="Look up a term (e.g. AUM, basis points)" required>
+  <button class="btn">Search</button>
+</form>
+
+<div class="state-grid" style="margin-bottom:24px;">
+  {% for L in letters %}
+    <a href="{{ url_for('glossary_letter', letter=L) }}">{{ L }}</a>
+  {% endfor %}
+</div>
+
+{% for L in letters %}
+  <h2 id="letter-{{ L }}">{{ L }}</h2>
+  <div class="sa-grid sa-cols-3">
+    {% for t in by_letter[L][:9] %}
+      <a class="card" href="{{ url_for('glossary_term', slug=t.slug) }}"
+         style="text-decoration:none;color:inherit;">
+        <h3 style="margin:0 0 4px;font-size:1rem;">{{ t.term }}</h3>
+        <p class="muted" style="font-size:.85rem;">{{ t.short_def }}</p>
+      </a>
+    {% endfor %}
+  </div>
+  {% if by_letter[L]|length > 9 %}
+    <p><a href="{{ url_for('glossary_letter', letter=L) }}">See all {{ by_letter[L]|length }} terms starting with {{ L }} &rsaquo;</a></p>
+  {% endif %}
+{% endfor %}
+{% endblock %}

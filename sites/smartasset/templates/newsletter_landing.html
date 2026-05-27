@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% block title %}SmartMoney Minute Newsletter | SmartAsset{% endblock %}
+{% block content %}
+<div class="breadcrumb"><a href="{{ url_for('index') }}">Home</a> &rsaquo; Newsletter</div>
+
+<div class="card-hero" style="background:linear-gradient(135deg,var(--sa-yellow),var(--sa-yellow-2));color:var(--sa-blue);">
+  <span class="tag" style="background:rgba(11,57,97,.12);color:var(--sa-blue);">Newsletter</span>
+  <h1 style="color:var(--sa-blue);">SmartMoney Minute</h1>
+  <p style="color:var(--sa-blue);">A weekly 4-minute read covering markets,
+    retirement, taxes and a single actionable tip you can use Monday morning.
+    Sent every Tuesday at 6 a.m. ET. 850k+ subscribers.</p>
+  <form method="post" action="{{ url_for('newsletter_subscribe') }}"
+        style="display:flex;gap:8px;max-width:480px;">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <input type="email" name="email" placeholder="your@email.com" required
+           style="flex:1;padding:10px 12px;border-radius:4px;border:1px solid #ccc;">
+    <button class="btn">Subscribe</button>
+  </form>
+</div>
+
+<div class="card" style="margin-top:24px;">
+  <h2>What you'll get</h2>
+  <ul>
+    <li><strong>Markets in 60 seconds.</strong> The week's open / close, top movers, and what the data actually means.</li>
+    <li><strong>One smart move.</strong> A single tactical change — usually 10 minutes of effort — that pays back over years.</li>
+    <li><strong>Reader Q&amp;A.</strong> One real reader question answered each week by a CFP.</li>
+    <li><strong>Calculator of the week.</strong> A scenario walk-through of one of SmartAsset's tools.</li>
+  </ul>
+</div>
+
+<div class="section-title"><h2>Recent issues</h2></div>
+<div class="sa-grid sa-cols-3">
+  {% for a in sample_articles %}
+    <a class="card" href="{{ url_for('article_detail', slug=a.slug) }}"
+       style="text-decoration:none;color:inherit;">
+      <span class="tag tag-muted">{{ a.category.name }}</span>
+      <h3 style="margin:8px 0 4px;">{{ a.title }}</h3>
+      <p class="muted">{{ a.dek }}</p>
+    </a>
+  {% endfor %}
+</div>
+{% endblock %}

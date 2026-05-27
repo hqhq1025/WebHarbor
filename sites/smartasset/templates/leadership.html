@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+{% block title %}Leadership | SmartAsset{% endblock %}
+{% block content %}
+<div class="breadcrumb">
+  <a href="{{ url_for('index') }}">Home</a> &rsaquo;
+  <a href="{{ url_for('about') }}">About</a> &rsaquo;
+  Leadership
+</div>
+<h1>SmartAsset Leadership</h1>
+<p class="muted" style="max-width:760px;font-size:1.05rem;">
+  The team running SmartAsset and the SmartAdvisor matching service. Combined
+  experience: 200+ years across financial services, fintech, journalism and
+  regulatory affairs.
+</p>
+
+<div class="sa-grid sa-cols-2">
+  <div class="card">
+    <h3>Michael Carvin</h3>
+    <p class="muted">Co-Founder &amp; CEO</p>
+    <p>Founded SmartAsset in 2012. Previously vice president at IBM Watson
+       Health and product lead at MasterCard. BA &mdash; Harvard, MBA &mdash;
+       Columbia Business School.</p>
+  </div>
+  <div class="card">
+    <h3>Phil Gibson</h3>
+    <p class="muted">Co-Founder &amp; CTO</p>
+    <p>Built SmartAsset's core advisor-matching technology. Previously
+       lead engineer at LinkedIn and Quantopian. BS Computer Science,
+       Cornell.</p>
+  </div>
+  <div class="card">
+    <h3>Adam Levine</h3>
+    <p class="muted">Chief Operating Officer</p>
+    <p>Joined SmartAsset in 2016. Led ops at Lyft and Vimeo before that.
+       Drives growth, partnerships and the AMP advisor program.</p>
+  </div>
+  <div class="card">
+    <h3>Sarah Park</h3>
+    <p class="muted">Chief Financial Officer</p>
+    <p>CFO since 2021. Former CFO of Etsy's marketplace division and
+       VP Finance at LinkedIn. CPA, MBA from Wharton.</p>
+  </div>
+  <div class="card">
+    <h3>Rosalyn Glenn, CFP&reg;</h3>
+    <p class="muted">Head of Editorial Standards</p>
+    <p>Certified Financial Planner with 18 years in private practice
+       before joining SmartAsset to run editorial standards and our
+       fiduciary-only vetting process.</p>
+  </div>
+  <div class="card">
+    <h3>Jacqueline Reses</h3>
+    <p class="muted">Board Chair</p>
+    <p>CEO of Lead Bank, former CEO of Square Capital and chair of the
+       San Francisco Federal Reserve Bank board. Wharton MBA.</p>
+  </div>
+</div>
+
+<div class="card" style="margin-top:24px;">
+  <h2>Open positions</h2>
+  <p>See current openings on the
+     <a href="{{ url_for('careers') }}">careers page</a>.</p>
+</div>
+{% endblock %}

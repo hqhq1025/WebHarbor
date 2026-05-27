@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block title %}Salary by City | SmartAsset{% endblock %}
+{% block content %}
+<div class="breadcrumb"><a href="{{ url_for('index') }}">Home</a> &rsaquo; Salary</div>
+<h1>Salary By City</h1>
+<p class="muted" style="max-width:760px;font-size:1.05rem;">
+  How far does a software engineer's salary stretch in 20 major US metros?
+  Median compensation paired with cost-of-living index — the higher the COLI,
+  the bigger the salary needed to maintain the same lifestyle.
+</p>
+
+<table style="width:100%;border-collapse:collapse;margin-top:18px;">
+  <thead>
+    <tr style="background:#f4f7fa;text-align:left;">
+      <th style="padding:10px;">City</th>
+      <th>Median software salary</th>
+      <th>COLI</th>
+      <th>Adjusted (vs national)</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for city, salary, coli in rows %}
+      <tr style="border-top:1px solid #e6ecf1;">
+        <td style="padding:10px;font-weight:600;">{{ city }}</td>
+        <td>{{ salary|money }}</td>
+        <td>{{ '%.2f'|format(coli) }}</td>
+        <td>{{ (salary / coli)|round|int|money }}</td>
+      </tr>
+    {% endfor %}
+  </tbody>
+</table>
+
+<div class="card" style="margin-top:24px;">
+  <h3>Run your own number</h3>
+  <p>The <a href="{{ url_for('calculator', slug='paycheck') }}">paycheck calculator</a>
+     translates a gross salary into take-home, by state. Combine it with the
+     <a href="{{ url_for('calculator', slug='cost-of-living') }}">cost-of-living tool</a>
+     to compare two cities side by side.</p>
+</div>
+{% endblock %}

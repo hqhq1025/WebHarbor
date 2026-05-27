@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% block title %}Refer a Friend | SmartAsset{% endblock %}
+{% block content %}
+<div class="breadcrumb">
+  <a href="{{ url_for('index') }}">Home</a> &rsaquo; Refer a Friend
+</div>
+
+<div class="card-hero" style="background:linear-gradient(135deg,var(--sa-yellow),var(--sa-yellow-2));color:var(--sa-blue);">
+  <span class="tag" style="background:rgba(11,57,97,.12);color:var(--sa-blue);">Referrals</span>
+  <h1 style="color:var(--sa-blue);">Refer a Friend, Earn $20</h1>
+  <p style="color:var(--sa-blue);">When a friend completes their first SmartAdvisor match,
+     you'll both receive a $20 Amazon gift code. No limits, no cap on referrals.</p>
+</div>
+
+<div class="sa-grid sa-cols-3" style="margin-top:24px;">
+  <div class="card">
+    <h3>1. Share your link</h3>
+    <p>Sign in and grab your personal referral link from your account dashboard.</p>
+  </div>
+  <div class="card">
+    <h3>2. Friend signs up</h3>
+    <p>Your friend creates a SmartAsset account using your link.</p>
+  </div>
+  <div class="card">
+    <h3>3. Earn rewards</h3>
+    <p>After their first advisor match, both of you get a $20 gift code by email.</p>
+  </div>
+</div>
+
+<div class="card" style="margin-top:18px;">
+  <h2>Apply a promo code</h2>
+  <p class="muted">Have a promo code from a friend, partner, or campaign?</p>
+  <form method="post" action="{{ url_for('apply_promo') }}" style="display:flex;gap:8px;max-width:480px;">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <input type="text" name="code" placeholder="Enter promo code (e.g. WELCOME10)" required>
+    <button class="btn" type="submit">Apply</button>
+  </form>
+</div>
+
+<div class="card" style="margin-top:18px;">
+  <h2>FAQ</h2>
+  <details>
+    <summary><strong>How long until I receive the gift code?</strong></summary>
+    <p>You'll receive your $20 within 7 business days of your friend completing their first
+       advisor match.</p>
+  </details>
+  <details>
+    <summary><strong>Is there a cap on the number of friends I can refer?</strong></summary>
+    <p>No cap. Refer as many friends as you like.</p>
+  </details>
+  <details>
+    <summary><strong>Do referred friends need to retain an advisor?</strong></summary>
+    <p>No. They simply need to complete the matching quiz and receive matched advisors.</p>
+  </details>
+</div>
+{% endblock %}

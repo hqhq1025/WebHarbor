@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block title %}Top U.S. Cities for Finances | SmartAsset{% endblock %}
+{% block content %}
+<div class="breadcrumb"><a href="{{ url_for('index') }}">Home</a> &rsaquo; Cities</div>
+<h1>Cost of Living, Mortgages and Taxes by City</h1>
+<p class="muted" style="max-width:760px;font-size:1.05rem;">
+  SmartAsset's city pages bring together cost of living, median home and rent
+  prices, property taxes, walk score and crime data. Pick a city to dive in.
+</p>
+
+<div class="sa-grid sa-cols-3">
+  {% for c in cities %}
+    <a class="card" href="{{ url_for('city_detail', slug=c.slug) }}"
+       style="text-decoration:none;color:inherit;">
+      <h3 style="margin:0 0 4px;">{{ c.name }}, {{ c.state_abbr }}</h3>
+      <p class="muted" style="font-size:.9rem;">
+        Pop. {{ c.population|commafy }}
+        &middot; Median home {{ c.median_home_price|money }}
+        &middot; COLI {{ '%.1f'|format(c.cost_of_living_index) }}
+      </p>
+    </a>
+  {% endfor %}
+</div>
+{% endblock %}

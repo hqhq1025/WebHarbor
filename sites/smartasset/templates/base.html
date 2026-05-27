@@ -16,13 +16,15 @@
     </a>
     <nav class="sa-nav">
       <a href="{{ url_for('smartreads_index') }}">SmartReads</a>
-      <a href="{{ url_for('calculators_index') }}">Calculators</a>
+      <a href="{{ url_for('tools_hub') }}">Tools</a>
       <a href="{{ url_for('advisor_landing') }}">Find Advisor</a>
       <a href="{{ url_for('states_index') }}">By State</a>
-      <a href="{{ url_for('category_page', slug='retirement') }}">Retirement</a>
-      <a href="{{ url_for('category_page', slug='taxes') }}">Taxes</a>
-      <a href="{{ url_for('category_page', slug='mortgage') }}">Mortgage</a>
-      <a href="{{ url_for('category_page', slug='investing') }}">Investing</a>
+      <a href="{{ url_for('hub_retirement') }}">Retirement</a>
+      <a href="{{ url_for('hub_mortgage') }}">Mortgage</a>
+      <a href="{{ url_for('hub_taxes') }}">Taxes</a>
+      <a href="{{ url_for('hub_investing') }}">Investing</a>
+      <a href="{{ url_for('hub_banking') }}">Banking</a>
+      <a href="{{ url_for('glossary_index') }}">Glossary</a>
     </nav>
     <div class="sa-actions">
       {% if current_user.is_authenticated %}
@@ -72,26 +74,42 @@
     </div>
     <div>
       <h4>Guides</h4>
-      <a href="{{ url_for('category_page', slug='retirement') }}">Retirement</a>
-      <a href="{{ url_for('category_page', slug='taxes') }}">Taxes</a>
-      <a href="{{ url_for('category_page', slug='mortgage') }}">Mortgage</a>
-      <a href="{{ url_for('category_page', slug='investing') }}">Investing</a>
-      <a href="{{ url_for('category_page', slug='banking') }}">Banking</a>
-      <a href="{{ url_for('category_page', slug='personal-finance') }}">Personal Finance</a>
+      <a href="{{ url_for('hub_retirement') }}">Retirement</a>
+      <a href="{{ url_for('hub_taxes') }}">Taxes</a>
+      <a href="{{ url_for('hub_mortgage') }}">Mortgage</a>
+      <a href="{{ url_for('hub_investing') }}">Investing</a>
+      <a href="{{ url_for('hub_banking') }}">Banking</a>
+      <a href="{{ url_for('hub_credit') }}">Credit</a>
+      <a href="{{ url_for('hub_insurance') }}">Insurance</a>
     </div>
     <div>
       <h4>Advisors</h4>
       <a href="{{ url_for('advisor_landing') }}">Find an Advisor</a>
       <a href="{{ url_for('advisor_match_start') }}">Matching Quiz</a>
       <a href="{{ url_for('states_index') }}">By State</a>
+      <a href="{{ url_for('ask_advisor') }}">Ask an Advisor</a>
       <a href="{{ url_for('authors_index') }}">Our Authors</a>
+    </div>
+    <div>
+      <h4>Tools &amp; Hubs</h4>
+      <a href="{{ url_for('tools_hub') }}">All Tools</a>
+      <a href="{{ url_for('compare_index') }}">Comparisons</a>
+      <a href="{{ url_for('glossary_index') }}">Glossary</a>
+      <a href="{{ url_for('cities_index') }}">Cities</a>
+      <a href="{{ url_for('reviews_index') }}">Reviews</a>
+      <a href="{{ url_for('calendar') }}">Calendar</a>
+      <a href="{{ url_for('salary_hub') }}">Salary by City</a>
     </div>
     <div>
       <h4>Company</h4>
       <a href="{{ url_for('about') }}">About</a>
+      <a href="{{ url_for('leadership') }}">Leadership</a>
+      <a href="{{ url_for('methodology') }}">Methodology</a>
       <a href="{{ url_for('careers') }}">Careers</a>
       <a href="{{ url_for('press') }}">Press</a>
       <a href="{{ url_for('contact') }}">Contact</a>
+      <a href="{{ url_for('faq') }}">FAQ</a>
+      <a href="{{ url_for('newsletter_landing') }}">Newsletter</a>
       <a href="{{ url_for('privacy') }}">Privacy</a>
       <a href="{{ url_for('terms') }}">Terms</a>
       <a href="{{ url_for('disclosure') }}">Disclosure</a>
