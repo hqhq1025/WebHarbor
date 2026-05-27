@@ -146,6 +146,13 @@ class Author(db.Model):
     created_at = db.Column(db.DateTime, default=lambda: MIRROR_REFERENCE_DATE)
     repos = db.relationship("Repository", backref="author_obj", lazy="dynamic")
 
+    # Homepage `/` queries `Author.query.filter_by(is_verified=True)
+    # .order_by(followers_count.desc()).limit(8)`. Composite turns the scan
+    # into an index seek on the leading boolean.
+    __table_args__ = (
+        db.Index("ix_author_verified_followers", "is_verified", "followers_count"),
+    )
+
 
 class Repository(db.Model):
     """Unified Model | Dataset | Space entity."""
@@ -160,6 +167,13 @@ class Repository(db.Model):
         db.Index("ix_repo_type_task_downloads", "repo_type", "task_id", "downloads"),
         db.Index("ix_repo_type_library_likes", "repo_type", "library", "likes_count"),
         db.Index("ix_repo_type_modality_downloads", "repo_type", "modality", "downloads"),
+        # Homepage trending lists: filter_by(repo_type=...) + order_by(likes_count DESC) limit 5.
+        # Without this composite, the planner falls back to a full scan over the
+        # 456k-row catalog (~41ms × 3 per request). With it, each becomes an
+        # index seek on the leading edge.
+        db.Index("ix_repo_type_likes", "repo_type", "likes_count"),
+        # /spaces trending: filter_by(repo_type='space', is_featured=True) + likes DESC.
+        db.Index("ix_repo_type_featured_likes", "repo_type", "is_featured", "likes_count"),
     )
     id = db.Column(db.Integer, primary_key=True)
     slug = db.Column(db.String(300), nullable=False, index=True)  # author/name
@@ -1315,15 +1329,32 @@ def seed_database():
 # ------------------------------------------------------------
 # Routes — Static / homepage
 # ------------------------------------------------------------
+
+# Process-level cache for the homepage repo-type totals. Each .count() on the
+# 456k-row repositories table without a covering index falls back to a full
+# scan (~100ms total per request for the 3 calls below). The catalog is
+# effectively static between resets — control_server respawns the worker on
+# /reset, which empties this cache, so it's always in sync with the DB.
+_REPO_TYPE_TOTAL_CACHE: dict = {}
+
+
+def _cached_repo_type_total(repo_type: str) -> int:
+    val = _REPO_TYPE_TOTAL_CACHE.get(repo_type)
+    if val is None:
+        val = Repository.query.filter_by(repo_type=repo_type).count()
+        _REPO_TYPE_TOTAL_CACHE[repo_type] = val
+    return val
+
+
 @app.route("/")
 def index():
     trending_models = Repository.query.filter_by(repo_type="model").order_by(Repository.likes_count.desc()).limit(5).all()
     trending_datasets = Repository.query.filter_by(repo_type="dataset").order_by(Repository.likes_count.desc()).limit(5).all()
     trending_spaces = Repository.query.filter_by(repo_type="space", is_featured=True).order_by(Repository.likes_count.desc()).limit(6).all()
     featured_orgs = Author.query.filter_by(is_verified=True).order_by(Author.followers_count.desc()).limit(8).all()
-    total_models = Repository.query.filter_by(repo_type="model").count()
-    total_datasets = Repository.query.filter_by(repo_type="dataset").count()
-    total_spaces = Repository.query.filter_by(repo_type="space").count()
+    total_models = _cached_repo_type_total("model")
+    total_datasets = _cached_repo_type_total("dataset")
+    total_spaces = _cached_repo_type_total("space")
     return render_template(
         "index.html",
         trending_models=trending_models,
