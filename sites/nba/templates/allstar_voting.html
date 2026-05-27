@@ -33,7 +33,7 @@
     <div class="player-card-grid">
       {% for p in east %}
       <a class="allstar-candidate" href="{{ url_for('player_detail', slug=p.slug) }}">
-        <img src="{{ p.image }}" alt=""><span>{{ p.name }}</span><small>{{ p.team.full_name }} · {{ p.position }}</small>
+        <img loading="lazy" decoding="async" src="{{ p.image }}" alt=""><span>{{ p.name }}</span><small>{{ p.team.full_name }} · {{ p.position }}</small>
       </a>
       {% endfor %}
     </div>
@@ -41,7 +41,7 @@
     <div class="player-card-grid">
       {% for p in west %}
       <a class="allstar-candidate" href="{{ url_for('player_detail', slug=p.slug) }}">
-        <img src="{{ p.image }}" alt=""><span>{{ p.name }}</span><small>{{ p.team.full_name }} · {{ p.position }}</small>
+        <img loading="lazy" decoding="async" src="{{ p.image }}" alt=""><span>{{ p.name }}</span><small>{{ p.team.full_name }} · {{ p.position }}</small>
       </a>
       {% endfor %}
     </div>

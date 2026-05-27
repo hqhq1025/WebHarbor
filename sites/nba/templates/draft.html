@@ -15,7 +15,7 @@
 </nav>
 
 <div class="draft-banner">
-  <img src="{{ url_for('static', filename='images/articles/nba-official-draft-banner.png') }}" alt="2026 NBA Draft">
+  <img loading="lazy" decoding="async" src="{{ url_for('static', filename='images/articles/nba-official-draft-banner.png') }}" alt="2026 NBA Draft">
 </div>
 
 <section class="draft-page">
@@ -23,7 +23,7 @@
     <div>
       <h1>2026 NBA Draft | June 23-24</h1>
       <a class="draft-hero-image" href="{{ url_for('article_detail', slug=draft.hero_slug) }}">
-        <img src="{{ url_for('static', filename='images/articles/nba-official-draft-combine-hero.jpg') }}" alt="">
+        <img loading="lazy" decoding="async" src="{{ url_for('static', filename='images/articles/nba-official-draft-combine-hero.jpg') }}" alt="">
         <h2>10 top performers at AWS Draft Combine</h2>
         <p>With 73 players participating in agility testing, shooting drills, team interviews and more, here are the standout performances.</p>
       </a>
@@ -40,7 +40,7 @@
     <div class="official-video-row">
       {% for title, duration, image, slug in draft.videos %}
         <a class="video-card-official" href="{{ url_for('article_detail', slug=slug) }}">
-          <img src="{{ url_for('static', filename='images/articles/' ~ image) }}" alt="">
+          <img loading="lazy" decoding="async" src="{{ url_for('static', filename='images/articles/' ~ image) }}" alt="">
           <span>&#9654; {{ duration }}</span>
           <h3>{{ title }}</h3>
         </a>
@@ -53,7 +53,7 @@
     <div class="draft-two-column-list">
       {% for title, dek, image, slug in draft.combine %}
         <a class="official-list-card" href="{{ url_for('article_detail', slug=slug) }}">
-          <img src="{{ url_for('static', filename='images/articles/' ~ image) }}" alt="">
+          <img loading="lazy" decoding="async" src="{{ url_for('static', filename='images/articles/' ~ image) }}" alt="">
           <div><h3>{{ title }}</h3><p>{{ dek }}</p><time>May {{ loop.index + 8 }}, 2026</time></div>
         </a>
       {% endfor %}
@@ -65,7 +65,7 @@
     <div class="draft-two-column-list compact-list">
       {% for title, dek, image, slug in draft.mock %}
         <a class="official-list-card" href="{{ url_for('article_detail', slug=slug) }}">
-          <img src="{{ url_for('static', filename='images/articles/' ~ image) }}" alt="">
+          <img loading="lazy" decoding="async" src="{{ url_for('static', filename='images/articles/' ~ image) }}" alt="">
           <div><h3>{{ title }}</h3><p>{{ dek }}</p><time>May 12, 2026</time></div>
         </a>
       {% endfor %}
@@ -74,7 +74,7 @@
 
   <section class="official-section draft-lottery" id="lottery">
     <a href="{{ url_for('article_detail', slug=draft.hero_slug) }}">
-      <img src="{{ url_for('static', filename='images/articles/nba-official-draft-lottery.jpg') }}" alt="">
+      <img loading="lazy" decoding="async" src="{{ url_for('static', filename='images/articles/nba-official-draft-lottery.jpg') }}" alt="">
       <h2>Wizards win 2026 Draft Lottery, will pick No. 1</h2>
       <p>The Washington Wizards win the 2026 NBA Draft Lottery and will pick No. 1 in the 2026 NBA Draft.</p>
     </a>
@@ -103,7 +103,7 @@
     <div class="draft-two-column-list">
       {% for title, dek, image, slug in draft.draft_info %}
         <a class="official-list-card" href="{{ url_for('article_detail', slug=slug) }}">
-          <img src="{{ url_for('static', filename='images/articles/' ~ image) }}" alt="">
+          <img loading="lazy" decoding="async" src="{{ url_for('static', filename='images/articles/' ~ image) }}" alt="">
           <div><h3>{{ title }}</h3><p>{{ dek }}</p></div>
         </a>
       {% endfor %}
@@ -115,7 +115,7 @@
     <div class="official-video-row">
       {% for title, duration, image, slug in draft.classic %}
         <a class="video-card-official" href="{{ url_for('article_detail', slug=slug) }}">
-          <img src="{{ url_for('static', filename='images/articles/' ~ image) }}" alt="">
+          <img loading="lazy" decoding="async" src="{{ url_for('static', filename='images/articles/' ~ image) }}" alt="">
           <span>&#9654; {{ duration }}</span>
           <h3>{{ title }}</h3>
         </a>

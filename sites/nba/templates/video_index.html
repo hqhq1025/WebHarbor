@@ -14,7 +14,7 @@
   <div class="video-grid">
     {% for v in videos %}
     <a class="video-card" href="{{ url_for('video_detail', slug=v.slug) }}">
-      <img src="{{ v.image }}" alt="">
+      <img loading="lazy" decoding="async" src="{{ v.image }}" alt="">
       <span class="duration">{{ v.duration }}</span>
       <strong>{{ v.title }}</strong>
       <small>{{ v.kind }} · {{ v.views }} views</small>

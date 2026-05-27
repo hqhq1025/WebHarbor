@@ -2,7 +2,7 @@
 {% block title %}{{ team.full_name }} - NBA{% endblock %}
 {% block content %}
 <section class="team-header" style="--team: {{ team.color }}">
-  <img src="{{ team.logo }}" alt="">
+  <img loading="lazy" decoding="async" src="{{ team.logo }}" alt="">
   <div>
     <span class="kicker">{{ team.conference }} · {{ team.division }}</span>
     <h1>{{ team.full_name }}</h1>
@@ -29,7 +29,7 @@
       <div class="section-title"><h2>Top Players</h2><a href="{{ url_for('team_roster', slug=team.slug) }}">Full Roster</a></div>
       <div class="story-grid compact">
         {% for player in team.players %}
-          <a class="player-card" href="{{ url_for('player_detail', slug=player.slug) }}"><img src="{{ player.image }}" alt=""><span>#{{ player.jersey }} · {{ player.position }}</span><strong>{{ player.name }}</strong><em>{{ "%.1f"|format(player.ppg) }} PPG</em></a>
+          <a class="player-card" href="{{ url_for('player_detail', slug=player.slug) }}"><img loading="lazy" decoding="async" src="{{ player.image }}" alt=""><span>#{{ player.jersey }} · {{ player.position }}</span><strong>{{ player.name }}</strong><em>{{ "%.1f"|format(player.ppg) }} PPG</em></a>
         {% else %}
           <p>No seeded roster rows for this team yet.</p>
         {% endfor %}

@@ -1,6 +1,6 @@
 <article class="team-card" style="--team: {{ team.color }}">
   <a class="team-main" href="{{ url_for('team_detail', slug=team.slug) }}">
-    <img src="{{ team.logo }}" alt="">
+    <img loading="lazy" decoding="async" src="{{ team.logo }}" alt="">
     <strong>{{ team.full_name }}</strong>
     <span>{{ team.conference }} · {{ team.division }}</span>
   </a>

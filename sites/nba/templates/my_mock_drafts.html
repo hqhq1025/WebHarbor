@@ -19,7 +19,7 @@
     {% for r in rows %}
     <li>
       <span>#{{ r.pick_no }}</span>
-      {% if r.prospect_image %}<img src="{{ r.prospect_image }}" alt="">{% endif %}
+      {% if r.prospect_image %}<img loading="lazy" decoding="async" src="{{ r.prospect_image }}" alt="">{% endif %}
       <strong>{{ r.prospect_name or r.prospect_slug }}</strong>
       <small>{{ r.year }} · submitted {{ r.submitted_at }}</small>
     </li>

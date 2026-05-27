@@ -2,7 +2,7 @@
 {% block title %}{{ player.name }} - NBA{% endblock %}
 {% block content %}
 <section class="player-hero-pro" style="--team: {{ player.team.color }}">
-  <div class="player-photo"><img src="{{ player.image }}" alt=""></div>
+  <div class="player-photo"><img loading="lazy" decoding="async" src="{{ player.image }}" alt=""></div>
   <div>
     <span class="kicker">{{ player.team.full_name }} · #{{ player.jersey }} · {{ player.position }}</span>
     <h1>{{ player.name }}</h1>

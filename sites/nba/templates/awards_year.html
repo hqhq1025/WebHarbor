@@ -12,11 +12,11 @@
       <h3>{{ a.name }}</h3>
       {% if a.winner_slug %}
       <a href="{{ url_for('player_detail', slug=a.winner_slug) }}">
-        <img src="{{ player_headshot(a.winner_slug) }}" alt="">
+        <img loading="lazy" decoding="async" src="{{ player_headshot(a.winner_slug) }}" alt="">
         <strong>{{ player_name(a.winner_slug) }}</strong>
       </a>
       {% if a.winner_team_slug %}
-      <p>Team: <a href="{{ url_for('team_detail', slug=a.winner_team_slug) }}"><img class="inline-logo" src="{{ team_logo(a.winner_team_slug) }}" alt="">{{ team_name(a.winner_team_slug) }}</a></p>
+      <p>Team: <a href="{{ url_for('team_detail', slug=a.winner_team_slug) }}"><img loading="lazy" decoding="async" class="inline-logo" src="{{ team_logo(a.winner_team_slug) }}" alt="">{{ team_name(a.winner_team_slug) }}</a></p>
       {% endif %}
       {% endif %}
       <dl>

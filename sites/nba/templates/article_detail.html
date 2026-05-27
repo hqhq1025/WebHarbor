@@ -16,10 +16,10 @@
     <h1>{{ detail.headline }}</h1>
     <p class="dek">{{ detail.dek }}</p>
     <div class="official-byline">
-      <div><img src="{{ detail.author_image }}" alt=""><span><strong>{{ detail.author }}</strong><a href="{{ url_for('news') }}">Archive</a></span></div>
+      <div><img loading="lazy" decoding="async" src="{{ detail.author_image }}" alt=""><span><strong>{{ detail.author }}</strong><a href="{{ url_for('news') }}">Archive</a></span></div>
       <time>{{ detail.date_label }}</time>
     </div>
-    <img class="official-article-image" src="{{ detail.image }}" alt="">
+    <img loading="lazy" decoding="async" class="official-article-image" src="{{ detail.image }}" alt="">
     <p class="caption">{{ detail.caption }}</p>
     {% for section in detail.sections %}
       {% if section.heading %}<h2>{{ section.heading }}</h2>{% endif %}
@@ -46,7 +46,7 @@
   <div class="latest-list">
     {% for item in latest %}
       <a class="playoff-news-row" href="{{ url_for('article_detail', slug=item.slug) }}">
-        <img src="{{ item.image }}" alt="">
+        <img loading="lazy" decoding="async" src="{{ item.image }}" alt="">
         <div><h3>{{ item.title }}</h3><p>{{ item.dek }}</p><span>{{ item.published_at.strftime('%-I hours ago') }}</span></div>
       </a>
     {% endfor %}

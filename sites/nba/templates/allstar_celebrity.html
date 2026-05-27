@@ -13,7 +13,7 @@
   <div class="celeb-grid">
     {% for c in celebs %}
     <article class="celeb-card">
-      <img src="{{ c.image }}" alt="">
+      <img loading="lazy" decoding="async" src="{{ c.image }}" alt="">
       <h3>{{ c.name }}</h3>
       <small>{{ c.team }} · {{ c.role }}</small>
       <p>{{ c.tagline }}</p>

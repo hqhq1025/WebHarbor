@@ -38,7 +38,7 @@
             <p>{{ game_round_label(game) }} · {{ game_number_label(game) }}</p>
             <div class="matchup-teams">
               <div>
-                <img src="{{ game.away_team.logo }}" alt="">
+                <img loading="lazy" decoding="async" src="{{ game.away_team.logo }}" alt="">
                 <span>{{ team_seed(game.away_team) }} {{ game.away_team.name }}</span>
               </div>
               <div class="matchup-time">
@@ -47,7 +47,7 @@
                 <em>{{ game_series_label(game) }}</em>
               </div>
               <div>
-                <img src="{{ game.home_team.logo }}" alt="">
+                <img loading="lazy" decoding="async" src="{{ game.home_team.logo }}" alt="">
                 <span>{{ team_seed(game.home_team) }} {{ game.home_team.name }}</span>
               </div>
             </div>
@@ -67,7 +67,7 @@
             </div>
             {% for player in game_leaders(game) %}
               <a class="leader-line" href="{{ url_for('player_detail', slug=player.slug) }}">
-                <img src="{{ player.image }}" alt="">
+                <img loading="lazy" decoding="async" src="{{ player.image }}" alt="">
                 <span><b>{{ player.name }}</b><small>{{ player.team.abbreviation }} | #{{ player.jersey }} | {{ player.position }}</small></span>
                 <em>{{ "%.1f"|format(player.ppg) }}</em>
                 <em>{{ "%.1f"|format(player.rpg) }}</em>
@@ -87,7 +87,7 @@
 
   <aside class="games-page-rail">
     <section class="games-ad-card">
-      <img src="{{ url_for('static', filename='images/articles/lp-right-rail.png') }}" alt="">
+      <img loading="lazy" decoding="async" src="{{ url_for('static', filename='images/articles/lp-right-rail.png') }}" alt="">
       <div>
         <h2>Stream every playoff game like you're courtside.</h2>
         <p>Get League Pass Premium to stream every game or download for later.</p>

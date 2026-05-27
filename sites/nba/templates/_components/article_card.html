@@ -1,5 +1,5 @@
 <a class="article-card" href="{{ url_for('article_detail', slug=article.slug) }}">
-  <img src="{{ article.image }}" alt="">
+  <img loading="lazy" decoding="async" src="{{ article.image }}" alt="">
   <div>
     <span>{{ article.category }}</span>
     <h3>{{ article.title }}</h3>

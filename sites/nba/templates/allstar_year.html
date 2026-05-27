@@ -17,7 +17,7 @@
       <ol class="allstar-leader-list">
         {% for v in east %}
         <li>
-          <img src="{{ player_headshot(v.player_slug) }}" alt="">
+          <img loading="lazy" decoding="async" src="{{ player_headshot(v.player_slug) }}" alt="">
           <a href="{{ url_for('player_detail', slug=v.player_slug) }}">{{ player_name(v.player_slug) }}</a>
           <span>{{ v.votes }} votes</span>
         </li>
@@ -29,7 +29,7 @@
       <ol class="allstar-leader-list">
         {% for v in west %}
         <li>
-          <img src="{{ player_headshot(v.player_slug) }}" alt="">
+          <img loading="lazy" decoding="async" src="{{ player_headshot(v.player_slug) }}" alt="">
           <a href="{{ url_for('player_detail', slug=v.player_slug) }}">{{ player_name(v.player_slug) }}</a>
           <span>{{ v.votes }} votes</span>
         </li>
@@ -42,7 +42,7 @@
     <div class="celeb-grid">
       {% for c in celebs %}
       <article class="celeb-card">
-        <img src="{{ c.image }}" alt="">
+        <img loading="lazy" decoding="async" src="{{ c.image }}" alt="">
         <h3>{{ c.name }}</h3>
         <small>{{ c.team }} · {{ c.role }}</small>
         <p>{{ c.tagline }}</p>

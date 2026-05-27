@@ -18,7 +18,7 @@
     {% for r in rows %}
     <li class="leader-row">
       <span class="rank">#{{ r.rank }}</span>
-      <img class="leader-portrait" src="{{ player_headshot(r.player_slug) }}" alt="">
+      <img loading="lazy" decoding="async" class="leader-portrait" src="{{ player_headshot(r.player_slug) }}" alt="">
       <a href="{{ url_for('player_detail', slug=r.player_slug) }}">{{ player_name(r.player_slug) }}</a>
       <strong>{{ r.value }}</strong>
     </li>

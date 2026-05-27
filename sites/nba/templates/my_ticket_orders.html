@@ -18,9 +18,9 @@
     <li>
       <strong>{{ r.confirmation }}</strong>
       <div>
-        <img class="inline-logo" src="{{ r.home_logo }}" alt="">
+        <img loading="lazy" decoding="async" class="inline-logo" src="{{ r.home_logo }}" alt="">
         <strong>{{ r.home_name }} vs {{ r.away_name }}</strong>
-        <img class="inline-logo" src="{{ r.away_logo }}" alt="">
+        <img loading="lazy" decoding="async" class="inline-logo" src="{{ r.away_logo }}" alt="">
       </div>
       <p>{{ r.game_date }} · {{ r.section }} · Row {{ r.row_label }} · {{ r.seats }} seats</p>
       <p>${{ r.price_each }} each · Total ${{ r.total }}</p>

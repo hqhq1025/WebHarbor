@@ -2,14 +2,14 @@
 {% block title %}{{ team_a.full_name }} vs {{ team_b.full_name }} - NBA Playoffs{% endblock %}
 {% block content %}
 <section class="game-detail-hero series-hero">
-  <div class="game-team"><img src="{{ team_a.logo }}" alt=""><h2>{{ team_a.full_name }}</h2><span>{{ team_seed(team_a) }} seed · {{ team_a.conference }}</span></div>
+  <div class="game-team"><img loading="lazy" decoding="async" src="{{ team_a.logo }}" alt=""><h2>{{ team_a.full_name }}</h2><span>{{ team_seed(team_a) }} seed · {{ team_a.conference }}</span></div>
   <div class="game-status">
     <span class="kicker">Playoff Series</span>
     <h1>{{ game_series_label(games[0]) }}</h1>
     <p>{{ game_round_label(games[0]) }}</p>
     <div class="tab-row"><a href="{{ url_for('playoffs') }}">Playoffs</a><a href="{{ url_for('schedule') }}">Schedule</a><a href="{{ url_for('tickets') }}">Tickets</a></div>
   </div>
-  <div class="game-team"><img src="{{ team_b.logo }}" alt=""><h2>{{ team_b.full_name }}</h2><span>{{ team_seed(team_b) }} seed · {{ team_b.conference }}</span></div>
+  <div class="game-team"><img loading="lazy" decoding="async" src="{{ team_b.logo }}" alt=""><h2>{{ team_b.full_name }}</h2><span>{{ team_seed(team_b) }} seed · {{ team_b.conference }}</span></div>
 </section>
 <section class="portal-shell">
   <main class="portal-main">

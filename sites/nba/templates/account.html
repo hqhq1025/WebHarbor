@@ -8,7 +8,7 @@
 <section class="content-block split-layout">
   <div>
     <div class="account-grid">
-      <section class="rail-card"><h2>Favorite Team</h2>{% if favorite_team %}<a class="team-cell large" href="{{ url_for('team_detail', slug=favorite_team.slug) }}"><img src="{{ favorite_team.logo }}" alt="">{{ favorite_team.full_name }}</a>{% else %}<p>No favorite team selected.</p>{% endif %}</section>
+      <section class="rail-card"><h2>Favorite Team</h2>{% if favorite_team %}<a class="team-cell large" href="{{ url_for('team_detail', slug=favorite_team.slug) }}"><img loading="lazy" decoding="async" src="{{ favorite_team.logo }}" alt="">{{ favorite_team.full_name }}</a>{% else %}<p>No favorite team selected.</p>{% endif %}</section>
       <section class="rail-card"><h2>Profile</h2><p>{{ current_user.address_line1 }}</p><p>{{ current_user.city }}, {{ current_user.state }} {{ current_user.zip_code }}</p><p>Payment ending {{ current_user.payment_last4 }}</p></section>
     </div>
     <section class="content-block inset">

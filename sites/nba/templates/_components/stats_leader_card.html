@@ -4,7 +4,7 @@
     <a href="{{ url_for('player_stats', stat=leader_group.key) }}">Full leaders</a>
   </div>
   <a class="leader-feature" href="{{ url_for('player_detail', slug=leader_group.leader.slug) }}">
-    <img src="{{ leader_group.leader.image }}" alt="">
+    <img loading="lazy" decoding="async" src="{{ leader_group.leader.image }}" alt="">
     <div>
       <strong>{{ leader_group.leader.name }}</strong>
       <em>{{ leader_group.leader.team.abbreviation }}</em>

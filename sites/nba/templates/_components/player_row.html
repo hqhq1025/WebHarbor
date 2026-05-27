@@ -1,7 +1,7 @@
 <tr>
   <td>
     <a class="player-cell" href="{{ url_for('player_detail', slug=player.slug) }}">
-      <img src="{{ player.image }}" alt="">
+      <img loading="lazy" decoding="async" src="{{ player.image }}" alt="">
       <span>{{ player.name }}</span>
     </a>
   </td>

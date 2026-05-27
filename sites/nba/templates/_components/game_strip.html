@@ -20,13 +20,13 @@
             {% else %}
               <div class="score-row">
                 <span>{{ team_seed(game.away_team) }}</span>
-                <img src="{{ game.away_team.logo }}" alt="">
+                <img loading="lazy" decoding="async" src="{{ game.away_team.logo }}" alt="">
                 <strong>{{ game.away_team.name }}</strong>
                 {% if game.status == 'Final' %}<b>{{ game.away_score }}</b>{% endif %}
               </div>
               <div class="score-row">
                 <span>{{ team_seed(game.home_team) }}</span>
-                <img src="{{ game.home_team.logo }}" alt="">
+                <img loading="lazy" decoding="async" src="{{ game.home_team.logo }}" alt="">
                 <strong>{{ game.home_team.name }}</strong>
                 {% if game.status == 'Final' %}<b>{{ game.home_score }}</b>{% endif %}
               </div>

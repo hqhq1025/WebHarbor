@@ -10,7 +10,7 @@
     </div>
     {% if hero %}
       <a class="section-feature" href="{{ url_for('article_detail', slug=hero.slug) }}">
-        <img src="{{ hero.image }}" alt="">
+        <img loading="lazy" decoding="async" src="{{ hero.image }}" alt="">
         <span>{{ hero.category }}</span>
         <h2>{{ hero.title }}</h2>
       </a>
@@ -43,7 +43,7 @@
             {% for leader in leaders[:3] %}
               {% set player = leader %}
               <a class="player-card" href="{{ url_for('player_detail', slug=player.slug) }}">
-                <img src="{{ player.image }}" alt="">
+                <img loading="lazy" decoding="async" src="{{ player.image }}" alt="">
                 <strong>{{ player.name }}</strong>
                 <span>{{ player.team.abbreviation }} · {{ "%.1f"|format(player.ppg) }} PPG</span>
               </a>

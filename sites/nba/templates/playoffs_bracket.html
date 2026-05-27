@@ -3,7 +3,7 @@
 {% block content %}
 <section class="playoffs-deep">
   <header class="playoffs-hero">
-    <img src="/static/images/articles/nba-official-finals-logo.png" alt="">
+    <img loading="lazy" decoding="async" src="/static/images/articles/nba-official-finals-logo.png" alt="">
     <h1>{{ year }} Playoff Bracket</h1>
     <nav class="playoffs-tabs">
       <a href="{{ url_for('playoffs_year', year=year) }}">Overview</a>
@@ -17,7 +17,7 @@
       <ol>
         {% for t in teams if t.conference == 'East' %}
         <li><a href="{{ url_for('team_detail', slug=t.slug) }}">
-          <img class="inline-logo" src="{{ t.logo }}" alt="">
+          <img loading="lazy" decoding="async" class="inline-logo" src="{{ t.logo }}" alt="">
           {{ t.full_name }}
         </a> ({{ t.wins }}-{{ t.losses }})</li>
         {% endfor %}
@@ -28,7 +28,7 @@
       <ol>
         {% for t in teams if t.conference == 'West' %}
         <li><a href="{{ url_for('team_detail', slug=t.slug) }}">
-          <img class="inline-logo" src="{{ t.logo }}" alt="">
+          <img loading="lazy" decoding="async" class="inline-logo" src="{{ t.logo }}" alt="">
           {{ t.full_name }}
         </a> ({{ t.wins }}-{{ t.losses }})</li>
         {% endfor %}

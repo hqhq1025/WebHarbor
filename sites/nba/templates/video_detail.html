@@ -3,7 +3,7 @@
 {% block content %}
 <section class="video-deep">
   <header class="video-player">
-    <img class="poster" src="{{ video.image }}" alt="">
+    <img loading="lazy" decoding="async" class="poster" src="{{ video.image }}" alt="">
     <div>
       <span class="eyebrow">{{ video.kind }} · {{ video.duration }} · {{ video.views }} views</span>
       <h1>{{ video.title }}</h1>
@@ -27,7 +27,7 @@
   <div class="video-grid">
     {% for v in related %}
     <a class="video-card" href="{{ url_for('video_detail', slug=v.slug) }}">
-      <img src="{{ v.image }}" alt="">
+      <img loading="lazy" decoding="async" src="{{ v.image }}" alt="">
       <span class="duration">{{ v.duration }}</span>
       <strong>{{ v.title }}</strong>
       <small>{{ v.views }} views</small>

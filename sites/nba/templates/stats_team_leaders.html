@@ -3,7 +3,7 @@
 {% block content %}
 <section class="leaders-deep">
   <header class="leaders-hero" style="--team:{{ team.color }}">
-    <img class="team-deep-logo" src="{{ team.logo }}" alt="">
+    <img loading="lazy" decoding="async" class="team-deep-logo" src="{{ team.logo }}" alt="">
     <h1>{{ team.full_name }} {{ category|upper }} Leaders</h1>
     <nav class="leader-tabs">
       {% for c in ['ppg','rpg','apg','spg','bpg','fg_pct','three_pct'] %}
@@ -15,7 +15,7 @@
     {% for p in players %}
     <li class="leader-row">
       <span class="rank">#{{ loop.index }}</span>
-      <img class="leader-portrait" src="{{ p.image }}" alt="">
+      <img loading="lazy" decoding="async" class="leader-portrait" src="{{ p.image }}" alt="">
       <a href="{{ url_for('player_detail', slug=p.slug) }}">{{ p.name }}</a>
       <span>{{ p.position }}</span>
       <strong>{{ stat_value(p, category) }}</strong>

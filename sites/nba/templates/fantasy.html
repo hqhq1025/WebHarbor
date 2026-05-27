@@ -15,7 +15,7 @@
 </nav>
 
 <div class="fantasy-banner">
-  <img src="{{ url_for('static', filename='images/articles/nba-official-fantasy-banner.png') }}" alt="Fantasy">
+  <img loading="lazy" decoding="async" src="{{ url_for('static', filename='images/articles/nba-official-fantasy-banner.png') }}" alt="Fantasy">
 </div>
 
 <section class="fantasy-page">
@@ -23,7 +23,7 @@
     <h2>Featured</h2>
     <div class="fantasy-feature-grid">
       <a class="fantasy-main-card" href="{{ url_for('article_detail', slug=fantasy.feature_slug) }}">
-        <img src="{{ url_for('static', filename='images/articles/nba-official-fantasy-pickem.jpg') }}" alt="">
+        <img loading="lazy" decoding="async" src="{{ url_for('static', filename='images/articles/nba-official-fantasy-pickem.jpg') }}" alt="">
         <h1>Play NBA Pick'Em Streak to the Finals!</h1>
         <p>Put your fandom to the test in NBA Pick'Em Streak to the Finals during the 2026 NBA Playoffs to win a trip to the NBA Finals.</p>
         <time>April 25, 2026</time>
@@ -31,7 +31,7 @@
       <div class="fantasy-side-list">
         {% for title, dek, image, slug in fantasy.top_links %}
           <a href="{{ url_for('article_detail', slug=slug) }}">
-            <img src="{{ url_for('static', filename='images/articles/' ~ image) }}" alt="">
+            <img loading="lazy" decoding="async" src="{{ url_for('static', filename='images/articles/' ~ image) }}" alt="">
             <div><h3>{{ title }}</h3><p>{{ dek }}</p><time>April {{ 15 - loop.index }}, 2026</time></div>
           </a>
         {% endfor %}
@@ -44,7 +44,7 @@
     <div class="official-video-row">
       {% for title, image, slug in fantasy.watch %}
         <a class="video-card-official" href="{{ url_for('article_detail', slug=slug) }}">
-          <img src="{{ url_for('static', filename='images/articles/' ~ image) }}" alt="">
+          <img loading="lazy" decoding="async" src="{{ url_for('static', filename='images/articles/' ~ image) }}" alt="">
           <span>&#9654; 02:06</span>
           <h3>{{ title }}</h3>
         </a>
@@ -57,7 +57,7 @@
     <div class="fantasy-news-grid">
       {% for title, dek, image, slug in fantasy.high_score %}
         <a class="official-list-card" href="{{ url_for('article_detail', slug=slug) }}">
-          <img src="{{ url_for('static', filename='images/articles/' ~ image) }}" alt="">
+          <img loading="lazy" decoding="async" src="{{ url_for('static', filename='images/articles/' ~ image) }}" alt="">
           <div><h3>{{ title }}</h3><p>{{ dek }}</p><time>April {{ 18 - loop.index }}, 2026</time></div>
         </a>
       {% endfor %}
@@ -113,7 +113,7 @@
     <div class="fantasy-news-grid">
       {% for title, dek, image, slug in fantasy.draft_prep %}
         <a class="official-list-card" href="{{ url_for('article_detail', slug=slug) }}">
-          <img src="{{ url_for('static', filename='images/articles/' ~ image) }}" alt="">
+          <img loading="lazy" decoding="async" src="{{ url_for('static', filename='images/articles/' ~ image) }}" alt="">
           <div><h3>{{ title }}</h3><p>{{ dek }}</p><time>September {{ 25 - loop.index }}, 2025</time></div>
         </a>
       {% endfor %}

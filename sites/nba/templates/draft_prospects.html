@@ -3,7 +3,7 @@
 {% block content %}
 <section class="draft-deep">
   <header class="draft-hero">
-    <img src="/static/images/articles/nba-official-draft-combine-hero.jpg" alt="">
+    <img loading="lazy" decoding="async" src="/static/images/articles/nba-official-draft-combine-hero.jpg" alt="">
     <div>
       <span class="eyebrow">{{ year }} Draft Prospects</span>
       <h1>{{ year }} Prospect Board</h1>
@@ -18,7 +18,7 @@
   <div class="prospect-grid">
     {% for p in prospects %}
     <article class="prospect-card">
-      <img src="{{ p.image }}" alt="{{ p.name }}">
+      <img loading="lazy" decoding="async" src="{{ p.image }}" alt="{{ p.name }}">
       <span>Mock #{{ p.mock_rank }} · {{ p.tier }}</span>
       <h3>{{ p.name }}</h3>
       <p>{{ p.position }} · {{ p.height }} · {{ p.weight }} lb · {{ p.wingspan }} wing</p>

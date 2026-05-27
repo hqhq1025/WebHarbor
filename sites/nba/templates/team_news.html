@@ -3,7 +3,7 @@
 {% block content %}
 <section class="team-deep">
   <header class="team-deep-hero" style="--team:{{ team.color }}">
-    <img class="team-deep-logo" src="{{ team.logo }}" alt="">
+    <img loading="lazy" decoding="async" class="team-deep-logo" src="{{ team.logo }}" alt="">
     <div>
       <span class="eyebrow">Team News</span>
       <h1>{{ team.full_name }}</h1>
@@ -21,7 +21,7 @@
   <ul class="team-news-list">
     {% for n in items %}
     <li>
-      <img src="{{ n.image }}" alt="">
+      <img loading="lazy" decoding="async" src="{{ n.image }}" alt="">
       <div>
         <small>{{ n.published_at }} · <span class="news-tag">{{ n.tag }}</span></small>
         <h3>{{ n.title }}</h3>

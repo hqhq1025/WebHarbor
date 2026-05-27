@@ -3,7 +3,7 @@
 {% block content %}
 <section class="player-deep">
   <header class="player-deep-hero" style="--team:{{ player.team.color }}">
-    <img class="player-deep-headshot" src="{{ player.image }}" alt="{{ player.name }}">
+    <img loading="lazy" decoding="async" class="player-deep-headshot" src="{{ player.image }}" alt="{{ player.name }}">
     <div>
       <span class="eyebrow">Game Log {{ year }}</span>
       <h1>{{ player.name }}</h1>

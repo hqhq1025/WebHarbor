@@ -3,7 +3,7 @@
 {% block content %}
 <section class="player-deep">
   <header class="player-deep-hero" style="--team:{{ player.team.color }}">
-    <img class="player-deep-headshot" src="{{ player.image }}" alt="{{ player.name }}">
+    <img loading="lazy" decoding="async" class="player-deep-headshot" src="{{ player.image }}" alt="{{ player.name }}">
     <div>
       <span class="eyebrow">Career Overview</span>
       <h1>{{ player.name }}</h1>
@@ -50,7 +50,7 @@
     <div class="player-shoe-grid">
       {% for e in endorsements %}
       <article class="player-shoe-card">
-        <img src="{{ e.image }}" alt="{{ e.shoe }}">
+        <img loading="lazy" decoding="async" src="{{ e.image }}" alt="{{ e.shoe }}">
         <div>
           <span>{{ e.brand }}</span>
           <h3>{{ e.shoe }}</h3>

@@ -20,9 +20,9 @@
     {% for game in games %}
       <form class="game-row ticket-row" method="post">
         <input type="hidden" name="game_id" value="{{ game.id }}">
-        <div><img src="{{ game.away_team.logo }}" alt=""><strong>{{ game.away_team.full_name }}</strong></div>
+        <div><img loading="lazy" decoding="async" src="{{ game.away_team.logo }}" alt=""><strong>{{ game.away_team.full_name }}</strong></div>
         <span>at</span>
-        <div><img src="{{ game.home_team.logo }}" alt=""><strong>{{ game.home_team.full_name }}</strong></div>
+        <div><img loading="lazy" decoding="async" src="{{ game.home_team.logo }}" alt=""><strong>{{ game.home_team.full_name }}</strong></div>
         <span>{{ game.game_date.strftime('%b %-d, %-I:%M %p') }} · {{ game.arena }} · from {{ game.ticket_price|money }}</span>
         <label>Seats<input name="seats" type="number" min="1" max="8" value="2"></label>
         <label>Section<select name="section_preference"><option>Lower bowl</option><option>Club level</option><option>Upper bowl</option></select></label>

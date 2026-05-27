@@ -27,12 +27,12 @@
       {% set team_a = teams_by_slug.get(a) %}
       {% set team_b = teams_by_slug.get(b) %}
       <a class="standings-bracket-card {{ cls }}" href="{{ url_for('playoff_series', series_slug=a ~ '-vs-' ~ b) if cls in ['b7','b8'] else url_for('playoffs') }}">
-        <div>{% if team_a %}<img src="{{ team_a.logo }}" alt=""><strong>{{ team_a.name }}</strong>{% else %}<span></span><strong>TBD</strong>{% endif %}</div>
-        <div>{% if team_b %}<img src="{{ team_b.logo }}" alt=""><strong>{{ team_b.name }}</strong>{% else %}<span></span><strong>TBD</strong>{% endif %}</div>
+        <div>{% if team_a %}<img loading="lazy" decoding="async" src="{{ team_a.logo }}" alt=""><strong>{{ team_a.name }}</strong>{% else %}<span></span><strong>TBD</strong>{% endif %}</div>
+        <div>{% if team_b %}<img loading="lazy" decoding="async" src="{{ team_b.logo }}" alt=""><strong>{{ team_b.name }}</strong>{% else %}<span></span><strong>TBD</strong>{% endif %}</div>
         <em>{{ note }}</em>
       </a>
     {% endfor %}
-    <img class="standings-finals-logo" src="{{ url_for('static', filename='images/articles/nba-official-finals-logo.png') }}" alt="">
+    <img loading="lazy" decoding="async" class="standings-finals-logo" src="{{ url_for('static', filename='images/articles/nba-official-finals-logo.png') }}" alt="">
     <a class="download-bracket standings-download" href="{{ url_for('playoffs') }}">Download Bracket ⇩</a>
   </section>
 

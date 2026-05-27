@@ -19,7 +19,7 @@
   <tbody>
     {% for team in teams %}
       <tr>
-        <td><a class="team-cell" href="{{ url_for('team_detail', slug=team.slug) }}"><span>{{ team.rank|default(loop.index) }}</span><img src="{{ team.logo }}" alt=""> {{ team.full_name }}</a></td>
+        <td><a class="team-cell" href="{{ url_for('team_detail', slug=team.slug) }}"><span>{{ team.rank|default(loop.index) }}</span><img loading="lazy" decoding="async" src="{{ team.logo }}" alt=""> {{ team.full_name }}</a></td>
         <td>{{ team.wins }}</td>
         <td>{{ team.losses }}</td>
         <td>{{ "%.3f"|format(team.win_pct) }}</td>

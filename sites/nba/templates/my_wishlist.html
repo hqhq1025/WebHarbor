@@ -16,7 +16,7 @@
   <div class="wishlist-grid">
     {% for r in rows %}
     <article class="wishlist-card">
-      {% if r.product_image %}<img src="{{ r.product_image }}" alt="">{% endif %}
+      {% if r.product_image %}<img loading="lazy" decoding="async" src="{{ r.product_image }}" alt="">{% endif %}
       <h3><a href="{{ url_for('product_detail', slug=r.product_slug) }}">{{ r.product_name or r.product_slug }}</a></h3>
       <p>${{ r.product_price }}</p>
       <small>{{ r.note }}</small>

@@ -28,7 +28,7 @@
 
     {% macro team_line(team, seed, muted=False) -%}
       <div class="bracket-team {% if muted %}muted{% endif %}">
-        {% if team %}<img src="{{ team.logo }}" alt=""><b>{{ seed }}</b><strong>{{ team.name }}</strong>{% else %}<span class="tbd-dot"></span><strong>TBD</strong>{% endif %}
+        {% if team %}<img loading="lazy" decoding="async" src="{{ team.logo }}" alt=""><b>{{ seed }}</b><strong>{{ team.name }}</strong>{% else %}<span class="tbd-dot"></span><strong>TBD</strong>{% endif %}
       </div>
     {%- endmacro %}
 
@@ -51,7 +51,7 @@
 
     {{ bracket_card('wf1', teams.get('thunder'), 1, teams.get('spurs'), 2, 'Series tied 0-0', link=url_for('playoff_series', series_slug='spurs-vs-thunder'), broadcast='Tue 8:30 AM CT · Now TV/League Pass') }}
 
-    <div class="finals-logo"><img src="{{ url_for('static', filename='images/league/nba-logo.svg') }}" alt=""><strong>Finals</strong></div>
+    <div class="finals-logo"><img loading="lazy" decoding="async" src="{{ url_for('static', filename='images/league/nba-logo.svg') }}" alt=""><strong>Finals</strong></div>
     {{ bracket_card('final-card', none, '', none, '', '', broadcast='4 June, 8:30 AM CT · League Pass') }}
 
     {{ bracket_card('ef1', teams.get('cavaliers'), 4, teams.get('knicks'), 3, 'Series tied 0-0', link=url_for('playoff_series', series_slug='cavaliers-vs-knicks'), broadcast='Wed 8:00 AM CT · Now TV/League Pass') }}
@@ -72,7 +72,7 @@
     <div class="playoff-news-grid">
       {% for item in latest_news %}
         <a class="playoff-news-row" href="{{ url_for('article_detail', slug=item.slug) }}">
-          <img src="{{ item.image }}" alt="">
+          <img loading="lazy" decoding="async" src="{{ item.image }}" alt="">
           <div><h3>{{ item.title }}</h3><p>{{ item.dek }}</p><span>{{ item.date }}</span></div>
         </a>
       {% endfor %}
@@ -84,7 +84,7 @@
     <div class="history-row">
       {% for title, duration, image in chasing_history %}
         <a class="history-card" href="{{ url_for('watch') }}">
-          <img src="{{ url_for('static', filename='images/articles/' ~ image) }}" alt="">
+          <img loading="lazy" decoding="async" src="{{ url_for('static', filename='images/articles/' ~ image) }}" alt="">
           <span>▶ {{ duration }}</span>
           <h3>{{ title }}</h3>
         </a>

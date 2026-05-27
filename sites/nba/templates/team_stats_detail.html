@@ -2,7 +2,7 @@
 {% block title %}{{ team.full_name }} Stats - NBA{% endblock %}
 {% block content %}
 <section class="team-header" style="--team: {{ team.color }}">
-  <img src="{{ team.logo }}" alt="">
+  <img loading="lazy" decoding="async" src="{{ team.logo }}" alt="">
   <div>
     <span class="kicker">{{ team.conference }} · {{ team.division }}</span>
     <h1>{{ team.full_name }} Stats</h1>
@@ -31,7 +31,7 @@
         <tbody>
           {% for player in players %}
             <tr>
-              <td><a class="player-cell" href="{{ url_for('player_detail', slug=player.slug) }}"><img src="{{ player.image }}" alt="">{{ player.name }}</a></td>
+              <td><a class="player-cell" href="{{ url_for('player_detail', slug=player.slug) }}"><img loading="lazy" decoding="async" src="{{ player.image }}" alt="">{{ player.name }}</a></td>
               <td>{{ player.jersey }}</td><td>{{ player.position }}</td><td>{{ "%.1f"|format(player.ppg) }}</td><td>{{ "%.1f"|format(player.rpg) }}</td><td>{{ "%.1f"|format(player.apg) }}</td><td>{{ "%.1f"|format(player.spg) }}</td><td>{{ "%.1f"|format(player.bpg) }}</td>
             </tr>
           {% endfor %}

@@ -15,7 +15,7 @@
     <tbody>
       {% for r in roster %}
       <tr>
-        <td><img class="roster-portrait" src="{{ r.player_image or '/static/images/league/nba-logo.svg' }}" alt=""></td>
+        <td><img loading="lazy" decoding="async" class="roster-portrait" src="{{ r.player_image or '/static/images/league/nba-logo.svg' }}" alt=""></td>
         <td><a href="{{ url_for('player_detail', slug=r.player_slug) }}">{{ r.player_name or r.player_slug }}</a></td>
         <td>{{ r.slot }}</td><td>{{ r.player_pos }}</td>
         <td>{{ r.team_name or '—' }}</td><td>{{ r.status }}</td>

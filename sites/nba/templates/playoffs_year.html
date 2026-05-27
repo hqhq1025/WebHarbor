@@ -3,7 +3,7 @@
 {% block content %}
 <section class="playoffs-deep">
   <header class="playoffs-hero">
-    <img src="/static/images/articles/nba-official-finals-logo.png" alt="">
+    <img loading="lazy" decoding="async" src="/static/images/articles/nba-official-finals-logo.png" alt="">
     <h1>{{ year }} NBA Playoffs</h1>
     <nav class="playoffs-tabs">
       <a class="active" href="{{ url_for('playoffs_year', year=year) }}">Overview</a>
@@ -15,7 +15,7 @@
   <div class="team-grid-condensed">
     {% for t in teams[:16] %}
     <a class="team-card-small" href="{{ url_for('team_detail', slug=t.slug) }}">
-      <img src="{{ t.logo }}" alt="">
+      <img loading="lazy" decoding="async" src="{{ t.logo }}" alt="">
       <strong>{{ t.full_name }}</strong>
       <small>{{ t.conference }} · {{ t.division }}</small>
     </a>

@@ -17,9 +17,9 @@
     {% for s in saved %}
     <li>
       <a href="{{ url_for('game_detail', game_id=s.game_id) }}">
-        <img class="inline-logo" src="{{ s.home_logo }}" alt="">
+        <img loading="lazy" decoding="async" class="inline-logo" src="{{ s.home_logo }}" alt="">
         <strong>{{ s.home_name }} vs {{ s.away_name }}</strong>
-        <img class="inline-logo" src="{{ s.away_logo }}" alt="">
+        <img loading="lazy" decoding="async" class="inline-logo" src="{{ s.away_logo }}" alt="">
       </a>
       <small>{{ s.game_date }} · {{ s.status }}</small>
       <p>{{ s.note }}</p>

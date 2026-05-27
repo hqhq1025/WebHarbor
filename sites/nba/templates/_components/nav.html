@@ -1,7 +1,7 @@
 <header class="nba-global">
   <div class="primary-nav">
     <a class="brand" href="{{ url_for('index') }}">
-      <img src="{{ url_for('static', filename='images/league/nba-logo.svg') }}" alt="NBA">
+      <img loading="lazy" decoding="async" src="{{ url_for('static', filename='images/league/nba-logo.svg') }}" alt="NBA">
     </a>
     <nav aria-label="Primary">
       <a class="{% if active_endpoint == 'games' or active_endpoint == 'game_detail' %}active{% endif %}" href="{{ url_for('games') }}">Games</a>

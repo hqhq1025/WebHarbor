@@ -2,7 +2,7 @@
 {% block title %}{{ product.name }} - NBA Store{% endblock %}
 {% block content %}
 <section class="product-detail">
-  <img src="{{ product.image }}" alt="">
+  <img loading="lazy" decoding="async" src="{{ product.image }}" alt="">
   <div>
     <p class="eyebrow">{{ product.category }} · {{ product.color }}</p>
     <h1>{{ product.name }}</h1>
@@ -17,5 +17,5 @@
     <ul>{% for feature in product.feature_list() %}<li>{{ feature }}</li>{% endfor %}</ul>
   </div>
 </section>
-<section class="band"><h2>Related gear</h2><div class="grid cards-4">{% for item in related %}<a class="card product" href="{{ url_for('product_detail', slug=item.slug) }}"><img src="{{ item.image }}" alt=""><h3>{{ item.name }}</h3><strong>{{ item.price|money }}</strong></a>{% endfor %}</div></section>
+<section class="band"><h2>Related gear</h2><div class="grid cards-4">{% for item in related %}<a class="card product" href="{{ url_for('product_detail', slug=item.slug) }}"><img loading="lazy" decoding="async" src="{{ item.image }}" alt=""><h3>{{ item.name }}</h3><strong>{{ item.price|money }}</strong></a>{% endfor %}</div></section>
 {% endblock %}

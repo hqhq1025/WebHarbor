@@ -3,7 +3,7 @@
 {% block content %}
 <section class="draft-deep">
   <header class="draft-hero">
-    <img src="/static/images/articles/nba-official-draft-banner.png" alt="">
+    <img loading="lazy" decoding="async" src="/static/images/articles/nba-official-draft-banner.png" alt="">
     <div>
       <span class="eyebrow">{{ year }} NBA Draft</span>
       <h1>{{ year }} Draft Central</h1>
@@ -21,7 +21,7 @@
   <div class="prospect-grid">
     {% for p in prospects[:10] %}
     <article class="prospect-card">
-      <img src="{{ p.image }}" alt="{{ p.name }}">
+      <img loading="lazy" decoding="async" src="{{ p.image }}" alt="{{ p.name }}">
       <span>Mock #{{ p.mock_rank }} · {{ p.tier }}</span>
       <h3>{{ p.name }}</h3>
       <p>{{ p.position }} · {{ p.height }} · {{ p.weight }} lb · {{ p.college }}</p>
@@ -37,7 +37,7 @@
       {% for l in lottery %}
       <tr>
         <td>{{ l.seed }}</td>
-        <td><img class="inline-logo" src="{{ team_logo(l.team_slug) }}" alt="">{{ team_name(l.team_slug) }}</td>
+        <td><img loading="lazy" decoding="async" class="inline-logo" src="{{ team_logo(l.team_slug) }}" alt="">{{ team_name(l.team_slug) }}</td>
         <td>{{ l.odds_pct }}%</td>
         <td>#{{ l.final_pick }}</td>
       </tr>

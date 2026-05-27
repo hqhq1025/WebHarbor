@@ -3,13 +3,13 @@
 {% block content %}
 <section class="game-deep">
   <header class="game-deep-hero">
-    <img class="team-side" src="{{ game.home_team.logo }}" alt="">
+    <img loading="lazy" decoding="async" class="team-side" src="{{ game.home_team.logo }}" alt="">
     <div class="score">
       <strong>{{ game.home_team.full_name }} {{ game.home_score or '-' }}</strong>
       <span>{% if game.status == 'Final' %}Final{% else %}Tip {{ game.game_date.strftime('%I:%M %p') }}{% endif %}</span>
       <strong>{{ game.away_score or '-' }} {{ game.away_team.full_name }}</strong>
     </div>
-    <img class="team-side" src="{{ game.away_team.logo }}" alt="">
+    <img loading="lazy" decoding="async" class="team-side" src="{{ game.away_team.logo }}" alt="">
   </header>
   <nav class="game-deep-tabs">
     <a href="{{ url_for('game_detail', game_id=game.id) }}">Summary</a>
@@ -23,7 +23,7 @@
     <tbody>
       {% for r in rows %}
       <tr>
-        <td><img class="inline-logo" src="{{ team_logo(r.team_slug) }}" alt="">{{ team_name(r.team_slug) }}</td>
+        <td><img loading="lazy" decoding="async" class="inline-logo" src="{{ team_logo(r.team_slug) }}" alt="">{{ team_name(r.team_slug) }}</td>
         <td>{{ r.q1 }}</td><td>{{ r.q2 }}</td><td>{{ r.q3 }}</td><td>{{ r.q4 }}</td>
         <td>{{ r.fg_made }}-{{ r.fg_att }}</td>
         <td>{{ r.three_made }}-{{ r.three_att }}</td>
