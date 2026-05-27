@@ -8,7 +8,7 @@
 {% block content %}
 <section class="container">
   {% set hero = pick_image('brand', 'patient-care') %}
-  {% if hero %}<img class="hero-image" src="{{ url_for('static', filename=hero) }}" alt="Mayo Clinic">{% endif %}
+  {% if hero %}<img loading="lazy" decoding="async" class="hero-image" src="{{ url_for('static', filename=hero) }}" alt="Mayo Clinic">{% endif %}
   <h1>Patient Care &amp; Health Information</h1>
   <p>From hundreds of disease guides to symptom checkers, drug references, and ways to find a Mayo Clinic doctor, our health library is built for patients and families researching care.</p>
 

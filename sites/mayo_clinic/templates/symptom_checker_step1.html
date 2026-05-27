@@ -12,7 +12,7 @@
   </div>
   <div class="sc-step">Step 1 of 5: Where is the symptom located?</div>
   <div style="display:grid;grid-template-columns: 220px 1fr; gap:24px; align-items:start;">
-    <img src="{{ url_for('static', filename='icons/body-silhouette.svg') }}" alt="Body region selector" style="width:200px;">
+    <img loading="lazy" decoding="async" src="{{ url_for('static', filename='icons/body-silhouette.svg') }}" alt="Body region selector" style="width:200px;">
     <div class="sc-options">
       {% for slug, label, _ in regions %}
         <a href="{{ url_for('symptom_checker', region=slug) }}">{{ label }}</a>

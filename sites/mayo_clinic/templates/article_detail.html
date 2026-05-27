@@ -12,7 +12,7 @@
   {% set img_kind = 'wellness' if article.kind == 'lifestyle' else ('stories' if article.kind == 'story' else 'trials') %}
   {% set hero = pick_image(img_kind, article.slug) %}
   {% if not hero %}{% set hero = pick_image('articles', article.slug) %}{% endif %}
-  {% if hero %}<img class="article-hero" src="{{ url_for('static', filename=hero) }}" alt="">{% endif %}
+  {% if hero %}<img loading="lazy" decoding="async" class="article-hero" src="{{ url_for('static', filename=hero) }}" alt="">{% endif %}
   <h1>{{ article.title }}</h1>
   <p class="muted">{{ article.category }} &middot; {{ article.published_date }}</p>
 

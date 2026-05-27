@@ -8,7 +8,7 @@
 {% block content %}
 <section class="container">
   {% set hero = pick_image('brand', 'giving') %}
-  {% if hero %}<img class="hero-image" src="{{ url_for('static', filename=hero) }}" alt="Mayo Clinic">{% endif %}
+  {% if hero %}<img loading="lazy" decoding="async" class="hero-image" src="{{ url_for('static', filename=hero) }}" alt="Mayo Clinic">{% endif %}
   <h1>Support Mayo Clinic</h1>
   <p>Generous donors help Mayo Clinic accelerate research, train the next generation of clinicians, and provide care to patients who otherwise could not afford it.</p>
 

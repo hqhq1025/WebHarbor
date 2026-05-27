@@ -57,7 +57,7 @@
   {% for d in doctors %}
     {% set img = pick_image('doctors', d.slug) %}
     <div class="doctor-card">
-      {% if img %}<img class="doctor-headshot-row" src="{{ url_for('static', filename=img) }}" alt="">{% else %}<div class="doctor-headshot-row" style="background:var(--mayo-blue-light); display:flex; align-items:center; justify-content:center; font-weight:700; color:var(--mayo-blue);">{{ d.name[0] }}</div>{% endif %}
+      {% if img %}<img loading="lazy" decoding="async" class="doctor-headshot-row" src="{{ url_for('static', filename=img) }}" alt="">{% else %}<div class="doctor-headshot-row" style="background:var(--mayo-blue-light); display:flex; align-items:center; justify-content:center; font-weight:700; color:var(--mayo-blue);">{{ d.name[0] }}</div>{% endif %}
       <div class="doctor-info">
         <h4><a href="{{ url_for('doctor_detail', slug=d.slug) }}">{{ d.name }}</a></h4>
         <div class="specialty">{{ d.specialty }}</div>

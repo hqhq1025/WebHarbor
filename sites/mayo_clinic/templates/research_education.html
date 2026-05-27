@@ -8,7 +8,7 @@
 {% block content %}
 <section class="container">
   {% set hero = pick_image('trials', 'research') %}
-  {% if hero %}<img class="hero-image" src="{{ url_for('static', filename=hero) }}" alt="Mayo Clinic research">{% endif %}
+  {% if hero %}<img loading="lazy" decoding="async" class="hero-image" src="{{ url_for('static', filename=hero) }}" alt="Mayo Clinic research">{% endif %}
   <h1>Mayo Clinic Research &amp; Education</h1>
   <p>Mayo Clinic combines clinical care, research, and education in one integrated mission. Each year, more than 4,000 ongoing studies span discovery science, translational research, and clinical trials.</p>
 

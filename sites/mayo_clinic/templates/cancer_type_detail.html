@@ -10,7 +10,7 @@
 {% block content %}
 <section class="container">
   {% set hero = pick_image('cancer', ct[0]) %}
-  {% if hero %}<img class="hero-image" src="{{ url_for('static', filename=hero) }}" alt="{{ name }}">{% endif %}
+  {% if hero %}<img loading="lazy" decoding="async" class="hero-image" src="{{ url_for('static', filename=hero) }}" alt="{{ name }}">{% endif %}
   <h1>{{ name }}</h1>
   <p class="muted">{{ blurb }}</p>
 

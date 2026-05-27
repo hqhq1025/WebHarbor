@@ -10,7 +10,7 @@
 {% block content %}
 <section class="container">
   {% set hero = pick_image('wellness', hub_slug) %}
-  {% if hero %}<img class="hero-image" src="{{ url_for('static', filename=hero) }}" alt="{{ hub_name }}">{% endif %}
+  {% if hero %}<img loading="lazy" decoding="async" class="hero-image" src="{{ url_for('static', filename=hero) }}" alt="{{ hub_name }}">{% endif %}
   <h1>{{ hub_name }}</h1>
   <p class="muted">{{ blurb }}</p>
 
@@ -19,7 +19,7 @@
     {% for a in articles %}
       {% set img = pick_image('articles', a.slug) %}
       <div class="card-with-image">
-        {% if img %}<img class="card-img" src="{{ url_for('static', filename=img) }}" alt="">{% endif %}
+        {% if img %}<img loading="lazy" decoding="async" class="card-img" src="{{ url_for('static', filename=img) }}" alt="">{% endif %}
         <div class="card-body">
           <div class="kind">{{ a.category }}</div>
           <h4><a href="{{ url_for('lifestyle_detail', slug=a.slug) }}">{{ a.title }}</a></h4>

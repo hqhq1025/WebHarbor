@@ -3,14 +3,14 @@
 {% block content %}
 <section class="container">
   {% set hero = pick_image('locations', 'overview') %}
-  {% if hero %}<img class="hero-image" src="{{ url_for('static', filename=hero) }}" alt="Mayo Clinic locations">{% endif %}
+  {% if hero %}<img loading="lazy" decoding="async" class="hero-image" src="{{ url_for('static', filename=hero) }}" alt="Mayo Clinic locations">{% endif %}
   <h1>Mayo Clinic locations</h1>
   <p class="muted">Learn more about Mayo Clinic locations or choose a specific location.</p>
 
   <div class="related-grid">
     {% set rochester_img = pick_image('locations', 'rochester') %}
     <div class="card-with-image">
-      {% if rochester_img %}<img class="card-img" src="{{ url_for('static', filename=rochester_img) }}" alt="Rochester">{% endif %}
+      {% if rochester_img %}<img loading="lazy" decoding="async" class="card-img" src="{{ url_for('static', filename=rochester_img) }}" alt="Rochester">{% endif %}
       <div class="card-body">
         <div class="kind">Minnesota</div>
         <h4><a href="{{ url_for('location_detail', slug='rochester') }}">Mayo Clinic in Rochester</a></h4>
@@ -20,7 +20,7 @@
     </div>
     {% set jax_img = pick_image('locations', 'jacksonville') %}
     <div class="card-with-image">
-      {% if jax_img %}<img class="card-img" src="{{ url_for('static', filename=jax_img) }}" alt="Jacksonville">{% endif %}
+      {% if jax_img %}<img loading="lazy" decoding="async" class="card-img" src="{{ url_for('static', filename=jax_img) }}" alt="Jacksonville">{% endif %}
       <div class="card-body">
         <div class="kind">Florida</div>
         <h4><a href="{{ url_for('location_detail', slug='jacksonville') }}">Mayo Clinic in Jacksonville</a></h4>
@@ -30,7 +30,7 @@
     </div>
     {% set phx_img = pick_image('locations', 'phoenix') %}
     <div class="card-with-image">
-      {% if phx_img %}<img class="card-img" src="{{ url_for('static', filename=phx_img) }}" alt="Phoenix">{% endif %}
+      {% if phx_img %}<img loading="lazy" decoding="async" class="card-img" src="{{ url_for('static', filename=phx_img) }}" alt="Phoenix">{% endif %}
       <div class="card-body">
         <div class="kind">Arizona</div>
         <h4><a href="{{ url_for('location_detail', slug='phoenix') }}">Mayo Clinic in Phoenix/Scottsdale</a></h4>

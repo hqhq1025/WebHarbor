@@ -16,7 +16,7 @@
   {% set anat = pick_image('anatomy', cond.slug) %}
   {% if anat %}
   <figure class="anatomy-fig">
-    <img src="{{ url_for('static', filename=anat) }}" alt="Illustration related to {{ cond.name }}">
+    <img loading="lazy" decoding="async" src="{{ url_for('static', filename=anat) }}" alt="Illustration related to {{ cond.name }}">
     <figcaption>Illustrative anatomy. Mayo Clinic Health Library.</figcaption>
   </figure>
   {% endif %}

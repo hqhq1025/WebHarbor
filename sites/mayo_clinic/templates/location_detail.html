@@ -11,7 +11,7 @@
 <section class="container">
   {% set hero = pick_image('locations', c.slug) %}
   {% if not hero %}{% set hero = pick_image('brand', c.slug) %}{% endif %}
-  {% if hero %}<img class="hero-image" src="{{ url_for('static', filename=hero) }}" alt="{{ c.name }}">{% endif %}
+  {% if hero %}<img loading="lazy" decoding="async" class="hero-image" src="{{ url_for('static', filename=hero) }}" alt="{{ c.name }}">{% endif %}
   <h1>Mayo Clinic in {{ c.name }}</h1>
   <p class="muted">{{ c.highlights }}</p>
 

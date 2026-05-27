@@ -13,7 +13,7 @@
     {% for a in articles %}
       {% set img = pick_image('trials', a.slug) %}
       <div class="card-with-image">
-        {% if img %}<img class="card-img" src="{{ url_for('static', filename=img) }}" alt="">{% endif %}
+        {% if img %}<img loading="lazy" decoding="async" class="card-img" src="{{ url_for('static', filename=img) }}" alt="">{% endif %}
         <div class="card-body">
           <div class="kind">{{ a.published_date }}</div>
           <h4><a href="{{ url_for('news_detail', slug=a.slug) }}">{{ a.title }}</a></h4>

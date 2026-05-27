@@ -77,7 +77,7 @@
     {% for c in featured_conditions %}
       {% set img = pick_image('anatomy', c.slug) %}
       <div class="card-with-image">
-        {% if img %}<img class="card-img" src="{{ url_for('static', filename=img) }}" alt="">{% endif %}
+        {% if img %}<img loading="lazy" decoding="async" class="card-img" src="{{ url_for('static', filename=img) }}" alt="">{% endif %}
         <div class="card-body">
           <div class="kind">Condition</div>
           <h4><a href="{{ url_for('condition_detail', slug=c.slug) }}">{{ c.name }}</a></h4>
@@ -92,7 +92,7 @@
     {% for a in featured_articles %}
       {% set img = pick_image('articles', a.slug) %}
       <div class="card-with-image">
-        {% if img %}<img class="card-img" src="{{ url_for('static', filename=img) }}" alt="">{% endif %}
+        {% if img %}<img loading="lazy" decoding="async" class="card-img" src="{{ url_for('static', filename=img) }}" alt="">{% endif %}
         <div class="card-body">
           <div class="kind">{{ a.category }}</div>
           <h4><a href="{{ url_for('lifestyle_detail', slug=a.slug) }}">{{ a.title }}</a></h4>

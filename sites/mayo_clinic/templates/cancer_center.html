@@ -10,7 +10,7 @@
 {% block content %}
 <section class="container">
   {% set hero = pick_image('cancer', 'cancer-center') %}
-  {% if hero %}<img class="hero-image" src="{{ url_for('static', filename=hero) }}" alt="Mayo Clinic Cancer Center">{% endif %}
+  {% if hero %}<img loading="lazy" decoding="async" class="hero-image" src="{{ url_for('static', filename=hero) }}" alt="Mayo Clinic Cancer Center">{% endif %}
   <h1>Mayo Clinic Comprehensive Cancer Center</h1>
   <p>One of only a small number of NCI-designated Comprehensive Cancer Centers in the United States, with integrated research, clinical trials, proton beam therapy, CAR-T programs, and multidisciplinary tumor boards across all three Mayo Clinic campuses.</p>
 
@@ -19,7 +19,7 @@
     {% for slug, name, cond_slug, blurb in cancer_types %}
       {% set img = pick_image('cancer', slug) %}
       <div class="cancer-card">
-        {% if img %}<img src="{{ url_for('static', filename=img) }}" alt="{{ name }}">{% endif %}
+        {% if img %}<img loading="lazy" decoding="async" src="{{ url_for('static', filename=img) }}" alt="{{ name }}">{% endif %}
         <div class="body">
           <h4><a href="{{ url_for('cancer_type_detail', slug=slug) }}">{{ name }}</a></h4>
           <p>{{ blurb }}</p>
