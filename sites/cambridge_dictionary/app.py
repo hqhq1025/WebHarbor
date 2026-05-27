@@ -37,6 +37,38 @@ login_manager = LoginManager(app)
 login_manager.login_view = 'login'
 login_manager.login_message = 'Please sign in to access your account.'
 login_manager.login_message_category = 'info'
+
+
+# >>> silent-fail-fix: unauthorized_handler
+@login_manager.unauthorized_handler
+def _unauthorized_silent_fail_fix():
+    """Return JSON 401 for AJAX/JSON requests so fetch().then(r=>r.json())
+    surfaces the auth requirement instead of choking on HTML 302→/login.
+    Falls back to the normal redirect for browser navigations.
+
+    Pairs with the fetch-wrapper in static/js/main.js which detects this and
+    redirects the user to /login. Root cause docs: gotcha #49."""
+    from flask import request, jsonify, redirect, url_for
+    accept = request.headers.get('Accept', '') or ''
+    wants_json = (
+        request.path.startswith('/api/')
+        or request.is_json
+        or 'application/json' in accept
+        or request.headers.get('X-Requested-With') == 'XMLHttpRequest'
+    )
+    next_url = request.full_path if request.query_string else request.path
+    try:
+        login_url = url_for('login', next=next_url)
+    except Exception:
+        login_url = '/login?next=' + next_url
+    if wants_json:
+        return jsonify({
+            'error': 'login_required',
+            'message': 'Sign in to continue.',
+            'redirect': login_url,
+        }), 401
+    return redirect(login_url)
+# <<< silent-fail-fix
 csrf = CSRFProtect(app)
 
 
@@ -180,6 +212,18 @@ class Word(db.Model):
 
     saved_by = db.relationship('SavedWord', backref='word', lazy=True,
                                cascade='all, delete-orphan')
+
+    # Composite indexes for the R6 word_detail panels. Without these the
+    # planner full-scans the 75k-row catalog: shared_coll_anchor lookup,
+    # is_thesaurus_phrase + headword range (nearby words), and slug prefix
+    # walk all hit the SCAN path (~30ms each). ix_ prefix is preserved by
+    # normalize_seed_db_layout so byte-id of instance_seed/cd.db is stable.
+    __table_args__ = (
+        db.Index('ix_words_thes_anchor_freq',
+                 'is_thesaurus_phrase', 'shared_coll_anchor', 'frequency_rank'),
+        db.Index('ix_words_thes_headword',
+                 'is_thesaurus_phrase', 'headword'),
+    )
 
     def get_definitions(self):
         try:
@@ -675,27 +719,54 @@ def index():
 # R6 helpers — same-root union, shared-collocation lookup, slug resolver.
 # ---------------------------------------------------------------------------
 
+# Memoize the per-word panels: the words catalog is read-only between
+# control_server /reset calls (which respawn the worker), so caching the
+# id lists across requests is safe. We cache id-lists, not Word ORM
+# objects, so we don't carry detached-instance state across sessions.
+_R6_SAME_ROOT_IDS: dict = {}
+_R6_SHARED_COLL_IDS: dict = {}
+
+
 def _r6_same_root_words(word, limit=8):
     """Union of (a) explicit ``roots`` slugs on the word and (b) other
     words whose slug shares the first 4 chars with this one. Excludes the
     word itself and returns at most ``limit`` real Word rows, ordered
     deterministically by (level rank, frequency_rank, headword)."""
-    out = []
+    key = (word.id, limit)
+    ids = _R6_SAME_ROOT_IDS.get(key)
+    if ids is None:
+        ids = _r6_same_root_ids(word, limit)
+        _R6_SAME_ROOT_IDS[key] = ids
+    if not ids:
+        return []
+    rows = Word.query.filter(Word.id.in_(ids)).all()
+    by_id = {w.id: w for w in rows}
+    return [by_id[i] for i in ids if i in by_id]
+
+
+def _r6_same_root_ids(word, limit):
+    out_ids = []
     seen = {word.id}
     # (a) explicit roots
     for r in word.get_roots():
         w = Word.query.filter_by(slug=r, is_thesaurus_phrase=False).first()
         if w and w.id not in seen:
-            out.append(w)
+            out_ids.append(w.id)
             seen.add(w.id)
-            if len(out) >= limit:
-                return out
-    # (b) prefix union — 4-char stem
+            if len(out_ids) >= limit:
+                return out_ids
+    # (b) prefix union — 4-char stem. Use a range comparison instead of
+    # ``slug LIKE 'stem%'``: SQLite's default LIKE is case-insensitive so
+    # the planner cannot use the BINARY slug index for the LIKE form and
+    # full-scans the 75k-row catalog (~30ms). Range comparison binds to
+    # the slug index for a sub-ms seek.
     stem = (word.slug or '')[:4]
     if len(stem) >= 4:
+        upper = stem + '￿'
         peers = (Word.query
                  .filter(Word.is_thesaurus_phrase == False,  # noqa
-                         Word.slug.like(stem + '%'),
+                         Word.slug >= stem,
+                         Word.slug < upper,
                          Word.id != word.id)
                  .order_by(Word.frequency_rank.asc(),
                            Word.headword.asc())
@@ -703,11 +774,11 @@ def _r6_same_root_words(word, limit=8):
         for w in peers:
             if w.id in seen:
                 continue
-            out.append(w)
+            out_ids.append(w.id)
             seen.add(w.id)
-            if len(out) >= limit:
+            if len(out_ids) >= limit:
                 break
-    return out
+    return out_ids
 
 
 def _r6_shared_coll_words(word, limit=6):
@@ -715,9 +786,23 @@ def _r6_shared_coll_words(word, limit=6):
     ``shared_coll_anchor`` column when populated, falls back to scanning
     other rows whose collocation phrases contain the word's headword
     token."""
-    out = []
+    key = (word.id, limit)
+    ids = _R6_SHARED_COLL_IDS.get(key)
+    if ids is None:
+        ids = _r6_shared_coll_ids(word, limit)
+        _R6_SHARED_COLL_IDS[key] = ids
+    if not ids:
+        return []
+    rows = Word.query.filter(Word.id.in_(ids)).all()
+    by_id = {w.id: w for w in rows}
+    return [by_id[i] for i in ids if i in by_id]
+
+
+def _r6_shared_coll_ids(word, limit):
+    out_ids = []
     anchor = (word.shared_coll_anchor or '').strip().lower()
     if anchor:
+        # Covered by ix_words_thes_anchor_freq — index seek + ordered.
         peers = (Word.query
                  .filter(Word.is_thesaurus_phrase == False,  # noqa
                          Word.shared_coll_anchor == anchor,
@@ -725,10 +810,14 @@ def _r6_shared_coll_words(word, limit=6):
                  .order_by(Word.frequency_rank.asc(),
                            Word.headword.asc())
                  .limit(limit).all())
-        out.extend(peers)
-    if len(out) < limit:
+        out_ids.extend(w.id for w in peers)
+    if len(out_ids) < limit:
         head = (word.headword or '').lower().split()[0]
         if head and len(head) >= 4:
+            # ``collocations_json LIKE '%head%'`` cannot use any index
+            # (substring match). Result is memoized by (word.id) so the
+            # 25ms full-scan only fires on the first hit per word; cache
+            # is reset when the worker is respawned by control_server.
             more = (Word.query
                     .filter(Word.is_thesaurus_phrase == False,  # noqa
                             Word.collocations_json.like(f'%{head}%'),
@@ -736,15 +825,15 @@ def _r6_shared_coll_words(word, limit=6):
                     .order_by(Word.frequency_rank.asc(),
                               Word.headword.asc())
                     .limit(limit * 3).all())
-            seen = {w.id for w in out}
+            seen = set(out_ids)
             for w in more:
                 if w.id in seen:
                     continue
-                out.append(w)
+                out_ids.append(w.id)
                 seen.add(w.id)
-                if len(out) >= limit:
+                if len(out_ids) >= limit:
                     break
-    return out[:limit]
+    return out_ids[:limit]
 
 
 def _r6_resolve_slugs(slugs):
