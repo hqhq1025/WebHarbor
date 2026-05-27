@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% block title %}{{ name }} — Allrecipes Chef Profile{% endblock %}
+{% block meta_description %}{{ name }} — {{ recipe_count }} recipes on Allrecipes. {{ bio }}{% endblock %}
+{% block content %}
+<section class="container" style="max-width:960px;margin:32px auto;padding:0 16px">
+  <div class="breadcrumb" style="font-size:0.82rem;color:#999;margin-bottom:12px">
+    <a href="{{ url_for('index') }}" style="color:#666">Home</a> &rsaquo;
+    <a href="{{ url_for('gui_chef_bio_hub') }}" style="color:#666">Chefs</a> &rsaquo;
+    {{ name }}
+  </div>
+
+  <header class="chef-header" style="background:#fafaf6;border:1px solid #eee;border-radius:8px;padding:24px 28px;margin-bottom:18px">
+    <h1 style="margin:0 0 6px 0;font-size:1.6rem">{{ name }}</h1>
+    <div style="color:#666;font-size:0.9rem">{{ location }} &middot; Allrecipes contributor since {{ join_year }}</div>
+    <p style="margin:14px 0 0 0;color:#333;font-size:0.98rem;max-width:720px">{{ bio }}</p>
+    <ul style="list-style:none;padding:0;margin:14px 0 0 0;display:flex;flex-wrap:wrap;gap:14px;color:#555;font-size:0.9rem">
+      <li><strong>{{ recipe_count }}</strong> recipes</li>
+      <li><strong>{{ '%.2f'|format(avg_rating) }}</strong> avg rating</li>
+      {% if top_topics %}<li>Specialties: {{ top_topics | join(' &middot; ') }}</li>{% endif %}
+    </ul>
+  </header>
+
+  <h2 style="margin:24px 0 12px 0">Top recipes by {{ name }}</h2>
+  {% if recipes %}
+  <div class="recipe-grid recipe-grid-3">
+    {% for recipe in recipes %}
+    <div class="recipe-card">
+      <div class="recipe-card-image">
+        <a href="{{ url_for('recipe_detail', slug=recipe.slug) }}">
+          <img src="{{ recipe.image }}" alt="{{ recipe.title }}"
+               onerror="this.parentElement.innerHTML='<div class=\'placeholder-img\'>{{ recipe.title }}</div>'">
+        </a>
+      </div>
+      <div class="recipe-card-body">
+        <div class="recipe-card-title"><a href="{{ url_for('recipe_detail', slug=recipe.slug) }}">{{ recipe.title }}</a></div>
+        <div class="recipe-card-meta">
+          <div class="recipe-card-rating">
+            {% for i in range(5) %}
+            <span class="star {% if i >= recipe.avg_rating|round(0,'floor')|int %}empty{% endif %}">&#9733;</span>
+            {% endfor %}
+          </div>
+          <span>({{ recipe.review_count|int }})</span>
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <p>No recipes yet.</p>
+  {% endif %}
+</section>
+{% endblock %}

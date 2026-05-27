@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block title %}Troubleshooting — {{ recipe.title }}{% endblock %}
+{% block meta_description %}Common questions and fixes for {{ recipe.title }} — why did my dish turn out dry, can I make it ahead, how do I store leftovers.{% endblock %}
+{% block content %}
+<section class="container" style="max-width:840px;margin:32px auto;padding:0 16px">
+  <div class="breadcrumb" style="font-size:0.82rem;color:#888;margin-bottom:10px">
+    <a href="{{ url_for('index') }}" style="color:#666">Home</a> &rsaquo;
+    <a href="{{ url_for('recipe_detail', slug=recipe.slug) }}" style="color:#666">{{ recipe.title }}</a> &rsaquo;
+    Troubleshooting
+  </div>
+  <h1 class="section-title" style="margin:0 0 6px 0">Troubleshooting — {{ recipe.title }}</h1>
+  <p style="color:#555;margin-bottom:18px">
+    Real questions home cooks asked while making this recipe — with quick
+    fixes you can apply in the moment.
+  </p>
+
+  <ol class="qa-list" style="list-style:none;padding:0;margin:0">
+    {% for q, a in qas %}
+    <li style="border:1px solid #eee;border-radius:6px;padding:16px 22px;margin-bottom:10px;background:#fff">
+      <h3 style="margin:0 0 6px 0;font-size:1.08rem;color:#1565c0">Q: {{ q }}</h3>
+      <p style="margin:0;color:#333;font-size:0.96rem">A: {{ a }}</p>
+    </li>
+    {% endfor %}
+  </ol>
+
+  <div style="margin-top:22px;font-size:0.9rem;color:#666">
+    Still stuck? Try the
+    <a href="{{ url_for('recipe_detail', slug=recipe.slug) }}">full recipe</a>,
+    the <a href="/recipe/{{ recipe.slug }}/reviews">community reviews</a>, or
+    the <a href="/help/popovers">site help</a>.
+  </div>
+</section>
+{% endblock %}

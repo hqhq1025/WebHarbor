@@ -1,0 +1,53 @@
+{# Shared recipe-grid partial used by detail pages that have done their own
+   slicing and pass `items` (list) + `page` / `pages` / `slug`. #}
+{% if items %}
+<div class="recipe-grid recipe-grid-3">
+  {% for recipe in items %}
+  <div class="recipe-card">
+    <div class="recipe-card-image">
+      <a href="{{ url_for('recipe_detail', slug=recipe.slug) }}">
+        <img src="{{ recipe.image }}" alt="{{ recipe.title }}"
+             onerror="this.parentElement.innerHTML='<div class=\'placeholder-img\'>{{ recipe.title }}</div>'">
+      </a>
+      <button class="recipe-card-save {% if is_in_recipe_box(recipe.id) %}saved{% endif %}"
+              data-recipe-id="{{ recipe.id }}" data-saved-icon="&#9829;" data-unsaved-icon="&#9825;">
+        {% if is_in_recipe_box(recipe.id) %}&#9829;{% else %}&#9825;{% endif %}
+      </button>
+    </div>
+    <div class="recipe-card-body">
+      <div class="recipe-card-title"><a href="{{ url_for('recipe_detail', slug=recipe.slug) }}">{{ recipe.title }}</a></div>
+      <div class="recipe-card-meta">
+        <div class="recipe-card-rating">
+          {% for i in range(5) %}
+          <span class="star {% if i >= recipe.avg_rating|round(0,'floor')|int %}empty{% endif %}">&#9733;</span>
+          {% endfor %}
+        </div>
+        <span>({{ recipe.review_count|int }})</span>
+      </div>
+      <div class="recipe-card-nutrition" style="margin-top:6px;font-size:0.78rem;color:#666">
+        {{ recipe.total_time or (recipe.total_time_mins ~ ' mins' if recipe.total_time_mins else '') }}
+        {% if recipe.calories %} &middot; {{ recipe.calories }} cal{% endif %}
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+
+{% if pages > 1 %}
+<div class="pagination">
+  {% if page > 1 %}<a href="?page={{ page - 1 }}">&laquo;</a>{% endif %}
+  {% for p in range(1, pages + 1) %}
+    {% if p == page %}<a class="active" href="?page={{ p }}">{{ p }}</a>
+    {% elif p <= 5 or p == pages or (p >= page - 2 and p <= page + 2) %}<a href="?page={{ p }}">{{ p }}</a>
+    {% endif %}
+  {% endfor %}
+  {% if page < pages %}<a href="?page={{ page + 1 }}">&raquo;</a>{% endif %}
+</div>
+{% endif %}
+{% else %}
+<div class="empty-state">
+  <h3>No recipes yet.</h3>
+  <p>Check back soon.</p>
+  <a href="{{ url_for('all_recipes') }}" class="btn btn-primary">Browse All Recipes</a>
+</div>
+{% endif %}

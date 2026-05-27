@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% block title %}Photos — {{ recipe.title }}{% endblock %}
+{% block meta_description %}Photo gallery for {{ recipe.title }} — {{ photo_count }} photos contributed by home cooks who made this recipe.{% endblock %}
+{% block content %}
+<section class="container" style="max-width:1040px;margin:32px auto;padding:0 16px">
+  <div class="breadcrumb" style="font-size:0.82rem;color:#888;margin-bottom:10px">
+    <a href="{{ url_for('index') }}" style="color:#666">Home</a> &rsaquo;
+    <a href="{{ url_for('recipe_detail', slug=recipe.slug) }}" style="color:#666">{{ recipe.title }}</a> &rsaquo;
+    Photos
+  </div>
+  <h1 class="section-title" style="margin:0 0 6px 0">Photos — {{ recipe.title }}</h1>
+  <p style="color:#555;margin-bottom:18px">
+    {{ photo_count }} photo{{ '' if photo_count == 1 else 's' }} contributed by home cooks who made this recipe.
+    <a href="{{ url_for('recipe_detail', slug=recipe.slug) }}" style="margin-left:6px">Back to recipe &rarr;</a>
+  </p>
+
+  {% if photos %}
+  <div class="photos-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px">
+    {% for p in photos %}
+    <figure class="photo-card" style="margin:0;background:#fafaf6;border:1px solid #eee;border-radius:6px;overflow:hidden">
+      <a href="{{ p.url }}">
+        <img src="{{ p.url }}" alt="{{ p.caption }}" loading="lazy"
+             style="width:100%;height:200px;object-fit:cover;display:block"
+             onerror="this.parentElement.parentElement.innerHTML='<div class=\'placeholder-img\' style=\'padding:80px 8px;text-align:center;color:#999\'>{{ p.caption }}</div>'">
+      </a>
+      <figcaption style="padding:8px 10px;font-size:0.85rem;color:#444">{{ p.caption }}</figcaption>
+    </figure>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="empty-state">
+    <h3>No photos yet.</h3>
+    <p>Be the first to share a photo of your version.</p>
+    <a href="{{ url_for('recipe_detail', slug=recipe.slug) }}" class="btn btn-primary">Back to recipe</a>
+  </div>
+  {% endif %}
+
+  <div style="margin-top:24px;font-size:0.9rem;color:#666">
+    See also:
+    <a href="{{ url_for('recipe_detail', slug=recipe.slug) }}">recipe page</a> ·
+    <a href="/recipe/{{ recipe.slug }}/reviews">reviews</a> ·
+    <a href="/recipe/{{ recipe.slug }}/troubleshooting">troubleshooting Q&amp;A</a>
+  </div>
+</section>
+{% endblock %}

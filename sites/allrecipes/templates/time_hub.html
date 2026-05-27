@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block title %}Recipes by Time{% endblock %}
+{% block meta_description %}Sort the catalog by how long you actually have to cook — under 15, under 30, under 60 or over 60 minutes.{% endblock %}
+{% block content %}
+<section class="container" style="margin-top:30px">
+  <div class="breadcrumb" style="font-size:0.82rem;color:#999;margin-bottom:12px">
+    <a href="{{ url_for('index') }}" style="color:#666">Home</a> &rsaquo; Recipes by Time
+  </div>
+  <h1 class="section-title">Recipes by Time</h1>
+  <p style="color:#555;margin-bottom:24px;max-width:760px">Sort the catalog by how long you actually have to cook — under 15, under 30, under 60 or over 60 minutes.</p>
+
+  <div class="landing-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px">
+    {% for entry in landing %}
+      {% if entry|length == 5 %}
+        {% set slug = entry[0] %}{% set nm = entry[1] %}{% set desc = entry[4] %}
+      {% else %}
+        {% set slug = entry[0] %}{% set nm = entry[1] %}{% set desc = entry[2] %}
+      {% endif %}
+    <a href="{{ url_for('gui_time_detail', slug=slug) }}"
+       class="landing-card"
+       style="display:block;border:1px solid #eee;border-radius:8px;padding:18px 20px;background:#fafaf6;text-decoration:none;color:inherit">
+      <div style="font-size:1.15rem;font-weight:700;color:#1565c0">{{ nm }}</div>
+      <div style="color:#555;font-size:0.9rem;margin-top:6px">{{ desc }}</div>
+      <div style="color:#888;font-size:0.85rem;margin-top:8px"><strong>{{ counts[slug] }}</strong> recipes</div>
+    </a>
+    {% endfor %}
+  </div>
+</section>
+{% endblock %}

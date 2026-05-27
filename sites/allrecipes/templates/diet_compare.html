@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% block title %}Compare Diets{% endblock %}
+{% block meta_description %}Side-by-side comparison of Vegan, Vegetarian, Keto, Paleo, Gluten-Free, Low-Carb, Whole30 and Mediterranean diets — macros, hallmark and foods to avoid.{% endblock %}
+{% block content %}
+<section class="container" style="margin-top:30px;max-width:1080px">
+  <div class="breadcrumb" style="font-size:0.82rem;color:#999;margin-bottom:12px">
+    <a href="{{ url_for('index') }}" style="color:#666">Home</a> &rsaquo;
+    <a href="{{ url_for('diets_hub') }}" style="color:#666">Diets</a> &rsaquo;
+    Compare
+  </div>
+  <h1 class="section-title">Compare Diets</h1>
+  <p style="color:#555;margin-bottom:18px;max-width:760px">
+    Eight popular eating patterns side-by-side — macronutrient ranges, the
+    hallmark idea behind each, foods they avoid, and how many recipes on
+    Allrecipes match.
+  </p>
+
+  <div style="overflow-x:auto">
+  <table class="diet-compare" style="border-collapse:collapse;width:100%;font-size:0.93rem">
+    <thead>
+      <tr style="background:#fafaf6;text-align:left">
+        <th style="padding:10px;border-bottom:2px solid #ccc">Diet</th>
+        <th style="padding:10px;border-bottom:2px solid #ccc">Carbs</th>
+        <th style="padding:10px;border-bottom:2px solid #ccc">Fat</th>
+        <th style="padding:10px;border-bottom:2px solid #ccc">Protein</th>
+        <th style="padding:10px;border-bottom:2px solid #ccc">Hallmark</th>
+        <th style="padding:10px;border-bottom:2px solid #ccc">Avoids</th>
+        <th style="padding:10px;border-bottom:2px solid #ccc">Recipes</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for r in rows %}
+      <tr>
+        <td style="padding:9px 10px;border-bottom:1px solid #eee"><a href="{{ url_for('diet_page', slug=r.slug) }}"><strong>{{ r.name }}</strong></a></td>
+        <td style="padding:9px 10px;border-bottom:1px solid #eee">{{ r.carbs }}</td>
+        <td style="padding:9px 10px;border-bottom:1px solid #eee">{{ r.fat }}</td>
+        <td style="padding:9px 10px;border-bottom:1px solid #eee">{{ r.protein }}</td>
+        <td style="padding:9px 10px;border-bottom:1px solid #eee">{{ r.hallmark }}</td>
+        <td style="padding:9px 10px;border-bottom:1px solid #eee;color:#a33">{{ r.avoids }}</td>
+        <td style="padding:9px 10px;border-bottom:1px solid #eee">{{ r.recipe_count }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  </div>
+
+  <p style="margin-top:18px;font-size:0.85rem;color:#666">
+    Macros are typical ranges for each pattern — actual values vary by
+    individual goal. Recipe counts are taken from the live Allrecipes
+    catalog and include both fully labeled diet recipes and those that
+    naturally fit the pattern based on their ingredient list.
+  </p>
+</section>
+{% endblock %}

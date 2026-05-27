@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+{% block title %}Reviews — {{ recipe.title }}{% endblock %}
+{% block meta_description %}{{ total }} reviews for {{ recipe.title }}. Filter by star rating, sort by most recent or top-rated.{% endblock %}
+{% block content %}
+<section class="container" style="max-width:960px;margin:32px auto;padding:0 16px">
+  <div class="breadcrumb" style="font-size:0.82rem;color:#888;margin-bottom:10px">
+    <a href="{{ url_for('index') }}" style="color:#666">Home</a> &rsaquo;
+    <a href="{{ url_for('recipe_detail', slug=recipe.slug) }}" style="color:#666">{{ recipe.title }}</a> &rsaquo;
+    Reviews
+  </div>
+  <h1 class="section-title" style="margin:0 0 6px 0">Reviews — {{ recipe.title }}</h1>
+
+  <div class="review-summary" style="background:#fafaf6;border:1px solid #eee;padding:16px 20px;border-radius:6px;margin-bottom:18px">
+    <div style="font-size:1.4rem;font-weight:600">
+      {{ '%.1f'|format(recipe.avg_rating) }} <span style="color:#f5b623">&#9733;</span>
+      <span style="color:#666;font-size:1rem;font-weight:400">based on {{ total }} reviews</span>
+    </div>
+    <table class="distribution" style="margin-top:10px;border-collapse:collapse;width:100%;max-width:380px">
+      {% for s in [5,4,3,2,1] %}
+      <tr>
+        <td style="padding:3px 8px 3px 0;font-size:0.85rem;color:#444;width:60px">{{ s }} star</td>
+        <td style="padding:3px 0;width:200px">
+          <div style="background:#eee;height:8px;border-radius:4px;overflow:hidden">
+            {% set pct = (distribution[s] * 100.0 / total)|round(0,'floor')|int if total else 0 %}
+            <div style="background:#f5b623;height:100%;width:{{ pct }}%"></div>
+          </div>
+        </td>
+        <td style="padding:3px 0 3px 8px;font-size:0.8rem;color:#666;width:60px">{{ distribution[s] }}</td>
+      </tr>
+      {% endfor %}
+    </table>
+  </div>
+
+  <nav class="review-tabs" aria-label="Filter reviews by rating" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px">
+    <a href="{{ url_for('gui_recipe_reviews', slug=recipe.slug) }}"
+       style="padding:6px 14px;border-radius:18px;background:{% if not star_filter %}#388e3c{% else %}#f0f0f0{% endif %};color:{% if not star_filter %}#fff{% else %}#333{% endif %};text-decoration:none;font-size:0.85rem">All ({{ total }})</a>
+    {% for s in [5,4,3,2,1] %}
+    <a href="{{ url_for('gui_recipe_reviews', slug=recipe.slug, stars=s) }}"
+       style="padding:6px 14px;border-radius:18px;background:{% if star_filter == s %}#388e3c{% else %}#f0f0f0{% endif %};color:{% if star_filter == s %}#fff{% else %}#333{% endif %};text-decoration:none;font-size:0.85rem">{{ s }} star ({{ distribution[s] }})</a>
+    {% endfor %}
+    <a href="{{ url_for('gui_recipe_reviews', slug=recipe.slug, sort='top', stars=star_filter or None) }}"
+       style="margin-left:auto;padding:6px 14px;border-radius:18px;background:{% if sort == 'top' %}#1565c0{% else %}#f0f0f0{% endif %};color:{% if sort == 'top' %}#fff{% else %}#333{% endif %};text-decoration:none;font-size:0.85rem">Sort: Top-rated</a>
+    <a href="{{ url_for('gui_recipe_reviews', slug=recipe.slug, sort='recent', stars=star_filter or None) }}"
+       style="padding:6px 14px;border-radius:18px;background:{% if sort == 'recent' %}#1565c0{% else %}#f0f0f0{% endif %};color:{% if sort == 'recent' %}#fff{% else %}#333{% endif %};text-decoration:none;font-size:0.85rem">Sort: Most recent</a>
+  </nav>
+
+  <p style="color:#666;font-size:0.9rem">Showing {{ showing }} of {{ total }} reviews{% if star_filter %} matching {{ star_filter }}-star filter{% endif %}.</p>
+
+  {% if reviews %}
+  <ul class="reviews-list" style="list-style:none;padding:0;margin:14px 0 0">
+    {% for rv in reviews %}
+    <li style="border:1px solid #eee;border-radius:6px;padding:14px 18px;margin-bottom:10px;background:#fff">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <strong style="color:#222">{{ rv.title or '(no title)' }}</strong>
+        <span style="color:#f5b623;font-size:0.95rem">
+          {% for i in range(rv.rating) %}&#9733;{% endfor %}
+          {% for i in range(5 - rv.rating) %}<span style="color:#ccc">&#9733;</span>{% endfor %}
+        </span>
+      </div>
+      <div style="color:#666;font-size:0.82rem;margin-top:2px">
+        By {{ (users[rv.user_id].display_name or users[rv.user_id].username) if rv.user_id in users else 'A Home Cook' }}
+      </div>
+      <p style="margin:6px 0 0;color:#333;font-size:0.95rem">{{ rv.body }}</p>
+    </li>
+    {% endfor %}
+  </ul>
+  {% else %}
+  <p style="color:#888;margin-top:14px">No reviews match this filter.</p>
+  {% endif %}
+
+  <div style="margin-top:24px;font-size:0.9rem;color:#666">
+    See also:
+    <a href="{{ url_for('recipe_detail', slug=recipe.slug) }}">recipe page</a> ·
+    <a href="/recipe/{{ recipe.slug }}/photos">photos</a> ·
+    <a href="/recipe/{{ recipe.slug }}/troubleshooting">troubleshooting</a>
+  </div>
+</section>
+{% endblock %}

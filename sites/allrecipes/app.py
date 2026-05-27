@@ -5605,6 +5605,15 @@ with app.app_context():
     except Exception as exc:  # pragma: no cover
         print(f"[r4_final_vacuum] failed: {exc!r}")
 
+
+# ---------------------------------------------------------------------------
+# GUI Deepen pass (2026-05-27): real-page surface for cuisine / diet / skill /
+# equipment / meal-type / seasonal / budget / time / dinner-fix / chef-bio /
+# editorial + per-recipe photos / reviews / troubleshooting / nutrition-label.
+# Routes registered as a side effect of the import.
+# ---------------------------------------------------------------------------
+import gui_deepen_routes  # noqa: F401,E402
+
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 28840))
     app.run(host='0.0.0.0', port=port, debug=True)

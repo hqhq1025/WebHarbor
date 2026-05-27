@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}{{ name }} Recipes{% endblock %}
+{% block meta_description %}{{ description }} — top-rated recipes from Allrecipes.{% endblock %}
+{% block content %}
+<section class="container" style="margin-top:30px">
+  <div class="breadcrumb" style="font-size:0.82rem;color:#999;margin-bottom:12px">
+    <a href="{{ url_for('index') }}" style="color:#666">Home</a> &rsaquo;
+    <a href="{{ url_for('gui_meal_type_hub') }}" style="color:#666">Recipes by Meal Type</a> &rsaquo;
+    {{ name }}
+  </div>
+  <div style="background:linear-gradient(135deg,#e3f2fd 0%,#bbdefb 100%);border-radius:8px;padding:28px 32px;margin-bottom:18px">
+    <h1 class="section-title" style="margin:0 0 8px 0">{{ name }}</h1>
+    <p style="color:#444;margin:0;font-size:1.02rem;max-width:760px">{{ description }}</p>
+    <div style="margin-top:12px;color:#666;font-size:0.9rem"><strong>{{ recipes.total }}</strong> recipes</div>
+  </div>
+
+  <nav class="sibling-nav" aria-label="Other options" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:18px">
+    {% for entry in siblings %}
+      {% if entry|length == 5 %}{% set s = entry[0] %}{% set nm = entry[1] %}{% else %}{% set s = entry[0] %}{% set nm = entry[1] %}{% endif %}
+    <a href="{{ url_for('gui_meal_type_detail', slug=s) }}"
+       style="padding:6px 14px;border-radius:18px;background:{% if s == slug %}#388e3c{% else %}#f0f0f0{% endif %};color:{% if s == slug %}#fff{% else %}#333{% endif %};text-decoration:none;font-size:0.85rem">{{ nm }}</a>
+    {% endfor %}
+  </nav>
+
+  {% include '_recipe_grid_paginated.html' %}
+</section>
+{% endblock %}

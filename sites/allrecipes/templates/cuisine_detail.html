@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block title %}{{ name }} Recipes{% endblock %}
+{% block meta_description %}{{ description }} — top-rated {{ name }} recipes from Allrecipes home cooks.{% endblock %}
+{% block content %}
+<section class="container" style="margin-top:30px">
+  <div class="breadcrumb" style="font-size:0.82rem;color:#999;margin-bottom:12px">
+    <a href="{{ url_for('index') }}" style="color:#666">Home</a> &rsaquo;
+    <a href="{{ url_for('gui_cuisine_hub') }}" style="color:#666">Cuisines</a> &rsaquo;
+    {{ name }}
+  </div>
+  <div style="background:linear-gradient(135deg,#fff7e6 0%,#ffe0b2 100%);border-radius:8px;padding:28px 32px;margin-bottom:18px">
+    <h1 class="section-title" style="margin:0 0 8px 0">{{ name }} Cuisine</h1>
+    <p style="color:#444;margin:0;font-size:1.02rem;max-width:760px">{{ description }}</p>
+    <div style="margin-top:12px;color:#666;font-size:0.9rem"><strong>{{ recipes.total }}</strong> recipes from {{ name }} cuisine</div>
+  </div>
+
+  <nav class="cuisine-nav" aria-label="Other cuisines" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:18px">
+    {% for s, nm, _d in siblings %}
+    <a href="{{ url_for('gui_cuisine_detail', slug=s) }}"
+       style="padding:6px 14px;border-radius:18px;background:{% if s == slug %}#388e3c{% else %}#f0f0f0{% endif %};color:{% if s == slug %}#fff{% else %}#333{% endif %};text-decoration:none;font-size:0.85rem">{{ nm }}</a>
+    {% endfor %}
+  </nav>
+
+  {% include '_recipe_grid_paginated.html' %}
+</section>
+{% endblock %}
