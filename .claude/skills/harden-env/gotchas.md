@@ -2029,3 +2029,89 @@ done
 ```
 
 把这个加到每 deepen subagent 完成的 checklist 里。
+
+## 47. 站根本没 CSS — base.html 引了 file 但 static/css/*.css 不存在 (404)
+
+**症状**：打开 site，看到的是完全裸 HTML 浏览器默认样式：
+- 蓝色下划线链接
+- 无 layout（所有元素纵向堆叠或满屏铺开）
+- 图片不对齐，文本块挤在一起
+- 输入框是原生 chunky 灰色，按钮是 OS-default
+
+不是 "CSS 加载慢" 或 "broken CSS rule" — 是 **CSS file 根本不存在**。
+
+### 怎么发现
+
+```bash
+# 1. base.html 引用了什么 CSS
+grep -hoE "static/css/[^'\"\\) ]+\.css" sites/<slug>/templates/*.html | sort -u
+
+# 2. 验证文件存在
+for ref in $(grep -hoE "static/css/[^'\"\\) ]+\.css" sites/<slug>/templates/*.html | sort -u); do
+  fname=${ref#static/}
+  if [ ! -f "sites/<slug>/static/$fname" ]; then
+    echo "MISSING: $ref"
+  fi
+done
+
+# 3. 浏览器端
+curl -s -o /dev/null -w "%{http_code}\n" http://localhost:<port>/static/css/<file>.css
+# 404 = missing
+```
+
+全 36 站扫：
+
+```bash
+for s in sites/*/; do
+  sn=$(basename "$s")
+  for ref in $(grep -hoE "static/css/[^'\"\\) ]+\.css" "$s/templates/"*.html 2>/dev/null | sort -u); do
+    fname=${ref#static/}
+    [ ! -f "$s/static/$fname" ] && echo "$sn: MISSING $ref"
+  done
+done
+```
+
+### 怎么修
+
+clone-website 系列 skill 应该已经在 Step 4 (Backend build) 生成 CSS。但 boardgamegeek 这种是 community PR site，作者没写 CSS（或写了但忘 commit）。
+
+**Fix path A**：手写一份基础 CSS，按真上游品牌 + 视觉风格：
+
+参考 `~/repos/WebHarbor/sites/boardgamegeek/static/css/bgg.css`（真案例 230 lines）—— 包含：
+- header gradient + 品牌色 (BGG 棕橙)
+- nav links
+- search form
+- card grid + hover effect
+- ranking table 风格
+- buttons + forms
+- footer
+- responsive media query
+- **horizontal overflow safety net**: `html, body { overflow-x: hidden; max-width: 100vw; }`
+
+**Fix path B**：复用其它 site 的 CSS 做 starter，改色 / 改字体。
+
+**Fix path C**：用 Tavily 抓上游一份 CSS snippet 参考，再 polish。
+
+### Hot-deploy
+
+```bash
+docker cp sites/<slug>/static/css wh-r10:/opt/WebSyn/<slug>/static/
+# 不需要 restart，CSS 静态文件下次 page reload 就生效
+```
+
+### 防止再发生
+
+每 clone-website / PR-merge 时跑 detection grep。把它加到 `verify-site-gui` harness 的检查项：
+
+```python
+# 在 verify_one() 里加
+import re
+for tpl in (sd / "templates").glob("*.html"):
+    src = tpl.read_text()
+    for ref in re.findall(r"static/[^'\"\\) ]+\.(?:css|js)", src):
+        fname = ref.replace("static/", "")
+        if not (sd / "static" / fname).exists():
+            findings["missing_static"].append({"template": tpl.name, "ref": ref})
+```
+
+**真案例 (2026-05-27)**：boardgamegeek (port 43030) 整站裸 HTML —— `base.html` 引 `/static/css/bgg.css` 但该文件根本不存在。修法：写 230-line bgg.css (BGG 风：棕橙 / 卡片网格 / ranking table)；docker cp 后立即可见。其它 35 站扫了一遍无类似问题。

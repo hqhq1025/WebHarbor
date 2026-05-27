@@ -1,0 +1,209 @@
+/* BoardGameGeek mirror — real BGG-inspired styling (brown/tan/orange) */
+
+* { box-sizing: border-box; }
+html, body {
+    margin: 0; padding: 0;
+    font-family: Verdana, Geneva, Tahoma, sans-serif;
+    background: #f7f2e9;
+    color: #333;
+    font-size: 14px;
+    line-height: 1.4;
+}
+
+a { color: #1976ad; text-decoration: none; }
+a:hover { text-decoration: underline; color: #c92a2a; }
+
+/* ===== HEADER (BGG brown bar) ===== */
+.bgg-header {
+    background: linear-gradient(180deg, #6f4f28 0%, #5a3e1f 100%);
+    color: #fff;
+    padding: 0;
+    border-bottom: 3px solid #c95823;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+}
+.bgg-header .container {
+    max-width: 1280px; margin: 0 auto; padding: 8px 16px;
+    display: flex; align-items: center; gap: 24px;
+}
+.bgg-header .logo {
+    font-size: 22px; font-weight: bold; color: #ffae3a;
+    text-shadow: 1px 1px 2px rgba(0,0,0,0.4);
+}
+.bgg-header .logo a { color: #ffae3a; }
+.bgg-header .logo a:hover { text-decoration: none; color: #ffd07a; }
+.bgg-header nav { display: flex; gap: 18px; flex-wrap: wrap; }
+.bgg-header nav a {
+    color: #f3e9d2; font-size: 13px; padding: 4px 0;
+    border-bottom: 2px solid transparent;
+}
+.bgg-header nav a:hover { color: #fff; border-bottom-color: #ffae3a; text-decoration: none; }
+.bgg-header .user-actions { margin-left: auto; display: flex; gap: 12px; align-items: center; }
+.bgg-header .user-actions a {
+    color: #fff; font-size: 12px; padding: 4px 10px;
+    background: rgba(255,255,255,0.1); border-radius: 3px;
+}
+.bgg-header .user-actions a:hover { background: rgba(255,255,255,0.2); text-decoration: none; }
+
+/* search form in header */
+.bgg-header form {
+    display: flex; gap: 4px; margin-left: 20px;
+}
+.bgg-header form input[type="text"], .bgg-header form input[type="search"] {
+    padding: 5px 8px; border: 1px solid #5a3e1f; border-radius: 3px;
+    font-size: 13px; min-width: 200px;
+}
+.bgg-header form select {
+    padding: 5px; border: 1px solid #5a3e1f; border-radius: 3px;
+    font-size: 13px; background: #fff;
+}
+.bgg-header form button, .bgg-header form input[type="submit"] {
+    padding: 5px 14px; background: #c95823; color: #fff;
+    border: none; border-radius: 3px; cursor: pointer; font-size: 13px;
+}
+.bgg-header form button:hover { background: #a84618; }
+
+/* ===== SUB-NAV (filter / sort strip under header) ===== */
+.bgg-subnav {
+    background: #ede0c4; padding: 10px 16px;
+    border-bottom: 1px solid #d4c4a1;
+}
+.bgg-subnav .container {
+    max-width: 1280px; margin: 0 auto;
+    display: flex; gap: 18px; flex-wrap: wrap; font-size: 13px;
+}
+.bgg-subnav a { color: #5a3e1f; font-weight: 500; }
+.bgg-subnav a:hover { color: #c95823; }
+
+/* ===== MAIN ===== */
+.bgg-main, main {
+    max-width: 1280px; margin: 0 auto; padding: 20px 16px;
+}
+
+/* ===== SECTION HEADINGS ===== */
+h1, h2, h3 {
+    color: #5a3e1f; font-family: Georgia, serif;
+    margin: 24px 0 12px;
+}
+h1 { font-size: 26px; border-bottom: 2px solid #c95823; padding-bottom: 6px; }
+h2 { font-size: 20px; border-bottom: 1px solid #d4c4a1; padding-bottom: 4px; }
+h3 { font-size: 16px; }
+
+/* Section title link style (e.g. "The Hotness", "Top Rated") */
+section > h2, section > h3 { margin-top: 0; }
+
+/* ===== THE HOTNESS — horizontal scrollable strip ===== */
+.hotness-strip, .game-strip {
+    display: flex; gap: 14px; overflow-x: auto; padding: 10px 0 16px;
+    margin-bottom: 20px; flex-wrap: wrap;
+}
+.hotness-strip .game-card, .game-strip .game-card,
+.hotness-item, .game-item {
+    flex: 0 0 140px; min-width: 0; max-width: 160px;
+    background: #fff; border: 1px solid #d4c4a1; border-radius: 4px;
+    padding: 8px; text-align: center;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+    transition: transform 0.15s, box-shadow 0.15s;
+}
+.hotness-item:hover, .game-item:hover, .game-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+.hotness-item img, .game-item img, .game-card img {
+    width: 100%; height: 120px; object-fit: cover;
+    border-radius: 3px; display: block; margin-bottom: 6px;
+}
+.hotness-item .title, .game-item .title, .game-card .title {
+    font-size: 12px; font-weight: 600; color: #1976ad;
+    overflow: hidden; text-overflow: ellipsis;
+    display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+}
+
+/* Fallback for unstyled image-link runs (BGG hotness strip pattern) */
+section img, section .ranking img { max-height: 80px; vertical-align: middle; margin: 0 4px; }
+
+/* ===== RANKING TABLE ===== */
+.ranking-table, table {
+    width: 100%; border-collapse: collapse; margin: 16px 0;
+    background: #fff; border: 1px solid #d4c4a1;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+}
+.ranking-table th, table th {
+    background: #ede0c4; color: #5a3e1f;
+    padding: 10px 8px; text-align: left;
+    border-bottom: 2px solid #c95823; font-size: 13px;
+}
+.ranking-table td, table td {
+    padding: 10px 8px; border-bottom: 1px solid #f0e6d2;
+    font-size: 13px; vertical-align: middle;
+}
+.ranking-table tr:hover, table tbody tr:hover { background: #fdf8ee; }
+.ranking-table td img, table td img {
+    width: 50px; height: 50px; object-fit: cover; border-radius: 3px;
+}
+
+/* ===== CARDS & BOXES ===== */
+.card, .box {
+    background: #fff; border: 1px solid #d4c4a1;
+    border-radius: 4px; padding: 16px; margin: 12px 0;
+}
+
+/* ===== BUTTONS ===== */
+button, .btn, input[type="submit"], input[type="button"] {
+    padding: 8px 16px; background: #c95823; color: #fff;
+    border: none; border-radius: 3px; cursor: pointer;
+    font-size: 13px; font-weight: 500;
+}
+button:hover, .btn:hover, input[type="submit"]:hover {
+    background: #a84618; color: #fff;
+}
+.btn-secondary { background: #6f4f28; }
+.btn-secondary:hover { background: #5a3e1f; }
+
+/* ===== FORMS ===== */
+input[type="text"], input[type="email"], input[type="password"],
+input[type="search"], input[type="number"], textarea, select {
+    padding: 6px 8px; border: 1px solid #c8b88a; border-radius: 3px;
+    font-size: 13px; font-family: inherit;
+}
+input:focus, textarea:focus, select:focus {
+    outline: none; border-color: #c95823;
+    box-shadow: 0 0 0 2px rgba(201,88,35,0.15);
+}
+label { display: block; margin-bottom: 4px; font-weight: 500; }
+
+/* ===== "Full browse" / "All hot games" arrow links ===== */
+.more-link {
+    color: #c95823; font-size: 13px; font-weight: 600;
+    margin-left: 8px;
+}
+
+/* ===== FOOTER ===== */
+.bgg-footer, footer {
+    background: #5a3e1f; color: #d4c4a1;
+    padding: 24px 16px; margin-top: 40px;
+    text-align: center; font-size: 12px;
+}
+.bgg-footer a, footer a { color: #ffae3a; }
+
+/* ===== UTILITIES ===== */
+.muted { color: #888; }
+.text-center { text-align: center; }
+.flex { display: flex; gap: 12px; }
+.flex-wrap { flex-wrap: wrap; }
+.grid {
+    display: grid; gap: 16px;
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+}
+
+/* ===== HORIZONTAL OVERFLOW SAFETY NET ===== */
+html, body { overflow-x: hidden; max-width: 100vw; }
+.container, main, section { max-width: 100%; }
+img { max-width: 100%; height: auto; }
+
+/* ===== RESPONSIVE ===== */
+@media (max-width: 768px) {
+    .bgg-header .container { flex-direction: column; align-items: stretch; gap: 10px; }
+    .bgg-header nav { justify-content: center; }
+    .bgg-header form { margin-left: 0; }
+    .bgg-header form input[type="text"] { min-width: 0; }
+}
