@@ -2129,3 +2129,107 @@ for tpl in (sd / "templates").glob("*.html"):
 ```
 
 **真案例 (2026-05-27)**：boardgamegeek (port 43030) 整站裸 HTML —— `base.html` 引 `/static/css/bgg.css` 但该文件根本不存在。修法：写 230-line bgg.css (BGG 风：棕橙 / 卡片网格 / ranking table)；docker cp 后立即可见。其它 35 站扫了一遍无类似问题。
+
+## 48. CSS 负 margin 把内容挡掉 / 截掉 — Amazon hero 灾难
+
+**症状**：page 顶部出现奇怪的 dark / colored strip 浮在内容上方，下面卡片网格看上去像浮在彩色背景里——但实际**那个背景是某个 section 被 negative margin 拉到几乎消失**，只剩一条 thin strip。用户看到：
+
+- amazon `/`: 深色 navy 条压在 cards 网格上方，应该是完整的 "Welcome to Amazon" hero CTA 整个被遮住
+- 经检查 `.hero-banner { margin-bottom: -200px; }` —— 设计初衷是 hero 含一张大图（image height ~250px），负 margin 把下一个 section 拉上来 200px 营造"floating cards over hero image" 效果（真 amazon 风格）
+- 但 lite-CTA 版本的 hero 只有 ~120px 高（padding 40 + 标题 + button），-200px 把整个 hero 都拉到 cards 下面去了
+
+### 怎么发现
+
+```bash
+# 扫所有大负 margin（>=200px 嫌疑大）
+for s in sites/*/; do
+  sn=$(basename "$s")
+  hits=$(grep -hnE 'margin(-top|-bottom)?\s*:\s*-[2-9][0-9][0-9](px|em|rem)' "$s/static/css/"*.css 2>/dev/null)
+  [ -n "$hits" ] && echo "=== $sn ===" && echo "$hits"
+done
+
+# 加 inline style 里的
+grep -rhnE 'margin(-top|-bottom)?\s*:\s*-[2-9][0-9][0-9](px|em|rem)' sites/*/templates/*.html 2>/dev/null
+```
+
+任何 `margin-X: -200px+` 都嫌疑大。如果配合一个本来矮的 sibling section，**几乎一定是 bug**。
+
+### 怎么修
+
+#### Fix A：去掉负 margin
+
+最简单：去掉这条 CSS。如果原设计需要"cards 浮在 hero 上"效果但 hero 本来就矮，去掉负 margin 后 cards 自然 stack 在 hero 下，符合 80% 用户期望。
+
+```css
+.hero-banner {
+    ...
+    /* margin-bottom: -200px;   ← removed: lite-CTA hero too short */
+}
+```
+
+#### Fix B：保证 hero 足够高
+
+```css
+.hero-banner {
+    min-height: 280px;        /* hero ≥ |margin| + 80px buffer */
+    margin-bottom: -200px;
+}
+```
+
+#### Fix C：sticky-sidebar 风格（recreation_gov 案例）
+
+```css
+@media (min-width: 901px) {
+    .detail-content-grid {
+        margin-top: -600px;    /* 主内容拉上覆盖 sidebar */
+    }
+    .detail-side-column {
+        padding-top: 600px;    /* sidebar 顶部空 600px 让主内容浮上 */
+    }
+}
+```
+
+这是 **paired** pattern — `-X` 配 `+X`，是 intentional sticky-sidebar 设计，不是 bug。**判定标准**：搜 sibling element 有没有对应 +X padding/margin。有 → intentional；没有 → bug。
+
+### 防止再发生
+
+- 在 deepen / clone-website prompt 加："禁止任何 `margin: -X` 其中 X > section 自身高度。如果要做 overlap effect，sibling 必须有对应 `padding`/`margin` 补偿"
+- verify-site-gui harness 加 visual sanity check: 截图首页，目测顶部 content 不被遮挡
+
+**真案例 (2026-05-27)**：amazon `.hero-banner { margin-bottom: -200px }` 把 ~120px hero 几乎完全遮住，只剩顶部 thin dark strip 漏在 cards 上方。修法 = 删 `margin-bottom: -200px`，commit 5e52a17。recreation_gov `.detail-content-grid { margin-top: -600px }` 配 `.detail-side-column { padding-top: 600px }` 是 sticky-sidebar，intentional，不动。
+
+## 49. Feature regression — 并行 fix subagent 误删 interactive 部件
+
+**症状**：用户报告 "之前能用的功能现在用不了"。例 amazon /cart/update qty=3 → DB 没生效；google_map /place/save → 500；allrecipes save_recipe → 模板渲不出。
+
+### 怎么发生的
+
+多个 fix subagent 并行修不同问题（R8 cleanup / overflow / asset audit / perf optimize），每个都 docker cp 改文件。可能：
+
+- R8 cleanup 删 modal markup 时，误删 modal 内的 `<form action="/cart/update">`
+- overflow fix 加 `overflow: hidden` 在 form 容器上 → dropdown 折叠不见，无法选 qty
+- asset audit 修 form action `/search/_/q/` → `/search` 时，sed 误改了其他 `/_/` 路径
+- perf optimize 加 `.limit(20)` 在 `cart.items.query` 上 → 第 21 个 cart item 看不见
+- image dup fix `UPDATE places SET hero_image = ...` 误改了 `cart_items.image`（共用 col 名）
+
+### 怎么发现
+
+dispatch 一个专门"feature regression hunter" subagent：
+
+对每站、每个 interactive feature（cart / save / review / follow / wishlist / login）：
+1. test_client login as benchmark user
+2. POST 对应 endpoint
+3. GET 验证 effect（cart item 出现 / saved 列表有它 / etc）
+4. 任何 fail 记录 + `git log --oneline sites/<site>/ -10` 看最近 commit 找 culprit
+
+### 怎么修
+
+找 culprit commit，**精准 revert** 那条改动（不要 revert 整 commit，否则其他 fix 也丢）。`git show <hash>` 看每个 file 改了什么，恢复 broken file 的那行。
+
+### 防止再发生
+
+- **并行 fix subagent 数量 ≤3** 同时改同 site —— 多了 race
+- 每 fix subagent 完成前必须跑一个 "smoke test" 验证主要交互还 work
+- verify-site-gui harness 加 POST/form smoke test 模式（不只 GET）
+
+**真案例 (2026-05-27)**：5 个并行 fix subagent (R8/overflow/image-dup/asset-audit/perf) 同时改 amazon，结果 /cart/update + /cart/remove 退化。专门派 hunter agent 找 culprit + revert specific lines + verify。
