@@ -1,0 +1,21 @@
+{% set article = r.article %}
+<div class="changes-row">
+  <span class="cr-time">{{ r.timestamp | ts }}</span>
+  <span class="cr-title">
+    <a href="{{ url_for('article_view', wiki_slug=article.wiki.slug, title=article.slug) }}">{{ article.title }}</a>
+    <small>({{ article.wiki.slug }})</small>
+    {% if r.minor %}<span class="tag-minor">m</span>{% endif %}
+    {% if r.bot %}<span class="tag-bot">bot</span>{% endif %}
+  </span>
+  <span class="cr-meta">
+    by
+    {% if r.user %}
+      <a href="{{ url_for('user_profile', username=r.user.username) }}">{{ r.user.username }}</a>
+    {% else %}
+      <span class="tag-anon" title="anonymous">{{ r.author_label }}</span>
+    {% endif %}
+    {% if r.bytes_delta > 0 %}<span class="bytes-pos">+{{ r.bytes_delta }}</span>
+    {% elif r.bytes_delta < 0 %}<span class="bytes-neg">{{ r.bytes_delta }}</span>{% endif %}
+    &mdash; <em>{{ r.summary }}</em>
+  </span>
+</div>

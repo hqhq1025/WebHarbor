@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% block title %}All categories &mdash; {{ wiki.name }}{% endblock %}
+{% block wiki_nav %}{% include "partials/wiki_nav.html" %}{% endblock %}
+
+{% block content %}
+<div class="container" style="padding: 24px 0;">
+  <h1>All categories on {{ wiki.name }}</h1>
+  <p style="color: #888;">{{ cats | length }} categories.</p>
+
+  <div style="background: #fff; padding: 20px; border-radius: 6px;">
+    <h2 style="margin-top: 0;">Top-level</h2>
+    <ul>
+      {% for c in by_parent.get('', []) %}
+        <li>
+          <a href="{{ url_for('article_view', wiki_slug=wiki.slug, title='Category:' + c.slug) }}">
+            {{ c.name }}
+          </a>
+          <small style="color: #888;">({{ counts.get(c.id, 0) }} pages)</small>
+          {% if by_parent.get(c.slug) %}
+            <ul>
+              {% for sub in by_parent[c.slug] %}
+                <li>
+                  <a href="{{ url_for('article_view', wiki_slug=wiki.slug, title='Category:' + sub.slug) }}">{{ sub.name }}</a>
+                  <small style="color: #888;">({{ counts.get(sub.id, 0) }})</small>
+                </li>
+              {% endfor %}
+            </ul>
+          {% endif %}
+        </li>
+      {% endfor %}
+    </ul>
+  </div>
+</div>
+{% endblock %}

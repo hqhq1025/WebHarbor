@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% block title %}Community Portal &mdash; Fandom{% endblock %}
+
+{% block content %}
+<div class="container" style="padding: 24px 0;">
+  <h1>Community Portal</h1>
+  <p style="color: #888;">A place to discuss Fandom-wide topics, request features, and report issues.</p>
+
+  <div class="wikihome-grid">
+    <div>
+      <div class="featured-article">
+        <div class="fa-label">Get involved</div>
+        <h2>How to contribute</h2>
+        <p>
+          Anyone with a Fandom account can edit any article. Click the
+          <strong>Edit</strong> tab on any article to make changes.
+          Use the <strong>Talk</strong> tab to discuss content with other editors.
+        </p>
+        <p>
+          New to wiki editing? Read the
+          <a href="{{ url_for('article_view', wiki_slug='mcu', title='Help:Editing') }}">editing help</a> on any wiki.
+        </p>
+      </div>
+      <div class="featured-article" style="margin-top: 16px;">
+        <div class="fa-label">Guidelines</div>
+        <h2>Editor policies</h2>
+        <ul>
+          <li>Be polite on talk pages.</li>
+          <li>Add citations when adding new facts.</li>
+          <li>Use minor-edit checkbox only for typos and formatting.</li>
+          <li>Discuss large rewrites on the talk page first.</li>
+          <li>Vandalism is reverted on sight — repeat offenders blocked.</li>
+        </ul>
+      </div>
+    </div>
+    <aside>
+      <div class="sidebar-card">
+        <h3>Active wikis</h3>
+        <ul>
+          {% for w in WIKIS %}
+            <li><a href="{{ url_for('wiki_home', wiki_slug=w.slug) }}">{{ w.name }}</a>
+                <small>({{ w.article_count }} articles)</small></li>
+          {% endfor %}
+        </ul>
+      </div>
+      <div class="sidebar-card">
+        <h3>Helpful pages</h3>
+        <ul>
+          <li><a href="{{ url_for('wiki_directory') }}">All wikis</a></li>
+          <li><a href="{{ url_for('search_global') }}">Site-wide search</a></li>
+          <li><a href="{{ url_for('register') }}">Create an account</a></li>
+        </ul>
+      </div>
+    </aside>
+  </div>
+</div>
+{% endblock %}

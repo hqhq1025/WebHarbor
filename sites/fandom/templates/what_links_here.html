@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block title %}What links here: {{ target_title }} | {{ wiki.name }}{% endblock %}
+{% block wiki_nav %}{% include "partials/wiki_nav.html" %}{% endblock %}
+
+{% block content %}
+<div class="container" style="padding: 24px 0;">
+  <h1>What links to "{{ target_title }}"</h1>
+  <p style="color: #888;">
+    {% if article %}
+      <a href="{{ url_for('article_view', wiki_slug=wiki.slug, title=article.slug) }}">View {{ target_title }}</a> &middot;
+    {% endif %}
+    {{ links_from | length }} backlinks
+  </p>
+
+  <ul>
+    {% for a in links_from %}
+      <li><a href="{{ url_for('article_view', wiki_slug=wiki.slug, title=a.slug) }}">{{ a.title }}</a>
+          <small style="color: #888;">({{ a.namespace }})</small></li>
+    {% else %}
+      <li style="color: #888;">No pages link here yet.</li>
+    {% endfor %}
+  </ul>
+</div>
+{% endblock %}

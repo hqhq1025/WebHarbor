@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block title %}Contributions of {{ user.username }} — {{ wiki.name }}{% endblock %}
+{% block wiki_nav %}{% include "partials/wiki_nav.html" %}{% endblock %}
+{% block content %}
+<div class="container" style="padding: 24px 0;">
+  <h1>Contributions of <a href="{{ url_for('user_profile', username=user.username) }}">{{ user.username }}</a>
+      on {{ wiki.name }}</h1>
+  <form method="get" class="filter-bar">
+    <label>Namespace:</label>
+    <select name="namespace">
+      <option value="">All</option>
+      <option value="Main" {% if namespace == 'Main' %}selected{% endif %}>Main</option>
+      <option value="User" {% if namespace == 'User' %}selected{% endif %}>User</option>
+      <option value="Template" {% if namespace == 'Template' %}selected{% endif %}>Template</option>
+      <option value="Help" {% if namespace == 'Help' %}selected{% endif %}>Help</option>
+      <option value="File" {% if namespace == 'File' %}selected{% endif %}>File</option>
+    </select>
+    <button class="btn btn-secondary" type="submit">Apply</button>
+  </form>
+  <div class="changes-feed">
+    {% for r in revisions %}{% include "partials/changes_row.html" %}{% endfor %}
+    {% if not revisions %}<p style="padding:18px;color:#888;">No contributions in this namespace.</p>{% endif %}
+  </div>
+</div>
+{% endblock %}

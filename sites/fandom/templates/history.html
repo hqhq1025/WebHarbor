@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+{% block title %}Revision history of {{ article.title }} | {{ wiki.name }}{% endblock %}
+{% block wiki_nav %}{% include "partials/wiki_nav.html" %}{% endblock %}
+
+{% block content %}
+<div class="container" style="padding: 24px 0;">
+  <h1 style="margin: 0 0 6px;">Revision history: {{ article.title }}</h1>
+  <p style="color: #888;">
+    <a href="{{ url_for('article_view', wiki_slug=wiki.slug, title=article.slug) }}">&laquo; Back to article</a>
+    &middot; {{ revisions | length }} revisions
+  </p>
+
+  <form method="get" action="">
+    <table class="history-table">
+      <thead>
+        <tr>
+          <th style="width: 70px;">Compare</th>
+          <th>When</th>
+          <th>Editor</th>
+          <th>Bytes</th>
+          <th>Summary</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for r in revisions %}
+          <tr>
+            <td>
+              <input type="radio" name="old" value="{{ r.id }}" {% if loop.index == 2 %}checked{% endif %}>
+              <input type="radio" name="new" value="{{ r.id }}" {% if loop.index == 1 %}checked{% endif %}>
+            </td>
+            <td>
+              <a href="{{ url_for('article_view', wiki_slug=wiki.slug, title=article.slug) }}#rev-{{ r.id }}">
+                {{ r.timestamp | ts }}
+              </a>
+            </td>
+            <td>
+              {% if r.user %}
+                <a href="{{ url_for('user_profile', username=r.user.username) }}">{{ r.user.username }}</a>
+              {% else %}
+                <span class="tag-anon">{{ r.author_label }}</span>
+              {% endif %}
+              {% if r.minor %}<span class="tag-minor">m</span>{% endif %}
+              {% if r.bot %}<span class="tag-bot">bot</span>{% endif %}
+            </td>
+            <td>
+              {{ r.bytes_size }}
+              {% if r.bytes_delta > 0 %}<span class="bytes-pos">(+{{ r.bytes_delta }})</span>
+              {% elif r.bytes_delta < 0 %}<span class="bytes-neg">({{ r.bytes_delta }})</span>{% endif %}
+            </td>
+            <td><em>{{ r.summary }}</em></td>
+            <td>
+              {% if not loop.last %}
+                {% set prev = revisions[loop.index] %}
+                <a href="{{ url_for('article_diff', wiki_slug=wiki.slug, title=article.slug, old_id=prev.id, new_id=r.id) }}">diff</a>
+              {% endif %}
+              {% if current_user.is_authenticated and not loop.first %}
+                | <form method="post" action="{{ url_for('article_revert', wiki_slug=wiki.slug, title=article.slug, rev_id=r.id) }}" style="display: inline;">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button type="submit" style="background: none; border: none; color: #fa005a; cursor: pointer; padding: 0; font-size: 12px;">revert</button>
+                  </form>
+              {% endif %}
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    <button type="button" class="btn" onclick="(function(){
+      var f=document.forms[0];
+      var o=f.elements['old'], n=f.elements['new'];
+      var oVal,nVal;
+      for(var i=0;i<o.length;i++){if(o[i].checked)oVal=o[i].value;if(n[i].checked)nVal=n[i].value;}
+      if(oVal&&nVal){location='{{ url_for('article_diff', wiki_slug=wiki.slug, title=article.slug, old_id=0, new_id=0) }}'.replace('0/0', oVal+'/'+nVal);}
+    })()">Compare selected revisions</button>
+  </form>
+</div>
+{% endblock %}

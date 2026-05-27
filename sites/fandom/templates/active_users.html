@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block title %}Active users &mdash; {{ wiki.name }}{% endblock %}
+{% block wiki_nav %}{% include "partials/wiki_nav.html" %}{% endblock %}
+
+{% block content %}
+<div class="container" style="padding: 24px 0;">
+  <h1>Active users on {{ wiki.name }}</h1>
+  <p style="color: #888;">Ranked by edit count.</p>
+
+  <table class="history-table">
+    <thead>
+      <tr><th>Rank</th><th>User</th><th>Groups</th><th>Edits</th></tr>
+    </thead>
+    <tbody>
+      {% for u, count in rows %}
+        <tr>
+          <td>{{ loop.index }}</td>
+          <td>
+            <span class="gn-avatar" style="background: {{ u.avatar_color }}; width: 24px; height: 24px; font-size: 12px; vertical-align: middle;">{{ u.username[0] | upper }}</span>
+            <a href="{{ url_for('user_profile', username=u.username) }}">{{ u.username }}</a>
+          </td>
+          <td>
+            {% for g in u.group_list %}<span class="tag-bot" style="background: #fae0e8; color: #ad1457; margin-right: 4px;">{{ g }}</span>{% endfor %}
+          </td>
+          <td>{{ count }}</td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

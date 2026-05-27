@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block title %}All wikis &mdash; Fandom{% endblock %}
+
+{% block content %}
+<div class="container" style="padding: 24px 0;">
+  <h1>Fandom wiki directory</h1>
+  <p style="color: #888;">All wikis hosted on this Fandom mirror.</p>
+  <div class="wiki-grid">
+    {% for w in WIKIS %}
+      <a class="wiki-card" href="{{ url_for('wiki_home', wiki_slug=w.slug) }}" style="--accent: {{ w.accent }};">
+        <div class="wc-banner"><span class="wc-tag">{{ w.slug }}</span></div>
+        <div class="wc-body">
+          <h3>{{ w.name }}</h3>
+          <p class="wc-tagline">{{ w.tagline }}</p>
+          <div class="wc-stats">
+            <span><strong>{{ w.article_count }}</strong> articles</span>
+            <span><strong>{{ '{:,}'.format(w.members_count) }}</strong> members</span>
+          </div>
+        </div>
+      </a>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,87 @@
+{% extends "base.html" %}
+{% block title %}{{ article.title }} | {{ wiki.name }}{% endblock %}
+{% block wiki_nav %}{% include "partials/wiki_nav.html" %}{% endblock %}
+
+{% block content %}
+<div class="article-shell">
+  <div class="article-header container">
+    <h1 class="article-title">{{ article.title }}</h1>
+    <div class="article-subtitle">
+      From {{ wiki.name }} &middot; {{ '{:,}'.format(article.view_count) }} views &middot; last updated {{ article.updated_at | ago }}
+    </div>
+  </div>
+  <nav class="article-tabs">
+    <div class="container" style="display: flex; gap: 0; flex-wrap: wrap;">
+      <a class="active" href="{{ url_for('article_view', wiki_slug=wiki.slug, title=article.slug) }}">Article</a>
+      <a href="{{ url_for('article_talk', wiki_slug=wiki.slug, title=article.slug) }}">Talk</a>
+      <a href="{{ url_for('article_comments', wiki_slug=wiki.slug, title=article.slug) }}">Comments</a>
+      <a href="{{ url_for('article_edit', wiki_slug=wiki.slug, title=article.slug) }}">Edit</a>
+      <a href="{{ url_for('article_history', wiki_slug=wiki.slug, title=article.slug) }}">History</a>
+      <a href="{{ url_for('article_view', wiki_slug=wiki.slug, title='Special:WhatLinksHere/' + article.slug) }}">What links here</a>
+      <a href="{{ url_for('article_move', wiki_slug=wiki.slug, title=article.slug) }}">Move</a>
+      <a href="{{ url_for('article_protect', wiki_slug=wiki.slug, title=article.slug) }}">Protect</a>
+      <a href="{{ url_for('article_delete', wiki_slug=wiki.slug, title=article.slug) }}">Delete</a>
+      {% if current_user.is_authenticated %}
+      <form action="{{ url_for('article_watch', wiki_slug=wiki.slug, title=article.slug) }}" method="post" style="margin-left: auto; padding: 4px 0;">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button class="btn btn-secondary" type="submit">{{ 'Unwatch' if is_watching else 'Watch' }}</button>
+      </form>
+      {% endif %}
+    </div>
+  </nav>
+
+  <div class="article-body">
+    <div class="article-content">
+      <p style="font-size: 16px; color: #444; border-left: 4px solid {{ wiki.accent }}; padding-left: 12px;">
+        {{ article.summary }}
+      </p>
+
+      {% if toc and toc|length >= 3 %}
+      <div class="article-toc">
+        <strong>Contents</strong>
+        <ol>
+          {% for level, txt, anchor in toc %}
+            <li class="toc-l{{ level }}"><a href="#{{ anchor }}">{{ txt }}</a></li>
+          {% endfor %}
+        </ol>
+      </div>
+      {% endif %}
+
+      {{ body_html | safe }}
+
+      <h3 id="References" class="section-heading">References</h3>
+      <ol>
+        <li>{{ wiki.name }} Editorial Team. "{{ article.title }} &mdash; production notes."</li>
+        <li>Official {{ wiki.name.split(' Wiki')[0] }} archive (accessed {{ article.updated_at | ts }}).</li>
+        <li>Wiki contributors. "Article history &mdash; {{ article.title }}." Revision {{ recent_revisions[0].id if recent_revisions else 'N/A' }}.</li>
+      </ol>
+
+      <h3 id="See_Also" class="section-heading">See also</h3>
+      <ul>
+        {% set related = wiki.articles | rejectattr('id', 'equalto', article.id) | list %}
+        {% for r in related[:6] %}
+          <li><a href="{{ url_for('article_view', wiki_slug=wiki.slug, title=r.slug) }}">{{ r.title }}</a></li>
+        {% endfor %}
+      </ul>
+
+      <h3 id="Recent_Edits" class="section-heading">Recent edits</h3>
+      <ul style="font-size: 13px;">
+        {% for r in recent_revisions %}
+          <li>{{ r.timestamp | ts }} &mdash; {{ r.author_label }}: <em>{{ r.summary }}</em></li>
+        {% endfor %}
+      </ul>
+    </div>
+
+    {% include "partials/infobox.html" %}
+  </div>
+
+  <div class="article-categories">
+    <strong>Categories:</strong>
+    {% for c in article.categories %}
+      <a href="{{ url_for('article_view', wiki_slug=wiki.slug, title='Category:' + c.slug) }}">{{ c.name }}</a>
+    {% else %}
+      <em style="color: #888;">No categories</em>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block title %}Delete {{ article.title }} — {{ wiki.name }}{% endblock %}
+{% block wiki_nav %}{% include "partials/wiki_nav.html" %}{% endblock %}
+{% block content %}
+<div class="form-shell">
+  <h1>Delete page</h1>
+  <p style="background:#f8d7da;color:#721c24;padding:10px;border-radius:4px;">
+    You are about to file a deletion request for <strong>{{ article.title }}</strong>.
+    The page will NOT be removed immediately &mdash; this records a request that a sysop
+    must review.
+  </p>
+  <form method="post">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <div class="form-row"><label>Reason</label>
+      <textarea name="reason" rows="4" style="min-height: 80px;" required
+                placeholder="Spam; copyright violation; non-notable subject; merged with X; ..."></textarea></div>
+    <button class="btn" type="submit">File delete request</button>
+    <a class="btn btn-secondary" href="{{ url_for('article_view', wiki_slug=wiki.slug, title=article.slug) }}">Cancel</a>
+  </form>
+</div>
+{% endblock %}

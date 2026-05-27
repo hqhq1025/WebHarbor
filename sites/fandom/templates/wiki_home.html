@@ -1,0 +1,104 @@
+{% extends "base.html" %}
+{% block title %}{{ wiki.name }}{% endblock %}
+{% block wiki_nav %}{% include "partials/wiki_nav.html" %}{% endblock %}
+
+{% block content %}
+{% set hero_map = {'mcu': 'mcu_hero.jpg', 'starwars': 'sw_hero.jpg', 'genshin': 'gs_hero.jpg'} %}
+<section class="wikihome-hero"
+         style="background: linear-gradient(120deg, {{ wiki.accent }}cc 0%, #1a0033cc 100%), url('{{ url_for('static', filename='images/' + hero_map.get(wiki.slug, 'fandom_banner.png')) }}') center/cover;">
+  <div class="container">
+    <h1>{{ wiki.name }}</h1>
+    <p>{{ wiki.description }}</p>
+    <div class="wikihome-stats">
+      <div><strong>{{ wiki.article_count }}</strong> articles</div>
+      <div><strong>{{ wiki.page_count }}</strong> pages</div>
+      <div><strong>{{ wiki.discussion_count }}</strong> discussions</div>
+      <div><strong>{{ '{:,}'.format(wiki.members_count) }}</strong> members</div>
+    </div>
+    {% if current_user.is_authenticated %}
+    <form method="post" action="{{ url_for('wiki_subscribe', wiki_slug=wiki.slug) }}" style="margin-top:12px;display:inline-block;">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <button class="btn btn-secondary" type="submit">Subscribe to notifications</button>
+    </form>
+    {% endif %}
+  </div>
+</section>
+
+<div class="container wikihome-grid">
+  <div>
+    {% if featured %}
+    <article class="featured-article">
+      {% if featured.image %}
+      <div style="margin-bottom: 14px; height: 180px; background: url('{{ url_for('static', filename='images/' + featured.image) }}') center/cover; border-radius: 4px;"></div>
+      {% endif %}
+      <div class="fa-label">Featured Article</div>
+      <h2><a href="{{ url_for('article_view', wiki_slug=wiki.slug, title=featured.slug) }}">{{ featured.title }}</a></h2>
+      <p>{{ featured.summary }}</p>
+      <p><a href="{{ url_for('article_view', wiki_slug=wiki.slug, title=featured.slug) }}">Read full article &raquo;</a></p>
+    </article>
+    {% endif %}
+
+    <section style="margin-top: 28px;">
+      <h2 style="font-size: 18px; border-bottom: 2px solid {{ wiki.accent }}; padding-bottom: 4px; display: inline-block;">Recent changes</h2>
+      <div class="changes-feed">
+        {% for r in recent %}{% include "partials/changes_row.html" %}{% endfor %}
+      </div>
+    </section>
+  </div>
+
+  <aside>
+    <div class="sidebar-card">
+      <h3>Popular pages</h3>
+      <ul>
+        {% for a in popular %}
+          <li><a href="{{ url_for('article_view', wiki_slug=wiki.slug, title=a.slug) }}">{{ a.title }}</a>
+              <small style="color: #888;">({{ '{:,}'.format(a.view_count) }})</small></li>
+        {% endfor %}
+      </ul>
+    </div>
+
+    {% if poll %}
+    <div class="sidebar-card">
+      <h3>Community poll</h3>
+      <p style="font-weight: 600; margin-top: 0;">{{ poll.question }}</p>
+      <form method="post" action="{{ url_for('poll_vote', wiki_slug=wiki.slug, poll_id=poll.id) }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        {% set total = poll_results.values() | sum %}
+        {% for opt in poll.options %}
+          {% set cnt = poll_results.get(loop.index0, 0) %}
+          {% set pct = (cnt * 100 // total) if total else 0 %}
+          <label style="display: block; margin: 6px 0; font-size: 13px;">
+            <input type="radio" name="choice" value="{{ loop.index0 }}"> {{ opt }}
+            <span style="float: right; color: #888;">{{ cnt }} ({{ pct }}%)</span>
+          </label>
+        {% endfor %}
+        <button class="btn" type="submit" style="margin-top: 8px;">Vote</button>
+      </form>
+      <p style="margin-top:10px;font-size:12px;"><a href="{{ url_for('special_polls', wiki_slug=wiki.slug) }}">All polls &raquo;</a></p>
+    </div>
+    {% endif %}
+
+    <div class="sidebar-card">
+      <h3>Top categories</h3>
+      <ul>
+        {% for c in cats %}
+          <li><a href="{{ url_for('article_view', wiki_slug=wiki.slug, title='Category:' + c.slug) }}">{{ c.name }}</a></li>
+        {% endfor %}
+      </ul>
+    </div>
+
+    <div class="sidebar-card">
+      <h3>Wiki shortcuts</h3>
+      <ul>
+        <li><a href="{{ url_for('forum_index', wiki_slug=wiki.slug) }}">Discussions</a></li>
+        <li><a href="{{ url_for('special_list_files', wiki_slug=wiki.slug) }}">Files</a></li>
+        <li><a href="{{ url_for('special_wiki_activity', wiki_slug=wiki.slug) }}">Wiki activity</a></li>
+        <li><a href="{{ url_for('special_top_editors', wiki_slug=wiki.slug) }}">Top editors</a></li>
+        <li><a href="{{ url_for('special_statistics', wiki_slug=wiki.slug) }}">Statistics</a></li>
+        <li><a href="{{ url_for('special_pages_index', wiki_slug=wiki.slug) }}">All special pages</a></li>
+        <li><a href="{{ url_for('help_index', wiki_slug=wiki.slug) }}">Help</a></li>
+      </ul>
+    </div>
+  </aside>
+</div>
+{% endblock %}

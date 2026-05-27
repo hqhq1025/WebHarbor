@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block title %}Short pages — {{ wiki.name }}{% endblock %}
+{% block wiki_nav %}{% include "partials/wiki_nav.html" %}{% endblock %}
+{% block content %}
+<div class="container" style="padding: 24px 0;">
+  <h1>Short pages on {{ wiki.name }}</h1>
+  <p>Stub articles in need of expansion. Top 50 shortest.</p>
+  <table class="history-table">
+    <thead><tr><th>#</th><th>Title</th><th>Bytes</th><th>Created</th></tr></thead>
+    <tbody>
+    {% for a in articles %}
+      <tr>
+        <td>{{ loop.index }}</td>
+        <td><a href="{{ url_for('article_view', wiki_slug=wiki.slug, title=a.slug) }}">{{ a.title }}</a></td>
+        <td>{{ '{:,}'.format(a.content|length) }}</td>
+        <td>{{ a.created_at | ago }}</td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

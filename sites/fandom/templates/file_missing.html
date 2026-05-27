@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block title %}File not found — {{ wiki.name }}{% endblock %}
+{% block wiki_nav %}{% include "partials/wiki_nav.html" %}{% endblock %}
+{% block content %}
+<div class="article-shell">
+  <div class="article-header container">
+    <h1 class="article-title">File:{{ filename }}</h1>
+    <div class="article-subtitle">This file does not exist on {{ wiki.name }}.</div>
+  </div>
+  <div class="article-body">
+    <div class="article-content">
+      <p>You may <a href="{{ url_for('special_upload', wiki_slug=wiki.slug) }}">upload it</a>, or browse
+      <a href="{{ url_for('special_list_files', wiki_slug=wiki.slug) }}">all files</a> on this wiki.</p>
+    </div>
+  </div>
+</div>
+{% endblock %}

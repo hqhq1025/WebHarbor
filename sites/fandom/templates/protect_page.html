@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block title %}Protect {{ article.title }} — {{ wiki.name }}{% endblock %}
+{% block wiki_nav %}{% include "partials/wiki_nav.html" %}{% endblock %}
+{% block content %}
+<div class="form-shell">
+  <h1>Protect page</h1>
+  <p>Set the protection level for <strong>{{ article.title }}</strong>.</p>
+  {% if prot %}
+    <p style="background:#fff3cd;padding:8px;border-radius:4px;">
+      Currently protected at: <strong>{{ prot.level }}</strong> &middot; set {{ prot.set_at | ago }}
+      &middot; reason: {{ prot.reason or '(none)' }}
+    </p>
+  {% else %}
+    <p style="color:#666;">No active protection.</p>
+  {% endif %}
+  <form method="post">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <div class="form-row"><label>Protection level</label>
+      <select name="level">
+        <option value="none">None (unprotect)</option>
+        <option value="autoconfirmed" {% if prot and prot.level == 'autoconfirmed' %}selected{% endif %}>Autoconfirmed — registered editors only</option>
+        <option value="sysop" {% if prot and prot.level == 'sysop' %}selected{% endif %}>Sysop — admins only</option>
+      </select></div>
+    <div class="form-row"><label>Reason</label>
+      <input type="text" name="reason" value="{{ prot.reason if prot else '' }}"
+             placeholder="Edit war; vandalism; high-traffic page; ..."></div>
+    <button class="btn" type="submit">Apply protection</button>
+  </form>
+</div>
+{% endblock %}

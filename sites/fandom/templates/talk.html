@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+{% block title %}Talk: {{ article.title }} | {{ wiki.name }}{% endblock %}
+{% block wiki_nav %}{% include "partials/wiki_nav.html" %}{% endblock %}
+
+{% block content %}
+<div class="container" style="padding: 24px 0;">
+  <h1 style="margin: 0 0 4px;">Talk: {{ article.title }}</h1>
+  <p style="color: #888;">
+    <a href="{{ url_for('article_view', wiki_slug=wiki.slug, title=article.slug) }}">&laquo; Back to article</a>
+    &middot; {{ posts | length }} posts
+  </p>
+
+  {% set top_posts = posts | selectattr('parent_id', 'equalto', None) | list %}
+  {% for p in top_posts %}
+    <div class="talk-thread">
+      <div class="tt-subject">{{ p.subject or '(no subject)' }}</div>
+      <div class="tt-meta">
+        Posted by <strong>{{ p.author_label }}</strong> &mdash; {{ p.timestamp | ts }}
+      </div>
+      <div>{{ p.body }}</div>
+
+      {% for reply in posts if reply.parent_id == p.id %}
+        <div class="talk-reply">
+          <div class="tt-meta">
+            <strong>{{ reply.author_label }}</strong> &mdash; {{ reply.timestamp | ts }}
+          </div>
+          <div>{{ reply.body }}</div>
+        </div>
+      {% endfor %}
+
+      {% if current_user.is_authenticated %}
+      <form method="post" style="margin-top: 14px; background: #fafafa; padding: 12px; border-radius: 4px;">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <input type="hidden" name="parent_id" value="{{ p.id }}">
+        <input type="hidden" name="subject" value="Re: {{ p.subject }}">
+        <div class="form-row" style="margin-bottom: 6px;">
+          <textarea name="body" rows="3" placeholder="Reply to {{ p.author_label }}..."></textarea>
+        </div>
+        <button class="btn" type="submit">Post reply</button>
+      </form>
+      {% endif %}
+    </div>
+  {% endfor %}
+
+  <hr style="margin: 28px 0;">
+  <h2>Start a new topic</h2>
+  {% if current_user.is_authenticated %}
+  <form method="post" class="form-shell" style="margin: 0; max-width: none; padding: 18px;">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <div class="form-row">
+      <label>Subject</label>
+      <input type="text" name="subject" required>
+    </div>
+    <div class="form-row">
+      <label>Message</label>
+      <textarea name="body" rows="5" required></textarea>
+    </div>
+    <button class="btn" type="submit">Post new topic</button>
+  </form>
+  {% else %}
+    <p style="background: #fff; padding: 16px; border-radius: 4px;">
+      <a href="{{ url_for('login') }}">Sign in</a> to start a new talk topic.
+    </p>
+  {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% block title %}User:{{ user.username }} | Fandom{% endblock %}
+
+{% block content %}
+<div class="container" style="padding: 24px 0;">
+  <div style="background: #fff; padding: 28px; border-radius: 8px; box-shadow: 0 2px 6px rgba(0,0,0,0.06); display: flex; gap: 28px; align-items: center; flex-wrap:wrap;">
+    {% set avatar_path = 'images/avatars/' + user.username + '.jpg' %}
+    <div class="gn-avatar" style="width: 80px; height: 80px; font-size: 38px;
+         background: url('{{ url_for('static', filename=avatar_path) }}') center/cover, {{ user.avatar_color }};">
+      {% if not user.username in ['AliceJ','BobK','CarolS','DanR','WikiBot'] %}{{ user.username[0] | upper }}{% endif %}
+    </div>
+    <div style="flex:1; min-width: 280px;">
+      <h1 style="margin: 0 0 4px;">{{ user.username }}</h1>
+      <p style="color: #666; margin: 0;">{{ user.bio }}</p>
+      <p style="color: #888; font-size: 13px; margin: 8px 0 0;">
+        Joined {{ user.joined | ts }} &middot;
+        {{ user.edit_count }} edits &middot;
+        Home wiki: <strong>{{ user.home_wiki or '—' }}</strong>
+      </p>
+      <p style="margin: 8px 0 0;">
+        {% for g in user.group_list %}
+          <span class="tag-bot" style="background: #fae0e8; color: #ad1457; margin-right: 4px;">{{ g }}</span>
+        {% endfor %}
+      </p>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:8px;">
+      {% if current_user.is_authenticated and current_user.id != user.id %}
+      <form method="post" action="{{ url_for('user_follow', username=user.username) }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button class="btn btn-secondary" type="submit">Follow / Unfollow</button>
+      </form>
+      {% endif %}
+      <a class="btn btn-secondary" href="{{ url_for('special_user_contribs', wiki_slug=(user.home_wiki or 'mcu'), username=user.username) }}">Contributions</a>
+      <a class="btn btn-secondary" href="{{ url_for('special_user_rights', wiki_slug=(user.home_wiki or 'mcu'), username=user.username) }}">User rights</a>
+    </div>
+  </div>
+
+  <h2 style="margin-top: 28px;">Recent contributions</h2>
+  <table class="history-table">
+    <thead>
+      <tr><th>When</th><th>Wiki</th><th>Article</th><th>Bytes</th><th>Summary</th></tr>
+    </thead>
+    <tbody>
+      {% for r in edits %}
+        <tr>
+          <td>{{ r.timestamp | ts }}</td>
+          <td>{{ r.article.wiki.slug }}</td>
+          <td><a href="{{ url_for('article_view', wiki_slug=r.article.wiki.slug, title=r.article.slug) }}">{{ r.article.title }}</a>
+              {% if r.minor %}<span class="tag-minor">m</span>{% endif %}
+              {% if r.bot %}<span class="tag-bot">bot</span>{% endif %}
+          </td>
+          <td>{{ r.bytes_size }}
+              {% if r.bytes_delta > 0 %}<span class="bytes-pos">(+{{ r.bytes_delta }})</span>{% endif %}</td>
+          <td><em>{{ r.summary }}</em></td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

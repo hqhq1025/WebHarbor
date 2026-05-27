@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+{% block title %}Page not found &mdash; Fandom{% endblock %}
+{% block content %}
+<div class="form-shell">
+  <h1>404 &mdash; Page not found</h1>
+  <p>The page you tried to reach doesn't exist on this wiki.</p>
+  <p><a class="btn" href="{{ url_for('hub') }}">Back to Fandom</a></p>
+</div>
+{% endblock %}

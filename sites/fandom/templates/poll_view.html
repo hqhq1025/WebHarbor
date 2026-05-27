@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block title %}Poll — {{ poll.question }}{% endblock %}
+{% block wiki_nav %}{% include "partials/wiki_nav.html" %}{% endblock %}
+{% block content %}
+<div class="container" style="padding: 24px 0; max-width: 720px;">
+  <h1>{{ poll.question }}</h1>
+  {% set total = results.values() | sum %}
+  <p style="color:#666;">{{ total }} votes &middot;
+    {% if poll.is_active %}<span style="color:#196b16;">Currently open</span>
+    {% else %}<span style="color:#888;">Closed</span>{% endif %}</p>
+
+  <form method="post" action="{{ url_for('poll_vote', wiki_slug=wiki.slug, poll_id=poll.id) }}">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    {% for opt in poll.options %}
+      {% set cnt = results.get(loop.index0, 0) %}
+      {% set pct = (cnt * 100 // total) if total else 0 %}
+      <div style="background:#fff;padding:12px 14px;border:1px solid #ddd;border-radius:6px;margin-bottom:8px;">
+        <label style="display:block;">
+          <input type="radio" name="choice" value="{{ loop.index0 }}"> {{ opt }}
+          <span style="float:right;color:#888;">{{ cnt }} ({{ pct }}%)</span>
+        </label>
+        <div style="margin-top:6px;background:#eee;height:8px;border-radius:4px;overflow:hidden;">
+          <div style="background: {{ wiki.accent }};height:100%;width:{{ pct }}%;"></div>
+        </div>
+      </div>
+    {% endfor %}
+    {% if poll.is_active %}<button class="btn" type="submit">Vote</button>{% endif %}
+  </form>
+
+  <p style="margin-top:24px;"><a href="{{ url_for('special_polls', wiki_slug=wiki.slug) }}">&laquo; All polls</a></p>
+</div>
+{% endblock %}

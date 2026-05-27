@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block title %}Most-edited pages — {{ wiki.name }}{% endblock %}
+{% block wiki_nav %}{% include "partials/wiki_nav.html" %}{% endblock %}
+{% block content %}
+<div class="container" style="padding: 24px 0;">
+  <h1>Most-edited pages on {{ wiki.name }}</h1>
+  <p>Articles with the highest revision count.</p>
+  <table class="history-table">
+    <thead><tr><th>#</th><th>Title</th><th>Revisions</th><th>Views</th></tr></thead>
+    <tbody>
+    {% for a, n in rows %}
+      <tr>
+        <td>{{ loop.index }}</td>
+        <td><a href="{{ url_for('article_view', wiki_slug=wiki.slug, title=a.slug) }}">{{ a.title }}</a></td>
+        <td>{{ n }}</td>
+        <td>{{ '{:,}'.format(a.view_count) }}</td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

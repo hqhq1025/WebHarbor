@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block title %}{{ title }} &mdash; not yet written | {{ wiki.name }}{% endblock %}
+{% block wiki_nav %}{% include "partials/wiki_nav.html" %}{% endblock %}
+
+{% block content %}
+<div class="container" style="padding: 24px 0;">
+  <h1>{{ title }}</h1>
+  <div style="background: #fff; padding: 20px; border-radius: 6px; border-left: 4px solid #fa005a;">
+    <p>There is no page titled "<strong>{{ title }}</strong>" on {{ wiki.name }} yet.</p>
+    <p>
+      <a class="btn" href="{{ url_for('article_edit', wiki_slug=wiki.slug, title=slug) }}">Create this page</a>
+      <a class="btn btn-secondary" href="{{ url_for('search_global', q=title, wiki=wiki.slug) }}">Search for "{{ title }}"</a>
+    </p>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block title %}{{ thread.title }} — {{ wiki.name }} Discussions{% endblock %}
+{% block wiki_nav %}{% include "partials/wiki_nav.html" %}{% endblock %}
+{% block content %}
+<div class="container" style="padding: 24px 0; max-width: 880px;">
+  <div style="font-size: 12px; color: #777; margin-bottom: 8px;">
+    <a href="{{ url_for('forum_index', wiki_slug=wiki.slug) }}">&laquo; Back to Discussions</a> &middot; {{ thread.category }}
+  </div>
+  <h1>{{ thread.title }}</h1>
+  <div style="font-size: 13px; color: #777; margin-bottom: 20px;">
+    Started by <a href="{{ url_for('user_profile', username=thread.author_label) }}">{{ thread.author_label }}</a>
+    &middot; {{ thread.view_count }} views &middot; {{ thread.created_at | ago }}
+  </div>
+
+  {% for p in posts %}
+    <div class="talk-thread" style="margin-bottom: 12px;">
+      <div class="tt-meta">
+        <a href="{{ url_for('user_profile', username=p.author_label) }}">{{ p.author_label }}</a>
+        &middot; {{ p.timestamp | ts }}
+        {% if p.likes %} &middot; <span style="color:#fa005a;">{{ p.likes }} likes</span>{% endif %}
+      </div>
+      <p style="margin: 8px 0 0;">{{ p.body }}</p>
+    </div>
+  {% endfor %}
+
+  {% if not thread.is_locked %}
+    {% if current_user.is_authenticated %}
+    <form method="post" style="background:#fff; padding: 16px; border-radius:6px; box-shadow: 0 1px 3px rgba(0,0,0,0.06);">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <div class="form-row"><label>Reply</label>
+        <textarea name="body" rows="4" required style="min-height: 100px;"></textarea>
+      </div>
+      <button class="btn" type="submit">Post reply</button>
+    </form>
+    {% else %}
+    <p style="text-align:center;">
+      <a href="{{ url_for('login', next=request.path) }}">Sign in to reply</a>
+    </p>
+    {% endif %}
+  {% else %}
+    <p style="color:#888;text-align:center;padding:14px;">This thread is locked.</p>
+  {% endif %}
+</div>
+{% endblock %}

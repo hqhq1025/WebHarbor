@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block title %}New discussion — {{ wiki.name }}{% endblock %}
+{% block wiki_nav %}{% include "partials/wiki_nav.html" %}{% endblock %}
+{% block content %}
+<div class="form-shell" style="max-width: 720px;">
+  <h1>Start a new discussion</h1>
+  <form method="post">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <div class="form-row">
+      <label>Title</label>
+      <input type="text" name="title" required>
+    </div>
+    <div class="form-row">
+      <label>Category</label>
+      <select name="category">
+        <option>General</option>
+        <option>Lore</option>
+        <option>News</option>
+        <option>Theories</option>
+        <option>Off-topic</option>
+        <option>Help</option>
+      </select>
+    </div>
+    <div class="form-row">
+      <label>Body</label>
+      <textarea name="body" rows="8" required style="min-height: 160px;"></textarea>
+    </div>
+    <button class="btn" type="submit">Post thread</button>
+  </form>
+</div>
+{% endblock %}

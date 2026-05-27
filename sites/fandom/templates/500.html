@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+{% block title %}Server error &mdash; Fandom{% endblock %}
+{% block content %}
+<div class="form-shell">
+  <h1>500 &mdash; Internal server error</h1>
+  <p>Something went wrong. Please try again later.</p>
+  <p><a class="btn" href="{{ url_for('hub') }}">Back to Fandom</a></p>
+</div>
+{% endblock %}

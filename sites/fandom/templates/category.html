@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block title %}Category: {{ category.name }} | {{ wiki.name }}{% endblock %}
+{% block wiki_nav %}{% include "partials/wiki_nav.html" %}{% endblock %}
+
+{% block content %}
+<div class="container" style="padding: 24px 0;">
+  <h1>Category: {{ category.name }}</h1>
+  <p style="color: #555;">{{ category.description }}</p>
+
+  {% if subs %}
+    <h2>Subcategories</h2>
+    <ul>
+      {% for c in subs %}
+        <li><a href="{{ url_for('article_view', wiki_slug=wiki.slug, title='Category:' + c.slug) }}">{{ c.name }}</a></li>
+      {% endfor %}
+    </ul>
+  {% endif %}
+
+  <h2>Articles in this category ({{ articles | length }})</h2>
+  <div class="trending-list">
+    {% for a in articles %}
+      <div class="trending-item">
+        <h4><a href="{{ url_for('article_view', wiki_slug=wiki.slug, title=a.slug) }}">{{ a.title }}</a></h4>
+        <div class="ti-meta">{{ a.summary[:120] }}{{ '...' if a.summary|length > 120 else '' }}</div>
+      </div>
+    {% else %}
+      <p style="color: #888;">No articles in this category yet.</p>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}

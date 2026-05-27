@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block title %}Upload file — {{ wiki.name }}{% endblock %}
+{% block wiki_nav %}{% include "partials/wiki_nav.html" %}{% endblock %}
+{% block content %}
+<div class="form-shell">
+  <h1>Upload file to {{ wiki.name }}</h1>
+  <form method="post">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <div class="form-row">
+      <label>Destination filename</label>
+      <input type="text" name="filename" placeholder="My_image.jpg" required>
+      <small style="color:#888;">e.g. <code>mcu_new_character.jpg</code> &mdash; underscores OK</small>
+    </div>
+    <div class="form-row">
+      <label>Description / source</label>
+      <textarea name="description" rows="4" style="min-height: 80px;"
+                placeholder="Official poster — fair-use per Wiki content policy."></textarea>
+    </div>
+    <div class="form-row">
+      <label>License</label>
+      <select name="license">
+        <option>Fair use</option>
+        <option>CC-BY-SA 4.0</option>
+        <option>CC-BY 4.0</option>
+        <option>Public Domain</option>
+      </select>
+    </div>
+    <div class="form-row">
+      <label>File size (bytes, optional)</label>
+      <input type="number" name="bytes_size" value="65536">
+    </div>
+    <p style="font-size:12px;color:#888;">Note: This is a mock upload — the file record is created without uploading actual bytes.</p>
+    <button class="btn" type="submit">Upload</button>
+  </form>
+</div>
+{% endblock %}

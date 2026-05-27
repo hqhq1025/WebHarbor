@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block title %}Orphaned pages — {{ wiki.name }}{% endblock %}
+{% block wiki_nav %}{% include "partials/wiki_nav.html" %}{% endblock %}
+{% block content %}
+<div class="container" style="padding: 24px 0;">
+  <h1>Orphaned pages on {{ wiki.name }}</h1>
+  <p>Pages no other article links to. Need cross-linking love.</p>
+  <ul>
+    {% for a in articles %}
+      <li><a href="{{ url_for('article_view', wiki_slug=wiki.slug, title=a.slug) }}">{{ a.title }}</a>
+          &middot; <a href="{{ url_for('article_view', wiki_slug=wiki.slug, title='Special:WhatLinksHere/' + a.slug) }}"
+                     style="font-size:12px;color:#888;">verify</a></li>
+    {% else %}
+      <li>No orphaned pages — every article is linked from somewhere.</li>
+    {% endfor %}
+  </ul>
+</div>
+{% endblock %}

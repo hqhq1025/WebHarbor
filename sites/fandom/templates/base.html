@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}Fandom — The home of fandom{% endblock %}</title>
+  <meta name="csrf-token" content="{{ csrf_token() }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
+</head>
+<body class="{% block body_class %}{% endblock %}" {% if wiki %}style="--accent: {{ wiki.accent }};"{% endif %}>
+
+<nav class="global-nav">
+  <div class="gn-inner">
+    <a href="{{ url_for('hub') }}" class="gn-logo">FAN<span class="pink">DOM</span></a>
+    <div class="gn-wikiswitcher">
+      {% for w in WIKIS %}
+        <a href="{{ url_for('wiki_home', wiki_slug=w.slug) }}"
+           class="{{ 'active' if wiki and wiki.slug == w.slug else '' }}">{{ w.name.split(' Wiki')[0].split(' —')[0] }}</a>
+      {% endfor %}
+    </div>
+    <form action="{{ url_for('search_global') }}" method="get" class="gn-search">
+      <input type="text" name="q" placeholder="Search Fandom..." value="{{ request.args.get('q','') }}">
+      {% if wiki %}<input type="hidden" name="wiki" value="{{ wiki.slug }}">{% endif %}
+      <button type="submit">Search</button>
+    </form>
+    <div class="gn-userbar">
+      {% if current_user.is_authenticated %}
+        <a href="{{ url_for('user_profile', username=current_user.username) }}">{{ current_user.username }}</a>
+        <a href="{{ url_for('account') }}" class="gn-avatar"
+           style="background: {{ current_user.avatar_color }};">
+          {{ current_user.username[0] | upper }}
+        </a>
+        <a href="{{ url_for('logout') }}">Sign out</a>
+      {% else %}
+        <a href="{{ url_for('login') }}">Sign in</a>
+        <a href="{{ url_for('register') }}" class="gn-avatar" title="Register">+</a>
+      {% endif %}
+    </div>
+  </div>
+</nav>
+
+{% block wiki_nav %}{% endblock %}
+
+{% if global_notices %}
+  {% for n in global_notices %}
+    <div style="background: #fff3cd; color: #856404; padding: 8px 16px; text-align: center; font-size: 13px; border-bottom: 1px solid #ffeeba;">
+      <strong>{{ n.title }}</strong> &mdash; {{ n.body }}
+    </div>
+  {% endfor %}
+{% endif %}
+
+{% with messages = get_flashed_messages(with_categories=true) %}
+  {% if messages %}
+  <div class="flash-container">
+    {% for cat, msg in messages %}
+      <div class="flash flash-{{ cat }}">{{ msg }}</div>
+    {% endfor %}
+  </div>
+  {% endif %}
+{% endwith %}
+
+<main>
+  {% block content %}{% endblock %}
+</main>
+
+<footer class="global-footer">
+  <div class="container">
+    <p>Fandom &mdash; Build your own wiki. Read the lore. &copy; {{ now_year }} Fandom, Inc. &mdash; Mirror site for benchmark testing.</p>
+    <p>
+      <a href="{{ url_for('wiki_directory') }}">All wikis</a> &middot;
+      <a href="{{ url_for('hub') }}">Home</a> &middot;
+      <a href="{{ url_for('community_portal') }}">Community Portal</a>
+    </p>
+  </div>
+</footer>
+
+</body>
+</html>

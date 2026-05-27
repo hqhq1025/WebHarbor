@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block title %}File list — {{ wiki.name }}{% endblock %}
+{% block wiki_nav %}{% include "partials/wiki_nav.html" %}{% endblock %}
+{% block content %}
+<div class="container" style="padding: 24px 0;">
+  <h1>Files on {{ wiki.name }}</h1>
+  <form method="get" class="filter-bar">
+    <label>Search files:</label>
+    <input type="text" name="q" value="{{ q }}" placeholder="filename or display name">
+    <button class="btn btn-secondary" type="submit">Search</button>
+    <a class="btn" href="{{ url_for('special_upload', wiki_slug=wiki.slug) }}">Upload file</a>
+  </form>
+  <table class="history-table">
+    <thead><tr>
+      <th>Preview</th><th>Filename</th><th>Display</th><th>Size</th>
+      <th>Uploader</th><th>Date</th><th>License</th>
+    </tr></thead>
+    <tbody>
+    {% for f in files %}
+      <tr>
+        <td><img src="{{ url_for('static', filename='images/' + f.filename) }}"
+                 alt="" style="width:40px;height:40px;object-fit:cover;border-radius:3px;"></td>
+        <td><a href="{{ url_for('file_view', wiki_slug=wiki.slug, filename=f.filename) }}">{{ f.filename }}</a></td>
+        <td>{{ f.display_name }}</td>
+        <td>{{ '{:.1f} KB'.format(f.bytes_size / 1024) }}</td>
+        <td><a href="{{ url_for('user_profile', username=f.uploader_label) }}">{{ f.uploader_label }}</a></td>
+        <td>{{ f.uploaded_at | ago }}</td>
+        <td>{{ f.license }}</td>
+      </tr>
+    {% else %}
+      <tr><td colspan="7" style="text-align:center;color:#888;padding:20px;">No files found.</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

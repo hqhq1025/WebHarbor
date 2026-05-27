@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block title %}Diff: {{ article.title }} | {{ wiki.name }}{% endblock %}
+{% block wiki_nav %}{% include "partials/wiki_nav.html" %}{% endblock %}
+
+{% block content %}
+<div class="container" style="padding: 24px 0;">
+  <h1 style="margin: 0 0 6px;">Difference: {{ article.title }}</h1>
+  <p style="color: #888;">
+    <a href="{{ url_for('article_history', wiki_slug=wiki.slug, title=article.slug) }}">&laquo; Back to history</a>
+  </p>
+
+  <table style="width: 100%; margin-bottom: 16px; font-size: 13px;">
+    <tr>
+      <th style="width: 50%; text-align: left; padding: 8px; background: #eee;">
+        Revision {{ old_r.id }} &mdash; {{ old_r.timestamp | ts }}<br>
+        <small>{{ old_r.author_label }} &mdash; <em>{{ old_r.summary }}</em></small>
+      </th>
+      <th style="text-align: left; padding: 8px; background: #eee;">
+        Revision {{ new_r.id }} &mdash; {{ new_r.timestamp | ts }}<br>
+        <small>{{ new_r.author_label }} &mdash; <em>{{ new_r.summary }}</em></small>
+      </th>
+    </tr>
+  </table>
+
+  <table class="diff-table">
+    {% for tag, l, r in rows %}
+      <tr class="diff-{{ tag }}">
+        <td class="{% if tag in ['replace','delete'] %}del{% endif %}">{{ l }}</td>
+        <td class="{% if tag in ['replace','insert'] %}ins{% endif %}">{{ r }}</td>
+      </tr>
+    {% endfor %}
+  </table>
+
+  <p>
+    <a href="{{ url_for('article_history', wiki_slug=wiki.slug, title=article.slug) }}">Back to history</a> &middot;
+    <a href="{{ url_for('article_view', wiki_slug=wiki.slug, title=article.slug) }}">Current article</a>
+  </p>
+</div>
+{% endblock %}

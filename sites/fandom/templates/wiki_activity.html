@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block title %}Wiki activity — {{ wiki.name }}{% endblock %}
+{% block wiki_nav %}{% include "partials/wiki_nav.html" %}{% endblock %}
+{% block content %}
+<div class="container" style="padding: 24px 0;">
+  <h1>Wiki activity</h1>
+  <p style="color:#666;">A non-technical view of everything happening on {{ wiki.name }} right now.</p>
+
+  <div style="display:grid;grid-template-columns:2fr 1fr;gap:24px;">
+    <div>
+      <h2 style="font-size:18px;">Recent edits</h2>
+      <div class="changes-feed">
+        {% for r in revs %}{% include "partials/changes_row.html" %}{% endfor %}
+      </div>
+    </div>
+    <aside>
+      <div class="sidebar-card">
+        <h3>Recent discussions</h3>
+        <ul>
+          {% for t in threads %}
+            <li><a href="{{ url_for('forum_thread', wiki_slug=wiki.slug, thread_id=t.id) }}">{{ t.title }}</a>
+                <small style="color:#888;display:block;">{{ t.updated_at | ago }}</small></li>
+          {% else %}<li>No threads yet.</li>{% endfor %}
+        </ul>
+      </div>
+      <div class="sidebar-card">
+        <h3>Recent comments</h3>
+        <ul>
+          {% for c in comments %}
+            <li>{{ c.author_label }} on
+              <a href="{{ url_for('article_comments', wiki_slug=wiki.slug, title=c.article.slug) }}">{{ c.article.title }}</a>
+              <small style="color:#888;display:block;">{{ c.timestamp | ago }}</small></li>
+          {% else %}<li>No comments yet.</li>{% endfor %}
+        </ul>
+      </div>
+    </aside>
+  </div>
+</div>
+{% endblock %}

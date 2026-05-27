@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block title %}Help:{{ topic | nice_title }} — {{ wiki.name }}{% endblock %}
+{% block wiki_nav %}{% include "partials/wiki_nav.html" %}{% endblock %}
+{% block content %}
+<div class="article-shell">
+  <div class="article-header container">
+    <h1 class="article-title">Help: {{ topic | nice_title }}</h1>
+    <div class="article-subtitle">
+      <a href="{{ url_for('help_index', wiki_slug=wiki.slug) }}">&laquo; Help index</a>
+    </div>
+  </div>
+  <div class="article-body">
+    <div class="article-content">
+      {% set body = {
+        'Editing': "Use the **Edit** tab on any article. Wikitext supports headings (`== Heading ==`), bullet lists (`* item`), numbered lists (`# item`), bold (`'''bold'''`), italic (`''italic''`), and internal links (`[[Article Name]]`). Click Preview before saving.",
+        'Categories': "Add `[[Category:Name]]` to the end of an article to file it. Categories form a tree: each category may declare a parent in its description. View `Special:Categories` for the full taxonomy.",
+        'Infoboxes': "The infobox is rendered from the article's `infobox_kind` and `infobox_json` columns. Currently we support `character`, `location`, and `item` kinds. Each key/value pair becomes a row in the sidebar.",
+        'Templates': "Templates are not yet supported in this mirror. The underlying upstream wiki uses `{{Template:Name|param=value}}` syntax; the mirror inlines content directly.",
+        'Talk_pages': "Every article has a **Talk** tab. Talk posts are threaded by `parent_id`. Subjects are optional; the body is required. Anonymous posts are disabled.",
+        'Citations': "Use the References section at the bottom of each article. We auto-generate three baseline reference entries; manually add more by editing the page.",
+        'Images': "Files are catalogued under `Special:ListFiles`. Each File: page records uploader, license, and file usage. Upload via `Special:Upload`.",
+        'User_groups': "Permission groups in ascending power: `autoconfirmed` -> `rollback` -> `sysop` -> `bureaucrat`. Bot accounts have the `bot` flag (edits hide from Recent Changes by default).",
+        'Policies': "Articles must be in-universe-neutral, sourced where possible, and free of speculation. Vandalism is reverted on sight. Persistent vandals are blocked at `Special:Block`.",
+        'Markup': "**Quick reference:** `== H2 ==`, `=== H3 ===`, `[[link]]`, `[[link|display]]`, `'''bold'''`, `''italic''`, `* bullet`, `# numbered`. Blank line = paragraph break.",
+        'Discussions': "Discussions live at `Forum`. Pick a category (General/Lore/News/Theories/Off-topic/Help), write a title and body. Replies thread under each thread.",
+        'Reverting': "Open a page's History tab, click an old revision, then submit the Revert form. The revert is logged as a new revision summarised as `Reverted to revision N by USER`.",
+      } %}
+      {% set md = body.get(topic, "Documentation page not yet written. Contribute via the **Edit** button.") %}
+      <p style="line-height: 1.7;">{{ md | safe }}</p>
+
+      <h3>See also</h3>
+      <ul>
+        <li><a href="{{ url_for('help_index', wiki_slug=wiki.slug) }}">Help index</a></li>
+        <li><a href="{{ url_for('community_portal') }}">Community portal</a></li>
+        <li><a href="{{ url_for('special_pages_index', wiki_slug=wiki.slug) }}">All special pages</a></li>
+      </ul>
+    </div>
+  </div>
+</div>
+{% endblock %}

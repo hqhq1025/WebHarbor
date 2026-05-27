@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block title %}New pages &mdash; {{ wiki.name }}{% endblock %}
+{% block wiki_nav %}{% include "partials/wiki_nav.html" %}{% endblock %}
+
+{% block content %}
+<div class="container" style="padding: 24px 0;">
+  <h1>Newest pages</h1>
+  <p style="color: #888;">Most recently created pages on {{ wiki.name }}.</p>
+
+  <table class="history-table">
+    <thead>
+      <tr><th>Created</th><th>Title</th><th>Views</th></tr>
+    </thead>
+    <tbody>
+      {% for a in articles %}
+        <tr>
+          <td>{{ a.created_at | ts }}</td>
+          <td><a href="{{ url_for('article_view', wiki_slug=wiki.slug, title=a.slug) }}">{{ a.title }}</a></td>
+          <td>{{ '{:,}'.format(a.view_count) }}</td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

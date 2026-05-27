@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block title %}Wanted pages — {{ wiki.name }}{% endblock %}
+{% block wiki_nav %}{% include "partials/wiki_nav.html" %}{% endblock %}
+{% block content %}
+<div class="container" style="padding: 24px 0;">
+  <h1>Wanted pages on {{ wiki.name }}</h1>
+  <p>Red links — titles referenced from existing pages but not yet written.</p>
+  <table class="history-table">
+    <thead><tr><th>#</th><th>Wanted title</th><th>Inbound link count</th><th>Create</th></tr></thead>
+    <tbody>
+    {% for title, count in rows %}
+      <tr>
+        <td>{{ loop.index }}</td>
+        <td><a class="redlink wikilink" href="{{ url_for('article_view', wiki_slug=wiki.slug, title=title) }}">{{ title }}</a></td>
+        <td>{{ count }}</td>
+        <td><a href="{{ url_for('article_edit', wiki_slug=wiki.slug, title=title) }}">[create]</a></td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

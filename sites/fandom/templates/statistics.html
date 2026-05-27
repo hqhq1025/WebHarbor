@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block title %}Statistics — {{ wiki.name }}{% endblock %}
+{% block wiki_nav %}{% include "partials/wiki_nav.html" %}{% endblock %}
+{% block content %}
+<div class="container" style="padding: 24px 0;">
+  <h1>{{ wiki.name }} statistics</h1>
+  <p style="color:#666;">A snapshot of wiki activity across pages, edits, files, and discussions.</p>
+  <div style="display:grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 12px; margin-top: 20px;">
+    {% for label, val in [
+      ('Articles', stats.articles),
+      ('Total pages', stats.pages),
+      ('Total revisions', stats.revisions),
+      ('Files', stats.files),
+      ('Active editors', stats.editors),
+      ('Categories', stats.categories),
+      ('Talk posts', stats.talk_posts),
+      ('Forum threads', stats.threads),
+      ('Forum posts', stats.forum_posts),
+      ('Article comments', stats.comments),
+    ] %}
+      <div class="sidebar-card" style="text-align: center;">
+        <div style="font-size: 32px; font-weight: 800; color: {{ wiki.accent }};">{{ '{:,}'.format(val) }}</div>
+        <div style="font-size: 12px; text-transform: uppercase; color: #888;">{{ label }}</div>
+      </div>
+    {% endfor %}
+  </div>
+  <p style="margin-top: 24px;">
+    See also:
+    <a href="{{ url_for('special_top_editors', wiki_slug=wiki.slug) }}">Top editors</a> &middot;
+    <a href="{{ url_for('special_long_pages', wiki_slug=wiki.slug) }}">Long pages</a> &middot;
+    <a href="{{ url_for('special_short_pages', wiki_slug=wiki.slug) }}">Short pages</a> &middot;
+    <a href="{{ url_for('special_most_revisions', wiki_slug=wiki.slug) }}">Most edited</a> &middot;
+    <a href="{{ url_for('special_orphaned', wiki_slug=wiki.slug) }}">Orphaned pages</a> &middot;
+    <a href="{{ url_for('special_wanted', wiki_slug=wiki.slug) }}">Wanted pages</a>
+  </p>
+</div>
+{% endblock %}

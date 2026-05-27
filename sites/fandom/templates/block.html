@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block title %}Block user — {{ wiki.name }}{% endblock %}
+{% block wiki_nav %}{% include "partials/wiki_nav.html" %}{% endblock %}
+{% block content %}
+<div class="container" style="padding: 24px 0; max-width: 720px;">
+  <h1>Block / unblock user</h1>
+  <form method="post" class="form-shell" style="margin: 16px 0; max-width: 100%;">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <div class="form-row"><label>Username</label>
+      <input type="text" name="username" required></div>
+    <div class="form-row"><label>Reason</label>
+      <input type="text" name="reason" placeholder="vandalism; spam; harassment; ..."></div>
+    <div class="form-row"><label>Duration</label>
+      <select name="duration">
+        <option>1 hour</option>
+        <option>1 day</option>
+        <option>3 days</option>
+        <option>1 week</option>
+        <option>1 month</option>
+        <option>indefinite</option>
+      </select></div>
+    <button class="btn" type="submit">Submit (toggles block)</button>
+    <p style="font-size:12px;color:#888;">Submitting an already-blocked user will unblock them.</p>
+  </form>
+
+  <h2 style="font-size:18px;">Currently active blocks</h2>
+  <table class="history-table">
+    <thead><tr><th>User</th><th>Reason</th><th>Duration</th><th>Set</th></tr></thead>
+    <tbody>
+    {% for b in blocks %}
+      <tr>
+        <td><a href="{{ url_for('user_profile', username=b.blocked_user.username) }}">{{ b.blocked_user.username }}</a></td>
+        <td>{{ b.reason or '&mdash;' | safe }}</td>
+        <td>{{ b.duration }}</td>
+        <td>{{ b.created_at | ago }}</td>
+      </tr>
+    {% else %}
+      <tr><td colspan="4" style="text-align:center;color:#888;">No active blocks.</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

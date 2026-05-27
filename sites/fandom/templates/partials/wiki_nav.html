@@ -1,0 +1,18 @@
+<nav class="wiki-nav">
+  <div class="wn-inner">
+    <a href="{{ url_for('wiki_home', wiki_slug=wiki.slug) }}" class="wn-wikiname">{{ wiki.name }}</a>
+    <div class="wn-tabs">
+      <a href="{{ url_for('wiki_home', wiki_slug=wiki.slug) }}">Home</a>
+      <a href="{{ url_for('article_view', wiki_slug=wiki.slug, title='Special:RecentChanges') }}">Recent changes</a>
+      <a href="{{ url_for('article_view', wiki_slug=wiki.slug, title='Special:AllPages') }}">All pages</a>
+      <a href="{{ url_for('article_view', wiki_slug=wiki.slug, title='Special:Categories') }}">Categories</a>
+      <a href="{{ url_for('special_list_files', wiki_slug=wiki.slug) }}">Files</a>
+      <a href="{{ url_for('forum_index', wiki_slug=wiki.slug) }}">Discussions</a>
+      <a href="{{ url_for('special_wiki_activity', wiki_slug=wiki.slug) }}">Activity</a>
+      <a href="{{ url_for('special_statistics', wiki_slug=wiki.slug) }}">Stats</a>
+      <a href="{{ url_for('article_view', wiki_slug=wiki.slug, title='Special:RandomPage') }}">Random</a>
+      <a href="{{ url_for('help_index', wiki_slug=wiki.slug) }}">Help</a>
+      <a href="{{ url_for('create_page', wiki_slug=wiki.slug) }}">+ Create</a>
+    </div>
+  </div>
+</nav>
