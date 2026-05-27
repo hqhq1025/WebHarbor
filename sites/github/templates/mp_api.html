@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+{% block title %}{{ page.title }} · GitHub{% endblock %}
+{% block extra_head %}
+<style>
+.mp-api-hero{padding:48px 24px;background:#0d1117;border-bottom:1px solid #30363d}
+.mp-api-hero .inner{max-width:1080px;margin:0 auto}
+.mp-api-hero .eyebrow{color:#3fb950;letter-spacing:.12em;text-transform:uppercase;font-size:12px;font-weight:700}
+.mp-api-hero h1{color:#f0f6fc;font-size:38px;margin:8px 0}
+.mp-api-hero p{color:#8b949e;line-height:1.6;max-width:680px}
+.mp-endpoints{max-width:1080px;margin:48px auto;padding:0 24px}
+.mp-endpoints h2{color:#f0f6fc;font-size:22px;margin-bottom:14px}
+.mp-ep-tbl{background:#161b22;border:1px solid #30363d;border-radius:8px;overflow:hidden;font-family:ui-monospace,Menlo,Consolas,monospace}
+.mp-ep-row{display:grid;grid-template-columns:80px 1.5fr 2fr;gap:18px;padding:12px 18px;border-bottom:1px solid #30363d;align-items:center}
+.mp-ep-row:last-child{border-bottom:none}
+.mp-method{display:inline-block;padding:3px 10px;border-radius:4px;font-weight:700;font-size:12px;text-align:center}
+.mp-method.GET{background:#0c2d23;color:#3fb950}
+.mp-method.POST{background:#1c2128;color:#79c0ff}
+.mp-method.PUT{background:#3a3110;color:#e3b341}
+.mp-method.DELETE{background:#5a1e1e;color:#ff7b72}
+.mp-ep-row .path{color:#79c0ff;font-size:13px}
+.mp-ep-row .desc{color:#c9d1d9;font-family:-apple-system,BlinkMacSystemFont,Segoe UI,sans-serif;font-size:14px}
+.mp-rate{max-width:1080px;margin:48px auto;padding:0 24px}
+.mp-rate h2{color:#f0f6fc;font-size:22px;margin-bottom:14px}
+.mp-rate-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+.mp-rate-card{background:#161b22;border:1px solid #30363d;border-radius:10px;padding:18px 20px;text-align:center}
+.mp-rate-card .who{color:#8b949e;font-size:13px;text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px}
+.mp-rate-card .n{color:#3fb950;font-size:28px;font-weight:800;font-family:ui-monospace,Menlo,Consolas,monospace}
+.mp-rate-card .u{color:#8b949e;font-size:12px}
+.mp-graphql{max-width:1080px;margin:48px auto 80px;padding:0 24px}
+.mp-graphql h2{color:#f0f6fc;font-size:22px;margin-bottom:14px}
+.mp-graphql pre{background:#0d1117;border:1px solid #30363d;border-radius:8px;padding:20px;color:#c9d1d9;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:13px;line-height:1.55;overflow-x:auto}
+</style>
+{% endblock %}
+{% block content %}
+<section class="mp-api-hero">
+  <div class="inner">
+    <span class="eyebrow">{{ page.eyebrow }}</span>
+    <h1>{{ page.headline }}</h1>
+    <p>{{ page.subtitle }}</p>
+  </div>
+</section>
+<section class="mp-endpoints">
+  <h2>Sample REST endpoints</h2>
+  <div class="mp-ep-tbl">
+    {% for e in data.endpoints %}
+    <div class="mp-ep-row">
+      <span class="mp-method {{ e.method }}">{{ e.method }}</span>
+      <span class="path">{{ e.path }}</span>
+      <span class="desc">{{ e.desc }}</span>
+    </div>
+    {% endfor %}
+  </div>
+</section>
+<section class="mp-rate">
+  <h2>Rate limits</h2>
+  <div class="mp-rate-grid">
+    {% for r in data.rate_limits %}
+    <div class="mp-rate-card">
+      <div class="who">{{ r.who }}</div>
+      <div class="n">{{ r.per_hour }}</div>
+      <div class="u">req/hour</div>
+    </div>
+    {% endfor %}
+  </div>
+</section>
+<section class="mp-graphql">
+  <h2>GraphQL example</h2>
+  <pre>{{ data.graphql_example }}</pre>
+</section>
+{% endblock %}

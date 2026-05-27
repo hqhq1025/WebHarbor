@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% block title %}{{ page.title }}{% endblock %}
+{% block extra_head %}
+<style>
+.mp-al-hero{padding:72px 24px;background:linear-gradient(135deg,#0d1117 0,#1a3a52 100%);text-align:center;border-bottom:1px solid #30363d}
+.mp-al-hero .eyebrow{color:#3fb950;letter-spacing:.12em;text-transform:uppercase;font-size:12px;font-weight:700}
+.mp-al-hero h1{color:#f0f6fc;font-size:42px;margin:12px auto;max-width:760px}
+.mp-al-hero p{color:#8b949e;max-width:660px;margin:0 auto;line-height:1.6}
+.mp-tracks{max-width:1080px;margin:48px auto;padding:0 24px}
+.mp-tracks h2{color:#f0f6fc;font-size:24px;margin-bottom:18px}
+.mp-track-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+.mp-track{background:#161b22;border:1px solid #30363d;border-radius:12px;padding:24px 24px}
+.mp-track .level{font-size:13px;letter-spacing:.08em;text-transform:uppercase;font-weight:700;margin-bottom:4px}
+.mp-track:nth-child(1) .level{color:#3fb950}
+.mp-track:nth-child(2) .level{color:#79c0ff}
+.mp-track:nth-child(3) .level{color:#f778ba}
+.mp-track .mins{color:#8b949e;font-size:12px;margin-bottom:14px}
+.mp-track ul{list-style:none;padding:0;margin:0;color:#c9d1d9}
+.mp-track li{padding:6px 0 6px 24px;position:relative;font-size:14px}
+.mp-track li:before{content:"\25B6";position:absolute;left:0;color:#3fb950;font-size:11px;top:8px}
+.mp-starters{max-width:1080px;margin:48px auto 80px;padding:0 24px}
+.mp-starters h2{color:#f0f6fc;font-size:24px;margin-bottom:18px}
+.mp-starter{background:#161b22;border:1px solid #30363d;border-radius:10px;margin-bottom:14px;overflow:hidden}
+.mp-starter .hdr{background:#0d1117;border-bottom:1px solid #30363d;padding:10px 18px;display:flex;justify-content:space-between;color:#f0f6fc;font-weight:600}
+.mp-starter .hdr .lang{color:#79c0ff;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px;background:#161b22;padding:3px 10px;border-radius:4px}
+.mp-starter pre{margin:0;padding:18px 20px;color:#c9d1d9;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:13px;line-height:1.55;overflow-x:auto;background:#0d1117}
+</style>
+{% endblock %}
+{% block content %}
+<section class="mp-al-hero">
+  <span class="eyebrow">{{ page.eyebrow }}</span>
+  <h1>{{ page.headline }}</h1>
+  <p>{{ page.subtitle }}</p>
+</section>
+<section class="mp-tracks">
+  <h2>Learning paths</h2>
+  <div class="mp-track-grid">
+    {% for t in data.tracks %}
+    <div class="mp-track">
+      <div class="level">{{ t.level }}</div>
+      <div class="mins">{{ t.mins }} minutes</div>
+      <ul>{% for l in t.lessons %}<li>{{ l }}</li>{% endfor %}</ul>
+    </div>
+    {% endfor %}
+  </div>
+</section>
+<section class="mp-starters">
+  <h2>Starter workflows &mdash; copy/paste into <code style="background:#161b22;padding:2px 6px;border-radius:3px;color:#79c0ff">.github/workflows/</code></h2>
+  {% for s in data.starter_workflows %}
+  <div class="mp-starter">
+    <div class="hdr"><span>{{ s.name }}</span><span class="lang">YAML</span></div>
+    <pre>{{ s.yaml }}</pre>
+  </div>
+  {% endfor %}
+</section>
+{% endblock %}

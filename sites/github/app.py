@@ -22,6 +22,13 @@ from wtforms.validators import DataRequired, Email, Length, EqualTo, Optional, U
 from sqlalchemy import or_, func
 from sqlalchemy.sql import text
 
+# R11: marketing-page content + DB seeder lives in its own module so the
+# top of app.py stays readable. Routes import the helpers below.
+from _marketing import (
+    seed_marketing_pages as _seed_marketing_pages_impl,
+    get_marketing_page as _get_marketing_page_impl,
+)
+
 # ───────────────────────── Mirror Clock ─────────────────────────
 # The github mirror is a frozen snapshot. Every "now"-dependent value
 # (relative-time strings like "2 days ago", "updated in last N days"
@@ -431,6 +438,44 @@ class Team(db.Model):
     members_json = db.Column(db.Text, default='[]')
     repos_json = db.Column(db.Text, default='[]')
     created_at = db.Column(db.DateTime, default=mirror_now)
+
+
+# R11: marketing pages — one row per /pricing, /enterprise, /education,
+# /features/*, /security/center, /solutions/*, /docs, /api, /status, /blog,
+# /privacy, /terms, /contact, /contact-sales, /copilot, /classroom,
+# /actions/learn, /resources/security. Each row's `slug` is the unique key,
+# `template` names the per-page Jinja file (every page gets its own distinct
+# template — no shared simple_landing/info_page), and `data_json` is the
+# JSON-encoded content blob (hero, sections, table, faq, cta, logo wall,
+# pipeline, etc.) the template renders.
+class MarketingPage(db.Model):
+    __tablename__ = 'marketing_page'
+    id = db.Column(db.Integer, primary_key=True)
+    slug = db.Column(db.String(120), nullable=False, unique=True, index=True)
+    template = db.Column(db.String(80), nullable=False)
+    title = db.Column(db.String(200), nullable=False)
+    eyebrow = db.Column(db.String(120), default='')
+    headline = db.Column(db.String(255), default='')
+    subtitle = db.Column(db.Text, default='')
+    meta_description = db.Column(db.Text, default='')
+    hero_image_path = db.Column(db.String(255), default='')
+    data_json = db.Column(db.Text, default='{}')   # full content blob
+    source_url = db.Column(db.String(255), default='')  # github.com page we extracted from
+    created_at = db.Column(db.DateTime, default=mirror_now)
+
+
+class MarketingPageSection(db.Model):
+    """Optional normalized child rows for analytics/queries; the live
+    template renders from MarketingPage.data_json. We still write one row
+    per logical section here so the table is non-empty + auditable."""
+    __tablename__ = 'marketing_page_section'
+    id = db.Column(db.Integer, primary_key=True)
+    page_id = db.Column(db.Integer, db.ForeignKey('marketing_page.id'),
+                        nullable=False, index=True)
+    kind = db.Column(db.String(40), nullable=False)   # hero/grid/table/faq/cta/logo_wall/diagram/code/testimonial/bullets
+    position = db.Column(db.Integer, default=0)
+    title = db.Column(db.String(200), default='')
+    json_data = db.Column(db.Text, default='{}')
 
 
 @login_manager.user_loader
@@ -2086,403 +2131,135 @@ def about():
     return render_template('about.html')
 
 
-# ─── Marketing stubs for links referenced from templates ───
-# Each of these pages was linked from existing GitHub-clone pages
-# (customer_stories, resources_security, copilot/faq, repo sidebars, index hero)
-# but had no route, so agents hit a 404 mid-flow. Stubs render the shared
-# simple_landing template with realistic-looking marketing content.
-
-_STUB_PAGES = {
-    'contact_sales': {
-        'title': 'Contact Sales',
-        'eyebrow': 'GitHub Sales',
-        'headline': 'Talk to our sales team.',
-        'sub': 'See how GitHub Enterprise, Advanced Security, and Copilot Business '
-               'fit your team. A specialist will follow up within one business day.',
-        'ctas': [
-            {'href': '#form', 'label': 'Request a demo', 'cls': 'gh-btn-primary'},
-            {'href': '/pricing', 'label': 'View pricing', 'cls': 'gh-btn-secondary'},
-        ],
-        'bullets': [
-            'Volume discounts on Enterprise seats',
-            'Single sign-on (SAML, OIDC) and SCIM provisioning',
-            'Dedicated customer success manager for >500 seats',
-        ],
-        'sections_title': 'What you get',
-        'sections': [
-            {'title': 'Custom rollout plan',
-             'body': 'A solutions architect maps GitHub Enterprise to your existing identity provider, audit pipeline, and CI fleet.'},
-            {'title': 'Security review',
-             'body': 'We share SOC 2 Type II, ISO 27001, FedRAMP, and pen-test reports under NDA so your security team can sign off.'},
-            {'title': 'Proof of concept',
-             'body': '30-day pilot on a sample org with white-glove migration help and weekly health checks.'},
-        ],
-    },
-    'enterprise': {
-        'title': 'GitHub Enterprise',
-        'eyebrow': 'GitHub Enterprise',
-        'headline': 'The developer platform built for the enterprise.',
-        'sub': 'Run GitHub on your terms: Enterprise Cloud with data residency, or '
-               'Enterprise Server in your own data centre. Same workflow, hardened controls.',
-        'ctas': [
-            {'href': '/contact-sales', 'label': 'Start a free trial', 'cls': 'gh-btn-primary'},
-            {'href': '/pricing', 'label': 'Compare plans', 'cls': 'gh-btn-secondary'},
-        ],
-        'bullets': [
-            '90% of the Fortune 100 build with GitHub Enterprise',
-            'SAML SSO, SCIM, audit log streaming to Splunk / Datadog',
-            'Data residency in US, EU, and Australia',
-        ],
-        'sections_title': 'Enterprise capabilities',
-        'sections': [
-            {'title': 'Advanced Security',
-             'body': 'Code scanning with CodeQL, secret scanning across 200+ token formats, and Dependabot supply-chain coverage.',
-             'href': '/features/code-scanning', 'link_label': 'Explore CodeQL'},
-            {'title': 'Copilot for Business',
-             'body': 'AI pair programmer with IP indemnification, no training on your code, and central admin policy controls.',
-             'href': '/features/copilot', 'link_label': 'See Copilot'},
-            {'title': 'GitHub Actions runners',
-             'body': 'Self-hosted and GitHub-hosted Linux/Windows/macOS runners with usage caps and per-org concurrency limits.',
-             'href': '/features/actions', 'link_label': 'Read the Actions docs'},
-        ],
-    },
-    'education': {
-        'title': 'GitHub Education',
-        'eyebrow': 'GitHub Education',
-        'headline': 'The tools you need to ship your first project — free.',
-        'sub': 'Verified students and teachers get free access to GitHub Copilot, '
-               'the Student Developer Pack (~100 partner offers), and Campus Experts mentoring.',
-        'ctas': [
-            {'href': '/register', 'label': 'Verify your student status', 'cls': 'gh-btn-primary'},
-            {'href': '/skills', 'label': 'Browse GitHub Skills', 'cls': 'gh-btn-secondary'},
-        ],
-        'bullets': [
-            'Free GitHub Pro account while you study',
-            'Free GitHub Copilot for students, teachers, and maintainers',
-            'Student Developer Pack: DigitalOcean credit, JetBrains, Namecheap, Canva, and more',
-        ],
-        'faq': [
-            {'q': 'Who qualifies?',
-             'a': 'Students aged 13+ enrolled at a degree-granting institution, plus teachers, faculty, and TAs.'},
-            {'q': 'Does Copilot stay free after I graduate?',
-             'a': 'Copilot Free is included in the Student Developer Pack while your verification is active (usually 1-2 years).'},
-            {'q': 'I am an open-source maintainer, not a student.',
-             'a': 'Maintainers of popular open-source projects (>1 active project, >1000 monthly users) get Copilot for Open Source free.'},
-        ],
-    },
-    'feature_code_scanning': {
-        'title': 'Code scanning · CodeQL',
-        'eyebrow': 'Advanced Security',
-        'headline': 'Find vulnerabilities in your code before they ship.',
-        'sub': 'CodeQL is the semantic analysis engine that powers GitHub Code Scanning. '
-               'Write queries once, run them across every PR and every default branch.',
-        'ctas': [
-            {'href': '/features/copilot', 'label': 'Pair with Copilot Autofix', 'cls': 'gh-btn-primary'},
-            {'href': '/resources/security', 'label': 'Security overview', 'cls': 'gh-btn-secondary'},
-        ],
-        'bullets': [
-            '11 supported languages: C, C++, C#, Go, Java, JavaScript, TypeScript, Kotlin, Python, Ruby, Swift',
-            '2,200+ curated CodeQL queries maintained by the GitHub Security Lab',
-            'Integrated SARIF output for Snyk, Semgrep, Trivy, and your own scanners',
-        ],
-        'sections_title': 'How code scanning works',
-        'sections': [
-            {'title': 'Default setup',
-             'body': 'One-click on the Security tab. We pick the right languages, queries, and runner.'},
-            {'title': 'Advanced setup',
-             'body': 'Bring your own workflow file. Pin a CodeQL version, exclude paths, schedule nightly scans.'},
-            {'title': 'PR feedback',
-             'body': 'New alerts show up as PR review comments. Block merge with branch protection if needed.'},
-        ],
-    },
-    'feature_secret_scanning': {
-        'title': 'Secret scanning',
-        'eyebrow': 'Advanced Security',
-        'headline': 'Stop leaked credentials before they reach production.',
-        'sub': 'GitHub scans every push for 200+ token formats from 100+ partners — AWS, '
-               'Stripe, OpenAI, Slack, and more — and notifies the provider so they can revoke.',
-        'ctas': [
-            {'href': '/contact-sales', 'label': 'Enable for your org', 'cls': 'gh-btn-primary'},
-            {'href': '/resources/security', 'label': 'Read the docs', 'cls': 'gh-btn-secondary'},
-        ],
-        'bullets': [
-            '200+ token formats — AWS, Azure, GCP, Stripe, Twilio, OpenAI, Anthropic, Slack',
-            'Push protection blocks the commit before the secret ever lands',
-            'Custom patterns for your internal API keys',
-        ],
-    },
-    'feature_dependency_review': {
-        'title': 'Dependency review',
-        'eyebrow': 'Advanced Security',
-        'headline': 'See exactly what each PR adds to your supply chain.',
-        'sub': 'Dependency review surfaces new and updated packages introduced by a pull '
-               'request, flagging known vulnerabilities and incompatible licenses before merge.',
-        'ctas': [
-            {'href': '/features/supply-chain', 'label': 'Supply-chain overview', 'cls': 'gh-btn-primary'},
-            {'href': '/contact-sales', 'label': 'Talk to sales', 'cls': 'gh-btn-secondary'},
-        ],
-        'bullets': [
-            'Coverage for npm, pip, Maven, NuGet, RubyGems, Go modules, Rust crates, Composer',
-            'Severity-based merge gates configurable in branch protection',
-            'License compatibility checks (MIT, Apache-2.0, GPL families, custom allowlists)',
-        ],
-    },
-    'feature_supply_chain': {
-        'title': 'Software supply chain security',
-        'eyebrow': 'Advanced Security',
-        'headline': 'A signed, attested supply chain — end to end.',
-        'sub': 'Generate SBOMs, sign your artifacts with Sigstore, attest builds with SLSA, '
-               'and verify provenance in deploy — all wired into GitHub Actions.',
-        'ctas': [
-            {'href': '/features/actions', 'label': 'GitHub Actions', 'cls': 'gh-btn-primary'},
-            {'href': '/features/dependency-review', 'label': 'Dependency review', 'cls': 'gh-btn-secondary'},
-        ],
-        'bullets': [
-            'SBOMs in SPDX 2.3 and CycloneDX 1.5 formats',
-            'Keyless signing with Sigstore cosign + GitHub OIDC',
-            'SLSA Build Level 3 provenance attestations',
-        ],
-    },
-    'security_center': {
-        'title': 'Security Center',
-        'eyebrow': 'Enterprise compliance',
-        'headline': 'One place for your compliance attestations.',
-        'sub': 'Available to GitHub Enterprise Cloud customers. Download our SOC 1, SOC 2, '
-               'ISO 27001, FedRAMP, PCI DSS, and HIPAA attestations under NDA.',
-        'ctas': [
-            {'href': '/contact-sales', 'label': 'Request access', 'cls': 'gh-btn-primary'},
-            {'href': '/resources/security', 'label': 'Security overview', 'cls': 'gh-btn-secondary'},
-        ],
-        'bullets': [
-            'SOC 1 Type 2 (audited annually by EY)',
-            'SOC 2 Type 2 — Security, Availability, Confidentiality',
-            'ISO 27001:2022, ISO 27017, ISO 27018',
-            'FedRAMP Moderate (in process), GovCloud roadmap',
-        ],
-    },
-}
+# ─── Marketing stubs removed in R11 ───
+# Content + routing moved to _marketing.MARKETING_PAGES + the
+# marketing_page DB table. Each former /enterprise, /education, etc.
+# now renders its own dedicated template via _render_marketing(slug).
 
 
+# R11: routes for the 8 marketing pages that used to share simple_landing.html
+# via the deleted _STUB_PAGES dict. Each is now backed by a `MarketingPage`
+# row + its own dedicated template (mp_*.html).
 @app.route('/contact-sales')
 def contact_sales():
-    return render_template('simple_landing.html', page=_STUB_PAGES['contact_sales'])
+    return _render_marketing('contact-sales')
 
 
 @app.route('/enterprise')
 def enterprise():
-    return render_template('simple_landing.html', page=_STUB_PAGES['enterprise'])
+    return _render_marketing('enterprise')
 
 
 @app.route('/education')
 def education():
-    return render_template('simple_landing.html', page=_STUB_PAGES['education'])
+    return _render_marketing('education')
 
 
 @app.route('/features/code-scanning')
 def feature_code_scanning():
-    return render_template('simple_landing.html', page=_STUB_PAGES['feature_code_scanning'])
+    return _render_marketing('features/code-scanning')
 
 
 @app.route('/features/secret-scanning')
 def feature_secret_scanning():
-    return render_template('simple_landing.html', page=_STUB_PAGES['feature_secret_scanning'])
+    return _render_marketing('features/secret-scanning')
 
 
 @app.route('/features/dependency-review')
 def feature_dependency_review():
-    return render_template('simple_landing.html', page=_STUB_PAGES['feature_dependency_review'])
+    return _render_marketing('features/dependency-review')
 
 
 @app.route('/features/supply-chain')
 def feature_supply_chain():
-    return render_template('simple_landing.html', page=_STUB_PAGES['feature_supply_chain'])
+    return _render_marketing('features/supply-chain')
 
 
 @app.route('/security/center')
 def security_center():
-    return render_template('simple_landing.html', page=_STUB_PAGES['security_center'])
+    return _render_marketing('security/center')
 
 
-# ── R2: extra stub pages referenced from footer/nav (Solutions tier) ──
-
-_R2_STUBS = {
-    'solutions_enterprise': {
-        'title': 'Enterprise solutions', 'eyebrow': 'Solutions',
-        'headline': 'Built for the world\'s largest engineering teams.',
-        'sub': 'GitHub Enterprise scales from 100 to 100,000 developers with '
-               'SAML SSO, audit log streaming, and data residency.',
-        'ctas': [{'href': '/contact-sales', 'label': 'Talk to sales', 'cls': 'gh-btn-primary'},
-                 {'href': '/pricing', 'label': 'Compare plans', 'cls': 'gh-btn-secondary'}],
-        'bullets': ['Used by 90% of the Fortune 100',
-                    'SAML SSO, SCIM, audit log streaming',
-                    'Data residency in US, EU, AU'],
-    },
-    'solutions_team': {
-        'title': 'Solutions for teams', 'eyebrow': 'Solutions',
-        'headline': 'Ship faster with a team that trusts each other.',
-        'sub': 'Code review, branch protection, and Actions CI for every team size.',
-        'ctas': [{'href': '/pricing', 'label': 'See Team pricing', 'cls': 'gh-btn-primary'}],
-        'bullets': ['Unlimited private repos with 3,000 Actions minutes/month',
-                    'Code owners + required reviews', 'Team-scoped secrets'],
-    },
-    'solutions_startups': {
-        'title': 'GitHub for Startups', 'eyebrow': 'Solutions',
-        'headline': 'Build your company on GitHub — free for 12 months.',
-        'sub': '20 seats of Enterprise free for one year for verified startups.',
-        'ctas': [{'href': '/contact-sales', 'label': 'Apply now', 'cls': 'gh-btn-primary'}],
-        'bullets': ['20 GitHub Enterprise seats, free for 12 months',
-                    'Free GitHub Copilot for Business seats',
-                    'Access to the Startups community'],
-    },
-    'solutions_devsecops': {
-        'title': 'DevSecOps with GitHub', 'eyebrow': 'Solutions',
-        'headline': 'Shift security left without slowing developers down.',
-        'sub': 'CodeQL, secret scanning, Dependabot, and Advisory Database in one place.',
-        'ctas': [{'href': '/features/code-scanning', 'label': 'Code scanning', 'cls': 'gh-btn-primary'},
-                 {'href': '/features/secret-scanning', 'label': 'Secret scanning', 'cls': 'gh-btn-secondary'}],
-        'bullets': ['CodeQL queries for 11 languages',
-                    '200+ partner secret formats covered',
-                    'Dependabot patches across 8 ecosystems'],
-    },
-    'solutions_devops': {
-        'title': 'DevOps on GitHub', 'eyebrow': 'Solutions',
-        'headline': 'Plan, build, ship — all in one place.',
-        'sub': 'GitHub Issues, Actions, Packages, and Environments give every team a single pane of glass.',
-        'ctas': [{'href': '/features/actions', 'label': 'GitHub Actions', 'cls': 'gh-btn-primary'}],
-        'bullets': ['GitHub-hosted Linux, macOS, Windows runners',
-                    'OIDC federation with AWS, Azure, GCP',
-                    'Environments with protection rules'],
-    },
-    'docs': {
-        'title': 'GitHub Docs', 'eyebrow': 'Documentation',
-        'headline': 'Everything you need to build on GitHub.',
-        'sub': 'Tutorials, reference, and guides for GitHub, Copilot, Actions, and the REST and GraphQL APIs.',
-        'ctas': [{'href': '/api', 'label': 'API reference', 'cls': 'gh-btn-primary'},
-                 {'href': '/features/actions', 'label': 'Actions docs', 'cls': 'gh-btn-secondary'}],
-        'bullets': ['REST and GraphQL APIs',
-                    'CLI: `gh`', 'Webhooks and Apps'],
-    },
-    'api': {
-        'title': 'GitHub REST & GraphQL APIs', 'eyebrow': 'Developer',
-        'headline': 'Build on top of GitHub.',
-        'sub': 'A REST API and a GraphQL endpoint for every resource on the platform.',
-        'ctas': [{'href': '/docs', 'label': 'Read the docs', 'cls': 'gh-btn-primary'}],
-        'bullets': ['REST API at api.github.com', 'GraphQL at api.github.com/graphql',
-                    '5,000 req/hr authenticated, 60 req/hr unauth'],
-    },
-    'status': {
-        'title': 'GitHub Status', 'eyebrow': 'Service status',
-        'headline': 'All systems operational.',
-        'sub': 'Real-time and historical status of every GitHub service: Git operations, '
-               'API requests, Pages, Actions, Packages, Webhooks, Codespaces, Copilot.',
-        'ctas': [{'href': '/about', 'label': 'About this mirror', 'cls': 'gh-btn-secondary'}],
-        'bullets': ['Git operations: operational',
-                    'API requests: operational',
-                    'GitHub Actions: operational',
-                    'GitHub Pages: operational',
-                    'Webhooks: operational'],
-    },
-    'blog': {
-        'title': 'The GitHub Blog', 'eyebrow': 'Updates and stories',
-        'headline': 'News from the GitHub team.',
-        'sub': 'Product launches, engineering deep-dives, and open-source highlights.',
-        'ctas': [{'href': '/customer-stories', 'label': 'Customer stories', 'cls': 'gh-btn-primary'}],
-        'bullets': ['Copilot Workspace generally available',
-                    'GitHub Actions adds Apple Silicon runners',
-                    'CodeQL coverage extended to Kotlin and Swift'],
-    },
-    'contact': {
-        'title': 'Contact GitHub', 'eyebrow': 'Help',
-        'headline': 'How can we help?',
-        'sub': 'Reach billing, sales, abuse, security, or community support — every team has a dedicated channel.',
-        'ctas': [{'href': '/contact-sales', 'label': 'Contact sales', 'cls': 'gh-btn-primary'}],
-        'bullets': ['Billing: through your Settings → Billing page',
-                    'Security: security@github.com',
-                    'Abuse: support.github.com/contact/report-abuse'],
-    },
-    'privacy': {
-        'title': 'GitHub Privacy Statement', 'eyebrow': 'Legal',
-        'headline': 'Your privacy matters to us.',
-        'sub': 'We process your data to provide the GitHub services. We are SOC 2 audited '
-               'and GDPR + CCPA compliant.',
-        'bullets': ['SOC 2 Type II', 'ISO 27001:2022',
-                    'GDPR and CCPA compliant',
-                    'Data residency available for Enterprise Cloud'],
-    },
-    'terms': {
-        'title': 'GitHub Terms of Service', 'eyebrow': 'Legal',
-        'headline': 'The rules of the road.',
-        'sub': 'By using GitHub you agree to the Terms of Service, the Acceptable Use Policies, '
-               'and the Privacy Statement.',
-        'bullets': ['Acceptable Use Policies',
-                    'Corporate Terms of Service for Enterprise',
-                    'Site policies on github.com/site-policy'],
-    },
-}
-
-
-def _r2_stub(slug):
-    return render_template('simple_landing.html', page=_R2_STUBS[slug])
+# R11: every marketing landing page is now backed by a `MarketingPage` row
+# + its dedicated Jinja template (one template per page — no shared
+# simple_landing/info_page). This helper performs the DB lookup and the
+# render. Falls back to 404 if the slug is missing (would only happen if a
+# fresh deploy forgot to seed marketing_page).
+def _render_marketing(slug):
+    page = _get_marketing_page_impl(slug, MarketingPage)
+    if page is None:
+        abort(404)
+    try:
+        data = json.loads(page.data_json or '{}')
+    except ValueError:
+        data = {}
+    return render_template(page.template, page=page, data=data)
 
 
 @app.route('/solutions/enterprise')
 def solutions_enterprise():
-    return _r2_stub('solutions_enterprise')
+    return _render_marketing('solutions/enterprise')
 
 
 @app.route('/solutions/team')
 def solutions_team():
-    return _r2_stub('solutions_team')
+    return _render_marketing('solutions/team')
 
 
 @app.route('/solutions/startups')
 def solutions_startups():
-    return _r2_stub('solutions_startups')
+    return _render_marketing('solutions/startups')
 
 
 @app.route('/solutions/devsecops')
 def solutions_devsecops():
-    return _r2_stub('solutions_devsecops')
+    return _render_marketing('solutions/devsecops')
 
 
 @app.route('/solutions/devops')
 def solutions_devops():
-    return _r2_stub('solutions_devops')
+    return _render_marketing('solutions/devops')
 
 
 @app.route('/docs')
 def docs():
-    return _r2_stub('docs')
+    return _render_marketing('docs')
 
 
 @app.route('/api')
 def api_docs():
-    return _r2_stub('api')
+    return _render_marketing('api')
 
 
 @app.route('/status')
 def status():
-    return _r2_stub('status')
+    return _render_marketing('status')
 
 
 @app.route('/blog')
 def blog():
-    return _r2_stub('blog')
+    return _render_marketing('blog')
 
 
 @app.route('/contact')
 def contact():
-    return _r2_stub('contact')
+    return _render_marketing('contact')
 
 
 @app.route('/privacy')
 def privacy():
-    return _r2_stub('privacy')
+    return _render_marketing('privacy')
 
 
 @app.route('/terms')
 def terms():
-    return _r2_stub('terms')
+    return _render_marketing('terms')
+
+
+# R11: new landing route — Actions learning paths (tutorials + starter YAMLs).
+@app.route('/actions/learn')
+def actions_learn():
+    return _render_marketing('actions/learn')
 
 
 # ─── Auth ───
@@ -9484,9 +9261,13 @@ def create_app():
         c18 = seed_r10_user_repos() or 0
         c1g = seed_extra_commits() or 0
         ct = post_seed_tweaks() or 0
+        # R11: marketing pages → DB
+        cm = _seed_marketing_pages_impl(
+            db, MarketingPage, MarketingPageSection) or 0
         normalize_seed_db_layout(
             dirty=(c0 + c1 + c1b + c1c + c1d + c1e + c1f + c1g + c2 + c3 + c4 + c5 + c6 + c7
-                   + c8 + c9 + c10 + c11 + c12 + c13 + c14 + c15 + c16 + c17 + c18 + ct) > 0)
+                   + c8 + c9 + c10 + c11 + c12 + c13 + c14 + c15 + c16 + c17 + c18
+                   + ct + cm) > 0)
     return app
 
 
@@ -9534,9 +9315,13 @@ with app.app_context():
         c18 = seed_r10_user_repos() or 0
         c1g = seed_extra_commits() or 0
         ct = post_seed_tweaks() or 0
+        # R11: marketing pages → DB
+        cm = _seed_marketing_pages_impl(
+            db, MarketingPage, MarketingPageSection) or 0
         normalize_seed_db_layout(
             dirty=(c0 + c1 + c1b + c1c + c1d + c1e + c1f + c1g + c2 + c3 + c4 + c5 + c6 + c7
-                   + c8 + c9 + c10 + c11 + c12 + c13 + c14 + c15 + c16 + c17 + c18 + ct) > 0)
+                   + c8 + c9 + c10 + c11 + c12 + c13 + c14 + c15 + c16 + c17 + c18
+                   + ct + cm) > 0)
         ct = post_seed_tweaks() or 0
         normalize_seed_db_layout(
             dirty=(c0 + c1 + c2 + c3 + c4 + c5 + c6 + c7 + c8 + ct) > 0)

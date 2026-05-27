@@ -1,0 +1,89 @@
+{% extends "base.html" %}
+{% block title %}{{ page.title }} · GitHub{% endblock %}
+{% block extra_head %}
+<style>
+.mp-cs-hero{background:radial-gradient(ellipse at top,#1a3a52 0,#0d1117 70%);padding:80px 24px 64px;text-align:center;border-bottom:1px solid #30363d}
+.mp-cs-hero .eyebrow{color:#a5d6ff;font-size:13px;text-transform:uppercase;letter-spacing:.12em;font-weight:600}
+.mp-cs-hero h1{font-size:44px;margin:12px 0 14px;color:#f0f6fc;max-width:780px;margin-left:auto;margin-right:auto}
+.mp-cs-hero p{max-width:680px;margin:0 auto;color:#8b949e;line-height:1.6}
+.mp-alert-board{max-width:1080px;margin:48px auto;padding:0 24px}
+.mp-alert-board h2{color:#f0f6fc;font-size:24px;margin-bottom:16px}
+.mp-alert-board .alert-table{background:#0d1117;border:1px solid #30363d;border-radius:8px;overflow:hidden}
+.mp-alert-row{display:grid;grid-template-columns:90px 1fr 240px;gap:16px;padding:14px 18px;align-items:center;border-bottom:1px solid #21262d;font-size:14px}
+.mp-alert-row:last-child{border-bottom:none}
+.mp-sev{padding:3px 10px;border-radius:12px;font-weight:600;font-size:12px;text-transform:uppercase;letter-spacing:.05em;text-align:center}
+.mp-sev.critical{background:#5a1e1e;color:#ff7b72}
+.mp-sev.high{background:#5c2820;color:#ffa657}
+.mp-sev.medium{background:#3a3110;color:#e3b341}
+.mp-sev.low{background:#0c2c47;color:#79c0ff}
+.mp-alert-row .rule{font-family:ui-monospace,Menlo,Consolas,monospace;color:#79c0ff;font-size:13px}
+.mp-alert-row .file{color:#8b949e;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px}
+.mp-alert-row .msg{color:#c9d1d9}
+.mp-codeql{max-width:1080px;margin:64px auto;padding:0 24px;display:grid;grid-template-columns:200px 1fr;gap:32px}
+.mp-codeql .logo-block{background:linear-gradient(135deg,#5a3ec8 0,#9b6dff 100%);border-radius:14px;padding:32px;text-align:center;color:#fff}
+.mp-codeql .logo-block .glyph{font-size:48px;font-weight:800;letter-spacing:-.04em}
+.mp-codeql .logo-block .name{font-size:18px;margin-top:6px;letter-spacing:.05em}
+.mp-codeql .lang-list{display:flex;flex-wrap:wrap;gap:8px}
+.mp-codeql .lang-list span{background:#161b22;border:1px solid #30363d;padding:6px 12px;border-radius:16px;font-size:13px;color:#c9d1d9}
+.mp-vendors{max-width:1080px;margin:48px auto;padding:0 24px}
+.mp-vendors h2{color:#f0f6fc;font-size:22px;margin-bottom:14px}
+.mp-vendor-grid{display:grid;grid-template-columns:repeat(8,1fr);gap:12px}
+.mp-vendor-grid .v{background:#161b22;border:1px solid #30363d;padding:14px 8px;text-align:center;border-radius:6px;color:#8b949e;font-size:13px;font-weight:600}
+.mp-pipeline{max-width:1080px;margin:48px auto 80px;padding:0 24px}
+.mp-pipeline h2{color:#f0f6fc;font-size:22px}
+.mp-steps{display:flex;gap:24px;margin-top:16px}
+.mp-step{flex:1;background:#161b22;border:1px solid #30363d;border-left:4px solid #3fb950;border-radius:8px;padding:18px 20px}
+.mp-step h3{color:#f0f6fc;font-size:16px;margin:0 0 6px}
+.mp-step p{color:#8b949e;font-size:13px;margin:0;line-height:1.5}
+</style>
+{% endblock %}
+{% block content %}
+<section class="mp-cs-hero">
+  <span class="eyebrow">{{ page.eyebrow }}</span>
+  <h1>{{ page.headline }}</h1>
+  <p>{{ page.subtitle }}</p>
+</section>
+<section class="mp-alert-board">
+  <h2>Code scanning alerts on this PR</h2>
+  <div class="alert-table">
+    {% for a in data.alert_rows %}
+    <div class="mp-alert-row">
+      <span class="mp-sev {{ a.sev }}">{{ a.sev }}</span>
+      <div>
+        <div class="rule">{{ a.rule }}</div>
+        <div class="msg">{{ a.msg }}</div>
+      </div>
+      <div class="file">{{ a.file }}</div>
+    </div>
+    {% endfor %}
+  </div>
+</section>
+<section class="mp-codeql">
+  <div class="logo-block">
+    <div class="glyph">QL</div>
+    <div class="name">CodeQL</div>
+  </div>
+  <div>
+    <h2 style="color:#f0f6fc;font-size:22px;margin:0 0 12px">11 supported languages</h2>
+    <div class="lang-list">{% for l in data.languages %}<span>{{ l }}</span>{% endfor %}</div>
+    <p style="color:#8b949e;margin-top:16px;font-size:14px">2,200+ curated CodeQL queries maintained by the GitHub Security Lab. SARIF output is consumed natively by every major DevSecOps stack.</p>
+  </div>
+</section>
+<section class="mp-vendors">
+  <h2>Integrates with</h2>
+  <div class="mp-vendor-grid">
+    {% for v in data.vendor_logos %}<div class="v">{{ v }}</div>{% endfor %}
+  </div>
+</section>
+<section class="mp-pipeline">
+  <h2>How code scanning works</h2>
+  <div class="mp-steps">
+    {% for s in data.pipeline %}
+    <div class="mp-step">
+      <h3>{{ s[0] }}</h3>
+      <p>{{ s[1] }}</p>
+    </div>
+    {% endfor %}
+  </div>
+</section>
+{% endblock %}

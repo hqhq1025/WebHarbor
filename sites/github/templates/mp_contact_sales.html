@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% block title %}{{ page.title }} · GitHub{% endblock %}
+{% block extra_head %}
+<style>
+.mp-sales-wrap{max-width:1100px;margin:48px auto 80px;padding:0 24px;display:grid;grid-template-columns:1.2fr 1fr;gap:48px;align-items:flex-start}
+.mp-sales-left .eyebrow{color:#79c0ff;letter-spacing:.12em;text-transform:uppercase;font-size:12px;font-weight:700}
+.mp-sales-left h1{font-size:38px;color:#f0f6fc;margin:8px 0 14px}
+.mp-sales-left p{color:#8b949e;line-height:1.6;margin-bottom:24px}
+.mp-sales-left .vp{background:#0d1117;border:1px solid #30363d;border-left:4px solid #1f6feb;padding:14px 18px;border-radius:6px;color:#c9d1d9;margin-bottom:8px;font-size:14px}
+.mp-sales-left h3{color:#f0f6fc;font-size:18px;margin:32px 0 12px}
+.mp-rep-row{display:grid;grid-template-columns:1fr 100px 140px;gap:10px;padding:10px 14px;background:#161b22;border:1px solid #30363d;border-radius:6px;margin-bottom:6px;font-size:13px;color:#c9d1d9;align-items:center}
+.mp-rep-row .region{font-weight:700;color:#f0f6fc}
+.mp-rep-row .tz{font-family:ui-monospace,Menlo,Consolas,monospace;color:#79c0ff}
+.mp-form{background:#161b22;border:1px solid #30363d;border-radius:14px;padding:32px 28px;position:sticky;top:24px}
+.mp-form h2{color:#f0f6fc;margin:0 0 18px;font-size:22px}
+.mp-form label{display:block;color:#c9d1d9;font-size:13px;font-weight:600;margin-bottom:6px}
+.mp-form input,.mp-form select,.mp-form textarea{width:100%;background:#0d1117;border:1px solid #30363d;color:#f0f6fc;padding:9px 12px;border-radius:6px;font-size:14px;margin-bottom:14px;font-family:inherit}
+.mp-form textarea{min-height:80px;resize:vertical}
+.mp-form button{width:100%;background:#238636;color:#fff;border:none;padding:11px 18px;border-radius:6px;font-weight:600;cursor:pointer;font-size:15px}
+.mp-form .req{color:#f85149;margin-left:4px}
+</style>
+{% endblock %}
+{% block content %}
+<div class="mp-sales-wrap">
+  <div class="mp-sales-left">
+    <span class="eyebrow">{{ page.eyebrow }}</span>
+    <h1>{{ page.headline }}</h1>
+    <p>{{ page.subtitle }}</p>
+    {% for v in data.value_props %}<div class="vp">{{ v }}</div>{% endfor %}
+    <h3>Regional sales contacts</h3>
+    {% for r in data.reps %}
+    <div class="mp-rep-row">
+      <span class="region">{{ r.region }} &mdash; {{ r.name }}</span>
+      <span class="tz">{{ r.tz }}</span>
+      <span>{{ r.hours }}</span>
+    </div>
+    {% endfor %}
+  </div>
+  <form class="mp-form" id="form" method="post" action="/contact-sales">
+    <h2>Tell us about your team</h2>
+    {% for f in data.form_fields %}
+      <label>{{ f.label }}{% if f.req %}<span class="req">*</span>{% endif %}</label>
+      {% if f.type == 'select' %}
+        <select name="{{ f.name }}">{% for o in f.options %}<option>{{ o }}</option>{% endfor %}</select>
+      {% elif f.type == 'textarea' %}
+        <textarea name="{{ f.name }}" placeholder="What can we help with?"></textarea>
+      {% else %}
+        <input type="{{ f.type }}" name="{{ f.name }}">
+      {% endif %}
+    {% endfor %}
+    <button type="button">Request a demo</button>
+  </form>
+</div>
+{% endblock %}

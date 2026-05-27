@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+{% block title %}{{ page.title }} · GitHub{% endblock %}
+{% block extra_head %}
+<style>
+.mp-sc-hero{padding:72px 24px;background:linear-gradient(160deg,#0d1f2c 0,#0d1117 60%);text-align:center;border-bottom:1px solid #30363d}
+.mp-sc-hero .eyebrow{color:#56d4dd;letter-spacing:.12em;text-transform:uppercase;font-size:13px;font-weight:600}
+.mp-sc-hero h1{font-size:42px;margin:12px 0 14px;color:#f0f6fc;max-width:780px;margin-left:auto;margin-right:auto}
+.mp-sc-hero p{max-width:660px;margin:0 auto;color:#8b949e;line-height:1.6}
+.mp-sbom{max-width:1080px;margin:48px auto;padding:0 24px}
+.mp-sbom h2{color:#f0f6fc;font-size:24px;margin-bottom:14px}
+.mp-sbom-tree{background:#0d1117;border:1px solid #30363d;border-radius:8px;padding:18px 22px;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:13px}
+.mp-sbom-node{padding:6px 0;display:flex;justify-content:space-between;color:#c9d1d9;border-bottom:1px dashed #21262d}
+.mp-sbom-node:last-child{border-bottom:none}
+.mp-sbom-node .pkg{color:#79c0ff}
+.mp-sbom-node.depth-0 .pkg{color:#f0f6fc;font-weight:700}
+.mp-sbom-node.depth-2 .pkg{color:#8b949e}
+.mp-sbom-node .lic{color:#56d4dd;font-size:12px}
+.mp-badges{max-width:1080px;margin:64px auto;padding:0 24px}
+.mp-badges h2{color:#f0f6fc;font-size:22px;margin-bottom:14px}
+.mp-badge-row{display:flex;flex-wrap:wrap;gap:14px}
+.mp-badge{padding:12px 20px;border-radius:8px;color:#fff;font-weight:700;letter-spacing:.04em;display:inline-flex;align-items:center;gap:8px;font-size:14px;box-shadow:0 1px 0 rgba(255,255,255,.1) inset,0 2px 6px rgba(0,0,0,.3)}
+.mp-badge:before{content:"\2713";font-size:18px}
+.mp-yaml{max-width:1080px;margin:48px auto 80px;padding:0 24px}
+.mp-yaml h2{color:#f0f6fc;font-size:22px;margin-bottom:14px}
+.mp-yaml pre{background:#0d1117;border:1px solid #30363d;border-radius:8px;padding:18px;color:#c9d1d9;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:13px;line-height:1.55;overflow-x:auto}
+.mp-yaml pre .key{color:#79c0ff}
+.mp-yaml pre .val{color:#a5d6ff}
+</style>
+{% endblock %}
+{% block content %}
+<section class="mp-sc-hero">
+  <span class="eyebrow">{{ page.eyebrow }}</span>
+  <h1>{{ page.headline }}</h1>
+  <p>{{ page.subtitle }}</p>
+</section>
+<section class="mp-sbom">
+  <h2>SBOM dependency graph</h2>
+  <div class="mp-sbom-tree">
+    {% for n in data.sbom_nodes %}
+    <div class="mp-sbom-node depth-{{ n.depth }}">
+      <span class="pkg">{{ n.pkg }}</span>
+      <span class="lic">{{ n.lic }}</span>
+    </div>
+    {% endfor %}
+  </div>
+</section>
+<section class="mp-badges">
+  <h2>Attestations</h2>
+  <div class="mp-badge-row">
+    {% for b in data.attestation_badges %}
+    <span class="mp-badge" style="background:{{ b.colour }}">{{ b.label }}</span>
+    {% endfor %}
+  </div>
+</section>
+<section class="mp-yaml">
+  <h2>Sign + attest with one Actions step</h2>
+  <pre>{{ data.workflow_snippet }}</pre>
+</section>
+{% endblock %}

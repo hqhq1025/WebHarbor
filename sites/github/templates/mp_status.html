@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% block title %}{{ page.title }}{% endblock %}
+{% block extra_head %}
+<style>
+.mp-stat-band{background:#0c2d23;border-bottom:1px solid #3fb950;padding:32px 24px;text-align:center}
+.mp-stat-band .dot{display:inline-block;width:14px;height:14px;background:#3fb950;border-radius:50%;margin-right:10px;animation:mp-pulse 2s infinite;vertical-align:middle}
+@keyframes mp-pulse{0%{box-shadow:0 0 0 0 rgba(63,185,80,.6)}70%{box-shadow:0 0 0 12px rgba(63,185,80,0)}100%{box-shadow:0 0 0 0 rgba(63,185,80,0)}}
+.mp-stat-band h1{display:inline-block;color:#3fb950;font-size:32px;margin:0;vertical-align:middle}
+.mp-stat-band p{color:#c9d1d9;margin:8px 0 0}
+.mp-services{max-width:1100px;margin:48px auto;padding:0 24px}
+.mp-services h2{color:#f0f6fc;font-size:22px;margin-bottom:14px}
+.mp-svc-tbl{background:#161b22;border:1px solid #30363d;border-radius:8px;overflow:hidden}
+.mp-svc-row{display:grid;grid-template-columns:1fr 180px 120px;gap:14px;padding:14px 20px;border-bottom:1px solid #30363d;align-items:center}
+.mp-svc-row:last-child{border-bottom:none}
+.mp-svc-row .name{color:#f0f6fc;font-weight:600}
+.mp-svc-row .status{display:flex;align-items:center;gap:8px;color:#3fb950;font-weight:600;font-size:14px}
+.mp-svc-row .status:before{content:"";width:10px;height:10px;background:#3fb950;border-radius:50%}
+.mp-svc-row .uptime{font-family:ui-monospace,Menlo,Consolas,monospace;color:#8b949e;font-size:13px;text-align:right}
+.mp-uptime-bar{height:24px;background:linear-gradient(90deg,#3fb950 0,#3fb950 100%);border-radius:2px;margin:6px 0}
+.mp-incidents{max-width:1100px;margin:48px auto 80px;padding:0 24px}
+.mp-incidents h2{color:#f0f6fc;font-size:22px;margin-bottom:14px}
+.mp-inc-row{background:#161b22;border:1px solid #30363d;border-left:4px solid #3fb950;border-radius:6px;padding:14px 20px;margin-bottom:8px;display:grid;grid-template-columns:120px 100px 1fr 100px;gap:14px;align-items:center;font-size:14px}
+.mp-inc-row .date{color:#8b949e;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:13px}
+.mp-inc-row .svc{color:#79c0ff;font-weight:600;font-size:13px}
+.mp-inc-row .title{color:#c9d1d9}
+.mp-inc-row .dur{color:#8b949e;text-align:right;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:13px}
+</style>
+{% endblock %}
+{% block content %}
+<section class="mp-stat-band">
+  <h1><span class="dot"></span>All systems operational.</h1>
+  <p>Real-time status of every GitHub service.</p>
+</section>
+<section class="mp-services">
+  <h2>Service status &mdash; 90-day uptime</h2>
+  <div class="mp-svc-tbl">
+    {% for s in data.services %}
+    <div class="mp-svc-row">
+      <div>
+        <div class="name">{{ s.name }}</div>
+        <div class="mp-uptime-bar"></div>
+      </div>
+      <div class="status">{{ s.status|capitalize }}</div>
+      <div class="uptime">{{ s.uptime_90d }}</div>
+    </div>
+    {% endfor %}
+  </div>
+</section>
+<section class="mp-incidents">
+  <h2>Recent incidents</h2>
+  {% for i in data.recent_incidents %}
+  <div class="mp-inc-row">
+    <span class="date">{{ i.date }}</span>
+    <span class="svc">{{ i.svc }}</span>
+    <span class="title">{{ i.title }}</span>
+    <span class="dur">{{ i.duration }}</span>
+  </div>
+  {% endfor %}
+</section>
+{% endblock %}

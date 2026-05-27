@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% block title %}{{ page.title }} · GitHub{% endblock %}
+{% block extra_head %}
+<style>
+.mp-team-hero{padding:64px 24px;background:linear-gradient(180deg,#0d1117 0,#161b22 100%);text-align:center;border-bottom:1px solid #30363d}
+.mp-team-hero .eyebrow{color:#3fb950;letter-spacing:.14em;text-transform:uppercase;font-size:12px;font-weight:700}
+.mp-team-hero h1{font-size:38px;color:#f0f6fc;margin:10px auto;max-width:780px}
+.mp-team-hero p{color:#8b949e;max-width:660px;margin:0 auto;line-height:1.6}
+.mp-workflow{max-width:1100px;margin:64px auto;padding:0 24px}
+.mp-workflow h2{color:#f0f6fc;font-size:26px;margin-bottom:18px;text-align:center}
+.mp-flow{display:flex;align-items:stretch;justify-content:space-between;gap:14px;flex-wrap:wrap}
+.mp-flow-step{flex:1;min-width:220px;background:#161b22;border:1px solid #30363d;border-radius:12px;padding:24px 22px;position:relative}
+.mp-flow-step .num{position:absolute;top:-14px;left:18px;background:#3fb950;color:#0d1117;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:15px}
+.mp-flow-step h3{color:#f0f6fc;margin:8px 0 8px;font-size:17px}
+.mp-flow-step p{color:#8b949e;font-size:14px;line-height:1.55;margin:0}
+.mp-arrow{align-self:center;color:#30363d;font-size:24px;display:none}
+.mp-seats{max-width:900px;margin:48px auto 80px;padding:0 24px}
+.mp-seats h2{color:#f0f6fc;font-size:24px;margin-bottom:16px;text-align:center}
+.mp-seats table{width:100%;border-collapse:collapse;background:#161b22;border:1px solid #30363d;border-radius:8px;overflow:hidden}
+.mp-seats th,.mp-seats td{padding:14px 18px;border-bottom:1px solid #30363d;color:#c9d1d9;text-align:left}
+.mp-seats th{background:#0d1117;color:#79c0ff;font-weight:600;font-size:13px;text-transform:uppercase;letter-spacing:.06em}
+.mp-seats .cta-row{text-align:center;margin-top:24px}
+.mp-seats .cta-row a{display:inline-block;background:#238636;color:#fff;padding:12px 28px;border-radius:6px;text-decoration:none;font-weight:600}
+</style>
+{% endblock %}
+{% block content %}
+<section class="mp-team-hero">
+  <span class="eyebrow">{{ page.eyebrow }}</span>
+  <h1>{{ page.headline }}</h1>
+  <p>{{ page.subtitle }}</p>
+</section>
+<section class="mp-workflow">
+  <h2>From PR to production in four steps</h2>
+  <div class="mp-flow">
+    {% for w in data.workflows %}
+    <div class="mp-flow-step">
+      <div class="num">{{ w.step }}</div>
+      <h3>{{ w.h }}</h3>
+      <p>{{ w.body }}</p>
+    </div>
+    {% endfor %}
+  </div>
+</section>
+<section class="mp-seats">
+  <h2>Seat pricing</h2>
+  <table>
+    <thead><tr><th>Team size</th><th>Rate</th></tr></thead>
+    <tbody>
+    {% for s in data.seat_grid %}
+    <tr><td>{{ s.size }}</td><td>{{ s.rate }}</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  <div class="cta-row"><a href="{{ data.pricing_link }}">See full pricing &rarr;</a></div>
+</section>
+{% endblock %}

@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% block title %}{{ page.title }}{% endblock %}
+{% block extra_head %}
+<style>
+.mp-priv-wrap{max-width:980px;margin:32px auto 80px;padding:0 24px;display:grid;grid-template-columns:240px 1fr;gap:32px}
+.mp-priv-toc{position:sticky;top:24px;align-self:flex-start;background:#161b22;border:1px solid #30363d;border-radius:10px;padding:18px 20px}
+.mp-priv-toc h4{color:#8b949e;text-transform:uppercase;letter-spacing:.06em;font-size:11px;margin:0 0 12px}
+.mp-priv-toc ol{list-style:none;counter-reset:tc;padding:0;margin:0}
+.mp-priv-toc li{counter-increment:tc;padding:6px 0;color:#79c0ff;font-size:13px;border-bottom:1px solid #21262d}
+.mp-priv-toc li:before{content:counter(tc) ".";color:#8b949e;margin-right:8px}
+.mp-priv-main h1{color:#f0f6fc;font-size:38px;margin:0 0 8px}
+.mp-priv-main .eyebrow{color:#a5d6ff;letter-spacing:.12em;text-transform:uppercase;font-size:12px;font-weight:700}
+.mp-priv-main .lead{color:#8b949e;line-height:1.6;margin:8px 0 24px;border-left:4px solid #1f6feb;padding-left:14px}
+.mp-principles{background:#161b22;border:1px solid #30363d;border-radius:10px;padding:18px 22px;margin-bottom:24px}
+.mp-principles h2{color:#f0f6fc;font-size:18px;margin:0 0 10px}
+.mp-principles ul{list-style:none;padding:0;margin:0}
+.mp-principles li{padding:8px 0 8px 28px;position:relative;color:#c9d1d9;border-bottom:1px dashed #30363d}
+.mp-principles li:last-child{border-bottom:none}
+.mp-principles li:before{content:"\1F510";position:absolute;left:0}
+.mp-cat-tbl{width:100%;border-collapse:collapse;background:#0d1117;border:1px solid #30363d;border-radius:8px;overflow:hidden}
+.mp-cat-tbl th,.mp-cat-tbl td{padding:12px 16px;border-bottom:1px solid #21262d;text-align:left;color:#c9d1d9;font-size:14px}
+.mp-cat-tbl th{background:#161b22;color:#79c0ff;font-weight:600}
+.mp-cat-tbl td:first-child{font-weight:700;color:#f0f6fc}
+</style>
+{% endblock %}
+{% block content %}
+<div class="mp-priv-wrap">
+  <aside class="mp-priv-toc">
+    <h4>Sections</h4>
+    <ol>{% for t in data.toc %}<li>{{ t[1] }}</li>{% endfor %}</ol>
+  </aside>
+  <main class="mp-priv-main">
+    <span class="eyebrow">{{ page.eyebrow }}</span>
+    <h1>{{ page.headline }}</h1>
+    <p class="lead">{{ page.subtitle }}</p>
+    <div class="mp-principles">
+      <h2>Our privacy principles</h2>
+      <ul>{% for p in data.principles %}<li>{{ p }}</li>{% endfor %}</ul>
+    </div>
+    <h2 style="color:#f0f6fc;font-size:20px;margin:24px 0 12px">Data categories we process</h2>
+    <table class="mp-cat-tbl">
+      <thead><tr><th>Category</th><th>Examples</th></tr></thead>
+      <tbody>
+      {% for c in data.data_categories %}<tr><td>{{ c.cat }}</td><td>{{ c.examples }}</td></tr>{% endfor %}
+      </tbody>
+    </table>
+  </main>
+</div>
+{% endblock %}

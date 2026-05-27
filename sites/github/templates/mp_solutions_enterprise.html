@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+{% block title %}{{ page.title }} · GitHub{% endblock %}
+{% block extra_head %}
+<style>
+.mp-se-hero{padding:80px 24px;background:linear-gradient(110deg,#1f3a52 0,#0d1117 70%);border-bottom:1px solid #30363d}
+.mp-se-hero .inner{max-width:1100px;margin:0 auto;display:grid;grid-template-columns:2fr 1fr;gap:48px;align-items:center}
+.mp-se-hero .eyebrow{color:#79c0ff;letter-spacing:.12em;text-transform:uppercase;font-size:12px;font-weight:700}
+.mp-se-hero h1{font-size:42px;color:#f0f6fc;margin:8px 0 14px}
+.mp-se-hero p{color:#8b949e;line-height:1.6;font-size:16px}
+.mp-se-hero .cta{display:flex;gap:10px;margin-top:18px}
+.mp-se-hero .cta a{padding:11px 22px;border-radius:6px;text-decoration:none;font-weight:600}
+.mp-se-hero .cta .p{background:#238636;color:#fff}
+.mp-se-hero .cta .s{background:transparent;color:#f0f6fc;border:1px solid #30363d}
+.mp-se-hero .badge{background:#161b22;border:1px solid #30363d;border-radius:14px;padding:24px;text-align:center}
+.mp-se-hero .badge .n{font-size:64px;font-weight:800;color:#3fb950;line-height:1}
+.mp-se-hero .badge .l{color:#8b949e;margin-top:8px;text-transform:uppercase;letter-spacing:.06em;font-size:13px}
+.mp-vg{max-width:1100px;margin:64px auto;padding:0 24px}
+.mp-vg h2{color:#f0f6fc;font-size:26px;margin-bottom:18px}
+.mp-vg-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:18px}
+.mp-vg-cell{background:#161b22;border:1px solid #30363d;border-radius:12px;padding:24px 26px;border-left:4px solid #1f6feb}
+.mp-vg-cell h3{color:#f0f6fc;margin:0 0 8px;font-size:18px}
+.mp-vg-cell p{color:#8b949e;margin:0;line-height:1.55}
+.mp-cases{max-width:1100px;margin:48px auto 80px;padding:0 24px}
+.mp-cases h2{color:#f0f6fc;font-size:24px;margin-bottom:14px}
+.mp-case{display:grid;grid-template-columns:160px 1fr 200px;gap:18px;background:#0d1117;border:1px solid #30363d;border-radius:8px;padding:18px 20px;margin-bottom:8px;align-items:center}
+.mp-case .co{color:#f0f6fc;font-weight:700;font-size:18px}
+.mp-case .metric{color:#a5d6ff;font-size:14px}
+.mp-case a{color:#79c0ff;text-decoration:none;text-align:right;font-size:13px}
+</style>
+{% endblock %}
+{% block content %}
+<section class="mp-se-hero">
+  <div class="inner">
+    <div>
+      <span class="eyebrow">{{ page.eyebrow }}</span>
+      <h1>{{ page.headline }}</h1>
+      <p>{{ page.subtitle }}</p>
+      <div class="cta">
+        <a class="p" href="{{ data.cta_primary.href }}">{{ data.cta_primary.label }}</a>
+        <a class="s" href="{{ data.cta_secondary.href }}">{{ data.cta_secondary.label }}</a>
+      </div>
+    </div>
+    <div class="badge"><div class="n">100K+</div><div class="l">Seats supported</div></div>
+  </div>
+</section>
+<section class="mp-vg">
+  <h2>Why choose Enterprise</h2>
+  <div class="mp-vg-grid">
+    {% for v in data.value_grid %}
+    <div class="mp-vg-cell"><h3>{{ v.h }}</h3><p>{{ v.body }}</p></div>
+    {% endfor %}
+  </div>
+</section>
+<section class="mp-cases">
+  <h2>Customer stories</h2>
+  {% for c in data.case_links %}
+  <div class="mp-case">
+    <div class="co">{{ c.company }}</div>
+    <div class="metric">{{ c.metric }}</div>
+    <a href="{{ c.href }}">Read the case study &rarr;</a>
+  </div>
+  {% endfor %}
+</section>
+{% endblock %}

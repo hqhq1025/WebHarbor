@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% block title %}{{ page.title }} · GitHub{% endblock %}
+{% block extra_head %}
+<style>
+.mp-do-hero{padding:64px 24px;background:linear-gradient(180deg,#0d1117 0,#1f3a52 100%);text-align:center;border-bottom:1px solid #30363d}
+.mp-do-hero .eyebrow{color:#79c0ff;letter-spacing:.14em;text-transform:uppercase;font-size:12px;font-weight:700}
+.mp-do-hero h1{color:#f0f6fc;font-size:42px;margin:10px auto;max-width:760px}
+.mp-do-hero p{color:#8b949e;max-width:640px;margin:0 auto;line-height:1.6}
+.mp-life{max-width:1180px;margin:64px auto;padding:0 24px}
+.mp-life h2{color:#f0f6fc;font-size:26px;margin-bottom:24px;text-align:center}
+.mp-loop{display:grid;grid-template-columns:repeat(6,1fr);gap:8px;position:relative}
+.mp-loop .stage{background:#161b22;border:1px solid #30363d;border-radius:8px;padding:16px 14px;text-align:center;position:relative}
+.mp-loop .stage:not(:last-child):after{content:"\2192";position:absolute;right:-12px;top:50%;transform:translateY(-50%);color:#1f6feb;font-size:24px;font-weight:700;z-index:1;background:#0d1117;width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center}
+.mp-loop .stage h3{color:#f0f6fc;margin:0 0 10px;font-size:16px;font-weight:700}
+.mp-loop .stage .tools{display:flex;flex-direction:column;gap:5px}
+.mp-loop .stage .tool{background:#0d1117;color:#79c0ff;padding:5px 8px;border-radius:4px;font-size:11px;font-family:ui-monospace,Menlo,Consolas,monospace}
+.mp-oidc{max-width:880px;margin:64px auto 80px;padding:0 24px;text-align:center}
+.mp-oidc h2{color:#f0f6fc;font-size:22px;margin-bottom:14px}
+.mp-oidc p{color:#8b949e;margin-bottom:18px}
+.mp-oidc .row{display:flex;justify-content:center;flex-wrap:wrap;gap:10px}
+.mp-oidc .c{background:#161b22;border:1px solid #79c0ff;color:#79c0ff;padding:10px 22px;border-radius:8px;font-weight:600;font-size:14px;font-family:ui-monospace,Menlo,Consolas,monospace}
+</style>
+{% endblock %}
+{% block content %}
+<section class="mp-do-hero">
+  <span class="eyebrow">{{ page.eyebrow }}</span>
+  <h1>{{ page.headline }}</h1>
+  <p>{{ page.subtitle }}</p>
+</section>
+<section class="mp-life">
+  <h2>The DevOps lifecycle on one platform</h2>
+  <div class="mp-loop">
+    {% for s in data.lifecycle_stages %}
+    <div class="stage">
+      <h3>{{ s.name }}</h3>
+      <div class="tools">
+        {% for t in s.tools %}<span class="tool">{{ t }}</span>{% endfor %}
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+</section>
+<section class="mp-oidc">
+  <h2>OIDC federation, no long-lived secrets</h2>
+  <p>Workflow tokens federate directly with your cloud provider — no rotation, no leaks.</p>
+  <div class="row">{% for c in data.oidc_federation %}<span class="c">{{ c }}</span>{% endfor %}</div>
+</section>
+{% endblock %}

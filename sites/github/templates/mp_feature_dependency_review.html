@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% block title %}{{ page.title }} · GitHub{% endblock %}
+{% block extra_head %}
+<style>
+.mp-dr-hero{padding:64px 24px;background:#0d1117;border-bottom:1px solid #30363d}
+.mp-dr-hero .inner{max-width:1080px;margin:0 auto;display:grid;grid-template-columns:1.2fr 1fr;gap:48px;align-items:center}
+.mp-dr-hero .eyebrow{color:#a371f7;letter-spacing:.1em;text-transform:uppercase;font-size:13px;font-weight:600}
+.mp-dr-hero h1{font-size:36px;color:#f0f6fc;margin:8px 0 12px}
+.mp-dr-hero p{color:#8b949e;line-height:1.6}
+.mp-diff{background:#0d1117;border:1px solid #30363d;border-radius:8px;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:13px;overflow:hidden}
+.mp-diff .hdr{background:#161b22;padding:8px 14px;color:#8b949e;border-bottom:1px solid #30363d}
+.mp-diff .row{display:grid;grid-template-columns:24px 1fr 80px 240px;padding:6px 14px;border-bottom:1px solid #161b22}
+.mp-diff .row.add{background:#0c2d23}
+.mp-diff .row.add .op{color:#3fb950}
+.mp-diff .row.rem{background:#2c0d0d}
+.mp-diff .row.rem .op{color:#ff7b72}
+.mp-diff .pkg{color:#79c0ff}
+.mp-diff .lic{color:#a5d6ff;text-align:center}
+.mp-diff .cve{color:#e3b341;font-size:12px}
+.mp-eco{max-width:1080px;margin:64px auto;padding:0 24px}
+.mp-eco h2{color:#f0f6fc;font-size:24px;margin-bottom:16px}
+.mp-eco-list{display:flex;flex-wrap:wrap;gap:10px}
+.mp-eco-list .e{background:linear-gradient(135deg,#a371f7 0,#5a3ec8 100%);color:#fff;padding:8px 18px;border-radius:18px;font-weight:600;font-size:14px}
+.mp-gates{max-width:1080px;margin:48px auto 80px;padding:0 24px}
+.mp-gates h2{color:#f0f6fc;font-size:22px;margin-bottom:14px}
+.mp-gates .gate{background:#161b22;border:1px solid #30363d;border-left:4px solid #a371f7;padding:14px 18px;border-radius:6px;margin-bottom:10px;color:#c9d1d9;font-size:14px}
+</style>
+{% endblock %}
+{% block content %}
+<section class="mp-dr-hero">
+  <div class="inner">
+    <div>
+      <span class="eyebrow">{{ page.eyebrow }}</span>
+      <h1>{{ page.headline }}</h1>
+      <p>{{ page.subtitle }}</p>
+    </div>
+    <div class="mp-diff">
+      <div class="hdr">package-lock.json — PR #2451</div>
+      {% for r in data.diff_rows %}
+      <div class="row {% if r.op == '+' %}add{% elif r.op == '-' %}rem{% endif %}">
+        <span class="op">{{ r.op }}</span>
+        <span class="pkg">{{ r.pkg }}@{{ r.ver }}</span>
+        <span class="lic">{{ r.lic }}</span>
+        <span class="cve">{{ r.cve }}</span>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+<section class="mp-eco">
+  <h2>Ecosystems we review</h2>
+  <div class="mp-eco-list">
+    {% for e in data.ecosystems %}<div class="e">{{ e }}</div>{% endfor %}
+  </div>
+</section>
+<section class="mp-gates">
+  <h2>Merge gates</h2>
+  {% for g in data.gates %}<div class="gate">{{ g }}</div>{% endfor %}
+</section>
+{% endblock %}

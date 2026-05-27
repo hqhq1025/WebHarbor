@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+{% block title %}{{ page.title }} · GitHub{% endblock %}
+{% block extra_head %}
+<style>
+.mp-sec-hero{padding:72px 24px;background:linear-gradient(160deg,#0d1117 0,#1f1d3a 60%);text-align:center;border-bottom:1px solid #30363d}
+.mp-sec-hero .eyebrow{color:#a5d6ff;letter-spacing:.14em;text-transform:uppercase;font-size:13px;font-weight:600}
+.mp-sec-hero h1{font-size:42px;color:#f0f6fc;margin:12px auto;max-width:780px}
+.mp-sec-hero p{color:#8b949e;max-width:660px;margin:0 auto;line-height:1.6}
+.mp-sec-badges{max-width:1100px;margin:48px auto;padding:0 24px}
+.mp-sec-badges h2{color:#f0f6fc;font-size:24px;margin-bottom:18px}
+.mp-badge-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+.mp-badge-card{background:#161b22;border:1px solid #30363d;border-radius:10px;padding:18px 20px;display:flex;gap:12px;align-items:center}
+.mp-badge-card .seal{width:48px;height:48px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#3fb950 0,#1c2f1f 100%);flex-shrink:0;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:800;font-size:18px}
+.mp-badge-card .meta .n{color:#f0f6fc;font-weight:700;font-size:15px}
+.mp-badge-card .meta .a{color:#8b949e;font-size:12px}
+.mp-advisory{max-width:1100px;margin:64px auto;padding:0 24px}
+.mp-advisory h2{color:#f0f6fc;font-size:22px;margin-bottom:14px}
+.mp-adv-feed{background:#0d1117;border:1px solid #30363d;border-radius:10px;overflow:hidden}
+.mp-adv-row{display:grid;grid-template-columns:110px 90px 1fr;gap:14px;padding:14px 20px;border-bottom:1px solid #21262d;align-items:center}
+.mp-adv-row:last-child{border-bottom:none}
+.mp-adv-row .date{color:#8b949e;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:13px}
+.mp-adv-row .title{color:#c9d1d9;font-size:14px}
+.mp-sev{padding:3px 10px;border-radius:12px;font-weight:600;font-size:11px;text-transform:uppercase;letter-spacing:.05em;text-align:center}
+.mp-sev.critical{background:#5a1e1e;color:#ff7b72}
+.mp-sev.high{background:#5c2820;color:#ffa657}
+.mp-sev.medium{background:#3a3110;color:#e3b341}
+.mp-sev.low{background:#0c2c47;color:#79c0ff}
+.mp-residency{max-width:1100px;margin:48px auto 80px;padding:0 24px}
+.mp-residency h2{color:#f0f6fc;font-size:22px;margin-bottom:14px}
+.mp-residency .row{display:flex;flex-wrap:wrap;gap:10px}
+.mp-residency .r{background:#0c2d23;color:#3fb950;border:1px solid #3fb950;padding:8px 16px;border-radius:18px;font-weight:600;font-size:13px}
+</style>
+{% endblock %}
+{% block content %}
+<section class="mp-sec-hero">
+  <span class="eyebrow">{{ page.eyebrow }}</span>
+  <h1>{{ page.headline }}</h1>
+  <p>{{ page.subtitle }}</p>
+</section>
+<section class="mp-sec-badges">
+  <h2>Compliance attestations</h2>
+  <div class="mp-badge-grid">
+    {% for b in data.badges %}
+    <div class="mp-badge-card">
+      <div class="seal">&check;</div>
+      <div class="meta">
+        <div class="n">{{ b.name }}</div>
+        <div class="a">{{ b.audit }}</div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+</section>
+<section class="mp-advisory">
+  <h2>Latest security advisories</h2>
+  <div class="mp-adv-feed">
+    {% for a in data.advisory_feed %}
+    <div class="mp-adv-row">
+      <span class="date">{{ a.date }}</span>
+      <span class="mp-sev {{ a.sev }}">{{ a.sev }}</span>
+      <span class="title">{{ a.title }}</span>
+    </div>
+    {% endfor %}
+  </div>
+</section>
+<section class="mp-residency">
+  <h2>Data residency regions</h2>
+  <div class="row">
+    {% for r in data.data_residency %}<span class="r">{{ r }}</span>{% endfor %}
+  </div>
+</section>
+{% endblock %}

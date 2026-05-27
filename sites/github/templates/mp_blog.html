@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% block title %}{{ page.title }}{% endblock %}
+{% block extra_head %}
+<style>
+.mp-blog-hero{padding:48px 24px;background:#0d1117;border-bottom:1px solid #30363d}
+.mp-blog-hero .inner{max-width:1080px;margin:0 auto}
+.mp-blog-hero .eyebrow{color:#a5d6ff;letter-spacing:.14em;text-transform:uppercase;font-size:12px;font-weight:700}
+.mp-blog-hero h1{color:#f0f6fc;font-size:36px;margin:8px 0}
+.mp-blog-hero p{color:#8b949e;line-height:1.6}
+.mp-blog-cats{max-width:1080px;margin:24px auto 0;padding:0 24px;display:flex;gap:8px;flex-wrap:wrap}
+.mp-blog-cats .c{background:#161b22;border:1px solid #30363d;color:#c9d1d9;padding:6px 14px;border-radius:14px;font-size:13px}
+.mp-blog-cats .c:hover{border-color:#1f6feb;color:#79c0ff}
+.mp-blog-feed{max-width:1080px;margin:48px auto 80px;padding:0 24px;display:grid;grid-template-columns:1fr 1fr;gap:20px}
+.mp-post{background:#161b22;border:1px solid #30363d;border-radius:12px;overflow:hidden;display:flex;flex-direction:column}
+.mp-post .hdr-img{height:160px;background:linear-gradient(135deg,#1f6feb 0,#3fb950 100%);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:18px;letter-spacing:.04em}
+.mp-post:nth-child(2n) .hdr-img{background:linear-gradient(135deg,#f778ba 0,#ffa657 100%)}
+.mp-post:nth-child(3n) .hdr-img{background:linear-gradient(135deg,#a371f7 0,#1f6feb 100%)}
+.mp-post .body{padding:20px 22px;flex:1}
+.mp-post .meta{display:flex;justify-content:space-between;color:#8b949e;font-size:12px;margin-bottom:8px;text-transform:uppercase;letter-spacing:.06em}
+.mp-post .meta .cat{color:#79c0ff;font-weight:600}
+.mp-post h3{color:#f0f6fc;margin:0 0 8px;font-size:18px}
+.mp-post p{color:#c9d1d9;margin:0;font-size:14px;line-height:1.55}
+.mp-post .read{padding:14px 22px;border-top:1px solid #21262d;color:#8b949e;font-size:12px}
+</style>
+{% endblock %}
+{% block content %}
+<section class="mp-blog-hero">
+  <div class="inner">
+    <span class="eyebrow">{{ page.eyebrow }}</span>
+    <h1>{{ page.headline }}</h1>
+    <p>{{ page.subtitle }}</p>
+  </div>
+</section>
+<div class="mp-blog-cats">
+  {% for c in data.categories %}<span class="c">{{ c }}</span>{% endfor %}
+</div>
+<section class="mp-blog-feed">
+  {% for p in data.posts %}
+  <article class="mp-post">
+    <div class="hdr-img">{{ p.cat }}</div>
+    <div class="body">
+      <div class="meta"><span class="cat">{{ p.cat }}</span><span>{{ p.date }}</span></div>
+      <h3>{{ p.title }}</h3>
+      <p>{{ p.body }}</p>
+    </div>
+    <div class="read">{{ p.mins }} min read &middot; By the GitHub team</div>
+  </article>
+  {% endfor %}
+</section>
+{% endblock %}
