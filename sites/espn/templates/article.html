@@ -52,7 +52,7 @@
       </div>
 
       {% if article.image %}
-      <img src="{{ article.image }}" alt="{{ article.title }}" class="article-hero-img">
+      <img loading="lazy" decoding="async" src="{{ article.image }}" alt="{{ article.title }}" class="article-hero-img">
       {% endif %}
 
       <div class="article-content">

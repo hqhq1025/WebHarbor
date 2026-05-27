@@ -30,7 +30,7 @@
       <li class="scorebar__item">
         <a href="{{ sp.url_prefix }}scoreboard">
           <span class="scorebar__league">
-            <img src="{{ url_for('static', filename='images/espn/leagues/' ~ sp.slug ~ '.png') }}" onerror="this.style.display='none'" alt="">
+            <img loading="lazy" decoding="async" src="{{ url_for('static', filename='images/espn/leagues/' ~ sp.slug ~ '.png') }}" onerror="this.style.display='none'" alt="">
             <span>{{ sp.name }}</span>
           </span>
           <span class="scorebar__state">Scores</span>
@@ -44,13 +44,13 @@
   <nav class="global-nav">
     <div class="global-nav__inner">
       <a href="/" class="logo-block" aria-label="ESPN">
-        <img src="{{ url_for('static', filename='images/espn/logo/espn-wordmark.png') }}" alt="ESPN" onerror="this.style.display='none'; this.parentElement.classList.add('logo-block--text');">
+        <img loading="lazy" decoding="async" src="{{ url_for('static', filename='images/espn/logo/espn-wordmark.png') }}" alt="ESPN" onerror="this.style.display='none'; this.parentElement.classList.add('logo-block--text');">
       </a>
       <ul class="nav-tabs">
         {% for sp in nav_sports %}
         <li>
           <a href="{{ sp.url_prefix }}">
-            <img class="nav-tabs__icon" src="{{ url_for('static', filename='images/espn/leagues/' ~ sp.slug ~ '.png') }}" onerror="this.style.display='none'" alt="">
+            <img loading="lazy" decoding="async" class="nav-tabs__icon" src="{{ url_for('static', filename='images/espn/leagues/' ~ sp.slug ~ '.png') }}" onerror="this.style.display='none'" alt="">
             <span>{% if sp.name|length > 8 %}{{ sp.slug|upper }}{% else %}{{ sp.name }}{% endif %}</span>
           </a>
         </li>

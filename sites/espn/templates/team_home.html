@@ -6,7 +6,7 @@
   <!-- Team Header -->
   <div class="team-header" style="border-left-color: {{ team.color_primary or '#DD0000' }};">
     <div class="team-header__row">
-      <img class="team-header__logo"
+      <img loading="lazy" decoding="async" class="team-header__logo"
            src="{{ url_for('static', filename='images/espn/teams/' ~ (sport.slug if sport else '') ~ '/' ~ (team.abbreviation or '').lower() ~ '.png') }}"
            onerror="this.style.display='none';" alt="">
       <div class="team-header__info">
