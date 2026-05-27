@@ -10,6 +10,8 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
+      /* R7 — horizontal-overflow safety net (gotcha #43) */
+      html, body { overflow-x: hidden; max-width: 100vw; }
       /* R5 — accessibility + reduced motion + dynamic type */
       :root { --r5-toast-error: #b00020; --r5-toast-success: #1d6a37; }
       @media (prefers-reduced-motion: reduce) {
@@ -117,50 +119,6 @@
       @media (max-width: 767px) {
         .r6-back-to-top { right: 12px; bottom: 78px; width: 40px; height: 40px; }
         .r6-why-compare, .r6-you-may-like { margin: 20px 12px 0; }
-      }
-      /* ============ R8 — Cmd+K Spotlight + '?' help + chord nav + sticky shipping eta ============ */
-      .r8-overlay {
-        position: fixed; inset: 0; background: rgba(0,0,0,0.42); backdrop-filter: blur(6px);
-        display: none; z-index: 9500; align-items: flex-start; justify-content: center; padding-top: 80px;
-      }
-      .r8-overlay.visible { display: flex; }
-      .r8-panel {
-        background: #fff; border-radius: 16px; width: min(640px, 92%);
-        max-height: 70vh; overflow: hidden; box-shadow: 0 30px 80px rgba(0,0,0,0.32);
-        display: flex; flex-direction: column;
-      }
-      .r8-search-box {
-        padding: 18px 22px; border-bottom: 1px solid #e5e5e7;
-      }
-      .r8-search-box input {
-        width: 100%; font-size: 18px; border: 0; outline: none; background: transparent;
-        color: #1d1d1f;
-      }
-      .r8-search-box .r8-search-hint {
-        display: block; margin-top: 8px; font-size: 12px; color: #86868b;
-      }
-      .r8-results { overflow-y: auto; padding: 8px 0; }
-      .r8-result {
-        display: flex; align-items: center; gap: 12px; padding: 12px 22px;
-        text-decoration: none; color: #1d1d1f; cursor: pointer; background: transparent; border: 0;
-        width: 100%; text-align: left; font-size: 15px;
-      }
-      .r8-result:hover, .r8-result.r8-active { background: #f5f5f7; }
-      .r8-result .r8-kind {
-        font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em;
-        color: #6e6e73; min-width: 64px;
-      }
-      .r8-result .r8-label { flex: 1; }
-      .r8-help-list {
-        max-height: 60vh; overflow-y: auto; padding: 8px 0; font-size: 14px; color: #1d1d1f;
-      }
-      .r8-help-list .r8-help-row {
-        display: flex; align-items: center; gap: 12px; padding: 10px 22px;
-      }
-      .r8-help-list kbd {
-        background: #f5f5f7; border: 1px solid #d2d2d7; border-radius: 6px;
-        padding: 2px 8px; font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-        font-size: 12px; min-width: 60px; text-align: center; color: #1d1d1f;
       }
       .r8-shipping-eta {
         position: fixed; left: 18px; bottom: 18px; z-index: 60;
@@ -307,42 +265,6 @@
             aria-label="Back to top" onclick="window.scrollTo({top: 0, behavior: 'smooth'})">
         &uarr;
     </button>
-
-    <!-- R8 — Cmd+K Spotlight modal -->
-    <div class="r8-overlay" id="r8-spotlight-overlay" role="dialog" aria-modal="true" aria-label="Spotlight search">
-      <div class="r8-panel" role="document">
-        <div class="r8-search-box">
-          <input type="search" id="r8-spotlight-input" placeholder="Search products, support, jumps..." aria-label="Spotlight search query" autocomplete="off" />
-          <span class="r8-search-hint">Spotlight (Cmd+K). Press <kbd>Esc</kbd> to dismiss, <kbd>Cmd+Enter</kbd> for quick buy.</span>
-        </div>
-        <div class="r8-results" id="r8-spotlight-results" role="listbox" aria-label="Spotlight results"></div>
-      </div>
-    </div>
-
-    <!-- R8 — '?' help modal -->
-    <div class="r8-overlay" id="r8-help-overlay" role="dialog" aria-modal="true" aria-label="Keyboard shortcuts">
-      <div class="r8-panel" role="document">
-        <div class="r8-search-box">
-          <strong>Keyboard shortcuts</strong>
-          <span class="r8-search-hint">Press <kbd>Esc</kbd> to close, <kbd>?</kbd> any time to reopen.</span>
-        </div>
-        <div class="r8-help-list" id="r8-help-list">
-          <div class="r8-help-row"><kbd>Cmd+K</kbd> Open Spotlight (jump to product, spec, store, or support)</div>
-          <div class="r8-help-row"><kbd>?</kbd> Open this help overlay</div>
-          <div class="r8-help-row"><kbd>g s</kbd> Go to Shop</div>
-          <div class="r8-help-row"><kbd>g i</kbd> Go to iPhone</div>
-          <div class="r8-help-row"><kbd>g m</kbd> Go to Mac</div>
-          <div class="r8-help-row"><kbd>g p</kbd> Go to iPad</div>
-          <div class="r8-help-row"><kbd>g w</kbd> Go to Apple Watch</div>
-          <div class="r8-help-row"><kbd>g a</kbd> Go to AirPods</div>
-          <div class="r8-help-row"><kbd>g b</kbd> Go to your shopping Bag</div>
-          <div class="r8-help-row"><kbd>g u</kbd> Go to Support</div>
-          <div class="r8-help-row"><kbd>/</kbd> Focus the global search</div>
-          <div class="r8-help-row"><kbd>.&nbsp;?</kbd> Show contextual help for the focused spec row</div>
-          <div class="r8-help-row"><kbd>Cmd+Enter</kbd> Confirm quick-buy in the command palette</div>
-        </div>
-      </div>
-    </div>
 
     <!-- R8 — Sticky regional shipping ETA (live region updated when /api/shipping/regional-eta is called) -->
     <aside class="r8-shipping-eta" id="r8-shipping-eta" aria-live="polite" role="status">
@@ -589,110 +511,6 @@
         toggleBackTop();
       }
 
-      // ============ R8 — Cmd+K Spotlight + '?' help + chord nav + shipping ETA ============
-      var r8Spot = document.getElementById('r8-spotlight-overlay');
-      var r8SpotInput = document.getElementById('r8-spotlight-input');
-      var r8SpotResults = document.getElementById('r8-spotlight-results');
-      var r8Help = document.getElementById('r8-help-overlay');
-      var r8ChordBuffer = '';
-      var r8ChordTimer = null;
-
-      function r8OpenSpotlight(){
-        if(!r8Spot) return;
-        r8Spot.classList.add('visible');
-        if(r8SpotInput){ r8SpotInput.value = ''; r8SpotInput.focus(); r8RefreshSpotlight(''); }
-      }
-      function r8CloseSpotlight(){ if(r8Spot) r8Spot.classList.remove('visible'); }
-      function r8OpenHelp(){ if(r8Help) r8Help.classList.add('visible'); }
-      function r8CloseHelp(){ if(r8Help) r8Help.classList.remove('visible'); }
-
-      function r8RenderResults(items){
-        if(!r8SpotResults) return;
-        r8SpotResults.innerHTML = '';
-        items.forEach(function(it, i){
-          var a = document.createElement('a');
-          a.className = 'r8-result' + (i === 0 ? ' r8-active' : '');
-          a.href = it.url || '#';
-          a.setAttribute('role', 'option');
-          a.innerHTML = '<span class="r8-kind">' + (it.kind || '') + '</span><span class="r8-label">' +
-                        (it.label || '').replace(/[<>]/g, '') + '</span>';
-          r8SpotResults.appendChild(a);
-        });
-      }
-
-      function r8RefreshSpotlight(q){
-        fetch('/api/spotlight?q=' + encodeURIComponent(q || ''))
-          .then(function(r){ return r.json(); })
-          .then(function(j){ r8RenderResults((j && j.results) || []); })
-          .catch(function(){ r8RenderResults([]); });
-      }
-
-      if(r8SpotInput){
-        var r8DebounceT = null;
-        r8SpotInput.addEventListener('input', function(){
-          var q = r8SpotInput.value;
-          clearTimeout(r8DebounceT);
-          r8DebounceT = setTimeout(function(){ r8RefreshSpotlight(q); }, 80);
-        });
-        r8SpotInput.addEventListener('keydown', function(e){
-          if(e.key === 'Enter'){
-            var first = r8SpotResults && r8SpotResults.querySelector('.r8-result');
-            if(first){ window.location.href = first.getAttribute('href'); }
-          }
-        });
-      }
-
-      // Backdrop click closes the modal.
-      [r8Spot, r8Help].forEach(function(el){
-        if(!el) return;
-        el.addEventListener('click', function(e){
-          if(e.target === el){
-            el.classList.remove('visible');
-          }
-        });
-      });
-
-      var r8GoMap = {
-        s: '/shop', i: '/iphone', m: '/mac', p: '/ipad',
-        w: '/watch', a: '/airpods', b: '/bag', u: '/support'
-      };
-
-      document.addEventListener('keydown', function(e){
-        // Cmd+K / Ctrl+K opens spotlight
-        if((e.metaKey || e.ctrlKey) && (e.key === 'k' || e.key === 'K')){
-          e.preventDefault(); r8OpenSpotlight(); return;
-        }
-        // Esc closes overlays
-        if(e.key === 'Escape'){
-          r8CloseSpotlight(); r8CloseHelp(); return;
-        }
-        // Ignore chords if user is typing into a field
-        var t = e.target;
-        var inField = t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || (t.isContentEditable));
-        if(inField) return;
-        // '?' opens help
-        if(e.key === '?'){
-          e.preventDefault(); r8OpenHelp(); return;
-        }
-        // '/' focuses global search
-        if(e.key === '/'){
-          var srch = document.querySelector('a.gn-link-search');
-          if(srch){ e.preventDefault(); window.location.href = '/search'; }
-          return;
-        }
-        // 'g X' chord nav
-        if(e.key === 'g' || e.key === 'G'){
-          r8ChordBuffer = 'g';
-          clearTimeout(r8ChordTimer);
-          r8ChordTimer = setTimeout(function(){ r8ChordBuffer = ''; }, 1200);
-          return;
-        }
-        if(r8ChordBuffer === 'g' && r8GoMap[e.key]){
-          window.location.href = r8GoMap[e.key];
-          r8ChordBuffer = '';
-        }
-      });
-
       // R8 — Live regional shipping ETA. Pulls last-used ZIP from cookies and refreshes the sticky.
       function r8RefreshShippingEta(zip, method){
         var region = document.getElementById('r8-shipping-region');
@@ -717,10 +535,6 @@
 
       // Expose for tasks / tests
       window.r8 = {
-        openSpotlight: r8OpenSpotlight,
-        closeSpotlight: r8CloseSpotlight,
-        openHelp: r8OpenHelp,
-        closeHelp: r8CloseHelp,
         refreshShippingEta: r8RefreshShippingEta,
       };
     })();
