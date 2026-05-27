@@ -584,10 +584,20 @@ def symptom_checker():
         return render_template("symptom_checker_step4.html",
                                region=region, symptom=symptom, age_group=age_group, step=4)
     # Step 5: results
-    rules = SymptomRule.query.filter_by(symptom_slug=symptom, age_group=age_group, duration=duration).order_by(SymptomRule.rank).all()
+    age_for_query = "adult" if age_group == "senior" else age_group
+    rules = SymptomRule.query.filter_by(symptom_slug=symptom, age_group=age_for_query, duration=duration).order_by(SymptomRule.rank).all()
     if not rules:
         # Fallback: try age_group=adult duration=any
         rules = SymptomRule.query.filter_by(symptom_slug=symptom).order_by(SymptomRule.rank).all()
+    # Senior re-ordering: surface age-sensitive conditions first when patient is 65+
+    if age_group == "senior" and rules:
+        senior_keywords = ("heart", "stroke", "alzheimer", "dementia", "osteoporosis",
+                           "arthritis", "parkinson", "copd", "diabetes", "hypertension",
+                           "fall", "fracture", "cancer", "kidney", "pneumonia")
+        def senior_rank(r):
+            name = (r.condition_slug or "").lower()
+            return (0 if any(k in name for k in senior_keywords) else 1, r.rank)
+        rules = sorted(rules, key=senior_rank)
     # Cross-link to condition pages where possible
     enriched = []
     for r in rules:
