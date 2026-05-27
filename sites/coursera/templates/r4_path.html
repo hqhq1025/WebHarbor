@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+{% block title %}
+  {% if mode == 'index' %}Learning paths
+  {% else %}{{ path.title }} — learning path{% endif %} | Coursera
+{% endblock %}
+{% block content %}
+<div class="container r4-path-page" data-r4-release="{{ release }}" data-r4-mode="{{ mode }}">
+  <nav class="breadcrumb">
+    <a href="{{ url_for('index') }}">Coursera</a> &rsaquo;
+    <a href="{{ url_for('r4_learning_path_index') }}">Learning paths</a>
+    {% if mode == 'detail' %} &rsaquo; <span>{{ path.title }}</span>{% endif %}
+  </nav>
+
+  {% if mode == 'index' %}
+    <header class="r4-path-header">
+      <h1 class="r4-headline">Curated learning paths</h1>
+      <p class="r4-intro">Pick a specialization-style roadmap and walk through it course by course. Each path lists a sequence of recommended courses from Coursera's catalog, anchored on a clear goal and audience.</p>
+      <p class="r4-meta">Total paths: <strong>{{ total }}</strong>.</p>
+    </header>
+    <ul class="r4-path-grid">
+      {% for p in paths %}
+        <li class="r4-path-card">
+          <a class="r4-path-link" href="{{ url_for('r4_learning_path_detail', slug=p.slug) }}">
+            <span class="r4-path-title">{{ p.title }}</span>
+            <span class="r4-path-category">{{ p.category }}</span>
+            <span class="r4-path-goal">{{ p.goal }}</span>
+            <span class="r4-path-audience">Audience: {{ p.audience }}</span>
+            <span class="r4-path-steps-count">{{ p.steps_count }} steps</span>
+            <span class="r4-path-slug">/r4/learning-path/{{ p.slug }}</span>
+          </a>
+        </li>
+      {% endfor %}
+    </ul>
+
+  {% else %}{# detail #}
+    <header class="r4-path-header">
+      <h1 class="r4-headline">{{ path.title }}</h1>
+      <p class="r4-intro">{{ path.goal }}</p>
+      <dl class="r4-path-meta">
+        <dt>Audience</dt><dd>{{ path.audience }}</dd>
+        <dt>Anchor category</dt><dd>{{ path.category }}</dd>
+        <dt>Steps</dt><dd>{{ courses|length }} ({{ filled }} mapped to a live course)</dd>
+        <dt>Path slug</dt><dd><code>{{ path.slug }}</code></dd>
+      </dl>
+    </header>
+    <ol class="r4-path-roadmap">
+      {% for step in courses %}
+        <li class="r4-path-step">
+          <div class="r4-step-title">Step {{ loop.index }} — {{ step.step_title }}</div>
+          <div class="r4-step-keyword">Keyword: <code>{{ step.keyword }}</code></div>
+          {% if step.course %}
+            <a class="r4-step-course" href="{{ url_for('course_detail', slug=step.course.slug) }}">
+              <span class="r4-course-title">{{ step.course.title }}</span>
+              <span class="r4-course-meta">{{ step.course.course_type }} · {{ step.course.level }} · {{ step.course.duration_text }}</span>
+            </a>
+            <div class="r4-step-jumps">
+              <a class="r4-jump" href="{{ url_for('r4_peer_grade_detail', slug=step.course.slug, n=1) }}">Peer-grade week 1</a>
+              <a class="r4-jump" href="{{ url_for('r4_qa_board', slug=step.course.slug) }}">Q&amp;A board</a>
+            </div>
+          {% else %}
+            <div class="r4-step-empty">No mapped course in this snapshot.</div>
+          {% endif %}
+        </li>
+      {% endfor %}
+    </ol>
+    <nav class="r4-cross-links">
+      <a class="r4-jump" href="{{ url_for('r4_learning_path_index') }}">&laquo; All learning paths</a>
+      <a class="r4-jump" href="{{ url_for('r4_api_learning_paths') }}">Learning-path JSON</a>
+    </nav>
+  {% endif %}
+</div>
+{% endblock %}

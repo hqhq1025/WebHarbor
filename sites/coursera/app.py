@@ -4780,6 +4780,358 @@ def r3_sitemap_xml():
 # === R2-R3 backfill END ===
 
 
+# ===========================================================================
+# R4 BACKFILL — learning path / specialization roadmap + peer-graded
+# assignment scoring + per-course Q&A discussion board. APPEND-ONLY: every
+# new identifier is prefixed ``r4_`` / ``R4_`` and lives in its own block
+# below the R2-R3 backfill section. Read-only (no DB writes), no new
+# columns, no seed-function changes — the seed DB md5 stays byte-identical.
+# ===========================================================================
+
+R4_BACKFILL_RELEASE_TAG = 'r4-backfill'
+
+# Eight curated learning paths. Each path is keyed on a category slug
+# (lower-case, dash-separated) and lists 5-8 step titles plus the SQL
+# LIKE filters that pick deterministic Course rows for each step. Order
+# of the steps matters — the roadmap renders them top-to-bottom.
+R4_LEARNING_PATHS = (
+    {
+        'slug': 'data-science-foundations',
+        'title': 'Data Science Foundations',
+        'goal': 'Move from spreadsheets to data-driven decision-making',
+        'audience': 'Career switchers and analysts ramping into data work',
+        'category': 'Data Science',
+        'steps': (
+            ('Statistics warm-up', 'statistics'),
+            ('Python for data', 'python'),
+            ('Pandas + SQL', 'sql'),
+            ('Exploratory analysis', 'analysis'),
+            ('Visualization', 'visualization'),
+            ('Capstone project', 'capstone'),
+        ),
+    },
+    {
+        'slug': 'machine-learning-engineer',
+        'title': 'Machine Learning Engineer',
+        'goal': 'Ship ML models to production end-to-end',
+        'audience': 'Engineers with a Python background',
+        'category': 'Data Science',
+        'steps': (
+            ('Linear algebra primer', 'linear'),
+            ('Classical ML', 'machine-learning'),
+            ('Deep learning intro', 'deep-learning'),
+            ('MLOps & deployment', 'mlops'),
+            ('Capstone — end-to-end ML', 'capstone'),
+        ),
+    },
+    {
+        'slug': 'web-development-fullstack',
+        'title': 'Full-Stack Web Developer',
+        'goal': 'Build, deploy, and operate modern web apps',
+        'audience': 'Self-taught coders ready to go full stack',
+        'category': 'Computer Science',
+        'steps': (
+            ('HTML/CSS fundamentals', 'web'),
+            ('JavaScript essentials', 'javascript'),
+            ('Frontend framework', 'react'),
+            ('Backend APIs', 'node'),
+            ('Databases & SQL', 'database'),
+            ('Cloud deployment', 'cloud'),
+            ('Capstone — production launch', 'capstone'),
+        ),
+    },
+    {
+        'slug': 'cloud-architect',
+        'title': 'Cloud Architect',
+        'goal': 'Design scalable, secure systems on the major clouds',
+        'audience': 'Engineers preparing for AWS/GCP/Azure certs',
+        'category': 'Information Technology',
+        'steps': (
+            ('Networking fundamentals', 'network'),
+            ('Linux essentials', 'linux'),
+            ('Containers & Kubernetes', 'kubernetes'),
+            ('Cloud platform deep-dive', 'cloud'),
+            ('Security & compliance', 'security'),
+            ('Capstone — reference architecture', 'capstone'),
+        ),
+    },
+    {
+        'slug': 'product-management-essentials',
+        'title': 'Product Management Essentials',
+        'goal': 'Lead cross-functional teams shipping software products',
+        'audience': 'Aspiring or new PMs from engineering / design',
+        'category': 'Business',
+        'steps': (
+            ('Strategy fundamentals', 'strategy'),
+            ('User research & discovery', 'user'),
+            ('Product analytics', 'analytics'),
+            ('Roadmapping & prioritization', 'roadmap'),
+            ('Stakeholder communication', 'communication'),
+            ('Capstone — product spec', 'capstone'),
+        ),
+    },
+    {
+        'slug': 'digital-marketing-pro',
+        'title': 'Digital Marketing Pro',
+        'goal': 'Run modern multi-channel acquisition end-to-end',
+        'audience': 'Marketers and growth analysts',
+        'category': 'Business',
+        'steps': (
+            ('Brand & positioning', 'brand'),
+            ('SEO foundations', 'seo'),
+            ('Performance ads', 'advertising'),
+            ('Content marketing', 'content'),
+            ('Analytics & attribution', 'analytics'),
+            ('Capstone — campaign plan', 'capstone'),
+        ),
+    },
+    {
+        'slug': 'cybersecurity-analyst',
+        'title': 'Cybersecurity Analyst',
+        'goal': 'Detect, respond and harden against modern threats',
+        'audience': 'IT generalists pivoting into security operations',
+        'category': 'Information Technology',
+        'steps': (
+            ('Security fundamentals', 'security'),
+            ('Networking for security', 'network'),
+            ('Threat intelligence', 'threat'),
+            ('Incident response', 'incident'),
+            ('GRC & compliance', 'compliance'),
+            ('Capstone — blue-team exercise', 'capstone'),
+        ),
+    },
+    {
+        'slug': 'ai-engineer-2026',
+        'title': 'AI Engineer 2026',
+        'goal': 'Apply LLMs and agents to real product problems',
+        'audience': 'Engineers entering the LLM / agentic-AI wave',
+        'category': 'Data Science',
+        'steps': (
+            ('Prompt engineering', 'prompt'),
+            ('RAG systems', 'rag'),
+            ('LLM evaluation', 'evaluation'),
+            ('Agentic workflows', 'agent'),
+            ('Production LLMOps', 'mlops'),
+            ('Capstone — AI product', 'capstone'),
+        ),
+    },
+)
+
+R4_LEARNING_PATH_BY_SLUG = {p['slug']: p for p in R4_LEARNING_PATHS}
+
+
+# Peer-graded assignment rubric — 5 deterministic criteria scored on
+# the standard Coursera 4-point scale. The same rubric is shown on every
+# /r4/learn/<slug>/peer-grade/<n> page so test authors can write tasks
+# against a fixed criterion list.
+R4_PEER_GRADE_RUBRIC = (
+    {'code': 'rigor',
+     'title': 'Methodological rigour',
+     'weight': 25,
+     'descriptor': 'The submission selects an appropriate method and applies it correctly with no major gaps.'},
+    {'code': 'evidence',
+     'title': 'Evidence & analysis',
+     'weight': 25,
+     'descriptor': 'Conclusions are supported by data, code outputs, or cited sources.'},
+    {'code': 'clarity',
+     'title': 'Clarity of communication',
+     'weight': 20,
+     'descriptor': 'The write-up is well structured, free of jargon, and easy to follow for a peer learner.'},
+    {'code': 'reproducibility',
+     'title': 'Reproducibility',
+     'weight': 15,
+     'descriptor': 'A reviewer can reproduce the main result by following the instructions and using the attached artefacts.'},
+    {'code': 'reflection',
+     'title': 'Reflection & next steps',
+     'weight': 15,
+     'descriptor': 'The author discusses limitations and articulates concrete follow-ups.'},
+)
+
+R4_PEER_GRADE_LEVELS = (
+    ('exemplary', 4, 'Exemplary'),
+    ('proficient', 3, 'Proficient'),
+    ('developing', 2, 'Developing'),
+    ('beginning', 1, 'Beginning'),
+)
+
+
+def r4_path_for_slug(slug):
+    """Return the curated learning-path dict for the given slug, or None."""
+    return R4_LEARNING_PATH_BY_SLUG.get(slug)
+
+
+def r4_path_courses(path):
+    """Resolve each step in the path to a deterministic Course row.
+
+    For each step we first try ``Course.slug == "{path.slug}-{step_slug}"``,
+    fall back to a category + title-keyword LIKE lookup, then to a global
+    title-keyword fallback. The lookups are wrapped in alphabetical
+    ``order_by(Course.slug)`` so the resolver is fully deterministic.
+    """
+    out = []
+    used_ids = set()
+    cat = path.get('category', '')
+    for title, kw in path['steps']:
+        course = None
+        kw_like = f'%{kw}%'
+        # Category-restricted match (avoids picking unrelated topics).
+        candidates = (Course.query
+                      .filter(Course.category == cat,
+                              Course.title.ilike(kw_like),
+                              ~Course.id.in_(used_ids) if used_ids else True)
+                      .order_by(Course.slug.asc())
+                      .limit(3).all())
+        for c in candidates:
+            if c.id not in used_ids:
+                course = c
+                break
+        if course is None:
+            # Cross-category fallback by keyword only.
+            candidates = (Course.query
+                          .filter(Course.title.ilike(kw_like),
+                                  ~Course.id.in_(used_ids) if used_ids else True)
+                          .order_by(Course.slug.asc())
+                          .limit(3).all())
+            for c in candidates:
+                if c.id not in used_ids:
+                    course = c
+                    break
+        out.append({'step_title': title, 'keyword': kw, 'course': course})
+        if course is not None:
+            used_ids.add(course.id)
+    return out
+
+
+def r4_peer_grade_score(course, n):
+    """Deterministic example peer-grade score for week n of `course`.
+
+    Combines course.id, week number and rubric criterion order so each
+    /r4/learn/<slug>/peer-grade/<n> page renders a stable score table.
+    """
+    rows = []
+    total = 0
+    for i, crit in enumerate(R4_PEER_GRADE_RUBRIC):
+        h = (course.id * 17 + n * 53 + i * 7) % 4
+        level = R4_PEER_GRADE_LEVELS[h]
+        points = level[1] * crit['weight'] / 4.0
+        total += points
+        rows.append({
+            'criterion': crit,
+            'level_slug': level[0],
+            'level_label': level[2],
+            'points': round(points, 1),
+            'max_points': crit['weight'],
+        })
+    return rows, round(total, 1)
+
+
+def r4_qa_board_threads(course):
+    """Deterministic list of 12 Q&A threads for the course. Distinct from
+    the existing /learn/<slug>/discussion route (which lists generic
+    discussion threads); the Q&A board is question-centric and exposes
+    accepted-answer flags, upvote counts and a tag per thread."""
+    bank = (
+        ('How do I install the recommended environment?', 'setup',  False),
+        ('Are the syllabus PDFs downloadable for offline study?', 'logistics', True),
+        ('Where can I find Week 1 datasets?', 'data', True),
+        ('Is there a make-up policy for missed deadlines?', 'logistics', True),
+        ('Does this course count towards a Specialization?', 'credit', True),
+        ('How do peer-graded assignments compare to auto-grading?', 'peer-grading', False),
+        ('Any tips for the Week 4 reading list?', 'reading', False),
+        ('Recommended pace for working professionals?', 'pacing', False),
+        ('Will the office hours be recorded?', 'office-hours', True),
+        ('How does the instructor compare to the predecessor course?', 'meta', False),
+        ('Can the capstone be used in a portfolio?', 'capstone', True),
+        ('What is the policy on AI tools for submissions?', 'policy', True),
+    )
+    out = []
+    for i, (q, tag, accepted) in enumerate(bank):
+        upvotes = (course.id * 11 + i * 23) % 41
+        replies = 2 + ((course.id + i) % 9)
+        out.append({
+            'index': i + 1,
+            'question': q,
+            'tag': tag,
+            'accepted': accepted,
+            'upvotes': upvotes,
+            'replies': replies,
+        })
+    return out
+
+
+@app.route('/r4/learning-path')
+@app.route('/r4/learning-path/')
+def r4_learning_path_index():
+    summary = [
+        {'slug': p['slug'], 'title': p['title'],
+         'goal': p['goal'], 'audience': p['audience'],
+         'steps_count': len(p['steps']),
+         'category': p['category']}
+        for p in R4_LEARNING_PATHS
+    ]
+    return render_template('r4_path.html', mode='index',
+                           paths=summary, total=len(R4_LEARNING_PATHS),
+                           release=R4_BACKFILL_RELEASE_TAG)
+
+
+@app.route('/r4/learning-path/<slug>')
+def r4_learning_path_detail(slug):
+    path = r4_path_for_slug(slug)
+    if path is None:
+        abort(404)
+    courses = r4_path_courses(path)
+    filled = sum(1 for c in courses if c['course'] is not None)
+    return render_template('r4_path.html', mode='detail',
+                           path=path, courses=courses,
+                           filled=filled,
+                           release=R4_BACKFILL_RELEASE_TAG)
+
+
+@app.route('/r4/learn/<slug>/peer-grade/<int:n>')
+def r4_peer_grade_detail(slug, n):
+    course = Course.query.filter_by(slug=slug).first_or_404()
+    mods = course.modules
+    if not mods or n < 1 or n > len(mods):
+        abort(404)
+    module = mods[n - 1]
+    rows, total = r4_peer_grade_score(course, n)
+    return render_template('r4_course_extras.html', mode='peer-grade',
+                           course=course, module=module, n=n,
+                           total_modules=len(mods),
+                           score_rows=rows, total_score=total,
+                           rubric=R4_PEER_GRADE_RUBRIC,
+                           levels=R4_PEER_GRADE_LEVELS,
+                           release=R4_BACKFILL_RELEASE_TAG)
+
+
+@app.route('/r4/learn/<slug>/qa-board')
+def r4_qa_board(slug):
+    course = Course.query.filter_by(slug=slug).first_or_404()
+    threads = r4_qa_board_threads(course)
+    answered = sum(1 for t in threads if t['accepted'])
+    return render_template('r4_course_extras.html', mode='qa-board',
+                           course=course, threads=threads,
+                           answered=answered,
+                           release=R4_BACKFILL_RELEASE_TAG)
+
+
+@app.route('/api/r4/learning-paths')
+def r4_api_learning_paths():
+    return jsonify({
+        'release': R4_BACKFILL_RELEASE_TAG,
+        'total_paths': len(R4_LEARNING_PATHS),
+        'paths': [
+            {'slug': p['slug'], 'title': p['title'],
+             'category': p['category'],
+             'steps_count': len(p['steps'])}
+            for p in R4_LEARNING_PATHS
+        ],
+    })
+
+
+# === R4 backfill END ===
+
+
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
     app.run(host='0.0.0.0', port=port, debug=False)

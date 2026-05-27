@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+{% block title %}
+  {% if mode == 'peer-grade' %}Peer grade · Week {{ n }} · {{ course.title }}
+  {% else %}Q&amp;A board · {{ course.title }}
+  {% endif %} | Coursera
+{% endblock %}
+{% block content %}
+<div class="container r4-course-extras-page" data-r4-release="{{ release }}" data-r4-mode="{{ mode }}">
+  <nav class="breadcrumb">
+    <a href="{{ url_for('index') }}">Coursera</a> &rsaquo;
+    <a href="{{ url_for('course_detail', slug=course.slug) }}">{{ course.title }}</a>
+    {% if mode == 'peer-grade' %}
+      &rsaquo; <span>Peer-grade week {{ n }}</span>
+    {% else %}
+      &rsaquo; <span>Q&amp;A board</span>
+    {% endif %}
+  </nav>
+
+  {% if mode == 'peer-grade' %}
+    <header class="r4-peer-header">
+      <h1 class="r4-headline">Peer-graded assignment — Week {{ n }} of {{ total_modules }}</h1>
+      <h2 class="r4-subhead">{{ module.title }}</h2>
+      <p class="r4-intro">Five rubric criteria, each scored on the 4-point Coursera scale by two peer reviewers. The deterministic example score below is what a reviewer following the rubric exactly would record for this submission.</p>
+      <div class="r4-peer-total">
+        Example total: <strong>{{ total_score }}</strong> / 100
+      </div>
+    </header>
+
+    <table class="r4-peer-table">
+      <thead>
+        <tr><th>Criterion</th><th>Weight</th><th>Level</th><th>Points</th></tr>
+      </thead>
+      <tbody>
+        {% for row in score_rows %}
+          <tr class="r4-peer-row r4-peer-{{ row.level_slug }}">
+            <th>
+              <span class="r4-criterion-title">{{ row.criterion.title }}</span>
+              <span class="r4-criterion-code">code: {{ row.criterion.code }}</span>
+              <span class="r4-criterion-descriptor">{{ row.criterion.descriptor }}</span>
+            </th>
+            <td class="r4-criterion-weight">{{ row.criterion.weight }}</td>
+            <td class="r4-criterion-level">{{ row.level_label }}</td>
+            <td class="r4-criterion-points">{{ row.points }} / {{ row.max_points }}</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+
+    <section class="r4-peer-levels">
+      <h3>Score scale</h3>
+      <ul>
+        {% for slug, pts, label in levels %}
+          <li class="r4-level-{{ slug }}"><strong>{{ label }}</strong> — {{ pts }} points</li>
+        {% endfor %}
+      </ul>
+    </section>
+
+    <nav class="r4-cross-links">
+      <a class="r4-jump" href="{{ url_for('course_peer_review', slug=course.slug) }}">Open peer-review queue</a>
+      <a class="r4-jump" href="{{ url_for('course_assignment', slug=course.slug, n=n) }}">Assignment brief</a>
+      <a class="r4-jump" href="{{ url_for('r4_qa_board', slug=course.slug) }}">Q&amp;A board</a>
+      {% if n > 1 %}<a class="r4-jump" href="{{ url_for('r4_peer_grade_detail', slug=course.slug, n=n-1) }}">&laquo; Previous week</a>{% endif %}
+      {% if n < total_modules %}<a class="r4-jump" href="{{ url_for('r4_peer_grade_detail', slug=course.slug, n=n+1) }}">Next week &raquo;</a>{% endif %}
+    </nav>
+
+  {% else %}{# qa-board #}
+    <header class="r4-qa-header">
+      <h1 class="r4-headline">Q&amp;A board — {{ course.title }}</h1>
+      <p class="r4-intro">Question-centric companion to the course discussion forum. Threads carry an accepted-answer flag, an upvote count and a topical tag.</p>
+      <p class="r4-meta">Total threads: <strong>{{ threads|length }}</strong> · Accepted answers: <strong>{{ answered }}</strong></p>
+    </header>
+    <ol class="r4-qa-threads">
+      {% for t in threads %}
+        <li class="r4-qa-thread {% if t.accepted %}r4-qa-accepted{% endif %}">
+          <span class="r4-qa-index">#{{ t.index }}</span>
+          <span class="r4-qa-question">{{ t.question }}</span>
+          <span class="r4-qa-tag">tag: {{ t.tag }}</span>
+          <span class="r4-qa-upvotes">{{ t.upvotes }} upvotes</span>
+          <span class="r4-qa-replies">{{ t.replies }} replies</span>
+          <span class="r4-qa-status">{% if t.accepted %}Answered{% else %}Open{% endif %}</span>
+        </li>
+      {% endfor %}
+    </ol>
+    <nav class="r4-cross-links">
+      <a class="r4-jump" href="{{ url_for('course_discussion', slug=course.slug) }}">Course discussion forum</a>
+      <a class="r4-jump" href="{{ url_for('r4_peer_grade_detail', slug=course.slug, n=1) }}">Peer-grade week 1</a>
+      <a class="r4-jump" href="{{ url_for('course_detail', slug=course.slug) }}">&laquo; Course page</a>
+    </nav>
+  {% endif %}
+</div>
+{% endblock %}
