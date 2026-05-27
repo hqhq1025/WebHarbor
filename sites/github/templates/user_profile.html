@@ -5,7 +5,7 @@
   <!-- Sidebar -->
   <aside class="profile-sidebar">
     <div class="profile-avatar-wrap">
-      <img src="{{ profile_user.avatar_url }}" alt="{{ profile_user.username }}" class="profile-avatar"
+      <img loading="lazy" decoding="async" src="{{ profile_user.avatar_url }}" alt="{{ profile_user.username }}" class="profile-avatar"
            onerror="this.src='/static/images/avatars/avatar_00.jpg'">
     </div>
     <div class="profile-name-block">
@@ -168,7 +168,7 @@
     <div class="profile-follow-list">
       {% for u in follow_users %}
       <div class="follow-list-item" style="display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--gh-border)">
-        <img src="{{ u.avatar_url }}" alt="{{ u.username }}" style="width:48px;height:48px;border-radius:50%" onerror="this.src='/static/images/avatars/avatar_00.jpg'">
+        <img loading="lazy" decoding="async" src="{{ u.avatar_url }}" alt="{{ u.username }}" style="width:48px;height:48px;border-radius:50%" onerror="this.src='/static/images/avatars/avatar_00.jpg'">
         <div style="flex:1">
           <a href="/{{ u.username }}" style="font-weight:600;color:var(--gh-link)">{{ u.username }}</a>
           {% if u.name %}<span style="color:var(--gh-text-muted);margin-left:4px">{{ u.name }}</span>{% endif %}
@@ -193,7 +193,7 @@
     <div class="profile-follow-list">
       {% for u in follow_users %}
       <div class="follow-list-item" style="display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--gh-border)">
-        <img src="{{ u.avatar_url }}" alt="{{ u.username }}" style="width:48px;height:48px;border-radius:50%" onerror="this.src='/static/images/avatars/avatar_00.jpg'">
+        <img loading="lazy" decoding="async" src="{{ u.avatar_url }}" alt="{{ u.username }}" style="width:48px;height:48px;border-radius:50%" onerror="this.src='/static/images/avatars/avatar_00.jpg'">
         <div style="flex:1">
           <a href="/{{ u.username }}" style="font-weight:600;color:var(--gh-link)">{{ u.username }}</a>
           {% if u.name %}<span style="color:var(--gh-text-muted);margin-left:4px">{{ u.name }}</span>{% endif %}

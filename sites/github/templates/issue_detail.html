@@ -43,7 +43,7 @@
       <!-- Original post -->
       <div class="issue-comment-box">
         <div class="issue-comment-header">
-          <img src="{{ issue.author.avatar_url }}" alt="{{ issue.author.username }}" class="comment-avatar"
+          <img loading="lazy" decoding="async" src="{{ issue.author.avatar_url }}" alt="{{ issue.author.username }}" class="comment-avatar"
                onerror="this.src='/static/images/avatars/avatar_00.jpg'">
           <div class="comment-header-info">
             <a href="/{{ issue.author.username }}" class="comment-author">{{ issue.author.username }}</a>
@@ -66,7 +66,7 @@
       {% for comment in comments %}
       <div class="issue-comment-box">
         <div class="issue-comment-header">
-          <img src="{{ comment.author.avatar_url }}" alt="{{ comment.author.username }}" class="comment-avatar"
+          <img loading="lazy" decoding="async" src="{{ comment.author.avatar_url }}" alt="{{ comment.author.username }}" class="comment-avatar"
                onerror="this.src='/static/images/avatars/avatar_00.jpg'">
           <div class="comment-header-info">
             <a href="/{{ comment.author.username }}" class="comment-author">{{ comment.author.username }}</a>
@@ -82,7 +82,7 @@
       <!-- Add comment / close -->
       {% if current_user.is_authenticated %}
       <div class="issue-comment-compose">
-        <img src="{{ current_user.avatar_url }}" alt="{{ current_user.username }}" class="comment-avatar"
+        <img loading="lazy" decoding="async" src="{{ current_user.avatar_url }}" alt="{{ current_user.username }}" class="comment-avatar"
              onerror="this.src='/static/images/avatars/avatar_00.jpg'">
         <div class="issue-compose-box">
           <form method="POST" action="/{{ repo.full_name }}/issues/{{ issue.number }}/comment">

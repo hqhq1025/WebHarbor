@@ -21,7 +21,7 @@
     {% for d in developers %}
     <li class="trending-dev-item">
       <span class="trending-dev-rank">#{{ d.rank }}</span>
-      <img src="{{ d.user.avatar_url }}" alt="{{ d.user.username }}" class="trending-dev-avatar"
+      <img loading="lazy" decoding="async" src="{{ d.user.avatar_url }}" alt="{{ d.user.username }}" class="trending-dev-avatar"
            onerror="this.src='/static/images/avatars/avatar_00.jpg'">
       <div class="trending-dev-info">
         <a href="/{{ d.user.username }}" class="trending-dev-name">

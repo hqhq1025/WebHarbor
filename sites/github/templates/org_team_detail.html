@@ -21,7 +21,7 @@
     <div class="org-avatar-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:10px;">
       {% for u in members %}
       <a href="/{{ u.username }}" style="display:flex;flex-direction:column;align-items:center;text-align:center;padding:10px;border:1px solid #30363d;border-radius:8px;text-decoration:none;color:inherit;background:#0d1117;">
-        <img src="{{ u.avatar_url }}" alt="{{ u.username }}" width="48" height="48" style="border-radius:50%;margin-bottom:6px;" onerror="this.src='/static/images/avatars/avatar_00.jpg'">
+        <img loading="lazy" decoding="async" src="{{ u.avatar_url }}" alt="{{ u.username }}" width="48" height="48" style="border-radius:50%;margin-bottom:6px;" onerror="this.src='/static/images/avatars/avatar_00.jpg'">
         <span style="font-size:13px;color:#e6edf3;font-weight:600;">{{ u.username }}</span>
         {% if u.name %}<span style="font-size:11px;color:#7d8590;">{{ u.name }}</span>{% endif %}
       </a>

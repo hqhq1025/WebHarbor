@@ -14,7 +14,7 @@
 </div>
 <div class="new-issue-page">
   <div class="new-issue-layout">
-    <img src="{{ current_user.avatar_url }}" alt="{{ current_user.username }}" class="issue-form-avatar"
+    <img loading="lazy" decoding="async" src="{{ current_user.avatar_url }}" alt="{{ current_user.username }}" class="issue-form-avatar"
          onerror="this.src='/static/images/avatars/avatar_00.jpg'">
     <div class="new-issue-form-wrap">
       <div class="issue-template-picker" role="group" aria-label="Pick an issue template">

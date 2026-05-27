@@ -4,7 +4,7 @@
 <div class="account-layout">
   <aside class="account-sidebar">
     <div class="account-profile-mini">
-      <img src="{{ current_user.avatar_url }}" alt="{{ current_user.username }}" class="account-avatar"
+      <img loading="lazy" decoding="async" src="{{ current_user.avatar_url }}" alt="{{ current_user.username }}" class="account-avatar"
            onerror="this.src='/static/images/avatars/avatar_00.jpg'">
       <div>
         <div class="account-username">{{ current_user.username }}</div>
@@ -98,7 +98,7 @@
       <div class="following-grid">
         {% for user in following %}
         <a href="/{{ user.username }}" class="following-card">
-          <img src="{{ user.avatar_url }}" alt="{{ user.username }}" class="following-avatar"
+          <img loading="lazy" decoding="async" src="{{ user.avatar_url }}" alt="{{ user.username }}" class="following-avatar"
                onerror="this.src='/static/images/avatars/avatar_00.jpg'">
           <span class="following-name">{{ user.username }}</span>
         </a>

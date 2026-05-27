@@ -150,7 +150,7 @@
       {% elif search_type == 'users' and users %}
         {% for user in users.items %}
         <div class="user-search-result">
-          <img src="{{ user.avatar_url }}" alt="{{ user.username }}" class="user-search-avatar"
+          <img loading="lazy" decoding="async" src="{{ user.avatar_url }}" alt="{{ user.username }}" class="user-search-avatar"
                onerror="this.src='/static/images/avatars/avatar_00.jpg'">
           <div class="user-search-info">
             <a href="/{{ user.username }}" class="user-search-name">{{ user.name or user.username }}</a>

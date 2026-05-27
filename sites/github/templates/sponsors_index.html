@@ -10,7 +10,7 @@
   <div class="sponsor-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:14px;">
     {% for f in featured %}
     <a href="/sponsors/{{ f.user.username }}" style="border:1px solid #30363d;border-radius:8px;padding:16px;text-decoration:none;color:inherit;background:#0d1117;display:flex;gap:12px;align-items:center;">
-      <img src="{{ f.user.avatar_url }}" alt="{{ f.user.username }}" width="48" height="48" style="border-radius:50%;" onerror="this.src='/static/images/avatars/avatar_00.jpg'">
+      <img loading="lazy" decoding="async" src="{{ f.user.avatar_url }}" alt="{{ f.user.username }}" width="48" height="48" style="border-radius:50%;" onerror="this.src='/static/images/avatars/avatar_00.jpg'">
       <div style="flex:1;min-width:0;">
         <div style="font-weight:600;color:#e6edf3;">{{ f.user.username }}</div>
         <div style="font-size:12px;color:#7d8590;">{{ f.sponsors }} sponsors · ${{ (f.monthly_cents/100)|int }}/mo</div>

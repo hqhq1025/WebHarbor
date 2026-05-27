@@ -26,7 +26,7 @@
     <div class="stargazers-grid">
       {% for u in stargazers %}
       <a class="stargazer-card" href="/{{ u.username }}">
-        <img class="stargazer-avatar" src="{{ u.avatar_url }}" alt="{{ u.username }}"
+        <img loading="lazy" decoding="async" class="stargazer-avatar" src="{{ u.avatar_url }}" alt="{{ u.username }}"
              onerror="this.src='/static/images/avatars/avatar_00.jpg'">
         <div class="stargazer-meta">
           <div class="stargazer-name">{{ u.name or u.username }}</div>

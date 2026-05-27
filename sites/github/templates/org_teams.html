@@ -3,7 +3,7 @@
 {% block content %}
 <div style="padding:24px 32px;max-width:1100px;margin:0 auto;">
   <header style="display:flex;gap:16px;align-items:center;margin-bottom:20px;">
-    <img src="{{ org.avatar_url }}" alt="{{ org.username }}" width="64" height="64" style="border-radius:8px;" onerror="this.src='/static/images/avatars/avatar_00.jpg'">
+    <img loading="lazy" decoding="async" src="{{ org.avatar_url }}" alt="{{ org.username }}" width="64" height="64" style="border-radius:8px;" onerror="this.src='/static/images/avatars/avatar_00.jpg'">
     <div>
       <h1 style="margin:0;font-size:22px;"><a href="/{{ org.username }}" style="color:#e6edf3;text-decoration:none;">{{ org.username }}</a></h1>
       <div style="font-size:13px;color:#7d8590;">{{ org_repo_count }} repositories · Organization</div>

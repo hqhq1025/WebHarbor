@@ -64,7 +64,7 @@
             </h2>
 
             <div class="release-card-meta">
-              <img class="release-author-avatar" src="{{ r.author_avatar }}"
+              <img loading="lazy" decoding="async" class="release-author-avatar" src="{{ r.author_avatar }}"
                    alt="{{ r.author }}"
                    onerror="this.src='/static/images/avatars/avatar_00.jpg'">
               <a href="/{{ r.author }}" class="release-author-name">{{ r.author }}</a>

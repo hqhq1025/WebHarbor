@@ -19,7 +19,7 @@
   <ul class="network-list">
     {% for r in dependents %}
     <li class="network-item">
-      <img src="{{ avatar_for(r.full_name.split('/')[0]) }}" class="network-avatar" alt="" width="32" height="32">
+      <img loading="lazy" decoding="async" src="{{ avatar_for(r.full_name.split('/')[0]) }}" class="network-avatar" alt="" width="32" height="32">
       <div class="network-info">
         <a href="/{{ r.full_name }}" class="network-username">{{ r.full_name }}</a>
         <div class="network-meta">
@@ -38,7 +38,7 @@
   <ul class="network-list">
     {% for f in forkers %}
     <li class="network-item">
-      <img src="{{ avatar_for(f.user.username) }}" class="network-avatar" alt="" width="32" height="32">
+      <img loading="lazy" decoding="async" src="{{ avatar_for(f.user.username) }}" class="network-avatar" alt="" width="32" height="32">
       <div class="network-info">
         <a href="/{{ f.user.username }}/{{ repo.name }}" class="network-username">{{ f.user.username }}/{{ repo.name }}</a>
         <div class="network-meta">

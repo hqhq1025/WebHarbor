@@ -77,7 +77,7 @@
     <div class="developers-grid">
       {% for dev in trending_devs %}
       <a href="/{{ dev.username }}" class="dev-card">
-        <img src="{{ dev.avatar_url }}" alt="{{ dev.username }}" class="dev-avatar"
+        <img loading="lazy" decoding="async" src="{{ dev.avatar_url }}" alt="{{ dev.username }}" class="dev-avatar"
              onerror="this.src='/static/images/avatars/avatar_00.jpg'">
         <div class="dev-info">
           <span class="dev-name">{{ dev.name or dev.username }}</span>

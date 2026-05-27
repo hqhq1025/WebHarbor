@@ -171,7 +171,7 @@
     <div class="repo-commit-bar">
       <div class="repo-commit-bar-left">
         <a href="/{{ latest_author }}" class="repo-commit-bar-avatar-link">
-          <img src="{{ avatar_for(latest_author) }}" class="repo-commit-bar-avatar"
+          <img loading="lazy" decoding="async" src="{{ avatar_for(latest_author) }}" class="repo-commit-bar-avatar"
                alt="@{{ latest_author }}"
                onerror="this.src='/static/images/avatars/avatar_00.jpg'">
         </a>
@@ -378,7 +378,7 @@
         {% for c in repo.get_contributors()[:20] %}
         <li class="sidebar-contributor-cell">
           <a href="/{{ c.username }}" title="@{{ c.username }} · {{ c.commits }} commits">
-            <img src="{{ avatar_for(c.username) }}"
+            <img loading="lazy" decoding="async" src="{{ avatar_for(c.username) }}"
                  alt="@{{ c.username }}"
                  class="sidebar-contributor-avatar"
                  onerror="this.src='/static/images/avatars/avatar_00.jpg'">
@@ -508,7 +508,7 @@
         {% for r in used_by %}
         <li class="sidebar-contributor-cell">
           <a href="/{{ r.full_name }}" title="{{ r.full_name }}">
-            <img src="{{ avatar_for(r.full_name.split('/')[0]) }}"
+            <img loading="lazy" decoding="async" src="{{ avatar_for(r.full_name.split('/')[0]) }}"
                  alt="{{ r.full_name }}"
                  class="sidebar-contributor-avatar"
                  onerror="this.src='/static/images/avatars/avatar_00.jpg'">

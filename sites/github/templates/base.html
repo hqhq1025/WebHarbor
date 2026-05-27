@@ -182,7 +182,7 @@
         </a>
         <div class="gh-nav-dropdown gh-avatar-dropdown">
           <button class="gh-avatar-btn" aria-label="Open user menu">
-            <img src="{{ current_user.avatar_url }}" alt="{{ current_user.username }}" class="gh-avatar-img" width="20" height="20"
+            <img loading="lazy" decoding="async" src="{{ current_user.avatar_url }}" alt="{{ current_user.username }}" class="gh-avatar-img" width="20" height="20"
                  onerror="this.src='/static/images/avatars/avatar_00.jpg'">
           </button>
           <div class="gh-nav-dropdown-menu gh-avatar-menu">
