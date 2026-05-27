@@ -4,21 +4,27 @@
       "title": "Solve Equations",
       "desc": "Wolfram Alpha can solve linear, quadratic, polynomial and systems of equations symbolically or numerically.",
       "images": [
-        "static/images/screenshots/examples_algebra.png"
+        "static/images/screenshots/examples_algebra.png",
+        "static/images/topics/algebra.png",
+        "static/images/topics/linear-algebra.png"
       ]
     },
     {
       "title": "Polynomial Operations",
       "desc": "Factor, expand, and simplify polynomial expressions.",
       "images": [
-        "static/images/screenshots/mathematics.png"
+        "static/images/screenshots/mathematics.png",
+        "static/images/screenshots/examples_algebra.png",
+        "static/images/topics/algebra.png"
       ]
     },
     {
       "title": "Graphing Functions",
       "desc": "Visualize algebraic functions with interactive plots.",
       "images": [
-        "static/images/screenshots/input_math.png"
+        "static/images/screenshots/input_math.png",
+        "static/images/screenshots/examples_algebra.png",
+        "static/images/topics/algebra.png"
       ]
     }
   ],
@@ -28,21 +34,26 @@
       "desc": "Compute definite and indefinite integrals symbolically and numerically.",
       "images": [
         "static/images/screenshots/input_math.png",
-        "static/images/screenshots/examples_calculus.png"
+        "static/images/screenshots/examples_calculus.png",
+        "static/images/topics/calculus.png"
       ]
     },
     {
       "title": "Derivatives",
       "desc": "Find derivatives of functions, including partial derivatives and higher-order derivatives.",
       "images": [
-        "static/images/screenshots/examples_calculus.png"
+        "static/images/screenshots/examples_calculus.png",
+        "static/images/topics/calculus.png",
+        "static/images/topics/finance.png"
       ]
     },
     {
       "title": "Series & Limits",
       "desc": "Evaluate limits, Taylor series, Fourier series, and more.",
       "images": [
-        "static/images/screenshots/mathematics.png"
+        "static/images/screenshots/mathematics.png",
+        "static/images/screenshots/examples_calculus.png",
+        "static/images/topics/calculus.png"
       ]
     }
   ],
@@ -51,21 +62,27 @@
       "title": "Statistical Distributions",
       "desc": "Analyze probability distributions, compute moments and quantiles.",
       "images": [
-        "static/images/screenshots/examples_statistics.png"
+        "static/images/screenshots/examples_statistics.png",
+        "static/images/topics/statistics.png",
+        "static/images/screenshots/examples_personal_health.png"
       ]
     },
     {
       "title": "Data Analysis",
       "desc": "Compute descriptive statistics, regression, and correlation.",
       "images": [
-        "static/images/screenshots/mathematics.png"
+        "static/images/screenshots/mathematics.png",
+        "static/images/screenshots/examples_statistics.png",
+        "static/images/topics/statistics.png"
       ]
     },
     {
       "title": "Probability",
       "desc": "Compute probabilities for events and distributions.",
       "images": [
-        "static/images/screenshots/examples_statistics.png"
+        "static/images/screenshots/examples_statistics.png",
+        "static/images/topics/statistics.png",
+        "static/images/topics/earth-science.png"
       ]
     }
   ],
@@ -74,21 +91,27 @@
       "title": "Classical Mechanics",
       "desc": "Compute forces, energy, momentum, and motion using fundamental physics formulas.",
       "images": [
-        "static/images/screenshots/examples_physics.png"
+        "static/images/screenshots/examples_physics.png",
+        "static/images/screenshots/input_physics.png",
+        "static/images/topics/physics.png"
       ]
     },
     {
       "title": "Electromagnetic Theory",
       "desc": "Solve problems involving electric and magnetic fields, circuits, and waves.",
       "images": [
-        "static/images/screenshots/input_physics.png"
+        "static/images/screenshots/input_physics.png",
+        "static/images/screenshots/examples_physics.png",
+        "static/images/topics/physics.png"
       ]
     },
     {
       "title": "Quantum & Atomic Physics",
       "desc": "Explore photon energies, atomic spectra, and quantum phenomena.",
       "images": [
-        "static/images/screenshots/examples_science.png"
+        "static/images/screenshots/examples_science.png",
+        "static/images/screenshots/examples_physics.png",
+        "static/images/screenshots/input_physics.png"
       ]
     }
   ],
@@ -98,21 +121,26 @@
       "desc": "Access comprehensive data on all elements of the periodic table.",
       "images": [
         "static/images/screenshots/input_carbon.png",
-        "static/images/screenshots/examples_chemistry.png"
+        "static/images/screenshots/examples_chemistry.png",
+        "static/images/screenshots/result_chemistry.png"
       ]
     },
     {
       "title": "Chemical Equations",
       "desc": "Balance and analyze chemical reactions and stoichiometry.",
       "images": [
-        "static/images/screenshots/examples_chemistry.png"
+        "static/images/screenshots/examples_chemistry.png",
+        "static/images/screenshots/result_chemistry.png",
+        "static/images/topics/chemistry.png"
       ]
     },
     {
       "title": "Molecular Properties",
       "desc": "Compute molecular formulas, structure, and physical properties.",
       "images": [
-        "static/images/screenshots/examples_science.png"
+        "static/images/screenshots/examples_science.png",
+        "static/images/screenshots/examples_chemistry.png",
+        "static/images/screenshots/result_chemistry.png"
       ]
     }
   ],
@@ -121,21 +149,27 @@
       "title": "Solar System",
       "desc": "Explore planetary data, orbital mechanics, and astronomical distances.",
       "images": [
-        "static/images/screenshots/examples_astronomy.png"
+        "static/images/screenshots/examples_astronomy.png",
+        "static/images/topics/astronomy.png",
+        "static/images/topics/probability.png"
       ]
     },
     {
       "title": "Stars & Galaxies",
       "desc": "Lookup star properties, distances, and spectral data.",
       "images": [
-        "static/images/screenshots/examples_science.png"
+        "static/images/screenshots/examples_science.png",
+        "static/images/screenshots/examples_astronomy.png",
+        "static/images/topics/astronomy.png"
       ]
     },
     {
       "title": "Sky Charts",
       "desc": "Generate star charts, planet positions, and astronomical event predictions.",
       "images": [
-        "static/images/screenshots/examples_astronomy.png"
+        "static/images/screenshots/examples_astronomy.png",
+        "static/images/topics/astronomy.png",
+        "static/images/topics/arts-media.png"
       ]
     }
   ],
@@ -144,21 +178,27 @@
       "title": "Current Conditions",
       "desc": "Get real-time weather data for any location worldwide.",
       "images": [
-        "static/images/screenshots/input_weather.png"
+        "static/images/screenshots/input_weather.png",
+        "static/images/topics/weather.png",
+        "static/images/topics/chemistry.png"
       ]
     },
     {
       "title": "Forecast & History",
       "desc": "Access hourly and daily forecasts, and historical weather records.",
       "images": [
-        "static/images/screenshots/input_weather.png"
+        "static/images/screenshots/input_weather.png",
+        "static/images/topics/weather.png",
+        "static/images/topics/entertainment.png"
       ]
     },
     {
       "title": "Climate Data",
       "desc": "Analyze long-term climate trends and comparisons.",
       "images": [
-        "static/images/screenshots/everyday.png"
+        "static/images/screenshots/everyday.png",
+        "static/images/screenshots/input_weather.png",
+        "static/images/topics/weather.png"
       ]
     }
   ],
@@ -167,21 +207,27 @@
       "title": "Stock Market",
       "desc": "Look up stock prices, market data, and historical charts.",
       "images": [
-        "static/images/screenshots/examples_finance.png"
+        "static/images/screenshots/examples_finance.png",
+        "static/images/topics/finance.png",
+        "static/images/topics/personal-finance.png"
       ]
     },
     {
       "title": "Currency Exchange",
       "desc": "Convert currencies and track exchange rate history.",
       "images": [
-        "static/images/screenshots/examples_finance.png"
+        "static/images/screenshots/examples_finance.png",
+        "static/images/topics/finance.png",
+        "static/images/topics/personal-finance.png"
       ]
     },
     {
       "title": "Mortgage & Loans",
       "desc": "Calculate loan payments, amortization schedules, and interest.",
       "images": [
-        "static/images/screenshots/examples_everyday.png"
+        "static/images/screenshots/examples_everyday.png",
+        "static/images/screenshots/examples_finance.png",
+        "static/images/topics/finance.png"
       ]
     }
   ],
@@ -190,21 +236,27 @@
       "title": "2D Geometry",
       "desc": "Compute areas, perimeters, and properties of 2D shapes.",
       "images": [
-        "static/images/screenshots/examples_geometry.png"
+        "static/images/screenshots/examples_geometry.png",
+        "static/images/topics/geometry.png",
+        "static/images/screenshots/examples_physics.png"
       ]
     },
     {
       "title": "3D Geometry",
       "desc": "Analyze volumes, surface areas, and properties of 3D solids.",
       "images": [
-        "static/images/screenshots/mathematics.png"
+        "static/images/screenshots/mathematics.png",
+        "static/images/screenshots/examples_geometry.png",
+        "static/images/topics/geometry.png"
       ]
     },
     {
       "title": "Coordinate Geometry",
       "desc": "Work with lines, curves, and transformations in coordinate systems.",
       "images": [
-        "static/images/screenshots/examples_algebra.png"
+        "static/images/screenshots/examples_algebra.png",
+        "static/images/screenshots/examples_geometry.png",
+        "static/images/topics/geometry.png"
       ]
     }
   ],
@@ -213,21 +265,27 @@
       "title": "Body Metrics",
       "desc": "Calculate BMI, caloric needs, and other personal health metrics.",
       "images": [
-        "static/images/screenshots/examples_personal_health.png"
+        "static/images/screenshots/examples_personal_health.png",
+        "static/images/topics/personal-health.png",
+        "static/images/topics/entertainment.png"
       ]
     },
     {
       "title": "Nutrition",
       "desc": "Look up nutritional content of foods and compare diets.",
       "images": [
-        "static/images/screenshots/examples_food.png"
+        "static/images/screenshots/examples_food.png",
+        "static/images/screenshots/examples_personal_health.png",
+        "static/images/topics/personal-health.png"
       ]
     },
     {
       "title": "Medical Reference",
       "desc": "Access clinical reference data, drug information, and anatomical data.",
       "images": [
-        "static/images/screenshots/examples_life.png"
+        "static/images/screenshots/examples_life.png",
+        "static/images/screenshots/examples_personal_health.png",
+        "static/images/topics/personal-health.png"
       ]
     }
   ],
@@ -236,7 +294,9 @@
       "title": "Examples",
       "desc": "Explore computational examples and answers in this topic.",
       "images": [
-        "static/images/screenshots/mathematics.png"
+        "static/images/screenshots/mathematics.png",
+        "static/images/topics/number-theory.png",
+        "static/images/screenshots/result_planet.png"
       ]
     }
   ],
@@ -245,7 +305,9 @@
       "title": "Examples",
       "desc": "Explore computational examples and answers in this topic.",
       "images": [
-        "static/images/screenshots/mathematics.png"
+        "static/images/screenshots/mathematics.png",
+        "static/images/topics/trigonometry.png",
+        "static/images/topics/personal-health.png"
       ]
     }
   ],
@@ -254,7 +316,9 @@
       "title": "Examples",
       "desc": "Explore computational examples and answers in this topic.",
       "images": [
-        "static/images/screenshots/mathematics.png"
+        "static/images/screenshots/mathematics.png",
+        "static/images/topics/linear-algebra.png",
+        "static/images/screenshots/input_weather.png"
       ]
     }
   ],
@@ -263,7 +327,9 @@
       "title": "Examples",
       "desc": "Explore computational examples and answers in this topic.",
       "images": [
-        "static/images/screenshots/mathematics.png"
+        "static/images/screenshots/mathematics.png",
+        "static/images/topics/differential-equations.png",
+        "static/images/topics/household-science.png"
       ]
     }
   ],
@@ -272,7 +338,9 @@
       "title": "Examples",
       "desc": "Explore computational examples and answers in this topic.",
       "images": [
-        "static/images/screenshots/mathematics.png"
+        "static/images/screenshots/mathematics.png",
+        "static/images/topics/probability.png",
+        "static/images/screenshots/examples_personal_health.png"
       ]
     }
   ],
@@ -281,7 +349,9 @@
       "title": "Examples",
       "desc": "Explore computational examples and answers in this topic.",
       "images": [
-        "static/images/screenshots/mathematics.png"
+        "static/images/screenshots/mathematics.png",
+        "static/images/topics/discrete-math.png",
+        "static/images/screenshots/products.png"
       ]
     }
   ],
@@ -290,7 +360,9 @@
       "title": "Examples",
       "desc": "Explore computational examples and answers in this topic.",
       "images": [
-        "static/images/screenshots/science.png"
+        "static/images/screenshots/science.png",
+        "static/images/topics/earth-science.png",
+        "static/images/topics/astronomy.png"
       ]
     }
   ],
@@ -299,7 +371,9 @@
       "title": "Examples",
       "desc": "Explore computational examples and answers in this topic.",
       "images": [
-        "static/images/screenshots/science.png"
+        "static/images/screenshots/science.png",
+        "static/images/topics/life-sciences.png",
+        "static/images/screenshots/about.png"
       ]
     }
   ],
@@ -308,7 +382,9 @@
       "title": "Examples",
       "desc": "Explore computational examples and answers in this topic.",
       "images": [
-        "static/images/screenshots/science.png"
+        "static/images/screenshots/science.png",
+        "static/images/topics/engineering.png",
+        "static/images/topics/calculus.png"
       ]
     }
   ],
@@ -317,7 +393,9 @@
       "title": "Examples",
       "desc": "Explore computational examples and answers in this topic.",
       "images": [
-        "static/images/screenshots/science.png"
+        "static/images/screenshots/science.png",
+        "static/images/topics/units-measures.png",
+        "static/images/screenshots/examples_earth.png"
       ]
     }
   ],
@@ -326,7 +404,9 @@
       "title": "Examples",
       "desc": "Explore computational examples and answers in this topic.",
       "images": [
-        "static/images/screenshots/science.png"
+        "static/images/screenshots/science.png",
+        "static/images/topics/health-medicine.png",
+        "static/images/topics/albert-einstein-curve.png"
       ]
     }
   ],
@@ -335,7 +415,9 @@
       "title": "Examples",
       "desc": "Explore computational examples and answers in this topic.",
       "images": [
-        "static/images/screenshots/science.png"
+        "static/images/screenshots/science.png",
+        "static/images/topics/food-science.png",
+        "static/images/screenshots/examples_people.png"
       ]
     }
   ],
@@ -344,7 +426,9 @@
       "title": "Examples",
       "desc": "Explore computational examples and answers in this topic.",
       "images": [
-        "static/images/screenshots/society.png"
+        "static/images/screenshots/society.png",
+        "static/images/screenshots/examples_people.png",
+        "static/images/topics/people.png"
       ]
     }
   ],
@@ -353,7 +437,9 @@
       "title": "Examples",
       "desc": "Explore computational examples and answers in this topic.",
       "images": [
-        "static/images/screenshots/society.png"
+        "static/images/screenshots/society.png",
+        "static/images/screenshots/examples_linguistics.png",
+        "static/images/topics/linguistics.png"
       ]
     }
   ],
@@ -362,7 +448,9 @@
       "title": "Examples",
       "desc": "Explore computational examples and answers in this topic.",
       "images": [
-        "static/images/screenshots/society.png"
+        "static/images/screenshots/society.png",
+        "static/images/topics/geography.png",
+        "static/images/topics/albert-einstein-curve.png"
       ]
     }
   ],
@@ -371,7 +459,9 @@
       "title": "Examples",
       "desc": "Explore computational examples and answers in this topic.",
       "images": [
-        "static/images/screenshots/society.png"
+        "static/images/screenshots/society.png",
+        "static/images/topics/history.png",
+        "static/images/screenshots/homepage.png"
       ]
     }
   ],
@@ -380,7 +470,9 @@
       "title": "Examples",
       "desc": "Explore computational examples and answers in this topic.",
       "images": [
-        "static/images/screenshots/society.png"
+        "static/images/screenshots/society.png",
+        "static/images/screenshots/examples_household_science.png",
+        "static/images/topics/chemistry.png"
       ]
     }
   ],
@@ -389,7 +481,9 @@
       "title": "Examples",
       "desc": "Explore computational examples and answers in this topic.",
       "images": [
-        "static/images/screenshots/society.png"
+        "static/images/screenshots/society.png",
+        "static/images/topics/arts-media.png",
+        "static/images/topics/travel.png"
       ]
     }
   ],
@@ -398,7 +492,9 @@
       "title": "Examples",
       "desc": "Explore computational examples and answers in this topic.",
       "images": [
-        "static/images/screenshots/society.png"
+        "static/images/screenshots/society.png",
+        "static/images/topics/economics.png",
+        "static/images/screenshots/examples_linguistics.png"
       ]
     }
   ],
@@ -407,7 +503,9 @@
       "title": "Examples",
       "desc": "Explore computational examples and answers in this topic.",
       "images": [
-        "static/images/screenshots/everyday.png"
+        "static/images/screenshots/everyday.png",
+        "static/images/screenshots/examples_entertainment.png",
+        "static/images/topics/entertainment.png"
       ]
     }
   ],
@@ -416,7 +514,9 @@
       "title": "Examples",
       "desc": "Explore computational examples and answers in this topic.",
       "images": [
-        "static/images/screenshots/everyday.png"
+        "static/images/screenshots/everyday.png",
+        "static/images/topics/personal-finance.png",
+        "static/images/screenshots/input_prime.png"
       ]
     }
   ],
@@ -425,7 +525,9 @@
       "title": "Examples",
       "desc": "Explore computational examples and answers in this topic.",
       "images": [
-        "static/images/screenshots/everyday.png"
+        "static/images/screenshots/everyday.png",
+        "static/images/topics/travel.png",
+        "static/images/screenshots/homepage.png"
       ]
     }
   ],
@@ -434,7 +536,9 @@
       "title": "Examples",
       "desc": "Explore computational examples and answers in this topic.",
       "images": [
-        "static/images/screenshots/everyday.png"
+        "static/images/screenshots/everyday.png",
+        "static/images/topics/household-math.png",
+        "static/images/screenshots/examples_personal_health.png"
       ]
     }
   ],
@@ -443,7 +547,9 @@
       "title": "Examples",
       "desc": "Explore computational examples and answers in this topic.",
       "images": [
-        "static/images/screenshots/everyday.png"
+        "static/images/screenshots/everyday.png",
+        "static/images/screenshots/examples_household_science.png",
+        "static/images/topics/household-science.png"
       ]
     }
   ]
