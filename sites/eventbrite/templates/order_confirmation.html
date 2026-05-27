@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block title %}Order confirmed — {{ ev.title }}{% endblock %}
+{% block content %}
+<div class="eb-container eb-page" style="max-width:720px;">
+  <div class="eb-steps">
+    <span class="eb-step done">1. Select tickets</span>
+    <span class="eb-step done">2. Attendee info</span>
+    <span class="eb-step done">3. Payment</span>
+    <span class="eb-step active">4. Confirmation</span>
+  </div>
+  <h1 class="eb-h1" style="color:var(--eb-success);">🎟 You're going!</h1>
+  <p>Order <strong>#{{ order.code }}</strong> — confirmation sent to {{ order.contact_email }}.</p>
+
+  <div style="background:var(--eb-bg-soft);padding:18px;border-radius:8px;margin:18px 0;">
+    <h3 style="margin-top:0">{{ ev.title }}</h3>
+    <p class="eb-muted">{{ fmt_dt(ev.start_dt) }} — {{ ev.timezone }}<br>
+       {% if ev.is_online %}Online event{% else %}{{ ev.venue_name }}, {{ ev.venue_address }}{% endif %}</p>
+    <a href="{{ url_for('event_ics', slug=ev.slug) }}" class="btn btn-outline">Add to calendar (.ics)</a>
+  </div>
+
+  <h3 class="eb-h3">Your tickets</h3>
+  <table class="eb-table">
+    <thead><tr><th>Code</th><th>Tier</th><th>Attendee</th><th>Email</th></tr></thead>
+    <tbody>
+      {% for t in order.tickets %}
+        <tr><td><code>{{ t.code }}</code></td><td>{{ t.tier.name }}</td><td>{{ t.attendee_name }}</td><td>{{ t.attendee_email }}</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <p style="margin-top:24px;">
+    <a class="btn btn-primary" href="{{ url_for('my_tickets') }}">View all tickets</a>
+    <a class="btn btn-outline" href="{{ url_for('event_detail', slug=ev.slug) }}">Back to event</a>
+  </p>
+</div>
+{% endblock %}

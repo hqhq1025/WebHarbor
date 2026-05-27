@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block title %}Create — Details | Eventbrite{% endblock %}
+{% block content %}
+<div class="eb-container eb-page" style="max-width:720px;">
+  <h1 class="eb-h1">Step 2: Details</h1>
+  <div class="eb-steps">
+    <span class="eb-step done">1. Basics</span><span class="eb-step active">2. Details</span>
+    <span class="eb-step">3. Tickets</span><span class="eb-step">4. Publish</span>
+  </div>
+  <form method="POST">
+    <div class="eb-form-grid">
+      <div class="eb-form-row"><label>Start date</label><input type="date" name="start_date" value="{{ d.start_dt.strftime('%Y-%m-%d') if d.start_dt else '' }}" required></div>
+      <div class="eb-form-row"><label>Start time</label><input type="time" name="start_time" value="{{ d.start_dt.strftime('%H:%M') if d.start_dt else '19:00' }}" required></div>
+      <div class="eb-form-row"><label>End date</label><input type="date" name="end_date" value="{{ d.end_dt.strftime('%Y-%m-%d') if d.end_dt else '' }}"></div>
+      <div class="eb-form-row"><label>End time</label><input type="time" name="end_time" value="{{ d.end_dt.strftime('%H:%M') if d.end_dt else '21:00' }}"></div>
+    </div>
+    <div class="eb-form-row"><label>Description</label><textarea name="description" rows="8">{{ d.description }}</textarea></div>
+    <button class="btn btn-primary btn-large" type="submit">Save & continue</button>
+  </form>
+</div>
+{% endblock %}

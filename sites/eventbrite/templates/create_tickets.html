@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block title %}Create — Tickets | Eventbrite{% endblock %}
+{% block content %}
+<div class="eb-container eb-page" style="max-width:720px;">
+  <h1 class="eb-h1">Step 3: Tickets</h1>
+  <div class="eb-steps">
+    <span class="eb-step done">1. Basics</span><span class="eb-step done">2. Details</span>
+    <span class="eb-step active">3. Tickets</span><span class="eb-step">4. Publish</span>
+  </div>
+  <form method="POST">
+    {% for i in range(6) %}
+      {% set t = tiers[i] if i < tiers|length else {} %}
+      <fieldset style="border:1px solid var(--eb-border);border-radius:6px;padding:14px;margin-bottom:10px;">
+        <legend>Tier {{ i + 1 }}</legend>
+        <div class="eb-form-grid">
+          <div class="eb-form-row"><label>Name</label><input name="tname_{{ i }}" value="{{ t.get('name','') if t else '' }}" placeholder="e.g. General Admission"></div>
+          <div class="eb-form-row"><label>Price (USD)</label><input name="tprice_{{ i }}" value="{{ t.get('price','') if t else '' }}" type="number" min="0" step="0.5"></div>
+          <div class="eb-form-row"><label>Capacity</label><input name="tcap_{{ i }}" value="{{ t.get('capacity','') if t else '' }}" type="number" min="1"></div>
+        </div>
+      </fieldset>
+    {% endfor %}
+    <button class="btn btn-primary btn-large" type="submit">Save & continue</button>
+  </form>
+</div>
+{% endblock %}

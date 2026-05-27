@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block title %}Select tickets — {{ ev.title }}{% endblock %}
+{% block content %}
+<div class="eb-container eb-page" style="max-width:720px;">
+  <div class="eb-steps">
+    <span class="eb-step active">1. Select tickets</span>
+    <span class="eb-step">2. Attendee info</span>
+    <span class="eb-step">3. Payment</span>
+    <span class="eb-step">4. Confirmation</span>
+  </div>
+  <h1 class="eb-h1">Select your tickets</h1>
+  <p class="eb-muted"><a href="{{ url_for('event_detail', slug=ev.slug) }}">{{ ev.title }}</a></p>
+
+  <form method="POST">
+    {% for t in ev.tickets %}
+      <div class="eb-tier-card {% if t.is_sold_out() %}sold-out{% endif %}">
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <div>
+            <div class="tier-name">{{ t.name }}</div>
+            <div class="tier-meta">{{ t.remaining() }} of {{ t.capacity }} remaining — Sales end {{ t.sale_end.strftime('%b %d, %Y') }}</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:14px;">
+            <div class="tier-price">{{ t.price_str() }}</div>
+            {% if t.is_sold_out() %}
+              <span class="eb-chip" style="background:var(--eb-error);color:#fff;">Sold out</span>
+            {% else %}
+              <div class="eb-qty">
+                <button type="button" onclick="var i=document.getElementById('qty_{{ t.id }}');i.value=Math.max(0,parseInt(i.value||0)-1);">−</button>
+                <input id="qty_{{ t.id }}" name="qty_{{ t.id }}" type="number" min="0" max="{{ t.max_per_order }}" value="0">
+                <button type="button" onclick="var i=document.getElementById('qty_{{ t.id }}');i.value=Math.min({{ [t.max_per_order, t.remaining()]|min }},parseInt(i.value||0)+1);">+</button>
+              </div>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    {% endfor %}
+    <button class="btn btn-primary btn-block btn-large" type="submit" style="margin-top:18px;">Continue to attendee info</button>
+  </form>
+</div>
+{% endblock %}

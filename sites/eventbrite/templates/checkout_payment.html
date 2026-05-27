@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% block title %}Payment — {{ ev.title }}{% endblock %}
+{% block content %}
+<div class="eb-container eb-page" style="max-width:720px;">
+  <div class="eb-steps">
+    <span class="eb-step done">1. Select tickets</span>
+    <span class="eb-step done">2. Attendee info</span>
+    <span class="eb-step active">3. Payment</span>
+    <span class="eb-step">4. Confirmation</span>
+  </div>
+  <h1 class="eb-h1">Payment</h1>
+  <p class="eb-muted">{{ ev.title }} — ${{ '%.2f'|format(cart['total']) }} total</p>
+
+  <form method="POST">
+    <h3 class="eb-h3">Billing</h3>
+    <div class="eb-form-grid">
+      <div class="eb-form-row"><label>Full name</label><input type="text" name="billing_name" value="{{ current_user.name }}" required></div>
+      <div class="eb-form-row"><label>Email</label><input type="email" name="billing_email" value="{{ current_user.email }}" required></div>
+    </div>
+    <div class="eb-form-row"><label>Phone</label><input type="tel" name="billing_phone" placeholder="+1-555-0100"></div>
+
+    <h3 class="eb-h3">Card details (demo only — no payment is processed)</h3>
+    <div class="eb-form-row"><label>Card number</label><input type="text" placeholder="4242 4242 4242 4242" value="4242 4242 4242 4242"></div>
+    <div class="eb-form-grid">
+      <div class="eb-form-row"><label>Expiry</label><input type="text" placeholder="MM/YY" value="12/29"></div>
+      <div class="eb-form-row"><label>CVC</label><input type="text" placeholder="123" value="123"></div>
+    </div>
+
+    <h3 class="eb-h3">Order summary</h3>
+    <table class="eb-table">
+      <thead><tr><th>Ticket</th><th>Qty</th><th>Price</th></tr></thead>
+      <tbody>
+      {% for tier_id, qty, price, name in cart['items'] %}
+        <tr><td>{{ name }}</td><td>{{ qty }}</td><td>${{ '%.2f'|format(price * qty) }}</td></tr>
+      {% endfor %}
+      </tbody>
+      <tfoot><tr><th colspan="2">Total</th><th>${{ '%.2f'|format(cart['total']) }}</th></tr></tfoot>
+    </table>
+
+    <button class="btn btn-primary btn-block btn-large" type="submit" style="margin-top:18px;">
+      {% if cart['total'] == 0 %}Reserve free tickets{% else %}Complete purchase — ${{ '%.2f'|format(cart['total']) }}{% endif %}
+    </button>
+  </form>
+</div>
+{% endblock %}

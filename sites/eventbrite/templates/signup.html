@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block title %}Sign up | Eventbrite{% endblock %}
+{% block content %}
+<div class="eb-container eb-page" style="max-width:420px;">
+  <h1 class="eb-h1">Create your account</h1>
+  {% if error %}<div class="eb-flash error">{{ error }}</div>{% endif %}
+  <form method="POST">
+    <div class="eb-form-row"><label>Full name</label><input type="text" name="name" required></div>
+    <div class="eb-form-row"><label>Email</label><input type="email" name="email" required></div>
+    <div class="eb-form-row"><label>Password</label><input type="password" name="password" minlength="6" required></div>
+    <button class="btn btn-primary btn-block btn-large" type="submit">Sign up</button>
+  </form>
+  <p class="eb-muted" style="margin-top:18px;">Already have an account? <a href="{{ url_for('login') }}">Log in</a></p>
+</div>
+{% endblock %}

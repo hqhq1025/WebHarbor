@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block title %}Help Center | Eventbrite{% endblock %}
+{% block content %}
+<div class="eb-container eb-page" style="max-width:920px;">
+  <h1 class="eb-h1">Help Center</h1>
+  <p class="eb-muted">Find answers to common questions about attending and organizing events.</p>
+  {% for section, items in sections.items() %}
+    <h2 class="eb-h2">{{ section }}</h2>
+    <ul>
+      {% for a in items %}
+        <li><a href="{{ url_for('help_article', slug=a.slug) }}">{{ a.title }}</a></li>
+      {% endfor %}
+    </ul>
+  {% endfor %}
+</div>
+{% endblock %}

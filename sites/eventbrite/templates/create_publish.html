@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block title %}Create — Publish | Eventbrite{% endblock %}
+{% block content %}
+<div class="eb-container eb-page" style="max-width:720px;">
+  <h1 class="eb-h1">Step 4: Publish</h1>
+  <div class="eb-steps">
+    <span class="eb-step done">1. Basics</span><span class="eb-step done">2. Details</span>
+    <span class="eb-step done">3. Tickets</span><span class="eb-step active">4. Publish</span>
+  </div>
+  <h2 class="eb-h2">{{ d.title or 'Untitled event' }}</h2>
+  <p class="eb-muted">{{ d.summary }}</p>
+  <p class="eb-muted">{{ cat_map.get(d.category_slug, ('—',))[0] }} · {% if d.is_online %}Online{% else %}{{ city_map.get(d.city_slug, ('—',))[0] }} · {{ d.venue_name }}{% endif %}</p>
+  <p class="eb-muted">{{ fmt_dt(d.start_dt) if d.start_dt else 'Date not set' }}</p>
+  <p>{{ d.description }}</p>
+  <h3 class="eb-h3">Tickets</h3>
+  <ul>{% for t in tiers %}<li>{{ t.name }} — ${{ t.price }} ({{ t.capacity }} capacity)</li>{% endfor %}</ul>
+  <form method="POST">
+    <button class="btn btn-primary btn-large" type="submit">Publish event (demo)</button>
+    <a class="btn btn-outline" href="{{ url_for('create_tickets') }}">Back</a>
+  </form>
+</div>
+{% endblock %}

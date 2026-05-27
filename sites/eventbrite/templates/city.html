@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block title %}Events in {{ city_name }}{% if sub_label %} — {{ sub_label }}{% endif %} | Eventbrite{% endblock %}
+{% block content %}
+<section class="eb-hero">
+  <div class="eb-container">
+    <h1 class="eb-hero-title">
+      {% if sub_label %}{{ sub_label }} in {{ city_name }}
+      {% else %}All events in {{ city_name }}{% if state %}, {{ state }}{% endif %}
+      {% endif %}
+    </h1>
+    <p class="eb-hero-sub">{{ events|length }} upcoming events</p>
+    <div class="eb-pill-row">
+      <a class="eb-pill {% if not sub %}active{% endif %}" href="{{ url_for('city_landing', city_slug=city_slug) }}">All</a>
+      <a class="eb-pill {% if sub=='this-weekend' %}active{% endif %}" href="{{ url_for('city_landing', city_slug=city_slug, sub='this-weekend') }}">This weekend</a>
+      <a class="eb-pill {% if sub=='free' %}active{% endif %}" href="{{ url_for('city_landing', city_slug=city_slug, sub='free') }}">Free</a>
+      <a class="eb-pill {% if sub=='popular' %}active{% endif %}" href="{{ url_for('city_landing', city_slug=city_slug, sub='popular') }}">Popular</a>
+    </div>
+    <div class="eb-pill-row" style="margin-top:8px;">
+      {% for cslug, cname, color in categories %}
+        <a class="eb-pill {% if category_slug==cslug %}active{% endif %}"
+           href="{{ url_for('city_landing', city_slug=city_slug, sub=cslug + '--events') }}">{{ cname }}</a>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+
+<div class="eb-container eb-page">
+  {% if events %}
+    <div class="eb-grid">
+      {% for ev in events %}
+        {% include 'partials/event_card.html' %}
+      {% endfor %}
+    </div>
+  {% else %}
+    <p class="eb-muted">No events match this filter — try a different category or date.</p>
+  {% endif %}
+</div>
+{% endblock %}

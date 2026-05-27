@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+{% block title %}{{ a.title }} | Eventbrite Help Center{% endblock %}
+{% block content %}
+<div class="eb-container eb-page" style="max-width:720px;">
+  <p class="eb-muted"><a href="{{ url_for('help_index') }}">← Help Center</a> · {{ a.section }}</p>
+  <h1 class="eb-h1">{{ a.title }}</h1>
+  <p>{{ a.body }}</p>
+</div>
+{% endblock %}
