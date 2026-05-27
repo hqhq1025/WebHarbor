@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block title %}{{ data.category_label }} - BBC iPlayer{% endblock %}
+{% block content %}
+<article class="gui-page gui-iplayer-category" data-gui-marker="gui_iplayer_category">
+    <header class="gui-hub-header">
+        <h1>BBC iPlayer - {{ data.category_label }}</h1>
+        <p class="gui-hub-subtitle">{{ data.total_shows }} shows in {{ data.category_slug }}</p>
+    </header>
+    <ul class="gui-show-grid">
+    {% for s in data.shows %}
+        <li data-show-id="{{ s.id }}">
+            <h3><a href="{{ url_for('gui_iplayer_episode', ep_id=s.id) }}">{{ s.name }}</a></h3>
+            <p>Starring {{ s.lead }} &middot; {{ s.seasons }} series &middot; {{ s.episode_min }} min</p>
+        </li>
+    {% endfor %}
+    </ul>
+</article>
+{% endblock %}

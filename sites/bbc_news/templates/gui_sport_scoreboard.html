@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}{{ data.sport_label }} scoreboard {{ data.date_str }} - BBC Sport{% endblock %}
+{% block content %}
+<article class="gui-page gui-sport-scoreboard" data-gui-marker="gui_sport_scoreboard">
+    <header class="gui-hub-header">
+        <h1>{{ data.sport_label }} scoreboard - {{ data.date_str }}</h1>
+        <p class="gui-hub-subtitle">{{ data.competition }} | {{ data.total_matches }} matches</p>
+    </header>
+    <table class="gui-scoreboard-table">
+        <thead>
+            <tr><th>Kickoff</th><th>Home</th><th>Score</th><th>Away</th><th>Status</th><th>Venue</th></tr>
+        </thead>
+        <tbody>
+        {% for f in data.fixtures %}
+            <tr data-match-id="{{ f.match_id }}">
+                <td>{{ f.kickoff_time }}</td>
+                <td>{{ f.home }}</td>
+                <td>{{ f.home_score }} - {{ f.away_score }}</td>
+                <td>{{ f.away }}</td>
+                <td>{{ f.status }}</td>
+                <td>{{ f.venue }}</td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</article>
+{% endblock %}

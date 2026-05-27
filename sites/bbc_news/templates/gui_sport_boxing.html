@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block title %}Boxing - BBC Sport{% endblock %}
+{% block content %}
+<article class="gui-page gui-sport-hub gui-sport-boxing" data-gui-marker="gui_sport_boxing_hub">
+    <header class="gui-hub-header">
+        <h1>BBC Sport - Boxing</h1>
+        <p class="gui-hub-subtitle">{{ data.league_label }} | snapshot {{ data.ref_date }}</p>
+    </header>
+    <nav class="gui-hub-tabs">
+        <a href="{{ url_for('gui_sport_fixtures', sport='boxing') }}">Upcoming fights</a>
+        <a href="{{ url_for('gui_sport_results', sport='boxing') }}">Results</a>
+        <a href="{{ url_for('gui_sport_standings', sport='boxing', league='heavyweight') }}">Rankings</a>
+    </nav>
+    <section class="gui-hub-headlines">
+        <h2>Boxing headlines</h2>
+        <ol>
+        {% for h in data.headlines %}
+            <li><h3>{{ h.headline }}</h3><p>{{ h.summary }}</p><span class="gui-meta">{{ h.minutes_ago }} mins ago</span></li>
+        {% endfor %}
+        </ol>
+    </section>
+    <section class="gui-hub-next-fixture">
+        <h2>Headline fight</h2>
+        <p><strong>{{ data.next_fixture }}</strong> &middot; {{ data.next_kickoff }}</p>
+    </section>
+    <section class="gui-hub-top-scorer">
+        <h2>Pound-for-pound number one</h2>
+        <p><strong>{{ data.top_scorer }}</strong></p>
+    </section>
+    <section class="gui-hub-teams">
+        <h2>Top heavyweight contenders</h2>
+        <ol class="gui-rank-list">
+        {% for t in data.teams %}<li>{{ t }}</li>{% endfor %}
+        </ol>
+    </section>
+</article>
+{% endblock %}

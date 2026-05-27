@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% block title %}Football - BBC Sport{% endblock %}
+{% block content %}
+<article class="gui-page gui-sport-hub gui-sport-football" data-gui-marker="gui_sport_football_hub">
+    <header class="gui-hub-header">
+        <h1>BBC Sport - Football</h1>
+        <p class="gui-hub-subtitle">{{ data.league_label }} | snapshot {{ data.ref_date }}</p>
+    </header>
+
+    <nav class="gui-hub-tabs" aria-label="Football tabs">
+        <a href="{{ url_for('gui_sport_scoreboard', sport='football', date_str=data.ref_date|replace(' ','-')) }}">Scores &amp; Fixtures</a>
+        <a href="{{ url_for('gui_sport_standings', sport='football', league='premier-league') }}">Tables</a>
+        <a href="{{ url_for('gui_sport_fixtures', sport='football') }}">Fixtures</a>
+        <a href="{{ url_for('gui_sport_results', sport='football') }}">Results</a>
+    </nav>
+
+    <section class="gui-hub-headlines">
+        <h2>Top stories</h2>
+        <ol>
+        {% for h in data.headlines %}
+            <li data-slot="{{ h.slot }}">
+                <h3>{{ h.headline }}</h3>
+                <p>{{ h.summary }}</p>
+                <span class="gui-meta">{{ h.minutes_ago }} mins ago</span>
+            </li>
+        {% endfor %}
+        </ol>
+    </section>
+
+    <section class="gui-hub-next-fixture">
+        <h2>Next big fixture</h2>
+        <p class="gui-fixture-line"><strong>{{ data.next_fixture }}</strong> &middot; {{ data.next_kickoff }}</p>
+    </section>
+
+    <section class="gui-hub-top-scorer">
+        <h2>Top scorer this season</h2>
+        <p><strong>{{ data.top_scorer }}</strong> - {{ data.top_scorer_count }} goals</p>
+    </section>
+
+    <section class="gui-hub-teams">
+        <h2>Premier League clubs</h2>
+        <ul class="gui-team-grid">
+        {% for t in data.teams %}
+            <li><a href="{{ url_for('gui_sport_team', sport='football', team_id=t|lower|replace(' ','-')|replace('&','and')) }}">{{ t }}</a></li>
+        {% endfor %}
+        </ul>
+    </section>
+</article>
+{% endblock %}

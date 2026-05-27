@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block title %}{{ data.show_name }} - BBC iPlayer{% endblock %}
+{% block content %}
+<article class="gui-page gui-iplayer-episode" data-gui-marker="gui_iplayer_episode">
+    <header class="gui-hub-header">
+        <h1>{{ data.show_name }}</h1>
+        <p class="gui-hub-subtitle">Category: {{ data.category_label }} | Starring: {{ data.lead_actor }}</p>
+    </header>
+    <section class="gui-episode-meta">
+        <dl class="gui-team-dl">
+            <dt>Total series</dt><dd>{{ data.total_seasons }}</dd>
+            <dt>Episode duration</dt><dd>{{ data.duration_per_episode }} min</dd>
+            <dt>Audience rating</dt><dd>{{ data.rating_pct }}%</dd>
+            <dt>Age rating</dt><dd>{{ data.age_rating }}</dd>
+            <dt>Available until</dt><dd>{{ data.available_until }}</dd>
+        </dl>
+    </section>
+    <section class="gui-episodes">
+        <h2>Episodes</h2>
+        <ol class="gui-episode-list">
+        {% for e in data.episodes %}
+            <li>
+                <strong>S{{ e.season }} E{{ e.episode }}: {{ e.title }}</strong>
+                <span class="gui-ep-meta">{{ e.duration_min }} min &middot; first broadcast {{ e.first_broadcast }}</span>
+                <p>{{ e.synopsis }}</p>
+            </li>
+        {% endfor %}
+        </ol>
+    </section>
+</article>
+{% endblock %}

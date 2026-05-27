@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block title %}{{ data.longform_title }} - BBC News{% endblock %}
+{% block content %}
+<article class="gui-page gui-news-longform" data-gui-marker="gui_news_longform">
+    <header class="gui-hub-header">
+        <h1>{{ data.longform_title }}</h1>
+        <p class="gui-hub-subtitle">By {{ data.author }} | {{ data.published }} | {{ data.reading_time_min }} min read</p>
+    </header>
+    <aside class="gui-longform-progress" role="status">
+        <p>Total: {{ data.total_words }} words across {{ data.total_chapters }} chapters.</p>
+        <progress max="100" value="0">0%</progress>
+    </aside>
+    <nav class="gui-longform-chapters" aria-label="Chapter navigation">
+        <h2>Chapters</h2>
+        <ol>
+        {% for c in data.chapters %}
+            <li><a href="#{{ c.anchor }}">{{ c.title }}</a> <span class="gui-meta">({{ c.word_count }} words)</span></li>
+        {% endfor %}
+        </ol>
+    </nav>
+    <section class="gui-longform-body">
+    {% for c in data.chapters %}
+        <section id="{{ c.anchor }}">
+            <h2>{{ c.title }}</h2>
+            <p>Chapter {{ loop.index }} of {{ data.longform_title }}. This chapter contains {{ c.word_count }} words.</p>
+        </section>
+    {% endfor %}
+    </section>
+</article>
+{% endblock %}

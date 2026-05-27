@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}{{ data.sport_label }} fixtures - BBC Sport{% endblock %}
+{% block content %}
+<article class="gui-page gui-sport-fixtures" data-gui-marker="gui_sport_fixtures">
+    <header class="gui-hub-header">
+        <h1>{{ data.sport_label }} - upcoming fixtures</h1>
+        <p class="gui-hub-subtitle">{{ data.fixtures|length }} fixtures listed</p>
+    </header>
+    <table class="gui-fixtures-table">
+        <thead>
+            <tr><th>Date</th><th>Kickoff</th><th>Home</th><th>Away</th><th>Competition</th><th>Venue</th></tr>
+        </thead>
+        <tbody>
+        {% for f in data.fixtures %}
+            <tr>
+                <td>{{ f.date }}</td>
+                <td>{{ f.kickoff }}</td>
+                <td>{{ f.home }}</td>
+                <td>{{ f.away }}</td>
+                <td>{{ f.competition }}</td>
+                <td>{{ f.venue }}</td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</article>
+{% endblock %}

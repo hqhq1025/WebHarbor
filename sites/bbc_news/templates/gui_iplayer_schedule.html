@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block title %}{{ data.channel_label }} schedule {{ data.date_str }} - BBC iPlayer{% endblock %}
+{% block content %}
+<article class="gui-page gui-iplayer-schedule" data-gui-marker="gui_iplayer_schedule">
+    <header class="gui-hub-header">
+        <h1>{{ data.channel_label }} - schedule for {{ data.date_str }}</h1>
+        <p class="gui-hub-subtitle">Channel slug: {{ data.channel_slug }}</p>
+    </header>
+    <table class="gui-schedule-table">
+        <thead><tr><th>Time</th><th>Programme</th><th>Duration</th><th>Lead</th><th>Synopsis</th></tr></thead>
+        <tbody>
+        {% for s in data.schedule %}
+            <tr data-time="{{ s.time }}">
+                <td>{{ s.time }}</td>
+                <td>{{ s.title }}</td>
+                <td>{{ s.duration_min }} min</td>
+                <td>{{ s.lead }}</td>
+                <td>{{ s.synopsis }}</td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</article>
+{% endblock %}

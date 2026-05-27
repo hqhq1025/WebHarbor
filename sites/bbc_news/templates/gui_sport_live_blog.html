@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block title %}Live - {{ data.home }} v {{ data.away }} - BBC Sport{% endblock %}
+{% block content %}
+<article class="gui-page gui-sport-live-blog" data-gui-marker="gui_sport_live_blog">
+    <header class="gui-hub-header">
+        <h1>{{ data.home }} <span class="gui-live-score">{{ data.home_score }} - {{ data.away_score }}</span> {{ data.away }}</h1>
+        <p class="gui-hub-subtitle">Live - minute {{ data.current_minute }}' | {{ data.competition }} | {{ data.venue }}</p>
+    </header>
+    <ol class="gui-live-updates">
+    {% for u in data.updates %}
+        <li data-minute="{{ u.minute }}">
+            <strong>{{ u.minute }}'</strong>
+            <span class="gui-live-event">{{ u.event }}</span>
+            <span class="gui-live-team">({{ u.team }})</span>
+            <p>{{ u.detail }}</p>
+        </li>
+    {% endfor %}
+    </ol>
+</article>
+{% endblock %}

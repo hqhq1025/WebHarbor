@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block title %}BBC Scotland{% endblock %}
+{% block content %}
+<article class="gui-page gui-region gui-region-scotland" data-gui-marker="gui_region_scotland">
+    <header class="gui-hub-header gui-region-hero" style="border-top: 6px solid #005eb8;">
+        <h1>BBC Scotland</h1>
+        <p class="gui-hub-subtitle">Capital: {{ data.capital }} | {{ data.ref_date }}</p>
+    </header>
+    <nav class="gui-region-tabs" aria-label="Scotland sections">
+        {% for s in data.sections %}<a href="#{{ s|lower }}">{{ s }}</a>{% endfor %}
+    </nav>
+    <section class="gui-region-feed">
+        <h2>Top stories from Scotland</h2>
+        <ol>
+        {% for h in data.headlines %}
+            <li>
+                <h3>{{ h.headline }}</h3>
+                <span class="gui-meta">{{ h.section }} &middot; {{ h.minutes_ago }} mins ago</span>
+            </li>
+        {% endfor %}
+        </ol>
+    </section>
+</article>
+{% endblock %}

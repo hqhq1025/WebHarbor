@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block title %}World weather - BBC Weather{% endblock %}
+{% block content %}
+<article class="gui-page gui-weather-world" data-gui-marker="gui_weather_world">
+    <header class="gui-hub-header">
+        <h1>World weather</h1>
+        <p class="gui-hub-subtitle">{{ data.total_cities }} cities | {{ data.ref_date }}</p>
+    </header>
+    <table class="gui-world-weather-table">
+        <thead><tr><th>City</th><th>Country</th><th>Temp</th><th>Condition</th><th>Humidity</th><th>Wind</th></tr></thead>
+        <tbody>
+        {% for c in data.cities %}
+            <tr data-city="{{ c.slug }}">
+                <td><a href="{{ url_for('gui_weather_forecast', location=c.slug) }}">{{ c.name }}</a></td>
+                <td>{{ c.country }}</td>
+                <td>{{ c.temp_c }}&deg;C</td>
+                <td>{{ c.condition }}</td>
+                <td>{{ c.humidity }}%</td>
+                <td>{{ c.wind_kph }} kph</td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</article>
+{% endblock %}

@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block title %}{{ data.topic_label }} - BBC News topic{% endblock %}
+{% block content %}
+<article class="gui-page gui-news-topic" data-gui-marker="gui_news_topic">
+    <header class="gui-hub-header">
+        <h1>Topic: {{ data.topic_label }}</h1>
+        <p class="gui-hub-subtitle">{{ data.followers }} followers | {{ data.ref_date }}</p>
+        <button class="gui-follow-btn" data-topic-slug="{{ data.topic_slug }}">Follow topic</button>
+    </header>
+    <section class="gui-topic-feed">
+        <h2>Latest articles ({{ data.total_articles }})</h2>
+        <ol>
+        {% for a in data.articles %}
+            <li>
+                <h3>{{ a.title }}</h3>
+                <p>{{ a.summary }}</p>
+                <span class="gui-meta">By {{ a.author }} &middot; {{ a.hours_ago }} hours ago</span>
+            </li>
+        {% endfor %}
+        </ol>
+    </section>
+</article>
+{% endblock %}

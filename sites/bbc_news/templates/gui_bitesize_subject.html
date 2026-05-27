@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block title %}{{ data.subject_label }} - BBC Bitesize{% endblock %}
+{% block content %}
+<article class="gui-page gui-bitesize" data-gui-marker="gui_bitesize_subject">
+    <header class="gui-hub-header">
+        <h1>BBC Bitesize - {{ data.subject_label }}</h1>
+        <p class="gui-hub-subtitle">Levels: {{ data.levels_label }} | Exam boards: {{ data.exam_boards|join(', ') }}</p>
+    </header>
+    <section class="gui-bitesize-topics">
+        <h2>{{ data.total_topics }} topics</h2>
+        <ul class="gui-topic-grid">
+        {% for t in data.topics %}
+            <li data-topic-slug="{{ t.topic_slug }}">
+                <h3>{{ t.topic_name }}</h3>
+                <p>Level: {{ t.level }} &middot; {{ t.guide_count }} guides</p>
+            </li>
+        {% endfor %}
+        </ul>
+    </section>
+</article>
+{% endblock %}

@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block title %}{{ data.sport_label }} results - BBC Sport{% endblock %}
+{% block content %}
+<article class="gui-page gui-sport-results" data-gui-marker="gui_sport_results">
+    <header class="gui-hub-header">
+        <h1>{{ data.sport_label }} - recent results</h1>
+        <p class="gui-hub-subtitle">{{ data.results|length }} results listed</p>
+    </header>
+    <table class="gui-results-table">
+        <thead>
+            <tr><th>Date</th><th>Home</th><th>Score</th><th>Away</th><th>Competition</th></tr>
+        </thead>
+        <tbody>
+        {% for r in data.results %}
+            <tr>
+                <td>{{ r.date }}</td>
+                <td>{{ r.home }}</td>
+                <td>{{ r.home_score }} - {{ r.away_score }}</td>
+                <td>{{ r.away }}</td>
+                <td>{{ r.competition }}</td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</article>
+{% endblock %}

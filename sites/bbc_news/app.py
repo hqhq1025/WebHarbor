@@ -4725,6 +4725,13 @@ def _ensure_gallery_full_column():
         conn.close()
 
 
+# --- GUI deepen module (25+ visual pages: sport hubs / weather / iPlayer /
+#     Sounds / longform / nations / business markets / topics). No DB writes,
+#     so the byte-identical reset invariant is preserved.
+from gui_deepen import register as register_gui_deepen
+register_gui_deepen(app)
+
+
 with app.app_context():
     _ensure_gallery_full_column()
     db.create_all()

@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block title %}American Football - BBC Sport{% endblock %}
+{% block content %}
+<article class="gui-page gui-sport-hub gui-sport-american-football" data-gui-marker="gui_sport_american_football_hub">
+    <header class="gui-hub-header">
+        <h1>BBC Sport - American Football</h1>
+        <p class="gui-hub-subtitle">{{ data.league_label }} | snapshot {{ data.ref_date }}</p>
+    </header>
+    <nav class="gui-hub-tabs">
+        <a href="{{ url_for('gui_sport_standings', sport='american-football', league='afc') }}">AFC standings</a>
+        <a href="{{ url_for('gui_sport_standings', sport='american-football', league='nfc') }}">NFC standings</a>
+        <a href="{{ url_for('gui_sport_fixtures', sport='american-football') }}">Schedule</a>
+        <a href="{{ url_for('gui_sport_results', sport='american-football') }}">Results</a>
+    </nav>
+    <section class="gui-hub-headlines">
+        <h2>NFL headlines</h2>
+        <ol>
+        {% for h in data.headlines %}
+            <li><h3>{{ h.headline }}</h3><p>{{ h.summary }}</p><span class="gui-meta">{{ h.minutes_ago }} mins ago</span></li>
+        {% endfor %}
+        </ol>
+    </section>
+    <section class="gui-hub-next-fixture">
+        <h2>Next big game</h2>
+        <p><strong>{{ data.next_fixture }}</strong> &middot; {{ data.next_kickoff }}</p>
+    </section>
+    <section class="gui-hub-top-scorer">
+        <h2>Leading passer</h2>
+        <p><strong>{{ data.top_scorer }}</strong> - {{ data.top_scorer_count * 250 }} yards</p>
+    </section>
+    <section class="gui-hub-teams">
+        <h2>NFL franchises</h2>
+        <ul class="gui-team-grid">
+        {% for t in data.teams %}<li>{{ t }}</li>{% endfor %}
+        </ul>
+    </section>
+</article>
+{% endblock %}

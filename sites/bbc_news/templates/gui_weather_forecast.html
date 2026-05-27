@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% block title %}{{ data.location_name }} weather - BBC Weather{% endblock %}
+{% block content %}
+<article class="gui-page gui-weather-forecast" data-gui-marker="gui_weather_forecast">
+    <header class="gui-hub-header">
+        <h1>{{ data.location_name }} weather</h1>
+        <p class="gui-hub-subtitle">{{ data.country }} | {{ data.ref_date }}</p>
+    </header>
+    <section class="gui-weather-now">
+        <div class="gui-weather-temp">
+            <span class="gui-temp">{{ data.current_temp_c }}&deg;C</span>
+            <span class="gui-temp-f">({{ data.current_temp_f }}&deg;F)</span>
+        </div>
+        <div class="gui-weather-condition">{{ data.current_condition }}</div>
+        <dl class="gui-weather-meta">
+            <dt>Feels like</dt><dd>{{ data.feels_like_c }}&deg;C</dd>
+            <dt>Wind</dt><dd>{{ data.wind_kph }} kph {{ data.wind_direction }}</dd>
+            <dt>Humidity</dt><dd>{{ data.humidity_pct }}%</dd>
+            <dt>UV index</dt><dd>{{ data.uv_index }}</dd>
+            <dt>Pollen</dt><dd>{{ data.pollen_level }}</dd>
+            <dt>Pressure</dt><dd>{{ data.pressure_mb }} mb</dd>
+            <dt>Visibility</dt><dd>{{ data.visibility_km }} km</dd>
+            <dt>Sunrise</dt><dd>{{ data.sunrise }}</dd>
+            <dt>Sunset</dt><dd>{{ data.sunset }}</dd>
+        </dl>
+    </section>
+    <section class="gui-weather-forecast-7">
+        <h2>7-day forecast</h2>
+        <table class="gui-forecast-table">
+            <thead><tr><th>Day</th><th>Date</th><th>High</th><th>Low</th><th>Condition</th><th>Rain</th><th>Wind</th><th>UV</th></tr></thead>
+            <tbody>
+            {% for d in data.forecast %}
+                <tr data-day="{{ d.day_short }}">
+                    <td>{{ d.day_name }}</td>
+                    <td>{{ d.date_label }}</td>
+                    <td>{{ d.high_c }}&deg;</td>
+                    <td>{{ d.low_c }}&deg;</td>
+                    <td>{{ d.condition }}</td>
+                    <td>{{ d.rain_chance }}%</td>
+                    <td>{{ d.wind_kph }} kph</td>
+                    <td>{{ d.uv_index }}</td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </section>
+</article>
+{% endblock %}

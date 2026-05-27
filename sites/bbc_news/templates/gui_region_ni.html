@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block title %}BBC Northern Ireland{% endblock %}
+{% block content %}
+<article class="gui-page gui-region gui-region-ni" data-gui-marker="gui_region_ni">
+    <header class="gui-hub-header gui-region-hero" style="border-top: 6px solid #007a4d;">
+        <h1>BBC Northern Ireland</h1>
+        <p class="gui-hub-subtitle">Capital: {{ data.capital }} | {{ data.ref_date }}</p>
+    </header>
+    <nav class="gui-region-tabs" aria-label="Northern Ireland sections">
+        {% for s in data.sections %}<a href="#{{ s|lower }}">{{ s }}</a>{% endfor %}
+    </nav>
+    <section class="gui-region-feed">
+        <h2>Top stories from Northern Ireland</h2>
+        <ol>
+        {% for h in data.headlines %}
+            <li>
+                <h3>{{ h.headline }}</h3>
+                <span class="gui-meta">{{ h.section }} &middot; {{ h.minutes_ago }} mins ago</span>
+            </li>
+        {% endfor %}
+        </ol>
+    </section>
+</article>
+{% endblock %}

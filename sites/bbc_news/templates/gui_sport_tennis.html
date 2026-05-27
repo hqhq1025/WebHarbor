@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block title %}Tennis - BBC Sport{% endblock %}
+{% block content %}
+<article class="gui-page gui-sport-hub gui-sport-tennis" data-gui-marker="gui_sport_tennis_hub">
+    <header class="gui-hub-header">
+        <h1>BBC Sport - Tennis</h1>
+        <p class="gui-hub-subtitle">{{ data.league_label }} | snapshot {{ data.ref_date }}</p>
+    </header>
+    <nav class="gui-hub-tabs">
+        <a href="{{ url_for('gui_sport_scoreboard', sport='tennis', date_str=data.ref_date|replace(' ','-')) }}">Live scores</a>
+        <a href="{{ url_for('gui_sport_fixtures', sport='tennis') }}">Schedule</a>
+        <a href="{{ url_for('gui_sport_results', sport='tennis') }}">Results</a>
+    </nav>
+    <section class="gui-hub-headlines">
+        <h2>Tennis headlines</h2>
+        <ol>
+        {% for h in data.headlines %}
+            <li><h3>{{ h.headline }}</h3><p>{{ h.summary }}</p><span class="gui-meta">{{ h.minutes_ago }} mins ago</span></li>
+        {% endfor %}
+        </ol>
+    </section>
+    <section class="gui-hub-next-fixture">
+        <h2>Featured match</h2>
+        <p><strong>{{ data.next_fixture }}</strong> &middot; {{ data.next_kickoff }}</p>
+    </section>
+    <section class="gui-hub-top-scorer">
+        <h2>Most match wins this season</h2>
+        <p><strong>{{ data.top_scorer }}</strong> - {{ data.top_scorer_count + 30 }} wins</p>
+    </section>
+    <section class="gui-hub-teams">
+        <h2>ATP top 12</h2>
+        <ol class="gui-rank-list">
+        {% for p in data.teams %}<li>{{ p }}</li>{% endfor %}
+        </ol>
+    </section>
+</article>
+{% endblock %}

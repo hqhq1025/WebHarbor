@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block title %}{{ data.podcast_name }} - BBC Sounds{% endblock %}
+{% block content %}
+<article class="gui-page gui-sounds-podcast" data-gui-marker="gui_sounds_podcast">
+    <header class="gui-hub-header">
+        <h1>{{ data.podcast_name }}</h1>
+        <p class="gui-hub-subtitle">Host: {{ data.host }} | {{ data.schedule }}</p>
+    </header>
+    <section class="gui-podcast-meta">
+        <p>{{ data.description }}</p>
+        <dl class="gui-team-dl">
+            <dt>Average duration</dt><dd>{{ data.duration_per_ep }} min</dd>
+            <dt>Subscribers</dt><dd>{{ data.subscribers }}</dd>
+            <dt>Average rating</dt><dd>{{ '%.1f'|format(data.average_rating) }} / 5</dd>
+            <dt>Total episodes</dt><dd>{{ data.total_episodes_listed }}</dd>
+        </dl>
+        <button class="gui-subscribe-btn" data-podcast-slug="{{ data.podcast_slug }}">Subscribe</button>
+    </section>
+    <section class="gui-podcast-episodes">
+        <h2>Latest episodes</h2>
+        <ol class="gui-episode-list">
+        {% for e in data.episodes %}
+            <li>
+                <strong>Ep {{ e.episode_num }}: {{ e.title }}</strong>
+                <span class="gui-ep-meta">{{ e.duration_min }} min &middot; {{ e.published }}</span>
+                <p>{{ e.summary }}</p>
+            </li>
+        {% endfor %}
+        </ol>
+    </section>
+</article>
+{% endblock %}

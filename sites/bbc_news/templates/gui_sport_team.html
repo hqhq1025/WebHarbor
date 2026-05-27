@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block title %}{{ data.team_name }} - BBC Sport{% endblock %}
+{% block content %}
+<article class="gui-page gui-sport-team" data-gui-marker="gui_sport_team">
+    <header class="gui-hub-header" style="border-left: 6px solid {{ data.kit_color }};">
+        <h1>{{ data.team_name }}</h1>
+        <p class="gui-hub-subtitle">Sport: {{ data.sport_key }} | League position: {{ data.league_position }}</p>
+    </header>
+
+    <section class="gui-team-stats">
+        <dl class="gui-team-dl">
+            <dt>Founded</dt><dd>{{ data.founded }}</dd>
+            <dt>Country</dt><dd>{{ data.founded_country }}</dd>
+            <dt>Manager</dt><dd>{{ data.manager }}</dd>
+            <dt>Captain</dt><dd>{{ data.captain }}</dd>
+            <dt>Home venue</dt><dd>{{ data.venue }}</dd>
+            <dt>Capacity</dt><dd>{{ data.capacity }}</dd>
+            <dt>Squad size</dt><dd>{{ data.squad_size }}</dd>
+            <dt>Major trophies</dt><dd>{{ data.trophies_total }}</dd>
+            <dt>Recent form</dt><dd>{{ data.form }}</dd>
+        </dl>
+    </section>
+
+    <section class="gui-team-next">
+        <h2>Next fixture</h2>
+        <p>{{ data.next_fixture }}</p>
+    </section>
+</article>
+{% endblock %}

@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block title %}{{ data.index_name }} - BBC Business{% endblock %}
+{% block content %}
+<article class="gui-page gui-business-market" data-gui-marker="gui_business_market">
+    <header class="gui-hub-header">
+        <h1>{{ data.index_name }}</h1>
+        <p class="gui-hub-subtitle">{{ data.exchange }} | Currency: {{ data.currency }} | {{ data.ref_date }}</p>
+    </header>
+    <section class="gui-market-now">
+        <p class="gui-market-value">{{ data.current_value }}</p>
+        <p class="gui-market-change">{{ data.change_points }} pts ({{ data.change_pct }}%)</p>
+        <dl class="gui-team-dl">
+            <dt>Day range</dt><dd>{{ data.day_range_lo }} - {{ data.day_range_hi }}</dd>
+            <dt>52-week low</dt><dd>{{ data.year_lo }}</dd>
+            <dt>52-week high</dt><dd>{{ data.year_hi }}</dd>
+        </dl>
+    </section>
+    <section class="gui-market-history">
+        <h2>12-month history</h2>
+        <table class="gui-history-table">
+            <thead><tr><th>Month</th><th>Close</th></tr></thead>
+            <tbody>
+            {% for h in data.history %}
+                <tr><td>{{ h.month }}</td><td>{{ h.close }}</td></tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </section>
+    <section class="gui-market-movers">
+        <h2>Top movers</h2>
+        <ol>
+        {% for m in data.top_movers %}
+            <li>{{ m.ticker }} - {{ m.name }} - {{ m.change_pct }}%</li>
+        {% endfor %}
+        </ol>
+    </section>
+</article>
+{% endblock %}

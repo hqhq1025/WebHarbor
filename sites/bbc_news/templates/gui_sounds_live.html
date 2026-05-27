@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block title %}{{ data.station_name }} live - BBC Sounds{% endblock %}
+{% block content %}
+<article class="gui-page gui-sounds-live" data-gui-marker="gui_sounds_live">
+    <header class="gui-hub-header">
+        <h1>{{ data.station_name }} - Live</h1>
+        <p class="gui-hub-subtitle">{{ data.tagline }}</p>
+    </header>
+    <section class="gui-now-playing">
+        <h2>On air now: {{ data.now_show_title }}</h2>
+        <p>Presented by <strong>{{ data.now_dj }}</strong></p>
+        <p>Now playing: <em>{{ data.now_track_title }}</em> by {{ data.now_track_artist }}</p>
+        <p class="gui-meta">Listeners: {{ data.listener_count }} &middot; Stream {{ data.stream_quality_kbps }} kbps</p>
+    </section>
+    <section class="gui-coming-up">
+        <h2>Coming up</h2>
+        <ol>
+        {% for s in data.coming_up %}
+            <li>
+                <strong>{{ s.time }}</strong> {{ s.show }} <span class="gui-meta">({{ s.duration_min }} min)</span>
+            </li>
+        {% endfor %}
+        </ol>
+    </section>
+</article>
+{% endblock %}

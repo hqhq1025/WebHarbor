@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block title %}Rugby Union - BBC Sport{% endblock %}
+{% block content %}
+<article class="gui-page gui-sport-hub gui-sport-rugby-union" data-gui-marker="gui_sport_rugby_union_hub">
+    <header class="gui-hub-header">
+        <h1>BBC Sport - Rugby Union</h1>
+        <p class="gui-hub-subtitle">{{ data.league_label }} | snapshot {{ data.ref_date }}</p>
+    </header>
+    <nav class="gui-hub-tabs">
+        <a href="{{ url_for('gui_sport_standings', sport='rugby-union', league='premiership') }}">Premiership table</a>
+        <a href="{{ url_for('gui_sport_standings', sport='rugby-union', league='six-nations') }}">Six Nations</a>
+        <a href="{{ url_for('gui_sport_fixtures', sport='rugby-union') }}">Fixtures</a>
+        <a href="{{ url_for('gui_sport_results', sport='rugby-union') }}">Results</a>
+    </nav>
+    <section class="gui-hub-headlines">
+        <h2>Rugby Union headlines</h2>
+        <ol>
+        {% for h in data.headlines %}
+            <li><h3>{{ h.headline }}</h3><p>{{ h.summary }}</p><span class="gui-meta">{{ h.minutes_ago }} mins ago</span></li>
+        {% endfor %}
+        </ol>
+    </section>
+    <section class="gui-hub-next-fixture">
+        <h2>Next Premiership fixture</h2>
+        <p><strong>{{ data.next_fixture }}</strong> &middot; {{ data.next_kickoff }}</p>
+    </section>
+    <section class="gui-hub-top-scorer">
+        <h2>Top try scorer</h2>
+        <p><strong>{{ data.top_scorer }}</strong> - {{ data.top_scorer_count }} tries</p>
+    </section>
+    <section class="gui-hub-teams">
+        <h2>Gallagher Premiership clubs</h2>
+        <ul class="gui-team-grid">
+        {% for t in data.teams %}<li>{{ t }}</li>{% endfor %}
+        </ul>
+    </section>
+</article>
+{% endblock %}

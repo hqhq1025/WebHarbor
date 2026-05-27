@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block title %}Formula 1 - BBC Sport{% endblock %}
+{% block content %}
+<article class="gui-page gui-sport-hub gui-sport-formula1" data-gui-marker="gui_sport_formula1_hub">
+    <header class="gui-hub-header">
+        <h1>BBC Sport - Formula 1</h1>
+        <p class="gui-hub-subtitle">{{ data.league_label }} | snapshot {{ data.ref_date }}</p>
+    </header>
+    <nav class="gui-hub-tabs">
+        <a href="{{ url_for('gui_sport_standings', sport='formula1', league='drivers') }}">Driver standings</a>
+        <a href="{{ url_for('gui_sport_fixtures', sport='formula1') }}">Calendar</a>
+        <a href="{{ url_for('gui_sport_results', sport='formula1') }}">Race results</a>
+    </nav>
+    <section class="gui-hub-headlines">
+        <h2>F1 headlines</h2>
+        <ol>
+        {% for h in data.headlines %}
+            <li><h3>{{ h.headline }}</h3><p>{{ h.summary }}</p><span class="gui-meta">{{ h.minutes_ago }} mins ago</span></li>
+        {% endfor %}
+        </ol>
+    </section>
+    <section class="gui-hub-next-fixture">
+        <h2>Next Grand Prix</h2>
+        <p><strong>{{ data.next_fixture }}</strong> &middot; {{ data.next_kickoff }}</p>
+    </section>
+    <section class="gui-hub-top-scorer">
+        <h2>Championship leader</h2>
+        <p><strong>{{ data.top_scorer }}</strong> - {{ data.top_scorer_count * 18 }} pts</p>
+    </section>
+    <section class="gui-hub-teams">
+        <h2>Drivers</h2>
+        <ol class="gui-rank-list">
+        {% for d in data.teams %}<li>{{ d }}</li>{% endfor %}
+        </ol>
+    </section>
+</article>
+{% endblock %}

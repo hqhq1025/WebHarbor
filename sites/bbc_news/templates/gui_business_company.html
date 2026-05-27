@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block title %}{{ data.company_name }} ({{ data.ticker }}) - BBC Business{% endblock %}
+{% block content %}
+<article class="gui-page gui-business-company" data-gui-marker="gui_business_company">
+    <header class="gui-hub-header">
+        <h1>{{ data.company_name }} <small>({{ data.ticker }})</small></h1>
+        <p class="gui-hub-subtitle">{{ data.exchange }} | {{ data.industry }} | {{ data.ref_date }}</p>
+    </header>
+    <section class="gui-company-now">
+        <p class="gui-company-price">{{ data.current_price }} {{ data.currency }}</p>
+        <p class="gui-company-change">{{ data.change_points }} ({{ data.change_pct }}%)</p>
+        <dl class="gui-team-dl">
+            <dt>CEO</dt><dd>{{ data.ceo }}</dd>
+            <dt>Market cap</dt><dd>{{ data.market_cap_bn }} bn {{ data.currency }}</dd>
+            <dt>P/E ratio</dt><dd>{{ data.pe_ratio }}</dd>
+            <dt>Dividend yield</dt><dd>{{ data.dividend_yield }}%</dd>
+            <dt>52-week high</dt><dd>{{ data.year_high }}</dd>
+            <dt>52-week low</dt><dd>{{ data.year_low }}</dd>
+            <dt>Volume</dt><dd>{{ '%.1f'|format(data.volume_m) }} M shares</dd>
+        </dl>
+    </section>
+</article>
+{% endblock %}

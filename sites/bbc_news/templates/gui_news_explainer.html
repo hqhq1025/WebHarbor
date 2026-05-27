@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block title %}{{ data.explainer_title }} - BBC News explainer{% endblock %}
+{% block content %}
+<article class="gui-page gui-news-explainer" data-gui-marker="gui_news_explainer">
+    <header class="gui-hub-header">
+        <h1>{{ data.explainer_title }}</h1>
+        <p class="gui-hub-subtitle">By {{ data.author }} | {{ data.published }} | {{ data.reading_time_min }} min read</p>
+    </header>
+    <nav class="gui-explainer-nav" aria-label="Explainer sections">
+        <h2>Contents</h2>
+        <ol>
+        {% for s in data.sections %}
+            <li><a href="#{{ s.anchor }}">{{ s.title }}</a> <span class="gui-meta">({{ s.word_count }} words)</span></li>
+        {% endfor %}
+        </ol>
+    </nav>
+    <section class="gui-explainer-body">
+    {% for s in data.sections %}
+        <section id="{{ s.anchor }}">
+            <h2>{{ s.title }}</h2>
+            <p>This section ({{ s.word_count }} words) explains {{ s.title|lower }} in the context of {{ data.explainer_title }}.</p>
+        </section>
+    {% endfor %}
+    </section>
+    <section class="gui-explainer-sources">
+        <h2>Sources</h2>
+        <ol>
+        {% for src in data.sources %}<li>{{ src }}</li>{% endfor %}
+        </ol>
+    </section>
+</article>
+{% endblock %}

@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block title %}{{ data.programme_name }} - BBC Programmes{% endblock %}
+{% block content %}
+<article class="gui-page gui-programmes" data-gui-marker="gui_programmes">
+    <header class="gui-hub-header">
+        <h1>{{ data.programme_name }}</h1>
+        <p class="gui-hub-subtitle">Programme ID: {{ data.programme_id }} | {{ data.channel }} | {{ data.genre }}</p>
+    </header>
+    <section class="gui-programme-meta">
+        <dl class="gui-team-dl">
+            <dt>First broadcast</dt><dd>{{ data.first_year }}</dd>
+            <dt>Total series</dt><dd>{{ data.total_series }}</dd>
+            <dt>Total episodes</dt><dd>{{ data.total_episodes }}</dd>
+            <dt>Episode duration</dt><dd>{{ data.episode_duration_min }} min</dd>
+            <dt>Average viewers</dt><dd>{{ '%.1f'|format(data.average_viewers_m) }} million</dd>
+            <dt>Genre tag</dt><dd>{{ data.category_tag }}</dd>
+            <dt>Available on iPlayer</dt><dd>{% if data.available_on_iplayer %}Yes{% else %}No{% endif %}</dd>
+            <dt>Official site</dt><dd><a href="{{ data.official_site }}">{{ data.official_site }}</a></dd>
+        </dl>
+    </section>
+</article>
+{% endblock %}

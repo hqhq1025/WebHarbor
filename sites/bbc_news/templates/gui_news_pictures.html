@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block title %}{{ data.event_title }} in pictures - BBC News{% endblock %}
+{% block content %}
+<article class="gui-page gui-news-pictures" data-gui-marker="gui_news_pictures">
+    <header class="gui-hub-header">
+        <h1>In pictures: {{ data.event_title }}</h1>
+        <p class="gui-hub-subtitle">{{ data.event_location }} | published {{ data.published }} | {{ data.total_images }} photos</p>
+    </header>
+    <ol class="gui-gallery">
+    {% for img in data.images %}
+        <li data-image-id="{{ img.image_id }}">
+            <figure>
+                <div class="gui-img-placeholder">[Photo {{ loop.index }}]</div>
+                <figcaption>
+                    <p>{{ img.caption }}</p>
+                    <span class="gui-meta">Credit: {{ img.credit }} / Photographer: {{ img.photographer }}</span>
+                </figcaption>
+            </figure>
+        </li>
+    {% endfor %}
+    </ol>
+</article>
+{% endblock %}
