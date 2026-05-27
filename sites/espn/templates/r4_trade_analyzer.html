@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block title %}{{ league.name }} — Trade Analyzer{% endblock %}
+{% block content %}
+<div class="container">
+  <div class="page-header">
+    <a href="/r4/fantasy/league/{{ league.slug }}" class="back-link">← {{ league.name }}</a>
+    <h1>Trade Analyzer</h1>
+    <p class="subtitle">All proposed, accepted, and rejected trades —
+       click a trade for the full multi-player swap valuation.</p>
+  </div>
+
+  <section class="section-block">
+    <table class="trade-table">
+      <thead><tr>
+        <th>Offer</th><th>From</th><th>To</th><th>Status</th>
+        <th>Value A → B</th><th>Detail</th>
+      </tr></thead>
+      <tbody>
+      {% for tr in trades %}
+        <tr>
+          <td>#{{ tr.id }}</td>
+          <td>{{ tr.a_name }} ({{ tr.a_mgr }})</td>
+          <td>{{ tr.b_name }} ({{ tr.b_mgr }})</td>
+          <td><strong>{{ tr.status }}</strong></td>
+          <td>{{ '%.2f' % tr.value_a }} → {{ '%.2f' % tr.value_b }}</td>
+          <td><a href="/r4/fantasy/trade/{{ tr.slug }}">view swap</a></td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </section>
+</div>
+{% endblock %}

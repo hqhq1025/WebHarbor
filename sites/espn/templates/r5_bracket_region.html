@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% block title %}{{ bracket.name }} — {{ region }} region{% endblock %}
+{% block content %}
+<div class="container">
+  <div class="page-header">
+    <a href="/r5/bracket/{{ bracket.slug }}" class="back-link">← {{ bracket.name }}</a>
+    <h1>{{ region }} region</h1>
+  </div>
+
+  <section class="section-block">
+    <h2 class="section-heading">Seeds</h2>
+    <table class="seed-table">
+      <thead><tr><th>Seed</th><th>Team</th><th>Conference</th>
+          <th>Record</th><th>Coach</th></tr></thead>
+      <tbody>
+        {% for s in seeds %}
+        <tr>
+          <td>{{ s.seed_num }}</td>
+          <td><a href="/r5/seed/{{ s.slug }}">{{ s.team_name }}</a></td>
+          <td>{{ s.conference }}</td>
+          <td>{{ s.record }}</td>
+          <td>{{ s.coach }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </section>
+
+  <section class="section-block">
+    <h2 class="section-heading">Results — all rounds in this region</h2>
+    <ul class="bracket-matchup-list">
+      {% for m in matchups %}
+      <li>
+        <span class="round-tag">{{ m.round_name }}</span>
+        <a href="/r5/bracket/{{ bracket.slug }}/matchup/{{ m.id }}">
+          ({{ m.team_a_seed }}) {{ m.team_a_name }} {{ m.score_a }} —
+          ({{ m.team_b_seed }}) {{ m.team_b_name }} {{ m.score_b }}
+        </a>
+        <span class="winner">→ {{ m.winner_name }}</span>
+      </li>
+      {% endfor %}
+    </ul>
+  </section>
+</div>
+{% endblock %}

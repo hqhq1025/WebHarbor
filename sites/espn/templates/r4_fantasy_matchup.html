@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block title %}Matchup — {{ matchup.a_name }} vs {{ matchup.b_name }}{% endblock %}
+{% block content %}
+<div class="container">
+  <div class="page-header">
+    <a href="/r4/fantasy/league/{{ matchup.league_slug }}" class="back-link">← {{ matchup.league_name }}</a>
+    <h1>{{ matchup.a_name }} {{ '%.2f' % matchup.score_a }} —
+        {{ matchup.b_name }} {{ '%.2f' % matchup.score_b }}</h1>
+    <p class="subtitle">Week {{ matchup.week }} · projected {{ '%.1f' % matchup.projected_a }}
+       to {{ '%.1f' % matchup.projected_b }}</p>
+  </div>
+
+  <section class="section-block twin-cols">
+    <div class="twin-col">
+      <h2>{{ matchup.a_name }} ({{ matchup.a_mgr }})</h2>
+      <table class="lineup-table">
+        <thead><tr><th>Slot</th><th>Player</th><th>Opp</th><th>Pts</th></tr></thead>
+        <tbody>
+        {% for r in lineup_a %}
+          <tr><td>{{ r.slot }}</td><td>{{ r.player_name }}</td>
+              <td>{{ r.opponent }}</td><td>{{ '%.2f' % r.actual_points }}</td></tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    <div class="twin-col">
+      <h2>{{ matchup.b_name }} ({{ matchup.b_mgr }})</h2>
+      <table class="lineup-table">
+        <thead><tr><th>Slot</th><th>Player</th><th>Opp</th><th>Pts</th></tr></thead>
+        <tbody>
+        {% for r in lineup_b %}
+          <tr><td>{{ r.slot }}</td><td>{{ r.player_name }}</td>
+              <td>{{ r.opponent }}</td><td>{{ '%.2f' % r.actual_points }}</td></tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+</div>
+{% endblock %}

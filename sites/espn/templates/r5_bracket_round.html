@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block title %}{{ bracket.name }} — {{ round_name }}{% endblock %}
+{% block content %}
+<div class="container">
+  <div class="page-header">
+    <a href="/r5/bracket/{{ bracket.slug }}" class="back-link">← {{ bracket.name }}</a>
+    <h1>{{ round_name }}</h1>
+    <p class="subtitle">All {{ matchups | length }} matchups across regions.</p>
+  </div>
+
+  <section class="section-block">
+    <table class="round-table">
+      <thead><tr><th>Region</th><th>Matchup</th><th>Score</th><th>Winner</th>
+          <th>Leading scorer</th><th>Detail</th></tr></thead>
+      <tbody>
+      {% for m in matchups %}
+        <tr>
+          <td>{{ m.region }}</td>
+          <td>({{ m.team_a_seed }}) {{ m.team_a_name }} vs.
+              ({{ m.team_b_seed }}) {{ m.team_b_name }}</td>
+          <td>{{ m.score_a }}–{{ m.score_b }}</td>
+          <td><strong>{{ m.winner_name }}</strong></td>
+          <td>{{ m.leading_scorer }} ({{ m.leading_scorer_pts }})</td>
+          <td><a href="/r5/bracket/{{ bracket.slug }}/matchup/{{ m.id }}">view</a></td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </section>
+</div>
+{% endblock %}

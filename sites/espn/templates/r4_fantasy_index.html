@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block title %}Fantasy R4 — Lineup, Waiver, Trades{% endblock %}
+{% block content %}
+<div class="container">
+  <div class="page-header">
+    <h1>ESPN Fantasy — R4 Hub</h1>
+    <p class="subtitle">Lineup builder, waiver-wire window, and trade analyzer
+       across the NFL, NBA, and MLB leagues.</p>
+  </div>
+
+  {% for sp, label in [('nfl', 'Fantasy Football'),
+                       ('nba', 'Fantasy Basketball'),
+                       ('mlb', 'Fantasy Baseball')] %}
+    {% set lst = leagues_by_sport.get(sp, []) %}
+    {% if lst %}
+    <section class="section-block">
+      <h2 class="section-heading">{{ label }}</h2>
+      <ul class="league-list">
+        {% for lg in lst %}
+        <li class="league-row">
+          <a href="/r4/fantasy/league/{{ lg.slug }}"><strong>{{ lg.name }}</strong></a>
+          <span class="muted">— {{ lg.scoring_type }} · {{ lg.league_size }} teams
+            · Week {{ lg.current_week }} of the {{ lg.season }} season</span>
+        </li>
+        {% endfor %}
+      </ul>
+    </section>
+    {% endif %}
+  {% endfor %}
+</div>
+{% endblock %}

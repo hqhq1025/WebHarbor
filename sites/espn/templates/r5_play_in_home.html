@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block title %}NBA Play-In Tournament 2024{% endblock %}
+{% block content %}
+<div class="container">
+  <div class="page-header">
+    <a href="/r5/bracket" class="back-link">← Bracket Center</a>
+    <h1>NBA Play-In Tournament 2024</h1>
+    <p class="subtitle">Single-game elimination between the 7-10 seeds in
+       each conference — winner of 7v8 takes the 7-seed, loser plays the
+       9v10 winner for the 8-seed.</p>
+  </div>
+
+  {% for label, games in [('Eastern Conference', east),
+                          ('Western Conference', west)] %}
+  <section class="section-block">
+    <h2 class="section-heading">{{ label }}</h2>
+    <ul class="play-in-list">
+      {% for g in games %}
+      <li>
+        <a href="/r5/play-in/nba/game/{{ g.slug }}">
+          ({{ g.team_a_seed }}) {{ g.team_a_name }} {{ g.score_a }} —
+          ({{ g.team_b_seed }}) {{ g.team_b_name }} {{ g.score_b }}
+        </a>
+        <span class="winner">→ {{ g.winner_name }}</span>
+        <span class="muted"> · {{ g.matchup_type }}</span>
+      </li>
+      {% endfor %}
+    </ul>
+  </section>
+  {% endfor %}
+</div>
+{% endblock %}

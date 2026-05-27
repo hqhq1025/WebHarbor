@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block title %}{{ slot }} slot — {{ team.team_name }}{% endblock %}
+{% block content %}
+<div class="container">
+  <div class="page-header">
+    <a href="/r4/fantasy/lineup/{{ team.slug }}" class="back-link">← Back to lineup</a>
+    <h1>{{ slot }} slot — {{ team.team_name }}</h1>
+    <p class="subtitle">Week {{ league.current_week }} · {{ league.sport_slug | upper }} ·
+       Currently starting: <strong>{{ row.player_name }}</strong> ({{ row.nfl_team_abbr }} {{ row.opponent }})</p>
+  </div>
+
+  <section class="section-block">
+    <h2 class="section-heading">Current starter</h2>
+    <dl class="kv-grid">
+      <dt>Player</dt><dd>{{ row.player_name }}</dd>
+      <dt>Pro team</dt><dd>{{ row.player_team }}</dd>
+      <dt>Matchup</dt><dd>{{ row.opponent }}</dd>
+      <dt>Projected points</dt><dd>{{ '%.2f' % row.projected_points }}</dd>
+      <dt>Actual points (scored so far)</dt><dd>{{ '%.2f' % row.actual_points }}</dd>
+    </dl>
+  </section>
+
+  <section class="section-block">
+    <h2 class="section-heading">Other eligible players</h2>
+    <ul class="alt-list">
+    {% for p in alts %}
+      <li><a href="/player/{{ league.sport_slug }}/{{ p.slug }}">{{ p.name }}</a>
+          <span class="muted">— {{ p.position }}</span></li>
+    {% endfor %}
+    </ul>
+  </section>
+</div>
+{% endblock %}

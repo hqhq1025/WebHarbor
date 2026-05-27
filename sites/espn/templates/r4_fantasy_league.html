@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% block title %}{{ league.name }} — League Home{% endblock %}
+{% block content %}
+<div class="container">
+  <div class="page-header">
+    <a href="/r4/fantasy" class="back-link">← All Fantasy Leagues</a>
+    <h1>{{ league.name }}</h1>
+    <p class="subtitle">{{ league.sport_slug | upper }} · {{ league.scoring_type }}
+       · Week {{ league.current_week }} of the {{ league.season }} season</p>
+    <ul class="action-bar">
+      <li><a href="/r4/fantasy/waiver-window/{{ league.slug }}">Waiver Wire</a></li>
+      <li><a href="/r4/fantasy/trade-analyzer/{{ league.slug }}">Trade Analyzer</a></li>
+    </ul>
+  </div>
+
+  <section class="section-block">
+    <h2 class="section-heading">Standings</h2>
+    <table class="standings-table">
+      <thead><tr>
+        <th>Rank</th><th>Team</th><th>Manager</th>
+        <th>W</th><th>L</th><th>PF</th><th>PA</th><th>Moves</th>
+      </tr></thead>
+      <tbody>
+      {% for t in teams %}
+        <tr>
+          <td>{{ loop.index }}</td>
+          <td><a href="/r4/fantasy/lineup/{{ t.slug }}">{{ t.team_name }}</a></td>
+          <td>{{ t.manager_name }}</td>
+          <td>{{ t.wins }}</td>
+          <td>{{ t.losses }}</td>
+          <td>{{ '%.2f' % t.points_for }}</td>
+          <td>{{ '%.2f' % t.points_against }}</td>
+          <td>{{ t.moves_used }}</td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </section>
+
+  <section class="section-block">
+    <h2 class="section-heading">Week {{ league.current_week }} Matchups</h2>
+    <ul class="matchup-grid">
+    {% for m in matchups %}
+      <li class="matchup-card">
+        <a href="/r4/fantasy/matchup/{{ m.id }}">
+          {{ m.a_name }} {{ '%.2f' % m.score_a }}
+          vs. {{ m.b_name }} {{ '%.2f' % m.score_b }}
+          <span class="muted">(proj {{ '%.1f' % m.projected_a }} – {{ '%.1f' % m.projected_b }})</span>
+        </a>
+      </li>
+    {% endfor %}
+    </ul>
+  </section>
+</div>
+{% endblock %}

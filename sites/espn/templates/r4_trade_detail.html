@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block title %}Trade #{{ trade.id }}{% endblock %}
+{% block content %}
+<div class="container">
+  <div class="page-header">
+    <a href="/r4/fantasy/trade-analyzer/{{ trade.league_slug }}" class="back-link">← Trade Analyzer</a>
+    <h1>Trade #{{ trade.id }}</h1>
+    <p class="subtitle">{{ trade.league_name }} · proposed {{ trade.proposed_date }}
+       · status <strong>{{ trade.status }}</strong></p>
+  </div>
+
+  <section class="section-block">
+    <h2 class="section-heading">Swap summary</h2>
+    <div class="trade-swap">
+      <div class="trade-side">
+        <h3>{{ trade.a_name }} sends</h3>
+        <ul>
+        {% for p in players_a %}
+          <li>{{ p.name }} ({{ p.pos }})</li>
+        {% endfor %}
+        </ul>
+        <p>Total value out: <strong>{{ '%.2f' % trade.value_a }}</strong></p>
+      </div>
+      <div class="trade-arrow">⇄</div>
+      <div class="trade-side">
+        <h3>{{ trade.b_name }} sends</h3>
+        <ul>
+        {% for p in players_b %}
+          <li>{{ p.name }} ({{ p.pos }})</li>
+        {% endfor %}
+        </ul>
+        <p>Total value out: <strong>{{ '%.2f' % trade.value_b }}</strong></p>
+      </div>
+    </div>
+    <p class="trade-note">{{ trade.note }}</p>
+  </section>
+</div>
+{% endblock %}

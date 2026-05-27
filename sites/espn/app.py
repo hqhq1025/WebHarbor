@@ -3052,6 +3052,352 @@ def r3_sitemap_xml():
 # === R2-R3 backfill END ===
 
 
+# === R4 GUI Fantasy + R5 GUI Brackets BEGIN ─────────────────────────────────
+# Adds:
+#   R4: lineup builder / waiver-wire window / trade analyzer / matchup detail
+#       on top of new r4_fantasy_* tables (see _r4gui_extend.py).
+#   R5: NCAA Men's + Women's March Madness, NBA Play-In, NHL Playoffs brackets
+#       on top of new r5_* tables (see _r5gui_extend.py).
+# Tables are queried via raw SQL (db.session.execute) since they have no
+# SQLAlchemy model classes — the data is shipped through instance_seed/espn.db.
+from sqlalchemy import text as _r45_text
+
+
+def _r45_rows(sql, **params):
+    """Execute SQL and return list of dict rows (RowMapping)."""
+    return [dict(r) for r in db.session.execute(_r45_text(sql), params).mappings()]
+
+
+def _r45_row(sql, **params):
+    rs = _r45_rows(sql, **params)
+    return rs[0] if rs else None
+
+
+# ─── R4 Fantasy helpers ──────────────────────────────────────────────────────
+
+def _r4_get_league_or_404(league_slug):
+    lg = _r45_row(
+        "SELECT * FROM r4_fantasy_leagues WHERE slug=:s", s=league_slug)
+    if not lg:
+        abort(404)
+    return lg
+
+
+def _r4_get_team_or_404(team_slug):
+    tm = _r45_row(
+        "SELECT * FROM r4_fantasy_teams WHERE slug=:s", s=team_slug)
+    if not tm:
+        abort(404)
+    return tm
+
+
+@app.route('/r4/fantasy')
+@app.route('/r4/fantasy/')
+def r4_fantasy_index():
+    """Fantasy R4 hub: list public leagues across NFL / NBA / MLB."""
+    leagues = _r45_rows(
+        "SELECT * FROM r4_fantasy_leagues "
+        "ORDER BY sport_slug, name")
+    by_sport = {'nfl': [], 'nba': [], 'mlb': []}
+    for lg in leagues:
+        by_sport.setdefault(lg['sport_slug'], []).append(lg)
+    return render_template('r4_fantasy_index.html',
+                            leagues_by_sport=by_sport)
+
+
+@app.route('/r4/fantasy/league/<league_slug>')
+def r4_fantasy_league_home(league_slug):
+    """League home: standings, matchup grid for current week, my team card."""
+    lg = _r4_get_league_or_404(league_slug)
+    teams = _r45_rows(
+        "SELECT * FROM r4_fantasy_teams WHERE league_id=:lid "
+        "ORDER BY wins DESC, points_for DESC", lid=lg['id'])
+    matchups = _r45_rows(
+        "SELECT m.*, ta.team_name AS a_name, ta.slug AS a_slug, "
+        "tb.team_name AS b_name, tb.slug AS b_slug "
+        "FROM r4_fantasy_matchups m "
+        "JOIN r4_fantasy_teams ta ON ta.id=m.team_a_id "
+        "JOIN r4_fantasy_teams tb ON tb.id=m.team_b_id "
+        "WHERE m.league_id=:lid AND m.week=:wk ORDER BY m.id",
+        lid=lg['id'], wk=lg['current_week'])
+    return render_template('r4_fantasy_league.html',
+                            league=lg, teams=teams, matchups=matchups)
+
+
+@app.route('/r4/fantasy/lineup/<team_slug>')
+def r4_lineup_builder(team_slug):
+    """Lineup builder: starting lineup by position slot for a fantasy team."""
+    tm = _r4_get_team_or_404(team_slug)
+    lg = _r45_row(
+        "SELECT * FROM r4_fantasy_leagues WHERE id=:lid", lid=tm['league_id'])
+    lineup = _r45_rows(
+        "SELECT * FROM r4_fantasy_lineups WHERE team_id=:tid "
+        "AND week=:wk ORDER BY id", tid=tm['id'], wk=lg['current_week'])
+    proj_total = round(sum((r['projected_points'] or 0.0) for r in lineup), 2)
+    return render_template('r4_lineup_builder.html',
+                            team=tm, league=lg, lineup=lineup,
+                            proj_total=proj_total)
+
+
+@app.route('/r4/fantasy/lineup/<team_slug>/slot/<slot>')
+def r4_lineup_slot_detail(team_slug, slot):
+    """Click a slot on the lineup builder to see eligible players + matchup."""
+    tm = _r4_get_team_or_404(team_slug)
+    lg = _r45_row(
+        "SELECT * FROM r4_fantasy_leagues WHERE id=:lid", lid=tm['league_id'])
+    row = _r45_row(
+        "SELECT * FROM r4_fantasy_lineups WHERE team_id=:tid "
+        "AND week=:wk AND slot=:sl", tid=tm['id'], wk=lg['current_week'],
+        sl=slot.upper())
+    if not row:
+        abort(404)
+    pos_map = {'QB': ['QB'], 'RB1': ['RB'], 'RB2': ['RB'],
+               'WR1': ['WR'], 'WR2': ['WR'], 'TE': ['TE'],
+               'FLEX': ['RB', 'WR', 'TE'], 'DST': ['DST'], 'K': ['K'],
+               'PG': ['PG'], 'SG': ['SG'], 'SF': ['SF'], 'PF': ['PF'],
+               'C': ['C'], 'G': ['PG', 'SG'], 'F': ['SF', 'PF'],
+               'UTIL1': ['PG', 'SG', 'SF', 'PF', 'C'],
+               'UTIL2': ['PG', 'SG', 'SF', 'PF', 'C']}
+    positions = pos_map.get(slot.upper(), [slot.upper()])
+    placeholders = ','.join([f':p{i}' for i in range(len(positions))])
+    params = {f'p{i}': p for i, p in enumerate(positions)}
+    params['sp'] = lg['sport_slug']
+    alts = _r45_rows(
+        f"SELECT name, position, slug FROM players WHERE sport_slug=:sp "
+        f"AND position IN ({placeholders}) ORDER BY id LIMIT 8",
+        **params)
+    return render_template('r4_lineup_slot.html',
+                            team=tm, league=lg, slot=slot.upper(),
+                            row=row, alts=alts)
+
+
+@app.route('/r4/fantasy/waiver-window/<league_slug>')
+def r4_waiver_wire_window(league_slug):
+    """Waiver wire transaction window for a league."""
+    lg = _r4_get_league_or_404(league_slug)
+    claims = _r45_rows(
+        "SELECT c.*, t.team_name, t.manager_name, t.slug AS team_slug "
+        "FROM r4_fantasy_waiver_claims c "
+        "JOIN r4_fantasy_teams t ON t.id=c.team_id "
+        "WHERE c.league_id=:lid ORDER BY c.priority, c.id",
+        lid=lg['id'])
+    return render_template('r4_waiver_window.html',
+                            league=lg, claims=claims)
+
+
+@app.route('/r4/fantasy/waiver-claim/<claim_slug>')
+def r4_waiver_claim_detail(claim_slug):
+    """Drill into a single waiver claim — needed for disambiguation tasks."""
+    c = _r45_row(
+        "SELECT c.*, t.team_name, t.manager_name, t.slug AS team_slug, "
+        "l.slug AS league_slug, l.name AS league_name, l.sport_slug "
+        "FROM r4_fantasy_waiver_claims c "
+        "JOIN r4_fantasy_teams t ON t.id=c.team_id "
+        "JOIN r4_fantasy_leagues l ON l.id=c.league_id "
+        "WHERE c.slug=:s", s=claim_slug)
+    if not c:
+        abort(404)
+    return render_template('r4_waiver_claim.html', claim=c)
+
+
+@app.route('/r4/fantasy/trade-analyzer/<league_slug>')
+def r4_trade_analyzer(league_slug):
+    """List all current trade proposals in a league."""
+    lg = _r4_get_league_or_404(league_slug)
+    trades = _r45_rows(
+        "SELECT tr.*, ta.team_name AS a_name, ta.slug AS a_slug, "
+        "ta.manager_name AS a_mgr, "
+        "tb.team_name AS b_name, tb.slug AS b_slug, tb.manager_name AS b_mgr "
+        "FROM r4_fantasy_trades tr "
+        "JOIN r4_fantasy_teams ta ON ta.id=tr.team_a_id "
+        "JOIN r4_fantasy_teams tb ON tb.id=tr.team_b_id "
+        "WHERE tr.league_id=:lid ORDER BY tr.id", lid=lg['id'])
+    return render_template('r4_trade_analyzer.html',
+                            league=lg, trades=trades)
+
+
+@app.route('/r4/fantasy/trade/<trade_slug>')
+def r4_trade_detail(trade_slug):
+    """Single trade proposal — multi-player swap valuation."""
+    tr = _r45_row(
+        "SELECT tr.*, ta.team_name AS a_name, ta.slug AS a_slug, "
+        "ta.manager_name AS a_mgr, "
+        "tb.team_name AS b_name, tb.slug AS b_slug, tb.manager_name AS b_mgr, "
+        "l.slug AS league_slug, l.name AS league_name, l.sport_slug "
+        "FROM r4_fantasy_trades tr "
+        "JOIN r4_fantasy_teams ta ON ta.id=tr.team_a_id "
+        "JOIN r4_fantasy_teams tb ON tb.id=tr.team_b_id "
+        "JOIN r4_fantasy_leagues l ON l.id=tr.league_id "
+        "WHERE tr.slug=:s", s=trade_slug)
+    if not tr:
+        abort(404)
+    players_a = json.loads(tr['players_a_json'] or '[]')
+    players_b = json.loads(tr['players_b_json'] or '[]')
+    return render_template('r4_trade_detail.html',
+                            trade=tr, players_a=players_a,
+                            players_b=players_b)
+
+
+@app.route('/r4/fantasy/matchup/<int:matchup_id>')
+def r4_fantasy_matchup(matchup_id):
+    """Head-to-head matchup detail page."""
+    m = _r45_row(
+        "SELECT m.*, ta.team_name AS a_name, ta.slug AS a_slug, "
+        "ta.manager_name AS a_mgr, "
+        "tb.team_name AS b_name, tb.slug AS b_slug, tb.manager_name AS b_mgr, "
+        "l.slug AS league_slug, l.name AS league_name, l.sport_slug "
+        "FROM r4_fantasy_matchups m "
+        "JOIN r4_fantasy_teams ta ON ta.id=m.team_a_id "
+        "JOIN r4_fantasy_teams tb ON tb.id=m.team_b_id "
+        "JOIN r4_fantasy_leagues l ON l.id=m.league_id "
+        "WHERE m.id=:id", id=matchup_id)
+    if not m:
+        abort(404)
+    lineup_a = _r45_rows(
+        "SELECT * FROM r4_fantasy_lineups WHERE team_id=:t AND week=:w "
+        "ORDER BY id", t=m['team_a_id'], w=m['week'])
+    lineup_b = _r45_rows(
+        "SELECT * FROM r4_fantasy_lineups WHERE team_id=:t AND week=:w "
+        "ORDER BY id", t=m['team_b_id'], w=m['week'])
+    return render_template('r4_fantasy_matchup.html',
+                            matchup=m, lineup_a=lineup_a,
+                            lineup_b=lineup_b)
+
+
+# ─── R5 Brackets ─────────────────────────────────────────────────────────────
+
+@app.route('/r5/bracket')
+@app.route('/r5/bracket/')
+def r5_bracket_index():
+    """List all brackets (men's, women's, NBA play-in, NHL playoffs)."""
+    brackets = _r45_rows(
+        "SELECT * FROM r5_brackets ORDER BY sport_slug, year DESC")
+    return render_template('r5_bracket_index.html', brackets=brackets)
+
+
+@app.route('/r5/bracket/<slug>')
+def r5_bracket_home(slug):
+    """Full bracket view — all regions, all rounds."""
+    b = _r45_row("SELECT * FROM r5_brackets WHERE slug=:s", s=slug)
+    if not b:
+        abort(404)
+    seeds = _r45_rows(
+        "SELECT * FROM r5_bracket_seeds WHERE bracket_id=:bid "
+        "ORDER BY region, seed_num", bid=b['id'])
+    matchups = _r45_rows(
+        "SELECT * FROM r5_bracket_matchups WHERE bracket_id=:bid "
+        "ORDER BY round_num, region, slot", bid=b['id'])
+    regions_set = sorted({s['region'] for s in seeds})
+    return render_template('r5_bracket_home.html',
+                            bracket=b, seeds=seeds, matchups=matchups,
+                            regions=regions_set)
+
+
+@app.route('/r5/bracket/<slug>/region/<region>')
+def r5_bracket_region(slug, region):
+    """One region of a bracket — 16 seeds + 4 rounds of games."""
+    b = _r45_row("SELECT * FROM r5_brackets WHERE slug=:s", s=slug)
+    if not b:
+        abort(404)
+    seeds = _r45_rows(
+        "SELECT * FROM r5_bracket_seeds WHERE bracket_id=:bid AND region=:r "
+        "ORDER BY seed_num", bid=b['id'], r=region)
+    matchups = _r45_rows(
+        "SELECT * FROM r5_bracket_matchups WHERE bracket_id=:bid AND region=:r "
+        "ORDER BY round_num, slot", bid=b['id'], r=region)
+    return render_template('r5_bracket_region.html',
+                            bracket=b, region=region, seeds=seeds,
+                            matchups=matchups)
+
+
+@app.route('/r5/bracket/<slug>/round/<int:round_num>')
+def r5_bracket_round(slug, round_num):
+    """All matchups in a single round across regions."""
+    b = _r45_row("SELECT * FROM r5_brackets WHERE slug=:s", s=slug)
+    if not b:
+        abort(404)
+    matchups = _r45_rows(
+        "SELECT * FROM r5_bracket_matchups WHERE bracket_id=:bid "
+        "AND round_num=:n ORDER BY region, slot", bid=b['id'], n=round_num)
+    if not matchups:
+        abort(404)
+    return render_template('r5_bracket_round.html',
+                            bracket=b, round_num=round_num,
+                            round_name=matchups[0]['round_name'],
+                            matchups=matchups)
+
+
+@app.route('/r5/bracket/<slug>/matchup/<int:matchup_id>')
+def r5_bracket_matchup_detail(slug, matchup_id):
+    """Single bracket matchup — score, leading scorer, etc."""
+    b = _r45_row("SELECT * FROM r5_brackets WHERE slug=:s", s=slug)
+    if not b:
+        abort(404)
+    m = _r45_row(
+        "SELECT * FROM r5_bracket_matchups WHERE id=:id AND bracket_id=:bid",
+        id=matchup_id, bid=b['id'])
+    if not m:
+        abort(404)
+    return render_template('r5_bracket_matchup.html',
+                            bracket=b, matchup=m)
+
+
+@app.route('/r5/seed/<slug>')
+def r5_bracket_seed_detail(slug):
+    """Drill into one seeded team — record, coach, region, results so far."""
+    s = _r45_row("SELECT * FROM r5_bracket_seeds WHERE slug=:s", s=slug)
+    if not s:
+        abort(404)
+    b = _r45_row("SELECT * FROM r5_brackets WHERE id=:i", i=s['bracket_id'])
+    games = _r45_rows(
+        "SELECT * FROM r5_bracket_matchups WHERE bracket_id=:bid "
+        "AND (team_a_name=:n OR team_b_name=:n) ORDER BY round_num",
+        bid=s['bracket_id'], n=s['team_name'])
+    return render_template('r5_bracket_seed.html',
+                            seed=s, bracket=b, games=games)
+
+
+@app.route('/r5/play-in/nba')
+@app.route('/r5/play-in/nba/')
+def r5_play_in_home():
+    """NBA Play-In Tournament home: East & West games."""
+    games = _r45_rows(
+        "SELECT * FROM r5_play_in_games ORDER BY conference, id")
+    east = [g for g in games if g['conference'] == 'EAST']
+    west = [g for g in games if g['conference'] == 'WEST']
+    return render_template('r5_play_in_home.html', east=east, west=west)
+
+
+@app.route('/r5/play-in/nba/game/<slug>')
+def r5_play_in_game_detail(slug):
+    g = _r45_row("SELECT * FROM r5_play_in_games WHERE slug=:s", s=slug)
+    if not g:
+        abort(404)
+    return render_template('r5_play_in_game.html', game=g)
+
+
+@app.route('/r5/playoffs/nhl')
+@app.route('/r5/playoffs/nhl/')
+def r5_nhl_playoffs_home():
+    """NHL Stanley Cup Playoffs home: East & West conference brackets."""
+    series = _r45_rows(
+        "SELECT * FROM r5_nhl_series ORDER BY round_num, conference, id")
+    east = [s for s in series if s['conference'] == 'EAST']
+    west = [s for s in series if s['conference'] == 'WEST']
+    return render_template('r5_nhl_playoffs.html', east=east, west=west)
+
+
+@app.route('/r5/playoffs/nhl/series/<slug>')
+def r5_nhl_series_detail(slug):
+    s = _r45_row("SELECT * FROM r5_nhl_series WHERE slug=:s", s=slug)
+    if not s:
+        abort(404)
+    return render_template('r5_nhl_series.html', series=s)
+
+
+# === R4 GUI Fantasy + R5 GUI Brackets END ───────────────────────────────────
+
+
 if __name__ == '__main__':
     with app.app_context():
         db.create_all()

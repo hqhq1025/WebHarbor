@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block title %}Bracket Center{% endblock %}
+{% block content %}
+<div class="container">
+  <div class="page-header">
+    <h1>ESPN Bracket Center</h1>
+    <p class="subtitle">March Madness brackets, NBA play-in tournament, and
+       the Stanley Cup Playoffs — pick a tournament to view the live bracket.</p>
+  </div>
+
+  <section class="section-block">
+    <ul class="bracket-list">
+      {% for b in brackets %}
+      <li class="bracket-card">
+        <a href="/r5/bracket/{{ b.slug }}"><strong>{{ b.name }}</strong></a>
+        <span class="muted"> — {{ b.year }} · {{ b.tv_network }}</span>
+        <p>{{ b.description }}</p>
+      </li>
+      {% endfor %}
+      <li class="bracket-card">
+        <a href="/r5/play-in/nba"><strong>NBA Play-In Tournament 2024</strong></a>
+        <span class="muted"> — Single-game elimination, 7-8 / 9-10 seeds.</span>
+      </li>
+      <li class="bracket-card">
+        <a href="/r5/playoffs/nhl"><strong>NHL Stanley Cup Playoffs 2024</strong></a>
+        <span class="muted"> — Best-of-seven East / West bracket.</span>
+      </li>
+    </ul>
+  </section>
+</div>
+{% endblock %}

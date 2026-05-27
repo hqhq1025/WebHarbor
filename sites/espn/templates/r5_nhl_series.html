@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block title %}NHL series — {{ series.team_a_name }} vs {{ series.team_b_name }}{% endblock %}
+{% block content %}
+<div class="container">
+  <div class="page-header">
+    <a href="/r5/playoffs/nhl" class="back-link">← NHL Stanley Cup Playoffs</a>
+    <h1>{{ series.team_a_name }} vs {{ series.team_b_name }}</h1>
+    <p class="subtitle">{{ series.conference }} · {{ series.round_name }} ·
+       Starts {{ series.starts_on }}</p>
+  </div>
+
+  <section class="section-block">
+    <dl class="kv-grid">
+      <dt>Series result</dt><dd>{{ series.wins_a }} – {{ series.wins_b }}</dd>
+      <dt>Winner</dt><dd><strong>{{ series.winner_name }}</strong></dd>
+      <dt>Seeds</dt><dd>({{ series.team_a_seed }}) vs ({{ series.team_b_seed }})</dd>
+      <dt>Round</dt><dd>{{ series.round_name }} (round {{ series.round_num }})</dd>
+      <dt>Conference</dt><dd>{{ series.conference }}</dd>
+    </dl>
+  </section>
+</div>
+{% endblock %}

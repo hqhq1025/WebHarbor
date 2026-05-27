@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block title %}{{ team.team_name }} — Lineup Builder{% endblock %}
+{% block content %}
+<div class="container">
+  <div class="page-header">
+    <a href="/r4/fantasy/league/{{ league.slug }}" class="back-link">← {{ league.name }}</a>
+    <h1>{{ team.team_name }}</h1>
+    <p class="subtitle">Manager: {{ team.manager_name }} ·
+       Record: {{ team.wins }}-{{ team.losses }} ·
+       Points for: {{ '%.2f' % team.points_for }}</p>
+    <p>Week {{ league.current_week }} starting lineup ({{ league.sport_slug | upper }}).
+       Projected total: <strong>{{ proj_total }}</strong> points.</p>
+  </div>
+
+  <section class="section-block">
+    <h2 class="section-heading">Starting Lineup — Click a slot to swap</h2>
+    <table class="lineup-table">
+      <thead><tr>
+        <th>Slot</th><th>Player</th><th>Team</th><th>Opp</th>
+        <th>Projected</th><th>Actual</th>
+      </tr></thead>
+      <tbody>
+      {% for r in lineup %}
+        <tr>
+          <td><a href="/r4/fantasy/lineup/{{ team.slug }}/slot/{{ r.slot }}">{{ r.slot }}</a></td>
+          <td>{{ r.player_name }}</td>
+          <td>{{ r.nfl_team_abbr }}</td>
+          <td>{{ r.opponent }}</td>
+          <td>{{ '%.2f' % r.projected_points }}</td>
+          <td>{{ '%.2f' % r.actual_points }}</td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </section>
+</div>
+{% endblock %}

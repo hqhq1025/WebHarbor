@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block title %}Waiver claim — {{ claim.add_player_name }}{% endblock %}
+{% block content %}
+<div class="container">
+  <div class="page-header">
+    <a href="/r4/fantasy/waiver-window/{{ claim.league_slug }}" class="back-link">← Waiver window</a>
+    <h1>Waiver claim — {{ claim.add_player_name }}</h1>
+    <p class="subtitle">{{ claim.league_name }} · {{ claim.sport_slug | upper }}</p>
+  </div>
+
+  <section class="section-block">
+    <dl class="kv-grid">
+      <dt>Submitted by</dt><dd>{{ claim.manager_name }} ({{ claim.team_name }})</dd>
+      <dt>Add</dt><dd>{{ claim.add_player_name }} — {{ claim.add_player_pos }}</dd>
+      <dt>Drop</dt><dd>{{ claim.drop_player_name }} — {{ claim.drop_player_pos }}</dd>
+      <dt>Bid amount</dt><dd>${{ claim.bid_amount }}</dd>
+      <dt>Waiver priority</dt><dd>{{ claim.priority }}</dd>
+      <dt>Status</dt><dd><strong>{{ claim.status }}</strong></dd>
+      <dt>Process date</dt><dd>{{ claim.process_date }}</dd>
+    </dl>
+  </section>
+</div>
+{% endblock %}

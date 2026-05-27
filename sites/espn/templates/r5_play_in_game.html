@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}Play-In: {{ game.team_a_name }} vs {{ game.team_b_name }}{% endblock %}
+{% block content %}
+<div class="container">
+  <div class="page-header">
+    <a href="/r5/play-in/nba" class="back-link">← NBA Play-In Tournament</a>
+    <h1>({{ game.team_a_seed }}) {{ game.team_a_name }}
+        {{ game.score_a }} —
+        ({{ game.team_b_seed }}) {{ game.team_b_name }}
+        {{ game.score_b }}</h1>
+    <p class="subtitle">{{ game.conference }} · {{ game.matchup_type }} ·
+       {{ game.game_date }} · {{ game.venue }}</p>
+  </div>
+
+  <section class="section-block">
+    <dl class="kv-grid">
+      <dt>Winner</dt><dd><strong>{{ game.winner_name }}</strong></dd>
+      <dt>Leading scorer</dt><dd>{{ game.leading_scorer }}
+          ({{ game.leading_scorer_pts }} points)</dd>
+      <dt>Matchup type</dt><dd>{{ game.matchup_type }}</dd>
+      <dt>Conference</dt><dd>{{ game.conference }}</dd>
+      <dt>Date</dt><dd>{{ game.game_date }}</dd>
+      <dt>Venue</dt><dd>{{ game.venue }}</dd>
+    </dl>
+  </section>
+</div>
+{% endblock %}

@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block title %}{{ league.name }} — Waiver Wire Window{% endblock %}
+{% block content %}
+<div class="container">
+  <div class="page-header">
+    <a href="/r4/fantasy/league/{{ league.slug }}" class="back-link">← {{ league.name }}</a>
+    <h1>Waiver Wire Window</h1>
+    <p class="subtitle">All pending, awarded, and failed waiver claims for
+       this league's current transaction window.</p>
+  </div>
+
+  <section class="section-block">
+    <table class="waiver-table">
+      <thead><tr>
+        <th>Pri</th><th>Team</th><th>Manager</th><th>Add</th><th>Drop</th>
+        <th>Bid</th><th>Status</th><th>Detail</th>
+      </tr></thead>
+      <tbody>
+      {% for c in claims %}
+        <tr class="status-{{ c.status }}">
+          <td>{{ c.priority }}</td>
+          <td><a href="/r4/fantasy/lineup/{{ c.team_slug }}">{{ c.team_name }}</a></td>
+          <td>{{ c.manager_name }}</td>
+          <td>{{ c.add_player_name }} ({{ c.add_player_pos }})</td>
+          <td>{{ c.drop_player_name }} ({{ c.drop_player_pos }})</td>
+          <td>${{ c.bid_amount }}</td>
+          <td>{{ c.status }}</td>
+          <td><a href="/r4/fantasy/waiver-claim/{{ c.slug }}">view</a></td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </section>
+</div>
+{% endblock %}

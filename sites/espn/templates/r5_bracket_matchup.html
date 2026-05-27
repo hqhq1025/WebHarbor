@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block title %}{{ matchup.team_a_name }} vs {{ matchup.team_b_name }}{% endblock %}
+{% block content %}
+<div class="container">
+  <div class="page-header">
+    <a href="/r5/bracket/{{ bracket.slug }}/round/{{ matchup.round_num }}" class="back-link">← {{ matchup.round_name }}</a>
+    <h1>({{ matchup.team_a_seed }}) {{ matchup.team_a_name }}
+        {{ matchup.score_a }} —
+        ({{ matchup.team_b_seed }}) {{ matchup.team_b_name }}
+        {{ matchup.score_b }}</h1>
+    <p class="subtitle">{{ bracket.name }} · {{ matchup.region }} ·
+       {{ matchup.round_name }} · {{ matchup.game_date }} ·
+       {{ matchup.venue }}</p>
+  </div>
+
+  <section class="section-block">
+    <dl class="kv-grid">
+      <dt>Winner</dt><dd><strong>{{ matchup.winner_name }}</strong></dd>
+      <dt>Leading scorer</dt><dd>{{ matchup.leading_scorer }}
+          ({{ matchup.leading_scorer_pts }} points)</dd>
+      <dt>Region</dt><dd>{{ matchup.region }}</dd>
+      <dt>Round</dt><dd>{{ matchup.round_name }} (round {{ matchup.round_num }})</dd>
+      <dt>Date</dt><dd>{{ matchup.game_date }}</dd>
+      <dt>Venue</dt><dd>{{ matchup.venue }}</dd>
+    </dl>
+  </section>
+</div>
+{% endblock %}
