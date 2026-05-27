@@ -1476,3 +1476,96 @@ Template: `<img src="/static-gen/avatar/{{ author.slug }}.svg">`. No disk footpr
 - **Pattern B (route-generated)**: when you have 10k+ entities and don't want 10k SVG files. Lower disk footprint. Slightly higher CPU per request.
 
 Both achieve >40% image utilization in templates without needing real photos.
+
+## 41. R8 / "advanced UX" 键盘 hotkey + Cmd+K palette 灾难 — 死盖在内容上挡点击
+
+**症状**：用户打开任何 page，pressing Cmd+K 或者 `?` （或者意外 keypress）会把一个 fullscreen modal 罩在整个 viewport 上。多重 modal 还会叠 z-index 一起盖。modal 外面的内容**全部不可点**。点 modal 外的暗背景理论上能关 但不一定 wire 对。
+
+视觉上：
+- 上方：`<input placeholder="Jump to model, dataset, space, or page…">` 形如 Cmd+K command palette
+- 下方：`<dialog>Keyboard shortcuts: / ? j k g then m ...</dialog>`
+- 两者背景 `rgba(15,23,42,.55)`、`z-index:9998-9999`、`position:fixed;inset:0`
+
+来源：早期某轮（如 R8 "advanced UX"）的 deepen prompt 让 subagent 加了 "Cmd+K command palette + j/k card nav + g-chord navigation" 之类，violation of `feedback_gui_only_no_keyboard.md`：
+
+> 动作空间限 click/type/submit/select/hover/scroll/back，禁止 Cmd+K / j+k / g+s / ? / / 等键盘 hotkey
+
+R8 round 在 2026-05-26 之前加的，那时 GUI-only feedback 还没立——所以混进了 14 个 vanilla 站。
+
+### 怎么发现
+
+```bash
+# 1. 扫所有 R8 markup 变体
+for s in sites/*/; do
+  sn=$(basename "$s")
+  hits=$(grep -rE 'r8-(cmdk|help|command-palette|modal|overlay)|R8:.*command palette|Keyboard shortcuts|keyboard-shortcuts|⌘K|Cmd\+K|/api/command-palette' "$s/templates" "$s/static" 2>/dev/null | wc -l)
+  [ "$hits" -gt 0 ] && echo "$sn: $hits hits"
+done
+
+# 2. 扫 JS keydown listener 处理 Cmd+K / ? / j / k / g
+grep -rnE "metaKey.*'k'|key === '\\?'|gPending|navCursor|openCmdK|toggleHelp|loadPalette" sites/*/static/js/*.js 2>/dev/null
+```
+
+Markup id 变体观察到的：`r8-cmdk` / `r8-help` / `r8-command-palette` / `r8-help-modal` / `r8-help-overlay` / `r8-help-list` / `r8HelpModal`、CSS class `.r8-modal` / `.r8-overlay` / `.r8-command-palette__panel`。每站都不同。
+
+### 怎么根治（4 类清理）
+
+**Category 1: 模板 markup**
+
+`templates/base.html` (或对应 layout) 中：
+- 删 `<div id="r8-*">...</div>` 整块
+- 删 `<style>` 中 `.r8-*` 块
+- 删 `{# R8: ... #}` 注释
+
+**Category 2: JS keydown listener**
+
+`static/js/*.js` 中删 IIFE 块（特征：`document.addEventListener('keydown', ...)` 处理 `metaKey + k` / `e.key === '?'` / `gPending` / `navCursor`）。整段 R8 listener IIFE 删干净 — Cmd+K 不开 modal、`?` 不开 help、`j/k/g+m` 不导航。
+
+**Category 3: Route + handler**
+
+`app.py` 中删：
+- `/api/command-palette` route + handler（返回 search 结果给 palette 用的，无 modal 就不需要）
+- `/api/keyboard-shortcuts` / `/api/shortcuts` 类似的 — 删
+- 任何 `MARKETING_PAGES` / `PALETTE_ITEMS` in-memory dict 给 palette 喂数据的 — 删
+
+**Category 4: site_specs/<slug>.yaml**
+
+- `modals.r8_help_modal` / `modals.command_palette_modal` / `modals.cmdk_modal` 条目删
+- 任何 `elements[].transition = open_modal` 指向上述 modal 的 — 改成 `page_navigate` 或删 element
+- `atomic_skills` 中以"按 Cmd+K"/"按 ?"开头的 — 删
+- `notes` 备注键盘 hotkey 的 — 删
+
+### Docker hot-reload (不用重 build image)
+
+```bash
+for slug in <changed-sites>; do
+  docker cp sites/$slug/templates wh-r10:/opt/WebSyn/$slug/
+  docker cp sites/$slug/static wh-r10:/opt/WebSyn/$slug/ 2>/dev/null || true
+  docker cp sites/$slug/app.py wh-r10:/opt/WebSyn/$slug/
+done
+docker restart wh-r10   # 重启所有 site_runner.py supervisor
+```
+
+### Verify
+
+```python
+import requests
+r = requests.get('http://localhost:43010/')
+assert 'r8-cmdk' not in r.text, "R8 cmdk modal still present!"
+assert 'Cmd+K' not in r.text or 'Keyboard shortcuts' not in r.text
+```
+
+### 防止再发生（防止后续 deepen subagent 重新引入）
+
+新派 deepen subagent 时 prompt 里加一条 **明确禁令**：
+
+```
+❌ 禁止加：keyboard shortcuts modal / command palette / Cmd+K hotkey / 
+   j-k card navigation / g-chord navigation / "/" search focus hotkey /
+   "?" help dialog / 任何 keydown listener
+✅ 允许的交互：click / hover / form submit / scroll / browser back
+```
+
+每 deepen subagent 完成后跑上面 detection grep 复查。
+
+**真案例（2026-05-27）**：14/15 vanilla 站受影响。allrecipes / apple / cambridge_dictionary / espn / github / huggingface / wolfram_alpha 几乎所有 vanilla 都中招。bbc_news / amazon / arxiv / booking / coursera / google_flights / google_map / google_search 在 templates/base.html 里没显式 markup 但可能在 JS listener / inline css 里有残留 — 需要 4 类全部 grep 确认。一次清掉，docker hot-reload，commit per-site。

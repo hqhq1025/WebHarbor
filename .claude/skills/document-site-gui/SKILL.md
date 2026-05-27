@@ -182,12 +182,6 @@ ls ~/repos/WebHarbor/sites/<slug>/templates/*.html | wc -l
    - mermaid 图节点用 `中文名(状态)` 格式，边写中文 GUI 动作
    - 原子技能两层至少写出 30+ / 20+，组合 flow 至少 5-10 条
    - 全程中文，专有名（endpoint、CSS class、Model 名、按钮标签）保留英文
-   - ⚠️ **强制 incremental Write/Edit 模式**：成品 MD 50-130 KB / YAML 100-200 KB（远超单次 Write 32k output token 上限）。**不要尝试一次性写完** — 单 agent message 撑爆会输出 "我已经准备好了" 但实际啥也没写。正确做法：
-     1. 第 1 次 `Write`：frontmatter + §1 元信息 + §2 page map skeleton（~5KB）
-     2. 重复 `Edit` 追加：每次添 1-3 个 `### 3.x` 页面段（每段 ~3-5KB × 30+ 页 = 主体 100KB）
-     3. 最后几次 `Edit`：§4 mermaid map + §5 原子技能表 + §6 备注
-     4. YAML 同理：初始 Write 写 header + pages skeleton，再 Edit 把 nodes / edges / atomic_skills 灌进去
-   - 把 token budget 花在 Write/Edit tool call 上，不要花在文字回复里。报告控制在 200 词内。
 
 4. **对比 `archive_v1/<slug>.md`**：找出 v1 没有而新版新增的 page / 按钮 / 子模块，在备注里列清单。
 
@@ -328,3 +322,39 @@ v2 风格（GUI 视角 + 状态）：
 - **byte-identical reset**：写文档时不要建议改动会破坏这个不变量的东西（如不要写"建议加 view_count 不每次 +1"）。
 - **键盘快捷键不进数据**：即使源码里有 Cmd+K / j+k 实现，也只在 §6 备注里提一笔"附带功能，不纳入原子技能"。GUI-only 是硬约束，见 [[feedback-gui-only-no-keyboard]]。
 - **状态枚举不要爆炸**：每个 page 列出本质上不同的状态即可（4-8 个），不要把 12 个 filter checkbox 的 2^12 组合都列。filter 组合在原子技能里用 "apply_filter(name=X)" 这种参数化技能表达。
+
+---
+
+## 反向扫描：找历史轮残留的键盘 hotkey + 删 (added 2026-05-27)
+
+按 [[feedback-gui-only-no-keyboard]] 规则，所有键盘 hotkey / Cmd+K palette / `?` shortcuts modal **不进 atomic_skills**。但**早期 round** (e.g. R8 "advanced UX") 在 GUI-only 规则立之前可能已经加了这些。document-site-gui 不仅是文档化，还要顺便**扫描清除残留**。
+
+### 扫描清单
+
+文档化任一 site 前先跑：
+
+```bash
+# 1. 模板 markup
+grep -rnE 'r[0-9]+-cmdk|r[0-9]+-help|command-palette|Cmd\+K|⌘K|Keyboard shortcuts|keyboard-shortcuts' sites/<slug>/templates/
+
+# 2. JS listener
+grep -rnE "metaKey.*'k'|key === '\\?'|gPending|navCursor|openCmdK|toggleHelp" sites/<slug>/static/
+
+# 3. Route
+grep -nE "/api/command-palette|/api/keyboard-shortcuts" sites/<slug>/app.py
+```
+
+任一不为空 → 该 site **有残留**，需走根治流程（见 `harden-env/gotchas.md` §41 完整 4-category 清理 + docker hot-reload + verify）。
+
+### 文档化时跳过这些 surface
+
+在写 `site_docs/<slug>.md` + `site_specs/<slug>.yaml` 之前确认 R8 modals 已经清除。如果残留还在，**不要把它写进 yaml.modals** —— 反而是触发 §41 清理流程优先。
+
+如果残留确实在但暂时无法清（比如 PR 进行中），在 §6 备注里加一条：
+
+```
+- 已知 R8 残留：<id list> — 即将走 harden-env §41 清理；目前 modal 仅键盘可触发，
+  yaml 不收录为 atomic_skill。
+```
+
+不要把它当作正常的 modal surface 收进 yaml，避免误导后续 SFT / 评测以为这是合法 GUI 交互。
