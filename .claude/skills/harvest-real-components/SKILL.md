@@ -7,6 +7,17 @@ description: "Phase 0 (pre-clone): harvest real HTML/CSS/screenshot fragments fr
 
 把要复刻的真站每个关键页面用真 Chromium 打开，拉回 HTML 片段 + 截图 + 元数据。**写 Flask mirror 之前就做**，让后续 clone/design/verify 阶段都有"真站长这样"的视觉与结构参考。
 
+## 复刻一个站需要 4 维度数据（v3.1 框架，2026-05）
+
+| Pillar | 内容 | harvest.py 产出 |
+|---|---|---|
+| **1. 样式** | HTML + CSS + JS + 视觉组件 | `full.html` + section/card fragments + `full.png` + `assets/{css_*,js_*,favicon,manifest.json}` |
+| **2. 文字** | 结构化数据 + 干净 body | `structured.json` (JSON-LD + state blobs + og:* meta) + `article.json` (trafilatura) |
+| **3. 图像** | 真图 URL + 图标 + brand | `_image_urls.jsonl` (img/srcset/css-bg) + `assets/favicon` + `assets/manifest.json` (PWA icons) |
+| **4. 跳转 + 按钮** | 真站 link graph + button catalog | `_nav_graph.json` (nodes+edges with anchor text) + `_buttons.jsonl` (text+onclick+data-*) |
+
+每跑一站 = 4 维度全捕获。下游 clone-website / design-tasks / site_specs.yaml / scrape-real-images 直接读这些产物。
+
 ## 何时使用
 
 - **Phase 0 — 任何新 P1+ site 复刻之前必做**
@@ -65,20 +76,21 @@ v2 自动检测的失败状态（写入 metadata.json）：
 
 **v2.1 关键修复**（2026-05 R2 phys_org 案例后）：`detect_failure` 不再 short-circuit。**bot_block 检测优先于 status**，所以 Akamai/CF 的 403 + "Checking your connection" body 会正确标 bot_block（之前会被错标成 not_found）。bot_block 触发 Exa fallback hint；not_found 不触发（真 404 没必要走 Exa）。
 
-## 配套工具（v3 stack，2026-05）
+## 配套工具（v3.1 stack，2026-05）
 
-`~/webvoyager-analysis/real_components/` 下完整工具集：
+`~/webvoyager-analysis/real_components/` 下完整工具集，每个对应 4 维度的某面：
 
-| 工具 | 作用 | 何时用 |
+| 工具 | 维度 | 作用 |
 |---|---|---|
-| `harvest.py` | 单 URL Playwright 抓 + bot 检测 + 结构化抽取 + Wayback 兜底 | 起步爬一个 URL |
-| `harvest_spider.py` | BFS 多页爬 + per-host fail-fast + SQLite checkpoint | 想深扒一站多页 |
-| `extract_image_urls.py` | 从 snapshots 抽 `<img src>` 入 `_image_urls.jsonl` | harvest 完后桥到 scrape-real-images |
-| `index_pool.py` | 聚 77k+ image URL 入 SQLite FTS5，alt 文本全文搜 | 跨站通用图片复用，避免重复爬 |
-| `infer_cdn_pattern.py` | 从一站 URLs 推 CDN 模板（host + 路径 placeholder） | 新发现的 CDN 半自动入 registry |
-| `reprocess_structured.py` | 从已有 `full.html` 离线抽 JSON-LD + state + 文章（不抓网）| 之前抓的 snapshot 升级到 v3 数据 |
-| `content_extract.py` | trafilatura wrapper 抽干净 article body | 新闻/博客站 |
-| `search_local.py` | 本地 SearXNG 搜，无 quota 替代 Tavily/Exa | 找 entity URL / image 替代 paid API |
+| `harvest.py` | 1+2+3 | 单 URL Playwright 抓 → HTML + fragments + structured.json + assets/ |
+| `harvest_spider.py` | all | BFS 多页爬 + per-host fail-fast + SQLite checkpoint |
+| `extract_image_urls.py` | 3 | 从 snapshots 抽 `<img src>` 入 `_image_urls.jsonl` |
+| `extract_nav_graph.py` | **4** | 从 snapshots 构建真站 link graph + button catalog |
+| `index_pool.py` | 3 | 聚 77k+ image URL 入 SQLite FTS5，跨站 alt 文本搜 |
+| `infer_cdn_pattern.py` | 3 | 从 URLs 推 CDN 模板 |
+| `reprocess_structured.py` | 2 | 从已有 `full.html` 离线抽 JSON-LD + 文章 |
+| `content_extract.py` | 2 | trafilatura wrapper 单页抽 clean article body |
+| `search_local.py` | helper | SearXNG 本地搜，无 quota 替代 Tavily/Exa |
 
 ## v3 增量（2026-05 升级）
 
