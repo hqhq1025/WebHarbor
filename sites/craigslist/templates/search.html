@@ -249,7 +249,7 @@
             <div class="thumb-node">
               <a class="thumb-image" href="{{ url_for('listing_detail', slug=listing.slug, listing_id=listing.id) }}">
                 {% if photos %}
-                <img src="{{ url_for('static', filename=photos[0]) }}" alt="">
+                <img loading="lazy" decoding="async" src="{{ url_for('static', filename=photos[0]) }}" alt="">
                 {% else %}
                 <span class="no-img">no image</span>
                 {% endif %}
@@ -286,7 +286,7 @@
               {% if listing.price is not none %}<span class="card-price">{{ listing.display_price }}</span>{% endif %}
               {% if photos %}
               {% for photo in photos %}
-              <img class="gallery-frame{% if loop.first %} active{% endif %}" src="{{ url_for('static', filename=photo) }}" alt="">
+              <img loading="lazy" decoding="async" class="gallery-frame{% if loop.first %} active{% endif %}" src="{{ url_for('static', filename=photo) }}" alt="">
               {% endfor %}
               {% else %}
               <span class="no-img">no image</span>

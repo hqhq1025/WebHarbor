@@ -16,7 +16,7 @@
     {% set listing = row.listing %}
     <li class="result-row">
       <a class="thumb" href="{{ url_for('listing_detail', slug=listing.slug, listing_id=listing.id) }}">
-        {% if listing.image %}<img src="{{ url_for('static', filename=listing.image) }}" alt="">{% else %}<span class="no-img">no image</span>{% endif %}
+        {% if listing.image %}<img loading="lazy" decoding="async" src="{{ url_for('static', filename=listing.image) }}" alt="">{% else %}<span class="no-img">no image</span>{% endif %}
       </a>
       <div class="result-main">
         <a class="result-title" href="{{ url_for('listing_detail', slug=listing.slug, listing_id=listing.id) }}">{{ listing.title }}</a>

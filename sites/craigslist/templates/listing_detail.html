@@ -46,7 +46,7 @@
         {% if photos %}
         <div class="posting-photo-stage">
           {% for photo in photos %}
-          <img class="gallery-frame{% if loop.first %} active{% endif %}" src="{{ url_for('static', filename=photo) }}" alt="">
+          <img loading="lazy" decoding="async" class="gallery-frame{% if loop.first %} active{% endif %}" src="{{ url_for('static', filename=photo) }}" alt="">
           {% endfor %}
           {% if photos|length > 1 %}
           <button class="gallery-arrow prev" type="button" data-gallery-prev aria-label="previous photo">&#8249;</button>

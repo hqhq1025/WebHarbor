@@ -9,7 +9,7 @@
     {% for item in listings %}
     <article class="best-card">
       {% set photos = listing_images(item) %}
-      {% if photos %}<a href="{{ url_for('listing_detail', slug=item.slug, listing_id=item.id) }}"><img src="{{ url_for('static', filename=photos[0]) }}" alt=""></a>{% endif %}
+      {% if photos %}<a href="{{ url_for('listing_detail', slug=item.slug, listing_id=item.id) }}"><img loading="lazy" decoding="async" src="{{ url_for('static', filename=photos[0]) }}" alt=""></a>{% endif %}
       <div class="best-meta">
         <a href="{{ url_for('listing_detail', slug=item.slug, listing_id=item.id) }}">{{ item.title }}</a>
         <span class="muted">{{ item.neighborhood }} &middot; {{ item.display_price }}</span>
