@@ -37,23 +37,50 @@ verify-site-gui (Phase 6)
 
 ## 工具
 
-`~/webvoyager-analysis/real_components/harvest.py` — Playwright 单页采集器。
+`~/webvoyager-analysis/real_components/harvest.py` — Playwright 单页采集器（v2，2026-05 Round 1 实战升级）。
 
 ```bash
 cd ~/webvoyager-analysis/real_components
-python3 harvest.py <site_slug> <page_name> "<URL>"
+python3 harvest.py <site_slug> <page_name> "<URL>" \
+    [--no-headless] [--timeout 30] [--settle 2500] [--scrolls 5] \
+    [--ua USER_AGENT] [--no-fallback]
 ```
 
-参数：
-- `<site_slug>`：域名 snake_case（`bestbuy_com` / `akc_org` / `us.megabus.com` → `megabus_com`）
-- `<page_name>`：页面意图 slug（`home` / `search` / `pdp` / `cart` / `checkout` / `account` / `compare` / `article` / `dashboard`）
-- `<URL>`：完整 URL（必须 https://）
+v2 默认就装的 anti-bot 套件：
+- 真 Chrome 131 Windows UA（破 Cloudflare "Just a moment..."）
+- 1366×768 viewport + `en-US` locale + `Accept-Language` + `sec-ch-ua` 头
+- `--disable-blink-features=AutomationControlled` Chromium launch arg
+- `navigator.webdriver = undefined` init script
+- 多步 scroll（默认 5 次 × 500ms）触发 lazy-load
+- Cookie kill: 已含 `Accept all` / `I agree` / `Got it` text-based 触发
+
+v2 自动检测的失败状态（写入 metadata.json）：
+- `not_found: true` — HTTP 4xx/5xx
+- `bot_block: true` — body 含 "Access Denied"/"errors.edgesuite.net"/"Pardon Our Interruption"/"Just a moment..."/"captcha-delivery" 等
+- `interstitial: true` — body < 5KB 又没明确 block phrase
+- `http2_error: true` — Chromium `ERR_HTTP2_PROTOCOL_ERROR`（自动用 curl HTTP/1.1 fallback）
+- `fallback_used: "curl_http1" | "exa_hint"` — 留 `FALLBACK_NEEDED.md` 让 agent 后续走 Exa MCP 抓 markdown 存 `content.md`
+
+## 配套工具
+
+`~/webvoyager-analysis/real_components/index_site.py` — 扫 `snapshots/<site>/<page>/metadata.json`，写 `_index.json` 汇总：
+
+```bash
+python3 index_site.py <site>      # 单站
+python3 index_site.py --all       # 全站
+
+# 输出格式：
+# <site>: pages=N ok=X bot_block=Y not_found=Z http2=W frags=F size=SMB
+```
+
+每次 harvest 后跑一遍 `--all`，立刻看到哪些站需要 Round 2 重抓。
 
 每次产出 `~/webvoyager-analysis/real_components/snapshots/<site>/<page_name>/`：
 - `full.html` + `full.png` — 整页
-- `page-header.html` + `.png`、`nav.html`、`hero.html`、`main.html`、`footer.html` — 主要 section
-- `card-<sel>-<n>.html` + `.png` — 首 3 个 card-like 元素
-- `metadata.json` — 索引 + bbox + selector + 时间戳
+- `page-header.html`、`nav.html`、`hero.html`、`main.html`、`footer.html`、`container.html`、`wrap.html`、`sidebar.html`
+- `card-<sel>-<n>.html` — 首 3 个 card-like 元素
+- `metadata.json` — 索引 + bbox + selector + flags + 时间戳
+- `FALLBACK_NEEDED.md` —（若 blocked）告诉 agent 后续怎么走 Exa
 
 ## 单站采集建议（10 页 / 站）
 
@@ -107,12 +134,16 @@ python3 harvest.py <site_slug> <page_name> "<URL>"
 
 | 陷阱 | 缓解 |
 |---|---|
-| **Cookie/consent overlay 挡内容** | harvester 自动找 `#onetrust-accept-btn-handler` / `button[id*='accept']` 一键关掉 |
-| **Lazy-load section 没出现** | harvester 已自动 scroll-to-bottom 再 scroll-to-top 一遍触发 |
-| **`<header>` / `<nav>` / `<main>` 缺失（纯 div 站）** | 已补 `[class*='header']` / `[class*='nav']` / `[class*='hero']` fallback |
-| **SPA 全部空 div + 慢 JS** | timeout 30s + wait 2.5s + lazy-load scroll。若仍空，加 `--no-headless` 手动看 |
-| **大站 full.html 3+ MB** | 不进 git，本地保存。catalog 引用相对路径 |
-| **Cloudflare/Akamai bot wall** | 浏览器 UA 通常能过；卡住就 `--no-headless` 跑（人手解 captcha） |
+| **Cookie/consent overlay 挡内容** | harvester 自动找 `#onetrust-accept-btn-handler` / `button[id*='accept']` / `Accept all` / `I agree` / `Got it` text-based 一键关掉 |
+| **Lazy-load section 没出现** | harvester 自动 5 次 scroll-by-viewport-height（v2 升级，原 1 次只能拿到 30%） |
+| **`<header>` / `<nav>` / `<main>` 缺失（纯 div 站，phys.org / fandom / discogs / google-maps）** | 已补 `[class*='header']` / `[class*='nav']` / `[id*='content']` / `[id='page']` / `[class*='page-wrap']` 兜底；card 选择器加 `[jscontroller]` 给 Google SPA |
+| **SPA 全部空 div + 慢 JS** | timeout 30s + settle 2.5s + 5 次 lazy-load scroll。Maps/Flights canvas 类 SPA 仍只能拿 full.html，section 提取意义不大 |
+| **大站 full.html 3+ MB / full.png 1+ MB 截图超时** | 自动 try/except 退化到 viewport-only（v2 加） |
+| **Akamai/AWS-WAF 边缘墙**（apartments.com / drugs.com / mayoclinic.org / amazon.com 部分页面） | Azure datacenter IP 被 IP-class 拉黑；stealth/UA/xvfb 全无效。v2 自动检测 `bot_block=true` + 写 `FALLBACK_NEEDED.md`，agent 接着跑 `mcp__exa__crawling_exa` 拿 markdown 存 `content.md` |
+| **HTTP/2 protocol error**（nba.com 全站） | v2 catch `ERR_HTTP2_PROTOCOL_ERROR` 自动 fallback `curl --http1.1`（HTML-only，无截图）|
+| **Captcha shell**（amazon 部分页面）| body < 50KB + "Are you a robot" → `bot_block=true`，走 Exa fallback |
+| **404 chrome 被当真实数据**（bbc 失效 article / arxiv subscribe）| v2 status≥400 → `not_found=true` 标记；agent 后续可弃这页或换 URL |
+| **Google SERP interstitial**（results/images/news/videos/shopping/maps_search 6 个变体）| Google 边缘 anti-bot 检测 headless，发送 6.6KB 重定向 stub；home / advanced / preferences 不触发。短期没好办法，long-term 需要 residential proxy |
 | **图片 src 是 CDN 链接，复刻时 404** | 单独 `curl --referer https://<site>/ <img-url>` 下载到 `sites/<slug>/static/images/` |
 
 ## 经验
@@ -122,3 +153,16 @@ python3 harvest.py <site_slug> <page_name> "<URL>"
 - **headless = True 默认**：CI / 后台跑都行。仅在调反爬 / cookie wall 时切 `--no-headless`
 - **不要 commit snapshots 到 WebHarbor 仓**：放 `~/webvoyager-analysis/real_components/snapshots/`，与 site_docs / site_specs 同层独立工作区
 - **catalog 是最高 ROI**：跨站 5 个 product card 比较后能抽出"标准 product card" template，多站复用
+
+## Round 1 (36 站) 实战数据（2026-05）
+
+总成绩：~335 page，~1 GB，6 个并行 agent × 6 站，平均每 batch ~5 min wall clock。
+
+| 类别 | 站 | 状态 |
+|---|---|---|
+| ✅ 满分 | github / apple / coursera / huggingface / wolfram / cambridge / berkeley / osu / phet / ted / espn / imdb / rotten_tomatoes / smartasset / boardgamegeek / mega / recreation_gov / booking / compass / carmax / eventbrite (8/11) / allrecipes (8/10) | 50+ 真 fragment / 站 |
+| ⚠️ Akamai 全 403 | **apartments_com / drugs_com / mayoclinic_org** | 11/12 页全 block；需 Exa 抓 markdown |
+| ⚠️ HTTP/2 error | **nba_com** | 全 11 页 ERR_HTTP2_PROTOCOL_ERROR；v2 用 curl --http1.1 拿 HTML |
+| ⚠️ Captcha shell | **amazon_com** (7/10) | 44KB shell；偶尔过 cart/category/deals |
+| ⚠️ Google interstitial | **google search SERPs**（6 个变体）| home / advanced / preferences 过；results/images/news/videos/shopping/maps_search 被拦 |
+| ⚠️ SPA canvas / div soup | **google_maps / phys_org / fandom / discogs / craigslist** | section 选择器命中率低；v2 加 `container` / `wrap` / `[jscontroller]` 兜底
