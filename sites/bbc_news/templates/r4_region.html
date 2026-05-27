@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block title %}{{ data.r4_region_label }} - BBC News{% endblock %}
+{% block content %}
+<div class="page-header" data-r4-marker="r4_region_mirror">
+    <h1>{{ data.r4_region_label }}</h1>
+    <p>Sub-feed for region <code>{{ data.r4_region_slug }}</code> &middot;
+        language <code>{{ data.r4_lang_code }}</code> &middot;
+        timezone <code>{{ data.r4_timezone }}</code>.</p>
+    <p>Total items: <strong data-r4-total="{{ data.r4_total_items }}">{{ data.r4_total_items }}</strong></p>
+</div>
+
+<ol class="r4-region-feed" data-r4-region-slug="{{ data.r4_region_slug }}">
+{% for art in data.r4_region_articles %}
+    <li class="r4-region-entry">
+        <a class="r4-region-link" href="/article/{{ art.r4_slug }}">{{ art.r4_headline }}</a>
+        <span class="r4-region-section">{{ art.r4_section }}</span>
+        <time class="r4-region-time">{{ art.r4_published_at }}</time>
+    </li>
+{% endfor %}
+</ol>
+
+<aside class="r4-language-switcher" data-r4-marker="r4_language_switcher">
+    <h2>Read in other languages</h2>
+    <ul>
+    {% for sw in data.r4_language_switches %}
+        <li><a href="{{ sw.r4_url }}">{{ sw.r4_label }}</a> &middot; <code>{{ sw.r4_code }}</code></li>
+    {% endfor %}
+    </ul>
+</aside>
+{% endblock %}

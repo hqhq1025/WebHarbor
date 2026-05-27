@@ -3893,6 +3893,803 @@ def api_multi_step_step():
 
 
 # =======================================================================
+# R3 - LIVE TICKER + BREAKING NEWS PILL
+# =======================================================================
+# Markers in this section: r3_ticker, r3_breaking_pill, r3_live_updates,
+# r3_ticker_refresh_seconds, r3_breaking_pill_ttl, r3_ticker_topics,
+# r3_ticker_entry_count, r3_ticker_feed_json, r3_pill_dismiss.
+
+R3_TICKER_REFRESH_SECONDS = 30
+R3_BREAKING_PILL_TTL = 1800   # 30 minutes
+R3_TICKER_ENTRY_COUNT = 20
+R3_TICKER_TOPICS = (
+    "all", "world", "uk", "business", "technology", "politics",
+    "health", "science", "sport", "entertainment",
+)
+
+
+def _r3_pick_articles_for_topic(topic: str, n: int):
+    q = Article.query.order_by(Article.published_at.desc())
+    t = (topic or "all").lower().strip()
+    if t and t != "all":
+        q = q.filter(or_(Article.section_slug == t, Article.subsection.ilike(f"%{t}%")))
+    return q.limit(n).all()
+
+
+@app.route("/r3/ticker")
+def r3_ticker_feed():
+    """Live ticker surface - rolling wire of latest stories for one topic."""
+    topic = (request.args.get("topic") or "all").lower().strip()
+    if topic not in R3_TICKER_TOPICS:
+        topic = "all"
+    arts = _r3_pick_articles_for_topic(topic, R3_TICKER_ENTRY_COUNT)
+    entries = []
+    for i, a in enumerate(arts):
+        entries.append({
+            "r3_entry_id": f"r3-{a.slug}",
+            "r3_headline": a.headline,
+            "r3_link": f"/article/{a.slug}",
+            "r3_section": a.section_slug or "news",
+            "r3_published_at": (a.published_at or datetime.utcnow()).isoformat() + "Z",
+        })
+    pill_art = arts[0] if arts else None
+    data = {
+        "r3_ticker_title": f"Live ticker - {topic}",
+        "r3_ticker_topic": topic,
+        "r3_ticker_refresh_seconds": R3_TICKER_REFRESH_SECONDS,
+        "r3_breaking_pill_ttl": R3_BREAKING_PILL_TTL,
+        "r3_ticker_entries": entries,
+        "r3_pill_headline": pill_art.headline if pill_art else "BBC News",
+        "r3_pill_meta": (pill_art.section_slug if pill_art else "news"),
+    }
+    if request.args.get("format") == "json":
+        return jsonify({"ok": True, "kind": "r3_ticker_feed_json", **data})
+    return render_template("r3_ticker.html", data=data, active_nav_slug="live")
+
+
+@app.route("/r3/breaking-pill")
+def r3_breaking_pill():
+    """Standalone breaking-news pill payload (used by client-side header)."""
+    art = Article.query.filter_by(is_breaking=True) \
+        .order_by(Article.published_at.desc()).first()
+    if art is None:
+        art = Article.query.order_by(Article.published_at.desc()).first()
+    payload = {
+        "ok": True,
+        "kind": "r3_breaking_pill",
+        "r3_breaking_pill_ttl": R3_BREAKING_PILL_TTL,
+        "r3_pill_dismiss_url": "/r3/breaking-pill/dismiss",
+        "headline": art.headline if art else "",
+        "slug": art.slug if art else "",
+        "link": f"/article/{art.slug}" if art else "/",
+        "issued_at": R8_REFERENCE_DATE.isoformat() + "Z",
+    }
+    return jsonify(payload)
+
+
+@app.route("/r3/live-updates/<topic>")
+def r3_live_updates(topic):
+    """Recent live-blog style updates for one topic."""
+    topic = (topic or "all").lower().strip()
+    if topic not in R3_TICKER_TOPICS:
+        topic = "all"
+    arts = _r3_pick_articles_for_topic(topic, R3_TICKER_ENTRY_COUNT)
+    return jsonify({
+        "ok": True,
+        "kind": "r3_live_updates",
+        "r3_topic": topic,
+        "r3_count": len(arts),
+        "r3_refresh_seconds": R3_TICKER_REFRESH_SECONDS,
+        "updates": [
+            {
+                "r3_entry_id": f"r3u-{i:04d}-{a.slug}",
+                "r3_headline": a.headline,
+                "r3_link": f"/article/{a.slug}",
+                "r3_published_at": (a.published_at or datetime.utcnow()).isoformat() + "Z",
+            }
+            for i, a in enumerate(arts)
+        ],
+    })
+
+
+# =======================================================================
+# R4 - REGIONAL / LANGUAGE SUB-FEED MIRRORS
+# =======================================================================
+# Markers: r4_region_mirror, r4_language_mirror, r4_supported_regions,
+# r4_supported_languages, r4_region_label, r4_total_items, r4_language_switcher.
+
+R4_SUPPORTED_REGIONS = {
+    "uk":            {"label": "BBC News UK",          "lang": "en-GB", "tz": "Europe/London",   "section": "uk"},
+    "world":         {"label": "BBC World Service",    "lang": "en-GB", "tz": "UTC",             "section": "world"},
+    "africa":        {"label": "BBC News Africa",      "lang": "en-GB", "tz": "Africa/Nairobi",  "section": "africa"},
+    "asia":          {"label": "BBC News Asia",        "lang": "en-GB", "tz": "Asia/Singapore",  "section": "asia"},
+    "europe":        {"label": "BBC News Europe",      "lang": "en-GB", "tz": "Europe/Berlin",   "section": "europe"},
+    "middle-east":   {"label": "BBC News Middle East", "lang": "en-GB", "tz": "Asia/Dubai",      "section": "middle_east"},
+    "latin-america": {"label": "BBC News Latin America","lang": "en-GB","tz": "America/Sao_Paulo","section": "latin_america"},
+    "us-canada":     {"label": "BBC News US & Canada", "lang": "en-GB", "tz": "America/New_York","section": "us_canada"},
+    "australia":     {"label": "BBC News Australia",   "lang": "en-GB", "tz": "Australia/Sydney","section": "australia"},
+}
+R4_SUPPORTED_LANGUAGES = {
+    "en-gb":  {"label": "English (UK)",        "section": "uk"},
+    "zh":     {"label": "BBC News China",      "section": "bbc_china"},
+    "ar":     {"label": "BBC Arabic",          "section": "bbc_arabic"},
+    "fa":     {"label": "BBC Persian",         "section": "bbc_persian"},
+    "ru":     {"label": "BBC Russian",         "section": "bbc_russian"},
+    "es":     {"label": "BBC News Mundo",      "section": "bbc_mundo"},
+    "pt-br":  {"label": "BBC Brasil",          "section": "bbc_brasil"},
+    "hi":     {"label": "BBC News India",      "section": "bbc_india"},
+    "sw":     {"label": "BBC News Africa (sw)","section": "bbc_africa"},
+}
+
+
+@app.route("/r4/region/<region_slug>")
+def r4_regional_mirror(region_slug):
+    slug = (region_slug or "").lower().strip()
+    meta = R4_SUPPORTED_REGIONS.get(slug)
+    if not meta:
+        return jsonify({"ok": False, "error": "unsupported_region",
+                        "r4_supported_regions": sorted(R4_SUPPORTED_REGIONS.keys())}), 404
+    section = meta["section"]
+    arts = (Article.query
+            .filter(or_(Article.section_slug == section, Article.region.ilike(f"%{section}%")))
+            .order_by(Article.published_at.desc())
+            .limit(40).all())
+    data = {
+        "r4_region_slug": slug,
+        "r4_region_label": meta["label"],
+        "r4_lang_code": meta["lang"],
+        "r4_timezone": meta["tz"],
+        "r4_total_items": len(arts),
+        "r4_region_articles": [
+            {
+                "r4_slug": a.slug,
+                "r4_headline": a.headline,
+                "r4_section": a.section_slug or section,
+                "r4_published_at": (a.published_at or datetime.utcnow()).strftime("%d %b %Y %H:%M"),
+            } for a in arts
+        ],
+        "r4_language_switches": [
+            {"r4_code": lc, "r4_label": lm["label"], "r4_url": f"/r4/language/{lc}"}
+            for lc, lm in R4_SUPPORTED_LANGUAGES.items()
+        ],
+    }
+    if request.args.get("format") == "json":
+        return jsonify({"ok": True, "kind": "r4_region_mirror", **data})
+    return render_template("r4_region.html", data=data, active_nav_slug="news")
+
+
+@app.route("/r4/language/<lang_code>")
+def r4_language_mirror(lang_code):
+    code = (lang_code or "").lower().strip()
+    meta = R4_SUPPORTED_LANGUAGES.get(code)
+    if not meta:
+        return jsonify({"ok": False, "error": "unsupported_language",
+                        "r4_supported_languages": sorted(R4_SUPPORTED_LANGUAGES.keys())}), 404
+    section = meta["section"]
+    arts = (Article.query
+            .filter(Article.section_slug == section)
+            .order_by(Article.published_at.desc())
+            .limit(40).all())
+    data = {
+        "r4_region_slug": code,
+        "r4_region_label": meta["label"],
+        "r4_lang_code": code,
+        "r4_timezone": "UTC",
+        "r4_total_items": len(arts),
+        "r4_region_articles": [
+            {
+                "r4_slug": a.slug,
+                "r4_headline": a.headline,
+                "r4_section": a.section_slug or section,
+                "r4_published_at": (a.published_at or datetime.utcnow()).strftime("%d %b %Y %H:%M"),
+            } for a in arts
+        ],
+        "r4_language_switches": [
+            {"r4_code": lc, "r4_label": lm["label"], "r4_url": f"/r4/language/{lc}"}
+            for lc, lm in R4_SUPPORTED_LANGUAGES.items()
+        ],
+    }
+    if request.args.get("format") == "json":
+        return jsonify({"ok": True, "kind": "r4_language_mirror", **data})
+    return render_template("r4_region.html", data=data, active_nav_slug="news")
+
+
+# =======================================================================
+# R5 - VIDEO / AUDIO / iPlayer / SOUNDS CARD SURFACES
+# =======================================================================
+# Markers: r5_video_card, r5_iplayer_card, r5_sounds_card, r5_card_kinds,
+# r5_bitrate_kbps, r5_duration_sec, r5_play_url, r5_embed_url.
+
+R5_CARD_KINDS = ("video", "iplayer", "sounds", "podcast")
+R5_VIDEO_BITRATE_KBPS = 3500
+R5_AUDIO_BITRATE_KBPS = 192
+
+
+def _r5_build_card(slug: str, kind: str):
+    art = Article.query.filter_by(slug=slug).first_or_404()
+    h = hashlib.md5(f"r5|{kind}|{art.slug}".encode()).hexdigest()
+    dur = 60 + (int(h[:6], 16) % 1740)         # 1-30 minutes
+    bitrate = R5_VIDEO_BITRATE_KBPS if kind == "video" else R5_AUDIO_BITRATE_KBPS
+    available_days = 7 + (int(h[6:9], 16) % 30)
+    until = (R8_REFERENCE_DATE + timedelta(days=available_days)).strftime("%Y-%m-%d")
+    return {
+        "r5_kind": kind,
+        "r5_card_title": art.headline,
+        "r5_card_subtitle": art.subtitle or art.summary[:120],
+        "r5_card_caption": (art.summary or "")[:200],
+        "r5_card_poster": art.hero_image or "/static/images/placeholder.svg",
+        "r5_duration_sec": dur,
+        "r5_duration_label": f"{dur // 60}:{dur % 60:02d}",
+        "r5_bitrate_kbps": bitrate,
+        "r5_available_until": until,
+        "r5_synopsis": (art.summary or art.headline)[:300],
+        "r5_play_url": f"/r5/{kind}-card/{art.slug}/play",
+        "r5_download_url": f"/r5/{kind}-card/{art.slug}/download",
+        "r5_embed_url": f"/r5/{kind}-card/{art.slug}/embed",
+    }
+
+
+@app.route("/r5/video-card/<slug>")
+def r5_video_card(slug):
+    data = _r5_build_card(slug, "video")
+    if request.args.get("format") == "json":
+        return jsonify({"ok": True, "kind": "r5_video_card", **data})
+    return render_template("r5_video_card.html", data=data, active_nav_slug="news")
+
+
+@app.route("/r5/iplayer-card/<slug>")
+def r5_iplayer_card(slug):
+    data = _r5_build_card(slug, "iplayer")
+    if request.args.get("format") == "json":
+        return jsonify({"ok": True, "kind": "r5_iplayer_card", **data})
+    return render_template("r5_video_card.html", data=data, active_nav_slug="iplayer")
+
+
+@app.route("/r5/sounds-card/<slug>")
+def r5_sounds_card(slug):
+    data = _r5_build_card(slug, "sounds")
+    if request.args.get("format") == "json":
+        return jsonify({"ok": True, "kind": "r5_sounds_card", **data})
+    return render_template("r5_video_card.html", data=data, active_nav_slug="sounds")
+
+
+# =======================================================================
+# R6 - COMMENT STATS, FOLLOW-AUTHOR, SAVE-FOR-LATER
+# =======================================================================
+# Markers: r6_follow_author, r6_comment_stats, r6_save_for_later,
+# r6_author_articles, r6_follower_count, r6_save_ttl_days, r6_thread_depth.
+
+R6_MAX_FOLLOWED_AUTHORS = 50
+R6_SAVE_TTL_DAYS = 90
+R6_THREAD_DEPTH = 3
+
+
+def _r6_author_metrics(author: str):
+    h = hashlib.md5(f"r6|{author.lower().strip()}".encode()).hexdigest()
+    followers = 250 + (int(h[:6], 16) % 9750)
+    return {"r6_follower_count": followers, "r6_thread_depth": R6_THREAD_DEPTH}
+
+
+@app.route("/r6/follow-author/<path:author_name>")
+def r6_follow_author(author_name):
+    name = (author_name or "").strip()
+    if not name:
+        abort(404)
+    arts = (Article.query.filter(Article.author == name)
+            .order_by(Article.published_at.desc()).limit(25).all())
+    if not arts:
+        arts = (Article.query.filter(Article.author.ilike(f"%{name}%"))
+                .order_by(Article.published_at.desc()).limit(25).all())
+    metrics = _r6_author_metrics(name)
+    data = {
+        "r6_author_name": name,
+        "r6_author_role": "Reporter",
+        "r6_author_beat": (arts[0].section_slug if arts else "news"),
+        "r6_follower_count": metrics["r6_follower_count"],
+        "r6_article_count": len(arts),
+        "r6_is_following": False,
+        "r6_follow_action_url": f"/r6/follow-author/{name}/follow",
+        "r6_author_articles": [
+            {
+                "r6_slug": a.slug,
+                "r6_headline": a.headline,
+                "r6_comment_count": a.comment_count,
+                "r6_published_at": (a.published_at or datetime.utcnow()).strftime("%d %b %Y"),
+            } for a in arts
+        ],
+    }
+    if request.args.get("format") == "json":
+        return jsonify({"ok": True, "kind": "r6_follow_author", **data})
+    return render_template("r6_author_follow.html", data=data, active_nav_slug="news")
+
+
+@app.route("/r6/comment-stats/<slug>")
+def r6_comment_stats(slug):
+    art = Article.query.filter_by(slug=slug).first_or_404()
+    top_level = Comment.query.filter(
+        Comment.article_id == art.id, Comment.parent_id.is_(None)).count()
+    total = art.comment_count
+    return jsonify({
+        "ok": True,
+        "kind": "r6_comment_stats",
+        "slug": art.slug,
+        "r6_total_comments": total,
+        "r6_top_level_comments": top_level,
+        "r6_reply_count": max(0, total - top_level),
+        "r6_thread_depth": R6_THREAD_DEPTH,
+    })
+
+
+@app.route("/r6/save-for-later/<slug>")
+def r6_save_for_later(slug):
+    art = Article.query.filter_by(slug=slug).first_or_404()
+    h = hashlib.md5(f"r6|save|{art.slug}".encode()).hexdigest()
+    return jsonify({
+        "ok": True,
+        "kind": "r6_save_for_later",
+        "slug": art.slug,
+        "headline": art.headline,
+        "r6_save_ttl_days": R6_SAVE_TTL_DAYS,
+        "r6_save_token": f"r6save-{h[:12]}",
+        "r6_save_action_url": f"/r6/save-for-later/{art.slug}/confirm",
+    })
+
+
+# =======================================================================
+# R7 - LONGFORM / IN DEPTH / EXPLAINER
+# =======================================================================
+# Markers: r7_longform_view, r7_in_depth_view, r7_explainer_view,
+# r7_min_words, r7_indepth_time_min, r7_explainer_box, r7_chapters.
+
+R7_LONGFORM_MIN_WORDS = 1800
+R7_INDEPTH_TIME_MIN = 9
+R7_EXPLAINER_BLOCKS = 5
+
+
+def _r7_build_longform(slug: str, fmt: str):
+    art = Article.query.filter_by(slug=slug).first_or_404()
+    body = art.get_paragraphs() or [art.summary or art.headline]
+    chap_titles = ["Background", "What changed", "Why it matters",
+                   "The evidence", "What happens next", "Voices"]
+    n_chap = min(len(chap_titles), max(2, (len(body) + 2) // 3))
+    per = max(1, len(body) // n_chap)
+    chapters = []
+    for ci in range(n_chap):
+        start = ci * per
+        end = (ci + 1) * per if ci < n_chap - 1 else len(body)
+        paras = body[start:end] or [art.summary or art.headline]
+        chapters.append({
+            "r7_chapter_id": f"r7c-{ci+1:02d}",
+            "r7_chapter_title": chap_titles[ci],
+            "r7_paragraphs": paras,
+        })
+    word_count = max(R7_LONGFORM_MIN_WORDS,
+                     sum(len(p.split()) for p in body))
+    h = hashlib.md5(f"r7|{fmt}|{slug}".encode()).hexdigest()
+    return {
+        "r7_format": fmt,
+        "r7_longform_kicker": {"longform": "In depth",
+                               "indepth": "BBC Verify In Depth",
+                               "explainer": "Explainer"}.get(fmt, "Feature"),
+        "r7_longform_headline": art.headline,
+        "r7_longform_standfirst": art.subtitle or (art.summary or "")[:240],
+        "r7_longform_author": art.author or "BBC News",
+        "r7_longform_published_at": (art.published_at or datetime.utcnow()).strftime("%d %b %Y"),
+        "r7_read_time_min": max(R7_INDEPTH_TIME_MIN, art.reading_time or R7_INDEPTH_TIME_MIN),
+        "r7_word_count": word_count,
+        "r7_chapters": chapters,
+        "r7_explainer_title": f"In short: {art.headline}",
+        "r7_explainer_body": (art.summary or art.headline)[:300],
+        "r7_token": f"r7-{h[:10]}",
+    }
+
+
+@app.route("/r7/longform/<slug>")
+def r7_longform_view(slug):
+    data = _r7_build_longform(slug, "longform")
+    if request.args.get("format") == "json":
+        return jsonify({"ok": True, "kind": "r7_longform_view", **data})
+    return render_template("r7_longform.html", data=data, active_nav_slug="news")
+
+
+@app.route("/r7/in-depth/<slug>")
+def r7_in_depth_view(slug):
+    data = _r7_build_longform(slug, "indepth")
+    if request.args.get("format") == "json":
+        return jsonify({"ok": True, "kind": "r7_in_depth_view", **data})
+    return render_template("r7_longform.html", data=data, active_nav_slug="news")
+
+
+@app.route("/r7/explainer/<slug>")
+def r7_explainer_view(slug):
+    data = _r7_build_longform(slug, "explainer")
+    if request.args.get("format") == "json":
+        return jsonify({"ok": True, "kind": "r7_explainer_view", **data})
+    return render_template("r7_longform.html", data=data, active_nav_slug="news")
+
+
+# =======================================================================
+# R8 - EDITOR'S PICKS + MOST READ + DATA-VIZ CHART CARD
+# =======================================================================
+# Markers: r8_editors_picks, r8_most_read, r8_chart_card,
+# r8_top_n_most_read, r8_chart_rows, r8_pick_count.
+
+R8_TOP_N_MOST_READ = 10
+R8_EDITORS_PICK_COUNT = 12
+R8_CHART_TOPICS = ("technology", "business", "health", "sport", "world")
+
+
+def _r8_editors_pick_rows():
+    arts = (Article.query.filter(Article.is_featured.is_(True))
+            .order_by(Article.published_at.desc())
+            .limit(R8_EDITORS_PICK_COUNT).all())
+    if len(arts) < R8_EDITORS_PICK_COUNT:
+        extra = (Article.query.order_by(Article.view_count.desc())
+                 .limit(R8_EDITORS_PICK_COUNT - len(arts)).all())
+        seen = {a.id for a in arts}
+        for a in extra:
+            if a.id not in seen:
+                arts.append(a)
+    return arts[:R8_EDITORS_PICK_COUNT]
+
+
+def _r8_most_read_rows():
+    return (Article.query.order_by(Article.view_count.desc())
+            .limit(R8_TOP_N_MOST_READ).all())
+
+
+@app.route("/r8/editors-picks")
+def r8_editors_picks():
+    picks = _r8_editors_pick_rows()
+    most_read = _r8_most_read_rows()
+    h = hashlib.md5(f"r8|chart|{R8_REFERENCE_DATE.isoformat()}".encode()).hexdigest()
+    rows = []
+    for i, topic in enumerate(R8_CHART_TOPICS):
+        n = 100 + (int(h[i*4:i*4+4], 16) % 900)
+        rows.append({"r8_x": topic, "r8_y": n})
+    data = {
+        "r8_reference_date": R8_REFERENCE_DATE.isoformat() + "Z",
+        "r8_editors_picks": [
+            {
+                "r8_slug": a.slug,
+                "r8_headline": a.headline,
+                "r8_section": a.section_slug or "news",
+                "r8_view_count": a.view_count or 0,
+                "r8_rank": i + 1,
+            } for i, a in enumerate(picks)
+        ],
+        "r8_most_read": [
+            {
+                "r8_slug": a.slug,
+                "r8_headline": a.headline,
+                "r8_view_count": a.view_count or 0,
+            } for a in most_read
+        ],
+        "r8_chart_title": "Top sections this week",
+        "r8_chart_x_label": "Section",
+        "r8_chart_y_label": "Story count",
+        "r8_chart_rows": rows,
+    }
+    if request.args.get("format") == "json":
+        return jsonify({"ok": True, "kind": "r8_editors_picks", **data})
+    return render_template("r8_editors_picks.html", data=data, active_nav_slug="news")
+
+
+@app.route("/r8/most-read")
+def r8_most_read():
+    arts = _r8_most_read_rows()
+    return jsonify({
+        "ok": True,
+        "kind": "r8_most_read",
+        "r8_top_n": R8_TOP_N_MOST_READ,
+        "r8_reference_date": R8_REFERENCE_DATE.isoformat() + "Z",
+        "items": [
+            {"r8_rank": i + 1, "r8_slug": a.slug, "r8_headline": a.headline,
+             "r8_view_count": a.view_count or 0,
+             "r8_section": a.section_slug or "news"}
+            for i, a in enumerate(arts)
+        ],
+    })
+
+
+@app.route("/r8/chart-card/<topic>")
+def r8_chart_card(topic):
+    t = (topic or "").lower().strip()
+    h = hashlib.md5(f"r8|chart|{t}".encode()).hexdigest()
+    rows = []
+    for i in range(7):
+        rows.append({"r8_day": f"D-{6-i}",
+                     "r8_value": 200 + (int(h[i*4:i*4+4], 16) % 800)})
+    return jsonify({
+        "ok": True,
+        "kind": "r8_chart_card",
+        "r8_topic": t,
+        "r8_chart_rows": rows,
+        "r8_reference_date": R8_REFERENCE_DATE.isoformat() + "Z",
+    })
+
+
+# =======================================================================
+# R9 - WEATHER WIDGET + SPORT SCOREBOARD + PODCAST LISTEN
+# =======================================================================
+# Markers: r9_weather_widget, r9_sport_scoreboard, r9_podcast_listen,
+# r9_weather_units, r9_forecast_days, r9_scoreboard_sports,
+# r9_podcast_bitrate_kbps.
+
+R9_WEATHER_UNITS = ("c", "f")
+R9_FORECAST_DAYS = 5
+R9_SCOREBOARD_SPORTS = ("football", "rugby", "cricket", "tennis",
+                        "formula1", "athletics", "boxing", "golf")
+R9_PODCAST_BITRATE_KBPS = 128
+R9_PODCAST_SHOWS = (
+    "global-news-podcast", "world-business-report", "newscast",
+    "americast", "the-coming-storm", "in-our-time", "more-or-less",
+    "documentary-podcast", "tech-tent", "the-news-quiz",
+)
+
+
+def _r9_seed(*parts):
+    return hashlib.md5("|".join(str(p) for p in parts).encode()).hexdigest()
+
+
+def _r9_scoreboard_payload(sport: str):
+    pool = ["Arsenal", "Aston Villa", "Brentford", "Brighton", "Chelsea",
+            "Crystal Palace", "Everton", "Fulham", "Liverpool",
+            "Manchester City", "Manchester United", "Newcastle",
+            "Nottingham Forest", "Tottenham", "West Ham", "Wolves"]
+    rows = []
+    for i in range(8):
+        seg = _r9_seed("r9", "scoreboard", sport, i)
+        a = pool[int(seg[0:2], 16) % len(pool)]
+        b = pool[int(seg[2:4], 16) % len(pool)]
+        if a == b:
+            b = pool[(int(seg[2:4], 16) + 1) % len(pool)]
+        hs = int(seg[4], 16) % 6
+        as_ = int(seg[5], 16) % 6
+        rows.append({
+            "r9_fixture_id": f"r9-{sport}-{i:02d}",
+            "r9_home": a,
+            "r9_away": b,
+            "r9_score": f"{hs} - {as_}",
+            "r9_status": ["FT", "HT", "LIVE", "FT", "FT"][i % 5],
+        })
+    return rows
+
+
+@app.route("/r9/weather-widget/<location>")
+def r9_weather_widget(location):
+    loc = (location or "").lower().strip()
+    if not loc:
+        abort(404)
+    h = _r9_seed("r9", "weather", loc)
+    units = (request.args.get("units") or "c").lower()
+    if units not in R9_WEATHER_UNITS:
+        units = "c"
+    base_temp_c = -2 + (int(h[:4], 16) % 30)
+    current = base_temp_c if units == "c" else int(base_temp_c * 9 / 5 + 32)
+    conditions = ["Sunny", "Partly cloudy", "Cloudy", "Light rain",
+                  "Heavy rain", "Showers", "Drizzle", "Thunder", "Snow",
+                  "Mist", "Fog", "Wind"]
+    forecast = []
+    days = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
+    for i in range(R9_FORECAST_DAYS):
+        ds = _r9_seed("r9", "weather", loc, "day", i)
+        hi = -2 + (int(ds[:4], 16) % 30)
+        lo = hi - 2 - (int(ds[4:6], 16) % 8)
+        forecast.append({
+            "r9_day_name": days[i % 7],
+            "r9_icon": ["sun", "part-cloud", "cloud", "rain", "storm", "snow"][int(ds[6:8], 16) % 6],
+            "r9_high_c": hi,
+            "r9_low_c": lo,
+            "r9_rain_chance": int(ds[2:4], 16) % 100,
+        })
+    data = {
+        "r9_location_slug": loc,
+        "r9_location_label": loc.replace("-", " ").title(),
+        "r9_region_label": "United Kingdom",
+        "r9_units": units,
+        "r9_units_label": units.upper(),
+        "r9_current_temp": current,
+        "r9_current_condition": conditions[int(h[4:6], 16) % len(conditions)],
+        "r9_wind_kph": 4 + (int(h[6:8], 16) % 50),
+        "r9_wind_direction": ["N", "NE", "E", "SE", "S", "SW", "W", "NW"][int(h[8:10], 16) % 8],
+        "r9_humidity_pct": 30 + (int(h[10:12], 16) % 60),
+        "r9_uv_index": int(h[12:14], 16) % 11,
+        "r9_pollen_level": ["Low", "Moderate", "High", "Very high"][int(h[14:16], 16) % 4],
+        "r9_forecast": forecast,
+        "r9_sport_label": "Premier League",
+        "r9_scoreboard": _r9_scoreboard_payload("football"),
+    }
+    if request.args.get("format") == "json":
+        return jsonify({"ok": True, "kind": "r9_weather_widget", **data})
+    return render_template("r9_weather_widget.html", data=data, active_nav_slug="weather")
+
+
+@app.route("/r9/sport-scoreboard/<sport>")
+def r9_sport_scoreboard(sport):
+    s = (sport or "").lower().strip()
+    if s not in R9_SCOREBOARD_SPORTS:
+        return jsonify({"ok": False, "error": "unsupported_sport",
+                        "r9_scoreboard_sports": list(R9_SCOREBOARD_SPORTS)}), 404
+    return jsonify({
+        "ok": True,
+        "kind": "r9_sport_scoreboard",
+        "r9_sport": s,
+        "r9_reference_date": R8_REFERENCE_DATE.isoformat() + "Z",
+        "fixtures": _r9_scoreboard_payload(s),
+    })
+
+
+@app.route("/r9/podcast-listen/<show>")
+def r9_podcast_listen(show):
+    sh = (show or "").lower().strip()
+    if sh not in R9_PODCAST_SHOWS:
+        return jsonify({"ok": False, "error": "unknown_show",
+                        "r9_podcast_shows": list(R9_PODCAST_SHOWS)}), 404
+    h = _r9_seed("r9", "podcast", sh)
+    episodes = []
+    for i in range(8):
+        seg = _r9_seed("r9", "podcast", sh, "ep", i)
+        episodes.append({
+            "r9_episode_id": f"r9-{sh}-ep{i+1:03d}",
+            "r9_episode_title": f"Episode {i+1}: {sh.replace('-', ' ').title()}",
+            "r9_duration_min": 20 + (int(seg[:2], 16) % 40),
+            "r9_published_at": (R8_REFERENCE_DATE - timedelta(days=i*7)).strftime("%Y-%m-%d"),
+            "r9_listen_url": f"/r9/podcast-listen/{sh}/play/{i+1}",
+        })
+    return jsonify({
+        "ok": True,
+        "kind": "r9_podcast_listen",
+        "r9_show": sh,
+        "r9_podcast_bitrate_kbps": R9_PODCAST_BITRATE_KBPS,
+        "r9_subscribe_url": f"/api/podcast/subscribe?show={sh}",
+        "episodes": episodes,
+    })
+
+
+# =======================================================================
+# R10 - GraphQL MIRROR + /api/v1/article + /r10/healthz + r10 sitemap
+# =======================================================================
+# Markers: r10_graphql, r10_api_v1_article, r10_healthz, r10_sitemap_xml,
+# r10_api_version, r10_graphql_schema, r10_rate_limit_per_min.
+
+R10_API_VERSION = "v1.0.0"
+R10_GRAPHQL_VERSION = "r10-graphql-2026.05"
+R10_API_V1_RATE_LIMIT_PER_MIN = 600
+R10_GRAPHQL_SCHEMA_VERSION = "r10.schema.1"
+
+
+def _r10_serialize_article(a):
+    return {
+        "id": a.id,
+        "slug": a.slug,
+        "headline": a.headline,
+        "subtitle": a.subtitle or "",
+        "summary": a.summary or "",
+        "author": a.author or "BBC News",
+        "section": a.section_slug or "news",
+        "subsection": a.subsection or "",
+        "region": a.region or "",
+        "topics": a.get_topics(),
+        "reading_time_min": a.reading_time or 0,
+        "word_count": a.word_count or 0,
+        "view_count": a.view_count or 0,
+        "is_featured": bool(a.is_featured),
+        "is_breaking": bool(a.is_breaking),
+        "is_live": bool(a.is_live),
+        "content_type": a.content_type or "article",
+        "hero_image": a.hero_image or "",
+        "source_url": a.source_url or bbc_article_share_url(a),
+        "published_at": (a.published_at or datetime.utcnow()).isoformat() + "Z",
+        "url": f"/article/{a.slug}",
+    }
+
+
+@app.route("/r10/graphql", methods=["GET", "POST"])
+@csrf.exempt
+def r10_graphql_endpoint():
+    """Tiny GraphQL-shaped JSON mirror. We do not parse SDL; instead we
+    accept a top-level `query_kind` (article|search|stats|category) which
+    plays the role of a query operation and resolve it on the live DB."""
+    body = request.get_json(silent=True) or {}
+    if request.method == "GET":
+        body = {
+            "query_kind": request.args.get("query_kind") or "stats",
+            "slug": request.args.get("slug"),
+            "q": request.args.get("q"),
+            "category": request.args.get("category"),
+            "limit": int(request.args.get("limit") or 5),
+        }
+    qk = (body.get("query_kind") or "stats").lower().strip()
+    out_data = {}
+    if qk == "article":
+        slug = (body.get("slug") or "").strip()
+        a = Article.query.filter_by(slug=slug).first() if slug else None
+        out_data = {"article": _r10_serialize_article(a) if a else None}
+    elif qk == "search":
+        q = (body.get("q") or "").strip()
+        limit = max(1, min(int(body.get("limit") or 5), 50))
+        rows = (Article.query.filter(Article.headline.ilike(f"%{q}%"))
+                .order_by(Article.published_at.desc()).limit(limit).all()) if q else []
+        out_data = {"search": [_r10_serialize_article(a) for a in rows],
+                    "search_total": len(rows)}
+    elif qk == "category":
+        cat = (body.get("category") or "").strip()
+        limit = max(1, min(int(body.get("limit") or 5), 50))
+        rows = (Article.query.filter(Article.section_slug == cat)
+                .order_by(Article.published_at.desc()).limit(limit).all()) if cat else []
+        out_data = {"category": cat,
+                    "articles": [_r10_serialize_article(a) for a in rows]}
+    else:
+        out_data = {
+            "stats": {
+                "articles": Article.query.count(),
+                "categories": Category.query.count(),
+                "comments": Comment.query.count(),
+            }
+        }
+    return jsonify({
+        "ok": True,
+        "kind": "r10_graphql",
+        "r10_graphql_version": R10_GRAPHQL_VERSION,
+        "r10_graphql_schema": R10_GRAPHQL_SCHEMA_VERSION,
+        "query_kind": qk,
+        "data": out_data,
+        "extensions": {
+            "rate_limit_per_min": R10_API_V1_RATE_LIMIT_PER_MIN,
+            "reference_date": R8_REFERENCE_DATE.isoformat() + "Z",
+        },
+    })
+
+
+@app.route("/api/v1/article/<slug>")
+def r10_api_v1_article(slug):
+    a = Article.query.filter_by(slug=slug).first_or_404()
+    return jsonify({
+        "ok": True,
+        "kind": "r10_api_v1_article",
+        "r10_api_version": R10_API_VERSION,
+        "r10_rate_limit_per_min": R10_API_V1_RATE_LIMIT_PER_MIN,
+        "article": _r10_serialize_article(a),
+    })
+
+
+@app.route("/r10/healthz")
+def r10_healthz():
+    return jsonify({
+        "ok": True,
+        "kind": "r10_healthz",
+        "r10_api_version": R10_API_VERSION,
+        "r10_graphql_version": R10_GRAPHQL_VERSION,
+        "r10_reference_date": R8_REFERENCE_DATE.isoformat() + "Z",
+        "uptime_label": "nominal",
+    })
+
+
+@app.route("/r10/sitemap.xml")
+def r10_sitemap_xml():
+    """Compact sitemap of r10 API + GraphQL surfaces."""
+    refs = [
+        "/r10/graphql",
+        "/r10/healthz",
+        "/api/v1/article/<slug>",
+        "/r8/most-read",
+        "/r8/editors-picks",
+        "/r9/weather-widget/london",
+        "/r9/sport-scoreboard/football",
+        "/r9/podcast-listen/global-news-podcast",
+        "/r3/ticker",
+        "/r3/breaking-pill",
+    ]
+    xml = ["<?xml version=\"1.0\" encoding=\"UTF-8\"?>",
+           "<urlset xmlns=\"http://www.sitemaps.org/schemas/sitemap/0.9\">"]
+    for u in refs:
+        xml.append(f"  <url><loc>{u}</loc></url>")
+    xml.append("</urlset>")
+    return Response("\n".join(xml), mimetype="application/xml")
+
+
+# =======================================================================
 # ERROR HANDLERS
 # =======================================================================
 

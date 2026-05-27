@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block title %}Editor's Picks - BBC News{% endblock %}
+{% block content %}
+<div class="page-header" data-r8-marker="r8_editors_picks">
+    <h1>Editor's picks</h1>
+    <p>Curated by the BBC News desk &middot; reference date
+       <code data-r8-reference-date="{{ data.r8_reference_date }}">{{ data.r8_reference_date }}</code></p>
+</div>
+
+<section class="r8-editors-grid">
+{% for art in data.r8_editors_picks %}
+    <a class="r8-pick-card" href="/article/{{ art.r8_slug }}" data-r8-rank="{{ art.r8_rank }}">
+        <span class="r8-pick-rank">#{{ art.r8_rank }}</span>
+        <h3 class="r8-pick-headline">{{ art.r8_headline }}</h3>
+        <span class="r8-pick-section">{{ art.r8_section }}</span>
+        <span class="r8-pick-view-count" data-r8-views="{{ art.r8_view_count }}">{{ art.r8_view_count }} views</span>
+    </a>
+{% endfor %}
+</section>
+
+<aside class="r8-most-read-sidebar" data-r8-marker="r8_most_read_sidebar">
+    <h2>Most read</h2>
+    <ol class="r8-most-read-list">
+    {% for art in data.r8_most_read %}
+        <li>
+            <a href="/article/{{ art.r8_slug }}">{{ art.r8_headline }}</a>
+            <span class="r8-mr-views">{{ art.r8_view_count }} views</span>
+        </li>
+    {% endfor %}
+    </ol>
+</aside>
+
+<figure class="r8-chart-card" data-r8-marker="r8_chart_card">
+    <figcaption>{{ data.r8_chart_title }}</figcaption>
+    <table class="r8-chart-table">
+        <thead><tr><th>{{ data.r8_chart_x_label }}</th><th>{{ data.r8_chart_y_label }}</th></tr></thead>
+        <tbody>
+        {% for row in data.r8_chart_rows %}
+            <tr><td>{{ row.r8_x }}</td><td>{{ row.r8_y }}</td></tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</figure>
+{% endblock %}

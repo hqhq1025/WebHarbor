@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block title %}{{ data.r3_ticker_title }} - BBC News{% endblock %}
+{% block content %}
+<div class="page-header">
+    <h1>
+        <span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:var(--bbc-red);margin-right:8px;animation:pulse 1.2s infinite;"></span>
+        {{ data.r3_ticker_title }}
+    </h1>
+    <p>Continuous wire of breaking stories &mdash; refreshes every
+        <strong data-r3-refresh-seconds="{{ data.r3_ticker_refresh_seconds }}">{{ data.r3_ticker_refresh_seconds }}s</strong>.
+        Topic filter: <code>{{ data.r3_ticker_topic or 'all' }}</code>.
+    </p>
+</div>
+
+<section class="r3-breaking-pill-strip" data-r3-pill-ttl="{{ data.r3_breaking_pill_ttl }}">
+    <span class="r3-breaking-pill" data-r3-marker="r3_breaking_pill">BREAKING</span>
+    <strong>{{ data.r3_pill_headline }}</strong>
+    <span class="r3-pill-meta">&middot; {{ data.r3_pill_meta }}</span>
+</section>
+
+<ol class="r3-ticker-feed" data-r3-marker="r3_ticker">
+{% for entry in data.r3_ticker_entries %}
+    <li class="r3-ticker-entry" data-r3-entry-id="{{ entry.r3_entry_id }}">
+        <time class="r3-ticker-time">{{ entry.r3_published_at }}</time>
+        <a class="r3-ticker-link" href="{{ entry.r3_link }}">{{ entry.r3_headline }}</a>
+        <span class="r3-ticker-section">{{ entry.r3_section }}</span>
+    </li>
+{% endfor %}
+</ol>
+{% endblock %}

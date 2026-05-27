@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% block title %}{{ data.r9_location_label }} weather - BBC News{% endblock %}
+{% block content %}
+<article class="r9-weather-widget" data-r9-marker="r9_weather_widget">
+    <header class="r9-weather-header">
+        <h1>{{ data.r9_location_label }}</h1>
+        <p>{{ data.r9_region_label }} &middot; <code>{{ data.r9_location_slug }}</code></p>
+    </header>
+
+    <section class="r9-weather-now" data-r9-units="{{ data.r9_units }}">
+        <span class="r9-temp">{{ data.r9_current_temp }}&deg;{{ data.r9_units_label }}</span>
+        <span class="r9-condition">{{ data.r9_current_condition }}</span>
+        <ul class="r9-weather-meta">
+            <li>Wind: {{ data.r9_wind_kph }} kph {{ data.r9_wind_direction }}</li>
+            <li>Humidity: {{ data.r9_humidity_pct }}%</li>
+            <li>UV index: {{ data.r9_uv_index }}</li>
+            <li>Pollen: {{ data.r9_pollen_level }}</li>
+        </ul>
+    </section>
+
+    <section class="r9-weather-forecast">
+        <h2>Five-day forecast</h2>
+        <ol class="r9-forecast-days">
+        {% for d in data.r9_forecast %}
+            <li>
+                <span class="r9-day">{{ d.r9_day_name }}</span>
+                <span class="r9-icon">{{ d.r9_icon }}</span>
+                <span class="r9-high">{{ d.r9_high_c }}&deg;</span>
+                <span class="r9-low">{{ d.r9_low_c }}&deg;</span>
+                <span class="r9-rain">{{ d.r9_rain_chance }}% rain</span>
+            </li>
+        {% endfor %}
+        </ol>
+    </section>
+</article>
+
+<section class="r9-sport-scoreboard" data-r9-marker="r9_sport_scoreboard">
+    <h2>Today's scoreboard &mdash; {{ data.r9_sport_label }}</h2>
+    <table class="r9-scoreboard-table">
+        <thead><tr><th>Home</th><th>Score</th><th>Away</th><th>Status</th></tr></thead>
+        <tbody>
+        {% for fx in data.r9_scoreboard %}
+            <tr data-r9-fixture-id="{{ fx.r9_fixture_id }}">
+                <td>{{ fx.r9_home }}</td>
+                <td>{{ fx.r9_score }}</td>
+                <td>{{ fx.r9_away }}</td>
+                <td>{{ fx.r9_status }}</td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</section>
+{% endblock %}

@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block title %}{{ data.r7_longform_headline }} - BBC News In Depth{% endblock %}
+{% block content %}
+<article class="r7-longform" data-r7-marker="r7_longform_view" data-r7-format="{{ data.r7_format }}">
+    <header class="r7-longform-header">
+        <span class="r7-longform-kicker">{{ data.r7_longform_kicker }}</span>
+        <h1 class="r7-longform-headline">{{ data.r7_longform_headline }}</h1>
+        <p class="r7-longform-standfirst">{{ data.r7_longform_standfirst }}</p>
+        <p class="r7-longform-meta">
+            <span>By {{ data.r7_longform_author }}</span> &middot;
+            <span>{{ data.r7_longform_published_at }}</span> &middot;
+            <span data-r7-read-time="{{ data.r7_read_time_min }}">{{ data.r7_read_time_min }} min read</span> &middot;
+            <span data-r7-word-count="{{ data.r7_word_count }}">{{ data.r7_word_count }} words</span>
+        </p>
+    </header>
+
+    {% for chap in data.r7_chapters %}
+    <section class="r7-longform-chapter" data-r7-chapter-id="{{ chap.r7_chapter_id }}">
+        <h2>{{ chap.r7_chapter_title }}</h2>
+        {% for p in chap.r7_paragraphs %}<p>{{ p }}</p>{% endfor %}
+    </section>
+    {% endfor %}
+
+    <aside class="r7-explainer-box" data-r7-marker="r7_explainer_box">
+        <h3>{{ data.r7_explainer_title }}</h3>
+        <p>{{ data.r7_explainer_body }}</p>
+    </aside>
+</article>
+{% endblock %}

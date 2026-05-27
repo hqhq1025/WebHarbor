@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block title %}{{ data.r6_author_name }} - BBC News{% endblock %}
+{% block content %}
+<header class="r6-author-header" data-r6-marker="r6_follow_author">
+    <h1>{{ data.r6_author_name }}</h1>
+    <p>{{ data.r6_author_role }} &middot; {{ data.r6_author_beat }}</p>
+    <p>Followers: <strong>{{ data.r6_follower_count }}</strong> &middot;
+       Articles indexed: <strong>{{ data.r6_article_count }}</strong></p>
+    <form method="post" action="{{ data.r6_follow_action_url }}" class="r6-follow-form">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button type="submit" class="r6-follow-button" data-r6-following="{{ data.r6_is_following }}">
+            {{ 'Following' if data.r6_is_following else 'Follow' }}
+        </button>
+    </form>
+</header>
+
+<section class="r6-author-articles" data-r6-marker="r6_author_articles">
+    <h2>Recent stories</h2>
+    <ol>
+    {% for art in data.r6_author_articles %}
+        <li>
+            <a href="/article/{{ art.r6_slug }}">{{ art.r6_headline }}</a>
+            <span class="r6-comment-badge" data-r6-comment-count="{{ art.r6_comment_count }}">{{ art.r6_comment_count }} comments</span>
+            <time>{{ art.r6_published_at }}</time>
+        </li>
+    {% endfor %}
+    </ol>
+</section>
+{% endblock %}

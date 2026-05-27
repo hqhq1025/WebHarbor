@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block title %}{{ data.r5_card_title }} - BBC News{% endblock %}
+{% block content %}
+<article class="r5-media-card" data-r5-marker="r5_video_card" data-r5-kind="{{ data.r5_kind }}">
+    <header class="r5-card-header">
+        <span class="r5-card-badge r5-badge-{{ data.r5_kind }}">{{ data.r5_kind|upper }}</span>
+        <h1 class="r5-card-title">{{ data.r5_card_title }}</h1>
+        <p class="r5-card-subtitle">{{ data.r5_card_subtitle }}</p>
+    </header>
+
+    <figure class="r5-card-figure">
+        <img src="{{ data.r5_card_poster }}" alt="{{ data.r5_card_title|e }}" loading="lazy">
+        <figcaption class="r5-card-caption">{{ data.r5_card_caption }}</figcaption>
+    </figure>
+
+    <dl class="r5-card-meta">
+        <dt>Duration</dt><dd data-r5-duration-sec="{{ data.r5_duration_sec }}">{{ data.r5_duration_label }}</dd>
+        <dt>Bitrate</dt><dd>{{ data.r5_bitrate_kbps }} kbps</dd>
+        <dt>Available until</dt><dd>{{ data.r5_available_until }}</dd>
+        <dt>Embed</dt><dd><code>{{ data.r5_embed_url }}</code></dd>
+        <dt>Synopsis</dt><dd>{{ data.r5_synopsis }}</dd>
+    </dl>
+
+    <footer class="r5-card-footer">
+        <a class="r5-card-cta" href="{{ data.r5_play_url }}">Play full</a>
+        <a class="r5-card-cta" href="{{ data.r5_download_url }}">Download</a>
+    </footer>
+</article>
+{% endblock %}
