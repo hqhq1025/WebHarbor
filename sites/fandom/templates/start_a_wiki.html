@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block title %}Start a Wiki | Fandom{% endblock %}
+{% block content %}
+<div class="form-shell" style="max-width: 720px;">
+  <h1>Start a Wiki</h1>
+  <p>Build your own encyclopedia for your favourite fandom. It's free.</p>
+  <ol style="margin-bottom: 18px;">
+    <li>Pick a name and a URL.</li>
+    <li>Choose a category &mdash; movies, games, anime, books.</li>
+    <li>Customise your theme &mdash; we'll set you up with a starter homepage.</li>
+    <li>Invite editors and start writing.</li>
+  </ol>
+  <form method="post">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <div class="form-row">
+      <label>Wiki name</label>
+      <input type="text" name="wiki_name" required>
+    </div>
+    <div class="form-row">
+      <label>URL (subdomain)</label>
+      <input type="text" name="url_slug" placeholder="my-wiki" required>
+    </div>
+    <div class="form-row">
+      <label>Vertical</label>
+      <select name="vertical">
+        <option>Movies</option>
+        <option>Games</option>
+        <option>TV</option>
+        <option>Anime</option>
+        <option>Books</option>
+      </select>
+    </div>
+    <div class="form-row">
+      <label>Description</label>
+      <textarea name="description" rows="3" style="min-height: 80px;"></textarea>
+    </div>
+    <button class="btn" type="submit">Create wiki</button>
+  </form>
+</div>
+{% endblock %}

@@ -41,6 +41,14 @@
 
 {% block wiki_nav %}{% endblock %}
 
+{% if global_notices %}
+  {% for n in global_notices %}
+    <div style="background: #fff3cd; color: #856404; padding: 8px 16px; text-align: center; font-size: 13px; border-bottom: 1px solid #ffeeba;">
+      <strong>{{ n.title }}</strong> &mdash; {{ n.body }}
+    </div>
+  {% endfor %}
+{% endif %}
+
 {% with messages = get_flashed_messages(with_categories=true) %}
   {% if messages %}
   <div class="flash-container">

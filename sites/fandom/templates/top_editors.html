@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block title %}Top editors — {{ wiki.name }}{% endblock %}
+{% block wiki_nav %}{% include "partials/wiki_nav.html" %}{% endblock %}
+{% block content %}
+<div class="container" style="padding: 24px 0;">
+  <h1>Top editors on {{ wiki.name }}</h1>
+  <div class="filter-bar">
+    <label>Time span:</label>
+    <a href="{{ url_for('special_top_editors', wiki_slug=wiki.slug, span='week') }}"
+       style="{% if span == 'week' %}font-weight:700;{% endif %}">Week</a>
+    <a href="{{ url_for('special_top_editors', wiki_slug=wiki.slug, span='month') }}"
+       style="{% if span == 'month' %}font-weight:700;{% endif %}">Month</a>
+    <a href="{{ url_for('special_top_editors', wiki_slug=wiki.slug, span='all') }}"
+       style="{% if span == 'all' %}font-weight:700;{% endif %}">All time</a>
+  </div>
+  <table class="history-table">
+    <thead><tr><th>Rank</th><th>Editor</th><th>Groups</th><th>Edits ({{ span }})</th><th>Joined</th></tr></thead>
+    <tbody>
+    {% for u, n in rows %}
+      <tr>
+        <td>{{ loop.index }}</td>
+        <td><a href="{{ url_for('user_profile', username=u.username) }}">{{ u.username }}</a></td>
+        <td>{% for g in u.group_list %}<span class="tag-bot" style="margin-right:4px;">{{ g }}</span>{% endfor %}</td>
+        <td>{{ n }}</td>
+        <td>{{ u.joined | ago }}</td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

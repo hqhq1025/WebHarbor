@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block title %}Help — {{ wiki.name }}{% endblock %}
+{% block wiki_nav %}{% include "partials/wiki_nav.html" %}{% endblock %}
+{% block content %}
+<div class="container" style="padding: 24px 0;">
+  <h1>Help &amp; documentation</h1>
+  <p>Everything you need to know to read, edit, and contribute on {{ wiki.name }}.</p>
+
+  <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px;">
+    {% set sections = [
+      ('Editing', 'Editing', 'Learn the wikitext syntax, sections, refs.'),
+      ('Categories', 'Categories', 'How to add and curate categories.'),
+      ('Infoboxes', 'Infoboxes', 'Build infobox templates for new article kinds.'),
+      ('Templates', 'Templates', 'Reusable wiki components.'),
+      ('Talk_pages', 'Talk pages', 'Per-article discussion threads.'),
+      ('Citations', 'Citations', 'How to cite official sources.'),
+      ('Images', 'Images', 'Upload, license, and embed images.'),
+      ('User_groups', 'User groups', 'autoconfirmed, rollback, sysop, bureaucrat.'),
+      ('Policies', 'Policies', 'Manual of style, neutrality, vandalism.'),
+      ('Markup', 'Markup quick reference', 'Two-minute syntax cheat sheet.'),
+      ('Discussions', 'Discussions', 'Forum threads and replies.'),
+      ('Reverting', 'Reverting edits', 'How to undo or revert a revision.'),
+    ] %}
+    {% for slug, name, desc in sections %}
+      <div class="sidebar-card">
+        <h3><a href="{{ url_for('help_page', wiki_slug=wiki.slug, topic=slug) }}">{{ name }}</a></h3>
+        <p style="font-size:13px;color:#555;">{{ desc }}</p>
+      </div>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}

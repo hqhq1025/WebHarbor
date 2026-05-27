@@ -11,12 +11,16 @@
     </div>
   </div>
   <nav class="article-tabs">
-    <div class="container" style="display: flex; gap: 0;">
+    <div class="container" style="display: flex; gap: 0; flex-wrap: wrap;">
       <a class="active" href="{{ url_for('article_view', wiki_slug=wiki.slug, title=article.slug) }}">Article</a>
       <a href="{{ url_for('article_talk', wiki_slug=wiki.slug, title=article.slug) }}">Talk</a>
+      <a href="{{ url_for('article_comments', wiki_slug=wiki.slug, title=article.slug) }}">Comments</a>
       <a href="{{ url_for('article_edit', wiki_slug=wiki.slug, title=article.slug) }}">Edit</a>
       <a href="{{ url_for('article_history', wiki_slug=wiki.slug, title=article.slug) }}">History</a>
       <a href="{{ url_for('article_view', wiki_slug=wiki.slug, title='Special:WhatLinksHere/' + article.slug) }}">What links here</a>
+      <a href="{{ url_for('article_move', wiki_slug=wiki.slug, title=article.slug) }}">Move</a>
+      <a href="{{ url_for('article_protect', wiki_slug=wiki.slug, title=article.slug) }}">Protect</a>
+      <a href="{{ url_for('article_delete', wiki_slug=wiki.slug, title=article.slug) }}">Delete</a>
       {% if current_user.is_authenticated %}
       <form action="{{ url_for('article_watch', wiki_slug=wiki.slug, title=article.slug) }}" method="post" style="margin-left: auto; padding: 4px 0;">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">

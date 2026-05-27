@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block title %}User rights — {{ user.username }} | {{ wiki.name }}{% endblock %}
+{% block wiki_nav %}{% include "partials/wiki_nav.html" %}{% endblock %}
+{% block content %}
+<div class="container" style="padding: 24px 0;">
+  <h1>Group membership for {{ user.username }}</h1>
+  <p>This page is read-only on the mirror. On the live wiki, sysops can adjust group memberships here.</p>
+  <table class="history-table">
+    <thead><tr><th>Group</th><th>Member</th><th>Granted permission</th></tr></thead>
+    <tbody>
+      {% set groups = user.group_list %}
+      {% for grp, desc in [
+        ('autoconfirmed', 'Automatic — registered &ge; 4 days, &ge; 10 edits.'),
+        ('rollback', 'May revert vandalism with one click.'),
+        ('sysop', 'Administrator — may delete pages, block users.'),
+        ('bot', 'Bot account — edits hidden from RC by default.'),
+        ('bureaucrat', 'May grant/revoke sysop and bot rights.'),
+        ('checkuser', 'May view IP information for accounts.'),
+      ] %}
+        <tr>
+          <td><strong>{{ grp }}</strong></td>
+          <td>{% if grp in groups %}<span style="color:#196b16;">&check;</span>{% else %}<span style="color:#888;">&mdash;</span>{% endif %}</td>
+          <td>{{ desc | safe }}</td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

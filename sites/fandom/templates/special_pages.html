@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% block title %}Special pages — {{ wiki.name }}{% endblock %}
+{% block wiki_nav %}{% include "partials/wiki_nav.html" %}{% endblock %}
+{% block content %}
+<div class="container" style="padding: 24px 0;">
+  <h1>Special pages on {{ wiki.name }}</h1>
+
+  <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px;">
+    {% set groups = [
+      ('Maintenance reports', [
+        ('Special:LongPages', 'Long pages'),
+        ('Special:ShortPages', 'Short pages'),
+        ('Special:MostRevisions', 'Pages with most revisions'),
+        ('Special:OrphanedPages', 'Orphaned pages'),
+        ('Special:WantedPages', 'Wanted pages'),
+      ]),
+      ('Lists of pages', [
+        ('Special:AllPages', 'All pages'),
+        ('Special:NewPages', 'New pages'),
+        ('Special:Categories', 'Categories'),
+        ('Special:ListFiles', 'Files'),
+        ('Special:WikiActivity', 'Wiki activity'),
+      ]),
+      ('Users and editing', [
+        ('Special:ActiveUsers', 'Active users'),
+        ('Special:TopEditors', 'Top editors'),
+        ('Special:RecentChanges', 'Recent changes'),
+        ('Special:Watchlist', 'Your watchlist'),
+        ('Special:Statistics', 'Wiki statistics'),
+      ]),
+      ('Admin', [
+        ('Special:Upload', 'Upload file'),
+        ('Special:Block', 'Block / unblock user'),
+        ('Special:Polls', 'Polls'),
+      ]),
+      ('Random and redirects', [
+        ('Special:RandomPage', 'Random page'),
+        ('Special:CreatePage', 'Create a page'),
+      ]),
+    ] %}
+    {% for label, items in groups %}
+      <div class="sidebar-card">
+        <h3>{{ label }}</h3>
+        <ul>
+          {% for slug, name in items %}
+            <li><a href="{{ url_for('article_view', wiki_slug=wiki.slug, title=slug) }}">{{ name }}</a></li>
+          {% endfor %}
+        </ul>
+      </div>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}

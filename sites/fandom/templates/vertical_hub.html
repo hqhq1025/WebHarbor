@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block title %}{{ spec.label }} | Fandom{% endblock %}
+{% block content %}
+<section class="hub-hero" style="background: linear-gradient(135deg, #00125a, #3a0066);">
+  <h1>{{ spec.label }}</h1>
+  <p>{{ spec.tagline }}</p>
+</section>
+<div class="container hub-section">
+  <h2>Featured {{ spec.label }} Wikis</h2>
+  <div class="wiki-grid">
+    {% for w in wikis %}
+      <a class="wiki-card" href="{{ url_for('wiki_home', wiki_slug=w.slug) }}" style="--accent: {{ w.accent }};">
+        <div class="wc-banner"><span class="wc-tag">{{ w.slug }}</span></div>
+        <div class="wc-body">
+          <h3>{{ w.name }}</h3>
+          <p class="wc-tagline">{{ w.tagline }}</p>
+          <div class="wc-stats">
+            <span><strong>{{ w.article_count }}</strong> articles</span>
+            <span><strong>{{ w.discussion_count }}</strong> discussions</span>
+          </div>
+        </div>
+      </a>
+    {% endfor %}
+  </div>
+</div>
+<div class="container hub-section">
+  <h2>Trending across {{ spec.label }}</h2>
+  <div class="trending-list">
+    {% for a in trending %}
+      <div class="trending-item">
+        <div class="ti-wiki">{{ a.wiki.name.split(' Wiki')[0].split(' —')[0] }}</div>
+        <h4><a href="{{ url_for('article_view', wiki_slug=a.wiki.slug, title=a.slug) }}">{{ a.title }}</a></h4>
+        <div class="ti-meta">{{ '{:,}'.format(a.view_count) }} views</div>
+      </div>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}

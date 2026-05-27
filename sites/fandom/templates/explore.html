@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% block title %}Explore Wikis | Fandom{% endblock %}
+{% block content %}
+<section class="hub-hero">
+  <h1>Explore <span class="pink">Fandom</span></h1>
+  <p>Browse wikis by vertical, jump into trending lore, or start your own.</p>
+</section>
+<div class="container hub-section">
+  <h2>By vertical</h2>
+  <div class="wiki-grid">
+    {% for slug, h in hubs.items() %}
+      <a class="wiki-card" href="{{ url_for('vertical_hub', hub_slug=slug) }}" style="--accent: #fa005a;">
+        <div class="wc-banner"><span class="wc-tag">{{ slug }}</span></div>
+        <div class="wc-body">
+          <h3>{{ h.label }}</h3>
+          <p class="wc-tagline">{{ h.tagline }}</p>
+          <div class="wc-stats"><span><strong>{{ h.slugs|length }}</strong> wikis</span></div>
+        </div>
+      </a>
+    {% endfor %}
+  </div>
+</div>
+<div class="container hub-section">
+  <h2>All wikis</h2>
+  <div class="wiki-grid">
+    {% for w in wikis %}
+      <a class="wiki-card" href="{{ url_for('wiki_home', wiki_slug=w.slug) }}" style="--accent: {{ w.accent }};">
+        <div class="wc-banner"><span class="wc-tag">{{ w.slug }}</span></div>
+        <div class="wc-body">
+          <h3>{{ w.name }}</h3>
+          <p class="wc-tagline">{{ w.tagline }}</p>
+          <div class="wc-stats">
+            <span><strong>{{ w.article_count }}</strong> articles</span>
+            <span><strong>{{ '{:,}'.format(w.members_count) }}</strong> members</span>
+          </div>
+        </div>
+      </a>
+    {% endfor %}
+  </div>
+  <p style="margin-top:24px;"><a class="btn" href="{{ url_for('start_a_wiki') }}">Start your own wiki &rarr;</a></p>
+</div>
+{% endblock %}

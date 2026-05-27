@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% block title %}File:{{ file.filename }} — {{ wiki.name }}{% endblock %}
+{% block wiki_nav %}{% include "partials/wiki_nav.html" %}{% endblock %}
+{% block content %}
+<div class="article-shell">
+  <div class="article-header container">
+    <h1 class="article-title">File:{{ file.filename }}</h1>
+    <div class="article-subtitle">
+      {{ file.display_name }} &middot; uploaded {{ file.uploaded_at | ago }} by
+      <a href="{{ url_for('user_profile', username=file.uploader_label) }}">{{ file.uploader_label }}</a>
+    </div>
+  </div>
+  <div class="article-body">
+    <div class="article-content">
+      <div style="text-align:center; background:#222; padding:30px; border-radius:6px;">
+        <img src="{{ url_for('static', filename='images/' + file.filename) }}"
+             alt="{{ file.filename }}"
+             style="max-width:100%; max-height:520px; border-radius:4px; box-shadow:0 2px 12px rgba(0,0,0,0.4);">
+      </div>
+
+      <h3>Description</h3>
+      <p>{{ file.description or 'No description provided.' }}</p>
+
+      <h3>File usage on this wiki</h3>
+      {% if usage %}
+        <ul>
+          {% for a in usage %}
+            <li><a href="{{ url_for('article_view', wiki_slug=wiki.slug, title=a.slug) }}">{{ a.title }}</a></li>
+          {% endfor %}
+        </ul>
+      {% else %}<p style="color:#888;">No articles use this file.</p>{% endif %}
+
+      <h3>Global file usage</h3>
+      {% if global_usage %}
+        <ul>
+          {% for a in global_usage %}
+            <li><a href="{{ url_for('article_view', wiki_slug=a.wiki.slug, title=a.slug) }}">[{{ a.wiki.slug }}] {{ a.title }}</a></li>
+          {% endfor %}
+        </ul>
+      {% else %}<p style="color:#888;">No cross-wiki uses.</p>{% endif %}
+
+      <h3>File metadata</h3>
+      <table class="history-table">
+        <tr><td>MIME type</td><td>{{ file.mime_type }}</td></tr>
+        <tr><td>Dimensions</td><td>{{ file.width }} &times; {{ file.height }}</td></tr>
+        <tr><td>Size</td><td>{{ '{:,}'.format(file.bytes_size) }} bytes</td></tr>
+        <tr><td>License</td><td>{{ file.license }}</td></tr>
+      </table>
+
+      <p style="margin-top:20px;">
+        <a class="btn" href="{{ url_for('static', filename='images/' + file.filename) }}" download>Download original</a>
+      </p>
+    </div>
+  </div>
+</div>
+{% endblock %}

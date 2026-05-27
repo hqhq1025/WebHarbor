@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block title %}Move {{ article.title }} — {{ wiki.name }}{% endblock %}
+{% block wiki_nav %}{% include "partials/wiki_nav.html" %}{% endblock %}
+{% block content %}
+<div class="form-shell">
+  <h1>Move page</h1>
+  <p>Rename <strong>{{ article.title }}</strong> to a new title. A redirect is NOT created on this mirror — be careful with cross-links.</p>
+  <form method="post">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <div class="form-row"><label>New title</label>
+      <input type="text" name="new_title" value="{{ article.title }}" required></div>
+    <div class="form-row"><label>Reason</label>
+      <textarea name="reason" rows="3" style="min-height: 60px;"
+                placeholder="Disambiguation; preferred canonical title; ..."></textarea></div>
+    <button class="btn" type="submit">Move page</button>
+    <a class="btn btn-secondary" href="{{ url_for('article_view', wiki_slug=wiki.slug, title=article.slug) }}">Cancel</a>
+  </form>
+</div>
+{% endblock %}

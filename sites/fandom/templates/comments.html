@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+{% block title %}Comments — {{ article.title }} | {{ wiki.name }}{% endblock %}
+{% block wiki_nav %}{% include "partials/wiki_nav.html" %}{% endblock %}
+{% block content %}
+<div class="article-shell">
+  <div class="article-header container">
+    <h1 class="article-title">Comments: {{ article.title }}</h1>
+    <div class="article-subtitle">
+      <a href="{{ url_for('article_view', wiki_slug=wiki.slug, title=article.slug) }}">&laquo; Back to article</a>
+      &middot; {{ comments | length }} comments
+    </div>
+  </div>
+  <div class="article-body">
+    <div class="article-content">
+      {% set parents = comments | rejectattr('parent_id') | list %}
+      {% for c in parents %}
+        <div class="talk-thread">
+          <div class="tt-meta">
+            <a href="{{ url_for('user_profile', username=c.author_label) }}">{{ c.author_label }}</a>
+            &middot; {{ c.timestamp | ts }}
+            {% if c.likes %}&middot; <span style="color:#fa005a;">{{ c.likes }} likes</span>{% endif %}
+          </div>
+          <p>{{ c.body }}</p>
+          {% if current_user.is_authenticated %}
+          <form method="post" action="{{ url_for('comment_like', wiki_slug=wiki.slug, cid=c.id) }}" style="display: inline;">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button class="btn btn-secondary" style="padding:3px 10px;font-size:12px;" type="submit">&#10084; Like</button>
+          </form>
+          {% endif %}
+          {% set replies = comments | selectattr('parent_id', 'equalto', c.id) | list %}
+          {% for r in replies %}
+            <div class="talk-reply">
+              <div class="tt-meta">
+                <a href="{{ url_for('user_profile', username=r.author_label) }}">{{ r.author_label }}</a>
+                &middot; {{ r.timestamp | ts }}
+              </div>
+              <p>{{ r.body }}</p>
+            </div>
+          {% endfor %}
+          {% if current_user.is_authenticated %}
+          <form method="post" style="margin-top:10px;">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <input type="hidden" name="parent_id" value="{{ c.id }}">
+            <input type="text" name="body" placeholder="Reply..." required
+                   style="width:80%;padding:6px 10px;border:1px solid #ccc;border-radius:3px;">
+            <button class="btn" style="padding:6px 12px;" type="submit">Reply</button>
+          </form>
+          {% endif %}
+        </div>
+      {% endfor %}
+
+      {% if current_user.is_authenticated %}
+      <h3>Add a comment</h3>
+      <form method="post" class="form-shell" style="max-width: 100%; padding: 16px; margin: 16px 0;">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <div class="form-row">
+          <textarea name="body" rows="3" required placeholder="Share your thoughts..." style="min-height:80px;"></textarea>
+        </div>
+        <button class="btn" type="submit">Post comment</button>
+      </form>
+      {% else %}
+      <p><a href="{{ url_for('login') }}">Sign in</a> to leave a comment.</p>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}
