@@ -537,10 +537,16 @@ def condition_detail(slug):
         Condition.primary_dept_slug == cond.primary_dept_slug,
         Condition.id != cond.id,
     ).limit(6).all()
+    is_saved = False
+    if current_user.is_authenticated:
+        is_saved = SavedItem.query.filter_by(
+            user_id=current_user.id, kind="condition", slug=cond.slug
+        ).first() is not None
     return render_template("condition_detail.html",
                            cond=cond, dept=dept,
                            related_procs=related_procs, related_drugs=related_drugs,
-                           doctors=doctors, related_conditions=related_conditions)
+                           doctors=doctors, related_conditions=related_conditions,
+                           is_saved=is_saved)
 
 
 # --- Symptoms ---
@@ -659,7 +665,12 @@ def drugs_index():
 def drug_detail(slug):
     d = Drug.query.filter_by(slug=slug).first_or_404()
     related_conds = Condition.query.filter(Condition.related_drugs.contains(slug)).limit(6).all()
-    return render_template("drug_detail.html", drug=d, related_conditions=related_conds)
+    is_saved = False
+    if current_user.is_authenticated:
+        is_saved = SavedItem.query.filter_by(
+            user_id=current_user.id, kind="drug", slug=slug
+        ).first() is not None
+    return render_template("drug_detail.html", drug=d, related_conditions=related_conds, is_saved=is_saved)
 
 
 # --- Departments & Doctors ---

@@ -48,6 +48,14 @@
       </form>
 
       {% if current_user.is_authenticated %}
+      {% if is_saved %}
+      <form action="{{ url_for('unsave_item') }}" method="post" style="display:inline-block;margin-top:14px;">
+        <input type="hidden" name="kind" value="condition">
+        <input type="hidden" name="slug" value="{{ cond.slug }}">
+        <input type="hidden" name="next" value="{{ request.path }}">
+        <button class="btn-primary" type="submit" style="background:#198754;border-color:#198754;">&#10003; Saved to portal &mdash; Remove</button>
+      </form>
+      {% else %}
       <form action="{{ url_for('save_item') }}" method="post" style="display:inline-block;margin-top:14px;">
         <input type="hidden" name="kind" value="condition">
         <input type="hidden" name="slug" value="{{ cond.slug }}">
@@ -55,6 +63,7 @@
         <input type="hidden" name="next" value="{{ request.path }}">
         <button class="btn-secondary" type="submit">Save to my portal</button>
       </form>
+      {% endif %}
       {% endif %}
 
       <form action="{{ url_for('share_article') }}" method="post" style="margin-top: 18px; padding: 14px; background: var(--mayo-bg-alt); border-radius: 4px;">

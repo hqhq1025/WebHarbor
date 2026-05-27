@@ -23,6 +23,14 @@
       <section id="interactions"><h2>Interactions</h2><p>{{ drug.interactions }}</p></section>
 
       {% if current_user.is_authenticated %}
+      {% if is_saved %}
+      <form action="{{ url_for('unsave_item') }}" method="post" style="margin-top:14px;">
+        <input type="hidden" name="kind" value="drug">
+        <input type="hidden" name="slug" value="{{ drug.slug }}">
+        <input type="hidden" name="next" value="{{ request.path }}">
+        <button class="btn-primary" type="submit" style="background:#198754;border-color:#198754;">&#10003; Saved to portal &mdash; Remove</button>
+      </form>
+      {% else %}
       <form action="{{ url_for('save_item') }}" method="post" style="margin-top:14px;">
         <input type="hidden" name="kind" value="drug">
         <input type="hidden" name="slug" value="{{ drug.slug }}">
@@ -30,6 +38,7 @@
         <input type="hidden" name="next" value="{{ request.path }}">
         <button class="btn-secondary" type="submit">Save to my portal</button>
       </form>
+      {% endif %}
       {% endif %}
     </div>
     <aside class="sidebar">
