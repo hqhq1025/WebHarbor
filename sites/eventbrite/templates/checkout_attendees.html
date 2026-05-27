@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block title %}Attendee info — {{ ev.title }}{% endblock %}
+{% block content %}
+<div class="eb-container eb-page" style="max-width:720px;">
+  <div class="eb-steps">
+    <span class="eb-step done">1. Select tickets</span>
+    <span class="eb-step active">2. Attendee info</span>
+    <span class="eb-step">3. Payment</span>
+    <span class="eb-step">4. Confirmation</span>
+  </div>
+  <h1 class="eb-h1">Attendee info</h1>
+  <p class="eb-muted">{{ ev.title }} — {{ cart['items']|length }} ticket type{% if cart['items']|length != 1 %}s{% endif %}, ${{ '%.2f'|format(cart['total']) }} total</p>
+
+  <form method="POST">
+    {% for tier_id, i, tier_name, price in slots %}
+      <fieldset style="border:1px solid var(--eb-border);border-radius:6px;padding:16px;margin-bottom:14px;">
+        <legend><strong>Ticket {{ loop.index }}</strong> — {{ tier_name }} (${{ '%.2f'|format(price) }})</legend>
+        <div class="eb-form-grid">
+          <div class="eb-form-row">
+            <label>Full name *</label>
+            <input type="text" name="name_{{ loop.index0 }}" required value="{{ attendees.get('name_' ~ loop.index0, '') }}">
+          </div>
+          <div class="eb-form-row">
+            <label>Email *</label>
+            <input type="email" name="email_{{ loop.index0 }}" required value="{{ attendees.get('email_' ~ loop.index0, '') }}">
+          </div>
+        </div>
+      </fieldset>
+    {% endfor %}
+
+    <div class="eb-form-row" style="margin-top:18px;">
+      <label>Custom question — Dietary restrictions or accessibility needs?</label>
+      <textarea name="qa_dietary" placeholder="Optional"></textarea>
+    </div>
+
+    <button class="btn btn-primary btn-block btn-large" type="submit">Continue to payment</button>
+  </form>
+</div>
+{% endblock %}

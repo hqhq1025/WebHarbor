@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block title %}Events in the United States | Eventbrite{% endblock %}
+{% block content %}
+<div class="eb-container eb-page">
+  {% include 'partials/breadcrumbs.html' with context %}
+  <h1 class="eb-h1">Events in the United States</h1>
+  <p class="eb-muted">Browse by region or jump directly to a city.</p>
+
+  {% for slug, name, cslugs in regions %}
+    <div class="eb-section-header" style="margin-top:32px;">
+      <h2 class="eb-h2">{{ name }}</h2>
+      <a href="{{ url_for('region_landing', region_slug=slug) }}">All {{ name }} →</a>
+    </div>
+    <div class="eb-grid-3">
+      {% for cs in cslugs %}
+        {% if cs in city_map %}
+          {% set cn = city_map[cs][0] %}{% set st = city_map[cs][1] %}
+          <a class="eb-card" href="{{ url_for('city_landing', city_slug=cs) }}" style="text-decoration:none;">
+            {% set img = city_image_url(cs) %}
+            {% if img %}
+              <div class="eb-card-img" style="background-image:url('{{ img }}');background-size:cover;background-position:center;">
+                <div class="img-title">{{ cn }}, {{ st }}</div>
+              </div>
+            {% else %}
+              <div class="eb-card-img" style="background:linear-gradient(135deg,#F05537,#FFB169);">
+                <div class="img-title">{{ cn }}, {{ st }}</div>
+              </div>
+            {% endif %}
+          </a>
+        {% endif %}
+      {% endfor %}
+    </div>
+  {% endfor %}
+</div>
+{% endblock %}

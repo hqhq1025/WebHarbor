@@ -1,0 +1,108 @@
+{% extends "base.html" %}
+{% block title %}Eventbrite — Discover events in {{ city_name }}{% endblock %}
+{% block content %}
+
+<section class="eb-hero" {% set hero = hero_image_url('hero_concert_crowd') %}{% if hero %}style="background-image:linear-gradient(135deg,rgba(30,10,60,.55),rgba(54,89,227,.45)),url('{{ hero }}');background-size:cover;background-position:center;color:#fff;"{% endif %}>
+  <div class="eb-container">
+    <h1 class="eb-hero-title">Browsing events in {{ city_name }}</h1>
+    <p class="eb-hero-sub">Discover the best things to do near you</p>
+    <div class="eb-pill-row">
+      <a class="eb-pill active" href="{{ url_for('city_landing', city_slug=city_slug) }}">All</a>
+      <a class="eb-pill" href="{{ url_for('date_landing', label='today') }}">Today</a>
+      <a class="eb-pill" href="{{ url_for('date_landing', label='this-weekend') }}">This weekend</a>
+      <a class="eb-pill" href="{{ url_for('free_events') }}">Free</a>
+      <a class="eb-pill" href="{{ url_for('category_landing', cat_slug='music') }}">Music</a>
+      <a class="eb-pill" href="{{ url_for('category_landing', cat_slug='food-drink') }}">Food &amp; Drink</a>
+      <a class="eb-pill" href="{{ url_for('online_hub') }}">Online</a>
+      <a class="eb-pill" href="{{ url_for('trending_hub') }}">Trending</a>
+    </div>
+  </div>
+</section>
+
+<div class="eb-container eb-page">
+
+  {% if weekend_events %}
+  <div class="eb-section-header">
+    <h2 class="eb-h2">This weekend in {{ city_name }}</h2>
+    <a href="{{ url_for('city_landing', city_slug=city_slug, sub='this-weekend') }}">See all →</a>
+  </div>
+  <div class="eb-grid">
+    {% for ev in weekend_events %}
+      {% include 'partials/event_card.html' %}
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  <div class="eb-section-header" style="margin-top:48px;">
+    <h2 class="eb-h2">Featured events for you</h2>
+    <a href="{{ url_for('search') }}?city={{ city_slug }}">See more →</a>
+  </div>
+  <div class="eb-grid">
+    {% for ev in featured_events %}
+      {% include 'partials/event_card.html' %}
+    {% endfor %}
+  </div>
+
+  <div class="eb-section-header" style="margin-top:48px;">
+    <h2 class="eb-h2">Online events</h2>
+    <a href="{{ url_for('online_landing') }}">Browse all online events →</a>
+  </div>
+  <div class="eb-cards-row">
+    {% for ev in online_events %}
+      {% include 'partials/event_card.html' %}
+    {% endfor %}
+  </div>
+
+  <div class="eb-section-header" style="margin-top:48px;">
+    <h2 class="eb-h2">Top destinations in United States</h2>
+  </div>
+  <div class="eb-grid">
+    {% for cslug, cname, cst, _, _ in popular_cities %}
+      <a class="eb-card" href="{{ url_for('city_landing', city_slug=cslug) }}" style="text-decoration:none;">
+        {% set img = city_image_url(cslug) %}
+        {% if img %}
+        <div class="eb-card-img" style="background-image:url('{{ img }}');background-size:cover;background-position:center;">
+          <div class="img-title">{{ cname }}</div>
+        </div>
+        {% else %}
+        <div class="eb-card-img" style="background:linear-gradient(135deg,#F05537,#FFB169);">
+          <div class="img-title">{{ cname }}</div>
+        </div>
+        {% endif %}
+        <div class="eb-card-body">
+          <div class="eb-card-title">Things to do in {{ cname }}</div>
+          <div class="eb-card-meta">{{ cst }}</div>
+        </div>
+      </a>
+    {% endfor %}
+  </div>
+
+  <div class="eb-section-header" style="margin-top:48px;"><h2 class="eb-h2">Browse by category</h2></div>
+  <div class="eb-grid-3">
+    {% for cslug, cname, color in categories %}
+      <a class="eb-card" href="{{ url_for('category_landing', cat_slug=cslug) }}" style="text-decoration:none;">
+        {% set cimg = category_hero_image_url(cslug) %}
+        {% if cimg %}
+        <div class="eb-card-img" style="background-image:linear-gradient(135deg,{{ color }}aa,rgba(255,255,255,.2)),url('{{ cimg }}');background-size:cover;background-position:center;">
+          <div class="img-title">{{ cname }}</div>
+        </div>
+        {% else %}
+        <div class="eb-card-img" style="background:linear-gradient(135deg,{{ color }},#ffffff66);">
+          <div class="img-title">{{ cname }}</div>
+        </div>
+        {% endif %}
+      </a>
+    {% endfor %}
+  </div>
+
+  <div style="margin-top:48px;background:var(--eb-bg-soft);padding:24px;border-radius:8px;">
+    <h2 class="eb-h2" style="margin-top:0">Subscribe for weekly picks</h2>
+    <p class="eb-muted">Get the best events in {{ city_name }} delivered Friday mornings.</p>
+    <form action="{{ url_for('newsletter_signup') }}" method="POST" style="display:flex;gap:8px;max-width:480px;">
+      <input type="email" name="email" required placeholder="you@example.com"
+             style="flex:1;padding:10px;border:1px solid var(--eb-border);border-radius:4px;">
+      <button class="btn btn-primary" type="submit">Subscribe</button>
+    </form>
+  </div>
+</div>
+{% endblock %}

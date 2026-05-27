@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block title %}Your cart | Eventbrite{% endblock %}
+{% block content %}
+<div class="eb-container eb-page">
+  {% include 'partials/breadcrumbs.html' with context %}
+  <h1 class="eb-h1">Your cart</h1>
+  {% if lines %}
+    <div style="border:1px solid var(--eb-border);border-radius:8px;overflow:hidden;">
+      {% for ln in lines %}
+        <div style="padding:18px;border-bottom:1px solid var(--eb-border);display:flex;gap:18px;align-items:center;">
+          <div style="flex:1;">
+            <a href="{{ url_for('event_detail', slug=ln.event.slug) }}"><strong>{{ ln.event.title }}</strong></a>
+            <div class="eb-muted">{{ ln.tier.name }} · ×{{ ln.qty }}</div>
+            <div class="eb-muted" style="font-size:12px;">{{ fmt_dt(ln.event.start_dt) }}</div>
+          </div>
+          <div style="text-align:right;">
+            <strong>${{ '%.2f'|format(ln.line_total) }}</strong>
+            <form action="{{ url_for('cart_remove', cart_id=ln.cart_id) }}" method="POST" style="margin-top:6px;">
+              <button class="btn-link" type="submit">Remove</button>
+            </form>
+          </div>
+        </div>
+      {% endfor %}
+      <div style="padding:18px;display:flex;justify-content:space-between;">
+        <strong>Total</strong>
+        <strong>${{ '%.2f'|format(total) }}</strong>
+      </div>
+    </div>
+    <p style="margin-top:18px;" class="eb-muted">Note: each event still completes its own checkout for billing & attendee info.</p>
+  {% else %}
+    <p class="eb-muted">Your cart is empty.</p>
+    <a class="btn btn-primary" href="{{ url_for('index') }}">Browse events</a>
+  {% endif %}
+</div>
+{% endblock %}

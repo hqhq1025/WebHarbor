@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+{% block title %}About {{ o.name }} | Eventbrite{% endblock %}
+{% block content %}
+<div class="eb-container eb-page">
+  {% include 'partials/breadcrumbs.html' with context %}
+  <div style="display:flex;gap:24px;align-items:center;margin-bottom:24px;">
+    <div class="eb-organizer-avatar" style="width:96px;height:96px;font-size:40px;background:{{ organizer_gradient(o) }};">{{ o.name[0] }}</div>
+    <div>
+      <h1 class="eb-h1" style="margin:0;">{{ o.name }}</h1>
+      <div class="eb-muted">{{ follower_count }} followers · {{ '%.1f'|format(avg) if reviews else '—' }} ★ ({{ reviews|length }} review{{ 's' if reviews|length != 1 else '' }})</div>
+      <div style="margin-top:8px;">
+        <a href="{{ url_for('organizer_profile', slug=o.slug) }}">Overview</a> ·
+        <a href="{{ url_for('organizer_about', slug=o.slug) }}"><strong>About</strong></a> ·
+        <a href="{{ url_for('organizer_past', slug=o.slug) }}">Past events</a> ·
+        <a href="{{ url_for('organizer_followers', slug=o.slug) }}">Followers</a>
+      </div>
+    </div>
+  </div>
+
+  <div class="eb-detail-grid">
+    <main>
+      <div class="eb-detail-section">
+        <h2>About {{ o.name }}</h2>
+        <p>{{ o.bio }}</p>
+      </div>
+      <div class="eb-detail-section">
+        <h2>Reviews</h2>
+        {% for r in reviews %}
+          <div style="border-bottom:1px solid var(--eb-border);padding:12px 0;">
+            <div style="color:#E5A300;">{% for i in range(r.rating) %}★{% endfor %}{% for i in range(5 - r.rating) %}☆{% endfor %}</div>
+            <p>{{ r.body }}</p>
+            <div class="eb-muted" style="font-size:12px;">{{ fmt_dt_short(r.created_at) }}</div>
+          </div>
+        {% else %}
+          <p class="eb-muted">No reviews yet.</p>
+        {% endfor %}
+
+        {% if current_user.is_authenticated %}
+        <form action="{{ url_for('review_organizer', slug=o.slug) }}" method="POST" style="margin-top:18px;">
+          <label>Your rating
+            <select name="rating" style="padding:6px;border:1px solid var(--eb-border);border-radius:4px;">
+              {% for n in [5,4,3,2,1] %}<option value="{{ n }}">{{ n }} ★</option>{% endfor %}
+            </select>
+          </label>
+          <textarea name="body" rows="3" placeholder="What was your experience?" style="width:100%;padding:8px;border:1px solid var(--eb-border);border-radius:4px;margin-top:8px;"></textarea>
+          <button class="btn btn-primary" type="submit" style="margin-top:8px;">Post review</button>
+        </form>
+        {% else %}
+          <p><a href="{{ url_for('login') }}">Log in</a> to leave a review.</p>
+        {% endif %}
+      </div>
+    </main>
+    <aside>
+      <div class="eb-sidebar">
+        <h3 class="eb-h3" style="margin-top:0;">Contact</h3>
+        <p class="eb-muted">{{ o.contact_email }}<br>{{ o.website }}</p>
+        <hr>
+        <h3 class="eb-h3">Subscribe to email updates</h3>
+        <form action="{{ url_for('subscribe_organizer_email', slug=o.slug) }}" method="POST">
+          <input type="email" name="email" required placeholder="you@example.com" style="width:100%;padding:8px;border:1px solid var(--eb-border);border-radius:4px;">
+          <button class="btn btn-outline" type="submit" style="margin-top:8px;width:100%;">Subscribe</button>
+        </form>
+        <hr>
+        <a class="btn-link" href="{{ url_for('report_organizer', slug=o.slug) }}">Report this organizer</a>
+      </div>
+    </aside>
+  </div>
+</div>
+{% endblock %}

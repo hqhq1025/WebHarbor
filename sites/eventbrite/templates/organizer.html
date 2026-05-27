@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+{% block title %}{{ o.name }} | Organizer on Eventbrite{% endblock %}
+{% block content %}
+<div class="eb-container eb-page">
+  <div style="display:flex;gap:24px;align-items:center;margin-bottom:32px;">
+    <div class="eb-organizer-avatar" style="width:88px;height:88px;flex:0 0 88px;font-size:36px;background:{{ organizer_gradient(o) }};">{{ o.name[0] }}</div>
+    <div style="flex:1;">
+      <h1 class="eb-h1" style="margin:0;">{{ o.name }}{% if o.verified %} <span style="font-size:18px;color:var(--eb-blue);">✓ Verified</span>{% endif %}</h1>
+      <div class="eb-muted">{{ follower_count }} followers · {{ upcoming|length }} upcoming · {{ past|length }} past</div>
+      {% if o.city_slug in city_map %}<div class="eb-muted">{{ city_map[o.city_slug][0] }}, {{ city_map[o.city_slug][1] }}</div>{% endif %}
+    </div>
+    <form method="POST" action="{{ url_for('follow_organizer', slug=o.slug) }}">
+      <button type="submit" class="btn {{ 'btn-outline' if is_following else 'btn-primary' }} btn-large">
+        {{ 'Following' if is_following else '+ Follow' }}
+      </button>
+    </form>
+  </div>
+
+  <div class="eb-detail-grid">
+    <main>
+      <div class="eb-detail-section">
+        <h2>About</h2>
+        <p>{{ o.bio }}</p>
+        <div style="margin-top:8px;font-size:14px;">
+          <a href="{{ url_for('organizer_about', slug=o.slug) }}">Full bio & reviews</a> ·
+          <a href="{{ url_for('organizer_past', slug=o.slug) }}">All past events</a> ·
+          <a href="{{ url_for('organizer_followers', slug=o.slug) }}">Followers</a>
+        </div>
+      </div>
+
+      {% if upcoming %}
+      <div class="eb-detail-section">
+        <h2>Upcoming events ({{ upcoming|length }})</h2>
+        <div class="eb-grid-2">
+          {% for ev in upcoming %}
+            {% include 'partials/event_card.html' %}
+          {% endfor %}
+        </div>
+      </div>
+      {% endif %}
+
+      {% if past %}
+      <div class="eb-detail-section">
+        <h2>Past events ({{ past|length }})</h2>
+        <div class="eb-grid-2">
+          {% for ev in past %}
+            {% include 'partials/event_card.html' %}
+          {% endfor %}
+        </div>
+      </div>
+      {% endif %}
+    </main>
+    <aside>
+      <div class="eb-sidebar">
+        <h3 class="eb-h3" style="margin-top:0">Contact</h3>
+        <p class="eb-muted">{{ o.contact_email }}</p>
+        <p class="eb-muted">{{ o.website }}</p>
+        <div style="margin-top:12px;">
+          <strong>{{ follower_count }}</strong> <span class="eb-muted">followers</span>
+        </div>
+        <hr>
+        <h3 class="eb-h3">Email me about new events</h3>
+        <form action="{{ url_for('subscribe_organizer_email', slug=o.slug) }}" method="POST">
+          <input type="email" name="email" required placeholder="you@example.com" {% if current_user.is_authenticated %}value="{{ current_user.email }}"{% endif %} style="width:100%;padding:8px;border:1px solid var(--eb-border);border-radius:4px;">
+          <button class="btn btn-outline" type="submit" style="margin-top:8px;width:100%;">Subscribe</button>
+        </form>
+        <hr>
+        <p style="margin:0;"><a href="{{ url_for('report_organizer', slug=o.slug) }}" class="btn-link">Report this organizer</a></p>
+      </div>
+    </aside>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block title %}Investors | Eventbrite{% endblock %}
+{% block content %}
+<div class="eb-container eb-page">
+  {% include 'partials/breadcrumbs.html' with context %}
+  <h1 class="eb-h1">Investor relations</h1>
+  <p class="eb-muted">Quarterly results, SEC filings, and shareholder resources.</p>
+  <h2 class="eb-h2">Q1 2026 highlights</h2>
+  <ul>
+    <li>Revenue: $86M (+12% YoY)</li>
+    <li>Paid tickets: 22.4M (+8% YoY)</li>
+    <li>Active creators: 920K (+11% YoY)</li>
+  </ul>
+  <p style="margin-top:24px;">Investor inquiries: <strong>ir@eventbrite-mirror.example</strong></p>
+</div>
+{% endblock %}

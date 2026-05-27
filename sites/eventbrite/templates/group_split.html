@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block title %}Split this order | Eventbrite{% endblock %}
+{% block content %}
+<div class="eb-container eb-page" style="max-width:640px;">
+  {% include 'partials/breadcrumbs.html' with context %}
+  <h1 class="eb-h1">Split this order</h1>
+  <p class="eb-muted">Order {{ order.code }} · ${{ '%.2f'|format(order.total) }}</p>
+  <p>Add friends' emails — we'll send each a payment request and split the total evenly across all of you.</p>
+  <form method="POST" action="{{ url_for('group_split', code=order.code) }}">
+    <label>Friends' emails (comma-separated)
+      <textarea name="emails" rows="3" required style="width:100%;padding:10px;border:1px solid var(--eb-border);border-radius:4px;margin-top:6px;"></textarea>
+    </label>
+    <button class="btn btn-primary" type="submit" style="margin-top:18px;">Send split requests</button>
+  </form>
+</div>
+{% endblock %}

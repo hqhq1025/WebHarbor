@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block title %}My tickets | Eventbrite{% endblock %}
+{% block content %}
+<div class="eb-container eb-page">
+  <h1 class="eb-h1">My tickets</h1>
+  {% if not orders %}
+    <p class="eb-muted">You don't have any orders yet. Find your next event on the <a href="{{ url_for('index') }}">home page</a>.</p>
+  {% endif %}
+  {% for o in orders %}
+    <div style="border:1px solid var(--eb-border);border-radius:8px;padding:16px;margin-bottom:14px;">
+      <div style="display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;">
+        <div>
+          <div class="eb-h3" style="margin:0;"><a href="{{ url_for('event_detail', slug=o.event.slug) }}">{{ o.event.title }}</a></div>
+          <div class="eb-muted">Order <code>{{ o.code }}</code> · {{ o.created_at.strftime('%b %d, %Y') }} · {{ o.tickets|length }} ticket{% if o.tickets|length != 1 %}s{% endif %} · ${{ '%.2f'|format(o.total) }}</div>
+          <div class="eb-muted">{{ fmt_dt(o.event.start_dt) }} — {% if o.event.is_online %}Online{% else %}{{ o.event.venue_name }}{% endif %}</div>
+          <div style="margin-top:8px;">
+            <span class="eb-chip" style="background:{% if o.status == 'cancelled' %}var(--eb-error);color:#fff{% else %}var(--eb-success);color:#fff{% endif %};">{{ o.status|upper }}</span>
+          </div>
+        </div>
+        <div style="text-align:right;">
+          <a class="btn btn-outline" href="{{ url_for('order_confirmation', code=o.code) }}">View tickets</a>
+          {% if o.status == 'confirmed' %}
+            <form method="POST" action="{{ url_for('cancel_order', code=o.code) }}" style="display:inline;">
+              <button class="btn btn-outline" type="submit" onclick="return confirm('Cancel this order? Tickets will be returned to inventory.');">Cancel order</button>
+            </form>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  {% endfor %}
+</div>
+{% endblock %}

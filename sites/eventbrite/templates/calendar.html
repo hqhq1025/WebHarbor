@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block title %}Calendar — {{ month_name }} {{ year }} | Eventbrite{% endblock %}
+{% block content %}
+<div class="eb-container eb-page">
+  <h1 class="eb-h1">Events calendar</h1>
+  <div style="display:flex;justify-content:space-between;align-items:center;margin:12px 0 18px;">
+    <a class="btn btn-outline" href="{{ url_for('calendar_view', year=prev_year, month=prev_month, city=city) }}">← {{ prev_year }}-{{ '%02d'|format(prev_month) }}</a>
+    <h2 class="eb-h2" style="margin:0;">{{ month_name }} {{ year }} — {{ city_map[city][0] if city in city_map else city }}</h2>
+    <a class="btn btn-outline" href="{{ url_for('calendar_view', year=next_year, month=next_month, city=city) }}">{{ next_year }}-{{ '%02d'|format(next_month) }} →</a>
+  </div>
+  <form method="GET" style="margin-bottom:12px;">
+    <input type="hidden" name="year" value="{{ year }}"><input type="hidden" name="month" value="{{ month }}">
+    <select name="city" onchange="this.form.submit()" style="padding:8px;">
+      {% for cslug, cname, cst, _, _ in cities %}
+        <option value="{{ cslug }}" {% if city==cslug %}selected{% endif %}>{{ cname }}, {{ cst }}</option>
+      {% endfor %}
+    </select>
+  </form>
+  <div class="eb-cal-head">
+    <div>Sun</div><div>Mon</div><div>Tue</div><div>Wed</div><div>Thu</div><div>Fri</div><div>Sat</div>
+  </div>
+  <div class="eb-cal">
+    {% for week in weeks %}
+      {% for d in week %}
+        <div class="eb-cal-cell {% if d == 0 %}muted{% endif %}">
+          {% if d != 0 %}
+            <div class="d">{{ d }}</div>
+            {% for ev in days.get(d, []) %}
+              <a class="evlink" href="{{ url_for('event_detail', slug=ev.slug) }}" title="{{ ev.title }}">{{ ev.start_dt.strftime('%H:%M') }} {{ ev.title|truncate(20) }}</a>
+            {% endfor %}
+          {% endif %}
+        </div>
+      {% endfor %}
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}

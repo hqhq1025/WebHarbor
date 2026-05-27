@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block title %}Create an event | Eventbrite{% endblock %}
+{% block content %}
+<div class="eb-container eb-page" style="max-width:720px;">
+  <h1 class="eb-h1">Create an event</h1>
+  <p class="eb-muted">Build your event in 4 steps. You can save and come back any time.</p>
+  <div class="eb-grid-2" style="margin-top:24px;">
+    <a class="eb-card" href="{{ url_for('create_basics') }}">
+      <div class="eb-card-img" style="background:linear-gradient(135deg,#F05537,#FFB169);"><div class="img-title">Step 1: Basics</div></div>
+      <div class="eb-card-body"><div class="eb-card-meta">Title, category, location</div></div>
+    </a>
+    <a class="eb-card" href="{{ url_for('create_details') }}">
+      <div class="eb-card-img" style="background:linear-gradient(135deg,#3659E3,#9CB5FF);"><div class="img-title">Step 2: Details</div></div>
+      <div class="eb-card-body"><div class="eb-card-meta">Date, time, description</div></div>
+    </a>
+    <a class="eb-card" href="{{ url_for('create_tickets') }}">
+      <div class="eb-card-img" style="background:linear-gradient(135deg,#9D2BB8,#E294FF);"><div class="img-title">Step 3: Tickets</div></div>
+      <div class="eb-card-body"><div class="eb-card-meta">Tiers, prices, capacity</div></div>
+    </a>
+    <a class="eb-card" href="{{ url_for('create_publish') }}">
+      <div class="eb-card-img" style="background:linear-gradient(135deg,#16823D,#7BDA8A);"><div class="img-title">Step 4: Publish</div></div>
+      <div class="eb-card-body"><div class="eb-card-meta">Review and publish</div></div>
+    </a>
+  </div>
+</div>
+{% endblock %}

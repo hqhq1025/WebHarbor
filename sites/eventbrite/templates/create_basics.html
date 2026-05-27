@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block title %}Create — Basics | Eventbrite{% endblock %}
+{% block content %}
+<div class="eb-container eb-page" style="max-width:720px;">
+  <h1 class="eb-h1">Step 1: Basics</h1>
+  <div class="eb-steps">
+    <span class="eb-step active">1. Basics</span><span class="eb-step">2. Details</span>
+    <span class="eb-step">3. Tickets</span><span class="eb-step">4. Publish</span>
+  </div>
+  <form method="POST">
+    <div class="eb-form-row"><label>Event title</label><input name="title" value="{{ d.title }}" required></div>
+    <div class="eb-form-row"><label>Summary</label><input name="summary" value="{{ d.summary }}" maxlength="140"></div>
+    <div class="eb-form-grid">
+      <div class="eb-form-row">
+        <label>Category</label>
+        <select name="category_slug">
+          {% for cslug, cname, color in categories %}
+            <option value="{{ cslug }}" {% if d.category_slug==cslug %}selected{% endif %}>{{ cname }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="eb-form-row">
+        <label>City</label>
+        <select name="city_slug">
+          {% for cslug, cname, cst, _, _ in cities %}
+            <option value="{{ cslug }}" {% if d.city_slug==cslug %}selected{% endif %}>{{ cname }}, {{ cst }}</option>
+          {% endfor %}
+        </select>
+      </div>
+    </div>
+    <div class="eb-form-row">
+      <label><input type="checkbox" name="is_online" {% if d.is_online %}checked{% endif %}> This is an online event</label>
+    </div>
+    <div class="eb-form-row"><label>Venue name (if in person)</label><input name="venue_name" value="{{ d.venue_name }}"></div>
+    <button class="btn btn-primary btn-large" type="submit">Save & continue</button>
+  </form>
+</div>
+{% endblock %}

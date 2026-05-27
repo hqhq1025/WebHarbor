@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block title %}{{ label_name }} | Eventbrite{% endblock %}
+{% block content %}
+<div class="eb-container eb-page">
+  {% include 'partials/breadcrumbs.html' with context %}
+  <h1 class="eb-h1">{{ label_name }}</h1>
+  <p class="eb-muted">Showing events from {{ start.strftime('%a, %b %-d') }} to {{ end.strftime('%a, %b %-d, %Y') }}.</p>
+
+  <div class="eb-pill-row" style="margin:18px 0;">
+    {% for k, n in date_labels.items() %}
+      <a class="eb-pill {{ 'active' if k == label else '' }}" href="{{ url_for('date_landing', label=k) }}">{{ n }}</a>
+    {% endfor %}
+  </div>
+
+  <div class="eb-grid">
+    {% for ev in events %}{% include 'partials/event_card.html' %}{% endfor %}
+    {% if not events %}<p class="eb-muted">No events in this window.</p>{% endif %}
+  </div>
+</div>
+{% endblock %}

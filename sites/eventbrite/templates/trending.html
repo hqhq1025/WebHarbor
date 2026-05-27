@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block title %}Trending events | Eventbrite{% endblock %}
+{% block content %}
+<div class="eb-container eb-page">
+  {% include 'partials/breadcrumbs.html' with context %}
+  <h1 class="eb-h1">Trending now</h1>
+  <p class="eb-muted">The hottest events in {{ city_map[city][0] if city in city_map else city }} this month, ranked by ticket-sales momentum.</p>
+
+  <div class="eb-section-header"><h2 class="eb-h2">Top trending</h2></div>
+  <div class="eb-grid">
+    {% for ev in events %}{% include 'partials/event_card.html' %}{% endfor %}
+  </div>
+
+  {% if top_picks %}
+  <div class="eb-section-header" style="margin-top:36px;"><h2 class="eb-h2">Editor's top picks</h2></div>
+  <div class="eb-grid">
+    {% for ev in top_picks %}{% include 'partials/event_card.html' %}{% endfor %}
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

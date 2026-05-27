@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block title %}{{ title }} | Eventbrite for Organizers{% endblock %}
+{% block content %}
+<div class="eb-container eb-page">
+  {% include 'partials/breadcrumbs.html' with context %}
+  <h1 class="eb-h1">{{ title }}</h1>
+  <p class="eb-muted" style="font-size:18px;max-width:700px;">{{ blurb }}</p>
+
+  <div class="eb-detail-grid" style="margin-top:32px;">
+    <main>
+      <div class="eb-detail-section">
+        <h2>What you get</h2>
+        <ul>
+          <li>Drag-and-drop event editor with live preview</li>
+          <li>Custom ticket tiers, fees, and presale windows</li>
+          <li>Embedded checkout for your own site</li>
+          <li>Attendee dashboard, refunds, and transfers</li>
+          <li>Customizable confirmation and reminder emails</li>
+          <li>Promo codes, group discounts, and waitlists</li>
+        </ul>
+      </div>
+      <div class="eb-detail-section">
+        <h2>What organizers say</h2>
+        <p>"We doubled our paid attendance in the first quarter on Eventbrite." — Schubas Tavern</p>
+        <p>"The promo code engine alone is worth the switch." — Startup Grind</p>
+      </div>
+      <div class="eb-detail-section">
+        <h2>Ready to start?</h2>
+        <a class="btn btn-primary btn-large" href="{{ url_for('create_intro') }}">Create your first event</a>
+      </div>
+    </main>
+    <aside>
+      <div class="eb-sidebar">
+        <h3 class="eb-h3" style="margin-top:0;">Other organizer pages</h3>
+        {% for s, t, _ in pages %}
+          {% if s != slug %}
+            <p><a href="{{ url_for('organize_page', page=s) }}">{{ t }}</a></p>
+          {% endif %}
+        {% endfor %}
+      </div>
+    </aside>
+  </div>
+</div>
+{% endblock %}

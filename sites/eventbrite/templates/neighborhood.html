@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block title %}{{ n_name }} events in {{ city_name }} | Eventbrite{% endblock %}
+{% block content %}
+<div class="eb-container eb-page">
+  {% include 'partials/breadcrumbs.html' with context %}
+  <h1 class="eb-h1">{{ n_name }} events in {{ city_name }}</h1>
+  <p class="eb-muted">{{ blurb }}</p>
+
+  <div class="eb-pill-row" style="margin:18px 0;">
+    <a class="eb-pill" href="{{ url_for('city_landing', city_slug=city_slug) }}">All of {{ city_name }}</a>
+    {% for ns, nn, _ in all_neighborhoods %}
+      <a class="eb-pill {{ 'active' if ns == n_slug else '' }}" href="{{ url_for('neighborhood_landing', city_slug=city_slug, n_slug=ns) }}">{{ nn }}</a>
+    {% endfor %}
+  </div>
+
+  <div class="eb-grid">
+    {% for ev in events %}{% include 'partials/event_card.html' %}{% endfor %}
+    {% if not events %}<p class="eb-muted">No events found in {{ n_name }} right now.</p>{% endif %}
+  </div>
+</div>
+{% endblock %}

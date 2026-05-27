@@ -1,0 +1,110 @@
+{% extends "base.html" %}
+{% block title %}{% if q %}{{ q }} | {% endif %}Search events | Eventbrite{% endblock %}
+{% block content %}
+<div class="eb-container eb-page" style="display:grid;grid-template-columns:260px 1fr;gap:32px;">
+
+  <aside class="eb-facets">
+    <form method="GET" action="{{ url_for('search') }}">
+      <input type="hidden" name="q" value="{{ q }}">
+
+      <h3>Date</h3>
+      <ul>
+        {% for v, l in [('','Anytime'),('today','Today'),('tomorrow','Tomorrow'),('this-weekend','This weekend'),('this-week','This week'),('this-month','This month')] %}
+          <li><a class="{% if when==v %}active{% endif %}"
+                 href="{{ url_for('search', q=q, city=city, category=cat, format=fmt, price=price, venue=venue, language=lang, when=v) }}">{{ l }}</a></li>
+        {% endfor %}
+      </ul>
+      <div class="eb-form-grid" style="margin-top:8px;">
+        <input type="date" name="from" value="{{ date_from.isoformat() if date_from else '' }}">
+        <input type="date" name="to"   value="{{ date_to.isoformat() if date_to else '' }}">
+      </div>
+
+      <h3>Price</h3>
+      <ul>
+        <li><a class="{% if not price %}active{% endif %}" href="{{ url_for('search', q=q, city=city, category=cat, format=fmt, when=when) }}">Any price</a></li>
+        <li><a class="{% if price=='free' %}active{% endif %}" href="{{ url_for('search', q=q, city=city, category=cat, format=fmt, when=when, price='free') }}">Free</a></li>
+        <li><a class="{% if price=='paid' %}active{% endif %}" href="{{ url_for('search', q=q, city=city, category=cat, format=fmt, when=when, price='paid') }}">Paid</a></li>
+      </ul>
+      <label style="font-size:13px;color:var(--eb-text-muted)">Max price ($)
+        <input type="number" name="max_price" value="{{ max_price or '' }}" min="0" step="5">
+      </label>
+
+      <h3>Format</h3>
+      <ul>
+        {% for v in ['Class','Conference','Festival','Networking','Party','Performance','Seminar','Tour'] %}
+          <li><a class="{% if fmt==v %}active{% endif %}"
+                 href="{{ url_for('search', q=q, city=city, category=cat, format=v, when=when, price=price, venue=venue) }}">{{ v }}</a></li>
+        {% endfor %}
+      </ul>
+
+      <h3>Venue</h3>
+      <ul>
+        <li><a class="{% if not venue %}active{% endif %}" href="{{ url_for('search', q=q, city=city, category=cat, format=fmt, when=when, price=price) }}">Any</a></li>
+        <li><a class="{% if venue=='online' %}active{% endif %}" href="{{ url_for('search', q=q, city=city, category=cat, format=fmt, when=when, price=price, venue='online') }}">Online</a></li>
+        <li><a class="{% if venue=='in-person' %}active{% endif %}" href="{{ url_for('search', q=q, city=city, category=cat, format=fmt, when=when, price=price, venue='in-person') }}">In-person</a></li>
+      </ul>
+
+      <h3>Category</h3>
+      <ul>
+        <li><a class="{% if not cat %}active{% endif %}" href="{{ url_for('search', q=q, city=city) }}">All categories</a></li>
+        {% for cslug, cname, color in categories %}
+          <li><a class="{% if cat==cslug %}active{% endif %}"
+                 href="{{ url_for('search', q=q, city=city, category=cslug, format=fmt, when=when, price=price, venue=venue) }}">{{ cname }}
+              {% if cat_counts.get(cslug) %}<span style="color:var(--eb-text-muted);">({{ cat_counts[cslug] }})</span>{% endif %}</a></li>
+        {% endfor %}
+      </ul>
+
+      <h3>Language</h3>
+      <ul>
+        {% for v, l in [('','Any'),('English','English'),('Spanish','Spanish'),('French','French')] %}
+          <li><a class="{% if lang==v %}active{% endif %}"
+                 href="{{ url_for('search', q=q, city=city, category=cat, format=fmt, when=when, price=price, venue=venue, language=v) }}">{{ l }}</a></li>
+        {% endfor %}
+      </ul>
+
+      <button class="btn btn-outline btn-block" type="submit" style="margin-top:14px;">Apply filters</button>
+    </form>
+  </aside>
+
+  <section>
+    <h1 class="eb-h1">
+      {% if q %}"{{ q }}"{% else %}All events{% endif %}
+      <span class="eb-muted" style="font-size:16px;font-weight:500;">— {{ total }} result{% if total != 1 %}s{% endif %}</span>
+    </h1>
+
+    {% if when or cat or price or fmt or venue or max_price or lang or city %}
+      <div style="margin:10px 0 18px;">
+        {% set base_args = {'q': q} %}
+        {% if when %}<span class="applied-filter">{{ when }} <a href="{{ url_for('search', q=q, city=city, category=cat, format=fmt, price=price, venue=venue, language=lang) }}">×</a></span>{% endif %}
+        {% if cat %}<span class="applied-filter">{{ cat_map[cat][0] }} <a href="{{ url_for('search', q=q, city=city, format=fmt, when=when, price=price, venue=venue, language=lang) }}">×</a></span>{% endif %}
+        {% if price %}<span class="applied-filter">{{ price|capitalize }} <a href="{{ url_for('search', q=q, city=city, category=cat, format=fmt, when=when, venue=venue, language=lang) }}">×</a></span>{% endif %}
+        {% if max_price %}<span class="applied-filter">≤ ${{ max_price }} <a href="{{ url_for('search', q=q, city=city, category=cat, format=fmt, when=when, price=price, venue=venue, language=lang) }}">×</a></span>{% endif %}
+        {% if fmt %}<span class="applied-filter">{{ fmt }} <a href="{{ url_for('search', q=q, city=city, category=cat, when=when, price=price, venue=venue, language=lang) }}">×</a></span>{% endif %}
+        {% if venue %}<span class="applied-filter">{{ venue }} <a href="{{ url_for('search', q=q, city=city, category=cat, format=fmt, when=when, price=price, language=lang) }}">×</a></span>{% endif %}
+        {% if lang %}<span class="applied-filter">{{ lang }} <a href="{{ url_for('search', q=q, city=city, category=cat, format=fmt, when=when, price=price, venue=venue) }}">×</a></span>{% endif %}
+        {% if city %}<span class="applied-filter">{{ city_map[city][0] if city in city_map else city }} <a href="{{ url_for('search', q=q, category=cat, format=fmt, when=when, price=price, venue=venue, language=lang) }}">×</a></span>{% endif %}
+      </div>
+    {% endif %}
+
+    <div style="margin-bottom:14px;">
+      <label class="eb-muted">Sort by:
+        <select onchange="window.location='{{ url_for('search', q=q, city=city, category=cat, format=fmt, when=when, price=price, venue=venue, language=lang) }}&sort=' + this.value">
+          <option value="date"        {% if sort=='date' %}selected{% endif %}>Date (soonest)</option>
+          <option value="price"       {% if sort=='price' %}selected{% endif %}>Price (low to high)</option>
+          <option value="price-desc"  {% if sort=='price-desc' %}selected{% endif %}>Price (high to low)</option>
+        </select>
+      </label>
+    </div>
+
+    {% if events %}
+      <div class="eb-grid-3">
+        {% for ev in events %}
+          {% include 'partials/event_card.html' %}
+        {% endfor %}
+      </div>
+    {% else %}
+      <p class="eb-muted">No results match your filters. Try removing some filters above.</p>
+    {% endif %}
+  </section>
+</div>
+{% endblock %}

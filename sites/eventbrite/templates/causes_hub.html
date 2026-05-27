@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block title %}Charity & Causes events | Eventbrite{% endblock %}
+{% block content %}
+<section class="eb-hero" style="background:linear-gradient(135deg,#C92450,#FF7A9C);">
+  <div class="eb-container">
+    <h1 class="eb-hero-title">Charity & Causes</h1>
+    <p class="eb-hero-sub">Fundraisers, galas, 5Ks, and volunteer drives backing the work that matters.</p>
+  </div>
+</section>
+<div class="eb-container eb-page">
+  {% include 'partials/breadcrumbs.html' with context %}
+  <div class="eb-section-header"><h2 class="eb-h2">Upcoming cause events</h2></div>
+  <div class="eb-grid">
+    {% for ev in events %}{% include 'partials/event_card.html' %}{% endfor %}
+  </div>
+</div>
+{% endblock %}

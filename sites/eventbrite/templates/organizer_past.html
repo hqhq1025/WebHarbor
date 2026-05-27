@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block title %}Past events from {{ o.name }} | Eventbrite{% endblock %}
+{% block content %}
+<div class="eb-container eb-page">
+  {% include 'partials/breadcrumbs.html' with context %}
+  <h1 class="eb-h1">{{ o.name }} — past events</h1>
+  <p class="eb-muted">{{ past|length }} past events · {{ follower_count }} followers</p>
+  <div style="margin-bottom:18px;">
+    <a href="{{ url_for('organizer_profile', slug=o.slug) }}">Overview</a> ·
+    <a href="{{ url_for('organizer_about', slug=o.slug) }}">About</a> ·
+    <a href="{{ url_for('organizer_past', slug=o.slug) }}"><strong>Past events</strong></a> ·
+    <a href="{{ url_for('organizer_followers', slug=o.slug) }}">Followers</a>
+  </div>
+  <div class="eb-grid">
+    {% for ev in past %}{% include 'partials/event_card.html' %}{% endfor %}
+    {% if not past %}<p class="eb-muted">No past events on file.</p>{% endif %}
+  </div>
+</div>
+{% endblock %}

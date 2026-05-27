@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block title %}My account | Eventbrite{% endblock %}
+{% block content %}
+<div class="eb-container eb-page" style="max-width:920px;">
+  <h1 class="eb-h1">Hi {{ current_user.name.split(' ')[0] }}</h1>
+  <div class="eb-grid-3">
+    <a class="eb-card" href="{{ url_for('my_tickets') }}">
+      <div class="eb-card-img" style="background:linear-gradient(135deg,#F05537,#FFB169);"><div class="img-title">My Tickets</div></div>
+      <div class="eb-card-body"><div class="eb-card-meta">Upcoming and past orders</div></div>
+    </a>
+    <a class="eb-card" href="{{ url_for('my_saved') }}">
+      <div class="eb-card-img" style="background:linear-gradient(135deg,#9D2BB8,#E294FF);"><div class="img-title">Likes</div></div>
+      <div class="eb-card-body"><div class="eb-card-meta">Events you've hearted</div></div>
+    </a>
+    <a class="eb-card" href="{{ url_for('my_following') }}">
+      <div class="eb-card-img" style="background:linear-gradient(135deg,#3659E3,#9CB5FF);"><div class="img-title">Following</div></div>
+      <div class="eb-card-body"><div class="eb-card-meta">Organizers you follow</div></div>
+    </a>
+    <a class="eb-card" href="{{ url_for('account_edit') }}">
+      <div class="eb-card-img" style="background:linear-gradient(135deg,#1F2A44,#586784);"><div class="img-title">Profile</div></div>
+      <div class="eb-card-body"><div class="eb-card-meta">Name, phone, city</div></div>
+    </a>
+    <a class="eb-card" href="{{ url_for('account_interests') }}">
+      <div class="eb-card-img" style="background:linear-gradient(135deg,#16823D,#7BDA8A);"><div class="img-title">Interests</div></div>
+      <div class="eb-card-body"><div class="eb-card-meta">Personalize your home</div></div>
+    </a>
+    <a class="eb-card" href="{{ url_for('create_intro') }}">
+      <div class="eb-card-img" style="background:linear-gradient(135deg,#E5A300,#FFD86B);"><div class="img-title">Create event</div></div>
+      <div class="eb-card-body"><div class="eb-card-meta">Host your own event</div></div>
+    </a>
+  </div>
+</div>
+{% endblock %}

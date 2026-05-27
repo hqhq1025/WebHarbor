@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block title %}{{ ev.title }} — FAQ | Eventbrite{% endblock %}
+{% block content %}
+<div class="eb-container eb-page">
+  {% include 'partials/breadcrumbs.html' with context %}
+  <h1 class="eb-h1">{{ ev.title }} — FAQ</h1>
+  <div style="margin:14px 0;">
+    <a href="{{ url_for('event_detail', slug=ev.slug) }}">Overview</a> ·
+    <a href="{{ url_for('event_schedule', slug=ev.slug) }}">Schedule</a> ·
+    <a href="{{ url_for('event_speakers', slug=ev.slug) }}">Speakers</a> ·
+    <a href="{{ url_for('event_faq', slug=ev.slug) }}"><strong>FAQ</strong></a> ·
+    <a href="{{ url_for('event_refund', slug=ev.slug) }}">Refund policy</a>
+  </div>
+  {% for f in ev.get_faq() %}
+    <div style="border-bottom:1px solid var(--eb-border);padding:12px 0;">
+      <strong>{{ f.q }}</strong>
+      <p style="margin:6px 0 0;">{{ f.a }}</p>
+    </div>
+  {% else %}
+    <p class="eb-muted">No FAQ posted.</p>
+  {% endfor %}
+
+  <hr style="margin:32px 0;">
+  <h2 class="eb-h2">Ask the organizer</h2>
+  <form action="{{ url_for('event_qa', slug=ev.slug) }}" method="POST">
+    {% if not current_user.is_authenticated %}
+      <input type="text" name="name" placeholder="Your name" style="width:100%;padding:8px;border:1px solid var(--eb-border);border-radius:4px;margin-bottom:8px;">
+    {% endif %}
+    <textarea name="question" rows="3" required placeholder="Your question" style="width:100%;padding:8px;border:1px solid var(--eb-border);border-radius:4px;"></textarea>
+    <button class="btn btn-primary" type="submit" style="margin-top:8px;">Submit question</button>
+  </form>
+</div>
+{% endblock %}

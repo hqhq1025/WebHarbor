@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{% block title %}Eventbrite — Discover the Best Local Events & Things to Do{% endblock %}</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' fill='%23F05537' rx='20'/><text x='50' y='66' font-size='62' font-family='Helvetica' font-weight='800' fill='white' text-anchor='middle'>e</text></svg>">
+</head>
+<body>
+<nav class="eb-nav">
+  <a class="eb-logo" href="{{ url_for('index') }}">Eventbrite</a>
+  <form class="eb-nav-search" action="{{ url_for('search') }}" method="GET" role="search">
+    <input type="text" name="q" placeholder="Search events" value="{{ request.args.get('q','') }}" aria-label="Search events">
+    <span class="divider"></span>
+    <select name="city" style="background:transparent;border:0;outline:0;font-size:14px;max-width:160px;">
+      <option value="">Anywhere</option>
+      {% for slug, name, st, _, _ in cities %}
+        <option value="{{ slug }}" {% if request.args.get('city')==slug %}selected{% endif %}>{{ name }}, {{ st }}</option>
+      {% endfor %}
+    </select>
+    <button class="btn btn-primary" type="submit" style="padding:6px 14px;border-radius:20px;">Search</button>
+  </form>
+  <div class="eb-nav-links">
+    {% if current_user.is_authenticated %}
+      <a href="{{ url_for('my_tickets') }}">Tickets</a>
+      <a href="{{ url_for('my_saved') }}">Likes</a>
+      <a href="{{ url_for('my_following') }}">Following</a>
+      <a href="{{ url_for('cart_view') }}">Cart{% if cart_count %} ({{ cart_count }}){% endif %}</a>
+      <a href="{{ url_for('create_intro') }}" class="eb-cta">Create an event</a>
+      <a href="{{ url_for('account') }}">{{ current_user.name.split(' ')[0] }}</a>
+      <form action="{{ url_for('logout') }}" method="POST" style="display:inline">
+        <button class="btn-link" type="submit">Log out</button>
+      </form>
+    {% else %}
+      <a href="{{ url_for('help_index') }}">Help Center</a>
+      <a href="{{ url_for('create_intro') }}" class="eb-cta">Create an event</a>
+      <a href="{{ url_for('login') }}" class="signin">Log In</a>
+      <a href="{{ url_for('signup') }}">Sign Up</a>
+    {% endif %}
+  </div>
+</nav>
+
+{% with messages = get_flashed_messages(with_categories=true) %}
+  {% if messages %}
+    <div class="eb-container" style="margin-top:12px;">
+      {% for cat, msg in messages %}
+        <div class="eb-flash {{ cat }}">{{ msg }}</div>
+      {% endfor %}
+    </div>
+  {% endif %}
+{% endwith %}
+
+{% block content %}{% endblock %}
+
+<footer class="eb-footer">
+  <div class="eb-footer-inner">
+    <div>
+      <h4>Use Eventbrite</h4>
+      <a href="{{ url_for('create_intro') }}">Create Events</a>
+      <a href="{{ url_for('organize_page', page='pricing') }}">Pricing</a>
+      <a href="{{ url_for('organize_page', page='event-marketing-platform') }}">Event Marketing Platform</a>
+      <a href="{{ url_for('mobile_app') }}">Mobile Ticket App</a>
+      <a href="{{ url_for('mobile_app') }}">Check-In App</a>
+      <a href="{{ url_for('organize_page', page='features') }}">Features</a>
+      <a href="{{ url_for('organize_page', page='boost') }}">Boost Ads</a>
+      <a href="{{ url_for('organize_page', page='salesforce') }}">Salesforce</a>
+    </div>
+    <div>
+      <h4>Plan events</h4>
+      <a href="{{ url_for('organize_hub') }}">Organize hub</a>
+      <a href="{{ url_for('organize_page', page='promote') }}">Promote your event</a>
+      <a href="{{ url_for('organize_page', page='spotlight') }}">Spotlight features</a>
+      <a href="{{ url_for('organize_page', page='music-tools') }}">Music tools</a>
+      <a href="{{ url_for('organize_page', page='how-it-works') }}">How it works</a>
+      <a href="{{ url_for('blog_index') }}">Blog</a>
+    </div>
+    <div>
+      <h4>Find Events</h4>
+      <a href="{{ url_for('city_landing', city_slug='ny--new-york') }}">New York</a>
+      <a href="{{ url_for('city_landing', city_slug='ca--los-angeles') }}">Los Angeles</a>
+      <a href="{{ url_for('city_landing', city_slug='il--chicago') }}">Chicago</a>
+      <a href="{{ url_for('city_landing', city_slug='tx--austin') }}">Austin</a>
+      <a href="{{ url_for('online_hub') }}">Online events</a>
+      <a href="{{ url_for('free_events') }}">Free events</a>
+      <a href="{{ url_for('date_landing', label='this-weekend') }}">This weekend</a>
+      <a href="{{ url_for('trending_hub') }}">Trending</a>
+      <a href="{{ url_for('calendar_view') }}">Calendar view</a>
+      <a href="{{ url_for('country_us') }}">United States</a>
+      <a href="{{ url_for('sitemap_page') }}">Sitemap</a>
+    </div>
+    <div>
+      <h4>Browse categories</h4>
+      {% for cslug, cname, _ in categories[:9] %}
+        <a href="{{ url_for('category_landing', cat_slug=cslug) }}">{{ cname }}</a>
+      {% endfor %}
+      <a href="{{ url_for('causes_hub') }}">Charity & Causes</a>
+      <a href="{{ url_for('conferences_hub') }}">Conferences</a>
+      <a href="{{ url_for('groups_hub') }}">Groups</a>
+    </div>
+    <div>
+      <h4>Connect with us</h4>
+      <a href="{{ url_for('help_index') }}">Help Center</a>
+      <a href="{{ url_for('help_search') }}">Search Help</a>
+      <a href="{{ url_for('about_page') }}">About</a>
+      <a href="{{ url_for('careers_page') }}">Careers</a>
+      <a href="{{ url_for('press_page') }}">Press</a>
+      <a href="{{ url_for('investors_page') }}">Investors</a>
+      <a href="#">Twitter</a>
+      <a href="#">Facebook</a>
+      <a href="#">LinkedIn</a>
+      <a href="#">Instagram</a>
+      <a href="#">TikTok</a>
+    </div>
+  </div>
+  <div style="max-width:1280px;margin:32px auto 0;border-top:1px solid #3d2c66;padding-top:18px;color:#a297c4;font-size:12px;">
+    © {{ now.year }} Eventbrite — WebHarbor mirror, not affiliated with the real company.
+  </div>
+</footer>
+
+</body>
+</html>

@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block title %}{{ ev.title }} — Schedule | Eventbrite{% endblock %}
+{% block content %}
+<div class="eb-container eb-page">
+  {% include 'partials/breadcrumbs.html' with context %}
+  <h1 class="eb-h1">{{ ev.title }} — Schedule</h1>
+  <p class="eb-muted">{{ fmt_dt(ev.start_dt) }} to {{ fmt_time(ev.end_dt) }} ({{ ev.timezone }})</p>
+  <div style="margin:14px 0;">
+    <a href="{{ url_for('event_detail', slug=ev.slug) }}">Overview</a> ·
+    <a href="{{ url_for('event_schedule', slug=ev.slug) }}"><strong>Schedule</strong></a> ·
+    <a href="{{ url_for('event_speakers', slug=ev.slug) }}">Speakers</a> ·
+    <a href="{{ url_for('event_faq', slug=ev.slug) }}">FAQ</a> ·
+    <a href="{{ url_for('event_refund', slug=ev.slug) }}">Refund policy</a>
+  </div>
+
+  <ul class="eb-agenda">
+    {% for item in ev.get_agenda() %}
+      <li><span class="time">{{ item.time }}</span> {{ item.title }}
+        {% if item.description %} — <span class="eb-muted">{{ item.description }}</span>{% endif %}
+      </li>
+    {% else %}
+      <li class="eb-muted">No schedule available.</li>
+    {% endfor %}
+  </ul>
+</div>
+{% endblock %}

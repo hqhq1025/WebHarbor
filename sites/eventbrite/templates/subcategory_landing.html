@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block title %}{{ sub_name }} {{ cat_name }} events | Eventbrite{% endblock %}
+{% block content %}
+<div class="eb-container eb-page">
+  {% include 'partials/breadcrumbs.html' with context %}
+  <h1 class="eb-h1">{{ sub_name }} {{ cat_name }} events</h1>
+  <p class="eb-muted">Find the best {{ sub_name|lower }} happenings on Eventbrite.</p>
+
+  <div class="eb-pill-row" style="margin:18px 0;">
+    <a class="eb-pill" href="{{ url_for('category_landing', cat_slug=cat_slug) }}">All {{ cat_name }}</a>
+    {% for ss, sn in subcategories %}
+      <a class="eb-pill {{ 'active' if ss == sub_slug else '' }}" href="{{ url_for('subcategory_landing', cat_slug=cat_slug, sub_slug=ss) }}">{{ sn }}</a>
+    {% endfor %}
+  </div>
+
+  <div class="eb-grid">
+    {% for ev in events %}{% include 'partials/event_card.html' %}{% endfor %}
+    {% if not events %}<p class="eb-muted">No events found in this subcategory yet.</p>{% endif %}
+  </div>
+</div>
+{% endblock %}

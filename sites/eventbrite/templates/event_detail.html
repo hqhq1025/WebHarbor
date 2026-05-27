@@ -1,0 +1,289 @@
+{% extends "base.html" %}
+{% block title %}{{ ev.title }} | Eventbrite{% endblock %}
+{% block content %}
+<div class="eb-container eb-page">
+
+  {% set hero = event_image_url(ev) %}
+  <div class="eb-event-hero" style="{% if hero %}background-image:linear-gradient(135deg,rgba(0,0,0,.4),rgba(0,0,0,.05)),url('{{ hero }}');background-size:cover;background-position:center;color:#fff;{% else %}background:{{ event_gradient(ev) }};{% endif %}">
+    <div>
+      <div style="margin-bottom:12px;">
+        <span class="eb-chip" style="background:rgba(255,255,255,.92);color:var(--eb-text);">{{ ev.category_name() }}</span>
+        <span class="eb-chip" style="background:rgba(255,255,255,.92);color:var(--eb-text);">{{ ev.format }}</span>
+        {% if ev.is_online %}<span class="eb-chip" style="background:rgba(255,255,255,.92);color:var(--eb-text);">Online event</span>{% endif %}
+      </div>
+      <h1>{{ ev.title }}</h1>
+    </div>
+  </div>
+
+  <div class="eb-detail-grid">
+    <main>
+      <p class="eb-muted" style="margin-top:18px;">{{ ev.summary }}</p>
+
+      <div style="margin:14px 0;font-size:14px;">
+        <a href="{{ url_for('category_landing', cat_slug=ev.category_slug) }}">{{ ev.category_name() }}</a>
+        {% if not ev.is_online %} · <a href="{{ url_for('city_landing', city_slug=ev.city_slug) }}">{{ ev.city_name() }}</a>{% endif %}
+        · <a href="{{ url_for('event_schedule', slug=ev.slug) }}">Schedule</a>
+        · <a href="{{ url_for('event_speakers', slug=ev.slug) }}">Speakers</a>
+        · <a href="{{ url_for('event_faq', slug=ev.slug) }}">FAQ</a>
+        · <a href="{{ url_for('event_refund', slug=ev.slug) }}">Refund</a>
+      </div>
+
+      <div class="eb-detail-section">
+        <h2>When and where</h2>
+        <div class="eb-meta-row">
+          <span class="eb-meta-icon">⏰</span>
+          <div>
+            <strong>{{ fmt_dt(ev.start_dt) }}</strong> to {{ fmt_time(ev.end_dt) }} ({{ ev.timezone }})<br>
+            <a href="{{ url_for('event_ics', slug=ev.slug) }}" class="btn-link">Add to calendar (ICS)</a>
+          </div>
+        </div>
+        <div class="eb-meta-row">
+          <span class="eb-meta-icon">📍</span>
+          <div>
+            {% if ev.is_online %}
+              <strong>Online event</strong><br>
+              <span class="eb-muted">Join link emailed after purchase</span>
+            {% else %}
+              <strong>{{ ev.venue_name }}</strong><br>
+              <span class="eb-muted">{{ ev.venue_address }}</span>
+            {% endif %}
+          </div>
+        </div>
+        {% if not ev.is_online %}
+          <div class="eb-map" aria-label="map">
+            <svg viewBox="0 0 600 200" preserveAspectRatio="none">
+              <rect width="600" height="200" fill="#E4E1F0"/>
+              <path d="M0,140 Q150,120 300,150 T600,130" stroke="#a99fcc" stroke-width="3" fill="none"/>
+              <path d="M0,80  Q200,60 400,90 T600,80"  stroke="#a99fcc" stroke-width="2" fill="none"/>
+              <path d="M120,200 L150,40" stroke="#cccae0" stroke-width="2"/>
+              <path d="M340,200 L320,30" stroke="#cccae0" stroke-width="2"/>
+              <circle cx="300" cy="100" r="10" fill="#F05537"/>
+              <circle cx="300" cy="100" r="22" fill="#F05537" opacity="0.18"/>
+              <text x="320" y="105" font-family="Helvetica" font-size="13" fill="#1E0A3C">{{ ev.venue_name|truncate(40) }}</text>
+            </svg>
+          </div>
+        {% endif %}
+      </div>
+
+      <div class="eb-detail-section">
+        <h2>About this event</h2>
+        {% for para in ev.description.split('\n\n') %}
+          <p>{{ para }}</p>
+        {% endfor %}
+        {% if ev.get_tags() %}
+        <div class="eb-tags" style="margin-top:12px;">
+          {% for t in ev.get_tags() %}<span class="eb-chip">{{ t }}</span>{% endfor %}
+        </div>
+        {% endif %}
+      </div>
+
+      {% if ev.get_agenda() %}
+      <div class="eb-detail-section">
+        <h2>Agenda</h2>
+        <ul class="eb-agenda">
+          {% for item in ev.get_agenda() %}
+            <li><span class="time">{{ item.time }}</span> {{ item.title }}
+              {% if item.description %} — <span class="eb-muted">{{ item.description }}</span>{% endif %}
+            </li>
+          {% endfor %}
+        </ul>
+      </div>
+      {% endif %}
+
+      {% if ev.get_speakers() %}
+      <div class="eb-detail-section">
+        <h2>Speakers</h2>
+        {% for sp in ev.get_speakers() %}
+          <div class="eb-organizer-card" style="margin-bottom:8px;">
+            <div class="eb-organizer-avatar" style="background:{{ event_gradient(ev) }};">{{ sp.name[0] }}</div>
+            <div class="meta">
+              <div class="name">{{ sp.name }}</div>
+              <div class="followers">{{ sp.title }}</div>
+              <div class="eb-muted">{{ sp.bio }}</div>
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+      {% endif %}
+
+      <div class="eb-detail-section">
+        <h2>Refund policy</h2>
+        <p><strong>{{ refund_label }}</strong></p>
+      </div>
+
+      {% if ev.get_faq() %}
+      <div class="eb-detail-section">
+        <h2>Frequently asked questions</h2>
+        <ul class="eb-faq">
+          {% for fq in ev.get_faq() %}
+            <li>
+              <div class="q">{{ fq.q }}</div>
+              <div class="a">{{ fq.a }}</div>
+            </li>
+          {% endfor %}
+        </ul>
+      </div>
+      {% endif %}
+
+      <div class="eb-detail-section">
+        <h2>Organizer</h2>
+        <div class="eb-organizer-card">
+          <div class="eb-organizer-avatar" style="background:{{ organizer_gradient(ev.organizer) }};">{{ ev.organizer.name[0] }}</div>
+          <div class="meta">
+            <div class="name"><a href="{{ url_for('organizer_profile', slug=ev.organizer.slug) }}">{{ ev.organizer.name }}{% if ev.organizer.verified %} ✓{% endif %}</a></div>
+            <div class="followers">{{ ev.organizer.follower_count() }} followers · {{ ev.organizer.past_count() }} past events</div>
+            <div class="eb-muted">{{ ev.organizer.bio|truncate(140) }}</div>
+          </div>
+          <form method="POST" action="{{ url_for('follow_organizer', slug=ev.organizer.slug) }}">
+            <button type="submit" class="btn {{ 'btn-outline' if is_following else 'btn-primary' }}">
+              {{ 'Following' if is_following else 'Follow' }}
+            </button>
+          </form>
+        </div>
+      </div>
+
+      {% if related %}
+      <div class="eb-detail-section">
+        <h2>Other events you may like</h2>
+        <div class="eb-grid-3">
+          {% for ev in related %}
+            {% include 'partials/event_card.html' %}
+          {% endfor %}
+        </div>
+      </div>
+      {% endif %}
+
+      <div class="eb-detail-section">
+        <h2>Share</h2>
+        <div class="eb-tags">
+          <a class="eb-chip" href="#" onclick="event.preventDefault();navigator.clipboard?navigator.clipboard.writeText(window.location.href):0;alert('Link copied');">Copy link</a>
+          <a class="eb-chip" href="#">Facebook</a>
+          <a class="eb-chip" href="#">Twitter</a>
+          <a class="eb-chip" href="#">LinkedIn</a>
+          <a class="eb-chip" href="mailto:?subject={{ ev.title|urlencode }}&body={{ ev.title|urlencode }}%20-%20{{ ev.slug|urlencode }}">Email</a>
+          <a class="eb-chip" href="{{ url_for('invite_friends', slug=ev.slug) }}">Invite friends</a>
+          <a class="eb-chip" href="{{ url_for('report_event', slug=ev.slug) }}">Report</a>
+        </div>
+        <form method="POST" action="{{ url_for('share_event_email', slug=ev.slug) }}" style="margin-top:12px;display:flex;gap:8px;max-width:480px;">
+          <input type="email" name="recipient_email" required placeholder="friend@example.com" style="flex:1;padding:8px;border:1px solid var(--eb-border);border-radius:4px;">
+          <button class="btn btn-outline" type="submit">Email a friend</button>
+        </form>
+      </div>
+
+      <div class="eb-detail-section">
+        <h2>Ask a question / RSVP</h2>
+        <form method="POST" action="{{ url_for('event_qa', slug=ev.slug) }}" style="margin-bottom:14px;">
+          {% if not current_user.is_authenticated %}<input type="text" name="name" placeholder="Your name" style="width:100%;padding:8px;border:1px solid var(--eb-border);border-radius:4px;margin-bottom:8px;">{% endif %}
+          <textarea name="question" rows="2" placeholder="Ask the organizer a public question" style="width:100%;padding:8px;border:1px solid var(--eb-border);border-radius:4px;"></textarea>
+          <button class="btn btn-outline" type="submit" style="margin-top:6px;">Submit question</button>
+        </form>
+        {% if current_user.is_authenticated %}
+        <form method="POST" action="{{ url_for('event_rsvp', slug=ev.slug) }}" style="display:flex;gap:6px;">
+          <button name="response" value="yes"   class="btn btn-outline" type="submit">RSVP Yes</button>
+          <button name="response" value="maybe" class="btn btn-outline" type="submit">Maybe</button>
+          <button name="response" value="no"    class="btn btn-outline" type="submit">No</button>
+        </form>
+        {% endif %}
+      </div>
+
+      {% if reviews %}
+      <div class="eb-detail-section">
+        <h2>Reviews</h2>
+        {% for r in reviews %}
+          <div style="padding:12px 0;border-bottom:1px solid var(--eb-border);">
+            <strong>{{ '★' * r.rating }}{{ '☆' * (5 - r.rating) }}</strong>
+            <div>{{ r.body }}</div>
+            <div class="eb-muted" style="font-size:12px;">{{ r.created_at.strftime('%b %d, %Y') }}</div>
+          </div>
+        {% endfor %}
+      </div>
+      {% endif %}
+
+      {% if current_user.is_authenticated %}
+      <div class="eb-detail-section">
+        <h2>Leave a review</h2>
+        <form method="POST" action="{{ url_for('submit_review', slug=ev.slug) }}">
+          <div class="eb-form-row">
+            <label>Rating</label>
+            <select name="rating">
+              <option value="5">5 — Excellent</option>
+              <option value="4">4 — Great</option>
+              <option value="3">3 — OK</option>
+              <option value="2">2 — Poor</option>
+              <option value="1">1 — Bad</option>
+            </select>
+          </div>
+          <div class="eb-form-row">
+            <label>Review</label>
+            <textarea name="body" required minlength="5" placeholder="What did you think?"></textarea>
+          </div>
+          <button class="btn btn-primary" type="submit">Post review</button>
+        </form>
+      </div>
+      {% endif %}
+    </main>
+
+    <aside>
+      <div class="eb-sidebar">
+        <div class="price-strip">
+          {% if ev.is_free() %}
+            Free
+            <div class="from">RSVP required</div>
+          {% else %}
+            From ${{ '%.2f'|format(ev.min_price()) }}
+            <div class="from">{{ ev.tickets|length }} ticket type{% if ev.tickets|length != 1 %}s{% endif %}</div>
+          {% endif %}
+        </div>
+
+        {% for t in ev.tickets %}
+          <div class="eb-tier-card {% if t.is_sold_out() %}sold-out{% endif %}">
+            <div style="display:flex;justify-content:space-between;align-items:center;">
+              <div class="tier-name">{{ t.name }}</div>
+              <div class="tier-price">{{ t.price_str() }}</div>
+            </div>
+            <div class="tier-meta">
+              {% if t.is_sold_out() %}
+                Sold out
+              {% else %}
+                {{ t.remaining() }} of {{ t.capacity }} remaining
+              {% endif %}
+            </div>
+            {% if t.description %}<div class="eb-muted">{{ t.description }}</div>{% endif %}
+          </div>
+        {% endfor %}
+
+        {% if ev.is_sold_out() %}
+          <button class="btn btn-outline btn-block btn-large" disabled>Sold out</button>
+          <form method="POST" action="{{ url_for('waitlist_event', slug=ev.slug) }}" style="margin-top:10px;">
+            <input type="email" name="email" placeholder="you@example.com" {% if current_user.is_authenticated %}value="{{ current_user.email }}"{% endif %} required style="width:100%;padding:8px;border:1px solid var(--eb-border);border-radius:4px;">
+            <button class="btn btn-outline btn-block" type="submit" style="margin-top:6px;">Notify me when on sale</button>
+          </form>
+        {% else %}
+          <a class="btn btn-primary btn-block btn-large" href="{{ url_for('checkout', slug=ev.slug) }}">Get tickets</a>
+          {% if current_user.is_authenticated %}
+          <form method="POST" action="{{ url_for('cart_add') }}" style="margin-top:6px;display:flex;gap:6px;">
+            <select name="tier_id" style="flex:1;padding:8px;border:1px solid var(--eb-border);border-radius:4px;">
+              {% for t in ev.tickets %}<option value="{{ t.id }}">{{ t.name }} — {{ t.price_str() }}</option>{% endfor %}
+            </select>
+            <input type="number" name="qty" min="1" max="10" value="1" style="width:64px;padding:8px;border:1px solid var(--eb-border);border-radius:4px;">
+            <button class="btn btn-outline" type="submit">+ Cart</button>
+          </form>
+          {% endif %}
+        {% endif %}
+
+        <form method="POST" action="{{ url_for('save_event_form', event_id=ev.id) }}" style="margin-top:10px;">
+          <button class="btn btn-outline btn-block" type="submit">
+            {% if is_saved %}♥ Saved{% else %}♡ Save event{% endif %}
+          </button>
+        </form>
+
+        <div style="margin-top:14px;font-size:13px;color:var(--eb-text-muted);">
+          <div>Refund policy: <strong>{{ refund_label }}</strong></div>
+          <div>Language: {{ ev.language }}</div>
+          <div>Age: {{ ev.age_restriction }}</div>
+        </div>
+      </div>
+    </aside>
+  </div>
+</div>
+{% endblock %}

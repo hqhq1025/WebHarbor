@@ -1,0 +1,40 @@
+{# Event card partial. Expects `ev` to be in scope. #}
+<a class="eb-card" href="{{ url_for('event_detail', slug=ev.slug) }}">
+  {% set img = event_image_url(ev) %}
+  {% if img %}
+    <div class="eb-card-img" style="background-image:url('{{ img }}');background-size:cover;background-position:center;">
+      <div class="cat-badge">{{ ev.category_name() }}</div>
+      <button class="save-heart" type="button"
+              data-event-id="{{ ev.id }}" aria-label="Save event">&#x2661;</button>
+      {% if ev.is_sold_out() %}
+        <div class="sold-out">Sold out</div>
+      {% endif %}
+      {% if not ev.is_free() %}
+        <div class="price-tag">From ${{ '%.2f'|format(ev.min_price()) }}</div>
+      {% else %}
+        <div class="price-tag" style="background:var(--eb-success);">Free</div>
+      {% endif %}
+    </div>
+  {% else %}
+    <div class="eb-card-img" style="background:{{ event_gradient(ev) }};">
+      <div class="cat-badge">{{ ev.category_name() }}</div>
+      <button class="save-heart" type="button"
+              data-event-id="{{ ev.id }}" aria-label="Save event">&#x2661;</button>
+      {% if ev.is_sold_out() %}
+        <div class="sold-out">Sold out</div>
+      {% endif %}
+      {% if not ev.is_free() %}
+        <div class="price-tag">From ${{ '%.2f'|format(ev.min_price()) }}</div>
+      {% else %}
+        <div class="price-tag" style="background:var(--eb-success);">Free</div>
+      {% endif %}
+      <div class="img-title">{{ ev.title|truncate(60) }}</div>
+    </div>
+  {% endif %}
+  <div class="eb-card-body">
+    <div class="eb-card-title">{{ ev.title }}</div>
+    <div class="eb-card-when">{{ fmt_dt(ev.start_dt) }}</div>
+    <div class="eb-card-where">{% if ev.is_online %}Online{% else %}{{ ev.city_name() }} · {{ ev.venue_name }}{% endif %}</div>
+    {% if ev.organizer %}<div class="eb-card-organizer">{{ ev.organizer.name }}</div>{% endif %}
+  </div>
+</a>

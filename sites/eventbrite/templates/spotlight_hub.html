@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block title %}Spotlight events | Eventbrite{% endblock %}
+{% block content %}
+<section class="eb-hero" style="background:linear-gradient(135deg,#E5A300,#FFD86B);">
+  <div class="eb-container">
+    <h1 class="eb-hero-title">Spotlight</h1>
+    <p class="eb-hero-sub">Hand-picked featured events curated by our editors.</p>
+  </div>
+</section>
+<div class="eb-container eb-page">
+  {% include 'partials/breadcrumbs.html' with context %}
+  <div class="eb-grid">
+    {% for ev in events %}{% include 'partials/event_card.html' %}{% endfor %}
+  </div>
+</div>
+{% endblock %}

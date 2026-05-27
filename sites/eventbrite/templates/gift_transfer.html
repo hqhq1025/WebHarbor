@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block title %}Gift a ticket | Eventbrite{% endblock %}
+{% block content %}
+<div class="eb-container eb-page" style="max-width:640px;">
+  {% include 'partials/breadcrumbs.html' with context %}
+  <h1 class="eb-h1">Gift a ticket</h1>
+  <p class="eb-muted">Order {{ order.code }} · {{ order.event.title }}</p>
+  <form method="POST" action="{{ url_for('gift_transfer', code=order.code) }}">
+    <label>Pick a ticket to gift
+      <select name="ticket_id" required style="width:100%;padding:10px;border:1px solid var(--eb-border);border-radius:4px;margin-top:6px;">
+        {% for t in order.tickets %}
+          <option value="{{ t.id }}">{{ t.code }} — {{ t.attendee_name or 'unassigned' }}</option>
+        {% endfor %}
+      </select>
+    </label>
+    <label style="display:block;margin-top:14px;">Recipient name
+      <input type="text" name="recipient_name" required style="width:100%;padding:10px;border:1px solid var(--eb-border);border-radius:4px;margin-top:6px;">
+    </label>
+    <label style="display:block;margin-top:14px;">Recipient email
+      <input type="email" name="recipient_email" required style="width:100%;padding:10px;border:1px solid var(--eb-border);border-radius:4px;margin-top:6px;">
+    </label>
+    <label style="display:block;margin-top:14px;">Note (optional)
+      <textarea name="message" rows="3" style="width:100%;padding:10px;border:1px solid var(--eb-border);border-radius:4px;margin-top:6px;"></textarea>
+    </label>
+    <button class="btn btn-primary" type="submit" style="margin-top:18px;">Send gift</button>
+  </form>
+</div>
+{% endblock %}

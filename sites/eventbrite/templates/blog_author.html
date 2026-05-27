@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block title %}{{ a.name }} — Eventbrite Blog{% endblock %}
+{% block content %}
+<div class="eb-container eb-page" style="max-width:820px;margin:0 auto;">
+  {% include 'partials/breadcrumbs.html' with context %}
+  <h1 class="eb-h1">{{ a.name }}</h1>
+  <p class="eb-muted">{{ a.title }}</p>
+  <p>{{ a.bio }}</p>
+  <hr style="margin:32px 0;">
+  <h2 class="eb-h2">Posts by {{ a.name }}</h2>
+  <ul style="list-style:none;padding:0;">
+    {% for p in posts %}
+      <li style="padding:14px 0;border-bottom:1px solid var(--eb-border);">
+        <a href="{{ url_for('blog_post', slug=p.slug) }}"><strong>{{ p.title }}</strong></a>
+        <div class="eb-muted">{{ fmt_dt_short(p.published_at) }} · {{ p.tag|title }}</div>
+      </li>
+    {% endfor %}
+  </ul>
+</div>
+{% endblock %}

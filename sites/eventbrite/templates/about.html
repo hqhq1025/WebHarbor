@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block title %}About | Eventbrite{% endblock %}
+{% block content %}
+<div class="eb-container eb-page">
+  {% include 'partials/breadcrumbs.html' with context %}
+  <h1 class="eb-h1">About Eventbrite</h1>
+  <p class="eb-muted" style="font-size:18px;max-width:680px;">Eventbrite is the global marketplace for live experiences. We help creators sell tickets, manage attendees, and grow their audience — for events ranging from a 10-person yoga workshop to a 100,000-person festival.</p>
+
+  <h2 class="eb-h2">Our mission</h2>
+  <p>To bring the world together through live experiences.</p>
+
+  <h2 class="eb-h2">By the numbers</h2>
+  <ul>
+    <li>5M+ creators trust Eventbrite each year</li>
+    <li>290M+ tickets distributed since 2006</li>
+    <li>180+ countries served</li>
+    <li>3,500+ event categories supported</li>
+  </ul>
+
+  <h2 class="eb-h2">Leadership</h2>
+  <p>Founded in 2006 by Kevin Hartz, Julia Hartz, and Renaud Visage in San Francisco.</p>
+</div>
+{% endblock %}

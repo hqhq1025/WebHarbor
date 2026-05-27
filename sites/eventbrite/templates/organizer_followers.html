@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block title %}Followers of {{ o.name }} | Eventbrite{% endblock %}
+{% block content %}
+<div class="eb-container eb-page">
+  {% include 'partials/breadcrumbs.html' with context %}
+  <h1 class="eb-h1">{{ o.name }} followers</h1>
+  <p class="eb-muted">{{ follower_count }} total followers</p>
+  <div style="margin-bottom:18px;">
+    <a href="{{ url_for('organizer_profile', slug=o.slug) }}">Overview</a> ·
+    <a href="{{ url_for('organizer_about', slug=o.slug) }}">About</a> ·
+    <a href="{{ url_for('organizer_past', slug=o.slug) }}">Past events</a> ·
+    <a href="{{ url_for('organizer_followers', slug=o.slug) }}"><strong>Followers</strong></a>
+  </div>
+  <div class="eb-grid-3">
+    {% for u in users %}
+      <div class="eb-card" style="padding:14px;display:flex;align-items:center;gap:12px;">
+        <div class="eb-organizer-avatar" style="width:42px;height:42px;font-size:18px;background:linear-gradient(135deg,#9D2BB8,#E294FF);">{{ u.name[0] }}</div>
+        <div>
+          <strong>{{ u.name }}</strong><br>
+          <span class="eb-muted">{{ u.city }}</span>
+        </div>
+      </div>
+    {% else %}
+      <p class="eb-muted">No followers visible.</p>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}

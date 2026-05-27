@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block title %}Following | Eventbrite{% endblock %}
+{% block content %}
+<div class="eb-container eb-page">
+  <h1 class="eb-h1">Following</h1>
+  {% if follows %}
+    <div class="eb-grid-2">
+      {% for f in follows %}{% set o = f.organizer %}
+        <a class="eb-organizer-card" href="{{ url_for('organizer_profile', slug=o.slug) }}">
+          <div class="eb-organizer-avatar" style="background:{{ organizer_gradient(o) }};">{{ o.name[0] }}</div>
+          <div class="meta">
+            <div class="name">{{ o.name }}{% if o.verified %} ✓{% endif %}</div>
+            <div class="followers">{{ o.follower_count() }} followers</div>
+            <div class="eb-muted">{{ o.bio|truncate(110) }}</div>
+          </div>
+        </a>
+      {% endfor %}
+    </div>
+  {% else %}
+    <p class="eb-muted">You aren't following any organizers yet. Visit an organizer page and click "Follow".</p>
+  {% endif %}
+</div>
+{% endblock %}

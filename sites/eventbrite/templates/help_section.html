@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block title %}{{ section_name }} — Help center | Eventbrite{% endblock %}
+{% block content %}
+<div class="eb-container eb-page">
+  {% include 'partials/breadcrumbs.html' with context %}
+  <h1 class="eb-h1">{{ section_name }}</h1>
+  <p class="eb-muted">Browse all articles in this section.</p>
+  <ul style="list-style:none;padding:0;margin-top:24px;">
+    {% for a in articles %}
+      <li style="padding:14px 0;border-bottom:1px solid var(--eb-border);">
+        <a href="{{ url_for('help_article', slug=a.slug) }}"><strong>{{ a.title }}</strong></a>
+        <div class="eb-muted">{{ a.body|truncate(140) }}</div>
+      </li>
+    {% endfor %}
+  </ul>
+  <p style="margin-top:24px;"><a href="{{ url_for('help_index') }}">← Back to Help Center</a></p>
+</div>
+{% endblock %}

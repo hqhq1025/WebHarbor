@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block title %}{{ ev.title }} — Speakers | Eventbrite{% endblock %}
+{% block content %}
+<div class="eb-container eb-page">
+  {% include 'partials/breadcrumbs.html' with context %}
+  <h1 class="eb-h1">{{ ev.title }} — Speakers</h1>
+  <div style="margin:14px 0;">
+    <a href="{{ url_for('event_detail', slug=ev.slug) }}">Overview</a> ·
+    <a href="{{ url_for('event_schedule', slug=ev.slug) }}">Schedule</a> ·
+    <a href="{{ url_for('event_speakers', slug=ev.slug) }}"><strong>Speakers</strong></a> ·
+    <a href="{{ url_for('event_faq', slug=ev.slug) }}">FAQ</a> ·
+    <a href="{{ url_for('event_refund', slug=ev.slug) }}">Refund policy</a>
+  </div>
+  <div class="eb-grid-2">
+    {% for s in ev.get_speakers() %}
+      <div class="eb-card" style="padding:18px;">
+        <h3 class="eb-h3" style="margin-top:0;">{{ s.name }}</h3>
+        <div class="eb-muted">{{ s.title }}</div>
+        <p>{{ s.bio }}</p>
+      </div>
+    {% else %}
+      <p class="eb-muted">No speakers announced.</p>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}

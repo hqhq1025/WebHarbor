@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block title %}Interests | Eventbrite{% endblock %}
+{% block content %}
+<div class="eb-container eb-page" style="max-width:720px;">
+  <h1 class="eb-h1">Your interests</h1>
+  <p class="eb-muted">Choose the categories you want to see more of on your home page.</p>
+  {% set picks = current_user.get_interests() %}
+  <form method="POST">
+    <div class="eb-tags" style="margin:18px 0;">
+      {% for cslug, cname, color in categories %}
+        <label class="eb-chip" style="cursor:pointer;background:{% if cslug in picks %}var(--eb-text);color:#fff{% else %}var(--eb-bg-soft);color:var(--eb-text){% endif %};">
+          <input type="checkbox" name="interests" value="{{ cslug }}" {% if cslug in picks %}checked{% endif %} style="margin-right:6px;"> {{ cname }}
+        </label>
+      {% endfor %}
+    </div>
+    <button class="btn btn-primary" type="submit">Save interests</button>
+    <a class="btn btn-outline" href="{{ url_for('account') }}">Cancel</a>
+  </form>
+</div>
+{% endblock %}

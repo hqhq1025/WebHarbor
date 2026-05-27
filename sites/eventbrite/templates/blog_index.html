@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block title %}Eventbrite Blog{% endblock %}
+{% block content %}
+<div class="eb-container eb-page">
+  {% include 'partials/breadcrumbs.html' with context %}
+  <h1 class="eb-h1">Eventbrite Blog</h1>
+  <p class="eb-muted">Industry reporting, organizer playbooks, and trend analysis.</p>
+
+  <div class="eb-pill-row" style="margin:18px 0;">
+    <a class="eb-pill {{ 'active' if not tag else '' }}" href="{{ url_for('blog_index') }}">All</a>
+    {% for t in tags %}
+      <a class="eb-pill {{ 'active' if t == tag else '' }}" href="{{ url_for('blog_tag', tag=t) }}">{{ t|title }}</a>
+    {% endfor %}
+  </div>
+
+  <div class="eb-grid-3">
+    {% for p in posts %}
+      <a class="eb-card" href="{{ url_for('blog_post', slug=p.slug) }}" style="text-decoration:none;">
+        {% if p.cover_image %}
+          <div class="eb-card-img" style="background-image:url('{{ url_for('static', filename='images/' + p.cover_image) }}');background-size:cover;background-position:center;height:180px;"></div>
+        {% else %}
+          <div class="eb-card-img" style="background:linear-gradient(135deg,#1F2A44,#586784);height:180px;"></div>
+        {% endif %}
+        <div class="eb-card-body">
+          <div class="eb-card-title">{{ p.title }}</div>
+          <div class="eb-card-meta">{{ p.author.name }} · {{ fmt_dt_short(p.published_at) }} · {{ p.tag|title }}</div>
+          <p class="eb-muted" style="margin-top:8px;">{{ p.excerpt|truncate(140) }}</p>
+        </div>
+      </a>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}

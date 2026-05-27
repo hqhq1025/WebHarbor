@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block title %}Organize on Eventbrite{% endblock %}
+{% block content %}
+<section class="eb-hero" style="background:linear-gradient(135deg,#1E0A3C,#3659E3);">
+  <div class="eb-container">
+    <h1 class="eb-hero-title">Bring your idea to life.</h1>
+    <p class="eb-hero-sub">From a 20-person workshop to a 20,000-person festival, Eventbrite has the tools.</p>
+    <div style="margin-top:18px;">
+      <a class="btn btn-primary btn-large" href="{{ url_for('create_intro') }}">Create an event</a>
+      <a class="btn btn-outline btn-large" href="{{ url_for('organize_page', page='pricing') }}" style="background:#fff;">See pricing</a>
+    </div>
+  </div>
+</section>
+<div class="eb-container eb-page">
+  {% include 'partials/breadcrumbs.html' with context %}
+  <div class="eb-section-header"><h2 class="eb-h2">Organizer tools</h2></div>
+  <div class="eb-grid-3">
+    {% for slug, title, blurb in pages %}
+      <a class="eb-card" href="{{ url_for('organize_page', page=slug) }}" style="padding:20px;">
+        <div class="eb-card-title">{{ title }}</div>
+        <div class="eb-card-meta">{{ blurb|truncate(120) }}</div>
+      </a>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}

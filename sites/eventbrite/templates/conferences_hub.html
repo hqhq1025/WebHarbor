@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block title %}Conferences | Eventbrite{% endblock %}
+{% block content %}
+<section class="eb-hero" style="background:linear-gradient(135deg,#3659E3,#9CB5FF);">
+  <div class="eb-container">
+    <h1 class="eb-hero-title">Conferences</h1>
+    <p class="eb-hero-sub">Multi-day summits, breakouts, and keynote-driven gatherings.</p>
+  </div>
+</section>
+<div class="eb-container eb-page">
+  {% include 'partials/breadcrumbs.html' with context %}
+  <div class="eb-section-header"><h2 class="eb-h2">Upcoming conferences</h2></div>
+  <div class="eb-grid">
+    {% for ev in events %}{% include 'partials/event_card.html' %}{% endfor %}
+  </div>
+</div>
+{% endblock %}
