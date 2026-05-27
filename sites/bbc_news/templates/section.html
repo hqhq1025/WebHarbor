@@ -35,7 +35,7 @@
 <section class="section-lead">
     <a href="{{ url_for('article_detail', slug=lead.slug) }}">
         {% if lead.hero_image %}
-        <img src="{{ lead.hero_image }}" alt="{{ lead.headline|e }}" class="section-lead-image"
+        <img loading="lazy" decoding="async" src="{{ lead.hero_image }}" alt="{{ lead.headline|e }}" class="section-lead-image"
              onerror="this.style.display='none'">
         {% else %}
         <div class="section-lead-image"></div>
@@ -62,7 +62,7 @@
     <a class="card" href="{{ url_for('article_detail', slug=art.slug) }}">
         <div class="card-image-wrap">
             {% if art.hero_image %}
-            <img src="{{ art.hero_image }}" alt="{{ art.headline|e }}" class="card-image"
+            <img loading="lazy" decoding="async" src="{{ art.hero_image }}" alt="{{ art.headline|e }}" class="card-image"
                  onerror="this.style.display='none'">
             {% endif %}
         </div>

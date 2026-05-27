@@ -38,7 +38,7 @@
         <a class="card" href="{{ url_for('article_detail', slug=art.slug) }}">
             <div class="card-image-wrap">
                 {% if art.hero_image %}
-                <img src="{{ art.hero_image }}" alt="{{ art.headline|e }}" class="card-image" onerror="this.style.display='none'">
+                <img loading="lazy" decoding="async" src="{{ art.hero_image }}" alt="{{ art.headline|e }}" class="card-image" onerror="this.style.display='none'">
                 {% endif %}
                 <div class="card-label" style="background: var(--bbc-red);">BREAKING</div>
             </div>
@@ -73,7 +73,7 @@
         <a class="card" href="{{ url_for('article_detail', slug=art.slug) }}">
             <div class="card-image-wrap">
                 {% if art.hero_image %}
-                <img src="{{ art.hero_image }}" alt="{{ art.headline|e }}" class="card-image" onerror="this.style.display='none'">
+                <img loading="lazy" decoding="async" src="{{ art.hero_image }}" alt="{{ art.headline|e }}" class="card-image" onerror="this.style.display='none'">
                 {% endif %}
             </div>
             <h3 class="card-headline">{{ art.headline }}</h3>

@@ -14,7 +14,7 @@
         <a href="{{ url_for('article_detail', slug=item.article.slug) }}">
             <div class="card-image-wrap">
                 {% if item.article.hero_image %}
-                <img src="{{ item.article.hero_image }}" alt="{{ item.article.headline|e }}" class="card-image"
+                <img loading="lazy" decoding="async" src="{{ item.article.hero_image }}" alt="{{ item.article.headline|e }}" class="card-image"
                      onerror="this.style.display='none'">
                 {% endif %}
             </div>

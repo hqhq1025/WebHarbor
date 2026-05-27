@@ -30,7 +30,7 @@
             {% for item in items %}
             <div class="rl-item">
                 {% if item.article.hero_image %}
-                <img src="{{ item.article.hero_image }}" alt="{{ item.article.headline|e }}"
+                <img loading="lazy" decoding="async" src="{{ item.article.hero_image }}" alt="{{ item.article.headline|e }}"
                      onerror="this.style.background='#eee'">
                 {% else %}
                 <div style="width:180px; height:110px; background:#eee;"></div>

@@ -41,7 +41,7 @@
     {% if item.article %}
     <div class="digest-detail-item">
         {% if item.article.hero_image %}
-        <img src="{{ item.article.hero_image }}" alt="{{ item.article.headline|e }}" onerror="this.style.display='none'">
+        <img loading="lazy" decoding="async" src="{{ item.article.hero_image }}" alt="{{ item.article.headline|e }}" onerror="this.style.display='none'">
         {% endif %}
         <div>
             <h3 style="font-size: 18px; font-weight: 700; margin-bottom: 4px;">

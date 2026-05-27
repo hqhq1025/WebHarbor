@@ -123,7 +123,7 @@
     </div>
 
     {% if article.hero_image %}
-    <img src="{{ article.hero_image }}" alt="{{ article.headline|e }}" class="article-hero"
+    <img loading="lazy" decoding="async" src="{{ article.hero_image }}" alt="{{ article.headline|e }}" class="article-hero"
          onerror="this.style.display='none'">
     <p class="article-hero-caption">Photo: BBC News</p>
     {% endif %}
@@ -268,7 +268,7 @@
         <p>{{ para }}</p>
         {% if loop.index0 == mid and mid > 0 and article.hero_image %}
         <figure class="article-inline-figure">
-            <img src="{{ article.hero_image }}" alt="{{ article.headline|e }}"
+            <img loading="lazy" decoding="async" src="{{ article.hero_image }}" alt="{{ article.headline|e }}"
                  onerror="this.parentElement.style.display='none'">
             <figcaption>{{ article.subtitle[:200] if article.subtitle else article.headline }}
                 <span class="figure-credit">Photo: BBC News / Reuters</span>
@@ -314,7 +314,7 @@
         <div class="pd-gallery-images">
             {% for img in section.images %}
             <div class="pd-gallery-img">
-                <img src="{{ img }}" alt="{{ article.headline|e }}"
+                <img loading="lazy" decoding="async" src="{{ img }}" alt="{{ article.headline|e }}"
                      onerror="this.parentElement.innerHTML='<div class=&quot;placeholder-img&quot;>{{ article.headline[:40]|e }}</div>'">
             </div>
             {% endfor %}
@@ -334,7 +334,7 @@
                data-preview-image="{{ art.hero_image }}">
                 <div class="card-image-wrap">
                     {% if art.hero_image %}
-                    <img src="{{ art.hero_image }}" alt="{{ art.headline|e }}" class="card-image"
+                    <img loading="lazy" decoding="async" src="{{ art.hero_image }}" alt="{{ art.headline|e }}" class="card-image"
                          onerror="this.style.display='none'">
                     {% endif %}
                 </div>
@@ -425,7 +425,7 @@
         <a class="top-story-card" href="{{ url_for('article_detail', slug=top_story_today.slug) }}"
            data-top-story-slug="{{ top_story_today.slug }}">
             {% if top_story_today.hero_image %}
-            <img src="{{ top_story_today.hero_image }}" alt="{{ top_story_today.headline|e }}"
+            <img loading="lazy" decoding="async" src="{{ top_story_today.hero_image }}" alt="{{ top_story_today.headline|e }}"
                  class="top-story-image"
                  onerror="this.style.display='none'">
             {% endif %}

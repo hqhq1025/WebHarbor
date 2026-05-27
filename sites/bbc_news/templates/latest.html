@@ -12,7 +12,7 @@
         {% for art in articles %}
         <a class="latest-item" href="{{ url_for('article_detail', slug=art.slug) }}">
             {% if art.hero_image %}
-            <img src="{{ art.hero_image }}" alt="{{ art.headline|e }}" class="latest-image"
+            <img loading="lazy" decoding="async" src="{{ art.hero_image }}" alt="{{ art.headline|e }}" class="latest-image"
                  onerror="this.style.display='none'">
             {% else %}
             <div class="latest-image" style="background:#eee;"></div>

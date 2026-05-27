@@ -7,7 +7,7 @@
 <section class="hero-grid">
     <a href="{{ url_for('article_detail', slug=top_story.slug) }}" class="hero-main">
         {% if top_story.hero_image %}
-        <img src="{{ top_story.hero_image }}" alt="{{ top_story.headline|e }}" class="hero-image"
+        <img loading="lazy" decoding="async" src="{{ top_story.hero_image }}" alt="{{ top_story.headline|e }}" class="hero-image"
              onerror="this.parentElement.querySelector('.hero-image').style.display='none'">
         {% else %}
         <div class="hero-image"></div>
@@ -36,7 +36,7 @@
         <div class="hero-side-card">
             <a href="{{ url_for('article_detail', slug=art.slug) }}">
                 {% if art.hero_image %}
-                <img src="{{ art.hero_image }}" alt="{{ art.headline|e }}" class="hero-side-image"
+                <img loading="lazy" decoding="async" src="{{ art.hero_image }}" alt="{{ art.headline|e }}" class="hero-side-image"
                      onerror="this.style.display='none'">
                 {% endif %}
                 <h3 class="hero-side-title">{{ art.headline }}</h3>
@@ -62,7 +62,7 @@
                 <p class="latest-meta">{{ art.published_date_str }} · {{ art.reading_time }} min read</p>
             </div>
             {% if art.hero_image %}
-            <img src="{{ art.hero_image }}" alt="{{ art.headline|e }}" class="latest-image"
+            <img loading="lazy" decoding="async" src="{{ art.hero_image }}" alt="{{ art.headline|e }}" class="latest-image"
                  onerror="this.style.display='none'">
             {% else %}
             <div class="latest-image"></div>
@@ -109,7 +109,7 @@
         <a class="card" href="{{ url_for('article_detail', slug=art.slug) }}">
             <div class="card-image-wrap">
                 {% if art.hero_image %}
-                <img src="{{ art.hero_image }}" alt="{{ art.headline|e }}" class="card-image"
+                <img loading="lazy" decoding="async" src="{{ art.hero_image }}" alt="{{ art.headline|e }}" class="card-image"
                      onerror="this.style.display='none'">
                 {% endif %}
             </div>
@@ -135,7 +135,7 @@
         <a class="card" href="{{ url_for('article_detail', slug=art.slug) }}">
             <div class="card-image-wrap">
                 {% if art.hero_image %}
-                <img src="{{ art.hero_image }}" alt="{{ art.headline|e }}" class="card-image"
+                <img loading="lazy" decoding="async" src="{{ art.hero_image }}" alt="{{ art.headline|e }}" class="card-image"
                      onerror="this.style.display='none'">
                 {% endif %}
             </div>
@@ -159,7 +159,7 @@
         <a class="card" href="{{ url_for('article_detail', slug=art.slug) }}">
             <div class="card-image-wrap">
                 {% if art.hero_image %}
-                <img src="{{ art.hero_image }}" alt="{{ art.headline|e }}" class="card-image"
+                <img loading="lazy" decoding="async" src="{{ art.hero_image }}" alt="{{ art.headline|e }}" class="card-image"
                      onerror="this.style.display='none'">
                 {% endif %}
             </div>
@@ -183,7 +183,7 @@
         <a class="card" href="{{ url_for('article_detail', slug=art.slug) }}">
             <div class="card-image-wrap">
                 {% if art.hero_image %}
-                <img src="{{ art.hero_image }}" alt="{{ art.headline|e }}" class="card-image"
+                <img loading="lazy" decoding="async" src="{{ art.hero_image }}" alt="{{ art.headline|e }}" class="card-image"
                      onerror="this.style.display='none'">
                 {% endif %}
             </div>
