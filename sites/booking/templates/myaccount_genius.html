@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+{% set myaccount_active = 'genius' %}
+{% block title %}Genius loyalty — Booking.com{% endblock %}
+{% block content %}
+<div class="container">
+    <h1 class="page-title">Genius loyalty</h1>
+    <p class="page-subtitle">You're at <strong>Genius Level {{ tier }}</strong> &middot;
+        <strong>{{ points }}</strong> points</p>
+
+    <div class="account-layout">
+        {% include "_myaccount_sidebar.html" %}
+
+        <main>
+            <div class="account-card genius-card">
+                <h2>Your status</h2>
+                <div class="genius-progress">
+                    {% for t, name, threshold, perks in tiers %}
+                    <div class="tier-row {% if t == tier %}current{% elif t < tier %}reached{% endif %}">
+                        <div class="tier-label">
+                            <strong>{{ name }}</strong>
+                            <small>{{ threshold }} points</small>
+                        </div>
+                        <div class="tier-perks text-muted">{{ perks }}</div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% if next_threshold %}
+                <p class="text-muted mt-2">
+                    Earn <strong>{{ next_threshold - points }}</strong> more points to reach the next level.
+                </p>
+                {% else %}
+                <p class="text-muted mt-2">You've unlocked the highest Genius tier. Thank you for booking with us.</p>
+                {% endif %}
+            </div>
+
+            <div class="account-card">
+                <h2>Points history</h2>
+                {% if events %}
+                <table class="genius-history">
+                    <thead>
+                        <tr><th>Date</th><th>Event</th><th>Description</th><th style="text-align:right;">Points</th></tr>
+                    </thead>
+                    <tbody>
+                    {% for ev in events %}
+                        <tr>
+                            <td>{{ ev.created_at.strftime('%d %b %Y') }}</td>
+                            <td><span class="badge badge-{{ ev.event_type }}">{{ ev.event_type|upper }}</span></td>
+                            <td>{{ ev.description }}</td>
+                            <td style="text-align:right; color:{{ '#008009' if ev.points >= 0 else '#cc0000' }};">
+                                {{ '+' if ev.points >= 0 }}{{ ev.points }}
+                            </td>
+                        </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+                {% else %}
+                <p class="text-muted">No Genius events yet. Complete a stay to start earning points.</p>
+                {% endif %}
+            </div>
+
+            <div class="account-card">
+                <h2>How Genius works</h2>
+                <ul>
+                    <li>Earn <strong>1 point per $1 spent</strong> on stays after they complete.</li>
+                    <li>Reach <strong>1,000</strong> points to unlock Level 2, <strong>2,500</strong> for Level 3.</li>
+                    <li>Higher levels unlock bigger discounts, free breakfast, and free room upgrades.</li>
+                </ul>
+                <a href="{{ url_for('genius') }}" class="btn-secondary mt-2">Read the full programme</a>
+            </div>
+        </main>
+    </div>
+</div>
+{% endblock %}

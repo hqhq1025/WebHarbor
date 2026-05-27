@@ -1,0 +1,83 @@
+{% extends "base.html" %}
+{% set myaccount_active = 'preferences' %}
+{% block title %}Preferences — Booking.com{% endblock %}
+{% block content %}
+<div class="container">
+    <h1 class="page-title">Preferences</h1>
+    <p class="page-subtitle">Choose your language, currency, and how Booking gets in touch</p>
+
+    <div class="account-layout">
+        {% include "_myaccount_sidebar.html" %}
+
+        <main>
+            <form class="account-card myaccount-form" method="POST"
+                  action="{{ url_for('myaccount_preferences_update') }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token_value }}">
+
+                <h2>Language &amp; currency</h2>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="preferred_language">Language</label>
+                        <select id="preferred_language" name="preferred_language">
+                            {% for lk, lname in language_choices %}
+                            <option value="{{ lk }}" {% if current_user.preferred_language == lk %}selected{% endif %}>
+                                {{ lname }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="preferred_currency">Currency</label>
+                        <select id="preferred_currency" name="preferred_currency">
+                            {% for cc in currency_choices %}
+                            <option value="{{ cc }}" {% if current_user.preferred_currency == cc %}selected{% endif %}>
+                                {{ cc }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+
+                <h2>Email notifications</h2>
+                <div class="form-group toggle-group">
+                    <label class="toggle">
+                        <input type="checkbox" name="notify_promotions"
+                               {% if current_user.notify_promotions %}checked{% endif %}>
+                        <span>Deals &amp; promotions</span>
+                    </label>
+                    <small class="text-muted">Member-only offers, flash sales, and seasonal deals.</small>
+                </div>
+                <div class="form-group toggle-group">
+                    <label class="toggle">
+                        <input type="checkbox" name="notify_property_messages"
+                               {% if current_user.notify_property_messages %}checked{% endif %}>
+                        <span>Property messages</span>
+                    </label>
+                    <small class="text-muted">Replies from properties about bookings or questions.</small>
+                </div>
+                <div class="form-group toggle-group">
+                    <label class="toggle">
+                        <input type="checkbox" name="notify_account_updates"
+                               {% if current_user.notify_account_updates %}checked{% endif %}>
+                        <span>Account &amp; booking updates</span>
+                    </label>
+                    <small class="text-muted">Confirmation, cancellation, and policy change notices.</small>
+                </div>
+                <div class="form-group toggle-group">
+                    <label class="toggle">
+                        <input type="checkbox" name="notify_travel_inspiration"
+                               {% if current_user.notify_travel_inspiration %}checked{% endif %}>
+                        <span>Travel inspiration newsletter</span>
+                    </label>
+                    <small class="text-muted">Hand-picked destinations, articles, and travel guides.</small>
+                </div>
+
+                <div class="form-actions">
+                    <button type="submit" class="form-submit">Save preferences</button>
+                    <a href="{{ url_for('myaccount_dashboard') }}" class="btn-secondary">Cancel</a>
+                </div>
+            </form>
+        </main>
+    </div>
+</div>
+{% endblock %}

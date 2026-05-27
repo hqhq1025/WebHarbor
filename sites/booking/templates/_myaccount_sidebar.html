@@ -1,0 +1,36 @@
+{# Shared sidebar for /myaccount/* pages — real Booking.com layout uses the
+   same persistent left nav on every account page. #}
+<aside class="account-sidebar myaccount-sidebar">
+    <div class="avatar">{{ current_user.first_name[0] if current_user.first_name else 'G' }}</div>
+    <h3>{{ current_user.full_name }}</h3>
+    <div class="genius-level">GENIUS Level {{ current_user.genius_level }}</div>
+    <nav class="myaccount-nav" aria-label="My Account">
+        <ul>
+            <li><a href="{{ url_for('myaccount_dashboard') }}"
+                   {% if myaccount_active == 'dashboard' %}class="active" aria-current="page"{% endif %}>Dashboard</a></li>
+            <li><a href="{{ url_for('myaccount_personal_details') }}"
+                   {% if myaccount_active == 'personal-details' %}class="active" aria-current="page"{% endif %}>Personal details</a></li>
+            <li><a href="{{ url_for('myaccount_preferences') }}"
+                   {% if myaccount_active == 'preferences' %}class="active" aria-current="page"{% endif %}>Preferences</a></li>
+            <li><a href="{{ url_for('myaccount_payment_methods') }}"
+                   {% if myaccount_active == 'payment-methods' %}class="active" aria-current="page"{% endif %}>Payment methods</a></li>
+            <li><a href="{{ url_for('myaccount_privacy') }}"
+                   {% if myaccount_active == 'privacy' %}class="active" aria-current="page"{% endif %}>Privacy</a></li>
+            <li><a href="{{ url_for('myaccount_security') }}"
+                   {% if myaccount_active == 'security' %}class="active" aria-current="page"{% endif %}>Security</a></li>
+            <li><a href="{{ url_for('myaccount_reviews') }}"
+                   {% if myaccount_active == 'reviews' %}class="active" aria-current="page"{% endif %}>My reviews</a></li>
+            <li><a href="{{ url_for('myaccount_genius') }}"
+                   {% if myaccount_active == 'genius' %}class="active" aria-current="page"{% endif %}>Genius loyalty</a></li>
+            <li><a href="{{ url_for('myaccount_wallet') }}"
+                   {% if myaccount_active == 'wallet' %}class="active" aria-current="page"{% endif %}>Wallet</a></li>
+            <li><a href="{{ url_for('myaccount_inbox') }}"
+                   {% if myaccount_active == 'inbox' %}class="active" aria-current="page"{% endif %}>
+                Inbox{% if myaccount_unread %} <span class="inbox-badge">{{ myaccount_unread }}</span>{% endif %}
+            </a></li>
+            <li><a href="{{ url_for('my_bookings') }}">My bookings</a></li>
+            <li><a href="{{ url_for('saved') }}">Saved properties</a></li>
+            <li><a href="{{ url_for('logout') }}">Sign out</a></li>
+        </ul>
+    </nav>
+</aside>

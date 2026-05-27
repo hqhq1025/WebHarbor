@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+{% set myaccount_active = 'privacy' %}
+{% block title %}Privacy — Booking.com{% endblock %}
+{% block content %}
+<div class="container">
+    <h1 class="page-title">Privacy</h1>
+    <p class="page-subtitle">Control how Booking.com uses your data</p>
+
+    <div class="account-layout">
+        {% include "_myaccount_sidebar.html" %}
+
+        <main>
+            <form class="account-card myaccount-form" method="POST"
+                  action="{{ url_for('myaccount_privacy_update') }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token_value }}">
+
+                <h2>Personalised advertising</h2>
+                <div class="form-group toggle-group">
+                    <label class="toggle">
+                        <input type="checkbox" name="privacy_personalised_ads"
+                               {% if current_user.privacy_personalised_ads %}checked{% endif %}>
+                        <span>Show me personalised ads</span>
+                    </label>
+                    <small class="text-muted">When off, you'll still see ads but they won't be tailored to your travel history.</small>
+                </div>
+
+                <h2>Data sharing with partners</h2>
+                <div class="form-group toggle-group">
+                    <label class="toggle">
+                        <input type="checkbox" name="privacy_share_with_partners"
+                               {% if current_user.privacy_share_with_partners %}checked{% endif %}>
+                        <span>Share my data with hotel partners for offers</span>
+                    </label>
+                    <small class="text-muted">Allows properties you've stayed at to send you direct promotions.</small>
+                </div>
+
+                <h2>Analytics &amp; product improvement</h2>
+                <div class="form-group toggle-group">
+                    <label class="toggle">
+                        <input type="checkbox" name="privacy_analytics"
+                               {% if current_user.privacy_analytics %}checked{% endif %}>
+                        <span>Help improve Booking.com by sharing usage data</span>
+                    </label>
+                    <small class="text-muted">Aggregated, non-identifying data only.</small>
+                </div>
+
+                <div class="form-actions">
+                    <button type="submit" class="form-submit">Save privacy settings</button>
+                    <a href="{{ url_for('legal') }}" class="btn-secondary">Privacy policy</a>
+                </div>
+            </form>
+
+            <div class="account-card">
+                <h2>Your data rights</h2>
+                <p class="text-muted">You can request a copy of your data, or ask us to delete your account
+                    permanently. Account deletion is irreversible and cancels future trips.</p>
+                <a href="{{ url_for('account') }}" class="btn-secondary">Account actions</a>
+            </div>
+        </main>
+    </div>
+</div>
+{% endblock %}

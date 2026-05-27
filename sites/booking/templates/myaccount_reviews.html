@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+{% set myaccount_active = 'reviews' %}
+{% block title %}My reviews — Booking.com{% endblock %}
+{% block content %}
+<div class="container">
+    <h1 class="page-title">My reviews</h1>
+    <p class="page-subtitle">Reviews you've written about properties you've stayed at</p>
+
+    <div class="account-layout">
+        {% include "_myaccount_sidebar.html" %}
+
+        <main>
+            {% if reviews %}
+                {% for rev in reviews %}
+                <div class="account-card review-row">
+                    <div class="review-header">
+                        <div>
+                            <strong class="review-rating">{{ '%.1f'|format(rev.rating) }}/10</strong>
+                            &middot; <span class="text-muted">{{ rev.traveller_type or 'Guest' }}</span>
+                            &middot; <span class="text-muted">{{ rev.created_at.strftime('%d %b %Y') }}</span>
+                        </div>
+                        <details class="review-actions">
+                            <summary class="btn-secondary" style="cursor:pointer;font-size:12px;">Edit / Delete</summary>
+                            <form class="myaccount-form" method="POST"
+                                  action="{{ url_for('myaccount_reviews_edit', review_id=rev.id) }}"
+                                  style="margin-top:12px;">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token_value }}">
+                                <div class="form-group">
+                                    <label>Rating</label>
+                                    <select name="rating">
+                                        {% for i in range(1, 11) %}
+                                        <option value="{{ i }}" {% if rev.rating|int == i %}selected{% endif %}>{{ i }}/10</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label>Title</label>
+                                    <input name="title" type="text" value="{{ rev.title or '' }}">
+                                </div>
+                                <div class="form-group">
+                                    <label>What did you like?</label>
+                                    <textarea name="body_positive" rows="3">{{ rev.body_positive or '' }}</textarea>
+                                </div>
+                                <div class="form-group">
+                                    <label>What could be better?</label>
+                                    <textarea name="body_negative" rows="3">{{ rev.body_negative or '' }}</textarea>
+                                </div>
+                                <button type="submit" class="form-submit">Save review</button>
+                            </form>
+                            <form method="POST"
+                                  action="{{ url_for('myaccount_reviews_delete', review_id=rev.id) }}"
+                                  style="margin-top:8px;">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token_value }}">
+                                <button type="submit" class="btn-remove" style="font-size:12px;padding:6px 12px;">
+                                    Delete this review
+                                </button>
+                            </form>
+                        </details>
+                    </div>
+                    <h3 style="margin:8px 0;">{{ rev.title or 'Untitled review' }}</h3>
+                    {% if rev.body_positive %}
+                    <p><strong>Liked:</strong> {{ rev.body_positive }}</p>
+                    {% endif %}
+                    {% if rev.body_negative %}
+                    <p><strong>Disliked:</strong> {{ rev.body_negative }}</p>
+                    {% endif %}
+                </div>
+                {% endfor %}
+            {% else %}
+                <div class="account-card">
+                    <p class="text-muted">You haven't written any reviews yet. After a stay completes,
+                        you can write a review from the booking detail page.</p>
+                    <a href="{{ url_for('my_bookings') }}" class="btn-primary mt-2">View my bookings</a>
+                </div>
+            {% endif %}
+        </main>
+    </div>
+</div>
+{% endblock %}

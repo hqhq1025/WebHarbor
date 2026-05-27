@@ -1679,3 +1679,138 @@ button { font-family: inherit; cursor: pointer; border: none; }
     font-weight: 700;
     pointer-events: none;
 }
+
+/* --------------------------------------------------------------------- */
+/* R12 — /myaccount hub additions                                        */
+/* --------------------------------------------------------------------- */
+.myaccount-sidebar .myaccount-nav ul { list-style: none; padding: 0; margin: 0; }
+.myaccount-sidebar .myaccount-nav li { margin-bottom: 4px; }
+.myaccount-sidebar .myaccount-nav a.active {
+    background: var(--bk-blue, #003580);
+    color: #fff;
+    font-weight: 600;
+}
+.myaccount-sidebar .inbox-badge {
+    display: inline-block;
+    background: #cc0000;
+    color: #fff;
+    font-size: 11px;
+    padding: 1px 6px;
+    border-radius: 10px;
+    margin-left: 4px;
+}
+.myaccount-form .form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+}
+.myaccount-form .form-group { margin-bottom: 12px; }
+.myaccount-form .form-group input[type=text],
+.myaccount-form .form-group input[type=email],
+.myaccount-form .form-group input[type=tel],
+.myaccount-form .form-group input[type=password],
+.myaccount-form .form-group select,
+.myaccount-form .form-group textarea {
+    width: 100%;
+    padding: 8px 10px;
+    border: 1px solid #ccd6e2;
+    border-radius: 4px;
+    font-size: 14px;
+}
+.myaccount-form .form-actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 16px;
+}
+.toggle-group .toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 600;
+}
+.toggle-group .toggle input[type=checkbox] { transform: scale(1.2); }
+
+.payment-list { list-style: none; padding: 0; }
+.payment-list-item {
+    padding: 12px 0;
+    border-bottom: 1px solid #eee;
+}
+.payment-list-item:last-child { border-bottom: none; }
+.card-summary { font-size: 15px; }
+.card-brand {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 4px;
+    background: #003580;
+    color: #fff;
+    font-weight: 700;
+    font-size: 12px;
+    margin-right: 4px;
+}
+.brand-mastercard { background: #eb001b; }
+.brand-amex { background: #2e77bb; }
+.brand-discover { background: #ff6000; }
+
+.wallet-summary .wallet-balance {
+    display: flex;
+    align-items: baseline;
+    gap: 16px;
+    margin-bottom: 8px;
+}
+.wallet-summary .wallet-amount {
+    font-size: 32px;
+    font-weight: 700;
+    color: #003580;
+}
+.wallet-history, .genius-history {
+    width: 100%;
+    border-collapse: collapse;
+}
+.wallet-history th, .wallet-history td,
+.genius-history th, .genius-history td {
+    padding: 8px;
+    text-align: left;
+    border-bottom: 1px solid #eee;
+    font-size: 14px;
+}
+.wallet-history th, .genius-history th { background: #f5faff; font-weight: 600; }
+
+.genius-card .tier-row {
+    padding: 12px;
+    border: 1px solid #eee;
+    border-radius: 4px;
+    margin-bottom: 8px;
+}
+.genius-card .tier-row.current { border-color: #006ce4; background: #f5faff; }
+.genius-card .tier-row.reached { opacity: 0.75; }
+
+.inbox-list .inbox-row {
+    padding: 12px 0;
+    border-bottom: 1px solid #eee;
+}
+.inbox-list .inbox-row:last-child { border-bottom: none; }
+.inbox-row.unread .inbox-subject a { color: #003580; font-weight: 700; }
+.inbox-row .unread-dot {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    background: #006ce4;
+    border-radius: 50%;
+    margin-right: 6px;
+    vertical-align: middle;
+}
+.inbox-meta { display: flex; gap: 8px; align-items: center; font-size: 12px; }
+.inbox-actions { margin-top: 8px; display: flex; gap: 8px; }
+.badge-property_reply { background: #008009; color: #fff; }
+.badge-promo { background: #ff8000; color: #fff; }
+.badge-system { background: #666; color: #fff; }
+.badge-booking_update { background: #003580; color: #fff; }
+.badge-read { background: #ccc; color: #333; }
+.badge-unread { background: #cc0000; color: #fff; }
+.badge-earn { background: #008009; color: #fff; }
+.badge-redeem { background: #cc0000; color: #fff; }
+.badge-tier_up { background: #ff8000; color: #fff; }
+.badge-credit { background: #008009; color: #fff; }
+.badge-cashback { background: #006ce4; color: #fff; }
+.badge-debit { background: #cc0000; color: #fff; }
+.badge-refund { background: #003580; color: #fff; }

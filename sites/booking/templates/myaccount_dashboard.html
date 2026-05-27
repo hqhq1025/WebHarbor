@@ -1,0 +1,140 @@
+{% extends "base.html" %}
+{% set myaccount_active = 'dashboard' %}
+{% block title %}My account — Booking.com{% endblock %}
+{% block content %}
+<div class="container">
+    <h1 class="page-title">My account</h1>
+    <p class="page-subtitle">Manage your trips, payments, and preferences</p>
+
+    <div class="account-layout">
+        {% include "_myaccount_sidebar.html" %}
+
+        <main>
+            <div class="account-card">
+                <h2>Welcome back, {{ current_user.first_name or current_user.email.split('@')[0] }}</h2>
+                <p class="text-muted">Here's an overview of your Booking account.</p>
+                <div class="account-stats">
+                    <div class="stat">
+                        <div class="stat-num">{{ total_bookings }}</div>
+                        <div class="stat-label">Total bookings</div>
+                    </div>
+                    <div class="stat">
+                        <div class="stat-num">{{ saved_props|length }}</div>
+                        <div class="stat-label">Saved</div>
+                    </div>
+                    <div class="stat">
+                        <div class="stat-num">{{ review_count }}</div>
+                        <div class="stat-label">Reviews</div>
+                    </div>
+                    <div class="stat">
+                        <div class="stat-num">${{ '%.2f'|format(current_user.wallet_credit_usd or 0.0) }}</div>
+                        <div class="stat-label">Wallet credit</div>
+                    </div>
+                    <div class="stat">
+                        <div class="stat-num">{{ current_user.genius_points or 0 }}</div>
+                        <div class="stat-label">Genius points</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="account-card">
+                <h2>Next trip</h2>
+                {% if next_trip %}
+                <div class="booking-row next-trip">
+                    {% if next_trip.items and next_trip.items[0].property.image %}
+                    <img src="{{ next_trip.items[0].property.image }}" alt=""
+                         onerror="this.style.background='linear-gradient(135deg,#003580,#006ce4)'">
+                    {% else %}
+                    <img src="/static/images/placeholder.jpg"
+                         onerror="this.style.background='linear-gradient(135deg,#003580,#006ce4)'">
+                    {% endif %}
+                    <div class="info">
+                        <h4>{{ next_trip.items[0].property.name if next_trip.items else 'Stay' }}</h4>
+                        <div class="meta">
+                            Booking <strong>{{ next_trip.booking_number }}</strong>
+                            &middot; {{ next_trip.nights }} night{{ 's' if next_trip.nights != 1 else '' }}
+                            &middot; Total ${{ '%.2f'|format(next_trip.total) }}
+                        </div>
+                        {% if next_trip.items %}
+                        <div class="meta">
+                            Check-in {{ next_trip.items[0].check_in.strftime('%a, %d %b %Y') }}
+                            &rarr; Check-out {{ next_trip.items[0].check_out.strftime('%a, %d %b %Y') }}
+                        </div>
+                        {% endif %}
+                    </div>
+                    <div>
+                        <a href="{{ url_for('booking_detail', booking_id=next_trip.id) }}" class="btn-primary">View booking</a>
+                    </div>
+                </div>
+                {% else %}
+                <p class="text-muted">You have no upcoming trips. <a href="{{ url_for('stays') }}">Find a stay</a>.</p>
+                {% endif %}
+            </div>
+
+            <div class="account-card">
+                <h2>Recent bookings</h2>
+                {% if recent_bookings %}
+                    {% for booking in recent_bookings %}
+                    <div class="booking-row">
+                        {% if booking.items and booking.items[0].property.image %}
+                        <img src="{{ booking.items[0].property.image }}" alt=""
+                             onerror="this.style.background='linear-gradient(135deg,#003580,#006ce4)'">
+                        {% else %}
+                        <img src="/static/images/placeholder.jpg"
+                             onerror="this.style.background='linear-gradient(135deg,#003580,#006ce4)'">
+                        {% endif %}
+                        <div class="info">
+                            <h4>{{ booking.items[0].property.name if booking.items else 'Booking' }}</h4>
+                            <div class="meta">{{ booking.booking_number }} &middot; {{ booking.created_at.strftime('%d %b %Y') }}</div>
+                        </div>
+                        <div>
+                            <div class="status status-{{ booking.status }}">{{ booking.status.upper() }}</div>
+                            <div style="text-align:right;margin-top:4px;">
+                                <a href="{{ url_for('booking_detail', booking_id=booking.id) }}" style="font-size:12px;">View &rarr;</a>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                    <div class="mt-2"><a href="{{ url_for('my_bookings') }}">View all bookings &rarr;</a></div>
+                {% else %}
+                    <p class="text-muted">No bookings yet.</p>
+                {% endif %}
+            </div>
+
+            {% if saved_props %}
+            <div class="account-card">
+                <h2>Saved searches & properties</h2>
+                <div class="card-grid cards-4">
+                    {% for item in saved_props %}
+                    <a href="{{ url_for('property_detail', slug=item.property.slug) }}" class="city-card">
+                        {% if item.property.image %}
+                        <img src="{{ item.property.image }}" alt="" class="city-card-img"
+                             onerror="this.style.background='linear-gradient(135deg,#003580,#006ce4)';this.alt=''">
+                        {% endif %}
+                        <div class="city-card-body">
+                            <h3 style="font-size:14px;">{{ item.property.name }}</h3>
+                            <span class="flag">{{ item.property.city.display }}</span>
+                        </div>
+                    </a>
+                    {% endfor %}
+                </div>
+                <div class="mt-2"><a href="{{ url_for('saved') }}">View all saved &rarr;</a></div>
+            </div>
+            {% endif %}
+
+            <div class="account-card">
+                <h2>Inbox</h2>
+                <p>You have <strong>{{ unread }}</strong> unread message{{ 's' if unread != 1 else '' }}.</p>
+                <a href="{{ url_for('myaccount_inbox') }}" class="btn-primary mt-2">Open inbox</a>
+            </div>
+
+            <div class="account-card">
+                <h2>Genius loyalty</h2>
+                <p>You are at <strong>Level {{ genius_tier }}</strong> with
+                    <strong>{{ current_user.genius_points or 0 }}</strong> points.</p>
+                <a href="{{ url_for('myaccount_genius') }}" class="btn-secondary mt-2">View Genius benefits</a>
+            </div>
+        </main>
+    </div>
+</div>
+{% endblock %}

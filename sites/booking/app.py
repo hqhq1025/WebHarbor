@@ -91,11 +91,34 @@ class User(db.Model, UserMixin):
     genius_level = db.Column(db.Integer, default=1)  # 1-3, loyalty tier
     created_at = db.Column(db.DateTime, default=lambda: MIRROR_REFERENCE_DATE)
 
+    # --- /myaccount hub fields (R12) -------------------------------------
+    # Preferences (Preferences page on real booking.com /myaccount/preferences).
+    preferred_language = db.Column(db.String(10), default='en-us')
+    preferred_currency = db.Column(db.String(5), default='USD')
+    # Notification email toggles
+    notify_promotions = db.Column(db.Boolean, default=True)
+    notify_property_messages = db.Column(db.Boolean, default=True)
+    notify_account_updates = db.Column(db.Boolean, default=True)
+    notify_travel_inspiration = db.Column(db.Boolean, default=False)
+    # Privacy / marketing
+    privacy_personalised_ads = db.Column(db.Boolean, default=True)
+    privacy_share_with_partners = db.Column(db.Boolean, default=False)
+    privacy_analytics = db.Column(db.Boolean, default=True)
+    # Security
+    two_factor_enabled = db.Column(db.Boolean, default=False)
+    two_factor_method = db.Column(db.String(20), default='')  # sms / authenticator / email
+    # Wallet & Genius
+    wallet_credit_usd = db.Column(db.Float, default=0.0)
+    genius_points = db.Column(db.Integer, default=0)
+
     bookings = db.relationship('Booking', backref='user', lazy=True, cascade='all, delete-orphan')
     cart_items = db.relationship('CartItem', backref='user', lazy=True, cascade='all, delete-orphan')
     saved = db.relationship('SavedProperty', backref='user', lazy=True, cascade='all, delete-orphan')
     reviews = db.relationship('Review', backref='user', lazy=True, cascade='all, delete-orphan')
     payment_methods = db.relationship('PaymentMethod', backref='user', lazy=True, cascade='all, delete-orphan')
+    messages = db.relationship('Message', backref='user', lazy=True, cascade='all, delete-orphan')
+    genius_events = db.relationship('GeniusEvent', backref='user', lazy=True, cascade='all, delete-orphan')
+    wallet_txns = db.relationship('WalletTransaction', backref='user', lazy=True, cascade='all, delete-orphan')
 
     @property
     def full_name(self):
@@ -492,6 +515,47 @@ class PaymentMethod(db.Model):
     exp_year = db.Column(db.Integer, nullable=False)
     cardholder_name = db.Column(db.String(120), default='')
     is_default = db.Column(db.Boolean, default=False)
+    created_at = db.Column(db.DateTime, default=lambda: MIRROR_REFERENCE_DATE)
+
+
+class Message(db.Model):
+    """Booking Inbox message — property reply / promo notification / system."""
+    __tablename__ = 'message'
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    kind = db.Column(db.String(30), default='property_reply', index=True)
+    # one of: property_reply / promo / system / booking_update
+    sender = db.Column(db.String(160), default='Booking.com')
+    subject = db.Column(db.String(200), nullable=False)
+    body = db.Column(db.Text, default='')
+    is_read = db.Column(db.Boolean, default=False)
+    related_booking_id = db.Column(db.Integer, db.ForeignKey('booking.id'), nullable=True)
+    reply_body = db.Column(db.Text, default='')
+    replied_at = db.Column(db.DateTime, nullable=True)
+    created_at = db.Column(db.DateTime, default=lambda: MIRROR_REFERENCE_DATE)
+
+
+class GeniusEvent(db.Model):
+    """Genius loyalty points event — earned at stay completion or redeemed."""
+    __tablename__ = 'genius_event'
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    event_type = db.Column(db.String(20), default='earn')  # earn / redeem / tier_up
+    points = db.Column(db.Integer, default=0)              # +earn, -redeem
+    tier_after = db.Column(db.Integer, default=1)
+    description = db.Column(db.String(240), default='')
+    created_at = db.Column(db.DateTime, default=lambda: MIRROR_REFERENCE_DATE)
+
+
+class WalletTransaction(db.Model):
+    """Booking Wallet (credit / cashback) transaction."""
+    __tablename__ = 'wallet_transaction'
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    txn_type = db.Column(db.String(20), default='credit')  # credit / debit / cashback / refund
+    amount_usd = db.Column(db.Float, default=0.0)          # +credit / cashback, -debit
+    description = db.Column(db.String(240), default='')
+    related_booking_id = db.Column(db.Integer, db.ForeignKey('booking.id'), nullable=True)
     created_at = db.Column(db.DateTime, default=lambda: MIRROR_REFERENCE_DATE)
 
 
@@ -2092,6 +2156,360 @@ def account_delete():
 def my_bookings():
     bookings = Booking.query.filter_by(user_id=current_user.id).order_by(Booking.created_at.desc()).all()
     return render_template('bookings.html', bookings=bookings)
+
+
+# =====================================================================
+# /myaccount HUB — real Booking.com style account dashboard (R12)
+# Dashboard, personal details, preferences, payment methods, privacy,
+# security, reviews, Genius, wallet, inbox. Every page links into the
+# shared sidebar partial `_myaccount_sidebar.html`.
+# =====================================================================
+
+# Supported language / currency choices for the Preferences form.
+MYACCT_LANGUAGE_CHOICES = [
+    ('en-us', 'English (US)'), ('en-gb', 'English (UK)'),
+    ('fr-fr', 'Français'), ('de-de', 'Deutsch'),
+    ('es-es', 'Español'), ('it-it', 'Italiano'),
+    ('pt-pt', 'Português'), ('nl-nl', 'Nederlands'),
+    ('ja-jp', '日本語'), ('zh-cn', '简体中文'),
+]
+MYACCT_CURRENCY_CHOICES = ['USD', 'EUR', 'GBP', 'JPY', 'CNY', 'AUD', 'CAD', 'CHF', 'BRL', 'AED']
+
+# Genius tier table — name + perk list shown on /myaccount/genius.
+GENIUS_TIERS = [
+    (1, 'Genius Level 1', 0, '10% off select stays · Member-only deals'),
+    (2, 'Genius Level 2', 1000, '10-15% off · Free breakfast at select properties · Priority support'),
+    (3, 'Genius Level 3', 2500, '20% off select stays · Free room upgrade · Free breakfast · 24/7 VIP support'),
+]
+
+
+def _myaccount_unread_count(user_id):
+    return Message.query.filter_by(user_id=user_id, is_read=False).count()
+
+
+def _genius_tier_for(points):
+    """Return current tier (1-3) for a given point balance."""
+    tier = 1
+    for t, _name, threshold, _perks in GENIUS_TIERS:
+        if points >= threshold:
+            tier = t
+    return tier
+
+
+@app.context_processor
+def _inject_myaccount_globals():
+    """Make inbox unread count + nav metadata available to all templates."""
+    if current_user.is_authenticated:
+        try:
+            return {'myaccount_unread': _myaccount_unread_count(current_user.id)}
+        except Exception:
+            return {'myaccount_unread': 0}
+    return {'myaccount_unread': 0}
+
+
+@app.route('/myaccount')
+@app.route('/myaccount/')
+@app.route('/myaccount/dashboard')
+@login_required
+def myaccount_dashboard():
+    """Dashboard hub — next trip, recent bookings, saved, wallet credit."""
+    bookings = Booking.query.filter_by(user_id=current_user.id).order_by(Booking.created_at.desc()).all()
+    upcoming = [b for b in bookings if b.status == 'confirmed']
+    next_trip = upcoming[0] if upcoming else None
+    recent = bookings[:4]
+    saved_props = SavedProperty.query.filter_by(user_id=current_user.id).order_by(
+        SavedProperty.saved_at.desc()).limit(4).all()
+    reviews = Review.query.filter_by(user_id=current_user.id).count()
+    unread = _myaccount_unread_count(current_user.id)
+    tier = _genius_tier_for(current_user.genius_points or 0)
+    return render_template(
+        'myaccount_dashboard.html',
+        next_trip=next_trip,
+        recent_bookings=recent,
+        saved_props=saved_props,
+        review_count=reviews,
+        total_bookings=len(bookings),
+        unread=unread,
+        genius_tier=tier,
+    )
+
+
+@app.route('/myaccount/personal-details')
+@login_required
+def myaccount_personal_details():
+    return render_template('myaccount_personal_details.html')
+
+
+@app.route('/myaccount/personal-details/update', methods=['POST'])
+@login_required
+def myaccount_personal_details_update():
+    current_user.first_name = (request.form.get('first_name') or current_user.first_name or '').strip()
+    current_user.last_name = (request.form.get('last_name') or current_user.last_name or '').strip()
+    current_user.phone = (request.form.get('phone') or '').strip()
+    current_user.country = (request.form.get('country') or '').strip()
+    current_user.city = (request.form.get('city') or '').strip()
+    current_user.address = (request.form.get('address') or '').strip()
+    current_user.postal_code = (request.form.get('postal_code') or '').strip()
+    db.session.commit()
+    flash('Personal details updated.', 'success')
+    return redirect(url_for('myaccount_personal_details'))
+
+
+@app.route('/myaccount/preferences')
+@login_required
+def myaccount_preferences():
+    return render_template(
+        'myaccount_preferences.html',
+        language_choices=MYACCT_LANGUAGE_CHOICES,
+        currency_choices=MYACCT_CURRENCY_CHOICES,
+    )
+
+
+@app.route('/myaccount/preferences/update', methods=['POST'])
+@login_required
+def myaccount_preferences_update():
+    lang = (request.form.get('preferred_language') or 'en-us').lower()
+    if lang in {k for k, _ in MYACCT_LANGUAGE_CHOICES}:
+        current_user.preferred_language = lang
+    cur = (request.form.get('preferred_currency') or 'USD').upper()
+    if cur in MYACCT_CURRENCY_CHOICES:
+        current_user.preferred_currency = cur
+    current_user.notify_promotions = request.form.get('notify_promotions') == 'on'
+    current_user.notify_property_messages = request.form.get('notify_property_messages') == 'on'
+    current_user.notify_account_updates = request.form.get('notify_account_updates') == 'on'
+    current_user.notify_travel_inspiration = request.form.get('notify_travel_inspiration') == 'on'
+    db.session.commit()
+    flash('Preferences saved.', 'success')
+    return redirect(url_for('myaccount_preferences'))
+
+
+@app.route('/myaccount/payment-methods')
+@login_required
+def myaccount_payment_methods():
+    methods = PaymentMethod.query.filter_by(user_id=current_user.id).order_by(
+        PaymentMethod.is_default.desc(), PaymentMethod.created_at.asc()
+    ).all()
+    return render_template('myaccount_payment_methods.html', methods=methods)
+
+
+@app.route('/myaccount/payment-methods/add', methods=['POST'])
+@login_required
+def myaccount_payment_methods_add():
+    card_number = (request.form.get('card_number') or '').replace(' ', '')
+    card_type = request.form.get('card_type', 'Visa')
+    cardholder_name = (request.form.get('cardholder_name') or '').strip()
+    card_exp = request.form.get('card_exp', '12/28')
+    try:
+        parts = card_exp.split('/')
+        exp_month = int(parts[0])
+        exp_year = int('20' + parts[1]) if len(parts[1]) == 2 else int(parts[1])
+    except Exception:
+        exp_month, exp_year = 12, 2028
+    last4 = card_number[-4:] if len(card_number) >= 4 else '0000'
+    is_default = not PaymentMethod.query.filter_by(user_id=current_user.id).first()
+    pm = PaymentMethod(
+        user_id=current_user.id,
+        card_type=card_type, last4=last4,
+        exp_month=exp_month, exp_year=exp_year,
+        cardholder_name=cardholder_name, is_default=is_default,
+    )
+    db.session.add(pm)
+    db.session.commit()
+    flash(f'{card_type} ending {last4} added.', 'success')
+    return redirect(url_for('myaccount_payment_methods'))
+
+
+@app.route('/myaccount/payment-methods/<int:pm_id>/delete', methods=['POST'])
+@login_required
+def myaccount_payment_methods_delete(pm_id):
+    pm = db.session.get(PaymentMethod, pm_id)
+    if pm and pm.user_id == current_user.id:
+        db.session.delete(pm)
+        db.session.commit()
+        flash('Payment method removed.', 'info')
+    return redirect(url_for('myaccount_payment_methods'))
+
+
+@app.route('/myaccount/privacy')
+@login_required
+def myaccount_privacy():
+    return render_template('myaccount_privacy.html')
+
+
+@app.route('/myaccount/privacy/update', methods=['POST'])
+@login_required
+def myaccount_privacy_update():
+    current_user.privacy_personalised_ads = request.form.get('privacy_personalised_ads') == 'on'
+    current_user.privacy_share_with_partners = request.form.get('privacy_share_with_partners') == 'on'
+    current_user.privacy_analytics = request.form.get('privacy_analytics') == 'on'
+    db.session.commit()
+    flash('Privacy settings saved.', 'success')
+    return redirect(url_for('myaccount_privacy'))
+
+
+@app.route('/myaccount/security')
+@login_required
+def myaccount_security():
+    return render_template('myaccount_security.html')
+
+
+@app.route('/myaccount/security/change-password', methods=['POST'])
+@login_required
+def myaccount_security_change_password():
+    current_pw = request.form.get('current_password', '')
+    new_pw = request.form.get('new_password', '')
+    confirm = request.form.get('confirm_password', '')
+    if not bcrypt.check_password_hash(current_user.password_hash, current_pw):
+        flash('Current password is incorrect.', 'danger')
+    elif len(new_pw) < 6:
+        flash('New password must be at least 6 characters.', 'danger')
+    elif new_pw != confirm:
+        flash('Passwords do not match.', 'danger')
+    else:
+        current_user.password_hash = bcrypt.generate_password_hash(new_pw).decode('utf-8')
+        db.session.commit()
+        flash('Password changed successfully.', 'success')
+    return redirect(url_for('myaccount_security'))
+
+
+@app.route('/myaccount/security/2fa/enable', methods=['POST'])
+@login_required
+def myaccount_security_2fa_enable():
+    method = (request.form.get('method') or 'authenticator').lower()
+    if method not in {'sms', 'authenticator', 'email'}:
+        method = 'authenticator'
+    current_user.two_factor_enabled = True
+    current_user.two_factor_method = method
+    db.session.commit()
+    flash(f'Two-factor authentication enabled ({method}).', 'success')
+    return redirect(url_for('myaccount_security'))
+
+
+@app.route('/myaccount/security/2fa/disable', methods=['POST'])
+@login_required
+def myaccount_security_2fa_disable():
+    current_user.two_factor_enabled = False
+    current_user.two_factor_method = ''
+    db.session.commit()
+    flash('Two-factor authentication disabled.', 'info')
+    return redirect(url_for('myaccount_security'))
+
+
+@app.route('/myaccount/reviews')
+@login_required
+def myaccount_reviews():
+    reviews = Review.query.filter_by(user_id=current_user.id).order_by(Review.created_at.desc()).all()
+    return render_template('myaccount_reviews.html', reviews=reviews)
+
+
+@app.route('/myaccount/reviews/<int:review_id>/edit', methods=['POST'])
+@login_required
+def myaccount_reviews_edit(review_id):
+    rev = db.session.get(Review, review_id)
+    if not rev or rev.user_id != current_user.id:
+        abort(404)
+    try:
+        rev.rating = float(request.form.get('rating', rev.rating))
+    except (TypeError, ValueError):
+        pass
+    rev.title = (request.form.get('title') or rev.title or '').strip()
+    rev.body_positive = (request.form.get('body_positive') or '').strip()
+    rev.body_negative = (request.form.get('body_negative') or '').strip()
+    db.session.commit()
+    flash('Review updated.', 'success')
+    return redirect(url_for('myaccount_reviews'))
+
+
+@app.route('/myaccount/reviews/<int:review_id>/delete', methods=['POST'])
+@login_required
+def myaccount_reviews_delete(review_id):
+    rev = db.session.get(Review, review_id)
+    if rev and rev.user_id == current_user.id:
+        db.session.delete(rev)
+        db.session.commit()
+        flash('Review deleted.', 'info')
+    return redirect(url_for('myaccount_reviews'))
+
+
+@app.route('/myaccount/genius')
+@login_required
+def myaccount_genius():
+    events = GeniusEvent.query.filter_by(user_id=current_user.id).order_by(
+        GeniusEvent.created_at.desc()).all()
+    points = current_user.genius_points or 0
+    tier = _genius_tier_for(points)
+    # Next-tier progress
+    next_threshold = None
+    for t, _name, threshold, _perks in GENIUS_TIERS:
+        if t > tier:
+            next_threshold = threshold
+            break
+    return render_template(
+        'myaccount_genius.html',
+        events=events,
+        points=points,
+        tier=tier,
+        tiers=GENIUS_TIERS,
+        next_threshold=next_threshold,
+    )
+
+
+@app.route('/myaccount/wallet')
+@login_required
+def myaccount_wallet():
+    txns = WalletTransaction.query.filter_by(user_id=current_user.id).order_by(
+        WalletTransaction.created_at.desc()).all()
+    return render_template(
+        'myaccount_wallet.html',
+        txns=txns,
+        balance=current_user.wallet_credit_usd or 0.0,
+    )
+
+
+@app.route('/myaccount/inbox')
+@login_required
+def myaccount_inbox():
+    msgs = Message.query.filter_by(user_id=current_user.id).order_by(Message.created_at.desc()).all()
+    unread = sum(1 for m in msgs if not m.is_read)
+    return render_template('myaccount_inbox.html', messages=msgs, unread=unread)
+
+
+@app.route('/myaccount/inbox/<int:msg_id>')
+@login_required
+def myaccount_inbox_detail(msg_id):
+    msg = db.session.get(Message, msg_id)
+    if not msg or msg.user_id != current_user.id:
+        abort(404)
+    return render_template('myaccount_inbox_detail.html', msg=msg)
+
+
+@app.route('/myaccount/inbox/<int:msg_id>/mark-read', methods=['POST'])
+@login_required
+def myaccount_inbox_mark_read(msg_id):
+    msg = db.session.get(Message, msg_id)
+    if msg and msg.user_id == current_user.id:
+        msg.is_read = True
+        db.session.commit()
+        flash('Message marked as read.', 'info')
+    return redirect(request.referrer or url_for('myaccount_inbox'))
+
+
+@app.route('/myaccount/inbox/<int:msg_id>/reply', methods=['POST'])
+@login_required
+def myaccount_inbox_reply(msg_id):
+    msg = db.session.get(Message, msg_id)
+    if not msg or msg.user_id != current_user.id:
+        abort(404)
+    body = (request.form.get('reply_body') or '').strip()
+    if not body:
+        flash('Reply cannot be empty.', 'danger')
+        return redirect(url_for('myaccount_inbox_detail', msg_id=msg.id))
+    msg.reply_body = body
+    msg.replied_at = datetime.utcnow()
+    msg.is_read = True
+    db.session.commit()
+    flash('Reply sent to property.', 'success')
+    return redirect(url_for('myaccount_inbox_detail', msg_id=msg.id))
 
 
 # =====================================================================
@@ -5694,6 +6112,173 @@ def seed_benchmark_users():
     # Carlos — luxury business + Americas
     _saved(carlos.id, ['boston', 'miami', 'sanfrancisco'], 'US business stays', count=3)
 
+    # -------------------------------------------------------------
+    # R12 — /myaccount hub seed: preferences, 2FA, wallet, Genius
+    # points history, and inbox messages. All values pinned to
+    # MIRROR_REFERENCE_DATE-relative deltas so byte-identical
+    # snapshots reproduce across rebuilds.
+    # -------------------------------------------------------------
+    sophie.preferred_language = 'fr-fr'
+    sophie.preferred_currency = 'EUR'
+    sophie.notify_promotions = True
+    sophie.notify_property_messages = True
+    sophie.notify_account_updates = True
+    sophie.notify_travel_inspiration = True
+    sophie.privacy_personalised_ads = True
+    sophie.privacy_share_with_partners = False
+    sophie.privacy_analytics = True
+    sophie.two_factor_enabled = True
+    sophie.two_factor_method = 'authenticator'
+    sophie.wallet_credit_usd = 145.00
+    sophie.genius_points = 2840
+
+    kenji.preferred_language = 'ja-jp'
+    kenji.preferred_currency = 'JPY'
+    kenji.notify_promotions = False
+    kenji.notify_property_messages = True
+    kenji.notify_account_updates = True
+    kenji.notify_travel_inspiration = False
+    kenji.privacy_personalised_ads = False
+    kenji.privacy_share_with_partners = False
+    kenji.privacy_analytics = True
+    kenji.two_factor_enabled = False
+    kenji.two_factor_method = ''
+    kenji.wallet_credit_usd = 32.50
+    kenji.genius_points = 620
+
+    emma.preferred_language = 'en-gb'
+    emma.preferred_currency = 'GBP'
+    emma.notify_promotions = True
+    emma.notify_property_messages = True
+    emma.notify_account_updates = True
+    emma.notify_travel_inspiration = True
+    emma.privacy_personalised_ads = True
+    emma.privacy_share_with_partners = True
+    emma.privacy_analytics = True
+    emma.two_factor_enabled = True
+    emma.two_factor_method = 'sms'
+    emma.wallet_credit_usd = 78.20
+    emma.genius_points = 1450
+
+    carlos.preferred_language = 'es-es'
+    carlos.preferred_currency = 'USD'
+    carlos.notify_promotions = True
+    carlos.notify_property_messages = True
+    carlos.notify_account_updates = False
+    carlos.notify_travel_inspiration = False
+    carlos.privacy_personalised_ads = False
+    carlos.privacy_share_with_partners = False
+    carlos.privacy_analytics = False
+    carlos.two_factor_enabled = True
+    carlos.two_factor_method = 'authenticator'
+    carlos.wallet_credit_usd = 210.75
+    carlos.genius_points = 3120
+
+    # Genius point history — deterministic offsets from MIRROR_REFERENCE_DATE.
+    def _ge(user, event_type, points, tier_after, description, days_ago):
+        db.session.add(GeniusEvent(
+            user_id=user.id, event_type=event_type, points=points,
+            tier_after=tier_after, description=description,
+            created_at=MIRROR_REFERENCE_DATE - timedelta(days=days_ago),
+        ))
+
+    _ge(sophie, 'earn', 540, 2, 'Stay at Hotel Drawing House Paris', 65)
+    _ge(sophie, 'earn', 720, 2, 'Stay at Le Roch Hotel & Spa', 110)
+    _ge(sophie, 'tier_up', 0, 3, 'Promoted to Genius Level 3', 90)
+    _ge(sophie, 'earn', 1580, 3, 'Stay at Hotel Brighton Paris', 30)
+    _ge(sophie, 'redeem', -200, 3, 'Redeemed for free breakfast at next stay', 12)
+    _ge(sophie, 'earn', 200, 3, 'Referral bonus', 6)
+
+    _ge(kenji, 'earn', 420, 1, 'Stay at Park Hyatt Tokyo', 180)
+    _ge(kenji, 'earn', 200, 1, 'Stay at Hotel Gracery Shinjuku', 100)
+
+    _ge(emma, 'earn', 600, 2, 'Stay at The Ned London', 75)
+    _ge(emma, 'earn', 400, 2, 'Stay at Holiday Inn Edinburgh', 50)
+    _ge(emma, 'earn', 450, 2, 'Stay at Citadines South Kensington', 22)
+
+    _ge(carlos, 'earn', 920, 2, 'Stay at The Standard New York', 150)
+    _ge(carlos, 'earn', 720, 2, 'Stay at Hotel Boston Park Plaza', 95)
+    _ge(carlos, 'tier_up', 0, 3, 'Promoted to Genius Level 3', 80)
+    _ge(carlos, 'earn', 1480, 3, 'Stay at Faena Hotel Miami Beach', 40)
+
+    # Wallet transactions — credits, debits, cashback.
+    def _wt(user, txn_type, amount, description, days_ago):
+        db.session.add(WalletTransaction(
+            user_id=user.id, txn_type=txn_type,
+            amount_usd=amount, description=description,
+            created_at=MIRROR_REFERENCE_DATE - timedelta(days=days_ago),
+        ))
+
+    _wt(sophie, 'credit', 100.00, 'Welcome credit for Genius Level 3', 90)
+    _wt(sophie, 'cashback', 75.00, 'Cashback from Hotel Brighton Paris stay', 28)
+    _wt(sophie, 'debit', -30.00, 'Applied at checkout for next Paris booking', 12)
+
+    _wt(kenji, 'credit', 25.00, 'Welcome bonus', 200)
+    _wt(kenji, 'cashback', 7.50, 'Cashback from Park Hyatt Tokyo', 170)
+
+    _wt(emma, 'credit', 50.00, 'Refer-a-friend bonus', 60)
+    _wt(emma, 'cashback', 28.20, 'Cashback from The Ned London', 70)
+
+    _wt(carlos, 'credit', 150.00, 'Business account credit', 120)
+    _wt(carlos, 'cashback', 90.75, 'Cashback from Faena Hotel Miami Beach', 38)
+    _wt(carlos, 'debit', -30.00, 'Applied to Boston booking BKN-CARL01', 90)
+
+    # Inbox messages — property reply, promo, system, booking update.
+    def _msg(user, kind, sender, subject, body, is_read, days_ago):
+        db.session.add(Message(
+            user_id=user.id, kind=kind, sender=sender, subject=subject,
+            body=body, is_read=is_read,
+            created_at=MIRROR_REFERENCE_DATE - timedelta(days=days_ago),
+        ))
+
+    _msg(sophie, 'property_reply', 'Hotel Brighton Paris',
+         'Your room request',
+         'Bonjour Sophie, we have noted your request for a high-floor room with a view of the Tuileries Garden. We look forward to welcoming you.',
+         False, 5)
+    _msg(sophie, 'promo', 'Booking.com',
+         'Genius Level 3 exclusive: 20% off Paris weekends',
+         'As a top-tier Genius member, enjoy 20% off select Paris properties this autumn. Browse handpicked stays now.',
+         False, 14)
+    _msg(sophie, 'booking_update', 'Booking.com',
+         'Reminder: check-in in 3 days',
+         'Your stay at Hotel Brighton Paris starts on Friday. Check-in opens at 15:00. Please bring a valid ID and your booking confirmation BKN-SOPH01.',
+         True, 28)
+
+    _msg(kenji, 'property_reply', 'Park Hyatt Tokyo',
+         'Re: airport pickup',
+         'Thank you for your message. Yes, we can arrange a private limousine pickup from Haneda Airport. Please confirm your flight details 48 hours before arrival.',
+         False, 4)
+    _msg(kenji, 'promo', 'Booking.com',
+         'Save on Kyoto stays this spring',
+         'Cherry blossom season is around the corner. Book a Kyoto ryokan now and save up to 15%.',
+         True, 22)
+
+    _msg(emma, 'property_reply', 'The Ned London',
+         'Family room layout',
+         'Hi Emma, the Heritage Family Suite sleeps two adults plus two children on a separate sofa bed. We can also add a cot at no extra charge.',
+         False, 7)
+    _msg(emma, 'promo', 'Booking.com',
+         'Earn 5% cashback on family stays',
+         'Selected family-friendly properties are offering 5% Wallet cashback this month. Browse the deals.',
+         False, 18)
+    _msg(emma, 'system', 'Booking.com',
+         'Two-factor authentication enabled',
+         'Two-factor authentication via SMS has been enabled on your account. If this was not you, please change your password immediately.',
+         True, 35)
+
+    _msg(carlos, 'property_reply', 'Faena Hotel Miami Beach',
+         'Re: late check-out',
+         'Hello Carlos, we have arranged complimentary late check-out at 14:00 for your upcoming stay. Looking forward to seeing you.',
+         False, 6)
+    _msg(carlos, 'booking_update', 'Booking.com',
+         'Your business invoice is ready',
+         'The invoice for booking BKN-CARL01 is available in your Business account. The total is $1,420.00.',
+         True, 30)
+    _msg(carlos, 'promo', 'Booking.com',
+         '15% Genius bonus on New York stays',
+         'Your favourite NYC properties are offering a 15% Genius bonus through the end of the quarter.',
+         False, 12)
+
     db.session.commit()
     print(f"[+] Seeded benchmark users: Sophie, Kenji, Emma, Carlos")
 
@@ -5847,6 +6432,29 @@ def _migrate_schema():
                 _seed_beaches()
         except Exception as _e2:
             print(f"[migrate] beach seed warning: {_e2}")
+
+        # R12 — /myaccount hub: add new User columns if missing.
+        if 'user' in insp.get_table_names():
+            ucols = {c['name'] for c in insp.get_columns('user')}
+            for cname, ctype, cdefault in [
+                ('preferred_language', "VARCHAR(10)", "'en-us'"),
+                ('preferred_currency', "VARCHAR(5)", "'USD'"),
+                ('notify_promotions', 'BOOLEAN', '1'),
+                ('notify_property_messages', 'BOOLEAN', '1'),
+                ('notify_account_updates', 'BOOLEAN', '1'),
+                ('notify_travel_inspiration', 'BOOLEAN', '0'),
+                ('privacy_personalised_ads', 'BOOLEAN', '1'),
+                ('privacy_share_with_partners', 'BOOLEAN', '0'),
+                ('privacy_analytics', 'BOOLEAN', '1'),
+                ('two_factor_enabled', 'BOOLEAN', '0'),
+                ('two_factor_method', "VARCHAR(20)", "''"),
+                ('wallet_credit_usd', 'FLOAT', '0.0'),
+                ('genius_points', 'INTEGER', '0'),
+            ]:
+                if cname not in ucols:
+                    default_sql = f" DEFAULT {cdefault}" if cdefault else ''
+                    with db.engine.begin() as conn:
+                        conn.execute(text(f'ALTER TABLE user ADD COLUMN {cname} {ctype}{default_sql}'))
     except Exception as _e:
         # best-effort — never crash on migrate
         print(f"[migrate] warning: {_e}")

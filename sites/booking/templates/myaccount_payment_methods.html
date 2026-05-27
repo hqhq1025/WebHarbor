@@ -1,0 +1,92 @@
+{% extends "base.html" %}
+{% set myaccount_active = 'payment-methods' %}
+{% block title %}Payment methods — Booking.com{% endblock %}
+{% block content %}
+<div class="container">
+    <h1 class="page-title">Payment methods</h1>
+    <p class="page-subtitle">Manage your saved cards for faster checkout</p>
+
+    <div class="account-layout">
+        {% include "_myaccount_sidebar.html" %}
+
+        <main>
+            <div class="account-card">
+                <h2>Saved cards</h2>
+                {% if methods %}
+                <ul class="payment-list">
+                    {% for pm in methods %}
+                    <li class="payment-list-item">
+                        <div class="card-summary">
+                            <span class="card-brand brand-{{ pm.card_type|lower }}">{{ pm.card_type }}</span>
+                            <span>&middot; ending in <strong>{{ pm.last4 }}</strong></span>
+                            {% if pm.is_default %}<span class="badge badge-genius">Default</span>{% endif %}
+                        </div>
+                        <div class="card-meta text-muted">
+                            {{ pm.cardholder_name or 'Cardholder' }}
+                            &middot; Expires {{ '%02d'|format(pm.exp_month) }}/{{ pm.exp_year }}
+                        </div>
+                        <form method="POST"
+                              action="{{ url_for('myaccount_payment_methods_delete', pm_id=pm.id) }}"
+                              style="margin-top:8px;">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token_value }}">
+                            <button type="submit" class="btn-remove" style="font-size:12px;padding:6px 12px;">Remove card</button>
+                        </form>
+                    </li>
+                    {% endfor %}
+                </ul>
+                {% else %}
+                <p class="text-muted">No saved cards yet. Add one below to check out faster.</p>
+                {% endif %}
+            </div>
+
+            <div class="account-card">
+                <h2>Add a new card</h2>
+                <form class="myaccount-form" method="POST"
+                      action="{{ url_for('myaccount_payment_methods_add') }}">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token_value }}">
+
+                    <div class="form-group">
+                        <label for="card_type">Card type</label>
+                        <select id="card_type" name="card_type">
+                            <option value="Visa">Visa</option>
+                            <option value="Mastercard">Mastercard</option>
+                            <option value="Amex">American Express</option>
+                            <option value="Discover">Discover</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="cardholder_name">Cardholder name</label>
+                        <input id="cardholder_name" name="cardholder_name" type="text"
+                               placeholder="Name as it appears on the card">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="card_number">Card number</label>
+                        <input id="card_number" name="card_number" type="text" inputmode="numeric"
+                               placeholder="1234 5678 9012 3456" autocomplete="cc-number">
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="card_exp">Expiry (MM/YY)</label>
+                            <input id="card_exp" name="card_exp" type="text" placeholder="12/28"
+                                   autocomplete="cc-exp">
+                        </div>
+                        <div class="form-group">
+                            <label for="card_cvv">CVV</label>
+                            <input id="card_cvv" name="card_cvv" type="text" inputmode="numeric"
+                                   maxlength="4" placeholder="123" autocomplete="cc-csc">
+                        </div>
+                    </div>
+
+                    <div class="form-actions">
+                        <button type="submit" class="form-submit">Save card</button>
+                        <a href="{{ url_for('myaccount_dashboard') }}" class="btn-secondary">Cancel</a>
+                    </div>
+                </form>
+            </div>
+        </main>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% set myaccount_active = 'inbox' %}
+{% block title %}Inbox — Booking.com{% endblock %}
+{% block content %}
+<div class="container">
+    <h1 class="page-title">Inbox</h1>
+    <p class="page-subtitle">
+        Messages from properties and Booking.com
+        {% if unread %}&middot; <strong>{{ unread }}</strong> unread{% endif %}
+    </p>
+
+    <div class="account-layout">
+        {% include "_myaccount_sidebar.html" %}
+
+        <main>
+            {% if messages %}
+            <div class="account-card inbox-list">
+                {% for m in messages %}
+                <div class="inbox-row {% if not m.is_read %}unread{% endif %}">
+                    <div class="inbox-meta">
+                        <span class="badge badge-{{ m.kind }}">{{ m.kind|replace('_', ' ')|upper }}</span>
+                        <span class="text-muted">{{ m.created_at.strftime('%d %b %Y') }}</span>
+                    </div>
+                    <h3 class="inbox-subject">
+                        <a href="{{ url_for('myaccount_inbox_detail', msg_id=m.id) }}">
+                            {% if not m.is_read %}<span class="unread-dot" aria-label="unread"></span>{% endif %}
+                            {{ m.subject }}
+                        </a>
+                    </h3>
+                    <div class="inbox-sender text-muted">From: {{ m.sender }}</div>
+                    <div class="inbox-preview text-muted">{{ (m.body or '')[:140] }}{% if (m.body or '')|length > 140 %}&hellip;{% endif %}</div>
+                    <div class="inbox-actions">
+                        <a href="{{ url_for('myaccount_inbox_detail', msg_id=m.id) }}" class="btn-secondary"
+                           style="font-size:12px;padding:6px 12px;">Open</a>
+                        {% if not m.is_read %}
+                        <form method="POST" action="{{ url_for('myaccount_inbox_mark_read', msg_id=m.id) }}"
+                              style="display:inline-block;">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token_value }}">
+                            <button type="submit" class="btn-secondary" style="font-size:12px;padding:6px 12px;">
+                                Mark read
+                            </button>
+                        </form>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="account-card">
+                <p class="text-muted">Your inbox is empty. Messages from properties or special offers will appear here.</p>
+            </div>
+            {% endif %}
+        </main>
+    </div>
+</div>
+{% endblock %}

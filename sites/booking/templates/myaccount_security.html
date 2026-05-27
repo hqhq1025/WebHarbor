@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+{% set myaccount_active = 'security' %}
+{% block title %}Security — Booking.com{% endblock %}
+{% block content %}
+<div class="container">
+    <h1 class="page-title">Security</h1>
+    <p class="page-subtitle">Protect your account with a strong password and two-factor authentication</p>
+
+    <div class="account-layout">
+        {% include "_myaccount_sidebar.html" %}
+
+        <main>
+            <div class="account-card">
+                <h2>Change password</h2>
+                <form class="myaccount-form" method="POST"
+                      action="{{ url_for('myaccount_security_change_password') }}">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token_value }}">
+
+                    <div class="form-group">
+                        <label for="current_password">Current password</label>
+                        <input id="current_password" name="current_password" type="password" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="new_password">New password</label>
+                        <input id="new_password" name="new_password" type="password" minlength="6" required>
+                        <small class="text-muted">At least 6 characters.</small>
+                    </div>
+                    <div class="form-group">
+                        <label for="confirm_password">Confirm new password</label>
+                        <input id="confirm_password" name="confirm_password" type="password" required>
+                    </div>
+                    <button type="submit" class="form-submit">Change password</button>
+                </form>
+            </div>
+
+            <div class="account-card">
+                <h2>Two-factor authentication</h2>
+                {% if current_user.two_factor_enabled %}
+                <p>2FA is <strong>enabled</strong> via
+                    <strong>{{ current_user.two_factor_method or 'authenticator' }}</strong>.</p>
+                <form method="POST" action="{{ url_for('myaccount_security_2fa_disable') }}">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token_value }}">
+                    <button type="submit" class="btn-secondary" style="color:#cc0000;border-color:#cc0000;">
+                        Disable 2FA
+                    </button>
+                </form>
+                {% else %}
+                <p>Two-factor authentication is <strong>disabled</strong>.
+                    Add an extra layer by picking a verification method.</p>
+                <form class="myaccount-form" method="POST"
+                      action="{{ url_for('myaccount_security_2fa_enable') }}">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token_value }}">
+                    <div class="form-group">
+                        <label for="method">Method</label>
+                        <select id="method" name="method">
+                            <option value="authenticator">Authenticator app (recommended)</option>
+                            <option value="sms">SMS text message</option>
+                            <option value="email">Email code</option>
+                        </select>
+                    </div>
+                    <button type="submit" class="form-submit">Enable 2FA</button>
+                </form>
+                {% endif %}
+            </div>
+
+            <div class="account-card">
+                <h2>Active sessions</h2>
+                <p class="text-muted">Sign-in activity from this device.</p>
+                <ul style="list-style:none;padding:0;">
+                    <li><strong>This device</strong>
+                        &middot; {{ request.user_agent.string[:64] if request.user_agent else 'Unknown' }}
+                        &middot; <span class="text-muted">active now</span></li>
+                </ul>
+                <a href="{{ url_for('logout') }}" class="btn-secondary" style="margin-top:8px;">Sign out of all devices</a>
+            </div>
+        </main>
+    </div>
+</div>
+{% endblock %}

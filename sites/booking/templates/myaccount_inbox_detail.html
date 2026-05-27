@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+{% set myaccount_active = 'inbox' %}
+{% block title %}{{ msg.subject }} — Inbox — Booking.com{% endblock %}
+{% block content %}
+<div class="container">
+    <h1 class="page-title">{{ msg.subject }}</h1>
+    <p class="page-subtitle">From {{ msg.sender }} &middot; {{ msg.created_at.strftime('%d %b %Y') }}</p>
+
+    <div class="account-layout">
+        {% include "_myaccount_sidebar.html" %}
+
+        <main>
+            <div class="account-card">
+                <div class="inbox-meta">
+                    <span class="badge badge-{{ msg.kind }}">{{ msg.kind|replace('_', ' ')|upper }}</span>
+                    {% if msg.is_read %}
+                    <span class="badge badge-read">READ</span>
+                    {% else %}
+                    <span class="badge badge-unread">UNREAD</span>
+                    {% endif %}
+                </div>
+                <div class="inbox-body" style="white-space:pre-wrap;margin-top:12px;">{{ msg.body }}</div>
+
+                {% if msg.reply_body %}
+                <div class="inbox-thread-reply" style="margin-top:16px;padding:12px;border-left:3px solid #006ce4;background:#f5faff;">
+                    <strong>Your reply</strong>
+                    <small class="text-muted">&middot; {{ msg.replied_at.strftime('%d %b %Y %H:%M') if msg.replied_at }}</small>
+                    <div style="white-space:pre-wrap;margin-top:6px;">{{ msg.reply_body }}</div>
+                </div>
+                {% endif %}
+
+                <div style="margin-top:16px;display:flex;gap:8px;">
+                    {% if not msg.is_read %}
+                    <form method="POST" action="{{ url_for('myaccount_inbox_mark_read', msg_id=msg.id) }}">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token_value }}">
+                        <button type="submit" class="btn-secondary">Mark as read</button>
+                    </form>
+                    {% endif %}
+                    <a href="{{ url_for('myaccount_inbox') }}" class="btn-secondary">Back to inbox</a>
+                </div>
+            </div>
+
+            {% if msg.kind == 'property_reply' %}
+            <div class="account-card">
+                <h2>Reply to the property</h2>
+                <form class="myaccount-form" method="POST"
+                      action="{{ url_for('myaccount_inbox_reply', msg_id=msg.id) }}">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token_value }}">
+                    <div class="form-group">
+                        <label for="reply_body">Your reply</label>
+                        <textarea id="reply_body" name="reply_body" rows="5"
+                                  placeholder="Type your reply here&hellip;">{{ msg.reply_body or '' }}</textarea>
+                    </div>
+                    <button type="submit" class="form-submit">Send reply</button>
+                </form>
+            </div>
+            {% endif %}
+        </main>
+    </div>
+</div>
+{% endblock %}
