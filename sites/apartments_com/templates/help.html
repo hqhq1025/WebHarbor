@@ -1,14 +1,35 @@
 {% extends "base.html" %}
 {% block content %}
 <div class="container-narrow" style="padding: 24px 20px;">
-  <h1>Help</h1>
-  <h2>How do I save a search?</h2>
-  <p>Run a search on the Search page, then click <strong>Save this search</strong> in the sidebar. You'll need to be signed in.</p>
-  <h2>How do I request a tour?</h2>
-  <p>On any building detail page, click <strong>Request a Tour</strong>. You'll go through a three-step form: tour type, date, and your info.</p>
-  <h2>How does compare work?</h2>
-  <p>Click <strong>Compare</strong> from a search card or building page. You can compare up to 4 buildings side-by-side.</p>
-  <h2>How do I list a property?</h2>
-  <p>Use the <a href="{{ url_for('list_property') }}">List Your Property</a> form. A leasing rep will follow up.</p>
+  <h1>Help Center</h1>
+  <p style="color:var(--muted);">Find answers about searching, touring, applying, signing your lease, and moving in.</p>
+
+  {% if topics %}
+  <div class="section-block" style="margin-top:20px;">
+    <h2>Browse help by topic</h2>
+    <div class="row" style="gap:14px;flex-wrap:wrap;">
+      {% for slug, (t_title, t_intro) in topics.items() %}
+        <a href="{{ url_for('help_topic', topic=slug) }}"
+           class="section-block"
+           style="flex:1;min-width:240px;max-width:320px;text-decoration:none;color:var(--ink);">
+          <h3 style="margin:0 0 6px 0;">{{ t_title }}</h3>
+          <p style="font-size:13px;color:var(--muted);margin:0;">{{ t_intro }}</p>
+        </a>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+
+  <div class="section-block" style="margin-top:20px;">
+    <h2>Quick answers</h2>
+    <h3>How do I save a search?</h3>
+    <p>Run a search on the Search page, then click <strong>Save this search</strong> in the sidebar. You'll need to be signed in.</p>
+    <h3>How do I request a tour?</h3>
+    <p>On any building detail page, click <strong>Request a Tour</strong>. You'll go through a three-step form: tour type, date, and your info.</p>
+    <h3>How does compare work?</h3>
+    <p>Click <strong>Compare</strong> from a search card or building page. You can compare up to 4 buildings side-by-side.</p>
+    <h3>How do I list a property?</h3>
+    <p>Use the <a href="{{ url_for('list_property') }}">List Your Property</a> form. A leasing rep will follow up.</p>
+  </div>
 </div>
 {% endblock %}
