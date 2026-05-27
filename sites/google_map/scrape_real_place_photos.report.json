@@ -1,0 +1,53 @@
+{
+  "ok": [
+    {
+      "slug": "rialto-bridge",
+      "n_photos": 3,
+      "secs": 1.846360445022583
+    },
+    {
+      "slug": "st-marks-square",
+      "n_photos": 3,
+      "secs": 2.094386100769043
+    },
+    {
+      "slug": "santa-maria-del-fiore",
+      "n_photos": 3,
+      "secs": 2.0547068119049072
+    },
+    {
+      "slug": "galleria-vittorio-emanuele",
+      "n_photos": 3,
+      "secs": 2.050302267074585
+    },
+    {
+      "slug": "royal-mile",
+      "n_photos": 3,
+      "secs": 2.239865303039551
+    },
+    {
+      "slug": "grand-place",
+      "n_photos": 3,
+      "secs": 2.060163974761963
+    },
+    {
+      "slug": "parliament-building-budapest",
+      "n_photos": 3,
+      "secs": 2.0827863216400146
+    },
+    {
+      "slug": "buda-castle",
+      "n_photos": 3,
+      "secs": 2.141350269317627
+    }
+  ],
+  "partial": [
+    {
+      "slug": "shibuya-crossing",
+      "n_photos": 2,
+      "needed": 3,
+      "secs": 1.9033327102661133
+    }
+  ],
+  "fail": []
+}
