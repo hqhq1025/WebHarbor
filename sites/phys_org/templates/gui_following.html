@@ -1,0 +1,15 @@
+{% extends 'base.html' %}
+{% block title %}Following — Phys.org{% endblock %}
+{% block content %}
+<article>
+  <h1>What you're following</h1>
+  <h2>Authors ({{ authors|length }})</h2>
+  <ul>{% for f in authors %}<li><a href="/author/{{ f.author_slug }}">{{ f.author_slug }}</a></li>{% else %}<li class="text-muted">None yet.</li>{% endfor %}</ul>
+  <h2>Topics ({{ topics|length }})</h2>
+  <ul>{% for f in topics %}<li><a href="/topic/{{ f.topic_slug }}">{{ f.topic_slug }}</a></li>{% else %}<li class="text-muted">None yet.</li>{% endfor %}</ul>
+  <h2>Podcasts ({{ podcasts|length }})</h2>
+  <ul>{% for f in podcasts %}<li><a href="/podcast/{{ f.podcast_slug }}">{{ f.podcast_slug }}</a></li>{% else %}<li class="text-muted">None yet.</li>{% endfor %}</ul>
+  <h2>Journals ({{ journals|length }})</h2>
+  <ul>{% for f in journals %}<li><a href="/journal/{{ f.journal_slug }}">{{ f.journal_slug }}</a></li>{% else %}<li class="text-muted">None yet.</li>{% endfor %}</ul>
+</article>
+{% endblock %}

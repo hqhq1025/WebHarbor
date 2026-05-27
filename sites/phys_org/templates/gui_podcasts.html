@@ -1,0 +1,16 @@
+{% extends 'base.html' %}
+{% block title %}Podcasts — Phys.org Mirror{% endblock %}
+{% block content %}
+<h1>Phys.org Podcasts</h1>
+<p class="lede">Long-form science conversation, one show per beat.</p>
+<div class="podcast-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:18px;">
+  {% for slug, title, blurb, ep_count in podcasts %}
+    <div class="podcast-card">
+      <a href="/podcast/{{ slug }}"><img src="/static-gen/podcast/{{ slug }}.svg" alt="{{ title }} cover" style="width:100%;display:block;border-radius:6px;"></a>
+      <h3 style="margin:8px 0 4px;"><a href="/podcast/{{ slug }}">{{ title }}</a></h3>
+      <div class="meta">{{ ep_count }} episodes</div>
+      <p style="font-size:13px;color:#555;">{{ blurb }}</p>
+    </div>
+  {% endfor %}
+</div>
+{% endblock %}

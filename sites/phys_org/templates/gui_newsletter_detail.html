@@ -1,0 +1,21 @@
+{% extends 'base.html' %}
+{% block title %}{{ title }} — Phys.org Newsletter{% endblock %}
+{% block content %}
+<article>
+  <h1>{{ title }}</h1>
+  <div class="meta">Cadence: {{ cadence }}</div>
+  <p class="lede">{{ blurb }}</p>
+  <form method="post" action="/newsletter/subscribe" style="margin:18px 0;">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <input type="hidden" name="newsletter_slug" value="{{ slug }}">
+    <input type="email" name="email" placeholder="you@example.com" required style="padding:8px;width:300px;">
+    <button class="btn" type="submit">Subscribe to {{ title }}</button>
+  </form>
+  <form method="post" action="/newsletter/unsubscribe">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <input type="hidden" name="newsletter_slug" value="{{ slug }}">
+    <input type="email" name="email" placeholder="email to unsubscribe" style="padding:6px;width:260px;">
+    <button class="btn secondary" type="submit">Unsubscribe</button>
+  </form>
+</article>
+{% endblock %}

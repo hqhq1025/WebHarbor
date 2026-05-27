@@ -1,0 +1,44 @@
+{% extends 'base.html' %}
+{% block title %}{{ subsection_label }} — {{ category.name }} — Phys.org Mirror{% endblock %}
+{% block content %}
+<div class="layout">
+  <article>
+    <div class="banner-image" style="margin-bottom:18px;">
+      <img src="/static-gen/banner/{{ subsection_slug }}.svg" alt="" style="width:100%;height:auto;display:block;border-radius:6px;">
+    </div>
+    <div class="crumbs">
+      <a href="{{ url_for('index') }}">Home</a> /
+      <a href="{{ url_for('category', slug=category.slug) }}">{{ category.name }}</a> /
+      {{ subsection_label }}
+    </div>
+    <h1>{{ subsection_label }}</h1>
+    <p class="lede">Latest reporting from the {{ subsection_label }} desk on Phys.org.</p>
+    <p class="text-muted">Showing {{ articles|length }} article{{ '' if articles|length == 1 else 's' }}.</p>
+    <div class="article-grid">
+      {% for a in articles %}
+        <article class="card">
+          {% if a.image_filename %}
+            <a href="{{ url_for('article_detail', slug=a.slug) }}"><img src="{{ url_for('static', filename='images/' ~ a.image_filename) }}" alt=""></a>
+          {% else %}
+            <a href="{{ url_for('article_detail', slug=a.slug) }}"><img src="{{ url_for('static', filename='icons/placeholder.svg') }}" alt=""></a>
+          {% endif %}
+          <h3><a href="{{ url_for('article_detail', slug=a.slug) }}">{{ a.title }}</a></h3>
+          <div class="byline">{{ a.author_name }} · {{ a.published_str }}</div>
+        </article>
+      {% endfor %}
+    </div>
+  </article>
+  <aside class="sidebar">
+    <div class="widget">
+      <h3>Related subsections</h3>
+      <ul>
+        {% set _other = [] %}
+        {% for c in all_categories if c.id == category.id %}{% endfor %}
+        <li><a href="{{ url_for('category', slug=category.slug) }}">All of {{ category.name }}</a></li>
+        <li><a href="/most-popular/weekly">This week's most-popular</a></li>
+        <li><a href="/research-news">Research News</a></li>
+      </ul>
+    </div>
+  </aside>
+</div>
+{% endblock %}

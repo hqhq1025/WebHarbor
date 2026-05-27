@@ -1,0 +1,32 @@
+{% extends 'base.html' %}
+{% block title %}{{ label }} — Phys.org Topic{% endblock %}
+{% block content %}
+<div class="layout">
+  <article>
+    <div class="banner-image" style="margin-bottom:14px;">
+      <img src="/static-gen/banner/topic-{{ slug }}.svg" alt="" style="width:100%;display:block;border-radius:6px;">
+    </div>
+    <div class="crumbs"><a href="/topics">Topics</a> / {{ label }}</div>
+    <h1>{{ label }}</h1>
+    <p class="lede">Phys.org's ongoing coverage of {{ label }}.</p>
+    {% if current_user.is_authenticated %}
+      <form method="post" action="/topic/{{ slug }}/follow" style="margin:8px 0 18px;">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button class="btn {{ 'secondary' if following else '' }}" type="submit">{{ 'Unfollow topic' if following else 'Follow topic' }}</button>
+      </form>
+    {% endif %}
+    <p class="meta">{{ articles|length }} article{{ '' if articles|length == 1 else 's' }} match this topic.</p>
+    <div class="article-grid">
+      {% for a in articles %}
+        <article class="card">
+          {% if a.image_filename %}
+            <a href="{{ url_for('article_detail', slug=a.slug) }}"><img src="{{ url_for('static', filename='images/' ~ a.image_filename) }}" alt=""></a>
+          {% endif %}
+          <h3><a href="{{ url_for('article_detail', slug=a.slug) }}">{{ a.title }}</a></h3>
+          <div class="byline">{{ a.author_name }} · {{ a.published_str }}</div>
+        </article>
+      {% endfor %}
+    </div>
+  </article>
+</div>
+{% endblock %}

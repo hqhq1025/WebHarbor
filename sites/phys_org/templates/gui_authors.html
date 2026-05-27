@@ -1,0 +1,14 @@
+{% extends 'base.html' %}
+{% block title %}Authors — Phys.org{% endblock %}{% block content %}
+<h1>Phys.org Authors</h1>
+<p class="lede">{{ authors|length }} staff writers and contributors.</p>
+<div class="author-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:14px;">
+  {% for a in authors %}
+    <a href="/author/{{ a.slug }}" class="author-card" style="display:block;text-align:center;text-decoration:none;color:inherit;">
+      <img src="/static-gen/avatar/{{ a.slug }}.svg" alt="" style="width:96px;height:96px;border-radius:50%;display:block;margin:0 auto 6px;">
+      <div style="font-weight:600;">{{ a.label }}</div>
+      <div class="text-muted" style="font-size:12px;">{{ a.count }} articles</div>
+    </a>
+  {% endfor %}
+</div>
+{% endblock %}

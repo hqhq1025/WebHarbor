@@ -1,0 +1,24 @@
+{% extends 'base.html' %}
+{% block title %}Share — {{ article.title }} — Phys.org{% endblock %}
+{% block content %}
+<article>
+  <div class="crumbs"><a href="{{ url_for('article_detail', slug=article.slug) }}">{{ article.title }}</a> / Share</div>
+  <h1>Share this article</h1>
+  <h2>Email a colleague</h2>
+  <form method="post" action="/article/{{ article.slug }}/share/email">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <input type="email" name="recipient" placeholder="recipient@example.com" required style="padding:8px;width:320px;">
+    <button class="btn" type="submit">Send</button>
+  </form>
+  <h2 style="margin-top:18px;">Share on social</h2>
+  <form method="post" action="/article/{{ article.slug }}/share/social">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <button class="btn" type="submit" name="channel" value="x">X</button>
+    <button class="btn" type="submit" name="channel" value="facebook">Facebook</button>
+    <button class="btn" type="submit" name="channel" value="bluesky">Bluesky</button>
+    <button class="btn" type="submit" name="channel" value="linkedin">LinkedIn</button>
+    <button class="btn" type="submit" name="channel" value="mastodon">Mastodon</button>
+  </form>
+  <p class="meta" style="margin-top:18px;">Permalink: <code>{{ url_for('article_detail', slug=article.slug, _external=True) }}</code></p>
+</article>
+{% endblock %}

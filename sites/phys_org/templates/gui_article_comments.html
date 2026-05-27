@@ -1,0 +1,28 @@
+{% extends 'base.html' %}
+{% block title %}Comments — {{ article.title }} — Phys.org{% endblock %}
+{% block content %}
+<article>
+  <div class="crumbs"><a href="{{ url_for('article_detail', slug=article.slug) }}">{{ article.title }}</a> / Comments</div>
+  <h1>Comments on "{{ article.title }}"</h1>
+  <p class="meta">{{ top_comments|length }} top-level comment{{ '' if top_comments|length == 1 else 's' }}.</p>
+  {% for c in top_comments %}
+    <div class="comment" id="comment-{{ c.id }}" style="border-top:1px solid #eee;padding:10px 0;">
+      <div class="head"><strong>{{ c.user.username }}</strong> · {{ c.time_ago }}</div>
+      <div class="body">{{ c.text }}</div>
+      <div class="actions" style="font-size:12px;margin-top:6px;">
+        {% if current_user.is_authenticated %}
+          <form method="post" action="/comment/{{ c.id }}/like" style="display:inline;">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button class="btn-link" type="submit">Like</button>
+          </form>
+        {% endif %}
+        <form method="post" action="/comment/{{ c.id }}/report" style="display:inline;">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <select name="reason"><option value="spam">Spam</option><option value="abuse">Abuse</option><option value="off-topic">Off-topic</option></select>
+          <button class="btn-link" type="submit">Report</button>
+        </form>
+      </div>
+    </div>
+  {% endfor %}
+</article>
+{% endblock %}

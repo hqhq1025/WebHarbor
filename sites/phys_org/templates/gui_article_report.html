@@ -1,0 +1,21 @@
+{% extends 'base.html' %}
+{% block title %}Report article — {{ article.title }} — Phys.org{% endblock %}
+{% block content %}
+<article>
+  <div class="crumbs"><a href="{{ url_for('article_detail', slug=article.slug) }}">{{ article.title }}</a> / Report</div>
+  <h1>Report an issue with this article</h1>
+  <form method="post" action="/article/{{ article.slug }}/report">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <p><label>Reason
+      <select name="reason">
+        <option value="factual-error">Factual error</option>
+        <option value="missing-source">Missing source</option>
+        <option value="image-rights">Image rights</option>
+        <option value="duplicate">Duplicate article</option>
+        <option value="other">Other</option>
+      </select></label></p>
+    <p><label>Details<br><textarea name="text" rows="6" style="width:540px;padding:7px;"></textarea></label></p>
+    <button class="btn" type="submit">Submit report</button>
+  </form>
+</article>
+{% endblock %}

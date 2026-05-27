@@ -1,0 +1,33 @@
+{% extends 'base.html' %}
+{% block title %}{{ title }} — Phys.org Podcast{% endblock %}
+{% block content %}
+<div class="layout">
+  <article>
+    <div style="display:flex;gap:18px;align-items:flex-start;">
+      <img src="/static-gen/podcast/{{ slug }}.svg" alt="" style="width:220px;height:220px;border-radius:8px;flex:0 0 auto;">
+      <div>
+        <h1>{{ title }}</h1>
+        <p class="lede">{{ blurb }}</p>
+        <div class="meta">{{ episode_count }} episodes total</div>
+        {% if current_user.is_authenticated %}
+          <form method="post" action="/podcast/{{ slug }}/follow" style="display:inline;">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button class="btn" type="submit">Follow podcast</button>
+          </form>
+        {% else %}
+          <a class="btn secondary" href="{{ url_for('login') }}">Sign in to follow</a>
+        {% endif %}
+      </div>
+    </div>
+    <h2 style="margin-top:24px;">Recent episodes</h2>
+    <ul class="episode-list" style="list-style:none;padding:0;">
+      {% for ep in episodes %}
+        <li style="border-top:1px solid #eee;padding:12px 0;">
+          <h3 style="margin:0 0 4px;">{{ ep.title }}</h3>
+          <div class="meta">Episode {{ ep.n }} · {{ ep.minutes }} min · Guest: {{ ep.guest }} · {{ ep.published_at.strftime('%b %d, %Y') }}</div>
+        </li>
+      {% endfor %}
+    </ul>
+  </article>
+</div>
+{% endblock %}

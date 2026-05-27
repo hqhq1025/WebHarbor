@@ -37,6 +37,9 @@
                {% if request.view_args and request.view_args.get('slug') == c.slug %}class="active"{% endif %}>{{ c.name }}</a></li>
       {% endfor %}
       <li><a href="{{ url_for('trending') }}" {% if request.endpoint == 'trending' %}class="active"{% endif %}>Trending</a></li>
+      {% for label, href in PHYS_NAV_HUBS %}
+        <li><a href="{{ href }}">{{ label }}</a></li>
+      {% endfor %}
     </ul>
   </nav>
 </header>

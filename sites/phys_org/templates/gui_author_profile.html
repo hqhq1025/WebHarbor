@@ -1,0 +1,36 @@
+{% extends 'base.html' %}
+{% block title %}{{ name }} — Phys.org Author{% endblock %}
+{% block content %}
+<div class="layout">
+  <article>
+    <div style="display:flex;gap:18px;align-items:flex-start;">
+      <img src="/static-gen/avatar/{{ slug }}.svg" alt="" style="width:140px;height:140px;border-radius:50%;flex:0 0 auto;">
+      <div>
+        <h1 style="margin:0;">{{ name }}</h1>
+        <p class="lede">{{ bio }}</p>
+        <div class="meta">{{ count }} article{{ '' if count == 1 else 's' }} on Phys.org</div>
+        {% if current_user.is_authenticated %}
+          <form method="post" action="/author/{{ slug }}/follow" style="display:inline;">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button class="btn {{ 'secondary' if following else '' }}" type="submit">{{ 'Unfollow' if following else 'Follow author' }}</button>
+          </form>
+        {% else %}
+          <a class="btn secondary" href="{{ url_for('login') }}">Sign in to follow</a>
+        {% endif %}
+      </div>
+    </div>
+    <h2 style="margin-top:24px;">Articles by {{ name }}</h2>
+    <div class="article-grid">
+      {% for a in articles %}
+        <article class="card">
+          {% if a.image_filename %}
+            <a href="{{ url_for('article_detail', slug=a.slug) }}"><img src="{{ url_for('static', filename='images/' ~ a.image_filename) }}" alt=""></a>
+          {% endif %}
+          <h3><a href="{{ url_for('article_detail', slug=a.slug) }}">{{ a.title }}</a></h3>
+          <div class="byline">{{ a.published_str }} · {{ a.category.name if a.category else '' }}</div>
+        </article>
+      {% endfor %}
+    </div>
+  </article>
+</div>
+{% endblock %}

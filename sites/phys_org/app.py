@@ -193,6 +193,162 @@ class SearchHistory(db.Model):
     user = db.relationship('User', backref='searches')
 
 
+# ----- Deepen tables ------------------------------------------------- #
+#
+# These tables back the gui_deepen.py POST surfaces (newsletter subscribe,
+# article vote/report, follow author/topic/podcast/journal, contact author,
+# submit tip, share, poll vote, user preferences, contact form). All of them
+# are **empty in instance_seed/phys_org.db**, so they don't affect the
+# byte-identical reset invariant — every reset wipes accumulated runtime
+# state by overwriting instance/ with the seed copy.
+
+class NewsletterSubscription(db.Model):
+    __tablename__ = 'newsletter_subscriptions'
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True, index=True)
+    email = db.Column(db.String(200), default='', index=True)
+    newsletter_slug = db.Column(db.String(80), nullable=False, index=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+
+class ArticleVote(db.Model):
+    __tablename__ = 'article_votes'
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False, index=True)
+    article_id = db.Column(db.Integer, db.ForeignKey('articles.id'), nullable=False, index=True)
+    direction = db.Column(db.String(8), default='up')
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    __table_args__ = (db.UniqueConstraint('user_id', 'article_id'),)
+
+
+class ArticleReport(db.Model):
+    __tablename__ = 'article_reports'
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True, index=True)
+    article_id = db.Column(db.Integer, db.ForeignKey('articles.id'), nullable=False, index=True)
+    reason = db.Column(db.String(40), default='other')
+    text = db.Column(db.Text, default='')
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+
+class CommentLike(db.Model):
+    __tablename__ = 'comment_likes'
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False, index=True)
+    comment_id = db.Column(db.Integer, db.ForeignKey('comments.id'), nullable=False, index=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    __table_args__ = (db.UniqueConstraint('user_id', 'comment_id'),)
+
+
+class CommentReport(db.Model):
+    __tablename__ = 'comment_reports'
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True, index=True)
+    comment_id = db.Column(db.Integer, db.ForeignKey('comments.id'), nullable=False, index=True)
+    reason = db.Column(db.String(40), default='other')
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+
+class AuthorFollow(db.Model):
+    __tablename__ = 'author_follows'
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False, index=True)
+    author_slug = db.Column(db.String(120), nullable=False, index=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    __table_args__ = (db.UniqueConstraint('user_id', 'author_slug'),)
+
+
+class TopicFollow(db.Model):
+    __tablename__ = 'topic_follows'
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False, index=True)
+    topic_slug = db.Column(db.String(80), nullable=False, index=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    __table_args__ = (db.UniqueConstraint('user_id', 'topic_slug'),)
+
+
+class PodcastFollow(db.Model):
+    __tablename__ = 'podcast_follows'
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False, index=True)
+    podcast_slug = db.Column(db.String(80), nullable=False, index=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    __table_args__ = (db.UniqueConstraint('user_id', 'podcast_slug'),)
+
+
+class JournalFollow(db.Model):
+    __tablename__ = 'journal_follows'
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False, index=True)
+    journal_slug = db.Column(db.String(120), nullable=False, index=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    __table_args__ = (db.UniqueConstraint('user_id', 'journal_slug'),)
+
+
+class TipSubmission(db.Model):
+    __tablename__ = 'tip_submissions'
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True, index=True)
+    article_id = db.Column(db.Integer, db.ForeignKey('articles.id'), nullable=True, index=True)
+    tip_text = db.Column(db.Text, default='')
+    email = db.Column(db.String(200), default='')
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+
+class ContactMessage(db.Model):
+    __tablename__ = 'contact_messages'
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True, index=True)
+    subject = db.Column(db.String(200), default='')
+    body = db.Column(db.Text, default='')
+    email = db.Column(db.String(200), default='')
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+
+class AuthorContactMessage(db.Model):
+    __tablename__ = 'author_contact_messages'
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True, index=True)
+    article_id = db.Column(db.Integer, db.ForeignKey('articles.id'), nullable=False, index=True)
+    author_name = db.Column(db.String(200), default='')
+    sender_name = db.Column(db.String(200), default='')
+    sender_email = db.Column(db.String(200), default='')
+    body = db.Column(db.Text, default='')
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+
+class ShareLog(db.Model):
+    __tablename__ = 'share_log'
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True, index=True)
+    article_id = db.Column(db.Integer, db.ForeignKey('articles.id'), nullable=False, index=True)
+    channel = db.Column(db.String(40), default='email')
+    recipient = db.Column(db.String(200), default='')
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+
+class UserPreferences(db.Model):
+    __tablename__ = 'user_preferences'
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False,
+                        unique=True, index=True)
+    daily_digest = db.Column(db.Boolean, default=False)
+    weekly_digest = db.Column(db.Boolean, default=False)
+    breaking_alerts = db.Column(db.Boolean, default=False)
+    preferred_categories = db.Column(db.String(255), default='')
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+
+class PollVote(db.Model):
+    __tablename__ = 'poll_votes'
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False, index=True)
+    poll_slug = db.Column(db.String(80), nullable=False, index=True)
+    choice = db.Column(db.String(200), nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    __table_args__ = (db.UniqueConstraint('user_id', 'poll_slug'),)
+
+
 # ----- Forms -----
 
 class LoginForm(FlaskForm):
@@ -273,7 +429,18 @@ def _flatten_comments(comments, depth=0):
 @app.context_processor
 def inject_globals():
     cats = Category.query.order_by(Category.sort_order, Category.name).all()
-    return {'all_categories': cats, 'site_name': 'Phys.org Mirror'}
+    return {'all_categories': cats, 'site_name': 'Phys.org Mirror',
+            'PHYS_NAV_HUBS': [
+                ('Podcasts', '/podcasts'),
+                ('Videos', '/videos'),
+                ('Journals', '/journals'),
+                ('Authors', '/authors'),
+                ('Topics', '/topics'),
+                ('Research News', '/research-news'),
+                ('Medical Press', '/medical-press'),
+                ('Tech Xplore', '/tech-xplore'),
+                ('Newsletter', '/newsletter'),
+            ]}
 
 
 # ----- Routes -----
@@ -563,11 +730,41 @@ def _health():
 # ----- Seed bootstrap -----
 
 from seed_data import seed_database, seed_benchmark_users   # noqa: E402
+from gui_deepen import register as register_gui_deepen      # noqa: E402
+
+register_gui_deepen(
+    app, db, Article, Category, Comment, User,
+    NewsletterSubscription, ArticleVote, ArticleReport,
+    CommentLike, CommentReport, AuthorFollow, TopicFollow,
+    PodcastFollow, JournalFollow, TipSubmission, ContactMessage,
+    AuthorContactMessage, ShareLog, UserPreferences, PollVote,
+)
 
 with app.app_context():
     db.create_all()
     seed_database(db, User, Category, Article, Comment, bcrypt)
     seed_benchmark_users(db, User, Category, Article, Comment, SavedArticle, SearchHistory, bcrypt)
+
+    # Byte-identical rebuild: SQLAlchemy emits CREATE INDEX in set-iteration
+    # (process-id-dependent) order. Re-emit indexes in alpha order and
+    # VACUUM so a clean re-build matches byte-for-byte across machines.
+    # See gotchas.md §2.
+    from sqlalchemy import text as _sa_text   # noqa: E402
+    _conn = db.engine.connect()
+    _idx_rows = _conn.execute(_sa_text(
+        "SELECT name, sql FROM sqlite_master "
+        "WHERE type='index' AND name LIKE 'ix_%'"
+    )).fetchall()
+    for _name, _sql in _idx_rows:
+        _conn.execute(_sa_text(f"DROP INDEX IF EXISTS {_name}"))
+    for _name, _sql in sorted(_idx_rows, key=lambda r: r[0]):
+        if _sql:
+            _conn.execute(_sa_text(_sql))
+    _conn.commit()
+    _conn.close()
+    with db.engine.connect() as _vc:
+        _vc.execute(_sa_text("VACUUM"))
+        _vc.commit()
 
 
 if __name__ == '__main__':

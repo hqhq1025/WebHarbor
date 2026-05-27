@@ -1,0 +1,15 @@
+{% extends 'base.html' %}
+{% block title %}Contact Phys.org — Phys.org{% endblock %}
+{% block content %}
+<article>
+  <h1>Contact Phys.org</h1>
+  <p class="lede">Editorial inquiries, corrections, partnerships and reader feedback.</p>
+  <form method="post" action="/contact">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <p><label>Subject<br><input name="subject" style="padding:7px;width:420px;"></label></p>
+    <p><label>Email<br><input type="email" name="email" required style="padding:7px;width:320px;"></label></p>
+    <p><label>Message<br><textarea name="body" rows="7" required style="width:540px;padding:7px;"></textarea></label></p>
+    <button class="btn" type="submit">Send</button>
+  </form>
+</article>
+{% endblock %}

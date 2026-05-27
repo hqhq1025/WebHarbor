@@ -1,0 +1,16 @@
+{% extends 'base.html' %}
+{% block title %}Contact author — {{ article.title }} — Phys.org{% endblock %}
+{% block content %}
+<article>
+  <div class="crumbs"><a href="{{ url_for('article_detail', slug=article.slug) }}">{{ article.title }}</a> / Contact author</div>
+  <h1>Contact {{ article.author_name }}</h1>
+  <p class="lede">Use the form below to send {{ article.author_name }} a message about this article. Our editorial team will forward verified messages.</p>
+  <form method="post" action="/article/{{ article.slug }}/contact-author">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <p><label>Your name<br><input name="name" style="padding:7px;width:340px;"></label></p>
+    <p><label>Your email<br><input type="email" name="email" required style="padding:7px;width:340px;"></label></p>
+    <p><label>Message<br><textarea name="body" rows="6" required style="width:540px;padding:7px;"></textarea></label></p>
+    <button class="btn" type="submit">Send message</button>
+  </form>
+</article>
+{% endblock %}

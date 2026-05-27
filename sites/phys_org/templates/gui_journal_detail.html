@@ -1,0 +1,31 @@
+{% extends 'base.html' %}
+{% block title %}{{ journal_label }} — Phys.org{% endblock %}
+{% block content %}
+<div class="layout">
+  <article>
+    <div class="banner-image" style="margin-bottom:14px;">
+      <img src="/static-gen/banner/{{ slug }}.svg" alt="" style="width:100%;display:block;border-radius:6px;">
+    </div>
+    <div class="crumbs"><a href="/journals">Journals</a> / {{ journal_label }}</div>
+    <h1>{{ journal_label }}</h1>
+    <p class="lede">{{ articles|length }} Phys.org article{{ '' if articles|length == 1 else 's' }} cite this journal as the source.</p>
+    {% if current_user.is_authenticated %}
+      <form method="post" action="/journal/{{ slug }}/follow" style="margin:8px 0 18px;">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button class="btn" type="submit">Follow journal</button>
+      </form>
+    {% endif %}
+    <div class="article-grid">
+      {% for a in articles %}
+        <article class="card">
+          {% if a.image_filename %}
+            <a href="{{ url_for('article_detail', slug=a.slug) }}"><img src="{{ url_for('static', filename='images/' ~ a.image_filename) }}" alt=""></a>
+          {% endif %}
+          <h3><a href="{{ url_for('article_detail', slug=a.slug) }}">{{ a.title }}</a></h3>
+          <div class="byline">{{ a.author_name }} · {{ a.published_str }}</div>
+        </article>
+      {% endfor %}
+    </div>
+  </article>
+</div>
+{% endblock %}

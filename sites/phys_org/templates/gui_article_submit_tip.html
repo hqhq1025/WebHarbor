@@ -1,0 +1,15 @@
+{% extends 'base.html' %}
+{% block title %}Submit a tip — Phys.org{% endblock %}
+{% block content %}
+<article>
+  <div class="crumbs"><a href="{{ url_for('article_detail', slug=article.slug) }}">{{ article.title }}</a> / Submit a tip</div>
+  <h1>Submit a tip about this story</h1>
+  <p class="lede">Spotted an error, a missing source or a related result we should follow up on? Send us a tip — we read every one.</p>
+  <form method="post" action="/article/{{ article.slug }}/submit-tip">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <p><label>Your email (optional)<br><input type="email" name="email" style="padding:7px;width:320px;"></label></p>
+    <p><label>Tip<br><textarea name="tip" rows="7" required style="width:540px;padding:7px;"></textarea></label></p>
+    <button class="btn" type="submit">Submit tip</button>
+  </form>
+</article>
+{% endblock %}

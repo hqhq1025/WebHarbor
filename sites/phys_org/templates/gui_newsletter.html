@@ -1,0 +1,21 @@
+{% extends 'base.html' %}
+{% block title %}Newsletters — Phys.org{% endblock %}
+{% block content %}
+<h1>Phys.org Newsletters</h1>
+<p class="lede">Subscribe to a daily, weekly or beat-specific digest.</p>
+<div class="newsletter-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:18px;">
+  {% for slug, title, blurb, cadence in newsletters %}
+    <div class="newsletter-card" style="border:1px solid #ddd;border-radius:6px;padding:14px;">
+      <h3 style="margin:0 0 6px;"><a href="/newsletter/{{ slug }}">{{ title }}</a></h3>
+      <div class="meta">{{ cadence }}</div>
+      <p style="font-size:13px;color:#444;">{{ blurb }}</p>
+      <form method="post" action="/newsletter/subscribe">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <input type="hidden" name="newsletter_slug" value="{{ slug }}">
+        <input type="email" name="email" placeholder="you@example.com" required style="width:65%;padding:6px 8px;">
+        <button class="btn" type="submit">Subscribe</button>
+      </form>
+    </div>
+  {% endfor %}
+</div>
+{% endblock %}

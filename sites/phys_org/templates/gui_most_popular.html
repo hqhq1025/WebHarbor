@@ -1,0 +1,37 @@
+{% extends 'base.html' %}
+{% block title %}Most popular — {{ period_label }} — Phys.org{% endblock %}
+{% block content %}
+<div class="layout">
+  <article>
+    <div class="banner-image" style="margin-bottom:18px;">
+      <img src="/static-gen/banner/most-popular-{{ period }}.svg" alt="" style="width:100%;display:block;border-radius:6px;">
+    </div>
+    <h1>Most popular — {{ period_label }}</h1>
+    <p class="lede">The most-viewed articles on Phys.org for {{ period_label.lower() }}.</p>
+    <ol class="ranked-list">
+      {% for a in articles %}
+        <li class="rank-{{ loop.index }}">
+          <div class="rank-num">#{{ loop.index }}</div>
+          {% if a.image_filename %}
+            <a href="{{ url_for('article_detail', slug=a.slug) }}"><img src="{{ url_for('static', filename='images/' ~ a.image_filename) }}" alt="" style="width:120px;height:80px;object-fit:cover;border-radius:4px;"></a>
+          {% endif %}
+          <div class="rank-body">
+            <h3><a href="{{ url_for('article_detail', slug=a.slug) }}">{{ a.title }}</a></h3>
+            <div class="meta">{{ a.views }} views · {{ a.author_name }} · {{ a.published_str }}</div>
+          </div>
+        </li>
+      {% endfor %}
+    </ol>
+  </article>
+  <aside class="sidebar">
+    <div class="widget">
+      <h3>Switch period</h3>
+      <ul>
+        <li><a href="/most-popular/daily">Today</a></li>
+        <li><a href="/most-popular/weekly">This week</a></li>
+        <li><a href="/most-popular/monthly">This month</a></li>
+      </ul>
+    </div>
+  </aside>
+</div>
+{% endblock %}

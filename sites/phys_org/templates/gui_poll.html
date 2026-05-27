@@ -1,0 +1,26 @@
+{% extends 'base.html' %}
+{% block title %}Poll — Phys.org{% endblock %}
+{% block content %}
+<article>
+  <h1>Reader poll</h1>
+  <h2>{{ question }}</h2>
+  {% if voted %}
+    <p class="text-muted">You voted: <strong>{{ user_choice }}</strong>.</p>
+    <ul class="poll-results">
+      {% for c in choices %}
+        <li>{{ c }} — <strong>{{ tallies[c] }}</strong> vote{{ '' if tallies[c] == 1 else 's' }}</li>
+      {% endfor %}
+    </ul>
+  {% elif current_user.is_authenticated %}
+    <form method="post" action="/poll/{{ slug }}/vote">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      {% for c in choices %}
+        <div style="margin:6px 0;"><label><input type="radio" name="choice" value="{{ c }}" required> {{ c }}</label></div>
+      {% endfor %}
+      <button class="btn" type="submit">Vote</button>
+    </form>
+  {% else %}
+    <p><a class="btn" href="{{ url_for('login') }}">Sign in to vote</a></p>
+  {% endif %}
+</article>
+{% endblock %}
