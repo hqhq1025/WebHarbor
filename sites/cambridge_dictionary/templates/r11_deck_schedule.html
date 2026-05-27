@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block title %}Review schedule — {{ deck.name }} | Cambridge Dictionary Plus{% endblock %}
+{% block content %}
+<div class="container r11-deck-schedule">
+  <nav class="breadcrumb">
+    <a href="{{ url_for('plus_index') }}">Plus</a> &raquo;
+    <a href="{{ url_for('r11_deck_detail', deck_id=deck.id) }}">{{ deck.name }}</a> &raquo;
+    <strong>Review schedule</strong>
+  </nav>
+  <h1>Review schedule for "{{ deck.name }}"</h1>
+  {% if schedule %}
+    <table class="r11-table">
+      <thead><tr><th>Next review</th><th>Headword</th><th>Bucket</th><th>Interval</th></tr></thead>
+      <tbody>
+      {% for c, dt in schedule %}
+        <tr>
+          <td>{{ dt.strftime('%Y-%m-%d') }}</td>
+          <td>{{ c.word.headword }}</td>
+          <td>{{ c.bucket }}</td>
+          <td>{{ c.interval_days }} day(s)</td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  {% else %}
+    <p class="r11-empty">No reviews scheduled.</p>
+  {% endif %}
+</div>
+{% endblock %}

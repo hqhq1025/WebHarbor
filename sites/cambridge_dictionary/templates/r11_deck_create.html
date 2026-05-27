@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block title %}Create a flashcard deck | Cambridge Dictionary Plus{% endblock %}
+{% block content %}
+<div class="container r11-deck-create">
+  <nav class="breadcrumb">
+    <a href="{{ url_for('plus_index') }}">Plus</a> &raquo;
+    <a href="{{ url_for('r11_deck_index') }}">Flashcard decks</a> &raquo;
+    <strong>Create</strong>
+  </nav>
+  <h1>Create a new flashcard deck</h1>
+  <form method="POST" action="{{ url_for('r11_deck_create') }}" class="r11-form">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <label>Deck name
+      <input type="text" name="name" required maxlength="120" placeholder="e.g. IELTS sprint cards">
+    </label>
+    <label>Description (optional)
+      <textarea name="description" rows="3" maxlength="500"></textarea>
+    </label>
+    <button type="submit" class="cta">Create deck</button>
+  </form>
+</div>
+{% endblock %}

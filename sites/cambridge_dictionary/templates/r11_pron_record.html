@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block title %}Record pronunciation — {{ word.headword }} | Cambridge Dictionary Plus{% endblock %}
+{% block content %}
+<div class="container r11-pron-record" data-slug="{{ word.slug }}">
+  <nav class="breadcrumb">
+    <a href="{{ url_for('plus_index') }}">Plus</a> &raquo;
+    <a href="{{ url_for('word_detail', slug=word.slug) }}">{{ word.headword }}</a> &raquo;
+    <strong>Record pronunciation</strong>
+  </nav>
+  <h1>Record your pronunciation of "{{ word.headword }}"</h1>
+  <p class="r11-blurb">The page records the recording <em>metadata</em> only (duration + dialect). Submit a recording to receive deterministic feedback comparing it to the reference IPA <code>{{ word.phonetic_uk or word.pronunciation_ipa }}</code>.</p>
+  <form method="POST" action="{{ url_for('r11_pron_record', slug=word.slug) }}" class="r11-form">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <label>Dialect target
+      <select name="dialect">
+        {% for d in dialects %}<option value="{{ d }}">{{ d|upper }}</option>{% endfor %}
+      </select>
+    </label>
+    <label>Recording duration (ms)
+      <input type="number" name="duration_ms" min="100" max="10000" value="1500" required>
+    </label>
+    <button type="submit" class="cta">Submit recording</button>
+  </form>
+  <p class="r11-meta"><a href="{{ url_for('r11_pron_compare', slug=word.slug) }}">View comparison feedback &raquo;</a></p>
+</div>
+{% endblock %}

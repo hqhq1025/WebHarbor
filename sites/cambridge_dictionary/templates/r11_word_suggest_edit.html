@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block title %}Suggest edit for {{ word.headword }} | Cambridge Dictionary{% endblock %}
+{% block content %}
+<div class="container r11-word-suggest">
+  <nav class="breadcrumb">
+    <a href="{{ url_for('word_detail', slug=word.slug) }}">{{ word.headword }}</a> &raquo;
+    <strong>Suggest edit</strong>
+  </nav>
+  <h1>Suggest an edit for "{{ word.headword }}"</h1>
+  <p class="r11-blurb">Editorial reviewers process suggestions in batches. Please pick the specific field you want to change and include a short rationale.</p>
+  <form method="POST" action="{{ url_for('r11_word_suggest_edit', word_id=word.id) }}" class="r11-form">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <label>Field
+      <select name="field">
+        <option value="definition">definition</option>
+        <option value="example">example sentence</option>
+        <option value="pos">part of speech</option>
+        <option value="etymology">etymology</option>
+        <option value="register">register tag</option>
+      </select>
+    </label>
+    <label>Proposed text
+      <textarea name="proposed_text" rows="4" maxlength="2000" required></textarea>
+    </label>
+    <label>Rationale (optional)
+      <textarea name="rationale" rows="2" maxlength="1000"></textarea>
+    </label>
+    <button type="submit" class="cta">Submit suggestion</button>
+  </form>
+</div>
+{% endblock %}

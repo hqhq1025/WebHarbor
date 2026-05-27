@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block title %}Share quiz score | Cambridge Dictionary Plus{% endblock %}
+{% block content %}
+<div class="container r11-quiz-share">
+  <nav class="breadcrumb">
+    <a href="{{ url_for('plus_index') }}">Plus</a> &raquo;
+    <a href="{{ url_for('r11_quiz_play', attempt_id=attempt.id) }}">Attempt #{{ attempt.id }}</a> &raquo;
+    <strong>Share score</strong>
+  </nav>
+  <h1>Share your score</h1>
+  <p class="r11-meta">Score: <strong>{{ attempt.score }} / {{ attempt.total }}</strong> on the {{ attempt.category }} quiz ({{ attempt.difficulty }}).</p>
+  <form method="POST" action="{{ url_for('r11_quiz_share_score', attempt_id=attempt.id) }}" class="r11-form">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <label>Optional message
+      <textarea name="message" rows="3" maxlength="200" placeholder="A short caption for your share link"></textarea>
+    </label>
+    <button type="submit" class="cta">Generate share link</button>
+  </form>
+  {% if share_url %}
+    <p class="r11-share-link">Share link: <code>{{ share_url }}</code></p>
+  {% endif %}
+</div>
+{% endblock %}

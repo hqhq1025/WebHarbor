@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+{% block title %}Quiz attempt #{{ attempt.id }} | Cambridge Dictionary Plus{% endblock %}
+{% block content %}
+<div class="container r11-quiz-play" data-attempt="{{ attempt.id }}">
+  <nav class="breadcrumb">
+    <a href="{{ url_for('plus_index') }}">Plus</a> &raquo;
+    <a href="{{ url_for('r11_quiz_start') }}">Quizzes</a> &raquo;
+    <strong>Attempt #{{ attempt.id }}</strong>
+  </nav>
+  <h1>{{ attempt.category|capitalize }} quiz ({{ attempt.difficulty }})</h1>
+  <p class="r11-meta">Score so far: <strong>{{ attempt.score }} / {{ attempt.total }}</strong> &middot; Status: <strong>{{ attempt.status }}</strong></p>
+
+  {% if attempt.status == 'in_progress' and current_q < questions|length %}
+    {% set q = questions[current_q] %}
+    <article class="r11-quiz-question">
+      <h2>Question {{ current_q + 1 }} of {{ attempt.total }}</h2>
+      <p class="r11-quiz-prompt">{{ q.q }}</p>
+      <form method="POST" action="{{ url_for('r11_quiz_submit_answer', attempt_id=attempt.id) }}" class="r11-form">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        {% for opt in q.options %}
+          <label class="r11-quiz-option">
+            <input type="radio" name="choice" value="{{ loop.index0 }}" required>
+            {{ opt }}
+          </label>
+        {% endfor %}
+        <button type="submit" class="cta">Submit answer</button>
+      </form>
+      <form method="POST" action="{{ url_for('r11_quiz_skip', attempt_id=attempt.id) }}" class="r11-quiz-skip-form">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button type="submit" class="r11-secondary">Skip this question</button>
+      </form>
+    </article>
+  {% else %}
+    <article class="r11-quiz-done">
+      <h2>Attempt finished</h2>
+      <p>Final score: <strong>{{ attempt.score }} / {{ attempt.total }}</strong></p>
+      <ul class="r11-quiz-answers">
+        {% for q in questions %}
+          {% set picked = answers[loop.index0] if loop.index0 < answers|length else None %}
+          <li>
+            <strong>Q{{ loop.index }}.</strong> {{ q.q }}<br>
+            Correct: <em>{{ q.options[q.answer] }}</em><br>
+            Your answer:
+            {% if picked is none %}<em>(unanswered)</em>
+            {% elif picked == -1 %}<em>(skipped)</em>
+            {% else %}<em>{{ q.options[picked] }}</em>{% endif %}
+          </li>
+        {% endfor %}
+      </ul>
+      <ul class="r11-quiz-actions">
+        <li>
+          <form method="POST" action="{{ url_for('r11_quiz_restart', attempt_id=attempt.id) }}" style="display:inline">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button type="submit" class="cta">Restart</button>
+          </form>
+        </li>
+        <li><a class="cta" href="{{ url_for('r11_quiz_share_score', attempt_id=attempt.id) }}">Share score</a></li>
+      </ul>
+    </article>
+  {% endif %}
+</div>
+{% endblock %}

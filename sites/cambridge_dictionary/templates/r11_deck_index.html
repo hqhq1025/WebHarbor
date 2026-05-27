@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block title %}Flashcard decks | Cambridge Dictionary Plus{% endblock %}
+{% block content %}
+<div class="container r11-deck-index">
+  <nav class="breadcrumb">
+    <a href="{{ url_for('plus_index') }}">Plus</a> &raquo;
+    <strong>Flashcard decks</strong>
+  </nav>
+  <h1>Your flashcard decks</h1>
+  <p class="r11-blurb">Spaced-repetition decks help you review words at expanding intervals. Each card cycles through <em>new</em> &rarr; <em>learning</em> &rarr; <em>review</em>.</p>
+  <p><a class="cta" href="{{ url_for('r11_deck_create') }}">+ Create new deck</a></p>
+  {% if decks %}
+    <table class="r11-table">
+      <thead><tr><th>#</th><th>Name</th><th>Cards</th><th>Actions</th></tr></thead>
+      <tbody>
+      {% for d in decks %}
+        <tr>
+          <td>{{ d.id }}</td>
+          <td><a href="{{ url_for('r11_deck_detail', deck_id=d.id) }}">{{ d.name }}</a></td>
+          <td>{{ d.cards|length }}</td>
+          <td>
+            <a href="{{ url_for('r11_deck_study_answer', deck_id=d.id) }}">study</a> |
+            <a href="{{ url_for('r11_deck_schedule', deck_id=d.id) }}">schedule</a>
+          </td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  {% else %}
+    <p class="r11-empty">No decks yet — create your first deck.</p>
+  {% endif %}
+</div>
+{% endblock %}

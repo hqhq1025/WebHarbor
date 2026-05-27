@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block title %}Update profile | Cambridge Dictionary Plus{% endblock %}
+{% block content %}
+<div class="container r11-profile-update">
+  <nav class="breadcrumb">
+    <a href="{{ url_for('account') }}">Account</a> &raquo;
+    <strong>Update profile</strong>
+  </nav>
+  <h1>Update your profile</h1>
+  <form method="POST" action="{{ url_for('r11_account_profile_update') }}" class="r11-form">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <label>Display name
+      <input type="text" name="name" value="{{ current_user.name }}" required maxlength="120">
+    </label>
+    <label>Short bio
+      <textarea name="bio" rows="4" maxlength="2000">{{ current_user.bio or '' }}</textarea>
+    </label>
+    <button type="submit" class="cta">Save profile</button>
+  </form>
+</div>
+{% endblock %}

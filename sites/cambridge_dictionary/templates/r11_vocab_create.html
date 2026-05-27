@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% block title %}Create a word list | Cambridge Dictionary Plus{% endblock %}
+{% block content %}
+<div class="container r11-vocab-create">
+  <nav class="breadcrumb">
+    <a href="{{ url_for('plus_index') }}">Plus</a> &raquo;
+    <a href="{{ url_for('r11_vocab_list_index') }}">Word lists</a> &raquo;
+    <strong>Create</strong>
+  </nav>
+  <h1>Create a new word list</h1>
+  <p class="r11-blurb">Word lists are private to your account. Add a short description to remember the theme.</p>
+  <form method="POST" action="{{ url_for('r11_vocab_create') }}" class="r11-form">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <label>List name
+      <input type="text" name="name" required maxlength="120" placeholder="e.g. C1 exam targets">
+    </label>
+    <label>Description (optional)
+      <textarea name="description" rows="3" maxlength="500"></textarea>
+    </label>
+    <label>Category
+      <select name="category">
+        <option value="general">general</option>
+        <option value="cefr">CEFR level</option>
+        <option value="ielts">IELTS</option>
+        <option value="toefl">TOEFL</option>
+        <option value="business">business</option>
+        <option value="academic">academic</option>
+        <option value="grammar">grammar</option>
+      </select>
+    </label>
+    <button type="submit" class="cta">Create list</button>
+  </form>
+</div>
+{% endblock %}

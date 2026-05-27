@@ -22,6 +22,43 @@
       </p>
     </section>
 
+    <!-- R11 — Plus interactivity surfaces. These four cards expose the new
+         user-write features (word lists / quizzes / flashcard decks /
+         pronunciation submissions). Logged-in users get full access; the
+         routes themselves require @login_required so anonymous clicks land
+         on /login next. -->
+    <section class="plus-section" id="r11-interact">
+      <h2 class="plus-section-title">&#x2728; Plus interactivity</h2>
+      <p class="plus-section-desc">Build personal word lists, take quizzes, run flashcard decks, and submit pronunciation recordings.</p>
+      <div class="quiz-grid">
+        <a href="{{ url_for('r11_vocab_list_index') }}" class="quiz-card quiz-card--grammar">
+          <div class="quiz-card-icon">&#x1F4D8;</div>
+          <h3>My word lists</h3>
+          <p>Create, rename, share and export your personal Cambridge Plus word lists.</p>
+          <div class="quiz-start-btn">Open word lists &rsaquo;</div>
+        </a>
+        <a href="{{ url_for('r11_quiz_start') }}" class="quiz-card quiz-card--grammar">
+          <div class="quiz-card-icon">&#x2753;</div>
+          <h3>Start a quiz</h3>
+          <p>Pick a difficulty + category and run a 5-question quiz with skip / restart / share.</p>
+          <div class="quiz-start-btn">Start quiz &rsaquo;</div>
+        </a>
+        <a href="{{ url_for('r11_deck_index') }}" class="quiz-card quiz-card--game">
+          <div class="quiz-card-icon">&#x1F0CF;</div>
+          <h3>Flashcard decks</h3>
+          <p>Spaced-repetition decks with a study mode and a review-schedule calendar.</p>
+          <div class="quiz-start-btn">Open decks &rsaquo;</div>
+        </a>
+        <a href="{{ url_for('r11_account_dialect') }}" class="quiz-card quiz-card--image">
+          <div class="quiz-card-icon">&#x1F5E3;</div>
+          <h3>Dialect &amp; profile</h3>
+          <p>Pick your default pronunciation dialect (UK / US / AU / CA) and update your bio.</p>
+          <div class="quiz-start-btn">Open settings &rsaquo;</div>
+        </a>
+      </div>
+    </section>
+
+
     <!-- Image Quizzes -->
     <section class="plus-section" id="image-quizzes">
       <h2 class="plus-section-title">&#x1F5BC; Image Quizzes</h2>

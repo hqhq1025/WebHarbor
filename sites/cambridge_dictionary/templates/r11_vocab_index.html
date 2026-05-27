@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block title %}My word lists | Cambridge Dictionary Plus{% endblock %}
+{% block content %}
+<div class="container r11-vocab-index">
+  <nav class="breadcrumb">
+    <a href="{{ url_for('plus_index') }}">Plus</a> &raquo;
+    <strong>Word lists</strong>
+  </nav>
+  <h1>My word lists</h1>
+  <p class="r11-blurb">Build personal word lists to revisit on the go. Lists are private by default; toggle sharing to publish a read-only link.</p>
+  <p><a class="cta" href="{{ url_for('r11_vocab_create') }}">+ Create new word list</a></p>
+  {% if lists %}
+    <table class="r11-table">
+      <thead><tr><th>#</th><th>Name</th><th>Category</th><th>Words</th><th>Shared</th><th>Actions</th></tr></thead>
+      <tbody>
+      {% for vl in lists %}
+        <tr>
+          <td>{{ vl.id }}</td>
+          <td><a href="{{ url_for('r11_vocab_detail', list_id=vl.id) }}">{{ vl.name }}</a></td>
+          <td>{{ vl.category }}</td>
+          <td>{{ vl.words|length }}</td>
+          <td>{{ 'yes' if vl.is_shared else 'no' }}</td>
+          <td>
+            <a href="{{ url_for('r11_vocab_rename', list_id=vl.id) }}">rename</a> |
+            <a href="{{ url_for('r11_vocab_share', list_id=vl.id) }}">share</a> |
+            <a href="{{ url_for('r11_vocab_export', list_id=vl.id) }}">export</a> |
+            <a href="{{ url_for('r11_vocab_study_start', list_id=vl.id) }}">study</a>
+          </td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  {% else %}
+    <p class="r11-empty">You haven't created any word lists yet.</p>
+  {% endif %}
+</div>
+{% endblock %}

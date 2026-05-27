@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block title %}Study {{ deck.name }} | Cambridge Dictionary Plus{% endblock %}
+{% block content %}
+<div class="container r11-deck-study" data-deck-id="{{ deck.id }}">
+  <nav class="breadcrumb">
+    <a href="{{ url_for('plus_index') }}">Plus</a> &raquo;
+    <a href="{{ url_for('r11_deck_detail', deck_id=deck.id) }}">{{ deck.name }}</a> &raquo;
+    <strong>Study</strong>
+  </nav>
+  <h1>Study "{{ deck.name }}"</h1>
+  {% if card %}
+    <article class="r11-study-card">
+      <h2>{{ card.word.headword }}</h2>
+      <p class="r11-meta">Bucket: <strong>{{ card.bucket }}</strong> &middot; Interval: <strong>{{ card.interval_days }} day(s)</strong></p>
+      <p class="r11-card-defi">
+        {% set defs = card.word.get_definitions() %}
+        {% if defs %}{{ defs[0].definition }}{% else %}<em>No definition.</em>{% endif %}
+      </p>
+      <form method="POST" action="{{ url_for('r11_deck_study_answer', deck_id=deck.id) }}" class="r11-form">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <input type="hidden" name="card_id" value="{{ card.id }}">
+        <label>How well did you know it?
+          <select name="outcome">
+            <option value="again">Again (didn't know)</option>
+            <option value="hard">Hard</option>
+            <option value="good" selected>Good</option>
+            <option value="easy">Easy</option>
+          </select>
+        </label>
+        <button type="submit" class="cta">Grade card</button>
+      </form>
+    </article>
+  {% else %}
+    <p class="r11-empty">No cards to study yet — add some from the deck page.</p>
+  {% endif %}
+
+  <section class="r11-card-list">
+    <h2>All cards</h2>
+    <ul>
+      {% for c in cards %}
+        <li>{{ c.word.headword }} — bucket: {{ c.bucket }}, interval: {{ c.interval_days }}d</li>
+      {% endfor %}
+    </ul>
+  </section>
+</div>
+{% endblock %}

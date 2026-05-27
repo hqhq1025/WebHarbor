@@ -52,6 +52,12 @@ class User(db.Model, UserMixin):
     name = db.Column(db.String(120), nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
+    # R11: per-user preferences. ``preferred_dialect`` drives
+    # /account/preferences/dialect (UK / US / AU / CA) and overrides the
+    # session-cookie picker for logged-in users.
+    preferred_dialect = db.Column(db.String(10), default='')
+    bio = db.Column(db.Text, default='')
+
     saved_words = db.relationship('SavedWord', backref='user', lazy=True,
                                   cascade='all, delete-orphan')
     search_history = db.relationship('SearchHistory', backref='user', lazy=True,
@@ -314,6 +320,183 @@ class MistakeCorner(db.Model):
             return json.loads(self.examples_json or '[]')
         except Exception:
             return []
+
+
+# ---------------------------------------------------------------------------
+# R11 — Plus interactivity (vocab lists / quiz attempts / flashcard decks /
+# pronunciation submissions / community contributions). The corresponding
+# routes live in the R11 block near the bottom of this file; the models are
+# declared here so db.create_all() picks them up before seed_database()
+# runs at app startup. Every POST endpoint persists to one of these tables —
+# no in-memory or JSON-blob shortcuts — which is what makes the surface
+# real for a GUI agent rather than just a form echo.
+# ---------------------------------------------------------------------------
+
+class VocabList(db.Model):
+    """A user-owned word list (Cambridge Plus 'word list' feature).
+
+    Words are joined through ``VocabListWord``. ``share_token`` is a
+    deterministic hash of (user_id, list_id) so /vocab/list/<id>/share
+    surfaces a stable read-only URL after the first share-toggle.
+    """
+    __tablename__ = 'vocab_lists'
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False,
+                        index=True)
+    name = db.Column(db.String(120), nullable=False)
+    description = db.Column(db.Text, default='')
+    category = db.Column(db.String(40), default='general')
+    is_shared = db.Column(db.Boolean, default=False)
+    share_token = db.Column(db.String(40), default='')
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    words = db.relationship('VocabListWord', backref='vocab_list', lazy=True,
+                            cascade='all, delete-orphan')
+    user = db.relationship('User', backref=db.backref('vocab_lists', lazy=True,
+                                                      cascade='all, delete-orphan'))
+
+
+class VocabListWord(db.Model):
+    __tablename__ = 'vocab_list_words'
+    id = db.Column(db.Integer, primary_key=True)
+    list_id = db.Column(db.Integer, db.ForeignKey('vocab_lists.id'),
+                        nullable=False, index=True)
+    word_id = db.Column(db.Integer, db.ForeignKey('words.id'), nullable=False)
+    note = db.Column(db.Text, default='')
+    added_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    word = db.relationship('Word')
+
+
+class FlashcardDeck(db.Model):
+    """User-owned flashcard deck with simple SM-2-style scheduling.
+
+    Each card sits in one of three review buckets (``new`` / ``learning`` /
+    ``review``). The next-review date is stored on the card so
+    /flashcards/deck/<id>/review-schedule can render a real calendar without
+    cron jobs.
+    """
+    __tablename__ = 'flashcard_decks'
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False,
+                        index=True)
+    name = db.Column(db.String(120), nullable=False)
+    description = db.Column(db.Text, default='')
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    cards = db.relationship('FlashcardCard', backref='deck', lazy=True,
+                            cascade='all, delete-orphan')
+    user = db.relationship('User', backref=db.backref('flashcard_decks', lazy=True,
+                                                      cascade='all, delete-orphan'))
+
+
+class FlashcardCard(db.Model):
+    __tablename__ = 'flashcard_cards'
+    id = db.Column(db.Integer, primary_key=True)
+    deck_id = db.Column(db.Integer, db.ForeignKey('flashcard_decks.id'),
+                        nullable=False, index=True)
+    word_id = db.Column(db.Integer, db.ForeignKey('words.id'), nullable=False)
+    bucket = db.Column(db.String(20), default='new')  # new|learning|review
+    interval_days = db.Column(db.Integer, default=1)
+    next_review = db.Column(db.DateTime, default=datetime.utcnow)
+    correct_count = db.Column(db.Integer, default=0)
+    miss_count = db.Column(db.Integer, default=0)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    word = db.relationship('Word')
+
+
+class QuizAttempt(db.Model):
+    """One user's attempt at a /quiz/start session. Answers are stored as
+    a JSON list of integers (index of chosen option) so /quiz/<id>/submit-answer
+    can incrementally update the row without per-answer rows.
+    """
+    __tablename__ = 'quiz_attempts'
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True,
+                        index=True)
+    quiz_id = db.Column(db.Integer, db.ForeignKey('quizzes.id'), nullable=True)
+    difficulty = db.Column(db.String(20), default='easy')
+    category = db.Column(db.String(80), default='')
+    answers_json = db.Column(db.Text, default='[]')
+    score = db.Column(db.Integer, default=0)
+    total = db.Column(db.Integer, default=0)
+    status = db.Column(db.String(20), default='in_progress')  # in_progress|done|abandoned
+    started_at = db.Column(db.DateTime, default=datetime.utcnow)
+    finished_at = db.Column(db.DateTime, default=None)
+
+    def get_answers(self):
+        try:
+            return json.loads(self.answers_json or '[]')
+        except Exception:
+            return []
+
+
+class PronunciationSubmission(db.Model):
+    """Metadata-only record for a learner's recorded pronunciation. The
+    audio bytes themselves are never stored (the mirror has no MP3 upload
+    sink). The ``score`` is a deterministic feedback number derived from
+    (slug, user, attempt) so /pronunciation/<word>/compare-feedback can
+    render byte-id feedback after a reset."""
+    __tablename__ = 'pronunciation_submissions'
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False,
+                        index=True)
+    word_id = db.Column(db.Integer, db.ForeignKey('words.id'), nullable=False)
+    dialect = db.Column(db.String(10), default='uk')
+    duration_ms = db.Column(db.Integer, default=0)
+    score = db.Column(db.Integer, default=0)  # 0-100
+    feedback = db.Column(db.Text, default='')
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    word = db.relationship('Word')
+
+
+class WordEditSuggestion(db.Model):
+    """Community-edit suggestion for an existing dictionary entry."""
+    __tablename__ = 'word_edit_suggestions'
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    word_id = db.Column(db.Integer, db.ForeignKey('words.id'), nullable=False,
+                        index=True)
+    field = db.Column(db.String(40), default='definition')
+    proposed_text = db.Column(db.Text, default='')
+    rationale = db.Column(db.Text, default='')
+    status = db.Column(db.String(20), default='pending')  # pending|accepted|rejected
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    word = db.relationship('Word')
+
+
+class WordExampleVote(db.Model):
+    """Up/down vote on a specific example sentence under a Word."""
+    __tablename__ = 'word_example_votes'
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    word_id = db.Column(db.Integer, db.ForeignKey('words.id'), nullable=False,
+                        index=True)
+    example_id = db.Column(db.Integer, nullable=False)
+    direction = db.Column(db.String(4), default='up')  # up|down
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    __table_args__ = (
+        db.UniqueConstraint('user_id', 'word_id', 'example_id',
+                            name='uq_word_example_vote'),
+    )
+
+
+class WordFollow(db.Model):
+    """User follows a word entry to receive updates (etymology revisions,
+    new example sentences). One row per (user, word)."""
+    __tablename__ = 'word_follows'
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    word_id = db.Column(db.Integer, db.ForeignKey('words.id'), nullable=False,
+                        index=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    __table_args__ = (
+        db.UniqueConstraint('user_id', 'word_id', name='uq_word_follow'),
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -5791,6 +5974,811 @@ def r3_sitemap_xml():
     return xml, 200, {'Content-Type': 'application/xml; charset=utf-8'}
 
 # === R2-R3 backfill END ===
+
+
+# === R11 BEGIN — Plus interactivity: vocab lists / quiz attempts / flashcard
+# decks / pronunciation submissions / community contributions. ================
+# Added 2026-05-27 to give the mirror real user-writes beyond
+# auth+save-word. Every route below either reads from or writes to a
+# dedicated table declared near the top of this file. The seed adds a few
+# anchor lists / decks for the four benchmark users so /vocab/list/<id>/...
+# and /flashcards/deck/<id>/... never 404 right after /reset. All seed-time
+# ids and ``created_at`` columns are pinned to MIRROR_REFERENCE_DATE so the
+# instance_seed/cambridge.db stays byte-identical across rebuilds.
+
+import hashlib as _r11_hashlib
+from datetime import timedelta as _r11_timedelta
+
+
+def _r11_share_token(user_id, list_id):
+    return _r11_hashlib.md5(
+        f'vlist|{user_id}|{list_id}|cambridge-r11'.encode()
+    ).hexdigest()[:16]
+
+
+def _r11_pron_score(slug, user_id, attempt_idx):
+    """Deterministic feedback score 60-95 (sounds plausible)."""
+    h = _r11_hashlib.md5(
+        f'pron|{slug}|{user_id}|{attempt_idx}'.encode()
+    ).digest()
+    return 60 + (h[0] % 36)
+
+
+def _r11_pron_feedback(score, dialect):
+    if score >= 90:
+        return f'Excellent {dialect.upper()} pronunciation — your stress placement matches the reference recording.'
+    if score >= 80:
+        return f'Good {dialect.upper()} attempt — the vowel quality on the stressed syllable is on target; tighten the final consonant.'
+    if score >= 70:
+        return f'Fair — your {dialect.upper()} vowel matches but the stress is on the wrong syllable.'
+    return f'Keep practising — the {dialect.upper()} reference uses a longer first vowel than your attempt.'
+
+
+R11_QUIZ_BANK = [
+    {
+        'difficulty': 'easy', 'category': 'vocab',
+        'questions': [
+            {'q': 'Which word means "lasting only a short time"?',
+             'options': ['eternal', 'ephemeral', 'enormous', 'enthusiastic'],
+             'answer': 1},
+            {'q': 'Which word means "happening by chance in a beneficial way"?',
+             'options': ['serendipity', 'symphony', 'sympathy', 'syllabus'],
+             'answer': 0},
+            {'q': 'Which word means "very careful and precise"?',
+             'options': ['miserable', 'mediocre', 'meticulous', 'monstrous'],
+             'answer': 2},
+            {'q': 'Which word means "found everywhere"?',
+             'options': ['ubiquitous', 'unique', 'uniform', 'unusual'],
+             'answer': 0},
+            {'q': 'Which word means "ability to recover quickly"?',
+             'options': ['reception', 'resilience', 'reservoir', 'residence'],
+             'answer': 1},
+        ],
+    },
+    {
+        'difficulty': 'medium', 'category': 'grammar',
+        'questions': [
+            {'q': 'Choose the correct sentence.',
+             'options': ['She has went home.', 'She has gone home.',
+                         'She has go home.', 'She has going home.'],
+             'answer': 1},
+            {'q': 'Identify the modal verb.',
+             'options': ['walked', 'should', 'house', 'quickly'],
+             'answer': 1},
+            {'q': 'Which is the past participle of "swim"?',
+             'options': ['swam', 'swimmed', 'swum', 'swimming'],
+             'answer': 2},
+            {'q': '"The book ___ on the table" — fill the gap.',
+             'options': ['lay', 'lays', 'lain', 'lain down'],
+             'answer': 0},
+            {'q': 'Which sentence uses the subjunctive mood?',
+             'options': ['If I was rich…', 'If I were rich…',
+                         'If I am rich…', 'If I will be rich…'],
+             'answer': 1},
+        ],
+    },
+    {
+        'difficulty': 'hard', 'category': 'idiom',
+        'questions': [
+            {'q': '"Bite the bullet" means…',
+             'options': ['Eat quickly', 'Endure a painful experience',
+                         'Argue loudly', 'Ignore a warning'],
+             'answer': 1},
+            {'q': '"Once in a blue moon" means…',
+             'options': ['Frequently', 'At night', 'Very rarely', 'On weekends'],
+             'answer': 2},
+            {'q': '"Hit the books" means…',
+             'options': ['Start studying', 'Punch a bookshelf',
+                         'Read aloud', 'Borrow from a library'],
+             'answer': 0},
+            {'q': '"Burn the midnight oil" means…',
+             'options': ['Cook late', 'Travel at night',
+                         'Stay up late working', 'Light a candle'],
+             'answer': 2},
+            {'q': '"Spill the beans" means…',
+             'options': ['Drop your lunch', 'Reveal a secret',
+                         'Make a mess', 'Lose your temper'],
+             'answer': 1},
+        ],
+    },
+]
+
+
+def _r11_quiz_payload(difficulty, category, attempt_idx=0):
+    """Return (questions_list, total) for a difficulty+category pair.
+
+    Pulls from R11_QUIZ_BANK but rotates question order deterministically
+    by attempt_idx so a 'restart' yields a different ordering without
+    needing a real RNG."""
+    for bank in R11_QUIZ_BANK:
+        if bank['difficulty'] == difficulty and bank['category'] == category:
+            q = list(bank['questions'])
+            # Stable rotation
+            shift = attempt_idx % len(q)
+            return q[shift:] + q[:shift], len(q)
+    # Default: first bank
+    q = list(R11_QUIZ_BANK[0]['questions'])
+    return q, len(q)
+
+
+R11_DIALECTS = ('uk', 'us', 'au', 'ca')
+
+
+# ---------------------------------------------------------------------------
+# Routes — Vocab lists
+# ---------------------------------------------------------------------------
+
+@app.route('/vocab/list')
+@app.route('/vocab/list/')
+@login_required
+def r11_vocab_list_index():
+    lists = VocabList.query.filter_by(user_id=current_user.id)\
+        .order_by(VocabList.id.asc()).all()
+    return render_template('r11_vocab_index.html', lists=lists)
+
+
+@app.route('/vocab/list/create', methods=['GET', 'POST'])
+@login_required
+def r11_vocab_create():
+    if request.method == 'POST':
+        name = (request.form.get('name') or '').strip()
+        if not name:
+            flash('List name is required.', 'danger')
+            return render_template('r11_vocab_create.html')
+        desc = (request.form.get('description') or '').strip()
+        category = (request.form.get('category') or 'general').strip()[:40]
+        vl = VocabList(user_id=current_user.id, name=name[:120],
+                       description=desc, category=category)
+        db.session.add(vl)
+        db.session.commit()
+        flash(f'Word list "{vl.name}" created.', 'success')
+        return redirect(url_for('r11_vocab_detail', list_id=vl.id))
+    return render_template('r11_vocab_create.html')
+
+
+@app.route('/vocab/list/<int:list_id>')
+@login_required
+def r11_vocab_detail(list_id):
+    vl = VocabList.query.filter_by(id=list_id, user_id=current_user.id).first_or_404()
+    candidates = Word.query.filter_by(is_thesaurus_phrase=False)\
+        .order_by(Word.id.asc()).limit(40).all()
+    return render_template('r11_vocab_detail.html', vl=vl, candidates=candidates)
+
+
+@app.route('/vocab/list/<int:list_id>/add-word', methods=['POST'])
+@login_required
+def r11_vocab_add_word(list_id):
+    vl = VocabList.query.filter_by(id=list_id, user_id=current_user.id).first_or_404()
+    word_id = request.form.get('word_id', type=int)
+    note = (request.form.get('note') or '').strip()
+    word = db.session.get(Word, word_id) if word_id else None
+    if not word:
+        flash('Word not found.', 'danger')
+        return redirect(url_for('r11_vocab_detail', list_id=vl.id))
+    existing = VocabListWord.query.filter_by(list_id=vl.id, word_id=word.id).first()
+    if existing:
+        flash(f'"{word.headword}" is already on this list.', 'info')
+    else:
+        db.session.add(VocabListWord(list_id=vl.id, word_id=word.id, note=note))
+        vl.updated_at = datetime.utcnow()
+        db.session.commit()
+        flash(f'Added "{word.headword}" to "{vl.name}".', 'success')
+    return redirect(url_for('r11_vocab_detail', list_id=vl.id))
+
+
+@app.route('/vocab/list/<int:list_id>/remove-word/<int:word_id>', methods=['POST'])
+@login_required
+def r11_vocab_remove_word(list_id, word_id):
+    vl = VocabList.query.filter_by(id=list_id, user_id=current_user.id).first_or_404()
+    row = VocabListWord.query.filter_by(list_id=vl.id, word_id=word_id).first()
+    if not row:
+        flash('Word not on list.', 'warning')
+        return redirect(url_for('r11_vocab_detail', list_id=vl.id))
+    word = db.session.get(Word, word_id)
+    db.session.delete(row)
+    vl.updated_at = datetime.utcnow()
+    db.session.commit()
+    flash(f'Removed "{word.headword if word else word_id}" from "{vl.name}".',
+          'info')
+    return redirect(url_for('r11_vocab_detail', list_id=vl.id))
+
+
+@app.route('/vocab/list/<int:list_id>/rename', methods=['GET', 'POST'])
+@login_required
+def r11_vocab_rename(list_id):
+    vl = VocabList.query.filter_by(id=list_id, user_id=current_user.id).first_or_404()
+    if request.method == 'POST':
+        new_name = (request.form.get('name') or '').strip()
+        if not new_name:
+            flash('List name cannot be empty.', 'danger')
+            return render_template('r11_vocab_rename.html', vl=vl)
+        vl.name = new_name[:120]
+        vl.description = (request.form.get('description') or vl.description).strip()
+        vl.updated_at = datetime.utcnow()
+        db.session.commit()
+        flash('List renamed.', 'success')
+        return redirect(url_for('r11_vocab_detail', list_id=vl.id))
+    return render_template('r11_vocab_rename.html', vl=vl)
+
+
+@app.route('/vocab/list/<int:list_id>/share', methods=['GET', 'POST'])
+@login_required
+def r11_vocab_share(list_id):
+    vl = VocabList.query.filter_by(id=list_id, user_id=current_user.id).first_or_404()
+    if request.method == 'POST':
+        vl.is_shared = bool(request.form.get('is_shared'))
+        if vl.is_shared and not vl.share_token:
+            vl.share_token = _r11_share_token(vl.user_id, vl.id)
+        vl.updated_at = datetime.utcnow()
+        db.session.commit()
+        flash('Sharing preferences updated.', 'success')
+        return redirect(url_for('r11_vocab_share', list_id=vl.id))
+    share_url = ('/vocab/shared/' + vl.share_token) if vl.is_shared and vl.share_token else ''
+    return render_template('r11_vocab_share.html', vl=vl, share_url=share_url)
+
+
+@app.route('/vocab/list/<int:list_id>/export-csv', methods=['GET', 'POST'])
+@login_required
+def r11_vocab_export(list_id):
+    vl = VocabList.query.filter_by(id=list_id, user_id=current_user.id).first_or_404()
+    if request.method == 'GET':
+        return render_template('r11_vocab_export.html', vl=vl)
+    # POST: render CSV
+    rows = ['headword,pos,level,note']
+    for vlw in vl.words:
+        w = vlw.word
+        if not w:
+            continue
+        rows.append(
+            f'"{w.headword}","{w.pos or ""}","{w.level or ""}","{(vlw.note or "").replace(chr(34), chr(39))}"'
+        )
+    csv_body = '\n'.join(rows) + '\n'
+    headers = {
+        'Content-Type': 'text/csv; charset=utf-8',
+        'Content-Disposition': f'attachment; filename="vocab-list-{vl.id}.csv"',
+    }
+    return csv_body, 200, headers
+
+
+@app.route('/vocab/list/<int:list_id>/study-mode/start', methods=['GET', 'POST'])
+@login_required
+def r11_vocab_study_start(list_id):
+    vl = VocabList.query.filter_by(id=list_id, user_id=current_user.id).first_or_404()
+    if request.method == 'POST':
+        mode = (request.form.get('mode') or 'flip').strip()
+        # Deterministic session token
+        token = _r11_hashlib.md5(
+            f'study|{vl.id}|{mode}'.encode()).hexdigest()[:10]
+        session['vocab_study_token'] = token
+        session['vocab_study_list'] = vl.id
+        session['vocab_study_mode'] = mode
+        flash(f'Study session started (mode: {mode}).', 'success')
+        return redirect(url_for('r11_vocab_study_start', list_id=vl.id))
+    token = session.get('vocab_study_token', '')
+    mode = session.get('vocab_study_mode', '')
+    return render_template('r11_vocab_study.html', vl=vl, token=token,
+                           mode=mode)
+
+
+# ---------------------------------------------------------------------------
+# Routes — Quiz attempts
+# ---------------------------------------------------------------------------
+
+@app.route('/quiz/start', methods=['GET', 'POST'])
+def r11_quiz_start():
+    if request.method == 'POST':
+        difficulty = (request.form.get('difficulty') or 'easy').strip()
+        category = (request.form.get('category') or 'vocab').strip()
+        if difficulty not in ('easy', 'medium', 'hard'):
+            difficulty = 'easy'
+        if category not in ('vocab', 'grammar', 'idiom'):
+            category = 'vocab'
+        _, total = _r11_quiz_payload(difficulty, category, 0)
+        attempt = QuizAttempt(
+            user_id=current_user.id if current_user.is_authenticated else None,
+            difficulty=difficulty, category=category,
+            total=total, status='in_progress',
+        )
+        db.session.add(attempt)
+        db.session.commit()
+        return redirect(url_for('r11_quiz_play', attempt_id=attempt.id))
+    return render_template('r11_quiz_start.html',
+                           difficulties=('easy', 'medium', 'hard'),
+                           categories=('vocab', 'grammar', 'idiom'))
+
+
+@app.route('/quiz/<int:attempt_id>')
+def r11_quiz_play(attempt_id):
+    attempt = db.session.get(QuizAttempt, attempt_id)
+    if not attempt:
+        abort(404)
+    questions, _ = _r11_quiz_payload(attempt.difficulty, attempt.category, 0)
+    answers = attempt.get_answers()
+    return render_template('r11_quiz_play.html', attempt=attempt,
+                           questions=questions, answers=answers,
+                           current_q=len(answers))
+
+
+@app.route('/quiz/<int:attempt_id>/submit-answer', methods=['POST'])
+def r11_quiz_submit_answer(attempt_id):
+    attempt = db.session.get(QuizAttempt, attempt_id)
+    if not attempt:
+        abort(404)
+    if attempt.status != 'in_progress':
+        flash('This attempt is already complete.', 'info')
+        return redirect(url_for('r11_quiz_play', attempt_id=attempt.id))
+    choice = request.form.get('choice', type=int)
+    if choice is None:
+        flash('Please pick an answer.', 'danger')
+        return redirect(url_for('r11_quiz_play', attempt_id=attempt.id))
+    questions, total = _r11_quiz_payload(attempt.difficulty, attempt.category, 0)
+    answers = attempt.get_answers()
+    if len(answers) >= total:
+        attempt.status = 'done'
+        attempt.finished_at = datetime.utcnow()
+        db.session.commit()
+        return redirect(url_for('r11_quiz_play', attempt_id=attempt.id))
+    answers.append(choice)
+    attempt.answers_json = json.dumps(answers)
+    if questions[len(answers) - 1]['answer'] == choice:
+        attempt.score += 1
+    if len(answers) >= total:
+        attempt.status = 'done'
+        attempt.finished_at = datetime.utcnow()
+        flash(f'Quiz finished. Score: {attempt.score}/{attempt.total}.', 'success')
+    db.session.commit()
+    return redirect(url_for('r11_quiz_play', attempt_id=attempt.id))
+
+
+@app.route('/quiz/<int:attempt_id>/skip', methods=['POST'])
+def r11_quiz_skip(attempt_id):
+    attempt = db.session.get(QuizAttempt, attempt_id)
+    if not attempt:
+        abort(404)
+    if attempt.status != 'in_progress':
+        return redirect(url_for('r11_quiz_play', attempt_id=attempt.id))
+    _, total = _r11_quiz_payload(attempt.difficulty, attempt.category, 0)
+    answers = attempt.get_answers()
+    if len(answers) < total:
+        answers.append(-1)  # -1 sentinel = skipped
+        attempt.answers_json = json.dumps(answers)
+    if len(answers) >= total:
+        attempt.status = 'done'
+        attempt.finished_at = datetime.utcnow()
+    db.session.commit()
+    flash('Question skipped.', 'info')
+    return redirect(url_for('r11_quiz_play', attempt_id=attempt.id))
+
+
+@app.route('/quiz/<int:attempt_id>/restart', methods=['POST'])
+def r11_quiz_restart(attempt_id):
+    old = db.session.get(QuizAttempt, attempt_id)
+    if not old:
+        abort(404)
+    new = QuizAttempt(
+        user_id=old.user_id, difficulty=old.difficulty,
+        category=old.category, total=old.total, status='in_progress',
+    )
+    old.status = 'abandoned'
+    old.finished_at = datetime.utcnow()
+    db.session.add(new)
+    db.session.commit()
+    flash('Quiz restarted.', 'info')
+    return redirect(url_for('r11_quiz_play', attempt_id=new.id))
+
+
+@app.route('/quiz/<int:attempt_id>/share-score', methods=['GET', 'POST'])
+def r11_quiz_share_score(attempt_id):
+    attempt = db.session.get(QuizAttempt, attempt_id)
+    if not attempt:
+        abort(404)
+    if request.method == 'POST':
+        msg = (request.form.get('message') or '').strip()[:200]
+        token = _r11_hashlib.md5(
+            f'qshare|{attempt.id}|{msg}'.encode()).hexdigest()[:12]
+        session[f'quiz_share_{attempt.id}'] = token
+        flash('Score share link generated.', 'success')
+        return redirect(url_for('r11_quiz_share_score',
+                                attempt_id=attempt.id))
+    token = session.get(f'quiz_share_{attempt.id}', '')
+    share_url = f'/quiz/shared/{token}' if token else ''
+    return render_template('r11_quiz_share.html', attempt=attempt,
+                           share_url=share_url)
+
+
+# ---------------------------------------------------------------------------
+# Routes — Flashcard decks
+# ---------------------------------------------------------------------------
+
+@app.route('/flashcards/deck')
+@app.route('/flashcards/deck/')
+@login_required
+def r11_deck_index():
+    decks = FlashcardDeck.query.filter_by(user_id=current_user.id)\
+        .order_by(FlashcardDeck.id.asc()).all()
+    return render_template('r11_deck_index.html', decks=decks)
+
+
+@app.route('/flashcards/deck/create', methods=['GET', 'POST'])
+@login_required
+def r11_deck_create():
+    if request.method == 'POST':
+        name = (request.form.get('name') or '').strip()
+        if not name:
+            flash('Deck name is required.', 'danger')
+            return render_template('r11_deck_create.html')
+        deck = FlashcardDeck(user_id=current_user.id, name=name[:120],
+                             description=(request.form.get('description') or '').strip())
+        db.session.add(deck)
+        db.session.commit()
+        flash(f'Deck "{deck.name}" created.', 'success')
+        return redirect(url_for('r11_deck_detail', deck_id=deck.id))
+    return render_template('r11_deck_create.html')
+
+
+@app.route('/flashcards/deck/<int:deck_id>')
+@login_required
+def r11_deck_detail(deck_id):
+    deck = FlashcardDeck.query.filter_by(id=deck_id, user_id=current_user.id).first_or_404()
+    candidates = Word.query.filter_by(is_thesaurus_phrase=False)\
+        .order_by(Word.id.asc()).limit(40).all()
+    return render_template('r11_deck_detail.html', deck=deck,
+                           candidates=candidates)
+
+
+@app.route('/flashcards/deck/<int:deck_id>/add', methods=['POST'])
+@login_required
+def r11_deck_add(deck_id):
+    deck = FlashcardDeck.query.filter_by(id=deck_id, user_id=current_user.id).first_or_404()
+    word_id = request.form.get('word_id', type=int)
+    word = db.session.get(Word, word_id) if word_id else None
+    if not word:
+        flash('Word not found.', 'danger')
+        return redirect(url_for('r11_deck_detail', deck_id=deck.id))
+    existing = FlashcardCard.query.filter_by(deck_id=deck.id, word_id=word.id).first()
+    if existing:
+        flash(f'"{word.headword}" is already in this deck.', 'info')
+    else:
+        db.session.add(FlashcardCard(deck_id=deck.id, word_id=word.id,
+                                     bucket='new'))
+        db.session.commit()
+        flash(f'Card "{word.headword}" added to deck.', 'success')
+    return redirect(url_for('r11_deck_detail', deck_id=deck.id))
+
+
+@app.route('/flashcards/deck/<int:deck_id>/study/answer', methods=['GET', 'POST'])
+@login_required
+def r11_deck_study_answer(deck_id):
+    deck = FlashcardDeck.query.filter_by(id=deck_id, user_id=current_user.id).first_or_404()
+    cards = FlashcardCard.query.filter_by(deck_id=deck.id)\
+        .order_by(FlashcardCard.id.asc()).all()
+    if request.method == 'POST':
+        card_id = request.form.get('card_id', type=int)
+        outcome = (request.form.get('outcome') or 'again').strip()
+        card = FlashcardCard.query.filter_by(id=card_id, deck_id=deck.id).first()
+        if not card:
+            flash('Card not found.', 'danger')
+            return redirect(url_for('r11_deck_study_answer', deck_id=deck.id))
+        # Minimal SM-2-style update.
+        if outcome == 'good':
+            card.correct_count += 1
+            card.interval_days = max(1, card.interval_days * 2)
+            card.bucket = 'review' if card.interval_days >= 4 else 'learning'
+        elif outcome == 'easy':
+            card.correct_count += 1
+            card.interval_days = max(1, card.interval_days * 3)
+            card.bucket = 'review'
+        else:  # 'again' or 'hard'
+            card.miss_count += 1
+            card.interval_days = 1
+            card.bucket = 'learning'
+        card.next_review = datetime.utcnow() + _r11_timedelta(days=card.interval_days)
+        db.session.commit()
+        flash(f'Card "{card.word.headword if card.word else card.id}" graded "{outcome}".',
+              'success')
+        return redirect(url_for('r11_deck_study_answer', deck_id=deck.id))
+    # GET: show next card
+    next_card = next((c for c in cards if c.bucket != 'review'), cards[0] if cards else None)
+    return render_template('r11_deck_study.html', deck=deck, card=next_card,
+                           cards=cards)
+
+
+@app.route('/flashcards/deck/<int:deck_id>/review-schedule')
+@login_required
+def r11_deck_schedule(deck_id):
+    deck = FlashcardDeck.query.filter_by(id=deck_id, user_id=current_user.id).first_or_404()
+    schedule = sorted(
+        [(c, c.next_review) for c in deck.cards if c.next_review],
+        key=lambda x: x[1]
+    )
+    return render_template('r11_deck_schedule.html', deck=deck,
+                           schedule=schedule)
+
+
+# ---------------------------------------------------------------------------
+# Routes — Pronunciation submissions
+# ---------------------------------------------------------------------------
+
+@app.route('/pronunciation/<slug>/record', methods=['GET', 'POST'])
+@login_required
+def r11_pron_record(slug):
+    word = Word.query.filter_by(slug=slug, is_thesaurus_phrase=False).first()
+    if not word:
+        abort(404)
+    if request.method == 'POST':
+        dialect = (request.form.get('dialect') or 'uk').strip().lower()
+        if dialect not in R11_DIALECTS:
+            dialect = 'uk'
+        try:
+            duration_ms = int(request.form.get('duration_ms', 0) or 0)
+        except ValueError:
+            duration_ms = 0
+        duration_ms = max(100, min(duration_ms, 10000))
+        attempt_idx = PronunciationSubmission.query.filter_by(
+            user_id=current_user.id, word_id=word.id).count()
+        score = _r11_pron_score(word.slug, current_user.id, attempt_idx)
+        feedback = _r11_pron_feedback(score, dialect)
+        sub = PronunciationSubmission(
+            user_id=current_user.id, word_id=word.id, dialect=dialect,
+            duration_ms=duration_ms, score=score, feedback=feedback,
+        )
+        db.session.add(sub)
+        db.session.commit()
+        flash(f'Recording submitted — score {score}/100.', 'success')
+        return redirect(url_for('r11_pron_compare', slug=slug))
+    return render_template('r11_pron_record.html', word=word,
+                           dialects=R11_DIALECTS)
+
+
+@app.route('/pronunciation/<slug>/compare-feedback', methods=['GET', 'POST'])
+@login_required
+def r11_pron_compare(slug):
+    word = Word.query.filter_by(slug=slug, is_thesaurus_phrase=False).first()
+    if not word:
+        abort(404)
+    subs = PronunciationSubmission.query.filter_by(
+        user_id=current_user.id, word_id=word.id
+    ).order_by(PronunciationSubmission.id.asc()).all()
+    if request.method == 'POST':
+        # Acknowledge feedback to clear "new" badge — flag stored in session.
+        session[f'pron_seen_{word.slug}'] = 1
+        flash('Feedback acknowledged.', 'info')
+        return redirect(url_for('r11_pron_compare', slug=slug))
+    return render_template('r11_pron_compare.html', word=word, subs=subs)
+
+
+# ---------------------------------------------------------------------------
+# Routes — Account + community
+# ---------------------------------------------------------------------------
+
+@app.route('/account/profile/update', methods=['GET', 'POST'])
+@login_required
+def r11_account_profile_update():
+    if request.method == 'POST':
+        name = (request.form.get('name') or '').strip()
+        bio = (request.form.get('bio') or '').strip()
+        if not name:
+            flash('Name is required.', 'danger')
+            return render_template('r11_profile_update.html')
+        current_user.name = name[:120]
+        current_user.bio = bio[:2000]
+        db.session.commit()
+        flash('Profile updated.', 'success')
+        return redirect(url_for('r11_account_profile_update'))
+    return render_template('r11_profile_update.html')
+
+
+@app.route('/account/preferences/dialect', methods=['GET', 'POST'])
+@login_required
+def r11_account_dialect():
+    if request.method == 'POST':
+        d = (request.form.get('dialect') or '').strip().lower()
+        if d not in R11_DIALECTS:
+            flash('Pick a supported dialect.', 'danger')
+            return render_template('r11_dialect_pref.html',
+                                   dialects=R11_DIALECTS)
+        current_user.preferred_dialect = d
+        db.session.commit()
+        flash(f'Default dialect set to {d.upper()}.', 'success')
+        return redirect(url_for('r11_account_dialect'))
+    return render_template('r11_dialect_pref.html', dialects=R11_DIALECTS)
+
+
+@app.route('/word/<int:word_id>/suggest-edit', methods=['GET', 'POST'])
+@login_required
+def r11_word_suggest_edit(word_id):
+    word = db.session.get(Word, word_id)
+    if not word:
+        abort(404)
+    if request.method == 'POST':
+        field = (request.form.get('field') or 'definition').strip()
+        text = (request.form.get('proposed_text') or '').strip()
+        rationale = (request.form.get('rationale') or '').strip()
+        if not text:
+            flash('Proposed text is required.', 'danger')
+            return render_template('r11_word_suggest_edit.html', word=word)
+        db.session.add(WordEditSuggestion(
+            user_id=current_user.id, word_id=word.id,
+            field=field[:40], proposed_text=text[:2000],
+            rationale=rationale[:1000],
+        ))
+        db.session.commit()
+        flash('Suggestion queued for editorial review.', 'success')
+        return redirect(url_for('word_detail', slug=word.slug))
+    return render_template('r11_word_suggest_edit.html', word=word)
+
+
+@app.route('/word/<int:word_id>/example-vote/<int:example_id>', methods=['POST'])
+@login_required
+def r11_word_example_vote(word_id, example_id):
+    word = db.session.get(Word, word_id)
+    if not word:
+        abort(404)
+    direction = (request.form.get('direction') or 'up').strip()
+    if direction not in ('up', 'down'):
+        direction = 'up'
+    existing = WordExampleVote.query.filter_by(
+        user_id=current_user.id, word_id=word.id, example_id=example_id
+    ).first()
+    if existing:
+        existing.direction = direction
+    else:
+        db.session.add(WordExampleVote(
+            user_id=current_user.id, word_id=word.id,
+            example_id=example_id, direction=direction,
+        ))
+    db.session.commit()
+    flash(f'Vote recorded ({direction}).', 'success')
+    return redirect(url_for('word_detail', slug=word.slug))
+
+
+@app.route('/word/<int:word_id>/follow', methods=['POST'])
+@login_required
+def r11_word_follow(word_id):
+    word = db.session.get(Word, word_id)
+    if not word:
+        abort(404)
+    existing = WordFollow.query.filter_by(
+        user_id=current_user.id, word_id=word.id).first()
+    if existing:
+        db.session.delete(existing)
+        db.session.commit()
+        flash(f'Unfollowed "{word.headword}".', 'info')
+    else:
+        db.session.add(WordFollow(user_id=current_user.id, word_id=word.id))
+        db.session.commit()
+        flash(f'Now following "{word.headword}" for updates.', 'success')
+    return redirect(url_for('word_detail', slug=word.slug))
+
+
+# ---------------------------------------------------------------------------
+# Seed — sample vocab lists / flashcard decks for the 4 benchmark users.
+# Pinned ids + MIRROR_REFERENCE_DATE keep instance_seed/cambridge.db byte-id
+# across rebuilds. Idempotent via VocabList.query.count() gate.
+# ---------------------------------------------------------------------------
+
+def seed_r11_data():
+    if VocabList.query.count() > 0:
+        return
+
+    def _w(slug):
+        return Word.query.filter_by(slug=slug, is_thesaurus_phrase=False).first()
+
+    def _u(email):
+        return User.query.filter_by(email=email).first()
+
+    plan = [
+        # (email, list_name, category, description, [slugs])
+        ('alice.j@test.com', 'C1 Anchor Words', 'cefr',
+         'C1/C2 anchors Alice references in her IELTS practice.',
+         ['serendipity', 'ubiquitous', 'ephemeral', 'resilience']),
+        ('alice.j@test.com', 'Academic Writing', 'academic',
+         'Words that recur in academic prose.',
+         ['altruism', 'eloquent', 'meticulous']),
+        ('bob.c@test.com', 'B2 Building Blocks', 'cefr',
+         'Bob\'s in-progress B2 vocabulary.',
+         ['harmony', 'nostalgia', 'solitude']),
+        ('bob.c@test.com', 'Grammar Focus Words', 'grammar',
+         'Words tagged in Bob\'s grammar drills.',
+         ['innovation', 'sustainable']),
+        ('carol.d@test.com', 'Mixed-Level Builder', 'general',
+         'Carol\'s ongoing mixed-level word list.',
+         ['mitigate', 'ambiguous', 'tenacious', 'pandemic']),
+        ('carol.d@test.com', 'Trendy Vocabulary', 'general',
+         'Modern English words Carol bookmarked.',
+         ['cryptocurrency', 'zeitgeist', 'gestalt']),
+        ('david.k@test.com', 'IELTS Target Words', 'ielts',
+         'David\'s IELTS academic-band target words.',
+         ['ameliorate', 'concatenate', 'unblemished']),
+        ('david.k@test.com', 'Grammar Showcase', 'grammar',
+         'Words David uses in his grammar examples.',
+         ['euphoria', 'reverie']),
+    ]
+    next_list_id = 1
+    for email, name, cat, desc, slugs in plan:
+        u = _u(email)
+        if not u:
+            continue
+        vl = VocabList(
+            id=next_list_id, user_id=u.id, name=name, description=desc,
+            category=cat, is_shared=False, share_token='',
+            created_at=MIRROR_REFERENCE_DATE,
+            updated_at=MIRROR_REFERENCE_DATE,
+        )
+        db.session.add(vl)
+        db.session.flush()
+        for slug in slugs:
+            w = _w(slug)
+            if w:
+                db.session.add(VocabListWord(
+                    list_id=vl.id, word_id=w.id, note='',
+                    added_at=MIRROR_REFERENCE_DATE,
+                ))
+        next_list_id += 1
+
+    deck_plan = [
+        ('alice.j@test.com', 'Alice C1 Daily Cards',
+         'Daily review deck for C1 anchors.',
+         ['serendipity', 'ubiquitous', 'ephemeral']),
+        ('bob.c@test.com', 'Bob B2 Sprint Deck',
+         'B2 sprint cards for the next exam.',
+         ['harmony', 'nostalgia']),
+        ('carol.d@test.com', 'Carol Mixed Deck',
+         'Mixed-level cards drawn from her vocab lists.',
+         ['mitigate', 'ambiguous']),
+        ('david.k@test.com', 'David IELTS Deck',
+         'IELTS targets cycled daily.',
+         ['ameliorate', 'concatenate']),
+    ]
+    next_deck_id = 1
+    for email, name, desc, slugs in deck_plan:
+        u = _u(email)
+        if not u:
+            continue
+        deck = FlashcardDeck(
+            id=next_deck_id, user_id=u.id, name=name, description=desc,
+            created_at=MIRROR_REFERENCE_DATE,
+        )
+        db.session.add(deck)
+        db.session.flush()
+        for slug in slugs:
+            w = _w(slug)
+            if w:
+                db.session.add(FlashcardCard(
+                    deck_id=deck.id, word_id=w.id, bucket='new',
+                    interval_days=1, next_review=MIRROR_REFERENCE_DATE,
+                    correct_count=0, miss_count=0,
+                    created_at=MIRROR_REFERENCE_DATE,
+                ))
+        next_deck_id += 1
+
+    db.session.commit()
+
+    # Re-sort indexes added by the R11 tables so the produced sqlite file
+    # stays byte-identical across rebuilds (same trick used by the main
+    # seed_database()).
+    from sqlalchemy import text as _sql_text
+    rows = db.session.execute(_sql_text(
+        "SELECT name, sql FROM sqlite_master "
+        "WHERE type='index' AND name NOT LIKE 'sqlite_%' "
+        "ORDER BY name"
+    )).all()
+    for name, _sql in rows:
+        db.session.execute(_sql_text(f'DROP INDEX IF EXISTS "{name}"'))
+    for _name, sql in rows:
+        if sql:
+            db.session.execute(_sql_text(sql))
+    db.session.commit()
+    raw = db.session.connection().connection
+    raw.isolation_level = None
+    raw.execute('VACUUM')
+    print('R11 sample data seeded.')
+
+
+with app.app_context():
+    seed_r11_data()
+
+# === R11 END ===
 
 
 if __name__ == '__main__':

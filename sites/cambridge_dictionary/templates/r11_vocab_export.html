@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block title %}Export {{ vl.name }} | Cambridge Dictionary Plus{% endblock %}
+{% block content %}
+<div class="container r11-vocab-export">
+  <nav class="breadcrumb">
+    <a href="{{ url_for('plus_index') }}">Plus</a> &raquo;
+    <a href="{{ url_for('r11_vocab_list_index') }}">Word lists</a> &raquo;
+    <a href="{{ url_for('r11_vocab_detail', list_id=vl.id) }}">{{ vl.name }}</a> &raquo;
+    <strong>Export CSV</strong>
+  </nav>
+  <h1>Export "{{ vl.name }}" to CSV</h1>
+  <p class="r11-blurb">CSV columns: <code>headword,pos,level,note</code>. UTF-8 encoded.</p>
+  <form method="POST" action="{{ url_for('r11_vocab_export', list_id=vl.id) }}" class="r11-form">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <p class="r11-meta">{{ vl.words|length }} words ready for export.</p>
+    <button type="submit" class="cta">Download CSV</button>
+  </form>
+</div>
+{% endblock %}

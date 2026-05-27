@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block title %}Dialect preference | Cambridge Dictionary Plus{% endblock %}
+{% block content %}
+<div class="container r11-dialect-pref">
+  <nav class="breadcrumb">
+    <a href="{{ url_for('account') }}">Account</a> &raquo;
+    <strong>Dialect preference</strong>
+  </nav>
+  <h1>Default pronunciation dialect</h1>
+  <p class="r11-blurb">Pick the dialect to highlight on word entries by default. The site-wide UK / US switcher in the navbar still works on a per-page basis.</p>
+  <form method="POST" action="{{ url_for('r11_account_dialect') }}" class="r11-form">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <label>Dialect
+      <select name="dialect">
+        {% for d in dialects %}
+          <option value="{{ d }}" {% if current_user.preferred_dialect == d %}selected{% endif %}>
+            {{ d|upper }} ({% if d == 'uk' %}British{% elif d == 'us' %}American{% elif d == 'au' %}Australian{% elif d == 'ca' %}Canadian{% endif %})
+          </option>
+        {% endfor %}
+      </select>
+    </label>
+    <button type="submit" class="cta">Save dialect</button>
+  </form>
+  <p class="r11-meta">Current default: <strong>{{ current_user.preferred_dialect|upper or 'not set' }}</strong></p>
+</div>
+{% endblock %}

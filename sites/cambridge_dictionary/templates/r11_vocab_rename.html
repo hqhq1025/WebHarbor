@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block title %}Rename {{ vl.name }} | Cambridge Dictionary Plus{% endblock %}
+{% block content %}
+<div class="container r11-vocab-rename">
+  <nav class="breadcrumb">
+    <a href="{{ url_for('plus_index') }}">Plus</a> &raquo;
+    <a href="{{ url_for('r11_vocab_list_index') }}">Word lists</a> &raquo;
+    <a href="{{ url_for('r11_vocab_detail', list_id=vl.id) }}">{{ vl.name }}</a> &raquo;
+    <strong>Rename</strong>
+  </nav>
+  <h1>Rename list</h1>
+  <form method="POST" action="{{ url_for('r11_vocab_rename', list_id=vl.id) }}" class="r11-form">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <label>New name
+      <input type="text" name="name" value="{{ vl.name }}" required maxlength="120">
+    </label>
+    <label>Description
+      <textarea name="description" rows="3" maxlength="500">{{ vl.description }}</textarea>
+    </label>
+    <button type="submit" class="cta">Save changes</button>
+  </form>
+</div>
+{% endblock %}

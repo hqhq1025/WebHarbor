@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block title %}Study mode — {{ vl.name }} | Cambridge Dictionary Plus{% endblock %}
+{% block content %}
+<div class="container r11-vocab-study">
+  <nav class="breadcrumb">
+    <a href="{{ url_for('plus_index') }}">Plus</a> &raquo;
+    <a href="{{ url_for('r11_vocab_detail', list_id=vl.id) }}">{{ vl.name }}</a> &raquo;
+    <strong>Study mode</strong>
+  </nav>
+  <h1>Study "{{ vl.name }}"</h1>
+  {% if token %}
+    <p class="r11-meta">Active session token: <code>{{ token }}</code> (mode: <strong>{{ mode }}</strong>).</p>
+  {% else %}
+    <p class="r11-blurb">Pick a study mode to start a focused session.</p>
+  {% endif %}
+  <form method="POST" action="{{ url_for('r11_vocab_study_start', list_id=vl.id) }}" class="r11-form">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <label>Mode
+      <select name="mode">
+        <option value="flip">flip cards (definition → headword)</option>
+        <option value="recall">recall (headword → definition)</option>
+        <option value="cloze">cloze (sentence with blank)</option>
+        <option value="audio">audio match (UK pronunciation)</option>
+      </select>
+    </label>
+    <button type="submit" class="cta">Start study session</button>
+  </form>
+
+  <section class="r11-deck-preview">
+    <h2>Cards in this list ({{ vl.words|length }})</h2>
+    <ol>
+      {% for vlw in vl.words %}
+        <li>{{ vlw.word.headword }} <em>({{ vlw.word.pos }})</em></li>
+      {% endfor %}
+    </ol>
+  </section>
+</div>
+{% endblock %}

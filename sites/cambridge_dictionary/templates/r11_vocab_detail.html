@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+{% block title %}{{ vl.name }} | Word list | Cambridge Dictionary Plus{% endblock %}
+{% block content %}
+<div class="container r11-vocab-detail" data-list-id="{{ vl.id }}">
+  <nav class="breadcrumb">
+    <a href="{{ url_for('plus_index') }}">Plus</a> &raquo;
+    <a href="{{ url_for('r11_vocab_list_index') }}">Word lists</a> &raquo;
+    <strong>{{ vl.name }}</strong>
+  </nav>
+  <header class="r11-list-header">
+    <h1>{{ vl.name }}</h1>
+    <p class="r11-meta">Category: <strong>{{ vl.category }}</strong> &middot; Words: <strong>{{ vl.words|length }}</strong> &middot; Shared: <strong>{{ 'yes' if vl.is_shared else 'no' }}</strong></p>
+    {% if vl.description %}<p class="r11-desc">{{ vl.description }}</p>{% endif %}
+    <ul class="r11-actions">
+      <li><a href="{{ url_for('r11_vocab_rename', list_id=vl.id) }}">Rename</a></li>
+      <li><a href="{{ url_for('r11_vocab_share', list_id=vl.id) }}">Share</a></li>
+      <li><a href="{{ url_for('r11_vocab_export', list_id=vl.id) }}">Export CSV</a></li>
+      <li><a href="{{ url_for('r11_vocab_study_start', list_id=vl.id) }}">Study mode</a></li>
+    </ul>
+  </header>
+
+  <section class="r11-list-words">
+    <h2>Words on this list</h2>
+    {% if vl.words %}
+      <table class="r11-table">
+        <thead><tr><th>Headword</th><th>Part of speech</th><th>Level</th><th>Note</th><th></th></tr></thead>
+        <tbody>
+        {% for vlw in vl.words %}
+          <tr>
+            <td><a href="{{ url_for('word_detail', slug=vlw.word.slug) }}">{{ vlw.word.headword }}</a></td>
+            <td>{{ vlw.word.pos }}</td>
+            <td>{{ vlw.word.level }}</td>
+            <td>{{ vlw.note }}</td>
+            <td>
+              <form method="POST" action="{{ url_for('r11_vocab_remove_word', list_id=vl.id, word_id=vlw.word.id) }}" style="display:inline">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button type="submit" class="r11-remove">remove</button>
+              </form>
+            </td>
+          </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    {% else %}
+      <p class="r11-empty">This list is empty. Add a word from the picker below.</p>
+    {% endif %}
+  </section>
+
+  <section class="r11-add-word">
+    <h2>Add a word</h2>
+    <form method="POST" action="{{ url_for('r11_vocab_add_word', list_id=vl.id) }}" class="r11-form">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <label>Pick a word
+        <select name="word_id" required>
+          {% for w in candidates %}
+            <option value="{{ w.id }}">{{ w.headword }} ({{ w.pos }}, {{ w.level or 'no level' }})</option>
+          {% endfor %}
+        </select>
+      </label>
+      <label>Note (optional)
+        <input type="text" name="note" maxlength="200" placeholder="Why this word matters to you">
+      </label>
+      <button type="submit" class="cta">Add to list</button>
+    </form>
+  </section>
+</div>
+{% endblock %}

@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}Share {{ vl.name }} | Cambridge Dictionary Plus{% endblock %}
+{% block content %}
+<div class="container r11-vocab-share">
+  <nav class="breadcrumb">
+    <a href="{{ url_for('plus_index') }}">Plus</a> &raquo;
+    <a href="{{ url_for('r11_vocab_list_index') }}">Word lists</a> &raquo;
+    <a href="{{ url_for('r11_vocab_detail', list_id=vl.id) }}">{{ vl.name }}</a> &raquo;
+    <strong>Share</strong>
+  </nav>
+  <h1>Share "{{ vl.name }}"</h1>
+  <p class="r11-blurb">When sharing is on, anyone with the link below can view the list read-only.</p>
+  <form method="POST" action="{{ url_for('r11_vocab_share', list_id=vl.id) }}" class="r11-form">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <label class="r11-checkbox">
+      <input type="checkbox" name="is_shared" value="1" {% if vl.is_shared %}checked{% endif %}>
+      Enable public sharing
+    </label>
+    <button type="submit" class="cta">Save sharing preference</button>
+  </form>
+  {% if share_url %}
+    <p class="r11-share-link">Public link: <code>{{ share_url }}</code></p>
+  {% else %}
+    <p class="r11-share-link">Sharing is currently off.</p>
+  {% endif %}
+</div>
+{% endblock %}

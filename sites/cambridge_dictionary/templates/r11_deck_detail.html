@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% block title %}{{ deck.name }} | Flashcard deck | Cambridge Dictionary Plus{% endblock %}
+{% block content %}
+<div class="container r11-deck-detail" data-deck-id="{{ deck.id }}">
+  <nav class="breadcrumb">
+    <a href="{{ url_for('plus_index') }}">Plus</a> &raquo;
+    <a href="{{ url_for('r11_deck_index') }}">Flashcard decks</a> &raquo;
+    <strong>{{ deck.name }}</strong>
+  </nav>
+  <header class="r11-deck-header">
+    <h1>{{ deck.name }}</h1>
+    {% if deck.description %}<p class="r11-desc">{{ deck.description }}</p>{% endif %}
+    <p class="r11-meta">{{ deck.cards|length }} cards.
+      <a href="{{ url_for('r11_deck_study_answer', deck_id=deck.id) }}">Start study</a> |
+      <a href="{{ url_for('r11_deck_schedule', deck_id=deck.id) }}">Review schedule</a>
+    </p>
+  </header>
+
+  <section class="r11-deck-cards">
+    <h2>Cards in this deck</h2>
+    {% if deck.cards %}
+      <table class="r11-table">
+        <thead><tr><th>Headword</th><th>Bucket</th><th>Interval (days)</th><th>Next review</th><th>Correct / miss</th></tr></thead>
+        <tbody>
+        {% for c in deck.cards %}
+          <tr>
+            <td><a href="{{ url_for('word_detail', slug=c.word.slug) }}">{{ c.word.headword }}</a></td>
+            <td>{{ c.bucket }}</td>
+            <td>{{ c.interval_days }}</td>
+            <td>{{ c.next_review.strftime('%Y-%m-%d') if c.next_review else '—' }}</td>
+            <td>{{ c.correct_count }} / {{ c.miss_count }}</td>
+          </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    {% else %}
+      <p class="r11-empty">No cards yet.</p>
+    {% endif %}
+  </section>
+
+  <section class="r11-deck-add">
+    <h2>Add a card</h2>
+    <form method="POST" action="{{ url_for('r11_deck_add', deck_id=deck.id) }}" class="r11-form">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <label>Pick a word
+        <select name="word_id" required>
+          {% for w in candidates %}
+            <option value="{{ w.id }}">{{ w.headword }} ({{ w.pos }})</option>
+          {% endfor %}
+        </select>
+      </label>
+      <button type="submit" class="cta">Add card</button>
+    </form>
+  </section>
+</div>
+{% endblock %}
