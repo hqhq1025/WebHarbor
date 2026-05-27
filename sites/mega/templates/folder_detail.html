@@ -9,7 +9,7 @@
 <section class="file-grid">
   {% for item in items %}
     <a class="file-tile {{ item.item_type }}" href="{{ url_for('file_detail', slug=item.slug) }}">
-      <img class="file-thumb" src="{{ image_url(ext_thumb(item.name, item.item_type)) }}" alt="{{ item.name }} thumbnail">
+      <img loading="lazy" decoding="async" class="file-thumb" src="{{ image_url(ext_thumb(item.name, item.item_type)) }}" alt="{{ item.name }} thumbnail">
       <strong>{{ item.name }}</strong>
       <span>{{ item.size_mb|size }} · {{ item.modified_at }}</span>
       {% if item.shared_with %}<span class="badge shared">Shared with {{ item.shared_with }}</span>{% endif %}

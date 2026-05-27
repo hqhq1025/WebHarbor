@@ -3,7 +3,7 @@
 {% block content %}
 <section class="page-head"><h1>Transfer preferences</h1></section>
 <form class="form-card" method="post">
-  <img class="hero" src="{{ image_url('Fast-downloads-and-uploads.png') }}" alt="Transfers">
+  <img loading="lazy" decoding="async" class="hero" src="{{ image_url('Fast-downloads-and-uploads.png') }}" alt="Transfers">
   <label>Upload limit (Mbps, 0 for unlimited)</label>
   <input name="upload_limit_mbps" type="number" min="0" value="{{ cfg.upload_limit_mbps }}">
   <label>Download limit (Mbps, 0 for unlimited)</label>

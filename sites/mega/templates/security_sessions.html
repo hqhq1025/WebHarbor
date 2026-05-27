@@ -7,7 +7,7 @@
   <div class="device-grid">
     {% for d in devices %}
       <article class="device-card">
-        <img src="{{ image_url(d.icon) }}" alt="{{ d.platform }}">
+        <img loading="lazy" decoding="async" src="{{ image_url(d.icon) }}" alt="{{ d.platform }}">
         <strong>{{ d.name }}</strong>
         <span class="muted">{{ d.platform }} · {{ d.client_version }}</span>
         <span>Last seen: {{ d.last_seen }}</span>

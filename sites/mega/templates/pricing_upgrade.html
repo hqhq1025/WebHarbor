@@ -3,7 +3,7 @@
 {% block content %}
 <section class="page-head"><h1>Upgrade to {{ plan.name }}</h1><p>{{ plan.tagline }}</p></section>
 <form class="form-card" method="post">
-  <img class="hero" src="{{ image_url(plan_icon(plan.category)) }}" alt="{{ plan.name }}">
+  <img loading="lazy" decoding="async" class="hero" src="{{ image_url(plan_icon(plan.category)) }}" alt="{{ plan.name }}">
   <label>Billing cycle</label>
   <select name="billing_cycle">
     <option value="monthly">Monthly</option>

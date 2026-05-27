@@ -9,7 +9,7 @@
 <section class="version-list">
   {% for v in versions %}
     <article class="version-row {% if v.current %}current{% endif %}">
-      <img class="version-thumb" src="{{ image_url(ext_thumb(item.name, item.item_type)) }}" alt="{{ item.name }} version {{ v.version_number }}">
+      <img loading="lazy" decoding="async" class="version-thumb" src="{{ image_url(ext_thumb(item.name, item.item_type)) }}" alt="{{ item.name }} version {{ v.version_number }}">
       <div>
         <strong>v{{ v.version_number }}</strong>{% if v.current %} <span class="badge">current</span>{% endif %}
         <p>{{ v.note }}</p>

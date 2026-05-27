@@ -2,7 +2,7 @@
 {% block title %}Chat — {{ thread.name }}{% endblock %}
 {% block content %}
 <section class="page-head chat-head">
-  <img class="avatar" src="{{ image_url(thread.avatar) }}" alt="{{ thread.name }}">
+  <img loading="lazy" decoding="async" class="avatar" src="{{ image_url(thread.avatar) }}" alt="{{ thread.name }}">
   <div>
     <h1>{{ thread.name }}</h1>
     <p class="muted">{{ thread.kind }} · members {{ thread.member_emails }}</p>
@@ -19,7 +19,7 @@
       <p>{{ m.body }}</p>
       {% if m.attachment_name %}
         <span class="attachment">
-          <img class="inline-icon" src="{{ image_url('MEGA-icon-cloud.png') }}" alt="attachment">
+          <img loading="lazy" decoding="async" class="inline-icon" src="{{ image_url('MEGA-icon-cloud.png') }}" alt="attachment">
           {{ m.attachment_name }}
         </span>
       {% endif %}

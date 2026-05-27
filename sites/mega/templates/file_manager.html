@@ -24,7 +24,7 @@
   <div class="thumb-strip">
     {% for r in recent %}
       <a class="thumb-card" href="{{ url_for('file_detail', slug=r.slug) }}">
-        <img src="{{ image_url(ext_thumb(r.name, r.item_type)) }}" alt="{{ r.name }} thumbnail">
+        <img loading="lazy" decoding="async" src="{{ image_url(ext_thumb(r.name, r.item_type)) }}" alt="{{ r.name }} thumbnail">
         <strong>{{ r.name }}</strong>
         <span>{{ r.size_mb|size }}</span>
       </a>
@@ -35,7 +35,7 @@
   <div class="file-grid">
     {% for item in items %}
       <a class="file-tile {{ item.item_type }}" href="{{ url_for('file_detail', slug=item.slug) }}">
-        <img class="file-thumb" src="{{ image_url(ext_thumb(item.name, item.item_type)) }}" alt="{{ item.name }} icon">
+        <img loading="lazy" decoding="async" class="file-thumb" src="{{ image_url(ext_thumb(item.name, item.item_type)) }}" alt="{{ item.name }} icon">
         <strong>{{ item.name }}</strong>
         <span class="muted">{{ item.folder }}</span>
         <span>{{ item.size_mb|size }} · {{ item.sync_status }}</span>

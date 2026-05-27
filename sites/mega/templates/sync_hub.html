@@ -10,12 +10,12 @@
       <a class="button ghost" href="{{ url_for('sync_mobile') }}">Mobile apps</a>
     </div>
   </div>
-  <div class="hero-media"><img src="{{ image_url('Sync-img-1-1.png') }}" alt="Sync overview"></div>
+  <div class="hero-media"><img loading="lazy" decoding="async" src="{{ image_url('Sync-img-1-1.png') }}" alt="Sync overview"></div>
 </section>
 <section class="platform-strip">
   {% for plat, icon in desktop_devices.items() %}
     <div class="platform-card">
-      <img src="{{ image_url(icon) }}" alt="{{ plat }} icon">
+      <img loading="lazy" decoding="async" src="{{ image_url(icon) }}" alt="{{ plat }} icon">
       <strong>{{ plat }}</strong>
     </div>
   {% endfor %}

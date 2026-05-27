@@ -10,7 +10,7 @@
 <section class="download-grid">
   {% for d in downloads %}
     <a class="download-card" href="{{ url_for('download_detail', download_id=d.id) }}">
-      <img src="{{ image_url(d.icon) }}" alt="{{ d.platform }}">
+      <img loading="lazy" decoding="async" src="{{ image_url(d.icon) }}" alt="{{ d.platform }}">
       <span>{{ d.product }} · {{ d.platform }}</span>
       <h3>{{ d.package_name }}</h3>
       <p>{{ d.version }} · {{ d.size_mb }} MB · {{ d.architecture }}</p>

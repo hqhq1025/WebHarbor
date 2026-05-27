@@ -14,7 +14,7 @@
   </div>
 {% else %}
   <section class="share-detail">
-    <img class="hero" src="{{ image_url('share-1.png') }}" alt="Shared item preview">
+    <img loading="lazy" decoding="async" class="hero" src="{{ image_url('share-1.png') }}" alt="Shared item preview">
     <div>
       <h2>{{ item.name }}</h2>
       <p>{{ item.content_summary }}</p>

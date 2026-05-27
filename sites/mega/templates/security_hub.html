@@ -4,25 +4,25 @@
 <section class="page-head"><h1>Security overview</h1></section>
 <section class="security-cards">
   <article class="form-card">
-    <img class="hero" src="{{ image_url('Sec-img-2-1.png') }}" alt="Encryption">
+    <img loading="lazy" decoding="async" class="hero" src="{{ image_url('Sec-img-2-1.png') }}" alt="Encryption">
     <h2>Zero-knowledge encryption</h2>
     <p>Every file is encrypted on your device before upload. Keys live with you, not MEGA.</p>
     <a class="text-link" href="{{ url_for('settings_encryption') }}">Encryption settings</a>
   </article>
   <article class="form-card">
-    <img class="hero" src="{{ image_url('Sec-img-3.png') }}" alt="Two-factor">
+    <img loading="lazy" decoding="async" class="hero" src="{{ image_url('Sec-img-3.png') }}" alt="Two-factor">
     <h2>Two-factor authentication</h2>
     <p>Status: {% if current_user.two_factor_enabled %}Enabled{% else %}Disabled{% endif %}.</p>
     <a class="button" href="{{ url_for('security_2fa') }}">Manage 2FA</a>
   </article>
   <article class="form-card">
-    <img class="hero" src="{{ image_url('Sec-img-4.png') }}" alt="Recovery key">
+    <img loading="lazy" decoding="async" class="hero" src="{{ image_url('Sec-img-4.png') }}" alt="Recovery key">
     <h2>Master recovery key</h2>
     <p>Last backed up: {{ cfg.master_key_backed_up_at or 'never' }}.</p>
     <a class="button" href="{{ url_for('security_master_key_backup') }}">Back up master key</a>
   </article>
   <article class="form-card">
-    <img class="hero" src="{{ image_url('Sec-img-5.png') }}" alt="Sessions">
+    <img loading="lazy" decoding="async" class="hero" src="{{ image_url('Sec-img-5.png') }}" alt="Sessions">
     <h2>Active sessions</h2>
     <a class="button" href="{{ url_for('security_sessions') }}">Manage sessions</a>
   </article>

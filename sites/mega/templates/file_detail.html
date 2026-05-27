@@ -3,7 +3,7 @@
 {% block content %}
 <section class="detail-layout">
   <div>
-    <img class="file-hero" src="{{ image_url(ext_thumb(item.name, item.item_type)) }}" alt="{{ item.name }} preview">
+    <img loading="lazy" decoding="async" class="file-hero" src="{{ image_url(ext_thumb(item.name, item.item_type)) }}" alt="{{ item.name }} preview">
     <p class="eyebrow">{{ item.folder }}</p>
     <h1>{{ item.name }}</h1>
     <p>{{ item.content_summary }}</p>

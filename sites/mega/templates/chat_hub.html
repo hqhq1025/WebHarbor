@@ -8,7 +8,7 @@
 <section class="chat-list">
   {% for t in threads %}
     <a class="chat-row {% if t.starred %}starred{% endif %} {% if t.unread %}unread{% endif %}" href="{{ url_for('chat_thread', slug=t.slug) }}">
-      <img class="avatar" src="{{ image_url(t.avatar) }}" alt="{{ t.name }} avatar">
+      <img loading="lazy" decoding="async" class="avatar" src="{{ image_url(t.avatar) }}" alt="{{ t.name }} avatar">
       <div>
         <strong>{{ t.name }}</strong>
         <span class="muted">{{ t.kind }} · last activity {{ t.last_message_at }}</span>

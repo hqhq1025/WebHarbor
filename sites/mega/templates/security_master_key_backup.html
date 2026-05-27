@@ -3,7 +3,7 @@
 {% block content %}
 <section class="page-head"><h1>Back up your master recovery key</h1></section>
 <form class="form-card" method="post">
-  <img class="hero" src="{{ image_url('keys-icon.png') }}" alt="Master key">
+  <img loading="lazy" decoding="async" class="hero" src="{{ image_url('keys-icon.png') }}" alt="Master key">
   <p>Without your master key, MEGA cannot recover your encrypted files. Print or save the key offline before continuing.</p>
   <p>Last backup: <strong>{{ cfg.master_key_backed_up_at or 'never' }}</strong>.</p>
   <button type="submit">Confirm offline backup</button>

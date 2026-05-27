@@ -7,7 +7,7 @@
     <p>{{ industry.tagline }}</p>
     {% if plan %}<a class="button" href="{{ url_for('plan_detail', slug=plan.slug) }}">Recommended: {{ plan.name }}</a>{% endif %}
   </div>
-  <div class="hero-media"><img src="{{ image_url(industry.hero_image) }}" alt="{{ industry.title }}"></div>
+  <div class="hero-media"><img loading="lazy" decoding="async" src="{{ image_url(industry.hero_image) }}" alt="{{ industry.title }}"></div>
 </section>
 <section class="industry-body">
   <p>{{ industry.body }}</p>

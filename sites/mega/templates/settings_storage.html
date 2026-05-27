@@ -3,7 +3,7 @@
 {% block content %}
 <section class="page-head"><h1>Storage</h1><p>{{ "%.2f"|format(total_gb) }} GB used.</p></section>
 <section class="storage-breakdown">
-  <img class="hero" src="{{ image_url('MEGA-Backup-visibility-of-all-your-backups.png') }}" alt="Backup overview">
+  <img loading="lazy" decoding="async" class="hero" src="{{ image_url('MEGA-Backup-visibility-of-all-your-backups.png') }}" alt="Backup overview">
   <ul>
     {% for folder, mb in breakdown %}
       <li><strong>{{ folder }}</strong><span>{{ mb|size }}</span></li>

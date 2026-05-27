@@ -3,7 +3,7 @@
 {% block content %}
 <section class="page-head"><h1>Two-factor authentication</h1></section>
 <form class="form-card" method="post">
-  <img class="hero" src="{{ image_url('image-otp-code.png') }}" alt="OTP code">
+  <img loading="lazy" decoding="async" class="hero" src="{{ image_url('image-otp-code.png') }}" alt="OTP code">
   <p>Two-factor authentication adds an extra verification step at sign-in. MEGA supports authenticator apps such as Aegis, 1Password, and Authy.</p>
   <label>
     <input type="checkbox" name="enable" {% if current_user.two_factor_enabled %}checked{% endif %}>

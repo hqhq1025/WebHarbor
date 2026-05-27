@@ -3,7 +3,7 @@
 {% block content %}
 <section class="page-head"><h1>Account settings</h1></section>
 <section class="settings-detail">
-  <img class="hero" src="{{ image_url('One-account-more-control.png') }}" alt="Account control">
+  <img loading="lazy" decoding="async" class="hero" src="{{ image_url('One-account-more-control.png') }}" alt="Account control">
   <dl>
     <div><dt>Email</dt><dd>{{ current_user.email }}</dd></div>
     <div><dt>Display name</dt><dd>{{ current_user.display_name }}</dd></div>

@@ -7,7 +7,7 @@
   <tbody>
   {% for link in links %}
     <tr>
-      <td><img src="{{ image_url('share-1.png') }}" alt="Share icon" class="row-icon"></td>
+      <td><img loading="lazy" decoding="async" src="{{ image_url('share-1.png') }}" alt="Share icon" class="row-icon"></td>
       <td>{{ link.title }}</td>
       <td><a href="{{ url_for('share_link_public', token=link.token) }}">{{ link.token }}</a></td>
       <td>{{ link.created_at }}</td>

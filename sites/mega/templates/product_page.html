@@ -11,7 +11,7 @@
       <a class="button ghost" href="{{ url_for('downloads') }}">Downloads</a>
     </div>
   </div>
-  <div class="hero-media"><img src="{{ image_url(page.hero_image) }}" alt="{{ page.title }}"></div>
+  <div class="hero-media"><img loading="lazy" decoding="async" src="{{ image_url(page.hero_image) }}" alt="{{ page.title }}"></div>
 </section>
 <section class="section split">
   <div>

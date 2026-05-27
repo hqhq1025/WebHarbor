@@ -3,7 +3,7 @@
 {% block content %}
 <section class="page-head"><h1>Notifications</h1><p>Choose which alerts MEGA sends you.</p></section>
 <form class="form-card" method="post">
-  <img class="hero" src="{{ image_url('MEGA-icon-message-call.png') }}" alt="Notifications">
+  <img loading="lazy" decoding="async" class="hero" src="{{ image_url('MEGA-icon-message-call.png') }}" alt="Notifications">
   <ul class="pref-list">
     {% for p in prefs %}
       <li>

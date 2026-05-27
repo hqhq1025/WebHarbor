@@ -15,7 +15,7 @@
 <section class="contact-grid">
   {% for c in contacts %}
     <a class="contact-card {% if c.starred %}starred{% endif %}" href="{{ url_for('contact_detail', email_slug=c.slug) }}">
-      <img class="avatar" src="{{ image_url(c.avatar) }}" alt="{{ c.name }} avatar">
+      <img loading="lazy" decoding="async" class="avatar" src="{{ image_url(c.avatar) }}" alt="{{ c.name }} avatar">
       <strong>{{ c.name }}</strong>
       <span class="muted">{{ c.email }}</span>
       <span>{{ c.company }}</span>

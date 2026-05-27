@@ -2,7 +2,7 @@
 {% block title %}{{ contact.name }}{% endblock %}
 {% block content %}
 <section class="contact-detail">
-  <img class="avatar large" src="{{ image_url(contact.avatar) }}" alt="{{ contact.name }} avatar">
+  <img loading="lazy" decoding="async" class="avatar large" src="{{ image_url(contact.avatar) }}" alt="{{ contact.name }} avatar">
   <div>
     <h1>{{ contact.name }} {% if contact.starred %}<span class="badge">starred</span>{% endif %}</h1>
     <p>{{ contact.company }}</p>
@@ -22,7 +22,7 @@
   <div class="link-grid">
     {% for link in shared_links %}
       <article class="link-card">
-        <img src="{{ image_url('share-1.png') }}" alt="Share thumbnail">
+        <img loading="lazy" decoding="async" src="{{ image_url('share-1.png') }}" alt="Share thumbnail">
         <strong>{{ link.title }}</strong>
         <span class="muted">{{ link.created_at }} · expires {{ link.expiry or '—' }}</span>
         <a class="button small" href="{{ url_for('share_link_public', token=link.token) }}">Open</a>

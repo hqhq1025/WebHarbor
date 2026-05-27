@@ -5,7 +5,7 @@
 <div class="link-grid">
 {% for link in links %}
   <article class="link-card">
-    <img src="{{ image_url('share-2.5.png') }}" alt="Incoming share">
+    <img loading="lazy" decoding="async" src="{{ image_url('share-2.5.png') }}" alt="Incoming share">
     <strong>{{ link.title }}</strong>
     <p>{{ link.token }}</p>
     <span class="muted">{{ link.downloads }} accesses · expires {{ link.expiry or '—' }}</span>

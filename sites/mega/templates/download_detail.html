@@ -13,6 +13,6 @@
       <div><span>Checksum</span><strong>{{ download.checksum }}</strong></div>
     </dl>
   </div>
-  <img class="detail-image" src="{{ image_url(download.icon) }}" alt="{{ download.package_name }}">
+  <img loading="lazy" decoding="async" class="detail-image" src="{{ image_url(download.icon) }}" alt="{{ download.package_name }}">
 </section>
 {% endblock %}

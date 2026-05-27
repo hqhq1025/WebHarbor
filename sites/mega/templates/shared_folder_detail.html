@@ -8,7 +8,7 @@
 <section class="file-grid">
   {% for c in children %}
     <a class="file-tile {{ c.item_type }}" href="{{ url_for('file_detail', slug=c.slug) }}">
-      <img class="file-thumb" src="{{ image_url(ext_thumb(c.name, c.item_type)) }}" alt="{{ c.name }} thumb">
+      <img loading="lazy" decoding="async" class="file-thumb" src="{{ image_url(ext_thumb(c.name, c.item_type)) }}" alt="{{ c.name }} thumb">
       <strong>{{ c.name }}</strong>
       <span>{{ c.size_mb|size }}</span>
     </a>

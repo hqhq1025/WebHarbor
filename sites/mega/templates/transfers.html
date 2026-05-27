@@ -13,7 +13,7 @@
     <tbody>
     {% for t in active %}
       <tr>
-        <td><img class="row-icon" src="{{ image_url(platform_icon(t.device.split(' ')[0])) }}" alt="{{ t.device }}"></td>
+        <td><img loading="lazy" decoding="async" class="row-icon" src="{{ image_url(platform_icon(t.device.split(' ')[0])) }}" alt="{{ t.device }}"></td>
         <td>{{ t.file_name }}</td>
         <td>{{ t.direction }}</td>
         <td>{{ t.device }}</td>
