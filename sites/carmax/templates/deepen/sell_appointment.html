@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block title %}Schedule an in-store appraisal | CarMax{% endblock %}
+{% block content %}
+<section class="section">
+  <div class="container dpn-form-container">
+    <h1>Schedule an in-store appraisal</h1>
+    {% if confirmation %}
+      <div class="dpn-confirmation">
+        <h2>Appointment confirmed</h2>
+        <p>{{ confirmation.name }}, your appraisal is set for <strong>{{ confirmation.date }}</strong> at <strong>{{ confirmation.time }}</strong> at <strong>{{ confirmation.store.name }}</strong> ({{ confirmation.store.location_label }}).</p>
+        <p>Please bring your title, registration, and any loan payoff information.</p>
+      </div>
+    {% endif %}
+    <p>Book a 30-minute appraisal at any CarMax store. A team member will inspect your car and give you a written offer on the spot.</p>
+    <form method="post" class="dpn-form">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <label>CarMax store
+        <select name="store" required>
+          <option value="">-- Choose a store --</option>
+          {% for s in stores %}
+            <option value="{{ s.slug }}">{{ s.name }} ({{ s.location_label }})</option>
+          {% endfor %}
+        </select>
+      </label>
+      <label>Date <input name="date" type="date" min="{{ today }}" required></label>
+      <label>Time
+        <select name="time">
+          {% for t in ['9:00 AM','10:00 AM','11:00 AM','12:00 PM','1:00 PM','2:00 PM','3:00 PM','4:00 PM','5:00 PM'] %}
+            <option>{{ t }}</option>
+          {% endfor %}
+        </select>
+      </label>
+      <label>Your name <input name="name" required></label>
+      <label>Email <input name="email" type="email"></label>
+      <label>Year <input name="year" type="number" min="1990" max="2026" value="2020"></label>
+      <label>Make <input name="make" required></label>
+      <label>Model <input name="model" required></label>
+      <label>Mileage <input name="mileage" type="number" min="0"></label>
+      <button class="btn btn-primary" type="submit">Book appointment</button>
+    </form>
+  </div>
+</section>
+{% endblock %}

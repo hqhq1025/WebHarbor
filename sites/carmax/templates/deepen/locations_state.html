@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block title %}CarMax stores in {{ state }} | CarMax{% endblock %}
+{% block content %}
+<section class="section">
+  <div class="container">
+    <h1>CarMax stores in {{ state }}</h1>
+    <p>{{ stores|length }} locations &middot; {{ total_in_state }} vehicles in stock statewide.</p>
+    <div class="dpn-store-list">
+      {% for s in stores %}
+        <div class="dpn-store-card">
+          <h3><a href="{{ url_for('store_detail', slug=s.slug) }}">{{ s.name }}</a></h3>
+          <p>{{ s.street }}, {{ s.city }}, {{ s.state }} {{ s.zip_code }}</p>
+          <p>{{ s.phone }} &middot; Mon-Fri {{ s.hours_weekday }}</p>
+          <a class="btn btn-outline" href="{{ url_for('store_city_inventory', slug=s.slug) }}">View inventory</a>
+        </div>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+{% endblock %}

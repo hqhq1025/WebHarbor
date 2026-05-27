@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+{% from "deepen/_dpn_macros.html" import vehicle_gallery_strip %}
+{% block title %}Finance calculator — {{ v.title }} | CarMax{% endblock %}
+{% block content %}
+<section class="section">
+  <div class="container dpn-form-container">
+    <p class="dpn-breadcrumb">
+      <a href="{{ url_for('vehicle_detail', slug=v.slug) }}">Back to {{ v.short_title }}</a>
+    </p>
+    <h1>Estimate your payment</h1>
+    <p>{{ v.title }} &middot; sale price {{ v.price|money }}</p>
+    {% set _imgs = v.all_images() %}
+    <div class="dpn-gallery dpn-gallery-4">
+      <img src="{{ _imgs[0] if _imgs|length > 0 else v.image }}"
+           alt="{{ v.title }} - front view"
+           onerror="this.src='/static/images/_pending.svg'">
+      <img src="{{ _imgs[1] if _imgs|length > 1 else v.image }}"
+           alt="{{ v.title }} - side view"
+           onerror="this.src='/static/images/_pending.svg'">
+      <img src="{{ _imgs[2] if _imgs|length > 2 else v.image }}"
+           alt="{{ v.title }} - rear view"
+           onerror="this.src='/static/images/_pending.svg'">
+      <img src="{{ _imgs[3] if _imgs|length > 3 else v.image }}"
+           alt="{{ v.title }} - dashboard"
+           onerror="this.src='/static/images/_pending.svg'">
+    </div>
+    <form method="post" class="dpn-form">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <label>Down payment ($)
+        <input name="down" type="number" min="0" step="100" value="{{ defaults.down|int }}">
+      </label>
+      <label>Trade-in value ($)
+        <input name="trade" type="number" min="0" step="100" value="{{ defaults.trade|int }}">
+      </label>
+      <label>APR (%)
+        <input name="apr" type="number" min="0" max="30" step="0.01" value="{{ '%.2f'|format(defaults.apr) }}">
+      </label>
+      <label>Term (months)
+        <select name="term">
+          {% for t in [36, 48, 60, 66, 72, 75, 84] %}
+            <option value="{{ t }}" {% if defaults.term == t %}selected{% endif %}>{{ t }} mo</option>
+          {% endfor %}
+        </select>
+      </label>
+      <label>Credit tier
+        <select name="credit_tier">
+          {% for ct in ['excellent','good','fair','building'] %}
+            <option value="{{ ct }}" {% if defaults.credit_tier == ct %}selected{% endif %}>{{ ct }}</option>
+          {% endfor %}
+        </select>
+      </label>
+      <button class="btn btn-primary" type="submit">Recalculate</button>
+    </form>
+    {% if result %}
+    <div class="dpn-calc-result">
+      <h2>Your estimated monthly payment: {{ result.monthly_payment|money }}</h2>
+      <table class="dpn-vhr-table">
+        <tr><th>Sale price</th><td>{{ result.sale_price|money }}</td></tr>
+        <tr><th>Down payment</th><td>{{ result.down_payment|money }}</td></tr>
+        <tr><th>Trade-in value</th><td>{{ result.trade_in_value|money }}</td></tr>
+        <tr><th>APR</th><td>{{ '%.2f'|format(result.apr) }}%</td></tr>
+        <tr><th>Term</th><td>{{ result.term_months }} months</td></tr>
+        <tr><th>Credit tier</th><td>{{ result.credit_tier }}</td></tr>
+        <tr><th>Total interest paid</th><td>{{ result.total_interest|money }}</td></tr>
+        <tr><th>Total cost of vehicle</th><td>{{ result.total_cost|money }}</td></tr>
+      </table>
+    </div>
+    {% endif %}
+  </div>
+</section>
+{% endblock %}

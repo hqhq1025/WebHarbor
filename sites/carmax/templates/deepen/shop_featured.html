@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% from "_macros.html" import vcard with context %}
+{% block title %}Featured used cars | CarMax{% endblock %}
+{% block content %}
+<section class="section">
+  <div class="container">
+    <h1>Featured CarMax Certified vehicles</h1>
+    <p>{{ items|length }} hand-picked cars highlighted by our editors.</p>
+    <div class="grid grid-4">
+      {% for v in items %}{{ vcard(v) }}{% endfor %}
+    </div>
+  </div>
+</section>
+{% endblock %}

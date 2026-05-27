@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block title %}MaxCare quote | CarMax{% endblock %}
+{% block content %}
+<section class="section">
+  <div class="container dpn-form-container">
+    <h1>Get a MaxCare quote</h1>
+    <p>MaxCare extends your coverage after the 30-day Limited Warranty ends. Choose a tier and deductible to see your total premium.</p>
+    <form method="post" class="dpn-form">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <label>Stock number <input name="stock" required placeholder="e.g. 01011034"></label>
+      <label>Plan tier
+        <select name="plan">
+          {% for tier, vals in prices.items() %}
+            <option value="{{ tier }}">{{ tier|capitalize }} - {{ vals[1] }} mo / {{ vals[2] }} mi ({{ vals[0] }} starting)</option>
+          {% endfor %}
+        </select>
+      </label>
+      <label>Deductible
+        <select name="deductible">
+          <option value="50">$50</option>
+          <option value="100">$100</option>
+          <option value="200" selected>$200</option>
+          <option value="500">$500</option>
+        </select>
+      </label>
+      <button class="btn btn-primary" type="submit">Get quote</button>
+    </form>
+    {% if result %}
+    <div class="dpn-calc-result">
+      <h2>Your MaxCare quote</h2>
+      <table class="dpn-vhr-table">
+        <tr><th>Plan tier</th><td>{{ result.plan_tier|capitalize }}</td></tr>
+        <tr><th>Coverage</th><td>{{ result.coverage_months }} months / {{ result.coverage_miles }} miles</td></tr>
+        <tr><th>Deductible</th><td>${{ result.deductible }}</td></tr>
+        <tr><th>Total premium</th><td>{{ result.total_premium|money }}</td></tr>
+        <tr><th>Approx. monthly amount</th><td>{{ result.monthly_amount|money }}</td></tr>
+        <tr><th>Quote valid until</th><td>{{ result.valid_until }}</td></tr>
+      </table>
+    </div>
+    {% endif %}
+  </div>
+</section>
+{% endblock %}

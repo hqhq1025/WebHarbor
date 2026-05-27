@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% from "_macros.html" import vcard with context %}
+{% block title %}Cars with {{ label }} | CarMax{% endblock %}
+{% block content %}
+<section class="section">
+  <div class="container">
+    <h1>Used cars with {{ label }}</h1>
+    <p>{{ total }} CarMax Certified vehicles include this feature.</p>
+    <div class="dpn-pricebar">
+      {% for s, lbl in feature_hubs %}
+        <a href="{{ url_for('cars_with_feature', slug=s) }}"
+           class="dpn-pricebar-link {% if s == slug %}active{% endif %}">{{ lbl }}</a>
+      {% endfor %}
+    </div>
+    <div class="grid grid-4">
+      {% for v in items %}{{ vcard(v) }}{% endfor %}
+    </div>
+  </div>
+</section>
+{% endblock %}

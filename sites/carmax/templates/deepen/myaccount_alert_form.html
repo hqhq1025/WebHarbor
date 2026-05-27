@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% block title %}{% if row %}Edit price alert{% else %}New price alert{% endif %} | CarMax{% endblock %}
+{% block content %}
+<section class="section">
+  <div class="container dpn-form-container">
+    <h1>{% if row %}Edit price alert{% else %}Create a price alert{% endif %}</h1>
+    <form method="post" action="{{ action_url }}" class="dpn-form">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <label>Label (optional) <input name="label" value="{{ row.label if row else '' }}" maxlength="120" placeholder="e.g. Honda CR-V under $25k"></label>
+      <label>Make
+        <select name="make_slug">
+          <option value="">Any</option>
+          {% for name, slug in makes %}
+            <option value="{{ slug }}" {% if row and row.make_slug == slug %}selected{% endif %}>{{ name }}</option>
+          {% endfor %}
+        </select>
+      </label>
+      <label>Model (optional) <input name="model_slug" value="{{ row.model_slug if row else '' }}" placeholder="e.g. cr-v"></label>
+      <label>Body style
+        <select name="body_style">
+          <option value="">Any</option>
+          {% for b in ['Sedan','SUV','Truck','Coupe','Wagon','Convertible','Minivan'] %}
+            <option {% if row and row.body_style == b %}selected{% endif %}>{{ b }}</option>
+          {% endfor %}
+        </select>
+      </label>
+      <label>Year (min) <input name="year_min" type="number" min="0" max="2026" value="{{ row.year_min if row else 0 }}"></label>
+      <label>Price (max) <input name="price_max" type="number" min="0" step="500" value="{{ row.price_max if row else 0 }}"></label>
+      <label>Mileage (max) <input name="mileage_max" type="number" min="0" step="1000" value="{{ row.mileage_max if row else 0 }}"></label>
+      <label>ZIP code <input name="zip_code" value="{{ row.zip_code if row else '' }}"></label>
+      <label>Frequency
+        <select name="frequency">
+          {% for f in ['instant','daily','weekly'] %}
+            <option value="{{ f }}" {% if row and row.frequency == f %}selected{% endif %}>{{ f|capitalize }}</option>
+          {% endfor %}
+        </select>
+      </label>
+      {% if row %}
+      <label><input type="checkbox" name="is_active" {% if row.is_active %}checked{% endif %}> Active</label>
+      {% endif %}
+      <button class="btn btn-primary" type="submit">{% if row %}Save changes{% else %}Create alert{% endif %}</button>
+    </form>
+  </div>
+</section>
+{% endblock %}

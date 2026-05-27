@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% from "deepen/_dpn_macros.html" import vehicle_gallery_strip %}
+{% block title %}Vehicle History Report — {{ v.title }} | CarMax{% endblock %}
+{% block content %}
+<section class="section">
+  <div class="container">
+    <p class="dpn-breadcrumb">
+      <a href="{{ url_for('vehicle_detail', slug=v.slug) }}">Back to {{ v.short_title }}</a>
+    </p>
+    <h1>Vehicle History Report</h1>
+    <p class="dpn-report-id">Report ID {{ report_id }} &middot; VIN {{ v.vin }}</p>
+    {% set _imgs = v.all_images() %}
+    <div class="dpn-gallery dpn-gallery-4">
+      <img src="{{ _imgs[0] if _imgs|length > 0 else v.image }}"
+           alt="{{ v.title }} - front view"
+           onerror="this.src='/static/images/_pending.svg'">
+      <img src="{{ _imgs[1] if _imgs|length > 1 else v.image }}"
+           alt="{{ v.title }} - side view"
+           onerror="this.src='/static/images/_pending.svg'">
+      <img src="{{ _imgs[2] if _imgs|length > 2 else v.image }}"
+           alt="{{ v.title }} - rear view"
+           onerror="this.src='/static/images/_pending.svg'">
+      <img src="{{ _imgs[3] if _imgs|length > 3 else v.image }}"
+           alt="{{ v.title }} - dashboard"
+           onerror="this.src='/static/images/_pending.svg'">
+    </div>
+    <table class="dpn-vhr-table">
+      <tr><th>Year</th><td>{{ v.year }}</td></tr>
+      <tr><th>Make / model</th><td>{{ v.make }} {{ v.model }}</td></tr>
+      <tr><th>Trim</th><td>{{ v.trim }}</td></tr>
+      <tr><th>Mileage on report</th><td>{{ v.mileage|miles }}</td></tr>
+      <tr><th>Number of owners</th><td>{{ owners }}</td></tr>
+      <tr><th>Reported accidents</th><td>{{ accidents }}</td></tr>
+      <tr><th>Service events</th><td>{{ service_events }}</td></tr>
+      <tr><th>Title status</th><td>Clean</td></tr>
+      <tr><th>Flood damage</th><td>None reported</td></tr>
+      <tr><th>Frame damage</th><td>None reported</td></tr>
+      <tr><th>Salvage history</th><td>None</td></tr>
+      <tr><th>CarMax inspection</th><td>Passed 125+ point inspection</td></tr>
+    </table>
+    <div class="dpn-cta-row">
+      <a class="btn btn-primary" href="{{ url_for('reserve', vehicle_id=v.id) }}">Reserve this car</a>
+      <a class="btn btn-outline" href="{{ url_for('car_similar', stock=v.stock_number) }}">See similar cars</a>
+    </div>
+  </div>
+</section>
+{% endblock %}

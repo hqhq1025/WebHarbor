@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% from "deepen/_dpn_macros.html" import vehicle_gallery_strip %}
+{% block title %}Transfer request submitted | CarMax{% endblock %}
+{% block content %}
+<section class="section">
+  <div class="container dpn-form-container">
+    <h1>Transfer request submitted</h1>
+    <p>Reference number: <strong>TR-{{ '%06d'|format(tr.id) }}</strong></p>
+    <p>Status: <strong>{{ tr.status }}</strong> &middot; Estimated arrival: <strong>{{ tr.eta_days }} business days</strong></p>
+    {% if v %}{% set _imgs = v.all_images() %}
+    <div class="dpn-gallery dpn-gallery-4">
+      <img src="{{ _imgs[0] if _imgs|length > 0 else v.image }}"
+           alt="{{ v.title }} - front view"
+           onerror="this.src='/static/images/_pending.svg'">
+      <img src="{{ _imgs[1] if _imgs|length > 1 else v.image }}"
+           alt="{{ v.title }} - side view"
+           onerror="this.src='/static/images/_pending.svg'">
+      <img src="{{ _imgs[2] if _imgs|length > 2 else v.image }}"
+           alt="{{ v.title }} - rear view"
+           onerror="this.src='/static/images/_pending.svg'">
+      <img src="{{ _imgs[3] if _imgs|length > 3 else v.image }}"
+           alt="{{ v.title }} - dashboard"
+           onerror="this.src='/static/images/_pending.svg'">
+    </div>{% endif %}
+    <table class="dpn-vhr-table">
+      <tr><th>Vehicle</th><td>{{ v.title if v else '' }} (stock {{ v.stock_number if v else '' }})</td></tr>
+      <tr><th>From store</th><td>{{ from_store.name if from_store else '' }} ({{ from_store.location_label if from_store else '' }})</td></tr>
+      <tr><th>To store</th><td>{{ to_store.name if to_store else '' }} ({{ to_store.location_label if to_store else '' }})</td></tr>
+      <tr><th>Transfer fee</th><td>{{ tr.transfer_fee|money }}</td></tr>
+      <tr><th>Contact</th><td>{{ tr.contact_name }} &middot; {{ tr.contact_email }} &middot; {{ tr.contact_phone }}</td></tr>
+      {% if tr.notes %}<tr><th>Notes</th><td>{{ tr.notes }}</td></tr>{% endif %}
+    </table>
+    <div class="dpn-cta-row">
+      {% if v %}
+      <a class="btn btn-primary" href="{{ url_for('test_drive', vehicle_id=v.id) }}">Schedule test drive</a>
+      <a class="btn btn-outline" href="{{ url_for('reserve', vehicle_id=v.id) }}">Reserve this car</a>
+      {% endif %}
+    </div>
+  </div>
+</section>
+{% endblock %}

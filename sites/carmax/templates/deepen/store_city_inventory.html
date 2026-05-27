@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% from "_macros.html" import vcard with context %}
+{% block title %}Inventory at {{ store.name }} | CarMax{% endblock %}
+{% block content %}
+<section class="section">
+  <div class="container">
+    <p class="dpn-breadcrumb">
+      <a href="{{ url_for('store_detail', slug=store.slug) }}">Back to {{ store.name }}</a>
+    </p>
+    <h1>Inventory at {{ store.name }}</h1>
+    <p>{{ total }} vehicles in stock at this location.</p>
+    <div class="grid grid-4">
+      {% for v in items %}{{ vcard(v) }}{% endfor %}
+    </div>
+  </div>
+</section>
+{% endblock %}

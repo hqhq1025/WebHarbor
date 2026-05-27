@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% from "deepen/_dpn_macros.html" import mini_vcard %}
+{% block title %}Similar to {{ v.short_title }} | CarMax{% endblock %}
+{% block content %}
+<section class="section">
+  <div class="container">
+    <p class="dpn-breadcrumb">
+      <a href="{{ url_for('vehicle_detail', slug=v.slug) }}">Back to {{ v.short_title }}</a>
+    </p>
+    <h1>Similar to {{ v.short_title }}</h1>
+    <p>We picked {{ similar|length }} CarMax Certified vehicles with the same body style and a similar price.</p>
+    <div class="dpn-cards-grid">
+      {% for s in similar %}{{ mini_vcard(s) }}{% endfor %}
+    </div>
+  </div>
+</section>
+{% endblock %}

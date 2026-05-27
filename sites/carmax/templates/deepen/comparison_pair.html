@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% from "deepen/_dpn_macros.html" import vehicle_gallery_strip %}
+{% block title %}{{ a.short_title }} vs {{ b.short_title }} | CarMax{% endblock %}
+{% block content %}
+<section class="section">
+  <div class="container">
+    <h1>{{ a.short_title }} vs {{ b.short_title }}</h1>
+    <div class="dpn-pair-grid">
+      <div class="dpn-pair-col">
+        {{ vehicle_gallery_strip(a, 4) }}
+        <h3><a href="{{ url_for('vehicle_detail', slug=a.slug) }}">{{ a.title }}</a></h3>
+      </div>
+      <div class="dpn-pair-col">
+        {{ vehicle_gallery_strip(b, 4) }}
+        <h3><a href="{{ url_for('vehicle_detail', slug=b.slug) }}">{{ b.title }}</a></h3>
+      </div>
+    </div>
+    <table class="dpn-compare-table">
+      <thead>
+        <tr><th></th><th>{{ a.short_title }}</th><th>{{ b.short_title }}</th></tr>
+      </thead>
+      <tbody>
+        <tr><th>Trim</th><td>{{ a.trim }}</td><td>{{ b.trim }}</td></tr>
+        <tr><th>Price</th><td>{{ a.price|money }}</td><td>{{ b.price|money }}</td></tr>
+        <tr><th>Mileage</th><td>{{ a.mileage|miles }}</td><td>{{ b.mileage|miles }}</td></tr>
+        <tr><th>Engine</th><td>{{ a.engine_text }}</td><td>{{ b.engine_text }}</td></tr>
+        <tr><th>Horsepower</th><td>{{ a.horsepower }}</td><td>{{ b.horsepower }}</td></tr>
+        <tr><th>Torque</th><td>{{ a.torque }}</td><td>{{ b.torque }}</td></tr>
+        <tr><th>Transmission</th><td>{{ a.transmission }}</td><td>{{ b.transmission }}</td></tr>
+        <tr><th>Drivetrain</th><td>{{ a.drive_type }}</td><td>{{ b.drive_type }}</td></tr>
+        <tr><th>Fuel type</th><td>{{ a.fuel_type }}</td><td>{{ b.fuel_type }}</td></tr>
+        <tr><th>City MPG</th><td>{{ a.mpg_city }}</td><td>{{ b.mpg_city }}</td></tr>
+        <tr><th>Highway MPG</th><td>{{ a.mpg_highway }}</td><td>{{ b.mpg_highway }}</td></tr>
+        <tr><th>Combined MPG</th><td>{{ a.mpg_combined }}</td><td>{{ b.mpg_combined }}</td></tr>
+        <tr><th>Seats</th><td>{{ a.seating_capacity }}</td><td>{{ b.seating_capacity }}</td></tr>
+        <tr><th>Exterior color</th><td>{{ a.exterior_color }}</td><td>{{ b.exterior_color }}</td></tr>
+        <tr><th>Interior color</th><td>{{ a.interior_color }}</td><td>{{ b.interior_color }}</td></tr>
+        <tr><th>Customer rating</th><td>{{ a.customer_rating }}/5</td><td>{{ b.customer_rating }}/5</td></tr>
+        <tr><th>RepairPal rating</th><td>{{ a.repairpal_rating }}/5</td><td>{{ b.repairpal_rating }}/5</td></tr>
+        <tr><th>Store</th><td>{{ a.store.location_label if a.store else '' }}</td><td>{{ b.store.location_label if b.store else '' }}</td></tr>
+        <tr><th>Transfer fee</th><td>{{ a.transfer_fee|money }}</td><td>{{ b.transfer_fee|money }}</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+{% endblock %}

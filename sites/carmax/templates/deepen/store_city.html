@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% from "_macros.html" import vcard with context %}
+{% block title %}CarMax {{ store.name }} | {{ store.location_label }}{% endblock %}
+{% block content %}
+<section class="section">
+  <div class="container">
+    <h1>{{ store.name }}</h1>
+    <p>{{ store.street }}, {{ store.city }}, {{ store.state }} {{ store.zip_code }} &middot; {{ store.phone }}</p>
+    <div class="dpn-gallery dpn-gallery-4">
+      {% for ph in photos %}
+        <img src="{{ ph.image }}" alt="{{ ph.caption }}" onerror="this.src='/static/images/_pending.svg'">
+      {% endfor %}
+    </div>
+    <table class="dpn-vhr-table">
+      <tr><th>Mon-Fri hours</th><td>{{ store.hours_weekday }}</td></tr>
+      <tr><th>Saturday hours</th><td>{{ store.hours_saturday }}</td></tr>
+      <tr><th>Sunday hours</th><td>{{ store.hours_sunday }}</td></tr>
+      <tr><th>Services</th><td>
+        {% if store.has_appraisal %}Appraisal &middot;{% endif %}
+        {% if store.has_express_pickup %}Express pickup &middot;{% endif %}
+        {% if store.has_service %}Service center &middot;{% endif %}
+        {% if store.has_home_delivery %}Home delivery{% endif %}
+      </td></tr>
+    </table>
+    <h2>Featured local inventory</h2>
+    <div class="grid grid-4">
+      {% for v in vehicles %}{{ vcard(v) }}{% endfor %}
+    </div>
+    <div class="dpn-cta-row">
+      <a class="btn btn-primary" href="{{ url_for('store_city_inventory', slug=store.slug) }}">See all inventory at this store</a>
+      <a class="btn btn-outline" href="{{ url_for('sell_appointment') }}">Schedule appraisal here</a>
+    </div>
+  </div>
+</section>
+{% endblock %}

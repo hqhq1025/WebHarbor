@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% block title %}My price alerts | CarMax{% endblock %}
+{% block content %}
+<section class="section">
+  <div class="container">
+    <h1>My price alerts</h1>
+    <p>{{ rows|length }} saved searches. You'll get an email when matching cars become available.</p>
+    <a class="btn btn-primary" href="{{ url_for('myaccount_alert_new') }}">+ Create new alert</a>
+    <table class="dpn-alerts-table">
+      <thead>
+        <tr><th>Label</th><th>Filters</th><th>Frequency</th><th>Last matches</th><th>Status</th><th></th></tr>
+      </thead>
+      <tbody>
+        {% for r in rows %}
+        <tr class="{% if not r.is_active %}dpn-row-paused{% endif %}">
+          <td>{{ r.label }}</td>
+          <td>
+            {% if r.make_slug %}<span>Make: {{ r.make_slug }}</span>{% endif %}
+            {% if r.model_slug %}<span>Model: {{ r.model_slug }}</span>{% endif %}
+            {% if r.body_style %}<span>Body: {{ r.body_style }}</span>{% endif %}
+            {% if r.year_min %}<span>Year &ge; {{ r.year_min }}</span>{% endif %}
+            {% if r.price_max %}<span>&le; {{ r.price_max|money }}</span>{% endif %}
+            {% if r.mileage_max %}<span>&le; {{ r.mileage_max|miles }}</span>{% endif %}
+            {% if r.zip_code %}<span>ZIP {{ r.zip_code }}</span>{% endif %}
+          </td>
+          <td>{{ r.frequency }}</td>
+          <td>{{ r.last_match_count }}</td>
+          <td>{% if r.is_active %}Active{% else %}Paused{% endif %}</td>
+          <td>
+            <a href="{{ url_for('myaccount_alert_edit', alert_id=r.id) }}">Edit</a>
+            <form method="post" action="{{ url_for('myaccount_alert_toggle', alert_id=r.id) }}" style="display:inline">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              <button class="btn-link" type="submit">{% if r.is_active %}Pause{% else %}Resume{% endif %}</button>
+            </form>
+            <form method="post" action="{{ url_for('myaccount_alert_delete', alert_id=r.id) }}" style="display:inline">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              <button class="btn-link dpn-danger" type="submit">Delete</button>
+            </form>
+          </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="6">You don't have any price alerts yet.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+{% endblock %}

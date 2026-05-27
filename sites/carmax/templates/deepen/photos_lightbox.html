@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% block title %}Photo gallery — {{ v.title }} | CarMax{% endblock %}
+{% block content %}
+<section class="section">
+  <div class="container">
+    <p class="dpn-breadcrumb">
+      <a href="{{ url_for('vehicle_detail', slug=v.slug) }}">Back to {{ v.short_title }}</a>
+    </p>
+    <h1>Photos: {{ v.title }}</h1>
+    <p>Stock #{{ v.stock_number }} &middot; {{ v.exterior_color }} exterior, {{ v.interior_color }} interior &middot; {{ v.mileage|miles }} &middot; {{ v.price|money }}</p>
+    {% set _imgs = v.all_images() %}
+    <div class="dpn-gallery-full">
+      <figure class="dpn-photo">
+        <img src="{{ _imgs[0] if _imgs|length > 0 else v.image }}" alt="{{ v.title }} front view"
+             onerror="this.src='/static/images/_pending.svg'">
+        <figcaption>Front view</figcaption>
+      </figure>
+      <figure class="dpn-photo">
+        <img src="{{ _imgs[1] if _imgs|length > 1 else v.image }}" alt="{{ v.title }} driver-side profile"
+             onerror="this.src='/static/images/_pending.svg'">
+        <figcaption>Driver-side profile</figcaption>
+      </figure>
+      <figure class="dpn-photo">
+        <img src="{{ _imgs[2] if _imgs|length > 2 else v.image }}" alt="{{ v.title }} rear view"
+             onerror="this.src='/static/images/_pending.svg'">
+        <figcaption>Rear view</figcaption>
+      </figure>
+      <figure class="dpn-photo">
+        <img src="{{ _imgs[3] if _imgs|length > 3 else v.image }}" alt="{{ v.title }} dashboard"
+             onerror="this.src='/static/images/_pending.svg'">
+        <figcaption>Dashboard and instruments</figcaption>
+      </figure>
+      <figure class="dpn-photo">
+        <img src="{{ _imgs[4] if _imgs|length > 4 else v.image }}" alt="{{ v.title }} cargo area"
+             onerror="this.src='/static/images/_pending.svg'">
+        <figcaption>Cargo area</figcaption>
+      </figure>
+      <figure class="dpn-photo">
+        <img src="{{ _imgs[5] if _imgs|length > 5 else v.image }}" alt="{{ v.title }} interior cabin"
+             onerror="this.src='/static/images/_pending.svg'">
+        <figcaption>Interior cabin</figcaption>
+      </figure>
+    </div>
+    <div class="dpn-cta-row">
+      <a class="btn btn-primary" href="{{ url_for('test_drive', vehicle_id=v.id) }}">Schedule test drive</a>
+      <a class="btn btn-outline" href="{{ url_for('car_transfer', stock=v.stock_number) }}">Request transfer</a>
+      <a class="btn btn-outline" href="{{ url_for('car_finance_calculator', stock=v.stock_number) }}">Finance calculator</a>
+    </div>
+  </div>
+</section>
+{% endblock %}

@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% from "deepen/_dpn_macros.html" import vehicle_gallery_strip %}
+{% block title %}Compare {{ vehicles|length }} cars | CarMax{% endblock %}
+{% block content %}
+<section class="section">
+  <div class="container">
+    <h1>Multi-car comparison ({{ vehicles|length }} vehicles)</h1>
+    <div class="dpn-multi-grid">
+      {% for v in vehicles %}
+      <div class="dpn-multi-col">
+        {{ vehicle_gallery_strip(v, 4) }}
+        <h3><a href="{{ url_for('vehicle_detail', slug=v.slug) }}">{{ v.title }}</a></h3>
+      </div>
+      {% endfor %}
+    </div>
+    <table class="dpn-compare-table">
+      <thead>
+        <tr><th></th>{% for v in vehicles %}<th>{{ v.short_title }}</th>{% endfor %}</tr>
+      </thead>
+      <tbody>
+        <tr><th>Trim</th>{% for v in vehicles %}<td>{{ v.trim }}</td>{% endfor %}</tr>
+        <tr><th>Price</th>{% for v in vehicles %}<td>{{ v.price|money }}</td>{% endfor %}</tr>
+        <tr><th>Mileage</th>{% for v in vehicles %}<td>{{ v.mileage|miles }}</td>{% endfor %}</tr>
+        <tr><th>Engine</th>{% for v in vehicles %}<td>{{ v.engine_text }}</td>{% endfor %}</tr>
+        <tr><th>Horsepower</th>{% for v in vehicles %}<td>{{ v.horsepower }}</td>{% endfor %}</tr>
+        <tr><th>Drivetrain</th>{% for v in vehicles %}<td>{{ v.drive_type }}</td>{% endfor %}</tr>
+        <tr><th>Combined MPG</th>{% for v in vehicles %}<td>{{ v.mpg_combined }}</td>{% endfor %}</tr>
+        <tr><th>Seats</th>{% for v in vehicles %}<td>{{ v.seating_capacity }}</td>{% endfor %}</tr>
+        <tr><th>Customer rating</th>{% for v in vehicles %}<td>{{ v.customer_rating }}/5</td>{% endfor %}</tr>
+        <tr><th>Store</th>{% for v in vehicles %}<td>{{ v.store.location_label if v.store else '' }}</td>{% endfor %}</tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+{% endblock %}

@@ -1992,6 +1992,16 @@ with app.app_context():
     seed_benchmark_users()
 
 
+# === DEEPEN MODULE BEGIN ===
+# Blueprint-style append from gui_deepen.py — defines new models, runs its
+# seed, and registers all /car/<stock>/*, /myaccount/*, /trade-in,
+# /financing/calculator, /comparison/<>, etc. routes. Late import keeps
+# the module out of seed_data's import cycle (see harden-env §32).
+import gui_deepen as _gui_deepen  # noqa: E402
+_gui_deepen.register(app)
+# === DEEPEN MODULE END ===
+
+
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
     app.run(host='0.0.0.0', port=port, debug=False)

@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% from "deepen/_dpn_macros.html" import mini_vcard %}
+{% block title %}{{ t.title }} | CarMax Research{% endblock %}
+{% block content %}
+<section class="section">
+  <div class="container">
+    <h1>{{ t.title }}</h1>
+    <p class="dpn-research-summary">{{ t.summary }}</p>
+    {% if t.hero_image %}
+      <img src="{{ t.hero_image }}" alt="{{ t.title }}" class="dpn-research-hero"
+           onerror="this.src='/static/images/_pending.svg'">
+    {% endif %}
+    <article class="dpn-research-body">
+      {% for para in t.body.split('\n\n') %}<p>{{ para }}</p>{% endfor %}
+    </article>
+    {% if related %}
+    <h2>Top picks from our inventory</h2>
+    <div class="dpn-cards-grid">
+      {% for v in related %}{{ mini_vcard(v) }}{% endfor %}
+    </div>
+    {% endif %}
+  </div>
+</section>
+{% endblock %}

@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block title %}Careers at CarMax{% endblock %}
+{% block content %}
+<section class="section">
+  <div class="container">
+    <h1>Careers at CarMax</h1>
+    {% if page %}
+    <p class="dpn-eyebrow">{{ page.eyebrow }}</p>
+    <img src="/static/images/articles/how-carmax-works.jpg" alt="Working at CarMax" class="dpn-about-hero">
+    <article class="dpn-about-body">
+      {% for para in page.body.split('\n\n') %}<p>{{ para }}</p>{% endfor %}
+    </article>
+    {% endif %}
+    <div class="dpn-info-grid">
+      <div class="dpn-info-card">
+        <img src="/static/images/articles/maxcare-explained.jpg" alt="Reconditioning">
+        <h3>Reconditioning &amp; Service</h3>
+        <p>Technicians, paint specialists, detailers. Earn $20-$45/hr with a 401(k) match.</p>
+      </div>
+      <div class="dpn-info-card">
+        <img src="/static/images/articles/first-time-car-buyer.jpg" alt="Customer experience">
+        <h3>Customer experience</h3>
+        <p>Sales consultants, business office, and finance roles at our 240+ stores.</p>
+      </div>
+      <div class="dpn-info-card">
+        <img src="/static/images/articles/pre-approval-vs-pre-qualified.jpg" alt="Technology">
+        <h3>Technology</h3>
+        <p>Engineering, data science, design, and product roles in Richmond, VA and remote.</p>
+      </div>
+    </div>
+  </div>
+</section>
+{% endblock %}

@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block title %}Selling guides | CarMax Research{% endblock %}
+{% block content %}
+<section class="section">
+  <div class="container">
+    <h1>Selling guides</h1>
+    <p>{{ topics|length }} articles to help you sell or trade in your car.</p>
+    <div class="dpn-info-grid">
+      {% for t in topics %}
+      <a class="dpn-info-card dpn-info-link" href="{{ url_for('research_topic', slug=t.slug) }}">
+        <img src="{{ t.hero_image }}" alt="{{ t.title }}"
+             onerror="this.src='/static/images/_pending.svg'">
+        <h3>{{ t.title }}</h3>
+        <p>{{ t.summary }}</p>
+      </a>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+{% endblock %}

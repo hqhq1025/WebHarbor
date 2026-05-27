@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block title %}My account | CarMax{% endblock %}
+{% block content %}
+<section class="section">
+  <div class="container">
+    <h1>Welcome back, {{ current_user.first_name or 'CarMax customer' }}</h1>
+    <div class="dpn-stats-grid">
+      <a class="dpn-stat" href="{{ url_for('myaccount_saved_cars') }}">
+        <div class="dpn-stat-n">{{ saved_count }}</div>
+        <div class="dpn-stat-l">Saved cars</div>
+      </a>
+      <a class="dpn-stat" href="{{ url_for('myaccount_recent_searches') }}">
+        <div class="dpn-stat-n">{{ recent_count }}</div>
+        <div class="dpn-stat-l">Recent searches</div>
+      </a>
+      <a class="dpn-stat" href="{{ url_for('myaccount_alerts') }}">
+        <div class="dpn-stat-n">{{ active_alert_count }} / {{ alert_count }}</div>
+        <div class="dpn-stat-l">Active price alerts</div>
+      </a>
+      <a class="dpn-stat" href="{{ url_for('account_orders') }}">
+        <div class="dpn-stat-n">{{ order_count }}</div>
+        <div class="dpn-stat-l">Orders</div>
+      </a>
+      <a class="dpn-stat" href="{{ url_for('account_reservations') }}">
+        <div class="dpn-stat-n">{{ res_count }}</div>
+        <div class="dpn-stat-l">Reservations</div>
+      </a>
+      <a class="dpn-stat" href="{{ url_for('account_test_drives') }}">
+        <div class="dpn-stat-n">{{ td_count }}</div>
+        <div class="dpn-stat-l">Test drives</div>
+      </a>
+      <a class="dpn-stat" href="{{ url_for('account_appraisals') }}">
+        <div class="dpn-stat-n">{{ app_count }}</div>
+        <div class="dpn-stat-l">Appraisals</div>
+      </a>
+    </div>
+  </div>
+</section>
+{% endblock %}

@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block title %}Trade-in calculator | CarMax{% endblock %}
+{% block content %}
+<section class="section">
+  <div class="container dpn-form-container">
+    <h1>Trade-in calculator</h1>
+    <p>Tell us about your current car. We'll estimate your trade value and your equity (value minus loan payoff).</p>
+    <form method="post" class="dpn-form">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <label>Year <input name="year" type="number" min="1990" max="2026" value="{{ form_data.year or 2020 }}" required></label>
+      <label>Make <input name="make" value="{{ form_data.make or '' }}" required></label>
+      <label>Model <input name="model" value="{{ form_data.model or '' }}" required></label>
+      <label>Trim <input name="trim" value="{{ form_data.trim or '' }}"></label>
+      <label>Mileage <input name="mileage" type="number" min="0" value="{{ form_data.mileage or 60000 }}" required></label>
+      <label>Condition
+        <select name="condition">
+          {% for c in ['excellent','good','fair','poor'] %}
+            <option value="{{ c }}" {% if form_data.condition == c %}selected{% endif %}>{{ c|capitalize }}</option>
+          {% endfor %}
+        </select>
+      </label>
+      <label>ZIP code <input name="zip_code" value="{{ form_data.zip_code or '' }}"></label>
+      <label>Amount owed on this car ($) <input name="owed" type="number" min="0" step="100" value="{{ (form_data.owed or 0)|int }}"></label>
+      <button class="btn btn-primary" type="submit">Calculate</button>
+    </form>
+    {% if result %}
+    <div class="dpn-calc-result">
+      <h2>Estimated trade-in value: {{ result.estimated_value|money }}</h2>
+      <table class="dpn-vhr-table">
+        <tr><th>Vehicle</th><td>{{ result.year }} {{ result.make }} {{ result.model }} {{ result.trim }}</td></tr>
+        <tr><th>Mileage</th><td>{{ result.mileage|miles }}</td></tr>
+        <tr><th>Condition</th><td>{{ result.condition }}</td></tr>
+        <tr><th>Estimated value</th><td>{{ result.estimated_value|money }}</td></tr>
+        <tr><th>Amount owed</th><td>{{ result.owed_amount|money }}</td></tr>
+        <tr><th>Estimated equity</th><td>{{ result.equity_estimate|money }}</td></tr>
+        <tr><th>Quote valid through</th><td>{{ result.valid_until }}</td></tr>
+      </table>
+      <p>This estimate is good for 7 days. Bring your car to any CarMax store to finalize.</p>
+    </div>
+    {% endif %}
+  </div>
+</section>
+{% endblock %}

@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% from "deepen/_dpn_macros.html" import vehicle_gallery_strip %}
+{% block title %}Request transfer — {{ v.title }} | CarMax{% endblock %}
+{% block content %}
+<section class="section">
+  <div class="container dpn-form-container">
+    <p class="dpn-breadcrumb">
+      <a href="{{ url_for('vehicle_detail', slug=v.slug) }}">Back to {{ v.short_title }}</a>
+    </p>
+    <h1>Request a transfer</h1>
+    <p>This {{ v.short_title }} is currently at <strong>{{ v.store.name if v.store else 'unknown' }}</strong> ({{ v.store.location_label if v.store else '' }}). Tell us where to send it.</p>
+    {% set _imgs = v.all_images() %}
+    <div class="dpn-gallery dpn-gallery-4">
+      <img src="{{ _imgs[0] if _imgs|length > 0 else v.image }}"
+           alt="{{ v.title }} - front view"
+           onerror="this.src='/static/images/_pending.svg'">
+      <img src="{{ _imgs[1] if _imgs|length > 1 else v.image }}"
+           alt="{{ v.title }} - side view"
+           onerror="this.src='/static/images/_pending.svg'">
+      <img src="{{ _imgs[2] if _imgs|length > 2 else v.image }}"
+           alt="{{ v.title }} - rear view"
+           onerror="this.src='/static/images/_pending.svg'">
+      <img src="{{ _imgs[3] if _imgs|length > 3 else v.image }}"
+           alt="{{ v.title }} - dashboard"
+           onerror="this.src='/static/images/_pending.svg'">
+    </div>
+    {% if v.transfer_fee %}
+      <p class="dpn-fee-note">Transfer fee: <strong>{{ v.transfer_fee|money }}</strong> (refunded if you buy the car).</p>
+    {% else %}
+      <p class="dpn-fee-note">Good news — this car transfers free.</p>
+    {% endif %}
+    <form method="post" class="dpn-form">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <label>Destination store
+        <select name="to_store" required>
+          <option value="">-- Choose a store --</option>
+          {% for s in stores %}
+            <option value="{{ s.slug }}" {% if form_to_store == s.slug %}selected{% endif %}>{{ s.name }} ({{ s.location_label }})</option>
+          {% endfor %}
+        </select>
+      </label>
+      <label>Your name <input name="name" required value="{{ form_name }}"></label>
+      <label>Email <input name="email" type="email" required value="{{ form_email }}"></label>
+      <label>Phone <input name="phone" type="tel" value="{{ form_phone }}"></label>
+      <label>Notes (optional)
+        <textarea name="notes" rows="3" maxlength="400">{{ form_notes }}</textarea>
+      </label>
+      <button class="btn btn-primary" type="submit">Submit transfer request</button>
+    </form>
+  </div>
+</section>
+{% endblock %}

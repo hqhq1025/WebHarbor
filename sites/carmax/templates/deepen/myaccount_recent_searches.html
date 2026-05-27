@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block title %}My recent searches | CarMax{% endblock %}
+{% block content %}
+<section class="section">
+  <div class="container">
+    <h1>My recent searches</h1>
+    <p>{{ rows|length }} searches in your history. Click any to re-run.</p>
+    {% if rows %}
+    <form method="post" action="{{ url_for('myaccount_recent_searches_clear') }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <button class="btn btn-outline" type="submit">Clear search history</button>
+    </form>
+    {% endif %}
+    <ul class="dpn-recent-list">
+      {% for r in rows %}
+      <li>
+        <a href="{{ url_for('search') }}?q={{ r.query_text }}">
+          <strong>{{ r.query_text }}</strong>
+        </a>
+        &middot; {{ r.result_count }} results &middot; {{ r.created_at.strftime('%Y-%m-%d') }}
+      </li>
+      {% else %}
+      <li>You haven't searched for any cars yet.</li>
+      {% endfor %}
+    </ul>
+  </div>
+</section>
+{% endblock %}

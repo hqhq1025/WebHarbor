@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block title %}Sell your car — instant offer | CarMax{% endblock %}
+{% block content %}
+<section class="section">
+  <div class="container dpn-form-container">
+    <h1>Get an instant offer</h1>
+    <p>Tell us about your car and get a written cash offer in under 2 minutes. Good for 7 days.</p>
+    <form method="post" class="dpn-form">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <label>Year <input name="year" type="number" min="1990" max="2026" value="{{ form_data.year or 2020 }}" required></label>
+      <label>Make <input name="make" value="{{ form_data.make or '' }}" required></label>
+      <label>Model <input name="model" value="{{ form_data.model or '' }}" required></label>
+      <label>Trim <input name="trim" value="{{ form_data.trim or '' }}"></label>
+      <label>Mileage <input name="mileage" type="number" min="0" value="{{ form_data.mileage or 60000 }}" required></label>
+      <label>Condition
+        <select name="condition">
+          {% for c in ['excellent','good','fair','poor'] %}
+            <option value="{{ c }}" {% if form_data.condition == c %}selected{% endif %}>{{ c|capitalize }}</option>
+          {% endfor %}
+        </select>
+      </label>
+      <label>ZIP code <input name="zip_code" value="{{ form_data.zip_code or '' }}"></label>
+      <label>Email <input name="email" type="email" value="{{ form_data.email or '' }}"></label>
+      <label><input type="checkbox" name="has_accidents" {% if form_data.has_accidents %}checked{% endif %}> Car has been in an accident</label>
+      <button class="btn btn-primary" type="submit">Get my instant offer</button>
+    </form>
+  </div>
+</section>
+{% endblock %}
