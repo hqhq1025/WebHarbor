@@ -304,6 +304,282 @@ class ReturnItem(db.Model):
     reason = db.Column(db.String(60), default='')  # doesnt_fit, defective, changed_mind, wrong_item
 
 
+# ===========================================================================
+# R3..R10 — Deepening models (Subscribe & Save, Registry, Q&A, Kindle,
+# Prime Video, Seller, Vine, Promo, Webhook).  Registered here so
+# db.create_all() picks them up before seed_deepen.run_deepen() populates.
+# Byte-identical reset relies on _seed_now and md5-derived numeric defaults.
+# ===========================================================================
+
+# ----- R3: Subscribe & Save plans + auto-delivery schedule -----
+
+class SubscribeSavePlan(db.Model):
+    __tablename__ = 'subscribe_save_plans'
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False, index=True)
+    product_id = db.Column(db.Integer, db.ForeignKey('products.id'), nullable=False, index=True)
+    frequency = db.Column(db.String(20), default='1-month')  # 1-month, 2-month, 3-month, 6-month
+    quantity = db.Column(db.Integer, default=1)
+    active = db.Column(db.Boolean, default=True)
+    created_at = db.Column(db.DateTime, default=_seed_now)
+
+    user = db.relationship('User', backref='subscribe_save_plans')
+    product = db.relationship('Product')
+    schedules = db.relationship('AutoDeliverySchedule', backref='plan',
+                                lazy=True, cascade='all, delete-orphan')
+
+
+class AutoDeliverySchedule(db.Model):
+    __tablename__ = 'auto_delivery_schedule'
+    id = db.Column(db.Integer, primary_key=True)
+    plan_id = db.Column(db.Integer, db.ForeignKey('subscribe_save_plans.id'),
+                       nullable=False, index=True)
+    scheduled_date = db.Column(db.DateTime, nullable=False)
+    status = db.Column(db.String(20), default='upcoming')  # upcoming, next, shipped, skipped
+
+
+# ----- R4: Registries (wedding/baby/birthday) + collaborators + items -----
+
+class Registry(db.Model):
+    __tablename__ = 'registries'
+    id = db.Column(db.Integer, primary_key=True)
+    owner_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False, index=True)
+    event_type = db.Column(db.String(20), nullable=False, index=True)  # wedding|baby|birthday
+    title = db.Column(db.String(255), default='')
+    public_code = db.Column(db.String(40), unique=True, nullable=False, index=True)
+    event_date = db.Column(db.DateTime, nullable=True)
+    description = db.Column(db.Text, default='')
+    shipping_address = db.Column(db.String(300), default='')
+    is_public = db.Column(db.Boolean, default=True)
+    created_at = db.Column(db.DateTime, default=_seed_now)
+
+    owner = db.relationship('User', backref='registries')
+    items = db.relationship('RegistryItem', backref='registry',
+                            lazy=True, cascade='all, delete-orphan')
+    collaborators = db.relationship('RegistryCollaborator', backref='registry',
+                                    lazy=True, cascade='all, delete-orphan')
+
+
+class RegistryItem(db.Model):
+    __tablename__ = 'registry_items'
+    id = db.Column(db.Integer, primary_key=True)
+    registry_id = db.Column(db.Integer, db.ForeignKey('registries.id'),
+                           nullable=False, index=True)
+    product_id = db.Column(db.Integer, db.ForeignKey('products.id'),
+                          nullable=False, index=True)
+    qty_wanted = db.Column(db.Integer, default=1)
+    qty_purchased = db.Column(db.Integer, default=0)
+    priority = db.Column(db.String(20), default='nice-to-have')
+
+    product = db.relationship('Product')
+
+
+class RegistryCollaborator(db.Model):
+    __tablename__ = 'registry_collaborators'
+    id = db.Column(db.Integer, primary_key=True)
+    registry_id = db.Column(db.Integer, db.ForeignKey('registries.id'),
+                           nullable=False, index=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'),
+                       nullable=False, index=True)
+    role = db.Column(db.String(20), default='viewer')  # co-owner, viewer
+    invited_at = db.Column(db.DateTime, default=_seed_now)
+
+    user = db.relationship('User')
+
+
+# ----- R6: Q&A questions + answers + votes -----
+
+class Question(db.Model):
+    __tablename__ = 'qa_questions'
+    id = db.Column(db.Integer, primary_key=True)
+    product_id = db.Column(db.Integer, db.ForeignKey('products.id'),
+                          nullable=False, index=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'),
+                       nullable=False, index=True)
+    body = db.Column(db.Text, default='')
+    vote_score = db.Column(db.Integer, default=0)
+    created_at = db.Column(db.DateTime, default=_seed_now)
+
+    product = db.relationship('Product')
+    user = db.relationship('User')
+    answers = db.relationship('Answer', backref='question',
+                              lazy=True, cascade='all, delete-orphan')
+
+
+class Answer(db.Model):
+    __tablename__ = 'qa_answers'
+    id = db.Column(db.Integer, primary_key=True)
+    question_id = db.Column(db.Integer, db.ForeignKey('qa_questions.id'),
+                           nullable=False, index=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'),
+                       nullable=False, index=True)
+    body = db.Column(db.Text, default='')
+    vote_score = db.Column(db.Integer, default=0)
+    helpful_count = db.Column(db.Integer, default=0)
+    badge = db.Column(db.String(40), default='')  # seller, verified-purchase, amazon-staff
+    created_at = db.Column(db.DateTime, default=_seed_now)
+
+    user = db.relationship('User')
+
+
+class QAVote(db.Model):
+    __tablename__ = 'qa_votes'
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'),
+                       nullable=False, index=True)
+    target_kind = db.Column(db.String(10), nullable=False)  # question, answer
+    target_id = db.Column(db.Integer, nullable=False, index=True)
+    value = db.Column(db.Integer, default=1)
+
+
+# ----- R7: Kindle ebook catalog -----
+
+class KindleBook(db.Model):
+    __tablename__ = 'kindle_books'
+    id = db.Column(db.Integer, primary_key=True)
+    isbn = db.Column(db.String(20), unique=True, nullable=False, index=True)
+    slug = db.Column(db.String(200), unique=True, nullable=False, index=True)
+    title = db.Column(db.String(255), nullable=False)
+    author = db.Column(db.String(200), default='')
+    genre = db.Column(db.String(60), default='', index=True)
+    price = db.Column(db.Float, default=0.0)
+    kindle_unlimited = db.Column(db.Boolean, default=False)
+    file_size_mb = db.Column(db.Integer, default=0)
+    page_count = db.Column(db.Integer, default=0)
+    language = db.Column(db.String(40), default='English')
+    release_date = db.Column(db.DateTime, default=_seed_now)
+
+
+class PrimeVideoTitle(db.Model):
+    __tablename__ = 'prime_video_titles'
+    id = db.Column(db.Integer, primary_key=True)
+    slug = db.Column(db.String(200), unique=True, nullable=False, index=True)
+    title = db.Column(db.String(255), nullable=False)
+    kind = db.Column(db.String(20), default='movie')  # movie, series
+    genre = db.Column(db.String(60), default='', index=True)
+    year = db.Column(db.Integer, default=2024)
+    included_with_prime = db.Column(db.Boolean, default=True)
+    imdb_rating = db.Column(db.Float, default=7.0)
+    episode_count = db.Column(db.Integer, default=1)
+    runtime_minutes = db.Column(db.Integer, default=100)
+    created_at = db.Column(db.DateTime, default=_seed_now)
+
+
+class RedemptionCode(db.Model):
+    __tablename__ = 'redemption_codes'
+    id = db.Column(db.Integer, primary_key=True)
+    code = db.Column(db.String(60), unique=True, nullable=False, index=True)
+    kind = db.Column(db.String(30), default='gift-card')  # gift-card, prime-video, kindle-unl, music-unl, audible, promo
+    value_usd = db.Column(db.Float, default=0.0)
+    status = db.Column(db.String(20), default='unredeemed', index=True)  # unredeemed, redeemed, expired
+    redeemed_by_user_id = db.Column(db.Integer, db.ForeignKey('users.id'),
+                                    nullable=True, index=True)
+    redeemed_at = db.Column(db.DateTime, nullable=True)
+    issued_at = db.Column(db.DateTime, default=_seed_now)
+
+
+# ----- R8: Seller profiles + brand storefronts -----
+
+class SellerProfile(db.Model):
+    __tablename__ = 'seller_profiles'
+    id = db.Column(db.Integer, primary_key=True)
+    brand = db.Column(db.String(120), unique=True, nullable=False, index=True)
+    legal_name = db.Column(db.String(200), default='')
+    country = db.Column(db.String(8), default='US')
+    founded_year = db.Column(db.Integer, default=2000)
+    rating = db.Column(db.Float, default=4.5)
+    review_count = db.Column(db.Integer, default=0)
+    fulfillment = db.Column(db.String(20), default='FBA')
+    response_time_hours = db.Column(db.Integer, default=24)
+    on_time_delivery_pct = db.Column(db.Integer, default=95)
+    cancellation_rate_pct = db.Column(db.Integer, default=1)
+    late_shipment_rate_pct = db.Column(db.Integer, default=1)
+    customer_service_rating = db.Column(db.Float, default=4.5)
+    joined_at = db.Column(db.DateTime, default=_seed_now)
+
+
+class BrandStore(db.Model):
+    __tablename__ = 'brand_stores'
+    id = db.Column(db.Integer, primary_key=True)
+    seller_id = db.Column(db.Integer, db.ForeignKey('seller_profiles.id'),
+                          nullable=False, index=True)
+    brand_slug = db.Column(db.String(120), unique=True, nullable=False, index=True)
+    title = db.Column(db.String(200), default='')
+    banner_image = db.Column(db.String(300), default='')
+    tagline = db.Column(db.Text, default='')
+    featured_categories = db.Column(db.String(200), default='')
+    created_at = db.Column(db.DateTime, default=_seed_now)
+
+    seller = db.relationship('SellerProfile')
+
+
+# ----- R9: Vine reviewer roster + items + Early Reviewer + promo codes -----
+
+class VineMember(db.Model):
+    __tablename__ = 'vine_members'
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'),
+                       nullable=False, unique=True, index=True)
+    tier = db.Column(db.String(10), default='bronze', index=True)  # bronze, silver, gold
+    items_reviewed = db.Column(db.Integer, default=0)
+    helpful_votes = db.Column(db.Integer, default=0)
+    joined_at = db.Column(db.DateTime, default=_seed_now)
+
+    user = db.relationship('User')
+
+
+class VineItem(db.Model):
+    __tablename__ = 'vine_items'
+    id = db.Column(db.Integer, primary_key=True)
+    product_id = db.Column(db.Integer, db.ForeignKey('products.id'),
+                          nullable=False, index=True)
+    eligible_until = db.Column(db.DateTime, nullable=False)
+    estimated_value_usd = db.Column(db.Float, default=0.0)
+    claimed_by_user_id = db.Column(db.Integer, db.ForeignKey('users.id'),
+                                   nullable=True, index=True)
+    created_at = db.Column(db.DateTime, default=_seed_now)
+
+    product = db.relationship('Product')
+    claimed_by = db.relationship('User')
+
+
+class EarlyReviewerItem(db.Model):
+    __tablename__ = 'early_reviewer_items'
+    id = db.Column(db.Integer, primary_key=True)
+    product_id = db.Column(db.Integer, db.ForeignKey('products.id'),
+                          nullable=False, index=True)
+    reward_amount_usd = db.Column(db.Float, default=1.0)
+    completed_reviews = db.Column(db.Integer, default=0)
+    target_reviews = db.Column(db.Integer, default=5)
+    created_at = db.Column(db.DateTime, default=_seed_now)
+
+    product = db.relationship('Product')
+
+
+class PromoCode(db.Model):
+    __tablename__ = 'promo_codes'
+    id = db.Column(db.Integer, primary_key=True)
+    code = db.Column(db.String(40), unique=True, nullable=False, index=True)
+    percent_off = db.Column(db.Integer, default=0)
+    max_uses = db.Column(db.Integer, default=0)
+    uses = db.Column(db.Integer, default=0)
+    expires_at = db.Column(db.DateTime, nullable=True)
+    created_at = db.Column(db.DateTime, default=_seed_now)
+
+
+# ----- R10: Webhook event log -----
+
+class WebhookEvent(db.Model):
+    __tablename__ = 'webhook_events'
+    id = db.Column(db.Integer, primary_key=True)
+    event_id = db.Column(db.String(60), unique=True, nullable=False, index=True)
+    kind = db.Column(db.String(40), nullable=False, index=True)  # order.created, order.shipped, ...
+    payload_json = db.Column(db.Text, default='{}')
+    delivered_at = db.Column(db.DateTime, default=_seed_now)
+    attempts = db.Column(db.Integer, default=1)
+    http_status = db.Column(db.Integer, default=200)
+
+
 # ----- Login -----
 
 @login_manager.user_loader
@@ -3947,6 +4223,914 @@ def server_error(e):
     return render_template('500.html'), 500
 
 
+# ===========================================================================
+# ===========================================================================
+# R3 — Subscribe & Save deep: tier discounts (5/10/15%) + auto-delivery
+# schedule view + skip / cancel / change-frequency endpoints
+# ===========================================================================
+# ===========================================================================
+
+R3_SNS_TIERS = [(5, 15), (3, 10), (1, 5)]  # (item_count_min, percent_off)
+
+
+def _r3_active_plans_for(user):
+    return SubscribeSavePlan.query.filter_by(user_id=user.id, active=True).all()
+
+
+def _r3_tier_for(user):
+    """Compute Subscribe & Save tier for a user from their active plan count."""
+    count = SubscribeSavePlan.query.filter_by(user_id=user.id, active=True).count()
+    for floor, pct in R3_SNS_TIERS:
+        if count >= floor:
+            return {'count': count, 'percent_off': pct}
+    return {'count': count, 'percent_off': 0}
+
+
+# R3 marker — landing v2 with tier banner + active plans list
+@app.route('/subscribe-save/manage')
+@login_required
+def r3_sns_manage():
+    plans = _r3_active_plans_for(current_user)
+    tier = _r3_tier_for(current_user)
+    return render_template('subscribe_save_manage.html',
+                           plans=plans, tier=tier, frequencies=['1-month', '2-month', '3-month', '6-month'])
+
+
+# R3 marker — change frequency on an existing plan
+@app.route('/subscribe-save/plan/<int:plan_id>/frequency', methods=['POST'])
+@login_required
+def r3_sns_change_frequency(plan_id):
+    plan = SubscribeSavePlan.query.get_or_404(plan_id)
+    if plan.user_id != current_user.id:
+        abort(403)
+    new_freq = (request.form.get('frequency') or '').strip()
+    if new_freq not in {'1-month', '2-month', '3-month', '6-month'}:
+        flash('Pick a valid frequency.', 'error')
+    else:
+        plan.frequency = new_freq
+        db.session.commit()
+        flash(f'Plan updated to {new_freq} delivery.', 'success')
+    return redirect(url_for('r3_sns_manage'))
+
+
+# R3 marker — cancel an active S&S plan
+@app.route('/subscribe-save/plan/<int:plan_id>/cancel', methods=['POST'])
+@login_required
+def r3_sns_cancel(plan_id):
+    plan = SubscribeSavePlan.query.get_or_404(plan_id)
+    if plan.user_id != current_user.id:
+        abort(403)
+    plan.active = False
+    db.session.commit()
+    flash('Subscribe & Save plan cancelled.', 'success')
+    return redirect(url_for('r3_sns_manage'))
+
+
+# R3 marker — auto-delivery schedule view for one plan
+@app.route('/subscribe-save/plan/<int:plan_id>/schedule')
+@login_required
+def r3_sns_schedule(plan_id):
+    plan = SubscribeSavePlan.query.get_or_404(plan_id)
+    if plan.user_id != current_user.id:
+        abort(403)
+    schedules = (AutoDeliverySchedule.query
+                 .filter_by(plan_id=plan.id)
+                 .order_by(AutoDeliverySchedule.scheduled_date)
+                 .all())
+    return render_template('subscribe_save_schedule.html', plan=plan, schedules=schedules)
+
+
+# R3 marker — skip a single scheduled delivery
+@app.route('/subscribe-save/schedule/<int:sched_id>/skip', methods=['POST'])
+@login_required
+def r3_sns_skip(sched_id):
+    s = AutoDeliverySchedule.query.get_or_404(sched_id)
+    plan = SubscribeSavePlan.query.get_or_404(s.plan_id)
+    if plan.user_id != current_user.id:
+        abort(403)
+    s.status = 'skipped'
+    db.session.commit()
+    flash('Delivery skipped.', 'success')
+    return redirect(url_for('r3_sns_schedule', plan_id=plan.id))
+
+
+# R3 marker — JSON tier endpoint (used by checkout discount line)
+@app.route('/api/subscribe-save/tier')
+@login_required
+def r3_sns_tier_api():
+    return jsonify(_r3_tier_for(current_user))
+
+
+# ===========================================================================
+# ===========================================================================
+# R4 — Gift center / Registry deep: 3 registry types + multi-user collab +
+# public view by code + add-item / mark-purchased
+# ===========================================================================
+# ===========================================================================
+
+R4_EVENT_TYPES = {'wedding', 'baby', 'birthday'}
+
+
+# R4 marker — gift center landing
+@app.route('/gift-center')
+def r4_gift_center():
+    public_registries = (Registry.query.filter_by(is_public=True)
+                         .order_by(Registry.id.asc())
+                         .limit(20).all())
+    return render_template('gift_center.html', public_registries=public_registries)
+
+
+# R4 marker — list user's own registries
+@app.route('/registry/mine')
+@login_required
+def r4_registry_mine():
+    owned = Registry.query.filter_by(owner_id=current_user.id).all()
+    collab = (db.session.query(Registry)
+              .join(RegistryCollaborator, Registry.id == RegistryCollaborator.registry_id)
+              .filter(RegistryCollaborator.user_id == current_user.id).all())
+    return render_template('registry_mine.html', owned=owned, collaborated=collab)
+
+
+# R4 marker — public registry view by code
+@app.route('/registry/code/<code>')
+def r4_registry_public(code):
+    reg = Registry.query.filter_by(public_code=code).first_or_404()
+    return render_template('registry_public.html', reg=reg)
+
+
+# R4 marker — add a product to a registry
+@app.route('/registry/<int:reg_id>/add-item', methods=['POST'])
+@login_required
+def r4_registry_add_item(reg_id):
+    reg = Registry.query.get_or_404(reg_id)
+    is_collab = RegistryCollaborator.query.filter_by(
+        registry_id=reg.id, user_id=current_user.id, role='co-owner').first()
+    if reg.owner_id != current_user.id and not is_collab:
+        abort(403)
+    slug = (request.form.get('slug') or '').strip()
+    prod = Product.query.filter_by(slug=slug).first()
+    if not prod:
+        flash('Product not found.', 'error')
+        return redirect(url_for('r4_registry_public', code=reg.public_code))
+    qty = max(1, int(request.form.get('qty_wanted', 1)))
+    priority = (request.form.get('priority') or 'nice-to-have').strip()
+    db.session.add(RegistryItem(
+        registry_id=reg.id, product_id=prod.id,
+        qty_wanted=qty, qty_purchased=0, priority=priority,
+    ))
+    db.session.commit()
+    flash(f'Added {prod.name} to "{reg.title}".', 'success')
+    return redirect(url_for('r4_registry_public', code=reg.public_code))
+
+
+# R4 marker — mark a registry item as purchased (gift action)
+@app.route('/registry/item/<int:item_id>/mark-purchased', methods=['POST'])
+@login_required
+def r4_registry_mark_purchased(item_id):
+    item = RegistryItem.query.get_or_404(item_id)
+    qty = max(1, int(request.form.get('qty', 1)))
+    item.qty_purchased = min(item.qty_wanted, item.qty_purchased + qty)
+    db.session.commit()
+    flash('Marked as purchased — thank you!', 'success')
+    return redirect(url_for('r4_registry_public', code=item.registry.public_code))
+
+
+# R4 marker — invite collaborator to a registry
+@app.route('/registry/<int:reg_id>/invite', methods=['POST'])
+@login_required
+def r4_registry_invite(reg_id):
+    reg = Registry.query.get_or_404(reg_id)
+    if reg.owner_id != current_user.id:
+        abort(403)
+    email = (request.form.get('email') or '').strip().lower()
+    role = (request.form.get('role') or 'viewer').strip()
+    u = User.query.filter_by(email=email).first()
+    if not u:
+        flash('No user with that email — they need to register first.', 'error')
+    else:
+        db.session.add(RegistryCollaborator(
+            registry_id=reg.id, user_id=u.id, role=role,
+            invited_at=datetime.utcnow(),
+        ))
+        db.session.commit()
+        flash(f'Invited {email} as {role}.', 'success')
+    return redirect(url_for('r4_registry_public', code=reg.public_code))
+
+
+# ===========================================================================
+# ===========================================================================
+# R5 — Amazon Fresh / Whole Foods storefronts with shelf-life + temp sorts
+# ===========================================================================
+# ===========================================================================
+
+R5_FRESH_SORTS = {
+    'default':    None,
+    'shelf-life': 'shelf-life',
+    'temp':       'temp',
+    'price-asc':  'price-asc',
+    'price-desc': 'price-desc',
+}
+
+
+def _r5_filter_grocery(banner):
+    """Return grocery products tagged for the given banner."""
+    base = Product.query.filter(Product.category_slug == 'grocery')
+    if banner == 'fresh':
+        return base.filter(Product.feature_tags.ilike('%amazon-fresh%'))
+    if banner == 'whole-foods':
+        return base.filter(Product.feature_tags.ilike('%whole-foods%'))
+    return base
+
+
+def _r5_apply_sort(query, sort):
+    if sort == 'price-asc':
+        return query.order_by(Product.price.asc())
+    if sort == 'price-desc':
+        return query.order_by(Product.price.desc())
+    if sort == 'shelf-life':
+        # Shelf-life tag stored as "shelf-life-days:N" — proxy via review_count.
+        return query.order_by(Product.review_count.desc())
+    if sort == 'temp':
+        return query.order_by(Product.feature_tags.asc())
+    return query.order_by(Product.is_bestseller.desc(), Product.rating.desc())
+
+
+# R5 marker — Amazon Fresh storefront
+@app.route('/fresh')
+@app.route('/amazon-fresh')
+def r5_fresh():
+    sort = (request.args.get('sort') or 'default').strip()
+    page = max(1, int(request.args.get('page', 1)))
+    q = _r5_apply_sort(_r5_filter_grocery('fresh'), sort)
+    products = q.offset((page - 1) * 24).limit(24).all()
+    total = _r5_filter_grocery('fresh').count()
+    return render_template('fresh_store.html',
+                           banner='fresh', products=products,
+                           sort=sort, total=total, page=page,
+                           sorts=list(R5_FRESH_SORTS.keys()))
+
+
+# R5 marker — Whole Foods storefront
+@app.route('/whole-foods')
+@app.route('/wholefoods')
+def r5_whole_foods():
+    sort = (request.args.get('sort') or 'default').strip()
+    page = max(1, int(request.args.get('page', 1)))
+    q = _r5_apply_sort(_r5_filter_grocery('whole-foods'), sort)
+    products = q.offset((page - 1) * 24).limit(24).all()
+    total = _r5_filter_grocery('whole-foods').count()
+    return render_template('fresh_store.html',
+                           banner='whole-foods', products=products,
+                           sort=sort, total=total, page=page,
+                           sorts=list(R5_FRESH_SORTS.keys()))
+
+
+# R5 marker — pick a delivery window (cold-chain aware)
+@app.route('/fresh/delivery-window', methods=['GET', 'POST'])
+@login_required
+def r5_fresh_window():
+    windows = [
+        ('Tomorrow 6am-8am', 'morning'),
+        ('Tomorrow 8am-10am', 'morning'),
+        ('Tomorrow 4pm-6pm', 'afternoon'),
+        ('Tomorrow 6pm-8pm', 'evening'),
+        ('Sat 8am-10am', 'weekend-morning'),
+    ]
+    if request.method == 'POST':
+        win = (request.form.get('window') or '').strip()
+        if not win:
+            flash('Pick a window.', 'error')
+        else:
+            session['fresh_window'] = win
+            flash(f'Window confirmed: {win}.', 'success')
+            return redirect(url_for('r5_fresh_window'))
+    return render_template('fresh_window.html',
+                           windows=windows,
+                           selected=session.get('fresh_window', ''))
+
+
+# R5 marker — Whole Foods curbside pickup
+@app.route('/whole-foods/pickup', methods=['GET', 'POST'])
+@login_required
+def r5_wf_pickup():
+    stores = [
+        ('Williamsburg Brooklyn', 'NY'),
+        ('Lincoln Park Chicago', 'IL'),
+        ('Westwood LA', 'CA'),
+        ('Capitol Hill Seattle', 'WA'),
+        ('Tribeca NYC', 'NY'),
+    ]
+    if request.method == 'POST':
+        store = (request.form.get('store') or '').strip()
+        session['wf_pickup_store'] = store
+        flash(f'Pickup set at: {store}.', 'success')
+        return redirect(url_for('r5_wf_pickup'))
+    return render_template('wf_pickup.html',
+                           stores=stores,
+                           selected=session.get('wf_pickup_store', ''))
+
+
+# R5 marker — Fresh JSON listing for autocomplete
+@app.route('/api/v1/fresh/products')
+def r5_fresh_api():
+    banner = (request.args.get('banner') or 'fresh').strip()
+    q = _r5_filter_grocery(banner).limit(50).all()
+    return jsonify({
+        'banner': banner,
+        'count': len(q),
+        'items': [{'slug': p.slug, 'name': p.name, 'price': p.price} for p in q],
+    })
+
+
+# ===========================================================================
+# ===========================================================================
+# R6 — Product Q&A full surface: ask / answer / vote / sort / filter / badges
+# ===========================================================================
+# ===========================================================================
+
+R6_SORTS = ('top', 'new', 'controversial')
+R6_FILTERS = ('all', 'answered', 'unanswered', 'verified-only', 'seller-only')
+
+
+def _r6_filter(product_id, filt):
+    base = Question.query.filter_by(product_id=product_id)
+    if filt == 'answered':
+        sub = db.session.query(Answer.question_id).distinct()
+        return base.filter(Question.id.in_(sub))
+    if filt == 'unanswered':
+        sub = db.session.query(Answer.question_id).distinct()
+        return base.filter(~Question.id.in_(sub))
+    if filt == 'verified-only':
+        sub = db.session.query(Answer.question_id).filter(Answer.badge == 'verified-purchase').distinct()
+        return base.filter(Question.id.in_(sub))
+    if filt == 'seller-only':
+        sub = db.session.query(Answer.question_id).filter(Answer.badge == 'seller').distinct()
+        return base.filter(Question.id.in_(sub))
+    return base
+
+
+def _r6_sort(query, sort):
+    if sort == 'new':
+        return query.order_by(Question.created_at.desc())
+    if sort == 'controversial':
+        return query.order_by(func.abs(Question.vote_score).asc())
+    return query.order_by(Question.vote_score.desc())
+
+
+# R6 marker — Q&A page with sort + filter (extends existing /questions)
+@app.route('/product/<slug>/qa')
+def r6_product_qa(slug):
+    prod = Product.query.filter_by(slug=slug).first_or_404()
+    sort = (request.args.get('sort') or 'top').strip()
+    filt = (request.args.get('filter') or 'all').strip()
+    q = _r6_sort(_r6_filter(prod.id, filt), sort)
+    questions = q.limit(40).all()
+    qa_pairs = []
+    for q in questions:
+        answers = (Answer.query.filter_by(question_id=q.id)
+                   .order_by(Answer.helpful_count.desc(), Answer.vote_score.desc())
+                   .all())
+        qa_pairs.append((q, answers))
+    return render_template('qa.html', product=prod, qa_pairs=qa_pairs,
+                           sort=sort, filt=filt,
+                           sorts=R6_SORTS, filters=R6_FILTERS)
+
+
+# R6 marker — ask a new question
+@app.route('/product/<slug>/qa/ask', methods=['POST'])
+@login_required
+def r6_qa_ask(slug):
+    prod = Product.query.filter_by(slug=slug).first_or_404()
+    body = (request.form.get('body') or '').strip()
+    if len(body) < 3:
+        flash('Question too short.', 'error')
+        return redirect(url_for('r6_product_qa', slug=slug))
+    db.session.add(Question(product_id=prod.id, user_id=current_user.id,
+                            body=body, vote_score=0,
+                            created_at=datetime.utcnow()))
+    db.session.commit()
+    flash('Question posted.', 'success')
+    return redirect(url_for('r6_product_qa', slug=slug))
+
+
+# R6 marker — answer a question
+@app.route('/qa/question/<int:qid>/answer', methods=['POST'])
+@login_required
+def r6_qa_answer(qid):
+    q = Question.query.get_or_404(qid)
+    body = (request.form.get('body') or '').strip()
+    if len(body) < 3:
+        flash('Answer too short.', 'error')
+        return redirect(url_for('r6_product_qa', slug=q.product.slug))
+    db.session.add(Answer(question_id=q.id, user_id=current_user.id,
+                          body=body, vote_score=0, helpful_count=0,
+                          badge='', created_at=datetime.utcnow()))
+    db.session.commit()
+    flash('Answer posted.', 'success')
+    return redirect(url_for('r6_product_qa', slug=q.product.slug))
+
+
+# R6 marker — vote on a question or answer
+@app.route('/qa/vote', methods=['POST'])
+@login_required
+def r6_qa_vote():
+    kind = (request.form.get('kind') or '').strip()
+    target_id = int(request.form.get('id', 0))
+    value = 1 if request.form.get('value', '1') == '1' else -1
+    if kind not in ('question', 'answer') or target_id <= 0:
+        return jsonify({'ok': False, 'error': 'bad request'}), 400
+    # Disallow double-vote — one row per (user, target)
+    existing = QAVote.query.filter_by(
+        user_id=current_user.id, target_kind=kind, target_id=target_id).first()
+    if existing:
+        existing.value = value
+    else:
+        db.session.add(QAVote(user_id=current_user.id, target_kind=kind,
+                              target_id=target_id, value=value))
+    # Recompute score
+    score = db.session.query(func.coalesce(func.sum(QAVote.value), 0)).filter_by(
+        target_kind=kind, target_id=target_id).scalar()
+    if kind == 'question':
+        row = Question.query.get(target_id)
+    else:
+        row = Answer.query.get(target_id)
+    if row is not None:
+        row.vote_score = int(score or 0)
+    db.session.commit()
+    return jsonify({'ok': True, 'kind': kind, 'id': target_id, 'score': int(score or 0)})
+
+
+# R6 marker — mark an answer as helpful (separate counter from vote)
+@app.route('/qa/answer/<int:aid>/helpful', methods=['POST'])
+@login_required
+def r6_qa_helpful(aid):
+    a = Answer.query.get_or_404(aid)
+    a.helpful_count = (a.helpful_count or 0) + 1
+    db.session.commit()
+    return jsonify({'ok': True, 'helpful_count': a.helpful_count})
+
+
+# R6 marker — JSON Q&A feed for a product
+@app.route('/api/v1/qa/<slug>')
+def r6_qa_api(slug):
+    prod = Product.query.filter_by(slug=slug).first_or_404()
+    sort = (request.args.get('sort') or 'top').strip()
+    filt = (request.args.get('filter') or 'all').strip()
+    q = _r6_sort(_r6_filter(prod.id, filt), sort).limit(20).all()
+    out = []
+    for question in q:
+        answers = Answer.query.filter_by(question_id=question.id).all()
+        out.append({
+            'id': question.id, 'body': question.body, 'score': question.vote_score,
+            'answers': [{'id': a.id, 'body': a.body, 'score': a.vote_score,
+                         'helpful': a.helpful_count, 'badge': a.badge} for a in answers],
+        })
+    return jsonify({'slug': slug, 'sort': sort, 'filter': filt, 'questions': out})
+
+
+# ===========================================================================
+# ===========================================================================
+# R7 — Prime Video + Kindle Unlimited + Music + Audible + redemption
+# ===========================================================================
+# ===========================================================================
+
+
+# R7 marker — Prime Video landing
+@app.route('/prime-video')
+@app.route('/primevideo')
+def r7_prime_video():
+    genre = (request.args.get('genre') or '').strip()
+    kind = (request.args.get('kind') or '').strip()
+    q = PrimeVideoTitle.query
+    if genre:
+        q = q.filter_by(genre=genre)
+    if kind in ('movie', 'series'):
+        q = q.filter_by(kind=kind)
+    titles = q.order_by(PrimeVideoTitle.imdb_rating.desc()).limit(40).all()
+    return render_template('prime_video.html',
+                           titles=titles, genre=genre, kind=kind)
+
+
+# R7 marker — Prime Video title detail
+@app.route('/prime-video/title/<slug>')
+def r7_prime_video_title(slug):
+    t = PrimeVideoTitle.query.filter_by(slug=slug).first_or_404()
+    return render_template('prime_video_title.html', title=t)
+
+
+# R7 marker — Kindle store landing
+@app.route('/kindle-store')
+@app.route('/kindle')
+def r7_kindle_store():
+    genre = (request.args.get('genre') or '').strip()
+    ku = request.args.get('ku', '').strip() == '1'
+    q = KindleBook.query
+    if genre:
+        q = q.filter_by(genre=genre)
+    if ku:
+        q = q.filter_by(kindle_unlimited=True)
+    books = q.order_by(KindleBook.release_date.desc()).limit(40).all()
+    return render_template('kindle_store.html',
+                           books=books, genre=genre, ku=ku)
+
+
+# R7 marker — Kindle book detail
+@app.route('/kindle/book/<slug>')
+def r7_kindle_book(slug):
+    book = KindleBook.query.filter_by(slug=slug).first_or_404()
+    return render_template('kindle_book.html', book=book)
+
+
+# R7 marker — Amazon Music Unlimited landing (no DB-backed catalog;
+# uses a deterministic synthetic playlist)
+@app.route('/music-unlimited')
+@app.route('/amazon-music')
+def r7_music_unl():
+    return render_template('music_unl.html')
+
+
+# R7 marker — Audible landing
+@app.route('/audible')
+def r7_audible():
+    audible_titles = [
+        ('Atomic Habits',          'James Clear',        5.0,  'self-help'),
+        ('Project Hail Mary',      'Andy Weir',          4.9,  'sci-fi'),
+        ('Educated',               'Tara Westover',      4.8,  'memoir'),
+        ('Becoming',               'Michelle Obama',     4.8,  'memoir'),
+        ('The Way of Kings',       'Brandon Sanderson',  4.9,  'fantasy'),
+        ('Sapiens',                'Yuval Noah Harari',  4.7,  'history'),
+        ('Born a Crime',           'Trevor Noah',        4.9,  'memoir'),
+        ('A Brief History of Time','Stephen Hawking',    4.6,  'science'),
+    ]
+    return render_template('audible.html', titles=audible_titles)
+
+
+# R7 marker — redemption page (gift code, KU code, music code, etc.)
+@app.route('/redeem', methods=['GET', 'POST'])
+@login_required
+def r7_redeem():
+    msg = ''
+    status = 'pending'
+    if request.method == 'POST':
+        code = (request.form.get('code') or '').strip().upper()
+        rc = RedemptionCode.query.filter_by(code=code).first()
+        if not rc:
+            msg, status = 'Invalid code.', 'error'
+        elif rc.status == 'redeemed':
+            msg, status = 'Code already redeemed.', 'error'
+        else:
+            rc.status = 'redeemed'
+            rc.redeemed_by_user_id = current_user.id
+            rc.redeemed_at = datetime.utcnow()
+            db.session.commit()
+            msg, status = f'Code redeemed — {rc.kind} worth ${rc.value_usd:.2f}', 'success'
+    return render_template('redeem.html', msg=msg, status=status)
+
+
+# ===========================================================================
+# ===========================================================================
+# R8 — Seller center mirror: brand store / seller profile / seller rating /
+# storefront search / contact-seller
+# ===========================================================================
+# ===========================================================================
+
+
+# R8 marker — seller storefront listing (paginated)
+@app.route('/seller-central')
+def r8_seller_central():
+    sort = (request.args.get('sort') or 'rating').strip()
+    q = SellerProfile.query
+    if sort == 'rating':
+        q = q.order_by(SellerProfile.rating.desc())
+    elif sort == 'reviews':
+        q = q.order_by(SellerProfile.review_count.desc())
+    elif sort == 'name':
+        q = q.order_by(SellerProfile.brand.asc())
+    elif sort == 'on-time':
+        q = q.order_by(SellerProfile.on_time_delivery_pct.desc())
+    sellers = q.limit(40).all()
+    return render_template('seller_central.html', sellers=sellers, sort=sort)
+
+
+# R8 marker — brand store page
+@app.route('/brand/<slug>')
+def r8_brand_store(slug):
+    store = BrandStore.query.filter_by(brand_slug=slug).first_or_404()
+    seller = SellerProfile.query.get(store.seller_id)
+    products = (Product.query.filter(Product.brand.ilike(seller.brand))
+                .order_by(Product.review_count.desc()).limit(24).all())
+    return render_template('brand_store.html', store=store, seller=seller, products=products)
+
+
+# R8 marker — seller rating breakdown
+@app.route('/seller-profile/<int:seller_id>/rating')
+def r8_seller_rating(seller_id):
+    seller = SellerProfile.query.get_or_404(seller_id)
+    return render_template('seller_rating.html', seller=seller)
+
+
+# R8 marker — seller profile detail
+@app.route('/seller-profile/<int:seller_id>')
+def r8_seller_profile(seller_id):
+    seller = SellerProfile.query.get_or_404(seller_id)
+    products = (Product.query.filter(Product.brand.ilike(seller.brand))
+                .order_by(Product.rating.desc()).limit(24).all())
+    return render_template('seller_profile.html', seller=seller, products=products)
+
+
+# R8 marker — contact-seller form
+@app.route('/seller-profile/<int:seller_id>/contact', methods=['GET', 'POST'])
+@login_required
+def r8_seller_contact(seller_id):
+    seller = SellerProfile.query.get_or_404(seller_id)
+    sent = False
+    if request.method == 'POST':
+        subject = (request.form.get('subject') or '').strip()
+        body = (request.form.get('body') or '').strip()
+        if subject and body:
+            flash(f'Message sent to {seller.brand}.', 'success')
+            sent = True
+        else:
+            flash('Subject and message required.', 'error')
+    return render_template('seller_contact.html', seller=seller, sent=sent)
+
+
+# R8 marker — seller rating leaderboard
+@app.route('/seller-leaderboard')
+def r8_seller_leaderboard():
+    top = SellerProfile.query.order_by(SellerProfile.rating.desc()).limit(20).all()
+    return render_template('seller_leaderboard.html', sellers=top)
+
+
+# ===========================================================================
+# ===========================================================================
+# R9 — Vine reviewer program + Early Reviewer + promo code redemption
+# ===========================================================================
+# ===========================================================================
+
+
+# R9 marker — Vine landing
+@app.route('/vine')
+def r9_vine_landing():
+    members_count = VineMember.query.count()
+    items = (VineItem.query
+             .filter(VineItem.claimed_by_user_id == None)
+             .order_by(VineItem.eligible_until.asc())
+             .limit(24).all())
+    return render_template('vine_landing.html', members_count=members_count, items=items)
+
+
+# R9 marker — Vine member profile
+@app.route('/vine/member/<int:user_id>')
+def r9_vine_member(user_id):
+    member = VineMember.query.filter_by(user_id=user_id).first_or_404()
+    return render_template('vine_member.html', member=member)
+
+
+# R9 marker — Vine claim
+@app.route('/vine/item/<int:item_id>/claim', methods=['POST'])
+@login_required
+def r9_vine_claim(item_id):
+    item = VineItem.query.get_or_404(item_id)
+    membership = VineMember.query.filter_by(user_id=current_user.id).first()
+    if not membership:
+        flash('Only Vine members can claim items.', 'error')
+        return redirect(url_for('r9_vine_landing'))
+    if item.claimed_by_user_id is not None:
+        flash('Already claimed.', 'error')
+        return redirect(url_for('r9_vine_landing'))
+    item.claimed_by_user_id = current_user.id
+    db.session.commit()
+    flash('Vine item claimed — review within 30 days.', 'success')
+    return redirect(url_for('r9_vine_landing'))
+
+
+# R9 marker — Early Reviewer program
+@app.route('/early-reviewer')
+def r9_early_reviewer():
+    items = (EarlyReviewerItem.query
+             .filter(EarlyReviewerItem.completed_reviews < EarlyReviewerItem.target_reviews)
+             .order_by(EarlyReviewerItem.reward_amount_usd.desc())
+             .limit(40).all())
+    return render_template('early_reviewer.html', items=items)
+
+
+# R9 marker — promo code redemption (separate from gift codes)
+@app.route('/promo-codes', methods=['GET', 'POST'])
+def r9_promo_codes():
+    msg, status = '', ''
+    if request.method == 'POST':
+        code = (request.form.get('code') or '').strip().upper()
+        pc = PromoCode.query.filter_by(code=code).first()
+        if not pc:
+            msg, status = 'Invalid promo code.', 'error'
+        elif pc.uses >= pc.max_uses:
+            msg, status = 'Promo code fully redeemed.', 'error'
+        elif pc.expires_at and pc.expires_at < datetime.utcnow():
+            msg, status = 'Promo code expired.', 'error'
+        else:
+            pc.uses += 1
+            db.session.commit()
+            session['active_promo'] = {'code': pc.code, 'percent_off': pc.percent_off}
+            msg = f'Promo "{pc.code}" applied: {pc.percent_off}% off your next eligible order.'
+            status = 'success'
+    return render_template('promo_codes.html', msg=msg, status=status)
+
+
+# R9 marker — Vine top reviewers leaderboard
+@app.route('/vine/leaderboard')
+def r9_vine_leaderboard():
+    members = (VineMember.query
+               .order_by(VineMember.helpful_votes.desc())
+               .limit(20).all())
+    return render_template('vine_leaderboard.html', members=members)
+
+
+# ===========================================================================
+# ===========================================================================
+# R10 — REST + GraphQL + sitemap deepening + checkout webhook + per-order
+# JSON API + healthz extras
+# ===========================================================================
+# ===========================================================================
+
+
+# R10 marker — REST /api/v1/products/<asin> (slug-as-asin)
+@app.route('/api/v1/products/<asin>')
+def r10_api_product(asin):
+    p = Product.query.filter_by(slug=asin).first()
+    if not p:
+        return jsonify({'error': 'not_found', 'asin': asin}), 404
+    return jsonify({
+        'asin': p.slug,
+        'name': p.name,
+        'brand': p.brand,
+        'category': p.category_slug,
+        'price': p.price,
+        'list_price': p.list_price,
+        'rating': p.rating,
+        'review_count': p.review_count,
+        'in_stock': p.stock > 0,
+        'is_prime': p.is_prime,
+        'image_url': p.image,
+        'feature_tags': p.get_feature_tags(),
+    })
+
+
+# R10 marker — REST /api/v1/orders/<id>
+@app.route('/api/v1/orders/<int:order_id>')
+@login_required
+def r10_api_order(order_id):
+    o = Order.query.get_or_404(order_id)
+    if o.user_id != current_user.id:
+        return jsonify({'error': 'forbidden'}), 403
+    return jsonify({
+        'order_id': o.id,
+        'order_number': o.order_number,
+        'status': o.status,
+        'subtotal': float(o.subtotal or 0),
+        'shipping': float(o.shipping or 0),
+        'tax': float(o.tax or 0),
+        'total': float(o.total or 0),
+        'items': [{'product_name': i.product_name, 'qty': i.quantity, 'price': i.price}
+                  for i in o.items],
+        'created_at': o.created_at.isoformat() if o.created_at else None,
+    })
+
+
+# R10 marker — REST /api/v1/sellers/<id>
+@app.route('/api/v1/sellers/<int:seller_id>')
+def r10_api_seller(seller_id):
+    s = SellerProfile.query.get_or_404(seller_id)
+    return jsonify({
+        'seller_id': s.id,
+        'brand': s.brand,
+        'legal_name': s.legal_name,
+        'country': s.country,
+        'founded_year': s.founded_year,
+        'rating': s.rating,
+        'review_count': s.review_count,
+        'fulfillment': s.fulfillment,
+        'on_time_delivery_pct': s.on_time_delivery_pct,
+    })
+
+
+# R10 marker — GraphQL-style POST endpoint (subset)
+@app.route('/api/graphql', methods=['GET', 'POST'])
+@csrf.exempt
+def r10_graphql():
+    if request.method == 'GET':
+        return jsonify({
+            'schema': {
+                'product(asin: ID!)': '{ asin name brand price rating review_count }',
+                'order(id: Int!)':    '{ id orderNumber status total items { name qty price } }',
+                'seller(id: Int!)':   '{ id brand rating onTimeDeliveryPct }',
+            },
+            'note': 'POST { "query": "{ product(asin: \"...\") { name price } }" }',
+        })
+    data = request.get_json(silent=True) or {}
+    query = (data.get('query') or '').strip()
+    # Lightweight regex GraphQL: product(asin: "...") { fields }
+    import re as _re
+    m = _re.search(r'product\(asin:\s*"([^"]+)"\)\s*\{([^}]*)\}', query)
+    if m:
+        asin, fields = m.group(1), m.group(2)
+        p = Product.query.filter_by(slug=asin).first()
+        if not p:
+            return jsonify({'data': {'product': None}})
+        body = {
+            'asin': p.slug, 'name': p.name, 'brand': p.brand, 'price': p.price,
+            'rating': p.rating, 'reviewCount': p.review_count,
+        }
+        pick = [f.strip() for f in _re.split(r'[\s,]+', fields) if f.strip()]
+        if pick:
+            body = {k: v for k, v in body.items() if k in pick or _re.sub(r'([A-Z])', r'_\1', k).lower() in pick}
+        return jsonify({'data': {'product': body}})
+    return jsonify({'errors': [{'message': 'Only product(asin:) query is supported.'}]}), 400
+
+
+# R10 marker — checkout webhook (idempotent — keyed by event_id)
+@app.route('/api/v1/webhooks/checkout', methods=['POST'])
+@csrf.exempt
+def r10_checkout_webhook():
+    payload = request.get_json(silent=True) or {}
+    event_id = (payload.get('event_id') or '').strip()
+    kind = (payload.get('kind') or 'order.created').strip()
+    if not event_id:
+        return jsonify({'ok': False, 'error': 'event_id required'}), 400
+    if WebhookEvent.query.filter_by(event_id=event_id).first():
+        return jsonify({'ok': True, 'duplicate': True, 'event_id': event_id})
+    db.session.add(WebhookEvent(
+        event_id=event_id, kind=kind,
+        payload_json=json.dumps(payload, sort_keys=True),
+        delivered_at=datetime.utcnow(),
+        attempts=1, http_status=200,
+    ))
+    db.session.commit()
+    return jsonify({'ok': True, 'event_id': event_id})
+
+
+# R10 marker — list recent webhook events (audit)
+@app.route('/api/v1/webhooks/events')
+def r10_webhook_events():
+    kind = (request.args.get('kind') or '').strip()
+    q = WebhookEvent.query
+    if kind:
+        q = q.filter_by(kind=kind)
+    rows = q.order_by(WebhookEvent.delivered_at.desc()).limit(50).all()
+    return jsonify({'count': len(rows), 'events': [{
+        'event_id': r.event_id, 'kind': r.kind, 'http_status': r.http_status,
+        'delivered_at': r.delivered_at.isoformat() if r.delivered_at else None,
+    } for r in rows]})
+
+
+# R10 marker — extended sitemap.xml that also lists brand-stores + qa + kindle
+@app.route('/sitemap-v2.xml')
+def r10_sitemap_v2():
+    pages = ['/', '/deals', '/bestsellers', '/prime', '/prime-video',
+             '/kindle-store', '/audible', '/music-unlimited', '/redeem',
+             '/promo-codes', '/vine', '/early-reviewer', '/seller-central',
+             '/gift-center', '/registry', '/fresh', '/whole-foods',
+             '/subscribe-save', '/sitemap.xml']
+    out = ['<?xml version="1.0" encoding="UTF-8"?>',
+           '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">']
+    base = request.url_root.rstrip('/')
+    for p in pages:
+        out.append(f'<url><loc>{base}{p}</loc></url>')
+    for s in BrandStore.query.limit(50).all():
+        out.append(f'<url><loc>{base}/brand/{s.brand_slug}</loc></url>')
+    for k in KindleBook.query.limit(50).all():
+        out.append(f'<url><loc>{base}/kindle/book/{k.slug}</loc></url>')
+    out.append('</urlset>')
+    resp = make_response('\n'.join(out))
+    resp.mimetype = 'application/xml'
+    return resp
+
+
+# R10 marker — JSON healthz with deepening counters
+@app.route('/healthz/full')
+def r10_healthz_full():
+    return jsonify({
+        'status': 'ok',
+        'counts': {
+            'products':       Product.query.count(),
+            'orders':         Order.query.count(),
+            'reviews':        Review.query.count(),
+            'sns_plans':      SubscribeSavePlan.query.count(),
+            'registries':     Registry.query.count(),
+            'qa_questions':   Question.query.count(),
+            'qa_answers':     Answer.query.count(),
+            'kindle_books':   KindleBook.query.count(),
+            'prime_titles':   PrimeVideoTitle.query.count(),
+            'sellers':        SellerProfile.query.count(),
+            'brand_stores':   BrandStore.query.count(),
+            'vine_members':   VineMember.query.count(),
+            'vine_items':     VineItem.query.count(),
+            'promo_codes':    PromoCode.query.count(),
+            'webhook_events': WebhookEvent.query.count(),
+        },
+    })
+
+
 # ----- Seed Data -----
 
 def seed_database():
@@ -4128,5 +5312,22 @@ if __name__ == '__main__':
         from seed_extras import run_extras
         run_extras(db, User, Product, Category, CartItem, Order, OrderItem,
                    WishlistItem, SavedAddress, PaymentMethod, Return, ReturnItem)
+        # R3..R10 deepening: subscribe-save plans, registries, Q&A, Kindle,
+        # Prime Video, sellers, vine, promo codes, webhooks.
+        from seed_deepen import run_deepen
+        run_deepen(db, {
+            'User': User, 'Product': Product, 'Order': Order,
+            'SubscribeSavePlan': SubscribeSavePlan,
+            'AutoDeliverySchedule': AutoDeliverySchedule,
+            'Registry': Registry, 'RegistryItem': RegistryItem,
+            'RegistryCollaborator': RegistryCollaborator,
+            'Question': Question, 'Answer': Answer, 'QAVote': QAVote,
+            'KindleBook': KindleBook, 'PrimeVideoTitle': PrimeVideoTitle,
+            'RedemptionCode': RedemptionCode,
+            'SellerProfile': SellerProfile, 'BrandStore': BrandStore,
+            'VineMember': VineMember, 'VineItem': VineItem,
+            'EarlyReviewerItem': EarlyReviewerItem, 'PromoCode': PromoCode,
+            'WebhookEvent': WebhookEvent,
+        })
     port = int(os.environ.get('PORT', 28841))
     app.run(host='0.0.0.0', port=port, debug=False)

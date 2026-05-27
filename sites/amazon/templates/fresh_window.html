@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block title %}Pick Delivery Window - Amazon Fresh{% endblock %}
+{% block content %}
+<div class="account-page" style="max-width:700px">
+    <h1>Pick a delivery window</h1>
+    <p>Cold-chain aware — perishable items (frozen + chilled) are restricted to morning slots.</p>
+    <form method="POST">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token_value }}">
+        {% for label, tag in windows %}
+        <label style="display:block;padding:10px;border:1px solid #ddd;border-radius:6px;margin:8px 0;cursor:pointer">
+            <input type="radio" name="window" value="{{ label }}" {% if selected==label %}checked{% endif %}>
+            {{ label }} <span style="color:#565959;font-size:12px">[{{ tag }}]</span>
+        </label>
+        {% endfor %}
+        <button class="btn-primary" type="submit">Confirm window</button>
+    </form>
+    {% if selected %}<p style="margin-top:14px"><strong>Current selection:</strong> {{ selected }}</p>{% endif %}
+</div>
+{% endblock %}

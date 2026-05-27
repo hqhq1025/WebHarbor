@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block title %}Vine Leaderboard{% endblock %}
+{% block content %}
+<div class="account-page" style="max-width:800px">
+    <h1>Top Vine reviewers (by helpful votes)</h1>
+    <ol>
+    {% for m in members %}
+        <li>{{ m.user.email }} — {{ m.tier }} tier, {{ m.helpful_votes }} helpful, {{ m.items_reviewed }} reviewed</li>
+    {% endfor %}
+    </ol>
+</div>
+{% endblock %}

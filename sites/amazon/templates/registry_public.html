@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+{% block title %}{{ reg.title }} - Amazon Registry{% endblock %}
+{% block content %}
+<div class="account-page" style="max-width:1100px">
+    <h1>{{ reg.title }}</h1>
+    <p>{{ reg.event_type|title }} registry · Event date: <strong>{{ reg.event_date.strftime('%Y-%m-%d') if reg.event_date else 'TBA' }}</strong> · Shipping to {{ reg.shipping_address }}</p>
+    <p style="font-family:monospace;color:#565959">Public code: {{ reg.public_code }}</p>
+    <h2 style="font-size:18px">Items</h2>
+    <table style="width:100%;border-collapse:collapse;font-size:14px">
+        <thead><tr style="background:#f3f3f3"><th style="padding:8px;text-align:left">Item</th><th>Priority</th><th>Wanted</th><th>Purchased</th><th>Action</th></tr></thead>
+        <tbody>
+        {% for it in reg.items %}
+        <tr style="border-top:1px solid #eee">
+            <td style="padding:8px"><a class="text-link" href="{{ url_for('product_detail', slug=it.product.slug) }}">{{ it.product.name }}</a></td>
+            <td style="padding:8px">{{ it.priority }}</td>
+            <td style="padding:8px">{{ it.qty_wanted }}</td>
+            <td style="padding:8px">{{ it.qty_purchased }}</td>
+            <td style="padding:8px">
+                {% if current_user.is_authenticated and it.qty_purchased < it.qty_wanted %}
+                <form method="POST" action="{{ url_for('r4_registry_mark_purchased', item_id=it.id) }}" style="display:inline">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token_value }}">
+                    <input type="hidden" name="qty" value="1">
+                    <button class="btn-action" type="submit">I'm gifting this</button>
+                </form>
+                {% endif %}
+            </td>
+        </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+
+    {% if current_user.is_authenticated and (current_user.id == reg.owner_id) %}
+    <h2 style="font-size:18px;margin-top:24px">Add an item</h2>
+    <form method="POST" action="{{ url_for('r4_registry_add_item', reg_id=reg.id) }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token_value }}">
+        <input type="text" name="slug" placeholder="Product slug" class="form-control" required>
+        <input type="number" name="qty_wanted" min="1" max="20" value="1" class="form-control" style="width:100px">
+        <select name="priority" class="form-control">
+            <option value="must-have">Must have</option>
+            <option value="nice-to-have" selected>Nice to have</option>
+            <option value="low">Low priority</option>
+        </select>
+        <button class="btn-primary" type="submit">Add item</button>
+    </form>
+
+    <h2 style="font-size:18px;margin-top:24px">Invite a co-owner / viewer</h2>
+    <form method="POST" action="{{ url_for('r4_registry_invite', reg_id=reg.id) }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token_value }}">
+        <input type="email" name="email" placeholder="friend@example.com" class="form-control" required>
+        <select name="role" class="form-control">
+            <option value="viewer">Viewer</option>
+            <option value="co-owner">Co-owner</option>
+        </select>
+        <button class="btn-primary" type="submit">Send invite</button>
+    </form>
+    {% endif %}
+
+    <h2 style="font-size:18px;margin-top:24px">Collaborators</h2>
+    <ul>
+        {% for c in reg.collaborators %}
+            <li>{{ c.user.email }} — {{ c.role }}</li>
+        {% else %}<li style="color:#565959">No collaborators yet.</li>{% endfor %}
+    </ul>
+</div>
+{% endblock %}

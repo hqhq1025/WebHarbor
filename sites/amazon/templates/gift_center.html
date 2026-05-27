@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block title %}Gift Center - Amazon.com{% endblock %}
+{% block content %}
+<div class="account-page" style="max-width:1100px">
+    <h1>🎁 Gift Center</h1>
+    <p>Browse public registries by friends &amp; family or start your own.</p>
+    <div style="display:flex;gap:16px;flex-wrap:wrap;margin:18px 0">
+        <a class="btn-action" href="{{ url_for('registry') }}">All registries</a>
+        <a class="btn-action" href="{{ url_for('r4_registry_mine') }}">My registries</a>
+        <a class="btn-action" href="{{ url_for('gift_finder') }}">Gift finder quiz</a>
+        <a class="btn-action" href="{{ url_for('gift_cards') }}">Gift cards</a>
+    </div>
+    <h2>Public registries</h2>
+    <table style="width:100%;border-collapse:collapse;font-size:14px">
+        <thead><tr style="background:#f3f3f3"><th style="padding:8px;text-align:left">Title</th><th>Event</th><th>Date</th><th>Code</th></tr></thead>
+        <tbody>
+        {% for r in public_registries %}
+        <tr style="border-top:1px solid #eee">
+            <td style="padding:8px"><a class="text-link" href="{{ url_for('r4_registry_public', code=r.public_code) }}">{{ r.title }}</a></td>
+            <td style="padding:8px">{{ r.event_type }}</td>
+            <td style="padding:8px">{{ r.event_date.strftime('%Y-%m-%d') if r.event_date else '' }}</td>
+            <td style="padding:8px;font-family:monospace">{{ r.public_code }}</td>
+        </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

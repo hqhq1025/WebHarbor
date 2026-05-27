@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block title %}Seller Central - Amazon.com{% endblock %}
+{% block content %}
+<div class="account-page" style="max-width:1200px">
+    <h1>Seller Central</h1>
+    <p>Browse {{ sellers|length }} top brand sellers on Amazon.</p>
+    <div style="margin:10px 0">
+        Sort:
+        <a class="text-link" href="?sort=rating">rating</a> ·
+        <a class="text-link" href="?sort=reviews">reviews</a> ·
+        <a class="text-link" href="?sort=name">name</a> ·
+        <a class="text-link" href="?sort=on-time">on-time delivery</a>
+    </div>
+    <table style="width:100%;border-collapse:collapse;font-size:14px">
+        <thead><tr style="background:#f3f3f3"><th style="padding:8px;text-align:left">Brand</th><th>Country</th><th>Rating</th><th>Reviews</th><th>Fulfillment</th><th>On-time</th></tr></thead>
+        <tbody>
+        {% for s in sellers %}
+        <tr style="border-top:1px solid #eee">
+            <td style="padding:8px"><a class="text-link" href="{{ url_for('r8_seller_profile', seller_id=s.id) }}">{{ s.brand }}</a></td>
+            <td style="padding:8px">{{ s.country }}</td>
+            <td style="padding:8px">⭐ {{ s.rating }}</td>
+            <td style="padding:8px">{{ s.review_count }}</td>
+            <td style="padding:8px">{{ s.fulfillment }}</td>
+            <td style="padding:8px">{{ s.on_time_delivery_pct }}%</td>
+        </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block title %}{{ title.title }} - Prime Video{% endblock %}
+{% block content %}
+<div class="account-page" style="max-width:900px">
+    <h1>{{ title.title }} ({{ title.year }})</h1>
+    <p>{{ title.kind|title }} · {{ title.genre }} · ⭐ {{ title.imdb_rating }} IMDb</p>
+    {% if title.kind == 'series' %}
+        <p>{{ title.episode_count }} episodes · ~{{ title.runtime_minutes }} min per ep</p>
+    {% else %}
+        <p>Runtime: {{ title.runtime_minutes }} min</p>
+    {% endif %}
+    <p>{% if title.included_with_prime %}✓ Included with Prime{% else %}Rent or buy{% endif %}</p>
+    <a class="btn-primary" href="{{ url_for('r7_prime_video') }}">← Back to Prime Video</a>
+</div>
+{% endblock %}

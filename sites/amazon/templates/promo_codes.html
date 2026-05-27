@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block title %}Promo Codes - Amazon.com{% endblock %}
+{% block content %}
+<div class="account-page" style="max-width:600px">
+    <h1>Apply a promo code</h1>
+    <form method="POST">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token_value }}">
+        <input type="text" name="code" class="form-control" placeholder="PRIMEDAY26" required>
+        <button class="btn-primary" type="submit">Apply</button>
+    </form>
+    {% if msg %}<p style="color:{{ 'green' if status=='success' else '#b12704' }};margin-top:14px">{{ msg }}</p>{% endif %}
+    {% if session.get('active_promo') %}
+        <p style="margin-top:14px"><strong>Active promo:</strong> {{ session['active_promo'].code }} — {{ session['active_promo'].percent_off }}% off</p>
+    {% endif %}
+</div>
+{% endblock %}

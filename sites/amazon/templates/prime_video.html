@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block title %}Prime Video - Amazon.com{% endblock %}
+{% block content %}
+<div class="account-page" style="max-width:1200px">
+    <h1>🎬 Prime Video</h1>
+    <p>Movies, originals &amp; series included with Prime.</p>
+    <div style="margin:10px 0">
+        Genre:
+        {% for g in ['action','comedy','drama','sci-fi','fantasy','thriller','horror','romance','mystery','crime','reality','superhero','spy-thriller','legal','memoir'] %}
+            <a class="text-link" href="?genre={{ g }}">{{ g }}</a>{% if not loop.last %} · {% endif %}
+        {% endfor %}
+        | Kind: <a class="text-link" href="?kind=movie">movies</a> · <a class="text-link" href="?kind=series">series</a>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px">
+    {% for t in titles %}
+        <div style="background:#fff;border:1px solid #ddd;border-radius:6px;padding:10px">
+            <a class="text-link" href="{{ url_for('r7_prime_video_title', slug=t.slug) }}"><strong>{{ t.title }}</strong></a>
+            <div style="font-size:12px;color:#565959">{{ t.kind }} · {{ t.year }} · ⭐ {{ t.imdb_rating }}</div>
+            <div style="font-size:11px">{{ t.genre }}{% if t.included_with_prime %} · ✓ Prime{% endif %}</div>
+        </div>
+    {% endfor %}
+    </div>
+</div>
+{% endblock %}

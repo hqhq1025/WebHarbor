@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block title %}Amazon Music Unlimited{% endblock %}
+{% block content %}
+<div class="account-page" style="max-width:1000px">
+    <h1>🎵 Amazon Music Unlimited</h1>
+    <p>100 million songs ad-free. $10.99/month for non-Prime, $9.99/month for Prime, $5.99 single-device Echo.</p>
+    <ul>
+        <li>Hi-Fi &amp; Ultra HD lossless audio</li>
+        <li>Spatial Audio (Dolby Atmos)</li>
+        <li>Offline listening — unlimited downloads</li>
+        <li>30-day free trial for new subscribers</li>
+    </ul>
+    <p><a class="btn-primary" href="{{ url_for('r7_redeem') }}">Redeem a Music Unlimited code →</a></p>
+</div>
+{% endblock %}

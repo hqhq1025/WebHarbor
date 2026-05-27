@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block title %}Vine Member - {{ member.user.email }}{% endblock %}
+{% block content %}
+<div class="account-page" style="max-width:800px">
+    <h1>Vine Member Profile</h1>
+    <ul>
+        <li>Email: {{ member.user.email }}</li>
+        <li>Tier: {{ member.tier }}</li>
+        <li>Items reviewed: {{ member.items_reviewed }}</li>
+        <li>Helpful votes: {{ member.helpful_votes }}</li>
+        <li>Joined: {{ member.joined_at.strftime('%Y-%m-%d') }}</li>
+    </ul>
+</div>
+{% endblock %}

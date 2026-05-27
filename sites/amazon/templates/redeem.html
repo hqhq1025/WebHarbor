@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block title %}Redeem a code - Amazon.com{% endblock %}
+{% block content %}
+<div class="account-page" style="max-width:600px">
+    <h1>Redeem a code</h1>
+    <p>Apply gift cards, Kindle Unlimited, Prime Video, Audible &amp; Music Unlimited codes.</p>
+    <form method="POST">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token_value }}">
+        <input type="text" name="code" class="form-control" placeholder="GIFT-ALICE-50" required>
+        <button class="btn-primary" type="submit">Redeem</button>
+    </form>
+    {% if msg %}<p style="margin-top:14px;color:{{ 'green' if status=='success' else '#b12704' }}">{{ msg }}</p>{% endif %}
+</div>
+{% endblock %}

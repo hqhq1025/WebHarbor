@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block title %}Kindle Store - Amazon.com{% endblock %}
+{% block content %}
+<div class="account-page" style="max-width:1200px">
+    <h1>📚 Kindle Store</h1>
+    <p>eBooks, Kindle Unlimited &amp; Audible.</p>
+    <div style="margin:10px 0">
+        Genre:
+        {% for g in ['fiction','non-fiction','biography','fantasy','sci-fi'] %}
+            <a class="text-link" href="?genre={{ g }}">{{ g }}</a>{% if not loop.last %} · {% endif %}
+        {% endfor %}
+        | <a class="text-link" href="?ku=1">Kindle Unlimited only</a>
+    </div>
+    <table style="width:100%;border-collapse:collapse;font-size:14px">
+        <thead><tr style="background:#f3f3f3"><th style="padding:8px;text-align:left">Title</th><th>Author</th><th>Genre</th><th>Price</th><th>KU</th></tr></thead>
+        <tbody>
+        {% for b in books %}
+        <tr style="border-top:1px solid #eee">
+            <td style="padding:8px"><a class="text-link" href="{{ url_for('r7_kindle_book', slug=b.slug) }}">{{ b.title }}</a></td>
+            <td style="padding:8px">{{ b.author }}</td>
+            <td style="padding:8px">{{ b.genre }}</td>
+            <td style="padding:8px">${{ '%.2f'|format(b.price) }}</td>
+            <td style="padding:8px">{% if b.kindle_unlimited %}✓{% else %}—{% endif %}</td>
+        </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

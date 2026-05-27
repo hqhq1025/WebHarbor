@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block title %}{{ book.title }} - Kindle{% endblock %}
+{% block content %}
+<div class="account-page" style="max-width:800px">
+    <h1>{{ book.title }}</h1>
+    <p>by {{ book.author }}</p>
+    <p>ISBN: <span style="font-family:monospace">{{ book.isbn }}</span></p>
+    <p>Genre: {{ book.genre }} · {{ book.page_count }} pages · {{ book.file_size_mb }} MB</p>
+    <p>Language: {{ book.language }}</p>
+    <p style="color:#b12704;font-weight:bold">${{ '%.2f'|format(book.price) }}{% if book.kindle_unlimited %} · ✓ Free with Kindle Unlimited{% endif %}</p>
+    <a class="btn-primary" href="{{ url_for('r7_kindle_store') }}">← Kindle Store</a>
+</div>
+{% endblock %}

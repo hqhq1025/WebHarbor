@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block title %}Audible - Amazon.com{% endblock %}
+{% block content %}
+<div class="account-page" style="max-width:1000px">
+    <h1>🎧 Audible</h1>
+    <p>Premium audiobooks &amp; Audible Originals. First month free.</p>
+    <table style="width:100%;font-size:14px;border-collapse:collapse">
+        <thead><tr style="background:#f3f3f3"><th style="padding:8px;text-align:left">Title</th><th>Author</th><th>Rating</th><th>Genre</th></tr></thead>
+        <tbody>
+        {% for title, author, rating, genre in titles %}
+            <tr style="border-top:1px solid #eee">
+                <td style="padding:8px">{{ title }}</td>
+                <td style="padding:8px">{{ author }}</td>
+                <td style="padding:8px">⭐ {{ rating }}</td>
+                <td style="padding:8px">{{ genre }}</td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

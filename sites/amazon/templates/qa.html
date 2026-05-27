@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+{% block title %}Customer Q&A - {{ product.name }}{% endblock %}
+{% block content %}
+<div class="account-page" style="max-width:1100px">
+    <h1>Customer Questions &amp; Answers</h1>
+    <p><a class="text-link" href="{{ url_for('product_detail', slug=product.slug) }}">← {{ product.name }}</a></p>
+    <div style="margin:14px 0">
+        Sort:
+        {% for s in sorts %}
+            <a class="text-link" href="?sort={{ s }}&filter={{ filt }}">{{ s }}</a>{% if not loop.last %} · {% endif %}
+        {% endfor %}
+        &nbsp;|&nbsp; Filter:
+        {% for f in filters %}
+            <a class="text-link" href="?sort={{ sort }}&filter={{ f }}">{{ f }}</a>{% if not loop.last %} · {% endif %}
+        {% endfor %}
+    </div>
+
+    {% if current_user.is_authenticated %}
+    <form method="POST" action="{{ url_for('r6_qa_ask', slug=product.slug) }}" style="margin:14px 0;background:#fff;padding:14px;border:1px solid #ddd;border-radius:6px">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token_value }}">
+        <textarea name="body" rows="2" class="form-control" placeholder="Ask a question about this product..." required></textarea>
+        <button class="btn-primary" type="submit">Ask question</button>
+    </form>
+    {% endif %}
+
+    {% for q, answers in qa_pairs %}
+    <div style="background:#fff;padding:14px;margin:10px 0;border:1px solid #ddd;border-radius:6px">
+        <div style="font-weight:bold">Q: {{ q.body }}</div>
+        <div style="color:#565959;font-size:12px;margin:4px 0">Score: {{ q.vote_score }} · Asked {{ q.created_at.strftime('%Y-%m-%d') }}</div>
+        {% if current_user.is_authenticated %}
+        <form method="POST" action="{{ url_for('r6_qa_vote') }}" style="display:inline">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token_value }}">
+            <input type="hidden" name="kind" value="question">
+            <input type="hidden" name="id" value="{{ q.id }}">
+            <input type="hidden" name="value" value="1">
+            <button class="btn-link" type="submit">👍 Helpful</button>
+        </form>
+        {% endif %}
+        <div style="margin-top:8px">
+            {% for a in answers %}
+            <div style="margin:6px 0;padding:8px;border-left:3px solid #f0c14b;background:#fafafa">
+                <div>A: {{ a.body }}
+                    {% if a.badge %}<span style="background:#f0c14b;padding:1px 6px;border-radius:3px;font-size:11px">{{ a.badge }}</span>{% endif %}
+                </div>
+                <div style="color:#565959;font-size:11px">Score {{ a.vote_score }} · {{ a.helpful_count }} found helpful</div>
+                {% if current_user.is_authenticated %}
+                <form method="POST" action="{{ url_for('r6_qa_helpful', aid=a.id) }}" style="display:inline">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token_value }}">
+                    <button class="btn-link" type="submit">Mark helpful</button>
+                </form>
+                {% endif %}
+            </div>
+            {% endfor %}
+            {% if current_user.is_authenticated %}
+            <form method="POST" action="{{ url_for('r6_qa_answer', qid=q.id) }}" style="margin-top:8px">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token_value }}">
+                <input type="text" name="body" class="form-control" placeholder="Write an answer..." required>
+                <button class="btn-action" type="submit">Post answer</button>
+            </form>
+            {% endif %}
+        </div>
+    </div>
+    {% else %}
+    <p style="color:#565959">No questions matched.</p>
+    {% endfor %}
+</div>
+{% endblock %}

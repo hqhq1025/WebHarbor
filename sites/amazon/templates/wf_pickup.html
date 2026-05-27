@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block title %}Whole Foods Curbside Pickup{% endblock %}
+{% block content %}
+<div class="account-page" style="max-width:700px">
+    <h1>Curbside pickup at Whole Foods</h1>
+    <form method="POST">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token_value }}">
+        {% for name, state in stores %}
+        <label style="display:block;padding:10px;border:1px solid #ddd;border-radius:6px;margin:8px 0;cursor:pointer">
+            <input type="radio" name="store" value="{{ name }}" {% if selected==name %}checked{% endif %}>
+            {{ name }}, {{ state }}
+        </label>
+        {% endfor %}
+        <button class="btn-primary" type="submit">Confirm pickup store</button>
+    </form>
+    {% if selected %}<p style="margin-top:14px"><strong>Current pickup store:</strong> {{ selected }}</p>{% endif %}
+</div>
+{% endblock %}

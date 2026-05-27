@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block title %}Top Sellers Leaderboard{% endblock %}
+{% block content %}
+<div class="account-page" style="max-width:900px">
+    <h1>Top-rated sellers on Amazon</h1>
+    <ol>
+    {% for s in sellers %}
+        <li><a class="text-link" href="{{ url_for('r8_seller_profile', seller_id=s.id) }}">{{ s.brand }}</a> — ⭐ {{ s.rating }} · {{ s.review_count }} reviews · {{ s.on_time_delivery_pct }}% on-time</li>
+    {% endfor %}
+    </ol>
+</div>
+{% endblock %}
