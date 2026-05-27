@@ -11,7 +11,7 @@
         <tr><th></th>{% for b in buildings %}<th>{{ b.name }}<br><span style="font-weight:400;color:var(--muted);font-size:12px;">{{ b.city }}, {{ b.state }}</span></th>{% endfor %}</tr>
       </thead>
       <tbody>
-        <tr><td>Photo</td>{% for b in buildings %}<td>{% if b.hero_image %}<img src="{{ b.hero_image }}" style="width:160px;height:110px;object-fit:cover;border-radius:4px;">{% endif %}</td>{% endfor %}</tr>
+        <tr><td>Photo</td>{% for b in buildings %}<td>{% if b.hero_image %}<img loading="lazy" decoding="async" src="{{ b.hero_image }}" style="width:160px;height:110px;object-fit:cover;border-radius:4px;">{% endif %}</td>{% endfor %}</tr>
         <tr><td>Rent</td>{% for b in buildings %}<td><strong>{{ b.rent_display }}</strong></td>{% endfor %}</tr>
         <tr><td>Bedrooms</td>{% for b in buildings %}<td>{{ b.beds_display }}</td>{% endfor %}</tr>
         <tr><td>Square feet</td>{% for b in buildings %}<td>{{ b.sqft_min }} – {{ b.sqft_max }}</td>{% endfor %}</tr>

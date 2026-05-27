@@ -14,7 +14,7 @@
   <div class="grid">
     {% for p in profiles %}
       <a class="listing-card" href="{{ url_for('roommate_detail', pid=p.id) }}">
-        <div class="photo">{% if p.avatar %}<img src="{{ p.avatar }}" alt="{{ p.name }}">{% endif %}</div>
+        <div class="photo">{% if p.avatar %}<img loading="lazy" decoding="async" src="{{ p.avatar }}" alt="{{ p.name }}">{% endif %}</div>
         <div class="body">
           <div class="name">{{ p.name }}, {{ p.age }}</div>
           <div class="specs">{{ p.city }}, {{ p.state }} · {{ p.neighborhood }}</div>

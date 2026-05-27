@@ -28,7 +28,7 @@
     <div class="grid">
       {% for c in featured_cities %}
         <a class="city-card" href="{{ url_for('city_page', city_slug=c.slug) }}">
-          <img src="{{ c.hero_image }}" alt="{{ c.name }}">
+          <img loading="lazy" decoding="async" src="{{ c.hero_image }}" alt="{{ c.name }}">
           <div class="overlay"></div>
           <div class="label">
             <div class="name">{{ c.name }}, {{ c.state }}</div>
@@ -91,7 +91,7 @@
       {% for a in recent_articles %}
         <a class="listing-card" href="{{ url_for('article_detail', slug=a.slug) }}">
           {% if a.hero_image %}
-            <div class="photo"><img src="{{ a.hero_image }}" alt=""></div>
+            <div class="photo"><img loading="lazy" decoding="async" src="{{ a.hero_image }}" alt=""></div>
           {% endif %}
           <div class="body">
             <span class="tag">{{ a.category }}</span>

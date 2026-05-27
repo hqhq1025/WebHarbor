@@ -16,7 +16,7 @@
     {% for a in articles %}
     <div class="listing-card">
       {% if a.hero_image %}<a href="{{ url_for('article_detail', slug=a.slug) }}" class="photo" style="display:block;">
-        <img src="{{ a.hero_image }}">
+        <img loading="lazy" decoding="async" src="{{ a.hero_image }}">
       </a>{% endif %}
       <div class="body">
         <span class="tag">{{ a.category }}</span>

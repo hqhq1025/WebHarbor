@@ -10,7 +10,7 @@
 
   <div class="row">
     <div class="section-block" style="flex:1;min-width:260px;max-width:340px;">
-      {% if p.avatar %}<img src="{{ p.avatar }}" alt="{{ p.name }}" style="width:100%;aspect-ratio:1/1;object-fit:cover;border-radius:8px;">{% endif %}
+      {% if p.avatar %}<img loading="lazy" decoding="async" src="{{ p.avatar }}" alt="{{ p.name }}" style="width:100%;aspect-ratio:1/1;object-fit:cover;border-radius:8px;">{% endif %}
       <h2 style="margin-top:14px;">{{ p.name }}, {{ p.age }}</h2>
       <p style="color:var(--muted);">{{ p.gender }} · {{ p.occupation }}</p>
       <p><strong>Location:</strong> {{ p.city }}, {{ p.state }} {% if p.neighborhood %}({{ p.neighborhood }}){% endif %}</p>
@@ -62,7 +62,7 @@
     <div class="grid">
       {% for s in similar %}
         <a class="listing-card" href="{{ url_for('roommate_detail', pid=s.id) }}">
-          <div class="photo">{% if s.avatar %}<img src="{{ s.avatar }}">{% endif %}</div>
+          <div class="photo">{% if s.avatar %}<img loading="lazy" decoding="async" src="{{ s.avatar }}">{% endif %}</div>
           <div class="body">
             <div class="name">{{ s.name }}, {{ s.age }}</div>
             <div class="specs">${{ '{:,}'.format(s.budget_max) }}/mo max · {{ s.neighborhood or s.city }}</div>

@@ -8,7 +8,7 @@
 
   <div class="row">
     <div class="section-block" style="flex:1;max-width:300px;">
-      {% if a.avatar %}<img src="{{ a.avatar }}" alt="{{ a.name }}" style="width:100%;aspect-ratio:1/1;object-fit:cover;border-radius:8px;">{% endif %}
+      {% if a.avatar %}<img loading="lazy" decoding="async" src="{{ a.avatar }}" alt="{{ a.name }}" style="width:100%;aspect-ratio:1/1;object-fit:cover;border-radius:8px;">{% endif %}
       <h2 style="margin-top:14px;">{{ a.name }}</h2>
       <p style="color:var(--muted);">{{ a.title }}</p>
       {% if a.twitter %}<p>Twitter: {{ a.twitter }}</p>{% endif %}

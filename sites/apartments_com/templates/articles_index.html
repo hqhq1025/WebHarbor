@@ -17,7 +17,7 @@
   <div class="grid">
     {% for a in articles %}
       <a class="listing-card" href="{{ url_for('article_detail', slug=a.slug) }}" style="text-decoration:none;color:inherit;">
-        {% if a.hero_image %}<div class="photo"><img src="{{ a.hero_image }}" alt=""></div>{% endif %}
+        {% if a.hero_image %}<div class="photo"><img loading="lazy" decoding="async" src="{{ a.hero_image }}" alt=""></div>{% endif %}
         <div class="body">
           <span class="tag">{{ a.category }}</span>
           <div class="name" style="margin-top:6px;">{{ a.title }}</div>

@@ -4,7 +4,7 @@
   <h1>{{ b.name }} — All photos</h1>
   <div class="photo-grid">
     {% for p in b.get_gallery() %}
-      <img src="{{ p }}" alt="">
+      <img loading="lazy" decoding="async" src="{{ p }}" alt="">
     {% endfor %}
   </div>
   <p style="margin-top:18px;">

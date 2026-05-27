@@ -6,7 +6,7 @@
   <div class="grid">
     {% for c in cities %}
       <a class="city-card" href="{{ url_for('city_page', city_slug=c.slug) }}">
-        <img src="{{ c.hero_image }}" alt="{{ c.name }}">
+        <img loading="lazy" decoding="async" src="{{ c.hero_image }}" alt="{{ c.name }}">
         <div class="overlay"></div>
         <div class="label">
           <div class="name">{{ c.name }}, {{ c.state }}</div>

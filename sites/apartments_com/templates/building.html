@@ -3,7 +3,7 @@
 {% block content %}
 
 <div class="detail-hero">
-  {% if b.hero_image %}<img src="{{ b.hero_image }}" alt="{{ b.name }}">{% endif %}
+  {% if b.hero_image %}<img loading="lazy" decoding="async" src="{{ b.hero_image }}" alt="{{ b.name }}">{% endif %}
   <a class="photo-count" href="{{ url_for('building_photos', state=b.state.lower(), city_slug=b.city|lower|replace(' ', '-'), building_slug=b.slug) }}">
     📷 {{ b.get_gallery()|length }} Photos {% if b.has_3d_tour %}· 🎥 3D Tour{% endif %}
   </a>
