@@ -2,7 +2,7 @@
 {% block title %}{{ event.title }} — Berkeley Events{% endblock %}
 
 {% block content %}
-<img src="{{ url_for('static', filename='images/campus_017.svg') }}" alt="UC Berkeley campus" style="width:100%;height:120px;object-fit:cover;border-bottom:4px solid var(--gold);">
+<img loading="lazy" decoding="async" src="{{ url_for('static', filename='images/campus_017.svg') }}" alt="UC Berkeley campus" style="width:100%;height:120px;object-fit:cover;border-bottom:4px solid var(--gold);">
 <div class="breadcrumb">
   <div class="container">
     <a href="{{ url_for('index') }}">Home</a><span>/</span>

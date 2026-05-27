@@ -5,7 +5,7 @@
 <div class="breadcrumb"><div class="container"><a href="{{ url_for('library_index') }}">Library</a><span>·</span><a href="{{ url_for('library_branch', slug=lib.slug) }}">{{ lib.name }}</a><span>·</span>Reserve</div></div>
 <section class="section">
   <div class="container" style="max-width:680px;">
-    <img src="{{ url_for('static', filename='images/' + lib.photo) }}" alt="{{ lib.name }}" style="width:100%;border-radius:4px;margin-bottom:24px;">
+    <img loading="lazy" decoding="async" src="{{ url_for('static', filename='images/' + lib.photo) }}" alt="{{ lib.name }}" style="width:100%;border-radius:4px;margin-bottom:24px;">
     <form method="post">
       <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
       <div class="form-row">

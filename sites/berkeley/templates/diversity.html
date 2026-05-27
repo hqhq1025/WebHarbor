@@ -9,7 +9,7 @@
     <div class="card-grid">
       {% for l in leaders %}
         <div class="card">
-          <img src="{{ url_for('static', filename='images/' + l.headshot) }}" alt="{{ l.name }}" style="width:100%;height:280px;object-fit:cover;">
+          <img loading="lazy" decoding="async" src="{{ url_for('static', filename='images/' + l.headshot) }}" alt="{{ l.name }}" style="width:100%;height:280px;object-fit:cover;">
           <div class="card-body">
             <span class="card-category">{{ l.office }}</span>
             <h3 class="card-title"><a href="{{ url_for('leader_profile', slug=l.slug) }}">{{ l.name }}</a></h3>

@@ -9,7 +9,7 @@
       <div class="card-grid mb-4">
       {% for s in services if s.category == cat %}
         <div class="card">
-          <img src="{{ url_for('static', filename='images/' + s.photo) }}" alt="{{ s.name }}" style="width:100%;height:140px;object-fit:cover;">
+          <img loading="lazy" decoding="async" src="{{ url_for('static', filename='images/' + s.photo) }}" alt="{{ s.name }}" style="width:100%;height:140px;object-fit:cover;">
           <div class="card-body">
             <h3 class="card-title"><a href="{{ url_for('student_service', slug=s.slug) }}">{{ s.name }}</a></h3>
             <p class="card-text">{{ s.location }} · {{ s.phone }}</p>

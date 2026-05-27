@@ -3,7 +3,7 @@
 {% block content %}
 <section class="page-header" style="background:var(--blue);">
   <div class="container" style="display:flex;gap:32px;align-items:center;flex-wrap:wrap;">
-    <img src="{{ url_for('static', filename='images/' + leader.headshot) }}" alt="{{ leader.name }}" style="width:160px;height:160px;border-radius:50%;border:4px solid var(--gold);">
+    <img loading="lazy" decoding="async" src="{{ url_for('static', filename='images/' + leader.headshot) }}" alt="{{ leader.name }}" style="width:160px;height:160px;border-radius:50%;border:4px solid var(--gold);">
     <div>
       <p style="color:var(--gold);text-transform:uppercase;font-family:Arial;font-size:13px;letter-spacing:2px;">{{ leader.office }}</p>
       <h1>{{ leader.name }}</h1>

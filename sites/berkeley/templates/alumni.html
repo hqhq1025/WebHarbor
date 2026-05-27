@@ -13,7 +13,7 @@
     <div class="card-grid">
       {% for ch in chapters %}
         <div class="card">
-          <img src="{{ url_for('static', filename='images/' + ch.photo) }}" alt="{{ ch.name }}" style="width:100%;height:140px;object-fit:cover;">
+          <img loading="lazy" decoding="async" src="{{ url_for('static', filename='images/' + ch.photo) }}" alt="{{ ch.name }}" style="width:100%;height:140px;object-fit:cover;">
           <div class="card-body">
             <span class="card-category">{{ ch.region }} · {{ ch.country }}</span>
             <h3 class="card-title"><a href="{{ url_for('alumni_chapter', slug=ch.slug) }}">{{ ch.name }}</a></h3>

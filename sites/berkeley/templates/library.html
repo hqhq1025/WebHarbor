@@ -14,7 +14,7 @@
     <div class="card-grid">
       {% for lib in libraries %}
         <div class="card">
-          <img src="{{ url_for('static', filename='images/' + lib.photo) }}" alt="{{ lib.name }}" style="width:100%;height:160px;object-fit:cover;">
+          <img loading="lazy" decoding="async" src="{{ url_for('static', filename='images/' + lib.photo) }}" alt="{{ lib.name }}" style="width:100%;height:160px;object-fit:cover;">
           <div class="card-body">
             <span class="card-category">{{ lib.branch_type }}</span>
             <h3 class="card-title"><a href="{{ url_for('library_branch', slug=lib.slug) }}">{{ lib.name }}</a></h3>

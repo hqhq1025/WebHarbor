@@ -12,7 +12,7 @@
 <section class="section">
   <div class="container sidebar-layout">
     <div>
-      <img src="{{ url_for('static', filename='images/' + sp.banner_photo) }}" alt="{{ sp.name }}" style="width:100%;border-radius:4px;margin-bottom:24px;">
+      <img loading="lazy" decoding="async" src="{{ url_for('static', filename='images/' + sp.banner_photo) }}" alt="{{ sp.name }}" style="width:100%;border-radius:4px;margin-bottom:24px;">
       <p class="mb-3">{{ sp.description }}</p>
       <h3 class="blue-text">Next Match</h3>
       <p class="mb-3">{{ sp.next_match }}</p>

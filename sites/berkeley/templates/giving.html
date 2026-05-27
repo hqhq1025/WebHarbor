@@ -13,7 +13,7 @@
     <div class="card-grid">
       {% for f in funds %}
         <div class="card">
-          <img src="{{ url_for('static', filename='images/' + f.photo) }}" alt="{{ f.name }}" style="width:100%;height:140px;object-fit:cover;">
+          <img loading="lazy" decoding="async" src="{{ url_for('static', filename='images/' + f.photo) }}" alt="{{ f.name }}" style="width:100%;height:140px;object-fit:cover;">
           <div class="card-body">
             <span class="card-category">{{ f.category }}</span>
             <h3 class="card-title"><a href="{{ url_for('giving_fund', slug=f.slug) }}">{{ f.name }}</a></h3>
