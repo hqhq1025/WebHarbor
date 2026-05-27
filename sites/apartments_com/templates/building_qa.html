@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block title %}Q&amp;A — {{ b.name }} | Apartments.com{% endblock %}
+{% block content %}
+<div class="container" style="padding-top:24px;">
+  <nav style="font-size:13px;color:var(--muted);margin-bottom:14px;">
+    <a href="{{ url_for('building_detail', state=b.state.lower(), city_slug=b.city|lower|replace(' ', '-'), building_slug=b.slug) }}">{{ b.name }}</a> › <span>Q&amp;A</span>
+  </nav>
+
+  <h1>Questions about {{ b.name }}</h1>
+  <p style="color:var(--muted);">Have a question for the property manager? Post it below — answers usually come within 1–3 business days.</p>
+
+  <div class="section-block">
+    <form method="post">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <div class="row">
+        <div class="form-field" style="flex:1;"><label>Display name</label><input type="text" name="author_name" value="{{ current_user.name if current_user.is_authenticated else 'Prospective Resident' }}"></div>
+      </div>
+      <div class="form-field"><label>Your question</label><textarea name="body" required placeholder="e.g. Do you allow large dogs? What's the EV charging policy?"></textarea></div>
+      <button class="btn" type="submit">Post question</button>
+    </form>
+  </div>
+
+  <h2>Previously asked</h2>
+  {% for q in questions %}
+  <div class="section-block">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+      <strong>{{ q.author_name }}</strong>
+      <span style="color:var(--muted);font-size:12px;">{{ q.created_at.strftime('%b %d, %Y') }}</span>
+    </div>
+    <p style="margin-top:8px;"><strong>Q:</strong> {{ q.body }}</p>
+    {% if q.answer %}
+    <div style="margin-top:10px;padding:10px;background:#e6f3fb;border-radius:6px;">
+      <strong>A from {{ q.answered_by }}:</strong> {{ q.answer }}
+      {% if q.answered_at %}<div style="color:var(--muted);font-size:12px;margin-top:4px;">Answered {{ q.answered_at.strftime('%b %d, %Y') }}</div>{% endif %}
+    </div>
+    {% else %}
+    <p style="color:var(--muted);">Awaiting response from the property manager.</p>
+    {% endif %}
+  </div>
+  {% else %}
+  <p>No questions yet — be the first to ask!</p>
+  {% endfor %}
+</div>
+{% endblock %}

@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% block title %}Notifications | Apartments.com{% endblock %}
+{% block content %}
+<div class="container" style="padding-top:24px;">
+  <h1>Notifications</h1>
+  {% if items %}
+    {% for n in items %}
+    <div class="section-block">
+      <div style="display:flex;justify-content:space-between;">
+        <strong>{{ n.title }}</strong>
+        <span style="color:var(--muted);font-size:12px;">{{ n.created_at.strftime('%b %d, %Y %I:%M %p') }}</span>
+      </div>
+      {% if n.body %}<p>{{ n.body }}</p>{% endif %}
+      <span class="tag">{{ n.kind }}</span>
+    </div>
+    {% endfor %}
+  {% else %}
+    <p>No notifications yet. We'll let you know when there's news about your saved searches or applications.</p>
+  {% endif %}
+
+  <div class="section-block" style="margin-top:24px;">
+    <h2>Notification preferences</h2>
+    <form method="post" action="{{ url_for('account_notifications') }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <div class="checkbox-row"><input type="checkbox" name="notify_tour_confirm" {% if current_user.notify_tour_confirm %}checked{% endif %}> Tour confirmations &amp; reminders</div>
+      <div class="checkbox-row"><input type="checkbox" name="notify_application_status" {% if current_user.notify_application_status %}checked{% endif %}> Application status updates</div>
+      <div class="checkbox-row"><input type="checkbox" name="notify_price_drop" {% if current_user.notify_price_drop %}checked{% endif %}> Price drops on favorited buildings</div>
+      <div class="checkbox-row"><input type="checkbox" name="notify_new_match" {% if current_user.notify_new_match %}checked{% endif %}> New buildings matching saved searches</div>
+      <div class="checkbox-row"><input type="checkbox" name="notify_newsletter" {% if current_user.notify_newsletter %}checked{% endif %}> Monthly newsletter</div>
+      <button class="btn" type="submit">Save preferences</button>
+    </form>
+  </div>
+</div>
+{% endblock %}

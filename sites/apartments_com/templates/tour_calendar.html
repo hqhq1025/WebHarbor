@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+{% block title %}Tour Calendar — {{ b.name }} | Apartments.com{% endblock %}
+{% block content %}
+<div class="container" style="padding-top:24px;">
+  <nav style="font-size:13px;color:var(--muted);margin-bottom:14px;">
+    <a href="{{ url_for('index') }}">Home</a> ›
+    <a href="{{ url_for('building_detail', state=b.state.lower(), city_slug=b.city|lower|replace(' ', '-'), building_slug=b.slug) }}">{{ b.name }}</a> ›
+    <span>Schedule a Tour</span>
+  </nav>
+
+  <h1>Schedule a Tour — {{ b.name }}</h1>
+  <p style="color:var(--muted);">{{ b.address }}, {{ b.city }}, {{ b.state }} {{ b.zip }}</p>
+
+  <div class="section-block">
+    <div style="display:flex;gap:10px;align-items:center;margin-bottom:14px;">
+      <a class="btn sm ghost" {% if week > 0 %}href="?week={{ week - 1 }}"{% else %}style="opacity:.4;pointer-events:none;"{% endif %}>← Prev week</a>
+      <strong>Week {{ week + 1 }} of 9</strong>
+      <a class="btn sm ghost" {% if week < 8 %}href="?week={{ week + 1 }}"{% else %}style="opacity:.4;pointer-events:none;"{% endif %}>Next week →</a>
+    </div>
+
+    <form method="post" action="">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <table class="units">
+        <thead><tr><th>Day</th><th>9:00 AM</th><th>11:00 AM</th><th>2:00 PM</th><th>4:30 PM</th></tr></thead>
+        <tbody>
+        {% for i in range(7) %}
+          {% set day_slots = slots[i*4:i*4+4] %}
+          <tr>
+            <td><strong>{{ day_slots[0].label }}</strong></td>
+            {% for s in day_slots %}
+              <td>
+                {% if s.taken %}<span style="color:var(--muted);">Booked</span>
+                {% else %}
+                  <label style="cursor:pointer;display:block;padding:6px 4px;">
+                    <input type="radio" name="slot" value="{{ s.date }}|{{ s.time }}">
+                    {{ s.time }}
+                  </label>
+                {% endif %}
+              </td>
+            {% endfor %}
+          </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+
+      <div class="row" style="margin-top:18px;">
+        <div class="form-field" style="flex:1;"><label>Your name</label><input type="text" name="name" required></div>
+        <div class="form-field" style="flex:1;"><label>Email</label><input type="email" name="email" required></div>
+        <div class="form-field" style="flex:1;"><label>Phone</label><input type="tel" name="phone"></div>
+      </div>
+      <div class="form-field">
+        <label>Tour type</label>
+        <select name="tour_type">
+          <option value="In-Person">In-Person</option>
+          <option value="Self-Guided">Self-Guided</option>
+          <option value="Live Video">Live Video</option>
+        </select>
+      </div>
+      <div class="form-field"><label>Note (optional)</label><textarea name="message" rows="3"></textarea></div>
+
+      {# Hidden split of slot into date and time on submit via JS-less approach: server splits. #}
+      <script>
+        document.addEventListener('submit', function(e){
+          var f = e.target;
+          var sel = f.querySelector('input[name="slot"]:checked');
+          if (sel) {
+            var parts = sel.value.split('|');
+            var d = document.createElement('input'); d.type='hidden'; d.name='date'; d.value=parts[0]; f.appendChild(d);
+            var t = document.createElement('input'); t.type='hidden'; t.name='time'; t.value=parts[1]; f.appendChild(t);
+          }
+        });
+      </script>
+
+      <button class="btn" type="submit">Confirm Tour</button>
+      <a class="btn ghost" href="{{ url_for('request_tour', state=b.state.lower(), city_slug=b.city|lower|replace(' ', '-'), building_slug=b.slug) }}">Use the step-by-step form instead</a>
+    </form>
+  </div>
+</div>
+{% endblock %}

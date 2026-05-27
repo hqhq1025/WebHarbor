@@ -1,0 +1,120 @@
+{% extends "base.html" %}
+{% block title %}Apply for {{ b.name }} | Step {{ step }} of 6 | Apartments.com{% endblock %}
+{% block content %}
+<div class="container-narrow" style="padding-top:24px;">
+  <nav style="font-size:13px;color:var(--muted);margin-bottom:14px;">
+    <a href="{{ url_for('building_detail', state=b.state.lower(), city_slug=b.city|lower|replace(' ', '-'), building_slug=b.slug) }}">{{ b.name }}</a> ›
+    <span>Rental Application</span>
+  </nav>
+
+  <h1>Rental Application — {{ b.name }}</h1>
+  <p style="color:var(--muted);">Step {{ step }} of 6. Your data is saved between steps.</p>
+
+  <div class="stepper">
+    {% for s in range(1, 7) %}
+      <div class="step {% if s < step %}done{% elif s == step %}active{% endif %}">
+        {{ s }}.
+        {% if s == 1 %}Personal
+        {% elif s == 2 %}Employment
+        {% elif s == 3 %}References
+        {% elif s == 4 %}Co-Applicant
+        {% elif s == 5 %}Pets & Additional
+        {% else %}Review{% endif %}
+      </div>
+    {% endfor %}
+  </div>
+
+  <form method="post" action="">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <input type="hidden" name="step" value="{{ step }}">
+
+  <div class="section-block">
+    {% if step == 1 %}
+      <h2>Personal Information</h2>
+      <div class="row">
+        <div class="form-field" style="flex:1;"><label>First name</label><input type="text" name="first_name" value="{{ state_data.get('first_name', '') }}" required></div>
+        <div class="form-field" style="flex:1;"><label>Last name</label><input type="text" name="last_name" value="{{ state_data.get('last_name', '') }}" required></div>
+      </div>
+      <div class="row">
+        <div class="form-field" style="flex:1;"><label>Email</label><input type="email" name="email" value="{{ state_data.get('email', '') }}" required></div>
+        <div class="form-field" style="flex:1;"><label>Phone</label><input type="tel" name="phone" value="{{ state_data.get('phone', '') }}" required></div>
+      </div>
+      <div class="row">
+        <div class="form-field" style="flex:1;"><label>Date of birth</label><input type="date" name="date_of_birth" value="{{ state_data.get('date_of_birth', '') }}"></div>
+        <div class="form-field" style="flex:1;"><label>SSN last 4 (for credit check)</label><input type="text" maxlength="4" name="ssn_last_four" value="{{ state_data.get('ssn_last_four', '') }}"></div>
+      </div>
+
+    {% elif step == 2 %}
+      <h2>Employment</h2>
+      <div class="form-field"><label>Current employer</label><input type="text" name="employer" value="{{ state_data.get('employer', '') }}" required></div>
+      <div class="form-field"><label>Job title</label><input type="text" name="job_title" value="{{ state_data.get('job_title', '') }}"></div>
+      <div class="row">
+        <div class="form-field" style="flex:1;"><label>Annual income (gross)</label><input type="number" name="annual_income" value="{{ state_data.get('annual_income', '') }}" min="0"></div>
+        <div class="form-field" style="flex:1;"><label>Employment start date</label><input type="date" name="employment_start" value="{{ state_data.get('employment_start', '') }}"></div>
+      </div>
+
+    {% elif step == 3 %}
+      <h2>References</h2>
+      <p style="color:var(--muted);">Two references — landlord, supervisor, or character.</p>
+      <div class="row">
+        <div class="form-field" style="flex:1;"><label>Reference #1 name</label><input type="text" name="ref1_name" value="{{ state_data.get('ref1_name', '') }}"></div>
+        <div class="form-field" style="flex:1;"><label>Reference #1 phone</label><input type="tel" name="ref1_phone" value="{{ state_data.get('ref1_phone', '') }}"></div>
+      </div>
+      <div class="row">
+        <div class="form-field" style="flex:1;"><label>Reference #2 name</label><input type="text" name="ref2_name" value="{{ state_data.get('ref2_name', '') }}"></div>
+        <div class="form-field" style="flex:1;"><label>Reference #2 phone</label><input type="tel" name="ref2_phone" value="{{ state_data.get('ref2_phone', '') }}"></div>
+      </div>
+
+    {% elif step == 4 %}
+      <h2>Co-Applicant (optional)</h2>
+      <p style="color:var(--muted);">Add a co-applicant if more than one person will sign the lease. They'll receive an email with a link to fill in their portion.</p>
+      <div class="form-field">
+        <label>Co-applicant email</label>
+        <input type="email" name="co_applicant_email" value="{{ state_data.get('co_applicant_email', '') }}">
+      </div>
+      <div class="form-field">
+        <button class="btn sm" type="submit" formaction="{{ url_for('apply_co_applicant', state=b.state.lower(), city_slug=b.city|lower|replace(' ', '-'), building_slug=b.slug) }}">Send co-applicant invite</button>
+      </div>
+
+    {% elif step == 5 %}
+      <h2>Pets & Additional Information</h2>
+      <div class="row">
+        <div class="form-field" style="flex:1;"><label>Number of pets</label><input type="number" name="pet_count" value="{{ state_data.get('pet_count', 0) }}" min="0"></div>
+        <div class="form-field" style="flex:2;"><label>Pet details (breed, weight, age)</label><input type="text" name="pet_details" value="{{ state_data.get('pet_details', '') }}"></div>
+      </div>
+      <div class="row">
+        <div class="form-field" style="flex:1;"><label>Move-in date</label><input type="date" name="move_in_date" value="{{ state_data.get('move_in_date', '') }}"></div>
+        <div class="form-field" style="flex:1;"><label>Lease length</label>
+          <select name="lease_length">
+            <option {% if state_data.get('lease_length') == '6 months' %}selected{% endif %}>6 months</option>
+            <option {% if state_data.get('lease_length') == '9 months' %}selected{% endif %}>9 months</option>
+            <option selected>12 months</option>
+            <option {% if state_data.get('lease_length') == '13 months' %}selected{% endif %}>13 months</option>
+            <option {% if state_data.get('lease_length') == '15 months' %}selected{% endif %}>15 months</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-field"><label>Additional notes</label><textarea name="additional_notes">{{ state_data.get('additional_notes', '') }}</textarea></div>
+
+    {% else %}
+      <h2>Review &amp; Submit</h2>
+      <table class="units">
+        <tr><th>Applicant</th><td>{{ state_data.get('first_name', '') }} {{ state_data.get('last_name', '') }}</td></tr>
+        <tr><th>Contact</th><td>{{ state_data.get('email', '') }} · {{ state_data.get('phone', '') }}</td></tr>
+        <tr><th>Employer</th><td>{{ state_data.get('employer', '—') }} ({{ state_data.get('job_title', '—') }})</td></tr>
+        <tr><th>Annual income</th><td>${{ '{:,}'.format(state_data.get('annual_income', 0)|int) }}</td></tr>
+        <tr><th>Co-applicant</th><td>{{ state_data.get('co_applicant_email', '—') }}</td></tr>
+        <tr><th>Pets</th><td>{{ state_data.get('pet_count', 0) }} — {{ state_data.get('pet_details', '—') }}</td></tr>
+        <tr><th>Move-in</th><td>{{ state_data.get('move_in_date', '—') }} · {{ state_data.get('lease_length', '12 months') }}</td></tr>
+      </table>
+      <p style="margin-top:10px;color:var(--muted);">A $75 application fee is charged on submission. Background and credit checks return in 1–2 business days.</p>
+    {% endif %}
+  </div>
+
+  <div style="display:flex;gap:10px;justify-content:space-between;">
+    {% if step > 1 %}<a class="btn ghost" href="?step={{ step - 1 }}">← Back</a>{% else %}<span></span>{% endif %}
+    <button class="btn" type="submit">{% if step >= 6 %}Submit application{% else %}Continue →{% endif %}</button>
+  </div>
+  </form>
+</div>
+{% endblock %}

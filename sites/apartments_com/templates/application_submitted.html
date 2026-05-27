@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block title %}Application Submitted | Apartments.com{% endblock %}
+{% block content %}
+<div class="container-narrow" style="padding:40px 20px;">
+  <div class="section-block">
+    <h1 style="color:#1aa260;">✓ Application Received</h1>
+    <p>Thanks, {{ la.first_name }}. We've received your application for <strong>{{ b.name }}</strong>.</p>
+    <p>Your application ID is <strong>#{{ la.id }}</strong>. You'll receive an email at {{ la.email }} within 1–2 business days with the decision.</p>
+    <p>While you wait you can <a href="{{ url_for('renters_insurance') }}">get a renters-insurance quote</a> or <a href="{{ url_for('moving_services') }}">browse local movers</a>.</p>
+    <div style="display:flex;gap:10px;">
+      <a class="btn" href="{{ url_for('building_detail', state=b.state.lower(), city_slug=b.city|lower|replace(' ', '-'), building_slug=b.slug) }}">Back to {{ b.name }}</a>
+      <a class="btn ghost" href="{{ url_for('account') }}">View account</a>
+    </div>
+  </div>
+</div>
+{% endblock %}
