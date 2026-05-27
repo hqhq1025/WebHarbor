@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block title %}Symptom Checker - Step 4{% endblock %}
+{% block content %}
+<section class="container">
+  <h1>Symptom Checker</h1>
+  <div class="sc-progress"><div class="done"></div><div class="done"></div><div class="done"></div><div class="done"></div><div></div></div>
+  <div class="sc-step">Step 4 of 5: How long has the symptom lasted?</div>
+  <div class="sc-options">
+    <a href="{{ url_for('symptom_checker', region=region, symptom=symptom, age_group=age_group, duration='acute') }}">Acute (less than 2 weeks)</a>
+    <a href="{{ url_for('symptom_checker', region=region, symptom=symptom, age_group=age_group, duration='chronic') }}">Chronic (2 weeks or longer)</a>
+    <a href="{{ url_for('symptom_checker', region=region, symptom=symptom, age_group=age_group, duration='any') }}">Not sure</a>
+  </div>
+  <p style="margin-top:16px;"><a href="{{ url_for('symptom_checker', region=region, symptom=symptom) }}">&larr; Back</a></p>
+</section>
+{% endblock %}

@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% block title %}Appointments{% endblock %}
+{% block breadcrumbs %}
+<div class="container breadcrumbs"><a href="{{ url_for('index') }}">Home</a><span>&rsaquo;</span> Appointments</div>
+{% endblock %}
+{% block content %}
+<section class="container">
+  <h1>Start your appointment request here.</h1>
+  <p>This is the easiest way to reach us. Mayo Clinic accepts appointments in Arizona, Florida, and Minnesota, as well as at Mayo Clinic Health System sites.</p>
+
+  <div class="feature-grid">
+    <div class="feature-card">
+      <div class="icon-wrap">&#9881;</div>
+      <h3>New patients</h3>
+      <p>Provide your information and set a follow-up time.</p>
+      <a class="btn-primary" href="{{ url_for('request_appointment') }}?step=1">Start a new request</a>
+    </div>
+    <div class="feature-card">
+      <div class="icon-wrap">&#9881;</div>
+      <h3>Returning patients</h3>
+      <p>Request using your patient account.</p>
+      <a class="btn-secondary" href="{{ url_for('patient_portal') }}">Sign in to portal</a>
+    </div>
+    <div class="feature-card">
+      <div class="icon-wrap">&#9881;</div>
+      <h3>Referring physicians</h3>
+      <p>Get consults and refer your patients to Mayo Clinic specialists.</p>
+      <a class="btn-secondary" href="{{ url_for('contact') }}">Referring physician resources</a>
+    </div>
+  </div>
+
+  <h2>Still want to schedule by phone?</h2>
+  <table class="data">
+    <thead><tr><th>Location</th><th>Phone</th><th>Hours</th></tr></thead>
+    <tbody>
+      <tr><td>Rochester, Minnesota</td><td>507-538-3270</td><td>7 a.m. to 6 p.m. CT, Mon-Fri</td></tr>
+      <tr><td>Phoenix/Scottsdale, Arizona</td><td>480-301-8484</td><td>8 a.m. to 5 p.m. MT, Mon-Fri</td></tr>
+      <tr><td>Jacksonville, Florida</td><td>904-953-0853</td><td>8 a.m. to 5 p.m. ET, Mon-Fri</td></tr>
+      <tr><td>International Appointment Office</td><td>+1 507-738-4021</td><td>06:00-20:00 CT, Mon-Fri</td></tr>
+    </tbody>
+  </table>
+
+  <h2>Departments accepting appointments</h2>
+  <ul class="az-list">
+    {% for d in departments %}<li><a href="{{ url_for('department_detail', slug=d.slug) }}">{{ d.name }}</a></li>{% endfor %}
+  </ul>
+</section>
+{% endblock %}

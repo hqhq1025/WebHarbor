@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+{% block title %}Request an Appointment - Step {{ step }}{% endblock %}
+{% block breadcrumbs %}
+<div class="container breadcrumbs">
+  <a href="{{ url_for('index') }}">Home</a><span>&rsaquo;</span>
+  <a href="{{ url_for('appointments_landing') }}">Appointments</a><span>&rsaquo;</span> Request
+</div>
+{% endblock %}
+{% block content %}
+<section class="container">
+  <h1>Request an Appointment</h1>
+  <div class="sc-progress" style="max-width:520px;">
+    {% for i in range(1,5) %}
+      <div class="{{ 'done' if i <= step else '' }}"></div>
+    {% endfor %}
+  </div>
+
+  <form method="post" action="{{ url_for('request_appointment') }}">
+    <input type="hidden" name="step" value="{{ step }}">
+
+    {% if step == 1 %}
+      <h2>Step 1: Select a department</h2>
+      <div class="form-row">
+        <label for="dept">Department</label>
+        <select name="dept" id="dept" required>
+          <option value="">Choose a department</option>
+          {% for d in departments %}
+            <option value="{{ d.slug }}" {{ 'selected' if state.get('dept') == d.slug else '' }}>{{ d.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="form-row">
+        <label for="location">Preferred location</label>
+        <select name="location" id="location">
+          {% for L in locations %}<option value="{{ L }}" {{ 'selected' if state.get('location') == L else '' }}>{{ L }}</option>{% endfor %}
+        </select>
+      </div>
+      <input type="hidden" name="next_step" value="2">
+      <button class="btn-primary" type="submit">Continue to step 2</button>
+    {% elif step == 2 %}
+      <h2>Step 2: Preferred date</h2>
+      <div class="form-row">
+        <label for="preferred_date">Preferred date</label>
+        <input type="date" name="preferred_date" id="preferred_date" value="{{ state.get('preferred_date','') }}" required>
+      </div>
+      <div class="form-row">
+        <label>Are you a new or returning patient?</label>
+        <label><input type="radio" name="new_or_returning" value="new" {{ 'checked' if state.get('new_or_returning','new') == 'new' else '' }}> New patient</label>
+        <label style="margin-left:18px;"><input type="radio" name="new_or_returning" value="returning" {{ 'checked' if state.get('new_or_returning') == 'returning' else '' }}> Returning patient</label>
+      </div>
+      <input type="hidden" name="next_step" value="3">
+      <button class="btn-secondary" type="submit" formaction="{{ url_for('request_appointment') }}?step=1" formnovalidate>&larr; Back</button>
+      <button class="btn-primary" type="submit">Continue to step 3</button>
+    {% elif step == 3 %}
+      <h2>Step 3: Your information</h2>
+      <div class="form-row"><label>Full name</label><input type="text" name="patient_name" value="{{ state.get('patient_name', current_user.display_name if current_user.is_authenticated else '') }}" required></div>
+      <div class="form-row"><label>Email</label><input type="email" name="patient_email" value="{{ state.get('patient_email', current_user.email if current_user.is_authenticated else '') }}" required></div>
+      <div class="form-row"><label>Phone</label><input type="tel" name="patient_phone" value="{{ state.get('patient_phone', current_user.phone if current_user.is_authenticated else '') }}" required></div>
+      <div class="form-row"><label>Insurance carrier</label><input type="text" name="insurance" value="{{ state.get('insurance','') }}"></div>
+      <input type="hidden" name="next_step" value="4">
+      <button class="btn-primary" type="submit">Continue to step 4</button>
+    {% elif step == 4 %}
+      <h2>Step 4: Reason for visit &amp; confirm</h2>
+      <div class="form-row"><label>Reason for visit</label><textarea name="reason" required>{{ state.get('reason','') }}</textarea></div>
+      <h3>Review</h3>
+      <table class="data">
+        <tr><th>Department</th><td>{{ state.get('dept','') }}</td></tr>
+        <tr><th>Location</th><td>{{ state.get('location','') }}</td></tr>
+        <tr><th>Preferred date</th><td>{{ state.get('preferred_date','') }}</td></tr>
+        <tr><th>Patient type</th><td>{{ state.get('new_or_returning','new') }}</td></tr>
+        <tr><th>Name</th><td>{{ state.get('patient_name','') }}</td></tr>
+        <tr><th>Email</th><td>{{ state.get('patient_email','') }}</td></tr>
+        <tr><th>Phone</th><td>{{ state.get('patient_phone','') }}</td></tr>
+        <tr><th>Insurance</th><td>{{ state.get('insurance','') }}</td></tr>
+      </table>
+      <input type="hidden" name="next_step" value="5">
+      <button class="btn-primary" type="submit">Submit appointment request</button>
+    {% endif %}
+  </form>
+</section>
+{% endblock %}

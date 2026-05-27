@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block title %}Tests &amp; Procedures{% endblock %}
+{% block breadcrumbs %}
+<div class="container breadcrumbs"><a href="{{ url_for('index') }}">Home</a><span>&rsaquo;</span> Tests &amp; Procedures</div>
+{% endblock %}
+{% block content %}
+<section class="container">
+  <h1>Tests &amp; Procedures</h1>
+  <p class="muted">What it is, how it's done, how to prepare, risks and results.</p>
+
+  <form method="get" action="{{ url_for('procedures_index') }}" style="margin:12px 0;">
+    <label>Filter by category:</label>
+    <select name="category" onchange="this.form.submit()">
+      <option value="">All categories</option>
+      {% for opt in ['test','procedure','surgery','imaging','therapy'] %}
+        <option value="{{ opt }}" {{ 'selected' if category == opt else '' }}>{{ opt|capitalize }}</option>
+      {% endfor %}
+    </select>
+    {% if active_letter %}<input type="hidden" name="letter" value="{{ active_letter }}">{% endif %}
+  </form>
+
+  <div class="az-strip">
+    {% for L in letters %}
+      <a class="{{ 'active' if L == active_letter else '' }}" href="{{ url_for('procedures_index') }}?letter={{ L }}{% if category %}&category={{category}}{% endif %}">{{ L }}</a>
+    {% endfor %}
+    {% if active_letter %}<a href="{{ url_for('procedures_index') }}{% if category %}?category={{category}}{% endif %}" style="background:#fff;color:#0064a2;">Show all</a>{% endif %}
+  </div>
+
+  <p class="muted">Showing {{ procedures|length }} procedure{{ '' if procedures|length == 1 else 's' }}{% if active_letter %} starting with "{{ active_letter }}"{% endif %}{% if category %} in category "{{ category }}"{% endif %}.</p>
+  <ul class="az-list">
+    {% for p in procedures %}
+      <li><a href="{{ url_for('procedure_detail', slug=p.slug) }}">{{ p.name }}</a> <span class="muted" style="font-size:12px;">({{ p.category }})</span></li>
+    {% endfor %}
+  </ul>
+</section>
+{% endblock %}

@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% block title %}{{ article.title }}{% endblock %}
+{% block breadcrumbs %}
+<div class="container breadcrumbs">
+  <a href="{{ url_for('index') }}">Home</a><span>&rsaquo;</span>
+  <a href="{{ back_url }}">{{ back_label }}</a><span>&rsaquo;</span>
+  {{ article.title }}
+</div>
+{% endblock %}
+{% block content %}
+<section class="container">
+  <h1>{{ article.title }}</h1>
+  <p class="muted">{{ article.category }} &middot; {{ article.published_date }}</p>
+
+  <div class="two-col">
+    <div class="article-body">
+      <p style="font-size:1.1rem;font-weight:600;color:var(--mayo-blue-dark);">{{ article.summary }}</p>
+      <div style="white-space:pre-wrap;">{{ article.body }}</div>
+
+      <form action="{{ url_for('feedback') }}" method="post" style="margin-top:24px;">
+        <input type="hidden" name="slug" value="{{ article.slug }}">
+        <input type="hidden" name="kind" value="article">
+        <strong>Was this helpful?</strong>
+        <button class="btn-secondary" name="helpful" value="yes" type="submit" style="margin-left:8px;">Yes</button>
+        <button class="btn-secondary" name="helpful" value="no" type="submit">No</button>
+      </form>
+
+      {% if current_user.is_authenticated %}
+      <form action="{{ url_for('save_item') }}" method="post" style="display:inline-block;margin-top:14px;">
+        <input type="hidden" name="kind" value="article">
+        <input type="hidden" name="slug" value="{{ article.slug }}">
+        <input type="hidden" name="title" value="{{ article.title }}">
+        <input type="hidden" name="next" value="{{ request.path }}">
+        <button class="btn-secondary" type="submit">Save article</button>
+      </form>
+      {% endif %}
+    </div>
+    <aside class="sidebar">
+      {% if related %}
+      <div class="sidebar-card">
+        <h4>Related</h4>
+        <ul>{% for r in related %}<li><a href="{{ request.path.rsplit('/',1)[0] }}/{{ r.slug }}">{{ r.title }}</a></li>{% endfor %}</ul>
+      </div>
+      {% endif %}
+      <div class="appointment-block">
+        <h4>Care at Mayo Clinic</h4>
+        <a class="btn-primary" href="{{ url_for('appointments_landing') }}">Request appointment</a>
+      </div>
+    </aside>
+  </div>
+</section>
+{% endblock %}

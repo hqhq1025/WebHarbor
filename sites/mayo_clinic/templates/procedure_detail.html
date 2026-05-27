@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+{% block title %}{{ proc.name }}{% endblock %}
+{% block breadcrumbs %}
+<div class="container breadcrumbs">
+  <a href="{{ url_for('index') }}">Home</a><span>&rsaquo;</span>
+  <a href="{{ url_for('procedures_index') }}">Tests &amp; Procedures</a><span>&rsaquo;</span>
+  {{ proc.name }}
+</div>
+{% endblock %}
+{% block content %}
+<section class="container">
+  <h1>{{ proc.name }}</h1>
+  <p class="muted">Category: {{ proc.category|capitalize }}{% if dept %} &middot; <a href="{{ url_for('department_detail', slug=dept.slug) }}">{{ dept.name }}</a>{% endif %}</p>
+
+  <div class="two-col">
+    <div class="article-body">
+      <section><h2>Overview</h2><p>{{ proc.summary }}</p></section>
+      <section id="why"><h2>Why it's done</h2><p>{{ proc.why_done }}</p></section>
+      <section id="prepare"><h2>How to prepare</h2><p>{{ proc.how_to_prepare }}</p></section>
+      <section id="expect"><h2>What you can expect</h2><p>{{ proc.what_you_can_expect }}</p></section>
+      <section id="results"><h2>Results</h2><p>{{ proc.results }}</p></section>
+      <section id="risks"><h2>Risks</h2><p>{{ proc.risks }}</p></section>
+
+      <form action="{{ url_for('feedback') }}" method="post" style="margin-top:24px;">
+        <input type="hidden" name="slug" value="{{ proc.slug }}">
+        <input type="hidden" name="kind" value="procedure">
+        <strong>Was this helpful?</strong>
+        <button class="btn-secondary" name="helpful" value="yes" type="submit" style="margin-left:8px;">Yes</button>
+        <button class="btn-secondary" name="helpful" value="no" type="submit">No</button>
+      </form>
+    </div>
+    <aside class="sidebar">
+      <div class="sidebar-card">
+        <h4>On this page</h4>
+        <ul>
+          <li><a class="toc-link" href="#why">Why it's done</a></li>
+          <li><a class="toc-link" href="#prepare">How to prepare</a></li>
+          <li><a class="toc-link" href="#expect">What to expect</a></li>
+          <li><a class="toc-link" href="#results">Results</a></li>
+          <li><a class="toc-link" href="#risks">Risks</a></li>
+        </ul>
+      </div>
+      <div class="appointment-block">
+        <h4>Discuss with a specialist</h4>
+        <a class="btn-primary" href="{{ url_for('appointments_landing') }}">Request appointment</a>
+      </div>
+      {% if related_conditions %}
+      <div class="sidebar-card">
+        <h4>Used to treat / diagnose</h4>
+        <ul>{% for c in related_conditions %}<li><a href="{{ url_for('condition_detail', slug=c.slug) }}">{{ c.name }}</a></li>{% endfor %}</ul>
+      </div>
+      {% endif %}
+      {% if related_procedures %}
+      <div class="sidebar-card">
+        <h4>Related procedures</h4>
+        <ul>{% for r in related_procedures %}<li><a href="{{ url_for('procedure_detail', slug=r.slug) }}">{{ r.name }}</a></li>{% endfor %}</ul>
+      </div>
+      {% endif %}
+      {% if doctors %}
+      <div class="sidebar-card">
+        <h4>Doctors who perform this</h4>
+        <ul>{% for d in doctors %}<li><a href="{{ url_for('doctor_detail', slug=d.slug) }}">{{ d.name }}</a></li>{% endfor %}</ul>
+      </div>
+      {% endif %}
+    </aside>
+  </div>
+</section>
+{% endblock %}

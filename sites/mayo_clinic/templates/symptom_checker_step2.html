@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block title %}Symptom Checker - Step 2{% endblock %}
+{% block breadcrumbs %}
+<div class="container breadcrumbs">
+  <a href="{{ url_for('index') }}">Home</a><span>&rsaquo;</span>
+  <a href="{{ url_for('symptom_checker') }}">Symptom Checker</a><span>&rsaquo;</span> Step 2
+</div>
+{% endblock %}
+{% block content %}
+<section class="container">
+  <h1>Symptom Checker</h1>
+  <div class="sc-progress">
+    <div class="done"></div><div class="done"></div><div></div><div></div><div></div>
+  </div>
+  <div class="sc-step">Step 2 of 5: Which specific symptom?</div>
+  <div class="sc-options">
+    {% for s in symptoms %}
+      <a href="{{ url_for('symptom_checker', region=region, symptom=s.slug) }}">{{ s.name }}</a>
+    {% else %}
+      <p class="muted">No symptoms catalogued for this region yet.</p>
+    {% endfor %}
+  </div>
+  <p style="margin-top:16px;"><a href="{{ url_for('symptom_checker') }}">&larr; Back to body region</a></p>
+</section>
+{% endblock %}

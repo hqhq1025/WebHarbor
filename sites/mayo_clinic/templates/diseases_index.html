@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block title %}Diseases &amp; Conditions{% endblock %}
+{% block breadcrumbs %}
+<div class="container breadcrumbs"><a href="{{ url_for('index') }}">Home</a><span>&rsaquo;</span> Diseases &amp; Conditions</div>
+{% endblock %}
+{% block content %}
+<section class="container">
+  <h1>Diseases &amp; Conditions</h1>
+  <p class="muted">Easy-to-understand answers about diseases and conditions from Mayo Clinic experts.</p>
+
+  <div class="az-strip">
+    {% for L in letters %}
+      <a class="{{ 'active' if L == active_letter else '' }}" href="{{ url_for('diseases_index') }}?letter={{ L }}">{{ L }}</a>
+    {% endfor %}
+    {% if active_letter %}<a href="{{ url_for('diseases_index') }}" style="background:#fff;color:#0064a2;">Show all</a>{% endif %}
+  </div>
+
+  <p class="muted">Showing {{ conditions|length }} condition{{ '' if conditions|length == 1 else 's' }}{% if active_letter %} starting with "{{ active_letter }}"{% endif %}.</p>
+  <ul class="az-list">
+    {% for c in conditions %}
+      <li><a href="{{ url_for('condition_detail', slug=c.slug) }}">{{ c.name }}</a></li>
+    {% else %}
+      <li class="muted">No conditions found.</li>
+    {% endfor %}
+  </ul>
+
+  <div class="appointment-block">
+    <h4>Make an appointment</h4>
+    <p>Mayo Clinic accepts appointments in Arizona, Florida and Minnesota and at Mayo Clinic Health System sites.</p>
+    <a class="btn-primary" href="{{ url_for('appointments_landing') }}">Request an appointment</a>
+  </div>
+</section>
+{% endblock %}

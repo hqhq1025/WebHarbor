@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+{% block title %}{{ doc.name }}{% endblock %}
+{% block breadcrumbs %}
+<div class="container breadcrumbs">
+  <a href="{{ url_for('index') }}">Home</a><span>&rsaquo;</span>
+  <a href="{{ url_for('find_doctor') }}">Find a Doctor</a><span>&rsaquo;</span> {{ doc.name }}
+</div>
+{% endblock %}
+{% block content %}
+<section class="container">
+  <div class="doctor-card" style="grid-template-columns:130px 1fr;">
+    <div class="avatar" style="width:130px;height:130px;font-size:42px;">{{ doc.name[0] }}</div>
+    <div>
+      <h1 style="margin:0;">{{ doc.name }}</h1>
+      <div class="specialty" style="font-size:1.1rem;">{{ doc.specialty }}</div>
+      <div class="meta">Department: {% if dept %}<a href="{{ url_for('department_detail', slug=dept.slug) }}">{{ dept.name }}</a>{% endif %}</div>
+      <div class="meta">Locations: {{ doc.locations.replace(',', ', ') }}</div>
+      <div class="meta">Languages spoken: {{ doc.languages.replace(',', ', ') }}</div>
+      <div class="pills" style="margin-top:8px;">
+        {% for f in doc.focus_areas.split(',') %}<span class="pill">{{ f.strip() }}</span>{% endfor %}
+      </div>
+      {% if doc.accepts_appointments %}
+        <a class="btn-primary" href="{{ url_for('request_appointment') }}?step=1&dept={{ doc.dept_slug }}" style="margin-top:14px;">Request appointment</a>
+      {% else %}
+        <p class="muted" style="margin-top:14px;">This physician is not currently accepting new patient appointments through online scheduling.</p>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="two-col">
+    <div class="article-body">
+      <section><h2>Biography</h2><p>{{ doc.bio }}</p></section>
+      <section><h2>Education and training</h2>
+        <ul>{% for line in doc.education.split('\n') %}<li>{{ line }}</li>{% endfor %}</ul>
+      </section>
+      <section><h2>Research interests</h2><p>{{ doc.research_interests }}</p></section>
+      {% if trials %}
+      <section><h2>Current clinical trials</h2>
+        {% for t in trials %}
+          <div class="trial-card">
+            <div><span class="status {{ 'recruiting' if t.status == 'Recruiting' else 'active' }}">{{ t.status }}</span> &middot; {{ t.phase }}</div>
+            <h4><a href="{{ url_for('trial_detail', nct_id=t.nct_id) }}">{{ t.title }}</a></h4>
+          </div>
+        {% endfor %}
+      </section>
+      {% endif %}
+    </div>
+    <aside class="sidebar">
+      <div class="appointment-block">
+        <h4>Schedule with {{ doc.name }}</h4>
+        <p>Mayo Clinic accepts appointments at the listed locations.</p>
+        <a class="btn-primary" href="{{ url_for('request_appointment') }}?step=1&dept={{ doc.dept_slug }}">Request appointment</a>
+      </div>
+      {% if conditions %}
+      <div class="sidebar-card">
+        <h4>Treats these conditions</h4>
+        <ul>{% for c in conditions %}<li><a href="{{ url_for('condition_detail', slug=c.slug) }}">{{ c.name }}</a></li>{% endfor %}</ul>
+      </div>
+      {% endif %}
+    </aside>
+  </div>
+</section>
+{% endblock %}

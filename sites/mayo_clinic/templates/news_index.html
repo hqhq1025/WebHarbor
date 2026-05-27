@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block title %}News{% endblock %}
+{% block breadcrumbs %}
+<div class="container breadcrumbs"><a href="{{ url_for('index') }}">Home</a><span>&rsaquo;</span> News</div>
+{% endblock %}
+{% block content %}
+<section class="container">
+  <h1>Mayo Clinic News Network</h1>
+  <ul style="list-style:none;padding:0;">
+    {% for a in articles %}
+      <li style="border-bottom:1px solid #eee;padding:14px 0;">
+        <div class="muted" style="font-size:13px;">{{ a.published_date }}</div>
+        <h3 style="margin:4px 0;"><a href="{{ url_for('news_detail', slug=a.slug) }}">{{ a.title }}</a></h3>
+        <p style="margin:4px 0;">{{ a.summary }}</p>
+      </li>
+    {% endfor %}
+  </ul>
+</section>
+{% endblock %}

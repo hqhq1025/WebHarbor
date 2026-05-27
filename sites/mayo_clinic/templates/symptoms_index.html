@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block title %}Symptoms{% endblock %}
+{% block breadcrumbs %}
+<div class="container breadcrumbs"><a href="{{ url_for('index') }}">Home</a><span>&rsaquo;</span> Symptoms</div>
+{% endblock %}
+{% block content %}
+<section class="container">
+  <h1>Symptoms</h1>
+  <p class="muted">Find out what could be causing your symptoms with the Mayo Clinic Symptom Checker, or browse symptoms by name.</p>
+  <a class="btn-primary" href="{{ url_for('symptom_checker') }}">Start the Symptom Checker</a>
+
+  <div class="az-strip" style="margin-top:18px;">
+    {% for L in letters %}
+      <a class="{{ 'active' if L == active_letter else '' }}" href="{{ url_for('symptoms_index') }}?letter={{ L }}">{{ L }}</a>
+    {% endfor %}
+  </div>
+
+  <ul class="az-list">
+    {% for s in symptoms %}
+      <li><a href="{{ url_for('symptom_detail', slug=s.slug) }}">{{ s.name }}</a></li>
+    {% endfor %}
+  </ul>
+</section>
+{% endblock %}

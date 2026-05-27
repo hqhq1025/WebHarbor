@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% block title %}{{ drug.name }}{% endblock %}
+{% block breadcrumbs %}
+<div class="container breadcrumbs">
+  <a href="{{ url_for('index') }}">Home</a><span>&rsaquo;</span>
+  <a href="{{ url_for('drugs_index') }}">Drugs &amp; Supplements</a><span>&rsaquo;</span>
+  {{ drug.name }}
+</div>
+{% endblock %}
+{% block content %}
+<section class="container">
+  <h1>{{ drug.name }}</h1>
+  <p class="muted">Type: {{ drug.kind|capitalize }} &middot; Route: {{ drug.route }}</p>
+
+  <div class="two-col">
+    <div class="article-body">
+      <section><h2>Description and brand names</h2><p>{{ drug.description }}</p>
+        <p><strong>Treats:</strong> {{ drug.treats }}</p>
+      </section>
+      <section id="dosage"><h2>Proper use</h2><p>{{ drug.dosage }}</p></section>
+      <section id="side-effects"><h2>Side effects</h2><p>{{ drug.side_effects }}</p></section>
+      <section id="warnings"><h2>Precautions and warnings</h2><p>{{ drug.warnings }}</p></section>
+      <section id="interactions"><h2>Interactions</h2><p>{{ drug.interactions }}</p></section>
+
+      {% if current_user.is_authenticated %}
+      <form action="{{ url_for('save_item') }}" method="post" style="margin-top:14px;">
+        <input type="hidden" name="kind" value="drug">
+        <input type="hidden" name="slug" value="{{ drug.slug }}">
+        <input type="hidden" name="title" value="{{ drug.name }}">
+        <input type="hidden" name="next" value="{{ request.path }}">
+        <button class="btn-secondary" type="submit">Save to my portal</button>
+      </form>
+      {% endif %}
+    </div>
+    <aside class="sidebar">
+      <div class="sidebar-card">
+        <h4>On this page</h4>
+        <ul>
+          <li><a class="toc-link" href="#dosage">Proper use</a></li>
+          <li><a class="toc-link" href="#side-effects">Side effects</a></li>
+          <li><a class="toc-link" href="#warnings">Precautions</a></li>
+          <li><a class="toc-link" href="#interactions">Interactions</a></li>
+        </ul>
+      </div>
+      {% if related_conditions %}
+      <div class="sidebar-card">
+        <h4>Used to treat</h4>
+        <ul>{% for c in related_conditions %}<li><a href="{{ url_for('condition_detail', slug=c.slug) }}">{{ c.name }}</a></li>{% endfor %}</ul>
+      </div>
+      {% endif %}
+      <div class="appointment-block">
+        <h4>Talk with a Mayo Clinic specialist</h4>
+        <a class="btn-primary" href="{{ url_for('appointments_landing') }}">Request appointment</a>
+      </div>
+    </aside>
+  </div>
+</section>
+{% endblock %}

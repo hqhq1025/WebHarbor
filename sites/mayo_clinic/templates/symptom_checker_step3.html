@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block title %}Symptom Checker - Step 3{% endblock %}
+{% block content %}
+<section class="container">
+  <h1>Symptom Checker</h1>
+  <div class="sc-progress"><div class="done"></div><div class="done"></div><div class="done"></div><div></div><div></div></div>
+  <div class="sc-step">Step 3 of 5: How old is the patient?</div>
+  <div class="sc-options">
+    <a href="{{ url_for('symptom_checker', region=region, symptom=symptom, age_group='child') }}">Child or adolescent (under 18)</a>
+    <a href="{{ url_for('symptom_checker', region=region, symptom=symptom, age_group='adult') }}">Adult (18-64)</a>
+    <a href="{{ url_for('symptom_checker', region=region, symptom=symptom, age_group='adult') }}">Older adult (65+)</a>
+  </div>
+  <p style="margin-top:16px;"><a href="{{ url_for('symptom_checker', region=region) }}">&larr; Back to symptom list</a></p>
+</section>
+{% endblock %}

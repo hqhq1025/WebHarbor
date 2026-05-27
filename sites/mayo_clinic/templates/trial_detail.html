@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block title %}{{ trial.title }}{% endblock %}
+{% block breadcrumbs %}
+<div class="container breadcrumbs">
+  <a href="{{ url_for('index') }}">Home</a><span>&rsaquo;</span>
+  <a href="{{ url_for('trials_index') }}">Clinical Trials</a><span>&rsaquo;</span>
+  <span class="muted">{{ trial.nct_id }}</span>
+</div>
+{% endblock %}
+{% block content %}
+<section class="container">
+  <h1>{{ trial.title }}</h1>
+  <p class="muted">{{ trial.nct_id }} &middot;
+    <span class="status {{ 'recruiting' if trial.status == 'Recruiting' else 'active' }}">{{ trial.status }}</span>
+    &middot; {{ trial.phase }}
+  </p>
+
+  <div class="two-col">
+    <div class="article-body">
+      <section><h2>Brief summary</h2><p>{{ trial.brief_summary }}</p></section>
+      <section><h2>Intervention</h2><p>{{ trial.intervention }}</p></section>
+      <section><h2>Eligibility criteria</h2><p>{{ trial.eligibility }}</p></section>
+      <section><h2>Locations</h2><p>{{ trial.locations.replace(',', ', ') }}</p></section>
+      <section><h2>Principal Investigator</h2>
+        {% if trial.principal_investigator %}
+          <p><a href="{{ url_for('doctor_detail', slug=trial.principal_investigator.slug) }}">{{ trial.principal_investigator.name }}</a> &mdash; {{ trial.principal_investigator.specialty }}</p>
+        {% else %}
+          <p>To be assigned.</p>
+        {% endif %}
+      </section>
+    </div>
+    <aside class="sidebar">
+      <div class="appointment-block">
+        <h4>Interested in this trial?</h4>
+        <p>Contact the study coordinator to determine your eligibility.</p>
+        <a class="btn-primary" href="{{ url_for('contact') }}">Contact study team</a>
+      </div>
+    </aside>
+  </div>
+</section>
+{% endblock %}

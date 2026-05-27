@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block title %}Healthy Lifestyle{% endblock %}
+{% block breadcrumbs %}
+<div class="container breadcrumbs"><a href="{{ url_for('index') }}">Home</a><span>&rsaquo;</span> Healthy Lifestyle</div>
+{% endblock %}
+{% block content %}
+<section class="container">
+  <h1>Healthy Lifestyle</h1>
+  <p class="muted">Information and tools for nutrition, fitness, stress, sleep, women's and men's health, pregnancy, children, and healthy aging.</p>
+
+  <form method="get" action="{{ url_for('lifestyle_index') }}" style="margin:14px 0;">
+    <label>Topic:</label>
+    <select name="category" onchange="this.form.submit()">
+      <option value="">All topics</option>
+      {% for c in categories %}
+        <option value="{{ c }}" {{ 'selected' if c == category else '' }}>{{ c }}</option>
+      {% endfor %}
+    </select>
+  </form>
+
+  <div class="related-grid">
+    {% for a in articles %}
+      <div class="related-card">
+        <div class="kind">{{ a.category }}</div>
+        <h4><a href="{{ url_for('lifestyle_detail', slug=a.slug) }}">{{ a.title }}</a></h4>
+        <p>{{ a.summary[:180] }}</p>
+      </div>
+    {% endfor %}
+  </div>
+</section>
+{% endblock %}

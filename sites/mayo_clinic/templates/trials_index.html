@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+{% block title %}Clinical Trials{% endblock %}
+{% block breadcrumbs %}
+<div class="container breadcrumbs"><a href="{{ url_for('index') }}">Home</a><span>&rsaquo;</span> Clinical Trials</div>
+{% endblock %}
+{% block content %}
+<section class="container">
+  <h1>Clinical Trials at Mayo Clinic</h1>
+  <p class="muted">Mayo Clinic conducts thousands of clinical trials and research studies each year. Find an active trial by disease, treatment, phase, or location.</p>
+
+  <form method="get" action="{{ url_for('trials_index') }}" style="background:#f7f7f7;padding:16px;border-radius:6px;display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px;">
+    <div class="form-row" style="margin:0;">
+      <label>Keyword</label>
+      <input type="text" name="q" value="{{ q }}" placeholder="e.g. lung cancer, diabetes">
+    </div>
+    <div class="form-row" style="margin:0;">
+      <label>Status</label>
+      <select name="status">
+        <option value="">Any status</option>
+        {% for s in ["Recruiting","Active, not recruiting","Completed"] %}
+          <option value="{{ s }}" {{ 'selected' if status == s else '' }}>{{ s }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="form-row" style="margin:0;">
+      <label>Phase</label>
+      <select name="phase">
+        <option value="">Any phase</option>
+        {% for p in ["Phase 1","Phase 2","Phase 3","Phase 4"] %}
+          <option value="{{ p }}" {{ 'selected' if phase == p else '' }}>{{ p }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="form-row" style="margin:0;">
+      <label>Location</label>
+      <select name="location">
+        <option value="">All locations</option>
+        {% for L in ["Rochester","Jacksonville","Phoenix"] %}
+          <option value="{{ L }}" {{ 'selected' if L == location else '' }}>{{ L }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="form-row" style="margin:0;display:flex;align-items:end;">
+      <button class="btn-primary" type="submit">Search trials</button>
+    </div>
+  </form>
+
+  <p class="muted" style="margin-top:16px;">{{ trials|length }} trial{{ '' if trials|length == 1 else 's' }} found.</p>
+  {% for t in trials %}
+    <div class="trial-card">
+      <div>
+        <span class="status {{ 'recruiting' if t.status == 'Recruiting' else ('active' if 'Active' in t.status else 'completed') }}">{{ t.status }}</span>
+        &middot; {{ t.phase }} &middot; <span class="muted">{{ t.nct_id }}</span>
+      </div>
+      <h3 style="margin:8px 0 6px;"><a href="{{ url_for('trial_detail', nct_id=t.nct_id) }}">{{ t.title }}</a></h3>
+      <p>{{ t.brief_summary[:240] }}{% if t.brief_summary|length > 240 %}...{% endif %}</p>
+      <p class="muted" style="font-size:13px;"><strong>Intervention:</strong> {{ t.intervention }} &middot; <strong>Locations:</strong> {{ t.locations.replace(',', ', ') }}</p>
+    </div>
+  {% else %}
+    <p class="muted">No trials match your filters.</p>
+  {% endfor %}
+</section>
+{% endblock %}

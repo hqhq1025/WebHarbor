@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% block title %}Site Map{% endblock %}
+{% block content %}
+<section class="container">
+  <h1>Site map</h1>
+  <p class="muted">Mayo Clinic content overview ({{ cond_count }} conditions, {{ proc_count }} procedures, {{ drug_count }} drugs, {{ doc_count }} doctors, {{ dept_count }} departments, {{ trial_count }} active trials, {{ article_count }} articles).</p>
+  <div class="footer-grid" style="background:#fff;color:#2d3033;">
+    <div>
+      <h5 style="color:var(--mayo-blue-dark);">Patient care</h5>
+      <ul style="list-style:none;padding:0;">
+        <li><a href="{{ url_for('appointments_landing') }}">Request an appointment</a></li>
+        <li><a href="{{ url_for('find_doctor') }}">Find a doctor</a></li>
+        <li><a href="{{ url_for('locations') }}">Locations</a></li>
+        <li><a href="{{ url_for('patient_portal') }}">Patient Portal</a></li>
+      </ul>
+    </div>
+    <div>
+      <h5 style="color:var(--mayo-blue-dark);">Health Information</h5>
+      <ul style="list-style:none;padding:0;">
+        <li><a href="{{ url_for('diseases_index') }}">Diseases &amp; Conditions</a></li>
+        <li><a href="{{ url_for('symptoms_index') }}">Symptoms</a></li>
+        <li><a href="{{ url_for('symptom_checker') }}">Symptom Checker</a></li>
+        <li><a href="{{ url_for('procedures_index') }}">Tests &amp; Procedures</a></li>
+        <li><a href="{{ url_for('drugs_index') }}">Drugs &amp; Supplements</a></li>
+        <li><a href="{{ url_for('lifestyle_index') }}">Healthy Lifestyle</a></li>
+        <li><a href="{{ url_for('stories_index') }}">Patient Stories</a></li>
+      </ul>
+    </div>
+    <div>
+      <h5 style="color:var(--mayo-blue-dark);">Research</h5>
+      <ul style="list-style:none;padding:0;">
+        <li><a href="{{ url_for('trials_index') }}">Clinical Trials</a></li>
+        <li><a href="{{ url_for('news_index') }}">News</a></li>
+      </ul>
+    </div>
+    <div>
+      <h5 style="color:var(--mayo-blue-dark);">About</h5>
+      <ul style="list-style:none;padding:0;">
+        <li><a href="{{ url_for('about') }}">About Mayo Clinic</a></li>
+        <li><a href="{{ url_for('careers') }}">Careers</a></li>
+        <li><a href="{{ url_for('education') }}">Education</a></li>
+        <li><a href="{{ url_for('contact') }}">Contact</a></li>
+      </ul>
+    </div>
+  </div>
+</section>
+{% endblock %}
