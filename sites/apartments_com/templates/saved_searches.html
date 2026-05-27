@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container" style="padding: 24px 20px; max-width: 720px;">
+  <h1>Saved searches</h1>
+  <p style="color:var(--muted);">You'll get email alerts when new buildings match.</p>
+  {% for s in items %}
+    <div class="section-block">
+      <h3>{{ s.name }}</h3>
+      <p style="color:var(--muted);font-size:13px;">{{ s.query_string }}</p>
+      <a class="btn" href="{{ url_for('search') }}?{{ s.query_string }}">Run this search</a>
+      <form method="post" action="{{ url_for('delete_saved_search', sid=s.id) }}" style="display:inline;">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button class="btn ghost" type="submit">Delete</button>
+      </form>
+    </div>
+  {% else %}
+    <p style="color:var(--muted);">No saved searches yet. Run a search and click "Save this search".</p>
+  {% endfor %}
+</div>
+{% endblock %}

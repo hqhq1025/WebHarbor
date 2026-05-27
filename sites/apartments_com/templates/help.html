@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container-narrow" style="padding: 24px 20px;">
+  <h1>Help</h1>
+  <h2>How do I save a search?</h2>
+  <p>Run a search on the Search page, then click <strong>Save this search</strong> in the sidebar. You'll need to be signed in.</p>
+  <h2>How do I request a tour?</h2>
+  <p>On any building detail page, click <strong>Request a Tour</strong>. You'll go through a three-step form: tour type, date, and your info.</p>
+  <h2>How does compare work?</h2>
+  <p>Click <strong>Compare</strong> from a search card or building page. You can compare up to 4 buildings side-by-side.</p>
+  <h2>How do I list a property?</h2>
+  <p>Use the <a href="{{ url_for('list_property') }}">List Your Property</a> form. A leasing rep will follow up.</p>
+</div>
+{% endblock %}

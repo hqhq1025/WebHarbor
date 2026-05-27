@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container" style="padding: 24px 20px; max-width: 720px;">
+  <a href="{{ url_for('building_detail', state=b.state.lower(), city_slug=b.city|lower|replace(' ', '-'), building_slug=b.slug) }}" style="font-size:13px;color:var(--muted);">← {{ b.name }}</a>
+  <h1>Request a Tour — {{ b.name }}</h1>
+
+  <div class="stepper">
+    <div class="step {% if step == 1 %}active{% elif step > 1 %}done{% endif %}">1. Tour type</div>
+    <div class="step {% if step == 2 %}active{% elif step > 2 %}done{% endif %}">2. Date & time</div>
+    <div class="step {% if step >= 3 %}active{% endif %}">3. Your info</div>
+  </div>
+
+  <form method="post" action="{{ url_for('request_tour', state=b.state.lower(), city_slug=b.city|lower|replace(' ', '-'), building_slug=b.slug) }}{% if unit %}?unit_id={{ unit.id }}{% endif %}">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <input type="hidden" name="step" value="{{ step }}">
+    {% if unit %}<input type="hidden" name="unit_id" value="{{ unit.id }}">{% endif %}
+
+    {% if step == 1 %}
+      <div class="section-block">
+        <h2>How would you like to tour?</h2>
+        {% for v, l in [('In-Person','In-person tour with a leasing agent'),('Self','Self-guided tour'),('Live Video','Live video tour')] %}
+        <label class="checkbox-row">
+          <input type="radio" name="tour_type" value="{{ v }}" {% if loop.first %}checked{% endif %}>{{ l }}
+        </label>
+        {% endfor %}
+        <button class="btn" type="submit" style="margin-top:14px;">Continue</button>
+      </div>
+    {% elif step == 2 %}
+      <div class="section-block">
+        <h2>Pick a date & time</h2>
+        {% if session.get('tour_tour_type') %}<input type="hidden" name="tour_type" value="{{ session['tour_tour_type'] }}">{% endif %}
+        <div class="form-field"><label>Preferred date</label><input type="date" name="preferred_date" required></div>
+        <div class="form-field"><label>Preferred time</label>
+          <select name="preferred_time">
+            <option>9:00 AM</option><option>10:00 AM</option><option>11:00 AM</option>
+            <option>1:00 PM</option><option>2:00 PM</option><option>3:00 PM</option>
+            <option>4:00 PM</option><option>5:00 PM</option>
+          </select>
+        </div>
+        <button class="btn" type="submit">Continue</button>
+      </div>
+    {% else %}
+      <div class="section-block">
+        <h2>Your info</h2>
+        {% if session.get('tour_tour_type') %}<input type="hidden" name="tour_type" value="{{ session['tour_tour_type'] }}">{% endif %}
+        {% if session.get('tour_preferred_date') %}<input type="hidden" name="preferred_date" value="{{ session['tour_preferred_date'] }}">{% endif %}
+        {% if session.get('tour_preferred_time') %}<input type="hidden" name="preferred_time" value="{{ session['tour_preferred_time'] }}">{% endif %}
+        <div class="form-field"><label>Name</label><input name="name" required {% if current_user.is_authenticated %}value="{{ current_user.name }}"{% endif %}></div>
+        <div class="form-field"><label>Email</label><input name="email" type="email" required {% if current_user.is_authenticated %}value="{{ current_user.email }}"{% endif %}></div>
+        <div class="form-field"><label>Phone</label><input name="phone" {% if current_user.is_authenticated %}value="{{ current_user.phone }}"{% endif %}></div>
+        <div class="form-field"><label>Planned move-in date</label><input type="date" name="move_in_date"></div>
+        <div class="form-field"><label>Anything to mention?</label><textarea name="message" rows="3"></textarea></div>
+        <button class="btn lg" type="submit">Submit tour request</button>
+      </div>
+    {% endif %}
+  </form>
+</div>
+{% endblock %}

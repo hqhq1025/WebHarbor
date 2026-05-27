@@ -1,0 +1,107 @@
+{% extends "base.html" %}
+{% block content %}
+
+<section class="hero">
+  <div class="container">
+    <h1>Find your next apartment</h1>
+    <div class="sub">Browse {{ total_buildings }} buildings across 22 US metros — with floor plans, walk scores, and real reviews.</div>
+    <form action="{{ url_for('search') }}" method="get" class="search-box">
+      <input name="q" placeholder="City, ZIP code, neighborhood, or building name…" autocomplete="off">
+      <button type="submit">Search</button>
+    </form>
+    <div class="chips">
+      <a href="{{ url_for('search') }}?beds=studio">Studios</a>
+      <a href="{{ url_for('search') }}?beds=1">1 Bedroom</a>
+      <a href="{{ url_for('search') }}?beds=2">2 Bedroom</a>
+      <a href="{{ url_for('search') }}?beds=3">3+ Bedroom</a>
+      <a href="{{ url_for('search') }}?mode=luxury">Luxury</a>
+      <a href="{{ url_for('search') }}?pet=any">Pet Friendly</a>
+      <a href="{{ url_for('search_draw') }}">Draw search →</a>
+    </div>
+  </div>
+</section>
+
+<section class="section">
+  <div class="container">
+    <h2>Popular metros</h2>
+    <div class="lead">Explore rentals where most renters are searching this week.</div>
+    <div class="grid">
+      {% for c in featured_cities %}
+        <a class="city-card" href="{{ url_for('city_page', city_slug=c.slug) }}">
+          <img src="{{ c.hero_image }}" alt="{{ c.name }}">
+          <div class="overlay"></div>
+          <div class="label">
+            <div class="name">{{ c.name }}, {{ c.state }}</div>
+            <div class="meta">avg 1BR ${{ '{:,}'.format(c.avg_rent_1br) }}/mo</div>
+          </div>
+        </a>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+
+<section class="section" style="background:#fff;">
+  <div class="container">
+    <h2>Featured properties</h2>
+    <div class="lead">Highly rated buildings curated by our editorial team.</div>
+    <div class="grid">
+      {% for b in featured_buildings %}
+        {% include "_card.html" %}
+      {% endfor %}
+    </div>
+  </div>
+</section>
+
+{% if new_buildings %}
+<section class="section">
+  <div class="container">
+    <h2>New on Apartments.com</h2>
+    <div class="grid">
+      {% for b in new_buildings %}
+        {% include "_card.html" %}
+      {% endfor %}
+    </div>
+  </div>
+</section>
+{% endif %}
+
+<section class="section" style="background:#fff;">
+  <div class="container">
+    <h2>Search by bedroom</h2>
+    <div class="row">
+      {% for bd, label, sub in [("studio","Studios","Compact living, no walls between you and the city"),
+                                ("1","1 Bedroom","Most popular layout — privacy + affordability"),
+                                ("2","2 Bedroom","Roommates, families, or a home office"),
+                                ("3","3+ Bedroom","Houses, townhomes, larger condos")] %}
+        <a href="{{ url_for('search') }}?beds={{ bd }}"
+           style="flex:1;min-width:220px;padding:24px;background:linear-gradient(135deg, #f5f7fa, #e6f3fb);border-radius:10px;border:1px solid var(--line);">
+          <div style="font-size:24px;font-weight:800;color:#1a2733;">{{ label }}</div>
+          <div style="color:#6b7785;font-size:14px;margin-top:6px;">{{ sub }}</div>
+        </a>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+
+<section class="section">
+  <div class="container">
+    <h2>Renters Guide</h2>
+    <div class="lead">Move-in checklists, lease guides, and market analysis.</div>
+    <div class="grid">
+      {% for a in recent_articles %}
+        <a class="listing-card" href="{{ url_for('article_detail', slug=a.slug) }}">
+          {% if a.hero_image %}
+            <div class="photo"><img src="{{ a.hero_image }}" alt=""></div>
+          {% endif %}
+          <div class="body">
+            <span class="tag">{{ a.category }}</span>
+            <div class="name" style="margin-top:6px;">{{ a.title }}</div>
+            <div class="meta">{{ a.reading_time_min }} min read · {{ a.published_at.strftime('%b %d, %Y') }}</div>
+          </div>
+        </a>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+
+{% endblock %}

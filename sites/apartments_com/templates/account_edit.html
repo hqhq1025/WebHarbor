@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container" style="padding: 24px 20px; max-width: 560px;">
+  <h1>Edit profile</h1>
+  <form method="post" class="section-block">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <div class="form-field"><label>Name</label><input name="name" value="{{ current_user.name }}"></div>
+    <div class="form-field"><label>Phone</label><input name="phone" value="{{ current_user.phone }}"></div>
+    <div class="form-field"><label>Max monthly budget</label><input name="budget_max" type="number" value="{{ current_user.budget_max or '' }}"></div>
+    <div class="form-field"><label>Minimum bedrooms</label><input name="beds_min" type="number" value="{{ current_user.beds_min }}"></div>
+    <label class="checkbox-row"><input type="checkbox" name="receive_alerts" {% if current_user.receive_alerts %}checked{% endif %}> Email me when new matching rentals are listed</label>
+    <button class="btn" type="submit" style="margin-top:14px;">Save</button>
+  </form>
+</div>
+{% endblock %}

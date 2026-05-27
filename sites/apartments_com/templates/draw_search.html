@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container" style="padding: 24px 20px; max-width: 760px;">
+  <h1>Draw search</h1>
+  <p style="color:var(--muted);">Define a custom search area as a polygon (latitude,longitude pairs separated by ;). Buildings inside the polygon's bounding box will be returned. Try one of the presets below.</p>
+
+  <form method="post" class="section-block">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <div class="form-field">
+      <label>Polygon (lat1,lng1;lat2,lng2;lat3,lng3;…)</label>
+      <textarea name="polygon" rows="3" placeholder="40.74,-74.01;40.78,-74.01;40.78,-73.96;40.74,-73.96"></textarea>
+      <div class="hint">At least three points. Bounding box of the polygon is used to filter.</div>
+    </div>
+    <button class="btn" type="submit">Search this area</button>
+  </form>
+
+  <div class="section-block">
+    <h2>Preset areas</h2>
+    <ul>
+      <li><a href="{{ url_for('search', polygon='40.74,-74.01;40.78,-74.01;40.78,-73.96;40.74,-73.96') }}">Midtown Manhattan rectangle</a></li>
+      <li><a href="{{ url_for('search', polygon='34.04,-118.27;34.06,-118.27;34.06,-118.24;34.04,-118.24') }}">Downtown LA / South Park rectangle</a></li>
+      <li><a href="{{ url_for('search', polygon='37.77,-122.42;37.79,-122.42;37.79,-122.39;37.77,-122.39') }}">SoMa San Francisco rectangle</a></li>
+      <li><a href="{{ url_for('search', polygon='41.88,-87.63;41.90,-87.63;41.90,-87.60;41.88,-87.60') }}">Chicago Loop rectangle</a></li>
+    </ul>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container" style="padding: 24px 20px; max-width: 980px;">
+  <a href="{{ url_for('building_detail', state=b.state.lower(), city_slug=b.city|lower|replace(' ', '-'), building_slug=b.slug) }}" style="font-size:13px;color:var(--muted);">← {{ b.name }}</a>
+  <h1>Unit {{ u.unit_number }} at {{ b.name }}</h1>
+  <p style="color:var(--muted);">{{ b.address }}, {{ b.city }}, {{ b.state }} {{ b.zip }}</p>
+
+  <div class="row" style="margin-top:18px;gap:18px;">
+    <div style="flex:2;min-width:320px;">
+      <div class="section-block">
+        <h2>${{ '{:,}'.format(u.rent) }}<span style="font-weight:400;color:var(--muted);font-size:16px;">/mo</span></h2>
+        <p>{{ u.beds if u.beds else "Studio" }} bd · {{ u.baths }} ba · {{ u.sqft }} sqft · Floor {{ u.floor }} · View: {{ u.view }}</p>
+        <p><strong>Available:</strong> {{ u.available_date }}</p>
+        <p><strong>Floor plan:</strong> {{ plan.name }} ({{ plan.sqft_min }}-{{ plan.sqft_max }} sqft)</p>
+        <p><strong>Lease options:</strong> {{ u.get_lease_terms() | join(', ') }}</p>
+      </div>
+
+      <div class="section-block">
+        <h2>Move-in cost calculator</h2>
+        <table class="units">
+          <tr><td>First month rent</td><td>${{ '{:,}'.format(u.rent) }}</td></tr>
+          <tr><td>Security deposit</td><td>${{ '{:,}'.format(u.deposit) }}</td></tr>
+          <tr><td>Application fee</td><td>${{ b.app_fee }}</td></tr>
+          <tr><td>Administrative fee</td><td>${{ b.admin_fee }}</td></tr>
+          {% if b.pet_friendly and b.pet_deposit %}
+          <tr><td>Pet deposit (optional)</td><td>${{ b.pet_deposit }}</td></tr>
+          {% endif %}
+          <tr style="font-weight:700;background:#f5f7fa;"><td>Total move-in (no pet)</td><td>${{ '{:,}'.format(u.rent + u.deposit + b.app_fee + b.admin_fee) }}</td></tr>
+        </table>
+      </div>
+
+      <div class="section-block">
+        <h2>About this unit</h2>
+        <p>This {{ u.beds if u.beds else "studio" }} unit at {{ b.name }} offers {{ u.sqft }} square feet with a {{ u.view|lower }} view on floor {{ u.floor }}. Available {{ u.available_date }}. Lease terms include {{ u.get_lease_terms() | join(' or ') }}. In a building with {{ b.get_amenities()|length }} resident amenities including {{ b.get_amenities()[:3] | join(', ') }}.</p>
+      </div>
+    </div>
+
+    <aside style="flex:1;min-width:260px;">
+      <div class="sticky-cta">
+        <a class="btn lg" href="{{ url_for('request_tour', state=b.state.lower(), city_slug=b.city|lower|replace(' ', '-'), building_slug=b.slug) }}?unit_id={{ u.id }}">Tour this unit</a>
+        <a class="btn lg outline" href="{{ url_for('send_message', state=b.state.lower(), city_slug=b.city|lower|replace(' ', '-'), building_slug=b.slug) }}">Ask a question</a>
+        <div class="phone">📞 <a href="tel:{{ b.contact_phone }}">{{ b.contact_phone }}</a></div>
+      </div>
+    </aside>
+  </div>
+</div>
+{% endblock %}

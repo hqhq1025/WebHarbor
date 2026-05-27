@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container" style="padding: 24px 20px;">
+  <h1>{{ city.name }}, {{ city.state }} Apartments for Rent</h1>
+  <p style="color:var(--muted);">{{ city.blurb }}</p>
+  <div class="row" style="background:#fff;padding:18px;border-radius:8px;border:1px solid var(--line);margin:14px 0;">
+    <div style="flex:1;"><div style="color:var(--muted);font-size:12px;">Avg Studio</div><div style="font-weight:700;">${{ '{:,}'.format(city.avg_rent_studio) }}/mo</div></div>
+    <div style="flex:1;"><div style="color:var(--muted);font-size:12px;">Avg 1 BR</div><div style="font-weight:700;">${{ '{:,}'.format(city.avg_rent_1br) }}/mo</div></div>
+    <div style="flex:1;"><div style="color:var(--muted);font-size:12px;">Avg 2 BR</div><div style="font-weight:700;">${{ '{:,}'.format(city.avg_rent_2br) }}/mo</div></div>
+    <div style="flex:1;"><div style="color:var(--muted);font-size:12px;">Avg 3 BR</div><div style="font-weight:700;">${{ '{:,}'.format(city.avg_rent_3br) }}/mo</div></div>
+    <div style="flex:1;"><div style="color:var(--muted);font-size:12px;">Total rentals</div><div style="font-weight:700;">{{ total }}</div></div>
+  </div>
+
+  {% if neighborhoods %}
+  <h2 style="margin-top:24px;">Neighborhoods in {{ city.name }}</h2>
+  <div class="grid">
+    {% for n in neighborhoods %}
+      <a class="listing-card" href="{{ url_for('neighborhood_page', city_slug=city.slug, nbhd_slug=n.slug) }}" style="text-decoration:none;color:inherit;">
+        <div class="body">
+          <div class="name">{{ n.name }}</div>
+          <div class="addr">{{ n.blurb }}</div>
+          <div class="meta" style="margin-top:8px;">
+            <span class="score-pill {{ n.walk_score | score_color }}">Walk {{ n.walk_score }}</span>
+            <span class="score-pill {{ n.transit_score | score_color }}">Transit {{ n.transit_score }}</span>
+          </div>
+          <div style="margin-top:8px;color:var(--ink-2);font-size:13px;">Avg ${{ '{:,}'.format(n.avg_rent) }}/mo</div>
+        </div>
+      </a>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  <h2 style="margin-top:32px;">Top buildings in {{ city.name }}</h2>
+  <div class="grid">
+    {% for b in buildings %}{% include "_card.html" %}{% endfor %}
+  </div>
+  <p style="margin-top:18px;"><a class="btn outline" href="{{ url_for('search') }}?city={{ city.name }}">See all {{ total }} rentals →</a></p>
+</div>
+{% endblock %}

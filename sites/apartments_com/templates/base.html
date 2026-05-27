@@ -1,0 +1,108 @@
+{# Shared layout #}<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}Apartments.com — Apartments for Rent{% endblock %}</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
+</head>
+<body>
+  <header class="site-header">
+    <div class="inner">
+      <a class="logo" href="{{ url_for('index') }}">
+        APARTMENTS<span class="dot">.</span>com
+      </a>
+      <nav>
+        <a href="{{ url_for('search') }}">Search</a>
+        <a href="{{ url_for('cities_index') }}">Cities</a>
+        <a href="{{ url_for('schools_index') }}">Schools</a>
+        <a href="{{ url_for('articles_index') }}">Renters Guide</a>
+        <a href="{{ url_for('list_property') }}">List a Property</a>
+      </nav>
+      <div class="spacer"></div>
+      <div class="user-menu">
+        {% if compare_buildings %}
+          <a href="{{ url_for('compare') }}">Compare ({{ compare_buildings|length }})</a>
+        {% endif %}
+        {% if current_user.is_authenticated %}
+          <a href="{{ url_for('favorites_list') }}">Favorites</a>
+          <a href="{{ url_for('account') }}">{{ current_user.name.split(' ')[0] }}</a>
+          <a href="{{ url_for('logout') }}">Sign out</a>
+        {% else %}
+          <a href="{{ url_for('login') }}">Sign in</a>
+          <a href="{{ url_for('register') }}" class="btn sm">Sign up</a>
+        {% endif %}
+      </div>
+    </div>
+  </header>
+
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+      <div class="container" style="margin-top: 14px;">
+        {% for cat, msg in messages %}
+          <div class="flash {{ cat }}">{{ msg }}</div>
+        {% endfor %}
+      </div>
+    {% endif %}
+  {% endwith %}
+
+  <main>{% block content %}{% endblock %}</main>
+
+  <footer class="site-footer">
+    <div class="cols">
+      <div>
+        <h4>Apartments.com</h4>
+        <p style="font-size:13px;color:#cbd5e1;">The leading marketplace for apartment rentals in the United States.
+        Find apartments, condos, townhomes, and houses for rent across 22+ metros.</p>
+        <form method="post" action="{{ url_for('newsletter_signup') }}" style="margin-top: 14px;">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <input type="email" name="email" placeholder="Email for market updates"
+                 style="padding:8px;border-radius:4px;border:none;width:200px;color:#1a2733;">
+          <button class="btn sm" type="submit">Subscribe</button>
+        </form>
+      </div>
+      <div>
+        <h4>Renters</h4>
+        <a href="{{ url_for('articles_index') }}">Renters Guide</a>
+        <a href="{{ url_for('articles_index') }}?category=Moving%20Tips">Moving Tips</a>
+        <a href="{{ url_for('search') }}?mode=student">Student Housing</a>
+        <a href="{{ url_for('search') }}?mode=senior">Senior Housing</a>
+        <a href="{{ url_for('search') }}?mode=military">Military Housing</a>
+      </div>
+      <div>
+        <h4>Pros</h4>
+        <a href="{{ url_for('list_property') }}">List a Property</a>
+        <a href="{{ url_for('list_property') }}">Property Management Tools</a>
+        <a href="{{ url_for('about') }}">About</a>
+        <a href="{{ url_for('help_page') }}">Help</a>
+      </div>
+      <div>
+        <h4>Discover</h4>
+        <a href="{{ url_for('cities_index') }}">Browse All Cities</a>
+        <a href="{{ url_for('schools_index') }}">Schools</a>
+        <a href="{{ url_for('search') }}?mode=luxury">Luxury Apartments</a>
+        <a href="{{ url_for('search_draw') }}">Draw Search</a>
+      </div>
+    </div>
+    <div class="copy">© {{ current_year }} Apartments.com Mirror — WebHarbor benchmark site. Not affiliated with apartments.com.</div>
+  </footer>
+
+  {% if compare_buildings %}
+  <div class="compare-bar">
+    <strong>Comparing:</strong>
+    <div class="items">
+      {% for b in compare_buildings %}
+        <div class="item">{{ b.name }} <a href="#" style="color:#fff;" onclick="document.getElementById('rm-{{ b.id }}').submit(); return false;">×</a>
+          <form id="rm-{{ b.id }}" method="post" action="{{ url_for('compare_remove', building_id=b.id) }}" style="display:none;"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"></form>
+        </div>
+      {% endfor %}
+    </div>
+    <a class="btn sm" href="{{ url_for('compare') }}">Compare side-by-side</a>
+    <form method="post" action="{{ url_for('compare_clear') }}" style="display:inline;">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <button type="submit" class="btn sm ghost" style="color:#cbd5e1;border-color:#3b4955;">Clear</button>
+    </form>
+  </div>
+  {% endif %}
+</body>
+</html>

@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container" style="padding: 24px 20px;">
+  <h1>Renters Guide</h1>
+  <p style="color:var(--muted);">Move-in checklists, lease guides, market analysis, and decorating tips.</p>
+
+  <div class="chip-row" style="margin: 14px 0;">
+    <a class="chip {% if not current_category %}{% else %}ghost{% endif %}"
+       href="{{ url_for('articles_index') }}"
+       style="background: {% if not current_category %}var(--accent){% else %}var(--brand){% endif %};">All</a>
+    {% for c in categories %}
+      <a class="chip" href="{{ url_for('articles_index') }}?category={{ c }}"
+         style="background: {% if current_category == c %}var(--accent){% else %}var(--brand){% endif %};">{{ c }}</a>
+    {% endfor %}
+  </div>
+
+  <div class="grid">
+    {% for a in articles %}
+      <a class="listing-card" href="{{ url_for('article_detail', slug=a.slug) }}" style="text-decoration:none;color:inherit;">
+        {% if a.hero_image %}<div class="photo"><img src="{{ a.hero_image }}" alt=""></div>{% endif %}
+        <div class="body">
+          <span class="tag">{{ a.category }}</span>
+          <div class="name" style="margin-top:6px;">{{ a.title }}</div>
+          <div class="meta">{{ a.reading_time_min }} min · {{ a.published_at.strftime('%b %d, %Y') }}</div>
+        </div>
+      </a>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}

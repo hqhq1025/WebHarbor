@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container" style="padding: 24px 20px; max-width: 680px; text-align: center;">
+  <h1>Tour request confirmed!</h1>
+  <div class="section-block">
+    <p>We've sent your <strong>{{ tr.tour_type }}</strong> tour request for <strong>{{ b.name }}</strong> {% if unit %}(unit {{ unit.unit_number }}){% endif %} on <strong>{{ tr.preferred_date }} at {{ tr.preferred_time }}</strong> to {{ b.property_manager }}.</p>
+    <p style="color:var(--muted);">A leasing agent will reach out to {{ tr.email }} or {{ tr.phone }} to confirm. Your confirmation number is <strong>TR-{{ '%06d'|format(tr.id) }}</strong>.</p>
+    <a class="btn" href="{{ url_for('building_detail', state=b.state.lower(), city_slug=b.city|lower|replace(' ', '-'), building_slug=b.slug) }}">Back to building</a>
+    <a class="btn outline" href="{{ url_for('account') if current_user.is_authenticated else url_for('search') }}">{% if current_user.is_authenticated %}My account{% else %}Keep browsing{% endif %}</a>
+  </div>
+</div>
+{% endblock %}

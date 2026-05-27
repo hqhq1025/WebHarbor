@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container-narrow" style="padding: 24px 20px;">
+  <a href="{{ url_for('articles_index') }}" style="font-size:13px;color:var(--muted);">← Renters Guide</a>
+  <h1>{{ a.title }}</h1>
+  <p style="color:var(--muted);">By {{ a.author }} · {{ a.published_at.strftime('%B %d, %Y') }} · {{ a.reading_time_min }} min read · <span class="tag">{{ a.category }}</span></p>
+  {% if a.hero_image %}<img src="{{ a.hero_image }}" alt="" style="width:100%;border-radius:8px;margin-bottom:18px;">{% endif %}
+  <article class="article-body">
+    {{ a.body | replace('\n\n', '</p><p>') | replace('# ', '') | safe }}
+  </article>
+  <hr style="margin: 36px 0; border: none; border-top: 1px solid var(--line);">
+  {% if related %}
+  <h2>Related</h2>
+  <div class="grid">
+    {% for r in related %}
+      <a class="listing-card" href="{{ url_for('article_detail', slug=r.slug) }}" style="text-decoration:none;color:inherit;">
+        <div class="body">
+          <span class="tag">{{ r.category }}</span>
+          <div class="name" style="margin-top:6px;">{{ r.title }}</div>
+          <div class="meta">{{ r.reading_time_min }} min · {{ r.published_at.strftime('%b %d, %Y') }}</div>
+        </div>
+      </a>
+    {% endfor %}
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

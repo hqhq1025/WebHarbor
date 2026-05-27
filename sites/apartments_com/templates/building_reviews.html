@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container" style="padding: 24px 20px; max-width: 900px;">
+  <a href="{{ url_for('building_detail', state=b.state.lower(), city_slug=b.city|lower|replace(' ', '-'), building_slug=b.slug) }}" style="font-size:13px;color:var(--muted);">← {{ b.name }}</a>
+  <h1>Reviews of {{ b.name }}</h1>
+  <p style="color:var(--muted);"><strong style="color:var(--accent-2);">★ {{ '%.1f'|format(b.rating_avg) }}</strong> · {{ reviews|length }} reviews</p>
+
+  <div class="section-block">
+    <h2>Write a review</h2>
+    <form method="post" action="{{ url_for('submit_review', state=b.state.lower(), city_slug=b.city|lower|replace(' ', '-'), building_slug=b.slug) }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <div class="row">
+        <div class="form-field" style="flex:1;"><label>Your name</label><input name="author_name" required></div>
+        <div class="form-field" style="flex:1;"><label>Overall rating</label>
+          <select name="rating"><option value="5">★★★★★</option><option value="4">★★★★</option><option value="3">★★★</option><option value="2">★★</option><option value="1">★</option></select>
+        </div>
+      </div>
+      <div class="row">
+        {% for fld, lab in [('rating_value','Value'),('rating_location','Location'),('rating_office_staff','Office Staff'),('rating_maintenance','Maintenance'),('rating_amenities','Amenities')] %}
+        <div class="form-field" style="flex:1;min-width:120px;"><label>{{ lab }}</label>
+          <select name="{{ fld }}"><option value="5">5</option><option value="4">4</option><option value="3">3</option><option value="2">2</option><option value="1">1</option></select>
+        </div>
+        {% endfor %}
+      </div>
+      <div class="form-field"><label>Title</label><input name="title" placeholder="A short headline"></div>
+      <div class="form-field"><label>Review</label><textarea name="body" rows="5" required></textarea></div>
+      <button class="btn" type="submit">Submit review</button>
+    </form>
+  </div>
+
+  {% for r in reviews %}
+    <div class="review-card">
+      <div class="author">{{ r.author_name }} <span class="stars">{% for _ in range(r.rating) %}★{% endfor %}</span></div>
+      {% if r.title %}<div style="font-weight:600;margin-top:4px;">{{ r.title }}</div>{% endif %}
+      <div class="body">{{ r.body }}</div>
+      <div style="margin-top:8px;color:var(--muted);font-size:12px;">
+        Value {{ r.rating_value }}/5 · Location {{ r.rating_location }}/5 · Office {{ r.rating_office_staff }}/5 · Maintenance {{ r.rating_maintenance }}/5 · Amenities {{ r.rating_amenities }}/5 · {{ r.created_at.strftime('%b %Y') }}
+      </div>
+    </div>
+  {% endfor %}
+</div>
+{% endblock %}

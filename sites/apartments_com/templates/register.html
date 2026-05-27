@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container" style="padding: 24px 20px; max-width: 460px;">
+  <h1>Create an account</h1>
+  <form method="post" class="section-block">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <div class="form-field"><label>Full name</label><input name="name" required></div>
+    <div class="form-field"><label>Email</label><input name="email" type="email" required></div>
+    <div class="form-field"><label>Password</label><input name="password" type="password" required></div>
+    <div class="form-field"><label>Confirm password</label><input name="confirm" type="password" required></div>
+    <button class="btn lg" type="submit" style="width:100%;margin-top:10px;">Sign up</button>
+    <p style="text-align:center;margin-top:14px;font-size:13px;color:var(--muted);">
+      Have an account? <a href="{{ url_for('login') }}">Sign in</a>
+    </p>
+  </form>
+</div>
+{% endblock %}

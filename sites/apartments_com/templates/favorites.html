@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container" style="padding: 24px 20px;">
+  <h1>Your favorite rentals</h1>
+  {% if not favs %}
+    <p style="color:var(--muted);">Save apartments by tapping the heart icon on any listing.</p>
+  {% else %}
+    <div class="grid">
+      {% for f in favs %}{% set b = f.building %}{% include "_card.html" %}{% endfor %}
+    </div>
+  {% endif %}
+</div>
+{% endblock %}

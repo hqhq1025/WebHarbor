@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container" style="padding: 24px 20px; text-align:center;">
+  <h1>Page not found</h1>
+  <p style="color:var(--muted);">We couldn't find what you were looking for.</p>
+  <a class="btn" href="{{ url_for('index') }}">Back to home</a>
+  <a class="btn outline" href="{{ url_for('search') }}">Search rentals</a>
+</div>
+{% endblock %}

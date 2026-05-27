@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container" style="padding: 24px 20px;">
+  <a href="{{ url_for('building_detail', state=b.state.lower(), city_slug=b.city|lower|replace(' ', '-'), building_slug=b.slug) }}" style="font-size:13px;color:var(--muted);">← {{ b.name }}</a>
+  <h1>{{ plan.name }} Floor Plan</h1>
+  <p style="color:var(--muted);">{{ plan.beds if plan.beds else "Studio" }} bd · {{ plan.baths }} ba · {{ plan.sqft_min }}-{{ plan.sqft_max }} sqft</p>
+
+  <div class="section-block">
+    <div class="fp-thumb" style="margin: 0 auto; max-width: 320px;">
+      <svg viewBox="0 0 200 150" class="grid-svg">
+        <rect x="6" y="6" width="188" height="138" fill="#fff" stroke="#9aa6b3"/>
+        {% if plan.beds == 0 %}
+          <rect x="20" y="20" width="140" height="100" fill="#e6f3fb" stroke="#9aa6b3"/>
+          <text x="100" y="80" text-anchor="middle" font-size="14" fill="#3b4955">Studio</text>
+        {% else %}
+          {% for i in range(plan.beds) %}
+            <rect x="{{ 20 + i * 50 }}" y="20" width="42" height="60" fill="#e6f3fb" stroke="#9aa6b3"/>
+            <text x="{{ 41 + i * 50 }}" y="55" text-anchor="middle" font-size="10" fill="#3b4955">Bed {{ i + 1 }}</text>
+          {% endfor %}
+          <rect x="20" y="86" width="160" height="48" fill="#fff3e0" stroke="#9aa6b3"/>
+          <text x="100" y="112" text-anchor="middle" font-size="11" fill="#3b4955">Living / Kitchen</text>
+        {% endif %}
+      </svg>
+    </div>
+    <p style="margin-top: 18px;">{{ plan.description }}</p>
+    <p><strong>Rent:</strong> ${{ '{:,}'.format(plan.rent_min) }} – ${{ '{:,}'.format(plan.rent_max) }}/mo · <strong>{{ plan.available_count }}</strong> currently available</p>
+  </div>
+
+  {% if units %}
+  <div class="section-block">
+    <h2>Available units on this plan</h2>
+    <table class="units">
+      <thead><tr><th>Unit</th><th>Floor</th><th>Sqft</th><th>Rent</th><th>Deposit</th><th>Available</th><th>View</th><th></th></tr></thead>
+      <tbody>
+        {% for u in units %}
+        <tr>
+          <td><strong>{{ u.unit_number }}</strong></td>
+          <td>{{ u.floor }}</td>
+          <td>{{ u.sqft }}</td>
+          <td><strong>${{ '{:,}'.format(u.rent) }}</strong></td>
+          <td>${{ '{:,}'.format(u.deposit) }}</td>
+          <td>{{ u.available_date }}</td>
+          <td>{{ u.view }}</td>
+          <td><a class="btn sm outline" href="{{ url_for('unit_detail', state=b.state.lower(), city_slug=b.city|lower|replace(' ', '-'), building_slug=b.slug, unit_id=u.id) }}">Details</a></td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

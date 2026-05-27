@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container" style="padding: 24px 20px;">
+  <h1>Top schools</h1>
+  <p style="color:var(--muted);">Schools serving apartment communities in our coverage area.</p>
+  <table class="units" style="background:#fff;">
+    <thead><tr><th>School</th><th>City</th><th>Level</th><th>Type</th><th>Rating</th></tr></thead>
+    <tbody>
+      {% for s in schools %}
+      <tr>
+        <td><a href="{{ url_for('school_detail', slug=s.slug) }}">{{ s.name }}</a></td>
+        <td>{{ s.city }}, {{ s.state }}</td>
+        <td>{{ s.grade_level }} ({{ s.grades }})</td>
+        <td>{{ s.type }}</td>
+        <td><span class="score-pill {{ (s.rating * 10) | score_color }}">{{ s.rating }}/10</span></td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

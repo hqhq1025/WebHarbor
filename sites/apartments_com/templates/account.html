@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container" style="padding: 24px 20px;">
+  <h1>Welcome, {{ current_user.name.split(' ')[0] }}</h1>
+  <p style="color:var(--muted);">{{ current_user.email }} · <a href="{{ url_for('account_edit') }}">Edit profile</a></p>
+
+  <div class="row">
+    <div class="section-block" style="flex:1;min-width:280px;">
+      <h2>Saved searches ({{ searches|length }})</h2>
+      {% for s in searches %}
+        <div style="padding:10px 0;border-bottom:1px solid var(--line);">
+          <strong>{{ s.name }}</strong><br>
+          <span style="color:var(--muted);font-size:13px;">{{ s.query_string }}</span><br>
+          <a class="btn sm outline" href="{{ url_for('search') }}?{{ s.query_string }}">Run search</a>
+          <form method="post" action="{{ url_for('delete_saved_search', sid=s.id) }}" style="display:inline;">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button class="btn sm ghost">Delete</button>
+          </form>
+        </div>
+      {% else %}<p style="color:var(--muted);">No saved searches yet.</p>{% endfor %}
+    </div>
+
+    <div class="section-block" style="flex:1;min-width:280px;">
+      <h2>Favorite buildings ({{ favs|length }})</h2>
+      {% for f in favs %}
+        <div style="padding:10px 0;border-bottom:1px solid var(--line);">
+          <a href="{{ url_for('building_detail', state=f.building.state.lower(), city_slug=f.building.city|lower|replace(' ', '-'), building_slug=f.building.slug) }}">{{ f.building.name }}</a>
+          <div style="color:var(--muted);font-size:13px;">{{ f.building.city }}, {{ f.building.state }} · {{ f.building.rent_display }}/mo</div>
+        </div>
+      {% else %}<p style="color:var(--muted);">No favorites saved.</p>{% endfor %}
+    </div>
+
+    <div class="section-block" style="flex:1;min-width:280px;">
+      <h2>Tour requests ({{ tours|length }})</h2>
+      {% for t in tours %}
+        <div style="padding:10px 0;border-bottom:1px solid var(--line);">
+          <strong>{{ t.building.name }}</strong> — {{ t.tour_type }}<br>
+          <span style="color:var(--muted);font-size:13px;">{{ t.preferred_date }} at {{ t.preferred_time }} · TR-{{ '%06d'|format(t.id) }}</span>
+        </div>
+      {% else %}<p style="color:var(--muted);">No tour requests yet.</p>{% endfor %}
+    </div>
+
+    <div class="section-block" style="flex:1;min-width:280px;">
+      <h2>Messages sent ({{ messages|length }})</h2>
+      {% for m in messages %}
+        <div style="padding:10px 0;border-bottom:1px solid var(--line);">
+          <strong>{{ m.building.name }}</strong><br>
+          <span style="color:var(--muted);font-size:13px;">{{ m.body[:80] }}…</span>
+        </div>
+      {% else %}<p style="color:var(--muted);">No messages sent.</p>{% endfor %}
+    </div>
+  </div>
+</div>
+{% endblock %}

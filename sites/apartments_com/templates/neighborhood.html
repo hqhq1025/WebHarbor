@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container" style="padding: 24px 20px;">
+  <a href="{{ url_for('city_page', city_slug=city.slug) }}" style="color:var(--muted);font-size:13px;">← {{ city.name }}, {{ city.state }}</a>
+  <h1>{{ nbhd.name }} Apartments for Rent</h1>
+  <p style="color:var(--muted);">{{ nbhd.blurb }}</p>
+
+  <div class="row" style="margin: 14px 0; gap:8px;">
+    <span class="score-pill {{ nbhd.walk_score | score_color }}">Walk Score {{ nbhd.walk_score }}</span>
+    <span class="score-pill {{ nbhd.transit_score | score_color }}">Transit Score {{ nbhd.transit_score }}</span>
+    <span class="score-pill {{ nbhd.bike_score | score_color }}">Bike Score {{ nbhd.bike_score }}</span>
+    <span class="score-pill {{ nbhd.sound_score | score_color }}">Sound Score {{ nbhd.sound_score }}</span>
+  </div>
+  <div class="mini-map" style="margin: 14px 0;">Neighborhood map · avg rent ${{ '{:,}'.format(nbhd.avg_rent) }}/mo</div>
+
+  <h2>Top rentals in {{ nbhd.name }} ({{ buildings|length }})</h2>
+  <div class="grid">
+    {% for b in buildings %}{% include "_card.html" %}{% endfor %}
+  </div>
+
+  {% if schools %}
+  <h2 style="margin-top:32px;">Schools serving {{ nbhd.name }}</h2>
+  <table class="units" style="background:#fff;">
+    <thead><tr><th>School</th><th>Level</th><th>Type</th><th>Rating</th></tr></thead>
+    <tbody>
+      {% for s in schools %}
+      <tr>
+        <td><a href="{{ url_for('school_detail', slug=s.slug) }}">{{ s.name }}</a></td>
+        <td>{{ s.grade_level }} ({{ s.grades }})</td>
+        <td>{{ s.type }}</td>
+        <td><span class="score-pill {{ (s.rating * 10) | score_color }}">{{ s.rating }}/10</span></td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% endif %}
+</div>
+{% endblock %}

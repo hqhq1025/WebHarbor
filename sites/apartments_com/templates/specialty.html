@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container" style="padding: 24px 20px;">
+  <div class="spec-banner">
+    <h1>{{ title }}</h1>
+    <p>{{ subtitle }}</p>
+    <a class="btn" href="{{ url_for('search') }}?mode={{ mode }}" style="background:#fff;color:var(--brand-dark);">See all {{ buildings|length }}+ matching rentals</a>
+  </div>
+  <h2>{{ buildings|length }} {{ title }} properties</h2>
+  <div class="grid">
+    {% for b in buildings %}{% include "_card.html" %}{% endfor %}
+  </div>
+</div>
+{% endblock %}

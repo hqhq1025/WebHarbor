@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container" style="padding: 24px 20px;">
+  <h1>Browse all cities</h1>
+  <p style="color:var(--muted);">{{ cities|length }} US metros covered.</p>
+  <div class="grid">
+    {% for c in cities %}
+      <a class="city-card" href="{{ url_for('city_page', city_slug=c.slug) }}">
+        <img src="{{ c.hero_image }}" alt="{{ c.name }}">
+        <div class="overlay"></div>
+        <div class="label">
+          <div class="name">{{ c.name }}, {{ c.state }}</div>
+          <div class="meta">avg 1BR ${{ '{:,}'.format(c.avg_rent_1br) }}/mo</div>
+        </div>
+      </a>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container" style="padding: 24px 20px; max-width: 720px;">
+  <h1>List Your Property on Apartments.com</h1>
+  <p style="color:var(--muted);">Reach 30M+ rental shoppers per month. Tell us about your portfolio and a leasing rep will follow up.</p>
+  <form method="post" class="section-block">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <div class="row">
+      <div class="form-field" style="flex:1;min-width:220px;"><label>Your name</label><input name="name" required></div>
+      <div class="form-field" style="flex:1;min-width:220px;"><label>Company</label><input name="company"></div>
+    </div>
+    <div class="row">
+      <div class="form-field" style="flex:1;min-width:220px;"><label>Email</label><input name="email" type="email" required></div>
+      <div class="form-field" style="flex:1;min-width:220px;"><label>Phone</label><input name="phone"></div>
+    </div>
+    <div class="form-field"><label>Portfolio size</label>
+      <select name="portfolio_size">
+        <option>1 property</option><option>2-9 properties</option>
+        <option>10-49 properties</option><option>50-249 properties</option>
+        <option>250+ properties</option>
+      </select>
+    </div>
+    <div class="form-field"><label>Anything we should know?</label><textarea name="notes" rows="3"></textarea></div>
+    <button class="btn lg" type="submit">Submit</button>
+  </form>
+</div>
+{% endblock %}

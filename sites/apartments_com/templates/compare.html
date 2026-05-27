@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container" style="padding: 24px 20px;">
+  <h1>Compare buildings ({{ buildings|length }}/4)</h1>
+  {% if not buildings %}
+    <p style="color:var(--muted);">Add buildings to your compare cart from search results or listing pages.</p>
+    <a class="btn" href="{{ url_for('search') }}">Browse rentals</a>
+  {% else %}
+    <table class="units" style="background:#fff;">
+      <thead>
+        <tr><th></th>{% for b in buildings %}<th>{{ b.name }}<br><span style="font-weight:400;color:var(--muted);font-size:12px;">{{ b.city }}, {{ b.state }}</span></th>{% endfor %}</tr>
+      </thead>
+      <tbody>
+        <tr><td>Photo</td>{% for b in buildings %}<td>{% if b.hero_image %}<img src="{{ b.hero_image }}" style="width:160px;height:110px;object-fit:cover;border-radius:4px;">{% endif %}</td>{% endfor %}</tr>
+        <tr><td>Rent</td>{% for b in buildings %}<td><strong>{{ b.rent_display }}</strong></td>{% endfor %}</tr>
+        <tr><td>Bedrooms</td>{% for b in buildings %}<td>{{ b.beds_display }}</td>{% endfor %}</tr>
+        <tr><td>Square feet</td>{% for b in buildings %}<td>{{ b.sqft_min }} – {{ b.sqft_max }}</td>{% endfor %}</tr>
+        <tr><td>Year built</td>{% for b in buildings %}<td>{{ b.year_built }}</td>{% endfor %}</tr>
+        <tr><td>Property type</td>{% for b in buildings %}<td>{{ b.property_type }}</td>{% endfor %}</tr>
+        <tr><td>Total units</td>{% for b in buildings %}<td>{{ b.total_units }}</td>{% endfor %}</tr>
+        <tr><td>Walk Score</td>{% for b in buildings %}<td><span class="score-pill {{ b.walk_score | score_color }}">{{ b.walk_score }}</span></td>{% endfor %}</tr>
+        <tr><td>Transit Score</td>{% for b in buildings %}<td><span class="score-pill {{ b.transit_score | score_color }}">{{ b.transit_score }}</span></td>{% endfor %}</tr>
+        <tr><td>Bike Score</td>{% for b in buildings %}<td><span class="score-pill {{ b.bike_score | score_color }}">{{ b.bike_score }}</span></td>{% endfor %}</tr>
+        <tr><td>Sound Score</td>{% for b in buildings %}<td><span class="score-pill {{ b.sound_score | score_color }}">{{ b.sound_score }}</span></td>{% endfor %}</tr>
+        <tr><td>Rating</td>{% for b in buildings %}<td>★ {{ '%.1f'|format(b.rating_avg) }} ({{ b.review_count }})</td>{% endfor %}</tr>
+        <tr><td>Pool</td>{% for b in buildings %}<td>{{ "✓" if b.has_pool else "—" }}</td>{% endfor %}</tr>
+        <tr><td>Gym</td>{% for b in buildings %}<td>{{ "✓" if b.has_gym else "—" }}</td>{% endfor %}</tr>
+        <tr><td>Doorman</td>{% for b in buildings %}<td>{{ "✓" if b.has_doorman else "—" }}</td>{% endfor %}</tr>
+        <tr><td>EV charging</td>{% for b in buildings %}<td>{{ "✓" if b.has_ev_charging else "—" }}</td>{% endfor %}</tr>
+        <tr><td>Parking</td>{% for b in buildings %}<td>{% if b.has_parking %}{{ b.parking_type }}{% if b.parking_fee %} (${{ b.parking_fee }}/mo){% endif %}{% else %}—{% endif %}</td>{% endfor %}</tr>
+        <tr><td>Pet-friendly</td>{% for b in buildings %}<td>{% if b.pet_friendly %}Yes (deposit ${{ b.pet_deposit }}){% else %}No{% endif %}</td>{% endfor %}</tr>
+        <tr><td>Deposit</td>{% for b in buildings %}<td>${{ '{:,}'.format(b.deposit) }}</td>{% endfor %}</tr>
+        <tr><td>Contact</td>{% for b in buildings %}<td>{{ b.contact_phone }}</td>{% endfor %}</tr>
+        <tr><td></td>{% for b in buildings %}<td>
+          <a class="btn sm outline" href="{{ url_for('building_detail', state=b.state.lower(), city_slug=b.city|lower|replace(' ', '-'), building_slug=b.slug) }}">View</a>
+          <form method="post" action="{{ url_for('compare_remove', building_id=b.id) }}" style="display:inline;">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button class="btn sm ghost" type="submit">Remove</button>
+          </form>
+        </td>{% endfor %}</tr>
+      </tbody>
+    </table>
+  {% endif %}
+</div>
+{% endblock %}

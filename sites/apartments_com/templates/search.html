@@ -1,0 +1,162 @@
+{% extends "base.html" %}
+{% block title %}Apartments for Rent — Search{% endblock %}
+{% block content %}
+
+<div class="container" style="padding-top: 18px;">
+  <h1 style="font-size: 24px;">
+    {{ total }} {{ "rental" if total == 1 else "rentals" }}
+    {% if filters.city %} in {{ filters.city }}{% endif %}
+    {% if filters.neighborhood %} — {{ filters.neighborhood }}{% endif %}
+    {% if filters.q %} matching "{{ filters.q }}"{% endif %}
+  </h1>
+
+  {# Active filter chips #}
+  {% set chips = [] %}
+  {% if filters.q %}{% set _ = chips.append(("q", filters.q)) %}{% endif %}
+  {% if filters.city %}{% set _ = chips.append(("city", filters.city)) %}{% endif %}
+  {% if filters.neighborhood %}{% set _ = chips.append(("neighborhood", filters.neighborhood)) %}{% endif %}
+  {% if filters.price_min %}{% set _ = chips.append(("price_min", "$" ~ filters.price_min)) %}{% endif %}
+  {% if filters.price_max %}{% set _ = chips.append(("price_max", "≤$" ~ filters.price_max)) %}{% endif %}
+  {% if filters.beds %}{% for b in filters.beds %}{% set _ = chips.append(("beds", b ~ " bd")) %}{% endfor %}{% endif %}
+  {% if filters.type %}{% for t in filters.type %}{% set _ = chips.append(("type", t)) %}{% endfor %}{% endif %}
+  {% if filters.amenity %}{% for a in filters.amenity %}{% set _ = chips.append(("amenity", a)) %}{% endfor %}{% endif %}
+  {% if filters.pet %}{% set _ = chips.append(("pet", "Pets: " ~ filters.pet)) %}{% endif %}
+  {% if filters.mode %}{% set _ = chips.append(("mode", filters.mode)) %}{% endif %}
+  {% if filters.available_by %}{% set _ = chips.append(("available_by", "by " ~ filters.available_by)) %}{% endif %}
+  {% if chips %}
+    <div class="chip-row">
+      {% for k, label in chips %}
+        <span class="chip">{{ label }}</span>
+      {% endfor %}
+      <a class="chip" href="{{ url_for('search') }}" style="background:var(--muted);">Clear all ×</a>
+    </div>
+  {% endif %}
+
+  <div class="search-layout">
+    <aside class="filter-sidebar">
+      <form method="get" action="{{ url_for('search') }}">
+        {% if filters.q %}<input type="hidden" name="q" value="{{ filters.q }}">{% endif %}
+        <h4>Price range</h4>
+        <div class="row">
+          <input class="form-field" name="price_min" type="number" placeholder="Min" value="{{ filters.price_min or '' }}" style="width:48%;">
+          <input class="form-field" name="price_max" type="number" placeholder="Max" value="{{ filters.price_max or '' }}" style="width:48%;">
+        </div>
+
+        <h4>Bedrooms</h4>
+        {% for v, l in [("studio","Studio"),("1","1 BR"),("2","2 BR"),("3","3 BR"),("4+","4+ BR")] %}
+        <label class="checkbox-row">
+          <input type="checkbox" name="beds" value="{{ v }}" {% if v in filters.beds %}checked{% endif %}>{{ l }}
+        </label>
+        {% endfor %}
+
+        <h4>Property type</h4>
+        {% for t in ["Apartment","Condo","Townhouse"] %}
+        <label class="checkbox-row">
+          <input type="checkbox" name="type" value="{{ t }}" {% if t in filters.type %}checked{% endif %}>{{ t }}
+        </label>
+        {% endfor %}
+
+        <h4>City</h4>
+        <select name="city" class="form-field" style="width:100%;">
+          <option value="">Any city</option>
+          {% for c in cities %}
+          <option value="{{ c.name }}" {% if filters.city == c.name %}selected{% endif %}>{{ c.name }}, {{ c.state }}</option>
+          {% endfor %}
+        </select>
+
+        <h4>Amenities</h4>
+        {% for v, l in [("pool","Pool"),("gym","Fitness center"),("rooftop","Rooftop"),("doorman","Doorman"),("ev_charging","EV charging"),("parking","Parking"),("dog_park","Dog park"),("concierge","Concierge"),("business_center","Business center"),("in_unit_laundry","In-unit laundry"),("elevator","Elevator"),("storage","Storage"),("furnished","Furnished")] %}
+        <label class="checkbox-row">
+          <input type="checkbox" name="amenity" value="{{ v }}" {% if v in filters.amenity %}checked{% endif %}>{{ l }}
+        </label>
+        {% endfor %}
+
+        <h4>Pets</h4>
+        {% for v, l in [("","Any"),("any","Pet friendly"),("dogs","Dogs ok"),("cats","Cats ok")] %}
+        <label class="checkbox-row">
+          <input type="radio" name="pet" value="{{ v }}" {% if filters.pet == v %}checked{% endif %}>{{ l }}
+        </label>
+        {% endfor %}
+
+        <h4>Housing type</h4>
+        {% for v, l in [("","All"),("luxury","Luxury"),("student","Student"),("senior","Senior 55+"),("military","Military")] %}
+        <label class="checkbox-row">
+          <input type="radio" name="mode" value="{{ v }}" {% if filters.mode == v %}checked{% endif %}>{{ l }}
+        </label>
+        {% endfor %}
+
+        <h4>Available by</h4>
+        <input type="date" name="available_by" value="{{ filters.available_by }}" class="form-field">
+
+        <button class="btn" type="submit" style="width:100%; margin-top: 10px;">Apply filters</button>
+      </form>
+      {% if current_user.is_authenticated %}
+      <form method="post" action="{{ url_for('save_search') }}" style="margin-top:14px;">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <input type="hidden" name="query_string" value="{{ request.query_string.decode('utf-8') }}">
+        <input class="form-field" name="name" placeholder="Search name (e.g. 'Brooklyn 2BR')">
+        <button class="btn secondary" style="width:100%;" type="submit">⭐ Save this search</button>
+      </form>
+      {% endif %}
+    </aside>
+
+    <section>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom: 14px;gap:12px;">
+        <div style="display:flex;gap:6px;">
+          <a class="btn sm {% if view != 'map' %}secondary{% else %}ghost{% endif %}" href="?{{ request.query_string.decode('utf-8') }}{% if request.query_string %}&{% endif %}view=list">List</a>
+          <a class="btn sm {% if view == 'map' %}secondary{% else %}ghost{% endif %}" href="?{{ request.query_string.decode('utf-8') }}{% if request.query_string %}&{% endif %}view=map">Map</a>
+          <a class="btn sm ghost" href="{{ url_for('search_draw') }}">Draw on map</a>
+        </div>
+        <form method="get" action="{{ url_for('search') }}" style="display:flex;gap:6px;align-items:center;">
+          {% for k, vs in request.args.lists() %}
+            {% if k != 'sort' and k != 'page' %}
+              {% for v in vs %}<input type="hidden" name="{{ k }}" value="{{ v }}">{% endfor %}
+            {% endif %}
+          {% endfor %}
+          <label style="font-size:13px;color:var(--muted);">Sort:</label>
+          <select name="sort" onchange="this.form.submit()" class="form-field" style="margin:0;width:auto;">
+            <option value="popular" {% if filters.sort == 'popular' %}selected{% endif %}>Most popular</option>
+            <option value="newest" {% if filters.sort == 'newest' %}selected{% endif %}>Newest</option>
+            <option value="price_asc" {% if filters.sort == 'price_asc' %}selected{% endif %}>Price (low to high)</option>
+            <option value="price_desc" {% if filters.sort == 'price_desc' %}selected{% endif %}>Price (high to low)</option>
+            <option value="sqft" {% if filters.sort == 'sqft' %}selected{% endif %}>Square feet</option>
+            <option value="rating" {% if filters.sort == 'rating' %}selected{% endif %}>Highest rated</option>
+          </select>
+        </form>
+      </div>
+
+      {% if view == 'map' %}
+        <div class="mini-map" style="height: 400px; margin-bottom: 14px; display:flex;align-items:center;justify-content:center;flex-direction:column;">
+          <strong>Map view — {{ buildings|length }} pins</strong>
+          <div class="coords" style="margin-top:8px;">
+            {% for b in buildings[:8] %}{{ b.latitude }}, {{ b.longitude }} — {{ b.name }}<br>{% endfor %}
+            {% if buildings|length > 8 %}+{{ buildings|length - 8 }} more pins …{% endif %}
+          </div>
+        </div>
+      {% endif %}
+
+      <div class="grid">
+        {% for b in buildings %}
+          {% include "_card.html" %}
+        {% else %}
+          <p style="grid-column:1/-1;text-align:center;color:var(--muted);padding:40px;">No rentals match your filters. <a href="{{ url_for('search') }}">Clear filters</a></p>
+        {% endfor %}
+      </div>
+
+      {% if pages > 1 %}
+      <div class="pagination">
+        {% set qs = request.args.to_dict(flat=False) %}
+        {% if page > 1 %}<a href="?{% for k, v in request.args.lists() %}{% if k != 'page' %}{% for vv in v %}{{ k }}={{ vv }}&{% endfor %}{% endif %}{% endfor %}page={{ page - 1 }}">‹ Prev</a>{% endif %}
+        {% for p in range(1, pages + 1) %}
+          {% if p == page %}<span class="current">{{ p }}</span>{% elif p <= 3 or p > pages - 3 or (p >= page - 1 and p <= page + 1) %}
+            <a href="?{% for k, v in request.args.lists() %}{% if k != 'page' %}{% for vv in v %}{{ k }}={{ vv }}&{% endfor %}{% endif %}{% endfor %}page={{ p }}">{{ p }}</a>
+          {% endif %}
+        {% endfor %}
+        {% if page < pages %}<a href="?{% for k, v in request.args.lists() %}{% if k != 'page' %}{% for vv in v %}{{ k }}={{ vv }}&{% endfor %}{% endif %}{% endfor %}page={{ page + 1 }}">Next ›</a>{% endif %}
+      </div>
+      {% endif %}
+    </section>
+  </div>
+</div>
+
+{% endblock %}

@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container" style="padding: 24px 20px; max-width: 680px;">
+  <a href="{{ url_for('building_detail', state=b.state.lower(), city_slug=b.city|lower|replace(' ', '-'), building_slug=b.slug) }}" style="font-size:13px;color:var(--muted);">← {{ b.name }}</a>
+  <h1>Send a Message to {{ b.name }}</h1>
+  <p style="color:var(--muted);">Your message will go to {{ b.property_manager }}.</p>
+  <form method="post" class="section-block">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <div class="form-field"><label>Name</label><input name="name" required {% if current_user.is_authenticated %}value="{{ current_user.name }}"{% endif %}></div>
+    <div class="form-field"><label>Email</label><input name="email" type="email" required {% if current_user.is_authenticated %}value="{{ current_user.email }}"{% endif %}></div>
+    <div class="form-field"><label>Phone</label><input name="phone"></div>
+    <div class="form-field"><label>Message</label><textarea name="body" required>Hi, I'm interested in {{ b.name }} and would like to learn more about availability and pricing.</textarea></div>
+    <button class="btn lg" type="submit">Send message</button>
+  </form>
+</div>
+{% endblock %}

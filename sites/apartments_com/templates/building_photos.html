@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container" style="padding: 24px 20px;">
+  <h1>{{ b.name }} — All photos</h1>
+  <div class="photo-grid">
+    {% for p in b.get_gallery() %}
+      <img src="{{ p }}" alt="">
+    {% endfor %}
+  </div>
+  <p style="margin-top:18px;">
+    <a class="btn outline" href="{{ url_for('building_detail', state=b.state.lower(), city_slug=b.city|lower|replace(' ', '-'), building_slug=b.slug) }}">← Back to building</a>
+  </p>
+</div>
+{% endblock %}
