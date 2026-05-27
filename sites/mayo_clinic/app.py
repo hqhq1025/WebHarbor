@@ -798,6 +798,14 @@ def request_appointment():
     step = int(request.values.get("step", 1))
     sd = session.setdefault("appt_request", {})
 
+    # Allow external GET prefill (e.g. ?dept=cardiology&location=Rochester from doctor / dept pages)
+    if request.method == "GET":
+        for k in ("dept", "location"):
+            v = request.args.get(k)
+            if v and not sd.get(k):
+                sd[k] = v
+                session.modified = True
+
     if request.method == "POST":
         # update state
         for k in ("dept", "location", "preferred_date", "patient_name",
