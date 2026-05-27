@@ -59,11 +59,45 @@ if not any(x in ct for x in ('image/jpeg', 'image/png', 'image/webp', 'image/svg
 
 Reject anything under 5 KB — almost always a tracking pixel, HTML error page, or empty placeholder.
 
-## ⚠️ Source priority: Wikipedia/Wikimedia FIRST, Tavily LAST
+## ⚠️ Source priority: Wikipedia/Wikimedia FIRST, **local SearXNG SECOND**, Tavily LAST
 
-**Tavily 是 fallback 不是 default**。Tavily 有月配额（free 1000 query/月），过去一次 36 站 polish 直接消耗 ~50-75%（700+ query），其中大部分本来能用免费 unlimited 的 Wikipedia/Wikimedia REST API 拿到。
+**Tavily / Exa 是 last resort 不是 default**。Tavily 有月配额（free 1000 query/月），过去一次 36 站 polish 直接消耗 ~50-75%（700+ query），其中大部分本来能用免费 unlimited 的 Wikipedia/Wikimedia REST API + **本地 SearXNG meta-search** 拿到。
 
-**第一反应应该是查这张表**（按 entity 类型直接知道去哪爬），找不到才用 Tavily：
+### 本地 SearXNG（替代 Tavily/Exa，完全免费、无 quota）
+
+跑在 `http://localhost:8888`（docker container `searxng`，端口 8888 → 8080）。聚合 Google / Bing / DuckDuckGo / Brave / Wikipedia / Wikimedia 等 70 个引擎，返回标准 JSON。如果 container 没在跑，启动：
+
+```bash
+mkdir -p /tmp/searxng && cat > /tmp/searxng/settings.yml <<'EOF'
+use_default_settings: true
+server:
+  secret_key: "<random>"
+  bind_address: "0.0.0.0"
+  port: 8080
+  limiter: false
+search:
+  formats: [html, json]
+EOF
+docker run -d --name searxng -p 8888:8080 -v /tmp/searxng:/etc/searxng:rw searxng/searxng:latest
+```
+
+调用（wrapper at `~/webvoyager-analysis/real_components/search_local.py`）：
+
+```python
+from search_local import search, search_images
+
+# Tavily-equivalent text search
+results = search("italian restaurant interior", n=10)
+# [{title, url, content, engine, score}, ...]
+
+# Tavily include_images=True equivalent — returns Google+Bing image search aggregated
+imgs = search_images("italian restaurant interior", n=20)
+# [{img_src, thumbnail_src, title, source}, ...]
+```
+
+实测 2026-05：289 image results / "iron man" query in 1 second，Google + Bing + Wikimedia 聚合，0 cost。
+
+**第一反应应该是查这张表**（按 entity 类型直接知道去哪爬），找不到才用本地 SearXNG，最后才用 Tavily：
 
 | 想要的图 | 直接爬哪（免费 unlimited） | 限速 |
 |---|---|---|
