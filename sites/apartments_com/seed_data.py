@@ -17,7 +17,9 @@ from datetime import date, datetime, timedelta
 
 from app import (db, User, City, Neighborhood, Building, FloorPlan, Unit,
                  School, BuildingSchool, POI, Review, SavedSearch, Favorite,
-                 TourRequest, Article, Newsletter, PropertyLead)
+                 TourRequest, Article, Newsletter, PropertyLead,
+                 Author, PropertyManagerProfile, RoommateProfile,
+                 Mover, BuildingQuestion, MarketTrend, GlossaryTerm)
 
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -540,14 +542,14 @@ METROS = [
 ]
 
 
-# Buildings per metro distribution -> totals around 420
+# Buildings per metro distribution -> totals around 660
 BLDG_PER_METRO = {
-    "New York": 36, "Los Angeles": 32, "Chicago": 28, "Houston": 18,
-    "Philadelphia": 16, "Phoenix": 18, "San Antonio": 14, "San Diego": 18,
-    "Dallas": 20, "Austin": 22, "San Francisco": 26, "Seattle": 24,
-    "Denver": 18, "Boston": 22, "Atlanta": 20, "Miami": 24,
-    "Washington": 22, "Portland": 18, "Nashville": 16, "Charlotte": 14,
-    "Tampa": 16, "Minneapolis": 14,
+    "New York": 56, "Los Angeles": 50, "Chicago": 44, "Houston": 28,
+    "Philadelphia": 25, "Phoenix": 28, "San Antonio": 22, "San Diego": 28,
+    "Dallas": 32, "Austin": 35, "San Francisco": 40, "Seattle": 38,
+    "Denver": 28, "Boston": 34, "Atlanta": 32, "Miami": 38,
+    "Washington": 34, "Portland": 28, "Nashville": 26, "Charlotte": 22,
+    "Tampa": 25, "Minneapolis": 22,
 }
 
 
@@ -572,18 +574,34 @@ METRO_PHOTO_KEY = {
     "San Francisco": "sf", "Seattle": "sea", "Miami": "mia",
     # Others fall back to mixed pool:
 }
+# Unsplash photos (u-*) form a shared pool for interior/amenity shots.
+UNSPLASH_POOL = [s for s in PHOTO_SLUGS if s.startswith("u-")]
 DEFAULT_PHOTO_POOL = PHOTO_SLUGS or ["nyc-aro-1"]
 
 
 def _photos_for(city, idx):
-    """Pick a deterministic ordered list of 12-18 photo URLs for a building."""
-    pool = PHOTO_BY_METRO.get(METRO_PHOTO_KEY.get(city, ""), DEFAULT_PHOTO_POOL)
-    if not pool:
-        pool = DEFAULT_PHOTO_POOL
+    """Pick a deterministic ordered list of 12-18 photo URLs for a building.
+
+    Strategy: hero shot from city-specific pool (apartments.com photos) when
+    available; interior/amenity gallery from the global Unsplash pool. Ensures
+    city-coherent exteriors while massively diversifying interior shots.
+    """
+    metro_pool = PHOTO_BY_METRO.get(METRO_PHOTO_KEY.get(city, ""), [])
+    interior_pool = UNSPLASH_POOL or DEFAULT_PHOTO_POOL
+    if not metro_pool:
+        # Cities without a real apartments.com hero get an Unsplash hero too.
+        metro_pool = interior_pool
     n = 12 + (_h("photos", city, idx) % 7)
     out = []
-    for i in range(n):
-        slug = pool[(_h("photo", city, idx, i) % len(pool))]
+    # First image is the hero — from the city-specific exterior pool
+    hero_slug = metro_pool[_h("hero", city, idx) % len(metro_pool)]
+    out.append(f"/static/images/buildings/{hero_slug}.jpg")
+    for i in range(1, n):
+        # mix interiors w/ occasional second exterior
+        if i == 1 and metro_pool != interior_pool:
+            slug = metro_pool[_h("ext2", city, idx, i) % len(metro_pool)]
+        else:
+            slug = interior_pool[_h("photo", city, idx, i) % len(interior_pool)]
         out.append(f"/static/images/buildings/{slug}.jpg")
     return out
 
@@ -1178,6 +1196,62 @@ ARTICLE_TITLES = [
     ("Affordability", "Income-restricted housing: how the math works"),
     ("Affordability", "Negotiating rent during a soft market"),
     ("Affordability", "The 50/30/20 rule when rent eats 40% of income"),
+    ("Renters Guide", "What to do if your landlord won't return your deposit"),
+    ("Renters Guide", "How to break a lease without ruining your credit"),
+    ("Renters Guide", "Subletting: when it works and when it doesn't"),
+    ("Renters Guide", "Understanding rent control and stabilization"),
+    ("Renters Guide", "How to handle a noisy neighbor (the legal way)"),
+    ("Renters Guide", "When to involve the housing court"),
+    ("Renters Guide", "Tenant rights: a state-by-state quick reference"),
+    ("Renters Guide", "Discrimination in housing: how to recognize and report it"),
+    ("Renters Guide", "Lease addenda 101: pet, parking, and storage clauses"),
+    ("Renters Guide", "How to find an apartment with bad credit"),
+    ("Moving Tips", "Long-distance moves: planning a multi-state relocation"),
+    ("Moving Tips", "The minimalist's guide to moving with less stuff"),
+    ("Moving Tips", "Moving on a budget: 12 ways to save"),
+    ("Moving Tips", "How to update your address with every important account"),
+    ("Moving Tips", "Last-minute moves: how to pull off a 5-day relocation"),
+    ("Moving Tips", "Building elevator reservations: what every renter forgets"),
+    ("Roommates", "How to find a roommate who isn't a stranger from Craigslist"),
+    ("Roommates", "Tenant vs occupant: the legal distinction"),
+    ("Roommates", "Roommate finance app showdown"),
+    ("Roommates", "Living with a roommate's partner: house rules"),
+    ("Market Trends", "Sun Belt vs Coastal: where renters got the best deal in 2026"),
+    ("Market Trends", "Concessions in luxury: free month, capital credits, parking"),
+    ("Market Trends", "Build-to-rent and the changing face of suburbs"),
+    ("Market Trends", "Multifamily vacancies and what they mean for rent"),
+    ("Market Trends", "AI-driven pricing tools and how they shape your offer"),
+    ("Decorating", "Renter-friendly wallpaper that actually peels off"),
+    ("Decorating", "Floor lamps vs ceiling lights: choosing for atmosphere"),
+    ("Decorating", "Small-space dining: tables that fold, expand, or stack"),
+    ("Decorating", "Renter-friendly entryway makeovers under $200"),
+    ("Decorating", "Removable kitchen backsplashes that look real"),
+    ("Decorating", "Curtains and shades: how to dress windows without drilling"),
+    ("Decorating", "Living room layouts for awkward apartments"),
+    ("Neighborhoods", "How to spot a gentrifying neighborhood (and what it means)"),
+    ("Neighborhoods", "Public transit access vs walkability: which matters more"),
+    ("Neighborhoods", "Suburb or city: a renter's true cost comparison"),
+    ("Neighborhoods", "Beach-adjacent neighborhoods worth the premium"),
+    ("Neighborhoods", "Up-and-coming neighborhoods in the Midwest"),
+    ("Pet Owners", "Dog parks within walking distance: how to evaluate"),
+    ("Pet Owners", "Indoor cat enrichment for apartment living"),
+    ("Pet Owners", "Service vs emotional support animal: rights in housing"),
+    ("Pet Owners", "Apartment-living pet checklist for new adopters"),
+    ("Student Housing", "Off-campus vs on-campus: a sophomore's checklist"),
+    ("Student Housing", "Graduate student housing: stipend math"),
+    ("Senior Living", "Independent vs assisted: which 55+ is right?"),
+    ("Senior Living", "Downsizing in retirement: what to keep"),
+    ("Senior Living", "Friendly senior communities by walkability score"),
+    ("Military", "Frequent PCS moves: how to optimize lease timing"),
+    ("Military", "VA loans for first-time buyers: rent-to-buy math"),
+    ("Affordability", "Rent stabilization in 2026: where it still applies"),
+    ("Affordability", "How to apply for housing vouchers"),
+    ("Affordability", "Co-living spaces vs traditional roommates"),
+    ("Renters Guide", "Renting after foreclosure: a step-by-step recovery plan"),
+    ("Renters Guide", "Renting after eviction: how to rebuild rental history"),
+    ("Renters Guide", "International renters: how to lease without a US credit history"),
+    ("Renters Guide", "Renting with student loans: how landlords actually evaluate"),
+    ("Decorating", "Houseplants for renters: the no-light edition"),
 ]
 
 
@@ -1214,15 +1288,451 @@ def seed_articles():
             "Get specifics in writing. The leasing office expects it, and good "
             "operators have the answers ready."
         )
+        # Assign authors round-robin (only 6 authors seeded below).
+        AUTHOR_NAMES = [
+            "Maya Chen", "Tom Larsen", "Priya Iyer", "Marcus Johnson",
+            "Sofia Rivera", "Ethan O'Brien",
+        ]
+        author = AUTHOR_NAMES[i % len(AUTHOR_NAMES)]
         a = Article(
             slug=slug, title=title, summary=summary, body=body,
             category=cat,
             hero_image=f"/static/images/buildings/{DEFAULT_PHOTO_POOL[i % len(DEFAULT_PHOTO_POOL)]}.jpg" if DEFAULT_PHOTO_POOL else "",
-            author="Apartments.com Editorial",
-            published_at=datetime(2026, 5, 27) - timedelta(days=(i * 3) + 1),
+            author=author,
+            published_at=datetime(2026, 5, 27) - timedelta(days=(i * 2) + 1),
             reading_time_min=4 + (i % 6),
         )
         db.session.add(a)
+    db.session.commit()
+
+
+# ─── Authors / property managers / market trends / glossary / movers ─────
+
+
+AUTHOR_SEEDS = [
+    ("maya-chen", "Maya Chen", "Senior Editor, Renters Guide",
+     "Maya covers lease structures, deposit disputes, and the renter side of US "
+     "housing policy. Before joining the editorial team she wrote at Curbed and "
+     "Bloomberg Citylab.", "@mayawrites"),
+    ("tom-larsen", "Tom Larsen", "Markets & Pricing Reporter",
+     "Tom watches metro-level pricing data and breaks down what apartment "
+     "operators do behind the scenes. He holds a CFA charter and previously "
+     "covered REITs at Reuters.", "@tomlrsn"),
+    ("priya-iyer", "Priya Iyer", "Decorating & Renter Hacks",
+     "Priya tests every renter-friendly product before publishing — she's "
+     "tried 47 peel-and-stick wallpapers so you don't have to.", "@priyahome"),
+    ("marcus-johnson", "Marcus Johnson", "Pets & Family Living",
+     "Marcus writes about apartment life with kids and animals. He's renovated "
+     "three rented spaces without losing a deposit.", "@marcusrent"),
+    ("sofia-rivera", "Sofia Rivera", "Moving & Logistics",
+     "Sofia has tracked moving company prices across 14 metros and writes the "
+     "checklists she wishes she'd had when she moved cross-country at 23.",
+     "@sofiamoves"),
+    ("ethan-obrien", "Ethan O'Brien", "Affordable & Subsidized Housing",
+     "Ethan reports on Section 8, HUD, and the affordable-housing pipeline. "
+     "He was a HOPWA case manager in Chicago before turning to journalism.",
+     "@ethanmaobr"),
+]
+
+
+def seed_authors():
+    if Author.query.count() > 0:
+        return
+    for i, (slug, name, title, bio, twitter) in enumerate(AUTHOR_SEEDS):
+        avatar_pool = DEFAULT_PHOTO_POOL or ["nyc-aro-1"]
+        a = Author(slug=slug, name=name, title=title, bio=bio, twitter=twitter,
+                   avatar=f"/static/images/buildings/{avatar_pool[(i * 17) % len(avatar_pool)]}.jpg")
+        db.session.add(a)
+    db.session.commit()
+
+
+def seed_property_managers():
+    if PropertyManagerProfile.query.count() > 0:
+        return
+    HQS = ["Charleston, SC", "Chicago, IL", "Arlington, VA", "Houston, TX",
+           "Greenbelt, MD", "Dallas, TX", "Phoenix, AZ", "Atlanta, GA",
+           "Englewood, CO", "Chicago, IL"]
+    blurbs = [
+        "A leader in luxury multifamily property management with portfolios "
+        "across major metros.",
+        "Multifamily REIT and operator emphasizing transit-rich urban infill.",
+        "Coastal high-rise developer-operator focused on Class-A communities.",
+        "Texas-headquartered REIT with national luxury and mid-range portfolios.",
+        "Boutique multifamily operator known for design-forward renovations.",
+        "National property-management platform with thousands of communities.",
+        "West-coast multifamily operator with strong sustainability programs.",
+        "Mid-Atlantic developer with a deep history of mixed-use lifestyle centers.",
+        "Sunbelt-focused developer with a track record on amenity-rich builds.",
+        "Independent operator with a portfolio across Sun Belt growth markets.",
+    ]
+    for i, name in enumerate(PROP_MANAGERS):
+        slug = _slug(name)
+        if PropertyManagerProfile.query.filter_by(slug=slug).first():
+            continue
+        blurb = blurbs[i % len(blurbs)]
+        hq = HQS[i % len(HQS)]
+        portfolio = Building.query.filter_by(property_manager=name).count() * 32 + 1200
+        # Deterministic rating based on name hash
+        rating = round(3.7 + (_h("pmrate", name) % 12) / 10.0, 1)
+        logo_pool = DEFAULT_PHOTO_POOL or ["nyc-aro-1"]
+        pm = PropertyManagerProfile(
+            slug=slug, name=name, blurb=blurb, headquarters=hq,
+            portfolio_size=portfolio, avg_rating=rating,
+            contact_email=f"contact@{_slug(name) or 'pm'}.example.com",
+            contact_phone="(800) 555-01" + f"{(_h('pmphone', name) % 89) + 10:02d}",
+            logo=f"/static/images/buildings/{logo_pool[_h('pmlogo', name) % len(logo_pool)]}.jpg",
+        )
+        db.session.add(pm)
+    db.session.commit()
+
+
+def seed_market_trends():
+    if MarketTrend.query.count() > 0:
+        return
+    for m in METROS:
+        c = City.query.filter_by(slug=m["slug"]).first()
+        if not c:
+            continue
+        mult = m["mult"]
+        yoy = round((_h("yoy", m["name"]) % 100 - 35) / 10.0, 1)  # -3.5 to +6.5
+        vacancy = round(3.5 + (_h("vac", m["name"]) % 40) / 10.0, 1)
+        t = MarketTrend(
+            city_id=c.id, period="2026-05",
+            median_studio=int(1500 * mult),
+            median_1br=int(1950 * mult),
+            median_2br=int(2750 * mult),
+            median_3br=int(3700 * mult),
+            yoy_pct=yoy, vacancy_pct=vacancy,
+        )
+        db.session.add(t)
+    db.session.commit()
+
+
+GLOSSARY_TERMS = [
+    ("ami", "AMI (Area Median Income)",
+     "The midpoint of household incomes for a given metropolitan area, "
+     "calculated and published annually by HUD. Affordable-housing programs "
+     "often cap rent eligibility at 50%, 60%, or 80% of AMI.",
+     "income-restricted,section-8"),
+    ("application-fee", "Application Fee",
+     "A non-refundable fee paid when submitting a rental application, used "
+     "to cover credit and background checks. Typically $35–$100 per applicant.",
+     "screening,credit-check"),
+    ("administrative-fee", "Administrative Fee",
+     "A one-time charge by the property to set up your file and lease, "
+     "separate from the application fee. Often $150–$300.",
+     "move-in-cost,application-fee"),
+    ("co-signer", "Co-Signer (Guarantor)",
+     "A third party who signs the lease and assumes financial responsibility "
+     "if you default. Required for renters with thin credit or income below "
+     "2.5–3x rent.",
+     "guarantor,credit-check"),
+    ("guarantor", "Guarantor",
+     "See Co-Signer. The terms are used interchangeably.",
+     "co-signer"),
+    ("credit-check", "Credit Check",
+     "A pull of your credit history during application, typically including "
+     "your FICO score, payment history, and any prior collections. Some "
+     "operators accept scores as low as 580.",
+     "application-fee,co-signer"),
+    ("dti-ratio", "DTI Ratio",
+     "Debt-to-income ratio. Mortgage underwriters cap this around 36–43% "
+     "for housing affordability purposes.",
+     "affordability"),
+    ("escrow", "Escrow",
+     "A neutral account where a third party holds funds (deposit, taxes, "
+     "insurance) until contract obligations are met.",
+     "security-deposit"),
+    ("eviction", "Eviction",
+     "A legal proceeding in which a landlord regains possession of a unit, "
+     "usually for non-payment or lease violation. Records typically remain "
+     "on your tenant screening report for 5–7 years.",
+     "lease-break"),
+    ("escalator-clause", "Escalator Clause",
+     "A lease provision that allows rent to increase by a defined amount at "
+     "renewal, often tied to CPI or a fixed percentage.",
+     "renewal,rent-increase"),
+    ("first-month-rent", "First Month's Rent",
+     "Required at lease signing alongside the security deposit. Combined "
+     "move-in often equals 2–3 months of rent.",
+     "move-in-cost,security-deposit"),
+    ("guarantor-service", "Guarantor Service",
+     "Companies (Insurent, The Guarantors, Rhino) that act as a paid "
+     "guarantor for renters without a personal co-signer.",
+     "co-signer,guarantor"),
+    ("hap-contract", "HAP Contract",
+     "A Housing Assistance Payment contract between a landlord and the local "
+     "housing authority covering Section 8 voucher subsidies.",
+     "section-8"),
+    ("hoa", "HOA (Homeowners Association)",
+     "Governance body for condominiums; condo renters indirectly experience "
+     "HOA rules around moving, pets, and amenities.",
+     "condo,move-in"),
+    ("income-restricted", "Income-Restricted",
+     "Units with rent caps for households earning at or below a specified "
+     "AMI percentage. Application requires income certification.",
+     "ami,section-8"),
+    ("lease-break", "Lease Break",
+     "Vacating a unit before the lease term ends. Most leases require "
+     "60 days notice and a buyout equal to 1–2 months of rent.",
+     "eviction,renewal"),
+    ("lease-takeover", "Lease Takeover (Assignment)",
+     "Transferring your lease to a new tenant who steps into your remaining "
+     "term. The new tenant must be approved by the landlord.",
+     "sublet,lease-break"),
+    ("market-rent", "Market Rent",
+     "The going rate for a comparable apartment in the same area. Used by "
+     "landlords for renewals and by tenants for negotiation.",
+     "rent-increase,renewal"),
+    ("move-in-cost", "Move-In Cost",
+     "The total upfront cost to start a lease: first month + last month + "
+     "security deposit + application + admin fees.",
+     "first-month-rent,security-deposit,application-fee"),
+    ("pet-rent", "Pet Rent",
+     "A monthly charge added to base rent for each pet, separate from any "
+     "pet deposit or pet fee. Typically $25–$75/pet.",
+     "pet-deposit,breed-restriction"),
+    ("pet-deposit", "Pet Deposit",
+     "A refundable deposit specifically tied to pet damages.",
+     "pet-rent,security-deposit"),
+    ("breed-restriction", "Breed Restriction",
+     "Property policy excluding certain dog breeds (most commonly Pit Bull, "
+     "Rottweiler, Doberman, German Shepherd, Akita, Chow Chow).",
+     "pet-rent"),
+    ("rent-stabilization", "Rent Stabilization",
+     "Local laws (notably NYC, San Francisco, LA) capping annual rent "
+     "increases on registered units.",
+     "rent-control,renewal"),
+    ("rent-control", "Rent Control",
+     "Stricter than rent stabilization; freezes or tightly caps rent and "
+     "covers a smaller universe of older units.",
+     "rent-stabilization"),
+    ("renewal", "Lease Renewal",
+     "An offer to extend the lease, usually with new rent and possibly "
+     "different terms.",
+     "rent-increase,market-rent"),
+    ("renters-insurance", "Renters Insurance",
+     "Coverage for your personal property and liability while renting, "
+     "required by most leases. Typically $12–$25/month.",
+     "valuables,liability"),
+    ("section-8", "Section 8",
+     "The federal Housing Choice Voucher program. Eligible renters pay 30% "
+     "of income toward rent and HUD subsidizes the balance to the landlord.",
+     "hap-contract,income-restricted"),
+    ("security-deposit", "Security Deposit",
+     "Refundable deposit (state law typically caps at 1–2 months of rent) "
+     "to cover damage beyond ordinary wear and tear.",
+     "first-month-rent,move-in-cost"),
+    ("sublet", "Sublet",
+     "Renting your apartment temporarily to a third party while remaining "
+     "responsible for the lease. Many leases require written approval.",
+     "lease-takeover"),
+    ("tenant-screening", "Tenant Screening",
+     "The application-stage background check including credit, criminal, "
+     "and prior-eviction records.",
+     "credit-check,eviction"),
+    ("walk-score", "Walk Score",
+     "A 0–100 score (and brand) measuring how walkable a neighborhood is.",
+     "transit-score,bike-score"),
+    ("transit-score", "Transit Score",
+     "A 0–100 score measuring access to public transit.",
+     "walk-score"),
+    ("bike-score", "Bike Score",
+     "A 0–100 score measuring how bikeable a neighborhood is.",
+     "walk-score"),
+]
+
+
+def seed_glossary():
+    if GlossaryTerm.query.count() > 0:
+        return
+    for slug, term, definition, related in GLOSSARY_TERMS:
+        db.session.add(GlossaryTerm(slug=slug, term=term,
+                                     definition=definition, related=related))
+    db.session.commit()
+
+
+MOVER_SEEDS = [
+    ("All-Star Moving", "Los Angeles", "CA", 4.6, 312, 145,
+     "Family-owned LA mover with 18 years of local and long-distance routes."),
+    ("Bellhops National Movers", "Nashville", "TN", 4.5, 580, 119,
+     "Tech-enabled national mover with flat-rate small moves."),
+    ("Two Men and a Truck Manhattan", "New York", "NY", 4.3, 1850, 180,
+     "NYC franchise of the national chain. Specializes in walk-up moves and Hudson Yards delivery."),
+    ("North American Van Lines", "Chicago", "IL", 4.4, 980, 135,
+     "Long-distance moves and corporate relocation, coast to coast."),
+    ("Allied Van Lines", "Houston", "TX", 4.3, 720, 130,
+     "Cross-country moves with storage, packing, and unpacking options."),
+    ("College Hunks Hauling Junk", "Atlanta", "GA", 4.5, 640, 115,
+     "Eco-conscious local mover that also clears junk and donations."),
+    ("Mayflower Transit", "Boston", "MA", 4.2, 510, 142,
+     "Cross-country mover with a Boston dispatch office."),
+    ("Square Cow Movers", "Austin", "TX", 4.7, 880, 125,
+     "Family-run Austin mover with strong reviews for apartment moves."),
+    ("Suddath Relocation", "Miami", "FL", 4.4, 410, 165,
+     "Florida-based relocation company with international moves."),
+    ("Bekins", "Seattle", "WA", 4.3, 380, 138,
+     "Long-haul Pacific Northwest mover with packing and storage."),
+    ("Olympia Moving & Storage", "Boston", "MA", 4.6, 720, 145,
+     "Premium Boston-area mover with specialty piano/art handling."),
+    ("Atlas Van Lines", "Denver", "CO", 4.3, 410, 135,
+     "National mover with strong Western reach and military discount."),
+]
+
+
+def seed_movers():
+    if Mover.query.count() > 0:
+        return
+    for slug_name, city, state, rating, reviews, base_rate, blurb in MOVER_SEEDS:
+        slug = _slug(slug_name)
+        if Mover.query.filter_by(slug=slug).first():
+            continue
+        services = ["Local moves", "Long-distance moves", "Packing", "Unpacking",
+                    "Storage", "Furniture disassembly"]
+        logo_pool = DEFAULT_PHOTO_POOL or ["nyc-aro-1"]
+        m = Mover(slug=slug, name=slug_name, city=city, state=state,
+                  rating=rating, review_count=reviews,
+                  blurb=blurb, base_rate=base_rate,
+                  services=json.dumps(services),
+                  phone=f"(800) 555-02{(_h('mvph', slug) % 89) + 10:02d}",
+                  logo=f"/static/images/buildings/{logo_pool[_h('mvlogo', slug) % len(logo_pool)]}.jpg")
+        db.session.add(m)
+    db.session.commit()
+
+
+ROOMMATE_SEEDS = [
+    ("Alex Chen", 26, "Non-binary", "New York", "NY", "Williamsburg", 1400, 2200,
+     "Software engineer at a fintech, vegetarian, weekend hiker.",
+     "yoga, board games, indie films", False, False),
+    ("Bella Rodriguez", 24, "Female", "Los Angeles", "CA", "Silver Lake", 1100, 1800,
+     "PhD student in linguistics. Reads in coffee shops, mostly home by 10pm.",
+     "books, hiking, ceramics", True, False),
+    ("Carlos Mendoza", 28, "Male", "Chicago", "IL", "Wicker Park", 900, 1500,
+     "Bike mechanic by day, drummer in a punk band on weekends. Quiet "
+     "weekday mornings, sometimes loud Saturdays.",
+     "music, vinyl, cycling", False, True),
+    ("Dana Klein", 31, "Female", "Seattle", "WA", "Capitol Hill", 1200, 2000,
+     "UX designer at Amazon. Two indoor cats — already trained, very chill.",
+     "coffee, design, weekend trips to Bainbridge", True, False),
+    ("Evan Patel", 22, "Male", "Boston", "MA", "Allston", 800, 1300,
+     "Senior at BU. Looking for a calm housemate I can study with.",
+     "coding, k-drama, gym", False, False),
+    ("Faye O'Connor", 27, "Female", "San Francisco", "CA", "Mission", 1500, 2400,
+     "Product manager at an open-source startup. Loves cooking elaborate "
+     "Sunday dinners and offering leftovers.",
+     "cooking, ceramics, hiking", False, False),
+    ("Gabriel Park", 33, "Male", "Austin", "TX", "East Austin", 1000, 1700,
+     "Bartender at a cocktail bar downtown. Late nights, sleep until 11. "
+     "Quiet mornings appreciated.",
+     "mixology, espresso, jiu-jitsu", False, True),
+    ("Hannah Sato", 25, "Female", "Miami", "FL", "Wynwood", 1200, 2000,
+     "Graphic designer at a fashion brand. Mostly home, no parties.",
+     "art, sushi, beach mornings", False, False),
+    ("Ibrahim Khaled", 29, "Male", "Washington", "DC", "Dupont Circle", 1300, 2200,
+     "Policy analyst at a think tank. Books, NPR, runs along the Mall.",
+     "running, policy, photography", False, False),
+    ("Jasmine Yu", 26, "Female", "Atlanta", "GA", "Old Fourth Ward", 950, 1500,
+     "Senior consultant. Mostly traveling Mon-Thu — barely home weekdays.",
+     "travel, brunch, BeltLine runs", False, False),
+    ("Kai Larsen", 30, "Non-binary", "Portland", "OR", "Pearl District", 1100, 1800,
+     "Senior backend engineer. Two roommate-friendly cats, super clean.",
+     "open source, climbing, baking", True, False),
+    ("Lina Vega", 23, "Female", "Denver", "CO", "Capitol Hill", 800, 1300,
+     "Graduate intern at REI. Climbs every weekend, dog-friendly, no smokers.",
+     "climbing, skiing, photography", True, False),
+    ("Marcus Tobin", 35, "Male", "Nashville", "TN", "Germantown", 1100, 1700,
+     "Country songwriter and session musician. Very calm at home, lots of "
+     "vinyl, mostly out at night.",
+     "vinyl, songwriting, BBQ", False, False),
+    ("Nina Adler", 28, "Female", "Minneapolis", "MN", "North Loop", 900, 1500,
+     "Architecture associate at a small firm. Loves quiet mornings and "
+     "long walks along the river.",
+     "drawing, biking, theater", False, False),
+    ("Oscar Beltran", 32, "Male", "San Diego", "CA", "North Park", 1100, 1800,
+     "Marine biologist. Wakes up at 5am, asleep by 10pm. Big surf fan, "
+     "kitchen is mostly empty.",
+     "surfing, science podcasts, hiking", False, False),
+    ("Priya Shah", 24, "Female", "Charlotte", "NC", "South End", 800, 1300,
+     "Medical resident. Schedules vary; need a flexible co-tenant.",
+     "running, reading, meal prep", False, False),
+    ("Quinn Roberts", 27, "Non-binary", "Tampa", "FL", "Hyde Park", 900, 1400,
+     "Coffee shop barista and weekend painter. Looking for a calm, creative "
+     "household.",
+     "painting, coffee, beach", False, False),
+    ("Ravi Kumar", 31, "Male", "Dallas", "TX", "Uptown", 1100, 1700,
+     "Salesforce engineer. Mostly works from home, mostly quiet. Will share "
+     "groceries.",
+     "tennis, cooking, formula 1", False, False),
+    ("Sara Lindgren", 29, "Female", "Philadelphia", "PA", "Fishtown", 950, 1500,
+     "Nurse at HUP. Three night shifts a week, very flexible. "
+     "Plants, no pets — allergies.",
+     "plants, baking, indie shows", False, False),
+    ("Tyler Brooks", 25, "Male", "Phoenix", "AZ", "Roosevelt Row", 800, 1300,
+     "Mechanical engineering grad heading into a job at Honeywell. "
+     "Likes board games and quiet nights.",
+     "boardgames, hikes, woodworking", False, False),
+]
+
+
+def seed_roommates():
+    if RoommateProfile.query.count() > 0:
+        return
+    avatar_pool = DEFAULT_PHOTO_POOL or ["nyc-aro-1"]
+    for i, (name, age, gender, city, state, nbhd, bmin, bmax, bio,
+            interests, has_pet, smoker) in enumerate(ROOMMATE_SEEDS):
+        rp = RoommateProfile(
+            name=name, age=age, gender=gender, city=city, state=state,
+            neighborhood=nbhd, budget_min=bmin, budget_max=bmax,
+            bio=bio, interests=interests, has_pet=has_pet, smoker=smoker,
+            move_in_date=(date(2026, 6, 15) + timedelta(days=i * 4)).isoformat(),
+            occupation=bio.split('.')[0],
+            avatar=f"/static/images/buildings/{avatar_pool[(_h('rmav', name) % len(avatar_pool))]}.jpg",
+            created_at=datetime(2026, 5, 27) - timedelta(days=i + 1),
+        )
+        db.session.add(rp)
+    db.session.commit()
+
+
+QA_PAIRS = [
+    ("How do utilities work? Are any included?",
+     "Resident pays electric and internet; building covers water, sewer, and trash. "
+     "Average electric runs ~$45/mo for a 1BR. Internet is direct with Spectrum or Verizon Fios."),
+    ("Is there a pet rent or deposit?",
+     "Yes — $300 one-time pet deposit and $35/mo pet rent per pet. Up to two pets "
+     "per unit. Breed restrictions apply for dogs over 80 lbs."),
+    ("How does parking work?",
+     "Reserved spots in the garage are $185/mo. Tandem and EV stalls available; "
+     "EV stalls have Level-2 chargers at no extra cost beyond the parking fee."),
+    ("What's the application timeline?",
+     "Online application takes ~15 min. Background and credit checks return in "
+     "1–2 business days. Move-in can typically happen within 7 days of approval."),
+    ("Are there move-in specials right now?",
+     "We're running one month free on 13-month leases for select 1BR floor plans, "
+     "applied as a concession over the first 13 months. Ask the leasing office for "
+     "the latest list of eligible units."),
+]
+
+
+def seed_building_questions():
+    if BuildingQuestion.query.count() > 0:
+        return
+    # 3 Q&A per building for a curated subset (first 80 buildings) — keeps DB compact.
+    buildings = Building.query.order_by(Building.id).limit(80).all()
+    for b in buildings:
+        for i in range(3):
+            q_text, a_text = QA_PAIRS[(_h("qa", b.slug, i) % len(QA_PAIRS))]
+            created = datetime(2026, 5, 27) - timedelta(days=(_h("qad", b.slug, i) % 60) + 1)
+            answered = created + timedelta(days=2)
+            q = BuildingQuestion(
+                building_id=b.id,
+                author_name=f"Prospect #{(_h('qan', b.slug, i) % 9000) + 1000}",
+                body=q_text,
+                answer=a_text,
+                answered_by=b.property_manager or "Leasing Team",
+                answered_at=answered,
+                created_at=created,
+            )
+            db.session.add(q)
     db.session.commit()
 
 
@@ -1245,6 +1755,13 @@ def seed_database():
     seed_building_relations()
     seed_reviews()
     seed_articles()
+    seed_authors()
+    seed_property_managers()
+    seed_market_trends()
+    seed_glossary()
+    seed_movers()
+    seed_roommates()
+    seed_building_questions()
 
 
 def _deterministic_pbkdf2_hash(email, pw="Password123!"):
