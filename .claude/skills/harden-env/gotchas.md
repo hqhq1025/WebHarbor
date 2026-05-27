@@ -1957,6 +1957,20 @@ wh_restart wh-r10
 
 ### 修复路径
 
+
+
+**⚠️ Werkzeug 重要陷阱**：Flask 静态 blueprint 在 `SEND_FILE_MAX_AGE_DEFAULT=None` (modern default) 下**预先 set `Cache-Control: no-cache`** 到每个 static response。所以 `headers.setdefault('Cache-Control', '...')` 是 **no-op**（已经有值），覆盖不生效。**必须用直接赋值**：
+
+```python
+@app.after_request
+def add_static_cache(resp):
+    if request.path.startswith('/static/'):
+        resp.headers['Cache-Control'] = 'public, max-age=86400, immutable'  # 直接赋值，不要 setdefault
+    return resp
+```
+
+verify：`curl -I http://localhost:43000/static/css/main.css | grep Cache-Control` 必须看到 `max-age=86400` 而不是 `no-cache`。本会话第一轮 36 commit 用 setdefault 全 silently 失败，第二轮直接赋值才生效。
+
 #### Path A：rebuild image + recreate container
 
 ```bash
