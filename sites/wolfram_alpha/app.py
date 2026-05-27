@@ -5132,6 +5132,1310 @@ def r6_data_drop_upload():
 # === R4-R5-R6 backfill END ===
 
 
+# === R11 GUI deepen BEGIN — auto-generated, do not hand-edit between markers ===
+# Added 2026-05-27. Adds 25+ real wolframalpha.com GUI page families
+# (examples / widgets / cloud / language / courseware / blog / community /
+# about / jobs / store / mathworld / demonstrations / research / conferences /
+# public notebooks). No DB writes; instance_seed/<site>.db md5 unchanged.
+# All routes net-new and never shadow R4/R5/R6/R10 verticals.
+
+R11_VERSION = 'r11'
+R11_SNAPSHOT_DATE = '2026-05-27'
+
+
+def _r11_render(slug, title, intro, params, parsed, plain, pod_title, payload,
+                schema, related, topic_slug):
+    rows = [(k, payload[k]) for k in sorted(payload) if k not in ('schema',)]
+    _r8_emit('r11.gui.opened', topic_slug, slug=slug)
+    if request.args.get('format') == 'json':
+        out = dict(payload)
+        out.update({'slug': slug, 'snapshot_date': R11_SNAPSHOT_DATE,
+                    'schema': schema, 'version': R11_VERSION})
+        return jsonify(out)
+    return render_template('r10/vertical.html',
+        r10_slug=slug, r10_title=title, r10_intro=intro,
+        r10_params=params, r10_parsed_input=parsed,
+        r10_plaintext=plain,
+        r10_pod_title=pod_title, r10_payload_rows=rows,
+        r10_schema=schema, r10_version=R11_VERSION,
+        r10_related=related, r10_topic_slug=topic_slug)
+
+
+# ---------------------------------------------------------------------------
+# R11 (1) /examples — index of all real wolframalpha.com example sections
+# ---------------------------------------------------------------------------
+_R11_EXAMPLES_INDEX = [
+    ('mathematics',           'Mathematics',           5,
+     'Elementary math, algebra, geometry, calculus, statistics.'),
+    ('science-and-technology','Science & Technology',  5,
+     'Physics, chemistry, units, engineering, computational sciences.'),
+    ('society-and-culture',   'Society & Culture',     5,
+     'People, arts, history, money, demographics, words.'),
+    ('everyday-life',         'Everyday Life',         5,
+     'Personal health, finance, entertainment, household science.'),
+    ('pro-features',          'Pro Features',          4,
+     'Step-by-step solutions, data/image/file inputs.'),
+]
+
+
+@app.route('/examples')
+def r11_examples_index():
+    sections = [{'slug': s, 'name': n, 'count': c, 'desc': d}
+                for s, n, c, d in _R11_EXAMPLES_INDEX]
+    payload = {'sections': [s['slug'] for s in sections],
+               'count': len(sections)}
+    return _r11_render(
+        'examples-index', 'WolframAlpha Examples',
+        'Browse expert-level example queries across mathematics, science, '
+        'society, everyday life, and Pro features.',
+        [('sections', len(sections))],
+        'Examples[Hierarchy["wolframalpha.com"]]',
+        'WolframAlpha exposes ' + str(len(sections)) + ' top-level example '
+        'sections; each lists subject subcategories and ready-to-run queries.',
+        'Sections', payload,
+        'wa-examples-index-v1',
+        [s['name'] for s in sections],
+        'examples-index')
+
+
+# ---------------------------------------------------------------------------
+# R11 (2) /widgets/<slug> — Wolfram Widgets library (plural; distinct from
+# the existing singular /widget/<slug> custom widget route).
+# ---------------------------------------------------------------------------
+_R11_WIDGETS = {
+    'tip-calculator':      ('Tip Calculator', 'finance', 41200, 4.7),
+    'unit-converter':      ('Unit Converter', 'units', 38900, 4.8),
+    'derivative-step':     ('Derivative Step-by-Step', 'calculus', 27500, 4.6),
+    'integral-step':       ('Integral Step-by-Step', 'calculus', 26100, 4.6),
+    'matrix-solver':       ('Matrix Equation Solver', 'linear-algebra', 18900, 4.5),
+    'periodic-table':      ('Periodic Table Lookup', 'chemistry', 22100, 4.7),
+    'bmi-calculator':      ('BMI Calculator', 'health', 16400, 4.4),
+    'loan-amortization':   ('Loan Amortization Schedule', 'finance', 13800, 4.5),
+    'mortgage-payment':    ('Mortgage Payment Calculator', 'finance', 19200, 4.6),
+    'mole-calculator':     ('Mole / Mass Calculator', 'chemistry', 11700, 4.5),
+    'projectile-motion':   ('Projectile Motion', 'physics', 14600, 4.6),
+    'standard-deviation':  ('Standard Deviation', 'statistics', 9800, 4.4),
+}
+
+
+@app.route('/widgets/<slug>')
+def r11_widgets_library(slug):
+    slug = (slug or '').strip().lower()
+    spec = _R11_WIDGETS.get(slug)
+    if not spec:
+        abort(404)
+    name, topic, installs, rating = spec
+    payload = {'name': name, 'topic': topic, 'installs': installs,
+               'rating': rating, 'embed_size': '420x300',
+               'public_url': '/widgets/' + slug}
+    return _r11_render(
+        slug, name + ' — Wolfram Widget',
+        'Embeddable Wolfram Widget for ' + topic + '. Installable on any HTML page.',
+        [('topic', topic), ('installs', installs), ('rating', rating)],
+        'Widget["' + slug + '"]',
+        name + ' has ' + str(installs) + ' embeds; rated ' + str(rating)
+        + '/5 across user installs.',
+        'Widget', payload, 'wa-widgets-library-v1',
+        ['widget-gallery', 'developer-widget-builder', 'embed snippet',
+         'install instructions'],
+        slug)
+
+
+# ---------------------------------------------------------------------------
+# R11 (3) /widget-gallery — total widget directory
+# ---------------------------------------------------------------------------
+@app.route('/widget-gallery')
+def r11_widget_gallery():
+    topic_q = (request.args.get('topic', '') or '').strip().lower()
+    items = []
+    for s, (n, t, inst, r) in _R11_WIDGETS.items():
+        if topic_q and topic_q not in t:
+            continue
+        items.append((s, n, t, inst, r))
+    items.sort(key=lambda x: -x[3])
+    payload = {'count': len(items), 'topic_filter': topic_q or 'all'}
+    return _r11_render(
+        'widget-gallery', 'Wolfram Widget Gallery',
+        'Browse ' + str(len(items)) + ' Wolfram Widgets across topics.',
+        [('topic_filter', topic_q or 'all'), ('count', len(items))],
+        'WidgetGallery[topic=' + repr(topic_q or 'all') + ']',
+        'Showing ' + str(len(items)) + ' widgets sorted by installs.',
+        'Top widgets', payload, 'wa-widget-gallery-v1',
+        [n for _, n, _, _, _ in items[:5]],
+        'widget-gallery')
+
+
+# ---------------------------------------------------------------------------
+# R11 (4) /pub/notebook/<slug> — publicly-shared notebooks (read-only)
+# ---------------------------------------------------------------------------
+_R11_PUB_NOTEBOOKS = {
+    'introduction-to-machine-learning':
+        ('Introduction to Machine Learning', 'Stephen Wolfram', 18,
+         'Tour of Classify, Predict, and FeatureExtraction with worked examples.'),
+    'visualizing-pi':
+        ('Visualizing Pi', 'Daniel Lichtblau', 9,
+         'Several visualizations of digits of pi using Wolfram Language.'),
+    'cellular-automata-explorer':
+        ('Cellular Automata Explorer', 'Wolfram Research', 14,
+         'Browse the 256 elementary cellular automaton rules interactively.'),
+    'covid-pandemic-data':
+        ('COVID Pandemic Data', 'Wolfram Curated', 22,
+         'Time series of cases, deaths and vaccinations across 195 countries.'),
+    'us-election-poll-aggregate':
+        ('US Election Poll Aggregate', 'Wolfram Curated', 12,
+         'Polling averages with confidence intervals for major US races.'),
+    'mortgage-affordability-model':
+        ('Mortgage Affordability Model', 'Wolfram Finance', 16,
+         'Interactive model linking income, interest rate, and PMI.'),
+    'sars-cov2-variant-tree':
+        ('SARS-CoV-2 Variant Tree', 'Wolfram Life Sciences', 11,
+         'Phylogenetic tree of major SARS-CoV-2 variants annotated with dates.'),
+    'galaxy-rotation-curves':
+        ('Galaxy Rotation Curves', 'Wolfram Astronomy', 10,
+         'Observed vs predicted rotation curves for 8 nearby galaxies.'),
+    'fourier-series-sandbox':
+        ('Fourier Series Sandbox', 'Wolfram Education', 13,
+         'Manipulate components of a Fourier series and view the time signal.'),
+    'matrix-decompositions':
+        ('Matrix Decompositions', 'Wolfram Linear Algebra', 17,
+         'SVD, QR, LU, Cholesky decompositions of worked-example matrices.'),
+    'pendulum-phase-space':
+        ('Pendulum Phase Space', 'Wolfram Physics', 8,
+         'Phase-space plots for damped/driven pendulums across regimes.'),
+    'crispr-target-finder':
+        ('CRISPR Target Finder', 'Wolfram Bioinformatics', 14,
+         'PAM-aware sgRNA candidate scoring across selected genomes.'),
+}
+
+
+@app.route('/pub/notebook/<slug>')
+def r11_pub_notebook(slug):
+    slug = (slug or '').strip().lower()
+    spec = _R11_PUB_NOTEBOOKS.get(slug)
+    if not spec:
+        abort(404)
+    title, author, cells, abstract = spec
+    payload = {'title': title, 'author': author, 'cells': cells,
+               'license': 'CC-BY-4.0', 'language': 'Wolfram'}
+    return _r11_render(
+        slug, title + ' — Public Notebook',
+        abstract,
+        [('author', author), ('cells', cells)],
+        'CloudObject["pub/' + slug + '"]',
+        'Read-only public notebook with ' + str(cells) + ' cells by ' + author + '.',
+        'Notebook', payload, 'wa-pub-notebook-v1',
+        ['Cloud upload', 'Cloud share', 'Notebook templates',
+         author + ' authored notebooks'],
+        slug)
+
+
+# ---------------------------------------------------------------------------
+# R11 (5-7) /cloud, /cloud/upload, /cloud/share
+# ---------------------------------------------------------------------------
+@app.route('/cloud')
+def r11_cloud_home():
+    payload = {'storage_gb_free': 5, 'compute_minutes_free': 200,
+               'public_notebooks': len(_R11_PUB_NOTEBOOKS),
+               'has_pro_plan': bool(getattr(current_user, 'is_pro', False)
+                                    if current_user.is_authenticated else False)}
+    return _r11_render(
+        'cloud', 'Wolfram Cloud',
+        'Run notebooks in the browser; share results via a public URL.',
+        [('storage_gb_free', 5), ('compute_minutes_free', 200)],
+        'CloudInstance[]',
+        'Wolfram Cloud offers 5 GB free storage and 200 free compute minutes per month.',
+        'Quota', payload, 'wa-cloud-home-v1',
+        ['Cloud upload', 'Cloud share', 'Public notebooks',
+         'Pro upgrade', 'Wolfram Language'],
+        'wolfram-cloud')
+
+
+@app.route('/cloud/upload', methods=['GET', 'POST'])
+def r11_cloud_upload():
+    name = (request.values.get('name', 'my-notebook') or 'my-notebook').strip().lower()
+    visibility = (request.values.get('visibility', 'private') or 'private').strip().lower()
+    if visibility not in ('private', 'public', 'shared'):
+        visibility = 'private'
+    token = hashlib.md5(('cloud-upload|' + name + '|' + visibility).encode()).hexdigest()[:12]
+    payload = {'name': name, 'visibility': visibility, 'cloud_token': token,
+               'public_url': '/pub/notebook/' + token}
+    return _r11_render(
+        'cloud-upload', 'Wolfram Cloud Upload',
+        'Upload a notebook to Wolfram Cloud and choose its visibility.',
+        [('name', name), ('visibility', visibility)],
+        'CloudUpload[Notebook[' + repr(name) + ']]',
+        'Uploaded notebook ' + repr(name) + ' as ' + visibility
+        + '; cloud token ' + token + '.',
+        'Upload', payload, 'wa-cloud-upload-v1',
+        ['Cloud home', 'Cloud share', 'Notebook templates'],
+        'wolfram-cloud-upload')
+
+
+@app.route('/cloud/share', methods=['GET', 'POST'])
+def r11_cloud_share():
+    token = (request.values.get('token', '') or '').strip()
+    audience = (request.values.get('audience', 'public') or 'public').strip().lower()
+    if not token:
+        token = hashlib.md5(('cloud-share|' + audience).encode()).hexdigest()[:12]
+    payload = {'token': token, 'audience': audience,
+               'share_url': '/cloud/share/' + token}
+    return _r11_render(
+        'cloud-share', 'Wolfram Cloud Share',
+        'Generate a shareable link for a Wolfram Cloud notebook.',
+        [('token', token), ('audience', audience)],
+        'CloudShare["' + token + '", ' + audience + ']',
+        'Share link generated for audience ' + repr(audience)
+        + '; token ' + token + '.',
+        'Share', payload, 'wa-cloud-share-v1',
+        ['Cloud upload', 'Public notebooks', 'Permissions'],
+        'wolfram-cloud-share')
+
+
+# ---------------------------------------------------------------------------
+# R11 (8-10) /language, /language/getting-started, /language/tutorial/<slug>
+# ---------------------------------------------------------------------------
+_R11_LANG_TUTORIALS = {
+    'lists':                ('Lists', 'Compose, transform, and structure lists in Wolfram Language.'),
+    'symbols-and-patterns': ('Symbols and Patterns', 'Pattern matching, replacement, and symbolic transforms.'),
+    'functions':            ('Functions', 'Define pure functions, options, and overloads.'),
+    'differential-equations':
+        ('Differential Equations', 'Solve ODEs and PDEs symbolically with DSolve.'),
+    'statistical-distributions':
+        ('Statistical Distributions', '70+ built-in distributions with derived quantities.'),
+    'strings-and-text':     ('Strings and Text', 'Tokenize, search, and rewrite text via patterns.'),
+    'files-and-streams':    ('Files and Streams', 'Import/export 200+ formats; streaming IO.'),
+    'notebooks-as-documents':
+        ('Notebooks as Interactive Documents', 'Cells, dynamics, and stylesheets.'),
+    'geometric-computation':('Geometric Computation', 'Polygons, regions, mesh and boundary representations.'),
+    'plotting':             ('Plotting', 'Plot, ListPlot, Plot3D and Manipulate-driven dynamics.'),
+    'numerical-mathematics':('Numerical Mathematics', 'NSolve, NIntegrate, NDSolve and tolerance control.'),
+    'machine-learning':     ('Machine Learning', 'Classify, Predict, NetTrain end-to-end pipelines.'),
+}
+
+
+@app.route('/language')
+def r11_language_home():
+    payload = {'tutorials': len(_R11_LANG_TUTORIALS),
+               'first_release_year': 1988,
+               'core_paradigms': 'symbolic-functional-pattern-rewriting'}
+    return _r11_render(
+        'language', 'Wolfram Language',
+        'A symbolic, knowledge-based programming language powering Mathematica '
+        'and Wolfram|Alpha.',
+        [('tutorials', len(_R11_LANG_TUTORIALS)),
+         ('first_release_year', 1988)],
+        'WolframLanguage[]',
+        'Wolfram Language ships ' + str(len(_R11_LANG_TUTORIALS))
+        + ' getting-started tutorials covering lists, patterns, plotting, and more.',
+        'Overview', payload, 'wa-language-home-v1',
+        ['Getting started', 'Tutorials catalog', 'Symbols and patterns',
+         'Plotting', 'Notebooks'],
+        'wolfram-language')
+
+
+@app.route('/language/getting-started')
+def r11_language_getting_started():
+    payload = {'sections': 6,
+               'sample_input': 'Plot[Sin[x], {x, 0, 2 Pi}]',
+               'sample_output': 'Sin-curve plot rendered inline'}
+    return _r11_render(
+        'language-getting-started', 'Getting Started with Wolfram Language',
+        'A 6-section walkthrough from first expression to first notebook.',
+        [('sections', 6)],
+        'GettingStarted[WolframLanguage]',
+        'Six sections: 1) install or use the Cloud, 2) first input, 3) lists, '
+        '4) plotting, 5) patterns, 6) notebooks.',
+        'Walkthrough', payload, 'wa-language-getting-started-v1',
+        ['Tutorial: lists', 'Tutorial: plotting', 'Tutorial: notebooks',
+         'Notebook templates'],
+        'wolfram-language-getting-started')
+
+
+@app.route('/language/tutorial/<slug>')
+def r11_language_tutorial(slug):
+    slug = (slug or '').strip().lower()
+    spec = _R11_LANG_TUTORIALS.get(slug)
+    if not spec:
+        abort(404)
+    title, abstract = spec
+    payload = {'title': title, 'abstract': abstract,
+               'sections': 4,
+               'next_slug': list(_R11_LANG_TUTORIALS.keys())[
+                   (list(_R11_LANG_TUTORIALS.keys()).index(slug) + 1)
+                   % len(_R11_LANG_TUTORIALS)]}
+    return _r11_render(
+        slug, 'Tutorial: ' + title,
+        abstract,
+        [('sections', 4)],
+        'Tutorial["' + slug + '"]',
+        title + ': ' + abstract,
+        'Tutorial', payload, 'wa-language-tutorial-v1',
+        ['Getting started', 'Wolfram Language home',
+         'Next tutorial: ' + payload['next_slug']],
+        slug)
+
+
+# ---------------------------------------------------------------------------
+# R11 (11-14) /courseware* — Wolfram-U courses, lessons, certificates
+# ---------------------------------------------------------------------------
+_R11_COURSES = {
+    'introduction-to-wolfram-language':
+        ('Introduction to Wolfram Language', 'Programming', 8, 'beginner'),
+    'introduction-to-game-theory':
+        ('Introduction to Game Theory', 'Mathematics', 6, 'intermediate'),
+    'introduction-to-partial-differential-equations':
+        ('Introduction to Partial Differential Equations', 'Mathematics', 7, 'advanced'),
+    'introduction-to-laplace-transforms':
+        ('Introduction to Laplace Transforms', 'Mathematics', 6, 'intermediate'),
+    'quick-start-wolfram-tech':
+        ('Quick Start to Wolfram Tech', 'Wolfram Language', 5, 'beginner'),
+    'visual-explorations-in-data-science':
+        ('Proficiency in Visual Explorations', 'Data Science', 7, 'intermediate'),
+    'machine-learning-fundamentals':
+        ('Machine Learning Fundamentals', 'Machine Learning', 8, 'intermediate'),
+    'image-processing-101':
+        ('Image Processing 101', 'Image Processing', 6, 'beginner'),
+    'multivariable-calculus':
+        ('Multivariable Calculus', 'Mathematics', 9, 'intermediate'),
+    'linear-algebra':
+        ('Linear Algebra', 'Mathematics', 8, 'intermediate'),
+    'introduction-to-finance':
+        ('Introduction to Finance', 'Finance', 6, 'beginner'),
+    'introduction-to-statistics':
+        ('Introduction to Statistics', 'Mathematics', 7, 'beginner'),
+}
+_R11_CERT_IDS = ['WU-2026-0421', 'WU-2026-0590', 'WU-2026-0612',
+                 'WU-2026-0733', 'WU-2026-0815', 'WU-2026-0901']
+
+
+@app.route('/courseware')
+def r11_courseware_index():
+    items = [(s, n, c, l, lv) for s, (n, c, l, lv) in _R11_COURSES.items()]
+    payload = {'count': len(items),
+               'categories': len(set(c for _, _, c, _, _ in items))}
+    return _r11_render(
+        'courseware', 'Wolfram-U Courseware',
+        'Browse ' + str(len(items)) + ' interactive Wolfram-U courses.',
+        [('courses', len(items)),
+         ('categories', payload['categories'])],
+        'Catalog[WolframU]',
+        'Wolfram-U offers ' + str(len(items)) + ' free courses across '
+        + str(payload['categories']) + ' categories.',
+        'Catalog', payload, 'wa-courseware-index-v1',
+        [n for _, n, _, _, _ in items[:6]],
+        'wolfram-u-catalog')
+
+
+@app.route('/courseware/<course>')
+def r11_courseware_detail(course):
+    course = (course or '').strip().lower()
+    spec = _R11_COURSES.get(course)
+    if not spec:
+        abort(404)
+    name, cat, lessons, level = spec
+    payload = {'name': name, 'category': cat, 'lessons': lessons,
+               'level': level, 'certificate_available': True}
+    return _r11_render(
+        course, name + ' — Wolfram-U',
+        name + ' is a ' + level + '-level ' + cat
+        + ' course with ' + str(lessons) + ' lessons.',
+        [('category', cat), ('lessons', lessons), ('level', level)],
+        'Course["' + course + '"]',
+        name + ' covers ' + str(lessons) + ' lessons and awards a certificate.',
+        'Course', payload, 'wa-courseware-detail-v1',
+        ['Lesson 1', 'Lesson ' + str(lessons), 'Certificate', 'Catalog'],
+        course)
+
+
+@app.route('/courseware/<course>/lesson/<int:n>')
+def r11_courseware_lesson(course, n):
+    course = (course or '').strip().lower()
+    spec = _R11_COURSES.get(course)
+    if not spec:
+        abort(404)
+    name, cat, lessons, level = spec
+    if n < 1 or n > lessons:
+        abort(404)
+    payload = {'course': name, 'lesson_number': n,
+               'lesson_title': name + ' — Lesson ' + str(n),
+               'video_minutes': 9 + (n % 6),
+               'has_exercise': True}
+    return _r11_render(
+        course + '-lesson-' + str(n), name + ' — Lesson ' + str(n),
+        'Lesson ' + str(n) + ' of ' + str(lessons) + ' in '
+        + name + ' (' + cat + ').',
+        [('lesson', n), ('total_lessons', lessons)],
+        'Lesson["' + course + '", ' + str(n) + ']',
+        'Lesson ' + str(n) + ' includes a ' + str(payload['video_minutes'])
+        + '-minute video, written notes and an exercise.',
+        'Lesson', payload, 'wa-courseware-lesson-v1',
+        ['Previous lesson', 'Next lesson', 'Course page', 'Certificate'],
+        course + '-lesson-' + str(n))
+
+
+@app.route('/courseware/certificate/<cid>')
+def r11_courseware_certificate(cid):
+    cid = (cid or '').strip()
+    if cid not in _R11_CERT_IDS:
+        abort(404)
+    idx = _R11_CERT_IDS.index(cid)
+    course_keys = list(_R11_COURSES.keys())
+    course = course_keys[idx % len(course_keys)]
+    cname = _R11_COURSES[course][0]
+    payload = {'certificate_id': cid, 'course': cname,
+               'issued_date': '2026-04-' + str(20 + idx),
+               'awarded_to': 'alice.j@test.com', 'verification_url':
+               '/courseware/certificate/' + cid}
+    return _r11_render(
+        'certificate-' + cid, 'Wolfram-U Certificate — ' + cid,
+        'Verified completion certificate for ' + cname + '.',
+        [('certificate_id', cid), ('course', cname)],
+        'Certificate["' + cid + '"]',
+        'Certificate ' + cid + ' awarded for ' + cname
+        + ' on ' + payload['issued_date'] + '.',
+        'Certificate', payload, 'wa-courseware-certificate-v1',
+        ['Course page', 'Wolfram-U catalog', 'Account certificates'],
+        'certificate-' + cid)
+
+
+# ---------------------------------------------------------------------------
+# R11 (15-17) /blog, /blog/<post-slug>, /blog/category/<cat>
+# ---------------------------------------------------------------------------
+_R11_BLOG_POSTS = {
+    'making-wolfram-tech-foundation-llm':
+        ('Making Wolfram Tech Available as a Foundation Tool for LLM Systems',
+         'Stephen Wolfram', '2026-02-14', 'wolfram-language',
+         'How Wolfram Language augments LLM systems with symbolic reasoning.'),
+    'instant-supercompute-launch':
+        ('Instant Supercompute: Launching Wolfram Compute Services',
+         'Stephen Wolfram', '2025-12-04', 'wolfram-news',
+         'Launch announcement for Wolfram Compute Services.'),
+    'laplace-transforms-etextbook':
+        ('A Modern eTextbook on Laplace Transforms for Engineering, Science and More',
+         'Devendra Kapadia', '2026-05-11', 'education',
+         'New interactive eTextbook covering Laplace transforms.'),
+    'checkmate-game-theory-wolfram':
+        ('Checkmate! Dominate the Competition by Learning Game Theory with Wolfram Language',
+         'Vitaliy Kaurov', '2026-04-22', 'mathematics',
+         'Game theory tutorial using Wolfram Language workflows.'),
+    'compression-recompression-jpeg':
+        ('Compression and Recompression of JPEG: Stability, Artifacts and Iterative Image Collapse',
+         'Roman Maeder', '2026-03-30', 'image-processing',
+         'What happens when you re-compress a JPEG many times.'),
+    'data-adventure-boston-1929':
+        ('A Data Adventure in Boston, 1929: Historical Census Corpus Analysis',
+         'Alan Joyce', '2026-03-12', 'digital-humanities',
+         'Computational study of 1929 Boston census data.'),
+    'llms-symbolic-mathematics':
+        ('LLMs, Symbolic Computation and the Future of Mathematical Discovery',
+         'Stephen Wolfram', '2026-02-28', 'mathematics',
+         'Where LLMs and symbolic computation meet in math research.'),
+    'vinor-prague-neolithic':
+        ('Computational Geometry Modeling of the Neolithic Circular Ditch in Vinoř, Prague',
+         'Silvia Hroncova', '2026-02-15', 'digital-humanities',
+         'Geometric reconstruction of an ancient earthwork.'),
+    'elementary-functions-single-operator':
+        ('All Elementary Functions from a Single Binary Operator',
+         'Stephen Wolfram', '2026-01-25', 'mathematics',
+         'Reducing the elementary function basis to one binary operator.'),
+    'computational-breast-cancer-detection':
+        ('A Computational Approach to Early Breast Cancer Detection Using Wolfram',
+         'Marina Shchitkova', '2025-11-30', 'life-sciences-and-medicine',
+         'Image-classification pipeline applied to breast cancer screening.'),
+    'transmon-cqed-qolab':
+        ('Transmon cQED: Wolfram x Qolab Collaboration',
+         'Wolfram Research', '2025-10-22', 'wolfram-news',
+         'Joint quantum-hardware collaboration with Qolab.'),
+    'mathematica-14-1-release':
+        ('Mathematica 14.1: New Features Across the Board',
+         'Roger Germundsson', '2025-07-11', 'mathematica-news',
+         'Highlights of the 14.1 release.'),
+    'wolfram-13-3-llm-functions':
+        ('LLM Functions, Chat Notebooks and What is Next',
+         'Stephen Wolfram', '2025-06-04', 'wolfram-language',
+         'New LLM functions and chat notebooks.'),
+    'wolfram-language-data-types':
+        ('A Tour of New Wolfram Language Data Types',
+         'Roger Germundsson', '2025-05-15', 'wolfram-language',
+         'Tour of typed arrays, packed lists, and structured data.'),
+    'pi-day-2026':
+        ('Pi Day 2026: Computing 100 Trillion Digits',
+         'Alan Joyce', '2026-03-14', 'recreational-computation',
+         'Pi day post on record-breaking digit computations.'),
+    'wolfram-summer-school-2025':
+        ('Wolfram Summer School 2025 Recap',
+         'Vitaliy Kaurov', '2025-09-01', 'events',
+         'Project highlights from the 2025 Summer School.'),
+    'finance-platform-update':
+        ('Wolfram Finance Platform 14 Update',
+         'Roger Germundsson', '2025-08-20', 'finance',
+         'New Finance Platform features.'),
+    'astronomy-image-of-the-day':
+        ('Building an Astronomy Image of the Day Notebook',
+         'Jeffrey Bryant', '2025-04-02', 'astronomy',
+         'Daily astronomy image notebook tutorial.'),
+}
+_R11_BLOG_CATEGORIES = {
+    'wolfram-language':       'Wolfram Language',
+    'mathematics':            'Mathematics',
+    'education':              'Education',
+    'image-processing':       'Image Processing',
+    'digital-humanities':     'Digital Humanities',
+    'wolfram-news':           'Wolfram News',
+    'mathematica-news':       'Mathematica News',
+    'life-sciences-and-medicine': 'Life Sciences and Medicine',
+    'recreational-computation':   'Recreational Computation',
+    'events':                 'Events',
+    'finance':                'Finance',
+    'astronomy':              'Astronomy',
+}
+
+
+@app.route('/blog')
+def r11_blog_index():
+    posts = list(_R11_BLOG_POSTS.items())
+    posts.sort(key=lambda kv: kv[1][2], reverse=True)
+    payload = {'count': len(posts), 'categories': len(_R11_BLOG_CATEGORIES),
+               'latest_slug': posts[0][0]}
+    return _r11_render(
+        'blog', 'Wolfram Blog',
+        'Long-form essays and announcements from the Wolfram team.',
+        [('posts', len(posts)), ('categories', len(_R11_BLOG_CATEGORIES))],
+        'Blog[Wolfram]',
+        'Latest post: ' + posts[0][1][0] + ' (' + posts[0][1][2] + ').',
+        'Blog', payload, 'wa-blog-index-v1',
+        [t[1][0] for t in posts[:5]], 'wolfram-blog')
+
+
+@app.route('/blog/<post_slug>')
+def r11_blog_post(post_slug):
+    post_slug = (post_slug or '').strip().lower()
+    spec = _R11_BLOG_POSTS.get(post_slug)
+    if not spec:
+        abort(404)
+    title, author, date, cat, abstract = spec
+    payload = {'title': title, 'author': author, 'date': date,
+               'category': cat, 'word_count': 1200 + (len(title) * 18)}
+    return _r11_render(
+        post_slug, title,
+        abstract,
+        [('author', author), ('date', date), ('category', cat)],
+        'BlogPost["' + post_slug + '"]',
+        title + ' — by ' + author + ' on ' + date + '. ' + abstract,
+        'Post', payload, 'wa-blog-post-v1',
+        ['Category: ' + _R11_BLOG_CATEGORIES.get(cat, cat),
+         'Blog index', 'Author: ' + author, 'Subscribe to RSS'],
+        post_slug)
+
+
+@app.route('/blog/category/<cat>')
+def r11_blog_category(cat):
+    cat = (cat or '').strip().lower()
+    if cat not in _R11_BLOG_CATEGORIES:
+        abort(404)
+    posts = [(s, m) for s, m in _R11_BLOG_POSTS.items() if m[3] == cat]
+    payload = {'category': cat, 'category_name': _R11_BLOG_CATEGORIES[cat],
+               'count': len(posts)}
+    return _r11_render(
+        'blog-cat-' + cat, _R11_BLOG_CATEGORIES[cat] + ' — Wolfram Blog Category',
+        'Posts in the ' + _R11_BLOG_CATEGORIES[cat] + ' category.',
+        [('category', cat), ('posts', len(posts))],
+        'BlogCategory["' + cat + '"]',
+        'Found ' + str(len(posts)) + ' posts in '
+        + _R11_BLOG_CATEGORIES[cat] + '.',
+        'Posts', payload, 'wa-blog-category-v1',
+        [m[0] for _, m in posts[:5]],
+        'blog-category-' + cat)
+
+
+# ---------------------------------------------------------------------------
+# R11 (18-20) /community, /community/topic/<id>, /community/group/<group>
+# ---------------------------------------------------------------------------
+_R11_COMMUNITY_GROUPS = {
+    'wolfram-language':    ('Wolfram Language', 18420),
+    'wolfram-alpha':       ('Wolfram|Alpha', 4180),
+    'mathematica':         ('Mathematica', 21330),
+    'wolfram-cloud':       ('Wolfram Cloud', 2210),
+    'wolfram-u':           ('Wolfram U', 1480),
+    'general':             ('General Discussion', 12890),
+}
+_R11_COMMUNITY_TOPICS = {
+    3678635: ('Compression and Recompression of JPEG',
+              'wolfram-language', 42, 'Roman Maeder'),
+    3682277: ('A Data Adventure in Boston, 1929',
+              'wolfram-language', 31, 'Alan Joyce'),
+    3711368: ('LLMs and Symbolic Computation',
+              'wolfram-language', 67, 'Stephen Wolfram'),
+    3710432: ('Neolithic Circular Ditch Geometry',
+              'wolfram-language', 24, 'Silvia Hroncova'),
+    3694198: ('Elementary Functions from a Single Operator',
+              'wolfram-language', 58, 'Stephen Wolfram'),
+    3649858: ('Computational Early Breast Cancer Detection',
+              'wolfram-language', 19, 'Marina Shchitkova'),
+    3666356: ('Transmon cQED with Wolfram',
+              'mathematica', 15, 'Wolfram Research'),
+    3601822: ('Solving a Tricky Definite Integral',
+              'mathematica', 9, 'Daniel Lichtblau'),
+    3589104: ('Pattern Matching Gotchas',
+              'wolfram-language', 13, 'Vitaliy Kaurov'),
+    3522345: ('Plotting a Riemann Surface',
+              'mathematica', 11, 'Jeffrey Bryant'),
+    3501776: ('Step-by-Step for Calculus 2 Students',
+              'wolfram-alpha', 22, 'Devendra Kapadia'),
+    3478910: ('Cloud Deployment Recipes',
+              'wolfram-cloud', 18, 'Andre Kuzniarek'),
+}
+
+
+@app.route('/community')
+def r11_community_home():
+    payload = {'groups': len(_R11_COMMUNITY_GROUPS),
+               'topics_indexed': len(_R11_COMMUNITY_TOPICS),
+               'total_members': sum(g[1] for g in _R11_COMMUNITY_GROUPS.values())}
+    return _r11_render(
+        'community', 'Wolfram Community',
+        'Wolfram Community: discussions, projects, Q&A across Wolfram tech.',
+        [('groups', len(_R11_COMMUNITY_GROUPS)),
+         ('topics_indexed', len(_R11_COMMUNITY_TOPICS))],
+        'Community[Wolfram]',
+        'Wolfram Community has '
+        + str(len(_R11_COMMUNITY_GROUPS)) + ' groups and '
+        + str(payload['total_members']) + ' members in the indexed snapshot.',
+        'Groups', payload, 'wa-community-home-v1',
+        [g[0] for g in _R11_COMMUNITY_GROUPS.values()],
+        'wolfram-community')
+
+
+@app.route('/community/topic/<int:tid>')
+def r11_community_topic(tid):
+    spec = _R11_COMMUNITY_TOPICS.get(tid)
+    if not spec:
+        abort(404)
+    title, group, replies, author = spec
+    payload = {'topic_id': tid, 'title': title, 'group': group,
+               'replies': replies, 'author': author}
+    return _r11_render(
+        'topic-' + str(tid), title,
+        'Wolfram Community thread #' + str(tid) + ' in ' + group + '.',
+        [('group', group), ('replies', replies)],
+        'CommunityTopic[' + str(tid) + ']',
+        'Topic #' + str(tid) + ' has ' + str(replies)
+        + ' replies and was started by ' + author + '.',
+        'Topic', payload, 'wa-community-topic-v1',
+        ['Group: ' + _R11_COMMUNITY_GROUPS.get(group, (group, 0))[0],
+         'Community home', 'Author: ' + author, 'Reply to thread'],
+        'community-topic-' + str(tid))
+
+
+@app.route('/community/group/<group>')
+def r11_community_group(group):
+    group = (group or '').strip().lower()
+    spec = _R11_COMMUNITY_GROUPS.get(group)
+    if not spec:
+        abort(404)
+    name, members = spec
+    topics = [(tid, m) for tid, m in _R11_COMMUNITY_TOPICS.items()
+              if m[1] == group]
+    payload = {'group': group, 'name': name, 'members': members,
+               'indexed_topics': len(topics)}
+    return _r11_render(
+        'group-' + group, name + ' — Wolfram Community Group',
+        'Members and topics in the ' + name + ' community group.',
+        [('members', members), ('indexed_topics', len(topics))],
+        'CommunityGroup["' + group + '"]',
+        name + ' has ' + str(members) + ' members and '
+        + str(len(topics)) + ' indexed topics.',
+        'Group', payload, 'wa-community-group-v1',
+        [m[0] for _, m in topics[:5]] if topics else ['Community home'],
+        'community-group-' + group)
+
+
+# ---------------------------------------------------------------------------
+# R11 (21-23) /about/team, /about/history, /contact-us
+# ---------------------------------------------------------------------------
+@app.route('/about/team')
+def r11_about_team():
+    members = [
+        ('Stephen Wolfram',   'Founder & CEO', 'sw@wolfram.com'),
+        ('Theodore Gray',     'Co-founder', 'tg@wolfram.com'),
+        ('Roger Germundsson', 'Director of R&D', 'rg@wolfram.com'),
+        ('Roman Maeder',      'Senior Research Mathematician', 'rm@wolfram.com'),
+        ('Conrad Wolfram',    'Strategic Director', 'cw@wolfram.com'),
+        ('Vitaliy Kaurov',    'Research Programmer', 'vk@wolfram.com'),
+        ('Daniel Lichtblau',  'Senior Kernel Developer', 'dl@wolfram.com'),
+    ]
+    payload = {'team_size': len(members),
+               'lead': members[0][0]}
+    return _r11_render(
+        'about-team', 'About Wolfram — Team',
+        'Meet the people behind Wolfram Research.',
+        [('team_size', len(members))],
+        'AboutTeam[]',
+        'Wolfram Research lists ' + str(len(members))
+        + ' core team members; CEO ' + members[0][0] + '.',
+        'Team', payload, 'wa-about-team-v1',
+        [m[0] + ' — ' + m[1] for m in members[:5]],
+        'about-team')
+
+
+@app.route('/about/history')
+def r11_about_history():
+    timeline = [
+        (1988, 'Mathematica 1.0 released'),
+        (1996, 'MathWorld launched (Eric Weisstein)'),
+        (1999, 'Mathematica 4.0'),
+        (2003, 'Wolfram Research opens UK office'),
+        (2009, 'Wolfram|Alpha launches publicly'),
+        (2014, 'Wolfram Language announced separately from Mathematica'),
+        (2016, 'Wolfram Cloud released'),
+        (2018, 'Mathematica 12.0 ships with neural-network framework'),
+        (2020, 'A Project to Find the Fundamental Theory of Physics launches'),
+        (2023, 'ChatGPT plugin and LLM-functions added to Wolfram Language'),
+    ]
+    payload = {'founded_year': timeline[0][0],
+               'milestones': len(timeline),
+               'latest_milestone_year': timeline[-1][0]}
+    return _r11_render(
+        'about-history', 'About Wolfram — History',
+        'A timeline of Wolfram Research, from Mathematica 1.0 to today.',
+        [('founded_year', payload['founded_year']),
+         ('milestones', payload['milestones'])],
+        'AboutHistory[]',
+        'Wolfram Research was founded in 1987; this timeline lists '
+        + str(len(timeline)) + ' major milestones through '
+        + str(timeline[-1][0]) + '.',
+        'Timeline', payload, 'wa-about-history-v1',
+        [str(y) + ': ' + e for y, e in timeline[:5]],
+        'about-history')
+
+
+@app.route('/contact-us')
+def r11_contact_us():
+    payload = {'support_email': 'info@wolframalpha.com',
+               'sales_email': 'sales@wolfram.com',
+               'phone_us': '+1-217-398-0700',
+               'address': '100 Trade Center Drive, Champaign, IL 61820, USA',
+               'response_sla_hours': 24}
+    return _r11_render(
+        'contact-us', 'Contact Wolfram',
+        'Contact Wolfram Research by email, phone, or postal mail.',
+        [('support_email', payload['support_email']),
+         ('phone_us', payload['phone_us'])],
+        'Contact[Wolfram]',
+        'Wolfram Research can be reached by email at '
+        + payload['support_email'] + ' or by phone at '
+        + payload['phone_us'] + '.',
+        'Contact', payload, 'wa-contact-us-v1',
+        ['About team', 'About history', 'Jobs', 'Store'],
+        'contact-us')
+
+
+# ---------------------------------------------------------------------------
+# R11 (24-25) /jobs, /jobs/<id>
+# ---------------------------------------------------------------------------
+_R11_JOBS = {
+    'JOB-2026-101': ('Senior Wolfram Language Engineer', 'Engineering',
+                     'Champaign, IL',  '$140k-$180k'),
+    'JOB-2026-102': ('Machine Learning Research Scientist', 'Research',
+                     'Remote (US)',    '$160k-$210k'),
+    'JOB-2026-103': ('Documentation Writer', 'Content',
+                     'Boston, MA',     '$80k-$110k'),
+    'JOB-2026-104': ('Cloud Platform SRE', 'Engineering',
+                     'Champaign, IL',  '$130k-$170k'),
+    'JOB-2026-105': ('Computational Mathematician', 'Research',
+                     'Remote (worldwide)', '$120k-$160k'),
+    'JOB-2026-106': ('UI/UX Designer for Notebooks', 'Design',
+                     'Boston, MA',     '$110k-$140k'),
+    'JOB-2026-107': ('Wolfram-U Curriculum Lead', 'Education',
+                     'Champaign, IL',  '$90k-$130k'),
+    'JOB-2026-108': ('LLM Integration Engineer', 'Engineering',
+                     'Remote (US)',    '$150k-$200k'),
+    'JOB-2026-109': ('Marketing Copywriter', 'Marketing',
+                     'Champaign, IL',  '$75k-$95k'),
+    'JOB-2026-110': ('Mobile Apps Engineer (iOS)', 'Engineering',
+                     'Remote (US)',    '$130k-$170k'),
+    'JOB-2026-111': ('Customer Support Specialist', 'Support',
+                     'Remote (US)',    '$60k-$80k'),
+    'JOB-2026-112': ('Quantum Computing Research Intern', 'Research',
+                     'Champaign, IL',  'Intern'),
+}
+
+
+@app.route('/jobs')
+def r11_jobs_index():
+    dept_q = (request.args.get('dept', '') or '').strip().lower()
+    rows = [(jid, t, d, loc, sal) for jid, (t, d, loc, sal) in _R11_JOBS.items()]
+    if dept_q:
+        rows = [r for r in rows if dept_q in r[2].lower()]
+    payload = {'open_positions': len(rows),
+               'departments': len(set(r[2] for r in rows)),
+               'dept_filter': dept_q or 'all'}
+    return _r11_render(
+        'jobs', 'Jobs at Wolfram',
+        'Open positions across Wolfram Research, Wolfram|Alpha, and Wolfram-U.',
+        [('open_positions', len(rows)),
+         ('dept_filter', dept_q or 'all')],
+        'Jobs[Wolfram, dept=' + repr(dept_q or 'all') + ']',
+        'Showing ' + str(len(rows)) + ' open positions across '
+        + str(payload['departments']) + ' departments.',
+        'Jobs', payload, 'wa-jobs-index-v1',
+        [r[1] for r in rows[:5]],
+        'wolfram-jobs')
+
+
+@app.route('/jobs/<jid>')
+def r11_jobs_detail(jid):
+    jid = (jid or '').strip()
+    spec = _R11_JOBS.get(jid)
+    if not spec:
+        abort(404)
+    title, dept, loc, salary = spec
+    payload = {'job_id': jid, 'title': title, 'department': dept,
+               'location': loc, 'salary_band': salary,
+               'apply_url': '/jobs/' + jid + '/apply'}
+    return _r11_render(
+        jid, title + ' — Wolfram Job',
+        title + ' (' + dept + ', ' + loc + ').',
+        [('department', dept), ('location', loc), ('salary', salary)],
+        'Job["' + jid + '"]',
+        title + ' is a ' + dept + ' role based in ' + loc
+        + ' with salary band ' + salary + '.',
+        'Job', payload, 'wa-jobs-detail-v1',
+        ['Apply', 'Jobs index', 'Department: ' + dept,
+         'Benefits', 'Relocation'],
+        'job-' + jid)
+
+
+# ---------------------------------------------------------------------------
+# R11 (26-27) /store, /store/product/<pid>
+# ---------------------------------------------------------------------------
+_R11_STORE_PRODUCTS = {
+    'mathematica-home':   ('Mathematica Home Edition', 'Software', 360.0,
+                           'Personal-use Mathematica license for home users.'),
+    'mathematica-student':('Mathematica Student Edition', 'Software', 159.0,
+                           'Discounted Mathematica license for enrolled students.'),
+    'mathematica-pro':    ('Mathematica Professional', 'Software', 2495.0,
+                           'Standard Mathematica for industry and research.'),
+    'wolfram-one':        ('Wolfram|One', 'Software', 1295.0,
+                           'Cloud-and-desktop bundle for general use.'),
+    'wolfram-alpha-pro':  ('Wolfram|Alpha Pro (1-year)', 'Subscription', 87.0,
+                           'One-year Wolfram|Alpha Pro subscription.'),
+    'system-modeler':     ('Wolfram System Modeler', 'Software', 1495.0,
+                           'Multi-physics modeling and simulation platform.'),
+    'finance-platform':   ('Wolfram Finance Platform', 'Software', 2495.0,
+                           'Quant finance and risk analytics platform.'),
+    'cloud-credits-1k':   ('Cloud Credits — 1000', 'Credits', 50.0,
+                           '1000 cloud-compute credits for Wolfram Cloud.'),
+    'cloud-credits-10k':  ('Cloud Credits — 10,000', 'Credits', 450.0,
+                           '10,000 cloud-compute credits, bulk discount.'),
+    'book-tnws':          ('A New Kind of Science (hardcover)', 'Book', 75.0,
+                           'Stephen Wolfram, 2002. Hardcover.'),
+    'book-elementary':    ('An Elementary Introduction to the Wolfram Language',
+                           'Book', 39.95,
+                           'Free online edition; this is the print copy.'),
+    'tshirt-wl':          ('Wolfram Language T-Shirt', 'Apparel', 24.0,
+                           'Unisex tee with WL syntax.'),
+}
+
+
+@app.route('/store')
+def r11_store_index():
+    cat_q = (request.args.get('cat', '') or '').strip().lower()
+    rows = [(pid, n, c, p, d) for pid, (n, c, p, d) in _R11_STORE_PRODUCTS.items()]
+    if cat_q:
+        rows = [r for r in rows if cat_q in r[2].lower()]
+    payload = {'products': len(rows),
+               'categories': sorted(set(r[2] for r in rows)),
+               'cat_filter': cat_q or 'all'}
+    return _r11_render(
+        'store', 'Wolfram Store',
+        'Wolfram software, subscriptions, credits, books, and apparel.',
+        [('products', len(rows)),
+         ('cat_filter', cat_q or 'all')],
+        'Store[Wolfram, cat=' + repr(cat_q or 'all') + ']',
+        'Showing ' + str(len(rows)) + ' products across categories: '
+        + ', '.join(payload['categories']) + '.',
+        'Catalog', payload, 'wa-store-index-v1',
+        [r[1] for r in rows[:6]],
+        'wolfram-store')
+
+
+@app.route('/store/product/<pid>')
+def r11_store_product(pid):
+    pid = (pid or '').strip().lower()
+    spec = _R11_STORE_PRODUCTS.get(pid)
+    if not spec:
+        abort(404)
+    name, cat, price, desc = spec
+    payload = {'product_id': pid, 'name': name, 'category': cat,
+               'price_usd': price,
+               'in_stock': True, 'ships_in_days': 2}
+    return _r11_render(
+        pid, name + ' — Wolfram Store',
+        desc,
+        [('category', cat), ('price_usd', price)],
+        'Product["' + pid + '"]',
+        name + ' (' + cat + ') is $' + str(price) + ' USD; '
+        + ('digital delivery' if cat in ('Software', 'Subscription', 'Credits')
+           else 'ships in 2 days') + '.',
+        'Product', payload, 'wa-store-product-v1',
+        ['Add to cart', 'Store catalog', 'Category: ' + cat,
+         'Returns policy', 'Volume licensing'],
+        'store-' + pid)
+
+
+# ---------------------------------------------------------------------------
+# R11 (28-29) /research, /research/<paper-slug>
+# ---------------------------------------------------------------------------
+_R11_RESEARCH = {
+    'computational-equivalence-2002':
+        ('Principle of Computational Equivalence',
+         'Stephen Wolfram', 2002, 'foundations',
+         'Cornerstone principle from A New Kind of Science.'),
+    'multiway-systems-2020':
+        ('Multiway Systems and the Fundamental Theory of Physics',
+         'Stephen Wolfram', 2020, 'physics',
+         'Multiway systems as a model of physics.'),
+    'symbolic-vs-llm-2024':
+        ('Symbolic vs Neural: A Case Study in Mathematics',
+         'Wolfram Research', 2024, 'machine-learning',
+         'Comparing symbolic and LLM approaches in math benchmarks.'),
+    'cellular-automata-class-1985':
+        ('A Classification of Cellular Automaton Rules',
+         'Stephen Wolfram', 1985, 'foundations',
+         'The classic four-class classification.'),
+    'wolfram-physics-graphs-2020':
+        ('Hypergraph Rewriting Rules and Spacetime',
+         'Jonathan Gorard', 2020, 'physics',
+         'Hypergraph rewriting and emergent spacetime.'),
+    'compute-everything-2023':
+        ('Computational Foundations of Numeric Linear Algebra',
+         'Daniel Lichtblau', 2023, 'numerics',
+         'Numeric linear algebra implementation notes.'),
+    'pattern-matching-rewriting-1998':
+        ('Pattern Matching and Term Rewriting in Mathematica',
+         'Roman Maeder', 1998, 'symbolic-computation',
+         'Pattern-matching internals.'),
+    'large-language-models-symbolic-2024':
+        ('Large Language Models Calling Symbolic Tools',
+         'Stephen Wolfram', 2024, 'machine-learning',
+         'Architecture for tool-augmented LLMs.'),
+    'physical-units-2019':
+        ('Physical Units in Symbolic Computation',
+         'Wolfram Research', 2019, 'symbolic-computation',
+         'Type-safe physical units in Wolfram Language.'),
+    'wolfram-language-history-2014':
+        ('A Brief History of the Wolfram Language',
+         'Stephen Wolfram', 2014, 'history',
+         'Timeline of the language and its design.'),
+    'knowledge-based-2010':
+        ('Knowledge-Based Programming',
+         'Stephen Wolfram', 2010, 'language-design',
+         'The knowledge-based paradigm.'),
+    'multivariate-polynomials-2017':
+        ('Algorithms for Multivariate Polynomials',
+         'Daniel Lichtblau', 2017, 'numerics',
+         'Implementation of resultants and Groebner bases.'),
+}
+
+
+@app.route('/research')
+def r11_research_index():
+    rows = [(s, *m) for s, m in _R11_RESEARCH.items()]
+    rows.sort(key=lambda r: -r[3])
+    payload = {'count': len(rows),
+               'years_span': str(min(r[3] for r in rows)) + '-'
+                             + str(max(r[3] for r in rows))}
+    return _r11_render(
+        'research', 'Wolfram Research — Papers',
+        'A catalog of foundational and technical papers from Wolfram Research.',
+        [('count', len(rows)),
+         ('years_span', payload['years_span'])],
+        'Research[Wolfram]',
+        'Wolfram Research lists ' + str(len(rows))
+        + ' indexed papers from ' + payload['years_span'] + '.',
+        'Papers', payload, 'wa-research-index-v1',
+        [r[1] for r in rows[:5]], 'wolfram-research')
+
+
+@app.route('/research/<paper_slug>')
+def r11_research_paper(paper_slug):
+    paper_slug = (paper_slug or '').strip().lower()
+    spec = _R11_RESEARCH.get(paper_slug)
+    if not spec:
+        abort(404)
+    title, author, year, area, abstract = spec
+    payload = {'title': title, 'author': author, 'year': year,
+               'area': area, 'pages': 18 + (len(title) % 12)}
+    return _r11_render(
+        paper_slug, title,
+        abstract,
+        [('author', author), ('year', year), ('area', area)],
+        'Paper["' + paper_slug + '"]',
+        title + ' (' + author + ', ' + str(year) + '). ' + abstract,
+        'Paper', payload, 'wa-research-paper-v1',
+        ['Research index', 'Area: ' + area, 'Author: ' + author,
+         'Cite (BibTeX)', 'Download PDF'],
+        paper_slug)
+
+
+# ---------------------------------------------------------------------------
+# R11 (30-31) /conferences, /conferences/<slug>
+# ---------------------------------------------------------------------------
+_R11_CONFERENCES = {
+    'wtc-2018': ('Wolfram Technology Conference 2018', 2018, 'Champaign, IL', 380),
+    'wtc-2019': ('Wolfram Technology Conference 2019', 2019, 'Champaign, IL', 410),
+    'wtc-2020': ('Wolfram Technology Conference 2020 (Virtual)', 2020, 'Virtual', 1820),
+    'wtc-2021': ('Wolfram Technology Conference 2021 (Virtual)', 2021, 'Virtual', 1950),
+    'wtc-2022': ('Wolfram Technology Conference 2022', 2022, 'Champaign, IL', 510),
+    'wtc-2023': ('Wolfram Technology Conference 2023', 2023, 'Champaign, IL', 540),
+    'wtc-2024': ('Wolfram Technology Conference 2024 (Virtual)', 2024, 'Virtual', 1610),
+    'wtc-2025': ('Wolfram Virtual Technology Conference 2025', 2025, 'Virtual', 1740),
+}
+
+
+@app.route('/conferences')
+def r11_conferences_index():
+    rows = [(s, n, y, loc, att) for s, (n, y, loc, att) in _R11_CONFERENCES.items()]
+    rows.sort(key=lambda r: -r[2])
+    payload = {'count': len(rows),
+               'latest_year': rows[0][2]}
+    return _r11_render(
+        'conferences', 'Wolfram Conferences',
+        'All editions of the Wolfram Technology Conference.',
+        [('editions', len(rows)),
+         ('latest_year', rows[0][2])],
+        'Conferences[Wolfram]',
+        'Latest: ' + rows[0][1] + '.',
+        'Conferences', payload, 'wa-conferences-index-v1',
+        [r[1] for r in rows[:5]], 'wolfram-conferences')
+
+
+@app.route('/conferences/<slug>')
+def r11_conferences_detail(slug):
+    slug = (slug or '').strip().lower()
+    spec = _R11_CONFERENCES.get(slug)
+    if not spec:
+        abort(404)
+    name, year, loc, att = spec
+    payload = {'name': name, 'year': year, 'location': loc,
+               'attendees': att, 'tracks':
+               ['Machine Learning / LLMs', 'Modeling & Engineering',
+                'Science & Math', 'Computational X', 'Education']}
+    return _r11_render(
+        slug, name,
+        name + ' was held in ' + loc + ' with ~' + str(att) + ' attendees.',
+        [('year', year), ('location', loc), ('attendees', att)],
+        'Conference["' + slug + '"]',
+        name + ' featured 5 tracks: ' + ', '.join(payload['tracks']) + '.',
+        'Conference', payload, 'wa-conference-detail-v1',
+        ['Conferences index', 'Keynote: Stephen Wolfram',
+         'Innovator Awards', 'One-Liner Competition'],
+        slug)
+
+
+# ---------------------------------------------------------------------------
+# R11 (32-33) /demonstrations, /demonstrations/<id>
+# ---------------------------------------------------------------------------
+_R11_DEMOS = {
+    1101: ('Logistic Map Bifurcation', 'mathematics',
+           'Bifurcation diagram of the logistic map.'),
+    1212: ('Damped Pendulum', 'physics',
+           'A draggable damped pendulum with phase-space view.'),
+    1325: ('Fourier Series Approximation', 'mathematics',
+           'Manipulate Fourier coefficients of a square wave.'),
+    1448: ('3D Lorenz Attractor', 'mathematics',
+           'Adjustable Lorenz attractor in 3D.'),
+    1551: ('Periodic Table Explorer', 'chemistry',
+           'Browse element properties on the periodic table.'),
+    1672: ('Random Walks on Graphs', 'mathematics',
+           'Animated random walks on common graphs.'),
+    1789: ('Diffraction Pattern', 'physics',
+           'Single/double-slit diffraction pattern.'),
+    1820: ('Newton Fractal', 'mathematics',
+           'Newton fractal for f(z) = z^3 - 1.'),
+    1953: ('Pendulum Wave', 'physics',
+           'Phase-relationship pendulum wave.'),
+    2076: ('Mandelbrot Set Zoom', 'mathematics',
+           'Zoom into the Mandelbrot set.'),
+    2191: ('DNA Translation', 'biology',
+           'Translate mRNA to amino acids interactively.'),
+    2204: ('Game of Life', 'mathematics',
+           'Conway Game of Life on a torus.'),
+    2317: ('Black Body Radiation', 'physics',
+           'Planck black-body curves at adjustable T.'),
+    2430: ('Map Projections', 'geography',
+           'Compare 8 common map projections.'),
+    2543: ('Hypocycloid Curves', 'mathematics',
+           'Inner-rolling-circle curves with adjustable ratios.'),
+    2666: ('Buffon Needle', 'statistics',
+           'Buffon needle Monte Carlo for pi.'),
+    2789: ('Galilean Telescope', 'astronomy',
+           'Geometric ray-trace of a Galilean telescope.'),
+    2802: ('Logistic Regression', 'statistics',
+           'Manipulate weights of a binary logistic classifier.'),
+}
+
+
+@app.route('/demonstrations')
+def r11_demos_index():
+    rows = [(did, n, t, d) for did, (n, t, d) in _R11_DEMOS.items()]
+    payload = {'count': len(rows),
+               'topics': sorted(set(r[2] for r in rows))}
+    return _r11_render(
+        'demonstrations', 'Wolfram Demonstrations Project',
+        'A library of interactive Wolfram Language demonstrations.',
+        [('count', len(rows))],
+        'Demonstrations[Wolfram]',
+        'Wolfram Demonstrations Project hosts '
+        + str(len(rows)) + ' indexed demos across '
+        + str(len(payload['topics'])) + ' topics.',
+        'Demos', payload, 'wa-demonstrations-index-v1',
+        [r[1] for r in rows[:6]],
+        'wolfram-demonstrations')
+
+
+@app.route('/demonstrations/<int:did>')
+def r11_demos_detail(did):
+    spec = _R11_DEMOS.get(did)
+    if not spec:
+        abort(404)
+    name, topic, desc = spec
+    payload = {'id': did, 'name': name, 'topic': topic,
+               'cdf_size_kb': 80 + (did % 64),
+               'views': 5000 + (did * 11) % 90000}
+    return _r11_render(
+        'demo-' + str(did), name + ' — Wolfram Demonstration',
+        desc,
+        [('topic', topic), ('id', did)],
+        'Demo[' + str(did) + ']',
+        name + ' (' + topic + '): ' + desc,
+        'Demonstration', payload, 'wa-demonstrations-detail-v1',
+        ['Demonstrations index', 'Topic: ' + topic, 'CDF download',
+         'Source notebook'],
+        'demo-' + str(did))
+
+
+# ---------------------------------------------------------------------------
+# R11 (34-35) /mathworld, /mathworld/<entry>
+# ---------------------------------------------------------------------------
+_R11_MATHWORLD = {
+    'Pythagorean-Theorem': ('Pythagorean Theorem', 'geometry',
+        'a^2 + b^2 = c^2 for a right triangle.'),
+    'Pi':                  ('Pi', 'numbers',
+        'Ratio of a circles circumference to its diameter; ~3.14159.'),
+    'e':                   ('e', 'numbers',
+        'Eulers number, base of the natural logarithm; ~2.71828.'),
+    'Golden-Ratio':        ('Golden Ratio', 'numbers',
+        '(1 + sqrt(5)) / 2; ~1.61803.'),
+    'Fibonacci-Number':    ('Fibonacci Number', 'numbers',
+        'Sequence 1, 1, 2, 3, 5, 8, 13, ...'),
+    'Riemann-Hypothesis':  ('Riemann Hypothesis', 'number-theory',
+        'Conjecture on the zeros of the Riemann zeta function.'),
+    'Eulers-Identity':     ('Eulers Identity', 'analysis',
+        'e^{i pi} + 1 = 0.'),
+    'Prime-Number-Theorem':('Prime Number Theorem', 'number-theory',
+        'Density of primes near n is ~1 / log(n).'),
+    'Twin-Prime-Conjecture':('Twin Prime Conjecture', 'number-theory',
+        'Infinitely many primes p with p+2 also prime.'),
+    'Goldbach-Conjecture': ('Goldbach Conjecture', 'number-theory',
+        'Every even integer >2 is the sum of two primes.'),
+    'Mandelbrot-Set':      ('Mandelbrot Set', 'fractals',
+        'Complex c for which iterating z->z^2+c stays bounded.'),
+    'Julia-Set':           ('Julia Set', 'fractals',
+        'Boundary of the basin of attraction for z->z^2+c.'),
+    'Lorenz-Attractor':    ('Lorenz Attractor', 'chaos',
+        'Three-dimensional strange attractor of the Lorenz equations.'),
+    'Gaussian-Distribution':('Gaussian Distribution', 'statistics',
+        'Bell-shaped continuous probability distribution.'),
+    'Binomial-Coefficient':('Binomial Coefficient', 'combinatorics',
+        'C(n,k) = n! / (k! (n-k)!).'),
+    'Catalan-Number':      ('Catalan Number', 'combinatorics',
+        'C_n = (2n)! / ((n+1)! n!); 1, 1, 2, 5, 14, 42, ...'),
+    'Eulers-Totient':      ('Eulers Totient Function', 'number-theory',
+        'phi(n): count of integers <=n coprime to n.'),
+    'Riemann-Zeta':        ('Riemann Zeta Function', 'analysis',
+        'zeta(s) = sum_{n>=1} 1/n^s.'),
+    'Pascals-Triangle':    ('Pascals Triangle', 'combinatorics',
+        'Triangular array of binomial coefficients.'),
+    'Fermats-Last-Theorem':('Fermats Last Theorem', 'number-theory',
+        'No x,y,z in Z with x^n+y^n=z^n for n>2.'),
+    'Cauchy-Schwarz':      ('Cauchy-Schwarz Inequality', 'analysis',
+        '<x,y>^2 <= <x,x><y,y> in any inner-product space.'),
+    'Triangle-Inequality': ('Triangle Inequality', 'analysis',
+        '|x+y| <= |x|+|y|.'),
+    'Chebyshev-Polynomials':('Chebyshev Polynomials', 'special-functions',
+        'Family of orthogonal polynomials T_n(cos theta)=cos(n theta).'),
+    'Bessel-Function':     ('Bessel Function', 'special-functions',
+        'Solutions to x^2 y + x y + (x^2 - n^2) y = 0.'),
+    'Legendre-Polynomial': ('Legendre Polynomial', 'special-functions',
+        'Orthogonal polynomials P_n(x) on [-1,1].'),
+    'Hermite-Polynomial':  ('Hermite Polynomial', 'special-functions',
+        'Orthogonal polynomials H_n(x) wrt e^{-x^2}.'),
+    'Gamma-Function':      ('Gamma Function', 'special-functions',
+        'Gamma(z) = int_0^infty t^{z-1} e^{-t} dt.'),
+    'Beta-Function':       ('Beta Function', 'special-functions',
+        'B(x,y) = Gamma(x) Gamma(y) / Gamma(x+y).'),
+    'Eulers-Formula':      ('Eulers Formula', 'analysis',
+        'e^{i theta} = cos(theta) + i sin(theta).'),
+    'Continued-Fraction':  ('Continued Fraction', 'number-theory',
+        'a_0 + 1/(a_1 + 1/(a_2 + ...)).'),
+    'Greens-Theorem':      ('Greens Theorem', 'analysis',
+        'Relates a double integral over a region to a line integral.'),
+    'Stokes-Theorem':      ('Stokes Theorem', 'analysis',
+        'int_M d omega = int_{dM} omega.'),
+    'Bayes-Theorem':       ('Bayes Theorem', 'statistics',
+        'P(A|B) = P(B|A) P(A) / P(B).'),
+    'Central-Limit-Theorem':('Central Limit Theorem', 'statistics',
+        'Sum of i.i.d. RVs converges in distribution to Gaussian.'),
+}
+
+
+@app.route('/mathworld')
+def r11_mathworld_index():
+    topic_q = (request.args.get('topic', '') or '').strip().lower()
+    rows = [(slug, n, t, d) for slug, (n, t, d) in _R11_MATHWORLD.items()]
+    if topic_q:
+        rows = [r for r in rows if topic_q in r[2].lower()]
+    payload = {'count': len(rows),
+               'topic_filter': topic_q or 'all',
+               'topics': sorted(set(r[2] for r in rows))}
+    return _r11_render(
+        'mathworld', 'MathWorld — Wolfram',
+        'MathWorld: ' + str(len(rows)) + ' mathematics entries authored by Eric W. Weisstein.',
+        [('count', len(rows)), ('topic_filter', topic_q or 'all')],
+        'MathWorld[topic=' + repr(topic_q or 'all') + ']',
+        'MathWorld indexes ' + str(len(rows))
+        + ' entries across ' + str(len(payload['topics'])) + ' topics.',
+        'Entries', payload, 'wa-mathworld-index-v1',
+        [r[1] for r in rows[:6]],
+        'mathworld')
+
+
+@app.route('/mathworld/<entry>')
+def r11_mathworld_entry(entry):
+    spec = _R11_MATHWORLD.get(entry)
+    if not spec:
+        abort(404)
+    name, topic, body = spec
+    payload = {'entry': entry, 'name': name, 'topic': topic,
+               'word_count': 600 + (len(name) * 25),
+               'references': 8 + (len(name) % 6)}
+    return _r11_render(
+        'mathworld-' + entry, name + ' — MathWorld',
+        body,
+        [('topic', topic)],
+        'MathWorld["' + entry + '"]',
+        name + ' (' + topic + '): ' + body,
+        'Entry', payload, 'wa-mathworld-entry-v1',
+        ['MathWorld index', 'Topic: ' + topic,
+         'Cite this entry', 'Eric W. Weisstein'],
+        'mathworld-' + entry)
+
+
+# === R11 GUI deepen END ===
+
+
 if __name__ == '__main__':
     with app.app_context():
         db.create_all()
