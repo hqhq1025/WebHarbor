@@ -34,7 +34,7 @@
           <td class="collection_rank">{{ g.overall_rank or '—' }}</td>
           <td class="collection_thumbnail">
             {% if g.thumb_filename %}
-              <img src="{{ url_for('static', filename='images/' + g.thumb_filename) }}" alt="">
+              <img loading="lazy" decoding="async" src="{{ url_for('static', filename='images/' + g.thumb_filename) }}" alt="">
             {% endif %}
           </td>
           <td class="collection_objectname">

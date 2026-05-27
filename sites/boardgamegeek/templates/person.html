@@ -20,7 +20,7 @@
         {% for g in games %}
         <tr>
           <td class="collection_thumbnail">
-            {% if g.thumb_filename %}<img src="{{ url_for('static', filename='images/' + g.thumb_filename) }}" alt="">{% endif %}
+            {% if g.thumb_filename %}<img loading="lazy" decoding="async" src="{{ url_for('static', filename='images/' + g.thumb_filename) }}" alt="">{% endif %}
           </td>
           <td class="collection_objectname">
             <a class="primary" href="{{ g.detail_url }}">{{ g.name }}</a>

@@ -12,9 +12,9 @@
     <div class="game-header">
       <div class="cover">
         {% if g.image_filename %}
-          <img src="{{ url_for('static', filename='images/' + g.image_filename) }}" alt="{{ g.name }}">
+          <img loading="lazy" decoding="async" src="{{ url_for('static', filename='images/' + g.image_filename) }}" alt="{{ g.name }}">
         {% else %}
-          <img src="{{ url_for('static', filename='icons/cover_placeholder.svg') }}" alt="{{ g.name }}">
+          <img loading="lazy" decoding="async" src="{{ url_for('static', filename='icons/cover_placeholder.svg') }}" alt="{{ g.name }}">
         {% endif %}
       </div>
       <div class="summary">
@@ -128,7 +128,7 @@
         {% for e in expansions[:8] %}
           <tr>
             <td class="collection_thumbnail">
-              {% if e.thumb_filename %}<img src="{{ url_for('static', filename='images/' + e.thumb_filename) }}" alt="">{% endif %}
+              {% if e.thumb_filename %}<img loading="lazy" decoding="async" src="{{ url_for('static', filename='images/' + e.thumb_filename) }}" alt="">{% endif %}
             </td>
             <td class="collection_objectname">
               <a class="primary" href="{{ e.detail_url }}">{{ e.name }}</a>

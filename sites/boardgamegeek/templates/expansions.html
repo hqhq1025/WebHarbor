@@ -19,7 +19,7 @@
       {% for e in expansions %}
         <tr>
           <td class="collection_thumbnail">
-            {% if e.thumb_filename %}<img src="{{ url_for('static', filename='images/' + e.thumb_filename) }}" alt="">{% endif %}
+            {% if e.thumb_filename %}<img loading="lazy" decoding="async" src="{{ url_for('static', filename='images/' + e.thumb_filename) }}" alt="">{% endif %}
           </td>
           <td class="collection_objectname">
             <a class="primary" href="{{ e.detail_url }}">{{ e.name }}</a>

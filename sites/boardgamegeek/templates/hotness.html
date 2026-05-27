@@ -9,9 +9,9 @@
       {% for g in games %}
       <a class="game-card" href="{{ g.detail_url }}">
         {% if g.thumb_filename %}
-          <img src="{{ url_for('static', filename='images/' + g.thumb_filename) }}" alt="{{ g.name }}">
+          <img loading="lazy" decoding="async" src="{{ url_for('static', filename='images/' + g.thumb_filename) }}" alt="{{ g.name }}">
         {% else %}
-          <img src="{{ url_for('static', filename='icons/cover_placeholder.svg') }}" alt="">
+          <img loading="lazy" decoding="async" src="{{ url_for('static', filename='icons/cover_placeholder.svg') }}" alt="">
         {% endif %}
         <span class="title">{{ g.name }}</span>
         <span class="meta">{{ g.year_published or '—' }}</span>

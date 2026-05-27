@@ -27,7 +27,7 @@
           <b>#{{ it.position }}</b>
           {% if it.game %}
             <a href="{{ it.game.detail_url }}">
-              {% if it.game.thumb_filename %}<img src="{{ url_for('static', filename='images/' + it.game.thumb_filename) }}" alt="" style="width:36px;height:36px;border-radius:2px;border:1px solid #ddd;">{% endif %}
+              {% if it.game.thumb_filename %}<img loading="lazy" decoding="async" src="{{ url_for('static', filename='images/' + it.game.thumb_filename) }}" alt="" style="width:36px;height:36px;border-radius:2px;border:1px solid #ddd;">{% endif %}
               <b>{{ it.game.name }}</b>
               <span class="muted">({{ it.game.year_published or '—' }})</span>
             </a>
