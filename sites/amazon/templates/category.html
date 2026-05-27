@@ -62,7 +62,7 @@
             {% for p in products %}
             <div class="result-card">
                 <a href="{{ url_for('product_detail', slug=p.slug) }}" class="result-card-img">
-                    <img src="{{ p.image }}" alt="{{ p.name }}" onerror="this.style.display='none'">
+                    <img loading="lazy" decoding="async" src="{{ p.image }}" alt="{{ p.name }}" onerror="this.style.display='none'">
                 </a>
                 <div class="result-card-info">
                     <h2 class="result-card-title"><a href="{{ url_for('product_detail', slug=p.slug) }}">{{ p.name }}</a></h2>

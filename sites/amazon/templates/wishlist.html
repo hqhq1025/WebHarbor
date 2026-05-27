@@ -11,7 +11,7 @@
         {% for item in items %}
         <div class="wishlist-card">
             <a href="{{ url_for('product_detail', slug=item.product.slug) }}">
-                <img src="{{ item.product.image }}" alt="{{ item.product.name }}" onerror="this.style.display='none'">
+                <img loading="lazy" decoding="async" src="{{ item.product.image }}" alt="{{ item.product.name }}" onerror="this.style.display='none'">
             </a>
             <h3><a href="{{ url_for('product_detail', slug=item.product.slug) }}">{{ item.product.name }}</a></h3>
             <div class="rating">

@@ -8,7 +8,7 @@
     </p>
 
     <div style="display:flex;gap:18px;align-items:flex-start;background:#fff;border:1px solid #d5d9d9;border-radius:6px;padding:18px;margin-top:10px">
-        <img src="{{ product.image }}" alt="{{ product.name }}"
+        <img loading="lazy" decoding="async" src="{{ product.image }}" alt="{{ product.name }}"
              style="width:120px;height:120px;object-fit:contain;background:#f7f7f7;border-radius:4px"
              onerror="this.style.display='none'">
         <div style="flex:1">

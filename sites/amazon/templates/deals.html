@@ -17,7 +17,7 @@
             </div>
             {% endif %}
             <a href="{{ url_for('product_detail', slug=p.slug) }}">
-                <img src="{{ p.image }}" alt="{{ p.name }}" style="width:100%;height:220px;object-fit:contain;margin-bottom:10px" onerror="this.style.display='none'">
+                <img loading="lazy" decoding="async" src="{{ p.image }}" alt="{{ p.name }}" style="width:100%;height:220px;object-fit:contain;margin-bottom:10px" onerror="this.style.display='none'">
             </a>
             <div class="text-red" style="font-weight:700;font-size:15px;margin:5px 0">
                 Deal: <span class="price-symbol">$</span><span class="price-whole">{{ p.price|int }}</span><span class="price-fraction">{{ '%02d'|format((p.price * 100)|round|int % 100) }}</span>

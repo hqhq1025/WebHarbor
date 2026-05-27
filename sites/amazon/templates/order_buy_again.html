@@ -15,7 +15,7 @@
         {% for entry in items %}
         <div style="background:#fff;border:1px solid #ddd;border-radius:4px;padding:16px;display:flex;flex-direction:column">
             <div style="display:flex;gap:12px">
-                <img src="{{ entry.last_item.product_image }}"
+                <img loading="lazy" decoding="async" src="{{ entry.last_item.product_image }}"
                     alt="{{ entry.product.name }}"
                     style="width:90px;height:90px;object-fit:contain"
                     onerror="this.style.display='none'">

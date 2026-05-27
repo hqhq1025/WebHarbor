@@ -13,7 +13,7 @@
                 #{{ loop.index }} Best Seller
             </div>
             <a href="{{ url_for('product_detail', slug=p.slug) }}">
-                <img src="{{ p.image }}" alt="{{ p.name }}" style="width:100%;height:220px;object-fit:contain;margin-bottom:10px" onerror="this.style.display='none'">
+                <img loading="lazy" decoding="async" src="{{ p.image }}" alt="{{ p.name }}" style="width:100%;height:220px;object-fit:contain;margin-bottom:10px" onerror="this.style.display='none'">
             </a>
             <a href="{{ url_for('product_detail', slug=p.slug) }}" style="color:var(--amz-text);font-size:14px">{{ p.name[:60] }}{% if p.name|length > 60 %}...{% endif %}</a>
             <div class="rating" style="margin-top:5px">

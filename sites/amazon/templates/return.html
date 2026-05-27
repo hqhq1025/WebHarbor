@@ -19,7 +19,7 @@
                     id="item_{{ item.id }}"
                     style="width:18px;height:18px;margin-top:4px;cursor:pointer">
 
-                <img src="{{ item.product_image }}" alt="{{ item.product_name }}"
+                <img loading="lazy" decoding="async" src="{{ item.product_image }}" alt="{{ item.product_name }}"
                     style="width:80px;height:80px;object-fit:contain"
                     onerror="this.style.display='none'">
 

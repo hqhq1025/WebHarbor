@@ -24,7 +24,7 @@
         <div class="card-grid">
             {% for p in blk.products %}
             <a href="{{ url_for('product_detail', slug=p.slug) }}" class="dept-card" style="display:block;text-decoration:none;color:inherit">
-                <img src="{{ p.image }}" alt="{{ p.name }}" style="width:100%;aspect-ratio:1;object-fit:contain;background:#fafafa" onerror="this.style.display='none'">
+                <img loading="lazy" decoding="async" src="{{ p.image }}" alt="{{ p.name }}" style="width:100%;aspect-ratio:1;object-fit:contain;background:#fafafa" onerror="this.style.display='none'">
                 <div style="font-size:13px;margin-top:6px;line-height:1.3">{{ p.name }}</div>
                 <div style="font-weight:700;margin-top:4px">${{ '%.2f'|format(p.price) }}</div>
             </a>

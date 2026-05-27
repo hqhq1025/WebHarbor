@@ -144,7 +144,7 @@
             {% for p in results %}
             <div class="result-card">
                 <a href="{{ url_for('product_detail', slug=p.slug) }}" class="result-card-img">
-                    <img src="{{ p.image }}" alt="{{ p.name }}" onerror="this.style.display='none'">
+                    <img loading="lazy" decoding="async" src="{{ p.image }}" alt="{{ p.name }}" onerror="this.style.display='none'">
                 </a>
                 <div>
                     {% if sponsored_ids and p.id in sponsored_ids %}

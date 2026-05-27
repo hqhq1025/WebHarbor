@@ -62,7 +62,7 @@
     <div class="row-scroll">
         {% for p in products[:12] %}
         <a class="row-card" href="{{ url_for('product_detail', slug=p.slug) }}">
-            <img src="{{ p.image }}" alt="{{ p.name }}" onerror="this.style.display='none'">
+            <img loading="lazy" decoding="async" src="{{ p.image }}" alt="{{ p.name }}" onerror="this.style.display='none'">
             <div class="row-card-brand">{{ p.brand }}</div>
             <div class="row-card-title">{{ p.name }}</div>
             <div class="row-card-price">

@@ -25,7 +25,7 @@
         <h2 style="font-size:18px">Items ordered</h2>
         {% for item in order.items %}
         <div style="display:grid;grid-template-columns:80px 1fr auto;gap:15px;padding:10px 0;border-bottom:1px solid #f0f0f0">
-            <img src="{{ item.product_image }}" alt="{{ item.product_name }}" style="width:80px;height:80px;object-fit:contain" onerror="this.style.display='none'">
+            <img loading="lazy" decoding="async" src="{{ item.product_image }}" alt="{{ item.product_name }}" style="width:80px;height:80px;object-fit:contain" onerror="this.style.display='none'">
             <div>
                 <a href="{{ url_for('product_detail', slug=item.product.slug) }}">{{ item.product_name }}</a>
                 <div class="text-muted" style="font-size:13px">Qty: {{ item.quantity }}</div>

@@ -21,7 +21,7 @@
         <div class="home-card-grid">
             {% for p in electronics[:4] %}
             <a class="tile" href="{{ url_for('product_detail', slug=p.slug) }}">
-                <img src="{{ p.image }}" alt="{{ p.name }}" onerror="this.style.display='none'">
+                <img loading="lazy" decoding="async" src="{{ p.image }}" alt="{{ p.name }}" onerror="this.style.display='none'">
                 <span>{{ p.subcategory or p.brand }}</span>
             </a>
             {% endfor %}
@@ -35,7 +35,7 @@
         <div class="home-card-grid">
             {% for p in home_goods[:4] %}
             <a class="tile" href="{{ url_for('product_detail', slug=p.slug) }}">
-                <img src="{{ p.image }}" alt="{{ p.name }}" onerror="this.style.display='none'">
+                <img loading="lazy" decoding="async" src="{{ p.image }}" alt="{{ p.name }}" onerror="this.style.display='none'">
                 <span>{{ p.subcategory or p.brand }}</span>
             </a>
             {% endfor %}
@@ -49,7 +49,7 @@
         <div class="home-card-grid">
             {% for p in fashion[:4] %}
             <a class="tile" href="{{ url_for('product_detail', slug=p.slug) }}">
-                <img src="{{ p.image }}" alt="{{ p.name }}" onerror="this.style.display='none'">
+                <img loading="lazy" decoding="async" src="{{ p.image }}" alt="{{ p.name }}" onerror="this.style.display='none'">
                 <span>{{ p.subcategory }}</span>
             </a>
             {% endfor %}
@@ -63,7 +63,7 @@
         <div class="home-card-grid">
             {% for p in computers[:4] %}
             <a class="tile" href="{{ url_for('product_detail', slug=p.slug) }}">
-                <img src="{{ p.image }}" alt="{{ p.name }}" onerror="this.style.display='none'">
+                <img loading="lazy" decoding="async" src="{{ p.image }}" alt="{{ p.name }}" onerror="this.style.display='none'">
                 <span>{{ p.subcategory }}</span>
             </a>
             {% endfor %}
@@ -76,7 +76,7 @@
         <h2>Today's deals</h2>
         {% if deals %}
         <a href="{{ url_for('product_detail', slug=deals[0].slug) }}">
-            <img class="home-card-single" src="{{ deals[0].image }}" alt="{{ deals[0].name }}" onerror="this.style.display='none'">
+            <img loading="lazy" decoding="async" class="home-card-single" src="{{ deals[0].image }}" alt="{{ deals[0].name }}" onerror="this.style.display='none'">
         </a>
         {% endif %}
         <a class="cta-link" href="{{ url_for('deals') }}">See all deals</a>
@@ -88,7 +88,7 @@
         <div class="home-card-grid">
             {% for p in books[:4] %}
             <a class="tile" href="{{ url_for('product_detail', slug=p.slug) }}">
-                <img src="{{ p.image }}" alt="{{ p.name }}" onerror="this.style.display='none'">
+                <img loading="lazy" decoding="async" src="{{ p.image }}" alt="{{ p.name }}" onerror="this.style.display='none'">
                 <span>{{ p.subcategory }}</span>
             </a>
             {% endfor %}
@@ -102,7 +102,7 @@
         <div class="home-card-grid">
             {% for p in beauty %}
             <a class="tile" href="{{ url_for('product_detail', slug=p.slug) }}">
-                <img src="{{ p.image }}" alt="{{ p.name }}" onerror="this.style.display='none'">
+                <img loading="lazy" decoding="async" src="{{ p.image }}" alt="{{ p.name }}" onerror="this.style.display='none'">
                 <span>{{ p.brand }}</span>
             </a>
             {% endfor %}
@@ -115,7 +115,7 @@
         <h2>Join Prime for exclusive deals</h2>
         {% if bestsellers %}
         <a href="{{ url_for('product_detail', slug=bestsellers[0].slug) }}">
-            <img class="home-card-single" src="{{ bestsellers[0].image }}" alt="Prime" onerror="this.style.display='none'">
+            <img loading="lazy" decoding="async" class="home-card-single" src="{{ bestsellers[0].image }}" alt="Prime" onerror="this.style.display='none'">
         </a>
         {% endif %}
         <a class="cta-link" href="{{ url_for('prime') }}">Learn about Prime</a>
@@ -132,7 +132,7 @@
     <div class="row-scroll">
         {% for p in deals[:6] %}
         <a class="row-card" href="{{ url_for('product_detail', slug=p.slug) }}">
-            <img src="{{ p.image }}" alt="{{ p.name }}" onerror="this.style.display='none'">
+            <img loading="lazy" decoding="async" src="{{ p.image }}" alt="{{ p.name }}" onerror="this.style.display='none'">
             <div class="row-card-brand">{{ p.brand }}</div>
             <div class="row-card-title">{{ p.name }}</div>
             <div class="row-card-price">
@@ -156,7 +156,7 @@
     <div class="row-scroll">
         {% for p in bestsellers[:6] %}
         <a class="row-card" href="{{ url_for('product_detail', slug=p.slug) }}">
-            <img src="{{ p.image }}" alt="{{ p.name }}" onerror="this.style.display='none'">
+            <img loading="lazy" decoding="async" src="{{ p.image }}" alt="{{ p.name }}" onerror="this.style.display='none'">
             <div class="row-card-brand">{{ p.brand }}</div>
             <div class="row-card-title">{{ p.name }}</div>
             <div class="row-card-price">
@@ -179,7 +179,7 @@
     <div class="row-scroll">
         {% for p in electronics[:6] %}
         <a class="row-card" href="{{ url_for('product_detail', slug=p.slug) }}">
-            <img src="{{ p.image }}" alt="{{ p.name }}" onerror="this.style.display='none'">
+            <img loading="lazy" decoding="async" src="{{ p.image }}" alt="{{ p.name }}" onerror="this.style.display='none'">
             <div class="row-card-brand">{{ p.brand }}</div>
             <div class="row-card-title">{{ p.name }}</div>
             <div class="row-card-price">
@@ -202,7 +202,7 @@
     <div class="row-scroll">
         {% for p in fashion[:6] %}
         <a class="row-card" href="{{ url_for('product_detail', slug=p.slug) }}">
-            <img src="{{ p.image }}" alt="{{ p.name }}" onerror="this.style.display='none'">
+            <img loading="lazy" decoding="async" src="{{ p.image }}" alt="{{ p.name }}" onerror="this.style.display='none'">
             <div class="row-card-brand">{{ p.brand }}</div>
             <div class="row-card-title">{{ p.name }}</div>
             <div class="row-card-price">

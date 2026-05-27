@@ -70,7 +70,7 @@
         <div class="order-card-body">
             {% for item in order.items %}
             <div class="order-card-item">
-                <img src="{{ item.product_image }}" alt="{{ item.product_name }}" onerror="this.style.display='none'">
+                <img loading="lazy" decoding="async" src="{{ item.product_image }}" alt="{{ item.product_name }}" onerror="this.style.display='none'">
                 <div>
                     <h3><a href="{{ url_for('product_detail', slug=item.product.slug) }}">{{ item.product_name }}</a></h3>
                     <div>Qty: {{ item.quantity }}</div>

@@ -38,7 +38,7 @@
             <h2 style="font-size:16px;margin:20px 0 10px">Items in this shipment</h2>
             {% for item in order.items %}
             <div class="order-card-item">
-                <img src="{{ item.product_image }}" alt="{{ item.product_name }}" onerror="this.style.display='none'">
+                <img loading="lazy" decoding="async" src="{{ item.product_image }}" alt="{{ item.product_name }}" onerror="this.style.display='none'">
                 <div>
                     <h3><a href="{{ url_for('product_detail', slug=item.product.slug) }}">{{ item.product_name }}</a></h3>
                     {% if item.variant %}<div class="text-muted" style="font-size:13px">{{ item.variant }}</div>{% endif %}
