@@ -3255,6 +3255,669 @@ def r9_tide_tomorrow(location):
 
 
 # ---------------------------------------------------------------------------
+# R10 vertical tools (10 routes + 1 shared template)
+# ---------------------------------------------------------------------------
+# Each handler reads query params, computes a deterministic payload that
+# matches the schema strings advertised in `_build_seed_r10.py`, and renders
+# either JSON (`?format=json`) or `templates/r10/vertical.html`.  Lookup
+# tables below mirror the seed builder so the live response is consistent
+# with the rows already present in `computation_results`; for parameters
+# outside the seed catalog the handler still returns a valid 200 with a
+# deterministic fallback computed from the same formula.
+R10_VERSION = 'r10'
+R10_SNAPSHOT_DATE = '2026-05-27'
+
+_R10_CCY_RATES = {
+    'USD': 1.0,   'EUR': 0.92, 'GBP': 0.79, 'JPY': 156.4,
+    'CNY': 7.21,  'CAD': 1.36, 'AUD': 1.49, 'CHF': 0.89,
+    'INR': 83.2,  'MXN': 17.5, 'BRL': 5.04, 'KRW': 1372.0,
+    'SGD': 1.34,  'HKD': 7.81, 'NZD': 1.63, 'SEK': 10.51,
+}
+
+_R10_RECIPES = {
+    'chicken-pesto-pasta':  (620, 38, 55, 26),
+    'vegan-buddha-bowl':    (540, 18, 78, 16),
+    'keto-cheeseburger':    (740, 42,  8, 60),
+    'tofu-stir-fry':        (460, 28, 38, 22),
+    'beef-tacos':           (580, 32, 42, 30),
+    'shrimp-fried-rice':    (510, 26, 64, 14),
+    'paleo-roast-chicken':  (520, 48, 12, 30),
+    'lentil-soup':          (380, 22, 52,  8),
+    'caesar-salad':         (410, 18, 18, 30),
+    'margherita-pizza':     (620, 22, 78, 24),
+    'vegan-curry':          (480, 14, 64, 18),
+    'greek-yogurt-bowl':    (320, 24, 36,  8),
+    'overnight-oats':       (360, 14, 56, 10),
+    'salmon-teriyaki':      (560, 36, 36, 24),
+    'falafel-wrap':         (520, 18, 64, 22),
+    'miso-ramen':           (580, 22, 70, 22),
+    'chicken-tikka-masala': (640, 34, 36, 36),
+    'beef-bourguignon':     (720, 42, 22, 48),
+    'mushroom-risotto':     (580, 14, 78, 18),
+    'caprese-salad':        (320, 16, 12, 24),
+    'breakfast-burrito':    (540, 24, 48, 28),
+    'protein-smoothie':     (290, 28, 32,  4),
+    'quinoa-salad':         (420, 14, 56, 16),
+    'thai-green-curry':     (540, 24, 48, 28),
+    'chickpea-stew':        (380, 16, 56, 10),
+    'shakshuka':            (360, 18, 24, 22),
+    'pad-thai':             (560, 24, 70, 18),
+    'zucchini-noodles':     (220, 12, 22, 10),
+}
+
+_R10_CRYPTOS = {
+    'BTC':   (64200.0, -0.8, 2.4e10),
+    'ETH':   (3140.0,   0.6, 1.1e10),
+    'SOL':   (148.5,   -1.4, 2.6e9),
+    'XRP':   (0.52,    -0.3, 1.8e9),
+    'ADA':   (0.43,     0.9, 4.4e8),
+    'DOGE':  (0.14,    -2.1, 1.2e9),
+    'AVAX':  (26.8,     1.4, 3.7e8),
+    'MATIC': (0.72,    -0.4, 2.4e8),
+    'LINK':  (14.2,     0.7, 2.6e8),
+    'DOT':   (6.4,     -0.2, 1.4e8),
+    'LTC':   (78.5,     0.5, 3.6e8),
+    'BCH':   (410.0,   -0.1, 3.1e8),
+    'UNI':   (7.6,     -1.1, 1.4e8),
+    'ATOM':  (8.5,      0.3, 1.6e8),
+    'NEAR':  (5.8,      1.2, 2.4e8),
+    'FIL':   (4.2,     -0.8, 1.2e8),
+}
+
+_R10_HOTELS = {
+    'hilton-times-square':    ('Hilton Times Square', 'New York', 'NY-US',
+        [('king', 289), ('double', 249), ('suite', 489)]),
+    'park-hyatt-tokyo':       ('Park Hyatt Tokyo', 'Tokyo', 'JP',
+        [('deluxe', 720), ('park-suite', 1480), ('presidential', 3800)]),
+    'hotel-lutetia-paris':    ('Hotel Lutetia', 'Paris', 'FR',
+        [('queen', 540), ('king', 690), ('executive', 1100)]),
+    'four-seasons-singapore': ('Four Seasons Singapore', 'Singapore', 'SG',
+        [('deluxe', 480), ('premier', 640), ('suite', 1280)]),
+    'marriott-marquis-sf':    ('Marriott Marquis SF', 'San Francisco', 'CA-US',
+        [('king', 329), ('double', 299), ('suite', 599)]),
+    'grand-hyatt-hk':         ('Grand Hyatt Hong Kong', 'Hong Kong', 'HK',
+        [('grand-king', 410), ('harbour-view', 540), ('grand-suite', 1200)]),
+    'shangri-la-sydney':      ('Shangri-La Sydney', 'Sydney', 'AU',
+        [('horizon', 395), ('grand-harbour', 540), ('suite', 990)]),
+    'ritz-carlton-doha':      ('Ritz-Carlton Doha', 'Doha', 'QA',
+        [('deluxe', 380), ('club', 520), ('suite', 980)]),
+    'beverly-wilshire':       ('Beverly Wilshire', 'Beverly Hills', 'CA-US',
+        [('king', 750), ('signature-suite', 1450), ('presidential', 4200)]),
+    'mandarin-london':        ('Mandarin Oriental London', 'London', 'UK',
+        [('deluxe', 690), ('park-view', 990), ('suite', 1800)]),
+    'peninsula-bangkok':      ('Peninsula Bangkok', 'Bangkok', 'TH',
+        [('deluxe', 320), ('grand', 460), ('suite', 980)]),
+    'intercon-geneva':        ('InterContinental Geneva', 'Geneva', 'CH',
+        [('classic', 360), ('club', 480), ('executive-suite', 920)]),
+    'aman-kyoto':             ('Aman Kyoto', 'Kyoto', 'JP',
+        [('garden', 1480), ('suite', 2400), ('pavilion', 4800)]),
+    'w-barcelona':            ('W Barcelona', 'Barcelona', 'ES',
+        [('wonderful', 320), ('cool-corner', 480), ('extreme-wow', 1200)]),
+    'claridges-london':       ('Claridges', 'London', 'UK',
+        [('superior', 720), ('deluxe', 920), ('royal-suite', 6800)]),
+    'westin-tokyo':           ('Westin Tokyo', 'Tokyo', 'JP',
+        [('classic', 380), ('club', 520), ('suite', 920)]),
+}
+
+_R10_MOVIES = {
+    'avatar-3':                   ('Avatar 3', '2025-12-19', 'Lightstorm/20C', 460, 980, 2400),
+    'dune-part-three':            ('Dune: Part Three', '2026-12-18', 'Legendary/WB', 145, 380, 720),
+    'mission-impossible-9':       ('Mission: Impossible 9', '2026-05-23', 'Paramount', 78, 220, 540),
+    'inside-out-2':               ('Inside Out 2', '2024-06-14', 'Pixar/Disney', 154, 652, 1672),
+    'deadpool-and-wolverine':     ('Deadpool & Wolverine', '2024-07-26', 'Marvel/Disney', 211, 636, 1338),
+    'wicked':                     ('Wicked', '2024-11-22', 'Universal', 114, 472, 728),
+    'moana-2':                    ('Moana 2', '2024-11-27', 'Disney', 225, 460, 1060),
+    'gladiator-ii':               ('Gladiator II', '2024-11-22', 'Paramount', 56, 171, 462),
+    'twisters':                   ('Twisters', '2024-07-19', 'Universal', 81, 268, 372),
+    'beetlejuice-beetlejuice':    ('Beetlejuice Beetlejuice', '2024-09-06', 'WB', 110, 294, 451),
+    'joker-folie-a-deux':         ('Joker: Folie a Deux', '2024-10-04', 'WB', 38, 58, 207),
+    'a-quiet-place-day-one':      ('A Quiet Place: Day One', '2024-06-28', 'Paramount', 53, 138, 261),
+    'it-ends-with-us':            ('It Ends with Us', '2024-08-09', 'Sony', 50, 148, 350),
+    'the-wild-robot':             ('The Wild Robot', '2024-09-27', 'DreamWorks/Universal', 35, 144, 324),
+    'mufasa-the-lion-king':       ('Mufasa: The Lion King', '2024-12-20', 'Disney', 36, 250, 720),
+    'alien-romulus':              ('Alien: Romulus', '2024-08-16', '20C/Disney', 41, 110, 350),
+    'despicable-me-4':            ('Despicable Me 4', '2024-07-03', 'Illumination/Universal', 122, 361, 970),
+    'bad-boys-ride-or-die':       ('Bad Boys: Ride or Die', '2024-06-07', 'Sony', 56, 194, 405),
+    'kingdom-of-the-planet-apes': ('Kingdom of the Planet of the Apes', '2024-05-10', '20C/Disney', 58, 171, 397),
+    'the-fall-guy':               ('The Fall Guy', '2024-05-03', 'Universal', 28, 92, 180),
+}
+
+_R10_TICKERS = {
+    'AAPL':  ('Apple Inc.', 198.4),
+    'MSFT':  ('Microsoft Corp.', 423.7),
+    'NVDA':  ('NVIDIA Corp.', 928.5),
+    'GOOGL': ('Alphabet Inc.', 168.2),
+    'AMZN':  ('Amazon.com Inc.', 184.3),
+    'META':  ('Meta Platforms Inc.', 471.6),
+    'TSLA':  ('Tesla Inc.', 178.4),
+    'BRK-B': ('Berkshire Hathaway B', 408.1),
+    'JPM':   ('JPMorgan Chase', 198.8),
+    'V':     ('Visa Inc.', 275.2),
+    'UNH':   ('UnitedHealth', 521.4),
+    'XOM':   ('ExxonMobil', 111.9),
+    'JNJ':   ('Johnson & Johnson', 148.6),
+    'WMT':   ('Walmart', 64.2),
+    'PG':    ('Procter & Gamble', 167.3),
+    'AVGO':  ('Broadcom', 1390.6),
+    'LLY':   ('Eli Lilly', 802.5),
+    'MA':    ('Mastercard', 458.7),
+    'HD':    ('Home Depot', 348.2),
+    'CVX':   ('Chevron', 158.5),
+}
+
+_R10_BOOKS = {
+    '9780262033848': ('Introduction to Algorithms', 'Cormen, Leiserson, Rivest, Stein', 'MIT Press', 2009, 1312, 'en'),
+    '9780201633610': ('Design Patterns', 'Gamma, Helm, Johnson, Vlissides', 'Addison-Wesley', 1994, 395, 'en'),
+    '9780132350884': ('Clean Code', 'Robert C. Martin', 'Prentice Hall', 2008, 464, 'en'),
+    '9780321125217': ('Domain-Driven Design', 'Eric Evans', 'Addison-Wesley', 2003, 560, 'en'),
+    '9780135957059': ('The Pragmatic Programmer', 'Hunt, Thomas', 'Addison-Wesley', 2019, 352, 'en'),
+    '9780321573513': ('Algorithms 4ed', 'Sedgewick, Wayne', 'Addison-Wesley', 2011, 976, 'en'),
+    '9780131103627': ('The C Programming Language', 'Kernighan, Ritchie', 'Prentice Hall', 1988, 272, 'en'),
+    '9780596007126': ('Head First Design Patterns', 'Freeman, Robson', "O'Reilly", 2004, 694, 'en'),
+    '9780321776402': ('Effective Java', 'Joshua Bloch', 'Addison-Wesley', 2017, 412, 'en'),
+    '9780321356680': ('Effective C++', 'Scott Meyers', 'Addison-Wesley', 2005, 320, 'en'),
+    '9780672327094': ('Linux Kernel Development', 'Robert Love', 'Addison-Wesley', 2010, 472, 'en'),
+    '9780596009205': ('Programming Collective Intelligence', 'Toby Segaran', "O'Reilly", 2007, 360, 'en'),
+    '9780596002817': ('Programming Perl', 'Wall, Christiansen, Orwant', "O'Reilly", 2000, 1067, 'en'),
+    '9781492052203': ('Fluent Python', 'Luciano Ramalho', "O'Reilly", 2022, 1014, 'en'),
+    '9781449355739': ('Learning Python', 'Mark Lutz', "O'Reilly", 2013, 1648, 'en'),
+    '9780136708558': ('Computer Networks', 'Tanenbaum, Feamster, Wetherall', 'Pearson', 2020, 944, 'en'),
+    '9780133594140': ('Computer Networking 7ed', 'Kurose, Ross', 'Pearson', 2016, 864, 'en'),
+    '9780136083450': ('Computer Organization and Design', 'Patterson, Hennessy', 'Morgan Kaufmann', 2013, 800, 'en'),
+    '9780124077263': ('Computer Architecture 5ed', 'Hennessy, Patterson', 'Morgan Kaufmann', 2011, 856, 'en'),
+    '9780321486813': ('Compilers: Principles, Techniques, Tools', 'Aho, Lam, Sethi, Ullman', 'Pearson', 2006, 1009, 'en'),
+    '9780262510875': ('Structure and Interpretation of Computer Programs', 'Abelson, Sussman', 'MIT Press', 1996, 657, 'en'),
+    '9780134685991': ('Effective Modern C++', 'Scott Meyers', "O'Reilly", 2014, 334, 'en'),
+    '9780136291558': ('Operating Systems Internals and Design Principles', 'William Stallings', 'Pearson', 2017, 800, 'en'),
+    '9780133970777': ('Database System Concepts', 'Silberschatz, Korth, Sudarshan', 'McGraw-Hill', 2019, 1376, 'en'),
+    '9780321125521': ('Patterns of Enterprise Application Architecture', 'Martin Fowler', 'Addison-Wesley', 2002, 560, 'en'),
+}
+_R10_ISBN_MODES = ['summary', 'cover', 'toc', 'reviews', 'citations']
+
+_R10_CARRIERS = ['UPS', 'FedEx', 'USPS', 'DHL', 'Royal-Mail',
+                 'Japan-Post', 'China-Post', 'Australia-Post']
+_R10_PKG_STATUSES = {
+    'label-created':    ('Label created at origin',          5),
+    'picked-up':        ('Picked up by carrier',             4),
+    'in-transit':       ('In transit between facilities',    3),
+    'out-for-delivery': ('Out for delivery',                 1),
+    'delivered':        ('Delivered to recipient',           0),
+    'exception':        ('Delivery exception',               2),
+}
+
+_R10_RACES = {
+    'us-president-2024':         ('US President 2024', 'Harris', 'Trump'),
+    'uk-general-2025':           ('UK General Election 2025', 'Labour', 'Conservative'),
+    'canada-federal-2025':       ('Canada Federal 2025', 'LPC', 'CPC'),
+    'germany-federal-2025':      ('Germany Federal 2025', 'SPD', 'CDU/CSU'),
+    'france-presidential-2027':  ('France Presidential 2027', 'Renaissance', 'RN'),
+    'australia-federal-2025':    ('Australia Federal 2025', 'Labor', 'Coalition'),
+    'india-general-2024':        ('India General 2024', 'INC', 'BJP'),
+    'japan-lower-house-2025':    ('Japan Lower House 2025', 'LDP', 'CDP'),
+    'south-korea-2027':          ('South Korea Presidential 2027', 'PPP', 'DP'),
+    'brazil-2026':               ('Brazil Presidential 2026', 'PT', 'PL'),
+    'mexico-2024':               ('Mexico Presidential 2024', 'Morena', 'PAN-PRI-PRD'),
+    'argentina-2027':            ('Argentina Presidential 2027', 'LLA', 'UxP'),
+    'italy-general-2027':        ('Italy General 2027', 'PD', 'FdI'),
+    'spain-general-2027':        ('Spain General 2027', 'PSOE', 'PP'),
+    'netherlands-2025':          ('Netherlands General 2025', 'GL-PvdA', 'VVD'),
+    'poland-presidential-2025':  ('Poland Presidential 2025', 'KO', 'PiS'),
+}
+_R10_POLL_FIRMS = ['YouGov', 'Ipsos', 'Gallup', 'Pew', 'Quinnipiac',
+                   'Morning-Consult', 'AtlasIntel', 'Datafolha']
+
+_R10_TRANSLATE_DEMO = {
+    ('en', 'es'): 'hola',     ('en', 'fr'): 'bonjour',
+    ('en', 'de'): 'hallo',    ('en', 'it'): 'ciao',
+    ('en', 'pt'): 'ola',      ('en', 'ja'): 'konnichiwa',
+    ('en', 'ko'): 'annyeong', ('en', 'zh'): 'nihao',
+    ('en', 'ru'): 'privet',   ('en', 'ar'): 'marhaba',
+    ('en', 'hi'): 'namaste',  ('en', 'nl'): 'hallo',
+    ('en', 'sv'): 'hej',      ('en', 'tr'): 'merhaba',
+}
+
+
+def _r10_render(slug, title, intro, params, parsed, plaintext, pod_title,
+                payload, related, topic_slug):
+    """Shared HTML/JSON renderer for every R10 vertical route."""
+    if request.args.get('format') == 'json':
+        return jsonify(payload)
+    payload_rows = [(k, payload[k]) for k in sorted(payload)
+                    if k not in ('schema',)]
+    return render_template(
+        'r10/vertical.html',
+        r10_slug=slug, r10_title=title, r10_intro=intro,
+        r10_params=params, r10_parsed_input=parsed,
+        r10_plaintext=plaintext, r10_pod_title=pod_title,
+        r10_payload_rows=payload_rows, r10_schema=payload.get('schema', ''),
+        r10_version=R10_VERSION, r10_related=related,
+        r10_topic_slug=topic_slug,
+    )
+
+
+# ---- R10 (1) Currency converter -----------------------------------------
+@app.route('/finance/currency-convert')
+def r10_currency_convert():
+    try:
+        amt = float(request.args.get('amt', '100'))
+    except (TypeError, ValueError):
+        amt = 100.0
+    a = (request.args.get('from', 'USD') or 'USD').upper()
+    b = (request.args.get('to', 'EUR') or 'EUR').upper()
+    rate_a = _R10_CCY_RATES.get(a, 1.0)
+    rate_b = _R10_CCY_RATES.get(b, 1.0)
+    rate = round(rate_b / rate_a, 6)
+    converted = round(amt * rate, 4)
+    parsed = f"CurrencyConvert[amount={amt}, from={a!r}, to={b!r}]"
+    plain = (f"{amt} {a} = {converted} {b} at mid-market rate {rate} "
+             f"on {R10_SNAPSHOT_DATE}.")
+    payload = {"amount": amt, "from": a, "to": b, "rate": rate,
+               "converted": converted, "snapshot_date": R10_SNAPSHOT_DATE,
+               "schema": "wa-currency-v1", "version": R10_VERSION}
+    _r8_emit('r10.currency.converted', 'currency-pair-converter',
+             a=a, b=b, amt=amt)
+    return _r10_render(
+        'currency-convert', 'Currency Pair Converter',
+        'Convert between two fiat currencies at the snapshot mid-market rate.',
+        [('amt', amt), ('from', a), ('to', b)],
+        parsed, plain, 'Currency conversion', payload,
+        [f"{a} to {b} rate today", f"{b} to {a} reverse",
+         f"{amt} {a} to USD", f"USD to {b} chart"],
+        'currency-pair-converter')
+
+
+# ---- R10 (2) Recipe macros ----------------------------------------------
+@app.route('/cooking/recipe-macros')
+def r10_recipe_macros():
+    slug = (request.args.get('slug', 'chicken-pesto-pasta')
+            or 'chicken-pesto-pasta').strip().lower()
+    try:
+        servings = int(request.args.get('servings', '1'))
+    except (TypeError, ValueError):
+        servings = 1
+    servings = max(1, min(16, servings))
+    if slug in _R10_RECIPES:
+        cal_s, p_s, c_s, f_s = _R10_RECIPES[slug]
+    else:
+        h = int(hashlib.md5(slug.encode()).hexdigest(), 16)
+        cal_s = 300 + (h % 500)
+        p_s = 10 + (h // 7 % 40)
+        c_s = 20 + (h // 11 % 60)
+        f_s = 5 + (h // 13 % 30)
+    tot_cal = cal_s * servings
+    tot_p   = p_s * servings
+    tot_c   = c_s * servings
+    tot_f   = f_s * servings
+    parsed = f"RecipeMacros[recipe={slug!r}, servings={servings}]"
+    plain = (f"{slug} x{servings}: total {tot_cal} kcal, "
+             f"P{tot_p}g / C{tot_c}g / F{tot_f}g. "
+             f"Per serving: {cal_s} kcal.")
+    payload = {"recipe": slug, "servings": servings,
+               "per_serving": {"kcal": cal_s, "protein_g": p_s,
+                               "carbs_g": c_s, "fat_g": f_s},
+               "total": {"kcal": tot_cal, "protein_g": tot_p,
+                         "carbs_g": tot_c, "fat_g": tot_f},
+               "snapshot_date": R10_SNAPSHOT_DATE,
+               "schema": "wa-recipe-macro-v1", "version": R10_VERSION}
+    _r8_emit('r10.recipe.macros', 'recipe-macro-calculator',
+             slug=slug, servings=servings)
+    return _r10_render(
+        'recipe-macros', 'Recipe Macro Calculator',
+        'Tally calories, protein, carbs, fat for a recipe and serving count.',
+        [('slug', slug), ('servings', servings)],
+        parsed, plain, 'Recipe macros', payload,
+        [f"{slug} ingredients", f"{slug} prep time",
+         f"swap servings {servings}->{servings*2}",
+         f"calories per serving {slug}"],
+        'recipe-macro-calculator')
+
+
+# ---- R10 (3) Crypto pair quote ------------------------------------------
+@app.route('/finance/crypto-quote')
+def r10_crypto_quote():
+    pair = request.args.get('pair', '')
+    if pair and '-' in pair:
+        base, quote = pair.split('-', 1)
+    else:
+        base = request.args.get('base', 'BTC')
+        quote = request.args.get('quote', 'USD')
+    base = (base or 'BTC').upper()
+    quote = (quote or 'USD').upper()
+    if base in _R10_CRYPTOS:
+        px, chg, vol = _R10_CRYPTOS[base]
+    else:
+        h = int(hashlib.md5(base.encode()).hexdigest(), 16)
+        px = round(1 + (h % 100000) / 100.0, 6)
+        chg = round(((h // 7) % 800 - 400) / 100.0, 2)
+        vol = float(1_000_000 + (h % 5_000_000))
+    fx = _R10_CCY_RATES.get(quote, 1.0)
+    local_px = round(px * fx, 6)
+    parsed = f"CryptoQuote[base={base!r}, quote={quote!r}]"
+    plain = (f"{base}/{quote}: last {local_px}, 24h change {chg:+.2f}%, "
+             f"24h volume {vol:.0f} {quote}.")
+    payload = {"base": base, "quote": quote, "last": local_px,
+               "change_24h_pct": chg, "volume_24h": vol,
+               "snapshot_date": R10_SNAPSHOT_DATE,
+               "schema": "wa-crypto-quote-v1", "version": R10_VERSION}
+    _r8_emit('r10.crypto.quoted', 'crypto-pair-quote',
+             base=base, quote=quote)
+    return _r10_render(
+        'crypto-quote', 'Crypto Pair Quote',
+        'Snapshot last price, 24h change, and 24h volume for a crypto pair.',
+        [('base', base), ('quote', quote)],
+        parsed, plain, 'Crypto pair quote', payload,
+        [f"{base} chart 1d", f"{base} circulating supply",
+         f"{base}-USD vs {base}-EUR", f"top movers {quote}"],
+        'crypto-pair-quote')
+
+
+# ---- R10 (4) Hotel room availability ------------------------------------
+@app.route('/travel/hotel-availability')
+def r10_hotel_availability():
+    slug = (request.args.get('slug', 'hilton-times-square')
+            or 'hilton-times-square').strip().lower()
+    if slug in _R10_HOTELS:
+        name, city, region, rooms = _R10_HOTELS[slug]
+    else:
+        h = int(hashlib.md5(slug.encode()).hexdigest(), 16)
+        name = slug.replace('-', ' ').title()
+        city = 'Unknown'
+        region = 'XX'
+        rates = [200 + h % 200, 350 + (h // 7) % 300, 800 + (h // 11) % 600]
+        rooms = [('standard', rates[0]), ('deluxe', rates[1]), ('suite', rates[2])]
+    check_in = request.args.get('check_in', '2026-06-03')
+    check_out = request.args.get('check_out', '2026-06-04')
+    try:
+        ci_d = datetime.strptime(check_in, '%Y-%m-%d').date()
+        co_d = datetime.strptime(check_out, '%Y-%m-%d').date()
+        nights_default = max(1, (co_d - ci_d).days)
+    except ValueError:
+        nights_default = 1
+    try:
+        nights = int(request.args.get('nights', str(nights_default)))
+    except (TypeError, ValueError):
+        nights = nights_default
+    nights = max(1, min(60, nights))
+    # Deterministic occupancy mirrors seed formula.
+    seed_hash = int(hashlib.md5(slug.encode()).hexdigest(), 16)
+    occ = 0.45 + ((seed_hash + nights) % 50) / 100.0
+    avail_rooms = []
+    for rt, rate in rooms:
+        rate_eff = round(rate * (1 + occ * 0.2), 2)
+        avail_rooms.append({"type": rt, "rate_usd_per_night": rate_eff,
+                            "available": True,
+                            "total_usd": round(rate_eff * nights, 2)})
+    parsed = (f"HotelAvailability[slug={slug!r}, check_in={check_in!r}, "
+              f"check_out={check_out!r}]")
+    plain = (f"{name} ({city}, {region}) {check_in} -> {check_out} "
+             f"({nights} nights): {len(rooms)} room types, "
+             f"occupancy {occ:.0%}.")
+    payload = {"slug": slug, "name": name, "city": city, "region": region,
+               "check_in": check_in, "check_out": check_out,
+               "nights": nights, "occupancy": round(occ, 3),
+               "rooms": avail_rooms,
+               "snapshot_date": R10_SNAPSHOT_DATE,
+               "schema": "wa-hotel-availability-v1",
+               "version": R10_VERSION}
+    _r8_emit('r10.hotel.availability', 'hotel-room-availability',
+             slug=slug, nights=nights)
+    return _r10_render(
+        'hotel-availability', 'Hotel Room Availability',
+        'Room types and per-night rates for a hotel + date window.',
+        [('slug', slug), ('check_in', check_in),
+         ('check_out', check_out), ('nights', nights)],
+        parsed, plain, 'Hotel availability', payload,
+        [f"{name} reviews", f"{name} amenities",
+         f"flights to {city}", f"hotels near {name}"],
+        'hotel-room-availability')
+
+
+# ---- R10 (5) Movie box office ------------------------------------------
+@app.route('/entertainment/box-office')
+def r10_box_office():
+    slug = (request.args.get('slug', 'avatar-3')
+            or 'avatar-3').strip().lower()
+    try:
+        week = int(request.args.get('week', '1'))
+    except (TypeError, ValueError):
+        week = 1
+    week = max(1, min(52, week))
+    if slug in _R10_MOVIES:
+        name, opening, studio, opening_w, dom_total, ww_total = _R10_MOVIES[slug]
+    else:
+        h = int(hashlib.md5(slug.encode()).hexdigest(), 16)
+        name = slug.replace('-', ' ').title()
+        opening = '2026-01-01'
+        studio = 'Studio X'
+        opening_w = 20 + (h % 80)
+        dom_total = opening_w * 3
+        ww_total = opening_w * 6
+    grown_dom = round(dom_total * min(1.0, week / 18.0), 2)
+    grown_ww  = round(ww_total  * min(1.0, week / 20.0), 2)
+    if grown_ww < grown_dom:
+        grown_ww = grown_dom
+    parsed = f"BoxOffice[slug={slug!r}, week={week}]"
+    plain = (f"{name} ({studio}) opening {opening}: opening weekend "
+             f"${opening_w}M, week {week} -> domestic ${grown_dom}M, "
+             f"worldwide ${grown_ww}M.")
+    payload = {"slug": slug, "name": name, "studio": studio,
+               "opening_date": opening,
+               "opening_weekend_musd": opening_w,
+               "week": week,
+               "domestic_musd": grown_dom,
+               "worldwide_musd": grown_ww,
+               "snapshot_date": R10_SNAPSHOT_DATE,
+               "schema": "wa-box-office-v1", "version": R10_VERSION}
+    _r8_emit('r10.boxoffice.viewed', 'movie-box-office-tracker',
+             slug=slug, week=week)
+    return _r10_render(
+        'box-office', 'Movie Box Office Tracker',
+        'Track a film’s opening weekend, domestic, and worldwide grosses.',
+        [('slug', slug), ('week', week)],
+        parsed, plain, 'Box office', payload,
+        [f"{name} reviews", f"{name} cast", f"{name} sequel",
+         f"{studio} 2024 slate"],
+        'movie-box-office-tracker')
+
+
+# ---- R10 (6) Stock history replay ---------------------------------------
+@app.route('/finance/stock-history')
+def r10_stock_history():
+    ticker = (request.args.get('ticker', 'AAPL')
+              or 'AAPL').strip().upper()
+    try:
+        window = int(request.args.get('window', '30'))
+    except (TypeError, ValueError):
+        window = 30
+    window = max(1, min(365, window))
+    if ticker in _R10_TICKERS:
+        name, base_px = _R10_TICKERS[ticker]
+    else:
+        h = int(hashlib.md5(ticker.encode()).hexdigest(), 16)
+        name = f"{ticker} Corp."
+        base_px = 50 + (h % 950)
+    d_open = round(base_px, 2)
+    d_high = round(d_open * (1 + (window % 7) / 200.0), 2)
+    d_low  = round(d_open * (1 - (window % 5) / 200.0), 2)
+    d_close = round((d_high + d_low) / 2, 2)
+    volume = 1_000_000 + (window % 500) * 100_000
+    parsed = f"StockHistory[ticker={ticker!r}, window={window}]"
+    plain = (f"{name} ({ticker}) {window}-day replay: open {d_open}, "
+             f"high {d_high}, low {d_low}, close {d_close}, "
+             f"vol {volume:,}.")
+    payload = {"ticker": ticker, "name": name, "window_days": window,
+               "open": d_open, "high": d_high, "low": d_low,
+               "close": d_close, "volume": volume,
+               "snapshot_date": R10_SNAPSHOT_DATE,
+               "schema": "wa-stock-ohlcv-v1", "version": R10_VERSION}
+    _r8_emit('r10.stock.history', 'stock-quote-history-replay',
+             ticker=ticker, window=window)
+    return _r10_render(
+        'stock-history', 'Stock Quote History Replay',
+        'Replay a stock’s OHLCV over a custom window.',
+        [('ticker', ticker), ('window', window)],
+        parsed, plain, 'Stock OHLCV', payload,
+        [f"{ticker} fundamentals", f"{ticker} earnings calendar",
+         f"{ticker} option chain", f"{name} peers"],
+        'stock-quote-history-replay')
+
+
+# ---- R10 (7) ISBN book lookup -------------------------------------------
+@app.route('/books/isbn-lookup')
+def r10_isbn_lookup():
+    isbn = (request.args.get('isbn', '9780262033848')
+            or '9780262033848').strip().replace('-', '')
+    mode = (request.args.get('mode', 'summary') or 'summary').strip().lower()
+    if mode not in _R10_ISBN_MODES:
+        mode = 'summary'
+    if isbn in _R10_BOOKS:
+        title, author, pub, year, pages, lang = _R10_BOOKS[isbn]
+    else:
+        h = int(hashlib.md5(isbn.encode()).hexdigest(), 16)
+        title = f"Unknown Title {isbn[-4:]}"
+        author = 'Unknown Author'
+        pub = 'Unknown Publisher'
+        year = 2000 + (h % 26)
+        pages = 200 + (h % 800)
+        lang = 'en'
+    parsed = f"ISBNLookup[isbn={isbn!r}, mode={mode!r}]"
+    plain = (f"{title} by {author} ({pub}, {year}), {pages} pages, "
+             f"language {lang}. View: {mode}.")
+    payload = {"isbn": isbn, "title": title, "author": author,
+               "publisher": pub, "year": year, "pages": pages,
+               "language": lang, "mode": mode,
+               "snapshot_date": R10_SNAPSHOT_DATE,
+               "schema": "wa-isbn-v1", "version": R10_VERSION}
+    _r8_emit('r10.isbn.lookup', 'isbn-book-lookup',
+             isbn=isbn, mode=mode)
+    return _r10_render(
+        'isbn-lookup', 'ISBN Book Lookup',
+        'Resolve an ISBN to title, author, publisher, year, pages, language.',
+        [('isbn', isbn), ('mode', mode)],
+        parsed, plain, 'ISBN lookup', payload,
+        [f"{title} editions", f"{author} bibliography",
+         f"{pub} catalog", f"books like {title}"],
+        'isbn-book-lookup')
+
+
+# ---- R10 (8) Package tracking -------------------------------------------
+@app.route('/travel/package-track')
+def r10_package_track():
+    carrier_q = (request.args.get('carrier', 'UPS') or 'UPS').strip()
+    # Carrier-name match is case-insensitive against the canonical list.
+    canon = {c.lower(): c for c in _R10_CARRIERS}
+    carrier = canon.get(carrier_q.lower(), carrier_q)
+    tracking_id = (request.args.get('id', 'ABC123') or 'ABC123').strip()
+    status_q = (request.args.get('status', 'label-created')
+                or 'label-created').strip().lower()
+    if status_q not in _R10_PKG_STATUSES:
+        # Deterministic hash-bucket fallback.
+        bucket = list(_R10_PKG_STATUSES)
+        h = int(hashlib.md5(status_q.encode()).hexdigest(), 16)
+        status_q = bucket[h % len(bucket)]
+    status_desc, eta_days = _R10_PKG_STATUSES[status_q]
+    eta_date = (datetime(2026, 5, 27) + timedelta(days=eta_days)).date().isoformat()
+    parsed = f"PackageTrack[carrier={carrier!r}, id={tracking_id!r}]"
+    plain = f"{carrier} {tracking_id}: {status_desc}. ETA {eta_date}."
+    payload = {"carrier": carrier, "tracking_id": tracking_id,
+               "status_code": status_q, "status_desc": status_desc,
+               "eta_date": eta_date,
+               "snapshot_date": R10_SNAPSHOT_DATE,
+               "schema": "wa-package-v1", "version": R10_VERSION}
+    _r8_emit('r10.package.tracked', 'package-tracking-status',
+             carrier=carrier, status=status_q)
+    return _r10_render(
+        'package-track', 'Package Tracking Status',
+        'Trace a parcel by carrier and tracking number.',
+        [('carrier', carrier), ('id', tracking_id), ('status', status_q)],
+        parsed, plain, 'Package status', payload,
+        [f"{carrier} contact", f"{carrier} service map",
+         f"shipment exceptions {carrier}",
+         f"refund {carrier} late delivery"],
+        'package-tracking-status')
+
+
+# ---- R10 (9) Election poll aggregator -----------------------------------
+@app.route('/society/election-polls')
+def r10_election_polls():
+    race_slug = (request.args.get('race', 'us-president-2024')
+                 or 'us-president-2024').strip().lower()
+    if race_slug in _R10_RACES:
+        race_name, party_a, party_b = _R10_RACES[race_slug]
+    else:
+        race_name = race_slug.replace('-', ' ').title()
+        party_a, party_b = 'Party A', 'Party B'
+    firm = (request.args.get('firm', 'YouGov') or 'YouGov').strip()
+    if firm not in _R10_POLL_FIRMS:
+        # Keep client-supplied firm name; it lands in the response either way.
+        pass
+    # Deterministic hash for non-seeded races + firms (still sums to 100).
+    seed = f"{race_slug}|{firm}"
+    h = int(hashlib.md5(seed.encode()).hexdigest(), 16)
+    a_pct = 30 + (h % 35)
+    b_pct = 30 + ((h // 7) % 35)
+    other = 100 - a_pct - b_pct
+    moe = 2 + ((h // 11) % 4)
+    parsed = f"PollAggregate[race={race_slug!r}, firm={firm!r}]"
+    plain = (f"{race_name}: {party_a} {a_pct}% vs {party_b} {b_pct}% "
+             f"(other {other}%) per {firm} +/- {moe}%.")
+    payload = {"race_slug": race_slug, "race_name": race_name,
+               "firm": firm,
+               "party_a": party_a, "pct_a": a_pct,
+               "party_b": party_b, "pct_b": b_pct,
+               "other_pct": other, "moe": moe,
+               "snapshot_date": R10_SNAPSHOT_DATE,
+               "schema": "wa-poll-v1", "version": R10_VERSION}
+    _r8_emit('r10.polls.aggregated', 'election-poll-aggregator',
+             race=race_slug, firm=firm)
+    return _r10_render(
+        'election-polls', 'Election Poll Aggregator',
+        'Weighted-mean poll snapshot for a national race.',
+        [('race', race_slug), ('firm', firm)],
+        parsed, plain, 'Poll aggregate', payload,
+        [f"{race_name} polls history", f"{party_a} platform",
+         f"{party_b} platform", f"{race_name} debate transcript"],
+        'election-poll-aggregator')
+
+
+# ---- R10 (10) Translate pair --------------------------------------------
+@app.route('/society/translate')
+def r10_translate():
+    phrase = request.args.get('phrase', 'hello') or 'hello'
+    src = (request.args.get('src', 'en') or 'en').strip().lower()
+    tgt = (request.args.get('tgt', 'es') or 'es').strip().lower()
+    demo = _R10_TRANSLATE_DEMO.get((src, tgt))
+    if phrase == 'hello' and demo:
+        translation = demo
+    else:
+        translation = f"[{tgt}] {phrase}"
+    h = int(hashlib.md5(f"{phrase}|{src}|{tgt}".encode()).hexdigest(), 16)
+    confidence = 70 + (h % 30)
+    label = 'hi' if phrase == 'hello' else 'phrase'
+    parsed = f"Translate[src={src!r}, tgt={tgt!r}, phrase={phrase!r}]"
+    plain = (f"'{phrase}' [{src}] -> '{translation}' [{tgt}] "
+             f"(label: {label}, confidence {confidence}%).")
+    payload = {"phrase": phrase, "label": label,
+               "src_lang": src, "tgt_lang": tgt,
+               "translation": translation,
+               "confidence_pct": confidence,
+               "snapshot_date": R10_SNAPSHOT_DATE,
+               "schema": "wa-translate-v1", "version": R10_VERSION}
+    _r8_emit('r10.translate.done', 'language-translation-pair',
+             src=src, tgt=tgt)
+    return _r10_render(
+        'translate', 'Language Translation Pair',
+        'Snapshot translation, romanization, and confidence for a phrase.',
+        [('phrase', phrase), ('src', src), ('tgt', tgt)],
+        parsed, plain, 'Translation', payload,
+        [f"romanize {phrase!r} in {tgt}",
+         f"pronunciation of {translation}",
+         f"useful {tgt} phrases",
+         f"{src} <-> {tgt} dictionary"],
+        'language-translation-pair')
+
+
+# ---------------------------------------------------------------------------
 # Error handlers
 # ---------------------------------------------------------------------------
 

@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% block title %}{{ r10_title }} — WolframAlpha{% endblock %}
+{% block body_class %}page-r10 page-r10-{{ r10_slug }}{% endblock %}
+{% block content %}
+<section class="wa-r10-vertical wa-r10-{{ r10_slug }}">
+  <h1>{{ r10_title }}</h1>
+  <p class="wa-intro">{{ r10_intro }}</p>
+
+  <h2>Parameters</h2>
+  <ul class="wa-r10-params">
+    {% for k, v in r10_params %}
+    <li><code>{{ k }}</code> = <strong>{{ v }}</strong></li>
+    {% endfor %}
+  </ul>
+
+  <h2>Parsed input</h2>
+  <pre class="wa-r10-parsed">{{ r10_parsed_input }}</pre>
+
+  <h2>Result</h2>
+  <p class="wa-r10-plain">{{ r10_plaintext }}</p>
+
+  <h2>{{ r10_pod_title }}</h2>
+  <table class="wa-r10-pod">
+    <thead><tr><th>field</th><th>value</th></tr></thead>
+    <tbody>
+      {% for k, v in r10_payload_rows %}
+      <tr><td><code>{{ k }}</code></td><td>{{ v }}</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <p class="wa-meta">
+    Schema: <code>{{ r10_schema }}</code>.
+    Snapshot date: <code>2026-05-27</code>.
+    Build: <code>{{ r10_version }}</code>.
+  </p>
+
+  {% if r10_related %}
+  <h2>Related Queries</h2>
+  <ul class="wa-related-queries">
+    {% for rq in r10_related %}
+    <li>{{ rq }}</li>
+    {% endfor %}
+  </ul>
+  {% endif %}
+
+  <p class="wa-related">
+    See <a href="/topic/{{ r10_topic_slug }}">{{ r10_topic_slug }}</a>,
+    <a href="/api/command-palette">Cmd+K palette</a>.
+  </p>
+</section>
+{% endblock %}
