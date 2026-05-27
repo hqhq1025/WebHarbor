@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block title %}Follow {% if entity_kind == 'team' %}{{ entity.full_name }}{% else %}{{ entity.name }}{% endif %}{% endblock %}
+{% block content %}
+<div class="container">
+  <div class="page-header">
+    <h1>
+      Follow {% if entity_kind == 'team' %}{{ entity.full_name }}{% else %}{{ entity.name }}{% endif %}?
+    </h1>
+    <p class="subtitle">
+      {% if entity_kind == 'team' %}
+        Get scores, news, and injury updates for {{ entity.full_name }} in your feed.
+      {% else %}
+        Get news and stats for {{ entity.name }} in your feed.
+      {% endif %}
+    </p>
+  </div>
+
+  <section class="section-block">
+    {% if entity_kind == 'team' %}
+      <form method="post" action="/team/{{ entity.sport_slug }}/{{ entity.slug }}/follow" class="r6-form">
+    {% else %}
+      <form method="post" action="/player/{{ entity.sport_slug }}/{{ entity.slug }}/follow" class="r6-form">
+    {% endif %}
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <button class="btn-red" type="submit">
+        {% if entity_kind == 'team' %}Follow team{% else %}Follow player{% endif %}
+      </button>
+    </form>
+  </section>
+</div>
+{% endblock %}

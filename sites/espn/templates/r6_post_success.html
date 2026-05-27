@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block title %}{{ title }} — ESPN{% endblock %}
+{% block content %}
+<div class="container">
+  <div class="page-header">
+    <h1>{{ title }}</h1>
+    <p class="subtitle">{{ message }}</p>
+  </div>
+  <section class="section-block">
+    <p class="r6-success-banner" data-testid="r6-success">
+      <strong>Success.</strong> {{ message }}
+    </p>
+    {% if back_url %}
+      <p><a class="btn-red" href="{{ back_url }}">{{ back_label }}</a></p>
+    {% endif %}
+    <p><a href="/">Return to ESPN home</a></p>
+  </section>
+</div>
+{% endblock %}

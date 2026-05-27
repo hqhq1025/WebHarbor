@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block title %}Create a Bracket Pool{% endblock %}
+{% block content %}
+<div class="container">
+  <div class="page-header">
+    <a href="/r5/bracket" class="back-link">← Brackets</a>
+    <h1>Create a Bracket Pool</h1>
+    <p class="subtitle">Compete with friends across the 2024 brackets.</p>
+  </div>
+
+  <section class="section-block">
+    <form method="post" action="/bracket-pool/create" class="r6-form">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+      <div class="form-group">
+        <label class="form-label" for="name">Pool name</label>
+        <input class="form-input" type="text" id="name" name="name" required maxlength="80">
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="bracket_slug">Bracket</label>
+        <select class="form-input" id="bracket_slug" name="bracket_slug" required>
+          <option value="">— pick a bracket —</option>
+          {% for b in brackets %}
+            <option value="{{ b.slug }}">{{ b.name }} ({{ b.year }})</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="scoring">Scoring</label>
+        <select class="form-input" id="scoring" name="scoring">
+          <option value="standard">Standard (1-2-4-8-16-32)</option>
+          <option value="seed-based">Seed-based (upset bonus)</option>
+          <option value="confidence">Confidence pool</option>
+        </select>
+      </div>
+      <button class="btn-red" type="submit">Create pool</button>
+    </form>
+  </section>
+</div>
+{% endblock %}

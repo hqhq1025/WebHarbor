@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+{% block title %}
+{% if mode == 'propose' %}Propose Trade — {{ league.name }}{% else %}Counter Offer{% endif %}
+{% endblock %}
+{% block content %}
+<div class="container">
+  <div class="page-header">
+    <a href="/r4/fantasy/league/{{ league.slug }}" class="back-link">← {{ league.name }}</a>
+    {% if mode == 'propose' %}
+      <h1>Propose a Trade</h1>
+    {% else %}
+      <h1>Counter Trade {{ original_trade.slug }}</h1>
+      <p class="subtitle">Original status will be marked <em>countered</em>.</p>
+    {% endif %}
+  </div>
+
+  <section class="section-block">
+    {% if mode == 'propose' %}
+      <form method="post" action="/fantasy/trade/propose/{{ league.slug }}" class="r6-form">
+    {% else %}
+      <form method="post" action="/fantasy/trade/{{ original_trade.slug }}/counter" class="r6-form">
+    {% endif %}
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+      <div class="form-group">
+        <label class="form-label" for="team_a">Your team</label>
+        <select name="team_a" id="team_a" class="form-input" required>
+          <option value="">— Choose your team —</option>
+          {% for t in teams %}
+            <option value="{{ t.slug }}">{{ t.team_name }} ({{ t.manager_name }})</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="team_b">Trade partner</label>
+        <select name="team_b" id="team_b" class="form-input" required>
+          <option value="">— Choose target team —</option>
+          {% for t in teams %}
+            <option value="{{ t.slug }}">{{ t.team_name }} ({{ t.manager_name }})</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="players_a">Players you give up (comma-separated)</label>
+        <textarea class="form-input" name="players_a" id="players_a" rows="2" required></textarea>
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="players_b">Players you receive (comma-separated)</label>
+        <textarea class="form-input" name="players_b" id="players_b" rows="2" required></textarea>
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="note">Trade note (optional)</label>
+        <textarea class="form-input" name="note" id="note" rows="2"></textarea>
+      </div>
+
+      <button class="btn-red" type="submit">
+        {% if mode == 'propose' %}Send trade proposal{% else %}Send counter offer{% endif %}
+      </button>
+    </form>
+  </section>
+</div>
+{% endblock %}

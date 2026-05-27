@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block title %}Upload Avatar — {{ team.team_name }}{% endblock %}
+{% block content %}
+<div class="container">
+  <div class="page-header">
+    <a href="/r4/fantasy/lineup/{{ team.slug }}" class="back-link">← {{ team.team_name }}</a>
+    <h1>Update Team Avatar</h1>
+    <p class="subtitle">Pick a preset or describe a custom avatar.</p>
+  </div>
+
+  <section class="section-block">
+    <form method="post" action="/fantasy/team/{{ team.slug }}/avatar/upload"
+          enctype="multipart/form-data" class="r6-form">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+      <div class="form-group">
+        <label class="form-label" for="avatar_label">Avatar label</label>
+        <select class="form-input" id="avatar_label" name="avatar_label">
+          <option value="lightning-bolt">Lightning bolt</option>
+          <option value="trophy">Trophy</option>
+          <option value="fire">Fire</option>
+          <option value="football">Football</option>
+          <option value="basketball">Basketball</option>
+          <option value="custom">Custom upload</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="avatar_file">Custom file (optional)</label>
+        <input class="form-input" type="file" id="avatar_file" name="avatar_file" accept="image/*">
+      </div>
+      <button class="btn-red" type="submit">Save avatar</button>
+    </form>
+  </section>
+</div>
+{% endblock %}

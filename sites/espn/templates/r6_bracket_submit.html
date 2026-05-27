@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block title %}Submit Bracket — {{ bracket.name }}{% endblock %}
+{% block content %}
+<div class="container">
+  <div class="page-header">
+    <a href="/r5/bracket/{{ bracket.slug }}" class="back-link">← {{ bracket.name }}</a>
+    <h1>Submit & Lock Bracket</h1>
+    <p class="subtitle">You have <strong>{{ n_picks }}</strong> picks on file. Locking is final.</p>
+  </div>
+
+  <section class="section-block">
+    <form method="post" action="/bracket/{{ bracket.slug }}/submit" class="r6-form">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <p>Once locked, you can no longer edit picks for {{ bracket.name }}.</p>
+      <button class="btn-red" type="submit">Lock my bracket</button>
+    </form>
+  </section>
+</div>
+{% endblock %}

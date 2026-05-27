@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% block title %}Comments — {{ article.title }}{% endblock %}
+{% block content %}
+<div class="container">
+  <div class="page-header">
+    <a href="/article/{{ article.slug }}" class="back-link">← Article</a>
+    <h1>Comments on: {{ article.title }}</h1>
+    <p class="subtitle">By {{ article.author or 'ESPN Staff' }} · {{ article.published_at }}</p>
+  </div>
+
+  <section class="section-block">
+    <h2 class="section-heading">Add a comment</h2>
+    <form method="post" action="/article/{{ article.slug }}/comment" class="r6-form">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+      <div class="form-group">
+        <label class="form-label" for="author_name">Your name</label>
+        <input class="form-input" type="text" id="author_name" name="author_name" required>
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="author_email">Email</label>
+        <input class="form-input" type="email" id="author_email" name="author_email">
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="body">Comment</label>
+        <textarea class="form-input" id="body" name="body" rows="4" required minlength="3"></textarea>
+      </div>
+
+      <button class="btn-red" type="submit">Post comment</button>
+    </form>
+  </section>
+
+  <section class="section-block">
+    <h2 class="section-heading">Latest comments ({{ comments | length }})</h2>
+    {% if comments %}
+      <ul class="r6-comments">
+      {% for c in comments %}
+        <li class="r6-comment">
+          <p class="r6-comment-meta"><strong>{{ c.author_name }}</strong> · {{ c.created_at }} · {{ c.upvotes }} upvotes</p>
+          <p>{{ c.body }}</p>
+          <p>
+            <a href="/comment/{{ c.id }}/upvote">Upvote</a> ·
+            <a href="/comment/{{ c.id }}/reply">Reply</a>
+          </p>
+        </li>
+      {% endfor %}
+      </ul>
+    {% else %}
+      <p>No comments yet — be the first.</p>
+    {% endif %}
+  </section>
+</div>
+{% endblock %}

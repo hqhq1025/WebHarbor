@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block title %}{{ action | capitalize }} Trade {{ trade.slug }}{% endblock %}
+{% block content %}
+<div class="container">
+  <div class="page-header">
+    <a href="/r4/fantasy" class="back-link">← Fantasy hub</a>
+    <h1>{{ action | capitalize }} trade: {{ trade.slug }}</h1>
+    <p class="subtitle">Current status: <strong>{{ trade.status }}</strong></p>
+  </div>
+
+  <section class="section-block">
+    <p><strong>Players A gives:</strong> {{ trade.players_a_json }}</p>
+    <p><strong>Players A receives:</strong> {{ trade.players_b_json }}</p>
+    <p>{{ trade.note }}</p>
+
+    <form method="post" action="/fantasy/trade/{{ trade.slug }}/{{ action }}" class="r6-form">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <button class="btn-red" type="submit">Confirm {{ action }}</button>
+    </form>
+  </section>
+</div>
+{% endblock %}

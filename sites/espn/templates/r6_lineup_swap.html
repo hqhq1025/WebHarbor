@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block title %}Swap {{ slot }} — {{ team.team_name }}{% endblock %}
+{% block content %}
+<div class="container">
+  <div class="page-header">
+    <a href="/fantasy/lineup/save/{{ team.slug }}" class="back-link">← Lineup</a>
+    <h1>Swap slot {{ slot }}</h1>
+    {% if current_slot %}
+      <p class="subtitle">Currently in {{ slot }}: <strong>{{ current_slot.player_name }}</strong>
+       ({{ current_slot.player_team }} — proj {{ '%.2f' % current_slot.projected_points }})</p>
+    {% endif %}
+  </div>
+
+  <section class="section-block">
+    <form method="post" action="/fantasy/lineup/swap/{{ team.slug }}/{{ slot }}" class="r6-form">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <div class="form-group">
+        <label class="form-label" for="new_player_name">Replacement player name</label>
+        <input class="form-input" type="text" name="new_player_name"
+               id="new_player_name" required placeholder="e.g. Saquon Barkley">
+      </div>
+      <button class="btn-red" type="submit">Confirm swap</button>
+    </form>
+  </section>
+</div>
+{% endblock %}

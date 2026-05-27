@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block title %}Invite to {{ pool.name }}{% endblock %}
+{% block content %}
+<div class="container">
+  <div class="page-header">
+    <a href="/r5/bracket/{{ pool.bracket_slug }}" class="back-link">← {{ pool.bracket_slug }}</a>
+    <h1>Invite to {{ pool.name }}</h1>
+    <p class="subtitle">Invite code: <strong>{{ pool.invite_code }}</strong></p>
+  </div>
+
+  <section class="section-block">
+    <form method="post" action="/bracket-pool/{{ pool.slug }}/invite" class="r6-form">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+      <div class="form-group">
+        <label class="form-label" for="recipient_email">Recipient email</label>
+        <input class="form-input" type="email" id="recipient_email" name="recipient_email" required>
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="message">Message (optional)</label>
+        <textarea class="form-input" id="message" name="message" rows="3"></textarea>
+      </div>
+
+      <button class="btn-red" type="submit">Send invite</button>
+    </form>
+  </section>
+</div>
+{% endblock %}

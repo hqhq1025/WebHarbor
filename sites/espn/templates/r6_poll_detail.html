@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block title %}Poll — {{ poll.question }}{% endblock %}
+{% block content %}
+<div class="container">
+  <div class="page-header">
+    <h1>{{ poll.question }}</h1>
+    <p class="subtitle">{{ poll.sport_slug | upper }} fan poll · closes {{ poll.closes_at }}</p>
+  </div>
+
+  <section class="section-block">
+    <form method="post" action="/poll/{{ poll.id }}/vote" class="r6-form">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <fieldset class="r6-poll">
+        <legend class="form-label">Choose one</legend>
+        {% for o in options %}
+          <label class="r6-radio">
+            <input type="radio" name="option_id" value="{{ o.id }}" required>
+            {{ o.label }} <span class="r6-votes">({{ o.votes }} votes)</span>
+          </label>
+        {% endfor %}
+      </fieldset>
+      <button class="btn-red" type="submit">Submit vote</button>
+    </form>
+  </section>
+</div>
+{% endblock %}

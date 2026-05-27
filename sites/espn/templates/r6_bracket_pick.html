@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block title %}Pick winner — {{ bracket.name }}{% endblock %}
+{% block content %}
+<div class="container">
+  <div class="page-header">
+    <a href="/r5/bracket/{{ bracket.slug }}" class="back-link">← {{ bracket.name }}</a>
+    <h1>Pick a Winner</h1>
+    <p class="subtitle">Round {{ matchup.round_num }}{% if matchup.region %} — {{ matchup.region }}{% endif %} (matchup #{{ matchup.id }})</p>
+  </div>
+
+  <section class="section-block">
+    <form method="post" action="/bracket/{{ bracket.slug }}/pick/{{ matchup.id }}" class="r6-form">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+      <div class="form-group">
+        <label class="form-label" for="picked_team">Winner</label>
+        <input class="form-input" type="text" id="picked_team" name="picked_team" required
+               placeholder="Team name (e.g. UConn Huskies)">
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="pool_slug">Pool (optional)</label>
+        <input class="form-input" type="text" id="pool_slug" name="pool_slug"
+               placeholder="Leave blank for personal bracket">
+      </div>
+
+      <button class="btn-red" type="submit">Save pick</button>
+    </form>
+  </section>
+</div>
+{% endblock %}

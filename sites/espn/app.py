@@ -3398,6 +3398,1085 @@ def r5_nhl_series_detail(slug):
 # === R4 GUI Fantasy + R5 GUI Brackets END ───────────────────────────────────
 
 
+# === R6 GUI Fantasy/Bracket/Community POST surface BEGIN ════════════════════
+# Adds ~30 POST endpoints (lineup save / waiver claim / trade lifecycle /
+# league create+invite+join+draft+settings / team rename+avatar / bracket
+# pick+champion+submit+tiebreaker / bracket pool create+join+invite /
+# comment+reply+upvote / team+player follow / watchlist / alert / poll vote).
+#
+# Storage: writes land in instance/espn.db (the live, per-container DB).
+# Tables are r6_* — created at build time by `_r6gui_extend.py`. The new
+# routes never re-seed and never touch instance_seed/espn.db at runtime.
+#
+# CSRF: every form template renders {{ csrf_token() }}; the existing
+# CSRFProtect() at module top will validate on submit. (Tasks that submit
+# forms via the browser pick up the token automatically.)
+#
+# Auth: most write endpoints fall back to an anonymous "guest@espn.local"
+# email when no user is logged in, so tasks that don't log in can still
+# exercise the surface. Endpoints that require a logged-in identity
+# (account-scoped settings, etc.) use @login_required.
+
+R6_GUEST_EMAIL = 'guest@espn.local'
+R6_GUEST_NAME = 'ESPN Guest'
+
+
+def _r6_actor():
+    """Return (email, display_name) for the current actor — logged in or guest."""
+    if current_user.is_authenticated:
+        return current_user.email, current_user.name
+    # Form may supply name/email for unauthenticated submissions
+    email = (request.form.get('author_email') or '').strip()
+    name = (request.form.get('author_name') or '').strip()
+    return (email or R6_GUEST_EMAIL, name or R6_GUEST_NAME)
+
+
+def _r6_now():
+    return mirror_now().strftime('%Y-%m-%d %H:%M:%S')
+
+
+def _r6_exec(sql, **params):
+    """Wrapper that runs an INSERT/UPDATE/DELETE and commits."""
+    db.session.execute(_r45_text(sql), params)
+    db.session.commit()
+
+
+def _r6_lookup_team_full(team_slug):
+    return _r45_row(
+        "SELECT * FROM r4_fantasy_teams WHERE slug=:s", s=team_slug)
+
+
+def _r6_render_success(title, message, back_url=None, back_label='Continue'):
+    return render_template('r6_post_success.html',
+                            title=title, message=message,
+                            back_url=back_url, back_label=back_label)
+
+
+# ─── Fantasy lineup ──────────────────────────────────────────────────────────
+
+@app.route('/fantasy/lineup/save/<team_slug>', methods=['GET', 'POST'])
+def r6_lineup_save(team_slug):
+    tm = _r6_lookup_team_full(team_slug)
+    if not tm:
+        abort(404)
+    lg = _r45_row("SELECT * FROM r4_fantasy_leagues WHERE id=:lid",
+                  lid=tm['league_id'])
+    lineup = _r45_rows(
+        "SELECT * FROM r4_fantasy_lineups WHERE team_id=:tid "
+        "AND week=:wk ORDER BY id", tid=tm['id'], wk=lg['current_week'])
+    if request.method == 'POST':
+        # Mark lineup saved (event log row + flip is_starter flags).
+        starters = set(request.form.getlist('starter'))
+        for r in lineup:
+            new_val = 1 if str(r['id']) in starters else 0
+            _r6_exec("UPDATE r4_fantasy_lineups SET is_starter=:v "
+                     "WHERE id=:i", v=new_val, i=r['id'])
+        email, _name = _r6_actor()
+        _r6_exec(
+            "INSERT INTO r6_lineup_events (team_slug, kind, slot, in_player, "
+            "out_player, week, saved_at) "
+            "VALUES (:t, 'save', NULL, NULL, NULL, :w, :ts)",
+            t=team_slug, w=lg['current_week'], ts=_r6_now())
+        flash(f'Lineup saved for week {lg["current_week"]}.', 'success')
+        return redirect(url_for('r6_lineup_save', team_slug=team_slug))
+    return render_template('r6_lineup_form.html',
+                            team=tm, league=lg, lineup=lineup)
+
+
+@app.route('/fantasy/lineup/swap/<team_slug>/<slot>', methods=['GET', 'POST'])
+def r6_lineup_swap(team_slug, slot):
+    tm = _r6_lookup_team_full(team_slug)
+    if not tm:
+        abort(404)
+    lg = _r45_row("SELECT * FROM r4_fantasy_leagues WHERE id=:lid",
+                  lid=tm['league_id'])
+    current_slot = _r45_row(
+        "SELECT * FROM r4_fantasy_lineups WHERE team_id=:tid "
+        "AND week=:wk AND slot=:s",
+        tid=tm['id'], wk=lg['current_week'], s=slot)
+    if request.method == 'POST':
+        new_player = request.form.get('new_player_name', '').strip()
+        if not new_player:
+            flash('Pick a replacement player.', 'danger')
+            return redirect(request.url)
+        out_player = current_slot['player_name'] if current_slot else ''
+        _r6_exec(
+            "UPDATE r4_fantasy_lineups SET player_name=:p "
+            "WHERE team_id=:tid AND week=:wk AND slot=:s",
+            p=new_player, tid=tm['id'], wk=lg['current_week'], s=slot)
+        _r6_exec(
+            "INSERT INTO r6_lineup_events (team_slug, kind, slot, in_player, "
+            "out_player, week, saved_at) "
+            "VALUES (:t, 'swap', :s, :ip, :op, :w, :ts)",
+            t=team_slug, s=slot, ip=new_player, op=out_player,
+            w=lg['current_week'], ts=_r6_now())
+        return _r6_render_success(
+            f'Swapped {slot}',
+            f'{new_player} is now in the {slot} slot for {tm["team_name"]}.',
+            back_url=f'/fantasy/lineup/save/{team_slug}',
+            back_label='Back to lineup')
+    return render_template('r6_lineup_swap.html',
+                            team=tm, league=lg, slot=slot,
+                            current_slot=current_slot)
+
+
+# ─── Fantasy waiver wire ─────────────────────────────────────────────────────
+
+@app.route('/fantasy/waiver/claim/<int:player_id>', methods=['GET', 'POST'])
+def r6_waiver_claim(player_id):
+    pl = _r45_row("SELECT * FROM players WHERE id=:i", i=player_id)
+    if not pl:
+        abort(404)
+    leagues = _r45_rows(
+        "SELECT * FROM r4_fantasy_leagues WHERE sport_slug=:s "
+        "ORDER BY name", s=pl['sport_slug'])
+    if request.method == 'POST':
+        league_slug = request.form.get('league_slug', '').strip()
+        team_slug = request.form.get('team_slug', '').strip()
+        bid_amount = int(request.form.get('bid_amount', '5') or '5')
+        drop_player = request.form.get('drop_player', '').strip()
+        lg = _r45_row(
+            "SELECT * FROM r4_fantasy_leagues WHERE slug=:s", s=league_slug)
+        tm = _r45_row(
+            "SELECT * FROM r4_fantasy_teams WHERE slug=:s", s=team_slug)
+        if not (lg and tm):
+            flash('League or team not found.', 'danger')
+            return redirect(request.url)
+        new_id = (_r45_row(
+            "SELECT COALESCE(MAX(id),0)+1 AS n "
+            "FROM r4_fantasy_waiver_claims") or {}).get('n', 1)
+        slug = f'l{lg["id"]}-c{new_id}'
+        _r6_exec(
+            "INSERT INTO r4_fantasy_waiver_claims "
+            "(id, league_id, team_id, slug, add_player_id, add_player_name, "
+            "add_player_pos, drop_player_id, drop_player_name, drop_player_pos, "
+            "bid_amount, priority, status, process_date) "
+            "VALUES (:id, :lid, :tid, :slug, :apid, :apn, :apos, NULL, :dpn, "
+            "'BENCH', :bid, 1, 'pending', :pd)",
+            id=new_id, lid=lg['id'], tid=tm['id'], slug=slug, apid=pl['id'],
+            apn=pl['name'], apos=pl['position'], dpn=drop_player,
+            bid=bid_amount, pd=DEMO_DATE_R6())
+        return _r6_render_success(
+            'Waiver claim submitted',
+            f'Claim filed for {pl["name"]} (${bid_amount} bid) — processes '
+            'next waiver window.',
+            back_url=f'/r4/fantasy/league/{league_slug}',
+            back_label='Back to league')
+    return render_template('r6_waiver_form.html',
+                            player=pl, leagues=leagues, mode='claim')
+
+
+@app.route('/fantasy/waiver/drop/<int:player_id>', methods=['GET', 'POST'])
+def r6_waiver_drop(player_id):
+    pl = _r45_row("SELECT * FROM players WHERE id=:i", i=player_id)
+    if not pl:
+        abort(404)
+    leagues = _r45_rows(
+        "SELECT * FROM r4_fantasy_leagues WHERE sport_slug=:s "
+        "ORDER BY name", s=pl['sport_slug'])
+    if request.method == 'POST':
+        league_slug = request.form.get('league_slug', '').strip()
+        team_slug = request.form.get('team_slug', '').strip()
+        lg = _r45_row(
+            "SELECT * FROM r4_fantasy_leagues WHERE slug=:s", s=league_slug)
+        tm = _r45_row(
+            "SELECT * FROM r4_fantasy_teams WHERE slug=:s", s=team_slug)
+        if not (lg and tm):
+            flash('League or team not found.', 'danger')
+            return redirect(request.url)
+        new_id = (_r45_row(
+            "SELECT COALESCE(MAX(id),0)+1 AS n "
+            "FROM r4_fantasy_waiver_claims") or {}).get('n', 1)
+        slug = f'l{lg["id"]}-c{new_id}'
+        _r6_exec(
+            "INSERT INTO r4_fantasy_waiver_claims "
+            "(id, league_id, team_id, slug, add_player_id, add_player_name, "
+            "add_player_pos, drop_player_id, drop_player_name, drop_player_pos, "
+            "bid_amount, priority, status, process_date) "
+            "VALUES (:id, :lid, :tid, :slug, NULL, '', '', :dpid, :dpn, :dpos, "
+            "0, 99, 'pending', :pd)",
+            id=new_id, lid=lg['id'], tid=tm['id'], slug=slug,
+            dpid=pl['id'], dpn=pl['name'], dpos=pl['position'],
+            pd=DEMO_DATE_R6())
+        return _r6_render_success(
+            'Player dropped',
+            f'Drop request filed for {pl["name"]}.',
+            back_url=f'/r4/fantasy/league/{league_slug}',
+            back_label='Back to league')
+    return render_template('r6_waiver_form.html',
+                            player=pl, leagues=leagues, mode='drop')
+
+
+def DEMO_DATE_R6():
+    return mirror_today().isoformat()
+
+
+# ─── Fantasy trade lifecycle ─────────────────────────────────────────────────
+
+@app.route('/fantasy/trade/propose/<league_slug>', methods=['GET', 'POST'])
+def r6_trade_propose(league_slug):
+    lg = _r45_row(
+        "SELECT * FROM r4_fantasy_leagues WHERE slug=:s", s=league_slug)
+    if not lg:
+        abort(404)
+    teams = _r45_rows(
+        "SELECT * FROM r4_fantasy_teams WHERE league_id=:lid ORDER BY id",
+        lid=lg['id'])
+    if request.method == 'POST':
+        team_a_slug = request.form.get('team_a', '').strip()
+        team_b_slug = request.form.get('team_b', '').strip()
+        players_a = request.form.get('players_a', '').strip()
+        players_b = request.form.get('players_b', '').strip()
+        note = request.form.get('note', '').strip()
+        a = _r45_row("SELECT * FROM r4_fantasy_teams WHERE slug=:s",
+                     s=team_a_slug)
+        b = _r45_row("SELECT * FROM r4_fantasy_teams WHERE slug=:s",
+                     s=team_b_slug)
+        if not (a and b):
+            flash('Pick both sides of the trade.', 'danger')
+            return redirect(request.url)
+        new_id = (_r45_row(
+            "SELECT COALESCE(MAX(id),0)+1 AS n "
+            "FROM r4_fantasy_trades") or {}).get('n', 1)
+        slug = f'l{lg["id"]}-tr{new_id}'
+        _r6_exec(
+            "INSERT INTO r4_fantasy_trades "
+            "(id, league_id, slug, team_a_id, team_b_id, players_a_json, "
+            "players_b_json, value_a, value_b, status, proposed_date, note) "
+            "VALUES (:id, :lid, :slug, :a, :b, :pa, :pb, 0, 0, 'pending', "
+            ":pd, :nt)",
+            id=new_id, lid=lg['id'], slug=slug, a=a['id'], b=b['id'],
+            pa=players_a, pb=players_b, pd=DEMO_DATE_R6(), nt=note)
+        return _r6_render_success(
+            'Trade proposed',
+            f'Trade proposal sent from {a["team_name"]} to {b["team_name"]}.',
+            back_url=f'/r4/fantasy/league/{league_slug}',
+            back_label='Back to league')
+    return render_template('r6_trade_form.html',
+                            league=lg, teams=teams, mode='propose')
+
+
+def _trade_status_update(trade_slug, new_status):
+    tr = _r45_row(
+        "SELECT * FROM r4_fantasy_trades WHERE slug=:s", s=trade_slug)
+    if not tr:
+        abort(404)
+    if request.method == 'POST':
+        _r6_exec(
+            "UPDATE r4_fantasy_trades SET status=:st WHERE slug=:s",
+            st=new_status, s=trade_slug)
+        lg = _r45_row(
+            "SELECT slug FROM r4_fantasy_leagues WHERE id=:i",
+            i=tr['league_id'])
+        return _r6_render_success(
+            f'Trade {new_status}',
+            f'Trade {trade_slug} marked as {new_status}.',
+            back_url=f'/r4/fantasy/league/{lg["slug"]}' if lg else '/r4/fantasy',
+            back_label='Back to league')
+    return render_template('r6_trade_review.html',
+                            trade=tr, action=new_status)
+
+
+@app.route('/fantasy/trade/<trade_slug>/accept', methods=['GET', 'POST'])
+def r6_trade_accept(trade_slug):
+    return _trade_status_update(trade_slug, 'accepted')
+
+
+@app.route('/fantasy/trade/<trade_slug>/reject', methods=['GET', 'POST'])
+def r6_trade_reject(trade_slug):
+    return _trade_status_update(trade_slug, 'rejected')
+
+
+@app.route('/fantasy/trade/<trade_slug>/counter', methods=['GET', 'POST'])
+def r6_trade_counter(trade_slug):
+    tr = _r45_row(
+        "SELECT * FROM r4_fantasy_trades WHERE slug=:s", s=trade_slug)
+    if not tr:
+        abort(404)
+    if request.method == 'POST':
+        # Mark original countered + insert new pending trade
+        _r6_exec(
+            "UPDATE r4_fantasy_trades SET status='countered' WHERE slug=:s",
+            s=trade_slug)
+        new_id = (_r45_row(
+            "SELECT COALESCE(MAX(id),0)+1 AS n "
+            "FROM r4_fantasy_trades") or {}).get('n', 1)
+        new_slug = f'{trade_slug}-counter{new_id}'
+        players_a = request.form.get('players_a', '').strip()
+        players_b = request.form.get('players_b', '').strip()
+        note = request.form.get('note', '').strip()
+        # In a counter, the previously-targeted team (team_b) becomes proposer
+        _r6_exec(
+            "INSERT INTO r4_fantasy_trades "
+            "(id, league_id, slug, team_a_id, team_b_id, players_a_json, "
+            "players_b_json, value_a, value_b, status, proposed_date, note) "
+            "VALUES (:id, :lid, :slug, :a, :b, :pa, :pb, 0, 0, 'pending', "
+            ":pd, :nt)",
+            id=new_id, lid=tr['league_id'], slug=new_slug,
+            a=tr['team_b_id'], b=tr['team_a_id'],
+            pa=players_a, pb=players_b, pd=DEMO_DATE_R6(), nt=note)
+        return _r6_render_success(
+            'Counter offer sent',
+            f'Counter offer recorded — original trade {trade_slug} marked '
+            'countered.',
+            back_url='/r4/fantasy',
+            back_label='Fantasy hub')
+    return render_template('r6_trade_form.html',
+                            league=_r45_row(
+                                "SELECT * FROM r4_fantasy_leagues "
+                                "WHERE id=:i", i=tr['league_id']),
+                            teams=_r45_rows(
+                                "SELECT * FROM r4_fantasy_teams "
+                                "WHERE league_id=:lid ORDER BY id",
+                                lid=tr['league_id']),
+                            mode='counter', original_trade=tr)
+
+
+# ─── Fantasy league lifecycle ────────────────────────────────────────────────
+
+@app.route('/fantasy/league/create', methods=['GET', 'POST'])
+def r6_league_create():
+    if request.method == 'POST':
+        name = request.form.get('name', '').strip()
+        sport = request.form.get('sport_slug', 'nfl').strip()
+        size = int(request.form.get('league_size', '10') or '10')
+        scoring = request.form.get('scoring_type', 'PPR').strip()
+        if not name:
+            flash('Pick a league name.', 'danger')
+            return redirect(request.url)
+        slug = re.sub(r'[^a-z0-9-]+', '-', name.lower()).strip('-') + f'-{sport}'
+        existing = _r45_row(
+            "SELECT id FROM r4_fantasy_leagues WHERE slug=:s", s=slug)
+        if existing:
+            slug = f'{slug}-{hashlib.md5(name.encode()).hexdigest()[:6]}'
+        new_id = (_r45_row(
+            "SELECT COALESCE(MAX(id),0)+1 AS n "
+            "FROM r4_fantasy_leagues") or {}).get('n', 1)
+        _r6_exec(
+            "INSERT INTO r4_fantasy_leagues "
+            "(id, slug, name, sport_slug, season, league_size, scoring_type, "
+            "roster_size, current_week, is_public) "
+            "VALUES (:id, :slug, :name, :sport, '2024-25', :sz, :sc, 16, 1, 1)",
+            id=new_id, slug=slug, name=name, sport=sport, sz=size, sc=scoring)
+        return _r6_render_success(
+            'League created',
+            f'Your new league "{name}" is ready.',
+            back_url=f'/r4/fantasy/league/{slug}',
+            back_label='Open league')
+    return render_template('r6_league_create.html')
+
+
+@app.route('/fantasy/league/<league_slug>/invite', methods=['GET', 'POST'])
+def r6_league_invite(league_slug):
+    lg = _r45_row(
+        "SELECT * FROM r4_fantasy_leagues WHERE slug=:s", s=league_slug)
+    if not lg:
+        abort(404)
+    if request.method == 'POST':
+        recipient = request.form.get('recipient_email', '').strip()
+        message = request.form.get('message', '').strip()
+        code = hashlib.md5(
+            (league_slug + recipient + _r6_now()).encode()
+        ).hexdigest()[:8].upper()
+        new_id = (_r45_row(
+            "SELECT COALESCE(MAX(id),0)+1 AS n "
+            "FROM r6_league_invites") or {}).get('n', 1)
+        _r6_exec(
+            "INSERT INTO r6_league_invites "
+            "(id, league_slug, invite_code, recipient_email, message, "
+            "status, sent_at) "
+            "VALUES (:id, :ls, :code, :r, :m, 'pending', :ts)",
+            id=new_id, ls=league_slug, code=code, r=recipient, m=message,
+            ts=_r6_now())
+        return _r6_render_success(
+            'Invite sent',
+            f'Invite code {code} sent to {recipient}.',
+            back_url=f'/r4/fantasy/league/{league_slug}',
+            back_label='Back to league')
+    return render_template('r6_league_invite.html', league=lg)
+
+
+@app.route('/fantasy/league/<league_slug>/join', methods=['GET', 'POST'])
+def r6_league_join(league_slug):
+    lg = _r45_row(
+        "SELECT * FROM r4_fantasy_leagues WHERE slug=:s", s=league_slug)
+    if not lg:
+        abort(404)
+    if request.method == 'POST':
+        team_name = request.form.get('team_name', 'My New Team').strip()
+        manager = request.form.get('manager_name', _r6_actor()[1]).strip()
+        invite_code = request.form.get('invite_code', '').strip()
+        # Validate invite_code lazily: accept the empty/default for public
+        # leagues (is_public=1) — otherwise require a known code.
+        if not lg['is_public'] and invite_code:
+            ok = _r45_row(
+                "SELECT id FROM r6_league_invites WHERE league_slug=:ls "
+                "AND invite_code=:c AND status='pending'",
+                ls=league_slug, c=invite_code)
+            if not ok:
+                flash('Invite code not recognized.', 'danger')
+                return redirect(request.url)
+        new_id = (_r45_row(
+            "SELECT COALESCE(MAX(id),0)+1 AS n "
+            "FROM r4_fantasy_teams") or {}).get('n', 1)
+        slug = re.sub(r'[^a-z0-9-]+', '-', team_name.lower()).strip('-')
+        slug = f'{slug}-l{lg["id"]}-t{new_id}'
+        _r6_exec(
+            "INSERT INTO r4_fantasy_teams "
+            "(id, league_id, slug, team_name, manager_name, wins, losses, "
+            "ties, points_for, points_against, rank, waiver_priority, "
+            "moves_used) "
+            "VALUES (:id, :lid, :slug, :tn, :mg, 0, 0, 0, 0.0, 0.0, "
+            ":rk, :wp, 0)",
+            id=new_id, lid=lg['id'], slug=slug, tn=team_name, mg=manager,
+            rk=lg['league_size'] + 1, wp=lg['league_size'] + 1)
+        return _r6_render_success(
+            'Welcome to the league',
+            f'{team_name} joined {lg["name"]} (managed by {manager}).',
+            back_url=f'/r4/fantasy/league/{league_slug}',
+            back_label='Open league')
+    return render_template('r6_league_join.html', league=lg)
+
+
+@app.route('/fantasy/league/<league_slug>/draft/pick',
+           methods=['GET', 'POST'])
+def r6_league_draft_pick(league_slug):
+    lg = _r45_row(
+        "SELECT * FROM r4_fantasy_leagues WHERE slug=:s", s=league_slug)
+    if not lg:
+        abort(404)
+    teams = _r45_rows(
+        "SELECT * FROM r4_fantasy_teams WHERE league_id=:lid ORDER BY id",
+        lid=lg['id'])
+    picks_so_far = _r45_rows(
+        "SELECT * FROM r6_draft_picks WHERE league_slug=:s "
+        "ORDER BY pick_num DESC LIMIT 20", s=league_slug)
+    if request.method == 'POST':
+        team_slug = request.form.get('team_slug', '').strip()
+        player_name = request.form.get('player_name', '').strip()
+        player_pos = request.form.get('player_pos', '').strip()
+        nfl_abbr = request.form.get('nfl_team_abbr', '').strip()
+        if not (team_slug and player_name):
+            flash('Pick a team and a player.', 'danger')
+            return redirect(request.url)
+        tm = _r45_row("SELECT * FROM r4_fantasy_teams WHERE slug=:s",
+                      s=team_slug)
+        if not tm:
+            flash('Team not found.', 'danger')
+            return redirect(request.url)
+        next_pick = (_r45_row(
+            "SELECT COALESCE(MAX(pick_num),0)+1 AS n "
+            "FROM r6_draft_picks WHERE league_slug=:s",
+            s=league_slug) or {}).get('n', 1)
+        round_num = ((next_pick - 1) // lg['league_size']) + 1
+        new_id = (_r45_row(
+            "SELECT COALESCE(MAX(id),0)+1 AS n FROM r6_draft_picks"
+        ) or {}).get('n', 1)
+        _r6_exec(
+            "INSERT INTO r6_draft_picks "
+            "(id, league_slug, pick_num, round_num, team_slug, team_name, "
+            "player_name, player_pos, nfl_team_abbr, picked_at) "
+            "VALUES (:id, :ls, :pn, :rn, :ts, :tn, :pl, :pp, :ab, :ts2)",
+            id=new_id, ls=league_slug, pn=next_pick, rn=round_num,
+            ts=team_slug, tn=tm['team_name'], pl=player_name, pp=player_pos,
+            ab=nfl_abbr, ts2=_r6_now())
+        flash(f'Pick #{next_pick} ({player_name}) recorded.', 'success')
+        return redirect(url_for('r6_league_draft_pick',
+                                 league_slug=league_slug))
+    return render_template('r6_league_draft_room.html',
+                            league=lg, teams=teams, picks=picks_so_far)
+
+
+@app.route('/fantasy/league/<league_slug>/settings/update',
+           methods=['GET', 'POST'])
+def r6_league_settings(league_slug):
+    lg = _r45_row(
+        "SELECT * FROM r4_fantasy_leagues WHERE slug=:s", s=league_slug)
+    if not lg:
+        abort(404)
+    if request.method == 'POST':
+        scoring = request.form.get('scoring_type', lg['scoring_type'])
+        roster_size = int(request.form.get('roster_size',
+                                            lg['roster_size']) or
+                          lg['roster_size'])
+        current_week = int(request.form.get('current_week',
+                                              lg['current_week']) or
+                           lg['current_week'])
+        _r6_exec(
+            "UPDATE r4_fantasy_leagues SET scoring_type=:sc, "
+            "roster_size=:rs, current_week=:cw WHERE slug=:s",
+            sc=scoring, rs=roster_size, cw=current_week, s=league_slug)
+        return _r6_render_success(
+            'Settings saved',
+            f'League settings updated for {lg["name"]}.',
+            back_url=f'/r4/fantasy/league/{league_slug}',
+            back_label='Back to league')
+    return render_template('r6_league_settings.html', league=lg)
+
+
+@app.route('/fantasy/team/<team_slug>/rename', methods=['GET', 'POST'])
+def r6_team_rename(team_slug):
+    tm = _r6_lookup_team_full(team_slug)
+    if not tm:
+        abort(404)
+    if request.method == 'POST':
+        new_name = request.form.get('team_name', '').strip()
+        if not new_name:
+            flash('Pick a new team name.', 'danger')
+            return redirect(request.url)
+        old_name = tm['team_name']
+        email, _name = _r6_actor()
+        _r6_exec(
+            "UPDATE r4_fantasy_teams SET team_name=:n WHERE slug=:s",
+            n=new_name, s=team_slug)
+        _r6_exec(
+            "INSERT INTO r6_team_audit (team_slug, change_kind, old_value, "
+            "new_value, actor_email, changed_at) "
+            "VALUES (:t, 'rename', :o, :n, :a, :ts)",
+            t=team_slug, o=old_name, n=new_name, a=email, ts=_r6_now())
+        return _r6_render_success(
+            'Team renamed',
+            f'Renamed "{old_name}" → "{new_name}".',
+            back_url=f'/r4/fantasy/lineup/{team_slug}',
+            back_label='Back to team')
+    return render_template('r6_team_rename.html', team=tm)
+
+
+@app.route('/fantasy/team/<team_slug>/avatar/upload',
+           methods=['GET', 'POST'])
+def r6_team_avatar(team_slug):
+    tm = _r6_lookup_team_full(team_slug)
+    if not tm:
+        abort(404)
+    if request.method == 'POST':
+        # We don't actually persist uploaded bytes (no static-asset writes in
+        # the mirror) — we record the audit only.
+        avatar_label = request.form.get('avatar_label', 'custom').strip()
+        email, _name = _r6_actor()
+        _r6_exec(
+            "INSERT INTO r6_team_audit (team_slug, change_kind, old_value, "
+            "new_value, actor_email, changed_at) "
+            "VALUES (:t, 'avatar', 'default', :n, :a, :ts)",
+            t=team_slug, n=avatar_label, a=email, ts=_r6_now())
+        return _r6_render_success(
+            'Avatar updated',
+            f'New avatar "{avatar_label}" saved for {tm["team_name"]}.',
+            back_url=f'/r4/fantasy/lineup/{team_slug}',
+            back_label='Back to team')
+    return render_template('r6_team_avatar.html', team=tm)
+
+
+# ─── Bracket picks + pools ───────────────────────────────────────────────────
+
+@app.route('/bracket/<bracket_slug>/pick/<int:matchup_id>',
+           methods=['GET', 'POST'])
+def r6_bracket_pick(bracket_slug, matchup_id):
+    br = _r45_row(
+        "SELECT * FROM r5_brackets WHERE slug=:s", s=bracket_slug)
+    matchup = _r45_row(
+        "SELECT * FROM r5_bracket_matchups WHERE id=:i", i=matchup_id)
+    if not (br and matchup):
+        abort(404)
+    if request.method == 'POST':
+        picked_team = request.form.get('picked_team', '').strip()
+        pool_slug = request.form.get('pool_slug', '').strip() or None
+        if not picked_team:
+            flash('Pick a team.', 'danger')
+            return redirect(request.url)
+        email, _name = _r6_actor()
+        # Idempotent: delete existing pick for (user, bracket, matchup) first
+        _r6_exec(
+            "DELETE FROM r6_bracket_picks WHERE user_email=:e "
+            "AND bracket_slug=:b AND matchup_id=:m",
+            e=email, b=bracket_slug, m=matchup_id)
+        new_id = (_r45_row(
+            "SELECT COALESCE(MAX(id),0)+1 AS n FROM r6_bracket_picks"
+        ) or {}).get('n', 1)
+        _r6_exec(
+            "INSERT INTO r6_bracket_picks "
+            "(id, user_email, bracket_slug, pool_slug, matchup_id, "
+            "picked_team, round_num, is_champion_pick, tiebreaker_score, "
+            "is_locked, picked_at) "
+            "VALUES (:id, :e, :b, :p, :m, :pt, :rn, 0, NULL, 0, :ts)",
+            id=new_id, e=email, b=bracket_slug, p=pool_slug, m=matchup_id,
+            pt=picked_team, rn=matchup['round_num'], ts=_r6_now())
+        return _r6_render_success(
+            'Pick saved',
+            f'{picked_team} is your pick for round {matchup["round_num"]} '
+            f'matchup {matchup_id}.',
+            back_url=f'/r5/bracket/{bracket_slug}',
+            back_label='Back to bracket')
+    return render_template('r6_bracket_pick.html',
+                            bracket=br, matchup=matchup)
+
+
+@app.route('/bracket/<bracket_slug>/champion-pick',
+           methods=['GET', 'POST'])
+def r6_bracket_champion(bracket_slug):
+    br = _r45_row(
+        "SELECT * FROM r5_brackets WHERE slug=:s", s=bracket_slug)
+    if not br:
+        abort(404)
+    seeds = _r45_rows(
+        "SELECT * FROM r5_bracket_seeds WHERE bracket_id=:b "
+        "ORDER BY seed_num, region", b=br['id'])
+    if request.method == 'POST':
+        team = request.form.get('champion_team', '').strip()
+        pool_slug = request.form.get('pool_slug', '').strip() or None
+        if not team:
+            flash('Pick a champion.', 'danger')
+            return redirect(request.url)
+        email, _name = _r6_actor()
+        _r6_exec(
+            "DELETE FROM r6_bracket_picks WHERE user_email=:e "
+            "AND bracket_slug=:b AND is_champion_pick=1",
+            e=email, b=bracket_slug)
+        new_id = (_r45_row(
+            "SELECT COALESCE(MAX(id),0)+1 AS n FROM r6_bracket_picks"
+        ) or {}).get('n', 1)
+        _r6_exec(
+            "INSERT INTO r6_bracket_picks "
+            "(id, user_email, bracket_slug, pool_slug, matchup_id, "
+            "picked_team, round_num, is_champion_pick, tiebreaker_score, "
+            "is_locked, picked_at) "
+            "VALUES (:id, :e, :b, :p, NULL, :pt, 7, 1, NULL, 0, :ts)",
+            id=new_id, e=email, b=bracket_slug, p=pool_slug, pt=team,
+            ts=_r6_now())
+        return _r6_render_success(
+            'Champion pick saved',
+            f'Your 2024 champion: {team}.',
+            back_url=f'/r5/bracket/{bracket_slug}',
+            back_label='Back to bracket')
+    return render_template('r6_bracket_champion.html',
+                            bracket=br, seeds=seeds)
+
+
+@app.route('/bracket/<bracket_slug>/submit', methods=['GET', 'POST'])
+def r6_bracket_submit(bracket_slug):
+    br = _r45_row(
+        "SELECT * FROM r5_brackets WHERE slug=:s", s=bracket_slug)
+    if not br:
+        abort(404)
+    email, _name = _r6_actor()
+    n_picks = (_r45_row(
+        "SELECT COUNT(*) AS n FROM r6_bracket_picks "
+        "WHERE user_email=:e AND bracket_slug=:b",
+        e=email, b=bracket_slug) or {}).get('n', 0)
+    if request.method == 'POST':
+        _r6_exec(
+            "UPDATE r6_bracket_picks SET is_locked=1 "
+            "WHERE user_email=:e AND bracket_slug=:b",
+            e=email, b=bracket_slug)
+        return _r6_render_success(
+            'Bracket locked',
+            f'Your bracket for {br["name"]} is submitted and locked '
+            f'({n_picks} picks).',
+            back_url=f'/r5/bracket/{bracket_slug}',
+            back_label='Back to bracket')
+    return render_template('r6_bracket_submit.html',
+                            bracket=br, n_picks=n_picks)
+
+
+@app.route('/bracket/<bracket_slug>/lock-tiebreaker',
+           methods=['GET', 'POST'])
+def r6_bracket_tiebreaker(bracket_slug):
+    br = _r45_row(
+        "SELECT * FROM r5_brackets WHERE slug=:s", s=bracket_slug)
+    if not br:
+        abort(404)
+    if request.method == 'POST':
+        tb = int(request.form.get('tiebreaker_score', '120') or '120')
+        email, _name = _r6_actor()
+        _r6_exec(
+            "UPDATE r6_bracket_picks SET tiebreaker_score=:tb "
+            "WHERE user_email=:e AND bracket_slug=:b "
+            "AND is_champion_pick=1",
+            tb=tb, e=email, b=bracket_slug)
+        return _r6_render_success(
+            'Tiebreaker locked',
+            f'Tiebreaker total set to {tb} for {br["name"]}.',
+            back_url=f'/r5/bracket/{bracket_slug}',
+            back_label='Back to bracket')
+    return render_template('r6_bracket_tiebreaker.html', bracket=br)
+
+
+@app.route('/bracket-pool/create', methods=['GET', 'POST'])
+def r6_bracket_pool_create():
+    brackets = _r45_rows(
+        "SELECT * FROM r5_brackets ORDER BY id")
+    if request.method == 'POST':
+        name = request.form.get('name', '').strip()
+        bracket_slug = request.form.get('bracket_slug', '').strip()
+        scoring = request.form.get('scoring', 'standard').strip()
+        if not (name and bracket_slug):
+            flash('Pick a pool name and a bracket.', 'danger')
+            return redirect(request.url)
+        slug = re.sub(r'[^a-z0-9-]+', '-', name.lower()).strip('-')
+        if not slug:
+            slug = 'pool'
+        slug = f'{slug}-{hashlib.md5((name+bracket_slug).encode()).hexdigest()[:6]}'
+        invite_code = hashlib.md5(
+            (slug + _r6_now()).encode()).hexdigest()[:8].upper()
+        new_id = (_r45_row(
+            "SELECT COALESCE(MAX(id),0)+1 AS n FROM r6_bracket_pools"
+        ) or {}).get('n', 1)
+        email, name_who = _r6_actor()
+        _r6_exec(
+            "INSERT INTO r6_bracket_pools "
+            "(id, slug, bracket_slug, name, owner_email, scoring, is_locked, "
+            "member_count, created_at, invite_code) "
+            "VALUES (:id, :slug, :bs, :nm, :e, :sc, 0, 1, :ts, :ic)",
+            id=new_id, slug=slug, bs=bracket_slug, nm=name, e=email,
+            sc=scoring, ts=_r6_now(), ic=invite_code)
+        # Auto-add owner as first member
+        mem_id = (_r45_row(
+            "SELECT COALESCE(MAX(id),0)+1 AS n "
+            "FROM r6_bracket_pool_members") or {}).get('n', 1)
+        _r6_exec(
+            "INSERT INTO r6_bracket_pool_members "
+            "(id, pool_id, user_email, display_name, joined_at, score) "
+            "VALUES (:id, :pid, :e, :nm, :ts, 0)",
+            id=mem_id, pid=new_id, e=email, nm=name_who, ts=_r6_now())
+        return _r6_render_success(
+            'Pool created',
+            f'Pool "{name}" created. Invite code: {invite_code}.',
+            back_url='/r5/bracket',
+            back_label='Bracket hub')
+    return render_template('r6_bracket_pool_create.html', brackets=brackets)
+
+
+@app.route('/bracket-pool/<pool_slug>/join', methods=['GET', 'POST'])
+def r6_bracket_pool_join(pool_slug):
+    pool = _r45_row(
+        "SELECT * FROM r6_bracket_pools WHERE slug=:s", s=pool_slug)
+    if not pool:
+        abort(404)
+    if request.method == 'POST':
+        display = request.form.get('display_name', _r6_actor()[1]).strip()
+        email = (request.form.get('email', '').strip() or _r6_actor()[0])
+        invite = request.form.get('invite_code', '').strip().upper()
+        if pool['invite_code'] and invite and invite != pool['invite_code']:
+            flash('Invite code does not match.', 'danger')
+            return redirect(request.url)
+        # Already a member?
+        existing = _r45_row(
+            "SELECT id FROM r6_bracket_pool_members "
+            "WHERE pool_id=:p AND user_email=:e",
+            p=pool['id'], e=email)
+        if existing:
+            return _r6_render_success(
+                'Already in this pool',
+                f'{email} is already a member of {pool["name"]}.',
+                back_url=f'/bracket-pool/{pool_slug}/join',
+                back_label='Back')
+        new_id = (_r45_row(
+            "SELECT COALESCE(MAX(id),0)+1 AS n "
+            "FROM r6_bracket_pool_members") or {}).get('n', 1)
+        _r6_exec(
+            "INSERT INTO r6_bracket_pool_members "
+            "(id, pool_id, user_email, display_name, joined_at, score) "
+            "VALUES (:id, :pid, :e, :nm, :ts, 0)",
+            id=new_id, pid=pool['id'], e=email, nm=display, ts=_r6_now())
+        _r6_exec(
+            "UPDATE r6_bracket_pools SET member_count=member_count+1 "
+            "WHERE id=:p", p=pool['id'])
+        return _r6_render_success(
+            'Joined pool',
+            f'{display} joined {pool["name"]}.',
+            back_url=f'/r5/bracket/{pool["bracket_slug"]}',
+            back_label='Open bracket')
+    return render_template('r6_bracket_pool_join.html', pool=pool)
+
+
+@app.route('/bracket-pool/<pool_slug>/invite', methods=['GET', 'POST'])
+def r6_bracket_pool_invite(pool_slug):
+    pool = _r45_row(
+        "SELECT * FROM r6_bracket_pools WHERE slug=:s", s=pool_slug)
+    if not pool:
+        abort(404)
+    if request.method == 'POST':
+        recipient = request.form.get('recipient_email', '').strip()
+        message = request.form.get('message', '').strip()
+        new_id = (_r45_row(
+            "SELECT COALESCE(MAX(id),0)+1 AS n FROM r6_league_invites"
+        ) or {}).get('n', 1)
+        _r6_exec(
+            "INSERT INTO r6_league_invites "
+            "(id, league_slug, invite_code, recipient_email, message, "
+            "status, sent_at) "
+            "VALUES (:id, :ls, :code, :r, :m, 'pending', :ts)",
+            id=new_id, ls=f'pool:{pool_slug}',
+            code=pool['invite_code'] or 'POOL', r=recipient, m=message,
+            ts=_r6_now())
+        return _r6_render_success(
+            'Pool invite sent',
+            f'Pool invite to {recipient} queued (code: '
+            f'{pool["invite_code"]}).',
+            back_url=f'/r5/bracket/{pool["bracket_slug"]}',
+            back_label='Back to bracket')
+    return render_template('r6_bracket_pool_invite.html', pool=pool)
+
+
+# ─── Community: comments / follows / watchlist / alerts / polls ───────────────
+
+@app.route('/article/<article_slug>/comment', methods=['GET', 'POST'])
+def r6_article_comment(article_slug):
+    art = _r45_row(
+        "SELECT * FROM articles WHERE slug=:s", s=article_slug)
+    if not art:
+        abort(404)
+    comments = _r45_rows(
+        "SELECT * FROM r6_comments WHERE article_slug=:s "
+        "AND parent_id IS NULL ORDER BY id DESC LIMIT 20", s=article_slug)
+    if request.method == 'POST':
+        body = request.form.get('body', '').strip()
+        if not body or len(body) < 3:
+            flash('Comment is too short.', 'danger')
+            return redirect(request.url)
+        email, name = _r6_actor()
+        new_id = (_r45_row(
+            "SELECT COALESCE(MAX(id),0)+1 AS n FROM r6_comments"
+        ) or {}).get('n', 1)
+        _r6_exec(
+            "INSERT INTO r6_comments "
+            "(id, article_slug, parent_id, author_name, author_email, body, "
+            "upvotes, created_at, is_flagged) "
+            "VALUES (:id, :a, NULL, :nm, :e, :b, 0, :ts, 0)",
+            id=new_id, a=article_slug, nm=name, e=email, b=body,
+            ts=_r6_now())
+        flash('Comment posted.', 'success')
+        return redirect(request.url)
+    return render_template('r6_article_comment.html',
+                            article=art, comments=comments)
+
+
+@app.route('/comment/<int:comment_id>/upvote', methods=['GET', 'POST'])
+def r6_comment_upvote(comment_id):
+    c = _r45_row(
+        "SELECT * FROM r6_comments WHERE id=:i", i=comment_id)
+    if not c:
+        abort(404)
+    if request.method == 'POST':
+        _r6_exec(
+            "UPDATE r6_comments SET upvotes=upvotes+1 WHERE id=:i",
+            i=comment_id)
+        nxt = request.form.get('next') or url_for(
+            'r6_article_comment', article_slug=c['article_slug'])
+        return redirect(nxt)
+    return render_template('r6_comment_upvote.html', comment=c)
+
+
+@app.route('/comment/<int:comment_id>/reply', methods=['GET', 'POST'])
+def r6_comment_reply(comment_id):
+    parent = _r45_row(
+        "SELECT * FROM r6_comments WHERE id=:i", i=comment_id)
+    if not parent:
+        abort(404)
+    if request.method == 'POST':
+        body = request.form.get('body', '').strip()
+        if not body or len(body) < 3:
+            flash('Reply is too short.', 'danger')
+            return redirect(request.url)
+        email, name = _r6_actor()
+        new_id = (_r45_row(
+            "SELECT COALESCE(MAX(id),0)+1 AS n FROM r6_comments"
+        ) or {}).get('n', 1)
+        _r6_exec(
+            "INSERT INTO r6_comments "
+            "(id, article_slug, parent_id, author_name, author_email, body, "
+            "upvotes, created_at, is_flagged) "
+            "VALUES (:id, :a, :p, :nm, :e, :b, 0, :ts, 0)",
+            id=new_id, a=parent['article_slug'], p=comment_id, nm=name,
+            e=email, b=body, ts=_r6_now())
+        return _r6_render_success(
+            'Reply posted',
+            f'Reply added to comment #{comment_id}.',
+            back_url=f'/article/{parent["article_slug"]}/comment',
+            back_label='Back to article')
+    return render_template('r6_comment_reply.html', parent=parent)
+
+
+@app.route('/team/<sport_slug>/<team_slug>/follow', methods=['GET', 'POST'])
+def r6_team_follow(sport_slug, team_slug):
+    team = _r45_row(
+        "SELECT * FROM teams WHERE sport_slug=:s AND slug=:t",
+        s=sport_slug, t=team_slug)
+    if not team:
+        abort(404)
+    if request.method == 'POST':
+        email, _name = _r6_actor()
+        existing = _r45_row(
+            "SELECT id FROM r6_follows WHERE user_email=:e "
+            "AND entity_kind='team' AND entity_slug=:s",
+            e=email, s=team_slug)
+        if not existing:
+            new_id = (_r45_row(
+                "SELECT COALESCE(MAX(id),0)+1 AS n FROM r6_follows"
+            ) or {}).get('n', 1)
+            _r6_exec(
+                "INSERT INTO r6_follows "
+                "(id, user_email, entity_kind, entity_sport, entity_slug, "
+                "followed_at) "
+                "VALUES (:id, :e, 'team', :sp, :sl, :ts)",
+                id=new_id, e=email, sp=sport_slug, sl=team_slug,
+                ts=_r6_now())
+        return _r6_render_success(
+            'Following team',
+            f'You are now following {team["full_name"]}.',
+            back_url=f'/team/{sport_slug}/{team_slug}',
+            back_label='Back to team')
+    return render_template('r6_follow_confirm.html',
+                            entity_kind='team', entity=team)
+
+
+@app.route('/player/<sport_slug>/<player_slug>/follow',
+           methods=['GET', 'POST'])
+def r6_player_follow(sport_slug, player_slug):
+    player = _r45_row(
+        "SELECT * FROM players WHERE sport_slug=:s AND slug=:p",
+        s=sport_slug, p=player_slug)
+    if not player:
+        abort(404)
+    if request.method == 'POST':
+        email, _name = _r6_actor()
+        existing = _r45_row(
+            "SELECT id FROM r6_follows WHERE user_email=:e "
+            "AND entity_kind='player' AND entity_slug=:s",
+            e=email, s=player_slug)
+        if not existing:
+            new_id = (_r45_row(
+                "SELECT COALESCE(MAX(id),0)+1 AS n FROM r6_follows"
+            ) or {}).get('n', 1)
+            _r6_exec(
+                "INSERT INTO r6_follows "
+                "(id, user_email, entity_kind, entity_sport, entity_slug, "
+                "followed_at) "
+                "VALUES (:id, :e, 'player', :sp, :sl, :ts)",
+                id=new_id, e=email, sp=sport_slug, sl=player_slug,
+                ts=_r6_now())
+        return _r6_render_success(
+            'Following player',
+            f'You are now following {player["name"]}.',
+            back_url=f'/player/{sport_slug}/{player_slug}',
+            back_label='Back to player')
+    return render_template('r6_follow_confirm.html',
+                            entity_kind='player', entity=player)
+
+
+@app.route('/watchlist/add', methods=['GET', 'POST'])
+def r6_watchlist_add():
+    if request.method == 'POST':
+        kind = request.form.get('kind', 'team').strip()
+        ref_slug = request.form.get('ref_slug', '').strip()
+        label = request.form.get('label', '').strip()
+        if not ref_slug:
+            flash('Pick something to watch.', 'danger')
+            return redirect(request.url)
+        email, _name = _r6_actor()
+        new_id = (_r45_row(
+            "SELECT COALESCE(MAX(id),0)+1 AS n FROM r6_watchlist"
+        ) or {}).get('n', 1)
+        _r6_exec(
+            "INSERT INTO r6_watchlist "
+            "(id, user_email, kind, ref_slug, label, added_at) "
+            "VALUES (:id, :e, :k, :r, :l, :ts)",
+            id=new_id, e=email, k=kind, r=ref_slug, l=label, ts=_r6_now())
+        return _r6_render_success(
+            'Added to watchlist',
+            f'{label or ref_slug} added to your watchlist.',
+            back_url='/watch', back_label='Back to Watch')
+    return render_template('r6_watchlist_form.html')
+
+
+@app.route('/alert/subscribe', methods=['GET', 'POST'])
+def r6_alert_subscribe():
+    if request.method == 'POST':
+        alert_kind = request.form.get('alert_kind', 'game-start').strip()
+        ref_slug = request.form.get('ref_slug', '').strip()
+        channel = request.form.get('channel', 'push').strip()
+        if not ref_slug:
+            flash('Pick something to be alerted about.', 'danger')
+            return redirect(request.url)
+        email, _name = _r6_actor()
+        new_id = (_r45_row(
+            "SELECT COALESCE(MAX(id),0)+1 AS n FROM r6_alerts"
+        ) or {}).get('n', 1)
+        _r6_exec(
+            "INSERT INTO r6_alerts "
+            "(id, user_email, alert_kind, ref_slug, channel, is_active, "
+            "subscribed_at) "
+            "VALUES (:id, :e, :k, :r, :c, 1, :ts)",
+            id=new_id, e=email, k=alert_kind, r=ref_slug, c=channel,
+            ts=_r6_now())
+        return _r6_render_success(
+            'Alert active',
+            f'You will receive {alert_kind} alerts for {ref_slug} via '
+            f'{channel}.',
+            back_url='/account', back_label='Account')
+    return render_template('r6_alert_subscribe.html')
+
+
+@app.route('/poll/<int:poll_id>/vote', methods=['GET', 'POST'])
+def r6_poll_vote(poll_id):
+    poll = _r45_row("SELECT * FROM r6_polls WHERE id=:i", i=poll_id)
+    if not poll:
+        abort(404)
+    options = _r45_rows(
+        "SELECT * FROM r6_poll_options WHERE poll_id=:i ORDER BY position",
+        i=poll_id)
+    if request.method == 'POST':
+        option_id = int(request.form.get('option_id', '0') or '0')
+        if not option_id:
+            flash('Pick an option.', 'danger')
+            return redirect(request.url)
+        opt = _r45_row(
+            "SELECT * FROM r6_poll_options WHERE id=:i AND poll_id=:p",
+            i=option_id, p=poll_id)
+        if not opt:
+            abort(400)
+        email, _name = _r6_actor()
+        existing = _r45_row(
+            "SELECT id FROM r6_poll_votes WHERE poll_id=:p "
+            "AND user_email=:e", p=poll_id, e=email)
+        if existing:
+            # Update vote (move count from old option to new)
+            old = _r45_row(
+                "SELECT option_id FROM r6_poll_votes WHERE id=:i",
+                i=existing['id'])
+            if old and old['option_id'] != option_id:
+                _r6_exec(
+                    "UPDATE r6_poll_options SET votes=votes-1 WHERE id=:i",
+                    i=old['option_id'])
+                _r6_exec(
+                    "UPDATE r6_poll_options SET votes=votes+1 WHERE id=:i",
+                    i=option_id)
+                _r6_exec(
+                    "UPDATE r6_poll_votes SET option_id=:o, voted_at=:ts "
+                    "WHERE id=:i", o=option_id, ts=_r6_now(),
+                    i=existing['id'])
+        else:
+            new_id = (_r45_row(
+                "SELECT COALESCE(MAX(id),0)+1 AS n FROM r6_poll_votes"
+            ) or {}).get('n', 1)
+            _r6_exec(
+                "INSERT INTO r6_poll_votes "
+                "(id, poll_id, option_id, user_email, voted_at) "
+                "VALUES (:id, :p, :o, :e, :ts)",
+                id=new_id, p=poll_id, o=option_id, e=email, ts=_r6_now())
+            _r6_exec(
+                "UPDATE r6_poll_options SET votes=votes+1 WHERE id=:i",
+                i=option_id)
+        return _r6_render_success(
+            'Vote recorded',
+            f'Your vote for "{opt["label"]}" is in.',
+            back_url=f'/poll/{poll_id}/vote', back_label='See results')
+    return render_template('r6_poll_detail.html',
+                            poll=poll, options=options)
+
+
+# === R6 GUI POST surface END ════════════════════════════════════════════════
+
+
 if __name__ == '__main__':
     with app.app_context():
         db.create_all()

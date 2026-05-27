@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% block title %}
+{% if mode == 'claim' %}Claim {{ player.name }}{% else %}Drop {{ player.name }}{% endif %} — Waiver Wire
+{% endblock %}
+{% block content %}
+<div class="container">
+  <div class="page-header">
+    <a href="/fantasy" class="back-link">← Fantasy</a>
+    {% if mode == 'claim' %}
+      <h1>Waiver Claim: Add {{ player.name }}</h1>
+      <p class="subtitle">{{ player.sport_slug | upper }} — {{ player.position }}</p>
+    {% else %}
+      <h1>Drop {{ player.name }}</h1>
+      <p class="subtitle">This player will be released to the waiver pool.</p>
+    {% endif %}
+  </div>
+
+  <section class="section-block">
+    {% if mode == 'claim' %}
+      <form method="post" action="/fantasy/waiver/claim/{{ player.id }}" class="r6-form">
+    {% else %}
+      <form method="post" action="/fantasy/waiver/drop/{{ player.id }}" class="r6-form">
+    {% endif %}
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+      <div class="form-group">
+        <label class="form-label" for="league_slug">League</label>
+        <select name="league_slug" id="league_slug" class="form-input" required>
+          <option value="">— Choose a league —</option>
+          {% for lg in leagues %}
+            <option value="{{ lg.slug }}">{{ lg.name }} ({{ lg.sport_slug | upper }})</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="team_slug">Your fantasy team slug</label>
+        <input class="form-input" type="text" id="team_slug" name="team_slug" required>
+      </div>
+
+      {% if mode == 'claim' %}
+        <div class="form-group">
+          <label class="form-label" for="bid_amount">Bid amount ($)</label>
+          <input class="form-input" type="number" id="bid_amount" name="bid_amount"
+                 value="5" min="0" max="1000">
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="drop_player">Drop player (optional)</label>
+          <input class="form-input" type="text" id="drop_player" name="drop_player"
+                 placeholder="Player to drop if claim is awarded">
+        </div>
+      {% endif %}
+
+      <button class="btn-red" type="submit">
+        {% if mode == 'claim' %}Submit claim{% else %}Drop player{% endif %}
+      </button>
+    </form>
+  </section>
+</div>
+{% endblock %}

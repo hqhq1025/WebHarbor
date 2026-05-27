@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block title %}Tiebreaker — {{ bracket.name }}{% endblock %}
+{% block content %}
+<div class="container">
+  <div class="page-header">
+    <a href="/r5/bracket/{{ bracket.slug }}" class="back-link">← {{ bracket.name }}</a>
+    <h1>Lock Tiebreaker</h1>
+    <p class="subtitle">Predict the championship game total score.</p>
+  </div>
+
+  <section class="section-block">
+    <form method="post" action="/bracket/{{ bracket.slug }}/lock-tiebreaker" class="r6-form">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+      <div class="form-group">
+        <label class="form-label" for="tiebreaker_score">Combined total score (championship game)</label>
+        <input class="form-input" type="number" id="tiebreaker_score" name="tiebreaker_score"
+               min="50" max="300" value="142" required>
+      </div>
+
+      <button class="btn-red" type="submit">Lock tiebreaker</button>
+    </form>
+  </section>
+</div>
+{% endblock %}

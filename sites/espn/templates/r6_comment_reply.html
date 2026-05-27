@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block title %}Reply to Comment{% endblock %}
+{% block content %}
+<div class="container">
+  <div class="page-header">
+    <a href="/article/{{ parent.article_slug }}/comment" class="back-link">← Comments</a>
+    <h1>Reply to {{ parent.author_name }}</h1>
+  </div>
+
+  <section class="section-block">
+    <p class="r6-comment-meta">Replying to: <em>{{ parent.body }}</em></p>
+    <form method="post" action="/comment/{{ parent.id }}/reply" class="r6-form">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+      <div class="form-group">
+        <label class="form-label" for="author_name">Your name</label>
+        <input class="form-input" type="text" id="author_name" name="author_name" required>
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="body">Reply</label>
+        <textarea class="form-input" id="body" name="body" rows="4" required minlength="3"></textarea>
+      </div>
+
+      <button class="btn-red" type="submit">Post reply</button>
+    </form>
+  </section>
+</div>
+{% endblock %}

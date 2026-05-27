@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% block title %}Create a Fantasy League{% endblock %}
+{% block content %}
+<div class="container">
+  <div class="page-header">
+    <a href="/fantasy" class="back-link">← Fantasy</a>
+    <h1>Create a New Fantasy League</h1>
+    <p class="subtitle">Set up a public league across NFL / NBA / MLB / NHL.</p>
+  </div>
+
+  <section class="section-block">
+    <form method="post" action="/fantasy/league/create" class="r6-form">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+      <div class="form-group">
+        <label class="form-label" for="name">League name</label>
+        <input class="form-input" type="text" id="name" name="name" required maxlength="80">
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="sport_slug">Sport</label>
+        <select class="form-input" id="sport_slug" name="sport_slug">
+          <option value="nfl">NFL</option>
+          <option value="nba">NBA</option>
+          <option value="mlb">MLB</option>
+          <option value="nhl">NHL</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="league_size">League size</label>
+        <select class="form-input" id="league_size" name="league_size">
+          <option value="8">8 teams</option>
+          <option value="10" selected>10 teams</option>
+          <option value="12">12 teams</option>
+          <option value="14">14 teams</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="scoring_type">Scoring</label>
+        <select class="form-input" id="scoring_type" name="scoring_type">
+          <option value="PPR">PPR</option>
+          <option value="Standard">Standard</option>
+          <option value="Half-PPR">Half-PPR</option>
+          <option value="Category">Category</option>
+          <option value="Roto">Roto</option>
+        </select>
+      </div>
+
+      <button class="btn-red" type="submit">Create league</button>
+    </form>
+  </section>
+</div>
+{% endblock %}

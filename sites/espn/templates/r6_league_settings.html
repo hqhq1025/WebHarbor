@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block title %}League Settings — {{ league.name }}{% endblock %}
+{% block content %}
+<div class="container">
+  <div class="page-header">
+    <a href="/r4/fantasy/league/{{ league.slug }}" class="back-link">← {{ league.name }}</a>
+    <h1>League Settings</h1>
+    <p class="subtitle">{{ league.sport_slug | upper }} · season {{ league.season }}</p>
+  </div>
+
+  <section class="section-block">
+    <form method="post" action="/fantasy/league/{{ league.slug }}/settings/update" class="r6-form">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+      <div class="form-group">
+        <label class="form-label" for="scoring_type">Scoring type</label>
+        <select class="form-input" id="scoring_type" name="scoring_type">
+          {% for s in ['PPR', 'Standard', 'Half-PPR', 'Category', 'Roto'] %}
+            <option value="{{ s }}" {% if s == league.scoring_type %}selected{% endif %}>{{ s }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="roster_size">Roster size</label>
+        <input class="form-input" type="number" id="roster_size" name="roster_size"
+               min="10" max="30" value="{{ league.roster_size }}">
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="current_week">Current week</label>
+        <input class="form-input" type="number" id="current_week" name="current_week"
+               min="1" max="26" value="{{ league.current_week }}">
+      </div>
+
+      <button class="btn-red" type="submit">Save settings</button>
+    </form>
+  </section>
+</div>
+{% endblock %}

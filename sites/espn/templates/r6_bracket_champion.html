@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block title %}Champion pick — {{ bracket.name }}{% endblock %}
+{% block content %}
+<div class="container">
+  <div class="page-header">
+    <a href="/r5/bracket/{{ bracket.slug }}" class="back-link">← {{ bracket.name }}</a>
+    <h1>Pick Your Champion</h1>
+    <p class="subtitle">{{ bracket.name }} — {{ bracket.year }}</p>
+  </div>
+
+  <section class="section-block">
+    <form method="post" action="/bracket/{{ bracket.slug }}/champion-pick" class="r6-form">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+      <div class="form-group">
+        <label class="form-label" for="champion_team">Champion (pick from any seed)</label>
+        <select class="form-input" id="champion_team" name="champion_team" required>
+          <option value="">— pick a team —</option>
+          {% for s in seeds %}
+            <option value="{{ s.team_name }}">[{{ s.seed_num }}] {{ s.region }} — {{ s.team_name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="pool_slug">Pool (optional)</label>
+        <input class="form-input" type="text" id="pool_slug" name="pool_slug">
+      </div>
+
+      <button class="btn-red" type="submit">Lock in champion</button>
+    </form>
+  </section>
+</div>
+{% endblock %}

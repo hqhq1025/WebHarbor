@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block title %}Save Lineup — {{ team.team_name }}{% endblock %}
+{% block content %}
+<div class="container">
+  <div class="page-header">
+    <a href="/r4/fantasy/league/{{ league.slug }}" class="back-link">← {{ league.name }}</a>
+    <h1>Save Week {{ league.current_week }} Lineup</h1>
+    <p class="subtitle">{{ team.team_name }} · Manager {{ team.manager_name }}</p>
+  </div>
+
+  <section class="section-block">
+    <h2 class="section-heading">Set starters (uncheck to bench)</h2>
+    <form method="post" action="/fantasy/lineup/save/{{ team.slug }}" class="r6-form">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <table class="lineup-table">
+        <thead><tr>
+          <th>Start?</th><th>Slot</th><th>Player</th><th>Opp</th><th>Proj.</th>
+        </tr></thead>
+        <tbody>
+        {% for r in lineup %}
+          <tr>
+            <td><input type="checkbox" name="starter" value="{{ r.id }}"
+                       {% if r.is_starter %}checked{% endif %}></td>
+            <td><a href="/fantasy/lineup/swap/{{ team.slug }}/{{ r.slot }}">{{ r.slot }}</a></td>
+            <td>{{ r.player_name }}</td>
+            <td>{{ r.opponent }}</td>
+            <td>{{ '%.2f' % r.projected_points }}</td>
+          </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+      <button class="btn-red" type="submit">Save lineup</button>
+    </form>
+  </section>
+</div>
+{% endblock %}
